@@ -1,43 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804Ab0LQNej (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 08:34:39 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33427 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754425Ab0LQNei (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 08:34:38 -0500
-Date: Fri, 17 Dec 2010 13:34:35 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Rabin Vincent <rabin@rab.in>, stern@rowland.harvard.edu,
-        linux-pm@lists.linux-foundation.org, linux-i2c@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: platform/i2c busses: pm runtime and system sleep
-Message-ID: <20101217133434.GH31453@rakim.wolfsonmicro.main>
-References: <AANLkTinyDE3OxKup_aqsN8HJH_r5LcwkP17OtuMRpACx@mail.gmail.com>
- <20101217125427.GA29640@sirena.org.uk>
- <201012171425.07775.rjw@sisk.pl>
+	id S1754763Ab0LQNmS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 08:42:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32431 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753937Ab0LQNmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 08:42:16 -0500
+Message-ID: <4D0B68AF.80804@redhat.com>
+Date: Fri, 17 Dec 2010 14:42:07 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20091014 Fedora/3.0-2.8.b4.fc11 Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201012171425.07775.rjw@sisk.pl>
-X-Cookie: I just had a NOSE JOB!!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jens Axboe <jaxboe@fusionio.com>
+CC: Vivek Goyal <vgoyal@redhat.com>,
+        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] block: fix accounting bug on cross partition merges
+References: <4CFCB08F.4010509@jp.fujitsu.com> <AANLkTimzkN9iCDY6S9Pajh+BqTouggOxs56fBdwyoxHY@mail.gmail.com> <4CFDDFC3.2070107@jp.fujitsu.com> <4CFF34E7.2030401@fusionio.com> <4CFF3AD6.6010904@jp.fujitsu.com> <4CFF3C86.2070504@fusionio.com> <4CFF3DA4.5060705@jp.fujitsu.com> <4CFF9A2C.1070401@fusionio.com> <4D025154.8030400@redhat.com> <20101210165553.GE31737@redhat.com> <4D07D2AC.6000500@fusionio.com>
+In-Reply-To: <4D07D2AC.6000500@fusionio.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 02:25:07PM +0100, Rafael J. Wysocki wrote:
-> On Friday, December 17, 2010, Mark Brown wrote:
 
-> > It'd be really good if this could all be factored out into the PM core,
-> > we're going to have to do the same thing for at least SPI as well and
-> > possibly some other buses :/
+/proc/diskstats would display a strange output as follows.
 
-> So how exactly the PM core is supposed to include those things?
+$ cat /proc/diskstats |grep sda
+   8       0 sda 90524 7579 102154 20464 0 0 0 0 0 14096 20089
+   8       1 sda1 19085 1352 21841 4209 0 0 0 0 4294967064 15689 4293424691
+                                                ~~~~~~~~~~
+   8       2 sda2 71252 3624 74891 15950 0 0 0 0 232 23995 1562390
+   8       3 sda3 54 487 2188 92 0 0 0 0 0 88 92
+   8       4 sda4 4 0 8 0 0 0 0 0 0 0 0
+   8       5 sda5 81 2027 2130 138 0 0 0 0 0 87 137
 
-> There certainly are other buses that don't want to do them.
+Its reason is the wrong way of accounting hd_struct->in_flight. When a bio is
+merged into a request belongs to different partition by ELEVATOR_FRONT_MERGE.
 
-By, for example, providing default implementations which the buses can
-use if they choose to.
+The detailed root cause is as follows.
+
+Assuming that there are two partition, sda1 and sda2.
+
+1. A request for sda2 is in request_queue. Hence sda1's hd_struct->in_flight
+   is 0 and sda2's one is 1.
+
+        | hd_struct->in_flight
+   ---------------------------
+   sda1 |          0
+   sda2 |          1
+   ---------------------------
+
+2. A bio belongs to sda1 is issued and is merged into the request mentioned on
+   step1 by ELEVATOR_BACK_MERGE. The first sector of the request is changed
+   from sda2 region to sda1 region. However the two partition's
+   hd_struct->in_flight are not changed.
+
+        | hd_struct->in_flight
+   ---------------------------
+   sda1 |          0
+   sda2 |          1
+   ---------------------------
+
+3. The request is finished and blk_account_io_done() is called. In this case,
+   sda2's hd_struct->in_flight, not a sda1's one, is decremented.
+
+        | hd_struct->in_flight
+   ---------------------------
+   sda1 |         -1
+   sda2 |          1
+   ---------------------------
+
+The patch fixes the problem by caching the partition lookup
+inside the request structure, hence making sure that the increment
+and decrement will always happen on the same partition struct. This
+also speeds up IO with accounting enabled, since it cuts down on
+the number of lookups we have to do.
+
+Also add a refcount to struct hd_struct to keep the partition in
+memory as long as users exist.
+
+Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+---
+ block/blk-core.c       |   15 ++++++++++-----
+ block/blk-merge.c      |    3 ++-
+ block/genhd.c          |    1 +
+ fs/partitions/check.c  |   11 ++++++++++-
+ include/linux/blkdev.h |    1 +
+ include/linux/genhd.h  |    2 ++
+ 6 files changed, 26 insertions(+), 7 deletions(-)
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 4ce953f..064921d 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -64,13 +64,16 @@ static void drive_stat_acct(struct request *rq, int new_io)
+ 		return;
+ 
+ 	cpu = part_stat_lock();
+-	part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
+ 
+-	if (!new_io)
++	if (!new_io) {
++		part = rq->part;
+ 		part_stat_inc(cpu, part, merges[rw]);
+-	else {
++	} else {
++		part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
+ 		part_round_stats(cpu, part);
+ 		part_inc_in_flight(part, rw);
++		kref_get(&part->ref);
++		rq->part = part;
+ 	}
+ 
+ 	part_stat_unlock();
+@@ -128,6 +131,7 @@ void blk_rq_init(struct request_queue *q, struct request *rq)
+ 	rq->ref_count = 1;
+ 	rq->start_time = jiffies;
+ 	set_start_time_ns(rq);
++	rq->part = NULL;
+ }
+ EXPORT_SYMBOL(blk_rq_init);
+ 
+@@ -1776,7 +1780,7 @@ static void blk_account_io_completion(struct request *req, unsigned int bytes)
+ 		int cpu;
+ 
+ 		cpu = part_stat_lock();
+-		part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
++		part = req->part;
+ 		part_stat_add(cpu, part, sectors[rw], bytes >> 9);
+ 		part_stat_unlock();
+ 	}
+@@ -1796,13 +1800,14 @@ static void blk_account_io_done(struct request *req)
+ 		int cpu;
+ 
+ 		cpu = part_stat_lock();
+-		part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
++		part = req->part;
+ 
+ 		part_stat_inc(cpu, part, ios[rw]);
+ 		part_stat_add(cpu, part, ticks[rw], duration);
+ 		part_round_stats(cpu, part);
+ 		part_dec_in_flight(part, rw);
+ 
++		kref_put(&part->ref, __delete_partition);
+ 		part_stat_unlock();
+ 	}
+ }
+diff --git a/block/blk-merge.c b/block/blk-merge.c
+index 77b7c26..b06b83b 100644
+--- a/block/blk-merge.c
++++ b/block/blk-merge.c
+@@ -351,11 +351,12 @@ static void blk_account_io_merge(struct request *req)
+ 		int cpu;
+ 
+ 		cpu = part_stat_lock();
+-		part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
++		part = req->part;
+ 
+ 		part_round_stats(cpu, part);
+ 		part_dec_in_flight(part, rq_data_dir(req));
+ 
++		kref_put(&part->ref, __delete_partition);
+ 		part_stat_unlock();
+ 	}
+ }
+diff --git a/block/genhd.c b/block/genhd.c
+index 5fa2b44..0c55eae 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -1192,6 +1192,7 @@ struct gendisk *alloc_disk_node(int minors, int node_id)
+ 			return NULL;
+ 		}
+ 		disk->part_tbl->part[0] = &disk->part0;
++		kref_init(&disk->part0.ref);
+ 
+ 		disk->minors = minors;
+ 		rand_initialize_disk(disk);
+diff --git a/fs/partitions/check.c b/fs/partitions/check.c
+index 0a8b0ad..4b5aa9d 100644
+--- a/fs/partitions/check.c
++++ b/fs/partitions/check.c
+@@ -372,6 +372,14 @@ static void delete_partition_rcu_cb(struct rcu_head *head)
+ 	put_device(part_to_dev(part));
+ }
+ 
++void __delete_partition(struct kref *ref)
++{
++	struct hd_struct *part =
++		container_of(ref, struct hd_struct, ref);
++
++	call_rcu(&part->rcu_head, delete_partition_rcu_cb);
++}
++
+ void delete_partition(struct gendisk *disk, int partno)
+ {
+ 	struct disk_part_tbl *ptbl = disk->part_tbl;
+@@ -390,7 +398,7 @@ void delete_partition(struct gendisk *disk, int partno)
+ 	kobject_put(part->holder_dir);
+ 	device_del(part_to_dev(part));
+ 
+-	call_rcu(&part->rcu_head, delete_partition_rcu_cb);
++	kref_put(&part->ref, __delete_partition);
+ }
+ 
+ static ssize_t whole_disk_show(struct device *dev,
+@@ -489,6 +497,7 @@ struct hd_struct *add_partition(struct gendisk *disk, int partno,
+ 	if (!dev_get_uevent_suppress(ddev))
+ 		kobject_uevent(&pdev->kobj, KOBJ_ADD);
+ 
++	kref_init(&p->ref);
+ 	return p;
+ 
+ out_free_info:
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index aae86fd..482a7fd 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -115,6 +115,7 @@ struct request {
+ 	void *elevator_private3;
+ 
+ 	struct gendisk *rq_disk;
++	struct hd_struct *part;
+ 	unsigned long start_time;
+ #ifdef CONFIG_BLK_CGROUP
+ 	unsigned long long start_time_ns;
+diff --git a/include/linux/genhd.h b/include/linux/genhd.h
+index 7a7b9c1..2ba2792 100644
+--- a/include/linux/genhd.h
++++ b/include/linux/genhd.h
+@@ -116,6 +116,7 @@ struct hd_struct {
+ 	struct disk_stats dkstats;
+ #endif
+ 	struct rcu_head rcu_head;
++	struct kref ref;
+ };
+ 
+ #define GENHD_FL_REMOVABLE			1
+@@ -583,6 +584,7 @@ extern struct hd_struct * __must_check add_partition(struct gendisk *disk,
+ 						     sector_t len, int flags,
+ 						     struct partition_meta_info
+ 						       *info);
++extern void __delete_partition(struct kref *ref);
+ extern void delete_partition(struct gendisk *, int);
+ extern void printk_all_partitions(void);
+ 
