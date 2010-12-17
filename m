@@ -1,91 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780Ab0LQSf0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 13:35:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23685 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755188Ab0LQSfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 13:35:24 -0500
-Date: Fri, 17 Dec 2010 13:35:07 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Stanislaw Gruszka <sgruszka@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Maxim Uvarov <muvarov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Neil Horman <nhorman@redhat.com>
-Subject: Re: kdump broken on 2.6.37-rc4
-Message-ID: <20101217183507.GA14502@redhat.com>
-References: <4D06783C.6040009@zytor.com>
- <20101214224135.GB19693@redhat.com>
- <20101215103954.GA2243@redhat.com>
- <4D09958D.2040907@kernel.org>
- <4D0AD976.3020504@zytor.com>
- <3C6B7683-9CDC-4C4A-A32A-56227DE01387@kernel.org>
- <20101217170146.GC9568@redhat.com>
- <4D0BA45A.7020402@zytor.com>
- <20101217180242.GB12425@redhat.com>
- <4D0BAA24.3080801@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D0BAA24.3080801@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755799Ab0LQSlX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 13:41:23 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:44759 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752109Ab0LQSlW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 13:41:22 -0500
+Subject: Re: [RFC][PATCH 5/5] sched: Reduce ttwu rq->lock contention
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1292610297.2266.334.camel@twins>
+References: <20101216145602.899838254@chello.nl>
+	 <20101216150920.968046926@chello.nl> <20101216184229.GA15889@redhat.com>
+	 <1292525893.2708.50.camel@laptop> <1292526220.2708.55.camel@laptop>
+	 <1292528874.2708.85.camel@laptop> <1292531553.2708.89.camel@laptop>
+	 <20101217165414.GA8997@redhat.com>  <20101217175013.GB8997@redhat.com>
+	 <1292610297.2266.334.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 17 Dec 2010 19:41:04 +0100
+Message-ID: <1292611264.2266.344.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 10:21:24AM -0800, Yinghai Lu wrote:
-> On 12/17/2010 10:02 AM, Vivek Goyal wrote:
-> > On Fri, Dec 17, 2010 at 09:56:42AM -0800, H. Peter Anvin wrote:
-> >> On 12/17/2010 09:01 AM, Vivek Goyal wrote:
-> >>> On Thu, Dec 16, 2010 at 07:58:48PM -0800, Yinghai wrote:
-> >>>> Please don't do that to 64 bit
-> >>>>
-> >>>> My big system with 1024g memory and a lot of cards with rhel 6 to make kdump work must have crashkernel=512m and second kernel need to take pci=nomsi
-> >>>>
-> >>>
-> >>> I agree here that we should not do it for 64 bit.
-> >>>
-> >>> - Just because we need it for 32 bit does not mean we should limit it for
-> >>>   64bit. And we do want to have the capability to boot the kernel from as
-> >>>   high memory as possible so creating another aritificial limit is counter
-> >>>   to that.
-> >>>
-> >>> - I would not worry too much about backward compatibility and allow
-> >>>   booting 32bit kernel till 768MB. The reason being that most of the
-> >>>   distros use same kernel for crash dumping as regular kernel. Maintainig
-> >>>   two separate kernels is big hassle.
-> >>>
-> >>>   So a small set of people who run into issue, would need to change kernel
-> >>>   command line "crashkernel=128M@64M" or something similar.
-> >>>
-> >>
-> >> Do we have actual testing for how high the 64-bit kernel will load?
-> > 
-> > I will do some experiments on my box today and let you know.
+On Fri, 2010-12-17 at 19:24 +0100, Peter Zijlstra wrote:
+> > Even simpler. This can race with, say, __migrate_task() which does
+> > deactivate_task + activate_task and temporary clears on_rq. Although
+> > this is simple to fix, I think.
 > 
-> if bzImage is used, it is 896M.
+> Yes, another hole.. 
 
-Strangely on my x86_84 systems with 37-rc6, I am trying to reserve memory and
-nothing shows up on /proc/iomem. dmesg says that I am reaserving 128M at 64M
-but nothing in /proc/iomeme. Going back to .36 kernel and see what
-happens.
+__migrate_task() is a tad special in that it should only migrate
+runnable tasks, but of course we can have it preempted with ->state !=
+TASK_RUNNING, which makes life interesting, but we can fix that by
+including a PREEMPT_ACTIVE test in ttwu.
 
-Ok, last time we had looked that kexec-tools had constraint to load
-bzImage and initrd below 896MB and it must be coming from that.
- 
-> 
-> or crashkernel=... will take two ranges like one high and one low.
-> 
-> also kexec bzImage in 64bit should use startup_64 aka 0x200 offset instead of startup_32 in arch/x86/boot/compressed/head_64.S
-> 
-> then bzImage can be put above 4G...
+Other such callers are more straight fwd though:
 
-Neil had been trying that but AFAIK, he had no success. I don't know but
-he was struggling with setting up pages tables in kexec for 64bit startup.
+  rt_mutex_setprio()
+  set_user_nice()
+  sched_move_task()
+  __sched_setscheduler()
+  normalize_task()
 
-But yes, making use of 64bit entry point is in the wish list.
-
-Thanks
-Vivek
+none of those are fast-path operations, so it is quite doable to also
+take the ->pi_lock there and fully serialize them.
+  
