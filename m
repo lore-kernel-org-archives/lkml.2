@@ -1,42 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756246Ab0LQXiy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 18:38:54 -0500
-Received: from complete.lackof.org ([198.49.126.79]:41971 "EHLO
-	complete.lackof.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754880Ab0LQXiw (ORCPT
+	id S1756308Ab0LQXkZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 18:40:25 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19237 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755153Ab0LQXkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 18:38:52 -0500
-From: dann frazier <dann.frazier@canonical.com>
-To: Corey Minyard <minyard@acm.org>
-Cc: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        dann frazier <dann.frazier@canonical.com>
-Subject: [PATCH] Add missing space in start_now parameter description
-Date: Fri, 17 Dec 2010 16:38:27 -0700
-Message-Id: <1292629107-26337-1-git-send-email-dann.frazier@canonical.com>
-X-Mailer: git-send-email 1.7.2.3
+	Fri, 17 Dec 2010 18:40:23 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp03.nvidia.com on Fri, 17 Dec 2010 15:40:08 -0800
+Date: Fri, 17 Dec 2010 15:40:08 -0800
+From: rmorell@nvidia.com
+To: Greg KH <gregkh@suse.de>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Benoit Goby <benoit@android.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
+        Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>,
+        Colin Cross <ccross@android.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] USB: ehci: tegra: Align DMA transfers to 32 bytes
+Message-ID: <20101217234008.GJ25105@morell.nvidia.com>
+References: <1292623129-26361-1-git-send-email-rmorell@nvidia.com>
+ <1292623129-26361-3-git-send-email-rmorell@nvidia.com>
+ <20101217223502.GB19418@suse.de>
+ <20101217224221.GE25105@morell.nvidia.com>
+ <20101217230940.GB21147@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101217230940.GB21147@suse.de>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: dann frazier <dann.frazier@canonical.com>
----
- drivers/char/ipmi/ipmi_watchdog.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Fri, Dec 17, 2010 at 03:09:40PM -0800, Greg KH wrote:
+> On Fri, Dec 17, 2010 at 02:42:21PM -0800, rmorell@nvidia.com wrote:
+> > On Fri, Dec 17, 2010 at 02:35:02PM -0800, Greg KH wrote:
+> > > On Fri, Dec 17, 2010 at 01:58:49PM -0800, Robert Morell wrote:
+> > > > --- a/include/linux/usb.h
+> > > > +++ b/include/linux/usb.h
+> > > > @@ -975,6 +975,7 @@ extern int usb_disabled(void);
+> > > >  #define URB_SETUP_MAP_SINGLE	0x00100000	/* Setup packet DMA mapped */
+> > > >  #define URB_SETUP_MAP_LOCAL	0x00200000	/* HCD-local setup packet */
+> > > >  #define URB_DMA_SG_COMBINED	0x00400000	/* S-G entries were combined */
+> > > > +#define URB_DRIVER_PRIVATE	0x80000000	/* For driver-private use */
+> > > 
+> > > Um, what?  You are using this for a build check, which seems pointless
+> > > as you already modified the code to not need this.
+> > > 
+> > > So it doesn't look like this is needed, right?
+> > 
+> > The intention was to reserve space in the URB flags for
+> > implementation-specific use.
+> 
+> Yes, but _which_ driver are you talking about here?  You didn't say that
+> this was a HCD-only flag, right?
 
-diff --git a/drivers/char/ipmi/ipmi_watchdog.c b/drivers/char/ipmi/ipmi_watchdog.c
-index f4d334f..9b12da5 100644
---- a/drivers/char/ipmi/ipmi_watchdog.c
-+++ b/drivers/char/ipmi/ipmi_watchdog.c
-@@ -314,7 +314,7 @@ MODULE_PARM_DESC(preop, "Pretimeout driver operation.  One of: "
- 		 "preop_none, preop_panic, preop_give_data.");
- 
- module_param(start_now, int, 0444);
--MODULE_PARM_DESC(start_now, "Set to 1 to start the watchdog as"
-+MODULE_PARM_DESC(start_now, "Set to 1 to start the watchdog as "
- 		 "soon as the driver is loaded.");
- 
- module_param(nowayout, int, 0644);
--- 
-1.7.2.3
+Sorry, I may not have been clear.  I did mean HCD-only flag; its exact
+meaning depends on the HCD in question.  In the case of tegra-ehci, it
+means that a temporary buffer has been allocated that needs freeing
+later.
 
+Would it make more sense if I called it URB_HCD_PRIVATE_MASK?
+
+Thanks,
+Robert
