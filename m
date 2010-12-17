@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753021Ab0LQILu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 03:11:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40142 "EHLO mx2.suse.de"
+	id S1753116Ab0LQIMJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 03:12:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40156 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752528Ab0LQILt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 03:11:49 -0500
-Date: Fri, 17 Dec 2010 09:11:47 +0100
-Message-ID: <s5hy67o95to.wl%tiwai@suse.de>
+	id S1752332Ab0LQIMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 03:12:07 -0500
+Date: Fri, 17 Dec 2010 09:12:06 +0100
+Message-ID: <s5hwrn895t5.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Chris Ball <cjb@laptop.org>
-Cc: Philip Rakity <prakity@marvell.com>, Aries Lee <arieslee@jmicron.com>,
-        zhangfei gao <zhangfei.gao@gmail.com>, Qiming Wu <wuqm@marvell.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mmc: Test bus-width for old MMC devices (v2)
-In-Reply-To: <20101217034342.GA19673@void.printf.net>
-References: <s5hfwtzbj8v.wl%tiwai@suse.de>
-	<20101216234032.GA17239@void.printf.net>
-	<50D31EC8-BD9E-4920-8CEB-2AD10DF9C5C5@marvell.com>
-	<20101217034342.GA19673@void.printf.net>
+Cc: Aries Lee <arieslee@jmicron.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mmc: Fix a typo in ocr_avail mask check for MMC
+In-Reply-To: <20101216234511.GB17239@void.printf.net>
+References: <s5h62uvnpgk.wl%tiwai@suse.de>
+	<20101216234511.GB17239@void.printf.net>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -29,44 +25,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Fri, 17 Dec 2010 03:43:42 +0000,
+At Thu, 16 Dec 2010 23:45:11 +0000,
 Chris Ball wrote:
 > 
-> Hi Philip,
+> Hi Takashi,
 > 
-> On Thu, Dec 16, 2010 at 06:33:49PM -0800, Philip Rakity wrote:
-> > It is not possible for bus_width to be not initialized.  This would imply ARRAY_SIZE(bus_widths) is 1.  Certainly not true.
+> On Wed, Dec 15, 2010 at 02:19:22PM +0100, Takashi Iwai wrote:
+> > In the patch "mmc: Add support for JMicron 388 SD/MMC controller",
+> > I changed a wrong field for MMC during rewrite.  Fixed now.
+> > 
+> > Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> > ---
+> >  drivers/mmc/host/sdhci.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> > index 51f5209..be0ff14 100644
+> > --- a/drivers/mmc/host/sdhci.c
+> > +++ b/drivers/mmc/host/sdhci.c
+> > @@ -1919,7 +1919,7 @@ int sdhci_add_host(struct sdhci_host *host)
+> >  		mmc->ocr_avail_sd &= ~MMC_VDD_165_195;
+> >  	mmc->ocr_avail_mmc = ocr_avail;
+> >  	if (host->ocr_avail_mmc)
+> > -		mmc->ocr_avail_sd &= host->ocr_avail_mmc;
+> > +		mmc->ocr_avail_mmc &= host->ocr_avail_mmc;
+> >  
+> >  	if (mmc->ocr_avail == 0) {
+> >  		printk(KERN_ERR "%s: Hardware doesn't report any "
 > 
-> Right, I agree.  We should fix the warning anyway.
+> Thanks, I've rebased this change into the original patch on my mmc-next
+> branch.
 
-Well, this is always a gray-zone question.  One prefers fixing it
-either via uninitialized_var() or by setting a bogus value.  But, this
-would cover any possible real bug in future.  Thus another prefers
-ignoring it, because it's just a compiler bug (mostly of old gcc).
+OK, thanks!
 
-After all, it's up to maintainer, so take as you like :)
-
-
-thanks,
 
 Takashi
-
-
-> > We could just initialize by changing
-> > +		unsigned idx, bus_width;
-> > to
-> > +		unsigned idx, bus_width = 0;
-> 
-> Okay, I've pushed to mmc-next with that change.
-> 
-> > I wonder what compiler are you using so we can avoid this issue in future.
-> 
-> Ah, good point -- I was building with a gcc 4.1.2 ARM cross-compiler,
-> and using a gcc 4.5.1 cross-build instead avoids the warning.
-> 
-> Thanks,
-> 
-> -- 
-> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-> One Laptop Per Child
-> 
