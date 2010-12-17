@@ -1,150 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755476Ab0LQPfM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 10:35:12 -0500
-Received: from www.tglx.de ([62.245.132.106]:60983 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754395Ab0LQPfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 10:35:09 -0500
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: sodaville@linutronix.de, x86@kernel.org, dirk.brandewie@gmail.com,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 14/15] rtc/cmos: add OF bindings
-Date: Fri, 17 Dec 2010 16:33:52 +0100
-Message-Id: <1292600033-12271-15-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de>
-References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de>
+	id S1755456Ab0LQPfH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 10:35:07 -0500
+Received: from mail-gx0-f180.google.com ([209.85.161.180]:48278 "EHLO
+	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754395Ab0LQPfC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 10:35:02 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=onvSd5PQjNWfP3w21IQJtemkfdtN9eVMGfVVIuYmjFXwQVAnN9Dcj2WCVT4M8FWoP/
+         VIoc9sKCruROgJzuBzIEJ8oemY7huSlMXPkjoxeoqEMot8Hjj0BT2oeB7Npm/rbJSmCS
+         EFMZfe2Gffz9fo6B6ppriNmgdhJ16dyO3UKfA=
+MIME-Version: 1.0
+In-Reply-To: <1292588555.2266.165.camel@twins>
+References: <1292482744-12953-1-git-send-email-ying.huang@intel.com>
+	<1292491467.6803.4327.camel@twins>
+	<1292545232.12648.1236.camel@yhuang-dev>
+	<1292588555.2266.165.camel@twins>
+Date: Fri, 17 Dec 2010 23:35:01 +0800
+Message-ID: <AANLkTi=6z1bw9iNi2hhDJaSnZVhBDOr_JDD2dAFYKqC_@mail.gmail.com>
+Subject: Re: [PATCH -mm -v8 0/3] Lockless memory allocator and list
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Huang Ying <ying.huang@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@alien8.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Dirk Hohndel <Dirk.Hohndel@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Brown,Len" <len.brown@intel.com>, "Luck,Tony" <tony.luck@intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows to load the OF driver based informations from the device
-tree. Systems without BIOS may need to perform some initialization.
-PowerPC creates a PNP device from the OF information and performs this
-kind of initialization in their private PCI quirk. This looks more
-generic.
+On Fri, Dec 17, 2010 at 8:22 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, 2010-12-17 at 08:20 +0800, Huang Ying wrote:
+>> On Thu, 2010-12-16 at 17:24 +0800, Peter Zijlstra wrote:
+>> > On Thu, 2010-12-16 at 14:59 +0800, Huang Ying wrote:
+>> > > This patchset adds a lockless memory allocator and a lock-less
+>> > > list.
+>> >
+>> > Still no users the allocator, and no attempt to unify the existing
+>> > lockless list implementations.
+>> >
+>> > I'm getting very tired of this Huang.
+>>
+>> I just want to do that in the next step after merging the data structure
+>> itself. The first user of the allocator is APEI, which will go ACPI
+>> tree, lockless list in irq_work will go tip tree, lockless list in xlist
+>> will go net tree.
+>>
+>> We must merge the data structure with its users together?
+>
+> Yes -- that's how new infrastructure gets merged. Because if we don't
+> agree with the users (I don't) there is no point in merging these things
+> either.
+>
+> I would really like you to stop posting code and talk to the EDAC guys.
+> You just keep on posting the same crap over and over again without
+> making any kind of progress what so ever.
+>
+> So stop pushing your crap, _please_, and talk to the EDAC and other RAS
+> guys and come up with something together.
+>
+> I haven't heard a single other RAS guy agree with your approach, and I'm
+> getting really sick of you just pushing your stuff without even wanting
+> to talk to them.
+>
+> I don't want to see a single line of code from you until you've talked
+> with other RAS folks and they agree that your bits make sense.
+>
+> So let me put it in simple words: unless there's a non-Intel RAS guy
+> signing off on your patches I'm objecting to them.
 
-Cc: rtc-linux@googlegroups.com
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: devicetree-discuss@lists.ozlabs.org
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
----
- Documentation/powerpc/dts-bindings/rtc-cmos.txt |   28 ++++++++++++++++
- drivers/rtc/rtc-cmos.c                          |   40 +++++++++++++++++++++++
- 2 files changed, 68 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/powerpc/dts-bindings/rtc-cmos.txt
+Please take a look at the patchset, this patchset is not RAS specific,
+it is not hardware error reporting infrastructure or hardware error
+reporting interface. This is just lock-less data structure. So this is
+not a RAS patchset. Why I must get non-Intel RAS guys' signing off for
+a non-RAS patchset?
 
-diff --git a/Documentation/powerpc/dts-bindings/rtc-cmos.txt b/Documentation/powerpc/dts-bindings/rtc-cmos.txt
-new file mode 100644
-index 0000000..7382989
---- /dev/null
-+++ b/Documentation/powerpc/dts-bindings/rtc-cmos.txt
-@@ -0,0 +1,28 @@
-+ Motorola mc146818 compatible RTC
-+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+
-+Required properties:
-+  - compatible : "motorola,mc146818"
-+  - reg : should contain registers location and length.
-+
-+Optional properties:
-+  - interrupts : should contain interrupt.
-+  - interrupt-parent : interrupt source phandle.
-+  - ctrl-reg : Contains the initial value of the control register also
-+    called "Register B".
-+  - freq-reg : Contains the initial value of the frequency register also
-+    called "Regsiter A".
-+
-+"Register A" and "B" are usually initialized by the firmware (BIOS for
-+instance). If this is not done, it can be performed by the driver.
-+
-+ISA Example:
-+
-+	rtc@70 {
-+	         compatible = "motorola,mc146818";
-+	         interrupts = <8 3>;
-+	         interrupt-parent = <&ioapic1>;
-+	         ctrl-reg = <2>;
-+	         freq-reg = <0x26>;
-+	         reg = <1 0x70 2>;
-+	 };
-diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
-index 5856167..8cf0049 100644
---- a/drivers/rtc/rtc-cmos.c
-+++ b/drivers/rtc/rtc-cmos.c
-@@ -36,6 +36,8 @@
- #include <linux/platform_device.h>
- #include <linux/mod_devicetable.h>
- #include <linux/log2.h>
-+#include <linux/of.h>
-+#include <linux/of_platform.h>
- 
- /* this is for "generic access to PC-style RTC" using CMOS_READ/CMOS_WRITE */
- #include <asm-generic/rtc.h>
-@@ -1121,6 +1123,15 @@ static struct pnp_driver cmos_pnp_driver = {
- 
- #endif	/* CONFIG_PNP */
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id of_cmos_match[] = {
-+	{
-+		.compatible = "motorola,mc146818",
-+	},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, of_cmos_match);
-+#endif
- /*----------------------------------------------------------------*/
- 
- /* Platform setup should have set up an RTC device, when PNP is
-@@ -1129,6 +1140,32 @@ static struct pnp_driver cmos_pnp_driver = {
- 
- static int __init cmos_platform_probe(struct platform_device *pdev)
- {
-+#ifdef CONFIG_OF
-+	if (pdev->dev.of_node) {
-+		struct device_node *node = pdev->dev.of_node;
-+		struct rtc_time time;
-+		int ret;
-+		const __be32 *val;
-+
-+		val = of_get_property(node, "ctrl-reg", NULL);
-+		if (val)
-+			CMOS_WRITE(be32_to_cpup(val), RTC_CONTROL);
-+
-+		val = of_get_property(node, "freq-reg", NULL);
-+		if (val)
-+			CMOS_WRITE(be32_to_cpup(val), RTC_FREQ_SELECT);
-+
-+		get_rtc_time(&time);
-+		ret = rtc_valid_tm(&time);
-+		if (ret) {
-+			struct rtc_time def_time = {
-+				.tm_year = 1,
-+				.tm_mday = 1,
-+			};
-+			set_rtc_time(&def_time);
-+		}
-+	}
-+#endif
- 	cmos_wake_setup(&pdev->dev);
- 	return cmos_do_probe(&pdev->dev,
- 			platform_get_resource(pdev, IORESOURCE_IO, 0),
-@@ -1157,6 +1194,9 @@ static struct platform_driver cmos_platform_driver = {
- 	.shutdown	= cmos_platform_shutdown,
- 	.driver = {
- 		.name		= (char *) driver_name,
-+#if defined(CONFIG_OF)
-+		.of_match_table = of_cmos_match,
-+#endif
- 		.suspend	= cmos_suspend,
- 		.resume		= cmos_resume,
- 	}
--- 
-1.7.3.2
+I will not post my original hardware error reporting infrastructure or
+interface after this patchset. Although I may use some part of this
+patchset in APEI code, that is just driver internal data structure
+usage, not general hardware error reporting infrastructure or
+interface.
 
+> The thing is, a unified RAS infrastructure is much more useful for
+> admins, it means they can use the same tools regardless of what platform
+> they're running on.
+>
+> Now I know creating such a thing seems daunting, but at least give it a
+> try, its better to have tried and failed that not attempted at all, at
+> worst you'll learn what you did wrong and can try to do better the
+> second time around.
+
+I have tried to do that with my original hardware error reporting
+interface patchset. It is really generic, simple and can help RAS
+guys. But it seems that no many people like it, and no many people
+really take a look at it. So I stop doing that now.
+
+And I remember the recent consensus on hardware error reporting is to
+use printk. Although I think it will be better if we have some other
+tool-oriented interface too. I will work on printk based hardware
+error reporting interface firstly.
+
+Best Regards,
+Huang Ying
