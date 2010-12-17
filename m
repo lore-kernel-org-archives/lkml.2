@@ -1,538 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab0LQBEo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 20:04:44 -0500
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:56761 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755300Ab0LQBEk (ORCPT
+	id S1755607Ab0LQBEt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 20:04:49 -0500
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:56616 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754813Ab0LQBEp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 20:04:40 -0500
+	Thu, 16 Dec 2010 20:04:45 -0500
 From: Armando Uribe <x0095078@ti.com>
 To: <omar.ramirez@ti.com>
 Cc: <x0095078@ti.com>, <ohad@wizery.com>, <felipe.contreras@gmail.com>,
         <rene.sapiens@ti.com>, <nm@ti.com>, <ernesto@ti.com>,
         <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>
-Subject: [PATCH 1/5] staging:tidspbridge - Remove unused defined constants
-Date: Thu, 16 Dec 2010 19:18:29 -0600
-Message-Id: <1292548713-27061-2-git-send-email-x0095078@ti.com>
+Subject: [PATCH 4/5] staging:tidspbridge - Remove unused typedefs
+Date: Thu, 16 Dec 2010 19:18:32 -0600
+Message-Id: <1292548713-27061-5-git-send-email-x0095078@ti.com>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1292548713-27061-1-git-send-email-x0095078@ti.com>
+In-Reply-To: <1292548713-27061-4-git-send-email-x0095078@ti.com>
 References: <1292548713-27061-1-git-send-email-x0095078@ti.com>
+ <1292548713-27061-2-git-send-email-x0095078@ti.com>
+ <1292548713-27061-3-git-send-email-x0095078@ti.com>
+ <1292548713-27061-4-git-send-email-x0095078@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove defined constants not being used.
+Unsed typedefs are removed, because of there are not
+used or because previous clean ups.
 
 Signed-off-by: Armando Uribe <x0095078@ti.com>
 ---
- .../tidspbridge/include/dspbridge/brddefs.h        |    2 -
- .../tidspbridge/include/dspbridge/cfgdefs.h        |   13 ------
- .../tidspbridge/include/dspbridge/chnldefs.h       |    3 -
- .../tidspbridge/include/dspbridge/chnlpriv.h       |   13 ------
- .../staging/tidspbridge/include/dspbridge/cod.h    |    3 -
- .../staging/tidspbridge/include/dspbridge/dbdefs.h |   26 -------------
- .../tidspbridge/include/dspbridge/dbldefs.h        |   11 -----
- .../tidspbridge/include/dspbridge/dehdefs.h        |    1 -
- .../staging/tidspbridge/include/dspbridge/drv.h    |   15 -------
- .../tidspbridge/include/dspbridge/dspdefs.h        |    6 ---
- .../staging/tidspbridge/include/dspbridge/dspdrv.h |    2 -
- .../tidspbridge/include/dspbridge/dspioctl.h       |    5 --
- .../tidspbridge/include/dspbridge/dynamic_loader.h |    2 -
- .../staging/tidspbridge/include/dspbridge/io_sm.h  |    1 -
- .../staging/tidspbridge/include/dspbridge/iodefs.h |    2 -
- .../staging/tidspbridge/include/dspbridge/mbx_sh.h |   40 --------------------
- .../staging/tidspbridge/include/dspbridge/pwr_sh.h |    4 --
- .../staging/tidspbridge/include/dspbridge/rms_sh.h |    9 ----
- .../tidspbridge/include/dspbridge/strmdefs.h       |    2 -
- drivers/staging/tidspbridge/pmgr/dev.c             |    2 +-
- 20 files changed, 1 insertions(+), 161 deletions(-)
+ .../tidspbridge/include/dspbridge/dbldefs.h        |   81 --------------------
+ .../tidspbridge/include/dspbridge/dblldefs.h       |   62 ---------------
+ 2 files changed, 0 insertions(+), 143 deletions(-)
+ delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/dbldefs.h
 
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/brddefs.h b/drivers/staging/tidspbridge/include/dspbridge/brddefs.h
-index f80d9a5..725d7b3 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/brddefs.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/brddefs.h
-@@ -24,9 +24,7 @@
- #define BRD_IDLE        0x1	/* Monitor Loaded, but suspended. */
- #define BRD_RUNNING     0x2	/* Monitor loaded, and executing. */
- #define BRD_UNKNOWN     0x3	/* Board state is indeterminate. */
--#define BRD_SYNCINIT    0x4
- #define BRD_LOADED      0x5
--#define BRD_LASTSTATE   BRD_LOADED	/* Set to highest legal board state. */
- #define BRD_SLEEP_TRANSITION 0x6	/* Sleep transition in progress */
- #define BRD_HIBERNATION 0x7	/* MPU initiated hibernation */
- #define BRD_RETENTION     0x8	/* Retention mode */
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/cfgdefs.h b/drivers/staging/tidspbridge/include/dspbridge/cfgdefs.h
-index f403c01..c3f04f8 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/cfgdefs.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/cfgdefs.h
-@@ -19,25 +19,12 @@
- #ifndef CFGDEFS_
- #define CFGDEFS_
- 
--/* Maximum length of module search path. */
--#define CFG_MAXSEARCHPATHLEN    255
--
--/* Maximum length of general paths. */
--#define CFG_MAXPATH             255
--
- /* Host Resources: */
- #define CFG_MAXMEMREGISTERS     9
--#define CFG_MAXIOPORTS          20
--#define CFG_MAXIRQS             7
--#define CFG_MAXDMACHANNELS      7
- 
- /* IRQ flag */
- #define CFG_IRQSHARED           0x01	/* IRQ can be shared */
- 
--/* DSP Resources: */
--#define CFG_DSPMAXMEMTYPES      10
--#define CFG_DEFAULT_NUM_WINDOWS 1	/* We support only one window. */
--
- /* A platform-related device handle: */
- struct cfg_devnode;
- 
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/chnldefs.h b/drivers/staging/tidspbridge/include/dspbridge/chnldefs.h
-index 5bf5f6b..8f8f9ec 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/chnldefs.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/chnldefs.h
-@@ -22,9 +22,6 @@
- /* Channel id option. */
- #define CHNL_PICKFREE       (~0UL)	/* Let manager pick a free channel. */
- 
--/* Channel manager limits: */
--#define CHNL_INITIOREQS      4	/* Default # of I/O requests. */
--
- /* Channel modes */
- #define CHNL_MODETODSP		0	/* Data streaming to the DSP. */
- #define CHNL_MODEFROMDSP	1	/* Data streaming from the DSP. */
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/chnlpriv.h b/drivers/staging/tidspbridge/include/dspbridge/chnlpriv.h
-index 9292100..1785c3e 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/chnlpriv.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/chnlpriv.h
-@@ -39,12 +39,6 @@
-  */
- #define CHNL_PCPY       0	/* Proc-copy transport 0 */
- 
--#define CHNL_MAXIRQ     0xff	/* Arbitrarily large number. */
--
--/* The following modes are private: */
--#define CHNL_MODEUSEREVENT  0x1000	/* User provided the channel event. */
--#define CHNL_MODEMASK       0x1001
--
- /* Higher level channel states: */
- #define CHNL_STATEREADY		0	/* Channel ready for I/O. */
- #define CHNL_STATECANCEL	1	/* I/O was cancelled. */
-@@ -56,13 +50,6 @@
- 
- /* Types of channel class libraries: */
- #define CHNL_TYPESM         1	/* Shared memory driver. */
--#define CHNL_TYPEBM         2	/* Bus Mastering driver. */
--
--/* Max string length of channel I/O completion event name - change if needed */
--#define CHNL_MAXEVTNAMELEN  32
--
--/* Max memory pages lockable in CHNL_PrepareBuffer() - change if needed */
--#define CHNL_MAXLOCKPAGES   64
- 
- /* Channel info. */
- struct chnl_info {
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/cod.h b/drivers/staging/tidspbridge/include/dspbridge/cod.h
-index 42bce2e..5efea91 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/cod.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/cod.h
-@@ -27,9 +27,6 @@
- #define COD_TRACEBEG            "SYS_PUTCBEG"
- #define COD_TRACEEND            "SYS_PUTCEND"
- #define COD_TRACECURPOS	"BRIDGE_SYS_PUTC_current"
--#define COD_TRACESECT           "trace"
--#define COD_TRACEBEGOLD         "PUTCBEG"
--#define COD_TRACEENDOLD         "PUTCEND"
- 
- #define COD_NOLOAD              DBLL_NOLOAD
- #define COD_SYMB                DBLL_SYMB
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h b/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h
-index 5af075d..38fffeb 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h
-@@ -31,9 +31,6 @@
- /* API return value and calling convention */
- #define DBAPI                       int
- 
--/* Infinite time value for the utimeout parameter to DSPStream_Select() */
--#define DSP_FOREVER                 (-1)
--
- /* Maximum length of node name, used in dsp_ndbprops */
- #define DSP_MAXNAMELEN              32
- 
-@@ -74,16 +71,9 @@
- #define DSP_NODE_MIN_PRIORITY       1
- #define DSP_NODE_MAX_PRIORITY       15
- 
--/* Pre-Defined Message Command Codes available to user: */
--#define DSP_RMSUSERCODESTART RMS_USER	/* Start of RMS user cmd codes */
--/* end of user codes */
--#define DSP_RMSUSERCODEEND (RMS_USER + RMS_MAXUSERCODES);
- /* msg_ctrl contains SM buffer description */
- #define DSP_RMSBUFDESC RMS_BUFDESC
- 
--/* Shared memory identifier for MEM segment named "SHMSEG0" */
--#define DSP_SHMSEG0     (u32)(-1)
--
- /* Processor ID numbers */
- #define DSP_UNIT    0
- #define IVA_UNIT    1
-@@ -91,15 +81,6 @@
- #define DSPWORD       unsigned char
- #define DSPWORDSIZE     sizeof(DSPWORD)
- 
--/* Power control enumerations */
--#define PROC_PWRCONTROL             0x8070
--
--#define PROC_PWRMGT_ENABLE          (PROC_PWRCONTROL + 0x3)
--#define PROC_PWRMGT_DISABLE         (PROC_PWRCONTROL + 0x4)
--
--/* Bridge Code Version */
--#define BRIDGE_VERSION_CODE         333
--
- #define    MAX_PROFILES     16
- 
- /* DSP chip type */
-@@ -501,13 +482,6 @@ bit 15 - Output (writeable) buffer
- #define DSPPROCTYPE_C64		6410
- #define IVAPROCTYPE_ARM7	470
- 
--#define REG_MGR_OBJECT	1
--#define REG_DRV_OBJECT	2
--
--/* registry */
--#define DRVOBJECT	"DrvObject"
--#define MGROBJECT	"MgrObject"
--
- /* Max registry path length. Also the max registry value length. */
- #define MAXREGPATHLENGTH	255
- 
 diff --git a/drivers/staging/tidspbridge/include/dspbridge/dbldefs.h b/drivers/staging/tidspbridge/include/dspbridge/dbldefs.h
-index bf4fb99..9973098 100644
+deleted file mode 100644
+index 5cf9dad..0000000
 --- a/drivers/staging/tidspbridge/include/dspbridge/dbldefs.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/dbldefs.h
-@@ -17,17 +17,6 @@
- #ifndef DBLDEFS_
- #define DBLDEFS_
- 
++++ /dev/null
+@@ -1,81 +0,0 @@
 -/*
-- *  Bit masks for dbl_flags.
+- * dbldefs.h
+- *
+- * DSP-BIOS Bridge driver support functions for TI OMAP processors.
+- *
+- * Copyright (C) 2005-2006 Texas Instruments, Inc.
+- *
+- * This package is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- *
+- * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+- * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+- * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 - */
--#define DBL_NOLOAD   0x0	/* Don't load symbols, code, or data */
--#define DBL_SYMB     0x1	/* load symbols */
--#define DBL_CODE     0x2	/* load code */
--#define DBL_DATA     0x4	/* load data */
--#define DBL_DYNAMIC  0x8	/* dynamic load */
--#define DBL_BSS      0x20	/* Unitialized section */
 -
--#define DBL_MAXPATHLENGTH       255
- 
- /*
-  *  ======== dbl_flags ========
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/dehdefs.h b/drivers/staging/tidspbridge/include/dspbridge/dehdefs.h
-index 09f8bf8..5341471 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/dehdefs.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/dehdefs.h
-@@ -26,7 +26,6 @@ struct deh_mgr;
- 
- /* Magic code used to determine if DSP signaled exception. */
- #define DEH_BASE        MBX_DEH_BASE
--#define DEH_USERS_BASE  MBX_DEH_USERS_BASE
- #define DEH_LIMIT       MBX_DEH_LIMIT
- 
- #endif /* _DEHDEFS_H */
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/drv.h b/drivers/staging/tidspbridge/include/dspbridge/drv.h
-index 37f5a45..adb28ec 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/drv.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/drv.h
-@@ -26,9 +26,6 @@
- #include <dspbridge/drvdefs.h>
- #include <linux/idr.h>
- 
--#define DRV_ASSIGN     1
--#define DRV_RELEASE    0
+-#ifndef DBLDEFS_
+-#define DBLDEFS_
 -
- /* Provide the DSP Internal memory windows that can be accessed from L3 address
-  * space */
- 
-@@ -38,23 +35,14 @@
- /* MEM1 is L2 RAM + L2 Cache space */
- #define OMAP_DSP_MEM1_BASE 0x5C7F8000
- #define OMAP_DSP_MEM1_SIZE 0x18000
--#define OMAP_DSP_GEM1_BASE 0x107F8000
- 
- /* MEM2 is L1P RAM/CACHE space */
- #define OMAP_DSP_MEM2_BASE 0x5CE00000
- #define OMAP_DSP_MEM2_SIZE 0x8000
--#define OMAP_DSP_GEM2_BASE 0x10E00000
- 
- /* MEM3 is L1D RAM/CACHE space */
- #define OMAP_DSP_MEM3_BASE 0x5CF04000
- #define OMAP_DSP_MEM3_SIZE 0x14000
--#define OMAP_DSP_GEM3_BASE 0x10F04000
 -
--#define OMAP_IVA2_PRM_BASE 0x48306000
--#define OMAP_IVA2_PRM_SIZE 0x1000
--
--#define OMAP_IVA2_CM_BASE 0x48004000
--#define OMAP_IVA2_CM_SIZE 0x1000
- 
- #define OMAP_PER_CM_BASE 0x48005000
- #define OMAP_PER_CM_SIZE 0x1000
-@@ -68,9 +56,6 @@
- #define OMAP_DMMU_BASE 0x5D000000
- #define OMAP_DMMU_SIZE 0x1000
- 
--#define OMAP_PRCM_VDD1_DOMAIN 1
--#define OMAP_PRCM_VDD2_DOMAIN 2
--
- /* GPP PROCESS CLEANUP Data structures */
- 
- /* New structure (member of process context) abstracts NODE resource info */
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h b/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h
-index 0ae7d16..2acbbb3 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h
-@@ -37,12 +37,6 @@
- #include <dspbridge/iodefs.h>
- #include <dspbridge/msgdefs.h>
- 
 -/*
-- *  Any IOCTLS at or above this value are reserved for standard Bridge driver
-- *  interfaces.
+- *  ======== dbl_flags ========
+- *  Specifies whether to load code, data, or symbols
 - */
--#define BRD_RESERVEDIOCTLBASE   0x8000
+-typedef s32 dbl_flags;
 -
- /* Handle to Bridge driver's private device context. */
- struct bridge_dev_context;
- 
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/dspdrv.h b/drivers/staging/tidspbridge/include/dspbridge/dspdrv.h
-index 0bb250f..7adf1e7 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/dspdrv.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/dspdrv.h
-@@ -20,8 +20,6 @@
- #if !defined _DSPDRV_H_
- #define _DSPDRV_H_
- 
--#define MAX_DEV     10		/* Max support of 10 devices */
+-/*
+- *  ======== dbl_alloc_fxn ========
+- *  Allocate memory function.  Allocate or reserve (if reserved == TRUE)
+- *  "size" bytes of memory from segment "space" and return the address in
+- *  *dsp_address (or starting at *dsp_address if reserve == TRUE). Returns 0 on
+- *  success, or an error code on failure.
+- */
+-typedef s32(*dbl_alloc_fxn) (void *hdl, s32 space, u32 size, u32 align,
+-			     u32 *dsp_address, s32 seg_id, s32 req,
+-			     bool reserved);
+-
+-/*
+- *  ======== dbl_free_fxn ========
+- *  Free memory function.  Free, or unreserve (if reserved == TRUE) "size"
+- *  bytes of memory from segment "space"
+- */
+-typedef bool(*dbl_free_fxn) (void *hdl, u32 addr, s32 space, u32 size,
+-			     bool reserved);
+-
+-/*
+- *  ======== dbl_log_write_fxn ========
+- *  Function to call when writing data from a section, to log the info.
+- *  Can be NULL if no logging is required.
+- */
+-typedef int(*dbl_log_write_fxn) (void *handle,
+-					struct dbl_sect_info *sect, u32 addr,
+-					u32 bytes);
+-
+-/*
+- *  ======== dbl_sym_lookup ========
+- *  Symbol lookup function - Find the symbol name and return its value.
+- *
+- *  Parameters:
+- *      handle          - Opaque handle
+- *      parg            - Opaque argument.
+- *      name            - Name of symbol to lookup.
+- *      sym             - Location to store address of symbol structure.
+- *
+- *  Returns:
+- *      TRUE:           Success (symbol was found).
+- *      FALSE:          Failed to find symbol.
+- */
+-typedef bool(*dbl_sym_lookup) (void *handle, void *parg, void *rmm_handle,
+-			       const char *name, struct dbl_symbol ** sym);
+-
+-/*
+- *  ======== dbl_write_fxn ========
+- *  Write memory function.  Write "n" HOST bytes of memory to segment "mtype"
+- *  starting at address "dsp_address" from the buffer "buf".  The buffer is
+- *  formatted as an array of words appropriate for the DSP.
+- */
+-typedef s32(*dbl_write_fxn) (void *hdl, u32 dsp_address, void *buf,
+-			     u32 n, s32 mtype);
+-
+-#endif /* DBLDEFS_ */
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/dblldefs.h b/drivers/staging/tidspbridge/include/dspbridge/dblldefs.h
+index 81821e5..30e0aa0 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/dblldefs.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/dblldefs.h
+@@ -348,29 +348,6 @@ typedef bool(*dbll_init_fxn) (void);
+ typedef int(*dbll_load_fxn) (struct dbll_library_obj *lib,
+ 				    dbll_flags flags,
+ 				    struct dbll_attrs *attrs, u32 *entry);
+-
+-/*
+- *  ======== dbll_load_sect ========
+- *  Load a named section from an library (for overlay support).
+- *  Parameters:
+- *      lib             - Handle returned from dbll_open().
+- *      sec_name        - Name of section to load.
+- *      attrs           - Contains write function and handle to pass to it.
+- *  Returns:
+- *      0:        Success.
+- *      -ENXIO:    Section not found.
+- *      -ENOSYS:   Function not implemented.
+- *  Requires:
+- *      Valid lib.
+- *      sec_name != NULL.
+- *      attrs != NULL.
+- *      attrs->write != NULL.
+- *  Ensures:
+- */
+-typedef int(*dbll_load_sect_fxn) (struct dbll_library_obj *lib,
+-					 char *sz_sect_name,
+-					 struct dbll_attrs *attrs);
 -
  /*
-  *  ======== dsp_deinit ========
-  *  Purpose:
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/dspioctl.h b/drivers/staging/tidspbridge/include/dspbridge/dspioctl.h
-index 41e0594..54552a7 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/dspioctl.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/dspioctl.h
-@@ -31,9 +31,6 @@
- 
- #define BRDIOCTL_CHNLREAD           (BRDIOCTL_RESERVEDBASE + 0x10)
- #define BRDIOCTL_CHNLWRITE          (BRDIOCTL_RESERVEDBASE + 0x20)
--#define BRDIOCTL_GETINTRCOUNT       (BRDIOCTL_RESERVEDBASE + 0x30)
--#define BRDIOCTL_RESETINTRCOUNT     (BRDIOCTL_RESERVEDBASE + 0x40)
--#define BRDIOCTL_INTERRUPTDSP       (BRDIOCTL_RESERVEDBASE + 0x50)
- /* DMMU */
- #define BRDIOCTL_SETMMUCONFIG       (BRDIOCTL_RESERVEDBASE + 0x60)
- /* PWR */
-@@ -47,8 +44,6 @@
- #define BRDIOCTL_DEEPSLEEP          (BRDIOCTL_PWRCONTROL + 0x0)
- #define BRDIOCTL_EMERGENCYSLEEP     (BRDIOCTL_PWRCONTROL + 0x1)
- #define BRDIOCTL_WAKEUP             (BRDIOCTL_PWRCONTROL + 0x2)
--#define BRDIOCTL_PWRENABLE          (BRDIOCTL_PWRCONTROL + 0x3)
--#define BRDIOCTL_PWRDISABLE         (BRDIOCTL_PWRCONTROL + 0x4)
- #define BRDIOCTL_CLK_CTRL		    (BRDIOCTL_PWRCONTROL + 0x7)
- /* DSP Initiated Hibernate */
- #define BRDIOCTL_PWR_HIBERNATE	(BRDIOCTL_PWRCONTROL + 0x8)
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/dynamic_loader.h b/drivers/staging/tidspbridge/include/dspbridge/dynamic_loader.h
-index 4b109d1..052d27e 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/dynamic_loader.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/dynamic_loader.h
-@@ -46,8 +46,6 @@ struct dynamic_loader_initialize;
-  * Option flags to modify the behavior of module loading
-  */
- #define DLOAD_INITBSS 0x1	/* initialize BSS sections to zero */
--#define DLOAD_BIGEND 0x2	/* require big-endian load module */
--#define DLOAD_LITTLE 0x4	/* require little-endian load module */
- 
- /*****************************************************************************
-  * Procedure dynamic_load_module
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/io_sm.h b/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
-index 18aec55..bcde1d9 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
-@@ -28,7 +28,6 @@
- #define IO_INPUT            0
- #define IO_OUTPUT           1
- #define IO_SERVICE          2
--#define IO_MAXSERVICE       IO_SERVICE
- 
- #ifdef CONFIG_TIDSPBRIDGE_DVFS
- /* The maximum number of OPPs that are supported */
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/iodefs.h b/drivers/staging/tidspbridge/include/dspbridge/iodefs.h
-index 8bd10a0..31cbc9a 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/iodefs.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/iodefs.h
-@@ -19,8 +19,6 @@
- #ifndef IODEFS_
- #define IODEFS_
- 
--#define IO_MAXIRQ   0xff	/* Arbitrarily large number. */
+  *  ======== dbll_open ========
+  *  dbll_open() returns a library handle that can be used to load/unload
+@@ -421,23 +398,6 @@ typedef int(*dbll_open_fxn) (struct dbll_tar_obj *target, char *file,
+ typedef int(*dbll_read_sect_fxn) (struct dbll_library_obj *lib,
+ 					 char *name, char *content,
+ 					 u32 cont_size);
 -
- /* IO Objects: */
- struct io_mgr;
- 
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/mbx_sh.h b/drivers/staging/tidspbridge/include/dspbridge/mbx_sh.h
-index 5d165cd..7424c88 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/mbx_sh.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/mbx_sh.h
-@@ -110,13 +110,7 @@
- #ifndef _MBX_SH_H
- #define _MBX_SH_H
- 
--#define MBX_CLASS_MSK      0xFC00	/* Class bits are 10 thru 15 */
--#define MBX_VALUE_MSK      0x03FF	/* Value is 0 thru 9 */
+-/*
+- *  ======== dbll_set_attrs ========
+- *  Set the attributes of the target.
+- *  Parameters:
+- *      target          - Handle returned from dbll_create().
+- *      pattrs          - New attributes.
+- *  Returns:
+- *  Requires:
+- *      DBL initialized.
+- *      Valid target.
+- *      pattrs != NULL.
+- *  Ensures:
+- */
+-typedef void (*dbll_set_attrs_fxn) (struct dbll_tar_obj *target,
+-				    struct dbll_attrs *attrs);
 -
--#define MBX_DEH_CLASS      0x0000	/* DEH owns Mbx INTR */
--#define MBX_DDMA_CLASS     0x0400	/* DSP-DMA link drvr chnls owns INTR */
- #define MBX_PCPY_CLASS     0x0800	/* PROC-COPY  " */
--#define MBX_ZCPY_CLASS     0x1000	/* ZERO-COPY  " */
- #define MBX_PM_CLASS       0x2000	/* Power Management */
- #define MBX_DBG_CLASS      0x4000	/* For debugging purpose */
- 
-@@ -128,55 +122,21 @@
- #define MBX_DEH_USERS_BASE  0x100	/* 256 */
- #define MBX_DEH_LIMIT       0x3FF	/* 1023 */
- #define MBX_DEH_RESET       0x101	/* DSP RESET (DEH) */
--#define MBX_DEH_EMMU        0X103	/*DSP MMU FAULT RECOVERY */
- 
  /*
-  *  Link driver command/status codes.
+  *  ======== dbll_unload ========
+  *  Unload library loaded with dbll_load().
+@@ -452,28 +412,6 @@ typedef void (*dbll_set_attrs_fxn) (struct dbll_tar_obj *target,
   */
--/* DSP-DMA */
--#define MBX_DDMA_NUMCHNLBITS 5	/* # chnl Id: # bits available */
--#define MBX_DDMA_CHNLSHIFT   0	/* # of bits to shift */
--#define MBX_DDMA_CHNLMSK     0x01F	/* bits 0 thru 4 */
+ typedef void (*dbll_unload_fxn) (struct dbll_library_obj *library,
+ 				 struct dbll_attrs *attrs);
 -
--#define MBX_DDMA_NUMBUFBITS  5	/* buffer index: # of bits avail */
--#define MBX_DDMA_BUFSHIFT    (MBX_DDMA_NUMCHNLBITS + MBX_DDMA_CHNLSHIFT)
--#define MBX_DDMA_BUFMSK      0x3E0	/* bits 5 thru 9 */
+-/*
+- *  ======== dbll_unload_sect ========
+- *  Unload a named section from an library (for overlay support).
+- *  Parameters:
+- *      lib             - Handle returned from dbll_open().
+- *      sec_name        - Name of section to load.
+- *      attrs           - Contains free() function and handle to pass to it.
+- *  Returns:
+- *      0:        Success.
+- *      -ENXIO:    Named section not found.
+- *      -ENOSYS
+- *  Requires:
+- *      DBL initialized.
+- *      Valid lib.
+- *      sec_name != NULL.
+- *  Ensures:
+- */
+-typedef int(*dbll_unload_sect_fxn) (struct dbll_library_obj *lib,
+-					   char *sz_sect_name,
+-					   struct dbll_attrs *attrs);
 -
--/* Zero-Copy */
--#define MBX_ZCPY_NUMCHNLBITS 5	/* # chnl Id: # bits available */
--#define MBX_ZCPY_CHNLSHIFT   0	/* # of bits to shift */
--#define MBX_ZCPY_CHNLMSK     0x01F	/* bits 0 thru 4 */
- 
- /*  Power Management Commands */
- #define MBX_PM_DSPIDLE                  (MBX_PM_CLASS + 0x0)
- #define MBX_PM_DSPWAKEUP                (MBX_PM_CLASS + 0x1)
- #define MBX_PM_EMERGENCYSLEEP           (MBX_PM_CLASS + 0x2)
--#define MBX_PM_SLEEPUNTILRESTART        (MBX_PM_CLASS + 0x3)
--#define MBX_PM_DSPGLOBALIDLE_OFF        (MBX_PM_CLASS + 0x4)
--#define MBX_PM_DSPGLOBALIDLE_ON         (MBX_PM_CLASS + 0x5)
- #define MBX_PM_SETPOINT_PRENOTIFY       (MBX_PM_CLASS + 0x6)
- #define MBX_PM_SETPOINT_POSTNOTIFY      (MBX_PM_CLASS + 0x7)
--#define MBX_PM_DSPRETN                  (MBX_PM_CLASS + 0x8)
- #define MBX_PM_DSPRETENTION        (MBX_PM_CLASS + 0x8)
- #define MBX_PM_DSPHIBERNATE        (MBX_PM_CLASS + 0x9)
- #define MBX_PM_HIBERNATE_EN        (MBX_PM_CLASS + 0xA)
- #define MBX_PM_OPP_REQ                  (MBX_PM_CLASS + 0xB)
--#define MBX_PM_OPP_CHG                  (MBX_PM_CLASS + 0xC)
--
--#define MBX_PM_TYPE_MASK 0x0300
--#define MBX_PM_TYPE_PWR_CHNG 0x0100
--#define MBX_PM_TYPE_OPP_PRECHNG 0x0200
--#define MBX_PM_TYPE_OPP_POSTCHNG 0x0300
--#define MBX_PM_TYPE_OPP_MASK 0x0300
--#define MBX_PM_OPP_PRECHNG (MBX_PM_CLASS | MBX_PM_TYPE_OPP_PRECHNG)
--/* DSP to MPU */
--#define MBX_PM_OPP_CHNG(OPP) (MBX_PM_CLASS | MBX_PM_TYPE_OPP_PRECHNG | (OPP))
--#define MBX_PM_RET (MBX_PM_CLASS | MBX_PM_TYPE_PWR_CHNG | 0x0006)
--#define MBX_PM_HIB (MBX_PM_CLASS | MBX_PM_TYPE_PWR_CHNG | 0x0002)
--#define MBX_PM_OPP1 0
--#define MBX_PM_OPP2 1
--#define MBX_PM_OPP3 2
--#define MBX_PM_OPP4 3
- 
- /* Bridge Debug Commands */
- #define MBX_DBG_SYSPRINTF       (MBX_DBG_CLASS + 0x0)
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/pwr_sh.h b/drivers/staging/tidspbridge/include/dspbridge/pwr_sh.h
-index 1b4a090..c78a1b1 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/pwr_sh.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/pwr_sh.h
-@@ -24,10 +24,6 @@
- /* valid sleep command codes that can be sent by GPP via mailbox: */
- #define PWR_DEEPSLEEP           MBX_PM_DSPIDLE
- #define PWR_EMERGENCYDEEPSLEEP  MBX_PM_EMERGENCYSLEEP
--#define PWR_SLEEPUNTILRESTART   MBX_PM_SLEEPUNTILRESTART
- #define PWR_WAKEUP              MBX_PM_DSPWAKEUP
--#define PWR_AUTOENABLE          MBX_PM_PWRENABLE
--#define PWR_AUTODISABLE         MBX_PM_PWRDISABLE
--#define PWR_RETENTION             MBX_PM_DSPRETN
- 
- #endif /* PWR_SH_ */
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/rms_sh.h b/drivers/staging/tidspbridge/include/dspbridge/rms_sh.h
-index 7bc5574..ba7f478 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/rms_sh.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/rms_sh.h
-@@ -22,27 +22,18 @@
- 
- #include <dspbridge/rmstypes.h>
- 
--/* Node Types: */
--#define RMS_TASK                1	/* Task node */
--#define RMS_DAIS                2	/* xDAIS socket node */
--#define RMS_MSG                 3	/* Message node */
--
- /* Memory Types: */
- #define RMS_CODE                0	/* Program space */
- #define RMS_DATA                1	/* Data space */
--#define RMS_IO                	2	/* I/O space */
- 
- /* RM Server Command and Response Buffer Sizes: */
- #define RMS_COMMANDBUFSIZE     256	/* Size of command buffer */
--#define RMS_RESPONSEBUFSIZE    16	/* Size of response buffer */
- 
- /* Pre-Defined Command/Response Codes: */
- #define RMS_EXIT                0x80000000	/* GPP->Node: shutdown */
- #define RMS_EXITACK             0x40000000	/* Node->GPP: ack shutdown */
- #define RMS_BUFDESC             0x20000000	/* Arg1 SM buf, Arg2 SM size */
- #define RMS_KILLTASK            0x10000000	/* GPP->Node: Kill Task */
--#define RMS_USER                0x0	/* Start of user-defined msg codes */
--#define RMS_MAXUSERCODES        0xfff	/* Maximum user defined C/R Codes */
- 
- /* RM Server RPC Command Structure: */
- struct rms_command {
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/strmdefs.h b/drivers/staging/tidspbridge/include/dspbridge/strmdefs.h
-index b363f79..c6abbf3 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/strmdefs.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/strmdefs.h
-@@ -19,8 +19,6 @@
- #ifndef STRMDEFS_
- #define STRMDEFS_
- 
--#define STRM_MAXEVTNAMELEN      32
--
- struct strm_mgr;
- 
- struct strm_object;
-diff --git a/drivers/staging/tidspbridge/pmgr/dev.c b/drivers/staging/tidspbridge/pmgr/dev.c
-index b160b00..b95cd20 100644
---- a/drivers/staging/tidspbridge/pmgr/dev.c
-+++ b/drivers/staging/tidspbridge/pmgr/dev.c
-@@ -880,7 +880,7 @@ int dev_start_device(struct cfg_devnode *dev_node_obj)
- {
- 	struct dev_object *hdev_obj = NULL;	/* handle to 'Bridge Device */
- 	/* Bridge driver filename */
--	char bridge_file_name[CFG_MAXSEARCHPATHLEN] = "UMA";
-+	char *bridge_file_name = "UMA";
- 	int status;
- 	struct mgr_object *hmgr_obj = NULL;
- 	struct drv_data *drv_datap = dev_get_drvdata(bridge);
+ struct dbll_fxns {
+ 	dbll_close_fxn close_fxn;
+ 	dbll_create_fxn create_fxn;
 -- 
 1.6.3.3
 
