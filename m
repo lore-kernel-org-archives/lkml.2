@@ -1,48 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891Ab0LQPWn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 10:22:43 -0500
-Received: from hera.kernel.org ([140.211.167.34]:41744 "EHLO hera.kernel.org"
+	id S1753966Ab0LQPWz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 10:22:55 -0500
+Received: from cantor.suse.de ([195.135.220.2]:33369 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753721Ab0LQPWm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 10:22:42 -0500
-Message-ID: <4D0B8023.1070009@kernel.org>
-Date: Fri, 17 Dec 2010 16:22:11 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [cpuops cmpxchg V2 2/5] x86: this_cpu_cmpxchg and this_cpu_xchg
- operations
-References: <20101214162842.542421046@linux.com> <20101214162853.636123666@linux.com>
-In-Reply-To: <20101214162853.636123666@linux.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752413Ab0LQPWx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 10:22:53 -0500
+Subject: Re: [ANNOUNCE] TCM/LIO v4.0.0-rc6 for 2.6.37-rc6
+From: James Bottomley <James.Bottomley@suse.de>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        "Patil, Kiran" <kiran.patil@intel.com>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Boaz Harrosh <bharrosh@panasas.com>,
+        Joe Eykholt <jeykholt@cisco.com>, "J.H." <warthog9@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <1292557664.31461.68.camel@haakon2.linux-iscsi.org>
+References: <1292557664.31461.68.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Dec 2010 10:22:44 -0500
+Message-ID: <1292599364.2820.21.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 17 Dec 2010 15:22:14 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2010 05:28 PM, Christoph Lameter wrote:
-> Provide support as far as the hardware capabilities of the x86 cpus
-> allow.
+On Thu, 2010-12-16 at 19:47 -0800, Nicholas A. Bellinger wrote:
+> Greetings all,
 > 
-> Define CONFIG_CMPXCHG_LOCAL in Kconfig.cpu to allow core code to test for
-> fast cpuops implementations.
+> It is my pleasure to announce TCM/LIO v4.0.0-rc6 for v2.6.37-rc6 has
+> been tagged and pushed into lio-core-2.6.git/lio-4.0 and master
+> branches.  It has been almost two months since the last -rc5 for .36-rc8
+> was released, and since that time a number of refactoring and cleanup
+> patch series from Christoph Hellwig have been merged to reduced the
+> target core logic and backend drivers by nearly ~4200 LOC!
 > 
-> V1->V2:
-> 	- Take out the definition for this_cpu_cmpxchg_8 and move it into
-> 	  a separate patch.
+> A big thanks to Christoph for jumping on a number of areas that have
+> needed attention in target_core_transport.c for some time, and for being
+> the very first 'third party' kernel developer to pull ahead in the
+> TCM/LIO patch ranking for a single TCM/LIO release.   It was a good
+> race, and hch did very much earn his victory for this round (41 vs. 36)
+> in the final rankings attached below.
 > 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
+> Also, I am proud to announce this is the first release of Target Core
+> code running with a publically available HW target fabric module.  The
+> tcm_qla2xxx and qla2xxx LLD code is now available from the
+> lio-core-2.6.git/tcm_qla2xxx branch, and more information about the
+> recent Alpha -> BETA release and the ongoing developers are available
+> here:
+> 
+> http://www.linux-iscsi.org/index.php/Qlogic
+> 
+> And the initial RFC patches here:
+> 
+> http://marc.info/?l=linux-scsi&m=129244523223528&w=2
+> 
+> There have also been a number of important bugfixes that have gone into
+> this release, so for folks running on earlier v4.0 code please consider
+> upgrading now..  Here is a brief list of the critical fixes from below:
+> 
+> *) tcm/iblock: Fix bio-set leak during bio exception handling (nab)
+> 
+> *) tcm/pscsi: Fix incorrect usage of head_of_queue with
+>     blk_execute_rq_nowait() (boaz)
+> 
+> *) tcm/pscsi: Fix failure case for __pscsi_map_task_SG() (nab)
+> 
+> *) tcm: Fix OOPs w/ task->task_sg_bidi[] for non BIDI operation (kiran)
+> 
+> *) target: Fix tfo->write_pending() fabric callback ordering (nab,
+> kiran, and others)
+> 
+> There has also been work in a number of branches where work is ongoing,
+> and not mentioned in the final stats below.  This includes Tomo-san's
+> work with the ibmvscsis module for IBM POWER VSCSI in branch
+> tcm_ibmvstgt, and Kiran Patil for his recent work in the
+> tcm_fc_ddp_offload branch for adding offload support for 10 Gb/sec Intel
+> NICs with TCM_FC/OpenFCOE target code that will be merged into TCM/LIO
+> upstream in a future release.
+> 
+> Kiran also found and fixed his first bug in upstream Target code, and
+> helped squash another long standing (since v2.x day) issue wrt to
+> interrupt context usage required for HW target mode within the
+> transport_generic_write_pending() callback.  He will be continuing to
+> test and improve the TCM_FC/OpenFCoE code on Intel 10 Gb/sec hardware,
+> and maintaining the DDP offload pieces for FCoE within
+> lio-core-2.6.git/tcm_fc_ddp_offload branch on kernel.org.  Thank you and
+> great work Kiran!
+> 
+> At this point v4.0 development will be slowing down, as I will only be
+> accepting critical fixes at this point for v4.0.0-rc7 as we move into
+> the testing and validation phase for .38 mainline code.  So please
+> folks, if anyone has immediate issues for v4.0 that need to be
+> considered, please make myself and other core target devels aware and we
+> will do our best to get them addressed.
 
-I reorderd ops so that it follow the organization better.  I'll soon
-post the updated patch.  Thanks.
+OK, I think this has reached the stage where it's been polished enough
+outside mainline to the point where we can complete any remaining todo
+items in-tree.
 
--- 
-tejun
+So lets begin merging with the minimal target core and the TCM_Loop as
+two separate commits.  I think the target core may just fit under the
+reflector mail length limits, but if not, you can send it as multiple
+patches and I'll recombine them.
+
+Thanks,
+
+James
+
+
