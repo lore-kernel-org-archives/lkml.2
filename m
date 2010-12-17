@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756308Ab0LQXkZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 18:40:25 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19237 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755153Ab0LQXkX (ORCPT
+	id S1755750Ab0LQXu7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 18:50:59 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48597 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751979Ab0LQXu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 18:40:23 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp03.nvidia.com on Fri, 17 Dec 2010 15:40:08 -0800
-Date: Fri, 17 Dec 2010 15:40:08 -0800
-From: rmorell@nvidia.com
-To: Greg KH <gregkh@suse.de>
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-        Benoit Goby <benoit@android.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
-        Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>,
-        Colin Cross <ccross@android.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] USB: ehci: tegra: Align DMA transfers to 32 bytes
-Message-ID: <20101217234008.GJ25105@morell.nvidia.com>
-References: <1292623129-26361-1-git-send-email-rmorell@nvidia.com>
- <1292623129-26361-3-git-send-email-rmorell@nvidia.com>
- <20101217223502.GB19418@suse.de>
- <20101217224221.GE25105@morell.nvidia.com>
- <20101217230940.GB21147@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101217230940.GB21147@suse.de>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 17 Dec 2010 18:50:58 -0500
+Date: Fri, 17 Dec 2010 15:49:47 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Baruch Siach <baruch@tkos.co.il>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] delay.h: add __must_check to msleep_interruptible
+Message-Id: <20101217154947.3e95488c.akpm@linux-foundation.org>
+In-Reply-To: <aed7ab07576c307653723b9bea04516879b3a3ed.1288860894.git.baruch@tkos.co.il>
+References: <aed7ab07576c307653723b9bea04516879b3a3ed.1288860894.git.baruch@tkos.co.il>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 03:09:40PM -0800, Greg KH wrote:
-> On Fri, Dec 17, 2010 at 02:42:21PM -0800, rmorell@nvidia.com wrote:
-> > On Fri, Dec 17, 2010 at 02:35:02PM -0800, Greg KH wrote:
-> > > On Fri, Dec 17, 2010 at 01:58:49PM -0800, Robert Morell wrote:
-> > > > --- a/include/linux/usb.h
-> > > > +++ b/include/linux/usb.h
-> > > > @@ -975,6 +975,7 @@ extern int usb_disabled(void);
-> > > >  #define URB_SETUP_MAP_SINGLE	0x00100000	/* Setup packet DMA mapped */
-> > > >  #define URB_SETUP_MAP_LOCAL	0x00200000	/* HCD-local setup packet */
-> > > >  #define URB_DMA_SG_COMBINED	0x00400000	/* S-G entries were combined */
-> > > > +#define URB_DRIVER_PRIVATE	0x80000000	/* For driver-private use */
-> > > 
-> > > Um, what?  You are using this for a build check, which seems pointless
-> > > as you already modified the code to not need this.
-> > > 
-> > > So it doesn't look like this is needed, right?
-> > 
-> > The intention was to reserve space in the URB flags for
-> > implementation-specific use.
+On Thu,  4 Nov 2010 10:55:41 +0200
+Baruch Siach <baruch@tkos.co.il> wrote:
+
+> Code calling msleep_interruptible() must be aware that sleep time might be
+> shorter than intended as a result of a signal being caught. Code not checking
+> the return value of msleep_interruptible() is probably buggy, unless it's doing
+> the signal_pending() check itself, which is redundant.
 > 
-> Yes, but _which_ driver are you talking about here?  You didn't say that
-> this was a HCD-only flag, right?
 
-Sorry, I may not have been clear.  I did mean HCD-only flag; its exact
-meaning depends on the HCD in question.  In the case of tegra-ehci, it
-means that a temporary buffer has been allocated that needs freeing
-later.
+True.  But there are around 250 callsites which don't check the
+msleep_interruptible() return value.
 
-Would it make more sense if I called it URB_HCD_PRIVATE_MASK?
+I don't think I want to add 250 new warnings to the kernel build -
+it'll take *years* to get them all weeded out and meanwhile it will
+cause people to miss other warnings while they're ignoring the
+msleep_interruptible() warnings.
 
-Thanks,
-Robert
+So.  Some lucky duck needs to get down and start fixing all these
+things first, please.  Meanwhile, a checkpatch rule which prevents new
+occurrences would be good.
+
+Except lots of developers and maintainers can't be assed running
+checkpatch, so a volunteer who regularly runs linux-next.patch and
+patch-2.6.Y-rcY through checkpatch and then hassles people would also be
+good.
+
