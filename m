@@ -1,84 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755702Ab0LQSLi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 13:11:38 -0500
-Received: from mga11.intel.com ([192.55.52.93]:42408 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753746Ab0LQSLh convert rfc822-to-8bit (ORCPT
+	id S1755528Ab0LQSP5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 13:15:57 -0500
+Received: from casper.infradead.org ([85.118.1.10]:60967 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755343Ab0LQSP4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 13:11:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,189,1291622400"; 
-   d="scan'208";a="869371605"
-From: "Raj, Ashok" <ashok.raj@intel.com>
-To: Cliff Wickman <cpw@sgi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Li, Shaohua" <shaohua.li@intel.com>,
-        "Keshavamurthy, Anil S" <anil.s.keshavamurthy@intel.com>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>
-Date: Fri, 17 Dec 2010 10:11:35 -0800
-Subject: RE: intel-iommu.c bug
-Thread-Topic: intel-iommu.c bug
-Thread-Index: Acud+5UB8WdIDo+PTNmSwafEsk9uqAAFuhqQ
-Message-ID: <647EFE31A07A4A478691C20DABDFFCB125C3855230@orsmsx501.amr.corp.intel.com>
-References: <E1PTbq3-00083L-Sp@eag09.americas.sgi.com>
-In-Reply-To: <E1PTbq3-00083L-Sp@eag09.americas.sgi.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	Fri, 17 Dec 2010 13:15:56 -0500
+Subject: Re: [RFC][PATCH 5/5] sched: Reduce ttwu rq->lock contention
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1292607781.2266.295.camel@twins>
+References: <20101216145602.899838254@chello.nl>
+	 <20101216150920.968046926@chello.nl> <20101216184229.GA15889@redhat.com>
+	 <1292525893.2708.50.camel@laptop> <1292526220.2708.55.camel@laptop>
+	 <1292528874.2708.85.camel@laptop> <1292531553.2708.89.camel@laptop>
+	 <20101217165414.GA8997@redhat.com>  <1292607781.2266.295.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Date: Fri, 17 Dec 2010 19:15:40 +0100
+Message-ID: <1292609740.2266.323.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Cliff
+On Fri, 2010-12-17 at 18:43 +0100, Peter Zijlstra wrote:
+> 
+> Hrmph, so is it only about serializing concurrent wakeups? If so, we
+> could possibly hold p->pi_lock over the wakeup. 
 
-Sending this to Suresh who is handling linux iommu.
+Something like the below.. except it still suffers from the
+__migrate_task() hole you identified in your other email.
 
-Ashok
+By fully serializing all wakeups using ->pi_lock it becomes a lot
+simpler (although I just realized we might have a problem with
+try_to_wake_up_local).
 
+static int
+try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+{
+        unsigned long flags;
+        int cpu, ret = 0;
 
->-----Original Message-----
->From: Cliff Wickman [mailto:cpw@sgi.com]
->Sent: Friday, December 17, 2010 7:03 AM
->To: linux-kernel@vger.kernel.org
->Cc: Raj, Ashok; Li, Shaohua; Keshavamurthy, Anil S; Yu, Fenghua
->Subject: intel-iommu.c bug
->
->
->
->This bug was reported by Mike Habeck <habeck@sgi.com>.
->The test system was an SGI Altix UV.  These are Mike's words:
->
-> It appears there is a bug in the iommu code that when 'forcedac' isn't used
-> the nvidia driver is handed back a 44bit dma address even though it's
-> dma_mask is set to 40bits.
->
-> I added some debug to the intel_iommu code and I see:
->  intel_map_sg(): dma_addr_t=0xf81fffff000, pdev->dma_mask=0xffffffffff
->
-> Note the dma_addr_t being handed back is 44bits even though the mask is 40bits.
-> This results in the nvidia card generating a bad dma (i.e. the nvidia hw is
-> only capable of generating a 40bit dma address so the upper 4 bits are lost
-> and that results in the iommu hw detecting a bad dma access):
->
->   DRHD: handling fault status reg 2
->   DMAR:[DMA Read] Request device [36:00.0] fault addr 81fffff000
->   DMAR:[fault reason 06] PTE Read access is not set
->
-> If I boot with 'forcedac' then the dma mask is honored and the dma_addr_t
-> handed back is 40bits:
->
->   intel_map_sg(): dma_addr_t=0xfffffff000, pdev->dma_mask=0xffffffffff
->
-> Without forcedac you'd expect these early maps being handed back to be 32bits.
-> This is the first debug printf (so the first mapping the nvidia device has
-> requested) so I'd expect it to be 0xfffff000... interesting that is what the
-> lower 32bits are in this address being handed back... that 0xf81 upper bits
-> appear to be garbage bits.  This might be a hint to help find the bug...
->
+        smp_wmb();
+        raw_spin_lock_irqsave(&p->pi_lock, flags);
+
+        if (!(p->state & state))
+                goto unlock;
+
+        ret = 1; /* we qualify as a proper wakeup now */
+
+        if (p->se.on_rq && ttwu_force(p, state, wake_flags))
+                goto unlock;
+
+        p->sched_contributes_to_load = !!task_contributes_to_load(p);
+
+        /*
+         * In order to serialize against other tasks wanting to task_rq_lock()
+         * we need to wait until the current task_rq(p)->lock holder goes away,
+         * so that the next might observe TASK_WAKING.
+         */
+        p->state = TASK_WAKING;
+        smp_wmb();
+        raw_spin_unlock_wait(&task_rq(p)->lock);
+
+        /*
+         * Stable, now that TASK_WAKING is visible.
+         */
+        cpu = task_cpu(p);
+
+#ifdef CONFIG_SMP
+        /*
+         * Catch the case where schedule() has done the dequeue but hasn't yet
+         * scheduled to a new task, in that case p is still being referenced
+         * by that cpu so we cannot wake it to any other cpu.
+         *
+         * Here we must either do a full remote enqueue, or simply wait for
+         * the remote cpu to finish the schedule(), the latter was found to
+         * be cheapest.
+         */
+        while (p->oncpu)
+                cpu_relax();
+
+        if (p->sched_class->task_waking)
+                p->sched_class->task_waking(p);
+
+        cpu = select_task_rq(p, SD_BALANCE_WAKE, wake_flags);
+#endif
+        ttwu_queue(p, cpu);
+        ttwu_stat(p, cpu, wake_flags);
+unlock:
+        raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+
+        return ret;
+}
+
