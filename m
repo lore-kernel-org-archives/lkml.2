@@ -1,48 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab0LQEId (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 23:08:33 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33918 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752482Ab0LQEIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 23:08:32 -0500
-Message-ID: <4D0AE231.4010804@zytor.com>
-Date: Thu, 16 Dec 2010 20:08:17 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Yinghai <yinghai@kernel.org>
-CC: Vivek Goyal <vgoyal@redhat.com>, Stanislaw Gruszka <sgruszka@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Maxim Uvarov <muvarov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Neil Horman <nhorman@redhat.com>
-Subject: Re: kdump broken on 2.6.37-rc4
-References: <20101207105053.GA2803@redhat.com> <4CFE89FE.1090901@kernel.org> <20101208141942.GA2335@redhat.com> <4D00823A.9050808@kernel.org> <20101209124117.GA6032@redhat.com> <4D01377B.5070809@kernel.org> <20101213100848.GA2237@redhat.com> <4D0663F0.2060103@kernel.org> <4D06783C.6040009@zytor.com> <20101214224135.GB19693@redhat.com> <20101215103954.GA2243@redhat.com> <4D09958D.2040907@kernel.org> <4D0AD976.3020504@zytor.com> <3C6B7683-9CDC-4C4A-A32A-56227DE01387@kernel.org>
-In-Reply-To: <3C6B7683-9CDC-4C4A-A32A-56227DE01387@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753241Ab0LQEQq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 23:16:46 -0500
+Received: from ganesha.gnumonks.org ([213.95.27.120]:37635 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752619Ab0LQEQi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 23:16:38 -0500
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: KyongHo Cho <pullip.cho@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Inho Lee <ilho215.lee@samsung.com>,
+        Inki Dae <inki.dae@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Johan MOSSBERG <johan.xx.mossberg@stericsson.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mel Gorman <mel@csn.ul.ie>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, linux-samsung-soc@vger.kernel.org,
+        Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [RFCv2,6/8] mm: vcm: VCM One-to-One wrapper added
+Date: Fri, 17 Dec 2010 12:56:25 +0900
+Message-Id: <1292558187-17348-7-git-send-email-pullip.cho@samsung.com>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1292558187-17348-6-git-send-email-pullip.cho@samsung.com>
+References: <1292558187-17348-1-git-send-email-pullip.cho@samsung.com>
+ <1292558187-17348-2-git-send-email-pullip.cho@samsung.com>
+ <1292558187-17348-3-git-send-email-pullip.cho@samsung.com>
+ <1292558187-17348-4-git-send-email-pullip.cho@samsung.com>
+ <1292558187-17348-5-git-send-email-pullip.cho@samsung.com>
+ <1292558187-17348-6-git-send-email-pullip.cho@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2010 07:58 PM, Yinghai wrote:
-> Please don't do that to 64 bit
-> 
-> My big system with 1024g memory and a lot of cards with rhel 6 to make kdump work must have crashkernel=512m and second kernel need to take pci=nomsi
-> 
-> Thanks
-> 
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
 
-Hm, this seems like an epic FAIL.
+This commits adds a VCM One-to-One wrapper which is meant to be
+a helper code for creating VCM drivers for "fake" MMUs, ie.
+situation where there is no real hardware MMU and memory
+must be contiguous physically and mapped directly to "virtual"
+address space.
 
-First of all, the current code still limits it to 896 MiB, so 512 MiB is
-not a significant restriction.
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ Documentation/virtual-contiguous-memory.txt |   33 ++++++++++
+ include/linux/vcm-drv.h                     |   41 ++++++++++++
+ mm/Kconfig                                  |   10 +++
+ mm/vcm.c                                    |   90 +++++++++++++++++++++++++++
+ 4 files changed, 174 insertions(+), 0 deletions(-)
 
-Second, this patch only applies if "crashkernel=" is not specified, so
-it doesn't even apply to your situation.
+diff --git a/Documentation/virtual-contiguous-memory.txt b/Documentation/virtual-contiguous-memory.txt
+index 9036abe..070685b 100644
+--- a/Documentation/virtual-contiguous-memory.txt
++++ b/Documentation/virtual-contiguous-memory.txt
+@@ -883,6 +883,39 @@ rather then the whole mapping.  It basically incorporates call to the
+ vcm_phys_walk() function so driver does not need to call it
+ explicitly.
+ 
++** Writing a one-to-one VCM driver
++
++Similarly to a wrapper for a real hardware MMU a wrapper for
++one-to-one VCM contexts has been created.  It implements all of the
++houskeeping operations and leaves only contiguous memory management
++(that is allocating and freeing contiguous regions) to the VCM O2O
++driver.
++
++As with other drivers, one-to-one driver needs to provide a context
++creation function.  It needs to allocate space for vcm_o2o structure
++and initialise its vcm.start, vcm.end and driver fields.  Calling
++vcm_o2o_init() will fill the other fields and validate entered values:
++
++	struct vcm *__must_check vcm_o2o_init(struct vcm_o2o *o2o);
++
++There are the following two operations used by the wrapper:
++
++	void (*cleanup)(struct vcm *vcm);
++	struct vcm_phys *(*phys)(struct vcm *vcm, resource_size_t size,
++				 unsigned flags);
++
++The cleanup operation cleans the context and frees all resources.  If
++not provided, kfree() is used.
++
++The phys operation is used in the same way as the core driver's phys
++operation.  The only difference is that it must return a physically
++contiguous memory block -- ie. returned structure must have only one
++part.  On error, the operation must return an error-pointer.  It is
++required.
++
++Note that to use the VCM one-to-one wrapper one needs to select the
++VCM_O2O Kconfig option or otherwise the wrapper won't be available.
++
+ * Epilogue
+ 
+ The initial version of the VCM framework was written by Zach Pfeffer
+diff --git a/include/linux/vcm-drv.h b/include/linux/vcm-drv.h
+index 98d065b..d7d97de 100644
+--- a/include/linux/vcm-drv.h
++++ b/include/linux/vcm-drv.h
+@@ -194,6 +194,47 @@ struct vcm *__must_check vcm_mmu_init(struct vcm_mmu *mmu);
+ 
+ #endif
+ 
++#ifdef CONFIG_VCM_O2O
++
++/**
++ * struct vcm_o2o_driver - VCM One-to-One driver
++ * @cleanup:	cleans up the VCM context; if not specified. kfree() is used.
++ * @phys:	allocates a physical contiguous memory block; this is used in
++ *		the same way &struct vcm_driver's phys is used expect it must
++ *		provide a contiguous block (ie. exactly one part); required.
++ */
++struct vcm_o2o_driver {
++	void (*cleanup)(struct vcm *vcm);
++	struct vcm_phys *(*phys)(struct vcm *vcm, resource_size_t size,
++				 unsigned flags);
++};
++
++/**
++ * struct vcm_o2o - VCM One-to-One context
++ * @vcm:	VCM context.
++ * @driver:	VCM One-to-One driver's operations.
++ */
++struct vcm_o2o {
++	struct vcm			vcm;
++	const struct vcm_o2o_driver	*driver;
++};
++
++/**
++ * vcm_o2o_init() - initialises a VCM context for a one-to-one context.
++ * @o2o:	the vcm_o2o context to initialise.
++ *
++ * This function initialises the vcm_o2o structure created by a O2O
++ * driver when setting things up.  It sets up all fields of the
++ * structure expect for @o2o->vcm.start, @o2o->vcm.size and
++ * @o2o->driver which are validated by this function.  If they have
++ * invalid value function produces warning and returns an
++ * error-pointer.  On any other error, an error-pointer is returned as
++ * well.  If everything is fine, address of @o2o->vcm is returned.
++ */
++struct vcm *__must_check vcm_o2o_init(struct vcm_o2o *o2o);
++
++#endif
++
+ #ifdef CONFIG_VCM_PHYS
+ 
+ /**
+diff --git a/mm/Kconfig b/mm/Kconfig
+index e91499d..53328d2 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -380,6 +380,16 @@ config VCM_MMU
+  	  will be automatically selected.  You select it if you are going to
+  	  build external modules that will use this functionality.
+ 
++config VCM_O2O
++	bool "VCM O2O wrapper"
++	depends on VCM && MODULES
++	help
++	  This enables the VCM one-to-one wrapper which helps creating VCM
++	  drivers for devices without IO MMUs.  If a VCM driver is built that
++	  requires this option, it will be automatically selected.  You select
++	  it if you are going to build external modules that will use this
++	  functionality.
++
+ #
+ # UP and nommu archs use km based percpu allocator
+ #
+diff --git a/mm/vcm.c b/mm/vcm.c
+index 0d74e95..312540a 100644
+--- a/mm/vcm.c
++++ b/mm/vcm.c
+@@ -648,6 +648,96 @@ EXPORT_SYMBOL_GPL(vcm_mmu_init);
+ #endif
+ 
+ 
++/**************************** One-to-One wrapper ****************************/
++
++#ifdef CONFIG_VCM_O2O
++
++static void vcm_o2o_cleanup(struct vcm *vcm)
++{
++	struct vcm_o2o *o2o = container_of(vcm, struct vcm_o2o, vcm);
++	if (o2o->driver->cleanup)
++		o2o->driver->cleanup(vcm);
++	else
++		kfree(o2o);
++}
++
++static struct vcm_phys *
++vcm_o2o_phys(struct vcm *vcm, resource_size_t size, unsigned flags)
++{
++	struct vcm_o2o *o2o = container_of(vcm, struct vcm_o2o, vcm);
++	struct vcm_phys *phys;
++
++	phys = o2o->driver->phys(vcm, size, flags);
++	if (!IS_ERR(phys) &&
++	    WARN_ON(!phys->free || !phys->parts->size ||
++		    phys->parts->size < size ||
++		    ((phys->parts->start | phys->parts->size) &
++		     ~PAGE_MASK))) {
++		if (phys->free)
++			phys->free(phys);
++		return ERR_PTR(-EINVAL);
++	}
++
++	return phys;
++}
++
++static struct vcm_res *
++vcm_o2o_map(struct vcm *vcm, struct vcm_phys *phys, unsigned flags)
++{
++	struct vcm_res *res;
++
++	if (phys->count != 1)
++		return ERR_PTR(-EOPNOTSUPP);
++
++	if (!phys->parts->size
++	 || ((phys->parts->start | phys->parts->size) & ~PAGE_MASK))
++		return ERR_PTR(-EINVAL);
++
++	res = kmalloc(sizeof *res, GFP_KERNEL);
++	if (!res)
++		return ERR_PTR(-ENOMEM);
++
++	res->start    = phys->parts->start;
++	res->res_size = phys->parts->size;
++	return res;
++}
++
++static int vcm_o2o_bind(struct vcm_res *res, struct vcm_phys *phys)
++{
++	if (phys->count != 1)
++		return -EOPNOTSUPP;
++
++	if (!phys->parts->size
++	 || ((phys->parts->start | phys->parts->size) & ~PAGE_MASK))
++		return -EINVAL;
++
++	if (res->start != phys->parts->start)
++		return -EOPNOTSUPP;
++
++	return 0;
++}
++
++struct vcm *__must_check vcm_o2o_init(struct vcm_o2o *o2o)
++{
++	static const struct vcm_driver driver = {
++		.cleanup	= vcm_o2o_cleanup,
++		.phys		= vcm_o2o_phys,
++		.map		= vcm_o2o_map,
++		.bind		= vcm_o2o_bind,
++		.unreserve	= (void (*)(struct vcm_res *))kfree,
++	};
++
++	if (WARN_ON(!o2o || !o2o->driver || !o2o->driver->phys))
++		return ERR_PTR(-EINVAL);
++
++	o2o->vcm.driver = &driver;
++	return vcm_init(&o2o->vcm);
++}
++EXPORT_SYMBOL_GPL(vcm_o2o_init);
++
++#endif
++
++
+ /************************ Physical memory management ************************/
+ 
+ #ifdef CONFIG_VCM_PHYS
+-- 
+1.6.2.5
 
-Third, if you have to specify "crashkernel=" that means that there is
-yet another problem here that should be fixed.
-
-	-hpa
