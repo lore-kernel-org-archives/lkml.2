@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274Ab0LQXxT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 18:53:19 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:1576 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755380Ab0LQXxQ (ORCPT
+	id S1756393Ab0LQXx5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 18:53:57 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45650 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756045Ab0LQXx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 18:53:16 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp03.nvidia.com on Fri, 17 Dec 2010 15:50:51 -0800
-Date: Fri, 17 Dec 2010 15:50:50 -0800
-From: rmorell@nvidia.com
-To: Greg KH <gregkh@suse.de>
-Cc: Oliver Neukum <oliver@neukum.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Benoit Goby <benoit@android.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
-        Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>,
-        Colin Cross <ccross@android.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] USB: ehci: tegra: Align DMA transfers to 32 bytes
-Message-ID: <20101217235050.GK25105@morell.nvidia.com>
-References: <1292623129-26361-1-git-send-email-rmorell@nvidia.com>
- <20101217224221.GE25105@morell.nvidia.com>
- <20101217230940.GB21147@suse.de>
- <201012180017.41391.oliver@neukum.org>
- <20101217233527.GA31162@suse.de>
+	Fri, 17 Dec 2010 18:53:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=YwJdKW/I2GNyUemibbHKP/jQvvz5fI5m9J9JMeyG26p9/BgTIED2XQ3DUQnW/KC8CZ
+         5d5n1bVj9WSoc4Cu90Vh+JhjNb6Ptg/P7xXrMhQYZIZwNSu+YveZYnBuRUUQ+i9YJS0B
+         hIbnPo/5ybpOvmi/wGbqMOVTO7BI0/0oGxtC8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101217233527.GA31162@suse.de>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4D0BEE1F.7020008@zytor.com>
+References: <4d0662e511688484b3@agluck-desktop.sc.intel.com>
+	<AANLkTindPUkF7fCkdbqSstNHFjF3_7fEYh18nhQFx_AJ@mail.gmail.com>
+	<AANLkTim3OpjPysjdCLDuFgFOipmcxyr2ay5cvUAu5PHi@mail.gmail.com>
+	<AANLkTinpYJddhgbf7=Pw_TtGrnWaC8fwo2xv1XRsT1w7@mail.gmail.com>
+	<AANLkTimA4x8oWyq71nOxB=Otp3Y0i3Kcu27DG0ajaXUG@mail.gmail.com>
+	<AANLkTinCG+E6ZzpeRqsJP+-qvNDQXW4VZFgJ1c-sTryL@mail.gmail.com>
+	<4D0BEE1F.7020008@zytor.com>
+Date: Fri, 17 Dec 2010 15:53:55 -0800
+X-Google-Sender-Auth: C1yc8Xz6kvKLWe4l0xjq0MZcSVg
+Message-ID: <AANLkTinwFt+KDKNEYP9MWQ7wGb9qk=E2Xa3RJB3+MJnN@mail.gmail.com>
+Subject: Re: [concept & "good taste" review] persistent store
+From: Tony Luck <tony.luck@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, greg@kroah.com,
+        akpm@linux-foundation.org, ying.huang@intel.com,
+        Borislav Petkov <bp@alien8.de>, David Miller <davem@davemloft.net>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Kyungmin Park <kmpark@infradead.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 03:35:27PM -0800, Greg KH wrote:
-> On Sat, Dec 18, 2010 at 12:17:40AM +0100, Oliver Neukum wrote:
-> > Am Samstag, 18. Dezember 2010, 00:09:40 schrieb Greg KH:
-> > > I still don't like it, it feels like a hack that is not going to be able
-> > > to be maintained very well.
-> > > 
-> > > And I still think the individual drivers should be fixed...
-> > > 
-> > 
-> > But they are not buggy. The USB API was written under the
-> > assumption that HCDs can deal with byte level granularity and alignment.
-> > Hence the network driver pass DMA-able memory with an alignment
-> > that suits them.
-> 
-> Ok, fair enough.
-> 
-> But I still don't like that urb flag stuff as a solution to this...
+On Fri, Dec 17, 2010 at 3:11 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> There are two models I can think of:
+>
+> 1. a file where the head is automatically dropped as space requires.
+> 2. a filesystem where the oldest files are automatically reclaimed.
+>
+> 1 has been implemented in actual systems, 2 is kind of a logical extension.
 
-Yeah, I wish I knew of a better way to store this information.
-urb->hcpriv seems like a nice place for host controller-private data,
-but it's used by the general ehci framework throughout the lifetime of
-an URB so isn't suitable for this case.
+#2 sounds more applicable here (we have some multi-kilobyte
+blobs of data, one from each kmsg_dumper invocation - and
+it would seem useful to keep them as separate entities)
 
-Thanks,
-Robert
+I'm not sure whether everyone would be happy with this. Imagine you
+have a system that gets two OOPs, followed by a full panic - but that
+the persistent store only has space for two of the three reports. I think
+that most people would want the first OOPs and the panic ... i.e.
+drop the middle bit, rather than the oldest bit.
 
-> thanks,
-> 
-> greg k-h
-> 
+-Tony
