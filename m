@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539Ab0LQSTG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 13:19:06 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:39302 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755252Ab0LQSTE convert rfc822-to-8bit (ORCPT
+	id S1755603Ab0LQSTT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 13:19:19 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:43306 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754883Ab0LQSTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 13:19:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:from:date:x-google-sender-auth:message-id
-         :subject:to:cc:content-type:content-transfer-encoding;
-        b=Wnizae2/6UD4IoF9ylvwGiP+DtwOgZbvlSlDtN24ZJzgEsp+AuMQHeheQxZoK7AJTa
-         un/gf7VBmFNsmZUYqCJHVKIo1SDldjYL5qGM6MRg7bcOQUZRQYNvZc72LTQPpLLqDpZa
-         E97VRfHkhy7hOzjt7ECvKuqjF5tW2546+mZxM=
-MIME-Version: 1.0
-From: Mike Snitzer <snitzer@redhat.com>
-Date: Fri, 17 Dec 2010 13:13:47 -0500
-X-Google-Sender-Auth: Rf2X56p_IZYwpcrAgBlIzV5qdG4
-Message-ID: <AANLkTi=H3-GrEZVWzmHyHvyx93HU6x=t_n6TBqCiEwxX@mail.gmail.com>
-Subject: reproducer for DM on MD flush deadlock? (was: Re: [PULL REQUEST] md
- bug fixes)
-To: Neil Brown <neilb@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-raid@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 17 Dec 2010 13:19:18 -0500
+Subject: Re: [concept & "good taste" review] persistent store
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Tony Luck <tony.luck@intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, greg@kroah.com,
+        akpm@linux-foundation.org, ying.huang@intel.com,
+        Borislav Petkov <bp@alien8.de>, David Miller <davem@davemloft.net>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Kyungmin Park <kmpark@infradead.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <AANLkTinpYJddhgbf7=Pw_TtGrnWaC8fwo2xv1XRsT1w7@mail.gmail.com>
+References: <4d0662e511688484b3@agluck-desktop.sc.intel.com>
+	 <AANLkTindPUkF7fCkdbqSstNHFjF3_7fEYh18nhQFx_AJ@mail.gmail.com>
+	 <AANLkTim3OpjPysjdCLDuFgFOipmcxyr2ay5cvUAu5PHi@mail.gmail.com>
+	 <AANLkTinpYJddhgbf7=Pw_TtGrnWaC8fwo2xv1XRsT1w7@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Dec 2010 13:19:12 -0500
+Message-ID: <1292609952.2820.43.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 14, 2010 at 2:22 AM, Neil Brown <neilb@suse.de> wrote:
->
->
-> Hi Linus,
->  here are a few bug fixes for md.
->  Some of the patches are actually clean-up rather than bug-fix,
->  but I that make the bugfix simpler to review.
->
-> Thanks,
-> NeilBrown
->
->
-> The following changes since commit 6313e3c21743cc88bb5bd8aa72948ee1e83937b6:
->
->  Merge branches 'x86-fixes-for-linus', 'perf-fixes-for-linus' and 'sched-fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2010-12-08 06:40:59 -0800)
->
-> are available in the git repository at:
->
->  git://neil.brown.name/md/ for-linus
->
-> NeilBrown (5):
->      md: remove handling of flush_pending in md_submit_flush_data
->      md: move code in to submit_flushes.
->      md: fix possible deadlock in handling flush requests.
+On Fri, 2010-12-17 at 10:09 -0800, Tony Luck wrote:
+> On Thu, Dec 16, 2010 at 10:28 PM, Tony Luck <tony.luck@gmail.com> wrote:
+> >> The _only_ valid reason for persistent storage is for things like
+> >> oopses that kill the machine.
+> >
+> > Maybe I misunderstood what "KMSG_DUMP_OOPS" meant ... it
+> > looked to me like this code is used for non-fatal OOPsen - ones
+> > that will be logged to /var/log/messages.
+> 
+> Thinking about this a bit more I see my experiments with
+> this were hopelessly naive. There is no way to know at
+> "oops" time whether the problem is going to turn out to
+> be minor or fatal.  So the right thing to do here is assume
+> the worst and squirrel the data away safely just in case
+> death is imminent.
 
-Hi Neil,
+To be honest, this is what I'd recommend even if you could tell the
+difference.  A lot of the oopses I see were triggered by something
+non-fatal (usually a WARN_ON()) earlier in the sequence.  Without seeing
+the preceding WARN_ON() data, the oops is usually terrifically hard to
+diagnose (often just a NULL or junk pointer deref).
 
-Thanks for fixing this DM on MD flush issue.  But my attempts to
-reproduce it have been unsuccessful.
+James
 
-I've tried ext4 w/ barriers to a DM device above a 2 member MD RAID1.
-The DM device has a table with 2 linear targets to the same md0
-device:
 
-# dmsetup table
-multiple_targets: 0 24576 linear 9:0 2048
-multiple_targets: 24576 49152 linear 9:0 26624
-
-No amount of IO with flushes has enabled me to hit a deadlock (in
-md_flush_request,  md_write_start, etc).
-
-Do you have a simple reproducer for this issue?
-
-Mike
