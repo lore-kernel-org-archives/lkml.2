@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752328Ab0LQLkg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 06:40:36 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:41948 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795Ab0LQLkf (ORCPT
+	id S1752486Ab0LQLoe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 06:44:34 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46565 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751795Ab0LQLod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 06:40:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=SbLNss4EsvgaFFmqKt2+TwwIHOX76uXKaDmgZKChcqysiJ5mF/lTeuhc/KFmI4SGGD
-         dw0bDALSsyfUv6T4yIyTUZVmjjvi1gGKCzAcVDc0NZcDDw81JJ/ITlxSS48kk301o3QK
-         SoWA1vmvtStttuaAOSo2hFCn3hz+8XPRbnfh8=
+	Fri, 17 Dec 2010 06:44:33 -0500
+Date: Fri, 17 Dec 2010 11:44:30 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 2/2] regulator: Optimise out noop voltage changes
+Message-ID: <20101217114430.GB31453@rakim.wolfsonmicro.main>
+References: <3bf69fb1c4f33c8a1f405b4f05ba1a59.squirrel@www.codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <1292585094-28544-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
-References: <1292585094-28544-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
-Date: Fri, 17 Dec 2010 12:40:34 +0100
-Message-ID: <AANLkTi=f6XPbsUiTSiFru2tj_XsQSu=-h898b0R2AePo@mail.gmail.com>
-Subject: Re: [PATCH 07/11] Bluetooth: Add UART API functions to ldisc
-From: Vitaly Wool <vitalywool@gmail.com>
-To: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
-Cc: Pavan Savoy <pavan_savoy@sify.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Samuel Ortiz <sameo@linux.intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>, linux-kernel@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org,
-        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3bf69fb1c4f33c8a1f405b4f05ba1a59.squirrel@www.codeaurora.org>
+X-Cookie: I just had a NOSE JOB!!
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Par,
+On Thu, Dec 16, 2010 at 05:46:07PM -0800, Saravana Kannan wrote:
+> 
+> 1. With support for multiple consumers, we can further optimize and call
+> the producer's set voltage only if the final voltage range changes. So if
+> consumer A asks for (2.0 - 5.0) and consumer B keeps changing between (1.0
+> - 5.0) and (1.5 - 5.0), then we can completely no-op all of consumer B's
+> calls.
 
-On Fri, Dec 17, 2010 at 12:24 PM, Par-Gunnar Hjalmdahl
-<par-gunnar.p.hjalmdahl@stericsson.com> wrote:
-> This patch adds new functions to control break and flow
-> as well as changing UART baud rate directly through the ldisc API
-> rather then using the TTY API directly.
+Yes, that could be done as a further optimisation - we'd be able to bale
+out after the 
 
-What do you need that for?
+> 2. When I was trying to do the above this Sunday, I also noticed what
+> looks like a bug or at least an unpleasant behavior. A consumer's min_uV
+> and max_uV were being updated (for-next around Dec 12th) before calling
+> the producer's set voltage. So, in the above example, if consumer C comes
+> in and asks for (10 - 15), it will prevent the producer voltage from ever
+> changing again. All of consumer A and B's future requests will result in a
+> failure since min_uV > max_uV when you do the consumer aggregation.
 
-> It also adds a boolean parameter so it is optional to register
-> to the Bluetooth stack (for drivers where a separate module
-> registers to the Bluetooth stack instead).
+I'm sorry I can't parse this at all.  What is a producer?
 
-I never liked this idea and I don't like it now as it scatters the
-changes needed to support devices you are aiming to support with your
-changes.
-
-Thanks,
-   Vitaly
+If the consumers are all asking for incompatible things there's a system
+integration issue and the consumers need to be sorted out; it's
+difficult for the regulator API to do anything safely while everything
+wants incompatible configurations.
