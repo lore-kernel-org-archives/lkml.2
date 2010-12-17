@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755664Ab0LQSCz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 13:02:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41859 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755316Ab0LQSCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 13:02:53 -0500
-Date: Fri, 17 Dec 2010 13:02:42 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai <yinghai@kernel.org>, Stanislaw Gruszka <sgruszka@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Maxim Uvarov <muvarov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Neil Horman <nhorman@redhat.com>
-Subject: Re: kdump broken on 2.6.37-rc4
-Message-ID: <20101217180242.GB12425@redhat.com>
-References: <20101213100848.GA2237@redhat.com>
- <4D0663F0.2060103@kernel.org>
- <4D06783C.6040009@zytor.com>
- <20101214224135.GB19693@redhat.com>
- <20101215103954.GA2243@redhat.com>
- <4D09958D.2040907@kernel.org>
- <4D0AD976.3020504@zytor.com>
- <3C6B7683-9CDC-4C4A-A32A-56227DE01387@kernel.org>
- <20101217170146.GC9568@redhat.com>
- <4D0BA45A.7020402@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D0BA45A.7020402@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755715Ab0LQSHJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 13:07:09 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:54247 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755642Ab0LQSHF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 13:07:05 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Qk0tjT7eKs/sHVBG987JA4BDRvXGpE6vpgzVKpUpQQOoq7ssBp/t0DEyh5bZbeBaCZs1kC/YtWu/N220aKmnWg28/AL85F8gqziqvZYf43OGpbHAkrOwbpvmTO/JbNpx;
+Date: Fri, 17 Dec 2010 10:06:00 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: <Narendra_K@Dell.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        <Matt_Domsch@Dell.com>, <Jordan_Hargrave@Dell.com>,
+        <Charles_Rose@Dell.com>
+Subject: Re: [PATCH] Enable pci=bfsort by default on future Dell systems
+Message-ID: <20101217100600.42b17b94@jbarnes-desktop>
+In-Reply-To: <20101217161102.GA32069@fedora-14-r710.oslab.blr.amer.dell.com>
+References: <20101214175048.GC31345@fedora-14-r710.oslab.blr.amer.dell.com>
+	<20101217161102.GA32069@fedora-14-r710.oslab.blr.amer.dell.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 09:56:42AM -0800, H. Peter Anvin wrote:
-> On 12/17/2010 09:01 AM, Vivek Goyal wrote:
-> > On Thu, Dec 16, 2010 at 07:58:48PM -0800, Yinghai wrote:
-> >> Please don't do that to 64 bit
-> >>
-> >> My big system with 1024g memory and a lot of cards with rhel 6 to make kdump work must have crashkernel=512m and second kernel need to take pci=nomsi
-> >>
+On Fri, 17 Dec 2010 08:17:29 -0800
+<Narendra_K@Dell.com> wrote:
+
+> On Tue, Dec 14, 2010 at 11:21:19PM +0530, K, Narendra wrote:
+> > Hello,
 > > 
-> > I agree here that we should not do it for 64 bit.
+> > This patch enables pci=bfsort by default on future Dell systems.
+> > Please consider for inclusion if acceptable.
 > > 
-> > - Just because we need it for 32 bit does not mean we should limit it for
-> >   64bit. And we do want to have the capability to boot the kernel from as
-> >   high memory as possible so creating another aritificial limit is counter
-> >   to that.
+> > From: Jordan Hargrave <jordan_hargrave@dell.com>
+> > Subject: [PATCH] Enable pci=bfsort by default on future Dell systems
 > > 
-> > - I would not worry too much about backward compatibility and allow
-> >   booting 32bit kernel till 768MB. The reason being that most of the
-> >   distros use same kernel for crash dumping as regular kernel. Maintainig
-> >   two separate kernels is big hassle.
+> > This patch enables pci=bfsort by default on future Dell systems.
+> > It reads SMBIOS type 0xB1 vendor specific record and sets pci=bfsort accordingly.
 > > 
-> >   So a small set of people who run into issue, would need to change kernel
-> >   command line "crashkernel=128M@64M" or something similar.
+> > Offset  Name    Length  Value   Description
 > > 
+> > 04      Flags0  Word    Varies  Bits 9-10
+> >                                 - 10:9 = 00  Unknown
+> >                                 - 10:9 = 01  Breadth First
+> >                                 - 10:9 = 10  Depth First
+> >                                 - 10:9 = 11  Reserved
+> > 
+> > 1. Any time pci=bfsort has to be enabled on a system, we need to add the model
+> > number of the system to the white list. With this patch, that is not required.
+> > 
+> > 2. Typically, model number has to be added to the white list when the system is
+> > under development. With this change, that is not required.
+> > 
+> > Signed-off-by: Jordan Hargrave <jordan_hargrave@dell.com>
+> > Signed-off-by: Narendra K <narendra_k@dell.com>
+> > ---
 > 
-> Do we have actual testing for how high the 64-bit kernel will load?
+> Hello Jesse,
+> 
+> Please let us know if there are any concerns with this patch. If the
+> patch is acceptable, please consider it for inclusion.
 
-I will do some experiments on my box today and let you know.
+Yeah, I don't have a problem with it; I'll queue it up in the -next
+branch.
 
-
->I'm assuming that the usage of a 32-bit kdump kernel for a 64-bit main
-> kernel is nonexistent.
-
-In the past I have run into 1-2 folks who were using 32bit kdump kernel
-on 64bit main. But again for those, the workaround is to specify the
-different crashkernel= syntax and explicityly specify where to reserve
-memory.
-
-Thanks
-Vivek
+-- 
+Jesse Barnes, Intel Open Source Technology Center
