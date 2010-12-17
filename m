@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241Ab0LQEQq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 23:16:46 -0500
-Received: from ganesha.gnumonks.org ([213.95.27.120]:37635 "EHLO
+	id S1753182Ab0LQEQo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 23:16:44 -0500
+Received: from ganesha.gnumonks.org ([213.95.27.120]:37618 "EHLO
 	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752619Ab0LQEQi (ORCPT
+	with ESMTP id S1752386Ab0LQEQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Dec 2010 23:16:38 -0500
 From: KyongHo Cho <pullip.cho@samsung.com>
@@ -22,256 +22,218 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
         linux-mm@kvack.org, linux-samsung-soc@vger.kernel.org,
         Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [RFCv2,6/8] mm: vcm: VCM One-to-One wrapper added
-Date: Fri, 17 Dec 2010 12:56:25 +0900
-Message-Id: <1292558187-17348-7-git-send-email-pullip.cho@samsung.com>
+Subject: [RFCv2,4/8] mm: vcm: VCM VMM driver added
+Date: Fri, 17 Dec 2010 12:56:23 +0900
+Message-Id: <1292558187-17348-5-git-send-email-pullip.cho@samsung.com>
 X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1292558187-17348-6-git-send-email-pullip.cho@samsung.com>
+In-Reply-To: <1292558187-17348-4-git-send-email-pullip.cho@samsung.com>
 References: <1292558187-17348-1-git-send-email-pullip.cho@samsung.com>
  <1292558187-17348-2-git-send-email-pullip.cho@samsung.com>
  <1292558187-17348-3-git-send-email-pullip.cho@samsung.com>
  <1292558187-17348-4-git-send-email-pullip.cho@samsung.com>
- <1292558187-17348-5-git-send-email-pullip.cho@samsung.com>
- <1292558187-17348-6-git-send-email-pullip.cho@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
 
-This commits adds a VCM One-to-One wrapper which is meant to be
-a helper code for creating VCM drivers for "fake" MMUs, ie.
-situation where there is no real hardware MMU and memory
-must be contiguous physically and mapped directly to "virtual"
-address space.
+This commit adds a VCM VMM driver that handles kernl virtual
+address space mappings.  The VCM context is available as a static
+object vcm_vmm.  It is mostly just a wrapper around vmap()
+function.
 
 Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- Documentation/virtual-contiguous-memory.txt |   33 ++++++++++
- include/linux/vcm-drv.h                     |   41 ++++++++++++
- mm/Kconfig                                  |   10 +++
- mm/vcm.c                                    |   90 +++++++++++++++++++++++++++
- 4 files changed, 174 insertions(+), 0 deletions(-)
+ Documentation/virtual-contiguous-memory.txt |   22 +++++-
+ include/linux/vcm.h                         |   13 +++
+ mm/vcm.c                                    |  108 +++++++++++++++++++++++++++
+ 3 files changed, 140 insertions(+), 3 deletions(-)
 
 diff --git a/Documentation/virtual-contiguous-memory.txt b/Documentation/virtual-contiguous-memory.txt
-index 9036abe..070685b 100644
+index 10a0638..c830b69 100644
 --- a/Documentation/virtual-contiguous-memory.txt
 +++ b/Documentation/virtual-contiguous-memory.txt
-@@ -883,6 +883,39 @@ rather then the whole mapping.  It basically incorporates call to the
- vcm_phys_walk() function so driver does not need to call it
- explicitly.
+@@ -510,6 +510,25 @@ state.
  
-+** Writing a one-to-one VCM driver
-+
-+Similarly to a wrapper for a real hardware MMU a wrapper for
-+one-to-one VCM contexts has been created.  It implements all of the
-+houskeeping operations and leaves only contiguous memory management
-+(that is allocating and freeing contiguous regions) to the VCM O2O
-+driver.
-+
-+As with other drivers, one-to-one driver needs to provide a context
-+creation function.  It needs to allocate space for vcm_o2o structure
-+and initialise its vcm.start, vcm.end and driver fields.  Calling
-+vcm_o2o_init() will fill the other fields and validate entered values:
-+
-+	struct vcm *__must_check vcm_o2o_init(struct vcm_o2o *o2o);
-+
-+There are the following two operations used by the wrapper:
-+
-+	void (*cleanup)(struct vcm *vcm);
-+	struct vcm_phys *(*phys)(struct vcm *vcm, resource_size_t size,
-+				 unsigned flags);
-+
-+The cleanup operation cleans the context and frees all resources.  If
-+not provided, kfree() is used.
-+
-+The phys operation is used in the same way as the core driver's phys
-+operation.  The only difference is that it must return a physically
-+contiguous memory block -- ie. returned structure must have only one
-+part.  On error, the operation must return an error-pointer.  It is
-+required.
-+
-+Note that to use the VCM one-to-one wrapper one needs to select the
-+VCM_O2O Kconfig option or otherwise the wrapper won't be available.
-+
- * Epilogue
+ The following VCM drivers are provided:
  
- The initial version of the VCM framework was written by Zach Pfeffer
-diff --git a/include/linux/vcm-drv.h b/include/linux/vcm-drv.h
-index 98d065b..d7d97de 100644
---- a/include/linux/vcm-drv.h
-+++ b/include/linux/vcm-drv.h
-@@ -194,6 +194,47 @@ struct vcm *__must_check vcm_mmu_init(struct vcm_mmu *mmu);
- 
- #endif
- 
-+#ifdef CONFIG_VCM_O2O
++** Virtual Memory Manager driver
 +
++Virtual Memory Manager driver is available as vcm_vmm and lets one map
++VCM managed physical memory into kernel space.  The calls that this
++driver supports are:
++
++	vcm_make_binding()
++	vcm_destroy_binding()
++
++	vcm_alloc()
++
++	vcm_map()
++	vcm_unmap()
++
++vcm_map() is likely to work with physical memory allocated in context
++of other drivers as well (the only requirement is that "page" field of
++struct vcm_phys_part will be set for all physically contiguous parts
++and that each part's size will be multiply of PAGE_SIZE).
++
+ ** Real hardware drivers
+ 
+ There are no real hardware drivers at this time.
+@@ -793,6 +812,3 @@ rewritten by Michal Nazarewicz <m.nazarewicz@samsung.com>.
+ The new version is still lacking a few important features.  Most
+ notably, no real hardware MMU has been implemented yet.  This may be
+ ported from original Zach's proposal.
+-
+-Also, support for VMM is lacking.  This is another thing that can be
+-ported from Zach's proposal.
+diff --git a/include/linux/vcm.h b/include/linux/vcm.h
+index 3d54f18..800b5a0 100644
+--- a/include/linux/vcm.h
++++ b/include/linux/vcm.h
+@@ -295,4 +295,17 @@ int  __must_check vcm_activate(struct vcm *vcm);
+  */
+ void vcm_deactivate(struct vcm *vcm);
+ 
 +/**
-+ * struct vcm_o2o_driver - VCM One-to-One driver
-+ * @cleanup:	cleans up the VCM context; if not specified. kfree() is used.
-+ * @phys:	allocates a physical contiguous memory block; this is used in
-+ *		the same way &struct vcm_driver's phys is used expect it must
-+ *		provide a contiguous block (ie. exactly one part); required.
-+ */
-+struct vcm_o2o_driver {
-+	void (*cleanup)(struct vcm *vcm);
-+	struct vcm_phys *(*phys)(struct vcm *vcm, resource_size_t size,
-+				 unsigned flags);
-+};
-+
-+/**
-+ * struct vcm_o2o - VCM One-to-One context
-+ * @vcm:	VCM context.
-+ * @driver:	VCM One-to-One driver's operations.
-+ */
-+struct vcm_o2o {
-+	struct vcm			vcm;
-+	const struct vcm_o2o_driver	*driver;
-+};
-+
-+/**
-+ * vcm_o2o_init() - initialises a VCM context for a one-to-one context.
-+ * @o2o:	the vcm_o2o context to initialise.
++ * vcm_vmm - VMM context
 + *
-+ * This function initialises the vcm_o2o structure created by a O2O
-+ * driver when setting things up.  It sets up all fields of the
-+ * structure expect for @o2o->vcm.start, @o2o->vcm.size and
-+ * @o2o->driver which are validated by this function.  If they have
-+ * invalid value function produces warning and returns an
-+ * error-pointer.  On any other error, an error-pointer is returned as
-+ * well.  If everything is fine, address of @o2o->vcm is returned.
++ * Context for manipulating kernel virtual mappings.  Reserve as well
++ * as rebinding is not supported by this driver.  Also, all mappings
++ * are always active (till unbound) regardless of calls to
++ * vcm_activate().
++ *
++ * After mapping, the start field of struct vcm_res should be cast to
++ * pointer to void and interpreted as a valid kernel space pointer.
 + */
-+struct vcm *__must_check vcm_o2o_init(struct vcm_o2o *o2o);
++extern struct vcm vcm_vmm[1];
 +
-+#endif
-+
- #ifdef CONFIG_VCM_PHYS
- 
- /**
-diff --git a/mm/Kconfig b/mm/Kconfig
-index e91499d..53328d2 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -380,6 +380,16 @@ config VCM_MMU
-  	  will be automatically selected.  You select it if you are going to
-  	  build external modules that will use this functionality.
- 
-+config VCM_O2O
-+	bool "VCM O2O wrapper"
-+	depends on VCM && MODULES
-+	help
-+	  This enables the VCM one-to-one wrapper which helps creating VCM
-+	  drivers for devices without IO MMUs.  If a VCM driver is built that
-+	  requires this option, it will be automatically selected.  You select
-+	  it if you are going to build external modules that will use this
-+	  functionality.
-+
- #
- # UP and nommu archs use km based percpu allocator
- #
+ #endif
 diff --git a/mm/vcm.c b/mm/vcm.c
-index 0d74e95..312540a 100644
+index 6804114..cd9f4ee 100644
 --- a/mm/vcm.c
 +++ b/mm/vcm.c
-@@ -648,6 +648,96 @@ EXPORT_SYMBOL_GPL(vcm_mmu_init);
- #endif
+@@ -16,6 +16,7 @@
+ #include <linux/vcm-drv.h>
+ #include <linux/module.h>
+ #include <linux/mm.h>
++#include <linux/vmalloc.h>
+ #include <linux/err.h>
+ #include <linux/slab.h>
+ 
+@@ -305,6 +306,113 @@ void vcm_deactivate(struct vcm *vcm)
+ EXPORT_SYMBOL_GPL(vcm_deactivate);
  
  
-+/**************************** One-to-One wrapper ****************************/
++/****************************** VCM VMM driver ******************************/
 +
-+#ifdef CONFIG_VCM_O2O
-+
-+static void vcm_o2o_cleanup(struct vcm *vcm)
++static void vcm_vmm_cleanup(struct vcm *vcm)
 +{
-+	struct vcm_o2o *o2o = container_of(vcm, struct vcm_o2o, vcm);
-+	if (o2o->driver->cleanup)
-+		o2o->driver->cleanup(vcm);
-+	else
-+		kfree(o2o);
++	/* This should never be called.  vcm_vmm is a static object. */
++	BUG_ON(1);
 +}
 +
 +static struct vcm_phys *
-+vcm_o2o_phys(struct vcm *vcm, resource_size_t size, unsigned flags)
++vcm_vmm_phys(struct vcm *vcm, resource_size_t size, unsigned flags)
 +{
-+	struct vcm_o2o *o2o = container_of(vcm, struct vcm_o2o, vcm);
-+	struct vcm_phys *phys;
-+
-+	phys = o2o->driver->phys(vcm, size, flags);
-+	if (!IS_ERR(phys) &&
-+	    WARN_ON(!phys->free || !phys->parts->size ||
-+		    phys->parts->size < size ||
-+		    ((phys->parts->start | phys->parts->size) &
-+		     ~PAGE_MASK))) {
-+		if (phys->free)
-+			phys->free(phys);
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	return phys;
++	static const unsigned char orders[] = { 0 };
++	return vcm_phys_alloc(size, flags, orders);
 +}
 +
-+static struct vcm_res *
-+vcm_o2o_map(struct vcm *vcm, struct vcm_phys *phys, unsigned flags)
++static void vcm_vmm_unreserve(struct vcm_res *res)
 +{
++	kfree(res);
++}
++
++struct vcm_res *vcm_vmm_map(struct vcm *vcm, struct vcm_phys *phys,
++			    unsigned flags)
++{
++	/*
++	 * Original implementation written by Cho KyongHo
++	 * (pullip.cho@samsung.com).  Later rewritten by mina86.
++	 */
++	struct vcm_phys_part *part;
++	struct page **pages, **p;
 +	struct vcm_res *res;
++	int ret = -ENOMEM;
++	unsigned i;
 +
-+	if (phys->count != 1)
-+		return ERR_PTR(-EOPNOTSUPP);
-+
-+	if (!phys->parts->size
-+	 || ((phys->parts->start | phys->parts->size) & ~PAGE_MASK))
-+		return ERR_PTR(-EINVAL);
++	pages = kmalloc((phys->size >> PAGE_SHIFT) * sizeof *pages, GFP_KERNEL);
++	if (!pages)
++		return ERR_PTR(-ENOMEM);
++	p = pages;
 +
 +	res = kmalloc(sizeof *res, GFP_KERNEL);
 +	if (!res)
-+		return ERR_PTR(-ENOMEM);
++		goto error_pages;
 +
-+	res->start    = phys->parts->start;
-+	res->res_size = phys->parts->size;
++	i    = phys->count;
++	part = phys->parts;
++	do {
++		unsigned j = part->size >> PAGE_SHIFT;
++		struct page *page = part->page;
++		if (!page)
++			goto error_notsupp;
++		do {
++			*p++ = page++;
++		} while (--j);
++	} while (++part, --i);
++
++	res->start = (dma_addr_t)vmap(pages, p - pages, VM_ALLOC, PAGE_KERNEL);
++	if (!res->start)
++		goto error_res;
++
++	kfree(pages);
++	res->res_size = phys->size;
 +	return res;
++
++error_notsupp:
++	ret = -EOPNOTSUPP;
++error_res:
++	kfree(res);
++error_pages:
++	kfree(pages);
++	return ERR_PTR(ret);
 +}
 +
-+static int vcm_o2o_bind(struct vcm_res *res, struct vcm_phys *phys)
++static void vcm_vmm_unbind(struct vcm_res *res)
 +{
-+	if (phys->count != 1)
-+		return -EOPNOTSUPP;
++	vunmap((void *)res->start);
++}
 +
-+	if (!phys->parts->size
-+	 || ((phys->parts->start | phys->parts->size) & ~PAGE_MASK))
-+		return -EINVAL;
-+
-+	if (res->start != phys->parts->start)
-+		return -EOPNOTSUPP;
-+
++static int vcm_vmm_activate(struct vcm *vcm)
++{
++	/* no operation, all bindings are immediately active */
 +	return 0;
 +}
 +
-+struct vcm *__must_check vcm_o2o_init(struct vcm_o2o *o2o)
++static void vcm_vmm_deactivate(struct vcm *vcm)
 +{
-+	static const struct vcm_driver driver = {
-+		.cleanup	= vcm_o2o_cleanup,
-+		.phys		= vcm_o2o_phys,
-+		.map		= vcm_o2o_map,
-+		.bind		= vcm_o2o_bind,
-+		.unreserve	= (void (*)(struct vcm_res *))kfree,
-+	};
-+
-+	if (WARN_ON(!o2o || !o2o->driver || !o2o->driver->phys))
-+		return ERR_PTR(-EINVAL);
-+
-+	o2o->vcm.driver = &driver;
-+	return vcm_init(&o2o->vcm);
++	/*
++	 * no operation, all bindings are immediately active and
++	 * cannot be deactivated unless unbound.
++	 */
 +}
-+EXPORT_SYMBOL_GPL(vcm_o2o_init);
 +
-+#endif
++struct vcm vcm_vmm[1] = { {
++	.start       = 0,
++	.size        = ~(resource_size_t)0,
++	/* prevent activate/deactivate from being called */
++	.activations = ATOMIC_INIT(1),
++	.driver      = &(const struct vcm_driver) {
++		.cleanup	= vcm_vmm_cleanup,
++		.phys		= vcm_vmm_phys,
++		.unbind		= vcm_vmm_unbind,
++		.unreserve	= vcm_vmm_unreserve,
++		.activate	= vcm_vmm_activate,
++		.deactivate	= vcm_vmm_deactivate,
++	}
++} };
++EXPORT_SYMBOL_GPL(vcm_vmm);
 +
 +
- /************************ Physical memory management ************************/
+ /****************************** VCM Drivers API *****************************/
  
- #ifdef CONFIG_VCM_PHYS
+ struct vcm *__must_check vcm_init(struct vcm *vcm)
 -- 
 1.6.2.5
 
