@@ -1,258 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756457Ab0LQWe0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 17:34:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	id S1756426Ab0LQWfQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 17:35:16 -0500
+Received: from cantor.suse.de ([195.135.220.2]:45144 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756306Ab0LQWeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 17:34:23 -0500
-Date: Fri, 17 Dec 2010 17:34:10 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com, oleg@redhat.com
-Subject: Re: [PATCH 2/2] blk-throttle: Some cleanups and race fixes in limit
- update code
-Message-ID: <20101217223410.GO14502@redhat.com>
-References: <1292447255-10698-1-git-send-email-vgoyal@redhat.com>
- <1292447255-10698-3-git-send-email-vgoyal@redhat.com>
- <20101217222805.GK2181@linux.vnet.ibm.com>
+	id S1756083Ab0LQWfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 17:35:14 -0500
+Date: Fri, 17 Dec 2010 14:35:02 -0800
+From: Greg KH <gregkh@suse.de>
+To: Robert Morell <rmorell@nvidia.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Benoit Goby <benoit@android.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
+        Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>,
+        Colin Cross <ccross@android.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] USB: ehci: tegra: Align DMA transfers to 32 bytes
+Message-ID: <20101217223502.GB19418@suse.de>
+References: <1292623129-26361-1-git-send-email-rmorell@nvidia.com>
+ <1292623129-26361-3-git-send-email-rmorell@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101217222805.GK2181@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1292623129-26361-3-git-send-email-rmorell@nvidia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 02:28:05PM -0800, Paul E. McKenney wrote:
-> On Wed, Dec 15, 2010 at 04:07:35PM -0500, Vivek Goyal wrote:
-> > o When throttle group limits are updated through cgroups, a thread is woken
-> >   up to process these updates. While reviewing that code, oleg noted couple
-> >   of race conditions existed in the code and he also suggested that code can
-> >   be simplified.
-> > 
-> > o This patch fixes the races simplifies the code based on Oleg's suggestions.
-> >         - Use xchg().
-> >         - Introduced a common function throtl_update_blkio_group_common()
-> >           which is shared now by all iops/bps update functions.
+On Fri, Dec 17, 2010 at 01:58:49PM -0800, Robert Morell wrote:
+> The Tegra2 USB controller doesn't properly deal with misaligned DMA
+> buffers, causing corruption.  This is especially prevalent with USB
+> network adapters, where skbuff alignment is often in the middle of a
+> 4-byte dword.
 > 
-> OK, this looks good at the moment.  The HW guys are still tearing their
-> hair out, but this approach does appear to have an excellent chance of
-> turning out to be safe.  ;-)
+> To avoid this, allocate a temporary buffer for the DMA if the provided
+> buffer isn't sufficiently aligned.
 > 
-> A few questions below, but assuming the answers turn out to be what
-> I believe them to be:
+> Signed-off-by: Robert Morell <rmorell@nvidia.com>
+> Reviewed-by: Scott Williams <scwilliams@nvidia.com>
+> Reviewed-by: Janne Hellsten <jhellsten@nvidia.com>
+> ---
+>  drivers/usb/host/ehci-tegra.c |   94 +++++++++++++++++++++++++++++++++++++++++
+>  include/linux/usb.h           |    1 +
+>  2 files changed, 95 insertions(+), 0 deletions(-)
 > 
-> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+> index d990c1c..a75e4db 100644
+> --- a/drivers/usb/host/ehci-tegra.c
+> +++ b/drivers/usb/host/ehci-tegra.c
+> @@ -32,6 +32,10 @@
+>  #define TEGRA_USB_USBMODE_HOST			(3 << 0)
+>  #define TEGRA_USB_PORTSC1_PTC(x)		(((x) & 0xf) << 16)
+>  
+> +#define TEGRA_USB_DMA_ALIGN 32
+> +
+> +#define URB_ALIGNED_TEMP_BUFFER 0x80000000
+> +
+>  struct tegra_ehci_context {
+>  	bool valid;
+>  	u32 command;
+> @@ -457,6 +461,94 @@ static int tegra_ehci_bus_resume(struct usb_hcd *hcd)
+>  }
+>  #endif
+>  
+> +struct temp_buffer {
+> +	void *kmalloc_ptr;
+> +	void *old_xfer_buffer;
+> +	u8 data[0];
+> +};
+> +
+> +static void free_temp_buffer(struct urb *urb)
+> +{
+> +	enum dma_data_direction dir;
+> +	struct temp_buffer *temp;
+> +
+> +	if (!(urb->transfer_flags & URB_ALIGNED_TEMP_BUFFER))
+> +		return;
+> +
+> +	dir = usb_urb_dir_in(urb) ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
+> +
+> +	temp = container_of(urb->transfer_buffer, struct temp_buffer,
+> +			    data);
+> +
+> +	if (dir == DMA_FROM_DEVICE)
+> +		memcpy(temp->old_xfer_buffer, temp->data,
+> +		       urb->transfer_buffer_length);
+> +	urb->transfer_buffer = temp->old_xfer_buffer;
+> +	kfree(temp->kmalloc_ptr);
+> +
+> +	urb->transfer_flags &= ~URB_ALIGNED_TEMP_BUFFER;
+> +}
+> +
+> +static int alloc_temp_buffer(struct urb *urb, gfp_t mem_flags)
+> +{
+> +	enum dma_data_direction dir;
+> +	struct temp_buffer *temp, *kmalloc_ptr;
+> +	size_t kmalloc_size;
+> +	void *data;
+> +
+> +	if (urb->num_sgs || urb->sg ||
+> +	    urb->transfer_buffer_length == 0 ||
+> +	    !((uintptr_t)urb->transfer_buffer & (TEGRA_USB_DMA_ALIGN - 1)))
+> +		return 0;
+> +
+> +	dir = usb_urb_dir_in(urb) ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
+> +
+> +	/* Allocate a buffer with enough padding for alignment */
+> +	kmalloc_size = urb->transfer_buffer_length +
+> +		sizeof(struct temp_buffer) + TEGRA_USB_DMA_ALIGN - 1;
+> +
+> +	kmalloc_ptr = kmalloc(kmalloc_size, mem_flags);
+> +	if (!kmalloc_ptr)
+> +		return -ENOMEM;
+> +
+> +	/* Position our struct temp_buffer such that data is aligned */
+> +	temp = PTR_ALIGN(kmalloc_ptr + 1, TEGRA_USB_DMA_ALIGN) - 1;
+> +
+> +	temp->kmalloc_ptr = kmalloc_ptr;
+> +	temp->old_xfer_buffer = urb->transfer_buffer;
+> +	if (dir == DMA_TO_DEVICE)
+> +		memcpy(temp->data, urb->transfer_buffer,
+> +		       urb->transfer_buffer_length);
+> +	urb->transfer_buffer = temp->data;
+> +
+> +	BUILD_BUG_ON(!(URB_ALIGNED_TEMP_BUFFER & URB_DRIVER_PRIVATE));
 
-Thanks a lot for the review paul. Yes all the assignments below without xchg()
-are at initialization time and no other cpu is accessing it.
+See below why this should be removed
 
-Thanks
-Vivek
+> +	urb->transfer_flags |= URB_ALIGNED_TEMP_BUFFER;
+> +
+> +	return 0;
+> +}
+> +
+> +static int tegra_ehci_map_urb_for_dma(struct usb_hcd *hcd, struct urb *urb,
+> +				      gfp_t mem_flags)
+> +{
+> +	int ret;
+> +
+> +	ret = alloc_temp_buffer(urb, mem_flags);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ret = usb_hcd_map_urb_for_dma(hcd, urb, mem_flags);
+> +	if (ret)
+> +		free_temp_buffer(urb);
+> +
+> +	return ret;
+> +}
+> +
+> +static void tegra_ehci_unmap_urb_for_dma(struct usb_hcd *hcd, struct urb *urb)
+> +{
+> +	usb_hcd_unmap_urb_for_dma(hcd, urb);
+> +	free_temp_buffer(urb);
+> +}
+> +
+>  static const struct hc_driver tegra_ehci_hc_driver = {
+>  	.description		= hcd_name,
+>  	.product_desc		= "Tegra EHCI Host Controller",
+> @@ -472,6 +564,8 @@ static const struct hc_driver tegra_ehci_hc_driver = {
+>  	.shutdown		= tegra_ehci_shutdown,
+>  	.urb_enqueue		= ehci_urb_enqueue,
+>  	.urb_dequeue		= ehci_urb_dequeue,
+> +	.map_urb_for_dma	= tegra_ehci_map_urb_for_dma,
+> +	.unmap_urb_for_dma	= tegra_ehci_unmap_urb_for_dma,
+>  	.endpoint_disable	= ehci_endpoint_disable,
+>  	.endpoint_reset		= ehci_endpoint_reset,
+>  	.get_frame_number	= ehci_get_frame,
+> diff --git a/include/linux/usb.h b/include/linux/usb.h
+> index 35fe6ab..cd07173 100644
+> --- a/include/linux/usb.h
+> +++ b/include/linux/usb.h
+> @@ -975,6 +975,7 @@ extern int usb_disabled(void);
+>  #define URB_SETUP_MAP_SINGLE	0x00100000	/* Setup packet DMA mapped */
+>  #define URB_SETUP_MAP_LOCAL	0x00200000	/* HCD-local setup packet */
+>  #define URB_DMA_SG_COMBINED	0x00400000	/* S-G entries were combined */
+> +#define URB_DRIVER_PRIVATE	0x80000000	/* For driver-private use */
 
+Um, what?  You are using this for a build check, which seems pointless
+as you already modified the code to not need this.
 
-> 
-> > Reviewed-by: Oleg Nesterov <oleg@redhat.com>
-> > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> > ---
-> >  block/blk-throttle.c |   96 +++++++++++++++++++++-----------------------------
-> >  1 files changed, 40 insertions(+), 56 deletions(-)
-> > 
-> > diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-> > index 91bd444..549bc8e 100644
-> > --- a/block/blk-throttle.c
-> > +++ b/block/blk-throttle.c
-> > @@ -97,7 +97,7 @@ struct throtl_data
-> >  	/* Work for dispatching throttled bios */
-> >  	struct delayed_work throtl_work;
-> > 
-> > -	atomic_t limits_changed;
-> > +	bool limits_changed;
-> >  };
-> > 
-> >  enum tg_state_flags {
-> > @@ -188,6 +188,7 @@ static struct throtl_grp * throtl_find_alloc_tg(struct throtl_data *td,
-> >  	RB_CLEAR_NODE(&tg->rb_node);
-> >  	bio_list_init(&tg->bio_lists[0]);
-> >  	bio_list_init(&tg->bio_lists[1]);
-> > +	td->limits_changed = false;
-> 
-> This is at initialization time, correct?  No other CPUs have access
-> at this point, right?
-> 
-> >  	/*
-> >  	 * Take the initial reference that will be released on destroy
-> > @@ -725,34 +726,27 @@ static void throtl_process_limit_change(struct throtl_data *td)
-> >  	struct throtl_grp *tg;
-> >  	struct hlist_node *pos, *n;
-> > 
-> > -	if (!atomic_read(&td->limits_changed))
-> > +	if (!td->limits_changed)
-> >  		return;
-> > 
-> > -	throtl_log(td, "limit changed =%d", atomic_read(&td->limits_changed));
-> > +	xchg(&td->limits_changed, false);
-> > 
-> > -	/*
-> > -	 * Make sure updates from throtl_update_blkio_group_read_bps() group
-> > -	 * of functions to tg->limits_changed are visible. We do not
-> > -	 * want update td->limits_changed to be visible but update to
-> > -	 * tg->limits_changed not being visible yet on this cpu. Hence
-> > -	 * the read barrier.
-> > -	 */
-> > -	smp_rmb();
-> > +	throtl_log(td, "limits changed");
-> > 
-> >  	hlist_for_each_entry_safe(tg, pos, n, &td->tg_list, tg_node) {
-> > -		if (throtl_tg_on_rr(tg) && tg->limits_changed) {
-> > -			throtl_log_tg(td, tg, "limit change rbps=%llu wbps=%llu"
-> > -				" riops=%u wiops=%u", tg->bps[READ],
-> > -				tg->bps[WRITE], tg->iops[READ],
-> > -				tg->iops[WRITE]);
-> > +		if (!tg->limits_changed)
-> > +			continue;
-> > +
-> > +		if (!xchg(&tg->limits_changed, false))
-> > +			continue;
-> > +
-> > +		throtl_log_tg(td, tg, "limit change rbps=%llu wbps=%llu"
-> > +			" riops=%u wiops=%u", tg->bps[READ], tg->bps[WRITE],
-> > +			tg->iops[READ], tg->iops[WRITE]);
-> > +
-> > +		if (throtl_tg_on_rr(tg))
-> >  			tg_update_disptime(td, tg);
-> > -			tg->limits_changed = false;
-> > -		}
-> >  	}
-> > -
-> > -	smp_mb__before_atomic_dec();
-> > -	atomic_dec(&td->limits_changed);
-> > -	smp_mb__after_atomic_dec();
-> >  }
-> > 
-> >  /* Dispatch throttled bios. Should be called without queue lock held. */
-> > @@ -887,6 +881,15 @@ void throtl_unlink_blkio_group(void *key, struct blkio_group *blkg)
-> >  	spin_unlock_irqrestore(td->queue->queue_lock, flags);
-> >  }
-> > 
-> > +static void throtl_update_blkio_group_common(struct throtl_data *td,
-> > +				struct throtl_grp *tg)
-> > +{
-> > +	xchg(&tg->limits_changed, true);
-> > +	xchg(&td->limits_changed, true);
-> > +	/* Schedule a work now to process the limit change */
-> > +	throtl_schedule_delayed_work(td->queue, 0);
-> > +}
-> > +
-> >  /*
-> >   * For all update functions, key should be a valid pointer because these
-> >   * update functions are called under blkcg_lock, that means, blkg is
-> > @@ -900,61 +903,40 @@ static void throtl_update_blkio_group_read_bps(void *key,
-> >  				struct blkio_group *blkg, u64 read_bps)
-> >  {
-> >  	struct throtl_data *td = key;
-> > +	struct throtl_grp *tg = tg_of_blkg(blkg);
-> > 
-> > -	tg_of_blkg(blkg)->bps[READ] = read_bps;
-> > -	/* Make sure read_bps is updated before setting limits_changed */
-> > -	smp_wmb();
-> > -	tg_of_blkg(blkg)->limits_changed = true;
-> > -
-> > -	/* Make sure tg->limits_changed is updated before td->limits_changed */
-> > -	smp_mb__before_atomic_inc();
-> > -	atomic_inc(&td->limits_changed);
-> > -	smp_mb__after_atomic_inc();
-> > -
-> > -	/* Schedule a work now to process the limit change */
-> > -	throtl_schedule_delayed_work(td->queue, 0);
-> > +	tg->bps[READ] = read_bps;
-> > +	throtl_update_blkio_group_common(td, tg);
-> >  }
-> > 
-> >  static void throtl_update_blkio_group_write_bps(void *key,
-> >  				struct blkio_group *blkg, u64 write_bps)
-> >  {
-> >  	struct throtl_data *td = key;
-> > +	struct throtl_grp *tg = tg_of_blkg(blkg);
-> > 
-> > -	tg_of_blkg(blkg)->bps[WRITE] = write_bps;
-> > -	smp_wmb();
-> > -	tg_of_blkg(blkg)->limits_changed = true;
-> > -	smp_mb__before_atomic_inc();
-> > -	atomic_inc(&td->limits_changed);
-> > -	smp_mb__after_atomic_inc();
-> > -	throtl_schedule_delayed_work(td->queue, 0);
-> > +	tg->bps[WRITE] = write_bps;
-> > +	throtl_update_blkio_group_common(td, tg);
-> >  }
-> > 
-> >  static void throtl_update_blkio_group_read_iops(void *key,
-> >  			struct blkio_group *blkg, unsigned int read_iops)
-> >  {
-> >  	struct throtl_data *td = key;
-> > +	struct throtl_grp *tg = tg_of_blkg(blkg);
-> > 
-> > -	tg_of_blkg(blkg)->iops[READ] = read_iops;
-> > -	smp_wmb();
-> > -	tg_of_blkg(blkg)->limits_changed = true;
-> > -	smp_mb__before_atomic_inc();
-> > -	atomic_inc(&td->limits_changed);
-> > -	smp_mb__after_atomic_inc();
-> > -	throtl_schedule_delayed_work(td->queue, 0);
-> > +	tg->iops[READ] = read_iops;
-> > +	throtl_update_blkio_group_common(td, tg);
-> >  }
-> > 
-> >  static void throtl_update_blkio_group_write_iops(void *key,
-> >  			struct blkio_group *blkg, unsigned int write_iops)
-> >  {
-> >  	struct throtl_data *td = key;
-> > +	struct throtl_grp *tg = tg_of_blkg(blkg);
-> > 
-> > -	tg_of_blkg(blkg)->iops[WRITE] = write_iops;
-> > -	smp_wmb();
-> > -	tg_of_blkg(blkg)->limits_changed = true;
-> > -	smp_mb__before_atomic_inc();
-> > -	atomic_inc(&td->limits_changed);
-> > -	smp_mb__after_atomic_inc();
-> > -	throtl_schedule_delayed_work(td->queue, 0);
-> > +	tg->iops[WRITE] = write_iops;
-> > +	throtl_update_blkio_group_common(td, tg);
-> >  }
-> > 
-> >  void throtl_shutdown_timer_wq(struct request_queue *q)
-> > @@ -1001,6 +983,7 @@ int blk_throtl_bio(struct request_queue *q, struct bio **biop)
-> >  		 */
-> >  		update_disptime = false;
-> >  		goto queue_bio;
-> > +
-> >  	}
-> > 
-> >  	/* Bio is with-in rate limit of group */
-> > @@ -1041,7 +1024,7 @@ int blk_throtl_init(struct request_queue *q)
-> > 
-> >  	INIT_HLIST_HEAD(&td->tg_list);
-> >  	td->tg_service_tree = THROTL_RB_ROOT;
-> > -	atomic_set(&td->limits_changed, 0);
-> > +	td->limits_changed = false;
-> 
-> And the name leads me to believe that there are no other CPUs accessing
-> things at this point as well.  Correct?
-> 
-> >  	/* Init root group */
-> >  	tg = &td->root_tg;
-> > @@ -1053,6 +1036,7 @@ int blk_throtl_init(struct request_queue *q)
-> >  	/* Practically unlimited BW */
-> >  	tg->bps[0] = tg->bps[1] = -1;
-> >  	tg->iops[0] = tg->iops[1] = -1;
-> > +	td->limits_changed = false;
-> 
-> Ditto?
-> 
-> >  	/*
-> >  	 * Set root group reference to 2. One reference will be dropped when
-> > -- 
-> > 1.7.1
-> > 
+So it doesn't look like this is needed, right?
+
+thanks,
+
+greg k-h
