@@ -1,130 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756524Ab0LQVMa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 16:12:30 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:51974 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756506Ab0LQVM2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 16:12:28 -0500
-X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=sESGoGjSBwoA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Un_KozB5vK8dKsD_cB4A:9 a=ys3WHognUGhlIgeq040A:7 a=1G6QN08U1giYlpNmx8QLa9N_bN8A:4 a=PUjeQqilurYA:10 a=FVnk07HAnIrHtmMg:21 a=FhAFJzQat1pibfGy:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH/RFC 1/2] jump label: make enable/disable o(1)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: Jason Baron <jbaron@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, hpa@zytor.com,
-        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, michael@ellerman.id.au, linux-kernel@vger.kernel.org
-In-Reply-To: <4D0BCD60.3030007@caviumnetworks.com>
-References: <1292526602.2708.57.camel@laptop>
-	 <20101216192303.GB2856@redhat.com> <1292528031.2708.77.camel@laptop>
-	 <20101216193635.GC2856@redhat.com> <1292528501.2708.80.camel@laptop>
-	 <20101216194852.GD2856@redhat.com> <20101216203603.GA15610@Krystal>
-	 <1292532221.2708.93.camel@laptop> <20101216205043.GB18095@Krystal>
-	 <1292532985.2708.97.camel@laptop> <20101217200738.GA4736@redhat.com>
-	 <4D0BCD60.3030007@caviumnetworks.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 17 Dec 2010 16:12:21 -0500
-Message-ID: <1292620341.22905.17.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756567Ab0LQVNY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 16:13:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40024 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756507Ab0LQVNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 16:13:20 -0500
+Date: Fri, 17 Dec 2010 16:13:01 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Stanislaw Gruszka <sgruszka@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Maxim Uvarov <muvarov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Neil Horman <nhorman@redhat.com>
+Subject: Re: kdump broken on 2.6.37-rc4
+Message-ID: <20101217211301.GK14502@redhat.com>
+References: <20101217170146.GC9568@redhat.com>
+ <4D0BA45A.7020402@zytor.com>
+ <20101217180242.GB12425@redhat.com>
+ <4D0BAA24.3080801@kernel.org>
+ <4D0BBC55.4010207@zytor.com>
+ <4D0BBE00.3010602@kernel.org>
+ <20101217195035.GE14502@redhat.com>
+ <4D0BC067.90507@zytor.com>
+ <20101217201104.GG14502@redhat.com>
+ <4D0BCF32.8060400@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D0BCF32.8060400@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-17 at 12:51 -0800, David Daney wrote:
-> On 12/17/2010 12:07 PM, Jason Baron wrote:
-
-> Not acceptable I would think.
+On Fri, Dec 17, 2010 at 12:59:30PM -0800, H. Peter Anvin wrote:
+> On 12/17/2010 12:11 PM, Vivek Goyal wrote:
+> >>
+> >> Can we do this in the meantime, just so we fix the immediate problem?
+> > 
+> > Peter, kexec-tools on 64bit currently seems to be allowing loding bzImage
+> > till 896MB. So I am not too keen it to reduce it to 768MB in kernel just
+> > because x86_64 could be booted from even higher addresses and somebody
+> > first has to do some auditing and experiments.
+> > 
+> > IMHO, we should have 768MB limit for 32bit and continue with 896MB limit for
+> > 64bit and once somebody makes x86_64 boot from even higher address reliably
+> > then we can change both kernel and kexec-tools.
+> > 
 > 
-> How about:
-> 
-> union fubar {
->     int key_as_non_atomic;
->     atomic_t key_as_atomic;
-> };
+> If we're splitting by architectures anyway, why not leave 32 bits at 512
+> MiB and thus making older crashkernels usable just in case someone has a
+> frozen toolset?
 
-I don't even like this union.
+If you are more comfortable with 512MB for i386, that's fine with me. I
+care more for 64bit at this point of time.
 
-> 
-> Now explain the exact semantics of this thing including how you 
-> guarantee no conflicting accesses *ever* occur.
-
-I don't like the mixed semantics at all.
-
-> 
-> 
-> > So for when jump labels are disabled case we could have
-> > one struct:
-> >
-> > struct jump_label_key {
-
-	atomic_t state;
-
-> > }
-> >
-> > and then we could then have (rough c code):
-> >
-> > jump_label_enable(struct jump_label_key *key)
-> > {
-
-	if (atomic_read(&key->state))
-		return;
-	atomic_inc(&key->state);
-
-> > }
-> >
-> > jump_label_disable(struct jump_label_key *key)
-> > {
-
-	if (!atomic_read(&key->state))
-		return;
-	atomic_dec(&key->state);
-	WARN_ON(atomic_read(&key->state);
-
-> > }
-> >
-> > jump_label_inc(struct jump_label_key *key)
-> > {
-
- 	atomic_inc(&key->state)
-
-> > }
-> >
-> > jump_label_dec(struct jump_label_key *key)
-> > {
-
- 	atomic_dec((&key->state)
-
-> > }
-> >
-> > bool unlikely_switch(struct jump_label_key *key)
-> > {
-
- 	if (atomic_read(&key->state))
-
-> > 		return true;
-> > 	return false;
-> > }
-> >
-
-There, now you are guaranteed that you have proper semantics.
-
-> >
-> > can we agree on something like this?
-> 
-> I get a sick feeling whenever casting is used to give types with well 
-> defined semantics (atomic_t) poorly defined semantics (your usage).
-
-Exactly, I like to avoid (void*) anything or even worse, casting one
-type to another for some strange semantics. This is guaranteed nightmare
-of maintenance.
-
--- Steve
-
-
+Thanks
+Vivek
