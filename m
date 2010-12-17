@@ -1,281 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227Ab0LQAlb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 19:41:31 -0500
-Received: from kroah.org ([198.145.64.141]:34665 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754043Ab0LQAl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 19:41:28 -0500
-Date: Thu, 16 Dec 2010 16:41:10 -0800
-From: Greg KH <greg@kroah.com>
-To: Sutharsan <srmt@cypress.com>
-Cc: linux-arm@vger.kernel.org, odc@cypress.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH] adding gpmc configuration functions, west bridge
- related
-Message-ID: <20101217004110.GA20684@kroah.com>
-References: <1292546030.1732.62.camel@sutharsan-laptop>
+	id S1754282Ab0LQAnJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 19:43:09 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:60012 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754043Ab0LQAnH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 19:43:07 -0500
+Message-ID: <4D0AB14F.9050900@kernel.org>
+Date: Thu, 16 Dec 2010 16:39:43 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292546030.1732.62.camel@sutharsan-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Maxim Uvarov <muvarov@gmail.com>,
+        linux-kernel@vger.kernel.org, Neil Horman <nhorman@redhat.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: kdump broken on 2.6.37-rc4
+References: <20101208141942.GA2335@redhat.com> <4D00823A.9050808@kernel.org> <20101209124117.GA6032@redhat.com> <4D01377B.5070809@kernel.org> <20101213100848.GA2237@redhat.com> <4D0663F0.2060103@kernel.org> <4D06783C.6040009@zytor.com> <20101214224135.GB19693@redhat.com> <20101215103954.GA2243@redhat.com> <4D09958D.2040907@kernel.org> <20101216143925.GA13870@redhat.com> <4D0A3E31.4000109@zytor.com> <4D0A4C51.3070008@kernel.org> <4D0A6F66.1010006@zytor.com> <4D0AA116.4050707@kernel.org> <4D0AA592.3060805@kernel.org>
+In-Reply-To: <4D0AA592.3060805@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 16, 2010 at 04:33:50PM -0800, Sutharsan wrote:
+On 12/16/2010 03:49 PM, Yinghai Lu wrote:
+> On 12/16/2010 03:30 PM, Yinghai Lu wrote:
+>> On 12/16/2010 11:58 AM, H. Peter Anvin wrote:
+>>> On 12/16/2010 09:28 AM, Yinghai Lu wrote:
+>>>>
+>>>> the brk is complaining if i change that to 
+>>>>
+>>>>  	if (end > ((-__PAGE_OFFSET-(128 <<20)-1) & 0x7fffffff))
+>>>>  		error("Destination address too large");
+>>>>
+>>>> brk is complaining when try to get more for dmi ...
+>>>> ...
+>>>> I'm in purgatory
+>>>> bootconsole [uart0] enabled
+>>>> Kernel Layout:
+>>>>   .text: [0x2e000000-0x2e3f08ca]
+>>>> .rodata: [0x2e3f2000-0x2e5a2fff]
+>>>>   .data: [0x2e5a3000-0x2e5f6467]
+>>>>   .init: [0x2e5f7000-0x2e670fff]
+>>>>    .bss: [0x2e675000-0x2e76ffff]
+>>>>    .brk: [0x2e770000-0x2e894fff]
+>>>>     memblock_x86_reserve_range: [0x00001000-0x00001fff]    EX TRAMPOLINE
+>>>>     memblock_x86_reserve_range: [0x2e000000-0x2e76ffff]    TEXT DATA BSS
+>>>>     memblock_x86_reserve_range: [0x35bdd000-0x35f49fff]          RAMDISK
+>>>>     memblock_x86_reserve_range: [0x0009c800-0x000fffff]  * BIOS reserved
+>>>> Initializing cgroup subsys cpuset
+>>>> Initializing cgroup subsys cpu
+>>>> Linux version 2.6.37-rc5-tip+ (root@mpk12-3214-189-181) (gcc version 4.4.4 20100726 (Red Hat 4.4.4-13) (GCC) ) #4 SMP Wed Dec 15 11:04:32 PST 2010
+>>>> KERNEL supported cpus:
+>>>>   Intel GenuineIntel
+>>>>   AMD AuthenticAMD
+>>>>   NSC Geode by NSC
+>>>>   Cyrix CyrixInstead
+>>>>   Centaur CentaurHauls
+>>>>   Transmeta GenuineTMx86
+>>>>   Transmeta TransmetaCPU
+>>>>   UMC UMC UMC UMC
+>>>> BIOS-provided physical RAM map:
+>>>>  BIOS-e820: [0x00000000000100-0x0000000009c7ff] (usable)
+>>>>  BIOS-e820: [0x0000000009c800-0x0000000009ffff] (reserved)
+>>>>  BIOS-e820: [0x000000000e0000-0x000000000fffff] (reserved)
+>>>>  BIOS-e820: [0x00000000100000-0x0000007ff9ffff] (usable)
+>>>>  BIOS-e820: [0x0000007ffae000-0x0000007ffaffff] (usable)
+>>>>  BIOS-e820: [0x0000007ffb0000-0x0000007ffbdfff] (ACPI data)
+>>>>  BIOS-e820: [0x0000007ffbe000-0x0000007ffeffff] (ACPI NVS)
+>>>>  BIOS-e820: [0x0000007fff0000-0x0000007fffffff] (reserved)
+>>>>  BIOS-e820: [0x000000e0000000-0x000000efffffff] (reserved)
+>>>>  BIOS-e820: [0x000000fec00000-0x000000fec00fff] (reserved)
+>>>>  BIOS-e820: [0x000000fee00000-0x000000feefffff] (reserved)
+>>>>  BIOS-e820: [0x000000ff700000-0x000000ffffffff] (reserved)
+>>>> last_pfn = 0x7ffb0 max_arch_pfn = 0x1000000
+>>>> NX (Execute Disable) protection: active
+>>>> user-defined physical RAM map:
+>>>>  user: [0x00000000000000-0x0000000009ffff] (usable)
+>>>>  user: [0x0000002e000000-0x00000035f59fff] (usable)
+>>>>  user: [0x0000007ffb0000-0x0000007ffeffff] (ACPI data)
+>>>> DMI present.
+>>>> BUG: Int 6: CR2   (null)
+>>>>      EDI 00000019  ESI ff940c18  EBP   (null)  ESP ee5a5e84
+>>>>      EBX ee5cfb68  EDX 00000006  ECX 00000019  EAX ee8e6019
+>>>>      err   (null)  EIP ee5fb4dd   CS 00000060  flg 00010002
+>>>> Stack: 00000019 ee62bf45 ff942000 00000563 00000001 ff940c00 000018c7 ee62bf83
+>>>>        ff940c00 ee62c063 80000000 ee3e6f2f ee50a3c0 ee5a5ed4 ff940c00 ff940c43
+>>>>        000018c7   (null) ee3173d4 000018c8 0000007f ff940c00 ff90b1bf ee5a5f18
+>>>> Pid: 0, comm: swapper Not tainted 2.6.37-rc5-tip+ #4
+>>>> Call Trace:
+>>>>  [<ee3dd1d5>] ? hlt_loop+0x0/0x3
+>>>>  [<ee5fb4dd>] ? extend_brk+0x31/0x44
+>>>
+>>> I'm assuming it bails due to:
+>>>
+>>> 	BUG_ON((char *)(_brk_end + size) > __brk_limit);
+>>>
+>>> ... could you find out what _brk_end and __brk_limit are?
+>>
+>> void __init print_kernel_layout(void)
+>> {
+>>         printk("Kernel Layout:\n");
+>>         printk("  .text: [%#010lx-%#010lx]\n", __pa_symbol(&_text), __pa_symbol(&_etext) - 1);
+>>         printk(".rodata: [%#010lx-%#010lx]\n", __pa_symbol(&__start_rodata), __pa_symbol(&__end_rodata) - 1);
+>>         printk("  .data: [%#010lx-%#010lx]\n", __pa_symbol(&_sdata), __pa_symbol(&_edata) - 1);
+>>         printk("  .init: [%#010lx-%#010lx]\n", __pa_symbol(&__init_begin), __pa_symbol(&__init_end) - 1);
+>>         printk("   .bss: [%#010lx-%#010lx]\n", __pa_symbol(&__bss_start), __pa_symbol(&__bss_stop) - 1);
+>>         printk("   .brk: [%#010lx-%#010lx]\n", __pa_symbol(&__brk_base), __pa_symbol(&__brk_limit) - 1);
+>> }
+>>
+>>>> Kernel Layout:
+>>>>   .text: [0x2e000000-0x2e3f08ca]
+>>>> .rodata: [0x2e3f2000-0x2e5a2fff]
+>>>>   .data: [0x2e5a3000-0x2e5f6467]
+>>>>   .init: [0x2e5f7000-0x2e670fff]
+>>>>    .bss: [0x2e675000-0x2e76ffff]
+>>>>    .brk: [0x2e770000-0x2e894fff]
+>>
+>> DMI present.
+>> _brk_end: ee8e6000, __brk_limit: ee895000 
+>>
 > 
-> This patch adds and exports gpmc configuration functions.
-> 'gpmc' configuration functions will be used by 
-> westbridge device controller driver in staging tree.
-> This patch is required to get westbridge device controller driver 
-> out of staging tree.
-
-Well, it's one step to getting the code out, not the only thing :)
-
-> Signed-off-by: Sutharsan Ramamoorthy <srmt@cypress.com>
-> ---
+> looks like in arch/x86/kernel/head_32.S
+> will put page_table in _brk....
 > 
-> diff -uprN -X linux-2.6.37_vanilla/Documentation/dontdiff linux-2.6.37_vanilla/arch/arm/mach-omap2/Makefile linux-2.6.37-cywb/arch/arm/mach-omap2/Makefile
-> --- linux-2.6.37_vanilla/arch/arm/mach-omap2/Makefile	2010-11-29 20:42:04.000000000 -0800
-> +++ linux-2.6.37-cywb/arch/arm/mach-omap2/Makefile	2010-12-13 16:04:08.378446603 -0800
-> @@ -182,6 +182,7 @@ obj-y					+= $(usbfs-m) $(usbfs-y)
->  obj-y					+= usb-musb.o
->  obj-$(CONFIG_MACH_OMAP2_TUSB6010)	+= usb-tusb6010.o
->  obj-y					+= usb-ehci.o
-> +obj-$(CONFIG_WESTBRIDGE_ASTORIA)        += usb-cywb-pnand.o
->  
->  onenand-$(CONFIG_MTD_ONENAND_OMAP2)	:= gpmc-onenand.o
->  obj-y					+= $(onenand-m) $(onenand-y)
-> diff -uprN -X linux-2.6.37_vanilla/Documentation/dontdiff linux-2.6.37_vanilla/arch/arm/mach-omap2/usb-cywb-pnand.c linux-2.6.37-cywb/arch/arm/mach-omap2/usb-cywb-pnand.c
-> --- linux-2.6.37_vanilla/arch/arm/mach-omap2/usb-cywb-pnand.c	1969-12-31 16:00:00.000000000 -0800
-> +++ linux-2.6.37-cywb/arch/arm/mach-omap2/usb-cywb-pnand.c	2010-12-14 15:51:13.710787480 -0800
-> @@ -0,0 +1,182 @@
-> +/*
-> + * linux /arch/arm/mach-omap2/usb-cywb-pnand.c
-> + *
-> + * Copyright (C) 2010  Cypress Semiconductor
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version 2
-> + * of the License, or (at your option) any later version.
+> if the whole range is some high, it will use more buffer in _brk for ...
+> 
+> brk pre-calucation could be wrong and too small.
 
-Do you _really_ mean "any later version"?  Are you aware of the issues
-involved here?
+32bit have assume KERNEL_IMAGE_SIZE is 512M
+arch/x86/include/asm/page_32_types.h:#define KERNEL_IMAGE_SIZE  (512 * 1024 * 1024)
+arch/x86/include/asm/page_64_types.h:#define KERNEL_IMAGE_SIZE  (512 * 1024 * 1024)
+arch/x86/kernel/head64.c:       BUILD_BUG_ON(MODULES_VADDR-KERNEL_IMAGE_START < KERNEL_IMAGE_SIZE);
+arch/x86/kernel/head64.c:       BUILD_BUG_ON(MODULES_LEN + KERNEL_IMAGE_SIZE > 2*PUD_SIZE);
+arch/x86/kernel/head64.c:       max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
+arch/x86/kernel/head_32.S: *     (KERNEL_IMAGE_SIZE/4096) / 1024 pages (worst case, non PAE)
+arch/x86/kernel/head_32.S: *     (KERNEL_IMAGE_SIZE/4096) / 512 + 4 pages (worst case for PAE)
+arch/x86/kernel/head_32.S: * KERNEL_IMAGE_SIZE should be greater than pa(_end)
+arch/x86/kernel/head_32.S:KERNEL_PAGES = (KERNEL_IMAGE_SIZE + MAPPING_BEYOND_END)>>PAGE_SHIFT 
 
-> +
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> +
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 51 Franklin Street, Fifth Floor,
-> + * Boston, MA  02110-1301, USA.
+and use that to estimate BRK size.
 
-These two paragraphs are not needed.
+so we could change the BRK calculating code to handle 896M or just limit crashkernel for 32bit to 512M...
 
-> + */
-> +
-> +#include <linux/module.h>
-> +
-> +#include <plat/gpmc.h>
-> +
-> +/*
-> + * chip select number on GPMC ( 0..7 )
-> + */
-> +#define AST_GPMC_CS 4
-> +
-> +/*
-> + * for use by gpmc_set_timings api, measured in ns, not clocks
-> + */
-> +#define WB_GPMC_BUSCYC_t    (7 * 6)
-> +#define WB_GPMC_CS_t_o_n    (0)
-> +#define WB_GPMC_ADV_t_o_n   (0)
-> +#define WB_GPMC_OE_t_o_n    (0)
-> +#define WB_GPMC_OE_t_o_f_f  (5 * 6)
-> +#define WB_GPMC_WE_t_o_n    (1 * 6)
-> +#define WB_GPMC_WE_t_o_f_f  (5 * 6)
-> +#define WB_GPMC_RDS_ADJ     (2 * 6)
-> +#define WB_GPMC_RD_t_a_c_c  (WB_GPMC_OE_t_o_f_f + WB_GPMC_RDS_ADJ)
-> +#define WB_GPMC_WR_t_a_c_c  (WB_GPMC_BUSCYC_t)
-> +
-> +#define GPMC_16BIT_MODE 0
-> +#define GPMC_RETIME     1
-> +
-> +/*
-> + * GPMC_CONFIG7[cs] register bit fields
-> + * AS_CS_MASK - 3 bit mask for  A26,A25,A24,
-> + * AS_CS_BADDR - 6 BIT VALUE  A29 ...A24
-> + * CSVALID_B - CSVALID bit on GPMC_CONFIG7[cs] register
-> + */
-> +#define AS_CS_MASK	(0X7 << 8)
-> +#define AS_CS_BADDR	 0x02
-> +#define CSVALID_B (1 << 6)
-> +
-> +#define BLKSZ_4K 0x1000
-> +
-> +/*
-> + * switch GPMC DATA bus mode
-> + */
-> +void cywb_gpmc_enable_16bit_bus(bool dbus16_enabled)
-> +{
-> +	uint32_t tmp32;
+handle 896M one:
 
-Ick, please use the "real" types for the kernel (u32 in this case.)
+---
+ arch/x86/boot/compressed/misc.c |    2 +-
+ arch/x86/kernel/head_32.S       |    4 +++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-> +
-> +	/*
-> +	 * disable gpmc CS4 operation 1st
-> +	 */
-> +	tmp32 = gpmc_cs_read_reg(AST_GPMC_CS,
-> +				GPMC_CS_CONFIG7) & ~GPMC_CONFIG7_CSVALID;
-> +	gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7, tmp32);
-> +
-> +	/*
-> +	 * GPMC NAND data bus can be 8 or 16 bit wide
-> +	 */
-> +	if (dbus16_enabled) {
-> +		printk(KERN_INFO "enabling 16 bit bus\n");
-
-Why print this for the whole world to see?  Also, no prefix saying
-exactly what code is printing this out?  Is this even needed?
-
-> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
-> +				(GPMC_CONFIG1_DEVICETYPE(2) |
-> +				GPMC_CONFIG1_WAIT_PIN_SEL(2) |
-> +				GPMC_CONFIG1_DEVICESIZE_16)
-> +				);
-
-Odd place to put a trailing ')' character.
-
-> +	} else {
-> +		printk(KERN_INFO "enabling 8 bit bus\n");
-
-Same as above.
-
-> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
-> +				(GPMC_CONFIG1_DEVICETYPE(2) |
-> +				GPMC_CONFIG1_WAIT_PIN_SEL(2))
-> +				);
-
-Samehere.
-
-> +	}
-> +
-> +	/*
-> +	 * re-enable astoria CS operation on GPMC
-> +	 */
-> +	 gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7,
-> +			(tmp32 | GPMC_CONFIG7_CSVALID));
-> +}
-> +
-> +int cywb_pnand_platform_retime(int action, bool dbus16_enabled)
-> +{
-> +	u32 tmp32;
-
-See, you got it right here :)
-
-> +	struct gpmc_timings	timings;
-
-What's with the extra padding?
-
-> +	int retval;
-> +
-> +	switch (action) {
-> +
-> +	case GPMC_16BIT_MODE:
-> +		cywb_gpmc_enable_16bit_bus(dbus16_enabled);
-> +		retval = 0;
-> +		break;
-> +	case GPMC_RETIME:
-> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
-> +						(GPMC_CONFIG1_DEVICETYPE(2) |
-> +						GPMC_CONFIG1_WAIT_PIN_SEL(2)));
-> +
-> +		memset(&timings, 0, sizeof(timings));
-> +
-> +		/* cs timing */
-> +		timings.cs_on = WB_GPMC_CS_t_o_n;
-> +		timings.cs_wr_off = WB_GPMC_BUSCYC_t;
-> +		timings.cs_rd_off = WB_GPMC_BUSCYC_t;
-> +
-> +		/* adv timing */
-> +		timings.adv_on = WB_GPMC_ADV_t_o_n;
-> +		timings.adv_rd_off = WB_GPMC_BUSCYC_t;
-> +		timings.adv_wr_off = WB_GPMC_BUSCYC_t;
-> +
-> +		/* oe timing */
-> +		timings.oe_on = WB_GPMC_OE_t_o_n;
-> +		timings.oe_off = WB_GPMC_OE_t_o_f_f;
-> +		timings.access = WB_GPMC_RD_t_a_c_c;
-> +		timings.rd_cycle = WB_GPMC_BUSCYC_t;
-> +
-> +		/* we timing */
-> +		timings.we_on = WB_GPMC_WE_t_o_n;
-> +		timings.we_off = WB_GPMC_WE_t_o_f_f;
-> +		timings.wr_access = WB_GPMC_WR_t_a_c_c;
-> +		timings.wr_cycle = WB_GPMC_BUSCYC_t;
-> +
-> +		timings.page_burst_access = WB_GPMC_BUSCYC_t;
-> +		timings.wr_data_mux_bus = WB_GPMC_BUSCYC_t;
-> +		gpmc_cs_set_timings(AST_GPMC_CS, &timings);
-> +
-> +		/*
-> +		 * DISABLE cs4, NOTE GPMC REG7 is already configured
-> +		 * at this point by gpmc_cs_request
-> +		 */
-> +		tmp32 = gpmc_cs_read_reg(AST_GPMC_CS, GPMC_CS_CONFIG7) &
-> +						~GPMC_CONFIG7_CSVALID;
-> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7, tmp32);
-> +
-> +		/*
-> +		 * PROGRAM chip select Region, (see OMAP3430 TRM PAGE 1088)
-> +		 */
-> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7,
-> +					(AS_CS_MASK | AS_CS_BADDR));
-> +
-> +		/*
-> +		 * by default configure GPMC into 8 bit mode
-> +		 * (to match astoria default mode)
-> +		 */
-> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
-> +					(GPMC_CONFIG1_DEVICETYPE(2) |
-> +					GPMC_CONFIG1_WAIT_PIN_SEL(2)));
-> +
-> +		/*
-> +		 * ENABLE astoria cs operation on GPMC
-> +		 */
-> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7,
-> +						(tmp32 | GPMC_CONFIG7_CSVALID));
-> +		retval = 0;
-> +		break;
-> +	default:
-> +		retval = -EINVAL;
-> +		break;
-> +	}
-> +
-> +	return retval;
-> +
-> +}
-> +EXPORT_SYMBOL(cywb_pnand_platform_retime);
-
-EXPORT_SYMBOL_GPL()?
-
-> ---------------------------------------------------------------
-> This message and any attachments may contain Cypress (or its
-> subsidiaries) confidential information. If it has been received
-> in error, please advise the sender and immediately delete this
-> message.
-
-Please never have this header on any code you have submitted for
-inclusion to the Linux kernel, as it is not acceptable, and can be seen
-as something that implies you should not be sending this information to
-us.
-
-thanks,
-
-greg k-h
+Index: linux-2.6/arch/x86/boot/compressed/misc.c
+===================================================================
+--- linux-2.6.orig/arch/x86/boot/compressed/misc.c
++++ linux-2.6/arch/x86/boot/compressed/misc.c
+@@ -365,7 +365,7 @@ asmlinkage void decompress_kernel(void *
+ 	if (heap > 0x3fffffffffffUL)
+ 		error("Destination address too large");
+ #else
+-	if (heap > ((-__PAGE_OFFSET-(512<<20)-1) & 0x7fffffff))
++	if (heap > ((-__PAGE_OFFSET-(128<<20)-1) & 0x7fffffff))
+ 		error("Destination address too large");
+ #endif
+ #ifndef CONFIG_RELOCATABLE
+Index: linux-2.6/arch/x86/kernel/head_32.S
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/head_32.S
++++ linux-2.6/arch/x86/kernel/head_32.S
+@@ -68,8 +68,10 @@ MAPPING_BEYOND_END = \
+  * Worst-case size of the kernel mapping we need to make:
+  * the worst-case size of the kernel itself, plus the extra we need
+  * to map for the linear map.
++ * to make crashkernel bzImage to stay high, make it map to 896M
++ *  but it will be claimed back when brk is concluded. So no wasting.
+  */
+-KERNEL_PAGES = (KERNEL_IMAGE_SIZE + MAPPING_BEYOND_END)>>PAGE_SHIFT
++KERNEL_PAGES = (KERNEL_IMAGE_SIZE + (384<<20) + MAPPING_BEYOND_END)>>PAGE_SHIFT
+ 
+ INIT_MAP_SIZE = PAGE_TABLE_SIZE(KERNEL_PAGES) * PAGE_SIZE_asm
+ RESERVE_BRK(pagetables, INIT_MAP_SIZE)
