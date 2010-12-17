@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998Ab0LQA7l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 19:59:41 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:38484 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752301Ab0LQA7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 19:59:40 -0500
-Date: Fri, 17 Dec 2010 11:59:32 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build warnings after merge of the ia64 tree
-Message-Id: <20101217115932.a633519e.sfr@canb.auug.org.au>
-In-Reply-To: <987664A83D2D224EAE907B061CE93D530193D00A15@orsmsx505.amr.corp.intel.com>
-References: <20101217112357.ec7879f1.sfr@canb.auug.org.au>
-	<987664A83D2D224EAE907B061CE93D530193D00A15@orsmsx505.amr.corp.intel.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__17_Dec_2010_11_59_32_+1100_TjhyAP4H7=CvzUK4"
+	id S1755401Ab0LQBEk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 20:04:40 -0500
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:56486 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754320Ab0LQBEj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 20:04:39 -0500
+From: Armando Uribe <x0095078@ti.com>
+To: <omar.ramirez@ti.com>
+Cc: <x0095078@ti.com>, <ohad@wizery.com>, <felipe.contreras@gmail.com>,
+        <rene.sapiens@ti.com>, <nm@ti.com>, <ernesto@ti.com>,
+        <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: [PATCH 0/5] staging:tidspbridge - Audit headers file
+Date: Thu, 16 Dec 2010 19:18:28 -0600
+Message-Id: <1292548713-27061-1-git-send-email-x0095078@ti.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__17_Dec_2010_11_59_32_+1100_TjhyAP4H7=CvzUK4
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The following set of patches performs a code clean up
+derived from a header files audit. Removes unused macros,
+constants, functions, structs, struct members, typedefs and
+its dependencies.
 
-Hi Tony,
+Armando Uribe (5):
+  staging:tidspbridge - Remove unused defined constants
+  staging:tidspbridge - Remove unused functions
+  staging:tidspbridge - Remove unused structs.
+  staging:tidspbridge - Remove unused typedefs
+  staging:tidspbridge -  Remove trivial header files
 
-On Thu, 16 Dec 2010 16:50:14 -0800 "Luck, Tony" <tony.luck@intel.com> wrote:
->
-> > Hmmmh. I wonder why I didn't see them in my build?
->=20
-> Ah - because I only built against Linus' tree, and linux-next
-> has:
->=20
-> commit 3b38bb5f7f06356a89bb2cbf92ad346025e95192
-> Author: Huang Ying <ying.huang@intel.com>
-> Date:   Thu Dec 2 10:40:53 2010 +0800
->=20
->     ACPI, APEI, use raw spinlock in ERST
+ drivers/staging/tidspbridge/core/io_sm.c           |    4 -
+ drivers/staging/tidspbridge/core/tiomap3430.c      |    2 -
+ drivers/staging/tidspbridge/core/tiomap3430_pwr.c  |    4 +-
+ .../tidspbridge/include/dspbridge/brddefs.h        |    2 -
+ .../tidspbridge/include/dspbridge/cfgdefs.h        |   19 ---
+ .../staging/tidspbridge/include/dspbridge/chnl.h   |   21 ---
+ .../tidspbridge/include/dspbridge/chnldefs.h       |    3 -
+ .../tidspbridge/include/dspbridge/chnlpriv.h       |   13 --
+ .../staging/tidspbridge/include/dspbridge/cod.h    |   13 +--
+ .../staging/tidspbridge/include/dspbridge/dbdefs.h |   26 ----
+ .../tidspbridge/include/dspbridge/dbldefs.h        |  141 -------------------
+ .../staging/tidspbridge/include/dspbridge/dbll.h   |    6 -
+ .../tidspbridge/include/dspbridge/dblldefs.h       |   65 ---------
+ .../tidspbridge/include/dspbridge/dehdefs.h        |   32 -----
+ .../staging/tidspbridge/include/dspbridge/dev.h    |   59 +--------
+ .../staging/tidspbridge/include/dspbridge/disp.h   |   15 ++-
+ .../tidspbridge/include/dspbridge/dispdefs.h       |   35 -----
+ .../staging/tidspbridge/include/dspbridge/drv.h    |   31 +----
+ .../tidspbridge/include/dspbridge/drvdefs.h        |   25 ----
+ .../tidspbridge/include/dspbridge/dspapi-ioctl.h   |    8 -
+ .../tidspbridge/include/dspbridge/dspdefs.h        |   10 +-
+ .../staging/tidspbridge/include/dspbridge/dspdrv.h |    2 -
+ .../staging/tidspbridge/include/dspbridge/dspio.h  |    4 +-
+ .../tidspbridge/include/dspbridge/dspioctl.h       |    5 -
+ .../tidspbridge/include/dspbridge/dynamic_loader.h |    2 -
+ .../tidspbridge/include/dspbridge/host_os.h        |    9 --
+ drivers/staging/tidspbridge/include/dspbridge/io.h |   29 ++---
+ .../staging/tidspbridge/include/dspbridge/io_sm.h  |  143 +-------------------
+ .../staging/tidspbridge/include/dspbridge/iodefs.h |   36 -----
+ .../staging/tidspbridge/include/dspbridge/ldr.h    |   29 ----
+ .../staging/tidspbridge/include/dspbridge/mbx_sh.h |   40 ------
+ .../staging/tidspbridge/include/dspbridge/node.h   |   20 +---
+ .../staging/tidspbridge/include/dspbridge/pwr.h    |    8 +-
+ .../staging/tidspbridge/include/dspbridge/pwr_sh.h |   33 -----
+ .../include/dspbridge/resourcecleanup.h            |   11 --
+ .../staging/tidspbridge/include/dspbridge/rms_sh.h |    9 --
+ .../staging/tidspbridge/include/dspbridge/strm.h   |   62 ---------
+ .../tidspbridge/include/dspbridge/strmdefs.h       |    2 -
+ drivers/staging/tidspbridge/pmgr/cod.c             |   14 +--
+ drivers/staging/tidspbridge/pmgr/dbll.c            |   41 ------
+ drivers/staging/tidspbridge/pmgr/dev.c             |   10 +-
+ drivers/staging/tidspbridge/pmgr/io.c              |    1 -
+ drivers/staging/tidspbridge/rmgr/dbdcd.c           |    2 +-
+ drivers/staging/tidspbridge/rmgr/drv_interface.c   |    1 -
+ drivers/staging/tidspbridge/rmgr/nldr.c            |    3 -
+ drivers/staging/tidspbridge/rmgr/node.c            |    1 -
+ 46 files changed, 55 insertions(+), 996 deletions(-)
+ delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/dbldefs.h
+ delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/dehdefs.h
+ delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/dispdefs.h
+ delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/drvdefs.h
+ delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/iodefs.h
+ delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/ldr.h
+ delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/pwr_sh.h
 
-That commit is in Linus' tree as of v2.6.37-rc6 so if you merge -rc6 into
-your tree, you can fix the conflict there.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__17_Dec_2010_11_59_32_+1100_TjhyAP4H7=CvzUK4
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNCrX0AAoJEDMEi1NhKgbsIiIH/iFhRzu9nFWc/OXBNS/YmgXL
-VqE47WLPfN61l66jLPfGOjGuGetzhoYKlLVohA2e5VVRbKVPLn2Cl5QvhJVaOpFN
-5Khrb7iJWLiqL+7UulLw7oI7skc5fDlsc/lFNZTLCfcT8iBZsfkYgAgYIHGsTyN1
-Kgnjaf3k+XVAiwI8Q0lWARKbURkDcXkKXw2OylUeH9G2TzIOAeXLzB80pzBlz3ha
-Ug3e2HDfaxJcblUmL0Lj/HF0AeInxOfu7xS3QD6thgPl8BtK7FtEBjSCm5On/bHG
-eqZD3sqCl2xtvuMw24Rp3Uyih2TzMvo9yllyeFHWmDF0HMcZbmSjgS1Za4/Yri8=
-=NPD6
------END PGP SIGNATURE-----
-
---Signature=_Fri__17_Dec_2010_11_59_32_+1100_TjhyAP4H7=CvzUK4--
