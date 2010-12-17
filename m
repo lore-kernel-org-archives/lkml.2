@@ -1,104 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867Ab0LQMDz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 07:03:55 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:38552 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753312Ab0LQMDx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 07:03:53 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Fri, 17 Dec 2010 13:03:22 +0100
-To: Andy Ross <andy@plausible.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] WeTab device ID
-Message-ID: <20101217120322.GA3873@polaris>
-References: <4D0AA66F.6080506@plausible.org>
+	id S1753312Ab0LQMKA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 07:10:00 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:41585 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752907Ab0LQMJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 07:09:58 -0500
+X-Authenticated: #54578410
+X-Provags-ID: V01U2FsdGVkX1/MjaBpA5XMAeIgta4BPFe1Diq04UosHdPnOPLoY4
+	9Ye1X+kXZPKAEP
+Message-ID: <4D0B5312.5080107@gmx.de>
+Date: Fri, 17 Dec 2010 13:09:54 +0100
+From: Michael Lawnick <ml.lawnick@gmx.de>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Mnenhy/0.8.3 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D0AA66F.6080506@plausible.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Originating-IP: 83.248.200.95
-X-Header-Warning: Invalid syntax in message headers: 
-X-Scan-Result: No virus found in message 1PTZ21-0005Wx-Bb.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PTZ21-0005Wx-Bb ed336397779d056cd0174381acfd253b
+To: Jean Delvare <khali@linux-fr.org>
+CC: Ben Dooks <ben-i2c@fluff.org>, Linux I2C <linux-i2c@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Matthias Zacharias <Matthias.Zacharias@bmk-solutions.de>
+Subject: Re: [RFC] i2c-algo-bit: Disable interrupts while SCL is high
+References: <20101216150638.7d3850b5@endymion.delvare>	<20101216160046.GE20097@trinity.fluff.org> <20101216175337.2b1ae6ee@endymion.delvare>
+In-Reply-To: <20101216175337.2b1ae6ee@endymion.delvare>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
-
-> > > Hi.  I'm looking at getting a WeTab running right now and just
-> > > found this patch set.  It's a few weeks old now and not upstream
-> > > yet, so before I start hacking at it I thought I should check with
-> > > you to make sure there isn't a more current one available.
-> >
-> > You find the tip of the mt work at
-> > git://git.kernel.org/pub/scm/linux/kernel/git/rydberg/input-mt.git
+Jean Delvare said the following:
+> Hi Ben,
 > 
-> Thanks much.  It works great, though on our WeTab it's missing the
-> device ID of the part on the board.  Patch below:
+> On Thu, 16 Dec 2010 16:00:46 +0000, Ben Dooks wrote:
+>> On Thu, Dec 16, 2010 at 03:06:38PM +0100, Jean Delvare wrote:
+>> > Add a spinlock to every user of i2c-algo-bit, which is taken before
+>> > raising SCL and released after lowering SCL. We don't really need
+>> > the exclusion functionality, but we have to disable local interrupts.
+>> > This is needed to comply with SMBus requirements that SCL shouldn't
+>> > be high for longer than 50 us.
+>> > 
+>> > SMBus slaves can consider SCL being high for 50 us as a timeout
+>> > condition. This has been observed to happen reproducibly with the
+>> > Melexis MLX90614.
+>> > 
+>> > The drawback of this approach is that spin_lock_irqsave() and
+>> > spin_unlock_irqrestore() will be called once for each bit going on the
+>> > I2C bus in either direction. This can mean up to 100 kHz for standard
+>> > I2C and SMBus and up to 250 kHz for fast I2C. The good thing is that
+>> > this limits the latency to reasonable values (2us at 250 kHz, 5 us at
+>> > 100 kHz and 50 us at 10 kHz).
+>> 
+>> Hmm, this is going to be a drain on interrupt latency... disabling
+>> interrupts in a system for that long could cause other things to
+>> jitter.
+> 
+> So you consider that even disabling interrupts for 5 us is too long? Or
+> are you only worried by the 50 us case?
 
-Thanks for the patch. Does the one below work for you?
+Sorry to disturb, but
+<MANTRA>
+	Disabling interrupts may be done only for a few instructions.</MANTRA>
 
-Henrik
----
->From a8b4613b6d7e7cf04a7335930e9c5c2fb44302d0 Mon Sep 17 00:00:00 2001
-From: Andy Ross <andy@plausible.org>
-Date: Thu, 16 Dec 2010 15:53:19 -0800
-Subject: [PATCH] hid: egalax: Add support for Wetab (726b)
+Even 1 us is an eternity on modern systems.
 
-This patch adds support for another Wetab device (726b), and grabs it
-accordingly in hid-core.
+JM2C
 
-[rydberg@euromail.se: rename and log message changes]
-Signed-off-by: Andy Ross <andy@plausible.org>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
- drivers/hid/hid-core.c   |    1 +
- drivers/hid/hid-egalax.c |    2 ++
- drivers/hid/hid-ids.h    |    1 +
- 3 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index f4a37f8..88668ae 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1302,6 +1302,7 @@ static const struct hid_device_id hid_blacklist[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH1) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH2) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH3) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH4) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_ELECOM, USB_DEVICE_ID_ELECOM_BM084) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_EZKEY, USB_DEVICE_ID_BTC_8193) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GAMERON, USB_DEVICE_ID_GAMERON_DUAL_PSX_ADAPTOR) },
-diff --git a/drivers/hid/hid-egalax.c b/drivers/hid/hid-egalax.c
-index 8787850..16566fc 100644
---- a/drivers/hid/hid-egalax.c
-+++ b/drivers/hid/hid-egalax.c
-@@ -242,6 +242,8 @@ static const struct hid_device_id egalax_devices[] = {
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH2) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH3) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
-+			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH4) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(hid, egalax_devices);
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index a95719b..0f150c7 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -198,6 +198,7 @@
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH1	0x720c
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH2	0x72a1
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH3	0x480e
-+#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH4	0x726b
- 
- #define USB_VENDOR_ID_ELECOM		0x056e
- #define USB_DEVICE_ID_ELECOM_BM084	0x0061
 -- 
-1.7.2.3
-
+KR
+Michael
