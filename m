@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766Ab0LQT1x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 14:27:53 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:40942 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754454Ab0LQT1w convert rfc822-to-8bit (ORCPT
+	id S1754933Ab0LQT3o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 14:29:44 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:49483 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752609Ab0LQT3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 14:27:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=v1f+O4RJaWK1MxAxVMkz8rlqlMwT6oFJ5D8uvCQJ73xuqKCgxtzsJ3h3AxzWHzwrxq
-         n1sUKwpW7dsnxzS1Bj+NE4ItX9mRhximTVx+bdR4z3ZDlboICOGPHwSZ+GZLPIOrwbF2
-         jnSh6j29NzlGmHbF1DOhSYd+W/sGyH20ohrCk=
+	Fri, 17 Dec 2010 14:29:40 -0500
+Message-ID: <4D0BB9AD.90506@kernel.org>
+Date: Fri, 17 Dec 2010 11:27:41 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <1292612166.2697.68.camel@Palantir>
-References: <7997200675c1a53b1954fdc3f46dd208db5dea77.1292578808.git.harald.gustafsson@ericsson.com>
-	<1292596194.2266.283.camel@twins>
-	<1292612166.2697.68.camel@Palantir>
-Date: Fri, 17 Dec 2010 20:27:51 +0100
-Message-ID: <AANLkTinbaYvMFeU1KyeDZ9df1LEbsoKoWWgM8D4=fV1m@mail.gmail.com>
-Subject: Re: [PATCH 1/3] Added runqueue clock normalized with cpufreq
-From: Harald Gustafsson <hgu1972@gmail.com>
-To: Dario Faggioli <raistlin@linux.it>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Harald Gustafsson <harald.gustafsson@ericsson.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+To: Venkatesh Pallipadi <venki@google.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        Michael Trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Nikanth Karthikesan <knikanth@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        "Zheng, Shaohui" <shaohui.zheng@intel.com>,
+        "linux-hotplug@vger.kernel.org" <linux-hotplug@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>, Nikhil Rao <ncrao@google.com>,
+        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Subject: Re: [PATCH -v2 2/2] x86, acpi: Parse all SRAT cpu entries even have
+ cpu num limitation
+References: <20101111100628.GA24728@localhost>	<1289478978.2084.74.camel@laptop>	<20101111124015.GA9706@localhost>	<1289480656.2084.80.camel@laptop>	<20101113084018.GA23098@localhost>	<1289644224.2084.521.camel@laptop>	<20101113120030.GA31517@localhost>	<1289653078.2084.675.camel@laptop>	<20101113131042.GA5522@localhost>	<4CDEE314.6090107@kernel.org>	<20101113235746.GA9458@localhost>	<4CDF3DA1.2090806@kernel.org>	<4D093ABB.4030206@zytor.com>	<4D0943D5.1090404@kernel.org>	<4D094703.7080701@zytor.com>	<4D0AD464.2020408@kernel.org>	<4D0AD486.9020704@kernel.org> <AANLkTin-LGig2RHHmvvy5H04jQRus_1mmS1Cr4KDWKsN@mail.gmail.com>
+In-Reply-To: <AANLkTin-LGig2RHHmvvy5H04jQRus_1mmS1Cr4KDWKsN@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/12/17 Dario Faggioli <raistlin@linux.it>:
-> On Fri, 2010-12-17 at 15:29 +0100, Peter Zijlstra wrote:
->> Solving the CPUfreq problem involves writing a SCHED_DEADLINE aware
->> CPUfreq governor. The governor must know about the constraints placed on
->> the system by the task-set. You simply cannot lower the frequency when
->> your system is at u=1.
->>
-> We already did the very same thing (for another EU Project called
-> FRESCOR), although it was done in an userspace sort of daemon. It was
-> also able to consider other "high level" parameters like some estimation
-> of the QoS of each application and of the global QoS of the system.
->
-> However, converting the basic mechanism into a CPUfreq governor should
-> be easily doable... The only problem is finding the time for that! ;-P
+On 12/17/2010 10:53 AM, Venkatesh Pallipadi wrote:
+> linus git + these two patches still fails on my test system with the
+> divide error. The failure dump is similar to what I reported here
+> http://lkml.indiana.edu/hypermail//linux/kernel/1012.1/03641.html
+> 
+> This patch description talk about new Intel systems. The test system I
+> am seeing failure here is an ancient Intel (2 socket P4 HT) system.
+> AFAICS, it does not even have an SRAT table (no "ACPI: SRAT" message
+> in dmesg).
 
-I'm a bit choked before the holidays, but I can fix this in the
-beginning of next year.
-At the same time as I do a new version of the current patches that takes
-in Peter's comments.
+that could be different cause.
 
->> The simple solution would be to slow down the runtime accounting of
->> SCHED_DEADLINE tasks by freq/max_freq. So instead of having:
->>
->>   dl_se->runtime -= delta;
->>
->> you do something like:
->>
->>   dl_se->runtime -= (freq * delta) / max_freq;
->>
->> Which auto-magically grows the actual bandwidth, and since the deadlines
->> are wall-time already it all works out nicely. It also keeps the
->> overhead inside SCHED_DEADLINE.
->>
-> And, at least for the meantime, this seems a very very nice solution.
-> The only thing I don't like is that division which would end up in being
-> performed at each tick/update_curr_dl(), but we can try to find out a
-> way to mitigate this, what do you think Harald?
+Do you have whole boot log with debug etc?
 
-Yes, I will do something like this instead, need to make sure that
-everything is consider first though.
