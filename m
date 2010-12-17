@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752275Ab0LQCmL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 21:42:11 -0500
-Received: from mga02.intel.com ([134.134.136.20]:34692 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751867Ab0LQCmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 21:42:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,358,1288594800"; 
-   d="scan'208";a="688029359"
-Subject: [BUG]x86: relocatable doesn't work with new binutils
-From: Shaohua Li <shaohua.li@intel.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "Lu, Hongjiu" <hongjiu.lu@intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 17 Dec 2010 10:42:06 +0800
-Message-ID: <1292553726.2323.482.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752336Ab0LQCzG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 21:55:06 -0500
+Received: from vms173013pub.verizon.net ([206.46.173.13]:36942 "EHLO
+	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114Ab0LQCzF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 21:55:05 -0500
+Date: Thu, 16 Dec 2010 21:54:44 -0500 (EST)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Jack Steiner <steiner@sgi.com>
+Cc: hpa@zytor.com, Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        tony.luck@gmail.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gbeshers@sgi.com
+Subject: Re: [PATCH] - Mapping ACPI tables as CACHED
+In-reply-to: <alpine.LFD.2.00.1012151536510.21167@x980>
+Message-id: <alpine.LFD.2.00.1012162149370.20940@x980>
+References: <20101214220932.GA1206@sgi.com>
+ <alpine.LFD.2.00.1012141903210.25387@x980> <20101215024136.GB19601@sgi.com>
+ <alpine.LFD.2.00.1012142302110.4878@x980> <20101215164635.GA27373@sgi.com>
+ <alpine.LFD.2.00.1012151536510.21167@x980>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-The CONFIG_RELOCATABLE is broken with new binutils, which will make boot
-panic. According to Lu Hongjiu, the affected binutils are from
-2.20.51.0.12 to 2.21.51.0.3, which are release since Oct 22 this year.
-At least ubuntu 10.10 is using such binutils. see:
-http://sourceware.org/bugzilla/show_bug.cgi?id=12327
-The reason of boot panic is we have 'jiffies = jiffies_64;' in
-vmlinux.lds.S. The jiffies isn't in any section. In kernel build, there
-is warning saying jiffies is an absolute address and can't be
-relocatable. At runtime, jiffies will have virtual address 0.
-We can easily workaround this issue by moving jiffies to a section or at
-least warn people if such binutils are using. what should we do?
+> I'll bet we can improve the boot sequence so that
+> some of the stuff we do before we have cached mappings
+> we can do with cached mappings...
 
-Thanks,
-Shaohua
+Nope, that is a losing bet...
+
+The early mappings are temporary, but they are cached,
+for they use __pgprot(__PAGE_KERNEL_IO), which is 
+(__PAGE_KERNEL | _PAGE_IOMAP)
+
+rather than __pgprot(__PAGE_KERNEL_IO_NOCACHE) or its variants.
+
+We just need to update the permanent mappings to match.
+
+cheers,
+Len Brown, Intel Open Source Technology Center
 
