@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751086Ab0LQFRg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 00:17:36 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54456 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1749667Ab0LQFRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 00:17:35 -0500
-Message-ID: <4D0AF23D.4010909@zytor.com>
-Date: Thu, 16 Dec 2010 21:16:45 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
+	id S1751403Ab0LQFVv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 00:21:51 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:18430 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177Ab0LQFVu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 00:21:50 -0500
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Vivek Goyal <vgoyal@redhat.com>, Stanislaw Gruszka <sgruszka@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Maxim Uvarov <muvarov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Neil Horman <nhorman@redhat.com>
-Subject: Re: kdump broken on 2.6.37-rc4
-References: <20101207105053.GA2803@redhat.com> <4CFE89FE.1090901@kernel.org> <20101208141942.GA2335@redhat.com> <4D00823A.9050808@kernel.org> <20101209124117.GA6032@redhat.com> <4D01377B.5070809@kernel.org> <20101213100848.GA2237@redhat.com> <4D0663F0.2060103@kernel.org> <4D06783C.6040009@zytor.com> <20101214224135.GB19693@redhat.com> <20101215103954.GA2243@redhat.com> <4D09958D.2040907@kernel.org> <4D0AD976.3020504@zytor.com> <3C6B7683-9CDC-4C4A-A32A-56227DE01387@kernel.org> <4D0AE231.4010804@zytor.com> <4D0AEB0F.5020909@kernel.org>
-In-Reply-To: <4D0AEB0F.5020909@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Message-ID: <deceffd7-c3a8-49a9-b203-4b4d06af1195@default>
+Date: Thu, 16 Dec 2010 21:15:07 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Chris Mason <chris.mason@oracle.com>, akpm@linux-foundation.org,
+        matthew@wil.cx, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        ngupta@vflare.org, jeremy@goop.org,
+        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
+        riel@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>, mel@csn.ul.ie,
+        minchan.kim@gmail.com
+Subject: RE: [PATCH V0 1/4] kztmem: simplified radix tree data structure
+ support
+References: <20101207180653.GA28115@ca-server1.us.oracle.com
+ dd88185d-bc2c-4d65-8730-8b1fc712306a@default>
+In-Reply-To: <dd88185d-bc2c-4d65-8730-8b1fc712306a@default>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6539.5000]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2010 08:46 PM, Yinghai Lu wrote:
->>
->> Second, this patch only applies if "crashkernel=" is not specified, so
->> it doesn't even apply to your situation.
-> current code:
->         /* 0 means: find the address automatically */
->         if (crash_base <= 0) {
->                 const unsigned long long alignment = 16<<20;    /* 16M */
+> A monolithic patch containing all of kztmem, cleancache, and frontswap
+> that applies cleanly to 2.6.36 can be found at:
 > 
->                 /*
->                  *  kexec want bzImage is below DEFAULT_BZIMAGE_ADDR_MAX
->                  */
->                 crash_base = memblock_find_in_range(alignment,
->                                DEFAULT_BZIMAGE_ADDR_MAX, crash_size, alignment);
+> http://oss.oracle.com/projects/tmem/dist/files/kztmem/kztmem-linux-
+> 2.6.36-101207.patch
 > 
->                 if (crash_base == MEMBLOCK_ERROR) {
->                         pr_info("crashkernel reservation failed - No suitable area found.\n");
->                         return;
->                 }
->         } else {
->                 unsigned long long start;
+> (Or http://oss.oracle.com/projects/tmem and Downloads and kztmem
+> patches)
 > 
->                 start = memblock_find_in_range(crash_base,
->                                  crash_base + crash_size, crash_size, 1<<20);
->                 if (start != crash_base) {
->                         pr_info("crashkernel reservation failed - memory is in use.\n");
->                         return;
->                 }
->         }
+> I'm a git novice but can prepare a git tree also if desired.
 > 
-> first branch : will take only crash_size.
-> second branch : will need to specify crash_base and crash_size.
+> To try kztmem:
 > 
->>
->> Third, if you have to specify "crashkernel=" that means that there is
->> yet another problem here that should be fixed.
+> 1) apply the monolithic patch to 2.6.36
+> 2) rebuild your config ensuring that CONFIG_KZTMEM, CONFIG_CLEANCACHE,
+>    CONFIG_FRONTSWAP, and CONFIG_ZRAM (for xvMalloc) become enabled
+> 3) rebuild and reboot with "kztmem" as a kernel boot parameter
+> 4) see /sys/kernel/mm/kztmem/* for statistics... note that with
+>    lots of RAM and no swapping, little or no activity will be seen
 > 
-> no, every kdump need to specify crashkernel=128M or more.
+> As I said, there are known weird bugs that may or may not show
+> up in your configuration and build environment, so be prepared
+> in advance that the kernel may crash... removing kztmem as
+> a boot parameter should disable kztmem and result in a normal boot.
 > 
+> Thanks in advance for trying and testing (and, if you are so
+> inclined, debugging) kztmem!  I'll be happy to answer any
+> questions on- or off-list!
 
-Oh, you're referring to crashkernel size.  Okay, this is somewhat
-different.  However, the margin is just too small on 64 bits, then.  How
-far up can we actually get away with on 64 bits currently?  4 GiB?
+FYI, in case anyone was thinking about giving it a spin,
+I have just posted an update of the (monolithic) kztmem
+patch here:
 
-	-hpa
+http://oss.oracle.com/projects/tmem/dist/files/kztmem/kztmem-linux-2.6.36-101207.patch 
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+I think all the weird bugs and crashes are now gone, though I
+have some concurrency rework to do after some feedback from
+Jeremy Fitzhardinge, and that's not going to happen until
+after the holidays.  So I am posting this intermediate version
+if you want to try it, but please hold off on any detailed
+code review until I post v1 to lkml/linux-mm.
 
+Thanks,
+Dan
