@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108Ab0LQOdv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 09:33:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25112 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754838Ab0LQOdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 09:33:50 -0500
-Date: Fri, 17 Dec 2010 15:33:49 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
-Cc: linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, mingo@redhat.com, yinghai@kernel.org,
-        tglx@linutronix.de
-Subject: Re: [tip:x86/urgent] x86-32: Make sure we can map all of lowmem if
- we need to
-Message-ID: <20101217143348.GA8104@redhat.com>
-References: <4D0AD3ED.8070607@kernel.org>
- <tip-147dd5610c8d1bacb88a6c1dfdaceaf257946ed0@git.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <tip-147dd5610c8d1bacb88a6c1dfdaceaf257946ed0@git.kernel.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1755054Ab0LQOxb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 09:53:31 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40737 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754854Ab0LQOxa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 09:53:30 -0500
+Subject: Re: linux-next: manual merge of the block tree with the  tree
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
+        Tejun Heo <tj@kernel.org>
+In-Reply-To: <20101217122831.39300d94.sfr@canb.auug.org.au>
+References: <20101217122831.39300d94.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Dec 2010 09:53:27 -0500
+Message-ID: <1292597607.2820.17.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 03:19:03AM +0000, tip-bot for H. Peter Anvin wrote:
-> Commit-ID:  147dd5610c8d1bacb88a6c1dfdaceaf257946ed0
-> Gitweb:     http://git.kernel.org/tip/147dd5610c8d1bacb88a6c1dfdaceaf257946ed0
-> Author:     H. Peter Anvin <hpa@linux.intel.com>
-> AuthorDate: Thu, 16 Dec 2010 19:11:09 -0800
-> Committer:  H. Peter Anvin <hpa@linux.intel.com>
-> CommitDate: Thu, 16 Dec 2010 19:11:09 -0800
+On Fri, 2010-12-17 at 12:28 +1100, Stephen Rothwell wrote:
+> Hi Jens,
 > 
-> x86-32: Make sure we can map all of lowmem if we need to
+> Today's linux-next merge of the block tree got a conflict in
+> drivers/scsi/sd.c between commit e765221e4b44b2141704a0ab201632446235712b
+> ("[SCSI] sd: improve logic and efficiecy of media-change detection") from
+> the  tree and commit c8d2e937355d02db3055c2fc203e5f017297ee1f ("sd:
+> implement sd_check_events()") from the block tree.
 > 
-> A relocatable kernel can be anywhere in lowmem -- and in the case of a
-> kdump kernel, is likely to be fairly high.  Since the early page
-> tables map everything from address zero up we need to make sure we
-> allocate enough brk that we can map all of lowmem if we need to.
-> 
-> Reported-by: Stanislaw Gruszka <sgruszka@redhat.com>
+> The changes here are a bit extensive for me to figure out, so I used
+> the block tree version of the conflicting code (there are other changes
+> in the scsi tree as well).  I probably needs checking.
 
-Fix confirmed, thanks
+Tejun, could you respin the sd patch on top of SCSI misc, please?  (I
+promise to review it speedily if you do).
 
-Stanislaw
+Thanks,
+
+James
+
+
