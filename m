@@ -1,38 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952Ab0LQICj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 03:02:39 -0500
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:36357 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750835Ab0LQICi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 03:02:38 -0500
-Message-ID: <4D0B190E.1030206@kernel.dk>
-Date: Fri, 17 Dec 2010 09:02:22 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	id S1752078Ab0LQIEe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 03:04:34 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35822 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab0LQIEd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 03:04:33 -0500
 MIME-Version: 1.0
-To: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-CC: akpm@linux-foundation.org, smcameron@yahoo.com,
-        linux-kernel@vger.kernel.org, mike.miller@hp.com, thenzl@redhat.com
-Subject: Re: [PATCH] cciss: fix cciss_revalidate panic.
-References: <20101216190200.630.8596.stgit@beardog.cce.hp.com>
-In-Reply-To: <20101216190200.630.8596.stgit@beardog.cce.hp.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20101216142649.4a904846.randy.dunlap@oracle.com>
+References: <1292532772-29923-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br> <20101216142649.4a904846.randy.dunlap@oracle.com>
+From: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+Date: Fri, 17 Dec 2010 06:04:12 -0200
+Message-ID: <AANLkTi=4DBTsE3RFbWUZmP4fE+Mn2J94ORrfWEi=-WJL@mail.gmail.com>
+Subject: Re: [PATCH] init: Fix for section mismatch in reference from name_to_dev_t().
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-12-16 20:02, Stephen M. Cameron wrote:
-> From: Stephen M. Cameron <StephenM.Cameron>
-> 
-> If you delete a logical drive, and then run BLKRRPART (e.g. via fdisk)
-> on a logical drive which is "after" the deleted logical drive in the h->drv[]
-> array, then cciss_revalidate panics because it will access the null pointer
-> h->drv[x] when x hits the deleted drive.
+On Thu, Dec 16, 2010 at 20:26, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>
+> On Thu, 16 Dec 2010 18:52:52 -0200 Marcelo Roberto Jimenez wrote:
+>
+> > This patch fixes the following message while compiling the kernel:
+>
+> I think that this one is preferable:
+>
+> https://lkml.org/lkml/2010/12/7/210
 
-Thanks Stephen. I put this in for-linus for 2.6.37 and marked it for
-stable backport.
-
--- 
-Jens Axboe
-
+I Agree, please do not consider my patch.
+Regards,
+Marcelo.
