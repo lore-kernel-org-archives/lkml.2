@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab0LQQYs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 11:24:48 -0500
-Received: from www.tglx.de ([62.245.132.106]:53569 "EHLO www.tglx.de"
+	id S1754351Ab0LQQdJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 11:33:09 -0500
+Received: from www.tglx.de ([62.245.132.106]:36839 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753768Ab0LQQYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 11:24:47 -0500
-Date: Fri, 17 Dec 2010 17:22:59 +0100 (CET)
+	id S1754202Ab0LQQdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 11:33:08 -0500
+Date: Fri, 17 Dec 2010 17:32:46 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: huang ying <huang.ying.caritas@gmail.com>
-cc: Peter Zijlstra <peterz@infradead.org>, Huang Ying <ying.huang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+To: Jan Kiszka <jan.kiszka@siemens.com>
+cc: Jan Kiszka <jan.kiszka@web.de>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@alien8.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Dirk Hohndel <Dirk.Hohndel@intel.com>,
-        "Brown,Len" <len.brown@intel.com>, "Luck,Tony" <tony.luck@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH -mm -v8 0/3] Lockless memory allocator and list
-In-Reply-To: <AANLkTi=6z1bw9iNi2hhDJaSnZVhBDOr_JDD2dAFYKqC_@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1012171649510.12146@localhost6.localdomain6>
-References: <AANLkTi=6z1bw9iNi2hhDJaSnZVhBDOr_JDD2dAFYKqC_@mail.gmail.com>
+        kvm <kvm@vger.kernel.org>, Tom Lyon <pugs@ieee.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [PATCH v3 2/4] genirq: Inform handler about line sharing state
+In-Reply-To: <4D0B8A73.4050005@siemens.com>
+Message-ID: <alpine.LFD.2.00.1012171725300.12146@localhost6.localdomain6>
+References: <cover.1292281184.git.jan.kiszka@web.de> <a59c76552ebeaa128022ba9bcc7ea0753b312447.1292281184.git.jan.kiszka@web.de> <alpine.LFD.2.00.1012161410440.12146@localhost6.localdomain6> <4D0A75E3.3090900@web.de> <4D0B1CD9.5060601@web.de>
+ <alpine.LFD.2.00.1012171116480.12146@localhost6.localdomain6> <4D0B3C11.4090307@siemens.com> <alpine.LFD.2.00.1012171137430.12146@localhost6.localdomain6> <4D0B400D.8010903@siemens.com> <alpine.LFD.2.00.1012171315260.12146@localhost6.localdomain6>
+ <4D0B8A73.4050005@siemens.com>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -30,45 +28,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-B1;2401;0cOn Fri, 17 Dec 2010, huang ying wrote:
-> On Fri, Dec 17, 2010 at 8:22 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > I don't want to see a single line of code from you until you've talked
-> > with other RAS folks and they agree that your bits make sense.
-> >
-> > So let me put it in simple words: unless there's a non-Intel RAS guy
-> > signing off on your patches I'm objecting to them.
+On Fri, 17 Dec 2010, Jan Kiszka wrote:
+> Am 17.12.2010 16:25, Thomas Gleixner wrote:
+> > Your aproach with disable_irq_nosync() is completely flawed, simply
+> > because you try to pretend that your interrupt handler is done, while
+> > it is not done at all. The threaded interrupt handler is done when
+> > user space completes. Everything else is just hacking around the
+> > problem and creates all that nasty transitional problems.
 > 
-> Please take a look at the patchset, this patchset is not RAS specific,
-> it is not hardware error reporting infrastructure or hardware error
-> reporting interface. This is just lock-less data structure. So this is
-> not a RAS patchset. Why I must get non-Intel RAS guys' signing off for
-> a non-RAS patchset?
->
-> I will not post my original hardware error reporting infrastructure or
-> interface after this patchset. Although I may use some part of this
+> disable_irq_nosync is the pattern currently used in KVM, it's nothing
+> new in fact.
 
-There are _NO_ users of that new infrastructure. And we do _NOT_ merge
-code which has no users and therefor no purpose just for fun. Period.
+That does not make it less flawed :)
 
-> patchset in APEI code, that is just driver internal data structure
-> usage, not general hardware error reporting infrastructure or
-> interface.
+> The approach looks interesting but requires separate code for
+> non-PCI-2.3 devices, i.e. when we have no means to mask at device level.
 
-So you want to use it in APEI code, then post it when your APEI code
-is ready, reviewed and mergeable, which requires the ack from the RAS
-folks.
+Why? You can have the same code, you just can't request COND_ONESHOT
+handlers for it, so it needs unshared ONESHOT or it won't work at all,
+no matter what approach you chose. No device level mask, no sharing,
+it's that simple.
 
-And stop reposting it _BEFORE_ you have at least tried to address
-Peters other request:
+> Further drawbacks - unless I missed something on first glance:
+> 
+> - prevents any future optimizations that would work without IRQ thread
+>   ping-pong (ie. once we allow guest IRQ injection from hardirq context
+>   for selected but typical setups)
+> - two additional, though light-weight, context switches on each
+>   interrupt completion
 
->> > ... and no attempt to unify the existing lockless list implementations.
+The drawback of these two points is way less than the horror which you
+need to introduce to do the whole async handler disable, userspace
+enable dance. Robust and simple solutions really a preferred over
+complex and fragile horror which has a questionable runtime benefit.
 
-That's a reasonable request as we have already lockless list
-implementations and adding another one is not of interest at all.
-
-If you think your lockless list is superior, then replace the existing
-implementations and convert the users or at least one of them. Then we
-have a technical ground to discuss your new lockless list.
+> - continuous polling if user space decides to leave the interrupt
+>   unhandled (e.g. because the virtual IRQ line is masked)
+ 
+That should be a solvable problem.
 
 Thanks,
 
