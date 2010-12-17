@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab0LQWoo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 17:44:44 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:22509 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755954Ab0LQWol (ORCPT
+	id S1756667Ab0LQWpu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 17:45:50 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:12833 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755954Ab0LQWpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 17:44:41 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6200"; a="67297881"
-From: Saravana Kannan <skannan@codeaurora.org>
-To: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-arm-msm@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] regulator: Update consumer state only after set voltage succeeds.
-Date: Fri, 17 Dec 2010 14:44:28 -0800
-Message-Id: <1292625868-26862-1-git-send-email-skannan@codeaurora.org>
-X-Mailer: git-send-email 1.7.1.1
+	Fri, 17 Dec 2010 17:45:46 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 17 Dec 2010 14:37:04 -0800
+Date: Fri, 17 Dec 2010 14:44:29 -0800
+From: rmorell@nvidia.com
+To: Greg KH <gregkh@suse.de>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Benoit Goby <benoit@android.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
+        Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>,
+        Colin Cross <ccross@android.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] Align tegra-ehci DMA transfers to 32B
+Message-ID: <20101217224429.GF25105@morell.nvidia.com>
+References: <1292623129-26361-1-git-send-email-rmorell@nvidia.com>
+ <20101217223227.GA19418@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101217223227.GA19418@suse.de>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the consumer state is updated but an error is returned due to
-consumer constraint issues, then all set voltages by all consumers on
-the regulator will fail till the "bad" consumer updates its voltage
-range with a compatible value.  A bad consumer request that's rejected
-shouldn't prevent other consumers from changing the voltage.
+On Fri, Dec 17, 2010 at 02:32:27PM -0800, Greg KH wrote:
+> On Fri, Dec 17, 2010 at 01:58:47PM -0800, Robert Morell wrote:
+> > This small set of patches fixes an issue where DMA from the tegra EHCI
+> > controller could be corrupted.  It was most commonly seen with USB network
+> > adapters, though in theory it could happen with any USB traffic.
+> > 
+> > (Note: An attempt was made to fix this with commit 367c3aab, which set
+> > NET_IP_ALIGN to 0 and NET_SKB_PAD to 32.  Unfortunately, not all network
+> > drivers honor them (presumably since these are intended as optimizations rather
+> > than hard rules).  This does mean that properly-written network drivers should
+> > fall through this code with very little overhead, however.)
+> 
+> We don't have many USB network drivers, why not just fix them up to
+> handle this properly, then you will not need to change any core USB
+> code, right?
 
-Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
----
- drivers/regulator/core.c |   14 +++++++++-----
- 1 files changed, 9 insertions(+), 5 deletions(-)
+The USB core code is used by devices other than USB adapters.  We've
+only seen this problem so far with usbnet devices, but I can't test
+every USB device ever to make sure that they always align their DMA to
+32 bytes.
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index ab419f8..590ae0c 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -148,11 +148,14 @@ static int regulator_check_voltage(struct regulator_dev *rdev,
-  * regulator consumers
-  */
- static int regulator_check_consumers(struct regulator_dev *rdev,
-+				     struct regulator *ignore,
- 				     int *min_uV, int *max_uV)
- {
- 	struct regulator *regulator;
- 
- 	list_for_each_entry(regulator, &rdev->consumer_list, list) {
-+		if (regulator  == ignore)
-+			continue;
- 		if (*max_uV > regulator->max_uV)
- 			*max_uV = regulator->max_uV;
- 		if (*min_uV < regulator->min_uV)
-@@ -1719,14 +1722,15 @@ int regulator_set_voltage(struct regulator *regulator, int min_uV, int max_uV)
- 	ret = regulator_check_voltage(rdev, &min_uV, &max_uV);
- 	if (ret < 0)
- 		goto out;
--	regulator->min_uV = min_uV;
--	regulator->max_uV = max_uV;
--
--	ret = regulator_check_consumers(rdev, &min_uV, &max_uV);
-+	ret = regulator_check_consumers(rdev, regulator, &min_uV, &max_uV);
- 	if (ret < 0)
- 		goto out;
- 
- 	ret = _regulator_do_set_voltage(rdev, min_uV, max_uV);
-+	if (!ret) {
-+		regulator->min_uV = min_uV;
-+		regulator->max_uV = max_uV;
-+	}
- 
- out:
- 	mutex_unlock(&rdev->mutex);
-@@ -1769,7 +1773,7 @@ int regulator_sync_voltage(struct regulator *regulator)
- 	if (ret < 0)
- 		goto out;
- 
--	ret = regulator_check_consumers(rdev, &min_uV, &max_uV);
-+	ret = regulator_check_consumers(rdev, NULL, &min_uV, &max_uV);
- 	if (ret < 0)
- 		goto out;
- 
--- 
-1.7.1.1
---
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Thanks,
+Robert
+
+> thanks,
+> 
+> greg k-h
+> 
