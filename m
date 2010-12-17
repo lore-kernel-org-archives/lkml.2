@@ -1,58 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175Ab0LQTec (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 14:34:32 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64766 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754454Ab0LQTe1 (ORCPT
+	id S1755092Ab0LQTe3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 14:34:29 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:43976 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752959Ab0LQTe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 14:34:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=lJFrdMpjth+t53KtZaz93hCTBo2KDIS/iGLcTKfBd2nodmTwW0doVEHGewLUVLcr7G
-         DNhvfu7KqDHs+J43waYfgQI1N+iWvS4qoOEq8V0Lv0QIK9Hzlf3F5U6pFkI5/ORYx0YU
-         gWXhWhVVH/TRAIGdrHiXqL0ERai2QUqUneLAs=
-Date: Fri, 17 Dec 2010 11:34:19 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] input: mt updates for 2.6.38
-Message-ID: <20101217193419.GA2576@core.coreip.homeip.net>
-References: <4D09F9E2.6060900@euromail.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D09F9E2.6060900@euromail.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 17 Dec 2010 14:34:26 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux-mm <linux-mm@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 18/20] 18: uprobes: commonly used filters.
+In-Reply-To: Your message of "Thu, 16 Dec 2010 15:30:49 +0530."
+             <20101216100049.23751.2658.sendpatchset@localhost6.localdomain6>
+From: Valdis.Kletnieks@vt.edu
+References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
+            <20101216100049.23751.2658.sendpatchset@localhost6.localdomain6>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1292614379_5427P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Fri, 17 Dec 2010 14:32:59 -0500
+Message-ID: <51253.1292614379@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020209.4D0BBAEF.0035,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 16, 2010 at 12:37:06PM +0100, Henrik Rydberg wrote:
-> Dmitry,
-> 
-> Please pull from
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rydberg/input-mt.git next
-> 
-> to re-receive input-mt updates for 2.6.38.
-> 
-> As a one-time measure, the tree has been rewound all the way to 2.6.37-rc1, to
-> keep our trees at a common checkpoint. Hereafter, the branch will be kept stable
-> and synchronized at a common checkpoint.
-> 
-> Content-wise, the filename change has been folded into the first commit. The
-> finger-count report and the trkid documentation have been folded into the commit
-> where they are introduced. Furthermore, MT_TOOL_ENVELOPE has been dropped
-> completely, and is going to be replaced by an input device quirk. The overall
-> documentation changes have been held back for another respin. Lastly, another
-> device patch has been added to hid-egalax.
-> 
+--==_Exmh_1292614379_5427P
+Content-Type: text/plain; charset=us-ascii
 
-Pulled, thanks Henrik.
+On Thu, 16 Dec 2010 15:30:49 +0530, Srikar Dronamraju said:
 
--- 
-Dmitry
+> Provides most commonly used filters. Prevents users from having to define
+> their own filters. However this would be useful once we can
+> dynamically associate a filter with a uprobe-event tracer.
+
+Unclear/awkward language here...
+
+Did you mean "Prevents users from defining their own filters" or "Allows
+users to not have to define their own filters"?
+
+--==_Exmh_1292614379_5427P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFNC7rrcC3lWbTT17ARAlNTAJ9uq4rg9D7GMbPo+hK8447gjk+2JwCaA4oS
+xZ+fbPNfA5DzHB/mTcd6r6g=
+=1SgE
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1292614379_5427P--
+
