@@ -1,90 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755489Ab0LQPgm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 10:36:42 -0500
-Received: from www.tglx.de ([62.245.132.106]:60856 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755384Ab0LQPev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 10:34:51 -0500
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: sodaville@linutronix.de, x86@kernel.org, dirk.brandewie@gmail.com,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 11/15] x86/ce4100: use OF for ioapic
-Date: Fri, 17 Dec 2010 16:33:49 +0100
-Message-Id: <1292600033-12271-12-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de>
-References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de>
+	id S1755508Ab0LQPgu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 10:36:50 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:32956 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755433Ab0LQPgs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 10:36:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=qTNYgguFRl1owKF338M8MIoKdPVoGhPVdcH3Zv3LWUH4hm7kk5dyRel3Om3nTvt5ZY
+         aGSSj2h7453wrI4wd5DrXUAibPKtkNhos1XmHazALIl5SRgPrAs1IIyoMWHH1HZLtOBe
+         8hW4M/3upApE5r8reHrPlSKuS8hPA0NmKR04g=
+MIME-Version: 1.0
+In-Reply-To: <1292599007.2266.290.camel@twins>
+References: <7997200675c1a53b1954fdc3f46dd208db5dea77.1292578808.git.harald.gustafsson@ericsson.com>
+	<1292596194.2266.283.camel@twins>
+	<1292596369.2266.286.camel@twins>
+	<AANLkTinGkf3a4_sw32b4UqAmpUU+i6fDmDUT8tXdw14D@mail.gmail.com>
+	<1292599007.2266.290.camel@twins>
+Date: Fri, 17 Dec 2010 16:36:47 +0100
+Message-ID: <AANLkTi=Etj3eu25cBuESoXdo3pMnJymFcicW9YN3LMn7@mail.gmail.com>
+Subject: Re: [PATCH 1/3] Added runqueue clock normalized with cpufreq
+From: Harald Gustafsson <hgu1972@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Harald Gustafsson <harald.gustafsson@ericsson.com>,
+        Dario Faggioli <faggioli@gandalf.sssup.it>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        Michael Trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>, Dario Faggioli <raistlin@linux.it>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-and hpet and a few others things....
+2010/12/17 Peter Zijlstra <peterz@infradead.org>:
+> I was more hinting at the fact that CPUfreq is at best a controversial
+> approach to power savings. I much prefer the whole race-to-idle
+> approach, its much simpler.
 
-Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- arch/x86/platform/ce4100/ce4100.c |   24 +++++++++++++++++-------
- 1 files changed, 17 insertions(+), 7 deletions(-)
+That depends to a large degree on architecture, chip technology node
+and deployed user space
+applications. I don't agree that race-to-idle is a good idea for
+some/many combinations at least
+for embedded systems. But of course race-to-idle is simpler, but not
+necessarily giving the
+lowest energy.
 
-diff --git a/arch/x86/platform/ce4100/ce4100.c b/arch/x86/platform/ce4100/ce4100.c
-index d2c0d51..7877453 100644
---- a/arch/x86/platform/ce4100/ce4100.c
-+++ b/arch/x86/platform/ce4100/ce4100.c
-@@ -15,21 +15,19 @@
- #include <linux/serial_reg.h>
- #include <linux/serial_8250.h>
- 
-+#include <asm/prom.h>
- #include <asm/setup.h>
-+#include <asm/i8259.h>
- #include <asm/io.h>
-+#include <asm/io_apic.h>
- 
- static int ce4100_i8042_detect(void)
- {
- 	return 0;
- }
- 
--static void __init sdv_find_smp_config(void)
--{
--}
--
- #ifdef CONFIG_SERIAL_8250
- 
--
- static unsigned int mem_serial_in(struct uart_port *p, int offset)
- {
- 	offset = offset << p->regshift;
-@@ -118,6 +116,13 @@ static void __init sdv_arch_setup(void)
- 	sdv_serial_fixup();
- }
- 
-+static void __cpuinit sdv_pci_init(void)
-+{
-+	x86_of_pci_init();
-+	/* We can't set this earlier, because we need calibrate the timer */
-+	legacy_pic = &null_legacy_pic;
-+}
-+
- /*
-  * CE4100 specific x86_init function overrides and early setup
-  * calls.
-@@ -127,6 +132,11 @@ void __init x86_ce4100_early_setup(void)
- 	x86_init.oem.arch_setup = sdv_arch_setup;
- 	x86_platform.i8042_detect = ce4100_i8042_detect;
- 	x86_init.resources.probe_roms = x86_init_noop;
--	x86_init.mpparse.get_smp_config = x86_init_uint_noop;
--	x86_init.mpparse.find_smp_config = sdv_find_smp_config;
-+	x86_init.mpparse.get_smp_config = x86_dtb_get_config;
-+	x86_init.mpparse.find_smp_config = x86_dtb_find_config;
-+
-+#ifdef CONFIG_X86_IO_APIC
-+	x86_init.pci.init_irq = sdv_pci_init;
-+	x86_init.mpparse.setup_ioapic_ids = setup_ioapic_ids_from_mpc_nocheck;
-+#endif
- }
--- 
-1.7.3.2
-
+/Harald
