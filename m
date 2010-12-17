@@ -1,181 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab0LQNRH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 08:17:07 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:51275 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645Ab0LQNRF (ORCPT
+	id S1754758Ab0LQNRe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 08:17:34 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:51314 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754646Ab0LQNQp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 08:17:05 -0500
-X-AuditID: b753bd60-a3afaba000000f8d-8d-4d0b62cdbf3c
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -tip 4/4] [BUGFIX]perf probe: Fix to support libdwfl older
-	than 0.148
-To: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 17 Dec 2010 22:12:18 +0900
-Message-ID: <20101217131218.24123.62424.stgit@ltc236.sdl.hitachi.co.jp>
-In-Reply-To: <20101217131149.24123.96128.stgit@ltc236.sdl.hitachi.co.jp>
-References: <20101217131149.24123.96128.stgit@ltc236.sdl.hitachi.co.jp>
-User-Agent: StGIT/0.14.3
+	Fri, 17 Dec 2010 08:16:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=QLCN9nHHlY3Qcn+6SZrMfVNM8yWJo9U//XbRAK/3GVgPMTut/64dzOWaZ+IcPPFmdZ
+         pkQhhoC+OG9e+w371ol+vE/8xr1V5EgfhHbtDZHYI9Hj3pwmYLL3N+Zl2iupNewo8lB6
+         CJIZWgyKXKOg2MlNZ8VpwuW2tKHdVavUS9jq0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEB
+In-Reply-To: <20101217130426.GA21706@isilmar-3.linta.de>
+References: <1292573592-3624-1-git-send-email-marek.belisko@open-nandra.com>
+	<1292573592-3624-2-git-send-email-marek.belisko@open-nandra.com>
+	<20101217130426.GA21706@isilmar-3.linta.de>
+Date: Fri, 17 Dec 2010 14:16:44 +0100
+Message-ID: <AANLkTimivmbhJed8_x_MGWem-3p2EBHj7H--qUy+oSQP@mail.gmail.com>
+Subject: Re: [PATCH 1/2] staging: ft1000-pcmcia: Fix compilation errors.
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Dominik Brodowski <linux@dominikbrodowski.net>,
+        Marek Belisko <marek.belisko@open-nandra.com>, gregkh@suse.de,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        chl.pixo@gmail.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the libdwfl before 0.148 fails to analyze live
-kernel debuginfo, 'perf probe --list' compiled with those
-old libdwfl sometime crashes.
+Hi,
 
-To avoid that bug, perf probe does not use libdwfl's live
-kernel analysis routine when it is compiled with older libdwfl.
+On Fri, Dec 17, 2010 at 2:04 PM, Dominik Brodowski
+<linux@dominikbrodowski.net> wrote:
+> Hey,
+>
+> On Fri, Dec 17, 2010 at 09:13:11AM +0100, Marek Belisko wrote:
+>> Following patch will fix all compilation errors. Main problems
+>> was with pcmcia API changes. Also remove BROKEN as now driver
+>> is properly build.
+>
+> Thanks!
+>
+> One question, though:
+>
+>> +int ft1000_get_mac(struct pcmcia_device *p_dev, tuple_t *tuple, void *priv)
+>>  {
+>> -     tuple_t tuple;
+>> +     int i;
+>>       cisparse_t parse;
+>> -     int last_fn, last_ret, i;
+>> -     u_char buf[64];
+>>       cistpl_lan_node_id_t *node_id;
+>> -     cistpl_cftable_entry_t dflt = { 0 };
+>> -     cistpl_cftable_entry_t *cfg;
+>> -     unsigned char mac_address[6];
+>> -
+>> -     DEBUG(0, "ft1000_cs: ft1000_config(0x%p)\n", link);
+>>
+>> +     if (!pcmcia_parse_tuple(tuple, &parse)) {
+>> +             if (parse.funce.type == CISTPL_FUNCE_LAN_NODE_ID) {
+>> +                     node_id = (cistpl_lan_node_id_t *) parse.funce.data;
+>> +                     if (node_id->nb == 6) {
+>> +                             for (i = 0; i < 6; i++)
+>> +                                     *((unsigned char *)priv + i) =
+>> +                                             node_id->id[i];
+>> +                             /*
+>> +                              *  we found MAC address and will
+>> +                              * end the pcmcia_loop_tuple
+>> +                              */
+>> +                             return 0;
+>> +                     }
+>> +             }
+>> +     }
+>>       /*
+>> -        This reads the card's CONFIG tuple to find its configuration
+>> -        registers.
+>> +      * we did not find MAC address in this tuple
+>> +      * continue pcmcia_loop_tuple
+>>        */
+>> -//   tuple.DesiredTuple = CISTPL_CONFIG;
+>> -//   tuple.Attributes = 0;
+>> -     tuple.TupleData = buf;
+>> -     tuple.TupleDataMax = sizeof(buf);
+>> -     tuple.TupleOffset = 0;
+>> -//   CS_CHECK(GetFirstTuple, pcmcia_get_first_tuple(link, &tuple));
+>> -//   CS_CHECK(GetTupleData, pcmcia_get_tuple_data(link, &tuple));
+>> -//   CS_CHECK(ParseTuple, pcmcia_parse_tuple(link, &tuple, &parse));
+>> -//   link->conf.ConfigBase = parse.config.base;
+>> -//   link->conf.Present = parse.config.rmask[0];
+>> +     return 1;
+>> +}                               /* ft1000_get_mac */
+>
+> ...
+>
+>> +     /* get the MAC address */
+>> +     ret = pcmcia_loop_tuple(link, CISTPL_FUNCE,
+>> +                             ft1000_get_mac, mac_address);
+>> +     if (ret)
+>> +             goto failed;
+>
+> Does this differ from the generic pcmcia_get_mac_from_cis() function, or
+> could we use this generic function for the purposes needed in this driver?
+Thanks for reviewing. We miss such a helper function.  After checking
+it do the same think.
+@Greg: should resend or will send in next patch?
+>
+> Best,
+>        Dominik
+>
 
-Side effect: perf with older libdwfl doesn't support
-listing probe in modules with source code line. Those
-could be shown by symbol+offset.
+thanks,
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org
----
+marek
 
- tools/perf/util/probe-finder.c |   85 ++++++++++++++++++++++++++--------------
- 1 files changed, 55 insertions(+), 30 deletions(-)
+-- 
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 90b6292..ab83b6a 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -117,28 +117,6 @@ static void line_list__free(struct list_head *head)
- }
- 
- /* Dwarf FL wrappers */
--
--static int __linux_kernel_find_elf(Dwfl_Module *mod,
--				   void **userdata,
--				   const char *module_name,
--				   Dwarf_Addr base,
--				   char **file_name, Elf **elfp)
--{
--	int fd;
--	const char *path = kernel_get_module_path(module_name);
--
--	if (path) {
--		fd = open(path, O_RDONLY);
--		if (fd >= 0) {
--			*file_name = strdup(path);
--			return fd;
--		}
--	}
--	/* If failed, try to call standard method */
--	return dwfl_linux_kernel_find_elf(mod, userdata, module_name, base,
--					  file_name, elfp);
--}
--
- static char *debuginfo_path;	/* Currently dummy */
- 
- static const Dwfl_Callbacks offline_callbacks = {
-@@ -151,14 +129,6 @@ static const Dwfl_Callbacks offline_callbacks = {
- 	.find_elf = dwfl_build_id_find_elf,
- };
- 
--static const Dwfl_Callbacks kernel_callbacks = {
--	.find_debuginfo = dwfl_standard_find_debuginfo,
--	.debuginfo_path = &debuginfo_path,
--
--	.find_elf = __linux_kernel_find_elf,
--	.section_address = dwfl_linux_kernel_module_section_address,
--};
--
- /* Get a Dwarf from offline image */
- static Dwarf *dwfl_init_offline_dwarf(int fd, Dwfl **dwflp, Dwarf_Addr *bias)
- {
-@@ -185,6 +155,38 @@ error:
- 	return dbg;
- }
- 
-+#if _ELFUTILS_PREREQ(0, 148)
-+/* This method is buggy if elfutils is older than 0.148 */
-+static int __linux_kernel_find_elf(Dwfl_Module *mod,
-+				   void **userdata,
-+				   const char *module_name,
-+				   Dwarf_Addr base,
-+				   char **file_name, Elf **elfp)
-+{
-+	int fd;
-+	const char *path = kernel_get_module_path(module_name);
-+
-+	pr_debug2("Use file %s for %s\n", path, module_name);
-+	if (path) {
-+		fd = open(path, O_RDONLY);
-+		if (fd >= 0) {
-+			*file_name = strdup(path);
-+			return fd;
-+		}
-+	}
-+	/* If failed, try to call standard method */
-+	return dwfl_linux_kernel_find_elf(mod, userdata, module_name, base,
-+					  file_name, elfp);
-+}
-+
-+static const Dwfl_Callbacks kernel_callbacks = {
-+	.find_debuginfo = dwfl_standard_find_debuginfo,
-+	.debuginfo_path = &debuginfo_path,
-+
-+	.find_elf = __linux_kernel_find_elf,
-+	.section_address = dwfl_linux_kernel_module_section_address,
-+};
-+
- /* Get a Dwarf from live kernel image */
- static Dwarf *dwfl_init_live_kernel_dwarf(Dwarf_Addr addr, Dwfl **dwflp,
- 					  Dwarf_Addr *bias)
-@@ -205,11 +207,34 @@ static Dwarf *dwfl_init_live_kernel_dwarf(Dwarf_Addr addr, Dwfl **dwflp,
- 	dbg = dwfl_addrdwarf(*dwflp, addr, bias);
- 	/* Here, check whether we could get a real dwarf */
- 	if (!dbg) {
-+		pr_debug("Failed to find kernel dwarf at %lx\n",
-+			 (unsigned long)addr);
- 		dwfl_end(*dwflp);
- 		*dwflp = NULL;
- 	}
- 	return dbg;
- }
-+#else
-+/* With older elfutils, this just support kernel module... */
-+static Dwarf *dwfl_init_live_kernel_dwarf(Dwarf_Addr addr __used, Dwfl **dwflp,
-+					  Dwarf_Addr *bias)
-+{
-+	int fd;
-+	const char *path = kernel_get_module_path("kernel");
-+
-+	if (!path) {
-+		pr_err("Failed to find vmlinux path\n");
-+		return NULL;
-+	}
-+
-+	pr_debug2("Use file %s for debuginfo\n", path);
-+	fd = open(path, O_RDONLY);
-+	if (fd < 0)
-+		return NULL;
-+
-+	return dwfl_init_offline_dwarf(fd, dwflp, bias);
-+}
-+#endif
- 
- /* Dwarf wrappers */
- 
-
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+icq: 290551086
+web: http://open-nandra.com
