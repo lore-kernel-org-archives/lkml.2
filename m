@@ -1,46 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057Ab0LQHDp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 02:03:45 -0500
-Received: from kroah.org ([198.145.64.141]:34069 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751156Ab0LQHDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 02:03:44 -0500
-Date: Thu, 16 Dec 2010 23:04:31 -0800
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: linux-next: build failure after merge of the final tree (tty
- tree related)
-Message-ID: <20101217070431.GA25192@kroah.com>
-References: <20101217171120.295b0c0c.sfr@canb.auug.org.au>
+	id S1752219Ab0LQHE7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 02:04:59 -0500
+Received: from mail-fx0-f66.google.com ([209.85.161.66]:60028 "EHLO
+	mail-fx0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab0LQHE5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 02:04:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=x4aT2EHhYDuUDHPz/diruj5O25ZVZyxNWsJsphVnCrdvLk90Og5rQzUjotoXh5L0rB
+         SJuuiQkelHaqF4AReK/OEDewBNeh39hVg5FK4ST5Cohx/Shqf8Mw0vqqbqltcb3Ybv4b
+         HS3Sopkh3wN8i4m9uoRRFfIaoi5C4pZk7AXP4=
+Date: Fri, 17 Dec 2010 08:04:50 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
+        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>
+Subject: Re: [PATCH V7 4/8] posix clocks: hook dynamic clocks into system
+ calls
+Message-ID: <20101217070450.GB2982@riccoc20.at.omicron.at>
+References: <cover.1292512461.git.richard.cochran@omicron.at>
+ <6241238a1df55033e50b151ec9d35ba957e43d53.1292512461.git.richard.cochran@omicron.at>
+ <alpine.LFD.2.00.1012162156580.12146@localhost6.localdomain6>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101217171120.295b0c0c.sfr@canb.auug.org.au>
+In-Reply-To: <alpine.LFD.2.00.1012162156580.12146@localhost6.localdomain6>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 05:11:20PM +1100, Stephen Rothwell wrote:
-> Hi Greg,
+On Fri, Dec 17, 2010 at 12:20:44AM +0100, Thomas Gleixner wrote:
+> On Thu, 16 Dec 2010, Richard Cochran wrote:
+> > +
+> > +static inline bool clock_is_static(const clockid_t id)
+> > +{
+> > +	if (0 == (id & ~CLOCKFD_MASK))
+> > +		return true;
+> > +	if (CLOCKFD == (id & CLOCKFD_MASK))
+> > +		return false;
 > 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
-> 
-> drivers/serial/apbuart.c:596: error: conflicting types for 'grlib_apbuart_configure'
-> drivers/serial/apbuart.c:523: note: previous declaration of 'grlib_apbuart_configure' was here
-> 
-> Caused by commit 35c64e5d13c3d7d8c4ad061ad5e20498b9160c24 ("drivers:
-> serial: apbuart: Handle OF failures gracefully").  This build has
-> CONFIG_SERIAL_GRLIB_GAISLER_APBUART_CONSOLE set ...
-> 
-> I have reverted this commit for today.
+> Please use the usual kernel notation.
 
-Ugh.  Thomas, care to send me a patch?
+Sorry, what do you mean?
 
-thanks,
+> >  	return CLOCK_DISPATCH(which_clock, clock_set, (which_clock, &new_tp));
+> 
+> I really start to wonder whether we should cleanup that whole
+> CLOCK_DISPATCH macro magic and provide real inline functions for
+> each of the clock functions instead.
 
-greg k-h
+I'm glad you suggested that.
+
+IMHO, the CLOCK_DISPATCH thing is calling out to be eliminated, but I
+didn't dare to take that upon myself.
+
+> Please don't tell me now that we could even hack this into
+> CLOCK_DISPATCH. *shudder*
+
+;^)
+
+> > +int pc_clock_adjtime(struct posix_clock *clk, struct timex *tx)
+> > +{
+> > +	int err;
+> > +
+> > +	mutex_lock(&clk->mux);
+> > +
+> > +	if (clk->zombie)
+> 
+> Uuurgh. That explains the zombie thing. That's really horrible and we
+> can be more clever. When we leave the file lookup to the pc_timer_*
+> functions, then we can simply do:
+...
+> That get's rid of your life time problems, of clk->mutex, clock->zombie
+> and makes the code simpler and more robust. And it avoids the whole
+> mess in posix-timers.c as well.
+
+The code in the patch set is modeled after a USB driver, namely
+drivers/usb/class/usbtmc.c. Alan Cox had brought up the example of a
+PTP Hardware Clock appearing as a USB device. So the device might
+suddenly disappear, and the zombie field is supposed to cover the case
+where the hardware no longer exists, but the file pointer is still
+valid.
+
+I'll take a closer look at your suggestion...
+
+> The whole point of this exercise is to provide dynamic clock ids and
+> make them available via the standard posix timer interface and aside
+> of that have standard file operations for these clocks to provide
+> special purpose ioctls, mmap and whatever. And to make it a bit more
+> complex these must be removable modules.
+
+Yes, and hot pluggable, too.
+ 
+> I need to read back the previous discussions, but maybe someone can
+> fill me in why we can't make these dynamic things not just live in
+> posix_clocks[MAX_CLOCKS ... MAX_DYNAMIC_CLOCKS] (there is no
+> requirement to have an unlimited number of those) and just get a
+> mapping from the fd to the clock_id? That creates a different set of
+> life time problems, but no real horrible ones.
+
+I would summarize the discussion like this:
+
+Alan Cox was strongly in favor of using a regular file descriptor as
+the reference to the dynamic clock.
+
+John Stultz thought it wouldn't be too bad to cycle though a number of
+static ids, being careful not to every assign the same static id (in
+series) to two different clocks.
+
+I implemented Alan's idea, since it seemed like maintaining the
+mapping between clocks and static ids would be extra work, but without
+any real benefit.
+
+Thanks again for your review,
+Richard
