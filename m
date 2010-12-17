@@ -1,207 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755443Ab0LQPe7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 10:34:59 -0500
-Received: from cantor.suse.de ([195.135.220.2]:33990 "EHLO mx1.suse.de"
+	id S1755476Ab0LQPfM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 10:35:12 -0500
+Received: from www.tglx.de ([62.245.132.106]:60983 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755381Ab0LQPey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 10:34:54 -0500
-Date: Fri, 17 Dec 2010 16:34:23 +0100
-From: Libor Pechacek <lpechacek@suse.cz>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Peter Berger <pberger@brimson.com>,
-        Al Borchers <alborchers@steinerpoint.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2.6.36-rc3] USB: serial: handle Data Carrier Detect changes
-Message-ID: <20101217153422.GE20400@fm.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18-muttng (2008-05-17-r1399)
+	id S1754395Ab0LQPfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 10:35:09 -0500
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: sodaville@linutronix.de, x86@kernel.org, dirk.brandewie@gmail.com,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH 14/15] rtc/cmos: add OF bindings
+Date: Fri, 17 Dec 2010 16:33:52 +0100
+Message-Id: <1292600033-12271-15-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de>
+References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan's commit 335f8514f200e63d689113d29cb7253a5c282967 introduced
-.carrier_raised function in several drivers.  That also means
-tty_port_block_til_ready can now suspend the process trying to open the serial
-port when Carrier Detect is low and put it into tty_port.open_wait queue.  We
-need to wake up the process when the Carrier Detect goes high.
+This allows to load the OF driver based informations from the device
+tree. Systems without BIOS may need to perform some initialization.
+PowerPC creates a PNP device from the OF information and performs this
+kind of initialization in their private PCI quirk. This looks more
+generic.
 
-Signed-off-by: Libor Pechacek <lpechacek@suse.cz>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Peter Berger <pberger@brimson.com>
-Cc: Al Borchers <alborchers@steinerpoint.com>
+Cc: rtc-linux@googlegroups.com
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: devicetree-discuss@lists.ozlabs.org
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
 ---
-Hi Alan,
+ Documentation/powerpc/dts-bindings/rtc-cmos.txt |   28 ++++++++++++++++
+ drivers/rtc/rtc-cmos.c                          |   40 +++++++++++++++++++++++
+ 2 files changed, 68 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/powerpc/dts-bindings/rtc-cmos.txt
 
-This is an amendment of your patch referenced above.  Please review and comment
-on the changes.
-
-@Greg: There are two drivers left to be fixed - drivers/usb/serial/cp210x.c and
-drivers/usb/serial/keyspan_pda.c.  cp210x device does not seem to have an
-interrupt endpoint to report the changes so a polling thread seems to be needed
-to detect DCD changes.  I can implement the polling for cp210x if you don't
-have a better idea.
-
-The keyspan_pda can report the changes asynchronously, but I haven't found the
-message format description anywhere.  Any idea how that driver can be fixed
-besides dropping .carrier_raised?
-
- drivers/usb/serial/ch341.c           |    4 ++++
- drivers/usb/serial/digi_acceleport.c |   17 +++++++++++------
- drivers/usb/serial/generic.c         |   20 ++++++++++++++++++++
- drivers/usb/serial/pl2303.c          |    4 ++++
- drivers/usb/serial/spcp8x5.c         |    5 +++++
- include/linux/usb/serial.h           |    2 ++
- 6 files changed, 46 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/usb/serial/ch341.c b/drivers/usb/serial/ch341.c
-index 63f7cc4..caa1f8d 100644
---- a/drivers/usb/serial/ch341.c
-+++ b/drivers/usb/serial/ch341.c
-@@ -486,12 +486,16 @@ static void ch341_read_int_callback(struct urb *urb)
- 	if (actual_length >= 4) {
- 		struct ch341_private *priv = usb_get_serial_port_data(port);
- 		unsigned long flags;
-+		u8 prev_line_status = priv->line_status;
- 
- 		spin_lock_irqsave(&priv->lock, flags);
- 		priv->line_status = (~(data[2])) & CH341_BITS_MODEM_STAT;
- 		if ((data[1] & CH341_MULT_STAT))
- 			priv->multi_status_change = 1;
- 		spin_unlock_irqrestore(&priv->lock, flags);
-+		if ((priv->line_status ^ prev_line_status) & CH341_BIT_DCD)
-+			usb_serial_handle_dcd_change(port,
-+					priv->line_status & CH341_BIT_DCD);
- 		wake_up_interruptible(&priv->delta_msr_wait);
- 	}
- 
-diff --git a/drivers/usb/serial/digi_acceleport.c b/drivers/usb/serial/digi_acceleport.c
-index b92070c..396c2c5 100644
---- a/drivers/usb/serial/digi_acceleport.c
-+++ b/drivers/usb/serial/digi_acceleport.c
-@@ -1738,9 +1738,9 @@ static int digi_read_oob_callback(struct urb *urb)
- 	struct usb_serial *serial = port->serial;
- 	struct tty_struct *tty;
- 	struct digi_port *priv = usb_get_serial_port_data(port);
--	int opcode, line, status, val;
-+	int opcode, line, status, val, new_dcd_val;
- 	int i;
--	unsigned int rts;
-+	unsigned int rts, dcd;
- 
- 	dbg("digi_read_oob_callback: port=%d, len=%d",
- 			priv->dp_port_num, urb->actual_length);
-@@ -1794,10 +1794,15 @@ static int digi_read_oob_callback(struct urb *urb)
- 				priv->dp_modem_signals |= TIOCM_RI;
- 			else
- 				priv->dp_modem_signals &= ~TIOCM_RI;
--			if (val & DIGI_READ_INPUT_SIGNALS_DCD)
--				priv->dp_modem_signals |= TIOCM_CD;
--			else
--				priv->dp_modem_signals &= ~TIOCM_CD;
+diff --git a/Documentation/powerpc/dts-bindings/rtc-cmos.txt b/Documentation/powerpc/dts-bindings/rtc-cmos.txt
+new file mode 100644
+index 0000000..7382989
+--- /dev/null
++++ b/Documentation/powerpc/dts-bindings/rtc-cmos.txt
+@@ -0,0 +1,28 @@
++ Motorola mc146818 compatible RTC
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 +
-+			dcd = priv->dp_modem_signals & TIOCM_CD;
-+			new_dcd_val = val & DIGI_READ_INPUT_SIGNALS_DCD;
-+			if (!!new_dcd_val != !!dcd) {
-+				priv->dp_modem_signals = new_dcd_val ?
-+					    priv->dp_modem_signals | TIOCM_CD :
-+					    priv->dp_modem_signals & ~TIOCM_CD;
-+				usb_serial_handle_dcd_change(port, dcd);
-+			}
++Required properties:
++  - compatible : "motorola,mc146818"
++  - reg : should contain registers location and length.
++
++Optional properties:
++  - interrupts : should contain interrupt.
++  - interrupt-parent : interrupt source phandle.
++  - ctrl-reg : Contains the initial value of the control register also
++    called "Register B".
++  - freq-reg : Contains the initial value of the frequency register also
++    called "Regsiter A".
++
++"Register A" and "B" are usually initialized by the firmware (BIOS for
++instance). If this is not done, it can be performed by the driver.
++
++ISA Example:
++
++	rtc@70 {
++	         compatible = "motorola,mc146818";
++	         interrupts = <8 3>;
++	         interrupt-parent = <&ioapic1>;
++	         ctrl-reg = <2>;
++	         freq-reg = <0x26>;
++	         reg = <1 0x70 2>;
++	 };
+diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
+index 5856167..8cf0049 100644
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -36,6 +36,8 @@
+ #include <linux/platform_device.h>
+ #include <linux/mod_devicetable.h>
+ #include <linux/log2.h>
++#include <linux/of.h>
++#include <linux/of_platform.h>
  
- 			wake_up_interruptible(&priv->dp_modem_change_wait);
- 			spin_unlock(&priv->dp_port_lock);
-diff --git a/drivers/usb/serial/generic.c b/drivers/usb/serial/generic.c
-index e6833e2..a877767 100644
---- a/drivers/usb/serial/generic.c
-+++ b/drivers/usb/serial/generic.c
-@@ -479,6 +479,26 @@ int usb_serial_handle_break(struct usb_serial_port *port)
- }
- EXPORT_SYMBOL_GPL(usb_serial_handle_break);
+ /* this is for "generic access to PC-style RTC" using CMOS_READ/CMOS_WRITE */
+ #include <asm-generic/rtc.h>
+@@ -1121,6 +1123,15 @@ static struct pnp_driver cmos_pnp_driver = {
  
-+/**
-+ *	usb_serial_handle_dcd_change - handle a change of carrier detect state
-+ *	@port: usb_serial_port structure for the open port
-+ *	@status: new carrier detect status, nonzero if active
-+ */
-+void usb_serial_handle_dcd_change(struct usb_serial_port *usb_port,
-+						unsigned int status)
-+{
-+	struct tty_port *port = &usb_port->port;
-+	struct tty_struct *tty = port->tty;
-+
-+	dbg("%s - port %d, status %d", __func__, usb_port->number, status);
-+
-+	if (status)
-+		wake_up_interruptible(&port->open_wait);
-+	else if (tty && !C_CLOCAL(tty))
-+		tty_hangup(tty);
-+}
-+EXPORT_SYMBOL_GPL(usb_serial_handle_dcd_change);
-+
- int usb_serial_generic_resume(struct usb_serial *serial)
+ #endif	/* CONFIG_PNP */
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id of_cmos_match[] = {
++	{
++		.compatible = "motorola,mc146818",
++	},
++	{ },
++};
++MODULE_DEVICE_TABLE(of, of_cmos_match);
++#endif
+ /*----------------------------------------------------------------*/
+ 
+ /* Platform setup should have set up an RTC device, when PNP is
+@@ -1129,6 +1140,32 @@ static struct pnp_driver cmos_pnp_driver = {
+ 
+ static int __init cmos_platform_probe(struct platform_device *pdev)
  {
- 	struct usb_serial_port *port;
-diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
-index 8ae4c6c..9b4f21b 100644
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -680,6 +680,7 @@ static void pl2303_update_line_status(struct usb_serial_port *port,
- 	unsigned long flags;
- 	u8 status_idx = UART_STATE;
- 	u8 length = UART_STATE + 1;
-+	u8 prev_line_status = priv->line_status;
- 	u16 idv, idp;
- 
- 	idv = le16_to_cpu(port->serial->dev->descriptor.idVendor);
-@@ -705,6 +706,9 @@ static void pl2303_update_line_status(struct usb_serial_port *port,
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 	if (priv->line_status & UART_BREAK_ERROR)
- 		usb_serial_handle_break(port);
-+	if ((priv->line_status ^ prev_line_status) & UART_DCD)
-+		usb_serial_handle_dcd_change(port,
-+				priv->line_status & UART_DCD);
- 	wake_up_interruptible(&priv->delta_msr_wait);
- }
- 
-diff --git a/drivers/usb/serial/spcp8x5.c b/drivers/usb/serial/spcp8x5.c
-index 765aa98..42bdb6b 100644
---- a/drivers/usb/serial/spcp8x5.c
-+++ b/drivers/usb/serial/spcp8x5.c
-@@ -452,6 +452,7 @@ static int spcp8x5_open(struct tty_struct *tty, struct usb_serial_port *port)
- 	struct spcp8x5_private *priv = usb_get_serial_port_data(port);
- 	int ret;
- 	unsigned long flags;
-+	u8 prev_line_status = priv->line_status;
- 	u8 status = 0x30;
- 	/* status 0x30 means DSR and CTS = 1 other CDC RI and delta = 0 */
- 
-@@ -479,6 +480,10 @@ static int spcp8x5_open(struct tty_struct *tty, struct usb_serial_port *port)
- 	priv->line_status = status & 0xf0 ;
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 
-+	if ((priv->line_status ^ prev_line_status) & MSR_STATUS_LINE_DCD)
-+		usb_serial_handle_dcd_change(port,
-+				priv->line_status & MSR_STATUS_LINE_DCD);
++#ifdef CONFIG_OF
++	if (pdev->dev.of_node) {
++		struct device_node *node = pdev->dev.of_node;
++		struct rtc_time time;
++		int ret;
++		const __be32 *val;
 +
- 	port->port.drain_delay = 256;
- 
- 	return usb_serial_generic_open(tty, port);
-diff --git a/include/linux/usb/serial.h b/include/linux/usb/serial.h
-index 16d682f..7fe31a9 100644
---- a/include/linux/usb/serial.h
-+++ b/include/linux/usb/serial.h
-@@ -347,6 +347,8 @@ extern int usb_serial_generic_prepare_write_buffer(struct usb_serial_port *port,
- extern int usb_serial_handle_sysrq_char(struct usb_serial_port *port,
- 					unsigned int ch);
- extern int usb_serial_handle_break(struct usb_serial_port *port);
-+extern void usb_serial_handle_dcd_change(struct usb_serial_port *usb_port,
-+					 unsigned int status);
- 
- 
- extern int usb_serial_bus_register(struct usb_serial_driver *device);
++		val = of_get_property(node, "ctrl-reg", NULL);
++		if (val)
++			CMOS_WRITE(be32_to_cpup(val), RTC_CONTROL);
++
++		val = of_get_property(node, "freq-reg", NULL);
++		if (val)
++			CMOS_WRITE(be32_to_cpup(val), RTC_FREQ_SELECT);
++
++		get_rtc_time(&time);
++		ret = rtc_valid_tm(&time);
++		if (ret) {
++			struct rtc_time def_time = {
++				.tm_year = 1,
++				.tm_mday = 1,
++			};
++			set_rtc_time(&def_time);
++		}
++	}
++#endif
+ 	cmos_wake_setup(&pdev->dev);
+ 	return cmos_do_probe(&pdev->dev,
+ 			platform_get_resource(pdev, IORESOURCE_IO, 0),
+@@ -1157,6 +1194,9 @@ static struct platform_driver cmos_platform_driver = {
+ 	.shutdown	= cmos_platform_shutdown,
+ 	.driver = {
+ 		.name		= (char *) driver_name,
++#if defined(CONFIG_OF)
++		.of_match_table = of_cmos_match,
++#endif
+ 		.suspend	= cmos_suspend,
+ 		.resume		= cmos_resume,
+ 	}
 -- 
-1.6.0.2
+1.7.3.2
 
