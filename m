@@ -1,358 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547Ab0LQBEq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 20:04:46 -0500
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:54220 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754453Ab0LQBEo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 20:04:44 -0500
-From: Armando Uribe <x0095078@ti.com>
-To: <omar.ramirez@ti.com>
-Cc: <x0095078@ti.com>, <ohad@wizery.com>, <felipe.contreras@gmail.com>,
-        <rene.sapiens@ti.com>, <nm@ti.com>, <ernesto@ti.com>,
-        <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: [PATCH 3/5] staging:tidspbridge - Remove unused structs
-Date: Thu, 16 Dec 2010 19:18:31 -0600
-Message-Id: <1292548713-27061-4-git-send-email-x0095078@ti.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1292548713-27061-3-git-send-email-x0095078@ti.com>
-References: <1292548713-27061-1-git-send-email-x0095078@ti.com>
- <1292548713-27061-2-git-send-email-x0095078@ti.com>
- <1292548713-27061-3-git-send-email-x0095078@ti.com>
+	id S1755840Ab0LQBFS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 20:05:18 -0500
+Received: from iona.labri.fr ([147.210.8.143]:60001 "EHLO iona.labri.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755768Ab0LQBFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 20:05:14 -0500
+Date: Fri, 17 Dec 2010 01:31:39 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: linux-kernel@vger.kernel.org
+Subject: Hardware locality (hwloc) v1.1 released
+Message-ID: <20101217003139.GF15302@const.famille.thibault.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.12-2006-07-14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove unused structs and its dependencies, like references
-in other structs or as arguments of certain functions.
+Bringing even more holiday joy, the Hardware Locality (hwloc) team is pleased to announce the release of v1.1:
 
-Signed-off-by: Armando Uribe <x0095078@ti.com>
----
- .../tidspbridge/include/dspbridge/cfgdefs.h        |    6 --
- .../staging/tidspbridge/include/dspbridge/cod.h    |   10 +----
- .../tidspbridge/include/dspbridge/dbldefs.h        |   49 --------------------
- .../staging/tidspbridge/include/dspbridge/drv.h    |   14 ------
- .../tidspbridge/include/dspbridge/dspapi-ioctl.h   |    8 ---
- .../staging/tidspbridge/include/dspbridge/ldr.h    |   29 ------------
- drivers/staging/tidspbridge/pmgr/cod.c             |   11 +----
- drivers/staging/tidspbridge/pmgr/dev.c             |    8 +---
- drivers/staging/tidspbridge/rmgr/dbdcd.c           |    2 +-
- 9 files changed, 4 insertions(+), 133 deletions(-)
- delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/ldr.h
+    http://www.open-mpi.org/projects/hwloc/ 
 
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/cfgdefs.h b/drivers/staging/tidspbridge/include/dspbridge/cfgdefs.h
-index c3f04f8..0589a0a 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/cfgdefs.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/cfgdefs.h
-@@ -58,10 +58,4 @@ struct cfg_hostres {
- 	void __iomem *dw_dmmu_base;
- };
- 
--struct cfg_dspmemdesc {
--	u32 mem_type;		/* Type of memory. */
--	u32 ul_min;		/* Minimum amount of memory of this type. */
--	u32 ul_max;		/* Maximum amount of memory of this type. */
--};
--
- #endif /* CFGDEFS_ */
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/cod.h b/drivers/staging/tidspbridge/include/dspbridge/cod.h
-index 5efea91..53bd4bb 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/cod.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/cod.h
-@@ -37,11 +37,6 @@ struct cod_manager;
- /* COD library handle */
- struct cod_libraryobj;
- 
--/* COD attributes */
--struct cod_attrs {
--	u32 ul_reserved;
--};
--
- /*
-  *  Function prototypes for writing memory to a DSP system, allocating
-  *  and freeing DSP memory.
-@@ -76,8 +71,6 @@ extern void cod_close(struct cod_libraryobj *lib);
-  *  Parameters:
-  *      manager:        created manager object
-  *      str_zl_file:    ZL DLL filename, of length < COD_MAXPATHLENGTH.
-- *      attrs:          attributes to be used by this object. A NULL value
-- *                      will cause default attrs to be used.
-  *  Returns:
-  *      0:                Success.
-  *      -ESPIPE:   ZL_Create failed.
-@@ -89,8 +82,7 @@ extern void cod_close(struct cod_libraryobj *lib);
-  *  Ensures:
-  */
- extern int cod_create(struct cod_manager **mgr,
--			     char *str_zl_file,
--			     const struct cod_attrs *attrs);
-+			     char *str_zl_file);
- 
- /*
-  *  ======== cod_delete ========
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/dbldefs.h b/drivers/staging/tidspbridge/include/dspbridge/dbldefs.h
-index 9973098..5cf9dad 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/dbldefs.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/dbldefs.h
-@@ -25,26 +25,6 @@
- typedef s32 dbl_flags;
- 
- /*
-- *  ======== dbl_sect_info ========
-- *  For collecting info on overlay sections
-- */
--struct dbl_sect_info {
--	const char *name;	/* name of section */
--	u32 sect_run_addr;	/* run address of section */
--	u32 sect_load_addr;	/* load address of section */
--	u32 size;		/* size of section (target MAUs) */
--	dbl_flags type;		/* Code, data, or BSS */
--};
--
--/*
-- *  ======== dbl_symbol ========
-- *  (Needed for dynamic load library)
-- */
--struct dbl_symbol {
--	u32 value;
--};
--
--/*
-  *  ======== dbl_alloc_fxn ========
-  *  Allocate memory function.  Allocate or reserve (if reserved == TRUE)
-  *  "size" bytes of memory from segment "space" and return the address in
-@@ -98,33 +78,4 @@ typedef bool(*dbl_sym_lookup) (void *handle, void *parg, void *rmm_handle,
- typedef s32(*dbl_write_fxn) (void *hdl, u32 dsp_address, void *buf,
- 			     u32 n, s32 mtype);
- 
--/*
-- *  ======== dbl_attrs ========
-- */
--struct dbl_attrs {
--	dbl_alloc_fxn alloc;
--	dbl_free_fxn free;
--	void *rmm_handle;	/* Handle to pass to alloc, free functions */
--	dbl_write_fxn write;
--	void *input_params;	/* Handle to pass to write, cinit function */
--
--	dbl_log_write_fxn log_write;
--	void *log_write_handle;
--
--	/* Symbol matching function and handle to pass to it */
--	dbl_sym_lookup sym_lookup;
--	void *sym_handle;
--	void *sym_arg;
--
--	/*
--	 *  These file manipulation functions should be compatible with the
--	 *  "C" run time library functions of the same name.
--	 */
--	 s32(*fread) (void *, size_t, size_t, void *);
--	 s32(*fseek) (void *, long, int);
--	 s32(*ftell) (void *);
--	 s32(*fclose) (void *);
--	void *(*fopen) (const char *, const char *);
--};
--
- #endif /* DBLDEFS_ */
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/drv.h b/drivers/staging/tidspbridge/include/dspbridge/drv.h
-index adb28ec..26972ad 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/drv.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/drv.h
-@@ -96,17 +96,6 @@ struct dmm_rsv_object {
- 	u32 dsp_reserved_addr;
- };
- 
--/* New structure (member of process context) abstracts DMM resource info */
--struct dspheap_res_object {
--	s32 heap_allocated;	/* DMM status */
--	u32 ul_mpu_addr;
--	u32 ul_dsp_addr;
--	u32 ul_dsp_res_addr;
--	u32 heap_size;
--	void *hprocessor;
--	struct dspheap_res_object *next;
--};
--
- /* New structure (member of process context) abstracts stream resource info */
- struct strm_res_object {
- 	s32 stream_allocated;	/* Stream status */
-@@ -151,9 +140,6 @@ struct process_context {
- 	struct list_head dmm_rsv_list;
- 	spinlock_t dmm_rsv_lock;
- 
--	/* DSP Heap resources */
--	struct dspheap_res_object *pdspheap_list;
--
- 	/* Stream resources */
- 	struct idr *stream_id;
- };
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/dspapi-ioctl.h b/drivers/staging/tidspbridge/include/dspbridge/dspapi-ioctl.h
-index 8da5bd8..8ad9ace 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/dspapi-ioctl.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/dspapi-ioctl.h
-@@ -120,10 +120,6 @@ union trapped_args {
- 
- 	struct {
- 		void *hprocessor;
--	} args_proc_start;
--
--	struct {
--		void *hprocessor;
- 		u32 ul_size;
- 		void *__user *pp_rsv_addr;
- 	} args_proc_rsvmem;
-@@ -165,10 +161,6 @@ union trapped_args {
- 
- 	struct {
- 		void *hprocessor;
--	} args_proc_stop;
--
--	struct {
--		void *hprocessor;
- 		void *pmpu_addr;
- 		u32 ul_size;
- 	} args_proc_invalidatememory;
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/ldr.h b/drivers/staging/tidspbridge/include/dspbridge/ldr.h
-deleted file mode 100644
-index 6a0269c..0000000
---- a/drivers/staging/tidspbridge/include/dspbridge/ldr.h
-+++ /dev/null
-@@ -1,29 +0,0 @@
--/*
-- * ldr.h
-- *
-- * DSP-BIOS Bridge driver support functions for TI OMAP processors.
-- *
-- * Provide module loading services and symbol export services.
-- *
-- * Notes:
-- *   This service is meant to be used by modules of the DSP/BIOS Bridge
-- *   driver.
-- *
-- * Copyright (C) 2005-2006 Texas Instruments, Inc.
-- *
-- * This package is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- *
-- * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
-- * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
-- * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-- */
--
--#ifndef LDR_
--#define LDR_
--
--/* Loader objects: */
--struct ldr_module;
--
--#endif /* LDR_ */
-diff --git a/drivers/staging/tidspbridge/pmgr/cod.c b/drivers/staging/tidspbridge/pmgr/cod.c
-index db29a19..17ea57d 100644
---- a/drivers/staging/tidspbridge/pmgr/cod.c
-+++ b/drivers/staging/tidspbridge/pmgr/cod.c
-@@ -33,9 +33,6 @@
- /*  ----------------------------------- Trace & Debug */
- #include <dspbridge/dbc.h>
- 
--/*  ----------------------------------- OS Adaptation Layer */
--#include <dspbridge/ldr.h>
--
- /*  ----------------------------------- Platform Manager */
- /* Include appropriate loader header file */
- #include <dspbridge/dbll.h>
-@@ -51,7 +48,6 @@ struct cod_manager {
- 	struct dbll_library_obj *base_lib;
- 	bool loaded;		/* Base library loaded? */
- 	u32 ul_entry;
--	struct ldr_module *dll_obj;
- 	struct dbll_fxns fxns;
- 	struct dbll_attrs attrs;
- 	char sz_zl_file[COD_MAXPATHLENGTH];
-@@ -206,8 +202,7 @@ void cod_close(struct cod_libraryobj *lib)
-  *      dynamically loaded object files.
-  *
-  */
--int cod_create(struct cod_manager **mgr, char *str_zl_file,
--		      const struct cod_attrs *attrs)
-+int cod_create(struct cod_manager **mgr, char *str_zl_file)
- {
- 	struct cod_manager *mgr_new;
- 	struct dbll_attrs zl_attrs;
-@@ -219,10 +214,6 @@ int cod_create(struct cod_manager **mgr, char *str_zl_file,
- 	/* assume failure */
- 	*mgr = NULL;
- 
--	/* we don't support non-default attrs yet */
--	if (attrs != NULL)
--		return -ENOSYS;
--
- 	mgr_new = kzalloc(sizeof(struct cod_manager), GFP_KERNEL);
- 	if (mgr_new == NULL)
- 		return -ENOMEM;
-diff --git a/drivers/staging/tidspbridge/pmgr/dev.c b/drivers/staging/tidspbridge/pmgr/dev.c
-index b95cd20..0f10a50 100644
---- a/drivers/staging/tidspbridge/pmgr/dev.c
-+++ b/drivers/staging/tidspbridge/pmgr/dev.c
-@@ -27,9 +27,6 @@
- /*  ----------------------------------- Trace & Debug */
- #include <dspbridge/dbc.h>
- 
--/*  ----------------------------------- OS Adaptation Layer */
--#include <dspbridge/ldr.h>
--
- /*  ----------------------------------- Platform Manager */
- #include <dspbridge/cod.h>
- #include <dspbridge/drv.h>
-@@ -75,7 +72,6 @@ struct dev_object {
- 	struct io_mgr *hio_mgr;	/* IO manager (CHNL, msg_ctrl) */
- 	struct cmm_object *hcmm_mgr;	/* SM memory manager. */
- 	struct dmm_object *dmm_mgr;	/* Dynamic memory manager. */
--	struct ldr_module *module_obj;	/* Bridge Module handle. */
- 	u32 word_size;		/* DSP word size: quick access. */
- 	struct drv_object *hdrv_obj;	/* Driver Object */
- 	/* List of Processors attached to this device */
-@@ -139,7 +135,6 @@ int dev_create_device(struct dev_object **device_obj,
- 			     struct cfg_devnode *dev_node_obj)
- {
- 	struct cfg_hostres *host_res;
--	struct ldr_module *module_obj = NULL;
- 	struct bridge_drv_interface *drv_fxns = NULL;
- 	struct dev_object *dev_obj = NULL;
- 	struct chnl_mgrattrs mgr_attrs;
-@@ -179,7 +174,6 @@ int dev_create_device(struct dev_object **device_obj,
- 		if (dev_obj) {
- 			/* Fill out the rest of the Dev Object structure: */
- 			dev_obj->dev_node_obj = dev_node_obj;
--			dev_obj->module_obj = module_obj;
- 			dev_obj->cod_mgr = NULL;
- 			dev_obj->hchnl_mgr = NULL;
- 			dev_obj->hdeh_mgr = NULL;
-@@ -953,7 +947,7 @@ static int init_cod_mgr(struct dev_object *dev_obj)
- 	DBC_REQUIRE(refs > 0);
- 	DBC_REQUIRE(!dev_obj || (dev_obj->cod_mgr == NULL));
- 
--	status = cod_create(&dev_obj->cod_mgr, sz_dummy_file, NULL);
-+	status = cod_create(&dev_obj->cod_mgr, sz_dummy_file);
- 
- 	return status;
- }
-diff --git a/drivers/staging/tidspbridge/rmgr/dbdcd.c b/drivers/staging/tidspbridge/rmgr/dbdcd.c
-index 3581a55..f01cf07 100644
---- a/drivers/staging/tidspbridge/rmgr/dbdcd.c
-+++ b/drivers/staging/tidspbridge/rmgr/dbdcd.c
-@@ -134,7 +134,7 @@ int dcd_create_manager(char *sz_zl_dll_name,
- 	DBC_REQUIRE(refs >= 0);
- 	DBC_REQUIRE(dcd_mgr);
- 
--	status = cod_create(&cod_mgr, sz_zl_dll_name, NULL);
-+	status = cod_create(&cod_mgr, sz_zl_dll_name);
- 	if (status)
- 		goto func_end;
- 
--- 
-1.6.3.3
+v1.1 is a major new release series for hwloc.  It includes many new features and changes over the v1.0.x series.  The just-released v1.0.3 is expected to be the last release of its series (see http://www.open-mpi.org/community/lists/hwloc-announce/2010/12/0010.php).
 
+The following is a summary of the changes since the v1.0 series:
+
+* API
+  + Increase HWLOC_API_VERSION to 0x00010100 so that API changes may be
+    detected at build-time.
+  + Add a memory binding interface.
+  + The cpuset API (hwloc/cpuset.h) is now deprecated. It is replaced by
+    the bitmap API (hwloc/bitmap.h) which offers the same features with more
+    generic names since it applies to CPU sets, node sets and more.
+    Backward compatibility with the cpuset API and ABI is still provided but
+    it will be removed in a future release.
+    Old types (hwloc_cpuset_t, ...) are still available as a way to clarify
+    what kind of hwloc_bitmap_t each API function manipulates.
+    Upgrading to the new API only requires to replace hwloc_cpuset_ function
+    calls with the corresponding hwloc_bitmap_ calls, with the following
+    renaming exceptions:
+    - hwloc_cpuset_cpu -> hwloc_bitmap_only
+    - hwloc_cpuset_all_but_cpu -> hwloc_bitmap_allbut
+    - hwloc_cpuset_from_string -> hwloc_bitmap_sscanf
+  + Add an `infos' array in each object to store couples of info names and
+    values. It enables generic storage of things like the old dmi board infos
+    that were previously stored in machine specific attributes.
+  + Add linesize cache attribute.
+* Features
+  + Bitmaps (and thus CPU sets and node sets) are dynamically (re-)allocated,
+    the maximal number of CPUs (HWLOC_NBMAXCPUS) has been removed.
+  + Improve the distance-based grouping code to better support irregular
+    distance matrices.
+  + Add support for device-tree to get cache information (useful on Power
+    architectures).
+* Helpers
+  + Add NVIDIA CUDA helpers in cuda.h and cudart.h to ease interoperability
+    with CUDA Runtime and Driver APIs.
+  + Add Myrinet Express helper in myriexpress.h to ease interoperability.
+* Tools
+  + lstopo now displays physical/OS indexes by default in graphical mode
+    (use -l to switch back to logical indexes). The textual output still uses
+    logical by default (use -p to switch to physical indexes).
+  + lstopo prefixes logical indexes with `L#' and physical indexes with `P#'.
+    Physical indexes are also printed as `P#N' instead of `phys=N' within
+    object attributes (in parentheses).
+  + Add a legend at the bottom of the lstopo graphical output, use --no-legend
+    to remove it.
+  + Add hwloc-ps to list process' bindings.
+  + Add --membind and --mempolicy options to hwloc-bind.
+  + Improve tools command-line options by adding a generic --input option
+    (and more) which replaces the old --xml, --synthetic and --fsys-root.
+  + Cleanup lstopo output configuration by adding --output-format.
+  + Add --intersect in hwloc-calc, and replace --objects with --largest.
+  + Add the ability to work on standard input in hwloc-calc.
+  + Add --from, --to and --at in hwloc-distrib.
+  + Add taskset-specific functions and command-line tools options to
+    manipulate CPU set strings in the format of the taskset program.
+  + Install hwloc-gather-topology.sh on Linux.
