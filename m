@@ -1,88 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757210Ab0LRXG7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 18:06:59 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42558 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752019Ab0LRXG6 (ORCPT
+	id S1757202Ab0LRXcw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 18:32:52 -0500
+Received: from elasmtp-mealy.atl.sa.earthlink.net ([209.86.89.69]:35880 "EHLO
+	elasmtp-mealy.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753139Ab0LRXcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 18:06:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=gvqzAk5VqMf1JRbuRca9wcXQ0ORbDj6BFsY90WLIDj1CAt6AEY2PyMGFDABwYTzRLC
-         JlvT69qQjrwh2JMTQAuzyzs3MrH+CFe43G7Nsx5Q/GaMEMn9Xp4Arx1WJ+2apqNGRMVe
-         OLradiT+WLmo/PJP7Fo+Lk7j2hGmiybWkc3rY=
+	Sat, 18 Dec 2010 18:32:51 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=dk20050327; d=earthlink.net;
+  b=caeuWIahucq3wcmSdRc7Iuzafo2XtU3vLu+FNDt55uDjj9oNofFMVOiV1HXkT5D1;
+  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
+Message-ID: <4D0D44A1.8090501@earthlink.net>
+Date: Sat, 18 Dec 2010 18:32:49 -0500
+From: Stephen Clark <sclark46@earthlink.net>
+Reply-To: sclark46@earthlink.net
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinoV_pL=Ygqq4qt4f8c+wsdc9r9K7rcJ58aHjD1@mail.gmail.com>
-References: <4d0662e511688484b3@agluck-desktop.sc.intel.com>
-	<AANLkTindPUkF7fCkdbqSstNHFjF3_7fEYh18nhQFx_AJ@mail.gmail.com>
-	<AANLkTim3OpjPysjdCLDuFgFOipmcxyr2ay5cvUAu5PHi@mail.gmail.com>
-	<AANLkTinpYJddhgbf7=Pw_TtGrnWaC8fwo2xv1XRsT1w7@mail.gmail.com>
-	<AANLkTimA4x8oWyq71nOxB=Otp3Y0i3Kcu27DG0ajaXUG@mail.gmail.com>
-	<AANLkTinCG+E6ZzpeRqsJP+-qvNDQXW4VZFgJ1c-sTryL@mail.gmail.com>
-	<4D0BEE1F.7020008@zytor.com>
-	<AANLkTinwFt+KDKNEYP9MWQ7wGb9qk=E2Xa3RJB3+MJnN@mail.gmail.com>
-	<AANLkTinoV_pL=Ygqq4qt4f8c+wsdc9r9K7rcJ58aHjD1@mail.gmail.com>
-Date: Sat, 18 Dec 2010 15:06:57 -0800
-Message-ID: <AANLkTikhtWjFBQmA111Q+2JGRudrRNAmegGThMagr4vF@mail.gmail.com>
-Subject: Re: [concept & "good taste" review] persistent store
-From: Tony Luck <tony.luck@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        greg@kroah.com, akpm@linux-foundation.org, ying.huang@intel.com,
-        Borislav Petkov <bp@alien8.de>, David Miller <davem@davemloft.net>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Chris Wilson <chris@chris-wilson.co.uk>
+CC: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: I915 driver locks up
+References: <4D0D1516.3040404@earthlink.net> <4D0D19FF.4020600@earthlink.net> <5b55a1$j0av6h@fmsmga002.fm.intel.com>
+In-Reply-To: <5b55a1$j0av6h@fmsmga002.fm.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec792a6045004676219dcaa965a034df12da350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
+X-Originating-IP: 69.22.83.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 18, 2010 at 10:23 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> You want to have a ring of events, and into that ring you also have a
-> "this event has been read" pointer. And you _never_ overwrite entries
-> that haven't been read yet, because quite frankly, if you get some
-> nasty memory corruption, you may end up with a thousand oopses in
-> rapid succession, and the latter ones are likely to be just fallout
-> from the earlier ones. So you definitely don't want to overwrite the
-> earlier ones, because they are more likely to contain the clues about
-> the actual original cause.
+On 12/18/2010 04:40 PM, Chris Wilson wrote:
+> On Sat, 18 Dec 2010 15:30:55 -0500, Stephen Clark<sclark46@earthlink.net>  wrote:
+>    
+>> On 12/18/2010 03:09 PM, Stephen Clark wrote:
+>>      
+>>> Hi,
+>>>
+>>> I am using 2.6.35.9-64.fc14.x86_64 running 1.3.9-1.fc14.x86_64
+>>> and am having my 945gma lock up in texture decompress according
+>>> to intel_gpu_top utility, when trying to play Myst 5.
+>>>
+>>> Any fixes on the horizon?
+>>>
+>>>        
+>> Additional data point with 2.6.37-0.rc6.git0.1.fc15.x86_64 from rawhide
+>> I get:
+>> [  307.256028] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer
+>> elapsed... GPU hung
+>> [  307.258118] [drm:i915_do_wait_request] *ERROR* i915_do_wait_request
+>> returns -11 (awaiting 27197 at 27195, next 27199)
+>> [  307.258975] [drm:i915_reset] *ERROR* Failed to reset chip.
+>>
+>> and my X screen goes weird - have to switch to vty console.
+>>      
+> Judging by your description, you've hit a bug in Mesa. Please verify the
+> bug with the current stable release (of Mesa) and file a bug report, and
+> be sure to include /sys/kernel/debug/dri/0/i915_error_state for the hang.
 >
-> At the same time, you do want to have the capability of saying "I've
-> seen this", and let it be overwritten. For example, if we end up
-> teaching syslogd or something like that to use this, syslogd would
-> write the oops to disk, do a fdatasync() on the oops file, and after
-> it's stable on disk it can mark it "read".
+> Thanks,
+> -Chris
 >
-> Also, since this is very much about persistent storage, I think any
-> events from a previous boot that still exists should be marked "read".
-> You still want to be able to read them (so marking something "read"
-> does not mean that it goes away), but if a new oops happens, you don't
-> want some old entries from long ago to stop it from being written to
-> persistent storage. So if you don't have any syslogd or any other tool
-> that saves things to disk, you'd still get the new oopses into
-> persistent storage.
->
-> Doesn't that sound like the best of both worlds?
+>    
+I had been using mesa-7.9.
+I loaded mesa-7.10 similar results. There is no
 
-It sounds like an excellent heuristic for how the platform layer
-should manage the persistent store when space is tight. But
-I think that I can still keep my /dev/pstore filesystem as a
-presentation layer to make the bits available to the user in
-a device independent way.
+/sys/kernel/debug/dri/0/i915_error_state
 
-Or perhaps the pstore layer can help with the implementation
-of the heuristic. It knows what items are in the pstore, so it
-could build & maintain the "ring" and pass the id of the least
-wanted item down to the platform layer whenever it wants to
-write a record ... with the platform layer giving a status to
-say whether it had to delete that item to make space for the
-new one?
+In fact there is nothing in the /sys/kernel/debug directory. Do I have 
+to enable
+something.
 
--Tony
+With the later kernel - things are worse X becomes totally useless it looks
+like my lcd panel lost horizontal sync. With the 2.6.25 kernel X is 
+still usable
+this makes me think at least some of the problem is kernel related.
+
+With 2.6.37-rc6 and mesa 7.10 with hardware acceleration turned off in wine-
+
+Dec 18 18:01:50 joker4 yum[5244]: Updated: mesa-libGL-7.10-0.17.fc15.x86_64
+Dec 18 18:01:52 joker4 yum[5244]: Updated: mesa-libGL-7.10-0.17.fc15.i686
+Dec 18 18:01:54 joker4 yum[5244]: Updated: mesa-libGLU-7.10-0.17.fc15.x86_64
+Dec 18 18:02:02 joker4 yum[5244]: Updated: mesa-dri-drivers-7.10-0.17.fc15.x86_6
+4
+Dec 18 18:02:03 joker4 yum[5244]: Updated: mesa-libGLU-7.10-0.17.fc15.i686
+Dec 18 18:02:11 joker4 yum[5244]: Updated: mesa-dri-drivers-7.10-0.17.fc15.i686
+Dec 18 18:04:18 joker4 kernel: [ 9603.588113] [drm:i915_hangcheck_elapsed] *ERRO
+R* Hangcheck timer elapsed... GPU hung
+Dec 18 18:04:18 joker4 kernel: [ 9603.588313] [drm:i915_do_wait_request] *ERROR*
+  i915_do_wait_request returns -5 (awaiting 379738 at 379735)
+
+
+-- 
+
+"They that give up essential liberty to obtain temporary safety,
+deserve neither liberty nor safety."  (Ben Franklin)
+
+"The course of history shows that as a government grows, liberty
+decreases."  (Thomas Jefferson)
+
+
+
