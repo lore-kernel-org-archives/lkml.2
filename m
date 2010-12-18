@@ -1,126 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757197Ab0LRWyk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 17:54:40 -0500
-Received: from science.horizon.com ([71.41.210.146]:65255 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757186Ab0LRWyk (ORCPT
+	id S1757210Ab0LRXG7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 18:06:59 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42558 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752019Ab0LRXG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 17:54:40 -0500
-Date: 18 Dec 2010 17:54:36 -0500
-Message-ID: <20101218225436.28264.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: bharrosh@panasas.com
-Subject: Re: Big git diff speedup by avoiding x86 "fast string" memcmp
-Cc: linux@horizon.com, linux-arch@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+	Sat, 18 Dec 2010 18:06:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=gvqzAk5VqMf1JRbuRca9wcXQ0ORbDj6BFsY90WLIDj1CAt6AEY2PyMGFDABwYTzRLC
+         JlvT69qQjrwh2JMTQAuzyzs3MrH+CFe43G7Nsx5Q/GaMEMn9Xp4Arx1WJ+2apqNGRMVe
+         OLradiT+WLmo/PJP7Fo+Lk7j2hGmiybWkc3rY=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinoV_pL=Ygqq4qt4f8c+wsdc9r9K7rcJ58aHjD1@mail.gmail.com>
+References: <4d0662e511688484b3@agluck-desktop.sc.intel.com>
+	<AANLkTindPUkF7fCkdbqSstNHFjF3_7fEYh18nhQFx_AJ@mail.gmail.com>
+	<AANLkTim3OpjPysjdCLDuFgFOipmcxyr2ay5cvUAu5PHi@mail.gmail.com>
+	<AANLkTinpYJddhgbf7=Pw_TtGrnWaC8fwo2xv1XRsT1w7@mail.gmail.com>
+	<AANLkTimA4x8oWyq71nOxB=Otp3Y0i3Kcu27DG0ajaXUG@mail.gmail.com>
+	<AANLkTinCG+E6ZzpeRqsJP+-qvNDQXW4VZFgJ1c-sTryL@mail.gmail.com>
+	<4D0BEE1F.7020008@zytor.com>
+	<AANLkTinwFt+KDKNEYP9MWQ7wGb9qk=E2Xa3RJB3+MJnN@mail.gmail.com>
+	<AANLkTinoV_pL=Ygqq4qt4f8c+wsdc9r9K7rcJ58aHjD1@mail.gmail.com>
+Date: Sat, 18 Dec 2010 15:06:57 -0800
+Message-ID: <AANLkTikhtWjFBQmA111Q+2JGRudrRNAmegGThMagr4vF@mail.gmail.com>
+Subject: Re: [concept & "good taste" review] persistent store
+From: Tony Luck <tony.luck@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        greg@kroah.com, akpm@linux-foundation.org, ying.huang@intel.com,
+        Borislav Petkov <bp@alien8.de>, David Miller <davem@davemloft.net>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Kyungmin Park <kmpark@infradead.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> static inline int dentry_memcmp_long(const unsigned char *cs,
-> 				const unsigned char *ct, ssize_t count)
-> {
-> 	int ret;
-> 	const unsigned long *ls = (const unsigned long *)cs;
-> 	const unsigned long *lt = (const unsigned long *)ct;
-> 
-> 	while (count > 8) {
-> 		ret = (*cs != *ct);
-> 		if (ret)
-> 			break;
-> 		cs++;
-> 		ct++;
-> 		count-=8;
-> 	}
-> 	if (count) {
-> 		unsigned long t = *ct & ((0xffffffffffffffff >> ((8 - count) * 8))
-> 		ret = (*cs != t)
-> 	}
-> 
-> 	return ret;
-> }
+On Sat, Dec 18, 2010 at 10:23 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> You want to have a ring of events, and into that ring you also have a
+> "this event has been read" pointer. And you _never_ overwrite entries
+> that haven't been read yet, because quite frankly, if you get some
+> nasty memory corruption, you may end up with a thousand oopses in
+> rapid succession, and the latter ones are likely to be just fallout
+> from the earlier ones. So you definitely don't want to overwrite the
+> earlier ones, because they are more likely to contain the clues about
+> the actual original cause.
+>
+> At the same time, you do want to have the capability of saying "I've
+> seen this", and let it be overwritten. For example, if we end up
+> teaching syslogd or something like that to use this, syslogd would
+> write the oops to disk, do a fdatasync() on the oops file, and after
+> it's stable on disk it can mark it "read".
+>
+> Also, since this is very much about persistent storage, I think any
+> events from a previous boot that still exists should be marked "read".
+> You still want to be able to read them (so marking something "read"
+> does not mean that it goes away), but if a new oops happens, you don't
+> want some old entries from long ago to stop it from being written to
+> persistent storage. So if you don't have any syslogd or any other tool
+> that saves things to disk, you'd still get the new oopses into
+> persistent storage.
+>
+> Doesn't that sound like the best of both worlds?
 
-First, let's get the code right, and use correct types, but also, there
-are some tricks to reduce the masking cost.
+It sounds like an excellent heuristic for how the platform layer
+should manage the persistent store when space is tight. But
+I think that I can still keep my /dev/pstore filesystem as a
+presentation layer to make the bits available to the user in
+a device independent way.
 
-As long as you have to mask one string, *and* don't have to worry about
-running off the end of mapped memory, there's no additional cost to
-masking both in the loop.  Just test (a ^ b) & mask.
+Or perhaps the pstore layer can help with the implementation
+of the heuristic. It knows what items are in the pstore, so it
+could build & maintain the "ring" and pass the id of the least
+wanted item down to the platform layer whenever it wants to
+write a record ... with the platform layer giving a status to
+say whether it had to delete that item to make space for the
+new one?
 
-#if 1	/* Table lookup */
-
-static unsigned long const dentry_memcmp_mask[8] = {
-#if defined(__LITTLE_ENDIAN)
-	0xff, 0xffff, 0xffffff, 0xffffffff,
-#if sizeof (unsigned long) > 4
-	0xffffffffff, 0xffffffffffff, 0xffffffffffffff, 0xffffffffffffffff
-#endif
-#elif defined(__BIG_ENDIAN)
-#if sizeof (unsigned long) == 4
-	0xff000000, 0xffff0000, 0xffffff00, 0xffffffff
-#else
-	0xff00000000000000, 0xffff000000000000,
-	0xffffff0000000000, 0xffffffff00000000,
-	0xffffffffff000000, 0xffffffffffff0000,
-	0xffffffffffffff00, 0xffffffffffffffff
-#endif
-#else
-#error undefined endianness
-#endif
-};
-
-#define dentry_memcmp_mask(count) dentry_memcmp_mask[(count)-1]
-
-#else /* In-line code */
-
-#if defined(__LITTLE_ENDIAN)
-#define dentry_memcmp_mask(count) (-1ul >> (sizeof 1ul - (count)) * 8)
-#elif defined(__BIG_ENDIAN)
-#define dentry_memcmp_mask(count) (-1ul << (sizeof 1ul - (count)) * 8)
-#else
-#error undefined endianness
-
-#endif
-
-static inline bool dentry_memcmp_long(unsigned char const *cs,
-				unsigned char const *ct, ssize_t count)
-{
-	unsigned long const *ls = (unsigned long const *)cs;
-	unsigned long const *lt = (unsigned long const *)ct;
-
-	while (count > sizeof *cs) {
-		if (*cs != *ct)
-			return true;
-		cs++;
-		ct++;
-		count -= sizeof *cs;
-	}
-	/* Last 1..8 bytes */
-	return ((*ct ^ *cs) & dentry_memcmp_mask(count)) != 0;
-}
-
-If your string is at least 8 bytes long, and the processor has fast unaligned
-loads, you can skip the mask entirely by redundantly comparing some bytes
-(although the code bloat is probably undesirable for inline code):
-
-static inline bool dentry_memcmp_long(const unsigned char *cs,
-				const unsigned char *ct, ssize_t count)
-{
-	unsigned long const *ls = (unsigned long const *)cs;
-	unsigned long const *lt = (unsigned long const *)ct;
-
-	if (count < sizeof *cs)
-		return ((*ct ^ *cs) & dentry_memcmp_mask(count)) != 0;
-
-	while (count > sizeof *cs) {
-		if (*cs != *ct)
-			return true;
-		cs++;
-		ct++;
-		count -= sizeof *cs;
-	}
-	cs = (unsigned long const *)((char const *)cs + count - sizeof *cs);
-	ct = (unsigned long const *)((char const *)ct + count - sizeof *ct);
-	return *cs != *ct;
-}
+-Tony
