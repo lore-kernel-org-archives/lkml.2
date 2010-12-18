@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751640Ab0LRFWw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 00:22:52 -0500
-Received: from mx1.vsecurity.com ([209.67.252.12]:57366 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387Ab0LRFWt (ORCPT
+	id S1752005Ab0LRFti (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 00:49:38 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48460 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166Ab0LRFtf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 00:22:49 -0500
-Subject: Re: [PATCH v2] kptr_restrict for hiding kernel pointers from
- unprivileged users
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        netdev@vger.kernel.org, jmorris@namei.org, eugeneteo@kernel.org,
-        kees.cook@canonical.com, mingo@elte.hu, davem@davemloft.net
-In-Reply-To: <20101217172231.8842f5cc.akpm@linux-foundation.org>
-References: <1292025924.2965.20.camel@Dan>
-	 <20101217164431.08f3e730.akpm@linux-foundation.org>
-	 <1292634759.9764.26.camel@Dan>
-	 <20101217172231.8842f5cc.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 18 Dec 2010 00:22:44 -0500
-Message-ID: <1292649765.10804.42.camel@dan>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 18 Dec 2010 00:49:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=JrEoAvpXMVQaWt1HWQOFIx7VLkNnP1htpJ7KqBH+PCy7bsWr3nK5t5hcIB8chKqhRh
+         CpMtR2I+qsDyDwpm9BrDHhdQubm8O4IgHrk8fJ8+Kfd78l09sAmh2cQaGdNCOOUTCLKe
+         MHDr1tYMG71NGkSY7ygSpQVusI9PbfJ6dgrRo=
+Date: Fri, 17 Dec 2010 21:49:28 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Andres Salomon <dilinger@queued.net>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org, dsd@laptop.org,
+        pgf@laptop.org, James Cameron <quozl@laptop.org>
+Subject: Re: [PATCH] psmouse: disable the synaptics extension on OLPC
+ machines.
+Message-ID: <20101218054927.GA14718@core.coreip.homeip.net>
+References: <20101217210939.19b6111a@queued.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101217210939.19b6111a@queued.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-17 at 17:22 -0800, Andrew Morton wrote:
-> On Fri, 17 Dec 2010 20:12:39 -0500
-> Dan Rosenberg <drosenberg@vsecurity.com> wrote:
+On Fri, Dec 17, 2010 at 09:09:39PM -0800, Andres Salomon wrote:
 > 
-> > > 
-> > > So what's next?  We need to convert 1,000,000 %p callsites to use %pK? 
-> > > That'll be fun.  Please consider adding a new checkpatch rule which
-> > > detects %p and asks people whether they should have used %pK.
-> > 
-> > The goal of this format specifier is specifically for pointers that are
-> > exposed to unprivileged users.  I agree that hiding all kernel pointers
-> > would be nice, but I don't expect the angry masses to ever agree to
-> > that.  For now, I'll isolate specific cases, especially in /proc, that
-> > are clear risks in terms of information leakage.  I'll also be skipping
-> > over pointers written to the syslog, since I think hiding that
-> > information is dmesg_restrict's job.
+> OLPC has switched to a Synaptics touchpad.  It turns out that it's
+> pretty useless in absolute mode.  This patch looks for an OLPC
+> system (via DMI tables), and refuses to init Synaptics mode in
+> that scenario (falling back to relative mode).
 > 
-> Well...  some administrators may wish to hide the pointer values even
-> for privileged callers.  That's a pretty trivial add-on for the code
-> which you have, and means that those admins can also suppress the
-> pointers for IRQ-time callers.  More /proc knobs :)
-> 
+> Signed-off-by: Andres Salomon <dilinger@queued.net>
 
-I can add a "2" setting that hides %pK pointers regardless of privilege
-level, which I agree is a useful option.  But because it would be built
-into the same format specifier, you still couldn't use %pK in interrupt
-context (in case the sysctl wasn't set to 2).
+Andres,
 
-> Then again, perhaps those admins would be OK if we simply disabled
-> plain old %p everywhere.  In which case we're looking at a separate
-> patch, I suggest.  
+Can we do what hgpk does and add "depend on !OLPC" to the Kconfig
+instead?
 
-I would be happy to do this from a security perspective, but I'd imagine
-there's a pretty high risk of things breaking by doing such a sweeping
-change.
+Thanks.
 
--Dan
-
+-- 
+Dmitry
