@@ -1,125 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756898Ab0LRPzx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 10:55:53 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:45524 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756263Ab0LRPzu (ORCPT
+	id S1756832Ab0LRQCz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 11:02:55 -0500
+Received: from 29.mail-out.ovh.net ([87.98.216.213]:42712 "HELO
+	29.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755628Ab0LRQCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 10:55:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=C26h2sIjMaRUTza2EaYF3p/0If3PnJGtENOygymjqAwsgabV6XPwIL0K0SO2LDHnd/
-         3DfSj7WLySpuIMUqeFBhPVvGkTYcooURa7lDn2vXU/odADz4lScB09gLWfdF7IWW9aev
-         gCcHdDnJVIXbjsTUC3/miIPJDz+dhjS9emPsQ=
-From: Jean-Michel Hautbois <jhautbois@gmail.com>
-To: davem@davemloft.net
-Cc: richard.cochran@omicron.at, shemminger@vyatta.com, tj@kernel.org,
-        randy.dunlap@oracle.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Jean-Michel Hautbois <jhautbois@gmail.com>
-Subject: [PATCH 2/2] net: phy: Fixed some checkpatch errors
-Date: Sat, 18 Dec 2010 16:55:23 +0100
-Message-Id: <1292687723-31981-2-git-send-email-jhautbois@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1292687723-31981-1-git-send-email-jhautbois@gmail.com>
-References: <1292687723-31981-1-git-send-email-jhautbois@gmail.com>
+	Sat, 18 Dec 2010 11:02:54 -0500
+Message-ID: <4D0CDB28.8090809@example.com>
+Date: Sat, 18 Dec 2010 17:02:48 +0100
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101211 Icedove/3.0.11
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: Why is networking GIT refusing me?
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 15792435045313638680
+X-Ovh-Remote: 83.6.195.8 (abbf8.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes some coding style issues (errors and warnings).
+Hello,
 
-Signed-off-by: Jean-Michel Hautbois <jhautbois@gmail.com>
----
- drivers/net/phy/phy.c |   20 ++++++++++----------
- 1 files changed, 10 insertions(+), 10 deletions(-)
+I tried to update my Linux tree with the newest networking source vand 
+tried to run:
 
-diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
-index b28f2ac..69758b4 100644
---- a/drivers/net/phy/phy.c
-+++ b/drivers/net/phy/phy.c
-@@ -33,10 +33,10 @@
- #include <linux/timer.h>
- #include <linux/workqueue.h>
- 
--#include <asm/atomic.h>
--#include <asm/io.h>
-+#include <linux/atomic.h>
-+#include <linux/io.h>
- #include <asm/irq.h>
--#include <asm/uaccess.h>
-+#include <linux/uaccess.h>
- 
- /**
-  * phy_print_status - Convenience function to print out the current phy status
-@@ -47,11 +47,11 @@ void phy_print_status(struct phy_device *phydev)
- 	pr_info("PHY: %s - Link is %s", dev_name(&phydev->dev),
- 			phydev->link ? "Up" : "Down");
- 	if (phydev->link)
--		printk(" - %d/%s", phydev->speed,
-+		pr_info(" - %d/%s", phydev->speed,
- 				DUPLEX_FULL == phydev->duplex ?
- 				"Full" : "Half");
- 
--	printk("\n");
-+	pr_info("\n");
- }
- EXPORT_SYMBOL(phy_print_status);
- 
-@@ -325,7 +325,7 @@ int phy_mii_ioctl(struct phy_device *phydev,
- 
- 	case SIOCSMIIREG:
- 		if (mii_data->phy_id == phydev->addr) {
--			switch(mii_data->reg_num) {
-+			switch (mii_data->reg_num) {
- 			case MII_BMCR:
- 				if ((val & (BMCR_RESET|BMCR_ANENABLE)) == 0)
- 					phydev->autoneg = AUTONEG_DISABLE;
-@@ -352,7 +352,7 @@ int phy_mii_ioctl(struct phy_device *phydev,
- 		}
- 
- 		phy_write(phydev, mii_data->reg_num, val);
--		
-+
- 		if (mii_data->reg_num == MII_BMCR &&
- 		    val & BMCR_RESET &&
- 		    phydev->drv->config_init) {
-@@ -471,7 +471,7 @@ static void phy_force_reduction(struct phy_device *phydev)
- 	int idx;
- 
- 	idx = phy_find_setting(phydev->speed, phydev->duplex);
--	
-+
- 	idx++;
- 
- 	idx = phy_find_valid(idx, phydev->supported);
-@@ -732,6 +732,7 @@ out_unlock:
- 	 * will not reenable interrupts.
- 	 */
- }
-+EXPORT_SYMBOL(phy_stop);
- 
- 
- /**
-@@ -762,7 +763,6 @@ void phy_start(struct phy_device *phydev)
- 	}
- 	mutex_unlock(&phydev->lock);
- }
--EXPORT_SYMBOL(phy_stop);
- EXPORT_SYMBOL(phy_start);
- 
- /**
-@@ -782,7 +782,7 @@ void phy_state_machine(struct work_struct *work)
- 	if (phydev->adjust_state)
- 		phydev->adjust_state(phydev->attached_dev);
- 
--	switch(phydev->state) {
-+	switch (phydev->state) {
- 		case PHY_DOWN:
- 		case PHY_STARTING:
- 		case PHY_READY:
+git remote add networking 
+master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
+git remote update
+
+The second one asks me if the SSH key is valid, and then asks me for the 
+root password which I obviously do not know and cannot update. Where to 
+get newest networking source by GIT?
+
+Regards,
+
+Piotr Hosowicz
+
 -- 
-1.7.0.4
-
+Z cyklu "Uroki demokracji", czyli pytania i odpowiedzi w teledurniejach:
+- Jak d³ugo trwa³a wojna sze¶ciodniowa miêdzy Izraelem a Egiptem?
+- (po d³u¿szym namy¶le): Czterna¶cie dni.
+NP: Peter Green Splinter Group - Big Change Is Gonna Come
+NB: 2.6.37-rc6-git3
