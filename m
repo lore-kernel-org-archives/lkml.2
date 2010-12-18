@@ -1,186 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757118Ab0LRRUm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 12:20:42 -0500
-Received: from mx1.vsecurity.com ([209.67.252.12]:57087 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756956Ab0LRRUj (ORCPT
+	id S1757106Ab0LRRm3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 12:42:29 -0500
+Received: from mail-bw0-f66.google.com ([209.85.214.66]:49712 "EHLO
+	mail-bw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757059Ab0LRRm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 12:20:39 -0500
-Subject: [PATCH v3] kptr_restrict for hiding kernel pointers
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Cc: jmorris@namei.org, eric.dumazet@gmail.com, tgraf@infradead.org,
-        eugeneteo@kernel.org, kees.cook@canonical.com, mingo@elte.hu,
-        davem@davemloft.net, a.p.zijlstra@chello.nl, akpm@linux-foundation.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 18 Dec 2010 12:20:34 -0500
-Message-ID: <1292692835.10804.67.camel@dan>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Sat, 18 Dec 2010 12:42:27 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Un76tSLd+sSgZ/G062Y+8UP3p+tbn6X13E6+0iZIMq3fUxJhqgNh3mSEhCkG6yzj4Q
+         X5FdLPOO1TRXj0AH0fD1Y8r9znUPk+YRzDjH48sWeWhCa6+HfVDCcML84KPdN1SsCzuY
+         uDgeHw6CIHuVoW+OVjLmD6c05mRb7Z0xeCesM=
+Message-ID: <4D0CF27F.1080601@kernel.org>
+Date: Sat, 18 Dec 2010 18:42:23 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, Jens Axboe <axboe@kernel.dk>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: [PATCH scsi-misc-2.6] sd: implement sd_check_events()
+References: <20101217122831.39300d94.sfr@canb.auug.org.au> <1292597607.2820.17.camel@mulgrave.site>
+In-Reply-To: <1292597607.2820.17.camel@mulgrave.site>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the %pK printk format specifier and
-the /proc/sys/kernel/kptr_restrict sysctl.
+Replace sd_media_change() with sd_check_events().
 
-The %pK format specifier is designed to hide exposed kernel pointers,
-specifically via /proc interfaces.  Exposing these pointers provides an
-easy target for kernel write vulnerabilities, since they reveal the
-locations of writable structures containing easily triggerable function
-pointers.  The behavior of %pK depends on the kptr_restrict sysctl.
+* Move media removed logic into set_media_not_present() and
+  media_not_present() and set sdev->changed iff an existing media is
+  removed or the device indicates UNIT_ATTENTION.
 
-If kptr_restrict is set to 0, no deviation from the standard %p behavior
-occurs.  If kptr_restrict is set to 1, if the current user (intended to
-be a reader via seq_printf(), etc.) does not have CAP_SYSLOG (which is
-currently in the LSM tree), kernel pointers using %pK are printed as
-0's.  If kptr_restrict is set to 2, kernel pointers using %pK are
-printed as 0's regardless of privileges.  Replacing with 0's was chosen
-over the default "(null)", which cannot be parsed by userland %p, which
-expects "(nil)".
+* Make sd_check_events() sets sdev->changed if previously missing
+  media becomes present.
 
+* Event is reported only if sdev->changed is set.
 
-v3 adds the "2" setting, cleans up documentation, removes the CONFIG,
-and incorporates changes and suggestions from Andrew Morton.
+This makes media presence event reported if scsi_disk->media_present
+actually changed or the device indicated UNIT_ATTENTION.  For backward
+compatibility, SDEV_EVT_MEDIA_CHANGE is generated each time
+sd_check_events() detects media change event.
 
-v2 improves checking for inappropriate context, on suggestion by Peter
-Zijlstra.  Thanks to Thomas Graf for suggesting use of a centralized
-format specifier.
-
-
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: James Morris <jmorris@namei.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Thomas Graf <tgraf@infradead.org>
-Cc: Eugene Teo <eugeneteo@kernel.org>
-Cc: Kees Cook <kees.cook@canonical.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
 ---
+Here it is.  The conflicts were due to Alan's recent patch, which was
+in the similar direction anyway.
 
- Documentation/sysctl/kernel.txt |   14 ++++++++++++++
- include/linux/kernel.h          |    2 ++
- kernel/sysctl.c                 |    9 +++++++++
- lib/vsprintf.c                  |   23 +++++++++++++++++++++++
- 4 files changed, 48 insertions(+), 0 deletions(-)
+Thanks.
 
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index 209e158..3cff47e 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -34,6 +34,7 @@ show up in /proc/sys/kernel:
- - hotplug
- - java-appletviewer           [ binfmt_java, obsolete ]
- - java-interpreter            [ binfmt_java, obsolete ]
-+- kptr_restrict
- - kstack_depth_to_print       [ X86 only ]
- - l2cr                        [ PPC only ]
- - modprobe                    ==> Documentation/debugging-modules.txt
-@@ -261,6 +262,19 @@ This flag controls the L2 cache of G3 processor boards. If
- 
- ==============================================================
- 
-+kptr_restrict:
+ drivers/scsi/sd.c |   99 +++++++++++++++++++++++++++---------------------------
+ drivers/scsi/sd.h |    1
+ 2 files changed, 50 insertions(+), 50 deletions(-)
+
+Index: work/drivers/scsi/sd.c
+===================================================================
+--- work.orig/drivers/scsi/sd.c
++++ work/drivers/scsi/sd.c
+@@ -990,30 +990,50 @@ out:
+
+ static void set_media_not_present(struct scsi_disk *sdkp)
+ {
++	if (sdkp->media_present)
++		sdkp->device->changed = 1;
+ 	sdkp->media_present = 0;
+ 	sdkp->capacity = 0;
+-	sdkp->device->changed = 1;
++}
 +
-+This toggle indicates whether restrictions are placed on
-+exposing kernel addresses via /proc and other interfaces.  When
-+kptr_restrict is set to (0), the default, there are no
-+restrictions.  When kptr_restrict is set to (1), kernel pointers
-+printed using the %pK format specifier will be replaced with 0's
-+unless the user has CAP_SYSLOG.  When kptr_restrict is set to
-+(2), kernel pointers printed using %pK will be replaced with 0's
-+regardless of privileges.
++static int media_not_present(struct scsi_disk *sdkp,
++			     struct scsi_sense_hdr *sshdr)
++{
++	if (!scsi_sense_valid(sshdr))
++		return 0;
 +
-+==============================================================
-+
- kstack_depth_to_print: (X86 only)
- 
- Controls the number of words to print when dumping the raw
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index b6de9a6..b4f4863 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -201,6 +201,8 @@ extern int sscanf(const char *, const char *, ...)
- extern int vsscanf(const char *, const char *, va_list)
- 	__attribute__ ((format (scanf, 2, 0)));
- 
-+extern int kptr_restrict;	/* for sysctl */
-+
- extern int get_option(char **str, int *pint);
- extern char *get_options(const char *str, int nints, int *ints);
- extern unsigned long long memparse(const char *ptr, char **retptr);
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 5abfa15..236fa91 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -713,6 +713,15 @@ static struct ctl_table kern_table[] = {
- 	},
- #endif
- 	{
-+		.procname	= "kptr_restrict",
-+		.data		= &kptr_restrict,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &zero,
-+		.extra2		= &two,
-+	},
-+	{
- 		.procname	= "ngroups_max",
- 		.data		= &ngroups_max,
- 		.maxlen		= sizeof (int),
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index c150d3d..b116aeb 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -936,6 +936,8 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
- 	return string(buf, end, uuid, spec);
- }
- 
-+int kptr_restrict;
-+
- /*
-  * Show a '%p' thing.  A kernel extension is that the '%p' is followed
-  * by an extra set of alphanumeric characters that are extended format
-@@ -979,6 +981,7 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
-  *       Implements a "recursive vsnprintf".
-  *       Do not use this feature without some mechanism to verify the
-  *       correctness of the format string and va_list arguments.
-+ * - 'K' For a kernel pointer that should be hidden from unprivileged users
-  *
-  * Note: The difference between 'S' and 'F' is that on ia64 and ppc64
-  * function pointers are really function descriptors, which contain a
-@@ -1035,6 +1038,26 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
- 		return buf + vsnprintf(buf, end - buf,
- 				       ((struct va_format *)ptr)->fmt,
- 				       *(((struct va_format *)ptr)->va));
-+	case 'K':
-+		/*
-+		 * %pK cannot be used in IRQ context because it tests
-+		 * CAP_SYSLOG.
-+		 */
-+		if (in_irq() || in_serving_softirq() || in_nmi())
-+			WARN_ONCE(1, "%%pK used in interrupt context.\n");
-+
-+		if (!kptr_restrict)
-+			break;		/* %pK does not obscure pointers */
-+
-+		if ((kptr_restrict != 2) && capable(CAP_SYSLOG))
-+			break;		/* privileged apps expose pointers,
-+					   unless kptr_restrict is 2 */
-+
-+		if (spec.field_width == -1) {
-+			spec.field_width = 2 * sizeof(void *);
-+			spec.flags |= ZEROPAD;
++	/* not invoked for commands that could return deferred errors */
++	switch (sshdr->sense_key) {
++	case UNIT_ATTENTION:
++		sdkp->device->changed = 1;
++		/* fall through */
++	case NOT_READY:
++		/* medium not present */
++		if (sshdr->asc == 0x3A) {
++			set_media_not_present(sdkp);
++			return 1;
 +		}
-+		return number(buf, end, 0, spec);
++	}
++	return 0;
+ }
+
+ /**
+- *	sd_media_changed - check if our medium changed
+- *	@disk: kernel device descriptor
++ *	sd_check_events - check media events
++ *	@disk: kernel device descriptor
++ *	@clearing: disk events currently being cleared
+  *
+- *	Returns 0 if not applicable or no change; 1 if change
++ *	Returns mask of DISK_EVENT_*.
+  *
+  *	Note: this function is invoked from the block subsystem.
+  **/
+-static int sd_media_changed(struct gendisk *disk)
++static unsigned int sd_check_events(struct gendisk *disk, unsigned int clearing)
+ {
+ 	struct scsi_disk *sdkp = scsi_disk(disk);
+ 	struct scsi_device *sdp = sdkp->device;
+ 	struct scsi_sense_hdr *sshdr = NULL;
+ 	int retval;
+
+-	SCSI_LOG_HLQUEUE(3, sd_printk(KERN_INFO, sdkp, "sd_media_changed\n"));
+-
+-	if (!sdp->removable)
+-		return 0;
++	SCSI_LOG_HLQUEUE(3, sd_printk(KERN_INFO, sdkp, "sd_check_events\n"));
+
+ 	/*
+ 	 * If the device is offline, don't send any commands - just pretend as
+@@ -1043,40 +1063,37 @@ static int sd_media_changed(struct gendi
+ 					      sshdr);
  	}
- 	spec.flags |= SMALL;
- 	if (spec.field_width == -1) {
 
+-	if (retval) {
++	/* failed to execute TUR, assume media not present */
++	if (host_byte(retval)) {
+ 		set_media_not_present(sdkp);
+ 		goto out;
+ 	}
 
++	if (media_not_present(sdkp, sshdr))
++		goto out;
++
+ 	/*
+ 	 * For removable scsi disk we have to recognise the presence
+-	 * of a disk in the drive. This is kept in the struct scsi_disk
+-	 * struct and tested at open !  Daniel Roche (dan@lectra.fr)
++	 * of a disk in the drive.
+ 	 */
++	if (!sdkp->media_present)
++		sdp->changed = 1;
+ 	sdkp->media_present = 1;
+-
+ out:
+ 	/*
+-	 * Report a media change under the following conditions:
++	 * sdp->changed is set under the following conditions:
+ 	 *
+-	 *	Medium is present now and wasn't present before.
+-	 *	Medium wasn't present before and is present now.
+-	 *	Medium was present at all times, but it changed while
+-	 *		we weren't looking (sdp->changed is set).
++	 *	Medium present state has changed in either direction.
++	 *	Device has indicated UNIT_ATTENTION.
+ 	 *
+-	 * If there was no medium before and there is no medium now then
+-	 * don't report a change, even if a medium was inserted and removed
+-	 * while we weren't looking.
++	 * Report SDEV_EVT_MEDIA_CHANGE too for backward compatibility.
+ 	 */
+-	retval = (sdkp->media_present != sdkp->previous_state ||
+-			(sdkp->media_present && sdp->changed));
+-	if (retval)
++	if (sdp->changed)
+ 		sdev_evt_send_simple(sdp, SDEV_EVT_MEDIA_CHANGE, GFP_KERNEL);
+-	sdkp->previous_state = sdkp->media_present;
+-
+-	/* sdp->changed indicates medium was changed or is not present */
+-	sdp->changed = !sdkp->media_present;
+ 	kfree(sshdr);
++
++	retval = sdp->changed ? DISK_EVENT_MEDIA_CHANGE : 0;
++	sdp->changed = 0;
+ 	return retval;
+ }
+
+@@ -1169,7 +1186,7 @@ static const struct block_device_operati
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl		= sd_compat_ioctl,
+ #endif
+-	.media_changed		= sd_media_changed,
++	.check_events		= sd_check_events,
+ 	.revalidate_disk	= sd_revalidate_disk,
+ 	.unlock_native_capacity	= sd_unlock_native_capacity,
+ };
+@@ -1305,23 +1322,6 @@ static int sd_done(struct scsi_cmnd *SCp
+ 	return good_bytes;
+ }
+
+-static int media_not_present(struct scsi_disk *sdkp,
+-			     struct scsi_sense_hdr *sshdr)
+-{
+-
+-	if (!scsi_sense_valid(sshdr))
+-		return 0;
+-	/* not invoked for commands that could return deferred errors */
+-	if (sshdr->sense_key != NOT_READY &&
+-	    sshdr->sense_key != UNIT_ATTENTION)
+-		return 0;
+-	if (sshdr->asc != 0x3A) /* medium not present */
+-		return 0;
+-
+-	set_media_not_present(sdkp);
+-	return 1;
+-}
+-
+ /*
+  * spinup disk - called only in sd_revalidate_disk()
+  */
+@@ -1496,7 +1496,7 @@ static void read_capacity_error(struct s
+ 	 */
+ 	if (sdp->removable &&
+ 	    sense_valid && sshdr->sense_key == NOT_READY)
+-		sdp->changed = 1;
++		set_media_not_present(sdkp);
+
+ 	/*
+ 	 * We used to set media_present to 0 here to indicate no media
+@@ -2382,8 +2382,10 @@ static void sd_probe_async(void *data, a
+
+ 	gd->driverfs_dev = &sdp->sdev_gendev;
+ 	gd->flags = GENHD_FL_EXT_DEVT;
+-	if (sdp->removable)
++	if (sdp->removable) {
+ 		gd->flags |= GENHD_FL_REMOVABLE;
++		gd->events |= DISK_EVENT_MEDIA_CHANGE;
++	}
+
+ 	add_disk(gd);
+ 	sd_dif_config_host(sdkp);
+@@ -2465,7 +2467,6 @@ static int sd_probe(struct device *dev)
+ 	sdkp->disk = gd;
+ 	sdkp->index = index;
+ 	atomic_set(&sdkp->openers, 0);
+-	sdkp->previous_state = 1;
+
+ 	if (!sdp->request_queue->rq_timeout) {
+ 		if (sdp->type != TYPE_MOD)
+Index: work/drivers/scsi/sd.h
+===================================================================
+--- work.orig/drivers/scsi/sd.h
++++ work/drivers/scsi/sd.h
+@@ -55,7 +55,6 @@ struct scsi_disk {
+ 	u8		media_present;
+ 	u8		write_prot;
+ 	u8		protection_type;/* Data Integrity Field */
+-	unsigned	previous_state : 1;
+ 	unsigned	ATO : 1;	/* state of disk ATO bit */
+ 	unsigned	WCE : 1;	/* state of disk WCE bit */
+ 	unsigned	RCD : 1;	/* state of disk RCD bit, unused */
