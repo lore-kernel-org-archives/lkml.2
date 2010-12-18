@@ -1,120 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756799Ab0LRBM7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 20:12:59 -0500
-Received: from mx1.vsecurity.com ([209.67.252.12]:55767 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755861Ab0LRBM6 (ORCPT
+	id S1756870Ab0LRBNo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 20:13:44 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54869 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756381Ab0LRBNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 20:12:58 -0500
-Subject: Re: [PATCH v2] kptr_restrict for hiding kernel pointers from
- unprivileged users
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        netdev@vger.kernel.org, jmorris@namei.org, eugeneteo@kernel.org,
-        kees.cook@canonical.com, mingo@elte.hu, davem@davemloft.net
-In-Reply-To: <20101217164431.08f3e730.akpm@linux-foundation.org>
-References: <1292025924.2965.20.camel@Dan>
-	 <20101217164431.08f3e730.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 17 Dec 2010 20:12:39 -0500
-Message-ID: <1292634759.9764.26.camel@Dan>
+	Fri, 17 Dec 2010 20:13:43 -0500
+Date: Fri, 17 Dec 2010 17:13:09 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+Cc: linux-kernel@vger.kernel.org, "Nikita V\. Youshchenko" <yoush@cs.msu.su>,
+        linuxpps@ml.enneenne.com, Rodolfo Giometti <giometti@enneenne.com>
+Subject: Re: [PATCHv6 15/16] pps: add parallel port PPS client
+Message-Id: <20101217171309.54b695a1.akpm@linux-foundation.org>
+In-Reply-To: <20101218035054.2aaac64b@apollo.gnet>
+References: <cover.1292604060.git.lasaine@lvk.cs.msu.su>
+	<5aad62a4e5290f8baa5994b227e7fe6edaa7841a.1292604060.git.lasaine@lvk.cs.msu.su>
+	<20101217161756.664b8d8b.akpm@linux-foundation.org>
+	<20101218035054.2aaac64b@apollo.gnet>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 18 Dec 2010 03:50:54 +0300
+Alexander Gordeev <lasaine@lvk.cs.msu.su> wrote:
 
-> The changelog doesn't describe why CONFIG_SECURITY_KPTR_RESTRICT
-> exists, nor why the kptr_restrict sysctl exists.  I can kinda guess why
-> this was done, but it would be much better if your reasoning was
-> present here.
+> __ Fri, 17 Dec 2010 16:17:56 -0800
+> Andrew Morton <akpm@linux-foundation.org> __________:
 > 
-> And I'd question whether we need CONFIG_SECURITY_KPTR_RESTRICT at all. 
-> Disabling it saves no memory.  Its presence just increases the level of
-> incompatibility between different vendor's kernels and potentially
-> doubles the number of kernels which distros must ship (which they of
-> course won't do).  It might be better to add a kptr_restrict=1 kernel boot
-> option (although people sometimes have problems with boot options in
-> embedded environments).
+> > On Fri, 17 Dec 2010 22:54:39 +0300
+> > Alexander Gordeev <lasaine@lvk.cs.msu.su> wrote:
+> > 
+> > > Add parallel port PPS client. It uses a standard method for capturing
+> > > timestamps for assert edge transitions: getting a timestamp soon after
+> > > an interrupt has happened. This is not a very precise source of time
+> > > information due to interrupt handling delays. However, timestamps for
+> > > clear edge transitions are much more precise because the interrupt
+> > > handler continuously polls hardware port until the transition is done.
+> > > Hardware port operations require only about 1us so the maximum error
+> > > should not exceed this value. This was my primary goal when developing
+> > > this client.
+> > > Clear edge capture could be disabled using clear_wait parameter.
+> > > 
+> > > ...
+> > >
+> > > +/* parport interrupt handler */
+> > > +static void parport_irq(void *handle)
+> > > +{
+> > > +	struct pps_event_time ts_assert, ts_clear;
+> > > +	struct pps_client_pp *dev = handle;
+> > > +	struct parport *port = dev->pardev->port;
+> > > +	unsigned int i;
+> > > +	unsigned long flags;
+> > > +
+> > > +	/* first of all we get the time stamp... */
+> > > +	pps_get_ts(&ts_assert);
+> > > +
+> > > +	if (dev->cw == 0)
+> > > +		/* clear edge capture disabled */
+> > > +		goto out_assert;
+> > > +
+> > > +	/* try capture the clear edge */
+> > > +	local_irq_save(flags);
+> > > +	/* check the signal (no signal means the pulse is lost this time) */
+> > > +	if (!signal_is_set(port)) {
+> > > +		local_irq_restore(flags);
+> > > +		dev_err(dev->pps->dev, "lost the signal\n");
+> > > +		goto out_assert;
+> > > +	}
+> > > +
+> > > +	/* poll the port until the signal is unset */
+> > > +	for (i = dev->cw; i; i--)
+> > > +		if (!signal_is_set(port)) {
+> > > +			pps_get_ts(&ts_clear);
+> > > +			local_irq_restore(flags);
+> > > +			dev->cw_err = 0;
+> > > +			goto out_both;
+> > > +		}
+> > > +	local_irq_restore(flags);
+> > 
+> > Why is this function paying around with local_irq_save()?  It's unusual
+> > and looks buggy because local_irq_save() doesn't stop other CPUs from
+> > taking an interrupt and coming in and playing with the "protected" data.
 > 
-> All that being said, distro initscripts can just set the sysctl to the
-> desired value before any non-root process has even started, but this
-> apparently is far too hard for them :(
-> 
-> Finally, the changelog and the documentation changes don't tell us the
-> full /proc path to the kptr_restrict pseudo-file.  That would be useful
-> info.  Seems that it's /proc/sys/kernel/kptr_restrict?
-> 
+> The idea is to prevent other interrupts on the same processor to
+> introduce uncontrolled time lags here. Reading from IO port is known to
+> take approximately 1us while other interrupt handlers can probably take
+> much more. So I poll the port with locally disabled interrupts to
+> ensure that the maximum lag here is 1us. All my experiments show that
+> it is in fact very precise this way given that input signal is precise.
 
-I'll send a clean-up patch tomorrow fixing the documentation issues.
-I'm also willing to take more feedback on the need for a config - this
-was the approach that was recommended to me recently with
-dmesg_restrict, but I also understand your reasoning.
+Please send along a patch which explains all this to future readers?
 
-> >
-> > ...
-> >
-> > --- a/lib/vsprintf.c
-> > +++ b/lib/vsprintf.c
-> > @@ -936,6 +936,8 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
-> >  	return string(buf, end, uuid, spec);
-> >  }
-> >  
-> > +int kptr_restrict = CONFIG_SECURITY_KPTR_RESTRICT;
-> > +
-> >  /*
-> >   * Show a '%p' thing.  A kernel extension is that the '%p' is followed
-> >   * by an extra set of alphanumeric characters that are extended format
-> > @@ -979,6 +981,7 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
-> >   *       Implements a "recursive vsnprintf".
-> >   *       Do not use this feature without some mechanism to verify the
-> >   *       correctness of the format string and va_list arguments.
-> > + * - 'K' For a kernel pointer that should be hidden from unprivileged users
-> >   *
-> >   * Note: The difference between 'S' and 'F' is that on ia64 and ppc64
-> >   * function pointers are really function descriptors, which contain a
-> > @@ -1035,6 +1038,21 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
-> >  		return buf + vsnprintf(buf, end - buf,
-> >  				       ((struct va_format *)ptr)->fmt,
-> >  				       *(((struct va_format *)ptr)->va));
-> > +	case 'K':
-> > +		if (kptr_restrict) {
-> > +			if (in_irq() || in_serving_softirq() || in_nmi())
-> > +				WARN(1, "%%pK used in interrupt context.\n");
-> > +
-> > +			else if (capable(CAP_SYSLOG))
-> > +				break;
-> 
-> And the reason why it's unusable in interrupt context is that we can't
-> meaningfully check CAP_SYSLOG from interrupt.
-> 
-> Fair enough, but this does restrict %pK's usefulness.
-> 
-> I think I'd be more comfortable with a WARN_ONCE here.  If someone
-> screws up then we don't want to spew thousands of repeated warnings at
-> our poor users - one will do.
-> 
-> 
+> Hmm. Do you want me to rewrite the parport subsystem?
 
-Agreed.
-
-> 
-> So what's next?  We need to convert 1,000,000 %p callsites to use %pK? 
-> That'll be fun.  Please consider adding a new checkpatch rule which
-> detects %p and asks people whether they should have used %pK.
-
-The goal of this format specifier is specifically for pointers that are
-exposed to unprivileged users.  I agree that hiding all kernel pointers
-would be nice, but I don't expect the angry masses to ever agree to
-that.  For now, I'll isolate specific cases, especially in /proc, that
-are clear risks in terms of information leakage.  I'll also be skipping
-over pointers written to the syslog, since I think hiding that
-information is dmesg_restrict's job.
-
-Thanks,
-Dan
+yep!  And page reclaim, writeback and readahead, please.
 
