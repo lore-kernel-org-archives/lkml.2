@@ -1,220 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708Ab0LREdA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 23:33:00 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:46997 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752310Ab0LREc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 23:32:58 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX195caRvTXB5Kf/6onnXuZOEoq/h4ynuO/DeSaI6ou
-	Li/OsPaidszFHv
-Subject: Re: Thunar crashes kernel
-From: Mike Galbraith <efault@gmx.de>
-To: Christian Hesse <mail@earthworm.de>
-Cc: linux-kernel@vger.kernel.org, thunar-dev@xfce.org
-In-Reply-To: <20101218005526.177e1617@leda.vpn.lugor.de>
-References: <20101218005526.177e1617@leda.vpn.lugor.de>
-Content-Type: multipart/mixed; boundary="=-dHX7eH2FIYX/DDIH5jXY"
-Date: Sat, 18 Dec 2010 05:32:53 +0100
-Message-Id: <1292646773.7406.19.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-X-Y-GMX-Trusted: 0
+	id S1755982Ab0LREf3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 23:35:29 -0500
+Received: from hera.kernel.org ([140.211.167.34]:53270 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751663Ab0LREfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 23:35:25 -0500
+Date: Sat, 18 Dec 2010 04:34:06 GMT
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        yinghai@kernel.org, vgoyal@redhat.com, tglx@linutronix.de,
+        hpa@linux.intel.com, sgruszka@redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, vgoyal@redhat.com, tglx@linutronix.de,
+        hpa@linux.intel.com, sgruszka@redhat.com
+In-Reply-To: <20101217195035.GE14502@redhat.com>
+References: <20101217195035.GE14502@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, kexec: Limit the crashkernel address appropriately
+Message-ID: <tip-7f8595bfacef279f06c82ec98d420ef54f2537e0@git.kernel.org>
+Git-Commit-ID: 7f8595bfacef279f06c82ec98d420ef54f2537e0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 18 Dec 2010 04:34:07 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  7f8595bfacef279f06c82ec98d420ef54f2537e0
+Gitweb:     http://git.kernel.org/tip/7f8595bfacef279f06c82ec98d420ef54f2537e0
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Thu, 16 Dec 2010 19:20:41 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 17 Dec 2010 15:04:00 -0800
 
---=-dHX7eH2FIYX/DDIH5jXY
-Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
+x86, kexec: Limit the crashkernel address appropriately
 
-On Sat, 2010-12-18 at 00:55 +0100, Christian Hesse wrote:
-> Hallo everybody,
-> 
-> I'm running kernel 2.6.36.2 from Arch Linux, patched with autogroup. It ran
-> perfectly stable so far, now I found a way to crash it:
+Keep the crash kernel address below 512 MiB for 32 bits and 896 MiB
+for 64 bits.  For 32 bits, this retains compatibility with earlier
+kernel releases, and makes it work even if the vmalloc= setting is
+adjusted.
 
-You're running a buggy version of the patch.  If you want autogroup in
-36.2, you'll want what was integrated into tip, plus a fix to that.
+For 64 bits, we should be able to increase this substantially once a
+hard-coded limit in kexec-tools is fixed.
 
-Attached is a quilt tarball of what I've got plugged into 36.2 here if
-you want to try it.
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+LKML-Reference: <20101217195035.GE14502@redhat.com>
+---
+ arch/x86/kernel/setup.c |   17 ++++++++++++++---
+ 1 files changed, 14 insertions(+), 3 deletions(-)
 
-	-Mike
-
---=-dHX7eH2FIYX/DDIH5jXY
-Content-Disposition: attachment; filename="autogroup-2.6.36.2.tar.gz"
-Content-Type: application/x-compressed-tar; name="autogroup-2.6.36.2.tar.gz"
-Content-Transfer-Encoding: base64
-
-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
-
-
---=-dHX7eH2FIYX/DDIH5jXY--
-
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 21c6746..c9089a1 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -501,7 +501,18 @@ static inline unsigned long long get_total_mem(void)
+ 	return total << PAGE_SHIFT;
+ }
+ 
+-#define DEFAULT_BZIMAGE_ADDR_MAX 0x37FFFFFF
++/*
++ * Keep the crash kernel below this limit.  On 32 bits earlier kernels
++ * would limit the kernel to the low 512 MiB due to mapping restrictions.
++ * On 64 bits, kexec-tools currently limits us to 896 MiB; increase this
++ * limit once kexec-tools are fixed.
++ */
++#ifdef CONFIG_X86_32
++# define CRASH_KERNEL_ADDR_MAX	(512 << 20)
++#else
++# define CRASH_KERNEL_ADDR_MAX	(896 << 20)
++#endif
++
+ static void __init reserve_crashkernel(void)
+ {
+ 	unsigned long long total_mem;
+@@ -520,10 +531,10 @@ static void __init reserve_crashkernel(void)
+ 		const unsigned long long alignment = 16<<20;	/* 16M */
+ 
+ 		/*
+-		 *  kexec want bzImage is below DEFAULT_BZIMAGE_ADDR_MAX
++		 *  kexec want bzImage is below CRASH_KERNEL_ADDR_MAX
+ 		 */
+ 		crash_base = memblock_find_in_range(alignment,
+-			       DEFAULT_BZIMAGE_ADDR_MAX, crash_size, alignment);
++			       CRASH_KERNEL_ADDR_MAX, crash_size, alignment);
+ 
+ 		if (crash_base == MEMBLOCK_ERROR) {
+ 			pr_info("crashkernel reservation failed - No suitable area found.\n");
