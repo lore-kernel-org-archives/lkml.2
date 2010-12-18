@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756842Ab0LRBWq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 20:22:46 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44099 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756741Ab0LRBWo (ORCPT
+	id S1756892Ab0LRBb6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 20:31:58 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:13606 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756677Ab0LRBby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 20:22:44 -0500
-Date: Fri, 17 Dec 2010 17:22:31 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        netdev@vger.kernel.org, jmorris@namei.org, eugeneteo@kernel.org,
-        kees.cook@canonical.com, mingo@elte.hu, davem@davemloft.net
-Subject: Re: [PATCH v2] kptr_restrict for hiding kernel pointers from
- unprivileged users
-Message-Id: <20101217172231.8842f5cc.akpm@linux-foundation.org>
-In-Reply-To: <1292634759.9764.26.camel@Dan>
-References: <1292025924.2965.20.camel@Dan>
-	<20101217164431.08f3e730.akpm@linux-foundation.org>
-	<1292634759.9764.26.camel@Dan>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 17 Dec 2010 20:31:54 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp03.nvidia.com on Fri, 17 Dec 2010 17:29:38 -0800
+Date: Fri, 17 Dec 2010 17:29:38 -0800
+From: rmorell@nvidia.com
+To: Greg KH <gregkh@suse.de>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Benoit Goby <benoit@android.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
+        Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>,
+        Colin Cross <ccross@android.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] USB: ehci: tegra: Align DMA transfers to 32 bytes
+Message-ID: <20101218012937.GM25105@morell.nvidia.com>
+References: <1292623129-26361-1-git-send-email-rmorell@nvidia.com>
+ <1292623129-26361-3-git-send-email-rmorell@nvidia.com>
+ <20101217223502.GB19418@suse.de>
+ <20101217224221.GE25105@morell.nvidia.com>
+ <20101217230940.GB21147@suse.de>
+ <20101217234008.GJ25105@morell.nvidia.com>
+ <20101218003747.GB16600@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101218003747.GB16600@suse.de>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Dec 2010 20:12:39 -0500
-Dan Rosenberg <drosenberg@vsecurity.com> wrote:
-
+On Fri, Dec 17, 2010 at 04:37:47PM -0800, Greg KH wrote:
+> On Fri, Dec 17, 2010 at 03:40:08PM -0800, rmorell@nvidia.com wrote:
+> > On Fri, Dec 17, 2010 at 03:09:40PM -0800, Greg KH wrote:
+> > > On Fri, Dec 17, 2010 at 02:42:21PM -0800, rmorell@nvidia.com wrote:
+> > > > On Fri, Dec 17, 2010 at 02:35:02PM -0800, Greg KH wrote:
+> > > > > On Fri, Dec 17, 2010 at 01:58:49PM -0800, Robert Morell wrote:
+> > > > > > --- a/include/linux/usb.h
+> > > > > > +++ b/include/linux/usb.h
+> > > > > > @@ -975,6 +975,7 @@ extern int usb_disabled(void);
+> > > > > >  #define URB_SETUP_MAP_SINGLE	0x00100000	/* Setup packet DMA mapped */
+> > > > > >  #define URB_SETUP_MAP_LOCAL	0x00200000	/* HCD-local setup packet */
+> > > > > >  #define URB_DMA_SG_COMBINED	0x00400000	/* S-G entries were combined */
+> > > > > > +#define URB_DRIVER_PRIVATE	0x80000000	/* For driver-private use */
+> > > > > 
+> > > > > Um, what?  You are using this for a build check, which seems pointless
+> > > > > as you already modified the code to not need this.
+> > > > > 
+> > > > > So it doesn't look like this is needed, right?
+> > > > 
+> > > > The intention was to reserve space in the URB flags for
+> > > > implementation-specific use.
+> > > 
+> > > Yes, but _which_ driver are you talking about here?  You didn't say that
+> > > this was a HCD-only flag, right?
 > > 
-> > So what's next?  We need to convert 1,000,000 %p callsites to use %pK? 
-> > That'll be fun.  Please consider adding a new checkpatch rule which
-> > detects %p and asks people whether they should have used %pK.
+> > Sorry, I may not have been clear.  I did mean HCD-only flag; its exact
+> > meaning depends on the HCD in question.  In the case of tegra-ehci, it
+> > means that a temporary buffer has been allocated that needs freeing
+> > later.
+> > 
+> > Would it make more sense if I called it URB_HCD_PRIVATE_MASK?
 > 
-> The goal of this format specifier is specifically for pointers that are
-> exposed to unprivileged users.  I agree that hiding all kernel pointers
-> would be nice, but I don't expect the angry masses to ever agree to
-> that.  For now, I'll isolate specific cases, especially in /proc, that
-> are clear risks in terms of information leakage.  I'll also be skipping
-> over pointers written to the syslog, since I think hiding that
-> information is dmesg_restrict's job.
+> How about naming it what it is being used for?
 
-Well...  some administrators may wish to hide the pointer values even
-for privileged callers.  That's a pretty trivial add-on for the code
-which you have, and means that those admins can also suppress the
-pointers for IRQ-time callers.  More /proc knobs :)
+Sure, I can do that.  I was just trying to avoid polluting the general
+USB namespace with HCD-specific constants, but I'll send out a revised
+patchset with this change.
 
-Then again, perhaps those admins would be OK if we simply disabled
-plain old %p everywhere.  In which case we're looking at a separate
-patch, I suggest.  
-
+Thanks,
+Robert
