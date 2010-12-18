@@ -1,151 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932192Ab0LRUOa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 15:14:30 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:46831 "EHLO e6.ny.us.ibm.com"
+	id S932168Ab0LRUQL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 15:16:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42387 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932126Ab0LRUO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 15:14:29 -0500
-Date: Sat, 18 Dec 2010 12:14:19 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com
-Subject: Re: [PATCH RFC tip/core/rcu 13/20] rcu: increase
- synchronize_sched_expedited() batching
-Message-ID: <20101218201419.GD2143@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20101217205433.GA10199@linux.vnet.ibm.com>
- <1292619291-2468-13-git-send-email-paulmck@linux.vnet.ibm.com>
- <4D0CDD93.7040907@kernel.org>
+	id S932156Ab0LRUQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Dec 2010 15:16:09 -0500
+Date: Sat, 18 Dec 2010 21:08:50 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 5/5] sched: Reduce ttwu rq->lock contention
+Message-ID: <20101218200850.GA17684@redhat.com>
+References: <20101216150920.968046926@chello.nl> <20101216184229.GA15889@redhat.com> <1292525893.2708.50.camel@laptop> <1292526220.2708.55.camel@laptop> <1292528874.2708.85.camel@laptop> <1292531553.2708.89.camel@laptop> <20101217165414.GA8997@redhat.com> <1292607781.2266.295.camel@twins> <1292609740.2266.323.camel@twins> <AANLkTik86z7NZCqkYU1JY1NUW3qxthaBohY3CNk6awEd@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4D0CDD93.7040907@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTik86z7NZCqkYU1JY1NUW3qxthaBohY3CNk6awEd@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 18, 2010 at 05:13:07PM +0100, Tejun Heo wrote:
-> Hello,
-> 
-> On 12/17/2010 09:54 PM, Paul E. McKenney wrote:
-> > From: Tejun Heo <tj@kernel.org>
-> > 
-> > The fix in commit #6a0cc49 requires more than three concurrent instances
-> > of synchronize_sched_expedited() before batching is possible.  This
-> > patch uses a ticket-counter-like approach that is also not unrelated to
-> > Lai Jiangshan's Ring RCU to allow sharing of expedited grace periods even
-> > when there are only two concurrent instances of synchronize_sched_expedited().
-> > 
-> > This commit builds on Tejun's original posting, which may be found at
-> > http://lkml.org/lkml/2010/11/9/204, adding memory barriers, avoiding
-> > overflow of signed integers (other than via atomic_t), and fixing the
-> > detection of batching.
-> > 
-> > Signed-off-by: Tejun Heo <tj@kernel.org>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> Acked-by: Tejun Heo <tj@kernel.org>
+On 12/18, Yong Zhang wrote:
+>
+> On Sat, Dec 18, 2010 at 2:15 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> >
+> > static int
+> > try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+> > {
+> >        unsigned long flags;
+> >        int cpu, ret = 0;
+> >
+> >        smp_wmb();
+> >        raw_spin_lock_irqsave(&p->pi_lock, flags);
+> >
+> >        if (!(p->state & state))
+> >                goto unlock;
+> >
+> >        ret = 1; /* we qualify as a proper wakeup now */
+>
+> Could below happen in this __window__?
+>
+> p is going through wake_event
 
-Thank you again!
+I don't think this can happen with wait_event/wake_up/etc,
+wait_queue_head_t->lock adds the necessary synchronization.
 
-> Some comments on the sequence testing tho.
-> 
-> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> > index 49e8e16..af56148 100644
-> > --- a/include/linux/rcupdate.h
-> > +++ b/include/linux/rcupdate.h
-> > @@ -47,6 +47,8 @@
-> >  extern int rcutorture_runnable; /* for sysctl */
-> >  #endif /* #ifdef CONFIG_RCU_TORTURE_TEST */
-> >  
-> > +#define UINT_CMP_GE(a, b)	(UINT_MAX / 2 >= (a) - (b))
-> > +#define UINT_CMP_LT(a, b)	(UINT_MAX / 2 < (a) - (b))
-> >  #define ULONG_CMP_GE(a, b)	(ULONG_MAX / 2 >= (a) - (b))
-> >  #define ULONG_CMP_LT(a, b)	(ULONG_MAX / 2 < (a) - (b))
-> 
-> I don't think the original comparison had overflow problem.  (a) < (b)
-> gives the wrong result on overflow but (int)((a) - (b)) < 0 is
-> correct.
+But, in general,
 
-You are right that it does give the correct result now, but the C
-standard never has defined overflow for signed integers, as noted in
-Section 6.3.1.3p3 of the N1494 Working Draft of the C standard:
+> and it first set TASK_UNINTERRUPTIBLE,
+> then waker see that and above if (!(p->state & state)) passed.
+> But at this time condition == true for p, and p return to run and
+> intend to sleep:
+>           p->state == XXX;
+>           sleep;
+>
+> then we could wake up a process which has wrong state, no?
 
-	Otherwise, the new type is signed and the value cannot be
-	represented in it; either the result is implementation-defined
-	or an implementation-defined signal is raised.
+I think this is possible, and this is possible whatever we do.
+Afaics, this patch changes nothing in this sense. Consider:
 
-I have heard too many compiler guys gleefully discussing optimizations
-that they could use if they took full advantage of this clause, so I
-am not comfortable relying on the intuitive semantics for signed
-arithmetic.  (Now atomic_t is another story -- both C and C++ will
-be requiring twos-complement semantics, thankfully.)
+	set_current_state(TASK_INTERRUPTIBLE);
 
-> I find the latter approach cleaner and that way the constant in the
-> instruction can be avoided too although if the compiler might generate
-> the same code regardless.
+	set_current_state(TASK_UNINTERRUPTIBLE);
+	schedule();
 
-I would like your way better if it was defined in the C standard.
-But it unfortunately is not.  :-(
+wake_up_state(TASK_INTERRUPTIBLE) in between can in fact wakeup
+this task in TASK_UNINTERRUPTIBLE state.
 
-> Also, I think the names are misleading.  They aren't testing whether
-> one is greater or less than the other.  They're testing whether one is
-> before or after the other where the counters are used as monotonically
-> incrementing (with wrapping) sequence, so wouldn't something like the
-> following be better?
+I do not think this is the problem. The user of wake_up_process()
+should take care and write the correct code ;) And in any case,
+any wait-event-like code should handle the spurious wakeups
+correctly.
 
-They are comparing the twos-complement difference between the two
-numbers against zero.
+Or I missed your point?
 
-> #define SEQ_TEST(a, b, test_op)	({					\
-> 	typeof(a) __seq_a = (a);					\
-> 	typeof(b) __seq_b = (b);					\
-> 	bool __ret;							\
-> 	(void)(&__seq_a == &__seq_b);					\
-> 	switch (sizeof(__seq_a)) {					\
-> 		case sizeof(char):					\
-> 			__ret = (char)(__seq_a - __seq_b) test_op 0;	\
-> 			break;						\
-> 		case sizeof(int):					\
-> 			__ret = (int)(__seq_a - __seq_b) test_op 0;	\
-> 			break;						\
-> 		case sizeof(long):					\
-> 			__ret = (long)(__seq_a - __seq_b) test_op 0;	\
-> 			break;						\
-> 		case sizeof(long long):					\
-> 			__ret = (long long)(__seq_a - __seq_b) test_op 0; \
-> 			break;						\
-> 		default:						\
-> 			__make_build_fail;				\
-> 	}								\
-> 	__ret;								\
-> })
-> 
-> #define SEQ_BEFORE(a, b)	SEQ_TEST((a), (b), <)
->  and so on...
-> 
-> Please note that the above macro is completely untested.
+Oleg.
 
-If you make something similar to these macros, but in a way that avoids
-overflowing signed integers, I would be happy to use it.  Might be a
-good addition to compiler.h, for example.
-
-							Thanx, Paul
-
-> Thanks.
-> 
-> -- 
-> tejun
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
