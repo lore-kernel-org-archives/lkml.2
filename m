@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704Ab0LRPcL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 10:32:11 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:33745 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756432Ab0LRPcJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 10:32:09 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=PZOhaTjVYl2+VxvoXRdQt8t7K6iaJP1QgOFhBRmEedL/w0ryGrtkxCg1kVMBH3YZ6R
-         /wcK2UBQCa+H/0bblpCggmZtWH12D09aCX+hyIvOn5H91UH7sNhgB5SC6sf8FXiNU2nW
-         IHIF6ublkgr11/vvdQ4Ctp67oakskxRCxCkNw=
-Message-ID: <4D0CD3F5.1020401@kernel.org>
-Date: Sat, 18 Dec 2010 16:32:05 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1756303Ab0LRPdm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 10:33:42 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:57656 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753349Ab0LRPdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Dec 2010 10:33:41 -0500
+Date: Sat, 18 Dec 2010 16:33:26 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, fweisbec@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>, akpm@linux-foundation.org,
+        dannf@hp.com
+Subject: Re: [PATCH] x86, nmi_watchdog:  Remove ARCH_HAS_NMI_WATCHDOG and
+ rely on CONFIG_HARDLOCKUP_DETECTOR
+Message-ID: <20101218153326.GA15675@elte.hu>
+References: <1292602853-21412-1-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: akpm@linux-foundation.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [cpuops cmpxchg V2 3/5] irq_work: Use per cpu atomics instead
- of regular atomics
-References: <20101214162842.542421046@linux.com> <20101214162854.218751478@linux.com>
-In-Reply-To: <20101214162854.218751478@linux.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292602853-21412-1-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2010 05:28 PM, Christoph Lameter wrote:
-> The irq work queue is a per cpu object and it is sufficient for
-> synchronization if per cpu atomics are used. Doing so simplifies
-> the code and reduces the overhead of the code.
-> 
-> Before:
-> 
-> christoph@linux-2.6$ size kernel/irq_work.o
->    text	   data	    bss	    dec	    hex	filename
->     451	      8	      1	    460	    1cc	kernel/irq_work.o
-> 
-> After:
-> 
-> christoph@linux-2.6$ size kernel/irq_work.o 
->    text	   data	    bss	    dec	    hex	filename
->     438	      8	      1	    447	    1bf	kernel/irq_work.o
-> 
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Applied 3 and 4 to percpu#for-2.6.38.
+* Don Zickus <dzickus@redhat.com> wrote:
 
-Thank you.
+> The x86 arch has shifted its use of the nmi_watchdog from a local implementation 
+> to the global one provide by kernel/watchdog.c.  This shift has caused a whole 
+> bunch of compile problems under different config options.  I attempt to simplify 
+> things with the patch below.
 
--- 
-tejun
+ok, this patch is looking better - but even after applying it to -tip (and resolving 
+the conflict) i get this link failure on 64-bit allyesconfig:
+
+watchdog.c:(.text+0x7eacc): undefined reference to `hw_nmi_get_sample_period'
+
+Thanks,
+
+	Ingo
