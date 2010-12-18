@@ -1,194 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753664Ab0LRIRQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 03:17:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28997 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752962Ab0LRIRO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 03:17:14 -0500
-Date: Sat, 18 Dec 2010 09:17:07 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-Subject: Re: mmotm 2010-12-16-14-56 uploaded (hugetlb)
-Message-ID: <20101218081707.GX1671@random.random>
-References: <201012162329.oBGNTdPY006808@imap1.linux-foundation.org>
- <20101217143316.fa36be7d.randy.dunlap@oracle.com>
- <20101217145334.3d67d80b.akpm@linux-foundation.org>
- <20101217233740.GR1671@random.random>
- <4D0C0043.7090408@oracle.com>
- <20101217165834.447cc096.akpm@linux-foundation.org>
+	id S1753938Ab0LRIus (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 03:50:48 -0500
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:51913 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751251Ab0LRIuq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Dec 2010 03:50:46 -0500
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Sat, 18 Dec 2010 09:48:12 +0100
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Ping Cheng <pingc@wacom.com>,
+        Chris Bagwell <chris@cnpbagwell.com>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: introduce device information ioctl
+Message-ID: <20101218084812.GA7297@polaris.bitmath.org>
+References: <1292531413-28924-1-git-send-email-rydberg@euromail.se>
+ <20101217193935.GB2576@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101217165834.447cc096.akpm@linux-foundation.org>
+In-Reply-To: <20101217193935.GB2576@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: 83.248.200.95
+X-Scan-Result: No virus found in message 1PTsSe-0002xj-3K.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PTsSe-0002xj-3K aa105da734570ee409cb84836ef2ac00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
-
-On Fri, Dec 17, 2010 at 04:58:34PM -0800, Andrew Morton wrote:
-> The first one millionth:
+On Fri, Dec 17, 2010 at 11:39:36AM -0800, Dmitry Torokhov wrote:
+> On Thu, Dec 16, 2010 at 09:30:13PM +0100, Henrik Rydberg wrote:
+> > Today, userspace sets up an input device based on the data it emits.
+> > This is not always enough; a tablet and a touchscreen may emit exactly
+> > the same data, for instance, but the former should be set up with a
+> > pointer whereas the latter does not need to. Recently, a new type of
+> > touchpad has emerged where the buttons are under the pad, which
+> > changes handling logic without changing the emitted data. This patch
+> > introduces a new ioctl, EVIOCGPROP, which enables user access to a set
+> > of device properties useful during setup. The properties are given as
+> > a bitmap in the same fashion as the event types, and are also made
+> > available via sysfs.
+> > 
 > 
-> include/asm-generic/pgtable.h: In function 'ptep_get_and_clear':
-> include/asm-generic/pgtable.h:77: error: expected statement before ')' token
-> include/asm-generic/pgtable.h:94: error: invalid storage class for function 'pmdp_get_and_clear'
+> Looks good to me.
 > 
-> Due to thp-add-pmd-mangling-generic-functions.patch
+> Could you please also wire up /proc/bus/input/devices to show new
+> 'props' (I think we could use  "B: PROP=" tags for them) and also to the
+> uevent handler?
 
-Here two fixes for the um build.
+Sure thing. Regarding the devices file, it would have been nice if an
+entry could be used to reproduce the device exactly. Currently, the
+ABS limits are missing. Should we add them as well?
 
-This is thp-add-pmd-mangling-generic-functions-fix.patch. I hope I'm
-not asking for more build troubles down the road insisting on inline
-and returning (pmd_t) { 0 } instead of converting it back to a
-preprocessor macro.
-
-========
-Subject: thp: fix pgtable.h build for um
-
-From: Andrea Arcangeli <aarcange@redhat.com>
-
-make ARCH=um failed because of some typo error in newly written code to cleanup
-asm-generic/pgtable.h but that was never compiled in on x86/x64 without um.
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
-
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -74,7 +74,7 @@ static inline pte_t ptep_get_and_clear(s
- 	pte_t pte = *ptep;
- 	pte_clear(mm, address, ptep);
- 	return pte;
--)
-+}
- #endif
- 
- #ifndef __HAVE_ARCH_PMDP_GET_AND_CLEAR
-@@ -93,7 +93,7 @@ static inline pmd_t pmdp_get_and_clear(s
- 				       pmd_t *pmdp)
- {
- 	BUG();
--	return 0;
-+	return (pmd_t){ 0 };
- }
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
- #endif
-diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
---- a/mm/pgtable-generic.c
-+++ b/mm/pgtable-generic.c
-@@ -29,7 +29,7 @@ int ptep_set_access_flags(struct vm_area
- 		flush_tlb_page(vma, address);
- 	}
- 	return changed;
--})
-+}
- #endif
- 
- #ifndef __HAVE_ARCH_PMDP_SET_ACCESS_FLAGS
-
-
-
-This one is thp-pte-alloc-trans-splitting-fix.patch
-
-======
-Subject: thp: fix pte_alloc_map
-
-From: Andrea Arcangeli <aarcange@redhat.com>
-
-vma can be NULL safely for archs not implementing THP.
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
-
-diff --git a/arch/arm/mm/pgd.c b/arch/arm/mm/pgd.c
---- a/arch/arm/mm/pgd.c
-+++ b/arch/arm/mm/pgd.c
-@@ -52,7 +52,7 @@ pgd_t *get_pgd_slow(struct mm_struct *mm
- 		if (!new_pmd)
- 			goto no_pmd;
- 
--		new_pte = pte_alloc_map(mm, new_pmd, 0);
-+		new_pte = pte_alloc_map(mm, NULL, new_pmd, 0);
- 		if (!new_pte)
- 			goto no_pte;
- 
-diff --git a/arch/ia64/mm/hugetlbpage.c b/arch/ia64/mm/hugetlbpage.c
---- a/arch/ia64/mm/hugetlbpage.c
-+++ b/arch/ia64/mm/hugetlbpage.c
-@@ -38,7 +38,7 @@ huge_pte_alloc(struct mm_struct *mm, uns
- 	if (pud) {
- 		pmd = pmd_alloc(mm, pud, taddr);
- 		if (pmd)
--			pte = pte_alloc_map(mm, pmd, taddr);
-+			pte = pte_alloc_map(mm, NULL, pmd, taddr);
- 	}
- 	return pte;
- }
-diff --git a/arch/sh/mm/hugetlbpage.c b/arch/sh/mm/hugetlbpage.c
---- a/arch/sh/mm/hugetlbpage.c
-+++ b/arch/sh/mm/hugetlbpage.c
-@@ -35,7 +35,7 @@ pte_t *huge_pte_alloc(struct mm_struct *
- 		if (pud) {
- 			pmd = pmd_alloc(mm, pud, addr);
- 			if (pmd)
--				pte = pte_alloc_map(mm, pmd, addr);
-+				pte = pte_alloc_map(mm, NULL, pmd, addr);
- 		}
- 	}
- 
-diff --git a/arch/sparc/mm/generic_32.c b/arch/sparc/mm/generic_32.c
---- a/arch/sparc/mm/generic_32.c
-+++ b/arch/sparc/mm/generic_32.c
-@@ -50,7 +50,7 @@ static inline int io_remap_pmd_range(str
- 		end = PGDIR_SIZE;
- 	offset -= address;
- 	do {
--		pte_t * pte = pte_alloc_map(mm, pmd, address);
-+		pte_t * pte = pte_alloc_map(mm, NULL, pmd, address);
- 		if (!pte)
- 			return -ENOMEM;
- 		io_remap_pte_range(mm, pte, address, end - address, address + offset, prot, space);
-diff --git a/arch/sparc/mm/generic_64.c b/arch/sparc/mm/generic_64.c
---- a/arch/sparc/mm/generic_64.c
-+++ b/arch/sparc/mm/generic_64.c
-@@ -92,7 +92,7 @@ static inline int io_remap_pmd_range(str
- 		end = PGDIR_SIZE;
- 	offset -= address;
- 	do {
--		pte_t * pte = pte_alloc_map(mm, pmd, address);
-+		pte_t * pte = pte_alloc_map(mm, NULL, pmd, address);
- 		if (!pte)
- 			return -ENOMEM;
- 		io_remap_pte_range(mm, pte, address, end - address, address + offset, prot, space);
-diff --git a/arch/sparc/mm/hugetlbpage.c b/arch/sparc/mm/hugetlbpage.c
---- a/arch/sparc/mm/hugetlbpage.c
-+++ b/arch/sparc/mm/hugetlbpage.c
-@@ -214,7 +214,7 @@ pte_t *huge_pte_alloc(struct mm_struct *
- 	if (pud) {
- 		pmd = pmd_alloc(mm, pud, addr);
- 		if (pmd)
--			pte = pte_alloc_map(mm, pmd, addr);
-+			pte = pte_alloc_map(mm, NULL, pmd, addr);
- 	}
- 	return pte;
- }
-diff --git a/arch/um/kernel/skas/mmu.c b/arch/um/kernel/skas/mmu.c
---- a/arch/um/kernel/skas/mmu.c
-+++ b/arch/um/kernel/skas/mmu.c
-@@ -31,7 +31,7 @@ static int init_stub_pte(struct mm_struc
- 	if (!pmd)
- 		goto out_pmd;
- 
--	pte = pte_alloc_map(mm, pmd, proc);
-+	pte = pte_alloc_map(mm, NULL, pmd, proc);
- 	if (!pte)
- 		goto out_pte;
- 
-
-
-Let me know if there are further build troubles, thanks!
-Andrea
+Henrik
