@@ -1,79 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756742Ab0LRAwx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 19:52:53 -0500
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:32808 "EHLO
-	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756221Ab0LRAwt (ORCPT
+	id S1756782Ab0LRAxf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 19:53:35 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48986 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756582Ab0LRAxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 19:52:49 -0500
-X-Spam-ASN: 
-Date: Sat, 18 Dec 2010 03:52:39 +0300
-From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "Nikita V\. Youshchenko" <yoush@cs.msu.su>,
-        linuxpps@ml.enneenne.com, Rodolfo Giometti <giometti@enneenne.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org
-Subject: Re: [PATCHv6 16/16] pps: add parallel port PPS signal generator
-Message-ID: <20101218035239.11d59828@apollo.gnet>
-In-Reply-To: <20101217161837.5f083e73.akpm@linux-foundation.org>
-References: <cover.1292604060.git.lasaine@lvk.cs.msu.su>
-	<c297ae1ac0479685b45191c950317a0cc3406822.1292604060.git.lasaine@lvk.cs.msu.su>
-	<20101217161837.5f083e73.akpm@linux-foundation.org>
-Organization: LVK
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	Fri, 17 Dec 2010 19:53:32 -0500
+Date: Fri, 17 Dec 2010 16:53:19 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        netdev@vger.kernel.org, jmorris@namei.org, eugeneteo@kernel.org,
+        kees.cook@canonical.com, mingo@elte.hu, davem@davemloft.net
+Subject: Re: [PATCH v2] kptr_restrict for hiding kernel pointers from
+ unprivileged users
+Message-Id: <20101217165319.98670d66.akpm@linux-foundation.org>
+In-Reply-To: <1292025924.2965.20.camel@Dan>
+References: <1292025924.2965.20.camel@Dan>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA256;
- boundary="Sig_/Z5+BbRBqum/zTwhIUQboU7w"; protocol="application/pgp-signature"
-X-AV-Checked: ClamAV using ClamSMTP
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Z5+BbRBqum/zTwhIUQboU7w
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Fri, 10 Dec 2010 19:05:24 -0500
+Dan Rosenberg <drosenberg@vsecurity.com> wrote:
 
-=D0=92 Fri, 17 Dec 2010 16:18:37 -0800
-Andrew Morton <akpm@linux-foundation.org> =D0=BF=D0=B8=D1=88=D0=B5=D1=82:
+> +	case 'K':
+> +		if (kptr_restrict) {
+> +			if (in_irq() || in_serving_softirq() || in_nmi())
+> +				WARN(1, "%%pK used in interrupt context.\n");
+> +
+> +			else if (capable(CAP_SYSLOG))
+> +				break;
+> +
+> +			if (spec.field_width == -1) {
+> +				spec.field_width = 2 * sizeof(void *);
+> +				spec.flags |= ZEROPAD;
+> +			}
+> +			return number(buf, end, 0, spec);
+> +		}
+> +		break;
 
-> On Fri, 17 Dec 2010 22:54:40 +0300
-> Alexander Gordeev <lasaine@lvk.cs.msu.su> wrote:
->=20
-> > +static enum hrtimer_restart hrtimer_event(struct hrtimer *timer)
-> > +{
-> > +	struct timespec expire_time, ts1, ts2, ts3, dts;
-> > +	struct pps_generator_pp *dev;
-> > +	struct parport *port;
-> > +	long lim, delta;
-> > +	unsigned long flags;
-> > +
-> > +	/* NB: approx time with blocked interrupts =3D
-> > +	   send_delay + 3 * SAFETY_INTERVAL */
-> > +	local_irq_save(flags);
->=20
-> ditto.
+Also, we should emit the runtime warning even if kptr_restrict is
+false.  Otherwise programmers might ship buggy code because they didn't
+enable kptr_restrict during testing.
 
-The same thing here: we don't want random lags due to other local
-interrupt handlers.
+So what I ended up with was
 
---=20
-  Alexander
+	case 'K':
+		/*
+		 * %pK cannot be used in IRQ context because it tests
+		 * CAP_SYSLOG.
+		 */
+		if (in_irq() || in_serving_softirq() || in_nmi())
+			WARN_ONCE(1, "%%pK used in interrupt context.\n");
 
---Sig_/Z5+BbRBqum/zTwhIUQboU7w
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+		if (!kptr_restrict)
+			break;		/* %pK does not obscure pointers */
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+		if (capable(CAP_SYSLOG))
+			break;		/* privileged apps expose pointers */
 
-iQEcBAEBCAAGBQJNDAXXAAoJEElrwznyooJbN5oH/2rYzKi3+W0oH6y3KNBSm8kU
-LlgplvXKFzEjoVzgHhvR0kxdo6Y26ab+iTMOmdkYsgqsDFbY+7xr6DpAUWBQqbvJ
-AoC6D36OjR4TFm3TztS8Ejcnqi1fqVAMOXlmUzglC+YBNKpaEeS4r0emgGiCpCZz
-Nhs9M470IG8WTJuom3THEhDCLPMD6UasCClod9ommq6yC3dEaWDj86k9UjRggD/6
-5mHEcej6weWDLVwwVRIRkPelACMW39lxhD/2pAsc9WcQcccCcf6+COgqsZtFk+6o
-k4kloMMlg0fqKpqdAbU0mnMK61l5Swm4Fjp8e7FlRx/NHMdtqzHBIdpJvzPssZw=
-=wjKp
------END PGP SIGNATURE-----
+		if (spec.field_width == -1) {
+			spec.field_width = 2 * sizeof(void *);
+			spec.flags |= ZEROPAD;
+		}
+		return number(buf, end, 0, spec);
 
---Sig_/Z5+BbRBqum/zTwhIUQboU7w--
+How does that look?
+
+
+Also...  permitting root to bypass the %pK obscuring seems pretty lame,
+really.  I bet a *lot* of the existing %p sites are already root-only
+(eg, driver initialisation).  So much of the value is lost.
