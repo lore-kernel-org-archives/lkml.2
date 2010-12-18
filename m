@@ -1,74 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab0LRAlH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 19:41:07 -0500
-Received: from cantor.suse.de ([195.135.220.2]:48332 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756487Ab0LRAlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 19:41:04 -0500
-Date: Fri, 17 Dec 2010 16:37:47 -0800
-From: Greg KH <gregkh@suse.de>
-To: rmorell@nvidia.com
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-        Benoit Goby <benoit@android.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
-        Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>,
-        Colin Cross <ccross@android.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] USB: ehci: tegra: Align DMA transfers to 32 bytes
-Message-ID: <20101218003747.GB16600@suse.de>
-References: <1292623129-26361-1-git-send-email-rmorell@nvidia.com>
- <1292623129-26361-3-git-send-email-rmorell@nvidia.com>
- <20101217223502.GB19418@suse.de>
- <20101217224221.GE25105@morell.nvidia.com>
- <20101217230940.GB21147@suse.de>
- <20101217234008.GJ25105@morell.nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101217234008.GJ25105@morell.nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756689Ab0LRAo5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 19:44:57 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45737 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751979Ab0LRAoy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 19:44:54 -0500
+Date: Fri, 17 Dec 2010 16:44:31 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        netdev@vger.kernel.org, jmorris@namei.org, eugeneteo@kernel.org,
+        kees.cook@canonical.com, mingo@elte.hu, davem@davemloft.net
+Subject: Re: [PATCH v2] kptr_restrict for hiding kernel pointers from
+ unprivileged users
+Message-Id: <20101217164431.08f3e730.akpm@linux-foundation.org>
+In-Reply-To: <1292025924.2965.20.camel@Dan>
+References: <1292025924.2965.20.camel@Dan>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 03:40:08PM -0800, rmorell@nvidia.com wrote:
-> On Fri, Dec 17, 2010 at 03:09:40PM -0800, Greg KH wrote:
-> > On Fri, Dec 17, 2010 at 02:42:21PM -0800, rmorell@nvidia.com wrote:
-> > > On Fri, Dec 17, 2010 at 02:35:02PM -0800, Greg KH wrote:
-> > > > On Fri, Dec 17, 2010 at 01:58:49PM -0800, Robert Morell wrote:
-> > > > > --- a/include/linux/usb.h
-> > > > > +++ b/include/linux/usb.h
-> > > > > @@ -975,6 +975,7 @@ extern int usb_disabled(void);
-> > > > >  #define URB_SETUP_MAP_SINGLE	0x00100000	/* Setup packet DMA mapped */
-> > > > >  #define URB_SETUP_MAP_LOCAL	0x00200000	/* HCD-local setup packet */
-> > > > >  #define URB_DMA_SG_COMBINED	0x00400000	/* S-G entries were combined */
-> > > > > +#define URB_DRIVER_PRIVATE	0x80000000	/* For driver-private use */
-> > > > 
-> > > > Um, what?  You are using this for a build check, which seems pointless
-> > > > as you already modified the code to not need this.
-> > > > 
-> > > > So it doesn't look like this is needed, right?
-> > > 
-> > > The intention was to reserve space in the URB flags for
-> > > implementation-specific use.
-> > 
-> > Yes, but _which_ driver are you talking about here?  You didn't say that
-> > this was a HCD-only flag, right?
+On Fri, 10 Dec 2010 19:05:24 -0500
+Dan Rosenberg <drosenberg@vsecurity.com> wrote:
+
+> The below patch adds the %pK format specifier, the
+> CONFIG_SECURITY_KPTR_RESTRICT configuration option, and the
+> kptr_restrict sysctl.
 > 
-> Sorry, I may not have been clear.  I did mean HCD-only flag; its exact
-> meaning depends on the HCD in question.  In the case of tegra-ehci, it
-> means that a temporary buffer has been allocated that needs freeing
-> later.
+> The %pK format specifier is designed to hide exposed kernel pointers
+> from unprivileged users, specifically via /proc interfaces.  Its
+> behavior depends on the kptr_restrict sysctl, whose default value
+> depends on CONFIG_SECURITY_KPTR_RESTRICT.  If kptr_restrict is set to 0,
+> no deviation from the standard %p behavior occurs.  If kptr_restrict is
+> set to 1, if the current user (intended to be a reader via seq_printf(),
+> etc.) does not have CAP_SYSLOG (which is currently in the LSM tree),
+> kernel pointers using %pK are printed as 0's.  This was chosen over the
+> default "(null)", which cannot be parsed by userland %p, which expects
+> "(nil)".
 > 
-> Would it make more sense if I called it URB_HCD_PRIVATE_MASK?
+> v2 improves checking for inappropriate context, on suggestion by Peter
+> Zijlstra.  Thanks to Thomas Graf for suggesting use of a centralized
+> format specifier.
 
-How about naming it what it is being used for?
+The changelog doesn't describe why CONFIG_SECURITY_KPTR_RESTRICT
+exists, nor why the kptr_restrict sysctl exists.  I can kinda guess why
+this was done, but it would be much better if your reasoning was
+present here.
 
-thanks,
+And I'd question whether we need CONFIG_SECURITY_KPTR_RESTRICT at all. 
+Disabling it saves no memory.  Its presence just increases the level of
+incompatibility between different vendor's kernels and potentially
+doubles the number of kernels which distros must ship (which they of
+course won't do).  It might be better to add a kptr_restrict=1 kernel boot
+option (although people sometimes have problems with boot options in
+embedded environments).
 
-greg k-h
+All that being said, distro initscripts can just set the sysctl to the
+desired value before any non-root process has even started, but this
+apparently is far too hard for them :(
+
+Finally, the changelog and the documentation changes don't tell us the
+full /proc path to the kptr_restrict pseudo-file.  That would be useful
+info.  Seems that it's /proc/sys/kernel/kptr_restrict?
+
+>
+> ...
+>
+> --- a/lib/vsprintf.c
+> +++ b/lib/vsprintf.c
+> @@ -936,6 +936,8 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
+>  	return string(buf, end, uuid, spec);
+>  }
+>  
+> +int kptr_restrict = CONFIG_SECURITY_KPTR_RESTRICT;
+> +
+>  /*
+>   * Show a '%p' thing.  A kernel extension is that the '%p' is followed
+>   * by an extra set of alphanumeric characters that are extended format
+> @@ -979,6 +981,7 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
+>   *       Implements a "recursive vsnprintf".
+>   *       Do not use this feature without some mechanism to verify the
+>   *       correctness of the format string and va_list arguments.
+> + * - 'K' For a kernel pointer that should be hidden from unprivileged users
+>   *
+>   * Note: The difference between 'S' and 'F' is that on ia64 and ppc64
+>   * function pointers are really function descriptors, which contain a
+> @@ -1035,6 +1038,21 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+>  		return buf + vsnprintf(buf, end - buf,
+>  				       ((struct va_format *)ptr)->fmt,
+>  				       *(((struct va_format *)ptr)->va));
+> +	case 'K':
+> +		if (kptr_restrict) {
+> +			if (in_irq() || in_serving_softirq() || in_nmi())
+> +				WARN(1, "%%pK used in interrupt context.\n");
+> +
+> +			else if (capable(CAP_SYSLOG))
+> +				break;
+
+And the reason why it's unusable in interrupt context is that we can't
+meaningfully check CAP_SYSLOG from interrupt.
+
+Fair enough, but this does restrict %pK's usefulness.
+
+I think I'd be more comfortable with a WARN_ONCE here.  If someone
+screws up then we don't want to spew thousands of repeated warnings at
+our poor users - one will do.
+
+
+
+So what's next?  We need to convert 1,000,000 %p callsites to use %pK? 
+That'll be fun.  Please consider adding a new checkpatch rule which
+detects %p and asks people whether they should have used %pK.
+
+
