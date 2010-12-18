@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756716Ab0LRA23 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 19:28:29 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:25949 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756446Ab0LRA22 (ORCPT
+	id S1756719Ab0LRA3r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 19:29:47 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:39013 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756446Ab0LRA3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 19:28:28 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAN+OC03O+J1F/2dsb2JhbACkMnS+WoVKBIRlhhyHdg
-X-IronPort-AV: E=Sophos;i="4.60,191,1291611600"; 
-   d="scan'208";a="85767145"
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Jens Axboe <jaxboe@fusionio.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org
-Cc: Shane Michael Matthews <shane.matthews@intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>
-Subject: [PATCH] Add readpages support for block devices
-Date: Fri, 17 Dec 2010 19:27:53 -0500
-Message-Id: <1292632073-6196-1-git-send-email-willy@linux.intel.com>
-X-Mailer: git-send-email 1.7.2.3
+	Fri, 17 Dec 2010 19:29:46 -0500
+Message-ID: <4D0C0043.7090408@oracle.com>
+Date: Fri, 17 Dec 2010 16:28:51 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+Subject: Re: mmotm 2010-12-16-14-56 uploaded (hugetlb)
+References: <201012162329.oBGNTdPY006808@imap1.linux-foundation.org> <20101217143316.fa36be7d.randy.dunlap@oracle.com> <20101217145334.3d67d80b.akpm@linux-foundation.org> <20101217233740.GR1671@random.random>
+In-Reply-To: <20101217233740.GR1671@random.random>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shane Michael Matthews <shane.matthews@intel.com>
+On 12/17/10 15:37, Andrea Arcangeli wrote:
+> Hello,
+> 
+> On Fri, Dec 17, 2010 at 02:53:34PM -0800, Andrew Morton wrote:
+>> afacit, CONFIG_HUGETLBFS must be enabled if CONFIG_HUGETLB_PAGE=y, and
+>> thp-config_transparent_hugepage.patch broke that, by permitting
+>> CONFIG_HUGETLBFS=n, CONFIG_HUGETLB_PAGE=y,
+>> CONFIG_TRANSPARENT_HUGEPAGE=y.
+> 
+> CONFIG_HUGETLBFS and CONFIG_HUGETLB_PAGE existed before, and
+> HUGETLBFS=n && HUGETLB_PAGE=y used to build just fine, I clearly
+> didn't try a build with HUGETLBFS=n recently.
+> 
+>> There's lots of stuff in hugetlb.h which is clearly related to
+>> hugetlbfs, but is enabled by CONFIG_HUGETLB_PAGE, so those things seem
+>> to be pretty joined at the hip nowadays.
+> 
+> Yes, it used to build just fine but I guess after the last hugetlbfs
+> updates I'm getting flood of errors no matter how I adjust things.
+> hugetlbfs code who needs some fixup here.
 
-Using mpage_readpages instead of multiple calls to blkdev_readpage reduces
-the CPU utilisation by 35% when using dd to clone a drive.
+I see a real *flood* of errors when I try building ARCH=um SUBARCH={i386|x86_64}:
 
-Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
-Signed-off-by: Shane Michael Matthews <shane.matthews@intel.com>
----
- fs/block_dev.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+> grep -c error: UM*/build*
+UM32/build-defcfg.out:454539
+UM64/build-defcfg.out:453707
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 4230252..55cf932 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -318,6 +318,12 @@ static int blkdev_readpage(struct file * file, struct page * page)
- 	return block_read_full_page(page, blkdev_get_block);
- }
- 
-+static int blkdev_readpages(struct file *file, struct address_space *mapping,
-+			struct list_head *pages, unsigned nr_pages)
-+{
-+	return mpage_readpages(mapping, pages, nr_pages, blkdev_get_block);
-+}
-+
- static int blkdev_write_begin(struct file *file, struct address_space *mapping,
- 			loff_t pos, unsigned len, unsigned flags,
- 			struct page **pagep, void **fsdata)
-@@ -1634,6 +1640,7 @@ static int blkdev_releasepage(struct page *page, gfp_t wait)
- 
- static const struct address_space_operations def_blk_aops = {
- 	.readpage	= blkdev_readpage,
-+	.readpages	= blkdev_readpages,
- 	.writepage	= blkdev_writepage,
- 	.sync_page	= block_sync_page,
- 	.write_begin	= blkdev_write_begin,
+
 -- 
-1.7.2.3
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
