@@ -1,60 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932184Ab0LRUN6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 15:13:58 -0500
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:55800 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932083Ab0LRUN4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 15:13:56 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Sat, 18 Dec 2010 21:13:14 +0100
-To: Ping Cheng <pinglinux@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Chris Bagwell <chris@cnpbagwell.com>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: introduce device information ioctl
-Message-ID: <20101218201313.GA1675@polaris.bitmath.org>
-References: <1292531413-28924-1-git-send-email-rydberg@euromail.se>
- <AANLkTimj3h_oVSj_QA5V=qB7WXXifbWcFtEgA6+6zPZc@mail.gmail.com>
+	id S932192Ab0LRUOa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 15:14:30 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:46831 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932126Ab0LRUO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Dec 2010 15:14:29 -0500
+Date: Sat, 18 Dec 2010 12:14:19 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com
+Subject: Re: [PATCH RFC tip/core/rcu 13/20] rcu: increase
+ synchronize_sched_expedited() batching
+Message-ID: <20101218201419.GD2143@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20101217205433.GA10199@linux.vnet.ibm.com>
+ <1292619291-2468-13-git-send-email-paulmck@linux.vnet.ibm.com>
+ <4D0CDD93.7040907@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTimj3h_oVSj_QA5V=qB7WXXifbWcFtEgA6+6zPZc@mail.gmail.com>
+In-Reply-To: <4D0CDD93.7040907@kernel.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Originating-IP: 83.248.200.95
-X-Scan-Result: No virus found in message 1PU39e-0004Ib-9X.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PU39e-0004Ib-9X 627ce7775e1b535f2543d57586fa143c
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 11:24:44AM -0800, Ping Cheng wrote:
-> On Thu, Dec 16, 2010 at 12:30 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> > Today, userspace sets up an input device based on the data it emits.
-> > This is not always enough; a tablet and a touchscreen may emit exactly
-> > the same data, for instance, but the former should be set up with a
-> > pointer whereas the latter does not need to. Recently, a new type of
-> > touchpad has emerged where the buttons are under the pad, which
-> > changes handling logic without changing the emitted data. This patch
-> > introduces a new ioctl, EVIOCGPROP, which enables user access to a set
-> > of device properties useful during setup. The properties are given as
-> > a bitmap in the same fashion as the event types, and are also made
-> > available via sysfs.
-> >
-> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+On Sat, Dec 18, 2010 at 05:13:07PM +0100, Tejun Heo wrote:
+> Hello,
 > 
-> Reviewed-by: Ping Cheng <pingc@wacom.com>
+> On 12/17/2010 09:54 PM, Paul E. McKenney wrote:
+> > From: Tejun Heo <tj@kernel.org>
+> > 
+> > The fix in commit #6a0cc49 requires more than three concurrent instances
+> > of synchronize_sched_expedited() before batching is possible.  This
+> > patch uses a ticket-counter-like approach that is also not unrelated to
+> > Lai Jiangshan's Ring RCU to allow sharing of expedited grace periods even
+> > when there are only two concurrent instances of synchronize_sched_expedited().
+> > 
+> > This commit builds on Tejun's original posting, which may be found at
+> > http://lkml.org/lkml/2010/11/9/204, adding memory barriers, avoiding
+> > overflow of signed integers (other than via atomic_t), and fixing the
+> > detection of batching.
+> > 
+> > Signed-off-by: Tejun Heo <tj@kernel.org>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > 
-> I wonder if we need to mention this new ioctl somewhere under
-> Documentation/input or not. INPUT_PROP_SEMI_MT could add useful
-> information for multi-touch-protocol.txt. The others could play a role
-> in Chase's new Documentation/input/evdev-codes.txt.
+> Acked-by: Tejun Heo <tj@kernel.org>
 
-Thank you, Ping - I added an acked-by to the last version by mistake,
-instead of a reviewed-by. Is that alright with you? And yes, I think the
-properties need to be documented somewhere.
+Thank you again!
 
-Henrik
+> Some comments on the sequence testing tho.
+> 
+> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> > index 49e8e16..af56148 100644
+> > --- a/include/linux/rcupdate.h
+> > +++ b/include/linux/rcupdate.h
+> > @@ -47,6 +47,8 @@
+> >  extern int rcutorture_runnable; /* for sysctl */
+> >  #endif /* #ifdef CONFIG_RCU_TORTURE_TEST */
+> >  
+> > +#define UINT_CMP_GE(a, b)	(UINT_MAX / 2 >= (a) - (b))
+> > +#define UINT_CMP_LT(a, b)	(UINT_MAX / 2 < (a) - (b))
+> >  #define ULONG_CMP_GE(a, b)	(ULONG_MAX / 2 >= (a) - (b))
+> >  #define ULONG_CMP_LT(a, b)	(ULONG_MAX / 2 < (a) - (b))
+> 
+> I don't think the original comparison had overflow problem.  (a) < (b)
+> gives the wrong result on overflow but (int)((a) - (b)) < 0 is
+> correct.
+
+You are right that it does give the correct result now, but the C
+standard never has defined overflow for signed integers, as noted in
+Section 6.3.1.3p3 of the N1494 Working Draft of the C standard:
+
+	Otherwise, the new type is signed and the value cannot be
+	represented in it; either the result is implementation-defined
+	or an implementation-defined signal is raised.
+
+I have heard too many compiler guys gleefully discussing optimizations
+that they could use if they took full advantage of this clause, so I
+am not comfortable relying on the intuitive semantics for signed
+arithmetic.  (Now atomic_t is another story -- both C and C++ will
+be requiring twos-complement semantics, thankfully.)
+
+> I find the latter approach cleaner and that way the constant in the
+> instruction can be avoided too although if the compiler might generate
+> the same code regardless.
+
+I would like your way better if it was defined in the C standard.
+But it unfortunately is not.  :-(
+
+> Also, I think the names are misleading.  They aren't testing whether
+> one is greater or less than the other.  They're testing whether one is
+> before or after the other where the counters are used as monotonically
+> incrementing (with wrapping) sequence, so wouldn't something like the
+> following be better?
+
+They are comparing the twos-complement difference between the two
+numbers against zero.
+
+> #define SEQ_TEST(a, b, test_op)	({					\
+> 	typeof(a) __seq_a = (a);					\
+> 	typeof(b) __seq_b = (b);					\
+> 	bool __ret;							\
+> 	(void)(&__seq_a == &__seq_b);					\
+> 	switch (sizeof(__seq_a)) {					\
+> 		case sizeof(char):					\
+> 			__ret = (char)(__seq_a - __seq_b) test_op 0;	\
+> 			break;						\
+> 		case sizeof(int):					\
+> 			__ret = (int)(__seq_a - __seq_b) test_op 0;	\
+> 			break;						\
+> 		case sizeof(long):					\
+> 			__ret = (long)(__seq_a - __seq_b) test_op 0;	\
+> 			break;						\
+> 		case sizeof(long long):					\
+> 			__ret = (long long)(__seq_a - __seq_b) test_op 0; \
+> 			break;						\
+> 		default:						\
+> 			__make_build_fail;				\
+> 	}								\
+> 	__ret;								\
+> })
+> 
+> #define SEQ_BEFORE(a, b)	SEQ_TEST((a), (b), <)
+>  and so on...
+> 
+> Please note that the above macro is completely untested.
+
+If you make something similar to these macros, but in a way that avoids
+overflowing signed integers, I would be happy to use it.  Might be a
+good addition to compiler.h, for example.
+
+							Thanx, Paul
+
+> Thanks.
+> 
+> -- 
+> tejun
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
