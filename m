@@ -1,55 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab0LRLi5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 06:38:57 -0500
-Received: from ix.technologeek.org ([213.41.157.215]:54664 "EHLO
-	sonic.technologeek.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755249Ab0LRLi4 (ORCPT
+	id S1755853Ab0LRLj0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 06:39:26 -0500
+Received: from smtp-vbr9.xs4all.nl ([194.109.24.29]:1833 "EHLO
+	smtp-vbr9.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755689Ab0LRLjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 06:38:56 -0500
-X-Greylist: delayed 566 seconds by postgrey-1.27 at vger.kernel.org; Sat, 18 Dec 2010 06:38:55 EST
-From: Julien BLACHE <jb@jblache.org>
-To: "Henrik Rydberg" <rydberg@euromail.se>
-Cc: Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        "lm-sensors\@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: Re: [lm-sensors] [PATCH 1/2 V3] applesmc: Use PnP rather than hardcoding resources and devices
-References: <20101217221618.GA13207@ericsson.com>
-	<1292624661-32474-1-git-send-email-mjg@redhat.com>
-	<20101218042320.GA14104@ericsson.com>
-	<20101218093719.GA1493@polaris.bitmath.org>
-	<20101218110954.7a2ca190@endymion.delvare>
-	<20101218103139.GA1668@polaris.bitmath.org>
-Date: Sat, 18 Dec 2010 12:29:52 +0100
-In-Reply-To: <20101218103139.GA1668@polaris.bitmath.org> (Henrik Rydberg's
-	message of "Sat, 18 Dec 2010 11:31:39 +0100")
-Message-ID: <878vzngvyn.fsf@sonic.technologeek.org>
-User-Agent: Gnus/5.110009 (No Gnus v0.9) XEmacs/21.4.22 (linux)
+	Sat, 18 Dec 2010 06:39:23 -0500
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: manjunatha_halli@ti.com
+Subject: Re: [PATCH v7 2/7] drivers:media:radio: wl128x: fmdrv_v4l2 sources
+Date: Sat, 18 Dec 2010 12:38:55 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.32-23-generic; KDE/4.4.5; x86_64; ; )
+Cc: mchehab@infradead.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+References: <1292583996-4440-1-git-send-email-manjunatha_halli@ti.com> <1292583996-4440-2-git-send-email-manjunatha_halli@ti.com> <1292583996-4440-3-git-send-email-manjunatha_halli@ti.com>
+In-Reply-To: <1292583996-4440-3-git-send-email-manjunatha_halli@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012181238.56021.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Henrik Rydberg" <rydberg@euromail.se> wrote:
+On Friday, December 17, 2010 12:06:31 manjunatha_halli@ti.com wrote:
+> From: Manjunatha Halli <manjunatha_halli@ti.com>
+> 
+> This module interfaces V4L2 subsystem and FM common module.
+> It registers itself with V4L2 as Radio module.
+> 
+> Signed-off-by: Manjunatha Halli <manjunatha_halli@ti.com>
+> ---
+>  drivers/media/radio/wl128x/fmdrv_v4l2.c |  588 +++++++++++++++++++++++++++++++
+>  drivers/media/radio/wl128x/fmdrv_v4l2.h |   33 ++
+>  2 files changed, 621 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/media/radio/wl128x/fmdrv_v4l2.c
+>  create mode 100644 drivers/media/radio/wl128x/fmdrv_v4l2.h
+> 
+> diff --git a/drivers/media/radio/wl128x/fmdrv_v4l2.c b/drivers/media/radio/wl128x/fmdrv_v4l2.c
+> new file mode 100644
+> index 0000000..623102f
+> --- /dev/null
+> +++ b/drivers/media/radio/wl128x/fmdrv_v4l2.c
 
-Hi,
+<snip>
 
->> Which applications? libsensors-based applications definitely don't
->> hard-wire anything.
->
-> The ones I am thinking of are pommed and macfanctld, there are
-> probably others. The sysfs nodes have been around a while, so it is
-> not really surprising. If there is a policy saying it is ok to break
-> userspace in this case, that's fine.
+> +static const struct v4l2_file_operations fm_drv_fops = {
+> +	.owner = THIS_MODULE,
+> +	.read = fm_v4l2_fops_read,
+> +	.write = fm_v4l2_fops_write,
+> +	.poll = fm_v4l2_fops_poll,
+> +	.ioctl = video_ioctl2,
 
-I've just changed pommed to probe for applesmc through /sys/class/hwmon,
-so you can go ahead and break it as far as I'm concerned :)
+Please use unlocked_ioctl. The .ioctl call is deprecated since it relied on the
+Big Kernel Lock which is in the process of being removed from the kernel. The
+BKL serialized all ioctl calls, unlocked_ioctl relies on the driver to serialize
+where necessary.
 
-JB.
+There are two ways of doing the conversion: one is to do all the locking within
+the driver, the other is to use core-assisted locking. How to do the core-assisted
+locking is described in Documentation/video4linux/v4l2-framework.txt, but I'll
+repeat the relevant part here:
+
+v4l2_file_operations and locking
+--------------------------------
+
+You can set a pointer to a mutex_lock in struct video_device. Usually this
+will be either a top-level mutex or a mutex per device node. If you want
+finer-grained locking then you have to set it to NULL and do you own locking.
+
+If a lock is specified then all file operations will be serialized on that
+lock. If you use videobuf then you must pass the same lock to the videobuf
+queue initialize function: if videobuf has to wait for a frame to arrive, then
+it will temporarily unlock the lock and relock it afterwards. If your driver
+also waits in the code, then you should do the same to allow other processes
+to access the device node while the first process is waiting for something.
+
+The implementation of a hotplug disconnect should also take the lock before
+calling v4l2_device_disconnect.
+
+> +	.open = fm_v4l2_fops_open,
+> +	.release = fm_v4l2_fops_release,
+> +};
+
+Regards,
+
+	Hans
 
 -- 
-Julien BLACHE                                   <http://www.jblache.org> 
-<jb@jblache.org>                                  GPG KeyID 0xF5D65169
+Hans Verkuil - video4linux developer - sponsored by Cisco
