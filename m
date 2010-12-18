@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932179Ab0LRUKD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 15:10:03 -0500
-Received: from elasmtp-junco.atl.sa.earthlink.net ([209.86.89.63]:47248 "EHLO
-	elasmtp-junco.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932083Ab0LRUKC (ORCPT
+	id S932184Ab0LRUN6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 15:13:58 -0500
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:55800 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932083Ab0LRUN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 15:10:02 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=earthlink.net;
-  b=CqUEpW9Usg6cgYqHPB3TGD2VQYE2J08F49XYqCkhMVMFt2Pbj7yk1ZBJTOLBkMWO;
-  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:Subject:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
-Message-ID: <4D0D1516.3040404@earthlink.net>
-Date: Sat, 18 Dec 2010 15:09:58 -0500
-From: Stephen Clark <sclark46@earthlink.net>
-Reply-To: sclark46@earthlink.net
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Sat, 18 Dec 2010 15:13:56 -0500
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Sat, 18 Dec 2010 21:13:14 +0100
+To: Ping Cheng <pinglinux@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Chris Bagwell <chris@cnpbagwell.com>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: introduce device information ioctl
+Message-ID: <20101218201313.GA1675@polaris.bitmath.org>
+References: <1292531413-28924-1-git-send-email-rydberg@euromail.se>
+ <AANLkTimj3h_oVSj_QA5V=qB7WXXifbWcFtEgA6+6zPZc@mail.gmail.com>
 MIME-Version: 1.0
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: I915 driver locks up
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec79868d4e0ad7bac251f71464752e549c8a350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 69.22.83.66
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimj3h_oVSj_QA5V=qB7WXXifbWcFtEgA6+6zPZc@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: 83.248.200.95
+X-Scan-Result: No virus found in message 1PU39e-0004Ib-9X.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PU39e-0004Ib-9X 627ce7775e1b535f2543d57586fa143c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Dec 17, 2010 at 11:24:44AM -0800, Ping Cheng wrote:
+> On Thu, Dec 16, 2010 at 12:30 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> > Today, userspace sets up an input device based on the data it emits.
+> > This is not always enough; a tablet and a touchscreen may emit exactly
+> > the same data, for instance, but the former should be set up with a
+> > pointer whereas the latter does not need to. Recently, a new type of
+> > touchpad has emerged where the buttons are under the pad, which
+> > changes handling logic without changing the emitted data. This patch
+> > introduces a new ioctl, EVIOCGPROP, which enables user access to a set
+> > of device properties useful during setup. The properties are given as
+> > a bitmap in the same fashion as the event types, and are also made
+> > available via sysfs.
+> >
+> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> 
+> Reviewed-by: Ping Cheng <pingc@wacom.com>
+> 
+> I wonder if we need to mention this new ioctl somewhere under
+> Documentation/input or not. INPUT_PROP_SEMI_MT could add useful
+> information for multi-touch-protocol.txt. The others could play a role
+> in Chase's new Documentation/input/evdev-codes.txt.
 
-I am using 2.6.35.9-64.fc14.x86_64 running 1.3.9-1.fc14.x86_64
-and am having my 945gma lock up in texture decompress according
-to intel_gpu_top utility, when trying to play Myst 5.
+Thank you, Ping - I added an acked-by to the last version by mistake,
+instead of a reviewed-by. Is that alright with you? And yes, I think the
+properties need to be documented somewhere.
 
-Any fixes on the horizon?
-
--- 
-
-"They that give up essential liberty to obtain temporary safety,
-deserve neither liberty nor safety."  (Ben Franklin)
-
-"The course of history shows that as a government grows, liberty
-decreases."  (Thomas Jefferson)
-
-
-
+Henrik
