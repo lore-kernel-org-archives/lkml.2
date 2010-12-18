@@ -1,71 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838Ab0LRBAO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 20:00:14 -0500
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:51382 "EHLO
-	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756381Ab0LRBAL (ORCPT
+	id S1756853Ab0LRBBY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 20:01:24 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33311 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756381Ab0LRBBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 20:00:11 -0500
-X-Spam-ASN: 
-Date: Sat, 18 Dec 2010 04:00:01 +0300
-From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "Nikita V\. Youshchenko" <yoush@cs.msu.su>,
-        linuxpps@ml.enneenne.com, Rodolfo Giometti <giometti@enneenne.com>
-Subject: Re: [PATCHv6 00/16] pps: several fixes and improvements
-Message-ID: <20101218040001.7b4a1bc0@apollo.gnet>
-In-Reply-To: <20101217161938.9247e433.akpm@linux-foundation.org>
-References: <cover.1292604060.git.lasaine@lvk.cs.msu.su>
-	<20101217161938.9247e433.akpm@linux-foundation.org>
-Organization: LVK
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA256;
- boundary="Sig_/XaqTwwJfnMAw4c9sh/hVt3l"; protocol="application/pgp-signature"
-X-AV-Checked: ClamAV using ClamSMTP
+	Fri, 17 Dec 2010 20:01:21 -0500
+Message-ID: <4D0C075B.3040501@kernel.org>
+Date: Fri, 17 Dec 2010 16:59:07 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>
+CC: Suresh Siddha <suresh.b.siddha@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: [PATCH 3/3] memblock: Make find_memory_core_early() find from top-down
+References: <4D0C0336.9010009@kernel.org>
+In-Reply-To: <4D0C0336.9010009@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/XaqTwwJfnMAw4c9sh/hVt3l
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
 
-=D0=92 Fri, 17 Dec 2010 16:19:38 -0800
-Andrew Morton <akpm@linux-foundation.org> =D0=BF=D0=B8=D1=88=D0=B5=D1=82:
+That is used for find ram in node or bootmem type.
 
-> On Fri, 17 Dec 2010 22:54:24 +0300
-> Alexander Gordeev <lasaine@lvk.cs.msu.su> wrote:
->=20
-> > There is one problem however: kernel consumer works bad (if enabled)
-> > when CONFIG_NO_HZ is enabled. The reason for this is commit
-> > a092ff0f90cae22b2ac8028ecd2c6f6c1a9e4601. Without it hardpps() is able
-> > to sync to 1us precision in about 10 seconds. With CONFIG_NO_HZ it is
-> > not syncing at all. This only affects patches 12-14, others are ok.
->=20
-> Is someone working on fixing all this?
+We should make it top-down so it will be consistent to memblock_find.
 
-Not right now but it is planned. I can only ensure that users can never
-select CONFIG_NO_HZ and CONFIG_NTP_PPS at the same time. Is it ok?
+Suggested-by: Jeremy Fitzhardinge <jeremy@goop.org>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
---=20
-  Alexander
+---
+ mm/page_alloc.c |   34 +++++++++++++++++++++++++++++++++-
+ 1 file changed, 33 insertions(+), 1 deletion(-)
 
---Sig_/XaqTwwJfnMAw4c9sh/hVt3l
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBCAAGBQJNDAeRAAoJEElrwznyooJbBggIAJLNp6QCcdvQSICHk0lN7AC8
-A0XijdFcRKI8X7+iZz4r4VheK8tx0CkS9d7nUNE/AkwNoo2pr5KSHhaVPtWzrAZ2
-n0Gy7Bf1rh06C/E3LSn2xY2JU2e6FUjtxO3fEUVQRgEXFpN4WLPELsjfYnA2WuPZ
-b8D5PvCTspewbo+ws7Y7/QggpAhRi63ZckDVY9W6++QDJtxI+pGxBogxZ6f8nszd
-UuCLHo5/xZeb0rNJOZu0ke2Q1XnWg7NQVeiXNMhOwiTM31vWU6t99d0KsBM4+Tqh
-pgPlwEBxiWeP9INvLs55D6loBD+KHtFwN0DeuQ14l299mCFaFdIW88NW+SgmD1E=
-=xHQR
------END PGP SIGNATURE-----
-
---Sig_/XaqTwwJfnMAw4c9sh/hVt3l--
+Index: linux-2.6/mm/page_alloc.c
+===================================================================
+--- linux-2.6.orig/mm/page_alloc.c
++++ linux-2.6/mm/page_alloc.c
+@@ -3556,6 +3556,34 @@ static int __meminit next_active_region_
+ 	return -1;
+ }
+ 
++/*
++ * Basic iterator support. Return the last range of PFNs for a node
++ * Note: nid == MAX_NUMNODES returns last region regardless of node
++ */
++static int __meminit last_active_region_index_in_nid(int nid)
++{
++	int i;
++
++	for (i = nr_nodemap_entries - 1; i >= 0; i--)
++		if (nid == MAX_NUMNODES || early_node_map[i].nid == nid)
++			return i;
++
++	return -1;
++}
++
++/*
++ * Basic iterator support. Return the previous active range of PFNs for a node
++ * Note: nid == MAX_NUMNODES returns next region regardless of node
++ */
++static int __meminit previous_active_region_index_in_nid(int index, int nid)
++{
++	for (index = index - 1; index >= 0; index--)
++		if (nid == MAX_NUMNODES || early_node_map[index].nid == nid)
++			return index;
++
++	return -1;
++}
++
+ #ifndef CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID
+ /*
+  * Required by SPARSEMEM. Given a PFN, return what node the PFN is on.
+@@ -3607,6 +3635,10 @@ bool __meminit early_pfn_in_nid(unsigned
+ 	for (i = first_active_region_index_in_nid(nid); i != -1; \
+ 				i = next_active_region_index_in_nid(i, nid))
+ 
++#define for_each_active_range_index_in_nid_reverse(i, nid) \
++	for (i = last_active_region_index_in_nid(nid); i != -1; \
++				i = previous_active_region_index_in_nid(i, nid))
++
+ /**
+  * free_bootmem_with_active_regions - Call free_bootmem_node for each active range
+  * @nid: The node to free memory on. If MAX_NUMNODES, all nodes are freed.
+@@ -3645,7 +3677,7 @@ u64 __init find_memory_core_early(int ni
+ 	int i;
+ 
+ 	/* Need to go over early_node_map to find out good range for node */
+-	for_each_active_range_index_in_nid(i, nid) {
++	for_each_active_range_index_in_nid_reverse(i, nid) {
+ 		u64 addr;
+ 		u64 ei_start, ei_last;
+ 		u64 final_start, final_end;
