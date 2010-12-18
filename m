@@ -1,141 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756874Ab0LRQlP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 11:41:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56523 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754621Ab0LRQlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 11:41:14 -0500
-Subject: Re: [ANNOUNCE] TCM/LIO v4.0.0-rc6 for 2.6.37-rc6
-From: James Bottomley <James.Bottomley@suse.de>
-To: Vladislav Bolkhovitin <vst@vlnb.net>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        "Patil, Kiran" <kiran.patil@intel.com>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Boaz Harrosh <bharrosh@panasas.com>,
-        Joe Eykholt <jeykholt@cisco.com>, "J.H." <warthog9@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Bart Van Assche <bart.vanassche@gmail.com>,
-        scst-devel <scst-devel@lists.sourceforge.net>
-In-Reply-To: <4D0CD04E.30806@vlnb.net>
-References: <1292557664.31461.68.camel@haakon2.linux-iscsi.org>
-	 <1292599364.2820.21.camel@mulgrave.site>  <4D0B8975.1040206@vlnb.net>
-	 <1292602908.2820.41.camel@mulgrave.site>  <4D0BBE40.6030000@vlnb.net>
-	 <1292617658.2820.80.camel@mulgrave.site>  <4D0BD79B.2010600@vlnb.net>
-	 <1292628398.16209.25.camel@mulgrave.site>  <4D0CD04E.30806@vlnb.net>
+	id S1756907Ab0LRQrU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 11:47:20 -0500
+Received: from exchange.solarflare.com ([216.237.3.220]:47315 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754621Ab0LRQrT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Dec 2010 11:47:19 -0500
+Subject: Re: [PATCH 1/2] net: phy: balance disable/enable irq on change
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Jean-Michel Hautbois <jhautbois@gmail.com>
+Cc: davem@davemloft.net, richard.cochran@omicron.at, shemminger@vyatta.com,
+        tj@kernel.org, randy.dunlap@oracle.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1292687723-31981-1-git-send-email-jhautbois@gmail.com>
+References: <1292687723-31981-1-git-send-email-jhautbois@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 18 Dec 2010 10:41:02 -0600
-Message-ID: <1292690462.16209.54.camel@mulgrave.site>
+Organization: Solarflare Communications
+Date: Sat, 18 Dec 2010 16:47:12 +0000
+Message-ID: <1292690832.6533.39.camel@localhost>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Dec 2010 16:47:18.0891 (UTC) FILETIME=[3BCF23B0:01CB9ED3]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17836.005
+X-TM-AS-Result: No--18.369700-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-12-18 at 18:16 +0300, Vladislav Bolkhovitin wrote:
-> James Bottomley, on 12/18/2010 02:26 AM wrote:
-> > Look, let me try to make it simple:  It's not about the community you
-> > bring to the table, it's about the community you have to join when you
-> > become part of the linux kernel. The interactions in the wider
-> > community are critical to the success of an open source project.  You've
-> > had the opportunity to interact with a couple of them:  sysfs we've
-> > covered elsewhere, but in the STGT case you basically said, here's our
-> > interface, use it. LIO actually asked what they wanted and constructed
-> > something to fit.  Why are you amazed then when the STGT people seem to
-> > prefer LIO?
-> > 
-> > You've also spent a lot of time doing ad hominem attacks on people who
-> > you think disagree with you.  Christoph can be abrasive and sometimes a
-> > little tactless, but he's not often wrong on technical issues, and when
-> > he is he's usually amenable to technical argument.  He gave both LIO and
-> > SCST pointers about improvements.  LIO implemented enough that he felt
-> > comfortable sending in fairly radical cleanup patches ... again, it's no
-> > real surprise he prefers LIO to work with.
-> > 
-> > Basically, in the years we've been at this, you've failed to convince
-> > any of the key people I rely on to help maintain SCSI to advocate for
-> > SCST or even to send in patches for it ... they all seem to be either
-> > neutral or leaning towards LIO.
+On Sat, 2010-12-18 at 16:55 +0100, Jean-Michel Hautbois wrote:
+> When phy interface changes its status, it calls phy_change() function.
+> This function calls the interrupt disabling functions for the driver registered, but if this driver doesn't implement it, there is no IRQ disabling. After doing the work, we call enable_irq and not the respective driver function. This fixes it, as it could lead to an unbalanced IRQ.
 > 
-> OK, then how those years looked from our side.
+> Signed-off-by: Jean-Michel Hautbois <jhautbois@gmail.com>
+> ---
+>  drivers/net/phy/phy.c |   12 ++++++++++--
+>  1 files changed, 10 insertions(+), 2 deletions(-)
 > 
-> In the beginning decision to go on with STGT was done completely behind
-> my back. ChristophH and MikeC did review of SCST code, but from comments
-> I've seen and SCST patches Mike was preparing it was obvious for me that
-> Christoph and Mike not really understood all the tasks SCST is solving
-> and, hence why its code so complicated. Particularly, the goal of all
-> the code to provide 1:many pass-through was not understood. But nobody
-> asked me to explain. The need in the 1:many pass-through code was
-> understood only much later after
-> http://thread.gmane.org/gmane.linux.scsi/31288. The decision to go ahead
-> with STGT was just taken. I knew about it only after I accidentally saw
-> some related discussion
-> http://thread.gmane.org/gmane.linux.iscsi.iscsi-target.devel/1996/focus=2022.
-> When I tried to explain that it's wrong, I wasn't heard.
-> 
-> You were attracted by the STGT idea by 2 points:
-> 
-> 1. Minimal in-kernel maintenance effort.
-> 
-> 2. Believe that mmap'ing user space pages can provide similar
-> performance as fully in-kernel approach.
-> 
-> I disagreed with both. I wasn't heard. But it turned out that at least
-> one person in the Linux kernel community agreed with me: Linus Torvalds.
-> See http://lkml.org/lkml/2007/4/24/364 for (1) and
-> http://lkml.org/lkml/2008/2/4/253 for (2).
-> 
-> Then I kept sending SCST patches and they were ignored by you and "the
-> key people". We were told that STGT is "good enough" despite of all the
-> obvious problems it has.
+> diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
+> index 7670aac..b28f2ac 100644
+> --- a/drivers/net/phy/phy.c
+> +++ b/drivers/net/phy/phy.c
+> @@ -89,7 +89,8 @@ static int phy_config_interrupt(struct phy_device *phydev, u32 interrupts)
+>  	phydev->interrupts = interrupts;
+>  	if (phydev->drv->config_intr)
+>  		err = phydev->drv->config_intr(phydev);
+> -
+> +	else
+> +		err = -ENOSYS;
+[...]
 
-This is a slightly prismatic view of history.  Firstly, LIO had wanted
-into the kernel from way back in the PyX days and secondly, both code
-bases (LIO and STGT) were impenetrably dense, had unacceptable /proc
-interfaces plus a whole host of other nasties.  The decision to choose a
-smaller (by an order of magnitutde) and more flexible implementation
-that was in accord with all of the basic Linux necessities was a pretty
-obvious one.
+ENOSYS means missing system call.  Perhaps EOPNOTSUPP is the appropriate
+error code.
 
->From a performance point of view, (which is what the thread was about),
-I'm OK with the assertion that there is a point where kernel/user
-transitions dominate (by your own figures somewhere above 1GbE) which is
-about the only reason I'm willing to consider an in-kernel solution.
+Ben.
 
-> Then suddenly NicholasB appeared with his LIO and suddenly what I was
-> writing for years was acknowledged correct: STGT isn't good enough and
-> must be replaced by the fully in-kernel approach.
-
-I'm not sure where you read that.  I said, for performance, adding
-in-kernel components to STGT would be OK ... keeping the user space
-flexibility is still equally (or more) important.
-
-> So, it turned out that I was right all those years and convinced all the
-> key people at once by the NicholasB hands?
-> 
-> So, writing that I failed to convince any of the key people isn't quite
-> correct.
-> 
-> It looks like those years I've been staying a step ahead and wasn't
-> heard. What were the reasons for it? My limited English, which isn't my
-> native language, so I can't use it similarly correctly and clearly as
-> native Americans can? I'm working hard to improve it and, hopefully,
-> progress is noticeable. Similarly, I'm willing to improve in any other
-> area. Just tell me what should be done?
-
-Well, you and Nick have each kept repeating that about your respective
-products ... it's the Bellman gambit.  From the performance point of
-view, you're both about equal ... the Niche Features piece I've covered
-elsewhere.
-
-Fewer than half of the key players in the storage area are native
-english speakers.
-
-James
-
+-- 
+Ben Hutchings, Senior Software Engineer, Solarflare Communications
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
