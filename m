@@ -1,121 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756689Ab0LRAo5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 19:44:57 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45737 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751979Ab0LRAoy (ORCPT
+	id S1756710Ab0LRAvK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 19:51:10 -0500
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:32779 "EHLO
+	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756221Ab0LRAvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 19:44:54 -0500
-Date: Fri, 17 Dec 2010 16:44:31 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        netdev@vger.kernel.org, jmorris@namei.org, eugeneteo@kernel.org,
-        kees.cook@canonical.com, mingo@elte.hu, davem@davemloft.net
-Subject: Re: [PATCH v2] kptr_restrict for hiding kernel pointers from
- unprivileged users
-Message-Id: <20101217164431.08f3e730.akpm@linux-foundation.org>
-In-Reply-To: <1292025924.2965.20.camel@Dan>
-References: <1292025924.2965.20.camel@Dan>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Fri, 17 Dec 2010 19:51:07 -0500
+X-Spam-ASN: 
+Date: Sat, 18 Dec 2010 03:50:54 +0300
+From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "Nikita V\. Youshchenko" <yoush@cs.msu.su>,
+        linuxpps@ml.enneenne.com, Rodolfo Giometti <giometti@enneenne.com>
+Subject: Re: [PATCHv6 15/16] pps: add parallel port PPS client
+Message-ID: <20101218035054.2aaac64b@apollo.gnet>
+In-Reply-To: <20101217161756.664b8d8b.akpm@linux-foundation.org>
+References: <cover.1292604060.git.lasaine@lvk.cs.msu.su>
+	<5aad62a4e5290f8baa5994b227e7fe6edaa7841a.1292604060.git.lasaine@lvk.cs.msu.su>
+	<20101217161756.664b8d8b.akpm@linux-foundation.org>
+Organization: LVK
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=PGP-SHA256;
+ boundary="Sig_/6nRZzEoBSTcbYJmRySLiGtu"; protocol="application/pgp-signature"
+X-AV-Checked: ClamAV using ClamSMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Dec 2010 19:05:24 -0500
-Dan Rosenberg <drosenberg@vsecurity.com> wrote:
+--Sig_/6nRZzEoBSTcbYJmRySLiGtu
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-> The below patch adds the %pK format specifier, the
-> CONFIG_SECURITY_KPTR_RESTRICT configuration option, and the
-> kptr_restrict sysctl.
-> 
-> The %pK format specifier is designed to hide exposed kernel pointers
-> from unprivileged users, specifically via /proc interfaces.  Its
-> behavior depends on the kptr_restrict sysctl, whose default value
-> depends on CONFIG_SECURITY_KPTR_RESTRICT.  If kptr_restrict is set to 0,
-> no deviation from the standard %p behavior occurs.  If kptr_restrict is
-> set to 1, if the current user (intended to be a reader via seq_printf(),
-> etc.) does not have CAP_SYSLOG (which is currently in the LSM tree),
-> kernel pointers using %pK are printed as 0's.  This was chosen over the
-> default "(null)", which cannot be parsed by userland %p, which expects
-> "(nil)".
-> 
-> v2 improves checking for inappropriate context, on suggestion by Peter
-> Zijlstra.  Thanks to Thomas Graf for suggesting use of a centralized
-> format specifier.
+=D0=92 Fri, 17 Dec 2010 16:17:56 -0800
+Andrew Morton <akpm@linux-foundation.org> =D0=BF=D0=B8=D1=88=D0=B5=D1=82:
 
-The changelog doesn't describe why CONFIG_SECURITY_KPTR_RESTRICT
-exists, nor why the kptr_restrict sysctl exists.  I can kinda guess why
-this was done, but it would be much better if your reasoning was
-present here.
+> On Fri, 17 Dec 2010 22:54:39 +0300
+> Alexander Gordeev <lasaine@lvk.cs.msu.su> wrote:
+>=20
+> > Add parallel port PPS client. It uses a standard method for capturing
+> > timestamps for assert edge transitions: getting a timestamp soon after
+> > an interrupt has happened. This is not a very precise source of time
+> > information due to interrupt handling delays. However, timestamps for
+> > clear edge transitions are much more precise because the interrupt
+> > handler continuously polls hardware port until the transition is done.
+> > Hardware port operations require only about 1us so the maximum error
+> > should not exceed this value. This was my primary goal when developing
+> > this client.
+> > Clear edge capture could be disabled using clear_wait parameter.
+> >=20
+> > ...
+> >
+> > +/* parport interrupt handler */
+> > +static void parport_irq(void *handle)
+> > +{
+> > +	struct pps_event_time ts_assert, ts_clear;
+> > +	struct pps_client_pp *dev =3D handle;
+> > +	struct parport *port =3D dev->pardev->port;
+> > +	unsigned int i;
+> > +	unsigned long flags;
+> > +
+> > +	/* first of all we get the time stamp... */
+> > +	pps_get_ts(&ts_assert);
+> > +
+> > +	if (dev->cw =3D=3D 0)
+> > +		/* clear edge capture disabled */
+> > +		goto out_assert;
+> > +
+> > +	/* try capture the clear edge */
+> > +	local_irq_save(flags);
+> > +	/* check the signal (no signal means the pulse is lost this time) */
+> > +	if (!signal_is_set(port)) {
+> > +		local_irq_restore(flags);
+> > +		dev_err(dev->pps->dev, "lost the signal\n");
+> > +		goto out_assert;
+> > +	}
+> > +
+> > +	/* poll the port until the signal is unset */
+> > +	for (i =3D dev->cw; i; i--)
+> > +		if (!signal_is_set(port)) {
+> > +			pps_get_ts(&ts_clear);
+> > +			local_irq_restore(flags);
+> > +			dev->cw_err =3D 0;
+> > +			goto out_both;
+> > +		}
+> > +	local_irq_restore(flags);
+>=20
+> Why is this function paying around with local_irq_save()?  It's unusual
+> and looks buggy because local_irq_save() doesn't stop other CPUs from
+> taking an interrupt and coming in and playing with the "protected" data.
 
-And I'd question whether we need CONFIG_SECURITY_KPTR_RESTRICT at all. 
-Disabling it saves no memory.  Its presence just increases the level of
-incompatibility between different vendor's kernels and potentially
-doubles the number of kernels which distros must ship (which they of
-course won't do).  It might be better to add a kptr_restrict=1 kernel boot
-option (although people sometimes have problems with boot options in
-embedded environments).
+The idea is to prevent other interrupts on the same processor to
+introduce uncontrolled time lags here. Reading from IO port is known to
+take approximately 1us while other interrupt handlers can probably take
+much more. So I poll the port with locally disabled interrupts to
+ensure that the maximum lag here is 1us. All my experiments show that
+it is in fact very precise this way given that input signal is precise.
 
-All that being said, distro initscripts can just set the sysctl to the
-desired value before any non-root process has even started, but this
-apparently is far too hard for them :(
+> I have a feeling I asked this before, but you didn't add a comment
+> explaining it, so I went and asked it again!  Cause, effect.
 
-Finally, the changelog and the documentation changes don't tell us the
-full /proc path to the kptr_restrict pseudo-file.  That would be useful
-info.  Seems that it's /proc/sys/kernel/kptr_restrict?
+No, you didn't ask this before, I think.
 
->
-> ...
->
-> --- a/lib/vsprintf.c
-> +++ b/lib/vsprintf.c
-> @@ -936,6 +936,8 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
->  	return string(buf, end, uuid, spec);
->  }
->  
-> +int kptr_restrict = CONFIG_SECURITY_KPTR_RESTRICT;
-> +
->  /*
->   * Show a '%p' thing.  A kernel extension is that the '%p' is followed
->   * by an extra set of alphanumeric characters that are extended format
-> @@ -979,6 +981,7 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
->   *       Implements a "recursive vsnprintf".
->   *       Do not use this feature without some mechanism to verify the
->   *       correctness of the format string and va_list arguments.
-> + * - 'K' For a kernel pointer that should be hidden from unprivileged users
->   *
->   * Note: The difference between 'S' and 'F' is that on ia64 and ppc64
->   * function pointers are really function descriptors, which contain a
-> @@ -1035,6 +1038,21 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
->  		return buf + vsnprintf(buf, end - buf,
->  				       ((struct va_format *)ptr)->fmt,
->  				       *(((struct va_format *)ptr)->va));
-> +	case 'K':
-> +		if (kptr_restrict) {
-> +			if (in_irq() || in_serving_softirq() || in_nmi())
-> +				WARN(1, "%%pK used in interrupt context.\n");
-> +
-> +			else if (capable(CAP_SYSLOG))
-> +				break;
+> > +static void parport_attach(struct parport *port)
+> > +{
+> > +	struct pps_client_pp *device;
+> > +	struct pps_source_info info =3D {
+> > +		.name		=3D KBUILD_MODNAME,
+> > +		.path		=3D "",
+> > +		.mode		=3D PPS_CAPTUREBOTH | \
+> > +				  PPS_OFFSETASSERT | PPS_OFFSETCLEAR | \
+> > +				  PPS_ECHOASSERT | PPS_ECHOCLEAR | \
+> > +				  PPS_CANWAIT | PPS_TSFMT_TSPEC,
+> > +		.echo		=3D pps_echo,
+> > +		.owner		=3D THIS_MODULE,
+> > +		.dev		=3D NULL
+> > +	};
+> > +
+> > +	device =3D kzalloc(sizeof(struct pps_client_pp), GFP_KERNEL);
+> > +	if (!device) {
+> > +		pr_err("memory allocation failed, not attaching\n");
+> > +		return;
+>=20
+> And the void-returning parport_driver.attach() still sucks.
 
-And the reason why it's unusable in interrupt context is that we can't
-meaningfully check CAP_SYSLOG from interrupt.
+Hmm. Do you want me to rewrite the parport subsystem? There are lots of
+problems in it now:
+ * not part of LDM
+ * controlled through /proc
+ * detach is called for every port, not only the on being attached to
+ * ...
 
-Fair enough, but this does restrict %pK's usefulness.
+Sure, I think it should be rewritten quite a bit but I cannot do that
+right now, sorry.
 
-I think I'd be more comfortable with a WARN_ONCE here.  If someone
-screws up then we don't want to spew thousands of repeated warnings at
-our poor users - one will do.
+> > +	}
+> > +
+> > +	device->pardev =3D parport_register_device(port, KBUILD_MODNAME,
+> > +			NULL, NULL, parport_irq, 0, device);
+> > +	if (!device->pardev) {
+> > +		pr_err("couldn't register with %s\n", port->name);
+> > +		goto err_free;
+> > +	}
+> > +
+> > +	if (parport_claim_or_block(device->pardev) < 0) {
+> > +		pr_err("couldn't claim %s\n", port->name);
+> > +		goto err_unregister_dev;
+> > +	}
+> > +
+> > +	device->pps =3D pps_register_source(&info,
+> > +			PPS_CAPTUREBOTH | PPS_OFFSETASSERT | PPS_OFFSETCLEAR);
+> > +	if (device->pps =3D=3D NULL) {
+> > +		pr_err("couldn't register PPS source\n");
+> > +		goto err_release_dev;
+> > +	}
+> > +
+> > +	device->cw =3D clear_wait;
+> > +
+> > +	port->ops->enable_irq(port);
+> > +
+> > +	pr_info("attached to %s\n", port->name);
+> > +
+> > +	return;
+> > +
+> > +err_release_dev:
+> > +	parport_release(device->pardev);
+> > +err_unregister_dev:
+> > +	parport_unregister_device(device->pardev);
+> > +err_free:
+> > +	kfree(device);
+> > +}
+> > +
+>=20
 
 
+--=20
+  Alexander
 
-So what's next?  We need to convert 1,000,000 %p callsites to use %pK? 
-That'll be fun.  Please consider adding a new checkpatch rule which
-detects %p and asks people whether they should have used %pK.
+--Sig_/6nRZzEoBSTcbYJmRySLiGtu
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iQEcBAEBCAAGBQJNDAVuAAoJEElrwznyooJbF7MH/jR9vDT03ZATjH9zWpIIu3VU
+t3IBMgxInMxNxpqw6KXey2BJGqrmlzSm56TA4werQ0hHBN7NQ5LoXaTPQ756BcWr
+ojSB8I937l46AGMthhd+ZDE8WArx7G/uNPFGw0RGjJdqLUwU7JqmoJrujY/MI+1t
+LZnEhhg6rElcYHDWLRBX6T2MZcOhflVIYaRFvlsY9T2EBITRY76yQTfk/iPXKYQb
+aWXzOrq30HQDVxvhAAwimTL9fm4SaaqqkUwcTcD83Rl5r15mmUugiwwuHb9HCgzz
+m00FzAd/1n3OGru6UuMjwk0MUuIRMgCm6kRn2Oh6dqSlqmYyOCMHyIQkmunfZHU=
+=lM2b
+-----END PGP SIGNATURE-----
+
+--Sig_/6nRZzEoBSTcbYJmRySLiGtu--
