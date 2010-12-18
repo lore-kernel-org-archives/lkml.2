@@ -1,97 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756965Ab0LRCJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 21:09:57 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:44464 "EHLO lunge.queued.net"
+	id S1755482Ab0LRDAU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 22:00:20 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:52870 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756855Ab0LRCJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 21:09:57 -0500
-Date: Fri, 17 Dec 2010 18:09:48 -0800
+	id S1753919Ab0LRDAQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 22:00:16 -0500
+Date: Fri, 17 Dec 2010 19:00:13 -0800
 From: Andres Salomon <dilinger@queued.net>
 To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-geode@lists.infradead.org,
-        dsd@laptop.org, pgf@laptop.org
-Subject: Re: [PATCH 1/2] cs5535-gpio: don't apply errata #36 to edge detect
- GPIOs
-Message-ID: <20101217180948.66ed5eef@queued.net>
-In-Reply-To: <20101215112807.2c85e991@queued.net>
-References: <20101215112807.2c85e991@queued.net>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] s1d13xxxfb: drop unused code
+Message-ID: <20101217190013.0107a93a@queued.net>
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note: these two patches fix problems with commit 853ff883, so they
-should definitely go in for 3.6.37.
 
+Silence warnings such as -
 
-On Wed, 15 Dec 2010 11:28:07
--0800 Andres Salomon <dilinger@queued.net> wrote:
+drivers/video/s1d13xxxfb.c:421: warning: ‘bltbit_wait_bitset’ defined but not used
 
-> 
-> The edge detect status GPIOs function differently from the other
-> atomic model CS5536 GPIO registers; writing 1 to the high bits clears
-> the GPIO, but writing 1 to the lower bits also clears the bit.  This
-> means that read-modify-write doesn't actually work for it, so don't
-> apply the errata here.  If a negative edge status gets lost after
-> resume.. well, we tried our best!
-> 
-> Signed-off-by: Andres Salomon <dilinger@queued.net>
-> Tested-by: Daniel Drake <dsd@laptop.org>
-> ---
->  drivers/gpio/cs5535-gpio.c |   15 +++++++++++----
->  1 files changed, 11 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/gpio/cs5535-gpio.c b/drivers/gpio/cs5535-gpio.c
-> index 599f6c9..79eb9c5 100644
-> --- a/drivers/gpio/cs5535-gpio.c
-> +++ b/drivers/gpio/cs5535-gpio.c
-> @@ -56,15 +56,22 @@ static struct cs5535_gpio_chip {
->   * registers, see include/linux/cs5535.h.
->   */
->  
-> -static void errata_outl(u32 val, unsigned long addr)
-> +static void errata_outl(struct cs5535_gpio_chip *chip, u32 val,
-> +		unsigned int reg)
->  {
-> +	unsigned long addr = chip->base + 0x80 + reg;
-> +
->  	/*
->  	 * According to the CS5536 errata (#36), after suspend
->  	 * a write to the high bank GPIO register will clear all
->  	 * non-selected bits; the recommended workaround is a
->  	 * read-modify-write operation.
-> +	 *
-> +	 * Don't apply this errata to the edge status GPIOs, as
-> writing
-> +	 * to their lower bits will clear them.
->  	 */
-> -	val |= inl(addr);
-> +	if (reg != GPIO_POSITIVE_EDGE_STS && reg !=
-> GPIO_NEGATIVE_EDGE_STS)
-> +		val |= inl(addr);
->  	outl(val, addr);
->  }
->  
-> @@ -76,7 +83,7 @@ static void __cs5535_gpio_set(struct
-> cs5535_gpio_chip *chip, unsigned offset, outl(1 << offset, chip->base
-> + reg); else
->  		/* high bank register */
-> -		errata_outl(1 << (offset - 16), chip->base + 0x80 +
-> reg);
-> +		errata_outl(chip, 1 << (offset - 16), reg);
->  }
->  
->  void cs5535_gpio_set(unsigned offset, unsigned int reg)
-> @@ -98,7 +105,7 @@ static void __cs5535_gpio_clear(struct
-> cs5535_gpio_chip *chip, unsigned offset, outl(1 << (offset + 16),
-> chip->base + reg); else
->  		/* high bank register */
-> -		errata_outl(1 << offset, chip->base + 0x80 + reg);
-> +		errata_outl(chip, 1 << offset, reg);
->  }
->  
->  void cs5535_gpio_clear(unsigned offset, unsigned int reg)
+Just drop the unused code.
+
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ drivers/video/s1d13xxxfb.c |   50 --------------------------------------------
+ include/video/s1d13xxxfb.h |    6 -----
+ 2 files changed, 0 insertions(+), 56 deletions(-)
+
+diff --git a/drivers/video/s1d13xxxfb.c b/drivers/video/s1d13xxxfb.c
+index a6247fc..28b1c6c 100644
+--- a/drivers/video/s1d13xxxfb.c
++++ b/drivers/video/s1d13xxxfb.c
+@@ -410,28 +410,6 @@ s1d13xxxfb_pan_display(struct fb_var_screeninfo *var, struct fb_info *info)
+  ************************************************************/
+ 
+ /**
+- *	bltbit_wait_bitset - waits for change in register value
+- *	@info : framebuffer structure
+- *	@bit  : value expected in register
+- *	@timeout : ...
+- *
+- *	waits until value changes INTO bit
+- */
+-static u8
+-bltbit_wait_bitset(struct fb_info *info, u8 bit, int timeout)
+-{
+-	while (!(s1d13xxxfb_readreg(info->par, S1DREG_BBLT_CTL0) & bit)) {
+-		udelay(10);
+-		if (!--timeout) {
+-			dbg_blit("wait_bitset timeout\n");
+-			break;
+-		}
+-	}
+-
+-	return timeout;
+-}
+-
+-/**
+  *	bltbit_wait_bitclear - waits for change in register value
+  *	@info : frambuffer structure
+  *	@bit  : value currently in register
+@@ -454,34 +432,6 @@ bltbit_wait_bitclear(struct fb_info *info, u8 bit, int timeout)
+ 	return timeout;
+ }
+ 
+-/**
+- *	bltbit_fifo_status - checks the current status of the fifo
+- *	@info : framebuffer structure
+- *
+- *	returns number of free words in buffer
+- */
+-static u8
+-bltbit_fifo_status(struct fb_info *info)
+-{
+-	u8 status;
+-
+-	status = s1d13xxxfb_readreg(info->par, S1DREG_BBLT_CTL0);
+-
+-	/* its empty so room for 16 words */
+-	if (status & BBLT_FIFO_EMPTY)
+-		return 16;
+-
+-	/* its full so we dont want to add */
+-	if (status & BBLT_FIFO_FULL)
+-		return 0;
+-
+-	/* its atleast half full but we can add one atleast */
+-	if (status & BBLT_FIFO_NOT_FULL)
+-		return 1;
+-
+-	return 0;
+-}
+-
+ /*
+  *	s1d13xxxfb_bitblt_copyarea - accelerated copyarea function
+  *	@info : framebuffer structure
+diff --git a/include/video/s1d13xxxfb.h b/include/video/s1d13xxxfb.h
+index f0736cf..55f5344 100644
+--- a/include/video/s1d13xxxfb.h
++++ b/include/video/s1d13xxxfb.h
+@@ -136,12 +136,6 @@
+ #define S1DREG_DELAYOFF			0xFFFE
+ #define S1DREG_DELAYON			0xFFFF
+ 
+-#define BBLT_FIFO_EMPTY			0x00
+-#define BBLT_FIFO_NOT_EMPTY		0x40
+-#define BBLT_FIFO_NOT_FULL		0x30
+-#define BBLT_FIFO_HALF_FULL		0x20
+-#define BBLT_FIFO_FULL			0x10
+-
+ #define BBLT_SOLID_FILL			0x0c
+ 
+ 
+-- 
+1.7.2.3
+
