@@ -1,83 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756892Ab0LRBb6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 20:31:58 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:13606 "EHLO
+	id S1756917Ab0LRBuJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 20:50:09 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14650 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756677Ab0LRBby (ORCPT
+	with ESMTP id S1756779Ab0LRBuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 20:31:54 -0500
+	Fri, 17 Dec 2010 20:50:06 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp03.nvidia.com on Fri, 17 Dec 2010 17:29:38 -0800
-Date: Fri, 17 Dec 2010 17:29:38 -0800
-From: rmorell@nvidia.com
-To: Greg KH <gregkh@suse.de>
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-        Benoit Goby <benoit@android.com>,
+	by hqnvupgp03.nvidia.com on Fri, 17 Dec 2010 17:49:49 -0800
+From: Robert Morell <rmorell@nvidia.com>
+To: David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Benoit Goby <benoit@android.com>,
         Alan Stern <stern@rowland.harvard.edu>,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Matthew Wilcox <willy@linux.intel.com>,
-        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
-        Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>,
-        Colin Cross <ccross@android.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] USB: ehci: tegra: Align DMA transfers to 32 bytes
-Message-ID: <20101218012937.GM25105@morell.nvidia.com>
+        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>
+Cc: Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>,
+        Colin Cross <ccross@android.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        Robert Morell <rmorell@nvidia.com>
+Subject: [PATCH v2 1/2] USB: Add driver hooks for (un)?map_urb_for_dma
+Date: Fri, 17 Dec 2010 17:49:30 -0800
+Message-Id: <1292636971-17701-2-git-send-email-rmorell@nvidia.com>
+X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <1292623129-26361-1-git-send-email-rmorell@nvidia.com>
 References: <1292623129-26361-1-git-send-email-rmorell@nvidia.com>
- <1292623129-26361-3-git-send-email-rmorell@nvidia.com>
- <20101217223502.GB19418@suse.de>
- <20101217224221.GE25105@morell.nvidia.com>
- <20101217230940.GB21147@suse.de>
- <20101217234008.GJ25105@morell.nvidia.com>
- <20101218003747.GB16600@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101218003747.GB16600@suse.de>
 X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 04:37:47PM -0800, Greg KH wrote:
-> On Fri, Dec 17, 2010 at 03:40:08PM -0800, rmorell@nvidia.com wrote:
-> > On Fri, Dec 17, 2010 at 03:09:40PM -0800, Greg KH wrote:
-> > > On Fri, Dec 17, 2010 at 02:42:21PM -0800, rmorell@nvidia.com wrote:
-> > > > On Fri, Dec 17, 2010 at 02:35:02PM -0800, Greg KH wrote:
-> > > > > On Fri, Dec 17, 2010 at 01:58:49PM -0800, Robert Morell wrote:
-> > > > > > --- a/include/linux/usb.h
-> > > > > > +++ b/include/linux/usb.h
-> > > > > > @@ -975,6 +975,7 @@ extern int usb_disabled(void);
-> > > > > >  #define URB_SETUP_MAP_SINGLE	0x00100000	/* Setup packet DMA mapped */
-> > > > > >  #define URB_SETUP_MAP_LOCAL	0x00200000	/* HCD-local setup packet */
-> > > > > >  #define URB_DMA_SG_COMBINED	0x00400000	/* S-G entries were combined */
-> > > > > > +#define URB_DRIVER_PRIVATE	0x80000000	/* For driver-private use */
-> > > > > 
-> > > > > Um, what?  You are using this for a build check, which seems pointless
-> > > > > as you already modified the code to not need this.
-> > > > > 
-> > > > > So it doesn't look like this is needed, right?
-> > > > 
-> > > > The intention was to reserve space in the URB flags for
-> > > > implementation-specific use.
-> > > 
-> > > Yes, but _which_ driver are you talking about here?  You didn't say that
-> > > this was a HCD-only flag, right?
-> > 
-> > Sorry, I may not have been clear.  I did mean HCD-only flag; its exact
-> > meaning depends on the HCD in question.  In the case of tegra-ehci, it
-> > means that a temporary buffer has been allocated that needs freeing
-> > later.
-> > 
-> > Would it make more sense if I called it URB_HCD_PRIVATE_MASK?
-> 
-> How about naming it what it is being used for?
+These are useful in case your device has quirks involving what memory
+is and is not DMAable.
 
-Sure, I can do that.  I was just trying to avoid polluting the general
-USB namespace with HCD-specific constants, but I'll send out a revised
-patchset with this change.
+Signed-off-by: Robert Morell <rmorell@nvidia.com>
+Reviewed-by: Scott Williams <scwilliams@nvidia.com>
+Reviewed-by: Janne Hellsten <jhellsten@nvidia.com>
+---
+ drivers/usb/core/hcd.c  |   19 ++++++++++++++++++-
+ include/linux/usb/hcd.h |    8 ++++++++
+ 2 files changed, 26 insertions(+), 1 deletions(-)
 
-Thanks,
-Robert
+diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+index 5cca00a..84fee0f 100644
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -1265,6 +1265,14 @@ static void hcd_free_coherent(struct usb_bus *bus, dma_addr_t *dma_handle,
+ 
+ static void unmap_urb_for_dma(struct usb_hcd *hcd, struct urb *urb)
+ {
++	if (hcd->driver->unmap_urb_for_dma)
++		hcd->driver->unmap_urb_for_dma(hcd, urb);
++	else
++		usb_hcd_unmap_urb_for_dma(hcd, urb);
++}
++
++void usb_hcd_unmap_urb_for_dma(struct usb_hcd *hcd, struct urb *urb)
++{
+ 	enum dma_data_direction dir;
+ 
+ 	if (urb->transfer_flags & URB_SETUP_MAP_SINGLE)
+@@ -1311,6 +1319,15 @@ static void unmap_urb_for_dma(struct usb_hcd *hcd, struct urb *urb)
+ static int map_urb_for_dma(struct usb_hcd *hcd, struct urb *urb,
+ 			   gfp_t mem_flags)
+ {
++	if (hcd->driver->map_urb_for_dma)
++		return hcd->driver->map_urb_for_dma(hcd, urb, mem_flags);
++	else
++		return usb_hcd_map_urb_for_dma(hcd, urb, mem_flags);
++}
++
++int usb_hcd_map_urb_for_dma(struct usb_hcd *hcd, struct urb *urb,
++			    gfp_t mem_flags)
++{
+ 	enum dma_data_direction dir;
+ 	int ret = 0;
+ 
+@@ -1400,7 +1417,7 @@ static int map_urb_for_dma(struct usb_hcd *hcd, struct urb *urb,
+ 		}
+ 		if (ret && (urb->transfer_flags & (URB_SETUP_MAP_SINGLE |
+ 				URB_SETUP_MAP_LOCAL)))
+-			unmap_urb_for_dma(hcd, urb);
++			usb_hcd_unmap_urb_for_dma(hcd, urb);
+ 	}
+ 	return ret;
+ }
+diff --git a/include/linux/usb/hcd.h b/include/linux/usb/hcd.h
+index 3b571f1..8aaf687 100644
+--- a/include/linux/usb/hcd.h
++++ b/include/linux/usb/hcd.h
+@@ -233,6 +233,11 @@ struct hc_driver {
+ 	int	(*urb_dequeue)(struct usb_hcd *hcd,
+ 				struct urb *urb, int status);
+ 
++	/* dma support */
++	int	(*map_urb_for_dma)(struct usb_hcd *hcd, struct urb *urb,
++				   gfp_t mem_flags);
++	void    (*unmap_urb_for_dma)(struct usb_hcd *hcd, struct urb *urb);
++
+ 	/* hw synch, freeing endpoint resources that urb_dequeue can't */
+ 	void	(*endpoint_disable)(struct usb_hcd *hcd,
+ 			struct usb_host_endpoint *ep);
+@@ -327,6 +332,9 @@ extern void usb_hcd_unlink_urb_from_ep(struct usb_hcd *hcd, struct urb *urb);
+ 
+ extern int usb_hcd_submit_urb(struct urb *urb, gfp_t mem_flags);
+ extern int usb_hcd_unlink_urb(struct urb *urb, int status);
++extern int usb_hcd_map_urb_for_dma(struct usb_hcd *hcd, struct urb *urb,
++		gfp_t mem_flags);
++extern void usb_hcd_unmap_urb_for_dma(struct usb_hcd *hcd, struct urb *urb);
+ extern void usb_hcd_giveback_urb(struct usb_hcd *hcd, struct urb *urb,
+ 		int status);
+ extern void usb_hcd_flush_endpoint(struct usb_device *udev,
+-- 
+1.7.2.2
+
