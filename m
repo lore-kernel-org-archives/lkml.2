@@ -1,46 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756954Ab0LRBzr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 20:55:47 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:14926 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756890Ab0LRBzq (ORCPT
+	id S1756990Ab0LRCCR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 21:02:17 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:60804 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756948Ab0LRCCQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 20:55:46 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 17 Dec 2010 17:47:36 -0800
-From: Robert Morell <rmorell@nvidia.com>
-To: David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Benoit Goby <benoit@android.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>
-Cc: Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>,
-        Colin Cross <ccross@android.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: [PATCH v2] Align tegra-ehci DMA transfers to 32B
-Date: Fri, 17 Dec 2010 17:49:29 -0800
-Message-Id: <1292636971-17701-1-git-send-email-rmorell@nvidia.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1292623129-26361-1-git-send-email-rmorell@nvidia.com>
-References: <1292623129-26361-1-git-send-email-rmorell@nvidia.com>
-X-NVConfidentiality: public
+	Fri, 17 Dec 2010 21:02:16 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AoQHAH+jC015LdJm/2dsb2JhbACXH40TdL44hUoEiwE
+Message-Id: <20101218014634.943276411@kernel.dk>
+User-Agent: quilt/0.48-1
+Date: Sat, 18 Dec 2010 12:46:34 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Subject: [patch 0/8] Inode data integrity patches
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This small set of patches fixes an issue where DMA from the tegra EHCI
-controller could be corrupted.  It was most commonly seen with USB network
-adapters, though in theory it could happen with any USB traffic.
+These are not for merge quite yet, need a bit more changelog and comments
+polishing, and splitting out filesystems patches, but if I don't get negative
+comments about them, I'll be asking to merge them in next window.
 
-Note: An attempt was made to fix this specifically for network devices with
-commit 367c3aab, which set NET_IP_ALIGN to 0 and NET_SKB_PAD to 32.
-Unfortunately, not all network drivers honor them (presumably since these are
-intended as optimizations rather than hard rules).  This does mean that
-properly behaved network drivers should fall through this code with very little
-overhead, however.
-
-Version 2 of this patchset gets rid of the HCD placeholder in the flags and
-instead simply reserves the flag globally for this use.
+Thanks,
+Nick
 
