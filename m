@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756584Ab0LRPYe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 10:24:34 -0500
+	id S1756667Ab0LRPYh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 10:24:37 -0500
 Received: from mail-bw0-f45.google.com ([209.85.214.45]:62457 "EHLO
 	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755029Ab0LRPYc (ORCPT
+	with ESMTP id S1756457Ab0LRPYe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 10:24:32 -0500
+	Sat, 18 Dec 2010 10:24:34 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=t5Bw1MxO2BuJ00FD9hNNVqpB1iF2YE4AqF2AxCiETD6+Ns/q+zT7Z3f1fCZ8ZcrODL
-         3qJh5DlqFqQxXiq0JfHyzW8w6gKhkVL8bZVwv+GTTrLST00hk03Tj07/0DJF8CV0tdZU
-         ou3Ji1R6NE/3T9VqggYMab6kMlB329e2SikFI=
+        b=rtpkoMjh5hBlLrhsDiQESMIlB+AV1/8APBaKz02Z1FxVtewZa3bFWNjVbTP4xF8B2x
+         LUUjr8FpatIS08pJWu+UMgre+ViFw+ifYt67IrvdsJeqcWiXt8UqGD6z3F70z4X1Jh80
+         HbIrs9ySXUgOHU9ukSPR/R3Uc21FlXWaZhrUc=
 From: Tejun Heo <tj@kernel.org>
 To: penberg@cs.helsinki.fi, akpm@linux-foundation.org,
         linux-kernel@vger.kernel.org, eric.dumazet@gmail.com, hpa@zytor.com,
         mathieu.desnoyers@efficios.com
-Cc: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux.com>
-Subject: [PATCH 3/6] percpu,x86: relocate this_cpu_add_return() and friends
-Date: Sat, 18 Dec 2010 16:24:09 +0100
-Message-Id: <1292685852-12469-4-git-send-email-tj@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 5/6] x86: this_cpu_cmpxchg and this_cpu_xchg operations
+Date: Sat, 18 Dec 2010 16:24:11 +0100
+Message-Id: <1292685852-12469-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1292685852-12469-1-git-send-email-tj@kernel.org>
 References: <1292685852-12469-1-git-send-email-tj@kernel.org>
@@ -29,208 +29,190 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- include/linux/percpu.h: this_cpu_add_return() and friends were
-  located next to __this_cpu_add_return().  However, the overall
-  organization is to first group by preemption safeness.  Relocate
-  this_cpu_add_return() and friends to preemption-safe area.
+From: Christoph Lameter <cl@linux.com>
 
-- arch/x86/include/asm/percpu.h: Relocate percpu_add_return_op() after
-  other more basic operations.  Relocate [__]this_cpu_add_return_8()
-  so that they're first grouped by preemption safeness.
+Provide support as far as the hardware capabilities of the x86 cpus
+allow.
 
+Define CONFIG_CMPXCHG_LOCAL in Kconfig.cpu to allow core code to test for
+fast cpuops implementations.
+
+V1->V2:
+	- Take out the definition for this_cpu_cmpxchg_8 and move it into
+	  a separate patch.
+
+tj: - Reordered ops to better follow this_cpu_* organization.
+    - Renamed macro temp variables similar to their existing
+      neighbours.
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>
 ---
- arch/x86/include/asm/percpu.h |   71 ++++++++++++++++++++---------------------
- include/linux/percpu.h        |   60 +++++++++++++++++-----------------
- 2 files changed, 65 insertions(+), 66 deletions(-)
+ arch/x86/Kconfig.cpu          |    3 +
+ arch/x86/include/asm/percpu.h |  107 ++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 109 insertions(+), 1 deletions(-)
 
+diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
+index 2ac9069..15588a0 100644
+--- a/arch/x86/Kconfig.cpu
++++ b/arch/x86/Kconfig.cpu
+@@ -310,6 +310,9 @@ config X86_INTERNODE_CACHE_SHIFT
+ config X86_CMPXCHG
+ 	def_bool X86_64 || (X86_32 && !M386)
+ 
++config CMPXCHG_LOCAL
++	def_bool X86_64 || (X86_32 && !M386)
++
+ config X86_L1_CACHE_SHIFT
+ 	int
+ 	default "7" if MPENTIUM4 || MPSC
 diff --git a/arch/x86/include/asm/percpu.h b/arch/x86/include/asm/percpu.h
-index 38f9e96..dd0cd4b 100644
+index dd0cd4b..b85ade5 100644
 --- a/arch/x86/include/asm/percpu.h
 +++ b/arch/x86/include/asm/percpu.h
-@@ -177,39 +177,6 @@ do {									\
- 	}								\
- } while (0)
- 
--/*
-- * Add return operation
-- */
--#define percpu_add_return_op(var, val)					\
--({									\
--	typeof(var) paro_ret__ = val;					\
--	switch (sizeof(var)) {						\
--	case 1:								\
--		asm("xaddb %0, "__percpu_arg(1)				\
--			    : "+q" (paro_ret__), "+m" (var)		\
--			    : : "memory");				\
--		break;							\
--	case 2:								\
--		asm("xaddw %0, "__percpu_arg(1)				\
--			    : "+r" (paro_ret__), "+m" (var)		\
--			    : : "memory");				\
--		break;							\
--	case 4:								\
--		asm("xaddl %0, "__percpu_arg(1)				\
--			    : "+r" (paro_ret__), "+m" (var)		\
--			    : : "memory");				\
--		break;							\
--	case 8:								\
--		asm("xaddq %0, "__percpu_arg(1)				\
--			    : "+re" (paro_ret__), "+m" (var)		\
--			    : : "memory");				\
--		break;							\
--	default: __bad_percpu_size();					\
--	}								\
--	paro_ret__ += val;						\
--	paro_ret__;							\
--})
--
- #define percpu_from_op(op, var, constraint)		\
- ({							\
- 	typeof(var) pfo_ret__;				\
-@@ -263,6 +230,39 @@ do {									\
+@@ -263,6 +263,83 @@ do {									\
  })
  
  /*
-+ * Add return operation
++ * Beware: xchg on x86 has an implied lock prefix. There will be the cost of
++ * full lock semantics even though they are not needed.
 + */
-+#define percpu_add_return_op(var, val)					\
++#define percpu_xchg_op(var, nval)					\
 +({									\
-+	typeof(var) paro_ret__ = val;					\
++	typeof(var) pxo_ret__;						\
++	typeof(var) pxo_new__ = (nval);					\
 +	switch (sizeof(var)) {						\
 +	case 1:								\
-+		asm("xaddb %0, "__percpu_arg(1)				\
-+			    : "+q" (paro_ret__), "+m" (var)		\
-+			    : : "memory");				\
++		asm("xchgb %2, "__percpu_arg(1)				\
++			    : "=a" (pxo_ret__), "+m" (var)		\
++			    : "q" (pxo_new__)				\
++			    : "memory");				\
 +		break;							\
 +	case 2:								\
-+		asm("xaddw %0, "__percpu_arg(1)				\
-+			    : "+r" (paro_ret__), "+m" (var)		\
-+			    : : "memory");				\
++		asm("xchgw %2, "__percpu_arg(1)				\
++			    : "=a" (pxo_ret__), "+m" (var)		\
++			    : "r" (pxo_new__)				\
++			    : "memory");				\
 +		break;							\
 +	case 4:								\
-+		asm("xaddl %0, "__percpu_arg(1)				\
-+			    : "+r" (paro_ret__), "+m" (var)		\
-+			    : : "memory");				\
++		asm("xchgl %2, "__percpu_arg(1)				\
++			    : "=a" (pxo_ret__), "+m" (var)		\
++			    : "r" (pxo_new__)				\
++			    : "memory");				\
 +		break;							\
 +	case 8:								\
-+		asm("xaddq %0, "__percpu_arg(1)				\
-+			    : "+re" (paro_ret__), "+m" (var)		\
-+			    : : "memory");				\
++		asm("xchgq %2, "__percpu_arg(1)				\
++			    : "=a" (pxo_ret__), "+m" (var)		\
++			    : "r" (pxo_new__)				\
++			    : "memory");				\
 +		break;							\
 +	default: __bad_percpu_size();					\
 +	}								\
-+	paro_ret__ += val;						\
-+	paro_ret__;							\
++	pxo_ret__;							\
++})
++
++/*
++ * cmpxchg has no such implied lock semantics as a result it is much
++ * more efficient for cpu local operations.
++ */
++#define percpu_cmpxchg_op(var, oval, nval)				\
++({									\
++	typeof(var) pco_ret__;						\
++	typeof(var) pco_old__ = (oval);					\
++	typeof(var) pco_new__ = (nval);					\
++	switch (sizeof(var)) {						\
++	case 1:								\
++		asm("cmpxchgb %2, "__percpu_arg(1)			\
++			    : "=a" (pco_ret__), "+m" (var)		\
++			    : "q" (pco_new__), "0" (pco_old__)		\
++			    : "memory");				\
++		break;							\
++	case 2:								\
++		asm("cmpxchgw %2, "__percpu_arg(1)			\
++			    : "=a" (pco_ret__), "+m" (var)		\
++			    : "r" (pco_new__), "0" (pco_old__)		\
++			    : "memory");				\
++		break;							\
++	case 4:								\
++		asm("cmpxchgl %2, "__percpu_arg(1)			\
++			    : "=a" (pco_ret__), "+m" (var)		\
++			    : "r" (pco_new__), "0" (pco_old__)		\
++			    : "memory");				\
++		break;							\
++	case 8:								\
++		asm("cmpxchgq %2, "__percpu_arg(1)			\
++			    : "=a" (pco_ret__), "+m" (var)		\
++			    : "r" (pco_new__), "0" (pco_old__)		\
++			    : "memory");				\
++		break;							\
++	default: __bad_percpu_size();					\
++	}								\
++	pco_ret__;							\
 +})
 +
 +/*
   * percpu_read() makes gcc load the percpu variable every time it is
   * accessed while percpu_read_stable() allows the value to be cached.
   * percpu_read_stable() is more efficient and can be used if its value
-@@ -352,6 +352,7 @@ do {									\
- #define __this_cpu_and_8(pcp, val)	percpu_to_op("and", (pcp), val)
- #define __this_cpu_or_8(pcp, val)	percpu_to_op("or", (pcp), val)
- #define __this_cpu_xor_8(pcp, val)	percpu_to_op("xor", (pcp), val)
-+#define __this_cpu_add_return_8(pcp, val) percpu_add_return_op(pcp, val)
+@@ -300,6 +377,12 @@ do {									\
+ #define __this_cpu_xor_1(pcp, val)	percpu_to_op("xor", (pcp), val)
+ #define __this_cpu_xor_2(pcp, val)	percpu_to_op("xor", (pcp), val)
+ #define __this_cpu_xor_4(pcp, val)	percpu_to_op("xor", (pcp), val)
++/*
++ * Generic fallback operations for __this_cpu_xchg_[1-4] are okay and much
++ * faster than an xchg with forced lock semantics.
++ */
++#define __this_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
++#define __this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
  
- #define this_cpu_read_8(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
- #define this_cpu_write_8(pcp, val)	percpu_to_op("mov", (pcp), val)
-@@ -359,14 +360,12 @@ do {									\
- #define this_cpu_and_8(pcp, val)	percpu_to_op("and", (pcp), val)
- #define this_cpu_or_8(pcp, val)		percpu_to_op("or", (pcp), val)
- #define this_cpu_xor_8(pcp, val)	percpu_to_op("xor", (pcp), val)
-+#define this_cpu_add_return_8(pcp, val)	percpu_add_return_op(pcp, val)
+ #define this_cpu_read_1(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
+ #define this_cpu_read_2(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
+@@ -319,6 +402,11 @@ do {									\
+ #define this_cpu_xor_1(pcp, val)	percpu_to_op("xor", (pcp), val)
+ #define this_cpu_xor_2(pcp, val)	percpu_to_op("xor", (pcp), val)
+ #define this_cpu_xor_4(pcp, val)	percpu_to_op("xor", (pcp), val)
++#define this_cpu_xchg_1(pcp, nval)	percpu_xchg_op(pcp, nval)
++#define this_cpu_xchg_2(pcp, nval)	percpu_xchg_op(pcp, nval)
++#define this_cpu_xchg_4(pcp, nval)	percpu_xchg_op(pcp, nval)
++#define this_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
++#define this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
  
- #define irqsafe_cpu_add_8(pcp, val)	percpu_add_op((pcp), val)
- #define irqsafe_cpu_and_8(pcp, val)	percpu_to_op("and", (pcp), val)
- #define irqsafe_cpu_or_8(pcp, val)	percpu_to_op("or", (pcp), val)
- #define irqsafe_cpu_xor_8(pcp, val)	percpu_to_op("xor", (pcp), val)
--
--#define __this_cpu_add_return_8(pcp, val) percpu_add_return_op(pcp, val)
--#define this_cpu_add_return_8(pcp, val)	percpu_add_return_op(pcp, val)
- #endif
+ #define irqsafe_cpu_add_1(pcp, val)	percpu_add_op((pcp), val)
+ #define irqsafe_cpu_add_2(pcp, val)	percpu_add_op((pcp), val)
+@@ -332,15 +420,32 @@ do {									\
+ #define irqsafe_cpu_xor_1(pcp, val)	percpu_to_op("xor", (pcp), val)
+ #define irqsafe_cpu_xor_2(pcp, val)	percpu_to_op("xor", (pcp), val)
+ #define irqsafe_cpu_xor_4(pcp, val)	percpu_to_op("xor", (pcp), val)
++#define irqsafe_cpu_xchg_1(pcp, nval)	percpu_xchg_op(pcp, nval)
++#define irqsafe_cpu_xchg_2(pcp, nval)	percpu_xchg_op(pcp, nval)
++#define irqsafe_cpu_xchg_4(pcp, nval)	percpu_xchg_op(pcp, nval)
++#define irqsafe_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
++#define irqsafe_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
  
- /* This is not atomic against other CPUs -- CPU preemption needs to be off */
-diff --git a/include/linux/percpu.h b/include/linux/percpu.h
-index 4d593de..3484e88 100644
---- a/include/linux/percpu.h
-+++ b/include/linux/percpu.h
-@@ -417,6 +417,36 @@ do {									\
- # define this_cpu_xor(pcp, val)		__pcpu_size_call(this_cpu_or_, (pcp), (val))
- #endif
- 
-+#define _this_cpu_generic_add_return(pcp, val)				\
-+({									\
-+	typeof(pcp) ret__;						\
-+	preempt_disable();						\
-+	__this_cpu_add(pcp, val);					\
-+	ret__ = __this_cpu_read(pcp);					\
-+	preempt_enable();						\
-+	ret__;								\
-+})
+ #ifndef CONFIG_M386
+ #define __this_cpu_add_return_1(pcp, val) percpu_add_return_op(pcp, val)
+ #define __this_cpu_add_return_2(pcp, val) percpu_add_return_op(pcp, val)
+ #define __this_cpu_add_return_4(pcp, val) percpu_add_return_op(pcp, val)
++#define __this_cpu_cmpxchg_1(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
++#define __this_cpu_cmpxchg_2(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
++#define __this_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
 +
-+#ifndef this_cpu_add_return
-+# ifndef this_cpu_add_return_1
-+#  define this_cpu_add_return_1(pcp, val)	_this_cpu_generic_add_return(pcp, val)
-+# endif
-+# ifndef this_cpu_add_return_2
-+#  define this_cpu_add_return_2(pcp, val)	_this_cpu_generic_add_return(pcp, val)
-+# endif
-+# ifndef this_cpu_add_return_4
-+#  define this_cpu_add_return_4(pcp, val)	_this_cpu_generic_add_return(pcp, val)
-+# endif
-+# ifndef this_cpu_add_return_8
-+#  define this_cpu_add_return_8(pcp, val)	_this_cpu_generic_add_return(pcp, val)
-+# endif
-+# define this_cpu_add_return(pcp, val)	__pcpu_size_call_return2(this_cpu_add_return_, pcp, val)
-+#endif
+ #define this_cpu_add_return_1(pcp, val)	percpu_add_return_op(pcp, val)
+ #define this_cpu_add_return_2(pcp, val)	percpu_add_return_op(pcp, val)
+ #define this_cpu_add_return_4(pcp, val)	percpu_add_return_op(pcp, val)
+-#endif
++#define this_cpu_cmpxchg_1(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
++#define this_cpu_cmpxchg_2(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
++#define this_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
 +
-+#define this_cpu_sub_return(pcp, val)	this_cpu_add_return(pcp, -(val))
-+#define this_cpu_inc_return(pcp)	this_cpu_add_return(pcp, 1)
-+#define this_cpu_dec_return(pcp)	this_cpu_add_return(pcp, -1)
++#define irqsafe_cpu_cmpxchg_1(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
++#define irqsafe_cpu_cmpxchg_2(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
++#define irqsafe_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
++#endif /* !CONFIG_M386 */
 +
  /*
-  * Generic percpu operations that do not require preemption handling.
-  * Either we do not care about races or the caller has the
-@@ -544,36 +574,6 @@ do {									\
- # define __this_cpu_xor(pcp, val)	__pcpu_size_call(__this_cpu_xor_, (pcp), (val))
- #endif
- 
--#define _this_cpu_generic_add_return(pcp, val)				\
--({									\
--	typeof(pcp) ret__;						\
--	preempt_disable();						\
--	__this_cpu_add(pcp, val);					\
--	ret__ = __this_cpu_read(pcp);					\
--	preempt_enable();						\
--	ret__;								\
--})
--
--#ifndef this_cpu_add_return
--# ifndef this_cpu_add_return_1
--#  define this_cpu_add_return_1(pcp, val)	_this_cpu_generic_add_return(pcp, val)
--# endif
--# ifndef this_cpu_add_return_2
--#  define this_cpu_add_return_2(pcp, val)	_this_cpu_generic_add_return(pcp, val)
--# endif
--# ifndef this_cpu_add_return_4
--#  define this_cpu_add_return_4(pcp, val)	_this_cpu_generic_add_return(pcp, val)
--# endif
--# ifndef this_cpu_add_return_8
--#  define this_cpu_add_return_8(pcp, val)	_this_cpu_generic_add_return(pcp, val)
--# endif
--# define this_cpu_add_return(pcp, val)	__pcpu_size_call_return2(this_cpu_add_return_, pcp, val)
--#endif
--
--#define this_cpu_sub_return(pcp, val)	this_cpu_add_return(pcp, -(val))
--#define this_cpu_inc_return(pcp)	this_cpu_add_return(pcp, 1)
--#define this_cpu_dec_return(pcp)	this_cpu_add_return(pcp, -1)
--
- #define __this_cpu_generic_add_return(pcp, val)				\
- ({									\
- 	__this_cpu_add(pcp, val);					\
+  * Per cpu atomic 64 bit operations are only available under 64 bit.
+  * 32 bit must fall back to generic operations.
 -- 
 1.7.1
 
