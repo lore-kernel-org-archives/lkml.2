@@ -1,59 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796Ab0LRL6S (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 06:58:18 -0500
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:36269 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755536Ab0LRL6R (ORCPT
+	id S1755907Ab0LRMIa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 07:08:30 -0500
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:54131 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755591Ab0LRMI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 06:58:17 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Sat, 18 Dec 2010 12:57:42 +0100
-To: Julien BLACHE <jb@jblache.org>
-Cc: Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>, Mikael Strom <mikael@sesamiq.com>
-Subject: Re: [lm-sensors] [PATCH 1/2 V3] applesmc: Use PnP rather than
- hardcoding resources and devices
-Message-ID: <20101218115742.GA2063@polaris.bitmath.org>
-References: <20101217221618.GA13207@ericsson.com>
- <1292624661-32474-1-git-send-email-mjg@redhat.com>
- <20101218042320.GA14104@ericsson.com>
- <20101218093719.GA1493@polaris.bitmath.org>
- <20101218110954.7a2ca190@endymion.delvare>
- <20101218103139.GA1668@polaris.bitmath.org>
- <878vzngvyn.fsf@sonic.technologeek.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <878vzngvyn.fsf@sonic.technologeek.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Originating-IP: 83.248.200.95
-X-Scan-Result: No virus found in message 1PTvQC-0003h9-8D.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PTvQC-0003h9-8D 37359dc5d9e85970f01ab55086fec377
+	Sat, 18 Dec 2010 07:08:28 -0500
+Date: Sat, 18 Dec 2010 12:58:50 +0100
+From: Nicolas Kaiser <nikai@nikai.net>
+To: Tejun Heo <tj@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Duncan Sands <duncan.sands@free.fr>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: speedtch: don't abuse struct delayed_work
+Message-ID: <20101218125850.24d4e604@absol.kitzblitz>
+In-Reply-To: <20101217145117.75a28ae0@absol.kitzblitz>
+References: <20101216213005.GA5781@kroah.com>
+	<1292172499-21633-6-git-send-email-tj@kernel.org>
+	<1292172499-21633-1-git-send-email-tj@kernel.org>
+	<20101217145117.75a28ae0@absol.kitzblitz>
+Organization: -
+X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
+ N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
+X-Mailer: Claws Mail (Linux)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 18, 2010 at 12:29:52PM +0100, Julien BLACHE wrote:
-> "Henrik Rydberg" <rydberg@euromail.se> wrote:
+* Nicolas Kaiser <nikai@nikai.net>:
+> > On Sun, Dec 12, 2010 at 05:48:18PM +0100, Tejun Heo wrote:
+> >> speedtch directly uses the internal timer and work members of a struct
+> >> delayed_work.  Use a separate work item and timer instead.
 > 
-> Hi,
+> >> This is part of a series to remove flush_scheduled_work() usage to
+> >> prepare for deprecation of flush_scheduled_work().  Patches in this
+> >> series are self contained and mostly straight-forward
 > 
-> >> Which applications? libsensors-based applications definitely don't
-> >> hard-wire anything.
-> >
-> > The ones I am thinking of are pommed and macfanctld, there are
-> > probably others. The sysfs nodes have been around a while, so it is
-> > not really surprising. If there is a policy saying it is ok to break
-> > userspace in this case, that's fine.
-> 
-> I've just changed pommed to probe for applesmc through /sys/class/hwmon,
-> so you can go ahead and break it as far as I'm concerned :)
+> I tested this patch with 2.6.37-rc6. Not sure whether 
+> I'm doing something wrong, but I failed to start the
+> PPP daemon with my speedtouch usb:
 
-Great, thanks Julien. And macfanctld should not be a problem either (ccing the author).
+I narrowed down my problem, and noticed that speedtch_atm_start
+never returns, but gets stuck trying to start status polling.
 
-Henrik
+Now when I delete this mod_timer, everything appears to work
+nicely at my place. With additional debug output:
 
+
+Dec 18 12:24:40 absol kernel: ATM dev 0: speedtch_atm_start entered
+Dec 18 12:24:40 absol kernel: ATM dev 0: speedtch_start_synchro entered
+Dec 18 12:24:40 absol kernel: ATM dev 0: speedtch_start_synchro: modem prodded. 2 bytes returned: 00 00
+ Dec 18 12:24:40 absol kernel: return from speedtch_start_synchro
+ Dec 18 12:24:40 absol kernel: return from speedtch_atm_start
+
+Dec 18 12:24:49 absol pppd[4844]: Plugin pppoatm.so loaded.
+Dec 18 12:24:49 absol pppd[4844]: PPPoATM plugin_init
+Dec 18 12:24:49 absol pppd[4844]: PPPoATM setdevname_pppoatm - SUCCESS:8.48
+Dec 18 12:24:49 absol pppd[4845]: pppd 2.4.4 started by root, uid 0
+Dec 18 12:24:49 absol pppd[4845]: using channel 1
+Dec 18 12:24:49 absol pppd[4845]: Using interface ppp0
+Dec 18 12:24:49 absol pppd[4845]: Connect: ppp0 <--> 8.48
+
+Dec 18 12:24:54 absol kernel: ATM dev 0: speedtch_handle_int entered
+Dec 18 12:24:54 absol kernel: ATM dev 0: DSL line goes up
+ Dec 18 12:24:54 absol kernel: return from speedtch_handle_int
+ Dec 18 12:24:54 absol kernel: entered speedtch_check_status
+ Dec 18 12:24:54 absol kernel: entered speedtch_read_status
+ Dec 18 12:24:54 absol kernel: return from speedtch_read_status
+Dec 18 12:24:54 absol kernel: ATM dev 0: speedtch_check_status: line state 0x20
+Dec 18 12:24:54 absol kernel: ATM dev 0: ADSL line is up (6176 kb/s down | 512 kb/s up)
+ Dec 18 12:24:54 absol kernel: return from speedtch_check_status
+
+
+Best regards,
+Nicolas Kaiser
+
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+---
+ drivers/usb/atm/speedtch.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/usb/atm/speedtch.c b/drivers/usb/atm/speedtch.c
+index b591906..e6d8847 100644
+--- a/drivers/usb/atm/speedtch.c
++++ b/drivers/usb/atm/speedtch.c
+@@ -686,9 +686,6 @@ static int speedtch_atm_start(struct usbatm_data *usbatm, struct atm_dev *atm_de
+ 		}
+ 	}
+ 
+-	/* Start status polling */
+-	mod_timer(&instance->status_check_timer, jiffies + msecs_to_jiffies(1000));
+-
+ 	return 0;
+ }
+ 
+-- 
+1.7.2.2
