@@ -1,50 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756628Ab0LRAKY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 19:10:24 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53164 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756370Ab0LRAKU (ORCPT
+	id S1756633Ab0LRAOA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 19:14:00 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41023 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756105Ab0LRAN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 19:10:20 -0500
-Message-ID: <4D0BFB9E.9040404@oracle.com>
-Date: Sat, 18 Dec 2010 08:09:02 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre OracleBeehiveExtension/1.0.0.2-OracleInternal ObetStats/CATLAF_1292475699435-498544290 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: Alexander Indenbaum <baum@tehutinetworks.net>,
-        Andy Gospodarek <andy@greyhouse.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Guru Anbalagane <guru.anbalagane@oracle.com>,
-        "greg.marsden@oracle.com" <greg.marsden@oracle.com>,
-        DuanZhenzhong <zhenzhong.duan@oracle.com>,
-        Jaswinder Singh Rajput <jaswinder@infradead.org>
-Subject: Re: [NETWORK] Firmware file for tehuti
-References: <4D0B0B70.9050306@oracle.com> <1292594691.3136.840.camel@localhost>
-In-Reply-To: <1292594691.3136.840.camel@localhost>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Fri, 17 Dec 2010 19:13:58 -0500
+Date: Fri, 17 Dec 2010 16:13:28 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+Cc: linux-kernel@vger.kernel.org, "Nikita V\. Youshchenko" <yoush@cs.msu.su>,
+        linuxpps@ml.enneenne.com, Rodolfo Giometti <giometti@enneenne.com>
+Subject: Re: [PATCHv6 07/16] pps: move idr stuff to pps.c
+Message-Id: <20101217161328.457ac8e6.akpm@linux-foundation.org>
+In-Reply-To: <8f66dc7613bb4a7d34e6d76465df3bf6bb2f66a8.1292604060.git.lasaine@lvk.cs.msu.su>
+References: <cover.1292604060.git.lasaine@lvk.cs.msu.su>
+	<8f66dc7613bb4a7d34e6d76465df3bf6bb2f66a8.1292604060.git.lasaine@lvk.cs.msu.su>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 17 Dec 2010 22:54:31 +0300
+Alexander Gordeev <lasaine@lvk.cs.msu.su> wrote:
 
-> My first version of the patch to use request_firmware() used
-> "tehuti/firmware.bin".  I then found Jaswinder's patch at
-> <http://git.infradead.org/users/jaswinder/firm-jsr-2.6.git?a=commitdiff;h=e41f3e5f8c5110871e376a2566b8eea2932b813b>,
-> which used the name "tehuti/bdx.bin".  For some reason I changed the
-> name of the firmware file in my patch to match that, but not the code.
+> Since now idr is only used to manage char device id's and not used in
+> kernel API anymore it should be moved to pps.c. This also makes it
+> possible to release id only at actual device freeing so nobody can
+> register a pps device with the same id while our device is not freed
+> yet.
+> 
+> ...
 >
+>  int pps_register_cdev(struct pps_device *pps)
+>  {
+>  	int err;
+>  	dev_t devt;
+>  
+> +	/* Get new ID for the new PPS source */
+> +	if (idr_pre_get(&pps_idr, GFP_KERNEL) == 0)
+> +		return -ENOMEM;
+> +
+> +	/* Now really allocate the PPS source.
+> +	 * After idr_get_new() calling the new source will be freely available
+> +	 * into the kernel.
+> +	 */
+> +	spin_lock_irq(&pps_idr_lock);
+> +	err = idr_get_new(&pps_idr, pps, &pps->id);
+> +	spin_unlock_irq(&pps_idr_lock);
+> +
+> +	if (err < 0)
+> +		return err;
 
-Thanks for the confirmation.
-> Ben.
->
+The IDR interface really sucks :(
 
+What this code should be doing is
 
--- 
-Oracle<http://www.oracle.com>
-Joe Jin | Team Leader, Software Development | +8610.8278.6295
-ORACLE | Linux and Virtualization
-Incubator Building 2-A ZPark | Beijing China, 100094
+retry:
+	if (idr_pre_get(&pps_idr, GFP_KERNEL) == 0)
+		return -ENOMEM;
+	spin_lock_irq(&pps_idr_lock);
+	err = idr_get_new(&pps_idr, pps, &pps->id);
+	spin_unlock_irq(&pps_idr_lock);
+	if (err < 0) {
+		if (err == -EAGAIN)
+			goto retry;
+		return err;
+	}
+
+this way it correctly handles the case where the idr_pre_get()
+succeeded in precharging the pool, but some other task cam in and stole
+your reservation.
+
 
