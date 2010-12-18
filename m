@@ -1,557 +1,338 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755687Ab0LRP3A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 10:29:00 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:55199 "EHLO
+	id S1756170Ab0LRPaL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 10:30:11 -0500
+Received: from mail-bw0-f45.google.com ([209.85.214.45]:54310 "EHLO
 	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753149Ab0LRP26 (ORCPT
+	with ESMTP id S1753875Ab0LRPaJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 10:28:58 -0500
+	Sat, 18 Dec 2010 10:30:09 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=cI/3DbFrr1Q33SNPe5504F12iUyZXbxw0JayytpkxFSxDjC1PoVW20A7xo2hQydNol
-         QokmiK2W70cDa78xXXOT8MzRR4x+wsyN6doPx9vqL+eTm8Jro8R3RWlTGu6PSEM54iN7
-         2hhDKJaOICuhh8b24f+az3HlI0EZ0ITJjkQqM=
-Message-ID: <4D0CD337.4080407@kernel.org>
-Date: Sat, 18 Dec 2010 16:28:55 +0100
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=HOCVKp8OOlHCbIfTFtxJB1F5eam53d6lFSgt+Tz4WiZRHM7ub88Kq4YjWGN1Wru1jt
+         DtAsLdHl3RDGPjToocKMWTQuLG1Zm7NfLkYhUwbyG40JQ9uL3Y/i4mnRXNdlvFDZLOqH
+         txxFwsnHRDWq65yy8Qpl4SnWgMUhYwiTkIdI4=
+Message-ID: <4D0CD37D.8020104@kernel.org>
+Date: Sat, 18 Dec 2010 16:30:05 +0100
 From: Tejun Heo <tj@kernel.org>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
 To: "H. Peter Anvin" <hpa@zytor.com>
 CC: Christoph Lameter <cl@linux-foundation.org>,
         lkml <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/3] x86: Use this_cpu_ops to optimize code
+Subject: [PATCH 2/3] x86: Replace uses of current_cpu_data with this_cpu ops
+References: <4D0CD337.4080407@kernel.org>
+In-Reply-To: <4D0CD337.4080407@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Go through x86 code and replace __get_cpu_var and get_cpu_var
-instances that refer to a scalar and are not used for address
-determinations.
+Replace all uses of current_cpu_data with this_cpu operations on the
+per cpu structure cpu_info.  The scala accesses are replaced with the
+matching this_cpu ops which results in smaller and more efficient
+code.
+
+In the long run, it might be a good idea to remove cpu_data() macro
+too and use per_cpu macro directly.
+
+tj: updated description
 
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Christoph Lameter <cl@linux.com>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
 Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Christoph Lameter <cl@linux.com>
 ---
-Peter, these three patches are the x86 ones which were in
-percpu#for-next but should go through x86 tree.  These should be
-applied on top of percpu#this_cpu_ops.
-
-Thank you.
-
- arch/x86/include/asm/debugreg.h           |    2 +-
- arch/x86/kernel/apic/io_apic.c            |    4 ++--
- arch/x86/kernel/apic/nmi.c                |   24 ++++++++++++------------
- arch/x86/kernel/apic/x2apic_uv_x.c        |    8 ++++----
+ arch/x86/include/asm/processor.h          |    3 +--
+ arch/x86/kernel/apic/apic.c               |    2 +-
+ arch/x86/kernel/cpu/amd.c                 |    2 +-
  arch/x86/kernel/cpu/cpufreq/powernow-k8.c |    2 +-
- arch/x86/kernel/cpu/mcheck/mce.c          |    6 +++---
- arch/x86/kernel/cpu/perf_event.c          |   27 +++++++++++----------------
- arch/x86/kernel/cpu/perf_event_intel.c    |    4 ++--
- arch/x86/kernel/ftrace.c                  |    6 +++---
- arch/x86/kernel/hw_breakpoint.c           |   12 ++++++------
- arch/x86/kernel/irq.c                     |    6 +++---
- arch/x86/kernel/irq_32.c                  |    4 ++--
- arch/x86/kernel/smpboot.c                 |    2 +-
- arch/x86/kernel/tsc.c                     |    2 +-
- arch/x86/kvm/x86.c                        |    8 ++++----
- arch/x86/oprofile/nmi_int.c               |    2 +-
- 16 files changed, 57 insertions(+), 62 deletions(-)
+ arch/x86/kernel/cpu/intel_cacheinfo.c     |    4 ++--
+ arch/x86/kernel/cpu/mcheck/mce.c          |   14 +++++++-------
+ arch/x86/kernel/cpu/mcheck/mce_intel.c    |    2 +-
+ arch/x86/kernel/process.c                 |    4 ++--
+ arch/x86/kernel/smpboot.c                 |   12 ++++++------
+ arch/x86/oprofile/op_model_ppro.c         |    8 ++++----
+ drivers/staging/lirc/lirc_serial.c        |    4 ++--
+ 11 files changed, 28 insertions(+), 29 deletions(-)
 
-diff --git a/arch/x86/include/asm/debugreg.h b/arch/x86/include/asm/debugreg.h
-index b81002f..078ad0c 100644
---- a/arch/x86/include/asm/debugreg.h
-+++ b/arch/x86/include/asm/debugreg.h
-@@ -94,7 +94,7 @@ static inline void hw_breakpoint_disable(void)
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index cae9c3c..c6efecf 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -141,10 +141,9 @@ extern __u32			cpu_caps_set[NCAPINTS];
+ #ifdef CONFIG_SMP
+ DECLARE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info);
+ #define cpu_data(cpu)		per_cpu(cpu_info, cpu)
+-#define current_cpu_data	__get_cpu_var(cpu_info)
+ #else
++#define cpu_info		boot_cpu_data
+ #define cpu_data(cpu)		boot_cpu_data
+-#define current_cpu_data	boot_cpu_data
+ #endif
 
- static inline int hw_breakpoint_active(void)
+ extern const struct seq_operations cpuinfo_op;
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 3f838d5..8accfe3 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -516,7 +516,7 @@ static void __cpuinit setup_APIC_timer(void)
  {
--	return __get_cpu_var(cpu_dr7) & DR_GLOBAL_ENABLE_MASK;
-+	return __this_cpu_read(cpu_dr7) & DR_GLOBAL_ENABLE_MASK;
- }
+ 	struct clock_event_device *levt = &__get_cpu_var(lapic_events);
 
- extern void aout_dump_debugregs(struct user *dump);
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 7cc0a72..8d50922 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2302,7 +2302,7 @@ asmlinkage void smp_irq_move_cleanup_interrupt(void)
- 		unsigned int irr;
- 		struct irq_desc *desc;
- 		struct irq_cfg *cfg;
--		irq = __get_cpu_var(vector_irq)[vector];
-+		irq = __this_cpu_read(vector_irq[vector]);
+-	if (cpu_has(&current_cpu_data, X86_FEATURE_ARAT)) {
++	if (cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_ARAT)) {
+ 		lapic_clockevent.features &= ~CLOCK_EVT_FEAT_C3STOP;
+ 		/* Make LAPIC timer preferrable over percpu HPET */
+ 		lapic_clockevent.rating = 150;
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 9e093f8..7c7bedb 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -668,7 +668,7 @@ EXPORT_SYMBOL_GPL(amd_erratum_383);
 
- 		if (irq == -1)
- 			continue;
-@@ -2336,7 +2336,7 @@ asmlinkage void smp_irq_move_cleanup_interrupt(void)
- 			apic->send_IPI_self(IRQ_MOVE_CLEANUP_VECTOR);
- 			goto unlock;
- 		}
--		__get_cpu_var(vector_irq)[vector] = -1;
-+		__this_cpu_write(vector_irq[vector], -1);
- unlock:
- 		raw_spin_unlock(&desc->lock);
- 	}
-diff --git a/arch/x86/kernel/apic/nmi.c b/arch/x86/kernel/apic/nmi.c
-index c90041c..b387dce 100644
---- a/arch/x86/kernel/apic/nmi.c
-+++ b/arch/x86/kernel/apic/nmi.c
-@@ -306,12 +306,12 @@ void acpi_nmi_disable(void)
-  */
- void cpu_nmi_set_wd_enabled(void)
+ bool cpu_has_amd_erratum(const int *erratum)
  {
--	__get_cpu_var(wd_enabled) = 1;
-+	__this_cpu_write(wd_enabled, 1);
- }
-
- void setup_apic_nmi_watchdog(void *unused)
- {
--	if (__get_cpu_var(wd_enabled))
-+	if (__this_cpu_read(wd_enabled))
- 		return;
-
- 	/* cheap hack to support suspend/resume */
-@@ -322,12 +322,12 @@ void setup_apic_nmi_watchdog(void *unused)
- 	switch (nmi_watchdog) {
- 	case NMI_LOCAL_APIC:
- 		if (lapic_watchdog_init(nmi_hz) < 0) {
--			__get_cpu_var(wd_enabled) = 0;
-+			__this_cpu_write(wd_enabled, 0);
- 			return;
- 		}
- 		/* FALL THROUGH */
- 	case NMI_IO_APIC:
--		__get_cpu_var(wd_enabled) = 1;
-+		__this_cpu_write(wd_enabled, 1);
- 		atomic_inc(&nmi_active);
- 	}
- }
-@@ -337,13 +337,13 @@ void stop_apic_nmi_watchdog(void *unused)
- 	/* only support LOCAL and IO APICs for now */
- 	if (!nmi_watchdog_active())
- 		return;
--	if (__get_cpu_var(wd_enabled) == 0)
-+	if (__this_cpu_read(wd_enabled) == 0)
- 		return;
- 	if (nmi_watchdog == NMI_LOCAL_APIC)
- 		lapic_watchdog_stop();
- 	else
- 		__acpi_nmi_disable(NULL);
--	__get_cpu_var(wd_enabled) = 0;
-+	__this_cpu_write(wd_enabled, 0);
- 	atomic_dec(&nmi_active);
- }
-
-@@ -403,8 +403,8 @@ nmi_watchdog_tick(struct pt_regs *regs, unsigned reason)
-
- 	sum = get_timer_irqs(cpu);
-
--	if (__get_cpu_var(nmi_touch)) {
--		__get_cpu_var(nmi_touch) = 0;
-+	if (__this_cpu_read(nmi_touch)) {
-+		__this_cpu_write(nmi_touch, 0);
- 		touched = 1;
- 	}
-
-@@ -427,7 +427,7 @@ nmi_watchdog_tick(struct pt_regs *regs, unsigned reason)
- 		touched = 1;
-
- 	/* if the none of the timers isn't firing, this cpu isn't doing much */
--	if (!touched && __get_cpu_var(last_irq_sum) == sum) {
-+	if (!touched && __this_cpu_read(last_irq_sum) == sum) {
- 		/*
- 		 * Ayiee, looks like this CPU is stuck ...
- 		 * wait a few IRQs (5 seconds) before doing the oops ...
-@@ -440,12 +440,12 @@ nmi_watchdog_tick(struct pt_regs *regs, unsigned reason)
- 			die_nmi("BUG: NMI Watchdog detected LOCKUP",
- 				regs, panic_on_timeout);
- 	} else {
--		__get_cpu_var(last_irq_sum) = sum;
-+		__this_cpu_write(last_irq_sum, sum);
- 		__this_cpu_write(alert_counter, 0);
- 	}
-
- 	/* see if the nmi watchdog went off */
--	if (!__get_cpu_var(wd_enabled))
-+	if (!__this_cpu_read(wd_enabled))
- 		return rc;
- 	switch (nmi_watchdog) {
- 	case NMI_LOCAL_APIC:
-@@ -467,7 +467,7 @@ nmi_watchdog_tick(struct pt_regs *regs, unsigned reason)
-
- static void enable_ioapic_nmi_watchdog_single(void *unused)
- {
--	__get_cpu_var(wd_enabled) = 1;
-+	__this_cpu_write(wd_enabled, 1);
- 	atomic_inc(&nmi_active);
- 	__acpi_nmi_enable(NULL);
- }
-diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
-index c1c52c3..26ec9a7 100644
---- a/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -118,8 +118,8 @@ static int __init uv_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
- 		else if (!strcmp(oem_table_id, "UVX"))
- 			uv_system_type = UV_X2APIC;
- 		else if (!strcmp(oem_table_id, "UVH")) {
--			__get_cpu_var(x2apic_extra_bits) =
--				nodeid << (uvh_apicid.s.pnode_shift - 1);
-+			__this_cpu_write(x2apic_extra_bits,
-+				nodeid << (uvh_apicid.s.pnode_shift - 1));
- 			uv_system_type = UV_NON_UNIQUE_APIC;
- 			uv_set_apicid_hibit();
- 			return 1;
-@@ -284,7 +284,7 @@ static unsigned int x2apic_get_apic_id(unsigned long x)
- 	unsigned int id;
-
- 	WARN_ON(preemptible() && num_online_cpus() > 1);
--	id = x | __get_cpu_var(x2apic_extra_bits);
-+	id = x | __this_cpu_read(x2apic_extra_bits);
-
- 	return id;
- }
-@@ -376,7 +376,7 @@ struct apic __refdata apic_x2apic_uv_x = {
-
- static __cpuinit void set_x2apic_extra_bits(int pnode)
- {
--	__get_cpu_var(x2apic_extra_bits) = (pnode << 6);
-+	__this_cpu_write(x2apic_extra_bits, (pnode << 6));
- }
-
- /*
+-	struct cpuinfo_x86 *cpu = &current_cpu_data;
++	struct cpuinfo_x86 *cpu = __this_cpu_ptr(&cpu_info);
+ 	int osvw_id = *erratum++;
+ 	u32 range;
+ 	u32 ms;
 diff --git a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-index 491977b..42a3604 100644
+index 42a3604..35c7e65 100644
 --- a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
 +++ b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-@@ -1377,7 +1377,7 @@ static int __devexit powernowk8_cpu_exit(struct cpufreq_policy *pol)
- static void query_values_on_cpu(void *_err)
- {
- 	int *err = _err;
--	struct powernow_k8_data *data = __get_cpu_var(powernow_data);
-+	struct powernow_k8_data *data = __this_cpu_read(powernow_data);
+@@ -521,7 +521,7 @@ static void check_supported_cpu(void *_rc)
 
- 	*err = query_current_values_with_pending_wait(data);
- }
+ 	*rc = -ENODEV;
+
+-	if (current_cpu_data.x86_vendor != X86_VENDOR_AMD)
++	if (__this_cpu_read(cpu_info.x86_vendor) != X86_VENDOR_AMD)
+ 		return;
+
+ 	eax = cpuid_eax(CPUID_PROCESSOR_SIGNATURE);
+diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
+index 17ad033..453c616 100644
+--- a/arch/x86/kernel/cpu/intel_cacheinfo.c
++++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
+@@ -266,7 +266,7 @@ amd_cpuid4(int leaf, union _cpuid4_leaf_eax *eax,
+ 		line_size = l2.line_size;
+ 		lines_per_tag = l2.lines_per_tag;
+ 		/* cpu_data has errata corrections for K7 applied */
+-		size_in_kb = current_cpu_data.x86_cache_size;
++		size_in_kb = __this_cpu_read(cpu_info.x86_cache_size);
+ 		break;
+ 	case 3:
+ 		if (!l3.val)
+@@ -288,7 +288,7 @@ amd_cpuid4(int leaf, union _cpuid4_leaf_eax *eax,
+ 	eax->split.type = types[leaf];
+ 	eax->split.level = levels[leaf];
+ 	eax->split.num_threads_sharing = 0;
+-	eax->split.num_cores_on_die = current_cpu_data.x86_max_cores - 1;
++	eax->split.num_cores_on_die = __this_cpu_read(cpu_info.x86_max_cores) - 1;
+
+
+ 	if (assoc == 0xffff)
 diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 7a35b72..0c746af 100644
+index 0c746af..d916183 100644
 --- a/arch/x86/kernel/cpu/mcheck/mce.c
 +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -326,7 +326,7 @@ static void mce_panic(char *msg, struct mce *final, char *exp)
+@@ -1159,7 +1159,7 @@ static void mce_start_timer(unsigned long data)
 
- static int msr_to_offset(u32 msr)
- {
--	unsigned bank = __get_cpu_var(injectm.bank);
-+	unsigned bank = __this_cpu_read(injectm.bank);
+ 	WARN_ON(smp_processor_id() != data);
 
- 	if (msr == rip_msr)
- 		return offsetof(struct mce, ip);
-@@ -346,7 +346,7 @@ static u64 mce_rdmsrl(u32 msr)
- {
- 	u64 v;
-
--	if (__get_cpu_var(injectm).finished) {
-+	if (__this_cpu_read(injectm.finished)) {
- 		int offset = msr_to_offset(msr);
-
- 		if (offset < 0)
-@@ -369,7 +369,7 @@ static u64 mce_rdmsrl(u32 msr)
-
- static void mce_wrmsrl(u32 msr, u64 v)
- {
--	if (__get_cpu_var(injectm).finished) {
-+	if (__this_cpu_read(injectm.finished)) {
- 		int offset = msr_to_offset(msr);
-
- 		if (offset >= 0)
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 6d75b91..ba85814 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -968,8 +968,7 @@ x86_perf_event_set_period(struct perf_event *event)
-
- static void x86_pmu_enable_event(struct perf_event *event)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
--	if (cpuc->enabled)
-+	if (__this_cpu_read(cpu_hw_events.enabled))
- 		__x86_pmu_enable_event(&event->hw,
- 				       ARCH_PERFMON_EVENTSEL_ENABLE);
- }
-@@ -1243,7 +1242,7 @@ perf_event_nmi_handler(struct notifier_block *self,
- 		break;
- 	case DIE_NMIUNKNOWN:
- 		this_nmi = percpu_read(irq_stat.__nmi_count);
--		if (this_nmi != __get_cpu_var(pmu_nmi).marked)
-+		if (this_nmi != __this_cpu_read(pmu_nmi.marked))
- 			/* let the kernel handle the unknown nmi */
- 			return NOTIFY_DONE;
- 		/*
-@@ -1267,8 +1266,8 @@ perf_event_nmi_handler(struct notifier_block *self,
- 	this_nmi = percpu_read(irq_stat.__nmi_count);
- 	if ((handled > 1) ||
- 		/* the next nmi could be a back-to-back nmi */
--	    ((__get_cpu_var(pmu_nmi).marked == this_nmi) &&
--	     (__get_cpu_var(pmu_nmi).handled > 1))) {
-+	    ((__this_cpu_read(pmu_nmi.marked) == this_nmi) &&
-+	     (__this_cpu_read(pmu_nmi.handled) > 1))) {
- 		/*
- 		 * We could have two subsequent back-to-back nmis: The
- 		 * first handles more than one counter, the 2nd
-@@ -1279,8 +1278,8 @@ perf_event_nmi_handler(struct notifier_block *self,
- 		 * handling more than one counter. We will mark the
- 		 * next (3rd) and then drop it if unhandled.
- 		 */
--		__get_cpu_var(pmu_nmi).marked	= this_nmi + 1;
--		__get_cpu_var(pmu_nmi).handled	= handled;
-+		__this_cpu_write(pmu_nmi.marked, this_nmi + 1);
-+		__this_cpu_write(pmu_nmi.handled, handled);
+-	if (mce_available(&current_cpu_data)) {
++	if (mce_available(__this_cpu_ptr(&cpu_info))) {
+ 		machine_check_poll(MCP_TIMESTAMP,
+ 				&__get_cpu_var(mce_poll_banks));
  	}
-
- 	return NOTIFY_STOP;
-@@ -1454,11 +1453,9 @@ static inline void x86_pmu_read(struct perf_event *event)
-  */
- static void x86_pmu_start_txn(struct pmu *pmu)
+@@ -1767,7 +1767,7 @@ static int mce_shutdown(struct sys_device *dev)
+ static int mce_resume(struct sys_device *dev)
  {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
--
- 	perf_pmu_disable(pmu);
--	cpuc->group_flag |= PERF_EVENT_TXN;
--	cpuc->n_txn = 0;
-+	__this_cpu_or(cpu_hw_events.group_flag, PERF_EVENT_TXN);
-+	__this_cpu_write(cpu_hw_events.n_txn, 0);
+ 	__mcheck_cpu_init_generic();
+-	__mcheck_cpu_init_vendor(&current_cpu_data);
++	__mcheck_cpu_init_vendor(__this_cpu_ptr(&cpu_info));
+
+ 	return 0;
  }
-
- /*
-@@ -1468,14 +1465,12 @@ static void x86_pmu_start_txn(struct pmu *pmu)
-  */
- static void x86_pmu_cancel_txn(struct pmu *pmu)
+@@ -1775,7 +1775,7 @@ static int mce_resume(struct sys_device *dev)
+ static void mce_cpu_restart(void *data)
  {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
--
--	cpuc->group_flag &= ~PERF_EVENT_TXN;
-+	__this_cpu_and(cpu_hw_events.group_flag, ~PERF_EVENT_TXN);
- 	/*
- 	 * Truncate the collected events.
- 	 */
--	cpuc->n_added -= cpuc->n_txn;
--	cpuc->n_events -= cpuc->n_txn;
-+	__this_cpu_sub(cpu_hw_events.n_added, __this_cpu_read(cpu_hw_events.n_txn));
-+	__this_cpu_sub(cpu_hw_events.n_events, __this_cpu_read(cpu_hw_events.n_txn));
- 	perf_pmu_enable(pmu);
- }
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index c8f5c08..4ee59bc 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -649,7 +649,7 @@ static void intel_pmu_enable_event(struct perf_event *event)
- 	struct hw_perf_event *hwc = &event->hw;
-
- 	if (unlikely(hwc->idx == X86_PMC_IDX_FIXED_BTS)) {
--		if (!__get_cpu_var(cpu_hw_events).enabled)
-+		if (!__this_cpu_read(cpu_hw_events.enabled))
- 			return;
-
- 		intel_pmu_enable_bts(hwc->config);
-@@ -679,7 +679,7 @@ static int intel_pmu_save_and_restart(struct perf_event *event)
-
- static void intel_pmu_reset(void)
+ 	del_timer_sync(&__get_cpu_var(mce_timer));
+-	if (!mce_available(&current_cpu_data))
++	if (!mce_available(__this_cpu_ptr(&cpu_info)))
+ 		return;
+ 	__mcheck_cpu_init_generic();
+ 	__mcheck_cpu_init_timer();
+@@ -1790,7 +1790,7 @@ static void mce_restart(void)
+ /* Toggle features for corrected errors */
+ static void mce_disable_ce(void *all)
  {
--	struct debug_store *ds = __get_cpu_var(cpu_hw_events).ds;
-+	struct debug_store *ds = __this_cpu_read(cpu_hw_events.ds);
+-	if (!mce_available(&current_cpu_data))
++	if (!mce_available(__this_cpu_ptr(&cpu_info)))
+ 		return;
+ 	if (all)
+ 		del_timer_sync(&__get_cpu_var(mce_timer));
+@@ -1799,7 +1799,7 @@ static void mce_disable_ce(void *all)
+
+ static void mce_enable_ce(void *all)
+ {
+-	if (!mce_available(&current_cpu_data))
++	if (!mce_available(__this_cpu_ptr(&cpu_info)))
+ 		return;
+ 	cmci_reenable();
+ 	cmci_recheck();
+@@ -2022,7 +2022,7 @@ static void __cpuinit mce_disable_cpu(void *h)
+ 	unsigned long action = *(unsigned long *)h;
+ 	int i;
+
+-	if (!mce_available(&current_cpu_data))
++	if (!mce_available(__this_cpu_ptr(&cpu_info)))
+ 		return;
+
+ 	if (!(action & CPU_TASKS_FROZEN))
+@@ -2040,7 +2040,7 @@ static void __cpuinit mce_reenable_cpu(void *h)
+ 	unsigned long action = *(unsigned long *)h;
+ 	int i;
+
+-	if (!mce_available(&current_cpu_data))
++	if (!mce_available(__this_cpu_ptr(&cpu_info)))
+ 		return;
+
+ 	if (!(action & CPU_TASKS_FROZEN))
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+index 6fcd093..8694ef5 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+@@ -130,7 +130,7 @@ void cmci_recheck(void)
  	unsigned long flags;
- 	int idx;
+ 	int banks;
 
-diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-index 3afb33f..b45246f 100644
---- a/arch/x86/kernel/ftrace.c
-+++ b/arch/x86/kernel/ftrace.c
-@@ -167,9 +167,9 @@ static void ftrace_mod_code(void)
-
- void ftrace_nmi_enter(void)
- {
--	__get_cpu_var(save_modifying_code) = modifying_code;
-+	__this_cpu_write(save_modifying_code, modifying_code);
-
--	if (!__get_cpu_var(save_modifying_code))
-+	if (!__this_cpu_read(save_modifying_code))
+-	if (!mce_available(&current_cpu_data) || !cmci_supported(&banks))
++	if (!mce_available(__this_cpu_ptr(&cpu_info)) || !cmci_supported(&banks))
  		return;
-
- 	if (atomic_inc_return(&nmi_running) & MOD_CODE_WRITE_FLAG) {
-@@ -183,7 +183,7 @@ void ftrace_nmi_enter(void)
-
- void ftrace_nmi_exit(void)
+ 	local_irq_save(flags);
+ 	machine_check_poll(MCP_TIMESTAMP, &__get_cpu_var(mce_banks_owned));
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 57d1868..dae1c07 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -445,7 +445,7 @@ void mwait_idle_with_hints(unsigned long ax, unsigned long cx)
  {
--	if (!__get_cpu_var(save_modifying_code))
-+	if (!__this_cpu_read(save_modifying_code))
- 		return;
+ 	trace_power_start(POWER_CSTATE, (ax>>4)+1, smp_processor_id());
+ 	if (!need_resched()) {
+-		if (cpu_has(&current_cpu_data, X86_FEATURE_CLFLUSH_MONITOR))
++		if (cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_CLFLUSH_MONITOR))
+ 			clflush((void *)&current_thread_info()->flags);
 
- 	/* Finish all executions before clearing nmi_running */
-diff --git a/arch/x86/kernel/hw_breakpoint.c b/arch/x86/kernel/hw_breakpoint.c
-index 42c5942..02f0763 100644
---- a/arch/x86/kernel/hw_breakpoint.c
-+++ b/arch/x86/kernel/hw_breakpoint.c
-@@ -122,7 +122,7 @@ int arch_install_hw_breakpoint(struct perf_event *bp)
- 		return -EBUSY;
-
- 	set_debugreg(info->address, i);
--	__get_cpu_var(cpu_debugreg[i]) = info->address;
-+	__this_cpu_write(cpu_debugreg[i], info->address);
-
- 	dr7 = &__get_cpu_var(cpu_dr7);
- 	*dr7 |= encode_dr7(i, info->len, info->type);
-@@ -397,12 +397,12 @@ void flush_ptrace_hw_breakpoint(struct task_struct *tsk)
-
- void hw_breakpoint_restore(void)
+ 		__monitor((void *)&current_thread_info()->flags, 0, 0);
+@@ -460,7 +460,7 @@ static void mwait_idle(void)
  {
--	set_debugreg(__get_cpu_var(cpu_debugreg[0]), 0);
--	set_debugreg(__get_cpu_var(cpu_debugreg[1]), 1);
--	set_debugreg(__get_cpu_var(cpu_debugreg[2]), 2);
--	set_debugreg(__get_cpu_var(cpu_debugreg[3]), 3);
-+	set_debugreg(__this_cpu_read(cpu_debugreg[0]), 0);
-+	set_debugreg(__this_cpu_read(cpu_debugreg[1]), 1);
-+	set_debugreg(__this_cpu_read(cpu_debugreg[2]), 2);
-+	set_debugreg(__this_cpu_read(cpu_debugreg[3]), 3);
- 	set_debugreg(current->thread.debugreg6, 6);
--	set_debugreg(__get_cpu_var(cpu_dr7), 7);
-+	set_debugreg(__this_cpu_read(cpu_dr7), 7);
- }
- EXPORT_SYMBOL_GPL(hw_breakpoint_restore);
+ 	if (!need_resched()) {
+ 		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
+-		if (cpu_has(&current_cpu_data, X86_FEATURE_CLFLUSH_MONITOR))
++		if (cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_CLFLUSH_MONITOR))
+ 			clflush((void *)&current_thread_info()->flags);
 
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 83ec017..3a43caa 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -234,7 +234,7 @@ unsigned int __irq_entry do_IRQ(struct pt_regs *regs)
- 	exit_idle();
- 	irq_enter();
-
--	irq = __get_cpu_var(vector_irq)[vector];
-+	irq = __this_cpu_read(vector_irq[vector]);
-
- 	if (!handle_irq(irq, regs)) {
- 		ack_APIC_irq();
-@@ -350,12 +350,12 @@ void fixup_irqs(void)
- 	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
- 		unsigned int irr;
-
--		if (__get_cpu_var(vector_irq)[vector] < 0)
-+		if (__this_cpu_read(vector_irq[vector]) < 0)
- 			continue;
-
- 		irr = apic_read(APIC_IRR + (vector / 32 * 0x10));
- 		if (irr  & (1 << (vector % 32))) {
--			irq = __get_cpu_var(vector_irq)[vector];
-+			irq = __this_cpu_read(vector_irq[vector]);
-
- 			data = irq_get_irq_data(irq);
- 			raw_spin_lock(&desc->lock);
-diff --git a/arch/x86/kernel/irq_32.c b/arch/x86/kernel/irq_32.c
-index 96656f2..48ff6dc 100644
---- a/arch/x86/kernel/irq_32.c
-+++ b/arch/x86/kernel/irq_32.c
-@@ -79,7 +79,7 @@ execute_on_irq_stack(int overflow, struct irq_desc *desc, int irq)
- 	u32 *isp, arg1, arg2;
-
- 	curctx = (union irq_ctx *) current_thread_info();
--	irqctx = __get_cpu_var(hardirq_ctx);
-+	irqctx = __this_cpu_read(hardirq_ctx);
-
- 	/*
- 	 * this is where we switch to the IRQ stack. However, if we are
-@@ -166,7 +166,7 @@ asmlinkage void do_softirq(void)
-
- 	if (local_softirq_pending()) {
- 		curctx = current_thread_info();
--		irqctx = __get_cpu_var(softirq_ctx);
-+		irqctx = __this_cpu_read(softirq_ctx);
- 		irqctx->tinfo.task = curctx->task;
- 		irqctx->tinfo.previous_esp = current_stack_pointer;
-
+ 		__monitor((void *)&current_thread_info()->flags, 0, 0);
 diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 083e99d..ff4e5a1 100644
+index ff4e5a1..0720071 100644
 --- a/arch/x86/kernel/smpboot.c
 +++ b/arch/x86/kernel/smpboot.c
-@@ -1377,7 +1377,7 @@ void play_dead_common(void)
+@@ -430,7 +430,7 @@ void __cpuinit set_cpu_sibling_map(int cpu)
 
+ 	cpumask_set_cpu(cpu, c->llc_shared_map);
+
+-	if (current_cpu_data.x86_max_cores == 1) {
++	if (__this_cpu_read(cpu_info.x86_max_cores) == 1) {
+ 		cpumask_copy(cpu_core_mask(cpu), cpu_sibling_mask(cpu));
+ 		c->booted_cores = 1;
+ 		return;
+@@ -1094,7 +1094,7 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
+
+ 	preempt_disable();
+ 	smp_cpu_index_default();
+-	current_cpu_data = boot_cpu_data;
++	memcpy(__this_cpu_ptr(&cpu_info), &boot_cpu_data, sizeof(cpu_info));
+ 	cpumask_copy(cpu_callin_mask, cpumask_of(0));
  	mb();
- 	/* Ack it */
--	__get_cpu_var(cpu_state) = CPU_DEAD;
-+	__this_cpu_write(cpu_state, CPU_DEAD);
-
  	/*
- 	 * With physical CPU hotplug, we should halt the cpu
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 0c40d8b..acb08dd 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -659,7 +659,7 @@ void restore_sched_clock_state(void)
+@@ -1397,11 +1397,11 @@ static inline void mwait_play_dead(void)
+ 	int i;
+ 	void *mwait_ptr;
 
- 	local_irq_save(flags);
+-	if (!cpu_has(&current_cpu_data, X86_FEATURE_MWAIT))
++	if (!cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_MWAIT))
+ 		return;
+-	if (!cpu_has(&current_cpu_data, X86_FEATURE_CLFLSH))
++	if (!cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_CLFLSH))
+ 		return;
+-	if (current_cpu_data.cpuid_level < CPUID_MWAIT_LEAF)
++	if (__this_cpu_read(cpu_info.cpuid_level) < CPUID_MWAIT_LEAF)
+ 		return;
 
--	__get_cpu_var(cyc2ns_offset) = 0;
-+	__this_cpu_write(cyc2ns_offset, 0);
- 	offset = cyc2ns_suspend - sched_clock();
+ 	eax = CPUID_MWAIT_LEAF;
+@@ -1452,7 +1452,7 @@ static inline void mwait_play_dead(void)
 
- 	for_each_possible_cpu(cpu)
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index cdac9e5..79d9606 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -981,7 +981,7 @@ static inline u64 nsec_to_cycles(u64 nsec)
- 	if (kvm_tsc_changes_freq())
- 		printk_once(KERN_WARNING
- 		 "kvm: unreliable cycle conversion on adjustable rate TSC\n");
--	ret = nsec * __get_cpu_var(cpu_tsc_khz);
-+	ret = nsec * __this_cpu_read(cpu_tsc_khz);
- 	do_div(ret, USEC_PER_SEC);
- 	return ret;
- }
-@@ -1066,7 +1066,7 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
- 	local_irq_save(flags);
- 	kvm_get_msr(v, MSR_IA32_TSC, &tsc_timestamp);
- 	kernel_ns = get_kernel_ns();
--	this_tsc_khz = __get_cpu_var(cpu_tsc_khz);
-+	this_tsc_khz = __this_cpu_read(cpu_tsc_khz);
-
- 	if (unlikely(this_tsc_khz == 0)) {
- 		local_irq_restore(flags);
-@@ -4432,7 +4432,7 @@ EXPORT_SYMBOL_GPL(kvm_fast_pio_out);
-
- static void tsc_bad(void *info)
+ static inline void hlt_play_dead(void)
  {
--	__get_cpu_var(cpu_tsc_khz) = 0;
-+	__this_cpu_write(cpu_tsc_khz, 0);
+-	if (current_cpu_data.x86 >= 4)
++	if (__this_cpu_read(cpu_info.x86) >= 4)
+ 		wbinvd();
+
+ 	while (1) {
+diff --git a/arch/x86/oprofile/op_model_ppro.c b/arch/x86/oprofile/op_model_ppro.c
+index d769cda..94b7450 100644
+--- a/arch/x86/oprofile/op_model_ppro.c
++++ b/arch/x86/oprofile/op_model_ppro.c
+@@ -95,8 +95,8 @@ static void ppro_setup_ctrs(struct op_x86_model_spec const *model,
+ 		 * counter width:
+ 		 */
+ 		if (!(eax.split.version_id == 0 &&
+-			current_cpu_data.x86 == 6 &&
+-				current_cpu_data.x86_model == 15)) {
++			__this_cpu_read(cpu_info.x86) == 6 &&
++				__this_cpu_read(cpu_info.x86_model) == 15)) {
+
+ 			if (counter_width < eax.split.bit_width)
+ 				counter_width = eax.split.bit_width;
+@@ -235,8 +235,8 @@ static void arch_perfmon_setup_counters(void)
+ 	eax.full = cpuid_eax(0xa);
+
+ 	/* Workaround for BIOS bugs in 6/15. Taken from perfmon2 */
+-	if (eax.split.version_id == 0 && current_cpu_data.x86 == 6 &&
+-		current_cpu_data.x86_model == 15) {
++	if (eax.split.version_id == 0 && __this_cpu_read(cpu_info.x86) == 6 &&
++		__this_cpu_read(cpu_info.x86_model) == 15) {
+ 		eax.split.version_id = 2;
+ 		eax.split.num_counters = 2;
+ 		eax.split.bit_width = 40;
+diff --git a/drivers/staging/lirc/lirc_serial.c b/drivers/staging/lirc/lirc_serial.c
+index 971844b..9bcf149 100644
+--- a/drivers/staging/lirc/lirc_serial.c
++++ b/drivers/staging/lirc/lirc_serial.c
+@@ -377,7 +377,7 @@ static int init_timing_params(unsigned int new_duty_cycle,
+ 	duty_cycle = new_duty_cycle;
+ 	freq = new_freq;
+
+-	loops_per_sec = current_cpu_data.loops_per_jiffy;
++	loops_per_sec = __this_cpu_read(cpu.info.loops_per_jiffy);
+ 	loops_per_sec *= HZ;
+
+ 	/* How many clocks in a microsecond?, avoiding long long divide */
+@@ -398,7 +398,7 @@ static int init_timing_params(unsigned int new_duty_cycle,
+ 	dprintk("in init_timing_params, freq=%d, duty_cycle=%d, "
+ 		"clk/jiffy=%ld, pulse=%ld, space=%ld, "
+ 		"conv_us_to_clocks=%ld\n",
+-		freq, duty_cycle, current_cpu_data.loops_per_jiffy,
++		freq, duty_cycle, __this_cpu_read(cpu_info.loops_per_jiffy),
+ 		pulse_width, space_width, conv_us_to_clocks);
+ 	return 0;
  }
-
- static void tsc_khz_changed(void *data)
-@@ -4446,7 +4446,7 @@ static void tsc_khz_changed(void *data)
- 		khz = cpufreq_quick_get(raw_smp_processor_id());
- 	if (!khz)
- 		khz = tsc_khz;
--	__get_cpu_var(cpu_tsc_khz) = khz;
-+	__this_cpu_write(cpu_tsc_khz, khz);
- }
-
- static int kvmclock_cpufreq_notifier(struct notifier_block *nb, unsigned long val,
-diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-index 4e8baad..a0cae67 100644
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -143,7 +143,7 @@ static inline int has_mux(void)
-
- inline int op_x86_phys_to_virt(int phys)
- {
--	return __get_cpu_var(switch_index) + phys;
-+	return __this_cpu_read(switch_index) + phys;
- }
-
- inline int op_x86_virt_to_phys(int virt)
 -- 
 1.7.1
 
