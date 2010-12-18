@@ -1,93 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755853Ab0LRLj0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 06:39:26 -0500
-Received: from smtp-vbr9.xs4all.nl ([194.109.24.29]:1833 "EHLO
-	smtp-vbr9.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755689Ab0LRLjX (ORCPT
+	id S1755689Ab0LRLli (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 06:41:38 -0500
+Received: from payne.is.scarlet.be ([193.74.71.226]:38037 "EHLO
+	payne.is.scarlet.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755357Ab0LRLlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 06:39:23 -0500
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: manjunatha_halli@ti.com
-Subject: Re: [PATCH v7 2/7] drivers:media:radio: wl128x: fmdrv_v4l2 sources
-Date: Sat, 18 Dec 2010 12:38:55 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.32-23-generic; KDE/4.4.5; x86_64; ; )
-Cc: mchehab@infradead.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-References: <1292583996-4440-1-git-send-email-manjunatha_halli@ti.com> <1292583996-4440-2-git-send-email-manjunatha_halli@ti.com> <1292583996-4440-3-git-send-email-manjunatha_halli@ti.com>
-In-Reply-To: <1292583996-4440-3-git-send-email-manjunatha_halli@ti.com>
+	Sat, 18 Dec 2010 06:41:37 -0500
+X-Greylist: delayed 498 seconds by postgrey-1.27 at vger.kernel.org; Sat, 18 Dec 2010 06:41:36 EST
+Message-ID: <4D0C9BFA.4080003@scarlet.be>
+Date: Sat, 18 Dec 2010 11:33:14 +0000
+From: Joel Soete <soete.joel@scarlet.be>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.15) Gecko/20101030 Icedove/3.0.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Help: major pppoe regression since 2.6.35 (panic on first ppp conection)?
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012181238.56021.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, December 17, 2010 12:06:31 manjunatha_halli@ti.com wrote:
-> From: Manjunatha Halli <manjunatha_halli@ti.com>
-> 
-> This module interfaces V4L2 subsystem and FM common module.
-> It registers itself with V4L2 as Radio module.
-> 
-> Signed-off-by: Manjunatha Halli <manjunatha_halli@ti.com>
-> ---
->  drivers/media/radio/wl128x/fmdrv_v4l2.c |  588 +++++++++++++++++++++++++++++++
->  drivers/media/radio/wl128x/fmdrv_v4l2.h |   33 ++
->  2 files changed, 621 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/media/radio/wl128x/fmdrv_v4l2.c
->  create mode 100644 drivers/media/radio/wl128x/fmdrv_v4l2.h
-> 
-> diff --git a/drivers/media/radio/wl128x/fmdrv_v4l2.c b/drivers/media/radio/wl128x/fmdrv_v4l2.c
-> new file mode 100644
-> index 0000000..623102f
-> --- /dev/null
-> +++ b/drivers/media/radio/wl128x/fmdrv_v4l2.c
+Hello all,
 
-<snip>
+Since a year now, I installed my favorite Debian testing on my new X86_64 platform on which I like to run my personal kernel 
+config. And all was working fine since 2.6.35 was released.
 
-> +static const struct v4l2_file_operations fm_drv_fops = {
-> +	.owner = THIS_MODULE,
-> +	.read = fm_v4l2_fops_read,
-> +	.write = fm_v4l2_fops_write,
-> +	.poll = fm_v4l2_fops_poll,
-> +	.ioctl = video_ioctl2,
+The first time I experiment this issue, it was during a test of Ubuntu upgrade to the latest release 10.10 against which I 
+open this bug report <https://bugs.launchpad.net/ubuntu/+source/linux/+bug/618636>: in short the system panicing on first 
+connection to my ISP.
 
-Please use unlocked_ioctl. The .ioctl call is deprecated since it relied on the
-Big Kernel Lock which is in the process of being removed from the kernel. The
-BKL serialized all ioctl calls, unlocked_ioctl relies on the driver to serialize
-where necessary.
+This still occurs to me on the latest ubuntu stock linux image 2.6.35 as well as on my personal config from vanilla sources.
 
-There are two ways of doing the conversion: one is to do all the locking within
-the driver, the other is to use core-assisted locking. How to do the core-assisted
-locking is described in Documentation/video4linux/v4l2-framework.txt, but I'll
-repeat the relevant part here:
+As in general this kind of problem is quickly identified and solved, I do some more test with 2.6.36 and even 2.6.37-rc? 
+releases, in smp or up config, with or without netfilter, with or without foreign nvidia graphical driver but this issue is 
+still there for me?
 
-v4l2_file_operations and locking
---------------------------------
+Obviously, I also do some researches with google but without a lot of success. So I try to figure out when this pb appears 
+in the development history and find out that it was already in 2.6.35-rc1. So I do more kind of rewind in time and all was 
+working fine since 2.6.34-git5 but problems appears in 2.6.34-git[67]. For my pppoe issue, there are few changes that I 
+tried to revert without success?
 
-You can set a pointer to a mutex_lock in struct video_device. Usually this
-will be either a top-level mutex or a mutex per device node. If you want
-finer-grained locking then you have to set it to NULL and do you own locking.
+The latest related stuff I can discovered is this regression report 2.6.35 -> 2.6.36 
+<http://www.spinics.net/lists/netdev/msg145824.html> and the debugging patch proposed by Jarek Poplawski effectively drops 
+the ppp interface but the system doesn't panic any more, so can I get following kernel log:
+Dec 17 17:26:53 sidh2 kernel: [   25.941424] eth1: Link up
+Dec 17 17:26:53 sidh2 kernel: [   25.941736] eth1: Link changed: 10Mbps, half duplex
+Dec 17 17:26:53 sidh2 kernel: [   26.266657] r8169 0000:08:00.0: eth0: link up
+Dec 17 17:26:53 sidh2 kernel: [   26.266662] r8169 0000:08:00.0: eth0: link up
+Dec 17 17:26:53 sidh2 kernel: [   26.829432] ip_tables: (C) 2000-2006 Netfilter Core Team
+Dec 17 17:26:58 sidh2 kernel: [   33.017352] ppdev: user-space parallel port driver
+Dec 17 17:27:04 sidh2 kernel: [   36.357885] eth0: no IPv6 routers present
+Dec 17 17:27:04 sidh2 kernel: [   36.517833] eth1: no IPv6 routers present
+Dec 17 17:28:12 sidh2 kernel: [  106.511762] BUG: unable to handle kernel NULL pointer dereference at (null)
+Dec 17 17:28:12 sidh2 kernel: [  106.511952] IP: [<ffffffff810e405b>] put_page+0x1b/0x180
+Dec 17 17:28:12 sidh2 kernel: [  106.512078] PGD 13c6f0067 PUD 134283067 PMD 0
+Dec 17 17:28:12 sidh2 kernel: [  106.512293] Oops: 0000 [#1] SMP
+Dec 17 17:28:12 sidh2 kernel: [  106.512456] last sysfs file: /sys/devices/virtual/sound/timer/uevent
+Dec 17 17:28:12 sidh2 kernel: [  106.512533] CPU 4
+Dec 17 17:28:12 sidh2 kernel: [  106.512584] Modules linked in: ppdev xt_TCPMSS xt_tcpmss xt_tcpudp iptable_mangle ip_tables 
+x_tables lp nvidia(P) parport_pc parport agpgart i7core_edac edac_core tpm_tis tpm tpm_bios [last unloaded: scsi_wait_scan]
+Dec 17 17:28:12 sidh2 kernel: [  106.513674]
+Dec 17 17:28:12 sidh2 kernel: [  106.513742] Pid: 1821, comm: pppd Tainted: P            2.6.35-amd64-t3 #5 EX58-UD3R/EX58-UD3R
+Dec 17 17:28:12 sidh2 kernel: [  106.513838] RIP: 0010:[<ffffffff810e405b>]  [<ffffffff810e405b>] put_page+0x1b/0x180
+Dec 17 17:28:12 sidh2 kernel: [  106.513982] RSP: 0018:ffff88013cecfe08  EFLAGS: 00010292
+Dec 17 17:28:12 sidh2 kernel: [  106.514056] RAX: 0000000000000030 RBX: 0000000000000000 RCX: 0000000000001733
+Dec 17 17:28:12 sidh2 kernel: [  106.514134] RDX: ffff88013c906640 RSI: ffff88013c906060 RDI: 0000000000000000
+Dec 17 17:28:12 sidh2 kernel: [  106.514211] RBP: ffff88013c86e900 R08: ffffffff81342b90 R09: 00000000ffe22e08
+Dec 17 17:28:12 sidh2 kernel: [  106.514288] R10: ffff88013cece000 R11: 0000000000000000 R12: 00000000080d5f42
+Dec 17 17:28:12 sidh2 kernel: [  106.514366] R13: ffff88013c86f400 R14: 000000000000000a R15: 00000000000005de
+Dec 17 17:28:12 sidh2 kernel: [  106.514444] FS:  0000000000000000(0000) GS:ffff880001f00000(0063) knlGS:00000000f75f5b20
+Dec 17 17:28:12 sidh2 kernel: [  106.514539] CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
+Dec 17 17:28:12 sidh2 kernel: [  106.514614] CR2: 0000000000000000 CR3: 000000013c758000 CR4: 00000000000006e0
+Dec 17 17:28:12 sidh2 kernel: [  106.514692] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+Dec 17 17:28:12 sidh2 kernel: [  106.514769] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Dec 17 17:28:12 sidh2 kernel: [  106.514847] Process pppd (pid: 1821, threadinfo ffff88013cece000, task ffff88013c7ea120)
+Dec 17 17:28:12 sidh2 kernel: [  106.514941] Stack:
+Dec 17 17:28:12 sidh2 kernel: [  106.515008]  0000000000000000 0000000000000001 ffff88013c86e900 00000000080d5f42
+Dec 17 17:28:12 sidh2 kernel: [  106.515227] <0> ffff88013c86f400 ffffffff814288b7 ffff88013c523c00 ffff88013c86e900
+Dec 17 17:28:12 sidh2 kernel: [  106.515556] <0> ffff88013c523c00 ffffffff814283c1 ffff88013c86e900 ffffffff81342d1c
+Dec 17 17:28:12 sidh2 kernel: [  106.515948] Call Trace:
+Dec 17 17:28:12 sidh2 kernel: [  106.516022]  [<ffffffff814288b7>] ? skb_release_data+0x77/0xd0
+Dec 17 17:28:12 sidh2 kernel: [  106.516099]  [<ffffffff814283c1>] ? __kfree_skb+0x11/0x90
+Dec 17 17:28:12 sidh2 kernel: [  106.516176]  [<ffffffff81342d1c>] ? ppp_read+0x18c/0x210
+Dec 17 17:28:12 sidh2 kernel: [  106.516252]  [<ffffffff8104df70>] ? default_wake_function+0x0/0x20
+Dec 17 17:28:12 sidh2 kernel: [  106.516329]  [<ffffffff8111f905>] ? vfs_read+0xb5/0x1a0
+Dec 17 17:28:12 sidh2 kernel: [  106.516404]  [<ffffffff8111fa3e>] ? sys_read+0x4e/0x90
+Dec 17 17:28:12 sidh2 kernel: [  106.516479]  [<ffffffff810996ff>] ? compat_sys_gettimeofday+0x9f/0xb0
+Dec 17 17:28:12 sidh2 kernel: [  106.516558]  [<ffffffff8103eb8f>] ? sysenter_dispatch+0x7/0x2e
+Dec 17 17:28:12 sidh2 kernel: [  106.516632] Code: cc bb f8 ff 66 66 66 2e 0f 1f 84 00 00 00 00 00 48 83 ec 28 48 89 5c 24 
+08 48 89 6c 24 10 48 89 fb 4c 89 64 24 18 4c 89 6c 24 20 <48> 8b 07 66 a9 00 c0 0f 85 13 01 00 00 f0 ff 4f 08 0f 94 c0 84
+Dec 17 17:28:12 sidh2 kernel: [  106.519823] RIP  [<ffffffff810e405b>] put_page+0x1b/0x180
+Dec 17 17:28:12 sidh2 kernel: [  106.519945]  RSP <ffff88013cecfe08>
+Dec 17 17:28:12 sidh2 kernel: [  106.520015] CR2: 0000000000000000
+Dec 17 17:28:12 sidh2 kernel: [  106.520093] ---[ end trace bac76655d5f488ec ]---
 
-If a lock is specified then all file operations will be serialized on that
-lock. If you use videobuf then you must pass the same lock to the videobuf
-queue initialize function: if videobuf has to wait for a frame to arrive, then
-it will temporarily unlock the lock and relock it afterwards. If your driver
-also waits in the code, then you should do the same to allow other processes
-to access the device node while the first process is waiting for something.
 
-The implementation of a hotplug disconnect should also take the lock before
-calling v4l2_device_disconnect.
+Sorry but I don't have enough knowledge to understand this pb, so all help will be appreciated.
 
-> +	.open = fm_v4l2_fops_open,
-> +	.release = fm_v4l2_fops_release,
-> +};
+Tia,
+	J.
 
-Regards,
-
-	Hans
-
--- 
-Hans Verkuil - video4linux developer - sponsored by Cisco
