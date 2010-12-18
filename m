@@ -1,258 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757106Ab0LRRm3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 12:42:29 -0500
-Received: from mail-bw0-f66.google.com ([209.85.214.66]:49712 "EHLO
-	mail-bw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757059Ab0LRRm1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 12:42:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=Un76tSLd+sSgZ/G062Y+8UP3p+tbn6X13E6+0iZIMq3fUxJhqgNh3mSEhCkG6yzj4Q
-         X5FdLPOO1TRXj0AH0fD1Y8r9znUPk+YRzDjH48sWeWhCa6+HfVDCcML84KPdN1SsCzuY
-         uDgeHw6CIHuVoW+OVjLmD6c05mRb7Z0xeCesM=
-Message-ID: <4D0CF27F.1080601@kernel.org>
-Date: Sat, 18 Dec 2010 18:42:23 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, Jens Axboe <axboe@kernel.dk>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+	id S932086Ab0LRRyU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 12:54:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58204 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932068Ab0LRRyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Dec 2010 12:54:17 -0500
+Date: Sat, 18 Dec 2010 09:52:27 -0800
+From: Greg KH <gregkh@suse.de>
+To: Robert Morell <rmorell@nvidia.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Benoit Goby <benoit@android.com>,
         Alan Stern <stern@rowland.harvard.edu>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: [PATCH scsi-misc-2.6] sd: implement sd_check_events()
-References: <20101217122831.39300d94.sfr@canb.auug.org.au> <1292597607.2820.17.camel@mulgrave.site>
-In-Reply-To: <1292597607.2820.17.camel@mulgrave.site>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
+        Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>,
+        Colin Cross <ccross@android.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] USB: ehci: tegra: Align DMA transfers to 32
+ bytes
+Message-ID: <20101218175227.GC7225@suse.de>
+References: <1292623129-26361-1-git-send-email-rmorell@nvidia.com>
+ <1292636971-17701-3-git-send-email-rmorell@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292636971-17701-3-git-send-email-rmorell@nvidia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace sd_media_change() with sd_check_events().
+On Fri, Dec 17, 2010 at 05:49:31PM -0800, Robert Morell wrote:
+> --- a/include/linux/usb.h
+> +++ b/include/linux/usb.h
+> @@ -975,6 +975,7 @@ extern int usb_disabled(void);
+>  #define URB_SETUP_MAP_SINGLE	0x00100000	/* Setup packet DMA mapped */
+>  #define URB_SETUP_MAP_LOCAL	0x00200000	/* HCD-local setup packet */
+>  #define URB_DMA_SG_COMBINED	0x00400000	/* S-G entries were combined */
+> +#define URB_ALIGNED_TEMP_BUFFER	0x00800000	/* Temp buffer was alloc'd */
 
-* Move media removed logic into set_media_not_present() and
-  media_not_present() and set sdev->changed iff an existing media is
-  removed or the device indicates UNIT_ATTENTION.
+This should go in the previous patch, right?
 
-* Make sd_check_events() sets sdev->changed if previously missing
-  media becomes present.
+thanks,
 
-* Event is reported only if sdev->changed is set.
-
-This makes media presence event reported if scsi_disk->media_present
-actually changed or the device indicated UNIT_ATTENTION.  For backward
-compatibility, SDEV_EVT_MEDIA_CHANGE is generated each time
-sd_check_events() detects media change event.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
----
-Here it is.  The conflicts were due to Alan's recent patch, which was
-in the similar direction anyway.
-
-Thanks.
-
- drivers/scsi/sd.c |   99 +++++++++++++++++++++++++++---------------------------
- drivers/scsi/sd.h |    1
- 2 files changed, 50 insertions(+), 50 deletions(-)
-
-Index: work/drivers/scsi/sd.c
-===================================================================
---- work.orig/drivers/scsi/sd.c
-+++ work/drivers/scsi/sd.c
-@@ -990,30 +990,50 @@ out:
-
- static void set_media_not_present(struct scsi_disk *sdkp)
- {
-+	if (sdkp->media_present)
-+		sdkp->device->changed = 1;
- 	sdkp->media_present = 0;
- 	sdkp->capacity = 0;
--	sdkp->device->changed = 1;
-+}
-+
-+static int media_not_present(struct scsi_disk *sdkp,
-+			     struct scsi_sense_hdr *sshdr)
-+{
-+	if (!scsi_sense_valid(sshdr))
-+		return 0;
-+
-+	/* not invoked for commands that could return deferred errors */
-+	switch (sshdr->sense_key) {
-+	case UNIT_ATTENTION:
-+		sdkp->device->changed = 1;
-+		/* fall through */
-+	case NOT_READY:
-+		/* medium not present */
-+		if (sshdr->asc == 0x3A) {
-+			set_media_not_present(sdkp);
-+			return 1;
-+		}
-+	}
-+	return 0;
- }
-
- /**
-- *	sd_media_changed - check if our medium changed
-- *	@disk: kernel device descriptor
-+ *	sd_check_events - check media events
-+ *	@disk: kernel device descriptor
-+ *	@clearing: disk events currently being cleared
-  *
-- *	Returns 0 if not applicable or no change; 1 if change
-+ *	Returns mask of DISK_EVENT_*.
-  *
-  *	Note: this function is invoked from the block subsystem.
-  **/
--static int sd_media_changed(struct gendisk *disk)
-+static unsigned int sd_check_events(struct gendisk *disk, unsigned int clearing)
- {
- 	struct scsi_disk *sdkp = scsi_disk(disk);
- 	struct scsi_device *sdp = sdkp->device;
- 	struct scsi_sense_hdr *sshdr = NULL;
- 	int retval;
-
--	SCSI_LOG_HLQUEUE(3, sd_printk(KERN_INFO, sdkp, "sd_media_changed\n"));
--
--	if (!sdp->removable)
--		return 0;
-+	SCSI_LOG_HLQUEUE(3, sd_printk(KERN_INFO, sdkp, "sd_check_events\n"));
-
- 	/*
- 	 * If the device is offline, don't send any commands - just pretend as
-@@ -1043,40 +1063,37 @@ static int sd_media_changed(struct gendi
- 					      sshdr);
- 	}
-
--	if (retval) {
-+	/* failed to execute TUR, assume media not present */
-+	if (host_byte(retval)) {
- 		set_media_not_present(sdkp);
- 		goto out;
- 	}
-
-+	if (media_not_present(sdkp, sshdr))
-+		goto out;
-+
- 	/*
- 	 * For removable scsi disk we have to recognise the presence
--	 * of a disk in the drive. This is kept in the struct scsi_disk
--	 * struct and tested at open !  Daniel Roche (dan@lectra.fr)
-+	 * of a disk in the drive.
- 	 */
-+	if (!sdkp->media_present)
-+		sdp->changed = 1;
- 	sdkp->media_present = 1;
--
- out:
- 	/*
--	 * Report a media change under the following conditions:
-+	 * sdp->changed is set under the following conditions:
- 	 *
--	 *	Medium is present now and wasn't present before.
--	 *	Medium wasn't present before and is present now.
--	 *	Medium was present at all times, but it changed while
--	 *		we weren't looking (sdp->changed is set).
-+	 *	Medium present state has changed in either direction.
-+	 *	Device has indicated UNIT_ATTENTION.
- 	 *
--	 * If there was no medium before and there is no medium now then
--	 * don't report a change, even if a medium was inserted and removed
--	 * while we weren't looking.
-+	 * Report SDEV_EVT_MEDIA_CHANGE too for backward compatibility.
- 	 */
--	retval = (sdkp->media_present != sdkp->previous_state ||
--			(sdkp->media_present && sdp->changed));
--	if (retval)
-+	if (sdp->changed)
- 		sdev_evt_send_simple(sdp, SDEV_EVT_MEDIA_CHANGE, GFP_KERNEL);
--	sdkp->previous_state = sdkp->media_present;
--
--	/* sdp->changed indicates medium was changed or is not present */
--	sdp->changed = !sdkp->media_present;
- 	kfree(sshdr);
-+
-+	retval = sdp->changed ? DISK_EVENT_MEDIA_CHANGE : 0;
-+	sdp->changed = 0;
- 	return retval;
- }
-
-@@ -1169,7 +1186,7 @@ static const struct block_device_operati
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl		= sd_compat_ioctl,
- #endif
--	.media_changed		= sd_media_changed,
-+	.check_events		= sd_check_events,
- 	.revalidate_disk	= sd_revalidate_disk,
- 	.unlock_native_capacity	= sd_unlock_native_capacity,
- };
-@@ -1305,23 +1322,6 @@ static int sd_done(struct scsi_cmnd *SCp
- 	return good_bytes;
- }
-
--static int media_not_present(struct scsi_disk *sdkp,
--			     struct scsi_sense_hdr *sshdr)
--{
--
--	if (!scsi_sense_valid(sshdr))
--		return 0;
--	/* not invoked for commands that could return deferred errors */
--	if (sshdr->sense_key != NOT_READY &&
--	    sshdr->sense_key != UNIT_ATTENTION)
--		return 0;
--	if (sshdr->asc != 0x3A) /* medium not present */
--		return 0;
--
--	set_media_not_present(sdkp);
--	return 1;
--}
--
- /*
-  * spinup disk - called only in sd_revalidate_disk()
-  */
-@@ -1496,7 +1496,7 @@ static void read_capacity_error(struct s
- 	 */
- 	if (sdp->removable &&
- 	    sense_valid && sshdr->sense_key == NOT_READY)
--		sdp->changed = 1;
-+		set_media_not_present(sdkp);
-
- 	/*
- 	 * We used to set media_present to 0 here to indicate no media
-@@ -2382,8 +2382,10 @@ static void sd_probe_async(void *data, a
-
- 	gd->driverfs_dev = &sdp->sdev_gendev;
- 	gd->flags = GENHD_FL_EXT_DEVT;
--	if (sdp->removable)
-+	if (sdp->removable) {
- 		gd->flags |= GENHD_FL_REMOVABLE;
-+		gd->events |= DISK_EVENT_MEDIA_CHANGE;
-+	}
-
- 	add_disk(gd);
- 	sd_dif_config_host(sdkp);
-@@ -2465,7 +2467,6 @@ static int sd_probe(struct device *dev)
- 	sdkp->disk = gd;
- 	sdkp->index = index;
- 	atomic_set(&sdkp->openers, 0);
--	sdkp->previous_state = 1;
-
- 	if (!sdp->request_queue->rq_timeout) {
- 		if (sdp->type != TYPE_MOD)
-Index: work/drivers/scsi/sd.h
-===================================================================
---- work.orig/drivers/scsi/sd.h
-+++ work/drivers/scsi/sd.h
-@@ -55,7 +55,6 @@ struct scsi_disk {
- 	u8		media_present;
- 	u8		write_prot;
- 	u8		protection_type;/* Data Integrity Field */
--	unsigned	previous_state : 1;
- 	unsigned	ATO : 1;	/* state of disk ATO bit */
- 	unsigned	WCE : 1;	/* state of disk WCE bit */
- 	unsigned	RCD : 1;	/* state of disk RCD bit, unused */
+greg k-h
