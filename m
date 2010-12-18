@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756089Ab0LRMyD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 07:54:03 -0500
-Received: from outgoing.selfhost.de ([82.98.87.70]:40955 "EHLO
-	outgoing.selfhost.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755685Ab0LRMyB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 07:54:01 -0500
-Message-ID: <4D0CAEE4.7080309@afaics.de>
-Date: Sat, 18 Dec 2010 13:53:56 +0100
-From: Harald Dunkel <harri@afaics.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101210 Thunderbird/3.1.7
+	id S1756120Ab0LRMzl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 07:55:41 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:37301 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755685Ab0LRMzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Dec 2010 07:55:40 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: platform/i2c busses: pm runtime and system sleep
+Date: Sat, 18 Dec 2010 13:54:57 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6+; KDE/4.4.4; x86_64; ; )
+Cc: Rabin Vincent <rabin@rab.in>, stern@rowland.harvard.edu,
+        linux-pm@lists.linux-foundation.org, linux-i2c@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+References: <AANLkTinyDE3OxKup_aqsN8HJH_r5LcwkP17OtuMRpACx@mail.gmail.com> <201012180001.25263.rjw@sisk.pl> <20101218010454.GA2430@opensource.wolfsonmicro.com>
+In-Reply-To: <20101218010454.GA2430@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Intel 82915G/GV/910GL, 2.6.36.2: problem with CONFIG_DRM_I915_KMS=y
-References: <4D0A9164.5070503@afaics.de> <AANLkTi=jeJriExzNVRxbApz9VEUeuL0BpVLnRoTx_SrT@mail.gmail.com> <5b55a1$ivogvh@fmsmga002.fm.intel.com>
-In-Reply-To: <5b55a1$ivogvh@fmsmga002.fm.intel.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201012181354.58077.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-On 12/17/10 02:15, Chris Wilson wrote:
+On Saturday, December 18, 2010, Mark Brown wrote:
+> On Sat, Dec 18, 2010 at 12:01:25AM +0100, Rafael J. Wysocki wrote:
+> > On Friday, December 17, 2010, Mark Brown wrote:
 > 
-> Sounds like:
+> > > 	if (pm) {
+> > > 		if (pm_runtime_suspended(dev))
+> > > 			return 0;
+> > > 		else
+> > > 			return pm->suspend ? pm->suspend(dev) : 0;
+> > > 	}
 > 
-> commit 47f1c6c9ffdec0c0e5a2c2709bd63c7380b325c4
+> > > 	return i2c_legacy_suspend(dev, PMSG_SUSPEND);
+> > > }
+> 
+> > > Ideally the if (pm) block could just be factored out into the pm core as
+> > > there's nothing I2C-specific about that at all.  Possibly even the whole
+> > > logic surrounding fall back to legacy, though that smells a bit.
+> 
+> > No, the legacy is i2c-specific.
+> 
+> SPI and platform (the first two buses I looked at) both seem to have
+> legacy suspend operations too?  Clearly the bus would need to provide an
+> op to invoke the legacy call but the logic which prioritises the pm_ops
+> over the legacy operation is generic.
 
-I tried 2.6.37-rc6 (which includes this patch): The problem is gone.
+Well, the problem with that is the driver would need to tell the generic call
+what the legacy routine is and there's no, er, generic way to do that.
 
+In the i2c case, for example, there is struct i2c_driver that contains the
+->suspend() and ->resume() pointers, so the bus type driver _knows_ how to
+get there, but the PM core doesn't have this information.
 
-Many thanx
-
-Harri
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk0Mrt4ACgkQUTlbRTxpHjdE+gCeKixT9dnELPELDyHRZ32wvgu9
-0pUAnidpUImDDX9LMrKfGFjX60kQUv4J
-=iFgU
------END PGP SIGNATURE-----
+Thanks,
+Rafael
