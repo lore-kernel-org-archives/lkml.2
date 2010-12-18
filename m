@@ -1,59 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166Ab0LRJQO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 04:16:14 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:57266 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753557Ab0LRJQK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 04:16:10 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=OEjmsqeK7n5+qlVhKSAIS9d6KxWGj3v4ufe+9Ap42VxgH/BqIZ24Wsdf+92Xhbj7s8
-         ERj93BTzSQYyKML7O7kpCD+74ZEx2pPnMTdqn426Hjf38ILHwURqGhj3q1n5J8I3zyoz
-         kxfKH0tJ7SGIkpFKYuI+z72BXcxx4cDJPoyXw=
-MIME-Version: 1.0
-In-Reply-To: <1292628398.16209.25.camel@mulgrave.site>
-References: <1292557664.31461.68.camel@haakon2.linux-iscsi.org>
- <1292599364.2820.21.camel@mulgrave.site> <4D0B8975.1040206@vlnb.net>
- <1292602908.2820.41.camel@mulgrave.site> <4D0BBE40.6030000@vlnb.net>
- <1292617658.2820.80.camel@mulgrave.site> <4D0BD79B.2010600@vlnb.net> <1292628398.16209.25.camel@mulgrave.site>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Sat, 18 Dec 2010 10:15:46 +0100
-X-Google-Sender-Auth: al4PRrzune3j6kuEGQZV00lvebE
-Message-ID: <AANLkTik5VkhxrRJ--PjF7-Lj-7h7XmunW+Ksmd=MsTJa@mail.gmail.com>
-Subject: Re: [ANNOUNCE] TCM/LIO v4.0.0-rc6 for 2.6.37-rc6
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Vladislav Bolkhovitin <vst@vlnb.net>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        "Patil, Kiran" <kiran.patil@intel.com>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Boaz Harrosh <bharrosh@panasas.com>,
-        Joe Eykholt <jeykholt@cisco.com>, "J.H." <warthog9@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754290Ab0LRJWH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 04:22:07 -0500
+Received: from verein.lst.de ([213.95.11.210]:50212 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753753Ab0LRJWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Dec 2010 04:22:03 -0500
+Date: Sat, 18 Dec 2010 10:20:49 +0100
+From: Christoph Hellwig <hch@lst.de>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org,
+        Shane Michael Matthews <shane.matthews@intel.com>
+Subject: Re: [PATCH] Add readpages support for block devices
+Message-ID: <20101218092049.GA32442@lst.de>
+References: <1292632073-6196-1-git-send-email-willy@linux.intel.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292632073-6196-1-git-send-email-willy@linux.intel.com>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: -0.001 () BAYES_44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 18, 2010 at 12:26 AM, James Bottomley
-<James.Bottomley@suse.de> wrote:
-> On Sat, 2010-12-18 at 00:35 +0300, Vladislav Bolkhovitin wrote:
-> > [ ... ]
-> > 2. It exports some information via procfs, which was declared as a big
-> > no-no.
->
-> I looked at the code fairly carefully and didn't find this ... where is
-> it?
+We already used to have this and Jens reverted it in commit
+172124e220f1854acc99ee394671781b8b5e2120.  I can't find a better
+explanation than his rather brief commit message, but he might not more.
 
-Does this mean that you didn't have a look yet at this patch ?
-
-[PATCH v2 02l/03] target: Add SCSI MIB statistics support
-
-Bart.
