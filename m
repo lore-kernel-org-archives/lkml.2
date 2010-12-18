@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756969Ab0LRQ5B (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 11:57:01 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:49202 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756797Ab0LRQ47 convert rfc822-to-8bit (ORCPT
+	id S1756981Ab0LRRCm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 12:02:42 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:36483 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756867Ab0LRRCk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 11:56:59 -0500
+	Sat, 18 Dec 2010 12:02:40 -0500
+From: Romain Francoise <romain@orebokech.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Christian Hesse <mail@earthworm.de>, linux-kernel@vger.kernel.org
+Subject: Re: Thunar crashes kernel
+Organization: orebokech dot com
+References: <20101218005526.177e1617@leda.vpn.lugor.de>
+	<1292646773.7406.19.camel@marge.simson.net>
+X-Face: }9mYu,e_@+e!`Z-P5kVXa3\_b:hdJ"B)ww[&=b<2=awG:GOIM</2q'*t@MNa)R`k0h1KbUu "Ek%gXCQA(?k=Uf9}qgF_x#7/+Ql\R!NJ9[Z[ky\CTYI<H(kc][?[m%*rsf!OG11|f&H[VgX;),"!N JG6IziY\~""3M
+Date: Sat, 18 Dec 2010 18:02:31 +0100
+In-Reply-To: <1292646773.7406.19.camel@marge.simson.net> (Mike Galbraith's
+	message of "Sat, 18 Dec 2010 05:32:53 +0100")
+Message-ID: <87y67nt3o8.fsf@elegiac.orebokech.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimrNrfTXGh675_8zhOg_+9+NKgOmzJq9rafyh+6@mail.gmail.com>
-References: <1292683981-6908-1-git-send-email-rydberg@euromail.se>
-	<1292683981-6908-2-git-send-email-rydberg@euromail.se>
-	<AANLkTimrNrfTXGh675_8zhOg_+9+NKgOmzJq9rafyh+6@mail.gmail.com>
-Date: Sat, 18 Dec 2010 10:56:59 -0600
-Message-ID: <AANLkTiktxcwfSvoVDEe3ykcT7ff9VwL_NBRVbbEvuJCV@mail.gmail.com>
-Subject: Re: [PATCH 1/4] Input: synaptics - add multitouch packet support
-From: Chris Bagwell <chris@cnpbagwell.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 18, 2010 at 10:55 AM, Chris Bagwell <chris@cnpbagwell.com> wrote:
-> On Sat, Dec 18, 2010 at 8:52 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
->> From: Chase Douglas <chase.douglas@canonical.com>
->>
->> Synaptics 2.7 series of touchpads support a mode for reporting 2 sets
->> of X/Y/Pressure data (multi-touch).  These same devices default mode
->> report single finger data and do not report finger counts.
->>
->> Enabling MT mode makes finger count reporting start working in same
->> fashion as touchpads that claim that capability. Up to three fingers
->> can be reported this way.
->>
->> While in MT mode and two or three fingers are touching, two sets of
->> data are sent.  The first is a new format buffer with lower resolution
->> reporting of stationary finger and the second is standard data format
->> reporting movement.
->
-> We should probably update this comment and remove parts that mention
-> stationary and movement.  It appears to be doing finger tracking and
-> first packet is always first touch... except we are getting reports
-> that clickpads/integrated button pads may not be consistently like
-> this.
->
+Mike Galbraith <efault@gmx.de> writes:
 
-Sorry.  Not first packet but higher resolution/second packet.
+> Attached is a quilt tarball of what I've got plugged into 36.2
+> here if you want to try it.
 
-Chris
+FWIW, I added fix_skip_clock_update.diff on top of what I was running
+previously (2.6.36.2 + the two patches you posted previously and are
+included in the tarball), and the WARN_ON_ONCE(test_tsk_need_resched(next));
+triggers on two machines. It looks like this:
+
+[ 2712.156085] ------------[ cut here ]------------
+[ 2712.156097] WARNING: at /home/romain/tmp/linux/linux-2.6-2.6.36/debian/build/source_amd64_none/kernel/sched.c:3807 schedule+0x448/0x5f9()
+[ 2712.156102] Hardware name:
+[ 2712.156105] Modules linked in: authenc xfrm6_mode_tunnel xfrm4_mode_tunnel deflate zlib_deflate ctr twofish_generic twofish_x86_64 twofish_common camellia serpent blowfish cast5 des_generic xcbc rmd160 sha512_generic sha1_generic hmac crypto_null xfrm_user xfrm4_tunnel tunnel4 ipcomp xfrm_ipcomp esp4 ah4 af_key ext4 jbd2 crc16 cpufreq_userspace cpufreq_stats cpufreq_conservative cpufreq_powersave xt_tcpudp nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack iptable_filter ip_tables x_tables coretemp acpi_cpufreq mperf loop sha256_generic aes_x86_64 aes_generic cbc dm_crypt dm_mod i915 ftdi_sio snd_hda_codec_realtek drm_kms_helper drm snd_hda_intel snd_hda_codec usbserial tpm_tis i2c_i801 tpm snd_pcsp i2c_algo_bit i2c_core rng_core tpm_bios snd_hwdep snd_pcm video psmouse parport_pc parport output snd_timer snd evdev soundcore serio_raw snd_page_alloc led_class processor button ext3 jbd mbcache raid1 md_mod sd_mod crc_t10dif ata_generic uhci_hcd thermal thermal_sys ata_piix ehci_hcd floppy r8169 usbcore mii libata scsi_mod nls_base [last unloaded: scsi_wait_scan]
+[ 2712.156225] Pid: 2958, comm: tmux Not tainted 2.6.36-ore-amd64 #1
+[ 2712.156229] Call Trace:
+[ 2712.156236]  [<ffffffff8104487c>] ? warn_slowpath_common+0x78/0x8c
+[ 2712.156242]  [<ffffffff8130e173>] ? schedule+0x448/0x5f9
+[ 2712.156248]  [<ffffffff8130e719>] ? schedule_timeout+0xa0/0xd7
+[ 2712.156254]  [<ffffffff81050c65>] ? process_timeout+0x0/0xb
+[ 2712.156261]  [<ffffffff811192e6>] ? sys_epoll_wait+0x17f/0x267
+[ 2712.156268]  [<ffffffff8103fab3>] ? default_wake_function+0x0/0xf
+[ 2712.156274]  [<ffffffff81008a02>] ? system_call_fastpath+0x16/0x1b
+[ 2712.156279] ---[ end trace 06ece612984887c2 ]---
+
+On the other machine:
+
+[ 6279.152199] Pid: 29865, comm: kworker/0:2 Tainted: P            2.6.36-ore-amd64 #1
+[ 6279.152201] Call Trace:
+[ 6279.152207]  [<ffffffff8104487c>] ? warn_slowpath_common+0x78/0x8c
+[ 6279.152211]  [<ffffffff8130e173>] ? schedule+0x448/0x5f9
+[ 6279.152215]  [<ffffffff8105a396>] ? worker_thread+0x23b/0x240
+[ 6279.152218]  [<ffffffff8105a15b>] ? worker_thread+0x0/0x240
+[ 6279.152221]  [<ffffffff8105a15b>] ? worker_thread+0x0/0x240
+[ 6279.152225]  [<ffffffff8105d10c>] ? kthread+0x7a/0x82
+[ 6279.152228]  [<ffffffff81009824>] ? kernel_thread_helper+0x4/0x10
+[ 6279.152232]  [<ffffffff8105d092>] ? kthread+0x0/0x82
+[ 6279.152234]  [<ffffffff81009820>] ? kernel_thread_helper+0x0/0x10
+[ 6279.152237] ---[ end trace 5be61ee2b4fbcfdd ]---
