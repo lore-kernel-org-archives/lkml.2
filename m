@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756321Ab0LRPcD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 10:32:03 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:35673 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751020Ab0LRPcB (ORCPT
+	id S1756704Ab0LRPcL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 10:32:11 -0500
+Received: from mail-bw0-f45.google.com ([209.85.214.45]:33745 "EHLO
+	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756432Ab0LRPcJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 10:32:01 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Sat, 18 Dec 2010 16:31:49 +0100
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCH 1/2 V3] applesmc: Use PnP rather than hardcoding
- resources and devices
-Message-ID: <20101218153149.GB1506@polaris.bitmath.org>
-References: <20101217221618.GA13207@ericsson.com>
- <1292624661-32474-1-git-send-email-mjg@redhat.com>
- <20101218042320.GA14104@ericsson.com>
- <20101218090714.GA436@polaris.bitmath.org>
- <20101218144049.GA21801@srcf.ucam.org>
+	Sat, 18 Dec 2010 10:32:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=PZOhaTjVYl2+VxvoXRdQt8t7K6iaJP1QgOFhBRmEedL/w0ryGrtkxCg1kVMBH3YZ6R
+         /wcK2UBQCa+H/0bblpCggmZtWH12D09aCX+hyIvOn5H91UH7sNhgB5SC6sf8FXiNU2nW
+         IHIF6ublkgr11/vvdQ4Ctp67oakskxRCxCkNw=
+Message-ID: <4D0CD3F5.1020401@kernel.org>
+Date: Sat, 18 Dec 2010 16:32:05 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101218144049.GA21801@srcf.ucam.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Originating-IP: 83.248.200.95
-X-Scan-Result: No virus found in message 1PTylD-0005Xi-AX.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PTylD-0005Xi-AX 7c478de5ada4cfa724abc10178f29d2b
+To: Christoph Lameter <cl@linux.com>
+CC: akpm@linux-foundation.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [cpuops cmpxchg V2 3/5] irq_work: Use per cpu atomics instead
+ of regular atomics
+References: <20101214162842.542421046@linux.com> <20101214162854.218751478@linux.com>
+In-Reply-To: <20101214162854.218751478@linux.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I tested under EFI and BIOS. NOTIFICATION_KEY is there for adding 
-> interrupt support - I got that hooked up but it seems that the latest 
-> Air is lacking the sudden motion sensor (probably because it's an 
-> SSD-only model) so wasn't able to test it. I'll play some more and add a 
-> further patch for that.
+On 12/14/2010 05:28 PM, Christoph Lameter wrote:
+> The irq work queue is a per cpu object and it is sufficient for
+> synchronization if per cpu atomics are used. Doing so simplifies
+> the code and reduces the overhead of the code.
+> 
+> Before:
+> 
+> christoph@linux-2.6$ size kernel/irq_work.o
+>    text	   data	    bss	    dec	    hex	filename
+>     451	      8	      1	    460	    1cc	kernel/irq_work.o
+> 
+> After:
+> 
+> christoph@linux-2.6$ size kernel/irq_work.o 
+>    text	   data	    bss	    dec	    hex	filename
+>     438	      8	      1	    447	    1bf	kernel/irq_work.o
+> 
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Sounds interesting. Please add the define in that patch instead.
+Applied 3 and 4 to percpu#for-2.6.38.
 
-Thanks,
-Henrik
+Thank you.
+
+-- 
+tejun
