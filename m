@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756719Ab0LRA3r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 19:29:47 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:39013 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756446Ab0LRA3q (ORCPT
+	id S1756735Ab0LRAa3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 19:30:29 -0500
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:25939 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756446Ab0LRAa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 19:29:46 -0500
-Message-ID: <4D0C0043.7090408@oracle.com>
-Date: Fri, 17 Dec 2010 16:28:51 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Fri, 17 Dec 2010 19:30:26 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 24.130.172.179
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/kUCf2QRvri7d7C0cAldmo
+Date: Fri, 17 Dec 2010 16:30:22 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Carlos Chinea <carlos.chinea@nokia.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [RFC PATCHv4 2/7] HSI: omap_ssi: Introducing OMAP SSI driver
+Message-ID: <20101218003022.GB5941@atomide.com>
+References: <1292321383-30200-1-git-send-email-carlos.chinea@nokia.com>
+ <1292321383-30200-3-git-send-email-carlos.chinea@nokia.com>
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-Subject: Re: mmotm 2010-12-16-14-56 uploaded (hugetlb)
-References: <201012162329.oBGNTdPY006808@imap1.linux-foundation.org> <20101217143316.fa36be7d.randy.dunlap@oracle.com> <20101217145334.3d67d80b.akpm@linux-foundation.org> <20101217233740.GR1671@random.random>
-In-Reply-To: <20101217233740.GR1671@random.random>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292321383-30200-3-git-send-email-carlos.chinea@nokia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/10 15:37, Andrea Arcangeli wrote:
-> Hello,
+* Carlos Chinea <carlos.chinea@nokia.com> [101214 02:13]:
+> Introduces the OMAP SSI driver in the kernel.
 > 
-> On Fri, Dec 17, 2010 at 02:53:34PM -0800, Andrew Morton wrote:
->> afacit, CONFIG_HUGETLBFS must be enabled if CONFIG_HUGETLB_PAGE=y, and
->> thp-config_transparent_hugepage.patch broke that, by permitting
->> CONFIG_HUGETLBFS=n, CONFIG_HUGETLB_PAGE=y,
->> CONFIG_TRANSPARENT_HUGEPAGE=y.
+> The Synchronous Serial Interface (SSI) is a legacy version
+> of HSI. As in the case of HSI, it is mainly used to connect
+> Application engines (APE) with cellular modem engines (CMT)
+> in cellular handsets.
 > 
-> CONFIG_HUGETLBFS and CONFIG_HUGETLB_PAGE existed before, and
-> HUGETLBFS=n && HUGETLB_PAGE=y used to build just fine, I clearly
-> didn't try a build with HUGETLBFS=n recently.
-> 
->> There's lots of stuff in hugetlb.h which is clearly related to
->> hugetlbfs, but is enabled by CONFIG_HUGETLB_PAGE, so those things seem
->> to be pretty joined at the hip nowadays.
-> 
-> Yes, it used to build just fine but I guess after the last hugetlbfs
-> updates I'm getting flood of errors no matter how I adjust things.
-> hugetlbfs code who needs some fixup here.
+> It provides a multichannel, full-duplex, multi-core communication
+> with no reference clock. The OMAP SSI block is capable of reaching
+> speeds of 110 Mbit/s.
+...
 
-I see a real *flood* of errors when I try building ARCH=um SUBARCH={i386|x86_64}:
+> +static int __init ssi_init(void)
+> +{
+> +	return platform_device_register(&ssi_pdev);
+> +}
+> +subsys_initcall(ssi_init);
 
-> grep -c error: UM*/build*
-UM32/build-defcfg.out:454539
-UM64/build-defcfg.out:453707
+Is this safe to do for all omaps2+ machines?
 
+Regards,
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Tony
