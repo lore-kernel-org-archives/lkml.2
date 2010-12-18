@@ -1,38 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756361Ab0LROus (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 09:50:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24470 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753197Ab0LROur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 09:50:47 -0500
-Message-ID: <4D0CCA26.3020809@redhat.com>
-Date: Sat, 18 Dec 2010 09:50:14 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1756380Ab0LROvk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 09:51:40 -0500
+Received: from mail-bw0-f45.google.com ([209.85.214.45]:43006 "EHLO
+	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755972Ab0LROvj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Dec 2010 09:51:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=aMVxWL4scSINm8jbfAzgHQPQMo2MjTX0Dotxcva8dM2eaeVmFc/OZkoGMZ+IfxgRnQ
+         wIkyO9GCz4fzpJNo7A+/eX76adZsOay5CXjK1APq4Bn5wBTea+xkWwsU+Iuua+PKXff6
+         rZw8eqrinZey/DMZ6ni4ceuQSrV3wDMcy2whY=
+Message-ID: <4D0CCA77.2040701@kernel.org>
+Date: Sat, 18 Dec 2010 15:51:35 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Avi Kiviti <avi@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>
-Subject: Re: [RFC -v2 PATCH 2/3] sched: add yield_to function
-References: <20101213224434.7495edb2@annuminas.surriel.com>	 <20101213224657.7e141746@annuminas.surriel.com> <1292329322.6803.1609.camel@twins>
-In-Reply-To: <1292329322.6803.1609.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Christoph Lameter <cl@linux.com>
+CC: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [cpuops cmpxchg double V1 1/4] Generic support for this_cpu_cmpxchg_double
+References: <20101214174847.887713690@linux.com> <20101214174900.058235985@linux.com> <4D0CC982.3030905@kernel.org>
+In-Reply-To: <4D0CC982.3030905@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2010 07:22 AM, Peter Zijlstra wrote:
+On 12/18/2010 03:47 PM, Tejun Heo wrote:
+> This is ugly. :-( I think we should have made this_cpu_*() ops take
+> pointers from the beginning.  Anyways, that's too late, so is it
+> completely impossible to make cmpxchg_double's take a scalar value?
+> It can take the pointer all the same, no?
 
-... fixed all the obvious stuff.   No idea what the hell I was
-thinking while doing that "cleanup" - probably too busy looking
-at the tests that I was running on a previous codebase :(
+Also, the ratonale behind taking a scalar value instead of pointer was
+that the operation changes what they do depending on the type of the
+parameter (the size of the parameter), which is true for the double
+ops too, so I think it would be better if we stick with lvalues.
 
-For the next version of the patches, I have switched to your
-version of yield_to_fair :)
+Thanks.
 
 -- 
-All rights reversed
+tejun
