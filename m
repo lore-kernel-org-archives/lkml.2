@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab0LRQxu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 11:53:50 -0500
-Received: from relay2.mail.vrmd.de ([81.28.224.28]:53394 "EHLO
-	relay2.mail.vrmd.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754621Ab0LRQxt (ORCPT
+	id S1756945Ab0LRQ4B (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 11:56:01 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:53478 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756710Ab0LRQ4A convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 11:53:49 -0500
-X-Greylist: delayed 1385 seconds by postgrey-1.27 at vger.kernel.org; Sat, 18 Dec 2010 11:53:48 EST
-Date: Sat, 18 Dec 2010 16:30:35 +0000
-From: Thorsten Kranzkowski <dl8bcu@dl8bcu.de>
-To: Piotr Hosowicz <piotr@hosowicz.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Why is networking GIT refusing me?
-Message-ID: <20101218163035.GA1127@ds20.borg.net>
-Reply-To: dl8bcu@dl8bcu.de
-Mail-Followup-To: dl8bcu@dl8bcu.de, Piotr Hosowicz <piotr@hosowicz.com>,
-	linux-kernel@vger.kernel.org
-References: <4D0CDB28.8090809@example.com>
+	Sat, 18 Dec 2010 11:56:00 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D0CDB28.8090809@example.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-Relay-User: dl8bcu@dl8bcu.de
+In-Reply-To: <1292683981-6908-2-git-send-email-rydberg@euromail.se>
+References: <1292683981-6908-1-git-send-email-rydberg@euromail.se>
+	<1292683981-6908-2-git-send-email-rydberg@euromail.se>
+Date: Sat, 18 Dec 2010 10:55:59 -0600
+Message-ID: <AANLkTimrNrfTXGh675_8zhOg_+9+NKgOmzJq9rafyh+6@mail.gmail.com>
+Subject: Re: [PATCH 1/4] Input: synaptics - add multitouch packet support
+From: Chris Bagwell <chris@cnpbagwell.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 18, 2010 at 05:02:48PM +0100, Piotr Hosowicz wrote:
-> Hello,
+On Sat, Dec 18, 2010 at 8:52 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> From: Chase Douglas <chase.douglas@canonical.com>
 >
-> I tried to update my Linux tree with the newest networking source vand 
-> tried to run:
+> Synaptics 2.7 series of touchpads support a mode for reporting 2 sets
+> of X/Y/Pressure data (multi-touch).  These same devices default mode
+> report single finger data and do not report finger counts.
 >
-> git remote add networking 
-> master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
+> Enabling MT mode makes finger count reporting start working in same
+> fashion as touchpads that claim that capability. Up to three fingers
+> can be reported this way.
+>
+> While in MT mode and two or three fingers are touching, two sets of
+> data are sent.  The first is a new format buffer with lower resolution
+> reporting of stationary finger and the second is standard data format
+> reporting movement.
 
-you probably want to use 
-git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-2.6.git
-for public, read only access.
+We should probably update this comment and remove parts that mention
+stationary and movement.  It appears to be doing finger tracking and
+first packet is always first touch... except we are getting reports
+that clickpads/integrated button pads may not be consistently like
+this.
 
-> git remote update
->
-> The second one asks me if the SSH key is valid, and then asks me for the 
-> root password which I obviously do not know and cannot update. Where to get 
-> newest networking source by GIT?
->
-> Regards,
->
-> Piotr Hosowicz
+This tracking is partly why type B protocol is being used in later patches.
 
--- 
-| Thorsten Kranzkowski        Internet: dl8bcu@dl8bcu.de                      |
-| Mobile: ++49 170 1876134       Snail: Kiebitzstr. 14, 49324 Melle, Germany  |
-| Ampr: dl8bcu@db0lj.#rpl.deu.eu, dl8bcu@marvin.dl8bcu.ampr.org [44.130.8.19] |
+Chris
