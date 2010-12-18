@@ -1,156 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756628Ab0LRPua (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 10:50:30 -0500
-Received: from mail-bw0-f66.google.com ([209.85.214.66]:38150 "EHLO
-	mail-bw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755295Ab0LRPu2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 10:50:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=XdMY+70ImEqDh2K+7BIaDwHnxGVabp8Nzkxg1a/eFCt6Vl0KPDS7vZXcgIoU2joyFQ
-         V6snST7BEpjyGaR8G+aLiTa9UJ8dlLog2eD/K/JSbvD3hDnFgn7XzPafLiPkIgVmfbvw
-         dRTPK9qdAEtne96L2NUUCW9jRF6SbBmRIFRvk=
-Message-ID: <4D0CD840.2050100@gmail.com>
-Date: Sat, 18 Dec 2010 16:50:24 +0100
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1756800Ab0LRPwV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 10:52:21 -0500
+Received: from hera.kernel.org ([140.211.167.34]:36426 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756263Ab0LRPwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Dec 2010 10:52:20 -0500
+Date: Sat, 18 Dec 2010 15:52:19 +0000
+From: Willy Tarreau <wtarreau@hera.kernel.org>
+To: linux-kernel@vger.kernel.org
+Subject: [ANNOUNCE] Linux 2.4.37.11
+Message-ID: <20101218155219.GA32284@hera.kernel.org>
+Reply-To: w@1wt.eu
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        rui.zhang@intel.com, lenb@kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: acpi throttling: Use this_cpu_has and simplify code
-References: <20101214162842.542421046@linux.com>  <20101214162855.392020353@linux.com> <1292345072.5934.32.camel@edumazet-laptop> <alpine.DEB.2.00.1012141055220.17229@router.home> <4D07A2B7.8080405@zytor.com> <alpine.DEB.2.00.1012141109470.17229@router.home> <4D07A7CB.7010205@zytor.com> <4D07A95C.7030703@kernel.org> <4D0814AF.7080209@zytor.com> <4D08ECEF.3040909@kernel.org> <4D08EE57.8010602@zytor.com> <4D08EF4E.8070403@kernel.org> <4D0A3AF2.50508@gmail.com> <alpine.DEB.2.00.1012161215200.21588@router.home>
-In-Reply-To: <alpine.DEB.2.00.1012161215200.21588@router.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 18 Dec 2010 15:52:19 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing ACPI ppl and quoting the whole body)
+Hi,
 
-On 12/16/2010 07:16 PM, Christoph Lameter wrote:
-> 
-> With the this_cpu_xx we no longer need to pass an acpi
-> structure to the msr management code. Simplifies code and improves
-> performance.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
-> 
-> ---
->  drivers/acpi/processor_throttling.c |   32 ++++++++++----------------------
->  1 file changed, 10 insertions(+), 22 deletions(-)
-> 
-> Index: linux-2.6/drivers/acpi/processor_throttling.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/acpi/processor_throttling.c	2010-12-16 11:56:57.000000000 -0600
-> +++ linux-2.6/drivers/acpi/processor_throttling.c	2010-12-16 12:00:17.000000000 -0600
-> @@ -662,20 +662,14 @@ static int acpi_processor_get_throttling
->  }
-> 
->  #ifdef CONFIG_X86
-> -static int acpi_throttling_rdmsr(struct acpi_processor *pr,
-> -					u64 *value)
-> +static int acpi_throttling_rdmsr(u64 *value)
->  {
-> -	struct cpuinfo_x86 *c;
->  	u64 msr_high, msr_low;
-> -	unsigned int cpu;
->  	u64 msr = 0;
->  	int ret = -1;
-> 
-> -	cpu = pr->id;
-> -	c = &cpu_data(cpu);
-> -
-> -	if ((c->x86_vendor != X86_VENDOR_INTEL) ||
-> -		!cpu_has(c, X86_FEATURE_ACPI)) {
-> +	if ((this_cpu_read(cpu_info.x86_vendor) != X86_VENDOR_INTEL) ||
-> +		!this_cpu_has(X86_FEATURE_ACPI)) {
->  		printk(KERN_ERR PREFIX
->  			"HARDWARE addr space,NOT supported yet\n");
->  	} else {
-> @@ -690,18 +684,13 @@ static int acpi_throttling_rdmsr(struct
->  	return ret;
->  }
-> 
-> -static int acpi_throttling_wrmsr(struct acpi_processor *pr, u64 value)
-> +static int acpi_throttling_wrmsr(u64 value)
->  {
-> -	struct cpuinfo_x86 *c;
-> -	unsigned int cpu;
->  	int ret = -1;
->  	u64 msr;
-> 
-> -	cpu = pr->id;
-> -	c = &cpu_data(cpu);
-> -
-> -	if ((c->x86_vendor != X86_VENDOR_INTEL) ||
-> -		!cpu_has(c, X86_FEATURE_ACPI)) {
-> +	if ((this_cpu_read(cpu_info.x86_vendor) != X86_VENDOR_INTEL) ||
-> +		!this_cpu_has(X86_FEATURE_ACPI)) {
->  		printk(KERN_ERR PREFIX
->  			"HARDWARE addr space,NOT supported yet\n");
->  	} else {
-> @@ -713,15 +702,14 @@ static int acpi_throttling_wrmsr(struct
->  	return ret;
->  }
->  #else
-> -static int acpi_throttling_rdmsr(struct acpi_processor *pr,
-> -				u64 *value)
-> +static int acpi_throttling_rdmsr(u64 *value)
->  {
->  	printk(KERN_ERR PREFIX
->  		"HARDWARE addr space,NOT supported yet\n");
->  	return -1;
->  }
-> 
-> -static int acpi_throttling_wrmsr(struct acpi_processor *pr, u64 value)
-> +static int acpi_throttling_wrmsr(u64 value)
->  {
->  	printk(KERN_ERR PREFIX
->  		"HARDWARE addr space,NOT supported yet\n");
-> @@ -753,7 +741,7 @@ static int acpi_read_throttling_status(s
->  		ret = 0;
->  		break;
->  	case ACPI_ADR_SPACE_FIXED_HARDWARE:
-> -		ret = acpi_throttling_rdmsr(pr, value);
-> +		ret = acpi_throttling_rdmsr(value);
->  		break;
->  	default:
->  		printk(KERN_ERR PREFIX "Unknown addr space %d\n",
-> @@ -786,7 +774,7 @@ static int acpi_write_throttling_state(s
->  		ret = 0;
->  		break;
->  	case ACPI_ADR_SPACE_FIXED_HARDWARE:
-> -		ret = acpi_throttling_wrmsr(pr, value);
-> +		ret = acpi_throttling_wrmsr(value);
->  		break;
->  	default:
->  		printk(KERN_ERR PREFIX "Unknown addr space %d\n",
-> 
+I've just released Linux 2.4.37.11.
 
-It's bothersome that these methods don't have any indication that
-they're bound to local CPU when they can't be called with @pr for
-another CPU as MSRs can only be accessed from local CPU.
+It fixes a number of minor security issues, mainly information leaks
+from the kernel stack on some 64-bit architectures, or possible NULL
+derefs and crashes in some less commonly used protocols (eg: econet,
+x25, irda).
 
-In the longer run, it would be nice if there's an indication that this
-is only for the local CPU and maybe a WARN_ON_ONCE().  Maybe dropping
-@pr and using this_cpu_*() is better for performance too?
+A build issue introduced in 2.4.37.10 when atm/clip was configured to
+build as a module was fixed.
 
-Anyways, the above doesn't make the situation any worse, so...
+An ext3 quota bug causing occasional random panics was fixed, thanks
+to a report from Sascha Umlang who also made lots of efforts to get
+a debuggable capture of the issue and test the backport for two months.
 
- Acked-by: Tejun Heo <tj@kernel.org>
+Last, various MIPS-related fixes provided by Ralf Baechle were merged.
 
-I think this one too fits the x86 tree better.
+The new 2.4 EOL is now pushed to end of 2011.
 
-Thanks.
+Willy
 
--- 
-tejun
+--
+The patch and changelog will appear soon at the following locations:
+  ftp://ftp.kernel.org/pub/linux/kernel/v2.4/
+  ftp://ftp.kernel.org/pub/linux/kernel/v2.4/patch-2.4.37.11.bz2
+  ftp://ftp.kernel.org/pub/linux/kernel/v2.4/ChangeLog-2.4.37.11
+
+Git repository:
+   git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.4.37.y.git
+  http://www.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.4.37.y.git
+
+Git repository through the gitweb interface:
+  http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.4.37.y.git
+
+Summary of changes from v2.4.37.10 to v2.4.37.11
+============================================
+
+Dan Rosenberg (3):
+      drivers/net/eql.c: prevent reading uninitialized stack memory
+      sys_semctl: fix kernel stack leakage
+      x25: Prevent crashing when parsing bad X.25 facilities
+
+David S. Miller (1):
+      rose: Fix signedness issues wrt. digi count.
+
+Ladislav Michl (1):
+      NET: SGIseeq: Add support for Challenge S Mezz board
+
+Nelson Elhage (1):
+      do_exit(): make sure that we run with get_fs() == USER_DS
+
+Pete Popov (1):
+      MTD: Add AMD Alchemy Mirage mapping driver.
+
+Phil Blundell (3):
+      econet: fix CVE-2010-3848
+      econet: disallow NULL remote addr for sendmsg(), fixes CVE-2010-3849
+      econet: fix CVE-2010-3850
+
+Ralf Baechle (2):
+      NET: hdlcdrv: Make driver stop method stop queue.
+      CHAR: New key map for IBM WorkPad z50.
+
+Samuel Ortiz (1):
+      irda: Fix parameter extraction stack overflow
+
+Vasiliy Kulikov (2):
+      drivers/char/ppdev.c: fix information leak to userland
+      ipc: shm: fix information leak to userland
+
+Willy Tarreau (6):
+      net: atm/clip does not work anymore as a module
+      ext3: ext3_symlink should use GFP_NOFS allocations inside
+      net: packet: fix information leak to userland
+      usb: core: fix information leak to userland
+      block: ioctl: fix information leak to userland
+      Change VERSION to 2.4.37.11
+
