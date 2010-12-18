@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756171Ab0LRNUc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 08:20:32 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34082 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751983Ab0LRNUb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 08:20:31 -0500
-Date: Sat, 18 Dec 2010 13:20:29 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Rabin Vincent <rabin@rab.in>, stern@rowland.harvard.edu,
-        linux-pm@lists.linux-foundation.org, linux-i2c@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: platform/i2c busses: pm runtime and system sleep
-Message-ID: <20101218132029.GA22273@opensource.wolfsonmicro.com>
-References: <AANLkTinyDE3OxKup_aqsN8HJH_r5LcwkP17OtuMRpACx@mail.gmail.com> <201012180001.25263.rjw@sisk.pl> <20101218010454.GA2430@opensource.wolfsonmicro.com> <201012181354.58077.rjw@sisk.pl>
+	id S1756154Ab0LRNuz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 08:50:55 -0500
+Received: from mout.perfora.net ([74.208.4.195]:65513 "EHLO mout.perfora.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752192Ab0LRNuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Dec 2010 08:50:54 -0500
+thread-index: AcueupC5LF51YLduT4WGxCoOqZenMQ==
+Thread-Topic: Please check out TexasTrue.com!  
+From: "celia villz" <success@yahoo.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: Please check out TexasTrue.com!  
+Date: Sat, 18 Dec 2010 08:50:43 -0500
+Message-ID: <6CB8D96197984BE192B0E088D89D98F4@hosting.xp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201012181354.58077.rjw@sisk.pl>
-X-Cookie: There is a 20% chance of tomorrow.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft CDO for Windows 2000
+Content-Class: urn:content-classes:message
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4721
+X-Provags-ID: V02:K0:vAwtR+3tx38DQSxlZhg2P9FCZ9rfyVps8TkJeoIObaP
+ L3DW4s5B3nvACqmchFZyz4ANoaCqBPo4UQJtWJtml5Or9qgeKf
+ u0nJPO4Q093MVTidI1BjR4DQT7fJM/iEcNr8xaSS72j5pLC4SZ
+ XuGaDQmgzJaczmKKPG9QOEuYU6g0+5iDCZ1t4MaZHgNW459tf
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 18, 2010 at 01:54:57PM +0100, Rafael J. Wysocki wrote:
-> On Saturday, December 18, 2010, Mark Brown wrote:
+Hi Friend,
 
-> > SPI and platform (the first two buses I looked at) both seem to have
-> > legacy suspend operations too?  Clearly the bus would need to provide an
-> > op to invoke the legacy call but the logic which prioritises the pm_ops
-> > over the legacy operation is generic.
+I sent you an incredibly important email
+yesterday and I wanted to make sure that
+you got to see this...
 
-> Well, the problem with that is the driver would need to tell the generic call
-> what the legacy routine is and there's no, er, generic way to do that.
+It's brand new (just came out).
 
-> In the i2c case, for example, there is struct i2c_driver that contains the
-> ->suspend() and ->resume() pointers, so the bus type driver _knows_ how to
-> get there, but the PM core doesn't have this information.
+Click below right now to access the training:
 
-Sure, but this could be readily accomplished by providing bus
-legacy_suspend() and legacy_resume() operations that the generic code
-could use to do the actual call.  This would save them all implmeneting
-essentially the same decision making code for all the various different 
-PM operations - the only bit that differs between buses is going to be
-the actual process for calling the legacy API.
+=> https://surefireprofitsystem.com/go.php?a=119832&p=832
 
-Like I say, I'm not sure if it's actually worth it.
+You'll discover...
+
+"How to Make Your First $1,000 Online"
+
+...starting immediately.
+
+It's truly inspiring!
+
+The video on the page explains it quickly
+and you won't want to miss it...
+
+=> https://surefireprofitsystem.com/go.php?a=119832&p=832
+
+All the best!
+
+celia villz
+
+PS - Access to the coaching program is only 
+available to the first 250 action-takers...
+
+Go check it out right now:
+
+https://surefireprofitsystem.com/go.php?a=119832&p=832
+
+:o)
+
+
+*The sender of this email receives compensation
+when products and services featured herein are
+purchased. Results are unique. Your results will
+vary. This is an advertisement.
+
+http://www.texastrue.com
