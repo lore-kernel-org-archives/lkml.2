@@ -1,92 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932169Ab0LRT64 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 14:58:56 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:41902 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932083Ab0LRT6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 14:58:55 -0500
-Date: Sat, 18 Dec 2010 11:58:49 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com
-Subject: Re: [PATCH RFC tip/core/rcu 11/20] rcu: fix race condition in
- synchronize_sched_expedited()
-Message-ID: <20101218195849.GC2143@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20101217205433.GA10199@linux.vnet.ibm.com>
- <1292619291-2468-11-git-send-email-paulmck@linux.vnet.ibm.com>
- <4D0CD8C7.8070604@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D0CD8C7.8070604@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+	id S932176Ab0LRUF6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 15:05:58 -0500
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:53935 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932083Ab0LRUFz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Dec 2010 15:05:55 -0500
+From: "Henrik Rydberg" <rydberg@euromail.se>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH v2] Input: introduce device properties
+Date: Sat, 18 Dec 2010 21:05:19 +0100
+Message-Id: <1292702719-1552-1-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.7.2.3
+X-Originating-IP: 83.248.200.95
+X-Scan-Result: No virus found in message 1PU32C-0002Lh-6x.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PU32C-0002Lh-6x 836b3661794c6fbf6a8d09b82260037f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 18, 2010 at 04:52:39PM +0100, Tejun Heo wrote:
-> Hello,
-> 
-> On 12/17/2010 09:54 PM, Paul E. McKenney wrote:
-> > The new (early 2010) implementation of synchronize_sched_expedited() uses
-> > try_stop_cpu() to force a context switch on every CPU.  It also permits
-> > concurrent calls to synchronize_sched_expedited() to share a single call
-> > to try_stop_cpu() through use of an atomically incremented
-> > synchronize_sched_expedited_count variable.  Unfortunately, this is
-> > subject to failure as follows:
-> > 
-> > o	Task A invokes synchronize_sched_expedited(), try_stop_cpus()
-> > 	succeeds, but Task A is preempted before getting to the atomic
-> > 	increment of synchronize_sched_expedited_count.
-> > 
-> > o	Task B also invokes synchronize_sched_expedited(), with exactly
-> > 	the same outcome as Task A.
-> > 
-> > o	Task C also invokes synchronize_sched_expedited(), again with
-> > 	exactly the same outcome as Tasks A and B.
-> > 
-> > o	Task D also invokes synchronize_sched_expedited(), but only
-> > 	gets as far as acquiring the mutex within try_stop_cpus()
-> > 	before being preempted, interrupted, or otherwise delayed.
-> > 
-> > o	Task E also invokes synchronize_sched_expedited(), but only
-> > 	gets to the snapshotting of synchronize_sched_expedited_count.
-> > 
-> > o	Tasks A, B, and C all increment synchronize_sched_expedited_count.
-> > 
-> > o	Task E fails to get the mutex, so checks the new value
-> > 	of synchronize_sched_expedited_count.  It finds that the
-> > 	value has increased, so (wrongly) assumes that its work
-> > 	has been done, returning despite there having been no
-> > 	expedited grace period since it began.
-> > 
-> > The solution is to have the lowest-numbered CPU atomically increment
-> > the synchronize_sched_expedited_count variable within the
-> > synchronize_sched_expedited_cpu_stop() function, which is under
-> > the protection of the mutex acquired by try_stop_cpus().  However, this
-> > also requires that piggybacking tasks wait for three rather than two
-> > instances of try_stop_cpu(), because we cannot control the order in
-> > which the per-CPU callback function occur.
-> > 
-> > Cc: Tejun Heo <tj@kernel.org>
-> > Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> Acked-by: Tejun Heo <tj@kernel.org>
+Today, userspace sets up an input device based on the data it emits.
+This is not always enough; a tablet and a touchscreen may emit exactly
+the same data, for instance, but the former should be set up with a
+pointer whereas the latter does not need to. Recently, a new type of
+touchpad has emerged where the buttons are under the pad, which
+changes logic without changing the emitted data. This patch introduces
+a new ioctl, EVIOCGPROP, which enables user access to a set of device
+properties useful during setup. The properties are given as a bitmap
+in the same fashion as the event types, and are also made available
+via sysfs, uevent and /proc/bus/input/devices.
 
-Thank you!
+Acked-by: Ping Cheng <pingc@wacom.com>
+Acked-by: Chase Douglas <chase.douglas@canonical.com>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+ drivers/input/evdev.c       |    4 ++++
+ drivers/input/input.c       |   19 +++++++++++++++++++
+ drivers/input/misc/uinput.c |    4 ++++
+ include/linux/input.h       |   16 ++++++++++++++++
+ include/linux/uinput.h      |    1 +
+ 5 files changed, 44 insertions(+), 0 deletions(-)
 
-> I suppose this should go -stable?
+diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+index e3f7fc6..0cd97e8 100644
+--- a/drivers/input/evdev.c
++++ b/drivers/input/evdev.c
+@@ -677,6 +677,10 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
+ #define EVIOC_MASK_SIZE(nr)	((nr) & ~(_IOC_SIZEMASK << _IOC_SIZESHIFT))
+ 	switch (EVIOC_MASK_SIZE(cmd)) {
+ 
++	case EVIOCGPROP(0):
++		return bits_to_user(dev->propbit, INPUT_PROP_MAX,
++				    size, p, compat_mode);
++
+ 	case EVIOCGKEY(0):
+ 		return bits_to_user(dev->key, KEY_MAX, size, p, compat_mode);
+ 
+diff --git a/drivers/input/input.c b/drivers/input/input.c
+index c62b4b9..3bb6907 100644
+--- a/drivers/input/input.c
++++ b/drivers/input/input.c
+@@ -1095,6 +1095,8 @@ static int input_devices_seq_show(struct seq_file *seq, void *v)
+ 		seq_printf(seq, "%s ", handle->name);
+ 	seq_putc(seq, '\n');
+ 
++	input_seq_print_bitmap(seq, "PROP", dev->propbit, INPUT_PROP_MAX);
++
+ 	input_seq_print_bitmap(seq, "EV", dev->evbit, EV_MAX);
+ 	if (test_bit(EV_KEY, dev->evbit))
+ 		input_seq_print_bitmap(seq, "KEY", dev->keybit, KEY_MAX);
+@@ -1318,11 +1320,26 @@ static ssize_t input_dev_show_modalias(struct device *dev,
+ }
+ static DEVICE_ATTR(modalias, S_IRUGO, input_dev_show_modalias, NULL);
+ 
++static int input_print_bitmap(char *buf, int buf_size, unsigned long *bitmap,
++			      int max, int add_cr);
++
++static ssize_t input_dev_show_properties(struct device *dev,
++					 struct device_attribute *attr,
++					 char *buf)
++{
++	struct input_dev *input_dev = to_input_dev(dev);
++	int len = input_print_bitmap(buf, PAGE_SIZE, input_dev->propbit,
++				     INPUT_PROP_MAX, true);
++	return min_t(int, len, PAGE_SIZE);
++}
++static DEVICE_ATTR(properties, S_IRUGO, input_dev_show_properties, NULL);
++
+ static struct attribute *input_dev_attrs[] = {
+ 	&dev_attr_name.attr,
+ 	&dev_attr_phys.attr,
+ 	&dev_attr_uniq.attr,
+ 	&dev_attr_modalias.attr,
++	&dev_attr_properties.attr,
+ 	NULL
+ };
+ 
+@@ -1522,6 +1539,8 @@ static int input_dev_uevent(struct device *device, struct kobj_uevent_env *env)
+ 	if (dev->uniq)
+ 		INPUT_ADD_HOTPLUG_VAR("UNIQ=\"%s\"", dev->uniq);
+ 
++	INPUT_ADD_HOTPLUG_BM_VAR("PROP=", dev->propbit, INPUT_PROP_MAX);
++
+ 	INPUT_ADD_HOTPLUG_BM_VAR("EV=", dev->evbit, EV_MAX);
+ 	if (test_bit(EV_KEY, dev->evbit))
+ 		INPUT_ADD_HOTPLUG_BM_VAR("KEY=", dev->keybit, KEY_MAX);
+diff --git a/drivers/input/misc/uinput.c b/drivers/input/misc/uinput.c
+index bea8972..82542a1 100644
+--- a/drivers/input/misc/uinput.c
++++ b/drivers/input/misc/uinput.c
+@@ -680,6 +680,10 @@ static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
+ 			retval = uinput_set_bit(arg, swbit, SW_MAX);
+ 			break;
+ 
++		case UI_SET_PROPBIT:
++			retval = uinput_set_bit(arg, propbit, INPUT_PROP_MAX);
++			break;
++
+ 		case UI_SET_PHYS:
+ 			if (udev->state == UIST_CREATED) {
+ 				retval = -EINVAL;
+diff --git a/include/linux/input.h b/include/linux/input.h
+index b3a1e02..8d9c76c 100644
+--- a/include/linux/input.h
++++ b/include/linux/input.h
+@@ -91,6 +91,7 @@ struct input_keymap_entry {
+ #define EVIOCGNAME(len)		_IOC(_IOC_READ, 'E', 0x06, len)		/* get device name */
+ #define EVIOCGPHYS(len)		_IOC(_IOC_READ, 'E', 0x07, len)		/* get physical location */
+ #define EVIOCGUNIQ(len)		_IOC(_IOC_READ, 'E', 0x08, len)		/* get unique identifier */
++#define EVIOCGPROP(len)		_IOC(_IOC_READ, 'E', 0x09, len)		/* get device properties */
+ 
+ #define EVIOCGKEY(len)		_IOC(_IOC_READ, 'E', 0x18, len)		/* get global key state */
+ #define EVIOCGLED(len)		_IOC(_IOC_READ, 'E', 0x19, len)		/* get all LEDs */
+@@ -108,6 +109,18 @@ struct input_keymap_entry {
+ #define EVIOCGRAB		_IOW('E', 0x90, int)			/* Grab/Release device */
+ 
+ /*
++ * Device properties and quirks
++ */
++
++#define INPUT_PROP_POINTER		0x00	/* needs a pointer */
++#define INPUT_PROP_DIRECT		0x01	/* direct input devices */
++#define INPUT_PROP_BUTTONPAD		0x02	/* has button(s) under pad */
++#define INPUT_PROP_SEMI_MT		0x03	/* touch rectangle only */
++
++#define INPUT_PROP_MAX			0x1f
++#define INPUT_PROP_CNT			(INPUT_PROP_MAX + 1)
++
++/*
+  * Event types
+  */
+ 
+@@ -1090,6 +1103,7 @@ struct ff_effect {
+  * @phys: physical path to the device in the system hierarchy
+  * @uniq: unique identification code for the device (if device has it)
+  * @id: id of the device (struct input_id)
++ * @propbit: bitmap of device properties and quirks
+  * @evbit: bitmap of types of events supported by the device (EV_KEY,
+  *	EV_REL, etc.)
+  * @keybit: bitmap of keys/buttons this device has
+@@ -1173,6 +1187,8 @@ struct input_dev {
+ 	const char *uniq;
+ 	struct input_id id;
+ 
++	unsigned long propbit[BITS_TO_LONGS(INPUT_PROP_CNT)];
++
+ 	unsigned long evbit[BITS_TO_LONGS(EV_CNT)];
+ 	unsigned long keybit[BITS_TO_LONGS(KEY_CNT)];
+ 	unsigned long relbit[BITS_TO_LONGS(REL_CNT)];
+diff --git a/include/linux/uinput.h b/include/linux/uinput.h
+index 05f7fed2..d28c726 100644
+--- a/include/linux/uinput.h
++++ b/include/linux/uinput.h
+@@ -104,6 +104,7 @@ struct uinput_ff_erase {
+ #define UI_SET_FFBIT		_IOW(UINPUT_IOCTL_BASE, 107, int)
+ #define UI_SET_PHYS		_IOW(UINPUT_IOCTL_BASE, 108, char*)
+ #define UI_SET_SWBIT		_IOW(UINPUT_IOCTL_BASE, 109, int)
++#define UI_SET_PROPBIT		_IOW(UINPUT_IOCTL_BASE, 110, int)
+ 
+ #define UI_BEGIN_FF_UPLOAD	_IOWR(UINPUT_IOCTL_BASE, 200, struct uinput_ff_upload)
+ #define UI_END_FF_UPLOAD	_IOW(UINPUT_IOCTL_BASE, 201, struct uinput_ff_upload)
+-- 
+1.7.2.3
 
-Given that it is only a theoretical bug, I am targeting 2.6.38 rather
-than 2.6.37.  But yes, looks to me like a -stable candidate.
-
-							Thanx, Paul
