@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932274Ab0LRVvL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 16:51:11 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:59805 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932199Ab0LRVvK (ORCPT
+	id S932280Ab0LRVw1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 16:52:27 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:16632 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932199Ab0LRVw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 16:51:10 -0500
-Message-ID: <4D0D2CA1.6070502@kernel.org>
-Date: Sat, 18 Dec 2010 13:50:25 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	Sat, 18 Dec 2010 16:52:27 -0500
+Date: Sat, 18 Dec 2010 22:43:00 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: autofs@linux.kernel.org
+cc: linux-kernel@vger.kernel.org, Ian Kent <raven@themaw.net>
+Subject: [PATCH] autofs4: Do not potentially dereference NULL pointer returned
+ by fget() in autofs_dev_ioctl_setpipefd()
+Message-ID: <alpine.LNX.2.00.1012182238560.17400@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Vivek Goyal <vgoyal@redhat.com>,
-        Maxim Uvarov <muvarov@gmail.com>, linux-kernel@vger.kernel.org,
-        Neil Horman <nhorman@redhat.com>
-Subject: Re: kdump broken on 2.6.37-rc4
-References: <20101208141942.GA2335@redhat.com> <4D00823A.9050808@kernel.org> <20101209124117.GA6032@redhat.com> <4D01377B.5070809@kernel.org> <20101213100848.GA2237@redhat.com> <4D0663F0.2060103@kernel.org> <4D06783C.6040009@zytor.com> <20101214224135.GB19693@redhat.com> <20101215103954.GA2243@redhat.com> <4D09958D.2040907@kernel.org> <20101216100050.GA2261@redhat.com>
-In-Reply-To: <20101216100050.GA2261@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2010 02:00 AM, Stanislaw Gruszka wrote:
-> On Wed, Dec 15, 2010 at 08:29:01PM -0800, Yinghai Lu wrote:
->> please check
->>
->> [PATCH] x86, crashkernel, 32bit: only try to get range under 512M
->>
->> Steanishlaw report kdump is 32bit is broken.
-> LOL
-> 
->> in misc.c for decompresser, it will do sanity checking to make sure heap
->> heap under 512M.
->>
->> So limit it in first kernel under 512M for 32bit system.
->>
->> Reported-by: Stanislaw Gruszka <sgruszka@redhat.com>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> Patch fix problem on my T-60 laptop.
-> 
-> As expected patch does not help on my other T-500 x86_64 system,
-> kdump not work there, but perhaps this is a different problem,
-> I'm going to check it.
+Hi,
 
-Can you try crashkernel=256M@128M on your T-500 x86_64 system?
+In fs/autofs4/dev-ioctl.c::autofs_dev_ioctl_setpipefd() we call fget(), 
+which may return NULL, but we do not explicitly test for that NULL return 
+so we may end up dereferencing a NULL pointer - bad.
 
-Thanks
+When I originally submitted this patch I had chosen EBUSY as the return 
+value to use if this happens. Ian Kent was kind enough to explain why that 
+would most likely be wrong and why EBADF should most likely be used 
+instead. This version of the patch uses EBADF.
 
-Yinghai
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ dev-ioctl.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/fs/autofs4/dev-ioctl.c b/fs/autofs4/dev-ioctl.c
+index eff9a41..a650d7e 100644
+--- a/fs/autofs4/dev-ioctl.c
++++ b/fs/autofs4/dev-ioctl.c
+@@ -372,6 +372,10 @@ static int autofs_dev_ioctl_setpipefd(struct file *fp,
+ 		return -EBUSY;
+ 	} else {
+ 		struct file *pipe = fget(pipefd);
++		if (!pipe) {
++			err = -EBADF;
++			goto out;
++		}
+ 		if (!pipe->f_op || !pipe->f_op->write) {
+ 			err = -EPIPE;
+ 			fput(pipe);
+
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
