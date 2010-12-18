@@ -1,188 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932176Ab0LRUF6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 15:05:58 -0500
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:53935 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932083Ab0LRUFz (ORCPT
+	id S932179Ab0LRUKD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 15:10:03 -0500
+Received: from elasmtp-junco.atl.sa.earthlink.net ([209.86.89.63]:47248 "EHLO
+	elasmtp-junco.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932083Ab0LRUKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 15:05:55 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH v2] Input: introduce device properties
-Date: Sat, 18 Dec 2010 21:05:19 +0100
-Message-Id: <1292702719-1552-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.2.3
-X-Originating-IP: 83.248.200.95
-X-Scan-Result: No virus found in message 1PU32C-0002Lh-6x.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PU32C-0002Lh-6x 836b3661794c6fbf6a8d09b82260037f
+	Sat, 18 Dec 2010 15:10:02 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=dk20050327; d=earthlink.net;
+  b=CqUEpW9Usg6cgYqHPB3TGD2VQYE2J08F49XYqCkhMVMFt2Pbj7yk1ZBJTOLBkMWO;
+  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:Subject:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
+Message-ID: <4D0D1516.3040404@earthlink.net>
+Date: Sat, 18 Dec 2010 15:09:58 -0500
+From: Stephen Clark <sclark46@earthlink.net>
+Reply-To: sclark46@earthlink.net
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: I915 driver locks up
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec79868d4e0ad7bac251f71464752e549c8a350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
+X-Originating-IP: 69.22.83.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today, userspace sets up an input device based on the data it emits.
-This is not always enough; a tablet and a touchscreen may emit exactly
-the same data, for instance, but the former should be set up with a
-pointer whereas the latter does not need to. Recently, a new type of
-touchpad has emerged where the buttons are under the pad, which
-changes logic without changing the emitted data. This patch introduces
-a new ioctl, EVIOCGPROP, which enables user access to a set of device
-properties useful during setup. The properties are given as a bitmap
-in the same fashion as the event types, and are also made available
-via sysfs, uevent and /proc/bus/input/devices.
+Hi,
 
-Acked-by: Ping Cheng <pingc@wacom.com>
-Acked-by: Chase Douglas <chase.douglas@canonical.com>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
- drivers/input/evdev.c       |    4 ++++
- drivers/input/input.c       |   19 +++++++++++++++++++
- drivers/input/misc/uinput.c |    4 ++++
- include/linux/input.h       |   16 ++++++++++++++++
- include/linux/uinput.h      |    1 +
- 5 files changed, 44 insertions(+), 0 deletions(-)
+I am using 2.6.35.9-64.fc14.x86_64 running 1.3.9-1.fc14.x86_64
+and am having my 945gma lock up in texture decompress according
+to intel_gpu_top utility, when trying to play Myst 5.
 
-diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-index e3f7fc6..0cd97e8 100644
---- a/drivers/input/evdev.c
-+++ b/drivers/input/evdev.c
-@@ -677,6 +677,10 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
- #define EVIOC_MASK_SIZE(nr)	((nr) & ~(_IOC_SIZEMASK << _IOC_SIZESHIFT))
- 	switch (EVIOC_MASK_SIZE(cmd)) {
- 
-+	case EVIOCGPROP(0):
-+		return bits_to_user(dev->propbit, INPUT_PROP_MAX,
-+				    size, p, compat_mode);
-+
- 	case EVIOCGKEY(0):
- 		return bits_to_user(dev->key, KEY_MAX, size, p, compat_mode);
- 
-diff --git a/drivers/input/input.c b/drivers/input/input.c
-index c62b4b9..3bb6907 100644
---- a/drivers/input/input.c
-+++ b/drivers/input/input.c
-@@ -1095,6 +1095,8 @@ static int input_devices_seq_show(struct seq_file *seq, void *v)
- 		seq_printf(seq, "%s ", handle->name);
- 	seq_putc(seq, '\n');
- 
-+	input_seq_print_bitmap(seq, "PROP", dev->propbit, INPUT_PROP_MAX);
-+
- 	input_seq_print_bitmap(seq, "EV", dev->evbit, EV_MAX);
- 	if (test_bit(EV_KEY, dev->evbit))
- 		input_seq_print_bitmap(seq, "KEY", dev->keybit, KEY_MAX);
-@@ -1318,11 +1320,26 @@ static ssize_t input_dev_show_modalias(struct device *dev,
- }
- static DEVICE_ATTR(modalias, S_IRUGO, input_dev_show_modalias, NULL);
- 
-+static int input_print_bitmap(char *buf, int buf_size, unsigned long *bitmap,
-+			      int max, int add_cr);
-+
-+static ssize_t input_dev_show_properties(struct device *dev,
-+					 struct device_attribute *attr,
-+					 char *buf)
-+{
-+	struct input_dev *input_dev = to_input_dev(dev);
-+	int len = input_print_bitmap(buf, PAGE_SIZE, input_dev->propbit,
-+				     INPUT_PROP_MAX, true);
-+	return min_t(int, len, PAGE_SIZE);
-+}
-+static DEVICE_ATTR(properties, S_IRUGO, input_dev_show_properties, NULL);
-+
- static struct attribute *input_dev_attrs[] = {
- 	&dev_attr_name.attr,
- 	&dev_attr_phys.attr,
- 	&dev_attr_uniq.attr,
- 	&dev_attr_modalias.attr,
-+	&dev_attr_properties.attr,
- 	NULL
- };
- 
-@@ -1522,6 +1539,8 @@ static int input_dev_uevent(struct device *device, struct kobj_uevent_env *env)
- 	if (dev->uniq)
- 		INPUT_ADD_HOTPLUG_VAR("UNIQ=\"%s\"", dev->uniq);
- 
-+	INPUT_ADD_HOTPLUG_BM_VAR("PROP=", dev->propbit, INPUT_PROP_MAX);
-+
- 	INPUT_ADD_HOTPLUG_BM_VAR("EV=", dev->evbit, EV_MAX);
- 	if (test_bit(EV_KEY, dev->evbit))
- 		INPUT_ADD_HOTPLUG_BM_VAR("KEY=", dev->keybit, KEY_MAX);
-diff --git a/drivers/input/misc/uinput.c b/drivers/input/misc/uinput.c
-index bea8972..82542a1 100644
---- a/drivers/input/misc/uinput.c
-+++ b/drivers/input/misc/uinput.c
-@@ -680,6 +680,10 @@ static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
- 			retval = uinput_set_bit(arg, swbit, SW_MAX);
- 			break;
- 
-+		case UI_SET_PROPBIT:
-+			retval = uinput_set_bit(arg, propbit, INPUT_PROP_MAX);
-+			break;
-+
- 		case UI_SET_PHYS:
- 			if (udev->state == UIST_CREATED) {
- 				retval = -EINVAL;
-diff --git a/include/linux/input.h b/include/linux/input.h
-index b3a1e02..8d9c76c 100644
---- a/include/linux/input.h
-+++ b/include/linux/input.h
-@@ -91,6 +91,7 @@ struct input_keymap_entry {
- #define EVIOCGNAME(len)		_IOC(_IOC_READ, 'E', 0x06, len)		/* get device name */
- #define EVIOCGPHYS(len)		_IOC(_IOC_READ, 'E', 0x07, len)		/* get physical location */
- #define EVIOCGUNIQ(len)		_IOC(_IOC_READ, 'E', 0x08, len)		/* get unique identifier */
-+#define EVIOCGPROP(len)		_IOC(_IOC_READ, 'E', 0x09, len)		/* get device properties */
- 
- #define EVIOCGKEY(len)		_IOC(_IOC_READ, 'E', 0x18, len)		/* get global key state */
- #define EVIOCGLED(len)		_IOC(_IOC_READ, 'E', 0x19, len)		/* get all LEDs */
-@@ -108,6 +109,18 @@ struct input_keymap_entry {
- #define EVIOCGRAB		_IOW('E', 0x90, int)			/* Grab/Release device */
- 
- /*
-+ * Device properties and quirks
-+ */
-+
-+#define INPUT_PROP_POINTER		0x00	/* needs a pointer */
-+#define INPUT_PROP_DIRECT		0x01	/* direct input devices */
-+#define INPUT_PROP_BUTTONPAD		0x02	/* has button(s) under pad */
-+#define INPUT_PROP_SEMI_MT		0x03	/* touch rectangle only */
-+
-+#define INPUT_PROP_MAX			0x1f
-+#define INPUT_PROP_CNT			(INPUT_PROP_MAX + 1)
-+
-+/*
-  * Event types
-  */
- 
-@@ -1090,6 +1103,7 @@ struct ff_effect {
-  * @phys: physical path to the device in the system hierarchy
-  * @uniq: unique identification code for the device (if device has it)
-  * @id: id of the device (struct input_id)
-+ * @propbit: bitmap of device properties and quirks
-  * @evbit: bitmap of types of events supported by the device (EV_KEY,
-  *	EV_REL, etc.)
-  * @keybit: bitmap of keys/buttons this device has
-@@ -1173,6 +1187,8 @@ struct input_dev {
- 	const char *uniq;
- 	struct input_id id;
- 
-+	unsigned long propbit[BITS_TO_LONGS(INPUT_PROP_CNT)];
-+
- 	unsigned long evbit[BITS_TO_LONGS(EV_CNT)];
- 	unsigned long keybit[BITS_TO_LONGS(KEY_CNT)];
- 	unsigned long relbit[BITS_TO_LONGS(REL_CNT)];
-diff --git a/include/linux/uinput.h b/include/linux/uinput.h
-index 05f7fed2..d28c726 100644
---- a/include/linux/uinput.h
-+++ b/include/linux/uinput.h
-@@ -104,6 +104,7 @@ struct uinput_ff_erase {
- #define UI_SET_FFBIT		_IOW(UINPUT_IOCTL_BASE, 107, int)
- #define UI_SET_PHYS		_IOW(UINPUT_IOCTL_BASE, 108, char*)
- #define UI_SET_SWBIT		_IOW(UINPUT_IOCTL_BASE, 109, int)
-+#define UI_SET_PROPBIT		_IOW(UINPUT_IOCTL_BASE, 110, int)
- 
- #define UI_BEGIN_FF_UPLOAD	_IOWR(UINPUT_IOCTL_BASE, 200, struct uinput_ff_upload)
- #define UI_END_FF_UPLOAD	_IOW(UINPUT_IOCTL_BASE, 201, struct uinput_ff_upload)
+Any fixes on the horizon?
+
 -- 
-1.7.2.3
+
+"They that give up essential liberty to obtain temporary safety,
+deserve neither liberty nor safety."  (Ben Franklin)
+
+"The course of history shows that as a government grows, liberty
+decreases."  (Thomas Jefferson)
+
+
 
