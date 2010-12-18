@@ -1,57 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756688Ab0LROyY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 09:54:24 -0500
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:57953 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756410Ab0LROyV (ORCPT
+	id S1756643Ab0LROyQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 09:54:16 -0500
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:48898 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756474Ab0LROyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 09:54:21 -0500
+	Sat, 18 Dec 2010 09:54:12 -0500
 From: "Henrik Rydberg" <rydberg@euromail.se>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: Jiri Kosina <jkosina@suse.cz>, Chase Douglas <chase.douglas@canonical.com>,
         Chris Bagwell <chris@cnpbagwell.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH 0/4] Input: synaptics - add semi-mt support
-Date: Sat, 18 Dec 2010 15:52:57 +0100
-Message-Id: <1292683981-6908-1-git-send-email-rydberg@euromail.se>
+        linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
+        Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH 1/4] Input: synaptics - add multitouch packet support
+Date: Sat, 18 Dec 2010 15:52:58 +0100
+Message-Id: <1292683981-6908-2-git-send-email-rydberg@euromail.se>
 X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1292683981-6908-1-git-send-email-rydberg@euromail.se>
+References: <1292683981-6908-1-git-send-email-rydberg@euromail.se>
 X-Originating-IP: 83.248.200.95
-X-Scan-Result: No virus found in message 1PTy9q-00006I-7t.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PTy9q-00006I-7t b2f891f20dad5144af3b985365558ec1
+X-Scan-Result: No virus found in message 1PTy9v-0005ax-5u.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PTy9v-0005ax-5u 5d32f8f71a4593ff5ee8b95a1b3e3213
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+From: Chase Douglas <chase.douglas@canonical.com>
 
-Here is what I hope to be a final version of the synaptics MT
-patches. The first patch is unchanged except for a fixed typo. It does
-not work very well on some clickpads, but this could arguably be fixed
-in userspace. There is a dkms package out there with similar code,
-which generally seems to work for people. The second patch fixes an
-odd behavior found on my test machine. Does it make a difference to
-anyone else? The third patch utilizes the new property interface to
-flag the clickpad property. The fourth patch implements the semi-mt
-support, this time flagged using the property interface.
+Synaptics 2.7 series of touchpads support a mode for reporting 2 sets
+of X/Y/Pressure data (multi-touch).  These same devices default mode
+report single finger data and do not report finger counts.
 
-Chase, Chris?
+Enabling MT mode makes finger count reporting start working in same
+fashion as touchpads that claim that capability. Up to three fingers
+can be reported this way.
 
-Thanks,
-Henrik
+While in MT mode and two or three fingers are touching, two sets of
+data are sent.  The first is a new format buffer with lower resolution
+reporting of stationary finger and the second is standard data format
+reporting movement.
 
-Chase Douglas (1):
-  Input: synaptics - add multitouch packet support
+Work to enable MT and decoding its packet is from patch from Takashi Iwai.
 
-Henrik Rydberg (3):
-  Input: synaptics - ignore bogus mt packet
-  Input: synaptics - report clickpad property
-  Input: synaptics - emit multitouch data
+Additional cleanup/testing of original patch was performed by Chase Douglas.
 
- drivers/input/mouse/synaptics.c |  124 ++++++++++++++++++++++++++++++++++-----
- drivers/input/mouse/synaptics.h |    4 +
- 2 files changed, 112 insertions(+), 16 deletions(-)
+Minor cleanup and testing performed by Chris Bagwell.
 
+Reported-by: Tobyn Bertram
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+Signed-off-by: Chris Bagwell <chris@cnpbagwell.com>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+ drivers/input/mouse/synaptics.c |   75 ++++++++++++++++++++++++++++++++-------
+ drivers/input/mouse/synaptics.h |    4 ++
+ 2 files changed, 66 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index 2e300a4..8a769e9 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -279,6 +279,24 @@ static void synaptics_set_rate(struct psmouse *psmouse, unsigned int rate)
+ 	synaptics_mode_cmd(psmouse, priv->mode);
+ }
+ 
++static int synaptics_set_multitouch_mode(struct psmouse *psmouse)
++{
++	static unsigned char param = 0xc8;
++	struct synaptics_data *priv = psmouse->private;
++
++	if (!SYN_CAP_MULTITOUCH(priv->ext_cap_0c))
++		return 0;
++
++	if (psmouse_sliced_command(psmouse, SYN_QUE_MODEL))
++		return -1;
++	if (ps2_command(&psmouse->ps2dev, &param, PSMOUSE_CMD_SETRATE))
++		return -1;
++
++	priv->multitouch = 1;
++	printk(KERN_INFO "Synaptics: Multitouch mode enabled\n");
++	return 0;
++}
++
+ /*****************************************************************************
+  *	Synaptics pass-through PS/2 port support
+  ****************************************************************************/
+@@ -380,23 +398,38 @@ static void synaptics_pt_create(struct psmouse *psmouse)
+  *	Functions to interpret the absolute mode packets
+  ****************************************************************************/
+ 
+-static void synaptics_parse_hw_state(unsigned char buf[], struct synaptics_data *priv, struct synaptics_hw_state *hw)
++static int synaptics_parse_hw_state(unsigned char buf[], struct synaptics_data *priv, struct synaptics_hw_state *hw)
+ {
+ 	memset(hw, 0, sizeof(struct synaptics_hw_state));
+ 
+ 	if (SYN_MODEL_NEWABS(priv->model_id)) {
+-		hw->x = (((buf[3] & 0x10) << 8) |
+-			 ((buf[1] & 0x0f) << 8) |
+-			 buf[4]);
+-		hw->y = (((buf[3] & 0x20) << 7) |
+-			 ((buf[1] & 0xf0) << 4) |
+-			 buf[5]);
+-
+-		hw->z = buf[2];
+ 		hw->w = (((buf[0] & 0x30) >> 2) |
+ 			 ((buf[0] & 0x04) >> 1) |
+ 			 ((buf[3] & 0x04) >> 2));
+ 
++		if (priv->multitouch && hw->w == 2) {
++			/* Multitouch data is half normal resolution */
++			hw->x = (((buf[4] & 0x0f) << 8) |
++				 buf[1]) << 1;
++			hw->y = (((buf[4] & 0xf0) << 4) |
++				 buf[2]) << 1;
++
++			hw->z = ((buf[3] & 0x30) |
++				 (buf[5] & 0x0f)) << 1;
++
++			/* Only look at x, y, and z for MT */
++			return 1;
++		} else {
++			hw->x = (((buf[3] & 0x10) << 8) |
++				 ((buf[1] & 0x0f) << 8) |
++				 buf[4]);
++			hw->y = (((buf[3] & 0x20) << 7) |
++				 ((buf[1] & 0xf0) << 4) |
++				 buf[5]);
++
++			hw->z = buf[2];
++		}
++
+ 		hw->left  = (buf[0] & 0x01) ? 1 : 0;
+ 		hw->right = (buf[0] & 0x02) ? 1 : 0;
+ 
+@@ -452,6 +485,8 @@ static void synaptics_parse_hw_state(unsigned char buf[], struct synaptics_data
+ 		hw->left  = (buf[0] & 0x01) ? 1 : 0;
+ 		hw->right = (buf[0] & 0x02) ? 1 : 0;
+ 	}
++
++	return 0;
+ }
+ 
+ /*
+@@ -466,7 +501,10 @@ static void synaptics_process_packet(struct psmouse *psmouse)
+ 	int finger_width;
+ 	int i;
+ 
+-	synaptics_parse_hw_state(psmouse->packet, priv, &hw);
++	if (synaptics_parse_hw_state(psmouse->packet, priv, &hw)) {
++		priv->mt = hw;
++		return;
++	}
+ 
+ 	if (hw.scroll) {
+ 		priv->scroll += hw.scroll;
+@@ -494,7 +532,8 @@ static void synaptics_process_packet(struct psmouse *psmouse)
+ 		if (SYN_CAP_EXTENDED(priv->capabilities)) {
+ 			switch (hw.w) {
+ 			case 0 ... 1:
+-				if (SYN_CAP_MULTIFINGER(priv->capabilities))
++				if (SYN_CAP_MULTIFINGER(priv->capabilities) ||
++				    priv->multitouch)
+ 					num_fingers = hw.w + 2;
+ 				break;
+ 			case 2:
+@@ -532,7 +571,7 @@ static void synaptics_process_packet(struct psmouse *psmouse)
+ 	input_report_key(dev, BTN_LEFT, hw.left);
+ 	input_report_key(dev, BTN_RIGHT, hw.right);
+ 
+-	if (SYN_CAP_MULTIFINGER(priv->capabilities)) {
++	if (SYN_CAP_MULTIFINGER(priv->capabilities) || priv->multitouch) {
+ 		input_report_key(dev, BTN_TOOL_DOUBLETAP, num_fingers == 2);
+ 		input_report_key(dev, BTN_TOOL_TRIPLETAP, num_fingers == 3);
+ 	}
+@@ -638,7 +677,7 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
+ 	__set_bit(BTN_LEFT, dev->keybit);
+ 	__set_bit(BTN_RIGHT, dev->keybit);
+ 
+-	if (SYN_CAP_MULTIFINGER(priv->capabilities)) {
++	if (SYN_CAP_MULTIFINGER(priv->capabilities) || priv->multitouch) {
+ 		__set_bit(BTN_TOOL_DOUBLETAP, dev->keybit);
+ 		__set_bit(BTN_TOOL_TRIPLETAP, dev->keybit);
+ 	}
+@@ -702,6 +741,11 @@ static int synaptics_reconnect(struct psmouse *psmouse)
+ 		return -1;
+ 	}
+ 
++	if (synaptics_set_multitouch_mode(psmouse)) {
++		printk(KERN_ERR "Unable to initialize Synaptics Multitouch.\n");
++		return -1;
++	}
++
+ 	return 0;
+ }
+ 
+@@ -769,6 +813,11 @@ int synaptics_init(struct psmouse *psmouse)
+ 		goto init_fail;
+ 	}
+ 
++	if (synaptics_set_multitouch_mode(psmouse)) {
++		printk(KERN_ERR "Unable to initialize Synaptics Multitouch.\n");
++		goto init_fail;
++	}
++
+ 	priv->pkt_type = SYN_MODEL_NEWABS(priv->model_id) ? SYN_NEWABS : SYN_OLDABS;
+ 
+ 	printk(KERN_INFO "Synaptics Touchpad, model: %ld, fw: %ld.%ld, id: %#lx, caps: %#lx/%#lx/%#lx\n",
+diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
+index 613a365..4cb13b8 100644
+--- a/drivers/input/mouse/synaptics.h
++++ b/drivers/input/mouse/synaptics.h
+@@ -53,6 +53,7 @@
+ #define SYN_CAP_PRODUCT_ID(ec)		(((ec) & 0xff0000) >> 16)
+ #define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100100)
+ #define SYN_CAP_MAX_DIMENSIONS(ex0c)	((ex0c) & 0x020000)
++#define SYN_CAP_MULTITOUCH(ex0c)	((ex0c) & 0x080000)
+ 
+ /* synaptics modes query bits */
+ #define SYN_MODE_ABSOLUTE(m)		((m) & (1 << 7))
+@@ -112,6 +113,9 @@ struct synaptics_data {
+ 	int scroll;
+ 
+ 	struct serio *pt_port;			/* Pass-through serio port */
++
++	int multitouch;				/* device provides MT data */
++	struct synaptics_hw_state mt;		/* current MT packet */
+ };
+ 
+ void synaptics_module_init(void);
 -- 
 1.7.2.3
 
