@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756884Ab0LRBPd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 20:15:33 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49332 "EHLO
+	id S1756860Ab0LRBTH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 20:19:07 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49341 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756381Ab0LRBPb (ORCPT
+	by vger.kernel.org with ESMTP id S1756381Ab0LRBTB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 20:15:31 -0500
-Date: Fri, 17 Dec 2010 17:14:52 -0800
+	Fri, 17 Dec 2010 20:19:01 -0500
+Date: Fri, 17 Dec 2010 17:18:29 -0800
 From: Andrew Morton <akpm@linux-foundation.org>
 To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 Cc: linux-kernel@vger.kernel.org, "Nikita V\. Youshchenko" <yoush@cs.msu.su>,
         linuxpps@ml.enneenne.com, Rodolfo Giometti <giometti@enneenne.com>
-Subject: Re: [PATCHv6 00/16] pps: several fixes and improvements
-Message-Id: <20101217171452.338b0dce.akpm@linux-foundation.org>
-In-Reply-To: <20101218040001.7b4a1bc0@apollo.gnet>
+Subject: Re: [PATCHv6 07/16] pps: move idr stuff to pps.c
+Message-Id: <20101217171829.814a6be3.akpm@linux-foundation.org>
+In-Reply-To: <20101218040738.64ab69f6@apollo.gnet>
 References: <cover.1292604060.git.lasaine@lvk.cs.msu.su>
-	<20101217161938.9247e433.akpm@linux-foundation.org>
-	<20101218040001.7b4a1bc0@apollo.gnet>
+	<8f66dc7613bb4a7d34e6d76465df3bf6bb2f66a8.1292604060.git.lasaine@lvk.cs.msu.su>
+	<20101217161328.457ac8e6.akpm@linux-foundation.org>
+	<20101218040738.64ab69f6@apollo.gnet>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -26,26 +27,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 18 Dec 2010 04:00:01 +0300
+On Sat, 18 Dec 2010 04:07:38 +0300
 Alexander Gordeev <lasaine@lvk.cs.msu.su> wrote:
 
-> __ Fri, 17 Dec 2010 16:19:38 -0800
-> Andrew Morton <akpm@linux-foundation.org> __________:
-> 
-> > On Fri, 17 Dec 2010 22:54:24 +0300
-> > Alexander Gordeev <lasaine@lvk.cs.msu.su> wrote:
+> > > +	if (err < 0)
+> > > +		return err;
 > > 
-> > > There is one problem however: kernel consumer works bad (if enabled)
-> > > when CONFIG_NO_HZ is enabled. The reason for this is commit
-> > > a092ff0f90cae22b2ac8028ecd2c6f6c1a9e4601. Without it hardpps() is able
-> > > to sync to 1us precision in about 10 seconds. With CONFIG_NO_HZ it is
-> > > not syncing at all. This only affects patches 12-14, others are ok.
+> > The IDR interface really sucks :(
 > > 
-> > Is someone working on fixing all this?
+> > What this code should be doing is
+> > 
+> > retry:
+> > 	if (idr_pre_get(&pps_idr, GFP_KERNEL) == 0)
+> > 		return -ENOMEM;
+> > 	spin_lock_irq(&pps_idr_lock);
+> > 	err = idr_get_new(&pps_idr, pps, &pps->id);
+> > 	spin_unlock_irq(&pps_idr_lock);
+> > 	if (err < 0) {
+> > 		if (err == -EAGAIN)
+> > 			goto retry;
+> > 		return err;
+> > 	}
+> > 
+> > this way it correctly handles the case where the idr_pre_get()
+> > succeeded in precharging the pool, but some other task cam in and stole
+> > your reservation.
 > 
-> Not right now but it is planned. I can only ensure that users can never
-> select CONFIG_NO_HZ and CONFIG_NTP_PPS at the same time. Is it ok?
+> Yeah, I see. Maybe switching from spin lock to mutex and protecting the
+> whole thing with it can do? Like this:
+> 
+> ...
+> mutex_lock(&pps_idr_lock);
+> if (idr_pre_get(&pps_idr, GFP_KERNEL) == 0) {
+> 	mutex_unlock(&pps_idr_lock);
+> 	return -ENOMEM;
+> }
+> err = idr_get_new(&pps_idr, pps, &pps->id);
+> mutex_unlock(&pps_idr_lock);
+> 
+> if (err < 0)
+> 	return err;
+> ...
 
-That's much better than permitting a subtly broken driver.
+That works so, as long as no code path will take pps_idr_lock in the
+page allocator direct-reclaim path.
 
-CONFIG_NO_HZ is pretty common nowadays, methinks.
+That's unlikely to be happening in the PPS driver of course.  It's
+conceivable that some filesystems might want to read the time when
+playing with file timestamps in the direct-reclaim path, but I assume
+pps_idr_lock wouldn't be taken on any read-system-time paths.
+
