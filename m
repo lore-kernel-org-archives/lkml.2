@@ -1,37 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab0LRWUx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 17:20:53 -0500
-Received: from depni.sinp.msu.ru ([213.131.7.21]:39767 "EHLO depni.sinp.msu.ru"
+	id S1752937Ab0LRWmH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 17:42:07 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:37839 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751497Ab0LRWUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 17:20:52 -0500
-X-Greylist: delayed 1567 seconds by postgrey-1.27 at vger.kernel.org; Sat, 18 Dec 2010 17:20:52 EST
-From: Serge Belyshev <belyshev@depni.sinp.msu.ru>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [ANNOUNCE] Linux 2.6.35.10 has been released
-References: <20101214232747.GA18757@basil.fritz.box>
-Date: Sat, 18 Dec 2010 21:54:38 +0000
-In-Reply-To: <20101214232747.GA18757@basil.fritz.box> (Andi Kleen's message of
-	"Wed, 15 Dec 2010 00:27:47 +0100")
-Message-ID: <877hf66929.fsf@depni.sinp.msu.ru>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1751124Ab0LRWmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Dec 2010 17:42:05 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: Re: [linux-pm] 2.6.37-rc5, pata_atiixp, DVD-ROM: kernel log flooded with "rpm_resume flags 0x4", "rpm_resume returns 1"
+Date: Sat, 18 Dec 2010 23:41:04 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6+; KDE/4.4.4; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        linux-pm@lists.linux-foundation.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <20101217211556.2789cb80@stein> <Pine.LNX.4.44L0.1012181259080.3334-100000@saphir.localdomain> <20101218200837.03a23f62@stein>
+In-Reply-To: <20101218200837.03a23f62@stein>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012182341.04947.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi Kleen <andi@firstfloor.org> writes:
+On Saturday, December 18, 2010, Stefan Richter wrote:
+> On Dec 18 Alan Stern wrote:
+> > On Fri, 17 Dec 2010, Stefan Richter wrote:
+> > > On Dec 11 Rafael J. Wysocki wrote:
+> > > > I guess you have either CONFIG_PM_VERBOSE set or CONFIG_PM_DEBUG unset.
+> > > > 
+> > > > Which is the case?
+> > > 
+> > > I have both options off on 2.6.36 and older kernels.  I have both
+> > > options on on 2.6.37-rc5/-rc6 (because I wanted to check something
+> > > unrelated on 2.6.37).
+> > 
+> > These messages are produced by dev_dbg() calls.  The debug output is 
+> > enabled by either CONFIG_PM_VERBOSE or CONFIG_DEBUG_DRIVER.  Since you say 
+> > CONFIG_PM_VERBOSE is off, the other must be on -- unless maybe you have 
+> > CONFIG_DYNAMIC_DEBUG enabled.
+> 
+> No, CONFIG_PM_VERBOSE is of course _on_ in the kernel that spams the
+> log.
 
-> A new longterm 2.6.35.10 kernel has been released. This release contains security
-> fixes and all 2.6.35 users are encouraged to update. This continues
-> the 2.6.35 stable series under a new name.
+Please turn if off, then.  Most likely you don't need it anyway.
 
-Could you please update this tree:
-git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.35.y.git ?
-
-This, and all other stable trees are mirrored here:
-git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6-stable.git
-it would be nice to keep it up-to-date.
+Thanks,
+Rafael
