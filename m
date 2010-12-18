@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756735Ab0LRAa3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 19:30:29 -0500
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:25939 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756446Ab0LRAa0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 19:30:26 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 24.130.172.179
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/kUCf2QRvri7d7C0cAldmo
-Date: Fri, 17 Dec 2010 16:30:22 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Carlos Chinea <carlos.chinea@nokia.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [RFC PATCHv4 2/7] HSI: omap_ssi: Introducing OMAP SSI driver
-Message-ID: <20101218003022.GB5941@atomide.com>
-References: <1292321383-30200-1-git-send-email-carlos.chinea@nokia.com>
- <1292321383-30200-3-git-send-email-carlos.chinea@nokia.com>
+	id S1756730Ab0LRAlH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 19:41:07 -0500
+Received: from cantor.suse.de ([195.135.220.2]:48332 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756487Ab0LRAlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 19:41:04 -0500
+Date: Fri, 17 Dec 2010 16:37:47 -0800
+From: Greg KH <gregkh@suse.de>
+To: rmorell@nvidia.com
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Benoit Goby <benoit@android.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
+        Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>,
+        Colin Cross <ccross@android.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] USB: ehci: tegra: Align DMA transfers to 32 bytes
+Message-ID: <20101218003747.GB16600@suse.de>
+References: <1292623129-26361-1-git-send-email-rmorell@nvidia.com>
+ <1292623129-26361-3-git-send-email-rmorell@nvidia.com>
+ <20101217223502.GB19418@suse.de>
+ <20101217224221.GE25105@morell.nvidia.com>
+ <20101217230940.GB21147@suse.de>
+ <20101217234008.GJ25105@morell.nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1292321383-30200-3-git-send-email-carlos.chinea@nokia.com>
+In-Reply-To: <20101217234008.GJ25105@morell.nvidia.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Carlos Chinea <carlos.chinea@nokia.com> [101214 02:13]:
-> Introduces the OMAP SSI driver in the kernel.
+On Fri, Dec 17, 2010 at 03:40:08PM -0800, rmorell@nvidia.com wrote:
+> On Fri, Dec 17, 2010 at 03:09:40PM -0800, Greg KH wrote:
+> > On Fri, Dec 17, 2010 at 02:42:21PM -0800, rmorell@nvidia.com wrote:
+> > > On Fri, Dec 17, 2010 at 02:35:02PM -0800, Greg KH wrote:
+> > > > On Fri, Dec 17, 2010 at 01:58:49PM -0800, Robert Morell wrote:
+> > > > > --- a/include/linux/usb.h
+> > > > > +++ b/include/linux/usb.h
+> > > > > @@ -975,6 +975,7 @@ extern int usb_disabled(void);
+> > > > >  #define URB_SETUP_MAP_SINGLE	0x00100000	/* Setup packet DMA mapped */
+> > > > >  #define URB_SETUP_MAP_LOCAL	0x00200000	/* HCD-local setup packet */
+> > > > >  #define URB_DMA_SG_COMBINED	0x00400000	/* S-G entries were combined */
+> > > > > +#define URB_DRIVER_PRIVATE	0x80000000	/* For driver-private use */
+> > > > 
+> > > > Um, what?  You are using this for a build check, which seems pointless
+> > > > as you already modified the code to not need this.
+> > > > 
+> > > > So it doesn't look like this is needed, right?
+> > > 
+> > > The intention was to reserve space in the URB flags for
+> > > implementation-specific use.
+> > 
+> > Yes, but _which_ driver are you talking about here?  You didn't say that
+> > this was a HCD-only flag, right?
 > 
-> The Synchronous Serial Interface (SSI) is a legacy version
-> of HSI. As in the case of HSI, it is mainly used to connect
-> Application engines (APE) with cellular modem engines (CMT)
-> in cellular handsets.
+> Sorry, I may not have been clear.  I did mean HCD-only flag; its exact
+> meaning depends on the HCD in question.  In the case of tegra-ehci, it
+> means that a temporary buffer has been allocated that needs freeing
+> later.
 > 
-> It provides a multichannel, full-duplex, multi-core communication
-> with no reference clock. The OMAP SSI block is capable of reaching
-> speeds of 110 Mbit/s.
-...
+> Would it make more sense if I called it URB_HCD_PRIVATE_MASK?
 
-> +static int __init ssi_init(void)
-> +{
-> +	return platform_device_register(&ssi_pdev);
-> +}
-> +subsys_initcall(ssi_init);
+How about naming it what it is being used for?
 
-Is this safe to do for all omaps2+ machines?
+thanks,
 
-Regards,
-
-Tony
+greg k-h
