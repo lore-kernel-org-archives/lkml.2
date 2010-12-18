@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756782Ab0LRAxf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 19:53:35 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48986 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756582Ab0LRAxc (ORCPT
+	id S1756756Ab0LRAxW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 19:53:22 -0500
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:27344 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756221Ab0LRAxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 19:53:32 -0500
-Date: Fri, 17 Dec 2010 16:53:19 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        netdev@vger.kernel.org, jmorris@namei.org, eugeneteo@kernel.org,
-        kees.cook@canonical.com, mingo@elte.hu, davem@davemloft.net
-Subject: Re: [PATCH v2] kptr_restrict for hiding kernel pointers from
- unprivileged users
-Message-Id: <20101217165319.98670d66.akpm@linux-foundation.org>
-In-Reply-To: <1292025924.2965.20.camel@Dan>
-References: <1292025924.2965.20.camel@Dan>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 17 Dec 2010 19:53:20 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 24.130.172.179
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19XLeT8JRQvCi5T0dwlh/w7
+Date: Fri, 17 Dec 2010 16:53:11 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Greg KH <greg@kroah.com>, akpm@linux-foundation.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Benoit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v3 0/4] Introduce hardware spinlock framework
+Message-ID: <20101218005311.GE5941@atomide.com>
+References: <1291420247-18171-1-git-send-email-ohad@wizery.com>
+ <AANLkTin1fd=Kei7Fo6G+uR+270HdTkc71fvsA6qjBjcA@mail.gmail.com>
+ <20101214170656.GA3832@kroah.com>
+ <AANLkTi=q=QMQ_Abxb8eUWT_qGG8K=pc892ZB-mqgt_mh@mail.gmail.com>
+ <20101216210837.GA22895@kroah.com>
+ <AANLkTi=s_Urcin4SAp1mXrKmoyzR2=6YuS3aU+OYYgqK@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=s_Urcin4SAp1mXrKmoyzR2=6YuS3aU+OYYgqK@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Dec 2010 19:05:24 -0500
-Dan Rosenberg <drosenberg@vsecurity.com> wrote:
+* Ohad Ben-Cohen <ohad@wizery.com> [101216 13:34]:
+> On Thu, Dec 16, 2010 at 11:08 PM, Greg KH <greg@kroah.com> wrote:
+> >> > I've seen a lot of discussion about this, are all of the review comments
+> >> > now addressed?
+> >>
+> >> Yes, all comments were addressed in this v3 iteration, and this thread
+> >> has been idle for about 10 days.
+> >
+> > That's because we are all busy with other things :(
+> 
+> Oh sure, my intention was only positive (to demonstrate that there are
+> no outstanding comments), sorry if it sounded differently than
+> intended.
+> 
+> > Sorry, I really don't have the time at the moment to review this code,
+> > nor does it seem to affect areas that I maintain, so I don't understand
+> > what you are looking for from me.
+> 
+> Sorry for the noise - I contacted you because you maintain the driver
+> core, in the hope you could suggest where this can go through.
+> 
+> Tony, Andrew, can you please have a look ?
+> 
+> Any comment or suggestion is appreciated.
 
-> +	case 'K':
-> +		if (kptr_restrict) {
-> +			if (in_irq() || in_serving_softirq() || in_nmi())
-> +				WARN(1, "%%pK used in interrupt context.\n");
-> +
-> +			else if (capable(CAP_SYSLOG))
-> +				break;
-> +
-> +			if (spec.field_width == -1) {
-> +				spec.field_width = 2 * sizeof(void *);
-> +				spec.flags |= ZEROPAD;
-> +			}
-> +			return number(buf, end, 0, spec);
-> +		}
-> +		break;
+Looks sane to me from omap point of view and it seems the locks
+are now all timeout based:
 
-Also, we should emit the runtime warning even if kptr_restrict is
-false.  Otherwise programmers might ship buggy code because they didn't
-enable kptr_restrict during testing.
+Acked-by: Tony Lindgren <tony@atomide.com>
 
-So what I ended up with was
+Regards,
 
-	case 'K':
-		/*
-		 * %pK cannot be used in IRQ context because it tests
-		 * CAP_SYSLOG.
-		 */
-		if (in_irq() || in_serving_softirq() || in_nmi())
-			WARN_ONCE(1, "%%pK used in interrupt context.\n");
-
-		if (!kptr_restrict)
-			break;		/* %pK does not obscure pointers */
-
-		if (capable(CAP_SYSLOG))
-			break;		/* privileged apps expose pointers */
-
-		if (spec.field_width == -1) {
-			spec.field_width = 2 * sizeof(void *);
-			spec.flags |= ZEROPAD;
-		}
-		return number(buf, end, 0, spec);
-
-How does that look?
-
-
-Also...  permitting root to bypass the %pK obscuring seems pretty lame,
-really.  I bet a *lot* of the existing %p sites are already root-only
-(eg, driver initialisation).  So much of the value is lost.
+Tony
