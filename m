@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280Ab0LRVw1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 16:52:27 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:16632 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932199Ab0LRVw1 (ORCPT
+	id S932299Ab0LRWBV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 17:01:21 -0500
+Received: from webmail.exar.com ([204.154.183.83]:1990 "EHLO smtp1.exar.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932284Ab0LRWBM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 16:52:27 -0500
-Date: Sat, 18 Dec 2010 22:43:00 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: autofs@linux.kernel.org
-cc: linux-kernel@vger.kernel.org, Ian Kent <raven@themaw.net>
-Subject: [PATCH] autofs4: Do not potentially dereference NULL pointer returned
- by fget() in autofs_dev_ioctl_setpipefd()
-Message-ID: <alpine.LNX.2.00.1012182238560.17400@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sat, 18 Dec 2010 17:01:12 -0500
+Date: Sat, 18 Dec 2010 16:01:09 -0600
+From: Jon Mason <jon.mason@exar.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Bjorn Helgaas <bjorn.helgaas@hp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Ramkrishna Vepa <Ramkrishna.Vepa@exar.com>
+Subject: Re: "x86: allocate space within a region top-down" causes bar0
+ access issue
+Message-ID: <20101218220109.GE7676@exar.com>
+References: <20101217194457.GA4470@exar.com>
+ <20101217114721.04eafeca@jbarnes-desktop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20101217114721.04eafeca@jbarnes-desktop>
+Thread-Topic: "x86: allocate space within a region top-down" causes bar0
+ access issue
+Accept-Language: en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Dec 17, 2010 at 11:47:21AM -0800, Jesse Barnes wrote:
+> On Fri, 17 Dec 2010 13:44:58 -0600
+> Jon Mason <jon.mason@exar.com> wrote:
+>
+> > The following patch is causing problem with the vxge driver/adapter on
+> > HP x86-64 systems. Reads to bar0 to return 0xffffffffffffffff instead
+> > of their intended value.  This prevents the vxge module from loading
+> > by failing sanity checks in the driver for certain values in bar0.  We
+> > are not seeing any issues with this patch on non-HP systems in our
+> > lab.
+> >
+> > Can this patch be removed from 2.6.37 until a better solution can be
+> > found?
+>
+> Can you try my for-linus branch and see if the problem still exists
+> there?  It's at
+> git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci-2.6.git.
 
-In fs/autofs4/dev-ioctl.c::autofs_dev_ioctl_setpipefd() we call fget(), 
-which may return NULL, but we do not explicitly test for that NULL return 
-so we may end up dereferencing a NULL pointer - bad.
+The for-linus branch does NOT have the issue
+The master branch does have the issue
 
-When I originally submitted this patch I had chosen EBUSY as the return 
-value to use if this happens. Ian Kent was kind enough to explain why that 
-would most likely be wrong and why EBADF should most likely be used 
-instead. This version of the patch uses EBADF.
+Thanks,
+Jon
 
+>
+> Thanks,
+> --
+> Jesse Barnes, Intel Open Source Technology Center
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- dev-ioctl.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/fs/autofs4/dev-ioctl.c b/fs/autofs4/dev-ioctl.c
-index eff9a41..a650d7e 100644
---- a/fs/autofs4/dev-ioctl.c
-+++ b/fs/autofs4/dev-ioctl.c
-@@ -372,6 +372,10 @@ static int autofs_dev_ioctl_setpipefd(struct file *fp,
- 		return -EBUSY;
- 	} else {
- 		struct file *pipe = fget(pipefd);
-+		if (!pipe) {
-+			err = -EBADF;
-+			goto out;
-+		}
- 		if (!pipe->f_op || !pipe->f_op->write) {
- 			err = -EPIPE;
- 			fput(pipe);
-
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+The information and any attached documents contained in this message
+may be confidential and/or legally privileged.  The message is
+intended solely for the addressee(s).  If you are not the intended
+recipient, you are hereby notified that any use, dissemination, or
+reproduction is strictly prohibited and may be unlawful.  If you are
+not the intended recipient, please contact the sender immediately by
+return e-mail and destroy all copies of the original message.
