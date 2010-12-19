@@ -1,131 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab0LSJuy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 04:50:54 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:40388 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904Ab0LSJuv convert rfc822-to-8bit (ORCPT
+	id S1753195Ab0LSKHA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 05:07:00 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:55997 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752400Ab0LSKG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 04:50:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=vQwyFfEYkQbhotDUbKptZXLf7micHPYJiXwbtWSTwuP6LaWAmGXZMwmSd9ztrqYgVz
-         dRR4p4xvNzoIXrDiE4W/WZmZC8SgD4WdVrgmqM32o1B8URCibPWundYvPT0xPI/ivO6e
-         ZyrMG/l77AdlNqw4kFCf1o7P1VE0kjqKZr/j0=
-MIME-Version: 1.0
-In-Reply-To: <20101216173856.8185.98094.stgit@bob.kio>
-References: <20101216173614.8185.19462.stgit@bob.kio>
-	<20101216173856.8185.98094.stgit@bob.kio>
-Date: Sun, 19 Dec 2010 01:50:50 -0800
-X-Google-Sender-Auth: cHiV7a63mwoW4FSCZIuuK0AndYY
-Message-ID: <AANLkTim68DbGeWbYKYx3_WOGFkA8KZFVHFyEFGtXt-cr@mail.gmail.com>
-Subject: Re: [PATCH 8/9] x86: avoid E820 regions when allocating address space
+	Sun, 19 Dec 2010 05:06:59 -0500
+Message-ID: <4D0DD916.4040609@kernel.org>
+Date: Sun, 19 Dec 2010 02:06:14 -0800
 From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Len Brown <lenb@kernel.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86, boot: Don't check if cmd_line_ptr is accessible in misc/decompressor()
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 16, 2010 at 9:38 AM, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
->
-> When we allocate address space, e.g., to assign it to a PCI device, don't
-> allocate anything mentioned in the BIOS E820 memory map.
->
-> On recent machines (2008 and newer), we assign PCI resources from the
-> windows described by the ACPI PCI host bridge _CRS.  On many Dell
-> machines, these windows overlap some E820 reserved areas, e.g.,
->
->    BIOS-e820: 00000000bfe4dc00 - 00000000c0000000 (reserved)
->    pci_root PNP0A03:00: host bridge window [mem 0xbff00000-0xdfffffff]
->
-> If we put devices at 0xbff00000, they don't work, probably because
-> that's really RAM, not I/O memory.  This patch prevents that by removing
-> the 0xbfe4dc00-0xbfffffff area from the "available" resource.
->
-> I'm not very happy with this solution because Windows solves the problem
-> differently (it seems to ignore E820 reserved areas and it allocates
-> top-down instead of bottom-up; details at comment 45 of the bugzilla
-> below).  That means we're vulnerable to BIOS defects that Windows would not
-> trip over.  For example, if BIOS described a device in ACPI but didn't
-> mention it in E820, Windows would work fine but Linux would fail.
->
-> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=16228
-> Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
-> ---
->
->  arch/x86/kernel/resource.c |   38 +++++++++++++++++++++++++++++++++++++-
->  1 files changed, 37 insertions(+), 1 deletions(-)
->
->
-> diff --git a/arch/x86/kernel/resource.c b/arch/x86/kernel/resource.c
-> index 407a900..89638af 100644
-> --- a/arch/x86/kernel/resource.c
-> +++ b/arch/x86/kernel/resource.c
-> @@ -1,11 +1,47 @@
->  #include <linux/ioport.h>
->  #include <asm/e820.h>
->
-> +static void resource_clip(struct resource *res, resource_size_t start,
-> +                         resource_size_t end)
-> +{
-> +       resource_size_t low = 0, high = 0;
-> +
-> +       if (res->end < start || res->start > end)
-> +               return;         /* no conflict */
-> +
-> +       if (res->start < start)
-> +               low = start - res->start;
-> +
-> +       if (res->end > end)
-> +               high = res->end - end;
-> +
-> +       /* Keep the area above or below the conflict, whichever is larger */
-> +       if (low > high)
-> +               res->end = start - 1;
-> +       else
-> +               res->start = end + 1;
-> +}
-> +
-> +static void remove_e820_regions(struct resource *avail)
-> +{
-> +       int i;
-> +       struct e820entry *entry;
-> +
-> +       for (i = 0; i < e820.nr_map; i++) {
-> +               entry = &e820.map[i];
-> +
-> +               resource_clip(avail, entry->addr,
-> +                             entry->addr + entry->size - 1);
-> +       }
-> +}
-> +
->  void arch_remove_reservations(struct resource *avail)
->  {
-> -       /* Trim out BIOS area (low 1MB) */
-> +       /* Trim out BIOS area (low 1MB) and E820 regions */
->        if (avail->flags & IORESOURCE_MEM) {
->                if (avail->start < BIOS_END)
->                        avail->start = BIOS_END;
-> +
-> +               remove_e820_regions(avail);
->        }
->  }
 
-that looks expensive. it will keep going through e820 tables...
+At that stage, it is already in 32bit protected mode or 64bit mode.
+so we do not need to check if ptr less 1M.
 
-but e820 should have been reserved in resource tree...
+When go from other boot loader (kdump) instead of boot/ code path.
 
-So why we need to check e820 again?
+Try to move out accessiable checking out __cmdline_find_option....
 
-Yinghai
+So misc.c will parse cmdline and have debug print out.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ arch/x86/boot/boot.h    |   14 ++++++++++++--
+ arch/x86/boot/cmdline.c |    8 ++++----
+ 2 files changed, 16 insertions(+), 6 deletions(-)
+
+Index: linux-2.6/arch/x86/boot/boot.h
+===================================================================
+--- linux-2.6.orig/arch/x86/boot/boot.h
++++ linux-2.6/arch/x86/boot/boot.h
+@@ -289,12 +289,22 @@ int __cmdline_find_option(u32 cmdline_pt
+ int __cmdline_find_option_bool(u32 cmdline_ptr, const char *option);
+ static inline int cmdline_find_option(const char *option, char *buffer, int bufsize)
+ {
+-	return __cmdline_find_option(boot_params.hdr.cmd_line_ptr, option, buffer, bufsize);
++	u32 cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
++
++	if (cmd_line_ptr >= 0x100000)
++		return -1;      /* inaccessible */
++
++	return __cmdline_find_option(cmd_line_ptr, option, buffer, bufsize);
+ }
+ 
+ static inline int cmdline_find_option_bool(const char *option)
+ {
+-	return __cmdline_find_option_bool(boot_params.hdr.cmd_line_ptr, option);
++	u32 cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
++
++	if (cmd_line_ptr >= 0x100000)
++		return -1;      /* inaccessible */
++
++	return __cmdline_find_option_bool(cmd_line_ptr, option);
+ }
+ 
+ 
+Index: linux-2.6/arch/x86/boot/cmdline.c
+===================================================================
+--- linux-2.6.orig/arch/x86/boot/cmdline.c
++++ linux-2.6/arch/x86/boot/cmdline.c
+@@ -41,8 +41,8 @@ int __cmdline_find_option(u32 cmdline_pt
+ 		st_bufcpy	/* Copying this to buffer */
+ 	} state = st_wordstart;
+ 
+-	if (!cmdline_ptr || cmdline_ptr >= 0x100000)
+-		return -1;	/* No command line, or inaccessible */
++	if (!cmdline_ptr)
++		return -1;      /* No command line */
+ 
+ 	cptr = cmdline_ptr & 0xf;
+ 	set_fs(cmdline_ptr >> 4);
+@@ -111,8 +111,8 @@ int __cmdline_find_option_bool(u32 cmdli
+ 		st_wordskip,	/* Miscompare, skip */
+ 	} state = st_wordstart;
+ 
+-	if (!cmdline_ptr || cmdline_ptr >= 0x100000)
+-		return -1;	/* No command line, or inaccessible */
++	if (!cmdline_ptr)
++		return -1;      /* No command line */
+ 
+ 	cptr = cmdline_ptr & 0xf;
+ 	set_fs(cmdline_ptr >> 4);
