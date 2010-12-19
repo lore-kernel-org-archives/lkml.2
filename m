@@ -1,230 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932314Ab0LSPek (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 10:34:40 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:36295 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932147Ab0LSPej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 10:34:39 -0500
-Date: Sun, 19 Dec 2010 16:34:23 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] perf fixes
-Message-ID: <20101219153423.GA20874@elte.hu>
+	id S932330Ab0LSPnA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 10:43:00 -0500
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:50505 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932252Ab0LSPm7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 10:42:59 -0500
+Date: Sun, 19 Dec 2010 16:42:57 +0100
+From: Andreas Mohr <andi@lisas.de>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Arnd Bergmann <arnd@arndb.de>, dhollis@davehollis.com,
+        Phil Chang <pchang23@sbcglobal.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] net: Add USB PID for new MOSCHIP USB ethernet controller
+ MCS7832 variant
+Message-ID: <20101219154257.GA29086@rhlx01.hs-esslingen.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20101130200737.GA5185@rhlx01.hs-esslingen.de>
+X-Priority: none
 User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Due to active notification of the new MCS7832 version by the manufacturer
+(Mr. Milton; thanks!) -- quote: "functionality same as MCS7830",
+I'm now submitting this patch (on -rc6), intended for networking.git and -stable.
 
-Please pull the latest perf-fixes-for-linus git tree from:
+- add MCS7832 USB PID to be able to support this new device variant, too
+- add related descriptions
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-fixes-for-linus
+Signed-off-by: Andreas Mohr <andi@lisas.de>
+Cc: stable@kernel.org
+---
+Patch created, "semi"-tested (via my existing MCS7830 only),
+checkpatch.pl'd.
+GIT history seems clean, should thus apply easily.
 
- Thanks,
+Took longer (it's that time of the year again).
 
-	Ingo
+Thanks!
 
------------------->
-Dan Carpenter (1):
-      perf: Fix off by one in perf_swevent_init()
-
-John Reiser (1):
-      ftrace: Have recordmcount honor endianness in fn_ELF_R_INFO
-
-Peter Zijlstra (2):
-      scripts/tags.sh: Add magic for trace-events
-      perf: Fix duplicate events with multiple-pmu vs software events
-
-Slava Pestov (1):
-      tracing: Fix panic when lseek() called on "trace" opened for writing
-
-
- include/linux/perf_event.h |    1 +
- kernel/perf_event.c        |   37 ++++++++++++++++++++++++++++++-------
- kernel/trace/trace.c       |   10 +++++++++-
- scripts/recordmcount.h     |    2 +-
- scripts/tags.sh            |    4 +++-
- 5 files changed, 44 insertions(+), 10 deletions(-)
-
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index de2c417..4f1279e 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -887,6 +887,7 @@ struct perf_cpu_context {
- 	int				exclusive;
- 	struct list_head		rotation_list;
- 	int				jiffies_interval;
-+	struct pmu			*active_pmu;
- };
+diff --git a/drivers/net/usb/mcs7830.c b/drivers/net/usb/mcs7830.c
+index a6281e3..b701f59 100644
+--- a/drivers/net/usb/mcs7830.c
++++ b/drivers/net/usb/mcs7830.c
+@@ -1,5 +1,5 @@
+ /*
+- * MOSCHIP MCS7830 based USB 2.0 Ethernet Devices
++ * MOSCHIP MCS7830 based (7730/7830/7832) USB 2.0 Ethernet Devices
+  *
+  * based on usbnet.c, asix.c and the vendor provided mcs7830 driver
+  *
+@@ -11,6 +11,9 @@
+  *
+  * Definitions gathered from MOSCHIP, Data Sheet_7830DA.pdf (thanks!).
+  *
++ * 2010-12-19: add 7832 USB PID ("functionality same as MCS7830"),
++ *             per active notification by manufacturer
++ *
+  * TODO:
+  * - support HIF_REG_CONFIG_SLEEPMODE/HIF_REG_CONFIG_TXENABLE (via autopm?)
+  * - implement ethtool_ops get_pauseparam/set_pauseparam
+@@ -60,6 +63,7 @@
+ #define MCS7830_MAX_MCAST	64
  
- struct perf_output_handle {
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index eac7e33..2870fee 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -3824,6 +3824,8 @@ static void perf_event_task_event(struct perf_task_event *task_event)
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(pmu, &pmus, entry) {
- 		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
-+		if (cpuctx->active_pmu != pmu)
-+			goto next;
- 		perf_event_task_ctx(&cpuctx->ctx, task_event);
+ #define MCS7830_VENDOR_ID	0x9710
++#define MCS7832_PRODUCT_ID	0x7832
+ #define MCS7830_PRODUCT_ID	0x7830
+ #define MCS7730_PRODUCT_ID	0x7730
  
- 		ctx = task_event->task_ctx;
-@@ -3959,6 +3961,8 @@ static void perf_event_comm_event(struct perf_comm_event *comm_event)
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(pmu, &pmus, entry) {
- 		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
-+		if (cpuctx->active_pmu != pmu)
-+			goto next;
- 		perf_event_comm_ctx(&cpuctx->ctx, comm_event);
- 
- 		ctxn = pmu->task_ctx_nr;
-@@ -4144,6 +4148,8 @@ got_name:
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(pmu, &pmus, entry) {
- 		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
-+		if (cpuctx->active_pmu != pmu)
-+			goto next;
- 		perf_event_mmap_ctx(&cpuctx->ctx, mmap_event,
- 					vma->vm_flags & VM_EXEC);
- 
-@@ -4713,7 +4719,7 @@ static int perf_swevent_init(struct perf_event *event)
- 		break;
- 	}
- 
--	if (event_id > PERF_COUNT_SW_MAX)
-+	if (event_id >= PERF_COUNT_SW_MAX)
- 		return -ENOENT;
- 
- 	if (!event->parent) {
-@@ -5145,20 +5151,36 @@ static void *find_pmu_context(int ctxn)
- 	return NULL;
+@@ -626,7 +630,7 @@ static int mcs7830_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
  }
  
--static void free_pmu_context(void * __percpu cpu_context)
-+static void update_pmu_context(struct pmu *pmu, struct pmu *old_pmu)
- {
--	struct pmu *pmu;
-+	int cpu;
-+
-+	for_each_possible_cpu(cpu) {
-+		struct perf_cpu_context *cpuctx;
-+
-+		cpuctx = per_cpu_ptr(pmu->pmu_cpu_context, cpu);
-+
-+		if (cpuctx->active_pmu == old_pmu)
-+			cpuctx->active_pmu = pmu;
-+	}
-+}
-+
-+static void free_pmu_context(struct pmu *pmu)
-+{
-+	struct pmu *i;
+ static const struct driver_info moschip_info = {
+-	.description	= "MOSCHIP 7830/7730 usb-NET adapter",
++	.description	= "MOSCHIP 7830/7832/7730 usb-NET adapter",
+ 	.bind		= mcs7830_bind,
+ 	.rx_fixup	= mcs7830_rx_fixup,
+ 	.flags		= FLAG_ETHER,
+@@ -645,6 +649,10 @@ static const struct driver_info sitecom_info = {
  
- 	mutex_lock(&pmus_lock);
- 	/*
- 	 * Like a real lame refcount.
- 	 */
--	list_for_each_entry(pmu, &pmus, entry) {
--		if (pmu->pmu_cpu_context == cpu_context)
-+	list_for_each_entry(i, &pmus, entry) {
-+		if (i->pmu_cpu_context == pmu->pmu_cpu_context) {
-+			update_pmu_context(i, pmu);
- 			goto out;
-+		}
- 	}
- 
--	free_percpu(cpu_context);
-+	free_percpu(pmu->pmu_cpu_context);
- out:
- 	mutex_unlock(&pmus_lock);
- }
-@@ -5190,6 +5212,7 @@ int perf_pmu_register(struct pmu *pmu)
- 		cpuctx->ctx.pmu = pmu;
- 		cpuctx->jiffies_interval = 1;
- 		INIT_LIST_HEAD(&cpuctx->rotation_list);
-+		cpuctx->active_pmu = pmu;
- 	}
- 
- got_cpu_context:
-@@ -5241,7 +5264,7 @@ void perf_pmu_unregister(struct pmu *pmu)
- 	synchronize_rcu();
- 
- 	free_percpu(pmu->pmu_disable_count);
--	free_pmu_context(pmu->pmu_cpu_context);
-+	free_pmu_context(pmu);
- }
- 
- struct pmu *perf_init_event(struct perf_event *event)
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index c380612..f8cf959 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2338,11 +2338,19 @@ tracing_write_stub(struct file *filp, const char __user *ubuf,
- 	return count;
- }
- 
-+static loff_t tracing_seek(struct file *file, loff_t offset, int origin)
-+{
-+	if (file->f_mode & FMODE_READ)
-+		return seq_lseek(file, offset, origin);
-+	else
-+		return 0;
-+}
-+
- static const struct file_operations tracing_fops = {
- 	.open		= tracing_open,
- 	.read		= seq_read,
- 	.write		= tracing_write_stub,
--	.llseek		= seq_lseek,
-+	.llseek		= tracing_seek,
- 	.release	= tracing_release,
- };
- 
-diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
-index 58e933a..3966717 100644
---- a/scripts/recordmcount.h
-+++ b/scripts/recordmcount.h
-@@ -119,7 +119,7 @@ static uint_t (*Elf_r_sym)(Elf_Rel const *rp) = fn_ELF_R_SYM;
- 
- static void fn_ELF_R_INFO(Elf_Rel *const rp, unsigned sym, unsigned type)
- {
--	rp->r_info = ELF_R_INFO(sym, type);
-+	rp->r_info = _w(ELF_R_INFO(sym, type));
- }
- static void (*Elf_r_info)(Elf_Rel *const rp, unsigned sym, unsigned type) = fn_ELF_R_INFO;
- 
-diff --git a/scripts/tags.sh b/scripts/tags.sh
-index 8509bb5..bbbe584 100755
---- a/scripts/tags.sh
-+++ b/scripts/tags.sh
-@@ -125,7 +125,9 @@ exuberant()
- 	-I DEFINE_TRACE,EXPORT_TRACEPOINT_SYMBOL,EXPORT_TRACEPOINT_SYMBOL_GPL \
- 	--extra=+f --c-kinds=-px                                \
- 	--regex-asm='/^ENTRY\(([^)]*)\).*/\1/'                  \
--	--regex-c='/^SYSCALL_DEFINE[[:digit:]]?\(([^,)]*).*/sys_\1/'
-+	--regex-c='/^SYSCALL_DEFINE[[:digit:]]?\(([^,)]*).*/sys_\1/' \
-+	--regex-c++='/^TRACE_EVENT\(([^,)]*).*/trace_\1/'		\
-+	--regex-c++='/^DEFINE_EVENT\(([^,)]*).*/trace_\1/'
- 
- 	all_kconfigs | xargs $1 -a                              \
- 	--langdef=kconfig --language-force=kconfig              \
+ static const struct usb_device_id products[] = {
+ 	{
++		USB_DEVICE(MCS7830_VENDOR_ID, MCS7832_PRODUCT_ID),
++		.driver_info = (unsigned long) &moschip_info,
++	},
++	{
+ 		USB_DEVICE(MCS7830_VENDOR_ID, MCS7830_PRODUCT_ID),
+ 		.driver_info = (unsigned long) &moschip_info,
+ 	},
