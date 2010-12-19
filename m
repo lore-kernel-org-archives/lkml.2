@@ -1,86 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757081Ab0LSOCn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 09:02:43 -0500
-Received: from uucp.gnuu.de ([83.246.114.63]:3666 "EHLO uucp.gnuu.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754587Ab0LSOCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 09:02:42 -0500
-X-Greylist: delayed 1415 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Dec 2010 09:02:42 EST
-X-DKIM: Sendmail DKIM Filter v2.5.2 uucp.gnuu.de 32568488087
-Date: Sun, 19 Dec 2010 14:27:05 +0100
-From: =?iso-8859-1?Q?J=F6rg?= Sommer <joerg@alea.gnuu.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-Subject: Re: Oops in trace_hardirqs_on (powerpc)
-Message-ID: <20101219132705.GE6615@alea.gnuu.de>
-References: <20100806233157.GA7117@alea.gnuu.de>
- <1285184671.26872.127.camel@gandalf.stny.rr.com>
- <20100927125037.GA4497@alea.gnuu.de>
- <1285639094.2989.1.camel@frodo>
+	id S1756148Ab0LSO2n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 09:28:43 -0500
+Received: from daytona.panasas.com ([67.152.220.89]:44053 "EHLO
+	daytona.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753938Ab0LSO2l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 09:28:41 -0500
+Message-ID: <4D0E1693.3040106@panasas.com>
+Date: Sun, 19 Dec 2010 16:28:35 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Dzs2zDY0zgkG72+7"
-Content-Disposition: inline
-In-Reply-To: <1285639094.2989.1.camel@frodo>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: George Spelvin <linux@horizon.com>
+CC: linux-arch@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Big git diff speedup by avoiding x86 "fast string" memcmp
+References: <20101218225436.28264.qmail@science.horizon.com>
+In-Reply-To: <20101218225436.28264.qmail@science.horizon.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 19 Dec 2010 14:28:37.0967 (UTC) FILETIME=[0690A5F0:01CB9F89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/19/2010 12:54 AM, George Spelvin wrote:
+>> static inline int dentry_memcmp_long(const unsigned char *cs,
+>> 				const unsigned char *ct, ssize_t count)
+>> {
+>> 	int ret;
+>> 	const unsigned long *ls = (const unsigned long *)cs;
+>> 	const unsigned long *lt = (const unsigned long *)ct;
+>>
+>> 	while (count > 8) {
+>> 		ret = (*cs != *ct);
+>> 		if (ret)
+>> 			break;
+>> 		cs++;
+>> 		ct++;
+>> 		count-=8;
+>> 	}
+>> 	if (count) {
+>> 		unsigned long t = *ct & ((0xffffffffffffffff >> ((8 - count) * 8))
+>> 		ret = (*cs != t)
+>> 	}
+>>
+>> 	return ret;
+>> }
+> 
+> First, let's get the code right, and use correct types, but also, there
+> are some tricks to reduce the masking cost.
+> 
+> As long as you have to mask one string, *and* don't have to worry about
+> running off the end of mapped memory, there's no additional cost to
+> masking both in the loop.  Just test (a ^ b) & mask.
+> 
+> #if 1	/* Table lookup */
+> 
+> static unsigned long const dentry_memcmp_mask[8] = {
+> #if defined(__LITTLE_ENDIAN)
+> 	0xff, 0xffff, 0xffffff, 0xffffffff,
+> #if sizeof (unsigned long) > 4
+> 	0xffffffffff, 0xffffffffffff, 0xffffffffffffff, 0xffffffffffffffff
+> #endif
+> #elif defined(__BIG_ENDIAN)
+> #if sizeof (unsigned long) == 4
+> 	0xff000000, 0xffff0000, 0xffffff00, 0xffffffff
+> #else
+> 	0xff00000000000000, 0xffff000000000000,
+> 	0xffffff0000000000, 0xffffffff00000000,
+> 	0xffffffffff000000, 0xffffffffffff0000,
+> 	0xffffffffffffff00, 0xffffffffffffffff
+> #endif
+> #else
+> #error undefined endianness
+> #endif
+> };
+> 
+> #define dentry_memcmp_mask(count) dentry_memcmp_mask[(count)-1]
+> 
+> #else /* In-line code */
+> 
+> #if defined(__LITTLE_ENDIAN)
+> #define dentry_memcmp_mask(count) (-1ul >> (sizeof 1ul - (count)) * 8)
+> #elif defined(__BIG_ENDIAN)
+> #define dentry_memcmp_mask(count) (-1ul << (sizeof 1ul - (count)) * 8)
+> #else
+> #error undefined endianness
+> 
+> #endif
+> 
 
---Dzs2zDY0zgkG72+7
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks Yes that fixes the _ENDIANness problem. and unsigned maths 
 
-Hi Steven,
+I was considering the table as well. The table might be better or not,
+considering the pipe-line and the multiple-instructions-per-clock. x86
+specially likes the operating on cost values. It should be tested
+with both #ifs
 
-Steven Rostedt hat am Mon 27. Sep, 21:58 (-0400) geschrieben:
-> On Mon, 2010-09-27 at 14:50 +0200, J=F6rg Sommer wrote:
-> > Hello Steven,
-> >=20
-> > Steven Rostedt hat am Wed 22. Sep, 15:44 (-0400) geschrieben:
-> > > Sorry for the late reply, but I was on vacation when you sent this, a=
-nd
-> > > I missed it while going through email.
-> > >=20
-> > > Do you still have this issue?
-> >=20
-> > No. I've rebuild my kernel without TRACE_IRQFLAGS and the problem
-> > vanished, as expected. The problem is, that in some cases the stack is
-> > only two frames deep, which causes the macro CALLER_ADDR1 makes an
-> > invalid access. Someone told me, there a workaround for the problem on
-> > i386, too.
-> >=20
-> > % sed -n 2p arch/x86/lib/thunk_32.S
-> >  * Trampoline to trace irqs off. (otherwise CALLER_ADDR1 might crash)
->=20
-> Yes, I remember that problem. When I get back from Tokyo, I'll tried to
-> remember to fix it.
+> static inline bool dentry_memcmp_long(unsigned char const *cs,
+> 				unsigned char const *ct, ssize_t count)
+> {
+> 	unsigned long const *ls = (unsigned long const *)cs;
+> 	unsigned long const *lt = (unsigned long const *)ct;
+> 
+> 	while (count > sizeof *cs) {
+> 		if (*cs != *ct)
+> 			return true;
+> 		cs++;
+> 		ct++;
+> 		count -= sizeof *cs;
+> 	}
+> 	/* Last 1..8 bytes */
 
-Did you've fixed this problem? The bug report is still marked as open.
-https://bugzilla.kernel.org/show_bug.cgi?id=3D16573
+what if at this point count == 0, I think you need the if (count) still
 
-Regards, J=F6rg.
---=20
-Begebenheit aus dem wahren Leben:
-Mediziner: ICEs sind die wei=DFen Z=FCge.
-Mathematiker: Das ist falsch. Jeder ICE ist zwar wei=DF, aber nicht alle
-  wei=DFen Z=FCge sind ICEs.
+> 	return ((*ct ^ *cs) & dentry_memcmp_mask(count)) != 0;
 
---Dzs2zDY0zgkG72+7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature http://en.wikipedia.org/wiki/OpenPGP
-Content-Disposition: inline
+	OK I like it, my version could be equally fast if the compiler
+	would use cmov but not all ARChs have it.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+> }
+> 
+> If your string is at least 8 bytes long, and the processor has fast unaligned
+> loads, you can skip the mask entirely by redundantly comparing some bytes
+> (although the code bloat is probably undesirable for inline code):
+> 
+> static inline bool dentry_memcmp_long(const unsigned char *cs,
+> 				const unsigned char *ct, ssize_t count)
+> {
+> 	unsigned long const *ls = (unsigned long const *)cs;
+> 	unsigned long const *lt = (unsigned long const *)ct;
+> 
+> 	if (count < sizeof *cs)
+> 		return ((*ct ^ *cs) & dentry_memcmp_mask(count)) != 0;
+> 
+> 	while (count > sizeof *cs) {
+> 		if (*cs != *ct)
+> 			return true;
+> 		cs++;
+> 		ct++;
+> 		count -= sizeof *cs;
+> 	}
+> 	cs = (unsigned long const *)((char const *)cs + count - sizeof *cs);
+> 	ct = (unsigned long const *)((char const *)ct + count - sizeof *ct);
+> 	return *cs != *ct;
+> }
 
-iEYEARECAAYFAk0OCCgACgkQwe0mZwH1VIClwgCfWOiK7rMhb1pvLCTPbogFGJKY
-4YgAn2ruSTXz84YqT7fDyFiY9S6aRHad
-=ElQJ
------END PGP SIGNATURE-----
+As Linus said, All this is mute, the qstr part of the compare is not long aligned
+at the start. So I guess we come up loosing.
 
---Dzs2zDY0zgkG72+7--
+Thanks
+Boaz
