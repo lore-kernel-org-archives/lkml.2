@@ -1,125 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753820Ab0LSJnx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 04:43:53 -0500
-Received: from mail-bw0-f66.google.com ([209.85.214.66]:46551 "EHLO
-	mail-bw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752603Ab0LSJnv (ORCPT
+	id S1752526Ab0LSJuy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 04:50:54 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:40388 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab0LSJuv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 04:43:51 -0500
+	Sun, 19 Dec 2010 04:50:51 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=FjbsaWiD3ikJTYZyqrnGYk29YwkXYZUTeLxkOotGw130YVp9bWQ2Fbsve5zCismlpq
-         sSx9si/RwY872tEPlrGIRxinVNZ5zuUeWa2tOhvQCGd4qHNmmCQiHBSWYMnBL5jcyKIC
-         PMadOH/CxcL0ZV9xXZhgLDX4R9lWX5MA0AuKI=
-Message-ID: <4D0DD3D2.4030606@kernel.org>
-Date: Sun, 19 Dec 2010 10:43:46 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=vQwyFfEYkQbhotDUbKptZXLf7micHPYJiXwbtWSTwuP6LaWAmGXZMwmSd9ztrqYgVz
+         dRR4p4xvNzoIXrDiE4W/WZmZC8SgD4WdVrgmqM32o1B8URCibPWundYvPT0xPI/ivO6e
+         ZyrMG/l77AdlNqw4kFCf1o7P1VE0kjqKZr/j0=
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com
-Subject: Re: [PATCH RFC tip/core/rcu 13/20] rcu: increase synchronize_sched_expedited()
- batching
-References: <20101217205433.GA10199@linux.vnet.ibm.com> <1292619291-2468-13-git-send-email-paulmck@linux.vnet.ibm.com> <4D0CDD93.7040907@kernel.org> <20101218201419.GD2143@linux.vnet.ibm.com>
-In-Reply-To: <20101218201419.GD2143@linux.vnet.ibm.com>
+In-Reply-To: <20101216173856.8185.98094.stgit@bob.kio>
+References: <20101216173614.8185.19462.stgit@bob.kio>
+	<20101216173856.8185.98094.stgit@bob.kio>
+Date: Sun, 19 Dec 2010 01:50:50 -0800
+X-Google-Sender-Auth: cHiV7a63mwoW4FSCZIuuK0AndYY
+Message-ID: <AANLkTim68DbGeWbYKYx3_WOGFkA8KZFVHFyEFGtXt-cr@mail.gmail.com>
+Subject: Re: [PATCH 8/9] x86: avoid E820 regions when allocating address space
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Len Brown <lenb@kernel.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 12/18/2010 09:14 PM, Paul E. McKenney wrote:
->>> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
->>> index 49e8e16..af56148 100644
->>> --- a/include/linux/rcupdate.h
->>> +++ b/include/linux/rcupdate.h
->>> @@ -47,6 +47,8 @@
->>>  extern int rcutorture_runnable; /* for sysctl */
->>>  #endif /* #ifdef CONFIG_RCU_TORTURE_TEST */
->>>  
->>> +#define UINT_CMP_GE(a, b)	(UINT_MAX / 2 >= (a) - (b))
->>> +#define UINT_CMP_LT(a, b)	(UINT_MAX / 2 < (a) - (b))
->>>  #define ULONG_CMP_GE(a, b)	(ULONG_MAX / 2 >= (a) - (b))
->>>  #define ULONG_CMP_LT(a, b)	(ULONG_MAX / 2 < (a) - (b))
->>
->> I don't think the original comparison had overflow problem.  (a) < (b)
->> gives the wrong result on overflow but (int)((a) - (b)) < 0 is
->> correct.
-> 
-> You are right that it does give the correct result now, but the C
-> standard never has defined overflow for signed integers, as noted in
-> Section 6.3.1.3p3 of the N1494 Working Draft of the C standard:
-> 
-> 	Otherwise, the new type is signed and the value cannot be
-> 	represented in it; either the result is implementation-defined
-> 	or an implementation-defined signal is raised.
-> 
-> I have heard too many compiler guys gleefully discussing optimizations
-> that they could use if they took full advantage of this clause, so I
-> am not comfortable relying on the intuitive semantics for signed
-> arithmetic.  (Now atomic_t is another story -- both C and C++ will
-> be requiring twos-complement semantics, thankfully.)
+On Thu, Dec 16, 2010 at 9:38 AM, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
 >
->> I find the latter approach cleaner and that way the constant in the
->> instruction can be avoided too although if the compiler might generate
->> the same code regardless.
-> 
-> I would like your way better if it was defined in the C standard.
-> But it unfortunately is not.  :-(
+> When we allocate address space, e.g., to assign it to a PCI device, don't
+> allocate anything mentioned in the BIOS E820 memory map.
+>
+> On recent machines (2008 and newer), we assign PCI resources from the
+> windows described by the ACPI PCI host bridge _CRS.  On many Dell
+> machines, these windows overlap some E820 reserved areas, e.g.,
+>
+>    BIOS-e820: 00000000bfe4dc00 - 00000000c0000000 (reserved)
+>    pci_root PNP0A03:00: host bridge window [mem 0xbff00000-0xdfffffff]
+>
+> If we put devices at 0xbff00000, they don't work, probably because
+> that's really RAM, not I/O memory.  This patch prevents that by removing
+> the 0xbfe4dc00-0xbfffffff area from the "available" resource.
+>
+> I'm not very happy with this solution because Windows solves the problem
+> differently (it seems to ignore E820 reserved areas and it allocates
+> top-down instead of bottom-up; details at comment 45 of the bugzilla
+> below).  That means we're vulnerable to BIOS defects that Windows would not
+> trip over.  For example, if BIOS described a device in ACPI but didn't
+> mention it in E820, Windows would work fine but Linux would fail.
+>
+> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=16228
+> Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+> ---
+>
+>  arch/x86/kernel/resource.c |   38 +++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 37 insertions(+), 1 deletions(-)
+>
+>
+> diff --git a/arch/x86/kernel/resource.c b/arch/x86/kernel/resource.c
+> index 407a900..89638af 100644
+> --- a/arch/x86/kernel/resource.c
+> +++ b/arch/x86/kernel/resource.c
+> @@ -1,11 +1,47 @@
+>  #include <linux/ioport.h>
+>  #include <asm/e820.h>
+>
+> +static void resource_clip(struct resource *res, resource_size_t start,
+> +                         resource_size_t end)
+> +{
+> +       resource_size_t low = 0, high = 0;
+> +
+> +       if (res->end < start || res->start > end)
+> +               return;         /* no conflict */
+> +
+> +       if (res->start < start)
+> +               low = start - res->start;
+> +
+> +       if (res->end > end)
+> +               high = res->end - end;
+> +
+> +       /* Keep the area above or below the conflict, whichever is larger */
+> +       if (low > high)
+> +               res->end = start - 1;
+> +       else
+> +               res->start = end + 1;
+> +}
+> +
+> +static void remove_e820_regions(struct resource *avail)
+> +{
+> +       int i;
+> +       struct e820entry *entry;
+> +
+> +       for (i = 0; i < e820.nr_map; i++) {
+> +               entry = &e820.map[i];
+> +
+> +               resource_clip(avail, entry->addr,
+> +                             entry->addr + entry->size - 1);
+> +       }
+> +}
+> +
+>  void arch_remove_reservations(struct resource *avail)
+>  {
+> -       /* Trim out BIOS area (low 1MB) */
+> +       /* Trim out BIOS area (low 1MB) and E820 regions */
+>        if (avail->flags & IORESOURCE_MEM) {
+>                if (avail->start < BIOS_END)
+>                        avail->start = BIOS_END;
+> +
+> +               remove_e820_regions(avail);
+>        }
+>  }
 
-I see, then would something like the following work?
+that looks expensive. it will keep going through e820 tables...
 
- (int)((unsigned)(a) - (unsigned)(b)) < 0
+but e820 should have been reserved in resource tree...
 
->> Also, I think the names are misleading.  They aren't testing whether
->> one is greater or less than the other.  They're testing whether one is
->> before or after the other where the counters are used as monotonically
->> incrementing (with wrapping) sequence, so wouldn't something like the
->> following be better?
-> 
-> They are comparing the twos-complement difference between the two
-> numbers against zero.
+So why we need to check e820 again?
 
-But still GE/LT are way too misleading.  Anyways, so with the above
-change the macro now would look like the following.
-
-#define SEQ_TEST(a, b, op)	({					\
-	typeof(a) __seq_a = (a);					\
-	typeof(b) __seq_b = (b);					\
-	bool __ret;							\
-	(void)(&__seq_a == &__seq_b);					\
-	switch (sizeof(__seq_a)) {					\
-		case sizeof(s8):					\
-			__ret = (s8)((u8)__seq_a - (u8)__seq_b) op 0;	\
-			break;						\
-		case sizeof(s16):					\
-			__ret = (s16)((u16)__seq_a - (u16)__seq_b) op 0;\
-			break;						\
-		case sizeof(s32):					\
-			__ret = (s32)((u32)__seq_a - (u32)__seq_b) op 0;\
-			break;						\
-		case sizeof(s64):					\
-			__ret = (s64)((u64)__seq_a - (u64)__seq_b) op 0;\
-			break;						\
-		default:						\
-			__make_build_fail;				\
-	}								\
-	__ret;								\
-})
-
-Would the above work?
-
-Thanks.
-
--- 
-tejun
+Yinghai
