@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932509Ab0LSV3M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 16:29:12 -0500
-Received: from nm11-vm0.bullet.mail.ac4.yahoo.com ([98.139.53.196]:31197 "HELO
-	nm11-vm0.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932479Ab0LSV3I (ORCPT
+	id S932513Ab0LSV32 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 16:29:28 -0500
+Received: from nm2.bullet.mail.ac4.yahoo.com ([98.139.52.199]:40656 "HELO
+	nm2.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757194Ab0LSV3Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 16:29:08 -0500
-X-Greylist: delayed 376 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Dec 2010 16:29:08 EST
-X-Yahoo-Newman-Id: 353952.9554.bm@omp1040.mail.ac4.yahoo.com
+	Sun, 19 Dec 2010 16:29:25 -0500
+X-Yahoo-Newman-Id: 83383.282.bm@omp1017.mail.ac4.yahoo.com
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: cddUdfYVM1lsUT3MCL4SQXneSzXKpKZKPrAXlJ1cn.2_xQ3
- 0zdcKAdWgYKJMBOErhViD7xU75Jif4J2QiBgDfFAxnayRfU2M6HDU5dbqoGb
- 1bIigubxIFAi1DyvlebG.p3VG7uGemwgXvZ8Wf79cyep5G44ogq1tz7mNeYK
- xsVsPEky19Q3grLFwNZkgvZHhRiCLLQTK1BMmoD4xJa62esXRnkJZoWQageo
- uzvetul0IYdx39n0cA22ua11DDb1yyjYZdkID08M8ybwv5nSOZ5PTV.n3TA5
- MZu26FJJWZUn7QMmOSD8IMr_YhOiL6Xd6Wa1E.cJow22btwKOIY8O6pH63hU
- 98r4EmN5cGu2GpGi2M0SJMawylCpD
+X-YMail-OSG: kQKYcycVM1ntTnp4auUIKnJuTEIC3w0QGPKmZJchsa6Lobb
+ ZHuKG7spWPEj2CiyN58lnli.2k.rK5ChzvjT8tTNpF9iz0LgRZ18WFliJPYm
+ R2HzBWCWMdAKOHY_D0TnomVHz2ttm9YepLlgo5TbPxB4OlxjOAsBbBJNG_tl
+ PczQ1CquchIBW7ReWhtNIauG_27jNKPkLsIs8ihzCGEqVTI6Vx77ZSKnB7qz
+ NO3R21fp.RcoxbOs8U9vn1ret58LKFOxXD7D63IG_wzWzTP2u7VaP1fkCqNQ
+ pbd4tri2QKg_4XMStn3dEMrazIi40gm5ReamvBcR5pb0cUWa1PKrZUuq.k_e
+ jyRdZKWjzTRAFIdb.Z0C2x7BsSSGdIWZNFj0BuvutvO8pRC5G2xRYny0tWf9
+ bKOrreCQ4ag2ggN3.cGnBu2qmS2rLBgEF_XLZf17xtK_aFgUv89SW
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -36,9 +36,9 @@ Cc: Mike Anderson <andmike@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
         Kashyap Desai <Kashyap.Desai@lsi.com>,
         MPTFusionLinux <DL-MPTFusionLinux@lsi.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 08/12] qla4xxx: Convert to host_lock less w/ interrupts disabled externally
-Date: Sun, 19 Dec 2010 13:22:03 -0800
-Message-Id: <1292793727-31957-9-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 11/12] megaraid_sas: Convert instance->issuepend_done to atomic_t
+Date: Sun, 19 Dec 2010 13:22:06 -0800
+Message-Id: <1292793727-31957-12-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org>
 References: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org>
@@ -48,71 +48,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch converts qla4xxx to run in host_lock less mode with the new
-IRQ_DISABLE_SCSI_QCMD() that disables interrupts while calling ->queuecommand()
-dispatch.  It also drops the legacy host_lock unlock optimization.
+This patch converts struct megasas_instance->issuepend_done to
+an atomic_t fw_issuepend_done.  This is because ->issuepend_done is
+being used as a check to determine if SCSI_MLQUEUE_HOST_BUSY should
+be returned during megasas_queue_command_lck().  So in order for a
+conversion to lock-less operation to occur, this bit needs to be
+handled in an atomic manner.
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/scsi/qla4xxx/ql4_os.c |   10 +++-------
- 1 files changed, 3 insertions(+), 7 deletions(-)
+ drivers/scsi/megaraid/megaraid_sas.c |   13 ++++++-------
+ drivers/scsi/megaraid/megaraid_sas.h |    2 +-
+ 2 files changed, 7 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/scsi/qla4xxx/ql4_os.c b/drivers/scsi/qla4xxx/ql4_os.c
-index 0d48fb4..d21eba7 100644
---- a/drivers/scsi/qla4xxx/ql4_os.c
-+++ b/drivers/scsi/qla4xxx/ql4_os.c
-@@ -450,7 +450,7 @@ void qla4xxx_srb_compl(struct kref *ref)
- }
+diff --git a/drivers/scsi/megaraid/megaraid_sas.c b/drivers/scsi/megaraid/megaraid_sas.c
+index 31c5419..da0d3e3 100644
+--- a/drivers/scsi/megaraid/megaraid_sas.c
++++ b/drivers/scsi/megaraid/megaraid_sas.c
+@@ -1344,7 +1344,7 @@ megasas_queue_command_lck(struct scsi_cmnd *scmd, void (*done) (struct scsi_cmnd
+ 	instance = (struct megasas_instance *)
+ 	    scmd->device->host->hostdata;
  
- /**
-- * qla4xxx_queuecommand - scsi layer issues scsi command to driver.
-+ * qla4xxx_queuecommand_irq_disable - scsi layer issues scsi command to driver.
-  * @cmd: Pointer to Linux's SCSI command structure
-  * @done_fn: Function that the driver calls to notify the SCSI mid-layer
-  *	that the command has been processed.
-@@ -463,7 +463,7 @@ void qla4xxx_srb_compl(struct kref *ref)
-  * completion handling).   Unfortunely, it sometimes calls the scheduler
-  * in interrupt context which is a big NO! NO!.
-  **/
--static int qla4xxx_queuecommand_lck(struct scsi_cmnd *cmd,
-+static int qla4xxx_queuecommand_irq_disable(struct scsi_cmnd *cmd,
- 				void (*done)(struct scsi_cmnd *))
- {
- 	struct scsi_qla_host *ha = to_qla_host(cmd->device->host);
-@@ -508,8 +508,6 @@ static int qla4xxx_queuecommand_lck(struct scsi_cmnd *cmd,
- 	    test_bit(DPC_RESET_HA_FW_CONTEXT, &ha->dpc_flags))
- 		goto qc_host_busy;
+-	if (instance->issuepend_done == 0)
++	if (atomic_read(&instance->fw_issuepend_done) == 0)
+ 		return SCSI_MLQUEUE_HOST_BUSY;
  
--	spin_unlock_irq(ha->host->host_lock);
+ 	spin_lock_irqsave(&instance->hba_lock, flags);
+@@ -1590,8 +1590,7 @@ void megasas_do_ocr(struct megasas_instance *instance)
+ 	}
+ 	instance->instancet->disable_intr(instance->reg_set);
+ 	instance->adprecovery   = MEGASAS_ADPRESET_SM_INFAULT;
+-	instance->issuepend_done = 0;
 -
- 	srb = qla4xxx_get_new_srb(ha, ddb_entry, cmd, done);
- 	if (!srb)
- 		goto qc_host_busy_lock;
-@@ -518,7 +516,6 @@ static int qla4xxx_queuecommand_lck(struct scsi_cmnd *cmd,
- 	if (rval != QLA_SUCCESS)
- 		goto qc_host_busy_free_sp;
++	atomic_set(&instance->fw_issuepend_done, 0);
+ 	atomic_set(&instance->fw_outstanding, 0);
+ 	megasas_internal_reset_defer_cmds(instance);
+ 	process_fw_state_change_wq(&instance->work_init);
+@@ -1941,7 +1940,7 @@ megasas_service_aen(struct megasas_instance *instance, struct megasas_cmd *cmd)
+ 	megasas_return_cmd(instance, cmd);
  
--	spin_lock_irq(ha->host->host_lock);
- 	return 0;
+ 	if ((instance->unload == 0) &&
+-		((instance->issuepend_done == 1))) {
++		((atomic_read(&instance->fw_issuepend_done) == 1))) {
+ 		struct megasas_aen_event *ev;
+ 		ev = kzalloc(sizeof(*ev), GFP_ATOMIC);
+ 		if (!ev) {
+@@ -2357,7 +2356,7 @@ process_fw_state_change_wq(struct work_struct *work)
+ 		instance->instancet->enable_intr(instance->reg_set);
  
- qc_host_busy_free_sp:
-@@ -526,7 +523,6 @@ qc_host_busy_free_sp:
- 	mempool_free(srb, ha->srb_mempool);
- 
- qc_host_busy_lock:
--	spin_lock_irq(ha->host->host_lock);
- 
- qc_host_busy:
- 	return SCSI_MLQUEUE_HOST_BUSY;
-@@ -537,7 +533,7 @@ qc_fail_command:
- 	return 0;
+ 		megasas_issue_pending_cmds_again(instance);
+-		instance->issuepend_done = 1;
++		atomic_set(&instance->fw_issuepend_done, 1);
+ 	}
+ 	return ;
  }
+@@ -2417,8 +2416,8 @@ megasas_deplete_reply_queue(struct megasas_instance *instance,
  
--static DEF_SCSI_QCMD(qla4xxx_queuecommand)
-+static IRQ_DISABLE_SCSI_QCMD(qla4xxx_queuecommand)
+ 			instance->instancet->disable_intr(instance->reg_set);
+ 			instance->adprecovery	= MEGASAS_ADPRESET_SM_INFAULT;
+-			instance->issuepend_done = 0;
  
- /**
-  * qla4xxx_mem_free - frees memory allocated to adapter
++			atomic_set(&instance->fw_issuepend_done, 0);
+ 			atomic_set(&instance->fw_outstanding, 0);
+ 			megasas_internal_reset_defer_cmds(instance);
+ 
+@@ -3798,7 +3797,7 @@ megasas_probe_one(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	megasas_poll_wait_aen = 0;
+ 	instance->flag_ieee = 0;
+ 	instance->ev = NULL;
+-	instance->issuepend_done = 1;
++	atomic_set(&instance->fw_issuepend_done, 1);
+ 	instance->adprecovery = MEGASAS_HBA_OPERATIONAL;
+ 	megasas_poll_wait_aen = 0;
+ 
+diff --git a/drivers/scsi/megaraid/megaraid_sas.h b/drivers/scsi/megaraid/megaraid_sas.h
+index ad16f5e..eaeb873 100644
+--- a/drivers/scsi/megaraid/megaraid_sas.h
++++ b/drivers/scsi/megaraid/megaraid_sas.h
+@@ -1303,6 +1303,7 @@ struct megasas_instance {
+ 
+ 	atomic_t fw_outstanding;
+ 	atomic_t fw_reset_no_pci_access;
++	atomic_t fw_issuepend_done;
+ 
+ 	struct megasas_instance_template *instancet;
+ 	struct tasklet_struct isr_tasklet;
+@@ -1311,7 +1312,6 @@ struct megasas_instance {
+ 	u8 flag;
+ 	u8 unload;
+ 	u8 flag_ieee;
+-	u8 issuepend_done;
+ 	u8 disableOnlineCtrlReset;
+ 	u8 adprecovery;
+ 	unsigned long last_time;
 -- 
 1.7.3.4
 
