@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932229Ab0LSNBs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 08:01:48 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:38636 "EHLO ogre.sisk.pl"
+	id S1756361Ab0LSNKS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 08:10:18 -0500
+Received: from fanny.its.uu.se ([130.238.4.241]:51381 "EHLO fanny.its.uu.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756755Ab0LSMzr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 07:55:47 -0500
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+	id S1754976Ab0LSNKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 08:10:16 -0500
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19726.1077.824539.753038@pilspetsen.it.uu.se>
+Date: Sun, 19 Dec 2010 14:10:13 +0100
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Miles Lane" <miles.lane@gmail.com>
-References: <ZRNlsjykcOD.A.b-F.20fDNB@chimera>
-In-Reply-To: <ZRNlsjykcOD.A.b-F.20fDNB@chimera>
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <xqq2Z3iR9HJ.A.gyH.32fDNB@chimera>
-Subject: [Bug #19052] 2.6.36-rc5-git1 -- [drm:i915_report_and_clear_eir] *ERROR* EIR stuck: 0x00000010, masking
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun, 19 Dec 2010 13:50:22 +0100 (CET)
+        "Mikael Pettersson" <mikpe@it.uu.se>
+Subject: Re: [Bug #23902] [BUG] 2.6.37-rc3 massive interactivity regression on ARM
+In-Reply-To: <6Ue85L6pKCJ.A.YfE.iefDNB@chimera>
+References: <wNJKqSoEutL.A.lKD.odfDNB@chimera>
+	<6Ue85L6pKCJ.A.YfE.iefDNB@chimera>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message has been generated automatically as a part of a report
-of regressions introduced between 2.6.35 and 2.6.36.
+Rafael J. Wysocki wrote:
+> The following bug entry is on the current list of known regressions
+> from 2.6.36.  Please verify if it still should be listed and let the tracking team
+> know (either way).
+> 
+> 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=23902
+> Subject		: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
+> Submitter	: Mikael Pettersson <mikpe@it.uu.se>
+> Date		: 2010-11-27 15:16 (23 days old)
+> First-Bad-Commit: http://git.kernel.org/linus/305e6835e05513406fa12820e40e4a8ecb63743c
+> Message-ID	: <<19697.8378.717761.236202@pilspetsen.it.uu.se>>
+> References	: http://marc.info/?l=linux-kernel&m=129087098911837&w=2
 
-The following bug entry is on the current list of known regressions
-introduced between 2.6.35 and 2.6.36.  Please verify if it still should
-be listed and let the tracking team know (either way).
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=19052
-Subject		: 2.6.36-rc5-git1 -- [drm:i915_report_and_clear_eir] *ERROR* EIR stuck: 0x00000010, masking
-Submitter	: Miles Lane <miles.lane@gmail.com>
-Date		: 2010-09-22 23:47 (89 days old)
-Message-ID	: <AANLkTikWQjUQjFJU9MO1+XbSLAEE-GARz+S+Dz2Fgu4h@mail.gmail.com>
-References	: http://marc.info/?l=linux-kernel&m=128519926626322&w=2
-
-
+The regression is still present in 2.6.37-rc6.
