@@ -1,42 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757071Ab0LSQyP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 11:54:15 -0500
+	id S932332Ab0LSQyY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 11:54:24 -0500
 Received: from mail-fx0-f43.google.com ([209.85.161.43]:36224 "EHLO
 	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752390Ab0LSQyO (ORCPT
+	with ESMTP id S932242Ab0LSQyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 11:54:14 -0500
+	Sun, 19 Dec 2010 11:54:22 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
          :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=DtEC4zB7DsVwZ82u6y/HFgbuxVk6z5/JVgBJ7lfGVsYolbXeK2npf2Q/yWuaBUOmTC
-         hhYsEytGNEh09Vl3EN+YMH7bMj0KNa7cMo0y1mRXncIK3MupCDYzAM/DwNGr2C/qKNbz
-         MSqB+qWMKiZ/O15Ox3Ybd6NMQIj4Uue1QFXa0=
-Subject: Re: mtd: fix CONFIG_MTD_COMPLEX_MAPPINGS=n compile
+        b=nEnjeFy0KzMq67JyBqhpTvjKfoBshxFhMDWZl/PNmKu2GzhAWJQa1trZHbc72cRkXB
+         UnN118PXzYtuJKR4qmJBgwvmup3x3Vd9g13a0bnJ2kxyPqlh9al0+cJ0p88QIFwP5H2/
+         OQCPuD//p1ur0By6wYJi8zpOV9taq8s2ibGGM=
+Subject: Re: [PATCH 1/1] mtd: nand: add check for out of page read
 From: Artem Bityutskiy <dedekind1@gmail.com>
 Reply-To: dedekind1@gmail.com
-To: Jason Lunz <lunz@acm.org>
-Cc: Anatolij Gustschin <agust@denx.de>, atom ota <atomota@sleepyhammer.com>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Sam Ravnborg <sam@ravnborg.org>, Jeff Dike <jdike@addtoit.com>,
-        lkml <linux-kernel@vger.kernel.org>, linux-mtd@lists.infradead.org,
-        Rob Landley <rob@landley.net>, David Woodhouse <dwmw2@infradead.org>
-In-Reply-To: <20101217042759.GA3148@falooley.org>
-References: <20071024011712.GA3762@falooley.org>
-	 <1193208689.26096.48.camel@pmac.infradead.org>
-	 <20071227181524.GA19051@falooley.org>
-	 <20071228174853.GA4252@uranus.ravnborg.org>
-	 <20101207072919.GA8511@falooley.org>
-	 <AANLkTineLxHdcDKZEUGiqVNAauSX_xyQrs49kKaqhiWo@mail.gmail.com>
-	 <20101207182012.GA10546@falooley.org> <1292343878.2538.80.camel@localhost>
-	 <20101214195124.GA6010@falooley.org> <20101216230110.65156c55@wker>
-	 <20101217042759.GA3148@falooley.org>
+To: Jason Liu <liu.h.jason@gmail.com>
+Cc: Jason Liu <r64343@freescale.com>, David.Woodhouse@intel.com,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTi=zB7UBjkvGYv_wdwZpH1Ghatn6eye1z5616h4X@mail.gmail.com>
+References: <1290156045-11719-1-git-send-email-r64343@freescale.com>
+	 <1292340409.2538.40.camel@localhost>
+	 <AANLkTi=zB7UBjkvGYv_wdwZpH1Ghatn6eye1z5616h4X@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 19 Dec 2010 18:47:56 +0200
-Message-ID: <1292777276.2140.1.camel@koala>
+Date: Sun, 19 Dec 2010 18:54:05 +0200
+Message-ID: <1292777645.13362.3.camel@koala>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
 Content-Transfer-Encoding: 8bit
@@ -44,15 +34,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-16 at 20:27 -0800, Jason Lunz wrote:
-> On Thu, Dec 16, 2010 at 11:01:10PM +0100, Anatolij Gustschin wrote:
-> > This change breaks compiling when CONFIG_MTD_COMPLEX_MAPPINGS is not
-> > defined in the kernel configuration. Please fix!
+On Wed, 2010-12-15 at 09:55 +0800, Jason Liu wrote:
+> >        /* Do not allow reads past end of device */
+> >        if (unlikely(from >= mtd->size ||
+> >                     ops->ooboffs + readlen > ((mtd->size >> chip->page_shift) -
+> >                                        (from >> chip->page_shift)) * len)) {
+> >                DEBUG(MTD_DEBUG_LEVEL0, "%s: Attempt read beyond end "
+> >                                        "of device\n", __func__);
+> >                return -EINVAL;
+> >        }
 > 
-> Sorry, sloppy of me. This reverts all changes to mtd.h while keeping the
-> ability to compile mtd on ARCH=um, with the exception mtdchar.
+> Here the mtd->size in nand_base.c should be the NAND flash chip size,
 
-Merged with the previous patch, thanks.
+I think this is partition size as well.
+
+> while in nand_oobtest,
+> 
+>               /* Attempt to read off end of device */
+>                 ops.mode      = MTD_OOB_AUTO;
+>                 ops.len       = 0;
+>                 ops.retlen    = 0;
+>                 ops.ooblen    = mtd->ecclayout->oobavail;
+>                 ops.oobretlen = 0;
+>                 ops.ooboffs   = 1;
+>                 ops.datbuf    = NULL;
+>                 ops.oobbuf    = readbuf;
+>                 printk(PRINT_PREF "attempting to read past end of device\n");
+>                 printk(PRINT_PREF "an error is expected...\n");
+>                 err = mtd->read_oob(mtd, mtd->size - mtd->writesize, &ops);
+>                 if (err) {
+>                         printk(PRINT_PREF "error occurred as expected\n");
+>                         err = 0;
+>                 } else {
+>                         printk(PRINT_PREF "error: read past end of device\n");
+>                         errcnt += 1;
+>                 }
+>         }
+> 
+> here, mtd->size is mtd partition size right? when the mtd partition is
+> not the last MTD partition, the error will happen.
+
+I think this is the same in both. Try to debug this with printks().
+
+> 
+> I have tested on real NAND, while not on nandsim.
+
+Please, try to reproduce this with nandsim as well, and if it works, try
+to find out why (using printk debugging)
 
 -- 
 Best Regards,
