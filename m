@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567Ab0LSMjz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 07:39:55 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:38370 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756345Ab0LSMjx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756396Ab0LSMjx (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 19 Dec 2010 07:39:53 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:38365 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755487Ab0LSMjv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 07:39:51 -0500
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Myron Stowe" <myron.stowe@hp.com>,
-        "Nikanth Karthikesan" <knikanth@suse.de>
+        "Dave Airlie" <airlied@redhat.com>,
+        "Keith Packard" <keithp@keithp.com>, "Paul Rolland" <rol@witbe.net>
 References: <wNJKqSoEutL.A.lKD.odfDNB@chimera>
 In-Reply-To: <wNJKqSoEutL.A.lKD.odfDNB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -20,8 +19,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <6Ue85L6pKCJ.A.HcF.tffDNB@chimera>
-Subject: [Bug #22662] divide error in select_task_rq_fair()
+Message-ID: <6Ue85L6pKCJ.A.5zF.8ffDNB@chimera>
+Subject: [Bug #22542] [2.6.37-rc1] drm:i195 errors
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Sun, 19 Dec 2010 13:34:38 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -36,11 +35,11 @@ from 2.6.36.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22662
-Subject		: divide error in select_task_rq_fair()
-Submitter	: Myron Stowe <myron.stowe@hp.com>
-Date		: 2010-11-10 23:58 (40 days old)
-Patch		: http://lkml.org/lkml/2010/11/13/176
-		  http://lkml.org/lkml/2010/11/13/181
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22542
+Subject		: [2.6.37-rc1] drm:i195 errors
+Submitter	: Paul Rolland <rol@witbe.net>
+Date		: 2010-11-02 14:58 (48 days old)
+Message-ID	: <20101102155813.09cb2c6e@tux.DEF.witbe.net>
+References	: http://marc.info/?l=linux-kernel&m=128870991628970&w=2
 
 
