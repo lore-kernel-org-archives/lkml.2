@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932317Ab0LSMmK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 07:42:10 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:38529 "EHLO ogre.sisk.pl"
+	id S932184Ab0LSMlL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 07:41:11 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:38469 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932242Ab0LSMmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 07:42:05 -0500
+	id S1756628Ab0LSMlI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 07:41:08 -0500
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        "Jeremy Fitzhardinge" <jeremy@goop.org>
+References: <wNJKqSoEutL.A.lKD.odfDNB@chimera>
+In-Reply-To: <wNJKqSoEutL.A.lKD.odfDNB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Matthew Wilcox <matthew@wil.cx>
-Subject: Re: [PATCH] PCI / PCIe: Clear Root PME Status bits during early resume
-Date: Sun, 19 Dec 2010 13:41:23 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6+; KDE/4.4.4; x86_64; ; )
-Cc: linux-pci@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-References: <201012191149.40547.rjw@sisk.pl> <20101219113658.GH1263@parisc-linux.org> <201012191338.24070.rjw@sisk.pl>
-In-Reply-To: <201012191338.24070.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012191341.23601.rjw@sisk.pl>
+Content-Disposition: inline
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <6Ue85L6pKCJ.A.1wD.GefDNB@chimera>
+Subject: [Bug #24592] 2.6.37-rc5: NULL pointer oops in selinux_socket_unix_stream_connect
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sun, 19 Dec 2010 13:34:42 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, December 19, 2010, Rafael J. Wysocki wrote:
-> On Sunday, December 19, 2010, Matthew Wilcox wrote:
-> > On Sun, Dec 19, 2010 at 11:49:40AM +0100, Rafael J. Wysocki wrote:
-> > > in pci_pm_default_resume_early() and not in the port's resume
-> > > routine, because it's generally necessary even if the PCI Express
-> > > port driver is not used).
-> > 
-> > We should make it impossible to not use the PCIe port driver.
-> 
-> Actually, that's not correct.  In some cases (e.g. _OSI doesn't allow us
+This message has been generated automatically as a part of a summary report
+of recent regressions.
 
-That should have been _OSC(), sorry.
+The following bug entry is on the current list of known regressions
+from 2.6.36.  Please verify if it still should be listed and let the tracking team
+know (either way).
 
-> to use PCIe native services), we simply can't use it (because it is unsafe
-> and leads to serious problems).
 
-Thanks,
-Rafael
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=24592
+Subject		: 2.6.37-rc5: NULL pointer oops in selinux_socket_unix_stream_connect
+Submitter	: Jeremy Fitzhardinge <jeremy@goop.org>
+Date		: 2010-12-08 21:09 (12 days old)
+Message-ID	: <4CFFF3F3.90100@goop.org>
+References	: http://marc.info/?l=linux-kernel&m=129184256629712&w=2
+
+
