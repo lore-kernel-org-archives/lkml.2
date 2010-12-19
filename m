@@ -1,16 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756821Ab0LSMkf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 07:40:35 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:38404 "EHLO ogre.sisk.pl"
+	id S932139Ab0LSMnm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 07:43:42 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:38416 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756170Ab0LSMkc convert rfc822-to-8bit (ORCPT
+	id S1756827Ab0LSMkf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 07:40:32 -0500
+	Sun, 19 Dec 2010 07:40:35 -0500
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, "Brian Rogers" <brian@xyzw.org>,
-        "Jeff Mahoney" <jeffm@suse.com>
+        Florian Mickler <florian@mickler.org>,
+        "Chris Wilson" <chris@chris-wilson.co.uk>,
+        "Daniel Vetter" <daniel.vetter@ffwll.ch>,
+        "Johannes Hirte" <johannes.hirte@fem.tu-ilmenau.de>
 References: <wNJKqSoEutL.A.lKD.odfDNB@chimera>
 In-Reply-To: <wNJKqSoEutL.A.lKD.odfDNB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,10 +20,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <6Ue85L6pKCJ.A.DUE.YefDNB@chimera>
-Subject: [Bug #24272] iotop reports insane per-process disk read/write statistics
+Message-ID: <6Ue85L6pKCJ.A.yzE.IffDNB@chimera>
+Subject: [Bug #23102] [bisected] i915 regression in post 2.6.36 kernels
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun, 19 Dec 2010 13:34:41 +0100 (CET)
+Date: Sun, 19 Dec 2010 13:34:40 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,10 +36,11 @@ from 2.6.36.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=24272
-Subject		: iotop reports insane per-process disk read/write statistics
-Submitter	: Brian Rogers <brian@xyzw.org>
-Date		: 2010-12-03 12:00 (17 days old)
-First-Bad-Commit: http://git.kernel.org/linus/85893120699f8bae8caa12a8ee18ab5fceac978e
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=23102
+Subject		: [bisected] i915 regression in post 2.6.36 kernels
+Submitter	: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
+Date		: 2010-11-10 7:02 (40 days old)
+Message-ID	: <201011100802.20332.johannes.hirte@fem.tu-ilmenau.de>
+References	: http://marc.info/?l=linux-kernel&m=128937310017057&w=2
 
 
