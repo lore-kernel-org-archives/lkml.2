@@ -1,59 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757197Ab0LSTHc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 14:07:32 -0500
-Received: from smtp.falooley.org ([66.180.170.91]:39261 "EHLO
-	smtp.falooley.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756120Ab0LSTHb convert rfc822-to-8bit (ORCPT
+	id S932427Ab0LSTIi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 14:08:38 -0500
+Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:7589 "EHLO
+	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932394Ab0LSTIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 14:07:31 -0500
-Date: Sun, 19 Dec 2010 14:07:20 -0500
-From: Jason Lunz <lunz@acm.org>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Anatolij Gustschin <agust@denx.de>, lkml <linux-kernel@vger.kernel.org>,
-        linux-mtd@lists.infradead.org
-Subject: Re: mtd: fix CONFIG_MTD_COMPLEX_MAPPINGS=n compile
-Message-ID: <20101219190720.GA16710@falooley.org>
-References: <20071227181524.GA19051@falooley.org>
- <20071228174853.GA4252@uranus.ravnborg.org>
- <20101207072919.GA8511@falooley.org>
- <AANLkTineLxHdcDKZEUGiqVNAauSX_xyQrs49kKaqhiWo@mail.gmail.com>
- <20101207182012.GA10546@falooley.org>
- <1292343878.2538.80.camel@localhost>
- <20101214195124.GA6010@falooley.org>
- <20101216230110.65156c55@wker>
- <20101217042759.GA3148@falooley.org>
- <1292777276.2140.1.camel@koala>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1292777276.2140.1.camel@koala>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
+	Sun, 19 Dec 2010 14:08:36 -0500
+From: Daniel Drake <dsd@laptop.org>
+To: a.zummo@towertech.it
+Cc: rtc-linux@googlegroups.com
+Cc: linux-kernel@vger.kernel.org
+Cc: pgf@laptop.org
+Cc: rjw@sisk.pl
+Subject: [PATCH v3] rtc-cmos: fix suspend/resume
+Message-Id: <20101219190828.A6C189D401C@zog.reactivated.net>
+Date: Sun, 19 Dec 2010 19:08:28 +0000 (GMT)
+X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=3ls3dc8-EF8A:10 a=Op-mwl0xAAAA:8 a=PtJcH0kQz5UYZKdmrUkA:9 a=8VAztMvWwEF8_RtukfsA:7 a=JGgORgc_T3jlxQFO1Vl_JUNFI5kA:4 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Paul Fox <pgf@laptop.org>
 
-You should also drop the changes that
-7bc3265a9e9a09d6a9a3cfaaf53ccf3af5271a93 made to drivers/mtd/mtdchar.c -
-there's no point changing that when mtdchar is disabled on ARCH=um.
+rtc-cmos was setting suspend/resume hooks at the device_driver level.
+However, the platform bus code (drivers/base/platform.c) only looks
+for resume hooks at the dev_pm_ops level, or within the platform_driver.
 
-Jason
+Switch rtc_cmos to use dev_pm_ops so that suspend/resume code is
+executed again.
 
-On Sun, Dec 19, 2010 at 06:47:56PM +0200, Artem Bityutskiy wrote:
-> On Thu, 2010-12-16 at 20:27 -0800, Jason Lunz wrote:
-> > On Thu, Dec 16, 2010 at 11:01:10PM +0100, Anatolij Gustschin wrote:
-> > > This change breaks compiling when CONFIG_MTD_COMPLEX_MAPPINGS is not
-> > > defined in the kernel configuration. Please fix!
-> > 
-> > Sorry, sloppy of me. This reverts all changes to mtd.h while keeping the
-> > ability to compile mtd on ARCH=um, with the exception mtdchar.
-> 
-> Merged with the previous patch, thanks.
-> 
-> -- 
-> Best Regards,
-> Artem Bityutskiy (Битюцкий Артём)
-> 
-> 
+Signed-off-by: Paul Fox <pgf@laptop.org>
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+---
+ drivers/rtc/rtc-cmos.c |   16 +++++++++-------
+ 1 files changed, 9 insertions(+), 7 deletions(-)
+
+v2: incorporate feedback from Rafael J. Wysocki, fix tabs, make a bit more
+consistent with typical SIMPLE_DEV_PM_OPS users.
+
+v3: remove const keyword already set by macro, thanks to Rafael
+
+diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
+index 5856167..dd8242d 100644
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -36,6 +36,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/mod_devicetable.h>
+ #include <linux/log2.h>
++#include <linux/pm.h>
+ 
+ /* this is for "generic access to PC-style RTC" using CMOS_READ/CMOS_WRITE */
+ #include <asm-generic/rtc.h>
+@@ -850,7 +851,7 @@ static void __exit cmos_do_remove(struct device *dev)
+ 
+ #ifdef	CONFIG_PM
+ 
+-static int cmos_suspend(struct device *dev, pm_message_t mesg)
++static int cmos_suspend(struct device *dev)
+ {
+ 	struct cmos_rtc	*cmos = dev_get_drvdata(dev);
+ 	unsigned char	tmp;
+@@ -898,7 +899,7 @@ static int cmos_suspend(struct device *dev, pm_message_t mesg)
+  */
+ static inline int cmos_poweroff(struct device *dev)
+ {
+-	return cmos_suspend(dev, PMSG_HIBERNATE);
++	return cmos_suspend(dev);
+ }
+ 
+ static int cmos_resume(struct device *dev)
+@@ -945,9 +946,9 @@ static int cmos_resume(struct device *dev)
+ 	return 0;
+ }
+ 
++static SIMPLE_DEV_PM_OPS(cmos_pm_ops, cmos_suspend, cmos_resume);
++
+ #else
+-#define	cmos_suspend	NULL
+-#define	cmos_resume	NULL
+ 
+ static inline int cmos_poweroff(struct device *dev)
+ {
+@@ -1077,7 +1078,7 @@ static void __exit cmos_pnp_remove(struct pnp_dev *pnp)
+ 
+ static int cmos_pnp_suspend(struct pnp_dev *pnp, pm_message_t mesg)
+ {
+-	return cmos_suspend(&pnp->dev, mesg);
++	return cmos_suspend(&pnp->dev);
+ }
+ 
+ static int cmos_pnp_resume(struct pnp_dev *pnp)
+@@ -1157,8 +1158,9 @@ static struct platform_driver cmos_platform_driver = {
+ 	.shutdown	= cmos_platform_shutdown,
+ 	.driver = {
+ 		.name		= (char *) driver_name,
+-		.suspend	= cmos_suspend,
+-		.resume		= cmos_resume,
++#ifdef CONFIG_PM
++		.pm		= &cmos_pm_ops,
++#endif
+ 	}
+ };
+ 
+-- 
+1.7.3.3
+
