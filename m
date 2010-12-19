@@ -1,141 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932563Ab0LSXil (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 18:38:41 -0500
-Received: from palinux.external.hp.com ([192.25.206.14]:33778 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932537Ab0LSXij (ORCPT
+	id S932577Ab0LTAAI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 19:00:08 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35995 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932536Ab0LTAAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 18:38:39 -0500
-Date: Sun, 19 Dec 2010 16:38:36 -0700
-From: Matthew Wilcox <matthew@wil.cx>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jeff Garzik <jeff@garzik.org>, Christoph Hellwig <hch@lst.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        Mike Anderson <andmike@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Ravi Anand <ravi.anand@qlogic.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        Joe Eykholt <jeykholt@cisco.com>, James Smart <james.smart@emulex.com>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        adam radford <aradford@gmail.com>,
-        Kashyap Desai <Kashyap.Desai@lsi.com>,
-        MPTFusionLinux <DL-MPTFusionLinux@lsi.com>
-Subject: Re: [PATCH 01/12] libiscsi: Convert to host_lock less w/
-	interrupts disabled internally
-Message-ID: <20101219233835.GJ1263@parisc-linux.org>
-References: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org> <1292793727-31957-2-git-send-email-nab@linux-iscsi.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292793727-31957-2-git-send-email-nab@linux-iscsi.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sun, 19 Dec 2010 19:00:06 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 20 Dec 2010 08:54:13 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: add replace_page_cache_page() function
+Message-Id: <20101220085413.b83d1093.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <E1PTcau-0001aw-60@pomaz-ex.szeredi.hu>
+References: <E1PStc6-0006Cd-0Z@pomaz-ex.szeredi.hu>
+	<20101216100744.e3a417cf.kamezawa.hiroyu@jp.fujitsu.com>
+	<E1PTCae-0007tw-Un@pomaz-ex.szeredi.hu>
+	<20101217090103.2a9ca19a.kamezawa.hiroyu@jp.fujitsu.com>
+	<E1PTcau-0001aw-60@pomaz-ex.szeredi.hu>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 19, 2010 at 01:21:56PM -0800, Nicholas A. Bellinger wrote:
-> This patch changes iscsi_queuecommand_lck() to a host_lock less
-> iscsi_queuecommand() that will internally disable interrupts using
-> session->lock and drop the now legacy host_lock unlock.
+On Fri, 17 Dec 2010 16:51:44 +0100
+Miklos Szeredi <miklos@szeredi.hu> wrote:
 
-I think this patch is buggy.  Before, iscsi_queuecommand_lck is called with
-interrupts disabled.  Now, it's called with interrupts disabled.  Elsewhere,
-session->lock is acquired with bh's disabled:
-
-void iscsi_put_task(struct iscsi_task *task)
-{
-        struct iscsi_session *session = task->conn->session;
-
-        spin_lock_bh(&session->lock);
-
-So I think you need to convert the
-        spin_lock(&session->lock);
-in iscsi_queuecommand_lck to at least a spin_lock_bh, and possibly
-a spin_lock_irq -- it's not clear to me whether it needs to exclude
-against interrupt context, or only BH context.  In some places, it's
-taken with spin_lock_irqsave().
-
-I'd play it safe and use _irq, but someone more confident with this code
-might choose to only use _bh.
-
-> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> ---
->  drivers/scsi/libiscsi.c |   10 ++--------
->  1 files changed, 2 insertions(+), 8 deletions(-)
+> On Fri, 17 Dec 2010, KAMEZAWA Hiroyuki wrote:
+> > No. memory cgroup expects all pages should be found on LRU. But, IIUC,
+> > pages on this radix-tree will not be on LRU. So, memory cgroup can't find
+> > it at destroying cgroup and can't reduce "usage" of resource to be 0.
+> > This makes rmdir() returns -EBUSY.
 > 
-> diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
-> index c15fde8..5535782 100644
-> --- a/drivers/scsi/libiscsi.c
-> +++ b/drivers/scsi/libiscsi.c
-> @@ -1599,7 +1599,7 @@ enum {
->  	FAILURE_SESSION_NOT_READY,
->  };
->  
-> -static int iscsi_queuecommand_lck(struct scsi_cmnd *sc, void (*done)(struct scsi_cmnd *))
-> +int iscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
->  {
->  	struct iscsi_cls_session *cls_session;
->  	struct Scsi_Host *host;
-> @@ -1609,13 +1609,11 @@ static int iscsi_queuecommand_lck(struct scsi_cmnd *sc, void (*done)(struct scsi
->  	struct iscsi_conn *conn;
->  	struct iscsi_task *task = NULL;
->  
-> -	sc->scsi_done = done;
->  	sc->result = 0;
->  	sc->SCp.ptr = NULL;
->  
->  	host = sc->device->host;
->  	ihost = shost_priv(host);
-> -	spin_unlock(host->host_lock);
->  
->  	cls_session = starget_to_session(scsi_target(sc->device));
->  	session = cls_session->dd_data;
-> @@ -1706,7 +1704,6 @@ static int iscsi_queuecommand_lck(struct scsi_cmnd *sc, void (*done)(struct scsi
->  
->  	session->queued_cmdsn++;
->  	spin_unlock(&session->lock);
-> -	spin_lock(host->host_lock);
->  	return 0;
->  
->  prepd_reject:
-> @@ -1716,7 +1713,6 @@ reject:
->  	spin_unlock(&session->lock);
->  	ISCSI_DBG_SESSION(session, "cmd 0x%x rejected (%d)\n",
->  			  sc->cmnd[0], reason);
-> -	spin_lock(host->host_lock);
->  	return SCSI_MLQUEUE_TARGET_BUSY;
->  
->  prepd_fault:
-> @@ -1732,12 +1728,10 @@ fault:
->  		scsi_out(sc)->resid = scsi_out(sc)->length;
->  		scsi_in(sc)->resid = scsi_in(sc)->length;
->  	}
-> -	done(sc);
-> -	spin_lock(host->host_lock);
-> +	sc->scsi_done(sc);
->  	return 0;
->  }
->  
-> -DEF_SCSI_QCMD(iscsi_queuecommand)
->  EXPORT_SYMBOL_GPL(iscsi_queuecommand);
->  
->  int iscsi_change_queue_depth(struct scsi_device *sdev, int depth, int reason)
-> -- 
-> 1.7.3.4
+> Oh, right.  Yes, the page will be on the LRU (it needs to be,
+> otherwise the VM coulnd't reclaim it).  After the
+> add_to_page_cache_locked is this:
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 	if (!(buf->flags & PIPE_BUF_FLAG_LRU))
+> 		lru_cache_add_file(newpage);
+> 
+> It will add the page to the LRU, unless it's already on it.
+> 
 
--- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+Thank you for clarification. 
+
+Thanks,
+-Kame
+
