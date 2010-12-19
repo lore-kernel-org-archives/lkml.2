@@ -1,103 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757202Ab0LRXcw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 18:32:52 -0500
-Received: from elasmtp-mealy.atl.sa.earthlink.net ([209.86.89.69]:35880 "EHLO
-	elasmtp-mealy.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753139Ab0LRXcv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 18:32:51 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=earthlink.net;
-  b=caeuWIahucq3wcmSdRc7Iuzafo2XtU3vLu+FNDt55uDjj9oNofFMVOiV1HXkT5D1;
-  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
-Message-ID: <4D0D44A1.8090501@earthlink.net>
-Date: Sat, 18 Dec 2010 18:32:49 -0500
-From: Stephen Clark <sclark46@earthlink.net>
-Reply-To: sclark46@earthlink.net
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S1757205Ab0LSAVK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Dec 2010 19:21:10 -0500
+Received: from kroah.org ([198.145.64.141]:46742 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752289Ab0LSAVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Dec 2010 19:21:09 -0500
+Date: Sat, 18 Dec 2010 16:21:46 -0800
+From: Greg KH <greg@kroah.com>
+To: Serge Belyshev <belyshev@depni.sinp.msu.ru>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: Re: [stable] [ANNOUNCE] Linux 2.6.35.10 has been released
+Message-ID: <20101219002146.GA11568@kroah.com>
+References: <20101214232747.GA18757@basil.fritz.box>
+ <877hf66929.fsf@depni.sinp.msu.ru>
 MIME-Version: 1.0
-To: Chris Wilson <chris@chris-wilson.co.uk>
-CC: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: I915 driver locks up
-References: <4D0D1516.3040404@earthlink.net> <4D0D19FF.4020600@earthlink.net> <5b55a1$j0av6h@fmsmga002.fm.intel.com>
-In-Reply-To: <5b55a1$j0av6h@fmsmga002.fm.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec792a6045004676219dcaa965a034df12da350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 69.22.83.66
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <877hf66929.fsf@depni.sinp.msu.ru>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2010 04:40 PM, Chris Wilson wrote:
-> On Sat, 18 Dec 2010 15:30:55 -0500, Stephen Clark<sclark46@earthlink.net>  wrote:
->    
->> On 12/18/2010 03:09 PM, Stephen Clark wrote:
->>      
->>> Hi,
->>>
->>> I am using 2.6.35.9-64.fc14.x86_64 running 1.3.9-1.fc14.x86_64
->>> and am having my 945gma lock up in texture decompress according
->>> to intel_gpu_top utility, when trying to play Myst 5.
->>>
->>> Any fixes on the horizon?
->>>
->>>        
->> Additional data point with 2.6.37-0.rc6.git0.1.fc15.x86_64 from rawhide
->> I get:
->> [  307.256028] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer
->> elapsed... GPU hung
->> [  307.258118] [drm:i915_do_wait_request] *ERROR* i915_do_wait_request
->> returns -11 (awaiting 27197 at 27195, next 27199)
->> [  307.258975] [drm:i915_reset] *ERROR* Failed to reset chip.
->>
->> and my X screen goes weird - have to switch to vty console.
->>      
-> Judging by your description, you've hit a bug in Mesa. Please verify the
-> bug with the current stable release (of Mesa) and file a bug report, and
-> be sure to include /sys/kernel/debug/dri/0/i915_error_state for the hang.
->
-> Thanks,
-> -Chris
->
->    
-I had been using mesa-7.9.
-I loaded mesa-7.10 similar results. There is no
+On Sat, Dec 18, 2010 at 09:54:38PM +0000, Serge Belyshev wrote:
+> Andi Kleen <andi@firstfloor.org> writes:
+> 
+> > A new longterm 2.6.35.10 kernel has been released. This release contains security
+> > fixes and all 2.6.35 users are encouraged to update. This continues
+> > the 2.6.35 stable series under a new name.
+> 
+> Could you please update this tree:
+> git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.35.y.git ?
 
-/sys/kernel/debug/dri/0/i915_error_state
+No, the "stable" trees are not being updated anymore, they have moved to
+the longterm git directory instead.
 
-In fact there is nothing in the /sys/kernel/debug directory. Do I have 
-to enable
-something.
+> This, and all other stable trees are mirrored here:
+> git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6-stable.git
+> it would be nice to keep it up-to-date.
 
-With the later kernel - things are worse X becomes totally useless it looks
-like my lcd panel lost horizontal sync. With the 2.6.25 kernel X is 
-still usable
-this makes me think at least some of the problem is kernel related.
+That tree is automatically generated by some scripts on kernel.org,
+which might need to be tweaked to handle the movement of the trees now.
 
-With 2.6.37-rc6 and mesa 7.10 with hardware acceleration turned off in wine-
+thanks,
 
-Dec 18 18:01:50 joker4 yum[5244]: Updated: mesa-libGL-7.10-0.17.fc15.x86_64
-Dec 18 18:01:52 joker4 yum[5244]: Updated: mesa-libGL-7.10-0.17.fc15.i686
-Dec 18 18:01:54 joker4 yum[5244]: Updated: mesa-libGLU-7.10-0.17.fc15.x86_64
-Dec 18 18:02:02 joker4 yum[5244]: Updated: mesa-dri-drivers-7.10-0.17.fc15.x86_6
-4
-Dec 18 18:02:03 joker4 yum[5244]: Updated: mesa-libGLU-7.10-0.17.fc15.i686
-Dec 18 18:02:11 joker4 yum[5244]: Updated: mesa-dri-drivers-7.10-0.17.fc15.i686
-Dec 18 18:04:18 joker4 kernel: [ 9603.588113] [drm:i915_hangcheck_elapsed] *ERRO
-R* Hangcheck timer elapsed... GPU hung
-Dec 18 18:04:18 joker4 kernel: [ 9603.588313] [drm:i915_do_wait_request] *ERROR*
-  i915_do_wait_request returns -5 (awaiting 379738 at 379735)
-
-
--- 
-
-"They that give up essential liberty to obtain temporary safety,
-deserve neither liberty nor safety."  (Ben Franklin)
-
-"The course of history shows that as a government grows, liberty
-decreases."  (Thomas Jefferson)
-
-
-
+greg k-h
