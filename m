@@ -1,99 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932355Ab0LSPqM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 10:46:12 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:34512 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932271Ab0LSPqK convert rfc822-to-8bit (ORCPT
+	id S1752704Ab0LSQHz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 11:07:55 -0500
+Received: from mail-gx0-f180.google.com ([209.85.161.180]:38385 "EHLO
+	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895Ab0LSQHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 10:46:10 -0500
+	Sun, 19 Dec 2010 11:07:54 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=a30H+I/A7KgL0a6zy6G58VOekGk267eEIClwdE1mEtl997t9a8FxdcEZVce92KHr4W
-         PVycV1z52qXHOfR2gh19fJii0MvEhG2Xz5eET9c8GKHuYaHI0f+HD7W8lpylYXt03wDB
-         1eOXdflH0jLkaYIbr6pLjIm4tdr9soSFc+ELo=
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Lis7BHCt37/NLFD3wJ72tPKY40okZu1FNDtDboTmUbMECxymH8i4F47VLjLZTzmHPS
+         ysvPIoN+W+aMsMsM0ahzaTRKQGI9BNDznyyxbQqMHLudh28fgWnhNmmdJ4YmuwkQ7B4R
+         RfPZCSrZ7SsQBslHUop/E7+mXLG7s7oGHUIlk=
+Message-ID: <4D0E2DD7.4060607@lwfinger.net>
+Date: Sun, 19 Dec 2010 10:07:51 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <20101218225436.28264.qmail@science.horizon.com>
-References: <20101218225436.28264.qmail@science.horizon.com>
-Date: Mon, 20 Dec 2010 02:46:07 +1100
-Message-ID: <AANLkTikwUEBd1Ez75pQ7gw7ShZitwQOQcH6CvCdJV2np@mail.gmail.com>
-Subject: Re: Big git diff speedup by avoiding x86 "fast string" memcmp
-From: Nick Piggin <npiggin@gmail.com>
-To: George Spelvin <linux@horizon.com>
-Cc: bharrosh@panasas.com, linux-arch@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [Bug #22562] Regression in 2.6.37-rc1 - logs spammed with "unable
+ to enumerate USB port" - bisected to commit 3df7169e
+References: <wNJKqSoEutL.A.lKD.odfDNB@chimera> <6Ue85L6pKCJ.A.MoF.2ffDNB@chimera>
+In-Reply-To: <6Ue85L6pKCJ.A.MoF.2ffDNB@chimera>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 19, 2010 at 9:54 AM, George Spelvin <linux@horizon.com> wrote:
->> static inline int dentry_memcmp_long(const unsigned char *cs,
->>                               const unsigned char *ct, ssize_t count)
->> {
->>       int ret;
->>       const unsigned long *ls = (const unsigned long *)cs;
->>       const unsigned long *lt = (const unsigned long *)ct;
->>
->>       while (count > 8) {
->>               ret = (*cs != *ct);
->>               if (ret)
->>                       break;
->>               cs++;
->>               ct++;
->>               count-=8;
->>       }
->>       if (count) {
->>               unsigned long t = *ct & ((0xffffffffffffffff >> ((8 - count) * 8))
->>               ret = (*cs != t)
->>       }
->>
->>       return ret;
->> }
->
-> First, let's get the code right, and use correct types, but also, there
+On 12/19/2010 06:34 AM, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
+> 
+> The following bug entry is on the current list of known regressions
+> from 2.6.36.  Please verify if it still should be listed and let the tracking team
+> know (either way).
+> 
+> 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22562
+> Subject		: Regression in 2.6.37-rc1 - logs spammed with "unable to enumerate USB port" - bisected to commit 3df7169e
+> Submitter	: Larry Finger <Larry.Finger@lwfinger.net>
+> Date		: 2010-11-02 22:32 (48 days old)
+> First-Bad-Commit: http://git.kernel.org/linus/3df7169e73fc1d71a39cffeacc969f6840cdf52b
+> Message-ID	: <4CD09166.4060202@lwfinger.net>
+> References	: http://marc.info/?l=linux-kernel&m=128873713207906&w=2
 
-You still used the wrong vars in the loop.
+Yes, this regression is still present in 2.6.37-rc6. I'm trying to debug this
+with very little success.
 
-> are some tricks to reduce the masking cost.
->
-> As long as you have to mask one string, *and* don't have to worry about
-> running off the end of mapped memory, there's no additional cost to
-> masking both in the loop.  Just test (a ^ b) & mask.
-
-Using a lookup table I considered, but maybe not well enough. It is
-another cacheline, but common to all lookups. So it could well be
-worth it, let's keep your code around...
-
-The big problem for CPUs that don't do well on this type of code is
-what the string goes through during the entire syscall.
-
-First, a byte-by-byte strcpy_from_user of the whole name string to
-kernel space. Then a byte-by-byte chunking and hashing component
-paths according to '/'. Then a byte-by-byte memcmp against the
-dentry name.
-
-I'd love to do everything with 8 byte loads, do the component
-separation and hashing at the same time as copy from user, and
-have the padded and aligned component strings and their hash
-available... but complexity.
-
-On my Westmere system, time to do a stat is 640 cycles plus 10
-cycles for every byte in the string (this cost holds perfectly
-from 1 byte name up to 32 byte names in my test range).
-`git diff` average path name strings are 31 bytes, although this
-is much less cache friendly, and over several components (my
-test is just a single component).
-
-But still, even if the base cost were doubled, it may still
-spend 20% or so kernel cycles in name string handling.
-
-This 8 byte memcpy takes my microbenchmark down to 8 cycles per
-byte, so it may get several more % on git diff.
-
-A careful thinking about the initial strcpy_from_user, and
-hashing code could shave another few cycles off it. Well
-worth investigating I think.
+Larry
