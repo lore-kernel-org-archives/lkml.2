@@ -1,55 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932410Ab0LSSz0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 13:55:26 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:39232 "EHLO ogre.sisk.pl"
+	id S1757174Ab0LSS60 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 13:58:26 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:39243 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932242Ab0LSSzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 13:55:24 -0500
+	id S1756120Ab0LSS6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 13:58:25 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [Bug #22672] Regression in 2.6.37-rc1 for Intel 945 Graphics Adapter - bisected to commit e9e331a
-Date: Sun, 19 Dec 2010 19:54:32 +0100
+To: Daniel Drake <dsd@laptop.org>
+Subject: Re: [PATCH v2] rtc-cmos: fix suspend/resume
+Date: Sun, 19 Dec 2010 19:57:53 +0100
 User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Keith Packard <keithp@keithp.com>
-References: <wNJKqSoEutL.A.lKD.odfDNB@chimera> <6Ue85L6pKCJ.A.NVF.qffDNB@chimera> <4D0E31FF.9060104@lwfinger.net>
-In-Reply-To: <4D0E31FF.9060104@lwfinger.net>
+Cc: a.zummo@towertech.it, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, pgf@laptop.org
+References: <20101219174032.3E7579D401C@zog.reactivated.net>
+In-Reply-To: <20101219174032.3E7579D401C@zog.reactivated.net>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012191954.32347.rjw@sisk.pl>
+Message-Id: <201012191957.53904.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, December 19, 2010, Larry Finger wrote:
-> On 12/19/2010 06:34 AM, Rafael J. Wysocki wrote:
-> > This message has been generated automatically as a part of a summary report
-> > of recent regressions.
-> > 
-> > The following bug entry is on the current list of known regressions
-> > from 2.6.36.  Please verify if it still should be listed and let the tracking team
-> > know (either way).
-> > 
-> > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22672
-> > Subject		: Regression in 2.6.37-rc1 for Intel 945 Graphics Adapter - bisected to commit e9e331a
-> > Submitter	: Larry Finger <Larry.Finger@lwfinger.net>
-> > Date		: 2010-11-11 01:56 (39 days old)
-> > References	: https://bugs.freedesktop.org/show_bug.cgi?id=31803
-> > 		  http://marc.info/?l=linux-kernel&m=128944001311444&w=2
-> > 		  http://www.mail-archive.com/intel-gfx@lists.freedesktop.org/msg02235.html
-> > Patch		: https://patchwork.kernel.org/patch/359472/
-> > 		  https://patchwork.kernel.org/patch/359502/
+On Sunday, December 19, 2010, Daniel Drake wrote:
+> From: Paul Fox <pgf@laptop.org>
 > 
-> The problem is still present in 2.6.37-rc6.
+> rtc-cmos was setting suspend/resume hooks at the device_driver level.
+> However, the platform bus code (drivers/base/platform.c) only looks
+> for resume hooks at the dev_pm_ops level, or within the platform_driver.
+> 
+> Switch rtc_cmos to use dev_pm_ops so that suspend/resume code is
+> executed again.
+> 
+> Signed-off-by: Paul Fox <pgf@laptop.org>
+> Signed-off-by: Daniel Drake <dsd@laptop.org>
+> ---
+>  drivers/rtc/rtc-cmos.c |   16 +++++++++-------
+>  1 files changed, 9 insertions(+), 7 deletions(-)
+> 
+> v2: incorporate feedback from Rafael J. Wysocki, fix tabs, make a bit more
+> consistent with typical SIMPLE_DEV_PM_OPS users.
+> 
+> diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
+> index 5856167..b46c539 100644
+> --- a/drivers/rtc/rtc-cmos.c
+> +++ b/drivers/rtc/rtc-cmos.c
+> @@ -36,6 +36,7 @@
+>  #include <linux/platform_device.h>
+>  #include <linux/mod_devicetable.h>
+>  #include <linux/log2.h>
+> +#include <linux/pm.h>
+>  
+>  /* this is for "generic access to PC-style RTC" using CMOS_READ/CMOS_WRITE */
+>  #include <asm-generic/rtc.h>
+> @@ -850,7 +851,7 @@ static void __exit cmos_do_remove(struct device *dev)
+>  
+>  #ifdef	CONFIG_PM
+>  
+> -static int cmos_suspend(struct device *dev, pm_message_t mesg)
+> +static int cmos_suspend(struct device *dev)
+>  {
+>  	struct cmos_rtc	*cmos = dev_get_drvdata(dev);
+>  	unsigned char	tmp;
+> @@ -898,7 +899,7 @@ static int cmos_suspend(struct device *dev, pm_message_t mesg)
+>   */
+>  static inline int cmos_poweroff(struct device *dev)
+>  {
+> -	return cmos_suspend(dev, PMSG_HIBERNATE);
+> +	return cmos_suspend(dev);
+>  }
+>  
+>  static int cmos_resume(struct device *dev)
+> @@ -945,9 +946,9 @@ static int cmos_resume(struct device *dev)
+>  	return 0;
+>  }
+>  
+> +static const SIMPLE_DEV_PM_OPS(cmos_pm_ops, cmos_suspend, cmos_resume);
 
-Thanks for the update.
+Well, SIMPLE_DEV_PM_OPS() has 'const' already, you only need to add 'static'.
 
+Thanks,
 Rafael
+
+
+> +
+>  #else
+> -#define	cmos_suspend	NULL
+> -#define	cmos_resume	NULL
+>  
+>  static inline int cmos_poweroff(struct device *dev)
+>  {
+> @@ -1077,7 +1078,7 @@ static void __exit cmos_pnp_remove(struct pnp_dev *pnp)
+>  
+>  static int cmos_pnp_suspend(struct pnp_dev *pnp, pm_message_t mesg)
+>  {
+> -	return cmos_suspend(&pnp->dev, mesg);
+> +	return cmos_suspend(&pnp->dev);
+>  }
+>  
+>  static int cmos_pnp_resume(struct pnp_dev *pnp)
+> @@ -1157,8 +1158,9 @@ static struct platform_driver cmos_platform_driver = {
+>  	.shutdown	= cmos_platform_shutdown,
+>  	.driver = {
+>  		.name		= (char *) driver_name,
+> -		.suspend	= cmos_suspend,
+> -		.resume		= cmos_resume,
+> +#ifdef CONFIG_PM
+> +		.pm		= &cmos_pm_ops,
+> +#endif
+>  	}
+>  };
+>  
+> 
+
