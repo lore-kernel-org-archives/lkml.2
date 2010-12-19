@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756361Ab0LSNKS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 08:10:18 -0500
-Received: from fanny.its.uu.se ([130.238.4.241]:51381 "EHLO fanny.its.uu.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754976Ab0LSNKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 08:10:16 -0500
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19726.1077.824539.753038@pilspetsen.it.uu.se>
-Date: Sun, 19 Dec 2010 14:10:13 +0100
-From: Mikael Pettersson <mikpe@it.uu.se>
+	id S932099Ab0LSNOU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 08:14:20 -0500
+Received: from hosting.visp.net.lb ([194.146.153.11]:46858 "EHLO
+	hosting.visp.net.lb" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755650Ab0LSNOT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 08:14:19 -0500
+From: Denys Fedoryshchenko <nuclearcat@nuclearcat.com>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [Bug #21662] 2.6.35->2.6.36 regression, vanilla kernel panic, ppp or hrtimers crashing
+Date: Sun, 19 Dec 2010 15:14:10 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc6-git5-home1; KDE/4.4.5; x86_64; ; )
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "Mikael Pettersson" <mikpe@it.uu.se>
-Subject: Re: [Bug #23902] [BUG] 2.6.37-rc3 massive interactivity regression on ARM
-In-Reply-To: <6Ue85L6pKCJ.A.YfE.iefDNB@chimera>
-References: <wNJKqSoEutL.A.lKD.odfDNB@chimera>
-	<6Ue85L6pKCJ.A.YfE.iefDNB@chimera>
-X-Mailer: VM 7.17 under Emacs 20.7.1
+        Florian Mickler <florian@mickler.org>
+References: <ZRNlsjykcOD.A.b-F.20fDNB@chimera> <xqq2Z3iR9HJ.A.WhG.q1fDNB@chimera>
+In-Reply-To: <xqq2Z3iR9HJ.A.WhG.q1fDNB@chimera>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012191514.10820.nuclearcat@nuclearcat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael J. Wysocki wrote:
+On Sunday 19 December 2010 14:50:26 Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.35 and 2.6.36.
+> 
 > The following bug entry is on the current list of known regressions
-> from 2.6.36.  Please verify if it still should be listed and let the tracking team
-> know (either way).
+> introduced between 2.6.35 and 2.6.36.  Please verify if it still should
+> be listed and let the tracking team know (either way).
 > 
 > 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=23902
-> Subject		: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
-> Submitter	: Mikael Pettersson <mikpe@it.uu.se>
-> Date		: 2010-11-27 15:16 (23 days old)
-> First-Bad-Commit: http://git.kernel.org/linus/305e6835e05513406fa12820e40e4a8ecb63743c
-> Message-ID	: <<19697.8378.717761.236202@pilspetsen.it.uu.se>>
-> References	: http://marc.info/?l=linux-kernel&m=129087098911837&w=2
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=21662
+> Subject		: 2.6.35->2.6.36 regression, vanilla kernel panic, ppp or 
+hrtimers
+> crashing Submitter	: Denys Fedoryshchenko <nuclearcat@nuclearcat.com>
+> Date		: 2010-10-25 9:22 (56 days old)
+> Message-ID	: <201010251222.37191.nuclearcat@nuclearcat.com>
+> References	: http://marc.info/?l=linux-kernel&m=128799855826011&w=2
+It is fixed, i guess for 2.6.37, patch works for me.
 
-The regression is still present in 2.6.37-rc6.
+http://marc.info/?l=linux-netdev&m=129219516718477&w=2
+Andrej Ota (1):
+      pppoe.c: Fix kernel panic caused by __pppoe_xmit
+	
