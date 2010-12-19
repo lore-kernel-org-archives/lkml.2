@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932504Ab0LSVWn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 16:22:43 -0500
-Received: from nm12.bullet.mail.ac4.yahoo.com ([98.139.52.209]:47301 "HELO
-	nm12.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932479Ab0LSVWk (ORCPT
+	id S1757278Ab0LSVWy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 16:22:54 -0500
+Received: from nm5.bullet.mail.ac4.yahoo.com ([98.139.52.202]:26247 "HELO
+	nm5.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757295Ab0LSVWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 16:22:40 -0500
-X-Yahoo-Newman-Id: 591921.41394.bm@omp1064.mail.ac4.yahoo.com
+	Sun, 19 Dec 2010 16:22:49 -0500
+X-Yahoo-Newman-Id: 74159.45774.bm@omp1054.mail.ac4.yahoo.com
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: hTkxBYgVM1kXydbR0.OwPC9ThDeIj1d9_AVEK7j3yXhaMEh
- fUzzV5eoEbNlVVCXyPoQXizF1ZEshgr2QOEebFRpbIEkj2A7sNSO.Aljg4Zd
- fLVO_YcsLAgy4jLEa8Nmc.Zgw9a9EEnw14_KL0AUcPHtYTJ5W0TSErthleim
- Iit.MAlSTGrSeO4vVKadSW_ojnXV.gn2Ubv341tmiwH2SYIiw1a1cjsPrHQs
- gzPrHtw9WC1ktntA4fAMohCquh5Z80kN4DeEWwYvY8pNn4ZB1nrxJZVoYXWL
- GXdalZbKQheuTLHB7vQo1EFw8b2yentbfAw6cSSYWr6Jb_pPrfp_aFaKAYlt
- oV8mbCckPeSZ2i2Ra2SMnyqSMLQVuwRkR7dn8ydZn8vOpEV3m_VHuU.dtTi4
- eCBhm7SsMRzDiaXO9GELDJJkmcVqqvrnunmuKjvMahDre4.LgoEat7NxNNQ-
- -
+X-YMail-OSG: fHTa2vwVM1kGc1iJ8UBPszN_8Eal3kwKed5sXkt97T3uOaD
+ 2BIeFSF8mXsoyKo13HaImznxN5scJ2_4An6LRTeuRiURc92OU3hERTKNA769
+ QChhnkYKpo_QjvhoMXz0jnOC4h_wo004RuZidowsCbnPuz1wzSsQmlMymcoB
+ mPM_LkidVqgqImK9cnhGkT313mXMbrJ1EQvr7GhsB2t0LesLaziTcp2Zb812
+ 93oH6TF5Y8hSYAChJ0yaTQfVDIujcXp2UCL_1Tc4Bv6jT.7xAyU18htpNXLb
+ FjshaWt7VCnt_vxH_W3KcedvvkOCHJB9ZTCq95H2sFTI2.MEkPjcCDoouDrW
+ i.VLypbhU829WB_5Yu5Cqs2j5G6O4
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -37,9 +35,9 @@ Cc: Mike Anderson <andmike@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
         Kashyap Desai <Kashyap.Desai@lsi.com>,
         MPTFusionLinux <DL-MPTFusionLinux@lsi.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 05/12] fnic: Convert to host_lock less w/ interrupts disabled externally
-Date: Sun, 19 Dec 2010 13:22:00 -0800
-Message-Id: <1292793727-31957-6-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 07/12] qla2xxx: Convert to host_lock less w/ interrupts disabled externally
+Date: Sun, 19 Dec 2010 13:22:02 -0800
+Message-Id: <1292793727-31957-8-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org>
 References: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org>
@@ -49,57 +47,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch converts fnic to run in host_lock less mode with the new
+This patch converts qla2xxx to run in host_lock less mode with the new
 IRQ_DISABLE_SCSI_QCMD() that disables interrupts while calling ->queuecommand()
 dispatch.  It also drops the legacy host_lock unlock optimization.
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/scsi/fnic/fnic_scsi.c |   14 +++-----------
- 1 files changed, 3 insertions(+), 11 deletions(-)
+ drivers/scsi/qla2xxx/qla_os.c |   11 +++--------
+ 1 files changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/scsi/fnic/fnic_scsi.c b/drivers/scsi/fnic/fnic_scsi.c
-index 22d0240..9f51beb 100644
---- a/drivers/scsi/fnic/fnic_scsi.c
-+++ b/drivers/scsi/fnic/fnic_scsi.c
-@@ -349,7 +349,8 @@ static inline int fnic_queue_wq_copy_desc(struct fnic *fnic,
-  * Routine to send a scsi cdb
-  * Called with host_lock held and interrupts disabled.
-  */
--static int fnic_queuecommand_lck(struct scsi_cmnd *sc, void (*done)(struct scsi_cmnd *))
-+static int fnic_queuecommand_irq_disable(struct scsi_cmnd *sc,
-+					void (*done)(struct scsi_cmnd *))
- {
- 	struct fc_lport *lp;
- 	struct fc_rport *rport;
-@@ -373,13 +374,6 @@ static int fnic_queuecommand_lck(struct scsi_cmnd *sc, void (*done)(struct scsi_
- 	if (lp->state != LPORT_ST_READY || !(lp->link_up))
- 		return SCSI_MLQUEUE_HOST_BUSY;
- 
--	/*
--	 * Release host lock, use driver resource specific locks from here.
--	 * Don't re-enable interrupts in case they were disabled prior to the
--	 * caller disabling them.
--	 */
--	spin_unlock(lp->host->host_lock);
--
- 	/* Get a new io_req for this SCSI IO */
- 	fnic = lport_priv(lp);
- 
-@@ -452,12 +446,10 @@ static int fnic_queuecommand_lck(struct scsi_cmnd *sc, void (*done)(struct scsi_
- 		}
- 	}
- out:
--	/* acquire host lock before returning to SCSI */
--	spin_lock(lp->host->host_lock);
- 	return ret;
+diff --git a/drivers/scsi/qla2xxx/qla_os.c b/drivers/scsi/qla2xxx/qla_os.c
+index 2c0876c..c6cdfeb 100644
+--- a/drivers/scsi/qla2xxx/qla_os.c
++++ b/drivers/scsi/qla2xxx/qla_os.c
+@@ -534,7 +534,8 @@ qla2x00_get_new_sp(scsi_qla_host_t *vha, fc_port_t *fcport,
  }
  
--DEF_SCSI_QCMD(fnic_queuecommand)
-+IRQ_DISABLE_SCSI_QCMD(fnic_queuecommand)
+ static int
+-qla2xxx_queuecommand_lck(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
++qla2xxx_queuecommand_irq_disable(struct scsi_cmnd *cmd,
++				void (*done)(struct scsi_cmnd *))
+ {
+ 	scsi_qla_host_t *vha = shost_priv(cmd->device->host);
+ 	fc_port_t *fcport = (struct fc_port *) cmd->device->hostdata;
+@@ -544,7 +545,6 @@ qla2xxx_queuecommand_lck(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *)
+ 	srb_t *sp;
+ 	int rval;
+ 
+-	spin_unlock_irq(vha->host->host_lock);
+ 	if (ha->flags.eeh_busy) {
+ 		if (ha->flags.pci_channel_io_perm_failure)
+ 			cmd->result = DID_NO_CONNECT << 16;
+@@ -585,8 +585,6 @@ qla2xxx_queuecommand_lck(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *)
+ 	if (rval != QLA_SUCCESS)
+ 		goto qc24_host_busy_free_sp;
+ 
+-	spin_lock_irq(vha->host->host_lock);
+-
+ 	return 0;
+ 
+ qc24_host_busy_free_sp:
+@@ -594,21 +592,18 @@ qc24_host_busy_free_sp:
+ 	mempool_free(sp, ha->srb_mempool);
+ 
+ qc24_host_busy_lock:
+-	spin_lock_irq(vha->host->host_lock);
+ 	return SCSI_MLQUEUE_HOST_BUSY;
+ 
+ qc24_target_busy:
+-	spin_lock_irq(vha->host->host_lock);
+ 	return SCSI_MLQUEUE_TARGET_BUSY;
+ 
+ qc24_fail_command:
+-	spin_lock_irq(vha->host->host_lock);
+ 	done(cmd);
+ 
+ 	return 0;
+ }
+ 
+-static DEF_SCSI_QCMD(qla2xxx_queuecommand)
++static IRQ_DISABLE_SCSI_QCMD(qla2xxx_queuecommand)
+ 
  
  /*
-  * fnic_fcpio_fw_reset_cmpl_handler
 -- 
 1.7.3.4
 
