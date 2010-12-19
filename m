@@ -1,89 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757132Ab0LSRGt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 12:06:49 -0500
-Received: from science.horizon.com ([71.41.210.146]:37276 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756226Ab0LSRGs (ORCPT
+	id S1757170Ab0LSRI3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 12:08:29 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:53328 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752390Ab0LSRI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 12:06:48 -0500
-Date: 19 Dec 2010 12:06:46 -0500
-Message-ID: <20101219170646.482.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, npiggin@gmail.com
-Subject: Re: Big git diff speedup by avoiding x86 "fast string" memcmp
-Cc: bharrosh@panasas.com, linux-arch@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTikwUEBd1Ez75pQ7gw7ShZitwQOQcH6CvCdJV2np@mail.gmail.com>
+	Sun, 19 Dec 2010 12:08:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=LFkQZvuw9y8OEjThfQ+sn4yv0hP1y7F7GhDpbHU+vkG2+h/oJ4uXCm4zAe2NaVdlhd
+         im9zfE44wAmeywyMxov44jcns5SaLSop1J9gI5OlM/atVu5GMITbgQA0DbYM0tYZK3hY
+         SGYXatey9dibpuOWry8ViK+67G2l6MGZOrEnc=
+Subject: Re: [PATCH] mtd: allow mtd and jffs2 when ARCH=um
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Rob Landley <rob@landley.net>
+Cc: Jason Lunz <lunz@acm.org>, Denys Vlasenko <vda.linux@googlemail.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Sam Ravnborg <sam@ravnborg.org>, David Woodhouse <dwmw2@infradead.org>,
+        atom ota <atomota@sleepyhammer.com>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        Jeff Dike <jdike@addtoit.com>, lkml <linux-kernel@vger.kernel.org>,
+        linux-mtd@lists.infradead.org
+In-Reply-To: <201012172208.17937.rob@landley.net>
+References: <22c797d00709272118i33d32b9dy93d5f5ec8f8edd30@mail.gmail.com>
+	 <201012150031.21417.rob@landley.net> <1292512711.2364.85.camel@localhost>
+	 <201012172208.17937.rob@landley.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 19 Dec 2010 19:08:22 +0200
+Message-ID: <1292778502.13362.13.camel@koala>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> First, a byte-by-byte strcpy_from_user of the whole name string to
-> kernel space. Then a byte-by-byte chunking and hashing component
-> paths according to '/'. Then a byte-by-byte memcmp against the
-> dentry name.
+On Fri, 2010-12-17 at 22:08 -0600, Rob Landley wrote:
+> On Thursday 16 December 2010 09:18:31 Artem Bityutskiy wrote:
+> > On Wed, 2010-12-15 at 00:31 -0600, Rob Landley wrote:
+> > > That is awesome and I'm not finding any documentation on it...  Ah:
+> > >
+> > >  
+> > > http://wiki.maemo.org/Modifying_the_root_image#Block_device_emulating_an_
+> > >MTD_device
+> > >
+> > > Wow that's awkward.  Let's see, that says...
+> > >
+> > >   mknod /tmp/mtdblock0 b 31 0
+> > >   modprobe loop
+> > >   losetup /dev/loop0 rootfs.jffs2
+> > >   modprobe mtdblock
+> > >   modprobe block2mtd
+> > >   # Note the ,128KiB is needed (on 2.6.26 at least) to set the
+> > >   # eraseblock  size.
+> > >   echo "/dev/loop0,128KiB" > /sys/module/block2mtd/parameters/block2mtd
+> > >   modprobe jffs2
+> > >   mount -t jffs2 /tmp/mtdblock0 /media/jffs2
+> >
+> > You should not need mtdblock in modern kernels, it is legacy. You should
+> > be abole to mount jffs2 on top of mtd0 with
+> >
+> > mount -t jffs2 mtd0 /media/jffs2
+> 
+> How does one associate the mtd0 with the loopback device?  (I thought mtd0 was 
+> for actual flash memory.)
 
-Well, you've put your finger on the obvious place to to the aligned copy,
-if you want.  Looking into it, I note that __d_lookup() does a 32-bit
-hash compare before doing a string compare, so the memcmp should almost
-always succeed.  (Failures are due to hash collisions and rename races.)
+You do not need loopback devices, just flash your rootfs.jffs2 directly
+to /dev/mtd0, e.g., with nandwrite. You can emulate nand with nandsim.
 
-> I'd love to do everything with 8 byte loads, do the component
-> separation and hashing at the same time as copy from user, and
-> have the padded and aligned component strings and their hash
-> available... but complexity.
+But your method should also work, I just wanted to point that JFFS2 does
+not depend on mtdblock in any way.
 
-It actually doesn't seem that difficult to do in fs/namei.c:do_getname
-via a heavily hacked strncpy_from_user.  Call it strhash_from_user, and
-it copies the string, while accumulating the hash and the length,
-until it hits a nul or /.  It has to return the length, the hash,
-and the termination condition: nul, /, or space exhausted.
+-- 
+Best Regards,
+Artem Bityutskiy (Битюцкий Артём)
 
-Then you could arrange for each component to be padded so that it
-starts aligned.
-
-(The hash and length can be stored directly in the qstr.  The length is
-only otherwise needed for components that end in /, so you could return
-a magic negative length in those cases.)
-
-If it matters, Bob Jenkins wrote a "one-at-a-time" hash function
-that is actually sligthy less work per character than the current
-partial_name_hash.  (Two shifts, two adds and a *11 gets turned into
-two shifts, two adds, and and an XOR)
-
-static inline u32 __attribute__((const))
-partial_name_hash(unsigned char c, u32 hash)
-{
-	hash += c;
-	hash += hash << 10;
-	hash ^= hash >> 6;
-	return hash;
-}
-
-static inline u32 end_name_hash(u32 hash)
-{
-	hash += hash << 3;
-	hash ^= hash >> 11;
-	hash += hash << 15;
-	return hash;
-}
-
-(I note that there's zero reason for the current partial_name_hash to
-use an unsigned long intermediate value, since the high 32 bits have no
-effect on the final result.  It just forces unnecessary REX prefixes.)
-
-The main problem with initializing all the qstr structures early is that
-it can lead to an oddly dynamic PATH_MAX and/or a type of kernel
-DOS by passing in paths with many short directory names that would need
-maximal padding.
-
-> On my Westmere system, time to do a stat is 640 cycles plus 10
-> cycles for every byte in the string (this cost holds perfectly
-> from 1 byte name up to 32 byte names in my test range).
-> `git diff` average path name strings are 31 bytes, although this
-> is much less cache friendly, and over several components (my
-> test is just a single component).
-
-Thank you for this useful real-world number!
-I hadn't realized the base cost was so low.
