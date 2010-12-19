@@ -1,117 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757174Ab0LSS60 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 13:58:26 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:39243 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756120Ab0LSS6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 13:58:25 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Daniel Drake <dsd@laptop.org>
-Subject: Re: [PATCH v2] rtc-cmos: fix suspend/resume
-Date: Sun, 19 Dec 2010 19:57:53 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6+; KDE/4.4.4; x86_64; ; )
-Cc: a.zummo@towertech.it, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, pgf@laptop.org
-References: <20101219174032.3E7579D401C@zog.reactivated.net>
-In-Reply-To: <20101219174032.3E7579D401C@zog.reactivated.net>
+	id S932421Ab0LSTAX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 14:00:23 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:37663 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S932385Ab0LSTAW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 14:00:22 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1+1qLYf8xW1yJXv/c+SNhnAaLF4WcHhAZobauYumy
+	Cuzsprsgjkvvm+
+From: Peter =?utf-8?q?H=C3=BCwe?= <PeterHuewe@gmx.de>
+To: sedat.dilek@gmail.com, Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] platform/x86: Fix recursive Kconfig dependency
+Date: Sun, 19 Dec 2010 20:00:14 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36.2; KDE/4.4.5; x86_64; ; )
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, John Linville <linville@tuxdriver.com>
+References: <1291850970-7190-1-git-send-email-peterhuewe@gmx.de> <201012152214.29452.PeterHuewe@gmx.de> <AANLkTikPVqaZE8KBOCKWuwkqRpn3mHKQn+V3bUU5cW7=@mail.gmail.com>
+In-Reply-To: <AANLkTikPVqaZE8KBOCKWuwkqRpn3mHKQn+V3bUU5cW7=@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012191957.53904.rjw@sisk.pl>
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201012192000.14969.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, December 19, 2010, Daniel Drake wrote:
-> From: Paul Fox <pgf@laptop.org>
+Am Freitag 17 Dezember 2010, 12:30:15 schrieb Sedat Dilek:
+> On Wed, Dec 15, 2010 at 10:14 PM, Peter Hüwe <PeterHuewe@gmx.de> wrote:
+> > Am Mittwoch 15 Dezember 2010, 21:51:04 schrieb Randy Dunlap:
+> >> > Hi, another patch was posted before:
+> >> > 
+> >> > http://article.gmane.org/gmane.linux.drivers.platform.x86.devel/970/ma
+> >> > tch =acpi_wmi
+> >> >Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+> > 
+> > Yeah, you're right - but as Sedat's patch is perfect (and fixes both) -
+> > so for Sedats's patch:
+> > Acked-by: Peter Huewe <peterhuewe@gmx.de>
+> > 
+> > Thanks,
+> > Peter
 > 
-> rtc-cmos was setting suspend/resume hooks at the device_driver level.
-> However, the platform bus code (drivers/base/platform.c) only looks
-> for resume hooks at the dev_pm_ops level, or within the platform_driver.
+> [ CC John Linville ]
 > 
-> Switch rtc_cmos to use dev_pm_ops so that suspend/resume code is
-> executed again.
-> 
-> Signed-off-by: Paul Fox <pgf@laptop.org>
-> Signed-off-by: Daniel Drake <dsd@laptop.org>
-> ---
->  drivers/rtc/rtc-cmos.c |   16 +++++++++-------
->  1 files changed, 9 insertions(+), 7 deletions(-)
-> 
-> v2: incorporate feedback from Rafael J. Wysocki, fix tabs, make a bit more
-> consistent with typical SIMPLE_DEV_PM_OPS users.
-> 
-> diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
-> index 5856167..b46c539 100644
-> --- a/drivers/rtc/rtc-cmos.c
-> +++ b/drivers/rtc/rtc-cmos.c
-> @@ -36,6 +36,7 @@
->  #include <linux/platform_device.h>
->  #include <linux/mod_devicetable.h>
->  #include <linux/log2.h>
-> +#include <linux/pm.h>
->  
->  /* this is for "generic access to PC-style RTC" using CMOS_READ/CMOS_WRITE */
->  #include <asm-generic/rtc.h>
-> @@ -850,7 +851,7 @@ static void __exit cmos_do_remove(struct device *dev)
->  
->  #ifdef	CONFIG_PM
->  
-> -static int cmos_suspend(struct device *dev, pm_message_t mesg)
-> +static int cmos_suspend(struct device *dev)
->  {
->  	struct cmos_rtc	*cmos = dev_get_drvdata(dev);
->  	unsigned char	tmp;
-> @@ -898,7 +899,7 @@ static int cmos_suspend(struct device *dev, pm_message_t mesg)
->   */
->  static inline int cmos_poweroff(struct device *dev)
->  {
-> -	return cmos_suspend(dev, PMSG_HIBERNATE);
-> +	return cmos_suspend(dev);
->  }
->  
->  static int cmos_resume(struct device *dev)
-> @@ -945,9 +946,9 @@ static int cmos_resume(struct device *dev)
->  	return 0;
->  }
->  
-> +static const SIMPLE_DEV_PM_OPS(cmos_pm_ops, cmos_suspend, cmos_resume);
-
-Well, SIMPLE_DEV_PM_OPS() has 'const' already, you only need to add 'static'.
-
-Thanks,
-Rafael
+> It's a bit disappointing to see my fix is still not in
+> platform-drivers-x86/linux-next [1] (even it's only fixing "warnings",
+> 9 days past).
+> linux-next tree is for me a very high dynamic SCM tree, I am doing
+> mostly daily builds, at weekend I am testing/pulling other trees
+> before they go into Monday's linux-next.
+> As far as I have fun with "my process"... I will continue.
 
 
-> +
->  #else
-> -#define	cmos_suspend	NULL
-> -#define	cmos_resume	NULL
->  
->  static inline int cmos_poweroff(struct device *dev)
->  {
-> @@ -1077,7 +1078,7 @@ static void __exit cmos_pnp_remove(struct pnp_dev *pnp)
->  
->  static int cmos_pnp_suspend(struct pnp_dev *pnp, pm_message_t mesg)
->  {
-> -	return cmos_suspend(&pnp->dev, mesg);
-> +	return cmos_suspend(&pnp->dev);
->  }
->  
->  static int cmos_pnp_resume(struct pnp_dev *pnp)
-> @@ -1157,8 +1158,9 @@ static struct platform_driver cmos_platform_driver = {
->  	.shutdown	= cmos_platform_shutdown,
->  	.driver = {
->  		.name		= (char *) driver_name,
-> -		.suspend	= cmos_suspend,
-> -		.resume		= cmos_resume,
-> +#ifdef CONFIG_PM
-> +		.pm		= &cmos_pm_ops,
-> +#endif
->  	}
->  };
->  
-> 
 
+Added Stephen Rothwell on CC, maybe he can apply it directly to linux-next ;)
+
+Peter
