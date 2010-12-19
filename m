@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932431Ab0LSM72 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 07:59:28 -0500
+	id S932351Ab0LSNAG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 08:00:06 -0500
 Received: from ogre.sisk.pl ([217.79.144.158]:38660 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932299Ab0LSM4Q convert rfc822-to-8bit (ORCPT
+	id S1756827Ab0LSM4P convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 07:56:16 -0500
+	Sun, 19 Dec 2010 07:56:15 -0500
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Ozan Caglayan" <ozan@pardus.org.tr>,
-        "Peter Zijlstra" <a.p.zijlstra@chello.nl>, 2010-04-22@ogre.sisk.pl,
-        "21:50:19"@ogre.sisk.pl
+        "Jesse Gross" <jesse@nicira.com>,
+        "Nikola Ciprich" <extmaillist@linuxbox.cz>
 References: <ZRNlsjykcOD.A.b-F.20fDNB@chimera>
 In-Reply-To: <ZRNlsjykcOD.A.b-F.20fDNB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -20,10 +19,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <xqq2Z3iR9HJ.A.lMH.Q2fDNB@chimera>
-Subject: [Bug #20232] kworker consumes ~100% CPU on HP Elitebook 8540w running 2.6.36_rc6-git4
+Message-ID: <xqq2Z3iR9HJ.A.T2G.A2fDNB@chimera>
+Subject: [Bug #20462] 2.6.36-rc7-git2 - panic/GPF: e1000e/vlans?
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun, 19 Dec 2010 13:50:24 +0100 (CET)
+Date: Sun, 19 Dec 2010 13:50:25 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -36,9 +35,13 @@ introduced between 2.6.35 and 2.6.36.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=20232
-Subject		: kworker consumes ~100% CPU on HP Elitebook 8540w running 2.6.36_rc6-git4
-Submitter	: Ozan Caglayan <ozan@pardus.org.tr>
-Date		: 2010-10-13 06:13 (68 days old)
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=20462
+Subject		: 2.6.36-rc7-git2 - panic/GPF: e1000e/vlans?
+Submitter	: Nikola Ciprich <extmaillist@linuxbox.cz>
+Date		: 2010-10-15 7:10 (66 days old)
+Message-ID	: <20101015071008.GA8714@pcnci.linuxbox.cz>
+References	: http://marc.info/?l=linux-kernel&m=128712984831303&w=2
+Handled-By	: Jesse Gross <jesse@nicira.com>
+Patch		: http://www.spinics.net/lists/netdev/msg146227.html
 
 
