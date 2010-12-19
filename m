@@ -1,89 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932341Ab0LSRaX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 12:30:23 -0500
-Received: from 64-131-28-21.usfamily.net ([64.131.28.21]:47119 "EHLO
-	mail.sandeen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752390Ab0LSRaW (ORCPT
+	id S932362Ab0LSRi5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 12:38:57 -0500
+Received: from mailout10.t-online.de ([194.25.134.21]:47601 "EHLO
+	mailout10.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932137Ab0LSRi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 12:30:22 -0500
-X-Greylist: delayed 1735 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Dec 2010 12:30:22 EST
-Message-ID: <4D0E3A63.606@sandeen.net>
-Date: Sun, 19 Dec 2010 11:01:23 -0600
-From: Eric Sandeen <sandeen@sandeen.net>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Sun, 19 Dec 2010 12:38:56 -0500
+X-Greylist: delayed 1084 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Dec 2010 12:38:56 EST
+Message-ID: <4D0E3EDF.3060805@t-online.de>
+Date: Sun, 19 Dec 2010 18:20:31 +0100
+From: =?ISO-8859-15?Q?Richard_Sch=FCtz?= <r.schtz@t-online.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101211 Lanikai/3.1.7
 MIME-Version: 1.0
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-CC: Sandon Van Ness <sandon@van-ness.com>, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, Alan Piszcz <ap@solarrain.com>
-Subject: Re: Is EXT4 the right FS for > 16TB?
-References: <alpine.DEB.2.00.1012190649060.5393@p34.internal.lan> <4D0E3435.30104@van-ness.com> <alpine.DEB.2.00.1012191151570.28865@p34.internal.lan>
-In-Reply-To: <alpine.DEB.2.00.1012191151570.28865@p34.internal.lan>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: linux-usb@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, usb-storage@lists.one-eyed-alien.net,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sergey Vlasov <vsu@altlinux.ru>, Greg KH <gregkh@suse.de>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+Subject: [PATCH] USB: usb-storage: unusual_devs update for Cypress ATACB
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 8bit
+X-ID: Z2KT+rZrrhB7t9nQO7pwARqA14vvrWh252PaEZhOWv+pxH0buJYB6k5HJ0BrG2wgEF
+X-TOI-MSGID: e85ad08d-69c2-4eee-83e3-362058555024
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/10 10:53 AM, Justin Piszcz wrote:
-> Hi,
-> 
-> Wow, there were no updates though after Eric's last comment..
-> Eric, have there been any improvements in the past 6 months?
-> 
-> Or should one still steer clear from EXT4 > 16TB?
+New device ID added for unusual Cypress ATACB device.
 
-There is still no released e2fsprogs which supports > 16T for
-ext4, but testing of the not-released bits is welcomed...
-Ted says a 16T-capable version is coming soon.  There's still
-work to be done there, though.
+Signed-off-by: Richard Schütz <r.schtz@t-online.de>
 
--Eric
+--- a/drivers/usb/storage/unusual_cypress.h	2010-12-09 
+23:17:27.000000000 +0100
++++ b/drivers/usb/storage/unusual_cypress.h	2010-12-19 
+12:20:14.756009149 +0100
+@@ -31,4 +31,9 @@ UNUSUAL_DEV(  0x04b4, 0x6831, 0x0000, 0x
+  		"Cypress ISD-300LP",
+  		US_SC_CYP_ATACB, US_PR_DEVICE, NULL, 0),
 
-> Justin.
-> 
-> On Sun, 19 Dec 2010, Sandon Van Ness wrote:
-> 
->> Was it me (houkouonchi) on hard forum? I asked if > 16 TiB support was
->> considered stable on here a while back:
->>
->> Is >16TB support considered stable?
->>
->> This was 6 months ago so maybe things have changed. The thread:
->>
->> http://kerneltrap.org/mailarchive/linux-ext4/2010/5/28/6884603/thread
->>
->> Luckily JFS fixed there userland utilities bug of not being able to
->> handle > 32TiB very shortly after this and I ended up going that route
->> and I have yet to have any data loss or problems on my JFS volume:
->>
->> root@dekabutsu: 08:32 AM :~# df -H /data
->> Filesystem             Size   Used  Avail Use% Mounted on
->> /dev/sdd1               36T    22T    15T  61% /data
->> root@dekabutsu: 08:32 AM :~#
->>
->> At work with our hundreds/thousands of servers we will likely be going
->> ext4 as we wont be using it on >16 TiB. I think its a huge improvement
->> over ext3 but for my use JFS ended up being a better fit. I
->> refuse/refused to go XFS.
->>
->> On 12/19/2010 03:52 AM, Justin Piszcz wrote:
->>> Hi,
->>>
->>> I've read a lot of posts regarding people who setup RAID volumes of
->>> and up to around 16TB and EXT4 is typically used.
->>>
->>> However, in various forums, people still ask what is the correct
->>> filesystem for > 16TB?  I did read one post somewhere that stated the
->>> ext4 developers did not recommend using ext4 for very large volumes,
->>> is this still true?
->>>
->>> I am looking at creating a 43TB volume possibly in the near future and
->>> I have used XFS in the past, which works well and would probably not
->>> have any problem with it; however, I have bitten quite a number of
->>> times by XFS bugs in the past several years, so I was curious, how
->>> does EXT4 perform on larger volumes, e.g., 20TB?
->>>
->>> Are there any caveats / problems?
->>>
->>> Justin.
++UNUSUAL_DEV( 0x14cd, 0x6116, 0x0000, 0x9999,
++		"Super Top",
++		"USB 2.0  SATA BRIDGE",
++		US_SC_CYP_ATACB, US_PR_DEVICE, NULL, 0),
++
+  #endif /* defined(CONFIG_USB_STORAGE_CYPRESS_ATACB) || ... */
+
+-- 
+Regards,
+Richard Schütz
