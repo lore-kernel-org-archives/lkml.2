@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099Ab0LSNOU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 08:14:20 -0500
-Received: from hosting.visp.net.lb ([194.146.153.11]:46858 "EHLO
-	hosting.visp.net.lb" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755650Ab0LSNOT (ORCPT
+	id S1756643Ab0LSN1q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 08:27:46 -0500
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:34733 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755982Ab0LSN1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 08:14:19 -0500
-From: Denys Fedoryshchenko <nuclearcat@nuclearcat.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [Bug #21662] 2.6.35->2.6.36 regression, vanilla kernel panic, ppp or hrtimers crashing
-Date: Sun, 19 Dec 2010 15:14:10 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc6-git5-home1; KDE/4.4.5; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-References: <ZRNlsjykcOD.A.b-F.20fDNB@chimera> <xqq2Z3iR9HJ.A.WhG.q1fDNB@chimera>
-In-Reply-To: <xqq2Z3iR9HJ.A.WhG.q1fDNB@chimera>
+	Sun, 19 Dec 2010 08:27:45 -0500
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275dhz32i637h668h)
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LDOG23-01-GR9-02
+X-M-MSG: 
+Date: Sun, 19 Dec 2010 14:27:39 +0100
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>
+Subject: Re: [PATCH 0/2] oprofile, x86: updates for AMD family 15h systems
+Message-ID: <20101219132739.GC21053@erda.amd.com>
+References: <1291981746-22114-1-git-send-email-robert.richter@amd.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012191514.10820.nuclearcat@nuclearcat.com>
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1291981746-22114-1-git-send-email-robert.richter@amd.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 19 December 2010 14:50:26 Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.35 and 2.6.36.
+On 10.12.10 06:49:04, Robert Richter wrote:
+> (resending due to mail corruption)
 > 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.35 and 2.6.36.  Please verify if it still should
-> be listed and let the tracking team know (either way).
+> This patch set adds support for AMD family 15h systems. It adds cpu
+> detection code for family 15h and implements support for 6 counters.
 > 
+> Suravee already sent updates for the oprofile userland to the oprofile
+> mailing list.
 > 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=21662
-> Subject		: 2.6.35->2.6.36 regression, vanilla kernel panic, ppp or 
-hrtimers
-> crashing Submitter	: Denys Fedoryshchenko <nuclearcat@nuclearcat.com>
-> Date		: 2010-10-25 9:22 (56 days old)
-> Message-ID	: <201010251222.37191.nuclearcat@nuclearcat.com>
-> References	: http://marc.info/?l=linux-kernel&m=128799855826011&w=2
-It is fixed, i guess for 2.6.37, patch works for me.
+> Please review. If the patches are fine I will apply them to the
+> oprofile git repostitory on kernel.org.
 
-http://marc.info/?l=linux-netdev&m=129219516718477&w=2
-Andrej Ota (1):
-      pppoe.c: Fix kernel panic caused by __pppoe_xmit
-	
+I applied the patches to
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git core
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
