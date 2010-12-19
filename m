@@ -1,108 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932381Ab0LSSNG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 13:13:06 -0500
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:60967 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932328Ab0LSSNE (ORCPT
+	id S932397Ab0LSSTq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 13:19:46 -0500
+Received: from mail-gx0-f180.google.com ([209.85.161.180]:49935 "EHLO
+	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932375Ab0LSSTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 13:13:04 -0500
+	Sun, 19 Dec 2010 13:19:45 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=kMww24cx4tHVSy23Rb2H/RimZPYS8yVcFv58Y75jTkofCo31b/1vGEzzqHVH9nYtWq
-         GayYLRbrWIerfRPyT0VYZ6qtTYmo23tdX6GUjDMFqG4Dd7x+rczdqVRKHRaIoKXqdwHU
-         p/cVCTgUqkm8zMoo8UQp69345T3iqB24WSXHc=
-Date: Sun, 19 Dec 2010 21:13:00 +0300
-From: Alexey Charkov <alchark@gmail.com>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com
-Subject: [PATCH] fbdev: Minor cleanup in WM8505-related code
-Message-ID: <20101219181300.GA32645@alchark-u3s>
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=coLJafR9wj04X2+xm+uoOZ9crFkvPYaO/rMZzdY16xqQYnWZhDHTC9I/QS+XntTvs8
+         ivfPr6J3SzkeWM8mRxofPfk4ZMS+omwX5WY13l62bFZJ+8uBMfSxCbezaS14GZrsGvp1
+         qEtuAy+1cnOP/FkgEnTv/phhXJWtpyAEfLyjs=
+Message-ID: <4D0E4CBE.5060504@lwfinger.net>
+Date: Sun, 19 Dec 2010 12:19:42 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <gregkh@suse.de>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [Bug #22562] Regression in 2.6.37-rc1 - logs spammed with "unable
+ to enumerate USB port" - bisected to commit 3df7169e
+References: <wNJKqSoEutL.A.lKD.odfDNB@chimera> <6Ue85L6pKCJ.A.MoF.2ffDNB@chimera> <4D0E2DD7.4060607@lwfinger.net> <20101219163427.GA22994@suse.de>
+In-Reply-To: <20101219163427.GA22994@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes vsync timing calculation in wm8505fb.c (was off by one,
-which caused some flicker with larger panels) and replaces the last
-remaining driver name reference with the macro for uniformity.
+On 12/19/2010 10:34 AM, Greg KH wrote:
+> On Sun, Dec 19, 2010 at 10:07:51AM -0600, Larry Finger wrote:
+>>
+>> Yes, this regression is still present in 2.6.37-rc6. I'm trying to debug this
+>> with very little success.
+> 
+> To be fair, you seem to have the only machine with this problem :(
 
-In addition, the error return path in wmt_ge_rops.c is made more
-uniform by getting rid of goto's in remaining places.
+I know, which is why I feel that I need to debug it.
 
-Signed-off-by: Alexey Charkov <alchark@gmail.com>
----
-
-Paul, could you please apply this to your fbdev tree? The patch seems
-to be trivial, and it would bring the mainline code in line with what
-people use when pulling from our Gitorious development repo.
-
-Best regards,
-Alexey
-
-diff --git a/drivers/video/wm8505fb.c b/drivers/video/wm8505fb.c
-index e37251b..96e34a5 100644
---- a/drivers/video/wm8505fb.c
-+++ b/drivers/video/wm8505fb.c
-@@ -88,7 +88,7 @@ static int wm8505fb_set_timing(struct fb_info *info)
- 	int v_start = info->var.upper_margin;
- 	int v_end = v_start + info->var.yres;
- 	int v_all = v_end + info->var.lower_margin;
--	int v_sync = info->var.vsync_len + 1;
-+	int v_sync = info->var.vsync_len;
- 
- 	writel(0, fbi->regbase + WMT_GOVR_TG);
- 
-@@ -291,7 +291,7 @@ static int __devinit wm8505fb_probe(struct platform_device *pdev)
- 		goto failed_fbi;
- 	}
- 
--	res = request_mem_region(res->start, resource_size(res), "wm8505fb");
-+	res = request_mem_region(res->start, resource_size(res), DRIVER_NAME);
- 	if (res == NULL) {
- 		dev_err(&pdev->dev, "failed to request I/O memory\n");
- 		ret = -EBUSY;
-diff --git a/drivers/video/wmt_ge_rops.c b/drivers/video/wmt_ge_rops.c
-index f31883f..45832b7 100644
---- a/drivers/video/wmt_ge_rops.c
-+++ b/drivers/video/wmt_ge_rops.c
-@@ -127,13 +127,11 @@ EXPORT_SYMBOL_GPL(wmt_ge_sync);
- static int __devinit wmt_ge_rops_probe(struct platform_device *pdev)
- {
- 	struct resource *res;
--	int ret;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (res == NULL) {
- 		dev_err(&pdev->dev, "no I/O memory resource defined\n");
--		ret = -ENODEV;
--		goto error;
-+		return -ENODEV;
- 	}
- 
- 	/* Only one ROP engine is presently supported. */
-@@ -145,17 +143,13 @@ static int __devinit wmt_ge_rops_probe(struct platform_device *pdev)
- 	regbase = ioremap(res->start, resource_size(res));
- 	if (regbase == NULL) {
- 		dev_err(&pdev->dev, "failed to map I/O memory\n");
--		ret = -EBUSY;
--		goto error;
-+		return -EBUSY;
- 	}
- 
- 	writel(1, regbase + GE_ENABLE_OFF);
- 	printk(KERN_INFO "Enabled support for WMT GE raster acceleration\n");
- 
- 	return 0;
--
--error:
--	return ret;
- }
- 
- static int __devexit wmt_ge_rops_remove(struct platform_device *pdev)
+Larry
