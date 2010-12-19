@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932436Ab0LSTOP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 14:14:15 -0500
-Received: from lucidpixels.com ([75.144.35.66]:49331 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932396Ab0LSTOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 14:14:14 -0500
-Date: Sun, 19 Dec 2010 14:14:13 -0500 (EST)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Eric Sandeen <sandeen@sandeen.net>
-cc: Sandon Van Ness <sandon@van-ness.com>, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, Alan Piszcz <ap@solarrain.com>
-Subject: Re: Is EXT4 the right FS for > 16TB?
-In-Reply-To: <4D0E3A63.606@sandeen.net>
-Message-ID: <alpine.DEB.2.00.1012191412520.27130@p34.internal.lan>
-References: <alpine.DEB.2.00.1012190649060.5393@p34.internal.lan> <4D0E3435.30104@van-ness.com> <alpine.DEB.2.00.1012191151570.28865@p34.internal.lan> <4D0E3A63.606@sandeen.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S932444Ab0LSTQv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 14:16:51 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:37558 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S932396Ab0LSTQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 14:16:51 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1/52SQ1f2D5rYSSdlN9EULdexjnVkT3CkEGN1lkwA
+	xgPc2FlvBHetb2
+From: Peter Huewe <PeterHuewe@gmx.de>
+To: Axel Lin <axel.lin@gmail.com>
+Subject: Re: [PATCH] [ARM] Add missing include "asm/memory.h"
+Date: Sun, 19 Dec 2010 20:16:48 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36.2; KDE/4.4.5; x86_64; ; )
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+References: <1292566109.21261.1.camel@mola>
+In-Reply-To: <1292566109.21261.1.camel@mola>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012192016.49026.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am Freitag 17 Dezember 2010, 07:08:29 schrieb Axel Lin:
+> This patch fixes below build error by adding the missing asm/memory.h,
+> which is needed for arch_is_coherent().
+> 
+> $ make pxa3xx_defconfig; make
+>   CC      init/do_mounts_rd.o
+> In file included from include/linux/list_bl.h:5,
+>                  from include/linux/rculist_bl.h:7,
+>                  from include/linux/dcache.h:7,
+>                  from include/linux/fs.h:381,
+>                  from init/do_mounts_rd.c:3:
+> include/linux/bit_spinlock.h: In function 'bit_spin_unlock':
+> include/linux/bit_spinlock.h:61: error: implicit declaration of function
+> 'arch_is_coherent' make[1]: *** [init/do_mounts_rd.o] Error 1
+> make: *** [init] Error 2
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
+Looks good - compiles fine on
+arm (hackkit_defconfig and ep93xx_defconfig), 
 
-On Sun, 19 Dec 2010, Eric Sandeen wrote:
-
-> On 12/19/10 10:53 AM, Justin Piszcz wrote:
->> Hi,
->>
->> Wow, there were no updates though after Eric's last comment..
->> Eric, have there been any improvements in the past 6 months?
->>
->> Or should one still steer clear from EXT4 > 16TB?
->
-> There is still no released e2fsprogs which supports > 16T for
-> ext4, but testing of the not-released bits is welcomed...
-> Ted says a 16T-capable version is coming soon.  There's still
-> work to be done there, though.
->
-> -Eric
->
-
-Thanks Eric for confirming.
-
-With 7 x 3TB HDD its now possible to breach 16TB (16.38TB) in RAID-5 so I
-suppose more people may start asking about this.
-
-Justin.
-
+Acked-by: Peter Huewe <peterhuewe@gmx.de>
