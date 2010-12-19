@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757174Ab0LSE6h (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Dec 2010 23:58:37 -0500
-Received: from imr3.ericy.com ([198.24.6.13]:54688 "EHLO imr3.ericy.com"
+	id S1751164Ab0LSGI6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 01:08:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38787 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755293Ab0LSE6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Dec 2010 23:58:36 -0500
-Date: Sat, 18 Dec 2010 20:55:20 -0800
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: "R, Durgadoss" <durgadoss.r@intel.com>
-CC: "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Patch[1/2] Adding_threshold_support_to_coretemp
-Message-ID: <20101219045520.GA16890@ericsson.com>
-References: <D6D887BA8C9DFF48B5233887EF04654105C1173BCD@bgsmsx502.gar.corp.intel.com>
+	id S1750809Ab0LSGI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 01:08:57 -0500
+Message-ID: <4D0DA15B.7080401@redhat.com>
+Date: Sun, 19 Dec 2010 08:08:27 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <D6D887BA8C9DFF48B5233887EF04654105C1173BCD@bgsmsx502.gar.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mike Galbraith <mgalbraith@suse.de>
+CC: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Chris Wright <chrisw@sous-sol.org>
+Subject: Re: [RFC -v2 PATCH 2/3] sched: add yield_to function
+References: <20101213224434.7495edb2@annuminas.surriel.com>	 <20101213224657.7e141746@annuminas.surriel.com>	 <1292306896.7448.157.camel@marge.simson.net> <4D0A6D34.6070806@redhat.com>	 <1292569018.7772.75.camel@marge.simson.net>	 <1292570143.7772.84.camel@marge.simson.net>  <4D0CEA7F.9080603@redhat.com> <1292699629.1181.58.camel@marge.simson.net>
+In-Reply-To: <1292699629.1181.58.camel@marge.simson.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 18, 2010 at 09:09:59AM -0500, R, Durgadoss wrote:
-> Hi,
-> 
-> I am submitting a patch to enable core thermal threshold
-> Support to coretemp.c. There are two core thermal thresholds
-> available through sysfs interfaces temp1_max and temp1_max_hyst.
-> The temp1_max_alarm is set when temperature reaches or crosses
-> above temp1_max or drops below temp1_max_hyst.
-> 
-> This patch is generated against stable Linux-2.6 kernel.
-> 
-> Kindly review and merge.
-> ----------------------------------------------------------------
-> From: Durgadoss R <durgadoss.r@intel.com>
-> 
-> Date: Sat, 18 Dec 2010 06:45:41 +0530
-> Subject: PATCH[1/2] Adding_Threshold_Support_to_Coretemp
-> 
-> This patch adds core thermal threshold support to coretemp.
-> These thresholds can be configured via the sysfs interfaces temp1_max
-> and temp1_max_hyst. An interrupt is generated when CPU temperature reaches
-> or crosses above temp1_max and drops below temp1_max_hyst.
-> 
-> Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
-> 
-Unfortunately, with this headline and description, the x86 folks will probably
-not even look at your patch, since they won't suspect that x86 platform code
-is affected.
+On 12/18/2010 09:13 PM, Mike Galbraith wrote:
+> On Sat, 2010-12-18 at 19:08 +0200, Avi Kivity wrote:
+> >  On 12/17/2010 09:15 AM, Mike Galbraith wrote:
+> >  >  BTW, with this vruntime donation thingy, what prevents a task from
+> >  >  forking off accomplices who do nothing but wait for a wakeup and
+> >  >  yield_to(exploit)?
+> >  >
+> >
+> >  What's the difference between that and forking off accomplices who
+> >  run(exploit) directly?
+>
+> The clock still advances.  What I described is a clock stopper.
 
-I would suggest to split this patch in two parts, one affecting the x86 code
-and the second for the hwmon code. The headline for the x86 patch should show
-that it is a x86 patch, ie the text should start with x86: (and the hwmon
-patches should really start with hwmon: for hwmon patches).
+That's scheduler jargon, I'm not familiar with scheduler internals.  
+Let's talk about this at a high level, since whenever I describe it in 
+scheduler terms I'm likely to get it wrong.
 
-Guenter
+If there are N tasks on the machine, each is entitled to 1/N of the 
+machine's cpu resources (ignoring nice and cgroups for the moment).  
+What I'd like is for one task to temporarily pass a portion of its 
+entitlement to another.  No other task's entitlement is affected; they 
+still get their 1/N.
+
+If a task donates its entitlement and immediately commits suicide, still 
+we won't have fundamentally changed anything; the task could have kept 
+itself alive and consumed that entitlement, so the scheduler was already 
+prepared to give it this entitlement so nothing was gained by the 
+forking task.  The problem of fork() creating new entitlements out of 
+thin air has nothing to do with directed yield, and is solved by cgroups.
+
+We already do something similar with priority inheritance.  This doesn't 
+involve cpu entitlement, but we have the same situation where a task's 
+ability to make progress depends on another task receiving cpu time.
+
+
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
+
