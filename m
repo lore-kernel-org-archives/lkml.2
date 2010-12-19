@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932405Ab0LSSgY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 13:36:24 -0500
-Received: from hapkido.dreamhost.com ([66.33.216.122]:39471 "EHLO
-	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932242Ab0LSSgX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 13:36:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=sqlcertification.net; h=from:to
-	:subject:date:content-type:content-transfer-encoding:message-id;
-	 q=dns; s=sqlcertification.net; b=cMaM/bLuOS1bdMnvFfpzBYa6HU33Ad
-	fH+h6GPIZF8plwIfcfQ+rIyVnTt9tCp41Xtup9DZtjrsJJ9F4byA6Tv9d4nRBvAB
-	RU0nsctFg4GtdtcAGHqfiD32dwZwOK9ruiATq85RiH9XoxzOGoPjbSgfcrK+vrJQ
-	OnewnRMuS06to=
-From: "Michele Rouse" <michele@sqlcertification.net>
-To: <linux-kernel@vger.kernel.org>
-Subject: osgalaxy.com feedback
-Date: Sun, 19 Dec 2010 19:35:26 +0100
-Content-Type: text/plain;
-	charset="iso-8859-1"
-Message-ID: <E2C53B10.1CB9FB3@PC-Enrico>
-X-Mailer: AMLC
+	id S932404Ab0LSSos (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 13:44:48 -0500
+Received: from mail.lang.hm ([64.81.33.126]:45681 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932242Ab0LSSor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 13:44:47 -0500
+Date: Sun, 19 Dec 2010 10:43:40 -0800 (PST)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Willy Tarreau <w@1wt.eu>
+cc: Greg KH <greg@kroah.com>, Andi Kleen <andi@firstfloor.org>,
+        Serge Belyshev <belyshev@depni.sinp.msu.ru>,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [stable] [ANNOUNCE] Linux 2.6.35.10 has been released
+In-Reply-To: <20101219165653.GK26410@1wt.eu>
+Message-ID: <alpine.DEB.2.00.1012191040410.16878@asgard.lang.hm>
+References: <20101214232747.GA18757@basil.fritz.box> <877hf66929.fsf@depni.sinp.msu.ru> <20101219002146.GA11568@kroah.com> <20101219103609.GB28751@basil.fritz.box> <20101219163935.GA23359@kroah.com> <20101219165653.GK26410@1wt.eu>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id oBJIagX8003024
 
-Hi, my name is Michele and I'm one of osgalaxy.com readers.
+On Sun, 19 Dec 2010, Willy Tarreau wrote:
 
-I'd like to thank you for the excellent information I've found
-on osgalaxy.com, It's always a great pleasure to read your articles
-and I count to become a loyal reader.
+> On Sun, Dec 19, 2010 at 08:39:35AM -0800, Greg KH wrote:
+>> On Sun, Dec 19, 2010 at 11:36:10AM +0100, Andi Kleen wrote:
+>>> On Sat, Dec 18, 2010 at 04:21:46PM -0800, Greg KH wrote:
+>>>>> Could you please update this tree:
+>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.35.y.git ?
+>>>>
+>>>> No, the "stable" trees are not being updated anymore, they have moved to
+>>>> the longterm git directory instead.
+>>>
+>>> It would be good if the old stable git tree for 2.6.35 was deleted to avoid
+>>> confusion. Greg, what do you think?
+>>
+>> No, we have never deleted any of the other trees when we "stopped"
+>> maintaining them, so we shouldn't delete these either.
+>>
+>> I need to look this week at using git notes to mark trees as unsupported
+>> or supported in a way that will work well.  That should solve this issue
+>> as the note could also say 'go look at the longterm kernel' as well.
+>
+> Once again, I think it's not too late to replace the old trees with a
+> symlink to the new one (or the opposite), considering that users have
+> not updated their scripts yet. Also I'm realizing it's a bit bothering
+> as a user to have to change the address of the remote when tracking such
+> a branch.
 
-I live in Danville, VA where I try to increase the awareness on
-SQL Server and DB careers among my family and friends.
+the bigger problem is realizing that you need to change the remote.
 
-I figured you might be interested in including a guest article
-for osgalaxy.com about the benefits of the new MS SQL Server Certification.
+the old way, all the stable kernels were togeather, and new ones (of any 
+branch) would show up whenever they were released.
 
-Article in form of a little guide to help your readers to experience
-with this topic and perhaps discuss the topic at hand.
+if we (the users) now have to setup a different remote for each person who 
+manages a tree, things are getting significantly more complex (and more 
+fragmented)
 
-Please, take a minute to consider this; any support would be appreciated.
+If there is any way that all the stable and long term trees can be kept 
+under the -stable location it would be great.
 
-With your support we can educate the public about new ways to learn SQL
-and hopefully help someone get a job.
+the next best would be to have a -longterm like stable. But if that can be 
+done, it should be pretty easy to then combine it with -stable as well, 
+and _far_ more convienient for the users.
 
-Either way, thanks for reading and keep posting your excellent
-information on osgalaxy.com.
-
-Hope you a good week.
-Sincerely
-Michele Rouse
-
+David Lang
