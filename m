@@ -1,70 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757222Ab0LSVUH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 16:20:07 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58995 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756728Ab0LSVUF (ORCPT
+	id S1757265Ab0LSVWd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 16:22:33 -0500
+Received: from nm7-vm0.bullet.mail.ac4.yahoo.com ([98.139.52.228]:29094 "HELO
+	nm7-vm0.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757251Ab0LSVWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 16:20:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1012142219240.10437@xanadu.home>
-References: <alpine.LFD.2.00.1012142219240.10437@xanadu.home>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 19 Dec 2010 13:19:42 -0800
-Message-ID: <AANLkTik8Jd4Q4xVZqTCw=gMP6z_ZLv=nn+zN2tVLfi1M@mail.gmail.com>
-Subject: Re: [PATCH] clarify a usage constraint for cnt32_to_63()
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: David Howells <dhowells@redhat.com>, lkml <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=0022152d6f5d78ffe20497c9f776
+	Sun, 19 Dec 2010 16:22:31 -0500
+X-Yahoo-Newman-Id: 303273.80993.bm@omp1029.mail.ac4.yahoo.com
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: UP8gN0gVM1kOG7V3UkgPFD6UiUOG6VfTkrjLz9U9KPkJJrW
+ 9FQuWoHQTsyvn515DAfAkPXRmJuolLVeq1.j7DwDkxSk5APbchfz.uBpWOqS
+ zThd8xi_pSqKt96.MbCSb2DYsjhZitB9Dxfa7uBtEBRH799zzb2ktC_OOE1n
+ hjzpBEgt5pUn9LdNMowY6krT1TTckud1vcSgwrlfJYjp_9w2zLu7.3Xpdy4Q
+ syFXi.q3Pa.nVd8ukUUwfdSs85TwocrJFghAeuz4sWTXemdLlyG2kWUYM4DD
+ .szp6q8rjkgt4jbZnK3Y.htAzf4P2AHJHOpYZdtTQPicMlCIWWo1KcaOSgyG
+ ESntqkbar_a9xTZ.lYPzk38ekfkLMSlyrgqKwcXEcGn35jUOHRkg029VzryZ
+ lh6Qts_iZeiu05LK.AgvHTKiXGE_cfU_BR6Sr4uT8sZPjJQk-
+X-Yahoo-Newman-Property: ymail-3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jeff Garzik <jeff@garzik.org>, Christoph Hellwig <hch@lst.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Mike Christie <michaelc@cs.wisc.edu>
+Cc: Mike Anderson <andmike@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Ravi Anand <ravi.anand@qlogic.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        Joe Eykholt <jeykholt@cisco.com>, James Smart <james.smart@emulex.com>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        adam radford <aradford@gmail.com>,
+        Kashyap Desai <Kashyap.Desai@lsi.com>,
+        MPTFusionLinux <DL-MPTFusionLinux@lsi.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 03/12] libsas: Convert to host_lock less w/ interrupts disabled externally
+Date: Sun, 19 Dec 2010 13:21:58 -0800
+Message-Id: <1292793727-31957-4-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org>
+References: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0022152d6f5d78ffe20497c9f776
-Content-Type: text/plain; charset=ISO-8859-1
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-On Tue, Dec 14, 2010 at 7:44 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
->
-> The cnt32_to_63 algorithm relies on proper counter data evaluation
-> ordering to work properly. This was missing from the provided
-> documentation.
->
-> Let's augment the documentation with the missing usage constraint and
-> fix the only instance that got it wrong.
+This patch converts the libsas queuecommand to run in host_lock less mode
+w/ the new IRQ_DISABLE_SCSI_QCMD() that disables interrupts while calling
+->queuecommand() dispatch.
 
-Hmm. In the meantime, mn10300 seems to have changed its get_cycles()
-to count up like a normal architecture.
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ drivers/scsi/libsas/sas_scsi_host.c |   12 ++----------
+ 1 files changed, 2 insertions(+), 10 deletions(-)
 
-So I _think_ the nm10300 part of the patch should now look like the
-attached. Untested. I'd like to get an ack from David or at least
-somebody who compiles (and preferably tests) mn10300. And then
-preferably a re-send of the whole patch.
+diff --git a/drivers/scsi/libsas/sas_scsi_host.c b/drivers/scsi/libsas/sas_scsi_host.c
+index 29251fa..011580f 100644
+--- a/drivers/scsi/libsas/sas_scsi_host.c
++++ b/drivers/scsi/libsas/sas_scsi_host.c
+@@ -185,24 +185,17 @@ int sas_queue_up(struct sas_task *task)
+ /**
+  * sas_queuecommand -- Enqueue a command for processing
+  * @parameters: See SCSI Core documentation
+- *
+- * Note: XXX: Remove the host unlock/lock pair when SCSI Core can
+- * call us without holding an IRQ spinlock...
+  */
+-static int sas_queuecommand_lck(struct scsi_cmnd *cmd,
++static int sas_queuecommand_irq_disable(struct scsi_cmnd *cmd,
+ 		     void (*scsi_done)(struct scsi_cmnd *))
+-	__releases(host->host_lock)
+ 	__acquires(dev->sata_dev.ap->lock)
+ 	__releases(dev->sata_dev.ap->lock)
+-	__acquires(host->host_lock)
+ {
+ 	int res = 0;
+ 	struct domain_device *dev = cmd_to_domain_dev(cmd);
+ 	struct Scsi_Host *host = cmd->device->host;
+ 	struct sas_internal *i = to_sas_internal(host->transportt);
+ 
+-	spin_unlock_irq(host->host_lock);
+-
+ 	{
+ 		struct sas_ha_struct *sas_ha = dev->port->ha;
+ 		struct sas_task *task;
+@@ -250,11 +243,10 @@ static int sas_queuecommand_lck(struct scsi_cmnd *cmd,
+ 		}
+ 	}
+ out:
+-	spin_lock_irq(host->host_lock);
+ 	return res;
+ }
+ 
+-DEF_SCSI_QCMD(sas_queuecommand)
++IRQ_DISABLE_SCSI_QCMD(sas_queuecommand)
+ 
+ static void sas_eh_finish_cmd(struct scsi_cmnd *cmd)
+ {
+-- 
+1.7.3.4
 
-Hmm?
-
-                          Linus
-
---0022152d6f5d78ffe20497c9f776
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_ghwfvuiq0
-
-IGFyY2gvbW4xMDMwMC9rZXJuZWwvdGltZS5jIHwgICAgOCArKy0tLS0tLQogMSBmaWxlcyBjaGFu
-Z2VkLCAyIGluc2VydGlvbnMoKyksIDYgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvYXJjaC9t
-bjEwMzAwL2tlcm5lbC90aW1lLmMgYi9hcmNoL21uMTAzMDAva2VybmVsL3RpbWUuYwppbmRleCBm
-ODYwYTM0Li41MTE0ZWI4IDEwMDY0NAotLS0gYS9hcmNoL21uMTAzMDAva2VybmVsL3RpbWUuYwor
-KysgYi9hcmNoL21uMTAzMDAva2VybmVsL3RpbWUuYwpAQCAtNDAsMjEgKzQwLDE3IEBAIHVuc2ln
-bmVkIGxvbmcgbG9uZyBzY2hlZF9jbG9jayh2b2lkKQogCQl1bnNpZ25lZCBsb25nIGxvbmcgbGw7
-CiAJCXVuc2lnbmVkIGxbMl07CiAJfSB0c2M2NCwgcmVzdWx0OwotCXVuc2lnbmVkIGxvbmcgdHNj
-LCB0bXA7CisJdW5zaWduZWQgbG9uZyB0bXA7CiAJdW5zaWduZWQgcHJvZHVjdFszXTsgLyogOTYt
-Yml0IGludGVybWVkaWF0ZSB2YWx1ZSAqLwogCiAJLyogY250MzJfdG9fNjMoKSBpcyBub3Qgc2Fm
-ZSB3aXRoIHByZWVtcHRpb24gKi8KIAlwcmVlbXB0X2Rpc2FibGUoKTsKIAotCS8qIHJlYWQgdGhl
-IFRTQyB2YWx1ZQotCSAqLwotCXRzYyA9IGdldF9jeWNsZXMoKTsKLQogCS8qIGV4cGFuZCB0byA2
-NC1iaXRzLgogCSAqIC0gc2NoZWRfY2xvY2soKSBtdXN0IGJlIGNhbGxlZCBvbmNlIGEgbWludXRl
-IG9yIGJldHRlciBvciB0aGUKIAkgKiAgIGZvbGxvd2luZyB3aWxsIGdvIGhvcnJpYmx5IHdyb25n
-IC0gc2VlIGNudDMyX3RvXzYzKCkKIAkgKi8KLQl0c2M2NC5sbCA9IGNudDMyX3RvXzYzKHRzYykg
-JiAweDdmZmZmZmZmZmZmZmZmZmZVTEw7CisJdHNjNjQubGwgPSBjbnQzMl90b182MyhnZXRfY3lj
-bGVzKCkpICYgMHg3ZmZmZmZmZmZmZmZmZmZmVUxMOwogCiAJcHJlZW1wdF9lbmFibGUoKTsKIAo=
---0022152d6f5d78ffe20497c9f776--
