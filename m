@@ -1,45 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757039Ab0LSQsS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 11:48:18 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:47133 "EHLO mail.skyhub.de"
+	id S932295Ab0LSQxM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 11:53:12 -0500
+Received: from lucidpixels.com ([75.144.35.66]:37182 "EHLO lucidpixels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756664Ab0LSQsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 11:48:17 -0500
-Date: Sun, 19 Dec 2010 17:48:12 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Daniel J Blueman <daniel.blueman@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [2.6.37-rc6] led_trigger_unregister protection fault...
-Message-ID: <20101219164812.GA24894@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Daniel J Blueman <daniel.blueman@gmail.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <AANLkTinz5aj9MDXCxogYgLypF7x4BwscR6Ndu5R6ybcA@mail.gmail.com>
+	id S1752877Ab0LSQxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 11:53:10 -0500
+Date: Sun, 19 Dec 2010 11:53:09 -0500 (EST)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Sandon Van Ness <sandon@van-ness.com>
+cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Alan Piszcz <ap@solarrain.com>, Eric Sandeen <sandeen@sandeen.net>
+Subject: Re: Is EXT4 the right FS for > 16TB?
+In-Reply-To: <4D0E3435.30104@van-ness.com>
+Message-ID: <alpine.DEB.2.00.1012191151570.28865@p34.internal.lan>
+References: <alpine.DEB.2.00.1012190649060.5393@p34.internal.lan> <4D0E3435.30104@van-ness.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <AANLkTinz5aj9MDXCxogYgLypF7x4BwscR6Ndu5R6ybcA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 19, 2010 at 12:55:43PM +0000, Daniel J Blueman wrote:
-> With 2.6.37-rc6, when hot-removing the battery on my Studio 1557 i7
-> laptop with AC power, kworker/0:2 hit a protection fault in
-> led_trigger_unregister_oops [1].
+Hi,
 
-Got the same oops and started analyzing it but the oops in
-led_trigger_unregister() is actually the third one in a row when
-unplugging the battery.
+Wow, there were no updates though after Eric's last comment..
+Eric, have there been any improvements in the past 6 months?
 
-See http://marc.info/?l=linux-kernel&m=129276362410145 for a complete
-oops. You might want to try the patch there to see if it fixes the issue
-for you too.
+Or should one still steer clear from EXT4 > 16TB?
 
-Thanks.
+Justin.
 
--- 
-Regards/Gruss,
-    Boris.
+On Sun, 19 Dec 2010, Sandon Van Ness wrote:
+
+> Was it me (houkouonchi) on hard forum? I asked if > 16 TiB support was
+> considered stable on here a while back:
+>
+> Is >16TB support considered stable?
+>
+> This was 6 months ago so maybe things have changed. The thread:
+>
+> http://kerneltrap.org/mailarchive/linux-ext4/2010/5/28/6884603/thread
+>
+> Luckily JFS fixed there userland utilities bug of not being able to
+> handle > 32TiB very shortly after this and I ended up going that route
+> and I have yet to have any data loss or problems on my JFS volume:
+>
+> root@dekabutsu: 08:32 AM :~# df -H /data
+> Filesystem             Size   Used  Avail Use% Mounted on
+> /dev/sdd1               36T    22T    15T  61% /data
+> root@dekabutsu: 08:32 AM :~#
+>
+> At work with our hundreds/thousands of servers we will likely be going
+> ext4 as we wont be using it on >16 TiB. I think its a huge improvement
+> over ext3 but for my use JFS ended up being a better fit. I
+> refuse/refused to go XFS.
+>
+> On 12/19/2010 03:52 AM, Justin Piszcz wrote:
+>> Hi,
+>>
+>> I've read a lot of posts regarding people who setup RAID volumes of
+>> and up to around 16TB and EXT4 is typically used.
+>>
+>> However, in various forums, people still ask what is the correct
+>> filesystem for > 16TB?  I did read one post somewhere that stated the
+>> ext4 developers did not recommend using ext4 for very large volumes,
+>> is this still true?
+>>
+>> I am looking at creating a 43TB volume possibly in the near future and
+>> I have used XFS in the past, which works well and would probably not
+>> have any problem with it; however, I have bitten quite a number of
+>> times by XFS bugs in the past several years, so I was curious, how
+>> does EXT4 perform on larger volumes, e.g., 20TB?
+>>
+>> Are there any caveats / problems?
+>>
+>> Justin.
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
