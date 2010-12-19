@@ -1,90 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932295Ab0LSQxM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 11:53:12 -0500
-Received: from lucidpixels.com ([75.144.35.66]:37182 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752877Ab0LSQxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 11:53:10 -0500
-Date: Sun, 19 Dec 2010 11:53:09 -0500 (EST)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Sandon Van Ness <sandon@van-ness.com>
-cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>, Eric Sandeen <sandeen@sandeen.net>
-Subject: Re: Is EXT4 the right FS for > 16TB?
-In-Reply-To: <4D0E3435.30104@van-ness.com>
-Message-ID: <alpine.DEB.2.00.1012191151570.28865@p34.internal.lan>
-References: <alpine.DEB.2.00.1012190649060.5393@p34.internal.lan> <4D0E3435.30104@van-ness.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+	id S1757071Ab0LSQyP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 11:54:15 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:36224 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752390Ab0LSQyO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 11:54:14 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=DtEC4zB7DsVwZ82u6y/HFgbuxVk6z5/JVgBJ7lfGVsYolbXeK2npf2Q/yWuaBUOmTC
+         hhYsEytGNEh09Vl3EN+YMH7bMj0KNa7cMo0y1mRXncIK3MupCDYzAM/DwNGr2C/qKNbz
+         MSqB+qWMKiZ/O15Ox3Ybd6NMQIj4Uue1QFXa0=
+Subject: Re: mtd: fix CONFIG_MTD_COMPLEX_MAPPINGS=n compile
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Jason Lunz <lunz@acm.org>
+Cc: Anatolij Gustschin <agust@denx.de>, atom ota <atomota@sleepyhammer.com>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Sam Ravnborg <sam@ravnborg.org>, Jeff Dike <jdike@addtoit.com>,
+        lkml <linux-kernel@vger.kernel.org>, linux-mtd@lists.infradead.org,
+        Rob Landley <rob@landley.net>, David Woodhouse <dwmw2@infradead.org>
+In-Reply-To: <20101217042759.GA3148@falooley.org>
+References: <20071024011712.GA3762@falooley.org>
+	 <1193208689.26096.48.camel@pmac.infradead.org>
+	 <20071227181524.GA19051@falooley.org>
+	 <20071228174853.GA4252@uranus.ravnborg.org>
+	 <20101207072919.GA8511@falooley.org>
+	 <AANLkTineLxHdcDKZEUGiqVNAauSX_xyQrs49kKaqhiWo@mail.gmail.com>
+	 <20101207182012.GA10546@falooley.org> <1292343878.2538.80.camel@localhost>
+	 <20101214195124.GA6010@falooley.org> <20101216230110.65156c55@wker>
+	 <20101217042759.GA3148@falooley.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 19 Dec 2010 18:47:56 +0200
+Message-ID: <1292777276.2140.1.camel@koala>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2010-12-16 at 20:27 -0800, Jason Lunz wrote:
+> On Thu, Dec 16, 2010 at 11:01:10PM +0100, Anatolij Gustschin wrote:
+> > This change breaks compiling when CONFIG_MTD_COMPLEX_MAPPINGS is not
+> > defined in the kernel configuration. Please fix!
+> 
+> Sorry, sloppy of me. This reverts all changes to mtd.h while keeping the
+> ability to compile mtd on ARCH=um, with the exception mtdchar.
 
-Wow, there were no updates though after Eric's last comment..
-Eric, have there been any improvements in the past 6 months?
+Merged with the previous patch, thanks.
 
-Or should one still steer clear from EXT4 > 16TB?
+-- 
+Best Regards,
+Artem Bityutskiy (Битюцкий Артём)
 
-Justin.
-
-On Sun, 19 Dec 2010, Sandon Van Ness wrote:
-
-> Was it me (houkouonchi) on hard forum? I asked if > 16 TiB support was
-> considered stable on here a while back:
->
-> Is >16TB support considered stable?
->
-> This was 6 months ago so maybe things have changed. The thread:
->
-> http://kerneltrap.org/mailarchive/linux-ext4/2010/5/28/6884603/thread
->
-> Luckily JFS fixed there userland utilities bug of not being able to
-> handle > 32TiB very shortly after this and I ended up going that route
-> and I have yet to have any data loss or problems on my JFS volume:
->
-> root@dekabutsu: 08:32 AM :~# df -H /data
-> Filesystem             Size   Used  Avail Use% Mounted on
-> /dev/sdd1               36T    22T    15T  61% /data
-> root@dekabutsu: 08:32 AM :~#
->
-> At work with our hundreds/thousands of servers we will likely be going
-> ext4 as we wont be using it on >16 TiB. I think its a huge improvement
-> over ext3 but for my use JFS ended up being a better fit. I
-> refuse/refused to go XFS.
->
-> On 12/19/2010 03:52 AM, Justin Piszcz wrote:
->> Hi,
->>
->> I've read a lot of posts regarding people who setup RAID volumes of
->> and up to around 16TB and EXT4 is typically used.
->>
->> However, in various forums, people still ask what is the correct
->> filesystem for > 16TB?  I did read one post somewhere that stated the
->> ext4 developers did not recommend using ext4 for very large volumes,
->> is this still true?
->>
->> I am looking at creating a 43TB volume possibly in the near future and
->> I have used XFS in the past, which works well and would probably not
->> have any problem with it; however, I have bitten quite a number of
->> times by XFS bugs in the past several years, so I was curious, how
->> does EXT4 perform on larger volumes, e.g., 20TB?
->>
->> Are there any caveats / problems?
->>
->> Justin.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
