@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932441Ab0LSVWi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 16:22:38 -0500
-Received: from nm3-vm0.bullet.mail.ac4.yahoo.com ([98.139.53.204]:41174 "HELO
-	nm3-vm0.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757055Ab0LSVWg (ORCPT
+	id S1757289Ab0LSVWq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 16:22:46 -0500
+Received: from nm7-vm0.bullet.mail.ac4.yahoo.com ([98.139.52.228]:29300 "HELO
+	nm7-vm0.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932479Ab0LSVWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 16:22:36 -0500
-X-Yahoo-Newman-Id: 932949.65065.bm@omp1064.mail.ac4.yahoo.com
+	Sun, 19 Dec 2010 16:22:44 -0500
+X-Yahoo-Newman-Id: 852828.32477.bm@omp1067.mail.ac4.yahoo.com
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: 6dzs.FgVM1mxfO6qdlgZUQsyJ_64aAD9Ozj3xhTEo0F1PjQ
- spaCS7rLul6zOR5JBi9gSml49IsHuvEtI10LSAiLkiSv9R4jdR_rZ.QCCVbA
- K8fAzyfsHMQmYMMNlHfYIJsV9JHR_eIr1AuVUpZvgtZQl3Ga_0ZJrD548QNJ
- JLKvw4rm3hbh1oc5s1XaXvhf0LFDWELFW3k3FIXmwz3T5DiGTPvDGQiR34wi
- FadXfaVE27dT8IWKxpUjNDPkubmlpq_pWDe8ttAo4UdJwsDnH8THCjxTLGPO
- lCX0U5jcIi7S83LdcxNsrZ3UAMt4IXY.Sin1R.xMWXk2xvuDs4wlNw12.34J
- adiJdkwqvqT3bR5CEQwSCUb_0CZI6oM854N3GRHVtutJGldStA1cIRMy5Bbn
- 1OLArQGP5dgq0jdvywokrPIlB_htVDPhtIo2bqOhxA_mgXS9KmCG_UUwzblG
- MJfAdzP3SGrqy8PtDtzIXgq8Fs17GUpveHkiQ4lu7hjjza6qIwRYhHnrn0L1
- f04fxHiv.hSOHCsvsFF8-
+X-YMail-OSG: gf_47qsVM1nlDH40ena0t81djqogN36AzwRLIHGt5mrRciF
+ xEQ91bPRFjkNtYP8c.iw9F8YAEiGqKjmtk4k1QCuBQMV_koQf9i1q80A_YX2
+ JcTfSDZLVb0K.pQiH8oXAJaoelL0a3YQ1i5we1sUFPQMqGg.jnveJIuXIIY3
+ PAN0LJlFAf1b.oe.rO7kOBQ4RAl0jW7In8GHhTaOJ8O2TUN8XFD2wPJtIIpv
+ 0MplfyXfPqREskSKuanBe3a0ORIfSbLXlAYPUlUCNAuAgu48gaFUN2jBV_W9
+ F5GUEvJLS7VUNuGDCxnMW1o3LoeoPpMllYfEMM8EeeTVarwp46txwCxQU5LJ
+ YjlLvcXYc2_zcdYR1wsgaNfWXI8voyarTwduKGsLuekSunG_7fZop0PVbDuK
+ nqAJdDmmkCFLdtc6.SoYRWaEhCHyKJKtOyRJ.0fBIuCnNJjoElJ.UP2YBVg-
+ -
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -38,9 +37,9 @@ Cc: Mike Anderson <andmike@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
         Kashyap Desai <Kashyap.Desai@lsi.com>,
         MPTFusionLinux <DL-MPTFusionLinux@lsi.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 04/12] message: Convert to host_lock less w/ interrupts disabled externally
-Date: Sun, 19 Dec 2010 13:21:59 -0800
-Message-Id: <1292793727-31957-5-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 06/12] lpfc: Convert to host_lock less w/ interrupts disabled externally
+Date: Sun, 19 Dec 2010 13:22:01 -0800
+Message-Id: <1292793727-31957-7-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org>
 References: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org>
@@ -50,133 +49,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch converts the message/fusion mptsas, mptscsih and mptspi
-to run in host_lock less mode with the new IRQ_DISABLE_SCSI_QCMD()
-that disables interrupts while calling ->queuecommand() dispatch.
-
-Note that mptfc.c is left out as it checks libfc rport state, which
-for the moment still needs the host lock.
+This patch converts lpfc to run in host_lock less mode with the new
+IRQ_DISABLE_SCSI_QCMD() that disables interrupts while calling ->queuecommand()
+dispatch.  It also drops the legacy host_lock unlock optimization around
+lpfc_sli_handle_fast_ring_event().
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/message/fusion/mptfc.c    |    2 +-
- drivers/message/fusion/mptsas.c   |    6 +++---
- drivers/message/fusion/mptscsih.c |    8 +++++---
- drivers/message/fusion/mptscsih.h |    2 +-
- drivers/message/fusion/mptspi.c   |    6 +++---
- 5 files changed, 13 insertions(+), 11 deletions(-)
+ drivers/scsi/lpfc/lpfc_scsi.c |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/message/fusion/mptfc.c b/drivers/message/fusion/mptfc.c
-index d784c36..349b3c7 100644
---- a/drivers/message/fusion/mptfc.c
-+++ b/drivers/message/fusion/mptfc.c
-@@ -677,7 +677,7 @@ mptfc_qcmd_lck(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_cmnd *))
- 		return 0;
+diff --git a/drivers/scsi/lpfc/lpfc_scsi.c b/drivers/scsi/lpfc/lpfc_scsi.c
+index 581837b..62a62e9 100644
+--- a/drivers/scsi/lpfc/lpfc_scsi.c
++++ b/drivers/scsi/lpfc/lpfc_scsi.c
+@@ -2886,7 +2886,7 @@ void lpfc_poll_timeout(unsigned long ptr)
+ }
+ 
+ /**
+- * lpfc_queuecommand - scsi_host_template queuecommand entry point
++ * lpfc_queuecommand_irq_disable - scsi_host_template queuecommand entry point
+  * @cmnd: Pointer to scsi_cmnd data structure.
+  * @done: Pointer to done routine.
+  *
+@@ -2899,7 +2899,8 @@ void lpfc_poll_timeout(unsigned long ptr)
+  *   SCSI_MLQUEUE_HOST_BUSY - Block all devices served by this host temporarily.
+  **/
+ static int
+-lpfc_queuecommand_lck(struct scsi_cmnd *cmnd, void (*done) (struct scsi_cmnd *))
++lpfc_queuecommand_irq_disable(struct scsi_cmnd *cmnd,
++			void (*done) (struct scsi_cmnd *))
+ {
+ 	struct Scsi_Host  *shost = cmnd->device->host;
+ 	struct lpfc_vport *vport = (struct lpfc_vport *) shost->hostdata;
+@@ -3038,11 +3039,9 @@ lpfc_queuecommand_lck(struct scsi_cmnd *cmnd, void (*done) (struct scsi_cmnd *))
+ 		goto out_host_busy_free_buf;
  	}
+ 	if (phba->cfg_poll & ENABLE_FCP_RING_POLLING) {
+-		spin_unlock(shost->host_lock);
+ 		lpfc_sli_handle_fast_ring_event(phba,
+ 			&phba->sli.ring[LPFC_FCP_RING], HA_R0RE_REQ);
  
--	return mptscsih_qcmd(SCpnt,done);
-+	return mptscsih_qcmd(SCpnt->device->host, SCpnt);
+-		spin_lock(shost->host_lock);
+ 		if (phba->cfg_poll & DISABLE_FCP_RING_INT)
+ 			lpfc_poll_rearm_timer(phba);
+ 	}
+@@ -3060,7 +3059,7 @@ lpfc_queuecommand_lck(struct scsi_cmnd *cmnd, void (*done) (struct scsi_cmnd *))
+ 	return 0;
  }
  
- static DEF_SCSI_QCMD(mptfc_qcmd)
-diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
-index d48c2c6..f0d205e 100644
---- a/drivers/message/fusion/mptsas.c
-+++ b/drivers/message/fusion/mptsas.c
-@@ -1889,7 +1889,7 @@ mptsas_slave_alloc(struct scsi_device *sdev)
- }
- 
- static int
--mptsas_qcmd_lck(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_cmnd *))
-+mptsas_qcmd_irq_disable(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_cmnd *))
- {
- 	MPT_SCSI_HOST	*hd;
- 	MPT_ADAPTER	*ioc;
-@@ -1910,10 +1910,10 @@ mptsas_qcmd_lck(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_cmnd *))
- 	if (ioc->debug_level & MPT_DEBUG_SCSI)
- 		scsi_print_command(SCpnt);
- 
--	return mptscsih_qcmd(SCpnt,done);
-+	return mptscsih_qcmd(SCpnt->device->host, SCpnt);
- }
- 
--static DEF_SCSI_QCMD(mptsas_qcmd)
-+static IRQ_DISABLE_SCSI_QCMD(mptsas_qcmd)
+-static DEF_SCSI_QCMD(lpfc_queuecommand)
++static IRQ_DISABLE_SCSI_QCMD(lpfc_queuecommand)
  
  /**
-  *	mptsas_mptsas_eh_timed_out - resets the scsi_cmnd timeout
-diff --git a/drivers/message/fusion/mptscsih.c b/drivers/message/fusion/mptscsih.c
-index 59b8f53..4ff996e 100644
---- a/drivers/message/fusion/mptscsih.c
-+++ b/drivers/message/fusion/mptscsih.c
-@@ -1383,7 +1383,7 @@ mptscsih_proc_info(struct Scsi_Host *host, char *buffer, char **start, off_t off
- 
- /*=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*/
- /**
-- *	mptscsih_qcmd - Primary Fusion MPT SCSI initiator IO start routine.
-+ *	mptscsih_qcmd_irq_disable - Primary Fusion MPT SCSI initiator IO start routine.
-  *	@SCpnt: Pointer to scsi_cmnd structure
-  *	@done: Pointer SCSI mid-layer IO completion function
-  *
-@@ -1393,8 +1393,8 @@ mptscsih_proc_info(struct Scsi_Host *host, char *buffer, char **start, off_t off
-  *
-  *	Returns 0. (rtn value discarded by linux scsi mid-layer)
-  */
--int
--mptscsih_qcmd(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_cmnd *))
-+static int
-+mptscsih_qcmd_irq_disable(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_cmnd *))
- {
- 	MPT_SCSI_HOST		*hd;
- 	MPT_FRAME_HDR		*mf;
-@@ -1529,6 +1529,8 @@ mptscsih_qcmd(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_cmnd *))
- 	return SCSI_MLQUEUE_HOST_BUSY;
- }
- 
-+IRQ_DISABLE_SCSI_QCMD(mptscsih_qcmd);
-+
- /*=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*/
- /*
-  *	mptscsih_freeChainBuffers - Function to free chain buffers associated
-diff --git a/drivers/message/fusion/mptscsih.h b/drivers/message/fusion/mptscsih.h
-index 45a5ff3..1815aef 100644
---- a/drivers/message/fusion/mptscsih.h
-+++ b/drivers/message/fusion/mptscsih.h
-@@ -113,7 +113,7 @@ extern int mptscsih_resume(struct pci_dev *pdev);
- #endif
- extern int mptscsih_proc_info(struct Scsi_Host *host, char *buffer, char **start, off_t offset, int length, int func);
- extern const char * mptscsih_info(struct Scsi_Host *SChost);
--extern int mptscsih_qcmd(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_cmnd *));
-+extern int mptscsih_qcmd(struct Scsi_Host *sh, struct scsi_cmnd *SCpnt);
- extern int mptscsih_IssueTaskMgmt(MPT_SCSI_HOST *hd, u8 type, u8 channel,
- 	u8 id, int lun, int ctx2abort, ulong timeout);
- extern void mptscsih_slave_destroy(struct scsi_device *device);
-diff --git a/drivers/message/fusion/mptspi.c b/drivers/message/fusion/mptspi.c
-index 6d9568d..53eec57 100644
---- a/drivers/message/fusion/mptspi.c
-+++ b/drivers/message/fusion/mptspi.c
-@@ -780,7 +780,7 @@ static int mptspi_slave_configure(struct scsi_device *sdev)
- }
- 
- static int
--mptspi_qcmd_lck(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_cmnd *))
-+mptspi_qcmd_irq_disable(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_cmnd *))
- {
- 	struct _MPT_SCSI_HOST *hd = shost_priv(SCpnt->device->host);
- 	VirtDevice	*vdevice = SCpnt->device->hostdata;
-@@ -802,10 +802,10 @@ mptspi_qcmd_lck(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_cmnd *))
- 	if (spi_dv_pending(scsi_target(SCpnt->device)))
- 		ddvprintk(ioc, scsi_print_command(SCpnt));
- 
--	return mptscsih_qcmd(SCpnt,done);
-+	return mptscsih_qcmd(SCpnt->device->host, SCpnt);
- }
- 
--static DEF_SCSI_QCMD(mptspi_qcmd)
-+static IRQ_DISABLE_SCSI_QCMD(mptspi_qcmd)
- 
- static void mptspi_slave_destroy(struct scsi_device *sdev)
- {
+  * lpfc_abort_handler - scsi_host_template eh_abort_handler entry point
 -- 
 1.7.3.4
 
