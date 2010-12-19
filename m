@@ -1,81 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757170Ab0LSRI3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 12:08:29 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:53328 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752390Ab0LSRI2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 12:08:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=LFkQZvuw9y8OEjThfQ+sn4yv0hP1y7F7GhDpbHU+vkG2+h/oJ4uXCm4zAe2NaVdlhd
-         im9zfE44wAmeywyMxov44jcns5SaLSop1J9gI5OlM/atVu5GMITbgQA0DbYM0tYZK3hY
-         SGYXatey9dibpuOWry8ViK+67G2l6MGZOrEnc=
-Subject: Re: [PATCH] mtd: allow mtd and jffs2 when ARCH=um
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Rob Landley <rob@landley.net>
-Cc: Jason Lunz <lunz@acm.org>, Denys Vlasenko <vda.linux@googlemail.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Sam Ravnborg <sam@ravnborg.org>, David Woodhouse <dwmw2@infradead.org>,
-        atom ota <atomota@sleepyhammer.com>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        Jeff Dike <jdike@addtoit.com>, lkml <linux-kernel@vger.kernel.org>,
-        linux-mtd@lists.infradead.org
-In-Reply-To: <201012172208.17937.rob@landley.net>
-References: <22c797d00709272118i33d32b9dy93d5f5ec8f8edd30@mail.gmail.com>
-	 <201012150031.21417.rob@landley.net> <1292512711.2364.85.camel@localhost>
-	 <201012172208.17937.rob@landley.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 19 Dec 2010 19:08:22 +0200
-Message-ID: <1292778502.13362.13.camel@koala>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	id S932348Ab0LSROs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 12:14:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7568 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932137Ab0LSROr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 12:14:47 -0500
+Message-ID: <4D0E3D80.4060607@redhat.com>
+Date: Sun, 19 Dec 2010 12:14:40 -0500
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Eric Sandeen <sandeen@sandeen.net>,
+        Justin Piszcz <jpiszcz@lucidpixels.com>,
+        Sandon Van Ness <sandon@van-ness.com>
+CC: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Alan Piszcz <ap@solarrain.com>
+Subject: Re: Is EXT4 the right FS for > 16TB?
+References: <alpine.DEB.2.00.1012190649060.5393@p34.internal.lan> <4D0E3435.30104@van-ness.com> <alpine.DEB.2.00.1012191151570.28865@p34.internal.lan> <4D0E3A63.606@sandeen.net>
+In-Reply-To: <4D0E3A63.606@sandeen.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-17 at 22:08 -0600, Rob Landley wrote:
-> On Thursday 16 December 2010 09:18:31 Artem Bityutskiy wrote:
-> > On Wed, 2010-12-15 at 00:31 -0600, Rob Landley wrote:
-> > > That is awesome and I'm not finding any documentation on it...  Ah:
-> > >
-> > >  
-> > > http://wiki.maemo.org/Modifying_the_root_image#Block_device_emulating_an_
-> > >MTD_device
-> > >
-> > > Wow that's awkward.  Let's see, that says...
-> > >
-> > >   mknod /tmp/mtdblock0 b 31 0
-> > >   modprobe loop
-> > >   losetup /dev/loop0 rootfs.jffs2
-> > >   modprobe mtdblock
-> > >   modprobe block2mtd
-> > >   # Note the ,128KiB is needed (on 2.6.26 at least) to set the
-> > >   # eraseblock  size.
-> > >   echo "/dev/loop0,128KiB" > /sys/module/block2mtd/parameters/block2mtd
-> > >   modprobe jffs2
-> > >   mount -t jffs2 /tmp/mtdblock0 /media/jffs2
-> >
-> > You should not need mtdblock in modern kernels, it is legacy. You should
-> > be abole to mount jffs2 on top of mtd0 with
-> >
-> > mount -t jffs2 mtd0 /media/jffs2
-> 
-> How does one associate the mtd0 with the loopback device?  (I thought mtd0 was 
-> for actual flash memory.)
+On 12/19/2010 12:01 PM, Eric Sandeen wrote:
+> On 12/19/10 10:53 AM, Justin Piszcz wrote:
+>> Hi,
+>>
+>> Wow, there were no updates though after Eric's last comment..
+>> Eric, have there been any improvements in the past 6 months?
+>>
+>> Or should one still steer clear from EXT4>  16TB?
+> There is still no released e2fsprogs which supports>  16T for
+> ext4, but testing of the not-released bits is welcomed...
+> Ted says a 16T-capable version is coming soon.  There's still
+> work to be done there, though.
+>
+> -Eric
 
-You do not need loopback devices, just flash your rootfs.jffs2 directly
-to /dev/mtd0, e.g., with nandwrite. You can emulate nand with nandsim.
+I usually tend to point people towards XFS when you need something at greater 
+than 16TB in size....
 
-But your method should also work, I just wanted to point that JFFS2 does
-not depend on mtdblock in any way.
+Good luck,
 
--- 
-Best Regards,
-Artem Bityutskiy (Битюцкий Артём)
+Ric
+
+>> Justin.
+>>
+>> On Sun, 19 Dec 2010, Sandon Van Ness wrote:
+>>
+>>> Was it me (houkouonchi) on hard forum? I asked if>  16 TiB support was
+>>> considered stable on here a while back:
+>>>
+>>> Is>16TB support considered stable?
+>>>
+>>> This was 6 months ago so maybe things have changed. The thread:
+>>>
+>>> http://kerneltrap.org/mailarchive/linux-ext4/2010/5/28/6884603/thread
+>>>
+>>> Luckily JFS fixed there userland utilities bug of not being able to
+>>> handle>  32TiB very shortly after this and I ended up going that route
+>>> and I have yet to have any data loss or problems on my JFS volume:
+>>>
+>>> root@dekabutsu: 08:32 AM :~# df -H /data
+>>> Filesystem             Size   Used  Avail Use% Mounted on
+>>> /dev/sdd1               36T    22T    15T  61% /data
+>>> root@dekabutsu: 08:32 AM :~#
+>>>
+>>> At work with our hundreds/thousands of servers we will likely be going
+>>> ext4 as we wont be using it on>16 TiB. I think its a huge improvement
+>>> over ext3 but for my use JFS ended up being a better fit. I
+>>> refuse/refused to go XFS.
+>>>
+>>> On 12/19/2010 03:52 AM, Justin Piszcz wrote:
+>>>> Hi,
+>>>>
+>>>> I've read a lot of posts regarding people who setup RAID volumes of
+>>>> and up to around 16TB and EXT4 is typically used.
+>>>>
+>>>> However, in various forums, people still ask what is the correct
+>>>> filesystem for>  16TB?  I did read one post somewhere that stated the
+>>>> ext4 developers did not recommend using ext4 for very large volumes,
+>>>> is this still true?
+>>>>
+>>>> I am looking at creating a 43TB volume possibly in the near future and
+>>>> I have used XFS in the past, which works well and would probably not
+>>>> have any problem with it; however, I have bitten quite a number of
+>>>> times by XFS bugs in the past several years, so I was curious, how
+>>>> does EXT4 perform on larger volumes, e.g., 20TB?
+>>>>
+>>>> Are there any caveats / problems?
+>>>>
+>>>> Justin.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
