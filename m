@@ -1,109 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932427Ab0LSTIi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 14:08:38 -0500
-Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:7589 "EHLO
-	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932394Ab0LSTIg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 14:08:36 -0500
-From: Daniel Drake <dsd@laptop.org>
-To: a.zummo@towertech.it
-Cc: rtc-linux@googlegroups.com
-Cc: linux-kernel@vger.kernel.org
-Cc: pgf@laptop.org
-Cc: rjw@sisk.pl
-Subject: [PATCH v3] rtc-cmos: fix suspend/resume
-Message-Id: <20101219190828.A6C189D401C@zog.reactivated.net>
-Date: Sun, 19 Dec 2010 19:08:28 +0000 (GMT)
-X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=3ls3dc8-EF8A:10 a=Op-mwl0xAAAA:8 a=PtJcH0kQz5UYZKdmrUkA:9 a=8VAztMvWwEF8_RtukfsA:7 a=JGgORgc_T3jlxQFO1Vl_JUNFI5kA:4 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	id S932436Ab0LSTOP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 14:14:15 -0500
+Received: from lucidpixels.com ([75.144.35.66]:49331 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932396Ab0LSTOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 14:14:14 -0500
+Date: Sun, 19 Dec 2010 14:14:13 -0500 (EST)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Eric Sandeen <sandeen@sandeen.net>
+cc: Sandon Van Ness <sandon@van-ness.com>, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Alan Piszcz <ap@solarrain.com>
+Subject: Re: Is EXT4 the right FS for > 16TB?
+In-Reply-To: <4D0E3A63.606@sandeen.net>
+Message-ID: <alpine.DEB.2.00.1012191412520.27130@p34.internal.lan>
+References: <alpine.DEB.2.00.1012190649060.5393@p34.internal.lan> <4D0E3435.30104@van-ness.com> <alpine.DEB.2.00.1012191151570.28865@p34.internal.lan> <4D0E3A63.606@sandeen.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Fox <pgf@laptop.org>
 
-rtc-cmos was setting suspend/resume hooks at the device_driver level.
-However, the platform bus code (drivers/base/platform.c) only looks
-for resume hooks at the dev_pm_ops level, or within the platform_driver.
 
-Switch rtc_cmos to use dev_pm_ops so that suspend/resume code is
-executed again.
+On Sun, 19 Dec 2010, Eric Sandeen wrote:
 
-Signed-off-by: Paul Fox <pgf@laptop.org>
-Signed-off-by: Daniel Drake <dsd@laptop.org>
----
- drivers/rtc/rtc-cmos.c |   16 +++++++++-------
- 1 files changed, 9 insertions(+), 7 deletions(-)
+> On 12/19/10 10:53 AM, Justin Piszcz wrote:
+>> Hi,
+>>
+>> Wow, there were no updates though after Eric's last comment..
+>> Eric, have there been any improvements in the past 6 months?
+>>
+>> Or should one still steer clear from EXT4 > 16TB?
+>
+> There is still no released e2fsprogs which supports > 16T for
+> ext4, but testing of the not-released bits is welcomed...
+> Ted says a 16T-capable version is coming soon.  There's still
+> work to be done there, though.
+>
+> -Eric
+>
 
-v2: incorporate feedback from Rafael J. Wysocki, fix tabs, make a bit more
-consistent with typical SIMPLE_DEV_PM_OPS users.
+Thanks Eric for confirming.
 
-v3: remove const keyword already set by macro, thanks to Rafael
+With 7 x 3TB HDD its now possible to breach 16TB (16.38TB) in RAID-5 so I
+suppose more people may start asking about this.
 
-diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
-index 5856167..dd8242d 100644
---- a/drivers/rtc/rtc-cmos.c
-+++ b/drivers/rtc/rtc-cmos.c
-@@ -36,6 +36,7 @@
- #include <linux/platform_device.h>
- #include <linux/mod_devicetable.h>
- #include <linux/log2.h>
-+#include <linux/pm.h>
- 
- /* this is for "generic access to PC-style RTC" using CMOS_READ/CMOS_WRITE */
- #include <asm-generic/rtc.h>
-@@ -850,7 +851,7 @@ static void __exit cmos_do_remove(struct device *dev)
- 
- #ifdef	CONFIG_PM
- 
--static int cmos_suspend(struct device *dev, pm_message_t mesg)
-+static int cmos_suspend(struct device *dev)
- {
- 	struct cmos_rtc	*cmos = dev_get_drvdata(dev);
- 	unsigned char	tmp;
-@@ -898,7 +899,7 @@ static int cmos_suspend(struct device *dev, pm_message_t mesg)
-  */
- static inline int cmos_poweroff(struct device *dev)
- {
--	return cmos_suspend(dev, PMSG_HIBERNATE);
-+	return cmos_suspend(dev);
- }
- 
- static int cmos_resume(struct device *dev)
-@@ -945,9 +946,9 @@ static int cmos_resume(struct device *dev)
- 	return 0;
- }
- 
-+static SIMPLE_DEV_PM_OPS(cmos_pm_ops, cmos_suspend, cmos_resume);
-+
- #else
--#define	cmos_suspend	NULL
--#define	cmos_resume	NULL
- 
- static inline int cmos_poweroff(struct device *dev)
- {
-@@ -1077,7 +1078,7 @@ static void __exit cmos_pnp_remove(struct pnp_dev *pnp)
- 
- static int cmos_pnp_suspend(struct pnp_dev *pnp, pm_message_t mesg)
- {
--	return cmos_suspend(&pnp->dev, mesg);
-+	return cmos_suspend(&pnp->dev);
- }
- 
- static int cmos_pnp_resume(struct pnp_dev *pnp)
-@@ -1157,8 +1158,9 @@ static struct platform_driver cmos_platform_driver = {
- 	.shutdown	= cmos_platform_shutdown,
- 	.driver = {
- 		.name		= (char *) driver_name,
--		.suspend	= cmos_suspend,
--		.resume		= cmos_resume,
-+#ifdef CONFIG_PM
-+		.pm		= &cmos_pm_ops,
-+#endif
- 	}
- };
- 
--- 
-1.7.3.3
+Justin.
 
