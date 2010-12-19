@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932305Ab0LSP11 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 10:27:27 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:41368 "EHLO mx2.mail.elte.hu"
+	id S932315Ab0LSPa7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 10:30:59 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:40645 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932256Ab0LSP1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 10:27:25 -0500
-Date: Sun, 19 Dec 2010 16:27:13 +0100
+	id S932256Ab0LSPa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 10:30:57 -0500
+Date: Sun, 19 Dec 2010 16:30:48 +0100
 From: Ingo Molnar <mingo@elte.hu>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] scheduler fixes
-Message-ID: <20101219152713.GA20101@elte.hu>
+Subject: [GIT PULL] x86 fixes
+Message-ID: <20101219153048.GA20533@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -31,507 +31,314 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest sched-fixes-for-linus git tree from:
+Please pull the latest x86-fixes-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git sched-fixes-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-fixes-for-linus
 
-It's a bit larger than usual - partly because it accumulated over two weeks and 
-partly because two complex fixes arrived late which needed more testing.
+
+out-of-topic modifications in x86-fixes-for-linus:
+--------------------------------------------------
+drivers/pci/dmar.c                 # 7f99d94: x86, vt-d: Handle previous faults
+drivers/pci/quirks.c               # 254e420: x86, vt-d: Quirk for masking vtd 
+include/linux/bootmem.h            # 53dde5f: bootmem: Add alloc_bootmem_align(
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Heiko Carstens (1):
-      nohz: Fix get_next_timer_interrupt() vs cpu hotplug
+H. Peter Anvin (2):
+      x86, gcc-4.6: Use gcc -m options when building vdso
+      x86-32: Make sure we can map all of lowmem if we need to
 
-Mike Galbraith (1):
-      Sched: fix skip_clock_update optimization
+Kenji Kaneshige (2):
+      x86, vt-d: Fix the vt-d fault handling irq migration in the x2apic mode
+      x86: Enable the intr-remap fault handling after local APIC setup
 
-Peter Zijlstra (3):
-      sched: Cure more NO_HZ load average woes
-      sched: Fix the irqtime code to deal with u64 wraps
-      sched: Fix the irqtime code for 32bit
+Suresh Siddha (4):
+      bootmem: Add alloc_bootmem_align()
+      x86, xsave: Use alloc_bootmem_align() instead of alloc_bootmem()
+      x86, vt-d: Quirk for masking vtd spec errors to platform error handling logic
+      x86, vt-d: Handle previous faults after enabling fault handling
+
+Thomas Gleixner (2):
+      x86: io_apic: Avoid unused variable warning when CONFIG_GENERIC_PENDING_IRQ=n
+      x86: HPET: Chose a paranoid safe value for the ETIME check
 
 
- include/linux/sched.h |    2 +-
- kernel/fork.c         |    1 +
- kernel/sched.c        |  288 ++++++++++++++++++++++++++++++++++++++++---------
- kernel/timer.c        |    8 ++-
- 4 files changed, 246 insertions(+), 53 deletions(-)
+ arch/x86/boot/compressed/misc.c |    2 +-
+ arch/x86/kernel/apic/apic.c     |    8 ++++++++
+ arch/x86/kernel/apic/io_apic.c  |    4 ++--
+ arch/x86/kernel/apic/probe_64.c |    7 -------
+ arch/x86/kernel/head_32.S       |   12 +++++++-----
+ arch/x86/kernel/hpet.c          |   26 ++++++++++++++++----------
+ arch/x86/kernel/xsave.c         |    3 ++-
+ arch/x86/vdso/Makefile          |    4 ++--
+ drivers/pci/dmar.c              |    5 +++++
+ drivers/pci/quirks.c            |   23 +++++++++++++++++++++++
+ include/linux/bootmem.h         |    2 ++
+ 11 files changed, 68 insertions(+), 28 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 2c79e92..2238745 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -143,7 +143,7 @@ extern unsigned long nr_iowait_cpu(int cpu);
- extern unsigned long this_cpu_load(void);
- 
- 
--extern void calc_global_load(void);
-+extern void calc_global_load(unsigned long ticks);
- 
- extern unsigned long get_parent_ip(unsigned long addr);
- 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 3b159c5..5447dc7 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -273,6 +273,7 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
- 
- 	setup_thread_stack(tsk, orig);
- 	clear_user_return_notifier(tsk);
-+	clear_tsk_need_resched(tsk);
- 	stackend = end_of_stack(tsk);
- 	*stackend = STACK_END_MAGIC;	/* for overflow detection */
- 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index dc91a4d..456c990 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -636,22 +636,18 @@ static inline struct task_group *task_group(struct task_struct *p)
- 
- #endif /* CONFIG_CGROUP_SCHED */
- 
--static u64 irq_time_cpu(int cpu);
--static void sched_irq_time_avg_update(struct rq *rq, u64 irq_time);
-+static void update_rq_clock_task(struct rq *rq, s64 delta);
- 
--inline void update_rq_clock(struct rq *rq)
-+static void update_rq_clock(struct rq *rq)
- {
--	if (!rq->skip_clock_update) {
--		int cpu = cpu_of(rq);
--		u64 irq_time;
-+	s64 delta;
- 
--		rq->clock = sched_clock_cpu(cpu);
--		irq_time = irq_time_cpu(cpu);
--		if (rq->clock - irq_time > rq->clock_task)
--			rq->clock_task = rq->clock - irq_time;
-+	if (rq->skip_clock_update)
-+		return;
- 
--		sched_irq_time_avg_update(rq, irq_time);
--	}
-+	delta = sched_clock_cpu(cpu_of(rq)) - rq->clock;
-+	rq->clock += delta;
-+	update_rq_clock_task(rq, delta);
- }
- 
- /*
-@@ -1924,10 +1920,9 @@ static void deactivate_task(struct rq *rq, struct task_struct *p, int flags)
-  * They are read and saved off onto struct rq in update_rq_clock().
-  * This may result in other CPU reading this CPU's irq time and can
-  * race with irq/account_system_vtime on this CPU. We would either get old
-- * or new value (or semi updated value on 32 bit) with a side effect of
-- * accounting a slice of irq time to wrong task when irq is in progress
-- * while we read rq->clock. That is a worthy compromise in place of having
-- * locks on each irq in account_system_time.
-+ * or new value with a side effect of accounting a slice of irq time to wrong
-+ * task when irq is in progress while we read rq->clock. That is a worthy
-+ * compromise in place of having locks on each irq in account_system_time.
-  */
- static DEFINE_PER_CPU(u64, cpu_hardirq_time);
- static DEFINE_PER_CPU(u64, cpu_softirq_time);
-@@ -1945,19 +1940,58 @@ void disable_sched_clock_irqtime(void)
- 	sched_clock_irqtime = 0;
- }
- 
--static u64 irq_time_cpu(int cpu)
-+#ifndef CONFIG_64BIT
-+static DEFINE_PER_CPU(seqcount_t, irq_time_seq);
-+
-+static inline void irq_time_write_begin(void)
- {
--	if (!sched_clock_irqtime)
--		return 0;
-+	__this_cpu_inc(irq_time_seq.sequence);
-+	smp_wmb();
-+}
-+
-+static inline void irq_time_write_end(void)
-+{
-+	smp_wmb();
-+	__this_cpu_inc(irq_time_seq.sequence);
-+}
-+
-+static inline u64 irq_time_read(int cpu)
-+{
-+	u64 irq_time;
-+	unsigned seq;
- 
-+	do {
-+		seq = read_seqcount_begin(&per_cpu(irq_time_seq, cpu));
-+		irq_time = per_cpu(cpu_softirq_time, cpu) +
-+			   per_cpu(cpu_hardirq_time, cpu);
-+	} while (read_seqcount_retry(&per_cpu(irq_time_seq, cpu), seq));
-+
-+	return irq_time;
-+}
-+#else /* CONFIG_64BIT */
-+static inline void irq_time_write_begin(void)
-+{
-+}
-+
-+static inline void irq_time_write_end(void)
-+{
-+}
-+
-+static inline u64 irq_time_read(int cpu)
-+{
- 	return per_cpu(cpu_softirq_time, cpu) + per_cpu(cpu_hardirq_time, cpu);
- }
-+#endif /* CONFIG_64BIT */
- 
-+/*
-+ * Called before incrementing preempt_count on {soft,}irq_enter
-+ * and before decrementing preempt_count on {soft,}irq_exit.
-+ */
- void account_system_vtime(struct task_struct *curr)
- {
- 	unsigned long flags;
-+	s64 delta;
- 	int cpu;
--	u64 now, delta;
- 
- 	if (!sched_clock_irqtime)
- 		return;
-@@ -1965,9 +1999,10 @@ void account_system_vtime(struct task_struct *curr)
- 	local_irq_save(flags);
- 
- 	cpu = smp_processor_id();
--	now = sched_clock_cpu(cpu);
--	delta = now - per_cpu(irq_start_time, cpu);
--	per_cpu(irq_start_time, cpu) = now;
-+	delta = sched_clock_cpu(cpu) - __this_cpu_read(irq_start_time);
-+	__this_cpu_add(irq_start_time, delta);
-+
-+	irq_time_write_begin();
- 	/*
- 	 * We do not account for softirq time from ksoftirqd here.
- 	 * We want to continue accounting softirq time to ksoftirqd thread
-@@ -1975,33 +2010,55 @@ void account_system_vtime(struct task_struct *curr)
- 	 * that do not consume any time, but still wants to run.
- 	 */
- 	if (hardirq_count())
--		per_cpu(cpu_hardirq_time, cpu) += delta;
-+		__this_cpu_add(cpu_hardirq_time, delta);
- 	else if (in_serving_softirq() && !(curr->flags & PF_KSOFTIRQD))
--		per_cpu(cpu_softirq_time, cpu) += delta;
-+		__this_cpu_add(cpu_softirq_time, delta);
- 
-+	irq_time_write_end();
- 	local_irq_restore(flags);
- }
- EXPORT_SYMBOL_GPL(account_system_vtime);
- 
--static void sched_irq_time_avg_update(struct rq *rq, u64 curr_irq_time)
-+static void update_rq_clock_task(struct rq *rq, s64 delta)
- {
--	if (sched_clock_irqtime && sched_feat(NONIRQ_POWER)) {
--		u64 delta_irq = curr_irq_time - rq->prev_irq_time;
--		rq->prev_irq_time = curr_irq_time;
--		sched_rt_avg_update(rq, delta_irq);
--	}
-+	s64 irq_delta;
-+
-+	irq_delta = irq_time_read(cpu_of(rq)) - rq->prev_irq_time;
-+
-+	/*
-+	 * Since irq_time is only updated on {soft,}irq_exit, we might run into
-+	 * this case when a previous update_rq_clock() happened inside a
-+	 * {soft,}irq region.
-+	 *
-+	 * When this happens, we stop ->clock_task and only update the
-+	 * prev_irq_time stamp to account for the part that fit, so that a next
-+	 * update will consume the rest. This ensures ->clock_task is
-+	 * monotonic.
-+	 *
-+	 * It does however cause some slight miss-attribution of {soft,}irq
-+	 * time, a more accurate solution would be to update the irq_time using
-+	 * the current rq->clock timestamp, except that would require using
-+	 * atomic ops.
-+	 */
-+	if (irq_delta > delta)
-+		irq_delta = delta;
-+
-+	rq->prev_irq_time += irq_delta;
-+	delta -= irq_delta;
-+	rq->clock_task += delta;
-+
-+	if (irq_delta && sched_feat(NONIRQ_POWER))
-+		sched_rt_avg_update(rq, irq_delta);
- }
- 
--#else
-+#else /* CONFIG_IRQ_TIME_ACCOUNTING */
- 
--static u64 irq_time_cpu(int cpu)
-+static void update_rq_clock_task(struct rq *rq, s64 delta)
- {
--	return 0;
-+	rq->clock_task += delta;
- }
- 
--static void sched_irq_time_avg_update(struct rq *rq, u64 curr_irq_time) { }
--
--#endif
-+#endif /* CONFIG_IRQ_TIME_ACCOUNTING */
- 
- #include "sched_idletask.c"
- #include "sched_fair.c"
-@@ -2129,7 +2186,7 @@ static void check_preempt_curr(struct rq *rq, struct task_struct *p, int flags)
- 	 * A queue event has occurred, and we're going to schedule.  In
- 	 * this case, we can save a useless back to back clock update.
- 	 */
--	if (test_tsk_need_resched(rq->curr))
-+	if (rq->curr->se.on_rq && test_tsk_need_resched(rq->curr))
- 		rq->skip_clock_update = 1;
- }
- 
-@@ -3119,6 +3176,15 @@ static long calc_load_fold_active(struct rq *this_rq)
- 	return delta;
- }
- 
-+static unsigned long
-+calc_load(unsigned long load, unsigned long exp, unsigned long active)
-+{
-+	load *= exp;
-+	load += active * (FIXED_1 - exp);
-+	load += 1UL << (FSHIFT - 1);
-+	return load >> FSHIFT;
-+}
-+
- #ifdef CONFIG_NO_HZ
- /*
-  * For NO_HZ we delay the active fold to the next LOAD_FREQ update.
-@@ -3148,6 +3214,128 @@ static long calc_load_fold_idle(void)
- 
- 	return delta;
- }
-+
-+/**
-+ * fixed_power_int - compute: x^n, in O(log n) time
-+ *
-+ * @x:         base of the power
-+ * @frac_bits: fractional bits of @x
-+ * @n:         power to raise @x to.
-+ *
-+ * By exploiting the relation between the definition of the natural power
-+ * function: x^n := x*x*...*x (x multiplied by itself for n times), and
-+ * the binary encoding of numbers used by computers: n := \Sum n_i * 2^i,
-+ * (where: n_i \elem {0, 1}, the binary vector representing n),
-+ * we find: x^n := x^(\Sum n_i * 2^i) := \Prod x^(n_i * 2^i), which is
-+ * of course trivially computable in O(log_2 n), the length of our binary
-+ * vector.
-+ */
-+static unsigned long
-+fixed_power_int(unsigned long x, unsigned int frac_bits, unsigned int n)
-+{
-+	unsigned long result = 1UL << frac_bits;
-+
-+	if (n) for (;;) {
-+		if (n & 1) {
-+			result *= x;
-+			result += 1UL << (frac_bits - 1);
-+			result >>= frac_bits;
-+		}
-+		n >>= 1;
-+		if (!n)
-+			break;
-+		x *= x;
-+		x += 1UL << (frac_bits - 1);
-+		x >>= frac_bits;
-+	}
-+
-+	return result;
-+}
-+
-+/*
-+ * a1 = a0 * e + a * (1 - e)
-+ *
-+ * a2 = a1 * e + a * (1 - e)
-+ *    = (a0 * e + a * (1 - e)) * e + a * (1 - e)
-+ *    = a0 * e^2 + a * (1 - e) * (1 + e)
-+ *
-+ * a3 = a2 * e + a * (1 - e)
-+ *    = (a0 * e^2 + a * (1 - e) * (1 + e)) * e + a * (1 - e)
-+ *    = a0 * e^3 + a * (1 - e) * (1 + e + e^2)
-+ *
-+ *  ...
-+ *
-+ * an = a0 * e^n + a * (1 - e) * (1 + e + ... + e^n-1) [1]
-+ *    = a0 * e^n + a * (1 - e) * (1 - e^n)/(1 - e)
-+ *    = a0 * e^n + a * (1 - e^n)
-+ *
-+ * [1] application of the geometric series:
-+ *
-+ *              n         1 - x^(n+1)
-+ *     S_n := \Sum x^i = -------------
-+ *             i=0          1 - x
-+ */
-+static unsigned long
-+calc_load_n(unsigned long load, unsigned long exp,
-+	    unsigned long active, unsigned int n)
-+{
-+
-+	return calc_load(load, fixed_power_int(exp, FSHIFT, n), active);
-+}
-+
-+/*
-+ * NO_HZ can leave us missing all per-cpu ticks calling
-+ * calc_load_account_active(), but since an idle CPU folds its delta into
-+ * calc_load_tasks_idle per calc_load_account_idle(), all we need to do is fold
-+ * in the pending idle delta if our idle period crossed a load cycle boundary.
-+ *
-+ * Once we've updated the global active value, we need to apply the exponential
-+ * weights adjusted to the number of cycles missed.
-+ */
-+static void calc_global_nohz(unsigned long ticks)
-+{
-+	long delta, active, n;
-+
-+	if (time_before(jiffies, calc_load_update))
-+		return;
-+
-+	/*
-+	 * If we crossed a calc_load_update boundary, make sure to fold
-+	 * any pending idle changes, the respective CPUs might have
-+	 * missed the tick driven calc_load_account_active() update
-+	 * due to NO_HZ.
-+	 */
-+	delta = calc_load_fold_idle();
-+	if (delta)
-+		atomic_long_add(delta, &calc_load_tasks);
-+
-+	/*
-+	 * If we were idle for multiple load cycles, apply them.
-+	 */
-+	if (ticks >= LOAD_FREQ) {
-+		n = ticks / LOAD_FREQ;
-+
-+		active = atomic_long_read(&calc_load_tasks);
-+		active = active > 0 ? active * FIXED_1 : 0;
-+
-+		avenrun[0] = calc_load_n(avenrun[0], EXP_1, active, n);
-+		avenrun[1] = calc_load_n(avenrun[1], EXP_5, active, n);
-+		avenrun[2] = calc_load_n(avenrun[2], EXP_15, active, n);
-+
-+		calc_load_update += n * LOAD_FREQ;
-+	}
-+
-+	/*
-+	 * Its possible the remainder of the above division also crosses
-+	 * a LOAD_FREQ period, the regular check in calc_global_load()
-+	 * which comes after this will take care of that.
-+	 *
-+	 * Consider us being 11 ticks before a cycle completion, and us
-+	 * sleeping for 4*LOAD_FREQ + 22 ticks, then the above code will
-+	 * age us 4 cycles, and the test in calc_global_load() will
-+	 * pick up the final one.
-+	 */
-+}
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 23f315c..325c052 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -355,7 +355,7 @@ asmlinkage void decompress_kernel(void *rmode, memptr heap,
+ 	if (heap > 0x3fffffffffffUL)
+ 		error("Destination address too large");
  #else
- static void calc_load_account_idle(struct rq *this_rq)
- {
-@@ -3157,6 +3345,10 @@ static inline long calc_load_fold_idle(void)
- {
- 	return 0;
- }
+-	if (heap > ((-__PAGE_OFFSET-(512<<20)-1) & 0x7fffffff))
++	if (heap > ((-__PAGE_OFFSET-(128<<20)-1) & 0x7fffffff))
+ 		error("Destination address too large");
+ #endif
+ #ifndef CONFIG_RELOCATABLE
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 3f838d5..7821813 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1389,6 +1389,14 @@ void __cpuinit end_local_APIC_setup(void)
+ 
+ 	setup_apic_nmi_watchdog(NULL);
+ 	apic_pm_activate();
 +
-+static void calc_global_nohz(unsigned long ticks)
-+{
-+}
++	/*
++	 * Now that local APIC setup is completed for BP, configure the fault
++	 * handling for interrupt remapping.
++	 */
++	if (!smp_processor_id() && intr_remapping_enabled)
++		enable_drhd_fault_handling();
++
+ }
+ 
+ #ifdef CONFIG_X86_X2APIC
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 7cc0a72..fadcd74 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -2430,13 +2430,12 @@ static void ack_apic_level(struct irq_data *data)
+ {
+ 	struct irq_cfg *cfg = data->chip_data;
+ 	int i, do_unmask_irq = 0, irq = data->irq;
+-	struct irq_desc *desc = irq_to_desc(irq);
+ 	unsigned long v;
+ 
+ 	irq_complete_move(cfg);
+ #ifdef CONFIG_GENERIC_PENDING_IRQ
+ 	/* If we are moving the irq we need to mask it */
+-	if (unlikely(desc->status & IRQ_MOVE_PENDING)) {
++	if (unlikely(irq_to_desc(irq)->status & IRQ_MOVE_PENDING)) {
+ 		do_unmask_irq = 1;
+ 		mask_ioapic(cfg);
+ 	}
+@@ -3413,6 +3412,7 @@ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 	msg.data |= MSI_DATA_VECTOR(cfg->vector);
+ 	msg.address_lo &= ~MSI_ADDR_DEST_ID_MASK;
+ 	msg.address_lo |= MSI_ADDR_DEST_ID(dest);
++	msg.address_hi = MSI_ADDR_BASE_HI | MSI_ADDR_EXT_DEST_ID(dest);
+ 
+ 	dmar_msi_write(irq, &msg);
+ 
+diff --git a/arch/x86/kernel/apic/probe_64.c b/arch/x86/kernel/apic/probe_64.c
+index f9e4e6a..d8c4a6f 100644
+--- a/arch/x86/kernel/apic/probe_64.c
++++ b/arch/x86/kernel/apic/probe_64.c
+@@ -79,13 +79,6 @@ void __init default_setup_apic_routing(void)
+ 		/* need to update phys_pkg_id */
+ 		apic->phys_pkg_id = apicid_phys_pkg_id;
+ 	}
+-
+-	/*
+-	 * Now that apic routing model is selected, configure the
+-	 * fault handling for intr remapping.
+-	 */
+-	if (intr_remapping_enabled)
+-		enable_drhd_fault_handling();
+ }
+ 
+ /* Same for both flat and physical. */
+diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+index bcece91..d7cdf5b 100644
+--- a/arch/x86/kernel/head_32.S
++++ b/arch/x86/kernel/head_32.S
+@@ -60,16 +60,18 @@
+ #define PAGE_TABLE_SIZE(pages) ((pages) / PTRS_PER_PGD)
  #endif
  
- /**
-@@ -3174,24 +3366,17 @@ void get_avenrun(unsigned long *loads, unsigned long offset, int shift)
- 	loads[2] = (avenrun[2] + offset) << shift;
- }
++/* Number of possible pages in the lowmem region */
++LOWMEM_PAGES = (((1<<32) - __PAGE_OFFSET) >> PAGE_SHIFT)
++	
+ /* Enough space to fit pagetables for the low memory linear map */
+-MAPPING_BEYOND_END = \
+-	PAGE_TABLE_SIZE(((1<<32) - __PAGE_OFFSET) >> PAGE_SHIFT) << PAGE_SHIFT
++MAPPING_BEYOND_END = PAGE_TABLE_SIZE(LOWMEM_PAGES) << PAGE_SHIFT
  
--static unsigned long
--calc_load(unsigned long load, unsigned long exp, unsigned long active)
--{
--	load *= exp;
--	load += active * (FIXED_1 - exp);
--	return load >> FSHIFT;
--}
--
  /*
-  * calc_load - update the avenrun load estimates 10 ticks after the
-  * CPUs have updated calc_load_tasks.
+  * Worst-case size of the kernel mapping we need to make:
+- * the worst-case size of the kernel itself, plus the extra we need
+- * to map for the linear map.
++ * a relocatable kernel can live anywhere in lowmem, so we need to be able
++ * to map all of lowmem.
   */
--void calc_global_load(void)
-+void calc_global_load(unsigned long ticks)
- {
--	unsigned long upd = calc_load_update + 10;
- 	long active;
+-KERNEL_PAGES = (KERNEL_IMAGE_SIZE + MAPPING_BEYOND_END)>>PAGE_SHIFT
++KERNEL_PAGES = LOWMEM_PAGES
  
--	if (time_before(jiffies, upd))
-+	calc_global_nohz(ticks);
+ INIT_MAP_SIZE = PAGE_TABLE_SIZE(KERNEL_PAGES) * PAGE_SIZE_asm
+ RESERVE_BRK(pagetables, INIT_MAP_SIZE)
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index ae03cab..4ff5968 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -27,6 +27,9 @@
+ #define HPET_DEV_FSB_CAP		0x1000
+ #define HPET_DEV_PERI_CAP		0x2000
+ 
++#define HPET_MIN_CYCLES			128
++#define HPET_MIN_PROG_DELTA		(HPET_MIN_CYCLES + (HPET_MIN_CYCLES >> 1))
 +
-+	if (time_before(jiffies, calc_load_update + 10))
- 		return;
+ #define EVT_TO_HPET_DEV(evt) container_of(evt, struct hpet_dev, evt)
  
- 	active = atomic_long_read(&calc_load_tasks);
-@@ -3845,7 +4030,6 @@ static void put_prev_task(struct rq *rq, struct task_struct *prev)
- {
- 	if (prev->se.on_rq)
- 		update_rq_clock(rq);
--	rq->skip_clock_update = 0;
- 	prev->sched_class->put_prev_task(rq, prev);
+ /*
+@@ -299,8 +302,9 @@ static void hpet_legacy_clockevent_register(void)
+ 	/* Calculate the min / max delta */
+ 	hpet_clockevent.max_delta_ns = clockevent_delta2ns(0x7FFFFFFF,
+ 							   &hpet_clockevent);
+-	/* 5 usec minimum reprogramming delta. */
+-	hpet_clockevent.min_delta_ns = 5000;
++	/* Setup minimum reprogramming delta. */
++	hpet_clockevent.min_delta_ns = clockevent_delta2ns(HPET_MIN_PROG_DELTA,
++							   &hpet_clockevent);
+ 
+ 	/*
+ 	 * Start hpet with the boot cpu mask and make it
+@@ -393,22 +397,24 @@ static int hpet_next_event(unsigned long delta,
+ 	 * the wraparound into account) nor a simple count down event
+ 	 * mode. Further the write to the comparator register is
+ 	 * delayed internally up to two HPET clock cycles in certain
+-	 * chipsets (ATI, ICH9,10). We worked around that by reading
+-	 * back the compare register, but that required another
+-	 * workaround for ICH9,10 chips where the first readout after
+-	 * write can return the old stale value. We already have a
+-	 * minimum delta of 5us enforced, but a NMI or SMI hitting
++	 * chipsets (ATI, ICH9,10). Some newer AMD chipsets have even
++	 * longer delays. We worked around that by reading back the
++	 * compare register, but that required another workaround for
++	 * ICH9,10 chips where the first readout after write can
++	 * return the old stale value. We already had a minimum
++	 * programming delta of 5us enforced, but a NMI or SMI hitting
+ 	 * between the counter readout and the comparator write can
+ 	 * move us behind that point easily. Now instead of reading
+ 	 * the compare register back several times, we make the ETIME
+ 	 * decision based on the following: Return ETIME if the
+-	 * counter value after the write is less than 8 HPET cycles
++	 * counter value after the write is less than HPET_MIN_CYCLES
+ 	 * away from the event or if the counter is already ahead of
+-	 * the event.
++	 * the event. The minimum programming delta for the generic
++	 * clockevents code is set to 1.5 * HPET_MIN_CYCLES.
+ 	 */
+ 	res = (s32)(cnt - hpet_readl(HPET_COUNTER));
+ 
+-	return res < 8 ? -ETIME : 0;
++	return res < HPET_MIN_CYCLES ? -ETIME : 0;
  }
  
-@@ -3903,7 +4087,6 @@ need_resched_nonpreemptible:
- 		hrtick_clear(rq);
+ static void hpet_legacy_set_mode(enum clock_event_mode mode,
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index 9c253bd..5471285 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -394,7 +394,8 @@ static void __init setup_xstate_init(void)
+ 	 * Setup init_xstate_buf to represent the init state of
+ 	 * all the features managed by the xsave
+ 	 */
+-	init_xstate_buf = alloc_bootmem(xstate_size);
++	init_xstate_buf = alloc_bootmem_align(xstate_size,
++					      __alignof__(struct xsave_struct));
+ 	init_xstate_buf->i387.mxcsr = MXCSR_DEFAULT;
  
- 	raw_spin_lock_irq(&rq->lock);
--	clear_tsk_need_resched(prev);
+ 	clts();
+diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
+index 4a2afa1..b6552b1 100644
+--- a/arch/x86/vdso/Makefile
++++ b/arch/x86/vdso/Makefile
+@@ -25,7 +25,7 @@ targets += vdso.so vdso.so.dbg vdso.lds $(vobjs-y)
  
- 	switch_count = &prev->nivcsw;
- 	if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
-@@ -3935,6 +4118,8 @@ need_resched_nonpreemptible:
+ export CPPFLAGS_vdso.lds += -P -C
  
- 	put_prev_task(rq, prev);
- 	next = pick_next_task(rq);
-+	clear_tsk_need_resched(prev);
-+	rq->skip_clock_update = 0;
+-VDSO_LDFLAGS_vdso.lds = -m elf_x86_64 -Wl,-soname=linux-vdso.so.1 \
++VDSO_LDFLAGS_vdso.lds = -m64 -Wl,-soname=linux-vdso.so.1 \
+ 		      	-Wl,-z,max-page-size=4096 -Wl,-z,common-page-size=4096
  
- 	if (likely(prev != next)) {
- 		sched_info_switch(prev, next);
-@@ -3943,6 +4128,7 @@ need_resched_nonpreemptible:
- 		rq->nr_switches++;
- 		rq->curr = next;
- 		++*switch_count;
-+		WARN_ON_ONCE(test_tsk_need_resched(next));
+ $(obj)/vdso.o: $(src)/vdso.S $(obj)/vdso.so
+@@ -69,7 +69,7 @@ vdso32.so-$(VDSO32-y)		+= sysenter
+ vdso32-images			= $(vdso32.so-y:%=vdso32-%.so)
  
- 		context_switch(rq, prev, next); /* unlocks the rq */
- 		/*
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 68a9ae7..353b922 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1252,6 +1252,12 @@ unsigned long get_next_timer_interrupt(unsigned long now)
- 	struct tvec_base *base = __get_cpu_var(tvec_bases);
- 	unsigned long expires;
+ CPPFLAGS_vdso32.lds = $(CPPFLAGS_vdso.lds)
+-VDSO_LDFLAGS_vdso32.lds = -m elf_i386 -Wl,-soname=linux-gate.so.1
++VDSO_LDFLAGS_vdso32.lds = -m32 -Wl,-soname=linux-gate.so.1
  
-+	/*
-+	 * Pretend that there is no timer pending if the cpu is offline.
-+	 * Possible pending timers will be migrated later to an active cpu.
-+	 */
-+	if (cpu_is_offline(smp_processor_id()))
-+		return now + NEXT_TIMER_MAX_DELTA;
- 	spin_lock(&base->lock);
- 	if (time_before_eq(base->next_timer, base->timer_jiffies))
- 		base->next_timer = __next_timer_interrupt(base);
-@@ -1319,7 +1325,7 @@ void do_timer(unsigned long ticks)
- {
- 	jiffies_64 += ticks;
- 	update_wall_time();
--	calc_global_load();
-+	calc_global_load(ticks);
- }
+ # This makes sure the $(obj) subdirectory exists even though vdso32/
+ # is not a kbuild sub-make subdirectory.
+diff --git a/drivers/pci/dmar.c b/drivers/pci/dmar.c
+index 0157708..09933eb 100644
+--- a/drivers/pci/dmar.c
++++ b/drivers/pci/dmar.c
+@@ -1417,6 +1417,11 @@ int __init enable_drhd_fault_handling(void)
+ 			       (unsigned long long)drhd->reg_base_addr, ret);
+ 			return -1;
+ 		}
++
++		/*
++		 * Clear any previous faults.
++		 */
++		dmar_fault(iommu->irq, iommu);
+ 	}
  
- #ifdef __ARCH_WANT_SYS_ALARM
+ 	return 0;
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 6f9350c..36191ed 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2764,6 +2764,29 @@ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_m
+ DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
+ #endif /*CONFIG_MMC_RICOH_MMC*/
+ 
++#if defined(CONFIG_DMAR) || defined(CONFIG_INTR_REMAP)
++#define VTUNCERRMSK_REG	0x1ac
++#define VTD_MSK_SPEC_ERRORS	(1 << 31)
++/*
++ * This is a quirk for masking vt-d spec defined errors to platform error
++ * handling logic. With out this, platforms using Intel 7500, 5500 chipsets
++ * (and the derivative chipsets like X58 etc) seem to generate NMI/SMI (based
++ * on the RAS config settings of the platform) when a vt-d fault happens.
++ * The resulting SMI caused the system to hang.
++ *
++ * VT-d spec related errors are already handled by the VT-d OS code, so no
++ * need to report the same error through other channels.
++ */
++static void vtd_mask_spec_errors(struct pci_dev *dev)
++{
++	u32 word;
++
++	pci_read_config_dword(dev, VTUNCERRMSK_REG, &word);
++	pci_write_config_dword(dev, VTUNCERRMSK_REG, word | VTD_MSK_SPEC_ERRORS);
++}
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, 0x342e, vtd_mask_spec_errors);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, 0x3c28, vtd_mask_spec_errors);
++#endif
+ 
+ static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
+ 			  struct pci_fixup *end)
+diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
+index 266ab92..499dfe9 100644
+--- a/include/linux/bootmem.h
++++ b/include/linux/bootmem.h
+@@ -105,6 +105,8 @@ extern void *__alloc_bootmem_low_node(pg_data_t *pgdat,
+ 
+ #define alloc_bootmem(x) \
+ 	__alloc_bootmem(x, SMP_CACHE_BYTES, __pa(MAX_DMA_ADDRESS))
++#define alloc_bootmem_align(x, align) \
++	__alloc_bootmem(x, align, __pa(MAX_DMA_ADDRESS))
+ #define alloc_bootmem_nopanic(x) \
+ 	__alloc_bootmem_nopanic(x, SMP_CACHE_BYTES, __pa(MAX_DMA_ADDRESS))
+ #define alloc_bootmem_pages(x) \
