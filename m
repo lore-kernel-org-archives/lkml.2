@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303Ab0LSWT1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 17:19:27 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:11471 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757238Ab0LSWT0 (ORCPT
+	id S1757310Ab0LSWVY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 17:21:24 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:49168 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757218Ab0LSWVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 17:19:26 -0500
-Date: Sun, 19 Dec 2010 23:10:20 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-mm@kvack.org
-cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] Close mem leak in error path in
- mm/hugetlb.c::nr_hugepages_store_common()
-Message-ID: <alpine.LNX.2.00.1012192305260.6486@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 19 Dec 2010 17:21:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=phXKpNFi4L6Gko3sL8Iv5lLSw+ieaEu0k1pLuoZzpTlx6FB0NvICMTGIqsoWchKQIs
+         SJIuY8wZ//Z9Lm2shbLyhVAI+o42HTP/BZyh9To0HLc0qr1EEjL3fLLlXB+wB/kdsZoY
+         pnLdbFSvtcSLvzMPq+a2Z1XvgIM0AboaizSnk=
+Message-ID: <4D0E855F.6040009@gmail.com>
+Date: Sun, 19 Dec 2010 17:21:19 -0500
+From: Ric Wheeler <ricwheeler@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Eric Sandeen <sandeen@sandeen.net>
+CC: Justin Piszcz <jpiszcz@lucidpixels.com>,
+        Sandon Van Ness <sandon@van-ness.com>, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Alan Piszcz <ap@solarrain.com>
+Subject: Re: Is EXT4 the right FS for > 16TB?
+References: <alpine.DEB.2.00.1012190649060.5393@p34.internal.lan> <4D0E3435.30104@van-ness.com> <alpine.DEB.2.00.1012191151570.28865@p34.internal.lan> <4D0E3A63.606@sandeen.net> <alpine.DEB.2.00.1012191412520.27130@p34.internal.lan> <4D0E5D67.6060504@sandeen.net>
+In-Reply-To: <4D0E5D67.6060504@sandeen.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 12/19/2010 02:30 PM, Eric Sandeen wrote:
+> On 12/19/10 1:14 PM, Justin Piszcz wrote:
+>>
+>> On Sun, 19 Dec 2010, Eric Sandeen wrote:
+>>
+>>> On 12/19/10 10:53 AM, Justin Piszcz wrote:
+>>>> Hi,
+>>>>
+>>>> Wow, there were no updates though after Eric's last comment..
+>>>> Eric, have there been any improvements in the past 6 months?
+>>>>
+>>>> Or should one still steer clear from EXT4>  16TB?
+>>> There is still no released e2fsprogs which supports>  16T for
+>>> ext4, but testing of the not-released bits is welcomed...
+>>> Ted says a 16T-capable version is coming soon.  There's still
+>>> work to be done there, though.
+>>>
+>>> -Eric
+>>>
+>> Thanks Eric for confirming.
+>>
+>> With 7 x 3TB HDD its now possible to breach 16TB (16.38TB) in RAID-5 so I
+>> suppose more people may start asking about this.
+> Agreed, 16T is not that much these days.
+>
+> As Ric said, XFS will handle it without problem, though.
+>
+> -Eric
+>
 
-The NODEMASK_ALLOC macro dynamically allocates memory for its second 
-argument ('nodes_allowed' in this context).
-In nr_hugepages_store_common() we may abort early if strict_strtoul() 
-fails, but in that case we do not free the memory already allocated to 
-'nodes_allowed', causing a memory leak.
-This patch closes the leak by freeing the memory in the error path.
+XFS as a base file system is in fact very popular with commercial storage 
+vendors just because of the size limitations.
 
+Also note that will really large drives, people are also really encouraged to 
+use RAID-6 (larger drives take longer to rebuild, so you have more exposure to a 
+double failure that would lose data in RAID-5)
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- hugetlb.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-  compile tested only
-
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 8585524..9fdcc35 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1439,8 +1439,10 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
- 	NODEMASK_ALLOC(nodemask_t, nodes_allowed, GFP_KERNEL | __GFP_NORETRY);
- 
- 	err = strict_strtoul(buf, 10, &count);
--	if (err)
-+	if (err) {
-+		kfree(nodes_allowed);
- 		return 0;
-+	}
- 
- 	h = kobj_to_hstate(kobj, &nid);
- 	if (nid == NUMA_NO_NODE) {
-
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
+Ric
 
