@@ -1,88 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932332Ab0LSQyY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 11:54:24 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:36224 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932242Ab0LSQyW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 11:54:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=nEnjeFy0KzMq67JyBqhpTvjKfoBshxFhMDWZl/PNmKu2GzhAWJQa1trZHbc72cRkXB
-         UnN118PXzYtuJKR4qmJBgwvmup3x3Vd9g13a0bnJ2kxyPqlh9al0+cJ0p88QIFwP5H2/
-         OQCPuD//p1ur0By6wYJi8zpOV9taq8s2ibGGM=
-Subject: Re: [PATCH 1/1] mtd: nand: add check for out of page read
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Jason Liu <liu.h.jason@gmail.com>
-Cc: Jason Liu <r64343@freescale.com>, David.Woodhouse@intel.com,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTi=zB7UBjkvGYv_wdwZpH1Ghatn6eye1z5616h4X@mail.gmail.com>
-References: <1290156045-11719-1-git-send-email-r64343@freescale.com>
-	 <1292340409.2538.40.camel@localhost>
-	 <AANLkTi=zB7UBjkvGYv_wdwZpH1Ghatn6eye1z5616h4X@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 19 Dec 2010 18:54:05 +0200
-Message-ID: <1292777645.13362.3.camel@koala>
+	id S932310Ab0LSQ5H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 11:57:07 -0500
+Received: from 1wt.eu ([62.212.114.60]:48755 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752951Ab0LSQ5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 11:57:05 -0500
+Date: Sun, 19 Dec 2010 17:56:53 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Greg KH <greg@kroah.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Serge Belyshev <belyshev@depni.sinp.msu.ru>,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [stable] [ANNOUNCE] Linux 2.6.35.10 has been released
+Message-ID: <20101219165653.GK26410@1wt.eu>
+References: <20101214232747.GA18757@basil.fritz.box> <877hf66929.fsf@depni.sinp.msu.ru> <20101219002146.GA11568@kroah.com> <20101219103609.GB28751@basil.fritz.box> <20101219163935.GA23359@kroah.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101219163935.GA23359@kroah.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-15 at 09:55 +0800, Jason Liu wrote:
-> >        /* Do not allow reads past end of device */
-> >        if (unlikely(from >= mtd->size ||
-> >                     ops->ooboffs + readlen > ((mtd->size >> chip->page_shift) -
-> >                                        (from >> chip->page_shift)) * len)) {
-> >                DEBUG(MTD_DEBUG_LEVEL0, "%s: Attempt read beyond end "
-> >                                        "of device\n", __func__);
-> >                return -EINVAL;
-> >        }
+On Sun, Dec 19, 2010 at 08:39:35AM -0800, Greg KH wrote:
+> On Sun, Dec 19, 2010 at 11:36:10AM +0100, Andi Kleen wrote:
+> > On Sat, Dec 18, 2010 at 04:21:46PM -0800, Greg KH wrote:
+> > > > Could you please update this tree:
+> > > > git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.35.y.git ?
+> > > 
+> > > No, the "stable" trees are not being updated anymore, they have moved to
+> > > the longterm git directory instead.
+> > 
+> > It would be good if the old stable git tree for 2.6.35 was deleted to avoid
+> > confusion. Greg, what do you think?
 > 
-> Here the mtd->size in nand_base.c should be the NAND flash chip size,
-
-I think this is partition size as well.
-
-> while in nand_oobtest,
+> No, we have never deleted any of the other trees when we "stopped"
+> maintaining them, so we shouldn't delete these either.
 > 
->               /* Attempt to read off end of device */
->                 ops.mode      = MTD_OOB_AUTO;
->                 ops.len       = 0;
->                 ops.retlen    = 0;
->                 ops.ooblen    = mtd->ecclayout->oobavail;
->                 ops.oobretlen = 0;
->                 ops.ooboffs   = 1;
->                 ops.datbuf    = NULL;
->                 ops.oobbuf    = readbuf;
->                 printk(PRINT_PREF "attempting to read past end of device\n");
->                 printk(PRINT_PREF "an error is expected...\n");
->                 err = mtd->read_oob(mtd, mtd->size - mtd->writesize, &ops);
->                 if (err) {
->                         printk(PRINT_PREF "error occurred as expected\n");
->                         err = 0;
->                 } else {
->                         printk(PRINT_PREF "error: read past end of device\n");
->                         errcnt += 1;
->                 }
->         }
-> 
-> here, mtd->size is mtd partition size right? when the mtd partition is
-> not the last MTD partition, the error will happen.
+> I need to look this week at using git notes to mark trees as unsupported
+> or supported in a way that will work well.  That should solve this issue
+> as the note could also say 'go look at the longterm kernel' as well.
 
-I think this is the same in both. Try to debug this with printks().
+Once again, I think it's not too late to replace the old trees with a
+symlink to the new one (or the opposite), considering that users have
+not updated their scripts yet. Also I'm realizing it's a bit bothering
+as a user to have to change the address of the remote when tracking such
+a branch.
 
-> 
-> I have tested on real NAND, while not on nandsim.
-
-Please, try to reproduce this with nandsim as well, and if it works, try
-to find out why (using printk debugging)
-
--- 
-Best Regards,
-Artem Bityutskiy (Битюцкий Артём)
+Regards,
+Willy
 
