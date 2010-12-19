@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932340Ab0LSV3F (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 16:29:05 -0500
-Received: from nm8-vm0.bullet.mail.ac4.yahoo.com ([98.139.52.230]:24360 "HELO
-	nm8-vm0.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757194Ab0LSV3E (ORCPT
+	id S932509Ab0LSV3M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 16:29:12 -0500
+Received: from nm11-vm0.bullet.mail.ac4.yahoo.com ([98.139.53.196]:31197 "HELO
+	nm11-vm0.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932479Ab0LSV3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 16:29:04 -0500
-X-Yahoo-Newman-Id: 752786.91293.bm@omp1014.mail.ac4.yahoo.com
+	Sun, 19 Dec 2010 16:29:08 -0500
+X-Greylist: delayed 376 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Dec 2010 16:29:08 EST
+X-Yahoo-Newman-Id: 353952.9554.bm@omp1040.mail.ac4.yahoo.com
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: 17J1V5wVM1mO57BDlhKs4wI8XAUjDFzRK6f0iTXaAg2FBe0
- 9cn8fHPVPFuLcaKP28GH7wPsvRTu5iriuGWimAtDJcDDS839mdRjxmcCh79Q
- QxpnW7KB_xgXjwMsfnkIvNDxL.7oEht.wIFdt_pE1gXGTfHUiyN_WfHhv.fr
- 4TSWYMpDjtyjvsioQzuWv7eOkgWypii1d7QO5sh8001Y9xtNLu9_63eDwh2.
- pgWAXqZ3TLtVTk8QCNhRkzPCMGBLWLJsJr_mlksGwA0F.ZAIx5uiWZaVN05r
- aLg6jGFAzImDqKuNdW8XgHi4SRfGejggXjgItX_eHei6PASXkOT2XCph_Zh6
- BRWWac2uN7RbHSbzg0Haegl1e72Vf
+X-YMail-OSG: cddUdfYVM1lsUT3MCL4SQXneSzXKpKZKPrAXlJ1cn.2_xQ3
+ 0zdcKAdWgYKJMBOErhViD7xU75Jif4J2QiBgDfFAxnayRfU2M6HDU5dbqoGb
+ 1bIigubxIFAi1DyvlebG.p3VG7uGemwgXvZ8Wf79cyep5G44ogq1tz7mNeYK
+ xsVsPEky19Q3grLFwNZkgvZHhRiCLLQTK1BMmoD4xJa62esXRnkJZoWQageo
+ uzvetul0IYdx39n0cA22ua11DDb1yyjYZdkID08M8ybwv5nSOZ5PTV.n3TA5
+ MZu26FJJWZUn7QMmOSD8IMr_YhOiL6Xd6Wa1E.cJow22btwKOIY8O6pH63hU
+ 98r4EmN5cGu2GpGi2M0SJMawylCpD
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -35,9 +36,9 @@ Cc: Mike Anderson <andmike@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
         Kashyap Desai <Kashyap.Desai@lsi.com>,
         MPTFusionLinux <DL-MPTFusionLinux@lsi.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 01/12] libiscsi: Convert to host_lock less w/ interrupts disabled internally
-Date: Sun, 19 Dec 2010 13:21:56 -0800
-Message-Id: <1292793727-31957-2-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 08/12] qla4xxx: Convert to host_lock less w/ interrupts disabled externally
+Date: Sun, 19 Dec 2010 13:22:03 -0800
+Message-Id: <1292793727-31957-9-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org>
 References: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org>
@@ -47,72 +48,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch changes iscsi_queuecommand_lck() to a host_lock less
-iscsi_queuecommand() that will internally disable interrupts using
-session->lock and drop the now legacy host_lock unlock.
+This patch converts qla4xxx to run in host_lock less mode with the new
+IRQ_DISABLE_SCSI_QCMD() that disables interrupts while calling ->queuecommand()
+dispatch.  It also drops the legacy host_lock unlock optimization.
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/scsi/libiscsi.c |   10 ++--------
- 1 files changed, 2 insertions(+), 8 deletions(-)
+ drivers/scsi/qla4xxx/ql4_os.c |   10 +++-------
+ 1 files changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
-index c15fde8..5535782 100644
---- a/drivers/scsi/libiscsi.c
-+++ b/drivers/scsi/libiscsi.c
-@@ -1599,7 +1599,7 @@ enum {
- 	FAILURE_SESSION_NOT_READY,
- };
+diff --git a/drivers/scsi/qla4xxx/ql4_os.c b/drivers/scsi/qla4xxx/ql4_os.c
+index 0d48fb4..d21eba7 100644
+--- a/drivers/scsi/qla4xxx/ql4_os.c
++++ b/drivers/scsi/qla4xxx/ql4_os.c
+@@ -450,7 +450,7 @@ void qla4xxx_srb_compl(struct kref *ref)
+ }
  
--static int iscsi_queuecommand_lck(struct scsi_cmnd *sc, void (*done)(struct scsi_cmnd *))
-+int iscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
+ /**
+- * qla4xxx_queuecommand - scsi layer issues scsi command to driver.
++ * qla4xxx_queuecommand_irq_disable - scsi layer issues scsi command to driver.
+  * @cmd: Pointer to Linux's SCSI command structure
+  * @done_fn: Function that the driver calls to notify the SCSI mid-layer
+  *	that the command has been processed.
+@@ -463,7 +463,7 @@ void qla4xxx_srb_compl(struct kref *ref)
+  * completion handling).   Unfortunely, it sometimes calls the scheduler
+  * in interrupt context which is a big NO! NO!.
+  **/
+-static int qla4xxx_queuecommand_lck(struct scsi_cmnd *cmd,
++static int qla4xxx_queuecommand_irq_disable(struct scsi_cmnd *cmd,
+ 				void (*done)(struct scsi_cmnd *))
  {
- 	struct iscsi_cls_session *cls_session;
- 	struct Scsi_Host *host;
-@@ -1609,13 +1609,11 @@ static int iscsi_queuecommand_lck(struct scsi_cmnd *sc, void (*done)(struct scsi
- 	struct iscsi_conn *conn;
- 	struct iscsi_task *task = NULL;
+ 	struct scsi_qla_host *ha = to_qla_host(cmd->device->host);
+@@ -508,8 +508,6 @@ static int qla4xxx_queuecommand_lck(struct scsi_cmnd *cmd,
+ 	    test_bit(DPC_RESET_HA_FW_CONTEXT, &ha->dpc_flags))
+ 		goto qc_host_busy;
  
--	sc->scsi_done = done;
- 	sc->result = 0;
- 	sc->SCp.ptr = NULL;
+-	spin_unlock_irq(ha->host->host_lock);
+-
+ 	srb = qla4xxx_get_new_srb(ha, ddb_entry, cmd, done);
+ 	if (!srb)
+ 		goto qc_host_busy_lock;
+@@ -518,7 +516,6 @@ static int qla4xxx_queuecommand_lck(struct scsi_cmnd *cmd,
+ 	if (rval != QLA_SUCCESS)
+ 		goto qc_host_busy_free_sp;
  
- 	host = sc->device->host;
- 	ihost = shost_priv(host);
--	spin_unlock(host->host_lock);
- 
- 	cls_session = starget_to_session(scsi_target(sc->device));
- 	session = cls_session->dd_data;
-@@ -1706,7 +1704,6 @@ static int iscsi_queuecommand_lck(struct scsi_cmnd *sc, void (*done)(struct scsi
- 
- 	session->queued_cmdsn++;
- 	spin_unlock(&session->lock);
--	spin_lock(host->host_lock);
+-	spin_lock_irq(ha->host->host_lock);
  	return 0;
  
- prepd_reject:
-@@ -1716,7 +1713,6 @@ reject:
- 	spin_unlock(&session->lock);
- 	ISCSI_DBG_SESSION(session, "cmd 0x%x rejected (%d)\n",
- 			  sc->cmnd[0], reason);
--	spin_lock(host->host_lock);
- 	return SCSI_MLQUEUE_TARGET_BUSY;
+ qc_host_busy_free_sp:
+@@ -526,7 +523,6 @@ qc_host_busy_free_sp:
+ 	mempool_free(srb, ha->srb_mempool);
  
- prepd_fault:
-@@ -1732,12 +1728,10 @@ fault:
- 		scsi_out(sc)->resid = scsi_out(sc)->length;
- 		scsi_in(sc)->resid = scsi_in(sc)->length;
- 	}
--	done(sc);
--	spin_lock(host->host_lock);
-+	sc->scsi_done(sc);
+ qc_host_busy_lock:
+-	spin_lock_irq(ha->host->host_lock);
+ 
+ qc_host_busy:
+ 	return SCSI_MLQUEUE_HOST_BUSY;
+@@ -537,7 +533,7 @@ qc_fail_command:
  	return 0;
  }
  
--DEF_SCSI_QCMD(iscsi_queuecommand)
- EXPORT_SYMBOL_GPL(iscsi_queuecommand);
+-static DEF_SCSI_QCMD(qla4xxx_queuecommand)
++static IRQ_DISABLE_SCSI_QCMD(qla4xxx_queuecommand)
  
- int iscsi_change_queue_depth(struct scsi_device *sdev, int depth, int reason)
+ /**
+  * qla4xxx_mem_free - frees memory allocated to adapter
 -- 
 1.7.3.4
 
