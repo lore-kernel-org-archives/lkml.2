@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757339Ab0LSVXE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 16:23:04 -0500
-Received: from nm28-vm0.bullet.mail.ac4.yahoo.com ([98.139.52.246]:46432 "HELO
-	nm28-vm0.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757293Ab0LSVXC (ORCPT
+	id S932504Ab0LSVWn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 16:22:43 -0500
+Received: from nm12.bullet.mail.ac4.yahoo.com ([98.139.52.209]:47301 "HELO
+	nm12.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932479Ab0LSVWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 16:23:02 -0500
-X-Yahoo-Newman-Id: 808980.62681.bm@omp1055.mail.ac4.yahoo.com
+	Sun, 19 Dec 2010 16:22:40 -0500
+X-Yahoo-Newman-Id: 591921.41394.bm@omp1064.mail.ac4.yahoo.com
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: tmOvf_QVM1kTvmSLfSCLKDGJZgmDgUWcwRLt2Zw1UYT2ija
- 5vKIoQFj6VexUbSrXPlrQkW0F1SFzZZ21t8ONWEYFyfYbagQ1fkLLAl8UtXM
- Ls0RoEUtadNceM6MfeRT.ZXPO8sITWs5J2OPKuaPdI3ODKYKJckyj33I4Z0b
- W0.3f1IwOETmakBgjj1gRBB4HSm7E8d1ZeGbGTLvw_n7TlbanfFPFh6iwf6z
- zNeQsVdne3.UqP3XzdQODoFBt7E1lfufwhfNVbh6NlL50lloVqIqnu.8jDzW
- DG7z2.rCfLHtzsncRi43KsOff9fyBD6wp89RhxOBDco6.y5LWollfVNzDKpP
- W_RbBlv2SXByPoBg55JIZtOQDcg0UP7Y5H16qRNgRd7LRbgNvs1x5jGdeWxw
- m2412e6qSMQ3V7fv9ogV.JSH.px0_7NtM7W44RCIgOO.6w2KzF297
+X-YMail-OSG: hTkxBYgVM1kXydbR0.OwPC9ThDeIj1d9_AVEK7j3yXhaMEh
+ fUzzV5eoEbNlVVCXyPoQXizF1ZEshgr2QOEebFRpbIEkj2A7sNSO.Aljg4Zd
+ fLVO_YcsLAgy4jLEa8Nmc.Zgw9a9EEnw14_KL0AUcPHtYTJ5W0TSErthleim
+ Iit.MAlSTGrSeO4vVKadSW_ojnXV.gn2Ubv341tmiwH2SYIiw1a1cjsPrHQs
+ gzPrHtw9WC1ktntA4fAMohCquh5Z80kN4DeEWwYvY8pNn4ZB1nrxJZVoYXWL
+ GXdalZbKQheuTLHB7vQo1EFw8b2yentbfAw6cSSYWr6Jb_pPrfp_aFaKAYlt
+ oV8mbCckPeSZ2i2Ra2SMnyqSMLQVuwRkR7dn8ydZn8vOpEV3m_VHuU.dtTi4
+ eCBhm7SsMRzDiaXO9GELDJJkmcVqqvrnunmuKjvMahDre4.LgoEat7NxNNQ-
+ -
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -36,9 +37,9 @@ Cc: Mike Anderson <andmike@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
         Kashyap Desai <Kashyap.Desai@lsi.com>,
         MPTFusionLinux <DL-MPTFusionLinux@lsi.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 10/12] megaraid_sas: Add smp_mb__after_atomic_*() for instance->fw_outstanding
-Date: Sun, 19 Dec 2010 13:22:05 -0800
-Message-Id: <1292793727-31957-11-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 05/12] fnic: Convert to host_lock less w/ interrupts disabled externally
+Date: Sun, 19 Dec 2010 13:22:00 -0800
+Message-Id: <1292793727-31957-6-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org>
 References: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org>
@@ -48,53 +49,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds four missing smp_mb__after_atomic_[inc,dec] barriers
-for atomic_inc() and atomic_dec() usage with instance->fw_outstanding
-within the main I/O dispatcher megasas_queue_command_lck(), completion
-callback megasas_complete_cmd() and struct megasas_instance HW reset
-queue drain in megasas_issue_pending_cmds_again().
+This patch converts fnic to run in host_lock less mode with the new
+IRQ_DISABLE_SCSI_QCMD() that disables interrupts while calling ->queuecommand()
+dispatch.  It also drops the legacy host_lock unlock optimization.
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/scsi/megaraid/megaraid_sas.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ drivers/scsi/fnic/fnic_scsi.c |   14 +++-----------
+ 1 files changed, 3 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/scsi/megaraid/megaraid_sas.c b/drivers/scsi/megaraid/megaraid_sas.c
-index 7451bc0..31c5419 100644
---- a/drivers/scsi/megaraid/megaraid_sas.c
-+++ b/drivers/scsi/megaraid/megaraid_sas.c
-@@ -1398,6 +1398,7 @@ megasas_queue_command_lck(struct scsi_cmnd *scmd, void (*done) (struct scsi_cmnd
- 	 * Issue the command to the FW
- 	 */
- 	atomic_inc(&instance->fw_outstanding);
-+	smp_mb__after_atomic_inc();
+diff --git a/drivers/scsi/fnic/fnic_scsi.c b/drivers/scsi/fnic/fnic_scsi.c
+index 22d0240..9f51beb 100644
+--- a/drivers/scsi/fnic/fnic_scsi.c
++++ b/drivers/scsi/fnic/fnic_scsi.c
+@@ -349,7 +349,8 @@ static inline int fnic_queue_wq_copy_desc(struct fnic *fnic,
+  * Routine to send a scsi cdb
+  * Called with host_lock held and interrupts disabled.
+  */
+-static int fnic_queuecommand_lck(struct scsi_cmnd *sc, void (*done)(struct scsi_cmnd *))
++static int fnic_queuecommand_irq_disable(struct scsi_cmnd *sc,
++					void (*done)(struct scsi_cmnd *))
+ {
+ 	struct fc_lport *lp;
+ 	struct fc_rport *rport;
+@@ -373,13 +374,6 @@ static int fnic_queuecommand_lck(struct scsi_cmnd *sc, void (*done)(struct scsi_
+ 	if (lp->state != LPORT_ST_READY || !(lp->link_up))
+ 		return SCSI_MLQUEUE_HOST_BUSY;
  
- 	instance->instancet->fire_cmd(instance, cmd->frame_phys_addr,
- 				cmd->frame_count-1, instance->reg_set);
-@@ -2068,6 +2069,7 @@ megasas_complete_cmd(struct megasas_instance *instance, struct megasas_cmd *cmd,
- 		if (exception) {
+-	/*
+-	 * Release host lock, use driver resource specific locks from here.
+-	 * Don't re-enable interrupts in case they were disabled prior to the
+-	 * caller disabling them.
+-	 */
+-	spin_unlock(lp->host->host_lock);
+-
+ 	/* Get a new io_req for this SCSI IO */
+ 	fnic = lport_priv(lp);
  
- 			atomic_dec(&instance->fw_outstanding);
-+			smp_mb__after_atomic_dec();
- 
- 			scsi_dma_unmap(cmd->scmd);
- 			cmd->scmd->scsi_done(cmd->scmd);
-@@ -2116,6 +2118,7 @@ megasas_complete_cmd(struct megasas_instance *instance, struct megasas_cmd *cmd,
+@@ -452,12 +446,10 @@ static int fnic_queuecommand_lck(struct scsi_cmnd *sc, void (*done)(struct scsi_
  		}
+ 	}
+ out:
+-	/* acquire host lock before returning to SCSI */
+-	spin_lock(lp->host->host_lock);
+ 	return ret;
+ }
  
- 		atomic_dec(&instance->fw_outstanding);
-+		smp_mb__after_atomic_dec();
+-DEF_SCSI_QCMD(fnic_queuecommand)
++IRQ_DISABLE_SCSI_QCMD(fnic_queuecommand)
  
- 		scsi_dma_unmap(cmd->scmd);
- 		cmd->scmd->scsi_done(cmd->scmd);
-@@ -2219,6 +2222,7 @@ megasas_issue_pending_cmds_again(struct megasas_instance *instance)
- 			cmd, cmd->scmd->cmnd[0], cmd->scmd->serial_number);
- 
- 			atomic_inc(&instance->fw_outstanding);
-+			smp_mb__after_atomic_inc();
- 			instance->instancet->fire_cmd(instance,
- 					cmd->frame_phys_addr,
- 					cmd->frame_count-1, instance->reg_set);
+ /*
+  * fnic_fcpio_fw_reset_cmpl_handler
 -- 
 1.7.3.4
 
