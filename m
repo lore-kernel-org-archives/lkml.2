@@ -1,41 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708Ab0LSL6j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 06:58:39 -0500
-Received: from lucidpixels.com ([75.144.35.66]:43202 "EHLO lucidpixels.com"
+	id S1756171Ab0LSMeI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 07:34:08 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:38328 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751640Ab0LSL6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 06:58:38 -0500
-X-Greylist: delayed 348 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Dec 2010 06:58:37 EST
-Date: Sun, 19 Dec 2010 06:52:49 -0500 (EST)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-kernel@vger.kernel.org
-cc: linux-ext4@vger.kernel.org, Alan Piszcz <ap@solarrain.com>
-Subject: Is EXT4 the right FS for > 16TB?
-Message-ID: <alpine.DEB.2.00.1012190649060.5393@p34.internal.lan>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755293Ab0LSMdy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 07:33:54 -0500
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        "Radu Andries" <admiral0@tuxfamily.org>
+References: <wNJKqSoEutL.A.lKD.odfDNB@chimera>
+In-Reply-To: <wNJKqSoEutL.A.lKD.odfDNB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Disposition: inline
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <6Ue85L6pKCJ.A.81F.DgfDNB@chimera>
+Subject: [Bug #22472] vga_switcheroo fails to switch from intel to ati
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sun, 19 Dec 2010 13:28:31 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This message has been generated automatically as a part of a summary report
+of recent regressions.
 
-I've read a lot of posts regarding people who setup RAID volumes of and up 
-to around 16TB and EXT4 is typically used.
+The following bug entry is on the current list of known regressions
+from 2.6.36.  Please verify if it still should be listed and let the tracking team
+know (either way).
 
-However, in various forums, people still ask what is the correct 
-filesystem for > 16TB?  I did read one post somewhere that stated the ext4 
-developers did not recommend using ext4 for very large volumes, is this 
-still true?
 
-I am looking at creating a 43TB volume possibly in the near future and I 
-have used XFS in the past, which works well and would probably not have 
-any problem with it; however, I have bitten quite a number of times by XFS 
-bugs in the past several years, so I was curious, how does EXT4 perform on 
-larger volumes, e.g., 20TB?
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22472
+Subject		: vga_switcheroo fails to switch from intel to ati
+Submitter	: Radu Andries <admiral0@tuxfamily.org>
+Date		: 2010-11-08 16:46 (42 days old)
 
-Are there any caveats / problems?
 
-Justin.
