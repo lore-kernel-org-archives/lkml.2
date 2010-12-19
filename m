@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932465Ab0LSTau (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 14:30:50 -0500
-Received: from 64-131-28-21.usfamily.net ([64.131.28.21]:60090 "EHLO
-	mail.sandeen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932424Ab0LSTat (ORCPT
+	id S932472Ab0LSToW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 14:44:22 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:37140 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932449Ab0LSToV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 14:30:49 -0500
-Message-ID: <4D0E5D67.6060504@sandeen.net>
-Date: Sun, 19 Dec 2010 13:30:47 -0600
-From: Eric Sandeen <sandeen@sandeen.net>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Sun, 19 Dec 2010 14:44:21 -0500
 MIME-Version: 1.0
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-CC: Sandon Van Ness <sandon@van-ness.com>, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, Alan Piszcz <ap@solarrain.com>
-Subject: Re: Is EXT4 the right FS for > 16TB?
-References: <alpine.DEB.2.00.1012190649060.5393@p34.internal.lan> <4D0E3435.30104@van-ness.com> <alpine.DEB.2.00.1012191151570.28865@p34.internal.lan> <4D0E3A63.606@sandeen.net> <alpine.DEB.2.00.1012191412520.27130@p34.internal.lan>
-In-Reply-To: <alpine.DEB.2.00.1012191412520.27130@p34.internal.lan>
+In-Reply-To: <xqq2Z3iR9HJ.A.T2G.A2fDNB@chimera>
+References: <ZRNlsjykcOD.A.b-F.20fDNB@chimera>
+	<xqq2Z3iR9HJ.A.T2G.A2fDNB@chimera>
+Date: Sun, 19 Dec 2010 11:44:19 -0800
+Message-ID: <AANLkTi=8Wdv4bwcFb+FS6R+stnrxHo8tB8iCHoqNYRYu@mail.gmail.com>
+Subject: Re: [Bug #20462] 2.6.36-rc7-git2 - panic/GPF: e1000e/vlans?
+From: Jesse Gross <jesse@nicira.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Nikola Ciprich <extmaillist@linuxbox.cz>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/10 1:14 PM, Justin Piszcz wrote:
-> 
-> 
-> On Sun, 19 Dec 2010, Eric Sandeen wrote:
-> 
->> On 12/19/10 10:53 AM, Justin Piszcz wrote:
->>> Hi,
->>>
->>> Wow, there were no updates though after Eric's last comment..
->>> Eric, have there been any improvements in the past 6 months?
->>>
->>> Or should one still steer clear from EXT4 > 16TB?
->>
->> There is still no released e2fsprogs which supports > 16T for
->> ext4, but testing of the not-released bits is welcomed...
->> Ted says a 16T-capable version is coming soon.  There's still
->> work to be done there, though.
->>
->> -Eric
->>
-> 
-> Thanks Eric for confirming.
-> 
-> With 7 x 3TB HDD its now possible to breach 16TB (16.38TB) in RAID-5 so I
-> suppose more people may start asking about this.
+On Sun, Dec 19, 2010 at 4:50 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.35 and 2.6.36.
+>
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.35 and 2.6.36.  Please verify if it still should
+> be listed and let the tracking team know (either way).
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=20462
+> Subject         : 2.6.36-rc7-git2 - panic/GPF: e1000e/vlans?
+> Submitter       : Nikola Ciprich <extmaillist@linuxbox.cz>
+> Date            : 2010-10-15 7:10 (66 days old)
+> Message-ID      : <20101015071008.GA8714@pcnci.linuxbox.cz>
+> References      : http://marc.info/?l=linux-kernel&m=128712984831303&w=2
+> Handled-By      : Jesse Gross <jesse@nicira.com>
+> Patch           : http://www.spinics.net/lists/netdev/msg146227.html
 
-Agreed, 16T is not that much these days.
-
-As Ric said, XFS will handle it without problem, though.
-
--Eric
-
-> Justin.
-> 
-
+Fixed in 2.6.36.2.
