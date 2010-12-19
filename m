@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932453Ab0LSTYb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 14:24:31 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:61961 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932401Ab0LSTY3 convert rfc822-to-8bit (ORCPT
+	id S932465Ab0LSTau (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 14:30:50 -0500
+Received: from 64-131-28-21.usfamily.net ([64.131.28.21]:60090 "EHLO
+	mail.sandeen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932424Ab0LSTat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 14:24:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=C+wPCCWWQ1trBqGxXeKKUXXcjEfJ8qAVZuvOD3O/wimBerVUHzSxb7EisKS/Yqw2ae
-         yVAm2WBqVWy1DGxWF0p19uq0njNMPhBIwqMKfHxzwExIxTI1W1HqA0pin/C8dWE/0uCc
-         FBhu1WciV+2S+Qi7BfvHxtbt7WPVpgWBF0wd8=
+	Sun, 19 Dec 2010 14:30:49 -0500
+Message-ID: <4D0E5D67.6060504@sandeen.net>
+Date: Sun, 19 Dec 2010 13:30:47 -0600
+From: Eric Sandeen <sandeen@sandeen.net>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <6Ue85L6pKCJ.A.9eD.8dfDNB@chimera>
-References: <wNJKqSoEutL.A.lKD.odfDNB@chimera>
-	<6Ue85L6pKCJ.A.9eD.8dfDNB@chimera>
-Date: Sun, 19 Dec 2010 20:24:28 +0100
-Message-ID: <AANLkTinRtWhM=NdjYWYNN5XBtxdUtCGVyPA_YhLC2BSm@mail.gmail.com>
-Subject: Re: [Bug #24772] Crash with btrfs rootfs on dm-crypt [ kernel BUG at
- fs/btrfs/inode.c:806! ] on linux 2.6.37-rc5
-From: Fabio Comolli <fabio.comolli@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+CC: Sandon Van Ness <sandon@van-ness.com>, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Alan Piszcz <ap@solarrain.com>
+Subject: Re: Is EXT4 the right FS for > 16TB?
+References: <alpine.DEB.2.00.1012190649060.5393@p34.internal.lan> <4D0E3435.30104@van-ness.com> <alpine.DEB.2.00.1012191151570.28865@p34.internal.lan> <4D0E3A63.606@sandeen.net> <alpine.DEB.2.00.1012191412520.27130@p34.internal.lan>
+In-Reply-To: <alpine.DEB.2.00.1012191412520.27130@p34.internal.lan>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
-As I wrote in the report, the bug destroyed my installation, so I
-don't have linux anymore on that laptop.
+On 12/19/10 1:14 PM, Justin Piszcz wrote:
+> 
+> 
+> On Sun, 19 Dec 2010, Eric Sandeen wrote:
+> 
+>> On 12/19/10 10:53 AM, Justin Piszcz wrote:
+>>> Hi,
+>>>
+>>> Wow, there were no updates though after Eric's last comment..
+>>> Eric, have there been any improvements in the past 6 months?
+>>>
+>>> Or should one still steer clear from EXT4 > 16TB?
+>>
+>> There is still no released e2fsprogs which supports > 16T for
+>> ext4, but testing of the not-released bits is welcomed...
+>> Ted says a 16T-capable version is coming soon.  There's still
+>> work to be done there, though.
+>>
+>> -Eric
+>>
+> 
+> Thanks Eric for confirming.
+> 
+> With 7 x 3TB HDD its now possible to breach 16TB (16.38TB) in RAID-5 so I
+> suppose more people may start asking about this.
 
-On Sun, Dec 19, 2010 at 1:34 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> This message has been generated automatically as a part of a summary report
-> of recent regressions.
->
-> The following bug entry is on the current list of known regressions
-> from 2.6.36.  Please verify if it still should be listed and let the tracking team
-> know (either way).
->
->
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=24772
-> Subject         : Crash with btrfs rootfs on dm-crypt [ kernel BUG at fs/btrfs/inode.c:806! ] on linux 2.6.37-rc5
-> Submitter       : Fabio Comolli <fabio.comolli@gmail.com>
-> Date            : 2010-12-10 20:30 (10 days old)
-> Message-ID      : <AANLkTi=j9zsaYNcu=NgGV=HfE-3rNHzVswov8VrgwjQp@mail.gmail.com>
-> References      : http://marc.info/?l=linux-kernel&m=129201308706568&w=2
->
->
->
+Agreed, 16T is not that much these days.
+
+As Ric said, XFS will handle it without problem, though.
+
+-Eric
+
+> Justin.
+> 
+
