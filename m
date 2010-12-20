@@ -1,46 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933086Ab0LTTvG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 14:51:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21285 "EHLO mx1.redhat.com"
+	id S933095Ab0LTTwM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 14:52:12 -0500
+Received: from mga02.intel.com ([134.134.136.20]:28504 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932744Ab0LTTvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 14:51:04 -0500
-Date: Mon, 20 Dec 2010 20:43:54 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
-        jan.kratochvil@redhat.com
-Subject: Re: [PATCH 14/16] ptrace: make SIGCONT notification reliable
-	against ptrace
-Message-ID: <20101220194354.GA23281@redhat.com>
-References: <1291654624-6230-1-git-send-email-tj@kernel.org> <1291654624-6230-15-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291654624-6230-15-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932744Ab0LTTwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 14:52:11 -0500
+Message-Id: <0d30dc$kh3cm9@orsmga001.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,203,1291622400"; 
+   d="scan'208";a="689025737"
+Date: Mon, 20 Dec 2010 19:52:07 +0000
+To: Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [BISECTED] agp/intel: revert "Remove confusion of stolen entries not stolen memory"
+Cc: linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>
+In-Reply-To: <201012202047.08544.arnd@arndb.de>
+References: <201012201912.19051.arnd@arndb.de> <849307$arcbdv@azsmga001.ch.intel.com> <201012202047.08544.arnd@arndb.de>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06, Tejun Heo wrote:
->
-> This patch adds a new signal flag SIGNAL_NOTIFY_CONT which is set when
-> a task is woken up by SIGCONT and cleared once the event is notified
-> to the parent.  SIGNAL_CLD_MASK bits are no longer cleared after
-> notification.  Combined with clearing SIGNAL_CLD_MASK if
-> !SIGNAL_NOTIFY_CONT on ptrace attach, these bits are set on ptrace
-> detach iff the tracee owes a notification to the real parent.
-> __ptrace_unlink() is updated to check these bits and reschedule
-> SIGCONT notification if necessary.
+Also, which modules do you have loaded when using VESA? i.e. is the
+i915.ko loaded, but in UMS mode (i915.modeset=0)?
+-Chris
 
-It turns out I can no longer read the patches today ;)  Will continue
-tomorrow with the fresh head.
-
-I must admit, I have some concerns. But most probably I just need
-to actually understand what this patch does.
-
-Oleg.
-
+-- 
+Chris Wilson, Intel Open Source Technology Centre
