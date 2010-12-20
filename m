@@ -1,58 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754326Ab0LTCIY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 21:08:24 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:36203 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753495Ab0LTCIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 21:08:21 -0500
-Date: Mon, 20 Dec 2010 13:08:12 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>
-Subject: linux-next: manual merge of the pci tree with Linus' tree
-Message-Id: <20101220130812.1710c405.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__20_Dec_2010_13_08_12_+1100_sev16BIE0Jg1xjH+"
+	id S1754243Ab0LTCMN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 21:12:13 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:54843 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753639Ab0LTCML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 21:12:11 -0500
+Message-ID: <4D0EBBCF.2070305@cn.fujitsu.com>
+Date: Mon, 20 Dec 2010 10:13:35 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH RFC tip/core/rcu 15/20] rcu: Keep gpnum and completed
+ fields synchronized
+References: <20101217205433.GA10199@linux.vnet.ibm.com> <1292619291-2468-15-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1292619291-2468-15-git-send-email-paulmck@linux.vnet.ibm.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-12-20 10:12:04,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-12-20 10:12:05,
+	Serialize complete at 2010-12-20 10:12:05
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__20_Dec_2010_13_08_12_+1100_sev16BIE0Jg1xjH+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 12/18/2010 04:54 AM, Paul E. McKenney wrote:
+> From: Frederic Weisbecker <fweisbec@gmail.com>
+> 
+> When a CPU that was in an extended quiescent state wakes
+> up and catches up with grace periods that remote CPUs
+> completed on its behalf, we update the completed field
+> but not the gpnum that keeps a stale value of a backward
+> grace period ID.
+> 
+> Later, note_new_gpnum() will interpret the shift between
+> the local CPU and the node grace period ID as some new grace
+> period to handle and will then start to hunt quiescent state.
+> 
+> But if every grace periods have already been completed, this
+> interpretation becomes broken. And we'll be stuck in clusters
+> of spurious softirqs because rcu_report_qs_rdp() will make
+> this broken state run into infinite loop.
+> 
+> The solution, as suggested by Lai Jiangshan, is to ensure that
+> the gpnum and completed fields are well synchronized when we catch
+> up with completed grace periods on their behalf by other cpus.
+> This way we won't start noting spurious new grace periods.
+> 
+> Suggested-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Steven Rostedt <rostedt@goodmis.org
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  kernel/rcutree.c |    9 +++++++++
+>  1 files changed, 9 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 916f42b..8105271 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -680,6 +680,15 @@ __rcu_process_gp_end(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
+>  		rdp->completed = rnp->completed;
+>  
+>  		/*
+> +		 * If we were in an extended quiescent state, we may have
+> +		 * missed some grace periods that others CPUs took care on
+> +		 * our behalf. Catch up with this state to avoid noting
+> +		 * spurious new grace periods.
+> +		 */
+> +		if (rdp->completed > rdp->gpnum)
+> +			rdp->gpnum = rdp->completed;
 
-Hi Jesse,
+Need to use ULONG_CMP_LT(rdp->gpnum, rdp->completed) instead.
 
-Today's linux-next merge of the pci tree got a conflicts in
-arch/x86/kernel/resource.c arch/x86/pci/i386.c kernel/resource.c between
-various commits from Linus' tree and similar commits from the pci tree.
+> +
+> +		/*
+>  		 * If another CPU handled our extended quiescent states and
+>  		 * we have no more grace period to complete yet, then stop
+>  		 * chasing quiescent states.
 
-I just used the versions from Linus' tree and assume that the pci tree
-needs to be resynced.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__20_Dec_2010_13_08_12_+1100_sev16BIE0Jg1xjH+
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNDrqMAAoJEDMEi1NhKgbsQ54H/01V4Gfl+NO1nbThVEhGAS8x
-x+RlMhkkKapXuTku4WMDWeS/WfjNiCbOPofi4mw2kbEmBMt74DH0DQR9GRzagbwy
-Y+EQiDN2XU833d52FfUC8u691kzeJF+cyZ5OLymP39MEzeFqEvSHR+Rog29dyfW0
-TyiEDB/Nn5//9dUisvt6vcgsukTL54Jp8TWj48zKFvwjPAur4s/lH56kDLLckGMe
-1TuP/+Exz57lqDPEJJ1KskuexaDKz6V8X61mIgvaaY1TOmxNqP2a0BtX78HWTjFa
-DtNswevdSteglDhtyzZKnNCw1DO74+HNWCvq5XZ54sij32l/DUdwgPO9/Kn3nNo=
-=UaYs
------END PGP SIGNATURE-----
-
---Signature=_Mon__20_Dec_2010_13_08_12_+1100_sev16BIE0Jg1xjH+--
