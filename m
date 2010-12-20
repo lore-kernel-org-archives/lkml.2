@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab0LTCDa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 21:03:30 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:54394 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753388Ab0LTCD1 (ORCPT
+	id S1753993Ab0LTCIE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 21:08:04 -0500
+Received: from palinux.external.hp.com ([192.25.206.14]:36450 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753388Ab0LTCIB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 21:03:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=CgsQfyiopvUFTbDF2g8BN8BbRkowYzomZHYCs4SZ8y7tkkXh1PEox8sYF3iu261Y0h
-         5D7zkwiMOaj0kc/gGAhgD/MLRCh+D3NVoNDdAfTR/Y78KfnT3e/IYMxYOphtCz1CCPlK
-         2qy8LW4FRJM89kMfPNF5NQOCbsoXttHAawqb4=
+	Sun, 19 Dec 2010 21:08:01 -0500
+Date: Sun, 19 Dec 2010 19:07:59 -0700
+From: Matthew Wilcox <matthew@wil.cx>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jeff Garzik <jeff@garzik.org>, Christoph Hellwig <hch@lst.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Mike Christie <michaelc@cs.wisc.edu>
+Subject: Re: [PATCH 01/12] libiscsi: Convert to host_lock less w/
+	interrupts disabled internally
+Message-ID: <20101220020758.GK1263@parisc-linux.org>
+References: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org> <1292793727-31957-2-git-send-email-nab@linux-iscsi.org> <20101219233835.GJ1263@parisc-linux.org> <1292807703.20840.29.camel@haakon2.linux-iscsi.org> <1292808126.20840.33.camel@haakon2.linux-iscsi.org>
 MIME-Version: 1.0
-In-Reply-To: <20101215081046.GB11920@core.coreip.homeip.net>
-References: <AANLkTimW5ro7EQBgoqMLSxnEsVrinL2S+USu207-Nbh=@mail.gmail.com>
-	<20101210213551.GE1630@core.coreip.homeip.net>
-	<AANLkTimhgLyx=Di2yBimFWm=Hg5-2CGOxHfuB+Gb-9_Q@mail.gmail.com>
-	<20101215081046.GB11920@core.coreip.homeip.net>
-Date: Sun, 19 Dec 2010 19:03:26 -0700
-Message-ID: <AANLkTi=gMYi8Dvv0V=if0e_c_YWYwFosZx-1h3JT0hSU@mail.gmail.com>
-Subject: Re: [PATCH] toshiba_acpi: FULL TOS1900 device support
-From: Azael Avalos <coproscefalo@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292808126.20840.33.camel@haakon2.linux-iscsi.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+On Sun, Dec 19, 2010 at 05:22:06PM -0800, Nicholas A. Bellinger wrote:
+> Actually sorry, Mike Christie did already make a clarification on this
+> subject here:
+> 
+> http://marc.info/?l=linux-scsi&m=129010439421506&w=2
+> 
+> I had originally thought the same that session->lock should be using
+> some flavour of spin_lock_irq*() as well, but apparently this is not the
+> case for libiscsi.
 
-Sorry for the late reply.
+Right, so it seems.  "the session lock is just locked in softirqs/timers"
+means that it does need to be the _bh() version of spin_lock though.
 
-I'll resend the patch with the changes you suggested, however,
-I'll change the description since this patch does not add _FULL_
-support to TOS1900 devices.
-
-I recently got a new laptop (Qosmio X505-Q898), which turns out
-it had a TOS1900 device as well, however, none of the known
-methods activate hotkeys on this model.
-
-Searching in the DSDT, I found a WMI interface, so if someone
-is interested in having a look on the DSDT let me know so I
-can attach the file.
-
-
-Saludos
-Azael
-
+I'm actually not sure ... is it safe to use the _bh versions in BH
+context?  I think it is because the preempt count is nested, unlike the
+_irq variants of spinlocks.
 
 -- 
--- El mundo apesta y vosotros apestais tambien --
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
