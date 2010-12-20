@@ -1,116 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757822Ab0LTOqF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 09:46:05 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:34087 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752945Ab0LTOqD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 09:46:03 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=tf8OB19jzYQuPQVs8zHDfuKo0nDnb+FAHyDKSXCRGg/b/59oxlcMArBOLUCbQuc3bQ
-         ffepNSspaX/M9q4AqPAlbjNmVU2wPrU7ON6HdVzfxuQ0vMkP1qeBgUdSzDaa22yTj49t
-         KEPvkkdFyGCseeN1WJm7i/ERdkNUhlobqFGC8=
+	id S932604Ab0LTOqu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 09:46:50 -0500
+Received: from fieldses.org ([174.143.236.118]:49461 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757794Ab0LTOqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 09:46:49 -0500
+Date: Mon, 20 Dec 2010 09:46:44 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: "Kirill A. Shutsemov" <kirill@shutemov.name>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, Neil Brown <neilb@suse.de>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/12] make rpc_pipefs be mountable multiple times
+Message-ID: <20101220144644.GC20643@fieldses.org>
+References: <1292846078-31793-1-git-send-email-kirill@shutemov.name>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <201012192000.14969.PeterHuewe@gmx.de>
-References: <1291850970-7190-1-git-send-email-peterhuewe@gmx.de>
-	<201012152214.29452.PeterHuewe@gmx.de>
-	<AANLkTikPVqaZE8KBOCKWuwkqRpn3mHKQn+V3bUU5cW7=@mail.gmail.com>
-	<201012192000.14969.PeterHuewe@gmx.de>
-Date: Mon, 20 Dec 2010 15:46:02 +0100
-Message-ID: <AANLkTi=gqimS5n6J6GXcZA_W1JHZ8yHJHAKqP=dDmN0Z@mail.gmail.com>
-Subject: Re: [PATCH] platform/x86: Fix recursive Kconfig dependency
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: =?UTF-8?Q?Peter_H=C3=BCwe?= <PeterHuewe@gmx.de>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Corentin Chary <corentin.chary@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org, John Linville <linville@tuxdriver.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292846078-31793-1-git-send-email-kirill@shutemov.name>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 19, 2010 at 8:00 PM, Peter Hüwe <PeterHuewe@gmx.de> wrote:
-> Am Freitag 17 Dezember 2010, 12:30:15 schrieb Sedat Dilek:
->> On Wed, Dec 15, 2010 at 10:14 PM, Peter Hüwe <PeterHuewe@gmx.de> wrote:
->> > Am Mittwoch 15 Dezember 2010, 21:51:04 schrieb Randy Dunlap:
->> >> > Hi, another patch was posted before:
->> >> >
->> >> > http://article.gmane.org/gmane.linux.drivers.platform.x86.devel/970/ma
->> >> > tch =acpi_wmi
->> >> >Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
->> >
->> > Yeah, you're right - but as Sedat's patch is perfect (and fixes both) -
->> > so for Sedats's patch:
->> > Acked-by: Peter Huewe <peterhuewe@gmx.de>
->> >
->> > Thanks,
->> > Peter
->>
->> [ CC John Linville ]
->>
->> It's a bit disappointing to see my fix is still not in
->> platform-drivers-x86/linux-next [1] (even it's only fixing "warnings",
->> 9 days past).
->> linux-next tree is for me a very high dynamic SCM tree, I am doing
->> mostly daily builds, at weekend I am testing/pulling other trees
->> before they go into Monday's linux-next.
->> As far as I have fun with "my process"... I will continue.
->
->
->
-> Added Stephen Rothwell on CC, maybe he can apply it directly to linux-next ;)
->
-> Peter
->
+On Mon, Dec 20, 2010 at 01:54:26PM +0200, Kirill A. Shutsemov wrote:
+> From: Kirill A. Shutemov <kirill@shutemov.name>
+> 
+> Prepare nfs/sunrpc stack to use multiple instances of rpc_pipefs.
+> Only for client for now.
+> 
+> Only quick sanity check was made. BTW, is there any check list for NFS
+> contributors?
 
-I do not think this will happen for a "as-warning-classified" patch.
-As far as I understood from a previous asking to accept a patch
-through Stephen, he answered me that he is expecting that patches for
-sub-trees shall be pushed by the sub-maintainer(s).
-This is surely the optimal way.
+Nothing formal.
 
-There is a nice, informative interview with Stephen on topic of
-linux-next [1] (working together with submaintainers etc.).
+Chuck may have some nlm patches that conflict; I'm not sure what their
+status is.
 
-Unfortunately, it will sometimes happen that more than one people will
-notice or send a patch to the same issue.
-So, yeah a bit waste of time someone could think.
-Thus, it is always good to check the MLs first :-).
+For testing rpc_pipefs, maybe a few mounts (simultaneous mounts might be
+good), possibly over different security flavors, and with some of them
+nfsv4, might be a good idea.
 
-But which MLs?
-It's a pity people don't use linux-next ML for l-n releated stuff.
-As a consequence, I subscribed a few hours ago to linux-next ML [2]
-and will post primarily there (LKML should IMHO not be the 1st place
-for such issues, but a CC is OK).
+By the way, was there ever a resolution to Trond's question?:
 
-The subjects of Emails should be very clear on what type of issue.
-For example, breakage(s) shoul be clearly expressed.
-Also, I miss often against WTF version of linux-next ppl send patches.
-Hey, hello, each l-n version has a localversion-next file, didn't see :-)?
-A good subject:
-"Re: linux-next: Tree for December 20 (BROKEN iwlwifi)" or
-"linux-next: next-20101220 (BROKEN iwlwifi)"
+	http://marc.info/?l=linux-nfs&m=128655758712817&w=2
 
-That a GIT tree is compile-able is a (maybe *the*) first step to QA,
-but QA is a big playground.
+	"The keyring upcalls are currently initiated through the same
+	mechanism as module_request and therefore get started with the
+	init_nsproxy namespace. We'd really like them to run inside the
+	same container as the process.  As part of the same problem,
+	there is the issue of what to do with the dns resolver and
+	Bryan's new keyring based idmapper code."
 
-Hmm, I have some ideas in my big suitcase...
-The wiki [1] needs partly a refresh...
-An IRC-channel #linux-next would be fine...
-Lemme re-think and write them down.
+--b.
 
-- Sedat -
-
-P.S.: Personally, I have seen some patches from Randy and others which
-were still not applied.
-
-[1] http://video.linux.com/video/1048
-[2] http://linux.f-seidel.de/linux-next/pmwiki/pmwiki.php?n=Linux-next.ShortSummary
+> 
+> Kirill A. Shutemov (12):
+>   sunrpc: mount rpc_pipefs on initialization
+>   sunrpc: introduce init_rpc_pipefs
+>   sunrpc: push init_rpc_pipefs up to rpc_create() callers
+>   sunrpc: tag svc_serv with rpc_pipefs mount point
+>   sunrpc: get rpc_pipefs mount point for svc_serv from callers
+>   lockd: get rpc_pipefs mount point from callers
+>   sunrpc: get rpc_pipefs mount point for rpcb_create_local from callers
+>   sunrpc: tag pipefs field of cache_detail with rpc_pipefs mount point
+>   nfs: per-rpc_pipefs dns cache
+>   sunrpc: introduce get_rpc_pipefs()
+>   nfs: introduce mount option 'rpcmount'
+>   sunrpc: make rpc_pipefs be mountable multiple times
+> 
+>  fs/lockd/clntlock.c                |    8 +-
+>  fs/lockd/host.c                    |   12 +++-
+>  fs/lockd/mon.c                     |   13 ++-
+>  fs/lockd/svc.c                     |    4 +-
+>  fs/nfs/cache_lib.c                 |   18 +----
+>  fs/nfs/cache_lib.h                 |    3 +-
+>  fs/nfs/callback.c                  |    6 +-
+>  fs/nfs/callback.h                  |    3 +-
+>  fs/nfs/client.c                    |   45 ++++++++++--
+>  fs/nfs/dns_resolve.c               |  128 ++++++++++++++++++++++++++-------
+>  fs/nfs/dns_resolve.h               |    8 +--
+>  fs/nfs/inode.c                     |    8 +--
+>  fs/nfs/internal.h                  |   10 ++-
+>  fs/nfs/mount_clnt.c                |    1 +
+>  fs/nfs/namespace.c                 |    3 +-
+>  fs/nfs/nfs4namespace.c             |   20 +++--
+>  fs/nfs/super.c                     |   20 +++++
+>  fs/nfsd/nfs4callback.c             |    2 +
+>  fs/nfsd/nfssvc.c                   |    8 +-
+>  include/linux/lockd/bind.h         |    3 +-
+>  include/linux/lockd/lockd.h        |    4 +-
+>  include/linux/nfs_fs_sb.h          |    1 +
+>  include/linux/sunrpc/cache.h       |    9 +--
+>  include/linux/sunrpc/clnt.h        |    5 +-
+>  include/linux/sunrpc/rpc_pipe_fs.h |    6 +-
+>  include/linux/sunrpc/svc.h         |    9 +-
+>  net/sunrpc/cache.c                 |   16 +++--
+>  net/sunrpc/clnt.c                  |   19 +++--
+>  net/sunrpc/rpc_pipe.c              |  142 ++++++++++++++++++++++++++++++------
+>  net/sunrpc/rpcb_clnt.c             |   13 ++-
+>  net/sunrpc/svc.c                   |   52 ++++++++-----
+>  31 files changed, 430 insertions(+), 169 deletions(-)
+> 
+> -- 
+> 1.7.3.4
+> 
