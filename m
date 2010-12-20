@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755799Ab0LTKtl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 05:49:41 -0500
-Received: from verein.lst.de ([213.95.11.210]:48295 "EHLO verein.lst.de"
+	id S1755878Ab0LTKuD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 05:50:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27541 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755629Ab0LTKtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 05:49:39 -0500
-Date: Mon, 20 Dec 2010 11:48:20 +0100
-From: Christoph Hellwig <hch@lst.de>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jeff Garzik <jeff@garzik.org>, Christoph Hellwig <hch@lst.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        Mike Anderson <andmike@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Ravi Anand <ravi.anand@qlogic.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        Joe Eykholt <jeykholt@cisco.com>, James Smart <james.smart@emulex.com>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        adam radford <aradford@gmail.com>,
-        Kashyap Desai <Kashyap.Desai@lsi.com>,
-        MPTFusionLinux <DL-MPTFusionLinux@lsi.com>
-Subject: Re: [PATCH 02/12] scsi: Add IRQ_DISABLE_SCSI_QCMD wrapper
-Message-ID: <20101220104820.GA2752@lst.de>
-References: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org> <1292793727-31957-3-git-send-email-nab@linux-iscsi.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292793727-31957-3-git-send-email-nab@linux-iscsi.org>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+	id S1754424Ab0LTKt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 05:49:59 -0500
+Message-ID: <4D0F34C0.9000400@redhat.com>
+Date: Mon, 20 Dec 2010 12:49:36 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Mike Galbraith <efault@gmx.de>
+CC: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Chris Wright <chrisw@sous-sol.org>
+Subject: Re: [RFC -v2 PATCH 2/3] sched: add yield_to function
+References: <20101213224434.7495edb2@annuminas.surriel.com>	 <20101213224657.7e141746@annuminas.surriel.com>	 <1292306896.7448.157.camel@marge.simson.net> <4D0A6D34.6070806@redhat.com>	 <1292569018.7772.75.camel@marge.simson.net>  <4D0B7D24.5060207@redhat.com>	 <1292615509.7381.81.camel@marge.simson.net>  <4D0CE937.8090601@redhat.com>	 <1292699204.1181.51.camel@marge.simson.net>  <4D0DA45A.9070600@redhat.com>	 <1292753156.16367.104.camel@marge.simson.net> <4D0DCE10.7000200@redhat.com>	 <1292834372.8948.27.camel@marge.simson.net> <4D0F1794.3010803@redhat.com>	 <1292835302.8948.35.camel@marge.simson.net> <4D0F1BD8.20601@redhat.com>	 <1292837440.8948.60.camel@marge.simson.net> <4D0F25E8.80305@redhat.com>	 <1292841193.11946.36.camel@marge.simson.net>  <4D0F3266.90908@redhat.com> <1292842010.11946.39.camel@marge.simson.net>
+In-Reply-To: <1292842010.11946.39.camel@marge.simson.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 19, 2010 at 01:21:57PM -0800, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
-> 
-> This patch adds a IRQ_DISABLE_SCSI_QCMD() wrapper macro used by LLDs
-> that can now run in host_lock less mode, but still need interrupts disabled
-> using local_irq_save() before calling their lld_queuecommand() dispatcher.
-> 
-> jgarzik says this method is in fact slower than doing a spin_lock_irqsave() on
-> internal lib_lld_queuecommand() callers (as is done in libiscsi and libata)
-> but is still needed by the majority of lock_less LLDs.
+On 12/20/2010 12:46 PM, Mike Galbraith wrote:
+> >
+> >  However, if I'm all alone on my cpu, and the other task is runnable but
+> >  not running, behind some unrelated task, then I do need that task to be
+> >  preempted (or to move tasks around).
+>
+> So in that case, a pull may be advantageous.
 
-As mentioned before, please don't add more macro obsfucation - The
-initial one Jeff added was ok for the quick transition and avoiding to
-have two methods, but any additional one is not helpful.
+Yes.
 
-In addition there's really no reason to every use this one.  There is
-not reason to disable local irqs in a driver without taking a spinlock.
+> >  >  Would a kick/hint option be useful?
+> >
+> >  Depends on what it does...
+>
+> Let you decide whether you only want to drop a hint and leave it at
+> that, or also attempt a preemption.
+
+Who is "you" in this?  the scheduler?
+
+I'm fine with hints so long as they are usually acted upon (if it isn't, 
+I'll go back to the guest, spin a bit more, and retry).
+
+-- 
+error compiling committee.c: too many arguments to function
+
