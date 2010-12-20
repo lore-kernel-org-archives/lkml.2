@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932305Ab0LTOSL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 09:18:11 -0500
+	id S932427Ab0LTOSO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 09:18:14 -0500
 Received: from mail-wy0-f174.google.com ([74.125.82.174]:57916 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757829Ab0LTOSJ (ORCPT
+	with ESMTP id S932314Ab0LTOSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 09:18:09 -0500
+	Mon, 20 Dec 2010 09:18:12 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=OH+wNGKf0z1NK3l1y3zZaKUdqqXW2ASDULR9dNGM43HypM3XT3OVW9D5o5sCYjVO2u
-         yN1z+F2q/oxOqyGI2SpqGRfEEFOzIyY9eYHcHQwlBFkiGehdntGuo3/8selX4oIlOFzZ
-         UhuNiTebouaoPgf6oQqCzpyvdEhBA/zHWpLPk=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=mHJTYIzYsKOWKKxtoJMkXSwjFhTFvhI03YU3yhwcsHLD7ZEImxB2sNH3T5pD3nxt/x
+         OTy9X/1DAfDYUc+hZ+VXho2iYOSkzIFhg3/CBfWjn3GO4pgMY0mJ3qgiQ/2flwC0tj6x
+         cLlRnsVX9nf4LBEkUUMwCrC0wXpCnXsnUf47A=
 From: Franck Bui-Huu <vagabon.xyz@gmail.com>
 To: masami.hiramatsu.pt@hitachi.com
 Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/6] Minor cleanups & fixes for perf-probe(1)
-Date: Mon, 20 Dec 2010 15:17:59 +0100
-Message-Id: <1292854685-8230-1-git-send-email-fbuihuu@gmail.com>
+Subject: [PATCH 1/6] perf-tools: make perf-probe -L display the absolute path of the dumped file
+Date: Mon, 20 Dec 2010 15:18:00 +0100
+Message-Id: <1292854685-8230-2-git-send-email-fbuihuu@gmail.com>
 X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <1292854685-8230-1-git-send-email-fbuihuu@gmail.com>
+References: <1292854685-8230-1-git-send-email-fbuihuu@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Franck Bui-Huu <fbuihuu@gmail.com>
 
-Hi,
+The actual file used by 'perf probe -L sched.c' is reported in the
+ouput of the command.
 
-This small patchset is just some random cosmetic cleanups I did when
-starting to read perf-probe(1) stuffs.
+But it's simply displayed as it has been given to the command (simply
+sched.c) which is too ambiguous to be really usefull since several
+sched.c files can be found into the same project and we also don't
+know which search path has been used.
 
-The 3 last patches of this serie are minor fixes though.
-
+Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
 ---
+ tools/perf/util/probe-event.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Franck Bui-Huu (6):
-  perf-tools: make perf-probe -L display the absolute path of the dumped file
-  perf-probe: rewrite show_one_line() to make it simpler
-  perf-probe: clean up redundant tests in show_line_range()
-  perf-probe: Fix line range description since a single file is allowed
-  perf-probe: don't always consider EOF as an error when listing source code
-  perf-probe: handle gracefully some stupid and buggy line syntaxes
-
- tools/perf/Documentation/perf-probe.txt |    2 +-
- tools/perf/util/probe-event.c           |  190 +++++++++++++++++++------------
- 2 files changed, 117 insertions(+), 75 deletions(-)
-
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 558545e..6fa0403 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -381,7 +381,7 @@ int show_line_range(struct line_range *lr, const char *module)
+ 		fprintf(stdout, "<%s:%d>\n", lr->function,
+ 			lr->start - lr->offset);
+ 	else
+-		fprintf(stdout, "<%s:%d>\n", lr->file, lr->start);
++		fprintf(stdout, "<%s:%d>\n", lr->path, lr->start);
+ 
+ 	fp = fopen(lr->path, "r");
+ 	if (fp == NULL) {
 -- 
 1.7.3.2
 
