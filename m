@@ -1,93 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753778Ab0LTHHM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 02:07:12 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64156 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753668Ab0LTHHK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 02:07:10 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Ojt8uKeXrvuEehRPgyLO2bW14akrQWNLimPHwykcvg4gRMzRNPjqRxgpw0qeWQ8iks
-         oHYGgESBoVI3pUKBZNFMIqUc67QLkfwrlNTR5jKrKFcOKuwQQaaKZpYXazrBh7OsL5KS
-         ZeFdJMWvARp42tJBGE7lvBOniK/CCVg1KgC58=
+	id S1753868Ab0LTHYO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 02:24:14 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:52015 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1753668Ab0LTHYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 02:24:11 -0500
+X-Authenticated: #54578410
+X-Provags-ID: V01U2FsdGVkX1+3bBoiDMS36GXZqb5+Of8baC61+/xU08cNiAdKlx
+	XanZvDEBOv9/AX
+Message-ID: <4D0F0497.7090306@gmx.de>
+Date: Mon, 20 Dec 2010 08:24:07 +0100
+From: Michael Lawnick <ml.lawnick@gmx.de>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Mnenhy/0.8.3 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <1292762975.2403.29.camel@localhost>
-References: <1292762975.2403.29.camel@localhost>
-Date: Mon, 20 Dec 2010 15:07:09 +0800
-Message-ID: <AANLkTimYx2Og1BG37wb0WZ0_U8WJjLKHMKgU45qycUaM@mail.gmail.com>
-Subject: Re: [PATCH] kthread_worker: Initialize dynamically allocated spinlock
- properly for lockdep
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Andy Walls <awalls@md.metrocast.net>
-Cc: linux-kernel@vger.kernel.org, nicolas.mailhot@laposte.net,
-        Tejun Heo <tj@kernel.org>, Jarod Wilson <jarod@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Hans Verkuil <hverkuil@xs4all.nl>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Jean Delvare <khali@linux-fr.org>
+CC: Ben Dooks <ben-i2c@fluff.org>, Linux I2C <linux-i2c@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Matthias Zacharias <Matthias.Zacharias@bmk-solutions.de>
+Subject: Re: [RFC] i2c-algo-bit: Disable interrupts while SCL is high
+References: <20101216150638.7d3850b5@endymion.delvare>	<20101216160046.GE20097@trinity.fluff.org>	<20101216175337.2b1ae6ee@endymion.delvare>	<4D0B5312.5080107@gmx.de> <20101218000924.546ad703@endymion.delvare>
+In-Reply-To: <20101218000924.546ad703@endymion.delvare>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 19, 2010 at 8:49 PM, Andy Walls <awalls@md.metrocast.net> wrote:
-> init_kthread_worker(), via KTHREAD_WORKER_INIT(), used an
-> initializer for static spin_lock objects, SPIN_LOCK_UNLOCKED, on
-> a dynamically allocated kthread_worker object's internal spinlock_t.
-> This causes lockdep to gripe:
->
->        INFO: trying to register non-static key.
->        the code is fine but needs lockdep annotation.
->        turning off the locking correctness validator.
->
-> To keep lockdep happy, use spin_lock_init() for dynamically
-> allocated kthread_worker objects' internal spinlock_t.
->
-> Reported-by: Nicolas <nicolas.mailhot@laposte.net>
-> Signed-off-by: Andy Walls <awalls@md.metrocast.net>
->
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Jarod Wilson <jarod@redhat.com>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Cc: Hans Verkuil <hverkuil@xs4all.nl>
->
-> diff --git a/include/linux/kthread.h b/include/linux/kthread.h
-> index 685ea65..e65d0b1 100644
-> --- a/include/linux/kthread.h
-> +++ b/include/linux/kthread.h
-> @@ -83,7 +83,13 @@ struct kthread_work {
->
->  static inline void init_kthread_worker(struct kthread_worker *worker)
->  {
-> -       *worker = (struct kthread_worker)KTHREAD_WORKER_INIT(*worker);
-> +       /*
-> +        * Lockdep complains if a dynamically allocated worker's spinlock_t
-> +        * is initialzed using SPIN_LOCK_UNLOCKED.
-> +        */
-> +       spin_lock_init(&worker->lock);
+Jean Delvare said the following:
+> Hi Michael,
+> 
+> On Fri, 17 Dec 2010 13:09:54 +0100, Michael Lawnick wrote:
+>> Sorry to disturb, but
+>> <MANTRA>
+>> 	Disabling interrupts may be done only for a few instructions.</MANTRA>
+>> 
+>> Even 1 us is an eternity on modern systems.
+> 
+> Don't be sorry, this is exactly the kind of input I was asking for. I'm
+> a little surprised, I thought disabling interrupts for a couple
+> microseconds was happening all the time, but I'll trust your
+> experience. 
 
-This will make different kthead_worker->lock initialized with one same
-key. You know spin_lock_init() will be like below:
-# define raw_spin_lock_init(lock)				\
-do {								\
-	static struct lock_class_key __key;			\
-								\
-	__raw_spin_lock_init((lock), #lock, &__key);		\
-} while (0)
+I can't tell whether this is happening all the time, but I can imagine
+and I highly discourage this. This is IMHO one of the lessons many LINUX
+developers have still to learn. Maybe it's a history reason.
 
-So we should put the real initializer to kernel/kthread.c
-and make init_kthread_worker() to be a MACRO.
+> Given your point and Ben's, it seems clear that my patch is
+> not acceptable as is, and at the very least I should make the spinlock
+> usage optional.
 
-BTW, init_kthread_work() should also be changed like above
-because member done is a wait_queue_head.
-
-Thanks,
-Yong
+At last you might not come around your solution, but a H/W-S/W
+combination driving you in such a direction should be considered broken.
+Using it in professional environment needs heavy discussions about pros
+and cons, best would be to beat the H/W designers to provide a real
+controller.
+Of course it may be used in a case, where you simply need a (temporary)
+hack to get something working.
 
 -- 
-Only stand for myself.
+KR
+Michael
