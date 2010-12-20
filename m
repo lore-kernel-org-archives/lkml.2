@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932429Ab0LTL6O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 06:58:14 -0500
-Received: from shutemov.name ([188.40.19.243]:38457 "EHLO shutemov.name"
+	id S1757624Ab0LTL7N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 06:59:13 -0500
+Received: from shutemov.name ([188.40.19.243]:38436 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757334Ab0LTLyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 06:54:43 -0500
+	id S1757247Ab0LTLym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 06:54:42 -0500
 From: "Kirill A. Shutsemov" <kirill@shutemov.name>
 To: Trond Myklebust <Trond.Myklebust@netapp.com>,
         "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>
@@ -13,9 +13,9 @@ Cc: Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: [PATCH 05/12] sunrpc: get rpc_pipefs mount point for svc_serv from callers
-Date: Mon, 20 Dec 2010 13:54:31 +0200
-Message-Id: <1292846078-31793-6-git-send-email-kirill@shutemov.name>
+Subject: [PATCH 02/12] sunrpc: introduce init_rpc_pipefs
+Date: Mon, 20 Dec 2010 13:54:28 +0200
+Message-Id: <1292846078-31793-3-git-send-email-kirill@shutemov.name>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1292846078-31793-1-git-send-email-kirill@shutemov.name>
 References: <1292846078-31793-1-git-send-email-kirill@shutemov.name>
@@ -25,165 +25,167 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kirill A. Shutemov <kirill@shutemov.name>
 
+Introduce global variable init_rpc_pipefs and use it instead of
+rpc_get_mount()/rpc_put_mount().
+
 Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
 ---
- fs/lockd/svc.c             |    4 +++-
- fs/nfs/callback.c          |    4 +++-
- fs/nfsd/nfssvc.c           |    6 ++++--
- include/linux/sunrpc/svc.h |    8 ++++----
- net/sunrpc/svc.c           |   18 +++++++++---------
- 5 files changed, 23 insertions(+), 17 deletions(-)
+ fs/nfs/cache_lib.c                 |    6 +++---
+ include/linux/sunrpc/rpc_pipe_fs.h |    4 ++--
+ net/sunrpc/clnt.c                  |   10 ++++------
+ net/sunrpc/rpc_pipe.c              |   23 ++++++-----------------
+ 4 files changed, 15 insertions(+), 28 deletions(-)
 
-diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
-index abfff9d..32310b1 100644
---- a/fs/lockd/svc.c
-+++ b/fs/lockd/svc.c
-@@ -31,6 +31,7 @@
- #include <linux/sunrpc/clnt.h>
- #include <linux/sunrpc/svc.h>
- #include <linux/sunrpc/svcsock.h>
-+#include <linux/sunrpc/rpc_pipe_fs.h>
- #include <net/ip.h>
- #include <linux/lockd/lockd.h>
- #include <linux/nfs.h>
-@@ -269,7 +270,8 @@ int lockd_up(void)
- 			"lockd_up: no pid, %d users??\n", nlmsvc_users);
+diff --git a/fs/nfs/cache_lib.c b/fs/nfs/cache_lib.c
+index 8469031..dd7ca5f 100644
+--- a/fs/nfs/cache_lib.c
++++ b/fs/nfs/cache_lib.c
+@@ -117,7 +117,7 @@ int nfs_cache_register(struct cache_detail *cd)
+ 	struct vfsmount *mnt;
+ 	int ret;
  
- 	error = -ENOMEM;
--	serv = svc_create(&nlmsvc_program, LOCKD_BUFSIZE, NULL);
-+	serv = svc_create(&nlmsvc_program, init_rpc_pipefs, LOCKD_BUFSIZE,
-+			NULL);
- 	if (!serv) {
- 		printk(KERN_WARNING "lockd_up: create service failed\n");
- 		goto out;
-diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
-index 93a8b3b..bef6abd 100644
---- a/fs/nfs/callback.c
-+++ b/fs/nfs/callback.c
-@@ -16,6 +16,7 @@
- #include <linux/freezer.h>
- #include <linux/kthread.h>
- #include <linux/sunrpc/svcauth_gss.h>
-+#include <linux/sunrpc/rpc_pipe_fs.h>
- #if defined(CONFIG_NFS_V4_1)
- #include <linux/sunrpc/bc_xprt.h>
- #endif
-@@ -253,7 +254,8 @@ int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
- 		nfs_callback_bc_serv(minorversion, xprt, cb_info);
- 		goto out;
- 	}
--	serv = svc_create(&nfs4_callback_program, NFS4_CALLBACK_BUFSIZE, NULL);
-+	serv = svc_create(&nfs4_callback_program, init_rpc_pipefs,
-+			NFS4_CALLBACK_BUFSIZE, NULL);
- 	if (!serv) {
- 		ret = -ENOMEM;
- 		goto out_err;
-diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index 2bae1d8..d96c32b 100644
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -13,6 +13,7 @@
- 
- #include <linux/sunrpc/stats.h>
- #include <linux/sunrpc/svcsock.h>
-+#include <linux/sunrpc/rpc_pipe_fs.h>
- #include <linux/lockd/bind.h>
- #include <linux/nfsacl.h>
- #include <linux/seq_file.h>
-@@ -331,8 +332,9 @@ int nfsd_create_serv(void)
- 	}
- 	nfsd_reset_versions();
- 
--	nfsd_serv = svc_create_pooled(&nfsd_program, nfsd_max_blksize,
--				      nfsd_last_thread, nfsd, THIS_MODULE);
-+	nfsd_serv = svc_create_pooled(&nfsd_program, init_rpc_pipefs,
-+				      nfsd_max_blksize, nfsd_last_thread, nfsd,
-+				      THIS_MODULE);
- 	if (nfsd_serv == NULL)
- 		return -ENOMEM;
- 
-diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
-index 3b6b26c..7f09411 100644
---- a/include/linux/sunrpc/svc.h
-+++ b/include/linux/sunrpc/svc.h
-@@ -400,13 +400,13 @@ struct svc_procedure {
- /*
-  * Function prototypes.
-  */
--struct svc_serv *svc_create(struct svc_program *, unsigned int,
--			    void (*shutdown)(struct svc_serv *));
-+struct svc_serv *svc_create(struct svc_program *, struct vfsmount *,
-+			    unsigned int, void (*shutdown)(struct svc_serv *));
- struct svc_rqst *svc_prepare_thread(struct svc_serv *serv,
- 					struct svc_pool *pool);
- void		   svc_exit_thread(struct svc_rqst *);
--struct svc_serv *  svc_create_pooled(struct svc_program *, unsigned int,
--			void (*shutdown)(struct svc_serv *),
-+struct svc_serv *  svc_create_pooled(struct svc_program *, struct vfsmount *,
-+			unsigned int, void (*shutdown)(struct svc_serv *),
- 			svc_thread_fn, struct module *);
- int		   svc_set_num_threads(struct svc_serv *, struct svc_pool *, int);
- int		   svc_pool_stats_open(struct svc_serv *serv, struct file *file);
-diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index d2f7c03..0bd6088 100644
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -28,7 +28,6 @@
- #include <linux/sunrpc/svcsock.h>
- #include <linux/sunrpc/clnt.h>
- #include <linux/sunrpc/bc_xprt.h>
--#include <linux/sunrpc/rpc_pipe_fs.h>
- 
- #define RPCDBG_FACILITY	RPCDBG_SVCDSP
- 
-@@ -361,7 +360,8 @@ svc_pool_for_cpu(struct svc_serv *serv, int cpu)
-  * Create an RPC service
-  */
- static struct svc_serv *
--__svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
-+__svc_create(struct svc_program *prog, struct vfsmount *rpcmount,
-+	     unsigned int bufsize, int npools,
- 	     void (*shutdown)(struct svc_serv *serv))
- {
- 	struct svc_serv	*serv;
-@@ -373,7 +373,7 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
- 		return NULL;
- 	serv->sv_name      = prog->pg_name;
- 	serv->sv_program   = prog;
--	serv->sv_rpcmount  = mntget(init_rpc_pipefs);
-+	serv->sv_rpcmount  = mntget(rpcmount);
- 	serv->sv_nrthreads = 1;
- 	serv->sv_stats     = prog->pg_stats;
- 	if (bufsize > RPCSVC_MAXPAYLOAD)
-@@ -429,22 +429,22 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
+-	mnt = rpc_get_mount();
++	mnt = mntget(init_rpc_pipefs);
+ 	if (IS_ERR(mnt))
+ 		return PTR_ERR(mnt);
+ 	ret = vfs_path_lookup(mnt->mnt_root, mnt, "/cache", 0, &nd);
+@@ -129,13 +129,13 @@ int nfs_cache_register(struct cache_detail *cd)
+ 	if (!ret)
+ 		return ret;
+ err:
+-	rpc_put_mount();
++	mntput(mnt);
+ 	return ret;
  }
  
- struct svc_serv *
--svc_create(struct svc_program *prog, unsigned int bufsize,
--	   void (*shutdown)(struct svc_serv *serv))
-+svc_create(struct svc_program *prog, struct vfsmount *rpcmount,
-+	   unsigned int bufsize, void (*shutdown)(struct svc_serv *serv))
+ void nfs_cache_unregister(struct cache_detail *cd)
  {
--	return __svc_create(prog, bufsize, /*npools*/1, shutdown);
-+	return __svc_create(prog, rpcmount, bufsize, /*npools*/1, shutdown);
+ 	sunrpc_cache_unregister_pipefs(cd);
+-	rpc_put_mount();
++	mntput(init_rpc_pipefs);
  }
- EXPORT_SYMBOL_GPL(svc_create);
  
- struct svc_serv *
--svc_create_pooled(struct svc_program *prog, unsigned int bufsize,
--		  void (*shutdown)(struct svc_serv *serv),
-+svc_create_pooled(struct svc_program *prog, struct vfsmount *rpcmount,
-+		  unsigned int bufsize, void (*shutdown)(struct svc_serv *serv),
- 		  svc_thread_fn func, struct module *mod)
+diff --git a/include/linux/sunrpc/rpc_pipe_fs.h b/include/linux/sunrpc/rpc_pipe_fs.h
+index cf14db9..b09bfa5 100644
+--- a/include/linux/sunrpc/rpc_pipe_fs.h
++++ b/include/linux/sunrpc/rpc_pipe_fs.h
+@@ -44,6 +44,8 @@ RPC_I(struct inode *inode)
+ 	return container_of(inode, struct rpc_inode, vfs_inode);
+ }
+ 
++extern struct vfsmount *init_rpc_pipefs;
++
+ extern int rpc_queue_upcall(struct inode *, struct rpc_pipe_msg *);
+ 
+ struct rpc_clnt;
+@@ -60,8 +62,6 @@ extern void rpc_remove_cache_dir(struct dentry *);
+ extern struct dentry *rpc_mkpipe(struct dentry *, const char *, void *,
+ 				 const struct rpc_pipe_ops *, int flags);
+ extern int rpc_unlink(struct dentry *);
+-extern struct vfsmount *rpc_get_mount(void);
+-extern void rpc_put_mount(void);
+ extern int register_rpc_pipefs(void);
+ extern void unregister_rpc_pipefs(void);
+ 
+diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
+index 92ce94f..da2507a 100644
+--- a/net/sunrpc/clnt.c
++++ b/net/sunrpc/clnt.c
+@@ -112,9 +112,7 @@ rpc_setup_pipedir(struct rpc_clnt *clnt, char *dir_name)
+ 	if (dir_name == NULL)
+ 		return 0;
+ 
+-	path.mnt = rpc_get_mount();
+-	if (IS_ERR(path.mnt))
+-		return PTR_ERR(path.mnt);
++	path.mnt = mntget(init_rpc_pipefs);
+ 	error = vfs_path_lookup(path.mnt->mnt_root, path.mnt, dir_name, 0, &nd);
+ 	if (error)
+ 		goto err;
+@@ -140,7 +138,7 @@ rpc_setup_pipedir(struct rpc_clnt *clnt, char *dir_name)
+ err_path_put:
+ 	path_put(&nd.path);
+ err:
+-	rpc_put_mount();
++	mntput(path.mnt);
+ 	return error;
+ }
+ 
+@@ -251,7 +249,7 @@ static struct rpc_clnt * rpc_new_client(const struct rpc_create_args *args, stru
+ out_no_auth:
+ 	if (!IS_ERR(clnt->cl_path.dentry)) {
+ 		rpc_remove_client_dir(clnt->cl_path.dentry);
+-		rpc_put_mount();
++		mntput(clnt->cl_path.mnt);
+ 	}
+ out_no_path:
+ 	kfree(clnt->cl_principal);
+@@ -472,7 +470,7 @@ rpc_free_client(struct rpc_clnt *clnt)
+ 			clnt->cl_protname, clnt->cl_server);
+ 	if (!IS_ERR(clnt->cl_path.dentry)) {
+ 		rpc_remove_client_dir(clnt->cl_path.dentry);
+-		rpc_put_mount();
++		mntput(clnt->cl_path.mnt);
+ 	}
+ 	if (clnt->cl_parent != clnt) {
+ 		rpc_release_client(clnt->cl_parent);
+diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
+index 7f3fbdd..b1e299b 100644
+--- a/net/sunrpc/rpc_pipe.c
++++ b/net/sunrpc/rpc_pipe.c
+@@ -28,9 +28,10 @@
+ #include <linux/sunrpc/rpc_pipe_fs.h>
+ #include <linux/sunrpc/cache.h>
+ 
+-static struct vfsmount *rpc_mnt __read_mostly;
++struct vfsmount *init_rpc_pipefs __read_mostly;
+ 
+ static struct file_system_type rpc_pipe_fs_type;
++EXPORT_SYMBOL_GPL(init_rpc_pipefs);
+ 
+ 
+ static struct kmem_cache *rpc_inode_cachep __read_mostly;
+@@ -412,18 +413,6 @@ struct rpc_filelist {
+ 	umode_t mode;
+ };
+ 
+-struct vfsmount *rpc_get_mount(void)
+-{
+-	return mntget(rpc_mnt);
+-}
+-EXPORT_SYMBOL_GPL(rpc_get_mount);
+-
+-void rpc_put_mount(void)
+-{
+-	mntput(rpc_mnt);
+-}
+-EXPORT_SYMBOL_GPL(rpc_put_mount);
+-
+ static int rpc_delete_dentry(struct dentry *dentry)
  {
- 	struct svc_serv *serv;
- 	unsigned int npools = svc_pool_map_get();
+ 	return 1;
+@@ -1060,9 +1049,9 @@ int register_rpc_pipefs(void)
+ 	if (err)
+ 		goto destroy_cache;
  
--	serv = __svc_create(prog, bufsize, npools, shutdown);
-+	serv = __svc_create(prog, rpcmount, bufsize, npools, shutdown);
+-	rpc_mnt = kern_mount(&rpc_pipe_fs_type);
+-	if (IS_ERR(rpc_mnt)) {
+-		err = PTR_ERR(rpc_mnt);
++	init_rpc_pipefs = kern_mount(&rpc_pipe_fs_type);
++	if (IS_ERR(init_rpc_pipefs)) {
++		err = PTR_ERR(init_rpc_pipefs);
+ 		goto unregister_fs;
+ 	}
  
- 	if (serv != NULL) {
- 		serv->sv_function = func;
+@@ -1077,7 +1066,7 @@ destroy_cache:
+ 
+ void unregister_rpc_pipefs(void)
+ {
+-	mntput(rpc_mnt);
++	mntput(init_rpc_pipefs);
+ 	kmem_cache_destroy(rpc_inode_cachep);
+ 	unregister_filesystem(&rpc_pipe_fs_type);
+ }
 -- 
 1.7.3.4
 
