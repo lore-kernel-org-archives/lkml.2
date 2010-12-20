@@ -1,46 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933026Ab0LTS23 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 13:28:29 -0500
-Received: from void.printf.net ([89.145.121.20]:38233 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932742Ab0LTS21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 13:28:27 -0500
-From: Chris Ball <cjb@laptop.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: sedat.dilek@gmail.com, Sedat Dilek <sedat.dilek@googlemail.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        ftpadmin@kernel.org
-Subject: Re: linux-next: Tree for December 20
-References: <AANLkTi=gjHyMt=W4-+PSMzt7PN7i-_Yvmx7EE8z0z74q@mail.gmail.com>
-	<20101220230007.e82487b8.sfr@canb.auug.org.au>
-Date: Mon, 20 Dec 2010 13:34:09 -0500
-In-Reply-To: <20101220230007.e82487b8.sfr@canb.auug.org.au> (Stephen
-	Rothwell's message of "Mon, 20 Dec 2010 23:00:07 +1100")
-Message-ID: <m3pqswe1jy.fsf@pullcord.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.0.60 (gnu/linux)
+	id S933030Ab0LTSa3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 13:30:29 -0500
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:33860 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932742Ab0LTSa2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 13:30:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1292865120-24020-1-git-send-email-felipe.contreras@nokia.com>
+References: <1292865120-24020-1-git-send-email-felipe.contreras@nokia.com>
+Date: Mon, 20 Dec 2010 12:30:27 -0600
+Message-ID: <AANLkTi=C4hvf9t9j51TE3JNdygHbjf-vAQBvdf+Oimfh@mail.gmail.com>
+Subject: Re: [PATCH] staging: tidspbridge: protect dmm_map properly
+From: "Kanigeri, Hari" <h-kanigeri2@ti.com>
+To: Felipe Contreras <felipe.contreras@nokia.com>
+Cc: linux-main <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>, Greg KH <greg@kroah.com>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        Nishanth Menon <nm@ti.com>, Ameya Palande <ameya.palande@nokia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Felipe,
 
-   >>> [The mirroring on kernel.org is running slowly]
+On Mon, Dec 20, 2010 at 11:12 AM, Felipe Contreras
+<felipe.contreras@nokia.com> wrote:
+> We need to protect not only the dmm_map list, but the individual
+> map_obj's, otherwise, we might be building the scatter-gather list with
+> garbage. So, use the existing proc_lock for that.
+>
+> I observed race conditions which caused kernel panics while running
+> stress tests. This patch fixes those.
+>
+> Signed-off-by: Felipe Contreras <felipe.contreras@nokia.com>
+> ---
+>  drivers/staging/tidspbridge/rmgr/proc.c |   18 ++++++++++++++----
+>  1 files changed, 14 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/staging/tidspbridge/rmgr/proc.c b/drivers/staging/tidspbridge/rmgr/proc.c
+> index b47d7aa..21052e3 100644
+> --- a/drivers/staging/tidspbridge/rmgr/proc.c
+> +++ b/drivers/staging/tidspbridge/rmgr/proc.c
+> @@ -781,12 +781,14 @@ int proc_begin_dma(void *hprocessor, void *pmpu_addr, u32 ul_size,
+>                                                        (u32)pmpu_addr,
+>                                                        ul_size, dir);
+>
+> +       mutex_lock(&proc_lock);
 
-   >> Indeed, you know what's wrong with the mirrors?
+May be you should use mutex_lock_interruptable instead of  mutex_lock.
 
-   > I don't know what is wrong.  The mirroring just seems to be much
-   > slower in the last week or so.  Today, it was just over three
-   > hours from when I uploaded linux-next until it was mirrored out.
+> +
+>        /* find requested memory are in cached mapping information */
+>        map_obj = find_containing_mapping(pr_ctxt, (u32) pmpu_addr, ul_size);
+>        if (!map_obj) {
+>                pr_err("%s: find_containing_mapping failed\n", __func__);
+>                status = -EFAULT;
+> -               goto err_out;
+> +               goto no_map;
+>        }
+>
+>        if (memory_give_ownership(map_obj, (u32) pmpu_addr, ul_size, dir)) {
+> @@ -795,6 +797,8 @@ int proc_begin_dma(void *hprocessor, void *pmpu_addr, u32 ul_size,
+>                status = -EFAULT;
+>        }
+>
+> +no_map:
+> +       mutex_unlock(&proc_lock);
+>  err_out:
+>
+>        return status;
+> @@ -819,12 +823,14 @@ int proc_end_dma(void *hprocessor, void *pmpu_addr, u32 ul_size,
+>                                                        (u32)pmpu_addr,
+>                                                        ul_size, dir);
+>
+> +       mutex_lock(&proc_lock);
+> +
+>        /* find requested memory are in cached mapping information */
+>        map_obj = find_containing_mapping(pr_ctxt, (u32) pmpu_addr, ul_size);
+>        if (!map_obj) {
+>                pr_err("%s: find_containing_mapping failed\n", __func__);
+>                status = -EFAULT;
+> -               goto err_out;
+> +               goto no_map;
+>        }
+>
+>        if (memory_regain_ownership(map_obj, (u32) pmpu_addr, ul_size, dir)) {
+> @@ -834,6 +840,8 @@ int proc_end_dma(void *hprocessor, void *pmpu_addr, u32 ul_size,
+>                goto err_out;
 
-I asked on IRC yesterday; we're still under high load from the Android
-Gingerbread release, which is causing many concurrent Git accesses
-(around 1500 simultaneous yesterday).
+Mutex is not released in this case as it is released only at no_map.
 
-Thanks,
+
+>        }
+>
+> +no_map:
+> +       mutex_unlock(&proc_lock);
+>  err_out:
+>        return status;
+>  }
+> @@ -1726,9 +1734,8 @@ int proc_un_map(void *hprocessor, void *map_addr,
+>                    (p_proc_object->hbridge_context, va_align, size_align);
+>        }
+>
+> -       mutex_unlock(&proc_lock);
+>        if (status)
+> -               goto func_end;
+> +               goto unmap_failed;
+>
+>        /*
+>         * A successful unmap should be followed by removal of map_obj
+> @@ -1737,6 +1744,9 @@ int proc_un_map(void *hprocessor, void *map_addr,
+>         */
+>        remove_mapping_information(pr_ctxt, (u32) map_addr, size_align);
+>
+> +unmap_failed:
+> +       mutex_unlock(&proc_lock);
+> +
+>  func_end:
+>        dev_dbg(bridge, "%s: hprocessor: 0x%p map_addr: 0x%p status: 0x%x\n",
+>                __func__, hprocessor, map_addr, status);
+> --
+> 1.7.3.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
+
 
 -- 
-Chris Ball   <cjb@laptop.org>
-One Laptop Per Child
+Thank you,
+Best regards,
+Hari Kanigeri
