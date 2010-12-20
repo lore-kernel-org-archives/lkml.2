@@ -1,62 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758048Ab0LTPzO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 10:55:14 -0500
-Received: from mail-bw0-f66.google.com ([209.85.214.66]:65216 "EHLO
-	mail-bw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757900Ab0LTPzM (ORCPT
+	id S1758067Ab0LTP5t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 10:57:49 -0500
+Received: from mail-bw0-f45.google.com ([209.85.214.45]:65090 "EHLO
+	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758023Ab0LTP5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 10:55:12 -0500
+	Mon, 20 Dec 2010 10:57:48 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=TuoE8H6oOBTRiXDIpnarv61/4S3icoOBYaYzUHE4n7IqB3KHCGjgkTv38UtAS4EbuW
-         b5DYqxF0/JBp7UHszyFXKp0Y438AieYdcbVCkTlYx6l6pR5HIlP/QaZe/Ka5E1vbU4N1
-         6M9Md7TbNInOpoTZqvz+A1mOOUptAIbyAeQNk=
-Message-ID: <4D0F7C5A.1060107@gmail.com>
-Date: Mon, 20 Dec 2010 16:55:06 +0100
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Shaohua Li <shaohua.li@intel.com>
-CC: Sam Ravnborg <sam@ravnborg.org>, lkml <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=q29Bjg8b3UoYZ9Eha2QTnoP/aZGhcZIQbShli53WA6qfLrpwOMimszXhulqGavXmI1
+         oZAa9+mftJml1JJBaWCa1ujuHV2TQcl52KjI3ERZFahAu0rGmUTtm2BSeSzaG2K22BrG
+         FvF1q25xVFOFt+BucteaJ+C2Vbva+l7no9bCw=
+Date: Mon, 20 Dec 2010 16:57:42 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
-Subject: Re: [patch 2/3] add new macros to make percpu readmostly section
- correctly align
-References: <1291255347.12777.116.camel@sli10-conroe>	 <4D0243DD.3090507@gmail.com> <1292200886.2323.15.camel@sli10-conroe>	 <4D05EBA4.60202@gmail.com> <1292288924.2323.458.camel@sli10-conroe>	 <4D073FA9.9020801@gmail.com> <1292378268.2323.464.camel@sli10-conroe>	 <4D08CBF4.6040102@gmail.com> <1292460817.2323.465.camel@sli10-conroe>	 <20101216054620.GA3241@merkur.ravnborg.org>	 <1292479000.2323.468.camel@sli10-conroe>  <4D09E0EE.7040605@gmail.com> <1292808518.10593.8.camel@sli10-conroe>
-In-Reply-To: <1292808518.10593.8.camel@sli10-conroe>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        Anton Blanchard <anton@au1.ibm.com>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 15/15] nohz_task: Procfs interface
+Message-ID: <20101220155737.GA1742@nowhere>
+References: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
+ <1292858662-5650-16-git-send-email-fweisbec@gmail.com>
+ <1292859744.5021.4.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292859744.5021.4.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, Dec 20, 2010 at 04:42:24PM +0100, Peter Zijlstra wrote:
+> On Mon, 2010-12-20 at 16:24 +0100, Frederic Weisbecker wrote:
+> > This implements the /proc/pid/nohz file that enables the
+> > nohz attribute of a task.
+> > 
+> > Synchronization is enforced so that:
+> > 
+> > - A CPU can have only one nohz task
+> 
+> Why?
 
-On 12/20/2010 02:28 AM, Shaohua Li wrote:
->> Not being able to cross build every arch is okay but you at least need
->> to make an effort to make things easily applicable to other archs and
->> avoid adding subtle ugliness like the above.  Please at least try to
->> look at other arch codes and see how things can be made to work across
->> different archs.  Setting up cross compilers for the major archs, for
->> example, sparc, power and ia64 isn't that difficult either.
->
-> This still needs I fix every arch, for example, as Sam pointed out,
-> spark build will fail. I really have the bandwidth and capability to do
-> this. Increment changes are always preferred. My original patch is
-> trying to follow increment changes way.
 
-Yeah, well, in my experience, those approaches usually just end up
-piling partial conversions on top of different set of partial
-conversions.  It's not like we're talking about a major arch dependent
-feature it's just a matter of looking through different arch codes,
-maybe test building some, pushing things to linux-next and dealing
-with fallouts if there is any.  I'll try to do it myself.
+This is because of the hooks we have with entering/exiting userspace.
+The "wants to enter extended quiescent" variable (nohz_task_ext_qs)
+is per CPU and applies to any nohz task.
 
-Thanks.
+If A and B are nohz task bound to the same CPU,
 
--- 
-tejun
+A enters userspace, says it can enter extended quiescent state
+(nohz_task_ext_qs = 1).
+B preempts it and enters kernel, hence saying that it doesn't want
+extended quiescent state (nohz_task_ext_qs = 0). B sleeps, we return
+to A which said that it wants extended quiescent state but the per cpu
+var has been screwed (nohz_task_ext_qs == 0).
+
+But this can be solved using a per task variable. I just thought it
+wouldn't be very useful to have two nohz task on a same CPU, but actually
+why not.
+ 
+> > - A nohz task can be only affine to a single CPU
+> 
+> Why?
+
+Same problem, we need to make some things per task. That's fixable,
+This will may be add a bit of complexity and since I couldn't find
+a usecase for migratable nohz tasks, I did not handled that case.
+
+Should I?
+
+> > For now this is only possible to write on /proc/self but probably
+> > allowing it from another task would be a good idea and wouldn't
+> > increase so much the complexity of the code. 
+> 
+> ptrace rules might match that.
+
+You think I should use the ptrace interface? Hmm, dunno if it's
+appropriate.
