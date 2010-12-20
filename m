@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330Ab0LTBk3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 20:40:29 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:41951 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752663Ab0LTBk2 (ORCPT
+	id S1753435Ab0LTBsJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 20:48:09 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:58518 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718Ab0LTBsI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 20:40:28 -0500
-Date: Mon, 20 Dec 2010 10:38:58 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Magnus Damm <damm@opensource.se>
-Subject: Re: linux-next: manual merge of the rmobile tree with the rmobile-current tree
-Message-ID: <20101220013858.GA10050@linux-sh.org>
-References: <20101220123329.be4093ad.sfr@canb.auug.org.au>
+	Sun, 19 Dec 2010 20:48:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=db8aycVGzt3fibw5i0Vfu64oPpH7i4A8Yw5yq1Aai6Of2KF/8rDrbcffP3awOv8d/o
+         9XO+pu5HXSxmCGnYCuLw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101220123329.be4093ad.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <131961.1292667059@localhost>
+References: <201012162329.oBGNTdPY006808@imap1.linux-foundation.org>
+	<131961.1292667059@localhost>
+Date: Sun, 19 Dec 2010 17:48:05 -0800
+Message-ID: <AANLkTik4ffEzb_zzEN7Y+fksSkr+6HZs5Szd4VupH4+-@mail.gmail.com>
+Subject: Re: mmotm 2010-12-16 - breaks mlockall() call
+From: Michel Lespinasse <walken@google.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        mm-commits@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 20, 2010 at 12:33:29PM +1100, Stephen Rothwell wrote:
-> Hi Paul,
-> 
-> Today's linux-next merge of the rmobile tree got a conflict in
-> arch/arm/mach-shmobile/include/mach/entry-macro.S between commit
-> 1cf215a5b43950d1a304373037828158057ff9fc ("ARM: mach-shmobile: INTC
-> interrupt priority level demux fix") from the rmobile-current tree and
-> commits 6d9598e24d50a8c72f48a3864327484a30aaee44 ("ARM: mach-shmobile:
-> Initial AG5 and AG5EVM support") and
-> 45bbaae0dcddc275594e23f108cb68869eae7433 ("ARM: mach-shmobile: Split out
-> entry-macros in to GIC and INTC variants") from the rmobile tree.
-> 
-> I just used the version from the rmobile tree and will leave any fixup to
-> you.
+On Sat, Dec 18, 2010 at 2:10 AM,  <Valdis.Kletnieks@vt.edu> wrote:
+> On Thu, 16 Dec 2010 14:56:39 PST, akpm@linux-foundation.org said:
+>> The mm-of-the-moment snapshot 2010-12-16-14-56 has been uploaded to
+>>
+>>    http://userweb.kernel.org/~akpm/mmotm/
+>
+> The patch mlock-only-hold-mmap_sem-in-shared-mode-when-faulting-in-pages.patch
+> causes this chunk of code from cryptsetup-luks to fail during the initramfs:
+>
+>        if (mlockall(MCL_CURRENT | MCL_FUTURE)) {
+>                        log_err(ctx, _("WARNING!!! Possibly insecure memory. Are you root?\n"));
+>                        _memlock_count--;
+>                        return 0;
+>                }
+>
+> Bisection fingered this patch, which was added after -rc4-mmotm1202, which
+> boots without tripping this log_err() call.  I haven't tried building a
+> -rc6-mmotm1216 with this patch reverted, because reverting it causes apply
+> errors for subsequent patches.
+>
+> Ideas?
 
-Ah, I forgot about that. I'll take care of it today, thanks.
+I had a quick look, but didn't figure out much so far.
+
+Could you send me your initramfs image and .config file so I can
+reproduce the issue locally ?
+
+Thanks,
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
