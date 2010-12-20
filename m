@@ -1,94 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933339Ab0LTXnh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 18:43:37 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:16405 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933293Ab0LTXng (ORCPT
+	id S933352Ab0LTXpY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 18:45:24 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:31217 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933293Ab0LTXpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 18:43:36 -0500
-Date: Tue, 21 Dec 2010 00:34:50 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Minchan Kim <minchan.kim@gmail.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [updated PATCH] Close mem leak in error path in
- mm/hugetlb.c::nr_hugepages_store_common()
-In-Reply-To: <AANLkTikmKB+4vP-dox+T0QzF-yTz7LQrTURYMcqHShsa@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1012210032220.23785@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1012192305260.6486@swampdragon.chaosbits.net> <AANLkTikNx5SG9Z=tUu6tyFRqnR2sLe5NxAjLCJr1UKmq@mail.gmail.com> <alpine.LNX.2.00.1012202302460.23785@swampdragon.chaosbits.net>
- <AANLkTikmKB+4vP-dox+T0QzF-yTz7LQrTURYMcqHShsa@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1880075165-1292888090=:23785"
+	Mon, 20 Dec 2010 18:45:23 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6203"; a="67628023"
+Subject: Re: [PATCH 1/5] mmc: msm: consolidate ifdefs for BUSCLK_PWRSAVE
+From: Daniel Walker <dwalker@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101220234206.GA15270@huya.qualcomm.com>
+References: <1292887011-30006-1-git-send-email-dwalker@codeaurora.org>
+	 <20101220233519.GA14582@huya.qualcomm.com>
+	 <1292888350.27552.22.camel@m0nster>
+	 <20101220234206.GA15270@huya.qualcomm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 20 Dec 2010 15:45:23 -0800
+Message-ID: <1292888723.27552.24.camel@m0nster>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323328-1880075165-1292888090=:23785
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-
-On Tue, 21 Dec 2010, Minchan Kim wrote:
-
-> On Tue, Dec 21, 2010 at 7:05 AM, Jesper Juhl <jj@chaosbits.net> wrote:
-> > On Mon, 20 Dec 2010, Minchan Kim wrote:
-> >
-> >> On Mon, Dec 20, 2010 at 7:10 AM, Jesper Juhl <jj@chaosbits.net> wrote:
-> >> > Hi,
-> >> >
-> >> > The NODEMASK_ALLOC macro dynamically allocates memory for its second
-> >> > argument ('nodes_allowed' in this context).
-> >> > In nr_hugepages_store_common() we may abort early if strict_strtoul()
-> >> > fails, but in that case we do not free the memory already allocated to
-> >> > 'nodes_allowed', causing a memory leak.
-> >> > This patch closes the leak by freeing the memory in the error path.
-> >> >
-> >> >
-> >> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> >> > ---
-> >> >  hugetlb.c |    4 +++-
-> >> >  1 file changed, 3 insertions(+), 1 deletion(-)
-> >> >
-> >> >  compile tested only
-> >> >
-> >> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> >> > index 8585524..9fdcc35 100644
-> >> > --- a/mm/hugetlb.c
-> >> > +++ b/mm/hugetlb.c
-> >> > @@ -1439,8 +1439,10 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
-> >> >        NODEMASK_ALLOC(nodemask_t, nodes_allowed, GFP_KERNEL | __GFP_NORETRY);
-> >> >
-> >> >        err = strict_strtoul(buf, 10, &count);
-> >> > -       if (err)
-> >> > +       if (err) {
-> >> > +               kfree(nodes_allowed);
-> >>
-> >> Nice catch. But use NODEMASK_FREE. It might be not kmalloced object.
-> >>
-> > Right. I just checked the macro and it used kmalloc(), so I just wrote
-> > kfree. But you are right, NODEMASK_FREE is the right thing to use here.
-> > Updated patch below.
-> >
-> >
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+On Mon, 2010-12-20 at 15:42 -0800, David Brown wrote:
+> On Mon, Dec 20, 2010 at 03:39:10PM -0800, Daniel Walker wrote:
+> > > I this feature even used?  It looks like some kind debug feature.
+> > 
+> > Yeah it's used, it's default on..
 > 
-> Could you resend the completed patch to save Andrew trouble?
-> 
-I'm pretty sure he can pick it up from this mail. But, if he has not done 
-so tomorrow evening (when I'll be reading email again) I'll re-submit the 
-patch - sure..
+> What I meant was "is there any reason to be able to turn this off."
+> It looks like something that would be used during development, and
+> doesn't need to be disabled once the driver works.
 
-Andrew: Please let me know if you pick up this patch or not..
+I have no idea. I'm just doing a clean up here .. It's on, it's got a
+config to turn it off, as far as I know it's used and useful.
+
+Daniel
 
 
 -- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
+Forum.
 
---8323328-1880075165-1292888090=:23785--
+
