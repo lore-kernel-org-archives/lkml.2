@@ -1,581 +1,510 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757521Ab0LTLzk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 06:55:40 -0500
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:56963 "EHLO
-	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757281Ab0LTLzh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 06:55:37 -0500
-X-Spam-ASN: 
-From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-To: linux-kernel@vger.kernel.org
-Cc: "Nikita V\. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
-        Rodolfo Giometti <giometti@enneenne.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-        John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Miroslav Lichvar <mlichvar@redhat.com>
-Subject: [PATCHv7 12/16] ntp: add hardpps implementation
-Date: Mon, 20 Dec 2010 14:54:52 +0300
-Message-Id: <a303c4e5732f1bc4dd907ba3ea9d9042cf178666.1292844387.git.lasaine@lvk.cs.msu.su>
+	id S1757584Ab0LTL4Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 06:56:16 -0500
+Received: from shutemov.name ([188.40.19.243]:38489 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757394Ab0LTLyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 06:54:44 -0500
+From: "Kirill A. Shutsemov" <kirill@shutemov.name>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>
+Cc: Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: [PATCH 11/12] nfs: introduce mount option 'rpcmount'
+Date: Mon, 20 Dec 2010 13:54:37 +0200
+Message-Id: <1292846078-31793-12-git-send-email-kirill@shutemov.name>
 X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <cover.1292844387.git.lasaine@lvk.cs.msu.su>
-References: <cover.1292604060.git.lasaine@lvk.cs.msu.su> <cover.1292844387.git.lasaine@lvk.cs.msu.su>
-X-AV-Checked: ClamAV using ClamSMTP
+In-Reply-To: <1292846078-31793-1-git-send-email-kirill@shutemov.name>
+References: <1292846078-31793-1-git-send-email-kirill@shutemov.name>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds hardpps() implementation based upon the original one
-from the NTPv4 reference kernel code from David Mills. However, it is
-highly optimized towards very fast syncronization and maximum stickness
-to PPS signal. The typical error is less then a microsecond.
-To make it sync faster I had to throw away exponential phase filter so
-that the full phase offset is corrected immediately. Then I also had to
-throw away median phase filter because it gives a bigger error itself
-if used without exponential filter.
-Maybe we will find an appropriate filtering scheme in the future but
-it's not necessary if the signal quality is ok.
+From: Kirill A. Shutemov <kirill@shutemov.name>
 
-Acked-by: John Stultz <johnstul@us.ibm.com>
-Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+It specifies rpc_pipefs to use. init_rpc_pipefs, by default.
+
+Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
 ---
- drivers/pps/Kconfig   |    9 +
- include/linux/timex.h |    1 +
- kernel/time/ntp.c     |  425 +++++++++++++++++++++++++++++++++++++++++++++++--
- 3 files changed, 420 insertions(+), 15 deletions(-)
+ fs/nfs/callback.c         |    6 ++--
+ fs/nfs/callback.h         |    3 +-
+ fs/nfs/client.c           |   46 ++++++++++++++++++++++++++++++++++++--------
+ fs/nfs/internal.h         |   10 +++++++-
+ fs/nfs/mount_clnt.c       |    3 +-
+ fs/nfs/namespace.c        |    3 +-
+ fs/nfs/nfs4namespace.c    |   22 +++++++++++---------
+ fs/nfs/super.c            |   20 +++++++++++++++++++
+ include/linux/nfs_fs_sb.h |    1 +
+ 9 files changed, 86 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/pps/Kconfig b/drivers/pps/Kconfig
-index 1afe4e0..0ad5ff3 100644
---- a/drivers/pps/Kconfig
-+++ b/drivers/pps/Kconfig
-@@ -30,6 +30,15 @@ config PPS_DEBUG
- 	  messages to the system log.  Select this if you are having a
- 	  problem with PPS support and want to see more of what is going on.
- 
-+config NTP_PPS
-+	bool "PPS kernel consumer support"
-+	depends on PPS && !NO_HZ
-+	help
-+	  This option adds support for direct in-kernel time
-+	  syncronization using an external PPS signal.
-+
-+	  It doesn't work on tickless systems at the moment.
-+
- source drivers/pps/clients/Kconfig
- 
- endmenu
-diff --git a/include/linux/timex.h b/include/linux/timex.h
-index 32d852f..d23999f 100644
---- a/include/linux/timex.h
-+++ b/include/linux/timex.h
-@@ -268,6 +268,7 @@ extern u64 tick_length;
- extern void second_overflow(void);
- extern void update_ntp_one_tick(void);
- extern int do_adjtimex(struct timex *);
-+extern void hardpps(const struct timespec *, const struct timespec *);
- 
- int read_current_timer(unsigned long *timer_val);
- 
-diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-index d232189..5c00242 100644
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -14,6 +14,7 @@
- #include <linux/timex.h>
- #include <linux/time.h>
- #include <linux/mm.h>
-+#include <linux/module.h>
- 
+diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
+index bef6abd..ef6d206 100644
+--- a/fs/nfs/callback.c
++++ b/fs/nfs/callback.c
+@@ -16,7 +16,6 @@
+ #include <linux/freezer.h>
+ #include <linux/kthread.h>
+ #include <linux/sunrpc/svcauth_gss.h>
+-#include <linux/sunrpc/rpc_pipe_fs.h>
+ #if defined(CONFIG_NFS_V4_1)
+ #include <linux/sunrpc/bc_xprt.h>
+ #endif
+@@ -239,7 +238,8 @@ static inline void nfs_callback_bc_serv(u32 minorversion, struct rpc_xprt *xprt,
  /*
-  * NTP timekeeping variables:
-@@ -74,6 +75,162 @@ static long			time_adjust;
- /* constant (boot-param configurable) NTP tick adjustment (upscaled)	*/
- static s64			ntp_tick_adj;
- 
-+#ifdef CONFIG_NTP_PPS
-+
-+/*
-+ * The following variables are used when a pulse-per-second (PPS) signal
-+ * is available. They establish the engineering parameters of the clock
-+ * discipline loop when controlled by the PPS signal.
-+ */
-+#define PPS_VALID	10	/* PPS signal watchdog max (s) */
-+#define PPS_POPCORN	4	/* popcorn spike threshold (shift) */
-+#define PPS_INTMIN	2	/* min freq interval (s) (shift) */
-+#define PPS_INTMAX	8	/* max freq interval (s) (shift) */
-+#define PPS_INTCOUNT	4	/* number of consecutive good intervals to
-+				   increase pps_shift or consecutive bad
-+				   intervals to decrease it */
-+#define PPS_MAXWANDER	100000	/* max PPS freq wander (ns/s) */
-+
-+static int pps_valid;		/* signal watchdog counter */
-+static long pps_tf[3];		/* phase median filter */
-+static long pps_jitter;		/* current jitter (ns) */
-+static struct timespec pps_fbase; /* beginning of the last freq interval */
-+static int pps_shift;		/* current interval duration (s) (shift) */
-+static int pps_intcnt;		/* interval counter */
-+static s64 pps_freq;		/* frequency offset (scaled ns/s) */
-+static long pps_stabil;		/* current stability (scaled ns/s) */
-+
-+/*
-+ * PPS signal quality monitors
-+ */
-+static long pps_calcnt;		/* calibration intervals */
-+static long pps_jitcnt;		/* jitter limit exceeded */
-+static long pps_stbcnt;		/* stability limit exceeded */
-+static long pps_errcnt;		/* calibration errors */
-+
-+
-+/* PPS kernel consumer compensates the whole phase error immediately.
-+ * Otherwise, reduce the offset by a fixed factor times the time constant.
-+ */
-+static inline s64 ntp_offset_chunk(s64 offset)
-+{
-+	if (time_status & STA_PPSTIME && time_status & STA_PPSSIGNAL)
-+		return offset;
-+	else
-+		return shift_right(offset, SHIFT_PLL + time_constant);
-+}
-+
-+static inline void pps_reset_freq_interval(void)
-+{
-+	/* the PPS calibration interval may end
-+	   surprisingly early */
-+	pps_shift = PPS_INTMIN;
-+	pps_intcnt = 0;
-+}
-+
-+/**
-+ * pps_clear - Clears the PPS state variables
-+ *
-+ * Must be called while holding a write on the xtime_lock
-+ */
-+static inline void pps_clear(void)
-+{
-+	pps_reset_freq_interval();
-+	pps_tf[0] = 0;
-+	pps_tf[1] = 0;
-+	pps_tf[2] = 0;
-+	pps_fbase.tv_sec = pps_fbase.tv_nsec = 0;
-+	pps_freq = 0;
-+}
-+
-+/* Decrease pps_valid to indicate that another second has passed since
-+ * the last PPS signal. When it reaches 0, indicate that PPS signal is
-+ * missing.
-+ *
-+ * Must be called while holding a write on the xtime_lock
-+ */
-+static inline void pps_dec_valid(void)
-+{
-+	if (pps_valid > 0)
-+		pps_valid--;
-+	else {
-+		time_status &= ~(STA_PPSSIGNAL | STA_PPSJITTER |
-+				 STA_PPSWANDER | STA_PPSERROR);
-+		pps_clear();
-+	}
-+}
-+
-+static inline void pps_set_freq(s64 freq)
-+{
-+	pps_freq = freq;
-+}
-+
-+static inline int is_error_status(int status)
-+{
-+	return (time_status & (STA_UNSYNC|STA_CLOCKERR))
-+		/* PPS signal lost when either PPS time or
-+		 * PPS frequency synchronization requested
-+		 */
-+		|| ((time_status & (STA_PPSFREQ|STA_PPSTIME))
-+			&& !(time_status & STA_PPSSIGNAL))
-+		/* PPS jitter exceeded when
-+		 * PPS time synchronization requested */
-+		|| ((time_status & (STA_PPSTIME|STA_PPSJITTER))
-+			== (STA_PPSTIME|STA_PPSJITTER))
-+		/* PPS wander exceeded or calibration error when
-+		 * PPS frequency synchronization requested
-+		 */
-+		|| ((time_status & STA_PPSFREQ)
-+			&& (time_status & (STA_PPSWANDER|STA_PPSERROR)));
-+}
-+
-+static inline void pps_fill_timex(struct timex *txc)
-+{
-+	txc->ppsfreq	   = shift_right((pps_freq >> PPM_SCALE_INV_SHIFT) *
-+					 PPM_SCALE_INV, NTP_SCALE_SHIFT);
-+	txc->jitter	   = pps_jitter;
-+	if (!(time_status & STA_NANO))
-+		txc->jitter /= NSEC_PER_USEC;
-+	txc->shift	   = pps_shift;
-+	txc->stabil	   = pps_stabil;
-+	txc->jitcnt	   = pps_jitcnt;
-+	txc->calcnt	   = pps_calcnt;
-+	txc->errcnt	   = pps_errcnt;
-+	txc->stbcnt	   = pps_stbcnt;
-+}
-+
-+#else /* !CONFIG_NTP_PPS */
-+
-+static inline s64 ntp_offset_chunk(s64 offset)
-+{
-+	return shift_right(offset, SHIFT_PLL + time_constant);
-+}
-+
-+static inline void pps_reset_freq_interval(void) {}
-+static inline void pps_clear(void) {}
-+static inline void pps_dec_valid(void) {}
-+static inline void pps_set_freq(s64 freq) {}
-+
-+static inline int is_error_status(int status)
-+{
-+	return status & (STA_UNSYNC|STA_CLOCKERR);
-+}
-+
-+static inline void pps_fill_timex(struct timex *txc)
-+{
-+	/* PPS is not implemented, so these are zero */
-+	txc->ppsfreq	   = 0;
-+	txc->jitter	   = 0;
-+	txc->shift	   = 0;
-+	txc->stabil	   = 0;
-+	txc->jitcnt	   = 0;
-+	txc->calcnt	   = 0;
-+	txc->errcnt	   = 0;
-+	txc->stbcnt	   = 0;
-+}
-+
-+#endif /* CONFIG_NTP_PPS */
-+
- /*
-  * NTP methods:
+  * Bring up the callback thread if it is not already up.
   */
-@@ -185,6 +342,9 @@ void ntp_clear(void)
+-int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
++int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt,
++		struct vfsmount *rpcmount)
+ {
+ 	struct svc_serv *serv = NULL;
+ 	struct svc_rqst *rqstp;
+@@ -254,7 +254,7 @@ int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
+ 		nfs_callback_bc_serv(minorversion, xprt, cb_info);
+ 		goto out;
+ 	}
+-	serv = svc_create(&nfs4_callback_program, init_rpc_pipefs,
++	serv = svc_create(&nfs4_callback_program, rpcmount,
+ 			NFS4_CALLBACK_BUFSIZE, NULL);
+ 	if (!serv) {
+ 		ret = -ENOMEM;
+diff --git a/fs/nfs/callback.h b/fs/nfs/callback.h
+index 85a7cfd..ae27385 100644
+--- a/fs/nfs/callback.h
++++ b/fs/nfs/callback.h
+@@ -133,7 +133,8 @@ extern __be32 nfs4_callback_getattr(struct cb_getattrargs *args, struct cb_getat
+ extern __be32 nfs4_callback_recall(struct cb_recallargs *args, void *dummy);
  
- 	tick_length	= tick_length_base;
- 	time_offset	= 0;
-+
-+	/* Clear PPS state variables */
-+	pps_clear();
- }
+ #ifdef CONFIG_NFS_V4
+-extern int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt);
++extern int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt,
++		struct vfsmount *rpcmount);
+ extern void nfs_callback_down(int minorversion);
+ extern int nfs4_validate_delegation_stateid(struct nfs_delegation *delegation,
+ 					    const nfs4_stateid *stateid);
+diff --git a/fs/nfs/client.c b/fs/nfs/client.c
+index fbc013d..ccc400a 100644
+--- a/fs/nfs/client.c
++++ b/fs/nfs/client.c
+@@ -107,6 +107,7 @@ struct nfs_client_initdata {
+ 	const struct nfs_rpc_ops *rpc_ops;
+ 	int proto;
+ 	u32 minorversion;
++	struct vfsmount *rpcmount;
+ };
  
  /*
-@@ -250,16 +410,16 @@ void second_overflow(void)
- 		time_status |= STA_UNSYNC;
- 	}
+@@ -143,6 +144,7 @@ static struct nfs_client *nfs_alloc_client(const struct nfs_client_initdata *cl_
+ 	clp->cl_rpcclient = ERR_PTR(-EINVAL);
  
--	/*
--	 * Compute the phase adjustment for the next second. The offset is
--	 * reduced by a fixed factor times the time constant.
--	 */
-+	/* Compute the phase adjustment for the next second */
- 	tick_length	 = tick_length_base;
+ 	clp->cl_proto = cl_init->proto;
++	clp->cl_rpcmount = mntget(cl_init->rpcmount);
  
--	delta		 = shift_right(time_offset, SHIFT_PLL + time_constant);
-+	delta		 = ntp_offset_chunk(time_offset);
- 	time_offset	-= delta;
- 	tick_length	+= delta;
+ #ifdef CONFIG_NFS_V4
+ 	INIT_LIST_HEAD(&clp->cl_delegations);
+@@ -231,6 +233,7 @@ static void nfs_free_client(struct nfs_client *clp)
+ 	if (clp->cl_machine_cred != NULL)
+ 		put_rpccred(clp->cl_machine_cred);
  
-+	/* Check PPS signal */
-+	pps_dec_valid();
++	mntput(clp->cl_rpcmount);
+ 	kfree(clp->cl_hostname);
+ 	kfree(clp);
+ 
+@@ -457,6 +460,9 @@ static struct nfs_client *nfs_match_client(const struct nfs_client_initdata *dat
+ 		/* Match the full socket address */
+ 		if (!nfs_sockaddr_cmp(sap, clap))
+ 			continue;
++		/* Match rpc_pipefs mount point */
++		if (clp->cl_rpcmount->mnt_sb != data->rpcmount->mnt_sb)
++			continue;
+ 
+ 		atomic_inc(&clp->cl_count);
+ 		return clp;
+@@ -615,7 +621,7 @@ static int nfs_create_rpc_client(struct nfs_client *clp,
+ 		.program	= &nfs_program,
+ 		.version	= clp->rpc_ops->version,
+ 		.authflavor	= flavor,
+-		.rpcmount	= init_rpc_pipefs,
++		.rpcmount	= clp->cl_rpcmount,
+ 	};
+ 
+ 	if (discrtry)
+@@ -650,7 +656,7 @@ static void nfs_destroy_server(struct nfs_server *server)
+ /*
+  * Version 2 or 3 lockd setup
+  */
+-static int nfs_start_lockd(struct nfs_server *server)
++static int nfs_start_lockd(struct nfs_server *server, struct vfsmount *rpcmount)
+ {
+ 	struct nlm_host *host;
+ 	struct nfs_client *clp = server->nfs_client;
+@@ -661,7 +667,7 @@ static int nfs_start_lockd(struct nfs_server *server)
+ 		.nfs_version	= clp->rpc_ops->version,
+ 		.noresvport	= server->flags & NFS_MOUNT_NORESVPORT ?
+ 					1 : 0,
+-		.rpcmount	= init_rpc_pipefs,
++		.rpcmount	= rpcmount,
+ 	};
+ 
+ 	if (nlm_init.nfs_version > 3)
+@@ -809,8 +815,16 @@ static int nfs_init_server(struct nfs_server *server,
+ 		cl_init.rpc_ops = &nfs_v3_clientops;
+ #endif
+ 
++	cl_init.rpcmount = get_rpc_pipefs(data->rpcmount);
++	if (IS_ERR(cl_init.rpcmount)) {
++		dprintk("<-- nfs_init_server() = error %ld\n",
++				PTR_ERR(cl_init.rpcmount));
++		return PTR_ERR(cl_init.rpcmount);
++	}
 +
- 	if (!time_adjust)
- 		return;
+ 	/* Allocate or find a client reference we can use */
+ 	clp = nfs_get_client(&cl_init);
++	mntput(cl_init.rpcmount);
+ 	if (IS_ERR(clp)) {
+ 		dprintk("<-- nfs_init_server() = error %ld\n", PTR_ERR(clp));
+ 		return PTR_ERR(clp);
+@@ -842,7 +856,7 @@ static int nfs_init_server(struct nfs_server *server,
+ 	server->acdirmax = data->acdirmax * HZ;
  
-@@ -369,6 +529,8 @@ static inline void process_adj_status(struct timex *txc, struct timespec *ts)
- 	if ((time_status & STA_PLL) && !(txc->status & STA_PLL)) {
- 		time_state = TIME_OK;
- 		time_status = STA_UNSYNC;
-+		/* restart PPS frequency calibration */
-+		pps_reset_freq_interval();
- 	}
+ 	/* Start lockd here, before we might error out */
+-	error = nfs_start_lockd(server);
++	error = nfs_start_lockd(server, clp->cl_rpcmount);
+ 	if (error < 0)
+ 		goto error;
  
- 	/*
-@@ -418,6 +580,8 @@ static inline void process_adjtimex_modes(struct timex *txc, struct timespec *ts
- 		time_freq = txc->freq * PPM_SCALE;
- 		time_freq = min(time_freq, MAXFREQ_SCALED);
- 		time_freq = max(time_freq, -MAXFREQ_SCALED);
-+		/* update pps_freq */
-+		pps_set_freq(time_freq);
- 	}
+@@ -1144,7 +1158,8 @@ static int nfs4_init_callback(struct nfs_client *clp)
+ 		}
  
- 	if (txc->modes & ADJ_MAXERROR)
-@@ -508,7 +672,8 @@ int do_adjtimex(struct timex *txc)
- 	}
+ 		error = nfs_callback_up(clp->cl_mvops->minor_version,
+-					clp->cl_rpcclient->cl_xprt);
++					clp->cl_rpcclient->cl_xprt,
++					clp->cl_rpcmount);
+ 		if (error < 0) {
+ 			dprintk("%s: failed to start callback. Error = %d\n",
+ 				__func__, error);
+@@ -1244,7 +1259,8 @@ static int nfs4_set_client(struct nfs_server *server,
+ 		const char *ip_addr,
+ 		rpc_authflavor_t authflavour,
+ 		int proto, const struct rpc_timeout *timeparms,
+-		u32 minorversion)
++		u32 minorversion,
++		struct vfsmount *rpcmount)
+ {
+ 	struct nfs_client_initdata cl_init = {
+ 		.hostname = hostname,
+@@ -1253,6 +1269,7 @@ static int nfs4_set_client(struct nfs_server *server,
+ 		.rpc_ops = &nfs_v4_clientops,
+ 		.proto = proto,
+ 		.minorversion = minorversion,
++		.rpcmount = rpcmount,
+ 	};
+ 	struct nfs_client *clp;
+ 	int error;
+@@ -1363,6 +1380,7 @@ static int nfs4_init_server(struct nfs_server *server,
+ 		const struct nfs_parsed_mount_data *data)
+ {
+ 	struct rpc_timeout timeparms;
++	struct vfsmount *rpcmount;
+ 	int error;
  
- 	result = time_state;	/* mostly `TIME_OK' */
--	if (time_status & (STA_UNSYNC|STA_CLOCKERR))
-+	/* check for errors */
-+	if (is_error_status(time_status))
- 		result = TIME_ERROR;
+ 	dprintk("--> nfs4_init_server()\n");
+@@ -1377,6 +1395,11 @@ static int nfs4_init_server(struct nfs_server *server,
+ 			server->caps |= NFS_CAP_READDIRPLUS;
+ 	server->options = data->options;
  
- 	txc->freq	   = shift_right((time_freq >> PPM_SCALE_INV_SHIFT) *
-@@ -522,15 +687,8 @@ int do_adjtimex(struct timex *txc)
- 	txc->tick	   = tick_usec;
- 	txc->tai	   = time_tai;
++	rpcmount = get_rpc_pipefs(data->rpcmount);
++	if (IS_ERR(rpcmount)) {
++		error = PTR_ERR(rpcmount);
++		goto error;
++	}
+ 	/* Get a client record */
+ 	error = nfs4_set_client(server,
+ 			data->nfs_server.hostname,
+@@ -1386,7 +1409,9 @@ static int nfs4_init_server(struct nfs_server *server,
+ 			data->auth_flavors[0],
+ 			data->nfs_server.protocol,
+ 			&timeparms,
+-			data->minorversion);
++			data->minorversion,
++			rpcmount);
++	mntput(rpcmount);
+ 	if (error < 0)
+ 		goto error;
  
--	/* PPS is not implemented, so these are zero */
--	txc->ppsfreq	   = 0;
--	txc->jitter	   = 0;
--	txc->shift	   = 0;
--	txc->stabil	   = 0;
--	txc->jitcnt	   = 0;
--	txc->calcnt	   = 0;
--	txc->errcnt	   = 0;
--	txc->stbcnt	   = 0;
-+	/* fill PPS status fields */
-+	pps_fill_timex(txc);
+@@ -1476,7 +1501,10 @@ struct nfs_server *nfs4_create_referral_server(struct nfs_clone_mount *data,
+ 				data->authflavor,
+ 				parent_server->client->cl_xprt->prot,
+ 				parent_server->client->cl_timeout,
+-				parent_client->cl_mvops->minor_version);
++				parent_client->cl_mvops->minor_version,
++				parent_client->cl_rpcmount);
++
++
+ 	if (error < 0)
+ 		goto error;
  
- 	write_sequnlock_irq(&xtime_lock);
+@@ -1550,7 +1578,7 @@ struct nfs_server *nfs_clone_server(struct nfs_server *source,
+ 		(unsigned long long) server->fsid.major,
+ 		(unsigned long long) server->fsid.minor);
  
-@@ -544,6 +702,243 @@ int do_adjtimex(struct timex *txc)
- 	return result;
+-	error = nfs_start_lockd(server);
++	error = nfs_start_lockd(server, server->nfs_client->cl_rpcmount);
+ 	if (error < 0)
+ 		goto out_free_server;
+ 
+diff --git a/fs/nfs/internal.h b/fs/nfs/internal.h
+index e6356b7..cb31fd9 100644
+--- a/fs/nfs/internal.h
++++ b/fs/nfs/internal.h
+@@ -86,6 +86,7 @@ struct nfs_parsed_mount_data {
+ 	unsigned int		version;
+ 	unsigned int		minorversion;
+ 	char			*fscache_uniq;
++	char			*rpcmount;
+ 
+ 	struct {
+ 		struct sockaddr_storage	address;
+@@ -120,6 +121,7 @@ struct nfs_mount_request {
+ 	int			noresvport;
+ 	unsigned int		*auth_flav_len;
+ 	rpc_authflavor_t	*auth_flavs;
++	struct vfsmount		*rpcmount;
+ };
+ 
+ extern int nfs_mount(struct nfs_mount_request *info);
+@@ -160,10 +162,14 @@ static inline void nfs_fs_proc_exit(void)
+ 
+ /* nfs4namespace.c */
+ #ifdef CONFIG_NFS_V4
+-extern struct vfsmount *nfs_do_refmount(const struct vfsmount *mnt_parent, struct dentry *dentry);
++extern struct vfsmount *nfs_do_refmount(const struct vfsmount *mnt_parent,
++		struct dentry *dentry,
++		struct vfsmount *rpcmount);
+ #else
+ static inline
+-struct vfsmount *nfs_do_refmount(const struct vfsmount *mnt_parent, struct dentry *dentry)
++struct vfsmount *nfs_do_refmount(const struct vfsmount *mnt_parent,
++		struct dentry *dentry,
++		struct vfsmount *rpcmount)
+ {
+ 	return ERR_PTR(-ENOENT);
+ }
+diff --git a/fs/nfs/mount_clnt.c b/fs/nfs/mount_clnt.c
+index 67b4b8d..9fd4157 100644
+--- a/fs/nfs/mount_clnt.c
++++ b/fs/nfs/mount_clnt.c
+@@ -13,7 +13,6 @@
+ #include <linux/in.h>
+ #include <linux/sunrpc/clnt.h>
+ #include <linux/sunrpc/sched.h>
+-#include <linux/sunrpc/rpc_pipe_fs.h>
+ #include <linux/nfs_fs.h>
+ #include "internal.h"
+ 
+@@ -162,7 +161,7 @@ int nfs_mount(struct nfs_mount_request *info)
+ 		.program	= &mnt_program,
+ 		.version	= info->version,
+ 		.authflavor	= RPC_AUTH_UNIX,
+-		.rpcmount	= init_rpc_pipefs,
++		.rpcmount	= info->rpcmount,
+ 	};
+ 	struct rpc_clnt		*mnt_clnt;
+ 	int			status;
+diff --git a/fs/nfs/namespace.c b/fs/nfs/namespace.c
+index db6aa36..d47f6f5 100644
+--- a/fs/nfs/namespace.c
++++ b/fs/nfs/namespace.c
+@@ -135,7 +135,8 @@ static void * nfs_follow_mountpoint(struct dentry *dentry, struct nameidata *nd)
+ 		goto out_err;
+ 
+ 	if (fattr->valid & NFS_ATTR_FATTR_V4_REFERRAL)
+-		mnt = nfs_do_refmount(nd->path.mnt, nd->path.dentry);
++		mnt = nfs_do_refmount(nd->path.mnt, nd->path.dentry,
++				server->nfs_client->cl_rpcmount);
+ 	else
+ 		mnt = nfs_do_submount(nd->path.mnt, nd->path.dentry, fh,
+ 				      fattr);
+diff --git a/fs/nfs/nfs4namespace.c b/fs/nfs/nfs4namespace.c
+index 7a61fdb..92d5d63 100644
+--- a/fs/nfs/nfs4namespace.c
++++ b/fs/nfs/nfs4namespace.c
+@@ -14,7 +14,6 @@
+ #include <linux/slab.h>
+ #include <linux/string.h>
+ #include <linux/sunrpc/clnt.h>
+-#include <linux/sunrpc/rpc_pipe_fs.h>
+ #include <linux/vfs.h>
+ #include <linux/inet.h>
+ #include "internal.h"
+@@ -99,14 +98,13 @@ static int nfs4_validate_fspath(const struct vfsmount *mnt_parent,
  }
  
-+#ifdef	CONFIG_NTP_PPS
-+
-+/* actually struct pps_normtime is good old struct timespec, but it is
-+ * semantically different (and it is the reason why it was invented):
-+ * pps_normtime.nsec has a range of ( -NSEC_PER_SEC / 2, NSEC_PER_SEC / 2 ]
-+ * while timespec.tv_nsec has a range of [0, NSEC_PER_SEC) */
-+struct pps_normtime {
-+	__kernel_time_t	sec;	/* seconds */
-+	long		nsec;	/* nanoseconds */
-+};
-+
-+/* normalize the timestamp so that nsec is in the
-+   ( -NSEC_PER_SEC / 2, NSEC_PER_SEC / 2 ] interval */
-+static inline struct pps_normtime pps_normalize_ts(struct timespec ts)
-+{
-+	struct pps_normtime norm = {
-+		.sec = ts.tv_sec,
-+		.nsec = ts.tv_nsec
-+	};
-+
-+	if (norm.nsec > (NSEC_PER_SEC >> 1)) {
-+		norm.nsec -= NSEC_PER_SEC;
-+		norm.sec++;
-+	}
-+
-+	return norm;
-+}
-+
-+/* get current phase correction and jitter */
-+static inline long pps_phase_filter_get(long *jitter)
-+{
-+	*jitter = pps_tf[0] - pps_tf[1];
-+	if (*jitter < 0)
-+		*jitter = -*jitter;
-+
-+	/* TODO: test various filters */
-+	return pps_tf[0];
-+}
-+
-+/* add the sample to the phase filter */
-+static inline void pps_phase_filter_add(long err)
-+{
-+	pps_tf[2] = pps_tf[1];
-+	pps_tf[1] = pps_tf[0];
-+	pps_tf[0] = err;
-+}
-+
-+/* decrease frequency calibration interval length.
-+ * It is halved after four consecutive unstable intervals.
-+ */
-+static inline void pps_dec_freq_interval(void)
-+{
-+	if (--pps_intcnt <= -PPS_INTCOUNT) {
-+		pps_intcnt = -PPS_INTCOUNT;
-+		if (pps_shift > PPS_INTMIN) {
-+			pps_shift--;
-+			pps_intcnt = 0;
-+		}
-+	}
-+}
-+
-+/* increase frequency calibration interval length.
-+ * It is doubled after four consecutive stable intervals.
-+ */
-+static inline void pps_inc_freq_interval(void)
-+{
-+	if (++pps_intcnt >= PPS_INTCOUNT) {
-+		pps_intcnt = PPS_INTCOUNT;
-+		if (pps_shift < PPS_INTMAX) {
-+			pps_shift++;
-+			pps_intcnt = 0;
-+		}
-+	}
-+}
-+
-+/* update clock frequency based on MONOTONIC_RAW clock PPS signal
-+ * timestamps
-+ *
-+ * At the end of the calibration interval the difference between the
-+ * first and last MONOTONIC_RAW clock timestamps divided by the length
-+ * of the interval becomes the frequency update. If the interval was
-+ * too long, the data are discarded.
-+ * Returns the difference between old and new frequency values.
-+ */
-+static long hardpps_update_freq(struct pps_normtime freq_norm)
-+{
-+	long delta, delta_mod;
-+	s64 ftemp;
-+
-+	/* check if the frequency interval was too long */
-+	if (freq_norm.sec > (2 << pps_shift)) {
-+		time_status |= STA_PPSERROR;
-+		pps_errcnt++;
-+		pps_dec_freq_interval();
-+		pr_err("hardpps: PPSERROR: interval too long - %ld s\n",
-+				freq_norm.sec);
-+		return 0;
-+	}
-+
-+	/* here the raw frequency offset and wander (stability) is
-+	 * calculated. If the wander is less than the wander threshold
-+	 * the interval is increased; otherwise it is decreased.
-+	 */
-+	ftemp = div_s64(((s64)(-freq_norm.nsec)) << NTP_SCALE_SHIFT,
-+			freq_norm.sec);
-+	delta = shift_right(ftemp - pps_freq, NTP_SCALE_SHIFT);
-+	pps_freq = ftemp;
-+	if (delta > PPS_MAXWANDER || delta < -PPS_MAXWANDER) {
-+		pr_warning("hardpps: PPSWANDER: change=%ld\n", delta);
-+		time_status |= STA_PPSWANDER;
-+		pps_stbcnt++;
-+		pps_dec_freq_interval();
-+	} else {	/* good sample */
-+		pps_inc_freq_interval();
-+	}
-+
-+	/* the stability metric is calculated as the average of recent
-+	 * frequency changes, but is used only for performance
-+	 * monitoring
-+	 */
-+	delta_mod = delta;
-+	if (delta_mod < 0)
-+		delta_mod = -delta_mod;
-+	pps_stabil += (div_s64(((s64)delta_mod) <<
-+				(NTP_SCALE_SHIFT - SHIFT_USEC),
-+				NSEC_PER_USEC) - pps_stabil) >> PPS_INTMIN;
-+
-+	/* if enabled, the system clock frequency is updated */
-+	if ((time_status & STA_PPSFREQ) != 0 &&
-+	    (time_status & STA_FREQHOLD) == 0) {
-+		time_freq = pps_freq;
-+		ntp_update_frequency();
-+	}
-+
-+	return delta;
-+}
-+
-+/* correct REALTIME clock phase error against PPS signal */
-+static void hardpps_update_phase(long error)
-+{
-+	long correction = -error;
-+	long jitter;
-+
-+	/* add the sample to the median filter */
-+	pps_phase_filter_add(correction);
-+	correction = pps_phase_filter_get(&jitter);
-+
-+	/* Nominal jitter is due to PPS signal noise. If it exceeds the
-+	 * threshold, the sample is discarded; otherwise, if so enabled,
-+	 * the time offset is updated.
-+	 */
-+	if (jitter > (pps_jitter << PPS_POPCORN)) {
-+		pr_warning("hardpps: PPSJITTER: jitter=%ld, limit=%ld\n",
-+		       jitter, (pps_jitter << PPS_POPCORN));
-+		time_status |= STA_PPSJITTER;
-+		pps_jitcnt++;
-+	} else if (time_status & STA_PPSTIME) {
-+		/* correct the time using the phase offset */
-+		time_offset = div_s64(((s64)correction) << NTP_SCALE_SHIFT,
-+				NTP_INTERVAL_FREQ);
-+		/* cancel running adjtime() */
-+		time_adjust = 0;
-+	}
-+	/* update jitter */
-+	pps_jitter += (jitter - pps_jitter) >> PPS_INTMIN;
-+}
-+
-+/*
-+ * hardpps() - discipline CPU clock oscillator to external PPS signal
-+ *
-+ * This routine is called at each PPS signal arrival in order to
-+ * discipline the CPU clock oscillator to the PPS signal. It takes two
-+ * parameters: REALTIME and MONOTONIC_RAW clock timestamps. The former
-+ * is used to correct clock phase error and the latter is used to
-+ * correct the frequency.
-+ *
-+ * This code is based on David Mills's reference nanokernel
-+ * implementation. It was mostly rewritten but keeps the same idea.
-+ */
-+void hardpps(const struct timespec *phase_ts, const struct timespec *raw_ts)
-+{
-+	struct pps_normtime pts_norm, freq_norm;
-+	unsigned long flags;
-+
-+	pts_norm = pps_normalize_ts(*phase_ts);
-+
-+	write_seqlock_irqsave(&xtime_lock, flags);
-+
-+	/* clear the error bits, they will be set again if needed */
-+	time_status &= ~(STA_PPSJITTER | STA_PPSWANDER | STA_PPSERROR);
-+
-+	/* indicate signal presence */
-+	time_status |= STA_PPSSIGNAL;
-+	pps_valid = PPS_VALID;
-+
-+	/* when called for the first time,
-+	 * just start the frequency interval */
-+	if (unlikely(pps_fbase.tv_sec == 0)) {
-+		pps_fbase = *raw_ts;
-+		write_sequnlock_irqrestore(&xtime_lock, flags);
-+		return;
-+	}
-+
-+	/* ok, now we have a base for frequency calculation */
-+	freq_norm = pps_normalize_ts(timespec_sub(*raw_ts, pps_fbase));
-+
-+	/* check that the signal is in the range
-+	 * [1s - MAXFREQ us, 1s + MAXFREQ us], otherwise reject it */
-+	if ((freq_norm.sec == 0) ||
-+			(freq_norm.nsec > MAXFREQ * freq_norm.sec) ||
-+			(freq_norm.nsec < -MAXFREQ * freq_norm.sec)) {
-+		time_status |= STA_PPSJITTER;
-+		/* restart the frequency calibration interval */
-+		pps_fbase = *raw_ts;
-+		write_sequnlock_irqrestore(&xtime_lock, flags);
-+		pr_err("hardpps: PPSJITTER: bad pulse\n");
-+		return;
-+	}
-+
-+	/* signal is ok */
-+
-+	/* check if the current frequency interval is finished */
-+	if (freq_norm.sec >= (1 << pps_shift)) {
-+		pps_calcnt++;
-+		/* restart the frequency calibration interval */
-+		pps_fbase = *raw_ts;
-+		hardpps_update_freq(freq_norm);
-+	}
-+
-+	hardpps_update_phase(pts_norm.nsec);
-+
-+	write_sequnlock_irqrestore(&xtime_lock, flags);
-+}
-+EXPORT_SYMBOL(hardpps);
-+
-+#endif	/* CONFIG_NTP_PPS */
-+
- static int __init ntp_tick_adj_setup(char *str)
+ static size_t nfs_parse_server_name(char *string, size_t len,
+-		struct sockaddr *sa, size_t salen)
++		struct sockaddr *sa, size_t salen, struct vfsmount *rpcmount)
  {
- 	ntp_tick_adj = simple_strtol(str, NULL, 0);
+ 	ssize_t ret;
+ 
+ 	ret = rpc_pton(string, len, sa, salen);
+ 	if (ret == 0) {
+-		ret = nfs_dns_resolve_name(string, len, sa, salen,
+-				init_rpc_pipefs);
++		ret = nfs_dns_resolve_name(string, len, sa, salen, rpcmount);
+ 		if (ret < 0)
+ 			ret = 0;
+ 	}
+@@ -115,7 +113,8 @@ static size_t nfs_parse_server_name(char *string, size_t len,
+ 
+ static struct vfsmount *try_location(struct nfs_clone_mount *mountdata,
+ 				     char *page, char *page2,
+-				     const struct nfs4_fs_location *location)
++				     const struct nfs4_fs_location *location,
++				     struct vfsmount *rpcmount)
+ {
+ 	const size_t addr_bufsize = sizeof(struct sockaddr_storage);
+ 	struct vfsmount *mnt = ERR_PTR(-ENOENT);
+@@ -143,7 +142,7 @@ static struct vfsmount *try_location(struct nfs_clone_mount *mountdata,
+ 			continue;
+ 
+ 		mountdata->addrlen = nfs_parse_server_name(buf->data, buf->len,
+-				mountdata->addr, addr_bufsize);
++				mountdata->addr, addr_bufsize, rpcmount);
+ 		if (mountdata->addrlen == 0)
+ 			continue;
+ 
+@@ -174,7 +173,8 @@ static struct vfsmount *try_location(struct nfs_clone_mount *mountdata,
+  */
+ static struct vfsmount *nfs_follow_referral(const struct vfsmount *mnt_parent,
+ 					    const struct dentry *dentry,
+-					    const struct nfs4_fs_locations *locations)
++					    const struct nfs4_fs_locations *locations,
++					    struct vfsmount *rpcmount)
+ {
+ 	struct vfsmount *mnt = ERR_PTR(-ENOENT);
+ 	struct nfs_clone_mount mountdata = {
+@@ -213,7 +213,7 @@ static struct vfsmount *nfs_follow_referral(const struct vfsmount *mnt_parent,
+ 		    location->rootpath.ncomponents == 0)
+ 			continue;
+ 
+-		mnt = try_location(&mountdata, page, page2, location);
++		mnt = try_location(&mountdata, page, page2, location, rpcmount);
+ 		if (!IS_ERR(mnt))
+ 			break;
+ 	}
+@@ -231,7 +231,9 @@ out:
+  * @dentry - dentry of referral
+  *
+  */
+-struct vfsmount *nfs_do_refmount(const struct vfsmount *mnt_parent, struct dentry *dentry)
++struct vfsmount *nfs_do_refmount(const struct vfsmount *mnt_parent,
++		struct dentry *dentry,
++		struct vfsmount *rpcmount)
+ {
+ 	struct vfsmount *mnt = ERR_PTR(-ENOMEM);
+ 	struct dentry *parent;
+@@ -264,7 +266,7 @@ struct vfsmount *nfs_do_refmount(const struct vfsmount *mnt_parent, struct dentr
+ 	    fs_locations->fs_path.ncomponents <= 0)
+ 		goto out_free;
+ 
+-	mnt = nfs_follow_referral(mnt_parent, dentry, fs_locations);
++	mnt = nfs_follow_referral(mnt_parent, dentry, fs_locations, rpcmount);
+ out_free:
+ 	__free_page(page);
+ 	kfree(fs_locations);
+diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+index 4100630..32b7e35 100644
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -35,6 +35,7 @@
+ #include <linux/sunrpc/metrics.h>
+ #include <linux/sunrpc/xprtsock.h>
+ #include <linux/sunrpc/xprtrdma.h>
++#include <linux/sunrpc/rpc_pipe_fs.h>
+ #include <linux/nfs_fs.h>
+ #include <linux/nfs_mount.h>
+ #include <linux/nfs4_mount.h>
+@@ -106,6 +107,7 @@ enum {
+ 	Opt_lookupcache,
+ 	Opt_fscache_uniq,
+ 	Opt_local_lock,
++	Opt_rpcmount,
+ 
+ 	/* Special mount options */
+ 	Opt_userspace, Opt_deprecated, Opt_sloppy,
+@@ -178,6 +180,7 @@ static const match_table_t nfs_mount_option_tokens = {
+ 	{ Opt_lookupcache, "lookupcache=%s" },
+ 	{ Opt_fscache_uniq, "fsc=%s" },
+ 	{ Opt_local_lock, "local_lock=%s" },
++	{ Opt_rpcmount, "rpcmount=%s" },
+ 
+ 	{ Opt_err, NULL }
+ };
+@@ -1484,6 +1487,13 @@ static int nfs_parse_mount_options(char *raw,
+ 				return 0;
+ 			};
+ 			break;
++		case Opt_rpcmount:
++			string = match_strdup(args);
++			if (string == NULL)
++				goto out_nomem;
++			kfree(mnt->rpcmount);
++			mnt->rpcmount = string;
++			break;
+ 
+ 		/*
+ 		 * Special options
+@@ -1644,11 +1654,19 @@ static int nfs_try_mount(struct nfs_parsed_mount_data *args,
+ 	request.salen = args->mount_server.addrlen;
+ 	nfs_set_port(request.sap, &args->mount_server.port, 0);
+ 
++	request.rpcmount = get_rpc_pipefs(args->rpcmount);
++	if (IS_ERR(request.rpcmount)) {
++		dfprintk(MOUNT,	"NFS: unable get rpc_pipefs mount point, "
++				"error %ld\n", PTR_ERR(request.rpcmount));
++		return PTR_ERR(request.rpcmount);
++	}
++
+ 	/*
+ 	 * Now ask the mount server to map our export path
+ 	 * to a file handle.
+ 	 */
+ 	status = nfs_mount(&request);
++	mntput(request.rpcmount);
+ 	if (status != 0) {
+ 		dfprintk(MOUNT, "NFS: unable to mount server %s, error %d\n",
+ 				request.hostname, status);
+@@ -2352,6 +2370,7 @@ out:
+ 	kfree(data->nfs_server.hostname);
+ 	kfree(data->mount_server.hostname);
+ 	kfree(data->fscache_uniq);
++	kfree(data->rpcmount);
+ 	security_free_mnt_opts(&data->lsm_opts);
+ out_free_fh:
+ 	nfs_free_fhandle(mntfh);
+@@ -2947,6 +2966,7 @@ out:
+ 	kfree(data->nfs_server.export_path);
+ 	kfree(data->nfs_server.hostname);
+ 	kfree(data->fscache_uniq);
++	kfree(data->rpcmount);
+ out_free_data:
+ 	kfree(data);
+ 	dprintk("<-- nfs4_get_sb() = %d%s\n", error,
+diff --git a/include/linux/nfs_fs_sb.h b/include/linux/nfs_fs_sb.h
+index 452d964..ee417c9 100644
+--- a/include/linux/nfs_fs_sb.h
++++ b/include/linux/nfs_fs_sb.h
+@@ -36,6 +36,7 @@ struct nfs_client {
+ 	struct list_head	cl_share_link;	/* link in global client list */
+ 	struct list_head	cl_superblocks;	/* List of nfs_server structs */
+ 
++	struct vfsmount		*cl_rpcmount;	/* rpc_pipefs mount point */
+ 	struct rpc_clnt *	cl_rpcclient;
+ 	const struct nfs_rpc_ops *rpc_ops;	/* NFS protocol vector */
+ 	int			cl_proto;	/* Network transport protocol */
 -- 
-1.7.2.3
+1.7.3.4
 
