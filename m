@@ -1,69 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757952Ab0LTSWd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 13:22:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57715 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757844Ab0LTSWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 13:22:32 -0500
-Date: Mon, 20 Dec 2010 19:15:16 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
-        jan.kratochvil@redhat.com
-Subject: Re: [PATCH 13/16] ptrace: reorganize __ptrace_unlink() and
-	ptrace_untrace()
-Message-ID: <20101220181516.GB18070@redhat.com>
-References: <1291654624-6230-1-git-send-email-tj@kernel.org> <1291654624-6230-14-git-send-email-tj@kernel.org>
+	id S932797Ab0LTSWx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 13:22:53 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:46486 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757975Ab0LTSWw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 13:22:52 -0500
+Date: Mon, 20 Dec 2010 18:22:42 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: 2.6.36.2 regression: suspend on Lenovo X200s broken due to TPM
+Message-ID: <20101220182242.GA29696@srcf.ucam.org>
+References: <AANLkTikaxPEszPPU=J1bP2TitrrDuhZ=FZKbD2hwD+VH@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1291654624-6230-14-git-send-email-tj@kernel.org>
+In-Reply-To: <AANLkTikaxPEszPPU=J1bP2TitrrDuhZ=FZKbD2hwD+VH@mail.gmail.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A bit off-topic note,
+On Mon, Dec 20, 2010 at 01:10:03PM -0500, Andrew Lutomirski wrote:
+> The change "PNPACPI: cope with invalid device IDs", added in 2.6.36.2,
+> makes the kernel detect my TPM (it used to not work at all), but the
+> TPM driver doesn't work because it can't autodetect the iTPM
+> workaround.  This breaks suspend without actually fixing my TPM.
 
-On 12/06, Tejun Heo wrote:
->
-> -static void ptrace_untrace(struct task_struct *child)
-> +void __ptrace_unlink(struct task_struct *child)
->  {
-> +	struct signal_struct *sig = child->signal;
-> +
-> +	BUG_ON(!child->ptrace);
-> +
->  	spin_lock(&child->sighand->siglock);
-> +
->  	if (task_is_traced(child)) {
->  		/*
->  		 * If group stop is completed or in progress, it should
->  		 * participate in the group stop.  Set GROUP_STOP_PENDING
->  		 * before kicking it.
->  		 */
-> -		if (child->signal->flags & SIGNAL_STOP_STOPPED ||
-> -		    child->signal->group_stop_count)
-> +		if (sig->flags & SIGNAL_STOP_STOPPED || sig->group_stop_count)
->  			child->group_stop |= GROUP_STOP_PENDING;
->  		signal_wake_up(child, 1);
+I hadn't realised that patch went back to stable. Greg, you'll want to 
+pull 3f0d3d016d89a5efb8b926d4707eb21fa13f3d27 as well.
 
-OK. Of course, I do not blame this patch, this mimics the current
-behaviour.
-
-But, afaics, this is not exactly right in the long term. Suppose
-that SIGNAL_STOP_STOPPED is set but the tracee is running (this can
-happen if, say, debugger resumes the tracee and exits). In this case,
-I think this thread should be stopped too.
-
-IIRC, I already tried to do this, but the patch (or idea) was nacked
-because it means another user-visible change. However, if we want to
-really fix things, we should fix this case too. If SIGNAL_STOP_STOPPED
-is set, there should be no running threads after detach.
-
-Or. We can change the rules for ptrace_resume(), more on this later.
-
-Oleg.
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
