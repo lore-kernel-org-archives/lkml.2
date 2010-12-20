@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758026Ab0LTP0u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 10:26:50 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:42508 "EHLO
+	id S1758032Ab0LTP1I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 10:27:08 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:54867 "EHLO
 	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757953Ab0LTPYq (ORCPT
+	with ESMTP id S1757895Ab0LTPYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 10:24:46 -0500
+	Mon, 20 Dec 2010 10:24:42 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=KPUo7zaKOcWGzD4hCewsw6kviACzqn7IawuVtG1HpWf7e+wzMq+fLaweKojA/ZgMac
-         r94LNpRXCZ4RLg7Km9v3FC3IWK3VIQA6oCtATKfftiOjiocTxsPsvtm+cWd1V+WjZ2w2
-         SbB4/muHtgHF4m7eEzsHBxVdJ/yVvIUxG4vvk=
+        b=DDI6j1EAPvB4pYxRi6y8Ps7ZgNYx1LpxM81GCz9ebyLn8yNin3fUGr6Z1YJYoSVmyS
+         8BXBkuhO+zqAOsr8dXKie8oX0h0CrabGt1uAFjNPuvkYjQe35SVqhzmLtDq8oOa7Aror
+         fW+WD4AQbIy99vdwYu4ISQYFuhqN9k1mJICnA=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -25,9 +25,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Anton Blanchard <anton@au1.ibm.com>,
         Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: [RFC PATCH 06/15] nohz_task: Keep the tick if rcu needs it
-Date: Mon, 20 Dec 2010 16:24:13 +0100
-Message-Id: <1292858662-5650-7-git-send-email-fweisbec@gmail.com>
+Subject: [RFC PATCH 01/15] nohz_task: New mask for cpus having nohz task
+Date: Mon, 20 Dec 2010 16:24:08 +0100
+Message-Id: <1292858662-5650-2-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
 References: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
@@ -35,9 +35,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a nohz task is running, don't stop the tick if RCU
-needs the CPU to notify a quiescent state or if it has
-callbacks to handle.
+A nohz task is a non-idle task that tries to shutdown the tick while
+the task is running under some conditions.
+
+This brings a new cpu_has_nohz_task_mask cpu mask that keeps track
+of the cpus that have a nohz task. This is a 1:1 mapping: a nohz
+task is affine to a single cpu and can't be moved elsewhere, and
+a cpu can have only one nohz task.
+
+This tracking will be useful later for rcu or when we need to
+find an idle cpu target for a timer.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
@@ -50,65 +57,98 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Anton Blanchard <anton@au1.ibm.com>
 Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>
 ---
- include/linux/rcupdate.h |    1 +
- kernel/rcutree.c         |    3 +--
- kernel/sched.c           |    6 ++++++
- 3 files changed, 8 insertions(+), 2 deletions(-)
+ arch/Kconfig            |    3 +++
+ include/linux/cpumask.h |    8 ++++++++
+ kernel/cpu.c            |   15 +++++++++++++++
+ kernel/time/Kconfig     |    7 +++++++
+ 4 files changed, 33 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 03cda7b..262d48b 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -122,6 +122,7 @@ extern void rcu_init(void);
- extern void rcu_sched_qs(int cpu);
- extern void rcu_bh_qs(int cpu);
- extern void rcu_check_callbacks(int cpu, int user);
-+extern int rcu_pending(int cpu);
- struct notifier_block;
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 8bf0fa65..e631791 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -175,4 +175,7 @@ config HAVE_PERF_EVENTS_NMI
+ config HAVE_ARCH_JUMP_LABEL
+ 	bool
  
- #ifdef CONFIG_NO_HZ
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index ccdc04c..44dce3f 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -149,7 +149,6 @@ module_param(rcu_cpu_stall_suppress, int, 0644);
- #endif /* #ifdef CONFIG_RCU_CPU_STALL_DETECTOR */
- 
- static void force_quiescent_state(struct rcu_state *rsp, int relaxed);
--static int rcu_pending(int cpu);
- 
- /*
-  * Return the number of RCU-sched batches processed thus far for debug & stats.
-@@ -1634,7 +1633,7 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
-  * by the current CPU, returning 1 if so.  This function is part of the
-  * RCU implementation; it is -not- an exported member of the RCU API.
-  */
--static int rcu_pending(int cpu)
-+int rcu_pending(int cpu)
- {
- 	return __rcu_pending(&rcu_sched_state, &per_cpu(rcu_sched_data, cpu)) ||
- 	       __rcu_pending(&rcu_bh_state, &per_cpu(rcu_bh_data, cpu)) ||
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 6dbae46..45bd6e2 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2470,10 +2470,16 @@ static void nohz_task_cpu_update(void *unused)
- int nohz_task_can_stop_tick(void)
- {
- 	struct rq *rq = this_rq();
-+	int cpu;
- 
- 	if (rq->nr_running > 1)
- 		return 0;
- 
-+	cpu = smp_processor_id();
++config HAVE_NO_HZ_TASK
++	bool
 +
-+	if (rcu_pending(cpu) || rcu_needs_cpu(cpu))
-+		return 0;
+ source "kernel/gcov/Kconfig"
+diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
+index bae6fe2..6c4801c 100644
+--- a/include/linux/cpumask.h
++++ b/include/linux/cpumask.h
+@@ -100,6 +100,13 @@ extern const struct cpumask *const cpu_active_mask;
+ #define cpu_active(cpu)		((cpu) == 0)
+ #endif
+ 
++#ifdef CONFIG_NO_HZ_TASK
++extern const struct cpumask *const cpu_has_nohz_task_mask;
++#define cpu_has_nohz_task(cpu)	cpumask_test_cpu((cpu), cpu_has_nohz_task_mask)
++#else
++#define cpu_has_nohz_task(cpu)	0
++#endif
 +
- 	return 1;
+ /* verify cpu argument to cpumask_* operators */
+ static inline unsigned int cpumask_check(unsigned int cpu)
+ {
+@@ -671,6 +678,7 @@ void set_cpu_possible(unsigned int cpu, bool possible);
+ void set_cpu_present(unsigned int cpu, bool present);
+ void set_cpu_online(unsigned int cpu, bool online);
+ void set_cpu_active(unsigned int cpu, bool active);
++void set_cpu_has_nohz_task(unsigned int cpu, bool has_nohz_task);
+ void init_cpu_present(const struct cpumask *src);
+ void init_cpu_possible(const struct cpumask *src);
+ void init_cpu_online(const struct cpumask *src);
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index f6e726f..bc9a93e 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -540,6 +540,11 @@ static DECLARE_BITMAP(cpu_active_bits, CONFIG_NR_CPUS) __read_mostly;
+ const struct cpumask *const cpu_active_mask = to_cpumask(cpu_active_bits);
+ EXPORT_SYMBOL(cpu_active_mask);
+ 
++#ifdef CONFIG_NO_HZ_TASK
++static DECLARE_BITMAP(cpu_has_nohz_task_bits, CONFIG_NR_CPUS) __read_mostly;
++const struct cpumask *const cpu_has_nohz_task_mask = to_cpumask(cpu_has_nohz_task_bits);
++#endif
++
+ void set_cpu_possible(unsigned int cpu, bool possible)
+ {
+ 	if (possible)
+@@ -572,6 +577,16 @@ void set_cpu_active(unsigned int cpu, bool active)
+ 		cpumask_clear_cpu(cpu, to_cpumask(cpu_active_bits));
  }
  
++#ifdef CONFIG_NO_HZ_TASK
++void set_cpu_has_nohz_task(unsigned int cpu, bool has_nohz_task)
++{
++	if (has_nohz_task)
++		cpumask_set_cpu(cpu, to_cpumask(cpu_has_nohz_task_bits));
++	else
++		cpumask_clear_cpu(cpu, to_cpumask(cpu_has_nohz_task_bits));
++}
++#endif
++
+ void init_cpu_present(const struct cpumask *src)
+ {
+ 	cpumask_copy(to_cpumask(cpu_present_bits), src);
+diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+index f06a8a3..a460cee 100644
+--- a/kernel/time/Kconfig
++++ b/kernel/time/Kconfig
+@@ -27,3 +27,10 @@ config GENERIC_CLOCKEVENTS_BUILD
+ 	default y
+ 	depends on GENERIC_CLOCKEVENTS || GENERIC_CLOCKEVENTS_MIGR
+ 
++config NO_HZ_TASK
++       bool "Tickless task"
++       depends on HAVE_NO_HZ_TASK && NO_HZ && SMP && HIGH_RES_TIMERS
++       help
++         When a task runs alone on a CPU and switches into this mode,
++         the timer interrupt will only trigger when it is strictly
++         needed.
 -- 
 1.7.3.2
 
