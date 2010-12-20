@@ -1,117 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758258Ab0LTXRM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 18:17:12 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:10808 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758164Ab0LTXRL (ORCPT
+	id S1758297Ab0LTXRl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 18:17:41 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:49662 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758192Ab0LTXRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 18:17:11 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6203"; a="67414636"
+	Mon, 20 Dec 2010 18:17:12 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6203"; a="67624264"
 From: Daniel Walker <dwalker@codeaurora.org>
 To: davidb@codeaurora.org
 Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
         Daniel Walker <dwalker@codeaurora.org>
-Subject: [PATCH 1/5] mmc: msm: consolidate ifdefs for BUSCLK_PWRSAVE
-Date: Mon, 20 Dec 2010 15:16:47 -0800
-Message-Id: <1292887011-30006-1-git-send-email-dwalker@codeaurora.org>
+Subject: [PATCH 4/5] mmc: msm: fix non-tab spacing
+Date: Mon, 20 Dec 2010 15:16:50 -0800
+Message-Id: <1292887011-30006-4-git-send-email-dwalker@codeaurora.org>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1292887011-30006-1-git-send-email-dwalker@codeaurora.org>
+References: <1292887011-30006-1-git-send-email-dwalker@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's cleaner to have ifdef's consolidated in one specific
-area. This change pulls adds one ifdef which will swap
-out of the function with a stub function if the ifdef is
-false.
+A couple lines have non-tab spacing infront of them. Just replace
+them with tabs.
 
 Signed-off-by: Daniel Walker <dwalker@codeaurora.org>
 ---
- drivers/mmc/host/msm_sdcc.c |   24 +++++++++++++-----------
- 1 files changed, 13 insertions(+), 11 deletions(-)
+ drivers/mmc/host/msm_sdcc.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/mmc/host/msm_sdcc.c b/drivers/mmc/host/msm_sdcc.c
-index 1290d14..d6ac82c 100644
+index c64a659..3f333b1 100644
 --- a/drivers/mmc/host/msm_sdcc.c
 +++ b/drivers/mmc/host/msm_sdcc.c
-@@ -61,7 +61,7 @@ static unsigned int msmsdcc_sdioirq;
- #define PIO_SPINMAX 30
- #define CMD_SPINMAX 20
+@@ -168,8 +168,8 @@ uint32_t msmsdcc_fifo_addr(struct msmsdcc_host *host)
  
--
-+#ifdef BUSCLK_PWRSAVE
  static inline void
- msmsdcc_disable_clocks(struct msmsdcc_host *host, int deferr)
- {
-@@ -83,6 +83,10 @@ msmsdcc_disable_clocks(struct msmsdcc_host *host, int deferr)
- 		}
- 	}
- }
-+#else
-+static inline void
-+msmsdcc_disable_clocks(struct msmsdcc_host *host, int deferr) { }
-+#endif
- 
- static inline int
- msmsdcc_enable_clocks(struct msmsdcc_host *host)
-@@ -139,9 +143,8 @@ msmsdcc_request_end(struct msmsdcc_host *host, struct mmc_request *mrq)
- 	if (mrq->cmd->error == -ETIMEDOUT)
- 		mdelay(5);
- 
--#if BUSCLK_PWRSAVE
- 	msmsdcc_disable_clocks(host, 1);
--#endif
-+
- 	/*
- 	 * Need to drop the host lock here; mmc_request_done may call
- 	 * back into the driver...
-@@ -259,9 +262,9 @@ msmsdcc_dma_complete_func(struct msm_dmov_cmd *cmd,
- 			mrq->data->bytes_xfered = host->curr.data_xfered;
- 
- 			spin_unlock_irqrestore(&host->lock, flags);
--#if BUSCLK_PWRSAVE
-+
- 			msmsdcc_disable_clocks(host, 1);
--#endif
-+
- 			mmc_request_done(host->mmc, mrq);
- 			return;
- 		} else
-@@ -930,9 +933,9 @@ msmsdcc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
- 		host->pwr = pwr;
- 		msmsdcc_writel(host, pwr, MMCIPOWER);
- 	}
--#if BUSCLK_PWRSAVE
-+
- 	msmsdcc_disable_clocks(host, 1);
--#endif
-+
- 	spin_unlock_irqrestore(&host->lock, flags);
+ msmsdcc_start_command_exec(struct msmsdcc_host *host, u32 arg, u32 c) {
+-       msmsdcc_writel(host, arg, MMCIARGUMENT);
+-       msmsdcc_writel(host, c, MMCICOMMAND);
++	msmsdcc_writel(host, arg, MMCIARGUMENT);
++	msmsdcc_writel(host, c, MMCICOMMAND);
  }
  
-@@ -1256,9 +1259,8 @@ msmsdcc_probe(struct platform_device *pdev)
- 	if (host->timer.function)
- 		pr_info("%s: Polling status mode enabled\n", mmc_hostname(mmc));
+ static void
+@@ -305,7 +305,7 @@ static int msmsdcc_config_dma(struct msmsdcc_host *host, struct mmc_data *data)
+ 	host->dma.sg = data->sg;
+ 	host->dma.num_ents = data->sg_len;
  
--#if BUSCLK_PWRSAVE
- 	msmsdcc_disable_clocks(host, 1);
--#endif
-+
- 	return 0;
-  cmd_irq_free:
- 	free_irq(cmd_irqres->start, host);
-@@ -1333,9 +1335,9 @@ msmsdcc_resume(struct platform_device *dev)
- 			mmc_resume_host(mmc);
- 		if (host->stat_irq)
- 			enable_irq(host->stat_irq);
--#if BUSCLK_PWRSAVE
-+
- 		msmsdcc_disable_clocks(host, 1);
--#endif
-+
- 	}
- 	return 0;
- }
+-       BUG_ON(host->dma.num_ents > NR_SG); /* Prevent memory corruption */
++	BUG_ON(host->dma.num_ents > NR_SG); /* Prevent memory corruption */
+ 
+ 	nc = host->dma.nc;
+ 
 -- 
 1.7.0.4
 
