@@ -1,53 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755878Ab0LTKuD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 05:50:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27541 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754424Ab0LTKt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 05:49:59 -0500
-Message-ID: <4D0F34C0.9000400@redhat.com>
-Date: Mon, 20 Dec 2010 12:49:36 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Chris Wright <chrisw@sous-sol.org>
-Subject: Re: [RFC -v2 PATCH 2/3] sched: add yield_to function
-References: <20101213224434.7495edb2@annuminas.surriel.com>	 <20101213224657.7e141746@annuminas.surriel.com>	 <1292306896.7448.157.camel@marge.simson.net> <4D0A6D34.6070806@redhat.com>	 <1292569018.7772.75.camel@marge.simson.net>  <4D0B7D24.5060207@redhat.com>	 <1292615509.7381.81.camel@marge.simson.net>  <4D0CE937.8090601@redhat.com>	 <1292699204.1181.51.camel@marge.simson.net>  <4D0DA45A.9070600@redhat.com>	 <1292753156.16367.104.camel@marge.simson.net> <4D0DCE10.7000200@redhat.com>	 <1292834372.8948.27.camel@marge.simson.net> <4D0F1794.3010803@redhat.com>	 <1292835302.8948.35.camel@marge.simson.net> <4D0F1BD8.20601@redhat.com>	 <1292837440.8948.60.camel@marge.simson.net> <4D0F25E8.80305@redhat.com>	 <1292841193.11946.36.camel@marge.simson.net>  <4D0F3266.90908@redhat.com> <1292842010.11946.39.camel@marge.simson.net>
-In-Reply-To: <1292842010.11946.39.camel@marge.simson.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756776Ab0LTKub (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 05:50:31 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38924 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754387Ab0LTKsv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 05:48:51 -0500
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        liu.y.victor@gmail.com, B02280@freescale.com,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [PATCH 1/9] ARM i.MX51: Add ipu clock support
+Date: Mon, 20 Dec 2010 11:48:39 +0100
+Message-Id: <1292842127-21406-2-git-send-email-s.hauer@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1292842127-21406-1-git-send-email-s.hauer@pengutronix.de>
+References: <1292842127-21406-1-git-send-email-s.hauer@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2010 12:46 PM, Mike Galbraith wrote:
-> >
-> >  However, if I'm all alone on my cpu, and the other task is runnable but
-> >  not running, behind some unrelated task, then I do need that task to be
-> >  preempted (or to move tasks around).
->
-> So in that case, a pull may be advantageous.
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+---
+ arch/arm/mach-mx5/clock-mx51-mx53.c |  140 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 140 insertions(+), 0 deletions(-)
 
-Yes.
-
-> >  >  Would a kick/hint option be useful?
-> >
-> >  Depends on what it does...
->
-> Let you decide whether you only want to drop a hint and leave it at
-> that, or also attempt a preemption.
-
-Who is "you" in this?  the scheduler?
-
-I'm fine with hints so long as they are usually acted upon (if it isn't, 
-I'll go back to the guest, spin a bit more, and retry).
-
+diff --git a/arch/arm/mach-mx5/clock-mx51-mx53.c b/arch/arm/mach-mx5/clock-mx51-mx53.c
+index 9fc65bb..f550d02 100644
+--- a/arch/arm/mach-mx5/clock-mx51-mx53.c
++++ b/arch/arm/mach-mx5/clock-mx51-mx53.c
+@@ -39,6 +39,9 @@ static struct clk periph_apm_clk;
+ static struct clk ahb_clk;
+ static struct clk ipg_clk;
+ static struct clk usboh3_clk;
++static struct clk emi_fast_clk;
++static struct clk ipu_clk;
++static struct clk mipi_hsc1_clk;
+ 
+ #define MAX_DPLL_WAIT_TRIES	1000 /* 1000 * udelay(1) = 1ms */
+ 
+@@ -688,6 +691,19 @@ static unsigned long clk_emi_slow_get_rate(struct clk *clk)
+ 	return clk_get_rate(clk->parent) / div;
+ }
+ 
++static unsigned long _clk_ddr_hf_get_rate(struct clk *clk)
++{
++	unsigned long rate;
++	u32 reg, div;
++
++	reg = __raw_readl(MXC_CCM_CBCDR);
++	div = ((reg & MXC_CCM_CBCDR_DDR_PODF_MASK) >>
++		MXC_CCM_CBCDR_DDR_PODF_OFFSET) + 1;
++	rate = clk_get_rate(clk->parent) / div;
++
++	return rate;
++}
++
+ /* External high frequency clock */
+ static struct clk ckih_clk = {
+ 	.get_rate = get_high_reference_clock_rate,
+@@ -846,6 +862,109 @@ static struct clk emi_slow_clk = {
+ 	.get_rate = clk_emi_slow_get_rate,
+ };
+ 
++static int clk_ipu_enable(struct clk *clk)
++{
++	u32 reg;
++
++	_clk_ccgr_enable(clk);
++
++	/* Enable handshake with IPU when certain clock rates are changed */
++	reg = __raw_readl(MXC_CCM_CCDR);
++	reg &= ~MXC_CCM_CCDR_IPU_HS_MASK;
++	__raw_writel(reg, MXC_CCM_CCDR);
++
++	/* Enable handshake with IPU when LPM is entered */
++	reg = __raw_readl(MXC_CCM_CLPCR);
++	reg &= ~MXC_CCM_CLPCR_BYPASS_IPU_LPM_HS;
++	__raw_writel(reg, MXC_CCM_CLPCR);
++
++	return 0;
++}
++
++static void clk_ipu_disable(struct clk *clk)
++{
++	u32 reg;
++
++	_clk_ccgr_disable(clk);
++
++	/* Disable handshake with IPU whe dividers are changed */
++	reg = __raw_readl(MXC_CCM_CCDR);
++	reg |= MXC_CCM_CCDR_IPU_HS_MASK;
++	__raw_writel(reg, MXC_CCM_CCDR);
++
++	/* Disable handshake with IPU when LPM is entered */
++	reg = __raw_readl(MXC_CCM_CLPCR);
++	reg |= MXC_CCM_CLPCR_BYPASS_IPU_LPM_HS;
++	__raw_writel(reg, MXC_CCM_CLPCR);
++}
++
++static struct clk ahbmux1_clk = {
++	.parent = &ahb_clk,
++	.secondary = &ahb_max_clk,
++	.enable_reg = MXC_CCM_CCGR0,
++	.enable_shift = MXC_CCM_CCGRx_CG8_OFFSET,
++	.enable = _clk_ccgr_enable,
++	.disable = _clk_ccgr_disable_inwait,
++};
++
++static struct clk ipu_sec_clk = {
++	.parent = &emi_fast_clk,
++	.secondary = &ahbmux1_clk,
++};
++
++static struct clk ddr_hf_clk = {
++	.parent = &pll1_sw_clk,
++	.get_rate = _clk_ddr_hf_get_rate,
++};
++
++static struct clk ddr_clk = {
++	.parent = &ddr_hf_clk,
++};
++
++/* clock definitions for MIPI HSC unit which has been removed
++ * from documentation, but not from hardware
++ */
++static int _clk_hsc_enable(struct clk *clk)
++{
++	u32 reg;
++
++	_clk_ccgr_enable(clk);
++	/* Handshake with IPU when certain clock rates are changed. */
++	reg = __raw_readl(MXC_CCM_CCDR);
++	reg &= ~MXC_CCM_CCDR_HSC_HS_MASK;
++	__raw_writel(reg, MXC_CCM_CCDR);
++
++	reg = __raw_readl(MXC_CCM_CLPCR);
++	reg &= ~MXC_CCM_CLPCR_BYPASS_HSC_LPM_HS;
++	__raw_writel(reg, MXC_CCM_CLPCR);
++
++	return 0;
++}
++
++static void _clk_hsc_disable(struct clk *clk)
++{
++	u32 reg;
++
++	_clk_ccgr_disable(clk);
++	/* No handshake with HSC as its not enabled. */
++	reg = __raw_readl(MXC_CCM_CCDR);
++	reg |= MXC_CCM_CCDR_HSC_HS_MASK;
++	__raw_writel(reg, MXC_CCM_CCDR);
++
++	reg = __raw_readl(MXC_CCM_CLPCR);
++	reg |= MXC_CCM_CLPCR_BYPASS_HSC_LPM_HS;
++	__raw_writel(reg, MXC_CCM_CLPCR);
++}
++
++static struct clk mipi_hsp_clk = {
++	.parent = &ipu_clk,
++	.enable_reg = MXC_CCM_CCGR4,
++	.enable_shift = MXC_CCM_CCGRx_CG6_OFFSET,
++	.enable = _clk_hsc_enable,
++	.disable = _clk_hsc_disable,
++	.secondary = &mipi_hsc1_clk,
++};
++
+ #define DEFINE_CLOCK_CCGR(name, i, er, es, pfx, p, s)	\
+ 	static struct clk name = {			\
+ 		.id		= i,			\
+@@ -1077,6 +1196,23 @@ DEFINE_CLOCK_FULL(esdhc2_ipg_clk, 1, MXC_CCM_CCGR3, MXC_CCM_CCGRx_CG2_OFFSET,
+ DEFINE_CLOCK_MAX(esdhc2_clk, 1, MXC_CCM_CCGR3, MXC_CCM_CCGRx_CG3_OFFSET,
+ 	clk_esdhc2, &pll2_sw_clk, &esdhc2_ipg_clk);
+ 
++DEFINE_CLOCK(mipi_esc_clk, 0, MXC_CCM_CCGR4, MXC_CCM_CCGRx_CG5_OFFSET, NULL, NULL, NULL, &pll2_sw_clk);
++DEFINE_CLOCK(mipi_hsc2_clk, 0, MXC_CCM_CCGR4, MXC_CCM_CCGRx_CG4_OFFSET, NULL, NULL, &mipi_esc_clk, &pll2_sw_clk);
++DEFINE_CLOCK(mipi_hsc1_clk, 0, MXC_CCM_CCGR4, MXC_CCM_CCGRx_CG3_OFFSET, NULL, NULL, &mipi_hsc2_clk, &pll2_sw_clk);
++
++/* IPU */
++DEFINE_CLOCK_FULL(ipu_clk, 0, MXC_CCM_CCGR5, MXC_CCM_CCGRx_CG5_OFFSET,
++	NULL,  NULL, clk_ipu_enable, clk_ipu_disable, &ahb_clk, &ipu_sec_clk);
++
++DEFINE_CLOCK_FULL(emi_fast_clk, 0, MXC_CCM_CCGR5, MXC_CCM_CCGRx_CG7_OFFSET,
++		NULL, NULL, _clk_ccgr_enable, _clk_ccgr_disable_inwait,
++		&ddr_clk, NULL);
++
++DEFINE_CLOCK(ipu_di0_clk, 0, MXC_CCM_CCGR6, MXC_CCM_CCGRx_CG5_OFFSET,
++		NULL, NULL, &pll3_sw_clk, NULL);
++DEFINE_CLOCK(ipu_di1_clk, 0, MXC_CCM_CCGR6, MXC_CCM_CCGRx_CG6_OFFSET,
++		NULL, NULL, &pll3_sw_clk, NULL);
++
+ #define _REGISTER_CLOCK(d, n, c) \
+        { \
+ 		.dev_id = d, \
+@@ -1117,6 +1253,10 @@ static struct clk_lookup mx51_lookups[] = {
+ 	_REGISTER_CLOCK(NULL, "iim_clk", iim_clk)
+ 	_REGISTER_CLOCK("imx2-wdt.0", NULL, dummy_clk)
+ 	_REGISTER_CLOCK("imx2-wdt.1", NULL, dummy_clk)
++	_REGISTER_CLOCK(NULL, "mipi_hsp", mipi_hsp_clk)
++	_REGISTER_CLOCK("imx-ipuv3", NULL, ipu_clk)
++	_REGISTER_CLOCK("imx-ipuv3", "di0", ipu_di0_clk)
++	_REGISTER_CLOCK("imx-ipuv3", "di1", ipu_di1_clk)
+ };
+ 
+ static struct clk_lookup mx53_lookups[] = {
 -- 
-error compiling committee.c: too many arguments to function
+1.7.2.3
 
