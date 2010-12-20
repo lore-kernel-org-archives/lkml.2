@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757612Ab0LTQXj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 11:23:39 -0500
-Received: from mail.sf-mail.de ([62.27.20.61]:53872 "EHLO mail.sf-mail.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757395Ab0LTQXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 11:23:38 -0500
-From: Rolf Eike Beer <eike-kernel@sf-tec.de>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] Add forward declaration of struct device
-Date: Mon, 20 Dec 2010 17:23:29 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.31.14-0.2-desktop; KDE/4.5.3; x86_64; ; )
-Cc: Dan Williams <dan.j.williams@intel.com>, trivial@kernel.org
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201012201723.30133.eike-kernel@sf-tec.de>
+	id S1757641Ab0LTQYZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 11:24:25 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:46894 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754879Ab0LTQYY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 11:24:24 -0500
+Subject: Re: [RFC PATCH 11/15] x86: Nohz task support
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+In-Reply-To: <1292858662-5650-12-git-send-email-fweisbec@gmail.com>
+References: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
+	 <1292858662-5650-12-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 20 Dec 2010 17:23:19 +0100
+Message-ID: <1292862199.5021.32.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes this warning when including linux/dmapool.h first:
+On Mon, 2010-12-20 at 16:24 +0100, Frederic Weisbecker wrote:
+> 
+> Implement the thread flag, syscalls and exception hooks for
+> nohz task support.
+> 
 
-warning: ‘struct device’ declared inside parameter list
-warning: its scope is only this definition or declaration, which is probably not what you want
+I saw:
+ - syscall
+ - do_int3
+ - do_debug (int1)
+ - #PF
 
-Signed-off-by: Rolf Eike Beer <eike-kernel@sf-tec.de>
----
- include/linux/dmapool.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/dmapool.h b/include/linux/dmapool.h
-index 022e34f..52456aa 100644
---- a/include/linux/dmapool.h
-+++ b/include/linux/dmapool.h
-@@ -14,6 +14,8 @@
- #include <asm/io.h>
- #include <asm/scatterlist.h>
- 
-+struct device;
-+
- struct dma_pool *dma_pool_create(const char *name, struct device *dev, 
- 			size_t size, size_t align, size_t allocation);
- 
--- 
-1.6.4.2
-
+So where's all other interrupts?
