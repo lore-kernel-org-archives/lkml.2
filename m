@@ -1,129 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757664Ab0LTPYh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 10:24:37 -0500
+	id S1757966Ab0LTPYr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 10:24:47 -0500
 Received: from mail-fx0-f43.google.com ([209.85.161.43]:63472 "EHLO
 	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754249Ab0LTPYg (ORCPT
+	with ESMTP id S1757834Ab0LTPYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 10:24:36 -0500
+	Mon, 20 Dec 2010 10:24:44 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=D7UGUKg+LyWV8VmBwG7OBewGA8moCC05uITpTl9JKLt5ChW1i+ZzkgpUmTx1e78wRO
-         YDVLZTdkcKeZNXjyo9Q0zirLvzb9YDrS1YrRZxsPeszEgt60ROmnEVNBXSZoEnfF9FmS
-         jpd2LlaTgdnm4TneSNuyjOA/k7A7qDw0B5Srw=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=G/gKgJrS8NfjWERYkEGhTbcOw0qvF1/j43nJRZynA1Z4T+yYyDj9jbFxQX34xnQSyV
+         QGvm4ZwqnuAgz+HsVABHw0PDl5EiA0B15Lums3xaa2vokKsToybmoAmwe/yWUFnanBke
+         7kYgXG246w/1wLdAaWq7fEmEt9uFGE8cXU3bo=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
         Lai Jiangshan <laijs@cn.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Anton Blanchard <anton@au1.ibm.com>,
         Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: [RFC PATCH 00/15] Nohz task support
-Date: Mon, 20 Dec 2010 16:24:07 +0100
-Message-Id: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
+Subject: [RFC PATCH 05/15] nohz_task: Restart the tick when another task compete on the cpu
+Date: Mon, 20 Dec 2010 16:24:12 +0100
+Message-Id: <1292858662-5650-6-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
+References: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The timer interrupt handles several things like preemption,
-timekeeping, rcu, etc...
+If a new task is enqueued on the same cpu than a nohz task, then
+the tick must be restarted in case it was stopped for the nohz
+task, so that preemption can work again.
 
-However it appears that sometimes it is simply useless like
-when a task runs alone and even more when it is in userspace
-as RCU doesn't need it at all in such case.
+Do this remotely using a specific IPI.
 
-It appears that HPC workload would get some win of such timer
-deactivation, and perhaps also the Real Time world as this
-minimizes the critical sections due to way less interrupts to
-handle.
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Anton Blanchard <anton@au1.ibm.com>
+Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>
+---
+ include/linux/sched.h |    2 ++
+ kernel/sched.c        |   45 ++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 46 insertions(+), 1 deletions(-)
 
-It works through the procfs interface:
-
-echo 1 > /proc/self/nohz
-
-With the following constraints:
-
-- A cpu can have only one nohz task
-- A nohz task must be affine to a single CPU. That affinity can't
-change while the task is in this mode
-- This must be written in /proc/self only, however further
-plans to allow than to be set from another task should be
-possible.
-
-You need to migrate irqs manually from userspace, same
-for tasks. If a non nohz task is running on the same cpu
-than a nohz task, the tick can't be stopped.
-
-I can provide you the tools I'm using to test it if you
-want.
-
-Note this depends on the rcu spurious softirq fixes in Paul's
-queue for .38
-
-I'm also using a hack to make init affine to the first CPU
-on boot so that all userspace tasks end up to the first CPU
-except kernel threads and tasks that change their affinity
-explicitly (this is not sched isolation). This avoids any
-task to set up timers to random CPUs on which we'll later
-want to run a nohz task. But probably this can be fixed
-with another way, like unbinding these timers or so. This
-probably require a detailed audit.
-
-Any comments are welcome.
-
-You can fetch from:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-	sched/nohz-task
-
-Frederic Weisbecker (15):
-  nohz_task: New mask for cpus having nohz task
-  nohz_task: Avoid nohz task cpu as non-idle timer target
-  nohz_task: Make tick stop and restart callable outside idle
-  nohz_task: Stop the tick when the nohz task runs alone
-  nohz_task: Restart the tick when another task compete on the cpu
-  nohz_task: Keep the tick if rcu needs it
-  nohz_task: Restart tick when RCU forces nohz task cpu quiescent state
-  smp: Don't warn if irq are disabled but we don't wait for the ipi
-  rcu: Make rcu_enter,exit_nohz() callable from irq
-  nohz_task: Enter in extended quiescent state when in userspace
-  x86: Nohz task support
-  clocksource: Ignore nohz task cpu in clocksource watchdog
-  sched: Protect nohz task cpu affinity
-  nohz_task: Clear nohz task attribute on exit()
-  nohz_task: Procfs interface
-
- arch/Kconfig                       |    7 ++
- arch/x86/Kconfig                   |    1 +
- arch/x86/include/asm/thread_info.h |   10 ++-
- arch/x86/kernel/ptrace.c           |   10 +++
- arch/x86/kernel/traps.c            |   22 ++++--
- arch/x86/mm/fault.c                |   13 +++-
- fs/proc/base.c                     |   80 +++++++++++++++++++++
- include/linux/cpumask.h            |    8 ++
- include/linux/rcupdate.h           |    1 +
- include/linux/sched.h              |    9 +++
- include/linux/tick.h               |   26 +++++++-
- kernel/cpu.c                       |   15 ++++
- kernel/exit.c                      |    3 +
- kernel/rcutree.c                   |  127 +++++++++++++++------------------
- kernel/rcutree.h                   |   12 ++--
- kernel/sched.c                     |  135 ++++++++++++++++++++++++++++++++++-
- kernel/smp.c                       |    2 +-
- kernel/softirq.c                   |    4 +-
- kernel/time/Kconfig                |    7 ++
- kernel/time/clocksource.c          |   10 ++-
- kernel/time/tick-sched.c           |  138 +++++++++++++++++++++++++++++++++--
- 21 files changed, 535 insertions(+), 105 deletions(-)
-
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 858a876..f80088a 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2550,8 +2550,10 @@ extern void task_oncpu_function_call(struct task_struct *p,
+ 				     void (*func) (void *info), void *info);
+ 
+ #ifdef CONFIG_NO_HZ_TASK
++extern void smp_send_update_nohz_task_cpu(int cpu);
+ extern int nohz_task_can_stop_tick(void);
+ #else
++static inline void smp_send_update_nohz_task_cpu(int cpu) { }
+ static inline int nohz_task_can_stop_tick(void) { return 0; }
+ #endif
+ 
+diff --git a/kernel/sched.c b/kernel/sched.c
+index e9cdd7a..6dbae46 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2446,6 +2446,27 @@ static void update_avg(u64 *avg, u64 sample)
+ #ifdef CONFIG_NO_HZ_TASK
+ DEFINE_PER_CPU(int, task_nohz_mode);
+ 
++/* Must be called with irq disabled! */
++static void nohz_task_cpu_update(void *unused)
++{
++	struct rq *rq;
++	int cpu;
++
++	if (!__get_cpu_var(task_nohz_mode))
++		return;
++
++	/*
++	 * Look at nr_running lockless. At worst, the new task was deactivated
++	 * and we just exit without doing anything.
++	 */
++	rq = this_rq();
++	cpu = smp_processor_id();
++	if (rq->nr_running > 1) {
++		__get_cpu_var(task_nohz_mode) = 0;
++		tick_nohz_restart_sched_tick();
++	}
++}
++
+ int nohz_task_can_stop_tick(void)
+ {
+ 	struct rq *rq = this_rq();
+@@ -2455,6 +2476,12 @@ int nohz_task_can_stop_tick(void)
+ 
+ 	return 1;
+ }
++
++void smp_send_update_nohz_task_cpu(int cpu)
++{
++	smp_call_function_single(cpu, nohz_task_cpu_update,
++				 NULL, 0);
++}
+ #endif
+ 
+ static inline void ttwu_activate(struct task_struct *p, struct rq *rq,
+@@ -2477,6 +2504,8 @@ static inline void ttwu_activate(struct task_struct *p, struct rq *rq,
+ static inline void ttwu_post_activation(struct task_struct *p, struct rq *rq,
+ 					int wake_flags, bool success)
+ {
++	int cpu = cpu_of(rq);
++
+ 	trace_sched_wakeup(p, success);
+ 	check_preempt_curr(rq, p, wake_flags);
+ 
+@@ -2498,7 +2527,21 @@ static inline void ttwu_post_activation(struct task_struct *p, struct rq *rq,
+ #endif
+ 	/* if a worker is waking up, notify workqueue */
+ 	if ((p->flags & PF_WQ_WORKER) && success)
+-		wq_worker_waking_up(p, cpu_of(rq));
++		wq_worker_waking_up(p, cpu);
++
++#ifdef CONFIG_NO_HZ_TASK
++	/*
++	 * CHECKME:
++	 * Ideally, we need to check if the target has a nohz task
++	 * and only send the IPI if so. But there is nothing but
++	 * a racy way to do that. Or can we assume at that point
++	 * of the wake up that if cpu_has_nohz_task(cpu) is 0, then
++	 * it's ok, even if it has a task about to switch to nohz
++	 * task mode?
++	 */
++	if (rq->nr_running == 2)
++		smp_send_update_nohz_task_cpu(cpu);
++#endif
+ }
+ 
+ /**
 -- 
 1.7.3.2
 
