@@ -1,87 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932907Ab0LTRFe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 12:05:34 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:43496 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932869Ab0LTRFd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 12:05:33 -0500
-X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=2O8TBr2BOcUA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=VnNF1IyMAAAA:8 a=meVymXHHAAAA:8 a=omOdbC7AAAAA:8 a=Z4Rwk6OoAAAA:8 a=MTx4394miYSEEy3pjJkA:9 a=V8KqgH4zrBled8725Z8A:7 a=K99dEbJTpLy7c-en0eaL27QNT7gA:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=jbrJJM5MRmoA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC PATCH 13/15] sched: Protect nohz task cpu affinity
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-In-Reply-To: <1292862533.5021.41.camel@laptop>
-References: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
-	 <1292858662-5650-14-git-send-email-fweisbec@gmail.com>
-	 <1292862533.5021.41.camel@laptop>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 20 Dec 2010 12:05:30 -0500
-Message-ID: <1292864730.22905.27.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S932928Ab0LTRJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 12:09:57 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:41732 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S932875Ab0LTRJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 12:09:56 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX18auGksIMEaVICf4c4qsihpr6Q5Ba/4VmVjsIGrYL
+	JNkYxOL5AX6hZc
+From: Peter =?utf-8?q?H=C3=BCwe?= <PeterHuewe@gmx.de>
+To: sedat.dilek@gmail.com
+Subject: Re: [PATCH] platform/x86: Fix recursive Kconfig dependency
+Date: Mon, 20 Dec 2010 18:09:40 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36.2; KDE/4.4.5; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, John Linville <linville@tuxdriver.com>
+References: <1291850970-7190-1-git-send-email-peterhuewe@gmx.de> <201012192000.14969.PeterHuewe@gmx.de> <AANLkTi=gqimS5n6J6GXcZA_W1JHZ8yHJHAKqP=dDmN0Z@mail.gmail.com>
+In-Reply-To: <AANLkTi=gqimS5n6J6GXcZA_W1JHZ8yHJHAKqP=dDmN0Z@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201012201809.41269.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-12-20 at 17:28 +0100, Peter Zijlstra wrote:
-> On Mon, 2010-12-20 at 16:24 +0100, Frederic Weisbecker wrote:
-> > Don't allow to change a nohz task cpu affinity as we want them
-> > to be bound to a single CPU and we want this affinity not to
-> > change.
+Am Montag 20 Dezember 2010, 15:46:02 schrieb Sedat Dilek:
+> > Added Stephen Rothwell on CC, maybe he can apply it directly to
+> > linux-next ;)
 > > 
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Anton Blanchard <anton@au1.ibm.com>
-> > Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>
-> > ---
-> >  kernel/sched.c |    7 +++++++
-> >  1 files changed, 7 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/kernel/sched.c b/kernel/sched.c
-> > index 4412493..bd0a41f 100644
-> > --- a/kernel/sched.c
-> > +++ b/kernel/sched.c
-> > @@ -5712,6 +5712,13 @@ again:
-> >  		goto out;
-> >  	}
-> >  
-> > +	/* Nohz tasks must keep their affinity */
-> > +	if (test_tsk_thread_flag(p, TIF_NOHZ) &&
-> > +	    !cpumask_equal(&p->cpus_allowed, new_mask)) {
-> > +		ret = -EBUSY;
-> > +		goto out;
-> > +	}
-> > +
-> >  	if (p->sched_class->set_cpus_allowed)
-> >  		p->sched_class->set_cpus_allowed(p, new_mask);
-> >  	else {
+> > Peter
 > 
-> NAK, this is really way too restrictive.
+> I do not think this will happen for a "as-warning-classified" patch.
 
-Agreed, the better solution is to disable the nohz from the task. If the
-use just changed its affinity (or something else did), disable the nohz.
-Maybe you can add a printk or warning, but I'm not sure about that
-either.
+On arm and avr32 it is not only a warning but an error instead!
 
--- Steve
+-> so the patch fixes an error / build failure which imho is quite an 
+important issue.
 
+You can see the errors in Ellerman's build farm.
 
+http://kisskb.ellerman.id.au/kisskb/buildresult/3652816/
+http://kisskb.ellerman.id.au/kisskb/buildresult/3664077/
+http://kisskb.ellerman.id.au/kisskb/buildresult/3652972/
+http://kisskb.ellerman.id.au/kisskb/buildresult/3664113/
 
+As it is an error for arm and avr32 maybe it should go through their trees 
+instead?
+
+Peter
