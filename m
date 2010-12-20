@@ -1,218 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932646Ab0LTPHj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 10:07:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7838 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932614Ab0LTPHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 10:07:37 -0500
-Date: Mon, 20 Dec 2010 16:00:37 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
-        jan.kratochvil@redhat.com
-Subject: Re: [PATCH 10/16] ptrace: clean transitions between TASK_STOPPED
-	and TRACED
-Message-ID: <20101220150037.GE11583@redhat.com>
-References: <1291654624-6230-1-git-send-email-tj@kernel.org> <1291654624-6230-11-git-send-email-tj@kernel.org>
+	id S932624Ab0LTPI3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 10:08:29 -0500
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:55814 "EHLO
+	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757693Ab0LTPI1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 10:08:27 -0500
+From: "Desai, Kashyap" <Kashyap.Desai@lsi.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jeff Garzik <jeff@garzik.org>, Christoph Hellwig <hch@lst.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, "Mike Christie" <michaelc@cs.wisc.edu>
+CC: Mike Anderson <andmike@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Ravi Anand <ravi.anand@qlogic.com>,
+        "Andrew Vasquez" <andrew.vasquez@qlogic.com>,
+        Joe Eykholt <jeykholt@cisco.com>,
+        "James Smart" <james.smart@emulex.com>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        "adam radford" <aradford@gmail.com>,
+        DL-MPT Fusion Linux <DL-MPTFusionLinux@lsi.com>
+Date: Mon, 20 Dec 2010 20:38:34 +0530
+Subject: RE: [PATCH 00/12] LLD host_lock-less conversion status for .38
+Thread-Topic: [PATCH 00/12] LLD host_lock-less conversion status for .38
+Thread-Index: AcufwuLJUxaefRiaRECKuxgwAKniEwAlHY+w
+Message-ID: <B2FD678A64EAAD45B089B123FDFC3ED70916A017@inbmail01.lsi.com>
+References: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org>
+In-Reply-To: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291654624-6230-11-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06, Tejun Heo wrote:
->
-> @@ -93,6 +99,7 @@ int ptrace_check_attach(struct task_struct *child, int kill)
->  	 * we are sure that this is our traced child and that can only
->  	 * be changed by us so it's not changing right after this.
->  	 */
-> +relock:
->  	read_lock(&tasklist_lock);
->  	if ((child->ptrace & PT_PTRACED) && child->parent == current) {
->  		ret = 0;
-> @@ -101,10 +108,30 @@ int ptrace_check_attach(struct task_struct *child, int kill)
->  		 * does ptrace_unlink() before __exit_signal().
->  		 */
->  		spin_lock_irq(&child->sighand->siglock);
-> -		if (task_is_stopped(child))
-> -			child->state = TASK_TRACED;
-> -		else if (!task_is_traced(child) && !kill)
-> +		if (!task_is_traced(child) && !kill) {
-> +			/*
-> +			 * If GROUP_STOP_TRAPPING is set, it is known that
-> +			 * the tracee will enter either TRACED or the bit
-> +			 * will be cleared in definite amount of (userland)
-> +			 * time.  Wait while the bit is set.
-> +			 *
-> +			 * This hides PTRACE_ATTACH initiated transition
-> +			 * from STOPPED to TRACED from userland.
-> +			 */
-> +			if (child->group_stop & GROUP_STOP_TRAPPING) {
-> +				const int bit = ilog2(GROUP_STOP_TRAPPING);
-> +				DEFINE_WAIT_BIT(wait, &child->group_stop, bit);
-
-Unused "wait_bit_queue wait"
-
-> +
-> +				spin_unlock_irq(&child->sighand->siglock);
-> +				read_unlock(&tasklist_lock);
-> +
-> +				wait_on_bit(&child->group_stop, bit,
-
-Hmm. we could probably use ->wait_chldexit/__wake_up_parent instead,
-although I am not sure this would be more clean...
-
-> +					    ptrace_wait_trap,
-> +					    TASK_UNINTERRUPTIBLE);
-
-I am nervous ;) To me, TASK_KILLABLE makes more sense, and it is
-safer if we have a bug.
-
-> +				goto relock;
-
-We already set ret = 0. "relock" should set -ESRCH.
-
-> +			}
->  			ret = -ESRCH;
-> +		}
-
-Probably this deserves a minor cleanup,
-
-	relock:
-		ret = -ESRCH;
-		read_lock(&tasklist_lock);
-		if (task_is_traced() || kill) {
-			ret = 0;
-		} else {
-		...
 
 
-OK. So, ptrace_attach() asks a stopped tracee to s/STOPPED/TRACED/.
-If it is not stopped, it should call ptrace_stop() eventually.
+> -----Original Message-----
+> From: Nicholas A. Bellinger [mailto:nab@linux-iscsi.org]
+> Sent: Monday, December 20, 2010 2:52 AM
+> To: linux-scsi; linux-kernel; James Bottomley; Jeff Garzik; Christoph
+> Hellwig; FUJITA Tomonori; Hannes Reinecke; Mike Christie
+> Cc: Mike Anderson; Tejun Heo; Vasu Dev; Tim Chen; Andi Kleen; Ravi
+> Anand; Andrew Vasquez; Joe Eykholt; James Smart; Douglas Gilbert; adam
+> radford; Desai, Kashyap; DL-MPT Fusion Linux; Nicholas Bellinger
+> Subject: [PATCH 00/12] LLD host_lock-less conversion status for .38
+> 
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
+> 
+> Greetings James and Co,
+> 
+> Attached are the current set of LLD host_lock-less conversions in the
+> queue
+> for .38, that have now been pushed into lio-core-2.6.git/lock_less-
+> LLDs-for-38-v3
+> 
+> New in this v3 series are the megaraid_sas LLD changes necessary to run
+> in
+> host_lock-less mode, which have been tested thus far in legacy x86
+> interrupt
+> pin mode using 8708EM2 QEMU HBA emulation into KVM guest using TCM_Loop
+> virtual SCSI LUNs.
+> 
+> This series also drops the drivers/scsi patches that have been resolved
+> with
+> the following (Thanks!)
+> 
+> commit 459dbf72e4d2b4aa13620e6b70d54f098547bf13
+> Author: James Bottomley <James.Bottomley@suse.de>
+> Date:   Wed Nov 17 10:10:57 2010 -0600
+> 
+>     [SCSI] Eliminate error handler overload of the SCSI serial number
+> 
+> At this point the remaining code TODO items for the LLD conversion
+> patches
+> include
+> 
+> *) libiscsi: NULL sc->scsi_done() callback in exception path in
+> iscsi_queuecommand().
+> The last status on this from Mike Christie was:
+> 
+> "This will NULL pointer. See a couple lines above where we NULL it.
+> iscsi_free_task checks if the scsi_done pointer is set and if it is it
+> will call scsi_done.
+> 
+> It is a hack to prevent the normal completion path from calling
+> scsi_done. For the case where we return SCSI_MLQUEUE_TARGET_BUSY (the
+> prepd_reject case) we need something to prevent scsi_done from getting
+> called.
+> 
+> For the return 0/prepd_fault case we can just call sc->scsi_done, but
+> we
+> have to move some code around."
+> 
+> mnc, have you been able to take another look at this..?
+> 
+> *) mpt2sas: Locking considerations for firmware specific data
+> structures
+> 
+> A patch to mptsas was included originally to convert to host_lock less
+> w/ interrupts
+> disabled externally here:
+> 
+> http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-
+> 2.6.git;a=commitdiff;h=87ba9071b46f37f1adab1732d41b87bf195d191f
+> 
+> but due to concerns from jgarzik this had been dropped from the
+> lock_less-LLDs-for-38-v2
+> during the last round.  The feedback from Kashyap @ LSI is that mpt2sas
+> technically should be
+> able to run in host_lock-less, but there needs to be some explict
+> clarification in the code
+> for the conversion to happen.  More details are here:
+> 
+> http://marc.info/?l=linux-scsi&m=129022827729386&w=2
+> 
+> Kashyap, can you take another look at this and make sure this is
+> acceptable..?
 
-This doesn't work if ptrace_attach() races with clone(CLONE_STOPPED).
-ptrace_check_attach() can return the wrong ESRCH after that. Perhaps
-it is time to kill the CLONE_STOPPED code in do_fork().
+Nicholas, I have replied my input on the same thread. 
 
-> @@ -204,6 +231,26 @@ int ptrace_attach(struct task_struct *task)
->  	__ptrace_link(task, current);
->  	send_sig_info(SIGSTOP, SEND_SIG_FORCED, task);
->
-> +	spin_lock(&task->sighand->siglock);
-> +
-> +	/*
-> +	 * If the task is already STOPPED, set GROUP_STOP_PENDING and
-> +	 * TRAPPING, and kick it so that it transits to TRACED.  TRAPPING
-> +	 * will be cleared if the child completes the transition or any
-> +	 * event which clears the group stop states happens.  The bit is
-> +	 * waited by ptrace_check_attach() to hide the transition from
-> +	 * userland.
-> +	 *
-> +	 * The following is safe as both transitions in and out of STOPPED
-> +	 * are protected by siglock.
-> +	 */
-> +	if (task_is_stopped(task)) {
-> +		task->group_stop |= GROUP_STOP_PENDING | GROUP_STOP_TRAPPING;
-> +		signal_wake_up(task, 1);
-> +	}
-> +
-> +	spin_unlock(&task->sighand->siglock);
-
-Well. I do not know whether this matters, but "hide the transition from
-userland" is not 100% correct. I mean, this change is still visible.
-
-ptrace_check_attach()->wait_on_bit() logic fixes the previous example,
-but:
-
-	1. the tracer knows that the tracee is stopped
-
-	2. the tracer does ptrace(ATTACH)
-
-	3. the tracer does do_wait()
-
-In this case do_wait() can see the tracee in TASK_RUNNING state,
-this breaks wait_task_stopped(ptrace => true).
-
-Jan?
-
-> @@ -1799,22 +1830,28 @@ static int do_signal_stop(int signr)
->  		 */
->  		sig->group_exit_code = signr;
->
-> -		current->group_stop = gstop;
-> +		current->group_stop &= ~GROUP_STOP_SIGMASK;
-> +		current->group_stop |= signr | gstop;
->  		sig->group_stop_count = 1;
-> -		for (t = next_thread(current); t != current; t = next_thread(t))
-> +		for (t = next_thread(current); t != current;
-> +		     t = next_thread(t)) {
-> +			t->group_stop &= ~GROUP_STOP_SIGMASK;
->  			/*
->  			 * Setting state to TASK_STOPPED for a group
->  			 * stop is always done with the siglock held,
->  			 * so this check has no races.
->  			 */
->  			if (!(t->flags & PF_EXITING) && !task_is_stopped(t)) {
-> -				t->group_stop = gstop;
-> +				t->group_stop |= signr | gstop;
->  				sig->group_stop_count++;
->  				signal_wake_up(t, 0);
-> -			} else
-> +			} else {
->  				task_clear_group_stop(t);
-
-This looks racy. Suppose that "current" is ptraced, in this case
-it can initiate the new group-stop even if SIGNAL_STOP_STOPPED
-is set and we have another TASK_STOPPED thead T.
-
-Suppose that another (or same) debugger ataches to this thread T,
-wakes it up and sets GROUP_STOP_TRAPPING.
-
-T resumes, calls ptrace_stop() in TASK_STOPPED, and temporary drops
-->siglock.
-
-Now, this task_clear_group_stop(T) confuses ptrace_check_attach(T).
-
-I think ptrace_stop() should be called in TASK_RUNNING state.
-This also makes sense because we may call arch_ptrace_stop().
-
-> +				t->group_stop |= signr;
-
-Probably this doesn't really matter, but why do we need to
-change the GROUP_STOP_SIGMASK part of t->group_stop? If it
-is exiting, this is not needed. If it is already stopped, then
-it already has the correct (previous) signr.
-
-> +			}
-> +		}
->  	}
-> -
-> +retry:
->  	current->exit_code = sig->group_exit_code;
->  	__set_current_state(TASK_STOPPED);
-
-It is no longer needed to set ->exit_code here. The only reason
-was s/STOPPED/TRACED/ change in ptrace_check_attach(). Now that
-we rely on ptrace_stop() which sets ->exit_state, this can be
-removed.
-
-And,
-
-> @@ -1842,7 +1879,18 @@ static int do_signal_stop(int signr)
->
->  		spin_lock_irq(&current->sighand->siglock);
->  	} else
-> -		ptrace_stop(current->exit_code, CLD_STOPPED, 0, NULL);
-> +		ptrace_stop(current->group_stop & GROUP_STOP_SIGMASK,
-> +			    CLD_STOPPED, 0, NULL);
-
-Perhaps it would be more clean to clear ->exit_code here, in the
-"else" branch.
-
-Oleg.
+> 
+> *) megaraid_sas: Running in host_lock-less mode with MSI-X interrupts
+> 
+> This has not been tested yet, but I would like to get some review from
+> the LSI
+> megaraid_sas folks now that their patches to enable MSI-X interrupts
+> has been sent
+> to linux-scsi.
+> 
+> AdamR, any thoughts or comments to add here..?
+> 
+> -----------------------------------------------------------------------
+> -----------
+> 
+> So at this point the next steps will be to shaking out breakage in
+> corner cases for
+> struct scsi_device hotplug removal, more testing+validation, and more
+> LLD code review.
+> 
+> For the CC'ed LLD maintainers, please have another look at the changes
+> to enable
+> host_lock-less operation within your code and send the necessary ACKs
+> to linux-scsi
+> at your earliest convience.  Many thanks to everyone who has
+> contributed!
+> 
+> If anyone has any other patches, comments or concerns please let me
+> know and they
+> will be queued up for the next v4 for-38 round.
+> 
+> Best Regards,
+> 
+> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> 
+> Nicholas Bellinger (12):
+>   libiscsi: Convert to host_lock less w/ interrupts disabled internally
+>   scsi: Add IRQ_DISABLE_SCSI_QCMD wrapper
+>   libsas: Convert to host_lock less w/ interrupts disabled externally
+>   message: Convert to host_lock less w/ interrupts disabled externally
+>   fnic: Convert to host_lock less w/ interrupts disabled externally
+>   lpfc: Convert to host_lock less w/ interrupts disabled externally
+>   qla2xxx: Convert to host_lock less w/ interrupts disabled externally
+>   qla4xxx: Convert to host_lock less w/ interrupts disabled externally
+>   scsi_debug: Convert to host_lock less
+>   megaraid_sas: Add smp_mb__after_atomic_*() for
+>     instance->fw_outstanding
+>   megaraid_sas: Convert instance->issuepend_done to atomic_t
+>   megaraid_sas: Convert SHT->queuecommand() to run host_lock-less
+> 
+>  drivers/message/fusion/mptfc.c       |    2 +-
+>  drivers/message/fusion/mptsas.c      |    6 +-
+>  drivers/message/fusion/mptscsih.c    |    8 ++-
+>  drivers/message/fusion/mptscsih.h    |    2 +-
+>  drivers/message/fusion/mptspi.c      |    6 +-
+>  drivers/scsi/fnic/fnic_scsi.c        |   14 +----
+>  drivers/scsi/libiscsi.c              |   10 +---
+>  drivers/scsi/libsas/sas_scsi_host.c  |   12 +----
+>  drivers/scsi/lpfc/lpfc_scsi.c        |    9 ++--
+>  drivers/scsi/megaraid/megaraid_sas.c |   85 ++++++++++++++++++++++----
+> --------
+>  drivers/scsi/megaraid/megaraid_sas.h |    2 +-
+>  drivers/scsi/qla2xxx/qla_os.c        |   11 +---
+>  drivers/scsi/qla4xxx/ql4_os.c        |   10 +---
+>  drivers/scsi/scsi_debug.c            |   16 +++----
+>  include/scsi/scsi_host.h             |   14 ++++++
+>  15 files changed, 107 insertions(+), 100 deletions(-)
+> 
+> --
+> 1.7.3.4
 
