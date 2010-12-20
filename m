@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933196Ab0LTUwo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 15:52:44 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:59096 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933077Ab0LTUwn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 15:52:43 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [BISECTED] agp/intel: revert "Remove confusion of stolen entries not stolen memory"
-Date: Mon, 20 Dec 2010 21:52:38 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3; KDE/4.5.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>
-References: <201012201912.19051.arnd@arndb.de> <201012202047.08544.arnd@arndb.de> <0d30dc$kh3cm9@orsmga001.jf.intel.com>
-In-Reply-To: <0d30dc$kh3cm9@orsmga001.jf.intel.com>
+	id S933215Ab0LTU46 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 15:56:58 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:41777 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933048Ab0LTU45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 15:56:57 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [Bug #20232] kworker consumes ~100% CPU on HP Elitebook 8540w running 2.6.36_rc6-git4
+Date: Mon, 20 Dec 2010 21:56:00 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6+; KDE/4.4.4; x86_64; ; )
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Ozan Caglayan <ozan@pardus.org.tr>
+References: <ZRNlsjykcOD.A.b-F.20fDNB@chimera> <1292841313.2708.137.camel@laptop> <4D0F8890.2070307@kernel.org>
+In-Reply-To: <4D0F8890.2070307@kernel.org>
 MIME-Version: 1.0
+Message-Id: <201012202156.00621.rjw@sisk.pl>
 Content-Type: Text/Plain;
-  charset="iso-8859-15"
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012202152.38863.arnd@arndb.de>
-X-Provags-ID: V02:K0:uFXW9VP/GRDHm5VHZAaqHVUInp1ROLWRB6qRqr2ddvN
- CJy7OhUhRgOFZQdy/d2sckIdf7DZ6FTuV3VX8teQhFyXpM3d6M
- Y1yZt8UUZPJP1pgUksCF+Q9hbBOHRHPuxOVmhP1N7YDsvC+FAO
- t3nZuhsKphlyhpi54RUQC/b1mfDMLRTSr0h1cUMFpKqmN0I6Kq
- h33x7WE7MgTwJPXdY2YOA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 20 December 2010 20:52:07 Chris Wilson wrote:
+On Monday, December 20, 2010, Tejun Heo wrote:
+> Hello,
 > 
-> Also, which modules do you have loaded when using VESA? i.e. is the
-> i915.ko loaded, but in UMS mode (i915.modeset=0)?
+> On 12/20/2010 11:35 AM, Peter Zijlstra wrote:
+> > On Sun, 2010-12-19 at 13:50 +0100, Rafael J. Wysocki wrote:
+> >> This message has been generated automatically as a part of a report
+> >> of regressions introduced between 2.6.35 and 2.6.36.
+> >>
+> >> The following bug entry is on the current list of known regressions
+> >> introduced between 2.6.35 and 2.6.36.  Please verify if it still should
+> >> be listed and let the tracking team know (either way).
+> >>
+> >>
+> >> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=20232
+> >> Subject		: kworker consumes ~100% CPU on HP Elitebook 8540w running 2.6.36_rc6-git4
+> >> Submitter	: Ozan Caglayan <ozan@pardus.org.tr>
+> >> Date		: 2010-10-13 06:13 (68 days old)
+> > 
+> > I'd be thinking that kworker going wonky is something for Tejun to have
+> > a look at.. Anyway, is it still relevant for current kernels?
+> 
+> It looks like the work is scheduled in loop, so the kworker acting out
+> seems to be the symptom of the problem not the cause.  Looks like
+> Rafael already has a proper fix on mind, so...
 
-This doesn't seem to matter, as far as I can tell, i915 can be loaded
-or now.
+Rather, something that _might_ work.
 
-I've seen the system crash once while loading i915 with
-modeset=1 and my revert patch applied and backed it out.
+I'm quite confident that this is a BIOS issue.  Apparently, the BIOS tells us
+we can control PCI Express hotplug, but then it tries to do that itself via
+ACPI at the same time and that leads to a GPE storm.  We may try to poke the
+BIOS a bit differently than we do right now, but whether or not it helps is
+to be seen.
 
-After that, I could no longer even get i915 to do modesetting,
-the ioremap in intel_opregion_setup now fails because reserve_memtype
-decides that the opregion should be write-back when we ask for
-an uncached mapping. That's probably an unrelated problem, but
-I'm mentioning it anyway in case it's significant.
+Also, we can try to handle both ACPI-based and native PCIe hotplug
+simultaneously at the same port, but that's going to be tricky.
 
-	Arnd
+We still can use DMI-based blacklisting as the last resort.
+
+Thanks,
+Rafael
