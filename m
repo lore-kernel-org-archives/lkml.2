@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933128Ab0LTUFJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 15:05:09 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:43958 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932744Ab0LTUFI (ORCPT
+	id S933184Ab0LTUIo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 15:08:44 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:58156 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933116Ab0LTUIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 15:05:08 -0500
-Message-ID: <4D0FB6E6.2060608@metafoo.de>
-Date: Mon, 20 Dec 2010 21:04:54 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101030 Icedove/3.0.10
-MIME-Version: 1.0
-To: Dan Carpenter <error27@gmail.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>
-CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch -next] power/gpio-charger: check for kzalloc() failure
-References: <20101220130856.GZ1936@bicker>
-In-Reply-To: <20101220130856.GZ1936@bicker>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 20 Dec 2010 15:08:41 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6203"; a="67599773"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Daniel Walker <dwalker@codeaurora.org>
+Subject: [PATCH 2/3] hvc_dcc: Simplify put_chars()/get_chars() loops
+Date: Mon, 20 Dec 2010 12:08:37 -0800
+Message-Id: <1292875718-7980-3-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.4.516.g15368e
+In-Reply-To: <1292875718-7980-1-git-send-email-sboyd@codeaurora.org>
+References: <1292649385-28771-1-git-send-email-sboyd@codeaurora.org>
+ <1292875718-7980-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Casting and anding with 0xff is unnecessary in
+hvc_dcc_put_chars() since buf is already a char[].
+__dcc_get_char() can't return an int less than 0 since it only
+returns a char. Simplify the if statement in hvc_dcc_get_chars()
+to take this into account.
 
-On 12/20/2010 02:08 PM, Dan Carpenter wrote:
-> Return -ENOMEM if kzalloc() fails.
-> 
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
-> 
-> diff --git a/drivers/power/gpio-charger.c b/drivers/power/gpio-charger.c
-> index fccbe99..06a74f0 100644
-> --- a/drivers/power/gpio-charger.c
-> +++ b/drivers/power/gpio-charger.c
-> @@ -87,6 +87,8 @@ static int __devinit gpio_charger_probe(struct platform_device *pdev)
->  	}
->  
->  	gpio_charger = kzalloc(sizeof(*gpio_charger), GFP_KERNEL);
-> +	if (!gpio_charger)
-> +		return -ENOMEM;
->  
->  	charger = &gpio_charger->charger;
->  
+Cc: Daniel Walker <dwalker@codeaurora.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/char/hvc_dcc.c |   12 ++++--------
+ 1 files changed, 4 insertions(+), 8 deletions(-)
 
-Hi
+diff --git a/drivers/char/hvc_dcc.c b/drivers/char/hvc_dcc.c
+index 155ec10..ad23cc8 100644
+--- a/drivers/char/hvc_dcc.c
++++ b/drivers/char/hvc_dcc.c
+@@ -89,7 +89,7 @@ static int hvc_dcc_put_chars(uint32_t vt, const char *buf, int count)
+ 		while (__dcc_getstatus() & DCC_STATUS_TX)
+ 			cpu_relax();
+ 
+-		__dcc_putchar((char)(buf[i] & 0xFF));
++		__dcc_putchar(buf[i]);
+ 	}
+ 
+ 	return count;
+@@ -99,15 +99,11 @@ static int hvc_dcc_get_chars(uint32_t vt, char *buf, int count)
+ {
+ 	int i;
+ 
+-	for (i = 0; i < count; ++i) {
+-		int c = -1;
+-
++	for (i = 0; i < count; ++i)
+ 		if (__dcc_getstatus() & DCC_STATUS_RX)
+-			c = __dcc_getchar();
+-		if (c < 0)
++			buf[i] = __dcc_getchar();
++		else
+ 			break;
+-		buf[i] = c;
+-	}
+ 
+ 	return i;
+ }
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-This is now the 4th patch or so fixing this issue. I send the first one[1], together
-with some other fixes[2][3], a month ago.
-
-Anton could you please pick them up?
-
-Thanks
-- - Lars
-
-[1] http://lkml.indiana.edu/hypermail/linux/kernel/1011.2/02029.html
-[2] http://lkml.indiana.edu/hypermail/linux/kernel/1011.2/02028.html
-[3] http://lkml.indiana.edu/hypermail/linux/kernel/1011.2/02030.html
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk0PtuYACgkQBX4mSR26RiOCRQCfdKUdpAjX2GxAJuGVekZDiyjx
-j3IAnRCS562ud3Ali/B5V1gWNeBHcxNj
-=M4Vg
------END PGP SIGNATURE-----
