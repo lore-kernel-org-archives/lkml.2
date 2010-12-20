@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932965Ab0LTROG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 12:14:06 -0500
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:18767
+	id S932975Ab0LTRON (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 12:14:13 -0500
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:18851
 	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932926Ab0LTROE (ORCPT
+	by vger.kernel.org with ESMTP id S932940Ab0LTROK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 12:14:04 -0500
+	Mon, 20 Dec 2010 12:14:10 -0500
 X-SpamScore: 1
 X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h61h)
 X-Spam-TCS-SCL: 0:0
 X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LDQL72-01-5EA-02
+X-WSS-ID: 0LDQL72-01-5ED-02
 X-M-MSG: 
 From: Hans Rosenfeld <hans.rosenfeld@amd.com>
 To: <hpa@zytor.com>, <tglx@linutronix.de>, <mingo@elte.hu>
 CC: <linux-kernel@vger.kernel.org>, <andreas.herrmann3@amd.com>,
         Hans Rosenfeld <hans.rosenfeld@amd.com>
-Subject: [PATCH 4/4] x86, amd: Support L3 Cache Partitioning on AMD family 0x15 CPUs
-Date: Mon, 20 Dec 2010 18:13:47 +0100
-Message-ID: <1292865227-647466-5-git-send-email-hans.rosenfeld@amd.com>
+Subject: [PATCH 3/4] x86, amd: Extend AMD northbridge caching code to support "Link Control" devices
+Date: Mon, 20 Dec 2010 18:13:46 +0100
+Message-ID: <1292865227-647466-4-git-send-email-hans.rosenfeld@amd.com>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1292865227-647466-1-git-send-email-hans.rosenfeld@amd.com>
 References: <1292865227-647466-1-git-send-email-hans.rosenfeld@amd.com>
@@ -30,278 +30,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-L3 Cache Partitioning allows selecting which of the 4 L3 subcaches can
-be used for evictions by the L2 cache of each compute unit. By writing a
-4-bit hexadecimal mask into the the sysfs file /sys/devices/system/cpu/\
-cpuX/cache/index3/subcaches, the user can set the enabled subcaches for
-a CPU. The settings are directly read from and written to the hardware,
-so there is no way to have contradicting settings for two CPUs belonging
-to the same compute unit. Writing will always overwrite any previous
-setting for a compute unit.
+"Link Control" devices (NB function 4) will be used by L3 cache
+partitioning on family 0x15.
 
 Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
 ---
- arch/x86/include/asm/amd_nb.h         |    3 +
- arch/x86/kernel/amd_nb.c              |   55 +++++++++++++++++++++++++
- arch/x86/kernel/cpu/intel_cacheinfo.c |   73 +++++++++++++++++++++++++++-----
- 3 files changed, 119 insertions(+), 12 deletions(-)
+ arch/x86/include/asm/amd_nb.h |    1 +
+ arch/x86/kernel/amd_nb.c      |   11 +++++++++--
+ include/linux/pci_ids.h       |    1 +
+ 3 files changed, 11 insertions(+), 2 deletions(-)
 
 diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
-index b830c7f..23e299f 100644
+index 6aee50d..b830c7f 100644
 --- a/arch/x86/include/asm/amd_nb.h
 +++ b/arch/x86/include/asm/amd_nb.h
-@@ -12,6 +12,8 @@ extern void amd_flush_garts(void);
- extern int amd_get_nodes(struct bootnode *nodes);
- extern int amd_numa_init(unsigned long start_pfn, unsigned long end_pfn);
- extern int amd_scan_nodes(void);
-+extern int amd_get_subcaches(int);
-+extern int amd_set_subcaches(int, int);
+@@ -15,6 +15,7 @@ extern int amd_scan_nodes(void);
  
  struct amd_northbridge {
  	struct pci_dev *misc;
-@@ -27,6 +29,7 @@ extern struct amd_northbridge_info amd_northbridges;
- 
- #define AMD_NB_GART			0x1
- #define AMD_NB_L3_INDEX_DISABLE		0x2
-+#define AMD_NB_L3_PARTITIONING		0x4
- 
- #ifdef CONFIG_AMD_NB
- 
-diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
-index aecf12f..4f69b86 100644
---- a/arch/x86/kernel/amd_nb.c
-+++ b/arch/x86/kernel/amd_nb.c
-@@ -88,6 +88,10 @@ int amd_cache_northbridges(void)
- 	if (boot_cpu_data.x86 == 0x15)
- 		amd_northbridges.flags |= AMD_NB_L3_INDEX_DISABLE;
- 
-+	/* L3 cache partitioning is supported on family 0x15 */
-+	if (boot_cpu_data.x86 == 0x15)
-+		amd_northbridges.flags |= AMD_NB_L3_PARTITIONING;
-+
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(amd_cache_northbridges);
-@@ -105,6 +109,57 @@ int __init early_is_amd_nb(u32 device)
- 	return 0;
- }
- 
-+int amd_get_subcaches(int cpu)
-+{
-+	struct pci_dev *link = node_to_amd_nb(amd_get_nb_id(cpu))->link;
-+	unsigned int mask;
-+
-+	if (!amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
-+		return 0;
-+
-+	pci_read_config_dword(link, 0x1d4, &mask);
-+
-+	return (mask >> (4 * cpu_data(cpu).compute_unit_id)) & 0xf;
-+}
-+
-+int amd_set_subcaches(int cpu, int mask)
-+{
-+	static unsigned int reset, ban;
-+	unsigned int reg;
-+	struct amd_northbridge *nb = node_to_amd_nb(amd_get_nb_id(cpu));
-+
-+	if (!amd_nb_has_feature(AMD_NB_L3_PARTITIONING) || mask > 0xf)
-+		return -EINVAL;
-+
-+	/* if necessary, collect reset state of L3 partitioning and BAN mode */
-+	if (reset == 0) {
-+		pci_read_config_dword(nb->link, 0x1d4, &reset);
-+		pci_read_config_dword(nb->misc, 0x1b8, &ban);
-+		ban &= 0x180000;
-+	}
-+
-+	/* deactivate BAN mode if any subcaches are to be disabled */
-+	if (mask != 0xf) {
-+		pci_read_config_dword(nb->misc, 0x1b8, &reg);
-+		pci_write_config_dword(nb->misc, 0x1b8, reg & ~0x180000);
-+	}
-+
-+	mask <<= 4 * cpu_data(cpu).compute_unit_id;
-+	mask |= (0xf ^ (1 << cpu_data(cpu).compute_unit_id)) << 26;
-+
-+	pci_write_config_dword(nb->link, 0x1d4, mask);
-+
-+	/* reset BAN mode if L3 partitioning returned to reset state */
-+	pci_read_config_dword(nb->link, 0x1d4, &reg);
-+	if (reg == reset) {
-+		pci_read_config_dword(nb->misc, 0x1b8, &reg);
-+		reg &= ~0x180000;
-+		pci_write_config_dword(nb->misc, 0x1b8, reg | ban);
-+	}
-+
-+	return 0;
-+}
-+
- int amd_cache_gart(void)
- {
-        int i;
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index 9ecf81f..557a927 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -301,8 +301,9 @@ amd_cpuid4(int leaf, union _cpuid4_leaf_eax *eax,
- 
- struct _cache_attr {
- 	struct attribute attr;
--	ssize_t (*show)(struct _cpuid4_info *, char *);
--	ssize_t (*store)(struct _cpuid4_info *, const char *, size_t count);
-+	ssize_t (*show)(struct _cpuid4_info *, char *, unsigned int);
-+	ssize_t (*store)(struct _cpuid4_info *, const char *, size_t count,
-+			 unsigned int);
++	struct pci_dev *link;
  };
  
- #ifdef CONFIG_AMD_NB
-@@ -397,7 +398,8 @@ static ssize_t show_cache_disable(struct _cpuid4_info *this_leaf, char *buf,
+ struct amd_northbridge_info {
+diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
+index 4ce87c2..aecf12f 100644
+--- a/arch/x86/kernel/amd_nb.c
++++ b/arch/x86/kernel/amd_nb.c
+@@ -20,6 +20,11 @@ struct pci_device_id amd_nb_misc_ids[] = {
+ };
+ EXPORT_SYMBOL(amd_nb_misc_ids);
  
- #define SHOW_CACHE_DISABLE(slot)					\
- static ssize_t								\
--show_cache_disable_##slot(struct _cpuid4_info *this_leaf, char *buf)	\
-+show_cache_disable_##slot(struct _cpuid4_info *this_leaf, char *buf,	\
-+			  unsigned int cpu)				\
- {									\
- 	return show_cache_disable(this_leaf, buf, slot);		\
- }
-@@ -509,7 +511,8 @@ static ssize_t store_cache_disable(struct _cpuid4_info *this_leaf,
- #define STORE_CACHE_DISABLE(slot)					\
- static ssize_t								\
- store_cache_disable_##slot(struct _cpuid4_info *this_leaf,		\
--			   const char *buf, size_t count)		\
-+			   const char *buf, size_t count,		\
-+			   unsigned int cpu)				\
- {									\
- 	return store_cache_disable(this_leaf, buf, count, slot);	\
- }
-@@ -521,6 +524,41 @@ static struct _cache_attr cache_disable_0 = __ATTR(cache_disable_0, 0644,
- static struct _cache_attr cache_disable_1 = __ATTR(cache_disable_1, 0644,
- 		show_cache_disable_1, store_cache_disable_1);
++static struct pci_device_id amd_nb_link_ids[] = {
++	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_LINK) },
++	{}
++};
++
+ struct amd_northbridge_info amd_northbridges;
+ EXPORT_SYMBOL(amd_northbridges);
  
-+static ssize_t
-+show_subcaches(struct _cpuid4_info *this_leaf, char *buf, unsigned int cpu)
-+{
-+	if (!this_leaf->l3 ||
-+	    !amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
-+		return -EINVAL;
-+
-+	return sprintf(buf, "%x\n", amd_get_subcaches(cpu));
-+}
-+
-+static ssize_t
-+store_subcaches(struct _cpuid4_info *this_leaf, const char *buf, size_t count,
-+		unsigned int cpu)
-+{
-+	unsigned long val;
-+
-+	if (!capable(CAP_SYS_ADMIN))
-+		return -EPERM;
-+
-+	if (!this_leaf->l3 ||
-+	    !amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
-+		return -EINVAL;
-+
-+	if (strict_strtoul(buf, 16, &val) < 0)
-+		return -EINVAL;
-+
-+	if (amd_set_subcaches(cpu, val))
-+		return -EINVAL;
-+
-+	return count;
-+}
-+
-+static struct _cache_attr subcaches =
-+	__ATTR(subcaches, 0644, show_subcaches, store_subcaches);
-+
- #else	/* CONFIG_AMD_NB */
- #define amd_init_l3_cache(x, y)
- #endif /* CONFIG_AMD_NB */
-@@ -867,8 +905,8 @@ static DEFINE_PER_CPU(struct _index_kobject *, ici_index_kobject);
- #define INDEX_KOBJECT_PTR(x, y)		(&((per_cpu(ici_index_kobject, x))[y]))
- 
- #define show_one_plus(file_name, object, val)				\
--static ssize_t show_##file_name						\
--			(struct _cpuid4_info *this_leaf, char *buf)	\
-+static ssize_t show_##file_name(struct _cpuid4_info *this_leaf, char *buf, \
-+				unsigned int cpu)			\
- {									\
- 	return sprintf(buf, "%lu\n", (unsigned long)this_leaf->object + val); \
- }
-@@ -879,7 +917,8 @@ show_one_plus(physical_line_partition, ebx.split.physical_line_partition, 1);
- show_one_plus(ways_of_associativity, ebx.split.ways_of_associativity, 1);
- show_one_plus(number_of_sets, ecx.split.number_of_sets, 1);
- 
--static ssize_t show_size(struct _cpuid4_info *this_leaf, char *buf)
-+static ssize_t show_size(struct _cpuid4_info *this_leaf, char *buf,
-+			 unsigned int cpu)
+@@ -38,7 +43,7 @@ int amd_cache_northbridges(void)
  {
- 	return sprintf(buf, "%luK\n", this_leaf->size / 1024);
- }
-@@ -903,17 +942,20 @@ static ssize_t show_shared_cpu_map_func(struct _cpuid4_info *this_leaf,
- 	return n;
- }
+ 	int i = 0;
+ 	struct amd_northbridge *nb;
+-	struct pci_dev *misc;
++	struct pci_dev *misc, *link;
  
--static inline ssize_t show_shared_cpu_map(struct _cpuid4_info *leaf, char *buf)
-+static inline ssize_t show_shared_cpu_map(struct _cpuid4_info *leaf, char *buf,
-+					  unsigned int cpu)
- {
- 	return show_shared_cpu_map_func(leaf, 0, buf);
- }
+ 	if (amd_nb_num())
+ 		return 0;
+@@ -57,10 +62,12 @@ int amd_cache_northbridges(void)
+ 	amd_northbridges.nb = nb;
+ 	amd_northbridges.num = i;
  
--static inline ssize_t show_shared_cpu_list(struct _cpuid4_info *leaf, char *buf)
-+static inline ssize_t show_shared_cpu_list(struct _cpuid4_info *leaf, char *buf,
-+					   unsigned int cpu)
- {
- 	return show_shared_cpu_map_func(leaf, 1, buf);
- }
+-	misc = NULL;
++	link = misc = NULL;
+ 	for (i = 0; i != amd_nb_num(); i++) {
+ 		node_to_amd_nb(i)->misc = misc =
+ 			next_northbridge(misc, amd_nb_misc_ids);
++		node_to_amd_nb(i)->link = link =
++			next_northbridge(link, amd_nb_link_ids);
+         }
  
--static ssize_t show_type(struct _cpuid4_info *this_leaf, char *buf)
-+static ssize_t show_type(struct _cpuid4_info *this_leaf, char *buf,
-+			 unsigned int cpu)
- {
- 	switch (this_leaf->eax.split.type) {
- 	case CACHE_TYPE_DATA:
-@@ -971,6 +1013,9 @@ static struct attribute ** __cpuinit amd_l3_attrs(void)
- 	if (amd_nb_has_feature(AMD_NB_L3_INDEX_DISABLE))
- 		n += 2;
- 
-+	if (amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
-+		n += 1;
-+
- 	attrs = kzalloc(n * sizeof (struct attribute *), GFP_KERNEL);
- 	if (attrs == NULL)
- 		return attrs = default_attrs;
-@@ -983,6 +1028,10 @@ static struct attribute ** __cpuinit amd_l3_attrs(void)
- 		attrs[n++] = &cache_disable_1.attr;
- 	}
- 
-+	if (amd_nb_has_feature(AMD_NB_L3_PARTITIONING)) {
-+		attrs[n++] = &subcaches.attr;
-+	}
-+
- 	return attrs;
- }
- #endif
-@@ -995,7 +1044,7 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
- 
- 	ret = fattr->show ?
- 		fattr->show(CPUID4_INFO_IDX(this_leaf->cpu, this_leaf->index),
--			buf) :
-+			buf, this_leaf->cpu) :
- 		0;
- 	return ret;
- }
-@@ -1009,7 +1058,7 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
- 
- 	ret = fattr->store ?
- 		fattr->store(CPUID4_INFO_IDX(this_leaf->cpu, this_leaf->index),
--			buf, count) :
-+			buf, count, this_leaf->cpu) :
- 		0;
- 	return ret;
- }
+ 	/* some CPU families (e.g. family 0x11) do not support GART */
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index c6bcfe9..dd8be13 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -518,6 +518,7 @@
+ #define PCI_DEVICE_ID_AMD_11H_NB_MISC	0x1303
+ #define PCI_DEVICE_ID_AMD_11H_NB_LINK	0x1304
+ #define PCI_DEVICE_ID_AMD_15H_NB_MISC	0x1603
++#define PCI_DEVICE_ID_AMD_15H_NB_LINK	0x1604
+ #define PCI_DEVICE_ID_AMD_LANCE		0x2000
+ #define PCI_DEVICE_ID_AMD_LANCE_HOME	0x2001
+ #define PCI_DEVICE_ID_AMD_SCSI		0x2020
 -- 
 1.5.6.5
 
