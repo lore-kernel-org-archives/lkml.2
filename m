@@ -1,89 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203Ab0LTCtO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 21:49:14 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58543 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751593Ab0LTCtN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 21:49:13 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=XB64yiduYgz8mmEZ8ndsZbLYSNF/EarmoZIjZMHPRNulV2Bk0LA4IWWRnLEamtOFHn
-         cFo2FDsc0p1NgyrKp+lw+EEY/nIFiR3LaN5tCa+9b7fIvtqdDhrQ98KAXUMkFICl8IXy
-         Mpe/mlAFK+5/1gX7P6w8B2TSNNN1GL0r2SWkQ=
-MIME-Version: 1.0
-In-Reply-To: <20101220113239.E56C.A69D9226@jp.fujitsu.com>
-References: <20101220112227.E566.A69D9226@jp.fujitsu.com>
-	<AANLkTimaW7X6w2e=4SvynHQHO-Kv3wXGv4_NCKDsuYRR@mail.gmail.com>
-	<20101220113239.E56C.A69D9226@jp.fujitsu.com>
-Date: Mon, 20 Dec 2010 11:49:12 +0900
-Message-ID: <AANLkTikOu6xUs3e_gEubidwSc_kQVuTKask+1WcCjzFs@mail.gmail.com>
-Subject: Re: [RFC 5/5] truncate: Remove unnecessary page release
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@suse.de>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752336Ab0LTCw3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 21:52:29 -0500
+Received: from mail.perches.com ([173.55.12.10]:2772 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752042Ab0LTCw0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 21:52:26 -0500
+Subject: Re: [PATCH][RESEND] scripts: add no-warning option to the
+ checkpatch script
+From: Joe Perches <joe@perches.com>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, apw@canonical.com
+In-Reply-To: <4D0DD027.4000507@gmail.com>
+References: <4D0DD027.4000507@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 19 Dec 2010 18:52:24 -0800
+Message-ID: <1292813544.22702.342.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 20, 2010 at 11:32 AM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
->> On Mon, Dec 20, 2010 at 11:21 AM, KOSAKI Motohiro
->> <kosaki.motohiro@jp.fujitsu.com> wrote:
->> >> This patch series changes remove_from_page_cache's page ref counting
->> >> rule. page cache ref count is decreased in remove_from_page_cache.
->> >> So we don't need call again in caller context.
->> >>
->> >> Cc: Nick Piggin <npiggin@suse.de>
->> >> Cc: Al Viro <viro@zeniv.linux.org.uk>
->> >> Cc: linux-mm@kvack.org
->> >> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
->> >> ---
->> >>  mm/truncate.c |    1 -
->> >>  1 files changed, 0 insertions(+), 1 deletions(-)
->> >>
->> >> diff --git a/mm/truncate.c b/mm/truncate.c
->> >> index 9ee5673..8decb93 100644
->> >> --- a/mm/truncate.c
->> >> +++ b/mm/truncate.c
->> >> @@ -114,7 +114,6 @@ truncate_complete_page(struct address_space *mapping, struct page *page)
->> >>        * calls cleancache_put_page (and note page->mapping is now NULL)
->> >>        */
->> >>       cleancache_flush_page(mapping, page);
->> >> -     page_cache_release(page);       /* pagecache ref */
->> >>       return 0;
->> >
->> > Do we _always_ have stable page reference here? IOW, I can assume
->>
->> I think so.
->> Because the page is locked so caller have to hold a ref to unlock it.
->
-> Hmm...
->
-> Perhaps, I'm missing something. But I think  __memory_failure() only lock
-> compaund_head page. not all. example.
+On Sun, 2010-12-19 at 10:28 +0100, Marco Stornelli wrote:
+> From: Marco Stornelli <marco.stornelli@gmail.com>
+> Add no-warning option to the checkpatch script.
+> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 
-The page passed truncate_complete_page is only head page?
-Is it possible to pass the page which isn't head of compound in
-truncate_complete_page?
+Hello Marco.
 
->
->>
->> > cleancache_flush_page() doesn't cause NULL deref?
->
->
->
->
+I don't have much of an opinion on this.
+I don't actually use checkpatch much.
+Why do you think it's useful?
 
+It's Andy's code, I just contribute a few
+possible additions here and there.
 
+cheers, Joe
 
--- 
-Kind regards,
-Minchan Kim
