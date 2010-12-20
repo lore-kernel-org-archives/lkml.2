@@ -1,70 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290Ab0LTKut (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 05:50:49 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:33738 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1755698Ab0LTKuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 05:50:44 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+sA8EySRqsL69IJvrVjLABwFuHjde58ePG2cU6U9
-	eKVgSBwjBDIXzE
-Subject: Re: [RFC -v2 PATCH 2/3] sched: add yield_to function
-From: Mike Galbraith <efault@gmx.de>
-To: Avi Kivity <avi@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Chris Wright <chrisw@sous-sol.org>
-In-Reply-To: <4D0F34C0.9000400@redhat.com>
-References: <20101213224434.7495edb2@annuminas.surriel.com>
-	 <20101213224657.7e141746@annuminas.surriel.com>
-	 <1292306896.7448.157.camel@marge.simson.net> <4D0A6D34.6070806@redhat.com>
-	 <1292569018.7772.75.camel@marge.simson.net>  <4D0B7D24.5060207@redhat.com>
-	 <1292615509.7381.81.camel@marge.simson.net>  <4D0CE937.8090601@redhat.com>
-	 <1292699204.1181.51.camel@marge.simson.net>  <4D0DA45A.9070600@redhat.com>
-	 <1292753156.16367.104.camel@marge.simson.net> <4D0DCE10.7000200@redhat.com>
-	 <1292834372.8948.27.camel@marge.simson.net> <4D0F1794.3010803@redhat.com>
-	 <1292835302.8948.35.camel@marge.simson.net> <4D0F1BD8.20601@redhat.com>
-	 <1292837440.8948.60.camel@marge.simson.net> <4D0F25E8.80305@redhat.com>
-	 <1292841193.11946.36.camel@marge.simson.net> <4D0F3266.90908@redhat.com>
-	 <1292842010.11946.39.camel@marge.simson.net>  <4D0F34C0.9000400@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 20 Dec 2010 11:50:43 +0100
-Message-ID: <1292842243.11946.40.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1756410Ab0LTKu3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 05:50:29 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38933 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755066Ab0LTKsv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 05:48:51 -0500
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        liu.y.victor@gmail.com, B02280@freescale.com,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [PATCH 6/9] ARM i.MX51: Add IPU device support
+Date: Mon, 20 Dec 2010 11:48:44 +0100
+Message-Id: <1292842127-21406-7-git-send-email-s.hauer@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1292842127-21406-1-git-send-email-s.hauer@pengutronix.de>
+References: <1292842127-21406-1-git-send-email-s.hauer@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-12-20 at 12:49 +0200, Avi Kivity wrote:
-> On 12/20/2010 12:46 PM, Mike Galbraith wrote:
-> > >
-> > >  However, if I'm all alone on my cpu, and the other task is runnable but
-> > >  not running, behind some unrelated task, then I do need that task to be
-> > >  preempted (or to move tasks around).
-> >
-> > So in that case, a pull may be advantageous.
-> 
-> Yes.
-> 
-> > >  >  Would a kick/hint option be useful?
-> > >
-> > >  Depends on what it does...
-> >
-> > Let you decide whether you only want to drop a hint and leave it at
-> > that, or also attempt a preemption.
-> 
-> Who is "you" in this?  the scheduler?
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+---
+ arch/arm/mach-mx5/devices-imx51.h               |    4 ++
+ arch/arm/plat-mxc/devices/Kconfig               |    4 ++
+ arch/arm/plat-mxc/devices/Makefile              |    1 +
+ arch/arm/plat-mxc/devices/platform-imx_ipuv3.c  |   47 +++++++++++++++++++++++
+ arch/arm/plat-mxc/include/mach/devices-common.h |   10 +++++
+ 5 files changed, 66 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/plat-mxc/devices/platform-imx_ipuv3.c
 
-The caller.
-
-> I'm fine with hints so long as they are usually acted upon (if it isn't, 
-> I'll go back to the guest, spin a bit more, and retry).
-
-
+diff --git a/arch/arm/mach-mx5/devices-imx51.h b/arch/arm/mach-mx5/devices-imx51.h
+index 6302e46..851c114 100644
+--- a/arch/arm/mach-mx5/devices-imx51.h
++++ b/arch/arm/mach-mx5/devices-imx51.h
+@@ -47,3 +47,7 @@ extern const struct imx_spi_imx_data imx51_ecspi_data[] __initconst;
+ extern const struct imx_imx2_wdt_data imx51_imx2_wdt_data[] __initconst;
+ #define imx51_add_imx2_wdt(id, pdata)	\
+ 	imx_add_imx2_wdt(&imx51_imx2_wdt_data[id])
++
++extern const struct imx_ipuv3_data imx51_ipuv3_data __initconst;
++#define imx51_add_ipuv3(pdata)	\
++	imx_add_ipuv3(&imx51_ipuv3_data, pdata)
+diff --git a/arch/arm/plat-mxc/devices/Kconfig b/arch/arm/plat-mxc/devices/Kconfig
+index 2537166..262d9c5 100644
+--- a/arch/arm/plat-mxc/devices/Kconfig
++++ b/arch/arm/plat-mxc/devices/Kconfig
+@@ -71,3 +71,7 @@ config IMX_HAVE_PLATFORM_SDHCI_ESDHC_IMX
+ 
+ config IMX_HAVE_PLATFORM_SPI_IMX
+ 	bool
++
++config IMX_HAVE_PLATFORM_IMX_IPUV3
++	bool
++
+diff --git a/arch/arm/plat-mxc/devices/Makefile b/arch/arm/plat-mxc/devices/Makefile
+index 75cd2ec..0a6be0a 100644
+--- a/arch/arm/plat-mxc/devices/Makefile
++++ b/arch/arm/plat-mxc/devices/Makefile
+@@ -22,3 +22,4 @@ obj-$(CONFIG_IMX_HAVE_PLATFORM_MXC_RNGA) += platform-mxc_rnga.o
+ obj-$(CONFIG_IMX_HAVE_PLATFORM_MXC_W1) += platform-mxc_w1.o
+ obj-$(CONFIG_IMX_HAVE_PLATFORM_SDHCI_ESDHC_IMX) += platform-sdhci-esdhc-imx.o
+ obj-$(CONFIG_IMX_HAVE_PLATFORM_SPI_IMX) +=  platform-spi_imx.o
++obj-$(CONFIG_IMX_HAVE_PLATFORM_IMX_IPUV3) +=  platform-imx_ipuv3.o
+diff --git a/arch/arm/plat-mxc/devices/platform-imx_ipuv3.c b/arch/arm/plat-mxc/devices/platform-imx_ipuv3.c
+new file mode 100644
+index 0000000..2c6b913
+--- /dev/null
++++ b/arch/arm/plat-mxc/devices/platform-imx_ipuv3.c
+@@ -0,0 +1,47 @@
++/*
++ * Copyright (C) 2010 Pengutronix
++ * Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
++ *
++ * This program is free software; you can redistribute it and/or modify it under
++ * the terms of the GNU General Public License version 2 as published by the
++ * Free Software Foundation.
++ */
++#include <mach/hardware.h>
++#include <mach/devices-common.h>
++
++#define imx51_ipuv3_data_entry_single(soc)				\
++	{								\
++		.iobase = soc ## _IPU_CTRL_BASE_ADDR,			\
++		.irq_err = soc ## _INT_IPU_ERR,				\
++		.irq = soc ## _INT_IPU_SYN,				\
++	}
++
++#ifdef CONFIG_SOC_IMX51
++const struct imx_ipuv3_data imx51_ipuv3_data __initconst =
++	imx51_ipuv3_data_entry_single(MX51);
++#endif /* ifdef CONFIG_SOC_IMX35 */
++
++struct platform_device *__init imx_add_ipuv3(
++		const struct imx_ipuv3_data *data,
++		const struct imx_ipuv3_platform_data *pdata)
++{
++	struct resource res[] = {
++		{
++			.start = data->iobase,
++			.end = data->iobase + SZ_512M - 1,
++			.flags = IORESOURCE_MEM,
++		}, {
++			.start = data->irq_err,
++			.end = data->irq_err,
++			.flags = IORESOURCE_IRQ,
++		}, {
++			.start = data->irq,
++			.end = data->irq,
++			.flags = IORESOURCE_IRQ,
++		},
++	};
++
++	return imx_add_platform_device("imx-ipuv3", -1,
++			res, ARRAY_SIZE(res), pdata, sizeof(*pdata));
++}
++
+diff --git a/arch/arm/plat-mxc/include/mach/devices-common.h b/arch/arm/plat-mxc/include/mach/devices-common.h
+index 8658c9c..8f5197f 100644
+--- a/arch/arm/plat-mxc/include/mach/devices-common.h
++++ b/arch/arm/plat-mxc/include/mach/devices-common.h
+@@ -264,3 +264,13 @@ struct imx_spi_imx_data {
+ struct platform_device *__init imx_add_spi_imx(
+ 		const struct imx_spi_imx_data *data,
+ 		const struct spi_imx_master *pdata);
++
++#include <mach/ipu-v3.h>
++struct imx_ipuv3_data {
++	resource_size_t iobase;
++	resource_size_t irq_err;
++	resource_size_t irq;
++};
++struct platform_device *__init imx_add_ipuv3(
++		const struct imx_ipuv3_data *data,
++		const struct imx_ipuv3_platform_data *pdata);
+-- 
+1.7.2.3
 
