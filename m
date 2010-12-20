@@ -1,104 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753578Ab0LTB51 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 20:57:27 -0500
-Received: from mail-gx0-f180.google.com ([209.85.161.180]:53455 "EHLO
-	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035Ab0LTB5Y (ORCPT
+	id S1753559Ab0LTB7N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 20:59:13 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49509 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035Ab0LTB7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 20:57:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=u+kUBCfL9cuKrok7LBECQbHMt+ZPMRZoCmVYpRNAKWF2Gt46I+kA6QSKUAwuOCf0KJ
-         xCMd+CHK2EPD5D5z7H/52XiiS2uEgdCloIzXB7Za1KpcZLM44v0+WXT9Olr0guab9HFR
-         tH6NW72l44wfiWl3r7SoGFXo+chuAq0vUGUoY=
-Message-ID: <4D0EB7F4.6070903@gmail.com>
-Date: Mon, 20 Dec 2010 09:57:08 +0800
-From: Li Yu <raise.sail@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); zh-CN; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: bcrl@kvack.org, viro@zeniv.linux.org.uk, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] aio: using hash table for active requests
-References: <4D082FE9.7080407@gmail.com> <x49lj3qd79m.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49lj3qd79m.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Sun, 19 Dec 2010 20:59:11 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 20 Dec 2010 10:53:22 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [RFC 1/5] drop page reference on remove_from_page_cache
+Message-Id: <20101220105322.3b0dba88.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4bd059fc4f45fba7ed29a9f4325deb4f437d39f3.1292604745.git.minchan.kim@gmail.com>
+References: <cover.1292604745.git.minchan.kim@gmail.com>
+	<4bd059fc4f45fba7ed29a9f4325deb4f437d39f3.1292604745.git.minchan.kim@gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 18 Dec 2010 02:13:36 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
+> Now we add page reference on add_to_page_cache but doesn't drop it
+> in remove_from_page_cache. Such asymmetric makes confusing about
+> page reference so that caller should notice it and comment why they
+> release page reference. It's not good API.
+> 
+> Long time ago, Hugh tried it[1] but gave up of reason which
+> reiser4's drop_page had to unlock the page between removing it from
+> page cache and doing the page_cache_release. But now the situation is
+> changed. I think at least things in current mainline doesn't have any
+> obstacles. The problem is fs or somethings out of mainline.
+> If it has done such thing like reiser4, this patch could be a problem.
+> 
+> Do anyone know the such things? Do we care about things out of mainline?
+> 
+> Note :
+> The comment of remove_from_page_cache make by copy & paste & s/swap/page/
+> from delete_from_swap_cache.
+> 
+> [1] http://lkml.org/lkml/2004/10/24/140
+> 
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: linux-mm@kvack.org
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 
-于 2010年12月16日 06:02, Jeff Moyer 写道:
-> Li Yu <raise.sail@gmail.com> writes:
-> 
->> This patch remove a TODO in fs/aio.c, that is to use hash table for
->> active requests.
-> 
-> It's remained a TODO item for this long because it hasn't really
-> mattered in the past.  Was there other motivation for this patch besides
-> the TODO comment?
-> 
+I like this.
+Reviewd-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-:), indeed, to solve a TODO is my major motivation.
-
->> I prefer add an iocb at tail of collision chain, so I do not use hlist
->> here.
-> 
-> Why do you prefer to add to the tail?  It makes more sense to add
-> collisions at the head, since if you're going to cancel everything, you
-> have a better chance of cancelling stuff that was queued later than
-> earlier (assuming you can cancel anything at all, which for most cases,
-> you can't).  Also, you're halving the number of buckets, so you should
-> have a good reason.
-> 
-
-I misunderstanded major feature of these code ... it just only can speed up a bit for io_cancel() syscall.
-However, the "add to tail" design is wrong here, I ever thinked each hash bucket acts as a FIFO queue, so add an element to tail of list can reduce dequeue time.
-
-> What sort of testing did you do?
-> 
-> I've made some cursory comments below.  I'll more fully review this if
-> you can provide a bit more justification and some proof of testing.  I'd
-> be really surprised if this helped any real workloads, though.
-
-Yes, I have some testings for this patches, it seem that its performance impact can be ignored, I tested by fio, iodepth=65535, size=1024m.
-
-Thanks for your review time!
-
-Yu
-
-> 
-> Cheers,
-> Jeff
-> 
->> +static int ioctx_active_reqs_init(struct kioctx *ctx)
->> +{
->> +	int i;
->> +
->> +	ctx->active_reqs_table = kmalloc(AIO_ACTREQ_BUCKETS*sizeof(struct list_head), GFP_KERNEL);
-> 
-> Fit this into 80 columns, please.  You may just want to run checkpatch
-> over the whole thing.
-> 
->> +static inline void aio_cancel_one(struct kioctx *ctx, struct kiocb *iocb)
-> 
-> I see no good reason to inline this.
-> 
->> @@ -465,10 +506,12 @@ static struct kiocb *__aio_get_req(struct kioctx *ctx)
->>  	/* Check if the completion queue has enough free space to
->>  	 * accept an event from this io.
->>  	 */
->> +	bucket = hash_long((unsigned long)tohash, AIO_ACTREQ_BUCKETS_SHIFT);
-> 
-> hash_ptr?
-> 
->> -	struct list_head	active_reqs;	/* used for cancellation */
->> +	struct list_head*	active_reqs_table;	/* used for cancellation */
-> 
-> Coding Style
-> 
