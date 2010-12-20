@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933343Ab0LTXmK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 18:42:10 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:58500 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933273Ab0LTXmI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 18:42:08 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6203"; a="67418039"
-Date: Mon, 20 Dec 2010 15:42:06 -0800
-From: David Brown <davidb@codeaurora.org>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: David Brown <davidb@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] mmc: msm: consolidate ifdefs for BUSCLK_PWRSAVE
-Message-ID: <20101220234206.GA15270@huya.qualcomm.com>
-References: <1292887011-30006-1-git-send-email-dwalker@codeaurora.org>
- <20101220233519.GA14582@huya.qualcomm.com>
- <1292888350.27552.22.camel@m0nster>
+	id S933355Ab0LTXmT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 18:42:19 -0500
+Received: from cantor.suse.de ([195.135.220.2]:56712 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933293Ab0LTXmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 18:42:18 -0500
+Date: Tue, 21 Dec 2010 00:42:13 +0100
+From: Michal Marek <mmarek@suse.cz>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        akpm@linux-foundation.org, smcameron@yahoo.com,
+        linux-kernel@vger.kernel.org, mike.miller@hp.com, thenzl@redhat.com,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] cciss: fix cciss_revalidate panic.
+Message-ID: <20101220234213.GA10060@sepie.suse.cz>
+References: <20101216190200.630.8596.stgit@beardog.cce.hp.com>
+ <4D0B190E.1030206@kernel.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1292888350.27552.22.camel@m0nster>
+In-Reply-To: <4D0B190E.1030206@kernel.dk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 20, 2010 at 03:39:10PM -0800, Daniel Walker wrote:
-> > I this feature even used?  It looks like some kind debug feature.
+On Fri, Dec 17, 2010 at 09:02:22AM +0100, Jens Axboe wrote:
+> On 2010-12-16 20:02, Stephen M. Cameron wrote:
+> > From: Stephen M. Cameron <StephenM.Cameron>
+> > 
+> > If you delete a logical drive, and then run BLKRRPART (e.g. via fdisk)
+> > on a logical drive which is "after" the deleted logical drive in the h->drv[]
+> > array, then cciss_revalidate panics because it will access the null pointer
+> > h->drv[x] when x hits the deleted drive.
 > 
-> Yeah it's used, it's default on..
+> Thanks Stephen. I put this in for-linus for 2.6.37 and marked it for
+> stable backport.
 
-What I meant was "is there any reason to be able to turn this off."
-It looks like something that would be used during development, and
-doesn't need to be disabled once the driver works.
+This got applied without the semicolon after 'continue' somehow and
+broke build. Please apply the patch below.
 
-David
+Michal
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+>From 70b720652024b23d71d72a1464f174df124600b7 Mon Sep 17 00:00:00 2001
+From: Michal Marek <mmarek@suse.cz>
+Date: Tue, 21 Dec 2010 00:35:56 +0100
+Subject: [PATCH] cciss: Fix build
+
+drivers/block/cciss.c:2839:3: error: expected ';' before 'if'
+
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+index 233e06c..8e0f925 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -2835,7 +2835,7 @@ static int cciss_revalidate(struct gendisk *disk)
+ 
+ 	for (logvol = 0; logvol < CISS_MAX_LUN; logvol++) {
+ 		if (!h->drv[logvol])
+-			continue
++			continue;
+ 		if (memcmp(h->drv[logvol]->LunID, drv->LunID,
+ 			sizeof(drv->LunID)) == 0) {
+ 			FOUND = 1;
