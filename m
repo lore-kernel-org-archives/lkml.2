@@ -1,85 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111Ab0LTA3W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 19:29:22 -0500
-Received: from mga02.intel.com ([134.134.136.20]:9298 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751177Ab0LTA3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 19:29:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,198,1291622400"; 
-   d="scan'208";a="585250498"
-Date: Mon, 20 Dec 2010 01:29:17 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Peter Huewe <peterhuewe@gmx.de>,
-        Ian Lartey <ian@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mfd/wm831x-irq: Convert to new irq_chip functions and
- fix build failure
-Message-ID: <20101220002916.GB3206@sortiz-mobl>
-References: <1291937687-20243-1-git-send-email-peterhuewe@gmx.de>
- <12ABA93B-6923-4AF7-BF34-E070BE72A8E2@opensource.wolfsonmicro.com>
- <alpine.LFD.2.00.1012100233510.2653@localhost6.localdomain6>
- <20101210050755.GA21712@linux-sh.org>
- <20101210121420.GC3200@rakim.wolfsonmicro.main>
- <20101210154332.GB21712@linux-sh.org>
- <20101210172407.GF3200@rakim.wolfsonmicro.main>
- <20101210174843.GB3750@linux-sh.org>
- <20101210182455.GJ3200@rakim.wolfsonmicro.main>
- <20101211015907.GC3750@linux-sh.org>
+	id S1752377Ab0LTAaW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 19:30:22 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36813 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751824Ab0LTAaU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 19:30:20 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4D0EA38C.2090003@jp.fujitsu.com>
+Date: Mon, 20 Dec 2010 09:30:04 +0900
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101211015907.GC3750@linux-sh.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [Resend][PATCH] PCI / Hotplug: Fix unexpected driver unregister
+ in pciehp_acpi.c
+References: <201012181329.46071.rjw@sisk.pl>
+In-Reply-To: <201012181329.46071.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+(2010/12/18 21:29), Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki<rjw@sisk.pl>
+> 
+> If pcie_ports_disabled is set, pcie_port_service_register() returns
+> error code and select_detection_mode() should not attempt to
+> unregister dummy_driver and use dummy_slots.  It should return
+> PCIEHP_DETECT_ACPI immediately instead.
+> 
+> Signed-off-by: Rafael J. Wysocki<rjw@sisk.pl>
 
-On Sat, Dec 11, 2010 at 10:59:08AM +0900, Paul Mundt wrote:
-> On Fri, Dec 10, 2010 at 06:24:55PM +0000, Mark Brown wrote:
-> > On Sat, Dec 11, 2010 at 02:48:43AM +0900, Paul Mundt wrote:
-> > 
-> > > I have no intention of dropping the select from SH, but I'm not going to
-> > > insist that these drivers have the deprecated dependency if we're a) not
-> > > really using them and b) there's a reasonable expectation that they'll
-> > > basically be taken care of in .38 anyways.
-> > 
-> > That's unfortunate, I'm a bit concerned about support for users picking
-> > up the kernel and using it to build products.
-> > 
-> As I pointed out initially, backtracking would only encourage people to
-> continue to add new code that uses deprecated interfaces. This happens
-> time and time again, and is a far greater concern.
-> 
-> > Samuel, would you be OK with cherry picking the relevant commits to the
-> > Wolfson drivers back into .37?  I'm especially concerned about WM8994
-> > here - I'd really not like to see a kernel version go out where that
-> > doesn't work.
-> > 
-> That hardly addresses the issue, and simply covers your own driver. The
-> issue at hand is whether it's worth flagging the deprecated API users
-> with an explicit dependency or not. You've dismissed the idea of getting
-> your dependencies right out of hand, but also don't wish to ship a broken
-> driver, so we need an alternative.
-> 
-> After a full tree audit it's the MFD drivers and a couple of GPIO
-> expanders that could theoretically be enabled and break the build. I
-> suppose I could switch to
-> 
-> 	select GENERIC_HARDIRQS_NO_DEPRECATED if !MFD_SUPPORT && !GPIOLIB
-> 
-> for .37 since it's too late to convert the remaining drivers now.
-I see that you've pushed this one, thanks a lot.
+Reviewed-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+Acked-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
 
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
