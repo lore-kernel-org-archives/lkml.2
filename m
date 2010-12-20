@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933254Ab0LTVLS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 16:11:18 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50285
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933048Ab0LTVLR (ORCPT
+	id S933257Ab0LTVMM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 16:12:12 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:56143 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933048Ab0LTVML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 16:11:17 -0500
-Date: Mon, 20 Dec 2010 13:11:46 -0800 (PST)
-Message-Id: <20101220.131146.115941299.davem@davemloft.net>
-To: tj@kernel.org
-Cc: mchan@broadcom.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next-2.6] bnx2: remove cancel_work_sync() from
- remove_one
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4D08C81D.8020606@kernel.org>
-References: <4D0796D7.3030309@kernel.org>
-	<1292348880.7394.63.camel@nseg_linux_HP1.broadcom.com>
-	<4D08C81D.8020606@kernel.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 20 Dec 2010 16:12:11 -0500
+X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=Zf2-li83EnIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=32ND24gm9FxZJ7-16HEA:9 a=1Ek9_At_dJibNcgAmAyKXgIl2scA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: Oops in trace_hardirqs_on (powerpc)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: =?ISO-8859-1?Q?J=F6rg?= Sommer <joerg@alea.gnuu.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+In-Reply-To: <1292877806.22905.62.camel@gandalf.stny.rr.com>
+References: <20100806233157.GA7117@alea.gnuu.de>
+	 <1285184671.26872.127.camel@gandalf.stny.rr.com>
+	 <20100927125037.GA4497@alea.gnuu.de> <1285639094.2989.1.camel@frodo>
+	 <20101219132705.GE6615@alea.gnuu.de>
+	 <1292877806.22905.62.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 20 Dec 2010 16:12:09 -0500
+Message-ID: <1292879529.22905.63.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tejun Heo <tj@kernel.org>
-Date: Wed, 15 Dec 2010 14:52:29 +0100
+On Mon, 2010-12-20 at 15:43 -0500, Steven Rostedt wrote:
 
-> After looking through the code, I don't think this is necessarily
-> correct.  ->ndo_close() doesn't guarantee that the watchdog timer has
-> finished running (the timer is deleted with del_timer() not
-> del_timer_sync()).  ie. the watchdog timer could still be running
-> after ->ndo_close() and may schedule reset_task.  If remove_one
-> doesn't flush the task, it may still be running when remove_one() is
-> called.
-> 
-> David, am I missing something?  Wouldn't it cleaner to guarantee that
-> ->ndo_close() is called with the guarantee that the watchdog timer is
-> not running anymore?
+> Anyway, it looks like this only affects 32 bit PPC as I can't reproduce
+> it with my 64 bit one. And also, unfortunately, my 32bit ppc got taken
+> from me by my kids, so I can't test it on that either.
 
-It would but we can't just make the change over to del_timer_sync()
-otherwise we'd deadlock on netif_tx_lock().
 
-But I think things might be OK as-is.
+Spoke too soon, I just triggered it on 64bit.
 
-The timer is deleted by dev_deactivate_many() which resets the qdisc
-to the no-op qdisc.  Then it deletes the timer.
+I'll look into it. Thanks!
 
-Any running timer will complete or see the no-op qdisc attached and
-return immediately.
+-- Steve
 
-synchronize_rcu() is then executed which guarentees completion.
 
-Since both the watchdog timer itself and the del_timer() call run
-with netif_tx_lock() held, this makes sure the timer, once deleted,
-will only see the no-op qdisc and return immediately if it is
-amidst running, else it has already returned when the timer delete
-completes.
-
-So we might be OK here.
