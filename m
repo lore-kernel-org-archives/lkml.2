@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907Ab0LTHZK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 02:25:10 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:53263 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753650Ab0LTHZI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 02:25:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=p7uOD22WFiP8SeTRV+xrSW+Hr8hSHPK+g6rNb8m11grc9RzsPyJfOUvoOjVYYNyR0r
-         uid9X14YkrfHXCFLgmzGyysvd0CP2MG0xv9K3WLERFylVqT2XNfvTefpyjbyWW7BuOsA
-         M9BoRQzZ+oWv6/5OJKinG/FKQhUCwDVDQaeJ4=
+	id S1753966Ab0LTH0m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 02:26:42 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:37213 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753805Ab0LTH0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 02:26:39 -0500
+Date: Mon, 20 Dec 2010 08:26:32 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Tony Luck <tony.luck@intel.com>
+Cc: Tony Luck <tony.luck@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        greg@kroah.com, akpm@linux-foundation.org, ying.huang@intel.com,
+        David Miller <davem@davemloft.net>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Kyungmin Park <kmpark@infradead.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [concept & "good taste" review] persistent store
+Message-ID: <20101220072632.GA28020@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Tony Luck <tony.luck@intel.com>, Tony Luck <tony.luck@gmail.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	"H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+	linux-arch@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
+	greg@kroah.com, akpm@linux-foundation.org, ying.huang@intel.com,
+	David Miller <davem@davemloft.net>,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+	Kyungmin Park <kmpark@infradead.org>,
+	Geert Uytterhoeven <geert@linux-m68k.org>
+References: <AANLkTim3OpjPysjdCLDuFgFOipmcxyr2ay5cvUAu5PHi@mail.gmail.com>
+ <AANLkTinpYJddhgbf7=Pw_TtGrnWaC8fwo2xv1XRsT1w7@mail.gmail.com>
+ <AANLkTimA4x8oWyq71nOxB=Otp3Y0i3Kcu27DG0ajaXUG@mail.gmail.com>
+ <AANLkTinCG+E6ZzpeRqsJP+-qvNDQXW4VZFgJ1c-sTryL@mail.gmail.com>
+ <4D0BEE1F.7020008@zytor.com>
+ <AANLkTinwFt+KDKNEYP9MWQ7wGb9qk=E2Xa3RJB3+MJnN@mail.gmail.com>
+ <AANLkTinoV_pL=Ygqq4qt4f8c+wsdc9r9K7rcJ58aHjD1@mail.gmail.com>
+ <AANLkTikhtWjFBQmA111Q+2JGRudrRNAmegGThMagr4vF@mail.gmail.com>
+ <20101219091752.GA16150@liondog.tnic>
+ <AANLkTi=9UZ5BYWo5xT=jh0upRP6PraH4S=t=tL49YRdr@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <xqq2Z3iR9HJ.A.9lH.p2fDNB@chimera>
-References: <ZRNlsjykcOD.A.b-F.20fDNB@chimera>
-	<xqq2Z3iR9HJ.A.9lH.p2fDNB@chimera>
-Date: Sun, 19 Dec 2010 23:25:06 -0800
-Message-ID: <AANLkTi=ApxE76PPOPjGPQCrO+YCwSQdCtpqAjUzYpiRa@mail.gmail.com>
-Subject: Re: [Bug #19392] WARNING: at drivers/net/wireless/ath/ath5k/base.c:3475
- ath5k_bss_info_changed+0x44/0x168 [ath5k]()
-From: Justin Mattock <justinmattock@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Johannes Berg <johannes@sipsolutions.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=9UZ5BYWo5xT=jh0upRP6PraH4S=t=tL49YRdr@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 19, 2010 at 4:50 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.35 and 2.6.36.
->
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.35 and 2.6.36.  Please verify if it still should
-> be listed and let the tracking team know (either way).
->
->
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=19392
-> Subject         : WARNING: at drivers/net/wireless/ath/ath5k/base.c:3475 ath5k_bss_info_changed+0x44/0x168 [ath5k]()
-> Submitter       : Justin Mattock <justinmattock@gmail.com>
-> Date            : 2010-09-28 22:30 (83 days old)
-> Message-ID      : <<AANLkTim5WCGKPvEkOkO_YnMF9pg8mvLfQoFBNUFpfa_k@mail.gmail.com>>
-> References      : http://marc.info/?l=linux-kernel&m=128571307018635&w=2
->
->
->
+On Sun, Dec 19, 2010 at 12:17:53PM -0800, Tony Luck wrote:
+> > So, I think what we could do is keep our big enough pstore with enough
+> > free space for a bunch of oopses in case we panic. In the remaining
+> > cases, we write them out thus freeing some more space.
+> 
+> Some feedback from syslogd (or whatever it is that gets things from
+> dmesg into /var/log/messages) would help here ... though to be really
+> useful it might need "fsync" to /var/log/messages, which might not
+> be a welcome addition.
 
-yep.. still here with the latest Mainline
+Right.
+
+However, AFAICT, all warnings/oopses go to dmesg anyway and from there
+to syslog so actually there should be no need to save them in pstore
+too, methinks.
+
+IOW, the simple (maybe too simple) algo of the pstore could be something
+like:
+
+1. Got a relevant message from kernel, log it.
+
+2. Am I still alive?
+|-> yes => Ah ok, non-critical, it should be in the logs anyway, drop last message set from pstore.
+|-> no  => Well I can't do here anything anyway, I'm dead... note-to-self: Show last messages set to user upon next boot.
+
+So, the pstore should actually be constantly almost empty rather than
+almost full. And it definitely is going to contain the last critical
+oops which may or may not be in the syslog.
+
+Or am I missing something?
+
+Thanks.
 
 -- 
-Justin P. Mattock
+Regards/Gruss,
+    Boris.
