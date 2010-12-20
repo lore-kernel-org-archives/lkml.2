@@ -1,117 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700Ab0LTV0u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 16:26:50 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:41589 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751688Ab0LTV0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 16:26:49 -0500
-From: Ernesto Ramos <ernesto@ti.com>
-To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: omar.ramirez@ti.com, ohad@wizery.com, felipe.contreras@gmail.com,
-        Ernesto Ramos <ernesto@ti.com>
-Subject: [PATCH] staging: tidspbridge: remove code referred by OPT_ZERO_COPY_LOADER
-Date: Mon, 20 Dec 2010 15:23:08 -0600
-Message-Id: <1292880188-5860-1-git-send-email-ernesto@ti.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1757039Ab0LTVjM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 16:39:12 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:61958 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752838Ab0LTVjL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 16:39:11 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Mon, 20 Dec 2010 16:39:10 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Tony Lindgren <tony@atomide.com>, Arnd Bergmann <arnd@arndb.de>,
+        Daniel Walker <dwalker@codeaurora.org>
+Subject: Re: [PATCH 1/3] hvc_dcc: Fix bad code generation by marking assembly
+ volatile
+In-reply-to: <1292875718-7980-2-git-send-email-sboyd@codeaurora.org>
+Message-id: <alpine.LFD.2.00.1012201638150.10437@xanadu.home>
+References: <1292649385-28771-1-git-send-email-sboyd@codeaurora.org>
+ <1292875718-7980-1-git-send-email-sboyd@codeaurora.org>
+ <1292875718-7980-2-git-send-email-sboyd@codeaurora.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove code referred by OPT_ZERO_COPY_LOADER since it is
-not used.
+On Mon, 20 Dec 2010, Stephen Boyd wrote:
 
-Signed-off-by: Ernesto Ramos <ernesto@ti.com>
----
- drivers/staging/tidspbridge/dynload/cload.c |   60 +++++++++------------------
- 1 files changed, 20 insertions(+), 40 deletions(-)
+> Without marking the asm __dcc_getstatus() volatile my compiler
+> decides it can cache the value of __ret in a register and then
+> check the value of it continually in hvc_dcc_put_chars() (I had
+> to replace get_wait/put_wait with 1 and fixup the branch
+> otherwise my disassembler barfed on __dcc_(get|put)char).
+> 
+> 00000000 <hvc_dcc_put_chars>:
+>    0:   ee103e11        mrc     14, 0, r3, cr0, cr1, {0}
+>    4:   e3a0c000        mov     ip, #0  ; 0x0
+>    8:   e2033202        and     r3, r3, #536870912      ; 0x20000000
+>    c:   ea000006        b       2c <hvc_dcc_put_chars+0x2c>
+>   10:   e3530000        cmp     r3, #0  ; 0x0
+>   14:   1afffffd        bne     10 <hvc_dcc_put_chars+0x10>
+>   18:   e7d1000c        ldrb    r0, [r1, ip]
+>   1c:   ee10fe11        mrc     14, 0, pc, cr0, cr1, {0}
+>   20:   2afffffd        bcs     1c <hvc_dcc_put_chars+0x1c>
+>   24:   ee000e15        mcr     14, 0, r0, cr0, cr5, {0}
+>   28:   e28cc001        add     ip, ip, #1      ; 0x1
+>   2c:   e15c0002        cmp     ip, r2
+>   30:   bafffff6        blt     10 <hvc_dcc_put_chars+0x10>
+>   34:   e1a00002        mov     r0, r2
+>   38:   e12fff1e        bx      lr
+> 
+> As you can see, the value of the mrc is checked against
+> DCC_STATUS_TX (bit 29) and then stored in r3 for later use.
+> Marking the asm volatile produces the following:
+> 
+> 00000000 <hvc_dcc_put_chars>:
+>    0:   e3a03000        mov     r3, #0  ; 0x0
+>    4:   ea000007        b       28 <hvc_dcc_put_chars+0x28>
+>    8:   ee100e11        mrc     14, 0, r0, cr0, cr1, {0}
+>    c:   e3100202        tst     r0, #536870912  ; 0x20000000
+>   10:   1afffffc        bne     8 <hvc_dcc_put_chars+0x8>
+>   14:   e7d10003        ldrb    r0, [r1, r3]
+>   18:   ee10fe11        mrc     14, 0, pc, cr0, cr1, {0}
+>   1c:   2afffffd        bcs     18 <hvc_dcc_put_chars+0x18>
+>   20:   ee000e15        mcr     14, 0, r0, cr0, cr5, {0}
+>   24:   e2833001        add     r3, r3, #1      ; 0x1
+>   28:   e1530002        cmp     r3, r2
+>   2c:   bafffff5        blt     8 <hvc_dcc_put_chars+0x8>
+>   30:   e1a00002        mov     r0, r2
+>   34:   e12fff1e        bx      lr
+> 
+> which looks better and actually works. Mark all the inline
+> assembly in this file as volatile since we don't want the
+> compiler to optimize away these statements or move them around
+> in any way.
+> 
+> Cc: Tony Lindgren <tony@atomide.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
+> Cc: Daniel Walker <dwalker@codeaurora.org>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-diff --git a/drivers/staging/tidspbridge/dynload/cload.c b/drivers/staging/tidspbridge/dynload/cload.c
-index a5cdfa1..7713e76 100644
---- a/drivers/staging/tidspbridge/dynload/cload.c
-+++ b/drivers/staging/tidspbridge/dynload/cload.c
-@@ -1133,9 +1133,6 @@ static void dload_data(struct dload_state *dlthis)
- 	u16 curr_sect;
- 	struct doff_scnhdr_t *sptr = dlthis->sect_hdrs;
- 	struct ldr_section_info *lptr = dlthis->ldr_sections;
--#ifdef OPT_ZERO_COPY_LOADER
--	bool zero_copy = false;
--#endif
- 	u8 *dest;
- 
- 	struct {
-@@ -1194,17 +1191,6 @@ static void dload_data(struct dload_state *dlthis)
- 					return;
- 				}
- 				dest = ibuf.bufr;
--#ifdef OPT_ZERO_COPY_LOADER
--				zero_copy = false;
--				if (!dload_check_type(sptr, DLOAD_CINIT) {
--					dlthis->myio->writemem(dlthis->myio,
--							       &dest,
--							       lptr->load_addr +
--							       image_offset,
--							       lptr, 0);
--					zero_copy = (dest != ibuf.bufr);
--				}
--#endif
- 				/* End of determination */
- 
- 				if (dlthis->strm->read_buffer(dlthis->strm,
-@@ -1268,33 +1254,27 @@ static void dload_data(struct dload_state *dlthis)
- 							    &ibuf.ipacket);
- 						cinit_processed = true;
- 					} else {
--#ifdef OPT_ZERO_COPY_LOADER
--						if (!zero_copy) {
--#endif
--							/* FIXME */
--							if (!dlthis->myio->
--							    writemem(dlthis->
--								myio,
--								ibuf.bufr,
--								lptr->
--								load_addr +
--								image_offset,
--								lptr,
--								BYTE_TO_HOST
--								(ibuf.
--								ipacket.
--								packet_size))) {
--								DL_ERROR
--								  ("Write to "
--								  FMT_UI32
--								  " failed",
--								  lptr->
--								  load_addr +
--								  image_offset);
--							}
--#ifdef OPT_ZERO_COPY_LOADER
-+						/* FIXME */
-+						if (!dlthis->myio->
-+						    writemem(dlthis->
-+							myio,
-+							ibuf.bufr,
-+							lptr->
-+							load_addr +
-+							image_offset,
-+							lptr,
-+							BYTE_TO_HOST
-+							(ibuf.
-+							ipacket.
-+							packet_size))) {
-+							DL_ERROR
-+							  ("Write to "
-+							  FMT_UI32
-+							  " failed",
-+							  lptr->
-+							  load_addr +
-+							  image_offset);
- 						}
--#endif
- 					}
- 				}
- 				image_offset +=
--- 
-1.7.0.4
+Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
 
+
+> ---
+>  drivers/char/hvc_dcc.c |   11 +++++------
+>  1 files changed, 5 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/char/hvc_dcc.c b/drivers/char/hvc_dcc.c
+> index 6470f63..155ec10 100644
+> --- a/drivers/char/hvc_dcc.c
+> +++ b/drivers/char/hvc_dcc.c
+> @@ -33,8 +33,7 @@
+>  static inline u32 __dcc_getstatus(void)
+>  {
+>  	u32 __ret;
+> -
+> -	asm("mrc p14, 0, %0, c0, c1, 0	@ read comms ctrl reg"
+> +	asm volatile("mrc p14, 0, %0, c0, c1, 0	@ read comms ctrl reg"
+>  		: "=r" (__ret) : : "cc");
+>  
+>  	return __ret;
+> @@ -46,7 +45,7 @@ static inline char __dcc_getchar(void)
+>  {
+>  	char __c;
+>  
+> -	asm("get_wait:	mrc p14, 0, pc, c0, c1, 0                          \n\
+> +	asm volatile("get_wait:	mrc p14, 0, pc, c0, c1, 0                  \n\
+>  			bne get_wait                                       \n\
+>  			mrc p14, 0, %0, c0, c5, 0	@ read comms data reg"
+>  		: "=r" (__c) : : "cc");
+> @@ -58,7 +57,7 @@ static inline char __dcc_getchar(void)
+>  {
+>  	char __c;
+>  
+> -	asm("mrc p14, 0, %0, c0, c5, 0	@ read comms data reg"
+> +	asm volatile("mrc p14, 0, %0, c0, c5, 0	@ read comms data reg"
+>  		: "=r" (__c));
+>  
+>  	return __c;
+> @@ -68,7 +67,7 @@ static inline char __dcc_getchar(void)
+>  #if defined(CONFIG_CPU_V7)
+>  static inline void __dcc_putchar(char c)
+>  {
+> -	asm("put_wait:	mrc p14, 0, pc, c0, c1, 0                 \n\
+> +	asm volatile("put_wait:	mrc p14, 0, pc, c0, c1, 0         \n\
+>  			bcs put_wait                              \n\
+>  			mcr p14, 0, %0, c0, c5, 0                   "
+>  	: : "r" (c) : "cc");
+> @@ -76,7 +75,7 @@ static inline void __dcc_putchar(char c)
+>  #else
+>  static inline void __dcc_putchar(char c)
+>  {
+> -	asm("mcr p14, 0, %0, c0, c5, 0	@ write a char"
+> +	asm volatile("mcr p14, 0, %0, c0, c5, 0	@ write a char"
+>  		: /* no output register */
+>  		: "r" (c));
+>  }
+> -- 
+> Sent by an employee of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> 
