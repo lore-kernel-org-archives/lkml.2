@@ -1,97 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758229Ab0LTWON (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 17:14:13 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:15182 "EHLO
+	id S1758242Ab0LTWTW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 17:19:22 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:15267 "EHLO
 	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758078Ab0LTWOL (ORCPT
+	with ESMTP id S1758078Ab0LTWTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 17:14:11 -0500
-Date: Mon, 20 Dec 2010 23:05:25 +0100 (CET)
+	Mon, 20 Dec 2010 17:19:20 -0500
+Date: Mon, 20 Dec 2010 23:10:34 +0100 (CET)
 From: Jesper Juhl <jj@chaosbits.net>
-To: Minchan Kim <minchan.kim@gmail.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [updated PATCH] Close mem leak in error path in
- mm/hugetlb.c::nr_hugepages_store_common()
-In-Reply-To: <AANLkTikNx5SG9Z=tUu6tyFRqnR2sLe5NxAjLCJr1UKmq@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1012202302460.23785@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1012192305260.6486@swampdragon.chaosbits.net> <AANLkTikNx5SG9Z=tUu6tyFRqnR2sLe5NxAjLCJr1UKmq@mail.gmail.com>
+To: "Andreas.Eversberg" <Andreas.Eversberg@versatel.de>
+cc: Karsten Keil <isdn@linux-pingi.de>,
+        "David S. Miller" <davem@davemloft.net>, Julia Lawall <julia@diku.dk>,
+        Tejun Heo <tj@kernel.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: AW: [PATCH] ISDN cmx: Avoid potential NULL deref in
+ dsp_cmx_send_member() and shrink code size.
+In-Reply-To: <B16317F2B1592B4492FC414114171CE604B08AEA@FLBVEXCH01.versatel.local>
+Message-ID: <alpine.LNX.2.00.1012202307220.23785@swampdragon.chaosbits.net>
+References: <B16317F2B1592B4492FC414114171CE604B08AEA@FLBVEXCH01.versatel.local>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-245131414-1292882725=:23785"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Mon, 20 Dec 2010, Andreas.Eversberg wrote:
 
---8323328-245131414-1292882725=:23785
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-
-On Mon, 20 Dec 2010, Minchan Kim wrote:
-
-> On Mon, Dec 20, 2010 at 7:10 AM, Jesper Juhl <jj@chaosbits.net> wrote:
-> > Hi,
-> >
-> > The NODEMASK_ALLOC macro dynamically allocates memory for its second
-> > argument ('nodes_allowed' in this context).
-> > In nr_hugepages_store_common() we may abort early if strict_strtoul()
-> > fails, but in that case we do not free the memory already allocated to
-> > 'nodes_allowed', causing a memory leak.
-> > This patch closes the leak by freeing the memory in the error path.
-> >
-> >
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > ---
-> >  hugetlb.c |    4 +++-
-> >  1 file changed, 3 insertions(+), 1 deletion(-)
-> >
-> >  compile tested only
-> >
-> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> > index 8585524..9fdcc35 100644
-> > --- a/mm/hugetlb.c
-> > +++ b/mm/hugetlb.c
-> > @@ -1439,8 +1439,10 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
-> >        NODEMASK_ALLOC(nodemask_t, nodes_allowed, GFP_KERNEL | __GFP_NORETRY);
-> >
-> >        err = strict_strtoul(buf, 10, &count);
-> > -       if (err)
-> > +       if (err) {
-> > +               kfree(nodes_allowed);
+> hi jesper,
 > 
-> Nice catch. But use NODEMASK_FREE. It might be not kmalloced object.
+> thanx for finding the bug. i think the right solution to solve the problem would be:
 > 
-Right. I just checked the macro and it used kmalloc(), so I just wrote 
-kfree. But you are right, NODEMASK_FREE is the right thing to use here. 
-Updated patch below.
+>                 if (dsp->conf && dsp->conf->software && dsp->conf->hardware)
+>                         tx_data_only = 1;
+> ->              if (dsp->echo.software && dsp->echo.hardware)
+>                         tx_data_only = 1;
+> 
+> this is how it looks in the 'socket' branch of mISDN git respository. it has been fixed already. but i cannot tell in which commit. my current head is this commit:
+> commit 45a51eed1c554a4891b48b88c270f4f95bd21df0
+> 
+I'm not familiar enough with the code to determine if my fix or the one 
+you propose is the right one. My fix is functionally equivalent to what 
+was there before (minus the NULL deref), yours is not. I'll let someone 
+more knowledgeable about the ISDN code determine what is the right fix.
 
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- hugetlb.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 8585524..71e7886 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1439,8 +1439,10 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
- 	NODEMASK_ALLOC(nodemask_t, nodes_allowed, GFP_KERNEL | __GFP_NORETRY);
- 
- 	err = strict_strtoul(buf, 10, &count);
--	if (err)
-+	if (err) {
-+		NODEMASK_FREE(nodes_allowed);
- 		return 0;
-+	}
- 
- 	h = kobj_to_hstate(kobj, &nid);
- 	if (nid == NUMA_NO_NODE) {
-
+> what branch do you use? 
+> 
+I'm working against Linus' kernel as of today.
 
 
 -- 
@@ -99,4 +55,3 @@ Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
 Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
 Plain text mails only, please.
 
---8323328-245131414-1292882725=:23785--
