@@ -1,53 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933370Ab0LTXrI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 18:47:08 -0500
-Received: from claw.goop.org ([74.207.240.146]:42550 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933293Ab0LTXrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 18:47:07 -0500
-Message-ID: <4D0FEAF4.2080409@goop.org>
-Date: Mon, 20 Dec 2010 15:47:00 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S933326Ab0LTXsw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 18:48:52 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50043 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933143Ab0LTXsv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 18:48:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Pn0f7DpbrF/JoPusdbtJrH4mmkqs0d2N31Dm97n8HbzhuHsEJLaB47vNmv79j0KAeh
+         pYo9290lW4uyClHV1I4tXuQdJ9KH176F0XdRSpXl6xsrxZK6bgAy5ksoTas5rREgLyZp
+         z1fEnP3Gy1Q5prEN+jbriCZij/ccClZv10m5Q=
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: the arch/x86 maintainers <x86@kernel.org>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: do pmd_populate with lazy mmu updates
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20101220170146.GS13914@csn.ul.ie>
+References: <20101220152335.GR13914@csn.ul.ie>
+	<20101220170146.GS13914@csn.ul.ie>
+Date: Tue, 21 Dec 2010 08:48:50 +0900
+Message-ID: <AANLkTiniXU9B5YpQ+hknOSF-mPig2z9UqqBWz-JwQjDL@mail.gmail.com>
+Subject: Re: [PATCH] mm: migration: Use rcu_dereference_protected when
+ dereferencing the radix tree slot during file page migration
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>, gerald.schaefer@de.ibm.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-ext4@vger.kernel.org,
+        "Ted Ts'o" <tytso@mit.edu>, Arun Bhanu <ab@arunbhanu.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows the set_pmd to be batched with whatever setup
-paravirt_alloc_pte() needs to do.  pmd_populate() is always called
-under the pagetable lock, so this is safe.
+On Tue, Dec 21, 2010 at 2:01 AM, Mel Gorman <mel@csn.ul.ie> wrote:
+> On Mon, Dec 20, 2010 at 03:23:36PM +0000, Mel Gorman wrote:
+>> migrate_pages() -> unmap_and_move() only calls rcu_read_lock() for anonymous
+>> pages, as introduced by git commit 989f89c57e6361e7d16fbd9572b5da7d313b073d.
+>> The point of the RCU protection there is part of getting a stable reference
+>> to anon_vma and is only held for anon pages as file pages are locked
+>> which is sufficient protection against freeing.
+>>
+>> However, while a file page's mapping is being migrated, the radix
+>> tree is double checked to ensure it is the expected page. This uses
+>> radix_tree_deref_slot() -> rcu_dereference() without the RCU lock held
+>> triggering the following warning under CONFIG_PROVE_RCU.
+>>
+>> [  173.674290] ===================================================
+>> [  173.676016] [ INFO: suspicious rcu_dereference_check() usage. ]
+>> [  173.676016] ---------------------------------------------------
+>> [  173.676016] include/linux/radix-tree.h:145 invoked rcu_dereference_check() without protection!
+>> [  173.676016]
+>> [  173.676016] other info that might help us debug this:
+>> [  173.676016]
+>> [  173.676016]
+>> [  173.676016] rcu_scheduler_active = 1, debug_locks = 0
+>> [  173.676016] 1 lock held by hugeadm/2899:
+>> [  173.676016]  #0:  (&(&inode->i_data.tree_lock)->rlock){..-.-.}, at: [<c10e3d2b>] migrate_page_move_mapping+0x40/0x1ab
+>> [  173.676016]
+>> [  173.676016] stack backtrace:
+>> [  173.676016] Pid: 2899, comm: hugeadm Not tainted 2.6.37-rc5-autobuild
+>> [  173.676016] Call Trace:
+>> [  173.676016]  [<c128cc01>] ? printk+0x14/0x1b
+>> [  173.676016]  [<c1063502>] lockdep_rcu_dereference+0x7d/0x86
+>> [  173.676016]  [<c10e3db5>] migrate_page_move_mapping+0xca/0x1ab
+>> [  173.676016]  [<c10e41ad>] migrate_page+0x23/0x39
+>> [  173.676016]  [<c10e491b>] buffer_migrate_page+0x22/0x107
+>> [  173.676016]  [<c10e48f9>] ? buffer_migrate_page+0x0/0x107
+>> [  173.676016]  [<c10e425d>] move_to_new_page+0x9a/0x1ae
+>> [  173.676016]  [<c10e47e6>] migrate_pages+0x1e7/0x2fa
+>>
+>> This patch introduces radix_tree_deref_slot_protected() which calls
+>> rcu_dereference_protected(). Users of it must pass in the mapping->tree_lock
+>> that is protecting this dereference. Holding the tree lock protects against
+>> parallel updaters of the radix tree meaning that rcu_dereference_protected
+>> is allowable.
+>>
+>> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+>> ---
+>>  include/linux/radix-tree.h |   17 +++++++++++++++++
+>>  mm/migrate.c               |    4 ++--
+>>  2 files changed, 19 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
+>> index ab2baa5..a1f1672 100644
+>> --- a/include/linux/radix-tree.h
+>> +++ b/include/linux/radix-tree.h
+>> @@ -146,6 +146,23 @@ static inline void *radix_tree_deref_slot(void **pslot)
+>>  }
+>>
+>>  /**
+>> + * radix_tree_deref_slot_protected   - dereference a slot without RCU lock but with tree lock held
+>> + * @pslot:   pointer to slot, returned by radix_tree_lookup_slot
+>> + * Returns:  item that was stored in that slot with any direct pointer flag
+>> + *           removed.
+>> + *
+>> + * Similar to radix_tree_deref_slot but only used during migration when a pages
+>> + * mapping is being moved. The caller does not hold the RCU read lock but it
+>> + * must hold the tree lock to prevent parallel updates.
+>> + */
+>> +static inline void *radix_tree_deref_slot_protected(void **pslot,
+>> +                                                     spinlock_t *treelock)
+>> +{
+>> +     BUG_ON(rcu_read_lock_held());
 
-With a corresponding change in the Xen-specific code, this allows
-the setup of a new pte page to be done with 1 hypercall rather than 3.
-This results in a 3-8% improvement in fork performance, depending on
-process size (more improvement on larger processes).  I expect a similar
-improvement in time spent touching a virgin part of the address space.
+Hmm.. Why did you add the check?
+If rcu_read_lock were already held, we wouldn't need this new API.
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+>
+> This was a bad idea. After some extended testing, it was obvious that
+> this function can be called for swapcache pages with the RCU lock held.
+> Paul, is it still permissible to use rcu_dereference_protected() or must
 
-diff --git a/arch/x86/include/asm/pgalloc.h b/arch/x86/include/asm/pgalloc.h
-index 271de94..15e1153f 100644
---- a/arch/x86/include/asm/pgalloc.h
-+++ b/arch/x86/include/asm/pgalloc.h
-@@ -71,8 +71,10 @@ static inline void pmd_populate(struct mm_struct *mm, pmd_t *pmd,
- {
- 	unsigned long pfn = page_to_pfn(pte);
- 
-+	arch_enter_lazy_mmu_mode();
- 	paravirt_alloc_pte(mm, pfn);
- 	set_pmd(pmd, __pmd(((pteval_t)pfn << PAGE_SHIFT) | _PAGE_TABLE));
-+	arch_leave_lazy_mmu_mode();
- }
- 
- #define pmd_pgtable(pmd) pmd_page(pmd)
+I guess has no problem.
+
+> the RCU read lock not be held?
+>
 
 
+
+-- 
+Kind regards,
+Minchan Kim
