@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933253Ab0LTWVJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 17:21:09 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:33070 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758233Ab0LTWUg (ORCPT
+	id S1758311Ab0LTWVI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 17:21:08 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:1415 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758236Ab0LTWUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 Dec 2010 17:20:36 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6203"; a="67616907"
+X-IronPort-AV: E=McAfee;i="5400,1158,6203"; a="67407005"
 From: Stephen Boyd <sboyd@codeaurora.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+To: linux-arm-msm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org,
         Saravana Kannan <skannan@codeaurora.org>,
         Daniel Walker <dwalker@codeaurora.org>,
@@ -19,9 +20,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         Brian Swetland <swetland@google.com>,
         =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCHv4 2/4] ARM: Allow machines to override __delay()
-Date: Mon, 20 Dec 2010 14:20:31 -0800
-Message-Id: <1292883633-19553-3-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCHv4 4/4] msm: timer: Migrate to timer based __delay()
+Date: Mon, 20 Dec 2010 14:20:33 -0800
+Message-Id: <1292883633-19553-5-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.7.3.4.516.g15368e
 In-Reply-To: <1292883633-19553-1-git-send-email-sboyd@codeaurora.org>
 References: <1292883633-19553-1-git-send-email-sboyd@codeaurora.org>
@@ -29,85 +30,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some machines want to implement their own __delay() routine based
-on fixed rate timers. Expose functionality to set the __delay()
-routine at runtime. This should allow two machines with different
-__delay() routines to happily co-exist within the same kernel
-with minimal overhead.
+We have to provide a dummy set_mode for the DGT since we don't
+want it to ever turn off.
 
-Russell expressed concern that using a timer based __delay()
-would cause problems when an iomapped device isn't mapped in
-prior to a delay call being made (see
-http://article.gmane.org/gmane.linux.ports.arm.kernel/78543 for
-more info). We can sidestep that issue with this approach since
-the __delay() routine _should_ only be pointed to a timer based
-delay once the timer has been properly mapped. Up until that
-point __delay() and udelay() will use delay_loop() which is
-always safe to call.
-
-This patch is inspired by x86's delay.c
-
-Reviewed-by: Saravana Kannan <skannan@codeaurora.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
 
-Changed to inline set_delay_fn()
+This is more of an illustration patch. This code needs to be
+fixed to always leave clocksources running.
 
- arch/arm/include/asm/delay.h |    7 +++++++
- arch/arm/lib/delay.c         |   14 +++++++++++---
- 2 files changed, 18 insertions(+), 3 deletions(-)
+ arch/arm/mach-msm/include/mach/timex.h |    1 +
+ arch/arm/mach-msm/timer.c              |   16 +++++++++++++++-
+ 2 files changed, 16 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/include/asm/delay.h b/arch/arm/include/asm/delay.h
-index ccc5ed5..82ef82a 100644
---- a/arch/arm/include/asm/delay.h
-+++ b/arch/arm/include/asm/delay.h
-@@ -40,5 +40,12 @@ extern void __const_udelay(unsigned long);
- 			__const_udelay((n) * ((2199023U*HZ)>>11))) :	\
- 	  __udelay(n))
+diff --git a/arch/arm/mach-msm/include/mach/timex.h b/arch/arm/mach-msm/include/mach/timex.h
+index a62e6b2..52b602b 100644
+--- a/arch/arm/mach-msm/include/mach/timex.h
++++ b/arch/arm/mach-msm/include/mach/timex.h
+@@ -17,5 +17,6 @@
+ #define __ASM_ARCH_MSM_TIMEX_H
  
-+extern void (*delay_fn)(unsigned long);
-+
-+static inline void set_delay_fn(void (*fn)(unsigned long))
-+{
-+	delay_fn = fn;
-+}
-+
- #endif /* defined(_ARM_DELAY_H) */
+ #define CLOCK_TICK_RATE		1000000
++#define ARCH_HAS_READ_CURRENT_TIMER
  
-diff --git a/arch/arm/lib/delay.c b/arch/arm/lib/delay.c
-index f92aca0..7468bc6 100644
---- a/arch/arm/lib/delay.c
-+++ b/arch/arm/lib/delay.c
-@@ -11,11 +11,9 @@
- #include <linux/delay.h>
- 
- /*
-- * loops = usecs * HZ * loops_per_jiffy / 1000000
-- *
-  * Oh, if only we had a cycle counter...
-  */
--void __delay(unsigned long loops)
-+static void delay_loop(unsigned long loops)
- {
- 	asm volatile(
- 	"1:	subs %0, %0, #1 \n"
-@@ -24,6 +22,16 @@ void __delay(unsigned long loops)
- 	: "r" (loops)
- 	);
+ #endif
+diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
+index 950100f..9da4908 100644
+--- a/arch/arm/mach-msm/timer.c
++++ b/arch/arm/mach-msm/timer.c
+@@ -84,6 +84,12 @@ static cycle_t msm_dgt_read(struct clocksource *cs)
+ 	return readl(MSM_DGT_BASE + TIMER_COUNT_VAL) >> MSM_DGT_SHIFT;
  }
-+
-+void (*delay_fn)(unsigned long) = delay_loop;
-+
-+/*
-+ * loops = usecs * HZ * loops_per_jiffy / 1000000
-+ */
-+void __delay(unsigned long loops)
-+{
-+	delay_fn(loops);
-+}
- EXPORT_SYMBOL(__delay);
  
- /*
++int read_current_timer(unsigned long *timer_val)
++{
++	*timer_val = readl(MSM_DGT_BASE + TIMER_COUNT_VAL);
++	return 0;
++}
++
+ static int msm_timer_set_next_event(unsigned long cycles,
+ 				    struct clock_event_device *evt)
+ {
+@@ -122,6 +128,12 @@ static void msm_timer_set_mode(enum clock_event_mode mode,
+ 	}
+ }
+ 
++static void msm_timer_set_mode_nop(enum clock_event_mode mode,
++				struct clock_event_device *evt)
++{
++	/* The timer is always ticking so do nothing */
++}
++
+ static struct msm_clock msm_clocks[] = {
+ 	{
+ 		.clockevent = {
+@@ -157,7 +169,7 @@ static struct msm_clock msm_clocks[] = {
+ 			.shift          = 32 + MSM_DGT_SHIFT,
+ 			.rating         = 300,
+ 			.set_next_event = msm_timer_set_next_event,
+-			.set_mode       = msm_timer_set_mode,
++			.set_mode       = msm_timer_set_mode_nop,
+ 		},
+ 		.clocksource = {
+ 			.name           = "dg_timer",
+@@ -218,6 +230,8 @@ static void __init msm_timer_init(void)
+ 
+ 		clockevents_register_device(ce);
+ 	}
++	writel(TIMER_ENABLE_EN, MSM_DGT_BASE + TIMER_ENABLE);
++	set_delay_fn(read_current_timer_delay_loop);
+ }
+ 
+ struct sys_timer msm_timer = {
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
