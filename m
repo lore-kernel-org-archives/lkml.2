@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757504Ab0LTMx6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 07:53:58 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:65085 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752775Ab0LTMx5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 07:53:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=rE72PUvqESfRmlZ4bTcv1QVFxWXyTcQaqi0laieUz+oj2fhVB3Pwm72ckcjJvmTkqe
-         f0AXoiZj6suCtL49LF35ipPakP2CGM2m3QSV5kT2E1gf5G/mTPCfV7DkpX/TE57sSrse
-         jm8HDmJZVIRFEiQT7RA5KGYgQ5SGdnOR3qkhE=
-Date: Mon, 20 Dec 2010 10:53:52 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Francis Moreau <francis.moro@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org
-Subject: Re: Why not making tools/* git submodules ?
-Message-ID: <20101220125352.GB26204@ghostprotocols.net>
-References: <m27hf9crqa.fsf@gmail.com>
- <m2zks3w44z.fsf@gmail.com>
+	id S1757464Ab0LTNAL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 08:00:11 -0500
+Received: from mga09.intel.com ([134.134.136.24]:16760 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751750Ab0LTNAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 08:00:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,202,1291622400"; 
+   d="scan'208";a="688906697"
+Date: Mon, 20 Dec 2010 14:00:05 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Arun Murthy <arun.murthy@stericsson.com>, linux-next@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] misc: Make AB8500_PWM driver depend on U8500 due to
+ PWM breakage
+Message-ID: <20101220130004.GG11095@sortiz-mobl>
+References: <20101220192121.47767525.sfr@canb.auug.org.au>
+ <1292848091-29959-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <m2zks3w44z.fsf@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1292848091-29959-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Dec 18, 2010 at 03:24:12PM +0100, Francis Moreau escreveu:
+Hi Mark,
+
+On Mon, Dec 20, 2010 at 12:28:11PM +0000, Mark Brown wrote:
+> Since we don't have a PWM API every PWM driver ends up exporting its
+> own version and we need to limit the platforms we try to build them on
+> in order to avoid multiple definitions. As the AB8500 is normally a
+> companion chip for the U8500 CPU depend on that architecture.
 > 
-> Adding linux-perf-users mailing list, hoping that someone out there is
-> more interested by this subject.
+> Previously the driver was relying on the AB8500 core only being built
+> on U8500 but this did not give us build coverage of any of the other
+> functions for the device.
 > 
-> Francis Moreau <francis.moro@gmail.com> writes:
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
 > 
-> > Hello,
-> >
-> > I'm just wondering if all tools such as perf could be tracked using
-> > git submodule.
+> Here's a better way of solving the problem, 
+Definitely nicer, yes. Patch applied, thanks a lot.
 
-I wasn't aware of "submodules", will read about it, thanks for bringing
-this to our attention.
+Cheers,
+Samuel.
 
-> > That would allow the tools to have their own tags at least.
-
-yeah, that would be cool.
-
-- Arnaldo
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
