@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757039Ab0LTVjM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 16:39:12 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:61958 "EHLO
+	id S1757349Ab0LTVo6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 16:44:58 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:16817 "EHLO
 	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752838Ab0LTVjL (ORCPT
+	with ESMTP id S1754179Ab0LTVo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 16:39:11 -0500
+	Mon, 20 Dec 2010 16:44:57 -0500
 MIME-version: 1.0
 Content-transfer-encoding: 7BIT
 Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Mon, 20 Dec 2010 16:39:10 -0500 (EST)
+Date: Mon, 20 Dec 2010 16:44:56 -0500 (EST)
 From: Nicolas Pitre <nico@fluxnic.net>
 X-X-Sender: nico@xanadu.home
 To: Stephen Boyd <sboyd@codeaurora.org>
@@ -18,13 +18,12 @@ Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Tony Lindgren <tony@atomide.com>, Arnd Bergmann <arnd@arndb.de>,
         Daniel Walker <dwalker@codeaurora.org>
-Subject: Re: [PATCH 1/3] hvc_dcc: Fix bad code generation by marking assembly
- volatile
-In-reply-to: <1292875718-7980-2-git-send-email-sboyd@codeaurora.org>
-Message-id: <alpine.LFD.2.00.1012201638150.10437@xanadu.home>
+Subject: Re: [PATCH 3/3] hvc_dcc: Simplify assembly for v6 and v7 ARM
+In-reply-to: <1292875718-7980-4-git-send-email-sboyd@codeaurora.org>
+Message-id: <alpine.LFD.2.00.1012201644110.10437@xanadu.home>
 References: <1292649385-28771-1-git-send-email-sboyd@codeaurora.org>
  <1292875718-7980-1-git-send-email-sboyd@codeaurora.org>
- <1292875718-7980-2-git-send-email-sboyd@codeaurora.org>
+ <1292875718-7980-4-git-send-email-sboyd@codeaurora.org>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,53 +31,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, 20 Dec 2010, Stephen Boyd wrote:
 
-> Without marking the asm __dcc_getstatus() volatile my compiler
-> decides it can cache the value of __ret in a register and then
-> check the value of it continually in hvc_dcc_put_chars() (I had
-> to replace get_wait/put_wait with 1 and fixup the branch
-> otherwise my disassembler barfed on __dcc_(get|put)char).
+> The inline assembly differences for v6 vs. v7 in the hvc_dcc
+> driver are purely optimizations. On a v7 processor, an mrc with
+> the pc sets the condition codes to the 28-31 bits of the register
+> being read. It just so happens that the TX/RX full bits the DCC
+> driver is testing for are high enough in the register to be put
+> into the condition codes. On a v6 processor, this "feature" isn't
+> implemented and thus we have to do the usual read, mask, test
+> operations to check for TX/RX full.
 > 
-> 00000000 <hvc_dcc_put_chars>:
->    0:   ee103e11        mrc     14, 0, r3, cr0, cr1, {0}
->    4:   e3a0c000        mov     ip, #0  ; 0x0
->    8:   e2033202        and     r3, r3, #536870912      ; 0x20000000
->    c:   ea000006        b       2c <hvc_dcc_put_chars+0x2c>
->   10:   e3530000        cmp     r3, #0  ; 0x0
->   14:   1afffffd        bne     10 <hvc_dcc_put_chars+0x10>
->   18:   e7d1000c        ldrb    r0, [r1, ip]
->   1c:   ee10fe11        mrc     14, 0, pc, cr0, cr1, {0}
->   20:   2afffffd        bcs     1c <hvc_dcc_put_chars+0x1c>
->   24:   ee000e15        mcr     14, 0, r0, cr0, cr5, {0}
->   28:   e28cc001        add     ip, ip, #1      ; 0x1
->   2c:   e15c0002        cmp     ip, r2
->   30:   bafffff6        blt     10 <hvc_dcc_put_chars+0x10>
->   34:   e1a00002        mov     r0, r2
->   38:   e12fff1e        bx      lr
-> 
-> As you can see, the value of the mrc is checked against
-> DCC_STATUS_TX (bit 29) and then stored in r3 for later use.
-> Marking the asm volatile produces the following:
-> 
-> 00000000 <hvc_dcc_put_chars>:
->    0:   e3a03000        mov     r3, #0  ; 0x0
->    4:   ea000007        b       28 <hvc_dcc_put_chars+0x28>
->    8:   ee100e11        mrc     14, 0, r0, cr0, cr1, {0}
->    c:   e3100202        tst     r0, #536870912  ; 0x20000000
->   10:   1afffffc        bne     8 <hvc_dcc_put_chars+0x8>
->   14:   e7d10003        ldrb    r0, [r1, r3]
->   18:   ee10fe11        mrc     14, 0, pc, cr0, cr1, {0}
->   1c:   2afffffd        bcs     18 <hvc_dcc_put_chars+0x18>
->   20:   ee000e15        mcr     14, 0, r0, cr0, cr5, {0}
->   24:   e2833001        add     r3, r3, #1      ; 0x1
->   28:   e1530002        cmp     r3, r2
->   2c:   bafffff5        blt     8 <hvc_dcc_put_chars+0x8>
->   30:   e1a00002        mov     r0, r2
->   34:   e12fff1e        bx      lr
-> 
-> which looks better and actually works. Mark all the inline
-> assembly in this file as volatile since we don't want the
-> compiler to optimize away these statements or move them around
-> in any way.
+> Since we already test the RX/TX full bits before calling
+> __dcc_getchar() and __dcc_putchar() we don't actually need to do
+> anything special for v7 over v6. The only difference is in
+> hvc_dcc_get_chars(). We would test RX full, poll RX full, and
+> then read a character from the buffer, whereas now we will test
+> RX full, read a character from the buffer, and then test RX full
+> again for the second iteration of the loop. It doesn't seem
+> possible for the buffer to go from full to empty between testing
+> the RX full and reading a character. Therefore, replace the v7
+> versions with the v6 versions and everything works the same.
 > 
 > Cc: Tony Lindgren <tony@atomide.com>
 > Cc: Arnd Bergmann <arnd@arndb.de>
@@ -88,61 +59,59 @@ On Mon, 20 Dec 2010, Stephen Boyd wrote:
 
 Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
 
-
 > ---
->  drivers/char/hvc_dcc.c |   11 +++++------
->  1 files changed, 5 insertions(+), 6 deletions(-)
+>  drivers/char/hvc_dcc.c |   24 ------------------------
+>  1 files changed, 0 insertions(+), 24 deletions(-)
 > 
 > diff --git a/drivers/char/hvc_dcc.c b/drivers/char/hvc_dcc.c
-> index 6470f63..155ec10 100644
+> index ad23cc8..435f6fa 100644
 > --- a/drivers/char/hvc_dcc.c
 > +++ b/drivers/char/hvc_dcc.c
-> @@ -33,8 +33,7 @@
->  static inline u32 __dcc_getstatus(void)
->  {
->  	u32 __ret;
+> @@ -40,19 +40,6 @@ static inline u32 __dcc_getstatus(void)
+>  }
+>  
+>  
+> -#if defined(CONFIG_CPU_V7)
+> -static inline char __dcc_getchar(void)
+> -{
+> -	char __c;
 > -
-> -	asm("mrc p14, 0, %0, c0, c1, 0	@ read comms ctrl reg"
-> +	asm volatile("mrc p14, 0, %0, c0, c1, 0	@ read comms ctrl reg"
->  		: "=r" (__ret) : : "cc");
->  
->  	return __ret;
-> @@ -46,7 +45,7 @@ static inline char __dcc_getchar(void)
+> -	asm volatile("get_wait:	mrc p14, 0, pc, c0, c1, 0                  \n\
+> -			bne get_wait                                       \n\
+> -			mrc p14, 0, %0, c0, c5, 0	@ read comms data reg"
+> -		: "=r" (__c) : : "cc");
+> -
+> -	return __c;
+> -}
+> -#else
+>  static inline char __dcc_getchar(void)
 >  {
 >  	char __c;
->  
-> -	asm("get_wait:	mrc p14, 0, pc, c0, c1, 0                          \n\
-> +	asm volatile("get_wait:	mrc p14, 0, pc, c0, c1, 0                  \n\
->  			bne get_wait                                       \n\
->  			mrc p14, 0, %0, c0, c5, 0	@ read comms data reg"
->  		: "=r" (__c) : : "cc");
-> @@ -58,7 +57,7 @@ static inline char __dcc_getchar(void)
->  {
->  	char __c;
->  
-> -	asm("mrc p14, 0, %0, c0, c5, 0	@ read comms data reg"
-> +	asm volatile("mrc p14, 0, %0, c0, c5, 0	@ read comms data reg"
->  		: "=r" (__c));
+> @@ -62,24 +49,13 @@ static inline char __dcc_getchar(void)
 >  
 >  	return __c;
-> @@ -68,7 +67,7 @@ static inline char __dcc_getchar(void)
->  #if defined(CONFIG_CPU_V7)
+>  }
+> -#endif
+>  
+> -#if defined(CONFIG_CPU_V7)
+> -static inline void __dcc_putchar(char c)
+> -{
+> -	asm volatile("put_wait:	mrc p14, 0, pc, c0, c1, 0         \n\
+> -			bcs put_wait                              \n\
+> -			mcr p14, 0, %0, c0, c5, 0                   "
+> -	: : "r" (c) : "cc");
+> -}
+> -#else
 >  static inline void __dcc_putchar(char c)
 >  {
-> -	asm("put_wait:	mrc p14, 0, pc, c0, c1, 0                 \n\
-> +	asm volatile("put_wait:	mrc p14, 0, pc, c0, c1, 0         \n\
->  			bcs put_wait                              \n\
->  			mcr p14, 0, %0, c0, c5, 0                   "
->  	: : "r" (c) : "cc");
-> @@ -76,7 +75,7 @@ static inline void __dcc_putchar(char c)
->  #else
->  static inline void __dcc_putchar(char c)
->  {
-> -	asm("mcr p14, 0, %0, c0, c5, 0	@ write a char"
-> +	asm volatile("mcr p14, 0, %0, c0, c5, 0	@ write a char"
+>  	asm volatile("mcr p14, 0, %0, c0, c5, 0	@ write a char"
 >  		: /* no output register */
 >  		: "r" (c));
 >  }
+> -#endif
+>  
+>  static int hvc_dcc_put_chars(uint32_t vt, const char *buf, int count)
+>  {
 > -- 
 > Sent by an employee of the Qualcomm Innovation Center, Inc.
 > The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
