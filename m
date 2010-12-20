@@ -1,105 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757904Ab0LTSK0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 13:10:26 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40769 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757697Ab0LTSKZ (ORCPT
+	id S932759Ab0LTSM1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 13:12:27 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:52078 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932243Ab0LTSM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 13:10:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:from:date:x-google-sender-auth:message-id
-         :subject:to:content-type;
-        b=M+bqJcNq+VD05drmkgruKBCn4IU/hKPAcK1EPSv1tw+nUZ5lyOC5ckt6jpTo2mly7h
-         px1PUnu5rHEKE9/Og41YDLSyRGGGmWlwCPsRlClfmYwhBiYKBKZqhRzD8oNiK0fG+Mqf
-         Dn+i2G09W1LOzQit79NVyEnNG7c8WIyQmp6p0=
+	Mon, 20 Dec 2010 13:12:26 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [BISECTED] agp/intel: revert "Remove confusion of stolen entries not stolen memory"
+Date: Mon, 20 Dec 2010 19:12:19 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6-next-20101220+; KDE/4.5.1; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>
 MIME-Version: 1.0
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Mon, 20 Dec 2010 13:10:03 -0500
-X-Google-Sender-Auth: FZcQrYt5Qiqn1pHloqE4vwaNtwA
-Message-ID: <AANLkTikaxPEszPPU=J1bP2TitrrDuhZ=FZKbD2hwD+VH@mail.gmail.com>
-Subject: 2.6.36.2 regression: suspend on Lenovo X200s broken due to TPM
-To: linux-kernel@vger.kernel.org, stable@kernel.org,
-        Matthew Garrett <mjg@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012201912.19051.arnd@arndb.de>
+X-Provags-ID: V02:K0:gehEh/Hejy6iwTmpKlMDrEY83/ARIYCSda/qXZbAGZl
+ w34qUKjL4uUqv27JAKMWjEhXZGOHDMIR8jRWnZEcEyOhuSaDG9
+ Cswy92p5AoaFRINvI3mxXJxT6zfm0Gie98sNZ5F54CEMGn1UmT
+ O+Ag/Er8xQeJ8BOqvY16y/H4pAC2pLKyuobuPqLkNmC6JFT5fP
+ Kw+tJPJ2aleZupTaOE3YQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The change "PNPACPI: cope with invalid device IDs", added in 2.6.36.2,
-makes the kernel detect my TPM (it used to not work at all), but the
-TPM driver doesn't work because it can't autodetect the iTPM
-workaround.  This breaks suspend without actually fixing my TPM.
+Commit c64f7ba5f10 "agp/intel: Remove confusion of stolen entries not stolen memory" caused a regression on my Intel G45 based system, using the VESA
+Xorg driver or uvesafb. I have not tried if i915 with KMS shows the same
+behaviour, but can try if necessary.
 
-On boot, I get:
+Reverting the patch on Friday's linux-next restores the normal behaviour
+and lets me use X again.
 
-[   11.159923] tpm_tis 00:0a: 1.2 TPM (device-id 0x1020, rev-id 6)
-[   11.165033] tpm_tis 00:0a: tpm_transmit: tpm_send: error -5
-[   11.171020] tpm_tis 00:0a: tpm_transmit: tpm_send: error -5
-[   11.177021] tpm_tis 00:0a: tpm_transmit: tpm_send: error -5
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
 
-and on suspend I get:
-
-[   67.918108] tpm_tis 00:0a: tpm_transmit: tpm_send: error -5
-[   67.918116] legacy_suspend(): pnp_bus_suspend+0x0/0x85 returns -5
-[   67.918120] PM: Device 00:0a failed to suspend: error -5
-[   68.174167] PM: Some devices failed to suspend
-
-tpm_tis.itpm=1 fixes it, as does upstream commit
-3f0d3d016d89a5efb8b926d4707eb21fa13f3d27 (tpm: Autodetect itpm
-devices)
-
-Greg (and mjg): can you either revert the PNPACPI fix in 2.6.36.3 or
-add the upstream fix?
-
-The offending commit is:
-
-commit 47bbe7b5e827946c7b560b1917cd8cbdbe6d84b7
-Author: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Date:   Sat Sep 18 10:11:09 2010 -0700
-
-    PNPACPI: cope with invalid device IDs
-
-    commit 420a0f66378c84b00b0e603e4d38210102dbe367 upstream.
-
-    If primary ID (HID) is invalid try locating first valid ID on compatible
-    ID list before giving up.
-
-    This helps, for example, to recognize i8042 AUX port on Sony Vaio VPCZ1
-    which uses SNYSYN0003 as HID. Without the patch users are forced to
-    boot with i8042.nopnp to make use of their touchpads.
-
-    Tested-by: Jan-Hendrik Zab <jan@jhz.name>
-    Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
-    Signed-off-by: Len Brown <len.brown@intel.com>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
-The fix is:
-
-commit 3f0d3d016d89a5efb8b926d4707eb21fa13f3d27
-Author: Matthew Garrett <mjg@redhat.com>
-Date:   Thu Oct 21 17:42:40 2010 -0400
-
-    tpm: Autodetect itpm devices
-
-    Some Lenovos have TPMs that require a quirk to function correctly. This can
-    be autodetected by checking whether the device has a _HID of INTC0102. This
-    is an invalid PNPid, and as such is discarded by the pnp layer - however
-    it's still present in the ACPI code, so we can pull it out that way. This
-    means that the quirk won't be automatically applied on non-ACPI systems,
-    but without ACPI we don't have any way to identify the chip anyway so I
-    don't think that's a great concern.
-
-    Signed-off-by: Matthew Garrett <mjg@redhat.com>
-    Acked-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-    Tested-by: Jiri Kosina <jkosina@suse.cz>
-    Tested-by: Andy Isaacson <adi@hexapodia.org>
-    Signed-off-by: James Morris <jmorris@namei.org>
-
-This applies cleanly to 2.6.36.2, reports "tpm_tis 00:0a: Intel iTPM
-workaround enabled" and makes my laptop suspend again.
-
-Thanks,
-Andy
+diff --git a/drivers/char/agp/intel-gtt.c b/drivers/char/agp/intel-gtt.c
+index 356f73e..7812a3a 100644
+--- a/drivers/char/agp/intel-gtt.c
++++ b/drivers/char/agp/intel-gtt.c
+@@ -342,12 +342,13 @@ static const struct aper_size_info_fixed intel_fake_agp_sizes[] = {
+ 	{512, 131072, 7},
+ };
+ 
+-static unsigned int intel_gtt_stolen_size(void)
++static unsigned int intel_gtt_stolen_entries(void)
+ {
+ 	u16 gmch_ctrl;
+ 	u8 rdct;
+ 	int local = 0;
+ 	static const int ddt[4] = { 0, 16, 32, 64 };
++	unsigned int overhead_entries;
+ 	unsigned int stolen_size = 0;
+ 
+ 	if (INTEL_GTT_GEN == 1)
+@@ -356,6 +357,14 @@ static unsigned int intel_gtt_stolen_size(void)
+ 	pci_read_config_word(intel_private.bridge_dev,
+ 			     I830_GMCH_CTRL, &gmch_ctrl);
+ 
++	if (INTEL_GTT_GEN > 4 || IS_PINEVIEW)
++		overhead_entries = 0;
++	else
++		overhead_entries = intel_private.base.gtt_mappable_entries
++			/ 1024;
++
++	overhead_entries += 1; /* BIOS popup */
++
+ 	if (intel_private.bridge_dev->device == PCI_DEVICE_ID_INTEL_82830_HB ||
+ 	    intel_private.bridge_dev->device == PCI_DEVICE_ID_INTEL_82845G_HB) {
+ 		switch (gmch_ctrl & I830_GMCH_GMS_MASK) {
+@@ -490,7 +499,7 @@ static unsigned int intel_gtt_stolen_size(void)
+ 		stolen_size = 0;
+ 	}
+ 
+-	return stolen_size;
++	return stolen_size/KB(4) - overhead_entries;
+ }
+ 
+ static void i965_adjust_pgetbl_size(unsigned int size_flag)
+@@ -686,7 +695,7 @@ static int intel_gtt_init(void)
+ 
+ 	global_cache_flush();   /* FIXME: ? */
+ 
+-	intel_private.base.stolen_size = intel_gtt_stolen_size();
++	intel_private.base.gtt_stolen_entries = intel_gtt_stolen_entries();
+ 
+ 	ret = intel_gtt_setup_scratch_page();
+ 	if (ret != 0) {
+@@ -867,7 +876,8 @@ static int intel_fake_agp_configure(void)
+ 
+ 	agp_bridge->gart_bus_addr = intel_private.gma_bus_addr;
+ 
+-	for (i = 0; i < intel_private.base.gtt_total_entries; i++) {
++	for (i = intel_private.base.gtt_stolen_entries;
++			i < intel_private.base.gtt_total_entries; i++) {
+ 		intel_private.driver->write_entry(intel_private.scratch_page_dma,
+ 						  i, 0);
+ 	}
+@@ -942,7 +952,17 @@ static int intel_fake_agp_insert_entries(struct agp_memory *mem,
+ 	if (mem->page_count == 0)
+ 		goto out;
+ 
+-	if (pg_start + mem->page_count > intel_private.base.gtt_total_entries)
++	if (pg_start < intel_private.base.gtt_stolen_entries) {
++		dev_printk(KERN_DEBUG, &intel_private.pcidev->dev,
++			   "pg_start == 0x%.8lx, gtt_stolen_entries == 0x%.8x\n",
++			   pg_start, intel_private.base.gtt_stolen_entries);
++
++		dev_info(&intel_private.pcidev->dev,
++			 "trying to insert into local/stolen memory\n");
++		goto out_err;
++	}
++
++	if ((pg_start + mem->page_count) > intel_private.base.gtt_total_entries)
+ 		goto out_err;
+ 
+ 	if (type != mem->type)
+@@ -991,6 +1011,12 @@ static int intel_fake_agp_remove_entries(struct agp_memory *mem,
+ 	if (mem->page_count == 0)
+ 		return 0;
+ 
++	if (pg_start < intel_private.base.gtt_stolen_entries) {
++		dev_info(&intel_private.pcidev->dev,
++			 "trying to disable local/stolen memory\n");
++		return -EINVAL;
++	}
++
+ 	if (intel_private.base.needs_dmar) {
+ 		intel_gtt_unmap_memory(mem->sg_list, mem->num_sg);
+ 		mem->sg_list = NULL;
+@@ -1489,7 +1515,7 @@ int intel_gmch_probe(struct pci_dev *pdev,
+ }
+ EXPORT_SYMBOL(intel_gmch_probe);
+ 
+-const struct intel_gtt *intel_gtt_get(void)
++struct intel_gtt *intel_gtt_get(void)
+ {
+ 	return &intel_private.base;
+ }
+diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+index 3f7b203..1655c39 100644
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1049,7 +1049,7 @@ static unsigned long i915_stolen_to_phys(struct drm_device *dev, u32 offset)
+ 		pci_read_config_byte(pdev, 0x9c, &val);
+ 		base = val >> 3 << 27;
+ 	}
+-	base -= dev_priv->mm.gtt->stolen_size;
++	base -= dev_priv->mm.gtt->gtt_stolen_entries << PAGE_SHIFT;
+ #endif
+ 
+ 	return base + offset;
+@@ -1173,7 +1173,7 @@ static int i915_load_modeset_init(struct drm_device *dev)
+ 	unsigned long prealloc_size, gtt_size, mappable_size;
+ 	int ret = 0;
+ 
+-	prealloc_size = dev_priv->mm.gtt->stolen_size;
++	prealloc_size = dev_priv->mm.gtt->gtt_stolen_entries << PAGE_SHIFT;
+ 	gtt_size = dev_priv->mm.gtt->gtt_total_entries << PAGE_SHIFT;
+ 	mappable_size = dev_priv->mm.gtt->gtt_mappable_entries << PAGE_SHIFT;
+ 
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index 30780f2..b41edf6 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -532,7 +532,7 @@ typedef struct drm_i915_private {
+ 
+ 	struct {
+ 		/** Bridge to intel-gtt-ko */
+-		const struct intel_gtt *gtt;
++		struct intel_gtt *gtt;
+ 		/** Memory allocator for GTT stolen memory */
+ 		struct drm_mm stolen;
+ 		/** Memory allocator for GTT */
+diff --git a/include/drm/intel-gtt.h b/include/drm/intel-gtt.h
+index 9e343c0..75c2088 100644
+--- a/include/drm/intel-gtt.h
++++ b/include/drm/intel-gtt.h
+@@ -2,10 +2,9 @@
+ 
+ #ifndef _DRM_INTEL_GTT_H
+ #define	_DRM_INTEL_GTT_H
+-
+-const struct intel_gtt {
+-	/* Size of memory reserved for graphics by the BIOS */
+-	unsigned int stolen_size;
++struct intel_gtt {
++	/* Number of stolen gtt entries at the beginning. */
++	unsigned int gtt_stolen_entries;
+ 	/* Total number of gtt entries. */
+ 	unsigned int gtt_total_entries;
+ 	/* Part of the gtt that is mappable by the cpu, for those chips where
