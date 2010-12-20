@@ -1,115 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932948Ab0LTRMl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 12:12:41 -0500
-Received: from smtp.nokia.com ([147.243.1.48]:33953 "EHLO mgw-sa02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932875Ab0LTRMj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 12:12:39 -0500
-From: Felipe Contreras <felipe.contreras@nokia.com>
-To: linux-main <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>, Greg KH <greg@kroah.com>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        Nishanth Menon <nm@ti.com>, Ameya Palande <ameya.palande@nokia.com>,
-        Felipe Contreras <felipe.contreras@nokia.com>
-Subject: [PATCH] staging: tidspbridge: protect dmm_map properly
-Date: Mon, 20 Dec 2010 19:12:00 +0200
-Message-Id: <1292865120-24020-1-git-send-email-felipe.contreras@nokia.com>
-X-Mailer: git-send-email 1.7.3.3
-X-Nokia-AV: Clean
+	id S932962Ab0LTRND (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 12:13:03 -0500
+Received: from mail-bw0-f45.google.com ([209.85.214.45]:60172 "EHLO
+	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932939Ab0LTRNA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 12:13:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=VkkM+kFsNU7e7xAvuhJz70+8uGbX/i6MftXtG+dnV8bO5a/AWXFiIIE5jh6pCY81G5
+         d0exPtkg/PxxVRgmu24eZaUuIpR66c+HTjYDwUChvsNH4lHc18syBkXEmGW9uIBWovJd
+         TTxLZmSX1OpBcH/ja/Wyv1v6CrSIuxOJGwujE=
+Message-ID: <4D0F8E98.9070500@kernel.org>
+Date: Mon, 20 Dec 2010 18:12:56 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Martin Steigerwald <Martin@lichtvoll.de>
+CC: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [regression] 2.6.37-rc5: scsi_eh_11 CPU loop
+References: <201012201105.08993.Martin@lichtvoll.de>
+In-Reply-To: <201012201105.08993.Martin@lichtvoll.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to protect not only the dmm_map list, but the individual
-map_obj's, otherwise, we might be building the scatter-gather list with
-garbage. So, use the existing proc_lock for that.
+Hello,
 
-I observed race conditions which caused kernel panics while running
-stress tests. This patch fixes those.
+On 12/20/2010 11:05 AM, Martin Steigerwald wrote:
+> Hi!
+> 
+> top - 10:49:07 up 3 days, 14:24,  8 users,  load average: 2.31, 2.62, 2.28
+> Tasks: 198 total,   2 running, 194 sleeping,   0 stopped,   2 zombie
+> Cpu(s):  6.8%us, 93.2%sy,  0.0%ni,  0.0%id,  0.0%wa,  0.0%hi,  0.0%si,  
+> 0.0%st
+> Mem:   2073660k total,  1941152k used,   132508k free,   153876k buffers
+> Swap:  4000180k total,   243452k used,  3756728k free,   676612k cached
+> 
+>   PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND                                               
+>   735 root      20   0     0    0    0 R 85.2  0.0 137:28.94 scsi_eh_11
+> 
+> I don't see anything in dmesg. Everything appears to work as normal, 
+> except for the slowness. Which got a bit better upon renicing scsi_eh_11 
+> to 19 (not knowing whether its really safe, but it works for now).
+> 
+> Interrupts appear to be within usual range as well:
 
-Signed-off-by: Felipe Contreras <felipe.contreras@nokia.com>
----
- drivers/staging/tidspbridge/rmgr/proc.c |   18 ++++++++++++++----
- 1 files changed, 14 insertions(+), 4 deletions(-)
+Can you please apply the following patch, trigger the problem and
+attach the kernel log?
 
-diff --git a/drivers/staging/tidspbridge/rmgr/proc.c b/drivers/staging/tidspbridge/rmgr/proc.c
-index b47d7aa..21052e3 100644
---- a/drivers/staging/tidspbridge/rmgr/proc.c
-+++ b/drivers/staging/tidspbridge/rmgr/proc.c
-@@ -781,12 +781,14 @@ int proc_begin_dma(void *hprocessor, void *pmpu_addr, u32 ul_size,
- 							(u32)pmpu_addr,
- 							ul_size, dir);
- 
-+	mutex_lock(&proc_lock);
+diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
+index 5e59050..c748b5a 100644
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -888,12 +888,19 @@ void ata_eh_fastdrain_timerfn(unsigned long arg)
+  */
+ static void ata_eh_set_pending(struct ata_port *ap, int fastdrain)
+ {
++	static int xxx;
+ 	int cnt;
+
+ 	/* already scheduled? */
+ 	if (ap->pflags & ATA_PFLAG_EH_PENDING)
+ 		return;
+
++	if (!(ap->pflags & ATA_PFLAG_LOADING) && xxx < 16) {
++		ata_port_printk(ap, KERN_WARNING, "XXX ata_eh_set_pending()\n");
++		dump_stack();
++		xxx++;
++	}
 +
- 	/* find requested memory are in cached mapping information */
- 	map_obj = find_containing_mapping(pr_ctxt, (u32) pmpu_addr, ul_size);
- 	if (!map_obj) {
- 		pr_err("%s: find_containing_mapping failed\n", __func__);
- 		status = -EFAULT;
--		goto err_out;
-+		goto no_map;
- 	}
- 
- 	if (memory_give_ownership(map_obj, (u32) pmpu_addr, ul_size, dir)) {
-@@ -795,6 +797,8 @@ int proc_begin_dma(void *hprocessor, void *pmpu_addr, u32 ul_size,
- 		status = -EFAULT;
- 	}
- 
-+no_map:
-+	mutex_unlock(&proc_lock);
- err_out:
- 
- 	return status;
-@@ -819,12 +823,14 @@ int proc_end_dma(void *hprocessor, void *pmpu_addr, u32 ul_size,
- 							(u32)pmpu_addr,
- 							ul_size, dir);
- 
-+	mutex_lock(&proc_lock);
-+
- 	/* find requested memory are in cached mapping information */
- 	map_obj = find_containing_mapping(pr_ctxt, (u32) pmpu_addr, ul_size);
- 	if (!map_obj) {
- 		pr_err("%s: find_containing_mapping failed\n", __func__);
- 		status = -EFAULT;
--		goto err_out;
-+		goto no_map;
- 	}
- 
- 	if (memory_regain_ownership(map_obj, (u32) pmpu_addr, ul_size, dir)) {
-@@ -834,6 +840,8 @@ int proc_end_dma(void *hprocessor, void *pmpu_addr, u32 ul_size,
- 		goto err_out;
- 	}
- 
-+no_map:
-+	mutex_unlock(&proc_lock);
- err_out:
- 	return status;
- }
-@@ -1726,9 +1734,8 @@ int proc_un_map(void *hprocessor, void *map_addr,
- 		    (p_proc_object->hbridge_context, va_align, size_align);
- 	}
- 
--	mutex_unlock(&proc_lock);
- 	if (status)
--		goto func_end;
-+		goto unmap_failed;
- 
- 	/*
- 	 * A successful unmap should be followed by removal of map_obj
-@@ -1737,6 +1744,9 @@ int proc_un_map(void *hprocessor, void *map_addr,
- 	 */
- 	remove_mapping_information(pr_ctxt, (u32) map_addr, size_align);
- 
-+unmap_failed:
-+	mutex_unlock(&proc_lock);
-+
- func_end:
- 	dev_dbg(bridge, "%s: hprocessor: 0x%p map_addr: 0x%p status: 0x%x\n",
- 		__func__, hprocessor, map_addr, status);
+ 	ap->pflags |= ATA_PFLAG_EH_PENDING;
+
+ 	if (!fastdrain)
+
 -- 
-1.7.3.3
-
+tejun
