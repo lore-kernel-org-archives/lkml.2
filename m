@@ -1,37 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932617Ab0LTQAo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 11:00:44 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:57735 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758078Ab0LTQAm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 11:00:42 -0500
-Date: Tue, 21 Dec 2010 00:59:12 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Andres Salomon <dilinger@queued.net>
-Cc: akpm@linux-foundation.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] s1d13xxxfb: drop unused code
-Message-ID: <20101220155912.GC26766@linux-sh.org>
-References: <20101217190013.0107a93a@queued.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101217190013.0107a93a@queued.net>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	id S932666Ab0LTQA5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 11:00:57 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34193 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932632Ab0LTQAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 11:00:55 -0500
+Subject: Re: RFC: short reads on block devices
+From: James Bottomley <James.Bottomley@suse.de>
+To: Hannes Reinecke <hare@suse.de>
+Cc: dgilbert@interlog.com, linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Penokie, George" <George.Penokie@lsi.com>, mkp@mkp.net
+In-Reply-To: <4D0F2524.5030407@suse.de>
+References: <4D0B945C.2060309@interlog.com>
+	 <1292618194.2820.90.camel@mulgrave.site>  <4D0F2524.5030407@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 20 Dec 2010 10:00:48 -0600
+Message-ID: <1292860848.3034.6.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 07:00:13PM -0800, Andres Salomon wrote:
+On Mon, 2010-12-20 at 10:43 +0100, Hannes Reinecke wrote:
+> On 12/17/2010 09:36 PM, James Bottomley wrote:
+> > On Fri, 2010-12-17 at 11:48 -0500, Douglas Gilbert wrote:
+> >> Recently while testing with the scsi_debug driver
+> >> I was able to trick the block layer into reading
+> >> random data which the block layer thought was
+> >> valid ***.
+> >>
+> >> Best to start with an example, say LBA ** 4660 has
+> >> an unrecoverable error (aka medium error) and
+> >> the block layer fires off a SCSI READ for 8
+> >> blocks (512 byte variety) at LBA 4656. The response
+> >> will be a medium error with the sense buffer info
+> >> field indicating LBA 4660. Now are the 4 blocks
+> >> that precede it (i.e. LBA 4656 to 4659) possibly
+> >> sitting in the data-in buffer and valid??
+> >>
+> >> The block layer thinks they are. This is what my
+> >> term "short read" in the title alludes to. So I put
+> >> this question to the T10 reflector:
+> >>     http://www.t10.org/t10r.htm
+> >> titled "sbc: reading blocks prior to a medium error".
+> >> And the answers were pretty clear. And the one from
+> >> George Penokie of LSI is interesting because Linux's
+> >> block layer assumption breaks some of LSI's equipment.
+> > 
+> > Well, unsurprisingly, I was aware of the issue via Novell customer
+> > interactions.  Since you've outed LSI, we can discuss it openly.
+> > 
+> > The fact is that for medium errors, every other array returns valid data
+> > up to the erroring sector.
+> > 
+> >> On the other hand, big array vendors and database vendors
+> >> want exactly what the block layer is doing at the moment.
+> >> So those guys don't want a change. [Please correct me
+> >> if that is too sweeping.] Also I'm informed some other
+> >> OSes do this as well.
+> > 
+> > Plus all disk devices transfer up to the error sector.  Additionally,
+> > Martin Petersen uses the same code for DIF and he's secured external
+> > agreement from the DIF based arrays that nothwithstanding the ambiguity
+> > in the SCSI standards, all DIF arrays return valid data up to the sector
+> > with the DIF error.
+> > 
+> >> I would like to propose a solution, at least in the SCSI
+> >> subsystem context. The 'resid' field was added 11 years
+> >> ago and is used by a HBA driver to indicate how many bytes
+> >> less than requested were placed in the scatter gather
+> >> list (i.e. the data-in buffer). It defaults to zero
+> >> (meaning all requested bytes have been read). Usually
+> >> for a medium error one would not bother setting resid
+> >> (so resid would remain 0). Somewhat surprisingly the
+> >> block layer has always ignored resid. I propose in the
+> >> case of a short read caused by a MEDIUM ERROR the block
+> >> layer checks resid. And if resid equals the requested
+> >> number of bytes then that means no data in the scatter
+> >> gather list is valid. So the block layer should act on
+> >> this information.
+> >>
+> >> To this end I propose to change the scsi_debug driver
+> >> to set resid equal to bufflen when it simulates a
+> >> medium error.
+> >>
+> >> Changes in the block layer and drivers from vendors who
+> >> want the strict "T10" handling of medium errors would
+> >> also be required. Maybe the USB mass storage (and UAS)
+> >> folks might also check if this impacts them.
+> > 
+> > OK, so I checked, and I think all of the major in-use HBA drivers today
+> > do set the residue, so I'd be reasonably happy with a modification like
+> > the following.  It basically believes the lower of either the
+> > transferred data or the listed error (assuming the listed error is
+> > valid ... if it's invalid, we still assume we can't trust anything).
+> > This should mean that HBA drivers that set the residue work for all
+> > arrays and those that don't work as they do today.
+> > 
+> Okay, having been part of the discussion (and the resulting
+> specification digging) I'm not quite convinced that this minimal
+> patch does entirely the right thing.
 > 
-> Silence warnings such as -
-> 
-> drivers/video/s1d13xxxfb.c:421: warning: ???bltbit_wait_bitset??? defined but not used
-> 
-> Just drop the unused code.
-> 
-> Signed-off-by: Andres Salomon <dilinger@queued.net>
+> After all, T10 said we should consider the buffer as invalid in the
+> face of read or write errors, despite the fact that some bits in
+> there _may_ be valid.
 
-Applied, thanks.
+Well, T10 always gives the most conservative approach.  All other array
+(and certainly all disk) vendors seem to confirm valid data up to the
+error ... certainly for the DIF case, Martin secured this agreement.
+
+> So the correct approach here would be to retry the command
+> with a short read up to the size indicated in the sense code;
+> that should avoid the error and the buffer would be filled with
+> correct data.
+> 
+> And with that approach we would be keeping everyone happy.
+> 
+> Hmm. Someone should do a patch here :-)
+
+Such a patch is harder than you think.  We certainly don't want to
+bother disks with this ... the read with medium error probably took
+several seconds, so we never want to hit that sector again.
+
+I think the correct approach is:
+
+     1. If we got data up to (and possibly including) the error sector,
+        we're done and we assume good data and terminate the command.
+     2. If we got an error sector and less good data than we should,
+        then we might need to repeat.  But currently failing the entire
+        transaction at that point with what we have is good
+     3. For the outlier repeat path, I think reconstructing the SCSI
+        command to request data up to the error sector is best.  We
+        still have to recognise this on return so as not to emit another
+        read for the bad sector.
+
+The proposed patch already does 1 & 2 ... I think we can do 3 later
+depending on just how common the outlier arrays are.
+
+James
+
+
