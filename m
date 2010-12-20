@@ -1,51 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757329Ab0LTLsf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 06:48:35 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:58190 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757174Ab0LTLse (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 06:48:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=BuaxxZVsAVqaCd6bqjxk/RCjCyrGLz7GbMOl1A/zYOImf1+NNspR6Sv7T2EiQbnMjo
-         3TNxco39KSDPqdXS9acsK8sAeE6xKH+NWbKYD4WBJ4ocqwQ777h9qe5Won1FqZ0paYXx
-         HJzx6f6uN49tqx3YBnXMQ6+foHRaz0bNsrdKA=
-MIME-Version: 1.0
-In-Reply-To: <1292836937.22702.424.camel@Joe-Laptop>
-References: <4D0DD027.4000507@gmail.com>
-	<1292813544.22702.342.camel@Joe-Laptop>
-	<AANLkTi=WP9k_yqyvvJmy2ZW0ErO9Yt=jQjVvWQ_RGByv@mail.gmail.com>
-	<1292836937.22702.424.camel@Joe-Laptop>
-Date: Mon, 20 Dec 2010 12:48:33 +0100
-Message-ID: <AANLkTimNe7_3Za6YgY69zEuXYCmU4dZdCjfLN2QMM=jb@mail.gmail.com>
-Subject: Re: [PATCH][RESEND] scripts: add no-warning option to the checkpatch script
-From: Marco Stornelli <marco.stornelli@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, apw@canonical.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757501Ab0LTLyq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 06:54:46 -0500
+Received: from shutemov.name ([188.40.19.243]:38444 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757268Ab0LTLyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 06:54:41 -0500
+From: "Kirill A. Shutsemov" <kirill@shutemov.name>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>
+Cc: Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: [PATCH 04/12] sunrpc: tag svc_serv with rpc_pipefs mount point
+Date: Mon, 20 Dec 2010 13:54:30 +0200
+Message-Id: <1292846078-31793-5-git-send-email-kirill@shutemov.name>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1292846078-31793-1-git-send-email-kirill@shutemov.name>
+References: <1292846078-31793-1-git-send-email-kirill@shutemov.name>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/12/20 Joe Perches <joe@perches.com>:
-> On Mon, 2010-12-20 at 09:37 +0100, Marco Stornelli wrote:
->> 2010/12/20 Joe Perches <joe@perches.com>:
->> > Why do you think it's useful?
->> To "debug" a patch from style point of view, I think it's useful to
->> fix before the errors and then the warnings. So this option it's
->> useful as a "filter". However, I added you in cc: because of a reply
->> to my first patch that indicated you as a person interested in this
->> scope.
->
-> Perhaps then it'd be better to filter/enable/disable
-> the 3 current categories of messages.
->
-> Maybe something like this:
+From: Kirill A. Shutemov <kirill@shutemov.name>
 
-Yeah, very good. Will it be inserted in mainline?
+Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+---
+ include/linux/sunrpc/svc.h |    1 +
+ net/sunrpc/svc.c           |    4 ++++
+ 2 files changed, 5 insertions(+), 0 deletions(-)
 
-Marco
+diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
+index 5a3085b..3b6b26c 100644
+--- a/include/linux/sunrpc/svc.h
++++ b/include/linux/sunrpc/svc.h
+@@ -64,6 +64,7 @@ struct svc_pool {
+  */
+ struct svc_serv {
+ 	struct svc_program *	sv_program;	/* RPC program */
++	struct vfsmount *	sv_rpcmount;	/* rpc_pipefs mount point*/
+ 	struct svc_stat *	sv_stats;	/* RPC statistics */
+ 	spinlock_t		sv_lock;
+ 	unsigned int		sv_nrthreads;	/* # of server threads */
+diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+index 6359c42..d2f7c03 100644
+--- a/net/sunrpc/svc.c
++++ b/net/sunrpc/svc.c
+@@ -20,6 +20,7 @@
+ #include <linux/module.h>
+ #include <linux/kthread.h>
+ #include <linux/slab.h>
++#include <linux/mount.h>
+ 
+ #include <linux/sunrpc/types.h>
+ #include <linux/sunrpc/xdr.h>
+@@ -27,6 +28,7 @@
+ #include <linux/sunrpc/svcsock.h>
+ #include <linux/sunrpc/clnt.h>
+ #include <linux/sunrpc/bc_xprt.h>
++#include <linux/sunrpc/rpc_pipe_fs.h>
+ 
+ #define RPCDBG_FACILITY	RPCDBG_SVCDSP
+ 
+@@ -371,6 +373,7 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
+ 		return NULL;
+ 	serv->sv_name      = prog->pg_name;
+ 	serv->sv_program   = prog;
++	serv->sv_rpcmount  = mntget(init_rpc_pipefs);
+ 	serv->sv_nrthreads = 1;
+ 	serv->sv_stats     = prog->pg_stats;
+ 	if (bufsize > RPCSVC_MAXPAYLOAD)
+@@ -492,6 +495,7 @@ svc_destroy(struct svc_serv *serv)
+ 	svc_sock_destroy(serv->bc_xprt);
+ #endif /* CONFIG_NFS_V4_1 */
+ 
++	mntput(serv->sv_rpcmount);
+ 	svc_unregister(serv);
+ 	kfree(serv->sv_pools);
+ 	kfree(serv);
+-- 
+1.7.3.4
+
