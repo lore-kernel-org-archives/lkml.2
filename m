@@ -1,65 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab0LTBsJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 20:48:09 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:58518 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718Ab0LTBsI convert rfc822-to-8bit (ORCPT
+	id S1753527Ab0LTBym (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 20:54:42 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:38347 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035Ab0LTByi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 20:48:08 -0500
+	Sun, 19 Dec 2010 20:54:38 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=db8aycVGzt3fibw5i0Vfu64oPpH7i4A8Yw5yq1Aai6Of2KF/8rDrbcffP3awOv8d/o
-         9XO+pu5HXSxmCGnYCuLw==
-MIME-Version: 1.0
-In-Reply-To: <131961.1292667059@localhost>
-References: <201012162329.oBGNTdPY006808@imap1.linux-foundation.org>
-	<131961.1292667059@localhost>
-Date: Sun, 19 Dec 2010 17:48:05 -0800
-Message-ID: <AANLkTik4ffEzb_zzEN7Y+fksSkr+6HZs5Szd4VupH4+-@mail.gmail.com>
-Subject: Re: mmotm 2010-12-16 - breaks mlockall() call
-From: Michel Lespinasse <walken@google.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        mm-commits@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=oJJx/oocxUJJ/QPcizT1iGSLm8oUXBYTQ4s2oI6RrkaLQ0PAEyUgjnsuKYBiJl2Pjy
+         ce2m3NQPOfObVK6PbT56wOWk0iswy61j/ZK5+9PBVRpz0sgk3Z0lzTA27IjgI+eJ4zmD
+         EzI46i8jXH8rLM5OAaMlI9bF5cYC0aDpjQ5G8=
+Subject: [PATCH v2] leds: leds-pca9532 cleanups
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Riku Voipio <riku.voipio@iki.fi>, Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitry Torokhov <dtor@mail.ru>
+Content-Type: text/plain
+Date: Mon, 20 Dec 2010 09:49:37 +0800
+Message-Id: <1292809777.15685.2.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 18, 2010 at 2:10 AM,  <Valdis.Kletnieks@vt.edu> wrote:
-> On Thu, 16 Dec 2010 14:56:39 PST, akpm@linux-foundation.org said:
->> The mm-of-the-moment snapshot 2010-12-16-14-56 has been uploaded to
->>
->>    http://userweb.kernel.org/~akpm/mmotm/
->
-> The patch mlock-only-hold-mmap_sem-in-shared-mode-when-faulting-in-pages.patch
-> causes this chunk of code from cryptsetup-luks to fail during the initramfs:
->
->        if (mlockall(MCL_CURRENT | MCL_FUTURE)) {
->                        log_err(ctx, _("WARNING!!! Possibly insecure memory. Are you root?\n"));
->                        _memlock_count--;
->                        return 0;
->                }
->
-> Bisection fingered this patch, which was added after -rc4-mmotm1202, which
-> boots without tripping this log_err() call.  I haven't tried building a
-> -rc6-mmotm1216 with this patch reverted, because reverting it causes apply
-> errors for subsequent patches.
->
-> Ideas?
+This patch includes below fixes:
+1. Remove unneeded input_free_device() after input_unregister_device().
+2. Add pca9532_destroy_devices() function for destroy devices.
 
-I had a quick look, but didn't figure out much so far.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+Changes for v2:
+Base on Dmitry's comments to add pca9532_destroy_devices() for destroy devices.
 
-Could you send me your initramfs image and .config file so I can
-reproduce the issue locally ?
+ drivers/leds/leds-pca9532.c |   66 ++++++++++++++++++------------------------
+ 1 files changed, 28 insertions(+), 38 deletions(-)
 
-Thanks,
-
+diff --git a/drivers/leds/leds-pca9532.c b/drivers/leds/leds-pca9532.c
+index 43d0875..afac338 100644
+--- a/drivers/leds/leds-pca9532.c
++++ b/drivers/leds/leds-pca9532.c
+@@ -200,6 +200,32 @@ static void pca9532_led_work(struct work_struct *work)
+ 	pca9532_setled(led);
+ }
+ 
++static void pca9532_destroy_devices(struct pca9532_data *data, int n_devs)
++{
++	int i = n_devs;
++
++	if (!data)
++		return;
++
++	while (--i >= 0) {
++		switch (data->leds[i].type) {
++		case PCA9532_TYPE_NONE:
++			break;
++		case PCA9532_TYPE_LED:
++			led_classdev_unregister(&data->leds[i].ldev);
++			cancel_work_sync(&data->leds[i].work);
++			break;
++		case PCA9532_TYPE_N2100_BEEP:
++			if (data->idev != NULL) {
++				input_unregister_device(data->idev);
++				cancel_work_sync(&data->work);
++				data->idev = NULL;
++			}
++			break;
++		}
++	}
++}
++
+ static int pca9532_configure(struct i2c_client *client,
+ 	struct pca9532_data *data, struct pca9532_platform_data *pdata)
+ {
+@@ -274,25 +300,7 @@ static int pca9532_configure(struct i2c_client *client,
+ 	return 0;
+ 
+ exit:
+-	if (i > 0)
+-		for (i = i - 1; i >= 0; i--)
+-			switch (data->leds[i].type) {
+-			case PCA9532_TYPE_NONE:
+-				break;
+-			case PCA9532_TYPE_LED:
+-				led_classdev_unregister(&data->leds[i].ldev);
+-				cancel_work_sync(&data->leds[i].work);
+-				break;
+-			case PCA9532_TYPE_N2100_BEEP:
+-				if (data->idev != NULL) {
+-					input_unregister_device(data->idev);
+-					input_free_device(data->idev);
+-					cancel_work_sync(&data->work);
+-					data->idev = NULL;
+-				}
+-				break;
+-			}
+-
++	pca9532_destroy_devices(data, i);
+ 	return err;
+ }
+ 
+@@ -329,25 +337,7 @@ static int pca9532_probe(struct i2c_client *client,
+ static int pca9532_remove(struct i2c_client *client)
+ {
+ 	struct pca9532_data *data = i2c_get_clientdata(client);
+-	int i;
+-	for (i = 0; i < 16; i++)
+-		switch (data->leds[i].type) {
+-		case PCA9532_TYPE_NONE:
+-			break;
+-		case PCA9532_TYPE_LED:
+-			led_classdev_unregister(&data->leds[i].ldev);
+-			cancel_work_sync(&data->leds[i].work);
+-			break;
+-		case PCA9532_TYPE_N2100_BEEP:
+-			if (data->idev != NULL) {
+-				input_unregister_device(data->idev);
+-				input_free_device(data->idev);
+-				cancel_work_sync(&data->work);
+-				data->idev = NULL;
+-			}
+-			break;
+-		}
+-
++	pca9532_destroy_devices(data, 16);
+ 	kfree(data);
+ 	return 0;
+ }
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+1.7.2
+
+
+
