@@ -1,79 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757873Ab0LTOYp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 09:24:45 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:60068 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757373Ab0LTOYo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 09:24:44 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Mon, 20 Dec 2010 15:23:44 +0100
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Mikael =?iso-8859-1?Q?Str=F6m?= <mikael@sesamiq.com>,
-        Julien BLACHE <jb@jblache.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: Re: [lm-sensors] [PATCH 1/2 V3] applesmc: Use PnP rather than
- hardcoding resources and devices
-Message-ID: <20101220142344.GA19566@polaris.bitmath.org>
-References: <20101217221618.GA13207@ericsson.com>
- <1292624661-32474-1-git-send-email-mjg@redhat.com>
- <20101218042320.GA14104@ericsson.com>
- <20101218093719.GA1493@polaris.bitmath.org>
- <20101218110954.7a2ca190@endymion.delvare>
- <20101218103139.GA1668@polaris.bitmath.org>
- <878vzngvyn.fsf@sonic.technologeek.org>
- <20101218115742.GA2063@polaris.bitmath.org>
- <1292852674.2118.10.camel@mike-laptop>
- <20101220145721.4c58ff3e@endymion.delvare>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101220145721.4c58ff3e@endymion.delvare>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Originating-IP: 83.248.200.95
-X-Scan-Result: No virus found in message 1PUgf0-0004TB-Bs.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PUgf0-0004TB-Bs 89589fcc2ae9dc099c55370ab3387655
+	id S1757886Ab0LTO0V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 09:26:21 -0500
+Received: from smtp.nokia.com ([147.243.128.26]:62299 "EHLO mgw-da02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757583Ab0LTO0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 09:26:19 -0500
+From: Felipe Contreras <felipe.contreras@nokia.com>
+To: linux-main <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>, Greg KH <greg@kroah.com>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        Nishanth Menon <nm@ti.com>, Ameya Palande <ameya.palande@nokia.com>,
+        Felipe Contreras <felipe.contreras@nokia.com>
+Subject: [PATCH 1/2] staging: tidspbridge: convert dmm_map_lock to sema
+Date: Mon, 20 Dec 2010 16:25:33 +0200
+Message-Id: <1292855134-14374-2-git-send-email-felipe.contreras@nokia.com>
+X-Mailer: git-send-email 1.7.3.3
+In-Reply-To: <1292855134-14374-1-git-send-email-felipe.contreras@nokia.com>
+References: <1292855134-14374-1-git-send-email-felipe.contreras@nokia.com>
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 20, 2010 at 02:57:21PM +0100, Jean Delvare wrote:
-> On Mon, 20 Dec 2010 21:44:34 +0800, Mikael Ström wrote:
-> > Hi,
-> > 
-> > I know nothing about the background to the mail below, but if it's of
-> > any help, macfanctld uses the following hardwired paths,
-> > 
-> > reading:
-> > 
-> > /sys/devices/platform/applesmc.768/temp<n>_input
-> > 
-> > and writing:
-> > 
-> > /sys/devices/platform/applesmc.768/fan1_min
-> > /sys/devices/platform/applesmc.768/fan2_min
-> > /sys/devices/platform/applesmc.768/fan1_manual
-> > /sys/devices/platform/applesmc.768/fan2_manual
-> > 
-> > If any of those are to be broken, please advice in advance so i can
-> > update the source before you break it, avoiding that the users fry their
-> > MacBooks.
-> 
-> I would expect the kernel driver to behave sanely in the absence of a
-> user-space application. Isn't it the case? If not, I consider it a
-> serious bug in the driver, which should be addressed ASAP.
+This is needed because the lock needs to be extended to protect the
+mapping info access, which is used to construct a scatter-gather list,
+and in the process, we might sleep.
 
-The macbook overheat problems goes way back. All models have automatic
-heat protection, but it kicks in at temperatures uncomfortable to most
-users. The severity also depends on when the model was made. The
-current solution is to use the macfanctld driver, which disables
-automatic fan control, replacing it with a control loop yielding more
-workable temperatures. A fan control solution in the kernel would
-certainly be well received.
+Signed-off-by: Felipe Contreras <felipe.contreras@nokia.com>
+---
+ .../staging/tidspbridge/include/dspbridge/drv.h    |    2 +-
+ drivers/staging/tidspbridge/rmgr/drv_interface.c   |    2 +-
+ drivers/staging/tidspbridge/rmgr/proc.c            |   12 ++++++------
+ 3 files changed, 8 insertions(+), 8 deletions(-)
 
-Henrik
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/drv.h b/drivers/staging/tidspbridge/include/dspbridge/drv.h
+index c1f363e..217c918 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/drv.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/drv.h
+@@ -163,7 +163,7 @@ struct process_context {
+ 
+ 	/* DMM mapped memory resources */
+ 	struct list_head dmm_map_list;
+-	spinlock_t dmm_map_lock;
++	struct semaphore dmm_map_sema;
+ 
+ 	/* DMM reserved memory resources */
+ 	struct list_head dmm_rsv_list;
+diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.c b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+index 324fcdf..82c25c6 100644
+--- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
++++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+@@ -507,7 +507,7 @@ static int bridge_open(struct inode *ip, struct file *filp)
+ 	pr_ctxt = kzalloc(sizeof(struct process_context), GFP_KERNEL);
+ 	if (pr_ctxt) {
+ 		pr_ctxt->res_state = PROC_RES_ALLOCATED;
+-		spin_lock_init(&pr_ctxt->dmm_map_lock);
++		sema_init(&pr_ctxt->dmm_map_sema, 1);
+ 		INIT_LIST_HEAD(&pr_ctxt->dmm_map_list);
+ 		spin_lock_init(&pr_ctxt->dmm_rsv_lock);
+ 		INIT_LIST_HEAD(&pr_ctxt->dmm_rsv_list);
+diff --git a/drivers/staging/tidspbridge/rmgr/proc.c b/drivers/staging/tidspbridge/rmgr/proc.c
+index b47d7aa..77ab5f5 100644
+--- a/drivers/staging/tidspbridge/rmgr/proc.c
++++ b/drivers/staging/tidspbridge/rmgr/proc.c
+@@ -144,9 +144,9 @@ static struct dmm_map_object *add_mapping_info(struct process_context *pr_ctxt,
+ 	map_obj->size = size;
+ 	map_obj->num_usr_pgs = num_usr_pgs;
+ 
+-	spin_lock(&pr_ctxt->dmm_map_lock);
++	down(&pr_ctxt->dmm_map_sema);
+ 	list_add(&map_obj->link, &pr_ctxt->dmm_map_list);
+-	spin_unlock(&pr_ctxt->dmm_map_lock);
++	up(&pr_ctxt->dmm_map_sema);
+ 
+ 	return map_obj;
+ }
+@@ -170,7 +170,7 @@ static void remove_mapping_information(struct process_context *pr_ctxt,
+ 	pr_debug("%s: looking for virt 0x%x size 0x%x\n", __func__,
+ 							dsp_addr, size);
+ 
+-	spin_lock(&pr_ctxt->dmm_map_lock);
++	down(&pr_ctxt->dmm_map_sema);
+ 	list_for_each_entry(map_obj, &pr_ctxt->dmm_map_list, link) {
+ 		pr_debug("%s: candidate: mpu_addr 0x%x virt 0x%x size 0x%x\n",
+ 							__func__,
+@@ -191,7 +191,7 @@ static void remove_mapping_information(struct process_context *pr_ctxt,
+ 
+ 	pr_err("%s: failed to find given map info\n", __func__);
+ out:
+-	spin_unlock(&pr_ctxt->dmm_map_lock);
++	up(&pr_ctxt->dmm_map_sema);
+ }
+ 
+ static int match_containing_map_obj(struct dmm_map_object *map_obj,
+@@ -211,7 +211,7 @@ static struct dmm_map_object *find_containing_mapping(
+ 	pr_debug("%s: looking for mpu_addr 0x%x size 0x%x\n", __func__,
+ 						mpu_addr, size);
+ 
+-	spin_lock(&pr_ctxt->dmm_map_lock);
++	down(&pr_ctxt->dmm_map_sema);
+ 	list_for_each_entry(map_obj, &pr_ctxt->dmm_map_list, link) {
+ 		pr_debug("%s: candidate: mpu_addr 0x%x virt 0x%x size 0x%x\n",
+ 						__func__,
+@@ -228,7 +228,7 @@ static struct dmm_map_object *find_containing_mapping(
+ 
+ 	map_obj = NULL;
+ out:
+-	spin_unlock(&pr_ctxt->dmm_map_lock);
++	up(&pr_ctxt->dmm_map_sema);
+ 	return map_obj;
+ }
+ 
+-- 
+1.7.3.3
+
