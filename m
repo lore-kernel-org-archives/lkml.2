@@ -1,49 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933133Ab0LTUAM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 15:00:12 -0500
-Received: from cantor.suse.de ([195.135.220.2]:50682 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932744Ab0LTUAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 15:00:10 -0500
-Date: Mon, 20 Dec 2010 11:58:47 -0800
-From: Greg KH <gregkh@suse.de>
-To: merez@codeaurora.org
-Cc: Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC/PATCH v2] usb: Add streams support to epautoconf.
-Message-ID: <20101220195847.GA2479@suse.de>
-References: <e81cf70b35cab2396bf79c3fbc9c268b.squirrel@www.codeaurora.org>
+	id S933128Ab0LTUFJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 15:05:09 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:43958 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932744Ab0LTUFI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 15:05:08 -0500
+Message-ID: <4D0FB6E6.2060608@metafoo.de>
+Date: Mon, 20 Dec 2010 21:04:54 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101030 Icedove/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <e81cf70b35cab2396bf79c3fbc9c268b.squirrel@www.codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dan Carpenter <error27@gmail.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>
+CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch -next] power/gpio-charger: check for kzalloc() failure
+References: <20101220130856.GZ1936@bicker>
+In-Reply-To: <20101220130856.GZ1936@bicker>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 20, 2010 at 11:33:44AM -0800, merez@codeaurora.org wrote:
-> > On Thu, Dec 16, 2010 at 10:15AM, Greg KH wrote:
-> > What do you exactly mean by "proprietary search algorithm"?
-> Our implementation for finding an EP with the required number of streams
-> may not fit the needs and platform definitions of all controllers.  For
-> example, having the minimum number of streams as a parameter will allow
-> controllers to compromise on the number of required streams in case there
-> is no EP that answers their first request.
-> At the beginning of usb_ep_autoconfig we could see many if statements for
-> finding the fitting EP for several controllers (for example
-> gadget_is_net2280). The new gadget op will prevent having additional if
-> statements in the usb_ep_autoconfig in case a different search is needed. 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Ok, but please note the word of "proprietary" usually means something
-else when talking about kernel code (i.e. licensing issues.)
+On 12/20/2010 02:08 PM, Dan Carpenter wrote:
+> Return -ENOMEM if kzalloc() fails.
+> 
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
+> 
+> diff --git a/drivers/power/gpio-charger.c b/drivers/power/gpio-charger.c
+> index fccbe99..06a74f0 100644
+> --- a/drivers/power/gpio-charger.c
+> +++ b/drivers/power/gpio-charger.c
+> @@ -87,6 +87,8 @@ static int __devinit gpio_charger_probe(struct platform_device *pdev)
+>  	}
+>  
+>  	gpio_charger = kzalloc(sizeof(*gpio_charger), GFP_KERNEL);
+> +	if (!gpio_charger)
+> +		return -ENOMEM;
+>  
+>  	charger = &gpio_charger->charger;
+>  
 
-I'll be glad to take this type of patch when you also provide a patch
-that uses the callback, but not before then.
+Hi
 
-thanks,
+This is now the 4th patch or so fixing this issue. I send the first one[1], together
+with some other fixes[2][3], a month ago.
 
-greg k-h
+Anton could you please pick them up?
+
+Thanks
+- - Lars
+
+[1] http://lkml.indiana.edu/hypermail/linux/kernel/1011.2/02029.html
+[2] http://lkml.indiana.edu/hypermail/linux/kernel/1011.2/02028.html
+[3] http://lkml.indiana.edu/hypermail/linux/kernel/1011.2/02030.html
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk0PtuYACgkQBX4mSR26RiOCRQCfdKUdpAjX2GxAJuGVekZDiyjx
+j3IAnRCS562ud3Ali/B5V1gWNeBHcxNj
+=M4Vg
+-----END PGP SIGNATURE-----
