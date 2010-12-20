@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757490Ab0LTMg1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 07:36:27 -0500
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:59269 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756919Ab0LTMgZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 07:36:25 -0500
-From: Linus WALLEIJ <linus.walleij@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Rabin VINCENT <rabin.vincent@stericsson.com>
-Date: Mon, 20 Dec 2010 13:35:56 +0100
-Subject: RE: [PATCH] mfd: Use dummy_irq_chip for tc3589x
-Thread-Topic: [PATCH] mfd: Use dummy_irq_chip for tc3589x
-Thread-Index: AcugPr65wHetc+hQQn+wm+I4R555BAAA5qIQ
-Message-ID: <CEE6BB42CAD6E947908279175AF8470A075EFE20EB@EXDCVYMBSTM006.EQ1STM.local>
-References: <20101220120918.GF11095@sortiz-mobl>
-In-Reply-To: <20101220120918.GF11095@sortiz-mobl>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757454Ab0LTMjI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 07:39:08 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39566 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756919Ab0LTMjF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 07:39:05 -0500
+Date: Mon, 20 Dec 2010 12:39:03 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: Update consumer state only after set
+ voltage succeeds.
+Message-ID: <20101220123903.GE26706@rakim.wolfsonmicro.main>
+References: <1292625868-26862-1-git-send-email-skannan@codeaurora.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292625868-26862-1-git-send-email-skannan@codeaurora.org>
+X-Cookie: Reapply as necessary.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Samuel]
+On Fri, Dec 17, 2010 at 02:44:28PM -0800, Saravana Kannan wrote:
 
-> This also converts tc3589x to the new irq API.
-> 
-> Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-> ---
-> 
-> Linus, this should go through your ux500-core branch as this is where
-> the
-> tc3589x rename happens.
+>  static int regulator_check_consumers(struct regulator_dev *rdev,
+> +				     struct regulator *ignore,
+>  				     int *min_uV, int *max_uV)
 
-OK applied and pushed to ux500-core, you can drop this
-tc35x stuff off the MFD tree now..
+This feels really invasive, and prone to robustness issues as we're just
+randomly not checking one of the consumers on a single call, meaning we
+skip some checking some of the time.  It's not going to make the code
+more maintainable.
 
-Yours,
-Linus Walleij
+> -	regulator->min_uV = min_uV;
+> -	regulator->max_uV = max_uV;
+> -
+> -	ret = regulator_check_consumers(rdev, &min_uV, &max_uV);
+> +	ret = regulator_check_consumers(rdev, regulator, &min_uV, &max_uV);
+>  	if (ret < 0)
+>  		goto out;
+>  
+>  	ret = _regulator_do_set_voltage(rdev, min_uV, max_uV);
+> +	if (!ret) {
+> +		regulator->min_uV = min_uV;
+> +		regulator->max_uV = max_uV;
+> +	}
+
+If you're going to do something probably unwinding the assignment on
+error would cover it.
