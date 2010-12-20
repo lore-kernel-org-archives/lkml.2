@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932928Ab0LTRJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 12:09:57 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:41732 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S932875Ab0LTRJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 12:09:56 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18auGksIMEaVICf4c4qsihpr6Q5Ba/4VmVjsIGrYL
-	JNkYxOL5AX6hZc
-From: Peter =?utf-8?q?H=C3=BCwe?= <PeterHuewe@gmx.de>
-To: sedat.dilek@gmail.com
-Subject: Re: [PATCH] platform/x86: Fix recursive Kconfig dependency
-Date: Mon, 20 Dec 2010 18:09:40 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36.2; KDE/4.4.5; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Corentin Chary <corentin.chary@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org, John Linville <linville@tuxdriver.com>
-References: <1291850970-7190-1-git-send-email-peterhuewe@gmx.de> <201012192000.14969.PeterHuewe@gmx.de> <AANLkTi=gqimS5n6J6GXcZA_W1JHZ8yHJHAKqP=dDmN0Z@mail.gmail.com>
-In-Reply-To: <AANLkTi=gqimS5n6J6GXcZA_W1JHZ8yHJHAKqP=dDmN0Z@mail.gmail.com>
+	id S932942Ab0LTRLF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 12:11:05 -0500
+Received: from mail-bw0-f45.google.com ([209.85.214.45]:62281 "EHLO
+	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932875Ab0LTRLD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 12:11:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=UpaiQOfMXDoVcSNnd2i5GMvJ6FFX8BkIXSMJ+V01GK5wMTDlyQ2mreQ6sPqHaSD/A1
+         Clqnd2JN99+OfEGiOr3wCuvPwJnnl6SAl+geSNNGPRwTJR/QbKoixcNGEV2LIplFK1dK
+         TAGpKYy7qLw1dy1lDxE/zaGW9J3Kk6pcMRUT8=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012201809.41269.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+In-Reply-To: <1292855134-14374-1-git-send-email-felipe.contreras@nokia.com>
+References: <1292855134-14374-1-git-send-email-felipe.contreras@nokia.com>
+Date: Mon, 20 Dec 2010 19:11:01 +0200
+Message-ID: <AANLkTikZN8rPcusHrOR3eCyQWXmzd=fMc4riRvKpzQ_O@mail.gmail.com>
+Subject: Re: [PATCH 0/2] staging: tidspbridge: fix dma race condition
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Felipe Contreras <felipe.contreras@nokia.com>
+Cc: linux-main <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>, Greg KH <greg@kroah.com>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        Nishanth Menon <nm@ti.com>, Ameya Palande <ameya.palande@nokia.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag 20 Dezember 2010, 15:46:02 schrieb Sedat Dilek:
-> > Added Stephen Rothwell on CC, maybe he can apply it directly to
-> > linux-next ;)
-> > 
-> > Peter
-> 
-> I do not think this will happen for a "as-warning-classified" patch.
+On Mon, Dec 20, 2010 at 4:25 PM, Felipe Contreras
+<felipe.contreras@nokia.com> wrote:
+> I found a race condition that triggers a kernel panic. It's explained in the
+> following patches, but basically the map_obj that contains the user pages is
+> being destroyed while doing a DMA operation (which requires that map_obj).
+>
+> My solution is to convert the spinlock to a semaphore, and exten the area
+> protected (which might sleep).
+>
+> I have not tested these specific patches; they have been forward ported. But in
+> a similar branch, they solve the issue.
 
-On arm and avr32 it is not only a warning but an error instead!
+Please disregard this patch series, I'll send a simpler single patch
+that does the trick.
 
--> so the patch fixes an error / build failure which imho is quite an 
-important issue.
-
-You can see the errors in Ellerman's build farm.
-
-http://kisskb.ellerman.id.au/kisskb/buildresult/3652816/
-http://kisskb.ellerman.id.au/kisskb/buildresult/3664077/
-http://kisskb.ellerman.id.au/kisskb/buildresult/3652972/
-http://kisskb.ellerman.id.au/kisskb/buildresult/3664113/
-
-As it is an error for arm and avr32 maybe it should go through their trees 
-instead?
-
-Peter
+-- 
+Felipe Contreras
