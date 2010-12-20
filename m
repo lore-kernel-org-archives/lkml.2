@@ -1,131 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757808Ab0LTN4Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 08:56:16 -0500
-Received: from router-fw.net-space.pl ([89.174.63.77]:51368 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757714Ab0LTNzk (ORCPT
+	id S1757755Ab0LTN5r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 08:57:47 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:30510 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757716Ab0LTN5q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 08:55:40 -0500
-X-Greylist: delayed 439 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Dec 2010 08:55:39 EST
-Date: Mon, 20 Dec 2010 14:46:40 +0100
-From: Daniel Kiper <dkiper@net-space.pl>
-To: akpm@linux-foundation.org, andi.kleen@intel.com,
-        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
-        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
-        v.tolstov@selfip.ru, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 1/3] mm: Add add_registered_memory() to memory hotplug API
-Message-ID: <20101220134640.GB6749@router-fw-old.local.net-space.pl>
+	Mon, 20 Dec 2010 08:57:46 -0500
+Date: Mon, 20 Dec 2010 14:57:21 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Mikael =?ISO-8859-1?B?U3Ry9m0=?= <mikael@sesamiq.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>, Julien BLACHE <jb@jblache.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: Re: [lm-sensors] [PATCH 1/2 V3] applesmc: Use PnP rather than 
+ hardcoding resources and devices
+Message-ID: <20101220145721.4c58ff3e@endymion.delvare>
+In-Reply-To: <1292852674.2118.10.camel@mike-laptop>
+References: <20101217221618.GA13207@ericsson.com>
+	<1292624661-32474-1-git-send-email-mjg@redhat.com>
+	<20101218042320.GA14104@ericsson.com>
+	<20101218093719.GA1493@polaris.bitmath.org>
+	<20101218110954.7a2ca190@endymion.delvare>
+	<20101218103139.GA1668@polaris.bitmath.org>
+	<878vzngvyn.fsf@sonic.technologeek.org>
+	<20101218115742.GA2063@polaris.bitmath.org>
+	<1292852674.2118.10.camel@mike-laptop>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.3.28i
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add_registered_memory() adds memory ealier registered
-as memory resource. It is required by memory hotplug
-for Xen guests, however it could be used also by other
-modules.
+On Mon, 20 Dec 2010 21:44:34 +0800, Mikael Ström wrote:
+> Hi,
+> 
+> I know nothing about the background to the mail below, but if it's of
+> any help, macfanctld uses the following hardwired paths,
+> 
+> reading:
+> 
+> /sys/devices/platform/applesmc.768/temp<n>_input
+> 
+> and writing:
+> 
+> /sys/devices/platform/applesmc.768/fan1_min
+> /sys/devices/platform/applesmc.768/fan2_min
+> /sys/devices/platform/applesmc.768/fan1_manual
+> /sys/devices/platform/applesmc.768/fan2_manual
+> 
+> If any of those are to be broken, please advice in advance so i can
+> update the source before you break it, avoiding that the users fry their
+> MacBooks.
 
-Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
----
- include/linux/memory_hotplug.h |    1 +
- mm/memory_hotplug.c            |   50 ++++++++++++++++++++++++++++++---------
- 2 files changed, 39 insertions(+), 12 deletions(-)
+I would expect the kernel driver to behave sanely in the absence of a
+user-space application. Isn't it the case? If not, I consider it a
+serious bug in the driver, which should be addressed ASAP.
 
-diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-index 864035f..2458b2f 100644
---- a/include/linux/memory_hotplug.h
-+++ b/include/linux/memory_hotplug.h
-@@ -203,6 +203,7 @@ static inline int is_mem_section_removable(unsigned long pfn,
- #endif /* CONFIG_MEMORY_HOTREMOVE */
- 
- extern int mem_online_node(int nid);
-+extern int add_registered_memory(int nid, u64 start, u64 size);
- extern int add_memory(int nid, u64 start, u64 size);
- extern int arch_add_memory(int nid, u64 start, u64 size);
- extern int remove_memory(u64 start, u64 size);
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index dd186c1..b642f26 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -509,20 +509,12 @@ out:
- }
- 
- /* we are OK calling __meminit stuff here - we have CONFIG_MEMORY_HOTPLUG */
--int __ref add_memory(int nid, u64 start, u64 size)
-+static int __ref __add_memory(int nid, u64 start, u64 size)
- {
- 	pg_data_t *pgdat = NULL;
- 	int new_pgdat = 0;
--	struct resource *res;
- 	int ret;
- 
--	lock_system_sleep();
--
--	res = register_memory_resource(start, size);
--	ret = -EEXIST;
--	if (!res)
--		goto out;
--
- 	if (!node_online(nid)) {
- 		pgdat = hotadd_new_pgdat(nid, start);
- 		ret = -ENOMEM;
-@@ -556,14 +548,48 @@ int __ref add_memory(int nid, u64 start, u64 size)
- 	goto out;
- 
- error:
--	/* rollback pgdat allocation and others */
-+	/* rollback pgdat allocation */
- 	if (new_pgdat)
- 		rollback_node_hotadd(nid, pgdat);
--	if (res)
--		release_memory_resource(res);
-+
-+out:
-+	return ret;
-+}
-+
-+int add_registered_memory(int nid, u64 start, u64 size)
-+{
-+	int ret;
-+
-+	lock_system_sleep();
-+	ret = __add_memory(nid, start, size);
-+	unlock_system_sleep();
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(add_registered_memory);
-+
-+int add_memory(int nid, u64 start, u64 size)
-+{
-+	int ret = -EEXIST;
-+	struct resource *res;
-+
-+	lock_system_sleep();
-+
-+	res = register_memory_resource(start, size);
-+
-+	if (!res)
-+		goto out;
-+
-+	ret = __add_memory(nid, start, size);
-+
-+	if (!ret)
-+		goto out;
-+
-+	release_memory_resource(res);
- 
- out:
- 	unlock_system_sleep();
-+
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(add_memory);
 -- 
-1.4.4.4
-
+Jean Delvare
