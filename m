@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776Ab0LTKub (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 05:50:31 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38924 "EHLO
+	id S1756981Ab0LTKuf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 05:50:35 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38928 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754387Ab0LTKsv (ORCPT
+	with ESMTP id S1754716Ab0LTKsv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 Dec 2010 05:48:51 -0500
 From: Sascha Hauer <s.hauer@pengutronix.de>
@@ -12,9 +12,9 @@ To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
         liu.y.victor@gmail.com, B02280@freescale.com,
         Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH 1/9] ARM i.MX51: Add ipu clock support
-Date: Mon, 20 Dec 2010 11:48:39 +0100
-Message-Id: <1292842127-21406-2-git-send-email-s.hauer@pengutronix.de>
+Subject: [PATCH 9/9] ARM i.MX51 babbage: Add framebuffer support
+Date: Mon, 20 Dec 2010 11:48:47 +0100
+Message-Id: <1292842127-21406-10-git-send-email-s.hauer@pengutronix.de>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1292842127-21406-1-git-send-email-s.hauer@pengutronix.de>
 References: <1292842127-21406-1-git-send-email-s.hauer@pengutronix.de>
@@ -28,188 +28,133 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 ---
- arch/arm/mach-mx5/clock-mx51-mx53.c |  140 +++++++++++++++++++++++++++++++++++
- 1 files changed, 140 insertions(+), 0 deletions(-)
+ arch/arm/mach-mx5/Kconfig              |    1 +
+ arch/arm/mach-mx5/board-mx51_babbage.c |   74 ++++++++++++++++++++++++++++++++
+ 2 files changed, 75 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-mx5/clock-mx51-mx53.c b/arch/arm/mach-mx5/clock-mx51-mx53.c
-index 9fc65bb..f550d02 100644
---- a/arch/arm/mach-mx5/clock-mx51-mx53.c
-+++ b/arch/arm/mach-mx5/clock-mx51-mx53.c
-@@ -39,6 +39,9 @@ static struct clk periph_apm_clk;
- static struct clk ahb_clk;
- static struct clk ipg_clk;
- static struct clk usboh3_clk;
-+static struct clk emi_fast_clk;
-+static struct clk ipu_clk;
-+static struct clk mipi_hsc1_clk;
+diff --git a/arch/arm/mach-mx5/Kconfig b/arch/arm/mach-mx5/Kconfig
+index 5011f42..2a936b7 100644
+--- a/arch/arm/mach-mx5/Kconfig
++++ b/arch/arm/mach-mx5/Kconfig
+@@ -22,6 +22,7 @@ config MACH_MX51_BABBAGE
+ 	select IMX_HAVE_PLATFORM_IMX_UART
+ 	select IMX_HAVE_PLATFORM_SDHCI_ESDHC_IMX
+ 	select IMX_HAVE_PLATFORM_SPI_IMX
++	select IMX_HAVE_PLATFORM_IMX_IPUV3
+ 	help
+ 	  Include support for MX51 Babbage platform, also known as MX51EVK in
+ 	  u-boot. This includes specific configurations for the board and its
+diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
+index 368a315..6c1576c 100644
+--- a/arch/arm/mach-mx5/board-mx51_babbage.c
++++ b/arch/arm/mach-mx5/board-mx51_babbage.c
+@@ -22,11 +22,13 @@
+ #include <linux/input.h>
+ #include <linux/spi/flash.h>
+ #include <linux/spi/spi.h>
++#include <linux/mfd/imx-ipu-v3.h>
  
- #define MAX_DPLL_WAIT_TRIES	1000 /* 1000 * udelay(1) = 1ms */
+ #include <mach/common.h>
+ #include <mach/hardware.h>
+ #include <mach/iomux-mx51.h>
+ #include <mach/mxc_ehci.h>
++#include <mach/ipu-v3.h>
  
-@@ -688,6 +691,19 @@ static unsigned long clk_emi_slow_get_rate(struct clk *clk)
- 	return clk_get_rate(clk->parent) / div;
+ #include <asm/irq.h>
+ #include <asm/setup.h>
+@@ -158,6 +160,41 @@ static iomux_v3_cfg_t mx51babbage_pads[] = {
+ 	MX51_PAD_CSPI1_SCLK__ECSPI1_SCLK,
+ 	MX51_PAD_CSPI1_SS0__GPIO_4_24,
+ 	MX51_PAD_CSPI1_SS1__GPIO_4_25,
++
++	/* Display */
++	MX51_PAD_DISPB2_SER_DIN__GPIO_3_5,
++	MX51_PAD_DISPB2_SER_DIO__GPIO_3_6,
++	MX51_PAD_NANDF_D12__GPIO_3_28,
++
++	MX51_PAD_DISP1_DAT0__DISP1_DAT0,
++	MX51_PAD_DISP1_DAT1__DISP1_DAT1,
++	MX51_PAD_DISP1_DAT2__DISP1_DAT2,
++	MX51_PAD_DISP1_DAT3__DISP1_DAT3,
++	MX51_PAD_DISP1_DAT4__DISP1_DAT4,
++	MX51_PAD_DISP1_DAT5__DISP1_DAT5,
++	MX51_PAD_DISP1_DAT6__DISP1_DAT6,
++	MX51_PAD_DISP1_DAT7__DISP1_DAT7,
++	MX51_PAD_DISP1_DAT8__DISP1_DAT8,
++	MX51_PAD_DISP1_DAT9__DISP1_DAT9,
++	MX51_PAD_DISP1_DAT10__DISP1_DAT10,
++	MX51_PAD_DISP1_DAT11__DISP1_DAT11,
++	MX51_PAD_DISP1_DAT12__DISP1_DAT12,
++	MX51_PAD_DISP1_DAT13__DISP1_DAT13,
++	MX51_PAD_DISP1_DAT14__DISP1_DAT14,
++	MX51_PAD_DISP1_DAT15__DISP1_DAT15,
++	MX51_PAD_DISP1_DAT16__DISP1_DAT16,
++	MX51_PAD_DISP1_DAT17__DISP1_DAT17,
++	MX51_PAD_DISP1_DAT18__DISP1_DAT18,
++	MX51_PAD_DISP1_DAT19__DISP1_DAT19,
++	MX51_PAD_DISP1_DAT20__DISP1_DAT20,
++	MX51_PAD_DISP1_DAT21__DISP1_DAT21,
++	MX51_PAD_DISP1_DAT22__DISP1_DAT22,
++	MX51_PAD_DISP1_DAT23__DISP1_DAT23,
++#define MX51_PAD_DI_GP4__IPU_DI2_PIN15                 IOMUX_PAD(0x758, 0x350, 4, 0x0,   0, NO_PAD_CTRL)
++	MX51_PAD_DI_GP4__IPU_DI2_PIN15,
++
++	/* I2C DVI enable */
++	MX51_PAD_CSI2_HSYNC__GPIO_4_14,
+ };
+ 
+ /* Serial ports */
+@@ -346,6 +383,23 @@ static const struct spi_imx_master mx51_babbage_spi_pdata __initconst = {
+ 	.num_chipselect = ARRAY_SIZE(mx51_babbage_spi_cs),
+ };
+ 
++static struct ipuv3_fb_platform_data babbage_fb0_data = {
++	.interface_pix_fmt = IPU_PIX_FMT_RGB24,
++	.flags = IMX_IPU_FB_USE_MODEDB | IMX_IPU_FB_USE_OVERLAY,
++	.display = 0,
++};
++
++static struct ipuv3_fb_platform_data babbage_fb1_data = {
++	.interface_pix_fmt = IPU_PIX_FMT_RGB565,
++	.flags = IMX_IPU_FB_USE_MODEDB,
++	.display = 1,
++};
++
++static struct imx_ipuv3_platform_data ipu_data = {
++	.fb_head0_platform_data = &babbage_fb0_data,
++	.fb_head1_platform_data = &babbage_fb1_data,
++};
++
+ /*
+  * Board specific initialization.
+  */
+@@ -392,6 +446,26 @@ static void __init mxc_board_init(void)
+ 		ARRAY_SIZE(mx51_babbage_spi_board_info));
+ 	imx51_add_ecspi(0, &mx51_babbage_spi_pdata);
+ 	imx51_add_imx2_wdt(0, NULL);
++
++#define GPIO_DVI_DETECT	(2 * 32 + 28)
++#define GPIO_DVI_RESET	(2 * 32 + 5)
++#define GPIO_DVI_PWRDN	(2 * 32 + 6)
++#define GPIO_DVI_I2C	(3 * 32 + 14)
++
++	/* DVI Detect */
++	gpio_request(GPIO_DVI_DETECT, "dvi detect");
++	gpio_direction_input(GPIO_DVI_DETECT);
++	/* DVI Reset - Assert for i2c disabled mode */
++	gpio_request(GPIO_DVI_RESET, "dvi reset");
++	gpio_direction_output(GPIO_DVI_RESET, 0);
++	/* DVI Power-down */
++	gpio_request(GPIO_DVI_PWRDN, "dvi pwdn");
++	gpio_direction_output(GPIO_DVI_PWRDN, 1);
++
++	gpio_request(GPIO_DVI_I2C, "dvi i2c");
++	gpio_direction_output(GPIO_DVI_I2C, 0);
++
++	imx51_add_ipuv3(&ipu_data);
  }
  
-+static unsigned long _clk_ddr_hf_get_rate(struct clk *clk)
-+{
-+	unsigned long rate;
-+	u32 reg, div;
-+
-+	reg = __raw_readl(MXC_CCM_CBCDR);
-+	div = ((reg & MXC_CCM_CBCDR_DDR_PODF_MASK) >>
-+		MXC_CCM_CBCDR_DDR_PODF_OFFSET) + 1;
-+	rate = clk_get_rate(clk->parent) / div;
-+
-+	return rate;
-+}
-+
- /* External high frequency clock */
- static struct clk ckih_clk = {
- 	.get_rate = get_high_reference_clock_rate,
-@@ -846,6 +862,109 @@ static struct clk emi_slow_clk = {
- 	.get_rate = clk_emi_slow_get_rate,
- };
- 
-+static int clk_ipu_enable(struct clk *clk)
-+{
-+	u32 reg;
-+
-+	_clk_ccgr_enable(clk);
-+
-+	/* Enable handshake with IPU when certain clock rates are changed */
-+	reg = __raw_readl(MXC_CCM_CCDR);
-+	reg &= ~MXC_CCM_CCDR_IPU_HS_MASK;
-+	__raw_writel(reg, MXC_CCM_CCDR);
-+
-+	/* Enable handshake with IPU when LPM is entered */
-+	reg = __raw_readl(MXC_CCM_CLPCR);
-+	reg &= ~MXC_CCM_CLPCR_BYPASS_IPU_LPM_HS;
-+	__raw_writel(reg, MXC_CCM_CLPCR);
-+
-+	return 0;
-+}
-+
-+static void clk_ipu_disable(struct clk *clk)
-+{
-+	u32 reg;
-+
-+	_clk_ccgr_disable(clk);
-+
-+	/* Disable handshake with IPU whe dividers are changed */
-+	reg = __raw_readl(MXC_CCM_CCDR);
-+	reg |= MXC_CCM_CCDR_IPU_HS_MASK;
-+	__raw_writel(reg, MXC_CCM_CCDR);
-+
-+	/* Disable handshake with IPU when LPM is entered */
-+	reg = __raw_readl(MXC_CCM_CLPCR);
-+	reg |= MXC_CCM_CLPCR_BYPASS_IPU_LPM_HS;
-+	__raw_writel(reg, MXC_CCM_CLPCR);
-+}
-+
-+static struct clk ahbmux1_clk = {
-+	.parent = &ahb_clk,
-+	.secondary = &ahb_max_clk,
-+	.enable_reg = MXC_CCM_CCGR0,
-+	.enable_shift = MXC_CCM_CCGRx_CG8_OFFSET,
-+	.enable = _clk_ccgr_enable,
-+	.disable = _clk_ccgr_disable_inwait,
-+};
-+
-+static struct clk ipu_sec_clk = {
-+	.parent = &emi_fast_clk,
-+	.secondary = &ahbmux1_clk,
-+};
-+
-+static struct clk ddr_hf_clk = {
-+	.parent = &pll1_sw_clk,
-+	.get_rate = _clk_ddr_hf_get_rate,
-+};
-+
-+static struct clk ddr_clk = {
-+	.parent = &ddr_hf_clk,
-+};
-+
-+/* clock definitions for MIPI HSC unit which has been removed
-+ * from documentation, but not from hardware
-+ */
-+static int _clk_hsc_enable(struct clk *clk)
-+{
-+	u32 reg;
-+
-+	_clk_ccgr_enable(clk);
-+	/* Handshake with IPU when certain clock rates are changed. */
-+	reg = __raw_readl(MXC_CCM_CCDR);
-+	reg &= ~MXC_CCM_CCDR_HSC_HS_MASK;
-+	__raw_writel(reg, MXC_CCM_CCDR);
-+
-+	reg = __raw_readl(MXC_CCM_CLPCR);
-+	reg &= ~MXC_CCM_CLPCR_BYPASS_HSC_LPM_HS;
-+	__raw_writel(reg, MXC_CCM_CLPCR);
-+
-+	return 0;
-+}
-+
-+static void _clk_hsc_disable(struct clk *clk)
-+{
-+	u32 reg;
-+
-+	_clk_ccgr_disable(clk);
-+	/* No handshake with HSC as its not enabled. */
-+	reg = __raw_readl(MXC_CCM_CCDR);
-+	reg |= MXC_CCM_CCDR_HSC_HS_MASK;
-+	__raw_writel(reg, MXC_CCM_CCDR);
-+
-+	reg = __raw_readl(MXC_CCM_CLPCR);
-+	reg |= MXC_CCM_CLPCR_BYPASS_HSC_LPM_HS;
-+	__raw_writel(reg, MXC_CCM_CLPCR);
-+}
-+
-+static struct clk mipi_hsp_clk = {
-+	.parent = &ipu_clk,
-+	.enable_reg = MXC_CCM_CCGR4,
-+	.enable_shift = MXC_CCM_CCGRx_CG6_OFFSET,
-+	.enable = _clk_hsc_enable,
-+	.disable = _clk_hsc_disable,
-+	.secondary = &mipi_hsc1_clk,
-+};
-+
- #define DEFINE_CLOCK_CCGR(name, i, er, es, pfx, p, s)	\
- 	static struct clk name = {			\
- 		.id		= i,			\
-@@ -1077,6 +1196,23 @@ DEFINE_CLOCK_FULL(esdhc2_ipg_clk, 1, MXC_CCM_CCGR3, MXC_CCM_CCGRx_CG2_OFFSET,
- DEFINE_CLOCK_MAX(esdhc2_clk, 1, MXC_CCM_CCGR3, MXC_CCM_CCGRx_CG3_OFFSET,
- 	clk_esdhc2, &pll2_sw_clk, &esdhc2_ipg_clk);
- 
-+DEFINE_CLOCK(mipi_esc_clk, 0, MXC_CCM_CCGR4, MXC_CCM_CCGRx_CG5_OFFSET, NULL, NULL, NULL, &pll2_sw_clk);
-+DEFINE_CLOCK(mipi_hsc2_clk, 0, MXC_CCM_CCGR4, MXC_CCM_CCGRx_CG4_OFFSET, NULL, NULL, &mipi_esc_clk, &pll2_sw_clk);
-+DEFINE_CLOCK(mipi_hsc1_clk, 0, MXC_CCM_CCGR4, MXC_CCM_CCGRx_CG3_OFFSET, NULL, NULL, &mipi_hsc2_clk, &pll2_sw_clk);
-+
-+/* IPU */
-+DEFINE_CLOCK_FULL(ipu_clk, 0, MXC_CCM_CCGR5, MXC_CCM_CCGRx_CG5_OFFSET,
-+	NULL,  NULL, clk_ipu_enable, clk_ipu_disable, &ahb_clk, &ipu_sec_clk);
-+
-+DEFINE_CLOCK_FULL(emi_fast_clk, 0, MXC_CCM_CCGR5, MXC_CCM_CCGRx_CG7_OFFSET,
-+		NULL, NULL, _clk_ccgr_enable, _clk_ccgr_disable_inwait,
-+		&ddr_clk, NULL);
-+
-+DEFINE_CLOCK(ipu_di0_clk, 0, MXC_CCM_CCGR6, MXC_CCM_CCGRx_CG5_OFFSET,
-+		NULL, NULL, &pll3_sw_clk, NULL);
-+DEFINE_CLOCK(ipu_di1_clk, 0, MXC_CCM_CCGR6, MXC_CCM_CCGRx_CG6_OFFSET,
-+		NULL, NULL, &pll3_sw_clk, NULL);
-+
- #define _REGISTER_CLOCK(d, n, c) \
-        { \
- 		.dev_id = d, \
-@@ -1117,6 +1253,10 @@ static struct clk_lookup mx51_lookups[] = {
- 	_REGISTER_CLOCK(NULL, "iim_clk", iim_clk)
- 	_REGISTER_CLOCK("imx2-wdt.0", NULL, dummy_clk)
- 	_REGISTER_CLOCK("imx2-wdt.1", NULL, dummy_clk)
-+	_REGISTER_CLOCK(NULL, "mipi_hsp", mipi_hsp_clk)
-+	_REGISTER_CLOCK("imx-ipuv3", NULL, ipu_clk)
-+	_REGISTER_CLOCK("imx-ipuv3", "di0", ipu_di0_clk)
-+	_REGISTER_CLOCK("imx-ipuv3", "di1", ipu_di1_clk)
- };
- 
- static struct clk_lookup mx53_lookups[] = {
+ static void __init mx51_babbage_timer_init(void)
 -- 
 1.7.2.3
 
