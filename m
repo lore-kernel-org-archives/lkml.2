@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933023Ab0LTS1t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 13:27:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25046 "EHLO mx1.redhat.com"
+	id S933026Ab0LTS23 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 13:28:29 -0500
+Received: from void.printf.net ([89.145.121.20]:38233 "EHLO void.printf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933009Ab0LTS1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 13:27:47 -0500
-Message-ID: <4D0FA00E.6010701@redhat.com>
-Date: Mon, 20 Dec 2010 16:27:26 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S932742Ab0LTS21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 13:28:27 -0500
+From: Chris Ball <cjb@laptop.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: sedat.dilek@gmail.com, Sedat Dilek <sedat.dilek@googlemail.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        ftpadmin@kernel.org
+Subject: Re: linux-next: Tree for December 20
+References: <AANLkTi=gjHyMt=W4-+PSMzt7PN7i-_Yvmx7EE8z0z74q@mail.gmail.com>
+	<20101220230007.e82487b8.sfr@canb.auug.org.au>
+Date: Mon, 20 Dec 2010 13:34:09 -0500
+In-Reply-To: <20101220230007.e82487b8.sfr@canb.auug.org.au> (Stephen
+	Rothwell's message of "Mon, 20 Dec 2010 23:00:07 +1100")
+Message-ID: <m3pqswe1jy.fsf@pullcord.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.0.60 (gnu/linux)
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL for 2.6.37-rc7] V4L/DVB fixes
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi,
 
-Please pull from:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
+   >>> [The mirroring on kernel.org is running slowly]
 
-For a series of fixes at v4l2 drivers. They fix an OOPS at bttv due to BKL
-patches, a series of regressions that happened at gspca sonixj driver, 
-affecting most of the sonix Jpeg cams and a duplicated symbol, noticed by
-enabling allyesconfig + staging/cx23821.
+   >> Indeed, you know what's wrong with the mirrors?
 
-Thanks!
-Mauro
+   > I don't know what is wrong.  The mirroring just seems to be much
+   > slower in the last week or so.  Today, it was just over three
+   > hours from when I uploaded linux-next until it was mirrored out.
 
----
+I asked on IRC yesterday; we're still under high load from the Android
+Gingerbread release, which is causing many concurrent Git accesses
+(around 1500 simultaneous yesterday).
 
+Thanks,
 
-The following changes since commit cf7d7e5a1980d1116ee152d25dac382b112b9c17:
-
-  Linux 2.6.37-rc5 (2010-12-06 20:09:04 -0800)
-
-are available in the git repository at:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
-
-Brandon Philips (1):
-      [media] bttv: remove unneeded locking comments
-
-Jean-Francois Moine (6):
-      [media] gspca - sonixj: Move bridge init to sd start
-      [media] gspca - sonixj: Fix a bad probe exchange
-      [media] gspca - sonixj: Add a flag in the driver_info table
-      [media] gspca - sonixj: Set the flag for some devices
-      [media] gspca - sonixj: Add the bit definitions of the bridge reg 0x01 and 0x17
-      [media] gspca - sonixj: Better handling of the bridge registers 0x01 and 0x17
-
-Mauro Carvalho Chehab (2):
-      [media] Don't export format_by_forcc on two different drivers
-      [media] bttv: fix mutex use before init (BZ#24602)
-
- drivers/media/common/saa7146_hlp.c      |    8 +-
- drivers/media/common/saa7146_video.c    |   16 +-
- drivers/media/video/bt8xx/bttv-driver.c |  117 +---------
- drivers/media/video/gspca/sonixj.c      |  416 ++++++++++++++-----------------
- drivers/staging/cx25821/cx25821-video.c |    8 +-
- drivers/staging/cx25821/cx25821-video.h |    2 +-
- include/media/saa7146.h                 |    2 +-
- 7 files changed, 205 insertions(+), 364 deletions(-)
-
+-- 
+Chris Ball   <cjb@laptop.org>
+One Laptop Per Child
