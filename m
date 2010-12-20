@@ -1,99 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933007Ab0LTS1l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 13:27:41 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:41029 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932742Ab0LTS1k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 13:27:40 -0500
-Message-ID: <4D0FA098.8000405@kernel.org>
-Date: Mon, 20 Dec 2010 10:29:44 -0800
-From: "J.H." <warthog9@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.10
+	id S933023Ab0LTS1t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 13:27:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25046 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933009Ab0LTS1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 13:27:47 -0500
+Message-ID: <4D0FA00E.6010701@redhat.com>
+Date: Mon, 20 Dec 2010 16:27:26 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: sedat.dilek@gmail.com
-CC: Sedat Dilek <sedat.dilek@googlemail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, ftpadmin@kernel.org
-Subject: Re: linux-next: Tree for December 20
-References: <AANLkTi=gjHyMt=W4-+PSMzt7PN7i-_Yvmx7EE8z0z74q@mail.gmail.com>	<20101220230007.e82487b8.sfr@canb.auug.org.au> <AANLkTin4dvM1B8GkxZH6DADJVg4ZWNSQvUHAviy-4O2J@mail.gmail.com>
-In-Reply-To: <AANLkTin4dvM1B8GkxZH6DADJVg4ZWNSQvUHAviy-4O2J@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL for 2.6.37-rc7] V4L/DVB fixes
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.3 (shards.monkeyblade.net [198.137.202.13]); Mon, 20 Dec 2010 10:27:24 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2010 04:12 AM, Sedat Dilek wrote:
-> On Mon, Dec 20, 2010 at 1:00 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> Hi,
->>
->> On Mon, 20 Dec 2010 12:46:08 +0100 Sedat Dilek <sedat.dilek@googlemail.com> wrote:
->>>
->>>>
->>>> [The mirroring on kernel.org is running slowly]
->>>
->>> Indeed, you know what's wrong with the mirrors?
->>
->> I don't know what is wrong.  The mirroring just seems to be much slower
->> in the last week or so.  Today, it was just over three hours from when I
->> uploaded linux-next until it was mirrored out.
->>
->> I have cc'd the admins.
->>
-> 
-> Thanks.
+Hi Linus,
 
-Gingerbread released last week, loads have been spiking to well above
-300 on the frontend machines, RAM usage has been in the ~20G range (on
-machines with 16G of RAM), and we've been running an *AVERAGE* of 2000+
-simultaneous GIT processes worldwide (normal is in the 100-200 range).
+Please pull from:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
 
-Bonus points that we blew a drive on one of the machines yesterday.
+For a series of fixes at v4l2 drivers. They fix an OOPS at bttv due to BKL
+patches, a series of regressions that happened at gspca sonixj driver, 
+affecting most of the sonix Jpeg cams and a duplicated symbol, noticed by
+enabling allyesconfig + staging/cx23821.
 
-I don't think anyone was quite expecting the onslaught we have gotten
-this time around, and I'm going to have to make some changes before the
-next big release (mainly shifting Android over to the bigger machines)
+Thanks!
+Mauro
 
->>> Can you upload the diff-patch (patch-v2.6.37-rc6-next-20101220) to [1]
->>> from your local-tree or place it somewhere else?
->>
->> I cannot upload directly to www.kernel.org, I up load to the same place
->> on master.kernel.org and the mirroring system puts it on www.kernel.org.
->>
-> 
-> I could download the diff-patch.
-> 
-> $ wget http://www.kernel.org/pub/linux/kernel/v2.6/next/patch-v2.6.37-rc6-next-20101220.bz2
+---
 
-Running a quick set of stats against the logs we keep from the syncing
-I'm seeing:
 
-	All of December:
-	------------------
-	Number of cycles: 5848
-	Total amount of time spent syncing: 1544407sec
-	Average Sync times: 264sec
-	Longest time: 24011sec
-	Shortest time: 42sec
+The following changes since commit cf7d7e5a1980d1116ee152d25dac382b112b9c17:
 
-	Last 10 days:
-	------------------
-	Number of cycles: 2144
-	Total amount of time spent syncing: 845762sec
-	Average Sync times: 394sec
-	Longest time: 24011sec
-	Shortest time: 45sec
+  Linux 2.6.37-rc5 (2010-12-06 20:09:04 -0800)
 
-With cyclical patterns of fast and slow syncs.  We seem to be (right
-now) in the middle of one of the slow cycles with the last few syncs
-taking a couple of hours each.  The culprit, for at least the current
-sync, seems to be the box with the highest load and the blown drive,
-which I'm also reluctant to disable since it's still handling it's fair
-share of the load and dumping all of that onto the opposite US mirror
-would not be good either.
+are available in the git repository at:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
 
-- John 'Warthog9' Hawley
+Brandon Philips (1):
+      [media] bttv: remove unneeded locking comments
+
+Jean-Francois Moine (6):
+      [media] gspca - sonixj: Move bridge init to sd start
+      [media] gspca - sonixj: Fix a bad probe exchange
+      [media] gspca - sonixj: Add a flag in the driver_info table
+      [media] gspca - sonixj: Set the flag for some devices
+      [media] gspca - sonixj: Add the bit definitions of the bridge reg 0x01 and 0x17
+      [media] gspca - sonixj: Better handling of the bridge registers 0x01 and 0x17
+
+Mauro Carvalho Chehab (2):
+      [media] Don't export format_by_forcc on two different drivers
+      [media] bttv: fix mutex use before init (BZ#24602)
+
+ drivers/media/common/saa7146_hlp.c      |    8 +-
+ drivers/media/common/saa7146_video.c    |   16 +-
+ drivers/media/video/bt8xx/bttv-driver.c |  117 +---------
+ drivers/media/video/gspca/sonixj.c      |  416 ++++++++++++++-----------------
+ drivers/staging/cx25821/cx25821-video.c |    8 +-
+ drivers/staging/cx25821/cx25821-video.h |    2 +-
+ include/media/saa7146.h                 |    2 +-
+ 7 files changed, 205 insertions(+), 364 deletions(-)
+
