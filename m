@@ -1,130 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932596Ab0LTOSa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 09:18:30 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51468 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932574Ab0LTOS1 (ORCPT
+	id S1757876Ab0LTOUI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 09:20:08 -0500
+Received: from mail12.space2u.com ([194.237.215.104]:48703 "EHLO
+	mail12.space2u.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753843Ab0LTOUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 09:18:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=KbAr3LtQ7+KW5ZWN+5rvbNik9EdLYNN/6mnsISV3/QWeqZxVOB+MTCW7RoiWu9WfKJ
-         lReBIkhkNIJy8VrOwj++4ohWZbY2Gk0pjiB7zN7wK+kNsFZ9SL1Z1qk+O81087B9Wgl/
-         gASNPFHm3f8psR0Yw/+1scglqvkDWA5uyiZgM=
-From: Franck Bui-Huu <vagabon.xyz@gmail.com>
-To: masami.hiramatsu.pt@hitachi.com
-Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/6] perf-probe: don't always consider EOF as an error when listing source code
-Date: Mon, 20 Dec 2010 15:18:04 +0100
-Message-Id: <1292854685-8230-6-git-send-email-fbuihuu@gmail.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1292854685-8230-1-git-send-email-fbuihuu@gmail.com>
-References: <1292854685-8230-1-git-send-email-fbuihuu@gmail.com>
+	Mon, 20 Dec 2010 09:20:06 -0500
+X-Greylist: delayed 2082 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Dec 2010 09:20:06 EST
+Subject: Re: [lm-sensors] [PATCH 1/2 V3] applesmc: Use PnP rather than
+ hardcoding resources and devices
+From: Mikael =?ISO-8859-1?Q?Str=F6m?= <mikael@sesamiq.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Julien BLACHE <jb@jblache.org>, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>
+In-Reply-To: <20101218115742.GA2063@polaris.bitmath.org>
+References: <20101217221618.GA13207@ericsson.com>
+	 <1292624661-32474-1-git-send-email-mjg@redhat.com>
+	 <20101218042320.GA14104@ericsson.com>
+	 <20101218093719.GA1493@polaris.bitmath.org>
+	 <20101218110954.7a2ca190@endymion.delvare>
+	 <20101218103139.GA1668@polaris.bitmath.org>
+	 <878vzngvyn.fsf@sonic.technologeek.org>
+	 <20101218115742.GA2063@polaris.bitmath.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 20 Dec 2010 21:44:34 +0800
+Message-ID: <1292852674.2118.10.camel@mike-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Franck Bui-Huu <fbuihuu@gmail.com>
+Hi,
 
-When listing a whole file or a function which is located at the end,
-perf-probe -L output wrongly: "Source file is shorter than expected.".
+I know nothing about the background to the mail below, but if it's of
+any help, macfanctld uses the following hardwired paths,
 
-This is because show_one_line() always consider EOF as an error.
+reading:
 
-This patch fixes this by not considering EOF as an error when dumping
-the trailing lines. Otherwise it's still an error and perf-probe still
-outputs its warning.
+/sys/devices/platform/applesmc.768/temp<n>_input
 
-Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
----
- tools/perf/util/probe-event.c |   38 ++++++++++++++++++++++++++------------
- 1 files changed, 26 insertions(+), 12 deletions(-)
+and writing:
 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 8e5f5ff..1e81936 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -297,7 +297,7 @@ static int get_real_path(const char *raw_path, const char *comp_dir,
- #define LINEBUF_SIZE 256
- #define NR_ADDITIONAL_LINES 2
- 
--static int show_one_line(FILE *fp, int l, bool skip, bool show_num)
-+static int __show_one_line(FILE *fp, int l, bool skip, bool show_num)
- {
- 	char buf[LINEBUF_SIZE];
- 	const char *color = show_num ? "" : PERF_COLOR_BLUE;
-@@ -316,16 +316,30 @@ static int show_one_line(FILE *fp, int l, bool skip, bool show_num)
- 
- 	} while (strchr(buf, '\n') == NULL);
- 
--	return 0;
-+	return 1;
- error:
--	if (feof(fp))
-+	if (ferror(fp)) {
- 		pr_warning("Source file is shorter than expected.\n");
--	else
--		pr_warning("File read error: %s\n", strerror(errno));
-+		return -1;
-+	}
-+	return 0;
-+}
- 
--	return -1;
-+static int _show_one_line(FILE *fp, int l, bool skip, bool show_num)
-+{
-+	int rv = __show_one_line(fp, l, skip, show_num);
-+	if (rv == 0) {
-+		pr_warning("Source file is shorter than expected.\n");
-+		rv = -1;
-+	}
-+	return rv;
- }
- 
-+#define show_one_line_with_num(f,l)	_show_one_line(f,l,false,true)
-+#define show_one_line(f,l)		_show_one_line(f,l,false,false)
-+#define skip_one_line(f,l)		_show_one_line(f,l,true,false)
-+#define show_one_line_or_eof(f,l)	__show_one_line(f,l,false,false)
-+
- /*
-  * Show line-range always requires debuginfo to find source file and
-  * line number.
-@@ -384,27 +398,27 @@ int show_line_range(struct line_range *lr, const char *module)
- 	}
- 	/* Skip to starting line number */
- 	while (l < lr->start) {
--		ret = show_one_line(fp, l++, true, false);
-+		ret = skip_one_line(fp, l++);
- 		if (ret < 0)
- 			goto end;
- 	}
- 
- 	list_for_each_entry(ln, &lr->line_list, list) {
- 		for (; ln->line > l; l++) {
--			ret = show_one_line(fp, l - lr->offset, false, false);
-+			ret = show_one_line(fp, l - lr->offset);
- 			if (ret < 0)
- 				goto end;
- 		}
--		ret = show_one_line(fp, l++ - lr->offset, false, true);
-+		ret = show_one_line_with_num(fp, l++ - lr->offset);
- 		if (ret < 0)
- 			goto end;
- 	}
- 
- 	if (lr->end == INT_MAX)
- 		lr->end = l + NR_ADDITIONAL_LINES;
--	while (l <= lr->end && !feof(fp)) {
--		ret = show_one_line(fp, l++ - lr->offset, false, false);
--		if (ret < 0)
-+	while (l <= lr->end) {
-+		ret = show_one_line_or_eof(fp, l++ - lr->offset);
-+		if (ret <= 0)
- 			break;
- 	}
- end:
+/sys/devices/platform/applesmc.768/fan1_min
+/sys/devices/platform/applesmc.768/fan2_min
+/sys/devices/platform/applesmc.768/fan1_manual
+/sys/devices/platform/applesmc.768/fan2_manual
+
+If any of those are to be broken, please advice in advance so i can
+update the source before you break it, avoiding that the users fry their
+MacBooks.
+
+Thanks,
+Mike
+
 -- 
-1.7.3.2
+Mikael Ström <mikael@sesamiq.com>
+
+On Sat, 2010-12-18 at 12:57 +0100, Henrik Rydberg wrote:
+> On Sat, Dec 18, 2010 at 12:29:52PM +0100, Julien BLACHE wrote:
+> > "Henrik Rydberg" <rydberg@euromail.se> wrote:
+> > 
+> > Hi,
+> > 
+> > >> Which applications? libsensors-based applications definitely don't
+> > >> hard-wire anything.
+> > >
+> > > The ones I am thinking of are pommed and macfanctld, there are
+> > > probably others. The sysfs nodes have been around a while, so it is
+> > > not really surprising. If there is a policy saying it is ok to break
+> > > userspace in this case, that's fine.
+> > 
+> > I've just changed pommed to probe for applesmc through /sys/class/hwmon,
+> > so you can go ahead and break it as far as I'm concerned :)
+> 
+> Great, thanks Julien. And macfanctld should not be a problem either (ccing the author).
+> 
+> Henrik
+> 
 
