@@ -1,60 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933261Ab0LTVOX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 16:14:23 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:41820 "EHLO ogre.sisk.pl"
+	id S1754700Ab0LTV0u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 16:26:50 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:41589 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933186Ab0LTVOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 16:14:22 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: platform/i2c busses: pm runtime and system sleep
-Date: Mon, 20 Dec 2010 22:13:53 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6+; KDE/4.4.4; x86_64; ; )
-Cc: Rabin Vincent <rabin@rab.in>, stern@rowland.harvard.edu,
-        linux-pm@lists.linux-foundation.org, linux-i2c@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-References: <AANLkTinyDE3OxKup_aqsN8HJH_r5LcwkP17OtuMRpACx@mail.gmail.com> <201012181559.50347.rjw@sisk.pl> <20101220150051.GI26706@rakim.wolfsonmicro.main>
-In-Reply-To: <20101220150051.GI26706@rakim.wolfsonmicro.main>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012202213.53902.rjw@sisk.pl>
+	id S1751688Ab0LTV0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 16:26:49 -0500
+From: Ernesto Ramos <ernesto@ti.com>
+To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: omar.ramirez@ti.com, ohad@wizery.com, felipe.contreras@gmail.com,
+        Ernesto Ramos <ernesto@ti.com>
+Subject: [PATCH] staging: tidspbridge: remove code referred by OPT_ZERO_COPY_LOADER
+Date: Mon, 20 Dec 2010 15:23:08 -0600
+Message-Id: <1292880188-5860-1-git-send-email-ernesto@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, December 20, 2010, Mark Brown wrote:
-> On Sat, Dec 18, 2010 at 03:59:50PM +0100, Rafael J. Wysocki wrote:
-> 
-> > Second, the situation at hand is that the bus type implements dev_pm_ops,
-> > but the driver doesn't.  Now, pm_generic_suspend() is called with a struct
-> > device pointer, so it would have to go back to dev->bus, find the
-> > ->legacy_suspend() callback (as opposed to ->suspend(), which also is legacy,
-> > but is called by the PM core instead).  May I call that confusing?
-> 
-> Well, the trouble is that the whole situation is already pretty
-> confusing for what should be very simple buses, each one needs to write
-> a bunch of not really bus specific code in order to get basic behaviour
-> which allows the drivers to make use of runtime PM, requiring more
-> thought and care per bus than I'd expect given that they've nothing
-> really to contribute.  This leads to the sort of random variations
-> between buses that Rabin is reporting, and means that updates keep
-> having to get done in multiple different places.
-> 
-> The overall effect is that from the point of view of trying to use
-> runtime PM in drivers which work with these simple buses everything
-> feels like it's much harder work than it should be.  Moving all the
-> decision making out of the buses and into the PM core seems like a win
-> here.
+Remove code referred by OPT_ZERO_COPY_LOADER since it is
+not used.
 
-Well, the _solution_ is to get rid of the legacy stuff from those buses in the
-first place.  Then, they'll just need to use the generic ops without any
-trouble.
+Signed-off-by: Ernesto Ramos <ernesto@ti.com>
+---
+ drivers/staging/tidspbridge/dynload/cload.c |   60 +++++++++------------------
+ 1 files changed, 20 insertions(+), 40 deletions(-)
 
-What you're proposing is a workaround that people will use as an excuse for
-not doing the right thing forever.
+diff --git a/drivers/staging/tidspbridge/dynload/cload.c b/drivers/staging/tidspbridge/dynload/cload.c
+index a5cdfa1..7713e76 100644
+--- a/drivers/staging/tidspbridge/dynload/cload.c
++++ b/drivers/staging/tidspbridge/dynload/cload.c
+@@ -1133,9 +1133,6 @@ static void dload_data(struct dload_state *dlthis)
+ 	u16 curr_sect;
+ 	struct doff_scnhdr_t *sptr = dlthis->sect_hdrs;
+ 	struct ldr_section_info *lptr = dlthis->ldr_sections;
+-#ifdef OPT_ZERO_COPY_LOADER
+-	bool zero_copy = false;
+-#endif
+ 	u8 *dest;
+ 
+ 	struct {
+@@ -1194,17 +1191,6 @@ static void dload_data(struct dload_state *dlthis)
+ 					return;
+ 				}
+ 				dest = ibuf.bufr;
+-#ifdef OPT_ZERO_COPY_LOADER
+-				zero_copy = false;
+-				if (!dload_check_type(sptr, DLOAD_CINIT) {
+-					dlthis->myio->writemem(dlthis->myio,
+-							       &dest,
+-							       lptr->load_addr +
+-							       image_offset,
+-							       lptr, 0);
+-					zero_copy = (dest != ibuf.bufr);
+-				}
+-#endif
+ 				/* End of determination */
+ 
+ 				if (dlthis->strm->read_buffer(dlthis->strm,
+@@ -1268,33 +1254,27 @@ static void dload_data(struct dload_state *dlthis)
+ 							    &ibuf.ipacket);
+ 						cinit_processed = true;
+ 					} else {
+-#ifdef OPT_ZERO_COPY_LOADER
+-						if (!zero_copy) {
+-#endif
+-							/* FIXME */
+-							if (!dlthis->myio->
+-							    writemem(dlthis->
+-								myio,
+-								ibuf.bufr,
+-								lptr->
+-								load_addr +
+-								image_offset,
+-								lptr,
+-								BYTE_TO_HOST
+-								(ibuf.
+-								ipacket.
+-								packet_size))) {
+-								DL_ERROR
+-								  ("Write to "
+-								  FMT_UI32
+-								  " failed",
+-								  lptr->
+-								  load_addr +
+-								  image_offset);
+-							}
+-#ifdef OPT_ZERO_COPY_LOADER
++						/* FIXME */
++						if (!dlthis->myio->
++						    writemem(dlthis->
++							myio,
++							ibuf.bufr,
++							lptr->
++							load_addr +
++							image_offset,
++							lptr,
++							BYTE_TO_HOST
++							(ibuf.
++							ipacket.
++							packet_size))) {
++							DL_ERROR
++							  ("Write to "
++							  FMT_UI32
++							  " failed",
++							  lptr->
++							  load_addr +
++							  image_offset);
+ 						}
+-#endif
+ 					}
+ 				}
+ 				image_offset +=
+-- 
+1.7.0.4
 
-Thanks,
-Rafael
