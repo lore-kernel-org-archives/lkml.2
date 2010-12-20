@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752377Ab0LTAaW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 19:30:22 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36813 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751824Ab0LTAaU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 19:30:20 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4D0EA38C.2090003@jp.fujitsu.com>
-Date: Mon, 20 Dec 2010 09:30:04 +0900
-From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	id S1752234Ab0LTAdm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 19:33:42 -0500
+Received: from mga01.intel.com ([192.55.52.88]:32140 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751750Ab0LTAdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 19:33:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,198,1291622400"; 
+   d="scan'208";a="869889156"
+Date: Mon, 20 Dec 2010 01:33:38 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Lennert Buytenhek <buytenh@wantstofly.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 18/20] mfd: wm831x: irq_data conversion.
+Message-ID: <20101220003337.GC3206@sortiz-mobl>
+References: <cover.1292241952.git.buytenh@wantstofly.org>
+ <20101213123121.GB15575@mail.wantstofly.org>
+ <20101213123935.GB21535@rakim.wolfsonmicro.main>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [Resend][PATCH] PCI / Hotplug: Fix unexpected driver unregister
- in pciehp_acpi.c
-References: <201012181329.46071.rjw@sisk.pl>
-In-Reply-To: <201012181329.46071.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101213123935.GB21535@rakim.wolfsonmicro.main>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/12/18 21:29), Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki<rjw@sisk.pl>
-> 
-> If pcie_ports_disabled is set, pcie_port_service_register() returns
-> error code and select_detection_mode() should not attempt to
-> unregister dummy_driver and use dummy_slots.  It should return
-> PCIEHP_DETECT_ACPI immediately instead.
-> 
-> Signed-off-by: Rafael J. Wysocki<rjw@sisk.pl>
+Hi Mark,
 
-Reviewed-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Acked-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+On Mon, Dec 13, 2010 at 12:39:35PM +0000, Mark Brown wrote:
+> On Mon, Dec 13, 2010 at 01:31:21PM +0100, Lennert Buytenhek wrote:
+> > Signed-off-by: Lennert Buytenhek <buytenh@secretlab.ca>
+> 
+> If you're doing this sort of work you really need to work against -next
+> or the individual development tree rather than Linus' tree.  The Wolfson
+> drivers have been converted in -next for a while now.
+> 
+> I also posted patches for everything in MFD except ezx-pcap over the
+> weekend - I pushed a branch up to a git tree earlier today with these
+> changes in, I'll try to keep it up to date with the acks I'm getting.
+> I'll add Lennart's ezx-pcap patch to that.
+> 
+> The following changes since commit 3ec93fcb34a97a9806a7280b136a7af20edf61f1:
+> 
+>   mfd: Fix twl_probe section mismatch warning in mfd/twl-core.c (2010-12-10 20:59:59 +0100)
+> 
+> are available in the git repository at:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc-2.6.git mfd-irq
+I've pulled this one into my for-next branch.
+Big thanks for taking care of this, I appreciate.
 
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
