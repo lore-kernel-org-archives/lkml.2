@@ -1,45 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756938Ab0LTKv2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 05:51:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24466 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754768Ab0LTKvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 05:51:25 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <AANLkTi=9UZ5BYWo5xT=jh0upRP6PraH4S=t=tL49YRdr@mail.gmail.com>
-References: <AANLkTi=9UZ5BYWo5xT=jh0upRP6PraH4S=t=tL49YRdr@mail.gmail.com> <4d0662e511688484b3@agluck-desktop.sc.intel.com> <AANLkTindPUkF7fCkdbqSstNHFjF3_7fEYh18nhQFx_AJ@mail.gmail.com> <AANLkTim3OpjPysjdCLDuFgFOipmcxyr2ay5cvUAu5PHi@mail.gmail.com> <AANLkTinpYJddhgbf7=Pw_TtGrnWaC8fwo2xv1XRsT1w7@mail.gmail.com> <AANLkTimA4x8oWyq71nOxB=Otp3Y0i3Kcu27DG0ajaXUG@mail.gmail.com> <AANLkTinCG+E6ZzpeRqsJP+-qvNDQXW4VZFgJ1c-sTryL@mail.gmail.com> <4D0BEE1F.7020008@zytor.com> <AANLkTinwFt+KDKNEYP9MWQ7wGb9qk=E2Xa3RJB3+MJnN@mail.gmail.com> <AANLkTinoV_pL=Ygqq4qt4f8c+wsdc9r9K7rcJ58aHjD1@mail.gmail.com> <AANLkTikhtWjFBQmA111Q+2JGRudrRNAmegGThMagr4vF@mail.gmail.com> <20101219091752.GA16150@liondog.tnic> 
-To: Tony Luck <tony.luck@intel.com>
-Cc: dhowells@redhat.com, Borislav Petkov <bp@alien8.de>,
-        Tony Luck <tony.luck@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        greg@kroah.com, akpm@linux-foundation.org, ying.huang@intel.com,
-        David Miller <davem@davemloft.net>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [concept & "good taste" review] persistent store
-Date: Mon, 20 Dec 2010 10:49:39 +0000
-Message-ID: <17090.1292842179@redhat.com>
+	id S1755696Ab0LTKuZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 05:50:25 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38938 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755092Ab0LTKsv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 05:48:51 -0500
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        liu.y.victor@gmail.com, B02280@freescale.com,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [PATCH 4/9] fb: export fb mode db table
+Date: Mon, 20 Dec 2010 11:48:42 +0100
+Message-Id: <1292842127-21406-5-git-send-email-s.hauer@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1292842127-21406-1-git-send-email-s.hauer@pengutronix.de>
+References: <1292842127-21406-1-git-send-email-s.hauer@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tony Luck <tony.luck@intel.com> wrote:
+The different modes can be useful for drivers. Currently there is
+no way to expose the modes to sysfs, so export them.
 
-> I'm not sure how big the store is on my system ... the ACPI/ERST
-> interface on this machine limits each entry to just under 8KB. But
-> that isn't inherent to to ERST, both larger and smaller values would
-> be an option. 8K seems quite useful for kmsg_dump purposes as
-> it grabs a significant number of lines leading up to the oops/panic.
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+---
+ drivers/video/modedb.c |    7 ++++++-
+ include/linux/fb.h     |    3 +++
+ 2 files changed, 9 insertions(+), 1 deletions(-)
 
-How are things written to the store?  Is it a record-based affair?
+diff --git a/drivers/video/modedb.c b/drivers/video/modedb.c
+index 0a4dbdc..82122a9 100644
+--- a/drivers/video/modedb.c
++++ b/drivers/video/modedb.c
+@@ -36,7 +36,7 @@ EXPORT_SYMBOL_GPL(fb_mode_option);
+      *  Standard video mode definitions (taken from XFree86)
+      */
+ 
+-static const struct fb_videomode modedb[] = {
++const struct fb_videomode modedb[] = {
+     {
+ 	/* 640x400 @ 70 Hz, 31.5 kHz hsync */
+ 	NULL, 70, 640, 400, 39721, 40, 24, 39, 9, 96, 2,
+@@ -277,6 +277,11 @@ static const struct fb_videomode modedb[] = {
+     },
+ };
+ 
++const struct fb_videomode *fb_modes = modedb;
++EXPORT_SYMBOL(fb_modes);
++const int num_fb_modes = ARRAY_SIZE(modedb);
++EXPORT_SYMBOL(num_fb_modes);
++
+ #ifdef CONFIG_FB_MODE_HELPERS
+ const struct fb_videomode vesa_modes[] = {
+ 	/* 0 640x350-85 VESA */
+diff --git a/include/linux/fb.h b/include/linux/fb.h
+index d1631d3..e006172 100644
+--- a/include/linux/fb.h
++++ b/include/linux/fb.h
+@@ -1151,6 +1151,9 @@ struct fb_videomode {
+ extern const char *fb_mode_option;
+ extern const struct fb_videomode vesa_modes[];
+ 
++extern const struct fb_videomode *fb_modes;
++extern const int num_fb_modes;
++
+ struct fb_modelist {
+ 	struct list_head list;
+ 	struct fb_videomode mode;
+-- 
+1.7.2.3
 
-David
