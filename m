@@ -1,98 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531Ab0LTCOT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 21:14:19 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:42333 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076Ab0LTCOS (ORCPT
+	id S1751636Ab0LTCV6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 21:21:58 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52454 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751160Ab0LTCV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 21:14:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=HUirylG5iLjt+nvy/aBAjpdBcZi6O55rqb1Gb3iBIE56GmG/BiWbRwM7K64IDun8nK
-         Nk2qyg7JL1ECa2LSNdYbxRT8MdPFctHmik4FHmVlC1T1/tSiGzXzYRvcgOAMGoQA+roI
-         RmHw6ROadvIVGnwRRyoypOCTkprcUThE4EmoM=
-Date: Mon, 20 Dec 2010 03:14:13 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH RFC tip/core/rcu 15/20] rcu: Keep gpnum and completed
- fields synchronized
-Message-ID: <20101220021411.GB1809@nowhere>
-References: <20101217205433.GA10199@linux.vnet.ibm.com>
- <1292619291-2468-15-git-send-email-paulmck@linux.vnet.ibm.com>
- <4D0EBBCF.2070305@cn.fujitsu.com>
+	Sun, 19 Dec 2010 21:21:56 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [RFC 5/5] truncate: Remove unnecessary page release
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@suse.de>, Al Viro <viro@zeniv.linux.org.uk>
+In-Reply-To: <02ab98b3a1450f7a1c31edc48ccc57e887cee900.1292604746.git.minchan.kim@gmail.com>
+References: <cover.1292604745.git.minchan.kim@gmail.com> <02ab98b3a1450f7a1c31edc48ccc57e887cee900.1292604746.git.minchan.kim@gmail.com>
+Message-Id: <20101220112227.E566.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D0EBBCF.2070305@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Mon, 20 Dec 2010 11:21:52 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 20, 2010 at 10:13:35AM +0800, Lai Jiangshan wrote:
-> On 12/18/2010 04:54 AM, Paul E. McKenney wrote:
-> > From: Frederic Weisbecker <fweisbec@gmail.com>
-> > 
-> > When a CPU that was in an extended quiescent state wakes
-> > up and catches up with grace periods that remote CPUs
-> > completed on its behalf, we update the completed field
-> > but not the gpnum that keeps a stale value of a backward
-> > grace period ID.
-> > 
-> > Later, note_new_gpnum() will interpret the shift between
-> > the local CPU and the node grace period ID as some new grace
-> > period to handle and will then start to hunt quiescent state.
-> > 
-> > But if every grace periods have already been completed, this
-> > interpretation becomes broken. And we'll be stuck in clusters
-> > of spurious softirqs because rcu_report_qs_rdp() will make
-> > this broken state run into infinite loop.
-> > 
-> > The solution, as suggested by Lai Jiangshan, is to ensure that
-> > the gpnum and completed fields are well synchronized when we catch
-> > up with completed grace periods on their behalf by other cpus.
-> > This way we won't start noting spurious new grace periods.
-> > 
-> > Suggested-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: Steven Rostedt <rostedt@goodmis.org
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > ---
-> >  kernel/rcutree.c |    9 +++++++++
-> >  1 files changed, 9 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index 916f42b..8105271 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -680,6 +680,15 @@ __rcu_process_gp_end(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
-> >  		rdp->completed = rnp->completed;
-> >  
-> >  		/*
-> > +		 * If we were in an extended quiescent state, we may have
-> > +		 * missed some grace periods that others CPUs took care on
-> > +		 * our behalf. Catch up with this state to avoid noting
-> > +		 * spurious new grace periods.
-> > +		 */
-> > +		if (rdp->completed > rdp->gpnum)
-> > +			rdp->gpnum = rdp->completed;
+> This patch series changes remove_from_page_cache's page ref counting
+> rule. page cache ref count is decreased in remove_from_page_cache.
+> So we don't need call again in caller context.
 > 
-> Need to use ULONG_CMP_LT(rdp->gpnum, rdp->completed) instead.
+> Cc: Nick Piggin <npiggin@suse.de>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Cc: linux-mm@kvack.org
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> ---
+>  mm/truncate.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/truncate.c b/mm/truncate.c
+> index 9ee5673..8decb93 100644
+> --- a/mm/truncate.c
+> +++ b/mm/truncate.c
+> @@ -114,7 +114,6 @@ truncate_complete_page(struct address_space *mapping, struct page *page)
+>  	 * calls cleancache_put_page (and note page->mapping is now NULL)
+>  	 */
+>  	cleancache_flush_page(mapping, page);
+> -	page_cache_release(page);	/* pagecache ref */
+>  	return 0;
 
-Paul fixed that in:
+Do we _always_ have stable page reference here? IOW, I can assume 
+cleancache_flush_page() doesn't cause NULL deref?
 
-[PATCH RFC tip/core/rcu 16/20] rcu: fine-tune grace-period begin/end checks
+
+
