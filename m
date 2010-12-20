@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757572Ab0LTNGf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 08:06:35 -0500
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:33942 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757446Ab0LTNGd (ORCPT
+	id S1757613Ab0LTNGq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 08:06:46 -0500
+Received: from mtagate2.uk.ibm.com ([194.196.100.162]:49268 "EHLO
+	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757548Ab0LTNGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 08:06:33 -0500
-Message-Id: <20101220130629.974963910@linux.vnet.ibm.com>
+	Mon, 20 Dec 2010 08:06:35 -0500
+Message-Id: <20101220130629.823952802@linux.vnet.ibm.com>
 User-Agent: quilt/0.47-1
-Date: Mon, 20 Dec 2010 14:05:45 +0100
+Date: Mon, 20 Dec 2010 14:05:44 +0100
 From: graalfs@linux.vnet.ibm.com
 To: robert.richter@amd.com
 Cc: mingo@elte.hu, oprofile-list@lists.sf.net, linux-kernel@vger.kernel.org,
@@ -17,75 +17,113 @@ Cc: mingo@elte.hu, oprofile-list@lists.sf.net, linux-kernel@vger.kernel.org,
         schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
         Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
         Maran Pakkirisamy <maranp@linux.vnet.ibm.com>
-Subject: [patch 4/4] Handle memory unmap while hardware sampling is running
+Subject: [patch 3/4] This patch introduces a new oprofile sample add function (oprofile_add_ext_hw_sample)
 References: <20101220130541.446049933@linux.vnet.ibm.com>
-Content-Disposition: inline; filename=handle_munmap.patch
+Content-Disposition: inline; filename=oprofile_worker.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: graalfs@linux.vnet.ibm.com
 
-During memory unmap hardware sampling is deactivated.
-After all samples have been collected hardware sampling is reactivated again.
- 
+This patch introduces a new oprofile sample add function (oprofile_add_ext_hw_sample)
+that can also take task_struct as an argument, which is used by the hwsampler kernel module 
+when copying hardware samples to OProfile buffers.
+
 Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
 Signed-off-by: Maran Pakkirisamy <maranp@linux.vnet.ibm.com>
 Signed-off-by: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
 ---
- arch/s390/oprofile/hwsampler_files.c |    2 +-
- drivers/oprofile/buffer_sync.c       |   13 +++++++++++++
- 2 files changed, 14 insertions(+), 1 deletion(-)
+ drivers/oprofile/cpu_buffer.c |   26 +++++++++++++++++++-------
+ 1 file changed, 19 insertions(+), 7 deletions(-)
 
-Index: linux-2.6/drivers/oprofile/buffer_sync.c
+Index: linux-2.6/drivers/oprofile/cpu_buffer.c
 ===================================================================
---- linux-2.6.orig/drivers/oprofile/buffer_sync.c
-+++ linux-2.6/drivers/oprofile/buffer_sync.c
-@@ -32,6 +32,11 @@
+--- linux-2.6.orig/drivers/oprofile/cpu_buffer.c
++++ linux-2.6/drivers/oprofile/cpu_buffer.c
+@@ -22,6 +22,7 @@
  #include <linux/sched.h>
- #include <linux/gfp.h>
+ #include <linux/oprofile.h>
+ #include <linux/errno.h>
++#include <linux/module.h>
  
-+#ifdef CONFIG_OPROFILE_HWSAMPLING_MODE
-+#include <asm/hwsampler.h>
-+extern unsigned long oprofile_hwsampler;
-+#endif
-+
- #include "oprofile_stats.h"
  #include "event_buffer.h"
  #include "cpu_buffer.h"
-@@ -513,6 +518,10 @@ void sync_buffer(int cpu)
+@@ -258,8 +259,10 @@ op_add_sample(struct oprofile_cpu_buffer
+  */
+ static int
+ log_sample(struct oprofile_cpu_buffer *cpu_buf, unsigned long pc,
+-	   unsigned long backtrace, int is_kernel, unsigned long event)
++	unsigned long backtrace, int is_kernel, unsigned long event,
++	struct task_struct *task)
+ {
++	struct task_struct *tsk = task ? task : current;
+ 	cpu_buf->sample_received++;
  
- 	mutex_lock(&buffer_mutex);
+ 	if (pc == ESCAPE_CODE) {
+@@ -267,7 +270,7 @@ log_sample(struct oprofile_cpu_buffer *c
+ 		return 0;
+ 	}
  
-+#ifdef CONFIG_OPROFILE_HWSAMPLING_MODE
-+	if (oprofile_hwsampler)
-+		hwsampler_deactivate(cpu);
-+#endif
- 	add_cpu_switch(cpu);
+-	if (op_add_code(cpu_buf, backtrace, is_kernel, current))
++	if (op_add_code(cpu_buf, backtrace, is_kernel, tsk))
+ 		goto fail;
  
- 	op_cpu_buffer_reset(cpu);
-@@ -569,6 +578,10 @@ void sync_buffer(int cpu)
+ 	if (op_add_sample(cpu_buf, pc, event))
+@@ -292,7 +295,8 @@ static inline void oprofile_end_trace(st
  
- 	mark_done(cpu);
+ static inline void
+ __oprofile_add_ext_sample(unsigned long pc, struct pt_regs * const regs,
+-			  unsigned long event, int is_kernel)
++			  unsigned long event, int is_kernel,
++			  struct task_struct *task)
+ {
+ 	struct oprofile_cpu_buffer *cpu_buf = &__get_cpu_var(op_cpu_buffer);
+ 	unsigned long backtrace = oprofile_backtrace_depth;
+@@ -301,7 +305,7 @@ __oprofile_add_ext_sample(unsigned long
+ 	 * if log_sample() fail we can't backtrace since we lost the
+ 	 * source of this event
+ 	 */
+-	if (!log_sample(cpu_buf, pc, backtrace, is_kernel, event))
++	if (!log_sample(cpu_buf, pc, backtrace, is_kernel, event, task))
+ 		/* failed */
+ 		return;
  
-+#ifdef CONFIG_OPROFILE_HWSAMPLING_MODE
-+	if (oprofile_hwsampler)
-+		hwsampler_activate(cpu);
-+#endif
- 	mutex_unlock(&buffer_mutex);
+@@ -316,9 +320,17 @@ __oprofile_add_ext_sample(unsigned long
+ void oprofile_add_ext_sample(unsigned long pc, struct pt_regs * const regs,
+ 			     unsigned long event, int is_kernel)
+ {
+-	__oprofile_add_ext_sample(pc, regs, event, is_kernel);
++	__oprofile_add_ext_sample(pc, regs, event, is_kernel, NULL);
  }
  
-Index: linux-2.6/arch/s390/oprofile/hwsampler_files.c
-===================================================================
---- linux-2.6.orig/arch/s390/oprofile/hwsampler_files.c
-+++ linux-2.6/arch/s390/oprofile/hwsampler_files.c
-@@ -22,7 +22,7 @@ unsigned long oprofile_max_interval;
- static unsigned long oprofile_sdbt_blocks = DEFAULT_SDBT_BLOCKS;
- static unsigned long oprofile_sdb_blocks = DEFAULT_SDB_BLOCKS;
- 
--static unsigned long oprofile_hwsampler;
-+unsigned long oprofile_hwsampler;
- 
- static int oprofile_hwsampler_start(void)
++void oprofile_add_ext_hw_sample(unsigned long pc, struct pt_regs * const regs,
++				unsigned long event, int is_kernel,
++				struct task_struct *task)
++{
++	__oprofile_add_ext_sample(pc, regs, event, is_kernel, task);
++}
++EXPORT_SYMBOL_GPL(oprofile_add_ext_hw_sample);
++
+ void oprofile_add_sample(struct pt_regs * const regs, unsigned long event)
  {
+ 	int is_kernel;
+@@ -332,7 +344,7 @@ void oprofile_add_sample(struct pt_regs
+ 		pc = ESCAPE_CODE; /* as this causes an early return. */
+ 	}
+ 
+-	__oprofile_add_ext_sample(pc, regs, event, is_kernel);
++	__oprofile_add_ext_sample(pc, regs, event, is_kernel, NULL);
+ }
+ 
+ /*
+@@ -403,7 +415,7 @@ int oprofile_write_commit(struct op_entr
+ void oprofile_add_pc(unsigned long pc, int is_kernel, unsigned long event)
+ {
+ 	struct oprofile_cpu_buffer *cpu_buf = &__get_cpu_var(op_cpu_buffer);
+-	log_sample(cpu_buf, pc, 0, is_kernel, event);
++	log_sample(cpu_buf, pc, 0, is_kernel, event, NULL);
+ }
+ 
+ void oprofile_add_trace(unsigned long pc)
 
