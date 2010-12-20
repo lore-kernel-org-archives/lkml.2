@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758065Ab0LTPxk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 10:53:40 -0500
-Received: from freeflow.nu ([178.79.134.28]:34566 "EHLO freeflow.nu"
+	id S1758072Ab0LTPx7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 10:53:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33875 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758010Ab0LTPxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 10:53:38 -0500
-Subject: Re: [PATCHSET percpu#this_cpu_ops] add
- this_cpu_{add_return|[cmp]xchg}() operations
-From: Pekka Enberg <penberg@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com, hpa@zytor.com, mathieu.desnoyers@efficios.com
-In-Reply-To: <1292685852-12469-1-git-send-email-tj@kernel.org>
-References: <1292685852-12469-1-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Mon, 20 Dec 2010 17:53:35 +0200
-Message-ID: <1292860415.4434.1.camel@jaguar>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1757987Ab0LTPx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 10:53:57 -0500
+Date: Mon, 20 Dec 2010 16:53:56 +0100
+From: Michal Marek <mmarek@suse.cz>
+To: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        debian-kernel@lists.debian.org
+Subject: Re: [PATCH v4] kbuild, deb-pkg: support overriding userland
+ architecture
+Message-ID: <20101220155356.GE20492@sepie.suse.cz>
+References: <4D00F709.1000406@suse.cz>
+ <1292175580-22085-1-git-send-email-asbjorn@asbjorn.biz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292175580-22085-1-git-send-email-asbjorn@asbjorn.biz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-12-18 at 16:24 +0100, Tejun Heo wrote:
-> Hello,
+On Sun, Dec 12, 2010 at 05:39:40PM +0000, Asbjoern Sloth Toennesen wrote:
+> Usefull if building for sparc64 userland, because the
+> sparc and sparc64 userlands use the same 64-bit kernel,
+> making it impossible to always select the correct userland
+> architecture for the resulting debian package.
 > 
-> Here are the patches that I applied to percpu#this_cpu_ops branch.
-> This branch won't be rebased and contains only the commits which
-> implement the new this_cpu_* ops, so that it can be pulled into other
-> trees without patches which make use of the operations which modify
-> other subsystems.
+> Might also be usefull, if you want a i386 userland with a amd64 kernel.
 > 
-> Christoph, I rearranged things a bit to make it conform better to the
-> overall organization.  It would be great if you can go over it once
-> just in case.
+> Example usage:
+> 	make KBUILD_DEBARCH=i386 deb-pkg
 > 
-> There are two git branches.
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git this_cpu_ops
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-2.6.38
-> 
-> Both branches won't be rebased.  this_cpu_ops contains only patches
-> from this series.  for-2.6.38 contains other percpu changes mostly
-> composed of patches which apply this_cpu_*() ops.
+> LKML-reference: <alpine.DEB.2.02.1011051437500.13287@aurora.sdinet.de>
+> Signed-off-by: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
+> Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
+> Acked-by: maximilian attems <max@stro.at>
 
-Thanks. Christoph, mind sending me the slub patches? There's been so
-many I've lost track which one is the latest.
+Applied to kbuild-2.6.git#packaging, thanks.
 
-			Pekka
-
+Michal
