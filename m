@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454Ab0LTMjI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 07:39:08 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39566 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756919Ab0LTMjF (ORCPT
+	id S1757504Ab0LTMx6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 07:53:58 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:65085 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752775Ab0LTMx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 07:39:05 -0500
-Date: Mon, 20 Dec 2010 12:39:03 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: Update consumer state only after set
- voltage succeeds.
-Message-ID: <20101220123903.GE26706@rakim.wolfsonmicro.main>
-References: <1292625868-26862-1-git-send-email-skannan@codeaurora.org>
+	Mon, 20 Dec 2010 07:53:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=rE72PUvqESfRmlZ4bTcv1QVFxWXyTcQaqi0laieUz+oj2fhVB3Pwm72ckcjJvmTkqe
+         f0AXoiZj6suCtL49LF35ipPakP2CGM2m3QSV5kT2E1gf5G/mTPCfV7DkpX/TE57sSrse
+         jm8HDmJZVIRFEiQT7RA5KGYgQ5SGdnOR3qkhE=
+Date: Mon, 20 Dec 2010 10:53:52 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Francis Moreau <francis.moro@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org
+Subject: Re: Why not making tools/* git submodules ?
+Message-ID: <20101220125352.GB26204@ghostprotocols.net>
+References: <m27hf9crqa.fsf@gmail.com>
+ <m2zks3w44z.fsf@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1292625868-26862-1-git-send-email-skannan@codeaurora.org>
-X-Cookie: Reapply as necessary.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <m2zks3w44z.fsf@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 02:44:28PM -0800, Saravana Kannan wrote:
+Em Sat, Dec 18, 2010 at 03:24:12PM +0100, Francis Moreau escreveu:
+> 
+> Adding linux-perf-users mailing list, hoping that someone out there is
+> more interested by this subject.
+> 
+> Francis Moreau <francis.moro@gmail.com> writes:
+> 
+> > Hello,
+> >
+> > I'm just wondering if all tools such as perf could be tracked using
+> > git submodule.
 
->  static int regulator_check_consumers(struct regulator_dev *rdev,
-> +				     struct regulator *ignore,
->  				     int *min_uV, int *max_uV)
+I wasn't aware of "submodules", will read about it, thanks for bringing
+this to our attention.
 
-This feels really invasive, and prone to robustness issues as we're just
-randomly not checking one of the consumers on a single call, meaning we
-skip some checking some of the time.  It's not going to make the code
-more maintainable.
+> > That would allow the tools to have their own tags at least.
 
-> -	regulator->min_uV = min_uV;
-> -	regulator->max_uV = max_uV;
-> -
-> -	ret = regulator_check_consumers(rdev, &min_uV, &max_uV);
-> +	ret = regulator_check_consumers(rdev, regulator, &min_uV, &max_uV);
->  	if (ret < 0)
->  		goto out;
->  
->  	ret = _regulator_do_set_voltage(rdev, min_uV, max_uV);
-> +	if (!ret) {
-> +		regulator->min_uV = min_uV;
-> +		regulator->max_uV = max_uV;
-> +	}
+yeah, that would be cool.
 
-If you're going to do something probably unwinding the assignment on
-error would cover it.
+- Arnaldo
