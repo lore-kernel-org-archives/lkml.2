@@ -1,128 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933326Ab0LTXsw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 18:48:52 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:50043 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933143Ab0LTXsv convert rfc822-to-8bit (ORCPT
+	id S933346Ab0LTXtX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 18:49:23 -0500
+Received: from mail-bw0-f45.google.com ([209.85.214.45]:43073 "EHLO
+	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933143Ab0LTXtW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 18:48:51 -0500
+	Mon, 20 Dec 2010 18:49:22 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=Pn0f7DpbrF/JoPusdbtJrH4mmkqs0d2N31Dm97n8HbzhuHsEJLaB47vNmv79j0KAeh
-         pYo9290lW4uyClHV1I4tXuQdJ9KH176F0XdRSpXl6xsrxZK6bgAy5ksoTas5rREgLyZp
-         z1fEnP3Gy1Q5prEN+jbriCZij/ccClZv10m5Q=
+        b=JVPkdDD+QiKZzy46NacT9xn7FRR5ka/xondQt+93LR5osLl5ZvLG8GHq9hDaqgqBWo
+         bUCArWW5/ZYNasa1lfkV5KlVv+JsZ+uzf+MCSp8GmAZAU0Q8tia83hZNDz0O9mILvXt8
+         AIe6Bo9LO4iyAnXyD4eFPCl2ZKJzDI4VMEwS0=
 MIME-Version: 1.0
-In-Reply-To: <20101220170146.GS13914@csn.ul.ie>
-References: <20101220152335.GR13914@csn.ul.ie>
-	<20101220170146.GS13914@csn.ul.ie>
-Date: Tue, 21 Dec 2010 08:48:50 +0900
-Message-ID: <AANLkTiniXU9B5YpQ+hknOSF-mPig2z9UqqBWz-JwQjDL@mail.gmail.com>
-Subject: Re: [PATCH] mm: migration: Use rcu_dereference_protected when
- dereferencing the radix tree slot during file page migration
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrew Morton <akpm@linux-foundation.org>, gerald.schaefer@de.ibm.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-ext4@vger.kernel.org,
-        "Ted Ts'o" <tytso@mit.edu>, Arun Bhanu <ab@arunbhanu.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <4D0FE546.7050302@bluewatersys.com>
+References: <1289147348-31969-1-git-send-email-alchark@gmail.com>
+	<20101107165745.GB1759@n2100.arm.linux.org.uk>
+	<AANLkTimFJ=Brx4pDiUqZOKDfABaDg0s_yFC7EkZGi7D8@mail.gmail.com>
+	<20101107171726.GF1759@n2100.arm.linux.org.uk>
+	<20101108171930.GA1471@alchark-u3s.lan>
+	<20101111212322.GA15533@alchark-u3s.lan>
+	<20101111234957.GA28735@n2100.arm.linux.org.uk>
+	<20101219174017.GA31832@alchark-u3s>
+	<20101220191549.GH28157@n2100.arm.linux.org.uk>
+	<20101220195423.GA14509@alchark-u3s>
+	<4D0FC1AE.2050708@bluewatersys.com>
+	<AANLkTin4XqbGwznp56Xjt_zest6rxNmir0QDJWTySY4+@mail.gmail.com>
+	<4D0FD747.9020700@bluewatersys.com>
+	<AANLkTikAWjK7ACyt=LedhyyrhsCk1WCiyWz182CXMe9C@mail.gmail.com>
+	<4D0FE546.7050302@bluewatersys.com>
+Date: Tue, 21 Dec 2010 02:49:20 +0300
+Message-ID: <AANLkTinyYKrhTcBMMCE4A2oFQHm11cqSZQozytGu+d6o@mail.gmail.com>
+Subject: Re: [PATCH 1/6 v9] ARM: Add basic architecture support for
+ VIA/WonderMedia 85xx SoC's
+From: Alexey Charkov <alchark@gmail.com>
+To: Ryan Mallon <ryan@bluewatersys.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        Eric Miao <eric.y.miao@gmail.com>,
+        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 21, 2010 at 2:01 AM, Mel Gorman <mel@csn.ul.ie> wrote:
-> On Mon, Dec 20, 2010 at 03:23:36PM +0000, Mel Gorman wrote:
->> migrate_pages() -> unmap_and_move() only calls rcu_read_lock() for anonymous
->> pages, as introduced by git commit 989f89c57e6361e7d16fbd9572b5da7d313b073d.
->> The point of the RCU protection there is part of getting a stable reference
->> to anon_vma and is only held for anon pages as file pages are locked
->> which is sufficient protection against freeing.
+2010/12/21 Ryan Mallon <ryan@bluewatersys.com>:
+> On 12/21/2010 12:00 PM, Alexey Charkov wrote:
+>> 2010/12/21 Ryan Mallon <ryan@bluewatersys.com>:
+>>> On 12/21/2010 10:48 AM, Alexey Charkov wrote:
+>>>> 2010/12/20 Ryan Mallon <ryan@bluewatersys.com>:
+>>>>> On 12/21/2010 08:54 AM, Alexey Charkov wrote:
+>>>>>> This adds support for the family of Systems-on-Chip produced initially
+>>>>>> by VIA and now its subsidiary WonderMedia that have recently become
+>>>>>> widespread in lower-end Chinese ARM-based tablets and netbooks.
+>>>>>>
+>>>>>> Support is included for both VT8500 and WM8505, selectable by a
+>>>>>> configuration switch at kernel build time.
+>>>>>>
+>>>>>> Included are basic machine initialization files, register and
+>>>>>> interrupt definitions, support for the on-chip interrupt controller,
+>>>>>> high-precision OS timer, GPIO lines, necessary macros for early debug,
+>>>>>> pulse-width-modulated outputs control, as well as platform device
+>>>>>> configurations for the specific drivers implemented elsewhere.
+>>>>>>
+>>>>>> Signed-off-by: Alexey Charkov <alchark@gmail.com>
+>>>>>
+>>>>> Hi Alexey,
+>>>>>
+>>>>> Quick review below.
+>>>
+>>>> <snip>
+>>>>>> +void __init wmt_set_resources(void)
+>>>>>> +{
+>>>>>> + Â  Â  resources_lcdc[0].start = wmt_current_regs->lcdc;
+>>>>>> + Â  Â  resources_lcdc[0].end = wmt_current_regs->lcdc + SZ_1K - 1;
+>>>>>> + Â  Â  resources_lcdc[1].start = wmt_current_irqs->lcdc;
+>>>>>> + Â  Â  resources_lcdc[1].end = wmt_current_irqs->lcdc;
+>>>>>
+>>>>> Ah, this makes more sense. But why have all the indirection? The
+>>>>> wmt_regmaps table could just be replaced with #defines and then have
+>>>>> separate device files for the VT8500 and the WM8505. This would also
+>>>>> make clearer which variants have which peripherals.
+>>>>>
+>>>>
+>>>> This was the way I implemented it originally. However, Arnd made quite
+>>>> a valid suggestion to allow runtime selection of the chip variant,
+>>>> thus registers and interrupts need to be held in an indexed data type
+>>>> instead of just compile-time macros. In addition, there is now some
+>>>> overall movement towards unification of binary kernel images for
+>>>> different ARM variants (as far as I can see), so this would be
+>>>> required in any case.
+>>>>
+>>>> Furthermore, as with many unbranded Chinese products, it's somewhat
+>>>> difficult to reliably determine the exact chip version used in your
+>>>> netbook without disassembling it. Reading a hardware register for
+>>>> identification is easier :)
+>>>
+>>> Okay, that makes sense. I still think there must be a better way than
+>>> having a massive indirect table with all the values. Why not detect the
+>>> variant in the core code and then have something like:
+>>>
+>>> int init_devices(void)
+>>> {
+>>> Â  Â  Â  Â int board_type = detect_board_type();
+>>>
+>>> Â  Â  Â  Â switch (board_type) {
+>>> Â  Â  Â  Â case BOARD_TYPE_VT8500:
+>>> Â  Â  Â  Â  Â  Â  Â  Â return vt8500_init_devices();
+>>>
+>>> Â  Â  Â  Â case BOARD_TYPE_WM8505:
+>>> Â  Â  Â  Â  Â  Â  Â  Â return wm8500_init_devices();
+>>> Â  Â  Â  Â }
+>>>
+>>> Â  Â  Â  Â pr_err("Unknown board type\n");
+>>> Â  Â  Â  Â BUG(); /* panic()? */
+>>> Â  Â  Â  Â while (1)
+>>> Â  Â  Â  Â  Â  Â  Â  Â ;
+>>> }
+>>>
+>>> Then you can have the peripheral setup for each of the variants in their
+>>> own files and use #defines. It may get tricky in a couple of places if
+>>> you need to be able to access some value directly which is different on
+>>> each of the variants, but that can be handled on a case by case basis.
+>>> The majority of the numbers will be passed into drivers via the resource
+>>> structs.
+>>>
 >>
->> However, while a file page's mapping is being migrated, the radix
->> tree is double checked to ensure it is the expected page. This uses
->> radix_tree_deref_slot() -> rcu_dereference() without the RCU lock held
->> triggering the following warning under CONFIG_PROVE_RCU.
->>
->> [  173.674290] ===================================================
->> [  173.676016] [ INFO: suspicious rcu_dereference_check() usage. ]
->> [  173.676016] ---------------------------------------------------
->> [  173.676016] include/linux/radix-tree.h:145 invoked rcu_dereference_check() without protection!
->> [  173.676016]
->> [  173.676016] other info that might help us debug this:
->> [  173.676016]
->> [  173.676016]
->> [  173.676016] rcu_scheduler_active = 1, debug_locks = 0
->> [  173.676016] 1 lock held by hugeadm/2899:
->> [  173.676016]  #0:  (&(&inode->i_data.tree_lock)->rlock){..-.-.}, at: [<c10e3d2b>] migrate_page_move_mapping+0x40/0x1ab
->> [  173.676016]
->> [  173.676016] stack backtrace:
->> [  173.676016] Pid: 2899, comm: hugeadm Not tainted 2.6.37-rc5-autobuild
->> [  173.676016] Call Trace:
->> [  173.676016]  [<c128cc01>] ? printk+0x14/0x1b
->> [  173.676016]  [<c1063502>] lockdep_rcu_dereference+0x7d/0x86
->> [  173.676016]  [<c10e3db5>] migrate_page_move_mapping+0xca/0x1ab
->> [  173.676016]  [<c10e41ad>] migrate_page+0x23/0x39
->> [  173.676016]  [<c10e491b>] buffer_migrate_page+0x22/0x107
->> [  173.676016]  [<c10e48f9>] ? buffer_migrate_page+0x0/0x107
->> [  173.676016]  [<c10e425d>] move_to_new_page+0x9a/0x1ae
->> [  173.676016]  [<c10e47e6>] migrate_pages+0x1e7/0x2fa
->>
->> This patch introduces radix_tree_deref_slot_protected() which calls
->> rcu_dereference_protected(). Users of it must pass in the mapping->tree_lock
->> that is protecting this dereference. Holding the tree lock protects against
->> parallel updaters of the radix tree meaning that rcu_dereference_protected
->> is allowable.
->>
->> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
->> ---
->>  include/linux/radix-tree.h |   17 +++++++++++++++++
->>  mm/migrate.c               |    4 ++--
->>  2 files changed, 19 insertions(+), 2 deletions(-)
->>
->> diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
->> index ab2baa5..a1f1672 100644
->> --- a/include/linux/radix-tree.h
->> +++ b/include/linux/radix-tree.h
->> @@ -146,6 +146,23 @@ static inline void *radix_tree_deref_slot(void **pslot)
->>  }
->>
->>  /**
->> + * radix_tree_deref_slot_protected   - dereference a slot without RCU lock but with tree lock held
->> + * @pslot:   pointer to slot, returned by radix_tree_lookup_slot
->> + * Returns:  item that was stored in that slot with any direct pointer flag
->> + *           removed.
->> + *
->> + * Similar to radix_tree_deref_slot but only used during migration when a pages
->> + * mapping is being moved. The caller does not hold the RCU read lock but it
->> + * must hold the tree lock to prevent parallel updates.
->> + */
->> +static inline void *radix_tree_deref_slot_protected(void **pslot,
->> +                                                     spinlock_t *treelock)
->> +{
->> +     BUG_ON(rcu_read_lock_held());
-
-Hmm.. Why did you add the check?
-If rcu_read_lock were already held, we wouldn't need this new API.
-
+>> This is more or less what I'm doing right now - except for the
+>> separation between different files. I tried to avoid duplication of
+>> similar things here. Is the indirect table really a big issue? I'm a
+>> bit reluctant to copy about the whole devices.c for each chip variant,
+>> which would be otherwise required. Further, it would add more
+>> complexity to the timer, irq, gpio, i8042 and probably some other
+>> places.
 >
-> This was a bad idea. After some extended testing, it was obvious that
-> this function can be called for swapcache pages with the RCU lock held.
-> Paul, is it still permissible to use rcu_dereference_protected() or must
-
-I guess has no problem.
-
-> the RCU read lock not be held?
+> Yeah, agreed about the duplication. My approach would require the common
+> peripherals to be defined for each variant. I'm not entirely against the
+> indirect table (and am even starting to think it may be the best overall
+> solution), it's just that it can be a bit difficult to follow because to
+> add a device you need to do the following:
+>
+> Â - Add a partially empty resource/platform_device struct
+> Â - Add resource entries to the resource table definition
+> Â - Add resource values to the resource table
+> Â - Add assignment of resource values to device init code
 >
 
+That's actually only one step more than what machines with static
+resource definitions require (the last one). Flexibility does come at
+a cost, so there should be a mathematical limit to optimization of
+this thing :)
 
+> The indirection also makes it harder to quickly determine the IRQ number
+> of memory address of a peripheral.
+>
+> The current solution using the indirect table is okay, but it would be
+> nice to find a solution which reduces some of this effort.
+>
+>>>>>> +}
+>>>>>> +
+>>>>>> +int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
+>>>>>> +{
+>>>>>> + Â  Â  unsigned long long c;
+>>>>>> + Â  Â  unsigned long period_cycles, prescale, pv, dc;
+>>>>>> +
+>>>>>> + Â  Â  if (pwm == NULL || period_ns == 0 || duty_ns > period_ns)
+>>>>>> + Â  Â  Â  Â  Â  Â  return -EINVAL;
+>>>>>> +
+>>>>>> + Â  Â  c = 25000000/2; /* wild guess --- need to implement clocks */
+>>>>>> + Â  Â  c = c * period_ns;
+>>>>>> + Â  Â  do_div(c, 1000000000);
+>>>>>> + Â  Â  period_cycles = c;
+>>>>>
+>>>>> This looks like it could be reworked to remove the do_div call.
+>>>>>
+>>>>
+>>>> I just followed PXA implementation in this regard. Are there any
+>>>> specific suggestions? Note that c should not be a complie-time
+>>>> constant eventually, as this is the guessed PWM base frequency (should
+>>>> be read from the hardware, but the code for clocks is not yet in).
+>>>
+>>> I didn't have a particular solution in mind, but often by changing the
+>>> units used and rearranging the math a bit you can often avoid having to
+>>> do horrible multiplies and divides.
+>>>
+>>> For now at least you could avoid the do_div by assigning period_cycles
+>>> directly.
+>>>
+>>
+>> It depends on period_ns, which is passed in as an argument from
+>> whatever uses PWM, so I'm not sure it can be assigned directly.
+>
+> Ah. How big a number is period_ns? Can you do something like this instead?
+>
+> Â  Â  Â  Â period_cycles = ((250 / 2) * period_ns) / 10000;
+>
+> and still safely avoid overflows?
+>
 
--- 
-Kind regards,
-Minchan Kim
+The only current in-kernel user of PWM is the backlight, and that
+currently uses period_ns = 250000. At this value it does not overflow.
+However, in a general case the base frequency will also be returned as
+a large number (like 12500000) as per CLK infrastructure conventions
+(once that part is implemented). Further, I can't see any built-in
+reasons for period_ns to be bounded by anything below sizeof(int). The
+hardware will work with up to 4096*1024*1000000000/base_frequency (see
+the code for constraints), so it can in principle overflow with 32 bit
+arithmetics.
+
+Best regards,
+Alexey
