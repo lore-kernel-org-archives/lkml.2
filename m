@@ -1,36 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932698Ab0LTQBu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 11:01:50 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:57756 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932410Ab0LTQBs (ORCPT
+	id S1758093Ab0LTQCu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 11:02:50 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:36980 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757900Ab0LTQCt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 11:01:48 -0500
-Date: Tue, 21 Dec 2010 01:00:18 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Alexey Charkov <alchark@gmail.com>
-Cc: "Janorkar, Mayuresh" <mayur@ti.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "vt8500-wm8505-linux-kernel@googlegroups.com" 
-	<vt8500-wm8505-linux-kernel@googlegroups.com>
-Subject: Re: [PATCH 2/2] fbdev: Modify vsync timing calculation in wm8505fb
-Message-ID: <20101220160018.GE26766@linux-sh.org>
-References: <20101220130314.GA3627@alchark-u3s> <20101220130957.GB3627@alchark-u3s>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101220130957.GB3627@alchark-u3s>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	Mon, 20 Dec 2010 11:02:49 -0500
+Subject: Re: [RFC PATCH 07/15] nohz_task: Restart tick when RCU forces nohz
+ task cpu quiescent state
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+In-Reply-To: <1292858662-5650-8-git-send-email-fweisbec@gmail.com>
+References: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
+	 <1292858662-5650-8-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 20 Dec 2010 17:02:09 +0100
+Message-ID: <1292860929.5021.16.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 20, 2010 at 04:09:57PM +0300, Alexey Charkov wrote:
-> This removes the '+1' in vsync timing calculation for wm8505fb to
-> directly use values provided from the board setup code.
+On Mon, 2010-12-20 at 16:24 +0100, Frederic Weisbecker wrote:
+> If a cpu is in nohz mode due to a nohz task running, then
+> it is not able to notify quiescent states requested by other
+> CPUs.
 > 
-> Signed-off-by: Alexey Charkov <alchark@gmail.com>
+> Then restart the tick to remotely force the quiescent states on the
+> nohz task cpus.
 
-This is queued for .37, thanks.
+-ENOPARSE.. if its in NOHZ state, it couldn't possibly need to
+participate in the quiescent state machine because the cpu is in a
+quiescent state and has 0 RCU activity.
+
