@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933244Ab0LTVJp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 16:09:45 -0500
-Received: from mail-iw0-f194.google.com ([209.85.214.194]:43086 "EHLO
-	mail-iw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933068Ab0LTVJm (ORCPT
+	id S933254Ab0LTVLS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 16:11:18 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50285
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933048Ab0LTVLR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 16:09:42 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:content-type;
-        b=LwGyfFrAyLFpimLuGKM76vLX6LbSkEh20UfMXZRa4TQuw5l7a3mNm2P8UK7DXe417h
-         fVEKVoPNpIzOnMzAgvXzRrCjVziHIc4XYw/sTL5lrEPmQ7ughoW6FGoMdqAiwMNHn4a/
-         0zogs4zBrKmsGG0BWLboD0yG39iCI0g65zQ/s=
-MIME-Version: 1.0
-In-Reply-To: <20101220185812.GA11285@liondog.tnic>
-References: <AANLkTimA4x8oWyq71nOxB=Otp3Y0i3Kcu27DG0ajaXUG@mail.gmail.com>
-	<AANLkTinCG+E6ZzpeRqsJP+-qvNDQXW4VZFgJ1c-sTryL@mail.gmail.com>
-	<4D0BEE1F.7020008@zytor.com>
-	<AANLkTinwFt+KDKNEYP9MWQ7wGb9qk=E2Xa3RJB3+MJnN@mail.gmail.com>
-	<AANLkTinoV_pL=Ygqq4qt4f8c+wsdc9r9K7rcJ58aHjD1@mail.gmail.com>
-	<AANLkTikhtWjFBQmA111Q+2JGRudrRNAmegGThMagr4vF@mail.gmail.com>
-	<20101219091752.GA16150@liondog.tnic>
-	<AANLkTi=9UZ5BYWo5xT=jh0upRP6PraH4S=t=tL49YRdr@mail.gmail.com>
-	<20101220072632.GA28020@liondog.tnic>
-	<AANLkTikhbxs-FU2qjpup17QDd67R78puMNvP4GNRwiKX@mail.gmail.com>
-	<20101220185812.GA11285@liondog.tnic>
-Date: Mon, 20 Dec 2010 13:09:41 -0800
-X-Google-Sender-Auth: PgZGQcw2Z1moQmDlOLjsgMue5ss
-Message-ID: <AANLkTim51KRmJ66OwQ=EyZia8GojhX9TMikpgAMLXRgo@mail.gmail.com>
-Subject: Re: [concept & "good taste" review] persistent store
-From: Tony Luck <tony.luck@intel.com>
-To: Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Tony Luck <tony.luck@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        greg@kroah.com, akpm@linux-foundation.org, ying.huang@intel.com,
-        David Miller <davem@davemloft.net>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 20 Dec 2010 16:11:17 -0500
+Date: Mon, 20 Dec 2010 13:11:46 -0800 (PST)
+Message-Id: <20101220.131146.115941299.davem@davemloft.net>
+To: tj@kernel.org
+Cc: mchan@broadcom.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next-2.6] bnx2: remove cancel_work_sync() from
+ remove_one
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4D08C81D.8020606@kernel.org>
+References: <4D0796D7.3030309@kernel.org>
+	<1292348880.7394.63.camel@nseg_linux_HP1.broadcom.com>
+	<4D08C81D.8020606@kernel.org>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 20, 2010 at 10:58 AM, Borislav Petkov <bp@alien8.de> wrote:
-> Yes, this was exactly what I was trying to say! Do something in a
-> watchdog handler path that shows that we actually made progress. But
-> you're right, we'd still need the notification. My look at "did we make
-> a progress" was too simple and there _are_ nuances which need to be
-> accounted for.
+From: Tejun Heo <tj@kernel.org>
+Date: Wed, 15 Dec 2010 14:52:29 +0100
 
-My view of the notification is:
-1) Oops happens, gets written to persistent store.
-2) fs/pstore code makes a file appear in /dev/pstore
-3) Daemon that's watching /dev/pstore sees new file
-4) File is read, copied some place safe and fsync'd
-5) Daemon unlinks file from /dev/pstore
-6) fs/pstore code tells platform level to erase record
+> After looking through the code, I don't think this is necessarily
+> correct.  ->ndo_close() doesn't guarantee that the watchdog timer has
+> finished running (the timer is deleted with del_timer() not
+> del_timer_sync()).  ie. the watchdog timer could still be running
+> after ->ndo_close() and may schedule reset_task.  If remove_one
+> doesn't flush the task, it may still be running when remove_one() is
+> called.
+> 
+> David, am I missing something?  Wouldn't it cleaner to guarantee that
+> ->ndo_close() is called with the guarantee that the watchdog timer is
+> not running anymore?
 
--Tony
+It would but we can't just make the change over to del_timer_sync()
+otherwise we'd deadlock on netif_tx_lock().
+
+But I think things might be OK as-is.
+
+The timer is deleted by dev_deactivate_many() which resets the qdisc
+to the no-op qdisc.  Then it deletes the timer.
+
+Any running timer will complete or see the no-op qdisc attached and
+return immediately.
+
+synchronize_rcu() is then executed which guarentees completion.
+
+Since both the watchdog timer itself and the del_timer() call run
+with netif_tx_lock() held, this makes sure the timer, once deleted,
+will only see the no-op qdisc and return immediately if it is
+amidst running, else it has already returned when the timer delete
+completes.
+
+So we might be OK here.
