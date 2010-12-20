@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821Ab0LTE3K (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 23:29:10 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:25894 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650Ab0LTE3I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 23:29:08 -0500
-Date: Sun, 19 Dec 2010 20:27:45 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andres Salomon <dilinger@queued.net>
-Subject: Re: linux-next: build warnings after merge of the mfd tree
-Message-Id: <20101219202745.c733f7f8.randy.dunlap@oracle.com>
-In-Reply-To: <20101220152505.f9974119.sfr@canb.auug.org.au>
-References: <20101220152505.f9974119.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1752846Ab0LTEbl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 23:31:41 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:47208 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752103Ab0LTEbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 23:31:39 -0500
+Date: Mon, 20 Dec 2010 15:31:27 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?Ik1pY2hhxYIgTWlyb3PFgmF3Ig==?= <mirq-linux@rere.qmqm.pl>
+Subject: linux-next: build warning after merge of the block tree
+Message-Id: <20101220153127.ad8213b2.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__20_Dec_2010_15_31_27_+1100_1Kv+TIk0.51LJh/V"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Dec 2010 15:25:05 +1100 Stephen Rothwell wrote:
+--Signature=_Mon__20_Dec_2010_15_31_27_+1100_1Kv+TIk0.51LJh/V
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Hi Samuel,
-> 
-> After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
-> produced these warnings:
-> 
-> drivers/gpio/cs5535-gpio.c: In function 'cs5535_gpio_probe':
-> drivers/gpio/cs5535-gpio.c:269: warning: format '%x' expects type 'unsigned int', but argument 3 has type 'resource_size_t'
-> drivers/gpio/cs5535-gpio.c:269: warning: format '%x' expects type 'unsigned int', but argument 4 has type 'resource_size_t'
-> drivers/misc/cs5535-mfgpt.c: In function 'cs5535_mfgpt_probe':
-> drivers/misc/cs5535-mfgpt.c:320: warning: format '%x' expects type 'unsigned int', but argument 3 has type 'resource_size_t'
-> drivers/misc/cs5535-mfgpt.c:320: warning: format '%x' expects type 'unsigned int', but argument 4 has type 'resource_size_t'
-> 
-> Introduced by commits d8fefd6ff3a8444ab34f6eb6c7c1961f0ca0008a ("gpio:
-> Convert cs5535 from pci device to platform device") and
-> 6a85d28cfca9663c0db297a04ca43777dc5bcaa6 ("misc: Convert cs5535-mfgpt
-> from pci device to platform device").  We have %pR for printing
-> resources ...
+Hi Jens,
 
-Yes, and Joe Perches has posted a patch for that.
-It just needs to be merged....
+After merging the block tree, today's linux-next build (powerpc
+ppc64_defconfig) produced this warning:
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
-desserts:  http://www.xenotime.net/linux/recipes/
+drivers/block/loop.c: In function 'lo_splice_actor':
+drivers/block/loop.c:398: warning: unused variable 'ret'
+
+Introduced by commit a8adbe378b56acd5945df70753c7e8f6fe223304
+("fs/splice: Pull buf->ops->confirm() from splice_from_pipe actors").
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__20_Dec_2010_15_31_27_+1100_1Kv+TIk0.51LJh/V
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNDtwfAAoJEDMEi1NhKgbsOG0H/3xIR08Dhw4UFTFm03rqvA/l
+JyM09csakxENfa5OiwAlma1k6yUOoZ/dPOcqklMpWQNOEPdlmmDYrhiAZkc5TCOS
+jhbmgoQ04RZe6UcJOc1pAp0RYAVQ83WUPt9yiFkEEjNLUqiiKfvK6yMjGFmcbVH0
+9oMMhpWiedZa5dTdzspBHCim3Y2C31siHL9uLP3+wG4e1k+1rYdjCsrp9WL5B+Lt
+YjIZ3k3r77I/zQ2SVAzPzGauKF0k0qFLSnZN8xLfY32M5hn+PE960DgorpcHpoo/
+IkP+qGhzJ3cRrWITR3Lg4sfhc4f/FXmCbYfe7MrI054y+6vqmnkjaUEpAWqttCE=
+=6orb
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__20_Dec_2010_15_31_27_+1100_1Kv+TIk0.51LJh/V--
