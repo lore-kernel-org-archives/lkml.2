@@ -1,65 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758202Ab0LTWKZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 17:10:25 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:34336 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758181Ab0LTWKY (ORCPT
+	id S1758229Ab0LTWON (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 17:14:13 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:15182 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758078Ab0LTWOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 17:10:24 -0500
-Date: Mon, 20 Dec 2010 17:10:20 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-X-X-Sender: nico@xanadu.home
-To: Stephen Boyd <sboyd@codeaurora.org>
-cc: Arnaud Lacombe <lacombar@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        lkml <linux-kernel@vger.kernel.org>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Tony Lindgren <tony@atomide.com>,
-        Arnd Bergmann <arnd@arndb.de>, Daniel Walker <dwalker@codeaurora.org>
-Subject: Re: [PATCH 1/3] hvc_dcc: Fix bad code generation by marking assembly
- volatile
-In-Reply-To: <4D0FD02E.3080901@codeaurora.org>
-Message-ID: <alpine.LFD.2.00.1012201702540.10437@xanadu.home>
-References: <1292649385-28771-1-git-send-email-sboyd@codeaurora.org> <1292875718-7980-1-git-send-email-sboyd@codeaurora.org> <1292875718-7980-2-git-send-email-sboyd@codeaurora.org> <AANLkTi=8F3keaAQ2o+V8gNncNM02c9k9=DRtd5GyP_LH@mail.gmail.com>
- <4D0FD02E.3080901@codeaurora.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Mon, 20 Dec 2010 17:14:11 -0500
+Date: Mon, 20 Dec 2010 23:05:25 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Minchan Kim <minchan.kim@gmail.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [updated PATCH] Close mem leak in error path in
+ mm/hugetlb.c::nr_hugepages_store_common()
+In-Reply-To: <AANLkTikNx5SG9Z=tUu6tyFRqnR2sLe5NxAjLCJr1UKmq@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1012202302460.23785@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1012192305260.6486@swampdragon.chaosbits.net> <AANLkTikNx5SG9Z=tUu6tyFRqnR2sLe5NxAjLCJr1UKmq@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-245131414-1292882725=:23785"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Dec 2010, Stephen Boyd wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> On 12/20/2010 01:49 PM, Arnaud Lacombe wrote:
+--8323328-245131414-1292882725=:23785
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+
+On Mon, 20 Dec 2010, Minchan Kim wrote:
+
+> On Mon, Dec 20, 2010 at 7:10 AM, Jesper Juhl <jj@chaosbits.net> wrote:
 > > Hi,
 > >
-> > On Mon, Dec 20, 2010 at 3:08 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> >> Without marking the asm __dcc_getstatus() volatile my compiler
-> >> decides [...]
-> > What compiler ? That might be a usefull information to know,
-> > espectially 5 years from now when tracing code history. There has been
-> > similar issue with gcc 4.5 recently. AFAIK, in the same idea, the
-> > final change has been to mark the asm volatile.
+> > The NODEMASK_ALLOC macro dynamically allocates memory for its second
+> > argument ('nodes_allowed' in this context).
+> > In nr_hugepages_store_common() we may abort early if strict_strtoul()
+> > fails, but in that case we do not free the memory already allocated to
+> > 'nodes_allowed', causing a memory leak.
+> > This patch closes the leak by freeing the memory in the error path.
+> >
+> >
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > ---
+> >  hugetlb.c |    4 +++-
+> >  1 file changed, 3 insertions(+), 1 deletion(-)
+> >
+> >  compile tested only
+> >
+> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > index 8585524..9fdcc35 100644
+> > --- a/mm/hugetlb.c
+> > +++ b/mm/hugetlb.c
+> > @@ -1439,8 +1439,10 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
+> >        NODEMASK_ALLOC(nodemask_t, nodes_allowed, GFP_KERNEL | __GFP_NORETRY);
+> >
+> >        err = strict_strtoul(buf, 10, &count);
+> > -       if (err)
+> > +       if (err) {
+> > +               kfree(nodes_allowed);
 > 
-> Sure, we can replace "my compiler" with "my compiler (arm-eabi-gcc (GCC)
-> 4.4.0)".
-
-Compiler version doesn't matter -- this is a simple correctness issue.
-
-If an inline asm statement provides an output value then the compiler is 
-free to cache that value in a register, unless the inline asm is marked 
-so that the value may change from one invocation to another.  Also, the 
-compiler is free to eliminate the inline asm statement entirely as well 
-if the output value provided by that inline asm is never used... unless 
-if the inline asm is marked as having side effects.  In both cases the 
-volatile qualifier does indicate that the returned value may change 
-(new status flag state) and 
-that the asm code therein has side effects (e.g. pop a character off a 
-FIFO).
-
-Sometimes the desired effect can be indicated by clever usage of 
-parameter constraints, but in this case the volatile keyword is most 
-appropriate.
+> Nice catch. But use NODEMASK_FREE. It might be not kmalloced object.
+> 
+Right. I just checked the macro and it used kmalloc(), so I just wrote 
+kfree. But you are right, NODEMASK_FREE is the right thing to use here. 
+Updated patch below.
 
 
-Nicolas
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ hugetlb.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 8585524..71e7886 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1439,8 +1439,10 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
+ 	NODEMASK_ALLOC(nodemask_t, nodes_allowed, GFP_KERNEL | __GFP_NORETRY);
+ 
+ 	err = strict_strtoul(buf, 10, &count);
+-	if (err)
++	if (err) {
++		NODEMASK_FREE(nodes_allowed);
+ 		return 0;
++	}
+ 
+ 	h = kobj_to_hstate(kobj, &nid);
+ 	if (nid == NUMA_NO_NODE) {
+
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
+--8323328-245131414-1292882725=:23785--
