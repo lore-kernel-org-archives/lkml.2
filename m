@@ -1,78 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758184Ab0LTW3C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 17:29:02 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:47561 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754457Ab0LTW3A (ORCPT
+	id S1758199Ab0LTWa2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 17:30:28 -0500
+Received: from straum.hexapodia.org ([207.7.131.186]:52493 "EHLO
+	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757933Ab0LTWa1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 17:29:00 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-security-module@vger.kernel.org, jmorris@namei.org,
-        eric.dumazet@gmail.com, tgraf@infradead.org, eugeneteo@kernel.org,
-        kees.cook@canonical.com, mingo@elte.hu, davem@davemloft.net,
-        a.p.zijlstra@chello.nl, akpm@linux-foundation.org
-Subject: Re: [PATCH v3] kptr_restrict for hiding kernel pointers
-In-Reply-To: Your message of "Sat, 18 Dec 2010 12:20:34 EST."
-             <1292692835.10804.67.camel@dan>
-From: Valdis.Kletnieks@vt.edu
-References: <1292692835.10804.67.camel@dan>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1292883991_5161P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Mon, 20 Dec 2010 17:26:31 -0500
-Message-ID: <50259.1292883991@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020204.4D0FD81A.004D,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Mon, 20 Dec 2010 17:30:27 -0500
+X-Greylist: delayed 340 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Dec 2010 17:30:27 EST
+Date: Mon, 20 Dec 2010 14:24:46 -0800
+From: Andy Isaacson <adi@hexapodia.org>
+To: btrfs-devel <btrfs-devel@oss.oracle.com>, linux-kernel@vger.kernel.org
+Subject: btrfs: 21 minutes to read 1.2M file directory
+Message-ID: <20101220222446.GA8629@hexapodia.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
+X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
+X-Domestic-Surveillance: money launder bomb tax evasion
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1292883991_5161P
-Content-Type: text/plain; charset=us-ascii
+I have a directory with 1.2M files in it, which makes readdir very slow
+on btrfs with cold caches (although it's reasonably fast with hot caches
+as in the first example below):
 
-On Sat, 18 Dec 2010 12:20:34 EST, Dan Rosenberg said:
+% time find /btr/foo > /btr/foo.list
+find /btr/foo > /btr/foo.list  4.10s user 7.97s system 36% cpu 33.275 total
+% head /btr/foo.list
+/btr/foo
+/btr/foo/1281373625.777.fg.jpg
+/btr/foo/1281373625.777.bg.jpg
+/btr/foo/1281373625.948.fg.jpg
+/btr/foo/1281373625.948.bg.jpg
+/btr/foo/1281373626.096.fg.jpg
+/btr/foo/1281373626.096.bg.jpg
+/btr/foo/1281373626.218.fg.jpg
+/btr/foo/1281373626.218.bg.jpg
+/btr/foo/1281373626.350.fg.jpg
+% wc !$
+wc /btr/foo.list
+ 12166666  12166666 401499940 /btr/foo.list
+% wc -l /btr/foo.list
+12166666 /btr/foo.list
+% sudo sysctl -w vm.drop_caches=3 vm.drop_caches=0
+vm.drop_caches = 3
+vm.drop_caches = 0
+% time find /btr/foo > /btr/foo.list.2
+find /btr/foo > /btr/foo.list.2  5.62s user 24.54s system 2% cpu 21:40.90 total
+% uname -a
+Linux pyron 2.6.36-rc7-00149-g29979aa #71 SMP Wed Oct 13 09:42:57 PDT 2010 x86_64 GNU/Linux
 
-> @@ -1035,6 +1038,26 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
->  		return buf + vsnprintf(buf, end - buf,
->  				       ((struct va_format *)ptr)->fmt,
->  				       *(((struct va_format *)ptr)->va));
-> +	case 'K':
-> +		/*
-> +		 * %pK cannot be used in IRQ context because it tests
-> +		 * CAP_SYSLOG.
-> +		 */
-> +		if (in_irq() || in_serving_softirq() || in_nmi())
-> +			WARN_ONCE(1, "%%pK used in interrupt context.\n");
+Interestingly, while readdir is busy I'm only seeing IO on sdb even
+though the btrfs is on 3 targets:
 
-Should this then continue on and test CAP_SYSLOG anyhow, or should it
-return a "" or or "<invalid>" or something?
+Label: btr  uuid: 1271de53-b3d2-4d68-9d48-b19487e1c982
+        Total devices 3 FS bytes used 555.13GB
+        devid    1 size 18.65GB used 18.64GB path /dev/sda2
+        devid    3 size 512.00GB used 44.13GB path /dev/sdc1
+        devid    2 size 512.00GB used 511.76GB path /dev/sdb1
 
---==_Exmh_1292883991_5161P
-Content-Type: application/pgp-signature
+"iostat -k 1 | grep sdb" tells me:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
 
-iD8DBQFND9gXcC3lWbTT17ARAlDxAKD02+4VO8q2qAP1QTVvM3JbWee6kgCg9JGO
-DwMSZSe+Bkbl/fGMZD4p1pM=
-=571E
------END PGP SIGNATURE-----
+sdb             173.00       692.00         0.00        692          0
+sdb             185.00       740.00         0.00        740          0
+sdb             198.00       792.00         0.00        792          0
+sdb             177.00       712.00         0.00        712          0
 
---==_Exmh_1292883991_5161P--
+I updated to a recent git and it's still slow (my test hasn't completed
+yet 19 minutes in):
 
+Linux pyron 2.6.37-rc6-11882-g55ec86f #72 SMP Mon Dec 20 13:34:38 PST 2010 x86_64 GNU/Linux
+
+The devices are:
+
+[    1.834527] ata1.00: ATA-7: INTEL SSDSA2M040G2GC, 2CV102HD, max UDMA/133
+[    1.834816] ata1.00: 78165360 sectors, multi 1: LBA48 NCQ (depth 31/32)
+[    1.835369] ata1.00: configured for UDMA/133
+[    1.835776] scsi 0:0:0:0: Direct-Access     ATA      INTEL SSDSA2M040 2CV1 PQ: 0 ANSI: 5
+...
+[    2.904919] ata3.00: ATA-8: ST31500341AS, CC1H, max UDMA/133
+[    2.905206] ata3.00: 2930277168 sectors, multi 0: LBA48 NCQ (depth 31/32)
+[    2.947393] ata3.00: configured for UDMA/133
+[    2.947850] scsi 2:0:0:0: Direct-Access     ATA      ST31500341AS     CC1H PQ: 0 ANSI: 5
+...
+[    3.989664] ata5: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+[    4.018524] ata5.00: ATA-8: ST31500341AS, CC1H, max UDMA/133
+[    4.018811] ata5.00: 2930277168 sectors, multi 0: LBA48 NCQ (depth 31/32)
+[    4.060838] ata5.00: configured for UDMA/133
+[    4.061205] scsi 4:0:0:0: Direct-Access     ATA      ST31500341AS     CC1H PQ: 0 ANSI: 5
+
+The host is a "Intel(R) Core(TM) i7 CPU 930 @2.80GHz" with 12GB RAM.
+
+Thanks,
+-andy
