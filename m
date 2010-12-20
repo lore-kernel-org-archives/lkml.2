@@ -1,104 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757872Ab0LTS6V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 13:58:21 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:57006 "EHLO mail.skyhub.de"
+	id S932691Ab0LTTOI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 14:14:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52472 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757292Ab0LTS6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 13:58:19 -0500
-Date: Mon, 20 Dec 2010 19:58:12 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Tony Luck <tony.luck@intel.com>, Tony Luck <tony.luck@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        greg@kroah.com, akpm@linux-foundation.org, ying.huang@intel.com,
-        David Miller <davem@davemloft.net>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [concept & "good taste" review] persistent store
-Message-ID: <20101220185812.GA11285@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Tony Luck <tony.luck@intel.com>, Tony Luck <tony.luck@gmail.com>,
-	"H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-	linux-arch@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
-	greg@kroah.com, akpm@linux-foundation.org, ying.huang@intel.com,
-	David Miller <davem@davemloft.net>,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>,
-	Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-	Kyungmin Park <kmpark@infradead.org>,
-	Geert Uytterhoeven <geert@linux-m68k.org>
-References: <AANLkTimA4x8oWyq71nOxB=Otp3Y0i3Kcu27DG0ajaXUG@mail.gmail.com>
- <AANLkTinCG+E6ZzpeRqsJP+-qvNDQXW4VZFgJ1c-sTryL@mail.gmail.com>
- <4D0BEE1F.7020008@zytor.com>
- <AANLkTinwFt+KDKNEYP9MWQ7wGb9qk=E2Xa3RJB3+MJnN@mail.gmail.com>
- <AANLkTinoV_pL=Ygqq4qt4f8c+wsdc9r9K7rcJ58aHjD1@mail.gmail.com>
- <AANLkTikhtWjFBQmA111Q+2JGRudrRNAmegGThMagr4vF@mail.gmail.com>
- <20101219091752.GA16150@liondog.tnic>
- <AANLkTi=9UZ5BYWo5xT=jh0upRP6PraH4S=t=tL49YRdr@mail.gmail.com>
- <20101220072632.GA28020@liondog.tnic>
- <AANLkTikhbxs-FU2qjpup17QDd67R78puMNvP4GNRwiKX@mail.gmail.com>
+	id S932243Ab0LTTOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 14:14:06 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Rogier Wolff <R.E.Wolff@BitWizard.nl>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Slow disks.
+References: <20101220141553.GA6088@bitwizard.nl>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 20 Dec 2010 14:09:01 -0500
+In-Reply-To: <20101220141553.GA6088@bitwizard.nl> (Rogier Wolff's message of
+	"Mon, 20 Dec 2010 15:15:53 +0100")
+Message-ID: <x49bp4gw9bm.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <AANLkTikhbxs-FU2qjpup17QDd67R78puMNvP4GNRwiKX@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 20, 2010 at 09:18:25AM -0800, Linus Torvalds wrote:
-> On Sun, Dec 19, 2010 at 11:26 PM, Borislav Petkov <bp@alien8.de> wrote:
-> >
-> > IOW, the simple (maybe too simple) algo of the pstore could be something
-> > like:
-> 
-> Simple?
-> 
-> > 1. Got a relevant message from kernel, log it.
-> >
-> > 2. Am I still alive?
-> 
-> Umm. The "am I still alive" question is traditionally called "the
-> stopping problem", and is considered to be the traditional example of
-> _least_ simple problem there is. As in "fundamentally unsolvable".
+Rogier Wolff <R.E.Wolff@BitWizard.nl> writes:
 
-Yeah, I meant simple in the sense of only two steps required.
+> Hi,
+>
+> A friend of mine has a server in a datacenter somewhere. His machine
+> is not working properly: most of his disks take 10-100 times longer
+> to process each IO request than normal. 
+>
+> iostat -kx 10 output: 
+> Device: rrqm/s wrqm/s r/s  w/s  rkB/s wkB/s avgrq-sz avgqu-sz await svctm %util
+> sdd     0.30   0.00   0.40 1.20 2.80  1.10  4.88     0.43  271.50 271.44  43.43
 
-> Did we kill X? Did we happen to hold some critical lock when oopsing?
-> Was it syslogd itself that died and caused nothing further to be
-> saved, even if the machine otherwise seems to be fine? Or did the
-> filesystem go into read-only mode due to the problem and the rest of
-> the system is fine, but the disk is never going to see the messages?
-> 
-> In other words, the problem really is that "am I still alive" thing.
-> That's a seriously impossible question to answer.
+You are doing ~4KB I/Os and driving a queue depth of <1.  If you are
+seeking all over the disk and mixing reads and writes, you may very well
+trigger bad behaviour like this for SATA disks.
 
-Maybe we should rephrase this as "am I still alive and well," for a
-specific definition of well.
+To further diagnose the issue, I'd recommend running blktrace on one of
+the devices.  If you report results here, could you also include more
+information about the hardware, the storage layout (including any dm/md
+drivers and file systems involved) and the workload?  Also, please let
+us know which I/O scheduler you're using.
 
-> What _can_ be answered is "did somebody write out the oops, then
-> fsync, and then notify us about it?" But without explicit notification
-> of "yeah, it really is saved off somewhere else", we really can't
-> tell.
+> These syptoms started when the system was running 2.6.33, but are
+> still present now the system has been upgraded to 2.6.36.
 
-That could work, I should look deeper into that.
+Are you sure it was a kernel change that caused the issue?  In other
+words, can you run with the 2.6.32 and confirm that the issue is not
+present?
 
-> We could do heuristics, of course, and they might even work in
-> practice (like "flush after half an hour if there has been actual work
-> done and the machine is clearly making progress").
-
-Yes, this was exactly what I was trying to say! Do something in a
-watchdog handler path that shows that we actually made progress. But
-you're right, we'd still need the notification. My look at "did we make
-a progress" was too simple and there _are_ nuances which need to be
-accounted for.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
+Thanks,
+Jeff
