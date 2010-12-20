@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932340Ab0LTLip (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 06:38:45 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:51266 "EHLO
+	id S1757476Ab0LTLi5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 06:38:57 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:51256 "EHLO
 	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757385Ab0LTLgz (ORCPT
+	with ESMTP id S1757366Ab0LTLgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 06:36:55 -0500
+	Mon, 20 Dec 2010 06:36:52 -0500
 From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 To: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
         alsa-devel@alsa-project.org
 Cc: broonie@opensource.wolfsonmicro.com, clemens@ladisch.de, gregkh@suse.de,
         sakari.ailus@maxwell.research.nokia.com
-Subject: [RFC/PATCH v7 09/12] media: Pipelines and media streams
-Date: Mon, 20 Dec 2010 12:36:32 +0100
-Message-Id: <1292844995-7900-10-git-send-email-laurent.pinchart@ideasonboard.com>
+Subject: [RFC/PATCH v7 07/12] media: Entities, pads and links enumeration
+Date: Mon, 20 Dec 2010 12:36:30 +0100
+Message-Id: <1292844995-7900-8-git-send-email-laurent.pinchart@ideasonboard.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1292844995-7900-1-git-send-email-laurent.pinchart@ideasonboard.com>
 References: <1292844995-7900-1-git-send-email-laurent.pinchart@ideasonboard.com>
@@ -22,258 +22,887 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drivers often need to associate pipeline objects to entities, and to
-take stream state into account when configuring entities and links. The
-pipeline API helps drivers manage that information.
+Create the following two ioctls and implement them at the media device
+level to enumerate entities, pads and links.
 
-When starting streaming, drivers call media_entity_pipeline_start(). The
-function marks all entities connected to the given entity through
-enabled links, either directly or indirectly, as streaming. Similarly,
-when stopping the stream, drivers call media_entity_pipeline_stop().
+- MEDIA_IOC_ENUM_ENTITIES: Enumerate entities and their properties
+- MEDIA_IOC_ENUM_LINKS: Enumerate all pads and links for a given entity
 
-The media_entity_pipeline_start() function takes a pointer to a media
-pipeline and stores it in every entity in the graph. Drivers should
-embed the media_pipeline structure in higher-level pipeline structures
-and can then access the pipeline through the media_entity structure.
+Entity IDs can be non-contiguous. Userspace applications should
+enumerate entities using the MEDIA_ENTITY_ID_FLAG_NEXT flag. When the
+flag is set in the entity ID, the MEDIA_IOC_ENUM_ENTITIES will return
+the next entity with an ID bigger than the requested one.
 
-Link configuration will fail with -EBUSY by default if either end of the
-link is a streaming entity, unless the link is marked with the
-MEDIA_LINK_FLAG_DYNAMIC flag.
+Only forward links that originate at one of the entity's source pads are
+returned during the enumeration process.
 
 Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
 ---
- Documentation/DocBook/v4l/media-ioc-enum-links.xml |    5 ++
- Documentation/DocBook/v4l/media-ioc-setup-link.xml |    3 +
- Documentation/media-framework.txt                  |   38 ++++++++++
- drivers/media/media-entity.c                       |   74 ++++++++++++++++++++
- include/linux/media.h                              |    1 +
- include/media/media-entity.h                       |   10 +++
- 6 files changed, 131 insertions(+), 0 deletions(-)
+ Documentation/DocBook/media-entities.tmpl          |    8 +
+ Documentation/DocBook/v4l/media-controller.xml     |    2 +
+ .../DocBook/v4l/media-ioc-device-info.xml          |    3 +-
+ .../DocBook/v4l/media-ioc-enum-entities.xml        |  308 ++++++++++++++++++++
+ Documentation/DocBook/v4l/media-ioc-enum-links.xml |  202 +++++++++++++
+ drivers/media/media-device.c                       |  123 ++++++++
+ include/linux/media.h                              |   85 ++++++
+ include/media/media-entity.h                       |   24 +--
+ 8 files changed, 731 insertions(+), 24 deletions(-)
+ create mode 100644 Documentation/DocBook/v4l/media-ioc-enum-entities.xml
+ create mode 100644 Documentation/DocBook/v4l/media-ioc-enum-links.xml
 
-diff --git a/Documentation/DocBook/v4l/media-ioc-enum-links.xml b/Documentation/DocBook/v4l/media-ioc-enum-links.xml
-index bcec89b..aa164f4 100644
---- a/Documentation/DocBook/v4l/media-ioc-enum-links.xml
-+++ b/Documentation/DocBook/v4l/media-ioc-enum-links.xml
-@@ -179,6 +179,11 @@
- 	    <entry>The link enabled state can't be modified at runtime. An
- 	    immutable link is always enabled.</entry>
- 	  </row>
+diff --git a/Documentation/DocBook/media-entities.tmpl b/Documentation/DocBook/media-entities.tmpl
+index 6af3375..6e7dae4 100644
+--- a/Documentation/DocBook/media-entities.tmpl
++++ b/Documentation/DocBook/media-entities.tmpl
+@@ -92,6 +92,8 @@
+ <!ENTITY VIDIOC-UNSUBSCRIBE-EVENT "<link linkend='vidioc-subscribe-event'><constant>VIDIOC_UNSUBSCRIBE_EVENT</constant></link>">
+ 
+ <!ENTITY MEDIA-IOC-DEVICE-INFO "<link linkend='media-ioc-device-info'><constant>MEDIA_IOC_DEVICE_INFO</constant></link>">
++<!ENTITY MEDIA-IOC-ENUM-ENTITIES "<link linkend='media-ioc-enum-entities'><constant>MEDIA_IOC_ENUM_ENTITIES</constant></link>">
++<!ENTITY MEDIA-IOC-ENUM-LINKS "<link linkend='media-ioc-enum-links'><constant>MEDIA_IOC_ENUM_LINKS</constant></link>">
+ 
+ <!-- Types -->
+ <!ENTITY v4l2-std-id "<link linkend='v4l2-std-id'>v4l2_std_id</link>">
+@@ -188,6 +190,10 @@
+ <!ENTITY v4l2-window "struct&nbsp;<link linkend='v4l2-window'>v4l2_window</link>">
+ 
+ <!ENTITY media-device-info "struct&nbsp;<link linkend='media-device-info'>media_device_info</link>">
++<!ENTITY media-entity-desc "struct&nbsp;<link linkend='media-entity-desc'>media_entity_desc</link>">
++<!ENTITY media-links-enum "struct&nbsp;<link linkend='media-links-enum'>media_links_enum</link>">
++<!ENTITY media-pad-desc "struct&nbsp;<link linkend='media-pad-desc'>media_pad_desc</link>">
++<!ENTITY media-link-desc "struct&nbsp;<link linkend='media-link-desc'>media_link_desc</link>">
+ 
+ <!-- Error Codes -->
+ <!ENTITY EACCES "<errorcode>EACCES</errorcode> error code">
+@@ -334,6 +340,8 @@
+ <!ENTITY sub-media-close SYSTEM "v4l/media-func-close.xml">
+ <!ENTITY sub-media-ioctl SYSTEM "v4l/media-func-ioctl.xml">
+ <!ENTITY sub-media-ioc-device-info SYSTEM "v4l/media-ioc-device-info.xml">
++<!ENTITY sub-media-ioc-enum-entities SYSTEM "v4l/media-ioc-enum-entities.xml">
++<!ENTITY sub-media-ioc-enum-links SYSTEM "v4l/media-ioc-enum-links.xml">
+ 
+ <!-- Function Reference -->
+ <!ENTITY close SYSTEM "v4l/func-close.xml">
+diff --git a/Documentation/DocBook/v4l/media-controller.xml b/Documentation/DocBook/v4l/media-controller.xml
+index a46b786..2c4fd2b 100644
+--- a/Documentation/DocBook/v4l/media-controller.xml
++++ b/Documentation/DocBook/v4l/media-controller.xml
+@@ -83,4 +83,6 @@
+   &sub-media-ioctl;
+   <!-- All ioctls go here. -->
+   &sub-media-ioc-device-info;
++  &sub-media-ioc-enum-entities;
++  &sub-media-ioc-enum-links;
+ </appendix>
+diff --git a/Documentation/DocBook/v4l/media-ioc-device-info.xml b/Documentation/DocBook/v4l/media-ioc-device-info.xml
+index 278a312..1f32373 100644
+--- a/Documentation/DocBook/v4l/media-ioc-device-info.xml
++++ b/Documentation/DocBook/v4l/media-ioc-device-info.xml
+@@ -27,7 +27,8 @@
+       <varlistentry>
+ 	<term><parameter>fd</parameter></term>
+ 	<listitem>
+-	  <para>&fd;</para>
++	  <para>File descriptor returned by
++	  <link linkend='media-func-open'><function>open()</function></link>.</para>
+ 	</listitem>
+       </varlistentry>
+       <varlistentry>
+diff --git a/Documentation/DocBook/v4l/media-ioc-enum-entities.xml b/Documentation/DocBook/v4l/media-ioc-enum-entities.xml
+new file mode 100644
+index 0000000..c898aab
+--- /dev/null
++++ b/Documentation/DocBook/v4l/media-ioc-enum-entities.xml
+@@ -0,0 +1,308 @@
++<refentry id="media-ioc-enum-entities">
++  <refmeta>
++    <refentrytitle>ioctl MEDIA_IOC_ENUM_ENTITIES</refentrytitle>
++    &manvol;
++  </refmeta>
++
++  <refnamediv>
++    <refname>MEDIA_IOC_ENUM_ENTITIES</refname>
++    <refpurpose>Enumerate entities and their properties</refpurpose>
++  </refnamediv>
++
++  <refsynopsisdiv>
++    <funcsynopsis>
++      <funcprototype>
++	<funcdef>int <function>ioctl</function></funcdef>
++	<paramdef>int <parameter>fd</parameter></paramdef>
++	<paramdef>int <parameter>request</parameter></paramdef>
++	<paramdef>struct media_entity_desc *<parameter>argp</parameter></paramdef>
++      </funcprototype>
++    </funcsynopsis>
++  </refsynopsisdiv>
++
++  <refsect1>
++    <title>Arguments</title>
++
++    <variablelist>
++      <varlistentry>
++	<term><parameter>fd</parameter></term>
++	<listitem>
++	  <para>File descriptor returned by
++	  <link linkend='media-func-open'><function>open()</function></link>.</para>
++	</listitem>
++      </varlistentry>
++      <varlistentry>
++	<term><parameter>request</parameter></term>
++	<listitem>
++	  <para>MEDIA_IOC_ENUM_ENTITIES</para>
++	</listitem>
++      </varlistentry>
++      <varlistentry>
++	<term><parameter>argp</parameter></term>
++	<listitem>
++	  <para></para>
++	</listitem>
++      </varlistentry>
++    </variablelist>
++  </refsect1>
++
++  <refsect1>
++    <title>Description</title>
++    <para>To query the attributes of an entity, applications set the id field
++    of a &media-entity-desc; structure and call the MEDIA_IOC_ENUM_ENTITIES
++    ioctl with a pointer to this structure. The driver fills the rest of the
++    structure or returns an &EINVAL; when the id is invalid.</para>
++    <para>Entities can be enumerated by or'ing the id with the
++    <constant>MEDIA_ENTITY_ID_FLAG_NEXT</constant> flag. The driver will return
++    information about the entity with the smallest id strictly larger than the
++    requested one ('next entity'), or the &EINVAL; if there is none.</para>
++    <para>Entity IDs can be non-contiguous. Applications must
++    <emphasis>not</emphasis> try to enumerate entities by calling
++    MEDIA_IOC_ENUM_ENTITIES with increasing id's until they get an error.</para>
++    <para>Two or more entities that share a common non-zero
++    <structfield>group_id</structfield> value are considered as logically
++    grouped. Groups are used to report
++    <itemizedlist>
++      <listitem>ALSA, VBI and video nodes that carry the same media
++      stream</listitem>
++      <listitem>lens and flash controllers associated with a sensor</listitem>
++    </itemizedlist>
++    </para>
++
++    <table pgwide="1" frame="none" id="media-entity-desc">
++      <title>struct <structname>media_entity_desc</structname></title>
++      <tgroup cols="5">
++	<colspec colname="c1" />
++	<colspec colname="c2" />
++	<colspec colname="c3" />
++	<colspec colname="c4" />
++	<colspec colname="c5" />
++	<tbody valign="top">
 +	  <row>
-+	    <entry><constant>MEDIA_LINK_FLAG_DYNAMIC</constant></entry>
-+	    <entry>The link enabled state can be modified during streaming. This
-+	    flag is set by drivers and is read-only for applications.</entry>
++	    <entry>__u32</entry>
++	    <entry><structfield>id</structfield></entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Entity id, set by the application. When the id is or'ed with
++	    <constant>MEDIA_ENTITY_ID_FLAG_NEXT</constant>, the driver clears
++	    the flag and returns the first entity with a larger id.</entry>
 +	  </row>
- 	</tbody>
-       </tgroup>
-     </table>
-diff --git a/Documentation/DocBook/v4l/media-ioc-setup-link.xml b/Documentation/DocBook/v4l/media-ioc-setup-link.xml
-index 09ab3d2..2331e76 100644
---- a/Documentation/DocBook/v4l/media-ioc-setup-link.xml
-+++ b/Documentation/DocBook/v4l/media-ioc-setup-link.xml
-@@ -60,6 +60,9 @@
-     <para>Link configuration has no side effect on other links. If an enabled
-     link at the sink pad prevents the link from being enabled, the driver
-     returns with an &EBUSY;.</para>
-+    <para>Only links marked with the <constant>DYNAMIC</constant> link flag can
-+    be enabled/disabled while streaming media data. Attempting to enable or
-+    disable a streaming non-dynamic link will return an &EBUSY;.</para>
-     <para>If the specified link can't be found the driver returns with an
-     &EINVAL;.</para>
-   </refsect1>
-diff --git a/Documentation/media-framework.txt b/Documentation/media-framework.txt
-index 4603417..7163dcb 100644
---- a/Documentation/media-framework.txt
-+++ b/Documentation/media-framework.txt
-@@ -343,3 +343,41 @@ link_setup calls are made with power active on the source and sink entities.
- In other words, enabling or disabling a link propagates reference count changes
- through the graph, and the final state is identical to what it would have been
- if the link had been enabled or disabled from the start.
++	  <row>
++	    <entry>char</entry>
++	    <entry><structfield>name</structfield>[32]</entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Entity name as an UTF-8 NULL-terminated string.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>type</structfield></entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Entity type, see <xref linkend="media-entity-type" /> for details.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>revision</structfield></entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Entity revision in a driver/hardware specific format.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>flags</structfield></entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Entity flags, see <xref linkend="media-entity-flag" /> for details.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>group_id</structfield></entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Entity group ID</entry>
++	  </row>
++	  <row>
++	    <entry>__u16</entry>
++	    <entry><structfield>pads</structfield></entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Number of pads</entry>
++	  </row>
++	  <row>
++	    <entry>__u16</entry>
++	    <entry><structfield>links</structfield></entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Total number of outbound links. Inbound links are not counted
++	    in this field.</entry>
++	  </row>
++	  <row>
++	    <entry>union</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry>struct</entry>
++	    <entry><structfield>v4l</structfield></entry>
++	    <entry></entry>
++	    <entry>Valid for V4L sub-devices and nodes only.</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>__u32</entry>
++	    <entry><structfield>major</structfield></entry>
++	    <entry>V4L device node major number. For V4L sub-devices with no
++	    device node, set by the driver to 0.</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>__u32</entry>
++	    <entry><structfield>minor</structfield></entry>
++	    <entry>V4L device node minor number. For V4L sub-devices with no
++	    device node, set by the driver to 0.</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry>struct</entry>
++	    <entry><structfield>fb</structfield></entry>
++	    <entry></entry>
++	    <entry>Valid for frame buffer nodes only.</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>__u32</entry>
++	    <entry><structfield>major</structfield></entry>
++	    <entry>Frame buffer device node major number.</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>__u32</entry>
++	    <entry><structfield>minor</structfield></entry>
++	    <entry>Frame buffer device node minor number.</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry>struct</entry>
++	    <entry><structfield>alsa</structfield></entry>
++	    <entry></entry>
++	    <entry>Valid for ALSA devices only.</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>__u32</entry>
++	    <entry><structfield>card</structfield></entry>
++	    <entry>ALSA card number</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>__u32</entry>
++	    <entry><structfield>device</structfield></entry>
++	    <entry>ALSA device number</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>__u32</entry>
++	    <entry><structfield>subdevice</structfield></entry>
++	    <entry>ALSA sub-device number</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry>int</entry>
++	    <entry><structfield>dvb</structfield></entry>
++	    <entry></entry>
++	    <entry>DVB card number</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry>__u8</entry>
++	    <entry><structfield>raw</structfield>[180]</entry>
++	    <entry></entry>
++	    <entry></entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
 +
++    <table frame="none" pgwide="1" id="media-entity-type">
++      <title>Media entity types</title>
++      <tgroup cols="2">
++        <colspec colname="c1"/>
++        <colspec colname="c2"/>
++	<tbody valign="top">
++	  <row>
++	    <entry><constant>MEDIA_ENTITY_TYPE_DEVNODE</constant></entry>
++	    <entry>Unknown device node</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENTITY_TYPE_DEVNODE_V4L</constant></entry>
++	    <entry>V4L video, radio or vbi device node</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENTITY_TYPE_DEVNODE_FB</constant></entry>
++	    <entry>Frame buffer device node</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENTITY_TYPE_DEVNODE_ALSA</constant></entry>
++	    <entry>ALSA card</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENTITY_TYPE_DEVNODE_DVB</constant></entry>
++	    <entry>DVB card</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENTITY_TYPE_V4L2_SUBDEV</constant></entry>
++	    <entry>Unknown V4L sub-device</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENTITY_TYPE_V4L2_SUBDEV_SENSOR</constant></entry>
++	    <entry>Video sensor</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENTITY_TYPE_V4L2_SUBDEV_FLASH</constant></entry>
++	    <entry>Flash controller</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENTITY_TYPE_V4L2_SUBDEV_LENS</constant></entry>
++	    <entry>Lens controller</entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
 +
-+Pipelines and media streams
-+---------------------------
++    <table frame="none" pgwide="1" id="media-entity-flag">
++      <title>Media entity flags</title>
++      <tgroup cols="2">
++        <colspec colname="c1"/>
++        <colspec colname="c2"/>
++	<tbody valign="top">
++	  <row>
++	    <entry><constant>MEDIA_ENTITY_FLAG_DEFAULT</constant></entry>
++	    <entry>Default entity for its type. Used to discover the default
++	    audio, VBI and video devices, the default camera sensor, ...</entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
++  </refsect1>
 +
-+When starting streaming, drivers must notify all entities in the pipeline to
-+prevent link states from being modified during streaming by calling
++  <refsect1>
++    &return-value;
 +
-+	media_entity_pipeline_start(struct media_entity *entity,
-+				    struct media_pipeline *pipe);
++    <variablelist>
++      <varlistentry>
++	<term><errorcode>EINVAL</errorcode></term>
++	<listitem>
++	  <para>The &media-entity-desc; <structfield>id</structfield> references
++	  a non-existing entity.</para>
++	</listitem>
++      </varlistentry>
++    </variablelist>
++  </refsect1>
++</refentry>
+diff --git a/Documentation/DocBook/v4l/media-ioc-enum-links.xml b/Documentation/DocBook/v4l/media-ioc-enum-links.xml
+new file mode 100644
+index 0000000..bcec89b
+--- /dev/null
++++ b/Documentation/DocBook/v4l/media-ioc-enum-links.xml
+@@ -0,0 +1,202 @@
++<refentry id="media-ioc-enum-links">
++  <refmeta>
++    <refentrytitle>ioctl MEDIA_IOC_ENUM_LINKS</refentrytitle>
++    &manvol;
++  </refmeta>
 +
-+The function will mark all entities connected to the given entity through
-+enabled links, either directly or indirectly, as streaming.
++  <refnamediv>
++    <refname>MEDIA_IOC_ENUM_LINKS</refname>
++    <refpurpose>Enumerate all pads and links for a given entity</refpurpose>
++  </refnamediv>
 +
-+The media_pipeline instance pointed to by the pipe argument will be stored in
-+every entity in the pipeline. Drivers should embed the media_pipeline structure
-+in higher-level pipeline structures and can then access the pipeline through
-+the media_entity pipe field.
++  <refsynopsisdiv>
++    <funcsynopsis>
++      <funcprototype>
++	<funcdef>int <function>ioctl</function></funcdef>
++	<paramdef>int <parameter>fd</parameter></paramdef>
++	<paramdef>int <parameter>request</parameter></paramdef>
++	<paramdef>struct media_links_enum *<parameter>argp</parameter></paramdef>
++      </funcprototype>
++    </funcsynopsis>
++  </refsynopsisdiv>
 +
-+Calls to media_entity_pipeline_start() can be nested. The pipeline pointer must
-+be identical for all nested calls to the function.
++  <refsect1>
++    <title>Arguments</title>
 +
-+When stopping the stream, drivers must notify the entities with
++    <variablelist>
++      <varlistentry>
++	<term><parameter>fd</parameter></term>
++	<listitem>
++	  <para>File descriptor returned by
++	  <link linkend='media-func-open'><function>open()</function></link>.</para>
++	</listitem>
++      </varlistentry>
++      <varlistentry>
++	<term><parameter>request</parameter></term>
++	<listitem>
++	  <para>MEDIA_IOC_ENUM_LINKS</para>
++	</listitem>
++      </varlistentry>
++      <varlistentry>
++	<term><parameter>argp</parameter></term>
++	<listitem>
++	  <para></para>
++	</listitem>
++      </varlistentry>
++    </variablelist>
++  </refsect1>
 +
-+	media_entity_pipeline_stop(struct media_entity *entity);
++  <refsect1>
++    <title>Description</title>
 +
-+If multiple calls to media_entity_pipeline_start() have been made the same
-+number of media_entity_pipeline_stop() calls are required to stop streaming. The
-+media_entity pipe field is reset to NULL on the last nested stop call.
++    <para>To enumerate pads and/or links for a given entity, applications set
++    the entity field of a &media-links-enum; structure and initialize the
++    &media-pad-desc; and &media-link-desc; structure arrays pointed by the
++    <structfield>pads</structfield> and <structfield>links</structfield> fields.
++    They then call the MEDIA_IOC_ENUM_LINKS ioctl with a pointer to this
++    structure.</para>
++    <para>If the <structfield>pads</structfield> field is not NULL, the driver
++    fills the <structfield>pads</structfield> array with information about the
++    entity's pads. The array must have enough room to store all the entity's
++    pads. The number of pads can be retrieved with the &MEDIA-IOC-ENUM-ENTITIES;
++    ioctl.</para>
++    <para>If the <structfield>links</structfield> field is not NULL, the driver
++    fills the <structfield>links</structfield> array with information about the
++    entity's outbound links. The array must have enough room to store all the
++    entity's outbound links. The number of outbound links can be retrieved with
++    the &MEDIA-IOC-ENUM-ENTITIES; ioctl.</para>
++    <para>Only forward links that originate at one of the entity's source pads
++    are returned during the enumeration process.</para>
 +
-+Link configuration will fail with -EBUSY by default if either end of the link is
-+a streaming entity. Links that can be modified while streaming must be marked
-+with the MEDIA_LINK_FLAG_DYNAMIC flag.
++    <table pgwide="1" frame="none" id="media-links-enum">
++      <title>struct <structname>media_links_enum</structname></title>
++      <tgroup cols="3">
++        &cs-str;
++	<tbody valign="top">
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>entity</structfield></entry>
++	    <entry>Entity id, set by the application.</entry>
++	  </row>
++	  <row>
++	    <entry>struct &media-pad-desc;</entry>
++	    <entry>*<structfield>pads</structfield></entry>
++	    <entry>Pointer to a pads array allocated by the application. Ignored
++	    if NULL.</entry>
++	  </row>
++	  <row>
++	    <entry>struct &media-link-desc;</entry>
++	    <entry>*<structfield>links</structfield></entry>
++	    <entry>Pointer to a links array allocated by the application. Ignored
++	    if NULL.</entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
 +
-+If other operations need to be disallowed on streaming entities (such as
-+changing entities configuration parameters) drivers can explictly check the
-+media_entity stream_count field to find out if an entity is streaming. This
-+operation must be done with the media_device graph_mutex held.
-diff --git a/drivers/media/media-entity.c b/drivers/media/media-entity.c
-index 53718f1..73bb26d 100644
---- a/drivers/media/media-entity.c
-+++ b/drivers/media/media-entity.c
-@@ -197,6 +197,75 @@ media_entity_graph_walk_next(struct media_entity_graph *graph)
- EXPORT_SYMBOL_GPL(media_entity_graph_walk_next);
++    <table pgwide="1" frame="none" id="media-pad-desc">
++      <title>struct <structname>media_pad_desc</structname></title>
++      <tgroup cols="3">
++        &cs-str;
++	<tbody valign="top">
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>entity</structfield></entry>
++	    <entry>ID of the entity this pad belongs to.</entry>
++	  </row>
++	  <row>
++	    <entry>__u16</entry>
++	    <entry><structfield>index</structfield></entry>
++	    <entry>0-based pad index.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>flags</structfield></entry>
++	    <entry>Pad flags, see <xref linkend="media-pad-flag" /> for more details.</entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
++
++    <table frame="none" pgwide="1" id="media-pad-flag">
++      <title>Media pad flags</title>
++      <tgroup cols="2">
++        <colspec colname="c1"/>
++        <colspec colname="c2"/>
++	<tbody valign="top">
++	  <row>
++	    <entry><constant>MEDIA_PAD_FLAG_INPUT</constant></entry>
++	    <entry>Input pad, relative to the entity. Input pads sink data and
++	    are targets of links.</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_PAD_FLAG_OUTPUT</constant></entry>
++	    <entry>Output pad, relative to the entity. Output pads source data
++	    and are origins of links.</entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
++
++    <table pgwide="1" frame="none" id="media-link-desc">
++      <title>struct <structname>media_links_enum</structname></title>
++      <tgroup cols="3">
++        &cs-str;
++	<tbody valign="top">
++	  <row>
++	    <entry>struct &media-pad-desc;</entry>
++	    <entry><structfield>source</structfield></entry>
++	    <entry>Pad at the origin of this link.</entry>
++	  </row>
++	  <row>
++	    <entry>struct &media-pad-desc;</entry>
++	    <entry><structfield>sink</structfield></entry>
++	    <entry>Pad at the target of this link.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>flags</structfield></entry>
++	    <entry>Link flags, see <xref linkend="media-link-flag" /> for more details.</entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
++
++    <table frame="none" pgwide="1" id="media-link-flag">
++      <title>Media link flags</title>
++      <tgroup cols="2">
++        <colspec colname="c1"/>
++        <colspec colname="c2"/>
++	<tbody valign="top">
++	  <row>
++	    <entry><constant>MEDIA_LINK_FLAG_ENABLED</constant></entry>
++	    <entry>The link is enabled and can be used to transfer media data.
++	    When two or more links target a sink pad, only one of them can be
++	    enabled at a time.</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_LINK_FLAG_IMMUTABLE</constant></entry>
++	    <entry>The link enabled state can't be modified at runtime. An
++	    immutable link is always enabled.</entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
++    <para>One and only one of <constant>MEDIA_PAD_FLAG_INPUT</constant> and
++    <constant>MEDIA_PAD_FLAG_OUTPUT</constant> must be set for every pad.</para>
++  </refsect1>
++
++  <refsect1>
++    &return-value;
++
++    <variablelist>
++      <varlistentry>
++	<term><errorcode>EINVAL</errorcode></term>
++	<listitem>
++	  <para>The &media-links-enum; <structfield>id</structfield> references
++	  a non-existing entity.</para>
++	</listitem>
++      </varlistentry>
++    </variablelist>
++  </refsect1>
++</refentry>
+diff --git a/drivers/media/media-device.c b/drivers/media/media-device.c
+index 5c745be..f41febc 100644
+--- a/drivers/media/media-device.c
++++ b/drivers/media/media-device.c
+@@ -61,6 +61,117 @@ static int media_device_get_info(struct media_device *dev,
+ 	return copy_to_user(__info, &info, sizeof(*__info));
+ }
  
- /* -----------------------------------------------------------------------------
-+ * Pipeline management
-+ */
-+
-+/**
-+ * media_entity_pipeline_start - Mark a pipeline as streaming
-+ * @entity: Starting entity
-+ * @pipe: Media pipeline to be assigned to all entities in the pipeline.
-+ *
-+ * Mark all entities connected to a given entity through enabled links, either
-+ * directly or indirectly, as streaming. The given pipeline object is assigned to
-+ * every entity in the pipeline and stored in the media_entity pipe field.
-+ *
-+ * Calls to this function can be nested, in which case the same number of
-+ * media_entity_pipeline_stop() calls will be required to stop streaming. The
-+ * pipeline pointer must be identical for all nested calls to
-+ * media_entity_pipeline_start().
-+ */
-+void media_entity_pipeline_start(struct media_entity *entity,
-+				 struct media_pipeline *pipe)
++static struct media_entity *find_entity(struct media_device *mdev, u32 id)
 +{
-+	struct media_device *mdev = entity->parent;
-+	struct media_entity_graph graph;
++	struct media_entity *entity;
++	int next = id & MEDIA_ENTITY_ID_FLAG_NEXT;
 +
-+	mutex_lock(&mdev->graph_mutex);
++	id &= ~MEDIA_ENTITY_ID_FLAG_NEXT;
 +
-+	media_entity_graph_walk_start(&graph, entity);
++	spin_lock(&mdev->lock);
 +
-+	while ((entity = media_entity_graph_walk_next(&graph))) {
-+		entity->stream_count++;
-+		WARN_ON(entity->pipe && entity->pipe != pipe);
-+		entity->pipe = pipe;
++	media_device_for_each_entity(entity, mdev) {
++		if ((entity->id == id && !next) ||
++		    (entity->id > id && next)) {
++			spin_unlock(&mdev->lock);
++			return entity;
++		}
 +	}
 +
-+	mutex_unlock(&mdev->graph_mutex);
++	spin_unlock(&mdev->lock);
++
++	return NULL;
 +}
-+EXPORT_SYMBOL_GPL(media_entity_pipeline_start);
 +
-+/**
-+ * media_entity_pipeline_stop - Mark a pipeline as not streaming
-+ * @entity: Starting entity
-+ *
-+ * Mark all entities connected to a given entity through enabled links, either
-+ * directly or indirectly, as not streaming. The media_entity pipe field is
-+ * reset to NULL.
-+ *
-+ * If multiple calls to media_entity_pipeline_start() have been made, the same
-+ * number of calls to this function are required to mark the pipeline as not
-+ * streaming.
-+ */
-+void media_entity_pipeline_stop(struct media_entity *entity)
++static long media_device_enum_entities(struct media_device *mdev,
++				       struct media_entity_desc __user *uent)
 +{
-+	struct media_device *mdev = entity->parent;
-+	struct media_entity_graph graph;
++	struct media_entity *ent;
++	struct media_entity_desc u_ent;
 +
-+	mutex_lock(&mdev->graph_mutex);
++	if (copy_from_user(&u_ent.id, &uent->id, sizeof(u_ent.id)))
++		return -EFAULT;
 +
-+	media_entity_graph_walk_start(&graph, entity);
++	ent = find_entity(mdev, u_ent.id);
 +
-+	while ((entity = media_entity_graph_walk_next(&graph))) {
-+		entity->stream_count--;
-+		if (entity->stream_count == 0)
-+			entity->pipe = NULL;
++	if (ent == NULL)
++		return -EINVAL;
++
++	u_ent.id = ent->id;
++	u_ent.name[0] = '\0';
++	if (ent->name)
++		strlcpy(u_ent.name, ent->name, sizeof(u_ent.name));
++	u_ent.type = ent->type;
++	u_ent.revision = ent->revision;
++	u_ent.flags = ent->flags;
++	u_ent.group_id = ent->group_id;
++	u_ent.pads = ent->num_pads;
++	u_ent.links = ent->num_links - ent->num_backlinks;
++	u_ent.v4l.major = ent->v4l.major;
++	u_ent.v4l.minor = ent->v4l.minor;
++	if (copy_to_user(uent, &u_ent, sizeof(u_ent)))
++		return -EFAULT;
++	return 0;
++}
++
++static void media_device_kpad_to_upad(const struct media_pad *kpad,
++				      struct media_pad_desc *upad)
++{
++	upad->entity = kpad->entity->id;
++	upad->index = kpad->index;
++	upad->flags = kpad->flags;
++}
++
++static long media_device_enum_links(struct media_device *mdev,
++				    struct media_links_enum __user *ulinks)
++{
++	struct media_entity *entity;
++	struct media_links_enum links;
++
++	if (copy_from_user(&links, ulinks, sizeof(links)))
++		return -EFAULT;
++
++	entity = find_entity(mdev, links.entity);
++	if (entity == NULL)
++		return -EINVAL;
++
++	if (links.pads) {
++		unsigned int p;
++
++		for (p = 0; p < entity->num_pads; p++) {
++			struct media_pad_desc pad;
++			media_device_kpad_to_upad(&entity->pads[p], &pad);
++			if (copy_to_user(&links.pads[p], &pad, sizeof(pad)))
++				return -EFAULT;
++		}
 +	}
 +
-+	mutex_unlock(&mdev->graph_mutex);
++	if (links.links) {
++		struct media_link_desc __user *ulink;
++		unsigned int l;
++
++		for (l = 0, ulink = links.links; l < entity->num_links; l++) {
++			struct media_link_desc link;
++
++			/* Ignore backlinks. */
++			if (entity->links[l].source->entity != entity)
++				continue;
++
++			media_device_kpad_to_upad(entity->links[l].source,
++						  &link.source);
++			media_device_kpad_to_upad(entity->links[l].sink,
++						  &link.sink);
++			link.flags = entity->links[l].flags;
++			if (copy_to_user(ulink, &link, sizeof(*ulink)))
++				return -EFAULT;
++			ulink++;
++		}
++	}
++	if (copy_to_user(ulinks, &links, sizeof(*ulinks)))
++		return -EFAULT;
++	return 0;
 +}
-+EXPORT_SYMBOL_GPL(media_entity_pipeline_stop);
 +
-+/* -----------------------------------------------------------------------------
-  * Power state handling
-  */
+ static long media_device_ioctl(struct file *filp, unsigned int cmd,
+ 			       unsigned long arg)
+ {
+@@ -74,6 +185,18 @@ static long media_device_ioctl(struct file *filp, unsigned int cmd,
+ 				(struct media_device_info __user *)arg);
+ 		break;
  
-@@ -505,6 +574,11 @@ int __media_entity_setup_link(struct media_link *link, u32 flags)
- 	if (link->flags == flags)
- 		return 0;
- 
-+	if (!(link->flags & MEDIA_LINK_FLAG_DYNAMIC) &&
-+	    (link->source->entity->stream_count ||
-+	     link->sink->entity->stream_count))
-+		return -EBUSY;
++	case MEDIA_IOC_ENUM_ENTITIES:
++		ret = media_device_enum_entities(dev,
++				(struct media_entity_desc __user *)arg);
++		break;
 +
- 	source = __media_entity_get(link->source->entity);
- 	if (!source)
- 		return ret;
++	case MEDIA_IOC_ENUM_LINKS:
++		mutex_lock(&dev->graph_mutex);
++		ret = media_device_enum_links(dev,
++				(struct media_links_enum __user *)arg);
++		mutex_unlock(&dev->graph_mutex);
++		break;
++
+ 	default:
+ 		ret = -ENOIOCTLCMD;
+ 	}
 diff --git a/include/linux/media.h b/include/linux/media.h
-index 0611e3d..944629b 100644
+index 4c52f08..3b1c065 100644
 --- a/include/linux/media.h
 +++ b/include/linux/media.h
-@@ -106,6 +106,7 @@ struct media_pad_desc {
+@@ -40,6 +40,91 @@ struct media_device_info {
+ 	__u32 reserved[31];
+ };
  
- #define MEDIA_LINK_FLAG_ENABLED			(1 << 0)
- #define MEDIA_LINK_FLAG_IMMUTABLE		(1 << 1)
-+#define MEDIA_LINK_FLAG_DYNAMIC			(1 << 2)
- 
- struct media_link_desc {
- 	struct media_pad_desc source;
-diff --git a/include/media/media-entity.h b/include/media/media-entity.h
-index 36ad6c7..8dbc268 100644
---- a/include/media/media-entity.h
-+++ b/include/media/media-entity.h
-@@ -26,6 +26,9 @@
- #include <linux/list.h>
- #include <linux/media.h>
- 
-+struct media_pipeline {
++#define MEDIA_ENTITY_ID_FLAG_NEXT		(1 << 31)
++
++#define MEDIA_ENTITY_TYPE_SHIFT			16
++#define MEDIA_ENTITY_TYPE_MASK			0x00ff0000
++#define MEDIA_ENTITY_SUBTYPE_MASK		0x0000ffff
++
++#define MEDIA_ENTITY_TYPE_DEVNODE		(1 << MEDIA_ENTITY_TYPE_SHIFT)
++#define MEDIA_ENTITY_TYPE_DEVNODE_V4L		(MEDIA_ENTITY_TYPE_DEVNODE + 1)
++#define MEDIA_ENTITY_TYPE_DEVNODE_FB		(MEDIA_ENTITY_TYPE_DEVNODE + 2)
++#define MEDIA_ENTITY_TYPE_DEVNODE_ALSA		(MEDIA_ENTITY_TYPE_DEVNODE + 3)
++#define MEDIA_ENTITY_TYPE_DEVNODE_DVB		(MEDIA_ENTITY_TYPE_DEVNODE + 4)
++
++#define MEDIA_ENTITY_TYPE_V4L2_SUBDEV		(2 << MEDIA_ENTITY_TYPE_SHIFT)
++#define MEDIA_ENTITY_TYPE_V4L2_SUBDEV_SENSOR	(MEDIA_ENTITY_TYPE_V4L2_SUBDEV + 1)
++#define MEDIA_ENTITY_TYPE_V4L2_SUBDEV_FLASH	(MEDIA_ENTITY_TYPE_V4L2_SUBDEV + 2)
++#define MEDIA_ENTITY_TYPE_V4L2_SUBDEV_LENS	(MEDIA_ENTITY_TYPE_V4L2_SUBDEV + 3)
++
++#define MEDIA_ENTITY_FLAG_DEFAULT		(1 << 0)
++
++struct media_entity_desc {
++	__u32 id;
++	char name[32];
++	__u32 type;
++	__u32 revision;
++	__u32 flags;
++	__u32 group_id;
++	__u16 pads;
++	__u16 links;
++
++	__u32 reserved[4];
++
++	union {
++		/* Node specifications */
++		struct {
++			__u32 major;
++			__u32 minor;
++		} v4l;
++		struct {
++			__u32 major;
++			__u32 minor;
++		} fb;
++		struct {
++			__u32 card;
++			__u32 device;
++			__u32 subdevice;
++		} alsa;
++		int dvb;
++
++		/* Sub-device specifications */
++		/* Nothing needed yet */
++		__u8 raw[184];
++	};
 +};
 +
++#define MEDIA_PAD_FLAG_INPUT			(1 << 0)
++#define MEDIA_PAD_FLAG_OUTPUT			(1 << 1)
++
++struct media_pad_desc {
++	__u32 entity;		/* entity ID */
++	__u16 index;		/* pad index */
++	__u32 flags;		/* pad flags */
++	__u32 reserved[2];
++};
++
++#define MEDIA_LINK_FLAG_ENABLED			(1 << 0)
++#define MEDIA_LINK_FLAG_IMMUTABLE		(1 << 1)
++
++struct media_link_desc {
++	struct media_pad_desc source;
++	struct media_pad_desc sink;
++	__u32 flags;
++	__u32 reserved[2];
++};
++
++struct media_links_enum {
++	__u32 entity;
++	/* Should have enough room for pads elements */
++	struct media_pad_desc __user *pads;
++	/* Should have enough room for links elements */
++	struct media_link_desc __user *links;
++	__u32 reserved[4];
++};
++
+ #define MEDIA_IOC_DEVICE_INFO		_IOWR('M', 1, struct media_device_info)
++#define MEDIA_IOC_ENUM_ENTITIES		_IOWR('M', 2, struct media_entity_desc)
++#define MEDIA_IOC_ENUM_LINKS		_IOWR('M', 3, struct media_links_enum)
+ 
+ #endif /* __LINUX_MEDIA_H */
+diff --git a/include/media/media-entity.h b/include/media/media-entity.h
+index a78d6c9..f45a2a5 100644
+--- a/include/media/media-entity.h
++++ b/include/media/media-entity.h
+@@ -24,29 +24,7 @@
+ #define _MEDIA_ENTITY_H
+ 
+ #include <linux/list.h>
+-
+-#define MEDIA_ENTITY_TYPE_SHIFT			16
+-#define MEDIA_ENTITY_TYPE_MASK			0x00ff0000
+-#define MEDIA_ENTITY_SUBTYPE_MASK		0x0000ffff
+-
+-#define MEDIA_ENTITY_TYPE_DEVNODE		(1 << MEDIA_ENTITY_TYPE_SHIFT)
+-#define MEDIA_ENTITY_TYPE_DEVNODE_V4L		(MEDIA_ENTITY_TYPE_DEVNODE + 1)
+-#define MEDIA_ENTITY_TYPE_DEVNODE_FB		(MEDIA_ENTITY_TYPE_DEVNODE + 2)
+-#define MEDIA_ENTITY_TYPE_DEVNODE_ALSA		(MEDIA_ENTITY_TYPE_DEVNODE + 3)
+-#define MEDIA_ENTITY_TYPE_DEVNODE_DVB		(MEDIA_ENTITY_TYPE_DEVNODE + 4)
+-
+-#define MEDIA_ENTITY_TYPE_V4L2_SUBDEV		(2 << MEDIA_ENTITY_TYPE_SHIFT)
+-#define MEDIA_ENTITY_TYPE_V4L2_SUBDEV_SENSOR	(MEDIA_ENTITY_TYPE_V4L2_SUBDEV + 1)
+-#define MEDIA_ENTITY_TYPE_V4L2_SUBDEV_FLASH	(MEDIA_ENTITY_TYPE_V4L2_SUBDEV + 2)
+-#define MEDIA_ENTITY_TYPE_V4L2_SUBDEV_LENS	(MEDIA_ENTITY_TYPE_V4L2_SUBDEV + 3)
+-
+-#define MEDIA_ENTITY_FLAG_DEFAULT		(1 << 0)
+-
+-#define MEDIA_LINK_FLAG_ENABLED			(1 << 0)
+-#define MEDIA_LINK_FLAG_IMMUTABLE		(1 << 1)
+-
+-#define MEDIA_PAD_FLAG_INPUT			(1 << 0)
+-#define MEDIA_PAD_FLAG_OUTPUT			(1 << 1)
++#include <linux/media.h>
+ 
  struct media_link {
  	struct media_pad *source;	/* Source pad */
- 	struct media_pad *sink;		/* Sink pad  */
-@@ -68,8 +71,11 @@ struct media_entity {
- 
- 	const struct media_entity_operations *ops;	/* Entity operations */
- 
-+	int stream_count;		/* Stream count for the entity. */
- 	int use_count;			/* Use count for the entity. */
- 
-+	struct media_pipeline *pipe;	/* Pipeline this entity belongs to. */
-+
- 	union {
- 		/* Node specifications */
- 		struct {
-@@ -115,6 +121,7 @@ struct media_entity_graph {
- int media_entity_init(struct media_entity *entity, u16 num_pads,
- 		struct media_pad *pads, u16 extra_links);
- void media_entity_cleanup(struct media_entity *entity);
-+
- int media_entity_create_link(struct media_entity *source, u16 source_pad,
- 		struct media_entity *sink, u16 sink_pad, u32 flags);
- int __media_entity_setup_link(struct media_link *link, u32 flags);
-@@ -130,6 +137,9 @@ void media_entity_graph_walk_start(struct media_entity_graph *graph,
- 		struct media_entity *entity);
- struct media_entity *
- media_entity_graph_walk_next(struct media_entity_graph *graph);
-+void media_entity_pipeline_start(struct media_entity *entity,
-+		struct media_pipeline *pipe);
-+void media_entity_pipeline_stop(struct media_entity *entity);
- 
- #define media_entity_call(entity, operation, args...)			\
- 	(((entity)->ops && (entity)->ops->operation) ?			\
 -- 
 1.7.2.2
 
