@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933277Ab0LTXIo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 18:08:44 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:56345 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933135Ab0LTXIm (ORCPT
+	id S933279Ab0LTXMF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 18:12:05 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:15929 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758164Ab0LTXMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 18:08:42 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:content-type;
-        b=M/4IMSNY/hwLet9IkdtS0J6mSRllSfapIsA9LtFWb+uMm2u94Oy2xsDTSxyG/R2Lg4
-         uM2vsree49Hc/08VbCFlID7T2AK5H7jhaelf70P61eXcZHxAzc6MZyXrmr1UgLpRNJ0Z
-         6tWYXxF0bJptnn7w5xmAww6Cnwcg01sJVYJ7I=
+	Mon, 20 Dec 2010 18:12:03 -0500
+Date: Tue, 21 Dec 2010 00:03:17 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Takashi Iwai <tiwai@suse.de>
+cc: Jaroslav Kysela <perex@perex.cz>, Krzysztof Helt <krzysztof.h1@wp.pl>,
+        Clemens Ladisch <clemens@ladisch.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] sound, core, pcm_lib: remember to always call va_end() on
+ stuff that we va_start()
+Message-ID: <alpine.LNX.2.00.1012202357150.23785@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-From: AJ ONeal <coolaj86@gmail.com>
-Date: Mon, 20 Dec 2010 16:08:21 -0700
-Message-ID: <AANLkTings_UPY4xSGe39X3GB8g9V=betWASk9YhspiTN@mail.gmail.com>
-Subject: SIGBUS caused by mmap and memcpy that doesn't go away after
- application restart
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After posting to my local LUG I was told to ask about the possibility
-of a kernel bug here
+Hi,
+
+The Coverity checker spotted that we do not always remember to call 
+va_end() on 'args' in failure paths in snd_pcm_hw_rule_add().
+Here's a patch to fix that up (compile tested only) - it also removes 
+some annoying trailing whitespace that caught my eye while I was in the 
+area..
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ pcm_lib.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/sound/core/pcm_lib.c b/sound/core/pcm_lib.c
+index b75db8e..11446a1 100644
+--- a/sound/core/pcm_lib.c
++++ b/sound/core/pcm_lib.c
+@@ -1070,8 +1070,10 @@ int snd_pcm_hw_rule_add(struct snd_pcm_runtime *runtime, unsigned int cond,
+ 		struct snd_pcm_hw_rule *new;
+ 		unsigned int new_rules = constrs->rules_all + 16;
+ 		new = kcalloc(new_rules, sizeof(*c), GFP_KERNEL);
+-		if (!new)
++		if (!new) {
++			va_end(args);
+ 			return -ENOMEM;
++		}
+ 		if (constrs->rules) {
+ 			memcpy(new, constrs->rules,
+ 			       constrs->rules_num * sizeof(*c));
+@@ -1087,8 +1089,10 @@ int snd_pcm_hw_rule_add(struct snd_pcm_runtime *runtime, unsigned int cond,
+ 	c->private = private;
+ 	k = 0;
+ 	while (1) {
+-		if (snd_BUG_ON(k >= ARRAY_SIZE(c->deps)))
++		if (snd_BUG_ON(k >= ARRAY_SIZE(c->deps))) {
++			va_end(args);
+ 			return -EINVAL;
++		}
+ 		c->deps[k++] = dep;
+ 		if (dep < 0)
+ 			break;
+@@ -1097,7 +1101,7 @@ int snd_pcm_hw_rule_add(struct snd_pcm_runtime *runtime, unsigned int cond,
+ 	constrs->rules_num++;
+ 	va_end(args);
+ 	return 0;
+-}				    
++}
+ 
+ EXPORT_SYMBOL(snd_pcm_hw_rule_add);
+ 
 
 
-I have an application which runs for several hours in the same loop
-correctly, but eventually dies with SIGBUS.
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-If I try to start the application again it immediately exits with
-SIGBUS and will not work until rebooted.
-
-gdb reports
-Program received signal SIGBUS, Bus error.
-0x401bd354 in memcpy () from /lib/libc.so.6
-(gdb) bt
-#0  0x401bd354 in memcpy () from /lib/libc.so.6
-#1  0x0000929c in capture_file_write ()
-#2  0x0fefeb0a in ?? ()
-#3  0x0fefeb0a in ?? ()
-
-Any ideas on what causes this error?
-How do I go about finding what #2 and #3 are?
-
-
-The system is a ARM OMAP3530 (Gumstix Overo). The kernel is 3.6.36.
-
-This is the application flow:
-
-count = 0
-do
-    outfile = /dev/shm/output.{#count}.dat
-    data = read logged.dat for 512kb
-    unlink outfile if exists
-    truncate outfile to 512kb
-    outfile_p = mmap outfile
-    memcpy data outfile_p
-    munmap
-    count += 1
-    if count > MAX; count = 0
-    advance or rewind logged.dat
-loop
-
-I can post a link to a gist of the source upon request.
-
-AJ ONeal
