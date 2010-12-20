@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933363Ab0LTXqQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 18:46:16 -0500
-Received: from cantor.suse.de ([195.135.220.2]:56785 "EHLO mx1.suse.de"
+	id S933370Ab0LTXrI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 18:47:08 -0500
+Received: from claw.goop.org ([74.207.240.146]:42550 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933293Ab0LTXqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 18:46:15 -0500
-Message-ID: <4D0FEAC4.8020009@suse.cz>
-Date: Tue, 21 Dec 2010 00:46:12 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+	id S933293Ab0LTXrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 18:47:07 -0500
+Message-ID: <4D0FEAF4.2080409@goop.org>
+Date: Mon, 20 Dec 2010 15:47:00 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: "Carlos R. Mafra" <crmafra2@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: Re: Build regression: unknown option "visible"
-References: <20101220172228.GA463@Pilar.aei.mpg.de> <AANLkTi=3WHB6iKaM5-=z33b9Nux7WyQ2K0apuRNwMhD=@mail.gmail.com>
-In-Reply-To: <AANLkTi=3WHB6iKaM5-=z33b9Nux7WyQ2K0apuRNwMhD=@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: the arch/x86 maintainers <x86@kernel.org>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: do pmd_populate with lazy mmu updates
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.12.2010 18:37, Arnaud Lacombe wrote:
-> Hi,
->
-> On Mon, Dec 20, 2010 at 12:22 PM, Carlos R. Mafra<crmafra2@gmail.com>  wrote:
->> After pulling latest git from Linus (v2.6.37-rc6-132-g55ec86f)
->> I can't compile it anymore:
->>
->> [mafra@Pilar:linux-2.6]$ make -j2 O=/mnt/ext4/kernel-output/
->>   GEN     /mnt/ext4/kernel-output/Makefile
->> scripts/kconfig/conf --silentoldconfig Kconfig
->> drivers/i2c/algos/Kconfig:6: unknown option "visible"
->> drivers/media/common/tuners/Kconfig:48: unknown option "visible"
->> drivers/media/video/Kconfig:115: unknown option "visible"
->> drivers/media/dvb/frontends/Kconfig:16: unknown option "visible"
->> make[3]: *** [silentoldconfig] Fehler 1
->> make[2]: *** [silentoldconfig] Fehler 2
->>
->> This was introduced by 37e3273ee52f ("media/video: convert Kconfig
->> to use the menu's `visible' keyword"), but I did a quick search
->> and apparently I am the only one with a broken build.
->>
->> In any case, that's a regression for me and therefore I'm reporting it.
->>
->> I can test patches etc and provide more info if needed.
->>
-> Did you build from a clean tree or a dirty one ?
->
-> I know these is issue with Kbuild where the parser will not get
-> updated to the new version if the target already exist but is older
-> than the current "shipped" one.
+This allows the set_pmd to be batched with whatever setup
+paravirt_alloc_pte() needs to do.  pmd_populate() is always called
+under the pagetable lock, so this is safe.
 
-Yes, if you build kconfig in the source tree and then do another build 
-in a separate directory (make O=/some/where), the build system will not 
-detect this and happily use generated kconfig files from the previous 
-build attempt. I really should fix this given the pace of kconfig 
-development lately :-).
+With a corresponding change in the Xen-specific code, this allows
+the setup of a new pte page to be done with 1 hypercall rather than 3.
+This results in a 3-8% improvement in fork performance, depending on
+process size (more improvement on larger processes).  I expect a similar
+improvement in time spent touching a virgin part of the address space.
 
-Michal
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+
+diff --git a/arch/x86/include/asm/pgalloc.h b/arch/x86/include/asm/pgalloc.h
+index 271de94..15e1153f 100644
+--- a/arch/x86/include/asm/pgalloc.h
++++ b/arch/x86/include/asm/pgalloc.h
+@@ -71,8 +71,10 @@ static inline void pmd_populate(struct mm_struct *mm, pmd_t *pmd,
+ {
+ 	unsigned long pfn = page_to_pfn(pte);
+ 
++	arch_enter_lazy_mmu_mode();
+ 	paravirt_alloc_pte(mm, pfn);
+ 	set_pmd(pmd, __pmd(((pteval_t)pfn << PAGE_SHIFT) | _PAGE_TABLE));
++	arch_leave_lazy_mmu_mode();
+ }
+ 
+ #define pmd_pgtable(pmd) pmd_page(pmd)
+
+
