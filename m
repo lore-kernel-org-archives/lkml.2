@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab0LTJwj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 04:52:39 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:46983 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755175Ab0LTJwi (ORCPT
+	id S1755425Ab0LTJ45 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 04:56:57 -0500
+Received: from a-pb-sasl-sd.pobox.com ([64.74.157.62]:35464 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755344Ab0LTJ44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 04:52:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=wzZsOIEi6DNQCnvtSIE04vO33pR3/Vooc6U27S8D6fBZMjHiZyUQPA55GbuI4LDji2
-         xu8vo9+9d4kfm0ttOx1UcOdvHK6tnHoVruqRIB3o9a/yDpHkDC/m32YqQwcth/X79KCx
-         EGpGvx0t4H1/85DfSLGiXEziqQwxO+jyD//Mg=
-Message-ID: <4D0F2760.6070203@gmail.com>
-Date: Mon, 20 Dec 2010 10:52:32 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+	Mon, 20 Dec 2010 04:56:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=to:cc:subject
+	:references:from:date:in-reply-to:message-id:mime-version
+	:content-type; q=dns; s=sasl; b=uAzWn5vyCofQzViUAYzSVIkgosoA/FXg
+	LIUl6UIHHNJXM/8OMeWeNk1B10Mc/JAjxUratdap2W7YBL02XFDczLFhYS571E2B
+	pCOc4sio66R7UbLfkCg3eMidH6K+PtyKqZhcrRAnz3DadT8DvKYgfD39KbC0g84A
+	4kq1qudtt2U=
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Crypto Fixes for 2.6.37
+References: <20100305071043.GA3548@gondor.apana.org.au>
+ <20100427135547.GA4008@gondor.apana.org.au>
+ <20100603100550.GA30681@gondor.apana.org.au>
+ <20100716022648.GA28219@gondor.apana.org.au>
+ <20100722055043.GA25689@gondor.apana.org.au>
+ <20100903060055.GA28915@gondor.apana.org.au>
+ <20100903110722.GA31826@gondor.apana.org.au>
+ <20101215115035.GA25248@gondor.apana.org.au>
+ <AANLkTikM4vQe7dsN8JJ1QSLeeTbRpSnuoJU=e4H2YFoz@mail.gmail.com>
+ <20101216004938.GA32662@gondor.apana.org.au>
+ <20101216005813.GA820@gondor.apana.org.au>
+From: Junio C Hamano <gitster@pobox.com>
+Date: Mon, 20 Dec 2010 01:56:40 -0800
+In-Reply-To: <20101216005813.GA820@gondor.apana.org.au> (Herbert Xu's message
+ of "Thu\, 16 Dec 2010 08\:58\:13 +0800")
+Message-ID: <7vd3owdaxz.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: i915 modeset defunct [was: mmotm 2010-12-16-14-56 uploaded]
-References: <201012162329.oBGNTdPY006808@imap1.linux-foundation.org> <4D0F26AE.9010205@gmail.com>
-In-Reply-To: <4D0F26AE.9010205@gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: 888BE634-0C1F-11E0-8AC6-C4BE9B774584-77302942!a-pb-sasl-sd.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2010 10:49 AM, Jiri Slaby wrote:
-> On 12/16/2010 11:56 PM, akpm@linux-foundation.org wrote:
->> The mm-of-the-moment snapshot 2010-12-16-14-56 has been uploaded to
-> 
-> Hi, there is a regression against 2010-12-02-16-34 in i915. When modeset
-> is used, my G33 produces no signal to the monitor (black screen, power
-> led blinks).
-...
-> any ideas?
+Herbert Xu <herbert@gondor.apana.org.au> writes:
 
-Oh, looks like:
-https://bugzilla.kernel.org/show_bug.cgi?id=25242
+> On Thu, Dec 16, 2010 at 08:49:38AM +0800, Herbert Xu wrote:
+>> On Wed, Dec 15, 2010 at 12:40:48PM -0800, Linus Torvalds wrote:
+>> >
+>> > There's a few other objects like that too. How do you push to your
+>> > repo, and what changed?
+>> 
+>> Oops, I've fixed that now.  I use rsync to copy files across so
+>> it's my end that has changed.  And indeed I've just done an upgrade.
+>> Sorry.
+>
+> OK it should be fixed for got now.  I suspect what has changed
+> is that git is now using my umask by default.
 
-regards,
--- 
-js
+Sorry, do you mean I need to be aware of a regression in recent version of
+git?  From which version to which version of git did you upgrade?  
+
+I offhand do not recall any recent change around umask area, especially
+with respect to rsync transport.
