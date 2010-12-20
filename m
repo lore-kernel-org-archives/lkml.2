@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757353Ab0LTMMJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 07:12:09 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:36403 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755489Ab0LTMMH convert rfc822-to-8bit (ORCPT
+	id S1757482Ab0LTMMV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 07:12:21 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48450 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757366Ab0LTMMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 07:12:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=lHnlOZKCQjWjyw6qqpv8Gv0oXveBOp/kMUVPHQDP0bGRMKXy3KlUYnc0aig8MpZb55
-         WnNFUWadW04OEpr+CRkrFMvjrBclRaRg0VevU1UO8014+3G+aJ+ognPf/1VuunpTN3xz
-         txJU2xkymisQtrsv1UXNrjUKwk05QhJ5D542I=
+	Mon, 20 Dec 2010 07:12:19 -0500
+Date: Mon, 20 Dec 2010 12:12:16 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sundar Iyer <sundar.iyer@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: linux-next: manual merge of the mfd tree with the ux500-core
+ tree
+Message-ID: <20101220121215.GC26706@rakim.wolfsonmicro.main>
+References: <20101220152148.6fedee0d.sfr@canb.auug.org.au>
+ <20101220042344.GB10050@linux-sh.org>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20101220230007.e82487b8.sfr@canb.auug.org.au>
-References: <AANLkTi=gjHyMt=W4-+PSMzt7PN7i-_Yvmx7EE8z0z74q@mail.gmail.com>
-	<20101220230007.e82487b8.sfr@canb.auug.org.au>
-Date: Mon, 20 Dec 2010 13:12:06 +0100
-Message-ID: <AANLkTin4dvM1B8GkxZH6DADJVg4ZWNSQvUHAviy-4O2J@mail.gmail.com>
-Subject: Re: linux-next: Tree for December 20
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        ftpadmin@kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101220042344.GB10050@linux-sh.org>
+X-Cookie: Reapply as necessary.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 20, 2010 at 1:00 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi,
->
-> On Mon, 20 Dec 2010 12:46:08 +0100 Sedat Dilek <sedat.dilek@googlemail.com> wrote:
->>
->> >
->> > [The mirroring on kernel.org is running slowly]
->>
->> Indeed, you know what's wrong with the mirrors?
->
-> I don't know what is wrong.  The mirroring just seems to be much slower
-> in the last week or so.  Today, it was just over three hours from when I
-> uploaded linux-next until it was mirrored out.
->
-> I have cc'd the admins.
->
+On Mon, Dec 20, 2010 at 01:23:44PM +0900, Paul Mundt wrote:
+> On Mon, Dec 20, 2010 at 03:21:48PM +1100, Stephen Rothwell wrote:
 
-Thanks.
+> > -static void tc3589x_irq_dummy(unsigned int irq)
+> > +static void tc3589x_irq_dummy(struct irq_data *data)
+> >  {
+> >  	/* No mask/unmask at this level */
+> >  }
+> >  
+> >  static struct irq_chip tc3589x_irq_chip = {
+> > -	.name	= "tc3589x",
+> > -	.mask	= tc3589x_irq_dummy,
+> > -	.unmask	= tc3589x_irq_dummy,
+> > +	.name		= "tc3589x",
+> > +	.irq_mask	= tc3589x_irq_dummy,
+> > +	.irq_unmask	= tc3589x_irq_dummy,
+> >  };
 
->> Can you upload the diff-patch (patch-v2.6.37-rc6-next-20101220) to [1]
->> from your local-tree or place it somewhere else?
->
-> I cannot upload directly to www.kernel.org, I up load to the same place
-> on master.kernel.org and the mirroring system puts it on www.kernel.org.
->
+> >  static int tc3589x_irq_init(struct tc3589x *tc3589x)
 
-I could download the diff-patch.
+> Is there some reason you don't just kill this off and use dummy_irq_chip?
 
-$ wget http://www.kernel.org/pub/linux/kernel/v2.6/next/patch-v2.6.37-rc6-next-20101220.bz2
-
-- Sedat -
+Mainly that I didn't take the time to read through the code and figure
+out if it was doing anything interesting with the struct elsewhere
+which meant this was actually sensible (one of the other drivers was
+doing something surprising).
