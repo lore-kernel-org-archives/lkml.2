@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab0LTIRE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 03:17:04 -0500
-Received: from leo.clearchain.com ([199.73.29.74]:49387 "EHLO
+	id S1754183Ab0LTIRs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 03:17:48 -0500
+Received: from leo.clearchain.com ([199.73.29.74]:22465 "EHLO
 	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753913Ab0LTIRB (ORCPT
+	with ESMTP id S1753913Ab0LTIRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 03:17:01 -0500
-Date: Mon, 20 Dec 2010 18:16:42 +1000
+	Mon, 20 Dec 2010 03:17:47 -0500
+Date: Mon, 20 Dec 2010 18:17:34 +1000
 From: Peter Hutterer <peter.hutterer@who-t.net>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Ping Cheng <pingc@wacom.com>, Chris Bagwell <chris@cnpbagwell.com>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC v2] input: Introduce device information ioctl
-Message-ID: <20101220081642.GA17764@barra.redhat.com>
-References: <1292440807-18502-1-git-send-email-rydberg@euromail.se>
- <20101216002941.GC4952@salty.local>
- <20101216004358.GA22066@core.coreip.homeip.net>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Chase Douglas <chase.douglas@canonical.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] input: mt: Interface and MT_TOOL documentation updates
+Message-ID: <20101220081734.GB17764@barra.redhat.com>
+References: <1292001842-5000-1-git-send-email-rydberg@euromail.se>
+ <4D065BDE.5020107@canonical.com>
+ <4D068E3C.8080100@euromail.se>
+ <4D06A60D.7010409@canonical.com>
+ <4D06AB66.8090909@euromail.se>
+ <20101214043635.GB12059@salty.local>
+ <4D073472.10104@euromail.se>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101216004358.GA22066@core.coreip.homeip.net>
+In-Reply-To: <4D073472.10104@euromail.se>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender is SPF-compliant, not delayed by milter-greylist-4.0.1 (mail.clearchain.com [127.0.0.1]); Mon, 20 Dec 2010 18:46:48 +1030 (CST)
+X-Greylist: Sender is SPF-compliant, not delayed by milter-greylist-4.0.1 (mail.clearchain.com [127.0.0.1]); Mon, 20 Dec 2010 18:47:39 +1030 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[sorry, mail stuck in my outbox for some reason]
+[sorry, got stuck in my outbox for some reason]
 
-On Wed, Dec 15, 2010 at 04:43:58PM -0800, Dmitry Torokhov wrote:
-> On Thu, Dec 16, 2010 at 10:29:42AM +1000, Peter Hutterer wrote:
-> > >  
-> > >  /*
-> > > + * Device properties and quirks
-> > > + */
-> > > +
-> > > +#define INPUT_PROP_POINTER		0x00	/* needs a pointer */
-> > > +#define INPUT_PROP_DIRECT		0x01	/* direct object manipulation */
+On Tue, Dec 14, 2010 at 10:10:10AM +0100, Henrik Rydberg wrote:
+> On 12/14/2010 05:36 AM, Peter Hutterer wrote:
+> 
+> > On Tue, Dec 14, 2010 at 12:25:26AM +0100, Henrik Rydberg wrote:
+> >>>> The envelope contacts serve as a way to detect a small area of fingers or a
+> >>
+> >>>> large area of fingers. There is nothing inherently problematic with having one
+> >>>> or three or more such contacts.
+> >>>
+> >>> Then I'm more confused :).
+> >>>
+> >>> I see one problem: devices that report two touch points, (X1, Y1) and
+> >>> (X2, Y2), but in reality the touches could be at (X1, Y2) and (X2, Y1)
+> >>> instead. Using a rectangle helps resolve this issue for panning and
+> >>> pinching, though not for rotation.
+> >>
+> >>
+> >> If panning and pinching and rotation could all be recovered properly, then the
+> >> individual contacts could actually have been reconstructed properly in the first
+> >> place. This is the whole point - there is not enough information available for
+> >> rotation to be recovered properly.
 > > 
-> > fwiw, I think the common term for these is "direct input devices", at least
-> > that's how a lot of the research literature refers to them. Might be good to
-> > use the same term.
-> > 
-> > either way, not sure about this one.  I've worked with devices that were
-> > indirect by nature but used directly. e.g. the magic touchpad could quite
-> > easily be used as direct input device with an top-down projector. the
-> > decision to use it as an indirect device is a UI decision.
-> > Likewise, some mountable direct-touch touchscreens can be used indirectly if
-> > the touchscreen isn't mounted straight on the display. This is very much a
-> > setup-specific property and I'm not sure about the value of this
-> > information.
+> > can you post an example event stream of the MT_ENVELOPE tool? I'm having
+> > trouble wrapping my head around it.
 > 
-> All of these "props" would have no reflection on the event stream
-> generated by the device, and exist solely for the benefits of userspace
-> consumers to help them set up the device automatically and interpret the
-> data appropriately. As such, if someone uses touchscreen as a tablet, I
-> believe userspace should allow it, but at the price of manual setup.
 > 
-> If we start seeing cuch devices we could consider EVIOCSPROPS so
-> infrastructure (udev) could adjust the properties so that upper levels
-> (X) can still use the data to set up devices properly.
+> Here is an example for you: You sit in a car. You turn your steering wheel left
+> or right to follow the road. Now, imagine that 40% of the time, when you turn
+> left, the car actually turns right. This is the behavior you get from the raw
+> data. Now, instead soak your gloves in soap. At least now you know that your car
+> will go straight 100% of the time. The MT_ENVELOPE tool is the soapy glove.
+> That's all there is to it.
 > 
-> What do you think?
+> The synaptics driver patch sent recently contains an example event stream
+> generator, in case you want to dwell on more details.
+> 
+> Personally, I am done bending myself backwards to support "old" or "semi-mt"
+> hardware I never use myself. If somebody cares deeply enough, send a patch. Or
+> forever hold your peace.
 
-I figured it didn't have any effect on the data stream.
-I think that for 95% of the devices, this information will probably be
-correct and the only ones affected are rather exotic setups anyway that need
-special setup. so I don't really oppose the flag, but there should be
-documentation on what it means and that it only represents the assumed usage
-of the device.
+thanks, I understood the concept but I was trying to get the actual event
+stream out of this patch set. I missed the synaptics one, makes sense now.
 
 Cheers,
   Peter
