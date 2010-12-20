@@ -1,191 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758293Ab0LTXRO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 18:17:14 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:49662 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758171Ab0LTXRL (ORCPT
+	id S1758258Ab0LTXRM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 18:17:12 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:10808 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758164Ab0LTXRL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 Dec 2010 18:17:11 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6203"; a="67624263"
+X-IronPort-AV: E=McAfee;i="5400,1158,6203"; a="67414636"
 From: Daniel Walker <dwalker@codeaurora.org>
 To: davidb@codeaurora.org
 Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
         Daniel Walker <dwalker@codeaurora.org>
-Subject: [PATCH 2/5] mmc: msm: convert int bools to actual bool type
-Date: Mon, 20 Dec 2010 15:16:48 -0800
-Message-Id: <1292887011-30006-2-git-send-email-dwalker@codeaurora.org>
+Subject: [PATCH 1/5] mmc: msm: consolidate ifdefs for BUSCLK_PWRSAVE
+Date: Mon, 20 Dec 2010 15:16:47 -0800
+Message-Id: <1292887011-30006-1-git-send-email-dwalker@codeaurora.org>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1292887011-30006-1-git-send-email-dwalker@codeaurora.org>
-References: <1292887011-30006-1-git-send-email-dwalker@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many variables in this MMC driver are used like bools but
-have int types. It's better to use the actual bool type for
-readability and optimization. This converts all these types
-of variables to actual the bool type.
+It's cleaner to have ifdef's consolidated in one specific
+area. This change pulls adds one ifdef which will swap
+out of the function with a stub function if the ifdef is
+false.
 
 Signed-off-by: Daniel Walker <dwalker@codeaurora.org>
 ---
- drivers/mmc/host/msm_sdcc.c |   28 ++++++++++++++--------------
- drivers/mmc/host/msm_sdcc.h |   10 +++++-----
- 2 files changed, 19 insertions(+), 19 deletions(-)
+ drivers/mmc/host/msm_sdcc.c |   24 +++++++++++++-----------
+ 1 files changed, 13 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/mmc/host/msm_sdcc.c b/drivers/mmc/host/msm_sdcc.c
-index d6ac82c..01bb684 100644
+index 1290d14..d6ac82c 100644
 --- a/drivers/mmc/host/msm_sdcc.c
 +++ b/drivers/mmc/host/msm_sdcc.c
-@@ -79,7 +79,7 @@ msmsdcc_disable_clocks(struct msmsdcc_host *host, int deferr)
- 		if (host->clks_on) {
- 			clk_disable(host->clk);
- 			clk_disable(host->pclk);
--			host->clks_on = 0;
-+			host->clks_on = false;
+@@ -61,7 +61,7 @@ static unsigned int msmsdcc_sdioirq;
+ #define PIO_SPINMAX 30
+ #define CMD_SPINMAX 20
+ 
+-
++#ifdef BUSCLK_PWRSAVE
+ static inline void
+ msmsdcc_disable_clocks(struct msmsdcc_host *host, int deferr)
+ {
+@@ -83,6 +83,10 @@ msmsdcc_disable_clocks(struct msmsdcc_host *host, int deferr)
  		}
  	}
  }
-@@ -106,7 +106,7 @@ msmsdcc_enable_clocks(struct msmsdcc_host *host)
- 		}
- 		udelay(1 + ((3 * USEC_PER_SEC) /
- 		       (host->clk_rate ? host->clk_rate : msmsdcc_fmin)));
--		host->clks_on = 1;
-+		host->clks_on = true;
++#else
++static inline void
++msmsdcc_disable_clocks(struct msmsdcc_host *host, int deferr) { }
++#endif
+ 
+ static inline int
+ msmsdcc_enable_clocks(struct msmsdcc_host *host)
+@@ -139,9 +143,8 @@ msmsdcc_request_end(struct msmsdcc_host *host, struct mmc_request *mrq)
+ 	if (mrq->cmd->error == -ETIMEDOUT)
+ 		mdelay(5);
+ 
+-#if BUSCLK_PWRSAVE
+ 	msmsdcc_disable_clocks(host, 1);
+-#endif
++
+ 	/*
+ 	 * Need to drop the host lock here; mmc_request_done may call
+ 	 * back into the driver...
+@@ -259,9 +262,9 @@ msmsdcc_dma_complete_func(struct msm_dmov_cmd *cmd,
+ 			mrq->data->bytes_xfered = host->curr.data_xfered;
+ 
+ 			spin_unlock_irqrestore(&host->lock, flags);
+-#if BUSCLK_PWRSAVE
++
+ 			msmsdcc_disable_clocks(host, 1);
+-#endif
++
+ 			mmc_request_done(host->mmc, mrq);
+ 			return;
+ 		} else
+@@ -930,9 +933,9 @@ msmsdcc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+ 		host->pwr = pwr;
+ 		msmsdcc_writel(host, pwr, MMCIPOWER);
+ 	}
+-#if BUSCLK_PWRSAVE
++
+ 	msmsdcc_disable_clocks(host, 1);
+-#endif
++
+ 	spin_unlock_irqrestore(&host->lock, flags);
+ }
+ 
+@@ -1256,9 +1259,8 @@ msmsdcc_probe(struct platform_device *pdev)
+ 	if (host->timer.function)
+ 		pr_info("%s: Polling status mode enabled\n", mmc_hostname(mmc));
+ 
+-#if BUSCLK_PWRSAVE
+ 	msmsdcc_disable_clocks(host, 1);
+-#endif
++
+ 	return 0;
+  cmd_irq_free:
+ 	free_irq(cmd_irqres->start, host);
+@@ -1333,9 +1335,9 @@ msmsdcc_resume(struct platform_device *dev)
+ 			mmc_resume_host(mmc);
+ 		if (host->stat_irq)
+ 			enable_irq(host->stat_irq);
+-#if BUSCLK_PWRSAVE
++
+ 		msmsdcc_disable_clocks(host, 1);
+-#endif
++
  	}
  	return 0;
  }
-@@ -158,7 +158,7 @@ static void
- msmsdcc_stop_data(struct msmsdcc_host *host)
- {
- 	host->curr.data = NULL;
--	host->curr.got_dataend = host->curr.got_datablkend = 0;
-+	host->curr.got_dataend = host->curr.got_datablkend = false;
- }
- 
- uint32_t msmsdcc_fifo_addr(struct msmsdcc_host *host)
-@@ -188,7 +188,7 @@ msmsdcc_dma_exec_func(struct msm_dmov_cmd *cmd)
- 					   (u32) host->cmd_cmd->arg,
- 					   (u32) host->cmd_c);
- 	}
--	host->dma.active = 1;
-+	host->dma.active = true;
- }
- 
- static void
-@@ -203,7 +203,7 @@ msmsdcc_dma_complete_func(struct msm_dmov_cmd *cmd,
- 	struct mmc_request	*mrq;
- 
- 	spin_lock_irqsave(&host->lock, flags);
--	host->dma.active = 0;
-+	host->dma.active = false;
- 
- 	mrq = host->curr.mrq;
- 	BUG_ON(!mrq);
-@@ -243,7 +243,7 @@ msmsdcc_dma_complete_func(struct msm_dmov_cmd *cmd,
- 	}
- 
- 	host->dma.sg = NULL;
--	host->dma.busy = 0;
-+	host->dma.busy = false;
- 
- 	if ((host->curr.got_dataend && host->curr.got_datablkend)
- 	     || mrq->data->error) {
-@@ -452,8 +452,8 @@ msmsdcc_start_data(struct msmsdcc_host *host, struct mmc_data *data,
- 	host->curr.xfer_size = data->blksz * data->blocks;
- 	host->curr.xfer_remain = host->curr.xfer_size;
- 	host->curr.data_xfered = 0;
--	host->curr.got_dataend = 0;
--	host->curr.got_datablkend = 0;
-+	host->curr.got_dataend = false;
-+	host->curr.got_datablkend = false;
- 
- 	memset(&host->pio, 0, sizeof(host->pio));
- 
-@@ -490,7 +490,7 @@ msmsdcc_start_data(struct msmsdcc_host *host, struct mmc_data *data,
- 
- 		host->dma.hdr.execute_func = msmsdcc_dma_exec_func;
- 		host->dma.hdr.data = (void *)host;
--		host->dma.busy = 1;
-+		host->dma.busy = true;
- 
- 		if (cmd) {
- 			msmsdcc_start_command_deferred(host, cmd, &c);
-@@ -749,10 +749,10 @@ msmsdcc_handle_irq_data(struct msmsdcc_host *host, u32 status,
- 
- 	/* Check for data done */
- 	if (!host->curr.got_dataend && (status & MCI_DATAEND))
--		host->curr.got_dataend = 1;
-+		host->curr.got_dataend = true;
- 
- 	if (!host->curr.got_datablkend && (status & MCI_DATABLOCKEND))
--		host->curr.got_datablkend = 1;
-+		host->curr.got_datablkend = true;
- 
- 	/*
- 	 * If DMA is still in progress, we complete via the completion handler
-@@ -789,7 +789,7 @@ msmsdcc_irq(int irq, void *dev_id)
- 	void __iomem		*base = host->base;
- 	u32			status;
- 	int			ret = 0;
--	int			cardint = 0;
-+	bool			cardint = false;
- 
- 	spin_lock(&host->lock);
- 
-@@ -808,7 +808,7 @@ msmsdcc_irq(int irq, void *dev_id)
- 		msmsdcc_handle_irq_data(host, status, base);
- 
- 		if (status & MCI_SDIOINTOPER) {
--			cardint = 1;
-+			cardint = true;
- 			status &= ~MCI_SDIOINTOPER;
- 		}
- 		ret = 1;
-@@ -1107,7 +1107,7 @@ msmsdcc_probe(struct platform_device *pdev)
- 	host->mmc = mmc;
- 	host->curr.cmd = NULL;
- 
--	host->cmdpoll = 1;
-+	host->cmdpoll = true;
- 
- 	host->base = ioremap(memres->start, PAGE_SIZE);
- 	if (!host->base) {
-diff --git a/drivers/mmc/host/msm_sdcc.h b/drivers/mmc/host/msm_sdcc.h
-index ff2b0f7..57db07f 100644
---- a/drivers/mmc/host/msm_sdcc.h
-+++ b/drivers/mmc/host/msm_sdcc.h
-@@ -170,8 +170,8 @@ struct msmsdcc_dma_data {
- 
- 	int				channel;
- 	struct msmsdcc_host		*host;
--	int				busy; /* Set if DM is busy */
--	int				active;
-+	bool				busy; /* Set if DM is busy */
-+	bool				active;
- };
- 
- struct msmsdcc_pio_data {
-@@ -187,8 +187,8 @@ struct msmsdcc_curr_req {
- 	unsigned int		xfer_size;	/* Total data size */
- 	unsigned int		xfer_remain;	/* Bytes remaining to send */
- 	unsigned int		data_xfered;	/* Bytes acked by BLKEND irq */
--	int			got_dataend;
--	int			got_datablkend;
-+	bool			got_dataend;
-+	bool			got_datablkend;
- 	int			user_pages;
- };
- 
-@@ -232,7 +232,7 @@ struct msmsdcc_host {
- 
- 	struct msmsdcc_dma_data	dma;
- 	struct msmsdcc_pio_data	pio;
--	int			cmdpoll;
-+	bool			cmdpoll;
- 	struct msmsdcc_stats	stats;
- 
- 	/* Command parameters */
 -- 
 1.7.0.4
 
