@@ -1,101 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758199Ab0LTWa2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 17:30:28 -0500
-Received: from straum.hexapodia.org ([207.7.131.186]:52493 "EHLO
-	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757933Ab0LTWa1 (ORCPT
+	id S1758107Ab0LTWjZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 17:39:25 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:15558 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754457Ab0LTWjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 17:30:27 -0500
-X-Greylist: delayed 340 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Dec 2010 17:30:27 EST
-Date: Mon, 20 Dec 2010 14:24:46 -0800
-From: Andy Isaacson <adi@hexapodia.org>
-To: btrfs-devel <btrfs-devel@oss.oracle.com>, linux-kernel@vger.kernel.org
-Subject: btrfs: 21 minutes to read 1.2M file directory
-Message-ID: <20101220222446.GA8629@hexapodia.org>
+	Mon, 20 Dec 2010 17:39:24 -0500
+Date: Mon, 20 Dec 2010 23:30:38 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        Roland McGrath <roland@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH][RFC] Always unlock 'tasklist_lock' in
+ kernel/exit.c::do_wait()
+Message-ID: <alpine.LNX.2.00.1012202324540.23785@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
-X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
-X-Domestic-Surveillance: money launder bomb tax evasion
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a directory with 1.2M files in it, which makes readdir very slow
-on btrfs with cold caches (although it's reasonably fast with hot caches
-as in the first example below):
+Hi,
 
-% time find /btr/foo > /btr/foo.list
-find /btr/foo > /btr/foo.list  4.10s user 7.97s system 36% cpu 33.275 total
-% head /btr/foo.list
-/btr/foo
-/btr/foo/1281373625.777.fg.jpg
-/btr/foo/1281373625.777.bg.jpg
-/btr/foo/1281373625.948.fg.jpg
-/btr/foo/1281373625.948.bg.jpg
-/btr/foo/1281373626.096.fg.jpg
-/btr/foo/1281373626.096.bg.jpg
-/btr/foo/1281373626.218.fg.jpg
-/btr/foo/1281373626.218.bg.jpg
-/btr/foo/1281373626.350.fg.jpg
-% wc !$
-wc /btr/foo.list
- 12166666  12166666 401499940 /btr/foo.list
-% wc -l /btr/foo.list
-12166666 /btr/foo.list
-% sudo sysctl -w vm.drop_caches=3 vm.drop_caches=0
-vm.drop_caches = 3
-vm.drop_caches = 0
-% time find /btr/foo > /btr/foo.list.2
-find /btr/foo > /btr/foo.list.2  5.62s user 24.54s system 2% cpu 21:40.90 total
-% uname -a
-Linux pyron 2.6.36-rc7-00149-g29979aa #71 SMP Wed Oct 13 09:42:57 PDT 2010 x86_64 GNU/Linux
+The Coverity checker spotted this. I think it has a point, but I'm not 
+intimate with this code so there could be somethingI'm missing.
 
-Interestingly, while readdir is busy I'm only seeing IO on sdb even
-though the btrfs is on 3 targets:
+It seems that kernel/exit.c::do_wait() does not always release 
+'tasklist_lock'. There are multiple ways the code could be changed to make 
+sure it's always released, I just picked the most straight forward one.
 
-Label: btr  uuid: 1271de53-b3d2-4d68-9d48-b19487e1c982
-        Total devices 3 FS bytes used 555.13GB
-        devid    1 size 18.65GB used 18.64GB path /dev/sda2
-        devid    3 size 512.00GB used 44.13GB path /dev/sdc1
-        devid    2 size 512.00GB used 511.76GB path /dev/sdb1
+Does this look right to everyone else or is it just me?
+I've only compile tested the patch so far.
 
-"iostat -k 1 | grep sdb" tells me:
 
-Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ exit.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-sdb             173.00       692.00         0.00        692          0
-sdb             185.00       740.00         0.00        740          0
-sdb             198.00       792.00         0.00        792          0
-sdb             177.00       712.00         0.00        712          0
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 676149a..456b13d 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1647,12 +1647,16 @@ repeat:
+ 	tsk = current;
+ 	do {
+ 		retval = do_wait_thread(wo, tsk);
+-		if (retval)
++		if (retval) {
++			read_unlock(&tasklist_lock);
+ 			goto end;
++		}
+ 
+ 		retval = ptrace_do_wait(wo, tsk);
+-		if (retval)
++		if (retval) {
++			read_unlock(&tasklist_lock);
+ 			goto end;
++		}
+ 
+ 		if (wo->wo_flags & __WNOTHREAD)
+ 			break;
 
-I updated to a recent git and it's still slow (my test hasn't completed
-yet 19 minutes in):
 
-Linux pyron 2.6.37-rc6-11882-g55ec86f #72 SMP Mon Dec 20 13:34:38 PST 2010 x86_64 GNU/Linux
 
-The devices are:
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-[    1.834527] ata1.00: ATA-7: INTEL SSDSA2M040G2GC, 2CV102HD, max UDMA/133
-[    1.834816] ata1.00: 78165360 sectors, multi 1: LBA48 NCQ (depth 31/32)
-[    1.835369] ata1.00: configured for UDMA/133
-[    1.835776] scsi 0:0:0:0: Direct-Access     ATA      INTEL SSDSA2M040 2CV1 PQ: 0 ANSI: 5
-...
-[    2.904919] ata3.00: ATA-8: ST31500341AS, CC1H, max UDMA/133
-[    2.905206] ata3.00: 2930277168 sectors, multi 0: LBA48 NCQ (depth 31/32)
-[    2.947393] ata3.00: configured for UDMA/133
-[    2.947850] scsi 2:0:0:0: Direct-Access     ATA      ST31500341AS     CC1H PQ: 0 ANSI: 5
-...
-[    3.989664] ata5: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-[    4.018524] ata5.00: ATA-8: ST31500341AS, CC1H, max UDMA/133
-[    4.018811] ata5.00: 2930277168 sectors, multi 0: LBA48 NCQ (depth 31/32)
-[    4.060838] ata5.00: configured for UDMA/133
-[    4.061205] scsi 4:0:0:0: Direct-Access     ATA      ST31500341AS     CC1H PQ: 0 ANSI: 5
-
-The host is a "Intel(R) Core(TM) i7 CPU 930 @2.80GHz" with 12GB RAM.
-
-Thanks,
--andy
