@@ -1,66 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123Ab0LTATU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 19:19:20 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:33044 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751394Ab0LTATS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 19:19:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=j4yKY79yjsBdaSsuffKReg3950QPD0BQtrG17xqskAvDsdtDkhwln8IqEsHnngbK+Z
-         pb68veeovFq2To9kyiCDte2AZTJgdk0KkUYD7mhemjkB1Pgdd6URx8NV5GC64NISlAIa
-         MK0+Lvl8FzaRBPHFt/qAfcslSoERXNApYGh7c=
-Message-ID: <4D0EA0FE.4090104@garzik.org>
-Date: Sun, 19 Dec 2010 19:19:10 -0500
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1752111Ab0LTA3W (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 19:29:22 -0500
+Received: from mga02.intel.com ([134.134.136.20]:9298 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751177Ab0LTA3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 19:29:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,198,1291622400"; 
+   d="scan'208";a="585250498"
+Date: Mon, 20 Dec 2010 01:29:17 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Peter Huewe <peterhuewe@gmx.de>,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mfd/wm831x-irq: Convert to new irq_chip functions and
+ fix build failure
+Message-ID: <20101220002916.GB3206@sortiz-mobl>
+References: <1291937687-20243-1-git-send-email-peterhuewe@gmx.de>
+ <12ABA93B-6923-4AF7-BF34-E070BE72A8E2@opensource.wolfsonmicro.com>
+ <alpine.LFD.2.00.1012100233510.2653@localhost6.localdomain6>
+ <20101210050755.GA21712@linux-sh.org>
+ <20101210121420.GC3200@rakim.wolfsonmicro.main>
+ <20101210154332.GB21712@linux-sh.org>
+ <20101210172407.GF3200@rakim.wolfsonmicro.main>
+ <20101210174843.GB3750@linux-sh.org>
+ <20101210182455.GJ3200@rakim.wolfsonmicro.main>
+ <20101211015907.GC3750@linux-sh.org>
 MIME-Version: 1.0
-To: Matthew Wilcox <matthew@wil.cx>
-CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Christoph Hellwig <hch@lst.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        Mike Anderson <andmike@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Ravi Anand <ravi.anand@qlogic.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        Joe Eykholt <jeykholt@cisco.com>, James Smart <james.smart@emulex.com>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        adam radford <aradford@gmail.com>,
-        Kashyap Desai <Kashyap.Desai@lsi.com>,
-        MPTFusionLinux <DL-MPTFusionLinux@lsi.com>
-Subject: Re: [PATCH 07/12] qla2xxx: Convert to host_lock less w/ interrupts
- disabled externally
-References: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org> <1292793727-31957-8-git-send-email-nab@linux-iscsi.org> <20101219231114.GI1263@parisc-linux.org>
-In-Reply-To: <20101219231114.GI1263@parisc-linux.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101211015907.GC3750@linux-sh.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2010 06:11 PM, Matthew Wilcox wrote:
-> I'm not sure this is the right direction to go.  Now that Jeff's done
-> the pushdown and put in the compatibility macros, I don't think it makes
-> sense to do another partial transition on each driver.  Much better to
-> take our time, analyse each driver thoroughly, and kill the DEF_SCSI_QCMD
-> in each driver without introducing IRQ_DISABLE_SCSI_QCMD.
+Hi Paul,
 
+On Sat, Dec 11, 2010 at 10:59:08AM +0900, Paul Mundt wrote:
+> On Fri, Dec 10, 2010 at 06:24:55PM +0000, Mark Brown wrote:
+> > On Sat, Dec 11, 2010 at 02:48:43AM +0900, Paul Mundt wrote:
+> > 
+> > > I have no intention of dropping the select from SH, but I'm not going to
+> > > insist that these drivers have the deprecated dependency if we're a) not
+> > > really using them and b) there's a reasonable expectation that they'll
+> > > basically be taken care of in .38 anyways.
+> > 
+> > That's unfortunate, I'm a bit concerned about support for users picking
+> > up the kernel and using it to build products.
+> > 
+> As I pointed out initially, backtracking would only encourage people to
+> continue to add new code that uses deprecated interfaces. This happens
+> time and time again, and is a far greater concern.
+> 
+> > Samuel, would you be OK with cherry picking the relevant commits to the
+> > Wolfson drivers back into .37?  I'm especially concerned about WM8994
+> > here - I'd really not like to see a kernel version go out where that
+> > doesn't work.
+> > 
+> That hardly addresses the issue, and simply covers your own driver. The
+> issue at hand is whether it's worth flagging the deprecated API users
+> with an explicit dependency or not. You've dismissed the idea of getting
+> your dependencies right out of hand, but also don't wish to ship a broken
+> driver, so we need an alternative.
+> 
+> After a full tree audit it's the MFD drivers and a couple of GPIO
+> expanders that could theoretically be enabled and break the build. I
+> suppose I could switch to
+> 
+> 	select GENERIC_HARDIRQS_NO_DEPRECATED if !MFD_SUPPORT && !GPIOLIB
+> 
+> for .37 since it's too late to convert the remaining drivers now.
+I see that you've pushed this one, thanks a lot.
 
-Agreed...   DEF_SCSI_QCMD was intended, as you note, to encourage a 
-piecemeal, in-depth approach to cleaning up the rest of the drivers. 
-Hopefully DEF_SCSI_QCMD removal means someone actually figured out [or 
-already knew] the locking for a driver, and created the most appropriate 
-patch, rather than another half-step.
+Cheers,
+Samuel.
 
-	Jeff
-
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
