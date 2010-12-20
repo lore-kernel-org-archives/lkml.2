@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757338Ab0LTLgo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 06:36:44 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:51227 "EHLO
+	id S932340Ab0LTLip (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 06:38:45 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:51266 "EHLO
 	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757287Ab0LTLgl (ORCPT
+	with ESMTP id S1757385Ab0LTLgz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 06:36:41 -0500
+	Mon, 20 Dec 2010 06:36:55 -0500
 From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 To: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
         alsa-devel@alsa-project.org
 Cc: broonie@opensource.wolfsonmicro.com, clemens@ladisch.de, gregkh@suse.de,
         sakari.ailus@maxwell.research.nokia.com
-Subject: [RFC/PATCH v7 02/12] media: Media device
-Date: Mon, 20 Dec 2010 12:36:25 +0100
-Message-Id: <1292844995-7900-3-git-send-email-laurent.pinchart@ideasonboard.com>
+Subject: [RFC/PATCH v7 09/12] media: Pipelines and media streams
+Date: Mon, 20 Dec 2010 12:36:32 +0100
+Message-Id: <1292844995-7900-10-git-send-email-laurent.pinchart@ideasonboard.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1292844995-7900-1-git-send-email-laurent.pinchart@ideasonboard.com>
 References: <1292844995-7900-1-git-send-email-laurent.pinchart@ideasonboard.com>
@@ -22,383 +22,258 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The media_device structure abstracts functions common to all kind of
-media devices (v4l2, dvb, alsa, ...). It manages media entities and
-offers a userspace API to discover and configure the media device
-internal topology.
+Drivers often need to associate pipeline objects to entities, and to
+take stream state into account when configuring entities and links. The
+pipeline API helps drivers manage that information.
+
+When starting streaming, drivers call media_entity_pipeline_start(). The
+function marks all entities connected to the given entity through
+enabled links, either directly or indirectly, as streaming. Similarly,
+when stopping the stream, drivers call media_entity_pipeline_stop().
+
+The media_entity_pipeline_start() function takes a pointer to a media
+pipeline and stores it in every entity in the graph. Drivers should
+embed the media_pipeline structure in higher-level pipeline structures
+and can then access the pipeline through the media_entity structure.
+
+Link configuration will fail with -EBUSY by default if either end of the
+link is a streaming entity, unless the link is marked with the
+MEDIA_LINK_FLAG_DYNAMIC flag.
 
 Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 ---
- Documentation/DocBook/media-entities.tmpl      |    2 +
- Documentation/DocBook/media.tmpl               |    3 +
- Documentation/DocBook/v4l/media-controller.xml |   56 +++++++++++++
- Documentation/media-framework.txt              |   68 ++++++++++++++++
- drivers/media/Makefile                         |    2 +-
- drivers/media/media-device.c                   |  100 ++++++++++++++++++++++++
- include/media/media-device.h                   |   69 ++++++++++++++++
- 7 files changed, 299 insertions(+), 1 deletions(-)
- create mode 100644 Documentation/DocBook/v4l/media-controller.xml
- create mode 100644 Documentation/media-framework.txt
- create mode 100644 drivers/media/media-device.c
- create mode 100644 include/media/media-device.h
+ Documentation/DocBook/v4l/media-ioc-enum-links.xml |    5 ++
+ Documentation/DocBook/v4l/media-ioc-setup-link.xml |    3 +
+ Documentation/media-framework.txt                  |   38 ++++++++++
+ drivers/media/media-entity.c                       |   74 ++++++++++++++++++++
+ include/linux/media.h                              |    1 +
+ include/media/media-entity.h                       |   10 +++
+ 6 files changed, 131 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/DocBook/media-entities.tmpl b/Documentation/DocBook/media-entities.tmpl
-index be34dcb..61d6f11 100644
---- a/Documentation/DocBook/media-entities.tmpl
-+++ b/Documentation/DocBook/media-entities.tmpl
-@@ -321,6 +321,8 @@
- <!ENTITY sub-media-entities SYSTEM "media-entities.tmpl">
- <!ENTITY sub-media-indices SYSTEM "media-indices.tmpl">
- 
-+<!ENTITY sub-media-controller SYSTEM "v4l/media-controller.xml">
-+
- <!-- Function Reference -->
- <!ENTITY close SYSTEM "v4l/func-close.xml">
- <!ENTITY ioctl SYSTEM "v4l/func-ioctl.xml">
-diff --git a/Documentation/DocBook/media.tmpl b/Documentation/DocBook/media.tmpl
-index f11048d..73464b0 100644
---- a/Documentation/DocBook/media.tmpl
-+++ b/Documentation/DocBook/media.tmpl
-@@ -106,6 +106,9 @@ Foundation. A copy of the license is included in the chapter entitled
- &sub-remote_controllers;
- </chapter>
- </part>
-+<part id="media_common">
-+&sub-media-controller;
-+</part>
- 
- &sub-fdl-appendix;
- 
-diff --git a/Documentation/DocBook/v4l/media-controller.xml b/Documentation/DocBook/v4l/media-controller.xml
-new file mode 100644
-index 0000000..253ddb4
---- /dev/null
-+++ b/Documentation/DocBook/v4l/media-controller.xml
-@@ -0,0 +1,56 @@
-+<partinfo>
-+  <authorgroup>
-+    <author>
-+      <firstname>Laurent</firstname>
-+      <surname>Pinchart</surname>
-+      <affiliation><address><email>laurent.pinchart@ideasonboard.com</email></address></affiliation>
-+      <contrib>Initial version.</contrib>
-+    </author>
-+  </authorgroup>
-+  <copyright>
-+    <year>2010</year>
-+    <holder>Laurent Pinchart</holder>
-+  </copyright>
-+
-+  <revhistory>
-+    <!-- Put document revisions here, newest first. -->
-+    <revision>
-+      <revnumber>1.0.0</revnumber>
-+      <date>2010-11-10</date>
-+      <authorinitials>lp</authorinitials>
-+      <revremark>Initial revision</revremark>
-+    </revision>
-+  </revhistory>
-+</partinfo>
-+
-+<title>Media Controller API</title>
-+
-+<chapter id="media_controller">
-+  <title>Media Controller</title>
-+
-+  <section id="media-controller-intro">
-+    <title>Introduction</title>
-+    <para>Media devices increasingly handle multiple related functions. Many USB
-+    cameras include microphones, video capture hardware can also output video,
-+    or SoC camera interfaces also perform memory-to-memory operations similar to
-+    video codecs.</para>
-+    <para>Independent functions, even when implemented in the same hardware, can
-+    be modelled as separate devices. A USB camera with a microphone will be
-+    presented to userspace applications as V4L2 and ALSA capture devices. The
-+    devices' relationships (when using a webcam, end-users shouldn't have to
-+    manually select the associated USB microphone), while not made available
-+    directly to applications by the drivers, can usually be retrieved from
-+    sysfs.</para>
-+    <para>With more and more advanced SoC devices being introduced, the current
-+    approach will not scale. Device topologies are getting increasingly complex
-+    and can't always be represented by a tree structure. Hardware blocks are
-+    shared between different functions, creating dependencies between seemingly
-+    unrelated devices.</para>
-+    <para>Kernel abstraction APIs such as V4L2 and ALSA provide means for
-+    applications to access hardware parameters. As newer hardware expose an
-+    increasingly high number of those parameters, drivers need to guess what
-+    applications really require based on limited information, thereby
-+    implementing policies that belong to userspace.</para>
-+    <para>The media controller API aims at solving those problems.</para>
-+  </section>
-+</chapter>
+diff --git a/Documentation/DocBook/v4l/media-ioc-enum-links.xml b/Documentation/DocBook/v4l/media-ioc-enum-links.xml
+index bcec89b..aa164f4 100644
+--- a/Documentation/DocBook/v4l/media-ioc-enum-links.xml
++++ b/Documentation/DocBook/v4l/media-ioc-enum-links.xml
+@@ -179,6 +179,11 @@
+ 	    <entry>The link enabled state can't be modified at runtime. An
+ 	    immutable link is always enabled.</entry>
+ 	  </row>
++	  <row>
++	    <entry><constant>MEDIA_LINK_FLAG_DYNAMIC</constant></entry>
++	    <entry>The link enabled state can be modified during streaming. This
++	    flag is set by drivers and is read-only for applications.</entry>
++	  </row>
+ 	</tbody>
+       </tgroup>
+     </table>
+diff --git a/Documentation/DocBook/v4l/media-ioc-setup-link.xml b/Documentation/DocBook/v4l/media-ioc-setup-link.xml
+index 09ab3d2..2331e76 100644
+--- a/Documentation/DocBook/v4l/media-ioc-setup-link.xml
++++ b/Documentation/DocBook/v4l/media-ioc-setup-link.xml
+@@ -60,6 +60,9 @@
+     <para>Link configuration has no side effect on other links. If an enabled
+     link at the sink pad prevents the link from being enabled, the driver
+     returns with an &EBUSY;.</para>
++    <para>Only links marked with the <constant>DYNAMIC</constant> link flag can
++    be enabled/disabled while streaming media data. Attempting to enable or
++    disable a streaming non-dynamic link will return an &EBUSY;.</para>
+     <para>If the specified link can't be found the driver returns with an
+     &EINVAL;.</para>
+   </refsect1>
 diff --git a/Documentation/media-framework.txt b/Documentation/media-framework.txt
-new file mode 100644
-index 0000000..84fa43a
---- /dev/null
+index 4603417..7163dcb 100644
+--- a/Documentation/media-framework.txt
 +++ b/Documentation/media-framework.txt
-@@ -0,0 +1,68 @@
-+Linux kernel media framework
-+============================
-+
-+This document describes the Linux kernel media framework, its data structures,
-+functions and their usage.
+@@ -343,3 +343,41 @@ link_setup calls are made with power active on the source and sink entities.
+ In other words, enabling or disabling a link propagates reference count changes
+ through the graph, and the final state is identical to what it would have been
+ if the link had been enabled or disabled from the start.
 +
 +
-+Introduction
-+------------
++Pipelines and media streams
++---------------------------
 +
-+The media controller API is documented in DocBook format in
-+Documentation/DocBook/v4l/media-controller.xml. This document will focus on
-+the kernel-side implementation of the media framework.
++When starting streaming, drivers must notify all entities in the pipeline to
++prevent link states from being modified during streaming by calling
 +
++	media_entity_pipeline_start(struct media_entity *entity,
++				    struct media_pipeline *pipe);
 +
-+Media device
-+------------
++The function will mark all entities connected to the given entity through
++enabled links, either directly or indirectly, as streaming.
 +
-+A media device is represented by a struct media_device instance, defined in
-+include/media/media-device.h. Allocation of the structure is handled by the
-+media device driver, usually by embedding the media_device instance in a
-+larger driver-specific structure.
++The media_pipeline instance pointed to by the pipe argument will be stored in
++every entity in the pipeline. Drivers should embed the media_pipeline structure
++in higher-level pipeline structures and can then access the pipeline through
++the media_entity pipe field.
 +
-+Drivers register media device instances by calling
++Calls to media_entity_pipeline_start() can be nested. The pipeline pointer must
++be identical for all nested calls to the function.
 +
-+	media_device_register(struct media_device *mdev);
++When stopping the stream, drivers must notify the entities with
 +
-+The caller is responsible for initializing the media_device structure before
-+registration. The following fields must be set:
++	media_entity_pipeline_stop(struct media_entity *entity);
 +
-+ - dev must point to the parent device (usually a pci_dev, usb_interface or
-+   platform_device instance).
++If multiple calls to media_entity_pipeline_start() have been made the same
++number of media_entity_pipeline_stop() calls are required to stop streaming. The
++media_entity pipe field is reset to NULL on the last nested stop call.
 +
-+ - model must be filled with the device model name as a NUL-terminated UTF-8
-+   string. The device/model revision must not be stored in this field.
++Link configuration will fail with -EBUSY by default if either end of the link is
++a streaming entity. Links that can be modified while streaming must be marked
++with the MEDIA_LINK_FLAG_DYNAMIC flag.
 +
-+The following fields are optional:
-+
-+ - serial is a unique serial number stored as a NUL-terminated ASCII string.
-+   The field is big enough to store a GUID in text form. If the hardware
-+   doesn't provide a unique serial number this field must be left empty.
-+
-+ - bus_info represents the location of the device in the system as a
-+   NUL-terminated ASCII string. For PCI/PCIe devices bus_info must be set to
-+   "PCI:" (or "PCIe:") followed by the value of pci_name(). For USB devices,
-+   the usb_make_path() function must be used. This field is used by
-+   applications to distinguish between otherwise identical devices that don't
-+   provide a serial number.
-+
-+ - hw_revision is the hardware device revision in a driver-specific format.
-+   When possible the revision should be formatted with the KERNEL_VERSION
-+   macro.
-+
-+ - driver_version is formatted with the KERNEL_VERSION macro. The version
-+   minor must be incremented when new features are added to the userspace API
-+   without breaking binary compatibility. The version major must be
-+   incremented when binary compatibility is broken.
-+
-+Upon successful registration a character device named media[0-9]+ is created.
-+The device major and minor numbers are dynamic. The model name is exported as
-+a sysfs attribute.
-+
-+Drivers unregister media device instances by calling
-+
-+	media_device_unregister(struct media_device *mdev);
-+
-+Unregistering a media device that hasn't been registered is *NOT* safe.
-+
-diff --git a/drivers/media/Makefile b/drivers/media/Makefile
-index 3a08991..019d3e0 100644
---- a/drivers/media/Makefile
-+++ b/drivers/media/Makefile
-@@ -2,7 +2,7 @@
- # Makefile for the kernel multimedia device drivers.
- #
++If other operations need to be disallowed on streaming entities (such as
++changing entities configuration parameters) drivers can explictly check the
++media_entity stream_count field to find out if an entity is streaming. This
++operation must be done with the media_device graph_mutex held.
+diff --git a/drivers/media/media-entity.c b/drivers/media/media-entity.c
+index 53718f1..73bb26d 100644
+--- a/drivers/media/media-entity.c
++++ b/drivers/media/media-entity.c
+@@ -197,6 +197,75 @@ media_entity_graph_walk_next(struct media_entity_graph *graph)
+ EXPORT_SYMBOL_GPL(media_entity_graph_walk_next);
  
--media-objs	:= media-devnode.o
-+media-objs	:= media-device.o media-devnode.o
- 
- ifeq ($(CONFIG_MEDIA_CONTROLLER),y)
-   obj-$(CONFIG_MEDIA_SUPPORT) += media.o
-diff --git a/drivers/media/media-device.c b/drivers/media/media-device.c
-new file mode 100644
-index 0000000..57a9c6b
---- /dev/null
-+++ b/drivers/media/media-device.c
-@@ -0,0 +1,100 @@
-+/*
-+ * Media device
-+ *
-+ * Copyright (C) 2010 Nokia Corporation
-+ *
-+ * Contacts: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-+ *	     Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ /* -----------------------------------------------------------------------------
++ * Pipeline management
 + */
-+
-+#include <linux/types.h>
-+#include <linux/ioctl.h>
-+
-+#include <media/media-device.h>
-+#include <media/media-devnode.h>
-+
-+static const struct media_file_operations media_device_fops = {
-+	.owner = THIS_MODULE,
-+};
-+
-+/* -----------------------------------------------------------------------------
-+ * sysfs
-+ */
-+
-+static ssize_t show_model(struct device *cd,
-+			  struct device_attribute *attr, char *buf)
-+{
-+	struct media_device *mdev = to_media_device(to_media_devnode(cd));
-+
-+	return sprintf(buf, "%.*s\n", (int)sizeof(mdev->model), mdev->model);
-+}
-+
-+static DEVICE_ATTR(model, S_IRUGO, show_model, NULL);
-+
-+/* -----------------------------------------------------------------------------
-+ * Registration/unregistration
-+ */
-+
-+static void media_device_release(struct media_devnode *mdev)
-+{
-+}
 +
 +/**
-+ * media_device_register - register a media device
-+ * @mdev:	The media device
++ * media_entity_pipeline_start - Mark a pipeline as streaming
++ * @entity: Starting entity
++ * @pipe: Media pipeline to be assigned to all entities in the pipeline.
 + *
-+ * The caller is responsible for initializing the media device before
-+ * registration. The following fields must be set:
++ * Mark all entities connected to a given entity through enabled links, either
++ * directly or indirectly, as streaming. The given pipeline object is assigned to
++ * every entity in the pipeline and stored in the media_entity pipe field.
 + *
-+ * - dev must point to the parent device
-+ * - model must be filled with the device model name
++ * Calls to this function can be nested, in which case the same number of
++ * media_entity_pipeline_stop() calls will be required to stop streaming. The
++ * pipeline pointer must be identical for all nested calls to
++ * media_entity_pipeline_start().
 + */
-+int __must_check media_device_register(struct media_device *mdev)
++void media_entity_pipeline_start(struct media_entity *entity,
++				 struct media_pipeline *pipe)
 +{
-+	int ret;
++	struct media_device *mdev = entity->parent;
++	struct media_entity_graph graph;
 +
-+	if (WARN_ON(mdev->dev == NULL || mdev->model[0] == 0))
-+		return -EINVAL;
++	mutex_lock(&mdev->graph_mutex);
 +
-+	/* Register the device node. */
-+	mdev->devnode.fops = &media_device_fops;
-+	mdev->devnode.parent = mdev->dev;
-+	mdev->devnode.release = media_device_release;
-+	ret = media_devnode_register(&mdev->devnode);
-+	if (ret < 0)
-+		return ret;
++	media_entity_graph_walk_start(&graph, entity);
 +
-+	ret = device_create_file(&mdev->devnode.dev, &dev_attr_model);
-+	if (ret < 0) {
-+		media_devnode_unregister(&mdev->devnode);
-+		return ret;
++	while ((entity = media_entity_graph_walk_next(&graph))) {
++		entity->stream_count++;
++		WARN_ON(entity->pipe && entity->pipe != pipe);
++		entity->pipe = pipe;
 +	}
 +
-+	return 0;
++	mutex_unlock(&mdev->graph_mutex);
 +}
-+EXPORT_SYMBOL_GPL(media_device_register);
++EXPORT_SYMBOL_GPL(media_entity_pipeline_start);
 +
 +/**
-+ * media_device_unregister - unregister a media device
-+ * @mdev:	The media device
++ * media_entity_pipeline_stop - Mark a pipeline as not streaming
++ * @entity: Starting entity
 + *
++ * Mark all entities connected to a given entity through enabled links, either
++ * directly or indirectly, as not streaming. The media_entity pipe field is
++ * reset to NULL.
++ *
++ * If multiple calls to media_entity_pipeline_start() have been made, the same
++ * number of calls to this function are required to mark the pipeline as not
++ * streaming.
 + */
-+void media_device_unregister(struct media_device *mdev)
++void media_entity_pipeline_stop(struct media_entity *entity)
 +{
-+	device_remove_file(&mdev->devnode.dev, &dev_attr_model);
-+	media_devnode_unregister(&mdev->devnode);
++	struct media_device *mdev = entity->parent;
++	struct media_entity_graph graph;
++
++	mutex_lock(&mdev->graph_mutex);
++
++	media_entity_graph_walk_start(&graph, entity);
++
++	while ((entity = media_entity_graph_walk_next(&graph))) {
++		entity->stream_count--;
++		if (entity->stream_count == 0)
++			entity->pipe = NULL;
++	}
++
++	mutex_unlock(&mdev->graph_mutex);
 +}
-+EXPORT_SYMBOL_GPL(media_device_unregister);
-diff --git a/include/media/media-device.h b/include/media/media-device.h
-new file mode 100644
-index 0000000..e11f01a
---- /dev/null
-+++ b/include/media/media-device.h
-@@ -0,0 +1,69 @@
-+/*
-+ * Media device
-+ *
-+ * Copyright (C) 2010 Nokia Corporation
-+ *
-+ * Contacts: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-+ *	     Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
++EXPORT_SYMBOL_GPL(media_entity_pipeline_stop);
 +
-+#ifndef _MEDIA_DEVICE_H
-+#define _MEDIA_DEVICE_H
++/* -----------------------------------------------------------------------------
+  * Power state handling
+  */
+ 
+@@ -505,6 +574,11 @@ int __media_entity_setup_link(struct media_link *link, u32 flags)
+ 	if (link->flags == flags)
+ 		return 0;
+ 
++	if (!(link->flags & MEDIA_LINK_FLAG_DYNAMIC) &&
++	    (link->source->entity->stream_count ||
++	     link->sink->entity->stream_count))
++		return -EBUSY;
 +
-+#include <linux/device.h>
-+#include <linux/list.h>
-+
-+#include <media/media-devnode.h>
-+
-+/**
-+ * struct media_device - Media device
-+ * @dev:	Parent device
-+ * @devnode:	Media device node
-+ * @model:	Device model name
-+ * @serial:	Device serial number (optional)
-+ * @bus_info:	Unique and stable device location identifier
-+ * @hw_revision: Hardware device revision
-+ * @driver_version: Device driver version
-+ *
-+ * This structure represents an abstract high-level media device. It allows easy
-+ * access to entities and provides basic media device-level support. The
-+ * structure can be allocated directly or embedded in a larger structure.
-+ *
-+ * The parent @dev is a physical device. It must be set before registering the
-+ * media device.
-+ *
-+ * @model is a descriptive model name exported through sysfs. It doesn't have to
-+ * be unique.
-+ */
-+struct media_device {
-+	/* dev->driver_data points to this struct. */
-+	struct device *dev;
-+	struct media_devnode devnode;
-+
-+	char model[32];
-+	char serial[40];
-+	char bus_info[32];
-+	u32 hw_revision;
-+	u32 driver_version;
+ 	source = __media_entity_get(link->source->entity);
+ 	if (!source)
+ 		return ret;
+diff --git a/include/linux/media.h b/include/linux/media.h
+index 0611e3d..944629b 100644
+--- a/include/linux/media.h
++++ b/include/linux/media.h
+@@ -106,6 +106,7 @@ struct media_pad_desc {
+ 
+ #define MEDIA_LINK_FLAG_ENABLED			(1 << 0)
+ #define MEDIA_LINK_FLAG_IMMUTABLE		(1 << 1)
++#define MEDIA_LINK_FLAG_DYNAMIC			(1 << 2)
+ 
+ struct media_link_desc {
+ 	struct media_pad_desc source;
+diff --git a/include/media/media-entity.h b/include/media/media-entity.h
+index 36ad6c7..8dbc268 100644
+--- a/include/media/media-entity.h
++++ b/include/media/media-entity.h
+@@ -26,6 +26,9 @@
+ #include <linux/list.h>
+ #include <linux/media.h>
+ 
++struct media_pipeline {
 +};
 +
-+/* media_devnode to media_device */
-+#define to_media_device(node) container_of(node, struct media_device, devnode)
+ struct media_link {
+ 	struct media_pad *source;	/* Source pad */
+ 	struct media_pad *sink;		/* Sink pad  */
+@@ -68,8 +71,11 @@ struct media_entity {
+ 
+ 	const struct media_entity_operations *ops;	/* Entity operations */
+ 
++	int stream_count;		/* Stream count for the entity. */
+ 	int use_count;			/* Use count for the entity. */
+ 
++	struct media_pipeline *pipe;	/* Pipeline this entity belongs to. */
 +
-+int __must_check media_device_register(struct media_device *mdev);
-+void media_device_unregister(struct media_device *mdev);
+ 	union {
+ 		/* Node specifications */
+ 		struct {
+@@ -115,6 +121,7 @@ struct media_entity_graph {
+ int media_entity_init(struct media_entity *entity, u16 num_pads,
+ 		struct media_pad *pads, u16 extra_links);
+ void media_entity_cleanup(struct media_entity *entity);
 +
-+#endif
+ int media_entity_create_link(struct media_entity *source, u16 source_pad,
+ 		struct media_entity *sink, u16 sink_pad, u32 flags);
+ int __media_entity_setup_link(struct media_link *link, u32 flags);
+@@ -130,6 +137,9 @@ void media_entity_graph_walk_start(struct media_entity_graph *graph,
+ 		struct media_entity *entity);
+ struct media_entity *
+ media_entity_graph_walk_next(struct media_entity_graph *graph);
++void media_entity_pipeline_start(struct media_entity *entity,
++		struct media_pipeline *pipe);
++void media_entity_pipeline_stop(struct media_entity *entity);
+ 
+ #define media_entity_call(entity, operation, args...)			\
+ 	(((entity)->ops && (entity)->ops->operation) ?			\
 -- 
 1.7.2.2
 
