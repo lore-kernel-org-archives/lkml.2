@@ -1,84 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757861Ab0LTOMn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 09:12:43 -0500
-Received: from mx1.fusionio.com ([64.244.102.30]:47996 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757112Ab0LTOMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 09:12:42 -0500
-X-ASG-Debug-ID: 1292854360-2c9de5330001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D0F643B.7030804@fusionio.com>
-Date: Mon, 20 Dec 2010 15:12:11 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1757854Ab0LTOP4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 09:15:56 -0500
+Received: from dtp.xs4all.nl ([80.101.171.8]:31825 "HELO abra2.bitwizard.nl"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1757828Ab0LTOP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 09:15:56 -0500
+Date: Mon, 20 Dec 2010 15:15:53 +0100
+From: Rogier Wolff <R.E.Wolff@BitWizard.nl>
+To: linux-kernel@vger.kernel.org
+Subject: Slow disks. 
+Message-ID: <20101220141553.GA6088@bitwizard.nl>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Final block bits for 2.6.37
-Content-Type: text/plain; charset="ISO-8859-1"
-X-ASG-Orig-Subj: [GIT PULL] Final block bits for 2.6.37
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1292854360
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0556 1.0000 -1.6647
-X-Barracuda-Spam-Score: -1.66
-X-Barracuda-Spam-Status: No, SCORE=-1.66 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.49984
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: BitWizard.nl
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-This little christmas bundle has been collected over the
-last 2-3 weeks and represent the final block fixes for
-2.6.37 unless a critical issue shows up.
+Hi,
 
-Please pull.
+A friend of mine has a server in a datacenter somewhere. His machine
+is not working properly: most of his disks take 10-100 times longer
+to process each IO request than normal. 
+
+iostat -kx 10 output: 
+Device: rrqm/s wrqm/s r/s  w/s  rkB/s wkB/s avgrq-sz avgqu-sz await svctm %util
+sdd     0.30   0.00   0.40 1.20 2.80  1.10  4.88     0.43  271.50 271.44  43.43
+
+shows that in this 10 second period, the disk was busy for 4.3 seconds
+and serviced 15-16 requests during that time.
+
+Normal disks show "svctm" of around 10-20ms. 
+
+Now you might say: It's his disk that's broken.
+Well no: I don't believe that all four of his disks are broken. 
+(I just showed you output about one disk, but there are 4 disks in there
+all behaving similar, but some are worse than others.)
+
+Or you might say: It's his controller that's broken. So we thought
+too. We replaced the onboard sata controller with a 4-port sata
+card. Now they are running off the external sata card... Slightly
+better, but not by much.
+
+Or you might say: it's hardware. But suppose the disk doesn't properly
+transfer the data 9 times out of 10, wouldn't the driver tell us
+SOMETHING in the syslog that things are not fine and dandy? Moreover,
+In the case above, 12kb were transferred in 4.3 seconds. If CRC errors
+were happening, the interface would've been able to transfer over
+400Mb during that time. So every transfer would need to be retried on
+average 30000 times... Not realistic. If that were the case, we'd
+surely hit a maximum retry limit every now and then?
 
 
-  git://git.kernel.dk/linux-2.6-block.git for-linus
+These syptoms started when the system was running 2.6.33, but are
+still present now the system has been upgraded to 2.6.36.
 
-Lars Ellenberg (2):
-      drbd: don't recvmsg with zero length
-      drbd: fix for spin_lock_irqsave in endio callback
+Is there anything you can suggest to get to the root of this problem?
+Could this be a software issue with the driver? Can we enable some
+driver debugging to find out what is wrong?
 
-Martin K. Petersen (1):
-      block: Deprecate QUEUE_FLAG_CLUSTER and use queue_limits instead
+Any help will be appreciated. 
 
-Mike Snitzer (1):
-      block: max hardware sectors limit wrapper
-
-Stephen M. Cameron (1):
-      cciss: fix cciss_revalidate panic
-
-Vivek Goyal (2):
-      blk-throttle: Trim/adjust slice_end once a bio has been dispatched
-      blk-throttle: Correct the placement of smp_rmb()
-
-Xiaotian Feng (1):
-      block: check for proper length of iov entries earlier in blk_rq_map_user_iov()
-
- block/blk-map.c                    |    5 ++-
- block/blk-merge.c                  |    6 ++--
- block/blk-settings.c               |   51 +++++++++++++++--------------------
- block/blk-sysfs.c                  |    2 +-
- block/blk-throttle.c               |   39 +++++++++++++++++----------
- drivers/block/cciss.c              |    2 +
- drivers/block/drbd/drbd_receiver.c |   14 +++++----
- drivers/block/drbd/drbd_req.h      |    3 +-
- drivers/block/drbd/drbd_worker.c   |   10 ++++++-
- drivers/md/dm-table.c              |   10 +-----
- drivers/md/md.c                    |    3 --
- drivers/scsi/scsi_lib.c            |    3 +-
- include/linux/blkdev.h             |   10 +++++--
- 13 files changed, 85 insertions(+), 73 deletions(-)
-
+	Roger.
 
 -- 
-Jens Axboe
-
+** R.E.Wolff@BitWizard.nl ** http://www.BitWizard.nl/ ** +31-15-2600998 **
+**    Delftechpark 26 2628 XH  Delft, The Netherlands. KVK: 27239233    **
+*-- BitWizard writes Linux device drivers for any device you may have! --*
+Q: It doesn't work. A: Look buddy, doesn't work is an ambiguous statement. 
+Does it sit on the couch all day? Is it unemployed? Please be specific! 
+Define 'it' and what it isn't doing. --------- Adapted from lxrbot FAQ
