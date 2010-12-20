@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757920Ab0LTO0o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 09:26:44 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:33418 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757892Ab0LTO0f (ORCPT
+	id S1757883Ab0LTO2a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 09:28:30 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:60770 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753843Ab0LTO23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 09:26:35 -0500
+	Mon, 20 Dec 2010 09:28:29 -0500
+Date: Mon, 20 Dec 2010 14:28:15 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Jean Delvare <khali@linux-fr.org>,
+        Mikael =?iso-8859-1?Q?Str=F6m?= <mikael@sesamiq.com>,
+        Julien BLACHE <jb@jblache.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [lm-sensors] [PATCH 1/2 V3] applesmc: Use PnP rather than
+	hardcoding resources and devices
+Message-ID: <20101220142815.GA23998@srcf.ucam.org>
+References: <1292624661-32474-1-git-send-email-mjg@redhat.com> <20101218042320.GA14104@ericsson.com> <20101218093719.GA1493@polaris.bitmath.org> <20101218110954.7a2ca190@endymion.delvare> <20101218103139.GA1668@polaris.bitmath.org> <878vzngvyn.fsf@sonic.technologeek.org> <20101218115742.GA2063@polaris.bitmath.org> <1292852674.2118.10.camel@mike-laptop> <20101220145721.4c58ff3e@endymion.delvare> <20101220142344.GA19566@polaris.bitmath.org>
 MIME-Version: 1.0
-X-Originating-IP: [87.194.19.206]
-In-Reply-To: <20100202120457.GA19605@omega>
-References: <20100202120457.GA19605@omega>
-Date: Mon, 20 Dec 2010 14:26:33 +0000
-Message-ID: <AANLkTik052sWOtqNyVdg6g6+cvo-NE-TBdSGdmmp_7en@mail.gmail.com>
-Subject: Re: [PATCH] exit: PR_SET_ANCHOR for marking processes as reapers for
- child processes
-From: Scott James Remnant <scott@netsplit.com>
-To: Lennart Poettering <lennart@poettering.net>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101220142344.GA19566@polaris.bitmath.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 2, 2010 at 12:04 PM, Lennart Poettering
-<lennart@poettering.net> wrote:
+On Mon, Dec 20, 2010 at 03:23:44PM +0100, Henrik Rydberg wrote:
 
-> Right now, if a process dies all its children are reparented to init.
-> This logic has good uses, i.e. for double forking when daemonizing.
-> However it also allows child processes to "escape" their parents, which
-> is a problem for software like session managers (such as gnome-session)
-> or other process supervisors.
->
-> This patch adds a simple flag for each process that marks it as an
-> "anchor" process for all its children and grandchildren. If a child of
-> such an anchor dies all its children will not be reparented to init, but
-> instead to this anchor, escaping this anchor process is not possible. A
-> task with this flag set hence acts is little "sub-init".
->
-Why can't you simply begin a new pid namespace with the session
-manager or other process supervisor?  That way the session
-manager/process supervisor is for all intents and purposes an init
-daemon, so shouldn't be surprised about getting SIGCHLD.
+> The macbook overheat problems goes way back. All models have automatic
+> heat protection, but it kicks in at temperatures uncomfortable to most
+> users. The severity also depends on when the model was made. The
+> current solution is to use the macfanctld driver, which disables
+> automatic fan control, replacing it with a control loop yielding more
+> workable temperatures. A fan control solution in the kernel would
+> certainly be well received.
 
-More to the point, it means that as far as the processes themselves
-are concerned, they're being reparented to pid 1 just as they were
-before, so you wouldn't be breaking any assumptions there either.
+There is one, you just need to hook into the thermal device interface.
 
-You could use the existing init daemon to create these pid namespaces
-when it spawns the session manager.
-
-Scott
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
