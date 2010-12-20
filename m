@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757902Ab0LTPAz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 10:00:55 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45123 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757760Ab0LTPAy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 10:00:54 -0500
-Date: Mon, 20 Dec 2010 15:00:52 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Rabin Vincent <rabin@rab.in>, stern@rowland.harvard.edu,
-        linux-pm@lists.linux-foundation.org, linux-i2c@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: platform/i2c busses: pm runtime and system sleep
-Message-ID: <20101220150051.GI26706@rakim.wolfsonmicro.main>
-References: <AANLkTinyDE3OxKup_aqsN8HJH_r5LcwkP17OtuMRpACx@mail.gmail.com>
- <201012181354.58077.rjw@sisk.pl>
- <20101218132029.GA22273@opensource.wolfsonmicro.com>
- <201012181559.50347.rjw@sisk.pl>
+	id S932591Ab0LTPFr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 10:05:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1465 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757693Ab0LTPFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 10:05:46 -0500
+Date: Mon, 20 Dec 2010 15:58:15 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
+        jan.kratochvil@redhat.com
+Subject: Re: [PATCH 02/16] signal: fix CLD_CONTINUED notification target
+Message-ID: <20101220145815.GA11583@redhat.com>
+References: <1291654624-6230-1-git-send-email-tj@kernel.org> <1291654624-6230-3-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201012181559.50347.rjw@sisk.pl>
-X-Cookie: Reapply as necessary.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1291654624-6230-3-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 18, 2010 at 03:59:50PM +0100, Rafael J. Wysocki wrote:
+On 12/06, Tejun Heo wrote:
+>
+> CLD_CONTINUED notification code calls do_notify_parent_cldstop() with
+> its group_leader; however, do_notify_parent_cldstop() already uses the
+> group_leader for non-ptraced notifications.
 
-> Second, the situation at hand is that the bus type implements dev_pm_ops,
-> but the driver doesn't.  Now, pm_generic_suspend() is called with a struct
-> device pointer, so it would have to go back to dev->bus, find the
-> ->legacy_suspend() callback (as opposed to ->suspend(), which also is legacy,
-> but is called by the PM core instead).  May I call that confusing?
+Yes,
 
-Well, the trouble is that the whole situation is already pretty
-confusing for what should be very simple buses, each one needs to write
-a bunch of not really bus specific code in order to get basic behaviour
-which allows the drivers to make use of runtime PM, requiring more
-thought and care per bus than I'd expect given that they've nothing
-really to contribute.  This leads to the sort of random variations
-between buses that Rabin is reporting, and means that updates keep
-having to get done in multiple different places.
+> The duplicate
+> ->group_leader dereferencing is unnecessary and leads to incorrectly
+> notifying the group_leader's ptracer of CLD_CONTINUED from a different
+> task in the group.  Fix it.
 
-The overall effect is that from the point of view of trying to use
-runtime PM in drivers which work with these simple buses everything
-feels like it's much harder work than it should be.  Moving all the
-decision making out of the buses and into the PM core seems like a win
-here.
+I do not really agree this is wrong, group_leader was used intentionally
+for ptrace case.
+
+There is no "correct" thread who should report CLD_CONTINUED, a random
+thread wins and notifies its ->real_parent or debugger. If we always
+choose ->group_leader, we always knows what happens. With this patch
+we can't predict where does this notification go.
+
+> --- a/kernel/signal.c
+> +++ b/kernel/signal.c
+> @@ -1867,7 +1867,7 @@ relock:
+>
+>  		if (why) {
+>  			read_lock(&tasklist_lock);
+> -			do_notify_parent_cldstop(current->group_leader, why);
+> +			do_notify_parent_cldstop(current, why);
+
+OTOH, I see nothing really wrong with this change, and this all will
+be reworked by the next patches anyway.
+
+Oleg.
+
