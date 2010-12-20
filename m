@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017Ab0LTCBg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 21:01:36 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49831 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753388Ab0LTCBf (ORCPT
+	id S1754172Ab0LTCBx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 21:01:53 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:63669 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753495Ab0LTCBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 21:01:35 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 20 Dec 2010 10:55:48 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@suse.de>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [RFC 5/5] truncate: Remove unnecessary page release
-Message-Id: <20101220105548.f2050be3.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <02ab98b3a1450f7a1c31edc48ccc57e887cee900.1292604746.git.minchan.kim@gmail.com>
-References: <cover.1292604745.git.minchan.kim@gmail.com>
-	<02ab98b3a1450f7a1c31edc48ccc57e887cee900.1292604746.git.minchan.kim@gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+	Sun, 19 Dec 2010 21:01:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=duED9QETnPa5hMsHLAkwd4e7/xHMe2MIKonw0fxyrYStHcjTlP5zKL66HFUXsw1IAM
+         HSVLiUBp3+urI5t3BV/Vc5jAdArs+TPe6uh0K0rohzFh4IRsc9UBU2rSUgHgfAjtQPlO
+         /oqbP/BU6L6NC9YfYUZFbhtA1YWVYx+M6htn4=
+Subject: [PATCH RESEND] mfd: Add __devexit annotation for vx855_remove
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Harald Welte <HaraldWelte@viatech.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Content-Type: text/plain
+Date: Mon, 20 Dec 2010 10:02:06 +0800
+Message-Id: <1292810526.17628.4.camel@mola>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 18 Dec 2010 02:13:40 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Acked-by: Harald Welte <HaraldWelte@viatech.com>
+---
+hi Samuel,
+Looks like this patch is missing.
+It was posted at http://kerneltrap.org/mailarchive/linux-kernel/2010/10/25/4636759
+with Harald's ack.
 
-> This patch series changes remove_from_page_cache's page ref counting
-> rule. page cache ref count is decreased in remove_from_page_cache.
-> So we don't need call again in caller context.
-> 
-> Cc: Nick Piggin <npiggin@suse.de>
-> Cc: Al Viro <viro@zeniv.linux.org.uk>
-> Cc: linux-mm@kvack.org
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Axel
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+ drivers/mfd/vx855.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/mfd/vx855.c b/drivers/mfd/vx855.c
+index ebb0597..348052a 100644
+--- a/drivers/mfd/vx855.c
++++ b/drivers/mfd/vx855.c
+@@ -112,7 +112,7 @@ out:
+ 	return ret;
+ }
+ 
+-static void vx855_remove(struct pci_dev *pdev)
++static void __devexit vx855_remove(struct pci_dev *pdev)
+ {
+ 	mfd_remove_devices(&pdev->dev);
+ 	pci_disable_device(pdev);
+-- 
+1.7.2
+
+
 
