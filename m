@@ -1,160 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756981Ab0LTKuf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 05:50:35 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38928 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754716Ab0LTKsv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 05:48:51 -0500
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        liu.y.victor@gmail.com, B02280@freescale.com,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH 9/9] ARM i.MX51 babbage: Add framebuffer support
-Date: Mon, 20 Dec 2010 11:48:47 +0100
-Message-Id: <1292842127-21406-10-git-send-email-s.hauer@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1292842127-21406-1-git-send-email-s.hauer@pengutronix.de>
-References: <1292842127-21406-1-git-send-email-s.hauer@pengutronix.de>
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1755290Ab0LTKut (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 05:50:49 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:33738 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1755698Ab0LTKuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 05:50:44 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+sA8EySRqsL69IJvrVjLABwFuHjde58ePG2cU6U9
+	eKVgSBwjBDIXzE
+Subject: Re: [RFC -v2 PATCH 2/3] sched: add yield_to function
+From: Mike Galbraith <efault@gmx.de>
+To: Avi Kivity <avi@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Chris Wright <chrisw@sous-sol.org>
+In-Reply-To: <4D0F34C0.9000400@redhat.com>
+References: <20101213224434.7495edb2@annuminas.surriel.com>
+	 <20101213224657.7e141746@annuminas.surriel.com>
+	 <1292306896.7448.157.camel@marge.simson.net> <4D0A6D34.6070806@redhat.com>
+	 <1292569018.7772.75.camel@marge.simson.net>  <4D0B7D24.5060207@redhat.com>
+	 <1292615509.7381.81.camel@marge.simson.net>  <4D0CE937.8090601@redhat.com>
+	 <1292699204.1181.51.camel@marge.simson.net>  <4D0DA45A.9070600@redhat.com>
+	 <1292753156.16367.104.camel@marge.simson.net> <4D0DCE10.7000200@redhat.com>
+	 <1292834372.8948.27.camel@marge.simson.net> <4D0F1794.3010803@redhat.com>
+	 <1292835302.8948.35.camel@marge.simson.net> <4D0F1BD8.20601@redhat.com>
+	 <1292837440.8948.60.camel@marge.simson.net> <4D0F25E8.80305@redhat.com>
+	 <1292841193.11946.36.camel@marge.simson.net> <4D0F3266.90908@redhat.com>
+	 <1292842010.11946.39.camel@marge.simson.net>  <4D0F34C0.9000400@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 20 Dec 2010 11:50:43 +0100
+Message-ID: <1292842243.11946.40.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
----
- arch/arm/mach-mx5/Kconfig              |    1 +
- arch/arm/mach-mx5/board-mx51_babbage.c |   74 ++++++++++++++++++++++++++++++++
- 2 files changed, 75 insertions(+), 0 deletions(-)
+On Mon, 2010-12-20 at 12:49 +0200, Avi Kivity wrote:
+> On 12/20/2010 12:46 PM, Mike Galbraith wrote:
+> > >
+> > >  However, if I'm all alone on my cpu, and the other task is runnable but
+> > >  not running, behind some unrelated task, then I do need that task to be
+> > >  preempted (or to move tasks around).
+> >
+> > So in that case, a pull may be advantageous.
+> 
+> Yes.
+> 
+> > >  >  Would a kick/hint option be useful?
+> > >
+> > >  Depends on what it does...
+> >
+> > Let you decide whether you only want to drop a hint and leave it at
+> > that, or also attempt a preemption.
+> 
+> Who is "you" in this?  the scheduler?
 
-diff --git a/arch/arm/mach-mx5/Kconfig b/arch/arm/mach-mx5/Kconfig
-index 5011f42..2a936b7 100644
---- a/arch/arm/mach-mx5/Kconfig
-+++ b/arch/arm/mach-mx5/Kconfig
-@@ -22,6 +22,7 @@ config MACH_MX51_BABBAGE
- 	select IMX_HAVE_PLATFORM_IMX_UART
- 	select IMX_HAVE_PLATFORM_SDHCI_ESDHC_IMX
- 	select IMX_HAVE_PLATFORM_SPI_IMX
-+	select IMX_HAVE_PLATFORM_IMX_IPUV3
- 	help
- 	  Include support for MX51 Babbage platform, also known as MX51EVK in
- 	  u-boot. This includes specific configurations for the board and its
-diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
-index 368a315..6c1576c 100644
---- a/arch/arm/mach-mx5/board-mx51_babbage.c
-+++ b/arch/arm/mach-mx5/board-mx51_babbage.c
-@@ -22,11 +22,13 @@
- #include <linux/input.h>
- #include <linux/spi/flash.h>
- #include <linux/spi/spi.h>
-+#include <linux/mfd/imx-ipu-v3.h>
- 
- #include <mach/common.h>
- #include <mach/hardware.h>
- #include <mach/iomux-mx51.h>
- #include <mach/mxc_ehci.h>
-+#include <mach/ipu-v3.h>
- 
- #include <asm/irq.h>
- #include <asm/setup.h>
-@@ -158,6 +160,41 @@ static iomux_v3_cfg_t mx51babbage_pads[] = {
- 	MX51_PAD_CSPI1_SCLK__ECSPI1_SCLK,
- 	MX51_PAD_CSPI1_SS0__GPIO_4_24,
- 	MX51_PAD_CSPI1_SS1__GPIO_4_25,
-+
-+	/* Display */
-+	MX51_PAD_DISPB2_SER_DIN__GPIO_3_5,
-+	MX51_PAD_DISPB2_SER_DIO__GPIO_3_6,
-+	MX51_PAD_NANDF_D12__GPIO_3_28,
-+
-+	MX51_PAD_DISP1_DAT0__DISP1_DAT0,
-+	MX51_PAD_DISP1_DAT1__DISP1_DAT1,
-+	MX51_PAD_DISP1_DAT2__DISP1_DAT2,
-+	MX51_PAD_DISP1_DAT3__DISP1_DAT3,
-+	MX51_PAD_DISP1_DAT4__DISP1_DAT4,
-+	MX51_PAD_DISP1_DAT5__DISP1_DAT5,
-+	MX51_PAD_DISP1_DAT6__DISP1_DAT6,
-+	MX51_PAD_DISP1_DAT7__DISP1_DAT7,
-+	MX51_PAD_DISP1_DAT8__DISP1_DAT8,
-+	MX51_PAD_DISP1_DAT9__DISP1_DAT9,
-+	MX51_PAD_DISP1_DAT10__DISP1_DAT10,
-+	MX51_PAD_DISP1_DAT11__DISP1_DAT11,
-+	MX51_PAD_DISP1_DAT12__DISP1_DAT12,
-+	MX51_PAD_DISP1_DAT13__DISP1_DAT13,
-+	MX51_PAD_DISP1_DAT14__DISP1_DAT14,
-+	MX51_PAD_DISP1_DAT15__DISP1_DAT15,
-+	MX51_PAD_DISP1_DAT16__DISP1_DAT16,
-+	MX51_PAD_DISP1_DAT17__DISP1_DAT17,
-+	MX51_PAD_DISP1_DAT18__DISP1_DAT18,
-+	MX51_PAD_DISP1_DAT19__DISP1_DAT19,
-+	MX51_PAD_DISP1_DAT20__DISP1_DAT20,
-+	MX51_PAD_DISP1_DAT21__DISP1_DAT21,
-+	MX51_PAD_DISP1_DAT22__DISP1_DAT22,
-+	MX51_PAD_DISP1_DAT23__DISP1_DAT23,
-+#define MX51_PAD_DI_GP4__IPU_DI2_PIN15                 IOMUX_PAD(0x758, 0x350, 4, 0x0,   0, NO_PAD_CTRL)
-+	MX51_PAD_DI_GP4__IPU_DI2_PIN15,
-+
-+	/* I2C DVI enable */
-+	MX51_PAD_CSI2_HSYNC__GPIO_4_14,
- };
- 
- /* Serial ports */
-@@ -346,6 +383,23 @@ static const struct spi_imx_master mx51_babbage_spi_pdata __initconst = {
- 	.num_chipselect = ARRAY_SIZE(mx51_babbage_spi_cs),
- };
- 
-+static struct ipuv3_fb_platform_data babbage_fb0_data = {
-+	.interface_pix_fmt = IPU_PIX_FMT_RGB24,
-+	.flags = IMX_IPU_FB_USE_MODEDB | IMX_IPU_FB_USE_OVERLAY,
-+	.display = 0,
-+};
-+
-+static struct ipuv3_fb_platform_data babbage_fb1_data = {
-+	.interface_pix_fmt = IPU_PIX_FMT_RGB565,
-+	.flags = IMX_IPU_FB_USE_MODEDB,
-+	.display = 1,
-+};
-+
-+static struct imx_ipuv3_platform_data ipu_data = {
-+	.fb_head0_platform_data = &babbage_fb0_data,
-+	.fb_head1_platform_data = &babbage_fb1_data,
-+};
-+
- /*
-  * Board specific initialization.
-  */
-@@ -392,6 +446,26 @@ static void __init mxc_board_init(void)
- 		ARRAY_SIZE(mx51_babbage_spi_board_info));
- 	imx51_add_ecspi(0, &mx51_babbage_spi_pdata);
- 	imx51_add_imx2_wdt(0, NULL);
-+
-+#define GPIO_DVI_DETECT	(2 * 32 + 28)
-+#define GPIO_DVI_RESET	(2 * 32 + 5)
-+#define GPIO_DVI_PWRDN	(2 * 32 + 6)
-+#define GPIO_DVI_I2C	(3 * 32 + 14)
-+
-+	/* DVI Detect */
-+	gpio_request(GPIO_DVI_DETECT, "dvi detect");
-+	gpio_direction_input(GPIO_DVI_DETECT);
-+	/* DVI Reset - Assert for i2c disabled mode */
-+	gpio_request(GPIO_DVI_RESET, "dvi reset");
-+	gpio_direction_output(GPIO_DVI_RESET, 0);
-+	/* DVI Power-down */
-+	gpio_request(GPIO_DVI_PWRDN, "dvi pwdn");
-+	gpio_direction_output(GPIO_DVI_PWRDN, 1);
-+
-+	gpio_request(GPIO_DVI_I2C, "dvi i2c");
-+	gpio_direction_output(GPIO_DVI_I2C, 0);
-+
-+	imx51_add_ipuv3(&ipu_data);
- }
- 
- static void __init mx51_babbage_timer_init(void)
--- 
-1.7.2.3
+The caller.
+
+> I'm fine with hints so long as they are usually acted upon (if it isn't, 
+> I'll go back to the guest, spin a bit more, and retry).
+
+
 
