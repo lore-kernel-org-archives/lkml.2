@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932691Ab0LTTOI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 14:14:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52472 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932243Ab0LTTOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 14:14:06 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Rogier Wolff <R.E.Wolff@BitWizard.nl>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Slow disks.
-References: <20101220141553.GA6088@bitwizard.nl>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 20 Dec 2010 14:09:01 -0500
-In-Reply-To: <20101220141553.GA6088@bitwizard.nl> (Rogier Wolff's message of
-	"Mon, 20 Dec 2010 15:15:53 +0100")
-Message-ID: <x49bp4gw9bm.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S932800Ab0LTTPO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 14:15:14 -0500
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:12457 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932601Ab0LTTPM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 14:15:12 -0500
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [Bug #24392] AGP aperture disabled, worked in 2.6.35
+Date: Mon, 20 Dec 2010 12:14:56 -0700
+User-Agent: KMail/1.13.2 (Linux/2.6.32-26-generic; KDE/4.4.2; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>, "Stephen Kitt" <steve@sk2.org>,
+        bugzilla-daemon@bugzilla.kernel.org,
+        Kulikov Vasiliy <segooon@gmail.com>
+References: <ZRNlsjykcOD.A.b-F.20fDNB@chimera> <xqq2Z3iR9HJ.A.cHG.-0fDNB@chimera>
+In-Reply-To: <xqq2Z3iR9HJ.A.cHG.-0fDNB@chimera>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201012201214.57068.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rogier Wolff <R.E.Wolff@BitWizard.nl> writes:
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=24392
+> First-Bad-Commit: http://git.kernel.org/linus/96576a9e1a0cdb8a43d3af5846be0948f52b4460
 
-> Hi,
->
-> A friend of mine has a server in a datacenter somewhere. His machine
-> is not working properly: most of his disks take 10-100 times longer
-> to process each IO request than normal. 
->
-> iostat -kx 10 output: 
-> Device: rrqm/s wrqm/s r/s  w/s  rkB/s wkB/s avgrq-sz avgqu-sz await svctm %util
-> sdd     0.30   0.00   0.40 1.20 2.80  1.10  4.88     0.43  271.50 271.44  43.43
+>From broken dmesg (https://bugzilla.kernel.org/attachment.cgi?id=39092):
 
-You are doing ~4KB I/Os and driving a queue depth of <1.  If you are
-seeking all over the disk and mixing reads and writes, you may very well
-trigger bad behaviour like this for SATA disks.
+  pci 0000:00:00.0: reg 10: [mem 0xf0000000-0xf7ffffff pref]
+  pci 0000:00:1f.1: reg 24: [mem 0x00000000-0x000003ff]
+  pci 0000:00:1e.0: PCI bridge to [bus 02-02] (subtractive decode)
+  pci 0000:00:1e.0:   bridge window [mem 0xef000000-0xfbffffff]
+  pci 0000:00:00.0: address space collision: [mem 0xf0000000-0xf7ffffff pref] conflicts with PCI Bus 0000:02 [mem 0xef000000-0xfbffffff]
+  pci 0000:00:1f.1: BAR 5: assigned [mem 0xc0000000-0xc00003ff]
+  agpgart-intel 0000:00:00.0: device not available (can't reserve [mem 0x00000000-0x07ffffff pref])
 
-To further diagnose the issue, I'd recommend running blktrace on one of
-the devices.  If you report results here, could you also include more
-information about the hardware, the storage layout (including any dm/md
-drivers and file systems involved) and the workload?  Also, please let
-us know which I/O scheduler you're using.
+The conflict between the AGP 00:00.0 BAR 0 and the 00:1e.0 bridge window
+looks real, so reassigning the AGP BAR looks like the right thing to do.
+We assign 00:1f.1 BAR 5 in the pcibios_assign_resources() path, and
+I think we would assign the AGP BAR there, too, except that the class
+code of 00:00.0 is probably 0x000600 (PCI_CLASS_BRIDGE_HOST), and we
+explicitly ignore host bridges in __dev_sort_resources(), so it's up
+to the driver to catch this and assign it explicitly before calling
+pci_enable_device().
 
-> These syptoms started when the system was running 2.6.33, but are
-> still present now the system has been upgraded to 2.6.36.
+That's kind of ugly because it's an exception to the normal "call
+pci_enable_device() first" rule, and it leads to bogus "conflicts"
+like this:
 
-Are you sure it was a kernel change that caused the issue?  In other
-words, can you run with the 2.6.32 and confirm that the issue is not
-present?
+  pnp 00:0d: disabling [mem 0x00000000-0x0009ffff] because it overlaps 0000:00:00.0 BAR 0 [mem 0x00000000-0x07ffffff pref]
 
-Thanks,
-Jeff
+but I think we're stuck with it for now, and the simplest solution
+is to just revert 96576a9e1a.
+
+Here's the old commit that made us ignore host bridge BARs:
+  http://git.kernel.org/?p=linux/kernel/git/torvalds/old-2.6-bkcvs.git;a=commitdiff;h=1d6f81a248eb2febbe24892fa4d54db382a1286c
+
+  2004/12/17 13:44:31-08:00 macro
+  [PATCH] PCI: Don't touch BARs of host bridges
+
+   BARs of host bridges often have special meaning and AFAIK are best left
+  to be setup by the firmware or system-specific startup code and kept
+  intact by the generic resource handler.  For example a couple of host
+  bridges used for MIPS processors interpret BARs as target-mode decoders
+  for accessing host memory by PCI masters (which is quite reasonable).
+  For them it's desirable to keep their decoded address range overlapping
+  with the host RAM for simplicity if nothing else (I can imagine running
+  out of address space with lots of memory and 32-bit PCI with no DAC
+  support in the participating devices).
+
+   This is already the case with the i386 and ppc platform-specific PCI
+  resource allocators.  Please consider the following change for the generic
+  allocator.  Currently we have a pile of hacks implemented for host bridges
+  to be left untouched and I'd be pleased to remove them.
+
+  From: "Maciej W. Rozycki" <macro@mips.com>
+  Signed-off-by: Greg Kroah-Hartman <greg@kroah.com>
