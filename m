@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871Ab0LTEZR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 23:25:17 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:58629 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752754Ab0LTEZO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752741Ab0LTEZO (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 19 Dec 2010 23:25:14 -0500
-Date: Mon, 20 Dec 2010 13:23:44 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sundar Iyer <sundar.iyer@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: linux-next: manual merge of the mfd tree with the ux500-core tree
-Message-ID: <20101220042344.GB10050@linux-sh.org>
-References: <20101220152148.6fedee0d.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101220152148.6fedee0d.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+Received: from chilli.pcug.org.au ([203.10.76.44]:38677 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752191Ab0LTEZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 23:25:12 -0500
+Date: Mon, 20 Dec 2010 15:25:05 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andres Salomon <dilinger@queued.net>
+Subject: linux-next: build warnings after merge of the mfd tree
+Message-Id: <20101220152505.f9974119.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__20_Dec_2010_15_25_05_+1100_1A=P3EGgKMAUpEcx"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 20, 2010 at 03:21:48PM +1100, Stephen Rothwell wrote:
-> The genirq core is being converted to pass struct irq_data to irq_chip
-> operations rather than an IRQ number. Update the tc35892 driver to the
-> new APIs.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Acked-by: Rabin Vincent <rabin.vincent@stericsson.com>
-> Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+--Signature=_Mon__20_Dec_2010_15_25_05_+1100_1A=P3EGgKMAUpEcx
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sorry to hijack the thread..
+Hi Samuel,
 
-> diff --git a/drivers/mfd/tc3589x.c b/drivers/mfd/tc3589x.c
-> index 32291fe..dde2d858 100644
-> --- a/drivers/mfd/tc3589x.c
-> +++ b/drivers/mfd/tc3589x.c
-> @@ -170,15 +170,15 @@ again:
->  	return IRQ_HANDLED;
->  }
->  
-> -static void tc3589x_irq_dummy(unsigned int irq)
-> +static void tc3589x_irq_dummy(struct irq_data *data)
->  {
->  	/* No mask/unmask at this level */
->  }
->  
->  static struct irq_chip tc3589x_irq_chip = {
-> -	.name	= "tc3589x",
-> -	.mask	= tc3589x_irq_dummy,
-> -	.unmask	= tc3589x_irq_dummy,
-> +	.name		= "tc3589x",
-> +	.irq_mask	= tc3589x_irq_dummy,
-> +	.irq_unmask	= tc3589x_irq_dummy,
->  };
->  
->  static int tc3589x_irq_init(struct tc3589x *tc3589x)
+After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
+produced these warnings:
 
-Is there some reason you don't just kill this off and use dummy_irq_chip?
+drivers/gpio/cs5535-gpio.c: In function 'cs5535_gpio_probe':
+drivers/gpio/cs5535-gpio.c:269: warning: format '%x' expects type 'unsigned=
+ int', but argument 3 has type 'resource_size_t'
+drivers/gpio/cs5535-gpio.c:269: warning: format '%x' expects type 'unsigned=
+ int', but argument 4 has type 'resource_size_t'
+drivers/misc/cs5535-mfgpt.c: In function 'cs5535_mfgpt_probe':
+drivers/misc/cs5535-mfgpt.c:320: warning: format '%x' expects type 'unsigne=
+d int', but argument 3 has type 'resource_size_t'
+drivers/misc/cs5535-mfgpt.c:320: warning: format '%x' expects type 'unsigne=
+d int', but argument 4 has type 'resource_size_t'
+
+Introduced by commits d8fefd6ff3a8444ab34f6eb6c7c1961f0ca0008a ("gpio:
+Convert cs5535 from pci device to platform device") and
+6a85d28cfca9663c0db297a04ca43777dc5bcaa6 ("misc: Convert cs5535-mfgpt
+from pci device to platform device").  We have %pR for printing
+resources ...
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__20_Dec_2010_15_25_05_+1100_1A=P3EGgKMAUpEcx
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNDtqhAAoJEDMEi1NhKgbsKNUIAIrz5rhdLxrGzaE+t6gL4rWE
+nxhB/GzWBG8QDEyld7fzwzwkCg5jchqhCl92uFRkJm7zkAbKrRA0tBoySfbbj3YY
+F1PeuHmtBjdf3qpwtTk8aaA8Nuc28cK4WoS/bJSrlw1rt3YHkdAQR4+NC6Pq8U4+
+fxhcjQ7oew9oBH/go4aEtO43DRV63zJ/zLAXaUFPisrh7onPU/VnbE/tbNA6QLM9
+QEgIUF2CaciaOS4+4i90X5MVTW0ZNCeSK56omUPWR/PuvJV9OrcA9h+TIpitZyMb
+CW6ZgGR3fEtv1bbx4ixfmtwsng0PqAFGore8Citm10/QNESHkpmVwtTYCW497Ak=
+=WJoV
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__20_Dec_2010_15_25_05_+1100_1A=P3EGgKMAUpEcx--
