@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932968Ab0LTRYk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 12:24:40 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59861 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932421Ab0LTRYh (ORCPT
+	id S932995Ab0LTRZH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 12:25:07 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:40846 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932421Ab0LTRZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 12:24:37 -0500
+	Mon, 20 Dec 2010 12:25:05 -0500
+Message-ID: <4D0F914F.2050908@oracle.com>
+Date: Mon, 20 Dec 2010 09:24:31 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-In-Reply-To: <20101220072632.GA28020@liondog.tnic>
-References: <AANLkTim3OpjPysjdCLDuFgFOipmcxyr2ay5cvUAu5PHi@mail.gmail.com>
- <AANLkTinpYJddhgbf7=Pw_TtGrnWaC8fwo2xv1XRsT1w7@mail.gmail.com>
- <AANLkTimA4x8oWyq71nOxB=Otp3Y0i3Kcu27DG0ajaXUG@mail.gmail.com>
- <AANLkTinCG+E6ZzpeRqsJP+-qvNDQXW4VZFgJ1c-sTryL@mail.gmail.com>
- <4D0BEE1F.7020008@zytor.com> <AANLkTinwFt+KDKNEYP9MWQ7wGb9qk=E2Xa3RJB3+MJnN@mail.gmail.com>
- <AANLkTinoV_pL=Ygqq4qt4f8c+wsdc9r9K7rcJ58aHjD1@mail.gmail.com>
- <AANLkTikhtWjFBQmA111Q+2JGRudrRNAmegGThMagr4vF@mail.gmail.com>
- <20101219091752.GA16150@liondog.tnic> <AANLkTi=9UZ5BYWo5xT=jh0upRP6PraH4S=t=tL49YRdr@mail.gmail.com>
- <20101220072632.GA28020@liondog.tnic>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 20 Dec 2010 09:18:25 -0800
-Message-ID: <AANLkTikhbxs-FU2qjpup17QDd67R78puMNvP4GNRwiKX@mail.gmail.com>
-Subject: Re: [concept & "good taste" review] persistent store
-To: Borislav Petkov <bp@alien8.de>, Tony Luck <tony.luck@intel.com>,
-        Tony Luck <tony.luck@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        greg@kroah.com, akpm@linux-foundation.org, ying.huang@intel.com,
-        David Miller <davem@davemloft.net>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: =?UTF-8?B?UGV0ZXIgSMO8d2U=?= <PeterHuewe@gmx.de>
+CC: sedat.dilek@gmail.com, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, John Linville <linville@tuxdriver.com>
+Subject: Re: [PATCH] platform/x86: Fix recursive Kconfig dependency
+References: <1291850970-7190-1-git-send-email-peterhuewe@gmx.de> <201012192000.14969.PeterHuewe@gmx.de> <AANLkTi=gqimS5n6J6GXcZA_W1JHZ8yHJHAKqP=dDmN0Z@mail.gmail.com> <201012201809.41269.PeterHuewe@gmx.de>
+In-Reply-To: <201012201809.41269.PeterHuewe@gmx.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 19, 2010 at 11:26 PM, Borislav Petkov <bp@alien8.de> wrote:
->
-> IOW, the simple (maybe too simple) algo of the pstore could be something
-> like:
+On 12/20/10 09:09, Peter Hüwe wrote:
+> Am Montag 20 Dezember 2010, 15:46:02 schrieb Sedat Dilek:
+>>> Added Stephen Rothwell on CC, maybe he can apply it directly to
+>>> linux-next ;)
+>>>
+>>> Peter
+>>
+>> I do not think this will happen for a "as-warning-classified" patch.
+> 
+> On arm and avr32 it is not only a warning but an error instead!
+> 
+> -> so the patch fixes an error / build failure which imho is quite an 
+> important issue.
+> 
+> You can see the errors in Ellerman's build farm.
+> 
+> http://kisskb.ellerman.id.au/kisskb/buildresult/3652816/
+> http://kisskb.ellerman.id.au/kisskb/buildresult/3664077/
+> http://kisskb.ellerman.id.au/kisskb/buildresult/3652972/
+> http://kisskb.ellerman.id.au/kisskb/buildresult/3664113/
+> 
+> As it is an error for arm and avr32 maybe it should go through their trees 
+> instead?
 
-Simple?
 
-> 1. Got a relevant message from kernel, log it.
->
-> 2. Am I still alive?
+It's a kconfig "error" on x86 also, but it does not stop the .config file
+from being generated.  It needs to be fixed, but it's not deadly.
 
-Umm. The "am I still alive" question is traditionally called "the
-stopping problem", and is considered to be the traditional example of
-_least_ simple problem there is. As in "fundamentally unsolvable".
 
-Did we kill X? Did we happen to hold some critical lock when oopsing?
-Was it syslogd itself that died and caused nothing further to be
-saved, even if the machine otherwise seems to be fine? Or did the
-filesystem go into read-only mode due to the problem and the rest of
-the system is fine, but the disk is never going to see the messages?
-
-In other words, the problem really is that "am I still alive" thing.
-That's a seriously impossible question to answer.
-
-What _can_ be answered is "did somebody write out the oops, then
-fsync, and then notify us about it?" But without explicit notification
-of "yeah, it really is saved off somewhere else", we really can't
-tell.
-
-We could do heuristics, of course, and they might even work in
-practice (like "flush after half an hour if there has been actual work
-done and the machine is clearly making progress").
-
-                          Linus
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
+desserts:  http://www.xenotime.net/linux/recipes/
