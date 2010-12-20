@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab0LTCIE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Dec 2010 21:08:04 -0500
-Received: from palinux.external.hp.com ([192.25.206.14]:36450 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753388Ab0LTCIB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 21:08:01 -0500
-Date: Sun, 19 Dec 2010 19:07:59 -0700
-From: Matthew Wilcox <matthew@wil.cx>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jeff Garzik <jeff@garzik.org>, Christoph Hellwig <hch@lst.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Mike Christie <michaelc@cs.wisc.edu>
-Subject: Re: [PATCH 01/12] libiscsi: Convert to host_lock less w/
-	interrupts disabled internally
-Message-ID: <20101220020758.GK1263@parisc-linux.org>
-References: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org> <1292793727-31957-2-git-send-email-nab@linux-iscsi.org> <20101219233835.GJ1263@parisc-linux.org> <1292807703.20840.29.camel@haakon2.linux-iscsi.org> <1292808126.20840.33.camel@haakon2.linux-iscsi.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292808126.20840.33.camel@haakon2.linux-iscsi.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754326Ab0LTCIY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Dec 2010 21:08:24 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:36203 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753495Ab0LTCIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Dec 2010 21:08:21 -0500
+Date: Mon, 20 Dec 2010 13:08:12 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>
+Subject: linux-next: manual merge of the pci tree with Linus' tree
+Message-Id: <20101220130812.1710c405.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__20_Dec_2010_13_08_12_+1100_sev16BIE0Jg1xjH+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 19, 2010 at 05:22:06PM -0800, Nicholas A. Bellinger wrote:
-> Actually sorry, Mike Christie did already make a clarification on this
-> subject here:
-> 
-> http://marc.info/?l=linux-scsi&m=129010439421506&w=2
-> 
-> I had originally thought the same that session->lock should be using
-> some flavour of spin_lock_irq*() as well, but apparently this is not the
-> case for libiscsi.
+--Signature=_Mon__20_Dec_2010_13_08_12_+1100_sev16BIE0Jg1xjH+
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Right, so it seems.  "the session lock is just locked in softirqs/timers"
-means that it does need to be the _bh() version of spin_lock though.
+Hi Jesse,
 
-I'm actually not sure ... is it safe to use the _bh versions in BH
-context?  I think it is because the preempt count is nested, unlike the
-_irq variants of spinlocks.
+Today's linux-next merge of the pci tree got a conflicts in
+arch/x86/kernel/resource.c arch/x86/pci/i386.c kernel/resource.c between
+various commits from Linus' tree and similar commits from the pci tree.
 
--- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+I just used the versions from Linus' tree and assume that the pci tree
+needs to be resynced.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__20_Dec_2010_13_08_12_+1100_sev16BIE0Jg1xjH+
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNDrqMAAoJEDMEi1NhKgbsQ54H/01V4Gfl+NO1nbThVEhGAS8x
+x+RlMhkkKapXuTku4WMDWeS/WfjNiCbOPofi4mw2kbEmBMt74DH0DQR9GRzagbwy
+Y+EQiDN2XU833d52FfUC8u691kzeJF+cyZ5OLymP39MEzeFqEvSHR+Rog29dyfW0
+TyiEDB/Nn5//9dUisvt6vcgsukTL54Jp8TWj48zKFvwjPAur4s/lH56kDLLckGMe
+1TuP/+Exz57lqDPEJJ1KskuexaDKz6V8X61mIgvaaY1TOmxNqP2a0BtX78HWTjFa
+DtNswevdSteglDhtyzZKnNCw1DO74+HNWCvq5XZ54sij32l/DUdwgPO9/Kn3nNo=
+=UaYs
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__20_Dec_2010_13_08_12_+1100_sev16BIE0Jg1xjH+--
