@@ -1,82 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183Ab0LTIRs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 03:17:48 -0500
-Received: from leo.clearchain.com ([199.73.29.74]:22465 "EHLO
-	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753913Ab0LTIRr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 03:17:47 -0500
-Date: Mon, 20 Dec 2010 18:17:34 +1000
-From: Peter Hutterer <peter.hutterer@who-t.net>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Chase Douglas <chase.douglas@canonical.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] input: mt: Interface and MT_TOOL documentation updates
-Message-ID: <20101220081734.GB17764@barra.redhat.com>
-References: <1292001842-5000-1-git-send-email-rydberg@euromail.se>
- <4D065BDE.5020107@canonical.com>
- <4D068E3C.8080100@euromail.se>
- <4D06A60D.7010409@canonical.com>
- <4D06AB66.8090909@euromail.se>
- <20101214043635.GB12059@salty.local>
- <4D073472.10104@euromail.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D073472.10104@euromail.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender is SPF-compliant, not delayed by milter-greylist-4.0.1 (mail.clearchain.com [127.0.0.1]); Mon, 20 Dec 2010 18:47:39 +1030 (CST)
+	id S1754228Ab0LTIVc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 03:21:32 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:52724 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753913Ab0LTIVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 03:21:30 -0500
+Date: Mon, 20 Dec 2010 19:21:21 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: linux-next: build failure after merge of the final tree (mfd tree
+ related)
+Message-Id: <20101220192121.47767525.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__20_Dec_2010_19_21_21_+1100_kx=k5I_TgZRlC8e0"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[sorry, got stuck in my outbox for some reason]
+--Signature=_Mon__20_Dec_2010_19_21_21_+1100_kx=k5I_TgZRlC8e0
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Dec 14, 2010 at 10:10:10AM +0100, Henrik Rydberg wrote:
-> On 12/14/2010 05:36 AM, Peter Hutterer wrote:
-> 
-> > On Tue, Dec 14, 2010 at 12:25:26AM +0100, Henrik Rydberg wrote:
-> >>>> The envelope contacts serve as a way to detect a small area of fingers or a
-> >>
-> >>>> large area of fingers. There is nothing inherently problematic with having one
-> >>>> or three or more such contacts.
-> >>>
-> >>> Then I'm more confused :).
-> >>>
-> >>> I see one problem: devices that report two touch points, (X1, Y1) and
-> >>> (X2, Y2), but in reality the touches could be at (X1, Y2) and (X2, Y1)
-> >>> instead. Using a rectangle helps resolve this issue for panning and
-> >>> pinching, though not for rotation.
-> >>
-> >>
-> >> If panning and pinching and rotation could all be recovered properly, then the
-> >> individual contacts could actually have been reconstructed properly in the first
-> >> place. This is the whole point - there is not enough information available for
-> >> rotation to be recovered properly.
-> > 
-> > can you post an example event stream of the MT_ENVELOPE tool? I'm having
-> > trouble wrapping my head around it.
-> 
-> 
-> Here is an example for you: You sit in a car. You turn your steering wheel left
-> or right to follow the road. Now, imagine that 40% of the time, when you turn
-> left, the car actually turns right. This is the behavior you get from the raw
-> data. Now, instead soak your gloves in soap. At least now you know that your car
-> will go straight 100% of the time. The MT_ENVELOPE tool is the soapy glove.
-> That's all there is to it.
-> 
-> The synaptics driver patch sent recently contains an example event stream
-> generator, in case you want to dwell on more details.
-> 
-> Personally, I am done bending myself backwards to support "old" or "semi-mt"
-> hardware I never use myself. If somebody cares deeply enough, send a patch. Or
-> forever hold your peace.
+Hi all,
 
-thanks, I understood the concept but I was trying to get the actual event
-stream out of this patch set. I missed the synaptics one, makes sense now.
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
+drivers/mfd/built-in.o: In function `__crc_pwm_free':
+(*ABS*+0x24ba6d1e): multiple definition of `__crc_pwm_free'
+drivers/mfd/built-in.o: In function `.pwm_free':
+(.text+0x1a2bc): multiple definition of `.pwm_free'
+drivers/misc/built-in.o:(.text+0x32e40): first defined here
+drivers/mfd/built-in.o: In function `__crc_pwm_request':
+(*ABS*+0xc1f4ec93): multiple definition of `__crc_pwm_request'
+drivers/mfd/built-in.o: In function `__crc_pwm_enable':
+(*ABS*+0x9d09808d): multiple definition of `__crc_pwm_enable'
+drivers/mfd/built-in.o: In function `.pwm_enable':
+(.text+0x1a348): multiple definition of `.pwm_enable'
+drivers/misc/built-in.o:(.text+0x32eac): first defined here
+drivers/mfd/built-in.o: In function `.pwm_request':
+(.text+0x19ff4): multiple definition of `.pwm_request'
+drivers/misc/built-in.o:(.text+0x32c80): first defined here
+drivers/mfd/built-in.o: In function `pwm_config':
+(.opd+0x1e48): multiple definition of `pwm_config'
+drivers/misc/built-in.o:(.opd+0x4158): first defined here
+drivers/mfd/built-in.o: In function `pwm_free':
+(.opd+0x1e90): multiple definition of `pwm_free'
+drivers/misc/built-in.o:(.opd+0x4128): first defined here
+drivers/mfd/built-in.o: In function `pwm_request':
+(.opd+0x1e60): multiple definition of `pwm_request'
+drivers/misc/built-in.o:(.opd+0x40b0): first defined here
+drivers/mfd/built-in.o: In function `__crc_pwm_disable':
+(*ABS*+0xb0493b18): multiple definition of `__crc_pwm_disable'
+drivers/mfd/built-in.o: In function `.pwm_disable':
+(.text+0x1a1a4): multiple definition of `.pwm_disable'
+drivers/misc/built-in.o:(.text+0x32d70): first defined here
+drivers/mfd/built-in.o: In function `pwm_enable':
+(.opd+0x1ea8): multiple definition of `pwm_enable'
+drivers/misc/built-in.o:(.opd+0x4140): first defined here
+drivers/mfd/built-in.o: In function `.pwm_config':
+(.text+0x19ec8): multiple definition of `.pwm_config'
+drivers/misc/built-in.o:(.text+0x32f8c): first defined here
+drivers/mfd/built-in.o: In function `pwm_disable':
+(.opd+0x1e78): multiple definition of `pwm_disable'
+drivers/misc/built-in.o:(.opd+0x4110): first defined here
+drivers/mfd/built-in.o: In function `__crc_pwm_config':
+(*ABS*+0xc23f5b9): multiple definition of `__crc_pwm_config'
+
+Probably caused by commit 665ba7cafa19e2e2596ace30edc75ebec882e82d ("mfd:
+Remove ARCH_U8500 dependency from AB8500") which allowed this driver to
+be built in on PowerPC ...
+
+Some of the above symbols are global in more than one place in our code ...
+
+I have reverted that commit for today.
+--=20
 Cheers,
-  Peter
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__20_Dec_2010_19_21_21_+1100_kx=k5I_TgZRlC8e0
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNDxIBAAoJEDMEi1NhKgbsvKIH/1vf1Ce9tehJLFeJ0xTdq5H7
+vIY8phkO485Ju7s+t8imcV2Z+49OPxC0xcAoIo+9ixqvP19pOEQvagfKkuyLofKc
+FFGGsLLg6IyMNfdpZue/yRye7V57SR5Yxnt2ymLIwR2F4u8MGrRhiNOgXxDiq5Pn
+YdyLyLyVdbdnkeHuQGXcPSX5SwW6XeJ5kXZVBBupxAqqG/TDpShEpx3podU7uhJw
+y9XQ0nJc9kaFfGdFh84xjhkzR/CVpxsWt//cJ8ytYZGIk5NaOyMEerx+cNyOYllX
+lbkm4ul2UZaM/43zhhYJpasIygV2/m7tqHuA3O0t6Wbdu5wMYKsRs0Qb4unr9s0=
+=WH1c
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__20_Dec_2010_19_21_21_+1100_kx=k5I_TgZRlC8e0--
