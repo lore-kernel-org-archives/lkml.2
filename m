@@ -1,177 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977Ab0LTJaG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 04:30:06 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:56744 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754810Ab0LTJaD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 04:30:03 -0500
-Subject: Re: [PATCH 07/12] qla2xxx: Convert to host_lock less w/ interrupts
-	disabled externally
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jeff Garzik <jeff@garzik.org>, Christoph Hellwig <hch@lst.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        Mike Anderson <andmike@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Ravi Anand <ravi.anand@qlogic.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        Joe Eykholt <jeykholt@cisco.com>, James Smart <james.smart@emulex.com>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        adam radford <aradford@gmail.com>,
-        Kashyap Desai <Kashyap.Desai@lsi.com>,
-        MPTFusionLinux <DL-MPTFusionLinux@lsi.com>
-In-Reply-To: <20101219231114.GI1263@parisc-linux.org>
-References: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org>
-	 <1292793727-31957-8-git-send-email-nab@linux-iscsi.org>
-	 <20101219231114.GI1263@parisc-linux.org>
-Content-Type: text/plain
-Date: Mon, 20 Dec 2010 01:23:53 -0800
-Message-Id: <1292837033.20840.39.camel@haakon2.linux-iscsi.org>
+	id S1755069Ab0LTJdV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 04:33:21 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:52400 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1754947Ab0LTJdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 04:33:19 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+9BZVja129RQrfRzcdvghhJkMIswS3NGt4XCacn8
+	OlQBb4TOr4Drc8
+Subject: Re: [RFC -v2 PATCH 2/3] sched: add yield_to function
+From: Mike Galbraith <efault@gmx.de>
+To: Avi Kivity <avi@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Chris Wright <chrisw@sous-sol.org>
+In-Reply-To: <4D0F1BD8.20601@redhat.com>
+References: <20101213224434.7495edb2@annuminas.surriel.com>
+	 <20101213224657.7e141746@annuminas.surriel.com>
+	 <1292306896.7448.157.camel@marge.simson.net> <4D0A6D34.6070806@redhat.com>
+	 <1292569018.7772.75.camel@marge.simson.net>  <4D0B7D24.5060207@redhat.com>
+	 <1292615509.7381.81.camel@marge.simson.net>  <4D0CE937.8090601@redhat.com>
+	 <1292699204.1181.51.camel@marge.simson.net>  <4D0DA45A.9070600@redhat.com>
+	 <1292753156.16367.104.camel@marge.simson.net> <4D0DCE10.7000200@redhat.com>
+	 <1292834372.8948.27.camel@marge.simson.net> <4D0F1794.3010803@redhat.com>
+	 <1292835302.8948.35.camel@marge.simson.net>  <4D0F1BD8.20601@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 20 Dec 2010 10:30:40 +0100
+Message-ID: <1292837440.8948.60.camel@marge.simson.net>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-12-19 at 16:11 -0700, Matthew Wilcox wrote:
-> On Sun, Dec 19, 2010 at 01:22:02PM -0800, Nicholas A. Bellinger wrote:
-> > This patch converts qla2xxx to run in host_lock less mode with the new
-> > IRQ_DISABLE_SCSI_QCMD() that disables interrupts while calling ->queuecommand()
-> > dispatch.  It also drops the legacy host_lock unlock optimization.
+On Mon, 2010-12-20 at 11:03 +0200, Avi Kivity wrote:
+> On 12/20/2010 10:55 AM, Mike Galbraith wrote:
+> > >  >  >
+> > >  >  >   I don't want it to run now.  I want it to run before some other task.  I
+> > >  >  >   don't care if N other tasks run before both.  So no godlike powers
+> > >  >  >   needed, simply a courteous "after you".
+> > >  >
+> > >  >  Ponders that...
+> > >  >
+> > >  >  What if: we test that both tasks are in the same thread group, if so,
+> > >
+> > >  In my use case, both tasks are in the same thread group, so that works.
+> > >  I don't see why the requirement is needed though.
+> >
+> > Because preempting a perfect stranger is not courteous, all tasks have
+> > to play nice.
 > 
-> I'm not sure this is the right direction to go.  Now that Jeff's done
-> the pushdown and put in the compatibility macros, I don't think it makes
-> sense to do another partial transition on each driver.  Much better to
-> take our time, analyse each driver thoroughly, and kill the DEF_SCSI_QCMD
-> in each driver without introducing IRQ_DISABLE_SCSI_QCMD.
+> I don't want to preempt anybody, simply make the task run before me.
+
+I thought you wanted to get the target to the cpu asap?  You just can't
+have he runs before me cross cpu.
+
+> Further, this is a kernel internal API, so no need for these types of 
+> restrictions.  If we expose it to userspace, sure.
+
+Doesn't matter whether it's kernel or not afaikt.  If virtualization has
+to coexist peacefully with other loads, it can't just say "my hints are
+the only ones that count", and thus shred other loads throughput. 
+
+> > >  >  use cfs_rq->next to pass the scheduler a HINT of what you would LIKE to
+> > >  >  happen.
+> > >
+> > >  Hint is fine, so long as the scheduler seriously considers it.
+> >
+> > It will take the hint if the target the target hasn't had too much cpu.
 > 
-> In particular for this driver, it explicitly re-enables interrupts,
-> so it's pretty easy to do a full conversion.  Compile-tested only.
+> Since I'm running and the target isn't, it's clear the scheduler thinks 
+> the target had more cpu than I did [73].  That's why I want to donate 
+> cpu time.
+
+That's not necessarily true, in fact, it's very often false.  Last/next
+buddy will allow a task to run ahead of leftmost so we don't always
+blindly select leftmost and shred cache.
+
+> [73] at least it'd be clear if the scheduler were globally fair.  As it 
+> is, I might be the only task running on my cpu, therefore in a cpu glut, 
+> while the other task shares the cpu with some other task and is 
+> currently waiting for its turn.
 > 
-> Convert qla2xxx driver to run without the shost lock
+> > >  >  If the current task on that rq is also in your group, resched
+> > >  >  it, then IFF the task you would like to run isn't too far right, it'll
+> > >  >  be selected.  If the current task is not one of yours, tough, you can
+> > >  >  set cfs_rq->next and hope it doesn't get overwritten, but you may not
+> > >  >  preempt a stranger.  If you happen to be sharing an rq, cool, you
+> > >  >  accomplished your yield_to().  If not, there's no practical way (I can
+> > >  >  think of) to ensure that the target runs before you run again if you try
+> > >  >  to yield, but you did your best to try to get him to the cpu sooner, and
+> > >  >  in a manner that preserves fairness without dangerous vruntime diddling.
+> > >  >
+> > >  >  Would that be good enough to stop (or seriously improve) cpu wastage?
+> > >
+> > >  The cross-cpu limitation is bothersome.  Since there are many cpus in
+> > >  modern machines, particularly ones used for virt, the probability of the
+> > >  two tasks being on the same cpu is quite low.
+> >
+> > What would you suggest?  There is no global execution timeline, so if
+> > you want to definitely run after this task, you're stuck with moving to
+> > his timezone or moving him to yours.  Well, you could sleep a while, but
+> > we know how productive sleeping is.
 > 
-> Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
+> I don't know.  The whole idea of donating runtime was predicated on CFS 
+> being completely fair.  Now I find that (a) it isn't (b) donating 
+> runtimes between tasks on different cpus is problematic.
 
-Ok, this patch is functioning with LTP disktest I/O using .37-rc6
-initiator side lock_less operation.
+True and true.  However, would you _want_ the scheduler to hold runnable
+tasks hostage, and thus let CPU go to waste in the name of perfect
+fairness?  Perfect is the enemy of good applies to that idea imho.
 
-This has been added as an incremental patch for lock_less-LLDs-for-38-v3
-here:
+> Moving tasks between cpus is expensive and sometimes prohibited by 
+> pinning.  I'd like to avoid it if possible, but it's better than nothing.
 
-commit 355798dc3d97a0f07b14d1f3891ecca1802c9094
-Author: Nicholas Bellinger <nab@linux-iscsi.org>
-Date:   Mon Dec 20 01:24:12 2010 -0800
+Expensive in many ways, so let's try to not do that.
 
-    qla2xxx: Convert qla2xxx driver to run without the shost lock
-    
-    This patch converts qla2xxx LLD code to run in fully lock-less mode
-    and removes IRQ_DISABLE_SCSI_QCMD usage.  This also includes a handful
-    of cleanups for cmd->scsi_done assignment removal from qla2x00_get_new_sp()
-    and renames one goto of the exception patch with the '_lock' suffix in
-    qla2xxx_queuecommand().
-    
-    So far this patch has been lightly tested with basic I/O functionality on
-    bare-metal x86_64 .37-rc6 using ISP-2532 8 Gb/sec HW.
-    
-    Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
-    Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+So why do you need this other task to run before you do, even cross cpu?
+If he's a lock holder, getting him to the cpu will give him a chance to
+drop, no?  Isn't that what you want to get done?  Drop that lock so you
+or someone else can get something other than spinning done?
 
-Thanks!
+	-Mike
 
---nab
-
-> 
-> diff --git a/drivers/scsi/qla2xxx/qla_os.c b/drivers/scsi/qla2xxx/qla_os.c
-> index 2c0876c..b44d986 100644
-> --- a/drivers/scsi/qla2xxx/qla_os.c
-> +++ b/drivers/scsi/qla2xxx/qla_os.c
-> @@ -513,7 +513,7 @@ qla24xx_fw_version_str(struct scsi_qla_host *vha, char *str)
->  
->  static inline srb_t *
->  qla2x00_get_new_sp(scsi_qla_host_t *vha, fc_port_t *fcport,
-> -    struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
-> +    struct scsi_cmnd *cmd)
->  {
->  	srb_t *sp;
->  	struct qla_hw_data *ha = vha->hw;
-> @@ -527,16 +527,15 @@ qla2x00_get_new_sp(scsi_qla_host_t *vha, fc_port_t *fcport,
->  	sp->cmd = cmd;
->  	sp->flags = 0;
->  	CMD_SP(cmd) = (void *)sp;
-> -	cmd->scsi_done = done;
->  	sp->ctx = NULL;
->  
->  	return sp;
->  }
->  
->  static int
-> -qla2xxx_queuecommand_lck(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
-> +qla2xxx_queuecommand(struct Scsi_Host *shost, struct scsi_cmnd *cmd)
->  {
-> -	scsi_qla_host_t *vha = shost_priv(cmd->device->host);
-> +	scsi_qla_host_t *vha = shost_priv(shost);
->  	fc_port_t *fcport = (struct fc_port *) cmd->device->hostdata;
->  	struct fc_rport *rport = starget_to_rport(scsi_target(cmd->device));
->  	struct qla_hw_data *ha = vha->hw;
-> @@ -544,7 +543,6 @@ qla2xxx_queuecommand_lck(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *)
->  	srb_t *sp;
->  	int rval;
->  
-> -	spin_unlock_irq(vha->host->host_lock);
->  	if (ha->flags.eeh_busy) {
->  		if (ha->flags.pci_channel_io_perm_failure)
->  			cmd->result = DID_NO_CONNECT << 16;
-> @@ -577,39 +575,32 @@ qla2xxx_queuecommand_lck(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *)
->  		goto qc24_target_busy;
->  	}
->  
-> -	sp = qla2x00_get_new_sp(base_vha, fcport, cmd, done);
-> +	sp = qla2x00_get_new_sp(base_vha, fcport, cmd);
->  	if (!sp)
-> -		goto qc24_host_busy_lock;
-> +		goto qc24_host_busy;
->  
->  	rval = ha->isp_ops->start_scsi(sp);
->  	if (rval != QLA_SUCCESS)
->  		goto qc24_host_busy_free_sp;
->  
-> -	spin_lock_irq(vha->host->host_lock);
-> -
->  	return 0;
->  
->  qc24_host_busy_free_sp:
->  	qla2x00_sp_free_dma(sp);
->  	mempool_free(sp, ha->srb_mempool);
->  
-> -qc24_host_busy_lock:
-> -	spin_lock_irq(vha->host->host_lock);
-> +qc24_host_busy:
->  	return SCSI_MLQUEUE_HOST_BUSY;
->  
->  qc24_target_busy:
-> -	spin_lock_irq(vha->host->host_lock);
->  	return SCSI_MLQUEUE_TARGET_BUSY;
->  
->  qc24_fail_command:
-> -	spin_lock_irq(vha->host->host_lock);
-> -	done(cmd);
-> +	cmd->scsi_done(cmd);
->  
->  	return 0;
->  }
->  
-> -static DEF_SCSI_QCMD(qla2xxx_queuecommand)
-> -
->  
->  /*
->   * qla2x00_eh_wait_on_command
-> 
 
