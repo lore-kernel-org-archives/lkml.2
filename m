@@ -1,104 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228Ab0LTIVc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 03:21:32 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:52724 "EHLO smtps.tip.net.au"
+	id S1754349Ab0LTIhU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 03:37:20 -0500
+Received: from hera.kernel.org ([140.211.167.34]:42278 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753913Ab0LTIVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 03:21:30 -0500
-Date: Mon, 20 Dec 2010 19:21:21 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: linux-next: build failure after merge of the final tree (mfd tree
- related)
-Message-Id: <20101220192121.47767525.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__20_Dec_2010_19_21_21_+1100_kx=k5I_TgZRlC8e0"
+	id S1754261Ab0LTIhS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 03:37:18 -0500
+Date: Mon, 20 Dec 2010 08:36:50 GMT
+From: tip-bot for Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, pjt@google.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, pjt@google.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <20101216031038.067028969@google.com>
+References: <20101216031038.067028969@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Move periodic share updates to entity_tick()
+Message-ID: <tip-43365bd7ff37979d2afdccbe953299ed64a4649b@git.kernel.org>
+Git-Commit-ID: 43365bd7ff37979d2afdccbe953299ed64a4649b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 20 Dec 2010 08:36:51 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__20_Dec_2010_19_21_21_+1100_kx=k5I_TgZRlC8e0
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  43365bd7ff37979d2afdccbe953299ed64a4649b
+Gitweb:     http://git.kernel.org/tip/43365bd7ff37979d2afdccbe953299ed64a4649b
+Author:     Paul Turner <pjt@google.com>
+AuthorDate: Wed, 15 Dec 2010 19:10:17 -0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sun, 19 Dec 2010 16:36:22 +0100
 
-Hi all,
+sched: Move periodic share updates to entity_tick()
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+Long running entities that do not block (dequeue) require periodic updates to
+maintain accurate share values.  (Note: group entities with several threads are
+quite likely to be non-blocking in many circumstances).
 
-drivers/mfd/built-in.o: In function `__crc_pwm_free':
-(*ABS*+0x24ba6d1e): multiple definition of `__crc_pwm_free'
-drivers/mfd/built-in.o: In function `.pwm_free':
-(.text+0x1a2bc): multiple definition of `.pwm_free'
-drivers/misc/built-in.o:(.text+0x32e40): first defined here
-drivers/mfd/built-in.o: In function `__crc_pwm_request':
-(*ABS*+0xc1f4ec93): multiple definition of `__crc_pwm_request'
-drivers/mfd/built-in.o: In function `__crc_pwm_enable':
-(*ABS*+0x9d09808d): multiple definition of `__crc_pwm_enable'
-drivers/mfd/built-in.o: In function `.pwm_enable':
-(.text+0x1a348): multiple definition of `.pwm_enable'
-drivers/misc/built-in.o:(.text+0x32eac): first defined here
-drivers/mfd/built-in.o: In function `.pwm_request':
-(.text+0x19ff4): multiple definition of `.pwm_request'
-drivers/misc/built-in.o:(.text+0x32c80): first defined here
-drivers/mfd/built-in.o: In function `pwm_config':
-(.opd+0x1e48): multiple definition of `pwm_config'
-drivers/misc/built-in.o:(.opd+0x4158): first defined here
-drivers/mfd/built-in.o: In function `pwm_free':
-(.opd+0x1e90): multiple definition of `pwm_free'
-drivers/misc/built-in.o:(.opd+0x4128): first defined here
-drivers/mfd/built-in.o: In function `pwm_request':
-(.opd+0x1e60): multiple definition of `pwm_request'
-drivers/misc/built-in.o:(.opd+0x40b0): first defined here
-drivers/mfd/built-in.o: In function `__crc_pwm_disable':
-(*ABS*+0xb0493b18): multiple definition of `__crc_pwm_disable'
-drivers/mfd/built-in.o: In function `.pwm_disable':
-(.text+0x1a1a4): multiple definition of `.pwm_disable'
-drivers/misc/built-in.o:(.text+0x32d70): first defined here
-drivers/mfd/built-in.o: In function `pwm_enable':
-(.opd+0x1ea8): multiple definition of `pwm_enable'
-drivers/misc/built-in.o:(.opd+0x4140): first defined here
-drivers/mfd/built-in.o: In function `.pwm_config':
-(.text+0x19ec8): multiple definition of `.pwm_config'
-drivers/misc/built-in.o:(.text+0x32f8c): first defined here
-drivers/mfd/built-in.o: In function `pwm_disable':
-(.opd+0x1e78): multiple definition of `pwm_disable'
-drivers/misc/built-in.o:(.opd+0x4110): first defined here
-drivers/mfd/built-in.o: In function `__crc_pwm_config':
-(*ABS*+0xc23f5b9): multiple definition of `__crc_pwm_config'
+By virtue of being long-running however, we will see entity ticks (otherwise
+the required update occurs in dequeue/put and we are done).  Thus we can move
+the detection (and associated work) for these updates into the periodic path.
 
-Probably caused by commit 665ba7cafa19e2e2596ace30edc75ebec882e82d ("mfd:
-Remove ARCH_U8500 dependency from AB8500") which allowed this driver to
-be built in on PowerPC ...
+This restores the 'atomicity' of update_curr() with respect to accounting.
 
-Some of the above symbols are global in more than one place in our code ...
+Signed-off-by: Paul Turner <pjt@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <20101216031038.067028969@google.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched_fair.c |   21 +++++++++++++++++----
+ 1 files changed, 17 insertions(+), 4 deletions(-)
 
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__20_Dec_2010_19_21_21_+1100_kx=k5I_TgZRlC8e0
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNDxIBAAoJEDMEi1NhKgbsvKIH/1vf1Ce9tehJLFeJ0xTdq5H7
-vIY8phkO485Ju7s+t8imcV2Z+49OPxC0xcAoIo+9ixqvP19pOEQvagfKkuyLofKc
-FFGGsLLg6IyMNfdpZue/yRye7V57SR5Yxnt2ymLIwR2F4u8MGrRhiNOgXxDiq5Pn
-YdyLyLyVdbdnkeHuQGXcPSX5SwW6XeJ5kXZVBBupxAqqG/TDpShEpx3podU7uhJw
-y9XQ0nJc9kaFfGdFh84xjhkzR/CVpxsWt//cJ8ytYZGIk5NaOyMEerx+cNyOYllX
-lbkm4ul2UZaM/43zhhYJpasIygV2/m7tqHuA3O0t6Wbdu5wMYKsRs0Qb4unr9s0=
-=WH1c
------END PGP SIGNATURE-----
-
---Signature=_Mon__20_Dec_2010_19_21_21_+1100_kx=k5I_TgZRlC8e0--
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index c886717..16ee398 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -564,10 +564,6 @@ __update_curr(struct cfs_rq *cfs_rq, struct sched_entity *curr,
+ 
+ #if defined CONFIG_SMP && defined CONFIG_FAIR_GROUP_SCHED
+ 	cfs_rq->load_unacc_exec_time += delta_exec;
+-	if (cfs_rq->load_unacc_exec_time > sysctl_sched_shares_window) {
+-		update_cfs_load(cfs_rq, 0);
+-		update_cfs_shares(cfs_rq, 0);
+-	}
+ #endif
+ }
+ 
+@@ -809,6 +805,14 @@ static void update_cfs_shares(struct cfs_rq *cfs_rq, long weight_delta)
+ 
+ 	reweight_entity(cfs_rq_of(se), se, shares);
+ }
++
++static void update_entity_shares_tick(struct cfs_rq *cfs_rq)
++{
++	if (cfs_rq->load_unacc_exec_time > sysctl_sched_shares_window) {
++		update_cfs_load(cfs_rq, 0);
++		update_cfs_shares(cfs_rq, 0);
++	}
++}
+ #else /* CONFIG_FAIR_GROUP_SCHED */
+ static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
+ {
+@@ -817,6 +821,10 @@ static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
+ static inline void update_cfs_shares(struct cfs_rq *cfs_rq, long weight_delta)
+ {
+ }
++
++static inline void update_entity_shares_tick(struct cfs_rq *cfs_rq)
++{
++}
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
+ static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
+@@ -1133,6 +1141,11 @@ entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
+ 	 */
+ 	update_curr(cfs_rq);
+ 
++	/*
++	 * Update share accounting for long-running entities.
++	 */
++	update_entity_shares_tick(cfs_rq);
++
+ #ifdef CONFIG_SCHED_HRTICK
+ 	/*
+ 	 * queued ticks are scheduled to match the slice, so don't bother
