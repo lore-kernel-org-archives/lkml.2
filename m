@@ -1,254 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757677Ab0LTNl7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 08:41:59 -0500
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:37726 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751750Ab0LTNl5 (ORCPT
+	id S1754797Ab0LTNpz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 08:45:55 -0500
+Received: from tomts43-srv.bellnexxia.net ([209.226.175.110]:61396 "EHLO
+	tomts43-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751803Ab0LTNpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 08:41:57 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Takashi Iwai <tiwai@suse.de>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Chris Bagwell <chris@cnpbagwell.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH 2/3] Input: synaptics - add multi-finger and semi-mt support
-Date: Mon, 20 Dec 2010 14:39:23 +0100
-Message-Id: <1292852364-19127-3-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1292852364-19127-1-git-send-email-rydberg@euromail.se>
-References: <1292852364-19127-1-git-send-email-rydberg@euromail.se>
-X-Originating-IP: 83.248.200.95
-X-Scan-Result: No virus found in message 1PUfyA-00084H-90.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PUfyA-00084H-90 bc68b62baf45fcb8a5888572d007f86b
+	Mon, 20 Dec 2010 08:45:54 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAJPmDk1GNBQZ/2dsb2JhbACkInS9VYVKBIRlizw
+Date: Mon, 20 Dec 2010 08:40:51 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: paulmck@linux.vnet.ibm.com, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+        niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com
+Subject: Re: [PATCH RFC tip/core/rcu 13/20] rcu: increase
+	synchronize_sched_expedited() batching
+Message-ID: <20101220134051.GA29577@Krystal>
+References: <20101217205433.GA10199@linux.vnet.ibm.com> <1292619291-2468-13-git-send-email-paulmck@linux.vnet.ibm.com> <4D0CDD93.7040907@kernel.org> <20101218201419.GD2143@linux.vnet.ibm.com> <4D0DD3D2.4030606@kernel.org> <20101219163552.GF2143@linux.vnet.ibm.com> <1292841231.2708.136.camel@laptop>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <1292841231.2708.136.camel@laptop>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 08:36:16 up 256 days, 23:26,  4 users,  load average: 0.42, 0.19,
+	0.11
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Synaptics 2.7 series of touchpads support a mode for reporting two
-sets of X/Y/Pressure data (advanced gesture mode). By default, these
-devices report only single finger data, depriving userspace of the
-nowadays ubiquitous two-finger scroll gesture.
+* Peter Zijlstra (peterz@infradead.org) wrote:
+> On Sun, 2010-12-19 at 08:35 -0800, Paul E. McKenney wrote:
+> > >  (int)((unsigned)(a) - (unsigned)(b)) < 0
+> > 
+> > Unfortunately, no.  :-(
+> > 
+> > The (int) converts from unsigned to signed, and if the upper bit of
+> > the unsigned difference is non-zero, then the paragraph I quoted above
+> > applies, and the standard allows the compiler to do whatever it wants.
+> > 
+> As noted in the previous reply, that would render quite a lot of our
+> time-keeping code broken. I think its safe to assume this works.
+> 
+> Look at time_after() for example:
+> 
+> #define time_after(a,b)		\
+> 	(typecheck(unsigned long, a) && \
+> 	 typecheck(unsigned long, b) && \
+> 	 ((long)(b) - (long)(a) < 0))
 
-Enabling advanced gesture mode also enables the multi-finger report,
-although the device does not claim that capability. Up to three
-fingers can be reported this way.
+I agree with Peter: as long as the difference value is expected not to
+overflow a signed long, the time_after() approach should be safe.
 
-While two or three fingers are touching, the normal packet is
-prepended by a reduced finger packet of lower resolution. From the two
-packets (which do not represent the actual fingers), the bounding
-rectangle of the individual contacts can be extracted.  This
-information is sufficient to perform scaling gestures and a limited
-form of rotation gesture. The behavior has been coined semi-mt
-capability, and is signaled to userspace via the INPUT_PROP_SEMI_MT
-device property.
+Now it depends if the usage Paul spotted is expected to have a
+difference that overflows a signed int. It's not clear to me that it's
+realistically possible from reading the patch, but I might be missing
+something.
 
-Work to decode the advanced gesture packet: Takashi Iwai.
-Cleanup and testing of the original patch: Chase Douglas.
-Minor cleanup and testing: Chris Bagwell.
-Finalization and semi-mt support: Henrik Rydberg.
+And by the way, if the difference is expected to overflow a signed int,
+then we're only a factor two away from overflowing an unsigned int, so
+the whole approach would be fragile.
 
-Reported-by: Tobyn Bertram
-Not-yet-signed-off-by: Takashi Iwai <tiwai@suse.de>
-Not-yet-signed-off-by: Chase Douglas <chase.douglas@canonical.com>
-Not-yet-signed-off-by: Chris Bagwell <chris@cnpbagwell.com>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
- drivers/input/mouse/synaptics.c |   88 +++++++++++++++++++++++++++++++++++++-
- drivers/input/mouse/synaptics.h |    3 +
- 2 files changed, 88 insertions(+), 3 deletions(-)
+Thanks,
 
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index 8997cbc..2f8a97a 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -25,7 +25,7 @@
- 
- #include <linux/module.h>
- #include <linux/dmi.h>
--#include <linux/input.h>
-+#include <linux/input/mt.h>
- #include <linux/serio.h>
- #include <linux/libps2.h>
- #include <linux/slab.h>
-@@ -279,6 +279,25 @@ static void synaptics_set_rate(struct psmouse *psmouse, unsigned int rate)
- 	synaptics_mode_cmd(psmouse, priv->mode);
- }
- 
-+static int synaptics_set_advanced_gesture_mode(struct psmouse *psmouse)
-+{
-+	static unsigned char param = 0xc8;
-+	struct synaptics_data *priv = psmouse->private;
-+
-+	if (!SYN_CAP_ADV_GESTURE(priv->ext_cap_0c))
-+		return 0;
-+
-+	if (psmouse_sliced_command(psmouse, SYN_QUE_MODEL))
-+		return -1;
-+	if (ps2_command(&psmouse->ps2dev, &param, PSMOUSE_CMD_SETRATE))
-+		return -1;
-+
-+	/* Advanced gesture mode also sends multi finger data */
-+	priv->capabilities |= BIT(1);
-+
-+	return 0;
-+}
-+
- /*****************************************************************************
-  *	Synaptics pass-through PS/2 port support
-  ****************************************************************************/
-@@ -380,7 +399,9 @@ static void synaptics_pt_create(struct psmouse *psmouse)
-  *	Functions to interpret the absolute mode packets
-  ****************************************************************************/
- 
--static void synaptics_parse_hw_state(unsigned char buf[], struct synaptics_data *priv, struct synaptics_hw_state *hw)
-+static int synaptics_parse_hw_state(const unsigned char buf[],
-+				    struct synaptics_data *priv,
-+				    struct synaptics_hw_state *hw)
- {
- 	memset(hw, 0, sizeof(struct synaptics_hw_state));
- 
-@@ -397,6 +418,14 @@ static void synaptics_parse_hw_state(unsigned char buf[], struct synaptics_data
- 			 ((buf[0] & 0x04) >> 1) |
- 			 ((buf[3] & 0x04) >> 2));
- 
-+		if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) && hw->w == 2) {
-+			/* Gesture packet: (x, y, z) at half resolution */
-+			priv->mt.x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
-+			priv->mt.y = (((buf[4] & 0xf0) << 4) | buf[2]) << 1;
-+			priv->mt.z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
-+			return 1;
-+		}
-+
- 		hw->left  = (buf[0] & 0x01) ? 1 : 0;
- 		hw->right = (buf[0] & 0x02) ? 1 : 0;
- 
-@@ -452,6 +481,36 @@ static void synaptics_parse_hw_state(unsigned char buf[], struct synaptics_data
- 		hw->left  = (buf[0] & 0x01) ? 1 : 0;
- 		hw->right = (buf[0] & 0x02) ? 1 : 0;
- 	}
-+
-+	return 0;
-+}
-+
-+static void set_slot(struct input_dev *dev, int slot, bool active, int x, int y)
-+{
-+	input_mt_slot(dev, slot);
-+	input_mt_report_slot_state(dev, MT_TOOL_FINGER, active);
-+	if (active) {
-+		input_report_abs(dev, ABS_MT_POSITION_X, x);
-+		input_report_abs(dev, ABS_MT_POSITION_Y,
-+				 YMAX_NOMINAL + YMIN_NOMINAL - y);
-+	}
-+}
-+
-+static void synaptics_report_semi_mt_data(struct input_dev *dev,
-+					  const struct synaptics_hw_state *a,
-+					  const struct synaptics_hw_state *b,
-+					  int num_fingers)
-+{
-+	if (num_fingers >= 2) {
-+		set_slot(dev, 0, true, min(a->x, b->x), min(a->y, b->y));
-+		set_slot(dev, 1, true, max(a->x, b->x), max(a->y, b->y));
-+	} else if (num_fingers == 1) {
-+		set_slot(dev, 0, true, a->x, a->y);
-+		set_slot(dev, 1, false, 0, 0);
-+	} else {
-+		set_slot(dev, 0, false, 0, 0);
-+		set_slot(dev, 1, false, 0, 0);
-+	}
- }
- 
- /*
-@@ -466,7 +525,8 @@ static void synaptics_process_packet(struct psmouse *psmouse)
- 	int finger_width;
- 	int i;
- 
--	synaptics_parse_hw_state(psmouse->packet, priv, &hw);
-+	if (synaptics_parse_hw_state(psmouse->packet, priv, &hw))
-+		return;
- 
- 	if (hw.scroll) {
- 		priv->scroll += hw.scroll;
-@@ -512,6 +572,9 @@ static void synaptics_process_packet(struct psmouse *psmouse)
- 		finger_width = 0;
- 	}
- 
-+	if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c))
-+		synaptics_report_semi_mt_data(dev, &hw, &priv->mt, num_fingers);
-+
- 	/* Post events
- 	 * BTN_TOUCH has to be first as mousedev relies on it when doing
- 	 * absolute -> relative conversion
-@@ -623,6 +686,7 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
- 	int i;
- 
- 	__set_bit(INPUT_PROP_POINTER, dev->propbit);
-+	__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
- 
- 	__set_bit(EV_ABS, dev->evbit);
- 	input_set_abs_params(dev, ABS_X,
-@@ -631,6 +695,14 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
- 			     YMIN_NOMINAL, priv->y_max ?: YMAX_NOMINAL, 0, 0);
- 	input_set_abs_params(dev, ABS_PRESSURE, 0, 255, 0, 0);
- 
-+	if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c)) {
-+		input_mt_init_slots(dev, 2);
-+		input_set_abs_params(dev, ABS_MT_POSITION_X, XMIN_NOMINAL,
-+				     priv->x_max ?: XMAX_NOMINAL, 0, 0);
-+		input_set_abs_params(dev, ABS_MT_POSITION_Y, YMIN_NOMINAL,
-+				     priv->y_max ?: YMAX_NOMINAL, 0, 0);
-+	}
-+
- 	if (SYN_CAP_PALMDETECT(priv->capabilities))
- 		input_set_abs_params(dev, ABS_TOOL_WIDTH, 0, 15, 0, 0);
- 
-@@ -705,6 +777,11 @@ static int synaptics_reconnect(struct psmouse *psmouse)
- 		return -1;
- 	}
- 
-+	if (synaptics_set_advanced_gesture_mode(psmouse)) {
-+		printk(KERN_ERR "Advanced gesture mode reconnect failed.\n");
-+		return -1;
-+	}
-+
- 	return 0;
- }
- 
-@@ -772,6 +849,11 @@ int synaptics_init(struct psmouse *psmouse)
- 		goto init_fail;
- 	}
- 
-+	if (synaptics_set_advanced_gesture_mode(psmouse)) {
-+		printk(KERN_ERR "Advanced gesture mode init failed.\n");
-+		goto init_fail;
-+	}
-+
- 	priv->pkt_type = SYN_MODEL_NEWABS(priv->model_id) ? SYN_NEWABS : SYN_OLDABS;
- 
- 	printk(KERN_INFO "Synaptics Touchpad, model: %ld, fw: %ld.%ld, id: %#lx, caps: %#lx/%#lx/%#lx\n",
-diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
-index 613a365..50e20e9 100644
---- a/drivers/input/mouse/synaptics.h
-+++ b/drivers/input/mouse/synaptics.h
-@@ -53,6 +53,7 @@
- #define SYN_CAP_PRODUCT_ID(ec)		(((ec) & 0xff0000) >> 16)
- #define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100100)
- #define SYN_CAP_MAX_DIMENSIONS(ex0c)	((ex0c) & 0x020000)
-+#define SYN_CAP_ADV_GESTURE(ex0c)	((ex0c) & 0x080000)
- 
- /* synaptics modes query bits */
- #define SYN_MODE_ABSOLUTE(m)		((m) & (1 << 7))
-@@ -112,6 +113,8 @@ struct synaptics_data {
- 	int scroll;
- 
- 	struct serio *pt_port;			/* Pass-through serio port */
-+
-+	struct synaptics_hw_state mt;		/* current gesture packet */
- };
- 
- void synaptics_module_init(void);
+Mathieu
+
 -- 
-1.7.2.3
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
