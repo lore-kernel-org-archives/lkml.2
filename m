@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758211Ab0LTWIW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 17:08:22 -0500
-Received: from mail-px0-f179.google.com ([209.85.212.179]:55641 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758181Ab0LTWIV (ORCPT
+	id S1758202Ab0LTWKZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 17:10:25 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:34336 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758181Ab0LTWKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 17:08:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=Vagk+iGtA5z+lyRxMVHnbB6GIHiLE/UMozmzk/nbsEH8zFdIWRWhAoVwsMsAeIhiqP
-         4iifeFjsQ/3u4YIjOv9OSxrPbTsHkly+QdUImxqrJEsrnNb1vOmfcjAJXffT2YSd/1Ow
-         VV+PErtlzkME+WS+KdvNOlKFUKZg7spAkauys=
+	Mon, 20 Dec 2010 17:10:24 -0500
+Date: Mon, 20 Dec 2010 17:10:20 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+X-X-Sender: nico@xanadu.home
+To: Stephen Boyd <sboyd@codeaurora.org>
+cc: Arnaud Lacombe <lacombar@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        lkml <linux-kernel@vger.kernel.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Tony Lindgren <tony@atomide.com>,
+        Arnd Bergmann <arnd@arndb.de>, Daniel Walker <dwalker@codeaurora.org>
+Subject: Re: [PATCH 1/3] hvc_dcc: Fix bad code generation by marking assembly
+ volatile
+In-Reply-To: <4D0FD02E.3080901@codeaurora.org>
+Message-ID: <alpine.LFD.2.00.1012201702540.10437@xanadu.home>
+References: <1292649385-28771-1-git-send-email-sboyd@codeaurora.org> <1292875718-7980-1-git-send-email-sboyd@codeaurora.org> <1292875718-7980-2-git-send-email-sboyd@codeaurora.org> <AANLkTi=8F3keaAQ2o+V8gNncNM02c9k9=DRtd5GyP_LH@mail.gmail.com>
+ <4D0FD02E.3080901@codeaurora.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1292866298-8585-1-git-send-email-per.forlin@stericsson.com>
-References: <1292866298-8585-1-git-send-email-per.forlin@stericsson.com>
-Date: Mon, 20 Dec 2010 23:08:19 +0100
-X-Google-Sender-Auth: 8C3RMQyRmgb_iOArFObU9OfoDZw
-Message-ID: <AANLkTi=7E7rAc=46p5d6YSpLeut5yehmBtLa4TVofefp@mail.gmail.com>
-Subject: Re: [PATCH] dmaengine: dma40: Add support to split up large elements
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Per Forlin <per.forlin@stericsson.com>
-Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        Per Forlin <per.forlin@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/12/20 Per Forlin <per.forlin@stericsson.com>:
+On Mon, 20 Dec 2010, Stephen Boyd wrote:
 
-> The maximum transfer size of the stedma40 is (64k-1) x data-width.
-> If the transfer size of one element exceeds this limit
-> the job is split up and sent as linked transfer.
->
-> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+> On 12/20/2010 01:49 PM, Arnaud Lacombe wrote:
+> > Hi,
+> >
+> > On Mon, Dec 20, 2010 at 3:08 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> >> Without marking the asm __dcc_getstatus() volatile my compiler
+> >> decides [...]
+> > What compiler ? That might be a usefull information to know,
+> > espectially 5 years from now when tracing code history. There has been
+> > similar issue with gcc 4.5 recently. AFAIK, in the same idea, the
+> > final change has been to mark the asm volatile.
+> 
+> Sure, we can replace "my compiler" with "my compiler (arm-eabi-gcc (GCC)
+> 4.4.0)".
 
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+Compiler version doesn't matter -- this is a simple correctness issue.
 
-I think this could actually go into 2.6.37 series: I consider it
-a bug fix since the transfer size limitation breaks the
-contract of the memcpy() API.
+If an inline asm statement provides an output value then the compiler is 
+free to cache that value in a register, unless the inline asm is marked 
+so that the value may change from one invocation to another.  Also, the 
+compiler is free to eliminate the inline asm statement entirely as well 
+if the output value provided by that inline asm is never used... unless 
+if the inline asm is marked as having side effects.  In both cases the 
+volatile qualifier does indicate that the returned value may change 
+(new status flag state) and 
+that the asm code therein has side effects (e.g. pop a character off a 
+FIFO).
 
-Yours,
-Linus Walleij
+Sometimes the desired effect can be indicated by clever usage of 
+parameter constraints, but in this case the volatile keyword is most 
+appropriate.
+
+
+Nicolas
