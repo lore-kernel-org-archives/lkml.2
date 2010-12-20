@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932535Ab0LTMCP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 07:02:15 -0500
-Received: from mga11.intel.com ([192.55.52.93]:39209 "EHLO mga11.intel.com"
+	id S1757510Ab0LTMGN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 07:06:13 -0500
+Received: from mail.perches.com ([173.55.12.10]:2783 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757457Ab0LTMCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 07:02:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,201,1291622400"; 
-   d="scan'208";a="638286713"
-Date: Mon, 20 Dec 2010 13:01:30 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Walleij <linus.walleij@ericsson.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Rabin Vincent <rabin.vincent@stericsson.com>
-Subject: [PATCH] mfd: Use dummy_irq_chip for tc3589x
-Message-ID: <20101220120128.GD11095@sortiz-mobl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757288Ab0LTMGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 07:06:12 -0500
+Subject: Re: [PATCH][RESEND] scripts: add no-warning option to the
+ checkpatch script
+From: Joe Perches <joe@perches.com>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, apw@canonical.com
+In-Reply-To: <AANLkTimNe7_3Za6YgY69zEuXYCmU4dZdCjfLN2QMM=jb@mail.gmail.com>
+References: <4D0DD027.4000507@gmail.com>
+	 <1292813544.22702.342.camel@Joe-Laptop>
+	 <AANLkTi=WP9k_yqyvvJmy2ZW0ErO9Yt=jQjVvWQ_RGByv@mail.gmail.com>
+	 <1292836937.22702.424.camel@Joe-Laptop>
+	 <AANLkTimNe7_3Za6YgY69zEuXYCmU4dZdCjfLN2QMM=jb@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 20 Dec 2010 04:06:10 -0800
+Message-ID: <1292846770.22702.440.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2010-12-20 at 12:48 +0100, Marco Stornelli wrote:
+> 2010/12/20 Joe Perches <joe@perches.com>:
+> > On Mon, 2010-12-20 at 09:37 +0100, Marco Stornelli wrote:
+> >> 2010/12/20 Joe Perches <joe@perches.com>:
+> >> > Why do you think it's useful?
+> >> To "debug" a patch from style point of view, I think it's useful to
+> >> fix before the errors and then the warnings. So this option it's
+> >> useful as a "filter". However, I added you in cc: because of a reply
+> >> to my first patch that indicated you as a person interested in this
+> >> scope.
+> > Perhaps then it'd be better to filter/enable/disable
+> > the 3 current categories of messages.
+> > Maybe something like this:
+> Yeah, very good. Will it be inserted in mainline?
 
-This also converts tc3589x to the new irq API.
+Dunno.  Maybe if Andy thinks it worthwhile.
+He takes his time about this sort of thing.
 
-Cc: Rabin Vincent <rabin.vincent@stericsson.com>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
----
-
-Linus, this should go through your ux500-core branch as this is where the
-tc3589x rename happens.
-
----
- drivers/mfd/tc3589x.c |   13 +------------
- 1 files changed, 1 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/mfd/tc3589x.c b/drivers/mfd/tc3589x.c
-index 32291fe..112efd3 100644
---- a/drivers/mfd/tc3589x.c
-+++ b/drivers/mfd/tc3589x.c
-@@ -170,17 +170,6 @@ again:
- 	return IRQ_HANDLED;
- }
- 
--static void tc3589x_irq_dummy(unsigned int irq)
--{
--	/* No mask/unmask at this level */
--}
--
--static struct irq_chip tc3589x_irq_chip = {
--	.name	= "tc3589x",
--	.mask	= tc3589x_irq_dummy,
--	.unmask	= tc3589x_irq_dummy,
--};
--
- static int tc3589x_irq_init(struct tc3589x *tc3589x)
- {
- 	int base = tc3589x->irq_base;
-@@ -188,7 +177,7 @@ static int tc3589x_irq_init(struct tc3589x *tc3589x)
- 
- 	for (irq = base; irq < base + TC3589x_NR_INTERNAL_IRQS; irq++) {
- 		set_irq_chip_data(irq, tc3589x);
--		set_irq_chip_and_handler(irq, &tc3589x_irq_chip,
-+		set_irq_chip_and_handler(irq, &dummy_irq_chip,
- 					 handle_edge_irq);
- 		set_irq_nested_thread(irq, 1);
- #ifdef CONFIG_ARM
--- 
-1.7.2.3
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
