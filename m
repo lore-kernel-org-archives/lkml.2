@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932771Ab0LTSPg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 13:15:36 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:65480 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932726Ab0LTSPf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 13:15:35 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/6 v8] ARM: Add basic architecture support for VIA/WonderMedia 85xx SoC's
-Date: Mon, 20 Dec 2010 19:15:32 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6-next-20101220+; KDE/4.5.1; x86_64; ; )
-Cc: Alexey Charkov <alchark@gmail.com>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Eric Miao <eric.y.miao@gmail.com>, linux-kernel@vger.kernel.org,
-        "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
-	<u.kleine-koenig@pengutronix.de>,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>
-References: <1289147348-31969-1-git-send-email-alchark@gmail.com> <20101111234957.GA28735@n2100.arm.linux.org.uk> <20101219174017.GA31832@alchark-u3s>
-In-Reply-To: <20101219174017.GA31832@alchark-u3s>
+	id S1757952Ab0LTSWd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 13:22:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57715 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757844Ab0LTSWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 13:22:32 -0500
+Date: Mon, 20 Dec 2010 19:15:16 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
+        jan.kratochvil@redhat.com
+Subject: Re: [PATCH 13/16] ptrace: reorganize __ptrace_unlink() and
+	ptrace_untrace()
+Message-ID: <20101220181516.GB18070@redhat.com>
+References: <1291654624-6230-1-git-send-email-tj@kernel.org> <1291654624-6230-14-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012201915.32851.arnd@arndb.de>
-X-Provags-ID: V02:K0:Xhqj5PRokqCMus+CMg6cSp6Wo1Lx0F3QUNKQqAclz6V
- Ha3cXGDvY5SvzBpkVKa1G2dpO3guBxmakQTF2HOq7vXtIZedBf
- Ks/GJwvBo195Hn2OpcHHgenxlp1XH1P4F70DJFp/M3KE43eqLs
- rtpSndoZFuRVloR4axV0BvT1p3Z1PF1nl5hYWdyMXRS7uGKyyL
- TCgPES6UC0kjqr8RN5Q/g==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291654624-6230-14-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 19 December 2010 18:40:17 Alexey Charkov wrote:
-> This adds support for the family of Systems-on-Chip produced initially
-> by VIA and now its subsidiary WonderMedia that have recently become
-> widespread in lower-end Chinese ARM-based tablets and netbooks.
-> 
-> Support is included for both VT8500 and WM8505. Suitable code is
-> selected (if compiled in) at early initialization time by reading a
-> platform-specific identification register, as current bootloaders
-> do not provide any reliable machine id to the kernel.
-> 
-> Included are basic machine initialization files, register and
-> interrupt definitions, support for the on-chip interrupt controller,
-> high-precision OS timer, GPIO lines, necessary macros for early debug,
-> pulse-width-modulated outputs control, as well as platform device
-> configurations for the specific drivers implemented elsewhere.
-> 
-> Signed-off-by: Alexey Charkov <alchark@gmail.com>
+A bit off-topic note,
 
-Looks good to me, thanks for addressing all my previous concerns.
+On 12/06, Tejun Heo wrote:
+>
+> -static void ptrace_untrace(struct task_struct *child)
+> +void __ptrace_unlink(struct task_struct *child)
+>  {
+> +	struct signal_struct *sig = child->signal;
+> +
+> +	BUG_ON(!child->ptrace);
+> +
+>  	spin_lock(&child->sighand->siglock);
+> +
+>  	if (task_is_traced(child)) {
+>  		/*
+>  		 * If group stop is completed or in progress, it should
+>  		 * participate in the group stop.  Set GROUP_STOP_PENDING
+>  		 * before kicking it.
+>  		 */
+> -		if (child->signal->flags & SIGNAL_STOP_STOPPED ||
+> -		    child->signal->group_stop_count)
+> +		if (sig->flags & SIGNAL_STOP_STOPPED || sig->group_stop_count)
+>  			child->group_stop |= GROUP_STOP_PENDING;
+>  		signal_wake_up(child, 1);
 
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+OK. Of course, I do not blame this patch, this mimics the current
+behaviour.
+
+But, afaics, this is not exactly right in the long term. Suppose
+that SIGNAL_STOP_STOPPED is set but the tracee is running (this can
+happen if, say, debugger resumes the tracee and exits). In this case,
+I think this thread should be stopped too.
+
+IIRC, I already tried to do this, but the patch (or idea) was nacked
+because it means another user-visible change. However, if we want to
+really fix things, we should fix this case too. If SIGNAL_STOP_STOPPED
+is set, there should be no running threads after detach.
+
+Or. We can change the rules for ptrace_resume(), more on this later.
+
+Oleg.
+
