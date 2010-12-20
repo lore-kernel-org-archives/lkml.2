@@ -1,171 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab0LTJor (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 04:44:47 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:34604 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755175Ab0LTJop convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 04:44:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=WRrLw7zoz9S+yCo+5GuKU0Em+NxW4kWjuzcExt2yjccYTSK9FRWe7e97gHOgNwo+//
-         Rp9zl5aC0o16Ky6sgIN+GEr9nLM1MGHTTPyj27Z93hjuAk1d8jtWgB/RmgB6M7fhh3tS
-         F6ChdIgyFucA36ZXln3vOLO+Ifb8g1Ylcd4lI=
+	id S1755335Ab0LTJqn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 04:46:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58849 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755175Ab0LTJqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 04:46:42 -0500
+Message-ID: <4D0F25E8.80305@redhat.com>
+Date: Mon, 20 Dec 2010 11:46:16 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <4D0E9F20.6080606@sssup.it>
-References: <7997200675c1a53b1954fdc3f46dd208db5dea77.1292578808.git.harald.gustafsson@ericsson.com>
-	<1292596194.2266.283.camel@twins>
-	<1292612166.2697.68.camel@Palantir>
-	<1292612385.2708.108.camel@laptop>
-	<AANLkTikO56++q906A1XRbomeASY77wxeEuBqAdx=EttW@mail.gmail.com>
-	<4D0E9F20.6080606@sssup.it>
-Date: Mon, 20 Dec 2010 10:44:43 +0100
-Message-ID: <AANLkTikidJBXT=vfbncd5=832VTPRwQps7UNru+DAw0e@mail.gmail.com>
-Subject: Re: [PATCH 1/3] Added runqueue clock normalized with cpufreq
-From: Harald Gustafsson <hgu1972@gmail.com>
-To: Tommaso Cucinotta <tommaso.cucinotta@sssup.it>
-Cc: Peter Zijlstra <peterz@infradead.org>, Dario Faggioli <raistlin@linux.it>,
-        Harald Gustafsson <harald.gustafsson@ericsson.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        Michael Trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Mike Galbraith <efault@gmx.de>
+CC: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Chris Wright <chrisw@sous-sol.org>
+Subject: Re: [RFC -v2 PATCH 2/3] sched: add yield_to function
+References: <20101213224434.7495edb2@annuminas.surriel.com>	 <20101213224657.7e141746@annuminas.surriel.com>	 <1292306896.7448.157.camel@marge.simson.net> <4D0A6D34.6070806@redhat.com>	 <1292569018.7772.75.camel@marge.simson.net>  <4D0B7D24.5060207@redhat.com>	 <1292615509.7381.81.camel@marge.simson.net>  <4D0CE937.8090601@redhat.com>	 <1292699204.1181.51.camel@marge.simson.net>  <4D0DA45A.9070600@redhat.com>	 <1292753156.16367.104.camel@marge.simson.net> <4D0DCE10.7000200@redhat.com>	 <1292834372.8948.27.camel@marge.simson.net> <4D0F1794.3010803@redhat.com>	 <1292835302.8948.35.camel@marge.simson.net>  <4D0F1BD8.20601@redhat.com> <1292837440.8948.60.camel@marge.simson.net>
+In-Reply-To: <1292837440.8948.60.camel@marge.simson.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/12/20 Tommaso Cucinotta <tommaso.cucinotta@sssup.it>:
-> 1. from a requirements analysis phase, it comes out that it should be
-> possible to specify the individual runtimes for each possible frequency, as
-> it is well-known that the way computation times scale to CPU frequency is
-> application-dependent (and platform-dependent); this assumes that as a
-> developer I can specify the possible configurations of my real-time app,
-> then the OS will be free to pick the CPU frequency that best suites its
-> power management logic (i.e., keeping the minimum frequency by which I can
-> meet all the deadlines).
-
-I think this make perfect sense, and I have explored related ideas,
-but for the Linux kernel and
-softer realtime use cases I think it is likely too much at least if
-this info needs to be passed to the kernel.
-
-> 2. this was also assuming, at an API level, a quite static settings (typical
-> of hard RT), in which I configure the system and don't change its frequency
-> too often; for example, implications of power switches on hard real-time
-> requirements (i.e., time windows in which the CPU is not operating during
-> the switch, and limits on the max sustainable switching frequencies by apps
-> and the like) have not been stated through the API;
-
-I would not worry too much about switch transition effects. They are
-in the same order of magnitude
-as other disturbances from timers and interrupts and can easily be set
-to a certain smallest periodicity.
-But if I was designing a system that needed real hard RT tasks I would
-probably not enable cpufreq
-when those tasks were active.
-
-> 3. for soft real-time contexts and Linux (consider FRESCOR targeted both
-> hard RT on RT OSes and soft RT on Linux), we played with a much simpler
-> trivial linear scaling, which is exactly what has been proposed and
-> implemented by someone in this thread on top of SCHED_DEADLINE (AFAIU);
-> however, there's a trick which cannot be neglected, i.e., *change protocol*
-> (see 5); benchmarks on MPEG-2 decoding times showed that the linear
-> approximation is not that bad, but the best interpolating ratio between the
-> computing times in different CPU frequencies do not perfectly conform to the
-> frequencies ratios; we didn't make any attempt of extensive evaluation over
-> different workloads so far. See Figure 4.1 in D-AQ2v2:
-
-Totally agree on this as well, and it would not be that difficult to
-implement in Linux.
-For example not just use the frequency as the normalization but have a
-different
-architecture dependent normalization. This would capture the general
-normalization but
-not on an application level. But, others might think this is
-complicating matter too much.
-The other solution is that the deadline task do some over-reservation,
-which is going to be
-less over-reservation compared to if no normalization existed.
-
-> 4. I would say that, given the tendency to over-provision the runtime (WCET)
-> for hard real-time contexts, it would not bee too much of a burden for a
-> hard RT developer to properly over-provision the required budget in presence
-> of a trivial runtime rescaling policy like in 2.; however, in order to make
-> everybody happy, it doesn't seem a bad idea to have something like:
->  4a) use the fine runtimes specified by the user if they are available;
->  4b) use the trivially rescaled runtimes if the user only specified a single
-> runtime, of course it should be clear through the API what is the frequency
-> the user is referring its runtime to, in such case (e.g., maximum one ?)
-
-You mean this on an application level? I think we should test the
-trivial rescaling first
-and if any users steps forward that need this lets reconsider.
-
-> 5. Mode Change Protocol: whenever a frequency switch occurs (e.g., dictated
-> by the non-RT workload fluctuations), runtimes cannot simply be rescaled
-> instantaneously: keeping it short, the simplest thing we can do is relying
-> on the various CBS servers implemented in the scheduler to apply the change
-> from the next "runtime recharge", i.e., the next period. This creates the
-> potential problem that the RT tasks have a non-negligible transitory for the
-> instances crossing the CPU frequency switch, in which they do not have
-> enough runtime for their work. Now, the general "rule of thumb" is
-> straightforward: make room first, then "pack", i.e., we need to consider 2
-> distinct cases:
-
-If we use the trivial rescaling is this a problem? In my
-implementation the runtime
-accounting is correct even when the frequency switch happens during a period.
-Also with Peter's suggested implementation the runtime will be correct
-as I understand it.
-
->  5a) we want to *increase the CPU frequency*; we can immediately increase
-> the frequency, then the RT applications will have a temporary
-> over-provisioning of runtime (still tuned for the slower frequency case),
-> however as soon as we're sure the CPU frequency switch completed, we can
-> lower the runtimes to the new values;
-
-Don't you think that this was due to that you did it from user space,
-I actually change the
-scheduler's accounting for the rest of the runtime, i.e. can deal with
-partial runtimes.
-
-> The protocol in 5. has been implemented completely in user-space as a
-> modification to the powernowd daemon, in the context of an extended version
-> of a paper in which we were automagically guessing the whole set of
-> scheduling parameters for periodic RT applications (EuroSys 2010). The
-> modified powernowd was considering both the whole RT utilization as imposed
-> by the RT reservations, and the non-RT utilization as measured on the CPU.
-> The paper will appear on ACM TECS, but who knows when, so here u can find it
-> (see Section 7.5 "Power Management"):
+On 12/20/2010 11:30 AM, Mike Galbraith wrote:
+> >  >
+> >  >  Because preempting a perfect stranger is not courteous, all tasks have
+> >  >  to play nice.
+> >
+> >  I don't want to preempt anybody, simply make the task run before me.
 >
->  http://retis.sssup.it/~tommaso/publications/ACM-TECS-2010.pdf
+> I thought you wanted to get the target to the cpu asap?  You just can't
+> have he runs before me cross cpu.
 
-Thanks I will take a look as soon as I find the time.
+You're right, of course.  I'm fine with running in parallel.  I'm fine 
+with him running before or instead of me.  I'm not fine with running 
+while the other guy is waiting.
 
-> Last, but not least, the whole point in the above discussion is the
-> assumption that it is meaningful to have a CPU frequency switching policy,
-> as opposed to merely CPU idle-ing. Perhaps on old embedded CPUs this is
-> still the case. Unfortunately, from preliminary measurements made on a few
-> systems I use every day through a cheap power measurement device attached on
-> the power cable, I could actually see that for RT workloads only it is worth
-> to leave the system at the maximum frequency and exploit the much higher
-> time spent in idle mode(s), except when the system is completely idle.
+> >  Further, this is a kernel internal API, so no need for these types of
+> >  restrictions.  If we expose it to userspace, sure.
+>
+> Doesn't matter whether it's kernel or not afaikt.  If virtualization has
+> to coexist peacefully with other loads, it can't just say "my hints are
+> the only ones that count", and thus shred other loads throughput.
 
-I was also of this impression for a while that cpufreq scaling would
-be of less importance.
-But when I looked at complex use cases, which are common on embedded devices and
-also new chip technology nodes I had to reconsider. Unfortunately I
-don't have any information
-that I can share publicly. What is true is that the whole system
-energy needs to be considered,
-including peripherals, and this is very application dependent.
+What does that have to do with being in the same group or not?  I want 
+to maintain fairness (needed for pure virt workloads, one guest cannot 
+dominate another), but I don't see how being in the same thread group is 
+relevant.
 
-> If you're interested, I can share the collected data sets.
-Sure, more data is always of interest.
+Again, I don't want more than one entitlement.  I want to move part of 
+my entitlement to another task.
+
+> >  >  >   >   use cfs_rq->next to pass the scheduler a HINT of what you would LIKE to
+> >  >  >   >   happen.
+> >  >  >
+> >  >  >   Hint is fine, so long as the scheduler seriously considers it.
+> >  >
+> >  >  It will take the hint if the target the target hasn't had too much cpu.
+> >
+> >  Since I'm running and the target isn't, it's clear the scheduler thinks
+> >  the target had more cpu than I did [73].  That's why I want to donate
+> >  cpu time.
+>
+> That's not necessarily true, in fact, it's very often false.  Last/next
+> buddy will allow a task to run ahead of leftmost so we don't always
+> blindly select leftmost and shred cache.
+
+Ok.
+
+> >  >
+> >  >  What would you suggest?  There is no global execution timeline, so if
+> >  >  you want to definitely run after this task, you're stuck with moving to
+> >  >  his timezone or moving him to yours.  Well, you could sleep a while, but
+> >  >  we know how productive sleeping is.
+> >
+> >  I don't know.  The whole idea of donating runtime was predicated on CFS
+> >  being completely fair.  Now I find that (a) it isn't (b) donating
+> >  runtimes between tasks on different cpus is problematic.
+>
+> True and true.  However, would you _want_ the scheduler to hold runnable
+> tasks hostage, and thus let CPU go to waste in the name of perfect
+> fairness?  Perfect is the enemy of good applies to that idea imho.
+
+Sorry, I don't see how it follows.
+
+> >  Moving tasks between cpus is expensive and sometimes prohibited by
+> >  pinning.  I'd like to avoid it if possible, but it's better than nothing.
+>
+> Expensive in many ways, so let's try to not do that.
+>
+> So why do you need this other task to run before you do, even cross cpu?
+> If he's a lock holder, getting him to the cpu will give him a chance to
+> drop, no?  Isn't that what you want to get done?  Drop that lock so you
+> or someone else can get something other than spinning done?
+
+Correct.  I don't want the other task to run before me, I just don't 
+want to run before it.
+
+-- 
+error compiling committee.c: too many arguments to function
+
