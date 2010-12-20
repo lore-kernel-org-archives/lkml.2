@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755720Ab0LTLVA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 06:21:00 -0500
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:41547 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755464Ab0LTLU6 (ORCPT
+	id S1756209Ab0LTLXm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 06:23:42 -0500
+Received: from mail-bw0-f45.google.com ([209.85.214.45]:64679 "EHLO
+	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755563Ab0LTLXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 06:20:58 -0500
-Message-ID: <4D0F3BDA.7080404@ru.mvista.com>
-Date: Mon, 20 Dec 2010 14:19:54 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Wu Zhangjin <wuzhangjin@gmail.com>
-CC: "Martin K. Petersen" <mkp@mkp.net>, Jeff Garzik <jgarzik@pobox.com>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhang Le <r0bertz@gentoo.org>, Chen Jie <chenj@lemote.com>
-Subject: Re: [PATCH] [libata] pata_cs5536: Add support for non-X86_32 platforms
-References: <1292769160-24420-1-git-send-email-wuzhangjin@gmail.com>
-In-Reply-To: <1292769160-24420-1-git-send-email-wuzhangjin@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 20 Dec 2010 06:23:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=drZAOjVusjPDTStjrXtKIdWOcWLADmDYVGGn4ccwyUE5dtqy0ZNp8vLwzIOkDDwgFr
+         /3s80v0zf70eoII7fPurKJBVgUkimVttxz2OdcRiWyADnzy0w4KXc88VClseQ0PPpElA
+         muCpt7DPLcm/N0aC/idkw4un9sN2rsDl5KS44=
+Subject: Re: mtd: fix CONFIG_MTD_COMPLEX_MAPPINGS=n compile
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Jason Lunz <lunz@acm.org>
+Cc: Anatolij Gustschin <agust@denx.de>, lkml <linux-kernel@vger.kernel.org>,
+        linux-mtd@lists.infradead.org
+In-Reply-To: <20101219190720.GA16710@falooley.org>
+References: <20071227181524.GA19051@falooley.org>
+	 <20071228174853.GA4252@uranus.ravnborg.org>
+	 <20101207072919.GA8511@falooley.org>
+	 <AANLkTineLxHdcDKZEUGiqVNAauSX_xyQrs49kKaqhiWo@mail.gmail.com>
+	 <20101207182012.GA10546@falooley.org> <1292343878.2538.80.camel@localhost>
+	 <20101214195124.GA6010@falooley.org> <20101216230110.65156c55@wker>
+	 <20101217042759.GA3148@falooley.org> <1292777276.2140.1.camel@koala>
+	 <20101219190720.GA16710@falooley.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 20 Dec 2010 13:23:36 +0200
+Message-ID: <1292844216.13362.19.camel@koala>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Sun, 2010-12-19 at 14:07 -0500, Jason Lunz wrote:
+> You should also drop the changes that
+> 7bc3265a9e9a09d6a9a3cfaaf53ccf3af5271a93 made to drivers/mtd/mtdchar.c -
+> there's no point changing that when mtdchar is disabled on ARCH=um.
 
-On 19-12-2010 17:32, Wu Zhangjin wrote:
+Ok, could you please re-sent the final patch with the commit message
+etc?
 
-> pata_cs5536 does work on the other platforms(e.g. Loongson, a MIPS
-> variant), so, remove the dependency of X86_32 and fix the building
-> errors under the other platforms via only reserving the X86_32 specific
-> parts for X86_32.
+-- 
+Best Regards,
+Artem Bityutskiy (Битюцкий Артём)
 
-> pata_amd also supports cs5536 IDE controller, but this one saves about
-> 33k for the compressed kernel image(vmlinuz for MIPS).
-
-> Signed-off-by: Zhang Le <r0bertz@gentoo.org>
-> Signed-off-by: Chen Jie <chenj@lemote.com>
-> Signed-off-by: Wu Zhangjin <wuzhangjin@gmail.com>
-[...]
-
-> diff --git a/drivers/ata/pata_cs5536.c b/drivers/ata/pata_cs5536.c
-> index 21ee23f..643488b 100644
-> --- a/drivers/ata/pata_cs5536.c
-> +++ b/drivers/ata/pata_cs5536.c
-> @@ -37,7 +37,17 @@
->   #include<linux/delay.h>
->   #include<linux/libata.h>
->   #include<scsi/scsi_host.h>
-> +
-> +#ifdef CONFIG_X86_32
->   #include<asm/msr.h>
-> +static int use_msr;
-> +module_param_named(msr, use_msr, int, 0644);
-> +MODULE_PARM_DESC(msr, "Force using MSR to configure IDE function (Default: 0)");
-> +#else
-> +#define rdmsr(x, y, z) do { } while (0)
-> +#define wrmsr(x, y, z) do { } while (0)
-> +#define use_msr 0
-> +#endif
->
->   #define DRV_NAME	"pata_cs5536"
->   #define DRV_VERSION	"0.0.7"
-
-    I think you should increment the driver version too.
-
-WBR, Sergei
