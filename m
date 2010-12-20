@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868Ab0LTHYO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 02:24:14 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:52015 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1753668Ab0LTHYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 02:24:11 -0500
-X-Authenticated: #54578410
-X-Provags-ID: V01U2FsdGVkX1+3bBoiDMS36GXZqb5+Of8baC61+/xU08cNiAdKlx
-	XanZvDEBOv9/AX
-Message-ID: <4D0F0497.7090306@gmx.de>
-Date: Mon, 20 Dec 2010 08:24:07 +0100
-From: Michael Lawnick <ml.lawnick@gmx.de>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Mnenhy/0.8.3 Thunderbird/3.1.7
+	id S1753907Ab0LTHZK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 02:25:10 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:53263 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753650Ab0LTHZI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 02:25:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=p7uOD22WFiP8SeTRV+xrSW+Hr8hSHPK+g6rNb8m11grc9RzsPyJfOUvoOjVYYNyR0r
+         uid9X14YkrfHXCFLgmzGyysvd0CP2MG0xv9K3WLERFylVqT2XNfvTefpyjbyWW7BuOsA
+         M9BoRQzZ+oWv6/5OJKinG/FKQhUCwDVDQaeJ4=
 MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>
-CC: Ben Dooks <ben-i2c@fluff.org>, Linux I2C <linux-i2c@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Matthias Zacharias <Matthias.Zacharias@bmk-solutions.de>
-Subject: Re: [RFC] i2c-algo-bit: Disable interrupts while SCL is high
-References: <20101216150638.7d3850b5@endymion.delvare>	<20101216160046.GE20097@trinity.fluff.org>	<20101216175337.2b1ae6ee@endymion.delvare>	<4D0B5312.5080107@gmx.de> <20101218000924.546ad703@endymion.delvare>
-In-Reply-To: <20101218000924.546ad703@endymion.delvare>
+In-Reply-To: <xqq2Z3iR9HJ.A.9lH.p2fDNB@chimera>
+References: <ZRNlsjykcOD.A.b-F.20fDNB@chimera>
+	<xqq2Z3iR9HJ.A.9lH.p2fDNB@chimera>
+Date: Sun, 19 Dec 2010 23:25:06 -0800
+Message-ID: <AANLkTi=ApxE76PPOPjGPQCrO+YCwSQdCtpqAjUzYpiRa@mail.gmail.com>
+Subject: Re: [Bug #19392] WARNING: at drivers/net/wireless/ath/ath5k/base.c:3475
+ ath5k_bss_info_changed+0x44/0x168 [ath5k]()
+From: Justin Mattock <justinmattock@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Johannes Berg <johannes@sipsolutions.net>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jean Delvare said the following:
-> Hi Michael,
-> 
-> On Fri, 17 Dec 2010 13:09:54 +0100, Michael Lawnick wrote:
->> Sorry to disturb, but
->> <MANTRA>
->> 	Disabling interrupts may be done only for a few instructions.</MANTRA>
->> 
->> Even 1 us is an eternity on modern systems.
-> 
-> Don't be sorry, this is exactly the kind of input I was asking for. I'm
-> a little surprised, I thought disabling interrupts for a couple
-> microseconds was happening all the time, but I'll trust your
-> experience. 
+On Sun, Dec 19, 2010 at 4:50 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.35 and 2.6.36.
+>
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.35 and 2.6.36.  Please verify if it still should
+> be listed and let the tracking team know (either way).
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=19392
+> Subject         : WARNING: at drivers/net/wireless/ath/ath5k/base.c:3475 ath5k_bss_info_changed+0x44/0x168 [ath5k]()
+> Submitter       : Justin Mattock <justinmattock@gmail.com>
+> Date            : 2010-09-28 22:30 (83 days old)
+> Message-ID      : <<AANLkTim5WCGKPvEkOkO_YnMF9pg8mvLfQoFBNUFpfa_k@mail.gmail.com>>
+> References      : http://marc.info/?l=linux-kernel&m=128571307018635&w=2
+>
+>
+>
 
-I can't tell whether this is happening all the time, but I can imagine
-and I highly discourage this. This is IMHO one of the lessons many LINUX
-developers have still to learn. Maybe it's a history reason.
-
-> Given your point and Ben's, it seems clear that my patch is
-> not acceptable as is, and at the very least I should make the spinlock
-> usage optional.
-
-At last you might not come around your solution, but a H/W-S/W
-combination driving you in such a direction should be considered broken.
-Using it in professional environment needs heavy discussions about pros
-and cons, best would be to beat the H/W designers to provide a real
-controller.
-Of course it may be used in a case, where you simply need a (temporary)
-hack to get something working.
+yep.. still here with the latest Mainline
 
 -- 
-KR
-Michael
+Justin P. Mattock
