@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687Ab0LTKaa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 05:30:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6978 "EHLO mx1.redhat.com"
+	id S1753424Ab0LTKbr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 05:31:47 -0500
+Received: from mga11.intel.com ([192.55.52.93]:60123 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752369Ab0LTKa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 05:30:29 -0500
-Date: Mon, 20 Dec 2010 11:30:25 +0100 (CET)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-lab-213.englab.brq.redhat.com
-To: Lukas Czerner <lczerner@redhat.com>
-cc: tytso@mit.edu, linux-kernel@vger.kernel.org, sandeen@redhat.com
-Subject: Re: [PATCH] ext4: fix possible overflow in ext4_trim_fs()
-In-Reply-To: <1290694277-29462-1-git-send-email-lczerner@redhat.com>
-Message-ID: <alpine.LFD.2.00.1012201129030.2995@dhcp-lab-213.englab.brq.redhat.com>
-References: <1290694277-29462-1-git-send-email-lczerner@redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752403Ab0LTKbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 05:31:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,201,1291622400"; 
+   d="scan'208";a="638260649"
+Date: Mon, 20 Dec 2010 11:31:43 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andres Salomon <dilinger@queued.net>
+Subject: Re: linux-next: build warnings after merge of the mfd tree
+Message-ID: <20101220103142.GB11095@sortiz-mobl>
+References: <20101220152505.f9974119.sfr@canb.auug.org.au>
+ <20101219202745.c733f7f8.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101219202745.c733f7f8.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Nov 2010, Lukas Czerner wrote:
-
-> When determining last group through ext4_get_group_no_and_offset() the
-> result may be wrong in cases when range->start and range-len are too
-> big, because it may overflow when summing up those two numbers.
+On Sun, Dec 19, 2010 at 08:27:45PM -0800, Randy Dunlap wrote:
+> On Mon, 20 Dec 2010 15:25:05 +1100 Stephen Rothwell wrote:
 > 
-> Fix that by checking range->len and limit its value to
-> ext4_blocks_count(). This commit was tested by myself with expected
-> result.
+> > Hi Samuel,
+> > 
+> > After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
+> > produced these warnings:
+> > 
+> > drivers/gpio/cs5535-gpio.c: In function 'cs5535_gpio_probe':
+> > drivers/gpio/cs5535-gpio.c:269: warning: format '%x' expects type 'unsigned int', but argument 3 has type 'resource_size_t'
+> > drivers/gpio/cs5535-gpio.c:269: warning: format '%x' expects type 'unsigned int', but argument 4 has type 'resource_size_t'
+> > drivers/misc/cs5535-mfgpt.c: In function 'cs5535_mfgpt_probe':
+> > drivers/misc/cs5535-mfgpt.c:320: warning: format '%x' expects type 'unsigned int', but argument 3 has type 'resource_size_t'
+> > drivers/misc/cs5535-mfgpt.c:320: warning: format '%x' expects type 'unsigned int', but argument 4 has type 'resource_size_t'
+> > 
+> > Introduced by commits d8fefd6ff3a8444ab34f6eb6c7c1961f0ca0008a ("gpio:
+> > Convert cs5535 from pci device to platform device") and
+> > 6a85d28cfca9663c0db297a04ca43777dc5bcaa6 ("misc: Convert cs5535-mfgpt
+> > from pci device to platform device").  We have %pR for printing
+> > resources ...
 > 
-> Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-> ---
->  fs/ext4/mballoc.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-> index 5b4d4e3..7b05d92 100644
-> --- a/fs/ext4/mballoc.c
-> +++ b/fs/ext4/mballoc.c
-> @@ -4819,6 +4819,7 @@ int ext4_trim_fs(struct super_block *sb, struct fstrim_range *range)
->  	ext4_group_t group, ngroups = ext4_get_groups_count(sb);
->  	ext4_grpblk_t cnt = 0, first_block, last_block;
->  	uint64_t start, len, minlen, trimmed;
-> +	ext4_fsblk_t blocks_count = ext4_blocks_count(EXT4_SB(sb)->s_es);
->  	int ret = 0;
->  
->  	start = range->start >> sb->s_blocksize_bits;
-> @@ -4826,6 +4827,9 @@ int ext4_trim_fs(struct super_block *sb, struct fstrim_range *range)
->  	minlen = range->minlen >> sb->s_blocksize_bits;
->  	trimmed = 0;
->  
-> +	if (len > blocks_count)
-> +		len = blocks_count - start;
-> +
->  	if (unlikely(minlen > EXT4_BLOCKS_PER_GROUP(sb)))
->  		return -EINVAL;
->  
-> 
+> Yes, and Joe Perches has posted a patch for that.
+I never received that one. I found it on patchwork, and applied it now.
+Stephen, this is fixed.
 
-Hi Ted,
+Cheers,
+Samuel.
 
-what is the status of this patch ?
-
--Lukas
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
