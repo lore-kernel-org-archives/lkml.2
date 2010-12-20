@@ -1,131 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087Ab0LTIJO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 03:09:14 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34536 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753750Ab0LTIJM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 03:09:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=m1H6ftyfWvc6/sYIwvaYu1H5ehhqe+pFcXcKzp7Z884bMpHUwK1H8kvCOrLJlcrXNY
-         jnu80QNy6XGVVaD52zcIrEalKZ9U+kTbfi3U8EJCc96U6elntkm4usue1IlKioPQ3+Or
-         VSRdXltCxBf2sKL5ZieUsua5NKPshSWJ/pmP8=
+	id S1754142Ab0LTIM2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 03:12:28 -0500
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:57903 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753913Ab0LTIM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 03:12:27 -0500
+Message-ID: <4D0F0FD1.2080407@kernel.dk>
+Date: Mon, 20 Dec 2010 09:12:01 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <20101220133526.e075feb8.kamezawa.hiroyu@jp.fujitsu.com>
-References: <cover.1292604745.git.minchan.kim@gmail.com>
-	<02ab98b3a1450f7a1c31edc48ccc57e887cee900.1292604746.git.minchan.kim@gmail.com>
-	<20101220112227.E566.A69D9226@jp.fujitsu.com>
-	<20101220112733.064f2fe3.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTi=UfmZNfKWCisrs6ezzoWqpcwUOT5bs8LGwN7Rv@mail.gmail.com>
-	<20101220133526.e075feb8.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Mon, 20 Dec 2010 17:09:11 +0900
-Message-ID: <AANLkTikn-ZyBKwVaDwuQ=QSvB=wLwY40u8FHGyWccStm@mail.gmail.com>
-Subject: Re: [RFC 5/5] truncate: Remove unnecessary page release
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@suse.de>, Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>
+Subject: Re: linux-next: build warning after merge of the block tree
+References: <20101220153127.ad8213b2.sfr@canb.auug.org.au> <20101220154259.9a84819e.sfr@canb.auug.org.au>
+In-Reply-To: <20101220154259.9a84819e.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 20, 2010 at 1:35 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Mon, 20 Dec 2010 11:58:50 +0900
-> Minchan Kim <minchan.kim@gmail.com> wrote:
->
->> On Mon, Dec 20, 2010 at 11:27 AM, KAMEZAWA Hiroyuki
->> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->> > On Mon, 20 Dec 2010 11:21:52 +0900 (JST)
->> > KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
->> >
->> >> > This patch series changes remove_from_page_cache's page ref counting
->> >> > rule. page cache ref count is decreased in remove_from_page_cache.
->> >> > So we don't need call again in caller context.
->> >> >
->> >> > Cc: Nick Piggin <npiggin@suse.de>
->> >> > Cc: Al Viro <viro@zeniv.linux.org.uk>
->> >> > Cc: linux-mm@kvack.org
->> >> > Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
->> >> > ---
->> >> >  mm/truncate.c |    1 -
->> >> >  1 files changed, 0 insertions(+), 1 deletions(-)
->> >> >
->> >> > diff --git a/mm/truncate.c b/mm/truncate.c
->> >> > index 9ee5673..8decb93 100644
->> >> > --- a/mm/truncate.c
->> >> > +++ b/mm/truncate.c
->> >> > @@ -114,7 +114,6 @@ truncate_complete_page(struct address_space *mapping, struct page *page)
->> >> >      * calls cleancache_put_page (and note page->mapping is now NULL)
->> >> >      */
->> >> >     cleancache_flush_page(mapping, page);
->> >> > -   page_cache_release(page);       /* pagecache ref */
->> >> >     return 0;
->> >>
->> >> Do we _always_ have stable page reference here? IOW, I can assume
->> >> cleancache_flush_page() doesn't cause NULL deref?
->> >>
->> > Hmm, my review was bad.
->> >
->> > I think cleancache_flush_page() here should eat (mapping, index) as argument
->> > rather than "page".
->> >
->> > BTW,  I can't understand
->> > ==
->> > void __cleancache_flush_page(struct address_space *mapping, struct page *page)
->> > {
->> >        /* careful... page->mapping is NULL sometimes when this is called */
->> >        int pool_id = mapping->host->i_sb->cleancache_poolid;
->> >        struct cleancache_filekey key = { .u.key = { 0 } };
->> > ==
->> >
->> > Why above is safe...
->> > I think (mapping,index) should be passed instead of page.
+On 2010-12-20 05:42, Stephen Rothwell wrote:
+> Hi Jens,
+> 
+> On Mon, 20 Dec 2010 15:31:27 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 >>
->> I don't think current code isn't safe.
+>> After merging the block tree, today's linux-next build (powerpc
+>> ppc64_defconfig) produced this warning:
 >>
->> void __cleancache_flush_page(struct address_space *mapping, struct page *page)
->> {
->>         /* careful... page->mapping is NULL sometimes when this is called */
->>         int pool_id = mapping->host->i_sb->cleancache_poolid;
->>         struct cleancache_filekey key = { .u.key = { 0 } };
+>> drivers/block/loop.c: In function 'lo_splice_actor':
+>> drivers/block/loop.c:398: warning: unused variable 'ret'
 >>
->>         if (pool_id >= 0) {
->>                 VM_BUG_ON(!PageLocked(page));
->>
->> it does check PageLocked. So caller should hold a page reference to
->> prevent freeing ramined PG_locked
->> If the caller doesn't hold a ref of page, I think it's BUG of caller.
->>
->> In our case, caller calls truncate_complete_page have to make sure it, I think.
->>
->
-> Ah, my point is that this function trust page->index even if page->mapping is
-> reset to NULL. And I'm not sure that there are any race that an other thread
-> add a replacement page for (mapping, index) while a thread call this function.
+>> Introduced by commit a8adbe378b56acd5945df70753c7e8f6fe223304
+>> ("fs/splice: Pull buf->ops->confirm() from splice_from_pipe actors").
+> 
+> Also:
+> 
+> fs/nfsd/vfs.c: In function 'nfsd_splice_actor':
+> fs/nfsd/vfs.c:848: warning: unused variable 'ret'
 
-Because the page is locked and is detached from page cache, I guess
-it's no problem.
-Anyway, I think It's off-topic.
-
->
-> Thanks,
-> -Kame
->
->
->
->
-
-
+Hrmpf, that's not very nice. I'll add a fixup patch, thanks Stephen.
 
 -- 
-Kind regards,
-Minchan Kim
+Jens Axboe
+
