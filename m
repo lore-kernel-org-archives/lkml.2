@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932641Ab0LTPZE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 10:25:04 -0500
-Received: from mail-ew0-f45.google.com ([209.85.215.45]:41757 "EHLO
-	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757985Ab0LTPYx (ORCPT
+	id S932674Ab0LTPZK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 10:25:10 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:63472 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932643Ab0LTPZG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 10:24:53 -0500
+	Mon, 20 Dec 2010 10:25:06 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=htoWvFOtMhP18yNmj8CTYLEy/Fbp6Q94rQdPFxRZrCKcUkKukxJS7fYXm6oMTHmVqC
-         O1e930oyziEsvzSMPvzIioRa6VCLnisDv/fCz3Vtz6enMgLldbmPCWAwtifW9a/lyLcB
-         WTslIFakysjzKkaZTpvD3vbAzL6ejJImCyTbs=
+        b=mfXGPr3/ue5ExFWoZlkvV6FLMOCxzXtFuFwAuXHZ0PCXcqx/hdTgAEDAUKEQiKf6a2
+         IaDCv1EM+rFTeNmnHjnLxsoBB31PUVTF85dAhB+/gGKjHthwcE+8JBx4xeEAo1s/oX84
+         uXEbh1rVSM4y8zm80JYygsWaI9plyLCpR8Snw=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -25,9 +25,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Anton Blanchard <anton@au1.ibm.com>,
         Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: [RFC PATCH 09/15] rcu: Make rcu_enter,exit_nohz() callable from irq
-Date: Mon, 20 Dec 2010 16:24:16 +0100
-Message-Id: <1292858662-5650-10-git-send-email-fweisbec@gmail.com>
+Subject: [RFC PATCH 15/15] nohz_task: Procfs interface
+Date: Mon, 20 Dec 2010 16:24:22 +0100
+Message-Id: <1292858662-5650-16-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
 References: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
@@ -35,38 +35,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to be able to enter/exit into rcu extended quiescent
-state from interrupt, we need to make rcu_enter_nohz() and
-rcu_exit_nohz() callable from interrupts.
+This implements the /proc/pid/nohz file that enables the
+nohz attribute of a task.
 
-So, this proposes a new implementation of the rcu nohz fast path
-related helpers, where rcu_enter_nohz() or rcu_exit_nohz() can
-be called between rcu_enter_irq() and rcu_exit_irq() while keeping
-the existing semantics.
+Synchronization is enforced so that:
 
-We maintain three per cpu fields:
+- A CPU can have only one nohz task
+- A nohz task can be only affine to a single CPU
 
-- nohz indicates we entered into extended quiescent state mode,
-we may or not be in an interrupt even if that state is set though.
-
-- irq_nest indicates we are in an irq. This number is incremented on
-irq entry and decreased on irq exit. This includes NMIs
-
-- qs_seq is increased everytime we see a true extended quiescent
-state:
-	* When we call rcu_enter_nohz() and we are not in an irq.
-	* When we exit the outer most nesting irq and we are in
-	  nohz mode (rcu_enter_nohz() was called without a pairing
-	  rcu_exit_nohz() yet).
-
->From that three-part we can deduce the extended grace periods like
-we did before on top of snapshots and comparisons.
-
-If nohz == 1 and irq_nest == 0, we are in a quiescent state. qs_seq
-is used to keep track of elapsed extended quiescent states, useful
-to compare snapshots of rcu nohz state.
-
-This is experimental and does not take care of barriers yet.
+For now this is only possible to write on /proc/self but probably
+allowing it from another task would be a good idea and wouldn't
+increase so much the complexity of the code.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
@@ -79,238 +58,234 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Anton Blanchard <anton@au1.ibm.com>
 Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>
 ---
- kernel/rcutree.c |  103 ++++++++++++++++++++++-------------------------------
- kernel/rcutree.h |   12 +++----
- 2 files changed, 48 insertions(+), 67 deletions(-)
+ fs/proc/base.c           |   80 ++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/sched.h    |    1 +
+ include/linux/tick.h     |    1 +
+ kernel/sched.c           |   43 ++++++++++++++++++++++++
+ kernel/time/Kconfig      |    6 ++--
+ kernel/time/tick-sched.c |   12 +++++++
+ 6 files changed, 140 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index ed6aba3..1ac1a61 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -129,10 +129,7 @@ void rcu_note_context_switch(int cpu)
- }
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 1828451..9a01978 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -83,6 +83,7 @@
+ #include <linux/pid_namespace.h>
+ #include <linux/fs_struct.h>
+ #include <linux/slab.h>
++#include <linux/tick.h>
+ #include "internal.h"
  
- #ifdef CONFIG_NO_HZ
--DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
--	.dynticks_nesting = 1,
--	.dynticks = 1,
--};
-+DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks);
- #endif /* #ifdef CONFIG_NO_HZ */
- 
- static int blimit = 10;		/* Maximum callbacks per softirq. */
-@@ -272,16 +269,15 @@ static int rcu_implicit_offline_qs(struct rcu_data *rdp)
-  */
- void rcu_enter_nohz(void)
- {
--	unsigned long flags;
- 	struct rcu_dynticks *rdtp;
- 
--	smp_mb(); /* CPUs seeing ++ must see prior RCU read-side crit sects */
--	local_irq_save(flags);
-+	preempt_disable();
- 	rdtp = &__get_cpu_var(rcu_dynticks);
--	rdtp->dynticks++;
--	rdtp->dynticks_nesting--;
--	WARN_ON_ONCE(rdtp->dynticks & 0x1);
--	local_irq_restore(flags);
-+	WARN_ON_ONCE(rdtp->nohz);
-+	rdtp->nohz = 1;
-+	if (!rdtp->irq_nest)
-+		local_inc(&rdtp->qs_seq);
-+	preempt_enable();
- }
- 
- /*
-@@ -292,16 +288,13 @@ void rcu_enter_nohz(void)
-  */
- void rcu_exit_nohz(void)
- {
--	unsigned long flags;
- 	struct rcu_dynticks *rdtp;
- 
--	local_irq_save(flags);
-+	preempt_disable();
- 	rdtp = &__get_cpu_var(rcu_dynticks);
--	rdtp->dynticks++;
--	rdtp->dynticks_nesting++;
--	WARN_ON_ONCE(!(rdtp->dynticks & 0x1));
--	local_irq_restore(flags);
--	smp_mb(); /* CPUs seeing ++ must see later RCU read-side crit sects */
-+	WARN_ON_ONCE(!rdtp->nohz);
-+	rdtp->nohz = 0;
-+	preempt_enable();
- }
- 
- /**
-@@ -313,13 +306,7 @@ void rcu_exit_nohz(void)
-  */
- void rcu_nmi_enter(void)
- {
--	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
--
--	if (rdtp->dynticks & 0x1)
--		return;
--	rdtp->dynticks_nmi++;
--	WARN_ON_ONCE(!(rdtp->dynticks_nmi & 0x1));
--	smp_mb(); /* CPUs seeing ++ must see later RCU read-side crit sects */
-+	rcu_irq_enter();
- }
- 
- /**
-@@ -331,13 +318,7 @@ void rcu_nmi_enter(void)
-  */
- void rcu_nmi_exit(void)
- {
--	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
--
--	if (rdtp->dynticks & 0x1)
--		return;
--	smp_mb(); /* CPUs seeing ++ must see prior RCU read-side crit sects */
--	rdtp->dynticks_nmi++;
--	WARN_ON_ONCE(rdtp->dynticks_nmi & 0x1);
-+	rcu_irq_exit();
- }
- 
- /**
-@@ -350,11 +331,7 @@ void rcu_irq_enter(void)
- {
- 	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
- 
--	if (rdtp->dynticks_nesting++)
--		return;
--	rdtp->dynticks++;
--	WARN_ON_ONCE(!(rdtp->dynticks & 0x1));
--	smp_mb(); /* CPUs seeing ++ must see later RCU read-side crit sects */
-+	rdtp->irq_nest++;
- }
- 
- /**
-@@ -368,11 +345,11 @@ void rcu_irq_exit(void)
- {
- 	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
- 
--	if (--rdtp->dynticks_nesting)
-+	if (--rdtp->irq_nest)
- 		return;
--	smp_mb(); /* CPUs seeing ++ must see prior RCU read-side crit sects */
--	rdtp->dynticks++;
--	WARN_ON_ONCE(rdtp->dynticks & 0x1);
-+
-+	if (rdtp->nohz)
-+		local_inc(&rdtp->qs_seq);
- 
- 	/* If the interrupt queued a callback, get out of dyntick mode. */
- 	if (__get_cpu_var(rcu_sched_data).nxtlist ||
-@@ -390,15 +367,19 @@ void rcu_irq_exit(void)
- static int dyntick_save_progress_counter(struct rcu_data *rdp)
- {
- 	int ret;
--	int snap;
--	int snap_nmi;
-+	int snap_nohz;
-+	int snap_irq_nest;
-+	long snap_qs_seq;
- 
--	snap = rdp->dynticks->dynticks;
--	snap_nmi = rdp->dynticks->dynticks_nmi;
-+	snap_nohz = rdp->dynticks->nohz;
-+	snap_irq_nest = rdp->dynticks->irq_nest;
-+	snap_qs_seq = local_read(&rdp->dynticks->qs_seq);
- 	smp_mb();	/* Order sampling of snap with end of grace period. */
--	rdp->dynticks_snap = snap;
--	rdp->dynticks_nmi_snap = snap_nmi;
--	ret = ((snap & 0x1) == 0) && ((snap_nmi & 0x1) == 0);
-+	rdp->dynticks_snap.nohz = snap_nohz;
-+	rdp->dynticks_snap.irq_nest = snap_irq_nest;
-+	local_set(&rdp->dynticks_snap.qs_seq, snap_qs_seq);
-+
-+	ret = (snap_nohz && !snap_irq_nest);
- 	if (ret)
- 		rdp->dynticks_fqs++;
- 	return ret;
-@@ -412,15 +393,10 @@ static int dyntick_save_progress_counter(struct rcu_data *rdp)
-  */
- static int rcu_implicit_dynticks_qs(struct rcu_data *rdp)
- {
--	long curr;
--	long curr_nmi;
--	long snap;
--	long snap_nmi;
-+	struct rcu_dynticks curr, snap;
- 
--	curr = rdp->dynticks->dynticks;
-+	curr = *rdp->dynticks;
- 	snap = rdp->dynticks_snap;
--	curr_nmi = rdp->dynticks->dynticks_nmi;
--	snap_nmi = rdp->dynticks_nmi_snap;
- 	smp_mb(); /* force ordering with cpu entering/leaving dynticks. */
- 
- 	/*
-@@ -431,14 +407,21 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp)
- 	 * read-side critical section that started before the beginning
- 	 * of the current RCU grace period.
- 	 */
--	if ((curr != snap || (curr & 0x1) == 0) &&
--	    (curr_nmi != snap_nmi || (curr_nmi & 0x1) == 0)) {
--		rdp->dynticks_fqs++;
--		return 1;
--	}
-+	if (curr.nohz && !curr.irq_nest)
-+		goto dynticks_qs;
-+
-+	if (snap.nohz && !snap.irq_nest)
-+		goto dynticks_qs;
-+
-+	if (local_read(&curr.qs_seq) != local_read(&snap.qs_seq))
-+		goto dynticks_qs;
- 
- 	/* Go check for the CPU being offline. */
- 	return rcu_implicit_offline_qs(rdp);
-+
-+dynticks_qs:
-+	rdp->dynticks_fqs++;
-+	return 1;
- }
- 
- #endif /* #ifdef CONFIG_SMP */
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 91d4170..215e431 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -27,6 +27,7 @@
- #include <linux/threads.h>
- #include <linux/cpumask.h>
- #include <linux/seqlock.h>
-+#include <asm/local.h>
- 
- /*
-  * Define shape of hierarchy based on NR_CPUS and CONFIG_RCU_FANOUT.
-@@ -79,11 +80,9 @@
-  * Dynticks per-CPU state.
-  */
- struct rcu_dynticks {
--	int dynticks_nesting;	/* Track nesting level, sort of. */
--	int dynticks;		/* Even value for dynticks-idle, else odd. */
--	int dynticks_nmi;	/* Even value for either dynticks-idle or */
--				/*  not in nmi handler, else odd.  So this */
--				/*  remains even for nmi from irq handler. */
-+	int nohz;
-+	local_t qs_seq;
-+	int irq_nest;
+ /* NOTE:
+@@ -1295,6 +1296,82 @@ static const struct file_operations proc_sessionid_operations = {
  };
+ #endif
  
- /*
-@@ -212,8 +211,7 @@ struct rcu_data {
- #ifdef CONFIG_NO_HZ
- 	/* 3) dynticks interface. */
- 	struct rcu_dynticks *dynticks;	/* Shared per-CPU dynticks state. */
--	int dynticks_snap;		/* Per-GP tracking for dynticks. */
--	int dynticks_nmi_snap;		/* Per-GP tracking for dynticks_nmi. */
-+	struct rcu_dynticks dynticks_snap;
- #endif /* #ifdef CONFIG_NO_HZ */
++#ifdef CONFIG_NO_HZ_TASK
++static ssize_t proc_nohz_read(struct file *file, char __user *buf,
++					size_t count, loff_t *ppos)
++{
++	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
++	char buffer[PROC_NUMBUF];
++	int val = 0;
++	size_t len;
++
++	if (!task)
++		return -ESRCH;
++
++	if (test_tsk_thread_flag(task, TIF_NOHZ))
++		val = 1;
++
++	put_task_struct(task);
++
++	len = snprintf(buffer, sizeof(buffer), "%d\n", val);
++
++	return simple_read_from_buffer(buf, count, ppos, buffer, len);
++}
++
++
++static ssize_t proc_nohz_write(struct file *file, const char __user *buf,
++			       size_t count, loff_t *ppos)
++{
++	struct inode *inode = file->f_path.dentry->d_inode;
++	struct task_struct *task;
++	char buffer[PROC_NUMBUF];
++	long val;
++	int err = 0;
++
++	memset(buffer, 0, sizeof(buffer));
++
++	if (count > sizeof(buffer) - 1)
++		count = sizeof(buffer) - 1;
++
++	if (copy_from_user(buffer, buf, count)) {
++		err = -EFAULT;
++		goto out;
++	}
++
++	err = strict_strtol(strstrip(buffer), 0, &val);
++
++	if (err || (val != 0 && val != 1)) {
++		err = -EINVAL;
++		goto out;
++	}
++
++	rcu_read_lock();
++	task = pid_task(proc_pid(inode), PIDTYPE_PID);
++	if (task != current) {
++		rcu_read_unlock();
++		err = -EPERM;
++		goto out;
++	}
++	rcu_read_unlock();
++
++	if (val == 1)
++		err = tick_nohz_task_set();
++	else
++		tick_nohz_task_clear();
++
++out:
++	return err < 0 ? err : count;
++}
++
++
++static const struct file_operations proc_nohz_operations = {
++	.read		= proc_nohz_read,
++	.write		= proc_nohz_write,
++	.llseek		= generic_file_llseek,
++};
++#endif /* CONFIG_NO_HZ_TASK */
++
++
+ #ifdef CONFIG_FAULT_INJECTION
+ static ssize_t proc_fault_inject_read(struct file * file, char __user * buf,
+ 				      size_t count, loff_t *ppos)
+@@ -2784,6 +2861,9 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	REG("loginuid",   S_IWUSR|S_IRUGO, proc_loginuid_operations),
+ 	REG("sessionid",  S_IRUGO, proc_sessionid_operations),
+ #endif
++#ifdef CONFIG_NO_HZ_TASK
++	REG("nohz", S_IWUSR|S_IRUGO, proc_nohz_operations),
++#endif
+ #ifdef CONFIG_FAULT_INJECTION
+ 	REG("make-it-fail", S_IRUGO|S_IWUSR, proc_fault_inject_operations),
+ #endif
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index f80088a..0e2e5c9 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2552,6 +2552,7 @@ extern void task_oncpu_function_call(struct task_struct *p,
+ #ifdef CONFIG_NO_HZ_TASK
+ extern void smp_send_update_nohz_task_cpu(int cpu);
+ extern int nohz_task_can_stop_tick(void);
++extern int sched_task_set_nohz(void);
+ #else
+ static inline void smp_send_update_nohz_task_cpu(int cpu) { }
+ static inline int nohz_task_can_stop_tick(void) { return 0; }
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index 37af961..5364438 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -137,6 +137,7 @@ extern void tick_nohz_task_enter_kernel(void);
+ extern void tick_nohz_task_exit_kernel(void);
+ extern void tick_nohz_task_enter_exception(struct pt_regs *regs);
+ extern void tick_nohz_task_exit_exception(struct pt_regs *regs);
++extern int tick_nohz_task_set(void);
+ extern void tick_nohz_task_clear(void);
+ extern int tick_nohz_task_mode(void);
  
- 	/* 4) reasons this CPU needed to be kicked by force_quiescent_state */
+diff --git a/kernel/sched.c b/kernel/sched.c
+index bd0a41f..d553a47 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2491,6 +2491,49 @@ void smp_send_update_nohz_task_cpu(int cpu)
+ 	smp_call_function_single(cpu, nohz_task_cpu_update,
+ 				 NULL, 0);
+ }
++
++int sched_task_set_nohz(void)
++{
++	int cpu;
++	struct rq *rq;
++	int err = -EBUSY;
++	unsigned long flags;
++
++	get_online_cpus();
++
++	/* We need to serialize against set_cpus_allowed() */
++	rq = task_rq_lock(current, &flags);
++
++	/* A nohz task must be affine to a single cpu */
++	if (!cpumask_weight(&current->cpus_allowed) == 1)
++		goto out;
++
++	cpu = smp_processor_id();
++
++	if (!cpu_online(cpu))
++		goto out;
++
++	/* A CPU must have a single nohz task */
++	if (cpu_has_nohz_task(cpu))
++		goto out;
++
++	/*
++	 * We need to keep at least one CPU without nohz task
++	 * for several background jobs.
++	 */
++	if (cpumask_weight(cpu_online_mask) -
++	    cpumask_weight(cpu_has_nohz_task_mask) == 1)
++		goto out;
++
++	set_cpu_has_nohz_task(cpu, 1);
++	set_thread_flag(TIF_NOHZ);
++	err = 0;
++out:
++	task_rq_unlock(rq, &flags);
++	put_online_cpus();
++
++	return err;
++}
+ #endif
+ 
+ static inline void ttwu_activate(struct task_struct *p, struct rq *rq,
+diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+index a460cee..dfb10db 100644
+--- a/kernel/time/Kconfig
++++ b/kernel/time/Kconfig
+@@ -31,6 +31,6 @@ config NO_HZ_TASK
+        bool "Tickless task"
+        depends on HAVE_NO_HZ_TASK && NO_HZ && SMP && HIGH_RES_TIMERS
+        help
+-         When a task runs alone on a CPU and switches into this mode,
+-         the timer interrupt will only trigger when it is strictly
+-         needed.
++         This implements the /proc/self/nohz interface. When a task
++	 runs alone on a CPU and switches into this mode, the timer
++	 interrupt will only trigger when it is strictly needed.
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 06379eb..f408803 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -720,6 +720,18 @@ void tick_check_idle(int cpu)
+ }
+ 
+ #ifdef CONFIG_NO_HZ_TASK
++int tick_nohz_task_set(void)
++{
++	/*
++	 * Only current can set this from procfs, so no possible
++	 * race.
++	 */
++	if (test_thread_flag(TIF_NOHZ))
++		return 0;
++
++	return sched_task_set_nohz();
++}
++
+ void tick_nohz_task_clear(void)
+ {
+ 	int cpu = raw_smp_processor_id();
 -- 
 1.7.3.2
 
