@@ -1,50 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab0LTIha (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 03:37:30 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:33627 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754389Ab0LTIh2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 03:37:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=qSCBpLNXB/On4ufjeq4rbN4xogAWfW36pELsbipmtS9yZgLzWQun7qrWCUL/0ofHQk
-         MZ0a6/Iyl64FTiw5fJROsbJXJ7NHMLFz+gJZtTPX2XXR7x4KoSe/qO2oJSnFW00KKPS3
-         SemZ06/lkdhGd7dDrjpRZggXGqAu0nHo5dgz0=
+	id S1754479Ab0LTIht (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 03:37:49 -0500
+Received: from hera.kernel.org ([140.211.167.34]:57801 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754305Ab0LTIhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 03:37:48 -0500
+Date: Mon, 20 Dec 2010 08:37:09 GMT
+From: tip-bot for Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, efault@gmx.de,
+        pjt@google.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, pjt@google.com,
+        efault@gmx.de, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20101216031038.159704378@google.com>
+References: <20101216031038.159704378@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Fix interactivity bug by charging unaccounted run-time on entity re-weight
+Message-ID: <tip-19e5eebb8eaa5ca3ff8aa18cb57ccb7a9f67277d@git.kernel.org>
+Git-Commit-ID: 19e5eebb8eaa5ca3ff8aa18cb57ccb7a9f67277d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1292813544.22702.342.camel@Joe-Laptop>
-References: <4D0DD027.4000507@gmail.com>
-	<1292813544.22702.342.camel@Joe-Laptop>
-Date: Mon, 20 Dec 2010 09:37:27 +0100
-Message-ID: <AANLkTi=WP9k_yqyvvJmy2ZW0ErO9Yt=jQjVvWQ_RGByv@mail.gmail.com>
-Subject: Re: [PATCH][RESEND] scripts: add no-warning option to the checkpatch script
-From: Marco Stornelli <marco.stornelli@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, apw@canonical.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 20 Dec 2010 08:37:11 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/12/20 Joe Perches <joe@perches.com>:
-> On Sun, 2010-12-19 at 10:28 +0100, Marco Stornelli wrote:
->> From: Marco Stornelli <marco.stornelli@gmail.com>
->> Add no-warning option to the checkpatch script.
->> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
->
-> Hello Marco.
->
-> I don't have much of an opinion on this.
-> I don't actually use checkpatch much.
-> Why do you think it's useful?
+Commit-ID:  19e5eebb8eaa5ca3ff8aa18cb57ccb7a9f67277d
+Gitweb:     http://git.kernel.org/tip/19e5eebb8eaa5ca3ff8aa18cb57ccb7a9f67277d
+Author:     Paul Turner <pjt@google.com>
+AuthorDate: Wed, 15 Dec 2010 19:10:18 -0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sun, 19 Dec 2010 16:36:30 +0100
 
-To "debug" a patch from style point of view, I think it's useful to
-fix before the errors and then the warnings. So this option it's
-useful as a "filter". However, I added you in cc: because of a reply
-to my first patch that indicated you as a person interested in this
-scope.
+sched: Fix interactivity bug by charging unaccounted run-time on entity re-weight
 
-Marco
+Mike Galbraith reported poor interactivity[*] when the new shares distribution
+code was combined with autogroups.
+
+The root cause turns out to be a mis-ordering of accounting accrued execution
+time and shares updates.  Since update_curr() is issued hierarchically,
+updating the parent entity weights to reflect child enqueue/dequeue results in
+the parent's unaccounted execution time then being accrued (vs vruntime) at the
+new weight as opposed to the weight present at accumulation.
+
+While this doesn't have much effect on processes with timeslices that cross a
+tick, it is particularly problematic for an interactive process (e.g. Xorg)
+which incurs many (tiny) timeslices.  In this scenario almost all updates are
+at dequeue which can result in significant fairness perturbation (especially if
+it is the only thread, resulting in potential {tg->shares, MIN_SHARES}
+transitions).
+
+Correct this by ensuring unaccounted time is accumulated prior to manipulating
+an entity's weight.
+
+[*] http://xkcd.com/619/ is perversely Nostradamian here.
+
+Signed-off-by: Paul Turner <pjt@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+LKML-Reference: <20101216031038.159704378@google.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched_fair.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 16ee398..c62ebae 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -765,8 +765,12 @@ static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
+ static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
+ 			    unsigned long weight)
+ {
+-	if (se->on_rq)
++	if (se->on_rq) {
++		/* commit outstanding execution time */
++		if (cfs_rq->curr == se)
++			update_curr(cfs_rq);
+ 		account_entity_dequeue(cfs_rq, se);
++	}
+ 
+ 	update_load_set(&se->load, weight);
+ 
