@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752818Ab0LUVKV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 16:10:21 -0500
-Received: from mail-gw0-f42.google.com ([74.125.83.42]:57083 "EHLO
-	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237Ab0LUVKU (ORCPT
+	id S1753163Ab0LUVNt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 16:13:49 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40610 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752076Ab0LUVNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 16:10:20 -0500
+	Tue, 21 Dec 2010 16:13:47 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=Preixk2T2bvHAqn1lYN3w4A+mQAdrK6E9pMQjpzUcXFYjTRSYZT/nU0RWfU/61QtDI
-         TObsXlqpbnLcfEnwFxcevwjYa6PWttl7L8BdXB+8Y7XJHcZ68eyYL5VKHCSDxF/APsY1
-         aNRzE3XyD4xpGn4khUJT6qw1ls9/NUwWTG4ak=
-Date: Tue, 21 Dec 2010 19:05:02 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Franck Bui-Huu <vagabon.xyz@gmail.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH 0/6] Minor cleanups & fixes for perf-probe(1)
-Message-ID: <20101221210502.GA29079@ghostprotocols.net>
-References: <1292854685-8230-1-git-send-email-fbuihuu@gmail.com>
- <4D10A795.9040809@hitachi.com>
- <m3aajzc8f1.fsf@gmail.com>
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=sTiab6KLOP6527m/a1QfN2d/xy48kTiDSpVLE5g4pBhi9tVDngVwQ2gTgdhOahy40y
+         J6aRfvu0QyELoQi+ZLTT1mSy4LYl42Fceak+v21Hy+1Eq16GzFs84Y1LUnk3LS4Z8dCb
+         J37kvO3TPmDoUADcjtVMH6E650VkhwNmOcmEM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m3aajzc8f1.fsf@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1292960224.2618.4.camel@work-vm>
+References: <cover.1292512461.git.richard.cochran@omicron.at>
+ <880d82bb8120f73973db27e0c48e949014b1a106.1292512461.git.richard.cochran@omicron.at>
+ <AANLkTi=yGoFwYt4p_LeHtAQyYgmURspO-p57UdL0sUEZ@mail.gmail.com> <1292960224.2618.4.camel@work-vm>
+From: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>
+Date: Wed, 22 Dec 2010 06:13:06 +0900
+Message-ID: <AANLkTikHV-qN73Zvvvxn76vtFFKG_VNTQhF3qpqTnOrE@mail.gmail.com>
+Subject: Re: [PATCH V7 1/8] ntp: add ADJ_SETOFFSET mode bit
+To: john stultz <johnstul@us.ibm.com>
+Cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Dec 21, 2010 at 07:01:06PM +0100, Franck Bui-Huu escreveu:
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
-> > (2010/12/20 23:17), Franck Bui-Huu wrote:
-> >> This small patchset is just some random cosmetic cleanups I did when
-> >> starting to read perf-probe(1) stuffs.
+On Wed, Dec 22, 2010 at 4:37 AM, john stultz <johnstul@us.ibm.com> wrote:
+> adjtimex is a linux specific interface, which is compatible but not
+> identical to the ntp specified interfaces. The ntp client code already
+> has Linux specific modifications, so I don't think we have to worry
+> about 0x40 specifically being reserved by the NTP client.
 
-> > Basically the contains of this series are good to me.  (I've sent my
-> > comments) however, it's less comments on each patch. Please explain
-> > what you did in each patch! (not only on the subject line:-))
-
-> Ok. I thought those changes in this serie was obvious enough.
-> 
-> > Thank you,
-> 
-> You're welcome.
-
-I did just that s/fprintf/color_fprintf/g change Masami asked and
-stashed everything in my perf/core branch.
-
-Thanks,
-
-- Arnaldo
+But struct timex is not linux-specific...
