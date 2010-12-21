@@ -1,40 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751576Ab0LULXK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 06:23:10 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:60891 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058Ab0LULXI (ORCPT
+	id S1751239Ab0LULa6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 06:30:58 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42690 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750742Ab0LULa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 06:23:08 -0500
-Date: Tue, 21 Dec 2010 22:22:59 +1100
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH -next] crypto: fix af_alg memory_allocated data type
-Message-ID: <20101221112259.GA26409@gondor.apana.org.au>
-References: <20101216173745.264eb2ca.sfr@canb.auug.org.au> <20101216101800.36529e89.randy.dunlap@oracle.com>
+	Tue, 21 Dec 2010 06:30:57 -0500
+Date: Tue, 21 Dec 2010 11:30:54 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Axel Lin <axel.lin@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 1/2] regulator: max8952 - fix max8952_set_voltage check
+ condition.
+Message-ID: <20101221113054.GC13696@rakim.wolfsonmicro.main>
+References: <1292907880-3353-1-git-send-email-myungjoo.ham@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101216101800.36529e89.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1292907880-3353-1-git-send-email-myungjoo.ham@samsung.com>
+X-Cookie: Contents may settle during shipment.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 16, 2010 at 10:18:00AM -0800, Randy Dunlap wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
+On Tue, Dec 21, 2010 at 02:04:39PM +0900, MyungJoo Ham wrote:
+> In the current implementation, the GPIO pin, vid0 is checked twice
+> (duplicated!) while vid1 is never checked; however, both vid0 and
+> vid1 should be checked. This patch fixes the typo that stated vid0 where
+> should've stated vid1.
 > 
-> Change data type to fix warning:
-> 
-> crypto/af_alg.c:35: warning: initialization from incompatible pointer type
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-Applied.  Thanks Randy!
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
