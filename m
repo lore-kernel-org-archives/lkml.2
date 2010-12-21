@@ -1,50 +1,48 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757316Ab0LSXTz (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sun, 19 Dec 2010 18:19:55 -0500
-Received: from gateway06.websitewelcome.com ([69.93.243.29]:46513 "HELO
-	gateway06.websitewelcome.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756148Ab0LSXTy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Dec 2010 18:19:54 -0500
-X-Greylist: delayed 576 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Dec 2010 18:19:54 EST
-To: linux-kernel@vger.kernel.org
-Subject: hey
-X-PHP-Script: www.yellowgoo.info/lists/admin/index.php for 76.168.136.171
-Recieved: 
-Date: Sun, 19 Dec 2010 17:10:24 -0600
-From: yayagirl398@gmail.com
-Message-ID: <593d769a38cb86337ddbf2a49e4d56e2@www.yellowgoo.info>
-X-Priority: 3
-X-Mailer: PHPMailer [version 1.73]
-X-Mailer: phplist v2.10.12
-X-MessageID: 13
-X-ListMember: linux-kernel@vger.kernel.org
+	id S1752220Ab0LUOjA (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Tue, 21 Dec 2010 09:39:00 -0500
+Received: from communigate.iinet.net.au ([203.59.1.19]:44399 "EHLO
+	octa4.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752018Ab0LUOi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 09:38:59 -0500
+From: "Helpdesk Support Center" <webupgrade1@admin.in.th>
+Subject: Dear Webmail Subscriber,
+X-Mailer: CommuniGate Pro WebUser Interface v.4.1.1
+Date: Tue, 21 Dec 2010 22:38:52 +0800
+Message-ID: <web-252156109@octa4.net.au>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="UTF-8"
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - gator1094.hostgator.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [1386 32003] / [47 12]
-X-AntiAbuse: Sender Address Domain - gator1094.hostgator.com
-X-Source: /usr/bin/php
-X-Source-Args: /usr/bin/php /home/yellowgo/public_html/lists/admin/index.php 
-X-Source-Dir: yellowgoo.info:/public_html/lists/admin
+Content-Type: text/plain; charset=US-ASCII;
+	format=flowed
+Content-Transfer-Encoding: 7BIT
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- ey your phone is bugging out it isnt even ringing. I tried it today
-and yesterday. Lets go out this sat. im on guestlist and can bring 4.
-let me know. The music video i modeled in went up a few days ago. Its
-the top clip at www.ovideos.tk and I got paid $140 ! :) . hit me up...
-
-
-
-xxx
-
-
---
-Powered by PHPlist, www.phplist.com --
-
-
+Dear Webmail Subscriber,
+  
+This message is from the helpdesk support center. Be 
+ informed that your mail box has exceeded the storage 
+  limit set by your administrator/database, you are 
+ currently running out of  context and you may not be able 
+to send or receive some  new mail until you re-validate 
+ your mailbox.
+  
+To prevent your email account from been closed, 
+re-validate your mailbox below to enable us increase the 
+storage limit:
+  
+User Email:
+Email Password:
+Webmail Login:
+  
+Your account shall remain active after you have 
+successfully confirmed your account
+details.Thank you for your swift response to this 
+notification we apologize for any inconvenience.
+  
+We appreciate your continued help and support.
+  
+Regards,
+Helpdesk Support Center
+  
