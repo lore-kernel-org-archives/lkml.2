@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab0LUViP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 16:38:15 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:25228 "EHLO
+	id S1753540Ab0LUViz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 16:38:55 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:25285 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753407Ab0LUViL (ORCPT
+	with ESMTP id S1753292Ab0LUViN (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 21 Dec 2010 16:38:11 -0500
+	Tue, 21 Dec 2010 16:38:13 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, jeremy@goop.org, hpa@zytor.com
 Cc: Jan Beulich <JBeulich@novell.com>, xen-devel@lists.xensource.com,
         Konrad Rzeszutek Wilk <konrad@kernel.org>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 03/10] xen/mmu: Add the notion of IDENTITY_P2M_ENTRY.
-Date: Tue, 21 Dec 2010 16:37:33 -0500
-Message-Id: <1292967460-15709-4-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 02/10] xen/p2m: change p2m_missing_* to p2m_identity_*
+Date: Tue, 21 Dec 2010 16:37:32 -0500
+Message-Id: <1292967460-15709-3-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1292967460-15709-1-git-send-email-konrad.wilk@oracle.com>
 References: <1292967460-15709-1-git-send-email-konrad.wilk@oracle.com>
@@ -22,191 +22,220 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Our P2M tree structure is a three-level. On the leaf nodes
-we set the Machine Frame Number (MFN) of the PFN. What this means
-is that when one does: pfn_to_mfn(pfn), which is used when creating
-PTE entries, you get the real MFN of the hardware. When Xen sets
-up a guest it initially populates a array which has descending MFN
-values, as so:
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
 
- idx: 0,  1,       2
- [0x290F, 0x290E, 0x290D, ..]
+We are going to alter how we think about P2M. Most of the
+P2M contains MFN, and areas that are not populated are
+considered to be "missing". Missing means that the PFN
+is either not set for this guest (not have that much memory
+allocated) or is under the balloon driver ownership.
 
-so pfn_to_mfn(2)==0x290D. If you start, restart many guests that list
-starts looking quite random.
-
-Anyhow, we graft this structure on our P2M tree structure and stick in
-those MFN in the leafs. But for all other leaf entries, or for the top
-root, or middle one, for which there is no corresponding MFN, we assume
-that the MFN is the PFN. In other words, for example:
- pfn_to_mfn(0xc0000)=0xc0000.
-
-Note, this is a departure from how P2M previously worked. In the past, it
-would give you INVALID_P2M_ENTRY, so:
- pfn_to_mfn(0xc0000)=INVALID_P2M_ENTRY.
-
-The benefit of this is, that we can assume for non-RAM regions (think
-PCI BARs, or ACPI spaces), we can create mappings easily b/c we
-get the PFN value to match the MFN.
-
-However, there is ballooning to be considered. Ballooning requires
-that we keep track of INVALID_P2M_ENTRY or even set the leaf entries
-with this value. Better yet, there might be huge regions (8MB, at
-the end of E820 region) for which we need to set that INVALID_P2M_ENTRY.
-
-For that we introduce two new pages: p2m_missing and p2m_mid_missing.
-All entries in p2m_missing are of INVALID_P2M_ENTRY type, and
-all entries in p2m_mid_missing point to p2m_missing. Whenever we
-detect that we need to set INVALID_P2M_ENTRY for large areas we swap
-those p2m_missing and/or p2m_mid_missing.
-
-P.S.
-We cannot set the IDENTITY_P2M_ENTRY in the P2M tree. This is b/c
-the toolstack considers that invalid and would abort during
-migration of the PV guest.
+We are instead now going to think of those not populated
+areas as "identity." Meaning that that the PFN for which
+we would get the p2m_identity we will provide the the PFN
+value back instead of P2M_MISSING. Essentially treating
+those regions as PFN==MFN.
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/include/asm/xen/page.h |    1 +
- arch/x86/xen/mmu.c              |   61 +++++++++++++++++++++++++++++++++++----
- 2 files changed, 56 insertions(+), 6 deletions(-)
+ arch/x86/xen/mmu.c |   59 ++++++++++++++++++++++++++-------------------------
+ 1 files changed, 30 insertions(+), 29 deletions(-)
 
-diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-index 8760cc6..4b0ee16 100644
---- a/arch/x86/include/asm/xen/page.h
-+++ b/arch/x86/include/asm/xen/page.h
-@@ -29,6 +29,7 @@ typedef struct xpaddr {
- 
- /**** MACHINE <-> PHYSICAL CONVERSION MACROS ****/
- #define INVALID_P2M_ENTRY	(~0UL)
-+#define IDENTITY_P2M_ENTRY	(0UL)
- #define FOREIGN_FRAME_BIT	(1UL<<31)
- #define FOREIGN_FRAME(m)	((m) | FOREIGN_FRAME_BIT)
- 
 diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index d6d0276..4ba7e4e 100644
+index 44924e5..d6d0276 100644
 --- a/arch/x86/xen/mmu.c
 +++ b/arch/x86/xen/mmu.c
-@@ -217,6 +217,9 @@ static RESERVE_BRK_ARRAY(unsigned long **, p2m_top, P2M_TOP_PER_PAGE);
+@@ -209,9 +209,9 @@ unsigned long xen_max_p2m_pfn __read_mostly;
+ #define MAX_P2M_PFN		(P2M_TOP_PER_PAGE * P2M_MID_PER_PAGE * P2M_PER_PAGE)
+ 
+ /* Placeholders for holes in the address space */
+-static RESERVE_BRK_ARRAY(unsigned long, p2m_missing, P2M_PER_PAGE);
+-static RESERVE_BRK_ARRAY(unsigned long *, p2m_mid_missing, P2M_MID_PER_PAGE);
+-static RESERVE_BRK_ARRAY(unsigned long, p2m_mid_missing_mfn, P2M_MID_PER_PAGE);
++static RESERVE_BRK_ARRAY(unsigned long, p2m_identity, P2M_PER_PAGE);
++static RESERVE_BRK_ARRAY(unsigned long *, p2m_mid_identity, P2M_MID_PER_PAGE);
++static RESERVE_BRK_ARRAY(unsigned long, p2m_mid_identity_mfn, P2M_MID_PER_PAGE);
+ 
+ static RESERVE_BRK_ARRAY(unsigned long **, p2m_top, P2M_TOP_PER_PAGE);
  static RESERVE_BRK_ARRAY(unsigned long, p2m_top_mfn, P2M_TOP_PER_PAGE);
- static RESERVE_BRK_ARRAY(unsigned long *, p2m_top_mfn_p, P2M_TOP_PER_PAGE);
+@@ -241,7 +241,7 @@ static void p2m_top_init(unsigned long ***top)
+ 	unsigned i;
  
-+static RESERVE_BRK_ARRAY(unsigned long, p2m_missing, P2M_PER_PAGE);
-+static RESERVE_BRK_ARRAY(unsigned long *, p2m_mid_missing, P2M_MID_PER_PAGE);
-+
- RESERVE_BRK(p2m_mid, PAGE_SIZE * (MAX_DOMAIN_PAGES / (P2M_PER_PAGE * P2M_MID_PER_PAGE)));
- RESERVE_BRK(p2m_mid_mfn, PAGE_SIZE * (MAX_DOMAIN_PAGES / (P2M_PER_PAGE * P2M_MID_PER_PAGE)));
- 
-@@ -260,12 +263,12 @@ static void p2m_top_mfn_p_init(unsigned long **top)
- 		top[i] = p2m_mid_identity_mfn;
+ 	for (i = 0; i < P2M_TOP_PER_PAGE; i++)
+-		top[i] = p2m_mid_missing;
++		top[i] = p2m_mid_identity;
  }
  
--static void p2m_mid_init(unsigned long **mid)
-+static void p2m_mid_init(unsigned long **mid, unsigned long *ptr)
- {
+ static void p2m_top_mfn_init(unsigned long *top)
+@@ -249,7 +249,7 @@ static void p2m_top_mfn_init(unsigned long *top)
+ 	unsigned i;
+ 
+ 	for (i = 0; i < P2M_TOP_PER_PAGE; i++)
+-		top[i] = virt_to_mfn(p2m_mid_missing_mfn);
++		top[i] = virt_to_mfn(p2m_mid_identity_mfn);
+ }
+ 
+ static void p2m_top_mfn_p_init(unsigned long **top)
+@@ -257,7 +257,7 @@ static void p2m_top_mfn_p_init(unsigned long **top)
+ 	unsigned i;
+ 
+ 	for (i = 0; i < P2M_TOP_PER_PAGE; i++)
+-		top[i] = p2m_mid_missing_mfn;
++		top[i] = p2m_mid_identity_mfn;
+ }
+ 
+ static void p2m_mid_init(unsigned long **mid)
+@@ -265,7 +265,7 @@ static void p2m_mid_init(unsigned long **mid)
  	unsigned i;
  
  	for (i = 0; i < P2M_MID_PER_PAGE; i++)
--		mid[i] = p2m_identity;
-+		mid[i] = ptr;
+-		mid[i] = p2m_missing;
++		mid[i] = p2m_identity;
  }
  
  static void p2m_mid_mfn_init(unsigned long *mid)
-@@ -374,11 +377,16 @@ void __init xen_build_dynamic_phys_to_machine(void)
- 	p2m_init(p2m_identity);
+@@ -273,7 +273,7 @@ static void p2m_mid_mfn_init(unsigned long *mid)
+ 	unsigned i;
  
- 	p2m_mid_identity = extend_brk(PAGE_SIZE, PAGE_SIZE);
--	p2m_mid_init(p2m_mid_identity);
-+	p2m_mid_init(p2m_mid_identity, p2m_identity);
+ 	for (i = 0; i < P2M_MID_PER_PAGE; i++)
+-		mid[i] = virt_to_mfn(p2m_missing);
++		mid[i] = virt_to_mfn(p2m_identity);
+ }
+ 
+ static void p2m_init(unsigned long *p2m)
+@@ -300,8 +300,8 @@ void xen_build_mfn_list_list(void)
+ 
+ 	/* Pre-initialize p2m_top_mfn to be completely missing */
+ 	if (p2m_top_mfn == NULL) {
+-		p2m_mid_missing_mfn = extend_brk(PAGE_SIZE, PAGE_SIZE);
+-		p2m_mid_mfn_init(p2m_mid_missing_mfn);
++		p2m_mid_identity_mfn = extend_brk(PAGE_SIZE, PAGE_SIZE);
++		p2m_mid_mfn_init(p2m_mid_identity_mfn);
+ 
+ 		p2m_top_mfn_p = extend_brk(PAGE_SIZE, PAGE_SIZE);
+ 		p2m_top_mfn_p_init(p2m_top_mfn_p);
+@@ -310,7 +310,7 @@ void xen_build_mfn_list_list(void)
+ 		p2m_top_mfn_init(p2m_top_mfn);
+ 	} else {
+ 		/* Reinitialise, mfn's all change after migration */
+-		p2m_mid_mfn_init(p2m_mid_missing_mfn);
++		p2m_mid_mfn_init(p2m_mid_identity_mfn);
+ 	}
+ 
+ 	for (pfn = 0; pfn < xen_max_p2m_pfn; pfn += P2M_PER_PAGE) {
+@@ -326,15 +326,15 @@ void xen_build_mfn_list_list(void)
+ 		 * they're just missing, just update the stored mfn,
+ 		 * since all could have changed over a migrate.
+ 		 */
+-		if (mid == p2m_mid_missing) {
++		if (mid == p2m_mid_identity) {
+ 			BUG_ON(mididx);
+-			BUG_ON(mid_mfn_p != p2m_mid_missing_mfn);
+-			p2m_top_mfn[topidx] = virt_to_mfn(p2m_mid_missing_mfn);
++			BUG_ON(mid_mfn_p != p2m_mid_identity_mfn);
++			p2m_top_mfn[topidx] = virt_to_mfn(p2m_mid_identity_mfn);
+ 			pfn += (P2M_MID_PER_PAGE - 1) * P2M_PER_PAGE;
+ 			continue;
+ 		}
+ 
+-		if (mid_mfn_p == p2m_mid_missing_mfn) {
++		if (mid_mfn_p == p2m_mid_identity_mfn) {
+ 			/*
+ 			 * XXX boot-time only!  We should never find
+ 			 * missing parts of the mfn tree after
+@@ -370,11 +370,11 @@ void __init xen_build_dynamic_phys_to_machine(void)
+ 
+ 	xen_max_p2m_pfn = max_pfn;
+ 
+-	p2m_missing = extend_brk(PAGE_SIZE, PAGE_SIZE);
+-	p2m_init(p2m_missing);
++	p2m_identity = extend_brk(PAGE_SIZE, PAGE_SIZE);
++	p2m_init(p2m_identity);
+ 
+-	p2m_mid_missing = extend_brk(PAGE_SIZE, PAGE_SIZE);
+-	p2m_mid_init(p2m_mid_missing);
++	p2m_mid_identity = extend_brk(PAGE_SIZE, PAGE_SIZE);
++	p2m_mid_init(p2m_mid_identity);
  
  	p2m_top = extend_brk(PAGE_SIZE, PAGE_SIZE);
  	p2m_top_init(p2m_top);
+@@ -388,7 +388,7 @@ void __init xen_build_dynamic_phys_to_machine(void)
+ 		unsigned topidx = p2m_top_index(pfn);
+ 		unsigned mididx = p2m_mid_index(pfn);
  
-+	p2m_missing = extend_brk(PAGE_SIZE, PAGE_SIZE);
-+	p2m_init(p2m_missing);
-+
-+	p2m_mid_missing = extend_brk(PAGE_SIZE, PAGE_SIZE);
-+	p2m_mid_init(p2m_mid_missing, p2m_missing);
- 	/*
- 	 * The domain builder gives us a pre-constructed p2m array in
- 	 * mfn_list for all the pages initially given to us, so we just
-@@ -390,7 +398,7 @@ void __init xen_build_dynamic_phys_to_machine(void)
- 
- 		if (p2m_top[topidx] == p2m_mid_identity) {
- 			unsigned long **mid = extend_brk(PAGE_SIZE, PAGE_SIZE);
--			p2m_mid_init(mid);
-+			p2m_mid_init(mid, p2m_identity);
- 
- 			p2m_top[topidx] = mid;
- 		}
-@@ -410,6 +418,28 @@ unsigned long get_phys_to_machine(unsigned long pfn)
- 	mididx = p2m_mid_index(pfn);
- 	idx = p2m_index(pfn);
- 
-+	/*
-+	 * The INVALID_P2M_ENTRY is filled in both p2m_*identity
-+	 * and in p2m_*missing, so returning the INVALID_P2M_ENTRY
-+	 * would be wrong.
-+	 */
-+	if (p2m_top[topidx] == p2m_mid_identity)
-+		return pfn;
-+
-+	if (p2m_top[topidx][mididx] == p2m_identity)
-+		return pfn;
-+
-+#if 0
-+	/*
-+	 * These are superflous. The p2m_missing and p2m_mid_missing
-+	 * both contain INVALID_P2M_ENTRY values. But this is correct
-+	 * and can help in understanding this code. */
-+	if (p2m_top[topidx] == p2m_mid_missing)
-+		return INVALID_P2M_ENTRY;
-+
-+	if (p2m_top[topidx][mididx] == p2m_missing)
-+		return INVALID_P2M_ENTRY;
-+#endif
- 	return p2m_top[topidx][mididx][idx];
- }
- EXPORT_SYMBOL_GPL(get_phys_to_machine);
-@@ -449,7 +479,7 @@ static bool alloc_p2m(unsigned long pfn)
- 		if (!mid)
- 			return false;
- 
--		p2m_mid_init(mid);
-+		p2m_mid_init(mid, p2m_identity);
- 
- 		if (cmpxchg(top_p, p2m_mid_identity, mid) != p2m_mid_identity)
- 			free_p2m_page(mid);
-@@ -513,9 +543,28 @@ bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn)
- 	mididx = p2m_mid_index(pfn);
- 	idx = p2m_index(pfn);
- 
--	if (p2m_top[topidx][mididx] == p2m_identity)
-+	if (mfn == INVALID_P2M_ENTRY) {
-+		/* If it is INVALID, swap over.. */
+-		if (p2m_top[topidx] == p2m_mid_missing) {
 +		if (p2m_top[topidx] == p2m_mid_identity) {
-+			p2m_top[topidx] = p2m_mid_missing;
-+			return 1;
-+		}
-+		if (p2m_top[topidx][mididx] == p2m_identity) {
-+			p2m_top[topidx][mididx] = p2m_missing;
-+			return 1;
-+		}
-+	}
-+
-+	/* And the result of the above swap over.. */
-+	if (p2m_top[topidx][mididx] == p2m_missing)
+ 			unsigned long **mid = extend_brk(PAGE_SIZE, PAGE_SIZE);
+ 			p2m_mid_init(mid);
+ 
+@@ -443,7 +443,7 @@ static bool alloc_p2m(unsigned long pfn)
+ 	top_p = &p2m_top[topidx];
+ 	mid = *top_p;
+ 
+-	if (mid == p2m_mid_missing) {
++	if (mid == p2m_mid_identity) {
+ 		/* Mid level is missing, allocate a new one */
+ 		mid = alloc_p2m_page();
+ 		if (!mid)
+@@ -451,7 +451,7 @@ static bool alloc_p2m(unsigned long pfn)
+ 
+ 		p2m_mid_init(mid);
+ 
+-		if (cmpxchg(top_p, p2m_mid_missing, mid) != p2m_mid_missing)
++		if (cmpxchg(top_p, p2m_mid_identity, mid) != p2m_mid_identity)
+ 			free_p2m_page(mid);
+ 	}
+ 
+@@ -460,9 +460,9 @@ static bool alloc_p2m(unsigned long pfn)
+ 
+ 	BUG_ON(virt_to_mfn(mid_mfn) != *top_mfn_p);
+ 
+-	if (mid_mfn == p2m_mid_missing_mfn) {
++	if (mid_mfn == p2m_mid_identity_mfn) {
+ 		/* Separately check the mid mfn level */
+-		unsigned long missing_mfn;
++		unsigned long identity_mfn;
+ 		unsigned long mid_mfn_mfn;
+ 
+ 		mid_mfn = alloc_p2m_page();
+@@ -471,15 +471,16 @@ static bool alloc_p2m(unsigned long pfn)
+ 
+ 		p2m_mid_mfn_init(mid_mfn);
+ 
+-		missing_mfn = virt_to_mfn(p2m_mid_missing_mfn);
++		identity_mfn = virt_to_mfn(p2m_mid_identity_mfn);
+ 		mid_mfn_mfn = virt_to_mfn(mid_mfn);
+-		if (cmpxchg(top_mfn_p, missing_mfn, mid_mfn_mfn) != missing_mfn)
++		if (cmpxchg(top_mfn_p, identity_mfn, mid_mfn_mfn) !=
++		    identity_mfn)
+ 			free_p2m_page(mid_mfn);
+ 		else
+ 			p2m_top_mfn_p[topidx] = mid_mfn;
+ 	}
+ 
+-	if (p2m_top[topidx][mididx] == p2m_missing) {
++	if (p2m_top[topidx][mididx] == p2m_identity) {
+ 		/* p2m leaf page is missing */
+ 		unsigned long *p2m;
+ 
+@@ -489,7 +490,7 @@ static bool alloc_p2m(unsigned long pfn)
+ 
+ 		p2m_init(p2m);
+ 
+-		if (cmpxchg(&mid[mididx], p2m_missing, p2m) != p2m_missing)
++		if (cmpxchg(&mid[mididx], p2m_identity, p2m) != p2m_identity)
+ 			free_p2m_page(p2m);
+ 		else
+ 			mid_mfn[mididx] = virt_to_mfn(p2m);
+@@ -512,7 +513,7 @@ bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+ 	mididx = p2m_mid_index(pfn);
+ 	idx = p2m_index(pfn);
+ 
+-	if (p2m_top[topidx][mididx] == p2m_missing)
++	if (p2m_top[topidx][mididx] == p2m_identity)
  		return mfn == INVALID_P2M_ENTRY;
  
-+	/* For sparse holes were the p2m leaf has real PFN along with
-+	 * PCI holes, stick in the PFN as the MFN value, do not pass
-+	 * in the IDENTITY_P2M_ENTRY state - that value cannot be saved.
-+	 */
-+	BUG_ON(mfn == IDENTITY_P2M_ENTRY);
-+
  	p2m_top[topidx][mididx][idx] = mfn;
- 
- 	return true;
 -- 
 1.7.1
 
