@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757422Ab0LUHrw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 02:47:52 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:46578 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752836Ab0LUHrv (ORCPT
+	id S1757649Ab0LUHvA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 02:51:00 -0500
+Received: from casper.infradead.org ([85.118.1.10]:59564 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753155Ab0LUHu7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 02:47:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=Edi8IOJS47TZifuhCFBH1ngrZ03Wy1PSgTaypEWN9HFqhM0rfcFyIX+AOGwNrvW3aa
-         jR8sSRlfTH1qJ++JBk9kPDFeJfY+JF8cCHn2Nm+crQF9irxCihtM1O5YbxK542yxjbDD
-         rxsCut8iWQZ/MYREi+1e8siL3sNPadSl8xgFI=
-MIME-Version: 1.0
-Date: Tue, 21 Dec 2010 08:47:49 +0100
-Message-ID: <AANLkTi=XEvW3iYLdaR_w+Mi_+Rpan+6QDC2qq8DnG_WH@mail.gmail.com>
-Subject: [PATCH] OMAP2: Devkit8000: Use _cansleep GPIO functions for display
- reset lines
-From: Daniel Morsing <daniel.morsing@gmail.com>
-To: tony@atomide.com
-Cc: daniel.morsing@gmail.com, weber@corscience.de, linux@arm.linux.org.uk,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 21 Dec 2010 02:50:59 -0500
+Subject: Re: [RFC PATCH 02/15] nohz_task: Avoid nohz task cpu as non-idle
+ timer target
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+In-Reply-To: <20101221001354.GG1715@nowhere>
+References: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
+	 <1292858662-5650-3-git-send-email-fweisbec@gmail.com>
+	 <1292860078.5021.6.camel@laptop>  <20101221001354.GG1715@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 21 Dec 2010 08:50:47 +0100
+Message-ID: <1292917847.5021.180.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The display reset lines are connected to a TPS65930 which may sleep
-when changing GPIO values. Use the appropriate function to silence
-a nasty warning from gpiolib.
+On Tue, 2010-12-21 at 01:13 +0100, Frederic Weisbecker wrote:
+> On Mon, Dec 20, 2010 at 04:47:58PM +0100, Peter Zijlstra wrote:
+> > On Mon, 2010-12-20 at 16:24 +0100, Frederic Weisbecker wrote:
+> > > Unbound timers are preferably targeted for non idle cpu. If
+> > > possible though, prioritize idle cpus over nohz task cpus,
+> > > because the main point of nohz task is to avoid unnecessary
+> > > timer interrupts.
+> > 
+> > Oh is it?
+> > 
+> > I'd very much expect the cpu that arms the timer to get the interrupt. I
+> > mean, if the task doesn't want to get interrupted by timers,
+> > _DON'T_USE_TIMERS_ to begin with.
+> > 
+> > So no, don't much like this at all.
+> 
+> I suspect TIMER_NOT_PINNED has been introduced to save some power by
+> avoiding to wake up idle cpus.
+> 
+> This is used by mod_timer(), schedule_timeout(), mod_timer_pending()
+> So that's widely used and removing that could have a deep impact on
+> power.
 
-Signed-off-by: Daniel Morsing <daniel.morsing@gmail.com>
----
- arch/arm/mach-omap2/board-devkit8000.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Yeah so? Who said task_nohz had to have the bestest power savings
+around? Its not a laptop feature by any means. Simply disable the thing:
+echo 0 > /proc/sys/kernel/timer_migration, or better yet, teach it about
+your cpuset constraints and avoid it migrating timers into your set and
+keep timers pinned within the set.
 
-diff --git a/arch/arm/mach-omap2/board-devkit8000.c
-b/arch/arm/mach-omap2/board-devkit8000.c
-index 53ac762..f1f58f5 100644
---- a/arch/arm/mach-omap2/board-devkit8000.c
-+++ b/arch/arm/mach-omap2/board-devkit8000.c
-@@ -118,27 +118,27 @@ static int devkit8000_panel_enable_lcd(struct
-omap_dss_device *dssdev)
- 	twl_i2c_write_u8(TWL4030_MODULE_LED, 0x0, 0x0);
 
- 	if (gpio_is_valid(dssdev->reset_gpio))
--		gpio_set_value(dssdev->reset_gpio, 1);
-+		gpio_set_value_cansleep(dssdev->reset_gpio, 1);
- 	return 0;
- }
-
- static void devkit8000_panel_disable_lcd(struct omap_dss_device *dssdev)
- {
- 	if (gpio_is_valid(dssdev->reset_gpio))
--		gpio_set_value(dssdev->reset_gpio, 0);
-+		gpio_set_value_cansleep(dssdev->reset_gpio, 0);
- }
-
- static int devkit8000_panel_enable_dvi(struct omap_dss_device *dssdev)
- {
- 	if (gpio_is_valid(dssdev->reset_gpio))
--		gpio_set_value(dssdev->reset_gpio, 1);
-+		gpio_set_value_cansleep(dssdev->reset_gpio, 1);
- 	return 0;
- }
-
- static void devkit8000_panel_disable_dvi(struct omap_dss_device *dssdev)
- {
- 	if (gpio_is_valid(dssdev->reset_gpio))
--		gpio_set_value(dssdev->reset_gpio, 0);
-+		gpio_set_value_cansleep(dssdev->reset_gpio, 0);
- }
-
- static struct regulator_consumer_supply devkit8000_vmmc1_supply =
--- 
-1.7.3.3
