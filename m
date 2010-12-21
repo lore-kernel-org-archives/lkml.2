@@ -1,81 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933658Ab0LUJ1Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 04:27:16 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:57669 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754099Ab0LUJ1M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 04:27:12 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAIcAEE15Lcps/2dsb2JhbACkDHTAJoVJBA
-Date: Tue, 21 Dec 2010 20:26:51 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: George Spelvin <linux@horizon.com>
-Cc: npiggin@gmail.com, bharrosh@panasas.com, linux-arch@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Big git diff speedup by avoiding x86 "fast string" memcmp
-Message-ID: <20101221092651.GA9242@amd>
-References: <AANLkTikwUEBd1Ez75pQ7gw7ShZitwQOQcH6CvCdJV2np@mail.gmail.com>
- <20101219170646.482.qmail@science.horizon.com>
+	id S933673Ab0LUJjd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 04:39:33 -0500
+Received: from mga01.intel.com ([192.55.52.88]:32169 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933382Ab0LUJja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 04:39:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,207,1291622400"; 
+   d="scan'208";a="870377993"
+Date: Tue, 21 Dec 2010 17:39:25 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] writeback: skip balance_dirty_pages() for in-memory fs
+Message-ID: <20101221093925.GA23110@localhost>
+References: <20101213144646.341970461@intel.com>
+ <20101213150329.002158963@intel.com>
+ <20101217021934.GA9525@localhost>
+ <alpine.LSU.2.00.1012162239270.23229@sister.anvils>
+ <20101217112111.GA8323@localhost>
+ <alpine.LSU.2.00.1012202127310.16112@tigran.mtv.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101219170646.482.qmail@science.horizon.com>
+In-Reply-To: <alpine.LSU.2.00.1012202127310.16112@tigran.mtv.corp.google.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 19, 2010 at 12:06:46PM -0500, George Spelvin wrote:
-> > First, a byte-by-byte strcpy_from_user of the whole name string to
-> > kernel space. Then a byte-by-byte chunking and hashing component
-> > paths according to '/'. Then a byte-by-byte memcmp against the
-> > dentry name.
+On Tue, Dec 21, 2010 at 01:59:46PM +0800, Hugh Dickins wrote:
+> On Fri, 17 Dec 2010, Wu Fengguang wrote:
 > 
-> Well, you've put your finger on the obvious place to to the aligned copy,
-> if you want.
-
-Yes, this would be a nice place to align things and parse '/' compoents,
-although in fact it doesn't strictly have to be a byte-by-byte copy
-(although doing long loads would put a lot more complexity in fault
-handling and parsing).
-
-
->  Looking into it, I note that __d_lookup() does a 32-bit
-> hash compare before doing a string compare, so the memcmp should almost
-> always succeed.  (Failures are due to hash collisions and rename races.)
+> > This avoids unnecessary checks and dirty throttling on tmpfs/ramfs.
+> > 
+> > It also prevents
+> > 
+> > [  388.126563] BUG: unable to handle kernel NULL pointer dereference at 0000000000000050
+> > 
+> > in the balance_dirty_pages tracepoint, which will call
+> > 
+> > 	dev_name(mapping->backing_dev_info->dev)
+> > 
+> > but shmem_backing_dev_info.dev is NULL.
+> > 
+> > CC: Hugh Dickins <hughd@google.com>
+> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 > 
-> > I'd love to do everything with 8 byte loads, do the component
-> > separation and hashing at the same time as copy from user, and
-> > have the padded and aligned component strings and their hash
-> > available... but complexity.
-> 
-> It actually doesn't seem that difficult to do in fs/namei.c:do_getname
-> via a heavily hacked strncpy_from_user.  Call it strhash_from_user, and
-> it copies the string, while accumulating the hash and the length,
-> until it hits a nul or /.  It has to return the length, the hash,
-> and the termination condition: nul, /, or space exhausted.
-> 
-> Then you could arrange for each component to be padded so that it
-> starts aligned.
-> 
-> (The hash and length can be stored directly in the qstr.  The length is
-> only otherwise needed for components that end in /, so you could return
-> a magic negative length in those cases.)
+> Whilst I do like this change, and I do think it's the right thing to do
+> (given that the bdi has explicitly opted out of what it then got into),
 
-Probably, due to bloat caused by the hash for small names, and that
-some filesystems do their own hashing, we should still hash in the
-same place. However we can do sizeof(long) at a time hashing, which
-should be nice and fast too.
+Thanks.
 
+> I've a sneaking feeling that something somewhere may show a regression
+> from it.  IIRC, there were circumstances in which it actually did
+> (inadvertently) end up throttling the tmpfs writing - if there were
+> too many dirty non-tmpfs pages around??
+
+Good point (that I missed!).
+
+Here is the findings after double checks.
+
+As for 2.6.36 and older kernels, the tmpfs writes will sleep inside
+balance_dirty_pages() as long as we are over the (dirty+background)/2
+global throttle threshold.  This is because both the dirty pages and
+threshold will be 0 for tmpfs/ramfs. Hence this test will always
+evaluate to TRUE:
+
+                dirty_exceeded =
+                        (bdi_nr_reclaimable + bdi_nr_writeback >= bdi_thresh)
+                        || (nr_reclaimable + nr_writeback >= dirty_thresh);
+
+As for 2.6.37, someone complained that the current logic does not
+allow the users to set vm.dirty_ratio=0.  So the to-be-released 2.6.37
+will have this change (commit 4cbec4c8b9)
+
+@@ -542,8 +536,8 @@ static void balance_dirty_pages(struct address_space *mapping,
+                 * the last resort safeguard.
+                 */
+                dirty_exceeded =
+-                       (bdi_nr_reclaimable + bdi_nr_writeback >= bdi_thresh)
+-                       || (nr_reclaimable + nr_writeback >= dirty_thresh);
++                       (bdi_nr_reclaimable + bdi_nr_writeback > bdi_thresh)
++                       || (nr_reclaimable + nr_writeback > dirty_thresh);
+
+So for 2.6.37 it will behave differently for tmpfs/ramfs: it will
+never get throttled unless the global dirty threshold is exceeded,
+which is very unlikely to happen (once happen, will block many tasks).
+
+I'd say that the 2.6.36 behavior is very bad for tmpfs/ramfs. It means
+for a busy writing server, tmpfs write()s may get livelocked! The
+"inadvertent" throttling can hardly bring help to any workload because
+of its "either no throttling, or get throttled to death" property.
+
+So based on 2.6.37, this patch won't bring more noticeable changes.
+
+> What am I saying?!  I think I'm asking you to look more closely at what
+> actually used to happen, and be more explicit about the behavior you're
+> stopping here - although the patch is mainly code optimization, there
+> is some functional change I think.  (You do mention throttling on
+> tmpfs/ramfs, but the way it worked out wasn't straightforward.)
+
+Good suggestion, thanks!
+
+> I'd better not burble on for a third paragraph!
+
+How about this updated patch?
+
+Thanks,
+Fengguang
+---
+Subject: writeback: skip balance_dirty_pages() for in-memory fs
+Date: Thu Dec 16 22:22:00 CST 2010
+
+This avoids unnecessary checks and dirty throttling on tmpfs/ramfs.
+
+It also prevents
+
+[  388.126563] BUG: unable to handle kernel NULL pointer dereference at 0000000000000050
+
+in the balance_dirty_pages tracepoint, which will call
+
+	dev_name(mapping->backing_dev_info->dev)
+
+but shmem_backing_dev_info.dev is NULL.
+
+Summary notes about the tmpfs/ramfs behavior changes:
+
+As for 2.6.36 and older kernels, the tmpfs writes will sleep inside
+balance_dirty_pages() as long as we are over the (dirty+background)/2
+global throttle threshold.  This is because both the dirty pages and
+threshold will be 0 for tmpfs/ramfs. Hence this test will always
+evaluate to TRUE:
+
+                dirty_exceeded =
+                        (bdi_nr_reclaimable + bdi_nr_writeback >= bdi_thresh)
+                        || (nr_reclaimable + nr_writeback >= dirty_thresh);
+
+For 2.6.37, someone complained that the current logic does not allow the
+users to set vm.dirty_ratio=0.  So commit 4cbec4c8b9 changed the test to
+
+                dirty_exceeded =
+                        (bdi_nr_reclaimable + bdi_nr_writeback > bdi_thresh)
+                        || (nr_reclaimable + nr_writeback > dirty_thresh);
+
+So 2.6.37 will behave differently for tmpfs/ramfs: it will never get
+throttled unless the global dirty threshold is exceeded (which is very
+unlikely to happen; once happen, will block many tasks).
+
+I'd say that the 2.6.36 behavior is very bad for tmpfs/ramfs. It means
+for a busy writing server, tmpfs write()s may get livelocked! The
+"inadvertent" throttling can hardly bring help to any workload because
+of its "either no throttling, or get throttled to death" property.
+
+So based on 2.6.37, this patch won't bring more noticeable changes.
+
+CC: Hugh Dickins <hughd@google.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ mm/page-writeback.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
+
+--- linux-next.orig/mm/page-writeback.c	2010-12-18 09:14:53.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-12-21 17:35:44.000000000 +0800
+@@ -230,13 +230,8 @@ void task_dirty_inc(struct task_struct *
+ static void bdi_writeout_fraction(struct backing_dev_info *bdi,
+ 		long *numerator, long *denominator)
+ {
+-	if (bdi_cap_writeback_dirty(bdi)) {
+-		prop_fraction_percpu(&vm_completions, &bdi->completions,
++	prop_fraction_percpu(&vm_completions, &bdi->completions,
+ 				numerator, denominator);
+-	} else {
+-		*numerator = 0;
+-		*denominator = 1;
+-	}
+ }
  
-> The main problem with initializing all the qstr structures early is that
-> it can lead to an oddly dynamic PATH_MAX and/or a type of kernel
-> DOS by passing in paths with many short directory names that would need
-> maximal padding.
-
-If the results are compelling enough, this could be worked around
-some way. Simple realloc probably, seeing as it would be a rare case.
-
-
+ static inline void task_dirties_fraction(struct task_struct *tsk,
+@@ -878,6 +873,9 @@ void balance_dirty_pages_ratelimited_nr(
+ {
+ 	struct backing_dev_info *bdi = mapping->backing_dev_info;
+ 
++	if (!bdi_cap_account_dirty(bdi))
++		return;
++
+ 	current->nr_dirtied += nr_pages_dirtied;
+ 
+ 	if (unlikely(!current->nr_dirtied_pause))
