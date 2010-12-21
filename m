@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022Ab0LUXpb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 18:45:31 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:43518 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751846Ab0LUXp0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 18:45:26 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6204"; a="67577245"
-Message-ID: <9eecc86d79182bb887f241f7367de068.squirrel@www.codeaurora.org>
-In-Reply-To: <20101215134135.51df5a7f@nehalam>
-References: <1292437866-11652-1-git-send-email-nvishwan@codeaurora.org>
-    <20101215134135.51df5a7f@nehalam>
-Date: Tue, 21 Dec 2010 15:45:12 -0800 (PST)
-Subject: Re: [PATCH] msm: rmnet: msm rmnet smd virtual ethernet driver
-From: nvishwan@codeaurora.org
-To: "Stephen Hemminger" <shemminger@vyatta.com>
-Cc: "Niranjana Vishwanathapura" <nvishwan@codeaurora.org>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        "Brian Swetland" <swetland@google.com>
-User-Agent: SquirrelMail/1.4.17
+	id S1754052Ab0LUXpx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 18:45:53 -0500
+Received: from fieldses.org ([174.143.236.118]:53194 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753986Ab0LUXpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 18:45:30 -0500
+Date: Tue, 21 Dec 2010 18:45:21 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: "Kirill A. Shutemov" <kas@openvz.org>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, Neil Brown <neilb@suse.de>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/12] make rpc_pipefs be mountable multiple times
+Message-ID: <20101221234520.GA30525@fieldses.org>
+References: <1292846078-31793-1-git-send-email-kirill@shutemov.name>
+ <20101220144644.GC20643@fieldses.org>
+ <20101221233215.GC7092@shutemov.name>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101221233215.GC7092@shutemov.name>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, 15 Dec 2010 10:31:06 -0800
-> Niranjana Vishwanathapura <nvishwan@codeaurora.org> wrote:
->
->> +
->> +static void rmnet_tx_timeout(struct net_device *dev)
->> +{
->> +	pr_info("rmnet_tx_timeout()\n");
->> +}
->
-> The purpose of having a tx_timeout is to clear the pending
-> request.
->
-> --
->
+On Wed, Dec 22, 2010 at 01:32:15AM +0200, Kirill A. Shutemov wrote:
+> On Mon, Dec 20, 2010 at 09:46:44AM -0500, J. Bruce Fields wrote:
+> > By the way, was there ever a resolution to Trond's question?:
+> > 
+> > 	http://marc.info/?l=linux-nfs&m=128655758712817&w=2
+> > 
+> > 	"The keyring upcalls are currently initiated through the same
+> > 	mechanism as module_request and therefore get started with the
+> > 	init_nsproxy namespace. We'd really like them to run inside the
+> > 	same container as the process.  As part of the same problem,
+> > 	there is the issue of what to do with the dns resolver and
+> > 	Bryan's new keyring based idmapper code."
+> 
+> I'm not sure that I understand the problem correctly.
+> 
+> Currently, idmap uses dentry taken from client's cl_rpcclient->cl_path
+> (see nfs_idmap_new()). cl_rpcclient (and cl_path) is initialized with
+> rpcmount resolved against mount namespace of mount process (see
+> nfs_create_rpc_client()).
+> I assume it's correct.
 
-Currently, there is no mechanism to clear the transaction.  This message
-is helpful in identifying the issue and fixing it.
+There's actually two separate sets of idmapper code; look at
+fs/nfs/idmapper.c, the first part of the file (between #ifdef
+CONFIG_NFS_USE_NEW_IDMAPPER and #else) is idmapping code that uses
+request_key().  The code you're looking at (including nfs_idmap_new())
+is later in the file, and deprecated.
+
+--b.
 
