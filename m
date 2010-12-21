@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933045Ab0LUAlZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 19:41:25 -0500
-Received: from mga03.intel.com ([143.182.124.21]:13015 "EHLO mga03.intel.com"
+	id S933147Ab0LUAla (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 19:41:30 -0500
+Received: from sabe.cs.wisc.edu ([128.105.6.20]:43481 "EHLO sabe.cs.wisc.edu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752838Ab0LUAlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 19:41:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,205,1291622400"; 
-   d="scan'208";a="364404616"
-Subject: Re: [concept & "good taste" review] persistent store
-From: Huang Ying <ying.huang@intel.com>
-To: David Howells <dhowells@redhat.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
-        Tony Luck <tony.luck@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>, "greg@kroah.com" <greg@kroah.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-In-Reply-To: <17027.1292841992@redhat.com>
-References: <1292813234.8743.66.camel@yhuang-dev>
-	 <4d0662e511688484b3@agluck-desktop.sc.intel.com>
-	 <AANLkTindPUkF7fCkdbqSstNHFjF3_7fEYh18nhQFx_AJ@mail.gmail.com>
-	 <AANLkTim3OpjPysjdCLDuFgFOipmcxyr2ay5cvUAu5PHi@mail.gmail.com>
-	 <AANLkTinpYJddhgbf7=Pw_TtGrnWaC8fwo2xv1XRsT1w7@mail.gmail.com>
-	 <AANLkTimA4x8oWyq71nOxB=Otp3Y0i3Kcu27DG0ajaXUG@mail.gmail.com>
-	 <AANLkTinCG+E6ZzpeRqsJP+-qvNDQXW4VZFgJ1c-sTryL@mail.gmail.com>
-	 <4D0BEE1F.7020008@zytor.com>
-	 <AANLkTinwFt+KDKNEYP9MWQ7wGb9qk=E2Xa3RJB3+MJnN@mail.gmail.com>
-	 <AANLkTinoV_pL=Ygqq4qt4f8c+wsdc9r9K7rcJ58aHjD1@mail.gmail.com>
-	 <AANLkTikhtWjFBQmA111Q+2JGRudrRNAmegGThMagr4vF@mail.gmail.com>
-	 <20101219091752.GA16150@liondog.tnic>
-	 <AANLkTi=9UZ5BYWo5xT=jh0upRP6PraH4S=t=tL49YRdr@mail.gmail.com>
-	 <17027.1292841992@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Dec 2010 08:41:12 +0800
-Message-ID: <1292892072.8743.70.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S933073Ab0LUAl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 19:41:29 -0500
+Message-ID: <4D0FF6A5.9040209@cs.wisc.edu>
+Date: Mon, 20 Dec 2010 18:36:53 -0600
+From: Mike Christie <michaelc@cs.wisc.edu>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: Matthew Wilcox <matthew@wil.cx>, linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jeff Garzik <jeff@garzik.org>, Christoph Hellwig <hch@lst.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>,
+        Open iSCSI <open-iscsi@googlegroups.com>
+Subject: Re: [PATCH 01/12] libiscsi: Convert to host_lock less w/	interrupts
+ disabled internally
+References: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org>	 <1292793727-31957-2-git-send-email-nab@linux-iscsi.org>	 <20101219233835.GJ1263@parisc-linux.org>	 <1292807703.20840.29.camel@haakon2.linux-iscsi.org>	 <1292808126.20840.33.camel@haakon2.linux-iscsi.org>	 <20101220020758.GK1263@parisc-linux.org> <1292837413.20840.47.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1292837413.20840.47.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-12-20 at 18:46 +0800, David Howells wrote:
-> Huang Ying <ying.huang@intel.com> wrote:
-> 
-> > - for OOPS messages will not cause system panic, it will go to disk and
-> > will not use up the persistent storage.
-> 
-> You can't guarantee that an oops didn't just kill your ability to actually
-> write your syslog to disk or out across the network.
+On 12/20/2010 03:30 AM, Nicholas A. Bellinger wrote:
+> After a quick audit of iscsi_session->lock usage, and I see that
+> iscsi_complete_pdu(), iscsi_tmf_timedout(), iscsi_eh_cmd_timed_out(),
+> iscsi_check_transport_timeouts() are using spin_lock(), and
+> iscsi_session_failure() and iscsi_conn_failure() are using
+> spin_lock_irqsave().
+>
+> Mike and Hannes, would you guys mind commenting on this..?  From what I
+> can determine these should all be converted to use spin_lock_bh(),
+> yes..?
+>
 
-I do not need to guarantee that. If the OOPS message can not be written
-to disk, just keeping it in persistent storage, and that is the very
-value of persistent storage.  But for OOPS can go to disk safely, we do
-not need to waste persistent storage for it.
-
-Best Regards,
-Huang Ying
-
-
+Yeah, they can use _bh locking. I was going to use them for qla4xxx eh, 
+which does iscsi processing in its irq, but we never did.
