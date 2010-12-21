@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933686Ab0LUJFv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 04:05:51 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:55207 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758135Ab0LUJF1 (ORCPT
+	id S933680Ab0LUJFY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 04:05:24 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:46799 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758051Ab0LUJFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 04:05:27 -0500
-X-AuditID: b753bd60-a55a3ba000003e7d-f1-4d106dd4efc5
+	Tue, 21 Dec 2010 04:05:01 -0500
+X-AuditID: b753bd60-a26f8ba000000f8d-f4-4d106dba3694
 From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Subject: [PATCH -tip v2 6/6] perf bts trace: add print all option
+Subject: [PATCH -tip v2 2/6] perf bts: Introduce new sub command 'perf bts
+ trace'
 To: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <peterz@infradead.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
@@ -21,8 +22,8 @@ Cc: linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
         Arnaldo Carvalho de Melo <acme@infradead.org>
-Date: Tue, 21 Dec 2010 18:06:15 +0900
-Message-ID: <20101221090615.8552.36006.stgit@localhost6.localdomain6>
+Date: Tue, 21 Dec 2010 18:05:49 +0900
+Message-ID: <20101221090549.8552.26257.stgit@localhost6.localdomain6>
 In-Reply-To: <20101221090527.8552.41486.stgit@localhost6.localdomain6>
 References: <20101221090527.8552.41486.stgit@localhost6.localdomain6>
 User-Agent: StGIT/0.14.3
@@ -35,13 +36,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For ease of use, add option printing all information '-A' or '--all'.
-This option can print following information.
-  - pid
-  - command name
-  - address
-  - function+offset
-  - elf file path
+Introduce new sub command 'perf bts trace'.
+This command can parse and print bts log recorded by
+'perf bts record'.
+
+Usage:
+ - First, record the bts log 'perf bts record <command>'
+ - Second, parse and print bts log 'perf bts trace'
+
+Output:
+0xffffffff8146fe0e => 0x0000003806200b20
+0x0000003806200b23 => 0x0000003806204910
+0xffffffff8146fe0e => 0x0000003806204910
+0xffffffff8146fe0e => 0x0000003806204936
+0xffffffff8146fe0e => 0x000000380620493d
+0x0000003806204981 => 0x00000038062049a3
+0x00000038062049a7 => 0x0000003806204988
+...
+
+Changes in V2:
+ - Update to the latest -tip tree
 
 Signed-off-by: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
 Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
@@ -52,46 +66,133 @@ Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
 ---
 
- tools/perf/Documentation/perf-bts.txt |    3 +++
- tools/perf/builtin-bts.c              |    6 ++++++
- 2 files changed, 9 insertions(+), 0 deletions(-)
+ tools/perf/Documentation/perf-bts.txt |   14 ++++++--
+ tools/perf/builtin-bts.c              |   56 +++++++++++++++++++++++++++++++--
+ 2 files changed, 64 insertions(+), 6 deletions(-)
 
 diff --git a/tools/perf/Documentation/perf-bts.txt b/tools/perf/Documentation/perf-bts.txt
-index 13ee862..c598dd2 100644
+index 55a2fe6..5920dcc 100644
 --- a/tools/perf/Documentation/perf-bts.txt
 +++ b/tools/perf/Documentation/perf-bts.txt
-@@ -44,6 +44,9 @@ OPTIONS
- -s::
- --symbol::
- 	Print function name and offset. (default)
-+-A::
-+--all::
-+	Print all information.
+@@ -3,22 +3,30 @@ perf-bts(1)
  
+ NAME
+ ----
+-perf-bts - Record branch-trace-store log
++perf-bts - Record and print branch-trace-store log
+ 
+ SYNOPSIS
+ --------
+ [verse]
+-'perf bts' record <command>
++'perf bts' [<options>] {record|trace}
+ 
+ DESCRIPTION
+ -----------
+-This command can record branch-trace-store log.
++This command can record and print branch-trace-store log.
+ Branch-trace-store is a facility of processors. It can record
+ address of branch to/from on every branch instruction and interrupt.
+ 
+ 'perf bts record <command>' records branch-trace-store log while specified
+ command is executing. And, save to the file "perf.data".
+ 
++'perf bts trace' parses recorded branch-trace-store log and prints it.
++
++OPTIONS
++-------
++-i::
++--input=::
++        Specify input file name to analyze.
++
  SEE ALSO
  --------
+ linkperf:perf-record[1]
 diff --git a/tools/perf/builtin-bts.c b/tools/perf/builtin-bts.c
-index be57571..bac4e83 100644
+index 587cfad..0d546d8 100644
 --- a/tools/perf/builtin-bts.c
 +++ b/tools/perf/builtin-bts.c
-@@ -34,6 +34,9 @@ struct exec_info {
- #define EI_FLAG_PRINT_ELFPATH		(1 << 3)
- #define EI_FLAG_PRINT_SYMBOL		(1 << 4)
- 
-+/* all print flags are enabled */
-+#define	 EI_FLAG_PRINT_ALL		-1UL
+@@ -1,10 +1,26 @@
+ #include "builtin.h"
+ #include "perf.h"
+ #include "util/parse-options.h"
++#include "util/session.h"
++#include "util/cache.h"
++#include "util/trace-event.h"
++#include <inttypes.h>
 +
- /* it's used when no print item specified */
- #define EI_FLAG_PRINT_DEFAULT		EI_FLAG_PRINT_SYMBOL
++/* format string of specifying min width to print address */
++#if __WORDSIZE == 32
++#define FMT_ADDR_WIDTH	"10"		/* length of "0x" + 32bit address */
++#else
++#define FMT_ADDR_WIDTH	"18"		/* length of "0x" + 64bit address */
++#endif
++/* format string to print address */
++#define FMT_ADDR	"%#0" FMT_ADDR_WIDTH "llx"
++
++/* default input file name to analyze */
++static const char *input_name = "perf.data";
  
-@@ -92,6 +95,9 @@ static const struct option bts_options[] = {
- 				   "print function+offset (default)",
- 				   set_print_flags,
- 				   (void *)EI_FLAG_PRINT_SYMBOL),
-+	OPT_CALLBACK_DEFAULT_NOOPT('A', "all", NULL, NULL,
-+				   "print all items", set_print_flags,
-+				   (void *)EI_FLAG_PRINT_ALL),
+ static const char * const bts_usage[] = {
+-	"perf bts record <command>",
+-	NULL,
++	"perf bts [<options>] {record|trace}",
++	NULL
+ };
+ 
+ /* arguments to call 'perf record' */
+@@ -16,11 +32,41 @@ static const char * const record_args[] = {
+ 	"-d",
+ };
+ 
+-/* dummy struct option to call parse_options() */
+ static const struct option bts_options[] = {
++	OPT_STRING('i', "input", &input_name, "file", "input file name"),
  	OPT_END()
  };
+ 
++static int process_sample_event(event_t *event __unused,
++	struct sample_data *sample, struct perf_session *session __unused)
++{
++	/* sample->ip is 'from address', sample->addr is 'to address' */
++	printf(FMT_ADDR " => " FMT_ADDR "\n", sample->ip, sample->addr);
++
++	return 0;
++}
++
++static struct perf_event_ops event_ops = {
++	.sample			= process_sample_event,
++	.ordered_samples	= false,
++};
++
++static int __cmd_trace(void)
++{
++	struct perf_session *session;
++
++	session = perf_session__new(input_name, O_RDONLY, 0, false);
++	if (!session) {
++		fprintf(stderr, "failed to create perf_session.\n");
++		return -ENOMEM;
++	}
++
++	perf_session__process_events(session, &event_ops);
++	perf_session__delete(session);
++
++	return 0;
++}
++
+ static int __cmd_record(int argc, const char **argv)
+ {
+ 	unsigned int rec_argc, i, j;
+@@ -55,6 +101,10 @@ int cmd_bts(int argc, const char **argv, const char *prefix __used)
+ 
+ 	if (!strncmp(argv[0], "record", 6))
+ 		return __cmd_record(argc, argv);
++	else if (!strncmp(argv[0], "trace", 5)) {
++		setup_pager();
++		return __cmd_trace();
++	}
+ 	else
+ 		usage_with_options(bts_usage, bts_options);
  
 
