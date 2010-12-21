@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629Ab0LUHiT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 02:38:19 -0500
-Received: from mx2.fusionio.com ([64.244.102.31]:35234 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753155Ab0LUHiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 02:38:18 -0500
-X-ASG-Debug-ID: 1292917096-0f2733fa0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D105963.7030509@fusionio.com>
-Date: Tue, 21 Dec 2010 08:38:11 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>
-CC: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        <akpm@linux-foundation.org>, <smcameron@yahoo.com>,
-        <linux-kernel@vger.kernel.org>, <mike.miller@hp.com>,
-        <thenzl@redhat.com>, Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] cciss: fix cciss_revalidate panic.
-References: <20101216190200.630.8596.stgit@beardog.cce.hp.com> <4D0B190E.1030206@kernel.dk> <20101220234213.GA10060@sepie.suse.cz> <4D105858.2020209@kernel.dk>
-X-ASG-Orig-Subj: Re: [PATCH] cciss: fix cciss_revalidate panic.
-In-Reply-To: <4D105858.2020209@kernel.dk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1292917096
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.50054
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	id S1754435Ab0LUHla (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 02:41:30 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:37485 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752481Ab0LUHl3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 02:41:29 -0500
+Subject: Re: [RFC PATCH 07/15] nohz_task: Restart tick when RCU forces nohz
+ task cpu quiescent state
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+In-Reply-To: <20101220235158.GE1715@nowhere>
+References: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
+	 <1292858662-5650-8-git-send-email-fweisbec@gmail.com>
+	 <1292860929.5021.16.camel@laptop>  <20101220235158.GE1715@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 21 Dec 2010 08:41:14 +0100
+Message-ID: <1292917274.5021.173.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-12-21 08:33, Jens Axboe wrote:
-> On 2010-12-21 00:42, Michal Marek wrote:
->> On Fri, Dec 17, 2010 at 09:02:22AM +0100, Jens Axboe wrote:
->>> On 2010-12-16 20:02, Stephen M. Cameron wrote:
->>>> From: Stephen M. Cameron <StephenM.Cameron>
->>>>
->>>> If you delete a logical drive, and then run BLKRRPART (e.g. via fdisk)
->>>> on a logical drive which is "after" the deleted logical drive in the h->drv[]
->>>> array, then cciss_revalidate panics because it will access the null pointer
->>>> h->drv[x] when x hits the deleted drive.
->>>
->>> Thanks Stephen. I put this in for-linus for 2.6.37 and marked it for
->>> stable backport.
->>
->> This got applied without the semicolon after 'continue' somehow and
->> broke build. Please apply the patch below.
+On Tue, 2010-12-21 at 00:52 +0100, Frederic Weisbecker wrote:
+> On Mon, Dec 20, 2010 at 05:02:09PM +0100, Peter Zijlstra wrote:
+> > On Mon, 2010-12-20 at 16:24 +0100, Frederic Weisbecker wrote:
+> > > If a cpu is in nohz mode due to a nohz task running, then
+> > > it is not able to notify quiescent states requested by other
+> > > CPUs.
+> > > 
+> > > Then restart the tick to remotely force the quiescent states on the
+> > > nohz task cpus.
+> > 
+> > -ENOPARSE.. if its in NOHZ state, it couldn't possibly need to
+> > participate in the quiescent state machine because the cpu is in a
+> > quiescent state and has 0 RCU activity.
 > 
-> I wonder how that happened. Thanks, I'll fix it up.
+> 
+> But it can be in nohz state in the kernel in which case it can have
+> any RCU activity.
 
-Linus already did I see.
+That still doesn't make sense.. if you're in nohz state there shouldn't
+be any rcu activity, otherwise its not nohz is it?
 
--- 
-Jens Axboe
 
