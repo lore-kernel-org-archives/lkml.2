@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab0LUXpJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 18:45:09 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:25849 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752865Ab0LUXpH (ORCPT
+	id S1754022Ab0LUXpb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 18:45:31 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:43518 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751846Ab0LUXp0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 18:45:07 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6204"; a="67788401"
-Message-ID: <d141676494ae8979d4b32a337c9dba38.squirrel@www.codeaurora.org>
-In-Reply-To: <20101215134107.0354c0c3@nehalam>
+	Tue, 21 Dec 2010 18:45:26 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6204"; a="67577245"
+Message-ID: <9eecc86d79182bb887f241f7367de068.squirrel@www.codeaurora.org>
+In-Reply-To: <20101215134135.51df5a7f@nehalam>
 References: <1292437866-11652-1-git-send-email-nvishwan@codeaurora.org>
-    <20101215134107.0354c0c3@nehalam>
-Date: Tue, 21 Dec 2010 15:44:52 -0800 (PST)
+    <20101215134135.51df5a7f@nehalam>
+Date: Tue, 21 Dec 2010 15:45:12 -0800 (PST)
 Subject: Re: [PATCH] msm: rmnet: msm rmnet smd virtual ethernet driver
 From: nvishwan@codeaurora.org
 To: "Stephen Hemminger" <shemminger@vyatta.com>
@@ -33,18 +33,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > On Wed, 15 Dec 2010 10:31:06 -0800
 > Niranjana Vishwanathapura <nvishwan@codeaurora.org> wrote:
 >
->> +static struct net_device_stats *rmnet_get_stats(struct net_device *dev)
->> +{
->> +	struct rmnet_private *p = netdev_priv(dev);
->> +	return &p->stats;
->> +}
 >> +
+>> +static void rmnet_tx_timeout(struct net_device *dev)
+>> +{
+>> +	pr_info("rmnet_tx_timeout()\n");
+>> +}
 >
-> Just use dev->stats and this function would no longer be needed.
+> The purpose of having a tx_timeout is to clear the pending
+> request.
 >
 > --
 >
 
-This function will be a function pointer (ndo_get_stats) in net_device_ops
-structure.
+Currently, there is no mechanism to clear the transaction.  This message
+is helpful in identifying the issue and fixing it.
 
