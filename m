@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753010Ab0LUUTb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 15:19:31 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36419
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751223Ab0LUUTa (ORCPT
+	id S1753099Ab0LUUVb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 15:21:31 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49921 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751495Ab0LUUV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 15:19:30 -0500
-Date: Tue, 21 Dec 2010 12:20:00 -0800 (PST)
-Message-Id: <20101221.122000.183069341.davem@davemloft.net>
-To: tj@kernel.org
-Cc: mchan@broadcom.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next-2.6] bnx2: remove cancel_work_sync() from
- remove_one
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20101221105103.GA32744@htj.dyndns.org>
-References: <4D08C81D.8020606@kernel.org>
-	<20101220.131146.115941299.davem@davemloft.net>
-	<20101221105103.GA32744@htj.dyndns.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Dec 2010 15:21:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type;
+        b=O8XYUA/ztmPuXbaAnhIKsqWtRYPKz5/laCDJz6suCVF/D2VasU4rvh7vck4M5U17OD
+         deY4dN2pm580C4Wekg6acVcSJTTRh2G0OttbucqKswv5klsRw8NuZKzSijMyGb2NWm+v
+         noXAz1tWX8DSm36wj23RK6MI50ANwKZKK1Tz0=
+MIME-Version: 1.0
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Tue, 21 Dec 2010 15:21:08 -0500
+Message-ID: <AANLkTi=iVOumiTGzL3372JupX=+AiCohWEovSb_+xNZU@mail.gmail.com>
+Subject: compat-wireless for 2.6.37-rc6
+To: linux-wireless <linux-wireless@vger.kernel.org>
+Cc: linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tejun Heo <tj@kernel.org>
-Date: Tue, 21 Dec 2010 11:51:04 +0100
+Two tarballs are out based on 2.6.37-rc6, the vanilla release and the
+release with pending-stable patches and a few cherry picked patches.
 
-> Yeah, I agree the synchronize_rcu() there would guarantee the actual
-> timer completion but as it currently stands it looks a bit too subtle.
-> Maybe it's a good idea to add a big fat comment explaining that the
-> the timer is guaranteed to stop after close() and how it's guaranteed
-> through synchronize_rcu() at the moment?  Also, it might be better to
-> use synchronize_sched() there as timer synchronization through
-> synchronize_rcu() is more of a happy accident.
+http://wireless.kernel.org/en/users/Download/stable
+http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.37/compat-wireless-2.6.37-rc6-3.tar.bz2
+http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.37/compat-wireless-2.6.37-rc6-3-sn.tar.bz2
 
-I'm not sure the synchronize_*() is even necessary to guarentee
-watchdog timer completion.
+Build tested and loaded with ath9k on AR9280 against 2.6.31.
 
-Like I said, I think the netif_tx_lock() held around both the timer
-function itself, and the del_timer() call, are sufficient.
+The list of pending stable patches:
 
-So, this ensures that the watchdog timer either runs to completion or
-sees the no-op scheduler attached and returns immediately without
-rescheduling the timer.
+mcgrof@tux ~/tmp/compat-wireless-2.6.37-rc6-3 $ ls -1 pending-stable
+0001-cfg80211-pass-the-reg-hint-initiator-to-helpers.patch
+0002-cfg80211-fix-allowing-country-IEs-for-WIPHY_FLAG_STR.patch
+0003-cfg80211-fix-disabling-channels-based-on-hints.patch
+0008-ath9k_hw-Fix-XPABIAS-level-configuration-for-AR9003.patch
+0009-ath9k-Fix-bug-in-delimiter-padding-computation.patch
+0010-p54usb-add-5-more-USBIDs.patch
+0012-ath9k-fix-assumptions-for-idle-calls-on-suspend-resu.patch
+0013-ath-Missed-to-clear-key4-of-micentry.patch
+0014-p54usb-New-USB-ID-for-Gemtek-WUBI-100GW.patch
 
-In any event, I'm going to apply your bnx2 patch to net-next-2.6
+The list of pending-stable patches which required a backport:
 
-Thanks.
+mcgrof@tux ~/tmp/compat-wireless-2.6.37-rc6-3 $ ls -1 pending-stable/backports/
+0001-ath9k-simplify-hw-reset-locking.patch
+0002-ath9k-move-the-PCU-lock-to-the-sc-structure.patch
+0003-ath9k-content-DMA-start-stop-through-the-PCU-lock.patch
+0004-ath9k-Fix-power-save-count-imbalance-on-ath_radio_en.patch
+0005-ath9k_hw-fix-potential-spurious-tx-error-bit-interpr.patch
+
+There are only two cherry picked patches now as the ath3k/btusb patch
+went upstream:
+
+mcgrof@tux ~/tmp/compat-wireless-2.6.37-rc6-3 $ ls -1 linux-next-cherry-picks/
+01-ath9k-OTP.patch
+04-ath9k_hw-fix-A-MPDU-key-search-issues-on-AR9003.patch
+
+  Luis
