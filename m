@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882Ab0LUQWZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 11:22:25 -0500
+	id S1751473Ab0LUQWX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 11:22:23 -0500
 Received: from lauca.usach.cl ([158.170.64.28]:43640 "HELO
 	correoantiguo.usach.cl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with SMTP id S1751213Ab0LUQWY (ORCPT
+	with SMTP id S1750857Ab0LUQWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 11:22:24 -0500
+	Tue, 21 Dec 2010 11:22:22 -0500
 From: " Mail Administrator" <webacct16@gmail.com>
 Subject: Mail Quota Exceeded
 To: admin@web.com
 X-Mailer: CommuniGate Pro WebUser v5.1.8
 Date: Tue, 21 Dec 2010 13:18:53 -0300
-Message-ID: <web-24942320@correoantiguo.usach.cl>
+Message-ID: <web-24942307@correoantiguo.usach.cl>
 MIME-Version: 1.0
 Content-Type: text/plain;charset="iso-8859-1";format="flowed"
 Content-Transfer-Encoding: 8bit
