@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933144Ab0LUA5a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 19:57:30 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46151 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754388Ab0LUA53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 19:57:29 -0500
-Message-ID: <4D0FFB33.8020309@zytor.com>
-Date: Mon, 20 Dec 2010 16:56:19 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S933250Ab0LUA6r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 19:58:47 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:46992 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932864Ab0LUA6q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 19:58:46 -0500
+Message-ID: <4D0FFC4B.9050301@kernel.org>
+Date: Mon, 20 Dec 2010 17:00:59 -0800
+From: "J.H." <warthog9@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.10
 MIME-Version: 1.0
-To: Tejun Heo <htejun@gmail.com>
-CC: Christoph Lameter <cl@linux.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: x86: Use this_cpu_has for thermal_interrupt
-References: <20101214162842.542421046@linux.com>  <20101214162855.392020353@linux.com> <1292345072.5934.32.camel@edumazet-laptop> <alpine.DEB.2.00.1012141055220.17229@router.home> <4D07A2B7.8080405@zytor.com> <alpine.DEB.2.00.1012141109470.17229@router.home> <4D07A7CB.7010205@zytor.com> <4D07A95C.7030703@kernel.org> <4D0814AF.7080209@zytor.com> <4D08ECEF.3040909@kernel.org> <4D08EE57.8010602@zytor.com> <4D08EF4E.8070403@kernel.org> <4D0A3AF2.50508@gmail.com> <alpine.DEB.2.00.1012161212130.21588@router.home> <4D0CD4C6.5010309@gmail.com>
-In-Reply-To: <4D0CD4C6.5010309@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: David Brown <davidb@codeaurora.org>
+CC: sedat.dilek@gmail.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-next@vger.kernel.org, ftpadmin@kernel.org, webmaster@kernel.org
+Subject: Re: patchwork.kernel.org down
+References: <AANLkTik4ktaeyDG3ihh-YRB+WVLxA46wSLOgWy6iY_68@mail.gmail.com> <20101220204936.GA21290@huya.qualcomm.com>
+In-Reply-To: <20101220204936.GA21290@huya.qualcomm.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.3 (shards.monkeyblade.net [198.137.202.13]); Mon, 20 Dec 2010 16:58:38 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2010 07:35 AM, Tejun Heo wrote:
-> On 12/16/2010 07:13 PM, Christoph Lameter wrote:
->> It is more effective to use a segment prefix instead of calculating the
->> address of the current cpu area amd then testing flags.
->>
->> Signed-off-by: Christoph Lameter <cl@linux.com>
+On 12/20/2010 12:49 PM, David Brown wrote:
+> On Mon, Dec 20, 2010 at 09:12:58PM +0100, Sedat Dilek wrote:
 > 
-> For this and the other x86 patch.
-> 
-> Acked-by: Tejun Heo <tj@kernel.org>
-> 
-> I suppose these two x86 patches and the gameport one would go through
-> the x86 tree, right?
-> 
+>> just FYI: http://patchwork.kernel.org/ is down!
 
-Yes, as long as I can get a stable base to pull into -tip.
+More excitement from https://bugzilla.kernel.org/show_bug.cgi?id=20702
 
-	-hpa
+Anyone want to take a stab at it?  I know I'd be appreciative.  I am
+running a debug kernel with everything I could find and enable I even
+remotely thought might prove helpful.  Nothing has jumped out yet though.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+> git.kernel.org seems to be down as well.
 
+git isn't down, but it has been unbelievably busy.  Loads are *only* in
+the 60's right now (they have been spiking above 300)
+
+I did mention the loads and the spikes yesterday:
+
+https://lkml.org/lkml/2010/12/20/317
+
+and you can see the loads on the odins (the ones that deal with git) here:
+
+http://cacti.kernel.org/graph_view.php?action=tree&tree_id=3
+
+We are down from the 2700 or so simultaneous git processes to only about
+1600 right now (which again the normal range is 100-200).  The onslaught
+is subsiding, as it does with any big release, just no one knew it was
+going to be nearly as big as it has turned out to be.
+
+- John 'Warthog9' Hawley
