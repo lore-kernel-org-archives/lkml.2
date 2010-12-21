@@ -1,69 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752279Ab0LUSGL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 13:06:11 -0500
-Received: from mail-gx0-f180.google.com ([209.85.161.180]:62221 "EHLO
-	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493Ab0LUSGJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 13:06:09 -0500
-MIME-Version: 1.0
-In-Reply-To: <20101221165956.GA28702@polaris.bitmath.org>
-References: <1292852364-19127-1-git-send-email-rydberg@euromail.se>
-	<1292852364-19127-3-git-send-email-rydberg@euromail.se>
-	<4D10D75D.80400@canonical.com>
-	<20101221165956.GA28702@polaris.bitmath.org>
-Date: Tue, 21 Dec 2010 12:06:08 -0600
-Message-ID: <AANLkTi=rxBMDB+JKLY9A4iMZEtCBGNhfJxAERMb4CEjR@mail.gmail.com>
-Subject: Re: [PATCH 2/3] Input: synaptics - add multi-finger and semi-mt support
-From: Chris Bagwell <chris@cnpbagwell.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Chase Douglas <chase.douglas@canonical.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Takashi Iwai <tiwai@suse.de>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752418Ab0LUSJW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 13:09:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44310 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751818Ab0LUSJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 13:09:20 -0500
+Subject: Re: [PATCH scsi-misc-2.6] sd: implement sd_check_events()
+From: James Bottomley <James.Bottomley@suse.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Jens Axboe <axboe@kernel.dk>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+In-Reply-To: <1292862013.3034.7.camel@mulgrave.site>
+References: <20101217122831.39300d94.sfr@canb.auug.org.au>
+	 <1292597607.2820.17.camel@mulgrave.site>  <4D0CF27F.1080601@kernel.org>
+	 <1292862013.3034.7.camel@mulgrave.site>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 21 Dec 2010 12:09:13 -0600
+Message-ID: <1292954953.3034.15.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 21, 2010 at 10:59 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
->> > Reported-by: Tobyn Bertram
->> > Not-yet-signed-off-by: Takashi Iwai <tiwai@suse.de>
->> > Not-yet-signed-off-by: Chase Douglas <chase.douglas@canonical.com>
->> > Not-yet-signed-off-by: Chris Bagwell <chris@cnpbagwell.com>
->> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
->>
->> You can keep my SOB.
->
-> Great, thanks.
->
->> > +static void set_slot(struct input_dev *dev, int slot, bool active, int x, int y)
->> > +{
->> > +   input_mt_slot(dev, slot);
->> > +   input_mt_report_slot_state(dev, MT_TOOL_FINGER, active);
->> > +   if (active) {
->> > +           input_report_abs(dev, ABS_MT_POSITION_X, x);
->> > +           input_report_abs(dev, ABS_MT_POSITION_Y,
->> > +                            YMAX_NOMINAL + YMIN_NOMINAL - y);
->> > +   }
->> > +}
->>
->> I take it that you feel MT_TOOL_FINGER should always be set, even if
->> it's always the same as BTN_TOOL_*? I just want to be sure this is
->> intended so we document it appropriately.
->
-> Yes - the MT_TOOLs are only emitted when explicitly set in absbit, but
-> the internal interface always handles it. This is actually documented
-> in the code (and DocBook).
+On Mon, 2010-12-20 at 10:20 -0600, James Bottomley wrote:
+> Added cc: linux-scsi
+> 
+> On Sat, 2010-12-18 at 18:42 +0100, Tejun Heo wrote:
+> > Replace sd_media_change() with sd_check_events().
+> > 
+> > * Move media removed logic into set_media_not_present() and
+> >   media_not_present() and set sdev->changed iff an existing media is
+> >   removed or the device indicates UNIT_ATTENTION.
+> > 
+> > * Make sd_check_events() sets sdev->changed if previously missing
+> >   media becomes present.
+> > 
+> > * Event is reported only if sdev->changed is set.
+> > 
+> > This makes media presence event reported if scsi_disk->media_present
+> > actually changed or the device indicated UNIT_ATTENTION.  For backward
+> > compatibility, SDEV_EVT_MEDIA_CHANGE is generated each time
+> > sd_check_events() detects media change event.
+> > 
+> > Signed-off-by: Tejun Heo <tj@kernel.org>
+> > Cc: Kay Sievers <kay.sievers@vrfy.org>
+> > ---
+> > Here it is.  The conflicts were due to Alan's recent patch, which was
+> > in the similar direction anyway.
+> 
+> This looks fine to me.  Jens can you strip the SCSI patches out of your
+> tree and I'll run them through a postmerge tree to get the fix up?
 
-That note is good guidance for developer side.  Its also worth noting
-on app side that MT_TOOL_FINGER is a little special since its value is
-0.  In most common case, I think it will get filtered out where as
-BTN_TOOL_FINGER will always be sent.
+Ping on this, please: I can't build a postmerge tree until block is
+sorted out.  I need these four removing:
 
-Since we can't yet query per slot ABS_MT_TOOL_TYPE, I guess apps have
-to just assume its a finger unless told otherwise?
+commit 638428ece619495edc9579b1e21493eb00f9687c
+Author: Tejun Heo <tj@kernel.org>
+Date:   Thu Dec 9 11:18:42 2010 +0100
 
-Chris
+    scsi: fix TUR error handling in sr_media_change()
+  
+commit 9f8a2c23c6c1140f515f601265c4dff7522110b7
+Author: Tejun Heo <tj@kernel.org>
+Date:   Wed Dec 8 20:57:40 2010 +0100
+
+    scsi: replace sr_test_unit_ready() with scsi_test_unit_ready()
+ 
+commit 93aae17af1172c40c6f74b7294e93a90c3cfaa5d
+Author: Tejun Heo <tj@kernel.org>
+Date:   Thu Dec 16 17:52:17 2010 +0100
+
+    sr: implement sr_check_events()
+
+commit c8d2e937355d02db3055c2fc203e5f017297ee1f
+Author: Tejun Heo <tj@kernel.org>
+Date:   Wed Dec 8 20:57:42 2010 +0100
+
+    sd: implement sd_check_events()
+
+Thanks,
+
+James
+
+
