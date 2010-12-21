@@ -1,65 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab0LUXzw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 18:55:52 -0500
-Received: from casper.infradead.org ([85.118.1.10]:42250 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752862Ab0LUXzv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 18:55:51 -0500
-Message-ID: <4D113E7C.7000307@infradead.org>
-Date: Tue, 21 Dec 2010 21:55:40 -0200
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1754027Ab0LUX6v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 18:58:51 -0500
+Received: from smtpout05.highway.telekom.at ([195.3.96.77]:23490 "EHLO
+	email.aon.at" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752914Ab0LUX6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 18:58:50 -0500
+To: linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] USB: add support for Dream Cheeky DL100B Webmail Notifier (1d34:0004)
+From: Melchior FRANZ <melchior.franz@gmail.com>
+X-Fingerprint: 9FFB C079 5B78 4F27 099C C6C6 7399 02D1 919B D903
+X-PGP: http://members.aon.at/mfranz/melchior.franz
+Date: Wed, 22 Dec 2010 00:58:42 +0100
 MIME-Version: 1.0
-To: Thiago Farina <tfransosi@gmail.com>
-CC: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH] drivers/media/video/v4l2-compat-ioctl32.c: Check the
- return value of copy_to_user
-References: <d21ad74592c295d59f5806f30a053745b5765397.1292894256.git.tfransosi@gmail.com>	<201012211925.38201.arnd@arndb.de> <AANLkTikbvST_B+4x3Xt=gxFhM1TBOrXVc1HjZT3zTXrt@mail.gmail.com>
-In-Reply-To: <AANLkTikbvST_B+4x3Xt=gxFhM1TBOrXVc1HjZT3zTXrt@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Message-Id: <201012220058.43366@rk-nord.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 21-12-2010 16:34, Thiago Farina escreveu:
-> On Tue, Dec 21, 2010 at 4:25 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> On Tuesday 21 December 2010 02:18:06 Thiago Farina wrote:
->>> diff --git a/drivers/media/video/v4l2-compat-ioctl32.c b/drivers/media/video/v4l2-compat-ioctl32.c
->>> index e30e8df..55825ec 100644
->>> --- a/drivers/media/video/v4l2-compat-ioctl32.c
->>> +++ b/drivers/media/video/v4l2-compat-ioctl32.c
->>> @@ -206,7 +206,9 @@ static struct video_code __user *get_microcode32(struct video_code32 *kp)
->>>          * user address is invalid, the native ioctl will do
->>>          * the error handling for us
->>>          */
->>> -       (void) copy_to_user(up->loadwhat, kp->loadwhat, sizeof(up->loadwhat));
->>> +       if (copy_to_user(up->loadwhat, kp->loadwhat, sizeof(up->loadwhat)))
->>> +               return NULL;
->>> +
->>>         (void) put_user(kp->datasize, &up->datasize);
->>>         (void) put_user(compat_ptr(kp->data), &up->data);
->>>         return up;
->>
->> Did you read the comment above the code you changed?
->>
-> Yes, I read, but I went ahead.
-> 
->> You can probably change this function to look at the return code of
->> copy_to_user, but then you need to treat the put_user return code
->> the same, and change the comment.
->>
-> 
-> Right, I will do the same with put_user, but I'm afraid of changing the comment.
+From: Melchior FRANZ <mfranz@aon.at>
 
-Well, we should just remove all V4L1 stuff for .38, so I don't see much sense on keeping
-the VIDIOCGMICROCODE32 compat stuff.
+So far the USBLED driver only supports Delcom's "USB Visual Signal
+Indicator" (http://www.delcomproducts.com/products_USBLMP.asp). The
+driver generates virtual files "red", "green", and "blue" under the
+device's /sys/ directory, where color values can be read from and
+written to.
 
-Cheers,
-Mauro
+This patch adds support for Dream Cheeky's "DL100B Webmail Notifier"
+(http://www.dreamcheeky.com/webmail-notifier -- available from several
+shops, such as http://www.conrad.at/ce/de/product/777048/USB-WEBMAIL).
+This device isn't as pretty as Delcom's, but it's *far* cheaper, and
+its 3 LEDs can be set in 32 brightness steps each. The grey envelope
+contour can easily be removed, leaving a rather neutral white box (with
+a few small holes), which is useful for generic signalling purposes.
+Of course, the small circuit board can easily be put into a prettier
+case.
+
+The DL100B device pretends to be a HID, but the HID descriptor shows
+that it's not overly useful as such (see below). The patch therefore
+removes the "HID-ness" (hid-core.c, hid-ids.h), and adds the necessary
+commands to usbled.c. The protocol info comes from the developer's
+manual that Dream Cheeky kindly provided (815DeveloperManual.pdf).
+
+
+HID descriptor:
+
+  0: 05 01   Usage Page 'Generic Desktop Controls'
+  2: 09 10   Usage 'Reserved'
+  4: a1 01   Collection 'Application (mouse, keyboard)'
+  6: 05 00           Usage Page 'Undefined'
+  8: 19 10           Usage Minimum = 16
+ 10: 29 11           Usage Maximum = 17
+ 12: 15 00           Logical Minimum = 0
+ 14: 25 0f           Logical Maximum = 15
+ 16: 75 08           Report Size = 8
+ 18: 95 08           Report Count = 8
+ 20: 91 02           Output data *var abs lin pref-state null-pos non-vol bit-field
+ 22: 19 10           Usage Minimum = 16
+ 24: 29 11           Usage Maximum = 17
+ 26: 15 00           Logical Minimum = 0
+ 28: 25 0f           Logical Maximum = 15
+ 30: 75 08           Report Size = 8
+ 32: 95 08           Report Count = 8
+ 34: 81 00           Input data array abs lin pref-state null-pos non-vol bit-field
+ 36: c0      End Collection
+
+Signed-off-by: Melchior FRANZ <mfranz@aon.at>
+---
+
+Greg: I hope I understood your instructions correctly.  :-)
+
+Some notes:
+- I increased the file's version number (1.1 -> 1.2). Hope that's OK.
+- There were two differently capitalized ENOMEM messages with the same
+  contents before, and as I had to add a third one, I de-capitalized one
+  for consistency reasons.
+- The patch removes the three color #define-s, as they are no longer
+  suitable on the top level, and puts the values directly in the code.
+  This should be clear enough, as the respective color is mentioned
+  in the line before. (I considered to use "const" values or an enum,
+  but both generated different, more verbose code.)
+
+
+Please review again and consider for inclusion. (The patch is diffed
+against 2.6.36.2.)
+
+
+
+
+ 
+ drivers/hid/hid-core.c    |    1 +
+ drivers/hid/hid-ids.h     |    2 +
+ drivers/usb/misc/usbled.c |  118 ++++++++++++++++++++++++++++++++++-----------
+ 3 files changed, 93 insertions(+), 28 deletions(-)
+
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index a0dea3d..cb904d2 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1594,6 +1594,7 @@ static const struct hid_device_id hid_ignore_list[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_DEALEXTREAME, USB_DEVICE_ID_DEALEXTREAME_RADIO_SI4701) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_DELORME, USB_DEVICE_ID_DELORME_EARTHMATE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_DELORME, USB_DEVICE_ID_DELORME_EM_LT20) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_DREAM_CHEEKY, 0x0004) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ESSENTIAL_REALITY, USB_DEVICE_ID_ESSENTIAL_REALITY_P5) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ETT, USB_DEVICE_ID_TC5UH) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ETT, USB_DEVICE_ID_TC4UM) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index c5ae5f1..650c7b2 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -197,6 +197,8 @@
+ #define USB_VENDOR_ID_ELECOM		0x056e
+ #define USB_DEVICE_ID_ELECOM_BM084	0x0061
+ 
++#define USB_VENDOR_ID_DREAM_CHEEKY	0x1d34
++
+ #define USB_VENDOR_ID_ELO		0x04E7
+ #define USB_DEVICE_ID_ELO_TS2700	0x0020
+ 
+diff --git a/drivers/usb/misc/usbled.c b/drivers/usb/misc/usbled.c
+index c96f51d..558a495 100644
+--- a/drivers/usb/misc/usbled.c
++++ b/drivers/usb/misc/usbled.c
+@@ -1,5 +1,5 @@
+ /*
+- * USB LED driver - 1.1
++ * USB LED driver - 1.2
+  *
+  * Copyright (C) 2004 Greg Kroah-Hartman (greg@kroah.com)
+  *
+@@ -20,12 +20,17 @@
+ #define DRIVER_AUTHOR "Greg Kroah-Hartman, greg@kroah.com"
+ #define DRIVER_DESC "USB LED Driver"
+ 
+-#define VENDOR_ID	0x0fc5
+-#define PRODUCT_ID	0x1223
++enum led_type {
++	DELCOM_VISUAL_SIGNAL_INDICATOR,
++	DREAM_CHEEKY_WEBMAIL_NOTIFIER,
++};
+ 
+ /* table of devices that work with this driver */
+ static const struct usb_device_id id_table[] = {
+-	{ USB_DEVICE(VENDOR_ID, PRODUCT_ID) },
++	{ USB_DEVICE(0x0fc5, 0x1223),
++			.driver_info = DELCOM_VISUAL_SIGNAL_INDICATOR },
++	{ USB_DEVICE(0x1d34, 0x0004),
++			.driver_info = DREAM_CHEEKY_WEBMAIL_NOTIFIER },
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE (usb, id_table);
+@@ -35,15 +40,12 @@ struct usb_led {
+ 	unsigned char		blue;
+ 	unsigned char		red;
+ 	unsigned char		green;
++	enum led_type		type;
+ };
+ 
+-#define BLUE	0x04
+-#define RED	0x02
+-#define GREEN	0x01
+ static void change_color(struct usb_led *led)
+ {
+ 	int retval;
+-	unsigned char color = 0x07;
+ 	unsigned char *buffer;
+ 
+ 	buffer = kmalloc(8, GFP_KERNEL);
+@@ -52,25 +54,59 @@ static void change_color(struct usb_led *led)
+ 		return;
+ 	}
+ 
+-	if (led->blue)
+-		color &= ~(BLUE);
+-	if (led->red)
+-		color &= ~(RED);
+-	if (led->green)
+-		color &= ~(GREEN);
+-	dev_dbg(&led->udev->dev,
+-		"blue = %d, red = %d, green = %d, color = %.2x\n",
+-		led->blue, led->red, led->green, color);
+-
+-	retval = usb_control_msg(led->udev,
+-				usb_sndctrlpipe(led->udev, 0),
+-				0x12,
+-				0xc8,
+-				(0x02 * 0x100) + 0x0a,
+-				(0x00 * 0x100) + color,
+-				buffer,	
+-				8,
+-				2000);
++	switch (led->type) {
++	case DELCOM_VISUAL_SIGNAL_INDICATOR: {
++		unsigned char color = 0x07;
++
++		if (led->blue)
++			color &= ~0x04;
++		if (led->red)
++			color &= ~0x02;
++		if (led->green)
++			color &= ~0x01;
++		dev_dbg(&led->udev->dev,
++			"blue = %d, red = %d, green = %d, color = %.2x\n",
++			led->blue, led->red, led->green, color);
++
++		retval = usb_control_msg(led->udev,
++					usb_sndctrlpipe(led->udev, 0),
++					0x12,
++					0xc8,
++					(0x02 * 0x100) + 0x0a,
++					(0x00 * 0x100) + color,
++					buffer,
++					8,
++					2000);
++		break;
++	}
++
++	case DREAM_CHEEKY_WEBMAIL_NOTIFIER:
++		dev_dbg(&led->udev->dev,
++			"red = %d, green = %d, blue = %d\n",
++			led->red, led->green, led->blue);
++
++		buffer[0] = led->red;
++		buffer[1] = led->green;
++		buffer[2] = led->blue;
++		buffer[3] = buffer[4] = buffer[5] = 0;
++		buffer[6] = 0x1a;
++		buffer[7] = 0x05;
++
++		retval = usb_control_msg(led->udev,
++					usb_sndctrlpipe(led->udev, 0),
++					0x09,
++					0x21,
++					0x200, The price difference to Delcom's thingy lets you a lot of room. :-)
++					0,
++					buffer,
++					8,
++					2000);
++		break;
++
++	default:
++		dev_err(&led->udev->dev, "unknown device type %d\n", led->type);
++	}
++
+ 	if (retval)
+ 		dev_dbg(&led->udev->dev, "retval = %d\n", retval);
+ 	kfree(buffer);
+@@ -107,11 +143,12 @@ static int led_probe(struct usb_interface *interface, const struct usb_device_id
+ 
+ 	dev = kzalloc(sizeof(struct usb_led), GFP_KERNEL);
+ 	if (dev == NULL) {
+-		dev_err(&interface->dev, "Out of memory\n");
++		dev_err(&interface->dev, "out of memory\n");
+ 		goto error_mem;
+ 	}
+ 
+ 	dev->udev = usb_get_dev(udev);
++	dev->type = id->driver_info;
+ 
+ 	usb_set_intfdata (interface, dev);
+ 
+@@ -125,6 +162,31 @@ static int led_probe(struct usb_interface *interface, const struct usb_device_id
+ 	if (retval)
+ 		goto error;
+ 
++	if (dev->type == DREAM_CHEEKY_WEBMAIL_NOTIFIER) {
++		unsigned char *enable;
++
++		enable = kmemdup("\x1f\x02\0\x5f\0\0\x1a\x03", 8, GFP_KERNEL);
++		if (!enable) {
++			dev_err(&interface->dev, "out of memory\n");
++			retval = -ENOMEM;
++			goto error;
++		}
++
++		retval = usb_control_msg(udev,
++					usb_sndctrlpipe(udev, 0),
++					0x09,
++					0x21,
++					0x200,
++					0,
++					enable,
++					8,
++					2000);
++
++		kfree(enable);
++		if (retval != 8)
++			goto error;
++	}
++
+ 	dev_info(&interface->dev, "USB LED device now attached\n");
+ 	return 0;
+ 
