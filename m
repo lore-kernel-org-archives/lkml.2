@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933532Ab0LUDW7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 22:22:59 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:40243 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933461Ab0LUDW6 (ORCPT
+	id S933536Ab0LUDYt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 22:24:49 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:45658 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933461Ab0LUDYs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 22:22:58 -0500
-Date: Tue, 21 Dec 2010 11:22:51 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Junio C Hamano <gitster@pobox.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Crypto Fixes for 2.6.37
-Message-ID: <20101221032251.GA22511@gondor.apana.org.au>
-References: <20100603100550.GA30681@gondor.apana.org.au> <20100716022648.GA28219@gondor.apana.org.au> <20100722055043.GA25689@gondor.apana.org.au> <20100903060055.GA28915@gondor.apana.org.au> <20100903110722.GA31826@gondor.apana.org.au> <20101215115035.GA25248@gondor.apana.org.au> <AANLkTikM4vQe7dsN8JJ1QSLeeTbRpSnuoJU=e4H2YFoz@mail.gmail.com> <20101216004938.GA32662@gondor.apana.org.au> <20101216005813.GA820@gondor.apana.org.au> <7vd3owdaxz.fsf@alter.siamese.dyndns.org>
+	Mon, 20 Dec 2010 22:24:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=S5QYtmbQi2cVhWoVChzb4ke0Qzk/6Ypmhh/uNm6b4OtqyzZZBFoia1A+Xn7RLhEMUe
+         wuxLQ0zEmI7CpP7+9WQVZJANtSc0jRFnhxcTJ+pLTU6/BIaCedv9Xo6q90fc7VudeZsI
+         qfeJwZmtXQKQx3BwI7XfOV/MACZkQwh3jPbJ0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7vd3owdaxz.fsf@alter.siamese.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1292896861.2300.288.camel@rui>
+References: <20101219130001.GB5790@liondog.tnic> <1292896861.2300.288.camel@rui>
+From: Seblu <seblu@seblu.net>
+Date: Tue, 21 Dec 2010 04:24:26 +0100
+X-Google-Sender-Auth: gWOnLWJYlr8swg81d8CgWUofHmo
+Message-ID: <AANLkTi=0ZU_eHQpUHwny=TZn31iH0GJq7tCXhPqs3WE4@mail.gmail.com>
+Subject: Re: [PATCH] ACPI battery: Fix sysfs oops when removing battery
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: Borislav Petkov <bp@alien8.de>, "Brown, Len" <len.brown@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 20, 2010 at 01:56:40AM -0800, Junio C Hamano wrote:
+On Tue, Dec 21, 2010 at 3:01 AM, Zhang Rui <rui.zhang@intel.com> wrote:
+> On Sun, 2010-12-19 at 21:00 +0800, Borislav Petkov wrote:
+>> Hi guys,
+>>
+>> I get the oops below on 37-rc6. Here's a possible fix:
+>>
+> does this happen every time when you unload the battery driver?
 >
-> > OK it should be fixed for got now.  I suspect what has changed
-> > is that git is now using my umask by default.
-> 
-> Sorry, do you mean I need to be aware of a regression in recent version of
-> git?  From which version to which version of git did you upgrade?  
-> 
-> I offhand do not recall any recent change around umask area, especially
-> with respect to rsync transport.
+on my laptop (dell e6410), with 4 tests, this append every times.
 
-No I don't think it was your fault.  I haven't upgraded in a long
-time and have only just caught up with Debian testing.
-
-Thanks,
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Sébastien Luttringer
+www.seblu.net
