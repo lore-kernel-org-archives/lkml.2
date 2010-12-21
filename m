@@ -1,41 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867Ab0LUPtw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 10:49:52 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56892 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750816Ab0LUPtw (ORCPT
+	id S1751292Ab0LUQAF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 11:00:05 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:38245 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751006Ab0LUQAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 10:49:52 -0500
-Date: Tue, 21 Dec 2010 15:50:04 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>, myungjoo.ham@gmail.com
-Subject: Re: [PATCH] MFD MAX8998/LP3974: Add Features: hibernation,
- charger, and other misc.
-Message-ID: <20101221155004.GA21871@opensource.wolfsonmicro.com>
-References: <1292898128-32647-1-git-send-email-myungjoo.ham@samsung.com>
+	Tue, 21 Dec 2010 11:00:04 -0500
+Date: Tue, 21 Dec 2010 11:00:02 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Anoop P <anoop.pa@gmail.com>
+cc: Ralf Baechle <ralf@linux-mips.org>, <gregkh@suse.de>,
+        <dbrownell@users.sourceforge.net>, <sarah.a.sharp@linux.intel.com>,
+        <andiry.xu@amd.com>, <agust@denx.de>, <ddaney@caviumnetworks.com>,
+        <gadiyar@ti.com>, <linux-mips@linux-mips.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH] EHCI support for on-chip PMC MSP USB controller.
+In-Reply-To: <1292929580-5829-1-git-send-email-anoop.pa@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1012211050470.31667-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292898128-32647-1-git-send-email-myungjoo.ham@samsung.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 21, 2010 at 11:22:08AM +0900, MyungJoo Ham wrote:
-> 1. Hibernation support
-> 2. Charger support
-> 3. Support LP3974 RTC.
-> 4. Support wider ranges for DVS-GPIO
+On Tue, 21 Dec 2010, Anoop P wrote:
 
-This would be much easier to review if each of these changes were split
-out into a separate patch - at the minute all the code changes are mixed
-in with each other.
+> From: Anoop P A <anoop.pa@gmail.com>
+> 
+> This patch includes.
+> 
+> 1. USB host driver for MSP71xx family SoC on-chip USB controller.
+> 2. Platform support for USB controller.
+
+It also contains changes to the core USB hub driver code.  You should 
+mention things like that in the patch description.
+
+...
+
+> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+> index 27115b4..f2a45ba 100644
+> --- a/drivers/usb/core/hub.c
+> +++ b/drivers/usb/core/hub.c
+> @@ -3377,12 +3377,43 @@ static void hub_events(void)
+>  			}
+>  			
+>  			if (portchange & USB_PORT_STAT_C_OVERCURRENT) {
+> +#ifdef CONFIG_USB_EHCI_HCD_PMC_MSP
+> +#define OVER_CURR_DELAY 100
+
+What happens if CONFIG_USB_EHCI_HCD_PMC_MSP is defined, but an 
+overcurrent status is detected on an external hub instead of the root 
+hub?
+
+> +				/* clear OCC bit */
+> +				clear_port_feature(hdev, i,
+> +					USB_PORT_FEAT_C_OVER_CURRENT);
+> +
+> +				/* This step is required to toggle the PP bit
+> +				 * to 0 and 1 (by hub_power_on) in order the
+> +				 * CSC bit to be transitioned
+> +				 * properly for device hotplug
+> +				 */
+> +				/* clear PP bit */
+> +				clear_port_feature(hdev, i,
+> +				USB_PORT_FEAT_POWER);
+> +
+> +				/* resume power */
+> +				hub_power_on(hub, true);
+> +
+> +				/* delay 100 usec */
+> +				udelay(OVER_CURR_DELAY);
+> +
+> +				/* read OCA bit */
+> +				if (portstatus &
+> +					(1<<USB_PORT_FEAT_OVER_CURRENT)) {
+> +					/* declare overcurrent */
+> +					dev_err(hub_dev,
+> +						"over-current change on port %d\n",
+> +						i);
+> +				}
+> +#else
+>  				dev_err (hub_dev,
+>  					"over-current change on port %d\n",
+>  					i);
+>  				clear_port_feature(hdev, i,
+>  					USB_PORT_FEAT_C_OVER_CURRENT);
+>  				hub_power_on(hub, true);
+> +#endif
+>  			}
+
+"#ifdef" inside code like this is strongly discouraged.  This should be 
+written using a separate subroutine.
+
+...
+
+> diff --git a/drivers/usb/host/ehci-pmcmsp.c b/drivers/usb/host/ehci-pmcmsp.c
+> new file mode 100644
+> index 0000000..b1b4f21
+> --- /dev/null
+> +++ b/drivers/usb/host/ehci-pmcmsp.c
+
+> +static const struct hc_driver ehci_msp_hc_driver = {
+> +	.description =		hcd_name,
+> +	.product_desc =		"PMC MSP EHCI",
+> +	.hcd_priv_size =	sizeof(struct ehci_hcd),
+> +
+> +	/*
+> +	 * generic hardware linkage
+> +	 */
+> +#ifdef CONFIG_MSP_HAS_DUAL_USB
+> +	.irq =			ehci_msp_irq,
+> +#else
+> +	.irq =			ehci_irq,
+> +#endif
+> +	.flags =		HCD_MEMORY | HCD_USB2,
+> +
+> +	/*
+> +	 * basic lifecycle operations
+> +	 */
+> +	.reset =		ehci_msp_setup,
+> +	.start =		ehci_run,
+> +#ifdef	CONFIG_PM
+> +	.suspend =		ehci_msp_suspend,
+> +	.resume =		ehci_msp_resume,
+> +#endif /*CONFIG_PM*/
+> +	.stop =			ehci_stop,
+> +
+> +	/*
+> +	 * managing i/o requests and associated device resources
+> +	 */
+> +	.urb_enqueue =		ehci_urb_enqueue,
+> +	.urb_dequeue =		ehci_urb_dequeue,
+> +	.endpoint_disable =	ehci_endpoint_disable,
+> +
+> +	/*
+> +	 * scheduling support
+> +	 */
+> +	.get_frame_number =	ehci_get_frame,
+> +
+> +	/*
+> +	 * root hub support
+> +	 */
+> +	.hub_status_data =	ehci_hub_status_data,
+> +	.hub_control =		ehci_hub_control,
+> +};
+
+This appears to have been copied from a really old version of 
+ehci-pci.c.  You should start with the most up-to-date code.
+
+Alan Stern
+
