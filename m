@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab0LUPCh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 10:02:37 -0500
+	id S1752316Ab0LUPCM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 10:02:12 -0500
 Received: from mail-bw0-f45.google.com ([209.85.214.45]:55293 "EHLO
 	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752519Ab0LUPCT (ORCPT
+	with ESMTP id S1751876Ab0LUPCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 10:02:19 -0500
+	Tue, 21 Dec 2010 10:02:10 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=pW/fgtkUmFaw2qyUz9oPzS8pP0nQZMIWc60sxadigDjfCN1LR+SsDtrJ+JaBwFRDyy
-         dR5N7Yx4TZ5DfsoiEjR+4/lBWAtQYIEZ6Krppi/8LKxnMzJN6hJf/i3Yri3ZHWrsKD9H
-         Ge2yQ+6qrWSOdaVwOLqFSC494R5oqHjMbS/R4=
+        b=FOTDhKdaaBBMEQrG9yr2QsBT8wdq21l7v2t33pZqw5SwDxVu1zHiL6v+Vee00XxMEB
+         kZ3fwlzKpysq3Ti6CwVuUgOb3otDv9q0kmc8uXbvTyixTVSfRQtWaMELMxHXRBX8lqG8
+         bNiTERBTUvUBMb0iEeBotf3DD4MPeyKo0uFQw=
 From: Tejun Heo <tj@kernel.org>
 To: linux-scsi@vger.kernel.org, James.Bottomley@suse.de,
         fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
         Eric.Moore@lsi.com, dgilbert@interlog.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 6/6] scsi: don't use execute_in_process_context()
-Date: Tue, 21 Dec 2010 16:02:01 +0100
-Message-Id: <1292943721-4519-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 1/6] scsi: remove flush_scheduled_work() usages
+Date: Tue, 21 Dec 2010 16:01:56 +0100
+Message-Id: <1292943721-4519-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1292943721-4519-1-git-send-email-tj@kernel.org>
 References: <1292943721-4519-1-git-send-email-tj@kernel.org>
@@ -29,219 +29,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SCSI is the only subsystem which uses execute_in_process_context() and
-its use is racy against module unload.  ie. the reap work is not
-properly flushed and could still be running after the scsi module is
-unloaded.
+Simple conversions to drop flush_scheduled_work() usages in
+drivers/scsi.  More involved ones will be done in separate patches.
 
-Although execute_in_process_context() can be more efficient when the
-caller already has a context, in this case, the call sites are quite
-cold and the difference is practically meaningless.  With commit
-c8efcc25 (workqueue: allow chained queueing during destruction), the
-race condition can easily be fixed by using a dedicated workqueue and
-destroying it on module unload.
+* NCR5380, megaraid_sas: cancel_delayed_work() +
+  flush_scheduled_work() -> cancel_delayed_work_sync().
 
-Create and use scsi_wq instead of execute_in_process_context().
+* mpt2sas_scsih: drop unnecessary flush_scheduled_work().
 
-* scsi_device->ew is replaced with release_work.  scsi_target->ew is
-  replaced with reap_work.
-
-* Both works are initialized with the respective release/reap function
-  during device/target init.  scsi_target_reap_usercontext() is moved
-  upwards to avoid needing forward declaration.
-
-* scsi_alloc_target() now explicitly flushes the reap_work of the
-  found dying target before putting it instead of depending on
-  flush_scheduled_work().
-
-For more info on the issues, please read the following thread.
-
- http://thread.gmane.org/gmane.linux.scsi/62923
+* arcmsr_hba, ipr, pmcraid: flush the used work explicitly instead of
+  using flush_scheduled_work().
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- drivers/scsi/scsi.c        |   15 +++++++++++++--
- drivers/scsi/scsi_scan.c   |   26 +++++++++++++-------------
- drivers/scsi/scsi_sysfs.c  |    8 +++++---
- include/scsi/scsi_device.h |    6 ++++--
- 4 files changed, 35 insertions(+), 20 deletions(-)
+ drivers/scsi/NCR5380.c               |    3 +--
+ drivers/scsi/arcmsr/arcmsr_hba.c     |    4 ++--
+ drivers/scsi/ipr.c                   |    2 +-
+ drivers/scsi/megaraid/megaraid_sas.c |    6 ++----
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c |    1 -
+ drivers/scsi/pmcraid.c               |    2 +-
+ 6 files changed, 7 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-index 2aeb2e9..12ebcbc 100644
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -70,6 +70,11 @@
- #define CREATE_TRACE_POINTS
- #include <trace/events/scsi.h>
- 
-+/*
-+ * Utility multithreaded workqueue for SCSI.
-+ */
-+struct workqueue_struct *scsi_wq;
-+
- static void scsi_done(struct scsi_cmnd *cmd);
- 
- /*
-@@ -1306,11 +1311,14 @@ MODULE_PARM_DESC(scsi_logging_level, "a bit mask of logging levels");
- 
- static int __init init_scsi(void)
+diff --git a/drivers/scsi/NCR5380.c b/drivers/scsi/NCR5380.c
+index 9a5629f..e7cd2fc 100644
+--- a/drivers/scsi/NCR5380.c
++++ b/drivers/scsi/NCR5380.c
+@@ -936,8 +936,7 @@ static void NCR5380_exit(struct Scsi_Host *instance)
  {
--	int error;
-+	int error = -ENOMEM;
+ 	struct NCR5380_hostdata *hostdata = (struct NCR5380_hostdata *) instance->hostdata;
  
-+	scsi_wq = alloc_workqueue("scsi", 0, 0);
-+	if (!scsi_wq)
-+		return error;
- 	error = scsi_init_queue();
- 	if (error)
--		return error;
-+		goto cleanup_wq;
- 	error = scsi_init_procfs();
- 	if (error)
- 		goto cleanup_queue;
-@@ -1342,6 +1350,8 @@ cleanup_procfs:
- 	scsi_exit_procfs();
- cleanup_queue:
- 	scsi_exit_queue();
-+cleanup_wq:
-+	destroy_workqueue(scsi_wq);
- 	printk(KERN_ERR "SCSI subsystem failed to initialize, error = %d\n",
- 	       -error);
- 	return error;
-@@ -1356,6 +1366,7 @@ static void __exit exit_scsi(void)
- 	scsi_exit_devinfo();
- 	scsi_exit_procfs();
- 	scsi_exit_queue();
-+	destroy_workqueue(scsi_wq);
- }
- 
- subsys_initcall(init_scsi);
-diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-index 087821f..4222b58 100644
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -362,6 +362,16 @@ int scsi_is_target_device(const struct device *dev)
- }
- EXPORT_SYMBOL(scsi_is_target_device);
- 
-+static void scsi_target_reap_usercontext(struct work_struct *work)
-+{
-+	struct scsi_target *starget =
-+		container_of(work, struct scsi_target, reap_work);
-+
-+	transport_remove_device(&starget->dev);
-+	device_del(&starget->dev);
-+	scsi_target_destroy(starget);
-+}
-+
- static struct scsi_target *__scsi_find_target(struct device *parent,
- 					      int channel, uint id)
- {
-@@ -427,6 +437,7 @@ static struct scsi_target *scsi_alloc_target(struct device *parent,
- 	starget->state = STARGET_CREATED;
- 	starget->scsi_level = SCSI_2;
- 	starget->max_target_blocked = SCSI_DEFAULT_TARGET_BLOCKED;
-+	INIT_WORK(&starget->reap_work, scsi_target_reap_usercontext);
-  retry:
- 	spin_lock_irqsave(shost->host_lock, flags);
- 
-@@ -462,21 +473,11 @@ static struct scsi_target *scsi_alloc_target(struct device *parent,
- 	}
- 	/* Unfortunately, we found a dying target; need to
- 	 * wait until it's dead before we can get a new one */
-+	flush_work(&found_target->reap_work);
- 	put_device(&found_target->dev);
+-	cancel_delayed_work(&hostdata->coroutine);
 -	flush_scheduled_work();
- 	goto retry;
- }
- 
--static void scsi_target_reap_usercontext(struct work_struct *work)
--{
--	struct scsi_target *starget =
--		container_of(work, struct scsi_target, ew.work);
--
--	transport_remove_device(&starget->dev);
--	device_del(&starget->dev);
--	scsi_target_destroy(starget);
--}
--
- /**
-  * scsi_target_reap - check to see if target is in use and destroy if not
-  * @starget: target to be checked
-@@ -507,8 +508,7 @@ void scsi_target_reap(struct scsi_target *starget)
- 	if (state == STARGET_CREATED)
- 		scsi_target_destroy(starget);
- 	else
--		execute_in_process_context(scsi_target_reap_usercontext,
--					   &starget->ew);
-+		queue_work(scsi_wq, &starget->reap_work);
++	cancel_delayed_work_sync(&hostdata->coroutine);
  }
  
  /**
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index 76ee2e7..b0cae21 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -300,7 +300,7 @@ static void scsi_device_dev_release_usercontext(struct work_struct *work)
- 	struct list_head *this, *tmp;
- 	unsigned long flags;
- 
--	sdev = container_of(work, struct scsi_device, ew.work);
-+	sdev = container_of(work, struct scsi_device, release_work);
- 
- 	parent = sdev->sdev_gendev.parent;
- 	starget = to_scsi_target(parent);
-@@ -343,8 +343,8 @@ static void scsi_device_dev_release_usercontext(struct work_struct *work)
- static void scsi_device_dev_release(struct device *dev)
- {
- 	struct scsi_device *sdp = to_scsi_device(dev);
--	execute_in_process_context(scsi_device_dev_release_usercontext,
--				   &sdp->ew);
-+
-+	queue_work(scsi_wq, &sdp->release_work);
+diff --git a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+index 17e3df4..36cc467 100644
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c
+@@ -1022,7 +1022,7 @@ static void arcmsr_remove(struct pci_dev *pdev)
+ 	int poll_count = 0;
+ 	arcmsr_free_sysfs_attr(acb);
+ 	scsi_remove_host(host);
+-	flush_scheduled_work();
++	flush_work_sync(&acb->arcmsr_do_message_isr_bh);
+ 	del_timer_sync(&acb->eternal_timer);
+ 	arcmsr_disable_outbound_ints(acb);
+ 	arcmsr_stop_adapter_bgrb(acb);
+@@ -1068,7 +1068,7 @@ static void arcmsr_shutdown(struct pci_dev *pdev)
+ 		(struct AdapterControlBlock *)host->hostdata;
+ 	del_timer_sync(&acb->eternal_timer);
+ 	arcmsr_disable_outbound_ints(acb);
+-	flush_scheduled_work();
++	flush_work_sync(&acb->arcmsr_do_message_isr_bh);
+ 	arcmsr_stop_adapter_bgrb(acb);
+ 	arcmsr_flush_adapter_cache(acb);
  }
+diff --git a/drivers/scsi/ipr.c b/drivers/scsi/ipr.c
+index de2e09e..91a40f9 100644
+--- a/drivers/scsi/ipr.c
++++ b/drivers/scsi/ipr.c
+@@ -8871,7 +8871,7 @@ static void __ipr_remove(struct pci_dev *pdev)
  
- static struct class sdev_class = {
-@@ -1069,6 +1069,8 @@ void scsi_sysfs_device_initialize(struct scsi_device *sdev)
- 	dev_set_name(&sdev->sdev_dev, "%d:%d:%d:%d",
- 		     sdev->host->host_no, sdev->channel, sdev->id, sdev->lun);
- 	sdev->scsi_level = starget->scsi_level;
-+	INIT_WORK(&sdev->release_work, scsi_device_dev_release_usercontext);
-+
- 	transport_setup_device(&sdev->sdev_gendev);
- 	spin_lock_irqsave(shost->host_lock, flags);
- 	list_add_tail(&sdev->same_target_siblings, &starget->devices);
-diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
-index 85867dc..64de831 100644
---- a/include/scsi/scsi_device.h
-+++ b/include/scsi/scsi_device.h
-@@ -168,7 +168,7 @@ struct scsi_device {
- 	struct device		sdev_gendev,
- 				sdev_dev;
+ 	spin_unlock_irqrestore(ioa_cfg->host->host_lock, host_lock_flags);
+ 	wait_event(ioa_cfg->reset_wait_q, !ioa_cfg->in_reset_reload);
+-	flush_scheduled_work();
++	flush_work_sync(&ioa_cfg->work_q);
+ 	spin_lock_irqsave(ioa_cfg->host->host_lock, host_lock_flags);
  
--	struct execute_work	ew; /* used to get process context on put */
-+	struct work_struct	release_work; /* for process context on put */
+ 	spin_lock(&ipr_driver_lock);
+diff --git a/drivers/scsi/megaraid/megaraid_sas.c b/drivers/scsi/megaraid/megaraid_sas.c
+index 7451bc0..6da090a 100644
+--- a/drivers/scsi/megaraid/megaraid_sas.c
++++ b/drivers/scsi/megaraid/megaraid_sas.c
+@@ -4036,9 +4036,8 @@ megasas_suspend(struct pci_dev *pdev, pm_message_t state)
+ 	/* cancel the delayed work if this work still in queue */
+ 	if (instance->ev != NULL) {
+ 		struct megasas_aen_event *ev = instance->ev;
+-		cancel_delayed_work(
++		cancel_delayed_work_sync(
+ 			(struct delayed_work *)&ev->hotplug_work);
+-		flush_scheduled_work();
+ 		instance->ev = NULL;
+ 	}
  
- 	struct scsi_dh_data	*scsi_dh_data;
- 	enum scsi_device_state sdev_state;
-@@ -258,7 +258,7 @@ struct scsi_target {
- #define SCSI_DEFAULT_TARGET_BLOCKED	3
+@@ -4186,9 +4185,8 @@ static void __devexit megasas_detach_one(struct pci_dev *pdev)
+ 	/* cancel the delayed work if this work still in queue*/
+ 	if (instance->ev != NULL) {
+ 		struct megasas_aen_event *ev = instance->ev;
+-		cancel_delayed_work(
++		cancel_delayed_work_sync(
+ 			(struct delayed_work *)&ev->hotplug_work);
+-		flush_scheduled_work();
+ 		instance->ev = NULL;
+ 	}
  
- 	char			scsi_level;
--	struct execute_work	ew;
-+	struct work_struct	reap_work;
- 	enum scsi_target_state	state;
- 	void 			*hostdata; /* available to low-level driver */
- 	unsigned long		starget_data[0]; /* for the transport */
-@@ -276,6 +276,8 @@ static inline struct scsi_target *scsi_target(struct scsi_device *sdev)
- #define starget_printk(prefix, starget, fmt, a...)	\
- 	dev_printk(prefix, &(starget)->dev, fmt, ##a)
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+index eda347c..b375150 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -6935,7 +6935,6 @@ _scsih_suspend(struct pci_dev *pdev, pm_message_t state)
+ 	u32 device_state;
  
-+extern struct workqueue_struct *scsi_wq;
-+
- extern struct scsi_device *__scsi_add_device(struct Scsi_Host *,
- 		uint, uint, uint, void *hostdata);
- extern int scsi_add_device(struct Scsi_Host *host, uint channel,
+ 	mpt2sas_base_stop_watchdog(ioc);
+-	flush_scheduled_work();
+ 	scsi_block_requests(shost);
+ 	device_state = pci_choose_state(pdev, state);
+ 	printk(MPT2SAS_INFO_FMT "pdev=0x%p, slot=%s, entering "
+diff --git a/drivers/scsi/pmcraid.c b/drivers/scsi/pmcraid.c
+index 300d59f..1d54e7a 100644
+--- a/drivers/scsi/pmcraid.c
++++ b/drivers/scsi/pmcraid.c
+@@ -5459,7 +5459,7 @@ static void __devexit pmcraid_remove(struct pci_dev *pdev)
+ 	pmcraid_shutdown(pdev);
+ 
+ 	pmcraid_disable_interrupts(pinstance, ~0);
+-	flush_scheduled_work();
++	flush_work_sync(&pinstance->worker_q);
+ 
+ 	pmcraid_kill_tasklets(pinstance);
+ 	pmcraid_unregister_interrupt_handler(pinstance);
 -- 
 1.7.1
 
