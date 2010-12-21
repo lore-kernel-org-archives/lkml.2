@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751081Ab0LUKhk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 05:37:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26529 "EHLO mx1.redhat.com"
+	id S1751501Ab0LUKjz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 05:39:55 -0500
+Received: from sirius.lasnet.de ([78.47.116.19]:52409 "EHLO sirius.lasnet.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750707Ab0LUKhj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 05:37:39 -0500
-Date: Tue, 21 Dec 2010 11:30:08 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Roland McGrath <roland@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH][RFC] Always unlock 'tasklist_lock' in
-	kernel/exit.c::do_wait()
-Message-ID: <20101221103008.GA30286@redhat.com>
-References: <alpine.LNX.2.00.1012202324540.23785@swampdragon.chaosbits.net>
+	id S1750869Ab0LUKjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 05:39:54 -0500
+Date: Tue, 21 Dec 2010 11:39:48 +0100
+From: Stefan Schmidt <stefan@datenfreihafen.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Stefan Schmidt <stefan@datenfreihafen.org>,
+        Mike Miller <mike.miller@hp.com>, iss_storagedev@hp.com,
+        linux-kernel@vger.kernel.org
+Message-ID: <20101221103948.GC14097@excalibur.local>
+References: <1292924526-10850-1-git-send-email-stefan@datenfreihafen.org>
+ <4D107CF0.5090007@kernel.dk>
+ <20101221103101.GB14097@excalibur.local>
+ <4D108249.4080205@kernel.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1012202324540.23785@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4D108249.4080205@kernel.dk>
+X-Mailer: Mutt http://www.mutt.org/
+X-KeyID: 0xDDF51665
+X-Website: http://www.datenfreihafen.org/
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Subject: Re: [PATCH] block/cciss: Close continue statement with semicolon
+ to fix build
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20, Jesper Juhl wrote:
->
-> Hi,
->
-> The Coverity checker spotted this. I think it has a point, but I'm not
-> intimate with this code so there could be somethingI'm missing.
->
-> It seems that kernel/exit.c::do_wait() does not always release
-> 'tasklist_lock'. There are multiple ways the code could be changed to make
-> sure it's always released, I just picked the most straight forward one.
->
-> Does this look right to everyone else or is it just me?
-> I've only compile tested the patch so far.
->
->
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  exit.c |    8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
->
-> diff --git a/kernel/exit.c b/kernel/exit.c
-> index 676149a..456b13d 100644
-> --- a/kernel/exit.c
-> +++ b/kernel/exit.c
-> @@ -1647,12 +1647,16 @@ repeat:
->  	tsk = current;
->  	do {
->  		retval = do_wait_thread(wo, tsk);
-> -		if (retval)
-> +		if (retval) {
-> +			read_unlock(&tasklist_lock);
+Hello.
 
-No, this is not right.
+On Tue, 2010-12-21 at 11:32, Jens Axboe wrote:
+> On 2010-12-21 11:31, Stefan Schmidt wrote:
+> 
+> Latest head is:
+> 
+> commit e5fcdb7ed856b714c878ad470040fe832cbe462b
+> Merge: 7bddaac 093d804
+> Author: Linus Torvalds <torvalds@linux-foundation.org>
+> 
+> And the fix is commit 453434cf3fdcd3954bb52460e37d4945a0913d3e. Perhaps
+> the mirror is slow, dunno, I pull via ssh from master.
 
-If wait_consider_task() returns nonzero (pid or errcode), tasklist_lock
-should be already released.
+The mirroring seems to be the problem then. Public tree is behind and thats why
+it is not fixed for me. Just ignore the patch then. :)
 
-That is why, for example, wait_task_stopped() does BUG_ON(!retval) after
-it drops tasklist.
-
-Oleg.
-
+regards
+Stefan Schmidt
