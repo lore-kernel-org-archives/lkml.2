@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509Ab0LUViR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 16:38:17 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:25232 "EHLO
+	id S1753558Ab0LUViV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 16:38:21 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:25466 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753419Ab0LUViL (ORCPT
+	with ESMTP id S1753419Ab0LUViT (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 21 Dec 2010 16:38:11 -0500
+	Tue, 21 Dec 2010 16:38:19 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, jeremy@goop.org, hpa@zytor.com
 Cc: Jan Beulich <JBeulich@novell.com>, xen-devel@lists.xensource.com,
         Konrad Rzeszutek Wilk <konrad@kernel.org>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 06/10] xen/setup: Only set identity mapping in E820 regions when privileged.
-Date: Tue, 21 Dec 2010 16:37:36 -0500
-Message-Id: <1292967460-15709-7-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 10/10] xen/mmu: Warn against races.
+Date: Tue, 21 Dec 2010 16:37:40 -0500
+Message-Id: <1292967460-15709-11-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1292967460-15709-1-git-send-email-konrad.wilk@oracle.com>
 References: <1292967460-15709-1-git-send-email-konrad.wilk@oracle.com>
@@ -22,29 +22,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We do not want to set the identity mapping on E820 reserved
-regions when running as PV. This is b/c the 0->ISA_END_ADDRESS region
-would be considered identity and we would try to read DMI information
-and fail (since the pfn_to_mfn(mfn)==pfn) under PV guests.
+The initial bootup code uses set_phys_to_machine quite a lot, and after
+bootup it would be the balloon driver. The balloon driver does have
+mutex lock so this should not be necessary - but just in case, add
+a warning if we do hit this scenario.
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/setup.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/xen/mmu.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 752c865..34fb906 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -160,7 +160,7 @@ static unsigned long __init xen_set_identity(const struct e820map *e820)
- 		if (end < start)
- 			continue;
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index b2b8733..86d3bd3 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -549,13 +549,15 @@ bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+ 	idx = p2m_index(pfn);
  
--		if (e820->map[i].type != E820_RAM) {
-+		if (xen_initial_domain() && e820->map[i].type != E820_RAM) {
- 			for (pfn = PFN_UP(start); pfn < PFN_DOWN(end); pfn++)
- 				set_phys_to_machine(pfn, pfn);
- 			identity += pfn - PFN_UP(start);
+ 	if (mfn == INVALID_P2M_ENTRY) {
+-		/* If it is INVALID, swap over.. */
++		/* Ballon lock should inhibit racing, but just in case.*/
+ 		if (p2m_top[topidx] == p2m_mid_identity) {
+-			p2m_top[topidx] = p2m_mid_missing;
++			WARN_ON(cmpxchg(&p2m_top[topidx], p2m_mid_identity,
++				p2m_mid_missing) != p2m_mid_identity);
+ 			return 1;
+ 		}
+ 		if (p2m_top[topidx][mididx] == p2m_identity) {
+-			p2m_top[topidx][mididx] = p2m_missing;
++			WARN_ON(cmpxchg(&p2m_top[topidx][mididx], p2m_identity,
++				p2m_missing) != p2m_identity);
+ 			return 1;
+ 		}
+ 	}
 -- 
 1.7.1
 
