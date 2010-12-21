@@ -1,97 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933698Ab0LUJry (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 04:47:54 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:34713 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933675Ab0LUJrx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 04:47:53 -0500
-X-AuditID: b753bd60-a41a1ba000003e7d-c0-4d1077c6e2ed
-Message-ID: <4D1077C4.6070301@hitachi.com>
-Date: Tue, 21 Dec 2010 18:47:48 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	id S933708Ab0LUJxl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 04:53:41 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:64061 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S933683Ab0LUJxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 04:53:39 -0500
+Message-ID: <4D107979.2020405@cn.fujitsu.com>
+Date: Tue, 21 Dec 2010 17:55:05 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Franck Bui-Huu <vagabon.xyz@gmail.com>
-Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH 3/6] perf-probe: clean up redundant tests in show_line_range()
-References: <1292854685-8230-1-git-send-email-fbuihuu@gmail.com> <1292854685-8230-4-git-send-email-fbuihuu@gmail.com>
-In-Reply-To: <1292854685-8230-4-git-send-email-fbuihuu@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Peter Zijlstra <peterz@infradead.org>, John Kacur <jkacur@redhat.com>,
+        James Bottomley <James.Bottomley@suse.de>, Ingo Molnar <mingo@elte.hu>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Namhyung Kim <namhyung@gmail.com>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 1/4 V2 ] futex,plist: pass the real head of the priority list
+ to plist_del()
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-12-21 17:53:30,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-12-21 17:53:32,
+	Serialize complete at 2010-12-21 17:53:32
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/12/20 23:18), Franck Bui-Huu wrote:
-> From: Franck Bui-Huu <fbuihuu@gmail.com>
-> 
-> It also removes some superflous parentheses.
 
-Oh, don't remove your superfluous comments too! ;-)
+Some plist_del()s in kernel/futex.c are passed a faked head of the
+priority list.
 
+It can work because current code does not require the real head
+in plist_del(). The code of plist_del() just uses the head for checking,
+so it will not cause bad result even when we use a faked head.
 
-> 
-> Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
-> ---
->  tools/perf/util/probe-event.c |   26 +++++++++++++++-----------
->  1 files changed, 15 insertions(+), 11 deletions(-)
-> 
-> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> index 5cc8f6b..3c92b92 100644
-> --- a/tools/perf/util/probe-event.c
-> +++ b/tools/perf/util/probe-event.c
-> @@ -383,26 +383,30 @@ int show_line_range(struct line_range *lr, const char *module)
->  		return -errno;
->  	}
->  	/* Skip to starting line number */
-> -	while (l < lr->start && ret >= 0)
-> +	while (l < lr->start) {
->  		ret = show_one_line(fp, l++, true, false);
-> -	if (ret < 0)
-> -		goto end;
-> +		if (ret < 0)
-> +			goto end;
-> +	}
->  
->  	list_for_each_entry(ln, &lr->line_list, list) {
-> -		while (ln->line > l && ret >= 0)
-> -			ret = show_one_line(fp, (l++) - lr->offset,
-> -					    false, false);
-> -		if (ret >= 0)
-> -			ret = show_one_line(fp, (l++) - lr->offset,
-> -					    false, true);
-> +		for (; ln->line > l; l++) {
-> +			ret = show_one_line(fp, l - lr->offset, false, false);
-> +			if (ret < 0)
-> +				goto end;
-> +		}
-> +		ret = show_one_line(fp, l++ - lr->offset, false, true);
->  		if (ret < 0)
->  			goto end;
->  	}
->  
->  	if (lr->end == INT_MAX)
->  		lr->end = l + NR_ADDITIONAL_LINES;
-> -	while (l <= lr->end && !feof(fp) && ret >= 0)
-> -		ret = show_one_line(fp, (l++) - lr->offset, false, false);
-> +	while (l <= lr->end && !feof(fp)) {
-> +		ret = show_one_line(fp, l++ - lr->offset, false, false);
-> +		if (ret < 0)
-> +			break;
-> +	}
->  end:
->  	fclose(fp);
->  	return ret;
+But it is an undocumented usage:
 
+/**
+ * plist_del - Remove a @node from plist.
+ *
+ * @node:	&struct plist_node pointer - entry to be removed
+ * @head:	&struct plist_head pointer - list head
+ */
 
--- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+The document said that @head is "list head" the head of the priority list.
+
+In futex code, several places use "plist_del(&q->list, &q->list.plist);",
+they passes faked head, we fix them all.
+
+Thank to Darren Hart for many suggests.
+
+Signed-off-by:  Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 3019b92..d901f40 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -740,6 +740,23 @@ retry:
+ 	return ret;
+ }
+ 
++/**
++ * __unqueue_futex() - Remove the futex_q from its futex_hash_bucket
++ * @q:	The futex_q to unqueue
++ *
++ * The q->lock_ptr must not be NULL and must be held by the caller.
++ */
++static void __unqueue_futex(struct futex_q *q)
++{
++	struct futex_hash_bucket *hb;
++
++	if (WARN_ON(!q->lock_ptr || !spin_is_locked(q->lock_ptr)))
++		return;
++
++	hb = container_of(q->lock_ptr, struct futex_hash_bucket, lock);
++	plist_del(&q->list, &hb->chain);
++}
++
+ /*
+  * The hash bucket lock must be held when this is called.
+  * Afterwards, the futex_q must not be accessed.
+@@ -757,7 +774,7 @@ static void wake_futex(struct futex_q *q)
+ 	 */
+ 	get_task_struct(p);
+ 
+-	plist_del(&q->list, &q->list.plist);
++	__unqueue_futex(q);
+ 	/*
+ 	 * The waiting task can free the futex_q as soon as
+ 	 * q->lock_ptr = NULL is written, without taking any locks. A
+@@ -1067,7 +1084,7 @@ void requeue_pi_wake_futex(struct futex_q *q, union futex_key *key,
+ 	q->key = *key;
+ 
+ 	WARN_ON(plist_node_empty(&q->list));
+-	plist_del(&q->list, &q->list.plist);
++	__unqueue_futex(q);
+ 
+ 	WARN_ON(!q->rt_waiter);
+ 	q->rt_waiter = NULL;
+@@ -1471,7 +1488,7 @@ retry:
+ 			goto retry;
+ 		}
+ 		WARN_ON(plist_node_empty(&q->list));
+-		plist_del(&q->list, &q->list.plist);
++		__unqueue_futex(q);
+ 
+ 		BUG_ON(q->pi_state);
+ 
+@@ -1492,7 +1509,7 @@ static void unqueue_me_pi(struct futex_q *q)
+ 	__releases(q->lock_ptr)
+ {
+ 	WARN_ON(plist_node_empty(&q->list));
+-	plist_del(&q->list, &q->list.plist);
++	__unqueue_futex(q);
+ 
+ 	BUG_ON(!q->pi_state);
+ 	free_pi_state(q->pi_state);
+@@ -2133,7 +2150,7 @@ int handle_early_requeue_pi_wakeup(struct futex_hash_bucket *hb,
+ 		 * We were woken prior to requeue by a timeout or a signal.
+ 		 * Unqueue the futex_q and determine which it was.
+ 		 */
+-		plist_del(&q->list, &q->list.plist);
++		plist_del(&q->list, &hb->chain);
+ 
+ 		/* Handle spurious wakeups gracefully */
+ 		ret = -EWOULDBLOCK;
