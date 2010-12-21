@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997Ab0LUXtj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 18:49:39 -0500
-Received: from fieldses.org ([174.143.236.118]:50144 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752862Ab0LUXth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 18:49:37 -0500
-Date: Tue, 21 Dec 2010 18:49:34 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: "Kirill A. Shutemov" <kas@openvz.org>, Neil Brown <neilb@suse.de>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] nfs: fix mispelling of idmap CONFIG symbol
-Message-ID: <20101221234934.GB30525@fieldses.org>
-References: <1292846078-31793-1-git-send-email-kirill@shutemov.name>
- <20101220144644.GC20643@fieldses.org>
- <20101221233215.GC7092@shutemov.name>
- <1292975008.16674.2.camel@heimdal.trondhjem.org>
+	id S1753860Ab0LUXvP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 18:51:15 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38484 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752191Ab0LUXvO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 18:51:14 -0500
+Date: Tue, 21 Dec 2010 23:51:27 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Rabin Vincent <rabin@rab.in>, stern@rowland.harvard.edu,
+        linux-pm@lists.linux-foundation.org, linux-i2c@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: platform/i2c busses: pm runtime and system sleep
+Message-ID: <20101221235127.GC10081@opensource.wolfsonmicro.com>
+References: <AANLkTinyDE3OxKup_aqsN8HJH_r5LcwkP17OtuMRpACx@mail.gmail.com>
+ <201012181559.50347.rjw@sisk.pl>
+ <20101220150051.GI26706@rakim.wolfsonmicro.main>
+ <201012202213.53902.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1292975008.16674.2.camel@heimdal.trondhjem.org>
+In-Reply-To: <201012202213.53902.rjw@sisk.pl>
+X-Cookie: You too can wear a nose mitten.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: J. Bruce Fields <bfields@redhat.com>
+On Mon, Dec 20, 2010 at 10:13:53PM +0100, Rafael J. Wysocki wrote:
 
-Trivial, but confusing when you're trying to grep through this
-code....
+> Well, the _solution_ is to get rid of the legacy stuff from those buses in the
+> first place.  Then, they'll just need to use the generic ops without any
+> trouble.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
----
- fs/nfs/idmap.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> What you're proposing is a workaround that people will use as an excuse for
+> not doing the right thing forever.
 
-diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
-index 4e2d9b6..1869688 100644
---- a/fs/nfs/idmap.c
-+++ b/fs/nfs/idmap.c
-@@ -238,7 +238,7 @@ int nfs_map_gid_to_group(struct nfs_client *clp, __u32 gid, char *buf, size_t bu
- 	return nfs_idmap_lookup_name(gid, "group", buf, buflen);
- }
- 
--#else  /* CONFIG_NFS_USE_IDMAPPER not defined */
-+#else  /* CONFIG_NFS_USE_NEW_IDMAPPER not defined */
- 
- #include <linux/module.h>
- #include <linux/mutex.h>
--- 
-1.7.1
-
+I hadn't actually realised that there was any urgency about removing the
+old APIs - I'd not really seen much work in that direction.  If the
+intention is to actively push people over to dev_pm_ops that does make a
+bit more sense.
