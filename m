@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933680Ab0LUJFY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 04:05:24 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:46799 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758051Ab0LUJFB (ORCPT
+	id S933685Ab0LUJGj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 04:06:39 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:58298 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933660Ab0LUJFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 04:05:01 -0500
-X-AuditID: b753bd60-a26f8ba000000f8d-f4-4d106dba3694
+	Tue, 21 Dec 2010 04:05:22 -0500
+X-AuditID: b753bd60-a1557ba00000044b-a0-4d106dcfc28c
 From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Subject: [PATCH -tip v2 2/6] perf bts: Introduce new sub command 'perf bts
- trace'
+Subject: [PATCH -tip v2 5/6] perf bts trace: print function+offset
 To: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <peterz@infradead.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
@@ -22,8 +21,8 @@ Cc: linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
         Arnaldo Carvalho de Melo <acme@infradead.org>
-Date: Tue, 21 Dec 2010 18:05:49 +0900
-Message-ID: <20101221090549.8552.26257.stgit@localhost6.localdomain6>
+Date: Tue, 21 Dec 2010 18:06:09 +0900
+Message-ID: <20101221090609.8552.71953.stgit@localhost6.localdomain6>
 In-Reply-To: <20101221090527.8552.41486.stgit@localhost6.localdomain6>
 References: <20101221090527.8552.41486.stgit@localhost6.localdomain6>
 User-Agent: StGIT/0.14.3
@@ -36,26 +35,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce new sub command 'perf bts trace'.
-This command can parse and print bts log recorded by
-'perf bts record'.
+Provide the function to print function+offset.
+And, set it as the default behavior of 'perf bts trace'.
+To use this function, users can also specify the option '-s' or '--symbol'.
 
-Usage:
- - First, record the bts log 'perf bts record <command>'
- - Second, parse and print bts log 'perf bts trace'
+Example: 'perf bts -as trace'
+This command prints address and function+offset.
 
-Output:
-0xffffffff8146fe0e => 0x0000003806200b20
-0x0000003806200b23 => 0x0000003806204910
-0xffffffff8146fe0e => 0x0000003806204910
-0xffffffff8146fe0e => 0x0000003806204936
-0xffffffff8146fe0e => 0x000000380620493d
-0x0000003806204981 => 0x00000038062049a3
-0x00000038062049a7 => 0x0000003806204988
+Output sample:
+address            function+offset
+0xffffffff8146fe0e irq_return+0x0         => 0x00007fd4038e3b20 _start+0x0
 ...
-
-Changes in V2:
- - Update to the latest -tip tree
+0x000000380661ee79 __libc_start_main+0xf9 => 0x00000000004035c3 main+0x0
+0xffffffff8146ef4e irq_return+0x0         => 0x00000000004035c3 main+0x0
+0x00000000004035e8 main+0x25              => 0x000000000040bca0 set_program_name+0x0
+0xffffffff8146ef4e irq_return+0x0         => 0x000000000040bca0 set_program_name+0x0
+0x000000000040bcae set_program_name+0xe   => 0x00000000004023d0 strrchr@plt+0x0
+0x00000000004023d0 strrchr@plt+0x0        => 0x00000000004023d6 strrchr@plt+0x6
+...
+0x0000000000403e0c main+0x849             => 0x00000000004021f0 exit@plt+0x0
+0x00000000004021f0 exit@plt+0x0           => 0x00000000004021f6 exit@plt+0x6
+0x00000000004021fb exit@plt+0xb           => 0x00000000004020d0 _init+0x18
+0x00000000004020d6 _init+0x1e             => 0x00000038062149d0 _dl_runtime_resolve+0x0
+...
 
 Signed-off-by: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
 Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
@@ -66,133 +68,153 @@ Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
 ---
 
- tools/perf/Documentation/perf-bts.txt |   14 ++++++--
- tools/perf/builtin-bts.c              |   56 +++++++++++++++++++++++++++++++--
- 2 files changed, 64 insertions(+), 6 deletions(-)
+ tools/perf/Documentation/perf-bts.txt |    5 +++-
+ tools/perf/builtin-bts.c              |   45 +++++++++++++++++++++++++++++----
+ 2 files changed, 44 insertions(+), 6 deletions(-)
 
 diff --git a/tools/perf/Documentation/perf-bts.txt b/tools/perf/Documentation/perf-bts.txt
-index 55a2fe6..5920dcc 100644
+index acabffc..13ee862 100644
 --- a/tools/perf/Documentation/perf-bts.txt
 +++ b/tools/perf/Documentation/perf-bts.txt
-@@ -3,22 +3,30 @@ perf-bts(1)
+@@ -31,7 +31,7 @@ OPTIONS
+         Specify input file name to analyze.
+ -a::
+ --addr::
+-	Print address. (default)
++	Print address.
+ -c::
+ --comm::
+ 	Print command name.
+@@ -41,6 +41,9 @@ OPTIONS
+ -e::
+ --elfpath::
+ 	Print file path of executed elf.
++-s::
++--symbol::
++	Print function name and offset. (default)
  
- NAME
- ----
--perf-bts - Record branch-trace-store log
-+perf-bts - Record and print branch-trace-store log
- 
- SYNOPSIS
- --------
- [verse]
--'perf bts' record <command>
-+'perf bts' [<options>] {record|trace}
- 
- DESCRIPTION
- -----------
--This command can record branch-trace-store log.
-+This command can record and print branch-trace-store log.
- Branch-trace-store is a facility of processors. It can record
- address of branch to/from on every branch instruction and interrupt.
- 
- 'perf bts record <command>' records branch-trace-store log while specified
- command is executing. And, save to the file "perf.data".
- 
-+'perf bts trace' parses recorded branch-trace-store log and prints it.
-+
-+OPTIONS
-+-------
-+-i::
-+--input=::
-+        Specify input file name to analyze.
-+
  SEE ALSO
  --------
- linkperf:perf-record[1]
 diff --git a/tools/perf/builtin-bts.c b/tools/perf/builtin-bts.c
-index 587cfad..0d546d8 100644
+index 1e82c89..be57571 100644
 --- a/tools/perf/builtin-bts.c
 +++ b/tools/perf/builtin-bts.c
-@@ -1,10 +1,26 @@
- #include "builtin.h"
- #include "perf.h"
- #include "util/parse-options.h"
-+#include "util/session.h"
-+#include "util/cache.h"
-+#include "util/trace-event.h"
-+#include <inttypes.h>
-+
-+/* format string of specifying min width to print address */
-+#if __WORDSIZE == 32
-+#define FMT_ADDR_WIDTH	"10"		/* length of "0x" + 32bit address */
-+#else
-+#define FMT_ADDR_WIDTH	"18"		/* length of "0x" + 64bit address */
-+#endif
-+/* format string to print address */
-+#define FMT_ADDR	"%#0" FMT_ADDR_WIDTH "llx"
-+
-+/* default input file name to analyze */
-+static const char *input_name = "perf.data";
- 
- static const char * const bts_usage[] = {
--	"perf bts record <command>",
--	NULL,
-+	"perf bts [<options>] {record|trace}",
-+	NULL
+@@ -21,6 +21,8 @@ struct exec_info {
+ 	pid_t		pid;		/* tracee process pid */
+ 	const char	*comm;		/* command name */
+ 	const char	*elfpath;	/* file path to elf */
++	const char	*function;	/* function name */
++	u64		offset;		/* offset from top of the function */
  };
  
- /* arguments to call 'perf record' */
-@@ -16,11 +32,41 @@ static const char * const record_args[] = {
- 	"-d",
- };
+ #define EI_PID_UNSET	-1
+@@ -30,9 +32,10 @@ struct exec_info {
+ #define EI_FLAG_PRINT_PID		(1 << 1)
+ #define EI_FLAG_PRINT_COMM		(1 << 2)
+ #define EI_FLAG_PRINT_ELFPATH		(1 << 3)
++#define EI_FLAG_PRINT_SYMBOL		(1 << 4)
  
--/* dummy struct option to call parse_options() */
+ /* it's used when no print item specified */
+-#define EI_FLAG_PRINT_DEFAULT		EI_FLAG_PRINT_ADDR
++#define EI_FLAG_PRINT_DEFAULT		EI_FLAG_PRINT_SYMBOL
+ 
+ /* print item flags */
+ static unsigned long print_flags;
+@@ -43,6 +46,9 @@ static unsigned long print_flags;
+ #define EI_UNKNOWN_TEXT			"(unknown)"
+ #define EI_UNKNOWN_TEXT_LEN		(sizeof(EI_UNKNOWN_TEXT))
+ 
++/* 'function+offset' lengh = function + '+' + %#18llx + '\0' */
++#define symbol_buf_size(func_name)	(strlen(func_name) + 1 + 18 + 1)
++
+ /* default input file name to analyze */
+ static const char *input_name = "perf.data";
+ 
+@@ -71,7 +77,7 @@ static int set_print_flags(const struct option *opt, const char *str __unused,
  static const struct option bts_options[] = {
-+	OPT_STRING('i', "input", &input_name, "file", "input file name"),
+ 	OPT_STRING('i', "input", &input_name, "file", "input file name"),
+ 	OPT_CALLBACK_DEFAULT_NOOPT('a', "addr", NULL, NULL,
+-				   "print address (default)", set_print_flags,
++				   "print address", set_print_flags,
+ 				   (void *)EI_FLAG_PRINT_ADDR),
+ 	OPT_CALLBACK_DEFAULT_NOOPT('p', "pid", NULL, NULL,
+ 				   "print pid", set_print_flags,
+@@ -82,6 +88,10 @@ static const struct option bts_options[] = {
+ 	OPT_CALLBACK_DEFAULT_NOOPT('e', "elfpath", NULL, NULL,
+ 				   "print file path to elf", set_print_flags,
+ 				   (void *)EI_FLAG_PRINT_ELFPATH),
++	OPT_CALLBACK_DEFAULT_NOOPT('s', "symbol", NULL, NULL,
++				   "print function+offset (default)",
++				   set_print_flags,
++				   (void *)EI_FLAG_PRINT_SYMBOL),
  	OPT_END()
  };
  
-+static int process_sample_event(event_t *event __unused,
-+	struct sample_data *sample, struct perf_session *session __unused)
-+{
-+	/* sample->ip is 'from address', sample->addr is 'to address' */
-+	printf(FMT_ADDR " => " FMT_ADDR "\n", sample->ip, sample->addr);
+@@ -106,7 +116,7 @@ static void fill_exec_info(struct exec_info *ei, struct perf_session *session,
+ 		return;
+ 	ei->comm = thread->comm;
+ 
+-	/* get file path to elf */
++	/* get file path to elf, and symbol information */
+ 	memset(&al, 0, sizeof(al));
+ 	thread__find_addr_map(thread, session, PERF_RECORD_MISC_USER,
+ 			      MAP__FUNCTION, event->ip.pid, addr, &al);
+@@ -115,9 +125,14 @@ static void fill_exec_info(struct exec_info *ei, struct perf_session *session,
+ 				      MAP__FUNCTION, event->ip.pid, addr, &al);
+ 	if (!al.map)
+ 		return;
+-	/* resolve vmlinux path */
+-	map__load(al.map, NULL);
 +
-+	return 0;
-+}
++	al.addr = al.map->map_ip(al.map, addr);
++	al.sym = map__find_symbol(al.map, al.addr, NULL);
++	if (!al.sym)
++		return;
+ 	ei->elfpath = al.map->dso->long_name;
++	ei->function = al.sym->name;
++	ei->offset = al.addr - al.sym->start;
+ }
+ 
+ static void __print_exec_info(struct exec_info *ei)
+@@ -125,6 +140,8 @@ static void __print_exec_info(struct exec_info *ei)
+ 	char pid[16];
+ 	const char *comm;
+ 	const char *elfpath;
++	char *symbol;
++	int symbol_len;
+ 
+ 	if (print_flags & EI_FLAG_PRINT_PID) {
+ 		if (ei->pid == EI_PID_UNSET)
+@@ -139,6 +156,22 @@ static void __print_exec_info(struct exec_info *ei)
+ 	}
+ 	if (print_flags & EI_FLAG_PRINT_ADDR)
+ 		printf(FMT_ADDR " ", ei->addr);
++	if (print_flags & EI_FLAG_PRINT_SYMBOL) {
++		if (!ei->function) {
++			/* when function is unknown, offset must be unknown */
++			printf("%-32s ", EI_UNKNOWN_TEXT);
++			goto print_elfpath;
++		}
 +
-+static struct perf_event_ops event_ops = {
-+	.sample			= process_sample_event,
-+	.ordered_samples	= false,
-+};
-+
-+static int __cmd_trace(void)
-+{
-+	struct perf_session *session;
-+
-+	session = perf_session__new(input_name, O_RDONLY, 0, false);
-+	if (!session) {
-+		fprintf(stderr, "failed to create perf_session.\n");
-+		return -ENOMEM;
++		symbol_len = symbol_buf_size(ei->function);
++		symbol = malloc(symbol_len);
++		snprintf(symbol, symbol_len, "%s+0x%llx",
++			 ei->function, ei->offset);
++		printf("%-32s ", symbol);
++		free(symbol);
 +	}
 +
-+	perf_session__process_events(session, &event_ops);
-+	perf_session__delete(session);
-+
-+	return 0;
-+}
-+
- static int __cmd_record(int argc, const char **argv)
- {
- 	unsigned int rec_argc, i, j;
-@@ -55,6 +101,10 @@ int cmd_bts(int argc, const char **argv, const char *prefix __used)
- 
- 	if (!strncmp(argv[0], "record", 6))
- 		return __cmd_record(argc, argv);
-+	else if (!strncmp(argv[0], "trace", 5)) {
-+		setup_pager();
-+		return __cmd_trace();
-+	}
- 	else
- 		usage_with_options(bts_usage, bts_options);
- 
++print_elfpath:
+ 	if (print_flags & EI_FLAG_PRINT_ELFPATH) {
+ 		elfpath = ei->elfpath ? : EI_UNKNOWN_TEXT;
+ 		printf("%-32s ", elfpath);
+@@ -161,6 +194,8 @@ static void print_exec_info_header(void)
+ 		printf("%-12s ", "command");
+ 	if (print_flags & EI_FLAG_PRINT_ADDR)
+ 		printf("%-" FMT_ADDR_WIDTH "s ", "address");
++	if (print_flags & EI_FLAG_PRINT_SYMBOL)
++		printf("%-32s ", "function+offset");
+ 	if (print_flags & EI_FLAG_PRINT_ELFPATH)
+ 		printf("%-32s ", "elf_filepath");
+ 	printf("\n");
 
