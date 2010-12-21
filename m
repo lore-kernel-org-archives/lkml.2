@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab0LUXrK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 18:47:10 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:44348 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752684Ab0LUXrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 18:47:08 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Matthew Wilcox <matthew@wil.cx>
-Subject: Re: [PATCH] Prevent users from disabling tickless
-Date: Wed, 22 Dec 2010 00:46:23 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc7+; KDE/4.4.4; x86_64; ; )
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org
-References: <20101221233942.GL1263@parisc-linux.org>
-In-Reply-To: <20101221233942.GL1263@parisc-linux.org>
+	id S1753650Ab0LUXtB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 18:49:01 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:35863 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799Ab0LUXs7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 18:48:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references
+         :mime-version:content-type:content-transfer-encoding;
+        b=SbVueKruNaJs38xQ7ApZjv2dNshte2t3dnRzVpBrLUpLgjSCcwxrY4lROckpfAuTU7
+         +l3o9JcQUsWGH0V5ggzMH9TJqlOoG1FBjFBBdWnp0alZWVupWs1LmaSS9BTqiisdEEfD
+         nva5jKyjAbCrrcVyXb67/TocjoKbwYamA8WK0=
+From: Thiago Farina <tfransosi@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-media@vger.kernel.org
+Subject: [PATCH v2] drivers/media/video/v4l2-compat-ioctl32.c: Check the return value of copy_to_user
+Date: Tue, 21 Dec 2010 21:48:45 -0200
+Message-Id: <83948188cda2388c2e22a50119dfb0023fba759a.1292975147.git.tfransosi@gmail.com>
+X-Mailer: git-send-email 1.7.3.2.343.g7d43d
+In-Reply-To: <201012212003.11446.arnd@arndb.de>
+References: <201012212003.11446.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012220046.23759.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, December 22, 2010, Matthew Wilcox wrote:
-> 
-> Disabling NO_HZ has a serious negative effect on performance -- an extra
-> 70us per I/O.  Prevent users from deselecting it.
-> 
-> Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
+This fix the following warning:
+drivers/media/video/v4l2-compat-ioctl32.c: In function ‘get_microcode32’:
+drivers/media/video/v4l2-compat-ioctl32.c:209: warning: ignoring return value of ‘copy_to_user’, declared with attribute warn_unused_result
 
-OTOH, it causes some systems to not work at all still.  Sadly.
+Signed-off-by: Thiago Farina <tfransosi@gmail.com>
+---
+ Changes from v1:
+ - Check the return code of put_user too.
+ - Remove the obsolete comment.
 
-Thanks,
-Rafael
+ drivers/media/video/v4l2-compat-ioctl32.c |   14 ++++++--------
+ 1 files changed, 6 insertions(+), 8 deletions(-)
 
-
-> diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
-> index f06a8a3..55b9a04 100644
-> --- a/kernel/time/Kconfig
-> +++ b/kernel/time/Kconfig
-> @@ -5,13 +5,9 @@ config TICK_ONESHOT
->  	bool
->  
->  config NO_HZ
-> -	bool "Tickless System (Dynamic Ticks)"
-> +	def_bool y
->  	depends on !ARCH_USES_GETTIMEOFFSET && GENERIC_CLOCKEVENTS
->  	select TICK_ONESHOT
-> -	help
-> -	  This option enables a tickless system: timer interrupts will
-> -	  only trigger on an as-needed basis both when the system is
-> -	  busy and when the system is idle.
->  
->  config HIGH_RES_TIMERS
->  	bool "High Resolution Timer Support"
-> 
-> 
+diff --git a/drivers/media/video/v4l2-compat-ioctl32.c b/drivers/media/video/v4l2-compat-ioctl32.c
+index e30e8df..6f2a022 100644
+--- a/drivers/media/video/v4l2-compat-ioctl32.c
++++ b/drivers/media/video/v4l2-compat-ioctl32.c
+@@ -201,14 +201,12 @@ static struct video_code __user *get_microcode32(struct video_code32 *kp)
+ 
+ 	up = compat_alloc_user_space(sizeof(*up));
+ 
+-	/*
+-	 * NOTE! We don't actually care if these fail. If the
+-	 * user address is invalid, the native ioctl will do
+-	 * the error handling for us
+-	 */
+-	(void) copy_to_user(up->loadwhat, kp->loadwhat, sizeof(up->loadwhat));
+-	(void) put_user(kp->datasize, &up->datasize);
+-	(void) put_user(compat_ptr(kp->data), &up->data);
++	if (copy_to_user(up->loadwhat, kp->loadwhat, sizeof(up->loadwhat)))
++		return NULL;
++	if (put_user(kp->datasize, &up->datasize))
++		return NULL;
++	if (put_user(compat_ptr(kp->data), &up->data))
++		return NULL;
+ 	return up;
+ }
+ 
+-- 
+1.7.3.2.343.g7d43d
 
