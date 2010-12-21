@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab0LUXai (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 18:30:38 -0500
-Received: from seehuhn.de ([80.68.93.199]:33986 "EHLO seehuhn.de"
+	id S1753738Ab0LUXcS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 18:32:18 -0500
+Received: from shutemov.name ([188.40.19.243]:42806 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752538Ab0LUXah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 18:30:37 -0500
-Date: Tue, 21 Dec 2010 23:30:30 +0000
-From: Jochen Voss <voss@seehuhn.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Dave Airlie <airlied@redhat.com>
-Subject: Re: Linux 2.6.37-rc7
-Message-ID: <20101221233022.GA9188@seehuhn.de>
-References: <AANLkTi=H7PHrLthxsM6x7bKPVHcn7bmH--7ehwJo1wLB@mail.gmail.com>
+	id S1750869Ab0LUXcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 18:32:16 -0500
+Date: Wed, 22 Dec 2010 01:32:15 +0200
+From: "Kirill A. Shutemov" <kas@openvz.org>
+To: "J. Bruce Fields" <bfields@fieldses.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Neil Brown <neilb@suse.de>, Pavel Emelyanov <xemul@parallels.com>,
+        linux-nfs@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/12] make rpc_pipefs be mountable multiple times
+Message-ID: <20101221233215.GC7092@shutemov.name>
+References: <1292846078-31793-1-git-send-email-kirill@shutemov.name>
+ <20101220144644.GC20643@fieldses.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=H7PHrLthxsM6x7bKPVHcn7bmH--7ehwJo1wLB@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20101220144644.GC20643@fieldses.org>
+User-Agent: Mutt/1.5.20 (2010-08-04)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear all,
+On Mon, Dec 20, 2010 at 09:46:44AM -0500, J. Bruce Fields wrote:
+> On Mon, Dec 20, 2010 at 01:54:26PM +0200, Kirill A. Shutsemov wrote:
+> > From: Kirill A. Shutemov <kirill@shutemov.name>
+> > 
+> > Prepare nfs/sunrpc stack to use multiple instances of rpc_pipefs.
+> > Only for client for now.
+> > 
+> > Only quick sanity check was made. BTW, is there any check list for NFS
+> > contributors?
+> 
+> Nothing formal.
+> 
+> Chuck may have some nlm patches that conflict; I'm not sure what their
+> status is.
+> 
+> For testing rpc_pipefs, maybe a few mounts (simultaneous mounts might be
+> good), possibly over different security flavors, and with some of them
+> nfsv4, might be a good idea.
 
-On Tue, Dec 21, 2010 at 11:52:17AM -0800, Linus Torvalds wrote:
-> I'm still nervous about some of the regression reports for intel
-> graphics, so please keep testing and reporting. This is the last -rc
-> before xmas (or whatever your holiday may be), so now you all have a
-> few free days when you have nothing better to do than test out an -rc
-> release, right?
+Ok, I'll play with it.
 
-For reference, the regression I reported yesterday
-(message id "20101220140615.GA3035@automatix",
-http://www.spinics.net/lists/kernel/msg1126718.html
-on the web) is still present: -rc7 only shows a blank
-screen on my system, -rc7 with 541cc966 reverted works
-without problems.
+> By the way, was there ever a resolution to Trond's question?:
+> 
+> 	http://marc.info/?l=linux-nfs&m=128655758712817&w=2
+> 
+> 	"The keyring upcalls are currently initiated through the same
+> 	mechanism as module_request and therefore get started with the
+> 	init_nsproxy namespace. We'd really like them to run inside the
+> 	same container as the process.  As part of the same problem,
+> 	there is the issue of what to do with the dns resolver and
+> 	Bryan's new keyring based idmapper code."
 
-I hope this helps,
-Jochen
+I'm not sure that I understand the problem correctly.
+
+Currently, idmap uses dentry taken from client's cl_rpcclient->cl_path
+(see nfs_idmap_new()). cl_rpcclient (and cl_path) is initialized with
+rpcmount resolved against mount namespace of mount process (see
+nfs_create_rpc_client()).
+I assume it's correct.
+
 -- 
-http://seehuhn.de/
+ Kirill A. Shutemov
