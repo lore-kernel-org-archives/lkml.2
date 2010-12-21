@@ -1,76 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933138Ab0LUA4D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 19:56:03 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:58921 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932628Ab0LUA4B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 19:56:01 -0500
-Message-ID: <4D0FFB1A.7070407@cn.fujitsu.com>
-Date: Tue, 21 Dec 2010 08:55:54 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S933144Ab0LUA5a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 19:57:30 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46151 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754388Ab0LUA53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 19:57:29 -0500
+Message-ID: <4D0FFB33.8020309@zytor.com>
+Date: Mon, 20 Dec 2010 16:56:19 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] tracing: Fix preempt count leak
-References: <4D0089AC.1020802@cn.fujitsu.com>
-In-Reply-To: <4D0089AC.1020802@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-21 08:55:47,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-21 08:55:49,
-	Serialize complete at 2010-12-21 08:55:49
-Content-Transfer-Encoding: 7bit
+To: Tejun Heo <htejun@gmail.com>
+CC: Christoph Lameter <cl@linux.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: x86: Use this_cpu_has for thermal_interrupt
+References: <20101214162842.542421046@linux.com>  <20101214162855.392020353@linux.com> <1292345072.5934.32.camel@edumazet-laptop> <alpine.DEB.2.00.1012141055220.17229@router.home> <4D07A2B7.8080405@zytor.com> <alpine.DEB.2.00.1012141109470.17229@router.home> <4D07A7CB.7010205@zytor.com> <4D07A95C.7030703@kernel.org> <4D0814AF.7080209@zytor.com> <4D08ECEF.3040909@kernel.org> <4D08EE57.8010602@zytor.com> <4D08EF4E.8070403@kernel.org> <4D0A3AF2.50508@gmail.com> <alpine.DEB.2.00.1012161212130.21588@router.home> <4D0CD4C6.5010309@gmail.com>
+In-Reply-To: <4D0CD4C6.5010309@gmail.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any comment?
+On 12/18/2010 07:35 AM, Tejun Heo wrote:
+> On 12/16/2010 07:13 PM, Christoph Lameter wrote:
+>> It is more effective to use a segment prefix instead of calculating the
+>> address of the current cpu area amd then testing flags.
+>>
+>> Signed-off-by: Christoph Lameter <cl@linux.com>
+> 
+> For this and the other x86 patch.
+> 
+> Acked-by: Tejun Heo <tj@kernel.org>
+> 
+> I suppose these two x86 patches and the gameport one would go through
+> the x86 tree, right?
+> 
 
-15:47, Li Zefan wrote:
-> While running my ftrace stress test, this showed up:
-> 
-> BUG: sleeping function called from invalid context at mm/mmap.c:233
-> ...
-> note: cat[3293] exited with preempt_count 1
-> 
-> The bug was introduced by commit 91e86e560d0b3ce4c5fc64fd2bbb99f856a30a4e
-> ("tracing: Fix recursive user stack trace")
-> 
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-> ---
->  kernel/trace/trace.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index c380612..5767457 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -1313,12 +1313,10 @@ ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags, int pc)
->  
->  	__this_cpu_inc(user_stack_count);
->  
-> -
-> -
->  	event = trace_buffer_lock_reserve(buffer, TRACE_USER_STACK,
->  					  sizeof(*entry), flags, pc);
->  	if (!event)
-> -		return;
-> +		goto out_drop_count;
->  	entry	= ring_buffer_event_data(event);
->  
->  	entry->tgid		= current->tgid;
-> @@ -1333,8 +1331,8 @@ ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags, int pc)
->  	if (!filter_check_discard(call, entry, buffer, event))
->  		ring_buffer_unlock_commit(buffer, event);
->  
-> + out_drop_count:
->  	__this_cpu_dec(user_stack_count);
-> -
->   out:
->  	preempt_enable();
->  }
+Yes, as long as I can get a stable base to pull into -tip.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
