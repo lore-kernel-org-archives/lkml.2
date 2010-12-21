@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855Ab0LUSgd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 13:36:33 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:36137 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752745Ab0LUSgV (ORCPT
+	id S1752783Ab0LUShL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 13:37:11 -0500
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:48311 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752460Ab0LUShH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 13:36:21 -0500
-Date: Tue, 21 Dec 2010 10:34:25 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: dd diasemi <dd.diasemi@gmail.com>
-Cc: dmitry.torokhov@gmail.com, dtor@mail.ru, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 8/11] Touch: Touch screen module of DA9052 device
- driver
-Message-Id: <20101221103425.42f58c28.randy.dunlap@oracle.com>
-In-Reply-To: <AANLkTikGsK7-5mBxBHjdf9sa4vYQpV+cvGoMr1ig-8S5@mail.gmail.com>
-References: <AANLkTikGsK7-5mBxBHjdf9sa4vYQpV+cvGoMr1ig-8S5@mail.gmail.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Dec 2010 13:37:07 -0500
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Tue, 21 Dec 2010 19:36:48 +0100
+To: Chris Bagwell <chris@cnpbagwell.com>
+Cc: Chase Douglas <chase.douglas@canonical.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, Takashi Iwai <tiwai@suse.de>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] Input: synaptics - add multi-finger and semi-mt
+ support
+Message-ID: <20101221183648.GA1874@polaris.bitmath.org>
+References: <1292852364-19127-1-git-send-email-rydberg@euromail.se>
+ <1292852364-19127-3-git-send-email-rydberg@euromail.se>
+ <4D10D75D.80400@canonical.com>
+ <20101221165956.GA28702@polaris.bitmath.org>
+ <AANLkTi=rxBMDB+JKLY9A4iMZEtCBGNhfJxAERMb4CEjR@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=rxBMDB+JKLY9A4iMZEtCBGNhfJxAERMb4CEjR@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: 83.248.200.95
+X-Scan-Result: No virus found in message 1PV74y-0001xI-8Q.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PV74y-0001xI-8Q 61ee93b4245cd8bc1a73a80f787505b8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Dec 2010 19:27:54 +0100 dd diasemi wrote:
-
-> TSI module for DA9052 PMIC device from Dialog Semiconductor.
+> > Yes - the MT_TOOLs are only emitted when explicitly set in absbit, but
+> > the internal interface always handles it. This is actually documented
+> > in the code (and DocBook).
 > 
-> Changes made since last submission:
-> . added chip specific parameters as platform data.
+> That note is good guidance for developer side.  Its also worth noting
+> on app side that MT_TOOL_FINGER is a little special since its value is
+> 0.  In most common case, I think it will get filtered out where as
+> BTN_TOOL_FINGER will always be sent.
 > 
-> Linux Kernel Version: 2.6.34
-> 
-> Signed-off-by: D. Chen <dchen@diasemi.com>
-> diff -Naur A-source/drivers/input/touchscreen/da9052_tsi.c
-> B-source/drivers/input/touchscreen/da9052_tsi.c
-> --- A-source/drivers/input/touchscreen/da9052_tsi.c	1970-01-01
-> 05:00:00.000000000 +0500
-> +++ B-source/drivers/input/touchscreen/da9052_tsi.c	2010-12-08
-> 15:51:26.000000000 +0500
+> Since we can't yet query per slot ABS_MT_TOOL_TYPE, I guess apps have
+> to just assume its a finger unless told otherwise?
 
-Long lines above have been split by your email app or some mail server.
+Yes - but this is actually done for every ABS value already, so it
+just follows the standard transfer method.
 
-There is some possible help in Documentation/email-clients.txt.
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
-desserts:  http://www.xenotime.net/linux/recipes/
+Thanks,
+Henrik
