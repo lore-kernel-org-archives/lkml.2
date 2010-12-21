@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753695Ab0LUH3X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 02:29:23 -0500
-Received: from darkcity.gna.ch ([195.226.6.51]:56460 "EHLO mail.gna.ch"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753051Ab0LUH3V convert rfc822-to-8bit (ORCPT
+	id S1753842Ab0LUHcn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 02:32:43 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:49517 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752689Ab0LUHcm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 02:29:21 -0500
-X-Amavis-Alert: BAD HEADER SECTION, Improper folded header field made up
-	entirely of whitespace (char 09 hex): Face: ...MWASAkVVViQjzP\n
-	jycPrvgA\n\t\n R1goSzOnkp14Y[...]
-Subject: Re: [PATCH 1/3] fb: fix overlapping test off-by-one.
-From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
-To: Dave Airlie <airlied@gmail.com>
-Cc: linux-fbdev@vger.kernel.org, Dave Airlie <airlied@redhat.com>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.sf.net
-In-Reply-To: <1292895677-4242-2-git-send-email-airlied@gmail.com>
-References: <1292895677-4242-1-git-send-email-airlied@gmail.com>
-	 <1292895677-4242-2-git-send-email-airlied@gmail.com>
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
- jycPrvgA	
- R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 21 Dec 2010 02:32:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=eP/fIt39D4sZTnFTdQhhEv2Tob66B2uEzOnh8vtirVyzvlgahw7xoNltk2jmPmUkKH
+         OjKrn//Ah4DpoPgwZcXtyJjaoyXeMZZrBAojdvwRBi8doY5gr5+E9AKBfA7SneiL1Kiw
+         6d4r98PkkL8PiArPfffKyd2o8hTe7BXMdk8oI=
+MIME-Version: 1.0
+In-Reply-To: <alpine.LSU.2.00.1012202048220.15447@tigran.mtv.corp.google.com>
+References: <cover.1292604745.git.minchan.kim@gmail.com>
+	<20101220103307.GA22986@infradead.org>
+	<AANLkTikss0RW_xRrD_vVvfqy1rH+NC=WPUB2qKBaw5qo@mail.gmail.com>
+	<alpine.LSU.2.00.1012202048220.15447@tigran.mtv.corp.google.com>
+Date: Tue, 21 Dec 2010 16:32:41 +0900
+Message-ID: <AANLkTimMKjLRiV5dpZL0wJ0FWLJyqQ8oNJbCQt9ZdrHP@mail.gmail.com>
+Subject: Re: [RFC 0/5] Change page reference hanlding semantic of page cache
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Tue, 21 Dec 2010 08:29:03 +0100
-Message-ID: <1292916543.19556.46.camel@thor.local>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Die, 2010-12-21 at 11:41 +1000, Dave Airlie wrote: 
-> From: Dave Airlie <airlied@redhat.com>
-> 
-> On my system with a radeon x2, the first GPU was not overlapping vesa
-> but the test decided it was.
-> 
-> Signed-off-by: Dave Airlie <airlied@redhat.com>
-> ---
->  drivers/video/fbmem.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
-> index 0e6aa3d..4ac1201 100644
-> --- a/drivers/video/fbmem.c
-> +++ b/drivers/video/fbmem.c
-> @@ -1458,7 +1458,7 @@ static bool apertures_overlap(struct aperture *gen, struct aperture *hw)
->  	if (gen->base == hw->base)
->  		return true;
->  	/* is the generic aperture base inside the hw base->hw base+size */
-> -	if (gen->base > hw->base && gen->base <= hw->base + hw->size)
-> +	if (gen->base > hw->base && gen->base < hw->base + hw->size)
+On Tue, Dec 21, 2010 at 2:07 PM, Hugh Dickins <hughd@google.com> wrote:
+> On Tue, 21 Dec 2010, Minchan Kim wrote:
+>> On Mon, Dec 20, 2010 at 7:33 PM, Christoph Hellwig <hch@infradead.org> wrote:
+>> > You'll need to merge all patches into one, otherwise you create really
+>> > nasty memory leaks when bisecting between them.
+>> >
+>>
+>> Okay. I will resend.
+>>
+>> Thanks for the notice, Christoph.
+>
+> Good point from hch, but I feel even more strongly: if you're going to
+> do this now, please rename remove_from_page_cache (delete_from_page_cache
+> was what I chose back when I misdid it) - you're changing an EXPORTed
+> function in a subtle (well, subtlish) confusing way, which could easily
+> waste people's time down the line, whether in not-yet-in-tree filesystems
+> or backports of fixes. �I'd much rather you break someone's build,
+> forcing them to look at what changed, than crash or leak at runtime.
+>
+> If you do rename, you can keep your patch structure, introducing the
+> new function as a wrapper to the old at the beginning, then removing
+> the old function at the end.
 
-Good catch.
+It is very good idea!!
+Thanks for good suggestion, Hugh.
 
-Reviewed-by: Michel Dänzer <michel@daenzer.net>
+>
+> (As you know, I do agree that it's right to decrement the reference
+> count at the point of removing from page cache.)
+>
+> Hugh
+>
+
 
 
 -- 
-Earthling Michel Dänzer           |                http://www.vmware.com
-Libre software enthusiast         |          Debian, X and DRI developer
+Kind regards,
+Minchan Kim
