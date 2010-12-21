@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546Ab0LUSBX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 13:01:23 -0500
-Received: from mail-ew0-f45.google.com ([209.85.215.45]:63162 "EHLO
-	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479Ab0LUSBV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 13:01:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type;
-        b=NR+HMmBZRepZYG6suLQc+fLivtpra0+Ko8cpd8C8qOsjY6XuE9OujUCQkWD/CGmoPT
-         c/CvZrPniRQ0Ldk/9zBI3xriLZ4HGeiNeGOk7ehG0sxah7Ob32B58M4ykrGIvvh+ZIwY
-         b75M9l0lt9h0FemsyBnqrk9Ar1YmEObD98Vp4=
-From: Franck Bui-Huu <vagabon.xyz@gmail.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH 0/6] Minor cleanups & fixes for perf-probe(1)
-References: <1292854685-8230-1-git-send-email-fbuihuu@gmail.com>
-	<4D10A795.9040809@hitachi.com>
-Date: Tue, 21 Dec 2010 19:01:06 +0100
-In-Reply-To: <4D10A795.9040809@hitachi.com> (Masami Hiramatsu's message of
-	"Tue, 21 Dec 2010 22:11:49 +0900")
-Message-ID: <m3aajzc8f1.fsf@gmail.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.2 (gnu/linux)
+	id S1752450Ab0LUSB7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 13:01:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8444 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750936Ab0LUSB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 13:01:58 -0500
+Date: Tue, 21 Dec 2010 18:54:39 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
+        jan.kratochvil@redhat.com
+Subject: Re: [PATCH 16/16] ptrace: remove the extra wake_up_process() from
+	ptrace_detach()
+Message-ID: <20101221175439.GA19434@redhat.com>
+References: <1291654624-6230-1-git-send-email-tj@kernel.org> <1291654624-6230-17-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291654624-6230-17-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
-
-> (2010/12/20 23:17), Franck Bui-Huu wrote:
->> 
->> This small patchset is just some random cosmetic cleanups I did when
->> starting to read perf-probe(1) stuffs.
+On 12/06, Tejun Heo wrote:
 >
-> Basically the contains of this series are good to me.
-> (I've sent my comments)
-> however, it's less comments on each patch. Please explain
-> what you did in each patch! (not only on the subject line:-))
+> --- a/kernel/ptrace.c
+> +++ b/kernel/ptrace.c
+> @@ -391,8 +391,6 @@ int ptrace_detach(struct task_struct *child, unsigned int data)
+>  	if (child->ptrace) {
+>  		child->exit_code = data;
+>  		dead = __ptrace_detach(current, child);
+> -		if (!child->exit_state)
+> -			wake_up_process(child);
 
-Ok. I thought those changes in this serie was obvious enough.
+I can only repeat that I obviously like this change ;)
 
-> Thank you,
+Now that Jan and Roland do not object, perhaps it can be sent as 2/X.
+This is bugfix, after all (like the first patch).
 
-You're welcome.
+Oleg.
 
--- 
-		Franck
