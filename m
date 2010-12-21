@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123Ab0LURBQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 12:01:16 -0500
-Received: from mail-fx0-f66.google.com ([209.85.161.66]:45123 "EHLO
-	mail-fx0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874Ab0LURBP (ORCPT
+	id S1752235Ab0LURBh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 12:01:37 -0500
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:42343 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751038Ab0LURBf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 12:01:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=T3oz7GFqIq7W0hz5nlyKZ9V9od/Mgu5pkJrU5D4BJutNa7+qtjXcVwCuFDGjUgoJRm
-         5GDBZRilTvTfEbi+aPHT67hbXlaYjb6y23v4EndtzILw/fDloNs70GtoG0Oc3SlZI4v5
-         28ppMY1GFEbVitDrAbDNqZ8BhEy5aclZ4+KM8=
-Date: Tue, 21 Dec 2010 18:01:10 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 00/15] Nohz task support
-Message-ID: <20101221170108.GL1750@nowhere>
-References: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
- <1292859886.22905.22.camel@gandalf.stny.rr.com>
- <20101220233341.GA1715@nowhere>
- <4D10B214.8010305@redhat.com>
+	Tue, 21 Dec 2010 12:01:35 -0500
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Tue, 21 Dec 2010 17:59:56 +0100
+To: Chase Douglas <chase.douglas@canonical.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Takashi Iwai <tiwai@suse.de>, Chris Bagwell <chris@cnpbagwell.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] Input: synaptics - add multi-finger and semi-mt
+ support
+Message-ID: <20101221165956.GA28702@polaris.bitmath.org>
+References: <1292852364-19127-1-git-send-email-rydberg@euromail.se>
+ <1292852364-19127-3-git-send-email-rydberg@euromail.se>
+ <4D10D75D.80400@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D10B214.8010305@redhat.com>
+In-Reply-To: <4D10D75D.80400@canonical.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: 83.248.200.95
+X-Scan-Result: No virus found in message 1PV5ZI-00010S-Av.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PV5ZI-00010S-Av 3402b8722917a889f68a254775696365
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 21, 2010 at 03:56:36PM +0200, Avi Kivity wrote:
-> On 12/21/2010 01:33 AM, Frederic Weisbecker wrote:
-> >On Mon, Dec 20, 2010 at 10:44:46AM -0500, Steven Rostedt wrote:
-> >>  On Mon, 2010-12-20 at 16:24 +0100, Frederic Weisbecker wrote:
-> >>  >  The timer interrupt handles several things like preemption,
-> >>  >  timekeeping, rcu, etc...
-> >>  >
-> >>  >  However it appears that sometimes it is simply useless like
-> >>  >  when a task runs alone and even more when it is in userspace
-> >>  >  as RCU doesn't need it at all in such case.
-> >>  >
-> >>  >  It appears that HPC workload would get some win of such timer
-> >>  >  deactivation, and perhaps also the Real Time world as this
-> >>  >  minimizes the critical sections due to way less interrupts to
-> >>  >  handle.
-> >>  >
-> >>  >  It works through the procfs interface:
-> >>  >
-> >>  >  echo 1>  /proc/self/nohz
-> >>
-> >>  I wounder if we could just have this happen automatically.
-> >
-> >But this would add some global overhead, especially in the syscall
-> >path as we need to take the slow path to hook userspace resume/exit.
+> > Reported-by: Tobyn Bertram
+> > Not-yet-signed-off-by: Takashi Iwai <tiwai@suse.de>
+> > Not-yet-signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+> > Not-yet-signed-off-by: Chris Bagwell <chris@cnpbagwell.com>
+> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 > 
-> This is zero as there is already a test on thread_info->flags on the
-> syscall exit path.
+> You can keep my SOB.
+
+Great, thanks.
+ 
+> > +static void set_slot(struct input_dev *dev, int slot, bool active, int x, int y)
+> > +{
+> > +	input_mt_slot(dev, slot);
+> > +	input_mt_report_slot_state(dev, MT_TOOL_FINGER, active);
+> > +	if (active) {
+> > +		input_report_abs(dev, ABS_MT_POSITION_X, x);
+> > +		input_report_abs(dev, ABS_MT_POSITION_Y,
+> > +				 YMAX_NOMINAL + YMIN_NOMINAL - y);
+> > +	}
+> > +}
 > 
-> (or I misunderstood you - what's the purpose of the slow path?)
+> I take it that you feel MT_TOOL_FINGER should always be set, even if
+> it's always the same as BTN_TOOL_*? I just want to be sure this is
+> intended so we document it appropriately.
 
+Yes - the MT_TOOLs are only emitted when explicitly set in absbit, but
+the internal interface always handles it. This is actually documented
+in the code (and DocBook).
 
-Yes but on most cases threads don't have flags that route them to the
-syscall slow path, which is to call syscall_trace_enter() and
-syscall_trace_leave() as proxys. They call the syscall handler
-directly.
+> 
+> > @@ -623,6 +686,7 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
+> >  	int i;
+> >  
+> >  	__set_bit(INPUT_PROP_POINTER, dev->propbit);
+> > +	__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
+> 
+> Shouldn't this only be set when SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) is
+> true?
 
-But the nohz tasks must use a TIF_ flag that forces the syscall
-slow path, which is where is the overhead. So if you wanted to
-make that automatic for every task, you need to force the syscall
-slow path on every tasks. And this is quite an overhead.
+Indeed - thanks.
+
+Henrik
