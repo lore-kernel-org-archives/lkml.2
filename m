@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933320Ab0LUBBe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 20:01:34 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:53008 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754388Ab0LUBBc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 20:01:32 -0500
-Date: Tue, 21 Dec 2010 12:01:23 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus <torvalds@linux-foundation.org>, Jens Axboe <jaxboe@fusionio.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>, stable@kernel.org
-Subject: linux-next: build failure in Linus' tree
-Message-Id: <20101221120123.93838d16.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__21_Dec_2010_12_01_23_+1100_xOSrSwU4CX0QNL+J"
+	id S933398Ab0LUBD6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 20:03:58 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:34599 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932881Ab0LUBD5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 20:03:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=IueJ2Phq9qMsdvqRdqfIwUofhFrznPBxf9UuHqg021D2VUO8A3lVgb+pq+8bCQ1fgo
+         6I7SyNCTrzsGIIX1/02ABaWnVTm7M3JdVl/UcKtPZBkdMLN9OA/6uGKejMi/IQzbAJWz
+         1TzlhCzRw2tYoBm2k2mMgPO20zWY2MpwkiDno=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTi=7E7rAc=46p5d6YSpLeut5yehmBtLa4TVofefp@mail.gmail.com>
+References: <1292866298-8585-1-git-send-email-per.forlin@stericsson.com>
+	<AANLkTi=7E7rAc=46p5d6YSpLeut5yehmBtLa4TVofefp@mail.gmail.com>
+Date: Mon, 20 Dec 2010 17:03:56 -0800
+X-Google-Sender-Auth: ynsdcTU9SeW-BCAM6KEYKWFRgzk
+Message-ID: <AANLkTin=U6j4XTmCq4H4sKivD+jecxor3Q-7mYFDfD=N@mail.gmail.com>
+Subject: Re: [PATCH] dmaengine: dma40: Add support to split up large elements
+From: Dan Williams <dan.j.williams@intel.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Per Forlin <per.forlin@stericsson.com>, linux-kernel@vger.kernel.org,
+        Per Forlin <per.forlin@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__21_Dec_2010_12_01_23_+1100_xOSrSwU4CX0QNL+J
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Dec 20, 2010 at 2:08 PM, Linus Walleij
+<linus.walleij@stericsson.com> wrote:
+> 2010/12/20 Per Forlin <per.forlin@stericsson.com>:
+>
+>> The maximum transfer size of the stedma40 is (64k-1) x data-width.
+>> If the transfer size of one element exceeds this limit
+>> the job is split up and sent as linked transfer.
+>>
+>> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+>
+> Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+>
+> I think this could actually go into 2.6.37 series: I consider it
+> a bug fix since the transfer size limitation breaks the
+> contract of the memcpy() API.
+>
 
-Hi all,
+If that is the case then the temporary fix for 2.6.37 is along the
+lines of fixing up the clients to not submit such large requests.  You
+mention the "memcpy api contract" can this be triggered outside of
+dmatest?  The other memcpy clients NET_DMA and ASYNC_TX_DMA will never
+submit an operation larger than PAGE_SIZE.
 
-While building Linus' tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+"4 files changed, 351 insertions(+), 130 deletions(-)" is difficult to
+defend at this stage of the game, if a smaller "don't do that" patch
+will suffice for 2.6.37.
 
-drivers/block/cciss.c: In function 'cciss_revalidate':
-drivers/block/cciss.c:2839: error: expected ';' before 'if'
-
-Caused by commit 0fc13c8995cd96f4123de400c71c223d80400ed9 ("cciss: fix
-cciss_revalidate panic").  Was this even build tested?  More care
-required.
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__21_Dec_2010_12_01_23_+1100_xOSrSwU4CX0QNL+J
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJND/xjAAoJEDMEi1NhKgbsDxQH/1dK3LyHXZcizXnVKSHBmZtQ
-GgHNhhYosADK7u2ePmiPEKhpuAUiiIdxs3KvuJz/GoVC3ocAcvX6u/DG7qY/c5sW
-wGeu4lyNeajQbZJvYH+lb2TsfC5QEpJdqzWAHxSNkj78uh5rBs5MXrahxJuD8Puo
-XDeTHaEKU3D/6FubxtYjwhMejBLcEQmxOdZc+RKiaZ3k8No1wXjE52A+EJutmBrK
-lm2K2Px5kNguJGib1YMRh0NVW0zr74i1+TsRRBI/JIJu5T4vrhAkEPfMMDfbmlsC
-VNDvubrE1Plo8c4+YlOYDE/K+mYarNTgc/NrMxd7wmcNGEd7w8vg0QvN63ZB/68=
-=vjeU
------END PGP SIGNATURE-----
-
---Signature=_Tue__21_Dec_2010_12_01_23_+1100_xOSrSwU4CX0QNL+J--
+--
+Dan
