@@ -1,72 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933594Ab0LUEmK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 23:42:10 -0500
-Received: from kroah.org ([198.145.64.141]:44629 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933545Ab0LUEmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 23:42:09 -0500
-Date: Mon, 20 Dec 2010 20:41:59 -0800
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	id S933610Ab0LUEmU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 23:42:20 -0500
+Received: from mail.windriver.com ([147.11.1.11]:42480 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933564Ab0LUEmT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 23:42:19 -0500
+Date: Tue, 21 Dec 2010 12:40:50 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, Andy Walls <awalls@md.metrocast.net>,
+        linux-kernel@vger.kernel.org, nicolas.mailhot@laposte.net,
+        Jarod Wilson <jarod@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Hans Verkuil <hverkuil@xs4all.nl>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PATCH] USB fixes for .37-rc6
-Message-ID: <20101221044159.GA11750@kroah.com>
+Subject: [V2 PATCH] kthread_work: Make lockdep happy
+Message-ID: <20101221044050.GA25718@windriver.com>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1292762975.2403.29.camel@localhost>
+ <AANLkTimYx2Og1BG37wb0WZ0_U8WJjLKHMKgU45qycUaM@mail.gmail.com>
+ <AANLkTikuKMLUoVnQsU6QNCnHBgOponJUngHGtyVHk1xK@mail.gmail.com>
+ <4D0F8276.9070903@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+In-Reply-To: <4D0F8276.9070903@kernel.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 21 Dec 2010 04:40:52.0447 (UTC) FILETIME=[3F80D6F0:01CBA0C9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are a number of USB patches for your .37-rc6 tree.
+From: Yong Zhang <yong.zhang0@gmail.com>
+Subject: [V2 PATCH] kthread_work: Make lockdep happy
 
-Again, some xhci fixes, and some other minor things.
+spinlock in kthread_worker and wait_queue_head in kthread_work
+both should be lockdep sensible.
+So change the interface to make it suiltable for CONFIG_LOCKDEP.
 
-Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb-2.6.git/ usb-linus
+Reported-by: Nicolas <nicolas.mailhot@laposte.net>
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Walls <awalls@md.metrocast.net>
+---
+Changes from V1:
+ *According to Tejun, kthread_worker could be defined on stack,
+  So introduce DEFINE_KTHREAD_WORKER_ONSTACK.
+ *Change wrong setting to kthread_work->task. Thanks Adny for
+  pointing it.
+ *including some minor issue.
 
-All of these patches have been in the linux-next and mm trees for a
-while.
+BTW, only passed build.
 
-The full patches will be sent to the linux-usb mailing list, if anyone
-wants to see them.
+ include/linux/kthread.h |   45 +++++++++++++++++++++++++++++++++++----------
+ kernel/kthread.c        |    9 +++++++++
+ 2 files changed, 44 insertions(+), 10 deletions(-)
 
-thanks,
-
-greg k-h
-
-------------
-
- drivers/usb/core/Kconfig           |   12 ++++++++++--
- drivers/usb/gadget/composite.c     |   18 +++++++++---------
- drivers/usb/host/xhci-mem.c        |   25 +++++++++++++++----------
- drivers/usb/misc/uss720.c          |    4 +++-
- drivers/usb/serial/ftdi_sio.c      |    1 +
- drivers/usb/serial/ftdi_sio_ids.h  |    5 +++++
- drivers/usb/storage/unusual_devs.h |    7 +++++++
- 7 files changed, 50 insertions(+), 22 deletions(-)
-
----------------
-
-Florian Faber (1):
-      USB: ftdi_sio: Add D.O.Tec PID
-
-Greg Kroah-Hartman (1):
-      Revert "USB: gadget: Allow function access to device ID data during bind()"
-
-Pavankumar Kondeti (2):
-      USB: core: Add input prompt and help text for USB_OTG config
-      USB: gadget: Remove suspended sysfs file before freeing cdev
-
-Sarah Sharp (1):
-      xhci: Fix issue with port array setup and buggy hosts.
-
-Thomas Sailer (1):
-      USB: misc: uss720.c: add another vendor/product ID
-
-Vitaly Kuznetsov (1):
-      USB: usb-storage: unusual_devs entry for the Samsung YP-CP3
-
+diff --git a/include/linux/kthread.h b/include/linux/kthread.h
+index 685ea65..f8b3320 100644
+--- a/include/linux/kthread.h
++++ b/include/linux/kthread.h
+@@ -81,16 +81,41 @@ struct kthread_work {
+ #define DEFINE_KTHREAD_WORK(work, fn)					\
+ 	struct kthread_work work = KTHREAD_WORK_INIT(work, fn)
+ 
+-static inline void init_kthread_worker(struct kthread_worker *worker)
+-{
+-	*worker = (struct kthread_worker)KTHREAD_WORKER_INIT(*worker);
+-}
+-
+-static inline void init_kthread_work(struct kthread_work *work,
+-				     kthread_work_func_t fn)
+-{
+-	*work = (struct kthread_work)KTHREAD_WORK_INIT(*work, fn);
+-}
++/*
++ * kthread_worker.lock and kthread_work.done need
++ * special work if they are defined on stack with
++ * lockdep enabled.
++ */
++#ifdef CONFIG_LOCKDEP
++# define KTHREAD_WORKER_INIT_ONSTACK(worker)				\
++	({ init_kthread_worker(&worker); worker; })
++# define DEFINE_KTHREAD_WORKER_ONSTACK(worker)				\
++	struct kthread_worker worker = KTHREAD_WORKER_INIT_ONSTACK(worker)
++# define KTHREAD_WORK_INIT_ONSTACK(work, fn)				\
++	({ init_kthread_work((&work), fn); work; })
++# define DEFINE_KTHREAD_WORK_ONSTACK(work, fn)				\
++	struct kthread_work work = KTHREAD_WORK_INIT_ONSTACK(work, fn)
++#else
++# define DEFINE_KTHREAD_WORKER_ONSTACK(worker) DEFINE_KTHREAD_WORKER(worker)
++# define DEFINE_KTHREAD_WORK_ONSTACK(work, fn) DEFINE_KTHREAD_WORK(work, fn)
++#endif
++
++extern void __init_kthread_worker(struct kthread_worker *worker,
++					struct lock_class_key *key);
++
++#define init_kthread_worker(worker)					\
++	do {								\
++		static struct lock_class_key __key;			\
++		__init_kthread_worker((worker), &__key);		\
++	} while (0)
++
++#define init_kthread_work(work, fn)					\
++	do {								\
++		memset((work), 0, sizeof(struct kthread_work));		\
++		INIT_LIST_HEAD(&(work)->node);				\
++		(work)->func = (fn);					\
++		init_waitqueue_head(&(work)->done);			\
++	} while (0)
+ 
+ int kthread_worker_fn(void *worker_ptr);
+ 
+diff --git a/kernel/kthread.c b/kernel/kthread.c
+index 2dc3786..f760587 100644
+--- a/kernel/kthread.c
++++ b/kernel/kthread.c
+@@ -265,6 +265,15 @@ int kthreadd(void *unused)
+ 	return 0;
+ }
+ 
++void __init_kthread_worker(struct kthread_worker *worker,
++				struct lock_class_key *key)
++{
++	spin_lock_init(&worker->lock);
++	lockdep_set_class(&worker->lock, key);
++	INIT_LIST_HEAD(&worker->work_list);
++	worker->task = NULL;
++}
++
+ /**
+  * kthread_worker_fn - kthread function to process kthread_worker
+  * @worker_ptr: pointer to initialized kthread_worker
+-- 
+1.7.0.4
