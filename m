@@ -1,77 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933456Ab0LUByU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 20:54:20 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55928 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933407Ab0LUByT (ORCPT
+	id S933470Ab0LUBzM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 20:55:12 -0500
+Received: from mail-fx0-f66.google.com ([209.85.161.66]:54831 "EHLO
+	mail-fx0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933407Ab0LUBzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 20:54:19 -0500
+	Mon, 20 Dec 2010 20:55:11 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=JvYL7yH3fenhv+h7hixOFIlZfu7NYoOCJV7f/SPxmxO6EgSWkQH5eJq3D0ScYlaOIN
-         LTWiUbXExjszkK8X5RLE1nFwQm51qJJd8YwDFb556JVnnbvPuOnlQTRVPPH4IxwWV5IT
-         YNNtTut+wymVMNyDWsR4f30xTomVWlgJSwNYI=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=cZyZlrTKYBcSZQC51PM2fvspvsUoiaY7mbhF60Hr0/X7vkULRIMM9VQ42vtb04s7eJ
+         v8n/WSsENUYbCo5qjgOAFirHycOZBTHv1lxuc1IY7Y/gY10t2dJTGPmth+xwg1GJ8DFa
+         gCkXV5K6nuaAWRRbNI5mvjKwhm654J+b8rxT0=
+Date: Tue, 21 Dec 2010 02:55:07 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 13/15] sched: Protect nohz task cpu affinity
+Message-ID: <20101221015504.GP1715@nowhere>
+References: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
+ <1292858662-5650-14-git-send-email-fweisbec@gmail.com>
+ <1292862533.5021.41.camel@laptop>
+ <1292864730.22905.27.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-In-Reply-To: <4D0F8276.9070903@kernel.org>
-References: <1292762975.2403.29.camel@localhost>
-	<AANLkTimYx2Og1BG37wb0WZ0_U8WJjLKHMKgU45qycUaM@mail.gmail.com>
-	<AANLkTikuKMLUoVnQsU6QNCnHBgOponJUngHGtyVHk1xK@mail.gmail.com>
-	<4D0F8276.9070903@kernel.org>
-Date: Tue, 21 Dec 2010 09:54:18 +0800
-Message-ID: <AANLkTikVwGqhCxuCjW1AceBaZp-iCY=1cxge5xqyNSBd@mail.gmail.com>
-Subject: Re: [PATCH] kthread_worker: Initialize dynamically allocated spinlock
- properly for lockdep
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andy Walls <awalls@md.metrocast.net>, linux-kernel@vger.kernel.org,
-        nicolas.mailhot@laposte.net, Jarod Wilson <jarod@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Hans Verkuil <hverkuil@xs4all.nl>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292864730.22905.27.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 21, 2010 at 12:21 AM, Tejun Heo <tj@kernel.org> wrote:
-> Hello,
->
-> On 12/20/2010 10:28 AM, Yong Zhang wrote:
->> Subject: [PATCH] kthread_work: Make lockdep happy
->>
->> spinlock in kthread_worker and wait_queue_head in kthread_work
->> both should be lockdep annotated.
->> So change the interface to make it suiltable for CONFIG_LOCKDEP.
->>
->> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
->> ---
->> I'm not sure if it's possible to define a worker on stack?
->> So I left DEFINE_KTHREAD_WORKER() untouched.
->
-> Yes, it can, I think.
+On Mon, Dec 20, 2010 at 12:05:30PM -0500, Steven Rostedt wrote:
+> On Mon, 2010-12-20 at 17:28 +0100, Peter Zijlstra wrote:
+> > On Mon, 2010-12-20 at 16:24 +0100, Frederic Weisbecker wrote:
+> > > Don't allow to change a nohz task cpu affinity as we want them
+> > > to be bound to a single CPU and we want this affinity not to
+> > > change.
+> > > 
+> > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > Cc: Ingo Molnar <mingo@elte.hu>
+> > > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > > Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+> > > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > > Cc: Anton Blanchard <anton@au1.ibm.com>
+> > > Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>
+> > > ---
+> > >  kernel/sched.c |    7 +++++++
+> > >  1 files changed, 7 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/kernel/sched.c b/kernel/sched.c
+> > > index 4412493..bd0a41f 100644
+> > > --- a/kernel/sched.c
+> > > +++ b/kernel/sched.c
+> > > @@ -5712,6 +5712,13 @@ again:
+> > >  		goto out;
+> > >  	}
+> > >  
+> > > +	/* Nohz tasks must keep their affinity */
+> > > +	if (test_tsk_thread_flag(p, TIF_NOHZ) &&
+> > > +	    !cpumask_equal(&p->cpus_allowed, new_mask)) {
+> > > +		ret = -EBUSY;
+> > > +		goto out;
+> > > +	}
+> > > +
+> > >  	if (p->sched_class->set_cpus_allowed)
+> > >  		p->sched_class->set_cpus_allowed(p, new_mask);
+> > >  	else {
+> > 
+> > NAK, this is really way too restrictive.
+> 
+> Agreed, the better solution is to disable the nohz from the task. If the
+> use just changed its affinity (or something else did), disable the nohz.
+> Maybe you can add a printk or warning, but I'm not sure about that
+> either.
 
-Thanks for your confirmation, I will update the patch in V2.
-
->BTW, where are you using kthread_worker?
-
-I don't have anything using kthread_worker, but go through
-the kernel and find ivtv is the only one.
-This is why I sent the untested patch :)
-
-> I'm
-> planning to update its flush semantics similar to that of proper
-> workqueue so that it's less confusing and switching between the two is
-> easy, so its usage may change slightly soon, although conversion
-> shouldn't be difficult.
-
-No problem. Now I just make the patch based on the current
-kthread_work*.
-
-Thanks,
-Yong
-
--- 
-Only stand for myself.
+Right. Or even better: don't force the nohz task to be affine to
+a single cpu.
