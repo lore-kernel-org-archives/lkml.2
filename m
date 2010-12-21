@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933583Ab0LUEqw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 23:46:52 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:3174 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933560Ab0LUEqv (ORCPT
+	id S933606Ab0LUErY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 23:47:24 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:45085 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933560Ab0LUErX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 23:46:51 -0500
+	Mon, 20 Dec 2010 23:47:23 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=t0U7kvkO2IfRbS/H9qmAX3hRrb4DxJzXwjlIMbVbZY3CsTOHnWVdvCON5ZMPBx1GJN
-         ZL32rZXk4oIaQKLflFlQ==
-Date: Mon, 20 Dec 2010 20:46:40 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hughd@tigran.mtv.corp.google.com
-To: AJ ONeal <coolaj86@gmail.com>
-cc: Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: Memory Leak in /dev/shm on ARM 2.6.36
-In-Reply-To: <AANLkTimze4agnNRM_HVnQ1=B44pWy_D+OmeUYFvCSwMy@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1012202037080.15253@tigran.mtv.corp.google.com>
-References: <AANLkTimze4agnNRM_HVnQ1=B44pWy_D+OmeUYFvCSwMy@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=kzHB+ozlt91SjREjps1PRzGaM7LaJYWE9QHX8SD6oYLHfk8gJQ1OY3muEBSZuOvDCZ
+         YEz1GZlzlqEi6nujb9H6Wl5HAVzkz6Deayb9gt7PiIP4+NW6eCxcPUDIMgGSiWsT2XGj
+         hGnnaImHLL40JIBfDlQqqYS17dNNn4KqYJsPA=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20101221120123.93838d16.sfr@canb.auug.org.au>
+References: <20101221120123.93838d16.sfr@canb.auug.org.au>
+Date: Tue, 21 Dec 2010 05:47:15 +0100
+Message-ID: <AANLkTin_rx3EFVSTnUyK0uVshGxMm_yMVimEg60GSXLi@mail.gmail.com>
+Subject: Re: linux-next: build failure in Linus' tree
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus <torvalds@linux-foundation.org>, Jens Axboe <jaxboe@fusionio.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>, stable@kernel.org,
+        Thiago Farina <tfransosi@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Dec 2010, AJ ONeal wrote:
+On Tue, Dec 21, 2010 at 2:01 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> While building Linus' tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+>
+> drivers/block/cciss.c: In function 'cciss_revalidate':
+> drivers/block/cciss.c:2839: error: expected ';' before 'if'
+>
+> Caused by commit 0fc13c8995cd96f4123de400c71c223d80400ed9 ("cciss: fix
+> cciss_revalidate panic").  Was this even build tested?  More care
+> required.
+>
+> I have reverted that commit for today.
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
+>
 
-> In my other message about SIGBUS I was mmap-ing a file in /dev/shm.
-> 
-> I switched my implementation to use write() instead of mmap and now it
-> leaks memory very very quickly.
-> 
-> `df -h` shows that 80mb of memory are in use
-> `du -ch /dev/shm` shows that 10mb of memory in use
-> 
-> After just a few minutes of creating and removing 512kb files in
-> /dev/shm the program exits with a write failure.
-> Unmounting and remounting /dev/shm reclaims the memory.
+[ CC Thiago Farina ]
 
-I'm interested, but won't have any time to investigate for several days.
+Did you see the patch "[PATCH] drivers/block/cciss.c: Fix compiling
+error by adding ';' at the end of continue statement." from [1] from
+Thiago?
 
-The usual reason (for such a large df/du discrepancy) would be something
-holding open the unlinked files; but if that were the case, then umount
-would fail, complaining that the mount is busy.
+- Sedat -
 
-Can you please try x86 and see if the same happens there with your
-program?  (I've got x86 but not arm: I see no problem on x86,
-but I'm probably not doing exactly what you're doing.)
-
-Can you please try 2.6.35 and see if that behaves in the same way?
-There were some shmem block accounting changes in 2.6.36, I wonder
-if they're misbehaving on arm.
-
-Thanks,
-Hugh
+[1] http://lkml.org/lkml/2010/12/20/465
