@@ -1,88 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751294Ab0LUKxf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 05:53:35 -0500
-Received: from daytona.panasas.com ([67.152.220.89]:40574 "EHLO
-	daytona.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828Ab0LUKxd (ORCPT
+	id S1751336Ab0LUK7K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 05:59:10 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:47083 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805Ab0LUK7H convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 05:53:33 -0500
-Message-ID: <4D108726.2080003@panasas.com>
-Date: Tue, 21 Dec 2010 12:53:26 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Tue, 21 Dec 2010 05:59:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=RxG79p3pgS/wjFvtXsHS57XWuTAGpekjRXSnAYriKuHN5+cKezuF+u6At3oXCUs6WD
+         cnPVZsx+yLCM0An9qk6fD6iUju2Wn95e/HZuKPUzk0MT/FQKFdUYKApOGG4MR72sLX5l
+         37AsjV1PxbPq+6h91Gkr+R+dMPtyBZjFWC3MY=
 MIME-Version: 1.0
-To: Mike Christie <michaelc@cs.wisc.edu>
-CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jeff Garzik <jeff@garzik.org>, Christoph Hellwig <hch@lst.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>,
-        Mike Anderson <andmike@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Ravi Anand <ravi.anand@qlogic.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        Joe Eykholt <jeykholt@cisco.com>, James Smart <james.smart@emulex.com>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        adam radford <aradford@gmail.com>,
-        Kashyap Desai <Kashyap.Desai@lsi.com>,
-        MPTFusionLinux <DL-MPTFusionLinux@lsi.com>
-Subject: Re: [PATCH 01/12] libiscsi: Convert to host_lock less w/ interrupts
- disabled internally
-References: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org> <1292793727-31957-2-git-send-email-nab@linux-iscsi.org> <4D0FF7E6.2060104@cs.wisc.edu>
-In-Reply-To: <4D0FF7E6.2060104@cs.wisc.edu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 21 Dec 2010 10:53:32.0388 (UTC) FILETIME=[4F111240:01CBA0FD]
+In-Reply-To: <s5hy67o95to.wl%tiwai@suse.de>
+References: <s5hfwtzbj8v.wl%tiwai@suse.de>
+	<20101216234032.GA17239@void.printf.net>
+	<50D31EC8-BD9E-4920-8CEB-2AD10DF9C5C5@marvell.com>
+	<20101217034342.GA19673@void.printf.net>
+	<s5hy67o95to.wl%tiwai@suse.de>
+Date: Tue, 21 Dec 2010 05:59:06 -0500
+Message-ID: <AANLkTimSt5a998m1oqdppsWjGCVid0-Ub81pKgsPR36f@mail.gmail.com>
+Subject: Re: [PATCH] mmc: Test bus-width for old MMC devices (v2)
+From: zhangfei gao <zhangfei.gao@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Chris Ball <cjb@laptop.org>, Philip Rakity <prakity@marvell.com>,
+        Aries Lee <arieslee@jmicron.com>, Qiming Wu <wuqm@marvell.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2010 02:42 AM, Mike Christie wrote:
-> On 12/19/2010 03:21 PM, Nicholas A. Bellinger wrote:
->>   prepd_fault:
->> @@ -1732,12 +1728,10 @@ fault:
->>   		scsi_out(sc)->resid = scsi_out(sc)->length;
->>   		scsi_in(sc)->resid = scsi_in(sc)->length;
->>   	}
->> -	done(sc);
->> -	spin_lock(host->host_lock);
->> +	sc->scsi_done(sc);
->>   	return 0;
-> 
-> 
-> Did you mean to send this patch or a different one? I think you sent a 
-> patch with this before and I said it was wrong. Did you disagree with 
-> that comment or did you change something else so it now works?
+On Fri, Dec 17, 2010 at 3:11 AM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Fri, 17 Dec 2010 03:43:42 +0000,
+> Chris Ball wrote:
+>>
+>> Hi Philip,
+>>
+>> On Thu, Dec 16, 2010 at 06:33:49PM -0800, Philip Rakity wrote:
+>> > It is not possible for bus_width to be not initialized.  This would imply ARRAY_SIZE(bus_widths) is 1.  Certainly not true.
+>>
+>> Right, I agree.  We should fix the warning anyway.
+>
+> Well, this is always a gray-zone question.  One prefers fixing it
+> either via uninitialized_var() or by setting a bogus value.  But, this
+> would cover any possible real bug in future.  Thus another prefers
+> ignoring it, because it's just a compiler bug (mostly of old gcc).
+>
+> After all, it's up to maintainer, so take as you like :)
+>
+>
+> thanks,
+>
+> Takashi
+>
+>
+>> > We could just initialize by changing
+>> > +           unsigned idx, bus_width;
+>> > to
+>> > +           unsigned idx, bus_width = 0;
+>>
+>> Okay, I've pushed to mmc-next with that change.
+>>
+>> > I wonder what compiler are you using so we can avoid this issue in future.
+>>
+>> Ah, good point -- I was building with a gcc 4.1.2 ARM cross-compiler,
+>> and using a gcc 4.5.1 cross-build instead avoids the warning.
+>>
+>> Thanks,
+>>
+>> --
+>> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+>> One Laptop Per Child
+>>
+>
 
-Mike hi
+Could you help adding this modification?
+We found error happen since bus_width is not set at these condition:
+1. ddr=0
+2. not set MMC_CAP_BUS_WIDTH_TEST
 
-I think Nick is gone for the holidays. What I understood is that he's
-waiting for you to fix it. Because he's not sure what the proper solution
-is. Do you have time to look into it? (It will take you much faster then me)
+diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+index 1d8409f..86cac0d 100644
+--- a/drivers/mmc/core/mmc.c
++++ b/drivers/mmc/core/mmc.c
+@@ -586,7 +586,11 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
+ 		} else if (ddr) {
+ 			mmc_card_set_ddr_mode(card);
+ 			mmc_set_bus_width_ddr(card->host, bus_width, ddr);
+-		}
++
++		} else
++			mmc_set_bus_width(card->host,
++					bus_widths[idx]);
++
+ 	}
 
-On 12/19/2010 11:21 PM, Nicholas A. Bellinger wrote:
-> *) libiscsi: NULL sc->scsi_done() callback in exception path in iscsi_queuecommand().
-> The last status on this from Mike Christie was:
-> 
-> "This will NULL pointer. See a couple lines above where we NULL it. 
-> iscsi_free_task checks if the scsi_done pointer is set and if it is it 
-> will call scsi_done.
-> 
-> It is a hack to prevent the normal completion path from calling 
-> scsi_done. For the case where we return SCSI_MLQUEUE_TARGET_BUSY (the 
-> prepd_reject case) we need something to prevent scsi_done from getting 
-> called.
-> 
-> For the return 0/prepd_fault case we can just call sc->scsi_done, but we 
-> have to move some code around."
-> 
-> mnc, have you been able to take another look at this..?
-> 
-
-Thanks
-Boaz
-
+ 	if (!oldcard)
