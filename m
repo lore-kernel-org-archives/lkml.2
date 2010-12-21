@@ -1,106 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933767Ab0LUKbd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 05:31:33 -0500
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:47554 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933744Ab0LUKba (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 05:31:30 -0500
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: [regression] 2.6.37-rc5: scsi_eh_11 CPU loop
-Date: Tue, 21 Dec 2010 11:31:15 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6-tp42-00009-gb3444d1; KDE/4.5.3; i686; ; )
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-References: <201012201105.08993.Martin@lichtvoll.de> <4D0F8E98.9070500@kernel.org> (sfid-20101220_204334_509249_EB5633FD)
-In-Reply-To: <4D0F8E98.9070500@kernel.org>
+	id S933744Ab0LUKdO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 05:33:14 -0500
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:44641 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933625Ab0LUKdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 05:33:13 -0500
+Message-ID: <4D108249.4080205@kernel.dk>
+Date: Tue, 21 Dec 2010 11:32:41 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart5527919.zP8bk1yNEJ";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012211131.27698.Martin@lichtvoll.de>
+To: Stefan Schmidt <stefan@datenfreihafen.org>
+CC: Mike Miller <mike.miller@hp.com>, iss_storagedev@hp.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block/cciss: Close continue statement with semicolon
+  to fix build
+References: <1292924526-10850-1-git-send-email-stefan@datenfreihafen.org> <4D107CF0.5090007@kernel.dk> <20101221103101.GB14097@excalibur.local>
+In-Reply-To: <20101221103101.GB14097@excalibur.local>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart5527919.zP8bk1yNEJ
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+On 2010-12-21 11:31, Stefan Schmidt wrote:
+> Hello.
+> 
+> On Tue, 2010-12-21 at 11:09, Jens Axboe wrote:
+>> On 2010-12-21 10:42, Stefan Schmidt wrote:
+>>> This fixes the following build error:
+>>> drivers/block/cciss.c: In function ‘cciss_revalidate’:
+>>> drivers/block/cciss.c:2839: error: expected ‘;’ before ‘if’
+>>> make[2]: *** [drivers/block/cciss.o] Error 1
+>>
+>> It's already included in Linus' git.
+> 
+> Hmm, not on my latest pull. And git tells me I'm up-to-date.
+> 
+> commit 8cad7f06e3b1d3f9a28bb7385e8fc09d5e1bf84c
+> Merge: 92d7c9b 0e4d413
+> Author: Linus Torvalds <torvalds@linux-foundation.org>
+> Date:   Mon Dec 20 10:35:04 2010 -0800
+> 
+>     Merge branch 'v4l_for_linus' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6
+> 
+> Webfrontend tells me the same.
+> 
+> So it is either not mirrored out yet or something else is spuky.
 
-Am Monday 20 December 2010 schrieb Tejun Heo:
-> Hello,
->=20
-> On 12/20/2010 11:05 AM, Martin Steigerwald wrote:
-> > Hi!
-> >=20
-> > top - 10:49:07 up 3 days, 14:24,  8 users,  load average: 2.31, 2.62,
-> > 2.28 Tasks: 198 total,   2 running, 194 sleeping,   0 stopped,   2
-> > zombie Cpu(s):  6.8%us, 93.2%sy,  0.0%ni,  0.0%id,  0.0%wa,  0.0%hi,
-> >  0.0%si, 0.0%st
-> > Mem:   2073660k total,  1941152k used,   132508k free,   153876k
-> > buffers Swap:  4000180k total,   243452k used,  3756728k free, =20
-> > 676612k cached
-> >=20
-> >   PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
-> >   735 root      20   0     0    0    0 R 85.2  0.0 137:28.94
-> >   scsi_eh_11
-> >=20
-> > I don't see anything in dmesg. Everything appears to work as normal,
-> > except for the slowness. Which got a bit better upon renicing
-> > scsi_eh_11 to 19 (not knowing whether its really safe, but it works
-> > for now).
->=20
-> > Interrupts appear to be within usual range as well:
+Latest head is:
 
-> Can you please apply the following patch, trigger the problem and
-> attach the kernel log?
->=20
-> diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
-> index 5e59050..c748b5a 100644
-[...]
->=20
-> +	if (!(ap->pflags & ATA_PFLAG_LOADING) && xxx < 16) {
-> +		ata_port_printk(ap, KERN_WARNING, "XXX ata_eh_set_pending()\n");
-> +		dump_stack();
-> +		xxx++;
-> +	}
-> +
+commit e5fcdb7ed856b714c878ad470040fe832cbe462b
+Merge: 7bddaac 093d804
+Author: Linus Torvalds <torvalds@linux-foundation.org>
 
-I will do so with my next kernel compile - likely rc7 if it comes out=20
-before Christmas.
+And the fix is commit 453434cf3fdcd3954bb52460e37d4945a0913d3e. Perhaps
+the mirror is slow, dunno, I pull via ssh from master.
 
-As I do not know what exactly triggers it, it can take a while till I=20
-experience it again. I hope to be able to trigger it by inserting and=20
-removing the PCMCIA eSATA adapter lots of times. As the bug happened, I=20
-forgot to vgchange -an the LVM on the external drive. That might be or=20
-might not be related to triggering the issue. I will try this as well.
+-- 
+Jens Axboe
 
-Reported-as: https://bugzilla.kernel.org/show_bug.cgi?id=3D25392
-
-Might make sense to switch this bugzilla report to mail. Or use the=20
-bugzilla. Or just use the bugzilla for tracking and continue using mail.=20
-I'll do whatever suits you best (but prefer mail).
-
-Thanks,
-=2D-=20
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
-
---nextPart5527919.zP8bk1yNEJ
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAk0QgfQACgkQmRvqrKWZhMf0KwCguzxXbUWSqnJGj1ZoguQPbrWQ
-ozwAniZoLZeU8cICE+2DbYmxTTEtDl3F
-=UTKL
------END PGP SIGNATURE-----
-
---nextPart5527919.zP8bk1yNEJ--
