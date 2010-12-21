@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753099Ab0LUUVb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 15:21:31 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49921 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495Ab0LUUV3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 15:21:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:cc:content-type;
-        b=O8XYUA/ztmPuXbaAnhIKsqWtRYPKz5/laCDJz6suCVF/D2VasU4rvh7vck4M5U17OD
-         deY4dN2pm580C4Wekg6acVcSJTTRh2G0OttbucqKswv5klsRw8NuZKzSijMyGb2NWm+v
-         noXAz1tWX8DSm36wj23RK6MI50ANwKZKK1Tz0=
-MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Tue, 21 Dec 2010 15:21:08 -0500
-Message-ID: <AANLkTi=iVOumiTGzL3372JupX=+AiCohWEovSb_+xNZU@mail.gmail.com>
-Subject: compat-wireless for 2.6.37-rc6
-To: linux-wireless <linux-wireless@vger.kernel.org>
-Cc: linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1753145Ab0LUUZI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 15:25:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48038 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751434Ab0LUUZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 15:25:06 -0500
+Subject: Re: [PATCH scsi-misc-2.6] sd: implement sd_check_events()
+From: James Bottomley <James.Bottomley@suse.de>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Tejun Heo <tj@kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+In-Reply-To: <4D10FDAD.2060801@kernel.dk>
+References: <20101217122831.39300d94.sfr@canb.auug.org.au>
+	 <1292597607.2820.17.camel@mulgrave.site>  <4D0CF27F.1080601@kernel.org>
+	 <1292862013.3034.7.camel@mulgrave.site>
+	 <1292954953.3034.15.camel@mulgrave.site>  <4D10FDAD.2060801@kernel.dk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 21 Dec 2010 14:24:57 -0600
+Message-ID: <1292963097.3034.21.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Two tarballs are out based on 2.6.37-rc6, the vanilla release and the
-release with pending-stable patches and a few cherry picked patches.
+On Tue, 2010-12-21 at 20:19 +0100, Jens Axboe wrote:
+> On 2010-12-21 19:09, James Bottomley wrote:
+> > On Mon, 2010-12-20 at 10:20 -0600, James Bottomley wrote:
+> >> Added cc: linux-scsi
+> >>
+> >> On Sat, 2010-12-18 at 18:42 +0100, Tejun Heo wrote:
+> >>> Replace sd_media_change() with sd_check_events().
+> >>>
+> >>> * Move media removed logic into set_media_not_present() and
+> >>>   media_not_present() and set sdev->changed iff an existing media is
+> >>>   removed or the device indicates UNIT_ATTENTION.
+> >>>
+> >>> * Make sd_check_events() sets sdev->changed if previously missing
+> >>>   media becomes present.
+> >>>
+> >>> * Event is reported only if sdev->changed is set.
+> >>>
+> >>> This makes media presence event reported if scsi_disk->media_present
+> >>> actually changed or the device indicated UNIT_ATTENTION.  For backward
+> >>> compatibility, SDEV_EVT_MEDIA_CHANGE is generated each time
+> >>> sd_check_events() detects media change event.
+> >>>
+> >>> Signed-off-by: Tejun Heo <tj@kernel.org>
+> >>> Cc: Kay Sievers <kay.sievers@vrfy.org>
+> >>> ---
+> >>> Here it is.  The conflicts were due to Alan's recent patch, which was
+> >>> in the similar direction anyway.
+> >>
+> >> This looks fine to me.  Jens can you strip the SCSI patches out of your
+> >> tree and I'll run them through a postmerge tree to get the fix up?
+> > 
+> > Ping on this, please: I can't build a postmerge tree until block is
+> > sorted out.  I need these four removing:
+> 
+> I would need to revert those four then, I can't rebase any of those
+> branches.
 
-http://wireless.kernel.org/en/users/Download/stable
-http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.37/compat-wireless-2.6.37-rc6-3.tar.bz2
-http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.37/compat-wireless-2.6.37-rc6-3-sn.tar.bz2
+That's a bit unfortunate.  OK, just revert the sd one then.  Hopefully
+we're close enough to the merge window that we won't pick up conflicts
+in the others.
 
-Build tested and loaded with ath9k on AR9280 against 2.6.31.
+James
 
-The list of pending stable patches:
 
-mcgrof@tux ~/tmp/compat-wireless-2.6.37-rc6-3 $ ls -1 pending-stable
-0001-cfg80211-pass-the-reg-hint-initiator-to-helpers.patch
-0002-cfg80211-fix-allowing-country-IEs-for-WIPHY_FLAG_STR.patch
-0003-cfg80211-fix-disabling-channels-based-on-hints.patch
-0008-ath9k_hw-Fix-XPABIAS-level-configuration-for-AR9003.patch
-0009-ath9k-Fix-bug-in-delimiter-padding-computation.patch
-0010-p54usb-add-5-more-USBIDs.patch
-0012-ath9k-fix-assumptions-for-idle-calls-on-suspend-resu.patch
-0013-ath-Missed-to-clear-key4-of-micentry.patch
-0014-p54usb-New-USB-ID-for-Gemtek-WUBI-100GW.patch
-
-The list of pending-stable patches which required a backport:
-
-mcgrof@tux ~/tmp/compat-wireless-2.6.37-rc6-3 $ ls -1 pending-stable/backports/
-0001-ath9k-simplify-hw-reset-locking.patch
-0002-ath9k-move-the-PCU-lock-to-the-sc-structure.patch
-0003-ath9k-content-DMA-start-stop-through-the-PCU-lock.patch
-0004-ath9k-Fix-power-save-count-imbalance-on-ath_radio_en.patch
-0005-ath9k_hw-fix-potential-spurious-tx-error-bit-interpr.patch
-
-There are only two cherry picked patches now as the ath3k/btusb patch
-went upstream:
-
-mcgrof@tux ~/tmp/compat-wireless-2.6.37-rc6-3 $ ls -1 linux-next-cherry-picks/
-01-ath9k-OTP.patch
-04-ath9k_hw-fix-A-MPDU-key-search-issues-on-AR9003.patch
-
-  Luis
