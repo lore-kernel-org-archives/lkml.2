@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074Ab0LUXqD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 18:46:03 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:43502 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753905Ab0LUXqA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 18:46:00 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6204"; a="67577303"
-Message-ID: <2c27ccc1dd4db9a31cd961f0ffaed886.squirrel@www.codeaurora.org>
-In-Reply-To: <20101215134406.3a634aa8@nehalam>
-References: <1292437866-11652-1-git-send-email-nvishwan@codeaurora.org>
-    <20101215134406.3a634aa8@nehalam>
-Date: Tue, 21 Dec 2010 15:45:45 -0800 (PST)
-Subject: Re: [PATCH] msm: rmnet: msm rmnet smd virtual ethernet driver
-From: nvishwan@codeaurora.org
-To: "Stephen Hemminger" <shemminger@vyatta.com>
-Cc: "Niranjana Vishwanathapura" <nvishwan@codeaurora.org>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        "Brian Swetland" <swetland@google.com>
-User-Agent: SquirrelMail/1.4.17
+	id S1753906Ab0LUXrK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 18:47:10 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:44348 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752684Ab0LUXrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 18:47:08 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Matthew Wilcox <matthew@wil.cx>
+Subject: Re: [PATCH] Prevent users from disabling tickless
+Date: Wed, 22 Dec 2010 00:46:23 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc7+; KDE/4.4.4; x86_64; ; )
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org
+References: <20101221233942.GL1263@parisc-linux.org>
+In-Reply-To: <20101221233942.GL1263@parisc-linux.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012220046.23759.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, 15 Dec 2010 10:31:06 -0800
-> Niranjana Vishwanathapura <nvishwan@codeaurora.org> wrote:
->
->> +
->> +static DECLARE_TASKLET(smd_net_data_tasklet, smd_net_data_handler, 0);
->> +
->> +static void smd_net_notify(void *_dev, unsigned event)
->> +{
->> +	if (event != SMD_EVENT_DATA)
->> +		return;
->> +
->> +	smd_net_data_tasklet.data = (unsigned long) _dev;
->> +
->> +	tasklet_schedule(&smd_net_data_tasklet);
->> +}
->> +
->
-> Rather than having private tasklet, maybe using NAPI
-> would be better?
->
-> Also since you are already in tasklet, no need to call netif_rx()
-> when receiving packet; instead use netif_receive_skb directly.
->
-> --
->
+On Wednesday, December 22, 2010, Matthew Wilcox wrote:
+> 
+> Disabling NO_HZ has a serious negative effect on performance -- an extra
+> 70us per I/O.  Prevent users from deselecting it.
+> 
+> Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
 
-NAPI will not buy much as the SMD transport doesn't provide a machanism to
-stop interrupts.  I will consider using NAPI in the future (it requires
-performance testing on lot of different targets).
+OTOH, it causes some systems to not work at all still.  Sadly.
 
-However, I can replace netif_rx() by netif_receive_skb() and send out new
-patch
+Thanks,
+Rafael
+
+
+> diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+> index f06a8a3..55b9a04 100644
+> --- a/kernel/time/Kconfig
+> +++ b/kernel/time/Kconfig
+> @@ -5,13 +5,9 @@ config TICK_ONESHOT
+>  	bool
+>  
+>  config NO_HZ
+> -	bool "Tickless System (Dynamic Ticks)"
+> +	def_bool y
+>  	depends on !ARCH_USES_GETTIMEOFFSET && GENERIC_CLOCKEVENTS
+>  	select TICK_ONESHOT
+> -	help
+> -	  This option enables a tickless system: timer interrupts will
+> -	  only trigger on an as-needed basis both when the system is
+> -	  busy and when the system is idle.
+>  
+>  config HIGH_RES_TIMERS
+>  	bool "High Resolution Timer Support"
+> 
+> 
 
