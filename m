@@ -1,154 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751292Ab0LUQAF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 11:00:05 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:38245 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751006Ab0LUQAE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 11:00:04 -0500
-Date: Tue, 21 Dec 2010 11:00:02 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Anoop P <anoop.pa@gmail.com>
-cc: Ralf Baechle <ralf@linux-mips.org>, <gregkh@suse.de>,
-        <dbrownell@users.sourceforge.net>, <sarah.a.sharp@linux.intel.com>,
-        <andiry.xu@amd.com>, <agust@denx.de>, <ddaney@caviumnetworks.com>,
-        <gadiyar@ti.com>, <linux-mips@linux-mips.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] EHCI support for on-chip PMC MSP USB controller.
-In-Reply-To: <1292929580-5829-1-git-send-email-anoop.pa@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1012211050470.31667-100000@netrider.rowland.org>
+	id S1751660Ab0LUQFq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 11:05:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58181 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751158Ab0LUQFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 11:05:45 -0500
+Date: Tue, 21 Dec 2010 11:05:40 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: jaxboe@fusionio.com
+Cc: oleg@redhat.com, paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] blk-throttle: Couple of more fixes
+Message-ID: <20101221160540.GE29522@redhat.com>
+References: <1292447255-10698-1-git-send-email-vgoyal@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292447255-10698-1-git-send-email-vgoyal@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Dec 2010, Anoop P wrote:
-
-> From: Anoop P A <anoop.pa@gmail.com>
+On Wed, Dec 15, 2010 at 04:07:33PM -0500, Vivek Goyal wrote:
+> Hi Jens,
 > 
-> This patch includes.
+> Please find attached couple of more fixes for blk-throttle code. These are
+> based on top of "for-linus" branch of your block tree. 
 > 
-> 1. USB host driver for MSP71xx family SoC on-chip USB controller.
-> 2. Platform support for USB controller.
 
-It also contains changes to the core USB hub driver code.  You should 
-mention things like that in the patch description.
+Hi Jens,
 
-...
+Do you have any concerns with these two fixes? Now Oleg and Paul have
+acked it too. Could you please apply these for 2.6.38.
 
-> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-> index 27115b4..f2a45ba 100644
-> --- a/drivers/usb/core/hub.c
-> +++ b/drivers/usb/core/hub.c
-> @@ -3377,12 +3377,43 @@ static void hub_events(void)
->  			}
->  			
->  			if (portchange & USB_PORT_STAT_C_OVERCURRENT) {
-> +#ifdef CONFIG_USB_EHCI_HCD_PMC_MSP
-> +#define OVER_CURR_DELAY 100
+Thanks
+Vivek
 
-What happens if CONFIG_USB_EHCI_HCD_PMC_MSP is defined, but an 
-overcurrent status is detected on an external hub instead of the root 
-hub?
-
-> +				/* clear OCC bit */
-> +				clear_port_feature(hdev, i,
-> +					USB_PORT_FEAT_C_OVER_CURRENT);
-> +
-> +				/* This step is required to toggle the PP bit
-> +				 * to 0 and 1 (by hub_power_on) in order the
-> +				 * CSC bit to be transitioned
-> +				 * properly for device hotplug
-> +				 */
-> +				/* clear PP bit */
-> +				clear_port_feature(hdev, i,
-> +				USB_PORT_FEAT_POWER);
-> +
-> +				/* resume power */
-> +				hub_power_on(hub, true);
-> +
-> +				/* delay 100 usec */
-> +				udelay(OVER_CURR_DELAY);
-> +
-> +				/* read OCA bit */
-> +				if (portstatus &
-> +					(1<<USB_PORT_FEAT_OVER_CURRENT)) {
-> +					/* declare overcurrent */
-> +					dev_err(hub_dev,
-> +						"over-current change on port %d\n",
-> +						i);
-> +				}
-> +#else
->  				dev_err (hub_dev,
->  					"over-current change on port %d\n",
->  					i);
->  				clear_port_feature(hdev, i,
->  					USB_PORT_FEAT_C_OVER_CURRENT);
->  				hub_power_on(hub, true);
-> +#endif
->  			}
-
-"#ifdef" inside code like this is strongly discouraged.  This should be 
-written using a separate subroutine.
-
-...
-
-> diff --git a/drivers/usb/host/ehci-pmcmsp.c b/drivers/usb/host/ehci-pmcmsp.c
-> new file mode 100644
-> index 0000000..b1b4f21
-> --- /dev/null
-> +++ b/drivers/usb/host/ehci-pmcmsp.c
-
-> +static const struct hc_driver ehci_msp_hc_driver = {
-> +	.description =		hcd_name,
-> +	.product_desc =		"PMC MSP EHCI",
-> +	.hcd_priv_size =	sizeof(struct ehci_hcd),
-> +
-> +	/*
-> +	 * generic hardware linkage
-> +	 */
-> +#ifdef CONFIG_MSP_HAS_DUAL_USB
-> +	.irq =			ehci_msp_irq,
-> +#else
-> +	.irq =			ehci_irq,
-> +#endif
-> +	.flags =		HCD_MEMORY | HCD_USB2,
-> +
-> +	/*
-> +	 * basic lifecycle operations
-> +	 */
-> +	.reset =		ehci_msp_setup,
-> +	.start =		ehci_run,
-> +#ifdef	CONFIG_PM
-> +	.suspend =		ehci_msp_suspend,
-> +	.resume =		ehci_msp_resume,
-> +#endif /*CONFIG_PM*/
-> +	.stop =			ehci_stop,
-> +
-> +	/*
-> +	 * managing i/o requests and associated device resources
-> +	 */
-> +	.urb_enqueue =		ehci_urb_enqueue,
-> +	.urb_dequeue =		ehci_urb_dequeue,
-> +	.endpoint_disable =	ehci_endpoint_disable,
-> +
-> +	/*
-> +	 * scheduling support
-> +	 */
-> +	.get_frame_number =	ehci_get_frame,
-> +
-> +	/*
-> +	 * root hub support
-> +	 */
-> +	.hub_status_data =	ehci_hub_status_data,
-> +	.hub_control =		ehci_hub_control,
-> +};
-
-This appears to have been copied from a really old version of 
-ehci-pci.c.  You should start with the most up-to-date code.
-
-Alan Stern
-
+> Oleg had pointed out couple of race conditions in cgroup weight update code.
+> I think these race conditions are hard to hit and not disastrous so I would
+> not be too concerned about pushing these patches in 2.6.37 and can queue
+> up for 2.6.38.
+> 
+> Paul,
+> 
+> Based on discussion in other mail thread, I have used xchg() based
+> implementation for updating and processing limtis.  Can you please have a look
+> if it is correct implementation and do I need any ACCESS_ONCE() or barriers
+> somewhere. If this implementation is not correct then I can go back to atomic
+> variable based implementation as suggested by you in other mail thread.
+> Appreciate the help.
+> 
+> Thanks
+> Vivek
+> 
+> Vivek Goyal (2):
+>   blk-throttle: process limit change only through one function
+>   blk-throttle: Some cleanups and race fixes in limit update code
+> 
+>  block/blk-throttle.c |  104 ++++++++++++++++++++------------------------------
+>  1 files changed, 41 insertions(+), 63 deletions(-)
