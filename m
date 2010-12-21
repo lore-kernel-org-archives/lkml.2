@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751611Ab0LURdG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 12:33:06 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:40399 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab0LURdF (ORCPT
+	id S1751841Ab0LURdO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 12:33:14 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:37705 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751662Ab0LURdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 12:33:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=sM7kEbLKTyy3JNH8jBNKFWTERYDNI4noMOBM2JGaSugC05p5y8z3onqNLAeCiZd98j
-         Jy2ZCRkDD4HLy7tPMLAsrt7PF/hk01wiqbhWrCH33pCQavtmKWqwWNfKsAUs5qNf6PI7
-         QqQJraNX3eqB2ldc8RFLMmeJwVfOnbGcPWrHY=
-Date: Tue, 21 Dec 2010 18:32:59 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
-        jan.kratochvil@redhat.com
-Subject: Re: [PATCH 10/16] ptrace: clean transitions between TASK_STOPPED
- and TRACED
-Message-ID: <20101221173258.GF13285@htj.dyndns.org>
-References: <1291654624-6230-1-git-send-email-tj@kernel.org>
- <1291654624-6230-11-git-send-email-tj@kernel.org>
- <20101220150037.GE11583@redhat.com>
- <20101221173155.GE13285@htj.dyndns.org>
+	Tue, 21 Dec 2010 12:33:11 -0500
+Message-ID: <4D10E4B6.8070003@canonical.com>
+Date: Tue, 21 Dec 2010 12:32:38 -0500
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101221173155.GE13285@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Takashi Iwai <tiwai@suse.de>, Chris Bagwell <chris@cnpbagwell.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] Input: synaptics - add multi-finger and semi-mt support
+References: <1292852364-19127-1-git-send-email-rydberg@euromail.se> <1292852364-19127-3-git-send-email-rydberg@euromail.se> <4D10D75D.80400@canonical.com> <20101221165956.GA28702@polaris.bitmath.org>
+In-Reply-To: <20101221165956.GA28702@polaris.bitmath.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 21, 2010 at 06:31:55PM +0100, Tejun Heo wrote:
-> > > @@ -1842,7 +1879,18 @@ static int do_signal_stop(int signr)
-> > >
-> > >  		spin_lock_irq(&current->sighand->siglock);
-> > >  	} else
-> > > -		ptrace_stop(current->exit_code, CLD_STOPPED, 0, NULL);
-> > > +		ptrace_stop(current->group_stop & GROUP_STOP_SIGMASK,
-> > > +			    CLD_STOPPED, 0, NULL);
-> > 
-> > Perhaps it would be more clean to clear ->exit_code here, in the
-> > "else" branch.
+On 12/21/2010 11:59 AM, Henrik Rydberg wrote:
+>>> Reported-by: Tobyn Bertram
+>>> Not-yet-signed-off-by: Takashi Iwai <tiwai@suse.de>
+>>> Not-yet-signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+>>> Not-yet-signed-off-by: Chris Bagwell <chris@cnpbagwell.com>
+>>> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+>>
+>> You can keep my SOB.
 > 
-> Hmmm... and dropping current->exit_code clearing from the
-> do_signal_stop(), right?  I'm a bit confused about the use of
-> current->exit_code tho.  Why aren't we clearing it from ptrace_stop()?
+> Great, thanks.
+>  
+>>> +static void set_slot(struct input_dev *dev, int slot, bool active, int x, int y)
+>>> +{
+>>> +	input_mt_slot(dev, slot);
+>>> +	input_mt_report_slot_state(dev, MT_TOOL_FINGER, active);
+>>> +	if (active) {
+>>> +		input_report_abs(dev, ABS_MT_POSITION_X, x);
+>>> +		input_report_abs(dev, ABS_MT_POSITION_Y,
+>>> +				 YMAX_NOMINAL + YMIN_NOMINAL - y);
+>>> +	}
+>>> +}
+>>
+>> I take it that you feel MT_TOOL_FINGER should always be set, even if
+>> it's always the same as BTN_TOOL_*? I just want to be sure this is
+>> intended so we document it appropriately.
+> 
+> Yes - the MT_TOOLs are only emitted when explicitly set in absbit, but
+> the internal interface always handles it. This is actually documented
+> in the code (and DocBook).
 
-Ah, never mind.  It's used as the signr return from ptrace signal
-trap.
+Ahh, I had forgotten about this.
 
-Thanks.
+>>> @@ -623,6 +686,7 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
+>>>  	int i;
+>>>  
+>>>  	__set_bit(INPUT_PROP_POINTER, dev->propbit);
+>>> +	__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
+>>
+>> Shouldn't this only be set when SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) is
+>> true?
+> 
+> Indeed - thanks.
 
--- 
-tejun
+All looks good to me with this change :). Thanks again!
+
+-- Chase
