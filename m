@@ -1,51 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933565Ab0LUEDF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 23:03:05 -0500
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:40192 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933493Ab0LUEDE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 23:03:04 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=bCoK6yqvKGy1dOm7FbfvBDBhg8l3ORla1rrKhV/CfZ/eAny0U5PdfjeyiZ9gqiIk9V10Ixc8UoVp6kkuz+S9y1wqJXJp0+9yGHpJx7iCKxQ6naLIYDtWh2UTARdLEeXm;
-Date: Mon, 20 Dec 2010 20:02:58 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Dave Airlie <airlied@gmail.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Dave Airlie <airlied@redhat.com>
-Subject: Re: [PATCH] vgaarb: use bridges to control VGA routing where
- possible. (v2)
-Message-ID: <20101220200258.305889ec@jbarnes-desktop>
-In-Reply-To: <1292803809-9200-1-git-send-email-airlied@gmail.com>
-References: <1292803809-9200-1-git-send-email-airlied@gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+	id S933562Ab0LUEMW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 23:12:22 -0500
+Received: from kroah.org ([198.145.64.141]:35482 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933461Ab0LUEMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 23:12:21 -0500
+Date: Mon, 20 Dec 2010 20:11:58 -0800
+From: Greg KH <greg@kroah.com>
+To: Sutharsan R <sutharsan.ram@gmail.com>
+Cc: linux-arm@vger.kernel.org, srmt@cypress.com, david.cross@cypress.com,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH] adding gpmc configuration functions, west bridge
+ related
+Message-ID: <20101221041158.GA30120@kroah.com>
+References: <AANLkTi==X9maghSd3YwG6g3cQek3gV9-3Fx8W+n_zLmp@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi==X9maghSd3YwG6g3cQek3gV9-3Fx8W+n_zLmp@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Dec 2010 10:10:09 +1000
-Dave Airlie <airlied@gmail.com> wrote:
+On Mon, Dec 20, 2010 at 06:42:06PM -0800, Sutharsan R wrote:
+> This patch adds and exports gpmc configuration functions.
+> 'gpmc' configuration functions will be used by
+> westbridge device controller driver in staging tree.
+> This patch is part of the work to get westbridge device controller driver
+> out of staging tree.
+> 
+> Signed-off-by: Sutharsan Ramamoorthy <srmt@cypress.com>
+> 
+> ---
+> 
+> diff -uprN -X linux-2.6.37_vanilla/Documentation/dontdiff
+> linux-2.6.37_vanilla/arch/arm/mach-omap2/Makefile
+> linux-2.6.37-cywb/arch/arm/mach-omap2/Makefile
+> --- linux-2.6.37_vanilla/arch/arm/mach-omap2/Makefile	2010-11-29
+> 20:42:04.000000000 -0800
+> +++ linux-2.6.37-cywb/arch/arm/mach-omap2/Makefile	2010-12-13
+> 16:04:08.378446603 -0800
 
-> - * @change_bridge: traverse ancestors and change bridges
-> + * @change_bridge_flags: traverse ancestors and change bridges
-> + * CHANGE_BRIDGE_ONLY / CHANGE_BRIDGE
->   */
->  int pci_set_vga_state(struct pci_dev *dev, bool decode,
-> -		      unsigned int command_bits, bool change_bridge)
-> +		      unsigned int command_bits, u32 flags)
->  {
+Your patch is linewrapped :(
 
-Other than this nitpick, it looks sound to me; we'll need to actually
-disable VGA decode in the shared bridge hierarchy case rather than just
-using simple bridge routing.
+> @@ -182,6 +182,7 @@ obj-y					+= $(usbfs-m) $(usbfs-y)
+>  obj-y					+= usb-musb.o
+>  obj-$(CONFIG_MACH_OMAP2_TUSB6010)	+= usb-tusb6010.o
+>  obj-y					+= usb-ehci.o
+> +obj-$(CONFIG_WESTBRIDGE_ASTORIA)        += usb-cywb-pnand.o
+> 
+>  onenand-$(CONFIG_MTD_ONENAND_OMAP2)	:= gpmc-onenand.o
+>  obj-y					+= $(onenand-m) $(onenand-y)
+> diff -uprN -X linux-2.6.37_vanilla/Documentation/dontdiff
+> linux-2.6.37_vanilla/arch/arm/mach-omap2/usb-cywb-pnand.c
+> linux-2.6.37-cywb/arch/arm/mach-omap2/usb-cywb-pnand.c
+> --- linux-2.6.37_vanilla/arch/arm/mach-omap2/usb-cywb-pnand.c	1969-12-31
+> 16:00:00.000000000 -0800
+> +++ linux-2.6.37-cywb/arch/arm/mach-omap2/usb-cywb-pnand.c	2010-12-20
+> 17:33:23.822251855 -0800
+> @@ -0,0 +1,170 @@
+> +/*
+> + * linux /arch/arm/mach-omap2/usb-cywb-pnand.c
+> + *
+> + * Copyright (C) 2010  Cypress Semiconductor
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation; either version 2
+> + * of the License.
 
-Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Either, or what?
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+> + */
+> +
+> +#include <linux/module.h>
+> +
+> +#include <plat/gpmc.h>
+
+Why the extra lines inbetween the #includes?
+
+> +
+> +/*
+> + * chip select number on GPMC ( 0..7 )
+> + */
+> +#define AST_GPMC_CS 4
+> +
+> +/*
+> + * for use by gpmc_set_timings api, measured in ns, not clocks
+> + */
+> +#define WB_GPMC_BUSCYC_t    (7 * 6)
+
+What's with the lowercase values in #defines?
+
+> +#define WB_GPMC_CS_t_o_n    (0)
+> +#define WB_GPMC_ADV_t_o_n   (0)
+> +#define WB_GPMC_OE_t_o_n    (0)
+> +#define WB_GPMC_OE_t_o_f_f  (5 * 6)
+> +#define WB_GPMC_WE_t_o_n    (1 * 6)
+> +#define WB_GPMC_WE_t_o_f_f  (5 * 6)
+> +#define WB_GPMC_RDS_ADJ     (2 * 6)
+> +#define WB_GPMC_RD_t_a_c_c  (WB_GPMC_OE_t_o_f_f + WB_GPMC_RDS_ADJ)
+> +#define WB_GPMC_WR_t_a_c_c  (WB_GPMC_BUSCYC_t)
+> +
+> +#define GPMC_16BIT_MODE 0
+> +#define GPMC_RETIME     1
+> +
+> +/*
+> + * GPMC_CONFIG7[cs] register bit fields
+> + * AS_CS_MASK - 3 bit mask for  A26,A25,A24,
+> + * AS_CS_BADDR - 6 BIT VALUE  A29 ...A24
+> + * CSVALID_B - CSVALID bit on GPMC_CONFIG7[cs] register
+> + */
+> +#define AS_CS_MASK	(0X7 << 8)
+> +#define AS_CS_BADDR	 0x02
+> +#define CSVALID_B (1 << 6)
+> +
+> +#define BLKSZ_4K 0x1000
+> +
+> +/*
+> + * switch GPMC DATA bus mode
+> + */
+> +void cywb_gpmc_enable_16bit_bus(bool dbus16_enabled)
+> +{
+> +	u32 tmp32;
+> +
+> +	/*
+> +	 * disable gpmc CS4 operation 1st
+> +	 */
+> +	tmp32 = gpmc_cs_read_reg(AST_GPMC_CS,
+> +				GPMC_CS_CONFIG7) & ~GPMC_CONFIG7_CSVALID;
+> +	gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7, tmp32);
+> +
+> +	/*
+> +	 * GPMC NAND data bus can be 8 or 16 bit wide
+> +	 */
+> +	if (dbus16_enabled) {
+> +		dev_dbg(KERN_INFO "gpmc: enabling 16 bit bus\n");
+> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
+> +				(GPMC_CONFIG1_DEVICETYPE(2) |
+> +				GPMC_CONFIG1_WAIT_PIN_SEL(2) |
+> +				GPMC_CONFIG1_DEVICESIZE_16));
+> +	} else {
+> +		dev_dbg(KERN_INFO "gpmc: enabling 8 bit bus\n");
+> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
+> +				(GPMC_CONFIG1_DEVICETYPE(2) |
+> +				GPMC_CONFIG1_WAIT_PIN_SEL(2)));
+> +	}
+> +
+> +	/*
+> +	 * re-enable astoria CS operation on GPMC
+> +	 */
+> +	 gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7,
+> +			(tmp32 | GPMC_CONFIG7_CSVALID));
+> +}
+> +
+> +int cywb_pnand_platform_retime(int action, bool dbus16_enabled)
+> +{
+> +	u32 tmp32;
+> +	struct gpmc_timings timings;
+> +	int retval;
+
+Set retval to 0 first, then you don't have to set it for when things go
+right, only when things go wrong.
+
+> +
+> +	switch (action) {
+> +
+> +	case GPMC_16BIT_MODE:
+> +		cywb_gpmc_enable_16bit_bus(dbus16_enabled);
+> +		retval = 0;
+> +		break;
+> +	case GPMC_RETIME:
+> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
+> +						(GPMC_CONFIG1_DEVICETYPE(2) |
+> +						GPMC_CONFIG1_WAIT_PIN_SEL(2)));
+> +
+> +		memset(&timings, 0, sizeof(timings));
+> +
+> +		/* cs timing */
+> +		timings.cs_on = WB_GPMC_CS_t_o_n;
+> +		timings.cs_wr_off = WB_GPMC_BUSCYC_t;
+> +		timings.cs_rd_off = WB_GPMC_BUSCYC_t;
+> +
+> +		/* adv timing */
+> +		timings.adv_on = WB_GPMC_ADV_t_o_n;
+> +		timings.adv_rd_off = WB_GPMC_BUSCYC_t;
+> +		timings.adv_wr_off = WB_GPMC_BUSCYC_t;
+> +
+> +		/* oe timing */
+> +		timings.oe_on = WB_GPMC_OE_t_o_n;
+> +		timings.oe_off = WB_GPMC_OE_t_o_f_f;
+> +		timings.access = WB_GPMC_RD_t_a_c_c;
+> +		timings.rd_cycle = WB_GPMC_BUSCYC_t;
+> +
+> +		/* we timing */
+> +		timings.we_on = WB_GPMC_WE_t_o_n;
+> +		timings.we_off = WB_GPMC_WE_t_o_f_f;
+> +		timings.wr_access = WB_GPMC_WR_t_a_c_c;
+> +		timings.wr_cycle = WB_GPMC_BUSCYC_t;
+> +
+> +		timings.page_burst_access = WB_GPMC_BUSCYC_t;
+> +		timings.wr_data_mux_bus = WB_GPMC_BUSCYC_t;
+> +		gpmc_cs_set_timings(AST_GPMC_CS, &timings);
+> +
+> +		/*
+> +		 * DISABLE cs4, NOTE GPMC REG7 is already configured
+> +		 * at this point by gpmc_cs_request
+> +		 */
+> +		tmp32 = gpmc_cs_read_reg(AST_GPMC_CS, GPMC_CS_CONFIG7) &
+> +						~GPMC_CONFIG7_CSVALID;
+> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7, tmp32);
+> +
+> +		/*
+> +		 * PROGRAM chip select Region, (see OMAP3430 TRM PAGE 1088)
+> +		 */
+> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7,
+> +					(AS_CS_MASK | AS_CS_BADDR));
+> +
+> +		/*
+> +		 * by default configure GPMC into 8 bit mode
+> +		 * (to match astoria default mode)
+> +		 */
+> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
+> +					(GPMC_CONFIG1_DEVICETYPE(2) |
+> +					GPMC_CONFIG1_WAIT_PIN_SEL(2)));
+> +
+> +		/*
+> +		 * ENABLE astoria cs operation on GPMC
+> +		 */
+> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7,
+> +						(tmp32 | GPMC_CONFIG7_CSVALID));
+> +		retval = 0;
+> +		break;
+> +	default:
+> +		retval = -EINVAL;
+
+No error message?  How could this ever happen?
+
+> +		break;
+> +	}
+> +
+> +	return retval;
+> +
+> +}
+> +EXPORT_SYMBOL(cywb_pnand_platform_retime);
+
+Again, are you sure about this export?
+
+What code uses this?  If it is the staging driver, is this code now
+duplicated there?  If so, why not remove it in the same patch, that
+would make more sense.
+
+Also, the code above will break the build, you obviously never even
+tested it out.  Why would you send us something and expect us to apply
+it, when you did not do the most simplest of tests yourself?
+
+{sigh}
+
+greg k-h
