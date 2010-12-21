@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148Ab0LUKvM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 05:51:12 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:64913 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751770Ab0LUKvK (ORCPT
+	id S1751294Ab0LUKxf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 05:53:35 -0500
+Received: from daytona.panasas.com ([67.152.220.89]:40574 "EHLO
+	daytona.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828Ab0LUKxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 05:51:10 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=kdj1yKmr31shPkb0mWeB9pI98yxxWkbEmVfIVOrHATJ2Aosr0MXZdV6ewTP3pocD6v
-         JWlWupl4qVhgoD4D+OMtAwhLvOPC7CXZulAsrWVAR92NhSCW3ClOcMUBhLs+45mPCbtD
-         D45/Ui7VbO66YgRrRRY2H+8NN9C2548Z+QBos=
-Date: Tue, 21 Dec 2010 11:51:04 +0100
-From: Tejun Heo <tj@kernel.org>
-To: David Miller <davem@davemloft.net>
-Cc: mchan@broadcom.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next-2.6] bnx2: remove cancel_work_sync() from
- remove_one
-Message-ID: <20101221105103.GA32744@htj.dyndns.org>
-References: <4D0796D7.3030309@kernel.org>
- <1292348880.7394.63.camel@nseg_linux_HP1.broadcom.com>
- <4D08C81D.8020606@kernel.org>
- <20101220.131146.115941299.davem@davemloft.net>
+	Tue, 21 Dec 2010 05:53:33 -0500
+Message-ID: <4D108726.2080003@panasas.com>
+Date: Tue, 21 Dec 2010 12:53:26 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101220.131146.115941299.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mike Christie <michaelc@cs.wisc.edu>
+CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jeff Garzik <jeff@garzik.org>, Christoph Hellwig <hch@lst.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>,
+        Mike Anderson <andmike@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Ravi Anand <ravi.anand@qlogic.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        Joe Eykholt <jeykholt@cisco.com>, James Smart <james.smart@emulex.com>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        adam radford <aradford@gmail.com>,
+        Kashyap Desai <Kashyap.Desai@lsi.com>,
+        MPTFusionLinux <DL-MPTFusionLinux@lsi.com>
+Subject: Re: [PATCH 01/12] libiscsi: Convert to host_lock less w/ interrupts
+ disabled internally
+References: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org> <1292793727-31957-2-git-send-email-nab@linux-iscsi.org> <4D0FF7E6.2060104@cs.wisc.edu>
+In-Reply-To: <4D0FF7E6.2060104@cs.wisc.edu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 21 Dec 2010 10:53:32.0388 (UTC) FILETIME=[4F111240:01CBA0FD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, David.
+On 12/21/2010 02:42 AM, Mike Christie wrote:
+> On 12/19/2010 03:21 PM, Nicholas A. Bellinger wrote:
+>>   prepd_fault:
+>> @@ -1732,12 +1728,10 @@ fault:
+>>   		scsi_out(sc)->resid = scsi_out(sc)->length;
+>>   		scsi_in(sc)->resid = scsi_in(sc)->length;
+>>   	}
+>> -	done(sc);
+>> -	spin_lock(host->host_lock);
+>> +	sc->scsi_done(sc);
+>>   	return 0;
+> 
+> 
+> Did you mean to send this patch or a different one? I think you sent a 
+> patch with this before and I said it was wrong. Did you disagree with 
+> that comment or did you change something else so it now works?
 
-On Mon, Dec 20, 2010 at 01:11:46PM -0800, David Miller wrote:
-> It would but we can't just make the change over to del_timer_sync()
-> otherwise we'd deadlock on netif_tx_lock().
-> 
-> But I think things might be OK as-is.
-> 
-> The timer is deleted by dev_deactivate_many() which resets the qdisc
-> to the no-op qdisc.  Then it deletes the timer.
-> 
-> Any running timer will complete or see the no-op qdisc attached and
-> return immediately.
-> 
-> synchronize_rcu() is then executed which guarentees completion.
-> 
-> Since both the watchdog timer itself and the del_timer() call run
-> with netif_tx_lock() held, this makes sure the timer, once deleted,
-> will only see the no-op qdisc and return immediately if it is
-> amidst running, else it has already returned when the timer delete
-> completes.
-> 
-> So we might be OK here.
+Mike hi
 
-Yeah, I agree the synchronize_rcu() there would guarantee the actual
-timer completion but as it currently stands it looks a bit too subtle.
-Maybe it's a good idea to add a big fat comment explaining that the
-the timer is guaranteed to stop after close() and how it's guaranteed
-through synchronize_rcu() at the moment?  Also, it might be better to
-use synchronize_sched() there as timer synchronization through
-synchronize_rcu() is more of a happy accident.
+I think Nick is gone for the holidays. What I understood is that he's
+waiting for you to fix it. Because he's not sure what the proper solution
+is. Do you have time to look into it? (It will take you much faster then me)
 
-Thanks.
+On 12/19/2010 11:21 PM, Nicholas A. Bellinger wrote:
+> *) libiscsi: NULL sc->scsi_done() callback in exception path in iscsi_queuecommand().
+> The last status on this from Mike Christie was:
+> 
+> "This will NULL pointer. See a couple lines above where we NULL it. 
+> iscsi_free_task checks if the scsi_done pointer is set and if it is it 
+> will call scsi_done.
+> 
+> It is a hack to prevent the normal completion path from calling 
+> scsi_done. For the case where we return SCSI_MLQUEUE_TARGET_BUSY (the 
+> prepd_reject case) we need something to prevent scsi_done from getting 
+> called.
+> 
+> For the return 0/prepd_fault case we can just call sc->scsi_done, but we 
+> have to move some code around."
+> 
+> mnc, have you been able to take another look at this..?
+> 
 
--- 
-tejun
+Thanks
+Boaz
+
