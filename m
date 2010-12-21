@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153Ab0LURs5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 12:48:57 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:53604 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751478Ab0LURs4 (ORCPT
+	id S1752205Ab0LURwx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 12:52:53 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:43366 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751427Ab0LURwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 12:48:56 -0500
+	Tue, 21 Dec 2010 12:52:51 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ambcKO6L5ei4Y4PsuLfbWd4WER/cXWnWBOaY7+q5cEHps+7p9BFVojs3BOn/q819HG
-         qc0KaxOLLfxA2yjulQv5QcIkCMwDHtcJkHmL52JWMQGvv5tFklw0+F//BAdlQsRiO5NR
-         g31IKxeVkB4m3y49MUlXZGmEiY55Reg22XMvk=
-Date: Tue, 21 Dec 2010 18:48:50 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
-        jan.kratochvil@redhat.com
-Subject: Re: [PATCH 14/16] ptrace: make SIGCONT notification reliable
- against ptrace
-Message-ID: <20101221174849.GI13285@htj.dyndns.org>
-References: <1291654624-6230-1-git-send-email-tj@kernel.org>
- <1291654624-6230-15-git-send-email-tj@kernel.org>
- <20101220194354.GA23281@redhat.com>
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=I31B91XXmIg63r0OxNgMee2oD74MoSI5rc0yBkHe/IDm/iNXlaI6qMlk195aZzD1Lf
+         G0Ezt3h4gmlgYXGmtR3p/7YabvquLIn+NAD/AU7tt9KNGC35VmFxTXIvswIVWEJ/Kqd7
+         Ezq8mmFc0ojm2gFrdQnlZTBxDnmskAGL9nYaE=
+Message-ID: <4D10E96F.6070406@gmail.com>
+Date: Tue, 21 Dec 2010 09:52:47 -0800
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101220194354.GA23281@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Michal Marek <mmarek@suse.cz>
+CC: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        sodaville@linutronix.de, linuxppc-dev@lists.ozlabs.org,
+        microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org
+Subject: Re: [PATCH 1/4] of: Add support for linking device tree blobs into
+ vmlinux
+References: <cover.1291820033.git.dirk.brandewie@gmail.com> <99ff131ecbee621f0d3178d6d3896d6f39207d6f.1291820034.git.dirk.brandewie@gmail.com> <4D10B8AA.3070500@suse.cz>
+In-Reply-To: <4D10B8AA.3070500@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Oleg.
+On 12/21/2010 06:24 AM, Michal Marek wrote:
+> On 8.12.2010 16:01, dirk.brandewie@gmail.com wrote:
+>> +quiet_cmd_dt_S_dtb= DTB    $@
+>
+>> +quiet_cmd_dtc = DTC $@
+>
+> Hi,
+>
+> just an aesthetic remark: The target name should start at the 9th
+> column, so there should be 5 spaces after both "DTB" and "DTC".
+>
+> Michal
+Thanks I will fix this.
 
-On Mon, Dec 20, 2010 at 08:43:54PM +0100, Oleg Nesterov wrote:
-> I must admit, I have some concerns.
+--Dirk
 
-Hey, join the club.
-
-> But most probably I just need to actually understand what this patch
-> does.
-
-The bigger question is about the direction tho.  The patchset
-definitely still has enough holes but do you in general agree with
-where it's headed?  If so, maybe it would be a good idea to set up an
-incremental devel branch somewhere?  We definitely need more review
-rounds but given the fragility of the whole thing I think it would be
-wiser to keep the spotted problems and fixes in changelog after the
-general direction is agreed on.
-
-Thanks.
-
--- 
-tejun
