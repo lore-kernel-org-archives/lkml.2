@@ -1,33 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933431Ab0LUBeg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 20:34:36 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:42449 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933384Ab0LUBeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 20:34:36 -0500
-Message-ID: <4D100400.7060104@zytor.com>
-Date: Mon, 20 Dec 2010 17:33:52 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S933442Ab0LUBep (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 20:34:45 -0500
+Received: from mail-fx0-f66.google.com ([209.85.161.66]:35601 "EHLO
+	mail-fx0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933384Ab0LUBen (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 20:34:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=uk5da5jck1ZvSDX9wR+dGIoIoCGGbJQYuU2NPxEQzx3Uh1FdnCPCy2dieLv+orjXAY
+         jWnfHW9q9/BuClv+I7NZaHDn39yQU2fu2uUbf24mYlhdDUmTHjjJf6+XAtQoeE6bKf9m
+         JYCR8h/cwyxfC9Yi8esdkI+d5XqBawHkSB0Pw=
+Date: Tue, 21 Dec 2010 02:34:39 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 03/15] nohz_task: Make tick stop and restart
+ callable outside idle
+Message-ID: <20101221013437.GL1715@nowhere>
+References: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
+ <1292858662-5650-4-git-send-email-fweisbec@gmail.com>
+ <1292860133.5021.7.camel@laptop>
+ <1292861950.22905.26.camel@gandalf.stny.rr.com>
+ <1292862311.5021.34.camel@laptop>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Christoph Lameter <cl@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] x86: Use this_cpu_ops to optimize code
-References: <4D0CD337.4080407@kernel.org>
-In-Reply-To: <4D0CD337.4080407@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292862311.5021.34.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2010 07:28 AM, Tejun Heo wrote:
-> Peter, these three patches are the x86 ones which were in
-> percpu#for-next but should go through x86 tree.  These should be
-> applied on top of percpu#this_cpu_ops.
+On Mon, Dec 20, 2010 at 05:25:11PM +0100, Peter Zijlstra wrote:
+> On Mon, 2010-12-20 at 11:19 -0500, Steven Rostedt wrote:
+> > On Mon, 2010-12-20 at 16:48 +0100, Peter Zijlstra wrote:
+> > > On Mon, 2010-12-20 at 16:24 +0100, Frederic Weisbecker wrote:
+> > > > +                       if (!current->pid)
+> > > 
+> > > I'm not exactly sure that's the sanest way to test if you're the idle
+> > > thread...
+> > 
+> > Would
+> > 
+> >  if (idle_cpu(cpu))
+> > 
+> > be better?
+> 
+> Lots ;-)
 
-Does that mean the latter is now a stable base that I can pull into -tip?
+I wondered about that too, will update.
 
-	-hpa
+Thanks.
