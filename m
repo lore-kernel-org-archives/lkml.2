@@ -1,61 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879Ab0LUThU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 14:37:20 -0500
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:41056 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751493Ab0LUThS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 14:37:18 -0500
-Subject: Re: [PATCH V7 1/8] ntp: add ADJ_SETOFFSET mode bit
-From: john stultz <johnstul@us.ibm.com>
-To: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>
-Cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, netdev@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
-        Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <AANLkTi=yGoFwYt4p_LeHtAQyYgmURspO-p57UdL0sUEZ@mail.gmail.com>
-References: <cover.1292512461.git.richard.cochran@omicron.at>
-	 <880d82bb8120f73973db27e0c48e949014b1a106.1292512461.git.richard.cochran@omicron.at>
-	 <AANLkTi=yGoFwYt4p_LeHtAQyYgmURspO-p57UdL0sUEZ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Dec 2010 11:37:04 -0800
-Message-ID: <1292960224.2618.4.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752934Ab0LUThp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 14:37:45 -0500
+Received: from mail.bluewatersys.com ([202.124.120.130]:7073 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752776Ab0LUThn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 14:37:43 -0500
+Message-ID: <4D110269.9030805@bluewatersys.com>
+Date: Wed, 22 Dec 2010 08:39:21 +1300
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+MIME-Version: 1.0
+To: Alexey Charkov <alchark@gmail.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        Eric Miao <eric.y.miao@gmail.com>,
+        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6 v9] ARM: Add basic architecture support for VIA/WonderMedia
+ 85xx SoC's
+References: <1289147348-31969-1-git-send-email-alchark@gmail.com>	<20101107165745.GB1759@n2100.arm.linux.org.uk>	<AANLkTimFJ=Brx4pDiUqZOKDfABaDg0s_yFC7EkZGi7D8@mail.gmail.com>	<20101107171726.GF1759@n2100.arm.linux.org.uk>	<20101108171930.GA1471@alchark-u3s.lan>	<20101111212322.GA15533@alchark-u3s.lan>	<20101111234957.GA28735@n2100.arm.linux.org.uk>	<20101219174017.GA31832@alchark-u3s>	<20101220191549.GH28157@n2100.arm.linux.org.uk>	<20101220195423.GA14509@alchark-u3s>	<4D0FC1AE.2050708@bluewatersys.com>	<AANLkTin4XqbGwznp56Xjt_zest6rxNmir0QDJWTySY4+@mail.gmail.com>	<4D0FD747.9020700@bluewatersys.com>	<AANLkTikAWjK7ACyt=LedhyyrhsCk1WCiyWz182CXMe9C@mail.gmail.com>	<4D0FE546.7050302@bluewatersys.com>	<AANLkTinyYKrhTcBMMCE4A2oFQHm11cqSZQozytGu+d6o@mail.gmail.com>	<4D1011CF.9080800@bluewatersys.com> <AANLkTi=7O-HwQRcybnLSt+r+A64g=D7rZY7NbdEMFys3@mail.gmail.com>
+In-Reply-To: <AANLkTi=7O-HwQRcybnLSt+r+A64g=D7rZY7NbdEMFys3@mail.gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-12-18 at 05:16 +0900, Kuwahara,T. wrote:
-> On 12/17/10, Richard Cochran <richardcochran@gmail.com> wrote:
-> > This patch adds a new mode bit into the timex structure. When set, the bit
-> > instructs the kernel to add the given time value to the current time.
-> >
-> 
-> The proposed new control mode, ADJ_SETOFFSET, is logically the same as
-> ADJ_OFFSET with timex.constant == -INFINITY. 
+On 12/21/2010 11:00 PM, Alexey Charkov wrote:
+> 2010/12/21 Ryan Mallon <ryan@bluewatersys.com>:
+>   
+>> On 12/21/2010 12:49 PM, Alexey Charkov wrote:
+>>     
+>>> 2010/12/21 Ryan Mallon <ryan@bluewatersys.com>:
+>>>       
+>>>> On 12/21/2010 12:00 PM, Alexey Charkov wrote:
+>>>>         
+>>>>> 2010/12/21 Ryan Mallon <ryan@bluewatersys.com>:
+>>>>>           
+>>>>>> On 12/21/2010 10:48 AM, Alexey Charkov wrote:
+>>>>>>             
+>>>>>>> 2010/12/20 Ryan Mallon <ryan@bluewatersys.com>:
+>>>>>>>               
+>>>>>>>> On 12/21/2010 08:54 AM, Alexey Charkov wrote:
+>>>>>>>>                 
+>>>>>>>>> This adds support for the family of Systems-on-Chip produced initially
+>>>>>>>>> by VIA and now its subsidiary WonderMedia that have recently become
+>>>>>>>>> widespread in lower-end Chinese ARM-based tablets and netbooks.
+>>>>>>>>>
+>>>>>>>>> Support is included for both VT8500 and WM8505, selectable by a
+>>>>>>>>> configuration switch at kernel build time.
+>>>>>>>>>
+>>>>>>>>> Included are basic machine initialization files, register and
+>>>>>>>>> interrupt definitions, support for the on-chip interrupt controller,
+>>>>>>>>> high-precision OS timer, GPIO lines, necessary macros for early debug,
+>>>>>>>>> pulse-width-modulated outputs control, as well as platform device
+>>>>>>>>> configurations for the specific drivers implemented elsewhere.
+>>>>>>>>>
+>>>>>>>>> Signed-off-by: Alexey Charkov <alchark@gmail.com>
+>>>>>>>>>                   
+>>>>>>>> Hi Alexey,
+>>>>>>>>
+>>>>>>>> Quick review below.
+>>>>>>>>                 
+>>>>>>             
+>>>>>>> <snip>
+>>>>>>>               
+>>>>>>>>> +void __init wmt_set_resources(void)
+>>>>>>>>> +{
+>>>>>>>>> +     resources_lcdc[0].start = wmt_current_regs->lcdc;
+>>>>>>>>> +     resources_lcdc[0].end = wmt_current_regs->lcdc + SZ_1K - 1;
+>>>>>>>>> +     resources_lcdc[1].start = wmt_current_irqs->lcdc;
+>>>>>>>>> +     resources_lcdc[1].end = wmt_current_irqs->lcdc;
+>>>>>>>>>                   
+>>>>>>>> Ah, this makes more sense. But why have all the indirection? The
+>>>>>>>> wmt_regmaps table could just be replaced with #defines and then have
+>>>>>>>> separate device files for the VT8500 and the WM8505. This would also
+>>>>>>>> make clearer which variants have which peripherals.
+>>>>>>>>
+>>>>>>>>                 
+>>>>>>> This was the way I implemented it originally. However, Arnd made quite
+>>>>>>> a valid suggestion to allow runtime selection of the chip variant,
+>>>>>>> thus registers and interrupts need to be held in an indexed data type
+>>>>>>> instead of just compile-time macros. In addition, there is now some
+>>>>>>> overall movement towards unification of binary kernel images for
+>>>>>>> different ARM variants (as far as I can see), so this would be
+>>>>>>> required in any case.
+>>>>>>>
+>>>>>>> Furthermore, as with many unbranded Chinese products, it's somewhat
+>>>>>>> difficult to reliably determine the exact chip version used in your
+>>>>>>> netbook without disassembling it. Reading a hardware register for
+>>>>>>> identification is easier :)
+>>>>>>>               
+>>>>>> Okay, that makes sense. I still think there must be a better way than
+>>>>>> having a massive indirect table with all the values. Why not detect the
+>>>>>> variant in the core code and then have something like:
+>>>>>>
+>>>>>> int init_devices(void)
+>>>>>> {
+>>>>>>        int board_type = detect_board_type();
+>>>>>>
+>>>>>>        switch (board_type) {
+>>>>>>        case BOARD_TYPE_VT8500:
+>>>>>>                return vt8500_init_devices();
+>>>>>>
+>>>>>>        case BOARD_TYPE_WM8505:
+>>>>>>                return wm8500_init_devices();
+>>>>>>        }
+>>>>>>
+>>>>>>        pr_err("Unknown board type\n");
+>>>>>>        BUG(); /* panic()? */
+>>>>>>        while (1)
+>>>>>>                ;
+>>>>>> }
+>>>>>>
+>>>>>> Then you can have the peripheral setup for each of the variants in their
+>>>>>> own files and use #defines. It may get tricky in a couple of places if
+>>>>>> you need to be able to access some value directly which is different on
+>>>>>> each of the variants, but that can be handled on a case by case basis.
+>>>>>> The majority of the numbers will be passed into drivers via the resource
+>>>>>> structs.
+>>>>>>
+>>>>>>             
+>>>>> This is more or less what I'm doing right now - except for the
+>>>>> separation between different files. I tried to avoid duplication of
+>>>>> similar things here. Is the indirect table really a big issue? I'm a
+>>>>> bit reluctant to copy about the whole devices.c for each chip variant,
+>>>>> which would be otherwise required. Further, it would add more
+>>>>> complexity to the timer, irq, gpio, i8042 and probably some other
+>>>>> places.
+>>>>>           
+>>>> Yeah, agreed about the duplication. My approach would require the common
+>>>> peripherals to be defined for each variant. I'm not entirely against the
+>>>> indirect table (and am even starting to think it may be the best overall
+>>>> solution), it's just that it can be a bit difficult to follow because to
+>>>> add a device you need to do the following:
+>>>>
+>>>>  - Add a partially empty resource/platform_device struct
+>>>>  - Add resource entries to the resource table definition
+>>>>  - Add resource values to the resource table
+>>>>  - Add assignment of resource values to device init code
+>>>>
+>>>>         
+>>> That's actually only one step more than what machines with static
+>>> resource definitions require (the last one). Flexibility does come at
+>>> a cost, so there should be a mathematical limit to optimization of
+>>> this thing :)
+>>>       
+>> No it isn't. You don't have the massive table, which requires
+>> modifications to both the definition and declaration, on machines with
+>> static resource definitions.
+>>
+>> How about using the resource structures directly rather than introducing
+>> the table which is effectively holding the same information? Something
+>> like this?
+>>
+>> In vt8500_resources.c (and similarly for wm8505_resources.c):
+>>
+>> static struct resource vt8500_resources_uart0[] __initdata = {
+>>        [0] = {
+>>                .flags  = IORESOURCE_MEM,
+>>                .start  = VT8500_UART0_PHYS_BASE,
+>>                .end    = VT8500_UART0_PHYS_BASE + 0xff,
+>>        },
+>>        [1] = {
+>>                .flags  = IORESOURCE_IRQ,
+>>                .start  = VT8500_UART0_IRQ,
+>>                .end    = VT8500_UART0_IRQ,
+>>        },
+>> };
+>>
+>> struct resource *vt8500_resources[] __initdata = {
+>>        [VT8500_UART0] = &vt8500_resources_uart0,
+>>        ...
+>> };
+>>
+>> In devices.c:
+>>
+>> extern struct resource *vt8500_resources;
+>> extern struct resource *wm8505_resources;
+>>
+>> /* Set this pointer according to board variant */
+>> static struct resource *resources;
+>>
+>> void __init wmt_set_resources(void)
+>> {
+>>        vt8500_device_uart0.resource = resources[VT8500_UART0];
+>>        ...
+>> }
+>>
+>> This way we only have a single externed resource structure per
+>> board-variant, there is no additional table needed, and the resource
+>> definitions can be read clearly. Alternatively the wmt_regmaps/wmt_irqs
+>> tables could be modified to use struct resource rather than individual
+>> fields which would simplify the assignments later.
+>>     
+> This way we will again duplicate quite much: those files will mostly
+> differ in just the macro definitions of specific registers/irqs.
+>
+> What if I just move all the initializations inside my runtime helper
+> function, and add a macro to save space and improve readability?
+> Something along the lines of:
+>
+> static struct resource resources_lcdc[2] __initdata;
+>
+> #define WMT_MMIO_RES(__start, __size) \
+> {\
+>         .flags = IORESOURCE_MEM,\
+>         .start = __start,\
+>         .end = __start + __size - 1,\
+> }
+> #define WMT_IRQ_RES(__irq) \
+> {\
+>         .flags = IORESOURCE_IRQ,\
+>         .start = __irq,\
+>         .end = __irq,\
+> }
+>
+> void __init wmt_set_resources(void)
+> {
+>      resources_lcdc[0] = WMT_MMIO_RES(wmt_current_regs->lcdc, SZ_1K);
+>      resources_lcdc[1] = WMT_IRQ_RES(wmt_current_irqs->lcdc);
+> ...
+> }
+>
+> Then there will be no half-empty initializations scattered around
+> separate from the other assignments (which is probably the worst thing
+> in current configuration).
+>
+> Best regards,
+> Alexey
+>   
+Sure, that works. In this case, can we remove the wmt_current_regs table
+and just have a switch statement with the two board variants in place?
+The latter will actually be half as much code because the struct
+definition for the table is no longer needed and each resource
+assignment is still one line. i.e.:
 
-I'm not sure if this is correct. Its more like settimeofday, only giving
-a relative offset to jump the clock, rather then an absolute time. It
-does not slew the clock over time like ADJ_OFFSET does.
+void __init wmt_set_resources(void)
+{
+	switch (board_type) {
+	case BOARD_TYPE_VT8500:
+		resources_lcdc[0] = WMT_MMIO_RES(VT8500_LCDC_BASE, SZ_1K);
+		resources_lcdc[1] = WMT_IRQ_RES(VT8500_LCDC_IRQ);
+		...
+		break;
 
->  So it is possible to do
-> the same thing without risking forward compatibility.  (I mean by "risking
-> forward compatibility" that the mode bit 0x0040 may be defined differently
-> by the upstream maintainer anytime in the future.)
+	case BOARD_TYPE_WM8505:
+		resources_lcdc[0] = WMT_MMIO_RES(WM8505_LCDC_BASE, SZ_1K);
+		resources_lcdc[1] = WMT_IRQ_RES(WM8505_LCDC_IRQ);
+		...
+		break;
+	}
+} 
 
-adjtimex is a linux specific interface, which is compatible but not
-identical to the ntp specified interfaces. The ntp client code already
-has Linux specific modifications, so I don't think we have to worry
-about 0x40 specifically being reserved by the NTP client.
+~Ryan
 
-thanks
--john
+-- 
+Bluewater Systems Ltd - ARM Technology Solution Centre
 
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751 
+Fax:   +64 3 3779135			  USA 1800 261 2934
 
