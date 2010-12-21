@@ -1,200 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933494Ab0LUCbO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 21:31:14 -0500
-Received: from mail.bluewatersys.com ([202.124.120.130]:16218 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933446Ab0LUCbN (ORCPT
+	id S933522Ab0LUCmK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 21:42:10 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:50354 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933461Ab0LUCmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 21:31:13 -0500
-Message-ID: <4D1011CF.9080800@bluewatersys.com>
-Date: Tue, 21 Dec 2010 15:32:47 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+	Mon, 20 Dec 2010 21:42:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=wnQ+209+RWlnNzXXss4gMmD1qWdcd2zrQNHk8m/ZFDVtXSOEoa7VXegsLmqxblqdcK
+         R/EZ/ixOe8BgQOig0M2mIundCrMsi0zq8OkuVWqqDkzp0o3PKtvA1hrHsAVxJ1iB3pDw
+         Nqwi/+sNUF6GFH2MvkHtZBQYDJccy78p0/UAc=
 MIME-Version: 1.0
-To: Alexey Charkov <alchark@gmail.com>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        Eric Miao <eric.y.miao@gmail.com>,
-        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6 v9] ARM: Add basic architecture support for VIA/WonderMedia
- 85xx SoC's
-References: <1289147348-31969-1-git-send-email-alchark@gmail.com>	<20101107165745.GB1759@n2100.arm.linux.org.uk>	<AANLkTimFJ=Brx4pDiUqZOKDfABaDg0s_yFC7EkZGi7D8@mail.gmail.com>	<20101107171726.GF1759@n2100.arm.linux.org.uk>	<20101108171930.GA1471@alchark-u3s.lan>	<20101111212322.GA15533@alchark-u3s.lan>	<20101111234957.GA28735@n2100.arm.linux.org.uk>	<20101219174017.GA31832@alchark-u3s>	<20101220191549.GH28157@n2100.arm.linux.org.uk>	<20101220195423.GA14509@alchark-u3s>	<4D0FC1AE.2050708@bluewatersys.com>	<AANLkTin4XqbGwznp56Xjt_zest6rxNmir0QDJWTySY4+@mail.gmail.com>	<4D0FD747.9020700@bluewatersys.com>	<AANLkTikAWjK7ACyt=LedhyyrhsCk1WCiyWz182CXMe9C@mail.gmail.com>	<4D0FE546.7050302@bluewatersys.com> <AANLkTinyYKrhTcBMMCE4A2oFQHm11cqSZQozytGu+d6o@mail.gmail.com>
-In-Reply-To: <AANLkTinyYKrhTcBMMCE4A2oFQHm11cqSZQozytGu+d6o@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Date: Mon, 20 Dec 2010 18:42:06 -0800
+Message-ID: <AANLkTi==X9maghSd3YwG6g3cQek3gV9-3Fx8W+n_zLmp@mail.gmail.com>
+Subject: [PATCH] adding gpmc configuration functions, west bridge related
+From: Sutharsan R <sutharsan.ram@gmail.com>
+To: greg@kroah.com, linux-arm@vger.kernel.org
+Cc: srmt@cypress.com, david.cross@cypress.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2010 12:49 PM, Alexey Charkov wrote:
-> 2010/12/21 Ryan Mallon <ryan@bluewatersys.com>:
->> On 12/21/2010 12:00 PM, Alexey Charkov wrote:
->>> 2010/12/21 Ryan Mallon <ryan@bluewatersys.com>:
->>>> On 12/21/2010 10:48 AM, Alexey Charkov wrote:
->>>>> 2010/12/20 Ryan Mallon <ryan@bluewatersys.com>:
->>>>>> On 12/21/2010 08:54 AM, Alexey Charkov wrote:
->>>>>>> This adds support for the family of Systems-on-Chip produced initially
->>>>>>> by VIA and now its subsidiary WonderMedia that have recently become
->>>>>>> widespread in lower-end Chinese ARM-based tablets and netbooks.
->>>>>>>
->>>>>>> Support is included for both VT8500 and WM8505, selectable by a
->>>>>>> configuration switch at kernel build time.
->>>>>>>
->>>>>>> Included are basic machine initialization files, register and
->>>>>>> interrupt definitions, support for the on-chip interrupt controller,
->>>>>>> high-precision OS timer, GPIO lines, necessary macros for early debug,
->>>>>>> pulse-width-modulated outputs control, as well as platform device
->>>>>>> configurations for the specific drivers implemented elsewhere.
->>>>>>>
->>>>>>> Signed-off-by: Alexey Charkov <alchark@gmail.com>
->>>>>>
->>>>>> Hi Alexey,
->>>>>>
->>>>>> Quick review below.
->>>>
->>>>> <snip>
->>>>>>> +void __init wmt_set_resources(void)
->>>>>>> +{
->>>>>>> +     resources_lcdc[0].start = wmt_current_regs->lcdc;
->>>>>>> +     resources_lcdc[0].end = wmt_current_regs->lcdc + SZ_1K - 1;
->>>>>>> +     resources_lcdc[1].start = wmt_current_irqs->lcdc;
->>>>>>> +     resources_lcdc[1].end = wmt_current_irqs->lcdc;
->>>>>>
->>>>>> Ah, this makes more sense. But why have all the indirection? The
->>>>>> wmt_regmaps table could just be replaced with #defines and then have
->>>>>> separate device files for the VT8500 and the WM8505. This would also
->>>>>> make clearer which variants have which peripherals.
->>>>>>
->>>>>
->>>>> This was the way I implemented it originally. However, Arnd made quite
->>>>> a valid suggestion to allow runtime selection of the chip variant,
->>>>> thus registers and interrupts need to be held in an indexed data type
->>>>> instead of just compile-time macros. In addition, there is now some
->>>>> overall movement towards unification of binary kernel images for
->>>>> different ARM variants (as far as I can see), so this would be
->>>>> required in any case.
->>>>>
->>>>> Furthermore, as with many unbranded Chinese products, it's somewhat
->>>>> difficult to reliably determine the exact chip version used in your
->>>>> netbook without disassembling it. Reading a hardware register for
->>>>> identification is easier :)
->>>>
->>>> Okay, that makes sense. I still think there must be a better way than
->>>> having a massive indirect table with all the values. Why not detect the
->>>> variant in the core code and then have something like:
->>>>
->>>> int init_devices(void)
->>>> {
->>>>        int board_type = detect_board_type();
->>>>
->>>>        switch (board_type) {
->>>>        case BOARD_TYPE_VT8500:
->>>>                return vt8500_init_devices();
->>>>
->>>>        case BOARD_TYPE_WM8505:
->>>>                return wm8500_init_devices();
->>>>        }
->>>>
->>>>        pr_err("Unknown board type\n");
->>>>        BUG(); /* panic()? */
->>>>        while (1)
->>>>                ;
->>>> }
->>>>
->>>> Then you can have the peripheral setup for each of the variants in their
->>>> own files and use #defines. It may get tricky in a couple of places if
->>>> you need to be able to access some value directly which is different on
->>>> each of the variants, but that can be handled on a case by case basis.
->>>> The majority of the numbers will be passed into drivers via the resource
->>>> structs.
->>>>
->>>
->>> This is more or less what I'm doing right now - except for the
->>> separation between different files. I tried to avoid duplication of
->>> similar things here. Is the indirect table really a big issue? I'm a
->>> bit reluctant to copy about the whole devices.c for each chip variant,
->>> which would be otherwise required. Further, it would add more
->>> complexity to the timer, irq, gpio, i8042 and probably some other
->>> places.
->>
->> Yeah, agreed about the duplication. My approach would require the common
->> peripherals to be defined for each variant. I'm not entirely against the
->> indirect table (and am even starting to think it may be the best overall
->> solution), it's just that it can be a bit difficult to follow because to
->> add a device you need to do the following:
->>
->>  - Add a partially empty resource/platform_device struct
->>  - Add resource entries to the resource table definition
->>  - Add resource values to the resource table
->>  - Add assignment of resource values to device init code
->>
-> 
-> That's actually only one step more than what machines with static
-> resource definitions require (the last one). Flexibility does come at
-> a cost, so there should be a mathematical limit to optimization of
-> this thing :)
+This patch adds and exports gpmc configuration functions.
+'gpmc' configuration functions will be used by
+westbridge device controller driver in staging tree.
+This patch is part of the work to get westbridge device controller driver
+out of staging tree.
 
-No it isn't. You don't have the massive table, which requires
-modifications to both the definition and declaration, on machines with
-static resource definitions.
+Signed-off-by: Sutharsan Ramamoorthy <srmt@cypress.com>
 
-How about using the resource structures directly rather than introducing
-the table which is effectively holding the same information? Something
-like this?
+---
 
-In vt8500_resources.c (and similarly for wm8505_resources.c):
+diff -uprN -X linux-2.6.37_vanilla/Documentation/dontdiff
+linux-2.6.37_vanilla/arch/arm/mach-omap2/Makefile
+linux-2.6.37-cywb/arch/arm/mach-omap2/Makefile
+--- linux-2.6.37_vanilla/arch/arm/mach-omap2/Makefile	2010-11-29
+20:42:04.000000000 -0800
++++ linux-2.6.37-cywb/arch/arm/mach-omap2/Makefile	2010-12-13
+16:04:08.378446603 -0800
+@@ -182,6 +182,7 @@ obj-y					+= $(usbfs-m) $(usbfs-y)
+ obj-y					+= usb-musb.o
+ obj-$(CONFIG_MACH_OMAP2_TUSB6010)	+= usb-tusb6010.o
+ obj-y					+= usb-ehci.o
++obj-$(CONFIG_WESTBRIDGE_ASTORIA)        += usb-cywb-pnand.o
 
-static struct resource vt8500_resources_uart0[] __initdata = {
-	[0] = {
-		.flags	= IORESOURCE_MEM,
-		.start  = VT8500_UART0_PHYS_BASE,
-		.end	= VT8500_UART0_PHYS_BASE + 0xff,
-	},
-	[1] = {
-		.flags	= IORESOURCE_IRQ,
-		.start	= VT8500_UART0_IRQ,
-		.end	= VT8500_UART0_IRQ,
-	},
-};
-
-struct resource *vt8500_resources[] __initdata = {
-	[VT8500_UART0] = &vt8500_resources_uart0,
-	...
-};
-
-In devices.c:
-
-extern struct resource *vt8500_resources;
-extern struct resource *wm8505_resources;
-
-/* Set this pointer according to board variant */
-static struct resource *resources;
-
-void __init wmt_set_resources(void)
-{
-	vt8500_device_uart0.resource = resources[VT8500_UART0];
-	...
-}
-
-This way we only have a single externed resource structure per
-board-variant, there is no additional table needed, and the resource
-definitions can be read clearly. Alternatively the wmt_regmaps/wmt_irqs
-tables could be modified to use struct resource rather than individual
-fields which would simplify the assignments later.
-
-~Ryan
-
--- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
-
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
+ onenand-$(CONFIG_MTD_ONENAND_OMAP2)	:= gpmc-onenand.o
+ obj-y					+= $(onenand-m) $(onenand-y)
+diff -uprN -X linux-2.6.37_vanilla/Documentation/dontdiff
+linux-2.6.37_vanilla/arch/arm/mach-omap2/usb-cywb-pnand.c
+linux-2.6.37-cywb/arch/arm/mach-omap2/usb-cywb-pnand.c
+--- linux-2.6.37_vanilla/arch/arm/mach-omap2/usb-cywb-pnand.c	1969-12-31
+16:00:00.000000000 -0800
++++ linux-2.6.37-cywb/arch/arm/mach-omap2/usb-cywb-pnand.c	2010-12-20
+17:33:23.822251855 -0800
+@@ -0,0 +1,170 @@
++/*
++ * linux /arch/arm/mach-omap2/usb-cywb-pnand.c
++ *
++ * Copyright (C) 2010  Cypress Semiconductor
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License.
++ */
++
++#include <linux/module.h>
++
++#include <plat/gpmc.h>
++
++/*
++ * chip select number on GPMC ( 0..7 )
++ */
++#define AST_GPMC_CS 4
++
++/*
++ * for use by gpmc_set_timings api, measured in ns, not clocks
++ */
++#define WB_GPMC_BUSCYC_t    (7 * 6)
++#define WB_GPMC_CS_t_o_n    (0)
++#define WB_GPMC_ADV_t_o_n   (0)
++#define WB_GPMC_OE_t_o_n    (0)
++#define WB_GPMC_OE_t_o_f_f  (5 * 6)
++#define WB_GPMC_WE_t_o_n    (1 * 6)
++#define WB_GPMC_WE_t_o_f_f  (5 * 6)
++#define WB_GPMC_RDS_ADJ     (2 * 6)
++#define WB_GPMC_RD_t_a_c_c  (WB_GPMC_OE_t_o_f_f + WB_GPMC_RDS_ADJ)
++#define WB_GPMC_WR_t_a_c_c  (WB_GPMC_BUSCYC_t)
++
++#define GPMC_16BIT_MODE 0
++#define GPMC_RETIME     1
++
++/*
++ * GPMC_CONFIG7[cs] register bit fields
++ * AS_CS_MASK - 3 bit mask for  A26,A25,A24,
++ * AS_CS_BADDR - 6 BIT VALUE  A29 ...A24
++ * CSVALID_B - CSVALID bit on GPMC_CONFIG7[cs] register
++ */
++#define AS_CS_MASK	(0X7 << 8)
++#define AS_CS_BADDR	 0x02
++#define CSVALID_B (1 << 6)
++
++#define BLKSZ_4K 0x1000
++
++/*
++ * switch GPMC DATA bus mode
++ */
++void cywb_gpmc_enable_16bit_bus(bool dbus16_enabled)
++{
++	u32 tmp32;
++
++	/*
++	 * disable gpmc CS4 operation 1st
++	 */
++	tmp32 = gpmc_cs_read_reg(AST_GPMC_CS,
++				GPMC_CS_CONFIG7) & ~GPMC_CONFIG7_CSVALID;
++	gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7, tmp32);
++
++	/*
++	 * GPMC NAND data bus can be 8 or 16 bit wide
++	 */
++	if (dbus16_enabled) {
++		dev_dbg(KERN_INFO "gpmc: enabling 16 bit bus\n");
++		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
++				(GPMC_CONFIG1_DEVICETYPE(2) |
++				GPMC_CONFIG1_WAIT_PIN_SEL(2) |
++				GPMC_CONFIG1_DEVICESIZE_16));
++	} else {
++		dev_dbg(KERN_INFO "gpmc: enabling 8 bit bus\n");
++		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
++				(GPMC_CONFIG1_DEVICETYPE(2) |
++				GPMC_CONFIG1_WAIT_PIN_SEL(2)));
++	}
++
++	/*
++	 * re-enable astoria CS operation on GPMC
++	 */
++	 gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7,
++			(tmp32 | GPMC_CONFIG7_CSVALID));
++}
++
++int cywb_pnand_platform_retime(int action, bool dbus16_enabled)
++{
++	u32 tmp32;
++	struct gpmc_timings timings;
++	int retval;
++
++	switch (action) {
++
++	case GPMC_16BIT_MODE:
++		cywb_gpmc_enable_16bit_bus(dbus16_enabled);
++		retval = 0;
++		break;
++	case GPMC_RETIME:
++		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
++						(GPMC_CONFIG1_DEVICETYPE(2) |
++						GPMC_CONFIG1_WAIT_PIN_SEL(2)));
++
++		memset(&timings, 0, sizeof(timings));
++
++		/* cs timing */
++		timings.cs_on = WB_GPMC_CS_t_o_n;
++		timings.cs_wr_off = WB_GPMC_BUSCYC_t;
++		timings.cs_rd_off = WB_GPMC_BUSCYC_t;
++
++		/* adv timing */
++		timings.adv_on = WB_GPMC_ADV_t_o_n;
++		timings.adv_rd_off = WB_GPMC_BUSCYC_t;
++		timings.adv_wr_off = WB_GPMC_BUSCYC_t;
++
++		/* oe timing */
++		timings.oe_on = WB_GPMC_OE_t_o_n;
++		timings.oe_off = WB_GPMC_OE_t_o_f_f;
++		timings.access = WB_GPMC_RD_t_a_c_c;
++		timings.rd_cycle = WB_GPMC_BUSCYC_t;
++
++		/* we timing */
++		timings.we_on = WB_GPMC_WE_t_o_n;
++		timings.we_off = WB_GPMC_WE_t_o_f_f;
++		timings.wr_access = WB_GPMC_WR_t_a_c_c;
++		timings.wr_cycle = WB_GPMC_BUSCYC_t;
++
++		timings.page_burst_access = WB_GPMC_BUSCYC_t;
++		timings.wr_data_mux_bus = WB_GPMC_BUSCYC_t;
++		gpmc_cs_set_timings(AST_GPMC_CS, &timings);
++
++		/*
++		 * DISABLE cs4, NOTE GPMC REG7 is already configured
++		 * at this point by gpmc_cs_request
++		 */
++		tmp32 = gpmc_cs_read_reg(AST_GPMC_CS, GPMC_CS_CONFIG7) &
++						~GPMC_CONFIG7_CSVALID;
++		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7, tmp32);
++
++		/*
++		 * PROGRAM chip select Region, (see OMAP3430 TRM PAGE 1088)
++		 */
++		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7,
++					(AS_CS_MASK | AS_CS_BADDR));
++
++		/*
++		 * by default configure GPMC into 8 bit mode
++		 * (to match astoria default mode)
++		 */
++		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
++					(GPMC_CONFIG1_DEVICETYPE(2) |
++					GPMC_CONFIG1_WAIT_PIN_SEL(2)));
++
++		/*
++		 * ENABLE astoria cs operation on GPMC
++		 */
++		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7,
++						(tmp32 | GPMC_CONFIG7_CSVALID));
++		retval = 0;
++		break;
++	default:
++		retval = -EINVAL;
++		break;
++	}
++
++	return retval;
++
++}
++EXPORT_SYMBOL(cywb_pnand_platform_retime);
++
