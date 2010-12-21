@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933487Ab0LUCDj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 21:03:39 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:38969 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933040Ab0LUCDi convert rfc822-to-8bit (ORCPT
+	id S933448Ab0LUCLI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 21:11:08 -0500
+Received: from mail-fx0-f66.google.com ([209.85.161.66]:52361 "EHLO
+	mail-fx0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933294Ab0LUCLG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 21:03:38 -0500
+	Mon, 20 Dec 2010 21:11:06 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :content-type:content-transfer-encoding;
-        b=HFe47C5f7sOJGzgQn++OY8cpKYgtOKgPKgXB5xQTOIRqBkjD8aZP112I1RxnrhRAbt
-         wR/8jaQ6iwYLaTkcSgSNRbHvR0Bg+dfD6efOsmpSWzGAWfn54DMvA1xZ1j0JONSYwXdb
-         GenZIupmuNs6NW1HUyZ8dRlnxTYiX0MNnJCQw=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=eVSDudECl6ga7h7UPddr7a+o+Qiuh+MbxI5a9utibVYjQeyLPUg7NE8Ua/8vnn7Z86
+         rTz5f7OlT/3q3KzCf/f+Uu2DdsetO8RxmMDzLzYk6t/PJMOSDFwyut+r2AB+vh3y3HiL
+         R7rY+FxCZhAvl0DSRG18q8fpFG5qZi/3mcYKM=
+Date: Tue, 21 Dec 2010 03:10:59 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 06/15] nohz_task: Keep the tick if rcu needs it
+Message-ID: <20101221021046.GQ1715@nowhere>
+References: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
+ <1292858662-5650-7-git-send-email-fweisbec@gmail.com>
+ <1292860700.5021.14.camel@laptop>
+ <20101220234934.GD1715@nowhere>
+ <20101220171259.1d3cb6ad@bike.lwn.net>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTings_UPY4xSGe39X3GB8g9V=betWASk9YhspiTN@mail.gmail.com>
-References: <AANLkTings_UPY4xSGe39X3GB8g9V=betWASk9YhspiTN@mail.gmail.com>
-From: AJ ONeal <coolaj86@gmail.com>
-Date: Mon, 20 Dec 2010 19:03:16 -0700
-Message-ID: <AANLkTim_AGDhuOo4WCHQiN+w0K5RUK8Rn+MGcSSndhXV@mail.gmail.com>
-Subject: Re: SIGBUS caused by mmap and memcpy that doesn't go away after
- application restart
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101220171259.1d3cb6ad@bike.lwn.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Perhaps this is the wrong list to be asking.
-If so will someone kindly suggest a better place?
+On Mon, Dec 20, 2010 at 05:12:59PM -0700, Jonathan Corbet wrote:
+> On Tue, 21 Dec 2010 00:49:38 +0100
+> Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 
+> > Nope, the new config can only be built after [RFC PATCH 11/15] x86: Nohz task support
+> > 
+> > I know I split up the patches in some unusual way but I did that on purpose:
+> > I wanted to have a finegrained patchset so that it's more reviewable than a big
+> > "core support" - "arch support" dual patch based style.
+> > 
+> > But I ensured the new config can not be enabled before it's entirely buildable
+> > and has no known bugs.
+> 
+> Which is a nice thought (it helped me to understand the patches - article
+> forthcoming)
 
-AJ ONeal
+Oh great :)
+
+> but there is a downside: if anybody tries to bisect a
+> problem, they'll end up at #11.  This stuff is sufficiently tricky that it
+> would be nice to be able to bisect a little closer to the patch which
+> actually introduced a bug.
 
 
-On Mon, Dec 20, 2010 at 4:08 PM, AJ ONeal <coolaj86@gmail.com> wrote:
-> After posting to my local LUG I was told to ask about the possibility
-> of a kernel bug here
->
->
-> I have an application which runs for several hours in the same loop
-> correctly, but eventually dies with SIGBUS.
->
-> If I try to start the application again it immediately exits with
-> SIGBUS and will not work until rebooted.
->
-> gdb reports
-> Program received signal SIGBUS, Bus error.
-> 0x401bd354 in memcpy () from /lib/libc.so.6
-> (gdb) bt
-> #0  0x401bd354 in memcpy () from /lib/libc.so.6
-> #1  0x0000929c in capture_file_write ()
-> #2  0x0fefeb0a in ?? ()
-> #3  0x0fefeb0a in ?? ()
->
-> Any ideas on what causes this error?
-> How do I go about finding what #2 and #3 are?
->
->
-> The system is a ARM OMAP3530 (Gumstix Overo). The kernel is 3.6.36.
->
-> This is the application flow:
->
-> count = 0
-> do
->    outfile = /dev/shm/output.{#count}.dat
->    data = read logged.dat for 512kb
->    unlink outfile if exists
->    truncate outfile to 512kb
->    outfile_p = mmap outfile
->    memcpy data outfile_p
->    munmap
->    count += 1
->    if count > MAX; count = 0
->    advance or rewind logged.dat
-> loop
->
-> I can post a link to a gist of the source upon request.
->
-> AJ ONeal
->
+Yeah indeed. I think I could split that up another way while keeping the fine
+grained progression (if any).
+
+I could enable the interface and CONFIG a bit sooner, once we have the support
+for tick stop and restart handling basic things like woken up tasks and rcu
+pending works checks.
+And then handle the rcu extended grace periods in userspace later.
+Because it works without, the nohz task would just be regularly interrupted by
+rcu IPIs to note the quiescent states.
+
+There are lots of changes to be done anyway, so I'm sure there will be enough
+new takes of this for me to train more patchset split-up flavours ;-)
