@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933114Ab0LUAsV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 19:48:21 -0500
-Received: from mga02.intel.com ([134.134.136.20]:34286 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754388Ab0LUAsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 19:48:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,205,1291622400"; 
-   d="scan'208";a="689107365"
-Subject: Re: [concept & "good taste" review] persistent store
-From: Huang Ying <ying.huang@intel.com>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>, "greg@kroah.com" <greg@kroah.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-In-Reply-To: <AANLkTikULE_Jncjs=PkARjZyxb=f+t=4J8g8LQL+L=BZ@mail.gmail.com>
-References: <4d0662e511688484b3@agluck-desktop.sc.intel.com>
-	 <AANLkTindPUkF7fCkdbqSstNHFjF3_7fEYh18nhQFx_AJ@mail.gmail.com>
-	 <AANLkTim3OpjPysjdCLDuFgFOipmcxyr2ay5cvUAu5PHi@mail.gmail.com>
-	 <AANLkTinpYJddhgbf7=Pw_TtGrnWaC8fwo2xv1XRsT1w7@mail.gmail.com>
-	 <AANLkTimA4x8oWyq71nOxB=Otp3Y0i3Kcu27DG0ajaXUG@mail.gmail.com>
-	 <AANLkTinCG+E6ZzpeRqsJP+-qvNDQXW4VZFgJ1c-sTryL@mail.gmail.com>
-	 <4D0BEE1F.7020008@zytor.com>
-	 <AANLkTinwFt+KDKNEYP9MWQ7wGb9qk=E2Xa3RJB3+MJnN@mail.gmail.com>
-	 <AANLkTinoV_pL=Ygqq4qt4f8c+wsdc9r9K7rcJ58aHjD1@mail.gmail.com>
-	 <AANLkTikhtWjFBQmA111Q+2JGRudrRNAmegGThMagr4vF@mail.gmail.com>
-	 <20101219091752.GA16150@liondog.tnic>
-	 <AANLkTi=9UZ5BYWo5xT=jh0upRP6PraH4S=t=tL49YRdr@mail.gmail.com>
-	 <1292813234.8743.66.camel@yhuang-dev>
-	 <AANLkTikULE_Jncjs=PkARjZyxb=f+t=4J8g8LQL+L=BZ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Dec 2010 08:48:14 +0800
-Message-ID: <1292892494.8743.76.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S933138Ab0LUA4D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 19:56:03 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:58921 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932628Ab0LUA4B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 19:56:01 -0500
+Message-ID: <4D0FFB1A.7070407@cn.fujitsu.com>
+Date: Tue, 21 Dec 2010 08:55:54 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] tracing: Fix preempt count leak
+References: <4D0089AC.1020802@cn.fujitsu.com>
+In-Reply-To: <4D0089AC.1020802@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-12-21 08:55:47,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-12-21 08:55:49,
+	Serialize complete at 2010-12-21 08:55:49
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-12-21 at 01:19 +0800, Tony Luck wrote:
-> On Sun, Dec 19, 2010 at 6:47 PM, Huang Ying <ying.huang@intel.com> wrote:
-> > 8KB is about 100-200 lines message, sometimes it may be not enough for
-> > all necessary information.  But in fact, we can use multiple ERST
-> > records to save one kernel message dumping. So the real limitation is
-> > just total storage capacity.
+Any comment?
+
+15:47, Li Zefan wrote:
+> While running my ftrace stress test, this showed up:
 > 
-> We can - but it will be a bit messy within my pstore + platform driver
-> framework (I'd have to have erst tell pstore that it could handle some
-> larger size, 2x or 3x the actual record size and then break a write
-> into pieces. Presumably re-assemble on the read side too).
-
-If persistent storage driver (such as ERST) implements kmsg_dumper by
-themselves, that should be easier to use multiple records for one
-message dumping request.
-
-Best Regards,
-Huang Ying
-
-
+> BUG: sleeping function called from invalid context at mm/mmap.c:233
+> ...
+> note: cat[3293] exited with preempt_count 1
+> 
+> The bug was introduced by commit 91e86e560d0b3ce4c5fc64fd2bbb99f856a30a4e
+> ("tracing: Fix recursive user stack trace")
+> 
+> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+> ---
+>  kernel/trace/trace.c |    6 ++----
+>  1 files changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index c380612..5767457 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -1313,12 +1313,10 @@ ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags, int pc)
+>  
+>  	__this_cpu_inc(user_stack_count);
+>  
+> -
+> -
+>  	event = trace_buffer_lock_reserve(buffer, TRACE_USER_STACK,
+>  					  sizeof(*entry), flags, pc);
+>  	if (!event)
+> -		return;
+> +		goto out_drop_count;
+>  	entry	= ring_buffer_event_data(event);
+>  
+>  	entry->tgid		= current->tgid;
+> @@ -1333,8 +1331,8 @@ ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags, int pc)
+>  	if (!filter_check_discard(call, entry, buffer, event))
+>  		ring_buffer_unlock_commit(buffer, event);
+>  
+> + out_drop_count:
+>  	__this_cpu_dec(user_stack_count);
+> -
+>   out:
+>  	preempt_enable();
+>  }
