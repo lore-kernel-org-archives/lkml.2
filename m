@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039Ab0LUUCa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 15:02:30 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:60716 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752858Ab0LUUC1 (ORCPT
+	id S1753010Ab0LUUTb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 15:19:31 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36419
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751223Ab0LUUTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 15:02:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=Dqw2s+yKH+zhgTJq9eA5NeRGJAtX9oCLIb9nUvMFSiJBl7/q0bOyWlczPjX0QzndkS
-         gXFjyzC4luLxytCO5hjEhJiIs1KAeHi3wZbIQXtfH2XYMuElSrx8CCelo5jnV6zix3U6
-         5igJFEu1lUa+2IFDSUZFwQ6IKP1wJQvKPLveg=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTik94Go7W4AMquncm-novWkHtLOBRn7BfpepoEZz@mail.gmail.com>
-References: <1292866298-8585-1-git-send-email-per.forlin@stericsson.com>
-	<AANLkTi=7E7rAc=46p5d6YSpLeut5yehmBtLa4TVofefp@mail.gmail.com>
-	<AANLkTin=U6j4XTmCq4H4sKivD+jecxor3Q-7mYFDfD=N@mail.gmail.com>
-	<AANLkTik94Go7W4AMquncm-novWkHtLOBRn7BfpepoEZz@mail.gmail.com>
-Date: Tue, 21 Dec 2010 12:02:26 -0800
-X-Google-Sender-Auth: WDvSwmU220M14C_vvhqdz6DsN8Q
-Message-ID: <AANLkTi=b45nmd+-yMKB_+AEyS6=9-aa+aBACUkZJLo_v@mail.gmail.com>
-Subject: Re: [PATCH] dmaengine: dma40: Add support to split up large elements
-From: Dan Williams <dan.j.williams@intel.com>
-To: Linus Walleij <linus.ml.walleij@gmail.com>
-Cc: Per Forlin <per.forlin@stericsson.com>, linux-kernel@vger.kernel.org,
-        Per Forlin <per.forlin@linaro.org>,
-        Rabin VINCENT <rabin.vincent@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 21 Dec 2010 15:19:30 -0500
+Date: Tue, 21 Dec 2010 12:20:00 -0800 (PST)
+Message-Id: <20101221.122000.183069341.davem@davemloft.net>
+To: tj@kernel.org
+Cc: mchan@broadcom.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next-2.6] bnx2: remove cancel_work_sync() from
+ remove_one
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20101221105103.GA32744@htj.dyndns.org>
+References: <4D08C81D.8020606@kernel.org>
+	<20101220.131146.115941299.davem@davemloft.net>
+	<20101221105103.GA32744@htj.dyndns.org>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 21, 2010 at 11:28 AM, Linus Walleij
-<linus.ml.walleij@gmail.com> wrote:
-> 2010/12/21 Dan Williams <dan.j.williams@intel.com>:
->
->> If that is the case then the temporary fix for 2.6.37 is along the
->> lines of fixing up the clients to not submit such large requests.
->
-> They don't, currently. We actually had some debate about this
-> internally, because the only driver submitting something >64K-1
-> was the MMCI driver (which is yet not in mainline) and yes, indeed
-> the suggested solution was to amend the MMCI driver
-> for the time being.
->
-> I insisted on doing this fix anyway because I was under the
-> impression that memcpy() is supposed to handle *any* size of
-> request, is this the intention?
+From: Tejun Heo <tj@kernel.org>
+Date: Tue, 21 Dec 2010 11:51:04 +0100
 
-Yes, the api does not enforce a limit if a driver cannot handle a
-given transaction size it can fail the prep.  To be useful the driver
-at least needs to support PAGE_SIZE requests.
+> Yeah, I agree the synchronize_rcu() there would guarantee the actual
+> timer completion but as it currently stands it looks a bit too subtle.
+> Maybe it's a good idea to add a big fat comment explaining that the
+> the timer is guaranteed to stop after close() and how it's guaranteed
+> through synchronize_rcu() at the moment?  Also, it might be better to
+> use synchronize_sched() there as timer synchronization through
+> synchronize_rcu() is more of a happy accident.
 
-> Since its semantics are not documented as far as I can see I
-> was maybe misguided in assuming that any size of buffer should
-> be possible to pass in... :-(
+I'm not sure the synchronize_*() is even necessary to guarentee
+watchdog timer completion.
 
-No, you made the right call.  This is just a large change that I would
-have a hard time justifying at this stage of the release process,
-especially because mainline can't trigger it, even dmatest by default
-cannot trigger it.  So I'll queue it up for the merge window.
+Like I said, I think the netif_tx_lock() held around both the timer
+function itself, and the del_timer() call, are sufficient.
 
-If you want to send a patch that catches and reports this byte count
-in case some out of tree user submits a large request that would be an
-acceptable workaround for 37.  >64K support is a new feature for 38.
+So, this ensures that the watchdog timer either runs to completion or
+sees the no-op scheduler attached and returns immediately without
+rescheduling the timer.
 
---
-Dan
+In any event, I'm going to apply your bnx2 patch to net-next-2.6
+
+Thanks.
