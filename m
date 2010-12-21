@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab0LUN5N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 08:57:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38645 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751928Ab0LUN5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 08:57:12 -0500
-Message-ID: <4D10B214.8010305@redhat.com>
-Date: Tue, 21 Dec 2010 15:56:36 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+	id S1752044Ab0LUN67 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 08:58:59 -0500
+Received: from mail-bw0-f45.google.com ([209.85.214.45]:47354 "EHLO
+	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280Ab0LUN66 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 08:58:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=qD8juxDcHxFCk8Yyd0sKBnGdUCokf+9JfH2e8li0hH3M4vRDiVvxaQXB+lCNMbZPQB
+         yM9hyG6/LXjJfgjrgRyDSzsq0BRndifSD+3XreEeK4dlxA/47cfM4Yt6VhZHgw9zIrPE
+         ziRC5ZUvDq2xA/kRaXlQfVfoWKt9yg6HA/kbg=
+Date: Tue, 21 Dec 2010 14:58:52 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Anton Blanchard <anton@au1.ibm.com>,
         Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 00/15] Nohz task support
-References: <1292858662-5650-1-git-send-email-fweisbec@gmail.com> <1292859886.22905.22.camel@gandalf.stny.rr.com> <20101220233341.GA1715@nowhere>
-In-Reply-To: <20101220233341.GA1715@nowhere>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [RFC PATCH 02/15] nohz_task: Avoid nohz task cpu as non-idle
+ timer target
+Message-ID: <20101221135849.GE1750@nowhere>
+References: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
+ <1292858662-5650-3-git-send-email-fweisbec@gmail.com>
+ <1292860078.5021.6.camel@laptop>
+ <1292861202.22905.23.camel@gandalf.stny.rr.com>
+ <1292861524.5021.22.camel@laptop>
+ <20101221002005.GH1715@nowhere>
+ <1292917902.5021.181.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292917902.5021.181.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2010 01:33 AM, Frederic Weisbecker wrote:
-> On Mon, Dec 20, 2010 at 10:44:46AM -0500, Steven Rostedt wrote:
-> >  On Mon, 2010-12-20 at 16:24 +0100, Frederic Weisbecker wrote:
-> >  >  The timer interrupt handles several things like preemption,
-> >  >  timekeeping, rcu, etc...
-> >  >
-> >  >  However it appears that sometimes it is simply useless like
-> >  >  when a task runs alone and even more when it is in userspace
-> >  >  as RCU doesn't need it at all in such case.
-> >  >
-> >  >  It appears that HPC workload would get some win of such timer
-> >  >  deactivation, and perhaps also the Real Time world as this
-> >  >  minimizes the critical sections due to way less interrupts to
-> >  >  handle.
-> >  >
-> >  >  It works through the procfs interface:
-> >  >
-> >  >  echo 1>  /proc/self/nohz
-> >
-> >  I wounder if we could just have this happen automatically.
->
-> But this would add some global overhead, especially in the syscall
-> path as we need to take the slow path to hook userspace resume/exit.
+On Tue, Dec 21, 2010 at 08:51:42AM +0100, Peter Zijlstra wrote:
+> On Tue, 2010-12-21 at 01:20 +0100, Frederic Weisbecker wrote:
+> > I can certainly deactivate TIMER_NOT_PINNED and make it a no-op
+> > if CONFIG_NO_HZ_TASK.
+> 
+> Why would you want to make that a compile time switch? Dynamic is
+> trivial to do.
 
-This is zero as there is already a test on thread_info->flags on the 
-syscall exit path.
-
-(or I misunderstood you - what's the purpose of the slow path?)
-
--- 
-error compiling committee.c: too many arguments to function
-
+Yep, I did not know the proc file at that time.
