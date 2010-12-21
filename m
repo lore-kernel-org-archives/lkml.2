@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717Ab0LUT1s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 14:27:48 -0500
-Received: from mail-fx0-f66.google.com ([209.85.161.66]:57542 "EHLO
-	mail-fx0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751793Ab0LUT1q (ORCPT
+	id S1752754Ab0LUT2X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 14:28:23 -0500
+Received: from mail-px0-f179.google.com ([209.85.212.179]:55512 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab0LUT2W convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 14:27:46 -0500
+	Tue, 21 Dec 2010 14:28:22 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Wnyv8Q7sVwockU6lvBo6l791xNHnB5nTRGy0WLDou4W6Hu7+Qx65z67AZIBDuGDPn8
-         6eWFiJ9srezIT/KAlzlz199DOMpm+h43vSig99cznquy7qeIhxmozALeQngBXPyQlgwi
-         zt0VXfGHNte7JjPvBpf36Cb99iPzkEMVRmT/c=
-Date: Tue, 21 Dec 2010 20:27:41 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 09/15] rcu: Make rcu_enter,exit_nohz() callable
- from irq
-Message-ID: <20101221192739.GR1750@nowhere>
-References: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
- <1292858662-5650-10-git-send-email-fweisbec@gmail.com>
- <20101221192635.GO2143@linux.vnet.ibm.com>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=OsG8gebQEE9o4GhBiaiP8LlgFy5/P7J+xf1AQkCeFzXBLJ29kWT0s4rV4nrNk1vFdy
+         eE2N+FjcB2tI4nviR3MNJBauA8wIoyK+FJzhMoTz6aAkgWFwKHiu5wJMj4NUWh0ZRmpL
+         +8Tpyf7Xq3kjBl1Sr46oPpK22CX4BjVZvP1Zw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101221192635.GO2143@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTin=U6j4XTmCq4H4sKivD+jecxor3Q-7mYFDfD=N@mail.gmail.com>
+References: <1292866298-8585-1-git-send-email-per.forlin@stericsson.com>
+	<AANLkTi=7E7rAc=46p5d6YSpLeut5yehmBtLa4TVofefp@mail.gmail.com>
+	<AANLkTin=U6j4XTmCq4H4sKivD+jecxor3Q-7mYFDfD=N@mail.gmail.com>
+Date: Tue, 21 Dec 2010 20:28:21 +0100
+Message-ID: <AANLkTik94Go7W4AMquncm-novWkHtLOBRn7BfpepoEZz@mail.gmail.com>
+Subject: Re: [PATCH] dmaengine: dma40: Add support to split up large elements
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Per Forlin <per.forlin@stericsson.com>, linux-kernel@vger.kernel.org,
+        Per Forlin <per.forlin@linaro.org>,
+        Rabin VINCENT <rabin.vincent@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 21, 2010 at 11:26:35AM -0800, Paul E. McKenney wrote:
-> On Mon, Dec 20, 2010 at 04:24:16PM +0100, Frederic Weisbecker wrote:
-> > In order to be able to enter/exit into rcu extended quiescent
-> > state from interrupt, we need to make rcu_enter_nohz() and
-> > rcu_exit_nohz() callable from interrupts.
-> > 
-> > So, this proposes a new implementation of the rcu nohz fast path
-> > related helpers, where rcu_enter_nohz() or rcu_exit_nohz() can
-> > be called between rcu_enter_irq() and rcu_exit_irq() while keeping
-> > the existing semantics.
-> > 
-> > We maintain three per cpu fields:
-> > 
-> > - nohz indicates we entered into extended quiescent state mode,
-> > we may or not be in an interrupt even if that state is set though.
-> > 
-> > - irq_nest indicates we are in an irq. This number is incremented on
-> > irq entry and decreased on irq exit. This includes NMIs
-> > 
-> > - qs_seq is increased everytime we see a true extended quiescent
-> > state:
-> > 	* When we call rcu_enter_nohz() and we are not in an irq.
-> > 	* When we exit the outer most nesting irq and we are in
-> > 	  nohz mode (rcu_enter_nohz() was called without a pairing
-> > 	  rcu_exit_nohz() yet).
-> > 
-> > >From that three-part we can deduce the extended grace periods like
-> > we did before on top of snapshots and comparisons.
-> > 
-> > If nohz == 1 and irq_nest == 0, we are in a quiescent state. qs_seq
-> > is used to keep track of elapsed extended quiescent states, useful
-> > to compare snapshots of rcu nohz state.
-> > 
-> > This is experimental and does not take care of barriers yet.
-> 
-> Indeed!!!
-> 
-> I will likely be reworking the dyntick interface soon anyway, so will
-> try to make sure that your requirements are met.
+2010/12/21 Dan Williams <dan.j.williams@intel.com>:
 
-Great, thanks!
+> If that is the case then the temporary fix for 2.6.37 is along the
+> lines of fixing up the clients to not submit such large requests.
+
+They don't, currently. We actually had some debate about this
+internally, because the only driver submitting something >64K-1
+was the MMCI driver (which is yet not in mainline) and yes, indeed
+the suggested solution was to amend the MMCI driver
+for the time being.
+
+I insisted on doing this fix anyway because I was under the
+impression that memcpy() is supposed to handle *any* size of
+request, is this the intention?
+
+Since its semantics are not documented as far as I can see I
+was maybe misguided in assuming that any size of buffer should
+be possible to pass in... :-(
+
+>  You
+> mention the "memcpy api contract" can this be triggered outside of
+> dmatest?
+
+Nope. That and out-of-tree MMCI.
+
+So for the next merge window it is, if the patch is semantically
+correct.
+
+Yours,
+Linus Walleij
