@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933619Ab0LUEma (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 23:42:30 -0500
-Received: from kroah.org ([198.145.64.141]:44633 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933557Ab0LUEmK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 23:42:10 -0500
-Date: Mon, 20 Dec 2010 20:42:05 -0800
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [GIT PATCH] TTY/serial fixes for .37-rc6
-Message-ID: <20101221044205.GB11750@kroah.com>
+	id S933583Ab0LUEqw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 23:46:52 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:3174 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933560Ab0LUEqv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 23:46:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=t0U7kvkO2IfRbS/H9qmAX3hRrb4DxJzXwjlIMbVbZY3CsTOHnWVdvCON5ZMPBx1GJN
+         ZL32rZXk4oIaQKLflFlQ==
+Date: Mon, 20 Dec 2010 20:46:40 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hughd@tigran.mtv.corp.google.com
+To: AJ ONeal <coolaj86@gmail.com>
+cc: Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: Memory Leak in /dev/shm on ARM 2.6.36
+In-Reply-To: <AANLkTimze4agnNRM_HVnQ1=B44pWy_D+OmeUYFvCSwMy@mail.gmail.com>
+Message-ID: <alpine.LSU.2.00.1012202037080.15253@tigran.mtv.corp.google.com>
+References: <AANLkTimze4agnNRM_HVnQ1=B44pWy_D+OmeUYFvCSwMy@mail.gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are two tty fixes for your .37-rc6 tree.
+On Mon, 20 Dec 2010, AJ ONeal wrote:
 
-Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/tty-2.6.git/ tty-linus
+> In my other message about SIGBUS I was mmap-ing a file in /dev/shm.
+> 
+> I switched my implementation to use write() instead of mmap and now it
+> leaks memory very very quickly.
+> 
+> `df -h` shows that 80mb of memory are in use
+> `du -ch /dev/shm` shows that 10mb of memory in use
+> 
+> After just a few minutes of creating and removing 512kb files in
+> /dev/shm the program exits with a write failure.
+> Unmounting and remounting /dev/shm reclaims the memory.
 
-Both of these have been in the -next and -mm releases for a while.
+I'm interested, but won't have any time to investigate for several days.
 
-Patches will be sent to the linux-kernel mailing list, if anyone wants
-to see them.
+The usual reason (for such a large df/du discrepancy) would be something
+holding open the unlinked files; but if that were the case, then umount
+would fail, complaining that the mount is busy.
 
-thanks,
+Can you please try x86 and see if the same happens there with your
+program?  (I've got x86 but not arm: I see no problem on x86,
+but I'm probably not doing exactly what you're doing.)
 
-greg k-h
+Can you please try 2.6.35 and see if that behaves in the same way?
+There were some shmem block accounting changes in 2.6.36, I wonder
+if they're misbehaving on arm.
 
-------------
-
- drivers/tty/n_gsm.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
----------------
-
-Ken Mills (2):
-      n_gsm: Fix message length handling when building header
-      n_gsm: gsm_data_alloc buffer allocation could fail and it is not being checked
-
+Thanks,
+Hugh
