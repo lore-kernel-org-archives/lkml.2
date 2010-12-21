@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933409Ab0LUBa2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 20:30:28 -0500
-Received: from mail-fx0-f66.google.com ([209.85.161.66]:46936 "EHLO
-	mail-fx0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932864Ab0LUBa1 (ORCPT
+	id S933418Ab0LUBbA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 20:31:00 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:35522 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932864Ab0LUBa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 20:30:27 -0500
+	Mon, 20 Dec 2010 20:30:58 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=HOKQH3wAiDIIgtsj4IaXpKR9RF5l/CuPc1N19w0WbgLOyUbuUWX88rd3zOLxszDJ9Q
-         y5ZLl2+OzxAvhZMKBLh13a7+6YlZWiOSzLi0PyAic3w5rw/ZIIBF+ee/bFd7ujdTXaWt
-         tKqy6iAQXhsIqKi9DO0GM5TohGdjfIR7BGmCk=
-Date: Tue, 21 Dec 2010 02:30:21 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 11/15] x86: Nohz task support
-Message-ID: <20101221013019.GK1715@nowhere>
-References: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
- <1292858662-5650-12-git-send-email-fweisbec@gmail.com>
- <1292862199.5021.32.camel@laptop>
+        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=IcXn7j42ugbpbQo6n+I3FN1v+mDZKzEMqeEKKrDFaMQCFB9XzvKbNVubWgNqnw82ls
+         P9zaPKuUyT9TssXU1btOO7TPDv8+d3qG7Y2sFKj4sygSx+ImO6+eMlvgQHi6Bd6YM6Xx
+         F+fstLegnboR0k2lu8FACSBVh2Tt3cTwFk8aQ=
+From: Thiago Farina <tfransosi@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mike Miller <mike.miller@hp.com>, iss_storagedev@hp.com
+Subject: [PATCH] drivers/block/cciss.c: Fix compiling error by adding ';' at the end of continue statement.
+Date: Mon, 20 Dec 2010 23:24:05 -0200
+Message-Id: <d1169c43a6baf75fe24f97c8c535288759354af5.1292894545.git.tfransosi@gmail.com>
+X-Mailer: git-send-email 1.7.3.2.343.g7d43d
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292862199.5021.32.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 20, 2010 at 05:23:19PM +0100, Peter Zijlstra wrote:
-> On Mon, 2010-12-20 at 16:24 +0100, Frederic Weisbecker wrote:
-> > 
-> > Implement the thread flag, syscalls and exception hooks for
-> > nohz task support.
-> > 
-> 
-> I saw:
->  - syscall
->  - do_int3
->  - do_debug (int1)
->  - #PF
-> 
-> So where's all other interrupts?
+This fix the following error:
 
-No need to handle them.
+drivers/block/cciss.c: In function ‘cciss_revalidate’:
+drivers/block/cciss.c:2839: error: expected ‘;’ before ‘if’
+make[2]: *** [drivers/block/cciss.o] Error 1
+make[2]: Target `__build' not remade because of errors.
+make[1]: *** [drivers/block] Error 2
 
-We have:
+Signed-off-by: Thiago Farina <tfransosi@gmail.com>
+---
+ drivers/block/cciss.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-rcu_irq_enter() rcu_irq_exit() rcu_nmi_enter() rcu_nmi_exit()
-and they already act as pauses into extended quiescent states, which
-is enough for our needs.
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+index 233e06c..8e0f925 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -2835,7 +2835,7 @@ static int cciss_revalidate(struct gendisk *disk)
+ 
+ 	for (logvol = 0; logvol < CISS_MAX_LUN; logvol++) {
+ 		if (!h->drv[logvol])
+-			continue
++			continue;
+ 		if (memcmp(h->drv[logvol]->LunID, drv->LunID,
+ 			sizeof(drv->LunID)) == 0) {
+ 			FOUND = 1;
+-- 
+1.7.3.2.343.g7d43d
+
