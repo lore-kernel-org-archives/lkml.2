@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753842Ab0LUHcn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 02:32:43 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:49517 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752689Ab0LUHcm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 02:32:42 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=eP/fIt39D4sZTnFTdQhhEv2Tob66B2uEzOnh8vtirVyzvlgahw7xoNltk2jmPmUkKH
-         OjKrn//Ah4DpoPgwZcXtyJjaoyXeMZZrBAojdvwRBi8doY5gr5+E9AKBfA7SneiL1Kiw
-         6d4r98PkkL8PiArPfffKyd2o8hTe7BXMdk8oI=
+	id S1753943Ab0LUHds (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 02:33:48 -0500
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:54352 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753163Ab0LUHdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 02:33:47 -0500
+Message-ID: <4D105858.2020209@kernel.dk>
+Date: Tue, 21 Dec 2010 08:33:44 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1012202048220.15447@tigran.mtv.corp.google.com>
-References: <cover.1292604745.git.minchan.kim@gmail.com>
-	<20101220103307.GA22986@infradead.org>
-	<AANLkTikss0RW_xRrD_vVvfqy1rH+NC=WPUB2qKBaw5qo@mail.gmail.com>
-	<alpine.LSU.2.00.1012202048220.15447@tigran.mtv.corp.google.com>
-Date: Tue, 21 Dec 2010 16:32:41 +0900
-Message-ID: <AANLkTimMKjLRiV5dpZL0wJ0FWLJyqQ8oNJbCQt9ZdrHP@mail.gmail.com>
-Subject: Re: [RFC 0/5] Change page reference hanlding semantic of page cache
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+To: Michal Marek <mmarek@suse.cz>
+CC: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        akpm@linux-foundation.org, smcameron@yahoo.com,
+        linux-kernel@vger.kernel.org, mike.miller@hp.com, thenzl@redhat.com,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] cciss: fix cciss_revalidate panic.
+References: <20101216190200.630.8596.stgit@beardog.cce.hp.com> <4D0B190E.1030206@kernel.dk> <20101220234213.GA10060@sepie.suse.cz>
+In-Reply-To: <20101220234213.GA10060@sepie.suse.cz>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 21, 2010 at 2:07 PM, Hugh Dickins <hughd@google.com> wrote:
-> On Tue, 21 Dec 2010, Minchan Kim wrote:
->> On Mon, Dec 20, 2010 at 7:33 PM, Christoph Hellwig <hch@infradead.org> wrote:
->> > You'll need to merge all patches into one, otherwise you create really
->> > nasty memory leaks when bisecting between them.
->> >
+On 2010-12-21 00:42, Michal Marek wrote:
+> On Fri, Dec 17, 2010 at 09:02:22AM +0100, Jens Axboe wrote:
+>> On 2010-12-16 20:02, Stephen M. Cameron wrote:
+>>> From: Stephen M. Cameron <StephenM.Cameron>
+>>>
+>>> If you delete a logical drive, and then run BLKRRPART (e.g. via fdisk)
+>>> on a logical drive which is "after" the deleted logical drive in the h->drv[]
+>>> array, then cciss_revalidate panics because it will access the null pointer
+>>> h->drv[x] when x hits the deleted drive.
 >>
->> Okay. I will resend.
->>
->> Thanks for the notice, Christoph.
->
-> Good point from hch, but I feel even more strongly: if you're going to
-> do this now, please rename remove_from_page_cache (delete_from_page_cache
-> was what I chose back when I misdid it) - you're changing an EXPORTed
-> function in a subtle (well, subtlish) confusing way, which could easily
-> waste people's time down the line, whether in not-yet-in-tree filesystems
-> or backports of fixes.  I'd much rather you break someone's build,
-> forcing them to look at what changed, than crash or leak at runtime.
->
-> If you do rename, you can keep your patch structure, introducing the
-> new function as a wrapper to the old at the beginning, then removing
-> the old function at the end.
+>> Thanks Stephen. I put this in for-linus for 2.6.37 and marked it for
+>> stable backport.
+> 
+> This got applied without the semicolon after 'continue' somehow and
+> broke build. Please apply the patch below.
 
-It is very good idea!!
-Thanks for good suggestion, Hugh.
-
->
-> (As you know, I do agree that it's right to decrement the reference
-> count at the point of removing from page cache.)
->
-> Hugh
->
-
-
+I wonder how that happened. Thanks, I'll fix it up.
 
 -- 
-Kind regards,
-Minchan Kim
+Jens Axboe
+
