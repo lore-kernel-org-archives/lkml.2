@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933640Ab0LUJFF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 04:05:05 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:58215 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758035Ab0LUJEx (ORCPT
+	id S932695Ab0LUJF1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 04:05:27 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:55148 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933647Ab0LUJFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 04:04:53 -0500
-X-AuditID: b753bd60-a26f8ba000000f8d-ac-4d106db35aad
+	Tue, 21 Dec 2010 04:05:08 -0500
+X-AuditID: b753bd60-a7da7ba000003e7d-24-4d106dc1629e
 From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Subject: [PATCH -tip v2 1/6] perf: Introduce perf sub command 'bts record'
+Subject: [PATCH -tip v2 3/6] perf bts trace: print pid and command
 To: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <peterz@infradead.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
@@ -21,8 +21,8 @@ Cc: linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
         Arnaldo Carvalho de Melo <acme@infradead.org>
-Date: Tue, 21 Dec 2010 18:05:42 +0900
-Message-ID: <20101221090542.8552.36227.stgit@localhost6.localdomain6>
+Date: Tue, 21 Dec 2010 18:05:56 +0900
+Message-ID: <20101221090556.8552.22624.stgit@localhost6.localdomain6>
 In-Reply-To: <20101221090527.8552.41486.stgit@localhost6.localdomain6>
 References: <20101221090527.8552.41486.stgit@localhost6.localdomain6>
 User-Agent: StGIT/0.14.3
@@ -35,24 +35,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce the easy way to record bts log, 'perf bts record'.
-This command can record the bts log while specified command is executing,
-and save to the file "perf.data"
+Provide the function of printing pid and command name to
+'perf bts trace'. Users can select items to print with options.
+For example,
+    'perf bts -p trace' prints only pid,
+    'perf bts -ac trace' prints address and comamnd name.
+    'perf bts trace' prints only address (default)
 
-Usage:
-  perf bts record <tracee command>
-
-Example:
-  # perf bts record ls -l
-    (ls -l outputs)
-  [ perf record: Woken up 1 times to write data ]
-  [ perf record: Captured and wrote 0.007 MB perf.data (~320 samples) ]
-  # ls
-    perf.data
-
-Changes in V2:
- - Update to the latest -tip tree
- - add bts explanation to the subcommand list
+This is output sample (perf bts -ac trace):
+command      address
+ls           0xffffffff8146fe0e => ls           0x0000003806200b20
+ls           0xffffffff8146fe0e => ls           0x0000003806200b20
+ls           0x0000003806200b23 => ls           0x0000003806204910
+ls           0xffffffff8146fe0e => ls           0x0000003806204910
+ls           0xffffffff8146fe0e => ls           0x0000003806204936
+ls           0xffffffff8146fe0e => ls           0x000000380620493d
+ls           0x0000003806204981 => ls           0x00000038062049a3
+ls           0x00000038062049a7 => ls           0x0000003806204988
 
 Signed-off-by: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
 Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
@@ -63,156 +62,230 @@ Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
 ---
 
- tools/perf/Documentation/perf-bts.txt |   24 +++++++++++++
- tools/perf/Makefile                   |    1 +
- tools/perf/builtin-bts.c              |   62 +++++++++++++++++++++++++++++++++
- tools/perf/builtin.h                  |    1 +
- tools/perf/command-list.txt           |    1 +
- tools/perf/perf.c                     |    1 +
- 6 files changed, 90 insertions(+), 0 deletions(-)
- create mode 100644 tools/perf/Documentation/perf-bts.txt
- create mode 100644 tools/perf/builtin-bts.c
+ tools/perf/Documentation/perf-bts.txt |   18 ++++-
+ tools/perf/builtin-bts.c              |  128 +++++++++++++++++++++++++++++++--
+ 2 files changed, 137 insertions(+), 9 deletions(-)
 
 diff --git a/tools/perf/Documentation/perf-bts.txt b/tools/perf/Documentation/perf-bts.txt
-new file mode 100644
-index 0000000..55a2fe6
---- /dev/null
+index 5920dcc..56ddaa4 100644
+--- a/tools/perf/Documentation/perf-bts.txt
 +++ b/tools/perf/Documentation/perf-bts.txt
-@@ -0,0 +1,24 @@
-+perf-bts(1)
-+==============
-+
-+NAME
-+----
-+perf-bts - Record branch-trace-store log
-+
-+SYNOPSIS
-+--------
-+[verse]
-+'perf bts' record <command>
-+
-+DESCRIPTION
-+-----------
-+This command can record branch-trace-store log.
-+Branch-trace-store is a facility of processors. It can record
-+address of branch to/from on every branch instruction and interrupt.
-+
-+'perf bts record <command>' records branch-trace-store log while specified
-+command is executing. And, save to the file "perf.data".
-+
-+SEE ALSO
-+--------
-+linkperf:perf-record[1]
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index ac6692c..cd3a8df 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -502,6 +502,7 @@ BUILTIN_OBJS += $(OUTPUT)builtin-lock.o
- BUILTIN_OBJS += $(OUTPUT)builtin-kvm.o
- BUILTIN_OBJS += $(OUTPUT)builtin-test.o
- BUILTIN_OBJS += $(OUTPUT)builtin-inject.o
-+BUILTIN_OBJS += $(OUTPUT)builtin-bts.o
+@@ -3,7 +3,7 @@ perf-bts(1)
  
- PERFLIBS = $(LIB_FILE)
+ NAME
+ ----
+-perf-bts - Record and print branch-trace-store log
++perf-bts - Record and analyze branch-trace-store log
  
+ SYNOPSIS
+ --------
+@@ -12,20 +12,32 @@ SYNOPSIS
+ 
+ DESCRIPTION
+ -----------
+-This command can record and print branch-trace-store log.
++This command can record and analyze branch-trace-store log.
+ Branch-trace-store is a facility of processors. It can record
+ address of branch to/from on every branch instruction and interrupt.
+ 
+ 'perf bts record <command>' records branch-trace-store log while specified
+ command is executing. And, save to the file "perf.data".
+ 
+-'perf bts trace' parses recorded branch-trace-store log and prints it.
++'perf bts trace' analyzes recorded branch-trace-store log and prints it.
++The command can select the item to print. For example,
++  'perf bts -a trace'	: prints only address
++  'perf bts -acp trace'	: prints address, command name and pid
+ 
+ OPTIONS
+ -------
+ -i::
+ --input=::
+         Specify input file name to analyze.
++-a::
++--addr::
++	Print address. (default)
++-c::
++--comm::
++	Print command name.
++-p::
++--pid::
++	Print pid.
+ 
+ SEE ALSO
+ --------
 diff --git a/tools/perf/builtin-bts.c b/tools/perf/builtin-bts.c
-new file mode 100644
-index 0000000..587cfad
---- /dev/null
+index 0d546d8..525bcd3 100644
+--- a/tools/perf/builtin-bts.c
 +++ b/tools/perf/builtin-bts.c
-@@ -0,0 +1,62 @@
-+#include "builtin.h"
-+#include "perf.h"
-+#include "util/parse-options.h"
-+
-+static const char * const bts_usage[] = {
-+	"perf bts record <command>",
-+	NULL,
+@@ -15,6 +15,32 @@
+ /* format string to print address */
+ #define FMT_ADDR	"%#0" FMT_ADDR_WIDTH "llx"
+ 
++/* printable items */
++struct exec_info {
++	u64		addr;		/* recorded address by bts */
++	pid_t		pid;		/* tracee process pid */
++	const char	*comm;		/* command name */
 +};
 +
-+/* arguments to call 'perf record' */
-+static const char * const record_args[] = {
-+	"record",
-+	"-f",
-+	"-e", "branches:u",
-+	"-c", "1",
-+	"-d",
-+};
++#define EI_PID_UNSET	-1
 +
-+/* dummy struct option to call parse_options() */
-+static const struct option bts_options[] = {
-+	OPT_END()
-+};
++/* flags which item print */
++#define EI_FLAG_PRINT_ADDR		(1 << 0)
++#define EI_FLAG_PRINT_PID		(1 << 1)
++#define EI_FLAG_PRINT_COMM		(1 << 2)
 +
-+static int __cmd_record(int argc, const char **argv)
++/* it's used when no print item specified */
++#define EI_FLAG_PRINT_DEFAULT		EI_FLAG_PRINT_ADDR
++
++/* print item flags */
++static unsigned long print_flags;
++
++#define is_flags_unset(flags)		(flags == 0)
++
++/* print it when we cannnot analyze and get the information */
++#define EI_UNKNOWN_TEXT			"(unknown)"
++#define EI_UNKNOWN_TEXT_LEN		(sizeof(EI_UNKNOWN_TEXT))
++
+ /* default input file name to analyze */
+ static const char *input_name = "perf.data";
+ 
+@@ -32,22 +58,108 @@ static const char * const record_args[] = {
+ 	"-d",
+ };
+ 
++/* set print flags call from parse_options() */
++static int set_print_flags(const struct option *opt, const char *str __unused,
++							int unset __unused)
 +{
-+	unsigned int rec_argc, i, j;
-+	const char **rec_argv;
-+	int rc;
-+
-+	/* prepare the arguments list to call 'perf record' */
-+	rec_argc = ARRAY_SIZE(record_args) + argc - 1;
-+	rec_argv = calloc(rec_argc + 1, sizeof(char *));
-+
-+	for (i = 0; i < ARRAY_SIZE(record_args); i++)
-+		rec_argv[i] = record_args[i];
-+
-+	for (j = 1; j < (unsigned int)argc; j++, i++)
-+		rec_argv[i] = argv[j];
-+
-+	BUG_ON(i != rec_argc);
-+
-+	/* call 'perf record' */
-+	rc = cmd_record(i, rec_argv, NULL);
-+
-+	free(rec_argv);
-+	return rc;
-+}
-+
-+int cmd_bts(int argc, const char **argv, const char *prefix __used)
-+{
-+	argc = parse_options(argc, argv, bts_options, bts_usage,
-+			     PARSE_OPT_STOP_AT_NON_OPTION);
-+	if (!argc)
-+		usage_with_options(bts_usage, bts_options);
-+
-+	if (!strncmp(argv[0], "record", 6))
-+		return __cmd_record(argc, argv);
-+	else
-+		usage_with_options(bts_usage, bts_options);
-+
++	print_flags |= (unsigned long)opt->defval;
 +	return 0;
 +}
-diff --git a/tools/perf/builtin.h b/tools/perf/builtin.h
-index c7798c7..11ed837 100644
---- a/tools/perf/builtin.h
-+++ b/tools/perf/builtin.h
-@@ -35,5 +35,6 @@ extern int cmd_lock(int argc, const char **argv, const char *prefix);
- extern int cmd_kvm(int argc, const char **argv, const char *prefix);
- extern int cmd_test(int argc, const char **argv, const char *prefix);
- extern int cmd_inject(int argc, const char **argv, const char *prefix);
-+extern int cmd_bts(int argc, const char **argv, const char *prefix);
++
+ static const struct option bts_options[] = {
+ 	OPT_STRING('i', "input", &input_name, "file", "input file name"),
++	OPT_CALLBACK_DEFAULT_NOOPT('a', "addr", NULL, NULL,
++				   "print address (default)", set_print_flags,
++				   (void *)EI_FLAG_PRINT_ADDR),
++	OPT_CALLBACK_DEFAULT_NOOPT('p', "pid", NULL, NULL,
++				   "print pid", set_print_flags,
++				   (void *)EI_FLAG_PRINT_PID),
++	OPT_CALLBACK_DEFAULT_NOOPT('c', "comm", NULL, NULL,
++				   "print command name", set_print_flags,
++				   (void *)EI_FLAG_PRINT_COMM),
+ 	OPT_END()
+ };
  
- #endif
-diff --git a/tools/perf/command-list.txt b/tools/perf/command-list.txt
-index 16b5088..956acea 100644
---- a/tools/perf/command-list.txt
-+++ b/tools/perf/command-list.txt
-@@ -22,3 +22,4 @@ perf-kmem			mainporcelain common
- perf-lock			mainporcelain common
- perf-kvm			mainporcelain common
- perf-test			mainporcelain common
-+perf-bts			mainporcelain common
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 595d0f4..4f4a98a 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -331,6 +331,7 @@ static void handle_internal_command(int argc, const char **argv)
- 		{ "kvm",	cmd_kvm,	0 },
- 		{ "test",	cmd_test,	0 },
- 		{ "inject",	cmd_inject,	0 },
-+		{ "bts",	cmd_bts,	0 },
- 	};
- 	unsigned int i;
- 	static const char ext[] = STRIP_EXTENSION;
+-static int process_sample_event(event_t *event __unused,
+-	struct sample_data *sample, struct perf_session *session __unused)
++static void init_exec_info(struct exec_info *ei)
++{
++	memset(ei, 0, sizeof(*ei));
++	ei->pid = EI_PID_UNSET;
++}
++
++/* collect printable items to struct exec_info */
++static void fill_exec_info(struct exec_info *ei, struct perf_session *session,
++						event_t *event, u64 addr)
++{
++	struct thread *thread;
++
++	ei->addr = addr;
++	ei->pid = event->ip.pid;
++
++	thread = perf_session__findnew(session, event->ip.pid);
++	if (!thread)
++		return;
++	ei->comm = thread->comm;
++}
++
++static void __print_exec_info(struct exec_info *ei)
++{
++	char pid[16];
++	const char *comm;
++
++	if (print_flags & EI_FLAG_PRINT_PID) {
++		if (ei->pid == EI_PID_UNSET)
++			strncpy(pid, EI_UNKNOWN_TEXT, EI_UNKNOWN_TEXT_LEN);
++		else
++			snprintf(pid, 16, "%d", ei->pid);
++		printf("%5s ", pid);
++	}
++	if (print_flags & EI_FLAG_PRINT_COMM) {
++		comm = ei->comm ? : EI_UNKNOWN_TEXT;
++		printf("%-12s ", comm);
++	}
++	if (print_flags & EI_FLAG_PRINT_ADDR)
++		printf(FMT_ADDR " ", ei->addr);
++}
++
++static void print_exec_info(struct exec_info *ei_from, struct exec_info *ei_to)
++{
++	__print_exec_info(ei_from);
++	printf("=> ");
++	__print_exec_info(ei_to);
++	printf("\n");
++}
++
++static void print_exec_info_header(void)
+ {
++	if (print_flags & EI_FLAG_PRINT_PID)
++		printf("%5s ", "pid");
++	if (print_flags & EI_FLAG_PRINT_COMM)
++		printf("%-12s ", "command");
++	if (print_flags & EI_FLAG_PRINT_ADDR)
++		printf("%-" FMT_ADDR_WIDTH "s ", "address");
++	printf("\n");
++}
++
++static int process_sample_event(event_t *event, struct sample_data *sample,
++						struct perf_session *session)
++{
++	struct exec_info ei_from, ei_to;
++
++	init_exec_info(&ei_from);
++	init_exec_info(&ei_to);
++
+ 	/* sample->ip is 'from address', sample->addr is 'to address' */
+-	printf(FMT_ADDR " => " FMT_ADDR "\n", sample->ip, sample->addr);
++	fill_exec_info(&ei_from, session, event, sample->ip);
++	fill_exec_info(&ei_to, session, event, sample->addr);
++
++	print_exec_info(&ei_from, &ei_to);
+ 
+ 	return 0;
+ }
+ 
+ static struct perf_event_ops event_ops = {
+ 	.sample			= process_sample_event,
++	.comm			= event__process_comm,
+ 	.ordered_samples	= false,
+ };
+ 
+@@ -61,6 +173,12 @@ static int __cmd_trace(void)
+ 		return -ENOMEM;
+ 	}
+ 
++	/* if print flags are unset, we use default flags */
++	if (is_flags_unset(print_flags))
++		print_flags = EI_FLAG_PRINT_DEFAULT;
++
++	setup_pager();
++	print_exec_info_header();
+ 	perf_session__process_events(session, &event_ops);
+ 	perf_session__delete(session);
+ 
+@@ -101,10 +219,8 @@ int cmd_bts(int argc, const char **argv, const char *prefix __used)
+ 
+ 	if (!strncmp(argv[0], "record", 6))
+ 		return __cmd_record(argc, argv);
+-	else if (!strncmp(argv[0], "trace", 5)) {
+-		setup_pager();
++	else if (!strncmp(argv[0], "trace", 5))
+ 		return __cmd_trace();
+-	}
+ 	else
+ 		usage_with_options(bts_usage, bts_options);
+ 
 
