@@ -1,292 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933460Ab0LUCA5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 21:00:57 -0500
-Received: from mga02.intel.com ([134.134.136.20]:56295 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933220Ab0LUCA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 21:00:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,205,1291622400"; 
-   d="scan'208";a="689122052"
-Subject: Re: [PATCH] ACPI battery: Fix sysfs oops when removing battery
-From: Zhang Rui <rui.zhang@intel.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "Brown, Len" <len.brown@intel.com>, Seblu <seblu@seblu.net>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101219130001.GB5790@liondog.tnic>
-References: <20101219130001.GB5790@liondog.tnic>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Dec 2010 10:01:01 +0800
-Message-ID: <1292896861.2300.288.camel@rui>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S933467Ab0LUCCz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 21:02:55 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:52746 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933040Ab0LUCCy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 21:02:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=MzbtICtEdTnsKcnfCAgB1955i1gES5zy/kgPbVWgSFG2Drw0ug3HVLIAO5SlvIK3eb
+         h0j/IOA18+Nd0eRqDw+aJiXUTh5dL2dnqYCQcD4+UKty+r4lLJmMeygRrefOHs6ZZs2f
+         zYF+MApmWcbfmOXFloJecTq7cCIFR4bu+JmCM=
+MIME-Version: 1.0
+In-Reply-To: <1292865387.9445.28.camel@morgan.silverblock.net>
+References: <1292762975.2403.29.camel@localhost>
+	<AANLkTimYx2Og1BG37wb0WZ0_U8WJjLKHMKgU45qycUaM@mail.gmail.com>
+	<AANLkTikuKMLUoVnQsU6QNCnHBgOponJUngHGtyVHk1xK@mail.gmail.com>
+	<1292865387.9445.28.camel@morgan.silverblock.net>
+Date: Tue, 21 Dec 2010 10:02:53 +0800
+Message-ID: <AANLkTinpJu1BuhvagViFQ9HUqT7suV1ZV7D9C_R6Vbtc@mail.gmail.com>
+Subject: Re: [PATCH] kthread_worker: Initialize dynamically allocated spinlock
+ properly for lockdep
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Andy Walls <awalls@md.metrocast.net>
+Cc: linux-kernel@vger.kernel.org, nicolas.mailhot@laposte.net,
+        Tejun Heo <tj@kernel.org>, Jarod Wilson <jarod@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Hans Verkuil <hverkuil@xs4all.nl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-12-19 at 21:00 +0800, Borislav Petkov wrote:
-> Hi guys,
-> 
-> I get the oops below on 37-rc6. Here's a possible fix:
-> 
-does this happen every time when you unload the battery driver?
+On Tue, Dec 21, 2010 at 1:16 AM, Andy Walls <awalls@md.metrocast.net> wrote:
+> On Mon, 2010-12-20 at 17:28 +0800, Yong Zhang wrote:
+>> On Mon, Dec 20, 2010 at 3:07 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
+>> > On Sun, Dec 19, 2010 at 8:49 PM, Andy Walls <awalls@md.metrocast.net> wrote:
+>> >> init_kthread_worker(), via KTHREAD_WORKER_INIT(), used an
+>> >> initializer for static spin_lock objects, SPIN_LOCK_UNLOCKED, on
+>> >> a dynamically allocated kthread_worker object's internal spinlock_t.
+>> >> This causes lockdep to gripe:
+>> >>
+>> >>        INFO: trying to register non-static key.
+>> >>        the code is fine but needs lockdep annotation.
+>> >>        turning off the locking correctness validator.
+>> >>
+>> >> To keep lockdep happy, use spin_lock_init() for dynamically
+>> >> allocated kthread_worker objects' internal spinlock_t.
+>> >>
+>> >> Reported-by: Nicolas <nicolas.mailhot@laposte.net>
+>> >> Signed-off-by: Andy Walls <awalls@md.metrocast.net>
+>> >>
+>> >> Cc: Tejun Heo <tj@kernel.org>
+>> >> Cc: Jarod Wilson <jarod@redhat.com>
+>> >> Cc: Ingo Molnar <mingo@redhat.com>
+>> >> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+>> >> Cc: Hans Verkuil <hverkuil@xs4all.nl>
+>
+>> > This will make different kthead_worker->lock initialized with one same
+>> > key.
+>
+> Well, that wouldn't be very useful. :P
+>
+>
+>> > So we should put the real initializer to kernel/kthread.c
+>> > and make init_kthread_worker() to be a MACRO.
+>
+> Sounds OK to me.  I'm not a lockdep expert and I made my initial patch
+> with the sole intention of making this bugzilla report go away:
+>
+> https://bugzilla.redhat.com/show_bug.cgi?id=662384
+>
+>
+>> untested patch is here. Andy/Nicolas, is it ok for you?
+>
+> No, see my comments below.
+>
+>> ---
+>> Subject: [PATCH] kthread_work: Make lockdep happy
+>>
+>> spinlock in kthread_worker and wait_queue_head in kthread_work
+>> both should be lockdep annotated.
+>> So change the interface to make it suiltable for CONFIG_LOCKDEP.
+>>
+>> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+>> ---
+>> I'm not sure if it's possible to define a worker on stack?
+>> So I left DEFINE_KTHREAD_WORKER() untouched.
+>>
+>>  include/linux/kthread.h |   37 +++++++++++++++++++++++++++----------
+>>  kernel/kthread.c        |    9 +++++++++
+>>  2 files changed, 36 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/include/linux/kthread.h b/include/linux/kthread.h
+>> index 685ea65..5d516b3 100644
+>> --- a/include/linux/kthread.h
+>> +++ b/include/linux/kthread.h
+>> @@ -75,22 +75,39 @@ struct kthread_work {
+>>       .flushing = ATOMIC_INIT(0),                                     \
+>>       }
+>>
+>> +/* Is it possible to define a worker on stack? */
+>
+> This comment doesn't help a developer decide if this interface is OK to
+> use.
+>
+> If there is an alternate preferred API for instantiating 1 (or more)
+> thread(s) to handle work objects off of the stack, then the comment
+> should point the reader to that API (e.g. singlethread_workqueue).
+>
+> To answer the question in the comment:
+>
+> It is possible to allocate a kthread worker off of the stack, but IMO it
+> has little advantage over a singlethread_workqueue allocated off of the
+> stack.
+>
+> ivtv only needed the kthread_worker API, because it has some deferred
+> work with tight timing constraints.  ivtv sets the kthread_worker to
+> SCHED_FIFO scheduling for ivtv work, which couldn't be done on a
+> workqueue thread with the updated singlethread_workqueue implementation.
+> Note that ivtv does *not* allocate its kthread worker off of the stack.
 
-thanks,
-rui
-> ---
-> From: Borislav Petkov <bp@alien8.de>
-> Date: Sun, 19 Dec 2010 12:58:45 +0100
-> Subject: [PATCH] ACPI battery: Fix sysfs oops when removing battery
-> 
-> 3138b32d5e0998ba3cbd1c74bdc1887d74c5279b fixed battery status updates in
-> sysfs but when the battery is removed from the machine, we hit a sysfs
-> warning which ends in NULL-ptr deref since the battery is not present
-> anymore:
-> 
-> [   39.592724] ------------[ cut here ]------------
-> [   39.599420] WARNING: at fs/sysfs/group.c:138 sysfs_remove_group+0xcd/0xd0()
-> [   39.606279] Hardware name: AOA150
-> [   39.606295] sysfs group c15191e0 not found for kobject 'BAT1'
-> ...
-> 
-> Fix this by doing sysfs status updates only if the battery is not
-> disappearing. Also, remove call to acpi_battery_get_state() since we
-> call it through acpi_battery_update() anyway.
-> 
-> Cc: Seblu <seblu@seblu.net>
-> Cc: Zhang Rui <rui.zhang@intel.com>
-> Cc: Len Brown <len.brown@intel.com>
-> Signed-off-by: Borislav Petkov <bp@alien8.de>
-> ---
->  drivers/acpi/battery.c |    9 +++++----
->  1 files changed, 5 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-> index 9fb9d5a..78be7d5 100644
-> --- a/drivers/acpi/battery.c
-> +++ b/drivers/acpi/battery.c
-> @@ -186,14 +186,15 @@ static int acpi_battery_get_property(struct power_supply *psy,
->         int ret = 0;
->         struct acpi_battery *battery = to_acpi_battery(psy);
-> 
-> -       if (acpi_battery_update(battery))
-> -               return -ENODEV;
-> -
->         if (acpi_battery_present(battery)) {
-> +
->                 /* run battery update only if it is present */
-> -               acpi_battery_get_state(battery);
-> +               if (acpi_battery_update(battery))
-> +                       return -ENODEV;
-> +
->         } else if (psp != POWER_SUPPLY_PROP_PRESENT)
->                 return -ENODEV;
-> +
->         switch (psp) {
->         case POWER_SUPPLY_PROP_STATUS:
->                 if (battery->state & 0x01)
-> --
-> 1.7.2.3
-> 
-> Oops:
-> --
-> 
-> [   39.592724] ------------[ cut here ]------------
-> [   39.599420] WARNING: at fs/sysfs/group.c:138 sysfs_remove_group+0xcd/0xd0()
-> [   39.606279] Hardware name: AOA150
-> [   39.606295] sysfs group c15191e0 not found for kobject 'BAT1'
-> [   39.606305] Modules linked in: acerhdf ipv6 sbs sbshc thermal container fan acpi_cpufreq mperf cpufreq_conservative cpufreq_stats cpufreq_userspace cpufreq_powersave fuse dm_crypt dm_mod loop arc4 ecb ath5k ath usbhid mac80211 psmouse sdhci_pci sdhci mmc_core battery cfg80211 processor rfkill ac uhci_hcd rng_core i2c_i801
-> [   39.606519] Pid: 2267, comm: kworker/0:3 Not tainted 2.6.37-rc6-dirty #12
-> [   39.606532] Call Trace:
-> [   39.606560]  [<c103aba2>] warn_slowpath_common+0x72/0xa0
-> [   39.606624]  [<c1125f0d>] ? sysfs_remove_group+0xcd/0xd0
-> [   39.606721]  [<c1125f0d>] ? sysfs_remove_group+0xcd/0xd0
-> [   39.606898]  [<c103ac73>] warn_slowpath_fmt+0x33/0x40
-> [   39.606999]  [<c1125f0d>] sysfs_remove_group+0xcd/0xd0
-> [   39.607064]  [<c1266d2d>] dpm_sysfs_remove+0x1d/0x20
-> [   39.607159]  [<c1260096>] device_del+0x36/0x180
-> [   39.607180]  [<c12601f0>] device_unregister+0x10/0x20
-> [   39.607203]  [<c12d3fff>] power_supply_unregister+0x1f/0x30
-> [   39.607237]  [<f879c05a>] sysfs_remove_battery+0x24/0x2e [battery]
-> [   39.607264]  [<f879c3bd>] acpi_battery_update+0x6a/0x28e [battery]
-> [   39.607289]  [<c1184300>] ? vsnprintf+0xf0/0x430
-> [   39.607317]  [<f879c712>] acpi_battery_get_property+0x19/0x1a6 [battery]
-> [   39.607342]  [<c12d454b>] power_supply_show_property+0x3b/0x150
-> [   39.607366]  [<c10ab4fb>] ? __get_free_pages+0x2b/0x30
-> [   39.607388]  [<c12d4715>] power_supply_uevent+0xb5/0x190
-> [   39.607412]  [<c125f96c>] dev_uevent+0x8c/0x150
-> [   39.607432]  [<c117e418>] ? add_uevent_var+0x38/0xd0
-> [   39.607454]  [<c117e6cd>] kobject_uevent_env+0x1cd/0x4d0
-> [   39.607477]  [<c1032d6b>] ? sub_preempt_count+0x7b/0xb0
-> [   39.607541]  [<c13d9126>] ? _raw_spin_unlock_irqrestore+0x16/0x40
-> [   39.607563]  [<c125f8e0>] ? dev_uevent+0x0/0x150
-> [   39.607585]  [<c117e9da>] kobject_uevent+0xa/0x10
-> [   39.607604]  [<c126017b>] device_del+0x11b/0x180
-> [   39.607624]  [<c12601f0>] device_unregister+0x10/0x20
-> [   39.607645]  [<c12d3fff>] power_supply_unregister+0x1f/0x30
-> [   39.607676]  [<f879c05a>] sysfs_remove_battery+0x24/0x2e [battery]
-> [   39.607702]  [<f879c3bd>] acpi_battery_update+0x6a/0x28e [battery]
-> [   39.607725]  [<c12da8dd>] ? do_dbs_timer+0x23d/0x3f0
-> [   39.607753]  [<f879c610>] acpi_battery_notify+0x2f/0x8b [battery]
-> [   39.607781]  [<c11b4789>] acpi_device_notify+0x17/0x1a
-> [   39.607802]  [<c11c0914>] acpi_ev_notify_dispatch+0x56/0x6a
-> [   39.607824]  [<c11b1d32>] acpi_os_execute_deferred+0x22/0x2d
-> [   39.607847]  [<c105424b>] process_one_work+0x11b/0x430
-> [   39.607870]  [<c11b1d10>] ? acpi_os_execute_deferred+0x0/0x2d
-> [   39.607893]  [<c10548b5>] worker_thread+0x125/0x3c0
-> [   39.607917]  [<c1054790>] ? worker_thread+0x0/0x3c0
-> [   39.607936]  [<c1057dc4>] kthread+0x74/0x80
-> [   39.607958]  [<c1057d50>] ? kthread+0x0/0x80
-> [   39.607978]  [<c100347e>] kernel_thread_helper+0x6/0x10
-> [   39.607994] ---[ end trace a636886777d7a081 ]---
-> [   39.608084] BUG: unable to handle kernel NULL pointer dereference at 00000010
-> [   39.608104] IP: [<c13c6858>] klist_put+0x18/0x90
-> [   39.608127] *pde = 00000000
-> [   39.608141] Oops: 0000 [#1] PREEMPT SMP
-> [   39.608156] last sysfs file: /sys/devices/system/cpu/sched_smt_power_savings
-> [   39.608172] Modules linked in: acerhdf ipv6 sbs sbshc thermal container fan acpi_cpufreq mperf cpufreq_conservative cpufreq_stats cpufreq_userspace cpufreq_powersave fuse dm_crypt dm_mod loop arc4 ecb ath5k ath usbhid mac80211 psmouse sdhci_pci sdhci mmc_core battery cfg80211 processor rfkill ac uhci_hcd rng_core i2c_i801
-> [   39.608286]
-> [   39.608303] Pid: 2267, comm: kworker/0:3 Tainted: G        W   2.6.37-rc6-dirty #12         /AOA150
-> [   39.608322] EIP: 0060:[<c13c6858>] EFLAGS: 00010246 CPU: 0
-> [   39.608339] EIP is at klist_put+0x18/0x90
-> [   39.608352] EAX: 00000000 EBX: 00000000 ECX: 35a22000 EDX: 00000001
-> [   39.608369] ESI: f5972374 EDI: f68361f0 EBP: f5f11d0c ESP: f5f11cfc
-> [   39.608385]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-> [   39.608402] Process kworker/0:3 (pid: 2267, ti=f5f10000 task=f618ed80 task.ti=f5f10000)
-> [   39.608415] Stack:
-> [   39.608423]  f5f7ba00 f5f7ba00 00000000 f68361f0 f5f11d14 c13c68fd f5f11d28 c12600a5
-> [   39.608457]  f5f7ba00 00000000 f5f7a000 f5f11d34 c12601f0 f5f7a014 f5f11d40 c12d3fff
-> [   39.608489]  f5f7a000 f5f11d4c f879c05a f5f7a000 f5f11d84 f879c3bd f683602c f5dc80ff
-> [   39.608522] Call Trace:
-> [   39.608543]  [<c13c68fd>] ? klist_del+0xd/0x10
-> [   39.608563]  [<c12600a5>] ? device_del+0x45/0x180
-> [   39.608584]  [<c12601f0>] ? device_unregister+0x10/0x20
-> [   39.608606]  [<c12d3fff>] ? power_supply_unregister+0x1f/0x30
-> [   39.608637]  [<f879c05a>] ? sysfs_remove_battery+0x24/0x2e [battery]
-> [   39.608664]  [<f879c3bd>] ? acpi_battery_update+0x6a/0x28e [battery]
-> [   39.608689]  [<c1184300>] ? vsnprintf+0xf0/0x430
-> [   39.608718]  [<f879c712>] ? acpi_battery_get_property+0x19/0x1a6 [battery]
-> [   39.608743]  [<c12d454b>] ? power_supply_show_property+0x3b/0x150
-> [   39.608767]  [<c10ab4fb>] ? __get_free_pages+0x2b/0x30
-> [   39.608790]  [<c12d4715>] ? power_supply_uevent+0xb5/0x190
-> [   39.608814]  [<c125f96c>] ? dev_uevent+0x8c/0x150
-> [   39.608834]  [<c117e418>] ? add_uevent_var+0x38/0xd0
-> [   39.608856]  [<c117e6cd>] ? kobject_uevent_env+0x1cd/0x4d0
-> [   39.608879]  [<c1032d6b>] ? sub_preempt_count+0x7b/0xb0
-> [   39.608901]  [<c13d9126>] ? _raw_spin_unlock_irqrestore+0x16/0x40
-> [   39.608924]  [<c125f8e0>] ? dev_uevent+0x0/0x150
-> [   39.608945]  [<c117e9da>] ? kobject_uevent+0xa/0x10
-> [   39.608965]  [<c126017b>] ? device_del+0x11b/0x180
-> [   39.608986]  [<c12601f0>] ? device_unregister+0x10/0x20
-> [   39.609007]  [<c12d3fff>] ? power_supply_unregister+0x1f/0x30
-> [   39.609039]  [<f879c05a>] ? sysfs_remove_battery+0x24/0x2e [battery]
-> [   39.609065]  [<f879c3bd>] ? acpi_battery_update+0x6a/0x28e [battery]
-> [   39.609088]  [<c12da8dd>] ? do_dbs_timer+0x23d/0x3f0
-> [   39.609117]  [<f879c610>] ? acpi_battery_notify+0x2f/0x8b [battery]
-> [   39.609144]  [<c11b4789>] ? acpi_device_notify+0x17/0x1a
-> [   39.609164]  [<c11c0914>] ? acpi_ev_notify_dispatch+0x56/0x6a
-> [   39.609187]  [<c11b1d32>] ? acpi_os_execute_deferred+0x22/0x2d
-> [   39.609209]  [<c105424b>] ? process_one_work+0x11b/0x430
-> [   39.609232]  [<c11b1d10>] ? acpi_os_execute_deferred+0x0/0x2d
-> [   39.609255]  [<c10548b5>] ? worker_thread+0x125/0x3c0
-> [   39.609279]  [<c1054790>] ? worker_thread+0x0/0x3c0
-> [   39.609299]  [<c1057dc4>] ? kthread+0x74/0x80
-> [   39.609321]  [<c1057d50>] ? kthread+0x0/0x80
-> [   39.609341]  [<c100347e>] ? kernel_thread_helper+0x6/0x10
-> [   39.609353] Code: e8 9e 43 c7 ff e9 51 ff ff ff 89 f6 8d bc 27 00 00 00 00 55 89 e5 83 ec 10 89 75 f8 89 c6 89 5d f4 89 7d fc 8b 18 83 e3 fe 89 d8 <8b> 7b 10 88 55 f0 e8 4d 2c 01 00 0f b6 55 f0 84 d2 74 0b 8b 06
-> [   39.609538] EIP: [<c13c6858>] klist_put+0x18/0x90 SS:ESP 0068:f5f11cfc
-> [   39.609563] CR2: 0000000000000010
-> [   39.609661] ---[ end trace a636886777d7a082 ]---
-> [   39.609979] BUG: unable to handle kernel paging request at fffffffc
-> [   39.609998] IP: [<c10579ff>] kthread_data+0xf/0x20
-> [   39.610024] *pde = 015db067 *pte = 00000000
-> [   39.610041] Oops: 0000 [#2] PREEMPT SMP
-> [   39.610056] last sysfs file: /sys/devices/system/cpu/sched_smt_power_savings
-> [   39.610070] Modules linked in: acerhdf ipv6 sbs sbshc thermal container fan acpi_cpufreq mperf cpufreq_conservative cpufreq_stats cpufreq_userspace cpufreq_powersave fuse dm_crypt dm_mod loop arc4 ecb ath5k ath usbhid mac80211 psmouse sdhci_pci sdhci mmc_core battery cfg80211 processor rfkill ac uhci_hcd rng_core i2c_i801
-> [   39.610182]
-> [   39.610198] Pid: 2267, comm: kworker/0:3 Tainted: G      D W   2.6.37-rc6-dirty #12         /AOA150
-> [   39.610217] EIP: 0060:[<c10579ff>] EFLAGS: 00010002 CPU: 0
-> [   39.610234] EIP is at kthread_data+0xf/0x20
-> [   39.610248] EAX: 00000000 EBX: 00000000 ECX: 00000000 EDX: 00000000
-> [   39.610263] ESI: 00000000 EDI: f618ed80 EBP: f5f11aa4 ESP: f5f11a98
-> [   39.610280]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-> [   39.610296] Process kworker/0:3 (pid: 2267, ti=f5f10000 task=f618ed80 task.ti=f5f10000)
-> [   39.610309] Stack:
-> [   39.610317]  c1053991 f6ff3e80 00000000 f5f11b64 c13d6e69 00000000 00000001 f5f11b3c
-> [   39.610348]  00000001 c10e007b f640007b f5f100d8 f5f100e0 ffffffc6 c111aebe c14f5fc0
-> [   39.610379]  00000009 c15cee80 f618ed80 c15d1e80 f618eef4 f618eef8 c15cc000 c15d1e80
-> [   39.610410] Call Trace:
-> [   39.610429]  [<c1053991>] ? wq_worker_sleeping+0x11/0x80
-> [   39.610452]  [<c13d6e69>] ? schedule+0x3f9/0xa00
-> [   39.610474]  [<c10e007b>] ? lookup_create+0xb/0xb0
-> [   39.610496]  [<c111aebe>] ? proc_flush_task+0x22e/0x270
-> [   39.610520]  [<c1003470>] ? common_interrupt+0x30/0x38
-> [   39.610540]  [<c10066de>] ? oops_end+0x6e/0x90
-> [   39.610559]  [<c10066de>] ? oops_end+0x6e/0x90
-> [   39.610578]  [<c10300d8>] ? sched_debug_show+0x948/0xce0
-> [   39.610600]  [<c103e73a>] ? do_exit+0x48a/0x6b0
-> [   39.610621]  [<c13d9126>] ? _raw_spin_unlock_irqrestore+0x16/0x40
-> [   39.610640]  [<c103bc21>] ? kmsg_dump+0x111/0x120
-> [   39.610662]  [<c10066de>] ? oops_end+0x6e/0x90
-> [   39.610681]  [<c13d66ee>] ? printk+0x1d/0x1f
-> [   39.610701]  [<c1024186>] ? no_context+0xc6/0x160
-> [   39.610723]  [<c10242b0>] ? __bad_area_nosemaphore+0x90/0x130
-> [   39.610744]  [<c13d760e>] ? preempt_schedule+0x2e/0x50
-> [   39.610763]  [<c103baa4>] ? vprintk+0x454/0x4c0
-> [   39.610784]  [<c1024367>] ? bad_area_nosemaphore+0x17/0x20
-> [   39.610804]  [<c102472b>] ? do_page_fault+0x25b/0x420
-> [   39.610827]  [<c13d66ee>] ? printk+0x1d/0x1f
-> [   39.610846]  [<c103a97f>] ? print_oops_end_marker+0x2f/0x40
-> [   39.610867]  [<c103abaf>] ? warn_slowpath_common+0x7f/0xa0
-> [   39.610887]  [<c10244d0>] ? do_page_fault+0x0/0x420
-> [   39.610906]  [<c13da067>] ? error_code+0x67/0x6c
-> [   39.610928]  [<c112007b>] ? kpagecount_read+0x3b/0x110
-> [   39.610947]  [<c13c6858>] ? klist_put+0x18/0x90
-> [   39.610967]  [<c13c68fd>] ? klist_del+0xd/0x10
-> [   39.610985]  [<c12600a5>] ? device_del+0x45/0x180
-> [   39.611005]  [<c12601f0>] ? device_unregister+0x10/0x20
-> [   39.611026]  [<c12d3fff>] ? power_supply_unregister+0x1f/0x30
-> [   39.611058]  [<f879c05a>] ? sysfs_remove_battery+0x24/0x2e [battery]
-> [   39.611084]  [<f879c3bd>] ? acpi_battery_update+0x6a/0x28e [battery]
-> [   39.611107]  [<c1184300>] ? vsnprintf+0xf0/0x430
-> [   39.611133]  [<f879c712>] ? acpi_battery_get_property+0x19/0x1a6 [battery]
-> [   39.611157]  [<c12d454b>] ? power_supply_show_property+0x3b/0x150
-> [   39.611180]  [<c10ab4fb>] ? __get_free_pages+0x2b/0x30
-> [   39.611202]  [<c12d4715>] ? power_supply_uevent+0xb5/0x190
-> [   39.611224]  [<c125f96c>] ? dev_uevent+0x8c/0x150
-> [   39.611243]  [<c117e418>] ? add_uevent_var+0x38/0xd0
-> [   39.611264]  [<c117e6cd>] ? kobject_uevent_env+0x1cd/0x4d0
-> [   39.611286]  [<c1032d6b>] ? sub_preempt_count+0x7b/0xb0
-> [   39.611308]  [<c13d9126>] ? _raw_spin_unlock_irqrestore+0x16/0x40
-> [   39.611328]  [<c125f8e0>] ? dev_uevent+0x0/0x150
-> [   39.611349]  [<c117e9da>] ? kobject_uevent+0xa/0x10
-> [   39.611367]  [<c126017b>] ? device_del+0x11b/0x180
-> [   39.611387]  [<c12601f0>] ? device_unregister+0x10/0x20
-> [   39.611408]  [<c12d3fff>] ? power_supply_unregister+0x1f/0x30
-> [   39.611438]  [<f879c05a>] ? sysfs_remove_battery+0x24/0x2e [battery]
-> [   39.611463]  [<f879c3bd>] ? acpi_battery_update+0x6a/0x28e [battery]
-> [   39.611485]  [<c12da8dd>] ? do_dbs_timer+0x23d/0x3f0
-> [   39.611510]  [<f879c610>] ? acpi_battery_notify+0x2f/0x8b [battery]
-> [   39.611536]  [<c11b4789>] ? acpi_device_notify+0x17/0x1a
-> [   39.611556]  [<c11c0914>] ? acpi_ev_notify_dispatch+0x56/0x6a
-> [   39.611578]  [<c11b1d32>] ? acpi_os_execute_deferred+0x22/0x2d
-> [   39.611599]  [<c105424b>] ? process_one_work+0x11b/0x430
-> [   39.611620]  [<c11b1d10>] ? acpi_os_execute_deferred+0x0/0x2d
-> [   39.611642]  [<c10548b5>] ? worker_thread+0x125/0x3c0
-> [   39.611664]  [<c1054790>] ? worker_thread+0x0/0x3c0
-> [   39.611684]  [<c1057dc4>] ? kthread+0x74/0x80
-> [   39.611704]  [<c1057d50>] ? kthread+0x0/0x80
-> [   39.611723]  [<c100347e>] ? kernel_thread_helper+0x6/0x10
-> [   39.611735] Code: 8d 74 26 00 64 a1 cc d4 5c c1 8b 80 4c 01 00 00 5d 8b 40 f8 c3 8d b4 26 00 00 00 00 55 89 e5 3e 8d 74 26 00 8b 80 4c 01 00 00 5d <8b> 40 fc c3 8d b6 00 00 00 00 8d bc 27 00 00 00 00 55 89 e5 3e
-> [   39.611903] EIP: [<c10579ff>] kthread_data+0xf/0x20 SS:ESP 0068:f5f11a98
-> [   39.611928] CR2: 00000000fffffffc
-> [   39.611940] ---[ end trace a636886777d7a083 ]---
-> [   39.611952] Fixing recursive fault but reboot is needed!
-> 
-> --
-> Regards/Gruss,
->     Boris.
+Just like Tejun has said, It is possible to allocate a kthread worker
+on stack, so I can just delete that unhelpful comment and also touch
+kthread_worker in V2.
 
+>
+>
+>>  #define DEFINE_KTHREAD_WORKER(worker)                                        \
+>>       struct kthread_worker worker = KTHREAD_WORKER_INIT(worker)
+>>
+>>  #define DEFINE_KTHREAD_WORK(work, fn)                                        \
+>>       struct kthread_work work = KTHREAD_WORK_INIT(work, fn)
+>>
+>> -static inline void init_kthread_worker(struct kthread_worker *worker)
+>> -{
+>> -     *worker = (struct kthread_worker)KTHREAD_WORKER_INIT(*worker);
+>> -}
+>> -
+>> -static inline void init_kthread_work(struct kthread_work *work,
+>> -                                  kthread_work_func_t fn)
+>> -{
+>> -     *work = (struct kthread_work)KTHREAD_WORK_INIT(*work, fn);
+>> -}
+>> +#ifdef CONFIG_LOCKDEP
+>> +# define KTHREAD_WORK_INIT_ONSTACK(work, fn)                         \
+>> +     ({init_kthread_work((&work), fn); work})
+>> +# define DEFINE_KTHREAD_WORK_ONSTACK(work, fn)                               \
+>> +     struct kthread_work work = KTHREAD_WORK_INIT_ONSTACK(work, fn)
+>> +#else
+>> +# define DEFINE_KTHREAD_WORK_ONSTACK(work, fn) DEFINE_KTHREAD_WORK(work, fn)
+>> +#endif
+>> +
+>> +extern void __init_kthread_worker(struct kthread_worker *worker,
+>> +                                     struct lock_class_key *key);
+>> +
+>> +#define init_kthread_worker(worker)                                  \
+>> +     do {                                                            \
+>> +             static struct lock_class_key __key;                     \
+>> +             __init_kthread_worker((worker), &__key);                \
+>> +     } while (0)
+>> +
+>> +#define init_kthread_work(work, fn)                                  \
+>> +     do {                                                            \
+>> +             memset((work), 0, sizeof(struct kthread_work));         \
+>> +             INIT_LIST_HEAD(&(work)->node);                          \
+>> +             (work)->func = (fn);                                    \
+>> +             init_waitqueue_head(&(work)->done);                     \
+>> +             (work)->flushing = ATOMIC_INIT(0);                      \
+>> +     } while (0)
+>>
+>>  int kthread_worker_fn(void *worker_ptr);
+>>
+>> diff --git a/kernel/kthread.c b/kernel/kthread.c
+>> index 2dc3786..fae2eff 100644
+>> --- a/kernel/kthread.c
+>> +++ b/kernel/kthread.c
+>> @@ -265,6 +265,15 @@ int kthreadd(void *unused)
+>>       return 0;
+>>  }
+>>
+>> +void __init_kthread_worker(struct kthread_worker *worker,
+>> +                             struct lock_class_key *key)
+>> +{
+>> +     spin_lock_init(&worker->lock);
+>> +     lockdep_set_class(&worker->lock, key);
+>> +     INIT_LIST_HEAD(&worker->work_list);
+>> +     worker->task == NULL;
+>                       ^^
+>                        |
+> GCC should have griped, "Statement with no effect," or something
+> similar.  (Did it?)
 
+Good catch.
+Will change it.
+
+Thanks,
+Yong
+-- 
+Only stand for myself.
