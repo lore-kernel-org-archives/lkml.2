@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752235Ab0LURBh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 12:01:37 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:42343 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751038Ab0LURBf (ORCPT
+	id S1752164Ab0LUREW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 12:04:22 -0500
+Received: from mail-bw0-f45.google.com ([209.85.214.45]:60760 "EHLO
+	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751240Ab0LUREV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 12:01:35 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Tue, 21 Dec 2010 17:59:56 +0100
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Takashi Iwai <tiwai@suse.de>, Chris Bagwell <chris@cnpbagwell.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] Input: synaptics - add multi-finger and semi-mt
- support
-Message-ID: <20101221165956.GA28702@polaris.bitmath.org>
-References: <1292852364-19127-1-git-send-email-rydberg@euromail.se>
- <1292852364-19127-3-git-send-email-rydberg@euromail.se>
- <4D10D75D.80400@canonical.com>
+	Tue, 21 Dec 2010 12:04:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=cyiKvAdv3l2MXtA7KWXchjDz3v2XJzMeNSNxWbvvGqhFNc3opNY3HTHy43r/0W6IrT
+         /CHk5ddcsyH/m6glyIToU6ZLNDKgV74E3Pb+GReY/qohr8ttPiMicq0TVmwo7BIHJ77x
+         OXANFb5A2duPW89ZXoR4kLeByJN74DjQ5i0Hk=
+Date: Tue, 21 Dec 2010 18:04:16 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
+        jan.kratochvil@redhat.com
+Subject: Re: [PATCH 06/16] signal: fix premature completion of group stop
+ when interfered by ptrace
+Message-ID: <20101221170414.GD13285@htj.dyndns.org>
+References: <1291654624-6230-1-git-send-email-tj@kernel.org>
+ <1291654624-6230-7-git-send-email-tj@kernel.org>
+ <20101220150018.GD11583@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D10D75D.80400@canonical.com>
+In-Reply-To: <20101220150018.GD11583@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Originating-IP: 83.248.200.95
-X-Scan-Result: No virus found in message 1PV5ZI-00010S-Av.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PV5ZI-00010S-Av 3402b8722917a889f68a254775696365
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Reported-by: Tobyn Bertram
-> > Not-yet-signed-off-by: Takashi Iwai <tiwai@suse.de>
-> > Not-yet-signed-off-by: Chase Douglas <chase.douglas@canonical.com>
-> > Not-yet-signed-off-by: Chris Bagwell <chris@cnpbagwell.com>
-> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> 
-> You can keep my SOB.
-
-Great, thanks.
- 
-> > +static void set_slot(struct input_dev *dev, int slot, bool active, int x, int y)
+On Mon, Dec 20, 2010 at 04:00:18PM +0100, Oleg Nesterov wrote:
+> On 12/06, Tejun Heo wrote:
+> >
+> > +static bool task_participate_group_stop(struct task_struct *task)
 > > +{
-> > +	input_mt_slot(dev, slot);
-> > +	input_mt_report_slot_state(dev, MT_TOOL_FINGER, active);
-> > +	if (active) {
-> > +		input_report_abs(dev, ABS_MT_POSITION_X, x);
-> > +		input_report_abs(dev, ABS_MT_POSITION_Y,
-> > +				 YMAX_NOMINAL + YMIN_NOMINAL - y);
-> > +	}
-> > +}
+> > +	struct signal_struct *sig = task->signal;
+> > +	bool consume = task->group_stop & GROUP_STOP_CONSUME;
+> > +
+> > +	task_clear_group_stop(task);
+> > +
+> > +	if (!consume)
+> > +		return false;
+> > +
+> > +	task->group_stop &= ~GROUP_STOP_CONSUME;
 > 
-> I take it that you feel MT_TOOL_FINGER should always be set, even if
-> it's always the same as BTN_TOOL_*? I just want to be sure this is
-> intended so we document it appropriately.
+> Minor nit, GROUP_STOP_CONSUME was already cleared by task_clear_group_stop().
 
-Yes - the MT_TOOLs are only emitted when explicitly set in absbit, but
-the internal interface always handles it. This is actually documented
-in the code (and DocBook).
+Thanks.  Dropped.
 
-> 
-> > @@ -623,6 +686,7 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
-> >  	int i;
-> >  
-> >  	__set_bit(INPUT_PROP_POINTER, dev->propbit);
-> > +	__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
-> 
-> Shouldn't this only be set when SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) is
-> true?
-
-Indeed - thanks.
-
-Henrik
+-- 
+tejun
