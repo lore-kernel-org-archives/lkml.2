@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669Ab0LUSXn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 13:23:43 -0500
-Received: from casper.infradead.org ([85.118.1.10]:38757 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752437Ab0LUSXl (ORCPT
+	id S1752613Ab0LUSZv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 13:25:51 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:55437 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752076Ab0LUSZt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 13:23:41 -0500
-Date: Tue, 21 Dec 2010 16:23:21 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH -tip 2/4] [BUGFIX]perf: Fix strlist__parse_list to
-	handle const string
-Message-ID: <20101221182321.GA15683@ghostprotocols.net>
-References: <20101217131149.24123.96128.stgit@ltc236.sdl.hitachi.co.jp> <20101217131206.24123.87394.stgit@ltc236.sdl.hitachi.co.jp>
+	Tue, 21 Dec 2010 13:25:49 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thiago Farina <tfransosi@gmail.com>
+Subject: Re: [PATCH] drivers/media/video/v4l2-compat-ioctl32.c: Check the return value of copy_to_user
+Date: Tue, 21 Dec 2010 19:25:38 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6-next-20101220+; KDE/4.5.1; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-media@vger.kernel.org
+References: <d21ad74592c295d59f5806f30a053745b5765397.1292894256.git.tfransosi@gmail.com>
+In-Reply-To: <d21ad74592c295d59f5806f30a053745b5765397.1292894256.git.tfransosi@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101217131206.24123.87394.stgit@ltc236.sdl.hitachi.co.jp>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012211925.38201.arnd@arndb.de>
+X-Provags-ID: V02:K0:ZzwJGszHwNw7r/eowNVQdIFhBED//g5KVDdA80UnDvt
+ baiFBQk1BP8ngUR4DfwfmVBJc49Wr2qwb5YWL1PoydGMmOBmXC
+ CUrpc0bYpf/BLhdqADzGS3/KgBmHsvflJFUgngOsrwY49lWjQ4
+ eqZr5k1oEp6C1POBnZ6AE0H5RmD2MWD0gzcX4b/EdACkLcsrSO
+ GTro2GHnMpJk2r21Sufzg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Dec 17, 2010 at 10:12:06PM +0900, Masami Hiramatsu escreveu:
-> Fix strlist__parse_list to handle const string. Without this patch,
-> strlist__parse_list() causes SEGV when caller passes a constant
-> string.
- 
-> +++ b/tools/perf/util/strlist.c
-> @@ -136,13 +136,19 @@ static int strlist__parse_list_entry(struct strlist *self, const char *s)
->  
->  int strlist__parse_list(struct strlist *self, const char *s)
->  {
-> -	char *sep;
-> +	char *sep, *tmp;
->  	int err;
->  
-> +	/* This method requires strdup, because this changes given string */
-> +	if (!self->dupstr)
-> +		return -EINVAL;
+On Tuesday 21 December 2010 02:18:06 Thiago Farina wrote:
+> diff --git a/drivers/media/video/v4l2-compat-ioctl32.c b/drivers/media/video/v4l2-compat-ioctl32.c
+> index e30e8df..55825ec 100644
+> --- a/drivers/media/video/v4l2-compat-ioctl32.c
+> +++ b/drivers/media/video/v4l2-compat-ioctl32.c
+> @@ -206,7 +206,9 @@ static struct video_code __user *get_microcode32(struct video_code32 *kp)
+>          * user address is invalid, the native ioctl will do
+>          * the error handling for us
+>          */
+> -       (void) copy_to_user(up->loadwhat, kp->loadwhat, sizeof(up->loadwhat));
+> +       if (copy_to_user(up->loadwhat, kp->loadwhat, sizeof(up->loadwhat)))
+> +               return NULL;
 > +
+>         (void) put_user(kp->datasize, &up->datasize);
+>         (void) put_user(compat_ptr(kp->data), &up->data);
+>         return up;
 
-Why is the above check needed if you solved the problem by strnduping at
-each separator?
+Did you read the comment above the code you changed?
 
-Wouldn't be better to just stop changing the string by passing the
-length to strlist__parse_list_entry, etc?
+You can probably change this function to look at the return code of
+copy_to_user, but then you need to treat the put_user return code
+the same, and change the comment.
 
->  	while ((sep = strchr(s, ',')) != NULL) {
-> -		*sep = '\0';
-> -		err = strlist__parse_list_entry(self, s);
-> -		*sep = ',';
-> +		tmp = strndup(s, sep - s);
-> +		if (tmp == NULL)
-> +			return -ENOMEM;
-> +		err = strlist__parse_list_entry(self, tmp);
-> +		free(tmp);
->  		if (err != 0)
->  			return err;
->  		s = sep + 1;
+	Arnd
