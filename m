@@ -1,76 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933530Ab0LUCoD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 21:44:03 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:57808 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933446Ab0LUCoA (ORCPT
+	id S933520Ab0LUDGO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 22:06:14 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:37864 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933446Ab0LUDGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 21:44:00 -0500
+	Mon, 20 Dec 2010 22:06:13 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:from:date:message-id:subject:to:cc:content-type;
-        b=NmV5W2GOLrB4SfIoq2OtszLfgt3mlr4ArruJrm+Hgyi1UEqX5l7cPzptjq7F4vl2LZ
-         cdct7Twzrbopq53IglZA==
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:content-type;
+        b=hJqqIUOrV4ad3aETzp4m9x7uLb3mqEMYS7UdSuCmlSGnDW5qvE/w8xQDj0wefzhQ9Z
+         p7oxT732tHbQHOOr9JTyBJNb6yi5midyXJvh2fpDLi5yAbYDnEy2m6LzyM0NjtXCgGl0
+         GQNNql/S0dYuO8y930Zkio6DIdl0XqWBWgpfg=
 MIME-Version: 1.0
-From: David Sharp <dhsharp@google.com>
-Date: Mon, 20 Dec 2010 18:43:37 -0800
-Message-ID: <AANLkTik6RfWWqjtuBUWRGZ0e+DHHm02opR9FAQJPdTR1@mail.gmail.com>
-Subject: ftrace: trace_pipe_raw interface broken
-To: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Cc: Michael Rubin <mrubin@google.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+From: AJ ONeal <coolaj86@gmail.com>
+Date: Mon, 20 Dec 2010 20:05:51 -0700
+Message-ID: <AANLkTimze4agnNRM_HVnQ1=B44pWy_D+OmeUYFvCSwMy@mail.gmail.com>
+Subject: Memory Leak in /dev/shm on ARM 2.6.36
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-trace_pipe_raw doesn't work correctly, I think because
-tracing_buffers_read() uses ring_buffer_read_page() incorrectly.
+In my other message about SIGBUS I was mmap-ing a file in /dev/shm.
 
-In particular, if you read less than one page at a time, then you get
-much more data than expected from the ring buffer:
+I switched my implementation to use write() instead of mmap and now it
+leaks memory very very quickly.
 
-$ ftrace=/sys/kernel/debug/tracing
-$ echo 0 > $ftrace/tracing_enabled
-$ echo 1 > $ftrace/events/enable
-$ echo > $ftrace/trace  # reset
-$ echo 100 > $ftrace/buffer_size_kb
-$  # generate lots of events:
-$ echo 1 > $ftrace/tracing_enabled &&  ls -laR /proc/ > /dev/null 2>&1
-&& echo 0 > $ftrace/tracing_enabled
-$ dd bs=1024 if=$ftrace/per_cpu/cpu0/trace_pipe_raw 2>/dev/null | wc -c
-675840
+`df -h` shows that 80mb of memory are in use
+`du -ch /dev/shm` shows that 10mb of memory in use
 
-That's significantly more data than the buffer could possibly contain.
-Further shrinking bs increases the amount of data output even more.
+After just a few minutes of creating and removing 512kb files in
+/dev/shm the program exits with a write failure.
+Unmounting and remounting /dev/shm reclaims the memory.
 
-Even when reading >=4096 bytes, something is funny:
+Again, if there is a better place to discuss this kind of bug, please
+point me to it.
 
-$ dd bs=4096 if=$ftrace/per_cpu/cpu0/trace_pipe_raw 2>/dev/null | wc -c
-118784
-
-That's 116kB. I expect 100kb to allocate (102400+4087)/4088 = 26
-pages, or 104kb-worth of pages. 116kB is about 28 pages.
-
-Looking at the code for tracing_buffers_read() and
-ring_buffer_read_page(), there seems to be a disconnect.
-
-ring_buffer_read_page can consume less than one page if it was in the
-middle of the buffer, such as when would happen after userspace only
-asks for 1k. It returns the offset of the start of what it cosumed,
-and the end is put in the returned bpage->commit. However,
-ring_buffer_data_page is not exposed outside of ring_buffer.c.
-Furthermore, tracing_buffers_read ignores the return value, except to
-check for error.
-
-Basically, I think tracing_buffers_read was forgotten when the ring
-buffer got headers in the buffer pages. It looks like it still expects
-whole pages to have valid tracing data.
-
-I was working on a fix, but, how is trace_pipe_raw supposed to work?
-I'm not sure if it's supposed to output full pages including the page
-headers, or just data. I'm guessing the latter?
-
-Thanks,
-d#
+AJ ONeal
