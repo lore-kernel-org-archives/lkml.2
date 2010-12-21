@@ -1,73 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751743Ab0LUM7l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 07:59:41 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:38614 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750965Ab0LUM7k (ORCPT
+	id S1751765Ab0LUNLG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 08:11:06 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:58093 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987Ab0LUNLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 07:59:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=hWn2lM6Z+Rb7S/tf8+NMtrbwJbIZxkeUj6Pmx9Qs/UK8h2xby9bt90qmBMfg5c5R1c
-         gcaXcviYvz7+/r8lv1zG7st9e18obYXWtgYYfAgiTOL/iMjVCSvik4PHqdotOZZMo/P6
-         W1LTABMvbj1ZUTn/H3SKmcFyyjkJWNt+1Zo9U=
-Date: Tue, 21 Dec 2010 13:59:36 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Andy Walls <awalls@md.metrocast.net>, linux-kernel@vger.kernel.org,
-        nicolas.mailhot@laposte.net, Jarod Wilson <jarod@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [V2 PATCH] kthread_work: Make lockdep happy
-Message-ID: <20101221125934.GA13285@htj.dyndns.org>
-References: <1292762975.2403.29.camel@localhost>
- <AANLkTimYx2Og1BG37wb0WZ0_U8WJjLKHMKgU45qycUaM@mail.gmail.com>
- <AANLkTikuKMLUoVnQsU6QNCnHBgOponJUngHGtyVHk1xK@mail.gmail.com>
- <4D0F8276.9070903@kernel.org>
- <20101221044050.GA25718@windriver.com>
+	Tue, 21 Dec 2010 08:11:04 -0500
+X-AuditID: b753bd60-a4ba2ba000003e7d-c1-4d10a765f397
+Message-ID: <4D10A763.4080209@hitachi.com>
+Date: Tue, 21 Dec 2010 22:10:59 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101221044050.GA25718@windriver.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Franck Bui-Huu <vagabon.xyz@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH 6/6] perf-probe: handle gracefully some stupid and buggy
+ line syntaxes
+References: <1292854685-8230-1-git-send-email-fbuihuu@gmail.com> <1292854685-8230-7-git-send-email-fbuihuu@gmail.com>
+In-Reply-To: <1292854685-8230-7-git-send-email-fbuihuu@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+(2010/12/20 23:18), Franck Bui-Huu wrote:
+> From: Franck Bui-Huu <fbuihuu@gmail.com>
+> 
+> Currently perf-probe doesn't handle those incorrect syntaxes
+> 
+>    $ perf probe -L sched.c:++13
+>    $ perf probe -L sched.c:-+13
+>    $ perf probe -L sched.c:10000000000000000000000000000+13
+> 
+> This patches rewrites parse_line_range_desc() to handle them.
 
-On Tue, Dec 21, 2010 at 12:40:50PM +0800, Yong Zhang wrote:
-> From: Yong Zhang <yong.zhang0@gmail.com>
-> Subject: [V2 PATCH] kthread_work: Make lockdep happy
+OK, without this patch, perf probe accepted that as "0+13".
+With this, perf probe rejects it as an invalid input.
+
+Thank you!
+
 > 
-> spinlock in kthread_worker and wait_queue_head in kthread_work
-> both should be lockdep sensible.
-> So change the interface to make it suiltable for CONFIG_LOCKDEP.
+> As a bonus side, it reports more usefull error messages instead of:
+> "Tailing with invalid character...".
 > 
-> Reported-by: Nicolas <nicolas.mailhot@laposte.net>
-> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Andy Walls <awalls@md.metrocast.net>
+> Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
 > ---
-> Changes from V1:
->  *According to Tejun, kthread_worker could be defined on stack,
->   So introduce DEFINE_KTHREAD_WORKER_ONSTACK.
->  *Change wrong setting to kthread_work->task. Thanks Adny for
->   pointing it.
->  *including some minor issue.
+>  tools/perf/util/probe-event.c |   92 ++++++++++++++++++++++++++--------------
+>  1 files changed, 60 insertions(+), 32 deletions(-)
 > 
-> BTW, only passed build.
+> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+> index 1e81936..469ad35 100644
+> --- a/tools/perf/util/probe-event.c
+> +++ b/tools/perf/util/probe-event.c
+> @@ -539,6 +539,19 @@ int show_available_vars(struct perf_probe_event *pevs __unused,
+>  }
+>  #endif
+>  
+> +static int parse_line_num(char **ptr, int *val, const char *what)
+> +{
+> +	const char *start = *ptr;
+> +
+> +	errno = 0;
+> +	*val = strtol(*ptr, ptr, 0);
+> +	if (errno || *ptr == start) {
+> +		semantic_error("'%s' is not a valid number.\n", what);
+> +		return -EINVAL;
+> +	}
+> +	return 0;
+> +}
+> +
+>  /*
+>   * Stuff 'lr' according to the line range described by 'arg'.
+>   * The line range syntax is described by:
+> @@ -548,50 +561,65 @@ int show_available_vars(struct perf_probe_event *pevs __unused,
+>   */
+>  int parse_line_range_desc(const char *arg, struct line_range *lr)
+>  {
+> -	const char *ptr;
+> -	char *tmp;
+> +	char *range, *name = strdup(arg);
+> +	int err;
+> +
+> +	if (!name)
+> +		return -ENOMEM;
+> +
+> +	lr->start = 0;
+> +	lr->end = INT_MAX;
+> +
+> +	range = strchr(name, ':');
+> +	if (range) {
+> +		*range++ = '\0';
+> +
+> +		err = parse_line_num(&range, &lr->start, "start line");
+> +		if (err)
+> +			goto err;
+> +
+> +		if (*range == '+' || *range == '-') {
+> +			const char c = *range++;
+> +
+> +			err = parse_line_num(&range, &lr->end, "end line");
+> +			if (err)
+> +				goto err;
+> +
+> +			if (c == '+') {
+> +				lr->end += lr->start;
+> +				/*
+> +				 * Adjust the number of lines here.
+> +				 * If the number of lines == 1, the
+> +				 * the end of line should be equal to
+> +				 * the start of line.
+> +				 */
+> +				lr->end--;
+> +			}
+> +		}
+>  
+> -	ptr = strchr(arg, ':');
+> -	if (ptr) {
+> -		lr->start = (int)strtoul(ptr + 1, &tmp, 0);
+> -		if (*tmp == '+') {
+> -			lr->end = lr->start + (int)strtoul(tmp + 1, &tmp, 0);
+> -			lr->end--;	/*
+> -					 * Adjust the number of lines here.
+> -					 * If the number of lines == 1, the
+> -					 * the end of line should be equal to
+> -					 * the start of line.
+> -					 */
+> -		} else if (*tmp == '-')
+> -			lr->end = (int)strtoul(tmp + 1, &tmp, 0);
+> -		else
+> -			lr->end = INT_MAX;
+>  		pr_debug("Line range is %d to %d\n", lr->start, lr->end);
+> +
+> +		err = -EINVAL;
+>  		if (lr->start > lr->end) {
+>  			semantic_error("Start line must be smaller"
+>  				       " than end line.\n");
+> -			return -EINVAL;
+> +			goto err;
+>  		}
+> -		if (*tmp != '\0') {
+> -			semantic_error("Tailing with invalid character '%d'.\n",
+> -				       *tmp);
+> -			return -EINVAL;
+> +		if (*range != '\0') {
+> +			semantic_error("Tailing with invalid str '%s'.\n", range);
+> +			goto err;
+>  		}
+> -		tmp = strndup(arg, (ptr - arg));
+> -	} else {
+> -		tmp = strdup(arg);
+> -		lr->end = INT_MAX;
+>  	}
+>  
+> -	if (tmp == NULL)
+> -		return -ENOMEM;
+> -
+> -	if (strchr(tmp, '.'))
+> -		lr->file = tmp;
+> +	if (strchr(name, '.'))
+> +		lr->file = name;
+>  	else
+> -		lr->function = tmp;
+> +		lr->function = name;
+>  
+>  	return 0;
+> +err:
+> +	free(name);
+> +	return err;
+>  }
+>  
+>  /* Check the name is good for event/group */
 
-If somebody can confirm this makes lockdep behave correctly, I'll
-route it through the wq tree.
-
-Thanks.
 
 -- 
-tejun
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
