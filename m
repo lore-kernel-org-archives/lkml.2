@@ -1,61 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898Ab0LUXoa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 18:44:30 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:17985 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753308Ab0LUXo3 (ORCPT
+	id S1753961Ab0LUXoi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 18:44:38 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:24872 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753905Ab0LUXof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 18:44:29 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp02.nvidia.com on Tue, 21 Dec 2010 15:44:26 -0800
-Subject: Re: [PATCH 1/1] power: bq20z75: Update return value of CURRENT NOW
-From: rklein <rklein@nvidia.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Chew <AChew@nvidia.com>, Olof Johansson <olof@lixom.net>
-In-Reply-To: <20101221232230.GA5417@oksana.dev.rtsoft.ru>
-References: <1292374885.8731.3.camel@rklein-linux2>
-	 <20101215030455.GA17414@lixom.net> <1292892862.12618.1.camel@rklein-linux2>
-	 <20101221232230.GA5417@oksana.dev.rtsoft.ru>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Dec 2010 15:41:15 -0800
-Message-ID: <1292974875.23715.0.camel@rklein-linux2>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Dec 2010 18:44:35 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6204"; a="67577123"
+Message-ID: <c59887f4d87c07003902219b5615d184.squirrel@www.codeaurora.org>
+In-Reply-To: <201012152204.42002.arnd@arndb.de>
+References: <1292437866-11652-1-git-send-email-nvishwan@codeaurora.org>
+    <201012152204.42002.arnd@arndb.de>
+Date: Tue, 21 Dec 2010 15:44:21 -0800 (PST)
+Subject: Re: [PATCH] msm: rmnet: msm rmnet smd virtual ethernet driver
+From: nvishwan@codeaurora.org
+To: "Arnd Bergmann" <arnd@arndb.de>
+Cc: "Niranjana Vishwanathapura" <nvishwan@codeaurora.org>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        "Brian Swetland" <swetland@google.com>
+User-Agent: SquirrelMail/1.4.17
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-12-21 at 15:22 -0800, Anton Vorontsov wrote:
-> On Mon, Dec 20, 2010 at 04:54:22PM -0800, rklein wrote:
-> > On Tue, 2010-12-14 at 19:04 -0800, Olof Johansson wrote:
-> > > On Tue, Dec 14, 2010 at 05:01:25PM -0800, rklein wrote:
-> > > > The BQ20Z75 will return a negative value for current if the battery is
-> > > > discharging and a positive value if charging. This should always be
-> > > > exported
-> > > > as a positive number.
-> > > >
-> > > > Signed-off-by: Rhyland Klein <rklein@nvidia.com>
-> > > 
-> > > Reviewed-by: Olof Johansson <olof@lixom.net>
-> > > 
-> > > -Olof
-> > 
-> > Anton, is this patch ok to get put in?
-> 
-> I'm not sure. Probably not. Why would you think that the current
-> should always be positive? For ds2760 it isn't, for example.
-> If some driver assumes always positive current, I think it should
-> be fixed instead.
-> 
-> If the battery is discharging, let it be negative. That's what
-> happens on wires anyway. :-)
-> 
+> On Wednesday 15 December 2010 19:31:06 Niranjana Vishwanathapura wrote:
+>> +struct rmnet_private {
+>> +       smd_channel_t *ch;
+>> +       struct net_device_stats stats;
+>> +       const char *chname;
+>> +#ifdef CONFIG_MSM_RMNET_DEBUG
+>> +       ktime_t last_packet;
+>> +       short active_countdown; /* Number of times left to check */
+>> +       short restart_count; /* Number of polls seems so far */
+>> +       unsigned long wakeups_xmit;
+>> +       unsigned long wakeups_rcv;
+>> +       unsigned long timeout_us;
+>> +       unsigned long awake_time_ms;
+>> +       struct delayed_work work;
+>> +#endif
+>> +};
+>
+> It feels like a significant portion of the code and the complexity
+> (of which there fortunately is very little otherwise) is in the
+> debugging code. How important is that debugging code still?
+>
+> In my experience, once a driver gets stable enough for inclusion,
+> most of the debugging code that you have put in there to write
+> the driver becomes obsolete, because the next bug is not going
+> to be found with it anyway.
+>
+> How about deleting the debug code now? You still have the code and
+> if something goes wrong, you can always put it back to analyse
+> the problem.
+>
 
-That makes sense to me, I will propose the change to the sw that was
-expecting the positive value.
+These debug code proved to be very helpful in debugging with different
+baseband images on different targets.  So, it would be very handy to keep it.
 
--rhyland
+But, let me remove it for now, I can send another patch later for debug code.
+
+>> +/* Called in soft-irq context */
+>> +static void smd_net_data_handler(unsigned long arg)
+>> +{
+>> ...
+>> +}
+>> +
+>> +static DECLARE_TASKLET(smd_net_data_tasklet, smd_net_data_handler, 0);
+>> +
+>> +static void smd_net_notify(void *_dev, unsigned event)
+>> +{
+>> +       if (event != SMD_EVENT_DATA)
+>> +               return;
+>> +
+>> +       smd_net_data_tasklet.data = (unsigned long) _dev;
+>> +
+>> +       tasklet_schedule(&smd_net_data_tasklet);
+>> +}
+>
+> It appears strange to do all the receive work in a tasklet. The
+> common networking code already has infrastructure for deferring
+> the rx to softirq time, and using the NAPI poll() logic likely gives
+> you better performance as well.
+>
+
+NAPI will not buy much as the SMD transport doesn't provide a machanism to
+stop interrupts.  I will consider using NAPI in the future (it requires
+performance testing on lot of different targets).
+
+> Aside from these, the driver looks very nice and clean to me.
+>
+> 	Arnd
+>
+
 
