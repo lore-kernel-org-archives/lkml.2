@@ -1,263 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933562Ab0LUEMW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 23:12:22 -0500
-Received: from kroah.org ([198.145.64.141]:35482 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933461Ab0LUEMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 23:12:21 -0500
-Date: Mon, 20 Dec 2010 20:11:58 -0800
-From: Greg KH <greg@kroah.com>
-To: Sutharsan R <sutharsan.ram@gmail.com>
-Cc: linux-arm@vger.kernel.org, srmt@cypress.com, david.cross@cypress.com,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH] adding gpmc configuration functions, west bridge
- related
-Message-ID: <20101221041158.GA30120@kroah.com>
-References: <AANLkTi==X9maghSd3YwG6g3cQek3gV9-3Fx8W+n_zLmp@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi==X9maghSd3YwG6g3cQek3gV9-3Fx8W+n_zLmp@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933570Ab0LUE23 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 23:28:29 -0500
+Received: from vms173017pub.verizon.net ([206.46.173.17]:61419 "EHLO
+	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933461Ab0LUE22 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 23:28:28 -0500
+Date: Mon, 20 Dec 2010 23:28:03 -0500 (EST)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <htejun@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: acpi throttling: Use this_cpu_has and simplify code
+In-reply-to: <alpine.DEB.2.00.1012161215200.21588@router.home>
+Message-id: <alpine.LFD.2.00.1012202318400.4383@x980>
+References: <20101214162842.542421046@linux.com>
+ <20101214162855.392020353@linux.com>
+ <1292345072.5934.32.camel@edumazet-laptop>
+ <alpine.DEB.2.00.1012141055220.17229@router.home> <4D07A2B7.8080405@zytor.com>
+ <alpine.DEB.2.00.1012141109470.17229@router.home> <4D07A7CB.7010205@zytor.com>
+ <4D07A95C.7030703@kernel.org> <4D0814AF.7080209@zytor.com>
+ <4D08ECEF.3040909@kernel.org> <4D08EE57.8010602@zytor.com>
+ <4D08EF4E.8070403@kernel.org> <4D0A3AF2.50508@gmail.com>
+ <alpine.DEB.2.00.1012161215200.21588@router.home>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 20, 2010 at 06:42:06PM -0800, Sutharsan R wrote:
-> This patch adds and exports gpmc configuration functions.
-> 'gpmc' configuration functions will be used by
-> westbridge device controller driver in staging tree.
-> This patch is part of the work to get westbridge device controller driver
-> out of staging tree.
-> 
-> Signed-off-by: Sutharsan Ramamoorthy <srmt@cypress.com>
+This patch is a valid cleanup, and I've applied it to the acpi-test tree.
+
+The routines named *rdmsr() and *wrmsr() run on the local CPU
+by definition.  I think that after this change to get rid of pr*,
+that is even more clear.
+
+The part about checking that you are on the right processor
+should really be done in the caller.  Yakui should send a patch
+for the driver to check for successful return from
+set_cpus_allowed_ptr() before invoking this code.
+
+> With the this_cpu_xx we no longer need to pass an acpi
+> structure to the msr management code. Simplifies code and improves
+> performance.
+
+Simplifies, yes.
+Performance -- not the focus here.
+If you are running routines to throttle the clock frequency,
+then you have already decided that performance isn't your top priority:-)
+
+thanks,
+Len Brown, Intel Open Source Technology Center
+
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 > 
 > ---
-> 
-> diff -uprN -X linux-2.6.37_vanilla/Documentation/dontdiff
-> linux-2.6.37_vanilla/arch/arm/mach-omap2/Makefile
-> linux-2.6.37-cywb/arch/arm/mach-omap2/Makefile
-> --- linux-2.6.37_vanilla/arch/arm/mach-omap2/Makefile	2010-11-29
-> 20:42:04.000000000 -0800
-> +++ linux-2.6.37-cywb/arch/arm/mach-omap2/Makefile	2010-12-13
-> 16:04:08.378446603 -0800
+>  drivers/acpi/processor_throttling.c |   32 ++++++++++----------------------
+>  1 file changed, 10 insertions(+), 22 deletions(-)
 
-Your patch is linewrapped :(
-
-> @@ -182,6 +182,7 @@ obj-y					+= $(usbfs-m) $(usbfs-y)
->  obj-y					+= usb-musb.o
->  obj-$(CONFIG_MACH_OMAP2_TUSB6010)	+= usb-tusb6010.o
->  obj-y					+= usb-ehci.o
-> +obj-$(CONFIG_WESTBRIDGE_ASTORIA)        += usb-cywb-pnand.o
-> 
->  onenand-$(CONFIG_MTD_ONENAND_OMAP2)	:= gpmc-onenand.o
->  obj-y					+= $(onenand-m) $(onenand-y)
-> diff -uprN -X linux-2.6.37_vanilla/Documentation/dontdiff
-> linux-2.6.37_vanilla/arch/arm/mach-omap2/usb-cywb-pnand.c
-> linux-2.6.37-cywb/arch/arm/mach-omap2/usb-cywb-pnand.c
-> --- linux-2.6.37_vanilla/arch/arm/mach-omap2/usb-cywb-pnand.c	1969-12-31
-> 16:00:00.000000000 -0800
-> +++ linux-2.6.37-cywb/arch/arm/mach-omap2/usb-cywb-pnand.c	2010-12-20
-> 17:33:23.822251855 -0800
-> @@ -0,0 +1,170 @@
-> +/*
-> + * linux /arch/arm/mach-omap2/usb-cywb-pnand.c
-> + *
-> + * Copyright (C) 2010  Cypress Semiconductor
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version 2
-> + * of the License.
-
-Either, or what?
-
-> + */
-> +
-> +#include <linux/module.h>
-> +
-> +#include <plat/gpmc.h>
-
-Why the extra lines inbetween the #includes?
-
-> +
-> +/*
-> + * chip select number on GPMC ( 0..7 )
-> + */
-> +#define AST_GPMC_CS 4
-> +
-> +/*
-> + * for use by gpmc_set_timings api, measured in ns, not clocks
-> + */
-> +#define WB_GPMC_BUSCYC_t    (7 * 6)
-
-What's with the lowercase values in #defines?
-
-> +#define WB_GPMC_CS_t_o_n    (0)
-> +#define WB_GPMC_ADV_t_o_n   (0)
-> +#define WB_GPMC_OE_t_o_n    (0)
-> +#define WB_GPMC_OE_t_o_f_f  (5 * 6)
-> +#define WB_GPMC_WE_t_o_n    (1 * 6)
-> +#define WB_GPMC_WE_t_o_f_f  (5 * 6)
-> +#define WB_GPMC_RDS_ADJ     (2 * 6)
-> +#define WB_GPMC_RD_t_a_c_c  (WB_GPMC_OE_t_o_f_f + WB_GPMC_RDS_ADJ)
-> +#define WB_GPMC_WR_t_a_c_c  (WB_GPMC_BUSCYC_t)
-> +
-> +#define GPMC_16BIT_MODE 0
-> +#define GPMC_RETIME     1
-> +
-> +/*
-> + * GPMC_CONFIG7[cs] register bit fields
-> + * AS_CS_MASK - 3 bit mask for  A26,A25,A24,
-> + * AS_CS_BADDR - 6 BIT VALUE  A29 ...A24
-> + * CSVALID_B - CSVALID bit on GPMC_CONFIG7[cs] register
-> + */
-> +#define AS_CS_MASK	(0X7 << 8)
-> +#define AS_CS_BADDR	 0x02
-> +#define CSVALID_B (1 << 6)
-> +
-> +#define BLKSZ_4K 0x1000
-> +
-> +/*
-> + * switch GPMC DATA bus mode
-> + */
-> +void cywb_gpmc_enable_16bit_bus(bool dbus16_enabled)
-> +{
-> +	u32 tmp32;
-> +
-> +	/*
-> +	 * disable gpmc CS4 operation 1st
-> +	 */
-> +	tmp32 = gpmc_cs_read_reg(AST_GPMC_CS,
-> +				GPMC_CS_CONFIG7) & ~GPMC_CONFIG7_CSVALID;
-> +	gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7, tmp32);
-> +
-> +	/*
-> +	 * GPMC NAND data bus can be 8 or 16 bit wide
-> +	 */
-> +	if (dbus16_enabled) {
-> +		dev_dbg(KERN_INFO "gpmc: enabling 16 bit bus\n");
-> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
-> +				(GPMC_CONFIG1_DEVICETYPE(2) |
-> +				GPMC_CONFIG1_WAIT_PIN_SEL(2) |
-> +				GPMC_CONFIG1_DEVICESIZE_16));
-> +	} else {
-> +		dev_dbg(KERN_INFO "gpmc: enabling 8 bit bus\n");
-> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
-> +				(GPMC_CONFIG1_DEVICETYPE(2) |
-> +				GPMC_CONFIG1_WAIT_PIN_SEL(2)));
-> +	}
-> +
-> +	/*
-> +	 * re-enable astoria CS operation on GPMC
-> +	 */
-> +	 gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7,
-> +			(tmp32 | GPMC_CONFIG7_CSVALID));
-> +}
-> +
-> +int cywb_pnand_platform_retime(int action, bool dbus16_enabled)
-> +{
-> +	u32 tmp32;
-> +	struct gpmc_timings timings;
-> +	int retval;
-
-Set retval to 0 first, then you don't have to set it for when things go
-right, only when things go wrong.
-
-> +
-> +	switch (action) {
-> +
-> +	case GPMC_16BIT_MODE:
-> +		cywb_gpmc_enable_16bit_bus(dbus16_enabled);
-> +		retval = 0;
-> +		break;
-> +	case GPMC_RETIME:
-> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
-> +						(GPMC_CONFIG1_DEVICETYPE(2) |
-> +						GPMC_CONFIG1_WAIT_PIN_SEL(2)));
-> +
-> +		memset(&timings, 0, sizeof(timings));
-> +
-> +		/* cs timing */
-> +		timings.cs_on = WB_GPMC_CS_t_o_n;
-> +		timings.cs_wr_off = WB_GPMC_BUSCYC_t;
-> +		timings.cs_rd_off = WB_GPMC_BUSCYC_t;
-> +
-> +		/* adv timing */
-> +		timings.adv_on = WB_GPMC_ADV_t_o_n;
-> +		timings.adv_rd_off = WB_GPMC_BUSCYC_t;
-> +		timings.adv_wr_off = WB_GPMC_BUSCYC_t;
-> +
-> +		/* oe timing */
-> +		timings.oe_on = WB_GPMC_OE_t_o_n;
-> +		timings.oe_off = WB_GPMC_OE_t_o_f_f;
-> +		timings.access = WB_GPMC_RD_t_a_c_c;
-> +		timings.rd_cycle = WB_GPMC_BUSCYC_t;
-> +
-> +		/* we timing */
-> +		timings.we_on = WB_GPMC_WE_t_o_n;
-> +		timings.we_off = WB_GPMC_WE_t_o_f_f;
-> +		timings.wr_access = WB_GPMC_WR_t_a_c_c;
-> +		timings.wr_cycle = WB_GPMC_BUSCYC_t;
-> +
-> +		timings.page_burst_access = WB_GPMC_BUSCYC_t;
-> +		timings.wr_data_mux_bus = WB_GPMC_BUSCYC_t;
-> +		gpmc_cs_set_timings(AST_GPMC_CS, &timings);
-> +
-> +		/*
-> +		 * DISABLE cs4, NOTE GPMC REG7 is already configured
-> +		 * at this point by gpmc_cs_request
-> +		 */
-> +		tmp32 = gpmc_cs_read_reg(AST_GPMC_CS, GPMC_CS_CONFIG7) &
-> +						~GPMC_CONFIG7_CSVALID;
-> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7, tmp32);
-> +
-> +		/*
-> +		 * PROGRAM chip select Region, (see OMAP3430 TRM PAGE 1088)
-> +		 */
-> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7,
-> +					(AS_CS_MASK | AS_CS_BADDR));
-> +
-> +		/*
-> +		 * by default configure GPMC into 8 bit mode
-> +		 * (to match astoria default mode)
-> +		 */
-> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
-> +					(GPMC_CONFIG1_DEVICETYPE(2) |
-> +					GPMC_CONFIG1_WAIT_PIN_SEL(2)));
-> +
-> +		/*
-> +		 * ENABLE astoria cs operation on GPMC
-> +		 */
-> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7,
-> +						(tmp32 | GPMC_CONFIG7_CSVALID));
-> +		retval = 0;
-> +		break;
-> +	default:
-> +		retval = -EINVAL;
-
-No error message?  How could this ever happen?
-
-> +		break;
-> +	}
-> +
-> +	return retval;
-> +
-> +}
-> +EXPORT_SYMBOL(cywb_pnand_platform_retime);
-
-Again, are you sure about this export?
-
-What code uses this?  If it is the staging driver, is this code now
-duplicated there?  If so, why not remove it in the same patch, that
-would make more sense.
-
-Also, the code above will break the build, you obviously never even
-tested it out.  Why would you send us something and expect us to apply
-it, when you did not do the most simplest of tests yourself?
-
-{sigh}
-
-greg k-h
