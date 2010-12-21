@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933604Ab0LUE54 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 23:57:56 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:5146 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933547Ab0LUE5z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 23:57:55 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAD7BD015LdEN/2dsb2JhbACkDHS/HoVJBA
-Date: Tue, 21 Dec 2010 15:57:51 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Eric Paris <eparis@redhat.com>
-Cc: npiggin@kernel.dk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: VFS scalability + cgroups == panic
-Message-ID: <20101221045751.GB3189@amd>
-References: <1292873163.26771.15.camel@localhost.localdomain>
- <1292877302.26771.18.camel@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292877302.26771.18.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933622Ab0LUE6k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 23:58:40 -0500
+Received: from kroah.org ([198.145.64.141]:59855 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933547Ab0LUE6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 23:58:39 -0500
+From: Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Ken Mills <ken.k.mills@intel.com>, Alan Cox <alan@linux.intel.com>,
+        stable@kernel.org, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 1/2] n_gsm: Fix message length handling when building header
+Date: Mon, 20 Dec 2010 20:58:36 -0800
+Message-Id: <1292907517-12275-1-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <20101221044205.GB11750@kroah.com>
+References: <20101221044205.GB11750@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 20, 2010 at 03:35:02PM -0500, Eric Paris wrote:
-> On Mon, 2010-12-20 at 14:26 -0500, Eric Paris wrote:
-> > [   46.337486] systemd[1]: readahead-collect.service: main process exited, code=exited, status=1
-> > [   46.339544] BUG: unable to handle kernel NULL pointer dereference at           (null)
-> > [   46.340232] IP: [<          (null)>]           (null)
-> > [   46.340232] PGD 3a885067 PUD 3b2ad067 PMD 0
-> > [   46.340232] Oops: 0010 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> > [   46.340232] last sysfs file: /sys/module/ipv6/parameters/disable
-> > [   46.340232] CPU 1
-> > [   46.340232] Modules linked in: ipv6 autofs4 ext4 jbd2 crc16 usbhid
-> > [   46.340232]
-> > [   46.340232] Pid: 1, comm: systemd Tainted: G        W   2.6.37-rc6-kernel1-next-20101220+ #149 /KVM
-> > [   46.340232] RIP: 0010:[<0000000000000000>]  [<          (null)>]           (null)
-> > [   46.340232] RSP: 0018:ffff88003de09d40  EFLAGS: 00010206
-> > [   46.340232] RAX: ffffffff81612080 RBX: ffff88003d8fdd20 RCX: 0000000000000000
-> > [   46.340232] RDX: ffffffff8154d737 RSI: ffff88003d8fdd98 RDI: ffff88003d8fdd20
-> > [   46.340232] RBP: ffff88003de09d78 R08: 0000000000000000 R09: 0000000000000000
-> > [   46.340232] R10: 0000000000000001 R11: 0000000000000001 R12: ffff88003d8fdd80
-> > [   46.340232] R13: ffff88003d8fd300 R14: ffff88003d8fd388 R15: ffff88003d8fddf8
-> > [   46.340232] FS:  00007f53e84b87c0(0000) GS:ffff88003e200000(0000) knlGS:0000000000000000
-> > [   46.340232] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> > [   46.340232] CR2: 0000000000000000 CR3: 000000003b21f000 CR4: 00000000000006e0
-> > [   46.340232] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> > [   46.340232] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> > [   46.340232] Process systemd (pid: 1, threadinfo ffff88003de08000, task ffff88003de00000)
-> > [   46.340232] Stack:
-> > [   46.340232]  ffffffff81146570 ffff88003de09d78 ffff88003d8fdd20 ffff88003d8fd2a0
-> > [   46.340232]  ffff88003d8fd300 ffff88003d8fd388 ffff88003d8fddf8 ffff88003de09dc8
-> > [   46.340232]  ffffffff810ad273 ffff88003de09da8 ffff88003d8fdd80 ffff88003ac0b7c8
-> > [   46.340232] Call Trace:
-> > [   46.340232]  [<ffffffff81146570>] ? dput+0xd0/0x220
-> > [   46.340232]  [<ffffffff810ad273>] cgroup_clear_directory+0x93/0x130
-> > [   46.340232]  [<ffffffff810af7f6>] cgroup_rmdir+0x3b6/0x550
-> > [   46.340232]  [<ffffffff8107d720>] ? autoremove_wake_function+0x0/0x40
-> > [   46.340232]  [<ffffffff8113ac14>] vfs_rmdir+0xa4/0xe0
-> > [   46.340232]  [<ffffffff8114cd0d>] ? mnt_want_write+0x4d/0x90
-> > [   46.340232]  [<ffffffff8113d18b>] do_rmdir+0x10b/0x120
-> > [   46.340232]  [<ffffffff81093188>] ? lockdep_sys_exit+0x28/0x80
-> > [   46.340232]  [<ffffffff8154d479>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> > [   46.340232]  [<ffffffff8113d1f1>] sys_rmdir+0x11/0x20
-> > [   46.340232]  [<ffffffff8100bf12>] system_call_fastpath+0x16/0x1b
-> > 
-> 
-> Best bisection I could do (numerous bisect unsafe problems with your
-> patch series.  undefined dget_locked_dlock() and
-> security_inode_exec_permission() has broken arguments for a while.)
+From: Ken Mills <ken.k.mills@intel.com>
 
-I'll try to improve bisectability.
+Fix message length handling when building header
+
+When the message length is greater than 127, the length field in the header
+is built incorrectly. According to the spec, when the length is less than 128
+the length field is a single byte formatted as: bbbbbbb1. When it is greater
+than 127 then the field is two bytes of the format: bbbbbbb0 bbbbbbbb.
+
+Signed-off-by: Ken Mills <ken.k.mills@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Cc: stable@kernel.org
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/tty/n_gsm.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
+index 81b4658..2fc5cf2 100644
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -716,8 +716,8 @@ static void __gsm_data_queue(struct gsm_dlci *dlci, struct gsm_msg *msg)
+ 		if (msg->len < 128)
+ 			*--dp = (msg->len << 1) | EA;
+ 		else {
+-			*--dp = ((msg->len & 127) << 1) | EA;
+-			*--dp = (msg->len >> 6) & 0xfe;
++			*--dp = (msg->len >> 7);	/* bits 7 - 15 */
++			*--dp = (msg->len & 127) << 1;	/* bits 0 - 6 */
+ 		}
+ 	}
+ 
+-- 
+1.7.3.2
 
