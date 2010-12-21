@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933439Ab0LUBk0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 20:40:26 -0500
-Received: from mail-fx0-f66.google.com ([209.85.161.66]:51313 "EHLO
-	mail-fx0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933396Ab0LUBkZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 20:40:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=nFKM9pPhJHx6O//AJFCktKBas/RxcC0zqdfYsb1FGEmV6IDtIXlR4zPlIce4gJhsUD
-         dr2lOZ9jFiyZhCyuRp+/58ZTVGCb14FSL9HnL/H6Bd5ep2MdGk5zasa4hxd8WXgXdqKX
-         m5TOkZ6xCkJAEKXZ8Dnhq6h2tyorVoKOo7cmQ=
-Date: Tue, 21 Dec 2010 02:40:21 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 12/15] clocksource: Ignore nohz task cpu in
- clocksource watchdog
-Message-ID: <20101221014019.GM1715@nowhere>
-References: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
- <1292858662-5650-13-git-send-email-fweisbec@gmail.com>
- <1292862458.5021.39.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292862458.5021.39.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933462Ab0LUBly (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 20:41:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28089 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933400Ab0LUBlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 20:41:52 -0500
+From: Dave Airlie <airlied@gmail.com>
+To: linux-fbdev@vger.kernel.org
+Cc: dri-devel@lists.sf.net, linux-kernel@vger.kernel.org,
+        Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 1/3] fb: fix overlapping test off-by-one.
+Date: Tue, 21 Dec 2010 11:41:15 +1000
+Message-Id: <1292895677-4242-2-git-send-email-airlied@gmail.com>
+In-Reply-To: <1292895677-4242-1-git-send-email-airlied@gmail.com>
+References: <1292895677-4242-1-git-send-email-airlied@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 20, 2010 at 05:27:38PM +0100, Peter Zijlstra wrote:
-> On Mon, 2010-12-20 at 16:24 +0100, Frederic Weisbecker wrote:
-> > 
-> > The watchdog should probably make an exception for nohz task cpus
-> > that want to be interrupted the least possible.
-> > 
-> > However we probably need to warn the user about that.
-> > 
-> > Another solution would be to make this timer defferable.
-> 
-> Nah, both skipping a cpu and making the timer deferrable render the
-> watchdog useless, just disable the thing.
+From: Dave Airlie <airlied@redhat.com>
 
-Thomas seemed to prefer we keep it but just ignore the nohz task cpus
-I mean when we talked about that at that time, the notion of nohz was
-purely per cpu.
+On my system with a radeon x2, the first GPU was not overlapping vesa
+but the test decided it was.
 
-Now we wish the notion of nohz task cpu could disappear, so
-we should indeed deactivate the thing for that config.
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+---
+ drivers/video/fbmem.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Would be nice to have Thomas opinion too.
+diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
+index 0e6aa3d..4ac1201 100644
+--- a/drivers/video/fbmem.c
++++ b/drivers/video/fbmem.c
+@@ -1458,7 +1458,7 @@ static bool apertures_overlap(struct aperture *gen, struct aperture *hw)
+ 	if (gen->base == hw->base)
+ 		return true;
+ 	/* is the generic aperture base inside the hw base->hw base+size */
+-	if (gen->base > hw->base && gen->base <= hw->base + hw->size)
++	if (gen->base > hw->base && gen->base < hw->base + hw->size)
+ 		return true;
+ 	return false;
+ }
+-- 
+1.7.1
+
