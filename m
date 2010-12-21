@@ -1,91 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933470Ab0LUBzM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 20:55:12 -0500
-Received: from mail-fx0-f66.google.com ([209.85.161.66]:54831 "EHLO
-	mail-fx0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933407Ab0LUBzL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 20:55:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=cZyZlrTKYBcSZQC51PM2fvspvsUoiaY7mbhF60Hr0/X7vkULRIMM9VQ42vtb04s7eJ
-         v8n/WSsENUYbCo5qjgOAFirHycOZBTHv1lxuc1IY7Y/gY10t2dJTGPmth+xwg1GJ8DFa
-         gCkXV5K6nuaAWRRbNI5mvjKwhm654J+b8rxT0=
-Date: Tue, 21 Dec 2010 02:55:07 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 13/15] sched: Protect nohz task cpu affinity
-Message-ID: <20101221015504.GP1715@nowhere>
-References: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
- <1292858662-5650-14-git-send-email-fweisbec@gmail.com>
- <1292862533.5021.41.camel@laptop>
- <1292864730.22905.27.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292864730.22905.27.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933474Ab0LUB5p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 20:57:45 -0500
+Received: from mga09.intel.com ([134.134.136.24]:19772 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933407Ab0LUB5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Dec 2010 20:57:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,205,1291622400"; 
+   d="scan'208";a="585638731"
+Subject: Re: acpi throttling: Use this_cpu_has and simplify code
+From: ykzhao <yakui.zhao@intel.com>
+To: Tejun Heo <htejun@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+In-Reply-To: <4D0CD840.2050100@gmail.com>
+References: <20101214162842.542421046@linux.com>
+	 <20101214162855.392020353@linux.com>
+	 <1292345072.5934.32.camel@edumazet-laptop>
+	 <alpine.DEB.2.00.1012141055220.17229@router.home>
+	 <4D07A2B7.8080405@zytor.com>
+	 <alpine.DEB.2.00.1012141109470.17229@router.home>
+	 <4D07A7CB.7010205@zytor.com> <4D07A95C.7030703@kernel.org>
+	 <4D0814AF.7080209@zytor.com> <4D08ECEF.3040909@kernel.org>
+	 <4D08EE57.8010602@zytor.com> <4D08EF4E.8070403@kernel.org>
+	 <4D0A3AF2.50508@gmail.com>
+	 <alpine.DEB.2.00.1012161215200.21588@router.home>
+	 <4D0CD840.2050100@gmail.com>
+Content-Type: text/plain
+Organization: Intel Open Source Technology Center
+Date: Tue, 21 Dec 2010 09:52:19 +0800
+Message-Id: <1292896339.4699.42.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.1 (2.22.1-2.fc9) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 20, 2010 at 12:05:30PM -0500, Steven Rostedt wrote:
-> On Mon, 2010-12-20 at 17:28 +0100, Peter Zijlstra wrote:
-> > On Mon, 2010-12-20 at 16:24 +0100, Frederic Weisbecker wrote:
-> > > Don't allow to change a nohz task cpu affinity as we want them
-> > > to be bound to a single CPU and we want this affinity not to
-> > > change.
-> > > 
-> > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > Cc: Ingo Molnar <mingo@elte.hu>
-> > > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > > Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-> > > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > > Cc: Anton Blanchard <anton@au1.ibm.com>
-> > > Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>
-> > > ---
-> > >  kernel/sched.c |    7 +++++++
-> > >  1 files changed, 7 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/kernel/sched.c b/kernel/sched.c
-> > > index 4412493..bd0a41f 100644
-> > > --- a/kernel/sched.c
-> > > +++ b/kernel/sched.c
-> > > @@ -5712,6 +5712,13 @@ again:
-> > >  		goto out;
-> > >  	}
-> > >  
-> > > +	/* Nohz tasks must keep their affinity */
-> > > +	if (test_tsk_thread_flag(p, TIF_NOHZ) &&
-> > > +	    !cpumask_equal(&p->cpus_allowed, new_mask)) {
-> > > +		ret = -EBUSY;
-> > > +		goto out;
-> > > +	}
-> > > +
-> > >  	if (p->sched_class->set_cpus_allowed)
-> > >  		p->sched_class->set_cpus_allowed(p, new_mask);
-> > >  	else {
-> > 
-> > NAK, this is really way too restrictive.
+On Sat, 2010-12-18 at 23:50 +0800, Tejun Heo wrote:
+> (cc'ing ACPI ppl and quoting the whole body)
 > 
-> Agreed, the better solution is to disable the nohz from the task. If the
-> use just changed its affinity (or something else did), disable the nohz.
-> Maybe you can add a printk or warning, but I'm not sure about that
-> either.
+> On 12/16/2010 07:16 PM, Christoph Lameter wrote:
+> > 
+> > With the this_cpu_xx we no longer need to pass an acpi
+> > structure to the msr management code. Simplifies code and improves
+> > performance.
+> > 
+> > Signed-off-by: Christoph Lameter <cl@linux.com>
+> > 
+> > ---
+> >  drivers/acpi/processor_throttling.c |   32 ++++++++++----------------------
+> >  1 file changed, 10 insertions(+), 22 deletions(-)
+> > 
+> > Index: linux-2.6/drivers/acpi/processor_throttling.c
+> > ===================================================================
+> > --- linux-2.6.orig/drivers/acpi/processor_throttling.c	2010-12-16 11:56:57.000000000 -0600
+> > +++ linux-2.6/drivers/acpi/processor_throttling.c	2010-12-16 12:00:17.000000000 -0600
+> > @@ -662,20 +662,14 @@ static int acpi_processor_get_throttling
+> >  }
+> > 
+> >  #ifdef CONFIG_X86
+> > -static int acpi_throttling_rdmsr(struct acpi_processor *pr,
+> > -					u64 *value)
+> > +static int acpi_throttling_rdmsr(u64 *value)
+> >  {
+> > -	struct cpuinfo_x86 *c;
+> >  	u64 msr_high, msr_low;
+> > -	unsigned int cpu;
+> >  	u64 msr = 0;
+> >  	int ret = -1;
+> > 
+> > -	cpu = pr->id;
+> > -	c = &cpu_data(cpu);
+> > -
+> > -	if ((c->x86_vendor != X86_VENDOR_INTEL) ||
+> > -		!cpu_has(c, X86_FEATURE_ACPI)) {
+> > +	if ((this_cpu_read(cpu_info.x86_vendor) != X86_VENDOR_INTEL) ||
+> > +		!this_cpu_has(X86_FEATURE_ACPI)) {
+> >  		printk(KERN_ERR PREFIX
+> >  			"HARDWARE addr space,NOT supported yet\n");
+> >  	} else {
+> > @@ -690,18 +684,13 @@ static int acpi_throttling_rdmsr(struct
+> >  	return ret;
+> >  }
+> > 
+> > -static int acpi_throttling_wrmsr(struct acpi_processor *pr, u64 value)
+> > +static int acpi_throttling_wrmsr(u64 value)
+> >  {
+> > -	struct cpuinfo_x86 *c;
+> > -	unsigned int cpu;
+> >  	int ret = -1;
+> >  	u64 msr;
+> > 
+> > -	cpu = pr->id;
+> > -	c = &cpu_data(cpu);
+> > -
+> > -	if ((c->x86_vendor != X86_VENDOR_INTEL) ||
+> > -		!cpu_has(c, X86_FEATURE_ACPI)) {
+> > +	if ((this_cpu_read(cpu_info.x86_vendor) != X86_VENDOR_INTEL) ||
+> > +		!this_cpu_has(X86_FEATURE_ACPI)) {
+> >  		printk(KERN_ERR PREFIX
+> >  			"HARDWARE addr space,NOT supported yet\n");
+> >  	} else {
+> > @@ -713,15 +702,14 @@ static int acpi_throttling_wrmsr(struct
+> >  	return ret;
+> >  }
+> >  #else
+> > -static int acpi_throttling_rdmsr(struct acpi_processor *pr,
+> > -				u64 *value)
+> > +static int acpi_throttling_rdmsr(u64 *value)
+> >  {
+> >  	printk(KERN_ERR PREFIX
+> >  		"HARDWARE addr space,NOT supported yet\n");
+> >  	return -1;
+> >  }
+> > 
+> > -static int acpi_throttling_wrmsr(struct acpi_processor *pr, u64 value)
+> > +static int acpi_throttling_wrmsr(u64 value)
+> >  {
+> >  	printk(KERN_ERR PREFIX
+> >  		"HARDWARE addr space,NOT supported yet\n");
+> > @@ -753,7 +741,7 @@ static int acpi_read_throttling_status(s
+> >  		ret = 0;
+> >  		break;
+> >  	case ACPI_ADR_SPACE_FIXED_HARDWARE:
+> > -		ret = acpi_throttling_rdmsr(pr, value);
+> > +		ret = acpi_throttling_rdmsr(value);
+> >  		break;
+> >  	default:
+> >  		printk(KERN_ERR PREFIX "Unknown addr space %d\n",
+> > @@ -786,7 +774,7 @@ static int acpi_write_throttling_state(s
+> >  		ret = 0;
+> >  		break;
+> >  	case ACPI_ADR_SPACE_FIXED_HARDWARE:
+> > -		ret = acpi_throttling_wrmsr(pr, value);
+> > +		ret = acpi_throttling_wrmsr(value);
+> >  		break;
+> >  	default:
+> >  		printk(KERN_ERR PREFIX "Unknown addr space %d\n",
+> > 
+> 
+> It's bothersome that these methods don't have any indication that
+> they're bound to local CPU when they can't be called with @pr for
+> another CPU as MSRs can only be accessed from local CPU.
 
-Right. Or even better: don't force the nohz task to be affine to
-a single cpu.
+The above function may be called under the scenario with irq disabled.
+In such case if the corresponding MRS is accessed by using remote
+method, it will complain the oops. Maybe it will be safer to firstly
+switch to the local CPU and then read/write the MRS register related
+with the throttling.
+
+> 
+> In the longer run, it would be nice if there's an indication that this
+> is only for the local CPU and maybe a WARN_ON_ONCE().  Maybe dropping
+> @pr and using this_cpu_*() is better for performance too?
+
+It is also ok to me that drops the pr input argument of
+acpi_throttling_rdmsr/wrmsr as it is already switched to the local cpu.
+
+> 
+> Anyways, the above doesn't make the situation any worse, so...
+> 
+>  Acked-by: Tejun Heo <tj@kernel.org>
+> 
+> I think this one too fits the x86 tree better.
+> 
+> Thanks.
+> 
+
