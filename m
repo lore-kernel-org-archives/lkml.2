@@ -1,57 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933137Ab0LUImJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 03:42:09 -0500
-Received: from mail-ew0-f45.google.com ([209.85.215.45]:41369 "EHLO
-	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754099Ab0LUImH (ORCPT
+	id S933043Ab0LUIzg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 03:55:36 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:53689 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932639Ab0LUIzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 03:42:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=bm+xxfNOorNgYMq9QXprA/Q38oHOB7WVT7dB59sA3GbyPKp6ps77o7tuJYtw3DkiFl
-         ZMQhSpw/S6bl0uLHZJVKQbl0LBoyw7XAfgWYP7+3MJBzUh87OAOasluar2LW1Y82BDNc
-         l2fD2duRPf7JAhMkMuvKOvhviAkBatvstiu+Y=
-Date: Tue, 21 Dec 2010 11:42:00 +0300
-From: Kulikov Vasiliy <segooon@gmail.com>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, Stephen Kitt <steve@sk2.org>,
-        bugzilla-daemon@bugzilla.kernel.org
-Subject: Re: [Bug #24392] AGP aperture disabled, worked in 2.6.35
-Message-ID: <20101221084200.GA2537@albatros>
-References: <ZRNlsjykcOD.A.b-F.20fDNB@chimera>
- <xqq2Z3iR9HJ.A.cHG.-0fDNB@chimera>
- <201012201214.57068.bjorn.helgaas@hp.com>
+	Tue, 21 Dec 2010 03:55:35 -0500
+X-AuditID: b753bd60-a3afaba000000f8d-69-4d106b859781
+Message-ID: <4D106B81.6090504@hitachi.com>
+Date: Tue, 21 Dec 2010 17:55:29 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201012201214.57068.bjorn.helgaas@hp.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Franck Bui-Huu <vagabon.xyz@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH 2/6] perf-probe: rewrite show_one_line() to make it simpler
+References: <1292854685-8230-1-git-send-email-fbuihuu@gmail.com> <1292854685-8230-3-git-send-email-fbuihuu@gmail.com>
+In-Reply-To: <1292854685-8230-3-git-send-email-fbuihuu@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+(2010/12/20 23:18), Franck Bui-Huu wrote:
+> From: Franck Bui-Huu <fbuihuu@gmail.com>
 
-On Mon, Dec 20, 2010 at 12:14 -0700, Bjorn Helgaas wrote:
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=24392
-> > First-Bad-Commit: http://git.kernel.org/linus/96576a9e1a0cdb8a43d3af5846be0948f52b4460
-...
-> That's kind of ugly because it's an exception to the normal "call
-> pci_enable_device() first" rule, and it leads to bogus "conflicts"
-> like this:
+Please explain what this patch will do...
 
-I don't understand rationale, but if standard enable-before-use breaks
-the boot then explicit comment _why_ do it is necessary here.
+> 
+> Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
+> ---
+>  tools/perf/util/probe-event.c |   29 +++++++++++------------------
+>  1 files changed, 11 insertions(+), 18 deletions(-)
+> 
+> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+> index 6fa0403..5cc8f6b 100644
+> --- a/tools/perf/util/probe-event.c
+> +++ b/tools/perf/util/probe-event.c
+> @@ -300,28 +300,21 @@ static int get_real_path(const char *raw_path, const char *comp_dir,
+>  static int show_one_line(FILE *fp, int l, bool skip, bool show_num)
+>  {
+>  	char buf[LINEBUF_SIZE];
+> -	const char *color = PERF_COLOR_BLUE;
+> +	const char *color = show_num ? "" : PERF_COLOR_BLUE;
+> +	const char *prefix = NULL;
+>  
+> -	if (fgets(buf, LINEBUF_SIZE, fp) == NULL)
+> -		goto error;
+> -	if (!skip) {
+> -		if (show_num)
+> -			fprintf(stdout, "%7d  %s", l, buf);
+> -		else
+> -			color_fprintf(stdout, color, "         %s", buf);
+> -	}
+> -
+> -	while (strlen(buf) == LINEBUF_SIZE - 1 &&
+> -	       buf[LINEBUF_SIZE - 2] != '\n') {
+> +	do {
+>  		if (fgets(buf, LINEBUF_SIZE, fp) == NULL)
+>  			goto error;
+> -		if (!skip) {
+> -			if (show_num)
+> -				fprintf(stdout, "%s", buf);
+> -			else
+> -				color_fprintf(stdout, color, "%s", buf);
+> +		if (skip)
+> +			continue;
+> +		if (!prefix) {
+> +			prefix = show_num ? "%7d  " : "         ";
+> +			fprintf(stdout, prefix, l);
 
+Could you use color_fprintf() here too?
+I know currently it's meaningless, but from the view of maintaining,
+it's better to use same function.
 
-Thanks,
+Thank you,
+
+>  		}
+> -	}
+> +		color_fprintf(stdout, color, "%s", buf);
+> +
+> +	} while (strchr(buf, '\n') == NULL);
+>  
+>  	return 0;
+>  error:
+
 
 -- 
-Vasiliy
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
