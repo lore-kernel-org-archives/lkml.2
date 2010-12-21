@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752379Ab0LUTCN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 14:02:13 -0500
-Received: from mail-fx0-f66.google.com ([209.85.161.66]:56172 "EHLO
-	mail-fx0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab0LUTCK (ORCPT
+	id S1752825Ab0LUTDT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 14:03:19 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:53989 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164Ab0LUTDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 14:02:10 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=UxymRvRAtJTfD4Y4QdYQWiWywWfmdScoU5WeqnQRRmFlKX0jT0dlcPmjBDhYuycpDw
-         zzDELpVIowKxEXRPseCx88MBhDvqeUQZbL8Jen5b7g5k7mFwf2xgDiIqslbv8p4vvzms
-         3nCSOxitQmdX8IZFqNLp8ftPQe/4yHR7zD5jE=
-Date: Tue, 21 Dec 2010 20:02:06 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        2nddept-manager@sdl.hitachi.co.jp, Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH -tip v2 2/6] perf bts: Introduce new sub command 'perf
- bts trace'
-Message-ID: <20101221190203.GQ1750@nowhere>
-References: <20101221090527.8552.41486.stgit@localhost6.localdomain6>
- <20101221090549.8552.26257.stgit@localhost6.localdomain6>
- <20101221183131.GO1750@nowhere>
- <1292956832.2170.17.camel@laptop>
- <20101221184516.GP1750@nowhere>
- <1292957546.2170.21.camel@laptop>
+	Tue, 21 Dec 2010 14:03:17 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thiago Farina <tfransosi@gmail.com>
+Subject: Re: [PATCH] drivers/media/video/v4l2-compat-ioctl32.c: Check the return value of copy_to_user
+Date: Tue, 21 Dec 2010 20:03:11 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6-next-20101220+; KDE/4.5.1; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-media@vger.kernel.org
+References: <d21ad74592c295d59f5806f30a053745b5765397.1292894256.git.tfransosi@gmail.com> <201012211925.38201.arnd@arndb.de> <AANLkTikbvST_B+4x3Xt=gxFhM1TBOrXVc1HjZT3zTXrt@mail.gmail.com>
+In-Reply-To: <AANLkTikbvST_B+4x3Xt=gxFhM1TBOrXVc1HjZT3zTXrt@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292957546.2170.21.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012212003.11446.arnd@arndb.de>
+X-Provags-ID: V02:K0:cC9PRPmZQV5bc2EDUKNDSc8ZNy15SJLJ+d8HwfmSpoW
+ w68dbwvN7X2qpYLZLvEWqwE4W39FzTRde/zmXW1UHlrn1vXsHP
+ ZJXEG+WfmDlByRTd/eaojzzb3kFU3Os2LPgwgsj0u6EPgYUiKY
+ MfyI6k3YkGVRCv5mU3uLaK/LAtW+6u0718PP+VckRC4otW3/GV
+ MnibiRQ/hopC1Q6cUBmTA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 21, 2010 at 07:52:26PM +0100, Peter Zijlstra wrote:
-> On Tue, 2010-12-21 at 19:45 +0100, Frederic Weisbecker wrote:
-> > On Tue, Dec 21, 2010 at 07:40:32PM +0100, Peter Zijlstra wrote:
-> > > On Tue, 2010-12-21 at 19:31 +0100, Frederic Weisbecker wrote:
-> > > > Actually the best would be to select PERF_SAMPLE_ID in the sample_type
-> > > > on record and also PERF_FORMAT_ID in the read_format.
-> > > 
-> > > That would grow the data size for little gain, as long as you only
-> > > record BTS data into the buffer the current bits should work fine.
-> > 
-> > Indeed.
-> > 
-> > In the longer term though, I think we need a specific branch set record.
-> > 
-> > Currently for every branch pair we create a new event with all the headers,
-> > so the pid, time, etc... are all repeated for every entries.
-> > 
-> > We rather need a single record everytime we flush the bts buffer to the perf
-> > buffer.
+On Tuesday 21 December 2010 19:34:04 Thiago Farina wrote:
+> > You can probably change this function to look at the return code of
+> > copy_to_user, but then you need to treat the put_user return code
+> > the same, and change the comment.
+> >
 > 
-> We also don't want arch specific data interfaces, so we need to iterate
-> the bts buffer and copy the stuff anyway, and if you don't want the time
-> and pid bits don't set those PERF_SAMPLE bits.
+> Right, I will do the same with put_user, but I'm afraid of changing the comment.
 
+The comment makes no sense when the code doesn't do what is explained
+there.
 
-But we may actually want the time and pid bits.
-
-This could be a PERF_SAMPLE_RAW may be?
+	Arnd
