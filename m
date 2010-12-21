@@ -1,78 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022Ab0LUU5p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 15:57:45 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:61547 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752299Ab0LUU5n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 15:57:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=vnIQ6GnWe8XF4KCcPqVkkQhJ/yeAxQh1art5F5smSn/O9Ztm89eXr4Qqa+oF/rp4K1
-         lx/KQVdGPxWL/dh1CokIBOnK6+cMQirJgb7nVZLCm9sIxnjZrAywgJKyRiPrmyJLS8hJ
-         089zArrXuufwsQ+7oJIUJ61qUaA7Q42U0ONew=
-MIME-Version: 1.0
-In-Reply-To: <20101221075612.GA13626@riccoc20.at.omicron.at>
-References: <cover.1292512461.git.richard.cochran@omicron.at>
- <880d82bb8120f73973db27e0c48e949014b1a106.1292512461.git.richard.cochran@omicron.at>
- <AANLkTi=yGoFwYt4p_LeHtAQyYgmURspO-p57UdL0sUEZ@mail.gmail.com> <20101221075612.GA13626@riccoc20.at.omicron.at>
-From: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>
-Date: Wed, 22 Dec 2010 05:57:02 +0900
-Message-ID: <AANLkTimJd5pScKTiDxuYd-h+NevYbCusyvUAqmUDXe8h@mail.gmail.com>
-Subject: Re: [PATCH V7 1/8] ntp: add ADJ_SETOFFSET mode bit
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
-        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
-        Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+	id S1752560Ab0LUVEr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 16:04:47 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:56733 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751280Ab0LUVEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 16:04:46 -0500
+Date: Tue, 21 Dec 2010 13:04:42 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-geode@lists.infradead.org,
+        dsd@laptop.org, pgf@laptop.org
+Subject: [PATCH 1/2] cs5535-gpio: don't apply errata #36 to edge detect
+ GPIOs
+Message-ID: <20101221130442.3fcd84fb@queued.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 21, 2010 at 4:56 PM, Richard Cochran
-<richardcochran@gmail.com> wrote:
-> Can you please elaborate?
+Hi Linus,
 
-The timex.constant is defined as equal to the binary logarithm of the
-reciprocal of
-the natural frequency minus SHIFT_PLL.  In other words, the following
-equation holds:
+These two should go in before 2.6.37; they fix regressions with
+853ff883.
 
-	log2(natural frequency) + time_constant + SHIFT_PLL = 0,
 
-which means that decreasing time_constant increases natural frequency
-exponentially.
-And since a larger natural frequency gives a smaller settling time, a
-sufficiently
-large negative time_constant results in immediate time step, at least in theory.
+From: Andres Salomon <dilinger@queued.net>
 
-> I don't see any way to use timex.constant with ADJ_OFFSET in order to
-> correct a time offset.
+The edge detect status GPIOs function differently from the other atomic model
+CS5536 GPIO registers; writing 1 to the high bits clears the GPIO, but writing
+1 to the lower bits also clears the bit.  This means that read-modify-write
+doesn't actually work for it, so don't apply the errata here.  If a negative
+edge status gets lost after resume.. well, we tried our best!
 
-How about this?
+Tested-by: Daniel Drake <dsd@laptop.org>
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ drivers/gpio/cs5535-gpio.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
 
-if (txc->modes & ADJ_OFFSET) {
-	if (txc->constant == INT32_MIN) {
-		/* step time */
-	} else {
-		/* slew time */
-	}
-}
+diff --git a/drivers/gpio/cs5535-gpio.c b/drivers/gpio/cs5535-gpio.c
+index 599f6c9..79eb9c5 100644
+--- a/drivers/gpio/cs5535-gpio.c
++++ b/drivers/gpio/cs5535-gpio.c
+@@ -56,15 +56,22 @@ static struct cs5535_gpio_chip {
+  * registers, see include/linux/cs5535.h.
+  */
+ 
+-static void errata_outl(u32 val, unsigned long addr)
++static void errata_outl(struct cs5535_gpio_chip *chip, u32 val,
++		unsigned int reg)
+ {
++	unsigned long addr = chip->base + 0x80 + reg;
++
+ 	/*
+ 	 * According to the CS5536 errata (#36), after suspend
+ 	 * a write to the high bank GPIO register will clear all
+ 	 * non-selected bits; the recommended workaround is a
+ 	 * read-modify-write operation.
++	 *
++	 * Don't apply this errata to the edge status GPIOs, as writing
++	 * to their lower bits will clear them.
+ 	 */
+-	val |= inl(addr);
++	if (reg != GPIO_POSITIVE_EDGE_STS && reg != GPIO_NEGATIVE_EDGE_STS)
++		val |= inl(addr);
+ 	outl(val, addr);
+ }
+ 
+@@ -76,7 +83,7 @@ static void __cs5535_gpio_set(struct cs5535_gpio_chip *chip, unsigned offset,
+ 		outl(1 << offset, chip->base + reg);
+ 	else
+ 		/* high bank register */
+-		errata_outl(1 << (offset - 16), chip->base + 0x80 + reg);
++		errata_outl(chip, 1 << (offset - 16), reg);
+ }
+ 
+ void cs5535_gpio_set(unsigned offset, unsigned int reg)
+@@ -98,7 +105,7 @@ static void __cs5535_gpio_clear(struct cs5535_gpio_chip *chip, unsigned offset,
+ 		outl(1 << (offset + 16), chip->base + reg);
+ 	else
+ 		/* high bank register */
+-		errata_outl(1 << offset, chip->base + 0x80 + reg);
++		errata_outl(chip, 1 << offset, reg);
+ }
+ 
+ void cs5535_gpio_clear(unsigned offset, unsigned int reg)
+-- 
+1.7.2.3
 
-> The 'time_constant' in kernel/time/ntp.c is
-> restricted to the interval [0..MAXTC], and MAXTC is 10 in timex.h.
-
-Then let's just ignore the restriction.  (It's possible by setting the
-timex.constant
-without setting the ADJ_TIMECONST flag.)
-
-That said, I'm somehow against the idea of using the adjtimex syscall
-for that purpose.
