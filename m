@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab0LUVlj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 16:41:39 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:38494 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752862Ab0LUVli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 16:41:38 -0500
-X-Authenticated: #27200637
-X-Provags-ID: V01U2FsdGVkX19BOahFeiFBYc9lcUOob55Fc9T+jRs8LB3Uq9soM/
-	jFivBwfiEMMwei
-From: =?UTF-8?q?Jan=20F=C3=BCsting?= <jan.fuesting@gmx.de>
-To: lenb@kernel.org
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Jan=20F=C3=BCsting?= <jan.fuesting@gmx.de>
-Subject: [PATCH 2/2] ACPI: Fixed some coding style issues in fan.c and battery.c
-Date: Tue, 21 Dec 2010 22:41:20 +0100
-Message-Id: <1292967680-14208-1-git-send-email-jan.fuesting@gmx.de>
-X-Mailer: git-send-email 1.7.2.3
+	id S1753331Ab0LUVm0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 16:42:26 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:44183 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751548Ab0LUVmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 16:42:25 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Nigel Cunningham <nigel@tuxonice.net>
+Subject: Re: Trying to find a TuxOnIce merging plan that works.
+Date: Tue, 21 Dec 2010 22:41:44 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6+; KDE/4.4.4; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+References: <4D111381.5000609@tuxonice.net>
+In-Reply-To: <4D111381.5000609@tuxonice.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012212241.44442.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed some coding style issues in fan.c and battery.c
+On Tuesday, December 21, 2010, Nigel Cunningham wrote:
+> Hi Rafael.
 
-Signed-off-by: Jan Füsting <jan.fuesting@gmx.de>
----
- drivers/acpi/battery.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Hi,
 
-diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-index 16fc4df..35d0c6f 100644
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -580,7 +580,7 @@ static void acpi_battery_quirks(struct acpi_battery *battery)
- {
- 	if (dmi_name_in_vendors("Acer") && battery->power_unit)
- 		set_bit(ACPI_BATTERY_QUIRK_SIGNED16_CURRENT, &battery->flags);
--}	
-+}
- 
- /*
-  * According to the ACPI spec, some kinds of primary batteries can
--- 
-1.7.2.3
+> As you may recall, I started working on a bunch of patches about six 
+> months ago that have been very slow to get merged (yes, mostly my fault 
+> for perhaps being overly careful about testing). Unfortunately, in the 
+> process, you've merged other patches (the compression ones) that mean I 
+> have to rewrite what I'd already done.
+> 
+> To avoid this happening again, I'm proposing that I only work on one 
+> patch (or very small series of patches) at a time, and not start on the 
+> next one until you've merged the previous into your for-Linus tree. I'll 
+> keep an overall plan of where I intend to go, but take things very 
+> slowly so I don't waste time like that again.
+> 
+> The downside is that means I won't always be able to show demonstrably 
+> improvements immediately, but I guess we'll just have to cope with that 
+> situation. I guess I can mitigate this downside by explaining where I'm 
+> going, even if I can't provide numbers to prove it will be a real 
+> improvement.
+> 
+> Does this sound feasible to you?
 
+Yes, sounds reasonable.
+
+Thanks,
+Rafael
