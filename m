@@ -1,69 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244Ab0LUV74 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 16:59:56 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:41426 "EHLO e5.ny.us.ibm.com"
+	id S1753407Ab0LUWTn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 17:19:43 -0500
+Received: from claw.goop.org ([74.207.240.146]:34603 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751076Ab0LUV7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 16:59:55 -0500
-Subject: Re: [PATCH V7 1/8] ntp: add ADJ_SETOFFSET mode bit
-From: john stultz <johnstul@us.ibm.com>
-To: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>,
-        Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-        Rodolfo Giometti <giometti@enneenne.com>
-Cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, netdev@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
-        Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <AANLkTikHV-qN73Zvvvxn76vtFFKG_VNTQhF3qpqTnOrE@mail.gmail.com>
-References: <cover.1292512461.git.richard.cochran@omicron.at>
-	 <880d82bb8120f73973db27e0c48e949014b1a106.1292512461.git.richard.cochran@omicron.at>
-	 <AANLkTi=yGoFwYt4p_LeHtAQyYgmURspO-p57UdL0sUEZ@mail.gmail.com>
-	 <1292960224.2618.4.camel@work-vm>
-	 <AANLkTikHV-qN73Zvvvxn76vtFFKG_VNTQhF3qpqTnOrE@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Dec 2010 13:59:44 -0800
-Message-ID: <1292968784.2618.51.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752736Ab0LUWTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 17:19:42 -0500
+Message-ID: <4D1127FC.8060102@goop.org>
+Date: Tue, 21 Dec 2010 14:19:40 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-kernel@vger.kernel.org, hpa@zytor.com,
+        Jan Beulich <JBeulich@novell.com>, xen-devel@lists.xensource.com,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: Re: [PATCH 01/10] xen: Make all reserved pages for the balloon be
+ INVALID_P2M_ENTRY.
+References: <1292967460-15709-1-git-send-email-konrad.wilk@oracle.com> <1292967460-15709-2-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1292967460-15709-2-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-22 at 06:13 +0900, Kuwahara,T. wrote:
-> On Wed, Dec 22, 2010 at 4:37 AM, john stultz <johnstul@us.ibm.com> wrote:
-> > adjtimex is a linux specific interface, which is compatible but not
-> > identical to the ntp specified interfaces. The ntp client code already
-> > has Linux specific modifications, so I don't think we have to worry
-> > about 0x40 specifically being reserved by the NTP client.
-> 
-> But struct timex is not linux-specific...
+On 12/21/2010 01:37 PM, Konrad Rzeszutek Wilk wrote:
+> This patch prepares ourselves for the case where void entries in the P2M
+> tree structure do not necessarily imply that the pages are missing.
+> With this, we diligently set regions that will be used by the
+> balloon driver to be INVALID_P2M_ENTRY and under the ownership
+> of the balloon driver.
+>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  arch/x86/xen/setup.c  |    8 ++++++++
+>  drivers/xen/balloon.c |    1 +
+>  2 files changed, 9 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+> index b5a7f92..d984d36 100644
+> --- a/arch/x86/xen/setup.c
+> +++ b/arch/x86/xen/setup.c
+> @@ -52,6 +52,8 @@ phys_addr_t xen_extra_mem_start, xen_extra_mem_size;
+>  
+>  static __init void xen_add_extra_mem(unsigned long pages)
+>  {
+> +	unsigned long pfn;
+> +
+>  	u64 size = (u64)pages * PAGE_SIZE;
+>  	u64 extra_start = xen_extra_mem_start + xen_extra_mem_size;
+>  
+> @@ -66,6 +68,11 @@ static __init void xen_add_extra_mem(unsigned long pages)
+>  	xen_extra_mem_size += size;
+>  
+>  	xen_max_p2m_pfn = PFN_DOWN(extra_start + size);
+> +
+> +	for (pfn = PFN_DOWN(extra_start); pfn <= xen_max_p2m_pfn; pfn++) {
+> +		BUG_ON(!set_phys_to_machine(pfn, INVALID_P2M_ENTRY));
 
-It is if you're compiling against linux's timex.h file. 
+Use __set_phys_to_machine where you don't expect (or can't allow) any
+allocation.
 
-We already have a number of differences compared with BSD's timex mode
-definitions:
-We have ADJ_TICK: 0x4000, which is MOD_CLKB in FreeBSD.
-We also have ADJ_OFFSET_SINGLESHOT and ADJ_OFFSET_SS_READ which allow
-adjtimex act like the original ntp_adjtime.
+Also, I'm not a fan of hiding real side-effectful code in a BUG_ON
+predicate.
 
-The key bit is that we map the shared MOD_* definitions that the NTP
-client uses to the linux specific ADJ_* values in the linux timex.h
+> +		BUG_ON(get_phys_to_machine(pfn) != INVALID_P2M_ENTRY);
+> +	}
+>  }
+>  
+>  static unsigned long __init xen_release_chunk(phys_addr_t start_addr,
+> @@ -105,6 +112,7 @@ static unsigned long __init xen_release_chunk(phys_addr_t start_addr,
+>  		     start, end, ret);
+>  		if (ret == 1) {
+>  			set_phys_to_machine(pfn, INVALID_P2M_ENTRY);
 
-However, your concern does bring up a good point: 0x40 is MOD_PPSMAX in
-BSD, and we should at-least check to make sure that the PPS code that is
-currently floating around on the lists and is in akpm's tree hasn't
-already reserved that bit.
+Ditto on this one (I guess I forgot, or it predates the existence of
+__set_phys_to_machine).
 
-Rodolfo, Alexander: Any comments here?
-
-thanks
--john
-
+> +			BUG_ON(get_phys_to_machine(pfn) != INVALID_P2M_ENTRY);
+>  			len++;
+>  		}
+>  	}
+> diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
+> index 43f9f02..f82bb48 100644
+> --- a/drivers/xen/balloon.c
+> +++ b/drivers/xen/balloon.c
+> @@ -297,6 +297,7 @@ static int decrease_reservation(unsigned long nr_pages)
+>  	for (i = 0; i < nr_pages; i++) {
+>  		pfn = mfn_to_pfn(frame_list[i]);
+>  		set_phys_to_machine(pfn, INVALID_P2M_ENTRY);
+> +		BUG_ON(get_phys_to_machine(pfn) != INVALID_P2M_ENTRY);
+>  		balloon_append(pfn_to_page(pfn));
+>  	}
+>  
 
