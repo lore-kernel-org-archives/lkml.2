@@ -1,150 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870Ab0LUXte (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 18:49:34 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54146 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752191Ab0LUXtd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 18:49:33 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Brandon Leong <bleong@codeaurora.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regulator: Add initial per-regulator debugfs support
-Date: Tue, 21 Dec 2010 23:49:31 +0000
-Message-Id: <1292975371-32233-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.5.4.3
-In-Reply-To: <>
-References: <>
+	id S1753997Ab0LUXtj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 18:49:39 -0500
+Received: from fieldses.org ([174.143.236.118]:50144 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752862Ab0LUXth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 18:49:37 -0500
+Date: Tue, 21 Dec 2010 18:49:34 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: "Kirill A. Shutemov" <kas@openvz.org>, Neil Brown <neilb@suse.de>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] nfs: fix mispelling of idmap CONFIG symbol
+Message-ID: <20101221234934.GB30525@fieldses.org>
+References: <1292846078-31793-1-git-send-email-kirill@shutemov.name>
+ <20101220144644.GC20643@fieldses.org>
+ <20101221233215.GC7092@shutemov.name>
+ <1292975008.16674.2.camel@heimdal.trondhjem.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292975008.16674.2.camel@heimdal.trondhjem.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We only expose the use and open counts to userspace, providing a tiny
-bit of insight into what the API is up to.
+From: J. Bruce Fields <bfields@redhat.com>
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Trivial, but confusing when you're trying to grep through this
+code....
+
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 ---
+ fs/nfs/idmap.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-This is clearly a completely different tack to Brandon's patches in
-terms of content but it does expose a bit of the internals like I was
-talking about in review of those patches and it gets the basic debugfs
-setup stuff done so we don't need to re-review that.
-
- drivers/regulator/core.c         |   35 +++++++++++++++++++++++++++++++++++
- include/linux/regulator/driver.h |    8 ++++++--
- 2 files changed, 41 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 6066a8f..9fa2095 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -17,6 +17,7 @@
- 
- #include <linux/kernel.h>
- #include <linux/init.h>
-+#include <linux/debugfs.h>
- #include <linux/device.h>
- #include <linux/slab.h>
- #include <linux/err.h>
-@@ -47,6 +48,10 @@ static LIST_HEAD(regulator_map_list);
- static bool has_full_constraints;
- static bool board_wants_dummy_regulator;
- 
-+#ifdef CONFIG_DEBUG_FS
-+static struct dentry *debugfs_root;
-+#endif
-+
- /*
-  * struct regulator_map
-  *
-@@ -2404,6 +2409,23 @@ static int add_regulator_attributes(struct regulator_dev *rdev)
- 	return status;
+diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
+index 4e2d9b6..1869688 100644
+--- a/fs/nfs/idmap.c
++++ b/fs/nfs/idmap.c
+@@ -238,7 +238,7 @@ int nfs_map_gid_to_group(struct nfs_client *clp, __u32 gid, char *buf, size_t bu
+ 	return nfs_idmap_lookup_name(gid, "group", buf, buflen);
  }
  
-+static void rdev_init_debugfs(struct regulator_dev *rdev)
-+{
-+#ifdef CONFIG_DEBUG_FS
-+	rdev->debugfs = debugfs_create_dir(rdev_get_name(rdev), debugfs_root);
-+	if (IS_ERR(rdev->debugfs) || !rdev->debugfs) {
-+		rdev_warn(rdev, "Failed to create debugfs directory\n");
-+		rdev->debugfs = NULL;
-+		return;
-+	}
-+
-+	debugfs_create_u32("use_count", 0444, rdev->debugfs,
-+			   &rdev->use_count);
-+	debugfs_create_u32("open_count", 0444, rdev->debugfs,
-+			   &rdev->open_count);
-+#endif
-+}
-+
- /**
-  * regulator_register - register regulator
-  * @regulator_desc: regulator to register
-@@ -2548,6 +2570,8 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
- 	}
+-#else  /* CONFIG_NFS_USE_IDMAPPER not defined */
++#else  /* CONFIG_NFS_USE_NEW_IDMAPPER not defined */
  
- 	list_add(&rdev->list, &regulator_list);
-+
-+	rdev_init_debugfs(rdev);
- out:
- 	mutex_unlock(&regulator_list_mutex);
- 	return rdev;
-@@ -2580,6 +2604,9 @@ void regulator_unregister(struct regulator_dev *rdev)
- 		return;
- 
- 	mutex_lock(&regulator_list_mutex);
-+#ifdef CONFIG_DEBUG_FS
-+	debugfs_remove_recursive(rdev->debugfs);
-+#endif
- 	WARN_ON(rdev->open_count);
- 	unset_regulator_supplies(rdev);
- 	list_del(&rdev->list);
-@@ -2723,6 +2750,14 @@ static int __init regulator_init(void)
- 
- 	ret = class_register(&regulator_class);
- 
-+#ifdef CONFIG_DEBUG_FS
-+	debugfs_root = debugfs_create_dir("regulator", NULL);
-+	if (IS_ERR(debugfs_root) || !debugfs_root) {
-+		pr_warn("regulator: Failed to create debugfs directory\n");
-+		debugfs_root = NULL;
-+	}
-+#endif
-+
- 	regulator_dummy_init();
- 
- 	return ret;
-diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
-index 975ae06..b8ed16a 100644
---- a/include/linux/regulator/driver.h
-+++ b/include/linux/regulator/driver.h
-@@ -175,9 +175,9 @@ struct regulator_desc {
-  */
- struct regulator_dev {
- 	struct regulator_desc *desc;
--	int use_count;
--	int open_count;
- 	int exclusive;
-+	u32 use_count;
-+	u32 open_count;
- 
- 	/* lists we belong to */
- 	struct list_head list; /* list of all regulators */
-@@ -195,6 +195,10 @@ struct regulator_dev {
- 	struct regulator_dev *supply;	/* for tree */
- 
- 	void *reg_data;		/* regulator_dev data */
-+
-+#ifdef CONFIG_DEBUG_FS
-+	struct dentry *debugfs;
-+#endif
- };
- 
- struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
+ #include <linux/module.h>
+ #include <linux/mutex.h>
 -- 
-1.5.4.3
+1.7.1
 
