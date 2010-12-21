@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933558Ab0LUEBx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Dec 2010 23:01:53 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59908 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933506Ab0LUEBv (ORCPT
+	id S933565Ab0LUEDF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Dec 2010 23:03:05 -0500
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:40192 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933493Ab0LUEDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Dec 2010 23:01:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=bFxELaErJ+DX0OT7AkTW22LUcBvqHm29EXhj2POPJ7awtkYtyHGmRjMsmefDq5ZEcl
-         kjeIqNeNTl0Xu5VA9NAv7hSJwNWigMlX+8C25NXsqD+tbj3H4wJa4rQu/X4Rn3rckEBp
-         Ah2p/TGzDHmUOiCF851CCaVs8Qw6HB0Wd76iE=
-Date: Tue, 21 Dec 2010 07:01:37 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Robert Love <robert.w.love@intel.com>
-Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>, devel@open-fcoe.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch -next] libfc: dereferencing ERR_PTR in fc_tm_done()
-Message-ID: <20101221040137.GE1936@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Robert Love <robert.w.love@intel.com>,
-	"James E.J. Bottomley" <James.Bottomley@suse.de>,
-	devel@open-fcoe.org, linux-scsi@vger.kernel.org,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 20 Dec 2010 23:03:04 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=bCoK6yqvKGy1dOm7FbfvBDBhg8l3ORla1rrKhV/CfZ/eAny0U5PdfjeyiZ9gqiIk9V10Ixc8UoVp6kkuz+S9y1wqJXJp0+9yGHpJx7iCKxQ6naLIYDtWh2UTARdLEeXm;
+Date: Mon, 20 Dec 2010 20:02:58 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Dave Airlie <airlied@gmail.com>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Dave Airlie <airlied@redhat.com>
+Subject: Re: [PATCH] vgaarb: use bridges to control VGA routing where
+ possible. (v2)
+Message-ID: <20101220200258.305889ec@jbarnes-desktop>
+In-Reply-To: <1292803809-9200-1-git-send-email-airlied@gmail.com>
+References: <1292803809-9200-1-git-send-email-airlied@gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we goto out, then it tries to call kfree_skb() on an ERR_PTR which
-will oops.  Just return directly.
+On Mon, 20 Dec 2010 10:10:09 +1000
+Dave Airlie <airlied@gmail.com> wrote:
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+> - * @change_bridge: traverse ancestors and change bridges
+> + * @change_bridge_flags: traverse ancestors and change bridges
+> + * CHANGE_BRIDGE_ONLY / CHANGE_BRIDGE
+>   */
+>  int pci_set_vga_state(struct pci_dev *dev, bool decode,
+> -		      unsigned int command_bits, bool change_bridge)
+> +		      unsigned int command_bits, u32 flags)
+>  {
 
-diff --git a/drivers/scsi/libfc/fc_fcp.c b/drivers/scsi/libfc/fc_fcp.c
-index 5962d1a..a918807 100644
---- a/drivers/scsi/libfc/fc_fcp.c
-+++ b/drivers/scsi/libfc/fc_fcp.c
-@@ -1321,7 +1321,7 @@ static void fc_tm_done(struct fc_seq *seq, struct fc_frame *fp, void *arg)
- 		 *
- 		 * scsi-eh will escalate for when either happens.
- 		 */
--		goto out;
-+		return;
- 	}
- 
- 	if (fc_fcp_lock_pkt(fsp))
+Other than this nitpick, it looks sound to me; we'll need to actually
+disable VGA decode in the shared bridge hierarchy case rather than just
+using simple bridge routing.
+
+Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+
+-- 
+Jesse Barnes, Intel Open Source Technology Center
