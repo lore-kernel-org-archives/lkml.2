@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933671Ab0LUIOr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 03:14:47 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:58417 "EHLO
+	id S932970Ab0LUId0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 03:33:26 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:45846 "EHLO
 	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932346Ab0LUIOq convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1758051Ab0LUIdZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 03:14:46 -0500
-Subject: Re: [RFC PATCH 15/15] nohz_task: Procfs interface
+	Tue, 21 Dec 2010 03:33:25 -0500
+Subject: Re: [tip:sched/core] sched: Add 'autogroup' scheduling feature:
+ automated per session task groups
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-In-Reply-To: <20101221012418.GI1715@nowhere>
-References: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
-	 <1292858662-5650-16-git-send-email-fweisbec@gmail.com>
-	 <1292859744.5021.4.camel@laptop> <20101220155737.GA1742@nowhere>
-	 <1292861799.5021.27.camel@laptop>  <20101221012418.GI1715@nowhere>
+To: Bharata B Rao <bharata.rao@gmail.com>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        mathieu.desnoyers@efficios.com, torvalds@linux-foundation.org,
+        efault@gmx.de, pjt@google.com, markus@trippelsdorf.de,
+        tglx@linutronix.de, oleg@redhat.com, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+In-Reply-To: <AANLkTi=qZHFCk=ACohxc1yajLQObn+A3SQ4KE25gtSnL@mail.gmail.com>
+References: <1290281700.28711.9.camel@maggy.simson.net>
+	 <tip-5091faa449ee0b7d73bc296a93bca9540fc51d0a@git.kernel.org>
+	 <AANLkTimRfVFmuMJzuirgsc37=RhC6zKX0C0YXhXO44O9@mail.gmail.com>
+	 <1292851159.5021.2.camel@laptop>
+	 <AANLkTi=3-FpuzXZ8xoEWCPhKrwydDOj0m4n-eEh-2BdT@mail.gmail.com>
+	 <AANLkTi=qZHFCk=ACohxc1yajLQObn+A3SQ4KE25gtSnL@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Tue, 21 Dec 2010 09:14:40 +0100
-Message-ID: <1292919280.5021.203.camel@laptop>
+Date: Tue, 21 Dec 2010 09:33:08 +0100
+Message-ID: <1292920388.5021.206.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-12-21 at 02:24 +0100, Frederic Weisbecker wrote:
+On Mon, 2010-12-20 at 21:23 +0530, Bharata B Rao wrote:
 > 
-> > Also, I'm not quite happy with the pure userspace restriction, but at
-> > least I see why you did that event though you didn't mention that.
-> 
-> What do you mean? The fact that kernel threads can not be nohz task? 
+> I missed adding the similar bits to RT in sched_dubug.c. If this
+> approach is reasonable, I can send the next one with RT changes
+> included. 
 
-No, that you key off kernel/user boundary transitions. Arguably one
-could allow simply system calls and page-faults to happen without
-restarting the tick, then again, RCU is very pervasive these days so I'm
-not quite sure you can actually make that happen.
+No that code needs a serious cleanup, I think you even (re-)introduced a
+NULL pointer deref (but I didn't look too closely).
 
+Simply re-instating the code that was removed isn't sufficient. 
 
+Just write your patch as if its a new feature (and never even look at
+the old code), you'll very probably end up with a much saner patch.
