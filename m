@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738Ab0LUXcS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 18:32:18 -0500
-Received: from shutemov.name ([188.40.19.243]:42806 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750869Ab0LUXcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 18:32:16 -0500
-Date: Wed, 22 Dec 2010 01:32:15 +0200
-From: "Kirill A. Shutemov" <kas@openvz.org>
-To: "J. Bruce Fields" <bfields@fieldses.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Neil Brown <neilb@suse.de>, Pavel Emelyanov <xemul@parallels.com>,
-        linux-nfs@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/12] make rpc_pipefs be mountable multiple times
-Message-ID: <20101221233215.GC7092@shutemov.name>
-References: <1292846078-31793-1-git-send-email-kirill@shutemov.name>
- <20101220144644.GC20643@fieldses.org>
+	id S1753488Ab0LUXgI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 18:36:08 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:48574 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799Ab0LUXgG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 18:36:06 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Y1KA3Acqi5y5O+fRnkje1kNtuKNdeqFfwpq7tbL+B9VTLDrAs5RUulqIRpkJL9bKOV
+         Tyg70pxR3n3Q+6f0m8Xd/1sCZ0Yy1yo4nnGS+csaIaNuJG8KLgknZ8jCIKqxnnPm65Np
+         /+GHgtOfBjJgNaoYYNbO9CE0YVWH2kXEjrpT4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101220144644.GC20643@fieldses.org>
-User-Agent: Mutt/1.5.20 (2010-08-04)
+In-Reply-To: <AANLkTikpHn4EkaTUznshMOAnhC9FfL5Yy9vZohvoy8cG@mail.gmail.com>
+References: <AANLkTi=kX8NraxuLn-f=s=nqja71Ayq2kYwgG6gq+7YF@mail.gmail.com>
+	<20101220214445.85816469.akpm@linux-foundation.org>
+	<AANLkTikpHn4EkaTUznshMOAnhC9FfL5Yy9vZohvoy8cG@mail.gmail.com>
+Date: Tue, 21 Dec 2010 15:36:04 -0800
+Message-ID: <AANLkTinVHsVg0=S9T2A120MYjgOknVB_hXmkwAmjpv2D@mail.gmail.com>
+Subject: Re: [PATCH] include/linux/unaligned: Pack the whole struct rather
+ than just the field.
+From: Harvey Harrison <harvey.harrison@gmail.com>
+To: Will Newton <will.newton@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>, stable@kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 20, 2010 at 09:46:44AM -0500, J. Bruce Fields wrote:
-> On Mon, Dec 20, 2010 at 01:54:26PM +0200, Kirill A. Shutsemov wrote:
-> > From: Kirill A. Shutemov <kirill@shutemov.name>
-> > 
-> > Prepare nfs/sunrpc stack to use multiple instances of rpc_pipefs.
-> > Only for client for now.
-> > 
-> > Only quick sanity check was made. BTW, is there any check list for NFS
-> > contributors?
-> 
-> Nothing formal.
-> 
-> Chuck may have some nlm patches that conflict; I'm not sure what their
-> status is.
-> 
-> For testing rpc_pipefs, maybe a few mounts (simultaneous mounts might be
-> good), possibly over different security flavors, and with some of them
-> nfsv4, might be a good idea.
+On Tue, Dec 21, 2010 at 2:43 AM, Will Newton <will.newton@gmail.com> wrote:
+> On Tue, Dec 21, 2010 at 5:44 AM, Andrew Morton
+>>>  #include <linux/kernel.h>
 
-Ok, I'll play with it.
+>>>
+>>> -struct __una_u16 { u16 x __attribute__((packed)); };
+>>> -struct __una_u32 { u32 x __attribute__((packed)); };
+>>> -struct __una_u64 { u64 x __attribute__((packed)); };
+>>> +struct __una_u16 { u16 x; } __attribute__((packed));
+>>> +struct __una_u32 { u32 x; } __attribute__((packed));
+>>> +struct __una_u64 { u64 x; } __attribute__((packed));
+>>>
+>>
+>> Yes, that was wrong.
+>>
+>> Do you think this bug affects 2.6.36 or earlier?
 
-> By the way, was there ever a resolution to Trond's question?:
-> 
-> 	http://marc.info/?l=linux-nfs&m=128655758712817&w=2
-> 
-> 	"The keyring upcalls are currently initiated through the same
-> 	mechanism as module_request and therefore get started with the
-> 	init_nsproxy namespace. We'd really like them to run inside the
-> 	same container as the process.  As part of the same problem,
-> 	there is the issue of what to do with the dns resolver and
-> 	Bryan's new keyring based idmapper code."
+Interesting, I thought about this when modifying this awhile ago, and
+was relying on this from the gcc manual:
 
-I'm not sure that I understand the problem correctly.
+packed
+<snip>
 
-Currently, idmap uses dentry taken from client's cl_rpcclient->cl_path
-(see nfs_idmap_new()). cl_rpcclient (and cl_path) is initialized with
-rpcmount resolved against mount namespace of mount process (see
-nfs_create_rpc_client()).
-I assume it's correct.
+    Specifying this attribute for struct and union types is equivalent
+to specifying the packed attribute on each of the
 
--- 
- Kirill A. Shutemov
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+structure or union members. Specifying the -fshort-enums flag on the
+line is equivalent to specifying the packed
+attribute on all enum definitions.
+
+What version of gcc was this?
+
+So, no objection to specifying packed on the struct definition rather
+than the member, it was only done that way
+as that was what was there when I made some of the code common.
+
+Harvey
