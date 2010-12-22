@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753572Ab0LVSj6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 13:39:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51174 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751777Ab0LVSj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 13:39:57 -0500
-Date: Wed, 22 Dec 2010 19:39:55 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Vojtech Pavlik <vojtech@suse.cz>,
-        =?ISO-8859-15?Q?Ilpo_J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>
-Subject: [PATCH] tcp: cleanup of cwnd initialization in tcp_init_metrics()
-Message-ID: <alpine.LNX.2.00.1012221938030.16569@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753363Ab0LVR1J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 12:27:09 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:46934 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752069Ab0LVR1H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 12:27:07 -0500
+Subject: Boot failure with block/for-next
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Jens Axboe <axboe@kernel.dk>, Tejun Heo <htejun@gmail.com>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Dec 2010 11:27:03 -0600
+Message-ID: <1293038823.3019.89.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 86bcebafc5e7f5 ("tcp: fix >2 iw selection") fixed a case when 
-congestion window initialization has been mistakenly omitted by 
-introducing cwnd label and putting backwards jump from the end of the 
-function.
+Trying to test out the SCSI post merge tree, I've found it won't boot on
+my SCSI test system.  The reason is a failure to read the partition
+table of the root disc.  It just gives
 
-This makes the code unnecessarily tricky to read and understand on a first 
-sight.
+sda: unable to read partition table
 
-Shuffle the code around a little bit to make it more obvious.
+The other four discs in the system seem to read their partition tables
+OK.
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
----
- net/ipv4/tcp_input.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
+The obvious candidate is the partition code rework in block/for-next.
+Simply reverting 
 
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index 6d8ab1c..dddff6d 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -915,11 +915,7 @@ static void tcp_init_metrics(struct sock *sk)
- 	if (inet_csk(sk)->icsk_rto < TCP_TIMEOUT_INIT && !tp->rx_opt.saw_tstamp)
- 		goto reset;
+commit d2bf1b6723ed0eab378363649d15b7893bf14e91
+Author: Tejun Heo <tj@kernel.org>
+Date:   Wed Dec 8 20:57:36 2010 +0100
+
+    block: move register_disk() and del_gendisk() to block/genhd.c
  
--cwnd:
--	tp->snd_cwnd = tcp_init_cwnd(tp, dst);
--	tp->snd_cwnd_stamp = tcp_time_stamp;
--	return;
--
-+	goto out;
- reset:
- 	/* Play conservative. If timestamps are not
- 	 * supported, TCP will fail to recalculate correct
-@@ -930,7 +926,9 @@ reset:
- 		tp->mdev = tp->mdev_max = tp->rttvar = TCP_TIMEOUT_INIT;
- 		inet_csk(sk)->icsk_rto = TCP_TIMEOUT_INIT;
- 	}
--	goto cwnd;
-+out:
-+	tp->snd_cwnd = tcp_init_cwnd(tp, dst);
-+	tp->snd_cwnd_stamp = tcp_time_stamp;
- }
- 
- static void tcp_update_reordering(struct sock *sk, const int metric,
--- 
-1.7.3.1
+Doesn't fix the boot failure, so it's obviously something deeper.
+
+James
+
 
