@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab0LVOWS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 09:22:18 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:51038 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751710Ab0LVOWQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 09:22:16 -0500
-Date: Wed, 22 Dec 2010 08:33:52 -0600
-From: David Sin <davidsin@ti.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        dri-devel@lists.freedesktop.org, Greg KH <greg@kroah.com>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH 0/9] TI DMM-TILER driver
-Message-ID: <20101222143350.GA27503@lba0869738>
-References: <1291674446-10766-1-git-send-email-davidsin@ti.com>
- <20101216172531.GG29435@lba0869738>
- <20101216173737.GA6767@lba0869738>
- <201012161843.48262.arnd@arndb.de>
- <20101216190207.GC6767@lba0869738>
- <AANLkTikZwm45Mkj_A=zzULeGBuYpLyP9N1bSJSFWegWV@mail.gmail.com>
+	id S1752513Ab0LVOX6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 09:23:58 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:40613 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040Ab0LVOX5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 09:23:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=qjW3GlgS5pHYTFL1lfWjSG9Kooq5DZol3POtjeOqDDaRuaMNFzUz4ma3kZIEK5pRKg
+         sBBMF5mUad018LEL6GJA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikZwm45Mkj_A=zzULeGBuYpLyP9N1bSJSFWegWV@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101222093032.0320c9bf@mschwide.boeblingen.de.ibm.com>
+References: <1292980144-28796-1-git-send-email-venki@google.com>
+	<1292980144-28796-3-git-send-email-venki@google.com>
+	<20101222093032.0320c9bf@mschwide.boeblingen.de.ibm.com>
+Date: Wed, 22 Dec 2010 06:23:55 -0800
+Message-ID: <AANLkTi=Jensy79OAu10LWvmFC7kMHGUpeJUFRX-soGTw@mail.gmail.com>
+Subject: Re: [PATCH 2/5] Add nsecs_to_cputime64 interface for asm-generic -v2
+From: Venkatesh Pallipadi <venki@google.com>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Paul Turner <pjt@google.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Shaun Ruffell <sruffell@digium.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 09:28:07AM +1000, Dave Airlie wrote:
-> On Fri, Dec 17, 2010 at 5:02 AM, David Sin <davidsin@ti.com> wrote:
-> I get the impression with the ARM graphics, that you just have a lot
-> of separate drivers for separate IP blocks all providing some misc
-> random interfaces to userspace where some binary driver binds all the
-> functionality together into a useful whole, which seems like a really
-> bad design.
-> 
-> Generally on x86, the tiling hw is part of the GPU and is exposed as
-> part of a coherent GPU driver.
-> 
-> I'm just wonder what the use-cases for this tiler are and what open
-> apps can use it for?
-> 
-> Dave.
-Yes -- on the omap4 soc, the dmm-tiler hw block is separate from the 
-gpu.  I've had some, but not much, past discusions on hw designs 
-where graphics/video related ip blocks are part of the same core.  It's 
-a good point that you bring up and it certainly makes sense to me.  
-I will bring it up with some omap hw folks that I know, and see if 
-something that can be considered in future omap versions.
- 
-Some of the use-cases are HD video decoding and encoding.  Also, 
-hi-res image capture -- I believe 12MP or greater.  OpenMax IL components 
-and other multimedia frameworks can allocate video memory 
-through a user space tiler library.  Thanks for your comments, Dave.  
--- 
-David Sin
+On Wed, Dec 22, 2010 at 12:30 AM, Martin Schwidefsky
+<schwidefsky@de.ibm.com> wrote:
+> On Tue, 21 Dec 2010 17:09:01 -0800
+> Venkatesh Pallipadi <venki@google.com> wrote:
+>
+>> Add nsecs_to_cputime64 interface. This is used in following patches that
+>> updates cpu irq stat based on ns granularity info in IRQ_TIME_ACCOUNTING.
+>>
+>> Tested-by: Shaun Ruffell <sruffell@digium.com>
+>> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+>> ---
+>>  include/asm-generic/cputime.h |    3 +++
+>>  include/linux/jiffies.h       |    1 +
+>>  kernel/time.c                 |   23 +++++++++++++++++++++--
+>>  3 files changed, 25 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/include/asm-generic/cputime.h b/include/asm-generic/cputime.h
+>> index 2bcc5c7..61e03dd 100644
+>> --- a/include/asm-generic/cputime.h
+>> +++ b/include/asm-generic/cputime.h
+>> @@ -30,6 +30,9 @@ typedef u64 cputime64_t;
+>>  #define cputime64_to_jiffies64(__ct) (__ct)
+>>  #define jiffies64_to_cputime64(__jif)        (__jif)
+>>  #define cputime_to_cputime64(__ct)   ((u64) __ct)
+>> +#define cputime64_gt(__a, __b)               ((__a) >  (__b))
+>> +
+>> +#define nsecs_to_cputime64(__ct)     nsecs_to_jiffies64(__ct)
+>>
+>>
+>>  /*
+>
+> If you define a new cputime primitive it is not enough to add it to the
+> generic cputime header. You have to add it to the arch-specific cputime
+> header for ia64, powerpc and s390 as well. Otherwise the build will
+> break with CONFIG_VIRT_CPU_ACCOUNTING=y on these architectures once the
+> new primitive is used.
+>
+
+But, those archs have arch specific cputime as well and so need a
+different macro for nsecs_to_cputime64, instead of nsec_to_jiffies64.
+Right? As of now this new primitive should not be used in those archs.
+I guess this is something needed when using the primitive in future?
+
+Thanks,
+Venki
