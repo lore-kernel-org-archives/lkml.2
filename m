@@ -1,170 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387Ab0LVWgi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 17:36:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55900 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751193Ab0LVWgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 17:36:36 -0500
-Message-ID: <4D127D72.8050303@suse.cz>
-Date: Wed, 22 Dec 2010 23:36:34 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: dirk.brandewie@gmail.com
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linuxppc-dev@lists.ozlabs.org, microblaze-uclinux@itee.uq.edu.au,
-        linux-arch@vger.kernel.org, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 1/4] of: Add support for linking device tree blobs into
- vmlinux
-References: <1293047849-26078-1-git-send-email-dirk.brandewie@gmail.com> <1293047849-26078-2-git-send-email-dirk.brandewie@gmail.com>
-In-Reply-To: <1293047849-26078-2-git-send-email-dirk.brandewie@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752516Ab0LVWgu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 17:36:50 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:36577 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752436Ab0LVWgt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 17:36:49 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Han Pingtian <phan@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 2/3] perf test: Look forward for symbol aliases
+Date: Wed, 22 Dec 2010 20:36:35 -0200
+Message-Id: <1293057396-21124-3-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1293057396-21124-1-git-send-email-acme@infradead.org>
+References: <1293057396-21124-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.12.2010 20:57, dirk.brandewie@gmail.com wrote:
-> From: Dirk Brandewie<dirk.brandewie@gmail.com>
->
-> This patch adds support for linking device tree blob(s) into
-> vmlinux. Modifies asm-generic/vmlinux.lds.h to add linking
-> .dtb sections into vmlinux. To maintain compatiblity with the of/fdt
-> driver code platforms MUST copy the blob to a non-init memory location
-> before the kernel frees the .init.* sections in the image.
->
-> Modifies scripts/Makefile.lib to add a kbuild command to
-> compile DTS files to device tree blobs and a rule to create objects to
-> wrap the blobs for linking.
->
-> STRUCT_ALIGNMENT is defined in vmlinux.lds.h for use in the rule to
-> create wrapper objects for the dtb in Makefile.lib.  The
-> STRUCT_ALIGN() macro in vmlinux.lds.h is modified to use the
-> STRUCT_ALIGNMENT definition.
->
-> The DTB's are placed on 32 byte boundries to allow parsing the blob
-> with driver/of/fdt.c during early boot without having to copy the blob
-> to get the structure alignment GCC expects.
->
-> A DTB is linked in by adding the DTB object to the list of objects to
-> be linked into vmlinux in the archtecture specific Makefile using
->     obj-y += foo.dtb.o
->
-> Signed-off-by: Dirk Brandewie<dirk.brandewie@gmail.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Hi,
+Not just before, fixing these false positives:
 
-you can add
-Acked-by: Michal Marek <mmarek@suse.cz>
-but I thing this series should go through the tip tree, as your primary 
-target seems to be x86 and patch 2/4 depends on the ce4100 code that is 
-only in tip.
+[acme@mica linux]$ perf test -v 1
+ 1: vmlinux symtab matches kallsyms:
+--- start ---
+Looking at the vmlinux_path (6 entries long)
+Using //lib/modules/2.6.37-rc5-00180-ge06b6bf/build/vmlinux for symbols
+0xffffffff81058dc0: diff name v: sys_vm86old k: sys_ni_syscall
+0xffffffff81058dc0: diff name v: sys_vm86 k: sys_ni_syscall
+0xffffffff81058dc0: diff name v: sys_subpage_prot k: sys_ni_syscall
+0xffffffff810b5f7c: diff name v: probe_kernel_write k: __probe_kernel_write
+0xffffffff810b5fe5: diff name v: probe_kernel_read k: __probe_kernel_read
+0xffffffff811bc380: diff name v: __memset k: memset
+0xffffffff81384a98: diff name v: __sched_text_start k: sleep_on_common
+0xffffffff81386750: diff name v: __sched_text_end k: _raw_spin_trylock
+0xffffffff8138cee8: diff name v: __irqentry_text_start k: do_IRQ
+0xffffffff8138f079: diff name v: __start_notes k: _etext
+0xffffffff8138f079: diff name v: __stop_notes k: _etext
+---- end ----
+vmlinux symtab matches kallsyms: FAILED!
 
-Michal
+[acme@mica linux]$
 
-> ---
->   Documentation/kbuild/makefiles.txt |   15 +++++++++++++++
->   include/asm-generic/vmlinux.lds.h  |   13 +++++++++++--
->   scripts/Makefile.lib               |   23 +++++++++++++++++++++++
->   3 files changed, 49 insertions(+), 2 deletions(-)
->
-> diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
-> index 0ef00bd..86e3cd0 100644
-> --- a/Documentation/kbuild/makefiles.txt
-> +++ b/Documentation/kbuild/makefiles.txt
-> @@ -1136,6 +1136,21 @@ When kbuild executes, the following steps are followed (roughly):
->   	      resulting in the target file being recompiled for no
->   	      obvious reason.
->
-> +    dtc
-> +	Create flattend device tree blob object suitable for linking
-> +	into vmlinux. Device tree blobs linked into vmlinux are placed
-> +	in an init section in the image. Platform code *must* copy the
-> +	blob to non-init memory prior to calling unflatten_device_tree().
-> +
-> +	Example:
-> +		#arch/x86/platform/ce4100/Makefile
-> +		clean-files := *dtb.S
-> +
-> +		DTC_FLAGS := -p 1024
-> +		obj-y += foo.dtb.o
-> +
-> +		$(obj)/%.dtb: $(src)/%.dts
-> +			$(call cmd,dtc)
->
->   --- 6.7 Custom kbuild commands
->
-> diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-> index bd69d79..05cbad0 100644
-> --- a/include/asm-generic/vmlinux.lds.h
-> +++ b/include/asm-generic/vmlinux.lds.h
-> @@ -67,7 +67,8 @@
->    * Align to a 32 byte boundary equal to the
->    * alignment gcc 4.5 uses for a struct
->    */
-> -#define STRUCT_ALIGN() . = ALIGN(32)
-> +#define STRUCT_ALIGNMENT 32
-> +#define STRUCT_ALIGN() . = ALIGN(STRUCT_ALIGNMENT)
->
->   /* The actual configuration determine if the init/exit sections
->    * are handled as text/data or they can be discarded (which
-> @@ -146,6 +147,13 @@
->   #define TRACE_SYSCALLS()
->   #endif
->
-> +
-> +#define KERNEL_DTB()							\
-> +	STRUCT_ALIGN();							\
-> +	VMLINUX_SYMBOL(__dtb_start) = .;				\
-> +	*(.dtb.init.rodata)						\
-> +	VMLINUX_SYMBOL(__dtb_end) = .;
-> +
->   /* .data section */
->   #define DATA_DATA							\
->   	*(.data)							\
-> @@ -468,7 +476,8 @@
->   	MCOUNT_REC()							\
->   	DEV_DISCARD(init.rodata)					\
->   	CPU_DISCARD(init.rodata)					\
-> -	MEM_DISCARD(init.rodata)
-> +	MEM_DISCARD(init.rodata)					\
-> +	KERNEL_DTB()
->
->   #define INIT_TEXT							\
->   	*(.init.text)							\
-> diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-> index 4c72c11..7df8eb5 100644
-> --- a/scripts/Makefile.lib
-> +++ b/scripts/Makefile.lib
-> @@ -200,6 +200,29 @@ quiet_cmd_gzip = GZIP    $@
->   cmd_gzip = (cat $(filter-out FORCE,$^) | gzip -f -9>  $@) || \
->   	(rm -f $@ ; false)
->
-> +# DTC
-> +#  ---------------------------------------------------------------------------
-> +
-> +# Generate an assembly file to wrap the output of the device tree compiler
-> +quiet_cmd_dt_S_dtb= DTB    $@
-> +cmd_dt_S_dtb=						\
-> +(							\
-> +	echo '\#include<asm-generic/vmlinux.lds.h>'; 	\
-> +	echo '.section .dtb.init.rodata,"a"';		\
-> +	echo '.balign STRUCT_ALIGNMENT';                \
-> +	echo '.global __dtb_$(*F)_begin';               \
-> +	echo '__dtb_$(*F)_begin:';                      \
-> +	echo '.incbin "$<" ';                           \
-> +	echo '__dtb_$(*F)_end:';                        \
-> +	echo '.global __dtb_$(*F)_end';                 \
-> +	echo '.balign STRUCT_ALIGNMENT'; 		\
-> +)>  $@
-> +
-> +$(obj)/%.dtb.S: $(obj)/%.dtb
-> +	$(call cmd,dt_S_dtb)
-> +
-> +quiet_cmd_dtc = DTC     $@
-> +      cmd_dtc = $(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) $<
->
->   # Bzip2
->   # ---------------------------------------------------------------------------
+Some are weak functions, others are just markers, etc. They get in the rb tree
+with the same addr, so we need to look around to find the symbol with the same
+name.
+
+We were looking just at the previous entries with the same addr, look forward
+too.
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Han Pingtian <phan@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Stephane Eranian <eranian@google.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-test.c |   23 +++++++++++++++++++----
+ 1 files changed, 19 insertions(+), 4 deletions(-)
+
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 035b9fa..e0c3f47 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -119,10 +119,16 @@ static int test__vmlinux_matches_kallsyms(void)
+ 	 * end addresses too.
+ 	 */
+ 	for (nd = rb_first(&vmlinux_map->dso->symbols[type]); nd; nd = rb_next(nd)) {
+-		struct symbol *pair;
++		struct symbol *pair, *first_pair;
++		bool backwards = true;
+ 
+ 		sym  = rb_entry(nd, struct symbol, rb_node);
+-		pair = machine__find_kernel_symbol(&kallsyms, type, sym->start, NULL, NULL);
++
++		if (sym->start == sym->end)
++			continue;
++
++		first_pair = machine__find_kernel_symbol(&kallsyms, type, sym->start, NULL, NULL);
++		pair = first_pair;
+ 
+ 		if (pair && pair->start == sym->start) {
+ next_pair:
+@@ -143,8 +149,10 @@ next_pair:
+ 				pr_debug("%#Lx: diff end addr for %s v: %#Lx k: %#Lx\n",
+ 					 sym->start, sym->name, sym->end, pair->end);
+ 			} else {
+-				struct rb_node *nnd = rb_prev(&pair->rb_node);
+-
++				struct rb_node *nnd;
++detour:
++				nnd = backwards ? rb_prev(&pair->rb_node) :
++						  rb_next(&pair->rb_node);
+ 				if (nnd) {
+ 					struct symbol *next = rb_entry(nnd, struct symbol, rb_node);
+ 
+@@ -153,6 +161,13 @@ next_pair:
+ 						goto next_pair;
+ 					}
+ 				}
++
++				if (backwards) {
++					backwards = false;
++					pair = first_pair;
++					goto detour;
++				}
++
+ 				pr_debug("%#Lx: diff name v: %s k: %s\n",
+ 					 sym->start, sym->name, pair->name);
+ 			}
+-- 
+1.6.2.5
 
