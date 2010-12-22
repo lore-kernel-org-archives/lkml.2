@@ -1,129 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752367Ab0LVVhA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 16:37:00 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:55907 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752153Ab0LVVg7 (ORCPT
+	id S1752435Ab0LVVls (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 16:41:48 -0500
+Received: from mail-ew0-f45.google.com ([209.85.215.45]:39486 "EHLO
+	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000Ab0LVVlq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 16:36:59 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Ingo Molnar <mingo@elte.hu>
-Cc: mat <castet.matthieu@free.fr>, Kees Cook <kees.cook@canonical.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-next@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
-        James Morris <jmorris@namei.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
-        Siarhei Liakh <sliakh.lkml@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 3/3 V13] RO/NX protection for loadable kernel
-In-Reply-To: Your message of "Wed, 22 Dec 2010 13:40:19 +0100."
-             <20101222124019.GG10809@elte.hu>
-From: Valdis.Kletnieks@vt.edu
-References: <4CE2F914.9070106@free.fr> <24422.1290656467@localhost> <20101126182355.62615dff@mat-laptop> <20101208221951.GO5750@outflux.net> <20101211001857.4c5e0794@mat-laptop>
-            <20101222124019.GG10809@elte.hu>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1293053719_7139P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 22 Dec 2010 16:35:19 -0500
-Message-ID: <34428.1293053719@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020208.4D126F1B.0087,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Wed, 22 Dec 2010 16:41:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=EWVBOtIIij4pqhHFoj6FeTfKVjxEOOXADx6OCS0qCnRYNFspq5nvcMI6sRxen2AZea
+         9jjB8WKYO2xwwneSPYSv6Pc+XkpqsIUEsfeKShvZWlwCocIWgCEd0q+6+X0ydJI6kJjR
+         j0Q33pLzMpKo46RlpBDLvHUKg39coh8zuKhPw=
+Date: Thu, 23 Dec 2010 00:41:41 +0300
+From: Alexey Charkov <alchark@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Alexey Charkov <alchark@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        Tony Lindgren <tony@atomide.com>, Feng Tang <feng.tang@intel.com>,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/6 v3] input: Add support for VIA VT8500 and compatibles in
+ i8042
+Message-ID: <20101222214141.GA31173@alchark-u3s>
+References: <1289147348-31969-1-git-send-email-alchark@gmail.com>
+ <1289147348-31969-3-git-send-email-alchark@gmail.com>
+ <AANLkTi=zvGxpukjAv-XFAMLpKYiqqKD=p9S5FtGowdDu@mail.gmail.com>
+ <20101112233013.GA30946@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101112233013.GA30946@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1293053719_7139P
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: quoted-printable
+VIA and WonderMedia Systems-on-Chip feature a standard i8042-compatible
+keyboard and mouse controller. This adds necessary glue to enable use
+of the standard driver with these systems.
 
-On Wed, 22 Dec 2010 13:40:19 +0100, Ingo Molnar said:
->=20
-> * mat <castet.matthieu=40free.fr> wrote:
->=20
-> > Le Wed, 8 Dec 2010 14:19:51 -0800,
-> > Kees Cook <kees.cook=40canonical.com> a =E9crit :
-> >=20
-> > > On Fri, Nov 26, 2010 at 06:23:55PM +0100, mat wrote:
-> > > > could you try the attached patch ?
-> > > >=20
-> > > > on module load, we sort the __jump_table section. So we should ma=
-ke
-> > > > it writable.
-> > > >=20
-> > > >=20
-> > > > Matthieu
-> > >=20
-> > > > diff --git a/arch/x86/include/asm/jump_label.h
-> > > > b/arch/x86/include/asm/jump_label.h index f52d42e..574dbc2 100644=
+Signed-off-by: Alexey Charkov <alchark@gmail.com>
+---
 
-> > > > --- a/arch/x86/include/asm/jump_label.h
-> > > > +++ b/arch/x86/include/asm/jump_label.h
-> > > > =40=40 -14,7 +14,7 =40=40
-> > > >  	do
-> > > > =7B							=5C asm
-> > > > goto(=221:=22					=5C
-> > > > JUMP_LABEL_INITIAL_NOP			=5C
-> > > > -			=22.pushsection __jump_table,  =5C=22a=5C=22 =5Cn=5Ct=22=5C
-> > > > +			=22.pushsection __jump_table,  =5C=22aw=5C=22 =5Cn=5Ct=22=5C
-> > > >  			_ASM_PTR =221b, %l=5B=22 =23label =22=5D, %c0 =5Cn=5Ct=22 =5C=
+This version of the patch introduces yet another trivial update to
+follow changes in arch code (namely variables that hold the register
+and interrupt numbers). Otherwise it is identical to v2.
 
-> > > >  			=22.popsection =5Cn=5Ct=22			=5C
-> > > >  			: :  =22i=22 (key) :  : label);
-> > > > =5C
-> > >=20
-> > > Acked-by: Kees Cook <kees.cook=40canonical.com>
-> > >=20
-> > > Can this please get committed to tip?
-> > I think it is not need anymore with  Steven Rostedt patch =5B1=5D
-> >=20
-> > Matthieu
-> >=20
-> > =5B1=5D
-> > > > Here we set the text read only before we call the notifiers. The
-> > > > function tracer changes the calls to mcount into nops via a notif=
-ier
-> > > > call so this must be done after the module notifiers.
->=20
-> What's the status of this bug?
->=20
-> If we still need the patch then please submit it standalone with a prop=
-er subject=20
-> line, with acks/signoffs added, etc.
+Best regards,
+Alexey
 
-Steve Rostedt's patch that moves the setting of the page permissions seem=
-s to
-make this patch no longer necessary.  I tripped over this same issue, but=
- the
-version in the latest -mmotm does not need it, as it includes Steve's fix=
-.
+ drivers/input/serio/Kconfig        |    3 +-
+ drivers/input/serio/i8042-vt8500.h |   73 ++++++++++++++++++++++++++++++++++++
+ drivers/input/serio/i8042.h        |    2 +
+ 3 files changed, 77 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/input/serio/i8042-vt8500.h
 
---==_Exmh_1293053719_7139P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNEm8XcC3lWbTT17ARAot9AJ9VxWZf0IuIN33JLqBmPcNPcviizwCcCVYj
-nFW2vul/vvM1LSMl8mYqU5Y=
-=O2LX
------END PGP SIGNATURE-----
-
---==_Exmh_1293053719_7139P--
+diff --git a/drivers/input/serio/Kconfig b/drivers/input/serio/Kconfig
+index 6256233..ff799f3 100644
+--- a/drivers/input/serio/Kconfig
++++ b/drivers/input/serio/Kconfig
+@@ -21,7 +21,8 @@ if SERIO
+ config SERIO_I8042
+ 	tristate "i8042 PC Keyboard controller" if EMBEDDED || !X86
+ 	default y
+-	depends on !PARISC && (!ARM || ARCH_SHARK || FOOTBRIDGE_HOST) && \
++	depends on !PARISC && \
++		  (!ARM || ARCH_SHARK || ARCH_VT8500 || FOOTBRIDGE_HOST) && \
+ 		   (!SUPERH || SH_CAYMAN) && !M68K && !BLACKFIN
+ 	help
+ 	  i8042 is the chip over which the standard AT keyboard and PS/2
+diff --git a/drivers/input/serio/i8042-vt8500.h b/drivers/input/serio/i8042-vt8500.h
+new file mode 100644
+index 0000000..a7e6673
+--- /dev/null
++++ b/drivers/input/serio/i8042-vt8500.h
+@@ -0,0 +1,73 @@
++#ifndef _I8042_VT8500_H
++#define _I8042_VT8500_H
++
++#include <mach/i8042.h>
++
++/*
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ */
++
++static void __iomem *regbase;
++
++/*
++ * Names.
++ */
++
++#define I8042_KBD_PHYS_DESC "vt8500ps2/serio0"
++#define I8042_AUX_PHYS_DESC "vt8500ps2/serio1"
++#define I8042_MUX_PHYS_DESC "vt8500ps2/serio%d"
++
++/*
++ * IRQs.
++ */
++
++#define I8042_KBD_IRQ	(wmt_i8042_kbd_irq)
++#define I8042_AUX_IRQ	(wmt_i8042_aux_irq)
++
++
++/*
++ * Register numbers.
++ */
++
++#define I8042_COMMAND_REG	(regbase + 0x4)
++#define I8042_STATUS_REG	(regbase + 0x4)
++#define I8042_DATA_REG		(regbase + 0x0)
++
++static inline int i8042_read_data(void)
++{
++	return readl(I8042_DATA_REG);
++}
++
++static inline int i8042_read_status(void)
++{
++	return readl(I8042_STATUS_REG);
++}
++
++static inline void i8042_write_data(int val)
++{
++	writel(val, I8042_DATA_REG);
++}
++
++static inline void i8042_write_command(int val)
++{
++	writel(val, I8042_COMMAND_REG);
++}
++
++static inline int i8042_platform_init(void)
++{
++	i8042_reset = true;
++	regbase = ioremap(wmt_i8042_base, SZ_1K);
++	if (!regbase)
++		return -ENODEV;
++
++	return 0;
++}
++
++static inline void i8042_platform_exit(void)
++{
++	iounmap(regbase);
++}
++
++#endif /* _I8042_VT8500_H */
+diff --git a/drivers/input/serio/i8042.h b/drivers/input/serio/i8042.h
+index cbc1beb..bdb2aeb 100644
+--- a/drivers/input/serio/i8042.h
++++ b/drivers/input/serio/i8042.h
+@@ -16,6 +16,8 @@
+ 
+ #if defined(CONFIG_MACH_JAZZ)
+ #include "i8042-jazzio.h"
++#elif defined(CONFIG_ARCH_VT8500)
++#include "i8042-vt8500.h"
+ #elif defined(CONFIG_SGI_HAS_I8042)
+ #include "i8042-ip22io.h"
+ #elif defined(CONFIG_SNI_RM)
+-- 
+1.7.3.4
 
