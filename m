@@ -1,76 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753Ab0LVM6V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 07:58:21 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:34653 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751531Ab0LVM6U (ORCPT
+	id S1752854Ab0LVNCN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 08:02:13 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:54088 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751876Ab0LVNCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 07:58:20 -0500
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-To: wg@grandegger.com, socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+	Wed, 22 Dec 2010 08:02:11 -0500
+From: "M. Mohan Kumar" <mohan@in.ibm.com>
+To: v9fs-developer@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH] pch_can: Fix array miss-pointing issue
-Date: Wed, 22 Dec 2010 22:00:39 +0900
-Message-Id: <1293022839-3202-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-X-Mailer: git-send-email 1.6.0.6
+Subject: [PATCH] fs/9p: TREADLINK fix
+Date: Wed, 22 Dec 2010 18:32:07 +0530
+Message-Id: <1293022927-27141-1-git-send-email-mohan@in.ibm.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Use copy_to_user function to copy symlink information to the userspace
+address. As part of this change v9fs_vfs_followlink_dotl also changed.
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Signed-off-by: M. Mohan Kumar <mohan@in.ibm.com>
 ---
- drivers/net/can/pch_can.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
+ fs/9p/vfs_inode.c |   43 +++++++++++++++++++++----------------------
+ 1 files changed, 21 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index 8d45fdd..c42e972 100644
---- a/drivers/net/can/pch_can.c
-+++ b/drivers/net/can/pch_can.c
-@@ -1078,15 +1078,17 @@ static int pch_can_suspend(struct pci_dev *pdev, pm_message_t state)
+diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
+index 2ce3668..9d3b910 100644
+--- a/fs/9p/vfs_inode.c
++++ b/fs/9p/vfs_inode.c
+@@ -1995,26 +1995,26 @@ error:
+ }
  
- 	/* Save Tx buffer enable state */
- 	for (i = PCH_TX_OBJ_START; i <= PCH_TX_OBJ_END; i++)
--		priv->tx_enable[i] = pch_can_get_rxtx_ir(priv, i, PCH_TX_IFREG);
-+		priv->tx_enable[i - 1] = pch_can_get_rxtx_ir(priv, i,
-+							     PCH_TX_IFREG);
+ static int
+-v9fs_vfs_readlink_dotl(struct dentry *dentry, char *buffer, int buflen)
++v9fs_vfs_readlink_dotl(struct dentry *dentry, char __user *buffer, int buflen)
+ {
+-	int retval;
++	int retval = -EPERM;
+ 	struct p9_fid *fid;
+ 	char *target = NULL;
  
- 	/* Disable all Transmit buffers */
- 	pch_can_set_tx_all(priv, 0);
+ 	P9_DPRINTK(P9_DEBUG_VFS, " %s\n", dentry->d_name.name);
+-	retval = -EPERM;
+ 	fid = v9fs_fid_lookup(dentry);
+ 	if (IS_ERR(fid))
+ 		return PTR_ERR(fid);
+-
+ 	retval = p9_client_readlink(fid, &target);
+ 	if (retval < 0)
+-		return retval;
+-
+-	strncpy(buffer, target, buflen);
+-	P9_DPRINTK(P9_DEBUG_VFS, "%s -> %s\n", dentry->d_name.name, buffer);
+-
+-	retval = strnlen(buffer, buflen);
++		goto error;
++	retval = copy_to_user(buffer, target, buflen);
++	if (retval < 0)
++		goto error;
++	P9_DPRINTK(P9_DEBUG_VFS, "%s -> %s\n", dentry->d_name.name, target);
++	retval = strnlen(target, buflen);
++error:
++	kfree(target);
+ 	return retval;
+ }
  
- 	/* Save Rx buffer enable state */
- 	for (i = PCH_RX_OBJ_START; i <= PCH_RX_OBJ_END; i++) {
--		priv->rx_enable[i] = pch_can_get_rxtx_ir(priv, i, PCH_RX_IFREG);
--		priv->rx_link[i] = pch_can_get_rx_buffer_link(priv, i);
-+		priv->rx_enable[i - 1] = pch_can_get_rxtx_ir(priv, i,
-+							     PCH_RX_IFREG);
-+		priv->rx_link[i - 1] = pch_can_get_rx_buffer_link(priv, i);
+@@ -2028,23 +2028,22 @@ v9fs_vfs_readlink_dotl(struct dentry *dentry, char *buffer, int buflen)
+ static void *
+ v9fs_vfs_follow_link_dotl(struct dentry *dentry, struct nameidata *nd)
+ {
+-	int len = 0;
+-	char *link = __getname();
++	int retval;
++	struct p9_fid *fid;
++	char *link = NULL;
+ 
+ 	P9_DPRINTK(P9_DEBUG_VFS, "%s n", dentry->d_name.name);
+ 
+-	if (!link)
+-		link = ERR_PTR(-ENOMEM);
+-	else {
+-		len = v9fs_vfs_readlink_dotl(dentry, link, PATH_MAX);
+-		if (len < 0) {
+-			__putname(link);
+-			link = ERR_PTR(len);
+-		} else
+-			link[min(len, PATH_MAX-1)] = 0;
++	fid = v9fs_fid_lookup(dentry);
++	if (IS_ERR(fid))
++		return fid;
++	retval = p9_client_readlink(fid, &link);
++	if (retval < 0) {
++		kfree(link);
++		link = ERR_PTR(retval);
  	}
+-	nd_set_link(nd, link);
  
- 	/* Disable all Receive buffers */
-@@ -1139,15 +1141,15 @@ static int pch_can_resume(struct pci_dev *pdev)
++	nd_set_link(nd, link);
+ 	return NULL;
+ }
  
- 	/* Enabling the transmit buffer. */
- 	for (i = PCH_TX_OBJ_START; i <= PCH_TX_OBJ_END; i++)
--		pch_can_set_rxtx(priv, i, priv->tx_enable[i], PCH_TX_IFREG);
-+		pch_can_set_rxtx(priv, i, priv->tx_enable[i - 1], PCH_TX_IFREG);
- 
- 	/* Configuring the receive buffer and enabling them. */
- 	for (i = PCH_RX_OBJ_START; i <= PCH_RX_OBJ_END; i++) {
- 		/* Restore buffer link */
--		pch_can_set_rx_buffer_link(priv, i, priv->rx_link[i]);
-+		pch_can_set_rx_buffer_link(priv, i, priv->rx_link[i - 1]);
- 
- 		/* Restore buffer enables */
--		pch_can_set_rxtx(priv, i, priv->rx_enable[i], PCH_RX_IFREG);
-+		pch_can_set_rxtx(priv, i, priv->rx_enable[i - 1], PCH_RX_IFREG);
- 	}
- 
- 	/* Enable CAN Interrupts */
 -- 
-1.6.0.6
+1.7.0.4
 
