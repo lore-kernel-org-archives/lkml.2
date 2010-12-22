@@ -1,53 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752320Ab0LVM2W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 07:28:22 -0500
-Received: from www17.your-server.de ([213.133.104.17]:41386 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738Ab0LVM2V (ORCPT
+	id S1752647Ab0LVM33 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 07:29:29 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49641 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751793Ab0LVM32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 07:28:21 -0500
-Subject: 2.6.37-rc7: NULL pointer dereference
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 22 Dec 2010 13:25:57 +0100
-Message-ID: <1293020757.1998.2.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: thomas@m3y3r.de
+	Wed, 22 Dec 2010 07:29:28 -0500
+Date: Wed, 22 Dec 2010 12:29:04 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Viresh Kumar <viresh.kumar@st.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        yuanyabin1978@sina.com, linux-kernel@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>, Peter Pearse <peter.pearse@arm.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Alessandro Rubini <rubini@unipv.it>
+Subject: Re: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081
+	PrimeCells
+Message-ID: <20101222122904.GC14693@n2100.arm.linux.org.uk>
+References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com> <20101221182037.GA4783@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101221182037.GA4783@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BUG: unable to handle kernel NULL pointer dereference at 00000008
-IP: [<c04eae14>] __mem_cgroup_try_charge+0x234/0x430
-*pde = 00000000 
-Oops: 0000 [#1] 
-last sysfs file: /sys/devices/platform/regulatory.0/uevent
-Modules linked in: vfat fat usb_storage fuse sco bnep l2cap bluetooth cpufreq_ondemand acpi_cpufreq mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables kvm_intel kvm uinput arc4 ecb snd_hda_codec_hdmi snd_hda_codec_realtek iwlagn snd_hda_intel snd_hda_codec iwlcore uvcvideo snd_hwdep mac80211 snd_seq videodev snd_seq_device snd_pcm cfg80211 snd_timer rfkill v4l1_compat wmi snd pcspkr soundcore joydev serio_raw snd_page_alloc ipv6 sha256_generic aes_i586 aes_generic cbc dm_crypt [last unloaded: scsi_wait_scan]
-Pid: 8058, comm: swapoff Tainted: G          I 2.6.37-rc7 #221 JM11-MS/Aspire 1810T
-EIP: 0060:[<c04eae14>] EFLAGS: 00010246 CPU: 0
-EIP is at __mem_cgroup_try_charge+0x234/0x430
-EAX: 00000008 EBX: 00000000 ECX: f2e71f10 EDX: f2f96380
-ESI: f3e55860 EDI: 00020000 EBP: f2e71eb4 ESP: f2e71e54
- DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
-Process swapoff (pid: 8058, ti=f2e70000 task=f3e55860 task.ti=f2e70000)
-Stack:
- f2e71e88 c0456607 26ba7c1c f3e55860 00000010 f3e55860 069d208a b2ee651d
- 00000008 000000d0 f2f96380 00000005 01ffffff f2e71f10 00000246 ec1a64ae
- ffffffff 00000000 27b52eae f044dc84 00000000 f2f96380 00000000 000000d0
-Call Trace:
- [<c0456607>] ? ktime_get_ts+0x107/0x140
- [<c04ebb89>] ? mem_cgroup_try_charge_swapin+0x49/0xb0
- [<c04d9b4b>] ? unuse_mm+0x1db/0x300
- [<c04dad9a>] ? sys_swapoff+0x2aa/0x890
- [<c047cd58>] ? audit_syscall_entry+0x218/0x240
- [<c047d043>] ? audit_syscall_exit+0x1f3/0x220
- [<c0403013>] ? sysenter_do_call+0x12/0x22
-Code: 55 c8 8b 82 90 01 00 00 85 c0 74 09 8b 80 7c 03 00 00 8b 58 2c 3b 1d 54 20 a9 c0 74 61 3b 1d 4c ca a4 c0 74 6a 8d 43 08 89 45 c0 <8b> 43 08 a8 01 0f 85 73 fe ff ff 8d 4b 04 89 5d bc 8d 76 00 8b 
-EIP: [<c04eae14>] __mem_cgroup_try_charge+0x234/0x430 SS:ESP 0068:f2e71e54
-CR2: 0000000000000008
+On Tue, Dec 21, 2010 at 06:20:37PM +0000, Russell King - ARM Linux wrote:
+> Having just looked at this while trying to undo the DMA API abuses
+> in the PL011 UART driver, I'm getting rather frustrated with this
+> code.
+> 
+> What's wrong with the PL08x DMA engine driver?  Well, in the PL011
+> UART driver, you do this:
+> 
+> +static void pl011_dma_tx_callback(void *data)
+> +{
+> ...
+> +       /* Refill the TX if the buffer is not empty */
+> +       if (!uart_circ_empty(xmit)) {
+> +               ret = pl011_dma_tx_refill(uap);
+> ...
+> +static int pl011_dma_tx_refill(struct uart_amba_port *uap)
+> +{
+> ...
+> +       /* Prepare the scatterlist */
+> +       desc = chan->device->device_prep_slave_sg(chan,
+> +                                                 &dmatx->scatter,
+> +                                                 1,
+> +                                                 DMA_TO_DEVICE,
+> +                                                 DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+> ...
+> +       /* Some data to go along to the callback */
+> +       desc->callback = pl011_dma_tx_callback;
+> +       desc->callback_param = uap;
+> 
+> Note that this calls the channel device_prep_slave_sg() from the
+> callback.  This seems reasonable.
+> 
+> Right, now let's look at this driver (from the latest kernel):
+> 
+> static void pl08x_tasklet(unsigned long data)
+> {
+> ...
+>         spin_lock(&plchan->lock);
+> ...
+>                 dma_async_tx_callback callback =
+>                         plchan->at->tx.callback;
+>                 void *callback_param =
+>                         plchan->at->tx.callback_param;
+> ...
+>                 /*
+>                  * Callback to signal completion
+>                  */
+>                 if (callback)
+>                         callback(callback_param);
+> 
+> Note that the callback is called with the channel lock held.
+> 
+> struct dma_async_tx_descriptor *pl08x_prep_slave_sg(
+>                 struct dma_chan *chan, struct scatterlist *sgl,
+>                 unsigned int sg_len, enum dma_data_direction direction,
+>                 unsigned long flags)
+> {
+> ...
+>         ret = pl08x_prep_channel_resources(plchan, txd);
+>         if (ret)
+>                 return NULL;
+>         /*
+>          * NB: the channel lock is held at this point so tx_submit()
+>          * must be called in direct succession.
+>          */
+> 
+> XXXXXXXX DEADLOCK XXXXXXXX
 
+Having found one of my ARM platforms which actually supports DMA (such
+a rare thing - neither my Realview EB nor Versatile Express supports it),
+I can finally see about run-time checking some of this.
 
+BUG: spinlock lockup on CPU#0, sh/417, c1870a08
+Backtrace:
+[<c0038880>] (dump_backtrace+0x0/0x10c) from [<c02c20e0>] (dump_stack+0x18/0x1c) r7:c104e000 r6:c1870a08 r5:00000000 r4:00000000
+[<c02c20c8>] (dump_stack+0x0/0x1c) from [<c017b520>] (do_raw_spin_lock+0x118/0x154)
+[<c017b408>] (do_raw_spin_lock+0x0/0x154) from [<c02c4b98>] (_raw_spin_lock_irqsave+0x54/0x60)
+[<c02c4b44>] (_raw_spin_lock_irqsave+0x0/0x60) from [<c01f5828>] (pl08x_prep_channel_resources+0x718/0x8b4)
+ r7:c1870a08 r6:00000001 r5:c19c3560 r4:ffd04010
+[<c01f5110>] (pl08x_prep_channel_resources+0x0/0x8b4) from [<c01f5bb4>] (pl08x_prep_slave_sg+0x120/0x19c)
+[<c01f5a94>] (pl08x_prep_slave_sg+0x0/0x19c) from [<c01be7a0>] (pl011_dma_tx_refill+0x164/0x224)
+ r8:00000020 r7:c03978c0 r6:c1850000 r5:c1847e00 r4:c1847f40
+[<c01be63c>] (pl011_dma_tx_refill+0x0/0x224) from [<c01bf1c8>] (pl011_dma_tx_callback+0x7c/0xc4)
+[<c01bf14c>] (pl011_dma_tx_callback+0x0/0xc4) from [<c01f4d34>] (pl08x_tasklet+0x60/0x368)
+ r5:c18709a0 r4:00000000
+[<c01f4cd4>] (pl08x_tasklet+0x0/0x368) from [<c004d978>] (tasklet_action+0xa0/0x100)
+[<c004d8d8>] (tasklet_action+0x0/0x100) from [<c004e01c>] (__do_softirq+0xa0/0x170)
+ r8:00000006 r7:00000001 r6:00000018 r5:c104e000 r4:00000100
+[<c004df7c>] (__do_softirq+0x0/0x170) from [<c004e140>] (irq_exit+0x54/0x9c)
+[<c004e0ec>] (irq_exit+0x0/0x9c) from [<c0029080>] (asm_do_IRQ+0x80/0xa0)
+[<c0029000>] (asm_do_IRQ+0x0/0xa0) from [<c00345b8>] (__irq_svc+0x38/0xa0)
+
+As described above in my code analysis, pl08x_tasklet takes the spinlock,
+calls pl011_dma_tx_callback and eventually back to pl08x_prep_slave_sg
+and pl08x_prep_channel_resources which then try to take the spinlock
+again, leading to deadlock.
