@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396Ab0LVGr3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 01:47:29 -0500
-Received: from mga11.intel.com ([192.55.52.93]:21468 "EHLO mga11.intel.com"
+	id S1752373Ab0LVGuL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 01:50:11 -0500
+Received: from mga11.intel.com ([192.55.52.93]:41183 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751859Ab0LVGr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 01:47:28 -0500
+	id S1751372Ab0LVGuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 01:50:10 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,211,1291622400"; 
-   d="scan'208";a="639162381"
-Message-ID: <4D119F02.3060900@linux.intel.com>
-Date: Tue, 21 Dec 2010 22:47:30 -0800
+   d="scan'208";a="639163118"
+Message-ID: <4D119FA6.4070807@linux.intel.com>
+Date: Tue, 21 Dec 2010 22:50:14 -0800
 From: Darren Hart <dvhart@linux.intel.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
@@ -21,33 +21,138 @@ CC: Peter Zijlstra <peterz@infradead.org>, John Kacur <jkacur@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Namhyung Kim <namhyung@gmail.com>, linux-kernel@vger.kernel.org,
         Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 2/4] futex,plist: remove debug lock assignment for plist_node
-References: <4D10797E.7040803@cn.fujitsu.com> <4D10FC90.6020104@linux.intel.com> <4D119353.9030401@cn.fujitsu.com>
-In-Reply-To: <4D119353.9030401@cn.fujitsu.com>
+Subject: Re: [PATCH 1/4 V3 ] futex,plist: pass the real head of the priority
+ list to plist_del()
+References: <4D107979.2020405@cn.fujitsu.com> <4D10FC40.6070808@linux.intel.com> <4D11984A.5030203@cn.fujitsu.com>
+In-Reply-To: <4D11984A.5030203@cn.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2010 09:57 PM, Lai Jiangshan wrote:
-> On 12/22/2010 03:14 AM, Darren Hart wrote:
+On 12/21/2010 10:18 PM, Lai Jiangshan wrote:
+> On 12/22/2010 03:13 AM, Darren Hart wrote:
 >> On 12/21/2010 01:55 AM, Lai Jiangshan wrote:
->>> original code use&plist_node->plist as the faked head of
->>> the priority list for plist_del(), these debug locks in
->>> the faked head are needed for CONFIG_DEBUG_PI_LIST.
->>>
->>> But now we always pass the real head to plist_del(), the debug locks
->>> in plist_node will not be used, so we remove these assignments.
 >>
->> Any reason to keep this separate from  patch 1/4 ?
+>> Hi Lai,
+>>
+>> Looks about ready to me, only a couple of more nitpics from me.
 >>
 >
-> Make the changes clearer and the patches are easier to read.
-> For me the purposes of patch 1/4 and 2/4 are different,
-> 1/4 makes the code sensible. 2/4 removes unused code.
+> Fixed, thanks.
 
-Fair enough.
+Looks good to me. How did the futextest runs go?
+
+--
+Darren
+
+>
+> Subject: [PATCH 1/4 V3 ] futex,plist: pass the real head of the priority list to plist_del()
+>
+> Some plist_del()s in kernel/futex.c are passed a faked head of the
+> priority list.
+>
+> It does not fail because the current code does not require the real head
+> in plist_del(). The current code of plist_del() just uses the head for checking,
+> so it will not cause a bad result even when we use a faked head.
+>
+> But it is undocumented usage:
+>
+> /**
+>   * plist_del - Remove a @node from plist.
+>   *
+>   * @node:	&struct plist_node pointer - entry to be removed
+>   * @head:	&struct plist_head pointer - list head
+>   */
+>
+> The document said that @head is "list head" the head of the priority list.
+>
+> In futex code, several places use "plist_del(&q->list,&q->list.plist);",
+> they passes faked head, we fix them all.
+>
+> Thanks to Darren Hart for many suggestions.
+>
+> Signed-off-by:  Lai Jiangshan<laijs@cn.fujitsu.com>
+> ---
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index 3019b92..d4f7252 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -740,6 +740,24 @@ retry:
+>   	return ret;
+>   }
+>
+> +/**
+> + * __unqueue_futex() - Remove the futex_q from its futex_hash_bucket
+> + * @q:	The futex_q to unqueue
+> + *
+> + * The q->lock_ptr must not be NULL and must be held by the caller.
+> + */
+> +static void __unqueue_futex(struct futex_q *q)
+> +{
+> +	struct futex_hash_bucket *hb;
+> +
+> +	if (WARN_ON(!q->lock_ptr || !spin_is_locked(q->lock_ptr)
+> +			|| plist_node_empty(&q->list)))
+> +		return;
+> +
+> +	hb = container_of(q->lock_ptr, struct futex_hash_bucket, lock);
+> +	plist_del(&q->list,&hb->chain);
+> +}
+> +
+>   /*
+>    * The hash bucket lock must be held when this is called.
+>    * Afterwards, the futex_q must not be accessed.
+> @@ -757,7 +775,7 @@ static void wake_futex(struct futex_q *q)
+>   	 */
+>   	get_task_struct(p);
+>
+> -	plist_del(&q->list,&q->list.plist);
+> +	__unqueue_futex(q);
+>   	/*
+>   	 * The waiting task can free the futex_q as soon as
+>   	 * q->lock_ptr = NULL is written, without taking any locks. A
+> @@ -1066,8 +1084,7 @@ void requeue_pi_wake_futex(struct futex_q *q, union futex_key *key,
+>   	get_futex_key_refs(key);
+>   	q->key = *key;
+>
+> -	WARN_ON(plist_node_empty(&q->list));
+> -	plist_del(&q->list,&q->list.plist);
+> +	__unqueue_futex(q);
+>
+>   	WARN_ON(!q->rt_waiter);
+>   	q->rt_waiter = NULL;
+> @@ -1470,8 +1487,7 @@ retry:
+>   			spin_unlock(lock_ptr);
+>   			goto retry;
+>   		}
+> -		WARN_ON(plist_node_empty(&q->list));
+> -		plist_del(&q->list,&q->list.plist);
+> +		__unqueue_futex(q);
+>
+>   		BUG_ON(q->pi_state);
+>
+> @@ -1491,8 +1507,7 @@ retry:
+>   static void unqueue_me_pi(struct futex_q *q)
+>   	__releases(q->lock_ptr)
+>   {
+> -	WARN_ON(plist_node_empty(&q->list));
+> -	plist_del(&q->list,&q->list.plist);
+> +	__unqueue_futex(q);
+>
+>   	BUG_ON(!q->pi_state);
+>   	free_pi_state(q->pi_state);
+> @@ -2133,7 +2148,7 @@ int handle_early_requeue_pi_wakeup(struct futex_hash_bucket *hb,
+>   		 * We were woken prior to requeue by a timeout or a signal.
+>   		 * Unqueue the futex_q and determine which it was.
+>   		 */
+> -		plist_del(&q->list,&q->list.plist);
+> +		plist_del(&q->list,&hb->chain);
+>
+>   		/* Handle spurious wakeups gracefully */
+>   		ret = -EWOULDBLOCK;
+
 
 -- 
 Darren Hart
