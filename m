@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148Ab0LVCxE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 21:53:04 -0500
+	id S1752063Ab0LVCws (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 21:52:48 -0500
 Received: from mga01.intel.com ([192.55.52.88]:52614 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752021Ab0LVCws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 21:52:48 -0500
+	id S1751628Ab0LVCwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 21:52:46 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,210,1291622400"; 
-   d="scan'208";a="639093834"
+   d="scan'208";a="639093797"
 From: Huang Ying <ying.huang@intel.com>
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
 Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
         Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
-        ying.huang@intel.com, Dean Nelson <dnelson@redhat.com>
-Subject: [RFC 3/3] KVM, HWPoison, unpoison address across rebooting
-Date: Wed, 22 Dec 2010 10:51:57 +0800
-Message-Id: <1292986317-2805-4-git-send-email-ying.huang@intel.com>
+        ying.huang@intel.com, Dean Nelson <dnelson@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [RFC 1/3] mm, Make __get_user_pages return -EHWPOISON for HWPOISON page optionally
+Date: Wed, 22 Dec 2010 10:51:55 +0800
+Message-Id: <1292986317-2805-2-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1292986317-2805-1-git-send-email-ying.huang@intel.com>
 References: <1292986317-2805-1-git-send-email-ying.huang@intel.com>
@@ -24,139 +25,125 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In HWPoison processing code, not only the struct page corresponding
-the error physical memory page is marked as HWPoison, but also the
-virtual address in processes mapping the error physical memory page is
-marked as HWPoison.  So that, the further accessing to the virtual
-address will kill corresponding processes with SIGBUS.
+Make __get_user_pages return -EHWPOISON for HWPOISON page only if
+FOLL_HWPOISON is specified.  With this patch, the interested callers
+can distinguish HWPOISON page from general FAULT page, while other
+callers will still get -EFAULT for pages, so the user space interface
+need not to be changed.
 
-If the error physical memory page is used by a KVM guest, the SIGBUS
-will be sent to QEMU, and QEMU will simulate a MCE to report that
-memory error to the guest OS.  If the guest OS can not recover from
-the error (for example, the page is accessed by kernel code), guest OS
-will reboot the system.  But because the underlying host virtual
-address backing the guest physical memory is still poisoned, if the
-guest system accesses the corresponding guest physical memory even
-after rebooting, the SIGBUS will still be sent to QEMU and MCE will be
-simulated.  That is, guest system can not recover via rebooting.
+get_user_pages_hwpoison is added as a variant of get_user_pages that
+can return -EHWPOISON for HWPOISON page.
 
-In fact, across rebooting, the contents of guest physical memory page
-need not to be kept.  We can allocate a new host physical page to
-back the corresponding guest physical address.
+This feature is needed by KVM, where UCR MCE should be relayed to
+guest for HWPOISON page, while instruction emulation and MMIO will be
+tried for general FAULT page.
 
-To do that, a mechanism in KVM to "unpoison" poisoned virtual address
-by clearing the corresponding PTE is provided.  So that, when doing
-rebooting, QEMU can unpoison the poisoned virtual address, and when
-the unpoisoned memory page is accessed, a new physical memory may be
-allocated if possible.
+The idea comes from Andrew Morton.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- include/linux/kvm.h |    1 +
- include/linux/mm.h  |    8 ++++++++
- mm/memory-failure.c |   39 +++++++++++++++++++++++++++++++++++++++
- virt/kvm/kvm_main.c |   14 ++++++++++++++
- 4 files changed, 62 insertions(+)
+ include/asm-generic/errno.h |    2 +
+ include/linux/mm.h          |    5 ++++
+ mm/memory.c                 |   53 +++++++++++++++++++++++++++++++++++++++++---
+ 3 files changed, 57 insertions(+), 3 deletions(-)
 
---- a/include/linux/kvm.h
-+++ b/include/linux/kvm.h
-@@ -676,6 +676,7 @@ struct kvm_clock_data {
- #define KVM_SET_PIT2              _IOW(KVMIO,  0xa0, struct kvm_pit_state2)
- /* Available with KVM_CAP_PPC_GET_PVINFO */
- #define KVM_PPC_GET_PVINFO	  _IOW(KVMIO,  0xa1, struct kvm_ppc_pvinfo)
-+#define KVM_UNPOISON_ADDRESS	  _IO(KVMIO,  0xa2)
+--- a/include/asm-generic/errno.h
++++ b/include/asm-generic/errno.h
+@@ -108,4 +108,6 @@
  
- /*
-  * ioctls for vcpu fds
+ #define ERFKILL		132	/* Operation not possible due to RF-kill */
+ 
++#define EHWPOISON	133	/* Memory page has hardware error */
++
+ #endif
 --- a/include/linux/mm.h
 +++ b/include/linux/mm.h
-@@ -1512,6 +1512,14 @@ extern int sysctl_memory_failure_recover
- extern void shake_page(struct page *p, int access);
- extern atomic_long_t mce_bad_pages;
- extern int soft_offline_page(struct page *page, int flags);
-+#ifdef CONFIG_MEMORY_FAILURE
-+int unpoison_address(unsigned long addr);
-+#else
-+static inline int unpoison_address(unsigned long addr)
-+{
-+	return -EINVAL;
-+}
-+#endif
+@@ -860,6 +860,10 @@ int get_user_pages(struct task_struct *t
+ 			struct page **pages, struct vm_area_struct **vmas);
+ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 			struct page **pages);
++int get_user_pages_hwpoison(struct task_struct *tsk, struct mm_struct *mm,
++			    unsigned long start, int nr_pages, int write,
++			    int force, struct page **pages,
++			    struct vm_area_struct **vmas);
+ struct page *get_dump_page(unsigned long addr);
  
- extern void dump_page(struct page *page);
+ extern int try_to_release_page(struct page * page, gfp_t gfp_mask);
+@@ -1415,6 +1419,7 @@ struct page *follow_page(struct vm_area_
+ #define FOLL_GET	0x04	/* do get_page on page */
+ #define FOLL_DUMP	0x08	/* give error on hole if it would be zero */
+ #define FOLL_FORCE	0x10	/* get_user_pages read/write w/o permission */
++#define FOLL_HWPOISON	0x20	/* check page is hwpoisoned */
  
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1433,3 +1433,42 @@ done:
- 	/* keep elevated page count for bad page */
- 	return ret;
- }
-+
-+int unpoison_address(unsigned long addr)
-+{
-+	struct mm_struct *mm;
-+	pgd_t *pgdp;
-+	pud_t pud, *pudp;
-+	pmd_t pmd, *pmdp;
-+	pte_t pte, *ptep;
-+	spinlock_t *ptl;
-+	swp_entry_t entry;
-+	int rc;
-+
-+	mm = current->mm;
-+	pgdp = pgd_offset(mm, addr);
-+	if (!pgd_present(*pgdp))
-+		return -EINVAL;
-+	pudp = pud_offset(pgdp, addr);
-+	pud = *pudp;
-+	if (!pud_present(pud) || pud_large(pud))
-+		return -EINVAL;
-+	pmdp = pmd_offset(pudp, addr);
-+	pmd = *pmdp;
-+	/* can not unpoison huge page yet */
-+	if (!pmd_present(pmd) || pmd_large(pmd))
-+		return -EINVAL;
-+	ptep = pte_offset_map_lock(mm, pmdp, addr, &ptl);
-+	pte = *ptep;
-+	rc = -EINVAL;
-+	if (!is_swap_pte(pte))
-+		goto out;
-+	entry = pte_to_swp_entry(pte);
-+	if (!is_hwpoison_entry(entry))
-+		goto out;
-+	pte_clear(mm, addr, ptep);
-+out:
-+	pte_unmap_unlock(ptep, ptl);
-+	return rc;
-+}
-+EXPORT_SYMBOL_GPL(unpoison_address);
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -774,6 +774,17 @@ int kvm_vm_ioctl_set_memory_region(struc
- 	return kvm_set_memory_region(kvm, mem, user_alloc);
- }
+ typedef int (*pte_fn_t)(pte_t *pte, pgtable_t token, unsigned long addr,
+ 			void *data);
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1449,9 +1449,16 @@ int __get_user_pages(struct task_struct
+ 				if (ret & VM_FAULT_ERROR) {
+ 					if (ret & VM_FAULT_OOM)
+ 						return i ? i : -ENOMEM;
+-					if (ret &
+-					    (VM_FAULT_HWPOISON|VM_FAULT_HWPOISON_LARGE|
+-					     VM_FAULT_SIGBUS))
++					if (ret & (VM_FAULT_HWPOISON |
++						   VM_FAULT_HWPOISON_LARGE)) {
++						if (i)
++							return i;
++						else if (gup_flags & FOLL_HWPOISON)
++							return -EHWPOISON;
++						else
++							return -EFAULT;
++					}
++					if (ret & VM_FAULT_SIGBUS)
+ 						return i ? i : -EFAULT;
+ 					BUG();
+ 				}
+@@ -1564,6 +1571,46 @@ int get_user_pages(struct task_struct *t
+ EXPORT_SYMBOL(get_user_pages);
  
-+static int kvm_unpoison_address(struct kvm *kvm, unsigned long address)
+ /**
++ * get_user_pages_hwpoison() - pin user pages in memory, return hwpoison status
++ * @tsk:	task_struct of target task
++ * @mm:		mm_struct of target mm
++ * @start:	starting user address
++ * @nr_pages:	number of pages from start to pin
++ * @write:	whether pages will be written to by the caller
++ * @force:	whether to force write access even if user mapping is
++ *		readonly. This will result in the page being COWed even
++ *		in MAP_SHARED mappings. You do not want this.
++ * @pages:	array that receives pointers to the pages pinned.
++ *		Should be at least nr_pages long. Or NULL, if caller
++ *		only intends to ensure the pages are faulted in.
++ * @vmas:	array of pointers to vmas corresponding to each page.
++ *		Or NULL if the caller does not require them.
++ *
++ * Returns number of pages pinned.
++ *
++ * If the page table or memory page is hwpoisoned, return -EHWPOISON.
++ *
++ * Otherwise, same as get_user_pages.
++ */
++int get_user_pages_hwpoison(struct task_struct *tsk, struct mm_struct *mm,
++			    unsigned long start, int nr_pages, int write,
++			    int force, struct page **pages,
++			    struct vm_area_struct **vmas)
 +{
-+	int r;
++	int flags = FOLL_TOUCH | FOLL_HWPOISON;
 +
-+	down_read(&current->mm->mmap_sem);
-+	r = unpoison_address(address);
-+	up_read(&current->mm->mmap_sem);
++	if (pages)
++		flags |= FOLL_GET;
++	if (write)
++		flags |= FOLL_WRITE;
++	if (force)
++		flags |= FOLL_FORCE;
 +
-+	return r;
++	return __get_user_pages(tsk, mm, start, nr_pages, flags, pages, vmas);
 +}
++EXPORT_SYMBOL(get_user_pages_hwpoison);
 +
- int kvm_get_dirty_log(struct kvm *kvm,
- 			struct kvm_dirty_log *log, int *is_dirty)
- {
-@@ -1728,6 +1739,9 @@ static long kvm_vm_ioctl(struct file *fi
- 		mutex_unlock(&kvm->lock);
- 		break;
- #endif
-+	case KVM_UNPOISON_ADDRESS:
-+		r = kvm_unpoison_address(kvm, arg);
-+		break;
- 	default:
- 		r = kvm_arch_vm_ioctl(filp, ioctl, arg);
- 		if (r == -ENOTTY)
++/**
+  * get_dump_page() - pin user page in memory while writing it to core dump
+  * @addr: user address
+  *
