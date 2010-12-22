@@ -1,159 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752373Ab0LVGuL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 01:50:11 -0500
-Received: from mga11.intel.com ([192.55.52.93]:41183 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751372Ab0LVGuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 01:50:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,211,1291622400"; 
-   d="scan'208";a="639163118"
-Message-ID: <4D119FA6.4070807@linux.intel.com>
-Date: Tue, 21 Dec 2010 22:50:14 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1752446Ab0LVHLM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 02:11:12 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:59486 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063Ab0LVHLK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 02:11:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=c2SBoxuO8tJvcvnwOsIaux5ve7AUdBDGb7BoPVE5Ytqc82WnRjKqH0l5Am7rnXhiag
+         0DVuc9OGm0Bpah1GxeAhWkucSkq1YKIB0txjQGHYHqGYrLa8XO72Tz6RtuJXu7T/Q6ab
+         7iqs3QgcTdp8ft+YFIVxKJ0cvYi1Cvu7Ib3uE=
+Date: Wed, 22 Dec 2010 08:11:04 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: john stultz <johnstul@us.ibm.com>
+Cc: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>,
+        Alexander Gordeev <lasaine@lvk.cs.msu.su>,
+        Rodolfo Giometti <giometti@enneenne.com>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH V7 1/8] ntp: add ADJ_SETOFFSET mode bit
+Message-ID: <20101222071104.GA8627@riccoc20.at.omicron.at>
+References: <cover.1292512461.git.richard.cochran@omicron.at>
+ <880d82bb8120f73973db27e0c48e949014b1a106.1292512461.git.richard.cochran@omicron.at>
+ <AANLkTi=yGoFwYt4p_LeHtAQyYgmURspO-p57UdL0sUEZ@mail.gmail.com>
+ <1292960224.2618.4.camel@work-vm>
+ <AANLkTikHV-qN73Zvvvxn76vtFFKG_VNTQhF3qpqTnOrE@mail.gmail.com>
+ <1292968784.2618.51.camel@work-vm>
 MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: Peter Zijlstra <peterz@infradead.org>, John Kacur <jkacur@redhat.com>,
-        James Bottomley <James.Bottomley@suse.de>, Ingo Molnar <mingo@elte.hu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Namhyung Kim <namhyung@gmail.com>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 1/4 V3 ] futex,plist: pass the real head of the priority
- list to plist_del()
-References: <4D107979.2020405@cn.fujitsu.com> <4D10FC40.6070808@linux.intel.com> <4D11984A.5030203@cn.fujitsu.com>
-In-Reply-To: <4D11984A.5030203@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292968784.2618.51.camel@work-vm>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2010 10:18 PM, Lai Jiangshan wrote:
-> On 12/22/2010 03:13 AM, Darren Hart wrote:
->> On 12/21/2010 01:55 AM, Lai Jiangshan wrote:
->>
->> Hi Lai,
->>
->> Looks about ready to me, only a couple of more nitpics from me.
->>
->
-> Fixed, thanks.
+On Tue, Dec 21, 2010 at 01:59:44PM -0800, john stultz wrote:
+> However, your concern does bring up a good point: 0x40 is MOD_PPSMAX in
+> BSD, and we should at-least check to make sure that the PPS code that is
+> currently floating around on the lists and is in akpm's tree hasn't
+> already reserved that bit.
 
-Looks good to me. How did the futextest runs go?
+If the concern is only about that bit, then we can choose another one
+from the range 0x0f00 instead.
 
---
-Darren
+It seems to me that the ability to jump the clock is a very useful
+feature, at least when implementing a clock servo for PTP in user
+space, if not in other cases, too. I wonder why that option is missing
+from the interface in the first place.
 
->
-> Subject: [PATCH 1/4 V3 ] futex,plist: pass the real head of the priority list to plist_del()
->
-> Some plist_del()s in kernel/futex.c are passed a faked head of the
-> priority list.
->
-> It does not fail because the current code does not require the real head
-> in plist_del(). The current code of plist_del() just uses the head for checking,
-> so it will not cause a bad result even when we use a faked head.
->
-> But it is undocumented usage:
->
-> /**
->   * plist_del - Remove a @node from plist.
->   *
->   * @node:	&struct plist_node pointer - entry to be removed
->   * @head:	&struct plist_head pointer - list head
->   */
->
-> The document said that @head is "list head" the head of the priority list.
->
-> In futex code, several places use "plist_del(&q->list,&q->list.plist);",
-> they passes faked head, we fix them all.
->
-> Thanks to Darren Hart for many suggestions.
->
-> Signed-off-by:  Lai Jiangshan<laijs@cn.fujitsu.com>
-> ---
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index 3019b92..d4f7252 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -740,6 +740,24 @@ retry:
->   	return ret;
->   }
->
-> +/**
-> + * __unqueue_futex() - Remove the futex_q from its futex_hash_bucket
-> + * @q:	The futex_q to unqueue
-> + *
-> + * The q->lock_ptr must not be NULL and must be held by the caller.
-> + */
-> +static void __unqueue_futex(struct futex_q *q)
-> +{
-> +	struct futex_hash_bucket *hb;
-> +
-> +	if (WARN_ON(!q->lock_ptr || !spin_is_locked(q->lock_ptr)
-> +			|| plist_node_empty(&q->list)))
-> +		return;
-> +
-> +	hb = container_of(q->lock_ptr, struct futex_hash_bucket, lock);
-> +	plist_del(&q->list,&hb->chain);
-> +}
-> +
->   /*
->    * The hash bucket lock must be held when this is called.
->    * Afterwards, the futex_q must not be accessed.
-> @@ -757,7 +775,7 @@ static void wake_futex(struct futex_q *q)
->   	 */
->   	get_task_struct(p);
->
-> -	plist_del(&q->list,&q->list.plist);
-> +	__unqueue_futex(q);
->   	/*
->   	 * The waiting task can free the futex_q as soon as
->   	 * q->lock_ptr = NULL is written, without taking any locks. A
-> @@ -1066,8 +1084,7 @@ void requeue_pi_wake_futex(struct futex_q *q, union futex_key *key,
->   	get_futex_key_refs(key);
->   	q->key = *key;
->
-> -	WARN_ON(plist_node_empty(&q->list));
-> -	plist_del(&q->list,&q->list.plist);
-> +	__unqueue_futex(q);
->
->   	WARN_ON(!q->rt_waiter);
->   	q->rt_waiter = NULL;
-> @@ -1470,8 +1487,7 @@ retry:
->   			spin_unlock(lock_ptr);
->   			goto retry;
->   		}
-> -		WARN_ON(plist_node_empty(&q->list));
-> -		plist_del(&q->list,&q->list.plist);
-> +		__unqueue_futex(q);
->
->   		BUG_ON(q->pi_state);
->
-> @@ -1491,8 +1507,7 @@ retry:
->   static void unqueue_me_pi(struct futex_q *q)
->   	__releases(q->lock_ptr)
->   {
-> -	WARN_ON(plist_node_empty(&q->list));
-> -	plist_del(&q->list,&q->list.plist);
-> +	__unqueue_futex(q);
->
->   	BUG_ON(!q->pi_state);
->   	free_pi_state(q->pi_state);
-> @@ -2133,7 +2148,7 @@ int handle_early_requeue_pi_wakeup(struct futex_hash_bucket *hb,
->   		 * We were woken prior to requeue by a timeout or a signal.
->   		 * Unqueue the futex_q and determine which it was.
->   		 */
-> -		plist_del(&q->list,&q->list.plist);
-> +		plist_del(&q->list,&hb->chain);
->
->   		/* Handle spurious wakeups gracefully */
->   		ret = -EWOULDBLOCK;
+I am not aware of any serious attempt to get any kind of standardized
+PTP clock support into any other OS.  As far as compatibility with NTP
+is concerned, why can't we let Linux set an example and let
+NTP/BSD/*nix follow us?
 
 
--- 
-Darren Hart
-Yocto Linux Kernel
+Richard
