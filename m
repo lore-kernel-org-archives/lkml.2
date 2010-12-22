@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751765Ab0LVUOl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 15:14:41 -0500
-Received: from isilmar-3.linta.de ([188.40.101.200]:38534 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751193Ab0LVUOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 15:14:40 -0500
-Date: Wed, 22 Dec 2010 21:14:10 +0100
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: Stano =?utf-8?B?TGFuxI1p?= <chl.pixo@gmail.com>
-Cc: Belisko Marek <marek.belisko@gmail.com>,
-        Marek Belisko <marek.belisko@open-nandra.com>, gregkh@suse.de,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] staging: ft1000-pcmcia: Fix compilation errors.
-Message-ID: <20101222201410.GA14419@comet.dominikbrodowski.net>
-Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-	Stano =?utf-8?B?TGFuxI1p?= <chl.pixo@gmail.com>,
-	Belisko Marek <marek.belisko@gmail.com>,
-	Marek Belisko <marek.belisko@open-nandra.com>, gregkh@suse.de,
-	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-References: <1292573592-3624-1-git-send-email-marek.belisko@open-nandra.com>
- <1292573592-3624-2-git-send-email-marek.belisko@open-nandra.com>
- <20101217130426.GA21706@isilmar-3.linta.de>
- <AANLkTimivmbhJed8_x_MGWem-3p2EBHj7H--qUy+oSQP@mail.gmail.com>
- <AANLkTinD0f06h75dP9b9d8k3jZ2jbaYX2u=tRS4UWZbc@mail.gmail.com>
+	id S1751887Ab0LVUUN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 15:20:13 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54566 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab0LVUUL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 15:20:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=uo4idTj+u9xtFfk1kbIodP6b/mqhbUGn8v9aF1T2VTUEci18g4tAyl2PB1CVi4B8om
+         bxEfIvQL84sAaZ7olo2Eq5dIU1BQcLSWO52EgIdXRHJIZ281UvEMkzHcKmyEx3U4lE4d
+         xpJ8EzDpidu0c5b5XO6GzVruKgmqFBIH1CFqg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinD0f06h75dP9b9d8k3jZ2jbaYX2u=tRS4UWZbc@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.00.1012211437120.12146@localhost6.localdomain6>
+References: <alpine.LFD.2.00.1002241740410.4245@localhost.localdomain>
+	<alpine.LFD.2.00.1002262041020.4245@localhost.localdomain>
+	<alpine.LFD.2.00.1003121124120.22855@localhost.localdomain>
+	<alpine.LFD.2.00.1003211158130.3147@localhost.localdomain>
+	<alpine.LFD.2.00.1004071619490.32352@localhost.localdomain>
+	<alpine.LFD.2.00.1004271744280.2951@localhost.localdomain>
+	<alpine.LFD.2.00.1004301156590.2951@localhost.localdomain>
+	<alpine.LFD.2.00.1005022109150.25342@localhost.localdomain>
+	<alpine.LFD.2.00.1006091837410.2933@localhost.localdomain>
+	<alpine.LFD.2.00.1007131745230.3321@localhost.localdomain>
+	<alpine.LFD.2.00.1007311530510.2471@localhost.localdomain>
+	<alpine.LFD.2.00.1008031118270.3225@localhost.localdomain>
+	<alpine.LFD.2.00.1012211437120.12146@localhost6.localdomain6>
+Date: Wed, 22 Dec 2010 21:20:11 +0100
+X-Google-Sender-Auth: Fp8euMdyahsV5SzTtkZrYW2eOWM
+Message-ID: <AANLkTin_pDS63RQT5SWd994P-SpmmHr1MTP_UGyApg4P@mail.gmail.com>
+Subject: Re: [ANNOUNCE] 2.6.33.7-rt29
+From: Remy Bohmer <linux@bohmer.net>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        rt-users <linux-rt-users@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+Hi Thomas,
 
-On Wed, Dec 22, 2010 at 05:14:14PM +0100, Stano Lanči wrote:
-> I reviewed your suggestion to use pcmcia_get_mac_from_cis().
-> The problem is we need net_device structure and we create it
-> in init_ft1000_card() that needs the mac address as one input parameter.
-> I can move the code for it to ft1000_hw.c that deals with network part of
-> the code, but then if the pcmcia API change that file will also
-> have to be reviewed.
+2010/12/21 Thomas Gleixner <tglx@linutronix.de>:
+>
+> At this point I want to say thanks to everyone who supported the
+> development of the -rt patches with testing, bugfixes, stable
+> backports etc. in the last years.
 
-If it isn't too much of a hassle to update ft1000_hw.c, I'd prefer that
-approach, for I do not intend to change the pcmcia API in this regard. And
-if I do, I'll feel responsible for fixing ft1000 as well :)
+First of all: Thank YOU for maintaining the RT-patch and the huge
+amount of effort you put into it!
 
-Best,
-	Dominik
+> I hope that I can rely on your help
+> for the upcoming 37 release and the ongoing effort to merge the patch
+> fully into the mainline.
+
+>From my side: I will test this new patch next Friday on ARM/at91, and
+when 2.6.37-rt becomes available: I am happy to test that one also.
+
+> I wish you all a Merry Christmas and a Happy New Year!
+
+Merry Christmas and a Happy New Year to you and anyone else too!
+
+Kind regards,
+
+Remy
