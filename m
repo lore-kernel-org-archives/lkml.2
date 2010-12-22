@@ -1,88 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087Ab0LVQZI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 11:25:08 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38109 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504Ab0LVQZF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 11:25:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=NrEYQezgWNgrP59qwL0g1HQd4RwQytpXfF21sOgRfIHiuJgm6G+Mqtxlntl7nodK7k
-         xsQ0hWNjlFTCHe/37lEVYqsRzHkhfNsFxDW3rArcNGAHuAcMl2EiSqV9VuY3RwrHdQDG
-         KXwIWzbVYJKlLkiPebxyhs1gv5QMp5F8MLeco=
-Subject: Re: Help: major pppoe regression since 2.6.35 (panic on first ppp
- conection)?
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Joel Soete <soete.joel@scarlet.be>
-Cc: Jarek Poplawski <jarkao2@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
-In-Reply-To: <4D122093.6060900@scarlet.be>
-References: <20101222110021.GA8985@ff.dom.local>
-	 <4D122093.6060900@scarlet.be>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 22 Dec 2010 17:25:00 +0100
-Message-ID: <1293035100.3027.247.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1754037Ab0LVQXW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 11:23:22 -0500
+Received: from mga02.intel.com ([134.134.136.20]:45509 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753391Ab0LVQXU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 11:23:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,214,1291622400"; 
+   d="scan'208";a="689800884"
+Message-ID: <4D1225FD.9010709@linux.intel.com>
+Date: Wed, 22 Dec 2010 08:23:25 -0800
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: Peter Zijlstra <peterz@infradead.org>, John Kacur <jkacur@redhat.com>,
+        James Bottomley <James.Bottomley@suse.de>, Ingo Molnar <mingo@elte.hu>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Namhyung Kim <namhyung@gmail.com>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 1/4 V3 ] futex,plist: pass the real head of the priority
+ list to plist_del()
+References: <4D107979.2020405@cn.fujitsu.com> <4D10FC40.6070808@linux.intel.com> <4D11984A.5030203@cn.fujitsu.com>
+In-Reply-To: <4D11984A.5030203@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 22 décembre 2010 à 17:00 +0100, Joel Soete a écrit :
-> Hello Jarek,
-> 
-> Nice to read you :<)
-> 
-> On 12/22/2010 12:00 PM, Jarek Poplawski wrote:
-> > On 2010-12-22 09:22, Andrew Morton wrote:
-> >> (cc netdev)
-> >>
-> >> The bug is still present in 2.6.37-rc6.
-> >>
-> >> On Sat, 18 Dec 2010 11:33:14 +0000 Joel Soete<soete.joel@scarlet.be>  wrote:
-> >>
-> >>> Hello all,
-> >
-> > Hi,
-> > Could you reproduce this bug with a vanilla kernel (without nvidia
-> > patch)? If so, please include dmesg and .config to the next report.
-> >
-> Yes (it was already a vanilla kernel but 2.6.35 with my config, even thought same issue occurs some other distro stock 
-> kernel 2.6.35), but here are some more dmesg with vanilla 2.6.37-rc6 and rc7 (I just added your debugging patch
-> I found here, just because if I don't do it kernel is panicing immediately without letting any chance to capture dmesg (and 
-> unfortunately I don't have any more chance to grab panic messages from serial console: no more rs232 on latest office laptop :<)
-> 
-> So you will find here attached personal config files of 2 kernels and respective dmesg.
-> 
-> If ever you need more details, don't hesitate to ask me.
-> 
-> Thanks a lot,
-> 	J.
+On 12/21/2010 10:18 PM, Lai Jiangshan wrote:
+> On 12/22/2010 03:13 AM, Darren Hart wrote:
+>> On 12/21/2010 01:55 AM, Lai Jiangshan wrote:
+>>
+>> Hi Lai,
+>>
+>> Looks about ready to me, only a couple of more nitpics from me.
+>>
+>
+> Fixed, thanks.
+>
+> Subject: [PATCH 1/4 V3 ] futex,plist: pass the real head of the priority list to plist_del()
+>
+> Some plist_del()s in kernel/futex.c are passed a faked head of the
+> priority list.
+>
+> It does not fail because the current code does not require the real head
+> in plist_del(). The current code of plist_del() just uses the head for checking,
+> so it will not cause a bad result even when we use a faked head.
+>
+> But it is undocumented usage:
+>
+> /**
+>   * plist_del - Remove a @node from plist.
+>   *
+>   * @node:	&struct plist_node pointer - entry to be removed
+>   * @head:	&struct plist_head pointer - list head
+>   */
+>
+> The document said that @head is "list head" the head of the priority list.
+>
+> In futex code, several places use "plist_del(&q->list,&q->list.plist);",
+> they passes faked head, we fix them all.
+>
+> Thanks to Darren Hart for many suggestions.
+>
+> Signed-off-by:  Lai Jiangshan<laijs@cn.fujitsu.com>
 
-Something overwrites nr_frags in skb_shinfo(skb)
+Acked-by: Darren Hart <dvhart@linux.intel.com>
 
-As skb_shinfo follows head portion of an skb, something overflows skb
-head
+> ---
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index 3019b92..d4f7252 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -740,6 +740,24 @@ retry:
+>   	return ret;
+>   }
+>
+> +/**
+> + * __unqueue_futex() - Remove the futex_q from its futex_hash_bucket
+> + * @q:	The futex_q to unqueue
+> + *
+> + * The q->lock_ptr must not be NULL and must be held by the caller.
+> + */
+> +static void __unqueue_futex(struct futex_q *q)
+> +{
+> +	struct futex_hash_bucket *hb;
+> +
+> +	if (WARN_ON(!q->lock_ptr || !spin_is_locked(q->lock_ptr)
+> +			|| plist_node_empty(&q->list)))
+> +		return;
+> +
+> +	hb = container_of(q->lock_ptr, struct futex_hash_bucket, lock);
+> +	plist_del(&q->list,&hb->chain);
+> +}
+> +
+>   /*
+>    * The hash bucket lock must be held when this is called.
+>    * Afterwards, the futex_q must not be accessed.
+> @@ -757,7 +775,7 @@ static void wake_futex(struct futex_q *q)
+>   	 */
+>   	get_task_struct(p);
+>
+> -	plist_del(&q->list,&q->list.plist);
+> +	__unqueue_futex(q);
+>   	/*
+>   	 * The waiting task can free the futex_q as soon as
+>   	 * q->lock_ptr = NULL is written, without taking any locks. A
+> @@ -1066,8 +1084,7 @@ void requeue_pi_wake_futex(struct futex_q *q, union futex_key *key,
+>   	get_futex_key_refs(key);
+>   	q->key = *key;
+>
+> -	WARN_ON(plist_node_empty(&q->list));
+> -	plist_del(&q->list,&q->list.plist);
+> +	__unqueue_futex(q);
+>
+>   	WARN_ON(!q->rt_waiter);
+>   	q->rt_waiter = NULL;
+> @@ -1470,8 +1487,7 @@ retry:
+>   			spin_unlock(lock_ptr);
+>   			goto retry;
+>   		}
+> -		WARN_ON(plist_node_empty(&q->list));
+> -		plist_del(&q->list,&q->list.plist);
+> +		__unqueue_futex(q);
+>
+>   		BUG_ON(q->pi_state);
+>
+> @@ -1491,8 +1507,7 @@ retry:
+>   static void unqueue_me_pi(struct futex_q *q)
+>   	__releases(q->lock_ptr)
+>   {
+> -	WARN_ON(plist_node_empty(&q->list));
+> -	plist_del(&q->list,&q->list.plist);
+> +	__unqueue_futex(q);
+>
+>   	BUG_ON(!q->pi_state);
+>   	free_pi_state(q->pi_state);
+> @@ -2133,7 +2148,7 @@ int handle_early_requeue_pi_wakeup(struct futex_hash_bucket *hb,
+>   		 * We were woken prior to requeue by a timeout or a signal.
+>   		 * Unqueue the futex_q and determine which it was.
+>   		 */
+> -		plist_del(&q->list,&q->list.plist);
+> +		plist_del(&q->list,&hb->chain);
+>
+>   		/* Handle spurious wakeups gracefully */
+>   		ret = -EWOULDBLOCK;
 
-Please try adding some room like in following patch ?
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index e6ba898..adf2834 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -187,6 +187,7 @@ enum {
-  * the end of the header data, ie. at skb->end.
-  */
- struct skb_shared_info {
-+	char		filler[64];
- 	unsigned short	nr_frags;
- 	unsigned short	gso_size;
- 	/* Warning: this field is not always filled in (UFO)! */
-
-
+-- 
+Darren Hart
+Yocto Linux Kernel
