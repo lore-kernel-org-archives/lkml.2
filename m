@@ -1,67 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab0LVWvh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 17:51:37 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:22405 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751637Ab0LVWvg (ORCPT
+	id S1752426Ab0LVWyF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 17:54:05 -0500
+Received: from mx1.vsecurity.com ([209.67.252.12]:58053 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752127Ab0LVWyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 17:51:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=KqE+Rjn3C3ryAYfShw9hLTFPKpTnT/tKF29TciK+uavtv2u0eYx1VtVVAcM2y7e27U
-         Z9ZjstQP7B+WVP2auaTw==
-Date: Wed, 22 Dec 2010 14:51:28 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Venkatesh Pallipadi <venki@google.com>, "H. Peter Anvin" <hpa@zytor.com>
-cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Nikanth Karthikesan <knikanth@suse.de>,
-        "Zheng, Shaohui" <shaohui.zheng@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>, Nikhil Rao <ncrao@google.com>,
-        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Subject: Re: [PATCH -v2 2/2] x86, acpi: Parse all SRAT cpu entries even have
- cpu num limitation
-In-Reply-To: <AANLkTim7GbOJzjt9Wdba-pdAj+GUR1xZCqOv+bDmypTj@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1012221446460.2612@chino.kir.corp.google.com>
-References: <20101111100628.GA24728@localhost> <1289478978.2084.74.camel@laptop> <20101111124015.GA9706@localhost> <1289480656.2084.80.camel@laptop> <20101113084018.GA23098@localhost> <1289644224.2084.521.camel@laptop> <20101113120030.GA31517@localhost>
- <1289653078.2084.675.camel@laptop> <20101113131042.GA5522@localhost> <4CDEE314.6090107@kernel.org> <20101113235746.GA9458@localhost> <4CDF3DA1.2090806@kernel.org> <4D093ABB.4030206@zytor.com> <4D0943D5.1090404@kernel.org> <4D094703.7080701@zytor.com>
- <4D0AD464.2020408@kernel.org> <4D0AD486.9020704@kernel.org> <AANLkTin-LGig2RHHmvvy5H04jQRus_1mmS1Cr4KDWKsN@mail.gmail.com> <4D0BB9AD.90506@kernel.org> <AANLkTimw_nvDEb4t1nOQFCtY8fx6fvg5Mmy+6vZw8mw1@mail.gmail.com> <AANLkTi=VYooLbwWkTCSfQ38z=UO_kQZyQyKaw-5+kyYn@mail.gmail.com>
- <alpine.DEB.2.00.1012212230580.9505@chino.kir.corp.google.com> <AANLkTim7GbOJzjt9Wdba-pdAj+GUR1xZCqOv+bDmypTj@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Wed, 22 Dec 2010 17:54:02 -0500
+Subject: [PATCH v6] kptr_restrict for hiding kernel pointers
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Cc: jmorris@namei.org, eric.dumazet@gmail.com, tgraf@infradead.org,
+        eugeneteo@kernel.org, kees.cook@canonical.com, mingo@elte.hu,
+        davem@davemloft.net, a.p.zijlstra@chello.nl, akpm@linux-foundation.org,
+        eparis@parisplace.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Dec 2010 17:53:59 -0500
+Message-ID: <1293058439.9820.317.camel@dan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Dec 2010, Venkatesh Pallipadi wrote:
+Add the %pK printk format specifier and
+the /proc/sys/kernel/kptr_restrict sysctl.
 
-> > Peter just merged my NUMA emulation fixes into the x86 tree, could you try
-> > applying Yinghai's series on top of x86/linux-2.6-tip.git#x86/numa and see
-> > if the problem persists?
-> >
-> > On a different topic: Yinghai, do you think you could base your series off
-> > of Tejun's x86_32/x86_64 NUMA unification series since it already
-> > duplicates some of the work?
-> >
-> 
-> Yes. #x86/numa kernel works fine both with and without Yinghai's series.
-> I am assuming those changes are lined up for .38. Is there any
-> specific fix that can make into .37 to fix this regression?
-> 
+The %pK format specifier is designed to hide exposed kernel pointers,
+specifically via /proc interfaces. Exposing these pointers provides an
+easy target for kernel write vulnerabilities, since they reveal the
+locations of writable structures containing easily triggerable function
+pointers. The behavior of %pK depends on the kptr_restrict sysctl.
 
-The specific fix should be d845c04a from that tree (x86, numa: Fake 
-node-to-cpumask for NUMA emulation).
+If kptr_restrict is set to 0, no deviation from the standard %p behavior
+occurs.  If kptr_restrict is set to 1, the default, if the current user
+(intended to be a reader via seq_printf(), etc.) does not have
+CAP_SYSLOG (currently in the LSM tree), kernel pointers using %pK are
+printed as 0's.  If kptr_restrict is set to 2, kernel pointers using %pK
+are printed as 0's regardless of privileges.  Replacing with 0's was
+chosen over the default "(null)", which cannot be parsed by userland %p,
+which expects "(nil)".
 
-Peter, I'm assuming these fixes are on track for .38 (although they have 
-been pending for a couple months and I was hoping for .37 inclusion)?
+
+v6 removes the WARN_ONCE in favor of returning "pK-error" to avoid
+breaking in certain cases, thanks to Ingo Molnar.
+
+v5 sets kptr_restrict to a default value of 1, and properly handles the
+case where it's incorrectly used in IRQ context. 
+
+v4 incorporates Eric Paris' suggestion of using
+has_capability_noaudit(), since failing this capability check is not a
+policy violation but rather a code path choice and shouldn't generate
+potentially excessive log noise.  Adjusted IRQ comment for clarity.
+
+v3 adds the "2" setting, cleans up documentation, removes the CONFIG,
+and incorporates changes and suggestions from Andrew Morton.
+
+v2 improves checking for inappropriate context, on suggestion by Peter
+Zijlstra.  Thanks to Thomas Graf for suggesting use of a centralized
+format specifier.
+
+
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Thomas Graf <tgraf@infradead.org>
+Cc: Eugene Teo <eugeneteo@kernel.org>
+Cc: Kees Cook <kees.cook@canonical.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Eric Paris <eparis@parisplace.org>
+---
+ Documentation/sysctl/kernel.txt |   14 ++++++++++++++
+ include/linux/kernel.h          |    2 ++
+ kernel/sysctl.c                 |    9 +++++++++
+ lib/vsprintf.c                  |   27 +++++++++++++++++++++++++++
+ 4 files changed, 52 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index 209e158..8ace8c4 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -34,6 +34,7 @@ show up in /proc/sys/kernel:
+ - hotplug
+ - java-appletviewer           [ binfmt_java, obsolete ]
+ - java-interpreter            [ binfmt_java, obsolete ]
++- kptr_restrict
+ - kstack_depth_to_print       [ X86 only ]
+ - l2cr                        [ PPC only ]
+ - modprobe                    ==> Documentation/debugging-modules.txt
+@@ -261,6 +262,19 @@ This flag controls the L2 cache of G3 processor boards. If
+ 
+ ==============================================================
+ 
++kptr_restrict:
++
++This toggle indicates whether restrictions are placed on
++exposing kernel addresses via /proc and other interfaces.  When
++kptr_restrict is set to (0), there are no restrictions.  When
++kptr_restrict is set to (1), the default, kernel pointers
++printed using the %pK format specifier will be replaced with 0's
++unless the user has CAP_SYSLOG.  When kptr_restrict is set to
++(2), kernel pointers printed using %pK will be replaced with 0's
++regardless of privileges.
++
++==============================================================
++
+ kstack_depth_to_print: (X86 only)
+ 
+ Controls the number of words to print when dumping the raw
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index b6de9a6..b4f4863 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -201,6 +201,8 @@ extern int sscanf(const char *, const char *, ...)
+ extern int vsscanf(const char *, const char *, va_list)
+ 	__attribute__ ((format (scanf, 2, 0)));
+ 
++extern int kptr_restrict;	/* for sysctl */
++
+ extern int get_option(char **str, int *pint);
+ extern char *get_options(const char *str, int nints, int *ints);
+ extern unsigned long long memparse(const char *ptr, char **retptr);
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 5abfa15..236fa91 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -713,6 +713,15 @@ static struct ctl_table kern_table[] = {
+ 	},
+ #endif
+ 	{
++		.procname	= "kptr_restrict",
++		.data		= &kptr_restrict,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &zero,
++		.extra2		= &two,
++	},
++	{
+ 		.procname	= "ngroups_max",
+ 		.data		= &ngroups_max,
+ 		.maxlen		= sizeof (int),
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index c150d3d..f0fcb31 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -936,6 +936,8 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
+ 	return string(buf, end, uuid, spec);
+ }
+ 
++int kptr_restrict = 1;
++
+ /*
+  * Show a '%p' thing.  A kernel extension is that the '%p' is followed
+  * by an extra set of alphanumeric characters that are extended format
+@@ -979,6 +981,7 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
+  *       Implements a "recursive vsnprintf".
+  *       Do not use this feature without some mechanism to verify the
+  *       correctness of the format string and va_list arguments.
++ * - 'K' For a kernel pointer that should be hidden from unprivileged users
+  *
+  * Note: The difference between 'S' and 'F' is that on ia64 and ppc64
+  * function pointers are really function descriptors, which contain a
+@@ -1035,6 +1038,30 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+ 		return buf + vsnprintf(buf, end - buf,
+ 				       ((struct va_format *)ptr)->fmt,
+ 				       *(((struct va_format *)ptr)->va));
++	case 'K':
++		/*
++		 * %pK cannot be used in IRQ context because its test
++		 * for CAP_SYSLOG would be meaningless.
++		 */
++		if (in_irq() || in_serving_softirq() || in_nmi()) {
++			if (spec.field_width == -1)
++				spec.field_width = 2 * sizeof(void *);
++			return string(buf, end, "pK-error", spec);
++		}
++
++		else if (!kptr_restrict)
++			break;		/* %pK does not obscure pointers */
++
++		else if ((kptr_restrict != 2) &&
++		    has_capability_noaudit(current, CAP_SYSLOG))
++			break;		/* privileged apps expose pointers,
++					   unless kptr_restrict is 2 */
++
++		if (spec.field_width == -1) {
++			spec.field_width = 2 * sizeof(void *);
++			spec.flags |= ZEROPAD;
++		}
++		return number(buf, end, 0, spec);
+ 	}
+ 	spec.flags |= SMALL;
+ 	if (spec.field_width == -1) {
+
+
+
+
