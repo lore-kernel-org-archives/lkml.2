@@ -1,67 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777Ab0LVKym (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 05:54:42 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:48292 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431Ab0LVKyl (ORCPT
+	id S1751996Ab0LVKz6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 05:55:58 -0500
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:54750 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490Ab0LVKz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 05:54:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Y0tEwtEWggdfdsAokb9QIZRrCvM1fq9XrDkiISfdPHy5XbPZ1VtE3OjsrK08RLx/tx
-         2rk6Ezwy1x6QagGQzQ9zxOTT2BsuqW8tMOs5O7fLp7QOWI8X+KR4lnEft6luImP6e7iZ
-         J7VaRrjySG86RzshubGpWFzmSi2/Hv6zmEvj8=
-Date: Wed, 22 Dec 2010 11:54:36 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
-        jan.kratochvil@redhat.com
-Subject: Re: [PATCH 10/16] ptrace: clean transitions between TASK_STOPPED
- and TRACED
-Message-ID: <20101222105436.GE4684@htj.dyndns.org>
-References: <1291654624-6230-1-git-send-email-tj@kernel.org>
- <1291654624-6230-11-git-send-email-tj@kernel.org>
- <20101220150037.GE11583@redhat.com>
- <20101221173155.GE13285@htj.dyndns.org>
+	Wed, 22 Dec 2010 05:55:57 -0500
+X-Authority-Analysis: v=1.1 cv=Inhw+Jdt7z1D3BivGPfn2aw54OvUEJw5lAn/booRZkE= c=1 sm=0 a=45vASgi77HYA:10 a=8nJEP1OIZ-IA:10 a=uMtljfmLDVLoqQOk5K3MRw==:17 a=yvcETbOcCbnVw1fe4qUA:9 a=wv69TibhTzCn9f8crgCaBlz-0FQA:4 a=wPNLvfGTeEIA:10 a=uMtljfmLDVLoqQOk5K3MRw==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 68.204.193.27
+Message-ID: <4D11D939.9080808@cfl.rr.com>
+Date: Wed, 22 Dec 2010 05:55:53 -0500
+From: Mark Hounschell <dmarkh@cfl.rr.com>
+Reply-To: dmarkh@cfl.rr.com
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101221173155.GE13285@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Michael Tokarev <mjt@tls.msk.ru>,
+        Linux-kernel <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: VERY slow scrolling on radeon graphics card: debugging a timing
+ issue?
+References: <4D0FC36D.9010304@msgid.tls.msk.ru> <20101222020041.c168bf87.akpm@linux-foundation.org>
+In-Reply-To: <20101222020041.c168bf87.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 12/22/2010 05:00 AM, Andrew Morton wrote:
+> (cc dri-devel)
+>
+> On Mon, 20 Dec 2010 23:58:21 +0300 Michael Tokarev <mjt@tls.msk.ru> wrote:
+>
+>   
+>> Hello.
+>>
+>> A weird problem here, and I'm looking for help in
+>> an attempt to solve it.
+>>
+>> Ever since KMS went into kernel and I tried turning
+>> it on, the scrolling speed on the resulting "text"
+>> console (with kms it works in one of graphics modes
+>> hence "text" in quotes) become really _awful_.
+>>
+>> For example, running `dmesg' (which has ~2000 lines)
+>> on the console takes about 2.5 _minutes_ (!) to
+>> complete, -- which means the speed is about 10 lines
+>> per second.  On an old notebook I have, with some also
+>> nvidia card, the same operation completes in about
+>> 0.8 sec.
+>>
+>> The lines goes up in a slow motion, I can watch every
+>> new line appearing and scrolling.
+>>
+>> It was this way for a long time, and I almost gave up --
+>> in X everything works ok, and in order to speed up
+>> booting again I just added "quiet" option to the kernel
+>> command line, to avoid scrolling of kernel messages.
+>>
+>> But yesterday I noticed something else entirely, which
+>> make me hope the problem actually _can_ be solved.
+>>
+>> The thing is: that same scrolling becomes much faster
+>> when I "do something" else while it scrolls up.  First
+>> I noticed this when I wanted to switch to another vt
+>> while it were scrolling -- I held down Ctrl key on my
+>> keyboard, and out of the sudden the scroll speed up
+>> dramatically.
+>>
+>> It turned out I can speed the thing to about 10 times
+>> by generating some load: hit and hold a key on the
+>> keyboard (generates interrupts?), run kernel compile
+>> in the background (generates disk interrupts?), move
+>> mouse...
+>>
+>> While doing "something", the same scrolling completes
+>> in about 8 seconds instead of 2m30s.  Dramatic improvement.
+>>
+>> Now, when I hold a key or move mouse, the scrolling
+>> is "jumpy" - sometimes it slows down back to original
+>> "slow" form for a bit, and sometimes it jumps a few
+>> lines in one go.
+>>
+>> I tried to disable cpufreq (selecting "performance"
+>> governor) - this changes exactly nothing.
+>>
+>> Next someone suggested the "perf" tool.  And this one
+>> is even more interesting: while `perf top' is running
+>> (on another console or X), the scrolling is.. fast
+>> again, as if I were moving my mouse!  Once I stop
+>> `perf top', it becomes slow again.  So the bug
+>> disappears while you watch it.
+>>
+>> And there I'm stuck again.  I asked in #radeon, but
+>> there, Alex Deucher told me that he has no clue and
+>> that the behavour is weird (it is weird indeed).
+>>
+>> Any hints on where to go from there are apprecated.
+>>
+>> The hardware is an AMD780g-based motherboard with
+>> and Athlon CPU, I've seen the same behavour from
+>> many other similar boards.  Kernels - all up to
+>> the current 2.6.36.2, sine the old days when kms
+>> for radeon first appeared in staging.
+>>
+>> I know kms/fbcon scrolling is slow on radeon because
+>> it uses completely unoptimized bitblt routines (even
+>> when the hw is pretty much capable of doing all that
+>> stuff internally).  But what I see here is something
+>> different - the 8 sec to scroll 2000 lines is the
+>> result from the un-optimal bitblt, not the 2m30s.
+>>     
+>
 
-On Tue, Dec 21, 2010 at 06:31:55PM +0100, Tejun Heo wrote:
-> > This looks racy. Suppose that "current" is ptraced, in this case
-> > it can initiate the new group-stop even if SIGNAL_STOP_STOPPED
-> > is set and we have another TASK_STOPPED thead T.
-> > 
-> > Suppose that another (or same) debugger ataches to this thread T,
-> > wakes it up and sets GROUP_STOP_TRAPPING.
-> > 
-> > T resumes, calls ptrace_stop() in TASK_STOPPED, and temporary drops
-> > ->siglock.
-> > 
-> > Now, this task_clear_group_stop(T) confuses ptrace_check_attach(T).
-> > 
-> > I think ptrace_stop() should be called in TASK_RUNNING state.
-> > This also makes sense because we may call arch_ptrace_stop().
-> 
-> I'm feeling a bit too dense to process the above right now.  I'll
-> respond to the above next morning after a strong cup of coffee. :-)
+I also see this very problem on several machines I have with radeon video.
+For me the worst part is using vi in a konsole. Moving the cursor around
+is so slow that I just can't use these machines directly and have to ssh
+into them from another machine just to work on them.
 
-Ah, right, the lock drop across arch_ptrace_stop().  Yeah, I agree
-calling ptrace_stop() with TASK_RUNNING would solve it.  I'll think
-about it a bit more.
+I know its probably not proper to mention it, but when I run the ATI
+proprietary
+driver, that problem does go away. But for other reasons I can't use it.
 
-Thank you.
-
--- 
-tejun
+Regards
+Mark
