@@ -1,65 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753786Ab0LVP3E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 10:29:04 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:57466 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753497Ab0LVP3B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 10:29:01 -0500
-Message-ID: <4D121900.2000404@vlnb.net>
-Date: Wed, 22 Dec 2010 18:28:00 +0300
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	id S1753725Ab0LVPdB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 10:33:01 -0500
+Received: from ocelot.nod.sk ([93.184.71.7]:36810 "EHLO ocelot.nod.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752900Ab0LVPdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 10:33:00 -0500
+X-Greylist: delayed 642 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Dec 2010 10:33:00 EST
+Subject: [Patch 1/1] fsnotify,fanotify: adding flag for execution
+From: Jozef Kralik <jozef.kralik@eset.sk>
+To: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Eric Paris <eparis@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Dec 2010 16:22:13 +0100
+Message-ID: <1293031333.1841.24.camel@jojo-HP-Compaq-8100-Elite-CMT-PC>
 MIME-Version: 1.0
-To: chetan loke <loke.chetan@gmail.com>
-CC: James Bottomley <James.Bottomley@suse.de>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        "Patil, Kiran" <kiran.patil@intel.com>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Boaz Harrosh <bharrosh@panasas.com>,
-        Joe Eykholt <jeykholt@cisco.com>, "J.H." <warthog9@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Bart Van Assche <bart.vanassche@gmail.com>
-Subject: Re: [ANNOUNCE] TCM/LIO v4.0.0-rc6 for 2.6.37-rc6
-References: <1292557664.31461.68.camel@haakon2.linux-iscsi.org>	<1292599364.2820.21.camel@mulgrave.site>	<4D0B8975.1040206@vlnb.net>	<1292602908.2820.41.camel@mulgrave.site>	<4D0BBE40.6030000@vlnb.net>	<1292617658.2820.80.camel@mulgrave.site>	<4D0BD79B.2010600@vlnb.net> <AANLkTimV-evsF4MFXs6JQ5H55AgtOpGrTuCdJBx9O_P=@mail.gmail.com>
-In-Reply-To: <AANLkTimV-evsF4MFXs6JQ5H55AgtOpGrTuCdJBx9O_P=@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:lzCmlbRssbwy7SjFf5szoeotQIaJOl69SjI8mFETH64
- 7OSeTGWsuuPDKcMHDSibZOg3z5JxWqMMlgKmGXHL5ZwtKtL/2l
- zY3bqOOVtSVoZz88ciIwT+PT8kh7OsQYkux923AKZ1ax2ztJqz
- l7uXbgwnTlMN3qvTcHcULTkN9kjCw1Ho0DzilIK3LvYYslEyI4
- adpv/UOx2udx9VLN1EDuA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-chetan loke, on 12/18/2010 10:13 PM wrote:
-> On Fri, Dec 17, 2010 at 4:35 PM, Vladislav Bolkhovitin <vst@vlnb.net> wrote:
->>
->> In this regard it looks to be a good idea to freeze accepting both LIO
->> and SCST until the end of the next year and then choose one with the
->> biggest activity in the related mailing lists, not counting me and
->> NicholasB.
-> 
-> Why wait till the end of the next year? What I proposed earlier was
-> 'to review at the architecture level'. If folks don't agree to it then
-> this email drama will never
-> stop. Once the review starts we can decide on a common baseline to
-> benchmark both the stacks. I'm more than willing to test/benchmark
-> ESX(front-end)/SCST/LIO(back-end) combo. I'm sure there will be others
-> who would be willing to spend some of their time for this cause to
-> validate claims made by both the communities. We can then publish all
-> the results so that others can reproduce them.
+From: Jozef Kralik <jozef.kralik@eset.sk>
 
-This will be exactly what we need: an open and fair comparison. But the
-problem is that James doesn't want any comparisons. He doesn't consider
-them important. Only personality of the code submitter is important for
-James.
+This patch add flag FS_OPENEXEC[FAN_OPENEXEC] to event
+FS_OPEN_PERM[FAN_OPEN_PERM], when file is opened with flag FMODE_EXEC. 
 
-Vlad
+Signed-off-by: Jozef Kralik <jozef.kralik@eset.sk>
+---
+Example:
+if (metadata->mask & FAN_OPEN_PERM)
+	if (metadata->mask & FAN_OPENEXEC)
+		printf("file was executed");
+	else
+		printf("file was opened");
+Developed & Tested kernel: 2.6.37-rc4 with patch: 
+patch-v2.6.37-rc4-next-20101201
+
+diffstat -p1 patch
+ fs/notify/fanotify/fanotify.c    |    1 +
+ fs/notify/fsnotify.c             |    2 +-
+ include/linux/fanotify.h         |    4 +++-
+ include/linux/fsnotify.h         |    9 ++++++---
+ include/linux/fsnotify_backend.h |    4 +++-
+ 5 files changed, 14 insertions(+), 6 deletions(-)
+
+diff -uprN -X linux-2.6.37-rc4/Documentation/dontdiff
+linux-2.6.37-rc4/fs/notify/fanotify/fanotify.c
+linux-2.6.37-rc4-dev/fs/notify/fanotify/fanotify.c
+--- linux-2.6.37-rc4/fs/notify/fanotify/fanotify.c	2010-12-08
+10:07:17.605885678 +0100
++++ linux-2.6.37-rc4-dev/fs/notify/fanotify/fanotify.c	2010-12-08
+10:08:06.729268116 +0100
+@@ -131,6 +131,7 @@ static int fanotify_handle_event(struct
+ 	BUILD_BUG_ON(FAN_CLOSE_NOWRITE != FS_CLOSE_NOWRITE);
+ 	BUILD_BUG_ON(FAN_CLOSE_WRITE != FS_CLOSE_WRITE);
+ 	BUILD_BUG_ON(FAN_OPEN != FS_OPEN);
++	BUILD_BUG_ON(FAN_OPENEXEC != FS_OPENEXEC);
+ 	BUILD_BUG_ON(FAN_EVENT_ON_CHILD != FS_EVENT_ON_CHILD);
+ 	BUILD_BUG_ON(FAN_Q_OVERFLOW != FS_Q_OVERFLOW);
+ 	BUILD_BUG_ON(FAN_OPEN_PERM != FS_OPEN_PERM);
+diff -uprN -X linux-2.6.37-rc4/Documentation/dontdiff
+linux-2.6.37-rc4/fs/notify/fsnotify.c
+linux-2.6.37-rc4-dev/fs/notify/fsnotify.c
+--- linux-2.6.37-rc4/fs/notify/fsnotify.c	2010-11-30 05:42:04.000000000
++0100
++++ linux-2.6.37-rc4-dev/fs/notify/fsnotify.c	2010-12-08
+10:08:06.729268116 +0100
+@@ -297,7 +297,7 @@ static __init int fsnotify_init(void)
+ {
+ 	int ret;
+ 
+-	BUG_ON(hweight32(ALL_FSNOTIFY_EVENTS) != 23);
++	BUG_ON(hweight32(ALL_FSNOTIFY_EVENTS) != 24);
+ 
+ 	ret = init_srcu_struct(&fsnotify_mark_srcu);
+ 	if (ret)
+diff -uprN -X linux-2.6.37-rc4/Documentation/dontdiff
+linux-2.6.37-rc4/include/linux/fanotify.h
+linux-2.6.37-rc4-dev/include/linux/fanotify.h
+--- linux-2.6.37-rc4/include/linux/fanotify.h	2010-12-08
+10:07:17.649885125 +0100
++++ linux-2.6.37-rc4-dev/include/linux/fanotify.h	2010-12-08
+10:08:06.733268063 +0100
+@@ -9,6 +9,7 @@
+ #define FAN_CLOSE_WRITE		0x00000008	/* Writtable file closed */
+ #define FAN_CLOSE_NOWRITE	0x00000010	/* Unwrittable file closed */
+ #define FAN_OPEN		0x00000020	/* File was opened */
++#define FAN_OPENEXEC	0x00001000	/* File had exec flag */
+ 
+ #define FAN_Q_OVERFLOW		0x00004000	/* Event queued overflowed */
+ 
+@@ -84,7 +85,8 @@
+ 
+ #define FAN_ALL_OUTGOING_EVENTS	(FAN_ALL_EVENTS |\
+ 				 FAN_ALL_PERM_EVENTS |\
+-				 FAN_Q_OVERFLOW)
++				FAN_Q_OVERFLOW |\
++				FAN_OPENEXEC)
+ 
+ #define FANOTIFY_METADATA_VERSION	2
+ 
+diff -uprN -X linux-2.6.37-rc4/Documentation/dontdiff
+linux-2.6.37-rc4/include/linux/fsnotify_backend.h
+linux-2.6.37-rc4-dev/include/linux/fsnotify_backend.h
+--- linux-2.6.37-rc4/include/linux/fsnotify_backend.h	2010-12-08
+10:07:17.657885026 +0100
++++ linux-2.6.37-rc4-dev/include/linux/fsnotify_backend.h	2010-12-08
+10:08:06.741267961 +0100
+@@ -36,6 +36,7 @@
+ #define FS_DELETE		0x00000200	/* Subfile was deleted */
+ #define FS_DELETE_SELF		0x00000400	/* Self was deleted */
+ #define FS_MOVE_SELF		0x00000800	/* Self was moved */
++#define FS_OPENEXEC		0x00001000	/* File had exec flag */
+ 
+ #define FS_UNMOUNT		0x00002000	/* inode on umount fs */
+ #define FS_Q_OVERFLOW		0x00004000	/* Event queued overflowed */
+@@ -73,7 +74,8 @@
+ 			     FS_UNMOUNT | FS_Q_OVERFLOW | FS_IN_IGNORED | \
+ 			     FS_OPEN_PERM | FS_ACCESS_PERM | FS_EXCL_UNLINK | \
+ 			     FS_ISDIR | FS_IN_ONESHOT | FS_DN_RENAME | \
+-			     FS_DN_MULTISHOT | FS_EVENT_ON_CHILD)
++				FS_DN_MULTISHOT | FS_EVENT_ON_CHILD | \
++				FS_OPENEXEC)
+ 
+ struct fsnotify_group;
+ struct fsnotify_event;
+diff -uprN -X linux-2.6.37-rc4/Documentation/dontdiff
+linux-2.6.37-rc4/include/linux/fsnotify.h
+linux-2.6.37-rc4-dev/include/linux/fsnotify.h
+--- linux-2.6.37-rc4/include/linux/fsnotify.h	2010-12-08
+10:07:17.653885076 +0100
++++ linux-2.6.37-rc4-dev/include/linux/fsnotify.h	2010-12-08
+10:11:17.086874772 +0100
+@@ -46,12 +46,15 @@ static inline int fsnotify_perm(struct f
+ 		return 0;
+ 	if (!(mask & (MAY_READ | MAY_OPEN)))
+ 		return 0;
+-	if (mask & MAY_OPEN)
++	if (mask & MAY_OPEN) {
+ 		fsnotify_mask = FS_OPEN_PERM;
+-	else if (mask & MAY_READ)
++		if (file->f_flags & FMODE_EXEC)
++			fsnotify_mask |= FS_OPENEXEC;
++	} else if (mask & MAY_READ) {
+ 		fsnotify_mask = FS_ACCESS_PERM;
+-	else
++	} else {
+ 		BUG();
++	}
+ 
+ 	ret = fsnotify_parent(path, NULL, fsnotify_mask);
+ 	if (ret)
+
+
