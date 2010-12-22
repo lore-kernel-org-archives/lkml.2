@@ -1,39 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633Ab0LVI3w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 03:29:52 -0500
-Received: from casper.infradead.org ([85.118.1.10]:43680 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752128Ab0LVI3v convert rfc822-to-8bit (ORCPT
+	id S1752697Ab0LVIak (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 03:30:40 -0500
+Received: from mtagate6.uk.ibm.com ([194.196.100.166]:49680 "EHLO
+	mtagate6.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752164Ab0LVIaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 03:29:51 -0500
-Subject: Re: [PATCH] avoid race condition in pick_next_task_fair in
- kernel/sched_fair.c
-From: Peter Zijlstra <peterz@infradead.org>
-To: Miklos Vajna <vmiklos@frugalware.org>
-Cc: shenghui <crosslonelyover@gmail.com>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, Greg KH <greg@kroah.com>,
-        systemd-devel@lists.freedesktop.org
-In-Reply-To: <20101222002248.GP10557@genesis.frugalware.org>
-References: <AANLkTin49UHeVhfS-iFwWvPIg29HPhXaP3DorBAa-a0I@mail.gmail.com>
-	 <1277808215.1868.5.camel@laptop>
-	 <20101219020313.GJ31750@genesis.frugalware.org>
-	 <20101222002248.GP10557@genesis.frugalware.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 22 Dec 2010 09:29:49 +0100
-Message-ID: <1293006589.2170.41.camel@laptop>
+	Wed, 22 Dec 2010 03:30:39 -0500
+Date: Wed, 22 Dec 2010 09:30:32 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Paul Turner <pjt@google.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Shaun Ruffell <sruffell@digium.com>
+Subject: Re: [PATCH 2/5] Add nsecs_to_cputime64 interface for asm-generic
+ -v2
+Message-ID: <20101222093032.0320c9bf@mschwide.boeblingen.de.ibm.com>
+In-Reply-To: <1292980144-28796-3-git-send-email-venki@google.com>
+References: <1292980144-28796-1-git-send-email-venki@google.com>
+	<1292980144-28796-3-git-send-email-venki@google.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-22 at 01:22 +0100, Miklos Vajna wrote:
-> Please let me know if you need more info.
+On Tue, 21 Dec 2010 17:09:01 -0800
+Venkatesh Pallipadi <venki@google.com> wrote:
 
-What distro are you using? it looks like systemd is involved and I'm
-actively avoiding anything using that crap. It now triggering a bug
-means I need to get myself a 32bit image using it :/
+> Add nsecs_to_cputime64 interface. This is used in following patches that
+> updates cpu irq stat based on ns granularity info in IRQ_TIME_ACCOUNTING.
+> 
+> Tested-by: Shaun Ruffell <sruffell@digium.com>
+> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+> ---
+>  include/asm-generic/cputime.h |    3 +++
+>  include/linux/jiffies.h       |    1 +
+>  kernel/time.c                 |   23 +++++++++++++++++++++--
+>  3 files changed, 25 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/asm-generic/cputime.h b/include/asm-generic/cputime.h
+> index 2bcc5c7..61e03dd 100644
+> --- a/include/asm-generic/cputime.h
+> +++ b/include/asm-generic/cputime.h
+> @@ -30,6 +30,9 @@ typedef u64 cputime64_t;
+>  #define cputime64_to_jiffies64(__ct)	(__ct)
+>  #define jiffies64_to_cputime64(__jif)	(__jif)
+>  #define cputime_to_cputime64(__ct)	((u64) __ct)
+> +#define cputime64_gt(__a, __b)		((__a) >  (__b))
+> +
+> +#define nsecs_to_cputime64(__ct)	nsecs_to_jiffies64(__ct)
+> 
+> 
+>  /*
 
-If you happen to have a qemu image that reproduces.. :-)
+If you define a new cputime primitive it is not enough to add it to the
+generic cputime header. You have to add it to the arch-specific cputime
+header for ia64, powerpc and s390 as well. Otherwise the build will
+break with CONFIG_VIRT_CPU_ACCOUNTING=y on these architectures once the
+new primitive is used.
+
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
