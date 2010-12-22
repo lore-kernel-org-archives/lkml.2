@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573Ab0LVMYu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 07:24:50 -0500
-Received: from mga03.intel.com ([143.182.124.21]:2396 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751473Ab0LVMYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 07:24:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,212,1291622400"; 
-   d="scan'208";a="365215786"
-Date: Wed, 22 Dec 2010 13:24:46 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Mattias Wallin <mattias.wallin@stericsson.com>,
-        Florian Fainelli <florian@openwrt.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [GIT] [2.6.37] MFD fixes
-Message-ID: <20101222122444.GB19525@sortiz-mobl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752320Ab0LVM2W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 07:28:22 -0500
+Received: from www17.your-server.de ([213.133.104.17]:41386 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738Ab0LVM2V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 07:28:21 -0500
+Subject: 2.6.37-rc7: NULL pointer dereference
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Dec 2010 13:25:57 +0100
+Message-ID: <1293020757.1998.2.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+BUG: unable to handle kernel NULL pointer dereference at 00000008
+IP: [<c04eae14>] __mem_cgroup_try_charge+0x234/0x430
+*pde = 00000000 
+Oops: 0000 [#1] 
+last sysfs file: /sys/devices/platform/regulatory.0/uevent
+Modules linked in: vfat fat usb_storage fuse sco bnep l2cap bluetooth cpufreq_ondemand acpi_cpufreq mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables kvm_intel kvm uinput arc4 ecb snd_hda_codec_hdmi snd_hda_codec_realtek iwlagn snd_hda_intel snd_hda_codec iwlcore uvcvideo snd_hwdep mac80211 snd_seq videodev snd_seq_device snd_pcm cfg80211 snd_timer rfkill v4l1_compat wmi snd pcspkr soundcore joydev serio_raw snd_page_alloc ipv6 sha256_generic aes_i586 aes_generic cbc dm_crypt [last unloaded: scsi_wait_scan]
+Pid: 8058, comm: swapoff Tainted: G          I 2.6.37-rc7 #221 JM11-MS/Aspire 1810T
+EIP: 0060:[<c04eae14>] EFLAGS: 00010246 CPU: 0
+EIP is at __mem_cgroup_try_charge+0x234/0x430
+EAX: 00000008 EBX: 00000000 ECX: f2e71f10 EDX: f2f96380
+ESI: f3e55860 EDI: 00020000 EBP: f2e71eb4 ESP: f2e71e54
+ DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
+Process swapoff (pid: 8058, ti=f2e70000 task=f3e55860 task.ti=f2e70000)
+Stack:
+ f2e71e88 c0456607 26ba7c1c f3e55860 00000010 f3e55860 069d208a b2ee651d
+ 00000008 000000d0 f2f96380 00000005 01ffffff f2e71f10 00000246 ec1a64ae
+ ffffffff 00000000 27b52eae f044dc84 00000000 f2f96380 00000000 000000d0
+Call Trace:
+ [<c0456607>] ? ktime_get_ts+0x107/0x140
+ [<c04ebb89>] ? mem_cgroup_try_charge_swapin+0x49/0xb0
+ [<c04d9b4b>] ? unuse_mm+0x1db/0x300
+ [<c04dad9a>] ? sys_swapoff+0x2aa/0x890
+ [<c047cd58>] ? audit_syscall_entry+0x218/0x240
+ [<c047d043>] ? audit_syscall_exit+0x1f3/0x220
+ [<c0403013>] ? sysenter_do_call+0x12/0x22
+Code: 55 c8 8b 82 90 01 00 00 85 c0 74 09 8b 80 7c 03 00 00 8b 58 2c 3b 1d 54 20 a9 c0 74 61 3b 1d 4c ca a4 c0 74 6a 8d 43 08 89 45 c0 <8b> 43 08 a8 01 0f 85 73 fe ff ff 8d 4b 04 89 5d bc 8d 76 00 8b 
+EIP: [<c04eae14>] __mem_cgroup_try_charge+0x234/0x430 SS:ESP 0068:f2e71e54
+CR2: 0000000000000008
 
-Here are the MFD fixes for 2.6.37. Could you please pull them in ?
 
-The following changes since commit 90a8a73c06cc32b609a880d48449d7083327e11a:
-
-  Linux 2.6.37-rc7 (2010-12-21 11:26:40 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-2.6.git for-linus
-
-Florian Fainelli (2):
-      gpio: Fix null pointer dereference while accessing rdc321x platform_data
-      watchdog: Fix null pointer dereference while accessing rdc321x platform_data
-
-Mark Brown (2):
-      mfd: Supply IRQ base for WM832x devices
-      mfd: Support additional parent IDs for wm831x
-
-Mattias Wallin (1):
-      mfd: Fix ab8500-core interrupt ffs bit bug
-
- drivers/gpio/rdc321x-gpio.c    |    2 +-
- drivers/mfd/ab8500-core.c      |    2 +-
- drivers/mfd/wm831x-core.c      |    8 ++++++--
- drivers/watchdog/rdc321x_wdt.c |    2 +-
- 4 files changed, 9 insertions(+), 5 deletions(-)
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
