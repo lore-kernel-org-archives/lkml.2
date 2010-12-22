@@ -1,134 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab0LVAkN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 19:40:13 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:42563 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753908Ab0LVAkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 19:40:12 -0500
-Date: Tue, 21 Dec 2010 16:40:10 -0800
-From: Arthur Kepner <akepner@sgi.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH] x86/irq: assign vectors from numa_node
-Message-ID: <20101222004010.GI4709@sgi.com>
-References: <20101203205348.GI20481@sgi.com> <alpine.LFD.2.00.1012101051290.2653@localhost6.localdomain6> <20101216223442.GE20481@sgi.com> <alpine.LFD.2.00.1012170145330.12146@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1012170145330.12146@localhost6.localdomain6>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1754242Ab0LVAp0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 19:45:26 -0500
+Received: from mga11.intel.com ([192.55.52.93]:45464 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753874Ab0LVApX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 19:45:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,210,1291622400"; 
+   d="scan'208";a="639052699"
+Subject: Re: [concept & "good taste" review] persistent store
+From: Huang Ying <ying.huang@intel.com>
+To: David Howells <dhowells@redhat.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
+        Tony Luck <tony.luck@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>, "greg@kroah.com" <greg@kroah.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Kyungmin Park <kmpark@infradead.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+In-Reply-To: <8362.1292977944@redhat.com>
+References: <1292977616.8743.87.camel@yhuang-dev>
+	 <1292892072.8743.70.camel@yhuang-dev> <1292813234.8743.66.camel@yhuang-dev>
+	 <4d0662e511688484b3@agluck-desktop.sc.intel.com>
+	 <AANLkTindPUkF7fCkdbqSstNHFjF3_7fEYh18nhQFx_AJ@mail.gmail.com>
+	 <AANLkTim3OpjPysjdCLDuFgFOipmcxyr2ay5cvUAu5PHi@mail.gmail.com>
+	 <AANLkTinpYJddhgbf7=Pw_TtGrnWaC8fwo2xv1XRsT1w7@mail.gmail.com>
+	 <AANLkTimA4x8oWyq71nOxB=Otp3Y0i3Kcu27DG0ajaXUG@mail.gmail.com>
+	 <AANLkTinCG+E6ZzpeRqsJP+-qvNDQXW4VZFgJ1c-sTryL@mail.gmail.com>
+	 <4D0BEE1F.7020008@zytor.com>
+	 <AANLkTinwFt+KDKNEYP9MWQ7wGb9qk=E2Xa3RJB3+MJnN@mail.gmail.com>
+	 <AANLkTinoV_pL=Ygqq4qt4f8c+wsdc9r9K7rcJ58aHjD1@mail.gmail.com>
+	 <AANLkTikhtWjFBQmA111Q+2JGRudrRNAmegGThMagr4vF@mail.gmail.com>
+	 <20101219091752.GA16150@liondog.tnic>
+	 <AANLkTi=9UZ5BYWo5xT=jh0upRP6PraH4S=t=tL49YRdr@mail.gmail.com>
+	 <17027.1292841992@redhat.com> <32058.1292926258@redhat.com>
+	 <8362.1292977944@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Dec 2010 08:43:55 +0800
+Message-ID: <1292978635.8743.96.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 10:04:48AM +0100, Thomas Gleixner wrote:
-> B1;2401;0cOn Thu, 16 Dec 2010, Arthur Kepner wrote:
+On Wed, 2010-12-22 at 08:32 +0800, David Howells wrote:
+> Huang Ying <ying.huang@intel.com> wrote:
 > 
-> > On Fri, Dec 10, 2010 at 11:55:12AM +0100, Thomas Gleixner wrote:
-> > > .....
-> > > There is absolutely no point assigning 4096 interrupts to a single
-> > > node in the first place. 
-> > 
-> > I'm not arguing that it's a good idea for a driver to request so 
-> > many resources. But some do. ...
+> > The user space program (syslogd) is in my big picture, it will guarantee
+> > an oops meesage actually go to disk via something like fsync.  After
+> > doing that, the user space program can erase the corresponding record in
+> > persistent storage to free the space.  So all in all, oops messages not
+> > causing system panic or disk error will go to disk eventually and being
+> > freed and will not use up the persistent storage.
 > 
-> Right, some do and we now make efforts to let them do that nonsense no
-> matter what ?
+> I see.  So you rely on fsync() to hang forever if the message can't be written
+> to disk because an oops killed the write path?
 
-To me, it seems better (and easier) to let drivers do non-sensical 
-things, than to determine what is sensible for a particluar driver. 
+Yes.  Or fsync() report error.
 
-How would you choose a limit of interrupt allocations? 
+Best Regards,
+Huang Ying
 
-> 
-> >  .... And what we do now is even worse than 
-> > assigning all the interrupts to a single node.
-> 
-> We assign it to a single core, which is wrong. But what the heck is
-> the difference between assinging 4k irqs to a single core or to a
-> single node ?
-> 
-> Nothing. And that's the whole problem.
-> 
-> I agree that the per node assignement needs to be resolved, but not in
-> the way that we just ignore the underlying problems and solve them at
-> the wrong place. You did not answer my comment further down in the
-> patch:
-> 
-> > > I agree, that __assign_irq_vector() should honour the request for a
-> > > node, but I don't agree, that we should magically spread stuff on
-> > > whatever node we find, when the node ran out of vectors.
-> > > 
-> > > There is probably a reason, why you want an interrupt on a specific
-> > > node and just silently pushing it somewhere else feels very wrong.
-> > > 
-> > > This needs to be solved from ground up with proper rules about failure
-> > > modes and fallback decisions.
-> 
-> Where is the answer to this ?
 
-The patch I sent made a 'best effort' to assign an interrupt to the 
-node where the device is installed. If no vectors were available on 
-that node, it tried elsewhere. 
-
-> 
-> > > Especially not, if we end up using only a few
-> > > of them in the end. And those you use are not necessarily on that very
-> > > node.
-> > 
-> > OK. Eric mentioned in a related thread that vector allocation 
-> > might be deferred until request_irq(). That sounds like a good 
-> > idea. But unless we change the way initial vector assignment is 
-> 
-> It does NOT sound like a good idea. 
-
-This seems at odds with what you said here:
-
-http://marc.info/?l=linux-kernel&m=128566136604152&w=2
-
-(specifically this bit:
-
-8<---------------------------- [snip] ----------------------------
-
-..... So the solution would be:
-
-create_irq allocates an irq number + irq descriptor, nothing else
-
-chip->startup() will setup the vector and chip->shutdown releases
-it. ......
-
-8<---------------------------- [snip] ----------------------------
-
-)
-
-Can you clarify?
-
-> ... Again, I agree that we need to fix
-> the per node assignment, but we need to discuss the problem of
-> anything which goes beyond the node.
-
-Suppose that a interrupt is initially assigned to a different 
-node than the device. Is that such a big deal? They can be 
-redistributed later by a user-space irq balancer.
-
-> 
-> > done, it just defers the problem (assuming that request_irq() 
-> > is done for every irq allocated in create_irq_nr()).
-> 
-> There is neither a reason for a driver to create so many interrupts in
-> the first place nor a re reason to request them right away. This is
-> just horrible crap, nothing else. Why the hell would a driver need to
-> startup 4k interrupts just to load itself w/o a single user?
-> 
-> We do _NOT_ work around such insanity somewhere else even if we can.
-> 
-> > Using the numa_node of the device to do the initial vector 
-> > assignment seems like a reasonable default choice, no? 
-> 
-> I still agree that we should honour the node request, but that has a
-> totally different scope than what your patch is trying to do.
-> 
-
--- 
-Arthur
