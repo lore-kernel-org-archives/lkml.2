@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab0LVTBs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 14:01:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51957 "EHLO mx1.redhat.com"
+	id S1752452Ab0LVTDd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 14:03:33 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:59226 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752078Ab0LVTBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 14:01:47 -0500
-Date: Wed, 22 Dec 2010 14:01:08 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>, fweisbec@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>, akpm@linux-foundation.org
-Subject: Re: [PATCH v2] x86, nmi_watchdog:  Remove ARCH_HAS_NMI_WATCHDOG and
- rely on CONFIG_HARDLOCKUP_DETECTOR
-Message-ID: <20101222190108.GE3743@redhat.com>
-References: <1293027942-7599-1-git-send-email-dzickus@redhat.com>
- <20101222162452.GA23665@elte.hu>
+	id S1751882Ab0LVTDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 14:03:32 -0500
+Message-ID: <4D124B80.9040401@sgi.com>
+Date: Wed, 22 Dec 2010 11:03:28 -0800
+From: Mike Travis <travis@sgi.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101222162452.GA23665@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Tejun Heo <tj@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Len Brown <lenb@kernel.org>,
+        Jack Steiner <steiner@sgi.com>, Lori Gilbertson <loriann@sgi.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Early kernel messages are overflowing the static log buffer
+References: <4D06B317.2090608@sgi.com> <20101222130946.GC13412@elte.hu> <20101222131719.GA8061@htj.dyndns.org> <4D1249ED.9040008@sgi.com>
+In-Reply-To: <4D1249ED.9040008@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 22, 2010 at 05:24:52PM +0100, Ingo Molnar wrote:
-> 
-> * Don Zickus <dzickus@redhat.com> wrote:
-> 
-> > Tested with
-> > ARCH=i386: allnoconfig, defconfig, allyesconfig, (various broken configs)
-> > ARCH=x86_64: allnoconfig, defconfig, allyesconfig, (various broken configs)
-> > 
-> > Hopefully, after this patch I won't get any more compile broken emails. :-)
-> > 
-> > Signed-off-by: Don Zickus <dzickus@redhat.com>
-> 
-> There's still some assumptions in the oprofile code, which breaks the build with 
-> your patch applied:
-> 
->  arch/x86/oprofile/op_model_p4.c:394:4: error: implicit declaration of function ‘release_perfctr_nmi’
->  arch/x86/oprofile/op_model_p4.c:403:4: error: implicit declaration of function ‘release_evntsel_nmi’
->  arch/x86/oprofile/op_model_p4.c:419:3: error: implicit declaration of function ‘reserve_perfctr_nmi’
->  arch/x86/oprofile/op_model_p4.c:428:3: error: implicit declaration of function ‘reserve_evntsel_nmi’
-> 
-> Config attached.
 
-Thanks.  I sent a patch to fix this.  Basically they were using
-linux/nmi.h instead of asm/nmi.h.
 
-Cheers,
-Don
+...
+>> Yeap, with percpu allocator now mostly stable, I don't think the
+>> message needs to be KERN_INFO anymore.  I'll change it to KERN_DEBUG.
+>>
+>> Thanks.
+>>
+> 
+> This doesn't really help the log buffer overflow problem as KERN_DEBUG
+> messages still end up in the buffer.  The pr_debug() macro does compile
+> out the messages if the system does not have KERNEL debug set, though
+> distros also have this set as a default.
+
+Btw, I meant to add that the my patchset allocates the log buffer right
+after boot mem is setup.  So this output does not affect the overflow
+problem, though it is nice to clean up the console output whenever we can.
