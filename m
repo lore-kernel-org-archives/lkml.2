@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000Ab0LVN3S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 08:29:18 -0500
-Received: from mailout04.t-online.de ([194.25.134.18]:56904 "EHLO
-	mailout04.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764Ab0LVN3R (ORCPT
+	id S1753322Ab0LVN30 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 08:29:26 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54112 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753020Ab0LVN3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 08:29:17 -0500
-Message-ID: <4D11FD18.6090100@t-online.de>
-Date: Wed, 22 Dec 2010 14:28:56 +0100
-From: =?ISO-8859-15?Q?Richard_Sch=FCtz?= <r.schtz@t-online.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101211 Lanikai/3.1.7
+	Wed, 22 Dec 2010 08:29:24 -0500
+Date: Wed, 22 Dec 2010 13:29:37 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>, myungjoo.ham@gmail.com
+Subject: Re: [PATCH v2 4/6] MFD MAX8998/LP3974 Bufgix: accessing array out
+ of bound.
+Message-ID: <20101222132936.GE26306@opensource.wolfsonmicro.com>
+References: <20101221155004.GA21871@opensource.wolfsonmicro.com>
+ <1292998991-26968-5-git-send-email-myungjoo.ham@samsung.com>
 MIME-Version: 1.0
-To: linux-usb@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Sergey Vlasov <vsu@altlinux.ru>, Greg KH <gregkh@suse.de>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-Subject: [PATCH v2] USB: usb-storage: unusual_devs update for TrekStor DataStation
- maxi g.u external hard drive enclosure
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 8bit
-X-ID: ESav-8ZYwhT0CoJfPP5V6gtNRIHlCReZfPPOXV5GPQ6KC3XM+cyeIoAM8PHQIAOwH5
-X-TOI-MSGID: ee178638-69b0-46ea-90f3-1d6a9ddc9300
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292998991-26968-5-git-send-email-myungjoo.ham@samsung.com>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TrekStor DataStation maxi g.u external hard drive enclosure uses a
-JMicron USB to SATA chip which needs the US_FL_IGNORE_RESIDUE flag to work
-properly.
+On Wed, Dec 22, 2010 at 03:23:09PM +0900, MyungJoo Ham wrote:
 
-Signed-off-by: Richard Schütz <r.schtz@t-online.de>
----
+> The previous driver may access ldo_voltage_map[] out of its bound at
+> probe function at line 790 (drivers/regulator/max8998.c). This patch
+> allocates an entry for every regulator in order to avoid accessing
+> out-of-bounds.
+> 
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-Applies to 2.6.37-rc7 now.
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
---- a/drivers/usb/storage/unusual_devs.h	2010-12-21 20:26:40.000000000 +0100
-+++ b/drivers/usb/storage/unusual_devs.h	2010-12-22 13:37:58.438818902 +0100
-@@ -1872,6 +1872,15 @@ UNUSUAL_DEV( 0x1908, 0x3335, 0x0200, 0x0
-  		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-  		US_FL_NO_READ_DISC_INFO ),
+for the fix but
 
-+/* Patch by Richard Schütz <r.schtz@t-online.de>
-+ * This external hard drive enclosure uses a JMicron chip which
-+ * needs the US_FL_IGNORE_RESIDUE flag to work properly. */
-+UNUSUAL_DEV(  0x1e68, 0x001b, 0x0000, 0x0000,
-+		"TrekStor GmbH & Co. KG",
-+		"DataStation maxi g.u",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_IGNORE_RESIDUE | US_FL_SANE_SENSE ),
-+
-  UNUSUAL_DEV( 0x2116, 0x0320, 0x0001, 0x0001,
-  		"ST",
-  		"2A",
+>  	&buck4_voltage_map_desc,	/* BUCK4 */
+> +	NULL,				/* EN32KHZ_AP */
+> +	NULL,				/* EN32KHZ_CP */
+> +	NULL,				/* ENVICHG */
+> +	NULL,				/* ESAFEOUT1 */
+> +	NULL,				/* ESAFEOUT2 */
 
--- 
-Regards,
-Richard Schütz
+it might be nicer to do this with a constant for the array size, or by
+having the users check for ARRAY_SIZE().
