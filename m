@@ -1,236 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513Ab0LVGY6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 01:24:58 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:40604 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290Ab0LVGYM (ORCPT
+	id S1752356Ab0LVGn5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 01:43:57 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:3423 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562Ab0LVGn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 01:24:12 -0500
-Date: Wed, 22 Dec 2010 15:23:06 +0900
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: [PATCH v2 1/6] MFD MAX8998/LP3974: Support Hibernation
-In-reply-to: <20101221155004.GA21871@opensource.wolfsonmicro.com>
-To: linux-kernel@vger.kernel.org
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>, myungjoo.ham@gmail.com
-Message-id: <1292998991-26968-2-git-send-email-myungjoo.ham@samsung.com>
-X-Mailer: git-send-email 1.7.1
-Content-transfer-encoding: 7BIT
-References: <20101221155004.GA21871@opensource.wolfsonmicro.com>
-X-OriginalArrivalTime: 22 Dec 2010 06:23:11.0577 (UTC)
- FILETIME=[B51F7C90:01CBA1A0]
+	Wed, 22 Dec 2010 01:43:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=pQH47oc8v+GA2IVuouAYjleYIO9HqTWBRNoj3tNhpNbz9SoYQShZdQHOdwJOL4JKLC
+         Ifj04DtiqNy36LDzl5nA==
+Date: Tue, 21 Dec 2010 22:43:44 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Venkatesh Pallipadi <venki@google.com>
+cc: Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Nikanth Karthikesan <knikanth@suse.de>,
+        "Zheng, Shaohui" <shaohui.zheng@intel.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>, Nikhil Rao <ncrao@google.com>,
+        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Subject: Re: [PATCH -v2 2/2] x86, acpi: Parse all SRAT cpu entries even have
+ cpu num limitation
+In-Reply-To: <AANLkTi=VYooLbwWkTCSfQ38z=UO_kQZyQyKaw-5+kyYn@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1012212230580.9505@chino.kir.corp.google.com>
+References: <20101111100628.GA24728@localhost> <1289478978.2084.74.camel@laptop> <20101111124015.GA9706@localhost> <1289480656.2084.80.camel@laptop> <20101113084018.GA23098@localhost> <1289644224.2084.521.camel@laptop> <20101113120030.GA31517@localhost>
+ <1289653078.2084.675.camel@laptop> <20101113131042.GA5522@localhost> <4CDEE314.6090107@kernel.org> <20101113235746.GA9458@localhost> <4CDF3DA1.2090806@kernel.org> <4D093ABB.4030206@zytor.com> <4D0943D5.1090404@kernel.org> <4D094703.7080701@zytor.com>
+ <4D0AD464.2020408@kernel.org> <4D0AD486.9020704@kernel.org> <AANLkTin-LGig2RHHmvvy5H04jQRus_1mmS1Cr4KDWKsN@mail.gmail.com> <4D0BB9AD.90506@kernel.org> <AANLkTimw_nvDEb4t1nOQFCtY8fx6fvg5Mmy+6vZw8mw1@mail.gmail.com>
+ <AANLkTi=VYooLbwWkTCSfQ38z=UO_kQZyQyKaw-5+kyYn@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With runtime-pm ops support, this patch enables to save and restore
-register values for hibernation.
+On Mon, 20 Dec 2010, Venkatesh Pallipadi wrote:
 
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/mfd/max8998-irq.c           |    7 ++
- drivers/mfd/max8998.c               |  108 +++++++++++++++++++++++++++++++++++
- include/linux/mfd/max8998-private.h |    2 +
- include/linux/mfd/max8998.h         |    1 +
- 4 files changed, 118 insertions(+), 0 deletions(-)
+> git bisect seems to narrow this down to the change below.
+> 
+> Thanks,
+> Venki
+> 
+> $ git bisect visualize
+> commit 50f2d7f682f9c0ed58191d0982fe77888d59d162
+> Author: Nikanth Karthikesan <knikanth@suse.de>
+> Date:   Thu Sep 30 17:34:10 2010 +0530
+> 
+>     x86, numa: Assign CPUs to nodes in round-robin manner on fake NUMA
+> 
+>     commit d9c2d5ac6af87b4491bff107113aaf16f6c2b2d9 "x86, numa: Use near(er)
+>     online node instead of roundrobin for NUMA" changed NUMA initialization on
+>     Intel to choose the nearest online node or first node.  Fake NUMA would be
+>     better of with round-robin initialization, instead of the all CPUS on
+>     first node.  Change the choice of first node, back to round-robin.
+> 
+>     For testing NUMA kernel behaviour without cpusets and NUMA aware
+>     applications, it would be better to have cpus in different nodes, rather
+>     than all in a single node.  With cpusets migration of tasks scenarios
+>     cannot not be tested.
+> 
+>     I guess having it round-robin shouldn't affect the use cases for all cpus
+>     on the first node.
+> 
+>     The code comments in arch/x86/mm/numa_64.c:759 indicate that this used to
+>     be the case, which was changed by commit d9c2d5ac6.  It changed from
+>     roundrobin to nearer or first node.  And I couldn't find any reason for
+>     this change in its changelog.
+> 
+>     Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
+>     Cc: David Rientjes <rientjes@google.com>
+>     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> 
 
-diff --git a/drivers/mfd/max8998-irq.c b/drivers/mfd/max8998-irq.c
-index 45bfe77..93c621d 100644
---- a/drivers/mfd/max8998-irq.c
-+++ b/drivers/mfd/max8998-irq.c
-@@ -181,6 +181,13 @@ static irqreturn_t max8998_irq_thread(int irq, void *data)
- 	return IRQ_HANDLED;
- }
- 
-+int max8998_irq_resume(struct max8998_dev *max8998)
-+{
-+	if (max8998->irq && max8998->irq_base)
-+		max8998_irq_thread(max8998->irq_base, max8998);
-+	return 0;
-+}
-+
- int max8998_irq_init(struct max8998_dev *max8998)
- {
- 	int i;
-diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
-index bb9977b..5ce00ad 100644
---- a/drivers/mfd/max8998.c
-+++ b/drivers/mfd/max8998.c
-@@ -25,6 +25,8 @@
- #include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/i2c.h>
-+#include <linux/interrupt.h>
-+#include <linux/pm_runtime.h>
- #include <linux/mutex.h>
- #include <linux/mfd/core.h>
- #include <linux/mfd/max8998.h>
-@@ -135,6 +137,7 @@ static int max8998_i2c_probe(struct i2c_client *i2c,
- 	if (pdata) {
- 		max8998->ono = pdata->ono;
- 		max8998->irq_base = pdata->irq_base;
-+		max8998->wakeup = pdata->wakeup;
- 	}
- 	mutex_init(&max8998->iolock);
- 
-@@ -146,6 +149,8 @@ static int max8998_i2c_probe(struct i2c_client *i2c,
- 	ret = mfd_add_devices(max8998->dev, -1,
- 			      max8998_devs, ARRAY_SIZE(max8998_devs),
- 			      NULL, 0);
-+	pm_runtime_set_active(max8998->dev);
-+
- 	if (ret < 0)
- 		goto err;
- 
-@@ -178,10 +183,113 @@ static const struct i2c_device_id max8998_i2c_id[] = {
- };
- MODULE_DEVICE_TABLE(i2c, max8998_i2c_id);
- 
-+static int max8998_suspend(struct device *dev)
-+{
-+	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
-+	struct max8998_dev *max8998 = i2c_get_clientdata(i2c);
-+
-+	if (max8998->wakeup)
-+		set_irq_wake(max8998->irq, 1);
-+	return 0;
-+}
-+
-+static int max8998_resume(struct device *dev)
-+{
-+	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
-+	struct max8998_dev *max8998 = i2c_get_clientdata(i2c);
-+
-+	if (max8998->wakeup)
-+		set_irq_wake(max8998->irq, 0);
-+	/*
-+	 * In LP3974, if IRQ registers are not "read & clear"
-+	 * when it's set during sleep, the interrupt becomes
-+	 * disabled.
-+	 */
-+	return max8998_irq_resume(i2c_get_clientdata(i2c));
-+}
-+
-+struct max8998_reg_dump {
-+	u8	addr;
-+	u8	val;
-+};
-+#define SAVE_ITEM(x)	{ .addr = (x), .val = 0x0, }
-+struct max8998_reg_dump max8998_dump[] = {
-+	SAVE_ITEM(MAX8998_REG_IRQM1),
-+	SAVE_ITEM(MAX8998_REG_IRQM2),
-+	SAVE_ITEM(MAX8998_REG_IRQM3),
-+	SAVE_ITEM(MAX8998_REG_IRQM4),
-+	SAVE_ITEM(MAX8998_REG_STATUSM1),
-+	SAVE_ITEM(MAX8998_REG_STATUSM2),
-+	SAVE_ITEM(MAX8998_REG_CHGR1),
-+	SAVE_ITEM(MAX8998_REG_CHGR2),
-+	SAVE_ITEM(MAX8998_REG_LDO_ACTIVE_DISCHARGE1),
-+	SAVE_ITEM(MAX8998_REG_LDO_ACTIVE_DISCHARGE1),
-+	SAVE_ITEM(MAX8998_REG_BUCK_ACTIVE_DISCHARGE3),
-+	SAVE_ITEM(MAX8998_REG_ONOFF1),
-+	SAVE_ITEM(MAX8998_REG_ONOFF2),
-+	SAVE_ITEM(MAX8998_REG_ONOFF3),
-+	SAVE_ITEM(MAX8998_REG_ONOFF4),
-+	SAVE_ITEM(MAX8998_REG_BUCK1_VOLTAGE1),
-+	SAVE_ITEM(MAX8998_REG_BUCK1_VOLTAGE2),
-+	SAVE_ITEM(MAX8998_REG_BUCK1_VOLTAGE3),
-+	SAVE_ITEM(MAX8998_REG_BUCK1_VOLTAGE4),
-+	SAVE_ITEM(MAX8998_REG_BUCK2_VOLTAGE1),
-+	SAVE_ITEM(MAX8998_REG_BUCK2_VOLTAGE2),
-+	SAVE_ITEM(MAX8998_REG_LDO2_LDO3),
-+	SAVE_ITEM(MAX8998_REG_LDO4),
-+	SAVE_ITEM(MAX8998_REG_LDO5),
-+	SAVE_ITEM(MAX8998_REG_LDO6),
-+	SAVE_ITEM(MAX8998_REG_LDO7),
-+	SAVE_ITEM(MAX8998_REG_LDO8_LDO9),
-+	SAVE_ITEM(MAX8998_REG_LDO10_LDO11),
-+	SAVE_ITEM(MAX8998_REG_LDO12),
-+	SAVE_ITEM(MAX8998_REG_LDO13),
-+	SAVE_ITEM(MAX8998_REG_LDO14),
-+	SAVE_ITEM(MAX8998_REG_LDO15),
-+	SAVE_ITEM(MAX8998_REG_LDO16),
-+	SAVE_ITEM(MAX8998_REG_LDO17),
-+	SAVE_ITEM(MAX8998_REG_BKCHR),
-+	SAVE_ITEM(MAX8998_REG_LBCNFG1),
-+	SAVE_ITEM(MAX8998_REG_LBCNFG2),
-+};
-+/* Save registers before hibernation */
-+static int max8998_freeze(struct device *dev)
-+{
-+	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(max8998_dump); i++)
-+		max8998_read_reg(i2c, max8998_dump[i].addr,
-+				&max8998_dump[i].val);
-+
-+	return 0;
-+}
-+
-+/* Restore registers after hibernation */
-+static int max8998_restore(struct device *dev)
-+{
-+	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(max8998_dump); i++)
-+		max8998_write_reg(i2c, max8998_dump[i].addr,
-+				max8998_dump[i].val);
-+
-+	return 0;
-+}
-+
-+const struct dev_pm_ops max8998_pm = {
-+	.suspend = max8998_suspend,
-+	.resume = max8998_resume,
-+	.freeze = max8998_freeze,
-+	.restore = max8998_restore,
-+};
-+
- static struct i2c_driver max8998_i2c_driver = {
- 	.driver = {
- 		   .name = "max8998",
- 		   .owner = THIS_MODULE,
-+		   .pm = &max8998_pm,
- 	},
- 	.probe = max8998_i2c_probe,
- 	.remove = max8998_i2c_remove,
-diff --git a/include/linux/mfd/max8998-private.h b/include/linux/mfd/max8998-private.h
-index 7363dea..effa5d3 100644
---- a/include/linux/mfd/max8998-private.h
-+++ b/include/linux/mfd/max8998-private.h
-@@ -159,10 +159,12 @@ struct max8998_dev {
- 	u8 irq_masks_cur[MAX8998_NUM_IRQ_REGS];
- 	u8 irq_masks_cache[MAX8998_NUM_IRQ_REGS];
- 	int type;
-+	bool wakeup;
- };
- 
- int max8998_irq_init(struct max8998_dev *max8998);
- void max8998_irq_exit(struct max8998_dev *max8998);
-+int max8998_irq_resume(struct max8998_dev *max8998);
- 
- extern int max8998_read_reg(struct i2c_client *i2c, u8 reg, u8 *dest);
- extern int max8998_bulk_read(struct i2c_client *i2c, u8 reg, int count,
-diff --git a/include/linux/mfd/max8998.h b/include/linux/mfd/max8998.h
-index f8c9f88..686a744 100644
---- a/include/linux/mfd/max8998.h
-+++ b/include/linux/mfd/max8998.h
-@@ -88,6 +88,7 @@ struct max8998_platform_data {
- 	int				buck1_set1;
- 	int				buck1_set2;
- 	int				buck2_set3;
-+	bool				wakeup;
- };
- 
- #endif /*  __LINUX_MFD_MAX8998_H */
--- 
-1.7.1
+Peter just merged my NUMA emulation fixes into the x86 tree, could you try 
+applying Yinghai's series on top of x86/linux-2.6-tip.git#x86/numa and see 
+if the problem persists?
 
+On a different topic: Yinghai, do you think you could base your series off 
+of Tejun's x86_32/x86_64 NUMA unification series since it already 
+duplicates some of the work?
