@@ -1,73 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab0LVIak (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 03:30:40 -0500
-Received: from mtagate6.uk.ibm.com ([194.196.100.166]:49680 "EHLO
-	mtagate6.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752164Ab0LVIaj (ORCPT
+	id S1752738Ab0LVIdf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 03:33:35 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:55227 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752301Ab0LVIde convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 03:30:39 -0500
-Date: Wed, 22 Dec 2010 09:30:32 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Paul Turner <pjt@google.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Shaun Ruffell <sruffell@digium.com>
-Subject: Re: [PATCH 2/5] Add nsecs_to_cputime64 interface for asm-generic
- -v2
-Message-ID: <20101222093032.0320c9bf@mschwide.boeblingen.de.ibm.com>
-In-Reply-To: <1292980144-28796-3-git-send-email-venki@google.com>
-References: <1292980144-28796-1-git-send-email-venki@google.com>
-	<1292980144-28796-3-git-send-email-venki@google.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	Wed, 22 Dec 2010 03:33:34 -0500
+Subject: Re: [RFC PATCH] perf: Add load latency monitoring on Intel
+ Nehalem/Westmere
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <1293005543.2565.156.camel@minggr.sh.intel.com>
+References: <1293005543.2565.156.camel@minggr.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 22 Dec 2010 09:33:28 +0100
+Message-ID: <1293006808.2170.42.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Dec 2010 17:09:01 -0800
-Venkatesh Pallipadi <venki@google.com> wrote:
+On Wed, 2010-12-22 at 16:12 +0800, Lin Ming wrote:
+> It's applied on top of tip/master(3ea1f4f89) and Andi's offcore
+> patchsets are needed. 
 
-> Add nsecs_to_cputime64 interface. This is used in following patches that
-> updates cpu irq stat based on ns granularity info in IRQ_TIME_ACCOUNTING.
-> 
-> Tested-by: Shaun Ruffell <sruffell@digium.com>
-> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
-> ---
->  include/asm-generic/cputime.h |    3 +++
->  include/linux/jiffies.h       |    1 +
->  kernel/time.c                 |   23 +++++++++++++++++++++--
->  3 files changed, 25 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/asm-generic/cputime.h b/include/asm-generic/cputime.h
-> index 2bcc5c7..61e03dd 100644
-> --- a/include/asm-generic/cputime.h
-> +++ b/include/asm-generic/cputime.h
-> @@ -30,6 +30,9 @@ typedef u64 cputime64_t;
->  #define cputime64_to_jiffies64(__ct)	(__ct)
->  #define jiffies64_to_cputime64(__jif)	(__jif)
->  #define cputime_to_cputime64(__ct)	((u64) __ct)
-> +#define cputime64_gt(__a, __b)		((__a) >  (__b))
-> +
-> +#define nsecs_to_cputime64(__ct)	nsecs_to_jiffies64(__ct)
-> 
-> 
->  /*
-
-If you define a new cputime primitive it is not enough to add it to the
-generic cputime header. You have to add it to the arch-specific cputime
-header for ia64, powerpc and s390 as well. Otherwise the build will
-break with CONFIG_VIRT_CPU_ACCOUNTING=y on these architectures once the
-new primitive is used.
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+I still haven't gotten a version of that I'm willing to apply.
