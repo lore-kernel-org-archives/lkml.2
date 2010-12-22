@@ -1,31 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068Ab0LVIuv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 03:50:51 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:24994 "EHLO SMTP.CITRIX.COM"
+	id S1752745Ab0LVIx5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 03:53:57 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:62248 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752776Ab0LVIut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 03:50:49 -0500
-X-Greylist: delayed 387 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Dec 2010 03:50:49 EST
+	id S1751868Ab0LVIx4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 03:53:56 -0500
 X-IronPort-AV: E=Sophos;i="4.60,212,1291611600"; 
-   d="scan'208";a="11652616"
-Subject: Re: [Xen-devel] Re: [PATCH 01/10] xen: Make all reserved pages for
- the balloon be INVALID_P2M_ENTRY.
+   d="scan'208";a="11652601"
+Subject: Re: [Xen-devel] [PATCH 03/10] xen/mmu: Add the notion of
+ IDENTITY_P2M_ENTRY.
 From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jeremy@goop.org" <jeremy@goop.org>, "hpa@zytor.com" <hpa@zytor.com>,
         Konrad Rzeszutek Wilk <konrad@kernel.org>,
         "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jan Beulich <JBeulich@novell.com>, "hpa@zytor.com" <hpa@zytor.com>
-In-Reply-To: <4D1127FC.8060102@goop.org>
+        Jan Beulich <JBeulich@novell.com>
+In-Reply-To: <1292967460-15709-4-git-send-email-konrad.wilk@oracle.com>
 References: <1292967460-15709-1-git-send-email-konrad.wilk@oracle.com>
-	 <1292967460-15709-2-git-send-email-konrad.wilk@oracle.com>
-	 <4D1127FC.8060102@goop.org>
+	 <1292967460-15709-4-git-send-email-konrad.wilk@oracle.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Organization: Citrix Systems, Inc.
-Date: Wed, 22 Dec 2010 08:47:10 +0000
-Message-ID: <1293007630.3998.36.camel@localhost.localdomain>
+Date: Wed, 22 Dec 2010 08:44:19 +0000
+Message-ID: <1293007459.3998.33.camel@localhost.localdomain>
 MIME-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -33,21 +31,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-12-21 at 22:19 +0000, Jeremy Fitzhardinge wrote: 
-> On 12/21/2010 01:37 PM, Konrad Rzeszutek Wilk wrote:
-> > +		BUG_ON(!set_phys_to_machine(pfn, INVALID_P2M_ENTRY));
-[...] 
-> I'm not a fan of hiding real side-effectful code in a BUG_ON
-> predicate.
-> 
-> > +		BUG_ON(get_phys_to_machine(pfn) != INVALID_P2M_ENTRY);
+On Tue, 2010-12-21 at 21:37 +0000, Konrad Rzeszutek Wilk wrote: 
+> P.S.
+> We cannot set the IDENTITY_P2M_ENTRY in the P2M tree. This is b/c
+> the toolstack considers that invalid and would abort during
+> migration of the PV guest.
 
-I'm also not a fan of this "is the previous I called function buggy"
-BUG_ON.
+What do we do instead, just write the actual identity MFN value?
 
-If we aren't confident that set_phys_to_machine() is doing the right
-thing then adding a post-condition check to that function would be a
-more preferable option.
+Does using 1UL<<30 (or 1UL<<62 on 64 bit, note that Jeremy recently
+fixed FOREIGN_FRAME_BIT too) as IDENTITY_P2M_ENTRY keep the toolstack
+happy while still allowing us to distinguish from identity from
+happens-to-be-the-same as necessary?
+
+To some extent 1-1 I/O regions could be considered foreign mappings (of
+"memory" owned by DOMIO) so perhaps it's possible that setting the
+FOREIGN_FRAME_BIT is both sufficient and correct?
 
 Ian.
 
