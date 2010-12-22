@@ -1,73 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103Ab0LVQcf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 11:32:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28123 "EHLO mx1.redhat.com"
+	id S1752323Ab0LVTAX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 14:00:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10670 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753478Ab0LVQcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 11:32:33 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Rogier Wolff <R.E.Wolff@BitWizard.nl>
-Cc: Greg Freemyer <greg.freemyer@gmail.com>,
-        Bruno =?utf-8?Q?Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: Slow disks.
-References: <20101220141553.GA6088@bitwizard.nl>
-	<20101220190630.66084e1d@neptune.home>
-	<AANLkTi=VAJbVSzX_DH9_==a3RonLJmawYu3MzF-uqGXC@mail.gmail.com>
-	<20101222104306.GB30941@bitwizard.nl>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 22 Dec 2010 11:27:20 -0500
-In-Reply-To: <20101222104306.GB30941@bitwizard.nl> (Rogier Wolff's message of
-	"Wed, 22 Dec 2010 11:43:06 +0100")
-Message-ID: <x49aajxsrh3.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752081Ab0LVTAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 14:00:22 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>, fweisbec@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>, akpm@linux-foundation.org,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH v3] x86, nmi_watchdog:  Remove ARCH_HAS_NMI_WATCHDOG and rely on CONFIG_HARDLOCKUP_DETECTOR
+Date: Wed, 22 Dec 2010 14:00:03 -0500
+Message-Id: <1293044403-14117-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rogier Wolff <R.E.Wolff@BitWizard.nl> writes:
+The x86 arch has shifted its use of the nmi_watchdog from a local implementation
+to the global one provide by kernel/watchdog.c.  This shift has caused a whole
+bunch of compile problems under different config options.  I attempt to simplify
+things with the patch below.
 
-> Unquoted text below is from either me or from my friend. 
->
->
-> Someone suggested we try an older kernel as if kernel 2.6.32 would not
-> have this problem. We do NOT think it suddenly started with a certain
-> kernel version. I was just hoping to have you kernel-guys help with
-> prodding the kernel into revealing which component was screwing things
-> up....
-[...]
-> ata3.00: ATA-8: WDC WD10EARS-00Y5B1, 80.00A80, max UDMA/133
+In order to simplify things, I had to come to terms with the meaning of two terms
+ARCH_HAS_NMI_WATCHDOG and CONFIG_HARDLOCKUP_DETECTOR.  Basically they mean the
+same thing, the former on a local level and the latter on a global level.
 
-This is an "Advanced format" drive, which, in this case, means it
-internally has a 4KB sector size and exports a 512byte logical sector
-size.  If your partitions are misaligned, this can cause performance
-problems.
+With the old x86 nmi watchdog gone, there is no need to rely on defining the
+ARCH_HAS_NMI_WATCHDOG variable because it doesn't make sense any more.  x86 will
+now use the global implementation.
 
-> MDstat:
->
-> Personalities : [raid1] [raid6] [raid5] [raid4]
-> md125 : active raid5 sdd3[5](S) sdb3[4] sda3[0] sdc3[3]
->       3903488 blocks super 1.1 level 5, 512k chunk, algorithm 2 [3/3] [UUU]
->
-> md126 : active raid5 sda4[0] sdd4[3] sdc4[5](S) sdb4[4]
->       1910063104 blocks super 1.1 level 5, 512k chunk, algorithm 2
-> [3/3] [UUU]
->
-> md1 : active raid5 sda2[0] sdd2[3](S) sdb2[1] sdc2[4]
->       39067648 blocks super 1.2 level 5, 512k chunk, algorithm 2 [3/3]
-> [3/3] [UUU]
->
-> md1 : active raid5 sda2[0] sdd2[3](S) sdb2[1] sdc2[4]
->       39067648 blocks super 1.2 level 5, 512k chunk, algorithm 2 [3/3]
-> [UUU]
+The changes below do a few things.  First it changes the few places that relied on
+ARCH_HAS_NMI_WATCHDOG to use CONFIG_X86_LOCAL_APIC (the former was an alias for
+the latter anyway, so nothing unusual here).  Those pieces of code were relying more
+on local apic functionality the nmi watchdog functionality, so the change should
+make sense.
 
-A 512KB raid5 chunk with 4KB I/Os?  That is a recipe for inefficiency.
-Again, blktrace data would be helpful.
+Second, I removed the x86 implementation of touch_nmi_watchdog().  It isn't need
+now, instead x86 will rely on kernel/watchdog.c's implementation.
 
-Cheers,
-Jeff
+Third, I removed the #define ARCH_HAS_NMI_WATCHDOG itself from x86.  And tweaked
+the include/linux/nmi.h file to tell users to look for an externally defined
+touch_nmi_watchdog in the case of ARCH_HAS_NMI_WATCHDOG _or_ CONFIG_HARDLOCKUP_DETECTOR.
+This changes removes some of the ugliness in that file.
+
+Finally, I added a Kconfig dependency for CONFIG_HARDLOCKUP_DETECTOR that said you
+can't have ARCH_HAS_NMI_WATCHDOG _and_ CONFIG_HARDLOCKUP_DETECTOR.  You can only have
+one nmi_watchdog.
+
+Tested with
+ARCH=i386: allnoconfig, defconfig, allyesconfig, (various broken configs)
+ARCH=x86_64: allnoconfig, defconfig, allyesconfig, (various broken configs)
+
+Hopefully, after this patch I won't get any more compile broken emails. :-)
+
+v3:
+  changed a couple of 'linux/nmi.h' -> 'asm/nmi.h' to pick-up correct function
+  prototypes when CONFIG_HARDLOCKUP_DETECTOR is not set.
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ arch/x86/include/asm/irq.h             |    4 ----
+ arch/x86/include/asm/nmi.h             |    2 +-
+ arch/x86/kernel/apic/hw_nmi.c          |   10 ----------
+ arch/x86/kernel/cpu/perfctr-watchdog.c |    2 +-
+ arch/x86/oprofile/op_model_p4.c        |    2 +-
+ drivers/watchdog/hpwdt.c               |    4 ++--
+ include/linux/nmi.h                    |    6 +-----
+ lib/Kconfig.debug                      |    3 ++-
+ 8 files changed, 8 insertions(+), 25 deletions(-)
+
+diff --git a/arch/x86/include/asm/irq.h b/arch/x86/include/asm/irq.h
+index 13b0eba..ba870bb 100644
+--- a/arch/x86/include/asm/irq.h
++++ b/arch/x86/include/asm/irq.h
+@@ -15,10 +15,6 @@ static inline int irq_canonicalize(int irq)
+ 	return ((irq == 2) ? 9 : irq);
+ }
+ 
+-#ifdef CONFIG_X86_LOCAL_APIC
+-# define ARCH_HAS_NMI_WATCHDOG
+-#endif
+-
+ #ifdef CONFIG_X86_32
+ extern void irq_ctx_init(int cpu);
+ #else
+diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
+index 3545838..c4021b9 100644
+--- a/arch/x86/include/asm/nmi.h
++++ b/arch/x86/include/asm/nmi.h
+@@ -5,7 +5,7 @@
+ #include <asm/irq.h>
+ #include <asm/io.h>
+ 
+-#ifdef ARCH_HAS_NMI_WATCHDOG
++#ifdef CONFIG_X86_LOCAL_APIC
+ 
+ extern void die_nmi(char *str, struct pt_regs *regs, int do_panic);
+ extern int avail_to_resrv_perfctr_nmi_bit(unsigned int);
+diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+index 93da91d..c57d0b5 100644
+--- a/arch/x86/kernel/apic/hw_nmi.c
++++ b/arch/x86/kernel/apic/hw_nmi.c
+@@ -17,7 +17,6 @@
+ #include <linux/nmi.h>
+ #include <linux/module.h>
+ 
+-#ifdef ARCH_HAS_NMI_WATCHDOG
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
+ u64 hw_nmi_get_sample_period(void)
+ {
+@@ -25,15 +24,6 @@ u64 hw_nmi_get_sample_period(void)
+ }
+ #endif
+ 
+-#ifndef CONFIG_HARDLOCKUP_DETECTOR
+-void touch_nmi_watchdog(void)
+-{
+-	touch_softlockup_watchdog();
+-}
+-EXPORT_SYMBOL(touch_nmi_watchdog);
+-#endif
+-#endif
+-
+ #ifdef arch_trigger_all_cpu_backtrace
+ /* For reliability, we're prepared to waste bits here. */
+ static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
+diff --git a/arch/x86/kernel/cpu/perfctr-watchdog.c b/arch/x86/kernel/cpu/perfctr-watchdog.c
+index 14d4592..d5a2366 100644
+--- a/arch/x86/kernel/cpu/perfctr-watchdog.c
++++ b/arch/x86/kernel/cpu/perfctr-watchdog.c
+@@ -16,7 +16,7 @@
+ #include <linux/kernel.h>
+ #include <linux/bitops.h>
+ #include <linux/smp.h>
+-#include <linux/nmi.h>
++#include <asm/nmi.h>
+ #include <linux/kprobes.h>
+ 
+ #include <asm/apic.h>
+diff --git a/arch/x86/oprofile/op_model_p4.c b/arch/x86/oprofile/op_model_p4.c
+index 182558d..9fadec0 100644
+--- a/arch/x86/oprofile/op_model_p4.c
++++ b/arch/x86/oprofile/op_model_p4.c
+@@ -11,7 +11,7 @@
+ #include <linux/oprofile.h>
+ #include <linux/smp.h>
+ #include <linux/ptrace.h>
+-#include <linux/nmi.h>
++#include <asm/nmi.h>
+ #include <asm/msr.h>
+ #include <asm/fixmap.h>
+ #include <asm/apic.h>
+diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
+index c19f4a2..dea7b5b 100644
+--- a/drivers/watchdog/hpwdt.c
++++ b/drivers/watchdog/hpwdt.c
+@@ -642,7 +642,7 @@ static struct notifier_block die_notifier = {
+  */
+ 
+ #ifdef CONFIG_HPWDT_NMI_DECODING
+-#ifdef ARCH_HAS_NMI_WATCHDOG
++#ifdef CONFIG_X86_LOCAL_APIC
+ static void __devinit hpwdt_check_nmi_decoding(struct pci_dev *dev)
+ {
+ 	/*
+@@ -657,7 +657,7 @@ static void __devinit hpwdt_check_nmi_decoding(struct pci_dev *dev)
+ 	dev_warn(&dev->dev, "NMI decoding is disabled. "
+ 		"Your kernel does not support a NMI Watchdog.\n");
+ }
+-#endif /* ARCH_HAS_NMI_WATCHDOG */
++#endif /* CONFIG_X86_LOCAL_APIC */
+ 
+ static int __devinit hpwdt_init_nmi_decoding(struct pci_dev *dev)
+ {
+diff --git a/include/linux/nmi.h b/include/linux/nmi.h
+index 17ccf44..c536f85 100644
+--- a/include/linux/nmi.h
++++ b/include/linux/nmi.h
+@@ -14,18 +14,14 @@
+  * may be used to reset the timeout - for code which intentionally
+  * disables interrupts for a long time. This call is stateless.
+  */
+-#ifdef ARCH_HAS_NMI_WATCHDOG
++#if defined(ARCH_HAS_NMI_WATCHDOG) || defined(CONFIG_HARDLOCKUP_DETECTOR)
+ #include <asm/nmi.h>
+ extern void touch_nmi_watchdog(void);
+ #else
+-#ifndef CONFIG_HARDLOCKUP_DETECTOR
+ static inline void touch_nmi_watchdog(void)
+ {
+ 	touch_softlockup_watchdog();
+ }
+-#else
+-extern void touch_nmi_watchdog(void);
+-#endif
+ #endif
+ 
+ /*
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 28b42b9..2d05adb 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -173,7 +173,8 @@ config LOCKUP_DETECTOR
+ 	  An NMI is generated every 60 seconds or so to check for hardlockups.
+ 
+ config HARDLOCKUP_DETECTOR
+-	def_bool LOCKUP_DETECTOR && PERF_EVENTS && HAVE_PERF_EVENTS_NMI
++	def_bool LOCKUP_DETECTOR && PERF_EVENTS && HAVE_PERF_EVENTS_NMI && \
++		 !ARCH_HAS_NMI_WATCHDOG
+ 
+ config BOOTPARAM_SOFTLOCKUP_PANIC
+ 	bool "Panic (Reboot) On Soft Lockups"
+-- 
+1.7.3.2
+
