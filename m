@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab0LVOdS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 09:33:18 -0500
-Received: from casper.infradead.org ([85.118.1.10]:45303 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752437Ab0LVOdR (ORCPT
+	id S1752992Ab0LVOhI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 09:37:08 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50071 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038Ab0LVOhG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 09:33:17 -0500
-Date: Wed, 22 Dec 2010 12:32:58 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH -tip 2/4] [BUGFIX]perf: Fix strlist__parse_list to handle
- const string
-Message-ID: <20101222143258.GA32740@ghostprotocols.net>
-References: <20101217131149.24123.96128.stgit@ltc236.sdl.hitachi.co.jp>
- <20101217131206.24123.87394.stgit@ltc236.sdl.hitachi.co.jp>
- <20101221182321.GA15683@ghostprotocols.net>
- <4D118543.3040007@hitachi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D118543.3040007@hitachi.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 22 Dec 2010 09:37:06 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=jgYaxNcrgoV482AO3OkSBOV0B2UVuQL9E444wKEgc9xKvRiMSbRci2bjxHuBNkvBVb
+         MuJLGzuehB46jxRdht8fGYfOmIFsQ1Kjfrk60VEZ123xDnJ6eJxVfrMsEUIJIaa8Ah/V
+         iIBRDLRuRXpRZB/FtTYM5+wFZYHqO8uFeeHQI=
+Subject: Re: [PATCH] tcp: use RTAX_CWND for outgoing connections properly
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Vojtech Pavlik <vojtech@suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1012221506500.16569@pobox.suse.cz>
+References: <alpine.LNX.2.00.1012172310400.16569@pobox.suse.cz>
+	 <alpine.LNX.2.00.1012221059340.16569@pobox.suse.cz>
+	 <1293017383.3027.75.camel@edumazet-laptop>
+	 <alpine.LNX.2.00.1012221231450.16569@pobox.suse.cz>
+	 <alpine.LNX.2.00.1012221506500.16569@pobox.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Dec 2010 15:37:01 +0100
+Message-ID: <1293028621.3027.129.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Dec 22, 2010 at 01:57:39PM +0900, Masami Hiramatsu escreveu:
-> (2010/12/22 3:23), Arnaldo Carvalho de Melo wrote:
-> > Em Fri, Dec 17, 2010 at 10:12:06PM +0900, Masami Hiramatsu escreveu:
-> > Wouldn't be better to just stop changing the string by passing the
-> > length to strlist__parse_list_entry, etc?
+Le mercredi 22 décembre 2010 à 15:07 +0100, Jiri Kosina a écrit :
+
 > 
-> Yeah, it could be, but in that case, we need changing code
-> wider.
-> I think this is the simplest solution. :)
-
-Ok, I'll try to fix it as I suggested, it it turns out difficult I'll
-apply the minimal fix.
- 
-> (Of course, we have to check dupstr flag on top of strlist__load too.)
+> OK, so current vanilla (not even net-next needed) seems to correctly 
+> handle initcwnd value and sends as many packets as fit into it, instead of 
+> waiting after one or two MSS-sized packets. So someone already fixed it 
+> in some other way apparently. Sorry for the noise.
 > 
-> Thank you,
 
-You're welcome,
+Indeed ;)
 
-- Arnaldo
+net-next was necessary at least for the other side, so that its SYNACK
+packet advertizes a large enough window ;)
+
+
+
