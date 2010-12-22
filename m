@@ -1,298 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276Ab0LVL3o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 06:29:44 -0500
-Received: from hera.kernel.org ([140.211.167.34]:34637 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751427Ab0LVL3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 06:29:42 -0500
-Date: Wed, 22 Dec 2010 11:29:07 GMT
-From: tip-bot for Ian Munsie <imunsie@au1.ibm.com>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@redhat.com, peterz@infradead.org, imunsie@au1.ibm.com,
-        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, fweisbec@gmail.com, peterz@infradead.org,
-        tglx@linutronix.de, imunsie@au1.ibm.com, mingo@elte.hu
-In-Reply-To: <1291951882-sup-6069@au1.ibm.com>
-References: <1291951882-sup-6069@au1.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf session: Fallback to unordered processing if no sample_id_all
-Message-ID: <tip-21ef97f05a7da5bc23b26cb34d6746f83ca9bf20@git.kernel.org>
-Git-Commit-ID: 21ef97f05a7da5bc23b26cb34d6746f83ca9bf20
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 22 Dec 2010 11:29:08 +0000 (UTC)
+	id S1752328Ab0LVL3u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 06:29:50 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60640 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752125Ab0LVL3s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 06:29:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=XSOFwnXFG9+NsWas/bR6M2M1YWfLUNtBgVVm5yTacbWtkXdTARPvv1gy7YH+rtmThb
+         ROrEn59tEt5rzCvnC26k8jQxM7Mhz7KYHchx2OpN0VQxxe8nXVGk5ofuMGx7e39iWGxe
+         MaUuBl/RaUamZijqI3iIYob240RB123DPiDmg=
+Subject: Re: [PATCH] tcp: use RTAX_CWND for outgoing connections properly
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Vojtech Pavlik <vojtech@suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1012221059340.16569@pobox.suse.cz>
+References: <alpine.LNX.2.00.1012172310400.16569@pobox.suse.cz>
+	 <alpine.LNX.2.00.1012221059340.16569@pobox.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Dec 2010 12:29:43 +0100
+Message-ID: <1293017383.3027.75.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  21ef97f05a7da5bc23b26cb34d6746f83ca9bf20
-Gitweb:     http://git.kernel.org/tip/21ef97f05a7da5bc23b26cb34d6746f83ca9bf20
-Author:     Ian Munsie <imunsie@au1.ibm.com>
-AuthorDate: Fri, 10 Dec 2010 14:09:16 +1100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 21 Dec 2010 20:17:51 -0200
+Le mercredi 22 décembre 2010 à 11:00 +0100, Jiri Kosina a écrit :
+> On Fri, 17 Dec 2010, Jiri Kosina wrote:
+> 
+> > For outgoing connections, the initial value of cwnd is always set to 2 (in 
+> > tcp_v4_init_sock()) regardless of setting of RTAX_CWND. For incoming 
+> > connections, this is handled properly in tcp_init_metrics().
+> > 
+> > As a result of this, Linux TCP stack always uses cwnd == 2 at the beginning of
+> > outgoing TCP session (i.e. waits for ACK after 2 packets once the connection
+> > has been established) and grows it in accordance with slow-start algorithm
+> > only after it receives ACK for first two packets.
+> > 
+> > When slow-start triggers later during the connection (e.g. after idle), 
+> > cwnd is properly re-initialized to RTAX_CWND value (if specified) through 
+> > tcp_cwnd_restart() -> tcp_init_cwnd().
+> > 
+> > Initialize tp->snd_cwnd properly so that RTAX_CWND value is being used 
+> > also in the slow-start phase for the first packets in the connection.
+> 
+> This should of course read RTAX_INITCWND instead of RTAX_CWND in the whole 
+> changelog, sorry.
+> 
+> Besides that, any comments on this, please?
+> 
 
-perf session: Fallback to unordered processing if no sample_id_all
+Its a bit strange, here is what I have with two net-next-2.6 machines
+(without your patch)
 
-If we are running the new perf on an old kernel without support for
-sample_id_all, we should fall back to the old unordered processing of
-events. If we didn't than we would *always* process events without
-timestamps out of order, whether or not we hit a reordering race. In
-other words, instead of there being a chance of not attributing samples
-correctly, we would guarantee that samples would not be attributed.
+192.168.20.0/24 dev eth1  scope link  initcwnd 10
 
-While processing all events without timestamps before events with
-timestamps may seem like an intuitive solution, it falls down as
-PERF_RECORD_EXIT events would also be processed before any samples.
-Even with a workaround for that case, samples before/after an exec would
-not be attributed correctly.
+12:13:46.855786 IP 192.168.20.110.39146 > 192.168.20.108.59636: S 1615862982:1615862982(0) win 14600 <mss 1460,sackOK,timestamp 277530 0,nop,wscale 8>
+12:13:46.855807 IP 192.168.20.108.59636 > 192.168.20.110.39146: S 1603053412:1603053412(0) ack 1615862983 win 14480 <mss 1460,sackOK,timestamp 744840 277530,nop,wscale 7>
+12:13:46.855878 IP 192.168.20.110.39146 > 192.168.20.108.59636: . ack 1 win 58 <nop,nop,timestamp 277530 744840>
+12:13:46.856779 IP 192.168.20.110.39146 > 192.168.20.108.59636: P 1:14481(14480) ack 1 win 58 <nop,nop,timestamp 277530 744840>
+12:13:46.856794 IP 192.168.20.108.59636 > 192.168.20.110.39146: . ack 14481 win 136 <nop,nop,timestamp 744841 277530>
+12:13:46.856901 IP 192.168.20.110.39146 > 192.168.20.108.59636: . 14481:15929(1448) ack 1 win 58 <nop,nop,timestamp 277531 744841>
+12:13:46.856912 IP 192.168.20.108.59636 > 192.168.20.110.39146: . ack 15929 win 159 <nop,nop,timestamp 744841 277531>
+12:13:46.856930 IP 192.168.20.110.39146 > 192.168.20.108.59636: . 15929:18825(2896) ack 1 win 58 <nop,nop,timestamp 277531 744841>
 
-This patch allows commands to indicate whether they need to fall back to
-unordered processing, so that commands that do not care about timestamps
-on every event will not be affected. If we do fallback, this will print
-out a warning if report -D was invoked.
 
-This patch adds the test in perf_session__new so that we only need to
-test once per session. Commands that do not use an event_ops (such as
-record and top) can simply pass NULL in it's place.
+We can see 192.168.20.110 sends 14480 bytes in its first frame.
 
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-LKML-Reference: <1291951882-sup-6069@au1.ibm.com>
-Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-annotate.c     |    2 +-
- tools/perf/builtin-buildid-list.c |    3 ++-
- tools/perf/builtin-diff.c         |    4 ++--
- tools/perf/builtin-inject.c       |    2 +-
- tools/perf/builtin-kmem.c         |    3 ++-
- tools/perf/builtin-lock.c         |    2 +-
- tools/perf/builtin-record.c       |    2 +-
- tools/perf/builtin-report.c       |    2 +-
- tools/perf/builtin-sched.c        |    3 ++-
- tools/perf/builtin-script.c       |    2 +-
- tools/perf/builtin-timechart.c    |    3 ++-
- tools/perf/builtin-top.c          |    2 +-
- tools/perf/util/session.c         |   11 ++++++++++-
- tools/perf/util/session.h         |    5 ++++-
- 14 files changed, 31 insertions(+), 15 deletions(-)
+Are you sure your patch still needed after commit 356f039822b8d802138f
+(TCP: increase default initial receive window.)
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 569a276..48dbab4 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -382,7 +382,7 @@ static int __cmd_annotate(void)
- 	int ret;
- 	struct perf_session *session;
- 
--	session = perf_session__new(input_name, O_RDONLY, force, false);
-+	session = perf_session__new(input_name, O_RDONLY, force, false, &event_ops);
- 	if (session == NULL)
- 		return -ENOMEM;
- 
-diff --git a/tools/perf/builtin-buildid-list.c b/tools/perf/builtin-buildid-list.c
-index 44a47e1..3b06f9c 100644
---- a/tools/perf/builtin-buildid-list.c
-+++ b/tools/perf/builtin-buildid-list.c
-@@ -39,7 +39,8 @@ static int __cmd_buildid_list(void)
- 	int err = -1;
- 	struct perf_session *session;
- 
--	session = perf_session__new(input_name, O_RDONLY, force, false);
-+	session = perf_session__new(input_name, O_RDONLY, force, false,
-+				    &build_id__mark_dso_hit_ops);
- 	if (session == NULL)
- 		return -1;
- 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 5e1a043..af84e1c 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -142,8 +142,8 @@ static int __cmd_diff(void)
- 	int ret, i;
- 	struct perf_session *session[2];
- 
--	session[0] = perf_session__new(input_old, O_RDONLY, force, false);
--	session[1] = perf_session__new(input_new, O_RDONLY, force, false);
-+	session[0] = perf_session__new(input_old, O_RDONLY, force, false, &event_ops);
-+	session[1] = perf_session__new(input_new, O_RDONLY, force, false, &event_ops);
- 	if (session[0] == NULL || session[1] == NULL)
- 		return -ENOMEM;
- 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 4b66b85..0c78ffa 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -196,7 +196,7 @@ static int __cmd_inject(void)
- 		inject_ops.tracing_data	= event__repipe_tracing_data;
- 	}
- 
--	session = perf_session__new(input_name, O_RDONLY, false, true);
-+	session = perf_session__new(input_name, O_RDONLY, false, true, &inject_ops);
- 	if (session == NULL)
- 		return -ENOMEM;
- 
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index c9620ff..def7ddc 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -481,7 +481,8 @@ static void sort_result(void)
- static int __cmd_kmem(void)
- {
- 	int err = -EINVAL;
--	struct perf_session *session = perf_session__new(input_name, O_RDONLY, 0, false);
-+	struct perf_session *session = perf_session__new(input_name, O_RDONLY,
-+							 0, false, &event_ops);
- 	if (session == NULL)
- 		return -ENOMEM;
- 
-diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-index b41b449..b9c6e54 100644
---- a/tools/perf/builtin-lock.c
-+++ b/tools/perf/builtin-lock.c
-@@ -858,7 +858,7 @@ static struct perf_event_ops eops = {
- 
- static int read_events(void)
- {
--	session = perf_session__new(input_name, O_RDONLY, 0, false);
-+	session = perf_session__new(input_name, O_RDONLY, 0, false, &eops);
- 	if (!session)
- 		die("Initializing perf session failed\n");
- 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index e9be6ae..efd1b3c 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -572,7 +572,7 @@ static int __cmd_record(int argc, const char **argv)
- 	}
- 
- 	session = perf_session__new(output_name, O_WRONLY,
--				    write_mode == WRITE_FORCE, false);
-+				    write_mode == WRITE_FORCE, false, NULL);
- 	if (session == NULL) {
- 		pr_err("Not enough memory for reading perf file header\n");
- 		return -1;
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index b6a2a89..fd4c450 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -308,7 +308,7 @@ static int __cmd_report(void)
- 
- 	signal(SIGINT, sig_handler);
- 
--	session = perf_session__new(input_name, O_RDONLY, force, false);
-+	session = perf_session__new(input_name, O_RDONLY, force, false, &event_ops);
- 	if (session == NULL)
- 		return -ENOMEM;
- 
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index c775394..7a4ebeb 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1643,7 +1643,8 @@ static struct perf_event_ops event_ops = {
- static int read_events(void)
- {
- 	int err = -EINVAL;
--	struct perf_session *session = perf_session__new(input_name, O_RDONLY, 0, false);
-+	struct perf_session *session = perf_session__new(input_name, O_RDONLY,
-+							 0, false, &event_ops);
- 	if (session == NULL)
- 		return -ENOMEM;
- 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 54f1ea8..6ef65c0 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -779,7 +779,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
- 	if (!script_name)
- 		setup_pager();
- 
--	session = perf_session__new(input_name, O_RDONLY, 0, false);
-+	session = perf_session__new(input_name, O_RDONLY, 0, false, &event_ops);
- 	if (session == NULL)
- 		return -ENOMEM;
- 
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index d2fc461..459b5e3 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -937,7 +937,8 @@ static struct perf_event_ops event_ops = {
- 
- static int __cmd_timechart(void)
- {
--	struct perf_session *session = perf_session__new(input_name, O_RDONLY, 0, false);
-+	struct perf_session *session = perf_session__new(input_name, O_RDONLY,
-+							 0, false, &event_ops);
- 	int ret = -EINVAL;
- 
- 	if (session == NULL)
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 0515ce9..ae15f04 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1272,7 +1272,7 @@ static int __cmd_top(void)
- 	 * FIXME: perf_session__new should allow passing a O_MMAP, so that all this
- 	 * mmap reading, etc is encapsulated in it. Use O_WRONLY for now.
- 	 */
--	struct perf_session *session = perf_session__new(NULL, O_WRONLY, false, false);
-+	struct perf_session *session = perf_session__new(NULL, O_WRONLY, false, false, NULL);
- 	if (session == NULL)
- 		return -ENOMEM;
- 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index b59abf5..0f7e544 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -125,7 +125,9 @@ static void perf_session__destroy_kernel_maps(struct perf_session *self)
- 	machines__destroy_guest_kernel_maps(&self->machines);
- }
- 
--struct perf_session *perf_session__new(const char *filename, int mode, bool force, bool repipe)
-+struct perf_session *perf_session__new(const char *filename, int mode,
-+				       bool force, bool repipe,
-+				       struct perf_event_ops *ops)
- {
- 	size_t len = filename ? strlen(filename) + 1 : 0;
- 	struct perf_session *self = zalloc(sizeof(*self) + len);
-@@ -170,6 +172,13 @@ struct perf_session *perf_session__new(const char *filename, int mode, bool forc
- 	}
- 
- 	perf_session__update_sample_type(self);
-+
-+	if (ops && ops->ordering_requires_timestamps &&
-+	    ops->ordered_samples && !self->sample_id_all) {
-+		dump_printf("WARNING: No sample_id_all support, falling back to unordered processing\n");
-+		ops->ordered_samples = false;
-+	}
-+
- out:
- 	return self;
- out_free:
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index ac36f99..ffe4b98 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -78,9 +78,12 @@ struct perf_event_ops {
- 			build_id;
- 	event_op2	finished_round;
- 	bool		ordered_samples;
-+	bool		ordering_requires_timestamps;
- };
- 
--struct perf_session *perf_session__new(const char *filename, int mode, bool force, bool repipe);
-+struct perf_session *perf_session__new(const char *filename, int mode,
-+				       bool force, bool repipe,
-+				       struct perf_event_ops *ops);
- void perf_session__delete(struct perf_session *self);
- 
- void perf_event_header__bswap(struct perf_event_header *self);
+
+
