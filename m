@@ -1,96 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601Ab0LVMkq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 07:40:46 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:55591 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751417Ab0LVMko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 07:40:44 -0500
-Date: Wed, 22 Dec 2010 13:40:19 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: mat <castet.matthieu@free.fr>
-Cc: Kees Cook <kees.cook@canonical.com>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-next@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
-        James Morris <jmorris@namei.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
-        Siarhei Liakh <sliakh.lkml@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 3/3 V13] RO/NX protection for loadable kernel
-Message-ID: <20101222124019.GG10809@elte.hu>
-References: <4CE2F914.9070106@free.fr>
- <24422.1290656467@localhost>
- <20101126182355.62615dff@mat-laptop>
- <20101208221951.GO5750@outflux.net>
- <20101211001857.4c5e0794@mat-laptop>
+	id S1752813Ab0LVMlG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 07:41:06 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60411 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417Ab0LVMlF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 07:41:05 -0500
+Date: Wed, 22 Dec 2010 12:41:03 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: dd diasemi <dd.diasemi@gmail.com>
+Cc: sameo@openedhand.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 1/11] MFD: MFD module of DA9052 device driver
+Message-ID: <20101222124102.GC4520@sirena.org.uk>
+References: <AANLkTinkj4uYG1sFCGRypa4z=Neyj6jOsy+OL91eunpz@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101211001857.4c5e0794@mat-laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <AANLkTinkj4uYG1sFCGRypa4z=Neyj6jOsy+OL91eunpz@mail.gmail.com>
+X-Cookie: Yow!  Now we can become alcoholics!
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 21, 2010 at 07:00:56PM +0100, dd diasemi wrote:
 
-* mat <castet.matthieu@free.fr> wrote:
+> Changes made since last submission:
+> . single kernel image for SPI and I2C connectivities.
+> . equal priorites for all DA9052 PMIC device events.
+> . semaphore protection for event notification. note usage of mutex
+> yields undesirable effects at run time.
+> . masked events are not processed.
 
-> Le Wed, 8 Dec 2010 14:19:51 -0800,
-> Kees Cook <kees.cook@canonical.com> a écrit :
-> 
-> > On Fri, Nov 26, 2010 at 06:23:55PM +0100, mat wrote:
-> > > could you try the attached patch ?
-> > > 
-> > > on module load, we sort the __jump_table section. So we should make
-> > > it writable.
-> > > 
-> > > 
-> > > Matthieu
-> > 
-> > > diff --git a/arch/x86/include/asm/jump_label.h
-> > > b/arch/x86/include/asm/jump_label.h index f52d42e..574dbc2 100644
-> > > --- a/arch/x86/include/asm/jump_label.h
-> > > +++ b/arch/x86/include/asm/jump_label.h
-> > > @@ -14,7 +14,7 @@
-> > >  	do
-> > > {							\ asm
-> > > goto("1:"					\
-> > > JUMP_LABEL_INITIAL_NOP			\
-> > > -			".pushsection __jump_table,  \"a\" \n\t"\
-> > > +			".pushsection __jump_table,  \"aw\" \n\t"\
-> > >  			_ASM_PTR "1b, %l[" #label "], %c0 \n\t" \
-> > >  			".popsection \n\t"			\
-> > >  			: :  "i" (key) :  : label);
-> > > \
-> > 
-> > Acked-by: Kees Cook <kees.cook@canonical.com>
-> > 
-> > Can this please get committed to tip?
-> I think it is not need anymore with  Steven Rostedt patch [1]
-> 
-> Matthieu
-> 
-> [1]
-> > > Here we set the text read only before we call the notifiers. The
-> > > function tracer changes the calls to mcount into nops via a notifier
-> > > call so this must be done after the module notifiers.
+> Linux Kernel Version: 2.6.34
 
-What's the status of this bug?
+Standard comments for your patch series: *always* submit against current
+kernel versions and always try to address review comments.  Many of the
+things I'm identifying below are very familiar.  The below comments are
+pretty terse due to the repitition - please refer to previous reviews
+for more detail.
 
-If we still need the patch then please submit it standalone with a proper subject 
-line, with acks/signoffs added, etc.
+> +struct da9052_eh_nb eve_nb_array[EVE_CNT];
+> +static struct da9052_ssc_ops ssc_ops;
+> +struct mutex manconv_lock;
+> +static struct semaphore eve_nb_array_lock;
 
-Thanks,
+These globals look suspicious...
 
-	Ingo
+> +int da9052_ssc_write(struct da9052 *da9052, struct da9052_ssc_msg *sscmsg)
+> +{
+> +	int ret = 0;
+> +
+> +	if ((sscmsg->addr < DA9052_PAGE0_REG_START) ||
+> +	(sscmsg->addr > DA9052_PAGE1_REG_END) ||
+> +	((sscmsg->addr > DA9052_PAGE0_REG_END) &&
+> +	(sscmsg->addr < DA9052_PAGE1_REG_START)))
+> +		return INVALID_REGISTER;
+
+Use standard error codes and check your indentation.
+
+> +static irqreturn_t da9052_eh_isr(int irq, void *dev_id)
+> +{
+> +	struct da9052 *da9052 = dev_id;
+> +	schedule_work(&da9052->eh_isr_work);
+> +	disable_irq_nosync(DA9052_IRQ);
+> +	return IRQ_HANDLED;
+> +}
+
+Use a threaded IRQ rather than open coding one with a workqueue.
+
+> +int eh_register_nb(struct da9052 *da9052, struct da9052_eh_nb *nb)
+> +{
+> +
+
+Rather than implementing a custom IRQ infrastructure you should use the
+genirq core to handle interrupts.
+
+> +	udelay(50);
+> +	enable_irq(DA9052_IRQ);
+
+The IRQ number used is another thing that should be hanled in a board
+specific fashion.  The I2C and SPI frameworks both provide standard
+features to pass IRQs to drivers.
+
+> +MODULE_AUTHOR("Dialog Semiconductor Ltd <dchen@diasemi.com>");
+> +MODULE_DESCRIPTION("I2C driver for Dialog DA9052 PMIC");
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_ALIAS("platform:" DA9052_SSC_I2C_DEVICE_NAME);
+
+Your I2C driver isn't a platform device...
+
+> +MODULE_AUTHOR("Dialog Semiconductor Ltd <dchen@diasemi.com>");
+> +MODULE_DESCRIPTION("SPI driver for Dialog DA9052 PMIC");
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_ALIAS("platform:" DA9052_SSC_SPI_DEVICE_NAME);
+
+...nor is your SPI driver.
+
+> +config PMIC_DA9052
+> +	tristate "Dialog DA9052 with SPI/I2C"
+> +	depends on SPI_MASTER=y
+> +	depends on I2C=y
+> +	select MFD_CORE
+
+This is going to force both I2C and SPI to be built in if the driver is
+enabled, even though only one is likely to be used in a given system and
+the driver itself supports modular operation.
+
+> +#ifeq ($(CONFIG_PMIC_DA9052),y)
+> +da9052-objs			:= da9052-spi.o da9052-i2c.o da9052-core.o
+> +obj-$(CONFIG_PMIC_DA9052)	+= da9052.o
+> +#endif
+
+This ifeq doesn't seem consistent with the above Kconfig...
+
+> +
+> +#define SPI 1
+> +#define I2C 2
+
+Namespacing...
+
+> +/* Configure the DA9052 IRQ as per the BSP */
+> +#define DA9052_IRQ	9
+
+Should be supplied via the bus.
+
+> +/* Module specific error codes */
+> +#define INVALID_REGISTER		2
+> +#define INVALID_READ			3
+> +#define INVALID_PAGE			4
+
+Don't define your own error codes, use standard ones.
+
+> +/* Defines for Volatile and Non Volatile register types */
+> +#define VOLATILE			0
+> +#define NON_VOLATILE			1
+> +
+> +/* Defines for cache state */
+> +#define VALID				0
+> +#define INVALID				1
+
+Namespacing.  There's lots of other things with this issue in the rest
+of the code.
