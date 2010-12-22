@@ -1,109 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834Ab0LVP0c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 10:26:32 -0500
-Received: from mail-bw0-f67.google.com ([209.85.214.67]:64359 "EHLO
-	mail-bw0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753803Ab0LVP03 (ORCPT
+	id S1753798Ab0LVP0Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 10:26:25 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:57132 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753501Ab0LVP0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 10:26:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=TckiZl5JoeTuDuuTCxhIE59z3BmFw63GZVEM74CDuUtReEBX0Dkpa7/gpouNLexaIB
-         MWHMoxc8rspxiIbhZXTtvQ6tBoA+vHMiN/K4maAzja1azcJ7mMDV5xpf5ps4a/4hLZKQ
-         e+XTUcnhQrPm53gQTVi+8k0D7Ess4W50+vp10=
-Date: Wed, 22 Dec 2010 16:26:21 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
-        jan.kratochvil@redhat.com
-Subject: Re: [PATCH 12/16] ptrace: make group stop notification reliable
- against ptrace
-Message-ID: <20101222152621.GD8061@htj.dyndns.org>
-References: <1291654624-6230-1-git-send-email-tj@kernel.org>
- <1291654624-6230-13-git-send-email-tj@kernel.org>
- <20101220173425.GA18070@redhat.com>
- <20101221174319.GH13285@htj.dyndns.org>
- <20101222115409.GB30266@redhat.com>
+	Wed, 22 Dec 2010 10:26:23 -0500
+Message-ID: <4D12189E.8000007@vlnb.net>
+Date: Wed, 22 Dec 2010 18:26:22 +0300
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101222115409.GB30266@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: James Bottomley <James.Bottomley@suse.de>
+CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        "Patil, Kiran" <kiran.patil@intel.com>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Boaz Harrosh <bharrosh@panasas.com>,
+        Joe Eykholt <jeykholt@cisco.com>, "J.H." <warthog9@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Bart Van Assche <bart.vanassche@gmail.com>,
+        scst-devel <scst-devel@lists.sourceforge.net>
+Subject: Re: [ANNOUNCE] TCM/LIO v4.0.0-rc6 for 2.6.37-rc6
+References: <1292557664.31461.68.camel@haakon2.linux-iscsi.org>	 <1292599364.2820.21.camel@mulgrave.site>  <4D0B8975.1040206@vlnb.net>	 <1292602908.2820.41.camel@mulgrave.site>  <4D0BBE40.6030000@vlnb.net>	 <1292617658.2820.80.camel@mulgrave.site>  <4D0BD79B.2010600@vlnb.net>	 <1292628398.16209.25.camel@mulgrave.site>  <4D0CD04E.30806@vlnb.net> <1292690462.16209.54.camel@mulgrave.site>
+In-Reply-To: <1292690462.16209.54.camel@mulgrave.site>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:z6UiuGMUHSFn9RzXjVQYdmX5/dEJsErZ01WUxB1wT1Y
+ S6pdddR1t2pAz6Pzi+UUjPUlqBnng5bn/E6m+iNT7EpnOgLAV7
+ mALfxg7HC3mKQg/59CR1bMMxTjODfsMF5tjTeiilbGCyDdRZWW
+ 8ew6QGGgWHuetOW2LRAV0JkYBkcfBk/unVoge6Jqsck3H9xfPw
+ a7GPBvaLzzaHhS1wKYSqQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+James Bottomley, on 12/18/2010 07:41 PM wrote:
+> This is a slightly prismatic view of history. Firstly, LIO had wanted
+> into the kernel from way back in the PyX days and secondly, both code
+> bases (LIO and STGT) were impenetrably dense, had unacceptable /proc
+> interfaces plus a whole host of other nasties. The decision to choose a
+> smaller (by an order of magnitutde) and more flexible implementation
+> that was in accord with all of the basic Linux necessities was a pretty
+> obvious one.
 
-On Wed, Dec 22, 2010 at 12:54:09PM +0100, Oleg Nesterov wrote:
-> On 12/21, Tejun Heo wrote:
-> > I see.  My focus was to make ptrace attach/detach transparent.  IOW,
-> > minimizing the effect of a debugger (or gcore or whatever) attaching
-> > and then leaving.  So, this patch just makes sure that the
-> > notification isn't absorbed by a ptracer.
+Sorry, James, but your view is even more prismatic.
+
+On the PyX days LIO didn't even exist. Those days it was an iSCSI target
+and only iSCSI target, like IET, without any sign of be generic and
+support other transports.
+
+Regarding "dense" SCST code. This is exactly what I meant writing that
+for me apparent that reviewers were not fully understanding the tasks
+SCST was solving. If you don't understand tasks to solve, code solving
+them would be terribly hard to read, correct? For instance, if a person
+believes that for pass-through the only needed is to pass incoming
+requests to backend SCSI hardware and responses from it to the sender,
+for him code emulating multi-nexus functionality by intercepting
+requests and responses would look like a huge overkill and impenetrably
+dense to read.
+
+Regarding unacceptable /proc interface. LIO still has it, but it doesn't
+prevent you accepting it. Several days passed since we pointed on it,
+but you have not requested to remove it.
+
+Regarding the "host of other nasties". Nobody ever reported them. Maybe,
+they didn't exist?
+
+>> Then suddenly NicholasB appeared with his LIO and suddenly what I was
+>> writing for years was acknowledged correct: STGT isn't good enough and
+>> must be replaced by the fully in-kernel approach.
 > 
-> Agreed. And the code itself certainly becomes correct/consistent,
-> contrary to "everything is broken" we currently have.
-> 
-> Tejun, I'll try to summarize my (very foggy) concerns in a separate
-> email. Don't get me wrong, I think this series rightly addresses the
-> numerous problems we have. My only question is, can't we go a bit
-> further and create the new (and simple) rules. Probably not.
+> I'm not sure where you read that.  I said, for performance, adding
+> in-kernel components to STGT would be OK ... keeping the user space
+> flexibility is still equally (or more) important.
 
-Yeah, definitely, if we're gonna make some userland visible changes,
-let's get it right once and for all (at least in terms of the intended
-behaviors, that is).  It's sure gonna take more work but I think it'll
-be manageable both in terms of the required effort and implementation
-complexity.  Well, actually, in terms of the latter, I think we're
-likely to improve the situation by making the rules and intentions
-clear.
+Well, the fact is that LIO and SCST have fundamentally the same
+architecture (LIO is just a worsened SCST several years back), so
+accepting LIO now you are confirming that SCST should have been accepted
+instead of STGT years ago.
 
-> > > > @@ -1901,21 +1925,12 @@ retry:
-> > > >  	__set_current_state(TASK_STOPPED);
-> > > >
-> > > >  	if (likely(!task_ptrace(current))) {
-> > > > -		int notify = 0;
-> > > > -
-> > > > -		/*
-> > > > -		 * If there are no other threads in the group, or if there
-> > > > -		 * is a group stop in progress and we are the last to stop,
-> > > > -		 * report to the parent.
-> > > > -		 */
-> > > > -		if (task_participate_group_stop(current))
-> > > > -			notify = CLD_STOPPED;
-> > > > -
-> > > > +		task_participate_group_stop(current);
-> > > >  		spin_unlock_irq(&current->sighand->siglock);
-> > > >
-> > > > -		if (notify) {
-> > > > +		if (sig->flags & SIGNAL_NOTIFY_STOP) {
-> > > >  			read_lock(&tasklist_lock);
-> > > > -			do_notify_parent_cldstop(current, notify);
-> > > > +			do_notify_parent_cldstop(current, CLD_STOPPED);
-> > >
-> > > Suppose that debugger attaches right after spin_unlock(->siglock).
-> > >
-> > > Nothing really bad can happen afaics, but in this case the debugger
-> > > will be notified twice. Hmm. If the debugger does do_wait() immediately
-> > > after the first notification, it has all rights to see the stopped
-> > > tracee but wait_task_stopped() fails, not good.
-> >
-> > Hmmm?  ptrace_attach() can't happen while tasklist_lock is held.
-> 
-> Sure, but is is not held after we drop ->siglock. And ptrace_attach() can
-> happen in the window before we take it for do_notify_parent_cldstop().
+Let's summarize what we have for people not fully following our discussion.
 
-I thought the code snippet was from inside do_notify_parent_cldstop()
-for some reason.  Okay, so the debugger can attach there
-and... hmmm... right.  Yeah, the debugger gets the extra notification.
-I don't think the previous code fared any better tho.  Anyways, I'll
-think about how to fix this.
+1. Linux kernel is believed to be a place gathering the best code and
+the best talents. New people believe that if they do the best writing
+the best code, it will be appreciated.
 
-Thanks.
+2. Choosing target mode subsystem you declare that neither code quality,
+nor advance of implementation, nor features set, nor users base, nor
+community size are important for you, hence considered. You believe that
+everything can be implemented somewhen in the future. What to do users
+while what they need not implemented yet is outside of scope of your
+consideration.
 
--- 
-tejun
+3. The only thing matters for you is personality of who submitted the
+code. Namely, you like Nicholas A. Bellinger and have chosen him. Hence,
+you have chosen LIO. (BTW, rumors suggest you have long standing close
+relationship with NicholasB since the PyX times at least.)
+
+4. What was strong requirements few years ago against SCST (no /proc
+interface and must have user space backend) for LIO not required. You
+can accept it without those requirements satisfied.
+
+5. To make your decision legitimate on the closed invitation-only
+storage summit, where there were only people you control and nobody from
+the SCST community, those people voted for LIO.
+
+No other result could be expected, because, for instance, Mike Christie
+clearly specified in https://bugzilla.redhat.com/show_bug.cgi?id=592147
+that he will choose whatever you choose.
+
+Another key person you are referring to, FUJITA Tomonori, also many
+times has written that he will do only what you approve to do.
+
+Who else voted for LIO?
+
+6. Now you are referring on that as it was not your decision. Your
+community decided it for you.
+
+James, doesn't it smell fishy?
+
+All those instead of an OPEN and FAIR comparison of all aspects of
+subsystems to choose the best one.
+
+Sorry, but the next logical step would be merge into the kernel for sale?
+
+Vlad
+
+P.S. Regarding personality of Nicholas A. Bellinger and methods he is
+considering acceptable. Page
+http://www.linux-iscsi.org/index.php/Main_Page is the most crying
+deliberate lie about SCST I've ever seen.
+
+Particularly statement: "SCST [...] is an improved version of IET. It
+has been developed by a team in Russia and has made Linux usable as an
+IP storage operating system."
+
+At first, SCST has no relation to IET. At all. NicholasB has been
+following SCST development sufficiently long to know that IET-derived
+iSCSI-SCST target driver was added relatively recently when SCST already
+well working with other target drivers (qla2x00t and ib_srpt, for instance).
+
+Second, I'm the only person from Russia in the SCST community. This is
+obvious from scst-devel@ mailing list on which NicholasB has been
+subscribed for many years. Moreover, for what is mentioning nationality
+in this context at all? Attempt to negatively affect SCST by exploiting
+not too good image Russia has at the moment in some Western countries?
+
+Third, SCST "makes Linux usable" as ANY SCSI-speaking storage, including
+Fibre Channel, SAS, etc. NicholasB knows it very well.
+
+It's also very nice to see on that page SCST declared "legacy" :).
+
+Regarding the comparison page, it has always been inaccurate about SCST
+and always in the direction to discredit it. Everybody are people and
+everybody make mistakes. But if attempts to point out on them ignored,
+mistakes become deliberate cheating. I several times e-mailed NicholasB
+explaining those mistakes, but all the times my messages were ignored. I
+also was blocked sending messages to the LIO mailing list. (Correct
+values for the comparison page you can find on
+http://scst.sourceforge.net/comparison.html page).
+
+Such cheating attempts to discredit SCST we have been constantly feeling
+since we first time heard NicholasB's name.
+
+Thus, James apparently thinks that the kernel community is too purified,
+so it will be good to add to it some sense of undercover intrigues to
+make it closer to real life ;)
+
+
