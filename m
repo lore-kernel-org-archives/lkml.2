@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691Ab0LVRSP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 12:18:15 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:18307 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081Ab0LVRSN (ORCPT
+	id S1753609Ab0LVSEg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 13:04:36 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:35791 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752547Ab0LVSEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 12:18:13 -0500
-Date: Wed, 22 Dec 2010 09:17:51 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: tapio.vihuri@nokia.com
-Cc: dmitry.torokhov@gmail.com, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, ilkka.koskinen@nokia.com,
-        samu.p.onkalo@nokia.com
-Subject: Re: [PATCH 2/3] ECI: introducing ECI bus driver
-Message-Id: <20101222091751.10009e90.randy.dunlap@oracle.com>
-In-Reply-To: <1293020435-5680-3-git-send-email-tapio.vihuri@nokia.com>
-References: <1293020435-5680-1-git-send-email-tapio.vihuri@nokia.com>
-	<1293020435-5680-2-git-send-email-tapio.vihuri@nokia.com>
-	<1293020435-5680-3-git-send-email-tapio.vihuri@nokia.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 22 Dec 2010 13:04:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=hMHGRrxzlPWU4ccXAKpVSrwjwjzaMUj2FI7ajYFWK8/pdkvWH1z3ffpfVj5SpqSzwe
+         ta68XRJA9SScPW5UbmcMS/Uo/iE8IUMIeBp9p2RFLuJQeNzSud723vfCwRfZ1+APL3hf
+         E4I+gEl7/1jgzQvk7RiJQeNtDfa1Xw8NpgDeM=
+Date: Wed, 22 Dec 2010 19:04:30 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Reiserfs deadlock in  2.6.36
+Message-ID: <20101222180428.GD1739@nowhere>
+References: <201011181650.00152.roucaries.bastien@gmail.com>
+ <20101202174328.GA1750@nowhere>
+ <201012161449.52318.roucaries.bastien@gmail.com>
+ <201012221850.51242.roucaries.bastien@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201012221850.51242.roucaries.bastien@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Dec 2010 14:20:34 +0200 tapio.vihuri@nokia.com wrote:
+On Wed, Dec 22, 2010 at 06:50:48PM +0100, Bastien ROUCARIES wrote:
+> Le jeudi 16 décembre 2010 14:49:48, Bastien ROUCARIES a écrit :
+> > Le jeudi 2 décembre 2010 18:43:32, vous avez écrit :
+> > > On Fri, Nov 26, 2010 at 05:57:05PM +0100, Bastien ROUCARIES wrote:
+> > > > Dear frederic,
+> I achieve to reproduce it. BTW it is my home partition with acl enable
 
-> From: Tapio Vihuri <tapio.vihuri@nokia.com>
-> 
-> ECI bus controller is kind of bridge between host CPU I2C and ECI accessory
-> ECI communication.
-> 
-> Signed-off-by: Tapio Vihuri <tapio.vihuri@nokia.com>
-> ---
->  drivers/Kconfig           |    2 +
->  drivers/Makefile          |    1 +
->  drivers/ecibus/Kconfig    |   46 ++++
->  drivers/ecibus/Makefile   |   10 +
->  drivers/ecibus/ecibus.c   |  583 +++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/input/eci.h |    8 +
->  6 files changed, 650 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/ecibus/Kconfig
->  create mode 100644 drivers/ecibus/Makefile
->  create mode 100644 drivers/ecibus/ecibus.c
+How do you know you reproduced it? You had a crash before using SysRq?
+Or you felt a deadlock or so?
 
+What's interesting is that report is that there is no blocked task
+that holds the reiserfs lock.
 
-ERROR: "intel_scu_ipc_iowrite8" [drivers/ecibus/ecibus.ko] undefined!
+So I really feel the problem is that someone opened the journal but did not
+release it.
 
-You must have had some kernel config enabled that I don't have enabled
-when you built this.  Please fix Kconfig files so that this won't happen.
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
-desserts:  http://www.xenotime.net/linux/recipes/
+How hard is it to reproduce now? If it's not so hard or haphazard, we should
+start a bisection. Otherwise I think we'll need to do some tracing and this
+is going to take several tries :)
