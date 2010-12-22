@@ -1,177 +1,375 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426Ab0LVL37 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 06:29:59 -0500
-Received: from hera.kernel.org ([140.211.167.34]:34660 "EHLO hera.kernel.org"
+	id S1752453Ab0LVLaI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 06:30:08 -0500
+Received: from hera.kernel.org ([140.211.167.34]:34669 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752367Ab0LVL35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 06:29:57 -0500
-Date: Wed, 22 Dec 2010 11:29:26 GMT
-From: tip-bot for Ian Munsie <imunsie@au1.ibm.com>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@redhat.com, peterz@infradead.org,
-        imunsie@au1.ibm.com, fweisbec@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, fweisbec@gmail.com,
-        peterz@infradead.org, tglx@linutronix.de, imunsie@au1.ibm.com,
-        mingo@elte.hu
-In-Reply-To: <1291872833-839-1-git-send-email-imunsie@au1.ibm.com>
-References: <1291872833-839-1-git-send-email-imunsie@au1.ibm.com>
+	id S1752205Ab0LVLaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 06:30:04 -0500
+Date: Wed, 22 Dec 2010 11:29:47 GMT
+From: tip-bot for David Ahern <daahern@cisco.com>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@redhat.com, tglx@linutronix.de, daahern@cisco.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, tglx@linutronix.de, daahern@cisco.com
+In-Reply-To: <1291926427-28846-1-git-send-email-daahern@cisco.com>
+References: <1291926427-28846-1-git-send-email-daahern@cisco.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf record,report,annotate,diff: Process events in order
-Message-ID: <tip-eac23d1c384b55e4bbb89ea9e5a6bb77fb4d1140@git.kernel.org>
-Git-Commit-ID: eac23d1c384b55e4bbb89ea9e5a6bb77fb4d1140
+Subject: [tip:perf/core] perf symbols: Add symfs option for off-box analysis using specified tree
+Message-ID: <tip-ec5761eab318e50e69fcf8e63e9edaef5949c067@git.kernel.org>
+Git-Commit-ID: ec5761eab318e50e69fcf8e63e9edaef5949c067
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 22 Dec 2010 11:29:27 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 22 Dec 2010 11:29:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  eac23d1c384b55e4bbb89ea9e5a6bb77fb4d1140
-Gitweb:     http://git.kernel.org/tip/eac23d1c384b55e4bbb89ea9e5a6bb77fb4d1140
-Author:     Ian Munsie <imunsie@au1.ibm.com>
-AuthorDate: Thu, 9 Dec 2010 16:33:53 +1100
+Commit-ID:  ec5761eab318e50e69fcf8e63e9edaef5949c067
+Gitweb:     http://git.kernel.org/tip/ec5761eab318e50e69fcf8e63e9edaef5949c067
+Author:     David Ahern <daahern@cisco.com>
+AuthorDate: Thu, 9 Dec 2010 13:27:07 -0700
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Tue, 21 Dec 2010 20:17:51 -0200
 
-perf record,report,annotate,diff: Process events in order
+perf symbols: Add symfs option for off-box analysis using specified tree
 
-This patch changes perf report to ask for the ID info on all events be
-default if recording from multiple CPUs.
+The symfs argument allows analysis of perf.data file using a locally accessible
+filesystem tree with debug symbols - e.g., tree created during image builds,
+sshfs mount, loop mounted KVM disk images, USB keys, initrds, etc. Anything
+with an OS tree can be analyzed from anywhere without the need to populate a
+local data store with build-ids.
 
-Perf report, annotate and diff will now process the events in order if
-the kernel is able to provide timestamps on all events. This ensures
-that events such as COMM and MMAP which are necessary to correctly
-interpret samples are processed prior to those samples so that they are
-attributed correctly.
+Commiter notes:
 
-Before:
- # perf record ./cachetest
- # perf report
+o Fixed up symfs="/" variants handling.
 
- # Events: 6K cycles
- #
- # Overhead  Command      Shared Object                           Symbol
- # ........  .......  .................  ...............................
- #
-     74.11%    :3259  [unknown]          [k] 0x4a6c
-      1.50%  cachetest  ld-2.11.2.so       [.] 0x1777c
-      1.46%    :3259  [kernel.kallsyms]  [k] .perf_event_mmap_ctx
-      1.25%    :3259  [kernel.kallsyms]  [k] restore
-      0.74%    :3259  [kernel.kallsyms]  [k] ._raw_spin_lock
-      0.71%    :3259  [kernel.kallsyms]  [k] .filemap_fault
-      0.66%    :3259  [kernel.kallsyms]  [k] .memset
-      0.54%  cachetest  [kernel.kallsyms]  [k] .sha_transform
-      0.54%    :3259  [kernel.kallsyms]  [k] .copy_4K_page
-      0.54%    :3259  [kernel.kallsyms]  [k] .find_get_page
-      0.52%    :3259  [kernel.kallsyms]  [k] .trace_hardirqs_off
-      0.50%    :3259  [kernel.kallsyms]  [k] .__do_fault
-<SNIP>
+o prefixed DSO__ORIG_GUEST_KMODULE case with symfs too, avoiding use of files
+  outside the symfs directory.
 
-After:
- # perf report
-
- # Events: 6K cycles
- #
- # Overhead  Command      Shared Object                           Symbol
- # ........  .......  .................  ...............................
- #
-     44.28%  cachetest  cachetest          [.] sumArrayNaive
-     22.53%  cachetest  cachetest          [.] sumArrayOptimal
-      6.59%  cachetest  ld-2.11.2.so       [.] 0x1777c
-      2.13%  cachetest  [unknown]          [k] 0x340
-      1.46%  cachetest  [kernel.kallsyms]  [k] .perf_event_mmap_ctx
-      1.25%  cachetest  [kernel.kallsyms]  [k] restore
-      0.74%  cachetest  [kernel.kallsyms]  [k] ._raw_spin_lock
-      0.71%  cachetest  [kernel.kallsyms]  [k] .filemap_fault
-      0.66%  cachetest  [kernel.kallsyms]  [k] .memset
-      0.54%  cachetest  [kernel.kallsyms]  [k] .copy_4K_page
-      0.54%  cachetest  [kernel.kallsyms]  [k] .find_get_page
-      0.54%  cachetest  [kernel.kallsyms]  [k] .sha_transform
-      0.52%  cachetest  [kernel.kallsyms]  [k] .trace_hardirqs_off
-      0.50%  cachetest  [kernel.kallsyms]  [k] .__do_fault
-<SNIP>
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-LKML-Reference: <1291872833-839-1-git-send-email-imunsie@au1.ibm.com>
-Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+LKML-Reference: <1291926427-28846-1-git-send-email-daahern@cisco.com>
+Signed-off-by: David Ahern <daahern@cisco.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-annotate.c |    2 ++
- tools/perf/builtin-diff.c     |    2 ++
- tools/perf/builtin-record.c   |    5 ++++-
- tools/perf/builtin-report.c   |    2 ++
- 4 files changed, 10 insertions(+), 1 deletions(-)
+ tools/perf/Documentation/perf-diff.txt      |    2 +
+ tools/perf/Documentation/perf-report.txt    |    3 +
+ tools/perf/Documentation/perf-timechart.txt |    2 +
+ tools/perf/builtin-diff.c                   |    2 +
+ tools/perf/builtin-report.c                 |    2 +
+ tools/perf/builtin-timechart.c              |    2 +
+ tools/perf/util/hist.c                      |   14 ++++-
+ tools/perf/util/symbol.c                    |   72 +++++++++++++++++++++------
+ tools/perf/util/symbol.h                    |    1 +
+ 9 files changed, 81 insertions(+), 19 deletions(-)
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 48dbab4..c056cdc 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -375,6 +375,8 @@ static struct perf_event_ops event_ops = {
- 	.mmap	= event__process_mmap,
- 	.comm	= event__process_comm,
- 	.fork	= event__process_task,
-+	.ordered_samples = true,
-+	.ordering_requires_timestamps = true,
- };
+diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
+index 6a9ec2b..74d7481 100644
+--- a/tools/perf/Documentation/perf-diff.txt
++++ b/tools/perf/Documentation/perf-diff.txt
+@@ -66,6 +66,8 @@ OPTIONS
+ --force::
+        Don't complain, do it.
  
- static int __cmd_annotate(void)
++--symfs=<directory>::
++        Look for files with symbols relative to this directory.
+ 
+ SEE ALSO
+ --------
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index fefea77..8ba03d6 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -116,6 +116,9 @@ OPTIONS
+ --force::
+         Don't complain, do it.
+ 
++--symfs=<directory>::
++        Look for files with symbols relative to this directory.
++
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1]
+diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
+index 4b17883..d7b79e2 100644
+--- a/tools/perf/Documentation/perf-timechart.txt
++++ b/tools/perf/Documentation/perf-timechart.txt
+@@ -38,6 +38,8 @@ OPTIONS
+ --process::
+         Select the processes to display, by name or PID
+ 
++--symfs=<directory>::
++        Look for files with symbols relative to this directory.
+ 
+ SEE ALSO
+ --------
 diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index af84e1c..97846dc 100644
+index 97846dc..3153e49 100644
 --- a/tools/perf/builtin-diff.c
 +++ b/tools/perf/builtin-diff.c
-@@ -61,6 +61,8 @@ static struct perf_event_ops event_ops = {
- 	.exit	= event__process_task,
- 	.fork	= event__process_task,
- 	.lost	= event__process_lost,
-+	.ordered_samples = true,
-+	.ordering_requires_timestamps = true,
+@@ -194,6 +194,8 @@ static const struct option options[] = {
+ 	OPT_STRING('t', "field-separator", &symbol_conf.field_sep, "separator",
+ 		   "separator for columns, no spaces will be added between "
+ 		   "columns '.' is reserved."),
++	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
++		    "Look for files with symbols relative to this directory"),
+ 	OPT_END()
  };
- 
- static void perf_session__insert_hist_entry_by_name(struct rb_root *root,
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index efd1b3c..5149e3d 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -285,7 +285,7 @@ static void create_counter(int counter, int cpu)
- 	if (system_wide)
- 		attr->sample_type	|= PERF_SAMPLE_CPU;
- 
--	if (sample_time)
-+	if (sample_time || system_wide || !no_inherit || cpu_list)
- 		attr->sample_type	|= PERF_SAMPLE_TIME;
- 
- 	if (raw_samples) {
-@@ -327,6 +327,9 @@ try_again:
- 				 * Old kernel, no attr->sample_id_type_all field
- 				 */
- 				sample_id_all_avail = false;
-+				if (!sample_time && !raw_samples)
-+					attr->sample_type &= ~PERF_SAMPLE_TIME;
-+
- 				goto retry_sample_id;
- 			}
  
 diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index fd4c450..4af7ce6 100644
+index 4af7ce6..75183a4 100644
 --- a/tools/perf/builtin-report.c
 +++ b/tools/perf/builtin-report.c
-@@ -244,6 +244,8 @@ static struct perf_event_ops event_ops = {
- 	.event_type = event__process_event_type,
- 	.tracing_data = event__process_tracing_data,
- 	.build_id = event__process_build_id,
-+	.ordered_samples = true,
-+	.ordering_requires_timestamps = true,
+@@ -483,6 +483,8 @@ static const struct option options[] = {
+ 		   "columns '.' is reserved."),
+ 	OPT_BOOLEAN('U', "hide-unresolved", &hide_unresolved,
+ 		    "Only display entries resolved to a symbol"),
++	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
++		    "Look for files with symbols relative to this directory"),
+ 	OPT_END()
  };
  
- extern volatile int session_done;
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index 459b5e3..d75084b 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -1022,6 +1022,8 @@ static const struct option options[] = {
+ 	OPT_CALLBACK('p', "process", NULL, "process",
+ 		      "process selector. Pass a pid or process name.",
+ 		       parse_process),
++	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
++		    "Look for files with symbols relative to this directory"),
+ 	OPT_END()
+ };
+ 
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index a3b8416..d503670 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -1092,6 +1092,12 @@ int hist_entry__annotate(struct hist_entry *self, struct list_head *head,
+ 	FILE *file;
+ 	int err = 0;
+ 	u64 len;
++	char symfs_filename[PATH_MAX];
++
++	if (filename) {
++		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
++			 symbol_conf.symfs, filename);
++	}
+ 
+ 	if (filename == NULL) {
+ 		if (dso->has_build_id) {
+@@ -1100,9 +1106,9 @@ int hist_entry__annotate(struct hist_entry *self, struct list_head *head,
+ 			return -ENOMEM;
+ 		}
+ 		goto fallback;
+-	} else if (readlink(filename, command, sizeof(command)) < 0 ||
++	} else if (readlink(symfs_filename, command, sizeof(command)) < 0 ||
+ 		   strstr(command, "[kernel.kallsyms]") ||
+-		   access(filename, R_OK)) {
++		   access(symfs_filename, R_OK)) {
+ 		free(filename);
+ fallback:
+ 		/*
+@@ -1111,6 +1117,8 @@ fallback:
+ 		 * DSO is the same as when 'perf record' ran.
+ 		 */
+ 		filename = dso->long_name;
++		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
++			 symbol_conf.symfs, filename);
+ 		free_filename = false;
+ 	}
+ 
+@@ -1137,7 +1145,7 @@ fallback:
+ 		 "objdump --start-address=0x%016Lx --stop-address=0x%016Lx -dS -C %s|grep -v %s|expand",
+ 		 map__rip_2objdump(map, sym->start),
+ 		 map__rip_2objdump(map, sym->end),
+-		 filename, filename);
++		 symfs_filename, filename);
+ 
+ 	pr_debug("Executing: %s\n", command);
+ 
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index ceefa65..561db63 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -41,6 +41,7 @@ struct symbol_conf symbol_conf = {
+ 	.exclude_other	  = true,
+ 	.use_modules	  = true,
+ 	.try_vmlinux_path = true,
++	.symfs            = "",
+ };
+ 
+ int dso__name_len(const struct dso *self)
+@@ -839,8 +840,11 @@ static int dso__synthesize_plt_symbols(struct  dso *self, struct map *map,
+ 	char sympltname[1024];
+ 	Elf *elf;
+ 	int nr = 0, symidx, fd, err = 0;
++	char name[PATH_MAX];
+ 
+-	fd = open(self->long_name, O_RDONLY);
++	snprintf(name, sizeof(name), "%s%s",
++		 symbol_conf.symfs, self->long_name);
++	fd = open(name, O_RDONLY);
+ 	if (fd < 0)
+ 		goto out;
+ 
+@@ -1452,16 +1456,19 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+ 	     self->origin++) {
+ 		switch (self->origin) {
+ 		case DSO__ORIG_BUILD_ID_CACHE:
+-			if (dso__build_id_filename(self, name, size) == NULL)
++			/* skip the locally configured cache if a symfs is given */
++			if (symbol_conf.symfs[0] ||
++			    (dso__build_id_filename(self, name, size) == NULL)) {
+ 				continue;
++			}
+ 			break;
+ 		case DSO__ORIG_FEDORA:
+-			snprintf(name, size, "/usr/lib/debug%s.debug",
+-				 self->long_name);
++			snprintf(name, size, "%s/usr/lib/debug%s.debug",
++				 symbol_conf.symfs, self->long_name);
+ 			break;
+ 		case DSO__ORIG_UBUNTU:
+-			snprintf(name, size, "/usr/lib/debug%s",
+-				 self->long_name);
++			snprintf(name, size, "%s/usr/lib/debug%s",
++				 symbol_conf.symfs, self->long_name);
+ 			break;
+ 		case DSO__ORIG_BUILDID: {
+ 			char build_id_hex[BUILD_ID_SIZE * 2 + 1];
+@@ -1473,19 +1480,26 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+ 					  sizeof(self->build_id),
+ 					  build_id_hex);
+ 			snprintf(name, size,
+-				 "/usr/lib/debug/.build-id/%.2s/%s.debug",
+-				 build_id_hex, build_id_hex + 2);
++				 "%s/usr/lib/debug/.build-id/%.2s/%s.debug",
++				 symbol_conf.symfs, build_id_hex, build_id_hex + 2);
+ 			}
+ 			break;
+ 		case DSO__ORIG_DSO:
+-			snprintf(name, size, "%s", self->long_name);
++			snprintf(name, size, "%s%s",
++			     symbol_conf.symfs, self->long_name);
+ 			break;
+ 		case DSO__ORIG_GUEST_KMODULE:
+ 			if (map->groups && map->groups->machine)
+ 				root_dir = map->groups->machine->root_dir;
+ 			else
+ 				root_dir = "";
+-			snprintf(name, size, "%s%s", root_dir, self->long_name);
++			snprintf(name, size, "%s%s%s", symbol_conf.symfs,
++				 root_dir, self->long_name);
++			break;
++
++		case DSO__ORIG_KMODULE:
++			snprintf(name, size, "%s%s", symbol_conf.symfs,
++				 self->long_name);
+ 			break;
+ 
+ 		default:
+@@ -1784,17 +1798,20 @@ static int dso__load_vmlinux(struct dso *self, struct map *map,
+ 			     const char *vmlinux, symbol_filter_t filter)
+ {
+ 	int err = -1, fd;
++	char symfs_vmlinux[PATH_MAX];
+ 
+-	fd = open(vmlinux, O_RDONLY);
++	snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s/%s",
++		 symbol_conf.symfs, vmlinux);
++	fd = open(symfs_vmlinux, O_RDONLY);
+ 	if (fd < 0)
+ 		return -1;
+ 
+ 	dso__set_loaded(self, map->type);
+-	err = dso__load_sym(self, map, vmlinux, fd, filter, 0, 0);
++	err = dso__load_sym(self, map, symfs_vmlinux, fd, filter, 0, 0);
+ 	close(fd);
+ 
+ 	if (err > 0)
+-		pr_debug("Using %s for symbols\n", vmlinux);
++		pr_debug("Using %s for symbols\n", symfs_vmlinux);
+ 
+ 	return err;
+ }
+@@ -1872,6 +1889,10 @@ static int dso__load_kernel_sym(struct dso *self, struct map *map,
+ 			goto out_fixup;
+ 	}
+ 
++	/* do not try local files if a symfs was given */
++	if (symbol_conf.symfs[0] != 0)
++		return -1;
++
+ 	/*
+ 	 * Say the kernel DSO was created when processing the build-id header table,
+ 	 * we have a build-id, so check if it is the same as the running kernel,
+@@ -2262,9 +2283,6 @@ static int vmlinux_path__init(void)
+ 	struct utsname uts;
+ 	char bf[PATH_MAX];
+ 
+-	if (uname(&uts) < 0)
+-		return -1;
+-
+ 	vmlinux_path = malloc(sizeof(char *) * 5);
+ 	if (vmlinux_path == NULL)
+ 		return -1;
+@@ -2277,6 +2295,14 @@ static int vmlinux_path__init(void)
+ 	if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
+ 		goto out_fail;
+ 	++vmlinux_path__nr_entries;
++
++	/* only try running kernel version if no symfs was given */
++	if (symbol_conf.symfs[0] != 0)
++		return 0;
++
++	if (uname(&uts) < 0)
++		return -1;
++
+ 	snprintf(bf, sizeof(bf), "/boot/vmlinux-%s", uts.release);
+ 	vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
+ 	if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
+@@ -2336,6 +2362,8 @@ static int setup_list(struct strlist **list, const char *list_str,
+ 
+ int symbol__init(void)
+ {
++	const char *symfs;
++
+ 	if (symbol_conf.initialized)
+ 		return 0;
+ 
+@@ -2364,6 +2392,18 @@ int symbol__init(void)
+ 		       symbol_conf.sym_list_str, "symbol") < 0)
+ 		goto out_free_comm_list;
+ 
++	/*
++	 * A path to symbols of "/" is identical to ""
++	 * reset here for simplicity.
++	 */
++	symfs = realpath(symbol_conf.symfs, NULL);
++	if (symfs == NULL)
++		symfs = symbol_conf.symfs;
++	if (strcmp(symfs, "/") == 0)
++		symbol_conf.symfs = "";
++	if (symfs != symbol_conf.symfs)
++		free((void *)symfs);
++
+ 	symbol_conf.initialized = true;
+ 	return 0;
+ 
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 12defbe..bcd2f98 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -86,6 +86,7 @@ struct symbol_conf {
+        struct strlist	*dso_list,
+ 			*comm_list,
+ 			*sym_list;
++	const char	*symfs;
+ };
+ 
+ extern struct symbol_conf symbol_conf;
