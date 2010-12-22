@@ -1,71 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752422Ab0LVQmI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 11:42:08 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:34251 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751842Ab0LVQmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 11:42:07 -0500
-Date: Wed, 22 Dec 2010 17:41:51 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Thomas Meyer <thomas@m3y3r.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
+	id S1754087Ab0LVQZI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 11:25:08 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:38109 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753504Ab0LVQZF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 11:25:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=NrEYQezgWNgrP59qwL0g1HQd4RwQytpXfF21sOgRfIHiuJgm6G+Mqtxlntl7nodK7k
+         xsQ0hWNjlFTCHe/37lEVYqsRzHkhfNsFxDW3rArcNGAHuAcMl2EiSqV9VuY3RwrHdQDG
+         KXwIWzbVYJKlLkiPebxyhs1gv5QMp5F8MLeco=
+Subject: Re: Help: major pppoe regression since 2.6.35 (panic on first ppp
+ conection)?
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Joel Soete <soete.joel@scarlet.be>
+Cc: Jarek Poplawski <jarkao2@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: 2.6.37-rc7: NULL pointer dereference
-Message-ID: <20101222164151.GA2048@cmpxchg.org>
-References: <1293020757.1998.2.camel@localhost.localdomain>
- <AANLkTin6GMiXHuoVzNWPcj0jXDqWyfWCwW9fd-v=pq=X@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+        Linux Kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+In-Reply-To: <4D122093.6060900@scarlet.be>
+References: <20101222110021.GA8985@ff.dom.local>
+	 <4D122093.6060900@scarlet.be>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Dec 2010 17:25:00 +0100
+Message-ID: <1293035100.3027.247.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTin6GMiXHuoVzNWPcj0jXDqWyfWCwW9fd-v=pq=X@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 23, 2010 at 12:37:11AM +0900, Minchan Kim wrote:
-> Cced linux-mm and maintainers of memcg.
+Le mercredi 22 dÃ©cembre 2010 Ã  17:00 +0100, Joel Soete a Ã©crit :
+> Hello Jarek,
 > 
-> On Wed, Dec 22, 2010 at 9:25 PM, Thomas Meyer <thomas@m3y3r.de> wrote:
-> > BUG: unable to handle kernel NULL pointer dereference at 00000008
-> > IP: [<c04eae14>] __mem_cgroup_try_charge+0x234/0x430
-> > *pde = 00000000
-> > Oops: 0000 [#1]
-> > last sysfs file: /sys/devices/platform/regulatory.0/uevent
-> > Modules linked in: vfat fat usb_storage fuse sco bnep l2cap bluetooth cpufreq_ondemand acpi_cpufreq mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables kvm_intel kvm uinput arc4 ecb snd_hda_codec_hdmi snd_hda_codec_realtek iwlagn snd_hda_intel snd_hda_codec iwlcore uvcvideo snd_hwdep mac80211 snd_seq videodev snd_seq_device snd_pcm cfg80211 snd_timer rfkill v4l1_compat wmi snd pcspkr soundcore joydev serio_raw snd_page_alloc ipv6 sha256_generic aes_i586 aes_generic cbc dm_crypt [last unloaded: scsi_wait_scan]
-> > Pid: 8058, comm: swapoff Tainted: G          I 2.6.37-rc7 #221 JM11-MS/Aspire 1810T
-> > EIP: 0060:[<c04eae14>] EFLAGS: 00010246 CPU: 0
-> > EIP is at __mem_cgroup_try_charge+0x234/0x430
-> > EAX: 00000008 EBX: 00000000 ECX: f2e71f10 EDX: f2f96380
-> > ESI: f3e55860 EDI: 00020000 EBP: f2e71eb4 ESP: f2e71e54
-> >  DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
-> > Process swapoff (pid: 8058, ti=f2e70000 task=f3e55860 task.ti=f2e70000)
-> > Stack:
-> >  f2e71e88 c0456607 26ba7c1c f3e55860 00000010 f3e55860 069d208a b2ee651d
-> >  00000008 000000d0 f2f96380 00000005 01ffffff f2e71f10 00000246 ec1a64ae
-> >  ffffffff 00000000 27b52eae f044dc84 00000000 f2f96380 00000000 000000d0
-> > Call Trace:
-> >  [<c0456607>] ? ktime_get_ts+0x107/0x140
-> >  [<c04ebb89>] ? mem_cgroup_try_charge_swapin+0x49/0xb0
-> >  [<c04d9b4b>] ? unuse_mm+0x1db/0x300
-> >  [<c04dad9a>] ? sys_swapoff+0x2aa/0x890
-> >  [<c047cd58>] ? audit_syscall_entry+0x218/0x240
-> >  [<c047d043>] ? audit_syscall_exit+0x1f3/0x220
-> >  [<c0403013>] ? sysenter_do_call+0x12/0x22
-> > Code: 55 c8 8b 82 90 01 00 00 85 c0 74 09 8b 80 7c 03 00 00 8b 58 2c 3b 1d 54 20 a9 c0 74 61 3b 1d 4c ca a4 c0 74 6a 8d 43 08 89 45 c0 <8b> 43 08 a8 01 0f 85 73 fe ff ff 8d 4b 04 89 5d bc 8d 76 00 8b
-> > EIP: [<c04eae14>] __mem_cgroup_try_charge+0x234/0x430 SS:ESP 0068:f2e71e54
-> > CR2: 0000000000000008
+> Nice to read you :<)
+> 
+> On 12/22/2010 12:00 PM, Jarek Poplawski wrote:
+> > On 2010-12-22 09:22, Andrew Morton wrote:
+> >> (cc netdev)
+> >>
+> >> The bug is still present in 2.6.37-rc6.
+> >>
+> >> On Sat, 18 Dec 2010 11:33:14 +0000 Joel Soete<soete.joel@scarlet.be>  wrote:
+> >>
+> >>> Hello all,
+> >
+> > Hi,
+> > Could you reproduce this bug with a vanilla kernel (without nvidia
+> > patch)? If so, please include dmesg and .config to the next report.
+> >
+> Yes (it was already a vanilla kernel but 2.6.35 with my config, even thought same issue occurs some other distro stock 
+> kernel 2.6.35), but here are some more dmesg with vanilla 2.6.37-rc6 and rc7 (I just added your debugging patch
+> I found here, just because if I don't do it kernel is panicing immediately without letting any chance to capture dmesg (and 
+> unfortunately I don't have any more chance to grab panic messages from serial console: no more rs232 on latest office laptop :<)
+> 
+> So you will find here attached personal config files of 2 kernels and respective dmesg.
+> 
+> If ever you need more details, don't hesitate to ask me.
+> 
+> Thanks a lot,
+> 	J.
 
-This could be explained by a kernel without VM_BUG_ON(), where
-!mm->owner goes uncaught until css_tryget() reads mem.css.flags (eight
-bytes member offset on 32-bit).
+Something overwrites nr_frags in skb_shinfo(skb)
 
-Does
-	http://marc.info/?l=linux-mm&m=128889198016021&w=2
-help?
+As skb_shinfo follows head portion of an skb, something overflows skb
+head
+
+Please try adding some room like in following patch ?
+
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index e6ba898..adf2834 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -187,6 +187,7 @@ enum {
+  * the end of the header data, ie. at skb->end.
+  */
+ struct skb_shared_info {
++	char		filler[64];
+ 	unsigned short	nr_frags;
+ 	unsigned short	gso_size;
+ 	/* Warning: this field is not always filled in (UFO)! */
+
+
