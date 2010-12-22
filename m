@@ -1,105 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab0LVPug (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 10:50:36 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41698 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753858Ab0LVPuf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 10:50:35 -0500
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: linuxppc-dev@ozlabs.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Wolfram Sang <w.sang@pengutronix.de>, Jeff Garzik <jgarzik@pobox.com>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND] pata_mpc52xx: driver needs BMDMA
-Date: Wed, 22 Dec 2010 16:50:10 +0100
-Message-Id: <1293033011-19265-1-git-send-email-w.sang@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1752139Ab0LVRFU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 12:05:20 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:5898 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751857Ab0LVRFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 12:05:19 -0500
+X-IronPort-AV: E=Sophos;i="4.60,214,1291611600"; 
+   d="scan'208";a="128063564"
+Subject: Re: [Xen-devel] [PATCH 07/10] xen/mmu: Work with 1-1 mappings when
+ allocating new top/middle entries.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jeremy@goop.org" <jeremy@goop.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jan Beulich <JBeulich@novell.com>
+In-Reply-To: <1292967460-15709-8-git-send-email-konrad.wilk@oracle.com>
+References: <1292967460-15709-1-git-send-email-konrad.wilk@oracle.com>
+	 <1292967460-15709-8-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Organization: Citrix Systems, Inc.
+Date: Wed, 22 Dec 2010 08:54:31 +0000
+Message-ID: <1293008071.3998.41.camel@localhost.localdomain>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Found by this build-error if BMDMA is disabled:
+On Tue, 2010-12-21 at 21:37 +0000, Konrad Rzeszutek Wilk wrote: 
+> We were not properly taking under advisement the 1-1 mappings
+> when a large area of memory was ballooned out.
 
-drivers/ata/pata_mpc52xx.c: In function 'mpc52xx_ata_init_one':
-drivers/ata/pata_mpc52xx.c:662: error: 'ata_bmdma_interrupt' undeclared (first use in this function)
-...
+Are we lazily allocating the p2m tree nodes for regions initially
+covered by the balloon? (perhaps we have always done this and it isn't
+new with this series)
 
-Move the Kconfig entry to the proper location as needed since
-9a7780c9acb821fe1c2b6fc53f74cc2556ff5364 (libata-sff: make BMDMA optional)
+Would it be simpley to always populate enough tree nodes to cover the
+ballooned area as well as nr_pages at start of day and therefore avoid
+worrying about it later on (except for memory hotplug which is special
+in this way already)?
 
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
----
+Ian.
 
-This is a build-failure, so fixing it before 2.6.37 would be great.
+> 
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  arch/x86/xen/mmu.c |   13 ++++++++-----
+>  1 files changed, 8 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> index bd02e7d..92f4fec 100644
+> --- a/arch/x86/xen/mmu.c
+> +++ b/arch/x86/xen/mmu.c
+> @@ -464,7 +464,7 @@ static void free_p2m_page(void *p)
+>  static bool alloc_p2m(unsigned long pfn)
+>  {
+>  	unsigned topidx, mididx;
+> -	unsigned long ***top_p, **mid;
+> +	unsigned long ***top_p, **mid, **mid_orig;
+>  	unsigned long *top_mfn_p, *mid_mfn;
+>  
+>  	topidx = p2m_top_index(pfn);
+> @@ -473,15 +473,16 @@ static bool alloc_p2m(unsigned long pfn)
+>  	top_p = &p2m_top[topidx];
+>  	mid = *top_p;
+>  
+> -	if (mid == p2m_mid_identity) {
+> +	if (mid == p2m_mid_identity || mid == p2m_mid_missing) {
+>  		/* Mid level is missing, allocate a new one */
+> +		mid_orig = mid;
+>  		mid = alloc_p2m_page();
+>  		if (!mid)
+>  			return false;
+>  
+>  		p2m_mid_init(mid, p2m_identity);
+>  
+> -		if (cmpxchg(top_p, p2m_mid_identity, mid) != p2m_mid_identity)
+> +		if (cmpxchg(top_p, mid_orig, mid) != mid_orig)
+>  			free_p2m_page(mid);
+>  	}
+>  
+> @@ -510,9 +511,11 @@ static bool alloc_p2m(unsigned long pfn)
+>  			p2m_top_mfn_p[topidx] = mid_mfn;
+>  	}
+>  
+> -	if (p2m_top[topidx][mididx] == p2m_identity) {
+> +	if (p2m_top[topidx][mididx] == p2m_identity ||
+> +	    p2m_top[topidx][mididx] == p2m_missing) {
+>  		/* p2m leaf page is missing */
+>  		unsigned long *p2m;
+> +		unsigned long *p2m_orig = p2m_top[topidx][mididx];
+>  
+>  		p2m = alloc_p2m_page();
+>  		if (!p2m)
+> @@ -520,7 +523,7 @@ static bool alloc_p2m(unsigned long pfn)
+>  
+>  		p2m_init(p2m);
+>  
+> -		if (cmpxchg(&mid[mididx], p2m_identity, p2m) != p2m_identity)
+> +		if (cmpxchg(&mid[mididx], p2m_orig, p2m) != p2m_orig)
+>  			free_p2m_page(p2m);
+>  		else
+>  			mid_mfn[mididx] = virt_to_mfn(p2m);
 
- drivers/ata/Kconfig  |   20 ++++++++++----------
- drivers/ata/Makefile |    2 +-
- 2 files changed, 11 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
-index 11ec911..85756b8 100644
---- a/drivers/ata/Kconfig
-+++ b/drivers/ata/Kconfig
-@@ -128,16 +128,6 @@ config PDC_ADMA
- 
- 	  If unsure, say N.
- 
--config PATA_MPC52xx
--	tristate "Freescale MPC52xx SoC internal IDE"
--	depends on PPC_MPC52xx && PPC_BESTCOMM
--	select PPC_BESTCOMM_ATA
--	help
--	  This option enables support for integrated IDE controller
--	  of the Freescale MPC52xx SoC.
--
--	  If unsure, say N.
--
- config PATA_OCTEON_CF
- 	tristate "OCTEON Boot Bus Compact Flash support"
- 	depends on CPU_CAVIUM_OCTEON
-@@ -491,6 +481,16 @@ config PATA_MARVELL
- 
- 	  If unsure, say N.
- 
-+config PATA_MPC52xx
-+	tristate "Freescale MPC52xx SoC internal IDE"
-+	depends on PPC_MPC52xx && PPC_BESTCOMM
-+	select PPC_BESTCOMM_ATA
-+	help
-+	  This option enables support for integrated IDE controller
-+	  of the Freescale MPC52xx SoC.
-+
-+	  If unsure, say N.
-+
- config PATA_NETCELL
- 	tristate "NETCELL Revolution RAID support"
- 	depends on PCI
-diff --git a/drivers/ata/Makefile b/drivers/ata/Makefile
-index c501af5..2b67c90 100644
---- a/drivers/ata/Makefile
-+++ b/drivers/ata/Makefile
-@@ -11,7 +11,6 @@ obj-$(CONFIG_SATA_DWC)		+= sata_dwc_460ex.o
- 
- # SFF w/ custom DMA
- obj-$(CONFIG_PDC_ADMA)		+= pdc_adma.o
--obj-$(CONFIG_PATA_MPC52xx)	+= pata_mpc52xx.o
- obj-$(CONFIG_PATA_OCTEON_CF)	+= pata_octeon_cf.o
- obj-$(CONFIG_SATA_QSTOR)	+= sata_qstor.o
- obj-$(CONFIG_SATA_SX4)		+= sata_sx4.o
-@@ -52,6 +51,7 @@ obj-$(CONFIG_PATA_IT821X)	+= pata_it821x.o
- obj-$(CONFIG_PATA_JMICRON)	+= pata_jmicron.o
- obj-$(CONFIG_PATA_MACIO)	+= pata_macio.o
- obj-$(CONFIG_PATA_MARVELL)	+= pata_marvell.o
-+obj-$(CONFIG_PATA_MPC52xx)	+= pata_mpc52xx.o
- obj-$(CONFIG_PATA_NETCELL)	+= pata_netcell.o
- obj-$(CONFIG_PATA_NINJA32)	+= pata_ninja32.o
- obj-$(CONFIG_PATA_NS87415)	+= pata_ns87415.o
--- 
-1.7.2.3
 
