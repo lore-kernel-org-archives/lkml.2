@@ -1,68 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751903Ab0LVDQm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 22:16:42 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:52133 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751455Ab0LVDQl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 22:16:41 -0500
-Date: Wed, 22 Dec 2010 12:15:07 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] radix_tree_destroy?
-Message-ID: <20101222031507.GE30700@linux-sh.org>
-References: <20101217032721.GD20847@linux-sh.org> <7fbf2264-04be-4899-9c1f-5c2e0942b158@default>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7fbf2264-04be-4899-9c1f-5c2e0942b158@default>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	id S1752054Ab0LVDQt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 22:16:49 -0500
+Received: from mga09.intel.com ([134.134.136.24]:12236 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751957Ab0LVDQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 22:16:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,210,1291622400"; 
+   d="scan'208";a="689566692"
+Subject: Re: [V3 PATCH 0/9] x86, NMI: give NMI handler a face-lift
+From: Huang Ying <ying.huang@intel.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "gorcunov@gmail.com" <gorcunov@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1291156050-4482-1-git-send-email-dzickus@redhat.com>
+References: <1291156050-4482-1-git-send-email-dzickus@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Dec 2010 11:16:26 +0800
+Message-ID: <1292987786.8743.116.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 10:44:06AM -0800, Dan Magenheimer wrote:
-> > > +void radix_tree_destroy(struct radix_tree_root *root, void
-> > (*slot_free)(void *))
-> > > +{
-> > > +	if (root->rnode == NULL)
-> > > +		return;
-> > > +	if (root->height == 0)
-> > > +		slot_free(root->rnode);
-> > 
-> > Don't you want indirect_to_ptr(root->rnode) here? You probably also
-> > don't
-> > want the callback in the !radix_tree_is_indirect_ptr() case.
-> > 
-> > > +	else {
-> > > +		radix_tree_node_destroy(root->rnode, root->height,
-> > slot_free);
-> > > +		radix_tree_node_free(root->rnode);
-> > > +		root->height = 0;
-> > > +	}
-> > > +	root->rnode = NULL;
-> > > +}
-> > 
-> > The above will handle the nodes, but what about the root? It looks like
-> > you're at least going to leak tags on the root, so at the very least
-> > you'd still want a root_tag_clear_all() here.
+Hi, Don,
+
+It seems that this patchset has not been merged yet.  Give it a retry?
+Busy on watchdog issue?
+
+Best Regards,
+Huang Ying
+
+On Wed, 2010-12-01 at 06:27 +0800, Don Zickus wrote:
+> Restructuring the nmi handler to be more readable and simpler.
 > 
-> Thanks for your help.  Will do both.  My use model doesn't require
-> tags or rcu, so my hacked version of radix_tree_destroy missed those
-> subtleties.
+> This is just laying the ground work for future improvements in this area.
 > 
-> So my assumption was correct?  There is no way to efficiently
-> destroy an entire radix tree without adding this new routine?
+> I also left out one of Huang's patch until we figure out how we are going
+> to proceed with a new notifier.
 > 
-Not that I'm specifically aware of, no. Most of the in-tree radix users
-bury the tree pointer under some other data structure that is separately
-accounted and then manually balanced with the insert/remove pair. I
-suppose your use case is modular and you wish to tear down the root
-completely on exit. In that case, if you have items you need to iterate
-over to clean up after for a clean exit anyways then simply wrapping in
-to radix_tree_delete() at that point for node-at-a-time freeing would be
-consistent with in-tree usage today. It'd be interesting to know what
-precisely your use case is and why the existing node-at-a-time delete
-semantics are sub-optimal for you, though.
+> Tested 32-bit and 64-bit on AMD and Intel machines.
+> 
+> V3:  rebased on top of removal of nmi watchdog
+>      add a couple more watchdog patches from my queue
+> 
+> V2:  add a patch to kill DIE_NMI_IPI and add in priorities
+> 
+> Cheers,
+> Don
+> 
+> Don Zickus (5):
+>   x86, NMI: Remove DIE_NMI_IPI and add priorties to handlers
+>   x86: only call smp_processor_id in non-preempt cases
+>   panic:  ratelimit panic messages
+>   watchdog:  touch_nmi_watchdog should only touch local cpu not every
+>     one
+> 
+> Dongdong Deng (1):
+>   x86: Avoid calling arch_trigger_all_cpu_backtrace() at the same time
+> 
+> Huang Ying (3):
+>   x86, NMI: Add NMI symbol constants and rename memory parity to PCI
+>     SERR
+>   x86, NMI: Add touch_nmi_watchdog to io_check_error delay
+>   x86, NMI: Rewrite NMI handler
+>   x86, NMI: Allow NMI reason io port (0x61) to be processed on any CPU
+> 
+>  Documentation/kernel-parameters.txt     |    6 ++
+>  arch/x86/include/asm/kdebug.h           |    1 -
+>  arch/x86/include/asm/mach_traps.h       |   12 +++-
+>  arch/x86/include/asm/nmi.h              |   20 ++++++
+>  arch/x86/kernel/apic/hw_nmi.c           |   19 ++++-
+>  arch/x86/kernel/apic/x2apic_uv_x.c      |    2 +-
+>  arch/x86/kernel/cpu/mcheck/mce-inject.c |    5 +-
+>  arch/x86/kernel/cpu/perf_event.c        |    3 +-
+>  arch/x86/kernel/kgdb.c                  |    6 +--
+>  arch/x86/kernel/reboot.c                |    5 +-
+>  arch/x86/kernel/traps.c                 |  114 ++++++++++++++++---------------
+>  arch/x86/oprofile/nmi_int.c             |    3 +-
+>  arch/x86/oprofile/nmi_timer_int.c       |    2 +-
+>  drivers/char/ipmi/ipmi_watchdog.c       |    2 +-
+>  drivers/watchdog/hpwdt.c                |    2 +-
+>  kernel/panic.c                          |   30 ++++++++
+>  kernel/watchdog.c                       |   17 +++--
+>  17 files changed, 166 insertions(+), 83 deletions(-)
+> 
+
+
