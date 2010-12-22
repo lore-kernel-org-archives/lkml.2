@@ -1,76 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312Ab0LVLdV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 06:33:21 -0500
-Received: from hera.kernel.org ([140.211.167.34]:49465 "EHLO hera.kernel.org"
+	id S1752143Ab0LVLip (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 06:38:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39797 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751417Ab0LVLdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 06:33:20 -0500
-Date: Wed, 22 Dec 2010 11:32:37 GMT
-From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        mitake@dcl.info.waseda.ac.jp, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, rostedt@goodmis.org, srikar@linux.vnet.ibm.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        mitake@dcl.info.waseda.ac.jp, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, rostedt@goodmis.org, srikar@linux.vnet.ibm.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20101217131200.24123.8202.stgit@ltc236.sdl.hitachi.co.jp>
-References: <20101217131200.24123.8202.stgit@ltc236.sdl.hitachi.co.jp>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools: Fix lazy wildcard matching
-Message-ID: <tip-ea187cfbb9a3de73e7bd7b7125ae345d92d4384b@git.kernel.org>
-Git-Commit-ID: ea187cfbb9a3de73e7bd7b7125ae345d92d4384b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1751253Ab0LVLin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 06:38:43 -0500
+Date: Wed, 22 Dec 2010 12:38:42 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Vojtech Pavlik <vojtech@suse.cz>
+Subject: Re: [PATCH] tcp: use RTAX_CWND for outgoing connections properly
+In-Reply-To: <1293017383.3027.75.camel@edumazet-laptop>
+Message-ID: <alpine.LNX.2.00.1012221231450.16569@pobox.suse.cz>
+References: <alpine.LNX.2.00.1012172310400.16569@pobox.suse.cz>  <alpine.LNX.2.00.1012221059340.16569@pobox.suse.cz> <1293017383.3027.75.camel@edumazet-laptop>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 22 Dec 2010 11:32:39 +0000 (UTC)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ea187cfbb9a3de73e7bd7b7125ae345d92d4384b
-Gitweb:     http://git.kernel.org/tip/ea187cfbb9a3de73e7bd7b7125ae345d92d4384b
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Fri, 17 Dec 2010 22:12:00 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 21 Dec 2010 19:15:42 -0200
+On Wed, 22 Dec 2010, Eric Dumazet wrote:
 
-perf tools: Fix lazy wildcard matching
+> > > For outgoing connections, the initial value of cwnd is always set to 2 (in 
+> > > tcp_v4_init_sock()) regardless of setting of RTAX_CWND. For incoming 
+> > > connections, this is handled properly in tcp_init_metrics().
+> > > 
+> > > As a result of this, Linux TCP stack always uses cwnd == 2 at the beginning of
+> > > outgoing TCP session (i.e. waits for ACK after 2 packets once the connection
+> > > has been established) and grows it in accordance with slow-start algorithm
+> > > only after it receives ACK for first two packets.
+> > > 
+> > > When slow-start triggers later during the connection (e.g. after idle), 
+> > > cwnd is properly re-initialized to RTAX_CWND value (if specified) through 
+> > > tcp_cwnd_restart() -> tcp_init_cwnd().
+> > > 
+> > > Initialize tp->snd_cwnd properly so that RTAX_CWND value is being used 
+> > > also in the slow-start phase for the first packets in the connection.
+> > 
+> > This should of course read RTAX_INITCWND instead of RTAX_CWND in the whole 
+> > changelog, sorry.
+> > 
+> > Besides that, any comments on this, please?
+> > 
+> 
+> Its a bit strange, here is what I have with two net-next-2.6 machines
+> (without your patch)
+> 
+> 192.168.20.0/24 dev eth1  scope link  initcwnd 10
+> 
+> 12:13:46.855786 IP 192.168.20.110.39146 > 192.168.20.108.59636: S 1615862982:1615862982(0) win 14600 <mss 1460,sackOK,timestamp 277530 0,nop,wscale 8>
+> 12:13:46.855807 IP 192.168.20.108.59636 > 192.168.20.110.39146: S 1603053412:1603053412(0) ack 1615862983 win 14480 <mss 1460,sackOK,timestamp 744840 277530,nop,wscale 7>
+> 12:13:46.855878 IP 192.168.20.110.39146 > 192.168.20.108.59636: . ack 1 win 58 <nop,nop,timestamp 277530 744840>
+> 12:13:46.856779 IP 192.168.20.110.39146 > 192.168.20.108.59636: P 1:14481(14480) ack 1 win 58 <nop,nop,timestamp 277530 744840>
+> 12:13:46.856794 IP 192.168.20.108.59636 > 192.168.20.110.39146: . ack 14481 win 136 <nop,nop,timestamp 744841 277530>
+> 12:13:46.856901 IP 192.168.20.110.39146 > 192.168.20.108.59636: . 14481:15929(1448) ack 1 win 58 <nop,nop,timestamp 277531 744841>
+> 12:13:46.856912 IP 192.168.20.108.59636 > 192.168.20.110.39146: . ack 15929 win 159 <nop,nop,timestamp 744841 277531>
+> 12:13:46.856930 IP 192.168.20.110.39146 > 192.168.20.108.59636: . 15929:18825(2896) ack 1 win 58 <nop,nop,timestamp 277531 744841>
+>
+> We can see 192.168.20.110 sends 14480 bytes in its first frame.
 
-Fix lazy wildcard matching to ignore space after wild card.
+So is this with 356f039822b8d802138f applied?
 
-Cc: 2nddept-manager@sdl.hitachi.co.jp
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-LKML-Reference: <20101217131200.24123.8202.stgit@ltc236.sdl.hitachi.co.jp>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/string.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I have had a testing environment in which I had forced the 'receiver' to 
+advertise large receive window, but still the sender started with a very 
+small initial congestion window, waiting for ack after 1 or 2 MSS-sized 
+packets.
 
-diff --git a/tools/perf/util/string.c b/tools/perf/util/string.c
-index 0409fc7..8fc0bd3 100644
---- a/tools/perf/util/string.c
-+++ b/tools/perf/util/string.c
-@@ -259,7 +259,7 @@ static bool __match_glob(const char *str, const char *pat, bool ignore_space)
- 		if (!*pat)	/* Tail wild card matches all */
- 			return true;
- 		while (*str)
--			if (strglobmatch(str++, pat))
-+			if (__match_glob(str++, pat, ignore_space))
- 				return true;
- 	}
- 	return !*str && !*pat;
+I must admit that I was reproducing it with slightly older kernel, but 
+haven't seen any changes in the code which would influence this behavior. 
+Will look how most up-to-date kernel (plus 356f039822b8d802138f) behaves 
+in that environment.
+
+Where in the code is the congestion window enlarged to accomodate 14480 
+bytes in your case? I don't see where the value of '2' coming from 
+tcp_v4_init_sock() is being overriden for "outgoing" connections ...
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
