@@ -1,84 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932Ab0LVDMt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 22:12:49 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:37770 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751877Ab0LVDMs convert rfc822-to-8bit (ORCPT
+	id S1751903Ab0LVDQm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 22:16:42 -0500
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:52133 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751455Ab0LVDQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 22:12:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=pH4C0vJOA84Q8WfdSclQs3sv3xrLEfORp7g9R9ZnxZWy4pZClh3k4I/g1H5c+pHAve
-         ShGlRjj4vho8oi6FkYuNXYFVcQt3V9luTtNxcfbgHyEEnErCDBbVfwA6fnRO20FEqVzZ
-         N/UXGpsCrqJVoslDzezshBMQ/05Go62WUHDdA=
+	Tue, 21 Dec 2010 22:16:41 -0500
+Date: Wed, 22 Dec 2010 12:15:07 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] radix_tree_destroy?
+Message-ID: <20101222031507.GE30700@linux-sh.org>
+References: <20101217032721.GD20847@linux-sh.org> <7fbf2264-04be-4899-9c1f-5c2e0942b158@default>
 MIME-Version: 1.0
-In-Reply-To: <1292978393.2401.14.camel@morgan.silverblock.net>
-References: <1292762975.2403.29.camel@localhost>
-	<AANLkTimYx2Og1BG37wb0WZ0_U8WJjLKHMKgU45qycUaM@mail.gmail.com>
-	<AANLkTikuKMLUoVnQsU6QNCnHBgOponJUngHGtyVHk1xK@mail.gmail.com>
-	<4D0F8276.9070903@kernel.org>
-	<20101221044050.GA25718@windriver.com>
-	<1292978393.2401.14.camel@morgan.silverblock.net>
-Date: Wed, 22 Dec 2010 11:12:47 +0800
-Message-ID: <AANLkTi=zw=0=7bAg9uV+u6bA6iY63k_GX9vo=G+bX0O3@mail.gmail.com>
-Subject: Re: [V2 PATCH] kthread_work: Make lockdep happy
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Andy Walls <awalls@md.metrocast.net>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        nicolas.mailhot@laposte.net, Jarod Wilson <jarod@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7fbf2264-04be-4899-9c1f-5c2e0942b158@default>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 22, 2010 at 8:39 AM, Andy Walls <awalls@md.metrocast.net> wrote:
-> Yong,
->
-> I have tested your patch with the following patch on top of yours.  I
-> find the two patches together acceptable in testing in a machine with
-> both a PVR-350 card and a PVR-500 card installed.
->
-> Tested-by: Andy Walls <awalls@md.metrocast.net>
-> Signed-off-by: Andy Walls <awalls@md.metrocast.net>
->
-> Could you please author a [V3 PATCH] adding my changes?
-
-Sure. Will do it.
-
-> Since the
-> majority of the change is your work, it should be attributed to you as
-> the author.
->
->
-> About my additional changes:
->
-> I needed the explicit EXPORT_SYMBOL_GPL(__init_kthread_worker),
-> otherwise the build would fail, because the ivtv module had an
-> unresolved symbol.
-
-Will update.
-
->
-> I added the lockdep class name to make it easier to identify the ivtv
-> module's kthread worker's lock class.  Now one can actually recognize
-> the lock class in lockdep output strings:
->
->        # cat lockdep | grep itv
->        ffffffffa0483a60 FD:    1 BD:    1 ......: (&itv->irq_worker)->lock
-
-Yeah, I like your idea.
-
-V3 coming soon :)
-
-Thanks,
-Yong
--- 
-Only stand for myself.
+On Fri, Dec 17, 2010 at 10:44:06AM -0800, Dan Magenheimer wrote:
+> > > +void radix_tree_destroy(struct radix_tree_root *root, void
+> > (*slot_free)(void *))
+> > > +{
+> > > +	if (root->rnode == NULL)
+> > > +		return;
+> > > +	if (root->height == 0)
+> > > +		slot_free(root->rnode);
+> > 
+> > Don't you want indirect_to_ptr(root->rnode) here? You probably also
+> > don't
+> > want the callback in the !radix_tree_is_indirect_ptr() case.
+> > 
+> > > +	else {
+> > > +		radix_tree_node_destroy(root->rnode, root->height,
+> > slot_free);
+> > > +		radix_tree_node_free(root->rnode);
+> > > +		root->height = 0;
+> > > +	}
+> > > +	root->rnode = NULL;
+> > > +}
+> > 
+> > The above will handle the nodes, but what about the root? It looks like
+> > you're at least going to leak tags on the root, so at the very least
+> > you'd still want a root_tag_clear_all() here.
+> 
+> Thanks for your help.  Will do both.  My use model doesn't require
+> tags or rcu, so my hacked version of radix_tree_destroy missed those
+> subtleties.
+> 
+> So my assumption was correct?  There is no way to efficiently
+> destroy an entire radix tree without adding this new routine?
+> 
+Not that I'm specifically aware of, no. Most of the in-tree radix users
+bury the tree pointer under some other data structure that is separately
+accounted and then manually balanced with the insert/remove pair. I
+suppose your use case is modular and you wish to tear down the root
+completely on exit. In that case, if you have items you need to iterate
+over to clean up after for a clean exit anyways then simply wrapping in
+to radix_tree_delete() at that point for node-at-a-time freeing would be
+consistent with in-tree usage today. It'd be interesting to know what
+precisely your use case is and why the existing node-at-a-time delete
+semantics are sub-optimal for you, though.
