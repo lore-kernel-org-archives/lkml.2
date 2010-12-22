@@ -1,95 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054Ab0LVDQt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 22:16:49 -0500
-Received: from mga09.intel.com ([134.134.136.24]:12236 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751957Ab0LVDQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 22:16:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,210,1291622400"; 
-   d="scan'208";a="689566692"
-Subject: Re: [V3 PATCH 0/9] x86, NMI: give NMI handler a face-lift
-From: Huang Ying <ying.huang@intel.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "gorcunov@gmail.com" <gorcunov@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1291156050-4482-1-git-send-email-dzickus@redhat.com>
-References: <1291156050-4482-1-git-send-email-dzickus@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 22 Dec 2010 11:16:26 +0800
-Message-ID: <1292987786.8743.116.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1751999Ab0LVDTa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 22:19:30 -0500
+Received: from elasmtp-kukur.atl.sa.earthlink.net ([209.86.89.65]:33216 "EHLO
+	elasmtp-kukur.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751640Ab0LVDT3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 22:19:29 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=dk20050327; d=earthlink.net;
+  b=IkA1EHLV09df586KXUN42apHG1IqUad2jOaf2M74Di6Z5CQSmIc9enM/ACIYk/Dj;
+  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
+Message-ID: <4D116E40.1060204@earthlink.net>
+Date: Tue, 21 Dec 2010 22:19:28 -0500
+From: Stephen Clark <sclark46@earthlink.net>
+Reply-To: sclark46@earthlink.net
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [git pull] drm fixes
+References: <alpine.DEB.2.00.1012212339090.30885@skynet.skynet.ie>
+In-Reply-To: <alpine.DEB.2.00.1012212339090.30885@skynet.skynet.ie>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec79044a379fa2dd1da4d3d9177fbb76acdd350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
+X-Originating-IP: 69.22.83.66
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Don,
+On 12/21/2010 06:43 PM, Dave Airlie wrote:
+> Hi,
+>
+> meant to get this out earlier, but I've been off sick as well as having a
+> sick kid, also meant a few things piled up when I wasn't looking
+>
+> contains a revert for reported regression in intel and also one in radeon,
+> a few radeon fixes, one for a 15s resume time on certain laptops, and one
+> to fix gpu reset on some gpus,
+>
+> Dave.
+>
+> The following changes since commit a4851d8f7d6351a395d36ae8fdcf41745a832d76:
+>
+>    Merge branch 'for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4 (2010-12-15 12:41:17 -0800)
+>
+> are available in the git repository at:
+>
+>    ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
+>
+> Alex Deucher (7):
+>        drm/radeon/kms: disable ss fixed ref divide
+>        drm/radeon/kms: disable the r600 cb offset checker for linear surfaces
+>        drm/radeon/kms/evergreen: flush hdp cache when flushing gart tlb
+>        drm/radeon/kms: fix evergreen asic reset
+>        drm/radeon/kms/evergreen: reset the grbm blocks at resume and init
+>        drm/radeon/kms: reorder display resume to avoid problems
+>        drm/radeon/kms: fix bug in r600_gpu_is_lockup
+>
+> Benjamin Herrenschmidt (1):
+>        drm/radeon: Add early unregister of firmware fb's
+>
+> Chris Wilson (5):
+>        drm/i915/ringbuffer: Handle wrapping of the autoreported HEAD
+>        drm/i915/sdvo: Only use the SDVO pin if it is in the valid range
+>        agp/intel: Fix missed cached memory flags setting in i965_write_entry()
+>        drm/i915/bios: Reverse order of 100/120 Mhz SSC clocks
+>        drm: Include the connector name in the output_poll_execute() debug message
+>
+> Dave Airlie (3):
+>        Merge remote branch 'intel/drm-intel-fixes' of /ssd/git/drm-next into drm-fixes
+>        drm/radeon: use aperture size not vram size for overlap tests
+>        Revert "drm: Don't try and disable an encoder that was never enabled"
+>
+> David Flynn (1):
+>        drm/i915/dp: Fix I2C/EDID handling with active DisplayPort to DVI converter
+>
+>   drivers/char/agp/intel-gtt.c            |   11 +++++++-
+>   drivers/gpu/drm/drm_crtc_helper.c       |    7 ++++-
+>   drivers/gpu/drm/i915/intel_bios.c       |    2 +-
+>   drivers/gpu/drm/i915/intel_dp.c         |   37 +++++++++++++++++++++++++------
+>   drivers/gpu/drm/i915/intel_ringbuffer.c |   19 ++++++---------
+>   drivers/gpu/drm/i915/intel_ringbuffer.h |    5 ++-
+>   drivers/gpu/drm/i915/intel_sdvo.c       |    9 +++++--
+>   drivers/gpu/drm/radeon/atombios_crtc.c  |    7 +++--
+>   drivers/gpu/drm/radeon/evergreen.c      |   27 ++++++++++------------
+>   drivers/gpu/drm/radeon/evergreend.h     |    1 +
+>   drivers/gpu/drm/radeon/r600.c           |   10 ++++++-
+>   drivers/gpu/drm/radeon/r600_cs.c        |    9 +++----
+>   drivers/gpu/drm/radeon/radeon_device.c  |    9 +++----
+>   drivers/gpu/drm/radeon/radeon_drv.c     |   19 ++++++++++++++++
+>   drivers/gpu/drm/radeon/radeon_fb.c      |    2 +-
+>   15 files changed, 115 insertions(+), 59 deletions(-)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>    
+Hello,
 
-It seems that this patchset has not been merged yet.  Give it a retry?
-Busy on watchdog issue?
+I am new to git and can't figure out how to get these changes.
 
-Best Regards,
-Huang Ying
+I have done a git clone of 
+git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+What next?
 
-On Wed, 2010-12-01 at 06:27 +0800, Don Zickus wrote:
-> Restructuring the nmi handler to be more readable and simpler.
-> 
-> This is just laying the ground work for future improvements in this area.
-> 
-> I also left out one of Huang's patch until we figure out how we are going
-> to proceed with a new notifier.
-> 
-> Tested 32-bit and 64-bit on AMD and Intel machines.
-> 
-> V3:  rebased on top of removal of nmi watchdog
->      add a couple more watchdog patches from my queue
-> 
-> V2:  add a patch to kill DIE_NMI_IPI and add in priorities
-> 
-> Cheers,
-> Don
-> 
-> Don Zickus (5):
->   x86, NMI: Remove DIE_NMI_IPI and add priorties to handlers
->   x86: only call smp_processor_id in non-preempt cases
->   panic:  ratelimit panic messages
->   watchdog:  touch_nmi_watchdog should only touch local cpu not every
->     one
-> 
-> Dongdong Deng (1):
->   x86: Avoid calling arch_trigger_all_cpu_backtrace() at the same time
-> 
-> Huang Ying (3):
->   x86, NMI: Add NMI symbol constants and rename memory parity to PCI
->     SERR
->   x86, NMI: Add touch_nmi_watchdog to io_check_error delay
->   x86, NMI: Rewrite NMI handler
->   x86, NMI: Allow NMI reason io port (0x61) to be processed on any CPU
-> 
->  Documentation/kernel-parameters.txt     |    6 ++
->  arch/x86/include/asm/kdebug.h           |    1 -
->  arch/x86/include/asm/mach_traps.h       |   12 +++-
->  arch/x86/include/asm/nmi.h              |   20 ++++++
->  arch/x86/kernel/apic/hw_nmi.c           |   19 ++++-
->  arch/x86/kernel/apic/x2apic_uv_x.c      |    2 +-
->  arch/x86/kernel/cpu/mcheck/mce-inject.c |    5 +-
->  arch/x86/kernel/cpu/perf_event.c        |    3 +-
->  arch/x86/kernel/kgdb.c                  |    6 +--
->  arch/x86/kernel/reboot.c                |    5 +-
->  arch/x86/kernel/traps.c                 |  114 ++++++++++++++++---------------
->  arch/x86/oprofile/nmi_int.c             |    3 +-
->  arch/x86/oprofile/nmi_timer_int.c       |    2 +-
->  drivers/char/ipmi/ipmi_watchdog.c       |    2 +-
->  drivers/watchdog/hpwdt.c                |    2 +-
->  kernel/panic.c                          |   30 ++++++++
->  kernel/watchdog.c                       |   17 +++--
->  17 files changed, 166 insertions(+), 83 deletions(-)
-> 
+Thanks
+
+-- 
+
+"They that give up essential liberty to obtain temporary safety,
+deserve neither liberty nor safety."  (Ben Franklin)
+
+"The course of history shows that as a government grows, liberty
+decreases."  (Thomas Jefferson)
+
 
 
