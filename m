@@ -1,76 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab0LVNqt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 08:46:49 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:64453 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752901Ab0LVNqs (ORCPT
+	id S1753435Ab0LVNrj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 08:47:39 -0500
+Received: from ganesha.gnumonks.org ([213.95.27.120]:35147 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752901Ab0LVNrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 08:46:48 -0500
-Date: Wed, 22 Dec 2010 14:46:46 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: linux-kernel@vger.kernel.org
-cc: Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH] dmaengine: provide dummy functions for DMA_ENGINE=n
-Message-ID: <Pine.LNX.4.64.1012221444300.14483@axis700.grange>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:F8p02zNWucKkP9ZQlqYHzHBLmi+PCCXAQk1DpBZ9rNW
- C2yXHOOUlAwUk/F3mz+jEDv6pF7ME7NboaVJxsNUroPQIBAwb2
- SnaFUxB+Xi64iCAREAHtRfHZCPG7klKGSCFdoddrHs4ZyJ+ASb
- /KVL1KJsdI79zVB/OUwuHY/F5vo6fiux73LHlISkjxJfSqI2IC
- MbWmVWtU2uYdjHp1BJdGIP1QZGo+9nyjHLrLBSjigE=
+	Wed, 22 Dec 2010 08:47:37 -0500
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: kgene.kim@samsung.com, Ilho Lee <ilho215.lee@samsung.com>,
+        KyongHo Cho <pullip.cho@samsung.com>
+Subject: [PATCH] mm: simple approach to calculate combined index of adjacent buddy lists
+Date: Wed, 22 Dec 2010 22:26:52 +0900
+Message-Id: <1293024412-15617-1-git-send-email-pullip.cho@samsung.com>
+X-Mailer: git-send-email 1.6.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This lets drivers, optionally using the dmaengine, build with DMA_ENGINE
-unselected.
+The previous approach of calucation of combined index was
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+page_idx & ~(1 << order))
+
+but we have same result with
+
+page_idx & buddy_idx
+.
+
+I think this reduces instructions slightly as well as enhances readability.
+
+Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
 ---
- include/linux/dmaengine.h |   13 ++++++++++---
- 1 files changed, 10 insertions(+), 3 deletions(-)
+ mm/page_alloc.c |   25 ++++++++++---------------
+ 1 files changed, 10 insertions(+), 15 deletions(-)
 
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 9d8688b..8cd00ad 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -824,6 +824,8 @@ enum dma_status dma_sync_wait(struct dma_chan *chan, dma_cookie_t cookie);
- #ifdef CONFIG_DMA_ENGINE
- enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx);
- void dma_issue_pending_all(void);
-+struct dma_chan *__dma_request_channel(dma_cap_mask_t *mask, dma_filter_fn fn, void *fn_param);
-+void dma_release_channel(struct dma_chan *chan);
- #else
- static inline enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index f12ad18..6033053 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -420,18 +420,10 @@ static inline void rmv_page_order(struct page *page)
+  *
+  * Assumption: *_mem_map is contiguous at least up to MAX_ORDER
+  */
+-static inline struct page *
+-__page_find_buddy(struct page *page, unsigned long page_idx, unsigned int order)
+-{
+-	unsigned long buddy_idx = page_idx ^ (1 << order);
+-
+-	return page + (buddy_idx - page_idx);
+-}
+-
+ static inline unsigned long
+-__find_combined_index(unsigned long page_idx, unsigned int order)
++__find_buddy_index(unsigned long page_idx, unsigned int order)
  {
-@@ -831,7 +833,14 @@ static inline enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descript
+-	return (page_idx & ~(1 << order));
++	return (page_idx ^ (1 << order));
  }
- static inline void dma_issue_pending_all(void)
+ 
+ /*
+@@ -493,6 +485,7 @@ static inline void __free_one_page(struct page *page,
  {
--	do { } while (0);
-+}
-+static inline struct dma_chan *__dma_request_channel(dma_cap_mask_t *mask,
-+					      dma_filter_fn fn, void *fn_param)
-+{
-+	return NULL;
-+}
-+static inline void dma_release_channel(struct dma_chan *chan)
-+{
- }
- #endif
+ 	unsigned long page_idx;
+ 	unsigned long combined_idx;
++	unsigned long buddy_idx;
+ 	struct page *buddy;
  
-@@ -842,8 +851,6 @@ void dma_async_device_unregister(struct dma_device *device);
- void dma_run_dependencies(struct dma_async_tx_descriptor *tx);
- struct dma_chan *dma_find_channel(enum dma_transaction_type tx_type);
- #define dma_request_channel(mask, x, y) __dma_request_channel(&(mask), x, y)
--struct dma_chan *__dma_request_channel(dma_cap_mask_t *mask, dma_filter_fn fn, void *fn_param);
--void dma_release_channel(struct dma_chan *chan);
+ 	if (unlikely(PageCompound(page)))
+@@ -507,7 +500,8 @@ static inline void __free_one_page(struct page *page,
+ 	VM_BUG_ON(bad_range(zone, page));
  
- /* --- Helper iov-locking functions --- */
+ 	while (order < MAX_ORDER-1) {
+-		buddy = __page_find_buddy(page, page_idx, order);
++		buddy_idx = __find_buddy_index(page_idx, order);
++		buddy = page + (buddy_idx - page_idx);
+ 		if (!page_is_buddy(page, buddy, order))
+ 			break;
  
+@@ -515,7 +509,7 @@ static inline void __free_one_page(struct page *page,
+ 		list_del(&buddy->lru);
+ 		zone->free_area[order].nr_free--;
+ 		rmv_page_order(buddy);
+-		combined_idx = __find_combined_index(page_idx, order);
++		combined_idx = buddy_idx & page_idx;
+ 		page = page + (combined_idx - page_idx);
+ 		page_idx = combined_idx;
+ 		order++;
+@@ -532,9 +526,10 @@ static inline void __free_one_page(struct page *page,
+ 	 */
+ 	if ((order < MAX_ORDER-1) && pfn_valid_within(page_to_pfn(buddy))) {
+ 		struct page *higher_page, *higher_buddy;
+-		combined_idx = __find_combined_index(page_idx, order);
+-		higher_page = page + combined_idx - page_idx;
+-		higher_buddy = __page_find_buddy(higher_page, combined_idx, order + 1);
++		combined_idx = buddy_idx & page_idx;
++		higher_page = page + (combined_idx - page_idx);
++		buddy_idx = __find_buddy_index(combined_idx, order + 1);
++		higher_buddy = page + (buddy_idx - combined_idx);
+ 		if (page_is_buddy(higher_page, higher_buddy, order + 1)) {
+ 			list_add_tail(&page->lru,
+ 				&zone->free_area[order].free_list[migratetype]);
 -- 
-1.7.2.3
+1.6.2.5
 
