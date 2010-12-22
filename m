@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846Ab0LVOHu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 09:07:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44359 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752684Ab0LVOHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 09:07:48 -0500
-Date: Wed, 22 Dec 2010 15:07:43 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Vojtech Pavlik <vojtech@suse.cz>
-Subject: Re: [PATCH] tcp: use RTAX_CWND for outgoing connections properly
-In-Reply-To: <alpine.LNX.2.00.1012221231450.16569@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1012221506500.16569@pobox.suse.cz>
-References: <alpine.LNX.2.00.1012172310400.16569@pobox.suse.cz>  <alpine.LNX.2.00.1012221059340.16569@pobox.suse.cz> <1293017383.3027.75.camel@edumazet-laptop> <alpine.LNX.2.00.1012221231450.16569@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752901Ab0LVOLu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 09:11:50 -0500
+Received: from casper.infradead.org ([85.118.1.10]:38341 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752205Ab0LVOLt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 09:11:49 -0500
+Subject: Re: [PATCH] avoid race condition in pick_next_task_fair in
+ kernel/sched_fair.c
+From: Peter Zijlstra <peterz@infradead.org>
+To: Miklos Vajna <vmiklos@frugalware.org>
+Cc: Mike Galbraith <efault@gmx.de>, shenghui <crosslonelyover@gmail.com>,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, Greg KH <greg@kroah.com>
+In-Reply-To: <1293026422.2170.136.camel@laptop>
+References: <AANLkTin49UHeVhfS-iFwWvPIg29HPhXaP3DorBAa-a0I@mail.gmail.com>
+	 <1277808215.1868.5.camel@laptop>
+	 <20101219020313.GJ31750@genesis.frugalware.org>
+	 <20101222002248.GP10557@genesis.frugalware.org>
+	 <1293006589.2170.41.camel@laptop>
+	 <1293007311.11370.172.camel@marge.simson.net>
+	 <1293008842.2170.70.camel@laptop>
+	 <20101222133154.GS10557@genesis.frugalware.org>
+	 <1293026422.2170.136.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 22 Dec 2010 15:11:52 +0100
+Message-ID: <1293027112.2170.140.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Dec 2010, Jiri Kosina wrote:
-
-> > 12:13:46.855786 IP 192.168.20.110.39146 > 192.168.20.108.59636: S 1615862982:1615862982(0) win 14600 <mss 1460,sackOK,timestamp 277530 0,nop,wscale 8>
-> > 12:13:46.855807 IP 192.168.20.108.59636 > 192.168.20.110.39146: S 1603053412:1603053412(0) ack 1615862983 win 14480 <mss 1460,sackOK,timestamp 744840 277530,nop,wscale 7>
-> > 12:13:46.855878 IP 192.168.20.110.39146 > 192.168.20.108.59636: . ack 1 win 58 <nop,nop,timestamp 277530 744840>
-> > 12:13:46.856779 IP 192.168.20.110.39146 > 192.168.20.108.59636: P 1:14481(14480) ack 1 win 58 <nop,nop,timestamp 277530 744840>
-> > 12:13:46.856794 IP 192.168.20.108.59636 > 192.168.20.110.39146: . ack 14481 win 136 <nop,nop,timestamp 744841 277530>
-> > 12:13:46.856901 IP 192.168.20.110.39146 > 192.168.20.108.59636: . 14481:15929(1448) ack 1 win 58 <nop,nop,timestamp 277531 744841>
-> > 12:13:46.856912 IP 192.168.20.108.59636 > 192.168.20.110.39146: . ack 15929 win 159 <nop,nop,timestamp 744841 277531>
-> > 12:13:46.856930 IP 192.168.20.110.39146 > 192.168.20.108.59636: . 15929:18825(2896) ack 1 win 58 <nop,nop,timestamp 277531 744841>
-> >
-> > We can see 192.168.20.110 sends 14480 bytes in its first frame.
+On Wed, 2010-12-22 at 15:00 +0100, Peter Zijlstra wrote:
+> On Wed, 2010-12-22 at 14:31 +0100, Miklos Vajna wrote:
+> > 
+> > http://frugalware.org/~vmiklos/files/systemd.img
+> > 
+> > Here is how I started it:
+> > 
+> > qemu-kvm -vnc :0 -m 1G -hda systemd.img 
 > 
-> So is this with 356f039822b8d802138f applied?
+> awesome, thanks!
 > 
-> I have had a testing environment in which I had forced the 'receiver' to 
-> advertise large receive window, but still the sender started with a very 
-> small initial congestion window, waiting for ack after 1 or 2 MSS-sized 
-> packets.
+> I started it with something like: 
+>  qemu -kernel foo-build/arch/x86/boot/bzImage -append "root=/dev/sda1
+> debug sched_debug ignore_loglevel sysrq_always_enabled console=ttyS0"
+> -hda systemd.img -serial stdio -m 1G
+> 
+> Where foo-build/ contains a kernel build using your .config.
+> 
+> I'll have a poke at it..
 
-OK, so current vanilla (not even net-next needed) seems to correctly 
-handle initcwnd value and sends as many packets as fit into it, instead of 
-waiting after one or two MSS-sized packets. So someone already fixed it 
-in some other way apparently. Sorry for the noise.
+Hrm,. its not really wanting to start properly..
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+---
+EXT4-fs (sda1): mounted filesystem with ordered data mode. Opts: (null)
+VFS: Mounted root (ext4 filesystem) readonly on device 8:1.
+Freeing unused kernel memory: 520k freed
+EXT4-fs (sda1): re-mounted. Opts: (null)
+md: stopping all md devices.
+Restarting system.
+machine restart
+---
+
+Does it _require_ initrd like muck? Or are there some modules that need
+to get built-in in order for the thing to boot?
+
+This is an utter lack of error reporting here, no idea what's wrong.
