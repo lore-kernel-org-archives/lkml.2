@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261Ab0LVT5x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 14:57:53 -0500
+	id S1752233Ab0LVT6M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 14:58:12 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:51700 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752194Ab0LVT5u (ORCPT
+	with ESMTP id S1750943Ab0LVT5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 14:57:50 -0500
+	Wed, 22 Dec 2010 14:57:48 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=drJ7WcsS14ACsOjIh00JK18Gb6NzYzt68jax/geN0U9L2F2n0DaqWKJLMyunbt9VNw
-         DhGHNctcJyiKQudoyLTfohsbRjb0BQhI8NaXr9abBgmvHyeG/Hz+ElisiXcQgYWH6u8B
-         j3/SBPY4lZFJnr3ifNCHVwd9MCsO1SBmXymAY=
+        b=R03zwwYW6m1VJilnunQUAJMKopvoioasKy+SBJGFw4Uh+31VIFi6eHnNf8j1kxtODR
+         RUyD5oqDxnD+OGSlSOZoAJVyzGYYNUl2d+Exx+AGGuEr5exipdgfcA9YeJ14eE1u8TNB
+         aJTVnQT5DoykJ4XLl8v66tBs/A5GJK+493QH8=
 From: dirk.brandewie@gmail.com
 To: linux-kernel@vger.kernel.org
 Cc: devicetree-discuss@lists.ozlabs.org, linuxppc-dev@lists.ozlabs.org,
         microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
         mmarek@suse.cz, dirk.brandewie@gmail.com, linux-kbuild@vger.kernel.org
-Subject: [PATCH 4/4] microblaze/of: Use generic rule to build dtb's
-Date: Wed, 22 Dec 2010 11:57:29 -0800
-Message-Id: <1293047849-26078-5-git-send-email-dirk.brandewie@gmail.com>
+Subject: [PATCH 3/4] of/powerpc: Use generic rule to build dtb's
+Date: Wed, 22 Dec 2010 11:57:28 -0800
+Message-Id: <1293047849-26078-4-git-send-email-dirk.brandewie@gmail.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1293047849-26078-1-git-send-email-dirk.brandewie@gmail.com>
 References: <1293047849-26078-1-git-send-email-dirk.brandewie@gmail.com>
@@ -35,41 +35,35 @@ scripts/Makefile.lib
 
 Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
 ---
- arch/microblaze/boot/Makefile |   12 +++---------
- 1 files changed, 3 insertions(+), 9 deletions(-)
+ arch/powerpc/boot/Makefile |    8 +++-----
+ 1 files changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/arch/microblaze/boot/Makefile b/arch/microblaze/boot/Makefile
-index be01d78..4c4e58e 100644
---- a/arch/microblaze/boot/Makefile
-+++ b/arch/microblaze/boot/Makefile
-@@ -10,9 +10,6 @@ targets := linux.bin linux.bin.gz simpleImage.%
+diff --git a/arch/powerpc/boot/Makefile b/arch/powerpc/boot/Makefile
+index fae8192..96deec6 100644
+--- a/arch/powerpc/boot/Makefile
++++ b/arch/powerpc/boot/Makefile
+@@ -35,7 +35,7 @@ endif
  
- OBJCOPYFLAGS := -O binary
+ BOOTCFLAGS	+= -I$(obj) -I$(srctree)/$(obj)
  
--# Where the DTS files live
--dtstree         := $(srctree)/$(src)/dts
--
- # Ensure system.dtb exists
- $(obj)/linked_dtb.o: $(obj)/system.dtb
+-DTS_FLAGS	?= -p 1024
++DTC_FLAGS	?= -p 1024
  
-@@ -51,14 +48,11 @@ $(obj)/simpleImage.%: vmlinux FORCE
- 	$(call if_changed,strip)
- 	@echo 'Kernel: $@ is ready' ' (#'`cat .version`')'
- 
--# Rule to build device tree blobs
--DTC = $(objtree)/scripts/dtc/dtc
+ $(obj)/4xx.o: BOOTCFLAGS += -mcpu=405
+ $(obj)/ebony.o: BOOTCFLAGS += -mcpu=405
+@@ -332,10 +332,8 @@ $(obj)/treeImage.%: vmlinux $(obj)/%.dtb $(wrapperbits)
+ 	$(call if_changed,wrap,treeboot-$*,,$(obj)/$*.dtb)
  
  # Rule to build device tree blobs
--quiet_cmd_dtc = DTC     $@
--	cmd_dtc = $(DTC) -O dtb -o $(obj)/$*.dtb -b 0 -p 1024 $(dtstree)/$*.dts
-+DTC_FLAGS := -p 1024
- 
--$(obj)/%.dtb: $(dtstree)/%.dts FORCE
--	$(call if_changed,dtc)
-+$(obj)/%.dtb: $(src)/dts/%.dts FORCE
+-DTC = $(objtree)/scripts/dtc/dtc
+-
+-$(obj)/%.dtb: $(dtstree)/%.dts
+-	$(DTC) -O dtb -o $(obj)/$*.dtb -b 0 $(DTS_FLAGS) $(dtstree)/$*.dts
++$(obj)/%.dtb: $(src)/dts/%.dts
 +	$(call cmd,dtc)
  
- clean-files += *.dtb simpleImage.*.unstrip linux.bin.ub
+ # If there isn't a platform selected then just strip the vmlinux.
+ ifeq (,$(image-y))
 -- 
 1.7.2.3
 
