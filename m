@@ -1,180 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735Ab0LVMBx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 07:01:53 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:17373 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752383Ab0LVMBw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 07:01:52 -0500
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-To: linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk, gregkh@suse.de
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH v2] pch_phub: add new device ML7213
-Date: Wed, 22 Dec 2010 21:04:11 +0900
-Message-Id: <1293019451-3703-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-X-Mailer: git-send-email 1.6.0.6
+	id S1752773Ab0LVMCA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 07:02:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33020 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752320Ab0LVMB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 07:01:59 -0500
+Date: Wed, 22 Dec 2010 12:54:09 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
+        jan.kratochvil@redhat.com
+Subject: Re: [PATCH 12/16] ptrace: make group stop notification reliable
+	against ptrace
+Message-ID: <20101222115409.GB30266@redhat.com>
+References: <1291654624-6230-1-git-send-email-tj@kernel.org> <1291654624-6230-13-git-send-email-tj@kernel.org> <20101220173425.GA18070@redhat.com> <20101221174319.GH13285@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101221174319.GH13285@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add ML7213 device information.
-ML7213 is companion chip of Intel Atom E6xx series for IVI(In-Vehicle Infotainment).
-ML7213 is completely compatible for Intel EG20T PCH.
+On 12/21, Tejun Heo wrote:
+>
+> On Mon, Dec 20, 2010 at 06:34:25PM +0100, Oleg Nesterov wrote:
+> > On 12/06, Tejun Heo wrote:
+> > >
+> > > This patch adds a new signal flag SIGNAL_NOTIFY_STOP which is set on
+> > > group stop completion and cleared on notification to the real parent
+> > > or together with other stopped flags on SIGCONT/KILL.  This guarantees
+> > > that the real parent is notified correctly regardless of ptrace.
+> >
+> > OK, I am a bit confused. I do not understand exactly what this
+> > "correctly" actually means.
+>
+> It means that the ptracer wouldn't eat the notification.  The
+> notification is buffered and delivered when ptrace detaches.
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
- drivers/misc/Kconfig    |    7 ++++-
- drivers/misc/pch_phub.c |   69 ++++++++++++++++++++++++++++++++---------------
- 2 files changed, 53 insertions(+), 23 deletions(-)
+Yes, I understand. I am a bit worried it is not easy to describe the
+new behaviour exactly.
 
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 4d073f1..4852595 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -441,7 +441,7 @@ config BMP085
- 	  module will be called bmp085.
- 
- config PCH_PHUB
--	tristate "PCH Packet Hub of Intel Topcliff"
-+	tristate "PCH Packet Hub of Intel Topcliff / OKI SEMICONDUCTOR ML7213"
- 	depends on PCI
- 	help
- 	  This driver is for PCH(Platform controller Hub) PHUB(Packet Hub) of
-@@ -449,6 +449,11 @@ config PCH_PHUB
- 	  processor. The Topcliff has MAC address and Option ROM data in SROM.
- 	  This driver can access MAC address and Option ROM data in SROM.
- 
-+	  This driver also can be used for OKI SEMICONDUCTOR's ML7213 which is
-+	  for IVI(In-Vehicle Infotainment) use.
-+	  ML7213 is companion chip for Intel Atom E6xx series.
-+	  ML7213 is completely compatible for Intel EG20T PCH.
-+
- 	  To compile this driver as a module, choose M here: the module will
- 	  be called pch_phub.
- 
-diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
-index 744b804..98bffc4 100644
---- a/drivers/misc/pch_phub.c
-+++ b/drivers/misc/pch_phub.c
-@@ -1,5 +1,5 @@
- /*
-- * Copyright (C) 2010 OKI SEMICONDUCTOR Co., LTD.
-+ * Copyright (C) 2010 OKI SEMICONDUCTOR CO., LTD.
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License as published by
-@@ -33,7 +33,12 @@
- #define PHUB_TIMEOUT 0x05		/* Time out value for Status Register */
- #define PCH_PHUB_ROM_WRITE_ENABLE 0x01	/* Enabling for writing ROM */
- #define PCH_PHUB_ROM_WRITE_DISABLE 0x00	/* Disabling for writing ROM */
--#define PCH_PHUB_ROM_START_ADDR 0x14	/* ROM data area start address offset */
-+#define PCH_PHUB_MAC_START_ADDR 0x20C  /* MAC data area start address offset */
-+#define PCH_PHUB_ROM_START_ADDR_EG20T 0x14 /* ROM data area start address offset
-+					      (Intel EG20T PCH)*/
-+#define PCH_PHUB_ROM_START_ADDR_ML7213 0x400 /* ROM data area start address
-+						offset(OKI SEMICONDUCTOR ML7213)
-+					      */
- 
- /* MAX number of INT_REDUCE_CONTROL registers */
- #define MAX_NUM_INT_REDUCE_CONTROL_REG 128
-@@ -42,6 +47,10 @@
- #define CLKCFG_CAN_50MHZ 0x12000000
- #define CLKCFG_CANCLK_MASK 0xFF000000
- 
-+/* Macros for ML7213 */
-+#define PCI_VENDOR_ID_ROHM			0x10db
-+#define PCI_DEVICE_ID_ROHM_ML7213_PHUB		0x801A
-+
- /* SROM ACCESS Macro */
- #define PCH_WORD_ADDR_MASK (~((1 << 2) - 1))
- 
-@@ -298,7 +307,7 @@ static void pch_phub_read_serial_rom_val(struct pch_phub_reg *chip,
- {
- 	unsigned int mem_addr;
- 
--	mem_addr = PCH_PHUB_ROM_START_ADDR +
-+	mem_addr = PCH_PHUB_ROM_START_ADDR_EG20T +
- 			pch_phub_mac_offset[offset_address];
- 
- 	pch_phub_read_serial_rom(chip, mem_addr, data);
-@@ -315,7 +324,7 @@ static int pch_phub_write_serial_rom_val(struct pch_phub_reg *chip,
- 	int retval;
- 	unsigned int mem_addr;
- 
--	mem_addr = PCH_PHUB_ROM_START_ADDR +
-+	mem_addr = PCH_PHUB_ROM_START_ADDR_EG20T +
- 			pch_phub_mac_offset[offset_address];
- 
- 	retval = pch_phub_write_serial_rom(chip, mem_addr, data);
-@@ -594,23 +603,38 @@ static int __devinit pch_phub_probe(struct pci_dev *pdev,
- 		"pch_phub_extrom_base_address variable is %p\n", __func__,
- 		chip->pch_phub_extrom_base_address);
- 
--	pci_set_drvdata(pdev, chip);
--
--	retval = sysfs_create_file(&pdev->dev.kobj, &dev_attr_pch_mac.attr);
--	if (retval)
--		goto err_sysfs_create;
--
--	retval = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
--	if (retval)
--		goto exit_bin_attr;
--
--	pch_phub_read_modify_write_reg(chip, (unsigned int)CLKCFG_REG_OFFSET,
--					CLKCFG_CAN_50MHZ, CLKCFG_CANCLK_MASK);
-+	if (id->driver_data == 1) {
-+		retval = sysfs_create_file(&pdev->dev.kobj,
-+					   &dev_attr_pch_mac.attr);
-+		if (retval)
-+			goto err_sysfs_create;
- 
--	/* set the prefech value */
--	iowrite32(0x000affaa, chip->pch_phub_base_address + 0x14);
--	/* set the interrupt delay value */
--	iowrite32(0x25, chip->pch_phub_base_address + 0x44);
-+		retval = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
-+		if (retval)
-+			goto exit_bin_attr;
-+
-+		pch_phub_read_modify_write_reg(chip,
-+					       (unsigned int)CLKCFG_REG_OFFSET,
-+					       CLKCFG_CAN_50MHZ,
-+					       CLKCFG_CANCLK_MASK);
-+
-+		/* set the prefech value */
-+		iowrite32(0x000affaa, chip->pch_phub_base_address + 0x14);
-+		/* set the interrupt delay value */
-+		iowrite32(0x25, chip->pch_phub_base_address + 0x44);
-+	} else if (id->driver_data == 2) {
-+		retval = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
-+		if (retval)
-+			goto err_sysfs_create;
-+		/* set the prefech value
-+		 * Device2(USB OHCI #1/ USB EHCI #1/ USB Device):a
-+		 * Device4(SDIO #0,1,2):f
-+		 * Device6(SATA 2):f
-+		 * Device8(USB OHCI #0/ USB EHCI #0):a
-+		 */
-+		iowrite32(0x000affa0, chip->pch_phub_base_address + 0x14);
-+	}
-+	pci_set_drvdata(pdev, chip);
- 
- 	return 0;
- exit_bin_attr:
-@@ -687,8 +711,9 @@ static int pch_phub_resume(struct pci_dev *pdev)
- #endif /* CONFIG_PM */
- 
- static struct pci_device_id pch_phub_pcidev_id[] = {
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_PCH1_PHUB)},
--	{0,}
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_PCH1_PHUB),       1,  },
-+	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ROHM_ML7213_PHUB), 2,  },
-+	{ }
- };
- 
- static struct pci_driver pch_phub_driver = {
--- 
-1.6.0.6
+> I see.  My focus was to make ptrace attach/detach transparent.  IOW,
+> minimizing the effect of a debugger (or gcore or whatever) attaching
+> and then leaving.  So, this patch just makes sure that the
+> notification isn't absorbed by a ptracer.
+
+Agreed. And the code itself certainly becomes correct/consistent,
+contrary to "everything is broken" we currently have.
+
+
+Tejun, I'll try to summarize my (very foggy) concerns in a separate
+email. Don't get me wrong, I think this series rightly addresses the
+numerous problems we have. My only question is, can't we go a bit
+further and create the new (and simple) rules. Probably not.
+
+> > > @@ -1901,21 +1925,12 @@ retry:
+> > >  	__set_current_state(TASK_STOPPED);
+> > >
+> > >  	if (likely(!task_ptrace(current))) {
+> > > -		int notify = 0;
+> > > -
+> > > -		/*
+> > > -		 * If there are no other threads in the group, or if there
+> > > -		 * is a group stop in progress and we are the last to stop,
+> > > -		 * report to the parent.
+> > > -		 */
+> > > -		if (task_participate_group_stop(current))
+> > > -			notify = CLD_STOPPED;
+> > > -
+> > > +		task_participate_group_stop(current);
+> > >  		spin_unlock_irq(&current->sighand->siglock);
+> > >
+> > > -		if (notify) {
+> > > +		if (sig->flags & SIGNAL_NOTIFY_STOP) {
+> > >  			read_lock(&tasklist_lock);
+> > > -			do_notify_parent_cldstop(current, notify);
+> > > +			do_notify_parent_cldstop(current, CLD_STOPPED);
+> >
+> > Suppose that debugger attaches right after spin_unlock(->siglock).
+> >
+> > Nothing really bad can happen afaics, but in this case the debugger
+> > will be notified twice. Hmm. If the debugger does do_wait() immediately
+> > after the first notification, it has all rights to see the stopped
+> > tracee but wait_task_stopped() fails, not good.
+>
+> Hmmm?  ptrace_attach() can't happen while tasklist_lock is held.
+
+Sure, but is is not held after we drop ->siglock. And ptrace_attach() can
+happen in the window before we take it for do_notify_parent_cldstop().
+
+Oleg.
 
