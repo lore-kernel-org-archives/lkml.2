@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513Ab0LVOX6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 09:23:58 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:40613 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752040Ab0LVOX5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 09:23:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=qjW3GlgS5pHYTFL1lfWjSG9Kooq5DZol3POtjeOqDDaRuaMNFzUz4ma3kZIEK5pRKg
-         sBBMF5mUad018LEL6GJA==
+	id S1752779Ab0LVOZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 09:25:26 -0500
+Received: from ffm.saftware.de ([83.141.3.46]:36038 "EHLO ffm.saftware.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752038Ab0LVOZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 09:25:25 -0500
+X-Greylist: delayed 633 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Dec 2010 09:25:25 EST
+Message-ID: <4D1207D9.2050000@linuxtv.org>
+Date: Wed, 22 Dec 2010 15:14:49 +0100
+From: Andreas Oberritter <obi@linuxtv.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20101222093032.0320c9bf@mschwide.boeblingen.de.ibm.com>
-References: <1292980144-28796-1-git-send-email-venki@google.com>
-	<1292980144-28796-3-git-send-email-venki@google.com>
-	<20101222093032.0320c9bf@mschwide.boeblingen.de.ibm.com>
-Date: Wed, 22 Dec 2010 06:23:55 -0800
-Message-ID: <AANLkTi=Jensy79OAu10LWvmFC7kMHGUpeJUFRX-soGTw@mail.gmail.com>
-Subject: Re: [PATCH 2/5] Add nsecs_to_cputime64 interface for asm-generic -v2
-From: Venkatesh Pallipadi <venki@google.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Paul Turner <pjt@google.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Shaun Ruffell <sruffell@digium.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Thiago Farina <tfransosi@gmail.com>
+CC: linux-kernel@vger.kernel.org, arnd@arndb.de,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH v2] drivers/media/video/v4l2-compat-ioctl32.c: Check the
+ return value of copy_to_user
+References: <201012212003.11446.arnd@arndb.de> <83948188cda2388c2e22a50119dfb0023fba759a.1292975147.git.tfransosi@gmail.com>
+In-Reply-To: <83948188cda2388c2e22a50119dfb0023fba759a.1292975147.git.tfransosi@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 22, 2010 at 12:30 AM, Martin Schwidefsky
-<schwidefsky@de.ibm.com> wrote:
-> On Tue, 21 Dec 2010 17:09:01 -0800
-> Venkatesh Pallipadi <venki@google.com> wrote:
->
->> Add nsecs_to_cputime64 interface. This is used in following patches that
->> updates cpu irq stat based on ns granularity info in IRQ_TIME_ACCOUNTING.
->>
->> Tested-by: Shaun Ruffell <sruffell@digium.com>
->> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
->> ---
->>  include/asm-generic/cputime.h |    3 +++
->>  include/linux/jiffies.h       |    1 +
->>  kernel/time.c                 |   23 +++++++++++++++++++++--
->>  3 files changed, 25 insertions(+), 2 deletions(-)
->>
->> diff --git a/include/asm-generic/cputime.h b/include/asm-generic/cputime.h
->> index 2bcc5c7..61e03dd 100644
->> --- a/include/asm-generic/cputime.h
->> +++ b/include/asm-generic/cputime.h
->> @@ -30,6 +30,9 @@ typedef u64 cputime64_t;
->>  #define cputime64_to_jiffies64(__ct) (__ct)
->>  #define jiffies64_to_cputime64(__jif)        (__jif)
->>  #define cputime_to_cputime64(__ct)   ((u64) __ct)
->> +#define cputime64_gt(__a, __b)               ((__a) >  (__b))
->> +
->> +#define nsecs_to_cputime64(__ct)     nsecs_to_jiffies64(__ct)
->>
->>
->>  /*
->
-> If you define a new cputime primitive it is not enough to add it to the
-> generic cputime header. You have to add it to the arch-specific cputime
-> header for ia64, powerpc and s390 as well. Otherwise the build will
-> break with CONFIG_VIRT_CPU_ACCOUNTING=y on these architectures once the
-> new primitive is used.
->
+On 12/22/2010 12:48 AM, Thiago Farina wrote:
+> This fix the following warning:
+> drivers/media/video/v4l2-compat-ioctl32.c: In function â€˜get_microcode32â€™:
+> drivers/media/video/v4l2-compat-ioctl32.c:209: warning: ignoring return value of â€˜copy_to_userâ€™, declared with attribute warn_unused_result
+> 
+> Signed-off-by: Thiago Farina <tfransosi@gmail.com>
+> ---
+>  Changes from v1:
+>  - Check the return code of put_user too.
+>  - Remove the obsolete comment.
+> 
+>  drivers/media/video/v4l2-compat-ioctl32.c |   14 ++++++--------
+>  1 files changed, 6 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/media/video/v4l2-compat-ioctl32.c b/drivers/media/video/v4l2-compat-ioctl32.c
+> index e30e8df..6f2a022 100644
+> --- a/drivers/media/video/v4l2-compat-ioctl32.c
+> +++ b/drivers/media/video/v4l2-compat-ioctl32.c
+> @@ -201,14 +201,12 @@ static struct video_code __user *get_microcode32(struct video_code32 *kp)
+>  
+>  	up = compat_alloc_user_space(sizeof(*up));
 
-But, those archs have arch specific cputime as well and so need a
-different macro for nsecs_to_cputime64, instead of nsec_to_jiffies64.
-Right? As of now this new primitive should not be used in those archs.
-I guess this is something needed when using the primitive in future?
+I don't know anything about that code, but I assume that "up" should be
+checked for NULL before use and should be freed in case an error occurs
+below.
 
-Thanks,
-Venki
+>  
+> -	/*
+> -	 * NOTE! We don't actually care if these fail. If the
+> -	 * user address is invalid, the native ioctl will do
+> -	 * the error handling for us
+> -	 */
+> -	(void) copy_to_user(up->loadwhat, kp->loadwhat, sizeof(up->loadwhat));
+> -	(void) put_user(kp->datasize, &up->datasize);
+> -	(void) put_user(compat_ptr(kp->data), &up->data);
+> +	if (copy_to_user(up->loadwhat, kp->loadwhat, sizeof(up->loadwhat)))
+> +		return NULL;
+> +	if (put_user(kp->datasize, &up->datasize))
+> +		return NULL;
+> +	if (put_user(compat_ptr(kp->data), &up->data))
+> +		return NULL;
+>  	return up;
+>  }
+>  
+
