@@ -1,85 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143Ab0LVLip (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 06:38:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39797 "EHLO mx2.suse.de"
+	id S1752164Ab0LVLlw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 06:41:52 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:53888 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751253Ab0LVLin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 06:38:43 -0500
-Date: Wed, 22 Dec 2010 12:38:42 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Vojtech Pavlik <vojtech@suse.cz>
-Subject: Re: [PATCH] tcp: use RTAX_CWND for outgoing connections properly
-In-Reply-To: <1293017383.3027.75.camel@edumazet-laptop>
-Message-ID: <alpine.LNX.2.00.1012221231450.16569@pobox.suse.cz>
-References: <alpine.LNX.2.00.1012172310400.16569@pobox.suse.cz>  <alpine.LNX.2.00.1012221059340.16569@pobox.suse.cz> <1293017383.3027.75.camel@edumazet-laptop>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751335Ab0LVLlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 06:41:51 -0500
+Date: Wed, 22 Dec 2010 12:41:40 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Cliff Wickman <cpw@sgi.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86: UV kdump reboot fix
+Message-ID: <20101222114140.GJ3127@elte.hu>
+References: <E1PPjXy-0004Cs-5F@eag09.americas.sgi.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1PPjXy-0004Cs-5F@eag09.americas.sgi.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Dec 2010, Eric Dumazet wrote:
 
-> > > For outgoing connections, the initial value of cwnd is always set to 2 (in 
-> > > tcp_v4_init_sock()) regardless of setting of RTAX_CWND. For incoming 
-> > > connections, this is handled properly in tcp_init_metrics().
-> > > 
-> > > As a result of this, Linux TCP stack always uses cwnd == 2 at the beginning of
-> > > outgoing TCP session (i.e. waits for ACK after 2 packets once the connection
-> > > has been established) and grows it in accordance with slow-start algorithm
-> > > only after it receives ACK for first two packets.
-> > > 
-> > > When slow-start triggers later during the connection (e.g. after idle), 
-> > > cwnd is properly re-initialized to RTAX_CWND value (if specified) through 
-> > > tcp_cwnd_restart() -> tcp_init_cwnd().
-> > > 
-> > > Initialize tp->snd_cwnd properly so that RTAX_CWND value is being used 
-> > > also in the slow-start phase for the first packets in the connection.
-> > 
-> > This should of course read RTAX_INITCWND instead of RTAX_CWND in the whole 
-> > changelog, sorry.
-> > 
-> > Besides that, any comments on this, please?
-> > 
+* Cliff Wickman <cpw@sgi.com> wrote:
+
 > 
-> Its a bit strange, here is what I have with two net-next-2.6 machines
-> (without your patch)
+> After a crash dump on an SGI Altix UV system the crash kernel fails to
+> cause a reboot.
+> Only the reboot_type of BOOT_ACPI works.
+> Other boot types ...BOOT_EFI, _KBD, _TRIPLE... fail.
 > 
-> 192.168.20.0/24 dev eth1  scope link  initcwnd 10
+> The system's BIOS has an EFI layer, so it is a bit of a mystery to me
+> why BOOT_EFI fails.  Can someone explain that?
 > 
-> 12:13:46.855786 IP 192.168.20.110.39146 > 192.168.20.108.59636: S 1615862982:1615862982(0) win 14600 <mss 1460,sackOK,timestamp 277530 0,nop,wscale 8>
-> 12:13:46.855807 IP 192.168.20.108.59636 > 192.168.20.110.39146: S 1603053412:1603053412(0) ack 1615862983 win 14480 <mss 1460,sackOK,timestamp 744840 277530,nop,wscale 7>
-> 12:13:46.855878 IP 192.168.20.110.39146 > 192.168.20.108.59636: . ack 1 win 58 <nop,nop,timestamp 277530 744840>
-> 12:13:46.856779 IP 192.168.20.110.39146 > 192.168.20.108.59636: P 1:14481(14480) ack 1 win 58 <nop,nop,timestamp 277530 744840>
-> 12:13:46.856794 IP 192.168.20.108.59636 > 192.168.20.110.39146: . ack 14481 win 136 <nop,nop,timestamp 744841 277530>
-> 12:13:46.856901 IP 192.168.20.110.39146 > 192.168.20.108.59636: . 14481:15929(1448) ack 1 win 58 <nop,nop,timestamp 277531 744841>
-> 12:13:46.856912 IP 192.168.20.108.59636 > 192.168.20.110.39146: . ack 15929 win 159 <nop,nop,timestamp 744841 277531>
-> 12:13:46.856930 IP 192.168.20.110.39146 > 192.168.20.108.59636: . 15929:18825(2896) ack 1 win 58 <nop,nop,timestamp 277531 744841>
->
-> We can see 192.168.20.110 sends 14480 bytes in its first frame.
+> Diffed against 2.6.37-rc2
+> 
+> Signed-off-by: Cliff Wickman <cpw@sgi.com>
+> 
+> ---
+>  arch/x86/kernel/reboot.c |    6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> Index: linux/arch/x86/kernel/reboot.c
+> ===================================================================
+> --- linux.orig/arch/x86/kernel/reboot.c
+> +++ linux/arch/x86/kernel/reboot.c
+> @@ -10,6 +10,7 @@
+>  #include <linux/dmi.h>
+>  #include <linux/sched.h>
+>  #include <linux/tboot.h>
+> +#include <linux/crash_dump.h>
+>  #include <acpi/reboot.h>
+>  #include <asm/io.h>
+>  #include <asm/apic.h>
+> @@ -22,6 +23,7 @@
+>  #include <asm/pci_x86.h>
+>  #include <asm/virtext.h>
+>  #include <asm/cpu.h>
+> +#include <asm/uv/uv.h>
+>  
+>  #ifdef CONFIG_X86_32
+>  # include <linux/ctype.h>
+> @@ -675,6 +677,10 @@ static void native_machine_restart(char 
+>  
+>  	if (!reboot_force)
+>  		machine_shutdown();
+> +
+> +	if (is_uv_system() && is_kdump_kernel())
+> +		reboot_type = BOOT_ACPI;
+> +
+>  	__machine_emergency_restart(0);
 
-So is this with 356f039822b8d802138f applied?
+This kind of is_uv_system() hackery in core x86 code is really unacceptable!
 
-I have had a testing environment in which I had forced the 'receiver' to 
-advertise large receive window, but still the sender started with a very 
-small initial congestion window, waiting for ack after 1 or 2 MSS-sized 
-packets.
+Either add a proper reboot quirk or add platform ops support for UV reboot, a'la:
 
-I must admit that I was reproducing it with slightly older kernel, but 
-haven't seen any changes in the code which would influence this behavior. 
-Will look how most up-to-date kernel (plus 356f039822b8d802138f) behaves 
-in that environment.
+ cfb505a7ebd4: x86: mrst: Add Moorestown specific reboot/shutdown support
 
-Where in the code is the congestion window enlarged to accomodate 14480 
-bytes in your case? I don't see where the value of '2' coming from 
-tcp_v4_init_sock() is being overriden for "outgoing" connections ...
+In fact all is_uv_system() checkery hacks in core x86 code should be eliminated:
+
+ arch/x86/kernel/cpu/common.c:   if (is_uv_system())
+ arch/x86/kernel/smpboot.c:      if (is_uv_system())
+ arch/x86/mm/tlb.c:      if (is_uv_system()) {
+
+and proper platform_ops (or machine_ops) should be introduced instead.
 
 Thanks,
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+	Ingo
