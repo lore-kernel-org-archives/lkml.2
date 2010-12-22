@@ -1,95 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008Ab0LVQyP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 11:54:15 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57230 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751418Ab0LVQyO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 11:54:14 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=U11su5U9731MNZYqLzBNDEq2s+1Nz8fa27iFV7qd0bjWam0G+Vvx9rsnqywvplgLa3
-         C78olYqoZjGszaUajKcH+HTKpUY17YS9qoupHkTU6AY5eXlgqMxDBlkKUSxOA7pUHvO9
-         8Lo49HZzrWvRvq+Vo6nzwVNi4uZKEXdncEXuY=
-Subject: Re: 2.6.36.2 - loop on read /proc/net/tcp
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Alexey Vlasov <renton@renton.name>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <20101222134343.GC19998@beaver.vrungel.ru>
-References: <20101222134343.GC19998@beaver.vrungel.ru>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 22 Dec 2010 17:54:09 +0100
-Message-ID: <1293036849.3027.277.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1752214Ab0LVS4z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 13:56:55 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:58702 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751704Ab0LVS4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 13:56:53 -0500
+Message-ID: <4D1249ED.9040008@sgi.com>
+Date: Wed, 22 Dec 2010 10:56:45 -0800
+From: Mike Travis <travis@sgi.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Len Brown <lenb@kernel.org>,
+        Jack Steiner <steiner@sgi.com>, Lori Gilbertson <loriann@sgi.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Early kernel messages are overflowing the static log buffer
+References: <4D06B317.2090608@sgi.com> <20101222130946.GC13412@elte.hu> <20101222131719.GA8061@htj.dyndns.org>
+In-Reply-To: <20101222131719.GA8061@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 22 décembre 2010 à 16:43 +0300, Alexey Vlasov a écrit :
-> Hi.
+Thanks.
+
+I have a patchset almost ready for submission.  We have a giant
+system (6 racks with some huge amount of nodes) for a few more
+days, and the buffer still overflowed with my changes.  So I'm
+making one more tweak to cut down the amount of characters 
+generated without losing information.
+
+Tejun Heo wrote:
+> Hello,
 > 
-> Has anyone seen such a bug at 2.6.36.2?
-> # netstat -ntl
-> Active Internet connections (only servers)
-> Proto Recv-Q Send-Q Local Address           Foreign Address         State
-> tcp        0      0 81.176.228.2:60608      0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.4:8099       0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.5:8099       0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.7:8099       0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.4:8100       0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.5:8100       0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.4:8101       0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.5:8101       0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.5:20037      0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.4:8102       0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.5:8102       0.0.0.0:*               LISTEN
-> tcp        0      0 127.0.0.1:3399          0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.4:20040      0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.4:38985      0.0.0.0:*               LISTEN
-> tcp        0      0 0.0.0.0:873             0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.4:20041      0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.4:20042      0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.4:3306       0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.3:3306       0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.2:3306       0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.5:9099       0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.4:9099       0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.4:20043      0.0.0.0:*               LISTEN
-> tcp        0      0 0.0.0.0:139             0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.5:9100       0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.4:9100       0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.4:20044      0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.5:33549      0.0.0.0:*               LISTEN
-> ...
-> First 30 lines are ok
+> On Wed, Dec 22, 2010 at 02:09:46PM +0100, Ingo Molnar wrote:
+>>> [    0.000000] pcpu-alloc: [000] 0000 0001 0002 0003 0004 0005 0006 0007 1024 1025 1026 1027 1028 1029 1030 1031
+>>>
+>>> What I'm asking is which of these would be most acceptable to
+>>> either remove or replace with some sort of message reduction?
+>> The pcpu alloc messages look entirely superfluous and zappable - make them 
+>> KERN_DEBUG perhaps (and Cc: Tejun)?
 > 
-> but then go lines repeating in "eternal" loop:
-> tcp        0      0 81.176.228.2:80         0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.3:80         0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.4:80         0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.7:80         0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.2:80         0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.3:80         0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.4:80         0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.7:80         0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.2:80         0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.3:80         0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.4:80         0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.7:80         0.0.0.0:*               LISTEN
-> tcp        0      0 81.176.228.2:80         0.0.0.0:*               LISTEN
+> Yeap, with percpu allocator now mostly stable, I don't think the
+> message needs to be KERN_INFO anymore.  I'll change it to KERN_DEBUG.
 > 
-> # cat /proc/net/tcp
-> ...
-> It can hang an hour or so. but not always actually.
+> Thanks.
+> 
 
-Ouch...
+This doesn't really help the log buffer overflow problem as KERN_DEBUG
+messages still end up in the buffer.  The pr_debug() macro does compile
+out the messages if the system does not have KERNEL debug set, though
+distros also have this set as a default.
 
-Hmm, yes, I think I can do something about it, thanks for the report
-
-
+Thanks,
+Mike
 
