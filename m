@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962Ab0LVLRw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 06:17:52 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:58478 "EHLO mx3.mail.elte.hu"
+	id S1752069Ab0LVLWu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 06:22:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58606 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751335Ab0LVLRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 06:17:51 -0500
-Date: Wed, 22 Dec 2010 12:17:25 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        penberg@kernel.org, alan@lxorguk.ukuu.org.uk, tglx@linutronix.de,
-        hpa@linux.intel.com
-Subject: Re: [tip:x86/cpu] x86, cpu: Clear XD_DISABLED flag on Intel to
- regain NX
-Message-ID: <20101222111725.GD3127@elte.hu>
-References: <1289414154-7829-3-git-send-email-kees.cook@canonical.com>
- <tip-ae84739c27b6b3725993202fe02ff35ab86468e1@git.kernel.org>
- <20101208222713.GP5750@outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101208222713.GP5750@outflux.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1751813Ab0LVLWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 06:22:49 -0500
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: WANG Cong <amwang@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Dan Carpenter <error27@gmail.com>, Tejun Heo <tj@kernel.org>
+Subject: [RFC Patch] kcore: restrict access to the whole memory
+Date: Wed, 22 Dec 2010 19:21:59 +0800
+Message-Id: <1293016926-1714-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch restricts /proc/kcore from accessing the whole memory,
+instead, only an ELF header can be read.
 
-* Kees Cook <kees.cook@canonical.com> wrote:
+The initial patch was done by Vivek.
 
-> On Thu, Nov 11, 2010 at 02:49:04AM +0000, tip-bot for Kees Cook wrote:
-> > Commit-ID:  ae84739c27b6b3725993202fe02ff35ab86468e1
-> > Gitweb:     http://git.kernel.org/tip/ae84739c27b6b3725993202fe02ff35ab86468e1
-> > Author:     Kees Cook <kees.cook@canonical.com>
-> > AuthorDate: Wed, 10 Nov 2010 10:35:52 -0800
-> > Committer:  H. Peter Anvin <hpa@linux.intel.com>
-> > CommitDate: Wed, 10 Nov 2010 15:42:54 -0800
-> > 
-> > x86, cpu: Clear XD_DISABLED flag on Intel to regain NX
-> 
-> Just some quick positive feedback on this patch series: I've had at least one 
-> confirmed report of a user with an Asus system that had NX disabled (in the BIOS 
-> which offered no toggle to switch it on) is able to use the NX bit on their CPU 
-> finally. Additionally, no regressions have been identified either, and there has 
-> been a fair number of people running with the patch for a few weeks now in 
-> Ubuntu's development kernel.
+Signed-off-by: WANG Cong <amwang@redhat.com>
 
-Nice!
-
-	Ingo
+---
+diff --git a/fs/proc/Kconfig b/fs/proc/Kconfig
+index 6a00688..2fd1df1 100644
+--- a/fs/proc/Kconfig
++++ b/fs/proc/Kconfig
+@@ -32,6 +32,14 @@ config PROC_KCORE
+ 	bool "/proc/kcore support" if !ARM
+ 	depends on PROC_FS && MMU
+ 
++config STRICT_PROC_KCORE
++	bool "Only export an ELF header from /proc/kcore"
++	depends on PROC_KCORE
++	default n
++	help
++	If this option is enabled, only an ELF header can be read from
++	/proc/kcore, instead of a whole ELF image.
++
+ config PROC_VMCORE
+ 	bool "/proc/vmcore support"
+ 	depends on PROC_FS && CRASH_DUMP
+diff --git a/fs/proc/kcore.c b/fs/proc/kcore.c
+index 6f37c39..c45ff00 100644
+--- a/fs/proc/kcore.c
++++ b/fs/proc/kcore.c
+@@ -90,7 +90,12 @@ static size_t get_kcore_size(int *nphdr, size_t *elf_buflen)
+ 			roundup(sizeof(struct elf_prpsinfo), 4) +
+ 			roundup(sizeof(struct task_struct), 4);
+ 	*elf_buflen = PAGE_ALIGN(*elf_buflen);
++#ifdef CONFIG_STRICT_PROC_KCORE
++	return *elf_buflen;
++#else
+ 	return size + *elf_buflen;
++#endif
++
+ }
+ 
+ static void free_kclist_ents(struct list_head *head)
+@@ -429,7 +434,7 @@ read_kcore(struct file *file, char __user *buffer, size_t buflen, loff_t *fpos)
+ 	size_t size, tsz;
+ 	size_t elf_buflen;
+ 	int nphdr;
+-	unsigned long start;
++	unsigned long __maybe_unused start;
+ 
+ 	read_lock(&kclist_lock);
+ 	size = get_kcore_size(&nphdr, &elf_buflen);
+@@ -473,6 +478,9 @@ read_kcore(struct file *file, char __user *buffer, size_t buflen, loff_t *fpos)
+ 	} else
+ 		read_unlock(&kclist_lock);
+ 
++#ifdef CONFIG_STRICT_PROC_KCORE
++	return acc;
++#else
+ 	/*
+ 	 * Check to see if our file offset matches with any of
+ 	 * the addresses in the elf_phdr on our list.
+@@ -537,6 +545,7 @@ read_kcore(struct file *file, char __user *buffer, size_t buflen, loff_t *fpos)
+ 	}
+ 
+ 	return acc;
++#endif
+ }
+ 
+ 
