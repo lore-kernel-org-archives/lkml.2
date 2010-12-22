@@ -1,215 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182Ab0L0DE4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Dec 2010 22:04:56 -0500
-Received: from nm23-vm0.bullet.mail.ac4.yahoo.com ([98.139.53.220]:38796 "HELO
-	nm23-vm0.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751535Ab0L0DEz (ORCPT
+	id S1752884Ab0L0DMg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Dec 2010 22:12:36 -0500
+Received: from minerva.fmed.edu.uy ([164.73.144.2]:54169 "EHLO
+	minerva.fmed.edu.uy" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751535Ab0L0DMf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Dec 2010 22:04:55 -0500
-X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Sun, 26 Dec 2010 22:04:55 EST
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 492912.31245.bm@omp1055.mail.ac4.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type;
-  b=gQT0T7F+StED0LWA5nUzizyLiz/f7b4QXDDtTGbfxxa+nBfa5MsRM5wzqQb8ZYtD1Ys5Ouda+/ouD2kyY3Is8NivVytqnj7svkGnM7lGGm4zp2LwoDXmSfFcOUufYg/jKcPYHg5ZB00Ljhd0iyrZDaKCYc1Ddi0uW6S1V8zTNho=;
-Message-ID: <342039.62488.qm@web65711.mail.ac4.yahoo.com>
-X-YMail-OSG: UuPFngUVM1nwJwckA2wOSYgivqT90reJZVzwHacGnuxfdOH
- rkZTAbsseZex.rZFT8QSAJTqsqtu_roXYjNhE08RDDU5JcTQ3UwJbiVNFACN
- euIMr69A_kP4PneJ.myXDdElbV4zURH3ydbcFMr90IbOYZgr7KTs8U9U5ip.
- 6DDNZdNbasHSPdVRIhhij5h1NdtWynIXy9oOFq6fF92XUU..LN4obXhBjKvl
- 6FPvGUo31IS8cSCYQsM2mixKIgaFi3HP09H6DcxIBJtpTtiVuri1jyu7.TQD
- zDpPmVnZBkuRVAElZjW1h.a_HQwOKmi85jBkpqXkOrH.QQhFg564gjIB2PbG
- V3NjqUDAilqzQ6yp90JOtYLK.IkmVAMG5pMC5opvpNjBMSC.2DE3sP1rN48h
- dmN1_11naaYU3nYiOnHucxwutHA--
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.285259
-Date: Sun, 26 Dec 2010 18:58:46 -0800 (PST)
-From: Tsozik <tsozik@yahoo.com>
-Subject: [PATCH 1/1] mct_u232: added _ioctl and _get_icount functions
-To: Greg Kroah-Hartman <gregkh@suse.de>, Pete Zaitcev <zaitcev@redhat.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+	Sun, 26 Dec 2010 22:12:35 -0500
+Message-ID: <20101222201640.6692781bfi13l2ww@correo.fmed.edu.uy>
+Date: Wed, 22 Dec 2010 20:16:40 -0200
+From: "Dr.Rod Thompson" <rodthompson222@aol.com>
+To: undisclosed-recipients:;
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="0-757389922-1293418726=:62488"
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
+X-Spam-Score: 6.2
+X-Spam-Report: Spam detection software, running on the system "minerva.fmed.edu.uy", has
+	identified this incoming email as possible spam.  The original message
+	has been attached to this so you can view it (if it isn't spam) or label
+	similar future email.  If you have any questions, see
+	the administrator of that system for details.
+	Content analysis details:   (6.2 points, 4.0 required)
+	pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	-1.4 ALL_TRUSTED            Passed through trusted hosts only via SMTP
+	2.7 DEAR_FRIEND            BODY: Dear Friend? That's not very dear!
+	2.0 ADVANCE_FEE_2          Appears to be advance fee fraud (Nigerian 419)
+	1.4 ADVANCE_FEE_3          Appears to be advance fee fraud (Nigerian 419)
+	1.5 ADVANCE_FEE_4          Appears to be advance fee fraud (Nigerian 419)
+X-Spam: YES
+Subject: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0-757389922-1293418726=:62488
-Content-Type: text/plain; charset=us-ascii
-
-Pete, Greg,
-
-Again thank you very much for your valuable feedback. I generated another patch (based on linux-2.6.37-rc7) and ran it against scripts/checkpatch.pl script which didn't produce any errors or warnings:
-
-[vtsozik@SR71 2.6.37-rc7]$ /usr/src/kernels/2.6.37-rc7/scripts/checkpatch.pl mct_u232.c.patch.submit 
-total: 0 errors, 0 warnings, 191 lines checked
-
-mct_u232.c.patch.submit has no obvious style problems and is ready for submission.
-[vtsozik@SR71 2.6.37-rc7]$
-
-I attached mct_u232.c.patch.submit file to this email, so tabs will not be expanded into spaces. Please let me know if there's anything else I need to correct before it can be rolled out,
-
-Again thank you for your help with this,
- Vadim.
 
 
-      
---0-757389922-1293418726=:62488
-Content-Type: application/octet-stream; name="mct_u232.c.patch.submit"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="mct_u232.c.patch.submit"
+Dear Friend, Business request
 
-RnJvbTogRnJvbTogVmFkaW0gVHNvemlrIDx0c296aWtAeWFob28uY29tPgoK
-QWRkZWQgbWN0X3UyMzJfaW9jdGwgKGltcGxlbWVudHMgVElPQ01JV0FJVCBj
-b21tYW5kKSBhbmQgbWN0X3UyMzJfZ2V0X2ljb3VudCAoaW1wbGVtZW50cyBU
-SU9DR0lDT1VOVCBjb21tYW5kKSBmdW5jdGlvbnMuIE1DVCB1MjMyIHA5IGlz
-IG9uZSBvZiBhIGZldyB1c2IgdG8gc2VyYWlsIGFkYXB0ZXJzIHdoaWNoIGNv
-bnZlcnRzIFVTQiArLy01diB2b2x0YWdlIGxldmVscyB0byBDT00gKy8tMTUg
-dm9sdGFnZXMuIFNvIGl0IGNhbiBhbHNvIHBvd2VyIENPTSBpbnRlcmZhY2Vk
-IGRldmljZXMuIFRoaXMgbWFrZXMgaXQgdmVyeSB1c2FibGUgZm9yIGxlZ2Fj
-eSBDT00gaW50ZXJmYWNlZCBkYXRhLWFjcXVpc2l0aW9uIGhhcmR3YXJlLiBJ
-IHRlc3RlZCBuZXcgaW1wbGVtZW50YXRpb24gd2l0aCBBV0FSRSBFbGVjdHJv
-bmljcyBSTS02MCByYWRpYXRpb24gbWV0ZXIsIHdoaWNoIHNlbmRzIHB1bHNl
-IHZpYSBSTkcgQ09NIGxpbmUgd2hlbmV2ZXIgbmV3IHBhcnRpY2xlIGlzIHJl
-Z2lzdGVyZWQuCgpTaWduZWQtb2ZmLWJ5OiBWYWRpbSBUc296aWsgPHRzb3pp
-a0B5YWhvby5jb20+CgotLS0KClBhdGNoIGJlbG93IGlzIGJhc2VkIG9uIGxp
-bnV4LTIuNi4zNy1yYzcKCi0tLSB1c2Ivc2VyaWFsL21jdF91MjMyLmMub3Jp
-ZwkyMDEwLTEyLTI2IDE2OjU0OjE2LjY2MDI5NDkyNCAtMDUwMAorKysgdXNi
-L3NlcmlhbC9tY3RfdTIzMi5jCTIwMTAtMTItMjYgMjA6NDU6NDEuNzExNjgy
-MTI3IC0wNTAwCkBAIC03OCw2ICs3OCw4IEBACiAjaW5jbHVkZSA8YXNtL3Vu
-YWxpZ25lZC5oPgogI2luY2x1ZGUgPGxpbnV4L3VzYi5oPgogI2luY2x1ZGUg
-PGxpbnV4L3VzYi9zZXJpYWwuaD4KKyNpbmNsdWRlIDxsaW51eC9zZXJpYWwu
-aD4KKyNpbmNsdWRlIDxsaW51eC9pb2N0bC5oPgogI2luY2x1ZGUgIm1jdF91
-MjMyLmgiCiAKIC8qCkBAIC0xMDQsNiArMTA2LDEwIEBAIHN0YXRpYyB2b2lk
-IG1jdF91MjMyX2JyZWFrX2N0bChzdHJ1Y3QgdHQKIHN0YXRpYyBpbnQgIG1j
-dF91MjMyX3Rpb2NtZ2V0KHN0cnVjdCB0dHlfc3RydWN0ICp0dHksIHN0cnVj
-dCBmaWxlICpmaWxlKTsKIHN0YXRpYyBpbnQgIG1jdF91MjMyX3Rpb2Ntc2V0
-KHN0cnVjdCB0dHlfc3RydWN0ICp0dHksIHN0cnVjdCBmaWxlICpmaWxlLAog
-CQkJdW5zaWduZWQgaW50IHNldCwgdW5zaWduZWQgaW50IGNsZWFyKTsKK3N0
-YXRpYyBpbnQgIG1jdF91MjMyX2lvY3RsKHN0cnVjdCB0dHlfc3RydWN0ICp0
-dHksIHN0cnVjdCBmaWxlICpmaWxlLAorCQkJdW5zaWduZWQgaW50IGNtZCwg
-dW5zaWduZWQgbG9uZyBhcmcpOworc3RhdGljIGludCAgbWN0X3UyMzJfZ2V0
-X2ljb3VudChzdHJ1Y3QgdHR5X3N0cnVjdCAqdHR5LAorCQkJc3RydWN0IHNl
-cmlhbF9pY291bnRlcl9zdHJ1Y3QgKmljb3VudCk7CiBzdGF0aWMgdm9pZCBt
-Y3RfdTIzMl90aHJvdHRsZShzdHJ1Y3QgdHR5X3N0cnVjdCAqdHR5KTsKIHN0
-YXRpYyB2b2lkIG1jdF91MjMyX3VudGhyb3R0bGUoc3RydWN0IHR0eV9zdHJ1
-Y3QgKnR0eSk7CiAKQEAgLTE1MCw5ICsxNTYsMTAgQEAgc3RhdGljIHN0cnVj
-dCB1c2Jfc2VyaWFsX2RyaXZlciBtY3RfdTIzMgogCS50aW9jbXNldCA9CSAg
-ICAgbWN0X3UyMzJfdGlvY21zZXQsCiAJLmF0dGFjaCA9CSAgICAgbWN0X3Uy
-MzJfc3RhcnR1cCwKIAkucmVsZWFzZSA9CSAgICAgbWN0X3UyMzJfcmVsZWFz
-ZSwKKwkuaW9jdGwgPSAgICAgICAgICAgICBtY3RfdTIzMl9pb2N0bCwKKwku
-Z2V0X2ljb3VudCA9ICAgICAgICBtY3RfdTIzMl9nZXRfaWNvdW50LAogfTsK
-IAotCiBzdHJ1Y3QgbWN0X3UyMzJfcHJpdmF0ZSB7CiAJc3BpbmxvY2tfdCBs
-b2NrOwogCXVuc2lnbmVkIGludAkgICAgIGNvbnRyb2xfc3RhdGU7IC8qIE1v
-ZGVtIExpbmUgU2V0dGluZyAoVElPQ00pICovCkBAIC0xNjAsNiArMTY3LDkg
-QEAgc3RydWN0IG1jdF91MjMyX3ByaXZhdGUgewogCXVuc2lnbmVkIGNoYXIJ
-ICAgICBsYXN0X2xzcjsgICAgICAvKiBMaW5lIFN0YXR1cyBSZWdpc3RlciAq
-LwogCXVuc2lnbmVkIGNoYXIJICAgICBsYXN0X21zcjsgICAgICAvKiBNb2Rl
-bSBTdGF0dXMgUmVnaXN0ZXIgKi8KIAl1bnNpZ25lZCBpbnQJICAgICByeF9m
-bGFnczsgICAgICAvKiBUaHJvdHRsaW5nIGZsYWdzICovCisJc3RydWN0IGFz
-eW5jX2ljb3VudCAgaWNvdW50OworCXdhaXRfcXVldWVfaGVhZF90ICAgIG1z
-cl93YWl0OwkvKiBmb3IgaGFuZGxpbmcgc2xlZXBpbmcgd2hpbGUgd2FpdGlu
-ZworCQkJCQkJZm9yIG1zciBjaGFuZ2UgdG8gaGFwcGVuICovCiB9OwogCiAj
-ZGVmaW5lIFRIUk9UVExFRAkJMHgwMQpAQCAtMzg2LDI3ICszOTYsNDEgQEAg
-c3RhdGljIGludCBtY3RfdTIzMl9nZXRfbW9kZW1fc3RhdChzdHJ1YwogCXJl
-dHVybiByYzsKIH0gLyogbWN0X3UyMzJfZ2V0X21vZGVtX3N0YXQgKi8KIAot
-c3RhdGljIHZvaWQgbWN0X3UyMzJfbXNyX3RvX3N0YXRlKHVuc2lnbmVkIGlu
-dCAqY29udHJvbF9zdGF0ZSwKLQkJCQkJCXVuc2lnbmVkIGNoYXIgbXNyKQor
-c3RhdGljIHZvaWQgbWN0X3UyMzJfbXNyX3RvX3N0YXRlKHN0cnVjdCBtY3Rf
-dTIzMl9wcml2YXRlICpwcml2KQogeworCXVuc2lnbmVkIGNoYXIgbXNyID0g
-cHJpdi0+bGFzdF9tc3I7CisJdW5zaWduZWQgaW50ICpjb250cm9sX3N0YXRl
-ID0gJnByaXYtPmNvbnRyb2xfc3RhdGU7CisJc3RydWN0IGFzeW5jX2ljb3Vu
-dCAqaWNvdW50ID0gJnByaXYtPmljb3VudDsKKwogCS8qIFRyYW5zbGF0ZSBD
-b250cm9sIExpbmUgc3RhdGVzICovCi0JaWYgKG1zciAmIE1DVF9VMjMyX01T
-Ul9EU1IpCisJaWYgKG1zciAmIE1DVF9VMjMyX01TUl9EU1IpIHsKIAkJKmNv
-bnRyb2xfc3RhdGUgfD0gIFRJT0NNX0RTUjsKLQllbHNlCisJCWljb3VudC0+
-ZHNyKys7CisJfSBlbHNlIHsKIAkJKmNvbnRyb2xfc3RhdGUgJj0gflRJT0NN
-X0RTUjsKLQlpZiAobXNyICYgTUNUX1UyMzJfTVNSX0NUUykKKwl9CisJaWYg
-KG1zciAmIE1DVF9VMjMyX01TUl9DVFMpIHsKIAkJKmNvbnRyb2xfc3RhdGUg
-fD0gIFRJT0NNX0NUUzsKLQllbHNlCisJCWljb3VudC0+Y3RzKys7CisJfSBl
-bHNlIHsKIAkJKmNvbnRyb2xfc3RhdGUgJj0gflRJT0NNX0NUUzsKLQlpZiAo
-bXNyICYgTUNUX1UyMzJfTVNSX1JJKQorCX0KKwlpZiAobXNyICYgTUNUX1Uy
-MzJfTVNSX1JJKSB7CiAJCSpjb250cm9sX3N0YXRlIHw9ICBUSU9DTV9SSTsK
-LQllbHNlCisJCWljb3VudC0+cm5nKys7CisJfSBlbHNlIHsKIAkJKmNvbnRy
-b2xfc3RhdGUgJj0gflRJT0NNX1JJOwotCWlmIChtc3IgJiBNQ1RfVTIzMl9N
-U1JfQ0QpCisJfQorCWlmIChtc3IgJiBNQ1RfVTIzMl9NU1JfQ0QpIHsKIAkJ
-KmNvbnRyb2xfc3RhdGUgfD0gIFRJT0NNX0NEOwotCWVsc2UKKwkJaWNvdW50
-LT5kY2QrKzsKKwl9IGVsc2UgewogCQkqY29udHJvbF9zdGF0ZSAmPSB+VElP
-Q01fQ0Q7CisJfQorCiAJZGJnKCJtc3JfdG9fc3RhdGU6IG1zcj0weCV4ID09
-PiBzdGF0ZT0weCV4IiwgbXNyLCAqY29udHJvbF9zdGF0ZSk7CisKKwl3YWtl
-X3VwX2ludGVycnVwdGlibGUoJnByaXYtPm1zcl93YWl0KTsKIH0gLyogbWN0
-X3UyMzJfbXNyX3RvX3N0YXRlICovCiAKIC8qCkBAIC00MjIsNiArNDQ2LDcg
-QEAgc3RhdGljIGludCBtY3RfdTIzMl9zdGFydHVwKHN0cnVjdCB1c2Jfcwog
-CWlmICghcHJpdikKIAkJcmV0dXJuIC1FTk9NRU07CiAJc3Bpbl9sb2NrX2lu
-aXQoJnByaXYtPmxvY2spOworCWluaXRfd2FpdHF1ZXVlX2hlYWQoJnByaXYt
-Pm1zcl93YWl0KTsKIAl1c2Jfc2V0X3NlcmlhbF9wb3J0X2RhdGEoc2VyaWFs
-LT5wb3J0WzBdLCBwcml2KTsKIAogCWluaXRfd2FpdHF1ZXVlX2hlYWQoJnNl
-cmlhbC0+cG9ydFswXS0+d3JpdGVfd2FpdCk7CkBAIC00OTgsNyArNTIzLDcg
-QEAgc3RhdGljIGludCAgbWN0X3UyMzJfb3BlbihzdHJ1Y3QgdHR5X3N0cgog
-CW1jdF91MjMyX2dldF9tb2RlbV9zdGF0KHNlcmlhbCwgJmxhc3RfbXNyKTsK
-IAlzcGluX2xvY2tfaXJxc2F2ZSgmcHJpdi0+bG9jaywgZmxhZ3MpOwogCXBy
-aXYtPmxhc3RfbXNyID0gbGFzdF9tc3I7Ci0JbWN0X3UyMzJfbXNyX3RvX3N0
-YXRlKCZwcml2LT5jb250cm9sX3N0YXRlLCBwcml2LT5sYXN0X21zcik7CisJ
-bWN0X3UyMzJfbXNyX3RvX3N0YXRlKHByaXYpOwogCXNwaW5fdW5sb2NrX2ly
-cXJlc3RvcmUoJnByaXYtPmxvY2ssIGZsYWdzKTsKIAogCXBvcnQtPnJlYWRf
-dXJiLT5kZXYgPSBwb3J0LT5zZXJpYWwtPmRldjsKQEAgLTYxOSw3ICs2NDQs
-NyBAQCBzdGF0aWMgdm9pZCBtY3RfdTIzMl9yZWFkX2ludF9jYWxsYmFjayhz
-CiAJcHJpdi0+bGFzdF9tc3IgPSBkYXRhW01DVF9VMjMyX01TUl9JTkRFWF07
-CiAKIAkvKiBSZWNvcmQgQ29udHJvbCBMaW5lIHN0YXRlcyAqLwotCW1jdF91
-MjMyX21zcl90b19zdGF0ZSgmcHJpdi0+Y29udHJvbF9zdGF0ZSwgcHJpdi0+
-bGFzdF9tc3IpOworCW1jdF91MjMyX21zcl90b19zdGF0ZShwcml2KTsKIAog
-I2lmIDAKIAkvKiBOb3QgeWV0IGhhbmRsZWQuIFNlZSBiZWxraW5fc2EuYyBm
-b3IgZnVydGhlciBpbmZvcm1hdGlvbiAqLwpAQCAtODI2LDcgKzg1MSw2IEBA
-IHN0YXRpYyB2b2lkIG1jdF91MjMyX3Rocm90dGxlKHN0cnVjdCB0dHkKIAl9
-CiB9CiAKLQogc3RhdGljIHZvaWQgbWN0X3UyMzJfdW50aHJvdHRsZShzdHJ1
-Y3QgdHR5X3N0cnVjdCAqdHR5KQogewogCXN0cnVjdCB1c2Jfc2VyaWFsX3Bv
-cnQgKnBvcnQgPSB0dHktPmRyaXZlcl9kYXRhOwpAQCAtODQ3LDYgKzg3MSw3
-MiBAQCBzdGF0aWMgdm9pZCBtY3RfdTIzMl91bnRocm90dGxlKHN0cnVjdCB0
-CiAJfQogfQogCitzdGF0aWMgaW50ICBtY3RfdTIzMl9pb2N0bChzdHJ1Y3Qg
-dHR5X3N0cnVjdCAqdHR5LCBzdHJ1Y3QgZmlsZSAqZmlsZSwKKwkJCXVuc2ln
-bmVkIGludCBjbWQsIHVuc2lnbmVkIGxvbmcgYXJnKQoreworCURFRklORV9X
-QUlUKHdhaXQpOworCXN0cnVjdCB1c2Jfc2VyaWFsX3BvcnQgKnBvcnQgPSB0
-dHktPmRyaXZlcl9kYXRhOworCXN0cnVjdCBtY3RfdTIzMl9wcml2YXRlICpt
-Y3RfdTIzMl9wb3J0ID0gdXNiX2dldF9zZXJpYWxfcG9ydF9kYXRhKHBvcnQp
-OworCXN0cnVjdCBhc3luY19pY291bnQgY25vdywgY3ByZXY7CisKKwlkYmco
-IiVzIC0gcG9ydCAlZCwgY21kID0gMHgleCIsIF9fZnVuY19fLCBwb3J0LT5u
-dW1iZXIsIGNtZCk7CisKKwlzd2l0Y2ggKGNtZCkgeworCisJY2FzZSBUSU9D
-TUlXQUlUOgorCisJCWRiZygiJXMgKCVkKSBUSU9DTUlXQUlUIiwgX19mdW5j
-X18sICBwb3J0LT5udW1iZXIpOworCisJCWNwcmV2ID0gbWN0X3UyMzJfcG9y
-dC0+aWNvdW50OworCQlmb3IgKCA7IDsgKSB7CisJCQlwcmVwYXJlX3RvX3dh
-aXQoJm1jdF91MjMyX3BvcnQtPm1zcl93YWl0LAorCQkJCQkmd2FpdCwgVEFT
-S19JTlRFUlJVUFRJQkxFKTsKKwkJCXNjaGVkdWxlKCk7CisJCQlmaW5pc2hf
-d2FpdCgmbWN0X3UyMzJfcG9ydC0+bXNyX3dhaXQsICZ3YWl0KTsKKwkJCS8q
-IHNlZSBpZiBhIHNpZ25hbCBkaWQgaXQgKi8KKwkJCWlmIChzaWduYWxfcGVu
-ZGluZyhjdXJyZW50KSkKKwkJCQlyZXR1cm4gLUVSRVNUQVJUU1lTOworCQkJ
-Y25vdyA9IG1jdF91MjMyX3BvcnQtPmljb3VudDsKKwkJCWlmIChjbm93LnJu
-ZyA9PSBjcHJldi5ybmcgJiYgY25vdy5kc3IgPT0gY3ByZXYuZHNyICYmCisJ
-CQkgICAgY25vdy5kY2QgPT0gY3ByZXYuZGNkICYmIGNub3cuY3RzID09IGNw
-cmV2LmN0cykKKwkJCQlyZXR1cm4gLUVJTzsgLyogbm8gY2hhbmdlID0+IGVy
-cm9yICovCisJCQlpZiAoKChhcmcgJiBUSU9DTV9STkcpICYmIChjbm93LnJu
-ZyAhPSBjcHJldi5ybmcpKSB8fAorCQkJICAgICgoYXJnICYgVElPQ01fRFNS
-KSAmJiAoY25vdy5kc3IgIT0gY3ByZXYuZHNyKSkgfHwKKwkJCSAgICAoKGFy
-ZyAmIFRJT0NNX0NEKSAgJiYgKGNub3cuZGNkICE9IGNwcmV2LmRjZCkpIHx8
-CisJCQkgICAgKChhcmcgJiBUSU9DTV9DVFMpICYmIChjbm93LmN0cyAhPSBj
-cHJldi5jdHMpKSkgeworCQkJCXJldHVybiAwOworCQkJfQorCQkJY3ByZXYg
-PSBjbm93OworCQl9CisKKwl9CisJcmV0dXJuIC1FTk9JT0NUTENNRDsKK30K
-Kworc3RhdGljIGludCAgbWN0X3UyMzJfZ2V0X2ljb3VudChzdHJ1Y3QgdHR5
-X3N0cnVjdCAqdHR5LAorCQkJc3RydWN0IHNlcmlhbF9pY291bnRlcl9zdHJ1
-Y3QgKmljb3VudCkKK3sKKwlzdHJ1Y3QgdXNiX3NlcmlhbF9wb3J0ICpwb3J0
-ID0gdHR5LT5kcml2ZXJfZGF0YTsKKwlzdHJ1Y3QgbWN0X3UyMzJfcHJpdmF0
-ZSAqbWN0X3UyMzJfcG9ydCA9IHVzYl9nZXRfc2VyaWFsX3BvcnRfZGF0YShw
-b3J0KTsKKwlzdHJ1Y3QgYXN5bmNfaWNvdW50ICppYyA9ICZtY3RfdTIzMl9w
-b3J0LT5pY291bnQ7CisKKwlpY291bnQtPmN0cyA9IGljLT5jdHM7CisJaWNv
-dW50LT5kc3IgPSBpYy0+ZHNyOworCWljb3VudC0+cm5nID0gaWMtPnJuZzsK
-KwlpY291bnQtPmRjZCA9IGljLT5kY2Q7CisJaWNvdW50LT5yeCA9IGljLT5y
-eDsKKwlpY291bnQtPnR4ID0gaWMtPnR4OworCWljb3VudC0+ZnJhbWUgPSBp
-Yy0+ZnJhbWU7CisJaWNvdW50LT5vdmVycnVuID0gaWMtPm92ZXJydW47CisJ
-aWNvdW50LT5wYXJpdHkgPSBpYy0+cGFyaXR5OworCWljb3VudC0+YnJrID0g
-aWMtPmJyazsKKwlpY291bnQtPmJ1Zl9vdmVycnVuID0gaWMtPmJ1Zl9vdmVy
-cnVuOworCisJZGJnKCIlcyAoJWQpIFRJT0NHSUNPVU5UIFJYPSVkLCBUWD0l
-ZCIsCisJCV9fZnVuY19fLCAgcG9ydC0+bnVtYmVyLCBpY291bnQtPnJ4LCBp
-Y291bnQtPnR4KTsKKwlyZXR1cm4gMDsKK30KKwogc3RhdGljIGludCBfX2lu
-aXQgbWN0X3UyMzJfaW5pdCh2b2lkKQogewogCWludCByZXR2YWw7Cg==
+LET'S BE  BUSINESS PARTNER.
 
---0-757389922-1293418726=:62488--
+My Name is Mr.Rod Thompson, Staff of ING BANK THE NETHERLANDS. I would  
+like you to indicate your interest to receive the transfer of € 8.5  
+Million Euros. I will like you to stand as the next of kin to my late  
+client whose account is presently dormant for claims. Please once you  
+are interested in my business proposal, further details of the  
+transfer will be forwarded to you as soon as I receive your return  
+mail. You can click on the blow link to confirm the genuineness of the  
+deceased death. http://news.bbc.co.uk/1/hi/world/europe/859479.stm
+If you are interested in my business proposal, get back to me with the  
+information's below so that i can forward to you the details and text  
+of application and the banks contacts for you to apply immediately for  
+the transfer of the € 8.5 Million euros into your bank account.
+                      Update me with your personal information such as;
+
+             1.Your name in Full:
+             2.Your Complete Address :
+             3.Your Occupation
+             4.Your Nationality
+             5.Your direct phone number;
+
+Please reply to my private email:  rodthompson222@aol.com
+Regards
+
+Mr.Rod Thompson
+rodthompson222@aol.com
+
+----------------------------------------------------------------
+Facultad de Medicina - Universidad de la Rep&uacute;blica
+Montevideo Uruguay
+
