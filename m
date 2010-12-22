@@ -1,145 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab0LVAjd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 19:39:33 -0500
-Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:57305 "EHLO
-	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752471Ab0LVAjc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 19:39:32 -0500
-Subject: Re: [V2 PATCH] kthread_work: Make lockdep happy
-From: Andy Walls <awalls@md.metrocast.net>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        nicolas.mailhot@laposte.net, Jarod Wilson <jarod@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20101221044050.GA25718@windriver.com>
-References: <1292762975.2403.29.camel@localhost>
-	 <AANLkTimYx2Og1BG37wb0WZ0_U8WJjLKHMKgU45qycUaM@mail.gmail.com>
-	 <AANLkTikuKMLUoVnQsU6QNCnHBgOponJUngHGtyVHk1xK@mail.gmail.com>
-	 <4D0F8276.9070903@kernel.org>  <20101221044050.GA25718@windriver.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Dec 2010 19:39:53 -0500
-Message-ID: <1292978393.2401.14.camel@morgan.silverblock.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
- definitions=2010-12-21_09:2010-12-21,2010-12-21,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=0
- phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- engine=5.0.0-1010190000 definitions=main-1012210159
+	id S1754232Ab0LVAkN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 19:40:13 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:42563 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753908Ab0LVAkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 19:40:12 -0500
+Date: Tue, 21 Dec 2010 16:40:10 -0800
+From: Arthur Kepner <akepner@sgi.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH] x86/irq: assign vectors from numa_node
+Message-ID: <20101222004010.GI4709@sgi.com>
+References: <20101203205348.GI20481@sgi.com> <alpine.LFD.2.00.1012101051290.2653@localhost6.localdomain6> <20101216223442.GE20481@sgi.com> <alpine.LFD.2.00.1012170145330.12146@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1012170145330.12146@localhost6.localdomain6>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-12-21 at 12:40 +0800, Yong Zhang wrote:
-> From: Yong Zhang <yong.zhang0@gmail.com>
-> Subject: [V2 PATCH] kthread_work: Make lockdep happy
+On Fri, Dec 17, 2010 at 10:04:48AM +0100, Thomas Gleixner wrote:
+> B1;2401;0cOn Thu, 16 Dec 2010, Arthur Kepner wrote:
 > 
-> spinlock in kthread_worker and wait_queue_head in kthread_work
-> both should be lockdep sensible.
-> So change the interface to make it suiltable for CONFIG_LOCKDEP.
+> > On Fri, Dec 10, 2010 at 11:55:12AM +0100, Thomas Gleixner wrote:
+> > > .....
+> > > There is absolutely no point assigning 4096 interrupts to a single
+> > > node in the first place. 
+> > 
+> > I'm not arguing that it's a good idea for a driver to request so 
+> > many resources. But some do. ...
 > 
-> Reported-by: Nicolas <nicolas.mailhot@laposte.net>
-> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Andy Walls <awalls@md.metrocast.net>
-> ---
-> Changes from V1:
->  *According to Tejun, kthread_worker could be defined on stack,
->   So introduce DEFINE_KTHREAD_WORKER_ONSTACK.
->  *Change wrong setting to kthread_work->task. Thanks Adny for
->   pointing it.
->  *including some minor issue.
+> Right, some do and we now make efforts to let them do that nonsense no
+> matter what ?
+
+To me, it seems better (and easier) to let drivers do non-sensical 
+things, than to determine what is sensible for a particluar driver. 
+
+How would you choose a limit of interrupt allocations? 
+
 > 
-> BTW, only passed build.
+> >  .... And what we do now is even worse than 
+> > assigning all the interrupts to a single node.
 > 
->  include/linux/kthread.h |   45 +++++++++++++++++++++++++++++++++++----------
->  kernel/kthread.c        |    9 +++++++++
->  2 files changed, 44 insertions(+), 10 deletions(-)
+> We assign it to a single core, which is wrong. But what the heck is
+> the difference between assinging 4k irqs to a single core or to a
+> single node ?
+> 
+> Nothing. And that's the whole problem.
+> 
+> I agree that the per node assignement needs to be resolved, but not in
+> the way that we just ignore the underlying problems and solve them at
+> the wrong place. You did not answer my comment further down in the
+> patch:
+> 
+> > > I agree, that __assign_irq_vector() should honour the request for a
+> > > node, but I don't agree, that we should magically spread stuff on
+> > > whatever node we find, when the node ran out of vectors.
+> > > 
+> > > There is probably a reason, why you want an interrupt on a specific
+> > > node and just silently pushing it somewhere else feels very wrong.
+> > > 
+> > > This needs to be solved from ground up with proper rules about failure
+> > > modes and fallback decisions.
+> 
+> Where is the answer to this ?
 
-Yong,
+The patch I sent made a 'best effort' to assign an interrupt to the 
+node where the device is installed. If no vectors were available on 
+that node, it tried elsewhere. 
 
-I have tested your patch with the following patch on top of yours.  I
-find the two patches together acceptable in testing in a machine with
-both a PVR-350 card and a PVR-500 card installed.
+> 
+> > > Especially not, if we end up using only a few
+> > > of them in the end. And those you use are not necessarily on that very
+> > > node.
+> > 
+> > OK. Eric mentioned in a related thread that vector allocation 
+> > might be deferred until request_irq(). That sounds like a good 
+> > idea. But unless we change the way initial vector assignment is 
+> 
+> It does NOT sound like a good idea. 
 
-Tested-by: Andy Walls <awalls@md.metrocast.net>
-Signed-off-by: Andy Walls <awalls@md.metrocast.net>
+This seems at odds with what you said here:
 
-Could you please author a [V3 PATCH] adding my changes?  Since the
-majority of the change is your work, it should be attributed to you as
-the author.
+http://marc.info/?l=linux-kernel&m=128566136604152&w=2
 
+(specifically this bit:
 
-About my additional changes:
+8<---------------------------- [snip] ----------------------------
 
-I needed the explicit EXPORT_SYMBOL_GPL(__init_kthread_worker),
-otherwise the build would fail, because the ivtv module had an
-unresolved symbol.
+..... So the solution would be:
 
-I added the lockdep class name to make it easier to identify the ivtv
-module's kthread worker's lock class.  Now one can actually recognize
-the lock class in lockdep output strings:
+create_irq allocates an irq number + irq descriptor, nothing else
 
-	# cat lockdep | grep itv
-	ffffffffa0483a60 FD:    1 BD:    1 ......: (&itv->irq_worker)->lock
+chip->startup() will setup the vector and chip->shutdown releases
+it. ......
 
-Thanks again.
+8<---------------------------- [snip] ----------------------------
 
-Regards,
-Andy
+)
 
+Can you clarify?
 
-diff --git a/include/linux/kthread.h b/include/linux/kthread.h
-index f8b3320..994564a 100644
---- a/include/linux/kthread.h
-+++ b/include/linux/kthread.h
-@@ -100,13 +100,15 @@ struct kthread_work {
- # define DEFINE_KTHREAD_WORK_ONSTACK(work, fn) DEFINE_KTHREAD_WORK(work, fn)
- #endif
- 
--extern void __init_kthread_worker(struct kthread_worker *worker,
--					struct lock_class_key *key);
-+void __init_kthread_worker(struct kthread_worker *worker,
-+			   struct lock_class_key *key,
-+			   const char *lock_class_name);
- 
- #define init_kthread_worker(worker)					\
- 	do {								\
- 		static struct lock_class_key __key;			\
--		__init_kthread_worker((worker), &__key);		\
-+		__init_kthread_worker((worker), &__key,			\
-+				      "(" #worker ")->lock");		\
- 	} while (0)
- 
- #define init_kthread_work(work, fn)					\
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index f760587..4657ebd 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -266,13 +266,15 @@ int kthreadd(void *unused)
- }
- 
- void __init_kthread_worker(struct kthread_worker *worker,
--				struct lock_class_key *key)
-+			   struct lock_class_key *key,
-+			   const char *lock_class_name)
- {
- 	spin_lock_init(&worker->lock);
--	lockdep_set_class(&worker->lock, key);
-+	lockdep_set_class_and_name(&worker->lock, key, lock_class_name);
- 	INIT_LIST_HEAD(&worker->work_list);
- 	worker->task = NULL;
- }
-+EXPORT_SYMBOL_GPL(__init_kthread_worker);
- 
- /**
-  * kthread_worker_fn - kthread function to process kthread_worker
+> ... Again, I agree that we need to fix
+> the per node assignment, but we need to discuss the problem of
+> anything which goes beyond the node.
 
+Suppose that a interrupt is initially assigned to a different 
+node than the device. Is that such a big deal? They can be 
+redistributed later by a user-space irq balancer.
 
+> 
+> > done, it just defers the problem (assuming that request_irq() 
+> > is done for every irq allocated in create_irq_nr()).
+> 
+> There is neither a reason for a driver to create so many interrupts in
+> the first place nor a re reason to request them right away. This is
+> just horrible crap, nothing else. Why the hell would a driver need to
+> startup 4k interrupts just to load itself w/o a single user?
+> 
+> We do _NOT_ work around such insanity somewhere else even if we can.
+> 
+> > Using the numa_node of the device to do the initial vector 
+> > assignment seems like a reasonable default choice, no? 
+> 
+> I still agree that we should honour the node request, but that has a
+> totally different scope than what your patch is trying to do.
+> 
+
+-- 
+Arthur
