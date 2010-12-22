@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752214Ab0LVS4z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 13:56:55 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:58702 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751704Ab0LVS4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 13:56:53 -0500
-Message-ID: <4D1249ED.9040008@sgi.com>
-Date: Wed, 22 Dec 2010 10:56:45 -0800
-From: Mike Travis <travis@sgi.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
+	id S1753995Ab0LVQHf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 11:07:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4156 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753870Ab0LVQHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 11:07:35 -0500
+Date: Wed, 22 Dec 2010 17:00:16 +0100
+From: Oleg Nesterov <oleg@redhat.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Len Brown <lenb@kernel.org>,
-        Jack Steiner <steiner@sgi.com>, Lori Gilbertson <loriann@sgi.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Early kernel messages are overflowing the static log buffer
-References: <4D06B317.2090608@sgi.com> <20101222130946.GC13412@elte.hu> <20101222131719.GA8061@htj.dyndns.org>
-In-Reply-To: <20101222131719.GA8061@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
+        jan.kratochvil@redhat.com
+Subject: Re: [PATCH 10/16] ptrace: clean transitions between TASK_STOPPED
+	and TRACED
+Message-ID: <20101222160016.GA11722@redhat.com>
+References: <1291654624-6230-1-git-send-email-tj@kernel.org> <1291654624-6230-11-git-send-email-tj@kernel.org> <20101220150037.GE11583@redhat.com> <20101221173155.GE13285@htj.dyndns.org> <20101222113948.GA30266@redhat.com> <20101222151429.GC8061@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101222151429.GC8061@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks.
+On 12/22, Tejun Heo wrote:
+>
+> On Wed, Dec 22, 2010 at 12:39:48PM +0100, Oleg Nesterov wrote:
+> >
+> > sys_ptrace() only works for the single thread who did PTRACE_ATTACH,
+> > but do_wait() should work for its sub-threads.
+> >
+> > 	1. the tracer knows that the tracee is stopped
+> >
+> > 	2. the tracer does ptrace(ATTACH)
+> >
+> > 	3. the tracer's sub-thread does do_wait()
+> >
+> > Note! Personally I think we can ignore this "problem", I do not
+> > think it can break anything except some specialized test-case.
+>
+> But if ptrace(ATTACH) doesn't return until the transition is complete
+> when the task is already stopped, the tracer's sub-thread's do_wait()
+> will behave exactly the same.  The only difference would be that
+> ptrace(ATTACH) may now block and/or is failed by a signal delivery.
+>
+> How would #3 behave differently if STOPPED -> TRACED transition is
+> guaranteed to be complete by the end of #2?
 
-I have a patchset almost ready for submission.  We have a giant
-system (6 racks with some huge amount of nodes) for a few more
-days, and the buffer still overflowed with my changes.  So I'm
-making one more tweak to cut down the amount of characters 
-generated without losing information.
+Ahhh, sorry. I meant, two threads can do 2. and 3. at the same time.
 
-Tejun Heo wrote:
-> Hello,
-> 
-> On Wed, Dec 22, 2010 at 02:09:46PM +0100, Ingo Molnar wrote:
->>> [    0.000000] pcpu-alloc: [000] 0000 0001 0002 0003 0004 0005 0006 0007 1024 1025 1026 1027 1028 1029 1030 1031
->>>
->>> What I'm asking is which of these would be most acceptable to
->>> either remove or replace with some sort of message reduction?
->> The pcpu alloc messages look entirely superfluous and zappable - make them 
->> KERN_DEBUG perhaps (and Cc: Tejun)?
-> 
-> Yeap, with percpu allocator now mostly stable, I don't think the
-> message needs to be KERN_INFO anymore.  I'll change it to KERN_DEBUG.
-> 
-> Thanks.
-> 
+But let me repeat, it is not that I think we should worry. I mentioned
+this only because I think it is better to discuss everything we can,
+even the really minor things.
 
-This doesn't really help the log buffer overflow problem as KERN_DEBUG
-messages still end up in the buffer.  The pr_debug() macro does compile
-out the messages if the system does not have KERNEL debug set, though
-distros also have this set as a default.
-
-Thanks,
-Mike
+Oleg.
 
