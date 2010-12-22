@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318Ab0LVOnq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 09:43:46 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:51454 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750Ab0LVOnp (ORCPT
+	id S1753153Ab0LVOuT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 09:50:19 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:46529 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752265Ab0LVOuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 09:43:45 -0500
-Date: Wed, 22 Dec 2010 12:43:38 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Franck Bui-Huu <vagabon.xyz@gmail.com>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de
-Subject: Re: [tip:perf/core] perf probe: Don't always consider EOF as an
-	error when listing source code
-Message-ID: <20101222144338.GA17134@ghostprotocols.net>
-References: <1292854685-8230-6-git-send-email-fbuihuu@gmail.com> <tip-fde52dbd7f71934aba4e150f3d1d51e826a08850@git.kernel.org> <m34oa6t0e4.fsf@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m34oa6t0e4.fsf@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 22 Dec 2010 09:50:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=HSsJG9OgoKwt1Cp7QZ+N98TlD9sIm4vrFcjZT4jckr43ELseXqpV3mAxiX1n5zmXsL
+         tY98sRpIlMbnWv7XyMiwyWMik5pXUciU55OqxXLheRYQJMJXkjA77xY/vLiLhjrDKpY+
+         +KuRLApPo1iLdJZSsoWM28Ci9H2V5bH8e83EU=
+Subject: Re: [PATCH V2 1/2] EHCI support for on-chip PMC MSP USB controller.
+From: Anoop P A <anoop.pa@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Anatolij Gustschin <agust@denx.de>,
+        Anand Gadiyar <gadiyar@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+In-Reply-To: <1293028561-22125-1-git-send-email-anoop.pa@gmail.com>
+References: <1292929580-5829-1-git-send-email-anoop.pa@gmail.com>
+	 <1293028561-22125-1-git-send-email-anoop.pa@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Dec 2010 20:28:12 +0530
+Message-ID: <1293029892.27661.42.camel@paanoop1-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Dec 22, 2010 at 02:14:43PM +0100, Franck Bui-Huu escreveu:
-> tip-bot for Franck Bui-Huu <fbuihuu@gmail.com> writes:
-> >  error:
-> > -	if (feof(fp))
-> > +	if (ferror(fp)) {
-> >  		pr_warning("Source file is shorter than expected.\n");
-> > -	else
-> > -		pr_warning("File read error: %s\n", strerror(errno));
-> > +		return -1;
+On Wed, 2010-12-22 at 20:06 +0530, Anoop P.A wrote:
+> From: Anoop P A <anoop.pa@gmail.com>
 > 
-> Argh, something wrong here.
+> This patch includes.
 > 
-> The warning left here, is the wrong one, I should have left the other
-> one.
-> 
-> Sorry for the mistake.
-> 
-> Should I send a patch to fix that ?
+> 1. USB host driver for MSP71xx family SoC on-chip USB controller.
 
-Please.
+>  	ehci_writel(ehci, tmp, reg_ptr);
+> +#ifdef CONFIG_USB_EHCI_HCD_PMC_MSP
+> +	/* set controller in host mode */
+> +	usb_hcd_tdi_set_mode(ehci);
+> +#endif
 
-- Arnaldo
+Missed this one while cleaning :( 
+>  }
+
+
