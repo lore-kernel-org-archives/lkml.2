@@ -1,87 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882Ab0LVT5o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 14:57:44 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:55396 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943Ab0LVT5n (ORCPT
+	id S1752114Ab0LVUAI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 15:00:08 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:36199 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751703Ab0LVUAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 14:57:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=UPolkPQ412FgIjnoaaayDyqlt3JuIcNN+RIQ7I7mMeT3VWfef/0ilXRUVbmFYTKF6B
-         EVNzarAyPrteiwpQb/oVs+gHf4YuSvW+cA2vgZ+PYcrxUHl0UPkGi99yd/eNdsPfBuE2
-         szl8RkMG4DEdwhzWgi9hqwkhySGnOGo/BAkNQ=
-From: dirk.brandewie@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org, linuxppc-dev@lists.ozlabs.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
-        mmarek@suse.cz, dirk.brandewie@gmail.com, linux-kbuild@vger.kernel.org
-Subject: [PATCH 0/4] V3 Add ability to link device blob(s) into vmlinux
-Date: Wed, 22 Dec 2010 11:57:25 -0800
-Message-Id: <1293047849-26078-1-git-send-email-dirk.brandewie@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	Wed, 22 Dec 2010 15:00:05 -0500
+Date: Wed, 22 Dec 2010 14:52:09 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: wireless-2.6 2010-12-22
+Message-ID: <20101222195209.GD10046@tuxdriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
+Dave,
 
-This patch set adds the ability to link device tree blobs into
-vmlinux. 
+Three more fixes intended for 2.6.37...
 
-Patch 1 implements the changes to include/asm-generic/vmlinux.lds.h and
-adds a generic rule for generating DTB objects to be linked vmlinux.
+The one from Johannes Berg avoids a NULL pointer dereference in the mesh
+code.  The one from Johannes Stezenbach fixes bug 24892, which is a
+lock-up caused by rt2x00.  Finally, you probably recognize the one from
+Meelis Roos which removes some log spam coming from hostap.  These have
+all spent several days in linux-next without any adverse effects.
 
-Patch 2 implements linking a DTB into an x86 image.
+Please let me know if there are problems!
 
-Patch 3-4 move {powerpc,microblaze}/boot/Makefile to use the dtc rule
-in patch 1.
+Thanks,
 
-This patch set has been tested on x86.
+John
 
-Powerpc and Microblaze have been compile tested with and without patch
-3 and 4 applied.
+---
 
-Changes from V1:
+The following changes since commit 227fb925d3d3c5e565c1f1323a530564509195f2:
 
-Documentation added for dtc command in Makefile.lib to
-Documentation/kbuild/makefiles.txt
-Separate DTB_ALIGNMENT define removed.
-FORCE removed from dtc rule.
-Removed hardcoded path to dts files from dtc command.  
-Moved %.dtb: %.dts rule to arch specific makefiles. 
+  MAINTAINERS: email address change (2010-12-21 19:58:15 -0800)
+
+are available in the git repository at:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git master
+
+Johannes Berg (1):
+      mac80211: fix mesh forwarding
+
+Johannes Stezenbach (1):
+      mac80211/rt2x00: add ieee80211_tx_status_ni()
+
+Meelis Roos (1):
+      hostap: remove netif_stop_queue from init
+
+ drivers/net/wireless/hostap/hostap_main.c |    1 -
+ drivers/net/wireless/rt2x00/rt2800pci.c   |    1 +
+ drivers/net/wireless/rt2x00/rt2x00.h      |    1 +
+ drivers/net/wireless/rt2x00/rt2x00dev.c   |    9 ++++++---
+ include/net/mac80211.h                    |   28 ++++++++++++++++++++++++----
+ net/mac80211/rx.c                         |    5 ++++-
+ 6 files changed, 36 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/net/wireless/hostap/hostap_main.c b/drivers/net/wireless/hostap/hostap_main.c
+index 25a2722..1d9aed6 100644
+--- a/drivers/net/wireless/hostap/hostap_main.c
++++ b/drivers/net/wireless/hostap/hostap_main.c
+@@ -891,7 +891,6 @@ void hostap_setup_dev(struct net_device *dev, local_info_t *local,
  
-Patch for adding kernel command line option to pass in dtb_compat
-string dropped from this set will be submitted seperately.
-
-Changes from V2:
-
-Rule to create assembly wrapper for blob changed to use Sam Ravnborgs
-suggested implementation.
-
-Rules in architecture specific Makefiles changed to use the cmd
-function instead of the if_changed function.
-
-Changes from V3:
-
-Cosmetic fix of DTC quiet command
-
-Dirk Brandewie (4):
-  of: Add support for linking device tree blobs into vmlinux
-  x86/of: Add building device tree blob(s) into image.
-  of/powerpc: Use generic rule to build dtb's
-  microblaze/of: Use generic rule to build dtb's
-
- Documentation/kbuild/makefiles.txt |   15 +++++++++++++++
- arch/microblaze/boot/Makefile      |   12 +++---------
- arch/powerpc/boot/Makefile         |    8 +++-----
- arch/x86/platform/ce4100/Makefile  |   10 ++++++++++
- include/asm-generic/vmlinux.lds.h  |   13 +++++++++++--
- scripts/Makefile.lib               |   23 +++++++++++++++++++++++
- 6 files changed, 65 insertions(+), 16 deletions(-)
-
+ 	SET_ETHTOOL_OPS(dev, &prism2_ethtool_ops);
+ 
+-	netif_stop_queue(dev);
+ }
+ 
+ static int hostap_enable_hostapd(local_info_t *local, int rtnl_locked)
+diff --git a/drivers/net/wireless/rt2x00/rt2800pci.c b/drivers/net/wireless/rt2x00/rt2800pci.c
+index b267395..09a6790 100644
+--- a/drivers/net/wireless/rt2x00/rt2800pci.c
++++ b/drivers/net/wireless/rt2x00/rt2800pci.c
+@@ -912,6 +912,7 @@ static int rt2800pci_probe_hw(struct rt2x00_dev *rt2x00dev)
+ 	__set_bit(DRIVER_REQUIRE_DMA, &rt2x00dev->flags);
+ 	__set_bit(DRIVER_REQUIRE_L2PAD, &rt2x00dev->flags);
+ 	__set_bit(DRIVER_REQUIRE_TXSTATUS_FIFO, &rt2x00dev->flags);
++	__set_bit(DRIVER_REQUIRE_TASKLET_CONTEXT, &rt2x00dev->flags);
+ 	if (!modparam_nohwcrypt)
+ 		__set_bit(CONFIG_SUPPORT_HW_CRYPTO, &rt2x00dev->flags);
+ 	__set_bit(DRIVER_SUPPORT_LINK_TUNING, &rt2x00dev->flags);
+diff --git a/drivers/net/wireless/rt2x00/rt2x00.h b/drivers/net/wireless/rt2x00/rt2x00.h
+index 94fe589..ab43e7c 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00.h
++++ b/drivers/net/wireless/rt2x00/rt2x00.h
+@@ -664,6 +664,7 @@ enum rt2x00_flags {
+ 	DRIVER_REQUIRE_COPY_IV,
+ 	DRIVER_REQUIRE_L2PAD,
+ 	DRIVER_REQUIRE_TXSTATUS_FIFO,
++	DRIVER_REQUIRE_TASKLET_CONTEXT,
+ 
+ 	/*
+ 	 * Driver features
+diff --git a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless/rt2x00/rt2x00dev.c
+index 5ba79b9..d019830 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00dev.c
++++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
+@@ -390,9 +390,12 @@ void rt2x00lib_txdone(struct queue_entry *entry,
+ 	 * through a mac80211 library call (RTS/CTS) then we should not
+ 	 * send the status report back.
+ 	 */
+-	if (!(skbdesc_flags & SKBDESC_NOT_MAC80211))
+-		ieee80211_tx_status(rt2x00dev->hw, entry->skb);
+-	else
++	if (!(skbdesc_flags & SKBDESC_NOT_MAC80211)) {
++		if (test_bit(DRIVER_REQUIRE_TASKLET_CONTEXT, &rt2x00dev->flags))
++			ieee80211_tx_status(rt2x00dev->hw, entry->skb);
++		else
++			ieee80211_tx_status_ni(rt2x00dev->hw, entry->skb);
++	} else
+ 		dev_kfree_skb_any(entry->skb);
+ 
+ 	/*
+diff --git a/include/net/mac80211.h b/include/net/mac80211.h
+index 9fdf982..365359b 100644
+--- a/include/net/mac80211.h
++++ b/include/net/mac80211.h
+@@ -2024,8 +2024,8 @@ static inline void ieee80211_rx_ni(struct ieee80211_hw *hw,
+  *
+  * This function may not be called in IRQ context. Calls to this function
+  * for a single hardware must be synchronized against each other. Calls
+- * to this function and ieee80211_tx_status_irqsafe() may not be mixed
+- * for a single hardware.
++ * to this function, ieee80211_tx_status_ni() and ieee80211_tx_status_irqsafe()
++ * may not be mixed for a single hardware.
+  *
+  * @hw: the hardware the frame was transmitted by
+  * @skb: the frame that was transmitted, owned by mac80211 after this call
+@@ -2034,13 +2034,33 @@ void ieee80211_tx_status(struct ieee80211_hw *hw,
+ 			 struct sk_buff *skb);
+ 
+ /**
++ * ieee80211_tx_status_ni - transmit status callback (in process context)
++ *
++ * Like ieee80211_tx_status() but can be called in process context.
++ *
++ * Calls to this function, ieee80211_tx_status() and
++ * ieee80211_tx_status_irqsafe() may not be mixed
++ * for a single hardware.
++ *
++ * @hw: the hardware the frame was transmitted by
++ * @skb: the frame that was transmitted, owned by mac80211 after this call
++ */
++static inline void ieee80211_tx_status_ni(struct ieee80211_hw *hw,
++					  struct sk_buff *skb)
++{
++	local_bh_disable();
++	ieee80211_tx_status(hw, skb);
++	local_bh_enable();
++}
++
++/**
+  * ieee80211_tx_status_irqsafe - IRQ-safe transmit status callback
+  *
+  * Like ieee80211_tx_status() but can be called in IRQ context
+  * (internally defers to a tasklet.)
+  *
+- * Calls to this function and ieee80211_tx_status() may not be mixed for a
+- * single hardware.
++ * Calls to this function, ieee80211_tx_status() and
++ * ieee80211_tx_status_ni() may not be mixed for a single hardware.
+  *
+  * @hw: the hardware the frame was transmitted by
+  * @skb: the frame that was transmitted, owned by mac80211 after this call
+diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
+index 54fb4a0e..b01e467 100644
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -1788,9 +1788,11 @@ ieee80211_rx_h_mesh_fwding(struct ieee80211_rx_data *rx)
+ 
+ 			fwd_skb = skb_copy(skb, GFP_ATOMIC);
+ 
+-			if (!fwd_skb && net_ratelimit())
++			if (!fwd_skb && net_ratelimit()) {
+ 				printk(KERN_DEBUG "%s: failed to clone mesh frame\n",
+ 						   sdata->name);
++				goto out;
++			}
+ 
+ 			fwd_hdr =  (struct ieee80211_hdr *) fwd_skb->data;
+ 			memcpy(fwd_hdr->addr2, sdata->vif.addr, ETH_ALEN);
+@@ -1828,6 +1830,7 @@ ieee80211_rx_h_mesh_fwding(struct ieee80211_rx_data *rx)
+ 		}
+ 	}
+ 
++ out:
+ 	if (is_multicast_ether_addr(hdr->addr1) ||
+ 	    sdata->dev->flags & IFF_PROMISC)
+ 		return RX_CONTINUE;
 -- 
-1.7.2.3
-
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
