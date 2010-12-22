@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab0LVPeJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 10:34:09 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:33013 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753724Ab0LVPeH (ORCPT
+	id S1754011Ab0LVPeU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 10:34:20 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62706 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753516Ab0LVPeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 10:34:07 -0500
+	Wed, 22 Dec 2010 10:34:17 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=DruAlooJYnFF+LMHAXVUVbNEL3YDNQw+PKCmwmOtCdO1ZfkTUarkGqz4RfXT+0DSjb
-         eQIlPvDVEeLH1MOdeIbIkcJYB1WxOqVi5Mq0m/R4Jc9Z0tURSxNDQKqLNRxG5d7of9kO
-         rMeB23GI/zwmqwbD25RSG+YW9eZbDkSryqrjs=
+        b=Leurs8i11f+Wodr24Z/TtRH5ycIdEzg/kUCX8nLTMwbHYDX/mT72iM+KdXNsd1RCx1
+         PrEo3MV5tP/htnvtS92yzKZ4XkdqF+RCtf+QlWK9DFRi59+XtnsOEq6LtENg0LbT9ZaG
+         ejd1dwdB6OnvBW8EB2TBjslP5ZQll5xnqdc9M=
 From: Minchan Kim <minchan.kim@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Minchan Kim <minchan.kim@gmail.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andi Kleen <andi@firstfloor.org>, Nick Piggin <npiggin@kernel.dk>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 5/7] truncate: Change remove_from_page_cache
-Date: Thu, 23 Dec 2010 00:32:47 +0900
-Message-Id: <fdafb3fb6ed32ec96f945fdbdd42bd6492d00cd7.1293031047.git.minchan.kim@gmail.com>
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>
+Subject: [PATCH 7/7] Change __remove_from_page_cache
+Date: Thu, 23 Dec 2010 00:32:49 +0900
+Message-Id: <6661e5a219276b590365774d90ec8e300956a3ad.1293031047.git.minchan.kim@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <cover.1293031046.git.minchan.kim@gmail.com>
 References: <cover.1293031046.git.minchan.kim@gmail.com>
@@ -33,39 +31,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series changes remove_from_page_cache's page ref counting
-rule. Page cache ref count is decreased in delete_from_page_cache.
-So we don't need decreasing page reference by caller.
+Now we renamed remove_from_page_cache with delete_from_page_cache.
+As consistency of __remove_from_swap_cache and remove_from_swap_cache,
+We change internal page cache handling function name, too.
 
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-mm@kvack.org
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Hugh Dickins <hughd@google.com>
 Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/truncate.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ include/linux/pagemap.h |    2 +-
+ mm/filemap.c            |    6 +++---
+ mm/truncate.c           |    2 +-
+ mm/vmscan.c             |    2 +-
+ 4 files changed, 6 insertions(+), 6 deletions(-)
 
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index 7bf6587..b5b21d8 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -455,7 +455,7 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
+ 				pgoff_t index, gfp_t gfp_mask);
+ int add_to_page_cache_lru(struct page *page, struct address_space *mapping,
+ 				pgoff_t index, gfp_t gfp_mask);
+-extern void __remove_from_page_cache(struct page *page);
++extern void __delete_from_page_cache(struct page *page);
+ extern void delete_from_page_cache(struct page *page);
+ 
+ /*
+diff --git a/mm/filemap.c b/mm/filemap.c
+index a4c43f7..9776166 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -109,11 +109,11 @@
+  */
+ 
+ /*
+- * Remove a page from the page cache and free it. Caller has to make
++ * Delete a page from the page cache and free it. Caller has to make
+  * sure the page is locked and that nobody else uses it - or that usage
+  * is safe.  The caller must hold the mapping's tree_lock.
+  */
+-void __remove_from_page_cache(struct page *page)
++void __delete_from_page_cache(struct page *page)
+ {
+ 	struct address_space *mapping = page->mapping;
+ 
+@@ -167,7 +167,7 @@ void delete_from_page_cache(struct page *page)
+ 
+ 	freepage = mapping->a_ops->freepage;
+ 	spin_lock_irq(&mapping->tree_lock);
+-	__remove_from_page_cache(page);
++	__delete_from_page_cache(page);
+ 	spin_unlock_irq(&mapping->tree_lock);
+ 	mem_cgroup_uncharge_cache_page(page);
+ 
 diff --git a/mm/truncate.c b/mm/truncate.c
-index 9ee5673..3adb9c0 100644
+index 3adb9c0..687429a 100644
 --- a/mm/truncate.c
 +++ b/mm/truncate.c
-@@ -108,13 +108,12 @@ truncate_complete_page(struct address_space *mapping, struct page *page)
- 	cancel_dirty_page(page, PAGE_CACHE_SIZE);
+@@ -402,7 +402,7 @@ invalidate_complete_page2(struct address_space *mapping, struct page *page)
  
  	clear_page_mlock(page);
--	remove_from_page_cache(page);
-+	delete_from_page_cache(page);
- 	ClearPageMappedToDisk(page);
- 	/* this must be after the remove_from_page_cache which
- 	 * calls cleancache_put_page (and note page->mapping is now NULL)
- 	 */
- 	cleancache_flush_page(mapping, page);
--	page_cache_release(page);	/* pagecache ref */
- 	return 0;
- }
+ 	BUG_ON(page_has_private(page));
+-	__remove_from_page_cache(page);
++	__delete_from_page_cache(page);
+ 	spin_unlock_irq(&mapping->tree_lock);
+ 	mem_cgroup_uncharge_cache_page(page);
+ 
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 47a5096..bdb867f 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -515,7 +515,7 @@ static int __remove_mapping(struct address_space *mapping, struct page *page)
+ 
+ 		freepage = mapping->a_ops->freepage;
+ 
+-		__remove_from_page_cache(page);
++		__delete_from_page_cache(page);
+ 		spin_unlock_irq(&mapping->tree_lock);
+ 		mem_cgroup_uncharge_cache_page(page);
  
 -- 
 1.7.0.4
