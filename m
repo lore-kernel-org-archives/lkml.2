@@ -1,67 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277Ab0LVUg1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 15:36:27 -0500
-Received: from claw.goop.org ([74.207.240.146]:52393 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751927Ab0LVUgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 15:36:25 -0500
-Message-ID: <4D126142.8010808@goop.org>
-Date: Wed, 22 Dec 2010 12:36:18 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: linux-kernel@vger.kernel.org, hpa@zytor.com,
-        Jan Beulich <JBeulich@novell.com>, xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>
-Subject: Re: [PATCH 02/10] xen/p2m: change p2m_missing_* to p2m_identity_*
-References: <1292967460-15709-1-git-send-email-konrad.wilk@oracle.com> <1292967460-15709-3-git-send-email-konrad.wilk@oracle.com> <4D112D13.8010208@goop.org> <20101222145917.GB1760@dumpdata.com>
-In-Reply-To: <20101222145917.GB1760@dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752235Ab0LVUg0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 15:36:26 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:58247 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268Ab0LVUgY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 15:36:24 -0500
+Subject: Re: [PATCH] avoid race condition in pick_next_task_fair in
+ kernel/sched_fair.c
+From: Peter Zijlstra <peterz@infradead.org>
+To: Miklos Vajna <vmiklos@frugalware.org>
+Cc: Mike Galbraith <efault@gmx.de>, shenghui <crosslonelyover@gmail.com>,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, Greg KH <greg@kroah.com>, Paul Turner <pjt@google.com>
+In-Reply-To: <1293037718.2170.155.camel@laptop>
+References: <AANLkTin49UHeVhfS-iFwWvPIg29HPhXaP3DorBAa-a0I@mail.gmail.com>
+	 <1277808215.1868.5.camel@laptop>
+	 <20101219020313.GJ31750@genesis.frugalware.org>
+	 <20101222002248.GP10557@genesis.frugalware.org>
+	 <1293006589.2170.41.camel@laptop>
+	 <1293007311.11370.172.camel@marge.simson.net>
+	 <1293008842.2170.70.camel@laptop>
+	 <20101222133154.GS10557@genesis.frugalware.org>
+	 <1293026422.2170.136.camel@laptop> <1293027112.2170.140.camel@laptop>
+	 <20101222151434.GW10557@genesis.frugalware.org>
+	 <1293037718.2170.155.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 22 Dec 2010 21:36:13 +0100
+Message-ID: <1293050173.2170.389.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/22/2010 06:59 AM, Konrad Rzeszutek Wilk wrote:
-> On Tue, Dec 21, 2010 at 02:41:23PM -0800, Jeremy Fitzhardinge wrote:
->> On 12/21/2010 01:37 PM, Konrad Rzeszutek Wilk wrote:
->>> From: Konrad Rzeszutek Wilk <konrad@kernel.org>
->>>
->>> We are going to alter how we think about P2M. Most of the
->>> P2M contains MFN, and areas that are not populated are
->>> considered to be "missing". Missing means that the PFN
->>> is either not set for this guest (not have that much memory
->>> allocated) or is under the balloon driver ownership.
->>>
->>> We are instead now going to think of those not populated
->>> areas as "identity." Meaning that that the PFN for which
->>> we would get the p2m_identity we will provide the the PFN
->>> value back instead of P2M_MISSING. Essentially treating
->>> those regions as PFN==MFN.
->>>
->> This renames missing -> identity, but does it actually change the
->> functionality?  Doesn't it just leave it being misnamed?  It would
->> probably be better to fold in the actual identity implementation as well.
-> You sure? It would be a lot of changes in one patch. This patch is
-> a nop - so no functional changes except the name change.
->
-> Let me annotate the git tree to mention this.
+On Wed, 2010-12-22 at 18:08 +0100, Peter Zijlstra wrote:
+> On Wed, 2010-12-22 at 16:14 +0100, Miklos Vajna wrote:
+> > kernel-build is a git build using the config I already sent and after a
+> > 'git checkout v2.6.36'. I can try to build master as well, so far what I
+> > saw is that the bug occurs there as well, but less frequently, so maybe
+> > that's a bit harder to debug. 
+> 
+> Right, so I've got v2.6.36 exploding, current -git and -tip won't
+> explode for me, tried both about 20 times. So I'll try and figure out
+> wth makes .36 explode and then see if further kernel still suffer that
+> problem.
 
-Yeah, I'm in two minds.  I like small single-purpose patches, but the
-rename really does leave things v. misnamed.  I guess it doesn't really
-matter for one commit, so long as its still bisectable (and the commit
-comment makes it clear that the name is misleading).
+OK, so something goes wrong with load accounting,
 
->>>  		mid_mfn_mfn = virt_to_mfn(mid_mfn);
->>> -		if (cmpxchg(top_mfn_p, missing_mfn, mid_mfn_mfn) != missing_mfn)
->>> +		if (cmpxchg(top_mfn_p, identity_mfn, mid_mfn_mfn) !=
->>> +		    identity_mfn)
->> Don't wrap this.
-> Checkpatch.pl was unhappy without it. I can ignore this.
+Full log at: http://programming.kicks-ass.net/sekrit/log4
 
-Checkpatch is generally wrong on the subject of long lines.
+I print the entire runqueue before and after each op, the last good one
+is a post-print:
 
-    J
+kworker/-9       0d..2. 2013644us : pick_next_task_fair: picked: f6a8de5c, kworker/u:1/1251
+kworker/-9       0d..2. 2013644us : print_runqueue <-pick_next_task_fair
+kworker/-9       0d..2. 2013645us : __print_runqueue:  cfs_rq: c2407c34, nr: 3, load: 3072
+kworker/-9       0d..2. 2013645us : __print_runqueue:  curr: f6a8de5c, comm: kworker/u:1/1251, load: 1024
+kworker/-9       0d..2. 2013646us : __print_runqueue:  se: f69e6300, load: 1024, 
+kworker/-9       0d..2. 2013646us : __print_runqueue:    cfs_rq: f69e6540, nr: 2, load: 2048
+kworker/-9       0d..2. 2013646us : __print_runqueue:    curr: (null)
+kworker/-9       0d..2. 2013647us : __print_runqueue:    se: f69e65a0, load: 1024, 
+kworker/-9       0d..2. 2013647us : __print_runqueue:      cfs_rq: f69e6240, nr: 1, load: 1024
+kworker/-9       0d..2. 2013648us : __print_runqueue:      curr: (null)
+kworker/-9       0d..2. 2013648us : __print_runqueue:      se: f725916c, comm: loadkeys/1225, load: 1024
+kworker/-9       0d..2. 2013649us : __print_runqueue:    se: f69e6660, load: 1024, 
+kworker/-9       0d..2. 2013649us : __print_runqueue:      cfs_rq: f69e6600, nr: 1, load: 1024
+kworker/-9       0d..2. 2013650us : __print_runqueue:      curr: (null)
+kworker/-9       0d..2. 2013650us : __print_runqueue:      se: f6a8da0c, comm: systemd-tmpfile/1246, load: 1024
+kworker/-9       0d..2. 2013651us : __print_runqueue:  se: f6a8cd1c, comm: kworker/u:1/1252, load: 1024
+
+
+And then the next pre-print looks like:
+
+systemd--1251    0d..5. 2015398us : enqueue_task_fair <-enqueue_task
+systemd--1251    0d..5. 2015398us : print_runqueue <-enqueue_task_fair
+systemd--1251    0d..5. 2015399us : __print_runqueue:  cfs_rq: c2407c34, nr: 3, load: 3072
+systemd--1251    0d..5. 2015400us : __print_runqueue:  curr: f6a8de5c, comm: systemd-cgroups/1251, load: 1024
+systemd--1251    0d..5. 2015401us : __print_runqueue:  se: f69e6300, load: 1024, 
+systemd--1251    0d..5. 2015401us : __print_runqueue:    cfs_rq: f69e6540, nr: 2, load: 2048
+systemd--1251    0d..5. 2015402us : __print_runqueue:    curr: (null)
+systemd--1251    0d..5. 2015402us : __print_runqueue:    se: f69e65a0, load: 4137574976, 
+systemd--1251    0d..5. 2015402us : __print_runqueue:      cfs_rq: f69e6240, nr: 1, load: 4137575360
+systemd--1251    0d..5. 2015403us : __print_runqueue:      curr: (null)
+systemd--1251    0d..5. 2015404us : __print_runqueue:      se: f725916c, comm: loadkeys/1225, load: 1024
+systemd--1251    0d..5. 2015404us : __print_runqueue:    se: f69e6660, load: 1024, 
+systemd--1251    0d..5. 2015404us : __print_runqueue:      cfs_rq: f69e6600, nr: 1, load: 1024
+systemd--1251    0d..5. 2015405us : __print_runqueue:      curr: (null)
+systemd--1251    0d..5. 2015406us : __print_runqueue:      se: f6a8da0c, comm: systemd-tmpfile/1246, load: 1024
+systemd--1251    0d..5. 2015406us : __print_runqueue:  se: f6a8cd1c, comm: kworker/u:1/1252, load: 1024
+
+
+The load value being crazy like this leads to dequeue_task_fair() making
+weird decisions since it checks for load==0 to dequeue groups.
+
+Not doing that, then leads to 'dead' groups still being enqueued and
+eventually referencing freed memory etc..
+
+I've no clue why any of this happens, it could be random scribbles,
+except the se/cfs_rq combo are always off together (although not always
+by the same amount).
+
+Anyway, my brain needs sleep, I'll continue poking tomorrow.
+
+---
+ kernel/sched_fair.c |   71 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 71 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index db3f674..8b8b038 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -333,6 +333,8 @@ static void __enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 	s64 key = entity_key(cfs_rq, se);
+ 	int leftmost = 1;
+ 
++	trace_printk("%p to %p, %ld tasks\n", se, cfs_rq, cfs_rq->nr_running);
++
+ 	/*
+ 	 * Find the right place in the rbtree:
+ 	 */
+@@ -364,6 +366,8 @@ static void __enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 
+ static void __dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ {
++	trace_printk("%p from %p, %ld left\n", se, cfs_rq, cfs_rq->nr_running);
++
+ 	if (cfs_rq->rb_leftmost == &se->run_node) {
+ 		struct rb_node *next_node;
+ 
+@@ -394,6 +398,53 @@ static struct sched_entity *__pick_last_entity(struct cfs_rq *cfs_rq)
+ 	return rb_entry(last, struct sched_entity, run_node);
+ }
+ 
++#define INDENT(i) ((i)*2), "                                  "
++
++static void notrace __print_runqueue(struct cfs_rq *cfs_rq, int indent);
++
++static void __always_inline
++__print_entity(struct sched_entity *se, char *name, int indent)
++{
++	if (!se) {
++		trace_printk("%.*s %s: %p\n", INDENT(indent), name, se);
++		return;
++	}
++
++	if (entity_is_task(se)) {
++		struct task_struct *p = task_of(se);
++		trace_printk("%.*s %s: %p, comm: %s/%d, load: %ld\n",
++				INDENT(indent), name, 
++				se, p->comm, p->pid, se->load.weight);
++	} else {
++		trace_printk("%.*s %s: %p, load: %ld, ", 
++				INDENT(indent), name,
++				se, se->load.weight);
++		__print_runqueue(group_cfs_rq(se), indent+1);
++	}
++}
++
++static void notrace __print_runqueue(struct cfs_rq *cfs_rq, int indent)
++{
++	struct rb_node *n;
++
++	trace_printk("%.*s cfs_rq: %p, nr: %ld, load: %ld\n", 
++			INDENT(indent),
++			cfs_rq, cfs_rq->nr_running,
++			cfs_rq->load.weight);
++
++	__print_entity(cfs_rq->curr, "curr", indent);
++
++	for (n = cfs_rq->rb_leftmost; n; n = rb_next(n)) {
++		struct sched_entity *se = rb_entry(n, struct sched_entity, run_node);
++		__print_entity(se, "se", indent);
++	}
++}
++
++void print_runqueue(struct cfs_rq *cfs_rq)
++{
++	__print_runqueue(cfs_rq, 0);
++}
++
+ /**************************************************************
+  * Scheduling class statistics methods:
+  */
+@@ -1047,6 +1098,7 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ 	struct cfs_rq *cfs_rq;
+ 	struct sched_entity *se = &p->se;
+ 
++	print_runqueue(&rq->cfs);
+ 	for_each_sched_entity(se) {
+ 		if (se->on_rq)
+ 			break;
+@@ -1055,6 +1107,9 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ 		flags = ENQUEUE_WAKEUP;
+ 	}
+ 
++	trace_printk("add task: %p, %s/%d\n", &p->se, p->comm, p->pid);
++	print_runqueue(&rq->cfs);
++
+ 	hrtick_update(rq);
+ }
+ 
+@@ -1068,6 +1123,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ 	struct cfs_rq *cfs_rq;
+ 	struct sched_entity *se = &p->se;
+ 
++	print_runqueue(&rq->cfs);
+ 	for_each_sched_entity(se) {
+ 		cfs_rq = cfs_rq_of(se);
+ 		dequeue_entity(cfs_rq, se, flags);
+@@ -1077,6 +1133,9 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ 		flags |= DEQUEUE_SLEEP;
+ 	}
+ 
++	trace_printk("del task: %p, %s/%d\n", &p->se, p->comm, p->pid);
++	print_runqueue(&rq->cfs);
++
+ 	hrtick_update(rq);
+ }
+ 
+@@ -1719,6 +1778,8 @@ static struct task_struct *pick_next_task_fair(struct rq *rq)
+ 	struct cfs_rq *cfs_rq = &rq->cfs;
+ 	struct sched_entity *se;
+ 
++	print_runqueue(&rq->cfs);
++
+ 	if (!cfs_rq->nr_running)
+ 		return NULL;
+ 
+@@ -1731,6 +1792,9 @@ static struct task_struct *pick_next_task_fair(struct rq *rq)
+ 	p = task_of(se);
+ 	hrtick_start_fair(rq, p);
+ 
++	trace_printk("picked: %p, %s/%d\n", se, p->comm, p->pid);
++	print_runqueue(&rq->cfs);
++
+ 	return p;
+ }
+ 
+@@ -1742,10 +1806,15 @@ static void put_prev_task_fair(struct rq *rq, struct task_struct *prev)
+ 	struct sched_entity *se = &prev->se;
+ 	struct cfs_rq *cfs_rq;
+ 
++	print_runqueue(&rq->cfs);
+ 	for_each_sched_entity(se) {
+ 		cfs_rq = cfs_rq_of(se);
+ 		put_prev_entity(cfs_rq, se);
+ 	}
++
++	trace_printk("put: %p, %s/%d\n", se, prev->comm, prev->pid);
++	print_runqueue(&rq->cfs);
++
+ }
+ 
+ #ifdef CONFIG_SMP
+@@ -3819,8 +3888,10 @@ static void set_curr_task_fair(struct rq *rq)
+ {
+ 	struct sched_entity *se = &rq->curr->se;
+ 
++	print_runqueue(&rq->cfs);
+ 	for_each_sched_entity(se)
+ 		set_next_entity(cfs_rq_of(se), se);
++	print_runqueue(&rq->cfs);
+ }
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
 
