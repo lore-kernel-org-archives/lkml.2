@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab0LVJRh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 04:17:37 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:38508 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751475Ab0LVJRf convert rfc822-to-8bit (ORCPT
+	id S1752096Ab0LVJUZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 04:20:25 -0500
+Received: from casper.infradead.org ([85.118.1.10]:37260 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751722Ab0LVJUX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 04:17:35 -0500
-Subject: Re: [PATCH 1/5] Free up pf flag PF_KSOFTIRQD -v2
+	Wed, 22 Dec 2010 04:20:23 -0500
+Subject: Re: [PATCH 5/5] Account ksoftirqd time as cpustat softirq -v2
 From: Peter Zijlstra <peterz@infradead.org>
 To: Venkatesh Pallipadi <venki@google.com>
 Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
@@ -17,13 +17,13 @@ Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
         linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
         Eric Dumazet <eric.dumazet@gmail.com>,
         Shaun Ruffell <sruffell@digium.com>
-In-Reply-To: <1292980144-28796-2-git-send-email-venki@google.com>
+In-Reply-To: <1292980144-28796-6-git-send-email-venki@google.com>
 References: <1292980144-28796-1-git-send-email-venki@google.com>
-	 <1292980144-28796-2-git-send-email-venki@google.com>
+	 <1292980144-28796-6-git-send-email-venki@google.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Wed, 22 Dec 2010 10:17:26 +0100
-Message-ID: <1293009446.2170.71.camel@laptop>
+Date: Wed, 22 Dec 2010 10:20:21 +0100
+Message-ID: <1293009621.2170.72.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
@@ -31,78 +31,39 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, 2010-12-21 at 17:09 -0800, Venkatesh Pallipadi wrote:
-> Patchset:
-> This is Part 2 of
-> "Proper kernel irq time accounting -v4"
-> http://lkml.indiana.edu/hypermail//linux/kernel/1010.0/01175.html
+> softirq time in ksoftirqd context is not accounted in ns granularity
+> per cpu softirq stats, as we want that to be a part of ksoftirqd
+> exec_runtime.
 > 
-> and applies 2.6.37-rc7.
-> 
-> Part 1 solves the way irqs are accounted in scheduler and tasks. This
-> patchset solves how irq times are reported in /proc/stat and also not
-> to include irq time in task->stime, etc.
-> 
-> Example:
-> Running a cpu intensive loop and network intensive nc on a 4 CPU system
-> and looking at 'top' output.
-> 
-> With vanilla kernel:
-> Cpu0  :  0.0% us,  0.3% sy,  0.0% ni, 99.3% id,  0.0% wa,  0.0% hi,  0.3% si
-> Cpu1  : 100.0% us,  0.0% sy,  0.0% ni,  0.0% id,  0.0% wa,  0.0% hi,  0.0% si
-> Cpu2  :  1.3% us, 27.2% sy,  0.0% ni,  0.0% id,  0.0% wa,  0.0% hi, 71.4% si
-> Cpu3  :  1.6% us,  1.3% sy,  0.0% ni, 96.7% id,  0.0% wa,  0.0% hi,  0.3% si
-> 
->  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
->  7555 root      20   0  1760  528  436 R  100  0.0   0:15.79 nc
->  7563 root      20   0  3632  268  204 R  100  0.0   0:13.13 loop
-> 
-> Notes:
-> * Both tasks show 100% CPU, even when one of them is stuck on a CPU thats
->   processing 70% softirq.
-> * no hardirq time.
-> 
-> 
-> With "Part 1" patches:
-> Cpu0  :  0.0% us,  0.0% sy,  0.0% ni, 100.0% id,  0.0% wa,  0.0% hi,  0.0% si
-> Cpu1  : 100.0% us,  0.0% sy,  0.0% ni,  0.0% id,  0.0% wa,  0.0% hi,  0.0% si
-> Cpu2  :  2.0% us, 30.6% sy,  0.0% ni,  0.0% id,  0.0% wa,  0.0% hi, 67.4% si
-> Cpu3  :  0.7% us,  0.7% sy,  0.3% ni, 98.3% id,  0.0% wa,  0.0% hi,  0.0% si
-> 
->  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
->  6289 root      20   0  3632  268  204 R  100  0.0   2:18.67 loop
->  5737 root      20   0  1760  528  436 R   33  0.0   0:26.72 nc
-> 
-> Notes:
-> * Tasks show 100% CPU and 33% CPU that correspond to their non-irq exec time.
-> * no hardirq time.
-> 
-> 
-> With "Part 1 + Part 2" patches:
-> Cpu0  :  1.3% us,  1.0% sy,  0.3% ni, 97.0% id,  0.0% wa,  0.0% hi,  0.3% si
-> Cpu1  : 99.3% us,  0.0% sy,  0.0% ni,  0.0% id,  0.0% wa,  0.7% hi,  0.0% si
-> Cpu2  :  1.3% us, 31.5% sy,  0.0% ni,  0.0% id,  0.0% wa,  8.3% hi, 58.9% si
-> Cpu3  :  1.0% us,  2.0% sy,  0.3% ni, 95.0% id,  0.0% wa,  0.7% hi,  1.0% si
-> 
->  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
-> 20929 root      20   0  3632  268  204 R   99  0.0   3:48.25 loop
-> 20796 root      20   0  1760  528  436 R   33  0.0   2:38.65 nc
-> 
-> Notes:
-> * Both task exec time and hard irq time reported correctly.
-> * hi and si time are based on fine granularity info and not on samples.
-> * getrusage would give proper utime/stime split not including irq times
->   in that ratio.
-> * Other places that report user/sys time like, cgroup cpuacct.stat will
->   now include only non-irq exectime.
-> 
-> This patch:
-
-Your 0/x seem repeated in here for some reason... I would expect on the
-below little bit.
-
-> Cleanup patch, freeing up PF_KSOFTIRQD and use per_cpu ksoftirqd pointer
-> instead, as suggested by Eric Dumazet.
+> Accounting them as softirq on /proc/stat separately.
 > 
 > Tested-by: Shaun Ruffell <sruffell@digium.com>
 > Signed-off-by: Venkatesh Pallipadi <venki@google.com>
-> --- 
+> ---
+>  kernel/sched.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index 193b1d0..4ff6d1a 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -3819,6 +3819,14 @@ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+>  		cpustat->irq = cputime64_add(cpustat->irq, tmp);
+>  	} else if (irqtime_account_si_update()) {
+>  		cpustat->softirq = cputime64_add(cpustat->softirq, tmp);
+> +	} else if (this_cpu_ksoftirqd() == p) {
+> +		/*
+> +		 * ksoftirqd time do not get accounted in cpu_softirq_time.
+> +		 * So, we have to handle it separately here.
+> +		 * Also, p->stime needs to be updated for ksoftirqd.
+> +		 */
+> +		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
+> +					&cpustat->softirq);
+>  	} else if (user_tick) {
+>  		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
+>  	} else if (p == rq->idle) {
+
+So you add the ksoftirqd runtime as softirq time in the /proc/stat
+output?
+
+That seems dubious...
