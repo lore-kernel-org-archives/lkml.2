@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944Ab0LVN1T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 08:27:19 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54094 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750764Ab0LVN1S (ORCPT
+	id S1753355Ab0LVN1c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 08:27:32 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:38237 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753255Ab0LVN1a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 08:27:18 -0500
-Date: Wed, 22 Dec 2010 13:27:30 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>, myungjoo.ham@gmail.com
-Subject: Re: [PATCH v2 3/6] MFD MAX8998/LP3974 Bugfix: incorrect variable
- name (typo)
-Message-ID: <20101222132730.GC26306@opensource.wolfsonmicro.com>
-References: <20101221155004.GA21871@opensource.wolfsonmicro.com>
- <1292998991-26968-4-git-send-email-myungjoo.ham@samsung.com>
+	Wed, 22 Dec 2010 08:27:30 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=GPKoWRpSanSyVbukyn0B5SMqorPdlYLvrRyh1nGdKaciV5s5Y9LQfQLCDDWhWStGmM
+         4p5ESS48eDvjsuJUVbl8dywwVjYqypL2ZwGjOnXkXFvW8Zr3h5mKTqDpxn463CcsuuWo
+         cetIo3kiZe5PkbxjdQn0qCs238zIYixNJmAJA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292998991-26968-4-git-send-email-myungjoo.ham@samsung.com>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101206122236.GC30654@intel.com>
+References: <20101206122236.GC30654@intel.com>
+Date: Wed, 22 Dec 2010 14:26:39 +0100
+Message-ID: <AANLkTinO7cgJgR0w=9dF0uSFFMh_ybb0bNXffXiCxy8p@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3]mmc: enable runtime PM support of sdhci host controller
+From: Pierre Tardy <tardyp@gmail.com>
+To: Yunpeng Gao <yunpeng.gao@intel.com>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 22, 2010 at 03:23:08PM +0900, MyungJoo Ham wrote:
-> trivial error. (buck1_idx->buck2_idx in the context of buck2 control)
-> 
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> +int sdhci_runtime_suspend(struct sdhci_host *host)
+> +{
+> +       int ret = 0;
+> +
+> +       if (host->vmmc)
+> +               ret = regulator_disable(host->vmmc);
+Please dont suspend the card's power in the sdhci's suspend function.
+This means the card will die.
+Think of the wifi idle use case where the wifi is working, but sdio
+bus is not used. sdhci will suspend, but wifi card wont.
+manipulation of the host->vmmc must be done in set_ios() (I will send
+the patch later in the week...)
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
-This looks like it has no dependency on the rest of the series.
-
->  drivers/regulator/max8998.c |    4 ++--
-
-Subject line would normally say 'regulator: ' as this is a patch to the
-regulator driver not the MFD.
+Regards,
+-- 
+Pierre
