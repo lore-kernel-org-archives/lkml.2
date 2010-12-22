@@ -1,113 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114Ab0LVCxf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 21:53:35 -0500
-Received: from mga01.intel.com ([192.55.52.88]:52614 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751907Ab0LVCwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 21:52:46 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,210,1291622400"; 
-   d="scan'208";a="639093820"
-From: Huang Ying <ying.huang@intel.com>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
-        ying.huang@intel.com, Dean Nelson <dnelson@redhat.com>
-Subject: [RFC 2/3] KVM, Replace is_hwpoison_address with get_user_pages_hwpoison
-Date: Wed, 22 Dec 2010 10:51:56 +0800
-Message-Id: <1292986317-2805-3-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1292986317-2805-1-git-send-email-ying.huang@intel.com>
-References: <1292986317-2805-1-git-send-email-ying.huang@intel.com>
+	id S1751932Ab0LVDMt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 22:12:49 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37770 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751877Ab0LVDMs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 22:12:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=pH4C0vJOA84Q8WfdSclQs3sv3xrLEfORp7g9R9ZnxZWy4pZClh3k4I/g1H5c+pHAve
+         ShGlRjj4vho8oi6FkYuNXYFVcQt3V9luTtNxcfbgHyEEnErCDBbVfwA6fnRO20FEqVzZ
+         N/UXGpsCrqJVoslDzezshBMQ/05Go62WUHDdA=
+MIME-Version: 1.0
+In-Reply-To: <1292978393.2401.14.camel@morgan.silverblock.net>
+References: <1292762975.2403.29.camel@localhost>
+	<AANLkTimYx2Og1BG37wb0WZ0_U8WJjLKHMKgU45qycUaM@mail.gmail.com>
+	<AANLkTikuKMLUoVnQsU6QNCnHBgOponJUngHGtyVHk1xK@mail.gmail.com>
+	<4D0F8276.9070903@kernel.org>
+	<20101221044050.GA25718@windriver.com>
+	<1292978393.2401.14.camel@morgan.silverblock.net>
+Date: Wed, 22 Dec 2010 11:12:47 +0800
+Message-ID: <AANLkTi=zw=0=7bAg9uV+u6bA6iY63k_GX9vo=G+bX0O3@mail.gmail.com>
+Subject: Re: [V2 PATCH] kthread_work: Make lockdep happy
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Andy Walls <awalls@md.metrocast.net>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        nicolas.mailhot@laposte.net, Jarod Wilson <jarod@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Hans Verkuil <hverkuil@xs4all.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-is_hwpoison_address only checks whether the page table entry is
-hwpoisoned, regardless the memory page mapped.  While
-get_user_pages_hwpoison will check both.
+On Wed, Dec 22, 2010 at 8:39 AM, Andy Walls <awalls@md.metrocast.net> wrote:
+> Yong,
+>
+> I have tested your patch with the following patch on top of yours.  I
+> find the two patches together acceptable in testing in a machine with
+> both a PVR-350 card and a PVR-500 card installed.
+>
+> Tested-by: Andy Walls <awalls@md.metrocast.net>
+> Signed-off-by: Andy Walls <awalls@md.metrocast.net>
+>
+> Could you please author a [V3 PATCH] adding my changes?
 
-In a following patch, we will introduce unpoison_address, which will
-clear the poisoned page table entry to make it possible to allocate a
-new memory page for the virtual address.  But it is also possible that
-the underlying memory page is kept poisoned even after the
-corresponding page table entry is cleared, that is, a new memory page
-can not be allocated.  get_user_pages_hwpoison can catch these
-situations.
+Sure. Will do it.
 
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- include/linux/mm.h  |    8 --------
- mm/memory-failure.c |   32 --------------------------------
- virt/kvm/kvm_main.c |    4 +++-
- 3 files changed, 3 insertions(+), 41 deletions(-)
+> Since the
+> majority of the change is your work, it should be attributed to you as
+> the author.
+>
+>
+> About my additional changes:
+>
+> I needed the explicit EXPORT_SYMBOL_GPL(__init_kthread_worker),
+> otherwise the build would fail, because the ivtv module had an
+> unresolved symbol.
 
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1512,14 +1512,6 @@ extern int sysctl_memory_failure_recover
- extern void shake_page(struct page *p, int access);
- extern atomic_long_t mce_bad_pages;
- extern int soft_offline_page(struct page *page, int flags);
--#ifdef CONFIG_MEMORY_FAILURE
--int is_hwpoison_address(unsigned long addr);
--#else
--static inline int is_hwpoison_address(unsigned long addr)
--{
--	return 0;
--}
--#endif
- 
- extern void dump_page(struct page *page);
- 
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1433,35 +1433,3 @@ done:
- 	/* keep elevated page count for bad page */
- 	return ret;
- }
--
--/*
-- * The caller must hold current->mm->mmap_sem in read mode.
-- */
--int is_hwpoison_address(unsigned long addr)
--{
--	pgd_t *pgdp;
--	pud_t pud, *pudp;
--	pmd_t pmd, *pmdp;
--	pte_t pte, *ptep;
--	swp_entry_t entry;
--
--	pgdp = pgd_offset(current->mm, addr);
--	if (!pgd_present(*pgdp))
--		return 0;
--	pudp = pud_offset(pgdp, addr);
--	pud = *pudp;
--	if (!pud_present(pud) || pud_large(pud))
--		return 0;
--	pmdp = pmd_offset(pudp, addr);
--	pmd = *pmdp;
--	if (!pmd_present(pmd) || pmd_large(pmd))
--		return 0;
--	ptep = pte_offset_map(pmdp, addr);
--	pte = *ptep;
--	pte_unmap(ptep);
--	if (!is_swap_pte(pte))
--		return 0;
--	entry = pte_to_swp_entry(pte);
--	return is_hwpoison_entry(entry);
--}
--EXPORT_SYMBOL_GPL(is_hwpoison_address);
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -966,7 +966,9 @@ static pfn_t hva_to_pfn(struct kvm *kvm,
- 			goto return_fault_page;
- 
- 		down_read(&current->mm->mmap_sem);
--		if (is_hwpoison_address(addr)) {
-+		npages = get_user_pages_hwpoison(current, current->mm,
-+						 addr, 1, 1, 0, page, NULL);
-+		if (npages == -EHWPOISON) {
- 			up_read(&current->mm->mmap_sem);
- 			get_page(hwpoison_page);
- 			return page_to_pfn(hwpoison_page);
+Will update.
+
+>
+> I added the lockdep class name to make it easier to identify the ivtv
+> module's kthread worker's lock class.  Now one can actually recognize
+> the lock class in lockdep output strings:
+>
+>        # cat lockdep | grep itv
+>        ffffffffa0483a60 FD:    1 BD:    1 ......: (&itv->irq_worker)->lock
+
+Yeah, I like your idea.
+
+V3 coming soon :)
+
+Thanks,
+Yong
+-- 
+Only stand for myself.
