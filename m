@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106Ab0LVADl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 19:03:41 -0500
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:50234 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753923Ab0LVADj (ORCPT
+	id S1754138Ab0LVAD4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 19:03:56 -0500
+Received: from mail-ew0-f45.google.com ([209.85.215.45]:52810 "EHLO
+	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754111Ab0LVADy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 19:03:39 -0500
+	Tue, 21 Dec 2010 19:03:54 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=nBZBhdWiCmrzpOJukMGNiV3umtaipMBfdrmWaUP1O4DyT+uTp/g404yLAV39E7cxzQ
-         TQua3VzhMAauKDl6o1tJhZmL1ETDrkoy2eNwzEHqr1T+mAsUiUDVcoHSNPTJtPgNZbSZ
-         zfbU1kl69mFFSRVapMiFIWHJfAr24aBhX27HY=
-Date: Wed, 22 Dec 2010 03:03:34 +0300
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:content-transfer-encoding:user-agent;
+        b=PD3CkGSJu/jow5B6Zm2MwBdHPpjehspqEk4SO8635WXXk4NVKM5bUno0wDA88iqZyQ
+         h4VAXQ6CkgQ7NM1d6ce3dphdXGKgg7OK4zJMaP/9aASOSX2WgxKv4W8wdxXMnGqCftvo
+         VFNO+gCmMgF1jyHF31Kjtxhdxd+RWf9/xP4FQ=
+Date: Wed, 22 Dec 2010 03:03:51 +0300
 From: Anton Vorontsov <cbouatmailru@gmail.com>
 To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-kernel@vger.kernel.org, Vasiliy Kulikov <segoon@openwall.com>,
-        Dan Carpenter <error27@gmail.com>
-Subject: Re: [PATCH] POWER: gpio-charger: Check result of kzalloc
-Message-ID: <20101222000334.GA23799@oksana.dev.rtsoft.ru>
-References: <1290118119-16468-1-git-send-email-lars@metafoo.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] jz4740-battery: Should include linux/io.h
+Message-ID: <20101222000351.GA23248@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1290118119-16468-1-git-send-email-lars@metafoo.de>
+Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 11:08:37PM +0100, Lars-Peter Clausen wrote:
-> Since kzalloc can return NULL we have to check its result.
-> 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> ---
+During test-build (with disabled 'depends on') I found that
+jz4740-battery driver lacks linux/io.h, which makes build break
+like this (on x86):
 
-Lars, Vasiliy, Dan,
+  CC [M]  drivers/power/isp1704_charger.o
+jz4740-battery.c: In function 'jz_battery_read_voltage':
+jz4740-battery.c:84: error: implicit declaration of function 'readw’
+jz4740-battery.c: In function 'jz_battery_probe':
+jz4740-battery.c:284: error: implicit declaration of function 'ioremap_nocache’
+jz4740-battery.c:285: warning: assignment makes pointer from integer without a cast
+jz4740-battery.c:372: error: implicit declaration of function 'iounmap'
+make[2]: *** [drivers/power/jz4740-battery.o] Error 1
 
-Thanks for the patch! I applied the following:
+This patch fixes the issues, and thus makes it easier to build-test
+the driver for me.
 
-commit 2e9ff5f5e4c6b034554f3539f29529265279102c
-Author: Lars-Peter Clausen <lars@metafoo.de>
-Date:   Thu Nov 18 23:08:37 2010 +0100
+Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+---
 
-    gpio-charger: Check result of kzalloc
-    
-    Since kzalloc can return NULL we have to check its result.
-    
-    Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-    Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-    Signed-off-by: Dan Carpenter <error27@gmail.com>
-    Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+I applied this to battery-2.6.git.
 
-diff --git a/drivers/power/gpio-charger.c b/drivers/power/gpio-charger.c
-index fccbe99..8458caf 100644
---- a/drivers/power/gpio-charger.c
-+++ b/drivers/power/gpio-charger.c
-@@ -87,6 +87,10 @@ static int __devinit gpio_charger_probe(struct platform_device *pdev)
- 	}
+ drivers/power/jz4740-battery.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/power/jz4740-battery.c b/drivers/power/jz4740-battery.c
+index 5b48215..02414db 100644
+--- a/drivers/power/jz4740-battery.c
++++ b/drivers/power/jz4740-battery.c
+@@ -19,6 +19,7 @@
+ #include <linux/module.h>
+ #include <linux/platform_device.h>
+ #include <linux/slab.h>
++#include <linux/io.h>
  
- 	gpio_charger = kzalloc(sizeof(*gpio_charger), GFP_KERNEL);
-+	if (!gpio_charger) {
-+		dev_err(&pdev->dev, "Failed to alloc driver structure\n");
-+		return -ENOMEM;
-+	}
- 
- 	charger = &gpio_charger->charger;
- 
+ #include <linux/delay.h>
+ #include <linux/gpio.h>
+-- 
+1.7.0.5
