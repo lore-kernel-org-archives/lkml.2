@@ -1,93 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498Ab0LVVoe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 16:44:34 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:38200 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134Ab0LVVoc (ORCPT
+	id S1752541Ab0LVVud (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 16:50:33 -0500
+Received: from mail.bluewatersys.com ([202.124.120.130]:15561 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751637Ab0LVVuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 16:44:32 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-security-module@vger.kernel.org,
-        jmorris@namei.org, eric.dumazet@gmail.com, tgraf@infradead.org,
-        eugeneteo@kernel.org, kees.cook@canonical.com, davem@davemloft.net,
-        a.p.zijlstra@chello.nl, akpm@linux-foundation.org,
-        eparis@parisplace.org
-Subject: Re: [PATCH v5] kptr_restrict for hiding kernel pointers
-In-Reply-To: Your message of "Wed, 22 Dec 2010 12:17:59 EST."
-             <1293038279.9820.250.camel@dan>
-From: Valdis.Kletnieks@vt.edu
-References: <1293037246.9820.236.camel@dan> <20101222171307.GA25611@elte.hu>
-            <1293038279.9820.250.camel@dan>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1293054216_7139P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	Wed, 22 Dec 2010 16:50:32 -0500
+Message-ID: <4D12730B.2030909@bluewatersys.com>
+Date: Thu, 23 Dec 2010 10:52:11 +1300
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+MIME-Version: 1.0
+To: Alexey Charkov <alchark@gmail.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        Eric Miao <eric.y.miao@gmail.com>,
+        =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6 v10] ARM: Add basic architecture support for VIA/WonderMedia
+ 85xx SoC's
+References: <20101220195423.GA14509@alchark-u3s> <4D0FC1AE.2050708@bluewatersys.com> <AANLkTin4XqbGwznp56Xjt_zest6rxNmir0QDJWTySY4+@mail.gmail.com> <4D0FD747.9020700@bluewatersys.com> <AANLkTikAWjK7ACyt=LedhyyrhsCk1WCiyWz182CXMe9C@mail.gmail.com> <4D0FE546.7050302@bluewatersys.com> <AANLkTinyYKrhTcBMMCE4A2oFQHm11cqSZQozytGu+d6o@mail.gmail.com> <4D1011CF.9080800@bluewatersys.com> <AANLkTi=7O-HwQRcybnLSt+r+A64g=D7rZY7NbdEMFys3@mail.gmail.com> <4D110269.9030805@bluewatersys.com> <20101222211815.GA31054@alchark-u3s>
+In-Reply-To: <20101222211815.GA31054@alchark-u3s>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Date: Wed, 22 Dec 2010 16:43:36 -0500
-Message-ID: <34753.1293054216@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020207.4D12710A.0131,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1293054216_7139P
-Content-Type: text/plain; charset=us-ascii
+On 12/23/2010 10:18 AM, Alexey Charkov wrote:
+> This adds support for the family of Systems-on-Chip produced initially
+> by VIA and now its subsidiary WonderMedia that have recently become
+> widespread in lower-end Chinese ARM-based tablets and netbooks.
+> 
+> Support is included for both VT8500 and WM8505, selectable by a
+> configuration switch at kernel build time.
+> 
+> Included are basic machine initialization files, register and
+> interrupt definitions, support for the on-chip interrupt controller,
+> high-precision OS timer, GPIO lines, necessary macros for early debug,
+> pulse-width-modulated outputs control, as well as platform device
+> configurations for the specific drivers implemented elsewhere.
+> 
+> Signed-off-by: Alexey Charkov <alchark@gmail.com>
+> ---
+> 
+> Welcome the jubilee tenth revision of this patch ;-)
+> 
+> I've tried to incorporate the suggestions by Ryan and Arnd, hope that
+> there is nothing left out. There was a massive reorganization of code
+> to remove less-than-obvious magic with MMIO registers and irqs being
+> held in huge structs, now they are again macro definitions. Those
+> macros are, however, only included in single isolated files, and
+> actual values to use are chosen at runtime by calling the respective
+> routines at machine initialization. There are also stylistic changes
+> all around, where Ryan suggested.
+> 
+> As a result, i8042 should again be adjusted a bit to reflect the new
+> place to find respective register/irq definitions, that one will be
+> sent in the respective thread shortly.
+> 
+> Best regards,
+> Alexey
 
-On Wed, 22 Dec 2010 12:17:59 EST, Dan Rosenberg said:
-> On Wed, 2010-12-22 at 18:13 +0100, Ingo Molnar wrote:
-> > * Dan Rosenberg <drosenberg@vsecurity.com> wrote:
-> > 
-> > > +	case 'K':
-> > > +		/*
-> > > +		 * %pK cannot be used in IRQ context because its test
-> > > +		 * for CAP_SYSLOG would be meaningless.
-> > > +		 */
-> > > +		if (in_irq() || in_serving_softirq() || in_nmi())
-> > > +			WARN_ONCE(1, "%%pK used in interrupt context.\n");
-> > 
-> > Hm, that bit looks possibly broken - some useful warning in irq context could print
-> > a pointer into the syslog and this would generate a second warning? That probably
-> > would crash as it recurses back into the printk code?
+<snip>
 
-> The double "%%" acts as an escape and simply prints "%" rather than
-> treating it as a format specifier.
+> --- /dev/null
+> +++ b/arch/arm/mach-vt8500/devices-vt8500.c
+> @@ -0,0 +1,117 @@
+> +/* linux/arch/arm/mach-vt8500/devices-vt8500.c
+> + *
+> + * Copyright (C) 2010 Alexey Charkov <alchark@gmail.com>
+> + *
+> + * This software is licensed under the terms of the GNU General Public
+> + * License version 2, as published by the Free Software Foundation, and
+> + * may be copied, distributed, and modified under those terms.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + */
+> +
+> +#include <linux/platform_device.h>
+> +
+> +#include <mach/vt8500_regs.h>
+> +#include <mach/vt8500_irqs.h>
+> +#include <mach/i8042.h>
+> +#include "devices.h"
+> +
+> +static inline struct resource WMT_MMIO_RES(u32 start, u32 size)
+> +{
+> +	struct resource tmp = {
+> +		.flags = IORESOURCE_MEM,
+> +		.start = start,
+> +		.end = start + size - 1,
+> +	};
+> +
+> +	return tmp;
+> +}
 
-I think Ingo was more worried about the fact that we're doing a WARN_ONCE which
-will generate a call to printk() - while we're in the middle of a printk() already.
+These functions can be marked __init (though I guess they already are if
+marked inline?). They should also have lower case names since they are
+proper functions.
 
-So if we hit a 'printk(KERN_INFO "Some blather with a %pK pointer in it",ptr) in irq
-context, what we'll get (if we're lucky is:
+Do these functions generate warnings about returning temporary values
+off the stack? If so, they could be rewritten as:
 
-Some blather with a <50-60 lines of WARN_ONCE output> pointer in it.
+static __init void wmt_mmio_res(struct resource *res,
+				u32 start, u32 size)
+{
+	res->flags = IORESOURCE_MEM;
+	res->start = start;
+	res->end   = start + size - 1;
+}
 
-If we're unlucky? Well... 
+You could also make these functions static inline in devices.h to avoid
+having to define them for each board.
 
+> +
+> +static inline struct resource WMT_IRQ_RES(int irq)
+> +{
+> +	struct resource tmp = {
+> +		.flags = IORESOURCE_IRQ,
+> +		.start = irq,
+> +		.end = irq,
+> +	};
+> +
+> +	return tmp;
+> +}
+> +
+> +#define WMT_RES_ADD(__device, __resource, __num) \
+> +if (platform_device_add_resources(__device, __resource, __num)) \
+> +	pr_err("Failed to assign resources to __device##\n");
 
---==_Exmh_1293054216_7139P
-Content-Type: application/pgp-signature
+This could be written as a proper function. The resource add is unlikely
+to fail. Maybe keep the warning but don't worry about printing the
+device name?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+~Ryan
 
-iD8DBQFNEnEIcC3lWbTT17ARAqG3AJ9koQENqu9aWBtsHfZd0aO8iyYlnACfU8F6
-tktz447GAnb/xeOirKQFB+A=
-=MEhx
------END PGP SIGNATURE-----
+-- 
+Bluewater Systems Ltd - ARM Technology Solution Centre
 
---==_Exmh_1293054216_7139P--
-
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
