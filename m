@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab0LVIue (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 03:50:34 -0500
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:51920 "EHLO kernel.dk"
+	id S1753068Ab0LVIuv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 03:50:51 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:24994 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752780Ab0LVIub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 03:50:31 -0500
-Message-ID: <4D11BBB1.2020807@kernel.dk>
-Date: Wed, 22 Dec 2010 09:49:53 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	id S1752776Ab0LVIut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 03:50:49 -0500
+X-Greylist: delayed 387 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Dec 2010 03:50:49 EST
+X-IronPort-AV: E=Sophos;i="4.60,212,1291611600"; 
+   d="scan'208";a="11652616"
+Subject: Re: [Xen-devel] Re: [PATCH 01/10] xen: Make all reserved pages for
+ the balloon be INVALID_P2M_ENTRY.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Beulich <JBeulich@novell.com>, "hpa@zytor.com" <hpa@zytor.com>
+In-Reply-To: <4D1127FC.8060102@goop.org>
+References: <1292967460-15709-1-git-send-email-konrad.wilk@oracle.com>
+	 <1292967460-15709-2-git-send-email-konrad.wilk@oracle.com>
+	 <4D1127FC.8060102@goop.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Organization: Citrix Systems, Inc.
+Date: Wed, 22 Dec 2010 08:47:10 +0000
+Message-ID: <1293007630.3998.36.camel@localhost.localdomain>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Tejun Heo <tj@kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH scsi-misc-2.6] sd: implement sd_check_events()
-References: <20101217122831.39300d94.sfr@canb.auug.org.au>	 <1292597607.2820.17.camel@mulgrave.site>  <4D0CF27F.1080601@kernel.org>	 <1292862013.3034.7.camel@mulgrave.site>	 <1292954953.3034.15.camel@mulgrave.site>  <4D10FDAD.2060801@kernel.dk> <1292963097.3034.21.camel@mulgrave.site>
-In-Reply-To: <1292963097.3034.21.camel@mulgrave.site>
-Content-Type: text/plain; charset=UTF-8
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-12-21 21:24, James Bottomley wrote:
-> On Tue, 2010-12-21 at 20:19 +0100, Jens Axboe wrote:
->> On 2010-12-21 19:09, James Bottomley wrote:
->>> On Mon, 2010-12-20 at 10:20 -0600, James Bottomley wrote:
->>>> Added cc: linux-scsi
->>>>
->>>> On Sat, 2010-12-18 at 18:42 +0100, Tejun Heo wrote:
->>>>> Replace sd_media_change() with sd_check_events().
->>>>>
->>>>> * Move media removed logic into set_media_not_present() and
->>>>>   media_not_present() and set sdev->changed iff an existing media is
->>>>>   removed or the device indicates UNIT_ATTENTION.
->>>>>
->>>>> * Make sd_check_events() sets sdev->changed if previously missing
->>>>>   media becomes present.
->>>>>
->>>>> * Event is reported only if sdev->changed is set.
->>>>>
->>>>> This makes media presence event reported if scsi_disk->media_present
->>>>> actually changed or the device indicated UNIT_ATTENTION.  For backward
->>>>> compatibility, SDEV_EVT_MEDIA_CHANGE is generated each time
->>>>> sd_check_events() detects media change event.
->>>>>
->>>>> Signed-off-by: Tejun Heo <tj@kernel.org>
->>>>> Cc: Kay Sievers <kay.sievers@vrfy.org>
->>>>> ---
->>>>> Here it is.  The conflicts were due to Alan's recent patch, which was
->>>>> in the similar direction anyway.
->>>>
->>>> This looks fine to me.  Jens can you strip the SCSI patches out of your
->>>> tree and I'll run them through a postmerge tree to get the fix up?
->>>
->>> Ping on this, please: I can't build a postmerge tree until block is
->>> sorted out.  I need these four removing:
->>
->> I would need to revert those four then, I can't rebase any of those
->> branches.
+On Tue, 2010-12-21 at 22:19 +0000, Jeremy Fitzhardinge wrote: 
+> On 12/21/2010 01:37 PM, Konrad Rzeszutek Wilk wrote:
+> > +		BUG_ON(!set_phys_to_machine(pfn, INVALID_P2M_ENTRY));
+[...] 
+> I'm not a fan of hiding real side-effectful code in a BUG_ON
+> predicate.
 > 
-> That's a bit unfortunate.  OK, just revert the sd one then.  Hopefully
-> we're close enough to the merge window that we won't pick up conflicts
-> in the others.
+> > +		BUG_ON(get_phys_to_machine(pfn) != INVALID_P2M_ENTRY);
 
-Done, sd patch reverted and pushed out.
+I'm also not a fan of this "is the previous I called function buggy"
+BUG_ON.
 
--- 
-Jens Axboe
+If we aren't confident that set_phys_to_machine() is doing the right
+thing then adding a post-condition check to that function would be a
+more preferable option.
+
+Ian.
+
 
