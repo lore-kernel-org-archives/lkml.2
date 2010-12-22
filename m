@@ -1,80 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531Ab0LVKev (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 05:34:51 -0500
-Received: from mail-px0-f179.google.com ([209.85.212.179]:48430 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218Ab0LVKeu convert rfc822-to-8bit (ORCPT
+	id S1751681Ab0LVKf3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 05:35:29 -0500
+Received: from mail-bw0-f45.google.com ([209.85.214.45]:41124 "EHLO
+	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751364Ab0LVKf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 05:34:50 -0500
+	Wed, 22 Dec 2010 05:35:28 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=m9lS7rpxzU+5SrPsduRlay4JQRuR91k8nhdbT0+QlTDTbSBKA/8mjpzHYemLy7r676
-         lnfMbDEPX0TZZ0Wphnh7oflYkU0sSw7vfS6WKx7OZHmZDqE9p1VyOAsCQ8WsH4IJEW0f
-         zViwI26foLIUVDOoLEP57P8BQaIKsar7eqGhg=
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ZtRK32JrYVIw/g2PATC2nyGuClLFV6QCpzBDTQ8nFZkgQeiZwDALOm1hVu/SNN7agB
+         FF2d6sTM4fkU0DFKfW1EMNsob72zZTJHKhIgf8CjpGty1cWGYenmbm82irwhK9+TL5OB
+         bYJIvbMFvQRVNEMIy9F75Kv0JP5tQQlBkei9I=
+Date: Wed, 22 Dec 2010 11:35:22 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
+        jan.kratochvil@redhat.com
+Subject: Re: [PATCH 14/16] ptrace: make SIGCONT notification reliable
+ against ptrace
+Message-ID: <20101222103522.GC4684@htj.dyndns.org>
+References: <1291654624-6230-1-git-send-email-tj@kernel.org>
+ <1291654624-6230-15-git-send-email-tj@kernel.org>
+ <20101221172516.GA16681@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinVHsVg0=S9T2A120MYjgOknVB_hXmkwAmjpv2D@mail.gmail.com>
-References: <AANLkTi=kX8NraxuLn-f=s=nqja71Ayq2kYwgG6gq+7YF@mail.gmail.com>
-	<20101220214445.85816469.akpm@linux-foundation.org>
-	<AANLkTikpHn4EkaTUznshMOAnhC9FfL5Yy9vZohvoy8cG@mail.gmail.com>
-	<AANLkTinVHsVg0=S9T2A120MYjgOknVB_hXmkwAmjpv2D@mail.gmail.com>
-Date: Wed, 22 Dec 2010 10:34:49 +0000
-Message-ID: <AANLkTimZOCWY4bAxo6WVn4R075zHZGr9NE3S9nRd407F@mail.gmail.com>
-Subject: Re: [PATCH] include/linux/unaligned: Pack the whole struct rather
- than just the field.
-From: Will Newton <will.newton@gmail.com>
-To: Harvey Harrison <harvey.harrison@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>, stable@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101221172516.GA16681@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 21, 2010 at 11:36 PM, Harvey Harrison
-<harvey.harrison@gmail.com> wrote:
-> On Tue, Dec 21, 2010 at 2:43 AM, Will Newton <will.newton@gmail.com> wrote:
->> On Tue, Dec 21, 2010 at 5:44 AM, Andrew Morton
->>>>  #include <linux/kernel.h>
->
->>>>
->>>> -struct __una_u16 { u16 x __attribute__((packed)); };
->>>> -struct __una_u32 { u32 x __attribute__((packed)); };
->>>> -struct __una_u64 { u64 x __attribute__((packed)); };
->>>> +struct __una_u16 { u16 x; } __attribute__((packed));
->>>> +struct __una_u32 { u32 x; } __attribute__((packed));
->>>> +struct __una_u64 { u64 x; } __attribute__((packed));
->>>>
->>>
->>> Yes, that was wrong.
->>>
->>> Do you think this bug affects 2.6.36 or earlier?
->
-> Interesting, I thought about this when modifying this awhile ago, and
-> was relying on this from the gcc manual:
->
-> packed
-> <snip>
->
->    Specifying this attribute for struct and union types is equivalent
-> to specifying the packed attribute on each of the
->
->
-> ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> structure or union members. Specifying the -fshort-enums flag on the
-> line is equivalent to specifying the packed
-> attribute on all enum definitions.
+Hello, Oleg.
 
-I think that's possibly a gcc documentation deficiency, it is
-equivalent to adding the packed attribute to all the struct members
-but *also* affects the assumed alignment of the struct.
+On Tue, Dec 21, 2010 at 06:25:16PM +0100, Oleg Nesterov wrote:
+> Two threads, T1 and T2. T1 is ptraced, T2 is not.
+> 
+> SIGSTOP stops them both. T1 sleeps in TASK_TRACED, T2 in TASK_STOPPED.
+> 
+> prepare_signal(SIGCONT) sets SIGNAL_NOTIFY_CONT + SIGNAL_CLD_CONTINUED,
+> and wakes T2 up.
+> 
+> T2 notifies its ->real_parent, clears SIGNAL_NOTIFY_CONT.
+> 
+> Debugger does ptrace(PTRACE_DETACH, T1), sees SIGNAL_CLD_MASK, and
+> restores SIGNAL_NOTIFY_CONT.
+> 
+> T1 resends the (bogus) notification to its (and T2's) real_parent.
 
-Looking at the gcc svn it seems the documentation has been improved a
-bit in this area.
+You're right.  Any thread which notifies the real parent should clear
+the pending status.
 
-> What version of gcc was this?
+> Even if I missed something,
+> 
+> > @@ -245,6 +273,14 @@ int ptrace_attach(struct task_struct *task)
+> >  		signal_wake_up(task, 1);
+> >  	}
+> >
+> > +	/*
+> > +	 * Clear SIGNAL_CLD_MASK if NOTIFY_CONT is not set.  This is
+> > +	 * used to preserve SIGCONT notification across ptrace
+> > +	 * attach/detach.  Read the comment in __ptrace_unlink().
+> > +	 */
+> > +	if (!(task->signal->flags & SIGNAL_NOTIFY_CONT))
+> > +		task->signal->flags &= ~SIGNAL_CLD_MASK;
+> 
+> What if there is another ptraced sub-thread in this group who "owes"
+> the notification ?
 
-4.2.4
+Okay, hmmm... yeah, this is problematic.  Man, I suck.
+
+Combined with the previously pointed out issue with indeterministic
+behavior regarding stop notification, maybe it's better to reimplement
+something which blocks both stop and cont notifications while any
+thread in the group is ptraced and reissues them when all detach?  So
+that we can get both transparent and more predictable behavior?
+
+> > +              * Force the tracee into signal delivery path so that
+> > +              * the notification is delievered ASAP.  This wakeup
+> > +              * is unintrusive as SIGCONT delivery would have
+> > +              * caused the same effect.
+> > +              */
+> > +             if (!woken_up)
+> > +                     signal_wake_up(child, 0);
+> 
+> Well, signal_wake_up() can really force the tracee into signal delivery.
+> It only sets TIF_SIGPENDING, but this can race with recalc_sigpending().
+
+Indeed.
+
+> Oh. This reminds me: http://marc.info/?t=123411921400004
+> 
+> > @@ -1639,7 +1642,24 @@ static void do_notify_parent_cldstop(struct task_struct *tsk, int why)
+> >
+> >  	switch (why) {
+> >  	case CLD_CONTINUED:
+> > -		notify = why;
+> > +		/*
+> > +		 * Notify once if NOTIFY_CONT is set regardless of ptrace.
+> > +		 * NOTIFY_CONT will be reinstated on detach if necessary.
+> > +		 */
+> > +		if (!(sig->flags & SIGNAL_NOTIFY_CONT))
+> > +			break;
+> > +
+> > +		/*
+> > +		 * If ptraced, always report CLD_CONTINUED; otherwise,
+> > +		 * prepare_signal(SIGCONT) encodes the CLD_ si_code into
+> > +		 * SIGNAL_CLD_MASK bits.
+> > +		 */
+> > +		if (task_ptrace(tsk) || (sig->flags & SIGNAL_CLD_CONTINUED))
+> > +			notify = CLD_CONTINUED;
+> 
+> See the comment on 4/16
+
+Will update.
+
+> > @@ -2015,31 +2035,18 @@ relock:
+> >  	 */
+> >  	try_to_freeze();
+> >
+> > -	spin_lock_irq(&sighand->siglock);
+> >  	/*
+> > -	 * Every stopped thread goes here after wakeup. Check to see if
+> > -	 * we should notify the parent, prepare_signal(SIGCONT) encodes
+> > -	 * the CLD_ si_code into SIGNAL_CLD_MASK bits.
+> > +	 * Every stopped thread should go through this function after
+> > +	 * waking up.  Check to see if we should notify the parent.
+> >  	 */
+> > -	if (unlikely(signal->flags & SIGNAL_CLD_MASK)) {
+> > -		int why;
+> > -
+> > -		if (task_ptrace(current) ||
+> > -		    (signal->flags & SIGNAL_CLD_CONTINUED))
+> > -			why = CLD_CONTINUED;
+> > -		else
+> > -			why = CLD_STOPPED;
+> > -
+> > -		signal->flags &= ~SIGNAL_CLD_MASK;
+> > -
+> > -		spin_unlock_irq(&sighand->siglock);
+> > -
+> > +	if (unlikely(current->signal->flags & SIGNAL_NOTIFY_CONT)) {
+> 
+> I am not sure it is OK to check SIGNAL_NOTIFY_CONT without ->siglock.
+> If we return from do_signal_stop(), everything is fine.
+> 
+> But if we got here because of __ptrace_unlink()->signal_wake_up(1),
+> we can miss SIGNAL_NOTIFY_CONT.
+
+This probably should be resolved together with the above
+recalc_sigpending() issue.  I'll think about it.
+
+Thank you.
+
+-- 
+tejun
