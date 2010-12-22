@@ -1,86 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541Ab0LVHjA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 02:39:00 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:60637 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868Ab0LVHi6 (ORCPT
+	id S1752619Ab0LVHwx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 02:52:53 -0500
+Received: from lechat.rtp-net.org ([88.191.19.38]:41960 "EHLO
+	lechat.rtp-net.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752164Ab0LVHww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 02:38:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:date:message-id:subject:from:to:cc
-         :content-type;
-        b=c9f1cEg9MiKgUC0FxFCjI/gciBaP/P8k7dTYqcX8MbhY5aG0JWDeXq9+f3+BgPKQOS
-         VqyZCLGbiLoylyr9VFJDP2xQAMy7xxUHA3wiWAhAj50hZjI9cAfk7B8LPb7m3HfdfJkt
-         B2f3xDnf262kvU5cRly3XOGMAmBvSNCSnIe3Q=
+	Wed, 22 Dec 2010 02:52:52 -0500
+From: Arnaud Patard (Rtp) <arnaud.patard@rtp-net.org>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, liu.y.victor@gmail.com,
+        B02280@freescale.com, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH v2] i.MX51 Framebuffer support
+Organization: RtpNet
+References: <1292842127-21406-1-git-send-email-s.hauer@pengutronix.de>
+Date: Wed, 22 Dec 2010 08:56:14 +0100
+In-Reply-To: <1292842127-21406-1-git-send-email-s.hauer@pengutronix.de>
+	(Sascha Hauer's message of "Mon, 20 Dec 2010 11:48:38 +0100")
+Message-ID: <87bp4eb5r5.fsf@lechat.rtp-net.org>
+User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Wed, 22 Dec 2010 08:38:57 +0100
-Message-ID: <AANLkTik7SQ76zcAMk5=mgKRF7MWghVHhLtY1CtK-WPKy@mail.gmail.com>
-Subject: [PATCH] drm/radeon: Remove DRIVER_DATE for UMS and KMS
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: DRI <dri-devel@lists.freedesktop.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-next@vger.kernel.org
-Content-Type: multipart/mixed; boundary=0016364ed8688f76030497fad8f9
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016364ed8688f76030497fad8f9
-Content-Type: text/plain; charset=UTF-8
+Sascha Hauer <s.hauer@pengutronix.de> writes:
 
 Hi,
 
-sorry, I still haven't setup a git-send-mail, thus sending the
-old-fashioned way as attached patch.
-This patch (against linux-next) is overdue.
+> The following series adds i.MX51 framebuffer support based on the IPUv3. It
+> is not perfect but I decided it is good enough to open it for a wider audience
+> and collect first reviews. I tested this on a babbage board using both outputs
+> (VGA/DVI) with different resolutions up to 1680x1050 and different colour depths.
+> I also tested it on one custom board using a fixed display setting.
 
-"DRIVER_DATE is not maintained or upgraded on changes.
+After adding code to my efika sb machine file and your patchset, I've
+seen the light. Err, no. It was a penguin and a login prompt.  I guess
+it means your patchset is working here.
 
-Furthermore, one DRIVER_DATE for UMS and KMS makes no sense.
-It is enough to bump {KMS_}DRIVER_MAJOR, {KMS_}DRIVER_MINOR and
-{KMS_}DRIVER_PATCHLEVEL defines."
+btw, would be nice to add some comments/docs about :
+- the meaning of the fields of the imx_ipuv3_platform_data struct. it's
+not clear
+- same for .display field of the ipuv3_fb_platform_data
 
-Regards,
-- Sedat -
-
---0016364ed8688f76030497fad8f9
-Content-Type: plain/text; 
-	name="0001-drm-radeon-Remove-DRIVER_DATE-for-UMS-and-KMS.patch"
-Content-Disposition: attachment; 
-	filename="0001-drm-radeon-Remove-DRIVER_DATE-for-UMS-and-KMS.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_ghzwtvgg0
-
-RnJvbSA3NDYzNzA4ZTY3NGUwMWU0M2JkOTIyMTg3NGVhNTdjODQ2NDM1Yjg3IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBTZWRhdCBEaWxlayA8c2VkYXQuZGlsZWtAZ21haWwuY29tPgpE
-YXRlOiBXZWQsIDIyIERlYyAyMDEwIDA4OjIzOjE2ICswMTAwClN1YmplY3Q6IFtQQVRDSF0gZHJt
-L3JhZGVvbjogUmVtb3ZlIERSSVZFUl9EQVRFIGZvciBVTVMgYW5kIEtNUwoKRFJJVkVSX0RBVEUg
-aXMgbm90IG1haW50YWluZWQgb3IgdXBncmFkZWQgb24gY2hhbmdlcy4KCkZ1cnRoZXJtb3JlLCBv
-bmUgRFJJVkVSX0RBVEUgZm9yIFVNUyBhbmQgS01TIG1ha2VzIG5vIHNlbnNlLgpJdCBpcyBlbm91
-Z2ggdG8gYnVtcCB7S01TX31EUklWRVJfTUFKT1IsIHtLTVNffURSSVZFUl9NSU5PUiBhbmQKe0tN
-U199RFJJVkVSX1BBVENITEVWRUwgZGVmaW5lcy4KClNpZ25lZC1vZmYtYnk6IFNlZGF0IERpbGVr
-IDxzZWRhdC5kaWxla0BnbWFpbC5jb20+Ci0tLQogZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9yYWRl
-b25fZHJ2LmMgfCAgICAyIC0tCiBkcml2ZXJzL2dwdS9kcm0vcmFkZW9uL3JhZGVvbl9kcnYuaCB8
-ICAgIDEgLQogMiBmaWxlcyBjaGFuZ2VkLCAwIGluc2VydGlvbnMoKyksIDMgZGVsZXRpb25zKC0p
-CgpkaWZmIC0tZ2l0IGEvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9yYWRlb25fZHJ2LmMgYi9kcml2
-ZXJzL2dwdS9kcm0vcmFkZW9uL3JhZGVvbl9kcnYuYwppbmRleCBhOTJkMmE1Li4xZjZmODRlIDEw
-MDY0NAotLS0gYS9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL3JhZGVvbl9kcnYuYworKysgYi9kcml2
-ZXJzL2dwdS9kcm0vcmFkZW9uL3JhZGVvbl9kcnYuYwpAQCAtMjMxLDcgKzIzMSw2IEBAIHN0YXRp
-YyBzdHJ1Y3QgZHJtX2RyaXZlciBkcml2ZXJfb2xkID0gewogCiAJLm5hbWUgPSBEUklWRVJfTkFN
-RSwKIAkuZGVzYyA9IERSSVZFUl9ERVNDLAotCS5kYXRlID0gRFJJVkVSX0RBVEUsCiAJLm1ham9y
-ID0gRFJJVkVSX01BSk9SLAogCS5taW5vciA9IERSSVZFUl9NSU5PUiwKIAkucGF0Y2hsZXZlbCA9
-IERSSVZFUl9QQVRDSExFVkVMLApAQCAtMzI0LDcgKzMyMyw2IEBAIHN0YXRpYyBzdHJ1Y3QgZHJt
-X2RyaXZlciBrbXNfZHJpdmVyID0gewogCiAJLm5hbWUgPSBEUklWRVJfTkFNRSwKIAkuZGVzYyA9
-IERSSVZFUl9ERVNDLAotCS5kYXRlID0gRFJJVkVSX0RBVEUsCiAJLm1ham9yID0gS01TX0RSSVZF
-Ul9NQUpPUiwKIAkubWlub3IgPSBLTVNfRFJJVkVSX01JTk9SLAogCS5wYXRjaGxldmVsID0gS01T
-X0RSSVZFUl9QQVRDSExFVkVMLApkaWZmIC0tZ2l0IGEvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9y
-YWRlb25fZHJ2LmggYi9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL3JhZGVvbl9kcnYuaAppbmRleCA0
-NDhlYmE4Li5kZTJkZDc4IDEwMDY0NAotLS0gYS9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL3JhZGVv
-bl9kcnYuaAorKysgYi9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL3JhZGVvbl9kcnYuaApAQCAtNDMs
-NyArNDMsNiBAQAogCiAjZGVmaW5lIERSSVZFUl9OQU1FCQkicmFkZW9uIgogI2RlZmluZSBEUklW
-RVJfREVTQwkJIkFUSSBSYWRlb24iCi0jZGVmaW5lIERSSVZFUl9EQVRFCQkiMjAwODA1MjgiCiAK
-IC8qIEludGVyZmFjZSBoaXN0b3J5OgogICoKLS0gCjEuNy4yLjMKCg==
---0016364ed8688f76030497fad8f9--
+Arnaud
