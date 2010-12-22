@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751813Ab0LVKPE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 05:15:04 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:55933 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751567Ab0LVKPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 05:15:03 -0500
-Date: Wed, 22 Dec 2010 11:14:43 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Lin Ming <ming.m.lin@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] perf: Add load latency monitoring on Intel
- Nehalem/Westmere
-Message-ID: <20101222101443.GA1640@elte.hu>
-References: <1293005543.2565.156.camel@minggr.sh.intel.com>
- <1293006808.2170.42.camel@laptop>
- <1293008656.2170.67.camel@laptop>
+	id S1751609Ab0LVKSN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 05:18:13 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45333 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751213Ab0LVKSK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 05:18:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=RDLYof285Tj9GprzsIp6JFUYMzLvEH9lYfmCsqL1T4Yasmfs0vMUuag46V92FudX1K
+         TmcnuAGff6pn7GCKOmECUj0gv3BoLvMiC6fx4lCkNLcdHnVcQBQ1g/S2KyvxdzfXI2lc
+         F4Q21LJ5ezeS1XOPNHbWv2In3G1qWCAudBnGo=
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: Arnaud Patard (Rtp) <arnaud.patard@rtp-net.org>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, liu.y.victor@gmail.com,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, B02280@freescale.com
+Subject: Re: [PATCH v2] i.MX51 Framebuffer support
+References: <1292842127-21406-1-git-send-email-s.hauer@pengutronix.de>
+	<87bp4eb5r5.fsf@lechat.rtp-net.org>
+Date: Wed, 22 Dec 2010 11:17:59 +0100
+In-Reply-To: <87bp4eb5r5.fsf@lechat.rtp-net.org> (Arnaud Patard's message of
+	"Wed, 22 Dec 2010 08:56:14 +0100")
+Message-ID: <87ipymun54.fsf@macbook.be.48ers.dk>
+User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1293008656.2170.67.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>>>> "Arnaud" == Arnaud Patard (Rtp) <arnaud.patard@rtp-net.org> writes:
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+ Arnaud> Sascha Hauer <s.hauer@pengutronix.de> writes:
+ Arnaud> Hi,
 
-> On Wed, 2010-12-22 at 09:33 +0100, Peter Zijlstra wrote:
-> > On Wed, 2010-12-22 at 16:12 +0800, Lin Ming wrote:
-> > > It's applied on top of tip/master(3ea1f4f89) and Andi's offcore
-> > > patchsets are needed. 
-> > 
-> > I still haven't gotten a version of that I'm willing to apply.
-> 
-> That is, maybe you could pick up his patches and finish them, Andi
-> doesn't seem interested in getting them sorted.
+ >> The following series adds i.MX51 framebuffer support based on the
+ >> IPUv3. It is not perfect but I decided it is good enough to open it
+ >> for a wider audience and collect first reviews. I tested this on a
+ >> babbage board using both outputs (VGA/DVI) with different
+ >> resolutions up to 1680x1050 and different colour depths.  I also
+ >> tested it on one custom board using a fixed display setting.
 
-FYI, this one of Peter's reviews that went unaddressed:
+ Arnaud> After adding code to my efika sb machine file and your patchset, I've
+ Arnaud> seen the light. Err, no. It was a penguin and a login prompt.  I guess
+ Arnaud> it means your patchset is working here.
 
-  https://lkml.org/lkml/2010/12/1/213
+Cool. Care to submit that machine file support?
 
-and he got no reply to that feedback in the past 3 weeks. (There may be other issues 
-outstanding, i have not checked.)
-
-Thanks,
-
-	Ingo
+-- 
+Bye, Peter Korsgaard
