@@ -1,149 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab0LVGRT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 01:17:19 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:61470 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751372Ab0LVGRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 01:17:17 -0500
-Message-ID: <4D11984A.5030203@cn.fujitsu.com>
-Date: Wed, 22 Dec 2010 14:18:50 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1752230Ab0LVGUS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 01:20:18 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:39627 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372Ab0LVGUQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 01:20:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=jPkgZxNlAxEgnhoIuqkSz5ZAwYe9I1FR0Nk8VVHH5NjOF6yCALem3eYdwVemWoN10M
+         INSk0yjyXD/Gw8wAC1CfDuthNlKC4P5GoTjjsBBy8urzcLDPGTJVRAiYi3r0+LySx61S
+         97YjHl0gfsJDyaM6pEl8dAzpsH930c0NS8MZ8=
 MIME-Version: 1.0
-To: Darren Hart <dvhart@linux.intel.com>
-CC: Peter Zijlstra <peterz@infradead.org>, John Kacur <jkacur@redhat.com>,
-        James Bottomley <James.Bottomley@suse.de>, Ingo Molnar <mingo@elte.hu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Namhyung Kim <namhyung@gmail.com>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 1/4 V3 ] futex,plist: pass the real head of the priority list
- to plist_del()
-References: <4D107979.2020405@cn.fujitsu.com> <4D10FC40.6070808@linux.intel.com>
-In-Reply-To: <4D10FC40.6070808@linux.intel.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-22 14:17:08,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-22 14:17:08,
-	Serialize complete at 2010-12-22 14:17:08
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <201012181238.56021.hverkuil@xs4all.nl>
+References: <1292583996-4440-1-git-send-email-manjunatha_halli@ti.com>
+ <1292583996-4440-2-git-send-email-manjunatha_halli@ti.com>
+ <1292583996-4440-3-git-send-email-manjunatha_halli@ti.com> <201012181238.56021.hverkuil@xs4all.nl>
+From: halli manjunatha <manjunatha_halli@ti.com>
+Date: Wed, 22 Dec 2010 11:49:54 +0530
+X-Google-Sender-Auth: BDCNfZ2lp3HfdMtAuTy1mobtKWo
+Message-ID: <AANLkTinLy_NBFDLyR9yKP72GFR0M2sCV42FnQemJ2D84@mail.gmail.com>
+Subject: Re: [PATCH v7 2/7] drivers:media:radio: wl128x: fmdrv_v4l2 sources
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: mchehab@infradead.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/22/2010 03:13 AM, Darren Hart wrote:
-> On 12/21/2010 01:55 AM, Lai Jiangshan wrote:
-> 
-> Hi Lai,
-> 
-> Looks about ready to me, only a couple of more nitpics from me.
-> 
+10 at 5:08 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
+> On Friday, December 17, 2010 12:06:31 manjunatha_halli@ti.com wrote:
+>> From: Manjunatha Halli <manjunatha_halli@ti.com>
+>>
+>> This module interfaces V4L2 subsystem and FM common module.
+>> It registers itself with V4L2 as Radio module.
+>>
+>> Signed-off-by: Manjunatha Halli <manjunatha_halli@ti.com>
+>> ---
+>>  drivers/media/radio/wl128x/fmdrv_v4l2.c |  588 +++++++++++++++++++++++++++++++
+>>  drivers/media/radio/wl128x/fmdrv_v4l2.h |   33 ++
+>>  2 files changed, 621 insertions(+), 0 deletions(-)
+>>  create mode 100644 drivers/media/radio/wl128x/fmdrv_v4l2.c
+>>  create mode 100644 drivers/media/radio/wl128x/fmdrv_v4l2.h
+>>
+>> diff --git a/drivers/media/radio/wl128x/fmdrv_v4l2.c b/drivers/media/radio/wl128x/fmdrv_v4l2.c
+>> new file mode 100644
+>> index 0000000..623102f
+>> --- /dev/null
+>> +++ b/drivers/media/radio/wl128x/fmdrv_v4l2.c
+>
+> <snip>
+>
+>> +static const struct v4l2_file_operations fm_drv_fops = {
+>> +     .owner = THIS_MODULE,
+>> +     .read = fm_v4l2_fops_read,
+>> +     .write = fm_v4l2_fops_write,
+>> +     .poll = fm_v4l2_fops_poll,
+>> +     .ioctl = video_ioctl2,
+>
+> Please use unlocked_ioctl. The .ioctl call is deprecated since it relied on the
+> Big Kernel Lock which is in the process of being removed from the kernel. The
+> BKL serialized all ioctl calls, unlocked_ioctl relies on the driver to serialize
+> where necessary.
+>
+> There are two ways of doing the conversion: one is to do all the locking within
+> the driver, the other is to use core-assisted locking. How to do the core-assisted
+> locking is described in Documentation/video4linux/v4l2-framework.txt, but I'll
+> repeat the relevant part here:
+>
+> v4l2_file_operations and locking
+> --------------------------------
+>
+> You can set a pointer to a mutex_lock in struct video_device. Usually this
+> will be either a top-level mutex or a mutex per device node. If you want
+> finer-grained locking then you have to set it to NULL and do you own locking.
+>
+> If a lock is specified then all file operations will be serialized on that
+> lock. If you use videobuf then you must pass the same lock to the videobuf
+> queue initialize function: if videobuf has to wait for a frame to arrive, then
+> it will temporarily unlock the lock and relock it afterwards. If your driver
+> also waits in the code, then you should do the same to allow other processes
+> to access the device node while the first process is waiting for something.
+>
+> The implementation of a hotplug disconnect should also take the lock before
+> calling v4l2_device_disconnect.
+>
+>> +     .open = fm_v4l2_fops_open,
+>> +     .release = fm_v4l2_fops_release,
+>> +};
 
-Fixed, thanks.
+Hans,
 
-Subject: [PATCH 1/4 V3 ] futex,plist: pass the real head of the priority list to plist_del()
+I did this in my driver,
+--- a/drivers/media/radio/wl128x/fmdrv_v4l2.c
++++ b/drivers/media/radio/wl128x/fmdrv_v4l2.c
+@@ -477,7 +477,7 @@ static const struct v4l2_file_operations fm_drv_fops = {
+        .read = fm_v4l2_fops_read,
+        .write = fm_v4l2_fops_write,
+        .poll = fm_v4l2_fops_poll,
+-       .ioctl = video_ioctl2,
++       .unlocked_ioctl = video_ioctl2,
+        .open = fm_v4l2_fops_open,
+        .release = fm_v4l2_fops_release,
 
-Some plist_del()s in kernel/futex.c are passed a faked head of the
-priority list.
+and apparently didn't face any issues during regression.. (related to
+concurrency...)
+and more-over all of my ioctls from the application being called in
+process context are all synchronous, i.e
+application calls and waits for it to finish before calling another ioctl.
 
-It does not fail because the current code does not require the real head
-in plist_del(). The current code of plist_del() just uses the head for checking,
-so it will not cause a bad result even when we use a faked head.
+So is this approach alright?
+Is there a reason to opt for the .ioctl ? The locked approach?
+Or have mutex locks inside the unlocked handlers?
 
-But it is undocumented usage:
+If not I will go ahead and submit v8 using the unlocked_ioctl....
 
-/**
- * plist_del - Remove a @node from plist.
- *
- * @node:	&struct plist_node pointer - entry to be removed
- * @head:	&struct plist_head pointer - list head
- */
 
-The document said that @head is "list head" the head of the priority list.
+> Regards,
+>
+>        Hans
+>
+> --
+> Hans Verkuil - video4linux developer - sponsored by Cisco
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-In futex code, several places use "plist_del(&q->list, &q->list.plist);",
-they passes faked head, we fix them all.
 
-Thanks to Darren Hart for many suggestions.
 
-Signed-off-by:  Lai Jiangshan <laijs@cn.fujitsu.com>
----
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 3019b92..d4f7252 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -740,6 +740,24 @@ retry:
- 	return ret;
- }
- 
-+/**
-+ * __unqueue_futex() - Remove the futex_q from its futex_hash_bucket
-+ * @q:	The futex_q to unqueue
-+ *
-+ * The q->lock_ptr must not be NULL and must be held by the caller.
-+ */
-+static void __unqueue_futex(struct futex_q *q)
-+{
-+	struct futex_hash_bucket *hb;
-+
-+	if (WARN_ON(!q->lock_ptr || !spin_is_locked(q->lock_ptr)
-+			|| plist_node_empty(&q->list)))
-+		return;
-+
-+	hb = container_of(q->lock_ptr, struct futex_hash_bucket, lock);
-+	plist_del(&q->list, &hb->chain);
-+}
-+
- /*
-  * The hash bucket lock must be held when this is called.
-  * Afterwards, the futex_q must not be accessed.
-@@ -757,7 +775,7 @@ static void wake_futex(struct futex_q *q)
- 	 */
- 	get_task_struct(p);
- 
--	plist_del(&q->list, &q->list.plist);
-+	__unqueue_futex(q);
- 	/*
- 	 * The waiting task can free the futex_q as soon as
- 	 * q->lock_ptr = NULL is written, without taking any locks. A
-@@ -1066,8 +1084,7 @@ void requeue_pi_wake_futex(struct futex_q *q, union futex_key *key,
- 	get_futex_key_refs(key);
- 	q->key = *key;
- 
--	WARN_ON(plist_node_empty(&q->list));
--	plist_del(&q->list, &q->list.plist);
-+	__unqueue_futex(q);
- 
- 	WARN_ON(!q->rt_waiter);
- 	q->rt_waiter = NULL;
-@@ -1470,8 +1487,7 @@ retry:
- 			spin_unlock(lock_ptr);
- 			goto retry;
- 		}
--		WARN_ON(plist_node_empty(&q->list));
--		plist_del(&q->list, &q->list.plist);
-+		__unqueue_futex(q);
- 
- 		BUG_ON(q->pi_state);
- 
-@@ -1491,8 +1507,7 @@ retry:
- static void unqueue_me_pi(struct futex_q *q)
- 	__releases(q->lock_ptr)
- {
--	WARN_ON(plist_node_empty(&q->list));
--	plist_del(&q->list, &q->list.plist);
-+	__unqueue_futex(q);
- 
- 	BUG_ON(!q->pi_state);
- 	free_pi_state(q->pi_state);
-@@ -2133,7 +2148,7 @@ int handle_early_requeue_pi_wakeup(struct futex_hash_bucket *hb,
- 		 * We were woken prior to requeue by a timeout or a signal.
- 		 * Unqueue the futex_q and determine which it was.
- 		 */
--		plist_del(&q->list, &q->list.plist);
-+		plist_del(&q->list, &hb->chain);
- 
- 		/* Handle spurious wakeups gracefully */
- 		ret = -EWOULDBLOCK;
+-- 
+Regards
+Halli
