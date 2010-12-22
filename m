@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab0LVOmb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 09:42:31 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:40622 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753248Ab0LVOm3 (ORCPT
+	id S1753318Ab0LVOnq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 09:43:46 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:51454 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752750Ab0LVOnp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 09:42:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=w1GvvlyiHJmQKNuCH1Fj2XJ50XeON514S+lmKfrqwnH9MLUARrmzcieefQDiToWEi0
-         wJN4OjaB3Bf4LlITbCxdq4daXWVOX6gFv2OsZb5WYo0jUAHJZPv1DUZf79eJicmyG0Cy
-         LECzniaFn8PMz7Z2lXPRpNm9Vhe2EkPKm8Rmw=
-Subject: Re: [PATCH] mtd: allow mtd and jffs2 when ARCH=um
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Jason Lunz <lunz@acm.org>
-Cc: Anatolij Gustschin <agust@denx.de>, lkml <linux-kernel@vger.kernel.org>,
-        linux-mtd@lists.infradead.org
-In-Reply-To: <20101220140454.GA26229@falooley.org>
-References: <20101207072919.GA8511@falooley.org>
-	 <AANLkTineLxHdcDKZEUGiqVNAauSX_xyQrs49kKaqhiWo@mail.gmail.com>
-	 <20101207182012.GA10546@falooley.org> <1292343878.2538.80.camel@localhost>
-	 <20101214195124.GA6010@falooley.org> <20101216230110.65156c55@wker>
-	 <20101217042759.GA3148@falooley.org> <1292777276.2140.1.camel@koala>
-	 <20101219190720.GA16710@falooley.org> <1292844216.13362.19.camel@koala>
-	 <20101220140454.GA26229@falooley.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 22 Dec 2010 16:40:42 +0200
-Message-ID: <1293028842.12773.15.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	Wed, 22 Dec 2010 09:43:45 -0500
+Date: Wed, 22 Dec 2010 12:43:38 -0200
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Franck Bui-Huu <vagabon.xyz@gmail.com>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de
+Subject: Re: [tip:perf/core] perf probe: Don't always consider EOF as an
+	error when listing source code
+Message-ID: <20101222144338.GA17134@ghostprotocols.net>
+References: <1292854685-8230-6-git-send-email-fbuihuu@gmail.com> <tip-fde52dbd7f71934aba4e150f3d1d51e826a08850@git.kernel.org> <m34oa6t0e4.fsf@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m34oa6t0e4.fsf@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-12-20 at 09:04 -0500, Jason Lunz wrote:
-> On Mon, Dec 20, 2010 at 01:23:36PM +0200, Artem Bityutskiy wrote:
-> > Ok, could you please re-sent the final patch with the commit message
-> > etc?
+Em Wed, Dec 22, 2010 at 02:14:43PM +0100, Franck Bui-Huu escreveu:
+> tip-bot for Franck Bui-Huu <fbuihuu@gmail.com> writes:
+> >  error:
+> > -	if (feof(fp))
+> > +	if (ferror(fp)) {
+> >  		pr_warning("Source file is shorter than expected.\n");
+> > -	else
+> > -		pr_warning("File read error: %s\n", strerror(errno));
+> > +		return -1;
 > 
-> Sure, here's everything as a single patch.
+> Argh, something wrong here.
 > 
-> ------------------------------------->8
-> Allow parts of drivers/mtd to compile on uml by pushing the HAS_IOMEM
-> dependencies down closer to the parts of mtd that actually need it.
-> This allows enough of mtd to build to let jffs2 be used on uml.
+> The warning left here, is the wrong one, I should have left the other
+> one.
 > 
-> Signed-off-by: Jason Lunz <lunz@acm.org>
+> Sorry for the mistake.
+> 
+> Should I send a patch to fix that ?
 
-OK, taken this one, thanks.
+Please.
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
-
+- Arnaldo
