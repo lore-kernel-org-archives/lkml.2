@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab0LVPeO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 10:34:14 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62706 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753724Ab0LVPeM (ORCPT
+	id S1753966Ab0LVPeJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 10:34:09 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:33013 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753724Ab0LVPeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 10:34:12 -0500
+	Wed, 22 Dec 2010 10:34:07 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=V6QGHDjCS/Jk4UdgMa5VERsR6CKgrCs+eqArqMExJy3sQ5NEPi0A+eiJdRklmq0D/H
-         pqo4Fu5DctegXdCXWNmrK14yT30nRJTPjO2knvZNetZTd4t3RiFmFYyB2RsULJVhIWe4
-         reEiLYjBUiBdzdCTz5/3vSvTUYEUeVuXcoWxc=
+        b=DruAlooJYnFF+LMHAXVUVbNEL3YDNQw+PKCmwmOtCdO1ZfkTUarkGqz4RfXT+0DSjb
+         eQIlPvDVEeLH1MOdeIbIkcJYB1WxOqVi5Mq0m/R4Jc9Z0tURSxNDQKqLNRxG5d7of9kO
+         rMeB23GI/zwmqwbD25RSG+YW9eZbDkSryqrjs=
 From: Minchan Kim <minchan.kim@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH 6/7] Good bye remove_from_page_cache
-Date: Thu, 23 Dec 2010 00:32:48 +0900
-Message-Id: <958620cb6a73a5633619d7d4a9793bc284260684.1293031047.git.minchan.kim@gmail.com>
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andi Kleen <andi@firstfloor.org>, Nick Piggin <npiggin@kernel.dk>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 5/7] truncate: Change remove_from_page_cache
+Date: Thu, 23 Dec 2010 00:32:47 +0900
+Message-Id: <fdafb3fb6ed32ec96f945fdbdd42bd6492d00cd7.1293031047.git.minchan.kim@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <cover.1293031046.git.minchan.kim@gmail.com>
 References: <cover.1293031046.git.minchan.kim@gmail.com>
@@ -31,76 +33,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now delete_from_page_cache replaces remove_from_page_cache.
-So we remove remove_from_page_cache so fs or something out of
-mainline will notice it when compile time and can fix it.
+This patch series changes remove_from_page_cache's page ref counting
+rule. Page cache ref count is decreased in delete_from_page_cache.
+So we don't need decreasing page reference by caller.
 
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Hugh Dickins <hughd@google.com>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Nick Piggin <npiggin@kernel.dk>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-mm@kvack.org
 Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- include/linux/pagemap.h |    1 -
- mm/filemap.c            |   27 +++++++++++----------------
- 2 files changed, 11 insertions(+), 17 deletions(-)
+ mm/truncate.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index 7a1cb49..7bf6587 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -455,7 +455,6 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
- 				pgoff_t index, gfp_t gfp_mask);
- int add_to_page_cache_lru(struct page *page, struct address_space *mapping,
- 				pgoff_t index, gfp_t gfp_mask);
--extern void remove_from_page_cache(struct page *page);
- extern void __remove_from_page_cache(struct page *page);
- extern void delete_from_page_cache(struct page *page);
+diff --git a/mm/truncate.c b/mm/truncate.c
+index 9ee5673..3adb9c0 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -108,13 +108,12 @@ truncate_complete_page(struct address_space *mapping, struct page *page)
+ 	cancel_dirty_page(page, PAGE_CACHE_SIZE);
  
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 1ca7475..a4c43f7 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -148,7 +148,17 @@ void __remove_from_page_cache(struct page *page)
- 	}
- }
- 
--void remove_from_page_cache(struct page *page)
-+/**
-+ * delete_from_page_cache - delete page from page cache
-+ *
-+ * @page: the page which the kernel is trying to remove from page cache
-+ *
-+ * This must be called only on pages that have
-+ * been verified to be in the page cache and locked.
-+ * It will never put the page into the free list,
-+ * the caller has a reference on the page.
-+ */
-+void delete_from_page_cache(struct page *page)
- {
- 	struct address_space *mapping = page->mapping;
- 	void (*freepage)(struct page *);
-@@ -163,22 +173,7 @@ void remove_from_page_cache(struct page *page)
- 
- 	if (freepage)
- 		freepage(page);
--}
--EXPORT_SYMBOL(remove_from_page_cache);
- 
--/**
-- * delete_from_page_cache - delete page from page cache
-- *
-- * @page: the page which the kernel is trying to remove from page cache
-- *
-- * This must be called only on pages that have
-- * been verified to be in the page cache and locked.
-- * It will never put the page into the free list,
-- * the caller has a reference on the page.
-- */
--void delete_from_page_cache(struct page *page)
--{
+ 	clear_page_mlock(page);
 -	remove_from_page_cache(page);
- 	page_cache_release(page);
++	delete_from_page_cache(page);
+ 	ClearPageMappedToDisk(page);
+ 	/* this must be after the remove_from_page_cache which
+ 	 * calls cleancache_put_page (and note page->mapping is now NULL)
+ 	 */
+ 	cleancache_flush_page(mapping, page);
+-	page_cache_release(page);	/* pagecache ref */
+ 	return 0;
  }
- EXPORT_SYMBOL(delete_from_page_cache);
+ 
 -- 
 1.7.0.4
 
