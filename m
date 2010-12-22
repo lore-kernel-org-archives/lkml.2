@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab0LVPZk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 10:25:40 -0500
-Received: from casper.infradead.org ([85.118.1.10]:60802 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760Ab0LVPZj convert rfc822-to-8bit (ORCPT
+	id S1753687Ab0LVPZy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 10:25:54 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52901 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753598Ab0LVPZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 10:25:39 -0500
-Subject: Re: [PATCH] avoid race condition in pick_next_task_fair in
- kernel/sched_fair.c
-From: Peter Zijlstra <peterz@infradead.org>
-To: Miklos Vajna <vmiklos@frugalware.org>
-Cc: Mike Galbraith <efault@gmx.de>, shenghui <crosslonelyover@gmail.com>,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, Greg KH <greg@kroah.com>
-In-Reply-To: <20101222151434.GW10557@genesis.frugalware.org>
-References: <AANLkTin49UHeVhfS-iFwWvPIg29HPhXaP3DorBAa-a0I@mail.gmail.com>
-	 <1277808215.1868.5.camel@laptop>
-	 <20101219020313.GJ31750@genesis.frugalware.org>
-	 <20101222002248.GP10557@genesis.frugalware.org>
-	 <1293006589.2170.41.camel@laptop>
-	 <1293007311.11370.172.camel@marge.simson.net>
-	 <1293008842.2170.70.camel@laptop>
-	 <20101222133154.GS10557@genesis.frugalware.org>
-	 <1293026422.2170.136.camel@laptop> <1293027112.2170.140.camel@laptop>
-	 <20101222151434.GW10557@genesis.frugalware.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 22 Dec 2010 16:25:30 +0100
-Message-ID: <1293031530.2170.150.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 22 Dec 2010 10:25:52 -0500
+Date: Wed, 22 Dec 2010 15:25:51 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Rabin Vincent <rabin@rab.in>
+Cc: Ben Dooks <ben-linux@fluff.org>, Jean Delvare <khali@linux-fr.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        linux-pm@lists.linux-foundation.org,
+        patches@opensource.wolfsonmicro.com, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [linux-pm] [PATCH 2/2] i2c: Factor out runtime suspend checks
+	from PM operations
+Message-ID: <20101222152550.GA16099@opensource.wolfsonmicro.com>
+References: <1292855593-30608-1-git-send-email-broonie@opensource.wolfsonmicro.com> <1292855593-30608-2-git-send-email-broonie@opensource.wolfsonmicro.com> <AANLkTi=KOq65TS299rB=K961=mVXnriyqNxdHzJey5rD@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=KOq65TS299rB=K961=mVXnriyqNxdHzJey5rD@mail.gmail.com>
+X-Cookie: You look tired.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-22 at 16:14 +0100, Miklos Vajna wrote:
-> 
-> qemu -enable-kvm -kernel kernel-build/arch/x86/boot/bzImage -append
-> "root=/dev/sda1 debug sched_debug ignore_loglevel sysrq_always_enabled
-> console=ttyS0 init=/bin/systemd" -hda systemd.img -serial stdio -m 1G
-> -vnc :0
-> 
-> ^ Only init=/bin/systemd added, and this results in a panic in most
-> cases. I'm attaching the stdout of qemu, showing the fail in
-> put_prev_task_fair. 
+On Wed, Dec 22, 2010 at 08:40:23PM +0530, Rabin Vincent wrote:
 
-OK, that does seem to work, maybe it really wants the vnc thing, dunno.
+> Shouldn't you be deleting the pm_runtime_* stuff from here?  There is
+> already done in pm_generic_restore() iff the callback exists and returns
+> zero.
 
-Anyway, it looks like I need to go build a kernel with kvm in for that
-machine ;-) Thanks for the effort so far.
+I guess; it's not clear why this is being done by the bus at all or how
+it interacts with the legacy stuff.
