@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753778Ab0LVSCa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 13:02:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50235 "EHLO mx2.suse.de"
+	id S1754056Ab0LVQ2Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 11:28:24 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:1477 "EHLO SMTP02.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751919Ab0LVSC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 13:02:29 -0500
-Date: Wed, 22 Dec 2010 19:02:28 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hrtimer: fix a typo in comment
-In-Reply-To: <1291785527.1672.4.camel@leonhard>
-Message-ID: <alpine.LNX.2.00.1012221902110.16569@pobox.suse.cz>
-References: <1291784991-5047-1-git-send-email-namhyung@gmail.com> <1291785527.1672.4.camel@leonhard>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753501Ab0LVQ2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 11:28:23 -0500
+X-IronPort-AV: E=Sophos;i="4.60,214,1291611600"; 
+   d="scan'208";a="128057067"
+Subject: Re: [Xen-devel] Re: [PATCH 04/10] xen/mmu: For 1-1 mapping,
+ automatically set _PAGE_IOMAP.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Beulich <JBeulich@novell.com>, "hpa@zytor.com" <hpa@zytor.com>
+In-Reply-To: <20101222150258.GD1760@dumpdata.com>
+References: <1292967460-15709-1-git-send-email-konrad.wilk@oracle.com>
+	 <1292967460-15709-5-git-send-email-konrad.wilk@oracle.com>
+	 <4D112A4B.5000503@goop.org>  <20101222150258.GD1760@dumpdata.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Wed, 22 Dec 2010 16:27:24 +0000
+Message-ID: <1293035244.4500.3744.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Dec 2010, Namhyung Kim wrote:
-
-> Oops. I forgot CC-ing to trivial.
-> 
-> 
-> 2010-12-08 (수), 14:09 +0900, Namhyung Kim:
-> > Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> > ---
-> >  kernel/hrtimer.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
+On Wed, 2010-12-22 at 15:02 +0000, Konrad Rzeszutek Wilk wrote:
+> On Tue, Dec 21, 2010 at 02:29:31PM -0800, Jeremy Fitzhardinge wrote:
+> > On 12/21/2010 01:37 PM, Konrad Rzeszutek Wilk wrote:
+> > > @@ -832,6 +832,9 @@ static pteval_t pte_pfn_to_mfn(pteval_t val)
+> > >  		pteval_t flags = val & PTE_FLAGS_MASK;
+> > >  		unsigned long mfn = pfn_to_mfn(pfn);
+> > >  
+> > > +		if (mfn == pfn)
+> > > +			flags |= _PAGE_IOMAP;
 > > 
-> > diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-> > index 72206cf..66163df 100644
-> > --- a/kernel/hrtimer.c
-> > +++ b/kernel/hrtimer.c
-> > @@ -1774,7 +1774,7 @@ schedule_hrtimeout_range_clock(ktime_t *expires, unsigned long delta,
-> >  	}
-> >  
-> >  	/*
-> > -	 * A NULL parameter means "inifinte"
-> > +	 * A NULL parameter means "infinite"
-> >  	 */
-> >  	if (!expires) {
-> >  		schedule();
+> > Why?  Does it really make sense to set _PAGE_IOMAP if they just happen
+> > to be the same value?
+> 
+> Yes. Without this, user applications, such as 'dmidecode' cannot get
+> data.
 
-Doesn't seem to be in linux-next as of today. Applied now.
+I think Jeremy's point is that the "mfn == pfn" here has false
+positives, since it is possible that a normal RAM page has identical mfn
+and pfn by pure chance.
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Ian.
+
+
