@@ -1,60 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab0LVW2K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 17:28:10 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:60469 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751877Ab0LVW2J (ORCPT
+	id S1752274Ab0LVWam (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 17:30:42 -0500
+Received: from mail.bluewatersys.com ([202.124.120.130]:27402 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752030Ab0LVWal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 17:28:09 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6205"; a="67932057"
-Message-ID: <4D127B78.7060707@codeaurora.org>
-Date: Wed, 22 Dec 2010 14:28:08 -0800
-From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090608)
+	Wed, 22 Dec 2010 17:30:41 -0500
+Message-ID: <4D127C71.5040301@bluewatersys.com>
+Date: Thu, 23 Dec 2010 11:32:17 +1300
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Namhyung Kim <namhyung@gmail.com>, Kees Cook <kees.cook@canonical.com>,
-        James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-arm-msm@vger.kernel.org, smuckle@codeaurora.org
-Subject: release_console_sem() and disabling interrupts
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Alexey Charkov <alchark@gmail.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        Eric Miao <eric.y.miao@gmail.com>,
+        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6 v10] ARM: Add basic architecture support for VIA/WonderMedia
+ 85xx SoC's
+References: <20101220195423.GA14509@alchark-u3s>	<4D0FC1AE.2050708@bluewatersys.com>	<AANLkTin4XqbGwznp56Xjt_zest6rxNmir0QDJWTySY4+@mail.gmail.com>	<4D0FD747.9020700@bluewatersys.com>	<AANLkTikAWjK7ACyt=LedhyyrhsCk1WCiyWz182CXMe9C@mail.gmail.com>	<4D0FE546.7050302@bluewatersys.com>	<AANLkTinyYKrhTcBMMCE4A2oFQHm11cqSZQozytGu+d6o@mail.gmail.com>	<4D1011CF.9080800@bluewatersys.com>	<AANLkTi=7O-HwQRcybnLSt+r+A64g=D7rZY7NbdEMFys3@mail.gmail.com>	<4D110269.9030805@bluewatersys.com>	<20101222211815.GA31054@alchark-u3s>	<4D12730B.2030909@bluewatersys.com> <AANLkTinZEhJ8aUe63yc_BNdifn_5g8U=iStwwXEU-+V9@mail.gmail.com>
+In-Reply-To: <AANLkTinZEhJ8aUe63yc_BNdifn_5g8U=iStwwXEU-+V9@mail.gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-release_console_sem() disables interrupts while it calls upon the 
-console drivers to dump the pending characters. This disabling of 
-interrupt is delaying the handling of interrupts leading to weird 
-latencies and bugs.
+On 12/23/2010 11:02 AM, Alexey Charkov wrote:
+> 2010/12/23 Ryan Mallon <ryan@bluewatersys.com>:
+>> On 12/23/2010 10:18 AM, Alexey Charkov wrote:
+>>> This adds support for the family of Systems-on-Chip produced initially
+>>> by VIA and now its subsidiary WonderMedia that have recently become
+>>> widespread in lower-end Chinese ARM-based tablets and netbooks.
+>>>
+>>> Support is included for both VT8500 and WM8505, selectable by a
+>>> configuration switch at kernel build time.
+>>>
+>>> Included are basic machine initialization files, register and
+>>> interrupt definitions, support for the on-chip interrupt controller,
+>>> high-precision OS timer, GPIO lines, necessary macros for early debug,
+>>> pulse-width-modulated outputs control, as well as platform device
+>>> configurations for the specific drivers implemented elsewhere.
+>>>
+>>> Signed-off-by: Alexey Charkov <alchark@gmail.com>
+>>> ---
+>>>
+>>> Welcome the jubilee tenth revision of this patch ;-)
+>>>
+>>> I've tried to incorporate the suggestions by Ryan and Arnd, hope that
+>>> there is nothing left out. There was a massive reorganization of code
+>>> to remove less-than-obvious magic with MMIO registers and irqs being
+>>> held in huge structs, now they are again macro definitions. Those
+>>> macros are, however, only included in single isolated files, and
+>>> actual values to use are chosen at runtime by calling the respective
+>>> routines at machine initialization. There are also stylistic changes
+>>> all around, where Ryan suggested.
+>>>
+>>> As a result, i8042 should again be adjusted a bit to reflect the new
+>>> place to find respective register/irq definitions, that one will be
+>>> sent in the respective thread shortly.
+>>>
+>>> Best regards,
+>>> Alexey
+>>
+>> <snip>
+>>
+>>> --- /dev/null
+>>> +++ b/arch/arm/mach-vt8500/devices-vt8500.c
+>>> @@ -0,0 +1,117 @@
+>>> +/* linux/arch/arm/mach-vt8500/devices-vt8500.c
+>>> + *
+>>> + * Copyright (C) 2010 Alexey Charkov <alchark@gmail.com>
+>>> + *
+>>> + * This software is licensed under the terms of the GNU General Public
+>>> + * License version 2, as published by the Free Software Foundation, and
+>>> + * may be copied, distributed, and modified under those terms.
+>>> + *
+>>> + * This program is distributed in the hope that it will be useful,
+>>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>>> + * GNU General Public License for more details.
+>>> + *
+>>> + */
+>>> +
+>>> +#include <linux/platform_device.h>
+>>> +
+>>> +#include <mach/vt8500_regs.h>
+>>> +#include <mach/vt8500_irqs.h>
+>>> +#include <mach/i8042.h>
+>>> +#include "devices.h"
+>>> +
+>>> +static inline struct resource WMT_MMIO_RES(u32 start, u32 size)
+>>> +{
+>>> +     struct resource tmp = {
+>>> +             .flags = IORESOURCE_MEM,
+>>> +             .start = start,
+>>> +             .end = start + size - 1,
+>>> +     };
+>>> +
+>>> +     return tmp;
+>>> +}
+>>
+>> These functions can be marked __init (though I guess they already are if
+>> marked inline?). They should also have lower case names since they are
+>> proper functions.
+> 
+> As inline functions are unrolled into the caller at compile time, and
+> the caller is __init, I would expect their code to be freed after init
+> as well. I could be wrong, though :)
 
-The specific scenario is while resuming, the __log_buf has accumulated 
-around 11,000 bytes of characters and resume_console takes for ever to 
-send them out. On my system with serial running at 115200 baud it takes 
-almost a second to flush 11,000 bytes.
+If the compiler decided not to inline them for whatever reason they
+would stick around. They should also probably be marked __init to make
+it clear that they are not permanent functions.
 
-I was thinking about limiting the characters to say N bytes and before 
-  the next set of N bytes is sent, we enable interrupts and do the 
-spin_lock_irqsave again. Basically spin in the for ( ; ; ) loop until 
-all the outstanding bytes are sent in sets of N bytes.
+>> Do these functions generate warnings about returning temporary values
+>> off the stack? If so, they could be rewritten as:
+>>
+> 
+> Should those be compile-time or run-time? I did not see any.
 
-This issue has been brought up many times earlier -
-http://www.webservertalk.com/archive242-2006-6-1537307.html
-http://www.webservertalk.com/archive242-2007-11-2129981.html
+I thought you might get compile time warnings. Returning things off the
+stack in general is error prone. I think passing a pointer to the
+resource into the function (as below) maybe a bit better.
 
-One reason I gather is that we want to prevent interrupts from printing 
-unorderly stuff in the __log_buf. But dont interrupts get the 
-spin_lock(&logbuf_lock) and then update the log_[end/start], con_start 
-etc? If so we wont see unorderly prints in the __log_buf, the spin_lock 
-protects those pointers.
+>> static __init void wmt_mmio_res(struct resource *res,
+>>                                u32 start, u32 size)
+>> {
+>>        res->flags = IORESOURCE_MEM;
+>>        res->start = start;
+>>        res->end   = start + size - 1;
+>> }
+>>
+>> You could also make these functions static inline in devices.h to avoid
+>> having to define them for each board.
+>>
+> 
+> Agreed.
+> 
+>>> +
+>>> +static inline struct resource WMT_IRQ_RES(int irq)
+>>> +{
+>>> +     struct resource tmp = {
+>>> +             .flags = IORESOURCE_IRQ,
+>>> +             .start = irq,
+>>> +             .end = irq,
+>>> +     };
+>>> +
+>>> +     return tmp;
+>>> +}
+>>> +
+>>> +#define WMT_RES_ADD(__device, __resource, __num) \
+>>> +if (platform_device_add_resources(__device, __resource, __num)) \
+>>> +     pr_err("Failed to assign resources to __device##\n");
+>>
+>> This could be written as a proper function. The resource add is unlikely
+>> to fail. Maybe keep the warning but don't worry about printing the
+>> device name?
+>>
+> 
+> There is memory allocation inside platform_device_add_resources, so
+> probably there is scope for failure. I could add unlikely(), though.
 
-Would like ask if limiting the number of characters per loop in 
-release_console_sem() is a good idea.
+I meant more in terms of losing the device name in the error which seems
+to be the sole point of the macro. i.e it could be rewritten as:
 
-Thanks
-Abhijeet
+static void wmt_add_resource(struct platform_device *pdev,
+				const struct resource *res,
+				unsigned num)
+{
+	if (platform_device_add_resources(pdev, res, num))
+		pr_err("Failed to add device resource\n");
+}
 
-Sent by an Employee of the Qualcomm Innovation Center, Inc. The Qualcomm 
-Innovation Center, Inc is a member of code aurora forum.
+Because the add resource failing would indicate some serious problem you
+may even want to BUG().
+
+~Ryan
+
+-- 
+Bluewater Systems Ltd - ARM Technology Solution Centre
+
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
