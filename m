@@ -1,107 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854Ab0LVNCN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 08:02:13 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:54088 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876Ab0LVNCL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 08:02:11 -0500
-From: "M. Mohan Kumar" <mohan@in.ibm.com>
-To: v9fs-developer@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] fs/9p: TREADLINK fix
-Date: Wed, 22 Dec 2010 18:32:07 +0530
-Message-Id: <1293022927-27141-1-git-send-email-mohan@in.ibm.com>
-X-Mailer: git-send-email 1.7.1
+	id S1752934Ab0LVNEo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 08:04:44 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:39651 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752021Ab0LVNEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 08:04:42 -0500
+Date: Wed, 22 Dec 2010 14:03:49 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-security-module@vger.kernel.org, jmorris@namei.org,
+        eric.dumazet@gmail.com, tgraf@infradead.org, eugeneteo@kernel.org,
+        kees.cook@canonical.com, davem@davemloft.net, a.p.zijlstra@chello.nl,
+        akpm@linux-foundation.org, eparis@parisplace.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v4] kptr_restrict for hiding kernel pointers
+Message-ID: <20101222130349.GB13412@elte.hu>
+References: <1292708499.10804.89.camel@dan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292708499.10804.89.camel@dan>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use copy_to_user function to copy symlink information to the userspace
-address. As part of this change v9fs_vfs_followlink_dotl also changed.
 
-Signed-off-by: M. Mohan Kumar <mohan@in.ibm.com>
----
- fs/9p/vfs_inode.c |   43 +++++++++++++++++++++----------------------
- 1 files changed, 21 insertions(+), 22 deletions(-)
+* Dan Rosenberg <drosenberg@vsecurity.com> wrote:
 
-diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
-index 2ce3668..9d3b910 100644
---- a/fs/9p/vfs_inode.c
-+++ b/fs/9p/vfs_inode.c
-@@ -1995,26 +1995,26 @@ error:
- }
- 
- static int
--v9fs_vfs_readlink_dotl(struct dentry *dentry, char *buffer, int buflen)
-+v9fs_vfs_readlink_dotl(struct dentry *dentry, char __user *buffer, int buflen)
- {
--	int retval;
-+	int retval = -EPERM;
- 	struct p9_fid *fid;
- 	char *target = NULL;
- 
- 	P9_DPRINTK(P9_DEBUG_VFS, " %s\n", dentry->d_name.name);
--	retval = -EPERM;
- 	fid = v9fs_fid_lookup(dentry);
- 	if (IS_ERR(fid))
- 		return PTR_ERR(fid);
--
- 	retval = p9_client_readlink(fid, &target);
- 	if (retval < 0)
--		return retval;
--
--	strncpy(buffer, target, buflen);
--	P9_DPRINTK(P9_DEBUG_VFS, "%s -> %s\n", dentry->d_name.name, buffer);
--
--	retval = strnlen(buffer, buflen);
-+		goto error;
-+	retval = copy_to_user(buffer, target, buflen);
-+	if (retval < 0)
-+		goto error;
-+	P9_DPRINTK(P9_DEBUG_VFS, "%s -> %s\n", dentry->d_name.name, target);
-+	retval = strnlen(target, buflen);
-+error:
-+	kfree(target);
- 	return retval;
- }
- 
-@@ -2028,23 +2028,22 @@ v9fs_vfs_readlink_dotl(struct dentry *dentry, char *buffer, int buflen)
- static void *
- v9fs_vfs_follow_link_dotl(struct dentry *dentry, struct nameidata *nd)
- {
--	int len = 0;
--	char *link = __getname();
-+	int retval;
-+	struct p9_fid *fid;
-+	char *link = NULL;
- 
- 	P9_DPRINTK(P9_DEBUG_VFS, "%s n", dentry->d_name.name);
- 
--	if (!link)
--		link = ERR_PTR(-ENOMEM);
--	else {
--		len = v9fs_vfs_readlink_dotl(dentry, link, PATH_MAX);
--		if (len < 0) {
--			__putname(link);
--			link = ERR_PTR(len);
--		} else
--			link[min(len, PATH_MAX-1)] = 0;
-+	fid = v9fs_fid_lookup(dentry);
-+	if (IS_ERR(fid))
-+		return fid;
-+	retval = p9_client_readlink(fid, &link);
-+	if (retval < 0) {
-+		kfree(link);
-+		link = ERR_PTR(retval);
- 	}
--	nd_set_link(nd, link);
- 
-+	nd_set_link(nd, link);
- 	return NULL;
- }
- 
--- 
-1.7.0.4
+> +kptr_restrict:
+> +
+> +This toggle indicates whether restrictions are placed on
+> +exposing kernel addresses via /proc and other interfaces.  When
+> +kptr_restrict is set to (0), the default, there are no
+> +restrictions.  When kptr_restrict is set to (1), kernel pointers
+> +printed using the %pK format specifier will be replaced with 0's
+> +unless the user has CAP_SYSLOG.  When kptr_restrict is set to
+> +(2), kernel pointers printed using %pK will be replaced with 0's
+> +regardless of privileges.
 
+Hm, why is it off by default? Is there some user-space regression that is caused by 
+this?
+
+We really want good security measures to be active by default (and to work by 
+default) - they are not worth much if they are not.
+
+Thanks,
+
+	Ingo
