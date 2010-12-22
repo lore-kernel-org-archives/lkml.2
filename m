@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947Ab0LVKWH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 05:22:07 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:38097 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268Ab0LVKWG convert rfc822-to-8bit (ORCPT
+	id S1751531Ab0LVKev (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 05:34:51 -0500
+Received: from mail-px0-f179.google.com ([209.85.212.179]:48430 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218Ab0LVKeu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 05:22:06 -0500
+	Wed, 22 Dec 2010 05:34:50 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=JEGMj+2PSfr5uPuJV/2tMc1oIgx0J8VWyEsq3bVnMkJR7dHUl3/yJwakrzvOLzHqY7
-         lNRVIXyEysSfpI4ybGir5I8acXv0ueFfbgMNVBwsc28t2x0NAEjSFLcKpsQBiQfCyE8B
-         U2q7QeN98Fys6X0Z4AhiPsC6uYydMvC8YUbRE=
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=m9lS7rpxzU+5SrPsduRlay4JQRuR91k8nhdbT0+QlTDTbSBKA/8mjpzHYemLy7r676
+         lnfMbDEPX0TZZ0Wphnh7oflYkU0sSw7vfS6WKx7OZHmZDqE9p1VyOAsCQ8WsH4IJEW0f
+         zViwI26foLIUVDOoLEP57P8BQaIKsar7eqGhg=
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20101222095332.GA3430@amd>
-References: <20101222095332.GA3430@amd>
-Date: Wed, 22 Dec 2010 11:22:05 +0100
-Message-ID: <AANLkTimRnWmQgd25S2LjaWsGogCeiTWjK9HT25Uv9O38@mail.gmail.com>
-Subject: Re: [announce] vfs-scale git tree update
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eparis@redhat.com, Al Viro <viro@zeniv.linux.org.uk>,
-        Lennart Poettering <lennart@poettering.net>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <AANLkTinVHsVg0=S9T2A120MYjgOknVB_hXmkwAmjpv2D@mail.gmail.com>
+References: <AANLkTi=kX8NraxuLn-f=s=nqja71Ayq2kYwgG6gq+7YF@mail.gmail.com>
+	<20101220214445.85816469.akpm@linux-foundation.org>
+	<AANLkTikpHn4EkaTUznshMOAnhC9FfL5Yy9vZohvoy8cG@mail.gmail.com>
+	<AANLkTinVHsVg0=S9T2A120MYjgOknVB_hXmkwAmjpv2D@mail.gmail.com>
+Date: Wed, 22 Dec 2010 10:34:49 +0000
+Message-ID: <AANLkTimZOCWY4bAxo6WVn4R075zHZGr9NE3S9nRd407F@mail.gmail.com>
+Subject: Re: [PATCH] include/linux/unaligned: Pack the whole struct rather
+ than just the field.
+From: Will Newton <will.newton@gmail.com>
+To: Harvey Harrison <harvey.harrison@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>, stable@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 22, 2010 at 10:53 AM, Nick Piggin <npiggin@kernel.dk> wrote:
-> Git tree is here:
+On Tue, Dec 21, 2010 at 11:36 PM, Harvey Harrison
+<harvey.harrison@gmail.com> wrote:
+> On Tue, Dec 21, 2010 at 2:43 AM, Will Newton <will.newton@gmail.com> wrote:
+>> On Tue, Dec 21, 2010 at 5:44 AM, Andrew Morton
+>>>> �#include <linux/kernel.h>
 >
->  git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git
+>>>>
+>>>> -struct __una_u16 { u16 x __attribute__((packed)); };
+>>>> -struct __una_u32 { u32 x __attribute__((packed)); };
+>>>> -struct __una_u64 { u64 x __attribute__((packed)); };
+>>>> +struct __una_u16 { u16 x; } __attribute__((packed));
+>>>> +struct __una_u32 { u32 x; } __attribute__((packed));
+>>>> +struct __una_u64 { u64 x; } __attribute__((packed));
+>>>>
+>>>
+>>> Yes, that was wrong.
+>>>
+>>> Do you think this bug affects 2.6.36 or earlier?
 >
-> Branch is:
+> Interesting, I thought about this when modifying this awhile ago, and
+> was relying on this from the gcc manual:
 >
->    vfs-scale-working
+> packed
+> <snip>
 >
-> Changes since last posting:
-> * Fix for the cgroupfs crash (probably temporary until Al's fixes are
->  merged).
-> * Fix a couple of bisectability bugs.
-> * Fix a race in disconnected dentry alias handling causing NFS to explode
->  under load. Basically the patch to split dentry hash locks needs to
->  lock the s_anon list with a seperate lock, which it wasn't doing
->  properly in the d_move() code.
+> � �Specifying this attribute for struct and union types is equivalent
+> to specifying the packed attribute on each of the
 >
-> Thanks to all testers.
 >
+> ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> structure or union members. Specifying the -fshort-enums flag on the
+> line is equivalent to specifying the packed
+> attribute on all enum definitions.
 
-[ CC Al Viro and Lennart Poettering ]
+I think that's possibly a gcc documentation deficiency, it is
+equivalent to adding the packed attribute to all the struct members
+but *also* affects the assumed alignment of the struct.
 
-Thanks for fixing this so quickly, Nick.
-I am looking forward to see Al's vfs work got merged into linux-next.
+Looking at the gcc svn it seems the documentation has been improved a
+bit in this area.
 
-Here some feedback from IRC #systemd/freenode (21-Dec-2010, UTC+1):
+> What version of gcc was this?
 
-[17:14:23] <mezcaler1> dileks: fun that we are able to trigger such problems
-[17:14:46] <mezcaler1> dileks: seems systemd is definitely a good
-"test case" already ;-)
-
-
-- Sedat -
+4.2.4
