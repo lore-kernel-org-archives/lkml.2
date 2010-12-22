@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851Ab0LVSni (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 13:43:38 -0500
-Received: from mga01.intel.com ([192.55.52.88]:7737 "EHLO mga01.intel.com"
+	id S1753572Ab0LVSj6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 13:39:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51174 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753794Ab0LVSnh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 13:43:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,214,1291622400"; 
-   d="scan'208";a="871005722"
-Date: Wed, 22 Dec 2010 10:42:56 -0800
-From: Jesse Barnes <jesse.barnes@intel.com>
-To: "Ahmed S. Darwish" <darwish.07@gmail.com>
-Cc: Jochen Voss <voss@seehuhn.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Airlie <airlied@linux.ie>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.37-rc7
-Message-ID: <20101222104256.3d501f94@jbarnes-desktop>
-In-Reply-To: <20101222181855.GA4244@laptop>
-References: <20101221233022.GA9188@seehuhn.de>
-	<20101222181855.GA4244@laptop>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751777Ab0LVSj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 13:39:57 -0500
+Date: Wed, 22 Dec 2010 19:39:55 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Vojtech Pavlik <vojtech@suse.cz>,
+        =?ISO-8859-15?Q?Ilpo_J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>
+Subject: [PATCH] tcp: cleanup of cwnd initialization in tcp_init_metrics()
+Message-ID: <alpine.LNX.2.00.1012221938030.16569@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Dec 2010 20:18:55 +0200
-"Ahmed S. Darwish" <darwish.07@gmail.com> wrote:
+Commit 86bcebafc5e7f5 ("tcp: fix >2 iw selection") fixed a case when 
+congestion window initialization has been mistakenly omitted by 
+introducing cwnd label and putting backwards jump from the end of the 
+function.
 
-> Hi,
-> 
-> On Tue, 21 Dec 2010 23:30:30 +0000, Jochen Voss wrote:
-> > On Tue, Dec 21, 2010 at 11:52:17AM -0800, Linus Torvalds wrote:
-> > > I'm still nervous about some of the regression reports for intel
-> > > graphics, so please keep testing and reporting. This is the last -rc
-> > > before xmas (or whatever your holiday may be), so now you all have a
-> > > few free days when you have nothing better to do than test out an -rc
-> > > release, right?
-> >
-> > For reference, the regression I reported yesterday
-> > (message id "20101220140615.GA3035@automatix",
-> > http://www.spinics.net/lists/kernel/msg1126718.html
-> > on the web) is still present: -rc7 only shows a blank
-> > screen on my system, -rc7 with 541cc966 reverted works
-> > without problems.
-> >
-> 
-> I can confirm the regression: a completely-blank screen right after the
-> grub prompt.
-> 
-> Printing kernel output using early_printk() all along ('earlyprintk=
-> serial,keep') shows that the rest of the kernel internally goes on with
-> its booting process as usual.
-> 
-> Reverting the mentioned 541cc966 commit solves the problem; the bug is
-> reproducible in both qemu and real hardware.
+This makes the code unnecessarily tricky to read and understand on a first 
+sight.
 
-That one has since been reverted; I think Dave has it queued up for
-Linus now actually.
+Shuffle the code around a little bit to make it more obvious.
 
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+---
+ net/ipv4/tcp_input.c |   10 ++++------
+ 1 files changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+index 6d8ab1c..dddff6d 100644
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -915,11 +915,7 @@ static void tcp_init_metrics(struct sock *sk)
+ 	if (inet_csk(sk)->icsk_rto < TCP_TIMEOUT_INIT && !tp->rx_opt.saw_tstamp)
+ 		goto reset;
+ 
+-cwnd:
+-	tp->snd_cwnd = tcp_init_cwnd(tp, dst);
+-	tp->snd_cwnd_stamp = tcp_time_stamp;
+-	return;
+-
++	goto out;
+ reset:
+ 	/* Play conservative. If timestamps are not
+ 	 * supported, TCP will fail to recalculate correct
+@@ -930,7 +926,9 @@ reset:
+ 		tp->mdev = tp->mdev_max = tp->rttvar = TCP_TIMEOUT_INIT;
+ 		inet_csk(sk)->icsk_rto = TCP_TIMEOUT_INIT;
+ 	}
+-	goto cwnd;
++out:
++	tp->snd_cwnd = tcp_init_cwnd(tp, dst);
++	tp->snd_cwnd_stamp = tcp_time_stamp;
+ }
+ 
+ static void tcp_update_reordering(struct sock *sk, const int metric,
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+1.7.3.1
+
