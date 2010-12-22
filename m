@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab0LWKL0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 05:11:26 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:34665 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752328Ab0LWKLZ convert rfc822-to-8bit (ORCPT
+	id S1752695Ab0LWKOA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 05:14:00 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:46389 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277Ab0LWKN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 05:11:25 -0500
-Subject: Re: [RFC PATCH] perf: Add load latency monitoring on Intel
- Nehalem/Westmere
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, paulus <paulus@samba.org>
-In-Reply-To: <1293092915.2565.168.camel@minggr.sh.intel.com>
-References: <1293005543.2565.156.camel@minggr.sh.intel.com>
-	 <1293008431.2170.63.camel@laptop>
-	 <AANLkTintfpyvx=Pj1+uu8kCkFn3zT6b36h27Hb7pm=ZF@mail.gmail.com>
-	 <1293014701.2170.111.camel@laptop>
-	 <1293092915.2565.168.camel@minggr.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 23 Dec 2010 11:11:24 +0100
-Message-ID: <1293099084.2170.438.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 23 Dec 2010 05:13:58 -0500
+Date: Thu, 23 Dec 2010 00:36:21 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Thomas Meyer <thomas@m3y3r.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: 2.6.37-rc7: NULL pointer dereference
+Message-ID: <20101222190621.GA16046@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <1293020757.1998.2.camel@localhost.localdomain>
+ <AANLkTin6GMiXHuoVzNWPcj0jXDqWyfWCwW9fd-v=pq=X@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTin6GMiXHuoVzNWPcj0jXDqWyfWCwW9fd-v=pq=X@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-23 at 16:28 +0800, Lin Ming wrote:
-> On Wed, 2010-12-22 at 18:45 +0800, Peter Zijlstra wrote:
-> > On Wed, 2010-12-22 at 11:08 +0100, Stephane Eranian wrote:
-> > > Yes, I think there is more to it than just data source, unfortunately.
-> > > If you want to avoid returning an opaque u64 (PERF_SAMPLE_EXTRA), then
-> > > you need to break it down: PERF_SAMPLE_DATA_SRC, PERF_SAMPLE_XX
-> > > and so on. 
-> > 
-> > I guess we can do things like:
-> > 
-> > Satisfied by {L1, L2, L3, RAM}x{snoop, local, remote} + unknown, and
-> > encode "Pending core cache HIT" as L2-snoop or something, whatever is
-> > most appropriate.
-> > 
-> > But does that cover every architecture?
-> > 
-> > Also, since that doesn't require more that 4 bits to encode, we could
-> > try and categorize what else is around and try and create a well
-> > specified _EXTRA register, I mean, we still got 60bits left after this.
+* MinChan Kim <minchan.kim@gmail.com> [2010-12-23 00:37:11]:
+
+> Cced linux-mm and maintainers of memcg.
 > 
-> Could you tell more about this well specified _EXTRA register?
+> On Wed, Dec 22, 2010 at 9:25 PM, Thomas Meyer <thomas@m3y3r.de> wrote:
+> > BUG: unable to handle kernel NULL pointer dereference at 00000008
+> > IP: [<c04eae14>] __mem_cgroup_try_charge+0x234/0x430
+> > *pde = 00000000
+> > Oops: 0000 [#1]
+> > last sysfs file: /sys/devices/platform/regulatory.0/uevent
+> > Modules linked in: vfat fat usb_storage fuse sco bnep l2cap bluetooth cpufreq_ondemand acpi_cpufreq mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables kvm_intel kvm uinput arc4 ecb snd_hda_codec_hdmi snd_hda_codec_realtek iwlagn snd_hda_intel snd_hda_codec iwlcore uvcvideo snd_hwdep mac80211 snd_seq videodev snd_seq_device snd_pcm cfg80211 snd_timer rfkill v4l1_compat wmi snd pcspkr soundcore joydev serio_raw snd_page_alloc ipv6 sha256_generic aes_i586 aes_generic cbc dm_crypt [last unloaded: scsi_wait_scan]
+> > Pid: 8058, comm: swapoff Tainted: G          I 2.6.37-rc7 #221 JM11-MS/Aspire 1810T
+> > EIP: 0060:[<c04eae14>] EFLAGS: 00010246 CPU: 0
+> > EIP is at __mem_cgroup_try_charge+0x234/0x430
+> > EAX: 00000008 EBX: 00000000 ECX: f2e71f10 EDX: f2f96380
+> > ESI: f3e55860 EDI: 00020000 EBP: f2e71eb4 ESP: f2e71e54
+> >  DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
+> > Process swapoff (pid: 8058, ti=f2e70000 task=f3e55860 task.ti=f2e70000)
+> > Stack:
+> >  f2e71e88 c0456607 26ba7c1c f3e55860 00000010 f3e55860 069d208a b2ee651d
+> >  00000008 000000d0 f2f96380 00000005 01ffffff f2e71f10 00000246 ec1a64ae
+> >  ffffffff 00000000 27b52eae f044dc84 00000000 f2f96380 00000000 000000d0
+> > Call Trace:
+> >  [<c0456607>] ? ktime_get_ts+0x107/0x140
+> >  [<c04ebb89>] ? mem_cgroup_try_charge_swapin+0x49/0xb0
+> >  [<c04d9b4b>] ? unuse_mm+0x1db/0x300
+> >  [<c04dad9a>] ? sys_swapoff+0x2aa/0x890
+> >  [<c047cd58>] ? audit_syscall_entry+0x218/0x240
+> >  [<c047d043>] ? audit_syscall_exit+0x1f3/0x220
+> >  [<c0403013>] ? sysenter_do_call+0x12/0x22
+> > Code: 55 c8 8b 82 90 01 00 00 85 c0 74 09 8b 80 7c 03 00 00 8b 58 2c 3b 1d 54 20 a9 c0 74 61 3b 1d 4c ca a4 c0 74 6a 8d 43 08 89 45 c0 <8b> 43 08 a8 01 0f 85 73 fe ff ff 8d 4b 04 89 5d bc 8d 76 00 8b
+> > EIP: [<c04eae14>] __mem_cgroup_try_charge+0x234/0x430 SS:ESP 0068:f2e71e54
+> > CR2: 0000000000000008
 
-Like how we should look at other archs (like POWER) and try and figure
-out what other useful information is available and come up with a
-generic format for that?
+Thanks for the report, does this happen at bootup?
 
-We could of course leave the 59 bits as reserved and fill it in later,
-and go with the data source bits only for now..
-
-
-
-
-
-
+-- 
+	Three Cheers,
+	Balbir
