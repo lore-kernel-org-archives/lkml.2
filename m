@@ -1,44 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457Ab0LVJxj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 04:53:39 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:55442 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751753Ab0LVJxh (ORCPT
+	id S1752550Ab0LVJ6b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 04:58:31 -0500
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:52538 "EHLO
+	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752214Ab0LVJ6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 04:53:37 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAJRZEU15Lcps/2dsb2JhbACkFHTCX4VJBA
-Date: Wed, 22 Dec 2010 20:53:32 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Sedat Dilek <sedat.dilek@googlemail.com>, eparis@redhat.com
-Subject: [announce] vfs-scale git tree update
-Message-ID: <20101222095332.GA3430@amd>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 22 Dec 2010 04:58:30 -0500
+X-Spam-ASN: 
+Date: Wed, 22 Dec 2010 12:58:10 +0300
+From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+To: john stultz <johnstul@us.ibm.com>
+Cc: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>,
+        Rodolfo Giometti <giometti@enneenne.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
+        David Miller <davem@davemloft.net>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH V7 1/8] ntp: add ADJ_SETOFFSET mode bit
+Message-ID: <20101222125810.2e41b167@apollo.gnet>
+In-Reply-To: <1292968784.2618.51.camel@work-vm>
+References: <cover.1292512461.git.richard.cochran@omicron.at>
+	<880d82bb8120f73973db27e0c48e949014b1a106.1292512461.git.richard.cochran@omicron.at>
+	<AANLkTi=yGoFwYt4p_LeHtAQyYgmURspO-p57UdL0sUEZ@mail.gmail.com>
+	<1292960224.2618.4.camel@work-vm>
+	<AANLkTikHV-qN73Zvvvxn76vtFFKG_VNTQhF3qpqTnOrE@mail.gmail.com>
+	<1292968784.2618.51.camel@work-vm>
+Organization: LVK
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA256;
+ boundary="Sig_//HgGPbBx7PbTHmzxfVUpz3d"; protocol="application/pgp-signature"
+X-AV-Checked: ClamAV using ClamSMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Git tree is here:
+--Sig_//HgGPbBx7PbTHmzxfVUpz3d
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git
+=D0=92 Tue, 21 Dec 2010 13:59:44 -0800
+john stultz <johnstul@us.ibm.com> =D0=BF=D0=B8=D1=88=D0=B5=D1=82:
 
-Branch is:
+> On Wed, 2010-12-22 at 06:13 +0900, Kuwahara,T. wrote:
+> > On Wed, Dec 22, 2010 at 4:37 AM, john stultz <johnstul@us.ibm.com> wrot=
+e:
+> > > adjtimex is a linux specific interface, which is compatible but not
+> > > identical to the ntp specified interfaces. The ntp client code already
+> > > has Linux specific modifications, so I don't think we have to worry
+> > > about 0x40 specifically being reserved by the NTP client.
+> >=20
+> > But struct timex is not linux-specific...
+>=20
+> It is if you're compiling against linux's timex.h file.=20
+>=20
+> We already have a number of differences compared with BSD's timex mode
+> definitions:
+> We have ADJ_TICK: 0x4000, which is MOD_CLKB in FreeBSD.
+> We also have ADJ_OFFSET_SINGLESHOT and ADJ_OFFSET_SS_READ which allow
+> adjtimex act like the original ntp_adjtime.
+>=20
+> The key bit is that we map the shared MOD_* definitions that the NTP
+> client uses to the linux specific ADJ_* values in the linux timex.h
+>=20
+> However, your concern does bring up a good point: 0x40 is MOD_PPSMAX in
+> BSD, and we should at-least check to make sure that the PPS code that is
+> currently floating around on the lists and is in akpm's tree hasn't
+> already reserved that bit.
+>=20
+> Rodolfo, Alexander: Any comments here?
 
-    vfs-scale-working
+No, it is used neither in my patches nor in the original code. The only
+change my patches do to timex.h is adding hardpps().
 
-Changes since last posting:
-* Fix for the cgroupfs crash (probably temporary until Al's fixes are
-  merged).
-* Fix a couple of bisectability bugs.
-* Fix a race in disconnected dentry alias handling causing NFS to explode
-  under load. Basically the patch to split dentry hash locks needs to
-  lock the s_anon list with a seperate lock, which it wasn't doing
-  properly in the d_move() code.
+--=20
+  Alexander
 
-Thanks to all testers.
+--Sig_//HgGPbBx7PbTHmzxfVUpz3d
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBCAAGBQJNEcuzAAoJEElrwznyooJbqIkH/0dC5fYiv7FoTr6YFmWapDnk
+rSgeRe5NeYn9yP+cUu4/TzETaChFswP6cUBpIJ1qZuCzkU58WitIi/x3mAENMGas
+hztqAVrh0SB33yVtPqsbVVBsVJssH7Ox7p2TLilIeqShKG7Wf8LftpTH1v4nuMFQ
+cy+qlzJGPS48HW90oJOMNrNu4zDFWGo5q11WuEQ6LPKZHpNEoODJTyV+h+IKhe0J
+iCVnvEfnEQM9qQXhG68lvB/XklTIWFvP6cWLA2HiDRIKdQF74s7XcFktvXhfjGIt
+tDMzMFtPsULiW3lE6350mcQiBRZhRKX/ainLUw5l13UGTbxWmq7If2mLDECxFWo=
+=tfcP
+-----END PGP SIGNATURE-----
+
+--Sig_//HgGPbBx7PbTHmzxfVUpz3d--
