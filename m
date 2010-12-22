@@ -1,170 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751877Ab0LVCUw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 21:20:52 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:39292 "EHLO e2.ny.us.ibm.com"
+	id S1751835Ab0LVC3M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 21:29:12 -0500
+Received: from ozlabs.org ([203.10.76.45]:33578 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751520Ab0LVCUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 21:20:51 -0500
-Date: Tue, 21 Dec 2010 18:20:40 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 10/15] nohz_task: Enter in extended quiescent state
- when in userspace
-Message-ID: <20101222022040.GQ2143@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
- <1292858662-5650-11-git-send-email-fweisbec@gmail.com>
- <20101221192849.GP2143@linux.vnet.ibm.com>
- <20101221214940.GV1750@nowhere>
+	id S1751455Ab0LVC3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 21:29:11 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: x86@kernel.org
+Subject: [PATCH] x86: initialize initial_page_table before paravirt jumps
+Date: Wed, 22 Dec 2010 12:59:00 +1030
+User-Agent: KMail/1.13.5 (Linux/2.6.35-23-generic; KDE/4.5.1; i686; ; )
+Cc: linux-kernel@vger.kernel.org, lguest <lguest@ozlabs.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101221214940.GV1750@nowhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012221259.01671.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 21, 2010 at 10:49:43PM +0100, Frederic Weisbecker wrote:
-> On Tue, Dec 21, 2010 at 11:28:49AM -0800, Paul E. McKenney wrote:
-> > On Mon, Dec 20, 2010 at 04:24:17PM +0100, Frederic Weisbecker wrote:
-> > > A nohz task can safely enter into extended quiescent state when
-> > > it goes into userspace, this avoids a remote cpu to force the
-> > > nohz task to be interrupted in order to notify quiescent states.
-> > > 
-> > > We enter into an extended quiescent state when:
-> > > 
-> > > - A nohz task resumes to userspace and is alone running on the
-> > > CPU (we check if the local cpu is in nohz mode, which means
-> > > no other task compete on that CPU). If the tick is still running
-> > > then entering into extended QS will be done later from the second
-> > > case:
-> > > 
-> > > - When the tick stops and verify the current task is a nohz one,
-> > > is alone running on the CPU and runs in userspace.
-> > > 
-> > > We exit the extended quiescent state when:
-> > > 
-> > > - A nohz task enters the kernel and is alone running on the CPU.
-> > > Again we check if the local cpu is in nohz mode for that. If
-> > > the tick is still running then it means we are not in an extended
-> > > QS and we don't do anything.
-> > > 
-> > > - The tick restarts because a new task is enqueued.
-> > > 
-> > > Whether the nohz task is in userspace or not is tracked by the
-> > > per cpu nohz_task_ext_qs variable.
-> > > 
-> > > Architectures need to provide some backend to notify userspace
-> > > exit/entry in order to support this mode.
-> > > It needs to implement the TIF_NOHZ flag that switches to slow
-> > > path syscall mode and to notify exceptions entry/exit.
-> > > 
-> > > We don't need to handle irqs or nmis as those are already handled
-> > > by RCU through rcu_enter_irq/nmi helpers.
-> > 
-> > One question below...
-> > 
-> > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > Cc: Ingo Molnar <mingo@elte.hu>
-> > > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > > Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-> > > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > > Cc: Anton Blanchard <anton@au1.ibm.com>
-> > > Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>
-> > > ---
-> > >  arch/Kconfig             |    4 +++
-> > >  include/linux/tick.h     |   16 ++++++++++-
-> > >  kernel/sched.c           |    3 ++
-> > >  kernel/time/tick-sched.c |   61 +++++++++++++++++++++++++++++++++++++++++++++-
-> > >  4 files changed, 81 insertions(+), 3 deletions(-)
-> > > 
-> > > diff --git a/arch/Kconfig b/arch/Kconfig
-> > > index e631791..d1ebea3 100644
-> > > --- a/arch/Kconfig
-> > > +++ b/arch/Kconfig
-> > > @@ -177,5 +177,9 @@ config HAVE_ARCH_JUMP_LABEL
-> > > 
-> > >  config HAVE_NO_HZ_TASK
-> > >  	bool
-> > > +	help
-> > > +	  Features necessary hooks for a task wanting to enter nohz
-> > > +	  while running alone on a CPU: thread flag for syscall hooks
-> > > +	  and exceptions entry/exit hooks.
-> > > 
-> > >  source "kernel/gcov/Kconfig"
-> > > diff --git a/include/linux/tick.h b/include/linux/tick.h
-> > > index 7465a47..a704bb7 100644
-> > > --- a/include/linux/tick.h
-> > > +++ b/include/linux/tick.h
-> > > @@ -8,6 +8,7 @@
-> > > 
-> > >  #include <linux/clockchips.h>
-> > >  #include <linux/percpu-defs.h>
-> > > +#include <asm/ptrace.h>
-> > > 
-> > >  #ifdef CONFIG_GENERIC_CLOCKEVENTS
-> > > 
-> > > @@ -130,10 +131,21 @@ extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
-> > > 
-> > >  #ifdef CONFIG_NO_HZ_TASK
-> > >  DECLARE_PER_CPU(int, task_nohz_mode);
-> > > +DECLARE_PER_CPU(int, nohz_task_ext_qs);
-> > > +
-> > > +extern void tick_nohz_task_enter_kernel(void);
-> > > +extern void tick_nohz_task_exit_kernel(void);
-> > > +extern void tick_nohz_task_enter_exception(struct pt_regs *regs);
-> > > +extern void tick_nohz_task_exit_exception(struct pt_regs *regs);
-> > >  extern int tick_nohz_task_mode(void);
-> > > -#else
-> > > +
-> > > +#else /* !NO_HZ_TASK */
-> > > +static inline void tick_nohz_task_enter_kernel(void) { }
-> > > +static inline void tick_nohz_task_exit_kernel(void) { }
-> > > +static inline void tick_nohz_task_enter_exception(struct pt_regs *regs) { }
-> > > +static inline void tick_nohz_task_exit_exception(struct pt_regs *regs) { }
-> > >  static inline int tick_nohz_task_mode(void) { return 0; }
-> > > -#endif
-> > > +#endif /* !NO_HZ_TASK */
-> > > 
-> > >  # else /* !NO_HZ */
-> > >  static inline void tick_nohz_stop_sched_tick(int inidle) { }
-> > > diff --git a/kernel/sched.c b/kernel/sched.c
-> > > index b99f192..4412493 100644
-> > > --- a/kernel/sched.c
-> > > +++ b/kernel/sched.c
-> > > @@ -2464,6 +2464,9 @@ static void nohz_task_cpu_update(void *unused)
-> > >  	if (rq->nr_running > 1 || rcu_pending(cpu) || rcu_needs_cpu(cpu)) {
-> > 
-> > If the task enters a system call in nohz mode, and then that system call
-> > enqueues an RCU callback, this code path will pull that CPU out of nohz
-> > mode, right?
-> > 
-> > 							Thanx, Paul
-> 
-> Hmm, no because this code path is only called after rcu or the scheduler sends
-> an IPI. And rcu won't call it after it enqueues a callback.
-> 
-> I did not think about that. If every other CPUs are in extended quiescent
-> state, nobody will take care of the grace period comletion, unless we are
-> lucky in the whole GP completion scenario. And at least the current CPU
-> that enqueues the callbacks is supposed to take care of that grace period
-> completion, right?
-> 
-> So I guess I need to restat the tick from there too.
+v2.6.36-rc8-54-gb40827f (x86-32, mm: Add an initial page table for
+core bootstrapping) made x86 boot using initial_page_table and broke
+lguest.
 
-Please!!!  ;-)
+For 2.6.37 we simply cut & paste the initialization code into lguest
+(da32dac10126 "lguest: populate initial_page_table"), now we fix it
+properly by doing that initialization before the paravirt jump.
 
-							Thanx, Paul
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Acked-by: Jeremy Fitzhardinge <jeremy@goop.org>
+---
+ arch/x86/kernel/head_32.S   |   77 ++++++++++++++++----------------
+ arch/x86/lguest/i386_head.S |  105 --------------------------------------------
+ 2 files changed, 39 insertions(+), 143 deletions(-)
+
+diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+--- a/arch/x86/kernel/head_32.S
++++ b/arch/x86/kernel/head_32.S
+@@ -139,39 +139,6 @@ 1:
+ 	movl %eax, pa(olpc_ofw_pgd)
+ #endif
+ 
+-#ifdef CONFIG_PARAVIRT
+-	/* This is can only trip for a broken bootloader... */
+-	cmpw $0x207, pa(boot_params + BP_version)
+-	jb default_entry
+-
+-	/* Paravirt-compatible boot parameters.  Look to see what architecture
+-		we're booting under. */
+-	movl pa(boot_params + BP_hardware_subarch), %eax
+-	cmpl $num_subarch_entries, %eax
+-	jae bad_subarch
+-
+-	movl pa(subarch_entries)(,%eax,4), %eax
+-	subl $__PAGE_OFFSET, %eax
+-	jmp *%eax
+-
+-bad_subarch:
+-WEAK(lguest_entry)
+-WEAK(xen_entry)
+-	/* Unknown implementation; there's really
+-	   nothing we can do at this point. */
+-	ud2a
+-
+-	__INITDATA
+-
+-subarch_entries:
+-	.long default_entry		/* normal x86/PC */
+-	.long lguest_entry		/* lguest hypervisor */
+-	.long xen_entry			/* Xen hypervisor */
+-	.long default_entry		/* Moorestown MID */
+-num_subarch_entries = (. - subarch_entries) / 4
+-.previous
+-#endif /* CONFIG_PARAVIRT */
+-
+ /*
+  * Initialize page tables.  This creates a PDE and a set of page
+  * tables, which are located immediately beyond __brk_base.  The variable
+@@ -181,7 +148,6 @@ num_subarch_entries = (. - subarch_entri
+  *
+  * Note that the stack is not yet set up!
+  */
+-default_entry:
+ #ifdef CONFIG_X86_PAE
+ 
+ 	/*
+@@ -261,7 +227,42 @@ 11:
+ 	movl $pa(initial_pg_fixmap)+PDE_IDENT_ATTR,%eax
+ 	movl %eax,pa(initial_page_table+0xffc)
+ #endif
+-	jmp 3f
++
++#ifdef CONFIG_PARAVIRT
++	/* This is can only trip for a broken bootloader... */
++	cmpw $0x207, pa(boot_params + BP_version)
++	jb default_entry
++
++	/* Paravirt-compatible boot parameters.  Look to see what architecture
++		we're booting under. */
++	movl pa(boot_params + BP_hardware_subarch), %eax
++	cmpl $num_subarch_entries, %eax
++	jae bad_subarch
++
++	movl pa(subarch_entries)(,%eax,4), %eax
++	subl $__PAGE_OFFSET, %eax
++	jmp *%eax
++
++bad_subarch:
++WEAK(lguest_entry)
++WEAK(xen_entry)
++	/* Unknown implementation; there's really
++	   nothing we can do at this point. */
++	ud2a
++
++	__INITDATA
++
++subarch_entries:
++	.long default_entry		/* normal x86/PC */
++	.long lguest_entry		/* lguest hypervisor */
++	.long xen_entry			/* Xen hypervisor */
++	.long default_entry		/* Moorestown MID */
++num_subarch_entries = (. - subarch_entries) / 4
++.previous
++#else
++	jmp default_entry
++#endif /* CONFIG_PARAVIRT */
++
+ /*
+  * Non-boot CPU entry point; entered from trampoline.S
+  * We can't lgdt here, because lgdt itself uses a data segment, but
+@@ -282,7 +283,7 @@ ENTRY(startup_32_smp)
+ 	movl %eax,%fs
+ 	movl %eax,%gs
+ #endif /* CONFIG_SMP */
+-3:
++default_entry:
+ 
+ /*
+  *	New page tables may be in 4Mbyte page mode and may
+@@ -622,13 +623,13 @@ ENTRY(initial_code)
+ __PAGE_ALIGNED_BSS
+ 	.align PAGE_SIZE_asm
+ #ifdef CONFIG_X86_PAE
+-ENTRY(initial_pg_pmd)
++initial_pg_pmd:
+ 	.fill 1024*KPMDS,4,0
+ #else
+ ENTRY(initial_page_table)
+ 	.fill 1024,4,0
+ #endif
+-ENTRY(initial_pg_fixmap)
++initial_pg_fixmap:
+ 	.fill 1024,4,0
+ ENTRY(empty_zero_page)
+ 	.fill 4096,1,0
+diff --git a/arch/x86/lguest/i386_head.S b/arch/x86/lguest/i386_head.S
+--- a/arch/x86/lguest/i386_head.S
++++ b/arch/x86/lguest/i386_head.S
+@@ -4,7 +4,6 @@
+ #include <asm/asm-offsets.h>
+ #include <asm/thread_info.h>
+ #include <asm/processor-flags.h>
+-#include <asm/pgtable.h>
+ 
+ /*G:020
+  * Our story starts with the kernel booting into startup_32 in
+@@ -38,113 +37,9 @@ ENTRY(lguest_entry)
+ 	/* Set up the initial stack so we can run C code. */
+ 	movl $(init_thread_union+THREAD_SIZE),%esp
+ 
+-	call init_pagetables
+-
+ 	/* Jumps are relative: we're running __PAGE_OFFSET too low. */
+ 	jmp lguest_init+__PAGE_OFFSET
+ 
+-/*
+- * Initialize page tables.  This creates a PDE and a set of page
+- * tables, which are located immediately beyond __brk_base.  The variable
+- * _brk_end is set up to point to the first "safe" location.
+- * Mappings are created both at virtual address 0 (identity mapping)
+- * and PAGE_OFFSET for up to _end.
+- *
+- * FIXME: This code is taken verbatim from arch/x86/kernel/head_32.S: they
+- * don't have a stack at this point, so we can't just use call and ret.
+- */
+-init_pagetables:
+-#if PTRS_PER_PMD > 1
+-#define PAGE_TABLE_SIZE(pages) (((pages) / PTRS_PER_PMD) + PTRS_PER_PGD)
+-#else
+-#define PAGE_TABLE_SIZE(pages) ((pages) / PTRS_PER_PGD)
+-#endif
+-#define pa(X) ((X) - __PAGE_OFFSET)
+-
+-/* Enough space to fit pagetables for the low memory linear map */
+-MAPPING_BEYOND_END = \
+-	PAGE_TABLE_SIZE(((1<<32) - __PAGE_OFFSET) >> PAGE_SHIFT) << PAGE_SHIFT
+-#ifdef CONFIG_X86_PAE
+-
+-	/*
+-	 * In PAE mode initial_page_table is statically defined to contain
+-	 * enough entries to cover the VMSPLIT option (that is the top 1, 2 or 3
+-	 * entries). The identity mapping is handled by pointing two PGD entries
+-	 * to the first kernel PMD.
+-	 *
+-	 * Note the upper half of each PMD or PTE are always zero at this stage.
+-	 */
+-
+-#define KPMDS (((-__PAGE_OFFSET) >> 30) & 3) /* Number of kernel PMDs */
+-
+-	xorl %ebx,%ebx				/* %ebx is kept at zero */
+-
+-	movl $pa(__brk_base), %edi
+-	movl $pa(initial_pg_pmd), %edx
+-	movl $PTE_IDENT_ATTR, %eax
+-10:
+-	leal PDE_IDENT_ATTR(%edi),%ecx		/* Create PMD entry */
+-	movl %ecx,(%edx)			/* Store PMD entry */
+-						/* Upper half already zero */
+-	addl $8,%edx
+-	movl $512,%ecx
+-11:
+-	stosl
+-	xchgl %eax,%ebx
+-	stosl
+-	xchgl %eax,%ebx
+-	addl $0x1000,%eax
+-	loop 11b
+-
+-	/*
+-	 * End condition: we must map up to the end + MAPPING_BEYOND_END.
+-	 */
+-	movl $pa(_end) + MAPPING_BEYOND_END + PTE_IDENT_ATTR, %ebp
+-	cmpl %ebp,%eax
+-	jb 10b
+-1:
+-	addl $__PAGE_OFFSET, %edi
+-	movl %edi, pa(_brk_end)
+-	shrl $12, %eax
+-	movl %eax, pa(max_pfn_mapped)
+-
+-	/* Do early initialization of the fixmap area */
+-	movl $pa(initial_pg_fixmap)+PDE_IDENT_ATTR,%eax
+-	movl %eax,pa(initial_pg_pmd+0x1000*KPMDS-8)
+-#else	/* Not PAE */
+-
+-page_pde_offset = (__PAGE_OFFSET >> 20);
+-
+-	movl $pa(__brk_base), %edi
+-	movl $pa(initial_page_table), %edx
+-	movl $PTE_IDENT_ATTR, %eax
+-10:
+-	leal PDE_IDENT_ATTR(%edi),%ecx		/* Create PDE entry */
+-	movl %ecx,(%edx)			/* Store identity PDE entry */
+-	movl %ecx,page_pde_offset(%edx)		/* Store kernel PDE entry */
+-	addl $4,%edx
+-	movl $1024, %ecx
+-11:
+-	stosl
+-	addl $0x1000,%eax
+-	loop 11b
+-	/*
+-	 * End condition: we must map up to the end + MAPPING_BEYOND_END.
+-	 */
+-	movl $pa(_end) + MAPPING_BEYOND_END + PTE_IDENT_ATTR, %ebp
+-	cmpl %ebp,%eax
+-	jb 10b
+-	addl $__PAGE_OFFSET, %edi
+-	movl %edi, pa(_brk_end)
+-	shrl $12, %eax
+-	movl %eax, pa(max_pfn_mapped)
+-
+-	/* Do early initialization of the fixmap area */
+-	movl $pa(initial_pg_fixmap)+PDE_IDENT_ATTR,%eax
+-	movl %eax,pa(initial_page_table+0xffc)
+-#endif
+-	ret
+-
+ /*G:055
+  * We create a macro which puts the assembler code between lgstart_ and lgend_
+  * markers.  These templates are put in the .text section: they can't be
