@@ -1,119 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab0LVP2V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 10:28:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17106 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753096Ab0LVP2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 10:28:20 -0500
-Date: Wed, 22 Dec 2010 16:20:29 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
-        jan.kratochvil@redhat.com
-Subject: Re: [PATCHSET] ptrace,signal: sane interaction between ptrace and
-	job control signals, take#2
-Message-ID: <20101222152029.GA9893@redhat.com>
-References: <1291654624-6230-1-git-send-email-tj@kernel.org>
+	id S1753786Ab0LVP3E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 10:29:04 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:57466 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753497Ab0LVP3B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 10:29:01 -0500
+Message-ID: <4D121900.2000404@vlnb.net>
+Date: Wed, 22 Dec 2010 18:28:00 +0300
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291654624-6230-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: chetan loke <loke.chetan@gmail.com>
+CC: James Bottomley <James.Bottomley@suse.de>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        "Patil, Kiran" <kiran.patil@intel.com>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Boaz Harrosh <bharrosh@panasas.com>,
+        Joe Eykholt <jeykholt@cisco.com>, "J.H." <warthog9@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Bart Van Assche <bart.vanassche@gmail.com>
+Subject: Re: [ANNOUNCE] TCM/LIO v4.0.0-rc6 for 2.6.37-rc6
+References: <1292557664.31461.68.camel@haakon2.linux-iscsi.org>	<1292599364.2820.21.camel@mulgrave.site>	<4D0B8975.1040206@vlnb.net>	<1292602908.2820.41.camel@mulgrave.site>	<4D0BBE40.6030000@vlnb.net>	<1292617658.2820.80.camel@mulgrave.site>	<4D0BD79B.2010600@vlnb.net> <AANLkTimV-evsF4MFXs6JQ5H55AgtOpGrTuCdJBx9O_P=@mail.gmail.com>
+In-Reply-To: <AANLkTimV-evsF4MFXs6JQ5H55AgtOpGrTuCdJBx9O_P=@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:lzCmlbRssbwy7SjFf5szoeotQIaJOl69SjI8mFETH64
+ 7OSeTGWsuuPDKcMHDSibZOg3z5JxWqMMlgKmGXHL5ZwtKtL/2l
+ zY3bqOOVtSVoZz88ciIwT+PT8kh7OsQYkux923AKZ1ax2ztJqz
+ l7uXbgwnTlMN3qvTcHcULTkN9kjCw1Ho0DzilIK3LvYYslEyI4
+ adpv/UOx2udx9VLN1EDuA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21, Tejun Heo wrote:
->
-> > Or. We can change the rules for ptrace_resume(), more on this later.
->
-> You haven't written this yet, right?  (I reconfigured / migrated my
-> mail setup during past few days so things are still a bit shaky.)
+chetan loke, on 12/18/2010 10:13 PM wrote:
+> On Fri, Dec 17, 2010 at 4:35 PM, Vladislav Bolkhovitin <vst@vlnb.net> wrote:
+>>
+>> In this regard it looks to be a good idea to freeze accepting both LIO
+>> and SCST until the end of the next year and then choose one with the
+>> biggest activity in the related mailing lists, not counting me and
+>> NicholasB.
+> 
+> Why wait till the end of the next year? What I proposed earlier was
+> 'to review at the architecture level'. If folks don't agree to it then
+> this email drama will never
+> stop. Once the review starts we can decide on a common baseline to
+> benchmark both the stacks. I'm more than willing to test/benchmark
+> ESX(front-end)/SCST/LIO(back-end) combo. I'm sure there will be others
+> who would be willing to spend some of their time for this cause to
+> validate claims made by both the communities. We can then publish all
+> the results so that others can reproduce them.
 
-I am moving this to 0/16 to get more attention from everyone.
+This will be exactly what we need: an open and fair comparison. But the
+problem is that James doesn't want any comparisons. He doesn't consider
+them important. Only personality of the code submitter is important for
+James.
 
-First of all, I'd like to clarify that I am not arguing with these
-changes. Quite contrary, I think this is the good step in the right
-direction imho. In this email, I do not try to comment this series,
-I am going to ask the questions.
-
-My concern is: we never tried to discuss the desired behaviour as
-it seen by the user-space.
-
-
-
-To simplify the discussion, let's assume that debugger != real_parent.
-Now, what should we actually do if the tracee starts/completes the
-group stop?
-
-To me, the only obvious thing is that each thread should report
-CLD_STOPPED to the debugger. Everything else is not clear to me. How
-and when we should notify real_parent? What should we do if tracee
-is multithreaded and some threads are not traced? (in the latter
-case we can't know which thread completes the group stop and sends
-the final notification).
-
-Probably we can delay this notification until the debugger detaches
-all threads. This makes sense because the debugger can resume the
-stopped thread and confuse its real_parent (say, /bin/sh) who has
-all rights to assume the child can't run without the subsequent
-CLD_CONTINUED. However, this doesn't look very good. This doesn't
-allow to write the "really transparent" strace, if the tracee was
-stopped by SIGSTOP this should be visible to its real_parent who
-probably owns this application and should react (again, sh/fg/bg).
-
-So. I think that probably we need some very simple and predictable
-behaviour, even if this implies the user-visible changes. If nothing
-else, any fix in this area is visible to user-space. To me, the
-best behaviour is
-
-	- each thread notifies the debugger (if it is traced)
-
-	- when the last thread stops, it also notifies its
-	  real_parent. IOW, it can send two notifications if
-	  it is traced.
-
-	  (This differs from the logic in 12/16)
-
-But, again, this means we are trying to fool the poor real_parent
-who does do_wait() and doesn't expect the child can suddenly run
-because of PTRACE_CONT/etc which does the unconditional wakeup.
-
-A bit off-topic, but can't resist. I like very much what utrace
-does in this case. Since it doesn't use these notifications (in
-fact it doesn't use signals/reparenting at all) we do not have
-any problems with parent/real_parent mess. And, utrace does _not_
-resume the stopped tracee. If the debugger wants to resume a
-thread in the SIGNAL_STOP_STOPPED group, it should send SIGCONT
-and this is visible to the real_parent. But of course, we can't
-change ptrace this way.
-
-However. Any chance we can change ptrace_resume() so that it won't
-break SIGNAL_STOP_STOPPED contract? Roughly, instead of unconditional
-wake_up_process(child) ptrace_resume() should do
-
-	if (child->signal->flags & SIGNAL_STOP_STOPPED)
-		prepare_signal(SIGCONT);
-	wake_up_state(child, __TASK_TRACED);
-
-(of course, we should not literally use prepare_signal(), only to
- explain what I mean).
-
-IOW, if we are going to resume the tracee and its thread group
-is stopped, we notify the real_parent and wakeup all TASK_STOPPED
-(or non-ptraced) sub-threads.
-
-Sure, this is the serious change. But otherwise, imho whatever we
-do the end result is not sane.
-
-Thoughts?
-
-
-As for CLD_CONTINUED, basically the same questions (in particular,
-I think that real_parent should be notified unconditionally). Except,
-perhaps the debugger doesn't need it at all?
-
-Oleg.
-
+Vlad
