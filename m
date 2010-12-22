@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171Ab0LWBOV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 20:14:21 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:62114 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752528Ab0LWBOU (ORCPT
+	id S1753213Ab0LWBR5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 20:17:57 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:48376 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528Ab0LWBRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 20:14:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=swOiR4u+dk8cTFW/f4ZPYX7sqTInr+QBC3Q+2a0EUwFTjCfzXRMDBax4B6ZOd73kpR
-         /CbZrekpR+Sim4/r+/Hw==
-Date: Wed, 22 Dec 2010 17:14:13 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Haicheng Li <haicheng.li@linux.intel.com>, lethal@linux-sh.org,
-        Andi Kleen <ak@linux.intel.com>, shaohui.zheng@linux.intel.com,
-        dave@linux.vnet.ibm.com, Greg KH <gregkh@suse.de>
-Subject: Re: [2/7, v9] NUMA Hotplug Emulator: Add numa=possible option
-In-Reply-To: <20101222162717.289cfe01.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.2.00.1012221713490.26427@chino.kir.corp.google.com>
-References: <20101210073119.156388875@intel.com> <20101210073242.357094158@intel.com> <20101222162717.289cfe01.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="531368966-1419668146-1293066855=:26427"
-X-System-Of-Record: true
+	Wed, 22 Dec 2010 20:17:55 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=qK-MKYc896kA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=vlzxsyFQE-gvVVU6GlAA:9 a=-cUdMWo59YLESl-5mYXwLCI35YkA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 3/3 V13] RO/NX protection for loadable kernel
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Valdis.Kletnieks@vt.edu, mat <castet.matthieu@free.fr>,
+        Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
+        Arjan van de Ven <arjan@infradead.org>,
+        James Morris <jmorris@namei.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
+        Siarhei Liakh <sliakh.lkml@gmail.com>
+In-Reply-To: <20101222215725.GB5585@elte.hu>
+References: <4CE2F914.9070106@free.fr> <24422.1290656467@localhost>
+	 <20101126182355.62615dff@mat-laptop> <20101208221951.GO5750@outflux.net>
+	 <20101211001857.4c5e0794@mat-laptop> <20101222124019.GG10809@elte.hu>
+	 <34428.1293053719@localhost>  <20101222215725.GB5585@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 22 Dec 2010 17:02:26 -0500
+Message-ID: <1293055346.22802.0.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Wed, 2010-12-22 at 22:57 +0100, Ingo Molnar wrote:
 
---531368966-1419668146-1293066855=:26427
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-
-On Wed, 22 Dec 2010, Andrew Morton wrote:
-
-> > @@ -646,6 +647,15 @@ void __init initmem_init(unsigned long start_pfn, unsigned long last_pfn,
-> >  		numa_set_node(i, 0);
-> >  	memblock_x86_register_active_regions(0, start_pfn, last_pfn);
-> >  	setup_node_bootmem(0, start_pfn << PAGE_SHIFT, last_pfn << PAGE_SHIFT);
-> > +out: __maybe_unused
+> It would be nice to see that fix submitted so that it gets into the tree that 
+> introduced the bug.
 > 
-> hm, I didn't know you could do that with labels.
-> 
-> Does it work?
-> 
+> Steve, Andrew?
 
-Yeah, it's equivalent to __attribute__((unused)) and according to the gcc 
-manual section 6.30:
+Hi Ingo,
 
-	In GNU C, an attribute specifier list may appear after the colon 
-	following a label, other than a case or default label. The only 
-	attribute it makes sense to use after a label is unused. This 
-	feature is intended for code generated by programs which contains 
-	labels that may be unused but which is compiled with ‘-Wall’. It 
-	would not normally be appropriate to use in it human-written code, 
-	though it could be useful in cases where the code that jumps to 
-	the label is contained within an #ifdef conditional.
+Which tree/branch should I base this on? I could do write up formal
+patch and push it out.
 
-I used it because I knew I wouldn't get away with putting a label inside 
-an #ifdef :)
+-- Steve
 
-> > +	for (i = 0; i < numa_possible_nodes; i++) {
-> > +		int nid;
-> > +
-> > +		nid = first_unset_node(node_possible_map);
-> > +		if (nid == MAX_NUMNODES)
-> > +			break;
-> > +		node_set(nid, node_possible_map);
-> > +	}
-> >  }
-> >  
-> >  unsigned long __init numa_free_all_bootmem(void)
---531368966-1419668146-1293066855=:26427--
+
