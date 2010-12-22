@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201Ab0LVAh4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 19:37:56 -0500
-Received: from smtpout06.highway.telekom.at ([195.3.96.89]:30586 "EHLO
-	email.aon.at" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752865Ab0LVAhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Dec 2010 19:37:55 -0500
-From: Melchior FRANZ <melchior.franz@gmail.com>
-To: Greg KH <greg@kroah.com>
-Subject: Re: [PATCH v2] USB: add support for Dream Cheeky DL100B Webmail Notifier (1d34:0004)
-Date: Wed, 22 Dec 2010 01:37:51 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36.2+; KDE/4.4.4; x86_64; ; )
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <201012220058.43366@rk-nord.at> <20101222001907.GA16255@kroah.com>
-In-Reply-To: <20101222001907.GA16255@kroah.com>
-X-Fingerprint: 9FFB C079 5B78 4F27 099C C6C6 7399 02D1 919B D903
-X-PGP: http://members.aon.at/mfranz/melchior.franz
+	id S1754212Ab0LVAih (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 19:38:37 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:44442 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752471Ab0LVAig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Dec 2010 19:38:36 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Matthew Wilcox <matthew@wil.cx>
+Subject: Re: [PATCH] Prevent users from disabling tickless
+Date: Wed, 22 Dec 2010 01:38:07 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc7+; KDE/4.4.4; x86_64; ; )
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org
+References: <20101221233942.GL1263@parisc-linux.org> <201012220046.23759.rjw@sisk.pl> <20101222002407.GM1263@parisc-linux.org>
+In-Reply-To: <20101222002407.GM1263@parisc-linux.org>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="us-ascii"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012220137.51440@rk-nord.at>
+Message-Id: <201012220138.08105.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Greg KH -- Wednesday 22 December 2010:
-> On Wed, Dec 22, 2010 at 12:58:42AM +0100, Melchior FRANZ wrote:
-> > - I increased the file's version number (1.1 -> 1.2). Hope that's OK.
+On Wednesday, December 22, 2010, Matthew Wilcox wrote:
+> On Wed, Dec 22, 2010 at 12:46:23AM +0100, Rafael J. Wysocki wrote:
+> > On Wednesday, December 22, 2010, Matthew Wilcox wrote:
+> > > 
+> > > Disabling NO_HZ has a serious negative effect on performance -- an extra
+> > > 70us per I/O.  Prevent users from deselecting it.
+> > > 
+> > > Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
+> > 
+> > OTOH, it causes some systems to not work at all still.  Sadly.
 > 
-> Actually, you could just remove it, it's pretty pointless :)
+> It doesn't stop people from specifying nohz=off on the kernel command line.
 
-Yeah, that's what I thought. But leaving it at 1.1 was even more pointless,
-so I aimed for the most conservative solution.  :-)
+Which still doesn't work for some people AFAICT.
 
-
-
-> I would, but it looks like you didn't test this patch out by building it
-> as the following line really would not compile properly at all, right:
-
-> > +					0x200, The price difference to Delcom's thingy lets you a lot of room. :-)
-
-Of course, I tested it. That garbage is not in the code, or in the generated
-diff. This happened after importing the correct diff into kmail. Probably
-and accidantal MMB click. Sigh. OK, it's my fault, no matter what ...
-
-
-
-> Third times a charm?
-
-Heh. Coming along ...
-Thanks for reviewing.
-
-m.
+Thanks,
+Rafael
