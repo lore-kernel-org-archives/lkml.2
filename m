@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab0LVPEg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 10:04:36 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:23047 "EHLO
+	id S1753466Ab0LVPEm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 10:04:42 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:23539 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752455Ab0LVPEf (ORCPT
+	with ESMTP id S1753352Ab0LVPEj (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Wed, 22 Dec 2010 10:04:35 -0500
-Date: Wed, 22 Dec 2010 10:02:58 -0500
+	Wed, 22 Dec 2010 10:04:39 -0500
+Date: Wed, 22 Dec 2010 10:04:21 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: Jeremy Fitzhardinge <jeremy@goop.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com,
         Jan Beulich <JBeulich@novell.com>, xen-devel@lists.xensource.com,
         Konrad Rzeszutek Wilk <konrad@kernel.org>
-Subject: Re: [PATCH 04/10] xen/mmu: For 1-1 mapping, automatically set
- _PAGE_IOMAP.
-Message-ID: <20101222150258.GD1760@dumpdata.com>
+Subject: Re: [PATCH 05/10] xen/setup: Set identity mapping for non-RAM E820
+ and E820 gaps.
+Message-ID: <20101222150421.GE1760@dumpdata.com>
 References: <1292967460-15709-1-git-send-email-konrad.wilk@oracle.com>
- <1292967460-15709-5-git-send-email-konrad.wilk@oracle.com>
- <4D112A4B.5000503@goop.org>
+ <1292967460-15709-6-git-send-email-konrad.wilk@oracle.com>
+ <4D112B80.9020600@goop.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D112A4B.5000503@goop.org>
+In-Reply-To: <4D112B80.9020600@goop.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 21, 2010 at 02:29:31PM -0800, Jeremy Fitzhardinge wrote:
-> On 12/21/2010 01:37 PM, Konrad Rzeszutek Wilk wrote:
-> > This means that for PFNs (specifically: those in any E820 gaps
-> > or non-RAM E820 regions) that have 1-1 mapping we set the
-> > _PAGE_IOMAP flag.
-> >
-> > Later on we could remove the _PAGE_IOMAP code handling, but
-> > for right now lets keep this in to not introduce any bisection
-> > failures across this patchset.
-> >
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > ---
-> >  arch/x86/xen/mmu.c |    3 +++
-> >  1 files changed, 3 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> > index 4ba7e4e..bd02e7d 100644
-> > --- a/arch/x86/xen/mmu.c
-> > +++ b/arch/x86/xen/mmu.c
-> > @@ -832,6 +832,9 @@ static pteval_t pte_pfn_to_mfn(pteval_t val)
-> >  		pteval_t flags = val & PTE_FLAGS_MASK;
-> >  		unsigned long mfn = pfn_to_mfn(pfn);
-> >  
-> > +		if (mfn == pfn)
-> > +			flags |= _PAGE_IOMAP;
+> Couldn't you just do something like:
 > 
-> Why?  Does it really make sense to set _PAGE_IOMAP if they just happen
-> to be the same value?
+> 	if (e820->map[i].type != E820_RAM)
 
-Yes. Without this, user applications, such as 'dmidecode' cannot get
-data.
+I am going to assume you meant '==' here.
 
-But I think with ditching a bunch of the _PAGE_IOMAP in the xen/mmu.c we can
-remove this.
+> 		continue;
+> 
+> 	for (pfn = PFN_UP(last); pfn < PFN_DOWN(start); pfn++)
+> 		set_phys_to_machine(pfn, pfn);
+> 	identity += pfn - PFN_UP(last);
+> 
+> 	last = end;
+> 
+> ie, handle the hole and non-RAM cases together?
 
-I would rather keep this patch as temporary scaffolding and when the
-other set of patches is ready for the _PAGE_IOMAP, ditch this one.
+A derivation of this does work:
+
+   last = ISA_END_ADDRESS;
+   for (i = 0; i < e820->nr_map; i++) {
+                phys_addr_t start = e820->map[i].addr;
+                phys_addr_t end = start + e820->map[i].size;
+
+                if (end < start)
+                        continue;
+
+                /* Skip over the 1MB region. */
+                if (last > end)
+                        continue;
+
+                if (e820->map[i].type == E820_RAM) {
+                        /* Without saving 'last' we would end up gobbling RAM regions. */
+                        last = end;
+                        continue;
+                }   
+
+                for (pfn = PFN_UP(last); pfn < PFN_DOWN(end); pfn++)
+                        set_phys_to_machine(pfn, pfn);
+                identity += pfn - PFN_UP(last);
+
+                last = end;
+	}
+
 
 > 
->     J
+> Also, what happens with the p2m tree mid layers in this?  If you're
+> doing page-by-page set_phys_to_machine, won't it end up allocating them
+> all?  How can you optimise the "large chunks of address space are
+> identity" case?
+
+The issue here is that when this code path is called (xen_memory_setup),
+the p2m_top[topidx][mididx] has been set to start_info->mfn_list[] (by
+xen_build_dynamic_phys_to_machine).
+
+Granted, some of these entries have been evicted (by the xen_return_unused_memory),
+so the regions in the mfn_list are pock-marked with INVALID_P2M_ENTRY. For those
+regions we set the PFN in the p2m_top[topidx][mididx][idx]. We do
+not allocate anything during this pass.
+
+In the the dom0_mem=max:X (or X,max:Y, where Y>X), which I neglected to test this
+would actually try to allocate (whoops). Let me roll up a patch for this.
+
+> 
+> It would probably be cleanest to have a set_ident_phys_to_machine(start,
+> end) function which can do all that.
+
+Not sure if it is truly needed.
