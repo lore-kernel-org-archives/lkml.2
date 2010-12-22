@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751679Ab0LVKtc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 05:49:32 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:42889 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268Ab0LVKtb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 05:49:31 -0500
-Subject: Re: [RFC PATCH] perf: Add load latency monitoring on Intel
- Nehalem/Westmere
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, paulus <paulus@samba.org>
-In-Reply-To: <1293014701.2170.111.camel@laptop>
-References: <1293005543.2565.156.camel@minggr.sh.intel.com>
-	 <1293008431.2170.63.camel@laptop>
-	 <AANLkTintfpyvx=Pj1+uu8kCkFn3zT6b36h27Hb7pm=ZF@mail.gmail.com>
-	 <1293014701.2170.111.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 22 Dec 2010 11:49:27 +0100
-Message-ID: <1293014967.2170.114.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1751923Ab0LVKuw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 05:50:52 -0500
+Received: from mout.perfora.net ([74.208.4.195]:62020 "EHLO mout.perfora.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751427Ab0LVKuv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 05:50:51 -0500
+thread-index: AcuhxhLz5FMJdmW7TCKRAaw4o40o3g==
+Thread-Topic: Please check out TexasTrue.com!  
+From: "Vanessa Gibson" <instantcash@yahoo.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: Please check out TexasTrue.com!  
+Date: Wed, 22 Dec 2010 05:50:40 -0500
+Message-ID: <EED8B8F2012741289224A37D236CF330@hosting.xp>
+MIME-Version: 1.0
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft CDO for Windows 2000
+Content-Class: urn:content-classes:message
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4721
+X-Provags-ID: V02:K0:ZvlGZr/GCADiFBiyoRRyZuHm7jZmzKvrF5S/OhyeUNX
+ R8TYrmV3711b0S1MUlO2irfqIPwQiQCoIJH2sCKl7GnOcJK4en
+ zgi/tClD32rd+zn2zYv4czoND9VFuSXeytEGgkwJjmZ/Wivitn
+ u08jEx9P5gRH3iKUPXBXtVeRhSVmgYSbjVNk0K6fzi1BPHejy
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-22 at 11:45 +0100, Peter Zijlstra wrote:
-> On Wed, 2010-12-22 at 11:08 +0100, Stephane Eranian wrote:
-> > Yes, I think there is more to it than just data source, unfortunately.
-> > If you want to avoid returning an opaque u64 (PERF_SAMPLE_EXTRA), then
-> > you need to break it down: PERF_SAMPLE_DATA_SRC, PERF_SAMPLE_XX
-> > and so on. 
-> 
-> I guess we can do things like:
-> 
-> Satisfied by {L1, L2, L3, RAM}x{snoop, local, remote} + unknown, and
-> encode "Pending core cache HIT" as L2-snoop or something, whatever is
-> most appropriate.
 
-Ah, I just saw my email window covered part of the spec and we can also
-have x{shared,exclusive}, so we end up with:
 
-{L1, L2, L3, RAM}x{snoop, local, remote}x{shared, exclusive} + {unknown,
-uncached, IO}
 
-Which takes all of 5 bits to encode.
+Hi Friend,
 
-> But does that cover every architecture?
-> 
-> Also, since that doesn't require more that 4 bits to encode, we could
-> try and categorize what else is around and try and create a well
-> specified _EXTRA register, I mean, we still got 60bits left after this.
+You Are Guaranteed To Get Paid Instantly For Each
+Email You Process! This is an easy, profitable opportunity to earn 
+$1000s every week $5,000 per month from home. No experience required.
 
-Leaving us with 59 bits to consider.
+Learn how to process simple customer rebates at home and earn $15 each GUARANTEED! 
+
+Did you get the email I sent you yesterday about this site? You gotta get in on 
+this before they close the doors!If you need an extra $5,000 per month, 
+go to the site right now!
+
+Click Here:>>>> http://tinyurl.com/Secure-5000-per-month
+
+Do you need some extra cash? Go claim your $5,000 check right now!
+This is a brand new, honest system where you can truly earn an extra 
+$5,000 per month in your spare time.
+
+If you've been looking for a way to make some extra cash on the side, 
+you gotta check this out right away!
+
+Click Here:>>>> http://tinyurl.com/Secure-5000-per-month
+
+This system is really different then anything you've ever seen. It's a brand new 
+program that once it's setup you go on to earn income for months and years to come!
+
+That's really the best part about it. It's that the income is stable! 
+This is truly set-and-forget!
+
+Go get your $5,000 per month right now:
+
+
+Click Here:>>>> http://tinyurl.com/Secure-5000-per-month
+
+To your success, Vanessa Gibson
+
+
+P.S. This offer will only be availible for a limited
+time only! So don't miss out! Go to the site now,
+if you try to go there later, you may be gone...
+
+Click Here:>>>> http://tinyurl.com/Secure-5000-per-month
+
+
+ 
+http://www.texastrue.com
