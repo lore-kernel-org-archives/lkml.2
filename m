@@ -1,141 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752230Ab0LVGUS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 01:20:18 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:39627 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751372Ab0LVGUQ convert rfc822-to-8bit (ORCPT
+	id S1752026Ab0LVGXP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 01:23:15 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:45758 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab0LVGXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 01:20:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=jPkgZxNlAxEgnhoIuqkSz5ZAwYe9I1FR0Nk8VVHH5NjOF6yCALem3eYdwVemWoN10M
-         INSk0yjyXD/Gw8wAC1CfDuthNlKC4P5GoTjjsBBy8urzcLDPGTJVRAiYi3r0+LySx61S
-         97YjHl0gfsJDyaM6pEl8dAzpsH930c0NS8MZ8=
-MIME-Version: 1.0
-In-Reply-To: <201012181238.56021.hverkuil@xs4all.nl>
-References: <1292583996-4440-1-git-send-email-manjunatha_halli@ti.com>
- <1292583996-4440-2-git-send-email-manjunatha_halli@ti.com>
- <1292583996-4440-3-git-send-email-manjunatha_halli@ti.com> <201012181238.56021.hverkuil@xs4all.nl>
-From: halli manjunatha <manjunatha_halli@ti.com>
-Date: Wed, 22 Dec 2010 11:49:54 +0530
-X-Google-Sender-Auth: BDCNfZ2lp3HfdMtAuTy1mobtKWo
-Message-ID: <AANLkTinLy_NBFDLyR9yKP72GFR0M2sCV42FnQemJ2D84@mail.gmail.com>
-Subject: Re: [PATCH v7 2/7] drivers:media:radio: wl128x: fmdrv_v4l2 sources
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: mchehab@infradead.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 22 Dec 2010 01:23:14 -0500
+Date: Wed, 22 Dec 2010 15:23:11 +0900
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: [PATCH v2 6/6] MFD MAX8998/LP3974: Support DVS-GPIO.
+In-reply-to: <20101221155004.GA21871@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>, myungjoo.ham@gmail.com
+Message-id: <1292998991-26968-7-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.1
+Content-transfer-encoding: 7BIT
+References: <20101221155004.GA21871@opensource.wolfsonmicro.com>
+X-OriginalArrivalTime: 22 Dec 2010 06:23:11.0842 (UTC)
+ FILETIME=[B547EC20:01CBA1A0]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-10 at 5:08 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
-> On Friday, December 17, 2010 12:06:31 manjunatha_halli@ti.com wrote:
->> From: Manjunatha Halli <manjunatha_halli@ti.com>
->>
->> This module interfaces V4L2 subsystem and FM common module.
->> It registers itself with V4L2 as Radio module.
->>
->> Signed-off-by: Manjunatha Halli <manjunatha_halli@ti.com>
->> ---
->>  drivers/media/radio/wl128x/fmdrv_v4l2.c |  588 +++++++++++++++++++++++++++++++
->>  drivers/media/radio/wl128x/fmdrv_v4l2.h |   33 ++
->>  2 files changed, 621 insertions(+), 0 deletions(-)
->>  create mode 100644 drivers/media/radio/wl128x/fmdrv_v4l2.c
->>  create mode 100644 drivers/media/radio/wl128x/fmdrv_v4l2.h
->>
->> diff --git a/drivers/media/radio/wl128x/fmdrv_v4l2.c b/drivers/media/radio/wl128x/fmdrv_v4l2.c
->> new file mode 100644
->> index 0000000..623102f
->> --- /dev/null
->> +++ b/drivers/media/radio/wl128x/fmdrv_v4l2.c
->
-> <snip>
->
->> +static const struct v4l2_file_operations fm_drv_fops = {
->> +     .owner = THIS_MODULE,
->> +     .read = fm_v4l2_fops_read,
->> +     .write = fm_v4l2_fops_write,
->> +     .poll = fm_v4l2_fops_poll,
->> +     .ioctl = video_ioctl2,
->
-> Please use unlocked_ioctl. The .ioctl call is deprecated since it relied on the
-> Big Kernel Lock which is in the process of being removed from the kernel. The
-> BKL serialized all ioctl calls, unlocked_ioctl relies on the driver to serialize
-> where necessary.
->
-> There are two ways of doing the conversion: one is to do all the locking within
-> the driver, the other is to use core-assisted locking. How to do the core-assisted
-> locking is described in Documentation/video4linux/v4l2-framework.txt, but I'll
-> repeat the relevant part here:
->
-> v4l2_file_operations and locking
-> --------------------------------
->
-> You can set a pointer to a mutex_lock in struct video_device. Usually this
-> will be either a top-level mutex or a mutex per device node. If you want
-> finer-grained locking then you have to set it to NULL and do you own locking.
->
-> If a lock is specified then all file operations will be serialized on that
-> lock. If you use videobuf then you must pass the same lock to the videobuf
-> queue initialize function: if videobuf has to wait for a frame to arrive, then
-> it will temporarily unlock the lock and relock it afterwards. If your driver
-> also waits in the code, then you should do the same to allow other processes
-> to access the device node while the first process is waiting for something.
->
-> The implementation of a hotplug disconnect should also take the lock before
-> calling v4l2_device_disconnect.
->
->> +     .open = fm_v4l2_fops_open,
->> +     .release = fm_v4l2_fops_release,
->> +};
+The previous driver did not support BUCK1-DVS3, BUCK1-DVS4, and
+BUCK2-DVS2 modes. This patch adds such modes and an option to block
+setting buck1/2 voltages out of the preset values.
 
-Hans,
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/regulator/max8998.c |   87 +++++++++++++++++++++++++++++++++----------
+ include/linux/mfd/max8998.h |   26 ++++++++++---
+ 2 files changed, 87 insertions(+), 26 deletions(-)
 
-I did this in my driver,
---- a/drivers/media/radio/wl128x/fmdrv_v4l2.c
-+++ b/drivers/media/radio/wl128x/fmdrv_v4l2.c
-@@ -477,7 +477,7 @@ static const struct v4l2_file_operations fm_drv_fops = {
-        .read = fm_v4l2_fops_read,
-        .write = fm_v4l2_fops_write,
-        .poll = fm_v4l2_fops_poll,
--       .ioctl = video_ioctl2,
-+       .unlocked_ioctl = video_ioctl2,
-        .open = fm_v4l2_fops_open,
-        .release = fm_v4l2_fops_release,
-
-and apparently didn't face any issues during regression.. (related to
-concurrency...)
-and more-over all of my ioctls from the application being called in
-process context are all synchronous, i.e
-application calls and waits for it to finish before calling another ioctl.
-
-So is this approach alright?
-Is there a reason to opt for the .ioctl ? The locked approach?
-Or have mutex locks inside the unlocked handlers?
-
-If not I will go ahead and submit v8 using the unlocked_ioctl....
-
-
-> Regards,
->
->        Hans
->
-> --
-> Hans Verkuil - video4linux developer - sponsored by Cisco
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-
-
-
+diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
+index 1c0bbd0..464cd14 100644
+--- a/drivers/regulator/max8998.c
++++ b/drivers/regulator/max8998.c
+@@ -456,6 +456,9 @@ static int max8998_set_voltage_buck(struct regulator_dev *rdev,
+ 				}
+ 			}
+ 
++			if (pdata->buck_voltage_lock)
++				return -EINVAL;
++
+ 			/* no predefine regulator found */
+ 			max8998->buck1_idx = (buck1_last_val % 2) + 2;
+ 			dev_dbg(max8998->dev, "max8998->buck1_idx:%d\n",
+@@ -483,18 +486,26 @@ buck1_exit:
+ 			"BUCK2, i:%d buck2_vol1:%d, buck2_vol2:%d\n"
+ 			, i, max8998->buck2_vol[0], max8998->buck2_vol[1]);
+ 		if (gpio_is_valid(pdata->buck2_set3)) {
+-			if (max8998->buck2_vol[0] == i) {
+-				max8998->buck2_idx = 0;
+-				buck2_gpio_set(pdata->buck2_set3, 0);
+-			} else {
+-				max8998->buck2_idx = 1;
+-				ret = max8998_get_voltage_register(rdev, &reg,
+-								   &shift,
+-								   &mask);
+-				ret = max8998_write_reg(i2c, reg, i);
+-				max8998->buck2_vol[1] = i;
+-				buck2_gpio_set(pdata->buck2_set3, 1);
++
++			/* check if requested voltage */
++			/* value is already defined */
++			for (j = 0; j < ARRAY_SIZE(max8998->buck2_vol); j++) {
++				if (max8998->buck2_vol[j] == i) {
++					max8998->buck2_idx = j;
++					buck2_gpio_set(pdata->buck2_set3, j);
++					goto buck2_exit;
++				}
+ 			}
++
++			if (pdata->buck_voltage_lock)
++				return -EINVAL;
++
++			max8998_get_voltage_register(rdev,
++					&reg, &shift, &mask);
++			ret = max8998_write_reg(i2c, reg, i);
++			max8998->buck2_vol[max8998->buck2_idx] = i;
++			buck2_gpio_set(pdata->buck2_set3, max8998->buck2_idx);
++buck2_exit:
+ 			dev_dbg(max8998->dev, "%s: SET3:%d\n", i2c->name,
+ 				gpio_get_value(pdata->buck2_set3));
+ 		} else {
+@@ -878,6 +889,9 @@ static __devinit int max8998_pmic_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, max8998);
+ 	i2c = max8998->iodev->i2c;
+ 
++	max8998->buck1_idx = pdata->buck1_default_idx;
++	max8998->buck2_idx = pdata->buck2_default_idx;
++
+ 	/* NOTE: */
+ 	/* For unused GPIO NOT marked as -1 (thereof equal to 0)  WARN_ON */
+ 	/* will be displayed */
+@@ -910,23 +924,46 @@ static __devinit int max8998_pmic_probe(struct platform_device *pdev)
+ 		i = 0;
+ 		while (buck12_voltage_map_desc.min +
+ 		       buck12_voltage_map_desc.step*i
+-		       != (pdata->buck1_max_voltage1 / 1000))
++		       < (pdata->buck1_voltage1 / 1000))
+ 			i++;
+-		printk(KERN_ERR "i:%d, buck1_idx:%d\n", i, max8998->buck1_idx);
+ 		max8998->buck1_vol[0] = i;
+ 		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK1_VOLTAGE1, i);
++		if (ret)
++			return ret;
+ 
+ 		/* Set predefined value for BUCK1 register 2 */
+ 		i = 0;
+ 		while (buck12_voltage_map_desc.min +
+ 		       buck12_voltage_map_desc.step*i
+-		       != (pdata->buck1_max_voltage2 / 1000))
++		       < (pdata->buck1_voltage2 / 1000))
+ 			i++;
+ 
+ 		max8998->buck1_vol[1] = i;
+-		printk(KERN_ERR "i:%d, buck1_idx:%d\n", i, max8998->buck1_idx);
+-		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK1_VOLTAGE2, i)
+-			+ ret;
++		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK1_VOLTAGE2, i);
++		if (ret)
++			return ret;
++
++		/* Set predefined value for BUCK1 register 3 */
++		i = 0;
++		while (buck12_voltage_map_desc.min +
++		       buck12_voltage_map_desc.step*i
++		       < (pdata->buck1_voltage3 / 1000))
++			i++;
++
++		max8998->buck1_vol[2] = i;
++		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK1_VOLTAGE3, i);
++		if (ret)
++			return ret;
++
++		/* Set predefined value for BUCK1 register 4 */
++		i = 0;
++		while (buck12_voltage_map_desc.min +
++		       buck12_voltage_map_desc.step*i
++		       < (pdata->buck1_voltage4 / 1000))
++			i++;
++
++		max8998->buck1_vol[3] = i;
++		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK1_VOLTAGE4, i);
+ 		if (ret)
+ 			return ret;
+ 
+@@ -943,18 +980,28 @@ static __devinit int max8998_pmic_probe(struct platform_device *pdev)
+ 		gpio_direction_output(pdata->buck2_set3,
+ 				      max8998->buck2_idx & 0x1);
+ 
+-		/* BUCK2 - set preset default voltage value to buck2_vol[0] */
++		/* BUCK2 register 1 */
+ 		i = 0;
+ 		while (buck12_voltage_map_desc.min +
+ 		       buck12_voltage_map_desc.step*i
+-		       != (pdata->buck2_max_voltage / 1000))
++		       < (pdata->buck2_voltage1 / 1000))
+ 			i++;
+-		printk(KERN_ERR "i:%d, buck2_idx:%d\n", i, max8998->buck2_idx);
+ 		max8998->buck2_vol[0] = i;
+ 		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK2_VOLTAGE1, i);
+ 		if (ret)
+ 			return ret;
+ 
++		/* BUCK2 register 2 */
++		i = 0;
++		while (buck12_voltage_map_desc.min +
++		       buck12_voltage_map_desc.step*i
++		       < (pdata->buck2_voltage2 / 1000))
++			i++;
++		printk(KERN_ERR "i2:%d, buck2_idx:%d\n", i, max8998->buck2_idx);
++		max8998->buck2_vol[1] = i;
++		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK2_VOLTAGE2, i);
++		if (ret)
++			return ret;
+ 	}
+ 
+ 	switch (pdev->id_entry->driver_data) {
+diff --git a/include/linux/mfd/max8998.h b/include/linux/mfd/max8998.h
+index 9c56839..2b117fe 100644
+--- a/include/linux/mfd/max8998.h
++++ b/include/linux/mfd/max8998.h
+@@ -78,12 +78,20 @@ struct max8998_regulator_data {
+  * @num_regulators: number of regultors used
+  * @irq_base: base IRQ number for max8998, required for IRQs
+  * @ono: power onoff IRQ number for max8998
+- * @buck1_max_voltage1: BUCK1 maximum alowed voltage register 1
+- * @buck1_max_voltage2: BUCK1 maximum alowed voltage register 2
+- * @buck2_max_voltage: BUCK2 maximum alowed voltage
++ * @buck_voltage_lock: Do NOT change the values of the following six
++ *   registers set by buck?_voltage?. The voltage of BUCK1/2 cannot
++ *   be other than the preset values.
++ * @buck1_voltage1: BUCK1 DVS mode 1 voltage register
++ * @buck1_voltage2: BUCK1 DVS mode 2 voltage register
++ * @buck1_voltage3: BUCK1 DVS mode 3 voltage register
++ * @buck1_voltage4: BUCK1 DVS mode 4 voltage register
++ * @buck2_voltage1: BUCK2 DVS mode 1 voltage register
++ * @buck2_voltage2: BUCK2 DVS mode 2 voltage register
+  * @buck1_set1: BUCK1 gpio pin 1 to set output voltage
+  * @buck1_set2: BUCK1 gpio pin 2 to set output voltage
++ * @buck1_default_idx: Default for BUCK1 gpio pin 1, 2
+  * @buck2_set3: BUCK2 gpio pin to set output voltage
++ * @buck2_default_idx: Default for BUCK2 gpio pin.
+  * @eoc: End of Charge Level: 10 ~ 45% or if it's over 45, in mA.
+  *   If it's under 10, leave it unchanged.
+  * @restart: Restart Level in mV: 100, 150, 200, and -1 for disable.
+@@ -96,12 +104,18 @@ struct max8998_platform_data {
+ 	int				num_regulators;
+ 	int				irq_base;
+ 	int				ono;
+-	int                             buck1_max_voltage1;
+-	int                             buck1_max_voltage2;
+-	int                             buck2_max_voltage;
++	bool				buck_voltage_lock;
++	int                             buck1_voltage1;
++	int                             buck1_voltage2;
++	int                             buck1_voltage3;
++	int                             buck1_voltage4;
++	int                             buck2_voltage1;
++	int                             buck2_voltage2;
+ 	int				buck1_set1;
+ 	int				buck1_set2;
++	int				buck1_default_idx;
+ 	int				buck2_set3;
++	int				buck2_default_idx;
+ 	bool				wakeup;
+ 	int				eoc;
+ 	int				restart;
 -- 
-Regards
-Halli
+1.7.1
+
