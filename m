@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab0LVPhN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 10:37:13 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59208 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753488Ab0LVPhM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 10:37:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=QF8Rb+0ZWV37PbB+bc7Q6Zt4iHhF1urCytnKF5QZdfP1AptfbiLaM2IkzKgQhA1eri
-         n+6MuyatpqnYwctWTsrz/NlMYxMZwWo3fF+7YQ5PVcf9p5+XE2q7kkb4bPkFe/cI+ZEA
-         p/8mjDHQj6mXbzHCZ3MPWh6mt8JpxlTSjZMIE=
+	id S1753729Ab0LVPqe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 10:46:34 -0500
+Received: from claw.goop.org ([74.207.240.146]:46794 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753614Ab0LVPqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 10:46:33 -0500
+Message-ID: <4D121D57.8010608@goop.org>
+Date: Wed, 22 Dec 2010 07:46:31 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <1293020757.1998.2.camel@localhost.localdomain>
-References: <1293020757.1998.2.camel@localhost.localdomain>
-Date: Thu, 23 Dec 2010 00:37:11 +0900
-Message-ID: <AANLkTin6GMiXHuoVzNWPcj0jXDqWyfWCwW9fd-v=pq=X@mail.gmail.com>
-Subject: Re: 2.6.37-rc7: NULL pointer dereference
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-kernel@vger.kernel.org, hpa@zytor.com,
+        Jan Beulich <JBeulich@novell.com>, xen-devel@lists.xensource.com,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: Re: [PATCH 01/10] xen: Make all reserved pages for the balloon be
+ INVALID_P2M_ENTRY.
+References: <1292967460-15709-1-git-send-email-konrad.wilk@oracle.com> <1292967460-15709-2-git-send-email-konrad.wilk@oracle.com> <4D1127FC.8060102@goop.org> <20101222145327.GA1760@dumpdata.com>
+In-Reply-To: <20101222145327.GA1760@dumpdata.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cced linux-mm and maintainers of memcg.
-
-On Wed, Dec 22, 2010 at 9:25 PM, Thomas Meyer <thomas@m3y3r.de> wrote:
-> BUG: unable to handle kernel NULL pointer dereference at 00000008
-> IP: [<c04eae14>] __mem_cgroup_try_charge+0x234/0x430
-> *pde = 00000000
-> Oops: 0000 [#1]
-> last sysfs file: /sys/devices/platform/regulatory.0/uevent
-> Modules linked in: vfat fat usb_storage fuse sco bnep l2cap bluetooth cpufreq_ondemand acpi_cpufreq mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables kvm_intel kvm uinput arc4 ecb snd_hda_codec_hdmi snd_hda_codec_realtek iwlagn snd_hda_intel snd_hda_codec iwlcore uvcvideo snd_hwdep mac80211 snd_seq videodev snd_seq_device snd_pcm cfg80211 snd_timer rfkill v4l1_compat wmi snd pcspkr soundcore joydev serio_raw snd_page_alloc ipv6 sha256_generic aes_i586 aes_generic cbc dm_crypt [last unloaded: scsi_wait_scan]
-> Pid: 8058, comm: swapoff Tainted: G          I 2.6.37-rc7 #221 JM11-MS/Aspire 1810T
-> EIP: 0060:[<c04eae14>] EFLAGS: 00010246 CPU: 0
-> EIP is at __mem_cgroup_try_charge+0x234/0x430
-> EAX: 00000008 EBX: 00000000 ECX: f2e71f10 EDX: f2f96380
-> ESI: f3e55860 EDI: 00020000 EBP: f2e71eb4 ESP: f2e71e54
->  DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
-> Process swapoff (pid: 8058, ti=f2e70000 task=f3e55860 task.ti=f2e70000)
-> Stack:
->  f2e71e88 c0456607 26ba7c1c f3e55860 00000010 f3e55860 069d208a b2ee651d
->  00000008 000000d0 f2f96380 00000005 01ffffff f2e71f10 00000246 ec1a64ae
->  ffffffff 00000000 27b52eae f044dc84 00000000 f2f96380 00000000 000000d0
-> Call Trace:
->  [<c0456607>] ? ktime_get_ts+0x107/0x140
->  [<c04ebb89>] ? mem_cgroup_try_charge_swapin+0x49/0xb0
->  [<c04d9b4b>] ? unuse_mm+0x1db/0x300
->  [<c04dad9a>] ? sys_swapoff+0x2aa/0x890
->  [<c047cd58>] ? audit_syscall_entry+0x218/0x240
->  [<c047d043>] ? audit_syscall_exit+0x1f3/0x220
->  [<c0403013>] ? sysenter_do_call+0x12/0x22
-> Code: 55 c8 8b 82 90 01 00 00 85 c0 74 09 8b 80 7c 03 00 00 8b 58 2c 3b 1d 54 20 a9 c0 74 61 3b 1d 4c ca a4 c0 74 6a 8d 43 08 89 45 c0 <8b> 43 08 a8 01 0f 85 73 fe ff ff 8d 4b 04 89 5d bc 8d 76 00 8b
-> EIP: [<c04eae14>] __mem_cgroup_try_charge+0x234/0x430 SS:ESP 0068:f2e71e54
-> CR2: 0000000000000008
+On 12/22/2010 06:53 AM, Konrad Rzeszutek Wilk wrote:
+> On Tue, Dec 21, 2010 at 02:19:40PM -0800, Jeremy Fitzhardinge wrote:
+>> On 12/21/2010 01:37 PM, Konrad Rzeszutek Wilk wrote:
+>>> This patch prepares ourselves for the case where void entries in the P2M
+>>> tree structure do not necessarily imply that the pages are missing.
+>>> With this, we diligently set regions that will be used by the
+>>> balloon driver to be INVALID_P2M_ENTRY and under the ownership
+>>> of the balloon driver.
+>>>
+>>> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>>> ---
+>>>  arch/x86/xen/setup.c  |    8 ++++++++
+>>>  drivers/xen/balloon.c |    1 +
+>>>  2 files changed, 9 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+>>> index b5a7f92..d984d36 100644
+>>> --- a/arch/x86/xen/setup.c
+>>> +++ b/arch/x86/xen/setup.c
+>>> @@ -52,6 +52,8 @@ phys_addr_t xen_extra_mem_start, xen_extra_mem_size;
+>>>  
+>>>  static __init void xen_add_extra_mem(unsigned long pages)
+>>>  {
+>>> +	unsigned long pfn;
+>>> +
+>>>  	u64 size = (u64)pages * PAGE_SIZE;
+>>>  	u64 extra_start = xen_extra_mem_start + xen_extra_mem_size;
+>>>  
+>>> @@ -66,6 +68,11 @@ static __init void xen_add_extra_mem(unsigned long pages)
+>>>  	xen_extra_mem_size += size;
+>>>  
+>>>  	xen_max_p2m_pfn = PFN_DOWN(extra_start + size);
+>>> +
+>>> +	for (pfn = PFN_DOWN(extra_start); pfn <= xen_max_p2m_pfn; pfn++) {
+>>> +		BUG_ON(!set_phys_to_machine(pfn, INVALID_P2M_ENTRY));
+>> Use __set_phys_to_machine where you don't expect (or can't allow) any
+>> allocation.
+> Are you OK with me moving then this check:
 >
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+>     if (unlikely(xen_feature(XENFEAT_auto_translated_physmap))) {
+>                 BUG_ON(pfn != mfn && mfn != INVALID_P2M_ENTRY);
+>                 return true;
+>         }    
+> from set_phys_to_machine to __set_phys_to_machine?
 
+Yep - not that we'll see that taken on any current or near-future Xen, I
+suspect.
 
-
--- 
-Kind regards,
-Minchan Kim
+    J
