@@ -1,78 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132Ab0LVNOu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 08:14:50 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38698 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751943Ab0LVNOs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 08:14:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type;
-        b=Mmpy0acRVDiUYFSwLN5WG9kHz4p/g94m9p2tkoJjKdRQqZ/FP2m+j9BJP2gMawLY45
-         7jgHEZwFEU967W0jjngpD/ULxZrYI7DU2t2rH3oFpjN5sW/FKxX32CDdwnHyV0WUCtU0
-         VWhm1ZumR0uBjg+viYp6iRJJEuPZrVOqxWTZE=
-From: Franck Bui-Huu <vagabon.xyz@gmail.com>
-To: mingo@redhat.com
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf probe: Don't always consider EOF as an error when listing source code
-References: <1292854685-8230-6-git-send-email-fbuihuu@gmail.com>
-	<tip-fde52dbd7f71934aba4e150f3d1d51e826a08850@git.kernel.org>
-Date: Wed, 22 Dec 2010 14:14:43 +0100
-In-Reply-To: <tip-fde52dbd7f71934aba4e150f3d1d51e826a08850@git.kernel.org>
-	(tip-bot for Franck Bui-Huu's message of "Wed, 22 Dec 2010 11:31:56
-	GMT")
-Message-ID: <m34oa6t0e4.fsf@gmail.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.2 (gnu/linux)
+	id S1752969Ab0LVNQK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 08:16:10 -0500
+Received: from hera.kernel.org ([140.211.167.34]:55713 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751417Ab0LVNQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 08:16:08 -0500
+Date: Wed, 22 Dec 2010 13:15:46 GMT
+From: tip-bot for Wu Zhangjin <wuzhangjin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        wuzhangjin@gmail.com, rostedt@goodmis.org, mmarek@suse.cz,
+        tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        wuzhangjin@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
+        mmarek@suse.cz
+In-Reply-To: <3dc8cddf022eb7024f9f2cf857529a15bee8999a.1288196498.git.wuzhangjin@gmail.com>
+References: <3dc8cddf022eb7024f9f2cf857529a15bee8999a.1288196498.git.wuzhangjin@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] ftrace: Speed up recordmcount
+Message-ID: <tip-45677454dd6d128608117abe7dcd2bdfdd7cdf72@git.kernel.org>
+Git-Commit-ID: 45677454dd6d128608117abe7dcd2bdfdd7cdf72
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 22 Dec 2010 13:15:47 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tip-bot for Franck Bui-Huu <fbuihuu@gmail.com> writes:
+Commit-ID:  45677454dd6d128608117abe7dcd2bdfdd7cdf72
+Gitweb:     http://git.kernel.org/tip/45677454dd6d128608117abe7dcd2bdfdd7cdf72
+Author:     Wu Zhangjin <wuzhangjin@gmail.com>
+AuthorDate: Thu, 28 Oct 2010 00:24:34 +0800
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Thu, 18 Nov 2010 17:16:05 -0500
 
+ftrace: Speed up recordmcount
 
-[...]
+cmd_record_mcount is used to locate the _mcount symbols in the object
+files, only the files compiled with -pg has the _mcount symbol, so, it
+is only needed for such files, but the current cmd_record_mcount is used
+for all of the object files, so, we need to fix it and speed it up.
 
-> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> index 3ba9c53..80cc0bc 100644
-> --- a/tools/perf/util/probe-event.c
-> +++ b/tools/perf/util/probe-event.c
-> @@ -287,7 +287,7 @@ static int get_real_path(const char *raw_path, const char *comp_dir,
->  #define LINEBUF_SIZE 256
->  #define NR_ADDITIONAL_LINES 2
->  
-> -static int show_one_line(FILE *fp, int l, bool skip, bool show_num)
-> +static int __show_one_line(FILE *fp, int l, bool skip, bool show_num)
->  {
->  	char buf[LINEBUF_SIZE];
->  	const char *color = show_num ? "" : PERF_COLOR_BLUE;
-> @@ -306,16 +306,30 @@ static int show_one_line(FILE *fp, int l, bool skip, bool show_num)
->  
->  	} while (strchr(buf, '\n') == NULL);
->  
-> -	return 0;
-> +	return 1;
->  error:
-> -	if (feof(fp))
-> +	if (ferror(fp)) {
->  		pr_warning("Source file is shorter than expected.\n");
-> -	else
-> -		pr_warning("File read error: %s\n", strerror(errno));
-> +		return -1;
+Since -pg may be removed by the method used in kernel/trace/Makefile:
 
-Argh, something wrong here.
+ORIG_CFLAGS := $(KBUILD_CFLAGS)
+KBUILD_CFLAGS = $(subst -pg,,$(ORIG_CFLAGS))
 
-The warning left here, is the wrong one, I should have left the other
-one.
+Or may be removed by the method used in arch/x86/kernel/Makefile:
 
-Sorry for the mistake.
+CFLAGS_REMOVE_file.o = -pg
 
-Should I send a patch to fix that ?
--- 
-		Franck
+So, we must check the last variable stores the compiling flags, that is
+c_flags(Please refer to cmd_cc_o_c and rule_cc_o_c defined in
+scripts/Makefile.build) and since the CFLAGS_REMOVE_file.o is already
+filtered in _c_flags(Please refer to scripts/Makefile.lib) and _c_flags
+has less symbols, therefore, we only need to check _c_flags.
+
+---------------
+Changes from v1:
+
+  o Don't touch Makefile for CONFIG_FTRACE_MCOUNT_RECORD is enough
+  o Use _c_flags intead of KBUILD_CFLAGS to cover CONFIG_REMOVE_file.o = -pg
+  (feedback from Steven Rostedt <rostedt@goodmis.org>)
+
+Acked-by: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Wu Zhangjin <wuzhangjin@gmail.com>
+LKML-Reference: <3dc8cddf022eb7024f9f2cf857529a15bee8999a.1288196498.git.wuzhangjin@gmail.com>
+
+[ changed if [ .. == .. ] to if [ .. = .. ] to handle dash environments ]
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ scripts/Makefile.build |   13 +++++++++----
+ 1 files changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+index 5ad25e1..4eb99ab 100644
+--- a/scripts/Makefile.build
++++ b/scripts/Makefile.build
+@@ -214,17 +214,22 @@ ifdef BUILD_C_RECORDMCOUNT
+ # The empty.o file is created in the make process in order to determine
+ #  the target endianness and word size. It is made before all other C
+ #  files, including recordmcount.
+-cmd_record_mcount = if [ $(@) != "scripts/mod/empty.o" ]; then			\
+-			$(objtree)/scripts/recordmcount "$(@)";			\
+-		    fi;
++sub_cmd_record_mcount =					\
++	if [ $(@) != "scripts/mod/empty.o" ]; then	\
++		$(objtree)/scripts/recordmcount "$(@)";	\
++	fi;
+ else
+-cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH)" \
++sub_cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH)" \
+ 	"$(if $(CONFIG_CPU_BIG_ENDIAN),big,little)" \
+ 	"$(if $(CONFIG_64BIT),64,32)" \
+ 	"$(OBJDUMP)" "$(OBJCOPY)" "$(CC) $(KBUILD_CFLAGS)" \
+ 	"$(LD)" "$(NM)" "$(RM)" "$(MV)" \
+ 	"$(if $(part-of-module),1,0)" "$(@)";
+ endif
++cmd_record_mcount = 						\
++	if [ "$(findstring -pg,$(_c_flags))" = "-pg" ]; then	\
++		$(sub_cmd_record_mcount)			\
++	fi;
+ endif
+ 
+ define rule_cc_o_c
