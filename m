@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619Ab0LVHwx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 02:52:53 -0500
-Received: from lechat.rtp-net.org ([88.191.19.38]:41960 "EHLO
-	lechat.rtp-net.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752164Ab0LVHww (ORCPT
+	id S1752634Ab0LVHyt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 02:54:49 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:65234 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752164Ab0LVHys convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 02:52:52 -0500
-From: Arnaud Patard (Rtp) <arnaud.patard@rtp-net.org>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, liu.y.victor@gmail.com,
-        B02280@freescale.com, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH v2] i.MX51 Framebuffer support
-Organization: RtpNet
-References: <1292842127-21406-1-git-send-email-s.hauer@pengutronix.de>
-Date: Wed, 22 Dec 2010 08:56:14 +0100
-In-Reply-To: <1292842127-21406-1-git-send-email-s.hauer@pengutronix.de>
-	(Sascha Hauer's message of "Mon, 20 Dec 2010 11:48:38 +0100")
-Message-ID: <87bp4eb5r5.fsf@lechat.rtp-net.org>
-User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
+	Wed, 22 Dec 2010 02:54:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=cXFjQPftpfIMO2FjVux9Biys4LdO0HFnQdOVjRKAvZIUR2VzEzOsRZPaxS7otbkPmt
+         C5rngFZ81xz2A+eEH/Kfq/g5rj5laT3RRqglcQk1Ju/29u3VCrR1budXHz8K3RJjUhkN
+         2j/s5ywksNd7yGub+tAxpfBsPwyBAVN0jksbo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <AANLkTi=b45nmd+-yMKB_+AEyS6=9-aa+aBACUkZJLo_v@mail.gmail.com>
+References: <1292866298-8585-1-git-send-email-per.forlin@stericsson.com>
+	<AANLkTi=7E7rAc=46p5d6YSpLeut5yehmBtLa4TVofefp@mail.gmail.com>
+	<AANLkTin=U6j4XTmCq4H4sKivD+jecxor3Q-7mYFDfD=N@mail.gmail.com>
+	<AANLkTik94Go7W4AMquncm-novWkHtLOBRn7BfpepoEZz@mail.gmail.com>
+	<AANLkTi=b45nmd+-yMKB_+AEyS6=9-aa+aBACUkZJLo_v@mail.gmail.com>
+Date: Wed, 22 Dec 2010 08:54:47 +0100
+Message-ID: <AANLkTin8g9EPa2xJQnLuM5+ujv7qCUE3xCBAu-uFC5ct@mail.gmail.com>
+Subject: Re: [PATCH] dmaengine: dma40: Add support to split up large elements
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Per Forlin <per.forlin@stericsson.com>, linux-kernel@vger.kernel.org,
+        Per Forlin <per.forlin@linaro.org>,
+        Rabin VINCENT <rabin.vincent@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sascha Hauer <s.hauer@pengutronix.de> writes:
+2010/12/21 Dan Williams <dan.j.williams@intel.com>:
 
-Hi,
+Thanks for clearing out the misunderstandings...
 
-> The following series adds i.MX51 framebuffer support based on the IPUv3. It
-> is not perfect but I decided it is good enough to open it for a wider audience
-> and collect first reviews. I tested this on a babbage board using both outputs
-> (VGA/DVI) with different resolutions up to 1680x1050 and different colour depths.
-> I also tested it on one custom board using a fixed display setting.
+> If you want to send a patch that catches and reports this byte count
+> in case some out of tree user submits a large request that would be an
+> acceptable workaround for 37.  >64K support is a new feature for 38.
 
-After adding code to my efika sb machine file and your patchset, I've
-seen the light. Err, no. It was a penguin and a login prompt.  I guess
-it means your patchset is working here.
+Nah noone else besides us would be using it right now and we have
+this under control. No-one should be harmed. It's fair enough if it goes
+into .38...
 
-btw, would be nice to add some comments/docs about :
-- the meaning of the fields of the imx_ipuv3_platform_data struct. it's
-not clear
-- same for .display field of the ipuv3_fb_platform_data
-
-Arnaud
+Yours,
+Linus Walleij
