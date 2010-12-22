@@ -1,69 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233Ab0LVT6M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 14:58:12 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51700 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943Ab0LVT5s (ORCPT
+	id S1751882Ab0LVT5o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 14:57:44 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:55396 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750943Ab0LVT5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 14:57:48 -0500
+	Wed, 22 Dec 2010 14:57:43 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=R03zwwYW6m1VJilnunQUAJMKopvoioasKy+SBJGFw4Uh+31VIFi6eHnNf8j1kxtODR
-         RUyD5oqDxnD+OGSlSOZoAJVyzGYYNUl2d+Exx+AGGuEr5exipdgfcA9YeJ14eE1u8TNB
-         aJTVnQT5DoykJ4XLl8v66tBs/A5GJK+493QH8=
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=UPolkPQ412FgIjnoaaayDyqlt3JuIcNN+RIQ7I7mMeT3VWfef/0ilXRUVbmFYTKF6B
+         EVNzarAyPrteiwpQb/oVs+gHf4YuSvW+cA2vgZ+PYcrxUHl0UPkGi99yd/eNdsPfBuE2
+         szl8RkMG4DEdwhzWgi9hqwkhySGnOGo/BAkNQ=
 From: dirk.brandewie@gmail.com
 To: linux-kernel@vger.kernel.org
 Cc: devicetree-discuss@lists.ozlabs.org, linuxppc-dev@lists.ozlabs.org,
         microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
         mmarek@suse.cz, dirk.brandewie@gmail.com, linux-kbuild@vger.kernel.org
-Subject: [PATCH 3/4] of/powerpc: Use generic rule to build dtb's
-Date: Wed, 22 Dec 2010 11:57:28 -0800
-Message-Id: <1293047849-26078-4-git-send-email-dirk.brandewie@gmail.com>
+Subject: [PATCH 0/4] V3 Add ability to link device blob(s) into vmlinux
+Date: Wed, 22 Dec 2010 11:57:25 -0800
+Message-Id: <1293047849-26078-1-git-send-email-dirk.brandewie@gmail.com>
 X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1293047849-26078-1-git-send-email-dirk.brandewie@gmail.com>
-References: <1293047849-26078-1-git-send-email-dirk.brandewie@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-Modify arch/powerpc/boot/Makefile to use dtc command in
-scripts/Makefile.lib
+This patch set adds the ability to link device tree blobs into
+vmlinux. 
 
-Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
----
- arch/powerpc/boot/Makefile |    8 +++-----
- 1 files changed, 3 insertions(+), 5 deletions(-)
+Patch 1 implements the changes to include/asm-generic/vmlinux.lds.h and
+adds a generic rule for generating DTB objects to be linked vmlinux.
 
-diff --git a/arch/powerpc/boot/Makefile b/arch/powerpc/boot/Makefile
-index fae8192..96deec6 100644
---- a/arch/powerpc/boot/Makefile
-+++ b/arch/powerpc/boot/Makefile
-@@ -35,7 +35,7 @@ endif
+Patch 2 implements linking a DTB into an x86 image.
+
+Patch 3-4 move {powerpc,microblaze}/boot/Makefile to use the dtc rule
+in patch 1.
+
+This patch set has been tested on x86.
+
+Powerpc and Microblaze have been compile tested with and without patch
+3 and 4 applied.
+
+Changes from V1:
+
+Documentation added for dtc command in Makefile.lib to
+Documentation/kbuild/makefiles.txt
+Separate DTB_ALIGNMENT define removed.
+FORCE removed from dtc rule.
+Removed hardcoded path to dts files from dtc command.  
+Moved %.dtb: %.dts rule to arch specific makefiles. 
  
- BOOTCFLAGS	+= -I$(obj) -I$(srctree)/$(obj)
- 
--DTS_FLAGS	?= -p 1024
-+DTC_FLAGS	?= -p 1024
- 
- $(obj)/4xx.o: BOOTCFLAGS += -mcpu=405
- $(obj)/ebony.o: BOOTCFLAGS += -mcpu=405
-@@ -332,10 +332,8 @@ $(obj)/treeImage.%: vmlinux $(obj)/%.dtb $(wrapperbits)
- 	$(call if_changed,wrap,treeboot-$*,,$(obj)/$*.dtb)
- 
- # Rule to build device tree blobs
--DTC = $(objtree)/scripts/dtc/dtc
--
--$(obj)/%.dtb: $(dtstree)/%.dts
--	$(DTC) -O dtb -o $(obj)/$*.dtb -b 0 $(DTS_FLAGS) $(dtstree)/$*.dts
-+$(obj)/%.dtb: $(src)/dts/%.dts
-+	$(call cmd,dtc)
- 
- # If there isn't a platform selected then just strip the vmlinux.
- ifeq (,$(image-y))
+Patch for adding kernel command line option to pass in dtb_compat
+string dropped from this set will be submitted seperately.
+
+Changes from V2:
+
+Rule to create assembly wrapper for blob changed to use Sam Ravnborgs
+suggested implementation.
+
+Rules in architecture specific Makefiles changed to use the cmd
+function instead of the if_changed function.
+
+Changes from V3:
+
+Cosmetic fix of DTC quiet command
+
+Dirk Brandewie (4):
+  of: Add support for linking device tree blobs into vmlinux
+  x86/of: Add building device tree blob(s) into image.
+  of/powerpc: Use generic rule to build dtb's
+  microblaze/of: Use generic rule to build dtb's
+
+ Documentation/kbuild/makefiles.txt |   15 +++++++++++++++
+ arch/microblaze/boot/Makefile      |   12 +++---------
+ arch/powerpc/boot/Makefile         |    8 +++-----
+ arch/x86/platform/ce4100/Makefile  |   10 ++++++++++
+ include/asm-generic/vmlinux.lds.h  |   13 +++++++++++--
+ scripts/Makefile.lib               |   23 +++++++++++++++++++++++
+ 6 files changed, 65 insertions(+), 16 deletions(-)
+
 -- 
 1.7.2.3
 
