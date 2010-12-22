@@ -1,90 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab0LVQWD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 11:22:03 -0500
-Received: from mail-bw0-f67.google.com ([209.85.214.67]:38366 "EHLO
-	mail-bw0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753797Ab0LVQWA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 11:22:00 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ZZqP1haVKU3Gc5lrd/2b56Btt+fGWspnhM9ctM+7MYmTDFe6J5WqFv6W6BkxOPF7Z4
-         /zwVzqZWyRj6HJ+DHbl9P4nEooTyvEkQDq1dmxwyowfOcmdgs6eNhbDqe5o9pJFIdlmA
-         3N2T9dM1gZBAiV0fvafYQOQ7SUDGbNgynQLEc=
-Date: Wed, 22 Dec 2010 17:21:55 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
-        jan.kratochvil@redhat.com
-Subject: Re: [PATCH 10/16] ptrace: clean transitions between TASK_STOPPED
- and TRACED
-Message-ID: <20101222162155.GE8061@htj.dyndns.org>
-References: <1291654624-6230-1-git-send-email-tj@kernel.org>
- <1291654624-6230-11-git-send-email-tj@kernel.org>
- <20101220150037.GE11583@redhat.com>
- <20101221173155.GE13285@htj.dyndns.org>
- <20101222113948.GA30266@redhat.com>
- <20101222151429.GC8061@htj.dyndns.org>
- <20101222160016.GA11722@redhat.com>
+	id S1754048Ab0LVQ0V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 11:26:21 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:9078 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753501Ab0LVQ0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 11:26:20 -0500
+X-IronPort-AV: E=Sophos;i="4.60,214,1291611600"; 
+   d="scan'208";a="128056685"
+Subject: Re: [Xen-devel] [RFC PATCH v1] Consider void entries in the P2M as
+ 1-1 mapping.
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jeremy@goop.org" <jeremy@goop.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jan Beulich <JBeulich@novell.com>
+In-Reply-To: <20101222150615.GF1760@dumpdata.com>
+References: <1292967460-15709-1-git-send-email-konrad.wilk@oracle.com>
+	 <1293007015.3998.25.camel@localhost.localdomain>
+	 <20101222150615.GF1760@dumpdata.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Wed, 22 Dec 2010 16:26:16 +0000
+Message-ID: <1293035176.4500.3742.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101222160016.GA11722@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Wed, Dec 22, 2010 at 05:00:16PM +0100, Oleg Nesterov wrote:
-> On 12/22, Tejun Heo wrote:
-> >
-> > On Wed, Dec 22, 2010 at 12:39:48PM +0100, Oleg Nesterov wrote:
-> > >
-> > > sys_ptrace() only works for the single thread who did PTRACE_ATTACH,
-> > > but do_wait() should work for its sub-threads.
-> > >
-> > > 	1. the tracer knows that the tracee is stopped
-> > >
-> > > 	2. the tracer does ptrace(ATTACH)
-> > >
-> > > 	3. the tracer's sub-thread does do_wait()
-> > >
-> > > Note! Personally I think we can ignore this "problem", I do not
-> > > think it can break anything except some specialized test-case.
-> >
-> > But if ptrace(ATTACH) doesn't return until the transition is complete
-> > when the task is already stopped, the tracer's sub-thread's do_wait()
-> > will behave exactly the same.  The only difference would be that
-> > ptrace(ATTACH) may now block and/or is failed by a signal delivery.
-> >
-> > How would #3 behave differently if STOPPED -> TRACED transition is
-> > guaranteed to be complete by the end of #2?
+On Wed, 2010-12-22 at 15:06 +0000, Konrad Rzeszutek Wilk wrote:
+> On Wed, Dec 22, 2010 at 08:36:55AM +0000, Ian Campbell wrote:
+> > On Tue, 2010-12-21 at 21:37 +0000, Konrad Rzeszutek Wilk wrote:
+> > > In the past we used to think of those regions as "missing" and under
+> > > the ownership of the balloon code. But the balloon code only operates
+> > > on a specific region. This region is in lastE820 RAM page (basically
+> > > any region past nr_pages is considered balloon type page). 
+> > 
+> > That is true at start of day but once the system is up and running the
+> > balloon driver can make a hole for anything which can be returned by
+> > alloc_page.
 > 
-> Ahhh, sorry. I meant, two threads can do 2. and 3. at the same time.
+> <nods>
+> > 
+> > The following descriptions seem to consider this correctly but I just
+> > wanted to clarify.
+> 
+> Yes. Thank you for thinking this one through.
+> > 
+> > I don't think it's necessarily the last E820 RAM page either, that's
+> > just what the tools today happen to build. In principal the tools could
+> > push down a holey e820 (e.g. with PCI holes prepunched etc) and boot the
+> > domain ballooned down such that the N-2, N-3 e820 RAM regions are above
+> > nr_pages too.
+> 
+> OK, but they would be marked as E820 RAM regions, right?
 
-Ah, okay, now I see, so WNOHANG wait(2) from a different thread may
-fail if it races against ptrace(ATTACH), although it would have
-succeeded regardless of the timing between #2 and #3 before the
-change.
+Yes. There's no special E820 type for ballooned out RAM.
 
-> But let me repeat, it is not that I think we should worry. I mentioned
-> this only because I think it is better to discuss everything we can,
-> even the really minor things.
+> > > This patchset considers the void entries as "identity" and for balloon
+> > > pages you have to set the PFNs to be "missing". This means that the
+> > > void entries are now considered 1-1, so for PFNs which exist in large
+> > > gaps of the P2M space will return the same PFN.
+> > 
+> > I would naively have expected that a missing entry indicated an
+> > invalid/missing entry rather than an identity region, it just seems like
+> 
+> It has. For regions that are small, or already allocated it would
+> stuff the INVALID_P2M_ENTRY in it. For larger areas (so more than 1MB or so)
+> if there has not been a top entry allocated for it, it will attach
+> the p2m_mid_missing to it which has pointes to p2m_missing, which in
+> turn is filled iwht INVALID_P2M_ENTRY.
 
-It's definitely worth documenting.  We can close off the condition by
-tweaking wait(2) so that it blocks if the target thread is in
-transition, but that might be reaching into the realm of unnecessary
-over-engineering.  IMHO, it would be wiser to hold off implementing it
-until we know it's actually necessary.  Roland, Jan, do you guys think
-this can actually cause a problem?
+Hrm, I think I'm probably just confused by the missing vs. invalid vs.
+void terminology and conflating it all with IDENTITY/INVALID_P2M_ENTRY
+and getting in a mess.
 
-Thank you.
+> > the safer default since we are (maybe) more likely to catch an
+> > INVALID_P2M_ENTRY before handing it to the hypervisor and getting
+> > ourselves shot.
+> 
+> When I think entry, I think the lowel-level of the tree, not the
+> top or middle which are the ones that are by default now considered
+> "identity".
 
--- 
-tejun
+"now" before this series or "now" after?
+
+I think the default value for a lookup of an uninitialised entry should
+be the same regardless of whether the mid levels of the tree happen to
+be filled in (or pointing to common placeholder entries) or not. Is that
+the case?
+
+>  FYI, the p2m_identity is stuffed with INVALID_P2M_ENTRY
+> so if somebody does get a hold of the value there somehow without
+> first trying to set it, we would catch it and do this:
+
+p2m_identity is filled with INVALID_P2M_ENTRY? No wonder I'm confused by
+the names ;-) Why isn't it either called p2m_invalid or filled with
+IDENTITY_P2M_ENTRY?
+
+> It might not be.. but it would end up in the same logic path (in
+> the pte_pfn_to_mfn function).
+
+Sure.
+
+My concern is about this bit but rather about what accesses to unknown
+entries return. Currently I think they return INVALID_P2M_ENTRY but you
+are proposing that they return identity instead, which seems wrong for
+anything which isn't explicitly initialised as I/O (or identity for any
+other reason).
+
+> > 
+> > > The xen/mmu.c code where it deals with _PAGE_IOMAP can be removed, but
+> > > to guard against regressions or bugs lets take it one patchset at a
+> > > time.
+> > 
+> > Could we have a WARN_ON(_PAGE_IOMAP && !PAGE_IDENTITY) (or whatever the
+> > predicates really are) in some relevant places in mmu.c?
+> 
+> The PAGE_IDENTITY or (IDENTITY_P2M_ENTRY) is never set anywhere.
+
+So how is it used? I don't see it apart from in a single BUG_ON and some
+comments. Do you just rely on IDENTITY_P2M_ENTRY==0 and things being
+filed with 0 by default?
+
+>  We could
+> do this:
+> 
+>   WARN_ON(pfn_to_mfn(pfn)==pfn && (flag & _PAGE_IOMAP))
+> 
+> but that would be printed all the time.
+> 
+> Unless I saved some extra flag (as you were alluding to earlier) and did that
+> along with the MFN and for identity mappings just returned that flag unconditionaly.
+
+
