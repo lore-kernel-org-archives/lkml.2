@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595Ab0LVHNZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 02:13:25 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:53559 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752418Ab0LVHNY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 02:13:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=jxIG9bHDtUrMl54bwM9Gk8xWW4Zs4aGBxI3GU2AGs8FgOUm3fL4FFbJAAXeihNmn6o
-         qHwzvyt7ovGroe1w3YCSpB9il/yfGqFz6/evu0n1K2ekUthnKgL+L1xWb1yS/zBpRhYt
-         /33c51E+BjR7frSIdUvVSrwD2C4+OWy99ElaE=
-Date: Wed, 22 Dec 2010 08:13:19 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
-        David Miller <davem@davemloft.net>, Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH V7 1/8] ntp: add ADJ_SETOFFSET mode bit
-Message-ID: <20101222071319.GB8627@riccoc20.at.omicron.at>
-References: <cover.1292512461.git.richard.cochran@omicron.at>
- <880d82bb8120f73973db27e0c48e949014b1a106.1292512461.git.richard.cochran@omicron.at>
- <AANLkTi=yGoFwYt4p_LeHtAQyYgmURspO-p57UdL0sUEZ@mail.gmail.com>
- <20101221075612.GA13626@riccoc20.at.omicron.at>
- <AANLkTimJd5pScKTiDxuYd-h+NevYbCusyvUAqmUDXe8h@mail.gmail.com>
- <1292970355.2618.76.camel@work-vm>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292970355.2618.76.camel@work-vm>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752473Ab0LVH2b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 02:28:31 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:34556 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752076Ab0LVH2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 02:28:30 -0500
+Date: Wed, 22 Dec 2010 18:28:20 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: No tree for December 22
+Message-Id: <20101222182820.76e13a21.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__22_Dec_2010_18_28_20_+1100_.ZoEwkTV2yQp3cxs"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 21, 2010 at 02:25:55PM -0800, john stultz wrote:
-> On Wed, 2010-12-22 at 05:57 +0900, Kuwahara,T. wrote:
-> 
-> > How about this?
-> > 
-> > if (txc->modes & ADJ_OFFSET) {
-> > 	if (txc->constant == INT32_MIN) {
-> > 		/* step time */
-> > 	} else {
-> > 		/* slew time */
-> > 	}
-> > }
-> 
-> This looks like magic behavior. Sort of a "knock twice and then say the
-> password" interface. I don't see why that would be better then adding a
-> clear new mode flag?
+--Signature=_Wed__22_Dec_2010_18_28_20_+1100_.ZoEwkTV2yQp3cxs
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I have to agree with John on this one. Looks very hacky to me.
+Sorry, but other more important things intruded :-)
 
-Richard
+Take a break!  :-)
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__22_Dec_2010_18_28_20_+1100_.ZoEwkTV2yQp3cxs
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNEaiUAAoJEDMEi1NhKgbsXysH/0+nKwYeTAtNV/WPA/TCZIjW
+48iMZb4RS0TeN3g4AH6MNZFPVxrIjAJzzawrzwD5ex5Zhk/3lb0jCL/nToJsYSEy
+6Lom0t8Y4xQEZUDqY6s40DWoJKQbM0x7tE5Ww6r0VqURkt4IiTmIND3QS7eToptz
+vhjpzpKAwe7RHEXKo3iVUN+gkOvgBytPnqvPV1XiRicQVWUMkfJvBP9k2xPJU7hq
+R4CEvKXDFCopt1eYk0lmkHLqxp56ZWlVP3XMALhx/R3f8iOdwiYD2awr6PTuc4cF
+y61L3/cEulHPGwwhGnx8TdsxgBcXC0VxwUp0e7ns9TiKoL3L3uDfk8C18VtTP+A=
+=sR1A
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__22_Dec_2010_18_28_20_+1100_.ZoEwkTV2yQp3cxs--
