@@ -1,97 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753466Ab0LVPEm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 10:04:42 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:23539 "EHLO
+	id S1753542Ab0LVPGu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 10:06:50 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27022 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753352Ab0LVPEj (ORCPT
+	with ESMTP id S1753474Ab0LVPGl (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Wed, 22 Dec 2010 10:04:39 -0500
-Date: Wed, 22 Dec 2010 10:04:21 -0500
+	Wed, 22 Dec 2010 10:06:41 -0500
+Date: Wed, 22 Dec 2010 10:06:15 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com,
-        Jan Beulich <JBeulich@novell.com>, xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>
-Subject: Re: [PATCH 05/10] xen/setup: Set identity mapping for non-RAM E820
- and E820 gaps.
-Message-ID: <20101222150421.GE1760@dumpdata.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jeremy@goop.org" <jeremy@goop.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jan Beulich <JBeulich@novell.com>
+Subject: Re: [Xen-devel] [RFC PATCH v1] Consider void entries in the P2M as
+ 1-1 mapping.
+Message-ID: <20101222150615.GF1760@dumpdata.com>
 References: <1292967460-15709-1-git-send-email-konrad.wilk@oracle.com>
- <1292967460-15709-6-git-send-email-konrad.wilk@oracle.com>
- <4D112B80.9020600@goop.org>
+ <1293007015.3998.25.camel@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D112B80.9020600@goop.org>
+In-Reply-To: <1293007015.3998.25.camel@localhost.localdomain>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Couldn't you just do something like:
+On Wed, Dec 22, 2010 at 08:36:55AM +0000, Ian Campbell wrote:
+> On Tue, 2010-12-21 at 21:37 +0000, Konrad Rzeszutek Wilk wrote:
+> > In the past we used to think of those regions as "missing" and under
+> > the ownership of the balloon code. But the balloon code only operates
+> > on a specific region. This region is in lastE820 RAM page (basically
+> > any region past nr_pages is considered balloon type page). 
 > 
-> 	if (e820->map[i].type != E820_RAM)
+> That is true at start of day but once the system is up and running the
+> balloon driver can make a hole for anything which can be returned by
+> alloc_page.
 
-I am going to assume you meant '==' here.
-
-> 		continue;
+<nods>
 > 
-> 	for (pfn = PFN_UP(last); pfn < PFN_DOWN(start); pfn++)
-> 		set_phys_to_machine(pfn, pfn);
-> 	identity += pfn - PFN_UP(last);
+> The following descriptions seem to consider this correctly but I just
+> wanted to clarify.
+
+Yes. Thank you for thinking this one through.
 > 
-> 	last = end;
+> I don't think it's necessarily the last E820 RAM page either, that's
+> just what the tools today happen to build. In principal the tools could
+> push down a holey e820 (e.g. with PCI holes prepunched etc) and boot the
+> domain ballooned down such that the N-2, N-3 e820 RAM regions are above
+> nr_pages too.
+
+OK, but they would be marked as E820 RAM regions, right?
 > 
-> ie, handle the hole and non-RAM cases together?
-
-A derivation of this does work:
-
-   last = ISA_END_ADDRESS;
-   for (i = 0; i < e820->nr_map; i++) {
-                phys_addr_t start = e820->map[i].addr;
-                phys_addr_t end = start + e820->map[i].size;
-
-                if (end < start)
-                        continue;
-
-                /* Skip over the 1MB region. */
-                if (last > end)
-                        continue;
-
-                if (e820->map[i].type == E820_RAM) {
-                        /* Without saving 'last' we would end up gobbling RAM regions. */
-                        last = end;
-                        continue;
-                }   
-
-                for (pfn = PFN_UP(last); pfn < PFN_DOWN(end); pfn++)
-                        set_phys_to_machine(pfn, pfn);
-                identity += pfn - PFN_UP(last);
-
-                last = end;
-	}
-
-
+> > This patchset considers the void entries as "identity" and for balloon
+> > pages you have to set the PFNs to be "missing". This means that the
+> > void entries are now considered 1-1, so for PFNs which exist in large
+> > gaps of the P2M space will return the same PFN.
 > 
-> Also, what happens with the p2m tree mid layers in this?  If you're
-> doing page-by-page set_phys_to_machine, won't it end up allocating them
-> all?  How can you optimise the "large chunks of address space are
-> identity" case?
+> I would naively have expected that a missing entry indicated an
+> invalid/missing entry rather than an identity region, it just seems like
 
-The issue here is that when this code path is called (xen_memory_setup),
-the p2m_top[topidx][mididx] has been set to start_info->mfn_list[] (by
-xen_build_dynamic_phys_to_machine).
+It has. For regions that are small, or already allocated it would
+stuff the INVALID_P2M_ENTRY in it. For larger areas (so more than 1MB or so)
+if there has not been a top entry allocated for it, it will attach
+the p2m_mid_missing to it which has pointes to p2m_missing, which in
+turn is filled iwht INVALID_P2M_ENTRY.
 
-Granted, some of these entries have been evicted (by the xen_return_unused_memory),
-so the regions in the mfn_list are pock-marked with INVALID_P2M_ENTRY. For those
-regions we set the PFN in the p2m_top[topidx][mididx][idx]. We do
-not allocate anything during this pass.
+> the safer default since we are (maybe) more likely to catch an
+> INVALID_P2M_ENTRY before handing it to the hypervisor and getting
+> ourselves shot.
 
-In the the dom0_mem=max:X (or X,max:Y, where Y>X), which I neglected to test this
-would actually try to allocate (whoops). Let me roll up a patch for this.
+When I think entry, I think the lowel-level of the tree, not the
+top or middle which are the ones that are by default now considered
+"identity". FYI, the p2m_identity is stuffed with INVALID_P2M_ENTRY
+so if somebody does get a hold of the value there somehow without
+first trying to set it, we would catch it and do this:
+
+(xen/mmu.c, pte_pfn_to_mfn function):
+
+  		/*   
+                 * If there's no mfn for the pfn, then just create an
+                 * empty non-present pte.  Unfortunately this loses
+                 * information about the original pfn, so
+                 * pte_mfn_to_pfn is asymmetric.
+                 */
+                if (unlikely(mfn == INVALID_P2M_ENTRY)) {
+                        mfn = 0; 
+                        flags = 0; 
+                }    
+
 
 > 
-> It would probably be cleanest to have a set_ident_phys_to_machine(start,
-> end) function which can do all that.
+> In that case the identity regions would need to be explicitly
+> registered, is that harder to do?
 
-Not sure if it is truly needed.
+It might not be.. but it would end up in the same logic path (in
+the pte_pfn_to_mfn function).
+
+> 
+> I guess we could register any hole or explicit non-RAM region in the
+> e820 as identity but do we sometimes see I/O memory above the top of the
+> e820 or is there some other problem I'm not thinking of?
+
+Hot plug memory is one. There are also some PCI BARs that are above
+that region (but I can't remember the details). Jeremy mentioned
+something about Fujitsu machines.
+
+> 
+> > The xen/mmu.c code where it deals with _PAGE_IOMAP can be removed, but
+> > to guard against regressions or bugs lets take it one patchset at a
+> > time.
+> 
+> Could we have a WARN_ON(_PAGE_IOMAP && !PAGE_IDENTITY) (or whatever the
+> predicates really are) in some relevant places in mmu.c?
+
+The PAGE_IDENTITY or (IDENTITY_P2M_ENTRY) is never set anywhere. We could
+do this:
+
+  WARN_ON(pfn_to_mfn(pfn)==pfn && (flag & _PAGE_IOMAP))
+
+but that would be printed all the time.
+
+Unless I saved some extra flag (as you were alluding to earlier) and did that
+along with the MFN and for identity mappings just returned that flag unconditionaly.
