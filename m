@@ -1,101 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540Ab0LVRx2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 12:53:28 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:64567 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753212Ab0LVRx0 (ORCPT
+	id S1753478Ab0LVRZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 12:25:26 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:34364 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752062Ab0LVRZZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 12:53:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=oTu8axA25VikEZNOu43XZnsT2+IuakO6WKWhLHklPIbzIVGsg/VXmlhK17sx4MJsf7
-         +3H/zfPKfHGqPaLGQwRo/B90FWNNWAnVNMYsKl6OinEjenhMYy+kdyDXdKM7Q9jXZAeZ
-         sJagVyQAoe3YaMoQ0E0GKroRonlQoT+eNNFYo=
-Date: Wed, 22 Dec 2010 18:53:19 +0100
-From: Tejun Heo <htejun@gmail.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Boot failure with block/for-next
-Message-ID: <20101222175319.GA1787@htj.dyndns.org>
-References: <1293038823.3019.89.camel@mulgrave.site>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1293038823.3019.89.camel@mulgrave.site>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 22 Dec 2010 12:25:25 -0500
+Subject: Re: [PATCH] avoid race condition in pick_next_task_fair in
+ kernel/sched_fair.c
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Miklos Vajna <vmiklos@frugalware.org>, Mike Galbraith <efault@gmx.de>,
+        shenghui <crosslonelyover@gmail.com>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
+In-Reply-To: <20101222171655.GB25611@elte.hu>
+References: <20101219020313.GJ31750@genesis.frugalware.org>
+	 <20101222002248.GP10557@genesis.frugalware.org>
+	 <1293006589.2170.41.camel@laptop>
+	 <1293007311.11370.172.camel@marge.simson.net>
+	 <1293008842.2170.70.camel@laptop>
+	 <20101222133154.GS10557@genesis.frugalware.org>
+	 <1293026422.2170.136.camel@laptop> <1293027112.2170.140.camel@laptop>
+	 <20101222151434.GW10557@genesis.frugalware.org>
+	 <1293037718.2170.155.camel@laptop>  <20101222171655.GB25611@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 22 Dec 2010 18:25:20 +0100
+Message-ID: <1293038720.2170.167.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Wed, Dec 22, 2010 at 11:27:03AM -0600, James Bottomley wrote:
-> Trying to test out the SCSI post merge tree, I've found it won't boot on
-> my SCSI test system.  The reason is a failure to read the partition
-> table of the root disc.  It just gives
+On Wed, 2010-12-22 at 18:16 +0100, Ingo Molnar wrote:
+> * Peter Zijlstra <peterz@infradead.org> wrote:
 > 
-> sda: unable to read partition table
+> > On Wed, 2010-12-22 at 16:14 +0100, Miklos Vajna wrote:
+> > > kernel-build is a git build using the config I already sent and after a
+> > > 'git checkout v2.6.36'. I can try to build master as well, so far what I
+> > > saw is that the bug occurs there as well, but less frequently, so maybe
+> > > that's a bit harder to debug. 
+> > 
+> > Right, so I've got v2.6.36 exploding, current -git and -tip won't
+> > explode for me, tried both about 20 times. So I'll try and figure out
+> > wth makes .36 explode and then see if further kernel still suffer that
+> > problem.
 > 
-> The other four discs in the system seem to read their partition tables
-> OK.
+> Does it explode if you change some of the CONFIG_CC flags, such as 
+> CONFIG_CC_OPTIMIZE_FOR_SIZE? I.e. is the crash dependent on the precise kernel image 
+> layout perhaps? If it's sensitive to that then this might keep you from chasing 
+> shadows ...
 
-That's really weird.
+I've since changed the .config slightly (enabled frame pointers, added
+debug info, enabled the function tracer) and its still exploding. Also,
+I suspect Miklos and me have different gcc versions.
 
-> The obvious candidate is the partition code rework in block/for-next.
-> Simply reverting 
-> 
-> commit d2bf1b6723ed0eab378363649d15b7893bf14e91
-> Author: Tejun Heo <tj@kernel.org>
-> Date:   Wed Dec 8 20:57:36 2010 +0100
-> 
->     block: move register_disk() and del_gendisk() to block/genhd.c
->  
-> Doesn't fix the boot failure, so it's obviously something deeper.
-
-Can you please apply the following patch and see what the kernel says?
-
-Thanks.
-
-diff --git a/fs/partitions/check.c b/fs/partitions/check.c
-index bdf8d3c..dd0b0f3 100644
---- a/fs/partitions/check.c
-+++ b/fs/partitions/check.c
-@@ -186,6 +186,8 @@ check_partition(struct gendisk *hd, struct block_device *bdev)
- 			/* We have hit an I/O error which we don't report now.
- 		 	* But record it, and let the others do their job.
- 		 	*/
-+			printk(KERN_WARNING "XXX %s: check_part %pf failed with %d\n",
-+			       state->name, check_part[i-1], res);
- 			err = res;
- 			res = 0;
- 		}
-@@ -197,8 +199,11 @@ check_partition(struct gendisk *hd, struct block_device *bdev)
- 		free_page((unsigned long)state->pp_buf);
- 		return state;
- 	}
--	if (state->access_beyond_eod)
-+	if (state->access_beyond_eod) {
-+		printk(KERN_WARNING "XXX %s: access_beyond_eod, err=-ENOSPC\n",
-+		       state->name);
- 		err = -ENOSPC;
-+	}
- 	if (err)
- 	/* The partition is unrecognized. So report I/O errors if there were any */
- 		res = err;
-diff --git a/fs/partitions/check.h b/fs/partitions/check.h
-index d68bf4d..f836fb2 100644
---- a/fs/partitions/check.h
-+++ b/fs/partitions/check.h
-@@ -26,6 +26,8 @@ static inline void *read_part_sector(struct parsed_partitions *state,
- 				     sector_t n, Sector *p)
- {
- 	if (n >= get_capacity(state->bdev->bd_disk)) {
-+		printk(KERN_WARNING "XXX %s: setting access_beyond_eod for sector %llu\n",
-+		       state->name, (unsigned long long)n);
- 		state->access_beyond_eod = true;
- 		return NULL;
- 	}
+So I suspect its really something weird, I just can't really make sense
+of it yet.
