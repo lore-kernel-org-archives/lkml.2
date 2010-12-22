@@ -1,53 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753153Ab0LVOuT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 09:50:19 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:46529 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752265Ab0LVOuR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 09:50:17 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=HSsJG9OgoKwt1Cp7QZ+N98TlD9sIm4vrFcjZT4jckr43ELseXqpV3mAxiX1n5zmXsL
-         tY98sRpIlMbnWv7XyMiwyWMik5pXUciU55OqxXLheRYQJMJXkjA77xY/vLiLhjrDKpY+
-         +KuRLApPo1iLdJZSsoWM28Ci9H2V5bH8e83EU=
-Subject: Re: [PATCH V2 1/2] EHCI support for on-chip PMC MSP USB controller.
-From: Anoop P A <anoop.pa@gmail.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Anatolij Gustschin <agust@denx.de>,
-        Anand Gadiyar <gadiyar@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-In-Reply-To: <1293028561-22125-1-git-send-email-anoop.pa@gmail.com>
-References: <1292929580-5829-1-git-send-email-anoop.pa@gmail.com>
-	 <1293028561-22125-1-git-send-email-anoop.pa@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 22 Dec 2010 20:28:12 +0530
-Message-ID: <1293029892.27661.42.camel@paanoop1-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1752980Ab0LVOxl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 09:53:41 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59559 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292Ab0LVOxk (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Wed, 22 Dec 2010 09:53:40 -0500
+Date: Wed, 22 Dec 2010 09:53:27 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com,
+        Jan Beulich <JBeulich@novell.com>, xen-devel@lists.xensource.com,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: Re: [PATCH 01/10] xen: Make all reserved pages for the balloon be
+ INVALID_P2M_ENTRY.
+Message-ID: <20101222145327.GA1760@dumpdata.com>
+References: <1292967460-15709-1-git-send-email-konrad.wilk@oracle.com>
+ <1292967460-15709-2-git-send-email-konrad.wilk@oracle.com>
+ <4D1127FC.8060102@goop.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D1127FC.8060102@goop.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-22 at 20:06 +0530, Anoop P.A wrote:
-> From: Anoop P A <anoop.pa@gmail.com>
+On Tue, Dec 21, 2010 at 02:19:40PM -0800, Jeremy Fitzhardinge wrote:
+> On 12/21/2010 01:37 PM, Konrad Rzeszutek Wilk wrote:
+> > This patch prepares ourselves for the case where void entries in the P2M
+> > tree structure do not necessarily imply that the pages are missing.
+> > With this, we diligently set regions that will be used by the
+> > balloon driver to be INVALID_P2M_ENTRY and under the ownership
+> > of the balloon driver.
+> >
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > ---
+> >  arch/x86/xen/setup.c  |    8 ++++++++
+> >  drivers/xen/balloon.c |    1 +
+> >  2 files changed, 9 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+> > index b5a7f92..d984d36 100644
+> > --- a/arch/x86/xen/setup.c
+> > +++ b/arch/x86/xen/setup.c
+> > @@ -52,6 +52,8 @@ phys_addr_t xen_extra_mem_start, xen_extra_mem_size;
+> >  
+> >  static __init void xen_add_extra_mem(unsigned long pages)
+> >  {
+> > +	unsigned long pfn;
+> > +
+> >  	u64 size = (u64)pages * PAGE_SIZE;
+> >  	u64 extra_start = xen_extra_mem_start + xen_extra_mem_size;
+> >  
+> > @@ -66,6 +68,11 @@ static __init void xen_add_extra_mem(unsigned long pages)
+> >  	xen_extra_mem_size += size;
+> >  
+> >  	xen_max_p2m_pfn = PFN_DOWN(extra_start + size);
+> > +
+> > +	for (pfn = PFN_DOWN(extra_start); pfn <= xen_max_p2m_pfn; pfn++) {
+> > +		BUG_ON(!set_phys_to_machine(pfn, INVALID_P2M_ENTRY));
 > 
-> This patch includes.
+> Use __set_phys_to_machine where you don't expect (or can't allow) any
+> allocation.
+
+Are you OK with me moving then this check:
+
+    if (unlikely(xen_feature(XENFEAT_auto_translated_physmap))) {
+                BUG_ON(pfn != mfn && mfn != INVALID_P2M_ENTRY);
+                return true;
+        }    
+from set_phys_to_machine to __set_phys_to_machine?
+
 > 
-> 1. USB host driver for MSP71xx family SoC on-chip USB controller.
+> Also, I'm not a fan of hiding real side-effectful code in a BUG_ON
+> predicate.
 
->  	ehci_writel(ehci, tmp, reg_ptr);
-> +#ifdef CONFIG_USB_EHCI_HCD_PMC_MSP
-> +	/* set controller in host mode */
-> +	usb_hcd_tdi_set_mode(ehci);
-> +#endif
-
-Missed this one while cleaning :( 
->  }
-
-
+Ok. Will expunge these.
