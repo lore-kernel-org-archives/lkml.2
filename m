@@ -1,165 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab0LVXpm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 18:45:42 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:41493 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752426Ab0LVXpl convert rfc822-to-8bit (ORCPT
+	id S1752822Ab0LVXrt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 18:47:49 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:23347 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752139Ab0LVXrs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 18:45:41 -0500
+	Wed, 22 Dec 2010 18:47:48 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=HwYI2b/tClRdrPGViXy02HMmcARc/IYxyeJdwIBfYF2d+eFlw0EhmLo1M3TGuyL7a7
-         7P0CBqKDzW0wNGUG/IK22cgXpTghA7/BEgSDDMUWCUl4JWUW9wuRtMLkYkOiCJWOGKJE
-         SCsyddUJCgp1s5lKZRiUMBLeClYZ75vuLUHsQ=
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=WBY+2hJuwlbCGwiIWqv/ikRjMKyyYxYo0QrlEWrkCHsyz+7JYV7p4rjb59P4MIAxzi
+         TVD5MpYHxsevxXsDSIHg==
 MIME-Version: 1.0
-In-Reply-To: <20101222122904.GC14693@n2100.arm.linux.org.uk>
-References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com>
-	<20101221182037.GA4783@n2100.arm.linux.org.uk>
-	<20101222122904.GC14693@n2100.arm.linux.org.uk>
-Date: Wed, 22 Dec 2010 15:45:39 -0800
-X-Google-Sender-Auth: Eegc9RCuuMH3OSwIzAIobyhjpks
-Message-ID: <AANLkTikpyAggDCPef1pS=_QHnu9-FyLcpddGyVHnGwWx@mail.gmail.com>
-Subject: Re: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081 PrimeCells
-From: Dan Williams <dan.j.williams@intel.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Viresh Kumar <viresh.kumar@st.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        yuanyabin1978@sina.com, linux-kernel@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>, Peter Pearse <peter.pearse@arm.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Alessandro Rubini <rubini@unipv.it>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <AANLkTikkwQC8pHPw=dvf5h++MnSOo9YY0dagNhv6s11B@mail.gmail.com>
+References: <AANLkTik6RfWWqjtuBUWRGZ0e+DHHm02opR9FAQJPdTR1@mail.gmail.com>
+ <1292903569.22905.123.camel@gandalf.stny.rr.com> <AANLkTin7nLrRPc9qGjdjHbeVDDWiJjAiYyb-L=gH85bx@mail.gmail.com>
+ <AANLkTikkwQC8pHPw=dvf5h++MnSOo9YY0dagNhv6s11B@mail.gmail.com>
+From: David Sharp <dhsharp@google.com>
+Date: Wed, 22 Dec 2010 15:47:24 -0800
+Message-ID: <AANLkTinFjuFFAp3ayeF8L5x813248zeVJbPbgKK02Rjv@mail.gmail.com>
+Subject: Re: ftrace: trace_pipe_raw interface broken
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Michael Rubin <mrubin@google.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 22, 2010 at 4:29 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Tue, Dec 21, 2010 at 06:20:37PM +0000, Russell King - ARM Linux wrote:
->> Having just looked at this while trying to undo the DMA API abuses
->> in the PL011 UART driver, I'm getting rather frustrated with this
->> code.
+On Wed, Dec 22, 2010 at 3:23 PM, David Sharp <dhsharp@google.com> wrote:
+> On Mon, Dec 20, 2010 at 9:59 PM, David Sharp <dhsharp@google.com> wrote:
+>> On Mon, Dec 20, 2010 at 7:52 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>>> Hi David,
+>>>
+>>> Thanks for the report.
+>>>
+>>> On Mon, 2010-12-20 at 18:43 -0800, David Sharp wrote:
+>>>> trace_pipe_raw doesn't work correctly, I think because
+>>>> tracing_buffers_read() uses ring_buffer_read_page() incorrectly.
+>>>>
+>>>> In particular, if you read less than one page at a time, then you get
+>>>> much more data than expected from the ring buffer:
+>>>>
+>>>> $ ftrace=/sys/kernel/debug/tracing
+>>>> $ echo 0 > $ftrace/tracing_enabled
+>>>> $ echo 1 > $ftrace/events/enable
+>>>> $ echo > $ftrace/trace Â # reset
+>>>> $ echo 100 > $ftrace/buffer_size_kb
+>>>> $ Â # generate lots of events:
+>>>> $ echo 1 > $ftrace/tracing_enabled && Â ls -laR /proc/ > /dev/null 2>&1
+>>>> && echo 0 > $ftrace/tracing_enabled
+>>>> $ dd bs=1024 if=$ftrace/per_cpu/cpu0/trace_pipe_raw 2>/dev/null | wc -c
+>>>> 675840
+>>>>
+>>>> That's significantly more data than the buffer could possibly contain.
+>>>> Further shrinking bs increases the amount of data output even more.
+>>>
+>>> Yep that's a side effect. What happens is that we always read a "full
+>>> page" even if we do not read in page size chunks. If we read 100 bytes,
+>>> it will read a header, and all the events that fit inside that 100
+>>> bytes, and then return a full page with the header, the 100 bytes -
+>>> header size, and the rest of the page filled with zeros.
+>>>
+>>> Do a:
+>>>
+>>> Â  Â  Â  Â hexdump -C outputfile
+>>>
+>>> and you'll see a lot of "zeros". The reason for this is to keep all
+>>> reads in pagesize chunks. If you read only 100 bytes of data, I still
+>>> need to keep that page aligned in the output. The reason I do this is in
+>>> case there's two readers. I don't want one to read part of a page that
+>>> includes the header, and then the other reads the rest of the page. The
+>>> header tells you how much data is on that page.
 >>
->> What's wrong with the PL08x DMA engine driver?  Well, in the PL011
->> UART driver, you do this:
+>> aha, I see. My assumption that the page headers weren't a needed part
+>> of the trace output was throwing off my analysis.
 >>
->> +static void pl011_dma_tx_callback(void *data)
->> +{
->> ...
->> +       /* Refill the TX if the buffer is not empty */
->> +       if (!uart_circ_empty(xmit)) {
->> +               ret = pl011_dma_tx_refill(uap);
->> ...
->> +static int pl011_dma_tx_refill(struct uart_amba_port *uap)
->> +{
->> ...
->> +       /* Prepare the scatterlist */
->> +       desc = chan->device->device_prep_slave_sg(chan,
->> +                                                 &dmatx->scatter,
->> +                                                 1,
->> +                                                 DMA_TO_DEVICE,
->> +                                                 DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
->> ...
->> +       /* Some data to go along to the callback */
->> +       desc->callback = pl011_dma_tx_callback;
->> +       desc->callback_param = uap;
+>>> I guess I could have had the info->spare just read the full page, and
+>>> then other readers would just read the next page.
 >>
->> Note that this calls the channel device_prep_slave_sg() from the
->> callback.  This seems reasonable.
+>> I don't think multiple readers a use case we're concerned about, so
+>> either way as far as I'm concerned.
 >>
->> Right, now let's look at this driver (from the latest kernel):
+>>>> Even when reading >=4096 bytes, something is funny:
+>>>>
+>>>> $ dd bs=4096 if=$ftrace/per_cpu/cpu0/trace_pipe_raw 2>/dev/null | wc -c
+>>>> 118784
+>>>>
+>>>> That's 116kB. I expect 100kb to allocate (102400+4087)/4088 = 26
+>>>> pages, or 104kb-worth of pages. 116kB is about 28 pages.
+>>>
+>>> Hmm, isn't page data 4080, not 4088, since it has 2, 8 byte items in it.
+>>> Timestamp and atomic (on 64bit). 4096 - 16 = 4080. But still the numbers
+>>> are not much different.
 >>
->> static void pl08x_tasklet(unsigned long data)
->> {
->> ...
->>         spin_lock(&plchan->lock);
->> ...
->>                 dma_async_tx_callback callback =
->>                         plchan->at->tx.callback;
->>                 void *callback_param =
->>                         plchan->at->tx.callback_param;
->> ...
->>                 /*
->>                  * Callback to signal completion
->>                  */
->>                 if (callback)
->>                         callback(callback_param);
+>> oops, yeah. I rounded 2*8 = 8 Â ;)
 >>
->> Note that the callback is called with the channel lock held.
+>>> Note, when I did it, I got:
+>>>
+>>> $ dd if=/debug/tracing/per_cpu/cpu0/trace_pipe_raw of=/tmp/dat bs=4096
+>>> 27+0 records in
+>>> 27+0 records out
+>>> 110592 bytes (111 kB) copied, 0.00302891 s, 36.5 MB/s
+>>>
+>>> $ cat /debug/tracing/buffer_size_kb
+>>> 100
+>>>
+>>> Ah, running hexdump -C, I got this at the end:
+>>>
+>>> 00019c80 Â 62 57 00 00 22 d1 09 81 Â ff ff ff ff 76 d1 09 81 Â |bW.."Ã‘..Ã¿Ã¿Ã¿Ã¿vÃ‘..|
+>>> 00019c90 Â ff ff ff ff 00 00 00 00 Â 00 00 00 00 00 00 00 00 Â |Ã¿Ã¿Ã¿Ã¿............|
+>>> 00019ca0 Â 00 00 00 00 00 00 00 00 Â 00 00 00 00 00 00 00 00 Â |................|
+>>> *
+>>> 0001a000 Â d8 32 b6 7e ed 53 05 00 Â 24 00 00 00 00 00 00 00 Â |Ã˜2Â¶~Ã­S..$.......|
+>>> 0001a010 Â a8 36 00 00 01 00 00 00 Â ca 0b 00 00 ff ff ff ff Â |Å¡6......ÃŠ...Ã¿Ã¿Ã¿Ã¿|
+>>> 0001a020 Â 00 00 00 00 6a d1 09 81 Â ff ff ff ff 68 26 16 81 Â |....jÃ‘..Ã¿Ã¿Ã¿Ã¿h&..|
+>>> 0001a030 Â ff ff ff ff 00 00 00 00 Â 00 00 00 00 00 00 00 00 Â |Ã¿Ã¿Ã¿Ã¿............|
+>>> 0001a040 Â 00 00 00 00 00 00 00 00 Â 00 00 00 00 00 00 00 00 Â |................|
+>>> *
+>>> 0001b000
+>>>
+>>> I don't know why it added that last page. I'll have to look into this.
 >>
->> struct dma_async_tx_descriptor *pl08x_prep_slave_sg(
->>                 struct dma_chan *chan, struct scatterlist *sgl,
->>                 unsigned int sg_len, enum dma_data_direction direction,
->>                 unsigned long flags)
->> {
->> ...
->>         ret = pl08x_prep_channel_resources(plchan, txd);
->>         if (ret)
->>                 return NULL;
->>         /*
->>          * NB: the channel lock is held at this point so tx_submit()
->>          * must be called in direct succession.
->>          */
+>> Thanks for taking a look!
 >>
->> XXXXXXXX DEADLOCK XXXXXXXX
+>> I'm actually seeing up to 3 extra pages (29 records) frequently,
+>> although it varies. I even just got 30 pages.
+>>
+>> aha, check this out though, looking at all the page headers:
+>>
+>> $ hexdump -C /tmp/trace_raw | grep '^[0-9a-f]*000 '
+>> 00000000 Â 7d 9a 19 9a fd 01 00 00 Â 74 0d 00 00 00 00 00 00 Â |}...ï¿½...t.......|
+>> 00001000 Â 12 22 4a 71 01 02 00 00 Â 38 00 00 00 00 00 00 00 Â |."Jq....8.......|
+>> 00002000 Â 62 99 60 d7 01 02 00 00 Â b8 0f 00 c0 ff ff ff ff Â |b.`ï¿½....ï¿½..ï¿½ï¿½ï¿½ï¿½ï¿½|
+>> # negative commit count? or, notice this is the third page.
+>> # Maybe there's garbage at the beginning, rather than the end.
+>> 00003000 Â e4 cb e2 dc 01 02 00 00 Â f0 0f 00 00 00 00 00 00 Â |ï¿½ï¿½ï¿½ï¿½....ï¿½.......|
+>> # <snip>
+>> 00019000 Â 7a 79 01 ef 01 02 00 00 Â dc 0f 00 00 00 00 00 00 Â |zy.ï¿½....ï¿½.......|
+>> 0001a000 Â c7 51 05 ef 01 02 00 00 Â c0 0f 00 00 00 00 00 00 Â |ï¿½Q.ï¿½....ï¿½.......|
+>> 0001b000 Â af fe 1b ef 01 02 00 00 Â 34 08 00 00 00 00 00 00 Â |ï¿½ï¿½.ï¿½....4.......|
+>> 0001c000 Â 49 f3 1f ef 01 02 00 00 Â 2c 00 00 00 00 00 00 00 Â |Iï¿½.ï¿½....,.......|
+>>
+>> Interestingly, they all have valid-looking timestamps (in that they
+>> are monotonic), even before the negative commit count.
+>>
+>> Here's the one where I got 30 pages:
+>>
+>> 00000000 Â 1d f5 1f ef 01 02 00 00 Â 68 07 00 00 00 00 00 00 Â |.ï¿½.ï¿½....h.......|
+>> 00000770 Â 00 00 00 00 00 00 00 00 Â 00 00 00 00 00 00 00 00 Â |................|
+>> *
+>> 00001000 Â bf 04 59 1f 4a 02 00 00 Â 28 00 00 00 00 00 00 00 Â |ï¿½.Y.J...(.......|
+>> 00001030 Â 00 00 00 00 ff ff ff ff Â 00 00 00 00 00 00 00 00 Â |....ï¿½ï¿½ï¿½ï¿½........|
+>> 00001040 Â 00 00 00 00 00 00 00 00 Â 00 00 00 00 00 00 00 00 Â |................|
+>> *
+>> 00002000 Â 6b 0b 59 1f 4a 02 00 00 Â 28 00 00 00 00 00 00 00 Â |k.Y.J...(.......|
+>> 00002030 Â ff ff ff ff 1d 00 00 00 Â 00 00 00 00 00 00 00 00 Â |ï¿½ï¿½ï¿½ï¿½............|
+>> 00002040 Â 00 00 00 00 00 00 00 00 Â 00 00 00 00 00 00 00 00 Â |................|
+>> *
+>> 00003000 Â df b5 6d 68 4a 02 00 00 Â d4 0f 00 c0 ff ff ff ff Â |ßµmhJ...ï¿½..ï¿½ï¿½ï¿½ï¿½ï¿½|
+>> # negative commit count in the 4th page this time. I see a pattern here...
+>> # also, lots of zeroes in the first 3 pages.
+>> 00004000 Â 94 9b be 6c 4a 02 00 00 Â d4 0f 00 00 00 00 00 00 Â |..ï¿½lJ...ï¿½.......|
+>> # <snip>
+>> 00019000 Â 88 69 4f 91 4a 02 00 00 Â cc 0f 00 00 00 00 00 00 Â |.iO.J...ï¿½.......|
+>> 0001a000 Â 6f 4d ab 97 4a 02 00 00 Â e4 0f 00 00 00 00 00 00 Â |oMï¿½.J...ï¿½.......|
+>> 0001b000 Â 4c 98 2d 9e 4a 02 00 00 Â d4 0f 00 00 00 00 00 00 Â |L.-.J...ï¿½.......|
+>> 0001c000 Â f0 92 57 a3 4a 02 00 00 Â 6c 0e 00 00 00 00 00 00 Â |ï¿½.Wï¿½J...l.......|
+>> 0001d000 Â 6e f9 24 a4 4a 02 00 00 Â 2c 00 00 00 00 00 00 00 Â |nï¿½$ï¿½J...,.......|
+>>
+>> I don't know what this means yet. Is a negative commit count ever
+>> expected? ring_buffer_read_page does add 1<<30 and 1<<31 when there
+>> are events missing, but I don't think that would result in these bit
+>> patterns.
+>>
+>> That's enough for today. I'll investigate more tomorrow.
 >
-> Having found one of my ARM platforms which actually supports DMA (such
-> a rare thing - neither my Realview EB nor Versatile Express supports it),
-> I can finally see about run-time checking some of this.
+> I did a test that yielded some interesting insights:
 >
-> BUG: spinlock lockup on CPU#0, sh/417, c1870a08
-> Backtrace:
-> [<c0038880>] (dump_backtrace+0x0/0x10c) from [<c02c20e0>] (dump_stack+0x18/0x1c) r7:c104e000 r6:c1870a08 r5:00000000 r4:00000000
-> [<c02c20c8>] (dump_stack+0x0/0x1c) from [<c017b520>] (do_raw_spin_lock+0x118/0x154)
-> [<c017b408>] (do_raw_spin_lock+0x0/0x154) from [<c02c4b98>] (_raw_spin_lock_irqsave+0x54/0x60)
-> [<c02c4b44>] (_raw_spin_lock_irqsave+0x0/0x60) from [<c01f5828>] (pl08x_prep_channel_resources+0x718/0x8b4)
->  r7:c1870a08 r6:00000001 r5:c19c3560 r4:ffd04010
-> [<c01f5110>] (pl08x_prep_channel_resources+0x0/0x8b4) from [<c01f5bb4>] (pl08x_prep_slave_sg+0x120/0x19c)
-> [<c01f5a94>] (pl08x_prep_slave_sg+0x0/0x19c) from [<c01be7a0>] (pl011_dma_tx_refill+0x164/0x224)
->  r8:00000020 r7:c03978c0 r6:c1850000 r5:c1847e00 r4:c1847f40
-> [<c01be63c>] (pl011_dma_tx_refill+0x0/0x224) from [<c01bf1c8>] (pl011_dma_tx_callback+0x7c/0xc4)
-> [<c01bf14c>] (pl011_dma_tx_callback+0x0/0xc4) from [<c01f4d34>] (pl08x_tasklet+0x60/0x368)
->  r5:c18709a0 r4:00000000
-> [<c01f4cd4>] (pl08x_tasklet+0x0/0x368) from [<c004d978>] (tasklet_action+0xa0/0x100)
-> [<c004d8d8>] (tasklet_action+0x0/0x100) from [<c004e01c>] (__do_softirq+0xa0/0x170)
->  r8:00000006 r7:00000001 r6:00000018 r5:c104e000 r4:00000100
-> [<c004df7c>] (__do_softirq+0x0/0x170) from [<c004e140>] (irq_exit+0x54/0x9c)
-> [<c004e0ec>] (irq_exit+0x0/0x9c) from [<c0029080>] (asm_do_IRQ+0x80/0xa0)
-> [<c0029000>] (asm_do_IRQ+0x0/0xa0) from [<c00345b8>] (__irq_svc+0x38/0xa0)
+> $ # write the current time to trace_mark continuously from cpu0:
+> $ taskset -c 0 sh -c 'while true ; do echo "time: $(date +%s.%N)" \
+> Â > /sys/kernel/debug/tracing/trace_marker ; done' &
+> $ # Let the buffer fill, and note the start and end times:
+> $ echo "start: $(date +%s.%N)" ; echo 1 > $ftrace/tracing_enabled ; sleep 12 ; \
+> Â echo 0 > $ftrace/tracing_enabled ; echo "end: Â  $(date +%s.%N)"
+> start: 1293051826.630452621
+> end: Â  1293051838.634052658
+> $ # gather result
+> $ dd bs=4096 if=$ftrace/per_cpu/cpu0/trace_pipe_raw of=/tmp/trace_raw
+> 30+0 records in
+> 30+0 records out
+> 122880 bytes (123 kB) copied, 0.000300114 s, 409 MB/s
 >
-> As described above in my code analysis, pl08x_tasklet takes the spinlock,
-> calls pl011_dma_tx_callback and eventually back to pl08x_prep_slave_sg
-> and pl08x_prep_channel_resources which then try to take the spinlock
-> again, leading to deadlock.
+> Okay, 30 pages. 4 too many, but I've seen that before.
+>
+> Now, the data. Page 1:
+>
+> 00000000 Â 61 17 63 55 ab 82 00 00 Â ac 0f 00 00 00 00 00 00 Â |a.cUï¿½...ï¿½.......|
+> 00000010 Â 1e 6c b4 f7 04 01 00 00 Â 0c 00 00 00 05 00 00 00 Â |.lï¿½ï¿½............|
+> 00000020 Â 66 44 00 00 ff ff ff ff Â 00 00 00 00 00 00 00 00 Â |fD..ï¿½ï¿½ï¿½ï¿½........|
+> 00000030 Â 74 69 6d 65 3a 20 31 32 Â 39 33 30 35 31 38 32 36 Â |time: 1293051826|
+> 00000040 Â 2e 36 33 31 32 34 31 31 Â 36 39 0a 00 0c 00 00 00 Â |.631241169......|
+>
+> okay, a small time lag (789 microsec) before the trace starts. (If
+> you're asking why you're seeing the beginning of the trace and how
+> there could have been no overflow, you're in the advanced class. I
+> didn't realize this until Page 4...)
+>
+> btw, the trace_marks are occurring on the order of 1ms apart.
+>
+> Page 1 ends at 0fbc, which fits the 0fac value for "commit" in the page header.
+>
+> Now, the whole of Page 2:
+>
+> 00001000 Â 70 25 e0 81 b3 82 00 00 Â 34 00 00 00 00 00 00 00 Â |p%ï¿½.ï¿½...4.......|
+> 00001010 Â 6c df ff 01 05 00 00 00 Â 66 44 00 00 ff ff ff ff Â |lï¿½ï¿½.....fD..ï¿½ï¿½ï¿½ï¿½|
+> 00001020 Â 00 00 00 00 00 00 00 00 Â 74 69 6d 65 3a 20 31 32 Â |........time: 12|
+> 00001030 Â 39 33 30 35 31 38 32 36 Â 2e 37 31 32 31 31 34 34 Â |93051826.7121144|
+> 00001040 Â 36 30 0a 00 00 00 00 00 Â 00 00 00 00 00 00 00 00 Â |60..............|
+>
+> Only a single event, nothing remarkable about it other than that it is
+> on a separate page
+>
+> Page 3 has only a padding event in it:
+>
+> 00002000 Â 6b 24 f0 81 b3 82 00 00 Â 10 00 00 00 00 00 00 00 Â |k$ï¿½.ï¿½...........|
+> 00002010 Â 3d 00 00 00 0c 00 00 00 Â 00 00 00 00 00 00 00 00 Â |=...............|
+>
+> So 0x0fac + 0x34 + 0x10 = 0xff0, plus 16 bytes of header makes one
+> page. So, it seems that was the real first page of the ring buffer.
+> The question is, why did it get split up?
+>
+> Here's where it gets more interesting. Here's Page 4:
+>
+> 00003000 Â 25 56 1a cb b5 82 00 00 Â d8 0f 00 c0 ff ff ff ff Â |%V.Ëµ...ï¿½..ï¿½ï¿½ï¿½ï¿½ï¿½|
+> 00003010 Â 0c 00 00 00 05 00 00 00 Â 66 44 00 00 ff ff ff ff Â |........fD..ï¿½ï¿½ï¿½ï¿½|
+> 00003020 Â 00 00 00 00 00 00 00 00 Â 74 69 6d 65 3a 20 31 32 Â |........time: 12|
+> 00003030 Â 39 33 30 35 31 38 33 36 Â 2e 35 34 34 36 31 30 31 Â |93051836.5446101|
+> 00003040 Â 37 39 0a 00 8c c7 0f 02 Â 05 00 00 00 66 44 00 00 Â |79...ï¿½......fD..|
+>
+> Remember the last event on page 2 was at 1293051826.712114460. There
+> are 10 seconds missing!
+>
+> Also, still seeing that strange value for "commit" (0xffffffff0c000fd8).
+>
+> Between the first event on Page4 and the last event, the events seem
+> to be contiguous, very roughly 1msec apart.
+>
+> The last event of the trace is the only event on the last page:
+>
+> 0001d000 Â 50 dc 41 47 b6 82 00 00 Â 34 00 00 00 00 00 00 00 Â |Pï¿½AGï¿½...4.......|
+> 0001d010 Â 2c b7 1a 02 05 00 00 00 Â 66 44 00 00 ff ff ff ff Â |,ï¿½......fD..ï¿½ï¿½ï¿½ï¿½|
+> 0001d020 Â 00 00 00 00 00 00 00 00 Â 74 69 6d 65 3a 20 31 32 Â |........time: 12|
+> 0001d030 Â 39 33 30 35 31 38 33 38 Â 2e 36 33 31 38 37 38 37 Â |93051838.6318787|
+> 0001d040 Â 39 34 0a 00 00 00 00 00 Â 00 00 00 00 00 00 00 00 Â |94..............|
+>
+> That's at 1293051838.631878794, compared to the recorded "end" time
+> 1293051838.634052658 (diff is 2,173 microsec). So, that very likely is
+> the real end of the trace.
+>
+> This leads to a theory that this has something to do with overflow:
+>
+> $ cat per_cpu/cpu0/stats
+> entries: 0
+> overrun: 16770
+> commit overrun: 0
+>
+> 16770 events where each event is on the order of 1msec apart roughly
+> accounts for 10 seconds of missing time.
+>
+> So, it seems that the ring buffer started out writing to what
+> eventually became the initial reader page. But then as overflow
+> occurs, that page does not get overwritten.
+>
+> There are three outstanding questions in my mind:
+> 1) Why are we seeing the "first" page, which either should have been
+> overwritten, or should not be seen at all?
+> 2) As before: Why the strange "commit" value in the page header for
+> the first contiguous-event page (Page 4)?
+> 3) Why is that first page getting split up?
+>
+> I think I have an idea about (3):
+>
+> in ring_buffer_read_page(), there are three conditions for reading out
+> a page on event at a time. One of them is "reader_page ==
+> commit_page". That seems plausible for a full ring buffer, but I
+> haven't fully groked that.
+>
+> But, within that path, it seems it should still copy out the whole
+> page. But, the loop condition for copying events is "while (len >
+> size)" where len is the remaining available size in the
+> caller-supplied page, and size is the size of the next event in the
+> ring buffer. So, that's off-by-one. if len == size, then there's just
+> enough space.
+>
+> Does this fit? 0x1000 - 0xfbc = 68 bytes for len, but the event in
+> Page 2 is 52 bytes... So no. hmm, another question.
+>
+> But, size is set to "rb_event_ts_length(event)", to ensure space for
+> time extend events to be paired with the event after it. Then in the
+> next loop, "size" bytes are memcpy'd to the caller-supplied page.
+> HOWEVER, the reader is then advanced with rb_advance_reader(), which
+> *does not* advance twice for time-extend events. So, the memcpy will
+> have copied two events, and "pos" is advanced by "size", and "len" is
+> decremented by "size", but then the reader is advanced by *only* one
+> event! This means that time-extend events should be followed by
+> duplicate events. Sure enough, the first event on the Page 1 is a time
+> extend, and it is followed by two identical events (I only show the
+> first word of the duplicate above, though).
+>
+> A patch for these two problems is incoming.
+>
+> Sorry for these long messages. If this is too much detail, I can scale it back.
+>
 
-This is listed in the dmaengine documentation [1], but I obviously
-missed this before merging.  This also would have been caught by
-lockdep as required by SubmitChecklist.  As far as corrective action
-before 2.6.37-final.  It looks like this driver needs a full scrub
-which seems unreasonable to complete and test over the holidays before
-.37 lands.  Linus we either need to mark this "depends on BROKEN" or
-revert it.
+Okay. Now I've tested with the patch (sent separately).
 
-Support for the DMA_COMPL flags are necessary if the DMA_MEMCPY
-capability is advertised, yes this driver got this wrong.  I'll update
-the documentation to make this requirement clear, and audit the other
-drivers.  With slave-only drivers the only usage model is one where
-the client driver owns dma-mapping.  In the non-slave (opportunistic
-memcpy offload) case the client is unaware of the engine so the driver
-owns unmapping.  The minimal fix is to disable memcpy offload.
-
---
-Dan
-
-[1]
-3.6 Constraints:
-1/ Calls to async_<operation> are not permitted in IRQ context.  Other
-   contexts are permitted provided constraint #2 is not violated.
-2/ Completion callback routines cannot submit new operations.  This
-   results in recursion in the synchronous case and spin_locks being
-   acquired twice in the asynchronous case.
+- Extra pages are only seen when I don't reset the buffer before
+running the test again.
+- So far, when I've seen extra pages, I've only seen one extra page.
+- When there's an extra page, it's still full of pre-overflow data, as
+opposed to, say, data from the previous test.
