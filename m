@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab0LVCws (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Dec 2010 21:52:48 -0500
+	id S1752114Ab0LVCxf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Dec 2010 21:53:35 -0500
 Received: from mga01.intel.com ([192.55.52.88]:52614 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751628Ab0LVCwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751907Ab0LVCwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 21 Dec 2010 21:52:46 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,210,1291622400"; 
-   d="scan'208";a="639093797"
+   d="scan'208";a="639093820"
 From: Huang Ying <ying.huang@intel.com>
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
 Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
         Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
-        ying.huang@intel.com, Dean Nelson <dnelson@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC 1/3] mm, Make __get_user_pages return -EHWPOISON for HWPOISON page optionally
-Date: Wed, 22 Dec 2010 10:51:55 +0800
-Message-Id: <1292986317-2805-2-git-send-email-ying.huang@intel.com>
+        ying.huang@intel.com, Dean Nelson <dnelson@redhat.com>
+Subject: [RFC 2/3] KVM, Replace is_hwpoison_address with get_user_pages_hwpoison
+Date: Wed, 22 Dec 2010 10:51:56 +0800
+Message-Id: <1292986317-2805-3-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1292986317-2805-1-git-send-email-ying.huang@intel.com>
 References: <1292986317-2805-1-git-send-email-ying.huang@intel.com>
@@ -25,125 +24,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make __get_user_pages return -EHWPOISON for HWPOISON page only if
-FOLL_HWPOISON is specified.  With this patch, the interested callers
-can distinguish HWPOISON page from general FAULT page, while other
-callers will still get -EFAULT for pages, so the user space interface
-need not to be changed.
+is_hwpoison_address only checks whether the page table entry is
+hwpoisoned, regardless the memory page mapped.  While
+get_user_pages_hwpoison will check both.
 
-get_user_pages_hwpoison is added as a variant of get_user_pages that
-can return -EHWPOISON for HWPOISON page.
-
-This feature is needed by KVM, where UCR MCE should be relayed to
-guest for HWPOISON page, while instruction emulation and MMIO will be
-tried for general FAULT page.
-
-The idea comes from Andrew Morton.
+In a following patch, we will introduce unpoison_address, which will
+clear the poisoned page table entry to make it possible to allocate a
+new memory page for the virtual address.  But it is also possible that
+the underlying memory page is kept poisoned even after the
+corresponding page table entry is cleared, that is, a new memory page
+can not be allocated.  get_user_pages_hwpoison can catch these
+situations.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- include/asm-generic/errno.h |    2 +
- include/linux/mm.h          |    5 ++++
- mm/memory.c                 |   53 +++++++++++++++++++++++++++++++++++++++++---
- 3 files changed, 57 insertions(+), 3 deletions(-)
+ include/linux/mm.h  |    8 --------
+ mm/memory-failure.c |   32 --------------------------------
+ virt/kvm/kvm_main.c |    4 +++-
+ 3 files changed, 3 insertions(+), 41 deletions(-)
 
---- a/include/asm-generic/errno.h
-+++ b/include/asm-generic/errno.h
-@@ -108,4 +108,6 @@
- 
- #define ERFKILL		132	/* Operation not possible due to RF-kill */
- 
-+#define EHWPOISON	133	/* Memory page has hardware error */
-+
- #endif
 --- a/include/linux/mm.h
 +++ b/include/linux/mm.h
-@@ -860,6 +860,10 @@ int get_user_pages(struct task_struct *t
- 			struct page **pages, struct vm_area_struct **vmas);
- int get_user_pages_fast(unsigned long start, int nr_pages, int write,
- 			struct page **pages);
-+int get_user_pages_hwpoison(struct task_struct *tsk, struct mm_struct *mm,
-+			    unsigned long start, int nr_pages, int write,
-+			    int force, struct page **pages,
-+			    struct vm_area_struct **vmas);
- struct page *get_dump_page(unsigned long addr);
+@@ -1512,14 +1512,6 @@ extern int sysctl_memory_failure_recover
+ extern void shake_page(struct page *p, int access);
+ extern atomic_long_t mce_bad_pages;
+ extern int soft_offline_page(struct page *page, int flags);
+-#ifdef CONFIG_MEMORY_FAILURE
+-int is_hwpoison_address(unsigned long addr);
+-#else
+-static inline int is_hwpoison_address(unsigned long addr)
+-{
+-	return 0;
+-}
+-#endif
  
- extern int try_to_release_page(struct page * page, gfp_t gfp_mask);
-@@ -1415,6 +1419,7 @@ struct page *follow_page(struct vm_area_
- #define FOLL_GET	0x04	/* do get_page on page */
- #define FOLL_DUMP	0x08	/* give error on hole if it would be zero */
- #define FOLL_FORCE	0x10	/* get_user_pages read/write w/o permission */
-+#define FOLL_HWPOISON	0x20	/* check page is hwpoisoned */
+ extern void dump_page(struct page *page);
  
- typedef int (*pte_fn_t)(pte_t *pte, pgtable_t token, unsigned long addr,
- 			void *data);
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1449,9 +1449,16 @@ int __get_user_pages(struct task_struct
- 				if (ret & VM_FAULT_ERROR) {
- 					if (ret & VM_FAULT_OOM)
- 						return i ? i : -ENOMEM;
--					if (ret &
--					    (VM_FAULT_HWPOISON|VM_FAULT_HWPOISON_LARGE|
--					     VM_FAULT_SIGBUS))
-+					if (ret & (VM_FAULT_HWPOISON |
-+						   VM_FAULT_HWPOISON_LARGE)) {
-+						if (i)
-+							return i;
-+						else if (gup_flags & FOLL_HWPOISON)
-+							return -EHWPOISON;
-+						else
-+							return -EFAULT;
-+					}
-+					if (ret & VM_FAULT_SIGBUS)
- 						return i ? i : -EFAULT;
- 					BUG();
- 				}
-@@ -1564,6 +1571,46 @@ int get_user_pages(struct task_struct *t
- EXPORT_SYMBOL(get_user_pages);
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1433,35 +1433,3 @@ done:
+ 	/* keep elevated page count for bad page */
+ 	return ret;
+ }
+-
+-/*
+- * The caller must hold current->mm->mmap_sem in read mode.
+- */
+-int is_hwpoison_address(unsigned long addr)
+-{
+-	pgd_t *pgdp;
+-	pud_t pud, *pudp;
+-	pmd_t pmd, *pmdp;
+-	pte_t pte, *ptep;
+-	swp_entry_t entry;
+-
+-	pgdp = pgd_offset(current->mm, addr);
+-	if (!pgd_present(*pgdp))
+-		return 0;
+-	pudp = pud_offset(pgdp, addr);
+-	pud = *pudp;
+-	if (!pud_present(pud) || pud_large(pud))
+-		return 0;
+-	pmdp = pmd_offset(pudp, addr);
+-	pmd = *pmdp;
+-	if (!pmd_present(pmd) || pmd_large(pmd))
+-		return 0;
+-	ptep = pte_offset_map(pmdp, addr);
+-	pte = *ptep;
+-	pte_unmap(ptep);
+-	if (!is_swap_pte(pte))
+-		return 0;
+-	entry = pte_to_swp_entry(pte);
+-	return is_hwpoison_entry(entry);
+-}
+-EXPORT_SYMBOL_GPL(is_hwpoison_address);
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -966,7 +966,9 @@ static pfn_t hva_to_pfn(struct kvm *kvm,
+ 			goto return_fault_page;
  
- /**
-+ * get_user_pages_hwpoison() - pin user pages in memory, return hwpoison status
-+ * @tsk:	task_struct of target task
-+ * @mm:		mm_struct of target mm
-+ * @start:	starting user address
-+ * @nr_pages:	number of pages from start to pin
-+ * @write:	whether pages will be written to by the caller
-+ * @force:	whether to force write access even if user mapping is
-+ *		readonly. This will result in the page being COWed even
-+ *		in MAP_SHARED mappings. You do not want this.
-+ * @pages:	array that receives pointers to the pages pinned.
-+ *		Should be at least nr_pages long. Or NULL, if caller
-+ *		only intends to ensure the pages are faulted in.
-+ * @vmas:	array of pointers to vmas corresponding to each page.
-+ *		Or NULL if the caller does not require them.
-+ *
-+ * Returns number of pages pinned.
-+ *
-+ * If the page table or memory page is hwpoisoned, return -EHWPOISON.
-+ *
-+ * Otherwise, same as get_user_pages.
-+ */
-+int get_user_pages_hwpoison(struct task_struct *tsk, struct mm_struct *mm,
-+			    unsigned long start, int nr_pages, int write,
-+			    int force, struct page **pages,
-+			    struct vm_area_struct **vmas)
-+{
-+	int flags = FOLL_TOUCH | FOLL_HWPOISON;
-+
-+	if (pages)
-+		flags |= FOLL_GET;
-+	if (write)
-+		flags |= FOLL_WRITE;
-+	if (force)
-+		flags |= FOLL_FORCE;
-+
-+	return __get_user_pages(tsk, mm, start, nr_pages, flags, pages, vmas);
-+}
-+EXPORT_SYMBOL(get_user_pages_hwpoison);
-+
-+/**
-  * get_dump_page() - pin user page in memory while writing it to core dump
-  * @addr: user address
-  *
+ 		down_read(&current->mm->mmap_sem);
+-		if (is_hwpoison_address(addr)) {
++		npages = get_user_pages_hwpoison(current, current->mm,
++						 addr, 1, 1, 0, page, NULL);
++		if (npages == -EHWPOISON) {
+ 			up_read(&current->mm->mmap_sem);
+ 			get_page(hwpoison_page);
+ 			return page_to_pfn(hwpoison_page);
