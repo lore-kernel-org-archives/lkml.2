@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893Ab0LVPds (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 10:33:48 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62706 "EHLO
+	id S1753808Ab0LVPhN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 10:37:13 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59208 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753508Ab0LVPdr (ORCPT
+	with ESMTP id S1753488Ab0LVPhM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 10:33:47 -0500
+	Wed, 22 Dec 2010 10:37:12 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Sf648p32kNtVaQ1DHh5MYd2JF/FLS2hijMcsWImglfvh4ik9V87SfNkosHgTlykOMP
-         +0vJG1CEI2xQyIaStgfsmEkyGcn3XMo8FU1KOtFyqJorGRsWbduX9dQ9yeOwNLPIm3vN
-         7GTc3R0e0EbM8Hmaehu1M1xCaU7qpKr+eApro=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=QF8Rb+0ZWV37PbB+bc7Q6Zt4iHhF1urCytnKF5QZdfP1AptfbiLaM2IkzKgQhA1eri
+         n+6MuyatpqnYwctWTsrz/NlMYxMZwWo3fF+7YQ5PVcf9p5+XE2q7kkb4bPkFe/cI+ZEA
+         p/8mjDHQj6mXbzHCZ3MPWh6mt8JpxlTSjZMIE=
+MIME-Version: 1.0
+In-Reply-To: <1293020757.1998.2.camel@localhost.localdomain>
+References: <1293020757.1998.2.camel@localhost.localdomain>
+Date: Thu, 23 Dec 2010 00:37:11 +0900
+Message-ID: <AANLkTin6GMiXHuoVzNWPcj0jXDqWyfWCwW9fd-v=pq=X@mail.gmail.com>
+Subject: Re: 2.6.37-rc7: NULL pointer dereference
 From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        William Irwin <wli@holomorphy.com>
-Subject: [PATCH 3/7] tlbfs: Change remove_from_page_cache
-Date: Thu, 23 Dec 2010 00:32:45 +0900
-Message-Id: <8fb992356ab4f24f0bcb47b8a59b298508e48745.1293031046.git.minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <cover.1293031046.git.minchan.kim@gmail.com>
-References: <cover.1293031046.git.minchan.kim@gmail.com>
-In-Reply-To: <cover.1293031046.git.minchan.kim@gmail.com>
-References: <cover.1293031046.git.minchan.kim@gmail.com>
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series changes remove_from_page_cache's page ref counting
-rule. Page cache ref count is decreased in delete_from_page_cache.
-So we don't need decreasing page reference by caller.
+Cced linux-mm and maintainers of memcg.
 
-Cc: William Irwin <wli@holomorphy.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- fs/hugetlbfs/inode.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+On Wed, Dec 22, 2010 at 9:25 PM, Thomas Meyer <thomas@m3y3r.de> wrote:
+> BUG: unable to handle kernel NULL pointer dereference at 00000008
+> IP: [<c04eae14>] __mem_cgroup_try_charge+0x234/0x430
+> *pde = 00000000
+> Oops: 0000 [#1]
+> last sysfs file: /sys/devices/platform/regulatory.0/uevent
+> Modules linked in: vfat fat usb_storage fuse sco bnep l2cap bluetooth cpufreq_ondemand acpi_cpufreq mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables kvm_intel kvm uinput arc4 ecb snd_hda_codec_hdmi snd_hda_codec_realtek iwlagn snd_hda_intel snd_hda_codec iwlcore uvcvideo snd_hwdep mac80211 snd_seq videodev snd_seq_device snd_pcm cfg80211 snd_timer rfkill v4l1_compat wmi snd pcspkr soundcore joydev serio_raw snd_page_alloc ipv6 sha256_generic aes_i586 aes_generic cbc dm_crypt [last unloaded: scsi_wait_scan]
+> Pid: 8058, comm: swapoff Tainted: G          I 2.6.37-rc7 #221 JM11-MS/Aspire 1810T
+> EIP: 0060:[<c04eae14>] EFLAGS: 00010246 CPU: 0
+> EIP is at __mem_cgroup_try_charge+0x234/0x430
+> EAX: 00000008 EBX: 00000000 ECX: f2e71f10 EDX: f2f96380
+> ESI: f3e55860 EDI: 00020000 EBP: f2e71eb4 ESP: f2e71e54
+>  DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
+> Process swapoff (pid: 8058, ti=f2e70000 task=f3e55860 task.ti=f2e70000)
+> Stack:
+>  f2e71e88 c0456607 26ba7c1c f3e55860 00000010 f3e55860 069d208a b2ee651d
+>  00000008 000000d0 f2f96380 00000005 01ffffff f2e71f10 00000246 ec1a64ae
+>  ffffffff 00000000 27b52eae f044dc84 00000000 f2f96380 00000000 000000d0
+> Call Trace:
+>  [<c0456607>] ? ktime_get_ts+0x107/0x140
+>  [<c04ebb89>] ? mem_cgroup_try_charge_swapin+0x49/0xb0
+>  [<c04d9b4b>] ? unuse_mm+0x1db/0x300
+>  [<c04dad9a>] ? sys_swapoff+0x2aa/0x890
+>  [<c047cd58>] ? audit_syscall_entry+0x218/0x240
+>  [<c047d043>] ? audit_syscall_exit+0x1f3/0x220
+>  [<c0403013>] ? sysenter_do_call+0x12/0x22
+> Code: 55 c8 8b 82 90 01 00 00 85 c0 74 09 8b 80 7c 03 00 00 8b 58 2c 3b 1d 54 20 a9 c0 74 61 3b 1d 4c ca a4 c0 74 6a 8d 43 08 89 45 c0 <8b> 43 08 a8 01 0f 85 73 fe ff ff 8d 4b 04 89 5d bc 8d 76 00 8b
+> EIP: [<c04eae14>] __mem_cgroup_try_charge+0x234/0x430 SS:ESP 0068:f2e71e54
+> CR2: 0000000000000008
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-index 9885082..b9eeb1c 100644
---- a/fs/hugetlbfs/inode.c
-+++ b/fs/hugetlbfs/inode.c
-@@ -332,8 +332,7 @@ static void truncate_huge_page(struct page *page)
- {
- 	cancel_dirty_page(page, /* No IO accounting for huge pages? */0);
- 	ClearPageUptodate(page);
--	remove_from_page_cache(page);
--	put_page(page);
-+	delete_from_page_cache(page);
- }
- 
- static void truncate_hugepages(struct inode *inode, loff_t lstart)
+
+
 -- 
-1.7.0.4
-
+Kind regards,
+Minchan Kim
