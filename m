@@ -1,46 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523Ab0LWJca (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 04:32:30 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60733 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752373Ab0LWJc3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 04:32:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=rNqJNRVF9vfMDSchEzCmVklXv+d5Fv0anm72RQn/BPmuFy9ahv1krjfEvZV+/wlPtr
-         /zLY7BDmHHeKLzN/+9It1VygVTh78XLN9+OlJ1hBXwgbNc6mZgPVaSNKtqU6tvufuv+b
-         lAkdSj1duKMM7RQp81IfgNUwQ7yBceaDdCXCc=
+	id S1752491Ab0LWJ6Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 04:58:25 -0500
+Received: from smtp4-g21.free.fr ([212.27.42.4]:45603 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752004Ab0LWJ6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 04:58:24 -0500
+From: Florian Fainelli <ffainelli@freebox.fr>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] coretemp: fix junction temperature for Intel CE4100
+Date: Thu, 23 Dec 2010 10:57:11 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.35-23-server; KDE/4.5.1; x86_64; ; )
+Cc: Dirk Brandewie <dirk.brandewie@gmail.com>, sodaville@linutronix.de,
+        Fenghua Yu <fenghua.yu@intel.com>
+References: <201012142217.07194.ffainelli@freebox.fr>
+In-Reply-To: <201012142217.07194.ffainelli@freebox.fr>
+Organization: Freebox
 MIME-Version: 1.0
-In-Reply-To: <AANLkTik4N5Caw2f4nNFgYXDjxwCMvkyLGyTrkz+vDfXS@mail.gmail.com>
-References: <alpine.DEB.2.00.1012212339090.30885@skynet.skynet.ie>
-	<s5hei99vkqj.wl%tiwai@suse.de>
-	<c6d829$pujifv@fmsmga001.fm.intel.com>
-	<AANLkTik4N5Caw2f4nNFgYXDjxwCMvkyLGyTrkz+vDfXS@mail.gmail.com>
-Date: Thu, 23 Dec 2010 10:32:27 +0100
-Message-ID: <AANLkTin_BLuv+T5jg6nM2KxaQjpR+T0JZACR480t5N0=@mail.gmail.com>
-Subject: Re: [git pull] drm fixes
-From: Alex Riesen <raa.lkml@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, Takashi Iwai <tiwai@suse.de>,
-        Dave Airlie <airlied@linux.ie>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012231057.11940.ffainelli@freebox.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 23, 2010 at 04:54, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> Why does that code need to figure out some LVDS clock from the BIOS?
-> Why can't the code look at the actual hardware state or similar, since
-> presumably the screen is on after boot. THAT we can rely on, since a
-> BIOS that doesn't initialize LVDS is not going to ever ship even as
-> pre-release.
+On Tuesday 14 December 2010 22:17:07 Florian Fainelli wrote:
+> From: Florian Fainelli <ffainelli@freebox.fr>
+> 
+> The Intel CE4100 System-on-a-Chip has a slightly higher junction
+> temperature (110 degrees Celsius) than other Atom-based hardware.
+> 
+> Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
+> Cc: sodaville@linutronix.de
+> Cc: Fenghua Yu <fenghua.yu@intel.com>
+> Signed-off-by: Florian Fainelli <ffainelli@freebox.fr>
 
-What if the system booted with it's display turned off? Like a closed
-laptop lid or disconnected monitor?
+Fenghua, is there anything wrong with that patch? Thank you.
+
+> ---
+> diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+> index 42de98d..e47b405 100644
+> --- a/drivers/hwmon/coretemp.c
+> +++ b/drivers/hwmon/coretemp.c
+> @@ -178,12 +178,23 @@ static int __devinit adjust_tjmax(struct cpuinfo_x86
+> *c, u32 id, struct device *
+> 
+>  		host_bridge = pci_get_bus_and_slot(0, PCI_DEVFN(0, 0));
+> 
+> -		if (host_bridge && host_bridge->vendor == PCI_VENDOR_ID_INTEL
+> -		    && (host_bridge->device == 0xa000	/* NM10 based nettop */
+> -		    || host_bridge->device == 0xa010))	/* NM10 based netbook */
+> -			tjmax = 100000;
+> -		else
+> -			tjmax = 90000;
+> +		if (host_bridge && host_bridge->vendor == PCI_VENDOR_ID_INTEL) {
+> +			switch (host_bridge->device) {
+> +			/* NM10 based nettop */
+> +			case 0xa000:
+> +			/* NM10 based netbook */
+> +			case 0xa010:
+> +				tjmax = 100000;
+> +				break;
+> +			/* IntelCE Sodaville (CE4100) */
+> +			case 0x0708:
+> +				tjmax = 110000;
+> +				break;
+> +			default:
+> +				tjmax = 90000;
+> +				break;
+> +			}
+> +		}
+> 
+>  		pci_dev_put(host_bridge);
+>  	}
