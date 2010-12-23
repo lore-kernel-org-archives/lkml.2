@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615Ab0LWKKF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 05:10:05 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44635 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752434Ab0LWKKC (ORCPT
+	id S1752664Ab0LWKL0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 05:11:26 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:34665 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752328Ab0LWKLZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 05:10:02 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=c0ino4cjqcqovFjvx7qLWIiwqk4Okbvr5LDJQznUlxxfv1E497Cy80ZsTXT+W7/qPR
-         L7xnNHt9pIgld1EgC2dXqdab4Yw/Y4L3YHAPmCGH6eTr1FPvMe2Ik0gr0Upk+7PSUQTG
-         dwmrnWMdST/2m0bLZ/EDXtFv0umSkIu4yQXdA=
-Date: Thu, 23 Dec 2010 11:09:56 +0100
-From: Tejun Heo <htejun@gmail.com>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Boot failure with block/for-next
-Message-ID: <20101223100956.GA15625@htj.dyndns.org>
-References: <1293038823.3019.89.camel@mulgrave.site>
- <1293078673.3019.765.camel@mulgrave.site>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1293078673.3019.765.camel@mulgrave.site>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 23 Dec 2010 05:11:25 -0500
+Subject: Re: [RFC PATCH] perf: Add load latency monitoring on Intel
+ Nehalem/Westmere
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>, paulus <paulus@samba.org>
+In-Reply-To: <1293092915.2565.168.camel@minggr.sh.intel.com>
+References: <1293005543.2565.156.camel@minggr.sh.intel.com>
+	 <1293008431.2170.63.camel@laptop>
+	 <AANLkTintfpyvx=Pj1+uu8kCkFn3zT6b36h27Hb7pm=ZF@mail.gmail.com>
+	 <1293014701.2170.111.camel@laptop>
+	 <1293092915.2565.168.camel@minggr.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 23 Dec 2010 11:11:24 +0100
+Message-ID: <1293099084.2170.438.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, James.
+On Thu, 2010-12-23 at 16:28 +0800, Lin Ming wrote:
+> On Wed, 2010-12-22 at 18:45 +0800, Peter Zijlstra wrote:
+> > On Wed, 2010-12-22 at 11:08 +0100, Stephane Eranian wrote:
+> > > Yes, I think there is more to it than just data source, unfortunately.
+> > > If you want to avoid returning an opaque u64 (PERF_SAMPLE_EXTRA), then
+> > > you need to break it down: PERF_SAMPLE_DATA_SRC, PERF_SAMPLE_XX
+> > > and so on. 
+> > 
+> > I guess we can do things like:
+> > 
+> > Satisfied by {L1, L2, L3, RAM}x{snoop, local, remote} + unknown, and
+> > encode "Pending core cache HIT" as L2-snoop or something, whatever is
+> > most appropriate.
+> > 
+> > But does that cover every architecture?
+> > 
+> > Also, since that doesn't require more that 4 bits to encode, we could
+> > try and categorize what else is around and try and create a well
+> > specified _EXTRA register, I mean, we still got 60bits left after this.
+> 
+> Could you tell more about this well specified _EXTRA register?
 
-On Wed, Dec 22, 2010 at 10:31:13PM -0600, James Bottomley wrote:
- > Actually, surprisingly, bisection confirms it's this patch:
- > 
- > Author: Tejun Heo <tj@kernel.org>
- > Date:   Wed Dec 8 20:57:42 2010 +0100
- > 
- >     sd: implement sd_check_events()
- > 
- > I can't quite see how yet.
+Like how we should look at other archs (like POWER) and try and figure
+out what other useful information is available and come up with a
+generic format for that?
 
-Does the following patch fix the problem?  Thanks.
+We could of course leave the 59 bits as reserved and fill it in later,
+and go with the data source bits only for now..
 
-Subject: sd: don't clear media presence unless it's removable
 
-set_media_not_present() can be called for a non-removable device if it
-raises UA for whatever reason; however, block layer calls into
-sd_check_events() only if the device is removable.  As the function is
-responsible for setting media presence, sd continues to think that
-media is missing on the non-removable device making it inaccessible.
 
-This patch makes set_media_not_present() clear media presence iff the
-device is removable.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- drivers/scsi/sd.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
 
-Index: work/drivers/scsi/sd.c
-===================================================================
---- work.orig/drivers/scsi/sd.c
-+++ work/drivers/scsi/sd.c
-@@ -993,8 +993,11 @@ static void set_media_not_present(struct
- {
- 	if (sdkp->media_present)
- 		sdkp->device->changed = 1;
--	sdkp->media_present = 0;
--	sdkp->capacity = 0;
-+
-+	if (sdkp->device->removable) {
-+		sdkp->media_present = 0;
-+		sdkp->capacity = 0;
-+	}
- }
- 
- static int media_not_present(struct scsi_disk *sdkp,
+
