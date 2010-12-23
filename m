@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab0LWRzq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 12:55:46 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48354
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753322Ab0LWRzp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 12:55:45 -0500
-Date: Thu, 23 Dec 2010 09:56:15 -0800 (PST)
-Message-Id: <20101223.095615.39194231.davem@davemloft.net>
-To: jkosina@suse.cz
-Cc: eric.dumazet@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vojtech@suse.cz,
-        ilpo.jarvinen@helsinki.fi
-Subject: Re: [PATCH] tcp: cleanup of cwnd initialization in
- tcp_init_metrics()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LNX.2.00.1012231022430.16569@pobox.suse.cz>
-References: <alpine.LNX.2.00.1012231002310.16569@pobox.suse.cz>
-	<1293095663.7789.3.camel@edumazet-laptop>
-	<alpine.LNX.2.00.1012231022430.16569@pobox.suse.cz>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1753555Ab0LWSCX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 13:02:23 -0500
+Received: from fieldses.org ([174.143.236.118]:49084 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752649Ab0LWSCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 13:02:21 -0500
+Date: Thu, 23 Dec 2010 13:02:14 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: "Kirill A. Shutemov" <kas@openvz.org>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, Neil Brown <neilb@suse.de>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/12] make rpc_pipefs be mountable multiple times
+Message-ID: <20101223180214.GA25865@fieldses.org>
+References: <1292846078-31793-1-git-send-email-kirill@shutemov.name>
+ <20101220144644.GC20643@fieldses.org>
+ <20101221233215.GC7092@shutemov.name>
+ <20101221234520.GA30525@fieldses.org>
+ <20101223065033.GA14006@shutemov.name>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101223065033.GA14006@shutemov.name>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Kosina <jkosina@suse.cz>
-Date: Thu, 23 Dec 2010 10:23:38 +0100 (CET)
+On Thu, Dec 23, 2010 at 08:50:33AM +0200, Kirill A. Shutemov wrote:
+> On Tue, Dec 21, 2010 at 06:45:21PM -0500, J. Bruce Fields wrote:
+> > On Wed, Dec 22, 2010 at 01:32:15AM +0200, Kirill A. Shutemov wrote:
+> > > On Mon, Dec 20, 2010 at 09:46:44AM -0500, J. Bruce Fields wrote:
+> > > > By the way, was there ever a resolution to Trond's question?:
+> > > > 
+> > > > 	http://marc.info/?l=linux-nfs&m=128655758712817&w=2
+> > > > 
+> > > > 	"The keyring upcalls are currently initiated through the same
+> > > > 	mechanism as module_request and therefore get started with the
+> > > > 	init_nsproxy namespace. We'd really like them to run inside the
+> > > > 	same container as the process.  As part of the same problem,
+> > > > 	there is the issue of what to do with the dns resolver and
+> > > > 	Bryan's new keyring based idmapper code."
+> > > 
+> > > I'm not sure that I understand the problem correctly.
+> > > 
+> > > Currently, idmap uses dentry taken from client's cl_rpcclient->cl_path
+> > > (see nfs_idmap_new()). cl_rpcclient (and cl_path) is initialized with
+> > > rpcmount resolved against mount namespace of mount process (see
+> > > nfs_create_rpc_client()).
+> > > I assume it's correct.
+> > 
+> > There's actually two separate sets of idmapper code; look at
+> > fs/nfs/idmapper.c, the first part of the file (between #ifdef
+> > CONFIG_NFS_USE_NEW_IDMAPPER and #else) is idmapping code that uses
+> > request_key().  The code you're looking at (including nfs_idmap_new())
+> > is later in the file, and deprecated.
+> 
+> IIUC, we need to save nsproxy of mount process in struct nfs_client and
+> pass it down to request_key(). I think it's outside of this patchset.
 
-> Right, that's even better. Updated patch below.
-> 
-> 
-> From: Jiri Kosina <jkosina@suse.cz>
-> Subject: [PATCH] tcp: cleanup of cwnd initialization in tcp_init_metrics()
-> 
-> Commit 86bcebafc5e7f5 ("tcp: fix >2 iw selection") fixed a case
-> when congestion window initialization has been mistakenly omitted
-> by introducing cwnd label and putting backwards goto from the
-> end of the function.
-> 
-> This makes the code unnecessarily tricky to read and understand
-> on a first sight.
-> 
-> Shuffle the code around a little bit to make it more obvious.
-> 
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+OK.  Yes, I wasn't expecting this patchset to deal with it, just
+wondered if there was a plan.
 
-Applied, thanks everyone.
+--b.
