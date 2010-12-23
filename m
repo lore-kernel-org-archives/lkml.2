@@ -1,95 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751743Ab0LWGOY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 01:14:24 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41196 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577Ab0LWGOV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 01:14:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=ojV9ez1ZIgaf21r2T7QINTjxPVNVUJhPuG73BYmdq1U5WYeom2G8Lh1NYxlL96CAAT
-         v0gKEoqbQ8HFYyjErH+ZIJR6lwqoOtVzjQiRJXJyK4guDl5R/jBckXBV9uGnfurPhKGM
-         GpvDU8Io3GojU5+pYplcI2KgChJNIudF9c5/w=
-MIME-Version: 1.0
-In-Reply-To: <4D127D72.8050303@suse.cz>
-References: <1293047849-26078-1-git-send-email-dirk.brandewie@gmail.com>
-	<1293047849-26078-2-git-send-email-dirk.brandewie@gmail.com>
-	<4D127D72.8050303@suse.cz>
-Date: Thu, 23 Dec 2010 07:14:20 +0100
-X-Google-Sender-Auth: QA1BMunAs3pYvDv46H8fYTHOpXg
-Message-ID: <AANLkTik-yqs2Dy+MBAcQ5Gpb9Vcvd80BS=C=fuDe7z-A@mail.gmail.com>
-Subject: Re: [PATCH 1/4] of: Add support for linking device tree blobs into vmlinux
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: dirk.brandewie@gmail.com, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linuxppc-dev@lists.ozlabs.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1751882Ab0LWGOc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 01:14:32 -0500
+Received: from mga09.intel.com ([134.134.136.24]:54294 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751213Ab0LWGOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 01:14:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,218,1291622400"; 
+   d="scan'208";a="690073755"
+From: Youquan Song <youquan.song@intel.com>
+To: davej@redhat.com, cpufreq@vger.kernle.org
+Cc: venki@google.com, arjan@linux.intel.com, lenb@kernel.org,
+        suresh.b.siddha@intel.com, kent.liu@intel.com, chaohong.guo@intel.com,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Youquan Song <youquan.song@linux.intel.com>,
+        Youquan Song <youquan.song@intel.com>
+Subject: [PATCH 0/6] cpufreq: Add sampling window to enhance ondemand governor power efficiency 
+Date: Thu, 23 Dec 2010 14:17:00 +0800
+Message-Id: <1293085026-18173-1-git-send-email-youquan.song@intel.com>
+X-Mailer: git-send-email 1.6.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/12/22 Michal Marek <mmarek@suse.cz>:
-> On 22.12.2010 20:57, dirk.brandewie@gmail.com wrote:
->>
->> From: Dirk Brandewie<dirk.brandewie@gmail.com>
->>
->> This patch adds support for linking device tree blob(s) into
->> vmlinux. Modifies asm-generic/vmlinux.lds.h to add linking
->> .dtb sections into vmlinux. To maintain compatiblity with the of/fdt
->> driver code platforms MUST copy the blob to a non-init memory location
->> before the kernel frees the .init.* sections in the image.
->>
->> Modifies scripts/Makefile.lib to add a kbuild command to
->> compile DTS files to device tree blobs and a rule to create objects to
->> wrap the blobs for linking.
->>
->> STRUCT_ALIGNMENT is defined in vmlinux.lds.h for use in the rule to
->> create wrapper objects for the dtb in Makefile.lib.  The
->> STRUCT_ALIGN() macro in vmlinux.lds.h is modified to use the
->> STRUCT_ALIGNMENT definition.
->>
->> The DTB's are placed on 32 byte boundries to allow parsing the blob
->> with driver/of/fdt.c during early boot without having to copy the blob
->> to get the structure alignment GCC expects.
->>
->> A DTB is linked in by adding the DTB object to the list of objects to
->> be linked into vmlinux in the archtecture specific Makefile using
->>    obj-y += foo.dtb.o
->>
->> Signed-off-by: Dirk Brandewie<dirk.brandewie@gmail.com>
->
-> Hi,
->
-> you can add
-> Acked-by: Michal Marek <mmarek@suse.cz>
-> but I thing this series should go through the tip tree, as your primary
-> target seems to be x86 and patch 2/4 depends on the ce4100 code that is only
-> in tip.
+Running a well-known power performance benchmark, current ondemand governor is
+not power efficiency. Even when workload is at 10%~20% of full capability, the
+CPU will also run much of time at highest frequency. In fact, in this situation,
+the lowest frequency often can meet user requirement. When running this
+benchmark on turbo mode enable machine, I compare the result of different
+governors, the results of ondemand and performance governors are the closest.
+There is no much power saving between ondemand and performance governor. If we
+can ignore the little power saving, the perfomance governor even better than 
+ondemand governor, at leaset for better performance. 
 
-If the two lines
+One potential reason for ondemand governor is not power efficiency is that
+ondemand governor decide the next target frequency by instant requirement during
+sampling interval (10ms or possible a little longer for deferrable timer in idle
+tickless). The instant requirement can response quickly to workload change, but
+it does not usually reflect workload real CPU usage requirement in a small 
+longer time and it possibly causes frequently change between highest and lowest
+frequency.     
 
-+# device tree blob
-+obj-$(CONFIG_X86_INTEL_CE) += ce4100.dtb.o
+This patchset add a sampling window for percpu ondemand thread. Each sampling
+window with max 150 record items which slide every sampling interval and use to
+track the workload requirement during latest sampling window timeframe. 
+The average of workload during latest sample windows will be used to decide next
+target frequency. The sampling window targets to be more truly reflects workload
+requirement of CPU usage. 
 
-are removed, patch 2/4 no longer depends on the ce4100 code.
-The summary and description for that patch don't mention anything
-about ce4100 anyway.
+The sampling window size can be set by user and default max sampling window
+is one second. When it is set to default sampling rate, the sampling window will
+roll back to original behaviour.
 
-Gr{oetje,eeting}s,
+The sampling window size also can be dynamicly changed in according to current
+system workload busy situation. The more idle, the smaller sampling window; the
+more busy, the larger sampling window. It will increase the respnose speed by
+decrease sampling window, while it will keep CPU working at high speed when busy
+by increase sampling window and also avoid unefficiently dangle between highest
+and lowest frequency in original ondemand.
 
-                        Geert
+We set to up_threshold to 80 and down_differential to 20, so when workload reach
+ 80% of current frequency, it will increase to highest frequency. When workload
+decrease to below (up_threshold - down_differential)60% of current frequency
+capability, it will decrease the frequency, which ensure that CPU work above 60%
+of its current capability, otherwise lowest frequency will be used. 
+   
+The Turbo Mode (P0) will comsume much more power compare with second largest
+frequency (P1) and P1 frequency is often double, even more, with Pn lowest
+frequency; Current logic will increase sharply to highest frequency Turbo Mode
+when workload reach to up_threshold of current frequency capacity, even current
+frequency at lowest frequency. In this patchset, it will firstly evaluate P1 if
+it is enough to support current workload before directly enter into Turbo Mode.
+If P1 can meet workload requirement, it will save power compare of being Turbo
+Mode.  
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+On my test platform with two sockets Westmere-EP server and run the well-known
+power performance benchmark, when workload is low, the patched governor is 
+power saving like powersave governor; while workload is high, the patched 
+governor is as good as performance governor but the patched governor consume
+less power than performance governor. Along with other patches in this patchset,
+the patched governor power efficiey is improved about 10%, while the performance
+has no apparently decrease.
+Running other benchmarks in phoronix, kernel building save 5% power, while the
+performance without decrease. compress-7zip save power 2%, while the performance
+also does not apparently decrease. However, apache benchmark saves power but its
+performance decrease a lot.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+
