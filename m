@@ -1,84 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446Ab0LWVI7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 16:08:59 -0500
-Received: from isilmar-3.linta.de ([188.40.101.200]:49055 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751418Ab0LWVI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 16:08:56 -0500
-Date: Thu, 23 Dec 2010 21:48:21 +0100
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Matthew Garrett <mjg@redhat.com>, Youquan Song <youquan.song@intel.com>,
-        davej@redhat.com, cpufreq@vger.kernel.org, arjan@linux.intel.com,
-        lenb@kernel.org, suresh.b.siddha@intel.com, kent.liu@intel.com,
-        chaohong.guo@intel.com, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org,
-        Youquan Song <youquan.song@linux.intel.com>
-Subject: Re: [PATCH 6/6] cpufreq: Evaluate P1 before enter turbo mode
-Message-ID: <20101223204821.GA6441@comet.dominikbrodowski.net>
-Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-	Venkatesh Pallipadi <venki@google.com>,
-	Matthew Garrett <mjg@redhat.com>,
-	Youquan Song <youquan.song@intel.com>, davej@redhat.com,
-	cpufreq@vger.kernel.org, arjan@linux.intel.com, lenb@kernel.org,
-	suresh.b.siddha@intel.com, kent.liu@intel.com,
-	chaohong.guo@intel.com, linux-kernel@vger.kernel.org,
-	linux-acpi@vger.kernel.org,
-	Youquan Song <youquan.song@linux.intel.com>
-References: <1293085424-18212-1-git-send-email-youquan.song@intel.com>
- <1293085424-18212-2-git-send-email-youquan.song@intel.com>
- <1293085424-18212-3-git-send-email-youquan.song@intel.com>
- <1293085424-18212-4-git-send-email-youquan.song@intel.com>
- <1293085424-18212-5-git-send-email-youquan.song@intel.com>
- <1293085424-18212-6-git-send-email-youquan.song@intel.com>
- <1293085424-18212-7-git-send-email-youquan.song@intel.com>
- <20101223105730.GB18363@comet.dominikbrodowski.net>
- <20101223143859.GA1402@srcf.ucam.org>
- <AANLkTi=XkMqUSfO076mVqGCHv-Kw-jnuL8dZiN17ypqZ@mail.gmail.com>
+	id S1752255Ab0LWVQn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 16:16:43 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:51401 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655Ab0LWVQm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 16:16:42 -0500
+Date: Thu, 23 Dec 2010 21:16:38 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: linux-acpi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, lenb@kernel.org
+Subject: [PATCH] acpi: Update battery information on notification 0x81
+Message-ID: <20101223211638.GA7862@srcf.ucam.org>
+References: <1281990739-17912-1-git-send-email-mjg@redhat.com> <20101215171928.GA17746@srcf.ucam.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=XkMqUSfO076mVqGCHv-Kw-jnuL8dZiN17ypqZ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101215171928.GA17746@srcf.ucam.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+A notification event 0x81 from an ACPI battery device requires us to
+re-read the battery information structure. Do so, and if the battery's
+reporting units have changed (as is the case on some Thinkpads) destroy
+and recreate the battery in order to populate the fields correctly.
 
-On Thu, Dec 23, 2010 at 10:13:54AM -0800, Venkatesh Pallipadi wrote:
-> On Thu, Dec 23, 2010 at 6:38 AM, Matthew Garrett <mjg@redhat.com> wrote:
-> > On Thu, Dec 23, 2010 at 11:57:30AM +0100, Dominik Brodowski wrote:
-> >
-> >> NACK. First of all, why is it only a "turbo mode" if it's 1000 kHz
-> >> difference?
-> >
-> > I believe that that's how it's supposed to be defined for Intel systems,
-> > but you're right that this doesn't belong in generic code. AMD have
-> > support for enabling/disabling their equivalent functionality through
-> > sysfs - I'd say that copying that interface and using it to limit the
-> > set of p-states provided to the core makes more sense.
-> >
-> 
-> If this 1000kHz hack is needed, it should be in acpi-cpufreq driver
-> along with Intel CPU and Turbo mode capability check..
-> I had a change earlier and I don't think I ever pushed it out. But, it
-> was doing the max freq transition on turbo capable CPUs in 2 steps.
-> Something like:
-> - cpu is in one of the low freqs.
-> - ondemand asks for highest freq.
-> - acpi-cpufreq will check whether the CPU is turbo capable and will
-> only switch to non-turbo peak freq as first step.
-> - If ondemand asks for highest freq again, acpi-cpufreq will then
-> switch to turbo freq.
-> 
-> Something like that would probably help the problem here?
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+---
 
-then we'd put policy in two places, instead of letting the decision be made
-at one place. So I'd not favour such an approach... What should indeed be in
-acpi-cpufreq is to mark certain frequency steps as being not power
-efficient, though.
+Respun against Linus master
 
-Best,
-	Dominik
+ drivers/acpi/battery.c |   24 +++++++++++++++++-------
+ 1 files changed, 17 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+index 9fb9d5a..8da9c88 100644
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -130,7 +130,7 @@ struct acpi_battery {
+ 	unsigned long flags;
+ };
+ 
+-static int acpi_battery_update(struct acpi_battery *battery);
++static int acpi_battery_update(struct acpi_battery *battery, bool get_info);
+ 
+ #define to_acpi_battery(x) container_of(x, struct acpi_battery, bat);
+ 
+@@ -186,7 +186,7 @@ static int acpi_battery_get_property(struct power_supply *psy,
+ 	int ret = 0;
+ 	struct acpi_battery *battery = to_acpi_battery(psy);
+ 
+-	if (acpi_battery_update(battery))
++	if (acpi_battery_update(battery, false))
+ 		return -ENODEV;
+ 
+ 	if (acpi_battery_present(battery)) {
+@@ -610,9 +610,11 @@ static void acpi_battery_quirks2(struct acpi_battery *battery)
+ 	}
+ }
+ 
+-static int acpi_battery_update(struct acpi_battery *battery)
++static int acpi_battery_update(struct acpi_battery *battery, bool get_info)
+ {
+ 	int result, old_present = acpi_battery_present(battery);
++	int old_power_unit = battery->power_unit;
++
+ 	result = acpi_battery_get_status(battery);
+ 	if (result)
+ 		return result;
+@@ -631,6 +633,14 @@ static int acpi_battery_update(struct acpi_battery *battery)
+ 	}
+ 	if (!battery->bat.dev)
+ 		sysfs_add_battery(battery);
++	if (get_info) {
++		acpi_battery_get_info(battery);
++		if (old_power_unit != battery->power_unit) {
++			/* The battery has changed its reporting units */
++			sysfs_remove_battery(battery);
++			sysfs_add_battery(battery);
++		}
++	}
+ 	result = acpi_battery_get_state(battery);
+ 	acpi_battery_quirks2(battery);
+ 	return result;
+@@ -808,7 +818,7 @@ static print_func acpi_print_funcs[ACPI_BATTERY_NUMFILES] = {
+ static int acpi_battery_read(int fid, struct seq_file *seq)
+ {
+ 	struct acpi_battery *battery = seq->private;
+-	int result = acpi_battery_update(battery);
++	int result = acpi_battery_update(battery, false);
+ 	return acpi_print_funcs[fid](seq, result);
+ }
+ 
+@@ -919,7 +929,7 @@ static void acpi_battery_notify(struct acpi_device *device, u32 event)
+ 	if (!battery)
+ 		return;
+ 	old = battery->bat.dev;
+-	acpi_battery_update(battery);
++	acpi_battery_update(battery, (event == ACPI_BATTERY_NOTIFY_INFO));
+ 	acpi_bus_generate_proc_event(device, event,
+ 				     acpi_battery_present(battery));
+ 	acpi_bus_generate_netlink_event(device->pnp.device_class,
+@@ -948,7 +958,7 @@ static int acpi_battery_add(struct acpi_device *device)
+ 	if (ACPI_SUCCESS(acpi_get_handle(battery->device->handle,
+ 			"_BIX", &handle)))
+ 		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
+-	acpi_battery_update(battery);
++	acpi_battery_update(battery, false);
+ #ifdef CONFIG_ACPI_PROCFS_POWER
+ 	result = acpi_battery_add_fs(device);
+ #endif
+@@ -989,7 +999,7 @@ static int acpi_battery_resume(struct acpi_device *device)
+ 		return -EINVAL;
+ 	battery = acpi_driver_data(device);
+ 	battery->update_time = 0;
+-	acpi_battery_update(battery);
++	acpi_battery_update(battery, true);
+ 	return 0;
+ }
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
