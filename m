@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821Ab0LWIyA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 03:54:00 -0500
+	id S1752830Ab0LWIyU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 03:54:20 -0500
 Received: from mailout4.samsung.com ([203.254.224.34]:31603 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752450Ab0LWIxn (ORCPT
+	with ESMTP id S1752706Ab0LWIxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 03:53:43 -0500
-Date: Thu, 23 Dec 2010 17:53:38 +0900
+	Thu, 23 Dec 2010 03:53:42 -0500
+Date: Thu, 23 Dec 2010 17:53:37 +0900
 From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: [PATCH v3 3/4] regulator MAX8998/LP3974: Support DVS-GPIO.
+Subject: [PATCH v3 2/4] MFD MAX8998/LP3974: Support LP3974 RTC
 In-reply-to: <1293094419-24221-1-git-send-email-myungjoo.ham@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
@@ -18,221 +18,268 @@ Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Joonyoung Shim <jy0922.shim@samsung.com>,
         Lukasz Majewski <l.majewski@samsung.com>, myungjoo.ham@gmail.com
-Message-id: <1293094419-24221-4-git-send-email-myungjoo.ham@samsung.com>
+Message-id: <1293094419-24221-3-git-send-email-myungjoo.ham@samsung.com>
 X-Mailer: git-send-email 1.7.1
 Content-transfer-encoding: 7BIT
 References: <1293094419-24221-1-git-send-email-myungjoo.ham@samsung.com>
-X-OriginalArrivalTime: 23 Dec 2010 08:53:39.0749 (UTC)
- FILETIME=[E4BEF550:01CBA27E]
+X-OriginalArrivalTime: 23 Dec 2010 08:53:39.0733 (UTC)
+ FILETIME=[E4BC8450:01CBA27E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The previous driver did not support BUCK1-DVS3, BUCK1-DVS4, and
-BUCK2-DVS2 modes. This patch adds such modes and an option to block
-setting buck1/2 voltages out of the preset values.
+The first releases of LP3974 have a large delay in RTC registers,
+which requires 2 seconds of delay after writing to a rtc register
+(recommended by National Semiconductor's engineers)
+before reading it. If the device name is "lp3974-regerr", the rtc driver
+assumes that such delays are required. If the device name is "lp3974",
+the rtc driver does not. Although we have not seen LP3974s without
+requiring such delays, we assume that such LP3974s will be released
+soon (or they have done so already) and they are supported by "lp3974".
+
+This patch adds delays with msleep when writing values to RTC registers
+if the device name is "lp3974-regerr".
 
 Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/regulator/max8998.c |   87 +++++++++++++++++++++++++++++++++----------
- include/linux/mfd/max8998.h |   26 ++++++++++---
- 2 files changed, 87 insertions(+), 26 deletions(-)
+ drivers/mfd/max8998.c               |   41 ++++++++++++++++++++++++--
+ drivers/regulator/max8998.c         |    7 ++++
+ drivers/rtc/rtc-max8998.c           |   55 +++++++++++++++++++++++++++++++---
+ include/linux/mfd/max8998-private.h |    1 +
+ 4 files changed, 96 insertions(+), 8 deletions(-)
 
+diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
+index 5ce00ad..8b9eed1 100644
+--- a/drivers/mfd/max8998.c
++++ b/drivers/mfd/max8998.c
+@@ -42,6 +42,22 @@ static struct mfd_cell max8998_devs[] = {
+ 	},
+ };
+ 
++static struct mfd_cell lp3974_devs[] = {
++	{
++		.name = "lp3974-pmic",
++	}, {
++		.name = "lp3974-rtc",
++	},
++};
++
++static struct mfd_cell lp3974_regerr_devs[] = {
++	{
++		.name = "lp3974-pmic",
++	}, {
++		.name = "lp3974-rtc-regerr",
++	},
++};
++
+ int max8998_read_reg(struct i2c_client *i2c, u8 reg, u8 *dest)
+ {
+ 	struct max8998_dev *max8998 = i2c_get_clientdata(i2c);
+@@ -146,11 +162,29 @@ static int max8998_i2c_probe(struct i2c_client *i2c,
+ 
+ 	max8998_irq_init(max8998);
+ 
+-	ret = mfd_add_devices(max8998->dev, -1,
+-			      max8998_devs, ARRAY_SIZE(max8998_devs),
+-			      NULL, 0);
+ 	pm_runtime_set_active(max8998->dev);
+ 
++	switch (id->driver_data) {
++	case TYPE_LP3974_REGERR:
++		ret = mfd_add_devices(max8998->dev, -1,
++				lp3974_regerr_devs,
++				ARRAY_SIZE(lp3974_regerr_devs),
++				NULL, 0);
++		break;
++	case TYPE_LP3974:
++		ret = mfd_add_devices(max8998->dev, -1,
++				lp3974_devs, ARRAY_SIZE(lp3974_devs),
++				NULL, 0);
++		break;
++	case TYPE_MAX8998:
++		ret = mfd_add_devices(max8998->dev, -1,
++				max8998_devs, ARRAY_SIZE(max8998_devs),
++				NULL, 0);
++		break;
++	default:
++		ret = -EINVAL;
++	}
++
+ 	if (ret < 0)
+ 		goto err;
+ 
+@@ -179,6 +213,7 @@ static int max8998_i2c_remove(struct i2c_client *i2c)
+ static const struct i2c_device_id max8998_i2c_id[] = {
+ 	{ "max8998", TYPE_MAX8998 },
+ 	{ "lp3974", TYPE_LP3974},
++	{ "lp3974-regerr", TYPE_LP3974_REGERR },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, max8998_i2c_id);
 diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
-index d183756..9946488 100644
+index ed5253c..d183756 100644
 --- a/drivers/regulator/max8998.c
 +++ b/drivers/regulator/max8998.c
-@@ -425,6 +425,9 @@ static int max8998_set_voltage_buck(struct regulator_dev *rdev,
- 				}
- 			}
+@@ -836,6 +836,12 @@ static int __devexit max8998_pmic_remove(struct platform_device *pdev)
+ 	return 0;
+ }
  
-+			if (pdata->buck_voltage_lock)
-+				return -EINVAL;
++static const struct platform_device_id max8998_pmic_id[] = {
++	{ "max8998-pmic", TYPE_MAX8998 },
++	{ "lp3974-pmic", TYPE_LP3974 },
++	{ }
++};
 +
- 			/* no predefine regulator found */
- 			max8998->buck1_idx = (buck1_last_val % 2) + 2;
- 			dev_dbg(max8998->dev, "max8998->buck1_idx:%d\n",
-@@ -452,18 +455,26 @@ buck1_exit:
- 			"BUCK2, i:%d buck2_vol1:%d, buck2_vol2:%d\n"
- 			, i, max8998->buck2_vol[0], max8998->buck2_vol[1]);
- 		if (gpio_is_valid(pdata->buck2_set3)) {
--			if (max8998->buck2_vol[0] == i) {
--				max8998->buck2_idx = 0;
--				buck2_gpio_set(pdata->buck2_set3, 0);
--			} else {
--				max8998->buck2_idx = 1;
--				ret = max8998_get_voltage_register(rdev, &reg,
--								   &shift,
--								   &mask);
--				ret = max8998_write_reg(i2c, reg, i);
--				max8998->buck2_vol[1] = i;
--				buck2_gpio_set(pdata->buck2_set3, 1);
-+
-+			/* check if requested voltage */
-+			/* value is already defined */
-+			for (j = 0; j < ARRAY_SIZE(max8998->buck2_vol); j++) {
-+				if (max8998->buck2_vol[j] == i) {
-+					max8998->buck2_idx = j;
-+					buck2_gpio_set(pdata->buck2_set3, j);
-+					goto buck2_exit;
-+				}
- 			}
-+
-+			if (pdata->buck_voltage_lock)
-+				return -EINVAL;
-+
-+			max8998_get_voltage_register(rdev,
-+					&reg, &shift, &mask);
-+			ret = max8998_write_reg(i2c, reg, i);
-+			max8998->buck2_vol[max8998->buck2_idx] = i;
-+			buck2_gpio_set(pdata->buck2_set3, max8998->buck2_idx);
-+buck2_exit:
- 			dev_dbg(max8998->dev, "%s: SET3:%d\n", i2c->name,
- 				gpio_get_value(pdata->buck2_set3));
- 		} else {
-@@ -708,6 +719,9 @@ static __devinit int max8998_pmic_probe(struct platform_device *pdev)
- 	platform_set_drvdata(pdev, max8998);
- 	i2c = max8998->iodev->i2c;
+ static struct platform_driver max8998_pmic_driver = {
+ 	.driver = {
+ 		.name = "max8998-pmic",
+@@ -843,6 +849,7 @@ static struct platform_driver max8998_pmic_driver = {
+ 	},
+ 	.probe = max8998_pmic_probe,
+ 	.remove = __devexit_p(max8998_pmic_remove),
++	.id_table = max8998_pmic_id,
+ };
  
-+	max8998->buck1_idx = pdata->buck1_default_idx;
-+	max8998->buck2_idx = pdata->buck2_default_idx;
+ static int __init max8998_pmic_init(void)
+diff --git a/drivers/rtc/rtc-max8998.c b/drivers/rtc/rtc-max8998.c
+index f22dee3..421ef0e 100644
+--- a/drivers/rtc/rtc-max8998.c
++++ b/drivers/rtc/rtc-max8998.c
+@@ -20,6 +20,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/mfd/max8998.h>
+ #include <linux/mfd/max8998-private.h>
++#include <linux/delay.h>
+ 
+ #define MAX8998_RTC_SEC			0x00
+ #define MAX8998_RTC_MIN			0x01
+@@ -73,6 +74,7 @@ struct max8998_rtc_info {
+ 	struct i2c_client	*rtc;
+ 	struct rtc_device	*rtc_dev;
+ 	int irq;
++	bool lp3974_bug_workaround;
+ };
+ 
+ static void max8998_data_to_tm(u8 *data, struct rtc_time *tm)
+@@ -124,10 +126,16 @@ static int max8998_rtc_set_time(struct device *dev, struct rtc_time *tm)
+ {
+ 	struct max8998_rtc_info *info = dev_get_drvdata(dev);
+ 	u8 data[8];
++	int ret;
+ 
+ 	max8998_tm_to_data(tm, data);
+ 
+-	return max8998_bulk_write(info->rtc, MAX8998_RTC_SEC, 8, data);
++	ret = max8998_bulk_write(info->rtc, MAX8998_RTC_SEC, 8, data);
 +
- 	/* NOTE: */
- 	/* For unused GPIO NOT marked as -1 (thereof equal to 0)  WARN_ON */
- 	/* will be displayed */
-@@ -740,23 +754,46 @@ static __devinit int max8998_pmic_probe(struct platform_device *pdev)
- 		i = 0;
- 		while (buck12_voltage_map_desc.min +
- 		       buck12_voltage_map_desc.step*i
--		       != (pdata->buck1_max_voltage1 / 1000))
-+		       < (pdata->buck1_voltage1 / 1000))
- 			i++;
--		printk(KERN_ERR "i:%d, buck1_idx:%d\n", i, max8998->buck1_idx);
- 		max8998->buck1_vol[0] = i;
- 		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK1_VOLTAGE1, i);
-+		if (ret)
-+			return ret;
- 
- 		/* Set predefined value for BUCK1 register 2 */
- 		i = 0;
- 		while (buck12_voltage_map_desc.min +
- 		       buck12_voltage_map_desc.step*i
--		       != (pdata->buck1_max_voltage2 / 1000))
-+		       < (pdata->buck1_voltage2 / 1000))
- 			i++;
- 
- 		max8998->buck1_vol[1] = i;
--		printk(KERN_ERR "i:%d, buck1_idx:%d\n", i, max8998->buck1_idx);
--		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK1_VOLTAGE2, i)
--			+ ret;
-+		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK1_VOLTAGE2, i);
-+		if (ret)
-+			return ret;
++	if (info->lp3974_bug_workaround)
++		msleep(2000);
 +
-+		/* Set predefined value for BUCK1 register 3 */
-+		i = 0;
-+		while (buck12_voltage_map_desc.min +
-+		       buck12_voltage_map_desc.step*i
-+		       < (pdata->buck1_voltage3 / 1000))
-+			i++;
++	return ret;
+ }
+ 
+ static int max8998_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+@@ -163,12 +171,29 @@ static int max8998_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 
+ static int max8998_rtc_stop_alarm(struct max8998_rtc_info *info)
+ {
+-	return max8998_write_reg(info->rtc, MAX8998_ALARM0_CONF, 0);
++	int ret = max8998_write_reg(info->rtc, MAX8998_ALARM0_CONF, 0);
 +
-+		max8998->buck1_vol[2] = i;
-+		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK1_VOLTAGE3, i);
-+		if (ret)
-+			return ret;
++	if (info->lp3974_bug_workaround)
++		msleep(2000);
 +
-+		/* Set predefined value for BUCK1 register 4 */
-+		i = 0;
-+		while (buck12_voltage_map_desc.min +
-+		       buck12_voltage_map_desc.step*i
-+		       < (pdata->buck1_voltage4 / 1000))
-+			i++;
++	return ret;
+ }
+ 
+ static int max8998_rtc_start_alarm(struct max8998_rtc_info *info)
+ {
+-	return max8998_write_reg(info->rtc, MAX8998_ALARM0_CONF, 0x77);
++	int ret;
++	u8 alarm0_conf = 0x77;
 +
-+		max8998->buck1_vol[3] = i;
-+		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK1_VOLTAGE4, i);
- 		if (ret)
- 			return ret;
++	/* LP3974 with delay bug chips has rtc alarm bugs with "MONTH" field */
++	if (info->lp3974_bug_workaround)
++		alarm0_conf = 0x57;
++
++	ret = max8998_write_reg(info->rtc, MAX8998_ALARM0_CONF, alarm0_conf);
++
++	if (info->lp3974_bug_workaround)
++		msleep(2000);
++
++	return ret;
+ }
  
-@@ -773,18 +810,28 @@ static __devinit int max8998_pmic_probe(struct platform_device *pdev)
- 		gpio_direction_output(pdata->buck2_set3,
- 				      max8998->buck2_idx & 0x1);
+ static int max8998_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+@@ -187,10 +212,13 @@ static int max8998_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 	if (ret < 0)
+ 		return ret;
  
--		/* BUCK2 - set preset default voltage value to buck2_vol[0] */
-+		/* BUCK2 register 1 */
- 		i = 0;
- 		while (buck12_voltage_map_desc.min +
- 		       buck12_voltage_map_desc.step*i
--		       != (pdata->buck2_max_voltage / 1000))
-+		       < (pdata->buck2_voltage1 / 1000))
- 			i++;
--		printk(KERN_ERR "i:%d, buck2_idx:%d\n", i, max8998->buck2_idx);
- 		max8998->buck2_vol[0] = i;
- 		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK2_VOLTAGE1, i);
- 		if (ret)
- 			return ret;
++	if (info->lp3974_bug_workaround)
++		msleep(2000);
++
+ 	if (alrm->enabled)
+-		return max8998_rtc_start_alarm(info);
++		ret = max8998_rtc_start_alarm(info);
  
-+		/* BUCK2 register 2 */
-+		i = 0;
-+		while (buck12_voltage_map_desc.min +
-+		       buck12_voltage_map_desc.step*i
-+		       < (pdata->buck2_voltage2 / 1000))
-+			i++;
-+		printk(KERN_ERR "i2:%d, buck2_idx:%d\n", i, max8998->buck2_idx);
-+		max8998->buck2_vol[1] = i;
-+		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK2_VOLTAGE2, i);
-+		if (ret)
-+			return ret;
- 	}
+-	return 0;
++	return ret;
+ }
  
- 	for (i = 0; i < pdata->num_regulators; i++) {
-diff --git a/include/linux/mfd/max8998.h b/include/linux/mfd/max8998.h
-index 686a744..7194c35 100644
---- a/include/linux/mfd/max8998.h
-+++ b/include/linux/mfd/max8998.h
-@@ -70,24 +70,38 @@ struct max8998_regulator_data {
-  * @num_regulators: number of regultors used
-  * @irq_base: base IRQ number for max8998, required for IRQs
-  * @ono: power onoff IRQ number for max8998
-- * @buck1_max_voltage1: BUCK1 maximum alowed voltage register 1
-- * @buck1_max_voltage2: BUCK1 maximum alowed voltage register 2
-- * @buck2_max_voltage: BUCK2 maximum alowed voltage
-+ * @buck_voltage_lock: Do NOT change the values of the following six
-+ *   registers set by buck?_voltage?. The voltage of BUCK1/2 cannot
-+ *   be other than the preset values.
-+ * @buck1_voltage1: BUCK1 DVS mode 1 voltage register
-+ * @buck1_voltage2: BUCK1 DVS mode 2 voltage register
-+ * @buck1_voltage3: BUCK1 DVS mode 3 voltage register
-+ * @buck1_voltage4: BUCK1 DVS mode 4 voltage register
-+ * @buck2_voltage1: BUCK2 DVS mode 1 voltage register
-+ * @buck2_voltage2: BUCK2 DVS mode 2 voltage register
-  * @buck1_set1: BUCK1 gpio pin 1 to set output voltage
-  * @buck1_set2: BUCK1 gpio pin 2 to set output voltage
-+ * @buck1_default_idx: Default for BUCK1 gpio pin 1, 2
-  * @buck2_set3: BUCK2 gpio pin to set output voltage
-+ * @buck2_default_idx: Default for BUCK2 gpio pin.
-  */
- struct max8998_platform_data {
- 	struct max8998_regulator_data	*regulators;
- 	int				num_regulators;
- 	int				irq_base;
- 	int				ono;
--	int                             buck1_max_voltage1;
--	int                             buck1_max_voltage2;
--	int                             buck2_max_voltage;
-+	bool				buck_voltage_lock;
-+	int				buck1_voltage1;
-+	int				buck1_voltage2;
-+	int				buck1_voltage3;
-+	int				buck1_voltage4;
-+	int				buck2_voltage1;
-+	int				buck2_voltage2;
- 	int				buck1_set1;
- 	int				buck1_set2;
-+	int				buck1_default_idx;
- 	int				buck2_set3;
-+	int				buck2_default_idx;
- 	bool				wakeup;
+ static int max8998_rtc_alarm_irq_enable(struct device *dev,
+@@ -249,10 +277,18 @@ static int __devinit max8998_rtc_probe(struct platform_device *pdev)
+ 
+ 	ret = request_threaded_irq(info->irq, NULL, max8998_rtc_alarm_irq, 0,
+ 			"rtc-alarm0", info);
++
+ 	if (ret < 0)
+ 		dev_err(&pdev->dev, "Failed to request alarm IRQ: %d: %d\n",
+ 			info->irq, ret);
+ 
++	dev_info(&pdev->dev, "RTC CHIP NAME: %s\n", pdev->id_entry->name);
++	if (pdev->id_entry->driver_data == TYPE_LP3974_REGERR) {
++		info->lp3974_bug_workaround = true;
++		dev_warn(&pdev->dev, "LP3974 with RTC REGERR option."
++				" RTC updates will be extremely slow.\n");
++	}
++
+ 	return 0;
+ 
+ out_rtc:
+@@ -273,6 +309,14 @@ static int __devexit max8998_rtc_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct platform_device_id max8998_rtc_id[] = {
++	{ "max8998-rtc", TYPE_MAX8998 },
++	{ "lp3974-rtc", TYPE_LP3974 },
++	/* REGERR: requires 1 ~ 2 s of delay after writing to RTC registers */
++	{ "lp3974-rtc-regerr", TYPE_LP3974_REGERR },
++	{ }
++};
++
+ static struct platform_driver max8998_rtc_driver = {
+ 	.driver		= {
+ 		.name	= "max8998-rtc",
+@@ -280,6 +324,7 @@ static struct platform_driver max8998_rtc_driver = {
+ 	},
+ 	.probe		= max8998_rtc_probe,
+ 	.remove		= __devexit_p(max8998_rtc_remove),
++	.id_table	= max8998_rtc_id,
+ };
+ 
+ static int __init max8998_rtc_init(void)
+diff --git a/include/linux/mfd/max8998-private.h b/include/linux/mfd/max8998-private.h
+index effa5d3..f107f42 100644
+--- a/include/linux/mfd/max8998-private.h
++++ b/include/linux/mfd/max8998-private.h
+@@ -105,6 +105,7 @@ enum {
+ enum {
+ 	TYPE_MAX8998 = 0, /* Default */
+ 	TYPE_LP3974,	/* National version of MAX8998 */
++	TYPE_LP3974_REGERR, /* National version of MAX8998 with RTC REG BUG */
+ 	TYPE_LP3979,	/* Added AVS */
  };
  
 -- 
