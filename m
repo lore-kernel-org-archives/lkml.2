@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752898Ab0LWLMg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 06:12:36 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:58300 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599Ab0LWLMe (ORCPT
+	id S1752996Ab0LWLMo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 06:12:44 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:42089 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752941Ab0LWLMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 06:12:34 -0500
+	Thu, 23 Dec 2010 06:12:41 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=raEO3K4l7VOvOYQvwHFDkkNMyWkL3zGdkIhz8EPTVGEooZGA+S26Aw0CZ46MDrwsZC
-         XJhDnnJSy36aOZrm54rMZteVkrHu03zkMIctkgWwiIRkhbaP5wzWvNE5iFHciHxYUVZH
-         7554tE8LzuP5/TLPtoJAuJgNWMWJ2jvUJsZXM=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=Gjgl1xQgZXHDD39Ixijd182/WtVLLaiYnQKuWFSQ/Ghi6Je8b3ZDjIkWVFErukTYhd
+         X+sgq9aLL3nLiK+mkQTFhcUqn6tHtprFFqQzXryg01RA81BIusUxiZV3yOqLroY6RnvR
+         rD+w7RQp7wOl5xlCpKjFh6+ma4nI9b2iHF9lo=
 From: Richard Genoud <richard.genoud@gmail.com>
 To: spi-devel-general@lists.sourceforge.net
 Cc: David Brownell <dbrownell@users.sourceforge.net>,
@@ -21,19 +21,20 @@ Cc: David Brownell <dbrownell@users.sourceforge.net>,
 	<u.kleine-koenig@pengutronix.de>,
         linux-kernel@vger.kernel.org,
         Richard Genoud <richard.genoud@gmail.com>
-Subject: [PATCH 1/2] spi_imx.c: CSPI3 irq is 0 on imx25
-Date: Thu, 23 Dec 2010 12:12:09 +0100
-Message-Id: <1293102730-32528-1-git-send-email-richard.genoud@gmail.com>
+Subject: [PATCH 2/2] spi_imx.c: TRIVIAL mx25 & mx35 SPI_VER is 0.7
+Date: Thu, 23 Dec 2010 12:12:10 +0100
+Message-Id: <1293102730-32528-2-git-send-email-richard.genoud@gmail.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1293102730-32528-1-git-send-email-richard.genoud@gmail.com>
+References: <1293102730-32528-1-git-send-email-richard.genoud@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On imx25 soc, MX25_INT_CSPI3 is 0
-(cf arch/arm/plat-mxc/include/mach/mx25.h).
-So, the test (spi_imx->irq <= 0) returned an error
-for this platform.
-This patch corrects this behaviour.
+The check on cpu_is_mx25 and cpu_is_mx35 was made twice.
+This is obviously wrong.
+Anyway, this patch won't change the previous behaviour which is
+SPI_IMX_VER_0_7 for mx25 and mx35.
 
 Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
 ---
@@ -41,18 +42,18 @@ Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/spi/spi_imx.c b/drivers/spi/spi_imx.c
-index 55a38e2..793ae99 100644
+index 793ae99..96be9d1 100644
 --- a/drivers/spi/spi_imx.c
 +++ b/drivers/spi/spi_imx.c
-@@ -847,7 +847,7 @@ static int __devinit spi_imx_probe(struct platform_device *pdev)
- 	}
- 
- 	spi_imx->irq = platform_get_irq(pdev, 0);
--	if (spi_imx->irq <= 0) {
-+	if (spi_imx->irq < 0) {
- 		ret = -EINVAL;
- 		goto out_iounmap;
- 	}
+@@ -806,7 +806,7 @@ static int __devinit spi_imx_probe(struct platform_device *pdev)
+ 		if (cpu_is_mx25() || cpu_is_mx35())
+ 			spi_imx->devtype_data =
+ 				spi_imx_devtype_data[SPI_IMX_VER_0_7];
+-		else if (cpu_is_mx25() || cpu_is_mx31() || cpu_is_mx35())
++		else if (cpu_is_mx31())
+ 			spi_imx->devtype_data =
+ 				spi_imx_devtype_data[SPI_IMX_VER_0_4];
+ 		else if (cpu_is_mx27() || cpu_is_mx21())
 -- 
 1.7.1
 
