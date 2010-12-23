@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab0LWChD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 21:37:03 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49167 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752482Ab0LWChB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 21:37:01 -0500
-Date: Thu, 23 Dec 2010 02:36:59 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>
-Subject: Re: [PATCH v2 5/6] MFD MAX8998/LP3974: Charger Support
-Message-ID: <20101223023659.GC25886@opensource.wolfsonmicro.com>
-References: <20101221155004.GA21871@opensource.wolfsonmicro.com> <1292998991-26968-6-git-send-email-myungjoo.ham@samsung.com> <20101222133359.GF26306@opensource.wolfsonmicro.com> <AANLkTimhfUTD0ze8VaBz9BtkuEMx9sutc-1VvsXfH-ot@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimhfUTD0ze8VaBz9BtkuEMx9sutc-1VvsXfH-ot@mail.gmail.com>
-X-Cookie: You will forget that you ever knew me.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1752813Ab0LWCiu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 21:38:50 -0500
+Received: from mga11.intel.com ([192.55.52.93]:30891 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751881Ab0LWCit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 21:38:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,217,1291622400"; 
+   d="scan'208";a="639599700"
+Subject: Re: [patch 2/3] add new macros to make percpu readmostly section
+ correctly align
+From: Shaohua Li <shaohua.li@intel.com>
+To: Tejun Heo <htejun@gmail.com>
+Cc: Sam Ravnborg <sam@ravnborg.org>, lkml <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
+In-Reply-To: <4D0F7C5A.1060107@gmail.com>
+References: <1291255347.12777.116.camel@sli10-conroe>
+	 <4D0243DD.3090507@gmail.com> <1292200886.2323.15.camel@sli10-conroe>
+	 <4D05EBA4.60202@gmail.com> <1292288924.2323.458.camel@sli10-conroe>
+	 <4D073FA9.9020801@gmail.com> <1292378268.2323.464.camel@sli10-conroe>
+	 <4D08CBF4.6040102@gmail.com> <1292460817.2323.465.camel@sli10-conroe>
+	 <20101216054620.GA3241@merkur.ravnborg.org>
+	 <1292479000.2323.468.camel@sli10-conroe>  <4D09E0EE.7040605@gmail.com>
+	 <1292808518.10593.8.camel@sli10-conroe>  <4D0F7C5A.1060107@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 23 Dec 2010 10:38:34 +0800
+Message-ID: <1293071914.10593.10.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 23, 2010 at 11:10:41AM +0900, MyungJoo Ham wrote:
-> On Wed, Dec 22, 2010 at 10:33 PM, Mark Brown
-> > On Wed, Dec 22, 2010 at 03:23:10PM +0900, MyungJoo Ham wrote:
+On Mon, 2010-12-20 at 23:55 +0800, Tejun Heo wrote:
+> Hello,
+> 
+> On 12/20/2010 02:28 AM, Shaohua Li wrote:
+> >> Not being able to cross build every arch is okay but you at least need
+> >> to make an effort to make things easily applicable to other archs and
+> >> avoid adding subtle ugliness like the above.  Please at least try to
+> >> look at other arch codes and see how things can be made to work across
+> >> different archs.  Setting up cross compilers for the major archs, for
+> >> example, sparc, power and ia64 isn't that difficult either.
+> >
+> > This still needs I fix every arch, for example, as Sam pointed out,
+> > spark build will fail. I really have the bandwidth and capability to do
+> > this. Increment changes are always preferred. My original patch is
+> > trying to follow increment changes way.
+> 
+> Yeah, well, in my experience, those approaches usually just end up
+> piling partial conversions on top of different set of partial
+> conversions.  It's not like we're talking about a major arch dependent
+> feature it's just a matter of looking through different arch codes,
+> maybe test building some, pushing things to linux-next and dealing
+> with fallouts if there is any.  I'll try to do it myself.
+Thanks for doing it and sorry I didn't do it.
+The first patch in the series isn't related to this issue, please
+consider merge it.
 
-> > Normally I'd expect a battery charger to be exposed via the power supply
-> > API - I'd at least expect to see a consumer in the power supply API
+Thanks,
+Shaohua
 
-> The "CHARGER" regulator is to give the charger control to the user,
-> which consists of switching (turn on/off) and current limit, which is
-> what a current regulator does. On the contrary, when the charger
-> control is implemented by power supply API, we do not have explicit
-> control over such features (current limit and turn on/off).
-
-Sure, like I say I'd just expect to see some power supply API visibility
-- that could be a driver that provides the control that's needed to
-userspace by controlling a current regulator, for example.
-
-> Furthermore, a board may need to support multiple types of
-> charger(USB, ACDC-5V-2A, ACDC-5V-1A, ...), which have various current
-> limits. Thus, we need to adjust charger current limit out of PMIC
-> driver unless the PMIC can detect every type of supported chargers,
-> which MAX8998/LP3974 cannot.
-
-Interesting system design - I've not seen that before.  With the system
-designs I usually look at the current limiting from the wall/charger
-supply is done on the primary system power rail which supplies both
-thehcarger and the rest of the system (since the current drains from the
-rest of the system also needs to be limited).  Similarly for the
-temperature monitoring, I've usually seen that managed by hardware.
-
-> That's why I have implemented charger in regulator framework. In the
-> environment described above, the power supply consumer is going to be
-> implemented over PMIC driver, USB/TA select driver (e.g., FSA9480),
-> and Thermistor driver (e.g., NTC Thermistor). It appears that such a
-> consumer driver is going to be a board or policy specification; (or
-> full or callbacks that is going to be filled by a mach/board file)
-
-I agree - it'd be a bit like the current GPIO power supply driver, I
-think.  It'd probably also specify things like callbacks for voltage
-monitoring via auxiliary ADCs in the PMIC or CPU.  My main point was
-that it was surprising that the regulator driver for the charger didn't
-come along with such a consuner driver, the split does make sense.
