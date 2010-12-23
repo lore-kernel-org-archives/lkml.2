@@ -1,79 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330Ab0LWOnA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 09:43:00 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60854 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753281Ab0LWOm6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 09:42:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=somrScE5C1rKpX9j65FFZv1sG7ulO/x+hGqANF/YQWhX41ksB9ZmJ4wnTzJaobMZgh
-         DuDJWFciSYAu/9JYBr0SZeaXbyqaExPqze4zHOT9rcCI8gTq9Y8mQsHiSi2KM3WWizdF
-         ViBpt8SQYBfcOH/vL+3mODU6/jX6fp78mMcdI=
+	id S1753364Ab0LWOnJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 09:43:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17767 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753158Ab0LWOnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 09:43:07 -0500
+Message-ID: <4D135FF3.1090903@redhat.com>
+Date: Thu, 23 Dec 2010 12:42:59 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20101223141608.GM3636@n2100.arm.linux.org.uk>
-References: <cover.1292443200.git.m.nazarewicz@samsung.com>
-	<AANLkTim8_=0+-zM5z4j0gBaw3PF3zgpXQNetEn-CfUGb@mail.gmail.com>
-	<20101223100642.GD3636@n2100.arm.linux.org.uk>
-	<00ea01cba290$4d67f500$e837df00$%szyprowski@samsung.com>
-	<20101223121917.GG3636@n2100.arm.linux.org.uk>
-	<4D135004.3070904@samsung.com>
-	<20101223134838.GK3636@n2100.arm.linux.org.uk>
-	<4D1356D7.2000008@samsung.com>
-	<20101223141608.GM3636@n2100.arm.linux.org.uk>
-Date: Thu, 23 Dec 2010 16:42:57 +0200
-Message-ID: <AANLkTinzsOom5awOr6Y8e7PKRbCWYQOqEbdw9is6HroR@mail.gmail.com>
-Subject: Re: [PATCHv8 00/12] Contiguous Memory Allocator
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Tomasz Fujak <t.fujak@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Kyungmin Park <kmpark@infradead.org>, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Nazarewicz <mina86@mina86.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-arm-kernel@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>, linux-media@vger.kernel.org,
-        Johan MOSSBERG <johan.xx.mossberg@stericsson.com>,
-        Ankita Garg <ankita@in.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL for 2.6.37-rc8] V4L/RC fixes
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 23, 2010 at 4:16 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Thu, Dec 23, 2010 at 03:04:07PM +0100, Tomasz Fujak wrote:
->> In other words, should we take your response as yet another NAK?
->> Or would you try harder and at least point us to some direction that
->> would not doom the effort from the very beginning.
->
-> What the fsck do you think I've been doing?  This is NOT THE FIRST time
-> I've raised this issue.  I gave up raising it after the first couple
-> of attempts because I wasn't being listened to.
->
-> You say about _me_ not being very helpful.  How about the CMA proponents
-> start taking the issue I've raised seriously, and try to work out how
-> to solve it?  And how about blaming them for the months of wasted time
-> on this issue _because_ _they_ have chosen to ignore it?
+Linus,
 
-I've also raised the issue for ARM. However, I don't see what is the
-big problem.
+Please pull from:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
 
-A generic solution (that I think I already proposed) would be to
-reserve a chunk of memory for the CMA that can be removed from the
-normally mapped kernel memory through memblock at boot time. The size
-of this memory region would be configurable through kconfig. Then, the
-CMA would have a "dma" flag or something, and take chunks out of it
-until there's no more, and then return errors. That would work for
-ARM.
+For a series of fixes for V4L and RC. Most of the patches are due to a bug 
+at the mceusb parser that weren't working with some MCE Remote Controller variants.
+There are also some regressions and bugs at s5p-fimc driver and a few other
+bugs at soc_camera/mx2_camera, nuvoton, lirc and streamzap drivers. 
 
-Cheers.
+Thanks!
+Mauro
 
--- 
-Felipe Contreras
+-
+
+The following changes since commit 90a8a73c06cc32b609a880d48449d7083327e11a:
+
+  Linux 2.6.37-rc7 (2010-12-21 11:26:40 -0800)
+
+are available in the git repository at:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
+
+Baruch Siach (1):
+      [media] mx2_camera: fix pixel clock polarity configuration
+
+Dan Carpenter (2):
+      [media] lirc_dev: stray unlock in lirc_dev_fop_poll()
+      [media] lirc_dev: fixes in lirc_dev_fop_read()
+
+Guennadi Liakhovetski (1):
+      [media] soc-camera: fix static build of the sh_mobile_csi2.c driver
+
+Jarod Wilson (10):
+      [media] mceusb: add support for Conexant Hybrid TV RDU253S
+      [media] nuvoton-cir: improve buffer parsing responsiveness
+      [media] mceusb: fix up reporting of trailing space
+      [media] mceusb: buffer parsing fixups for 1st-gen device
+      [media] IR: add tv power scancode to rc6 mce keymap
+      [media] mceusb: fix keybouce issue after parser simplification
+      [media] streamzap: merge timeout space with trailing space
+      [media] mceusb: add another Fintek device ID
+      [media] mceusb: fix inverted mask inversion logic
+      [media] mceusb: set a default rx timeout
+
+Paul Bender (1):
+      [media] rc: fix sysfs entry for mceusb and streamzap
+
+Sylwester Nawrocki (6):
+      [media] s5p-fimc: BKL lock removal - compilation fix
+      [media] s5p-fimc: Fix vidioc_g_crop/cropcap on camera sensor
+      [media] s5p-fimc: Explicitly add required header file
+      [media] s5p-fimc: Convert m2m driver to unlocked_ioctl
+      [media] s5p-fimc: Use correct fourcc code for 32-bit RGB format
+      [media] s5p-fimc: Fix output DMA handling in S5PV310 IP revisions
+
+ drivers/media/IR/keymaps/rc-rc6-mce.c       |   21 ++--
+ drivers/media/IR/lirc_dev.c                 |   29 +++--
+ drivers/media/IR/mceusb.c                   |  174 +++++++++++++++++----------
+ drivers/media/IR/nuvoton-cir.c              |   10 ++-
+ drivers/media/IR/streamzap.c                |   21 ++--
+ drivers/media/video/mx2_camera.c            |    2 -
+ drivers/media/video/s5p-fimc/fimc-capture.c |   51 ++++++++-
+ drivers/media/video/s5p-fimc/fimc-core.c    |   54 +++++----
+ drivers/media/video/s5p-fimc/fimc-core.h    |   24 +++--
+ drivers/media/video/s5p-fimc/regs-fimc.h    |    3 +
+ drivers/media/video/sh_mobile_ceu_camera.c  |    2 +-
+ 11 files changed, 257 insertions(+), 134 deletions(-)
+
