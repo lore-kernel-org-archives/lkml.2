@@ -1,89 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277Ab0LWJRy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 04:17:54 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35232 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab0LWJRw convert rfc822-to-8bit (ORCPT
+	id S1752328Ab0LWJUC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 04:20:02 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40438 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781Ab0LWJT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 04:17:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=vb6ntTFRkzOHpeI40vez5RBdiQ4712th0vHuhchpXfbdJDdvybnKhrGUh55KPqQ+yG
-         rDhj611Ei4OMTqjfHHxP5avDz2nSEsOuxeMlgr5k4ou9YwsFLn4dYgaNOp6PZivu1e77
-         +184LhiJ+s5x5t7eJL/BqDXCLDu7oTDzbC2K8=
+	Thu, 23 Dec 2010 04:19:59 -0500
+Date: Thu, 23 Dec 2010 09:18:22 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Viresh Kumar <viresh.kumar@st.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        yuanyabin1978@sina.com, linux-kernel@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>, Peter Pearse <peter.pearse@arm.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Alessandro Rubini <rubini@unipv.it>
+Subject: Re: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081
+	PrimeCells
+Message-ID: <20101223091822.GB3636@n2100.arm.linux.org.uk>
+References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com> <20101221182037.GA4783@n2100.arm.linux.org.uk> <20101222122904.GC14693@n2100.arm.linux.org.uk> <AANLkTikpyAggDCPef1pS=_QHnu9-FyLcpddGyVHnGwWx@mail.gmail.com> <20101223001012.GF29368@n2100.arm.linux.org.uk> <AANLkTimirgsuoM2che_ocrkvCZqGu6xEJjrjdmt9-69p@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <m3pqss50lr.fsf@pullcord.laptop.org>
-References: <m3pqss50lr.fsf@pullcord.laptop.org>
-Date: Thu, 23 Dec 2010 18:17:50 +0900
-X-Google-Sender-Auth: YZFC9IY5bRBdNlwTD1q1_Bofcao
-Message-ID: <AANLkTine-9YC7062cNaPG+iieBD2bcttx2b3sf3sveKP@mail.gmail.com>
-Subject: Re: [GIT PULL] MMC fixes for 2.6.37
-From: Kyungmin Park <kmpark@infradead.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimirgsuoM2che_ocrkvCZqGu6xEJjrjdmt9-69p@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+On Wed, Dec 22, 2010 at 05:11:24PM -0800, Dan Williams wrote:
+> On Wed, Dec 22, 2010 at 4:10 PM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > On Wed, Dec 22, 2010 at 03:45:39PM -0800, Dan Williams wrote:
+> >> 3.6 Constraints:
+> >> 1/ Calls to async_<operation> are not permitted in IRQ context.  Other
+> >>    contexts are permitted provided constraint #2 is not violated.
+> >
+> > BTW, this is misleading.  Have the functions been renamed dma_async_xxx(),
+> > eg dma_async_memcpy_buf_to_buf etc, or are you referring just to:
+> >
+> >        async_dmaengine_get
+> >        async_dmaengine_put
+> >        async_dma_find_channel
+> >        async_dma_find_channel
+> >        async_tx_ack
+> >        async_tx_clear_ack
+> >        async_tx_test_ack
+> >
+> > Beware of just renaming it to dma_async_<operation> as there's other
+> > functions in that namespace which may not be appropriate.
+> >
+> > Eg, is it really illegal to issue call dma_async_issue_pending() from
+> > IRQ context?  That'd make it exceedingly difficult to use the DMA
+> > engine with the slave API in a lot of device drivers.
+> 
+> This is generic offload (async_{memcpy|xor|etc...}) versus the slave
+> usage confusion.
 
-Can you include the s5pc210 external clock support? without this,
-s5pc210 boards doesn't use the SDHCI.
+My point is that async_<operation> refers to something that doesn't
+exist.  What we do have:
 
-I think Ben is busy with other task so can't reply your ack request.
+dma_cookie_t dma_async_memcpy_buf_to_buf(struct dma_chan *chan,
+        void *dest, void *src, size_t len);
+dma_cookie_t dma_async_memcpy_buf_to_pg(struct dma_chan *chan,
+        struct page *page, unsigned int offset, void *kdata, size_t len);
+dma_cookie_t dma_async_memcpy_pg_to_pg(struct dma_chan *chan,
+        struct page *dest_pg, unsigned int dest_off, struct page *src_pg,
+        unsigned int src_off, size_t len);
 
-To Ben,
-Can you ack the s5pc210 patch?
+Nothing in dmaengine.h matches 'async_xor', so that suggests it's
+incomplete.  There's another problem with referring to them as
+dma_async_<operation> because we also have:
 
-Thank you,
-Kyungmin Park
+static inline void dma_async_issue_pending(struct dma_chan *chan)
+#define dma_async_memcpy_issue_pending(chan) dma_async_issue_pending(chan)
+static inline enum dma_status dma_async_is_tx_complete(struct dma_chan *chan,
+        dma_cookie_t cookie, dma_cookie_t *last, dma_cookie_t *used)
+#define dma_async_memcpy_complete(chan, cookie, last, used)\
+static inline enum dma_status dma_async_is_complete(dma_cookie_t cookie,
+                        dma_cookie_t last_complete, dma_cookie_t last_used)
+int dma_async_device_register(struct dma_device *device);
+void dma_async_device_unregister(struct dma_device *device);
 
-On Thu, Dec 23, 2010 at 5:56 PM, Chris Ball <cjb@laptop.org> wrote:
-> Linus,
->
-> Please pull from:
->
->  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
->
-> to fix a regression in resume-from-hibernate, and two minor driver bugs
-> on Atmel controllers.  These have been tested in linux-next.  Thanks.
->
-> The following changes since commit 0a59228168d3722b71f8e3dbc623316fb4be78f4:
->
->  Merge git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile (2010-12-18 10:28:54 -0800)
->
-> are available in the git repository at:
->
->  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
->
-> Nicolas Ferre (1):
->      mmc: atmel-mci: fix multiblock SDIO transfers
->
-> Takashi Iwai (1):
->      mmc: Fix re-probing with PM_POST_RESTORE notification
->
-> Yauhen Kharuzhy (1):
->      mmc: at91_mci: fix multiblock SDIO transfers
->
->  arch/arm/mach-at91/include/mach/at91_mci.h |    2 ++
->  drivers/mmc/core/core.c                    |    1 +
->  drivers/mmc/host/at91_mci.c                |   13 +++++++++----
->  drivers/mmc/host/atmel-mci.c               |   18 ++++++++++++------
->  4 files changed, 24 insertions(+), 10 deletions(-)
->
-> --
-> Chris Ball   <cjb@laptop.org>
-> One Laptop Per Child
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+So just referring to dma_async_<operation> will also be confusing.
+
+There's also a bunch of other async_* named functions which makes it
+look like these are what's being referred to (see the list above).
+So, the documentation is confusing.
+
+Maybe it would be better to refer to struct dma_device's device_prep_dma_*
+methods and anything which calls them, with the exception of
+device_prep_dma_cyclic?  (Shouldn't that be device_prep_slave_cyclic?)
