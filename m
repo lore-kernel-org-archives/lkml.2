@@ -1,88 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753749Ab0LWSvg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 13:51:36 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:46714 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753084Ab0LWSve convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 13:51:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=bmcMjutH1JJMW/ETwPdqkcN6wr499VF8sn97BhV1wUhym7boRJknAU2TT9gF6Bm/BU
-         R6+Fy4GxvMW6p6lsV5orGFyk0IGWRxrmTb+ACD8wvZwSdx1whx5iq+Yq6wayJQg5dNOR
-         Pjw3jSItyrMjltyKsvRvqhCFz6fEnsngfJHBA=
+	id S1753834Ab0LWSv6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 13:51:58 -0500
+Received: from mga02.intel.com ([134.134.136.20]:57025 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753808Ab0LWSv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 13:51:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,219,1291622400"; 
+   d="scan'208";a="586741289"
+Message-ID: <4D139A4C.7000003@linux.intel.com>
+Date: Thu, 23 Dec 2010 10:51:56 -0800
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+Organization: Intel Open Source Technology Center
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <x49bp4c7555.fsf@segfault.boston.devel.redhat.com>
-References: <20101220141553.GA6088@bitwizard.nl> <20101220190630.66084e1d@neptune.home>
- <AANLkTi=VAJbVSzX_DH9_==a3RonLJmawYu3MzF-uqGXC@mail.gmail.com>
- <20101222104306.GB30941@bitwizard.nl> <x49aajxsrh3.fsf@segfault.boston.devel.redhat.com>
- <20101222224416.GE30941@bitwizard.nl> <x494oa48scp.fsf@segfault.boston.devel.redhat.com>
- <20101223170109.GA31591@bitwizard.nl> <x49bp4c7555.fsf@segfault.boston.devel.redhat.com>
-From: Greg Freemyer <greg.freemyer@gmail.com>
-Date: Thu, 23 Dec 2010 13:51:13 -0500
-Message-ID: <AANLkTikbhzopmyfbJuHUQdEBJLLP9e65n0cNBuUjhDdd@mail.gmail.com>
-Subject: Re: Slow disks.
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Rogier Wolff <R.E.Wolff@bitwizard.nl>,
-        =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+To: Yinghai <yinghai@kernel.org>
+CC: Florian Fainelli <ffainelli@freebox.fr>,
+        "sodaville@linutronix.de" <sodaville@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [sodaville] [PATCH] x86/trampoline: fallback to fixed	trampoline
+ address if no e820 map is provided
+References: <201012142219.40062.ffainelli@freebox.fr>	<201012231057.35021.ffainelli@freebox.fr> <7A03AE18-9737-41D6-8EF5-6C6C29C1BF0D@kernel.org>
+In-Reply-To: <7A03AE18-9737-41D6-8EF5-6C6C29C1BF0D@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 23, 2010 at 12:47 PM, Jeff Moyer <jmoyer@redhat.com> wrote:
-> Rogier Wolff <R.E.Wolff@BitWizard.nl> writes:
->
->> On Thu, Dec 23, 2010 at 09:40:54AM -0500, Jeff Moyer wrote:
->>> > In my performance calculations, 10ms average seek (should be around
->>> > 7), 4ms average rotational latency for a total of 14ms. This would
->>> > degrade for read-modify-write to 10+4+8 = 22ms. Still 10 times better
->>> > than what we observe: service times on the order of 200-300ms.
+On 12/23/2010 05:16 AM, Yinghai wrote:
+> 
+> On Dec 23, 2010, at 1:57 AM, Florian Fainelli <ffainelli@freebox.fr> wrote:
+> 
+>> On Tuesday 14 December 2010 22:19:39 Florian Fainelli wrote:
+>>> From: Florian Fainelli <ffainelli@freebox.fr>
 >>>
->>> I didn't say it would account for all of your degradation, just that it
->>> could affect performance.  I'm sorry if I wasn't clear on that.
->>
->> We can live with a "2x performance degradation" due to stupid
->> configuration. But not with the 10x -30x that we're seeing now.
->
-> Wow.  I'm not willing to give up any performance due to
-> misconfiguration!
+>>> Since 893f38d1 (x86: Use find_e820() instead of hard coded trampoline
+>>> address), the trampoline base address should be provided by the BIOS as an
+>>> e820 area. Some minimalistic BIOSes (like CEFDK on CE4100) may not provide
+>>> any e820 area, still we should fallback to a fixed trampoline base address
+>>> for SMP to work correctly.
+> 
+> No e820 memmap ?
+> 
+> Not sure how does it work
+> 
+> Do you have boot log with debug ?
+> 
+> Also recent kernel is using memblock already for finding free area.
+> 
 
-I suspect a mailserver on a raid 5 with large chunksize could be a lot
-worse than 2x slower.  But most of the blame is just raid 5.
+OK, this deeply troubles me.  This is clearly not the right approach
+here... the memory map should be fed to the kernel, this has been a
+requirement all along, and Linus has very deliberately not agreed to
+exceptions (and I agree with that stance.)
 
-ie.
-write 4K from userspace
+So this patch is a non-starter... I presume the memory map is being
+provided in through the device (which means it should be fed into
+memblock in current kernels, although the ordering may need to be tweaked?)
 
-Kernel
-Read old primary data, wait for data to actually arrive
-Read old parity data, wait again
-modify both for new data
-write primary data to drive queue
-write parity data to drive queue
-
-userspace: fsync
-kernel: force data from queues to drive (requires wait)
-
-
-I'm guessing raid1 or raid10 would be several times faster.  And is at
-least as robust as raid 5.
-
-ie.
-write 4K from userspace
-
-Kernel
-write 4K to first mirror's queue
-write 4K to second mirror's queue
-done
-
-userspace: fsync
-kernel: force data from queues to drive (requires wait)
-
-Good Luck
-Greg
+	-hpa
