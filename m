@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748Ab0LWK4s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 05:56:48 -0500
-Received: from casper.infradead.org ([85.118.1.10]:60061 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752453Ab0LWK4r convert rfc822-to-8bit (ORCPT
+	id S1752664Ab0LWK6U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 05:58:20 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:29232 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752378Ab0LWK6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 05:56:47 -0500
-Subject: Re: + kmap-types-clean-up-and-optimization.patch added to -mm tree
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: mingo@elte.hu, tglx@linutronix.de, akpm@linux-foundation.org,
-        LKML <linux-kernel@vger.kernel.org>, mm-commits@vger.kernel.org,
-        hpa@zytor.com
-In-Reply-To: <4D1336DE020000780002977F@vpn.id2.novell.com>
-References: <201012222248.oBMMmbcF023808@imap1.linux-foundation.org>
-	 <1293098310.2170.415.camel@laptop>
-	 <4D1336DE020000780002977F@vpn.id2.novell.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 23 Dec 2010 11:56:45 +0100
-Message-ID: <1293101805.2170.514.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 23 Dec 2010 05:58:19 -0500
+Date: Thu, 23 Dec 2010 11:58:08 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCHv8 00/12] Contiguous Memory Allocator
+In-reply-to: <20101223100642.GD3636@n2100.arm.linux.org.uk>
+To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        "'Kyungmin Park'" <kmpark@infradead.org>
+Cc: "'Michal Nazarewicz'" <m.nazarewicz@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Johan MOSSBERG'" <johan.xx.mossberg@stericsson.com>,
+        "'Mel Gorman'" <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+        "'Michal Nazarewicz'" <mina86@mina86.com>, linux-mm@kvack.org,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-media@vger.kernel.org,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Message-id: <00ea01cba290$4d67f500$e837df00$%szyprowski@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: pl
+Content-transfer-encoding: 7BIT
+Thread-index: AcuiiWPfhnfwa0RHTauoouex3IdUTQABZHLQ
+References: <cover.1292443200.git.m.nazarewicz@samsung.com>
+ <AANLkTim8_=0+-zM5z4j0gBaw3PF3zgpXQNetEn-CfUGb@mail.gmail.com>
+ <20101223100642.GD3636@n2100.arm.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-23 at 10:47 +0000, Jan Beulich wrote:
-> >>> On 23.12.10 at 10:58, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > On Wed, 2010-12-22 at 14:48 -0800, akpm@linux-foundation.org wrote:
-> >> The patch titled
-> >>      kmap-types: clean up and optimization
-> >> has been added to the -mm tree.  Its filename is
-> >>      kmap-types-clean-up-and-optimization.patch
-> >> 
-> >> Before you just go and hit "reply", please:
-> >>    a) Consider who else should be cc'ed
-> >>    b) Prefer to cc a suitable mailing list as well
-> >>    c) Ideally: find the original patch on the mailing list and do a
-> >>       reply-to-all to that, adding suitable additional cc's
-> >> 
-> > 
-> >> ------------------------------------------------------
-> >> Subject: kmap-types: clean up and optimization
-> >> From: "Jan Beulich" <JBeulich@novell.com>
-> >> 
-> >> Several of the types aren't being used at all anymore - those can be
-> >> deleted altogether.  
-> > 
-> > NO! That's wrong, in fact non of them are being used, but removing them
-> > will decrease the number of kmap_atomic slots, but those are still being
-> > used.
+Hello,
+
+On Thursday, December 23, 2010 11:07 AM Russell King - ARM Linux wrote:
+
+> On Thu, Dec 23, 2010 at 06:30:57PM +0900, Kyungmin Park wrote:
+> > Hi Andrew,
+> >
+> > any comments? what's the next step to merge it for 2.6.38 kernel. we
+> > want to use this feature at mainline kernel.
 > 
-> Would you mind pointing out examples of such uses (i.e. without
-> the proper enumerator)? How would those avoid collisions with
-> actually used slots?
+> Has anyone addressed my issue with it that this is wide-open for
+> abuse by allocating large chunks of memory, and then remapping
+> them in some way with different attributes, thereby violating the
+> ARM architecture specification?
 
-Nobody uses explicit slots anymore:
+Actually this contiguous memory allocator is a better replacement for
+alloc_pages() which is used by dma_alloc_coherent(). It is a generic
+framework that is not tied only to ARM architecture.
 
-/*
- * Make both: kmap_atomic(page, idx) and kmap_atomic(page) work.
- */
-#define kmap_atomic(page, args...) __kmap_atomic(page)
+> In other words, do we _actually_ have a use for this which doesn't
+> involve doing something like allocating 32MB of memory from it,
+> remapping it so that it's DMA coherent, and then performing DMA
+> on the resulting buffer?
 
-All instances of KM_foo are deprecated and in need of a cleanup.
-See commit: 3e4d3af501cccdc8a8cca41bdbe57d54ad7e7e73
+This is an arm specific problem, also related to dma_alloc_coherent()
+allocator. To be 100% conformant with ARM specification we would
+probably need to unmap all pages used by the dma_coherent allocator
+from the LOW MEM area. This is doable, but completely not related
+to the CMA and this patch series.
 
-> > Feh, its only a few pages and since there is no way to actually tell if
-> > you've got enough kmap atomic pages other than experiencing runtime
-> > errors, removing them must be done with utmost prudence.
-> 
-> Whether 2Mb of lowmem is "only a few pages" certainly depends
-> on the perspective you take.
-> 
-> And even then - shouldn't the bad (non-enumerated) uses of
-> atomic kmap-s be fixed rather than keeping unused entries in
-> the enumeration just because there is broken code somewhere?
-
-With the current 20 slots on x86, its 80k per CPU, you need 25 CPUs to
-cross the 2M boundary, 32bit kernels having that many CPUs deserve to
-suffer.
+Best regards
+--
+Marek Szyprowski
+Samsung Poland R&D Center
 
 
