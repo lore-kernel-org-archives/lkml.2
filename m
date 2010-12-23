@@ -1,87 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751662Ab0LWFhr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 00:37:47 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:47752 "EHLO e5.ny.us.ibm.com"
+	id S1751827Ab0LWFib (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 00:38:31 -0500
+Received: from mail.ufpr.br ([200.17.203.37]:54404 "EHLO mail.ufpr.br"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751009Ab0LWFhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 00:37:46 -0500
-Date: Wed, 22 Dec 2010 21:37:36 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, tj@kernel.org,
-        fweisbec@gmail.com, mk@lab.zgora.pl
-Subject: [GIT PULL rcu/next] rcu commits for 2.6.38
-Message-ID: <20101223053736.GA17521@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	id S1751244Ab0LWFia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 00:38:30 -0500
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Dec 2010 00:38:29 EST
+Message-ID: <7a77ff4cf9f35f44162de896a60d3ce8.squirrel@webmail.ufpr.br>
+Date: Thu, 23 Dec 2010 03:15:49 -0200 (BRST)
+Subject: NOTIFICATION...
+From: "Power-Horse Energy  Company" <infophed@yahoo.com.au>
+Reply-To: powerhorseenerydrink11@hotmail.com
+User-Agent: SquirrelMail/1.4.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo,
+Good Day.
+Power-Horse Energy Drink Company,this e-mail is to  inform you that, your
+Email ID has won you the sum of $540,000.00 US  Dollars  on our online
+draws contact us via email: powerhorseenerydrink11@hotmail.com for more
+details.
 
-This pull request covers RCU changes for 2.6.38.  These include RCU
-priority boosting for TINY_RCU and TINY_PREEMPT_RCU, some cleanups from
-Lai Jiangshan, fixes to synchronize_sched_expedited() including some
-from Tejun Heo, some nohz fixes from Frederic Weisbecker, some changes
-to reduce lock contention for internal-to-RCU locks, and a fix from
-Mariusz Kozlowski to fix unbalanced parentheses.
-
-These changes are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/next
-
------------------->
-Frederic Weisbecker (2):
-      rcu: Stop chasing QS if another CPU did it for us
-      rcu: Keep gpnum and completed fields synchronized
-
-Lai Jiangshan (2):
-      rcu,cleanup: move synchronize_sched_expedited() out of sched.c
-      rcu,cleanup: simplify the code when cpu is dying
-
-Mariusz Kozlowski (1):
-      rculist: fix borked __list_for_each_rcu() macro
-
-Paul E. McKenney (14):
-      rcu: add priority-inversion testing to rcutorture
-      rcu: move TINY_RCU from softirq to kthread
-      rcu: priority boosting for TINY_PREEMPT_RCU
-      rcu: add tracing for TINY_RCU and TINY_PREEMPT_RCU
-      rcu: document TINY_RCU and TINY_PREEMPT_RCU tracing.
-      rcu: Distinguish between boosting and boosted
-      rcu: get rid of obsolete "classic" names in TREE_RCU tracing
-      rcu: update documentation/comments for Lai's adoption patch
-      rcu: fix race condition in synchronize_sched_expedited()
-      rcu: Make synchronize_srcu_expedited() fast if running readers
-      rcu: fine-tune grace-period begin/end checks
-      rcu: limit rcu_node leaf-level fanout
-      rcu: reduce __call_rcu()-induced contention on rcu_node structures
-      rcu: remove unused __list_for_each_rcu() macro
-
-Tejun Heo (1):
-      rcu: increase synchronize_sched_expedited() batching
-
- Documentation/RCU/trace.txt |  144 +++++++++++++--
- include/linux/init_task.h   |    9 +-
- include/linux/rculist.h     |    5 -
- include/linux/rcupdate.h    |    4 +-
- include/linux/rcutiny.h     |   13 +-
- include/linux/rcutree.h     |    2 +
- include/linux/sched.h       |   11 +-
- init/Kconfig                |   55 ++++++-
- kernel/rcutiny.c            |  105 +++++++----
- kernel/rcutiny_plugin.h     |  433 +++++++++++++++++++++++++++++++++++++++++--
- kernel/rcutorture.c         |  270 ++++++++++++++++++++++++++-
- kernel/rcutree.c            |  156 ++++++++--------
- kernel/rcutree.h            |   61 +++----
- kernel/rcutree_plugin.h     |  135 +++++++++++++-
- kernel/rcutree_trace.c      |   12 +-
- kernel/sched.c              |   69 -------
- kernel/srcu.c               |    8 +-
- 17 files changed, 1207 insertions(+), 285 deletions(-)
