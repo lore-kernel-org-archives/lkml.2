@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350Ab0LWBb1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 20:31:27 -0500
-Received: from mail-wy0-f194.google.com ([74.125.82.194]:34505 "EHLO
-	mail-wy0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751857Ab0LWBb0 (ORCPT
+	id S1752316Ab0LWBep (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 20:34:45 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50834
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751505Ab0LWBeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 20:31:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=LOaBh3pSWVquktd8OusSo1in4HOaBp4uTv9pXBN25lnu0GP80O42CD+uabGChaj9jK
-         i7Rx85RwCfkMkKEQxZT7Vb4jv3WR/zjRmwo41BfnIbyPeY/MYZyzdk1LBp7dBIMibA+h
-         SaOR01HyFKJI5YV+BNSQt8M/S5qM9Yds9P0qY=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimirgsuoM2che_ocrkvCZqGu6xEJjrjdmt9-69p@mail.gmail.com>
-References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com>
-	<20101221182037.GA4783@n2100.arm.linux.org.uk>
-	<20101222122904.GC14693@n2100.arm.linux.org.uk>
-	<AANLkTikpyAggDCPef1pS=_QHnu9-FyLcpddGyVHnGwWx@mail.gmail.com>
-	<20101223001012.GF29368@n2100.arm.linux.org.uk>
-	<AANLkTimirgsuoM2che_ocrkvCZqGu6xEJjrjdmt9-69p@mail.gmail.com>
-Date: Wed, 22 Dec 2010 17:31:25 -0800
-X-Google-Sender-Auth: mENqBsEJs17MH4sxAO-GPqtaFPk
-Message-ID: <AANLkTikP+JZkN7AjqaNfHY8jZ7bVsV-af=YR=MTdfnNU@mail.gmail.com>
-Subject: Re: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081 PrimeCells
-From: Dan Williams <dan.j.williams@intel.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Viresh Kumar <viresh.kumar@st.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        yuanyabin1978@sina.com, linux-kernel@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>, Peter Pearse <peter.pearse@arm.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Alessandro Rubini <rubini@unipv.it>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 22 Dec 2010 20:34:44 -0500
+Date: Wed, 22 Dec 2010 17:35:13 -0800 (PST)
+Message-Id: <20101222.173513.102576612.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless-2.6 2010-12-22
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20101222195209.GD10046@tuxdriver.com>
+References: <20101222195209.GD10046@tuxdriver.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 22, 2010 at 5:11 PM, Dan Williams <dan.j.williams@intel.com> wrote:
-> Drivers that do not
-> want to meet the constraints expected by the opportunistic offload
-> clients should do what ste_dma40 does and add "depends on !(NET_DMA ||
-> ASYNC_TX_DMA)"
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Wed, 22 Dec 2010 14:52:09 -0500
 
-Sorry I was looking at a local change it does not do this today, but I
-recommended it to workaround the broken >64k transfer support that was
-reported recently.
+> Dave,
+> 
+> Three more fixes intended for 2.6.37...
+> 
+> The one from Johannes Berg avoids a NULL pointer dereference in the mesh
+> code.  The one from Johannes Stezenbach fixes bug 24892, which is a
+> lock-up caused by rt2x00.  Finally, you probably recognize the one from
+> Meelis Roos which removes some log spam coming from hostap.  These have
+> all spent several days in linux-next without any adverse effects.
+> 
+> Please let me know if there are problems!
 
---
-Dan
+Pulled, thanks John.
