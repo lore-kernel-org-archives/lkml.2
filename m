@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640Ab0LWBjn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 20:39:43 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:33583 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880Ab0LWBjm convert rfc822-to-8bit (ORCPT
+	id S1752697Ab0LWBkH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 20:40:07 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34697 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751505Ab0LWBkF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 20:39:42 -0500
+	Wed, 22 Dec 2010 20:40:05 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:in-reply-to:references:date
          :x-google-sender-auth:message-id:subject:from:to:cc:content-type
          :content-transfer-encoding;
-        b=vYm9fg2KuqEDJk2RftNMHhuIIauhKFnHEtFgwua9I0wKck0VSJzI93sAWb4yVoKnas
-         4WbkCLOhHkhS/z1YwaoOUaGZNM/oahUXn7RbLAIChxcGPg8o8uIxyFGY2dgNCc1gu5UG
-         0vyrmFQCZ/e4H4VTWMtyapaNtBf0E9MuUBMN8=
+        b=ezZLTVGI1UBRSZ+kToXFRHWOQ0Jk61GEFqFeCrWCrb2fKndL0yJ0w2cvgrPT+liiEl
+         nJ/x0SnztBUdnAWBjoyohlNvzlGFs543CFUdNh5B0vOhiOfG/jC0i9Pi/IPlw1xPS8Xp
+         sp3Gb7Rcr8V4COTbEjPnf1bZSpfalhT6ws2aY=
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1012230109150.19497@axis700.grange>
-References: <Pine.LNX.4.64.1012221444300.14483@axis700.grange>
-	<AANLkTim-1xCmk1S3KhdFazYCizzex0C5c_PtpjQoVkvj@mail.gmail.com>
-	<Pine.LNX.4.64.1012230109150.19497@axis700.grange>
-Date: Wed, 22 Dec 2010 17:39:40 -0800
-X-Google-Sender-Auth: YsEtvGkAPAnRf7DrFF9qkDp6lIA
-Message-ID: <AANLkTimHHOiRXek9yPwGWvFg5BWU0RF1rptuAE0ijjnW@mail.gmail.com>
-Subject: Re: [PATCH] dmaengine: provide dummy functions for DMA_ENGINE=n
-From: Dan Williams <dan.j.williams@intel.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20101222132235.GA26306@opensource.wolfsonmicro.com>
+References: <20101221155004.GA21871@opensource.wolfsonmicro.com>
+	<1292998991-26968-2-git-send-email-myungjoo.ham@samsung.com>
+	<20101222132235.GA26306@opensource.wolfsonmicro.com>
+Date: Thu, 23 Dec 2010 10:40:04 +0900
+X-Google-Sender-Auth: uUcm3EKuBgYc0hckJb8BFGJWz_M
+Message-ID: <AANLkTik8T=wmKcV13hLSkGsum3pDoPBsJ=fQZwhLA1PR@mail.gmail.com>
+Subject: Re: [PATCH v2 1/6] MFD MAX8998/LP3974: Support Hibernation
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 22, 2010 at 4:13 PM, Guennadi Liakhovetski
-<g.liakhovetski@gmx.de> wrote:
-> On Wed, 22 Dec 2010, Dan Williams wrote:
+On Wed, Dec 22, 2010 at 10:22 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Wed, Dec 22, 2010 at 03:23:06PM +0900, MyungJoo Ham wrote:
+>> With runtime-pm ops support, this patch enables to save and restore
+>> register values for hibernation.
 >
->> On Wed, Dec 22, 2010 at 5:46 AM, Guennadi Liakhovetski
->> <g.liakhovetski@gmx.de> wrote:
->> > This lets drivers, optionally using the dmaengine, build with DMA_ENGINE
->> > unselected.
->> >
->> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
->> > ---
->> >  include/linux/dmaengine.h |   13 ++++++++++---
->> >  1 files changed, 10 insertions(+), 3 deletions(-)
->>
->> Is this fixing build errors, or is this just relieving drivers from
->> needing to surround calls to dma_{request|release}_channel() with
->> ifdef CONFIG_DMA_ENGINE?  The former makes this more urgent, the
->> latter can wait for the next merge window.
->
-> sh_mmcif.c doesn't compile, if configured for DMA, but DMA_ENGINE is
-> unselected. So, yes, this wants to be fixed. But there's more than one way
-> to fix it. I've chosen this one, as it seems more generic to me.
+> There's no actual runtime PM support in this patch, but this looks like
+> it's just an error in the changelog?
 >
 
-Yes, it's the right fix.  I was just trying to see if it needs to go
-in now and if there were any implications for -stable.  Unless I am
-missing something drivers/mmc/host/sh_mmcif.c does not even include
-dmaengine.h today so this can wait until the 2.6.38 window.
+Probably, it can be rephrased as "Providing struct dev_pm_ops, this
+patch enables to save and restore register values for hibernation".
+Anyway, implementing such features also resulted in proper behavior
+with runtime-pm enabled kernel. (Before this patch, there were issues
+with sleep-wakeup with lp3974 irqs if runtime-pm is enabled)
 
---
-Dan
+
+-- 
+MyungJoo Ham (í•¨ëª…ì£¼), Ph.D.
+Mobile Software Platform Lab,
+Digital Media and Communications (DMC) Business
+Samsung Electronics
+cell: 82-10-6714-2858
