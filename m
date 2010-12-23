@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab0LWCiu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 21:38:50 -0500
-Received: from mga11.intel.com ([192.55.52.93]:30891 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751881Ab0LWCit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 21:38:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,217,1291622400"; 
-   d="scan'208";a="639599700"
-Subject: Re: [patch 2/3] add new macros to make percpu readmostly section
- correctly align
-From: Shaohua Li <shaohua.li@intel.com>
-To: Tejun Heo <htejun@gmail.com>
-Cc: Sam Ravnborg <sam@ravnborg.org>, lkml <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
-In-Reply-To: <4D0F7C5A.1060107@gmail.com>
-References: <1291255347.12777.116.camel@sli10-conroe>
-	 <4D0243DD.3090507@gmail.com> <1292200886.2323.15.camel@sli10-conroe>
-	 <4D05EBA4.60202@gmail.com> <1292288924.2323.458.camel@sli10-conroe>
-	 <4D073FA9.9020801@gmail.com> <1292378268.2323.464.camel@sli10-conroe>
-	 <4D08CBF4.6040102@gmail.com> <1292460817.2323.465.camel@sli10-conroe>
-	 <20101216054620.GA3241@merkur.ravnborg.org>
-	 <1292479000.2323.468.camel@sli10-conroe>  <4D09E0EE.7040605@gmail.com>
-	 <1292808518.10593.8.camel@sli10-conroe>  <4D0F7C5A.1060107@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Dec 2010 10:38:34 +0800
-Message-ID: <1293071914.10593.10.camel@sli10-conroe>
+	id S1752779Ab0LWCnA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 21:43:00 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:59090 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752498Ab0LWCm7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 21:42:59 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=Zf2-li83EnIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=cIs6I4qDPgwQT4n7TxkA:9 a=utSY0b3mPEPAp6o-YhbHN9HOMXoA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: Oops in trace_hardirqs_on (powerpc)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: =?ISO-8859-1?Q?J=F6rg?= Sommer <joerg@alea.gnuu.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+In-Reply-To: <20101219132705.GE6615@alea.gnuu.de>
+References: <20100806233157.GA7117@alea.gnuu.de>
+	 <1285184671.26872.127.camel@gandalf.stny.rr.com>
+	 <20100927125037.GA4497@alea.gnuu.de> <1285639094.2989.1.camel@frodo>
+	 <20101219132705.GE6615@alea.gnuu.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 22 Dec 2010 21:42:56 -0500
+Message-ID: <1293072176.22802.6.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-12-20 at 23:55 +0800, Tejun Heo wrote:
-> Hello,
+On Sun, 2010-12-19 at 14:27 +0100, Jörg Sommer wrote:
+> Hi Steven,
 > 
-> On 12/20/2010 02:28 AM, Shaohua Li wrote:
-> >> Not being able to cross build every arch is okay but you at least need
-> >> to make an effort to make things easily applicable to other archs and
-> >> avoid adding subtle ugliness like the above.  Please at least try to
-> >> look at other arch codes and see how things can be made to work across
-> >> different archs.  Setting up cross compilers for the major archs, for
-> >> example, sparc, power and ia64 isn't that difficult either.
-> >
-> > This still needs I fix every arch, for example, as Sam pointed out,
-> > spark build will fail. I really have the bandwidth and capability to do
-> > this. Increment changes are always preferred. My original patch is
-> > trying to follow increment changes way.
-> 
-> Yeah, well, in my experience, those approaches usually just end up
-> piling partial conversions on top of different set of partial
-> conversions.  It's not like we're talking about a major arch dependent
-> feature it's just a matter of looking through different arch codes,
-> maybe test building some, pushing things to linux-next and dealing
-> with fallouts if there is any.  I'll try to do it myself.
-Thanks for doing it and sorry I didn't do it.
-The first patch in the series isn't related to this issue, please
-consider merge it.
 
-Thanks,
-Shaohua
+> Did you've fixed this problem? The bug report is still marked as open.
+> https://bugzilla.kernel.org/show_bug.cgi?id=16573
+> 
+
+I just posted a patch to that BZ. I have it here below too. Could you
+see if it fixes you problem. I only fixed the one place that you
+reported, it may need more fixes (and in that case a macro to do the
+work).
+
+I hit the same bug on my ppc64 box, and have a fix for that, that I'll
+post to LKML tomorrow.
+
+-- Steve
+
+diff --git a/arch/powerpc/kernel/entry_32.S b/arch/powerpc/kernel/entry_32.S
+index ed4aeb9..915cc03 100644
+--- a/arch/powerpc/kernel/entry_32.S
++++ b/arch/powerpc/kernel/entry_32.S
+@@ -879,7 +879,18 @@ END_MMU_FTR_SECTION_IFSET(MMU_FTR_TYPE_47x)
+ 	 */
+ 	andi.	r10,r9,MSR_EE
+ 	beq	1f
++	/*
++	 * Since the ftrace irqsoff latency trace checks CALLER_ADDR1,
++	 * which is the stack frame here, we need to force a stack frame
++	 * in case we came from user space.
++	 */
++	stwu	r1,-32(r1)
++	mflr	r0
++	stw	r0,4(r1)
++	stwu	r1,-32(r1)
+ 	bl	trace_hardirqs_on
++	lwz	r1,0(r1)
++	lwz	r1,0(r1)
+ 	lwz	r9,_MSR(r1)
+ 1:
+ #endif /* CONFIG_TRACE_IRQFLAGS */
+
 
