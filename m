@@ -1,23 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab0LWL53 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 06:57:29 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:55039 "EHLO mx2.mail.elte.hu"
+	id S1753327Ab0LWL5i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 06:57:38 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:47511 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753281Ab0LWL51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 06:57:27 -0500
-Date: Thu, 23 Dec 2010 12:57:11 +0100
+	id S1753054Ab0LWL5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 06:57:36 -0500
+Date: Thu, 23 Dec 2010 12:57:16 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, tj@kernel.org,
-        fweisbec@gmail.com, mk@lab.zgora.pl
-Subject: Re: [GIT PULL rcu/next] rcu commits for 2.6.38
-Message-ID: <20101223115711.GB1471@elte.hu>
-References: <20101223053736.GA17521@linux.vnet.ibm.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andres Salomon <dilinger@queued.net>, Milton Miller <miltonm@bga.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] x86: OLPC: speed up device tree creation during boot
+ (v2)
+Message-ID: <20101223115716.GA2108@elte.hu>
+References: <20101111214546.4e573cad@queued.net>
+ <reply-olpc-3-v2@mdm.bga.com>
+ <20101112002704.50c629e2@queued.net>
+ <20101114095013.GB24206@elte.hu>
+ <4CE0B54E.6000101@zytor.com>
+ <20101115070254.GA25243@elte.hu>
+ <4CE17133.2050101@zytor.com>
+ <20101118083420.GC26398@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101223053736.GA17521@linux.vnet.ibm.com>
+In-Reply-To: <20101118083420.GC26398@elte.hu>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -31,71 +42,56 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+* Ingo Molnar <mingo@elte.hu> wrote:
 
-> Hello, Ingo,
+> > However, I have to vehemently object to putting them in a wider scope
+> > than is otherwise necessary.  I agree that static variables should be
+> > used sparsely if at all (there really are vary few uses of them that are
+> > valid), but putting them in a larger scope screams "I'm used in more
+> > than one function", and that is *not* a good thing.
 > 
-> This pull request covers RCU changes for 2.6.38.  These include RCU
-> priority boosting for TINY_RCU and TINY_PREEMPT_RCU, some cleanups from
-> Lai Jiangshan, fixes to synchronize_sched_expedited() including some
-> from Tejun Heo, some nohz fixes from Frederic Weisbecker, some changes
-> to reduce lock contention for internal-to-RCU locks, and a fix from
-> Mariusz Kozlowski to fix unbalanced parentheses.
+> That's why we sometimes use the (imperfect) compromise to put them in front of 
+> that function, not at the top of the file.
 > 
-> These changes are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/next
-> 
-> ------------------>
-> Frederic Weisbecker (2):
->       rcu: Stop chasing QS if another CPU did it for us
->       rcu: Keep gpnum and completed fields synchronized
-> 
-> Lai Jiangshan (2):
->       rcu,cleanup: move synchronize_sched_expedited() out of sched.c
->       rcu,cleanup: simplify the code when cpu is dying
-> 
-> Mariusz Kozlowski (1):
->       rculist: fix borked __list_for_each_rcu() macro
-> 
-> Paul E. McKenney (14):
->       rcu: add priority-inversion testing to rcutorture
->       rcu: move TINY_RCU from softirq to kthread
->       rcu: priority boosting for TINY_PREEMPT_RCU
->       rcu: add tracing for TINY_RCU and TINY_PREEMPT_RCU
->       rcu: document TINY_RCU and TINY_PREEMPT_RCU tracing.
->       rcu: Distinguish between boosting and boosted
->       rcu: get rid of obsolete "classic" names in TREE_RCU tracing
->       rcu: update documentation/comments for Lai's adoption patch
->       rcu: fix race condition in synchronize_sched_expedited()
->       rcu: Make synchronize_srcu_expedited() fast if running readers
->       rcu: fine-tune grace-period begin/end checks
->       rcu: limit rcu_node leaf-level fanout
->       rcu: reduce __call_rcu()-induced contention on rcu_node structures
->       rcu: remove unused __list_for_each_rcu() macro
-> 
-> Tejun Heo (1):
->       rcu: increase synchronize_sched_expedited() batching
-> 
->  Documentation/RCU/trace.txt |  144 +++++++++++++--
->  include/linux/init_task.h   |    9 +-
->  include/linux/rculist.h     |    5 -
->  include/linux/rcupdate.h    |    4 +-
->  include/linux/rcutiny.h     |   13 +-
->  include/linux/rcutree.h     |    2 +
->  include/linux/sched.h       |   11 +-
->  init/Kconfig                |   55 ++++++-
->  kernel/rcutiny.c            |  105 +++++++----
->  kernel/rcutiny_plugin.h     |  433 +++++++++++++++++++++++++++++++++++++++++--
->  kernel/rcutorture.c         |  270 ++++++++++++++++++++++++++-
->  kernel/rcutree.c            |  156 ++++++++--------
->  kernel/rcutree.h            |   61 +++----
->  kernel/rcutree_plugin.h     |  135 +++++++++++++-
->  kernel/rcutree_trace.c      |   12 +-
->  kernel/sched.c              |   69 -------
->  kernel/srcu.c               |    8 +-
->  17 files changed, 1207 insertions(+), 285 deletions(-)
+> Look at the general balance of hardship: very little harm is done (it's not a big 
+> deal if a variable is only used in a single function) but having it with local 
+> variables can be _really_ harmful - for example i overlooked them when i reviewed 
+> this patch. I dont like important details obscured - i like them to be apparent. 
+> Again, this is something that some people can parse immediately on the visual 
+> level - me and many others cannot.
 
-Pulled, thanks a lot Paul!
+As an addendum, beyond my own bad experience with them, see below a recent upstream 
+fix that shows the kinds of problems that overlooked function scope statics can 
+cause.
 
 	Ingo
+
+------------->
+>From 3cb50ddf97a0a1ca4c68bc12fa1e727a6b45fbf2 Mon Sep 17 00:00:00 2001
+From: Al Viro <viro@ZenIV.linux.org.uk>
+Date: Mon, 20 Dec 2010 15:53:18 +0000
+Subject: [PATCH] Fix btrfs b0rkage
+
+Buggered-in: 76dda93c6ae2 ("Btrfs: add snapshot/subvolume destroy
+ioctl")
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Acked-by: Chris Mason <chris.mason@oracle.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+---
+ fs/btrfs/export.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/fs/btrfs/export.c b/fs/btrfs/export.c
+index 6f04444..659f532 100644
+--- a/fs/btrfs/export.c
++++ b/fs/btrfs/export.c
+@@ -166,7 +166,7 @@ static struct dentry *btrfs_fh_to_dentry(struct super_block *sb, struct fid *fh,
+ static struct dentry *btrfs_get_parent(struct dentry *child)
+ {
+ 	struct inode *dir = child->d_inode;
+-	static struct dentry *dentry;
++	struct dentry *dentry;
+ 	struct btrfs_root *root = BTRFS_I(dir)->root;
+ 	struct btrfs_path *path;
+ 	struct extent_buffer *leaf;
