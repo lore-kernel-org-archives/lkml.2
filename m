@@ -1,100 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752377Ab0LWWvV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 17:51:21 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:59757 "EHLO
+	id S1752253Ab0LWWvT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 17:51:19 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:65201 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707Ab0LWWvS (ORCPT
+	with ESMTP id S1751608Ab0LWWvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 17:51:18 -0500
-X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=gyqfW-nqqoUA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=1nSz6Ew-AAAA:8 a=meVymXHHAAAA:8 a=90yoMks2NXfqcteSHF8A:9 a=hI8lqDGLouhKB5jEdJcA:7 a=xWYsQVGwaVXPe1FBYnS8AqLPCfoA:4 a=jEp0ucaQiEUA:10 a=nj4rVwXhlm8A:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Thu, 23 Dec 2010 17:51:17 -0500
+X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=Ar2y4WLajYgA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=WkNP1CVgQmBOtLH6c5cA:9 a=w0o3Ozu8mCxCVFLuxmkA:7 a=L1ezqvitGTH2P92ScqGq2UvVz1IA:4 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20101223225116.729981172@goodmis.org>
+Message-Id: <20101223224755.078983538@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 23 Dec 2010 17:47:58 -0500
+Date: Thu, 23 Dec 2010 17:47:55 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Gregory Haskins <ghaskins@novell.com>,
-        Peter Morreale <pmorreale@novell.com>
-Subject: [RFC][RT][PATCH 3/4] rtmutex: Revert Optimize rt lock wakeup
-References: <20101223224755.078983538@goodmis.org>
-Content-Disposition: inline; filename=0003-rtmutex-Revert-Optimize-rt-lock-wakeup.patch
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [RFC][RT][PATCH 0/4] rtmutex: Simplify PI code
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+This is still a little buggy. I've been hitting a hang when running
+dbench 100 in a loop. But I also hit that hang with vanilla -rt.
 
-The commit: rtmutex: Optimize rt lock wakeup
+But I'm sure this still has some things that need to be straighten out.
+Anyway, you can either apply the following patches or pull the code
+from the listed git repo.
 
-Does not do what it was suppose to do.
-This is because the adaptive waiter sets its state to TASK_(UN)INTERRUPTIBLE
-before going into the loop. Thus, the test in wakeup_next_waiter()
-will always fail on an adaptive waiter, as it only tests to see if
-the pending waiter never has its state set ot TASK_RUNNING unless
-something else had woke it up.
+This still needs to be worked out, but since I'm taking off for the
+rest of the year, I might as well show you where I ended up at.
 
-The smp_mb() added to make this test work is just as expensive as
-just calling wakeup. And since we we fail to wake up anyway, we are
-doing both a smp_mb() and wakeup as well.
+The following patches are in:
 
-I tested this with dbench and we run faster without this patch.
-I also tried a variant that instead fixed the loop, to change the state
-only if the spinner was to go to sleep, and that still did not show
-any improvement.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-rt.git
 
-Cc: Gregory Haskins <ghaskins@novell.com>
-Cc: Peter Morreale <pmorreale@novell.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/rtmutex.c |   29 ++---------------------------
- 1 files changed, 2 insertions(+), 27 deletions(-)
-
-diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
-index 318d7ed..e218873 100644
---- a/kernel/rtmutex.c
-+++ b/kernel/rtmutex.c
-@@ -554,33 +554,8 @@ static void wakeup_next_waiter(struct rt_mutex *lock, int savestate)
- 	 */
- 	if (!savestate)
- 		wake_up_process(pendowner);
--	else {
--		/*
--		 * We can skip the actual (expensive) wakeup if the
--		 * waiter is already running, but we have to be careful
--		 * of race conditions because they may be about to sleep.
--		 *
--		 * The waiter-side protocol has the following pattern:
--		 * 1: Set state != RUNNING
--		 * 2: Conditionally sleep if waiter->task != NULL;
--		 *
--		 * And the owner-side has the following:
--		 * A: Set waiter->task = NULL
--		 * B: Conditionally wake if the state != RUNNING
--		 *
--		 * As long as we ensure 1->2 order, and A->B order, we
--		 * will never miss a wakeup.
--		 *
--		 * Therefore, this barrier ensures that waiter->task = NULL
--		 * is visible before we test the pendowner->state.  The
--		 * corresponding barrier is in the sleep logic.
--		 */
--		smp_mb();
--
--		/* If !RUNNING && !RUNNING_MUTEX */
--		if (pendowner->state & ~TASK_RUNNING_MUTEX)
--			wake_up_process_mutex(pendowner);
--	}
-+	else
-+		wake_up_process_mutex(pendowner);
- 
- 	rt_mutex_set_owner(lock, pendowner, RT_MUTEX_OWNER_PENDING);
- 
--- 
-1.7.2.3
+    branch: rt/tip/rt/devel
 
 
+Lai Jiangshan (1):
+      rtmutex: Ensure only the top waiter or higher priority task can take the lock
+
+Steven Rostedt (3):
+      rtmutex: Only save lock depth once in spin_slowlock
+      rtmutex: Try to take lock early in rt_spin_lock_slowlock()
+      rtmutex: Revert Optimize rt lock wakeup
+
+----
+ kernel/futex.c          |   22 +--
+ kernel/rt.c             |   10 +-
+ kernel/rtmutex-debug.c  |    1 -
+ kernel/rtmutex.c        |  458 ++++++++++++++++++-----------------------------
+ kernel/rtmutex_common.h |   18 +--
+ 5 files changed, 188 insertions(+), 321 deletions(-)
