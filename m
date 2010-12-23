@@ -1,40 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007Ab0LWMPZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 07:15:25 -0500
-Received: from mail2.sendit.NoDak.edu ([134.129.111.44]:38315 "EHLO
-	mail2.sendit.nodak.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760Ab0LWMPX (ORCPT
+	id S1753151Ab0LWMU0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 07:20:26 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60804 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752587Ab0LWMUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 07:15:23 -0500
-message-id: <46818.50.16.82.99.1293101866.horde@webmail.sendit.nodak.edu>
-Date: Thu, 23 Dec 2010 04:57:46 -0600
-From: "James M Jansen" <James.Jansen@sendit.nodak.edu>
-Reply-to: beeline@diploma.com
-To: undisclosed-recipients:;
-Subject: Claim is Free
+	Thu, 23 Dec 2010 07:20:25 -0500
+Date: Thu, 23 Dec 2010 12:19:18 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: "'Kyungmin Park'" <kmpark@infradead.org>,
+        "'Michal Nazarewicz'" <m.nazarewicz@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Johan MOSSBERG'" <johan.xx.mossberg@stericsson.com>,
+        "'Mel Gorman'" <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+        "'Michal Nazarewicz'" <mina86@mina86.com>, linux-mm@kvack.org,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-media@vger.kernel.org,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCHv8 00/12] Contiguous Memory Allocator
+Message-ID: <20101223121917.GG3636@n2100.arm.linux.org.uk>
+References: <cover.1292443200.git.m.nazarewicz@samsung.com> <AANLkTim8_=0+-zM5z4j0gBaw3PF3zgpXQNetEn-CfUGb@mail.gmail.com> <20101223100642.GD3636@n2100.arm.linux.org.uk> <00ea01cba290$4d67f500$e837df00$%szyprowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.2)
+In-Reply-To: <00ea01cba290$4d67f500$e837df00$%szyprowski@samsung.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Winner,
+On Thu, Dec 23, 2010 at 11:58:08AM +0100, Marek Szyprowski wrote:
+> Actually this contiguous memory allocator is a better replacement for
+> alloc_pages() which is used by dma_alloc_coherent(). It is a generic
+> framework that is not tied only to ARM architecture.
 
-   We have been notified to let you know about your claim of  
-250,000GBP. You are to reconfirmed your personal information to us  
-immediately for further action.
-Full Name: ,Contact Address:, Phone Number:,Age:, Sex:, Country:
-contact Email: beeline@diploma.com
-Bee Line Services
-Joan Ekblad
+... which is open to abuse.  What I'm trying to find out is - if it
+can't be used for DMA, what is it to be used for?
 
+Or are we inventing an everything-but-ARM framework?
 
+> > In other words, do we _actually_ have a use for this which doesn't
+> > involve doing something like allocating 32MB of memory from it,
+> > remapping it so that it's DMA coherent, and then performing DMA
+> > on the resulting buffer?
+> 
+> This is an arm specific problem, also related to dma_alloc_coherent()
+> allocator. To be 100% conformant with ARM specification we would
+> probably need to unmap all pages used by the dma_coherent allocator
+> from the LOW MEM area. This is doable, but completely not related
+> to the CMA and this patch series.
 
+You've already been told why we can't unmap pages from the kernel
+direct mapping.
 
+Okay, so I'm just going to assume that CMA has _no_ _business_ being
+used on ARM, and is not something that should interest anyone in the
+ARM community.
