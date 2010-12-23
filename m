@@ -1,92 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab0LWOnJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 09:43:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17767 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753158Ab0LWOnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 09:43:07 -0500
-Message-ID: <4D135FF3.1090903@redhat.com>
-Date: Thu, 23 Dec 2010 12:42:59 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL for 2.6.37-rc8] V4L/RC fixes
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753323Ab0LWOpU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 09:45:20 -0500
+Received: from ms01.sssup.it ([193.205.80.99]:44901 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753051Ab0LWOpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 09:45:19 -0500
+Subject: Re: Sending some form of notifaction when sched_fifo throttling
+ kicks in...
+From: Dario Faggioli <raistlin@linux.it>
+To: Dhaval Giani <dhaval.giani@gmail.com>
+Cc: torbenh <torbenh@gmx.de>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Gregory Haskins <ghaskins@novell.com>,
+        Nick Piggin <nickpiggin@yahoo.com.au>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>, vatsa@in.ibm.com
+In-Reply-To: <AANLkTi=1v6YG-Vc7uZFvqO6K0fAuZ-o9A7hxeZVVAHm3@mail.gmail.com>
+References: <20101223113926.GH14960@siel.b>
+	 <1293110258.3390.41.camel@Palantir>
+	 <AANLkTi=1v6YG-Vc7uZFvqO6K0fAuZ-o9A7hxeZVVAHm3@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-xeb6AyB6Pmi+dXH4snxy"
+Date: Thu, 23 Dec 2010 15:44:56 +0100
+Message-ID: <1293115496.3390.49.camel@Palantir>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
 
-Please pull from:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
+--=-xeb6AyB6Pmi+dXH4snxy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-For a series of fixes for V4L and RC. Most of the patches are due to a bug 
-at the mceusb parser that weren't working with some MCE Remote Controller variants.
-There are also some regressions and bugs at s5p-fimc driver and a few other
-bugs at soc_camera/mx2_camera, nuvoton, lirc and streamzap drivers. 
+On Thu, 2010-12-23 at 15:04 +0100, Dhaval Giani wrote:=20
+> > ... If you think you're fine with some /proc (and perhaps cpuacct, if
+> > cgroups are being used) readable, I can try to come up with something.
+> >
+>=20
+> There is no point in putting it in cpuacct since cpuacct can be used
+> separately from cpu.
+>=20
+Which would mean that you'd need both for having such stat. Anyway, I'm
+fine with putting this in 'cpu' as well, just trying to find a consensus
+on what the right place is.
 
-Thanks!
-Mauro
+> > Do others have some idea and/or comments about that? This is
+> > ABI/interface, and that really scares me! :-P
+>=20
+> IIRC, your patchset had something like this for getting the
+> statistics? Starting fromt hre, would schedstats be the right place?
+>=20
+SCHED_DEADLINE patchset has both signaling capabilities and some
+statistic reporting, bat it's a different thing.
 
--
+I think schedstat could be the right place for _this_ thing here, but
+since each cgroup could be throttled, we also need something which is
+per-cgroup... Don't you agree?
 
-The following changes since commit 90a8a73c06cc32b609a880d48449d7083327e11a:
+Regards,
+Dario
 
-  Linux 2.6.37-rc7 (2010-12-21 11:26:40 -0800)
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
 
-are available in the git repository at:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
+http://retis.sssup.it/people/faggioli -- dario.faggioli@jabber.org
 
-Baruch Siach (1):
-      [media] mx2_camera: fix pixel clock polarity configuration
+--=-xeb6AyB6Pmi+dXH4snxy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Dan Carpenter (2):
-      [media] lirc_dev: stray unlock in lirc_dev_fop_poll()
-      [media] lirc_dev: fixes in lirc_dev_fop_read()
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Guennadi Liakhovetski (1):
-      [media] soc-camera: fix static build of the sh_mobile_csi2.c driver
+iEYEABECAAYFAk0TYGgACgkQk4XaBE3IOsR80ACeMmYYpuqlvRUUSaNn/y3M56lC
+Hy4AoKr1fPt+HCUckLNfKsbm7sY0EDsQ
+=q1aZ
+-----END PGP SIGNATURE-----
 
-Jarod Wilson (10):
-      [media] mceusb: add support for Conexant Hybrid TV RDU253S
-      [media] nuvoton-cir: improve buffer parsing responsiveness
-      [media] mceusb: fix up reporting of trailing space
-      [media] mceusb: buffer parsing fixups for 1st-gen device
-      [media] IR: add tv power scancode to rc6 mce keymap
-      [media] mceusb: fix keybouce issue after parser simplification
-      [media] streamzap: merge timeout space with trailing space
-      [media] mceusb: add another Fintek device ID
-      [media] mceusb: fix inverted mask inversion logic
-      [media] mceusb: set a default rx timeout
-
-Paul Bender (1):
-      [media] rc: fix sysfs entry for mceusb and streamzap
-
-Sylwester Nawrocki (6):
-      [media] s5p-fimc: BKL lock removal - compilation fix
-      [media] s5p-fimc: Fix vidioc_g_crop/cropcap on camera sensor
-      [media] s5p-fimc: Explicitly add required header file
-      [media] s5p-fimc: Convert m2m driver to unlocked_ioctl
-      [media] s5p-fimc: Use correct fourcc code for 32-bit RGB format
-      [media] s5p-fimc: Fix output DMA handling in S5PV310 IP revisions
-
- drivers/media/IR/keymaps/rc-rc6-mce.c       |   21 ++--
- drivers/media/IR/lirc_dev.c                 |   29 +++--
- drivers/media/IR/mceusb.c                   |  174 +++++++++++++++++----------
- drivers/media/IR/nuvoton-cir.c              |   10 ++-
- drivers/media/IR/streamzap.c                |   21 ++--
- drivers/media/video/mx2_camera.c            |    2 -
- drivers/media/video/s5p-fimc/fimc-capture.c |   51 ++++++++-
- drivers/media/video/s5p-fimc/fimc-core.c    |   54 +++++----
- drivers/media/video/s5p-fimc/fimc-core.h    |   24 +++--
- drivers/media/video/s5p-fimc/regs-fimc.h    |    3 +
- drivers/media/video/sh_mobile_ceu_camera.c  |    2 +-
- 11 files changed, 257 insertions(+), 134 deletions(-)
+--=-xeb6AyB6Pmi+dXH4snxy--
 
