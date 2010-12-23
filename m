@@ -1,92 +1,327 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387Ab0LWPgV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 10:36:21 -0500
-Received: from tomasu.net ([64.85.170.234]:52629 "EHLO mail.tomasu.net"
+	id S1753411Ab0LWPjw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 10:39:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52530 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753251Ab0LWPgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 10:36:20 -0500
-From: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Reply-To: thomas@fjellstrom.ca
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: intermittent problem with skge driver/hardware
-Date: Thu, 23 Dec 2010 08:36:14 -0700
-User-Agent: KMail/1.13.5 (Linux/2.6.36.1+; KDE/4.5.2; x86_64; svn-1188918; 2010-10-21)
-References: <201012220856.38279.thomas@fjellstrom.ca>
-In-Reply-To: <201012220856.38279.thomas@fjellstrom.ca>
+	id S1751704Ab0LWPjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 10:39:51 -0500
+Date: Thu, 23 Dec 2010 10:39:15 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>,
+        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] block: fix accounting bug on cross partition merges
+Message-ID: <20101223153915.GE9502@redhat.com>
+References: <4CFF3AD6.6010904@jp.fujitsu.com>
+ <4CFF3C86.2070504@fusionio.com>
+ <4CFF3DA4.5060705@jp.fujitsu.com>
+ <4CFF9A2C.1070401@fusionio.com>
+ <4D025154.8030400@redhat.com>
+ <20101210165553.GE31737@redhat.com>
+ <4D07D2AC.6000500@fusionio.com>
+ <4D0B68AF.80804@redhat.com>
+ <4D0BB4A1.8080305@fusionio.com>
+ <4D13664C.3020500@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012230836.14668.thomas@fjellstrom.ca>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D13664C.3020500@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On December 22, 2010, you wrote:
-> I've been getting a strange issue, where traffic over one of the built in
-> skge nics in my server will just die. No traffic can make it over, but
-> it'll claim the device is up:
+On Thu, Dec 23, 2010 at 04:10:04PM +0100, Jerome Marchand wrote:
+> On 12/17/2010 08:06 PM, Jens Axboe wrote:
+> > On 2010-12-17 14:42, Jerome Marchand wrote:
+> >>
+> >> /proc/diskstats would display a strange output as follows.
+> > 
+> > [snip]
+> > 
+> > This looks a lot better! One comment:
+> > 
+> >> diff --git a/block/blk-core.c b/block/blk-core.c
+> >> index 4ce953f..064921d 100644
+> >> --- a/block/blk-core.c
+> >> +++ b/block/blk-core.c
+> >> @@ -64,13 +64,16 @@ static void drive_stat_acct(struct request *rq, int new_io)
+> >>  		return;
+> >>  
+> >>  	cpu = part_stat_lock();
+> >> -	part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
+> >>  
+> >> -	if (!new_io)
+> >> +	if (!new_io) {
+> >> +		part = rq->part;
+> >>  		part_stat_inc(cpu, part, merges[rw]);
+> >> -	else {
+> >> +	} else {
+> >> +		part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
+> >>  		part_round_stats(cpu, part);
+> >>  		part_inc_in_flight(part, rw);
+> >> +		kref_get(&part->ref);
+> >> +		rq->part = part;
+> >>  	}
+> >>  
+> >>  	part_stat_unlock();
+> > 
+> > I don't think this is completely safe. The rcu lock is held due to the
+> > part_stat_lock(), but that only prevents the __delete_partition()
+> > callback from happening. Lets say you have this:
+> > 
+> > CPU0                                         CPU1
+> > part = disk_map_sector_rcu()
+> >                                              kref_put(part); <- now 0
 > 
-> dmesg:
-> [85007.362349] skge 0000:05:06.0: PCI error cmd=0x7 status=0x22b0
-> [85007.362735] skge 0000:05:06.0: unable to clear error (so ignoring them)
-> [85076.960083] ------------[ cut here ]------------
-> [85076.960963] WARNING: at net/sched/sch_generic.c:258
-> dev_watchdog+0xfc/0x19b() [85076.961799] Hardware name: GA-MA790FXT-UD5P
-> [85076.962654] NETDEV WATCHDOG: eth2 (skge): transmit queue 0 timed out
-> [85076.963520] Modules linked in: tun ip6table_filter ip6_tables
-> iptable_filter ip_tables x_tables powernow_k8 mperf cpufreq_conservative
-> cpufreq_stats cpufreq_userspace cpufreq_$ [85076.970411] Pid: 0, comm:
-> kworker/0:1 Not tainted 2.6.36.1+ #5
-> [85076.971401] Call Trace:
-> [85076.971406]  <IRQ>  [<ffffffff8103687e>] ?
-> warn_slowpath_common+0x78/0x8c [85076.971426]  [<ffffffff81036931>] ?
-> warn_slowpath_fmt+0x45/0x4a [85076.971434]  [<ffffffff8122b866>] ?
-> netif_tx_lock+0x3d/0x64
-> [85076.971442]  [<ffffffff8122b989>] ? dev_watchdog+0xfc/0x19b
-> [85076.971450]  [<ffffffff8104097a>] ? cascade+0x60/0x7a
-> [85076.971458]  [<ffffffff81026bda>] ? check_preempt_curr+0x1a/0x31
-> [85076.971466]  [<ffffffff8104232e>] ? run_timer_softirq+0x1c2/0x284
-> [85076.971475]  [<ffffffff8109cece>] ? perf_event_task_tick+0x6a/0x185
-> [85076.971483]  [<ffffffff8122b88d>] ? dev_watchdog+0x0/0x19b
-> [85076.971493]  [<ffffffff8103bec4>] ? __do_softirq+0xde/0x19e
-> [85076.971501]  [<ffffffff81059f8a>] ? tick_dev_program_event+0x33/0xf0
-> [85076.971510]  [<ffffffff8100384c>] ? call_softirq+0x1c/0x28
-> [85076.971517]  [<ffffffff81004c01>] ? do_softirq+0x31/0x63
-> [85076.971525]  [<ffffffff8103bd4b>] ? irq_exit+0x36/0x79
-> [85076.971534]  [<ffffffff81017b4b>] ? smp_apic_timer_interrupt+0x87/0x95
-> [85076.971541]  [<ffffffff81003313>] ? apic_timer_interrupt+0x13/0x20
-> [85076.971545]  <EOI>  [<ffffffff8100942c>] ? default_idle+0x36/0x4c
-> [85076.971557]  [<ffffffff8100940c>] ? default_idle+0x16/0x4c
-> [85076.971563]  [<ffffffff81001a73>] ? cpu_idle+0xa9/0x11b
-> [85076.971572]  [<ffffffff81290cc0>] ? _raw_spin_unlock_irqrestore+0x4/0x5
-> [85076.971580]  [<ffffffff8128a265>] ? start_secondary+0x1db/0x1e1
-> [85076.971586] ---[ end trace b7c537207c4cd873 ]---
-> [88574.943219] skge 0000:05:06.0: eth2: Link is down
-> [88574.983011] wan_bridge: port 1(eth2) entering forwarding state
-> [88579.652590] skge 0000:05:06.0: eth2: Link is up at 100 Mbps, full
-> duplex, flow control both [88579.656363] wan_bridge: port 1(eth2) entering
-> forwarding state
-> [88579.657347] wan_bridge: port 1(eth2) entering forwarding state
-> 
-> lspci:
-> 05:06.0 Ethernet controller: D-Link System Inc DGE-530T Gigabit Ethernet
-> Adapter (rev 11) (rev 11)
-> 
-> I'm wondering if this is a hardware issue, and I'll just have to use a
-> different nic, or maybe some kind of driver issue? I don't know.
-> 
-> I've tried rmmoding the driver and reloading, but it never seems to get
-> me my networking back, maybe due to the bridging+kvm setup I have.
+> A kref_get(part) happens here, or am I missing something?
 
-I should make a quick correction, the skge adapter is not built in, rather its 
-a plain old D-Link GbE pci card. If it happens again, I'll try one of my 
-spares (bought several D-Link cards prior to upgrading all my hardware, so 
-most of them are redundant now, as the boards all have GbE built in).
+It might happen that kref_get(part) is called after kref_put() has been
+called and reference has reached 0 and and delete_parition() call has
+been scheduled as soon as rcu grace period is over. So if you do
+kref_get() after that, it is not going to help.
 
-If anyone else knows what might be the cause, please let me know.
+> If we use an atomic kref_test_and_get() function, which only increment the
+> refcount if it's not zero, we would be safe. If kref_test_and_get() fails,
+> we can cache rq->rq_disk->part0 instead. See my drafty patch below.
 
--- 
-Thomas Fjellstrom
-thomas@fjellstrom.ca
+Conceptually it kind of makes sense to me. So if even if we get the
+pointer to partition under rcu_read_lock(), we will not account the IO
+to partition if it is going away.
+
+> 
+> > part_stat_unlock()
+> >                                              __delete_partition();
+> >                                              ...
+> >                                              delete_partition_rcu_cb();
+> > merge, or endio, boom
+> > 
+> > Now rq has ->part pointing to freed memory, later merges or end
+> > accounting will touch freed memory.
+> > 
+> > I think we can fix this by just having delete_partition_rcu_rb() check
+> > the reference count and return if non-zero. Since someone holds a
+> > reference to the table, they will drop it and we'll re-schedule the rcu
+> > callback.
+> > 
+> > 
+> 
+> 
+> ---
+> 
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index 4ce953f..72d12d2 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -64,13 +64,21 @@ static void drive_stat_acct(struct request *rq, int new_io)
+>  		return;
+>  
+>  	cpu = part_stat_lock();
+> -	part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
+>  
+> -	if (!new_io)
+> +	if (!new_io) {
+> +		part = rq->part;
+>  		part_stat_inc(cpu, part, merges[rw]);
+> -	else {
+> +	} else {
+> +		part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
+> +		if(part->partno && !kref_test_and_get(&part->ref))
+> +			/*
+
+Do we have to check this part->partno both while taking and releasing
+reference. Can't we take one extra reference for disk->part0, at
+alloc_disk_node() time so that it is never freed and only freed when
+disk is going away and gendisk is being freed.
+
+That way, you don't have to differentiate between disk->part0 and rest
+of the partitions while taking or dropping references.
+
+Thanks
+Vivek
+
+> +			 * The partition is already being removed,
+> +			 * the request will be accounted on the disk only
+> +			 */
+> +			part = &rq->rq_disk->part0;
+>  		part_round_stats(cpu, part);
+>  		part_inc_in_flight(part, rw);
+> +		rq->part = part;
+>  	}
+>  
+>  	part_stat_unlock();
+> @@ -128,6 +136,7 @@ void blk_rq_init(struct request_queue *q, struct request *rq)
+>  	rq->ref_count = 1;
+>  	rq->start_time = jiffies;
+>  	set_start_time_ns(rq);
+> +	rq->part = NULL;
+>  }
+>  EXPORT_SYMBOL(blk_rq_init);
+>  
+> @@ -1776,7 +1785,7 @@ static void blk_account_io_completion(struct request *req, unsigned int bytes)
+>  		int cpu;
+>  
+>  		cpu = part_stat_lock();
+> -		part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
+> +		part = req->part;
+>  		part_stat_add(cpu, part, sectors[rw], bytes >> 9);
+>  		part_stat_unlock();
+>  	}
+> @@ -1796,13 +1805,15 @@ static void blk_account_io_done(struct request *req)
+>  		int cpu;
+>  
+>  		cpu = part_stat_lock();
+> -		part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
+> +		part = req->part;
+>  
+>  		part_stat_inc(cpu, part, ios[rw]);
+>  		part_stat_add(cpu, part, ticks[rw], duration);
+>  		part_round_stats(cpu, part);
+>  		part_dec_in_flight(part, rw);
+>  
+> +		if (part->partno)
+> +			kref_put(&part->ref, __delete_partition);
+>  		part_stat_unlock();
+>  	}
+>  }
+> diff --git a/block/blk-merge.c b/block/blk-merge.c
+> index 77b7c26..3334578 100644
+> --- a/block/blk-merge.c
+> +++ b/block/blk-merge.c
+> @@ -351,11 +351,13 @@ static void blk_account_io_merge(struct request *req)
+>  		int cpu;
+>  
+>  		cpu = part_stat_lock();
+> -		part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
+> +		part = req->part;
+>  
+>  		part_round_stats(cpu, part);
+>  		part_dec_in_flight(part, rq_data_dir(req));
+>  
+> +		if (part->partno)
+> +			kref_put(&part->ref, __delete_partition);
+>  		part_stat_unlock();
+>  	}
+>  }
+> diff --git a/block/genhd.c b/block/genhd.c
+> index 5fa2b44..0c55eae 100644
+> --- a/block/genhd.c
+> +++ b/block/genhd.c
+> @@ -1192,6 +1192,7 @@ struct gendisk *alloc_disk_node(int minors, int node_id)
+>  			return NULL;
+>  		}
+>  		disk->part_tbl->part[0] = &disk->part0;
+> +		kref_init(&disk->part0.ref);
+>  
+>  		disk->minors = minors;
+>  		rand_initialize_disk(disk);
+> diff --git a/fs/partitions/check.c b/fs/partitions/check.c
+> index 0a8b0ad..0123717 100644
+> --- a/fs/partitions/check.c
+> +++ b/fs/partitions/check.c
+> @@ -372,6 +372,13 @@ static void delete_partition_rcu_cb(struct rcu_head *head)
+>  	put_device(part_to_dev(part));
+>  }
+>  
+> +void __delete_partition(struct kref *ref)
+> +{
+> +	struct hd_struct *part = container_of(ref, struct hd_struct, ref);
+> +
+> +	call_rcu(&part->rcu_head, delete_partition_rcu_cb);
+> +}
+> +
+>  void delete_partition(struct gendisk *disk, int partno)
+>  {
+>  	struct disk_part_tbl *ptbl = disk->part_tbl;
+> @@ -390,7 +397,7 @@ void delete_partition(struct gendisk *disk, int partno)
+>  	kobject_put(part->holder_dir);
+>  	device_del(part_to_dev(part));
+>  
+> -	call_rcu(&part->rcu_head, delete_partition_rcu_cb);
+> +	kref_put(&part->ref, __delete_partition);
+>  }
+>  
+>  static ssize_t whole_disk_show(struct device *dev,
+> @@ -489,6 +496,7 @@ struct hd_struct *add_partition(struct gendisk *disk, int partno,
+>  	if (!dev_get_uevent_suppress(ddev))
+>  		kobject_uevent(&pdev->kobj, KOBJ_ADD);
+>  
+> +	kref_init(&p->ref);
+>  	return p;
+>  
+>  out_free_info:
+> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> index aae86fd..482a7fd 100644
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -115,6 +115,7 @@ struct request {
+>  	void *elevator_private3;
+>  
+>  	struct gendisk *rq_disk;
+> +	struct hd_struct *part;
+>  	unsigned long start_time;
+>  #ifdef CONFIG_BLK_CGROUP
+>  	unsigned long long start_time_ns;
+> diff --git a/include/linux/genhd.h b/include/linux/genhd.h
+> index 7a7b9c1..2ba2792 100644
+> --- a/include/linux/genhd.h
+> +++ b/include/linux/genhd.h
+> @@ -116,6 +116,7 @@ struct hd_struct {
+>  	struct disk_stats dkstats;
+>  #endif
+>  	struct rcu_head rcu_head;
+> +	struct kref ref;
+>  };
+>  
+>  #define GENHD_FL_REMOVABLE			1
+> @@ -583,6 +584,7 @@ extern struct hd_struct * __must_check add_partition(struct gendisk *disk,
+>  						     sector_t len, int flags,
+>  						     struct partition_meta_info
+>  						       *info);
+> +extern void __delete_partition(struct kref *ref);
+>  extern void delete_partition(struct gendisk *, int);
+>  extern void printk_all_partitions(void);
+>  
+> diff --git a/include/linux/kref.h b/include/linux/kref.h
+> index 6cc38fc..90b9e44 100644
+> --- a/include/linux/kref.h
+> +++ b/include/linux/kref.h
+> @@ -23,6 +23,7 @@ struct kref {
+>  
+>  void kref_init(struct kref *kref);
+>  void kref_get(struct kref *kref);
+> +int kref_test_and_get(struct kref *kref);
+>  int kref_put(struct kref *kref, void (*release) (struct kref *kref));
+>  
+>  #endif /* _KREF_H_ */
+> diff --git a/lib/kref.c b/lib/kref.c
+> index d3d227a..5f663b9 100644
+> --- a/lib/kref.c
+> +++ b/lib/kref.c
+> @@ -37,6 +37,22 @@ void kref_get(struct kref *kref)
+>  }
+>  
+>  /**
+> + * kref_test_and_get - increment refcount for object only if refcount is not
+> + * zero.
+> + * @kref: object.
+> + *
+> + * Return non-zero if the refcount was incremented, 0 otherwise
+> + */
+> +int kref_test_and_get(struct kref *kref)
+> +{
+> +	int ret;
+> +	smp_mb__before_atomic_inc();
+> +	ret = atomic_inc_not_zero(&kref->refcount);
+> +	smp_mb__after_atomic_inc();
+> +	return ret;
+> +}
+> +
+> +/**
+>   * kref_put - decrement refcount for object.
+>   * @kref: object.
+>   * @release: pointer to the function that will clean up the object when the
