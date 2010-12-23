@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567Ab0LWRei (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 12:34:38 -0500
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:44014 "EHLO
+	id S1753642Ab0LWRfI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 12:35:08 -0500
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:34322 "EHLO
 	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753518Ab0LWReg (ORCPT
+	by vger.kernel.org with ESMTP id S1753559Ab0LWRfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 12:34:36 -0500
-X-Sasl-enc: gA6fQlUdDQM6xwxrMOh78G7A9G81GmKhiXojV+jL82cB 1293125675
+	Thu, 23 Dec 2010 12:35:05 -0500
+X-Sasl-enc: QpNgDFVZQH11zdTTrl2/Rd5J637ko2bqzxbRLtv5xoDJ 1293125704
 To: linux-security-module@vger.kernel.org
-Subject: [RFC][PATCH 2/6] encrypted-keys: added additional debug messages
+Subject: [RFC][PATCH 3/6] encrypted-keys: add key format support
 From: Roberto Sassu <roberto.sassu@polito.it>
-Date: Thu, 23 Dec 2010 18:34:30 +0100
+Date: Thu, 23 Dec 2010 18:35:00 +0100
 Cc: keyrings@linux-nfs.org, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>,
         David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>,
@@ -20,121 +20,541 @@ Cc: keyrings@linux-nfs.org, linux-fsdevel@vger.kernel.org,
         Tyler Hicks <tyhicks@linux.vnet.ibm.com>, kirkland@canonical.com
 MIME-Version: 1.0
 Content-Type: multipart/signed;
-  boundary="nextPart3326347.OXiLX5CQZO";
+  boundary="nextPart5749342.I5aPMAWj3C";
   protocol="application/pkcs7-signature";
   micalg=sha1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012231834.30497.roberto.sassu@polito.it>
+Message-Id: <201012231835.01075.roberto.sassu@polito.it>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart3326347.OXiLX5CQZO
+--nextPart5749342.I5aPMAWj3C
 Content-Type: text/plain;
   charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
-Some debug messages have been added in the function datablob_parse() in
-order to better identify errors returned when dealing with 'encrypted'
-keys.
+This patch introduces a new parameter, called 'format', that defines the
+format of data stored by encrypted keys. The 'default' format identifies
+encrypted keys containing only the symmetric key, while other formats can
+be defined to support additional information. The 'format' parameter is
+written in the datablob produced by commands 'keyctl print' or
+'keyctl pipe' and is integrity protected by the HMAC.
 
 Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 =2D--
- security/keys/encrypted_defined.c |   44 +++++++++++++++++++++++++++------=
+ Documentation/keys-trusted-encrypted.txt |   48 +++++++----
+ include/keys/encrypted-type.h            |   13 +++-
+ security/keys/encrypted_defined.c        |  139 +++++++++++++++++++++-----=
 =2D--
- 1 files changed, 33 insertions(+), 11 deletions(-)
+ 3 files changed, 141 insertions(+), 59 deletions(-)
 
+diff --git a/Documentation/keys-trusted-encrypted.txt b/Documentation/keys-=
+trusted-encrypted.txt
+index 8fb79bc..0afcb50 100644
+=2D-- a/Documentation/keys-trusted-encrypted.txt
++++ b/Documentation/keys-trusted-encrypted.txt
+@@ -53,12 +53,19 @@ they are only as secure as the user key encrypting them=
+=2E  The master user key
+ should therefore be loaded in as secure a way as possible, preferably earl=
+y in
+ boot.
+=20
++The decrypted portion of encrypted keys can contain either a simple symmet=
+ric
++key or a more complex structure. The format of the more complex structure =
+is
++application specific, which is identified by 'format'.
++
+ Usage:
+=2D  keyctl add encrypted name "new key-type:master-key-name keylen" ring
+=2D  keyctl add encrypted name "load hex_blob" ring
+=2D  keyctl update keyid "update key-type:master-key-name"
++    keyctl add encrypted name "new [format] key-type:master-key-name keyle=
+n"
++        ring
++    keyctl add encrypted name "load hex_blob" ring
++    keyctl update keyid "update key-type:master-key-name"
++
++format:=3D 'default'
++key-type:=3D 'trusted' | 'user'
+=20
+=2Dwhere 'key-type' is either 'trusted' or 'user'.
+=20
+ Examples of trusted and encrypted key usage:
+=20
+@@ -114,15 +121,25 @@ Reseal a trusted key under new pcr values:
+     7ef6a24defe4846104209bf0c3eced7fa1a672ed5b125fc9d8cd88b476a658a4434644=
+ef
+     df8ae9a178e9f83ba9f08d10fa47e4226b98b0702f06b3b8
+=20
+=2DCreate and save an encrypted key "evm" using the above trusted key "kmk":
++The initial consumer of trusted keys is EVM, which at boot time needs a hi=
+gh
++quality symmetric key for HMAC protection of file metadata.  The use of a
++trusted key provides strong guarantees that the EVM key has not been
++compromised by a user level problem, and when sealed to specific boot PCR
++values, protects against boot and offline attacks.  Create and save an
++encrypted key "evm" using the above trusted key "kmk":
+=20
++option 1: omitting 'format'
+     $ keyctl add encrypted evm "new trusted:kmk 32" @u
+     159771175
+=20
++option 2: explicitly defining 'format' as 'default'
++    $ keyctl add encrypted evm "new default trusted:kmk 32" @u
++    159771175
++
+     $ keyctl print 159771175
+=2D    trusted:kmk 32 2375725ad57798846a9bbd240de8906f006e66c03af53b1b382db=
+bc55
+=2D    be2a44616e4959430436dc4f2a7a9659aa60bb4652aeb2120f149ed197c564e02471=
+7c64
+=2D    5972dcb82ab2dde83376d82b2e3c09ffc
++    default trusted:kmk 32 2375725ad57798846a9bbd240de8906f006e66c03af53b1=
+b3
++    82dbbc55be2a44616e4959430436dc4f2a7a9659aa60bb4652aeb2120f149ed197c564=
+e0
++    24717c64 5972dcb82ab2dde83376d82b2e3c09ffc
+=20
+     $ keyctl pipe 159771175 > evm.blob
+=20
+@@ -132,14 +149,9 @@ Load an encrypted key "evm" from saved blob:
+     831684262
+=20
+     $ keyctl print 831684262
+=2D    trusted:kmk 32 2375725ad57798846a9bbd240de8906f006e66c03af53b1b382db=
+bc55
+=2D    be2a44616e4959430436dc4f2a7a9659aa60bb4652aeb2120f149ed197c564e02471=
+7c64
+=2D    5972dcb82ab2dde83376d82b2e3c09ffc
+=2D
++    default trusted:kmk 32 2375725ad57798846a9bbd240de8906f006e66c03af53b1=
+b3
++    82dbbc55be2a44616e4959430436dc4f2a7a9659aa60bb4652aeb2120f149ed197c564=
+e0
++    24717c64 5972dcb82ab2dde83376d82b2e3c09ffc
+=20
+=2DThe initial consumer of trusted keys is EVM, which at boot time needs a =
+high
+=2Dquality symmetric key for HMAC protection of file metadata.  The use of a
+=2Dtrusted key provides strong guarantees that the EVM key has not been
+=2Dcompromised by a user level problem, and when sealed to specific boot PCR
+=2Dvalues, protects against boot and offline attacks.  Other uses for trust=
+ed and
+=2Dencrypted keys, such as for disk and file encryption are anticipated.
++Other uses for trusted and encrypted keys, such as for disk and file encry=
+ption
++are anticipated.
+diff --git a/include/keys/encrypted-type.h b/include/keys/encrypted-type.h
+index 9585501..1d45413 100644
+=2D-- a/include/keys/encrypted-type.h
++++ b/include/keys/encrypted-type.h
+@@ -1,6 +1,11 @@
+ /*
+  * Copyright (C) 2010 IBM Corporation
+=2D * Author: Mimi Zohar <zohar@us.ibm.com>
++ * Copyright (C) 2010 Politecnico di Torino, Italy
++ *                    TORSEC group -- http://security.polito.it
++ *
++ * Authors:
++ * Mimi Zohar <zohar@us.ibm.com>
++ * Roberto Sassu <roberto.sassu@polito.it>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -15,13 +20,17 @@
+=20
+ struct encrypted_key_payload {
+ 	struct rcu_head rcu;
++	char *format;		/* datablob: format */
+ 	char *master_desc;	/* datablob: master key name */
+ 	char *datalen;		/* datablob: decrypted key length */
+ 	u8 *iv;			/* datablob: iv */
+ 	u8 *encrypted_data;	/* datablob: encrypted data */
+ 	unsigned short datablob_len;	/* length of datablob */
+ 	unsigned short decrypted_datalen;	/* decrypted data length */
+=2D	u8 decrypted_data[0];	/* decrypted data +  datablob + hmac */
++	unsigned short payload_datalen;		/* payload data length */
++	unsigned short encrypted_key_format;	/* encrypted key format */
++	u8 *decrypted_data;	/* decrypted data */
++	u8 payload_data[0];	/* payload data + datablob + hmac */
+ };
+=20
+ extern struct key_type key_type_encrypted;
 diff --git a/security/keys/encrypted_defined.c b/security/keys/encrypted_de=
 fined.c
-index c1c5e27..2bb2c47 100644
+index 2bb2c47..7a914ab 100644
 =2D-- a/security/keys/encrypted_defined.c
 +++ b/security/keys/encrypted_defined.c
-@@ -133,46 +133,68 @@ static int datablob_parse(char *datablob, char **mast=
-er_desc,
+@@ -1,8 +1,11 @@
+ /*
+  * Copyright (C) 2010 IBM Corporation
++ * Copyright (C) 2010 Politecnico di Torino, Italy
++ *                    TORSEC group -- http://security.polito.it
+  *
+=2D * Author:
++ * Authors:
+  * Mimi Zohar <zohar@us.ibm.com>
++ * Roberto Sassu <roberto.sassu@polito.it>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -37,6 +40,7 @@ static const char KEY_USER_PREFIX[] =3D "user:";
+ static const char hash_alg[] =3D "sha256";
+ static const char hmac_alg[] =3D "hmac(sha256)";
+ static const char blkcipher_alg[] =3D "cbc(aes)";
++static const char key_format_default[] =3D "default";
+ static unsigned int ivsize;
+ static int blksize;
+=20
+@@ -58,6 +62,15 @@ enum {
+ 	Opt_err =3D -1, Opt_new, Opt_load, Opt_update
+ };
+=20
++enum {
++	Opt_error =3D -1, Opt_default
++};
++
++static const match_table_t key_format_tokens =3D {
++	{Opt_default, "default"},
++	{Opt_error, NULL}
++};
++
+ static const match_table_t key_tokens =3D {
+ 	{Opt_new, "new"},
+ 	{Opt_load, "load"},
+@@ -118,8 +131,9 @@ out:
+  * datablob_parse - parse the keyctl data
+  *
+  * datablob format:
+=2D * new <master-key name> <decrypted data length>
+=2D * load <master-key name> <decrypted data length> <encrypted iv + data>
++ * new [<format>] <master-key name> <decrypted data length>
++ * load [<format>] <master-key name> <decrypted data length>
++ *     <encrypted iv + data>
+  * update <new-master-key name>
+  *
+  * Tokenizes a copy of the keyctl data, returning a pointer to each token,
+@@ -127,12 +141,14 @@ out:
+  *
+  * On success returns 0, otherwise -EINVAL.
+  */
+=2Dstatic int datablob_parse(char *datablob, char **master_desc,
+=2D			  char **decrypted_datalen, char **hex_encoded_iv)
++static int datablob_parse(char *datablob, const char **format,
++			  char **master_desc, char **decrypted_datalen,
++			  char **hex_encoded_iv)
+ {
  	substring_t args[MAX_OPT_ARGS];
  	int ret =3D -EINVAL;
  	int key_cmd;
-=2D	char *p;
-+	char *p, *keyword;
++	int key_format;
+ 	char *p, *keyword;
 =20
-=2D	p =3D strsep(&datablob, " \t");
-=2D	if (!p)
-+	keyword =3D strsep(&datablob, " \t");
-+	if (!keyword) {
+ 	keyword =3D strsep(&datablob, " \t");
+@@ -142,7 +158,24 @@ static int datablob_parse(char *datablob, char **maste=
+r_desc,
+ 	}
+ 	key_cmd =3D match_token(keyword, key_tokens, args);
+=20
+=2D	*master_desc =3D strsep(&datablob, " \t");
++	/* Get optional format: default */
++	p =3D strsep(&datablob, " \t");
++	if (!p) {
 +		pr_err("encrypted_key: insufficient parameters specified\n");
- 		return ret;
-=2D	key_cmd =3D match_token(p, key_tokens, args);
++		return ret;
 +	}
-+	key_cmd =3D match_token(keyword, key_tokens, args);
-=20
- 	*master_desc =3D strsep(&datablob, " \t");
-=2D	if (!*master_desc)
-+	if (!*master_desc) {
-+		pr_err("encrypted_key: master key parameter is missing\n");
++
++	key_format =3D match_token(p, key_format_tokens, args);
++	switch (key_format) {
++	case Opt_default:
++		*format =3D p;
++		*master_desc =3D strsep(&datablob, " \t");
++		break;
++	case Opt_error:
++		*master_desc =3D p;
++		break;
++	}
++
+ 	if (!*master_desc) {
+ 		pr_err("encrypted_key: master key parameter is missing\n");
  		goto out;
-+	}
+@@ -219,8 +252,8 @@ static char *datablob_format(struct encrypted_key_paylo=
+ad *epayload,
+ 	ascii_buf[asciiblob_len] =3D '\0';
 =20
-=2D	if (valid_master_desc(*master_desc, NULL) < 0)
-+	if (valid_master_desc(*master_desc, NULL) < 0) {
-+		pr_err("encrypted_key: master key parameter \'%s\' "
-+		       "is invalid\n", *master_desc);
+ 	/* copy datablob master_desc and datalen strings */
+=2D	len =3D sprintf(ascii_buf, "%s %s ", epayload->master_desc,
+=2D		      epayload->datalen);
++	len =3D sprintf(ascii_buf, "%s %s %s ", epayload->format,
++		      epayload->master_desc, epayload->datalen);
+=20
+ 	/* convert the hex encoded iv, encrypted-data and HMAC to ascii */
+ 	bufp =3D &ascii_buf[len];
+@@ -461,9 +494,9 @@ static int datablob_hmac_append(struct encrypted_key_pa=
+yload *epayload,
+ 	if (ret < 0)
  		goto out;
-+	}
 =20
- 	if (decrypted_datalen) {
- 		*decrypted_datalen =3D strsep(&datablob, " \t");
-=2D		if (!*decrypted_datalen)
-+		if (!*decrypted_datalen) {
-+			pr_err("encrypted_key: keylen parameter is missing\n");
- 			goto out;
-+		}
- 	}
-=20
- 	switch (key_cmd) {
- 	case Opt_new:
-=2D		if (!decrypted_datalen)
-+		if (!decrypted_datalen) {
-+			pr_err("encrypted_key: keyword \'%s\' not allowed when "
-+			       "updating an existent key\n", keyword);
- 			break;
-+		}
- 		ret =3D 0;
- 		break;
- 	case Opt_load:
-=2D		if (!decrypted_datalen)
-+		if (!decrypted_datalen) {
-+			pr_err("encrypted_key: keyword \'%s\' not allowed when "
-+			       "updating an existent key\n", keyword);
- 			break;
-+		}
- 		*hex_encoded_iv =3D strsep(&datablob, " \t");
-=2D		if (!*hex_encoded_iv)
-+		if (!*hex_encoded_iv) {
-+			pr_err("encrypted_key: hex blob is missing\n");
- 			break;
-+		}
- 		ret =3D 0;
- 		break;
- 	case Opt_update:
-=2D		if (decrypted_datalen)
-+		if (decrypted_datalen) {
-+			pr_err("encrypted_key: keyword \'%s\' not allowed when "
-+			       "instantiating a new key\n", keyword);
- 			break;
-+		}
- 		ret =3D 0;
- 		break;
- 	case Opt_err:
-+		pr_err("encrypted_key: keyword \'%s\' not recognized\n",
-+		       keyword);
- 		break;
- 	}
+=2D	digest =3D epayload->master_desc + epayload->datablob_len;
++	digest =3D epayload->format + epayload->datablob_len;
+ 	ret =3D calc_hmac(digest, derived_key, sizeof derived_key,
+=2D			epayload->master_desc, epayload->datablob_len);
++			epayload->format, epayload->datablob_len);
+ 	if (!ret)
+ 		dump_hmac(NULL, digest, HASH_SIZE);
  out:
+@@ -472,26 +505,35 @@ out:
+=20
+ /* verify HMAC before decrypting encrypted key */
+ static int datablob_hmac_verify(struct encrypted_key_payload *epayload,
+=2D				const u8 *master_key, size_t master_keylen)
++				const u8 *format, const u8 *master_key,
++				size_t master_keylen)
+ {
+ 	u8 derived_key[HASH_SIZE];
+ 	u8 digest[HASH_SIZE];
+ 	int ret;
++	char *p;
++	unsigned short len;
+=20
+ 	ret =3D get_derived_key(derived_key, AUTH_KEY, master_key, master_keylen);
+ 	if (ret < 0)
+ 		goto out;
+=20
+=2D	ret =3D calc_hmac(digest, derived_key, sizeof derived_key,
+=2D			epayload->master_desc, epayload->datablob_len);
++	len =3D epayload->datablob_len;
++	if (!format) {
++		p =3D epayload->master_desc;
++		len -=3D strlen(epayload->format) + 1;
++	} else
++		p =3D epayload->format;
++
++	ret =3D calc_hmac(digest, derived_key, sizeof derived_key, p, len);
+ 	if (ret < 0)
+ 		goto out;
+=2D	ret =3D memcmp(digest, epayload->master_desc + epayload->datablob_len,
++	ret =3D memcmp(digest, epayload->format + epayload->datablob_len,
+ 		     sizeof digest);
+ 	if (ret) {
+ 		ret =3D -EINVAL;
+ 		dump_hmac("datablob",
+=2D			  epayload->master_desc + epayload->datablob_len,
++			  epayload->format + epayload->datablob_len,
+ 			  HASH_SIZE);
+ 		dump_hmac("calc", digest, HASH_SIZE);
+ 	}
+@@ -536,13 +578,16 @@ out:
+=20
+ /* Allocate memory for decrypted key and datablob. */
+ static struct encrypted_key_payload *encrypted_key_alloc(struct key *key,
++							 const char *format,
+ 							 const char *master_desc,
+ 							 const char *datalen)
+ {
+ 	struct encrypted_key_payload *epayload =3D NULL;
+ 	unsigned short datablob_len;
+ 	unsigned short decrypted_datalen;
++	unsigned short payload_datalen;
+ 	unsigned int encrypted_datalen;
++	unsigned int format_len;
+ 	long dlen;
+ 	int ret;
+=20
+@@ -550,29 +595,32 @@ static struct encrypted_key_payload *encrypted_key_al=
+loc(struct key *key,
+ 	if (ret < 0 || dlen < MIN_DATA_SIZE || dlen > MAX_DATA_SIZE)
+ 		return ERR_PTR(-EINVAL);
+=20
++	format_len =3D (!format) ? strlen(key_format_default) : strlen(format);
+ 	decrypted_datalen =3D dlen;
++	payload_datalen =3D decrypted_datalen;
+ 	encrypted_datalen =3D roundup(decrypted_datalen, blksize);
+=20
+=2D	datablob_len =3D strlen(master_desc) + 1 + strlen(datalen) + 1
+=2D	    + ivsize + 1 + encrypted_datalen;
++	datablob_len =3D format_len + 1 + strlen(master_desc) + 1
++	    + strlen(datalen) + 1 + ivsize + 1 + encrypted_datalen;
+=20
+=2D	ret =3D key_payload_reserve(key, decrypted_datalen + datablob_len
++	ret =3D key_payload_reserve(key, payload_datalen + datablob_len
+ 				  + HASH_SIZE + 1);
+ 	if (ret < 0)
+ 		return ERR_PTR(ret);
+=20
+=2D	epayload =3D kzalloc(sizeof(*epayload) + decrypted_datalen +
++	epayload =3D kzalloc(sizeof(*epayload) + payload_datalen +
+ 			   datablob_len + HASH_SIZE + 1, GFP_KERNEL);
+ 	if (!epayload)
+ 		return ERR_PTR(-ENOMEM);
+=20
++	epayload->payload_datalen =3D payload_datalen;
+ 	epayload->decrypted_datalen =3D decrypted_datalen;
+ 	epayload->datablob_len =3D datablob_len;
+ 	return epayload;
+ }
+=20
+ static int encrypted_key_decrypt(struct encrypted_key_payload *epayload,
+=2D				 const char *hex_encoded_iv)
++				 const char *format, const char *hex_encoded_iv)
+ {
+ 	struct key *mkey;
+ 	u8 derived_key[HASH_SIZE];
+@@ -593,14 +641,14 @@ static int encrypted_key_decrypt(struct encrypted_key=
+_payload *epayload,
+ 	hex2bin(epayload->iv, hex_encoded_iv, ivsize);
+ 	hex2bin(epayload->encrypted_data, hex_encoded_data, encrypted_datalen);
+=20
+=2D	hmac =3D epayload->master_desc + epayload->datablob_len;
++	hmac =3D epayload->format + epayload->datablob_len;
+ 	hex2bin(hmac, hex_encoded_data + (encrypted_datalen * 2), HASH_SIZE);
+=20
+ 	mkey =3D request_master_key(epayload, &master_key, &master_keylen);
+ 	if (IS_ERR(mkey))
+ 		return PTR_ERR(mkey);
+=20
+=2D	ret =3D datablob_hmac_verify(epayload, master_key, master_keylen);
++	ret =3D datablob_hmac_verify(epayload, format, master_key, master_keylen);
+ 	if (ret < 0) {
+ 		pr_err("encrypted_key: bad hmac (%d)\n", ret);
+ 		goto out;
+@@ -620,14 +668,23 @@ out:
+ }
+=20
+ static void __ekey_init(struct encrypted_key_payload *epayload,
+=2D			const char *master_desc, const char *datalen)
++			const char *format, const char *master_desc,
++			const char *datalen)
+ {
+=2D	epayload->master_desc =3D epayload->decrypted_data
+=2D	    + epayload->decrypted_datalen;
++	unsigned int format_len;
++
++	format_len =3D (!format) ? strlen(key_format_default) : strlen(format);
++	epayload->format =3D epayload->payload_data + epayload->payload_datalen;
++	epayload->master_desc =3D epayload->format + format_len + 1;
+ 	epayload->datalen =3D epayload->master_desc + strlen(master_desc) + 1;
+ 	epayload->iv =3D epayload->datalen + strlen(datalen) + 1;
+ 	epayload->encrypted_data =3D epayload->iv + ivsize + 1;
++	epayload->decrypted_data =3D epayload->payload_data;
+=20
++	if (!format)
++		memcpy(epayload->format, key_format_default, format_len);
++	else
++		memcpy(epayload->format, format, format_len);
+ 	memcpy(epayload->master_desc, master_desc, strlen(master_desc));
+ 	memcpy(epayload->datalen, datalen, strlen(datalen));
+ }
+@@ -639,19 +696,19 @@ static void __ekey_init(struct encrypted_key_payload =
+*epayload,
+  * itself.  For an old key, decrypt the hex encoded data.
+  */
+ static int encrypted_init(struct encrypted_key_payload *epayload,
+=2D			  const char *master_desc, const char *datalen,
+=2D			  const char *hex_encoded_iv)
++			  const char *format, const char *master_desc,
++			  const char *datalen, const char *hex_encoded_iv)
+ {
+ 	int ret =3D 0;
+=20
+=2D	__ekey_init(epayload, master_desc, datalen);
++	__ekey_init(epayload, format, master_desc, datalen);
+ 	if (!hex_encoded_iv) {
+ 		get_random_bytes(epayload->iv, ivsize);
+=20
+ 		get_random_bytes(epayload->decrypted_data,
+ 				 epayload->decrypted_datalen);
+ 	} else
+=2D		ret =3D encrypted_key_decrypt(epayload, hex_encoded_iv);
++		ret =3D encrypted_key_decrypt(epayload, format, hex_encoded_iv);
+ 	return ret;
+ }
+=20
+@@ -668,6 +725,7 @@ static int encrypted_instantiate(struct key *key, const=
+ void *data,
+ {
+ 	struct encrypted_key_payload *epayload =3D NULL;
+ 	char *datablob =3D NULL;
++	const char *format =3D NULL;
+ 	char *master_desc =3D NULL;
+ 	char *decrypted_datalen =3D NULL;
+ 	char *hex_encoded_iv =3D NULL;
+@@ -681,17 +739,18 @@ static int encrypted_instantiate(struct key *key, con=
+st void *data,
+ 		return -ENOMEM;
+ 	datablob[datalen] =3D 0;
+ 	memcpy(datablob, data, datalen);
+=2D	ret =3D datablob_parse(datablob, &master_desc, &decrypted_datalen,
+=2D			     &hex_encoded_iv);
++	ret =3D datablob_parse(datablob, &format, &master_desc,
++			     &decrypted_datalen, &hex_encoded_iv);
+ 	if (ret < 0)
+ 		goto out;
+=20
+=2D	epayload =3D encrypted_key_alloc(key, master_desc, decrypted_datalen);
++	epayload =3D encrypted_key_alloc(key, format, master_desc,
++				       decrypted_datalen);
+ 	if (IS_ERR(epayload)) {
+ 		ret =3D PTR_ERR(epayload);
+ 		goto out;
+ 	}
+=2D	ret =3D encrypted_init(epayload, master_desc, decrypted_datalen,
++	ret =3D encrypted_init(epayload, format, master_desc, decrypted_datalen,
+ 			     hex_encoded_iv);
+ 	if (ret < 0) {
+ 		kfree(epayload);
+@@ -728,6 +787,7 @@ static int encrypted_update(struct key *key, const void=
+ *data, size_t datalen)
+ 	struct encrypted_key_payload *new_epayload;
+ 	char *buf;
+ 	char *new_master_desc =3D NULL;
++	const char *format =3D NULL;
+ 	int ret =3D 0;
+=20
+ 	if (datalen <=3D 0 || datalen > 32767 || !data)
+@@ -739,7 +799,7 @@ static int encrypted_update(struct key *key, const void=
+ *data, size_t datalen)
+=20
+ 	buf[datalen] =3D 0;
+ 	memcpy(buf, data, datalen);
+=2D	ret =3D datablob_parse(buf, &new_master_desc, NULL, NULL);
++	ret =3D datablob_parse(buf, &format, &new_master_desc, NULL, NULL);
+ 	if (ret < 0)
+ 		goto out;
+=20
+@@ -747,18 +807,19 @@ static int encrypted_update(struct key *key, const vo=
+id *data, size_t datalen)
+ 	if (ret < 0)
+ 		goto out;
+=20
+=2D	new_epayload =3D encrypted_key_alloc(key, new_master_desc,
+=2D					   epayload->datalen);
++	new_epayload =3D encrypted_key_alloc(key, epayload->format,
++					   new_master_desc, epayload->datalen);
+ 	if (IS_ERR(new_epayload)) {
+ 		ret =3D PTR_ERR(new_epayload);
+ 		goto out;
+ 	}
+=20
+=2D	__ekey_init(new_epayload, new_master_desc, epayload->datalen);
++	__ekey_init(new_epayload, epayload->format, new_master_desc,
++		    epayload->datalen);
+=20
+ 	memcpy(new_epayload->iv, epayload->iv, ivsize);
+=2D	memcpy(new_epayload->decrypted_data, epayload->decrypted_data,
+=2D	       epayload->decrypted_datalen);
++	memcpy(new_epayload->payload_data, epayload->payload_data,
++	       epayload->payload_datalen);
+=20
+ 	rcu_assign_pointer(key->payload.data, new_epayload);
+ 	call_rcu(&epayload->rcu, encrypted_rcu_free);
 =2D-=20
 1.7.2.3
 
 
---nextPart3326347.OXiLX5CQZO
+--nextPart5749342.I5aPMAWj3C
 Content-Type: application/pkcs7-signature; name="smime.p7s"
 Content-Disposition: attachment; filename="smime.p7s"
 Content-Transfer-Encoding: base64
@@ -209,13 +629,13 @@ atFI68AMXH0Xx9UIcjRi+kvsyvwHlc0Z8AoAtfRMoIl4zFF4Qaowec2UunBKYlqPpFTtU9czuoEP
 12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggIcMIICGAIBATBrMGUxCzAJBgNVBAYT
 AklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBkaSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNv
 IGRpIFRvcmlubyBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCBhzAYBgkq
-hkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMDEyMjMxNzM0MzBaMCMGCSqG
-SIb3DQEJBDEWBBRR7JQ1jUHcMMPPWnMxlaYvOT3ZMzAoBgkqhkiG9w0BCQ8xGzAZMAsGCWCGSAFl
-AwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQAENZ6YW+IWVE7qj00Fq6ycxunSGbEE
-IjOjmVDN1x7YQGf+rrwoObyjTHM29lRr9kLndyE5oqWk+/yAV8+jCmMwfCgbBU/0BvOEMDZSOIsv
-I6TNCCAE2yYu3DG4AtFNPzzKgeKc5ztK1/fgqG1Gd6AvmglL1K554QyfpLU67t/dfhnTI3mCi4TC
-eLWEF1XdmZVX4ZXngwxrv2AcznV+/DHy5Jph5z+agF7ysxHFgS/T2QYDdrbIjX29rpO2+cb2MI1a
-5e0xnpTVaREQEzXmPi3fmS/e/jmQwpYxrg5WrlT6c0Ob0PVv7hb2YSEIJm7HHxoZ8ze7Ih+X+bgk
-UTGgVLvZAAAAAAAA
+hkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMDEyMjMxNzM1MDBaMCMGCSqG
+SIb3DQEJBDEWBBSDSgEdNhf9K1fX32wSfilrP/URWjAoBgkqhkiG9w0BCQ8xGzAZMAsGCWCGSAFl
+AwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQCoDgwKSSyqEaT4BjEtkdmLaEWKgyKN
+veCo5XOJmGwLbgAPMy7g5SWkamH+IuX42BRhjG4CQ1K5BKQ/kL5Oq0tmI1lMNuRXE1DqW80YcN7P
+4MVx9INDlAP6+q0qd2E5S8KV27xLiNVDEXchluj6sNYRw8QqxnaeXE7ihsU2/kFQBDiHz03izbaF
+0/ms+mSQR99bwCJ2jl3sZyXfKWtKQxy9mQuy9ipgSKeEBcBV3bip8R3P6g3y0Y268/0Afl+FS1kj
+svCQboElzrWYQKuZRz4VuegedSBDBL+gqKh9Tc4V+lIO7m5B02YwdqhCfG+eOBx2YDiZ/xPLSug7
+X9jq/BOsAAAAAAAA
 
---nextPart3326347.OXiLX5CQZO--
+--nextPart5749342.I5aPMAWj3C--
