@@ -1,93 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233Ab0LWIYj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 03:24:39 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35631 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751924Ab0LWIYh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 03:24:37 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=qyuAWkj9lxMOMz2qPUENZ8GMahhC5eodAVgenGIHiXsC3mPK6lZMxTDEISaGVKkZOp
-         OwyKLGVriC4YJqW3I9fHAa8HtTA6Ex+AITrpDe/URbetvpV1+To8a+2xYuqy6Is/oqNO
-         LmyOwmQTfhiYbLKL5owvsA77/I+ragtQtFOtk=
-Subject: Re: [PATCH] tcp: cleanup of cwnd initialization in
- tcp_init_metrics()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Vojtech Pavlik <vojtech@suse.cz>,
-        Ilpo =?ISO-8859-1?Q?J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>
-In-Reply-To: <alpine.LNX.2.00.1012221938030.16569@pobox.suse.cz>
-References: <alpine.LNX.2.00.1012221938030.16569@pobox.suse.cz>
+	id S1752378Ab0LWIYw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 03:24:52 -0500
+Received: from mga02.intel.com ([134.134.136.20]:57939 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752326Ab0LWIYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 03:24:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,218,1291622400"; 
+   d="scan'208";a="586570745"
+Subject: Re: [RFC PATCH] perf: Add load latency monitoring on Intel
+ Nehalem/Westmere
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>, paulus <paulus@samba.org>
+In-Reply-To: <1293014701.2170.111.camel@laptop>
+References: <1293005543.2565.156.camel@minggr.sh.intel.com>
+	 <1293008431.2170.63.camel@laptop>
+	 <AANLkTintfpyvx=Pj1+uu8kCkFn3zT6b36h27Hb7pm=ZF@mail.gmail.com>
+	 <1293014701.2170.111.camel@laptop>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Dec 2010 09:24:31 +0100
-Message-ID: <1293092671.2679.44.camel@edumazet-laptop>
+Date: Thu, 23 Dec 2010 16:28:35 +0800
+Message-ID: <1293092915.2565.168.camel@minggr.sh.intel.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 22 décembre 2010 à 19:39 +0100, Jiri Kosina a écrit :
-> Commit 86bcebafc5e7f5 ("tcp: fix >2 iw selection") fixed a case when 
-> congestion window initialization has been mistakenly omitted by 
-> introducing cwnd label and putting backwards jump from the end of the 
-> function.
+On Wed, 2010-12-22 at 18:45 +0800, Peter Zijlstra wrote:
+> On Wed, 2010-12-22 at 11:08 +0100, Stephane Eranian wrote:
+> > Yes, I think there is more to it than just data source, unfortunately.
+> > If you want to avoid returning an opaque u64 (PERF_SAMPLE_EXTRA), then
+> > you need to break it down: PERF_SAMPLE_DATA_SRC, PERF_SAMPLE_XX
+> > and so on. 
 > 
-> This makes the code unnecessarily tricky to read and understand on a first 
-> sight.
+> I guess we can do things like:
 > 
-> Shuffle the code around a little bit to make it more obvious.
-
-Well in fine you have
-
-	if (inet_csk(sk)->icsk_rto < TCP_TIMEOUT_INIT && !tp->rx_opt.saw_tstamp)
-		goto reset;
-	goto out;
-reset:
-
-Is that really more obvious ? ;)
-
+> Satisfied by {L1, L2, L3, RAM}x{snoop, local, remote} + unknown, and
+> encode "Pending core cache HIT" as L2-snoop or something, whatever is
+> most appropriate.
 > 
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> ---
->  net/ipv4/tcp_input.c |   10 ++++------
->  1 files changed, 4 insertions(+), 6 deletions(-)
+> But does that cover every architecture?
 > 
-> diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-> index 6d8ab1c..dddff6d 100644
-> --- a/net/ipv4/tcp_input.c
-> +++ b/net/ipv4/tcp_input.c
-> @@ -915,11 +915,7 @@ static void tcp_init_metrics(struct sock *sk)
->  	if (inet_csk(sk)->icsk_rto < TCP_TIMEOUT_INIT && !tp->rx_opt.saw_tstamp)
->  		goto reset;
->  
-> -cwnd:
-> -	tp->snd_cwnd = tcp_init_cwnd(tp, dst);
-> -	tp->snd_cwnd_stamp = tcp_time_stamp;
-> -	return;
-> -
-> +	goto out;
->  reset:
->  	/* Play conservative. If timestamps are not
->  	 * supported, TCP will fail to recalculate correct
-> @@ -930,7 +926,9 @@ reset:
->  		tp->mdev = tp->mdev_max = tp->rttvar = TCP_TIMEOUT_INIT;
->  		inet_csk(sk)->icsk_rto = TCP_TIMEOUT_INIT;
->  	}
-> -	goto cwnd;
-> +out:
-> +	tp->snd_cwnd = tcp_init_cwnd(tp, dst);
-> +	tp->snd_cwnd_stamp = tcp_time_stamp;
->  }
->  
->  static void tcp_update_reordering(struct sock *sk, const int metric,
+> Also, since that doesn't require more that 4 bits to encode, we could
+> try and categorize what else is around and try and create a well
+> specified _EXTRA register, I mean, we still got 60bits left after this.
 
-
+Could you tell more about this well specified _EXTRA register?
 
 
