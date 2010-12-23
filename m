@@ -1,96 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752295Ab0LWNJz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 08:09:55 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:65233 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493Ab0LWNJy (ORCPT
+	id S1752649Ab0LWNNF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 08:13:05 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:34522 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751704Ab0LWNND convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 08:09:54 -0500
-Date: Thu, 23 Dec 2010 14:09:44 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [PATCHv8 00/12] Contiguous Memory Allocator
-In-reply-to: <20101223121917.GG3636@n2100.arm.linux.org.uk>
-To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
-Cc: "'Kyungmin Park'" <kmpark@infradead.org>,
-        "'Michal Nazarewicz'" <m.nazarewicz@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Johan MOSSBERG'" <johan.xx.mossberg@stericsson.com>,
-        "'Mel Gorman'" <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>, linux-mm@kvack.org,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-media@vger.kernel.org,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Message-id: <00ec01cba2a2$af20b8b0$0d622a10$%szyprowski@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: pl
-Content-transfer-encoding: 7BIT
-Thread-index: Acuim6rWc290esufReGeGb3ho0NVWgABUgRw
-References: <cover.1292443200.git.m.nazarewicz@samsung.com>
- <AANLkTim8_=0+-zM5z4j0gBaw3PF3zgpXQNetEn-CfUGb@mail.gmail.com>
- <20101223100642.GD3636@n2100.arm.linux.org.uk>
- <00ea01cba290$4d67f500$e837df00$%szyprowski@samsung.com>
- <20101223121917.GG3636@n2100.arm.linux.org.uk>
+	Thu, 23 Dec 2010 08:13:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=bjDYhdXNRlpnVppYkj1SSkhZ02MaVlr5o6TPZkkyYPG1S0nZ+rEPH2lDO+cv7UnEgl
+         LchW7Mu26Z+6tqwf5YQoefn0mfuz9KJYDbDuHStN3+iY3oftmQvTC/KVWpfRxS/jQTQr
+         57lIhXjVZZbtVk3+THLAG4lPraj7phiHxx5Z4=
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20101223224057.3da60db3.sfr@canb.auug.org.au>
+References: <20101223224057.3da60db3.sfr@canb.auug.org.au>
+Date: Thu, 23 Dec 2010 14:13:01 +0100
+Message-ID: <AANLkTimj95TwJ-jLPBQFCdnT1j3wzzzVzLbfxa9YFK47@mail.gmail.com>
+Subject: Re: linux-next: No tree for December 23
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Dec 23, 2010 at 12:40 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> Christmas has intervened!  Today's linux-next (I was putting it together
+> in my spare moments) took too long, so it is not being released, sorry.
+>
+> The next release of linux-next will be Dec 27, or 28 (my time).  Have a
+> nice break and relax.  :-)
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
+>
 
-On Thursday, December 23, 2010 1:19 PM Russell King - ARM Linux wrote:
+Personally, I have no problems w/o a linux-next (next-20101223)
+release for today.
 
-> On Thu, Dec 23, 2010 at 11:58:08AM +0100, Marek Szyprowski wrote:
-> > Actually this contiguous memory allocator is a better replacement for
-> > alloc_pages() which is used by dma_alloc_coherent(). It is a generic
-> > framework that is not tied only to ARM architecture.
-> 
-> ... which is open to abuse.  What I'm trying to find out is - if it
-> can't be used for DMA, what is it to be used for?
-> 
-> Or are we inventing an everything-but-ARM framework?
+Today, you posted a lot of emails with merge problems from diverse
+trees, beginning with vfs-scale-working.
 
-We are trying to get something that really works and SOLVES some of the
-problems with real devices that require contiguous memory for DMA.
+Last night, I tried to merge rest-of-Linux-2.6.37-rc7 on top of
+linux-next (next-20101221), fixed the conflicts manually.
+Then I tried to pull-in vfs-scale-working and I guess I have solved
+the merge-problems correct, but my build had several errors.
+So, I need more exercise :-).
 
-> > > In other words, do we _actually_ have a use for this which doesn't
-> > > involve doing something like allocating 32MB of memory from it,
-> > > remapping it so that it's DMA coherent, and then performing DMA
-> > > on the resulting buffer?
-> >
-> > This is an arm specific problem, also related to dma_alloc_coherent()
-> > allocator. To be 100% conformant with ARM specification we would
-> > probably need to unmap all pages used by the dma_coherent allocator
-> > from the LOW MEM area. This is doable, but completely not related
-> > to the CMA and this patch series.
-> 
-> You've already been told why we can't unmap pages from the kernel
-> direct mapping.
+Now, to my questions:
 
-It requires some amount of work but I see no reason why we shouldn't be
-able to unmap that pages to stay 100% conformant with ARM spec.
+[1] Linux-next tree as base?
 
-Please notice that there are also use cases where the memory will not be
-accessed by the CPU at all (like DMA transfers between multimedia devices
-and the system memory).
+Why are all those for-next/linux-next sub-trees not based/rebased on
+linux-next and prepared for you as *the* main co-ordinator of
+linux-next?
 
-> Okay, so I'm just going to assume that CMA has _no_ _business_ being
-> used on ARM, and is not something that should interest anyone in the
-> ARM community.
+Funny, there are strange names around like "test" for linux-acpi-2.6
+for example - is this a "for-next" tree or not?
+I mean the nomenclature seems not to be consistent when I look over
+the sub-tress.
+Then submaintainers have branches like (what I prefer) "for-linus"
+(aka upstream, for-2.6.37) or mostly "for-next" (or "linux-next", aka
+for-2.6.38) within a single (same) GIT repository.
+Others prefer two separated repos: For example net-2.6 ->
+upstream/for-2.6.37 and net-next-2.6 -> linux-next/for-2.6.38.
+Surely, it depends on the sub-tree and the interaction with other sub-trees.
 
-Go ahead! Remeber to remove dma_coherent because it also breaks the spec. :)
-Oh, I forgot. We can also remove all device drivers that might use DMA. :)
+Can't all submaintainers use "for-linus" (upstream-fixes) and
+"for-next" (new code for upcoming release)?
 
+That's leading to my next question: Ideal/optimal work-flow in merging
+tress on top of "parent".
 
+Here an example for a "wise" dependency chain for pulls/merges:
+1. net-2.6 -> 2. wireless-2.6 -> 3. net-next-2.6 -> 4. wireless-next-2.6
 
-Merry Christmas and Happy New Year for everyone! :)
+So John Linville (maintainer of linux-wireless) and Dave Miller
+(maintainer of net-2.6) are really working together (I missed that
+John also pulls in bluetooth sub-tree). The work (pull-requests) are
+documented by emails to both MLs.
 
-Best regards
---
-Marek Szyprowski
-Samsung Poland R&D Center
+For me, it seemd other sub-trees which interact or overlap are not
+well co-ordinated (I have block-2.6, vfs-2.6 and *-fs in mind)
+So, this needs a bit of an analysis/discussion which would help to
+reduce this merge f-ups (I hope).
 
+[2] Merge process?
+
+Is this a script you are using? Is there a standard work-flow you
+follow? tree1, then tree2, then tree3... Is this always the same
+procedure? Does a script exist or you do that manually? Do you use
+"brain-power" or which strategies do you perform to solve merge
+conflicts? Which help can give git tool on this?
+
+My 0.02EUR.
+
+- Sedat -
