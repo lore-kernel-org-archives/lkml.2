@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117Ab0LWIXE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 03:23:04 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55454 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751670Ab0LWIXD convert rfc822-to-8bit (ORCPT
+	id S1752233Ab0LWIYj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 03:24:39 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35631 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751924Ab0LWIYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 03:23:03 -0500
+	Thu, 23 Dec 2010 03:24:37 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=cOR9cWLO0n+V3ic0v6G5vpJAoxldHBkqgdE3u9bIL7wfbnJ/WGVHmqEiLa9FsDC0k6
-         +CdxACYrUgBtEmU3DUvhmcL9bA3RkUrsit894NqsvX1aUzQSnSRy2W3ZSAX+znEHHy6p
-         JUEJDP9z7yCWleqJVokMYn4bZHQsGph8Y75pA=
-MIME-Version: 1.0
-In-Reply-To: <20101222132730.GC26306@opensource.wolfsonmicro.com>
-References: <20101221155004.GA21871@opensource.wolfsonmicro.com>
-	<1292998991-26968-4-git-send-email-myungjoo.ham@samsung.com>
-	<20101222132730.GC26306@opensource.wolfsonmicro.com>
-Date: Thu, 23 Dec 2010 17:23:01 +0900
-X-Google-Sender-Auth: UBlDQWGOeCl8tHuFQaL_ZPE5Me0
-Message-ID: <AANLkTinj1s2vGJfqg8ypW1WbezpDjZZ1jS3g_LbDdq0O@mail.gmail.com>
-Subject: Re: [PATCH v2 3/6] MFD MAX8998/LP3974 Bugfix: incorrect variable name (typo)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        =?UTF-8?B?7ZWo66qF7KO8?= <myungjoo.ham@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=qyuAWkj9lxMOMz2qPUENZ8GMahhC5eodAVgenGIHiXsC3mPK6lZMxTDEISaGVKkZOp
+         OwyKLGVriC4YJqW3I9fHAa8HtTA6Ex+AITrpDe/URbetvpV1+To8a+2xYuqy6Is/oqNO
+         LmyOwmQTfhiYbLKL5owvsA77/I+ragtQtFOtk=
+Subject: Re: [PATCH] tcp: cleanup of cwnd initialization in
+ tcp_init_metrics()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Vojtech Pavlik <vojtech@suse.cz>,
+        Ilpo =?ISO-8859-1?Q?J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>
+In-Reply-To: <alpine.LNX.2.00.1012221938030.16569@pobox.suse.cz>
+References: <alpine.LNX.2.00.1012221938030.16569@pobox.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 23 Dec 2010 09:24:31 +0100
+Message-ID: <1293092671.2679.44.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 22, 2010 at 10:27 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Wed, Dec 22, 2010 at 03:23:08PM +0900, MyungJoo Ham wrote:
->> trivial error. (buck1_idx->buck2_idx in the context of buck2 control)
->>
->> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
->
-> This looks like it has no dependency on the rest of the series.
+Le mercredi 22 décembre 2010 à 19:39 +0100, Jiri Kosina a écrit :
+> Commit 86bcebafc5e7f5 ("tcp: fix >2 iw selection") fixed a case when 
+> congestion window initialization has been mistakenly omitted by 
+> introducing cwnd label and putting backwards jump from the end of the 
+> function.
+> 
+> This makes the code unnecessarily tricky to read and understand on a first 
+> sight.
+> 
+> Shuffle the code around a little bit to make it more obvious.
 
-Ok, in the next patch release, the two bugfixes will be separated as
-another patch set.
+Well in fine you have
 
->
->>  drivers/regulator/max8998.c |    4 ++--
->
-> Subject line would normally say 'regulator: ' as this is a patch to the
-> regulator driver not the MFD.
->
+	if (inet_csk(sk)->icsk_rto < TCP_TIMEOUT_INIT && !tp->rx_opt.saw_tstamp)
+		goto reset;
+	goto out;
+reset:
+
+Is that really more obvious ? ;)
+
+> 
+> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> ---
+>  net/ipv4/tcp_input.c |   10 ++++------
+>  1 files changed, 4 insertions(+), 6 deletions(-)
+> 
+> diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+> index 6d8ab1c..dddff6d 100644
+> --- a/net/ipv4/tcp_input.c
+> +++ b/net/ipv4/tcp_input.c
+> @@ -915,11 +915,7 @@ static void tcp_init_metrics(struct sock *sk)
+>  	if (inet_csk(sk)->icsk_rto < TCP_TIMEOUT_INIT && !tp->rx_opt.saw_tstamp)
+>  		goto reset;
+>  
+> -cwnd:
+> -	tp->snd_cwnd = tcp_init_cwnd(tp, dst);
+> -	tp->snd_cwnd_stamp = tcp_time_stamp;
+> -	return;
+> -
+> +	goto out;
+>  reset:
+>  	/* Play conservative. If timestamps are not
+>  	 * supported, TCP will fail to recalculate correct
+> @@ -930,7 +926,9 @@ reset:
+>  		tp->mdev = tp->mdev_max = tp->rttvar = TCP_TIMEOUT_INIT;
+>  		inet_csk(sk)->icsk_rto = TCP_TIMEOUT_INIT;
+>  	}
+> -	goto cwnd;
+> +out:
+> +	tp->snd_cwnd = tcp_init_cwnd(tp, dst);
+> +	tp->snd_cwnd_stamp = tcp_time_stamp;
+>  }
+>  
+>  static void tcp_update_reordering(struct sock *sk, const int metric,
 
 
--- 
-MyungJoo Ham (함명주), Ph.D.
-Mobile Software Platform Lab,
-Digital Media and Communications (DMC) Business
-Samsung Electronics
-cell: 82-10-6714-2858
+
+
