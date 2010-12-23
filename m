@@ -1,92 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938Ab0LWIFZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 03:05:25 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:63272 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751469Ab0LWIFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 03:05:24 -0500
-Message-ID: <4D1303B9.3080801@cn.fujitsu.com>
-Date: Thu, 23 Dec 2010 16:09:29 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1752077Ab0LWIMO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 03:12:14 -0500
+Received: from smtp.nokia.com ([147.243.128.26]:60011 "EHLO mgw-da02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751582Ab0LWIMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 03:12:14 -0500
+Message-ID: <4D130452.2010706@nokia.com>
+Date: Thu, 23 Dec 2010 10:12:02 +0200
+From: =?UTF-8?B?SnVoYW5pIE3DpGtlbMOk?= <ext-juhani.3.makela@nokia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] KVM: MMU: handle 'map_writable' in set_spte() function
-References: <4D130383.30406@cn.fujitsu.com>
-In-Reply-To: <4D130383.30406@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-23 16:05:08,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-23 16:05:10,
-	Serialize complete at 2010-12-23 16:05:10
-Content-Transfer-Encoding: 7bit
+To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Kprobe: Fixed a leak when a retprobe entry function returns
+ non-zero
+X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the operation of 'writable' to set_spte() to clean up code
+Dear Sirs,
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Here is a little fix I found necessary to implement in order to perform
+some probing:
+
+----
+A kretprobe can install an optional entry probe that is called when
+the probed function is entered. If the callback returns non zero,
+the return probe will not be called and the instance is forgotten.
+However, the allocated instance of struct kretprobe_instance was
+not returned in the free_instances list. Fixed this by returning
+the unused instance to the free list if it was not needed.
 ---
- arch/x86/kvm/mmu.c         |    4 ++--
- arch/x86/kvm/paging_tmpl.h |   11 ++---------
- 2 files changed, 4 insertions(+), 11 deletions(-)
+ kernel/kprobes.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 4e49e24..4a8df5f 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1983,6 +1983,8 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 
- 	if (host_writable)
- 		spte |= SPTE_HOST_WRITEABLE;
-+	else
-+		pte_access &= ~ACC_WRITE_MASK;
- 
- 	spte |= (u64)pfn << PAGE_SHIFT;
- 
-@@ -2222,8 +2224,6 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
- 		if (iterator.level == level) {
- 			unsigned pte_access = ACC_ALL;
- 
--			if (!map_writable)
--				pte_access &= ~ACC_WRITE_MASK;
- 			mmu_set_spte(vcpu, iterator.sptep, ACC_ALL, pte_access,
- 				     0, write, 1, &pt_write,
- 				     level, gfn, pfn, prefault, map_writable);
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 5ca9426..6ed2c5e 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -511,9 +511,6 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
- 		link_shadow_page(it.sptep, sp);
- 	}
- 
--	if (!map_writable)
--		access &= ~ACC_WRITE_MASK;
--
- 	mmu_set_spte(vcpu, it.sptep, access, gw->pte_access & access,
- 		     user_fault, write_fault, dirty, ptwrite, it.level,
- 		     gw->gfn, pfn, prefault, map_writable);
-@@ -809,12 +806,8 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
- 
- 		nr_present++;
- 		pte_access = sp->role.access & FNAME(gpte_access)(vcpu, gpte);
--		if (!(sp->spt[i] & SPTE_HOST_WRITEABLE)) {
--			pte_access &= ~ACC_WRITE_MASK;
--			host_writable = 0;
--		} else {
--			host_writable = 1;
--		}
-+		host_writable = !!(sp->spt[i] & SPTE_HOST_WRITEABLE);
-+
- 		set_spte(vcpu, &sp->spt[i], pte_access, 0, 0,
- 			 is_dirty_gpte(gpte), PT_PAGE_TABLE_LEVEL, gfn,
- 			 spte_to_pfn(sp->spt[i]), true, false,
--- 
-1.7.0.4
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 5240d75..69d0ca9 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -971,8 +971,16 @@ static int __kprobes pre_handler_kretprobe(struct
+kprobe *p,
+ 		ri->rp = rp;
+ 		ri->task = current;
 
+-		if (rp->entry_handler && rp->entry_handler(ri, regs))
++		if (rp->entry_handler && rp->entry_handler(ri, regs)) {
++			/*
++			 * Restore the instance to the free list
++			 * if it is not needed any more.
++			 */
++			spin_lock_irqsave(&rp->lock, flags);
++			hlist_add_head(&ri->hlist, &rp->free_instances);
++			spin_unlock_irqrestore(&rp->lock, flags);
+ 			return 0;
++		}
+
+ 		arch_prepare_kretprobe(ri, regs);
+----
+
+I'm not at all positive that this is the right fix, but at least in our
+environment it seems to help. Here is some background info:
+
+We have implemented a kernel module that implements capability check
+tracing by adding a kretprobe in the "capable" function. Every time a
+capability check is made, it gathers some data about the process being
+checked, the capability number and the result of the check. If the check
+comes with current->mm == NULL, it's disregarded by the tracer to avoid
+unnecessary overhead, and the entry_handler returns value 1.
+
+Normally this works fine, but this week we noticed that if the module is
+compiled in and activated in an early phase in the boot it doesn't work
+at all. It appeared that our entry_handler was called as many times as
+was set in the maxactive field of the registered probe, and every time
+it returned 1 because current->mm was NULL in all of the calls. Then no
+more callbacks were made. When the probe was de-registered, the nmissed
+counter had a large value (>6000), and after registering it again the
+probing started to work.
+
+This made me suspect a resource leak, and as far as I can see there
+indeed is one in kprobe.c::pre_handler_kretprobe. The fix above solved
+the problem and seems not to have any undesired side effects.
+
+We are using kernel version 2.6.32, but it seems to me that the same
+problem exists in more current kernels judging by a quick look.
+
+Why the problem manifests itself only if the tracing is enabled early in
+the boot I cannot say. Could it be that if the entry_handler returns 0
+at least once before the free list has been exhausted, it resets the
+situation somehow? Or is it that after some point after userspace
+initialization current->mm is never NULL?
+
+The capability tracing module itself is ment for upstream, but I have
+been told its code is not kernel quality (not enough comments) and the
+implementation lacks obvious features so we have not dared to offer it
+yet. It is used for defining profiles for daemon processes currently
+running as root by checking what capabilities they actually need and
+then assigning them only those, in the context of the MSSF security
+framework project:
+
+http://conference2010.meego.com/session/mobile-simplified-security-framework-overview
+
+In case you are interested I'm happy to make the code and documentation
+available at the forum of your choice.
+
+Yours sincerely,
+Juhani Mäkelä
+Nixu OPEN - https://www.nixuopen.org
