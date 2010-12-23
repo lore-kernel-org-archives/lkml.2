@@ -1,152 +1,407 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751670Ab0LWHXY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 02:23:24 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:56451 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751467Ab0LWHXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 02:23:23 -0500
-Message-ID: <4D12F94F.8050001@cn.fujitsu.com>
-Date: Thu, 23 Dec 2010 15:25:03 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Darren Hart <dvhart@linux.intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Young <hidave.darkstar@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] rtmutex: multiple candidate owners without unrelated
- boosting
-References: <4D07330A.7020600@cn.fujitsu.com> <alpine.LFD.2.00.1012141850460.12146@localhost6.localdomain6> <4D0A7CB5.1030406@linux.intel.com>
-In-Reply-To: <4D0A7CB5.1030406@linux.intel.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-23 15:23:12,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-23 15:23:13,
-	Serialize complete at 2010-12-23 15:23:13
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1752103Ab0LWHYK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 02:24:10 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:33820 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751882Ab0LWHYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 02:24:07 -0500
+From: pavan_savoy@ti.com
+To: gregkh@suse.de, linux-kernel@vger.kernel.org
+Cc: padovan@profusion.mobi, marcel@holtmann.org,
+        linux-bluetooth@vger.kernel.org, Pavan Savoy <pavan_savoy@ti.com>
+Subject: [PATCH 1/2] drivers:staging: ti-st: add the v7 btwilink driver
+Date: Thu, 23 Dec 2010 01:23:56 -0600
+Message-Id: <1293089037-23130-2-git-send-email-pavan_savoy@ti.com>
+X-Mailer: git-send-email 1.5.6.3
+In-Reply-To: <1293089037-23130-1-git-send-email-pavan_savoy@ti.com>
+References: <1293089037-23130-1-git-send-email-pavan_savoy@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2010 04:55 AM, Darren Hart wrote:
-> On 12/14/2010 12:07 PM, Thomas Gleixner wrote:
->> B1;2401;0cOn Tue, 14 Dec 2010, Lai Jiangshan wrote:
->>> Not advantage nor disadvantage
->>> 1) Even we support multiple candidate owners, we hardly cause "thundering herd"
->>>     the number of candidate owners is likely 1.
->>
->> I'm not convinced about that function, see comments below
->>
->>> 2) two APIs are changed.
->>>     rt_mutex_owner() will not return pending owner
->>>     rt_mutex_next_owner() always return the top owner, it is a candidate owner.
->>> 	will not return NULL if we only have a pending owner.
->>>     I have fixed the code that use these APIs.
->>
->> I think we want a separate function which can be used by futex code,
->> but that's a detail.
-> 
-> 
-> We do use both functions in the futex code.
-> 
-> 
->> @@ -778,15 +778,6 @@ static int wake_futex_pi(u32 __user *uaddr, u32 uval, struct futex_q *this)
->>  	new_owner = rt_mutex_next_owner(&pi_state->pi_mutex);
->>  
->>  	/*
->> -	 * This happens when we have stolen the lock and the original
->> -	 * pending owner did not enqueue itself back on the rt_mutex.
->> -	 * Thats not a tragedy. We know that way, that a lock waiter
->> -	 * is on the fly. We make the futex_q waiter the pending owner.
->> -	 */
->> -	if (!new_owner)
->> -		new_owner = this->task;
->> -
-> 
-> 
-> If I'm reading Lai's statement above correctly, the change actually just
-> eliminates the need for the !new_owner check, as in that case it will
-> return current. Is this correct? And indeed, Lai's patch removes it.
-> This looks correct to me.
-> 
+From: Pavan Savoy <pavan_savoy@ti.com>
 
+Add the btwilink driver which has undergone 7 revisions
+of review. Based on bluetooth maintainer comments, since
+there might be some re-work needed on underlying ST driver,
+park the driver here.
 
-After this patch applied, the topwaiter will not be deququed when the lock
-is released(any waiter is dequeued only when it really get the lock or give up).
-So the wait list will not be empty if someone is still waiting on.
-In this code, this->task is waiting, so rt_mutex_next_owner() will not return NULL.
+Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+---
+ drivers/staging/ti-st/btwilink.c |  363 ++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 363 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/ti-st/btwilink.c
 
-> 
->> @@ -1647,18 +1638,20 @@ static int fixup_owner(u32 __user *uaddr, int fshared, struct futex_q *q,
->>  		/*
->>  		 * pi_state is incorrect, some other task did a lock steal and
->>  		 * we returned due to timeout or signal without taking the
->> -		 * rt_mutex. Too late. We can access the rt_mutex_owner without
->> -		 * locking, as the other task is now blocked on the hash bucket
->> -		 * lock. Fix the state up.
-> 
-> 
-> How does this patch change this behavior? Removing the comment and
-> adding the lock says that "the other task is now able to contend for the
-> pi_mutex".
+diff --git a/drivers/staging/ti-st/btwilink.c b/drivers/staging/ti-st/btwilink.c
+new file mode 100644
+index 0000000..71e69f8
+--- /dev/null
++++ b/drivers/staging/ti-st/btwilink.c
+@@ -0,0 +1,363 @@
++/*
++ *  Texas Instrument's Bluetooth Driver For Shared Transport.
++ *
++ *  Bluetooth Driver acts as interface between HCI core and
++ *  TI Shared Transport Layer.
++ *
++ *  Copyright (C) 2009-2010 Texas Instruments
++ *  Author: Raja Mani <raja_mani@ti.com>
++ *	Pavan Savoy <pavan_savoy@ti.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ */
++
++#include <linux/platform_device.h>
++#include <net/bluetooth/bluetooth.h>
++#include <net/bluetooth/hci_core.h>
++
++#include <linux/ti_wilink_st.h>
++
++/* Bluetooth Driver Version */
++#define VERSION               "1.0"
++
++/* Number of seconds to wait for registration completion
++ * when ST returns PENDING status.
++ */
++#define BT_REGISTER_TIMEOUT   6000	/* 6 sec */
++
++/**
++ * struct ti_st - driver operation structure
++ * @hdev: hci device pointer which binds to bt driver
++ * @reg_status: ST registration callback status
++ * @st_write: write function provided by the ST driver
++ *	to be used by the driver during send_frame.
++ * @wait_reg_completion - completion sync between ti_st_open
++ *	and ti_st_registration_completion_cb.
++ */
++struct ti_st {
++	struct hci_dev *hdev;
++	char reg_status;
++	long (*st_write) (struct sk_buff *);
++	struct completion wait_reg_completion;
++};
++
++/* Increments HCI counters based on pocket ID (cmd,acl,sco) */
++static inline void ti_st_tx_complete(struct ti_st *hst, int pkt_type)
++{
++	struct hci_dev *hdev = hst->hdev;
++
++	/* Update HCI stat counters */
++	switch (pkt_type) {
++	case HCI_COMMAND_PKT:
++		hdev->stat.cmd_tx++;
++		break;
++
++	case HCI_ACLDATA_PKT:
++		hdev->stat.acl_tx++;
++		break;
++
++	case HCI_SCODATA_PKT:
++		hdev->stat.sco_tx++;
++		break;
++	}
++}
++
++/* ------- Interfaces to Shared Transport ------ */
++
++/* Called by ST layer to indicate protocol registration completion
++ * status.ti_st_open() function will wait for signal from this
++ * API when st_register() function returns ST_PENDING.
++ */
++static void st_registration_completion_cb(void *priv_data, char data)
++{
++	struct ti_st *lhst = priv_data;
++
++	/* Save registration status for use in ti_st_open() */
++	lhst->reg_status = data;
++	/* complete the wait in ti_st_open() */
++	complete(&lhst->wait_reg_completion);
++}
++
++/* Called by Shared Transport layer when receive data is
++ * available */
++static long st_receive(void *priv_data, struct sk_buff *skb)
++{
++	struct ti_st *lhst = priv_data;
++	int err;
++
++	if (!skb)
++		return -EFAULT;
++
++	if (!lhst) {
++		kfree_skb(skb);
++		return -EFAULT;
++	}
++
++	skb->dev = (void *) lhst->hdev;
++
++	/* Forward skb to HCI core layer */
++	err = hci_recv_frame(skb);
++	if (err < 0) {
++		BT_ERR("Unable to push skb to HCI core(%d)", err);
++		return err;
++	}
++
++	lhst->hdev->stat.byte_rx += skb->len;
++
++	return 0;
++}
++
++/* ------- Interfaces to HCI layer ------ */
++/* protocol structure registered with shared transport */
++static struct st_proto_s ti_st_proto = {
++	.type = ST_BT,
++	.recv = st_receive,
++	.reg_complete_cb = st_registration_completion_cb,
++};
++
++/* Called from HCI core to initialize the device */
++static int ti_st_open(struct hci_dev *hdev)
++{
++	unsigned long timeleft;
++	struct ti_st *hst;
++	int err;
++
++	BT_DBG("%s %p", hdev->name, hdev);
++	if (test_and_set_bit(HCI_RUNNING, &hdev->flags)) {
++		BT_ERR("btwilink already opened");
++		return -EBUSY;
++	}
++
++	/* provide contexts for callbacks from ST */
++	hst = hdev->driver_data;
++	ti_st_proto.priv_data = hst;
++
++	err = st_register(&ti_st_proto);
++	if (err == -EINPROGRESS) {
++		/* ST is busy with either protocol registration or firmware
++		 * download.
++		 */
++		/* Prepare wait-for-completion handler data structures.
++		 */
++		init_completion(&hst->wait_reg_completion);
++
++		/* Reset ST registration callback status flag , this value
++		 * will be updated in ti_st_registration_completion_cb()
++		 * function whenever it called from ST driver.
++		 */
++		hst->reg_status = -EINPROGRESS;
++
++		BT_DBG("waiting for registration completion signal from ST");
++		timeleft = wait_for_completion_timeout
++			(&hst->wait_reg_completion,
++			 msecs_to_jiffies(BT_REGISTER_TIMEOUT));
++		if (!timeleft) {
++			clear_bit(HCI_RUNNING, &hdev->flags);
++			BT_ERR("Timeout(%d sec),didn't get reg "
++					"completion signal from ST",
++					BT_REGISTER_TIMEOUT / 1000);
++			return -ETIMEDOUT;
++		}
++
++		/* Is ST registration callback called with ERROR status? */
++		if (hst->reg_status != 0) {
++			clear_bit(HCI_RUNNING, &hdev->flags);
++			BT_ERR("ST registration completed with invalid "
++					"status %d", hst->reg_status);
++			return -EAGAIN;
++		}
++		err = 0;
++	} else if (err != 0) {
++		clear_bit(HCI_RUNNING, &hdev->flags);
++		BT_ERR("st_register failed %d", err);
++		return err;
++	}
++
++	/* ti_st_proto.write is filled up by the underlying shared
++	 * transport driver upon registration
++	 */
++	hst->st_write = ti_st_proto.write;
++	if (!hst->st_write) {
++		BT_ERR("undefined ST write function");
++		clear_bit(HCI_RUNNING, &hdev->flags);
++
++		/* Undo registration with ST */
++		err = st_unregister(ST_BT);
++		if (err)
++			BT_ERR("st_unregister() failed with error %d", err);
++
++		hst->st_write = NULL;
++		return err;
++	}
++
++	return err;
++}
++
++/* Close device */
++static int ti_st_close(struct hci_dev *hdev)
++{
++	int err;
++	struct ti_st *hst = hdev->driver_data;
++
++	if (!test_and_clear_bit(HCI_RUNNING, &hdev->flags))
++		return 0;
++
++	/* continue to unregister from transport */
++	err = st_unregister(ST_BT);
++	if (err)
++		BT_ERR("st_unregister() failed with error %d", err);
++
++	hst->st_write = NULL;
++
++	return err;
++}
++
++static int ti_st_send_frame(struct sk_buff *skb)
++{
++	struct hci_dev *hdev;
++	struct ti_st *hst;
++	long len;
++
++	hdev = (struct hci_dev *)skb->dev;
++
++	if (!test_bit(HCI_RUNNING, &hdev->flags))
++		return -EBUSY;
++
++	hst = hdev->driver_data;
++
++	/* Prepend skb with frame type */
++	memcpy(skb_push(skb, 1), &bt_cb(skb)->pkt_type, 1);
++
++	BT_DBG("%s: type %d len %d", hdev->name, bt_cb(skb)->pkt_type,
++			skb->len);
++
++	/* Insert skb to shared transport layer's transmit queue.
++	 * Freeing skb memory is taken care in shared transport layer,
++	 * so don't free skb memory here.
++	 */
++	len = hst->st_write(skb);
++	if (len < 0) {
++		kfree_skb(skb);
++		BT_ERR("ST write failed (%ld)", len);
++		/* Try Again, would only fail if UART has gone bad */
++		return -EAGAIN;
++	}
++
++	/* ST accepted our skb. So, Go ahead and do rest */
++	hdev->stat.byte_tx += len;
++	ti_st_tx_complete(hst, bt_cb(skb)->pkt_type);
++
++	return 0;
++}
++
++static void ti_st_destruct(struct hci_dev *hdev)
++{
++	BT_DBG("%s", hdev->name);
++	kfree(hdev->driver_data);
++}
++
++static int bt_ti_probe(struct platform_device *pdev)
++{
++	static struct ti_st *hst;
++	struct hci_dev *hdev;
++	int err;
++
++	hst = kzalloc(sizeof(struct ti_st), GFP_KERNEL);
++	if (!hst)
++		return -ENOMEM;
++
++	/* Expose "hciX" device to user space */
++	hdev = hci_alloc_dev();
++	if (!hdev) {
++		kfree(hst);
++		return -ENOMEM;
++	}
++
++	BT_DBG("hdev %p", hdev);
++
++	hst->hdev = hdev;
++	hdev->bus = HCI_UART;
++	hdev->driver_data = hst;
++	hdev->open = ti_st_open;
++	hdev->close = ti_st_close;
++	hdev->flush = NULL;
++	hdev->send = ti_st_send_frame;
++	hdev->destruct = ti_st_destruct;
++	hdev->owner = THIS_MODULE;
++
++	err = hci_register_dev(hdev);
++	if (err < 0) {
++		BT_ERR("Can't register HCI device error %d", err);
++		kfree(hst);
++		hci_free_dev(hdev);
++		return err;
++	}
++
++	BT_DBG("HCI device registered (hdev %p)", hdev);
++
++	dev_set_drvdata(&pdev->dev, hst);
++	return err;
++}
++
++static int bt_ti_remove(struct platform_device *pdev)
++{
++	struct hci_dev *hdev;
++	struct ti_st *hst = dev_get_drvdata(&pdev->dev);
++
++	if (!hst)
++		return -EFAULT;
++
++	hdev = hst->hdev;
++	ti_st_close(hdev);
++	hci_unregister_dev(hdev);
++
++	hci_free_dev(hdev);
++	kfree(hst);
++
++	dev_set_drvdata(&pdev->dev, NULL);
++	return 0;
++}
++
++static struct platform_driver btwilink_driver = {
++	.probe = bt_ti_probe,
++	.remove = bt_ti_remove,
++	.driver = {
++		.name = "btwilink",
++		.owner = THIS_MODULE,
++	},
++};
++
++/* ------- Module Init/Exit interfaces ------ */
++static int __init btwilink_init(void)
++{
++	BT_INFO("Bluetooth Driver for TI WiLink - Version %s", VERSION);
++
++	return platform_driver_register(&btwilink_driver);
++}
++
++static void __exit btwilink_exit(void)
++{
++	platform_driver_unregister(&btwilink_driver);
++}
++
++module_init(btwilink_init);
++module_exit(btwilink_exit);
++
++/* ------ Module Info ------ */
++
++MODULE_AUTHOR("Raja Mani <raja_mani@ti.com>");
++MODULE_DESCRIPTION("Bluetooth Driver for TI Shared Transport" VERSION);
++MODULE_VERSION(VERSION);
++MODULE_LICENSE("GPL");
+-- 
+1.6.3.3
 
-After this patch applied, it is possible that:
-current task calls rt_mutex_trylock() and returns faill
-&& the rt_mutex_owner() return NULL.
-
-This happen when the lock is just released and the highest prio waiter
-is wokenup, but it has not taken the lock yet. So we have to
-call rt_mutex_next_owner() to get the highest prio waiter and set it to
-q->pi_state->owner.
-
-The top waiter is possible changed by priority boosting. so we need
-to hold the wait_lock when access to it.
-
-> 
-> 
->> +		 * rt_mutex. Too late.
->>  		 */
->> +		raw_spin_lock(&q->pi_state->pi_mutex.wait_lock);
->>  		owner = rt_mutex_owner(&q->pi_state->pi_mutex);
->> +		if (!owner)
->> +			owner = rt_mutex_next_owner(&q->pi_state->pi_mutex);
->> +		raw_spin_unlock(&q->pi_state->pi_mutex.wait_lock);
->>  		ret = fixup_pi_state_owner(uaddr, q, owner, fshared);
->>  		goto out;
->>  	}
->>  
->>  	/*
->>  	 * Paranoia check. If we did not take the lock, then we should not be
->> -	 * the owner, nor the pending owner, of the rt_mutex.
->> +	 * the owner of the rt_mutex.
-> 
-> 
-> Is this changed because we could now be a "candidate owner" ?
-
-It now is not possible "candidate owner" either.
-but since it is a "Paranoia check", we don't need to check all things and
-add unneed overhead.
-
-> 
-> 
->>  	 */
->>  	if (rt_mutex_owner(&q->pi_state->pi_mutex) == current)
->>  		printk(KERN_ERR "fixup_owner: ret = %d pi-mutex: %p "
-> 
-> 
-> The other uses of rt_mutex_owner in futex.c don't appear to be impacted
-> by the change in API described above as they just compare the result to
-> current (futex_lock_pi and futex_wait_requeue_pi).
-> 
-> 
-
-Rignt, the other uses of rt_mutex_owner() do not be impacted.
-
-Thanks a lot.
-Lai.
