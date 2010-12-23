@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752935Ab0LWMMU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 07:12:20 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:49976 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752864Ab0LWMMS convert rfc822-to-8bit (ORCPT
+	id S1753080Ab0LWMMg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 07:12:36 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56806 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752994Ab0LWMMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 07:12:18 -0500
-Subject: Re: [PATCH] avoid race condition in pick_next_task_fair in
- kernel/sched_fair.c
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Miklos Vajna <vmiklos@frugalware.org>, Mike Galbraith <efault@gmx.de>,
-        shenghui <crosslonelyover@gmail.com>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, Greg KH <greg@kroah.com>,
-        Paul Turner <pjt@google.com>
-In-Reply-To: <AANLkTi=1GMKF4emms0Qpx31=xk-FZXOTaeONmCohzWb2@mail.gmail.com>
-References: <AANLkTin49UHeVhfS-iFwWvPIg29HPhXaP3DorBAa-a0I@mail.gmail.com>
-	 <1277808215.1868.5.camel@laptop>
-	 <20101219020313.GJ31750@genesis.frugalware.org>
-	 <20101222002248.GP10557@genesis.frugalware.org>
-	 <1293006589.2170.41.camel@laptop>
-	 <1293007311.11370.172.camel@marge.simson.net>
-	 <1293008842.2170.70.camel@laptop>
-	 <20101222133154.GS10557@genesis.frugalware.org>
-	 <1293026422.2170.136.camel@laptop> <1293027112.2170.140.camel@laptop>
-	 <20101222151434.GW10557@genesis.frugalware.org>
-	 <1293037718.2170.155.camel@laptop> <1293050173.2170.389.camel@laptop>
-	 <AANLkTi=1GMKF4emms0Qpx31=xk-FZXOTaeONmCohzWb2@mail.gmail.com>
+	Thu, 23 Dec 2010 07:12:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=FryqK+jXNTouBqVdIiFKmtg5ahwEtA1At6thcUfyExfvraE1uiivRzCbBifqwTHB7M
+         DR3clmf17hZiKenhATcOBby2NDnXunCuEIKvE07TMi8ZL4bCdI/oGe2qRmw0tLFan14W
+         gG2Z4BEvG6BO59QyP71znYcG472GJXmqvXN0U=
+Subject: Re: Help: major pppoe regression since 2.6.35 (panic on first ppp
+ conection)?
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Joel Soete <soete.joel@scarlet.be>
+Cc: Jarek Poplawski <jarkao2@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+In-Reply-To: <4D132C5F.8090404@scarlet.be>
+References: <20101222110021.GA8985@ff.dom.local>
+	 <4D122093.6060900@scarlet.be> <1293035100.3027.247.camel@edumazet-laptop>
+	 <4D132C5F.8090404@scarlet.be>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 23 Dec 2010 13:12:10 +0100
-Message-ID: <1293106330.2170.618.camel@laptop>
+Date: Thu, 23 Dec 2010 13:12:28 +0100
+Message-ID: <1293106348.7789.5.camel@edumazet-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-23 at 10:08 +0800, Yong Zhang wrote:
-> > systemd--1251    0d..5. 2015398us : enqueue_task_fair <-enqueue_task
-> > systemd--1251    0d..5. 2015398us : print_runqueue <-enqueue_task_fair
-> > systemd--1251    0d..5. 2015399us : __print_runqueue:  cfs_rq: c2407c34, nr: 3, load: 3072
-> > systemd--1251    0d..5. 2015400us : __print_runqueue:  curr: f6a8de5c, comm: systemd-cgroups/1251, load: 1024
-> > systemd--1251    0d..5. 2015401us : __print_runqueue:  se: f69e6300, load: 1024,
-> > systemd--1251    0d..5. 2015401us : __print_runqueue:    cfs_rq: f69e6540, nr: 2, load: 2048
-> > systemd--1251    0d..5. 2015402us : __print_runqueue:    curr: (null)
-> > systemd--1251    0d..5. 2015402us : __print_runqueue:    se: f69e65a0, load: 4137574976,
+Le jeudi 23 décembre 2010 à 11:02 +0000, Joel Soete a écrit :
+> Hello Eric,
 > 
-> the load == f69e65a0 == address of se, odd
+> 
+> On 12/22/2010 04:25 PM, Eric Dumazet wrote:
+> [snip]
+> >
+> > Something overwrites nr_frags in skb_shinfo(skb)
+> >
+> > As skb_shinfo follows head portion of an skb, something overflows skb
+> > head
+> >
+> > Please try adding some room like in following patch ?
+> >
+> > diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+> > index e6ba898..adf2834 100644
+> > --- a/include/linux/skbuff.h
+> > +++ b/include/linux/skbuff.h
+> > @@ -187,6 +187,7 @@ enum {
+> >    * the end of the header data, ie. at skb->end.
+> >    */
+> >   struct skb_shared_info {
+> > +	char		filler[64];
+> >   	unsigned short	nr_frags;
+> >   	unsigned short	gso_size;
+> >   	/* Warning: this field is not always filled in (UFO)! */
+> >
+> Sorry for delay but I have good news, I am sending this answer from:
+> $ uname -a
+> Linux sidh2 2.6.37-rc7-amd64-t1 #1 SMP Thu Dec 23 10:30:27 GMT 2010 x86_64 GNU/Linux
+> 
+> with your tips ;<) (without kernel had already died)
+> 
+> That said how can find stuff overflowing skb head? (all I say, is that this issue started with 2.6.34-git6???)
+> 
+> Thanks a lot,
 
-This appears to be consistently true, I've also found that in between
-these two prints, there is a free_sched_group() freeing that exact
-entry. So post-print is a use-after-free artifact.
+You're welcome. At least we know were to search. Thanks !
 
-What's interesting is that its freeing a cfs_rq struct with
-nr_running=1, that should not be possible...
+I am taking holidays right now for about 5 days, I guess someone else
+might find the bug before me ;)
 
-/me goes stare at the whole cgroup task attach vs cgroup destruction
-muck.
+
+
