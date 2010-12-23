@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640Ab0LWDzY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 22:55:24 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36838 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752127Ab0LWDzX convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 22:55:23 -0500
-MIME-Version: 1.0
-In-Reply-To: <c6d829$pujifv@fmsmga001.fm.intel.com>
-References: <alpine.DEB.2.00.1012212339090.30885@skynet.skynet.ie>
- <s5hei99vkqj.wl%tiwai@suse.de> <c6d829$pujifv@fmsmga001.fm.intel.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 22 Dec 2010 19:54:31 -0800
-Message-ID: <AANLkTik4N5Caw2f4nNFgYXDjxwCMvkyLGyTrkz+vDfXS@mail.gmail.com>
-Subject: Re: [git pull] drm fixes
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Takashi Iwai <tiwai@suse.de>, Dave Airlie <airlied@linux.ie>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751739Ab0LWEK7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 23:10:59 -0500
+Received: from mail.perches.com ([173.55.12.10]:2845 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751258Ab0LWEK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 23:10:58 -0500
+Subject: Re: [PATCH v7] kptr_restrict for hiding kernel pointers
+From: Joe Perches <joe@perches.com>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-security-module@vger.kernel.org, jmorris@namei.org,
+        eric.dumazet@gmail.com, tgraf@infradead.org, eugeneteo@kernel.org,
+        kees.cook@canonical.com, mingo@elte.hu, davem@davemloft.net,
+        a.p.zijlstra@chello.nl, akpm@linux-foundation.org,
+        eparis@parisplace.org
+In-Reply-To: <1293069792.9820.342.camel@dan>
+References: <1293069792.9820.342.camel@dan>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Dec 2010 20:10:55 -0800
+Message-ID: <1293077455.28077.6.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 22, 2010 at 8:59 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> On Wed, 22 Dec 2010 17:24:36 +0100, Takashi Iwai <tiwai@suse.de> wrote:
->> The commit 448f53a1ede54eb854d036abf54573281412d650
->>   drm/i915/bios: Reverse order of 100/120 Mhz SSC clocks
->>
->> causes a regression on a SandyBridge machine here.
->> The laptop display (LVDS) becomes blank.  Reverting the commit fixes
->> the problem.
->
-> The question is whose BIOS is wrong?
+On Wed, 2010-12-22 at 21:03 -0500, Dan Rosenberg wrote:
+> Add the %pK printk format specifier and
+> the /proc/sys/kernel/kptr_restrict sysctl.
 
-I don't think so.
+Another trivial style comment:
 
->                         The Lenovo U160's or the
-> Sandybridge SDV? And why does it work for that other OS? <Insert
-> rhetorical question of the day here.>
+> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+[]
+> +	case 'K':
+> +		/*
+> +		 * %pK cannot be used in IRQ context because its test
+> +		 * for CAP_SYSLOG would be meaningless.
+> +		 */
+> +		if (in_irq() || in_serving_softirq() || in_nmi()) {
+> +			if (spec.field_width == -1)
+> +				spec.field_width = 2 * sizeof(void *);
+> +			return string(buf, end, "pK-error", spec);
+> +		}
+> +
+> +		else if ((kptr_restrict == 0) ||
+> +			 (kptr_restrict == 1 &&
+> +			  has_capability_noaudit(current, CAP_SYSLOG)))
+> +			break;
+> +
 
-Quite frankly, I don't think the question should *ever* be "whose BIOS
-is wrong?"
+---
 
-You should always take for granted that the BIOS is wrong. It's not a
-question of "blame the BIOS", it's a question of facts of life.
+> +		if (spec.field_width == -1) {
+> +			spec.field_width = 2 * sizeof(void *);
+> +			spec.flags |= ZEROPAD;
+> +		}
+> +		return number(buf, end, 0, spec);
 
-It's 100% pointless to point fingers and say "the HP BIOS is wrong" or
-"the Lenovo BIOS is wrong". Buggy BIOSes happen. ALWAYS. Any code that
-relies on the BIOS to such a degree that it either works or not based
-on it is by definition broken.
+It'd be slightly smaller code to use:
 
-Why does that code need to figure out some LVDS clock from the BIOS?
-Why can't the code look at the actual hardware state or similar, since
-presumably the screen is on after boot. THAT we can rely on, since a
-BIOS that doesn't initialize LVDS is not going to ever ship even as
-pre-release.
+ 		   ptr = 0;
+		   break;
 
-                        Linus
+and delete the if block and return number.
+
+>  	}
+>  	spec.flags |= SMALL;
+>  	if (spec.field_width == -1) {
+
+
