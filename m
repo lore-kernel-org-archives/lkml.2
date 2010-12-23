@@ -1,60 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab0LWOj5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 09:39:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25009 "EHLO mx1.redhat.com"
+	id S1753292Ab0LWOlP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 09:41:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53086 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753151Ab0LWOj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 09:39:56 -0500
-Message-ID: <4D135F09.3080700@redhat.com>
-Date: Thu, 23 Dec 2010 22:39:05 +0800
-From: Eugene Teo <eugene@redhat.com>
-Organization: Red Hat, Inc
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1753048Ab0LWOlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 09:41:14 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Rogier Wolff <R.E.Wolff@BitWizard.nl>
+Cc: Greg Freemyer <greg.freemyer@gmail.com>,
+        Bruno =?utf-8?Q?Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: Slow disks.
+References: <20101220141553.GA6088@bitwizard.nl>
+	<20101220190630.66084e1d@neptune.home>
+	<AANLkTi=VAJbVSzX_DH9_==a3RonLJmawYu3MzF-uqGXC@mail.gmail.com>
+	<20101222104306.GB30941@bitwizard.nl>
+	<x49aajxsrh3.fsf@segfault.boston.devel.redhat.com>
+	<20101222224416.GE30941@bitwizard.nl>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 23 Dec 2010 09:40:54 -0500
+In-Reply-To: <20101222224416.GE30941@bitwizard.nl> (Rogier Wolff's message of
+	"Wed, 22 Dec 2010 23:44:16 +0100")
+Message-ID: <x494oa48scp.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Cong Wang <amwang@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Dan Carpenter <error27@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [RFC Patch] kcore: restrict access to the whole memory
-References: <1293016926-1714-1-git-send-email-amwang@redhat.com> <20101222150209.8e18afa7.akpm@linux-foundation.org> <4D131DEA.4050206@redhat.com>
-In-Reply-To: <4D131DEA.4050206@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/2010 06:01 PM, Cong Wang wrote:
-> 于 2010年12月23日 07:02, Andrew Morton 写道:
->> On Wed, 22 Dec 2010 19:21:59 +0800
->> Amerigo Wang<amwang@redhat.com> wrote:
->>
->>> This patch restricts /proc/kcore from accessing the whole memory,
->>> instead, only an ELF header can be read.
->>>
->>> The initial patch was done by Vivek.
->>
->> Getting a bit tired of this.
->>
->> Are we supposed to be mind-readers? How else are we to work out why
->> you think Linux needs this feature? What problems it solves? What
->> applications are expected to break and what the breakage patterns are?
->> Why the benefits are worth the maintenance costs and the risk of
->> breakage? Why it's done with a config option and not a boot-time or
->> runtime tunable?
+Rogier Wolff <R.E.Wolff@BitWizard.nl> writes:
 
-As opposed to /dev/{mem,kmem}, /proc/kcore is read-only. It is meant to 
-be a preventive measure to disallow privileged users from reading the 
-kcore file beyond the ELF headers as it can contain sensitive 
-information. This is based on a patch that we have been carrying in Red 
-Hat Enterprise Linux 5 for a few years. I believe other distributions 
-also have similar restrictions.
+> On Wed, Dec 22, 2010 at 11:27:20AM -0500, Jeff Moyer wrote:
+>> Rogier Wolff <R.E.Wolff@BitWizard.nl> writes:
+>> 
+>> > Unquoted text below is from either me or from my friend. 
+>> >
+>> >
+>> > Someone suggested we try an older kernel as if kernel 2.6.32 would not
+>> > have this problem. We do NOT think it suddenly started with a certain
+>> > kernel version. I was just hoping to have you kernel-guys help with
+>> > prodding the kernel into revealing which component was screwing things
+>> > up....
+>> [...]
+>> > ata3.00: ATA-8: WDC WD10EARS-00Y5B1, 80.00A80, max UDMA/133
+>> 
+>> This is an "Advanced format" drive, which, in this case, means it
+>> internally has a 4KB sector size and exports a 512byte logical sector
+>> size.  If your partitions are misaligned, this can cause performance
+>> problems.
+>
+> This would mean that for a misalgned write, the drive would have to
+> read-modify-write every super-sector. 
+>
+> In my performance calculations, 10ms average seek (should be around
+> 7), 4ms average rotational latency for a total of 14ms. This would
+> degrade for read-modify-write to 10+4+8 = 22ms. Still 10 times better
+> than what we observe: service times on the order of 200-300ms. 
 
-Thanks, Eugene
+I didn't say it would account for all of your degradation, just that it
+could affect performance.  I'm sorry if I wasn't clear on that.
 
+>  > md1 : active raid5 sda2[0] sdd2[3](S) sdb2[1] sdc2[4]
+>> >       39067648 blocks super 1.2 level 5, 512k chunk, algorithm 2 [3/3]
+>> > [UUU]
+>> 
+>> A 512KB raid5 chunk with 4KB I/Os?  That is a recipe for inefficiency.
+>> Again, blktrace data would be helpful.
+>
+> Where did you get the 4kb IOs from? You mean from the iostat -x
+> output?
+
+Yes, since that's all I have to go on at the moment.
+
+> The system/filesystem decided to do those small IOs. With the
+> throughput we're getting on the filesystem, it better not try to write
+> larger chuncks...
+
+Your logic is a bit flawed, for so many reasons I'm not even going to
+try to enumerate them here.  Anyway, I'll continue to sound like a
+broken record and ask for blktrace data.
+
+> I have benchmarked my own "high bandwidth" raid arrays. I benchmarked
+> them with 128k, 256, 512 and 1024k blocksize. I got the best
+> throughput (for my benchmark: dd if=/dev/md0 of=/dev/null bs=1024k)
+> with 512k blocksize. (and yes that IS a valid benchmark for my
+> usage of the array.)
+
+Sorry, I'm not sure I understand how this is relevant.  I thought we
+were troubleshooting a problem on someone else's system.  Further, the
+window into the workload we saw via iostat definitely shows that smaller
+I/Os are issued.
+
+Anyway, it will be much easier to debate the issue once the blktrace
+data is gathered.
+
+Happy holidays.
+
+-Jeff
