@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752078Ab0LWFo2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 00:44:28 -0500
-Received: from mga11.intel.com ([192.55.52.93]:26203 "EHLO mga11.intel.com"
+	id S1752027Ab0LWFo1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 00:44:27 -0500
+Received: from mga11.intel.com ([192.55.52.93]:61580 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751952Ab0LWFoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751973Ab0LWFoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 23 Dec 2010 00:44:25 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,217,1291622400"; 
-   d="scan'208";a="639642770"
+   d="scan'208";a="639642780"
 From: Huang Ying <ying.huang@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
         ying.huang@intel.com, Peter Zijlstra <peterz@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [RFC -v9 3/4] irq_work, Use llist in irq_work
-Date: Thu, 23 Dec 2010 13:43:22 +0800
-Message-Id: <1293083003-19577-4-git-send-email-ying.huang@intel.com>
+        Ingo Molnar <mingo@elte.hu>, Chris Mason <chris.mason@oracle.com>
+Subject: [RFC -v9 4/4] net, rds, Replace xlist in net/rds/xlist.h with llist
+Date: Thu, 23 Dec 2010 13:43:23 +0800
+Message-Id: <1293083003-19577-5-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1293083003-19577-1-git-send-email-ying.huang@intel.com>
 References: <1293083003-19577-1-git-send-email-ying.huang@intel.com>
@@ -25,229 +25,335 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use llist in irq_work instead of the lock-less linked list
-implementation in irq_work to avoid the code duplication.
+The functionality of xlist and llist is almost same.  This patch
+replace xlist with llist to avoid code duplication.
+
+Known issues: don't know how to test this, need special hardware?
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Chris Mason <chris.mason@oracle.com>
 ---
- include/linux/irq_work.h |   15 ++++---
- init/Kconfig             |    1 
- kernel/irq_work.c        |   90 ++++++++++++++++++-----------------------------
- 3 files changed, 46 insertions(+), 60 deletions(-)
+ net/rds/Kconfig   |    1 
+ net/rds/ib_rdma.c |  110 ++++++++++++++++++++++++------------------------------
+ net/rds/xlist.h   |   80 ---------------------------------------
+ 3 files changed, 50 insertions(+), 141 deletions(-)
+ delete mode 100644 net/rds/xlist.h
 
---- a/include/linux/irq_work.h
-+++ b/include/linux/irq_work.h
-@@ -1,20 +1,23 @@
- #ifndef _LINUX_IRQ_WORK_H
- #define _LINUX_IRQ_WORK_H
+--- a/net/rds/Kconfig
++++ b/net/rds/Kconfig
+@@ -9,6 +9,7 @@ config RDS
  
+ config RDS_RDMA
+ 	tristate "RDS over Infiniband and iWARP"
++	select LLIST
+ 	depends on RDS && INFINIBAND && INFINIBAND_ADDR_TRANS
+ 	---help---
+ 	  Allow RDS to use Infiniband and iWARP as a transport.
+--- a/net/rds/ib_rdma.c
++++ b/net/rds/ib_rdma.c
+@@ -33,10 +33,10 @@
+ #include <linux/kernel.h>
+ #include <linux/slab.h>
+ #include <linux/rculist.h>
 +#include <linux/llist.h>
-+
- struct irq_work {
--	struct irq_work *next;
-+	unsigned long flags;
-+	struct llist_node llnode;
- 	void (*func)(struct irq_work *);
- };
  
- static inline
--void init_irq_work(struct irq_work *entry, void (*func)(struct irq_work *))
-+void init_irq_work(struct irq_work *work, void (*func)(struct irq_work *))
- {
--	entry->next = NULL;
--	entry->func = func;
-+	work->flags = 0;
-+	work->func = func;
+ #include "rds.h"
+ #include "ib.h"
+-#include "xlist.h"
+ 
+ static struct workqueue_struct *rds_ib_fmr_wq;
+ 
+@@ -51,7 +51,7 @@ struct rds_ib_mr {
+ 	struct rds_ib_mr_pool	*pool;
+ 	struct ib_fmr		*fmr;
+ 
+-	struct xlist_head	xlist;
++	struct llist_node	llnode;
+ 
+ 	/* unmap_list is for freeing */
+ 	struct list_head	unmap_list;
+@@ -73,9 +73,9 @@ struct rds_ib_mr_pool {
+ 	atomic_t		item_count;		/* total # of MRs */
+ 	atomic_t		dirty_count;		/* # dirty of MRs */
+ 
+-	struct xlist_head	drop_list;		/* MRs that have reached their max_maps limit */
+-	struct xlist_head	free_list;		/* unused MRs */
+-	struct xlist_head	clean_list;		/* global unused & unamapped MRs */
++	struct llist_head	drop_list;		/* MRs that have reached their max_maps limit */
++	struct llist_head	free_list;		/* unused MRs */
++	struct llist_head	clean_list;		/* global unused & unamapped MRs */
+ 	wait_queue_head_t	flush_wait;
+ 
+ 	atomic_t		free_pinned;		/* memory pinned by free MRs */
+@@ -222,9 +222,9 @@ struct rds_ib_mr_pool *rds_ib_create_mr_
+ 	if (!pool)
+ 		return ERR_PTR(-ENOMEM);
+ 
+-	INIT_XLIST_HEAD(&pool->free_list);
+-	INIT_XLIST_HEAD(&pool->drop_list);
+-	INIT_XLIST_HEAD(&pool->clean_list);
++	init_llist_head(&pool->free_list);
++	init_llist_head(&pool->drop_list);
++	init_llist_head(&pool->clean_list);
+ 	mutex_init(&pool->flush_lock);
+ 	init_waitqueue_head(&pool->flush_wait);
+ 	INIT_DELAYED_WORK(&pool->flush_worker, rds_ib_mr_pool_flush_worker);
+@@ -262,26 +262,18 @@ void rds_ib_destroy_mr_pool(struct rds_i
+ 	kfree(pool);
  }
  
--bool irq_work_queue(struct irq_work *entry);
-+bool irq_work_queue(struct irq_work *work);
- void irq_work_run(void);
--void irq_work_sync(struct irq_work *entry);
-+void irq_work_sync(struct irq_work *work);
- 
- #endif /* _LINUX_IRQ_WORK_H */
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -27,6 +27,7 @@ config HAVE_IRQ_WORK
- config IRQ_WORK
- 	bool
- 	depends on HAVE_IRQ_WORK
-+	select LLIST
- 
- menu "General setup"
- 
---- a/kernel/irq_work.c
-+++ b/kernel/irq_work.c
-@@ -17,49 +17,34 @@
-  * claimed   NULL, 3 -> {pending}       : claimed to be enqueued
-  * pending   next, 3 -> {busy}          : queued, pending callback
-  * busy      NULL, 2 -> {free, claimed} : callback in progress, can be claimed
-- *
-- * We use the lower two bits of the next pointer to keep PENDING and BUSY
-- * flags.
-  */
- 
- #define IRQ_WORK_PENDING	1UL
- #define IRQ_WORK_BUSY		2UL
- #define IRQ_WORK_FLAGS		3UL
- 
--static inline bool irq_work_is_set(struct irq_work *entry, int flags)
+-static void refill_local(struct rds_ib_mr_pool *pool, struct xlist_head *xl,
+-			 struct rds_ib_mr **ibmr_ret)
 -{
--	return (unsigned long)entry->next & flags;
--}
-+#define LIST_NONEMPTY_BIT	0
- 
--static inline struct irq_work *irq_work_next(struct irq_work *entry)
--{
--	unsigned long next = (unsigned long)entry->next;
--	next &= ~IRQ_WORK_FLAGS;
--	return (struct irq_work *)next;
--}
-+struct irq_work_list {
-+	unsigned long flags;
-+	struct llist_head llist;
-+};
- 
--static inline struct irq_work *next_flags(struct irq_work *entry, int flags)
--{
--	unsigned long next = (unsigned long)entry;
--	next |= flags;
--	return (struct irq_work *)next;
+-	struct xlist_head *ibmr_xl;
+-	ibmr_xl = xlist_del_head_fast(xl);
+-	*ibmr_ret = list_entry(ibmr_xl, struct rds_ib_mr, xlist);
 -}
 -
--static DEFINE_PER_CPU(struct irq_work *, irq_work_list);
-+static DEFINE_PER_CPU(struct irq_work_list, irq_work_lists);
+ static inline struct rds_ib_mr *rds_ib_reuse_fmr(struct rds_ib_mr_pool *pool)
+ {
+ 	struct rds_ib_mr *ibmr = NULL;
+-	struct xlist_head *ret;
++	struct llist_node *ret;
+ 	unsigned long *flag;
+ 
+ 	preempt_disable();
+ 	flag = &__get_cpu_var(clean_list_grace);
+ 	set_bit(CLEAN_LIST_BUSY_BIT, flag);
+-	ret = xlist_del_head(&pool->clean_list);
++	ret = llist_del_first(&pool->clean_list);
+ 	if (ret)
+-		ibmr = list_entry(ret, struct rds_ib_mr, xlist);
++		ibmr = llist_entry(ret, struct rds_ib_mr, llnode);
+ 
+ 	clear_bit(CLEAN_LIST_BUSY_BIT, flag);
+ 	preempt_enable();
+@@ -531,46 +523,42 @@ static inline unsigned int rds_ib_flush_
+ }
  
  /*
-  * Claim the entry so that no one else will poke at it.
+- * given an xlist of mrs, put them all into the list_head for more processing
++ * given an llist of mrs, put them all into the list_head for more processing
   */
--static bool irq_work_claim(struct irq_work *entry)
-+static bool irq_work_claim(struct irq_work *work)
+-static void xlist_append_to_list(struct xlist_head *xlist, struct list_head *list)
++static void llist_append_to_list(struct llist_head *llist, struct list_head *list)
  {
--	struct irq_work *next, *nflags;
-+	unsigned long flags, nflags;
- 
- 	do {
--		next = entry->next;
--		if ((unsigned long)next & IRQ_WORK_PENDING)
-+		flags = work->flags;
-+		if (flags & IRQ_WORK_PENDING)
- 			return false;
--		nflags = next_flags(next, IRQ_WORK_FLAGS);
--	} while (cmpxchg(&entry->next, next, nflags) != next);
-+		nflags = flags | IRQ_WORK_FLAGS;
-+	} while (cmpxchg(&work->flags, flags, nflags) != flags);
- 
- 	return true;
+ 	struct rds_ib_mr *ibmr;
+-	struct xlist_head splice;
+-	struct xlist_head *cur;
+-	struct xlist_head *next;
+-
+-	splice.next = NULL;
+-	xlist_splice(xlist, &splice);
+-	cur = splice.next;
+-	while (cur) {
+-		next = cur->next;
+-		ibmr = list_entry(cur, struct rds_ib_mr, xlist);
++	struct llist_node *node;
++	struct llist_node *next;
++
++	node = llist_del_all(llist);
++	while (node) {
++		next = node->next;
++		ibmr = llist_entry(node, struct rds_ib_mr, llnode);
+ 		list_add_tail(&ibmr->unmap_list, list);
+-		cur = next;
++		node = next;
+ 	}
  }
-@@ -75,20 +60,16 @@ void __weak arch_irq_work_raise(void)
+ 
  /*
-  * Queue the entry and raise the IPI if needed.
+- * this takes a list head of mrs and turns it into an xlist of clusters.
+- * each cluster has an xlist of MR_CLUSTER_SIZE mrs that are ready for
+- * reuse.
++ * this takes a list head of mrs and turns it into linked llist nodes.
   */
--static void __irq_work_queue(struct irq_work *entry)
-+static void __irq_work_queue(struct irq_work *work)
+-static void list_append_to_xlist(struct rds_ib_mr_pool *pool,
+-				struct list_head *list, struct xlist_head *xlist,
+-				struct xlist_head **tail_ret)
++static void list_to_llist_nodes(struct rds_ib_mr_pool *pool,
++				struct list_head *list,
++				struct llist_node **nodes_head,
++				struct llist_node **nodes_tail)
  {
--	struct irq_work **head, *next;
-+	struct irq_work_list *irq_work_list;
+ 	struct rds_ib_mr *ibmr;
+-	struct xlist_head *cur_mr = xlist;
+-	struct xlist_head *tail_mr = NULL;
++	struct llist_node *cur = NULL;
++	struct llist_node **next = nodes_head;
  
--	head = &get_cpu_var(irq_work_list);
-+	irq_work_list = &get_cpu_var(irq_work_lists);
+ 	list_for_each_entry(ibmr, list, unmap_list) {
+-		tail_mr = &ibmr->xlist;
+-		tail_mr->next = NULL;
+-		cur_mr->next = tail_mr;
+-		cur_mr = tail_mr;
++		cur = &ibmr->llnode;
++		*next = cur;
++		next = &cur->next;
+ 	}
+-	*tail_ret = tail_mr;
++	*next = NULL;
++	*nodes_tail = cur;
+ }
  
--	do {
--		next = *head;
--		/* Can assign non-atomic because we keep the flags set. */
--		entry->next = next_flags(next, IRQ_WORK_FLAGS);
--	} while (cmpxchg(head, next, entry) != next);
-+	llist_add(&work->llnode, &irq_work_list->llist);
- 
- 	/* The list was empty, raise self-interrupt to start processing. */
--	if (!irq_work_next(entry))
-+	if (!test_and_set_bit(LIST_NONEMPTY_BIT, &irq_work_list->flags))
- 		arch_irq_work_raise();
- 
- 	put_cpu_var(irq_work_list);
-@@ -100,16 +81,16 @@ static void __irq_work_queue(struct irq_
-  *
-  * Can be re-enqueued while the callback is still in progress.
-  */
--bool irq_work_queue(struct irq_work *entry)
-+bool irq_work_queue(struct irq_work *work)
+ /*
+@@ -583,8 +571,8 @@ static int rds_ib_flush_mr_pool(struct r
+ 			        int free_all, struct rds_ib_mr **ibmr_ret)
  {
--	if (!irq_work_claim(entry)) {
-+	if (!irq_work_claim(work)) {
- 		/*
- 		 * Already enqueued, can't do!
+ 	struct rds_ib_mr *ibmr, *next;
+-	struct xlist_head clean_xlist;
+-	struct xlist_head *clean_tail;
++	struct llist_node *clean_nodes;
++	struct llist_node *clean_tail;
+ 	LIST_HEAD(unmap_list);
+ 	LIST_HEAD(fmr_list);
+ 	unsigned long unpinned = 0;
+@@ -605,7 +593,7 @@ static int rds_ib_flush_mr_pool(struct r
+ 
+ 			prepare_to_wait(&pool->flush_wait, &wait,
+ 					TASK_UNINTERRUPTIBLE);
+-			if (xlist_empty(&pool->clean_list))
++			if (llist_empty(&pool->clean_list))
+ 				schedule();
+ 
+ 			ibmr = rds_ib_reuse_fmr(pool);
+@@ -630,10 +618,10 @@ static int rds_ib_flush_mr_pool(struct r
+ 	/* Get the list of all MRs to be dropped. Ordering matters -
+ 	 * we want to put drop_list ahead of free_list.
+ 	 */
+-	xlist_append_to_list(&pool->drop_list, &unmap_list);
+-	xlist_append_to_list(&pool->free_list, &unmap_list);
++	llist_append_to_list(&pool->drop_list, &unmap_list);
++	llist_append_to_list(&pool->free_list, &unmap_list);
+ 	if (free_all)
+-		xlist_append_to_list(&pool->clean_list, &unmap_list);
++		llist_append_to_list(&pool->clean_list, &unmap_list);
+ 
+ 	free_goal = rds_ib_flush_goal(pool, free_all);
+ 
+@@ -665,22 +653,22 @@ static int rds_ib_flush_mr_pool(struct r
+ 	if (!list_empty(&unmap_list)) {
+ 		/* we have to make sure that none of the things we're about
+ 		 * to put on the clean list would race with other cpus trying
+-		 * to pull items off.  The xlist would explode if we managed to
++		 * to pull items off.  The llist would explode if we managed to
+ 		 * remove something from the clean list and then add it back again
+-		 * while another CPU was spinning on that same item in xlist_del_head.
++		 * while another CPU was spinning on that same item in llist_del_first.
+ 		 *
+-		 * This is pretty unlikely, but just in case  wait for an xlist grace period
++		 * This is pretty unlikely, but just in case  wait for an llist grace period
+ 		 * here before adding anything back into the clean list.
  		 */
- 		return false;
+ 		wait_clean_list_grace();
+ 
+-		list_append_to_xlist(pool, &unmap_list, &clean_xlist, &clean_tail);
++		list_to_llist_nodes(pool, &unmap_list, &clean_nodes, &clean_tail);
+ 		if (ibmr_ret)
+-			refill_local(pool, &clean_xlist, ibmr_ret);
++			*ibmr_ret = llist_entry(clean_nodes, struct rds_ib_mr, llnode);
+ 
+-		/* refill_local may have emptied our list */
+-		if (!xlist_empty(&clean_xlist))
+-			xlist_add(clean_xlist.next, clean_tail, &pool->clean_list);
++		/* more than one entry in llist nodes */
++		if (clean_nodes->next)
++			llist_add_batch(clean_nodes->next, clean_tail, &pool->clean_list);
+ 
  	}
  
--	__irq_work_queue(entry);
-+	__irq_work_queue(work);
- 	return true;
- }
- EXPORT_SYMBOL_GPL(irq_work_queue);
-@@ -120,34 +101,35 @@ EXPORT_SYMBOL_GPL(irq_work_queue);
-  */
- void irq_work_run(void)
- {
--	struct irq_work *list, **head;
-+	struct irq_work_list *irq_work_list;
-+	struct llist_node *llnode;
-+	struct irq_work *work;
+@@ -731,9 +719,9 @@ void rds_ib_free_mr(void *trans_private,
  
--	head = &__get_cpu_var(irq_work_list);
--	if (*head == NULL)
-+	irq_work_list = &__get_cpu_var(irq_work_lists);
-+	if (llist_empty(&irq_work_list->llist))
- 		return;
+ 	/* Return it to the pool's free list */
+ 	if (ibmr->remap_count >= pool->fmr_attr.max_maps)
+-		xlist_add(&ibmr->xlist, &ibmr->xlist, &pool->drop_list);
++		llist_add(&ibmr->llnode, &pool->drop_list);
+ 	else
+-		xlist_add(&ibmr->xlist, &ibmr->xlist, &pool->free_list);
++		llist_add(&ibmr->llnode, &pool->free_list);
  
- 	BUG_ON(!in_irq());
- 	BUG_ON(!irqs_disabled());
- 
--	list = xchg(head, NULL);
--	while (list != NULL) {
--		struct irq_work *entry = list;
-+	clear_bit(LIST_NONEMPTY_BIT, &irq_work_list->flags);
-+	llnode = llist_del_all(&irq_work_list->llist);
-+	while (llnode != NULL) {
-+		work = llist_entry(llnode, struct irq_work, llnode);
- 
--		list = irq_work_next(list);
-+		llnode = llnode->next;
- 
- 		/*
--		 * Clear the PENDING bit, after this point the @entry
-+		 * Clear the PENDING bit, after this point the @work
- 		 * can be re-used.
- 		 */
--		entry->next = next_flags(NULL, IRQ_WORK_BUSY);
--		entry->func(entry);
-+		work->flags = IRQ_WORK_BUSY;
-+		work->func(work);
- 		/*
- 		 * Clear the BUSY bit and return to the free state if
- 		 * no-one else claimed it meanwhile.
- 		 */
--		(void)cmpxchg(&entry->next,
--			      next_flags(NULL, IRQ_WORK_BUSY),
--			      NULL);
-+		(void)cmpxchg(&work->flags, IRQ_WORK_BUSY, 0);
- 	}
- }
- EXPORT_SYMBOL_GPL(irq_work_run);
-@@ -156,11 +138,11 @@ EXPORT_SYMBOL_GPL(irq_work_run);
-  * Synchronize against the irq_work @entry, ensures the entry is not
-  * currently in use.
-  */
--void irq_work_sync(struct irq_work *entry)
-+void irq_work_sync(struct irq_work *work)
- {
- 	WARN_ON_ONCE(irqs_disabled());
- 
--	while (irq_work_is_set(entry, IRQ_WORK_BUSY))
-+	while (work->flags & IRQ_WORK_BUSY)
- 		cpu_relax();
- }
- EXPORT_SYMBOL_GPL(irq_work_sync);
+ 	atomic_add(ibmr->sg_len, &pool->free_pinned);
+ 	atomic_inc(&pool->dirty_count);
+--- a/net/rds/xlist.h
++++ /dev/null
+@@ -1,80 +0,0 @@
+-#ifndef _LINUX_XLIST_H
+-#define _LINUX_XLIST_H
+-
+-#include <linux/stddef.h>
+-#include <linux/poison.h>
+-#include <linux/prefetch.h>
+-#include <asm/system.h>
+-
+-struct xlist_head {
+-	struct xlist_head *next;
+-};
+-
+-static inline void INIT_XLIST_HEAD(struct xlist_head *list)
+-{
+-	list->next = NULL;
+-}
+-
+-static inline int xlist_empty(struct xlist_head *head)
+-{
+-	return head->next == NULL;
+-}
+-
+-static inline void xlist_add(struct xlist_head *new, struct xlist_head *tail,
+-			     struct xlist_head *head)
+-{
+-	struct xlist_head *cur;
+-	struct xlist_head *check;
+-
+-	while (1) {
+-		cur = head->next;
+-		tail->next = cur;
+-		check = cmpxchg(&head->next, cur, new);
+-		if (check == cur)
+-			break;
+-	}
+-}
+-
+-static inline struct xlist_head *xlist_del_head(struct xlist_head *head)
+-{
+-	struct xlist_head *cur;
+-	struct xlist_head *check;
+-	struct xlist_head *next;
+-
+-	while (1) {
+-		cur = head->next;
+-		if (!cur)
+-			goto out;
+-
+-		next = cur->next;
+-		check = cmpxchg(&head->next, cur, next);
+-		if (check == cur)
+-			goto out;
+-	}
+-out:
+-	return cur;
+-}
+-
+-static inline struct xlist_head *xlist_del_head_fast(struct xlist_head *head)
+-{
+-	struct xlist_head *cur;
+-
+-	cur = head->next;
+-	if (!cur)
+-		return NULL;
+-
+-	head->next = cur->next;
+-	return cur;
+-}
+-
+-static inline void xlist_splice(struct xlist_head *list,
+-				struct xlist_head *head)
+-{
+-	struct xlist_head *cur;
+-
+-	WARN_ON(head->next);
+-	cur = xchg(&list->next, NULL);
+-	head->next = cur;
+-}
+-
+-#endif
