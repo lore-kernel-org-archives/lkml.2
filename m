@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755Ab0LWCpj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 21:45:39 -0500
-Received: from mga09.intel.com ([134.134.136.24]:45084 "EHLO mga09.intel.com"
+	id S1752921Ab0LWCpr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 21:45:47 -0500
+Received: from mga14.intel.com ([143.182.124.37]:41617 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751661Ab0LWCpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 21:45:38 -0500
+	id S1752794Ab0LWCpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 21:45:45 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,217,1291622400"; 
-   d="scan'208";a="586504854"
-Subject: [PATCH 2/2]block cfq: don't use atomic_t for cfq_group
+   d="scan'208";a="365612826"
+Subject: [PATCH 1/2]block cfq: don't use atomic_t for cfq_queue
 From: Shaohua Li <shaohua.li@intel.com>
 To: lkml <linux-kernel@vger.kernel.org>
 Cc: Jens Axboe <jaxboe@fusionio.com>, vgoyal@redhat.com, jmoyer@redhat.com
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Dec 2010 10:45:35 +0800
-Message-ID: <1293072335.10593.22.camel@sli10-conroe>
+Date: Thu, 23 Dec 2010 10:45:33 +0800
+Message-ID: <1293072333.10593.21.camel@sli10-conroe>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -23,108 +23,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cfq_group->ref is used with queue_lock hold, the only exception is
-cfq_set_request, which looks like a bug to me, so ref doesn't need
-to be an atomic and atomic operation is slower.
+cfq_queue->ref is used with queue_lock hold, so ref doesn't need to be an atomic
+and atomic operation is slower.
 
 Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 
 ---
- block/cfq-iosched.c |   21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+ block/cfq-iosched.c |   27 ++++++++++++++++-----------
+ 1 file changed, 16 insertions(+), 11 deletions(-)
 
 Index: linux/block/cfq-iosched.c
 ===================================================================
---- linux.orig/block/cfq-iosched.c	2010-12-23 10:22:21.000000000 +0800
-+++ linux/block/cfq-iosched.c	2010-12-23 10:23:03.000000000 +0800
-@@ -209,7 +209,7 @@ struct cfq_group {
- 	struct blkio_group blkg;
- #ifdef CONFIG_CFQ_GROUP_IOSCHED
- 	struct hlist_node cfqd_node;
+--- linux.orig/block/cfq-iosched.c	2010-12-22 21:14:15.000000000 +0800
++++ linux/block/cfq-iosched.c	2010-12-23 10:44:23.000000000 +0800
+@@ -97,7 +97,7 @@ struct cfq_rb_root {
+  */
+ struct cfq_queue {
+ 	/* reference count */
 -	atomic_t ref;
 +	int ref;
- #endif
- 	/* number of requests that are on the dispatch list or inside driver */
- 	int dispatched;
-@@ -1026,7 +1026,7 @@ cfq_find_alloc_cfqg(struct cfq_data *cfq
- 	 * elevator which will be dropped by either elevator exit
- 	 * or cgroup deletion path depending on who is exiting first.
+ 	/* various state flags, see below */
+ 	unsigned int flags;
+ 	/* parent cfq_data */
+@@ -2040,7 +2040,7 @@ static int cfqq_process_refs(struct cfq_
+ 	int process_refs, io_refs;
+ 
+ 	io_refs = cfqq->allocated[READ] + cfqq->allocated[WRITE];
+-	process_refs = atomic_read(&cfqq->ref) - io_refs;
++	process_refs = cfqq->ref - io_refs;
+ 	BUG_ON(process_refs < 0);
+ 	return process_refs;
+ }
+@@ -2080,10 +2080,10 @@ static void cfq_setup_merge(struct cfq_q
  	 */
--	atomic_set(&cfqg->ref, 1);
-+	cfqg->ref = 1;
- 
- 	/*
- 	 * Add group onto cgroup list. It might happen that bdi->dev is
-@@ -1071,7 +1071,7 @@ static struct cfq_group *cfq_get_cfqg(st
- 
- static inline struct cfq_group *cfq_ref_get_cfqg(struct cfq_group *cfqg)
- {
--	atomic_inc(&cfqg->ref);
-+	cfqg->ref++;
- 	return cfqg;
+ 	if (new_process_refs >= process_refs) {
+ 		cfqq->new_cfqq = new_cfqq;
+-		atomic_add(process_refs, &new_cfqq->ref);
++		new_cfqq->ref += process_refs;
+ 	} else {
+ 		new_cfqq->new_cfqq = cfqq;
+-		atomic_add(new_process_refs, &cfqq->ref);
++		cfqq->ref += new_process_refs;
+ 	}
  }
  
-@@ -1083,7 +1083,7 @@ static void cfq_link_cfqq_cfqg(struct cf
+@@ -2538,9 +2538,10 @@ static void cfq_put_queue(struct cfq_que
+ 	struct cfq_data *cfqd = cfqq->cfqd;
+ 	struct cfq_group *cfqg, *orig_cfqg;
  
- 	cfqq->cfqg = cfqg;
- 	/* cfqq reference on cfqg */
--	atomic_inc(&cfqq->cfqg->ref);
-+	cfqq->cfqg->ref++;
- }
+-	BUG_ON(atomic_read(&cfqq->ref) <= 0);
++	BUG_ON(cfqq->ref <= 0);
  
- static void cfq_put_cfqg(struct cfq_group *cfqg)
-@@ -1091,8 +1091,9 @@ static void cfq_put_cfqg(struct cfq_grou
- 	struct cfq_rb_root *st;
- 	int i, j;
- 
--	BUG_ON(atomic_read(&cfqg->ref) <= 0);
--	if (!atomic_dec_and_test(&cfqg->ref))
-+	BUG_ON(cfqg->ref <= 0);
-+	cfqg->ref--;
-+	if (cfqg->ref)
+-	if (!atomic_dec_and_test(&cfqq->ref))
++	cfqq->ref--;
++	if (cfqq->ref)
  		return;
- 	for_each_cfqg_st(cfqg, i, j, st)
- 		BUG_ON(!RB_EMPTY_ROOT(&st->rb) || st->active != NULL);
-@@ -1200,7 +1201,7 @@ static void cfq_service_tree_add(struct
- 			cfq_group_service_tree_del(cfqd, cfqq->cfqg);
- 		cfqq->orig_cfqg = cfqq->cfqg;
- 		cfqq->cfqg = &cfqd->root_group;
--		atomic_inc(&cfqd->root_group.ref);
-+		cfqd->root_group.ref++;
- 		group_changed = 1;
- 	} else if (!cfqd->cfq_group_isolation
- 		   && cfqq_type(cfqq) == SYNC_WORKLOAD && cfqq->orig_cfqg) {
-@@ -3645,6 +3646,7 @@ cfq_set_request(struct request_queue *q,
- 	const bool is_sync = rq_is_sync(rq);
- 	struct cfq_queue *cfqq;
- 	unsigned long flags;
-+	struct cfq_group *cfqg;
  
- 	might_sleep_if(gfp_mask & __GFP_WAIT);
+ 	cfq_log_cfqq(cfqd, cfqq, "put_queue");
+@@ -2843,7 +2844,7 @@ static void cfq_init_cfqq(struct cfq_dat
+ 	RB_CLEAR_NODE(&cfqq->p_node);
+ 	INIT_LIST_HEAD(&cfqq->fifo);
  
-@@ -3683,12 +3685,13 @@ new_queue:
+-	atomic_set(&cfqq->ref, 0);
++	cfqq->ref = 0;
+ 	cfqq->cfqd = cfqd;
+ 
+ 	cfq_mark_cfqq_prio_changed(cfqq);
+@@ -2979,11 +2980,11 @@ cfq_get_queue(struct cfq_data *cfqd, boo
+ 	 * pin the queue now that it's allocated, scheduler exit will prune it
+ 	 */
+ 	if (!is_sync && !(*async_cfqq)) {
+-		atomic_inc(&cfqq->ref);
++		cfqq->ref++;
+ 		*async_cfqq = cfqq;
+ 	}
+ 
+-	atomic_inc(&cfqq->ref);
++	cfqq->ref++;
+ 	return cfqq;
+ }
+ 
+@@ -3681,7 +3682,7 @@ new_queue:
+ 	}
  
  	cfqq->allocated[rw]++;
- 	cfqq->ref++;
-+	cfqg = cfq_ref_get_cfqg(cfqq->cfqg);
+-	atomic_inc(&cfqq->ref);
++	cfqq->ref++;
  
  	spin_unlock_irqrestore(q->queue_lock, flags);
  
- 	rq->elevator_private = cic;
- 	rq->elevator_private2 = cfqq;
--	rq->elevator_private3 = cfq_ref_get_cfqg(cfqq->cfqg);
-+	rq->elevator_private3 = cfqg;
- 	return 0;
+@@ -3862,6 +3863,10 @@ static void *cfq_init_queue(struct reque
+ 	if (!cfqd)
+ 		return NULL;
  
- queue_fail:
-@@ -3886,7 +3889,7 @@ static void *cfq_init_queue(struct reque
- 	 * Take a reference to root group which we never drop. This is just
- 	 * to make sure that cfq_put_cfqg() does not try to kfree root group
++	/*
++	 * Don't need take queue_lock in the routine, since we are
++	 * initializing the ioscheduler, and nobody is using cfqd
++	 */
+ 	cfqd->cic_index = i;
+ 
+ 	/* Init root service tree */
+@@ -3901,7 +3906,7 @@ static void *cfq_init_queue(struct reque
+ 	 * will not attempt to free it.
  	 */
--	atomic_set(&cfqg->ref, 1);
-+	cfqg->ref = 1;
- 	rcu_read_lock();
- 	cfq_blkiocg_add_blkio_group(&blkio_root_cgroup, &cfqg->blkg,
- 					(void *)cfqd, 0);
+ 	cfq_init_cfqq(cfqd, &cfqd->oom_cfqq, 1, 0);
+-	atomic_inc(&cfqd->oom_cfqq.ref);
++	cfqd->oom_cfqq.ref++;
+ 	cfq_link_cfqq_cfqg(&cfqd->oom_cfqq, &cfqd->root_group);
+ 
+ 	INIT_LIST_HEAD(&cfqd->cic_list);
 
 
