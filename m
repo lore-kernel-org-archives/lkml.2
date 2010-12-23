@@ -1,180 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292Ab0LWQBJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 11:01:09 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47638 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119Ab0LWQBG (ORCPT
+	id S1753413Ab0LWQIj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 11:08:39 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:35879 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753053Ab0LWQIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 11:01:06 -0500
+	Thu, 23 Dec 2010 11:08:37 -0500
+Date: Thu, 23 Dec 2010 11:08:36 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Anoop P A <anoop.pa@gmail.com>
+cc: Ralf Baechle <ralf@linux-mips.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Anatolij Gustschin <agust@denx.de>, Anand Gadiyar <gadiyar@ti.com>,
+        <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Oliver Neukum <oneukum@suse.de>, Hans de Goede <hdegoede@redhat.com>,
+        Paul Mortier <mortier@btinternet.com>, Andiry Xu <andiry.xu@amd.com>
+Subject: Re: [PATCH V2 2/2] MSP onchip root hub over current quirk.
+In-Reply-To: <1293096541.27661.46.camel@paanoop1-desktop>
+Message-ID: <Pine.LNX.4.44L0.1012231104060.5617-100000@netrider.rowland.org>
 MIME-Version: 1.0
-X-Originating-IP: [87.194.19.206]
-In-Reply-To: <20101223154458.GB17788@tango.0pointer.de>
-References: <AANLkTik052sWOtqNyVdg6g6+cvo-NE-TBdSGdmmp_7en@mail.gmail.com>
-	<20101221095625.GA4438@tango.0pointer.de>
-	<AANLkTi=GGGP4vK1hOBn-+oCAM1gFXg_XUfLeTFM2CqA_@mail.gmail.com>
-	<20101223154458.GB17788@tango.0pointer.de>
-Date: Thu, 23 Dec 2010 16:00:54 +0000
-Message-ID: <AANLkTim_nTOD20B1W=_1nvXFBBVKnJYaNTo1ZfBAnxVV@mail.gmail.com>
-Subject: Re: [PATCH] exit: PR_SET_ANCHOR for marking processes as reapers for
- child processes
-From: Scott James Remnant <scott@netsplit.com>
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=20cf3054a6bb7d37b7049815f92a
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf3054a6bb7d37b7049815f92a
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Thu, 23 Dec 2010, Anoop P A wrote:
 
-On Thu, Dec 23, 2010 at 3:44 PM, Lennart Poettering
-<mzxreary@0pointer.de> wrote:
-> On Tue, 21.12.10 12:05, Scott James Remnant (scott@netsplit.com) wrote:
->
->> > PID namespaces primarily provide an independent PID numbering scheme f=
-or
->> > a subset of processes, i.e. so that identical may PIDs refer to differ=
-ent
->> > processes depending on the namespace they are running in. As a side
->> > effect this also provides init-like behaviour for processes that aren'=
-t
->> > the original PID 1 of the operating system. For systemd we are only
->> > interested in this side effect, but are not interested at all in the
->> > renumbering of processes, and in fact would even really dislike if it
->> > happened. That's why PR_SET_ANCHOR is useful: it gives us init-like
->> > behaviour without renaming all processes.
->> >
->> Right, but I don't get why you need this behavior to supervise either
->> system or user processes. =A0You already get all the functionality you
->> need to track processes via either cgroups or the proc connector (or a
->> combination of both).
->
-> Well, we want a clean way to get access to the full siginfo_t of the
-> SIGCHLD for the main process of a service. the proc connector is awful
-> and cgroups does not pass siginfo_t's back to userspace, hence the
-> cleanest way to get this done properly and beautifully is to make the
-> session systemd a mini-init via PR_SET_ANCHOR, because then the per-user
-> systemd's and the per-system systemd can use the exact same code to
-> handle process managment.
->
-Ah, if you're after the siginfo_t this makes more sense.
+> > > +				usb_detect_quirks(hdev);
+> > 
+> > This line is wrong.  usb_detect_quirks() gets called only once per 
+> > device, when the device is initialized.  Besides, you probably want to 
+> > use a hub-specific flag for this rather than a device-specific flag.
+> 
+> Can you point me to an example for the recommended way of doing the
+> hack. I don't have much exposure to USB subsystem.
 
-You may or may not be interested in a patch I did a couple of years
-ago, this also spliced into the same kind of code, but to notify init
-via signal when it got given a new process via adoption.  I assume
-this would work with a PR_SET_ANCHOR'd mini-init too?
+One example, suitable for PCI devices, can be found in 
+drivers/usb/host/ehci-pci.c:ehci_pci_setup().
 
-(Apologies if the attachment screws up, still getting used to gmail :p)
+However the best approach would be for you to avoid adding any
+special-purpose code at all.  Is it possible to handle
+overcurrent-change events in a way that will work just as well for
+normal hubs as for your MSP root hub?
 
-Scott
+Alan Stern
 
---20cf3054a6bb7d37b7049815f92a
-Content-Type: text/x-patch; charset=US-ASCII; name="notify-adoption-simple.patch"
-Content-Disposition: attachment; filename="notify-adoption-simple.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gi1ua8dz0
-
-ZGlmZiAtLWdpdCBhL2ZzL2V4ZWMuYyBiL2ZzL2V4ZWMuYwppbmRleCBjNWYxYTkyLi4wN2E4Nzgy
-IDEwMDY0NAotLS0gYS9mcy9leGVjLmMKKysrIGIvZnMvZXhlYy5jCkBAIC0xMDExLDYgKzEwMTEs
-NyBAQCBpbnQgZmx1c2hfb2xkX2V4ZWMoc3RydWN0IGxpbnV4X2JpbnBybSAqIGJwcm0pCiAJCXN1
-aWRfa2V5cyhjdXJyZW50KTsKIAkJc2V0X2R1bXBhYmxlKGN1cnJlbnQtPm1tLCBzdWlkX2R1bXBh
-YmxlKTsKIAkJY3VycmVudC0+cGRlYXRoX3NpZ25hbCA9IDA7CisJCWN1cnJlbnQtPmFkb3B0X3Np
-Z25hbCA9IDA7CiAJfSBlbHNlIGlmIChmaWxlX3Blcm1pc3Npb24oYnBybS0+ZmlsZSwgTUFZX1JF
-QUQpIHx8CiAJCQkoYnBybS0+aW50ZXJwX2ZsYWdzICYgQklOUFJNX0ZMQUdTX0VORk9SQ0VfTk9O
-RFVNUCkpIHsKIAkJc3VpZF9rZXlzKGN1cnJlbnQpOwpAQCAtMTA5OSw2ICsxMTAwLDcgQEAgdm9p
-ZCBjb21wdXRlX2NyZWRzKHN0cnVjdCBsaW51eF9iaW5wcm0gKmJwcm0pCiAJaWYgKGJwcm0tPmVf
-dWlkICE9IGN1cnJlbnQtPnVpZCkgewogCQlzdWlkX2tleXMoY3VycmVudCk7CiAJCWN1cnJlbnQt
-PnBkZWF0aF9zaWduYWwgPSAwOworCQljdXJyZW50LT5hZG9wdF9zaWduYWwgPSAwOwogCX0KIAll
-eGVjX2tleXMoY3VycmVudCk7CiAKZGlmZiAtLWdpdCBhL2luY2x1ZGUvbGludXgvcHJjdGwuaCBi
-L2luY2x1ZGUvbGludXgvcHJjdGwuaAppbmRleCA0OGQ4ODdlLi4xZmExYjc1IDEwMDY0NAotLS0g
-YS9pbmNsdWRlL2xpbnV4L3ByY3RsLmgKKysrIGIvaW5jbHVkZS9saW51eC9wcmN0bC5oCkBAIC04
-NSw0ICs4NSw4IEBACiAjZGVmaW5lIFBSX1NFVF9USU1FUlNMQUNLIDI5CiAjZGVmaW5lIFBSX0dF
-VF9USU1FUlNMQUNLIDMwCiAKKy8qIFNldC9nZXQgbm90aWZpY2F0aW9uIG9mIGFkb3B0aW9uIGJ5
-IHNpZ25hbCAqLworI2RlZmluZSBQUl9TRVRfQURPUFRTSUcgMzEgIC8qIFNlY29uZCBhcmcgaXMg
-YSBzaWduYWwgKi8KKyNkZWZpbmUgUFJfR0VUX0FET1BUU0lHIDMyICAvKiBTZWNvbmQgYXJnIGlz
-IGEgcHRyIHRvIHJldHVybiB0aGUgc2lnbmFsICovCisKICNlbmRpZiAvKiBfTElOVVhfUFJDVExf
-SCAqLwpkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9zY2hlZC5oIGIvaW5jbHVkZS9saW51eC9z
-Y2hlZC5oCmluZGV4IDU1ZTMwZDEuLmJjZDJhZjMgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvbGludXgv
-c2NoZWQuaAorKysgYi9pbmNsdWRlL2xpbnV4L3NjaGVkLmgKQEAgLTExMzMsNiArMTEzMyw3IEBA
-IHN0cnVjdCB0YXNrX3N0cnVjdCB7CiAJaW50IGV4aXRfc3RhdGU7CiAJaW50IGV4aXRfY29kZSwg
-ZXhpdF9zaWduYWw7CiAJaW50IHBkZWF0aF9zaWduYWw7ICAvKiAgVGhlIHNpZ25hbCBzZW50IHdo
-ZW4gdGhlIHBhcmVudCBkaWVzICAqLworCWludCBhZG9wdF9zaWduYWw7ICAvKiAgVGhlIHNpZ25h
-bCBzZW50IHdoZW4gYSBwcm9jZXNzIGlzIHJlcGFyZW50ZWQgICovCiAJLyogPz8/ICovCiAJdW5z
-aWduZWQgaW50IHBlcnNvbmFsaXR5OwogCXVuc2lnbmVkIGRpZF9leGVjOjE7CkBAIC0xODI5LDYg
-KzE4MzAsNyBAQCBleHRlcm4gaW50IGtpbGxfcGdycChzdHJ1Y3QgcGlkICpwaWQsIGludCBzaWcs
-IGludCBwcml2KTsKIGV4dGVybiBpbnQga2lsbF9waWQoc3RydWN0IHBpZCAqcGlkLCBpbnQgc2ln
-LCBpbnQgcHJpdik7CiBleHRlcm4gaW50IGtpbGxfcHJvY19pbmZvKGludCwgc3RydWN0IHNpZ2lu
-Zm8gKiwgcGlkX3QpOwogZXh0ZXJuIGludCBkb19ub3RpZnlfcGFyZW50KHN0cnVjdCB0YXNrX3N0
-cnVjdCAqLCBpbnQpOworZXh0ZXJuIHZvaWQgZG9fbm90aWZ5X3BhcmVudF9hZG9wdGVkKHN0cnVj
-dCB0YXNrX3N0cnVjdCAqLCBzdHJ1Y3QgdGFza19zdHJ1Y3QgKik7CiBleHRlcm4gdm9pZCBmb3Jj
-ZV9zaWcoaW50LCBzdHJ1Y3QgdGFza19zdHJ1Y3QgKik7CiBleHRlcm4gdm9pZCBmb3JjZV9zaWdf
-c3BlY2lmaWMoaW50LCBzdHJ1Y3QgdGFza19zdHJ1Y3QgKik7CiBleHRlcm4gaW50IHNlbmRfc2ln
-KGludCwgc3RydWN0IHRhc2tfc3RydWN0ICosIGludCk7CmRpZmYgLS1naXQgYS9rZXJuZWwvZXhp
-dC5jIGIva2VybmVsL2V4aXQuYwppbmRleCAyZDhiZTdlLi44MTNhMjMyIDEwMDY0NAotLS0gYS9r
-ZXJuZWwvZXhpdC5jCisrKyBiL2tlcm5lbC9leGl0LmMKQEAgLTgxMyw2ICs4MTMsOSBAQCBzdGF0
-aWMgdm9pZCByZXBhcmVudF90aHJlYWQoc3RydWN0IHRhc2tfc3RydWN0ICpwLCBzdHJ1Y3QgdGFz
-a19zdHJ1Y3QgKmZhdGhlcikKIAkJLyogV2UgYWxyZWFkeSBob2xkIHRoZSB0YXNrbGlzdF9sb2Nr
-IGhlcmUuICAqLwogCQlncm91cF9zZW5kX3NpZ19pbmZvKHAtPnBkZWF0aF9zaWduYWwsIFNFTkRf
-U0lHX05PSU5GTywgcCk7CiAKKwlpZiAocC0+cmVhbF9wYXJlbnQtPmFkb3B0X3NpZ25hbCkKKwkJ
-ZG9fbm90aWZ5X3BhcmVudF9hZG9wdGVkKHAsIGZhdGhlcik7CisKIAlsaXN0X21vdmVfdGFpbCgm
-cC0+c2libGluZywgJnAtPnJlYWxfcGFyZW50LT5jaGlsZHJlbik7CiAKIAkvKiBJZiB0aGlzIGlz
-IGEgdGhyZWFkZWQgcmVwYXJlbnQgdGhlcmUgaXMgbm8gbmVlZCB0bwpkaWZmIC0tZ2l0IGEva2Vy
-bmVsL3NpZ25hbC5jIGIva2VybmVsL3NpZ25hbC5jCmluZGV4IDQ1MzBmYzYuLjQwMjI4ZTIgMTAw
-NjQ0Ci0tLSBhL2tlcm5lbC9zaWduYWwuYworKysgYi9rZXJuZWwvc2lnbmFsLmMKQEAgLTE0NzQs
-NiArMTQ3NCw0MyBAQCBzdGF0aWMgdm9pZCBkb19ub3RpZnlfcGFyZW50X2NsZHN0b3Aoc3RydWN0
-IHRhc2tfc3RydWN0ICp0c2ssIGludCB3aHkpCiAJc3Bpbl91bmxvY2tfaXJxcmVzdG9yZSgmc2ln
-aGFuZC0+c2lnbG9jaywgZmxhZ3MpOwogfQogCisvKiBMZXQgaW5pdCBrbm93IHRoYXQgaXQgaGFz
-IGFkb3B0ZWQgYSBuZXcgY2hpbGQgKi8KK3ZvaWQgZG9fbm90aWZ5X3BhcmVudF9hZG9wdGVkKHN0
-cnVjdCB0YXNrX3N0cnVjdCAqdHNrLCBzdHJ1Y3QgdGFza19zdHJ1Y3QgKmZhdGhlcikKK3sKKwlz
-dHJ1Y3Qgc2lnaW5mbyBpbmZvOworCXVuc2lnbmVkIGxvbmcgZmxhZ3M7CisJc3RydWN0IHRhc2tf
-c3RydWN0ICpyZWFwZXI7CisJc3RydWN0IHNpZ2hhbmRfc3RydWN0ICpzaWdoYW5kOworCWludCBy
-ZXQ7CisKKwlyZWFwZXIgPSB0c2stPnJlYWxfcGFyZW50OworCisJbWVtc2V0ICgmaW5mbywgMCwg
-c2l6ZW9mIGluZm8pOworCWluZm8uc2lfc2lnbm8gPSByZWFwZXItPmFkb3B0X3NpZ25hbDsKKwkv
-KgorCSAqIHNldCBjb2RlIHRvIHRoZSBzYW1lIHJhbmdlIGFzIFNJR0NITEQgc28gdGhlIHJpZ2h0
-IGJpdHMgb2YKKwkgKiBzaWdpbmZvX3QgZ2V0IGNvcGllZCwgdG8gdXNlcnNwYWNlIHRoaXMgd2ls
-bCBhcHBlYXIgYXMgc2lfY29kZT0wCisJICovCisJaW5mby5zaV9jb2RlID0gX19TSV9DSExEOwor
-CS8qCisJICogc2VlIGNvbW1lbnQgaW4gZG9fbm90aWZ5X3BhcmVudCgpIGFib3V0IHRoZSBmb2xs
-b3dpbmcgNCBsaW5lcworCSAqLworCXJjdV9yZWFkX2xvY2soKTsKKwlpbmZvLnNpX3BpZCA9IHRh
-c2tfcGlkX25yX25zKHRzaywgcmVhcGVyLT5uc3Byb3h5LT5waWRfbnMpOworCWluZm8uc2lfc3Rh
-dHVzID0gdGFza19waWRfbnJfbnMoZmF0aGVyLCByZWFwZXItPm5zcHJveHktPnBpZF9ucyk7CisJ
-cmN1X3JlYWRfdW5sb2NrKCk7CisKKwlpbmZvLnNpX3VpZCA9IHRzay0+dWlkOworCisJaW5mby5z
-aV91dGltZSA9IGNwdXRpbWVfdG9fY2xvY2tfdCh0c2stPnV0aW1lKTsKKwlpbmZvLnNpX3N0aW1l
-ID0gY3B1dGltZV90b19jbG9ja190KHRzay0+c3RpbWUpOworCisJc2lnaGFuZCA9IHJlYXBlci0+
-c2lnaGFuZDsKKwlzcGluX2xvY2tfaXJxc2F2ZSgmc2lnaGFuZC0+c2lnbG9jaywgZmxhZ3MpOwor
-CV9fZ3JvdXBfc2VuZF9zaWdfaW5mbyhyZWFwZXItPmFkb3B0X3NpZ25hbCwgJmluZm8sIHJlYXBl
-cik7CisJc3Bpbl91bmxvY2tfaXJxcmVzdG9yZSgmc2lnaGFuZC0+c2lnbG9jaywgZmxhZ3MpOwor
-fQorCiBzdGF0aWMgaW5saW5lIGludCBtYXlfcHRyYWNlX3N0b3Aodm9pZCkKIHsKIAlpZiAoIWxp
-a2VseShjdXJyZW50LT5wdHJhY2UgJiBQVF9QVFJBQ0VEKSkKZGlmZiAtLWdpdCBhL2tlcm5lbC9z
-eXMuYyBiL2tlcm5lbC9zeXMuYwppbmRleCAzMWRlYmE4Li4xNzIwMDUzIDEwMDY0NAotLS0gYS9r
-ZXJuZWwvc3lzLmMKKysrIGIva2VybmVsL3N5cy5jCkBAIC0xNzI2LDYgKzE3MjYsMTYgQEAgYXNt
-bGlua2FnZSBsb25nIHN5c19wcmN0bChpbnQgb3B0aW9uLCB1bnNpZ25lZCBsb25nIGFyZzIsIHVu
-c2lnbmVkIGxvbmcgYXJnMywKIAkJCWVsc2UKIAkJCQljdXJyZW50LT50aW1lcl9zbGFja19ucyA9
-IGFyZzI7CiAJCQlicmVhazsKKwkJY2FzZSBQUl9TRVRfQURPUFRTSUc6CisJCQlpZiAoIXZhbGlk
-X3NpZ25hbChhcmcyKSkgeworCQkJCWVycm9yID0gLUVJTlZBTDsKKwkJCQlicmVhazsKKwkJCX0K
-KwkJCWN1cnJlbnQtPmFkb3B0X3NpZ25hbCA9IGFyZzI7CisJCQlicmVhazsKKwkJY2FzZSBQUl9H
-RVRfQURPUFRTSUc6CisJCQllcnJvciA9IHB1dF91c2VyKGN1cnJlbnQtPmFkb3B0X3NpZ25hbCwg
-KGludCBfX3VzZXIgKilhcmcyKTsKKwkJCWJyZWFrOwogCQlkZWZhdWx0OgogCQkJZXJyb3IgPSAt
-RUlOVkFMOwogCQkJYnJlYWs7CmRpZmYgLS1naXQgYS9zZWN1cml0eS9jb21tb25jYXAuYyBiL3Nl
-Y3VyaXR5L2NvbW1vbmNhcC5jCmluZGV4IDZjYmVjMTEuLmEyZGEzYWIgMTAwNjQ0Ci0tLSBhL3Nl
-Y3VyaXR5L2NvbW1vbmNhcC5jCisrKyBiL3NlY3VyaXR5L2NvbW1vbmNhcC5jCkBAIC0zNjUsNiAr
-MzY1LDcgQEAgdm9pZCBjYXBfYnBybV9hcHBseV9jcmVkcyAoc3RydWN0IGxpbnV4X2JpbnBybSAq
-YnBybSwgaW50IHVuc2FmZSkKIAkJCSAgY3VycmVudC0+Y2FwX3Blcm1pdHRlZCkpIHsKIAkJc2V0
-X2R1bXBhYmxlKGN1cnJlbnQtPm1tLCBzdWlkX2R1bXBhYmxlKTsKIAkJY3VycmVudC0+cGRlYXRo
-X3NpZ25hbCA9IDA7CisJCWN1cnJlbnQtPmFkb3B0X3NpZ25hbCA9IDA7CiAKIAkJaWYgKHVuc2Fm
-ZSAmIH5MU01fVU5TQUZFX1BUUkFDRV9DQVApIHsKIAkJCWlmICghY2FwYWJsZShDQVBfU0VUVUlE
-KSkgewpkaWZmIC0tZ2l0IGEvc2VjdXJpdHkvc2VsaW51eC9ob29rcy5jIGIvc2VjdXJpdHkvc2Vs
-aW51eC9ob29rcy5jCmluZGV4IDc1Nzc3Y2IuLjhmMDg5YzggMTAwNjQ0Ci0tLSBhL3NlY3VyaXR5
-L3NlbGludXgvaG9va3MuYworKysgYi9zZWN1cml0eS9zZWxpbnV4L2hvb2tzLmMKQEAgLTIyODAs
-OCArMjI4MCwxMCBAQCBzdGF0aWMgdm9pZCBzZWxpbnV4X2Jwcm1fcG9zdF9hcHBseV9jcmVkcyhz
-dHJ1Y3QgbGludXhfYmlucHJtICpicHJtKQogCQlzcGluX3VubG9ja19pcnEoJmN1cnJlbnQtPnNp
-Z2hhbmQtPnNpZ2xvY2spOwogCX0KIAotCS8qIEFsd2F5cyBjbGVhciBwYXJlbnQgZGVhdGggc2ln
-bmFsIG9uIFNJRCB0cmFuc2l0aW9ucy4gKi8KKwkvKiBBbHdheXMgY2xlYXIgcGFyZW50IGRlYXRo
-IHNpZ25hbCBhbmQgYWRvcHRpb24gbm90aWZpY2F0aW9uCisJICogb24gU0lEIHRyYW5zaXRpb25z
-LiAqLwogCWN1cnJlbnQtPnBkZWF0aF9zaWduYWwgPSAwOworCWN1cnJlbnQtPmFkb3B0X3NpZ25h
-bCA9IDA7CiAKIAkvKiBDaGVjayB3aGV0aGVyIHRoZSBuZXcgU0lEIGNhbiBpbmhlcml0IHJlc291
-cmNlIGxpbWl0cwogCSAgIGZyb20gdGhlIG9sZCBTSUQuICBJZiBub3QsIHJlc2V0IGFsbCBzb2Z0
-IGxpbWl0cyB0bwo=
---20cf3054a6bb7d37b7049815f92a--
