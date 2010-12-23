@@ -1,86 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791Ab0LWJF1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 04:05:27 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:42408 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645Ab0LWJFW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 04:05:22 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Subject: Re: [RFC/PATCH v7 03/12] media: Entities, pads and links
-Date: Thu, 23 Dec 2010 10:05:34 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r3; KDE/4.5.3; x86_64; ; )
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
-        clemens@ladisch.de, gregkh@suse.de,
-        sakari.ailus@maxwell.research.nokia.com
-References: <1292844995-7900-1-git-send-email-laurent.pinchart@ideasonboard.com> <1292844995-7900-4-git-send-email-laurent.pinchart@ideasonboard.com> <201012211722.39810.hverkuil@xs4all.nl>
-In-Reply-To: <201012211722.39810.hverkuil@xs4all.nl>
+	id S1752856Ab0LWJFu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 04:05:50 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:65181 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752808Ab0LWJFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 04:05:44 -0500
+Message-ID: <4D13114D.5060709@cn.fujitsu.com>
+Date: Thu, 23 Dec 2010 17:07:25 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Young <hidave.darkstar@gmail.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] rtmutex: ensure only the top waiter or higher priority
+ task can take the lock and reduce unrelated boosting
+References: <4D07330A.7020600@cn.fujitsu.com>	 <alpine.LFD.2.00.1012141850460.12146@localhost6.localdomain6>	 <4D083900.1050801@cn.fujitsu.com>	 <1292386606.5015.1862.camel@gandalf.stny.rr.com>	 <4D0877D2.10000@cn.fujitsu.com> <1292425462.5015.1895.camel@gandalf.stny.rr.com>
+In-Reply-To: <1292425462.5015.1895.camel@gandalf.stny.rr.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-12-23 17:05:33,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-12-23 17:05:33,
+	Serialize complete at 2010-12-23 17:05:33
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012231005.34882.laurent.pinchart@ideasonboard.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
-
-On Tuesday 21 December 2010 17:22:39 Hans Verkuil wrote:
-> Hi Laurent,
+On 12/15/2010 11:04 PM, Steven Rostedt wrote:
+> On Wed, 2010-12-15 at 16:09 +0800, Lai Jiangshan wrote:
 > 
-> I promised to look at the new type names, so here is my opinion:
+> Some English updates.
 
-Thanks.
+Updated, Thank you very much.
 
-> On Monday, December 20, 2010 12:36:26 Laurent Pinchart wrote:
 > 
-> <snip>
-> 
-> > +
-> > +#define MEDIA_ENTITY_TYPE_SHIFT			16
-> > +#define MEDIA_ENTITY_TYPE_MASK			0x00ff0000
-> > +#define MEDIA_ENTITY_SUBTYPE_MASK		0x0000ffff
-> > +
-> > +#define MEDIA_ENTITY_TYPE_DEVNODE		(1 << MEDIA_ENTITY_TYPE_SHIFT)
-> > +#define MEDIA_ENTITY_TYPE_DEVNODE_V4L		(MEDIA_ENTITY_TYPE_DEVNODE + 
-1)
-> > +#define MEDIA_ENTITY_TYPE_DEVNODE_FB		(MEDIA_ENTITY_TYPE_DEVNODE + 2)
-> > +#define MEDIA_ENTITY_TYPE_DEVNODE_ALSA		(MEDIA_ENTITY_TYPE_DEVNODE + 
-3)
-> > +#define MEDIA_ENTITY_TYPE_DEVNODE_DVB		(MEDIA_ENTITY_TYPE_DEVNODE + 
-4)
-> > +
-> > +#define MEDIA_ENTITY_TYPE_V4L2_SUBDEV		(2 << MEDIA_ENTITY_TYPE_SHIFT)
-> > +#define
-> > MEDIA_ENTITY_TYPE_V4L2_SUBDEV_SENSOR	(MEDIA_ENTITY_TYPE_V4L2_SUBDEV + 1)
-> > +#define
-> > MEDIA_ENTITY_TYPE_V4L2_SUBDEV_FLASH	(MEDIA_ENTITY_TYPE_V4L2_SUBDEV + 2)
-> > +#define
-> > MEDIA_ENTITY_TYPE_V4L2_SUBDEV_LENS	(MEDIA_ENTITY_TYPE_V4L2_SUBDEV + 3) +
-> > +#define MEDIA_ENTITY_FLAG_DEFAULT		(1 << 0)
-> > +
-> > +#define MEDIA_LINK_FLAG_ENABLED			(1 << 0)
-> > +#define MEDIA_LINK_FLAG_IMMUTABLE		(1 << 1)
-> > +
-> > +#define MEDIA_PAD_FLAG_INPUT			(1 << 0)
-> > +#define MEDIA_PAD_FLAG_OUTPUT			(1 << 1)
-> 
-> Using V4L2_SUBDEV instead of just SUBDEV is definitely an improvement.
-> 
-> However, I think the defines are getting way too long and I would propose
-> to use the ME_ prefix instead of MEDIA_ENTITY_. Also ML_ instead of
-> MEDIA_LINK_ and MP_ instead of MEDIA_PAD_.
-> 
-> That way it is less of an alphabet soup when reading code.
+>>
 
-I agree that the names are too long, but I'm concerned that the ME_, ML_ and 
-MP_ prefixes might cause namespace clashes.
+[...]
 
--- 
-Regards,
+>> + * owner	bit0
+>> + * NULL		0	lock is free (fast acquire possible)
+>> + * NULL		1	lock is free and has waiters and the top waiter
+>> + *				is going to take the lock*
+>> + * taskpointer	0	lock is held (fast release possible)
+>> + * taskpointer	1	lock is held and has waiters
+> 
+>   * taskpointer 1        lock is held and has waiters*
+> 
+> 
+>>   *
+>>   * The fast atomic compare exchange based acquire and release is only
+>> - * possible when bit 0 and 1 of lock->owner are 0.
+>> + * possible when bit 0 of lock->owner are 0.
+> 
+> 	s/are/is/
+> 
+>>   *
+>> - * (*) There's a small time where the owner can be NULL and the
+>> - * "lock has waiters" bit is set.  This can happen when grabbing the lock.
+>> - * To prevent a cmpxchg of the owner releasing the lock, we need to set this
+>> - * bit before looking at the lock, hence the reason this is a transitional
+>> - * state.
+>> + * (*) It also can be a transitional state when grabbing the lock
+>> + * with ->wait_lock is held. To prevent any fast path cmpxchg to the lock,
+>> + * we need to set the bit0 before looking at the lock, and the owner may be
+>> + * NULL in this small time, hence this can be a transitional state.
+> 
+> 
+>  * (*) There is a small time when bit 0 is set but there are no
+>  * waiters. This can happen when grabbing the lock in the slow path.
+>  * To prevent a cmpxchg of the owner releasing the lock, we need to
+>  * set this bit before looking at the lock.
+> 
+> 
 
-Laurent Pinchart
+Very good! Added.
+
+
+> 
+>> It has called try_to_take_rt_mutex() in __rt_mutex_slowlock(),
+>> when timeout or got signal, it returns from __rt_mutex_slowlock()
+>> with lock->wait_lock still held, and then calls remove_waiter(),
+>>
+>> so we don't need to call try_to_take_rt_mutex() in remove_waiter().
+>> It is strange that remove_waiter() do some "require lock" work.
+> 
+> I think you are correct here. It should never get to this path where
+> !owner && first is true. If we timed out then we either got the lock or
+> we could not. If we could not than owner had to be set or we are not the
+> top waiter. Thus we need:
+> 
+> 	if (!owner) {
+> 		BUG_ON(first);
+> 		return;
+> 	}
+> 
+
+The "BUG_ON" is not added, but new comments for this are added.
+Because we have just tested it in try_to_take_rt_mutex(), don't need
+to check it again.
+
+If prerequisites are passed by complex paths or are
+provided by different threads, I will happy to add more checks.
+
+Thanks,
+Lai
+
