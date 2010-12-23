@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab0LWMxO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 07:53:14 -0500
-Received: from mx2.compro.net ([12.186.155.4]:16000 "EHLO mx2.compro.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753248Ab0LWMxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 07:53:13 -0500
-X-IronPort-AV: E=Sophos;i="4.60,219,1291611600"; 
-   d="scan'208";a="6165960"
-Message-ID: <4D134637.9020709@compro.net>
-Date: Thu, 23 Dec 2010 07:53:11 -0500
-From: Mark Hounschell <markh@compro.net>
-Reply-To: markh@compro.net
-Organization: Compro Computer Svcs.
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
+	id S1751880Ab0LWMzo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 07:55:44 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49248 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750943Ab0LWMzn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 07:55:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=FWO62heyz1pojIWUPQhdKGpEJfZSO5PzdroBvL0Vu+SeYTXQjAGoFnaRQyjBz0GNId
+         ptFydkh3TS1wIpfTG2xJdViPsAtsdtHZlf/3AFJgOTfPMPg3ia9oqjml3bvBJbcqsKe0
+         oHbn/LrS/BBQJ5AIgONFTY18wHLXOPHN4A5AE=
+Date: Thu, 23 Dec 2010 13:55:38 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: buggy perf callgraph output
+Message-ID: <20101223125535.GA1769@nowhere>
+References: <20101208164015.GA5444@amd>
+ <20101208214809.GG1709@nowhere>
+ <20101215130245.GA10004@amd>
+ <20101216114755.GA1687@nowhere>
+ <20101217053258.GC3282@amd>
 MIME-Version: 1.0
-To: =?UTF-8?B?TWljaGVsIETDpG56ZXI=?= <michel@daenzer.net>
-CC: dmarkh@cfl.rr.com, Andrew Morton <akpm@linux-foundation.org>,
-        Michael Tokarev <mjt@tls.msk.ru>,
-        Linux-kernel <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: VERY slow scrolling on radeon graphics card: debugging a timing
- issue?
-References: <4D0FC36D.9010304@msgid.tls.msk.ru>	 <20101222020041.c168bf87.akpm@linux-foundation.org>	 <4D11D939.9080808@cfl.rr.com> <1293089117.19556.109.camel@thor.local>
-In-Reply-To: <1293089117.19556.109.camel@thor.local>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101217053258.GC3282@amd>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/2010 02:25 AM, Michel Dänzer wrote:
-> On Mit, 2010-12-22 at 05:55 -0500, Mark Hounschell wrote: 
->>
->> I also see this very problem on several machines I have with radeon video.
->> For me the worst part is using vi in a konsole. Moving the cursor around
->> is so slow that I just can't use these machines directly and have to ssh
->> into them from another machine just to work on them.
-> 
-> That's not the same problem as the one described by Michael, which is
-> about the console on virtual terminals different from X.
-> 
-> For your problem, try choosing a different font (a fontconfig one
-> instead of a legacy X one) in konsole.
-> 
-> 
+On Fri, Dec 17, 2010 at 04:32:58PM +1100, Nick Piggin wrote:
+> That would be great, thanks! It's a really awesome tool, I appreciate
+> your effort on it.
 
-Hum, but I do in fact see the same thing he sees on a VT. A dmesg
-command from a VT  takes around 20 seconds to display. The same in a
-konsole takes a fraction of a second.
-So your probably right that my vi problem in a konsole is a different
-issue. I do see the same thing as the OP does though. I just figured
-they were probably related.
+Thanks :)
 
-Changing fonts doesn't change anything though. I normally use the "Misc
-Console" font FWIW.
+So the below patch should fix the issue. Tell me if you encounter it
+again, or anything else.
 
-Regards
-Mark
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index d503670..c749ba6 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -356,7 +356,7 @@ static size_t ipchain__fprintf_graph_line(FILE *fp, int depth, int depth_mask,
+ 
+ static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
+ 				     int depth, int depth_mask, int period,
+-				     u64 total_samples, int hits,
++				     u64 total_samples, u64 hits,
+ 				     int left_margin)
+ {
+ 	int i;
 
