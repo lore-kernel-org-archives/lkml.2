@@ -1,42 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251Ab0LWOmf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 09:42:35 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:42453 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752822Ab0LWOme (ORCPT
+	id S1753330Ab0LWOnA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 09:43:00 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60854 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753281Ab0LWOm6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 09:42:34 -0500
-Date: Thu, 23 Dec 2010 14:42:20 +0000
-From: Matthew Garrett <mjg@redhat.com>
-To: Youquan Song <youquan.song@intel.com>
-Cc: davej@redhat.com, cpufreq@vger.kernel.org, venki@google.com,
-        arjan@linux.intel.com, lenb@kernel.org, suresh.b.siddha@intel.com,
-        kent.liu@intel.com, chaohong.guo@intel.com,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Youquan Song <youquan.song@linux.intel.com>
-Subject: Re: [PATCH 0/6] cpufreq: Add sampling window to enhance ondemand
-	governor power efficiency
-Message-ID: <20101223144220.GB1402@srcf.ucam.org>
-References: <1293085424-18212-1-git-send-email-youquan.song@intel.com>
+	Thu, 23 Dec 2010 09:42:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=somrScE5C1rKpX9j65FFZv1sG7ulO/x+hGqANF/YQWhX41ksB9ZmJ4wnTzJaobMZgh
+         DuDJWFciSYAu/9JYBr0SZeaXbyqaExPqze4zHOT9rcCI8gTq9Y8mQsHiSi2KM3WWizdF
+         ViBpt8SQYBfcOH/vL+3mODU6/jX6fp78mMcdI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1293085424-18212-1-git-send-email-youquan.song@intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20101223141608.GM3636@n2100.arm.linux.org.uk>
+References: <cover.1292443200.git.m.nazarewicz@samsung.com>
+	<AANLkTim8_=0+-zM5z4j0gBaw3PF3zgpXQNetEn-CfUGb@mail.gmail.com>
+	<20101223100642.GD3636@n2100.arm.linux.org.uk>
+	<00ea01cba290$4d67f500$e837df00$%szyprowski@samsung.com>
+	<20101223121917.GG3636@n2100.arm.linux.org.uk>
+	<4D135004.3070904@samsung.com>
+	<20101223134838.GK3636@n2100.arm.linux.org.uk>
+	<4D1356D7.2000008@samsung.com>
+	<20101223141608.GM3636@n2100.arm.linux.org.uk>
+Date: Thu, 23 Dec 2010 16:42:57 +0200
+Message-ID: <AANLkTinzsOom5awOr6Y8e7PKRbCWYQOqEbdw9is6HroR@mail.gmail.com>
+Subject: Re: [PATCHv8 00/12] Contiguous Memory Allocator
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Tomasz Fujak <t.fujak@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Kyungmin Park <kmpark@infradead.org>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Nazarewicz <mina86@mina86.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-arm-kernel@lists.infradead.org,
+        Andrew Morton <akpm@linux-foundation.org>, linux-media@vger.kernel.org,
+        Johan MOSSBERG <johan.xx.mossberg@stericsson.com>,
+        Ankita Garg <ankita@in.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We've generally been assuming (rightly or wrongly) that getting into 
-deep C states is preferable to being active (even at a lower frequency), 
-and so the current behaviour of tending to rapidly switch to the maximum 
-P state isn't inherently a problem. What kind of power savings are you 
-benchmarking with this, and do you still see a saving if you just 
-disable turbo mode?
+On Thu, Dec 23, 2010 at 4:16 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Thu, Dec 23, 2010 at 03:04:07PM +0100, Tomasz Fujak wrote:
+>> In other words, should we take your response as yet another NAK?
+>> Or would you try harder and at least point us to some direction that
+>> would not doom the effort from the very beginning.
+>
+> What the fsck do you think I've been doing?  This is NOT THE FIRST time
+> I've raised this issue.  I gave up raising it after the first couple
+> of attempts because I wasn't being listened to.
+>
+> You say about _me_ not being very helpful.  How about the CMA proponents
+> start taking the issue I've raised seriously, and try to work out how
+> to solve it?  And how about blaming them for the months of wasted time
+> on this issue _because_ _they_ have chosen to ignore it?
+
+I've also raised the issue for ARM. However, I don't see what is the
+big problem.
+
+A generic solution (that I think I already proposed) would be to
+reserve a chunk of memory for the CMA that can be removed from the
+normally mapped kernel memory through memblock at boot time. The size
+of this memory region would be configurable through kconfig. Then, the
+CMA would have a "dma" flag or something, and take chunks out of it
+until there's no more, and then return errors. That would work for
+ARM.
+
+Cheers.
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Felipe Contreras
