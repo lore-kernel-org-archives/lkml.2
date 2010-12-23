@@ -1,87 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969Ab0LWMbG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 07:31:06 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34913 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703Ab0LWMbE (ORCPT
+	id S1753061Ab0LWMds (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 07:33:48 -0500
+Received: from casper.infradead.org ([85.118.1.10]:47034 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277Ab0LWMdr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 07:31:04 -0500
-Date: Thu, 23 Dec 2010 12:30:28 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Walleij <linus.ml.walleij@gmail.com>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        Viresh Kumar <viresh.kumar@st.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        yuanyabin1978@sina.com, linux-kernel@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>, Peter Pearse <peter.pearse@arm.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Alessandro Rubini <rubini@unipv.it>
-Subject: Re: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081
-	PrimeCells
-Message-ID: <20101223123028.GI3636@n2100.arm.linux.org.uk>
-References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com> <20101221182037.GA4783@n2100.arm.linux.org.uk> <20101222122904.GC14693@n2100.arm.linux.org.uk> <AANLkTikpyAggDCPef1pS=_QHnu9-FyLcpddGyVHnGwWx@mail.gmail.com> <AANLkTinOMOkY6AUW8Z6FWMMWU9u0_sNjA2r_31u9-A8v@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinOMOkY6AUW8Z6FWMMWU9u0_sNjA2r_31u9-A8v@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 23 Dec 2010 07:33:47 -0500
+Subject: Re: [PATCH] avoid race condition in pick_next_task_fair in
+ kernel/sched_fair.c
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Miklos Vajna <vmiklos@frugalware.org>, Mike Galbraith <efault@gmx.de>,
+        shenghui <crosslonelyover@gmail.com>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, Greg KH <greg@kroah.com>,
+        Paul Turner <pjt@google.com>
+In-Reply-To: <1293106330.2170.618.camel@laptop>
+References: <AANLkTin49UHeVhfS-iFwWvPIg29HPhXaP3DorBAa-a0I@mail.gmail.com>
+	 <1277808215.1868.5.camel@laptop>
+	 <20101219020313.GJ31750@genesis.frugalware.org>
+	 <20101222002248.GP10557@genesis.frugalware.org>
+	 <1293006589.2170.41.camel@laptop>
+	 <1293007311.11370.172.camel@marge.simson.net>
+	 <1293008842.2170.70.camel@laptop>
+	 <20101222133154.GS10557@genesis.frugalware.org>
+	 <1293026422.2170.136.camel@laptop> <1293027112.2170.140.camel@laptop>
+	 <20101222151434.GW10557@genesis.frugalware.org>
+	 <1293037718.2170.155.camel@laptop> <1293050173.2170.389.camel@laptop>
+	 <AANLkTi=1GMKF4emms0Qpx31=xk-FZXOTaeONmCohzWb2@mail.gmail.com>
+	 <1293106330.2170.618.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 23 Dec 2010 13:33:44 +0100
+Message-ID: <1293107624.2170.642.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 23, 2010 at 09:17:07AM +0100, Linus Walleij wrote:
-> 2010/12/23 Dan Williams <dan.j.williams@intel.com>:
-> > It looks like this driver needs a full scrub
-> > which seems unreasonable to complete and test over the holidays before
-> > .37 lands.  Linus we either need to mark this "depends on BROKEN" or
-> > revert it.
+On Thu, 2010-12-23 at 13:12 +0100, Peter Zijlstra wrote:
+> On Thu, 2010-12-23 at 10:08 +0800, Yong Zhang wrote:
+> > > systemd--1251    0d..5. 2015398us : enqueue_task_fair <-enqueue_task
+> > > systemd--1251    0d..5. 2015398us : print_runqueue <-enqueue_task_fair
+> > > systemd--1251    0d..5. 2015399us : __print_runqueue:  cfs_rq: c2407c34, nr: 3, load: 3072
+> > > systemd--1251    0d..5. 2015400us : __print_runqueue:  curr: f6a8de5c, comm: systemd-cgroups/1251, load: 1024
+> > > systemd--1251    0d..5. 2015401us : __print_runqueue:  se: f69e6300, load: 1024,
+> > > systemd--1251    0d..5. 2015401us : __print_runqueue:    cfs_rq: f69e6540, nr: 2, load: 2048
+> > > systemd--1251    0d..5. 2015402us : __print_runqueue:    curr: (null)
+> > > systemd--1251    0d..5. 2015402us : __print_runqueue:    se: f69e65a0, load: 4137574976,
+> > 
+> > the load == f69e65a0 == address of se, odd
 > 
-> Isn't it really as simple as to release the spinlock during callbacks?
-> That lock is only intended to protect the plchan variables, not to block
-> anyone from queueing new stuff during the callback (as happens now).
+> This appears to be consistently true, I've also found that in between
+> these two prints, there is a free_sched_group() freeing that exact
+> entry. So post-print is a use-after-free artifact.
 > 
-> It can release that lock, make a callback where a new descriptor
-> gets queued, and then take it again and start looking at the queue,
-> at which point it discovers the new desc and process it.
+> What's interesting is that its freeing a cfs_rq struct with
+> nr_running=1, that should not be possible...
+> 
+> /me goes stare at the whole cgroup task attach vs cgroup destruction
+> muck.
 
-Is it actually safe to do this?  The answer seems to be no - if we happen
-to terminate all transfers (as your PL011 uart code does) when we fail to
-setup a new DMA transaction, then bad stuff happens due to this:
+ systemd-1       0d..1. 2070793us : sched_destroy_group: se: f69e43c0, load: 1024
+ systemd-1       0d..1. 2070794us : sched_destroy_group: cfs_rq: f69e4720, nr: 1, load: 1024
+ systemd-1       0d..1. 2070794us : __print_runqueue:  cfs_rq: f69e4720, nr: 1, load: 1024
+ systemd-1       0d..1. 2070795us : __print_runqueue:  curr: (null)
+ systemd-1       0d..1. 2070796us : __print_runqueue:  se: f6a8eb4c, comm: systemd-tmpfile/1243, load: 1024
+ systemd-1       0d..1. 2070796us : _raw_spin_unlock_irqrestore <-sched_destroy_group
 
-                /*
-                 * Device callbacks should NOT clear
-                 * the current transaction on the channel
-                 * Linus: sometimes they should?
-                 */
-                if (!plchan->at)
-                        BUG();
-
-We really need a saner approach here - maybe the list approach described
-by Jassie.
-
-> diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-> index b605cc9..7879a22 100644
-> --- a/drivers/dma/amba-pl08x.c
-> +++ b/drivers/dma/amba-pl08x.c
-> @@ -1651,8 +1651,11 @@ static void pl08x_tasklet(unsigned long data)
->  		/*
->  		 * Callback to signal completion
->  		 */
-> -		if (callback)
-> -			callback(callback_param);
-> +		if (callback) {
-> +                        spin_unlock(&plchan->lock);
-> +                        callback(callback_param);
-> +                        spin_lock(&plchan->lock);
-
-Plus, of course, that tasklets run with IRQs enabled.  This means we're
-taking this spinlock in an interruptible context.  If we have some other
-path which also takes this lock from an IRQ context, then we're asking
-for deadlock.  See my previous mails on this subject.
-
-I'm currently splitting my dirty patch, and attacking this driver to
-clean up some of it into a more reasonable shape, so this is one area
-which I'm going to be sorting out.
-
-Patches later.
+So somehow it manages to destroy a group with a task attached.
