@@ -1,69 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695Ab0LWKOA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 05:14:00 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:46389 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277Ab0LWKN6 (ORCPT
+	id S1752748Ab0LWKOE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 05:14:04 -0500
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:59242 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277Ab0LWKOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 05:13:58 -0500
-Date: Thu, 23 Dec 2010 00:36:21 +0530
+	Thu, 23 Dec 2010 05:14:01 -0500
+Date: Thu, 23 Dec 2010 14:03:54 +0530
 From: Balbir Singh <balbir@linux.vnet.ibm.com>
 To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Thomas Meyer <thomas@m3y3r.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: 2.6.37-rc7: NULL pointer dereference
-Message-ID: <20101222190621.GA16046@balbir.in.ibm.com>
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kosaki.motohiro@jp.fujitsu.com, cl@linux.com,
+        kamezawa.hiroyu@jp.fujitsu.com
+Subject: Re: [PATCH 3/3] Provide control over unmapped pages (v2)
+Message-ID: <20101223083354.GB16046@balbir.in.ibm.com>
 Reply-To: balbir@linux.vnet.ibm.com
-References: <1293020757.1998.2.camel@localhost.localdomain>
- <AANLkTin6GMiXHuoVzNWPcj0jXDqWyfWCwW9fd-v=pq=X@mail.gmail.com>
+References: <20101210142745.29934.29186.stgit@localhost6.localdomain6>
+ <20101210143112.29934.22944.stgit@localhost6.localdomain6>
+ <AANLkTinaTUUfvK+Nc-Whck21r-OzT+0CFVnS4W_jG5aw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTin6GMiXHuoVzNWPcj0jXDqWyfWCwW9fd-v=pq=X@mail.gmail.com>
+In-Reply-To: <AANLkTinaTUUfvK+Nc-Whck21r-OzT+0CFVnS4W_jG5aw@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* MinChan Kim <minchan.kim@gmail.com> [2010-12-23 00:37:11]:
+* MinChan Kim <minchan.kim@gmail.com> [2010-12-14 20:02:45]:
 
-> Cced linux-mm and maintainers of memcg.
+> > +                       if (should_reclaim_unmapped_pages(zone))
+> > +                               wakeup_kswapd(zone, order);
 > 
-> On Wed, Dec 22, 2010 at 9:25 PM, Thomas Meyer <thomas@m3y3r.de> wrote:
-> > BUG: unable to handle kernel NULL pointer dereference at 00000008
-> > IP: [<c04eae14>] __mem_cgroup_try_charge+0x234/0x430
-> > *pde = 00000000
-> > Oops: 0000 [#1]
-> > last sysfs file: /sys/devices/platform/regulatory.0/uevent
-> > Modules linked in: vfat fat usb_storage fuse sco bnep l2cap bluetooth cpufreq_ondemand acpi_cpufreq mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables kvm_intel kvm uinput arc4 ecb snd_hda_codec_hdmi snd_hda_codec_realtek iwlagn snd_hda_intel snd_hda_codec iwlcore uvcvideo snd_hwdep mac80211 snd_seq videodev snd_seq_device snd_pcm cfg80211 snd_timer rfkill v4l1_compat wmi snd pcspkr soundcore joydev serio_raw snd_page_alloc ipv6 sha256_generic aes_i586 aes_generic cbc dm_crypt [last unloaded: scsi_wait_scan]
-> > Pid: 8058, comm: swapoff Tainted: G          I 2.6.37-rc7 #221 JM11-MS/Aspire 1810T
-> > EIP: 0060:[<c04eae14>] EFLAGS: 00010246 CPU: 0
-> > EIP is at __mem_cgroup_try_charge+0x234/0x430
-> > EAX: 00000008 EBX: 00000000 ECX: f2e71f10 EDX: f2f96380
-> > ESI: f3e55860 EDI: 00020000 EBP: f2e71eb4 ESP: f2e71e54
-> >  DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
-> > Process swapoff (pid: 8058, ti=f2e70000 task=f3e55860 task.ti=f2e70000)
-> > Stack:
-> >  f2e71e88 c0456607 26ba7c1c f3e55860 00000010 f3e55860 069d208a b2ee651d
-> >  00000008 000000d0 f2f96380 00000005 01ffffff f2e71f10 00000246 ec1a64ae
-> >  ffffffff 00000000 27b52eae f044dc84 00000000 f2f96380 00000000 000000d0
-> > Call Trace:
-> >  [<c0456607>] ? ktime_get_ts+0x107/0x140
-> >  [<c04ebb89>] ? mem_cgroup_try_charge_swapin+0x49/0xb0
-> >  [<c04d9b4b>] ? unuse_mm+0x1db/0x300
-> >  [<c04dad9a>] ? sys_swapoff+0x2aa/0x890
-> >  [<c047cd58>] ? audit_syscall_entry+0x218/0x240
-> >  [<c047d043>] ? audit_syscall_exit+0x1f3/0x220
-> >  [<c0403013>] ? sysenter_do_call+0x12/0x22
-> > Code: 55 c8 8b 82 90 01 00 00 85 c0 74 09 8b 80 7c 03 00 00 8b 58 2c 3b 1d 54 20 a9 c0 74 61 3b 1d 4c ca a4 c0 74 6a 8d 43 08 89 45 c0 <8b> 43 08 a8 01 0f 85 73 fe ff ff 8d 4b 04 89 5d bc 8d 76 00 8b
-> > EIP: [<c04eae14>] __mem_cgroup_try_charge+0x234/0x430 SS:ESP 0068:f2e71e54
-> > CR2: 0000000000000008
+> I think we can put the logic into zone_watermark_okay.
+>
 
-Thanks for the report, does this happen at bootup?
+I did some checks and zone_watermark_ok is used in several places for
+a generic check like this -- for example prior to zone_reclaim(), if
+in get_page_from_freelist() we skip zones based on the return value.
+The compaction code uses it as well, the impact would be deeper. The
+compaction code uses it to check whether an allocation will succeed or
+not, I don't want unmapped page control to impact that.
+ 
+> > +                       /*
+> > +                        * We do unmapped page reclaim once here and once
+> > +                        * below, so that we don't lose out
+> > +                        */
+> > +                       reclaim_unmapped_pages(priority, zone, &sc);
+> 
+> It can make unnecessary stir of lru pages.
+> How about this?
+> zone_watermark_ok returns ZONE_UNMAPPED_PAGE_FULL.
+> wakeup_kswapd(..., please reclaim unmapped page cache).
+> If kswapd is woke up by unmapped page full, kswapd sets up sc with unmap = 0.
+> If the kswapd try to reclaim unmapped page, shrink_page_list doesn't
+> rotate non-unmapped pages.
+
+With may_unmap set to 0 and may_writepage set to 0, I don't think this
+should be a major problem, like I said this code is already enabled if
+zone_reclaim_mode != 0 and CONFIG_NUMA is set.
+
+> > +unsigned long reclaim_unmapped_pages(int priority, struct zone *zone,
+> > +                                               struct scan_control *sc)
+> > +{
+> > +       if (unlikely(unmapped_page_control) &&
+> > +               (zone_unmapped_file_pages(zone) > zone->min_unmapped_pages)) {
+> > +               struct scan_control nsc;
+> > +               unsigned long nr_pages;
+> > +
+> > +               nsc = *sc;
+> > +
+> > +               nsc.swappiness = 0;
+> > +               nsc.may_writepage = 0;
+> > +               nsc.may_unmap = 0;
+> > +               nsc.nr_reclaimed = 0;
+> 
+> This logic can be put in zone_reclaim_unmapped_pages.
+> 
+
+Now that I refactored the code and called it zone_reclaim_pages, I
+expect the correct sc to be passed to it. This code is reused between
+zone_reclaim() and reclaim_unmapped_pages(). In the former,
+zone_reclaim does the setup.
+
+> If we want really this, how about the new cache lru idea as Kame suggests?
+> For example, add_to_page_cache_lru adds the page into cache lru.
+> page_add_file_rmap moves the page into inactive file.
+> page_remove_rmap moves the page into lru cache, again.
+> We can count the unmapped pages and if the size exceeds limit, we can
+> wake up kswapd.
+> whenever the memory pressure happens, first of all, reclaimer try to
+> reclaim cache lru.
+
+We already have a file LRU and that has active/inactive lists, I don't
+think a special mapped/unmapped list makes sense at this point.
+
 
 -- 
 	Three Cheers,
