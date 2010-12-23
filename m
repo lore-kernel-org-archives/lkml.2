@@ -1,250 +1,674 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684Ab0LWIwQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 03:52:16 -0500
-Received: from hera.kernel.org ([140.211.167.34]:52569 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752573Ab0LWIwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 03:52:14 -0500
-Date: Thu, 23 Dec 2010 08:51:45 GMT
-From: tip-bot for Don Zickus <dzickus@redhat.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        peterz@infradead.org, tglx@linutronix.de, mingo@elte.hu,
-        dzickus@redhat.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, dzickus@redhat.com,
-        mingo@elte.hu
-In-Reply-To: <1293044403-14117-1-git-send-email-dzickus@redhat.com>
-References: <1293044403-14117-1-git-send-email-dzickus@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] x86, nmi_watchdog: Remove ARCH_HAS_NMI_WATCHDOG and rely on CONFIG_HARDLOCKUP_DETECTOR
-Message-ID: <tip-4a7863cc2eb5f9804f1c4e9156619a801cd7f14f@git.kernel.org>
-Git-Commit-ID: 4a7863cc2eb5f9804f1c4e9156619a801cd7f14f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 23 Dec 2010 08:51:46 +0000 (UTC)
+	id S1752799Ab0LWIxq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 03:53:46 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:31603 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752754Ab0LWIxo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 03:53:44 -0500
+Date: Thu, 23 Dec 2010 17:53:39 +0900
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: [PATCH v3 4/4] MFD MAX8998/LP3974: Support Charger
+In-reply-to: <1293094419-24221-1-git-send-email-myungjoo.ham@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>, myungjoo.ham@gmail.com
+Message-id: <1293094419-24221-5-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.1
+Content-transfer-encoding: 7BIT
+References: <1293094419-24221-1-git-send-email-myungjoo.ham@samsung.com>
+X-OriginalArrivalTime: 23 Dec 2010 08:53:39.0764 (UTC)
+ FILETIME=[E4C13F40:01CBA27E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4a7863cc2eb5f9804f1c4e9156619a801cd7f14f
-Gitweb:     http://git.kernel.org/tip/4a7863cc2eb5f9804f1c4e9156619a801cd7f14f
-Author:     Don Zickus <dzickus@redhat.com>
-AuthorDate: Wed, 22 Dec 2010 14:00:03 -0500
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 22 Dec 2010 22:15:32 +0100
+With the new regulator, "CHARGER", users can control charging
+current and turn on and off the charger. Note that the charger
+specification of LP3974 is different from that of MAX8998.
 
-x86, nmi_watchdog: Remove ARCH_HAS_NMI_WATCHDOG and rely on CONFIG_HARDLOCKUP_DETECTOR
+driver/power/max8998.c supports power supply APIs for
 
-The x86 arch has shifted its use of the nmi_watchdog from a
-local implementation to the global one provide by
-kernel/watchdog.c.  This shift has caused a whole bunch of
-compile problems under different config options.  I attempt to
-simplify things with the patch below.
+1. "ONLINE" monitors the charger status, which can be
+different from the status "CHARGER"; e.g., users allowed the charger
+to charge, but the MAX8998 chip decided not to do so.
 
-In order to simplify things, I had to come to terms with the
-meaning of two terms ARCH_HAS_NMI_WATCHDOG and
-CONFIG_HARDLOCKUP_DETECTOR.  Basically they mean the same thing,
-the former on a local level and the latter on a global level.
+2. "PRESENT" monitors the battery status (the existence of the
+battery).
 
-With the old x86 nmi watchdog gone, there is no need to rely on
-defining the ARCH_HAS_NMI_WATCHDOG variable because it doesn't
-make sense any more.  x86 will now use the global
-implementation.
-
-The changes below do a few things.  First it changes the few
-places that relied on ARCH_HAS_NMI_WATCHDOG to use
-CONFIG_X86_LOCAL_APIC (the former was an alias for the latter
-anyway, so nothing unusual here).  Those pieces of code were
-relying more on local apic functionality the nmi watchdog
-functionality, so the change should make sense.
-
-Second, I removed the x86 implementation of
-touch_nmi_watchdog().  It isn't need now, instead x86 will rely
-on kernel/watchdog.c's implementation.
-
-Third, I removed the #define ARCH_HAS_NMI_WATCHDOG itself from
-x86.  And tweaked the include/linux/nmi.h file to tell users to
-look for an externally defined touch_nmi_watchdog in the case of
-ARCH_HAS_NMI_WATCHDOG _or_ CONFIG_HARDLOCKUP_DETECTOR. This
-changes removes some of the ugliness in that file.
-
-Finally, I added a Kconfig dependency for
-CONFIG_HARDLOCKUP_DETECTOR that said you can't have
-ARCH_HAS_NMI_WATCHDOG _and_ CONFIG_HARDLOCKUP_DETECTOR.  You can
-only have one nmi_watchdog.
-
-Tested with
-ARCH=i386: allnoconfig, defconfig, allyesconfig, (various broken
-configs) ARCH=x86_64: allnoconfig, defconfig, allyesconfig,
-(various broken configs)
-
-Hopefully, after this patch I won't get any more compile broken
-emails. :-)
-
-v3:
-  changed a couple of 'linux/nmi.h' -> 'asm/nmi.h' to pick-up correct function
-  prototypes when CONFIG_HARDLOCKUP_DETECTOR is not set.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: fweisbec@gmail.com
-LKML-Reference: <1293044403-14117-1-git-send-email-dzickus@redhat.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- arch/x86/include/asm/irq.h             |    4 ----
- arch/x86/include/asm/nmi.h             |    2 +-
- arch/x86/kernel/apic/hw_nmi.c          |   10 ----------
- arch/x86/kernel/cpu/perfctr-watchdog.c |    2 +-
- arch/x86/oprofile/op_model_p4.c        |    2 +-
- drivers/watchdog/hpwdt.c               |    4 ++--
- include/linux/nmi.h                    |    6 +-----
- lib/Kconfig.debug                      |    3 ++-
- 8 files changed, 8 insertions(+), 25 deletions(-)
+ drivers/mfd/max8998.c               |    6 +
+ drivers/power/Kconfig               |    7 +
+ drivers/power/Makefile              |    1 +
+ drivers/power/max8998.c             |  265 +++++++++++++++++++++++++++++++++++
+ drivers/regulator/max8998.c         |  129 +++++++++++++++++-
+ include/linux/mfd/max8998-private.h |   12 ++-
+ include/linux/mfd/max8998.h         |   15 ++
+ 7 files changed, 431 insertions(+), 4 deletions(-)
+ create mode 100644 drivers/power/max8998.c
 
-diff --git a/arch/x86/include/asm/irq.h b/arch/x86/include/asm/irq.h
-index 13b0eba..ba870bb 100644
---- a/arch/x86/include/asm/irq.h
-+++ b/arch/x86/include/asm/irq.h
-@@ -15,10 +15,6 @@ static inline int irq_canonicalize(int irq)
- 	return ((irq == 2) ? 9 : irq);
+diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
+index 8b9eed1..fe8d62e 100644
+--- a/drivers/mfd/max8998.c
++++ b/drivers/mfd/max8998.c
+@@ -39,6 +39,8 @@ static struct mfd_cell max8998_devs[] = {
+ 		.name = "max8998-pmic",
+ 	}, {
+ 		.name = "max8998-rtc",
++	}, {
++		.name = "max8998-battery",
+ 	},
+ };
+ 
+@@ -47,6 +49,8 @@ static struct mfd_cell lp3974_devs[] = {
+ 		.name = "lp3974-pmic",
+ 	}, {
+ 		.name = "lp3974-rtc",
++	}, {
++		.name = "lp3974-battery",
+ 	},
+ };
+ 
+@@ -55,6 +59,8 @@ static struct mfd_cell lp3974_regerr_devs[] = {
+ 		.name = "lp3974-pmic",
+ 	}, {
+ 		.name = "lp3974-rtc-regerr",
++	}, {
++		.name = "lp3974-battery",
+ 	},
+ };
+ 
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index 60d83d9..06b720c 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -185,4 +185,11 @@ config CHARGER_TWL4030
+ 	help
+ 	  Say Y here to enable support for TWL4030 Battery Charge Interface.
+ 
++config CHARGERCTRL_MAX8998
++	tristate "Battery charger driver for MAX8998/LP3974 PMIC"
++	depends on MFD_MAX8998 && REGULATOR_MAX8998
++	help
++	  Say Y to enable support for the battery charger control sysfs and
++	  platform data of MAX8998/LP3974 PMICs.
++
+ endif # POWER_SUPPLY
+diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+index c75772e..4e66b91 100644
+--- a/drivers/power/Makefile
++++ b/drivers/power/Makefile
+@@ -32,3 +32,4 @@ obj-$(CONFIG_BATTERY_JZ4740)	+= jz4740-battery.o
+ obj-$(CONFIG_BATTERY_INTEL_MID)	+= intel_mid_battery.o
+ obj-$(CONFIG_CHARGER_ISP1704)	+= isp1704_charger.o
+ obj-$(CONFIG_CHARGER_TWL4030)	+= twl4030_charger.o
++obj-$(CONFIG_CHARGERCTRL_MAX8998)	+= max8998.o
+diff --git a/drivers/power/max8998.c b/drivers/power/max8998.c
+new file mode 100644
+index 0000000..6e73b42
+--- /dev/null
++++ b/drivers/power/max8998.c
+@@ -0,0 +1,265 @@
++/*
++ * max8998.c - Power supply consumer driver for the Maxim 8998
++ *
++ *  Copyright (C) 2009-2010 Samsung Electronics
++ *  MyungJoo Ham <myungjoo.ham@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#include <linux/err.h>
++#include <linux/slab.h>
++#include <linux/platform_device.h>
++#include <linux/power_supply.h>
++#include <linux/mfd/max8998.h>
++#include <linux/mfd/max8998-private.h>
++
++struct max8998_battery_data {
++	struct device *dev;
++	struct max8998_dev *iodev;
++	unsigned int eoc_in_mA;
++	struct power_supply battery;
++	enum max8998_type device_id;
++};
++
++static enum power_supply_property max8998_battery_props[] = {
++	POWER_SUPPLY_PROP_MANUFACTURER,
++	POWER_SUPPLY_PROP_PRESENT, /* the presence of battery */
++	POWER_SUPPLY_PROP_ONLINE, /* charger is active or not */
++};
++
++static const char * const manufacturers[] = {
++	[TYPE_MAX8998] = "Maxim",
++	[TYPE_LP3974] = "National Semiconductor",
++	[TYPE_UNKNOWN] = "Unknown",
++};
++
++/* Note that the charger control is done by a current regulator "CHARGER" */
++static int max8998_battery_get_property(struct power_supply *psy,
++		enum power_supply_property psp,
++		union power_supply_propval *val)
++{
++	struct max8998_battery_data *max8998 = container_of(psy,
++			struct max8998_battery_data, battery);
++	struct i2c_client *i2c = max8998->iodev->i2c;
++	int ret;
++	u8 reg;
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_MANUFACTURER:
++		if (max8998->device_id == TYPE_MAX8998)
++			val->strval = manufacturers[TYPE_MAX8998];
++		else if (max8998->device_id == TYPE_LP3974)
++			val->strval = manufacturers[TYPE_LP3974];
++		else
++			val->strval = manufacturers[TYPE_UNKNOWN];
++		break;
++	case POWER_SUPPLY_PROP_PRESENT:
++		ret = max8998_read_reg(i2c, MAX8998_REG_STATUS2, &reg);
++		if (ret)
++			return ret;
++		if (reg & (1 << 4))
++			val->intval = 0;
++		else
++			val->intval = 1;
++		break;
++	case POWER_SUPPLY_PROP_ONLINE:
++		ret = max8998_read_reg(i2c, MAX8998_REG_STATUS2, &reg);
++		if (ret)
++			return ret;
++		if (reg & (1 << 3))
++			val->intval = 0;
++		else
++			val->intval = 1;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static void _max8998_update_eoc(struct platform_device *pdev)
++{
++	struct max8998_battery_data *max8998 = platform_get_drvdata(pdev);
++	struct i2c_client *i2c = max8998->iodev->i2c;
++	int charge_current = 0;
++	int target_eoc_ratio;
++	u8 val;
++
++	/* Nothing to do. User set EOC with % */
++	if (max8998->eoc_in_mA == 0)
++		return;
++
++	/* Not initialized. */
++	if (!charger_current_map_desc)
++		return;
++
++	if (max8998_read_reg(i2c, MAX8998_REG_CHGR1, &val))
++		return;
++
++	charge_current = charger_current_map_desc[val & 0x07];
++
++	target_eoc_ratio = max8998->eoc_in_mA / charge_current * 100;
++
++	if (target_eoc_ratio < 10)
++		target_eoc_ratio = 10;
++	if (target_eoc_ratio > 45)
++		target_eoc_ratio = 45;
++
++	max8998_update_reg(i2c, MAX8998_REG_CHGR1,
++			(target_eoc_ratio / 5 - 2) << 5,
++			0x7 << 5);
++}
++
++/*
++ * max89998_update_eoc() sets EOC ratio. It uses
++ * the greatest EOC ratio that results in equal to or lower than the
++ * specified "eoc_in_mA" value. If no such value exists, it's 10%.
++**/
++void max8998_update_eoc(struct max8998_dev *mdev)
++{
++	_max8998_update_eoc(mdev->battery);
++}
++
++static __devinit int max8998_battery_probe(struct platform_device *pdev)
++{
++	struct max8998_dev *iodev = dev_get_drvdata(pdev->dev.parent);
++	struct max8998_platform_data *pdata = dev_get_platdata(iodev->dev);
++	struct max8998_battery_data *max8998;
++	struct i2c_client *i2c;
++	int ret = 0;
++
++	if (!pdata) {
++		dev_err(pdev->dev.parent, "No platform init data supplied\n");
++		return -ENODEV;
++	}
++
++	max8998 = kzalloc(sizeof(struct max8998_battery_data), GFP_KERNEL);
++	if (!max8998)
++		return -ENOMEM;
++
++	max8998->eoc_in_mA = 0;
++	max8998->dev = &pdev->dev;
++	max8998->iodev = iodev;
++	iodev->battery = pdev;
++	platform_set_drvdata(pdev, max8998);
++	i2c = max8998->iodev->i2c;
++
++	/* Setup "End of Charge" */
++	if (pdata->eoc >= 10 && pdata->eoc <= 45) {
++		max8998_update_reg(i2c, MAX8998_REG_CHGR1,
++				(pdata->eoc / 5 - 2) << 5, 0x7 << 5);
++	} else if (pdata->eoc >= 50) {
++		max8998->eoc_in_mA = pdata->eoc;
++		_max8998_update_eoc(pdev);
++	} else {
++		dev_info(max8998->dev, "EOC value not set: leave it unchanged.\n");
++	}
++
++	/* Setup Charge Restart Level */
++	switch (pdata->restart) {
++	case 100:
++		max8998_update_reg(i2c, MAX8998_REG_CHGR1, 0x1 << 3, 0x3 << 3);
++		break;
++	case 150:
++		max8998_update_reg(i2c, MAX8998_REG_CHGR1, 0x0 << 3, 0x3 << 3);
++		break;
++	case 200:
++		max8998_update_reg(i2c, MAX8998_REG_CHGR1, 0x2 << 3, 0x3 << 3);
++		break;
++	case -1:
++		max8998_update_reg(i2c, MAX8998_REG_CHGR1, 0x3 << 3, 0x3 << 3);
++		break;
++	default:
++		dev_info(max8998->dev, "Restart Level not set: leave it unchanged.\n");
++	}
++
++	/* Setup Charge Full Timeout */
++	switch (pdata->timeout) {
++	case 5:
++		max8998_update_reg(i2c, MAX8998_REG_CHGR2, 0x0 << 4, 0x3 << 4);
++		break;
++	case 6:
++		max8998_update_reg(i2c, MAX8998_REG_CHGR2, 0x1 << 4, 0x3 << 4);
++		break;
++	case 7:
++		max8998_update_reg(i2c, MAX8998_REG_CHGR2, 0x2 << 4, 0x3 << 4);
++		break;
++	case -1:
++		max8998_update_reg(i2c, MAX8998_REG_CHGR2, 0x3 << 4, 0x3 << 4);
++		break;
++	default:
++		dev_info(max8998->dev, "Full Timeout not set: leave it unchanged.\n");
++	}
++
++	max8998->battery.name = "max8998_pmic";
++	max8998->battery.type = POWER_SUPPLY_TYPE_BATTERY;
++	max8998->battery.get_property = max8998_battery_get_property;
++	max8998->battery.properties = max8998_battery_props;
++	max8998->battery.num_properties = ARRAY_SIZE(max8998_battery_props);
++
++	ret = power_supply_register(max8998->dev, &max8998->battery);
++	if (ret) {
++		dev_err(max8998->dev, "failed: power supply register\n");
++		kfree(max8998);
++		return ret;
++	}
++
++	max8998->device_id = pdev->id_entry->driver_data;
++
++	return 0;
++}
++
++static int __devexit max8998_battery_remove(struct platform_device *pdev)
++{
++	struct max8998_battery_data *max8998 = platform_get_drvdata(pdev);
++
++	power_supply_unregister(&max8998->battery);
++	kfree(max8998);
++
++	return 0;
++}
++
++static const struct platform_device_id max8998_battery_id[] = {
++	{ "max8998-battery", TYPE_MAX8998 },
++	{ "lp3974-battery", TYPE_LP3974 },
++};
++
++static struct platform_driver max8998_battery_driver = {
++	.driver = {
++		.name = "max8998-battery",
++		.owner = THIS_MODULE,
++	},
++	.probe = max8998_battery_probe,
++	.remove = __devexit_p(max8998_battery_remove),
++	.id_table = max8998_battery_id,
++};
++
++static int __init max8998_battery_init(void)
++{
++	return platform_driver_register(&max8998_battery_driver);
++}
++module_init(max8998_battery_init);
++
++static void __exit max8998_battery_cleanup(void)
++{
++	platform_driver_unregister(&max8998_battery_driver);
++}
++module_exit(max8998_battery_cleanup);
++
++MODULE_DESCRIPTION("MAXIM 8998 battery control driver");
++MODULE_AUTHOR("MyungJoo Ham <myungjoo.ham@samsung.com>");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
+index 9946488..0d38e64 100644
+--- a/drivers/regulator/max8998.c
++++ b/drivers/regulator/max8998.c
+@@ -86,6 +86,13 @@ static const struct voltage_map_desc buck3_voltage_map_desc = {
+ static const struct voltage_map_desc buck4_voltage_map_desc = {
+ 	.min = 800,	.step = 100,	.max = 2300,
+ };
++static const int charger_current_map_desc_max8998[] = {
++	90, 380, 475, 550, 570, 600, 700, 800
++};
++static const int charger_current_map_desc_lp3974[] = {
++	100, 400, 450, 500, 550, 600, 700, 800
++};
++const int *charger_current_map_desc;
+ 
+ static const struct voltage_map_desc *ldo_voltage_map[] = {
+ 	NULL,
+@@ -115,6 +122,7 @@ static const struct voltage_map_desc *ldo_voltage_map[] = {
+ 	NULL,				/* ENVICHG */
+ 	NULL,				/* ESAFEOUT1 */
+ 	NULL,				/* ESAFEOUT2 */
++	NULL,				/* CHARGER */
+ };
+ 
+ static inline int max8998_get_ldo(struct regulator_dev *rdev)
+@@ -173,6 +181,10 @@ static int max8998_get_enable_register(struct regulator_dev *rdev,
+ 		*reg = MAX8998_REG_CHGR2;
+ 		*shift = 7 - (ldo - MAX8998_ESAFEOUT1);
+ 		break;
++	case MAX8998_CHARGER:
++		*reg = MAX8998_REG_CHGR2;
++		*shift = 0;
++		break;
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -198,6 +210,14 @@ static int max8998_ldo_is_enabled(struct regulator_dev *rdev)
+ 	return val & (1 << shift);
  }
  
--#ifdef CONFIG_X86_LOCAL_APIC
--# define ARCH_HAS_NMI_WATCHDOG
--#endif
++static int max8998_ldo_is_enabled_negated(struct regulator_dev *rdev)
++{
++	int ret = max8998_ldo_is_enabled(rdev);
++	if (ret >= 0)
++		ret = !ret;
++	return ret;
++}
++
+ static int max8998_ldo_enable(struct regulator_dev *rdev)
+ {
+ 	struct max8998_data *max8998 = rdev_get_drvdata(rdev);
+@@ -503,6 +523,76 @@ buck2_exit:
+ 	return ret;
+ }
+ 
++static int max8998_charger_current_set(struct regulator_dev *rdev,
++					int min_uA, int max_uA)
++{
++	struct max8998_data *max8998 = rdev_get_drvdata(rdev);
++	struct i2c_client *i2c = max8998->iodev->i2c;
++	int reg = MAX8998_REG_CHGR1;
++	int shift = 0;
++	int mask = 0x7;
++	int ret;
++	u8 val;
++	int chosen = -1, chosen_current = -1;
++	int i;
++
++	if (!charger_current_map_desc)
++		return -ENXIO;
++
++	for (i = 0; i < (mask + 1); i++) {
++		int temp = charger_current_map_desc[i];
++		if (temp >= (min_uA / 1000) && temp <= (max_uA / 1000) &&
++				temp > chosen_current) {
++			chosen = i;
++			chosen_current = temp;
++		}
++	}
++
++	if (chosen < 0)
++		return -EINVAL;
++
++	ret = max8998_read_reg(i2c, reg, &val);
++	if (ret)
++		return ret;
++
++	val &= ~(mask << shift);
++	val |= (chosen & mask) << shift;
++
++	ret = max8998_write_reg(i2c, reg, val);
++	if (ret)
++		return ret;
++
++	dev_info(&rdev->dev, "charger current limit = %dmA (%xh)\n",
++			chosen_current, chosen);
++
++	max8998_update_eoc(max8998->iodev);
++
++	return 0;
++}
++
++static int max8998_charger_current_get(struct regulator_dev *rdev)
++{
++	struct max8998_data *max8998 = rdev_get_drvdata(rdev);
++	struct i2c_client *i2c = max8998->iodev->i2c;
++	int reg = MAX8998_REG_CHGR1;
++	int shift = 0;
++	int mask = 0x7;
++	int ret;
++	u8 val;
++
++	ret = max8998_read_reg(i2c, reg, &val);
++	if (ret)
++		return ret;
++
++	val >>= shift;
++	val &= mask;
++
++	if (!charger_current_map_desc)
++		return -ENXIO;
++
++	return charger_current_map_desc[val] * 1000;
++}
++
+ static struct regulator_ops max8998_ldo_ops = {
+ 	.list_voltage		= max8998_list_voltage,
+ 	.is_enabled		= max8998_ldo_is_enabled,
+@@ -533,6 +623,20 @@ static struct regulator_ops max8998_others_ops = {
+ 	.set_suspend_disable	= max8998_ldo_disable,
+ };
+ 
++/* The enable bit is negated */
++static struct regulator_ops max8998_charger_ops = {
++	.is_enabled		= max8998_ldo_is_enabled_negated,
++	/* enable and disable are intentionally negated */
++	.enable			= max8998_ldo_disable,
++	.disable		= max8998_ldo_enable,
++	.set_current_limit	= max8998_charger_current_set,
++	.get_current_limit	= max8998_charger_current_get,
++};
++
++static struct regulator_ops max8998_neg_online_ops = {
++	.is_enabled		= max8998_ldo_is_enabled_negated,
++};
++
+ static struct regulator_desc regulators[] = {
+ 	{
+ 		.name		= "LDO2",
+@@ -684,7 +788,13 @@ static struct regulator_desc regulators[] = {
+ 		.ops		= &max8998_others_ops,
+ 		.type		= REGULATOR_VOLTAGE,
+ 		.owner		= THIS_MODULE,
+-	}
++	}, {
++		.name		= "CHARGER",
++		.id		= MAX8998_CHARGER,
++		.ops		= &max8998_charger_ops,
++		.type		= REGULATOR_CURRENT,
++		.owner		= THIS_MODULE,
++	},
+ };
+ 
+ static __devinit int max8998_pmic_probe(struct platform_device *pdev)
+@@ -834,13 +944,27 @@ static __devinit int max8998_pmic_probe(struct platform_device *pdev)
+ 			return ret;
+ 	}
+ 
++	switch (pdev->id_entry->driver_data) {
++	case TYPE_MAX8998:
++		charger_current_map_desc = charger_current_map_desc_max8998;
++		break;
++	case TYPE_LP3974:
++		charger_current_map_desc = charger_current_map_desc_lp3974;
++		break;
++	default:
++		ret = -ENODEV;
++		goto err;
++	}
++
+ 	for (i = 0; i < pdata->num_regulators; i++) {
+ 		const struct voltage_map_desc *desc;
+ 		int id = pdata->regulators[i].id;
+ 		int index = id - MAX8998_LDO2;
+ 
+ 		desc = ldo_voltage_map[id];
+-		if (desc && regulators[index].ops != &max8998_others_ops) {
++		if (desc && regulators[index].ops != &max8998_others_ops &&
++		    regulators[index].ops != &max8998_charger_ops &&
++		    regulators[index].ops != &max8998_neg_online_ops) {
+ 			int count = (desc->max - desc->min) / desc->step + 1;
+ 			regulators[index].n_voltages = count;
+ 		}
+@@ -854,7 +978,6 @@ static __devinit int max8998_pmic_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
 -
- #ifdef CONFIG_X86_32
- extern void irq_ctx_init(int cpu);
- #else
-diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
-index 3545838..c4021b9 100644
---- a/arch/x86/include/asm/nmi.h
-+++ b/arch/x86/include/asm/nmi.h
-@@ -5,7 +5,7 @@
- #include <asm/irq.h>
- #include <asm/io.h>
+ 	return 0;
+ err:
+ 	for (i = 0; i < max8998->num_regulators; i++)
+diff --git a/include/linux/mfd/max8998-private.h b/include/linux/mfd/max8998-private.h
+index f107f42..704249d 100644
+--- a/include/linux/mfd/max8998-private.h
++++ b/include/linux/mfd/max8998-private.h
+@@ -102,11 +102,12 @@ enum {
+ };
  
--#ifdef ARCH_HAS_NMI_WATCHDOG
-+#ifdef CONFIG_X86_LOCAL_APIC
+ /* MAX8998 various variants */
+-enum {
++enum max8998_type {
+ 	TYPE_MAX8998 = 0, /* Default */
+ 	TYPE_LP3974,	/* National version of MAX8998 */
+ 	TYPE_LP3974_REGERR, /* National version of MAX8998 with RTC REG BUG */
+ 	TYPE_LP3979,	/* Added AVS */
++	TYPE_UNKNOWN,
+ };
  
- extern void die_nmi(char *str, struct pt_regs *regs, int do_panic);
- extern int avail_to_resrv_perfctr_nmi_bit(unsigned int);
-diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-index 93da91d..c57d0b5 100644
---- a/arch/x86/kernel/apic/hw_nmi.c
-+++ b/arch/x86/kernel/apic/hw_nmi.c
-@@ -17,7 +17,6 @@
- #include <linux/nmi.h>
- #include <linux/module.h>
- 
--#ifdef ARCH_HAS_NMI_WATCHDOG
- #ifdef CONFIG_HARDLOCKUP_DETECTOR
- u64 hw_nmi_get_sample_period(void)
- {
-@@ -25,15 +24,6 @@ u64 hw_nmi_get_sample_period(void)
- }
- #endif
- 
--#ifndef CONFIG_HARDLOCKUP_DETECTOR
--void touch_nmi_watchdog(void)
--{
--	touch_softlockup_watchdog();
--}
--EXPORT_SYMBOL(touch_nmi_watchdog);
--#endif
--#endif
--
- #ifdef arch_trigger_all_cpu_backtrace
- /* For reliability, we're prepared to waste bits here. */
- static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
-diff --git a/arch/x86/kernel/cpu/perfctr-watchdog.c b/arch/x86/kernel/cpu/perfctr-watchdog.c
-index 14d4592..d5a2366 100644
---- a/arch/x86/kernel/cpu/perfctr-watchdog.c
-+++ b/arch/x86/kernel/cpu/perfctr-watchdog.c
-@@ -16,7 +16,7 @@
- #include <linux/kernel.h>
- #include <linux/bitops.h>
- #include <linux/smp.h>
--#include <linux/nmi.h>
-+#include <asm/nmi.h>
- #include <linux/kprobes.h>
- 
- #include <asm/apic.h>
-diff --git a/arch/x86/oprofile/op_model_p4.c b/arch/x86/oprofile/op_model_p4.c
-index 182558d..9fadec0 100644
---- a/arch/x86/oprofile/op_model_p4.c
-+++ b/arch/x86/oprofile/op_model_p4.c
-@@ -11,7 +11,7 @@
- #include <linux/oprofile.h>
- #include <linux/smp.h>
- #include <linux/ptrace.h>
--#include <linux/nmi.h>
-+#include <asm/nmi.h>
- #include <asm/msr.h>
- #include <asm/fixmap.h>
- #include <asm/apic.h>
-diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
-index c19f4a2..dea7b5b 100644
---- a/drivers/watchdog/hpwdt.c
-+++ b/drivers/watchdog/hpwdt.c
-@@ -642,7 +642,7 @@ static struct notifier_block die_notifier = {
+ #define MAX8998_IRQ_DCINF_MASK		(1 << 2)
+@@ -146,6 +147,7 @@ enum {
+  * @irq_masks_cur: currently active value
+  * @irq_masks_cache: cached hardware value
+  * @type: indicate which max8998 "variant" is used
++ * @battery: the max8998 battery control device
   */
+ struct max8998_dev {
+ 	struct device *dev;
+@@ -161,6 +163,7 @@ struct max8998_dev {
+ 	u8 irq_masks_cache[MAX8998_NUM_IRQ_REGS];
+ 	int type;
+ 	bool wakeup;
++	struct platform_device *battery;
+ };
  
- #ifdef CONFIG_HPWDT_NMI_DECODING
--#ifdef ARCH_HAS_NMI_WATCHDOG
-+#ifdef CONFIG_X86_LOCAL_APIC
- static void __devinit hpwdt_check_nmi_decoding(struct pci_dev *dev)
- {
- 	/*
-@@ -657,7 +657,7 @@ static void __devinit hpwdt_check_nmi_decoding(struct pci_dev *dev)
- 	dev_warn(&dev->dev, "NMI decoding is disabled. "
- 		"Your kernel does not support a NMI Watchdog.\n");
- }
--#endif /* ARCH_HAS_NMI_WATCHDOG */
-+#endif /* CONFIG_X86_LOCAL_APIC */
+ int max8998_irq_init(struct max8998_dev *max8998);
+@@ -175,4 +178,11 @@ extern int max8998_bulk_write(struct i2c_client *i2c, u8 reg, int count,
+ 		u8 *buf);
+ extern int max8998_update_reg(struct i2c_client *i2c, u8 reg, u8 val, u8 mask);
  
- static int __devinit hpwdt_init_nmi_decoding(struct pci_dev *dev)
- {
-diff --git a/include/linux/nmi.h b/include/linux/nmi.h
-index 17ccf44..c536f85 100644
---- a/include/linux/nmi.h
-+++ b/include/linux/nmi.h
-@@ -14,18 +14,14 @@
-  * may be used to reset the timeout - for code which intentionally
-  * disables interrupts for a long time. This call is stateless.
++#ifdef CONFIG_CHARGERCTRL_MAX8998
++extern void max8998_update_eoc(struct max8998_dev *mdev);
++extern const int *charger_current_map_desc;
++#else
++static void __maybe_unused max8998_update_eoc(struct max8998_dev *mdev) { }
++#endif
++
+ #endif /*  __LINUX_MFD_MAX8998_PRIV_H */
+diff --git a/include/linux/mfd/max8998.h b/include/linux/mfd/max8998.h
+index 7194c35..146a7ad 100644
+--- a/include/linux/mfd/max8998.h
++++ b/include/linux/mfd/max8998.h
+@@ -52,6 +52,12 @@ enum {
+ 	MAX8998_ENVICHG,
+ 	MAX8998_ESAFEOUT1,
+ 	MAX8998_ESAFEOUT2,
++	/*
++	 * CHARGER: Controls ON/OFF, current limit of the charger.
++	 * However, note that even if CHARGER is ON, CHARGER_ONLINE
++	 * can be in "disabled" state by MAX8998 internal control.
++	**/
++	MAX8998_CHARGER,
+ };
+ 
+ /**
+@@ -84,6 +90,12 @@ struct max8998_regulator_data {
+  * @buck1_default_idx: Default for BUCK1 gpio pin 1, 2
+  * @buck2_set3: BUCK2 gpio pin to set output voltage
+  * @buck2_default_idx: Default for BUCK2 gpio pin.
++ * @eoc: End of Charge Level: 10 ~ 45% or if it's over 45, in mA.
++ *   If it's under 10, leave it unchanged.
++ * @restart: Restart Level in mV: 100, 150, 200, and -1 for disable.
++ *   Otherwise, leave it unchanged.
++ * @timeout: Full Timeout in hours: 5, 6, 7, and -1 for disable.
++ *  Otherwise, leave it unchanged.
   */
--#ifdef ARCH_HAS_NMI_WATCHDOG
-+#if defined(ARCH_HAS_NMI_WATCHDOG) || defined(CONFIG_HARDLOCKUP_DETECTOR)
- #include <asm/nmi.h>
- extern void touch_nmi_watchdog(void);
- #else
--#ifndef CONFIG_HARDLOCKUP_DETECTOR
- static inline void touch_nmi_watchdog(void)
- {
- 	touch_softlockup_watchdog();
- }
--#else
--extern void touch_nmi_watchdog(void);
--#endif
- #endif
+ struct max8998_platform_data {
+ 	struct max8998_regulator_data	*regulators;
+@@ -103,6 +115,9 @@ struct max8998_platform_data {
+ 	int				buck2_set3;
+ 	int				buck2_default_idx;
+ 	bool				wakeup;
++	int				eoc;
++	int				restart;
++	int				timeout;
+ };
  
- /*
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 28b42b9..2d05adb 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -173,7 +173,8 @@ config LOCKUP_DETECTOR
- 	  An NMI is generated every 60 seconds or so to check for hardlockups.
- 
- config HARDLOCKUP_DETECTOR
--	def_bool LOCKUP_DETECTOR && PERF_EVENTS && HAVE_PERF_EVENTS_NMI
-+	def_bool LOCKUP_DETECTOR && PERF_EVENTS && HAVE_PERF_EVENTS_NMI && \
-+		 !ARCH_HAS_NMI_WATCHDOG
- 
- config BOOTPARAM_SOFTLOCKUP_PANIC
- 	bool "Panic (Reboot) On Soft Lockups"
+ #endif /*  __LINUX_MFD_MAX8998_H */
+-- 
+1.7.1
+
