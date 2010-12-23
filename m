@@ -1,150 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751743Ab0LWGTH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 01:19:07 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:58494 "EHLO smtps.tip.net.au"
+	id S1751660Ab0LWGVD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 01:21:03 -0500
+Received: from mga02.intel.com ([134.134.136.20]:4331 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751081Ab0LWGTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 01:19:06 -0500
-Date: Thu, 23 Dec 2010 17:18:59 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anand Gadiyar <gadiyar@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>
-Subject: linux-next: manual merge of the usb tree with the omap tree
-Message-Id: <20101223171859.f6842045.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751186Ab0LWGVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 01:21:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,217,1291622400"; 
+   d="scan'208";a="690075275"
+From: Youquan Song <youquan.song@intel.com>
+To: davej@redhat.com, cpufreq@vger.kernel.org
+Cc: venki@google.com, arjan@linux.intel.com, lenb@kernel.org,
+        suresh.b.siddha@intel.com, kent.liu@intel.com, chaohong.guo@intel.com,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Youquan Song <youquan.song@linux.intel.com>,
+        Youquan Song <youquan.song@intel.com>
+Subject: [PATCH 0/6] cpufreq: Add sampling window to enhance ondemand governor power efficiency 
+Date: Thu, 23 Dec 2010 14:23:38 +0800
+Message-Id: <1293085424-18212-1-git-send-email-youquan.song@intel.com>
+X-Mailer: git-send-email 1.6.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Running a well-known power performance benchmark, current ondemand governor is
+not power efficiency. Even when workload is at 10%~20% of full capability, the
+CPU will also run much of time at highest frequency. In fact, in this situation,
+the lowest frequency often can meet user requirement. When running this
+benchmark on turbo mode enable machine, I compare the result of different
+governors, the results of ondemand and performance governors are the closest.
+There is no much power saving between ondemand and performance governor. If we
+can ignore the little power saving, the perfomance governor even better than 
+ondemand governor, at leaset for better performance. 
 
-Today's linux-next merge of the usb tree got a conflict in
-arch/arm/mach-omap2/clock3xxx_data.c and
-arch/arm/mach-omap2/clock44xx_data.c between various commits from the omap
-tree and various commits from the usb tree.
+One potential reason for ondemand governor is not power efficiency is that
+ondemand governor decide the next target frequency by instant requirement during
+sampling interval (10ms or possible a little longer for deferrable timer in idle
+tickless). The instant requirement can response quickly to workload change, but
+it does not usually reflect workload real CPU usage requirement in a small 
+longer time and it possibly causes frequently change between highest and lowest
+frequency.     
 
-I did a quick fix (which may be completely wrong - see below).
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+This patchset add a sampling window for percpu ondemand thread. Each sampling
+window with max 150 record items which slide every sampling interval and use to
+track the workload requirement during latest sampling window timeframe. 
+The average of workload during latest sample windows will be used to decide next
+target frequency. The sampling window targets to be more truly reflects workload
+requirement of CPU usage. 
 
-diff --cc arch/arm/mach-omap2/clock3xxx_data.c
-index 9ab817e,0579604..0000000
---- a/arch/arm/mach-omap2/clock3xxx_data.c
-+++ b/arch/arm/mach-omap2/clock3xxx_data.c
-@@@ -3275,17 -3267,18 +3275,18 @@@ static struct omap_clk omap3xxx_clks[] 
-  	CLK(NULL,	"gfx_l3_ick",	&gfx_l3_ick,	CK_3430ES1),
-  	CLK(NULL,	"gfx_cg1_ck",	&gfx_cg1_ck,	CK_3430ES1),
-  	CLK(NULL,	"gfx_cg2_ck",	&gfx_cg2_ck,	CK_3430ES1),
- -	CLK(NULL,	"sgx_fck",	&sgx_fck,	CK_3430ES2 | CK_3517),
- -	CLK(NULL,	"sgx_ick",	&sgx_ick,	CK_3430ES2 | CK_3517),
- +	CLK(NULL,	"sgx_fck",	&sgx_fck,	CK_3430ES2PLUS | CK_3517 | CK_36XX),
- +	CLK(NULL,	"sgx_ick",	&sgx_ick,	CK_3430ES2PLUS | CK_3517 | CK_36XX),
-  	CLK(NULL,	"d2d_26m_fck",	&d2d_26m_fck,	CK_3430ES1),
- -	CLK(NULL,	"modem_fck",	&modem_fck,	CK_343X),
- -	CLK(NULL,	"sad2d_ick",	&sad2d_ick,	CK_343X),
- -	CLK(NULL,	"mad2d_ick",	&mad2d_ick,	CK_343X),
- +	CLK(NULL,	"modem_fck",	&modem_fck,	CK_34XX | CK_36XX),
- +	CLK(NULL,	"sad2d_ick",	&sad2d_ick,	CK_34XX | CK_36XX),
- +	CLK(NULL,	"mad2d_ick",	&mad2d_ick,	CK_34XX | CK_36XX),
-  	CLK(NULL,	"gpt10_fck",	&gpt10_fck,	CK_3XXX),
-  	CLK(NULL,	"gpt11_fck",	&gpt11_fck,	CK_3XXX),
- -	CLK(NULL,	"cpefuse_fck",	&cpefuse_fck,	CK_3430ES2 | CK_AM35XX),
- -	CLK(NULL,	"ts_fck",	&ts_fck,	CK_3430ES2 | CK_AM35XX),
- -	CLK(NULL,	"usbtll_fck",	&usbtll_fck,	CK_3430ES2 | CK_AM35XX),
- +	CLK(NULL,	"cpefuse_fck",	&cpefuse_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
- +	CLK(NULL,	"ts_fck",	&ts_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
- +	CLK(NULL,	"usbtll_fck",	&usbtll_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
-+ 	CLK("ehci-omap.0",	"usbtll_fck",	&usbtll_fck,	CK_3430ES2 | CK_AM35XX),
-  	CLK("omap-mcbsp.1",	"prcm_fck",	&core_96m_fck,	CK_3XXX),
-  	CLK("omap-mcbsp.5",	"prcm_fck",	&core_96m_fck,	CK_3XXX),
-  	CLK(NULL,	"core_96m_fck",	&core_96m_fck,	CK_3XXX),
-@@@ -3309,26 -3302,27 +3310,27 @@@
-  	CLK(NULL,	"core_12m_fck",	&core_12m_fck,	CK_3XXX),
-  	CLK("omap_hdq.0", "fck",	&hdq_fck,	CK_3XXX),
-  	CLK(NULL,	"ssi_ssr_fck",	&ssi_ssr_fck_3430es1,	CK_3430ES1),
- -	CLK(NULL,	"ssi_ssr_fck",	&ssi_ssr_fck_3430es2,	CK_3430ES2),
- +	CLK(NULL,	"ssi_ssr_fck",	&ssi_ssr_fck_3430es2,	CK_3430ES2PLUS | CK_36XX),
-  	CLK(NULL,	"ssi_sst_fck",	&ssi_sst_fck_3430es1,	CK_3430ES1),
- -	CLK(NULL,	"ssi_sst_fck",	&ssi_sst_fck_3430es2,	CK_3430ES2),
- +	CLK(NULL,	"ssi_sst_fck",	&ssi_sst_fck_3430es2,	CK_3430ES2PLUS | CK_36XX),
-  	CLK(NULL,	"core_l3_ick",	&core_l3_ick,	CK_3XXX),
-- 	CLK("musb_hdrc",	"ick",	&hsotgusb_ick_3430es1,	CK_3430ES1),
-- 	CLK("musb_hdrc",	"ick",	&hsotgusb_ick_3430es2,	CK_3430ES2PLUS | CK_36XX),
-+ 	CLK("musb-omap2430",	"ick",	&hsotgusb_ick_3430es1,	CK_3430ES1),
- -	CLK("musb-omap2430",	"ick",	&hsotgusb_ick_3430es2,	CK_3430ES2),
-++	CLK("musb-omap2430",	"ick",	&hsotgusb_ick_3430es2,	CK_3430ES2PLUS | CK_36XX),
-  	CLK(NULL,	"sdrc_ick",	&sdrc_ick,	CK_3XXX),
-  	CLK(NULL,	"gpmc_fck",	&gpmc_fck,	CK_3XXX),
- -	CLK(NULL,	"security_l3_ick", &security_l3_ick, CK_343X),
- -	CLK(NULL,	"pka_ick",	&pka_ick,	CK_343X),
- +	CLK(NULL,	"security_l3_ick", &security_l3_ick, CK_34XX | CK_36XX),
- +	CLK(NULL,	"pka_ick",	&pka_ick,	CK_34XX | CK_36XX),
-  	CLK(NULL,	"core_l4_ick",	&core_l4_ick,	CK_3XXX),
- -	CLK(NULL,	"usbtll_ick",	&usbtll_ick,	CK_3430ES2 | CK_AM35XX),
- +	CLK(NULL,	"usbtll_ick",	&usbtll_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
-+ 	CLK("ehci-omap.0",	"usbtll_ick",	&usbtll_ick,	CK_3430ES2 | CK_AM35XX),
- -	CLK("mmci-omap-hs.2",	"ick",	&mmchs3_ick,	CK_3430ES2 | CK_AM35XX),
- -	CLK(NULL,	"icr_ick",	&icr_ick,	CK_343X),
- -	CLK("omap-aes",	"ick",	&aes2_ick,	CK_343X),
- -	CLK("omap-sham",	"ick",	&sha12_ick,	CK_343X),
- -	CLK(NULL,	"des2_ick",	&des2_ick,	CK_343X),
- +	CLK("mmci-omap-hs.2",	"ick",	&mmchs3_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
- +	CLK(NULL,	"icr_ick",	&icr_ick,	CK_34XX | CK_36XX),
- +	CLK("omap-aes",	"ick",	&aes2_ick,	CK_34XX | CK_36XX),
- +	CLK("omap-sham",	"ick",	&sha12_ick,	CK_34XX | CK_36XX),
- +	CLK(NULL,	"des2_ick",	&des2_ick,	CK_34XX | CK_36XX),
-  	CLK("mmci-omap-hs.1",	"ick",	&mmchs2_ick,	CK_3XXX),
-  	CLK("mmci-omap-hs.0",	"ick",	&mmchs1_ick,	CK_3XXX),
- -	CLK(NULL,	"mspro_ick",	&mspro_ick,	CK_343X),
- +	CLK(NULL,	"mspro_ick",	&mspro_ick,	CK_34XX | CK_36XX),
-  	CLK("omap_hdq.0", "ick",	&hdq_ick,	CK_3XXX),
-  	CLK("omap2_mcspi.4", "ick",	&mcspi4_ick,	CK_3XXX),
-  	CLK("omap2_mcspi.3", "ick",	&mcspi3_ick,	CK_3XXX),
-@@@ -3361,14 -3355,17 +3363,17 @@@
-  	CLK("omapdss",	"video_fck",	&dss_96m_fck,	CK_3XXX),
-  	CLK("omapdss",	"dss2_fck",	&dss2_alwon_fck, CK_3XXX),
-  	CLK("omapdss",	"ick",		&dss_ick_3430es1,	CK_3430ES1),
- -	CLK("omapdss",	"ick",		&dss_ick_3430es2,	CK_3430ES2 | CK_AM35XX),
- -	CLK(NULL,	"cam_mclk",	&cam_mclk,	CK_343X),
- -	CLK(NULL,	"cam_ick",	&cam_ick,	CK_343X),
- -	CLK(NULL,	"csi2_96m_fck",	&csi2_96m_fck,	CK_343X),
- -	CLK(NULL,	"usbhost_120m_fck", &usbhost_120m_fck, CK_3430ES2 | CK_AM35XX),
- +	CLK("omapdss",	"ick",		&dss_ick_3430es2,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
- +	CLK(NULL,	"cam_mclk",	&cam_mclk,	CK_34XX | CK_36XX),
- +	CLK(NULL,	"cam_ick",	&cam_ick,	CK_34XX | CK_36XX),
- +	CLK(NULL,	"csi2_96m_fck",	&csi2_96m_fck,	CK_34XX | CK_36XX),
- +	CLK(NULL,	"usbhost_120m_fck", &usbhost_120m_fck, CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
-+ 	CLK("ehci-omap.0",	"hs_fck", &usbhost_120m_fck, CK_3430ES2 | CK_AM35XX),
- -	CLK(NULL,	"usbhost_48m_fck", &usbhost_48m_fck, CK_3430ES2 | CK_AM35XX),
- +	CLK(NULL,	"usbhost_48m_fck", &usbhost_48m_fck, CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
-+ 	CLK("ehci-omap.0",	"fs_fck", &usbhost_48m_fck, CK_3430ES2 | CK_AM35XX),
- -	CLK(NULL,	"usbhost_ick",	&usbhost_ick,	CK_3430ES2 | CK_AM35XX),
- +	CLK(NULL,	"usbhost_ick",	&usbhost_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
-+ 	CLK("ehci-omap.0",	"usbhost_ick",	&usbhost_ick,	CK_3430ES2 | CK_AM35XX),
- -	CLK(NULL,	"usim_fck",	&usim_fck,	CK_3430ES2),
- +	CLK(NULL,	"usim_fck",	&usim_fck,	CK_3430ES2PLUS | CK_36XX),
-  	CLK(NULL,	"gpt1_fck",	&gpt1_fck,	CK_3XXX),
-  	CLK(NULL,	"wkup_32k_fck",	&wkup_32k_fck,	CK_3XXX),
-  	CLK(NULL,	"gpio1_dbck",	&gpio1_dbck,	CK_3XXX),
-diff --cc arch/arm/mach-omap2/clock44xx_data.c
-index c426adc,bfcd19f..0000000
---- a/arch/arm/mach-omap2/clock44xx_data.c
-+++ b/arch/arm/mach-omap2/clock44xx_data.c
-@@@ -3198,6 -2937,10 +3198,7 @@@ static struct omap_clk omap44xx_clks[] 
-  	CLK(NULL,	"uart3_fck",			&uart3_fck,	CK_443X),
-  	CLK(NULL,	"uart4_fck",			&uart4_fck,	CK_443X),
-  	CLK(NULL,	"usb_host_fs_fck",		&usb_host_fs_fck,	CK_443X),
-+ 	CLK("ehci-omap.0",	"fs_fck",		&usb_host_fs_fck,	CK_443X),
- -	CLK(NULL,	"usb_host_hs_utmi_p3_clk",	&usb_host_hs_utmi_p3_clk,	CK_443X),
- -	CLK(NULL,	"usb_host_hs_hsic60m_p1_clk",	&usb_host_hs_hsic60m_p1_clk,	CK_443X),
- -	CLK(NULL,	"usb_host_hs_hsic60m_p2_clk",	&usb_host_hs_hsic60m_p2_clk,	CK_443X),
-  	CLK(NULL,	"utmi_p1_gfclk",		&utmi_p1_gfclk,	CK_443X),
-  	CLK(NULL,	"usb_host_hs_utmi_p1_clk",	&usb_host_hs_utmi_p1_clk,	CK_443X),
-  	CLK(NULL,	"utmi_p2_gfclk",		&utmi_p2_gfclk,	CK_443X),
+The sampling window size can be set by user and default max sampling window
+is one second. When it is set to default sampling rate, the sampling window will
+roll back to original behaviour.
+
+The sampling window size also can be dynamicly changed in according to current
+system workload busy situation. The more idle, the smaller sampling window; the
+more busy, the larger sampling window. It will increase the respnose speed by
+decrease sampling window, while it will keep CPU working at high speed when busy
+by increase sampling window and also avoid unefficiently dangle between highest
+and lowest frequency in original ondemand.
+
+We set to up_threshold to 80 and down_differential to 20, so when workload reach
+ 80% of current frequency, it will increase to highest frequency. When workload
+decrease to below (up_threshold - down_differential)60% of current frequency
+capability, it will decrease the frequency, which ensure that CPU work above 60%
+of its current capability, otherwise lowest frequency will be used. 
+   
+The Turbo Mode (P0) will comsume much more power compare with second largest
+frequency (P1) and P1 frequency is often double, even more, with Pn lowest
+frequency; Current logic will increase sharply to highest frequency Turbo Mode
+when workload reach to up_threshold of current frequency capacity, even current
+frequency at lowest frequency. In this patchset, it will firstly evaluate P1 if
+it is enough to support current workload before directly enter into Turbo Mode.
+If P1 can meet workload requirement, it will save power compare of being Turbo
+Mode.  
+
+On my test platform with two sockets Westmere-EP server and run the well-known
+power performance benchmark, when workload is low, the patched governor is 
+power saving like powersave governor; while workload is high, the patched 
+governor is as good as performance governor but the patched governor consume
+less power than performance governor. Along with other patches in this patchset,
+the patched governor power efficiey is improved about 10%, while the performance
+has no apparently decrease.
+Running other benchmarks in phoronix, kernel building save 5% power, while the
+performance without decrease. compress-7zip save power 2%, while the performance
+also does not apparently decrease. However, apache benchmark saves power but its
+performance decrease a lot.
+
+
