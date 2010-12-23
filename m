@@ -1,76 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739Ab0LWSN7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 13:13:59 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:9254 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753656Ab0LWSN6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 13:13:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Uhu8PnAip8PEo1xLk1JIPhpELx9fz8k6k2r5TDYSVaV1BmNG/7pz0YHwy45e2SFx+D
-         CgV1hu53t1asB6WpGVLw==
+	id S1753764Ab0LWSTc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 13:19:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52308 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752286Ab0LWSTb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 13:19:31 -0500
+Date: Thu, 23 Dec 2010 19:12:13 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Dario Faggioli <raistlin@linux.it>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>, torbenh <torbenh@gmx.de>,
+        john.stultz@linaro.org, roland@redhat.com, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stanislaw Gruszka <sgruszka@redhat.com>
+Subject: Re: [PATCH] Read THREAD_CPUTIME clock from other  processes.
+Message-ID: <20101223181213.GA16501@redhat.com>
+References: <1293121303.3390.185.camel@Palantir> <20101223164453.GA13111@redhat.com> <1293125901.2748.10.camel@Palantir>
 MIME-Version: 1.0
-In-Reply-To: <20101223143859.GA1402@srcf.ucam.org>
-References: <1293085424-18212-1-git-send-email-youquan.song@intel.com>
-	<1293085424-18212-2-git-send-email-youquan.song@intel.com>
-	<1293085424-18212-3-git-send-email-youquan.song@intel.com>
-	<1293085424-18212-4-git-send-email-youquan.song@intel.com>
-	<1293085424-18212-5-git-send-email-youquan.song@intel.com>
-	<1293085424-18212-6-git-send-email-youquan.song@intel.com>
-	<1293085424-18212-7-git-send-email-youquan.song@intel.com>
-	<20101223105730.GB18363@comet.dominikbrodowski.net>
-	<20101223143859.GA1402@srcf.ucam.org>
-Date: Thu, 23 Dec 2010 10:13:54 -0800
-Message-ID: <AANLkTi=XkMqUSfO076mVqGCHv-Kw-jnuL8dZiN17ypqZ@mail.gmail.com>
-Subject: Re: [PATCH 6/6] cpufreq: Evaluate P1 before enter turbo mode
-From: Venkatesh Pallipadi <venki@google.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
-        Youquan Song <youquan.song@intel.com>, davej@redhat.com,
-        cpufreq@vger.kernel.org, arjan@linux.intel.com, lenb@kernel.org,
-        suresh.b.siddha@intel.com, kent.liu@intel.com, chaohong.guo@intel.com,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Youquan Song <youquan.song@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1293125901.2748.10.camel@Palantir>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 23, 2010 at 6:38 AM, Matthew Garrett <mjg@redhat.com> wrote:
-> On Thu, Dec 23, 2010 at 11:57:30AM +0100, Dominik Brodowski wrote:
+On 12/23, Dario Faggioli wrote:
 >
->> NACK. First of all, why is it only a "turbo mode" if it's 1000 kHz
->> difference?
+> On Thu, 2010-12-23 at 17:44 +0100, Oleg Nesterov wrote:
+> > > Therefore, this patch removes such limitation and enables the
+> > > following behaviour, for the threaded and process-based case,
+> > > respectively:
+> >
+> > Can't comment, I never understood this.
+> >
+> If I can ask... What's that you never understood? Why the limitation is
+> there?
+
+Yes. IOW, I agree it looks strange, clock_gettime() can sample the
+whole group but not a single thread.
+
+> > > @@ -349,18 +347,21 @@ int posix_cpu_clock_get(const clockid_t which_clock, struct timespec *tp)
+> > >  		rcu_read_lock();
+> > >  		p = find_task_by_vpid(pid);
+> > >  		if (p) {
+> > > -			if (CPUCLOCK_PERTHREAD(which_clock)) {
+> > > -				if (same_thread_group(p, current)) {
+> > > -					error = cpu_clock_sample(which_clock,
+> > > -								 p, &rtn);
+> > > -				}
+> > > +
+> > > +			if (CPUCLOCK_PERTHREAD(which_clock) &&
+> > > +			    same_thread_group(p, current)) {
+> > > +				error = cpu_clock_sample(which_clock,
+> > > +							 p, &rtn);
+> > >  			} else {
+> > >  				read_lock(&tasklist_lock);
+> > > -				if (thread_group_leader(p) && p->sighand) {
+> > > +				if (!CPUCLOCK_PERTHREAD(which_clock) &&
+> > > +				    thread_group_leader(p) && p->sighand)
+> > >  					error =
+> > >  					    cpu_clock_sample_group(which_clock,
+> > > -							           p, &rtn);
+> > > -				}
+> > > +								   p, &rtn);
+> > > +				else
+> > > +					error = cpu_clock_sample(which_clock,
+> > > +								 p, &rtn);
+> > >  				read_unlock(&tasklist_lock);
+> >
+> > Can't understand... why did you duplicate cpu_clock_sample() ?
+> >
+> > IOW, it seems to me you could simply kill the
+> > "if (same_thread_group(p, current)) {" line with the same efect, no?
+> >
+> Well, yes, but looking at the original code I thought that in the !
+> same_thread_group() case I might need the tasklist_lock...
 >
-> I believe that that's how it's supposed to be defined for Intel systems,
-> but you're right that this doesn't belong in generic code. AMD have
-> support for enabling/disabling their equivalent functionality through
-> sysfs - I'd say that copying that interface and using it to limit the
-> set of p-states provided to the core makes more sense.
->
+> Am I wrong? Is it there just because of cpu_clock_sample_group()?
 
-If this 1000kHz hack is needed, it should be in acpi-cpufreq driver
-along with Intel CPU and Turbo mode capability check..
-I had a change earlier and I don't think I ever pushed it out. But, it
-was doing the max freq transition on turbo capable CPUs in 2 steps.
-Something like:
-- cpu is in one of the low freqs.
-- ondemand asks for highest freq.
-- acpi-cpufreq will check whether the CPU is turbo capable and will
-only switch to non-turbo peak freq as first step.
-- If ondemand asks for highest freq again, acpi-cpufreq will then
-switch to turbo freq.
+Yes, it is because of _group (we are going to sample all sub-threads),
+not because of !same_thread_group().
 
-Something like that would probably help the problem here?
+Oh. In fact we should remove this tasklist, but this is another story.
 
-Thanks,
-Venki
+Oleg.
 
-
-Thanks,
-Venki
