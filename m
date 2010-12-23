@@ -1,150 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab0LWQV4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 11:21:56 -0500
-Received: from ms01.sssup.it ([193.205.80.99]:36870 "EHLO sssup.it"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752846Ab0LWQVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 11:21:55 -0500
-Subject: [PATCH] Read THREAD_CPUTIME clock from other  processes.
-From: Dario Faggioli <raistlin@linux.it>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, torbenh <torbenh@gmx.de>,
-        oleg <oleg@redhat.com>, john.stultz@linaro.org, roland@redhat.com,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-40XQ9HkjWZVkE7tABX7f"
-Date: Thu, 23 Dec 2010 17:21:43 +0100
-Message-ID: <1293121303.3390.185.camel@Palantir>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753147Ab0LWQgK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 11:36:10 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40564 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751927Ab0LWQgI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 11:36:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=t9jgD51EvthnKhXtcakcC8sYKy5bPfCgUIPnQd68O+YsFb8qA/QDUKPiBOf/t+nQrM
+         RY6V8/MOY4gVlgFnXxc/O32DnR31rEIFk1Tqz7ffSjI/vwF7i0AKiLXixLYQHwOVWwWw
+         KjwMfTKFJEgP3dEVeZxOPNLLWwkR2vXqzFTMQ=
+Date: Thu, 23 Dec 2010 17:33:15 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
+        jan.kratochvil@redhat.com
+Subject: Re: [PATCH 09/16] ptrace: make do_signal_stop() use ptrace_stop()
+ if the task is being ptraced
+Message-ID: <20101223163315.GD18482@htj.dyndns.org>
+References: <1291654624-6230-1-git-send-email-tj@kernel.org>
+ <1291654624-6230-10-git-send-email-tj@kernel.org>
+ <20101223122634.GA365@redhat.com>
+ <20101223135330.GA18482@htj.dyndns.org>
+ <20101223160648.GA10096@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101223160648.GA10096@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Dec 23, 2010 at 05:06:48PM +0100, Oleg Nesterov wrote:
+> > Yes, before the change, the task would respond to SIGCONT before the
+> > first ptrace request succeeds after attach.
+> 
+> Not exactly. But perhaps you meant that even without this change,
+> any ptrace() request after ptrace(PTRACE_CONT, SIGSTOP) will change
+> child->state = TASK_TRACED, and kill(SIGCONT) won't work after that.
 
---=-40XQ9HkjWZVkE7tABX7f
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Yeap, exactly.
 
-Trying to read CLOCK_THREAD_CPUTIME_ID of a thread from outside
-the process that spawned it with this code:
+> > To me, this doesn't seem to be anything intentional tho.  It seems
+> > a lot of ptrace and group stop interactions is in the grey area
+> > with only the current (quirky, I'm afraid) behavior drawing almost
+> > arbitrary lines across different behaviors.
+> 
+> Agreed.
+> 
+> However. Strangely, I didn't think about this before. With this
+> change, it is not possible to trace/debug the application so that
+> it can properly react to SIGCONT. Yes, currently we have a lot
+> more problems here, including do_wait, so probably this doesn't
+> matter.
+> 
+> Still I'd like to know what Jan and Roland think. I am paranoid,
+> yes ;)
 
-        if (clock_getcpuclockid(tid, &clockid) !=3D 0) {
-                perror("clock_getcpuclockid");
-                exit(EXIT_FAILURE);
-        }
+Definitely.
 
-results in this:
-  ### Testing tid 24207: CPU-time clock for PID 24207 is 1.132371729 second=
-s
-  ### Testing tid 24209: clock_getcpuclockid: Success
+Hmm... the mention of SIGCONT behavior reminds me of your mention of
+notification behavior on the other message.  I might write a more
+detailed reply there but, anyways, I don't think we'll be able to find
+one good behavior with the current set of operations.  If we hide the
+group stop handling and notification from the ptracer, it would allow,
+for example, transparent strace, but it will at the same time restrict
+what a debugger can do behind the tracee's back in a regressive way
+(ie. the current users would notice).
 
-OTH, if full-fledged processes are involved, the behaviour is this:
-  ### Testing tid 24218: CPU-time clock for PID 24218 is 0.001059305 second=
-s
-  ### Testing tid 24220: CPU-time clock for PID 24220 is 1.044057391 second=
-s
+I think it would be better to introduce a few new ptrace operations
+and give them more control in clearly defined and hopefully intutive
+way.  For example, a ptracer is notified when a task is stopping for
+group stop and it should be able to decide and tell the kernel whether
+to participate in the group stop or not.  For SIGCONT, likewise, the
+kernel can notify all ptracers in the group and can notify the real
+parent if all ptracers decide to participate in the continuation.
 
-Test programs available here: http://gitorious.org/clockid.
+That way, debuggers can still work behind the real parent's back (they
+often want to) while audit type tools can sniff transparently.  I
+think the trickier part would be adapting the existing operations so
+that they have clearly defined (mostly) compatible behavior while not
+hindering too much with addition of new capabilities.
 
-This is because clock_getcpuclockid forbids accessing thread
-specific CPU-time clocks from outside the thread group. This is
-not requested (e.g., by POSIX) to be like this, or at least no
-indication that such operation should fail can be found in
-`man clock_getcpuclockid' and alike.
+Thanks.
 
-However, having such capability could be useful, if you want
-to monitor the execution of a bunch of thread from some kind of
-"manager" which might not be part of the same process. A typical
-example that could benefit from this could be the JACK graph-manager.
-
-Therefore, this patch removes such limitation and enables the
-following behaviour, for the threaded and process-based case,
-respectively:
-
-  ### Testing tid 24704: CPU-time clock for PID 24704 is 1.049570008 second=
-s
-  ### Testing tid 24706: CPU-time clock for PID 24706 is 1.028650801seconds
-
-  ### Testing tid 24715: CPU-time clock for PID 24715 is 0.000957685 second=
-s
-  ### Testing tid 24717: CPU-time clock for PID 24717 is 1.045351509 second=
-s
-
-Signed-off-by: Dario Faggioli <raistlin@linux.it>
----
- kernel/posix-cpu-timers.c |   23 ++++++++++++-----------
- 1 files changed, 12 insertions(+), 11 deletions(-)
-
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index 05bb717..b0ed8cf 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -39,10 +39,8 @@ static int check_clock(const clockid_t which_clock)
-=20
- 	rcu_read_lock();
- 	p =3D find_task_by_vpid(pid);
--	if (!p || !(CPUCLOCK_PERTHREAD(which_clock) ?
--		   same_thread_group(p, current) : has_group_leader_pid(p))) {
-+	if (!p)
- 		error =3D -EINVAL;
--	}
- 	rcu_read_unlock();
-=20
- 	return error;
-@@ -349,18 +347,21 @@ int posix_cpu_clock_get(const clockid_t which_clock, =
-struct timespec *tp)
- 		rcu_read_lock();
- 		p =3D find_task_by_vpid(pid);
- 		if (p) {
--			if (CPUCLOCK_PERTHREAD(which_clock)) {
--				if (same_thread_group(p, current)) {
--					error =3D cpu_clock_sample(which_clock,
--								 p, &rtn);
--				}
-+
-+			if (CPUCLOCK_PERTHREAD(which_clock) &&
-+			    same_thread_group(p, current)) {
-+				error =3D cpu_clock_sample(which_clock,
-+							 p, &rtn);
- 			} else {
- 				read_lock(&tasklist_lock);
--				if (thread_group_leader(p) && p->sighand) {
-+				if (!CPUCLOCK_PERTHREAD(which_clock) &&
-+				    thread_group_leader(p) && p->sighand)
- 					error =3D
- 					    cpu_clock_sample_group(which_clock,
--							           p, &rtn);
--				}
-+								   p, &rtn);
-+				else
-+					error =3D cpu_clock_sample(which_clock,
-+								 p, &rtn);
- 				read_unlock(&tasklist_lock);
- 			}
- 		}
---=20
-1.7.2.3
-
-
---=20
-<<This happens because I choose it to happen!>> (Raistlin Majere)
-----------------------------------------------------------------------
-Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
-
-http://retis.sssup.it/people/faggioli -- dario.faggioli@jabber.org
-
---=-40XQ9HkjWZVkE7tABX7f
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAk0TdxcACgkQk4XaBE3IOsTLOQCgi0wjdcNzarCz4DF3HSSedNVQ
-bp4AmQHcOZnEBCm2nQDKHDpdFFIV5XVE
-=IAEm
------END PGP SIGNATURE-----
-
---=-40XQ9HkjWZVkE7tABX7f--
-
+-- 
+tejun
