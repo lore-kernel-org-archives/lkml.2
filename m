@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544Ab0LWItk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 03:49:40 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:60166 "EHLO mx2.mail.elte.hu"
+	id S1752613Ab0LWIt4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 03:49:56 -0500
+Received: from void.printf.net ([89.145.121.20]:40086 "EHLO void.printf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752114Ab0LWIti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 03:49:38 -0500
-Date: Thu, 23 Dec 2010 09:49:08 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Valdis.Kletnieks@vt.edu, mat <castet.matthieu@free.fr>,
-        Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
-        Arjan van de Ven <arjan@infradead.org>,
-        James Morris <jmorris@namei.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
-        Siarhei Liakh <sliakh.lkml@gmail.com>
-Subject: Re: [PATCH 3/3 V13] RO/NX protection for loadable kernel
-Message-ID: <20101223084908.GA21946@elte.hu>
-References: <4CE2F914.9070106@free.fr>
- <24422.1290656467@localhost>
- <20101126182355.62615dff@mat-laptop>
- <20101208221951.GO5750@outflux.net>
- <20101211001857.4c5e0794@mat-laptop>
- <20101222124019.GG10809@elte.hu>
- <34428.1293053719@localhost>
- <20101222215725.GB5585@elte.hu>
- <1293055346.22802.0.camel@gandalf.stny.rr.com>
+	id S1752027Ab0LWIty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 03:49:54 -0500
+From: Chris Ball <cjb@laptop.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: [GIT PULL] MMC fixes for 2.6.37
+Date: Thu, 23 Dec 2010 03:56:16 -0500
+Message-ID: <m3pqss50lr.fsf@pullcord.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.0.60 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1293055346.22802.0.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus,
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+Please pull from:
 
-> On Wed, 2010-12-22 at 22:57 +0100, Ingo Molnar wrote:
-> 
-> > It would be nice to see that fix submitted so that it gets into the tree that 
-> > introduced the bug.
-> > 
-> > Steve, Andrew?
-> 
-> Hi Ingo,
-> 
-> Which tree/branch should I base this on?
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
 
-Please use tip:x86/security, it contains the RO/NX patches:
+to fix a regression in resume-from-hibernate, and two minor driver bugs
+on Atmel controllers.  These have been tested in linux-next.  Thanks.
 
- 691513f70d39: x86: Resume trampoline must be executable
- 84e1c6bb38eb: x86: Add RO/NX protection for loadable kernel modules
- 5bd5a452662b: x86: Add NX protection for kernel data
- 64edc8ed5ffa: x86: Fix improper large page preservation
+The following changes since commit 0a59228168d3722b71f8e3dbc623316fb4be78f4:
 
-> [...] I could do write up formal patch and push it out.
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile (2010-12-18 10:28:54 -0800)
 
-Thanks!
+are available in the git repository at:
 
-	Ingo
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
+
+Nicolas Ferre (1):
+      mmc: atmel-mci: fix multiblock SDIO transfers
+
+Takashi Iwai (1):
+      mmc: Fix re-probing with PM_POST_RESTORE notification
+
+Yauhen Kharuzhy (1):
+      mmc: at91_mci: fix multiblock SDIO transfers
+
+ arch/arm/mach-at91/include/mach/at91_mci.h |    2 ++
+ drivers/mmc/core/core.c                    |    1 +
+ drivers/mmc/host/at91_mci.c                |   13 +++++++++----
+ drivers/mmc/host/atmel-mci.c               |   18 ++++++++++++------
+ 4 files changed, 24 insertions(+), 10 deletions(-)
+
+-- 
+Chris Ball   <cjb@laptop.org>
+One Laptop Per Child
