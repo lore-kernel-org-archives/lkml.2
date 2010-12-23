@@ -1,28 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752356Ab0LWUwP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 15:52:15 -0500
-Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:50456 "HELO
-	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752201Ab0LWUwN (ORCPT
+	id S1752391Ab0LWUyl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 15:54:41 -0500
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:42852 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751655Ab0LWUyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 15:52:13 -0500
+	Thu, 23 Dec 2010 15:54:39 -0500
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
 	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=X62QN26qLdaCWW84ebpM0idFexWGqnLxrk7GuYKWQH/K/enmA+pjkSJAQCECqe876HLbkajAPqIJYNF6+a+X9u0VkmDXo56K9mTz3ECB0ZijS9bID6ZeglWSB1p/52s4;
-Date: Thu, 23 Dec 2010 12:52:10 -0800
+	b=BJQcuQOd1Q4uUixoXDgTyx/NtiSuesXtDyLIUiOYCa/gUYxkcMCxkcACZRiRY5zCfzgjqKeuGBLM6SFR6R2fCSaBRL8l12+dDykmJlRqN2fqBVWcYN5yHi4QVj5S6jrM;
+Date: Thu, 23 Dec 2010 12:54:35 -0800
 From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-        linux-pci@vger.kernel.org,
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Matthew Wilcox <matthew@wil.cx>, linux-pci@vger.kernel.org,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
         ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [Resend][PATCH] PCI / Hotplug: Fix unexpected driver unregister
- in pciehp_acpi.c
-Message-ID: <20101223125210.07cc350f@jbarnes-desktop>
-In-Reply-To: <4D0EA38C.2090003@jp.fujitsu.com>
-References: <201012181329.46071.rjw@sisk.pl>
-	<4D0EA38C.2090003@jp.fujitsu.com>
+        LKML <linux-kernel@vger.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+Subject: Re: [PATCH] PCI / PCIe: Clear Root PME Status bits early during
+ system resume
+Message-ID: <20101223125435.248105fa@jbarnes-desktop>
+In-Reply-To: <201012191557.16403.rjw@sisk.pl>
+References: <201012191149.40547.rjw@sisk.pl>
+	<201012191341.23601.rjw@sisk.pl>
+	<201012191354.47960.rjw@sisk.pl>
+	<201012191557.16403.rjw@sisk.pl>
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -32,25 +35,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Dec 2010 09:30:04 +0900
-Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com> wrote:
+On Sun, 19 Dec 2010 15:57:16 +0100
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-> (2010/12/18 21:29), Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki<rjw@sisk.pl>
-> > 
-> > If pcie_ports_disabled is set, pcie_port_service_register() returns
-> > error code and select_detection_mode() should not attempt to
-> > unregister dummy_driver and use dummy_slots.  It should return
-> > PCIEHP_DETECT_ACPI immediately instead.
-> > 
-> > Signed-off-by: Rafael J. Wysocki<rjw@sisk.pl>
+> From: Rafael J. Wysocki <rjw@sisk.pl>
 > 
-> Reviewed-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-> Acked-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+> I noticed that PCI Express PMEs don't work on my Toshiba Portege R500
+> after the system has been woken up from a sleep state by a PME
+> (through Wake-on-LAN).  After some investigation it turned out that
+> the BIOS didn't clear the Root PME Status bit in the root port that
+> received the wakeup PME and since the Requester ID was also set in
+> the port's Root Status register, any subsequent PMEs didn't trigger
+> interrupts.
 > 
+> This problem can be avoided by clearing the Root PME Status bits in
+> all PCI Express root ports during early resume.  For this purpose,
+> add an early resume routine to the PCIe port driver and make this
+> driver be always registered, even if pci_ports_disable is set (in
+> which case the driver's only function is to provide the early
+> resume callback).
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> ---
 > 
 
-Applied to my for-linus branch, thanks guys.
+Applied to my linux-next branch, thanks.
 
 -- 
 Jesse Barnes, Intel Open Source Technology Center
