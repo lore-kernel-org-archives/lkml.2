@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016Ab0LWMBN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 07:01:13 -0500
-Received: from 30.mail-out.ovh.net ([213.186.62.213]:47479 "HELO
-	30.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752612Ab0LWMBL (ORCPT
+	id S1752935Ab0LWMMU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 07:12:20 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:49976 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752864Ab0LWMMS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 07:01:11 -0500
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Dec 2010 07:01:11 EST
-Message-ID: <4D133872.5050804@example.com>
-Date: Thu, 23 Dec 2010 12:54:26 +0100
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101211 Icedove/3.0.11
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Kukjin Kim <kgene.kim@samsung.com>, "'Takashi Iwai'" <tiwai@suse.de>,
-        "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Jassi Brar'" <jassi.brar@samsung.com>
-Subject: Re: linux-next: manual merge of the sound tree with the s5p tree
-References: <20101223115339.1ce18216.sfr@canb.auug.org.au> <003f01cba28c$872214f0$95663ed0$%kim@samsung.com> <s5hk4j0n43g.wl%tiwai@suse.de> <004001cba292$3827d2d0$a8777870$%kim@samsung.com> <20101223115024.GA28928@sirena.org.uk>
-In-Reply-To: <20101223115024.GA28928@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 4098557137468223791
-X-Ovh-Remote: 95.49.239.230 (afjf230.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	Thu, 23 Dec 2010 07:12:18 -0500
+Subject: Re: [PATCH] avoid race condition in pick_next_task_fair in
+ kernel/sched_fair.c
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Miklos Vajna <vmiklos@frugalware.org>, Mike Galbraith <efault@gmx.de>,
+        shenghui <crosslonelyover@gmail.com>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, Greg KH <greg@kroah.com>,
+        Paul Turner <pjt@google.com>
+In-Reply-To: <AANLkTi=1GMKF4emms0Qpx31=xk-FZXOTaeONmCohzWb2@mail.gmail.com>
+References: <AANLkTin49UHeVhfS-iFwWvPIg29HPhXaP3DorBAa-a0I@mail.gmail.com>
+	 <1277808215.1868.5.camel@laptop>
+	 <20101219020313.GJ31750@genesis.frugalware.org>
+	 <20101222002248.GP10557@genesis.frugalware.org>
+	 <1293006589.2170.41.camel@laptop>
+	 <1293007311.11370.172.camel@marge.simson.net>
+	 <1293008842.2170.70.camel@laptop>
+	 <20101222133154.GS10557@genesis.frugalware.org>
+	 <1293026422.2170.136.camel@laptop> <1293027112.2170.140.camel@laptop>
+	 <20101222151434.GW10557@genesis.frugalware.org>
+	 <1293037718.2170.155.camel@laptop> <1293050173.2170.389.camel@laptop>
+	 <AANLkTi=1GMKF4emms0Qpx31=xk-FZXOTaeONmCohzWb2@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 23 Dec 2010 13:12:10 +0100
+Message-ID: <1293106330.2170.618.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.12.2010 12:50, Mark Brown wrote:
+On Thu, 2010-12-23 at 10:08 +0800, Yong Zhang wrote:
+> > systemd--1251    0d..5. 2015398us : enqueue_task_fair <-enqueue_task
+> > systemd--1251    0d..5. 2015398us : print_runqueue <-enqueue_task_fair
+> > systemd--1251    0d..5. 2015399us : __print_runqueue:  cfs_rq: c2407c34, nr: 3, load: 3072
+> > systemd--1251    0d..5. 2015400us : __print_runqueue:  curr: f6a8de5c, comm: systemd-cgroups/1251, load: 1024
+> > systemd--1251    0d..5. 2015401us : __print_runqueue:  se: f69e6300, load: 1024,
+> > systemd--1251    0d..5. 2015401us : __print_runqueue:    cfs_rq: f69e6540, nr: 2, load: 2048
+> > systemd--1251    0d..5. 2015402us : __print_runqueue:    curr: (null)
+> > systemd--1251    0d..5. 2015402us : __print_runqueue:    se: f69e65a0, load: 4137574976,
+> 
+> the load == f69e65a0 == address of se, odd
 
->> Is there another repository?
->
-> topic/asoc is in Takashi's tree and is equivalent to my for-next branch,
-> it usually lags it by only a small amount.  Takashi's tree is at:
->
->    git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6.git
+This appears to be consistently true, I've also found that in between
+these two prints, there is a free_sched_group() freeing that exact
+entry. So post-print is a use-after-free artifact.
 
-Each time I get source from Linus tree I get alsa source from Takashi 
-and build the kernel. Should I get the source also from you to be up to 
-date with sound source?
+What's interesting is that its freeing a cfs_rq struct with
+nr_running=1, that should not be possible...
 
-Regards and Merry Christmas,
-
-Piotr Hosowicz
-
--- 
-Babcia rox! :
-alek:   przyszli do mnie jehowi dzisiaj, otworzy³a babcia
-pate_q: i co?
-alek:   po 30 minutach rozmowy chcieli przej¶æ na chrze¶cijañstwo
-NP: Peter Green Splinter Group - Hiding In Shadows
-NB: 2.6.37-rc7
+/me goes stare at the whole cgroup task attach vs cgroup destruction
+muck.
