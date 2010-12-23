@@ -1,151 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111Ab0LWWmr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 17:42:47 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:49488 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751659Ab0LWWmq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 17:42:46 -0500
-Subject: Re: linux-next: build failure after merge of the block tree
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Christoph Hellwig <hch@infradead.org>
-In-Reply-To: <20101223125356.9ce57329.sfr@canb.auug.org.au>
-References: <20101223125356.9ce57329.sfr@canb.auug.org.au>
-Content-Type: text/plain
-Date: Thu, 23 Dec 2010 14:36:50 -0800
-Message-Id: <1293143810.4649.169.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1752134Ab0LWWo4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 17:44:56 -0500
+Received: from thunk.org ([69.25.196.29]:60852 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751636Ab0LWWoz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 17:44:55 -0500
+Date: Thu, 23 Dec 2010 17:44:53 -0500
+Message-Id: <E1PVtu1-0005vZ-Ay@tytso-glaptop>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] ext4 regression fix
+From: "Theodore Ts'o" <tytso@mit.edu>
+Phone: (781) 391-3464
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-23 at 12:53 +1100, Stephen Rothwell wrote:
-> Hi Jens,
-> 
-> After merging the block tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> drivers/target/target_core_iblock.c: In function 'iblock_create_virtdevice':
-> drivers/target/target_core_iblock.c:155: error: implicit declaration of function 'open_bdev_exclusive'
-> drivers/target/target_core_iblock.c:156: warning: assignment makes pointer from integer without a cast
-> drivers/target/target_core_iblock.c: In function 'iblock_free_device':
-> drivers/target/target_core_iblock.c:223: error: implicit declaration of function 'close_bdev_exclusive'
-> drivers/target/target_core_pscsi.c: In function 'pscsi_create_type_disk':
-> drivers/target/target_core_pscsi.c:463: error: implicit declaration of function 'open_bdev_exclusive'
-> drivers/target/target_core_pscsi.c:464: warning: assignment makes pointer from integer without a cast
-> drivers/target/target_core_pscsi.c:474: error: implicit declaration of function 'close_bdev_exclusive'
-> 
-> Caused by commit 759026ddf4bdcfc68d1d330c7a5a9aee026a77c3 ("[SCSI]
-> target: Add LIO target core v4.0.0-rc6") from the scsi tree interacting
-> with commits e525fd89d380c4a94c0d63913a1dd1a593ed25e7 ("block: make
-> blkdev_get/put() handle exclusive access") and
-> d4d77629953eabd3c14f6fa5746f6b28babfc55f ("block: clean up blkdev_get()
-> wrappers and their users") from the block tree.
-> 
-> We have better ways of deprecating/replacing interfaces ...
-> 
-> I have added the following fix up patch for today ... and can carry it as
-> necessary, though someone needs to remember to tell Linus when the latter
-> of the block and scsi trees get merged.
-> 
+Hi Linus,
 
-Hi Stephen and James,
+Please pull from:
 
-Thank you for catching and fixing this breakage.  Please carry this
-patch for now, and I will get this merged into my upstream tree when I
-pull .38-rc1 from Linus.  The patch is fine so feel free to add my:
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git linus-hot-fix
 
-Acked-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+To get the following regression fix (which was introduced in
+2.6.37-rc1).
 
-Also now that drivers/target/ code is on the linux-next radar, I will
-begin regularly build testing against a 'for-linux-next' branch to catch
-any future issues before they appear on your side.
+Thanks,
 
-Thank you and warmest regards,
+						- Ted
 
---nab
+Theodore Ts'o (1):
+      ext4: fix on-line resizing regression
 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Thu, 23 Dec 2010 12:34:11 +1100
-> Subject: [PATCH] scsi: fix for open/close_bdev_exclusive going away
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  drivers/target/target_core_iblock.c |    6 +++---
->  drivers/target/target_core_pscsi.c  |   12 ++++++------
->  2 files changed, 7 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
-> index e99bfc2..0d55188 100644
-> --- a/drivers/target/target_core_iblock.c
-> +++ b/drivers/target/target_core_iblock.c
-> @@ -152,8 +152,8 @@ static struct se_device *iblock_create_virtdevice(
->  	printk(KERN_INFO  "IBLOCK: Claiming struct block_device: %s\n",
->  			ib_dev->ibd_udev_path);
->  
-> -	bd = open_bdev_exclusive(ib_dev->ibd_udev_path,
-> -			FMODE_WRITE|FMODE_READ, ib_dev);
-> +	bd = blkdev_get_by_path(ib_dev->ibd_udev_path,
-> +			FMODE_WRITE|FMODE_READ|FMODE_EXCL, ib_dev);
->  	if (!(bd))
->  		goto failed;
->  	/*
-> @@ -220,7 +220,7 @@ static void iblock_free_device(void *p)
->  {
->  	struct iblock_dev *ib_dev = p;
->  
-> -	close_bdev_exclusive(ib_dev->ibd_bd, FMODE_WRITE|FMODE_READ);
-> +	blkdev_put(ib_dev->ibd_bd, FMODE_WRITE|FMODE_READ|FMODE_EXCL);
->  	bioset_free(ib_dev->ibd_bio_set);
->  	kfree(ib_dev);
->  }
-> diff --git a/drivers/target/target_core_pscsi.c b/drivers/target/target_core_pscsi.c
-> index 6a7495b..05924d1 100644
-> --- a/drivers/target/target_core_pscsi.c
-> +++ b/drivers/target/target_core_pscsi.c
-> @@ -460,10 +460,10 @@ static struct se_device *pscsi_create_type_disk(
->  	 * Claim exclusive struct block_device access to struct scsi_device
->  	 * for TYPE_DISK using supplied udev_path
->  	 */
-> -	bd = open_bdev_exclusive(se_dev->se_dev_udev_path,
-> -				FMODE_WRITE|FMODE_READ, pdv);
-> +	bd = blkdev_get_by_path(se_dev->se_dev_udev_path,
-> +				FMODE_WRITE|FMODE_READ|FMODE_EXCL, pdv);
->  	if (!(bd)) {
-> -		printk("pSCSI: open_bdev_exclusive() failed\n");
-> +		printk("pSCSI: blkdev_get_by_path() failed\n");
->  		scsi_device_put(sd);
->  		return NULL;
->  	}
-> @@ -471,7 +471,7 @@ static struct se_device *pscsi_create_type_disk(
->  
->  	dev = pscsi_add_device_to_list(hba, se_dev, pdv, sd, dev_flags);
->  	if (!(dev)) {
-> -		close_bdev_exclusive(pdv->pdv_bd, FMODE_WRITE|FMODE_READ);
-> +		blkdev_put(pdv->pdv_bd, FMODE_WRITE|FMODE_READ|FMODE_EXCL);
->  		scsi_device_put(sd);
->  		return NULL;
->  	}
-> @@ -680,8 +680,8 @@ static void pscsi_free_device(void *p)
->  		 * struct scsi_device with TYPE_DISK from pscsi_create_type_disk()
->  		 */
->  		if ((sd->type == TYPE_DISK) && pdv->pdv_bd) {
-> -			close_bdev_exclusive(pdv->pdv_bd,
-> -					FMODE_WRITE|FMODE_READ);
-> +			blkdev_put(pdv->pdv_bd,
-> +					FMODE_WRITE|FMODE_READ|FMODE_EXCL);
->  			pdv->pdv_bd = NULL;
->  		}
->  		/*
-> 
-
-
-
-
+ fs/ext4/resize.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
