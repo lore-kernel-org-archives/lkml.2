@@ -1,95 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752328Ab0LWJUC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 04:20:02 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40438 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab0LWJT7 (ORCPT
+	id S1752481Ab0LWJVA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 04:21:00 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:43354 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774Ab0LWJU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 04:19:59 -0500
-Date: Thu, 23 Dec 2010 09:18:22 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Viresh Kumar <viresh.kumar@st.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        yuanyabin1978@sina.com, linux-kernel@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>, Peter Pearse <peter.pearse@arm.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Alessandro Rubini <rubini@unipv.it>
-Subject: Re: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081
-	PrimeCells
-Message-ID: <20101223091822.GB3636@n2100.arm.linux.org.uk>
-References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com> <20101221182037.GA4783@n2100.arm.linux.org.uk> <20101222122904.GC14693@n2100.arm.linux.org.uk> <AANLkTikpyAggDCPef1pS=_QHnu9-FyLcpddGyVHnGwWx@mail.gmail.com> <20101223001012.GF29368@n2100.arm.linux.org.uk> <AANLkTimirgsuoM2che_ocrkvCZqGu6xEJjrjdmt9-69p@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimirgsuoM2che_ocrkvCZqGu6xEJjrjdmt9-69p@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 23 Dec 2010 04:20:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=cR3S1rnYr0qwFLZh+nRGId1TU+aENBLWQJLzR597fXK2ZZ15l3xlgVKc0Mu+OMTL/q
+         PDuCcKgvPR4AhUKViix78WzfRcFkvWhDRea1fT65NmwGG3ATELM4ZfGBhb4gxOtoMPJI
+         1L8FxdtIi511yiz/8iv5wsC1WhGUtJ7xVeUF4=
+Subject: Re: [PATCH V2 2/2] MSP onchip root hub over current quirk.
+From: Anoop P A <anoop.pa@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Ralf Baechle <ralf@linux-mips.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Anatolij Gustschin <agust@denx.de>, Anand Gadiyar <gadiyar@ti.com>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Oliver Neukum <oneukum@suse.de>, Hans de Goede <hdegoede@redhat.com>,
+        Paul Mortier <mortier@btinternet.com>, Andiry Xu <andiry.xu@amd.com>
+In-Reply-To: <Pine.LNX.4.44L0.1012222112200.26667-100000@netrider.rowland.org>
+References: <Pine.LNX.4.44L0.1012222112200.26667-100000@netrider.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 23 Dec 2010 14:59:01 +0530
+Message-ID: <1293096541.27661.46.camel@paanoop1-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 22, 2010 at 05:11:24PM -0800, Dan Williams wrote:
-> On Wed, Dec 22, 2010 at 4:10 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > On Wed, Dec 22, 2010 at 03:45:39PM -0800, Dan Williams wrote:
-> >> 3.6 Constraints:
-> >> 1/ Calls to async_<operation> are not permitted in IRQ context.  Other
-> >>    contexts are permitted provided constraint #2 is not violated.
-> >
-> > BTW, this is misleading.  Have the functions been renamed dma_async_xxx(),
-> > eg dma_async_memcpy_buf_to_buf etc, or are you referring just to:
-> >
-> >        async_dmaengine_get
-> >        async_dmaengine_put
-> >        async_dma_find_channel
-> >        async_dma_find_channel
-> >        async_tx_ack
-> >        async_tx_clear_ack
-> >        async_tx_test_ack
-> >
-> > Beware of just renaming it to dma_async_<operation> as there's other
-> > functions in that namespace which may not be appropriate.
-> >
-> > Eg, is it really illegal to issue call dma_async_issue_pending() from
-> > IRQ context?  That'd make it exceedingly difficult to use the DMA
-> > engine with the slave API in a lot of device drivers.
+On Wed, 2010-12-22 at 21:18 -0500, Alan Stern wrote:
+> On Wed, 22 Dec 2010, Anoop P.A wrote:
 > 
-> This is generic offload (async_{memcpy|xor|etc...}) versus the slave
-> usage confusion.
+> > From: Anoop P A <anoop.pa@gmail.com>
+> > 
+> > Adding chip specific code under quirk.
+> 
+> NAK.  See below.
+> 
+> > Signed-off-by: Anoop P A <anoop.pa@gmail.com>
+> > ---
+> >  drivers/usb/core/hub.c     |   45 ++++++++++++++++++++++++++++++++++++++-----
+> >  drivers/usb/core/quirks.c  |    3 ++
+> >  include/linux/usb/quirks.h |    3 ++
+> >  3 files changed, 45 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+> > index 27115b4..4bff994 100644
+> > --- a/drivers/usb/core/hub.c
+> > +++ b/drivers/usb/core/hub.c
+> > @@ -3377,12 +3377,45 @@ static void hub_events(void)
+> >  			}
+> >  			
+> >  			if (portchange & USB_PORT_STAT_C_OVERCURRENT) {
+> > -				dev_err (hub_dev,
+> > -					"over-current change on port %d\n",
+> > -					i);
+> > -				clear_port_feature(hdev, i,
+> > -					USB_PORT_FEAT_C_OVER_CURRENT);
+> > -				hub_power_on(hub, true);
+> > +				usb_detect_quirks(hdev);
+> 
+> This line is wrong.  usb_detect_quirks() gets called only once per 
+> device, when the device is initialized.  Besides, you probably want to 
+> use a hub-specific flag for this rather than a device-specific flag.
 
-My point is that async_<operation> refers to something that doesn't
-exist.  What we do have:
+Can you point me to an example for the recommended way of doing the
+hack. I don't have much exposure to USB subsystem.
 
-dma_cookie_t dma_async_memcpy_buf_to_buf(struct dma_chan *chan,
-        void *dest, void *src, size_t len);
-dma_cookie_t dma_async_memcpy_buf_to_pg(struct dma_chan *chan,
-        struct page *page, unsigned int offset, void *kdata, size_t len);
-dma_cookie_t dma_async_memcpy_pg_to_pg(struct dma_chan *chan,
-        struct page *dest_pg, unsigned int dest_off, struct page *src_pg,
-        unsigned int src_off, size_t len);
+> 
+> > +				if (hdev->quirks & USB_QUIRK_MSP_OVERCURRENT) {
+> 
+> Also, it would be better to put this code in a separate subroutine 
+> instead of indenting it so far.
+> 
+> > +					/* clear OCC bit */
+> > +					clear_port_feature(hdev, i,
+> > +						USB_PORT_FEAT_C_OVER_CURRENT);
+> > +
+> > +					/* This step is required to toggle the
+> > +					* PP bit to 0 and 1 (by hub_power_on)
+> > +					* in order the CSC bit to be
+> > +					* transitioned properly for device
+> > +					* hotplug
+> > +					*/
+> > +					/* clear PP bit */
+> > +					clear_port_feature(hdev, i,
+> > +						USB_PORT_FEAT_POWER);
+> > +
+> > +					/* resume power */
+> > +					hub_power_on(hub, true);
+> > +
+> > +					/* delay 100 usec */
+> > +					udelay(100);
+> > +
+> > +					/* read OCA bit */
+> > +					if (portstatus &
+> > +					(1<<USB_PORT_FEAT_OVER_CURRENT)) {
+> > +						/* declare overcurrent */
+> > +						dev_err(hub_dev,
+> > +						"over-current change \
+> > +							on port %d\n", i);
+> > +					}
+> > +				} else {
+> > +					dev_err(hub_dev,
+> > +						"over-current change \
+> > +							on port %d\n", i);
+> > +					clear_port_feature(hdev, i,
+> > +						USB_PORT_FEAT_C_OVER_CURRENT);
+> > +					hub_power_on(hub, true);
+> > +				}
+> > +
+> >  			}
+> >  
+> >  			if (portchange & USB_PORT_STAT_C_RESET) {
+> > diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
+> > index 25719da..59843b9 100644
+> > --- a/drivers/usb/core/quirks.c
+> > +++ b/drivers/usb/core/quirks.c
+> > @@ -88,6 +88,9 @@ static const struct usb_device_id usb_quirk_list[] = {
+> >  	/* INTEL VALUE SSD */
+> >  	{ USB_DEVICE(0x8086, 0xf1a5), .driver_info = USB_QUIRK_RESET_RESUME },
+> >  
+> > +	/* PMC MSP over current quirk */
+> > +	{ USB_DEVICE(0x1d6b, 0x0002), .driver_info = USB_QUIRK_MSP_OVERCURRENT },
+> > +
+> 
+> This implementation is completely wrong.  It applies to all USB-2.0
+> root hubs in Linux, not just the PMC MSP.
+> 
+> >  	{ }  /* terminating entry must be last */
+> >  };
+> >  
+> > diff --git a/include/linux/usb/quirks.h b/include/linux/usb/quirks.h
+> > index 3e93de7..97ab168 100644
+> > --- a/include/linux/usb/quirks.h
+> > +++ b/include/linux/usb/quirks.h
+> > @@ -30,4 +30,7 @@
+> >     descriptor */
+> >  #define USB_QUIRK_DELAY_INIT		0x00000040
+> >  
+> > +/*MSP SoC onchip EHCI overcurrent issue */
+> > +#define USB_QUIRK_MSP_OVERCURRENT	0x00000080
+> > +
+> >  #endif /* __LINUX_USB_QUIRKS_H */
+> > 
+> 
+Thanks
+Anoop
 
-Nothing in dmaengine.h matches 'async_xor', so that suggests it's
-incomplete.  There's another problem with referring to them as
-dma_async_<operation> because we also have:
-
-static inline void dma_async_issue_pending(struct dma_chan *chan)
-#define dma_async_memcpy_issue_pending(chan) dma_async_issue_pending(chan)
-static inline enum dma_status dma_async_is_tx_complete(struct dma_chan *chan,
-        dma_cookie_t cookie, dma_cookie_t *last, dma_cookie_t *used)
-#define dma_async_memcpy_complete(chan, cookie, last, used)\
-static inline enum dma_status dma_async_is_complete(dma_cookie_t cookie,
-                        dma_cookie_t last_complete, dma_cookie_t last_used)
-int dma_async_device_register(struct dma_device *device);
-void dma_async_device_unregister(struct dma_device *device);
-
-So just referring to dma_async_<operation> will also be confusing.
-
-There's also a bunch of other async_* named functions which makes it
-look like these are what's being referred to (see the list above).
-So, the documentation is confusing.
-
-Maybe it would be better to refer to struct dma_device's device_prep_dma_*
-methods and anything which calls them, with the exception of
-device_prep_dma_cyclic?  (Shouldn't that be device_prep_slave_cyclic?)
