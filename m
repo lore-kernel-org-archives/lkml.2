@@ -1,75 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752779Ab0LWCnA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 21:43:00 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:59090 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752498Ab0LWCm7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 21:42:59 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=Zf2-li83EnIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=cIs6I4qDPgwQT4n7TxkA:9 a=utSY0b3mPEPAp6o-YhbHN9HOMXoA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: Oops in trace_hardirqs_on (powerpc)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: =?ISO-8859-1?Q?J=F6rg?= Sommer <joerg@alea.gnuu.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-In-Reply-To: <20101219132705.GE6615@alea.gnuu.de>
-References: <20100806233157.GA7117@alea.gnuu.de>
-	 <1285184671.26872.127.camel@gandalf.stny.rr.com>
-	 <20100927125037.GA4497@alea.gnuu.de> <1285639094.2989.1.camel@frodo>
-	 <20101219132705.GE6615@alea.gnuu.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 22 Dec 2010 21:42:56 -0500
-Message-ID: <1293072176.22802.6.camel@gandalf.stny.rr.com>
+	id S1752755Ab0LWCpj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 21:45:39 -0500
+Received: from mga09.intel.com ([134.134.136.24]:45084 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751661Ab0LWCpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 21:45:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,217,1291622400"; 
+   d="scan'208";a="586504854"
+Subject: [PATCH 2/2]block cfq: don't use atomic_t for cfq_group
+From: Shaohua Li <shaohua.li@intel.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>, vgoyal@redhat.com, jmoyer@redhat.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 23 Dec 2010 10:45:35 +0800
+Message-ID: <1293072335.10593.22.camel@sli10-conroe>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-12-19 at 14:27 +0100, Jörg Sommer wrote:
-> Hi Steven,
-> 
+cfq_group->ref is used with queue_lock hold, the only exception is
+cfq_set_request, which looks like a bug to me, so ref doesn't need
+to be an atomic and atomic operation is slower.
 
-> Did you've fixed this problem? The bug report is still marked as open.
-> https://bugzilla.kernel.org/show_bug.cgi?id=16573
-> 
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 
-I just posted a patch to that BZ. I have it here below too. Could you
-see if it fixes you problem. I only fixed the one place that you
-reported, it may need more fixes (and in that case a macro to do the
-work).
+---
+ block/cfq-iosched.c |   21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
-I hit the same bug on my ppc64 box, and have a fix for that, that I'll
-post to LKML tomorrow.
-
--- Steve
-
-diff --git a/arch/powerpc/kernel/entry_32.S b/arch/powerpc/kernel/entry_32.S
-index ed4aeb9..915cc03 100644
---- a/arch/powerpc/kernel/entry_32.S
-+++ b/arch/powerpc/kernel/entry_32.S
-@@ -879,7 +879,18 @@ END_MMU_FTR_SECTION_IFSET(MMU_FTR_TYPE_47x)
+Index: linux/block/cfq-iosched.c
+===================================================================
+--- linux.orig/block/cfq-iosched.c	2010-12-23 10:22:21.000000000 +0800
++++ linux/block/cfq-iosched.c	2010-12-23 10:23:03.000000000 +0800
+@@ -209,7 +209,7 @@ struct cfq_group {
+ 	struct blkio_group blkg;
+ #ifdef CONFIG_CFQ_GROUP_IOSCHED
+ 	struct hlist_node cfqd_node;
+-	atomic_t ref;
++	int ref;
+ #endif
+ 	/* number of requests that are on the dispatch list or inside driver */
+ 	int dispatched;
+@@ -1026,7 +1026,7 @@ cfq_find_alloc_cfqg(struct cfq_data *cfq
+ 	 * elevator which will be dropped by either elevator exit
+ 	 * or cgroup deletion path depending on who is exiting first.
  	 */
- 	andi.	r10,r9,MSR_EE
- 	beq	1f
-+	/*
-+	 * Since the ftrace irqsoff latency trace checks CALLER_ADDR1,
-+	 * which is the stack frame here, we need to force a stack frame
-+	 * in case we came from user space.
-+	 */
-+	stwu	r1,-32(r1)
-+	mflr	r0
-+	stw	r0,4(r1)
-+	stwu	r1,-32(r1)
- 	bl	trace_hardirqs_on
-+	lwz	r1,0(r1)
-+	lwz	r1,0(r1)
- 	lwz	r9,_MSR(r1)
- 1:
- #endif /* CONFIG_TRACE_IRQFLAGS */
+-	atomic_set(&cfqg->ref, 1);
++	cfqg->ref = 1;
+ 
+ 	/*
+ 	 * Add group onto cgroup list. It might happen that bdi->dev is
+@@ -1071,7 +1071,7 @@ static struct cfq_group *cfq_get_cfqg(st
+ 
+ static inline struct cfq_group *cfq_ref_get_cfqg(struct cfq_group *cfqg)
+ {
+-	atomic_inc(&cfqg->ref);
++	cfqg->ref++;
+ 	return cfqg;
+ }
+ 
+@@ -1083,7 +1083,7 @@ static void cfq_link_cfqq_cfqg(struct cf
+ 
+ 	cfqq->cfqg = cfqg;
+ 	/* cfqq reference on cfqg */
+-	atomic_inc(&cfqq->cfqg->ref);
++	cfqq->cfqg->ref++;
+ }
+ 
+ static void cfq_put_cfqg(struct cfq_group *cfqg)
+@@ -1091,8 +1091,9 @@ static void cfq_put_cfqg(struct cfq_grou
+ 	struct cfq_rb_root *st;
+ 	int i, j;
+ 
+-	BUG_ON(atomic_read(&cfqg->ref) <= 0);
+-	if (!atomic_dec_and_test(&cfqg->ref))
++	BUG_ON(cfqg->ref <= 0);
++	cfqg->ref--;
++	if (cfqg->ref)
+ 		return;
+ 	for_each_cfqg_st(cfqg, i, j, st)
+ 		BUG_ON(!RB_EMPTY_ROOT(&st->rb) || st->active != NULL);
+@@ -1200,7 +1201,7 @@ static void cfq_service_tree_add(struct
+ 			cfq_group_service_tree_del(cfqd, cfqq->cfqg);
+ 		cfqq->orig_cfqg = cfqq->cfqg;
+ 		cfqq->cfqg = &cfqd->root_group;
+-		atomic_inc(&cfqd->root_group.ref);
++		cfqd->root_group.ref++;
+ 		group_changed = 1;
+ 	} else if (!cfqd->cfq_group_isolation
+ 		   && cfqq_type(cfqq) == SYNC_WORKLOAD && cfqq->orig_cfqg) {
+@@ -3645,6 +3646,7 @@ cfq_set_request(struct request_queue *q,
+ 	const bool is_sync = rq_is_sync(rq);
+ 	struct cfq_queue *cfqq;
+ 	unsigned long flags;
++	struct cfq_group *cfqg;
+ 
+ 	might_sleep_if(gfp_mask & __GFP_WAIT);
+ 
+@@ -3683,12 +3685,13 @@ new_queue:
+ 
+ 	cfqq->allocated[rw]++;
+ 	cfqq->ref++;
++	cfqg = cfq_ref_get_cfqg(cfqq->cfqg);
+ 
+ 	spin_unlock_irqrestore(q->queue_lock, flags);
+ 
+ 	rq->elevator_private = cic;
+ 	rq->elevator_private2 = cfqq;
+-	rq->elevator_private3 = cfq_ref_get_cfqg(cfqq->cfqg);
++	rq->elevator_private3 = cfqg;
+ 	return 0;
+ 
+ queue_fail:
+@@ -3886,7 +3889,7 @@ static void *cfq_init_queue(struct reque
+ 	 * Take a reference to root group which we never drop. This is just
+ 	 * to make sure that cfq_put_cfqg() does not try to kfree root group
+ 	 */
+-	atomic_set(&cfqg->ref, 1);
++	cfqg->ref = 1;
+ 	rcu_read_lock();
+ 	cfq_blkiocg_add_blkio_group(&blkio_root_cgroup, &cfqg->blkg,
+ 					(void *)cfqd, 0);
 
 
