@@ -1,106 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab0LWC2A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 21:28:00 -0500
-Received: from ozlabs.org ([203.10.76.45]:52515 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752318Ab0LWC17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 21:27:59 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Dmitry Torokhov <dtor@vmware.com>
-Subject: Re: [PATCH] Show version information for built-in modules in sysfs
-Date: Thu, 23 Dec 2010 12:57:56 +1030
-User-Agent: KMail/1.13.5 (Linux/2.6.35-23-generic; KDE/4.5.1; i686; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>
-References: <20101215220019.GA6560@dtor-ws.eng.vmware.com> <201012221218.45533.rusty@rustcorp.com.au> <20101223003823.GA19568@dtor-ws.eng.vmware.com>
-In-Reply-To: <20101223003823.GA19568@dtor-ws.eng.vmware.com>
+	id S1752697Ab0LWChD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 21:37:03 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49167 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752482Ab0LWChB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 21:37:01 -0500
+Date: Thu, 23 Dec 2010 02:36:59 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>
+Subject: Re: [PATCH v2 5/6] MFD MAX8998/LP3974: Charger Support
+Message-ID: <20101223023659.GC25886@opensource.wolfsonmicro.com>
+References: <20101221155004.GA21871@opensource.wolfsonmicro.com> <1292998991-26968-6-git-send-email-myungjoo.ham@samsung.com> <20101222133359.GF26306@opensource.wolfsonmicro.com> <AANLkTimhfUTD0ze8VaBz9BtkuEMx9sutc-1VvsXfH-ot@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012231257.56971.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimhfUTD0ze8VaBz9BtkuEMx9sutc-1VvsXfH-ot@mail.gmail.com>
+X-Cookie: You will forget that you ever knew me.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Dec 2010 11:08:23 am Dmitry Torokhov wrote:
-> On Tue, Dec 21, 2010 at 05:48:45PM -0800, Rusty Russell wrote:
-> > On Wed, 22 Dec 2010 11:47:12 am Dmitry Torokhov wrote:
-> > > On Tue, Dec 21, 2010 at 05:02:40PM -0800, Rusty Russell wrote:
-> > > > On Thu, 16 Dec 2010 08:30:19 am Dmitry Torokhov wrote:
-> > > > > +
-> > > > > +#ifdef MODULE
-> > > > >  #define MODULE_VERSION(_version) MODULE_INFO(version, _version)
-> > > > > +#else
-> > > > > +#define MODULE_VERSION(_version)					\
-> > > > > +	extern ssize_t __modver_version_show(struct module_attribute *,	\
-> > > > > +					     struct module *, char *);	\
-> > > > > +	static struct module_version_attribute __modver_version_attr	\
-> > > > > +	__used								\
-> > > > > +    __attribute__ ((unused,__section__ ("__modver"),aligned(sizeof(void *)))) \
-> > > > 
-> > > > __used and unused seems overkill, and confused.
-> > > > 
-> > > 
-> > > Must admit that I copied used/unused verbatim from linux/moduleparam.h:
-> > > 
-> > > /* This is the fundamental function for registering boot/module
-> > >    parameters. */
-> > > #define __module_param_call(prefix, name, ops, arg, isbool, perm)	\
-> > > 	/* Default value instead of permissions? */			\
-> > > 	static int __param_perm_check_##name __attribute__((unused)) =	\
-> > > 	BUILD_BUG_ON_ZERO((perm) < 0 || (perm) > 0777 || ((perm) & 2))	\
-> > > 	+ BUILD_BUG_ON_ZERO(sizeof(""prefix) > MAX_PARAM_PREFIX_LEN);	\
-> > > 	static const char __param_str_##name[] = prefix #name;		\
-> > > 	static struct kernel_param __moduleparam_const __param_##name	\
-> > > 	__used								\
-> > >     __attribute__ ((unused,__section__ ("__param"),aligned(sizeof(void *)))) \
-> > > 	= { __param_str_##name, ops, perm, isbool ? KPARAM_ISBOOL : 0,	\
-> > > 	    { arg } }
-> > > 
-> > > 
-> > > So should it be removed from here as well?
-> > 
-> > I think so, but (as always!) check git blame.
-> > 
-> 
-> Whew, found it:
-> 
-> commit 4d62364652499ef106d1c0737968a879ef077bd4
-> Author: akpm <akpm>
-> Date:   Tue Jan 20 05:13:24 2004 +0000
-> 
->     [PATCH] make gcc 3.4 compilation work
-> 
->     From: David Mosberger <davidm@napali.hpl.hp.com>
-> 
->     With gcc-3.4 we need "attribute((used))" declarations to get "make
->     modules_install" to work.
-> 
->     Otherwise these sections get dropped from the final image (I assume).
-> 
->     BKrev: 400cb8f4ByHxZCElstAaZ3mBZ2oflQ
-> 
-> ...
-> 
-> diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
-> index 0a5becb..cbca007 100644
-> --- a/include/linux/moduleparam.h
-> +++ b/include/linux/moduleparam.h
-> @@ -52,6 +52,7 @@ struct kparam_array
->  #define __module_param_call(prefix, name, set, get, arg, perm) \
->         static char __param_str_##name[] __initdata = prefix #name; \
->         static struct kernel_param const __param_##name \
-> +       __attribute_used__ \
->      __attribute__ ((unused,__section__ ("__param"),aligned(sizeof(void *)))) \
->         = { __param_str_##name, perm, set, get, arg }
-> 
-> 
-> Since we still claim to support GCC 3.4 I guess __used is still
-> needed...
+On Thu, Dec 23, 2010 at 11:10:41AM +0900, MyungJoo Ham wrote:
+> On Wed, Dec 22, 2010 at 10:33 PM, Mark Brown
+> > On Wed, Dec 22, 2010 at 03:23:10PM +0900, MyungJoo Ham wrote:
 
-Well, __used is correct.  But this unused should have been removed
-at the same time.
+> > Normally I'd expect a battery charger to be exposed via the power supply
+> > API - I'd at least expect to see a consumer in the power supply API
 
-Cheers,
-Rusty.
+> The "CHARGER" regulator is to give the charger control to the user,
+> which consists of switching (turn on/off) and current limit, which is
+> what a current regulator does. On the contrary, when the charger
+> control is implemented by power supply API, we do not have explicit
+> control over such features (current limit and turn on/off).
+
+Sure, like I say I'd just expect to see some power supply API visibility
+- that could be a driver that provides the control that's needed to
+userspace by controlling a current regulator, for example.
+
+> Furthermore, a board may need to support multiple types of
+> charger(USB, ACDC-5V-2A, ACDC-5V-1A, ...), which have various current
+> limits. Thus, we need to adjust charger current limit out of PMIC
+> driver unless the PMIC can detect every type of supported chargers,
+> which MAX8998/LP3974 cannot.
+
+Interesting system design - I've not seen that before.  With the system
+designs I usually look at the current limiting from the wall/charger
+supply is done on the primary system power rail which supplies both
+thehcarger and the rest of the system (since the current drains from the
+rest of the system also needs to be limited).  Similarly for the
+temperature monitoring, I've usually seen that managed by hardware.
+
+> That's why I have implemented charger in regulator framework. In the
+> environment described above, the power supply consumer is going to be
+> implemented over PMIC driver, USB/TA select driver (e.g., FSA9480),
+> and Thermistor driver (e.g., NTC Thermistor). It appears that such a
+> consumer driver is going to be a board or policy specification; (or
+> full or callbacks that is going to be filled by a mach/board file)
+
+I agree - it'd be a bit like the current GPIO power supply driver, I
+think.  It'd probably also specify things like callbacks for voltage
+monitoring via auxiliary ADCs in the PMIC or CPU.  My main point was
+that it was surprising that the regulator driver for the charger didn't
+come along with such a consuner driver, the split does make sense.
