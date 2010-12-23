@@ -1,62 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151Ab0LWMU0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 07:20:26 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60804 "EHLO
+	id S1752969Ab0LWMbG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 07:31:06 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34913 "EHLO
 	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752587Ab0LWMUZ (ORCPT
+	with ESMTP id S1752703Ab0LWMbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 07:20:25 -0500
-Date: Thu, 23 Dec 2010 12:19:18 +0000
+	Thu, 23 Dec 2010 07:31:04 -0500
+Date: Thu, 23 Dec 2010 12:30:28 +0000
 From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: "'Kyungmin Park'" <kmpark@infradead.org>,
-        "'Michal Nazarewicz'" <m.nazarewicz@samsung.com>,
+To: Linus Walleij <linus.ml.walleij@gmail.com>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        Viresh Kumar <viresh.kumar@st.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        yuanyabin1978@sina.com, linux-kernel@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>, Peter Pearse <peter.pearse@arm.com>,
         linux-arm-kernel@lists.infradead.org,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Johan MOSSBERG'" <johan.xx.mossberg@stericsson.com>,
-        "'Mel Gorman'" <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>, linux-mm@kvack.org,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-media@vger.kernel.org,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCHv8 00/12] Contiguous Memory Allocator
-Message-ID: <20101223121917.GG3636@n2100.arm.linux.org.uk>
-References: <cover.1292443200.git.m.nazarewicz@samsung.com> <AANLkTim8_=0+-zM5z4j0gBaw3PF3zgpXQNetEn-CfUGb@mail.gmail.com> <20101223100642.GD3636@n2100.arm.linux.org.uk> <00ea01cba290$4d67f500$e837df00$%szyprowski@samsung.com>
+        Alessandro Rubini <rubini@unipv.it>
+Subject: Re: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081
+	PrimeCells
+Message-ID: <20101223123028.GI3636@n2100.arm.linux.org.uk>
+References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com> <20101221182037.GA4783@n2100.arm.linux.org.uk> <20101222122904.GC14693@n2100.arm.linux.org.uk> <AANLkTikpyAggDCPef1pS=_QHnu9-FyLcpddGyVHnGwWx@mail.gmail.com> <AANLkTinOMOkY6AUW8Z6FWMMWU9u0_sNjA2r_31u9-A8v@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <00ea01cba290$4d67f500$e837df00$%szyprowski@samsung.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinOMOkY6AUW8Z6FWMMWU9u0_sNjA2r_31u9-A8v@mail.gmail.com>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 23, 2010 at 11:58:08AM +0100, Marek Szyprowski wrote:
-> Actually this contiguous memory allocator is a better replacement for
-> alloc_pages() which is used by dma_alloc_coherent(). It is a generic
-> framework that is not tied only to ARM architecture.
-
-... which is open to abuse.  What I'm trying to find out is - if it
-can't be used for DMA, what is it to be used for?
-
-Or are we inventing an everything-but-ARM framework?
-
-> > In other words, do we _actually_ have a use for this which doesn't
-> > involve doing something like allocating 32MB of memory from it,
-> > remapping it so that it's DMA coherent, and then performing DMA
-> > on the resulting buffer?
+On Thu, Dec 23, 2010 at 09:17:07AM +0100, Linus Walleij wrote:
+> 2010/12/23 Dan Williams <dan.j.williams@intel.com>:
+> > It looks like this driver needs a full scrub
+> > which seems unreasonable to complete and test over the holidays before
+> > .37 lands.  Linus we either need to mark this "depends on BROKEN" or
+> > revert it.
 > 
-> This is an arm specific problem, also related to dma_alloc_coherent()
-> allocator. To be 100% conformant with ARM specification we would
-> probably need to unmap all pages used by the dma_coherent allocator
-> from the LOW MEM area. This is doable, but completely not related
-> to the CMA and this patch series.
+> Isn't it really as simple as to release the spinlock during callbacks?
+> That lock is only intended to protect the plchan variables, not to block
+> anyone from queueing new stuff during the callback (as happens now).
+> 
+> It can release that lock, make a callback where a new descriptor
+> gets queued, and then take it again and start looking at the queue,
+> at which point it discovers the new desc and process it.
 
-You've already been told why we can't unmap pages from the kernel
-direct mapping.
+Is it actually safe to do this?  The answer seems to be no - if we happen
+to terminate all transfers (as your PL011 uart code does) when we fail to
+setup a new DMA transaction, then bad stuff happens due to this:
 
-Okay, so I'm just going to assume that CMA has _no_ _business_ being
-used on ARM, and is not something that should interest anyone in the
-ARM community.
+                /*
+                 * Device callbacks should NOT clear
+                 * the current transaction on the channel
+                 * Linus: sometimes they should?
+                 */
+                if (!plchan->at)
+                        BUG();
+
+We really need a saner approach here - maybe the list approach described
+by Jassie.
+
+> diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
+> index b605cc9..7879a22 100644
+> --- a/drivers/dma/amba-pl08x.c
+> +++ b/drivers/dma/amba-pl08x.c
+> @@ -1651,8 +1651,11 @@ static void pl08x_tasklet(unsigned long data)
+>  		/*
+>  		 * Callback to signal completion
+>  		 */
+> -		if (callback)
+> -			callback(callback_param);
+> +		if (callback) {
+> +                        spin_unlock(&plchan->lock);
+> +                        callback(callback_param);
+> +                        spin_lock(&plchan->lock);
+
+Plus, of course, that tasklets run with IRQs enabled.  This means we're
+taking this spinlock in an interruptible context.  If we have some other
+path which also takes this lock from an IRQ context, then we're asking
+for deadlock.  See my previous mails on this subject.
+
+I'm currently splitting my dirty patch, and attacking this driver to
+clean up some of it into a more reasonable shape, so this is one area
+which I'm going to be sorting out.
+
+Patches later.
