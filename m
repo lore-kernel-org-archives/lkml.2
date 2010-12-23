@@ -1,61 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087Ab0LWP2I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 10:28:08 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:41518 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752746Ab0LWP2G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 10:28:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:user-agent:mime-version
-         :content-type;
-        b=xwuwrYynOwSHyAD0tz7uvDiws2EDe66TIgcuZA44bwYwFQ7vVFU9K8lbOHpitXZiMi
-         nLXwovnLTflmet0wy3SKlu9e78aKOZR/1S24D+WrPQWAamRJgwQ+Z6dlnR6TYAqIT07E
-         nBCC8PanyYXrmxGD1qGg67cgzxYvLiHLWLp1c=
-From: Franck Bui-Huu <vagabon.xyz@gmail.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] perf-probe: no need to initialize the entire temporary buffers in synthesize_perf_probe_point()
-Date: Thu, 23 Dec 2010 16:27:57 +0100
-Message-ID: <m3wrn07blu.fsf@gmail.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.2 (gnu/linux)
+	id S1753132Ab0LWPcH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 10:32:07 -0500
+Received: from tomasu.net ([64.85.170.234]:43054 "EHLO mail.tomasu.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752421Ab0LWPcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 10:32:05 -0500
+From: Thomas Fjellstrom <thomas@fjellstrom.ca>
+Reply-To: thomas@fjellstrom.ca
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: Wake On lan and ATL1 nic
+Date: Thu, 23 Dec 2010 08:32:00 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.36.1+; KDE/4.5.2; x86_64; svn-1188918; 2010-10-21)
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+References: <201012141756.59591.thomas@fjellstrom.ca> <201012221423.29719.rjw@sisk.pl>
+In-Reply-To: <201012221423.29719.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012230832.00443.thomas@fjellstrom.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Franck Bui-Huu <fbuihuu@gmail.com>
+On December 22, 2010, Rafael J. Wysocki wrote:
+> On Wednesday, December 15, 2010, Thomas Fjellstrom wrote:
+> > I can't seem to get wol to work with my desktop, which has an integrated
+> > ATL1 GbE nic. I can't be absolutely sure if it ever worked, but I think
+> > it did at one point. I can use ethtool to look at the wol status, that
+> > it supports magic-packet wol, and I can enable it, which is done at boot
+> > using an init script. But No matter how many times I try to send a wol
+> > packet to that machine it never wakes up.
+> > 
+> > Looking around on the net seems to say it is supported, and should work,
+> > but I'm not having any luck. Anyone have any hints?
+> 
+> It works for me with 2.6.37-rc7 and the appended patch applied (at least
+> the machine is woken up from suspend to RAM).  Of course, the adapter
+> needs to be configured for that with the help of ethtool.
 
-This patches only put a single null byte at the beginning of each
-temporary buffers line[], offs[], file[] instead of filling their full
-contents with null bytes.
+Hi, thanks for making quick work of this. I have one slight problem, my nic 
+seems to use the atl1 driver, and not atl1c. I've tried using atl1c and atl1e, 
+both will load if I modprobe them, but neither actually bring up the device. 
+Even tried blacklisting atl1 first.
 
-Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
----
- tools/perf/util/probe-event.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+> Thanks,
+> Rafael
+> 
+> ---
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> Subject: atl1c: Do not use legacy PCI power management
+> 
+> The atl1c driver uses the legacy PCI power management, so it has to
+> do some PCI-specific things in its ->suspend() and ->resume()
+> callbacks and they are not done correctly.
+> 
+> Convert atl1c to the new PCI power management framework and make it
+> let the PCI subsystem handle all of the PCI-specific aspects of
+> device handling during system power transitions.
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> ---
+>  drivers/net/atl1c/atl1c_main.c |   39
+> +++++++++++++++------------------------ 1 file changed, 15 insertions(+),
+> 24 deletions(-)
+> 
+> Index: linux-2.6/drivers/net/atl1c/atl1c_main.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/net/atl1c/atl1c_main.c
+> +++ linux-2.6/drivers/net/atl1c/atl1c_main.c
+> @@ -702,6 +702,7 @@ static int __devinit atl1c_sw_init(struc
+> 
+> 
+>  	adapter->wol = 0;
+> +	device_set_wakeup_enable(&pdev->dev, false);
+>  	adapter->link_speed = SPEED_0;
+>  	adapter->link_duplex = FULL_DUPLEX;
+>  	adapter->num_rx_queues = AT_DEF_RECEIVE_QUEUE;
+> @@ -2444,8 +2445,9 @@ static int atl1c_close(struct net_device
+>  	return 0;
+>  }
+> 
+> -static int atl1c_suspend(struct pci_dev *pdev, pm_message_t state)
+> +static int atl1c_suspend(struct device *dev)
+>  {
+> +	struct pci_dev *pdev = to_pci_dev(dev);
+>  	struct net_device *netdev = pci_get_drvdata(pdev);
+>  	struct atl1c_adapter *adapter = netdev_priv(netdev);
+>  	struct atl1c_hw *hw = &adapter->hw;
+> @@ -2454,7 +2456,6 @@ static int atl1c_suspend(struct pci_dev
+>  	u32 wol_ctrl_data = 0;
+>  	u16 mii_intr_status_data = 0;
+>  	u32 wufc = adapter->wol;
+> -	int retval = 0;
+> 
+>  	atl1c_disable_l0s_l1(hw);
+>  	if (netif_running(netdev)) {
+> @@ -2462,9 +2463,6 @@ static int atl1c_suspend(struct pci_dev
+>  		atl1c_down(adapter);
+>  	}
+>  	netif_device_detach(netdev);
+> -	retval = pci_save_state(pdev);
+> -	if (retval)
+> -		return retval;
+> 
+>  	if (wufc)
+>  		if (atl1c_phy_power_saving(hw) != 0)
+> @@ -2525,12 +2523,8 @@ static int atl1c_suspend(struct pci_dev
+>  		AT_WRITE_REG(hw, REG_WOL_CTRL, wol_ctrl_data);
+>  		AT_WRITE_REG(hw, REG_MAC_CTRL, mac_ctrl_data);
+> 
+> -		/* pcie patch */
+> -		device_set_wakeup_enable(&pdev->dev, 1);
+> -
+>  		AT_WRITE_REG(hw, REG_GPHY_CTRL, GPHY_CTRL_DEFAULT |
+>  			GPHY_CTRL_EXT_RESET);
+> -		pci_prepare_to_sleep(pdev);
+>  	} else {
+>  		AT_WRITE_REG(hw, REG_GPHY_CTRL, GPHY_CTRL_POWER_SAVING);
+>  		master_ctrl_data |= MASTER_CTRL_CLK_SEL_DIS;
+> @@ -2540,25 +2534,17 @@ static int atl1c_suspend(struct pci_dev
+>  		AT_WRITE_REG(hw, REG_MAC_CTRL, mac_ctrl_data);
+>  		AT_WRITE_REG(hw, REG_WOL_CTRL, 0);
+>  		hw->phy_configured = false; /* re-init PHY when resume */
+> -		pci_enable_wake(pdev, pci_choose_state(pdev, state), 0);
+>  	}
+> 
+> -	pci_disable_device(pdev);
+> -	pci_set_power_state(pdev, pci_choose_state(pdev, state));
+> -
+>  	return 0;
+>  }
+> 
+> -static int atl1c_resume(struct pci_dev *pdev)
+> +static int atl1c_resume(struct device *dev)
+>  {
+> +	struct pci_dev *pdev = to_pci_dev(dev);
+>  	struct net_device *netdev = pci_get_drvdata(pdev);
+>  	struct atl1c_adapter *adapter = netdev_priv(netdev);
+> 
+> -	pci_set_power_state(pdev, PCI_D0);
+> -	pci_restore_state(pdev);
+> -	pci_enable_wake(pdev, PCI_D3hot, 0);
+> -	pci_enable_wake(pdev, PCI_D3cold, 0);
+> -
+>  	AT_WRITE_REG(&adapter->hw, REG_WOL_CTRL, 0);
+>  	atl1c_reset_pcie(&adapter->hw, ATL1C_PCIE_L0S_L1_DISABLE |
+>  			ATL1C_PCIE_PHY_RESET);
+> @@ -2582,7 +2568,12 @@ static int atl1c_resume(struct pci_dev *
+> 
+>  static void atl1c_shutdown(struct pci_dev *pdev)
+>  {
+> -	atl1c_suspend(pdev, PMSG_SUSPEND);
+> +	struct net_device *netdev = pci_get_drvdata(pdev);
+> +	struct atl1c_adapter *adapter = netdev_priv(netdev);
+> +
+> +	atl1c_suspend(&pdev->dev);
+> +	pci_wake_from_d3(pdev, adapter->wol);
+> +	pci_set_power_state(pdev, PCI_D3hot);
+>  }
+> 
+>  static const struct net_device_ops atl1c_netdev_ops = {
+> @@ -2886,16 +2877,16 @@ static struct pci_error_handlers atl1c_e
+>  	.resume = atl1c_io_resume,
+>  };
+> 
+> +static SIMPLE_DEV_PM_OPS(atl1c_pm_ops, atl1c_suspend, atl1c_resume);
+> +
+>  static struct pci_driver atl1c_driver = {
+>  	.name     = atl1c_driver_name,
+>  	.id_table = atl1c_pci_tbl,
+>  	.probe    = atl1c_probe,
+>  	.remove   = __devexit_p(atl1c_remove),
+> -	/* Power Managment Hooks */
+> -	.suspend  = atl1c_suspend,
+> -	.resume   = atl1c_resume,
+>  	.shutdown = atl1c_shutdown,
+> -	.err_handler = &atl1c_err_handler
+> +	.err_handler = &atl1c_err_handler,
+> +	.driver.pm = &atl1c_pm_ops,
+>  };
+> 
+>  /*
 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index adc2620..e453f13 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -1058,9 +1058,11 @@ error:
- static char *synthesize_perf_probe_point(struct perf_probe_point *pp)
- {
- 	char *buf, *tmp;
--	char offs[32] = "", line[32] = "", file[32] = "";
-+	char offs[32], line[32], file[32];
- 	int ret, len;
- 
-+	offs[0] = line[0] = file[0] = '\0';
-+
- 	buf = zalloc(MAX_CMDLEN);
- 	if (buf == NULL) {
- 		ret = -ENOMEM;
+
 -- 
-1.7.3.2
-
+Thomas Fjellstrom
+thomas@fjellstrom.ca
