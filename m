@@ -1,80 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660Ab0LWWVG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 17:21:06 -0500
-Received: from imr4.ericy.com ([198.24.6.8]:35573 "EHLO imr4.ericy.com"
+	id S1752013Ab0LWWYW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 17:24:22 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:49814 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751193Ab0LWWVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 17:21:05 -0500
-Date: Thu, 23 Dec 2010 14:20:27 -0800
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: dd diasemi <dd.diasemi@gmail.com>
-CC: "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [lm-sensors] [PATCHv3 6/11] HWMON: HWMON module of DA9052
- device driver
-Message-ID: <20101223222027.GA29608@ericsson.com>
-References: <AANLkTin7N2HViUNSez9si7WytPkQAkTiR9NP3iUitbh4@mail.gmail.com>
+	id S1751608Ab0LWWYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 17:24:21 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [PATCH] acpi: Update battery information on notification 0x81
+Date: Thu, 23 Dec 2010 23:23:42 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc7+; KDE/4.4.4; x86_64; ; )
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, lenb@kernel.org
+References: <1281990739-17912-1-git-send-email-mjg@redhat.com> <20101215171928.GA17746@srcf.ucam.org> <20101223211638.GA7862@srcf.ucam.org>
+In-Reply-To: <20101223211638.GA7862@srcf.ucam.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <AANLkTin7N2HViUNSez9si7WytPkQAkTiR9NP3iUitbh4@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012232323.42702.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 21, 2010 at 12:52:50PM -0500, dd diasemi wrote:
-> HWMON module for DA9052 PMIC device from Dialog Semiconductor.
+On Thursday, December 23, 2010, Matthew Garrett wrote:
+> A notification event 0x81 from an ACPI battery device requires us to
+> re-read the battery information structure. Do so, and if the battery's
+> reporting units have changed (as is the case on some Thinkpads) destroy
+> and recreate the battery in order to populate the fields correctly.
 > 
-> Changes made since last submission:
-> . removed the DA9052 customized success and error codes
-> . changed da9052_manual_read() return type
+> Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> ---
 > 
-> Linux Kernel Version: 2.6.34
-> 
-> Signed-off-by: D. Chen <dchen@diasemi.com>
+> Respun against Linus master
 
-[ ... ]
+As I've already said on IRC, I'd simply add a new function like:
 
+void acpi_battery_refresh(struct acpi_battery *battery)
+{
+	if (!battery->bat.dev)
+		return;
+	acpi_battery_get_info(battery);
+	/* The battery may have changed its reporting units */
+	sysfs_remove_battery(battery);
+	sysfs_add_battery(battery);
+}
+
+and call it before acpi_battery_update()
+(a) in acpi_battery_resume()
+(b) in acpi_battery_notify() if event == ACPI_BATTERY_NOTIFY_INFO
+
+That would be more straightforward IMHO.
+
+Thanks,
+Rafael
+
+
+>  drivers/acpi/battery.c |   24 +++++++++++++++++-------
+>  1 files changed, 17 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+> index 9fb9d5a..8da9c88 100644
+> --- a/drivers/acpi/battery.c
+> +++ b/drivers/acpi/battery.c
+> @@ -130,7 +130,7 @@ struct acpi_battery {
+>  	unsigned long flags;
+>  };
+>  
+> -static int acpi_battery_update(struct acpi_battery *battery);
+> +static int acpi_battery_update(struct acpi_battery *battery, bool get_info);
+>  
+>  #define to_acpi_battery(x) container_of(x, struct acpi_battery, bat);
+>  
+> @@ -186,7 +186,7 @@ static int acpi_battery_get_property(struct power_supply *psy,
+>  	int ret = 0;
+>  	struct acpi_battery *battery = to_acpi_battery(psy);
+>  
+> -	if (acpi_battery_update(battery))
+> +	if (acpi_battery_update(battery, false))
+>  		return -ENODEV;
+>  
+>  	if (acpi_battery_present(battery)) {
+> @@ -610,9 +610,11 @@ static void acpi_battery_quirks2(struct acpi_battery *battery)
+>  	}
+>  }
+>  
+> -static int acpi_battery_update(struct acpi_battery *battery)
+> +static int acpi_battery_update(struct acpi_battery *battery, bool get_info)
+>  {
+>  	int result, old_present = acpi_battery_present(battery);
+> +	int old_power_unit = battery->power_unit;
 > +
-> +static DEVICE_ATTR(name, S_IRUGO, da9052_adc_show_name, NULL);
-> +static SENSOR_DEVICE_ATTR(read_vddout, S_IRUGO,
-> +                               da9052_adc_read_start_stop, NULL,
-> +                               DA9052_ADC_VDDOUT);
-> +static SENSOR_DEVICE_ATTR(read_ich, S_IRUGO, da9052_adc_read_ich, NULL,
-> +                               DA9052_ADC_ICH);
-> +static SENSOR_DEVICE_ATTR(read_tbat, S_IRUGO, da9052_adc_read_tbat, NULL,
-> +                               DA9052_ADC_TBAT);
-> +static SENSOR_DEVICE_ATTR(read_vbat, S_IRUGO, da9052_adc_read_vbat, NULL,
-> +                               DA9052_ADC_VBAT);
-> +#if (DA9052_ADC_CONF_ADC4 == 1)
-> +static SENSOR_DEVICE_ATTR(in4_input, S_IRUGO, da9052_adc_read_start_stop, NULL,
-> +                               DA9052_ADC_ADCIN4);
-> +#endif
-> +#if (DA9052_ADC_CONF_ADC5 == 1)
-> +static SENSOR_DEVICE_ATTR(in5_input, S_IRUGO, da9052_adc_read_start_stop, NULL,
-> +                               DA9052_ADC_ADCIN5);
-> +#endif
-> +#if (DA9052_ADC_CONF_ADC6 == 1)
-> +static SENSOR_DEVICE_ATTR(in6_input, S_IRUGO, da9052_adc_read_start_stop, NULL,
-> +                               DA9052_ADC_ADCIN6);
-> +#endif
-> +static SENSOR_DEVICE_ATTR(read_tjunc, S_IRUGO, da9052_adc_read_tjunc, NULL,
-> +                               DA9052_ADC_TJUNC);
-> +static SENSOR_DEVICE_ATTR(read_vbbat, S_IRUGO, da9052_adc_read_vbbat, NULL,
-> +                               DA9052_ADC_VBBAT);
-> +
+>  	result = acpi_battery_get_status(battery);
+>  	if (result)
+>  		return result;
+> @@ -631,6 +633,14 @@ static int acpi_battery_update(struct acpi_battery *battery)
+>  	}
+>  	if (!battery->bat.dev)
+>  		sysfs_add_battery(battery);
+> +	if (get_info) {
+> +		acpi_battery_get_info(battery);
+> +		if (old_power_unit != battery->power_unit) {
+> +			/* The battery has changed its reporting units */
+> +			sysfs_remove_battery(battery);
+> +			sysfs_add_battery(battery);
+> +		}
+> +	}
+>  	result = acpi_battery_get_state(battery);
+>  	acpi_battery_quirks2(battery);
+>  	return result;
+> @@ -808,7 +818,7 @@ static print_func acpi_print_funcs[ACPI_BATTERY_NUMFILES] = {
+>  static int acpi_battery_read(int fid, struct seq_file *seq)
+>  {
+>  	struct acpi_battery *battery = seq->private;
+> -	int result = acpi_battery_update(battery);
+> +	int result = acpi_battery_update(battery, false);
+>  	return acpi_print_funcs[fid](seq, result);
+>  }
+>  
+> @@ -919,7 +929,7 @@ static void acpi_battery_notify(struct acpi_device *device, u32 event)
+>  	if (!battery)
+>  		return;
+>  	old = battery->bat.dev;
+> -	acpi_battery_update(battery);
+> +	acpi_battery_update(battery, (event == ACPI_BATTERY_NOTIFY_INFO));
+>  	acpi_bus_generate_proc_event(device, event,
+>  				     acpi_battery_present(battery));
+>  	acpi_bus_generate_netlink_event(device->pnp.device_class,
+> @@ -948,7 +958,7 @@ static int acpi_battery_add(struct acpi_device *device)
+>  	if (ACPI_SUCCESS(acpi_get_handle(battery->device->handle,
+>  			"_BIX", &handle)))
+>  		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
+> -	acpi_battery_update(battery);
+> +	acpi_battery_update(battery, false);
+>  #ifdef CONFIG_ACPI_PROCFS_POWER
+>  	result = acpi_battery_add_fs(device);
+>  #endif
+> @@ -989,7 +999,7 @@ static int acpi_battery_resume(struct acpi_device *device)
+>  		return -EINVAL;
+>  	battery = acpi_driver_data(device);
+>  	battery->update_time = 0;
+> -	acpi_battery_update(battery);
+> +	acpi_battery_update(battery, true);
+>  	return 0;
+>  }
+> 
+> 
 
-Driver doesn't follow hwmon sysfs ABI, with no good reason.
-As for the labels, I am not sure if the provided labels reflect chip data 
-or the use of the chip on a specific board. The product brief seems to indicate
-the latter. If so, defining label attribute files is not appropriate. Labels
-can then be assigned through sensors.conf.
-
-The use of ifdefs in the code is excessive. There should be a single Kconfig entry
-to enable the driver. Remaining data can be provided with platform data if it is 
-mandatory, or sensors not supported on a given board can be configured to be 
-ignored via sensors.conf.
-
-Guenter
