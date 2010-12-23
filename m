@@ -1,64 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004Ab0LWHfo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 02:35:44 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:55545 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532Ab0LWHfn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 02:35:43 -0500
-Message-ID: <3164a8edfdf8816a1b73200245684f57.squirrel@www.firstfloor.org>
-In-Reply-To: <20101222101443.GA1640@elte.hu>
-References: <1293005543.2565.156.camel@minggr.sh.intel.com>
-    <1293006808.2170.42.camel@laptop> <1293008656.2170.67.camel@laptop>
-    <20101222101443.GA1640@elte.hu>
-Date: Thu, 23 Dec 2010 08:35:39 +0100
-Subject: Re: [RFC PATCH] perf: Add load latency monitoring on Intel
- Nehalem/Westmere
-From: "Andi Kleen" <andi@firstfloor.org>
-To: "Ingo Molnar" <mingo@elte.hu>
-Cc: "Peter Zijlstra" <peterz@infradead.org>, "Lin Ming" <ming.m.lin@intel.com>,
-        "Andi Kleen" <andi@firstfloor.org>,
-        "Stephane Eranian" <eranian@google.com>,
-        "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "Arjan van de Ven" <arjan@infradead.org>,
-        "lkml" <linux-kernel@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.21
+	id S1752382Ab0LWIEZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 03:04:25 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:56852 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751992Ab0LWIEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 03:04:23 -0500
+Message-ID: <4D130383.30406@cn.fujitsu.com>
+Date: Thu, 23 Dec 2010 16:08:35 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2 RESEND] KVM: MMU: audit: allow audit more guests at the
+ same time
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-12-23 16:04:14,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-12-23 16:04:14,
+	Serialize complete at 2010-12-23 16:04:14
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> * Peter Zijlstra <peterz@infradead.org> wrote:
->
->> On Wed, 2010-12-22 at 09:33 +0100, Peter Zijlstra wrote:
->> > On Wed, 2010-12-22 at 16:12 +0800, Lin Ming wrote:
->> > > It's applied on top of tip/master(3ea1f4f89) and Andi's offcore
->> > > patchsets are needed.
->> >
->> > I still haven't gotten a version of that I'm willing to apply.
->>
->> That is, maybe you could pick up his patches and finish them, Andi
->> doesn't seem interested in getting them sorted.
->
-> FYI, this one of Peter's reviews that went unaddressed:
->
->   https://lkml.org/lkml/2010/12/1/213
->
-> and he got no reply to that feedback in the past 3 weeks. (There may be
-> other issues
-> outstanding, i have not checked.)
+It only allows to audit one guest in the system since:
+- 'audit_point' is a glob variable
+- mmu_audit_disable() is called in kvm_mmu_destroy(), so audit is disabled
+  after a guest exited
 
-Sorry didn't see that email. I dropped the variable intentionally
-to simplify the code; there is no fastpath overhead for the other
-CPUs and allocating a few bytes per core didn't seem worth having a
-special variable to guard it. I can readd it if people really
-want it.
+this patch fix those issues then allow to audit more guests at the same time
 
--Andi
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/include/asm/kvm_host.h |    4 ++++
+ arch/x86/kvm/mmu.c              |   26 +++++++++++++-------------
+ arch/x86/kvm/mmu_audit.c        |   39 ++++++++++++++++++++++-----------------
+ 3 files changed, 39 insertions(+), 30 deletions(-)
 
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 4461429..c447f50 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -460,6 +460,10 @@ struct kvm_arch {
+ 	/* fields used by HYPER-V emulation */
+ 	u64 hv_guest_os_id;
+ 	u64 hv_hypercall;
++
++	#ifdef CONFIG_KVM_MMU_AUDIT
++	int audit_point;
++	#endif
+ };
+ 
+ struct kvm_vm_stat {
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index c3853d5..4e49e24 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -3528,13 +3528,6 @@ static void mmu_destroy_caches(void)
+ 		kmem_cache_destroy(mmu_page_header_cache);
+ }
+ 
+-void kvm_mmu_module_exit(void)
+-{
+-	mmu_destroy_caches();
+-	percpu_counter_destroy(&kvm_total_used_mmu_pages);
+-	unregister_shrinker(&mmu_shrinker);
+-}
+-
+ int kvm_mmu_module_init(void)
+ {
+ 	pte_chain_cache = kmem_cache_create("kvm_pte_chain",
+@@ -3727,12 +3720,6 @@ int kvm_mmu_get_spte_hierarchy(struct kvm_vcpu *vcpu, u64 addr, u64 sptes[4])
+ }
+ EXPORT_SYMBOL_GPL(kvm_mmu_get_spte_hierarchy);
+ 
+-#ifdef CONFIG_KVM_MMU_AUDIT
+-#include "mmu_audit.c"
+-#else
+-static void mmu_audit_disable(void) { }
+-#endif
+-
+ void kvm_mmu_destroy(struct kvm_vcpu *vcpu)
+ {
+ 	ASSERT(vcpu);
+@@ -3740,5 +3727,18 @@ void kvm_mmu_destroy(struct kvm_vcpu *vcpu)
+ 	destroy_kvm_mmu(vcpu);
+ 	free_mmu_pages(vcpu);
+ 	mmu_free_memory_caches(vcpu);
++}
++
++#ifdef CONFIG_KVM_MMU_AUDIT
++#include "mmu_audit.c"
++#else
++static void mmu_audit_disable(void) { }
++#endif
++
++void kvm_mmu_module_exit(void)
++{
++	mmu_destroy_caches();
++	percpu_counter_destroy(&kvm_total_used_mmu_pages);
++	unregister_shrinker(&mmu_shrinker);
+ 	mmu_audit_disable();
+ }
+diff --git a/arch/x86/kvm/mmu_audit.c b/arch/x86/kvm/mmu_audit.c
+index ba2bcdd..5f6223b 100644
+--- a/arch/x86/kvm/mmu_audit.c
++++ b/arch/x86/kvm/mmu_audit.c
+@@ -19,11 +19,9 @@
+ 
+ #include <linux/ratelimit.h>
+ 
+-static int audit_point;
+-
+-#define audit_printk(fmt, args...)		\
++#define audit_printk(kvm, fmt, args...)		\
+ 	printk(KERN_ERR "audit: (%s) error: "	\
+-		fmt, audit_point_name[audit_point], ##args)
++		fmt, audit_point_name[kvm->arch.audit_point], ##args)
+ 
+ typedef void (*inspect_spte_fn) (struct kvm_vcpu *vcpu, u64 *sptep, int level);
+ 
+@@ -97,18 +95,21 @@ static void audit_mappings(struct kvm_vcpu *vcpu, u64 *sptep, int level)
+ 
+ 	if (sp->unsync) {
+ 		if (level != PT_PAGE_TABLE_LEVEL) {
+-			audit_printk("unsync sp: %p level = %d\n", sp, level);
++			audit_printk(vcpu->kvm, "unsync sp: %p "
++				     "level = %d\n", sp, level);
+ 			return;
+ 		}
+ 
+ 		if (*sptep == shadow_notrap_nonpresent_pte) {
+-			audit_printk("notrap spte in unsync sp: %p\n", sp);
++			audit_printk(vcpu->kvm, "notrap spte in unsync "
++				     "sp: %p\n", sp);
+ 			return;
+ 		}
+ 	}
+ 
+ 	if (sp->role.direct && *sptep == shadow_notrap_nonpresent_pte) {
+-		audit_printk("notrap spte in direct sp: %p\n", sp);
++		audit_printk(vcpu->kvm, "notrap spte in direct sp: %p\n",
++			     sp);
+ 		return;
+ 	}
+ 
+@@ -125,8 +126,9 @@ static void audit_mappings(struct kvm_vcpu *vcpu, u64 *sptep, int level)
+ 
+ 	hpa =  pfn << PAGE_SHIFT;
+ 	if ((*sptep & PT64_BASE_ADDR_MASK) != hpa)
+-		audit_printk("levels %d pfn %llx hpa %llx ent %llxn",
+-				   vcpu->arch.mmu.root_level, pfn, hpa, *sptep);
++		audit_printk(vcpu->kvm, "levels %d pfn %llx hpa %llx "
++			     "ent %llxn", vcpu->arch.mmu.root_level, pfn,
++			     hpa, *sptep);
+ }
+ 
+ static void inspect_spte_has_rmap(struct kvm *kvm, u64 *sptep)
+@@ -142,8 +144,8 @@ static void inspect_spte_has_rmap(struct kvm *kvm, u64 *sptep)
+ 	if (!gfn_to_memslot(kvm, gfn)) {
+ 		if (!printk_ratelimit())
+ 			return;
+-		audit_printk("no memslot for gfn %llx\n", gfn);
+-		audit_printk("index %ld of sp (gfn=%llx)\n",
++		audit_printk(kvm, "no memslot for gfn %llx\n", gfn);
++		audit_printk(kvm, "index %ld of sp (gfn=%llx)\n",
+ 		       (long int)(sptep - rev_sp->spt), rev_sp->gfn);
+ 		dump_stack();
+ 		return;
+@@ -153,7 +155,8 @@ static void inspect_spte_has_rmap(struct kvm *kvm, u64 *sptep)
+ 	if (!*rmapp) {
+ 		if (!printk_ratelimit())
+ 			return;
+-		audit_printk("no rmap for writable spte %llx\n", *sptep);
++		audit_printk(kvm, "no rmap for writable spte %llx\n",
++			     *sptep);
+ 		dump_stack();
+ 	}
+ }
+@@ -168,8 +171,9 @@ static void audit_spte_after_sync(struct kvm_vcpu *vcpu, u64 *sptep, int level)
+ {
+ 	struct kvm_mmu_page *sp = page_header(__pa(sptep));
+ 
+-	if (audit_point == AUDIT_POST_SYNC && sp->unsync)
+-		audit_printk("meet unsync sp(%p) after sync root.\n", sp);
++	if (vcpu->kvm->arch.audit_point == AUDIT_POST_SYNC && sp->unsync)
++		audit_printk(vcpu->kvm, "meet unsync sp(%p) after sync "
++			     "root.\n", sp);
+ }
+ 
+ static void check_mappings_rmap(struct kvm *kvm, struct kvm_mmu_page *sp)
+@@ -202,8 +206,9 @@ static void audit_write_protection(struct kvm *kvm, struct kvm_mmu_page *sp)
+ 	spte = rmap_next(kvm, rmapp, NULL);
+ 	while (spte) {
+ 		if (is_writable_pte(*spte))
+-			audit_printk("shadow page has writable mappings: gfn "
+-				     "%llx role %x\n", sp->gfn, sp->role.word);
++			audit_printk(kvm, "shadow page has writable "
++				     "mappings: gfn %llx role %x\n",
++				     sp->gfn, sp->role.word);
+ 		spte = rmap_next(kvm, rmapp, spte);
+ 	}
+ }
+@@ -238,7 +243,7 @@ static void kvm_mmu_audit(void *ignore, struct kvm_vcpu *vcpu, int point)
+ 	if (!__ratelimit(&ratelimit_state))
+ 		return;
+ 
+-	audit_point = point;
++	vcpu->kvm->arch.audit_point = point;
+ 	audit_all_active_sps(vcpu->kvm);
+ 	audit_vcpu_spte(vcpu);
+ }
+-- 
+1.7.0.4
