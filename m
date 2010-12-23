@@ -1,106 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885Ab0LWAiY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 19:38:24 -0500
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:61918 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751882Ab0LWAiX (ORCPT
+	id S1753052Ab0LWAip (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 19:38:45 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:14709 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752350Ab0LWAio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 19:38:23 -0500
-Date: Wed, 22 Dec 2010 16:38:23 -0800
-From: Dmitry Torokhov <dtor@vmware.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Show version information for built-in modules in sysfs
-Message-ID: <20101223003823.GA19568@dtor-ws.eng.vmware.com>
-References: <20101215220019.GA6560@dtor-ws.eng.vmware.com>
- <201012221132.41057.rusty@rustcorp.com.au>
- <20101222011712.GA19105@dtor-ws.eng.vmware.com>
- <201012221218.45533.rusty@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201012221218.45533.rusty@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 22 Dec 2010 19:38:44 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=kmt5Uv2QzTKk+5CG5z8xrI1n6pvFxJA1613Zcihc1U2QNhhT1PlAVLzrzwW3RqHbW
+	nVH2cpE2lc9ODHyUgcGrg==
+From: David Sharp <dhsharp@google.com>
+To: rostedt@goodmis.org
+Cc: linux-kernel@vger.kernel.org, mrubin@google.com,
+        David Sharp <dhsharp@google.com>
+Subject: [PATCH] ring_buffer: off-by-one and duplicate events in ring_buffer_read_page
+Date: Wed, 22 Dec 2010 16:38:24 -0800
+Message-Id: <1293064704-8101-1-git-send-email-dhsharp@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <AANLkTin7nLrRPc9qGjdjHbeVDDWiJjAiYyb-L=gH85bx@mail.gmail.com>
+References: <AANLkTin7nLrRPc9qGjdjHbeVDDWiJjAiYyb-L=gH85bx@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 21, 2010 at 05:48:45PM -0800, Rusty Russell wrote:
-> On Wed, 22 Dec 2010 11:47:12 am Dmitry Torokhov wrote:
-> > On Tue, Dec 21, 2010 at 05:02:40PM -0800, Rusty Russell wrote:
-> > > On Thu, 16 Dec 2010 08:30:19 am Dmitry Torokhov wrote:
-> > > > +
-> > > > +#ifdef MODULE
-> > > >  #define MODULE_VERSION(_version) MODULE_INFO(version, _version)
-> > > > +#else
-> > > > +#define MODULE_VERSION(_version)					\
-> > > > +	extern ssize_t __modver_version_show(struct module_attribute *,	\
-> > > > +					     struct module *, char *);	\
-> > > > +	static struct module_version_attribute __modver_version_attr	\
-> > > > +	__used								\
-> > > > +    __attribute__ ((unused,__section__ ("__modver"),aligned(sizeof(void *)))) \
-> > > 
-> > > __used and unused seems overkill, and confused.
-> > > 
-> > 
-> > Must admit that I copied used/unused verbatim from linux/moduleparam.h:
-> > 
-> > /* This is the fundamental function for registering boot/module
-> >    parameters. */
-> > #define __module_param_call(prefix, name, ops, arg, isbool, perm)	\
-> > 	/* Default value instead of permissions? */			\
-> > 	static int __param_perm_check_##name __attribute__((unused)) =	\
-> > 	BUILD_BUG_ON_ZERO((perm) < 0 || (perm) > 0777 || ((perm) & 2))	\
-> > 	+ BUILD_BUG_ON_ZERO(sizeof(""prefix) > MAX_PARAM_PREFIX_LEN);	\
-> > 	static const char __param_str_##name[] = prefix #name;		\
-> > 	static struct kernel_param __moduleparam_const __param_##name	\
-> > 	__used								\
-> >     __attribute__ ((unused,__section__ ("__param"),aligned(sizeof(void *)))) \
-> > 	= { __param_str_##name, ops, perm, isbool ? KPARAM_ISBOOL : 0,	\
-> > 	    { arg } }
-> > 
-> > 
-> > So should it be removed from here as well?
-> 
-> I think so, but (as always!) check git blame.
-> 
+Fix two related problems in the event-copying loop of
+ring_buffer_read_page.
 
-Whew, found it:
+The loop condition for copying events is off-by-one.
+"len" is the remaining space in the caller-supplied page.
+"size" is the size of the next event (or two events).
+If len == size, then there is just enough space for the next event.
 
-commit 4d62364652499ef106d1c0737968a879ef077bd4
-Author: akpm <akpm>
-Date:   Tue Jan 20 05:13:24 2004 +0000
+size was set to rb_event_ts_length, which may include the size of two
+events if the first event is a time-extend, in order to assure time-
+extends are kept together with the event after it. However,
+rb_advance_reader always advances by one event. This would result in the
+event after any time-extend being duplicated. Instead, get the size of
+a single event for the memcpy, but use rb_event_ts_length for the loop
+condition.
 
-    [PATCH] make gcc 3.4 compilation work
+Signed-off-by: David Sharp <dhsharp@google.com>
+CC: Steven Rostedt <rostedt@goodmis.org>
+LKML-Reference: <AANLkTin7nLrRPc9qGjdjHbeVDDWiJjAiYyb-L=gH85bx@mail.gmail.com>
+---
+ kernel/trace/ring_buffer.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
-    From: David Mosberger <davidm@napali.hpl.hp.com>
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 9ed509a..bd1c35a 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -3853,6 +3853,13 @@ int ring_buffer_read_page(struct ring_buffer *buffer,
+ 
+ 		/* Need to copy one event at a time */
+ 		do {
++			/* We need the size of one event, because
++			 * rb_advance_reader only advances by one event,
++			 * whereas rb_event_ts_length may include the size of
++			 * one or two events.
++			 * We have already ensured there's enough space if this
++			 * is a time extend. */
++			size = rb_event_length(event);
+ 			memcpy(bpage->data + pos, rpage->data + rpos, size);
+ 
+ 			len -= size;
+@@ -3867,7 +3874,7 @@ int ring_buffer_read_page(struct ring_buffer *buffer,
+ 			event = rb_reader_event(cpu_buffer);
+ 			/* Always keep the time extend and data together */
+ 			size = rb_event_ts_length(event);
+-		} while (len > size);
++		} while (len >= size);
+ 
+ 		/* update bpage */
+ 		local_set(&bpage->commit, pos);
+-- 
+1.7.3.1
 
-    With gcc-3.4 we need "attribute((used))" declarations to get "make
-    modules_install" to work.
-
-    Otherwise these sections get dropped from the final image (I assume).
-
-    BKrev: 400cb8f4ByHxZCElstAaZ3mBZ2oflQ
-
-...
-
-diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
-index 0a5becb..cbca007 100644
---- a/include/linux/moduleparam.h
-+++ b/include/linux/moduleparam.h
-@@ -52,6 +52,7 @@ struct kparam_array
- #define __module_param_call(prefix, name, set, get, arg, perm) \
-        static char __param_str_##name[] __initdata = prefix #name; \
-        static struct kernel_param const __param_##name \
-+       __attribute_used__ \
-     __attribute__ ((unused,__section__ ("__param"),aligned(sizeof(void *)))) \
-        = { __param_str_##name, perm, set, get, arg }
-
-
-Since we still claim to support GCC 3.4 I guess __used is still
-needed...
-
-Thanks,
-
-Dmitry
