@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880Ab0LWMzo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 07:55:44 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49248 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943Ab0LWMzn (ORCPT
+	id S1752277Ab0LWM4P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 07:56:15 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:47691 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab0LWM4O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 07:55:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=FWO62heyz1pojIWUPQhdKGpEJfZSO5PzdroBvL0Vu+SeYTXQjAGoFnaRQyjBz0GNId
-         ptFydkh3TS1wIpfTG2xJdViPsAtsdtHZlf/3AFJgOTfPMPg3ia9oqjml3bvBJbcqsKe0
-         oHbn/LrS/BBQJ5AIgONFTY18wHLXOPHN4A5AE=
-Date: Thu, 23 Dec 2010 13:55:38 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: buggy perf callgraph output
-Message-ID: <20101223125535.GA1769@nowhere>
-References: <20101208164015.GA5444@amd>
- <20101208214809.GG1709@nowhere>
- <20101215130245.GA10004@amd>
- <20101216114755.GA1687@nowhere>
- <20101217053258.GC3282@amd>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101217053258.GC3282@amd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 23 Dec 2010 07:56:14 -0500
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=heD8I4ohhdAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=NdegZAw4AoZ6PcTxkKsA:9 a=b291zD9zMvZIjlu5yPX4H8cVTW0A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] rtmutex: ensure only the top waiter or higher priority
+ task can take the lock and reduce unrelated boosting
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Young <hidave.darkstar@gmail.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <4D13114D.5060709@cn.fujitsu.com>
+References: <4D07330A.7020600@cn.fujitsu.com>
+	 <alpine.LFD.2.00.1012141850460.12146@localhost6.localdomain6>
+	 <4D083900.1050801@cn.fujitsu.com>
+	 <1292386606.5015.1862.camel@gandalf.stny.rr.com>
+	 <4D0877D2.10000@cn.fujitsu.com>
+	 <1292425462.5015.1895.camel@gandalf.stny.rr.com>
+	 <4D13114D.5060709@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 23 Dec 2010 07:56:10 -0500
+Message-ID: <1293108970.22802.9.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 04:32:58PM +1100, Nick Piggin wrote:
-> That would be great, thanks! It's a really awesome tool, I appreciate
-> your effort on it.
+On Thu, 2010-12-23 at 17:07 +0800, Lai Jiangshan wrote:
+> On 12/15/2010 11:04 PM, Steven Rostedt wrote:
+> > On Wed, 2010-12-15 at 16:09 +0800, Lai Jiangshan wrote:
+> > 
+> > Some English updates.
+> 
+> Updated, Thank you very much.
+> 
 
-Thanks :)
+Note, I've been working all week on a port for -rt. It required some
+clean ups, but as I finished (last week), I keep hitting a "hung task"
+when running dbench in a loop over night. I spent most the week trying
+to debug it. But I'm starting to think this is something to do with -rt
+and not your patch. So I'll be posting my patches later today.
 
-So the below patch should fix the issue. Tell me if you encounter it
-again, or anything else.
+-- Steve
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index d503670..c749ba6 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -356,7 +356,7 @@ static size_t ipchain__fprintf_graph_line(FILE *fp, int depth, int depth_mask,
- 
- static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
- 				     int depth, int depth_mask, int period,
--				     u64 total_samples, int hits,
-+				     u64 total_samples, u64 hits,
- 				     int left_margin)
- {
- 	int i;
 
