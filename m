@@ -1,105 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706Ab0LWKsC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 05:48:02 -0500
-Received: from casper.infradead.org ([85.118.1.10]:38902 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752615Ab0LWKsA convert rfc822-to-8bit (ORCPT
+	id S1752684Ab0LWKsz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 05:48:55 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:40832 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752491Ab0LWKsx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 05:48:00 -0500
-Subject: Re: [RFC PATCH] perf: Add load latency monitoring on Intel
- Nehalem/Westmere
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, paulus <paulus@samba.org>
-In-Reply-To: <AANLkTi=LJB1zA-Kt8KE_qaSNga9iJqnR=FMDRq38Zq5_@mail.gmail.com>
-References: <1293005543.2565.156.camel@minggr.sh.intel.com>
-	 <1293008431.2170.63.camel@laptop>
-	 <AANLkTintfpyvx=Pj1+uu8kCkFn3zT6b36h27Hb7pm=ZF@mail.gmail.com>
-	 <1293014701.2170.111.camel@laptop> <1293014967.2170.114.camel@laptop>
-	 <1293094781.2565.197.camel@minggr.sh.intel.com>
-	 <1293099498.2170.452.camel@laptop>
-	 <AANLkTi=LJB1zA-Kt8KE_qaSNga9iJqnR=FMDRq38Zq5_@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 23 Dec 2010 05:48:53 -0500
+MIME-Version: 1.0
+X-Originating-IP: [192.163.20.232]
+In-Reply-To: <AFCDDB4A3EA003429EEF1E7B211FDBBA3348A3A516@EXDCVYMBSTM005.EQ1STM.local>
+References: <1292584829-28279-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+	<AANLkTimCYea+G7Z+o-2BDCGHbRobM2n+VJLLcDO6g=9d@mail.gmail.com>
+	<AANLkTi=J1AdOgxA_S9p9Ts65PL3Mi5NXXWMf0f-=0AwN@mail.gmail.com>
+	<AFCDDB4A3EA003429EEF1E7B211FDBBA3348A3A516@EXDCVYMBSTM005.EQ1STM.local>
+Date: Thu, 23 Dec 2010 16:18:52 +0530
+Message-ID: <AANLkTikxnWZNwf7AO0XnD0Y59Sdk9DMCsGtmap=H_gNk@mail.gmail.com>
+Subject: Re: [PATCH 00/11] mfd and bluetooth: Add CG2900 support
+From: Pavan Savoy <pavan_savoy@sify.com>
+To: Par-Gunnar HJALMDAHL <par-gunnar.p.hjalmdahl@stericsson.com>
+Cc: Vitaly Wool <vitalywool@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
+        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Date: Thu, 23 Dec 2010 11:48:00 +0100
-Message-ID: <1293101280.2170.501.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-23 at 11:31 +0100, Stephane Eranian wrote:
-> On Thu, Dec 23, 2010 at 11:18 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Thu, 2010-12-23 at 16:59 +0800, Lin Ming wrote:
-> >> > {L1, L2, L3, RAM}x{snoop, local, remote}x{shared, exclusive} + {unknown,
-> >> > uncached, IO}
-> >> >
-> >> > Which takes all of 5 bits to encode.
-> >>
-> >> Do you mean below encoding?
-> >>
-> >> bits4 3 2 1 0
-> >>     + + + + +
-> >>     | | | | |
-> >>     | | | {L1, L2, L3, RAM} or {unknown, uncached, IO}
-> >>     | | |
-> >>     | {snoop, local, remote, OTHER}
-> >>     |
-> >>     {shared, exclusive}
-> >>
-> >> If bits(2-3) is OTHER, then bits(0-1) is the encoding of {unknown,
-> >> uncached, IO}.
-> >
-> > That is most certainly a very valid encoding, and a rather nice one at
-> > that. I hadn't really gone further than: 4*3*2 + 3 < 2^5 :-)
-> >
-> > If you also make OTHER=0, then a valid encoding for unknown is also 0,
-> > which is a nice meaning for 0...
-> >
-> I am not sure how you would cover the 9 possibilities for data source as
-> shown in Table 10-13 using this encoding. Could you show me?
+P-G, Vitaly,
 
-Ah, I think I see the problem, there's multiple L3-snoops, I guess we
-can fix that by extending the {shared, exclusive} to full MESI, growing
-us to 6 bits.
+>
+> I would say our design would map like this:
+> common-hci-module: cg2900_core
+> serial, spi, i2c,... : cg2900_uart together with hci_ldisc (for other transports it would be different files)
+> bt, ti-radio, st-e-radio,...: cg2900_chip together with btcg2900 and other users per channel (cg2900_char_devices for users in User space)
+> So it is not a 1-to-1 mapping for the upper parts. I would draw it like this:
+>
+>                               bt   st-e-radio  st-e-gps
+>                                |         |          |
+>                                +---------+----------+
+>                                          |
+>                   ti-xx                st-e cg2900...
+>                     |                    |
+>                     +---------+----------+
+>                               |
+>                       common-hci-module
+>                               |
+>                   +-----------+-----------+
+>                   |        |       |      |
+>                 serial    spi     i2c    ...
 
-I'm assuming you mean "Table 30-13. Data Source Encoding for Load
-Latency Record", which has 14 values defined.
+regarding the architecture above suggested...
+Is having the common-hci-module, only way ?
+Why is this dependency on bluetooth at all?
 
-Value	Intel				Perf
-0x0	Unknown L3			Unknown
+for example: today I don't compile my kernel with BT support, but
+still want to use
+the chip for FM & GPS, It should be possible correct ?
+Even in TI case, although the firmware download is HCI-VS way, we
+don't use hci_core
+to interpret the responses...
 
-0x1	L1				L1-local
+instead of common-hci-module, why not create a algo-driver layer 'ala
+i2c ? where individual drivers can register their receive handlers for
+data interpretation ?
 
-0x2	Pending core cache HIT		L2-snoop
-	Outstanding core cache miss to
-	the same line was underway
-0x3	L2				L2-local
-
-0x4	L3-snoop, no coherency actions	L3-snoop-I
-0x5	L3-snoop, found no M		L3-snoop-S
-0x6	L3-snoop, found M		L3-snoop-M
-
-0x8     L3-miss, snoop, shared		RAM-snoop-S
-0xA	L3-miss, local, shared		RAM-local-S
-0xB	L3-miss, remote, shared		RAM-remote-S
-
-0xC	L3-miss, local, exclusive	RAM-local-E
-0xD	L3-miss, remote, exclusive	RAM-remote-E
-
-0xE	IO				IO
-0xF	uncached			uncached
-
-
-Leaving us with: 
-
-{L1, L2, L3, RAM}x{snoop, local, remote}x{modified, exclusive, shared, invalid} + {unknown, uncached, IO}
-
-Now the question is, is this sufficient to map all data sources from
-other archs as well?
+>
+> The reason for this difference I've gone through before. Basically there are so many special behaviors and needed handling that is individual for each chip (like startup and shutdown and in the case of CG2900 flow control over FM and BT channels for audio commands). If you then look at the users I guess it would be possible to have one BT user, but it would have to be modified to handle vendor specific commands (as btcg2900 does with BT_ENABLE command). As Arnd has drawn for FM and GPS the users would be completely individual since they don't have a standardized  interface.
+>
+> /P-G
+>
