@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684Ab0LWKsz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 05:48:55 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:40832 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491Ab0LWKsx convert rfc822-to-8bit (ORCPT
+	id S1752748Ab0LWK4s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 05:56:48 -0500
+Received: from casper.infradead.org ([85.118.1.10]:60061 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453Ab0LWK4r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 05:48:53 -0500
-MIME-Version: 1.0
-X-Originating-IP: [192.163.20.232]
-In-Reply-To: <AFCDDB4A3EA003429EEF1E7B211FDBBA3348A3A516@EXDCVYMBSTM005.EQ1STM.local>
-References: <1292584829-28279-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
-	<AANLkTimCYea+G7Z+o-2BDCGHbRobM2n+VJLLcDO6g=9d@mail.gmail.com>
-	<AANLkTi=J1AdOgxA_S9p9Ts65PL3Mi5NXXWMf0f-=0AwN@mail.gmail.com>
-	<AFCDDB4A3EA003429EEF1E7B211FDBBA3348A3A516@EXDCVYMBSTM005.EQ1STM.local>
-Date: Thu, 23 Dec 2010 16:18:52 +0530
-Message-ID: <AANLkTikxnWZNwf7AO0XnD0Y59Sdk9DMCsGtmap=H_gNk@mail.gmail.com>
-Subject: Re: [PATCH 00/11] mfd and bluetooth: Add CG2900 support
-From: Pavan Savoy <pavan_savoy@sify.com>
-To: Par-Gunnar HJALMDAHL <par-gunnar.p.hjalmdahl@stericsson.com>
-Cc: Vitaly Wool <vitalywool@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
-        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
-        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 23 Dec 2010 05:56:47 -0500
+Subject: Re: + kmap-types-clean-up-and-optimization.patch added to -mm tree
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: mingo@elte.hu, tglx@linutronix.de, akpm@linux-foundation.org,
+        LKML <linux-kernel@vger.kernel.org>, mm-commits@vger.kernel.org,
+        hpa@zytor.com
+In-Reply-To: <4D1336DE020000780002977F@vpn.id2.novell.com>
+References: <201012222248.oBMMmbcF023808@imap1.linux-foundation.org>
+	 <1293098310.2170.415.camel@laptop>
+	 <4D1336DE020000780002977F@vpn.id2.novell.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Thu, 23 Dec 2010 11:56:45 +0100
+Message-ID: <1293101805.2170.514.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-P-G, Vitaly,
+On Thu, 2010-12-23 at 10:47 +0000, Jan Beulich wrote:
+> >>> On 23.12.10 at 10:58, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > On Wed, 2010-12-22 at 14:48 -0800, akpm@linux-foundation.org wrote:
+> >> The patch titled
+> >>      kmap-types: clean up and optimization
+> >> has been added to the -mm tree.  Its filename is
+> >>      kmap-types-clean-up-and-optimization.patch
+> >> 
+> >> Before you just go and hit "reply", please:
+> >>    a) Consider who else should be cc'ed
+> >>    b) Prefer to cc a suitable mailing list as well
+> >>    c) Ideally: find the original patch on the mailing list and do a
+> >>       reply-to-all to that, adding suitable additional cc's
+> >> 
+> > 
+> >> ------------------------------------------------------
+> >> Subject: kmap-types: clean up and optimization
+> >> From: "Jan Beulich" <JBeulich@novell.com>
+> >> 
+> >> Several of the types aren't being used at all anymore - those can be
+> >> deleted altogether.  
+> > 
+> > NO! That's wrong, in fact non of them are being used, but removing them
+> > will decrease the number of kmap_atomic slots, but those are still being
+> > used.
+> 
+> Would you mind pointing out examples of such uses (i.e. without
+> the proper enumerator)? How would those avoid collisions with
+> actually used slots?
 
->
-> I would say our design would map like this:
-> common-hci-module: cg2900_core
-> serial, spi, i2c,... : cg2900_uart together with hci_ldisc (for other transports it would be different files)
-> bt, ti-radio, st-e-radio,...: cg2900_chip together with btcg2900 and other users per channel (cg2900_char_devices for users in User space)
-> So it is not a 1-to-1 mapping for the upper parts. I would draw it like this:
->
->                               bt   st-e-radio  st-e-gps
->                                |         |          |
->                                +---------+----------+
->                                          |
->                   ti-xx                st-e cg2900...
->                     |                    |
->                     +---------+----------+
->                               |
->                       common-hci-module
->                               |
->                   +-----------+-----------+
->                   |        |       |      |
->                 serial    spi     i2c    ...
+Nobody uses explicit slots anymore:
 
-regarding the architecture above suggested...
-Is having the common-hci-module, only way ?
-Why is this dependency on bluetooth at all?
+/*
+ * Make both: kmap_atomic(page, idx) and kmap_atomic(page) work.
+ */
+#define kmap_atomic(page, args...) __kmap_atomic(page)
 
-for example: today I don't compile my kernel with BT support, but
-still want to use
-the chip for FM & GPS, It should be possible correct ?
-Even in TI case, although the firmware download is HCI-VS way, we
-don't use hci_core
-to interpret the responses...
+All instances of KM_foo are deprecated and in need of a cleanup.
+See commit: 3e4d3af501cccdc8a8cca41bdbe57d54ad7e7e73
 
-instead of common-hci-module, why not create a algo-driver layer 'ala
-i2c ? where individual drivers can register their receive handlers for
-data interpretation ?
+> > Feh, its only a few pages and since there is no way to actually tell if
+> > you've got enough kmap atomic pages other than experiencing runtime
+> > errors, removing them must be done with utmost prudence.
+> 
+> Whether 2Mb of lowmem is "only a few pages" certainly depends
+> on the perspective you take.
+> 
+> And even then - shouldn't the bad (non-enumerated) uses of
+> atomic kmap-s be fixed rather than keeping unused entries in
+> the enumeration just because there is broken code somewhere?
 
->
-> The reason for this difference I've gone through before. Basically there are so many special behaviors and needed handling that is individual for each chip (like startup and shutdown and in the case of CG2900 flow control over FM and BT channels for audio commands). If you then look at the users I guess it would be possible to have one BT user, but it would have to be modified to handle vendor specific commands (as btcg2900 does with BT_ENABLE command). As Arnd has drawn for FM and GPS the users would be completely individual since they don't have a standardized  interface.
->
-> /P-G
->
+With the current 20 slots on x86, its 80k per CPU, you need 25 CPUs to
+cross the 2M boundary, 32bit kernels having that many CPUs deserve to
+suffer.
+
+
