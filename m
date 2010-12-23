@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252Ab0LWHZg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 02:25:36 -0500
-Received: from darkcity.gna.ch ([195.226.6.51]:53374 "EHLO mail.gna.ch"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751469Ab0LWHZe convert rfc822-to-8bit (ORCPT
+	id S1752004Ab0LWHfo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 02:35:44 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:55545 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532Ab0LWHfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 02:25:34 -0500
-X-Amavis-Alert: BAD HEADER SECTION, Improper folded header field made up
-	entirely of whitespace (char 09 hex): Face: ...MWASAkVVViQjzP\n
-	jycPrvgA\n\t\n R1goSzOnkp14Y[...]
-Subject: Re: VERY slow scrolling on radeon graphics card: debugging a
- timing issue?
-From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
-To: dmarkh@cfl.rr.com
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Michael Tokarev <mjt@tls.msk.ru>,
-        Linux-kernel <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-In-Reply-To: <4D11D939.9080808@cfl.rr.com>
-References: <4D0FC36D.9010304@msgid.tls.msk.ru>
-	 <20101222020041.c168bf87.akpm@linux-foundation.org>
-	 <4D11D939.9080808@cfl.rr.com>
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
- jycPrvgA	
- R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 23 Dec 2010 08:25:17 +0100
-Message-ID: <1293089117.19556.109.camel@thor.local>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 23 Dec 2010 02:35:43 -0500
+Message-ID: <3164a8edfdf8816a1b73200245684f57.squirrel@www.firstfloor.org>
+In-Reply-To: <20101222101443.GA1640@elte.hu>
+References: <1293005543.2565.156.camel@minggr.sh.intel.com>
+    <1293006808.2170.42.camel@laptop> <1293008656.2170.67.camel@laptop>
+    <20101222101443.GA1640@elte.hu>
+Date: Thu, 23 Dec 2010 08:35:39 +0100
+Subject: Re: [RFC PATCH] perf: Add load latency monitoring on Intel
+ Nehalem/Westmere
+From: "Andi Kleen" <andi@firstfloor.org>
+To: "Ingo Molnar" <mingo@elte.hu>
+Cc: "Peter Zijlstra" <peterz@infradead.org>, "Lin Ming" <ming.m.lin@intel.com>,
+        "Andi Kleen" <andi@firstfloor.org>,
+        "Stephane Eranian" <eranian@google.com>,
+        "Frederic Weisbecker" <fweisbec@gmail.com>,
+        "Arjan van de Ven" <arjan@infradead.org>,
+        "lkml" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.21
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mit, 2010-12-22 at 05:55 -0500, Mark Hounschell wrote: 
-> 
-> I also see this very problem on several machines I have with radeon video.
-> For me the worst part is using vi in a konsole. Moving the cursor around
-> is so slow that I just can't use these machines directly and have to ssh
-> into them from another machine just to work on them.
+>
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+>
+>> On Wed, 2010-12-22 at 09:33 +0100, Peter Zijlstra wrote:
+>> > On Wed, 2010-12-22 at 16:12 +0800, Lin Ming wrote:
+>> > > It's applied on top of tip/master(3ea1f4f89) and Andi's offcore
+>> > > patchsets are needed.
+>> >
+>> > I still haven't gotten a version of that I'm willing to apply.
+>>
+>> That is, maybe you could pick up his patches and finish them, Andi
+>> doesn't seem interested in getting them sorted.
+>
+> FYI, this one of Peter's reviews that went unaddressed:
+>
+>   https://lkml.org/lkml/2010/12/1/213
+>
+> and he got no reply to that feedback in the past 3 weeks. (There may be
+> other issues
+> outstanding, i have not checked.)
 
-That's not the same problem as the one described by Michael, which is
-about the console on virtual terminals different from X.
+Sorry didn't see that email. I dropped the variable intentionally
+to simplify the code; there is no fastpath overhead for the other
+CPUs and allocating a few bytes per core didn't seem worth having a
+special variable to guard it. I can readd it if people really
+want it.
 
-For your problem, try choosing a different font (a fontconfig one
-instead of a legacy X one) in konsole.
+-Andi
 
-
--- 
-Earthling Michel Dänzer           |                http://www.vmware.com
-Libre software enthusiast         |          Debian, X and DRI developer
