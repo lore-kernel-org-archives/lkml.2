@@ -1,83 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612Ab0LWKrs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 05:47:48 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:49732 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277Ab0LWKrr convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:5:1>);
-	Thu, 23 Dec 2010 05:47:47 -0500
-Message-Id: <4D1336DE020000780002977F@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Thu, 23 Dec 2010 10:47:42 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Peter Zijlstra" <a.p.zijlstra@chello.nl>
-Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <akpm@linux-foundation.org>,
-        "LKML" <linux-kernel@vger.kernel.org>, <mm-commits@vger.kernel.org>,
-        <hpa@zytor.com>
-Subject: Re: + kmap-types-clean-up-and-optimization.patch added to -mm
-	 tree
-References: <201012222248.oBMMmbcF023808@imap1.linux-foundation.org>
- <1293098310.2170.415.camel@laptop>
-In-Reply-To: <1293098310.2170.415.camel@laptop>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752706Ab0LWKsC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 05:48:02 -0500
+Received: from casper.infradead.org ([85.118.1.10]:38902 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752615Ab0LWKsA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 05:48:00 -0500
+Subject: Re: [RFC PATCH] perf: Add load latency monitoring on Intel
+ Nehalem/Westmere
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>, paulus <paulus@samba.org>
+In-Reply-To: <AANLkTi=LJB1zA-Kt8KE_qaSNga9iJqnR=FMDRq38Zq5_@mail.gmail.com>
+References: <1293005543.2565.156.camel@minggr.sh.intel.com>
+	 <1293008431.2170.63.camel@laptop>
+	 <AANLkTintfpyvx=Pj1+uu8kCkFn3zT6b36h27Hb7pm=ZF@mail.gmail.com>
+	 <1293014701.2170.111.camel@laptop> <1293014967.2170.114.camel@laptop>
+	 <1293094781.2565.197.camel@minggr.sh.intel.com>
+	 <1293099498.2170.452.camel@laptop>
+	 <AANLkTi=LJB1zA-Kt8KE_qaSNga9iJqnR=FMDRq38Zq5_@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Date: Thu, 23 Dec 2010 11:48:00 +0100
+Message-ID: <1293101280.2170.501.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 23.12.10 at 10:58, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Wed, 2010-12-22 at 14:48 -0800, akpm@linux-foundation.org wrote:
->> The patch titled
->>      kmap-types: clean up and optimization
->> has been added to the -mm tree.  Its filename is
->>      kmap-types-clean-up-and-optimization.patch
->> 
->> Before you just go and hit "reply", please:
->>    a) Consider who else should be cc'ed
->>    b) Prefer to cc a suitable mailing list as well
->>    c) Ideally: find the original patch on the mailing list and do a
->>       reply-to-all to that, adding suitable additional cc's
->> 
-> 
->> ------------------------------------------------------
->> Subject: kmap-types: clean up and optimization
->> From: "Jan Beulich" <JBeulich@novell.com>
->> 
->> Several of the types aren't being used at all anymore - those can be
->> deleted altogether.  
-> 
-> NO! That's wrong, in fact non of them are being used, but removing them
-> will decrease the number of kmap_atomic slots, but those are still being
-> used.
+On Thu, 2010-12-23 at 11:31 +0100, Stephane Eranian wrote:
+> On Thu, Dec 23, 2010 at 11:18 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Thu, 2010-12-23 at 16:59 +0800, Lin Ming wrote:
+> >> > {L1, L2, L3, RAM}x{snoop, local, remote}x{shared, exclusive} + {unknown,
+> >> > uncached, IO}
+> >> >
+> >> > Which takes all of 5 bits to encode.
+> >>
+> >> Do you mean below encoding?
+> >>
+> >> bits4 3 2 1 0
+> >>     + + + + +
+> >>     | | | | |
+> >>     | | | {L1, L2, L3, RAM} or {unknown, uncached, IO}
+> >>     | | |
+> >>     | {snoop, local, remote, OTHER}
+> >>     |
+> >>     {shared, exclusive}
+> >>
+> >> If bits(2-3) is OTHER, then bits(0-1) is the encoding of {unknown,
+> >> uncached, IO}.
+> >
+> > That is most certainly a very valid encoding, and a rather nice one at
+> > that. I hadn't really gone further than: 4*3*2 + 3 < 2^5 :-)
+> >
+> > If you also make OTHER=0, then a valid encoding for unknown is also 0,
+> > which is a nice meaning for 0...
+> >
+> I am not sure how you would cover the 9 possibilities for data source as
+> shown in Table 10-13 using this encoding. Could you show me?
 
-Would you mind pointing out examples of such uses (i.e. without
-the proper enumerator)? How would those avoid collisions with
-actually used slots?
+Ah, I think I see the problem, there's multiple L3-snoops, I guess we
+can fix that by extending the {shared, exclusive} to full MESI, growing
+us to 6 bits.
 
->> Others are used only by single components that can be
->> assumed to be enabled everywhere, so those are made dependent upon
->> CONFIG_* settings.  Since this somewhat conflicts with the sequential gap
->> markers used under __WITH_KM_FENCE, and since this can be simplified
->> anyway, fold the enumerator definitions with the (modified accordingly)
->> KMAP_D() macro always.
->> 
->> The whole point of the reduction is that, at least on ix86, the number of
->> kmap types can (depending on configuration) affect the amount of low
->> memory, and thus unused types should be avoided if possible.
-> 
-> Feh, its only a few pages and since there is no way to actually tell if
-> you've got enough kmap atomic pages other than experiencing runtime
-> errors, removing them must be done with utmost prudence.
+I'm assuming you mean "Table 30-13. Data Source Encoding for Load
+Latency Record", which has 14 values defined.
 
-Whether 2Mb of lowmem is "only a few pages" certainly depends
-on the perspective you take.
+Value	Intel				Perf
+0x0	Unknown L3			Unknown
 
-And even then - shouldn't the bad (non-enumerated) uses of
-atomic kmap-s be fixed rather than keeping unused entries in
-the enumeration just because there is broken code somewhere?
+0x1	L1				L1-local
 
-Jan
+0x2	Pending core cache HIT		L2-snoop
+	Outstanding core cache miss to
+	the same line was underway
+0x3	L2				L2-local
 
+0x4	L3-snoop, no coherency actions	L3-snoop-I
+0x5	L3-snoop, found no M		L3-snoop-S
+0x6	L3-snoop, found M		L3-snoop-M
+
+0x8     L3-miss, snoop, shared		RAM-snoop-S
+0xA	L3-miss, local, shared		RAM-local-S
+0xB	L3-miss, remote, shared		RAM-remote-S
+
+0xC	L3-miss, local, exclusive	RAM-local-E
+0xD	L3-miss, remote, exclusive	RAM-remote-E
+
+0xE	IO				IO
+0xF	uncached			uncached
+
+
+Leaving us with: 
+
+{L1, L2, L3, RAM}x{snoop, local, remote}x{modified, exclusive, shared, invalid} + {unknown, uncached, IO}
+
+Now the question is, is this sufficient to map all data sources from
+other archs as well?
