@@ -1,88 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017Ab0LWLh5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 06:37:57 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:50662 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645Ab0LWLh4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 06:37:56 -0500
-Subject: Re: [RFC PATCH] perf: Add load latency monitoring on Intel
- Nehalem/Westmere
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, paulus <paulus@samba.org>
-In-Reply-To: <AANLkTi==HfPX1J7yRW=9nbDJfY7Bd4=kZhphq+SoU+-k@mail.gmail.com>
-References: <1293005543.2565.156.camel@minggr.sh.intel.com>
-	 <1293008431.2170.63.camel@laptop>
-	 <AANLkTintfpyvx=Pj1+uu8kCkFn3zT6b36h27Hb7pm=ZF@mail.gmail.com>
-	 <1293014701.2170.111.camel@laptop> <1293014967.2170.114.camel@laptop>
-	 <1293094781.2565.197.camel@minggr.sh.intel.com>
-	 <1293099498.2170.452.camel@laptop>
-	 <AANLkTi=LJB1zA-Kt8KE_qaSNga9iJqnR=FMDRq38Zq5_@mail.gmail.com>
-	 <1293101280.2170.501.camel@laptop>
-	 <AANLkTi==HfPX1J7yRW=9nbDJfY7Bd4=kZhphq+SoU+-k@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 23 Dec 2010 12:37:50 +0100
-Message-ID: <1293104270.2170.580.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753125Ab0LWLjc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 06:39:32 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:41499 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752845Ab0LWLjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 06:39:31 -0500
+X-Authenticated: #911537
+X-Provags-ID: V01U2FsdGVkX18mXlRrRJImmhj2jw42WyuVVo7RSuic+mzo/hDUFH
+	EadwTwTDHRRbTR
+Date: Thu, 23 Dec 2010 12:39:26 +0100
+From: torbenh <torbenh@gmx.de>
+To: linux-kernel@vger.kernel.org
+Subject: Sending some form of notifaction when sched_fifo throttling kicks
+ in...
+Message-ID: <20101223113926.GH14960@siel.b>
+Mail-Followup-To: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-23 at 12:05 +0100, Stephane Eranian wrote:
 
-> > Value   Intel                           Perf
-> > 0x0     Unknown L3                      Unknown
-> >
-> > 0x1     L1                              L1-local
-> >
-> > 0x2     Pending core cache HIT          L2-snoop
-> >        Outstanding core cache miss to
-> 
-> Not clear how you know this is snoop or L2?
-> 
-> I suspect this one is saying you have a request for a line
-> for which there is already a pending request underway. Could
-> be the first came from prefetchers, the 2nd is actual demand.
-> 
-> Let me check with Intel. The table is unclear.
+hi...
 
-Right, so cache snoops as used by Intel are data transfer operations
-(not only the watching for remote modifications and local invalidation
-as per the strict definition), they typically short-circuit a complete
-fetch, get it from a neighboring cache, or otherwise in-flight data.
+when the rt_runtime budget is exceeded, the kernel silently stops
+scheduling RT tasks. there is no way to distinguish this from 
+a task taking very long to complete.
 
-Since this is a pending fetch, the data is in-flight, and snoop seemed
-to apply, but I admit it is somewhat of a stretch.
+it would be very nice, if the kernel would send some form of notifaction
+when it starts throttling things.
 
-The L2 came from the usage of "core cache", I might be wrong on that.
+recording the timestamp of the last occurence of throttling
+in a /proc file would be sufficient, if there were no cgroups.
 
-Anyway, its a bit of an odd one out, you can have the exact same
-'problem' of pending fetches on the same line on all levels, yet they
-don't provide this 'source' for other levels.
+would it be possible to add a readonly property to the cpu subsystem ?
+there is already a printk_once, but thats pretty useless :)
 
-Strictly speaking, this is a stall, not a source, and we could simply
-map it to 'unknown' and be done with it.
 
-> >        the same line was underway
-> > 0x3     L2                              L2-local
-> >
-> > 0x4     L3-snoop, no coherency actions  L3-snoop-I
-> 
-> I am not sure I understand what you mean by local vs. remote
-> in your terminology.
+from -rt kernel kernel/sched_rt.c:
 
-Local being the cache nearest to the cpu, remote being all others.
+----------------------------------------------------------------------------------
+static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
+{
+	u64 runtime = sched_rt_runtime(rt_rq);
 
-Admittedly that doesn't really make too much sense for L[12], but
-imagine threads having their own L1, then I could imagine a thread
-trying to peek in a sibling's L1 since its so near. In that case it
-would make sense to use local vs remote on the L1.
+	if (rt_rq->rt_throttled)
+		return rt_rq_throttled(rt_rq);
 
+	if (sched_rt_runtime(rt_rq) >= sched_rt_period(rt_rq))
+		return 0;
+
+	balance_runtime(rt_rq);
+	runtime = sched_rt_runtime(rt_rq);
+	if (runtime == RUNTIME_INF)
+		return 0;
+
+	if (rt_rq->rt_time > runtime) {
+		rt_rq->rt_throttled = 1;
+		printk_once(KERN_WARNING "sched: RT throttling activated\n");
++ // send some form of notification. 
+		if (rt_rq_throttled(rt_rq)) {
+			sched_rt_rq_dequeue(rt_rq);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+-----------------------------------------------------------------------------------
+-- 
+torben Hohn
