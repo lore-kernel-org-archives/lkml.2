@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751689Ab0LWWMN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 17:12:13 -0500
-Received: from amavis-outgoing1.knology.net ([24.214.64.230]:46145 "EHLO
-	amavis-outgoing1.knology.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751186Ab0LWWMM (ORCPT
+	id S1751985Ab0LWWNY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 17:13:24 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52037 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552Ab0LWWNW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 17:12:12 -0500
-X-Greylist: delayed 1497 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Dec 2010 17:12:12 EST
-Subject: Re: [PATCH 01/30] infiniband: update workqueue usage
-From: David Dillow <dave@thedillows.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Roland Dreier <rdreier@cisco.com>, linux-kernel@vger.kernel.org,
-        Roland Dreier <rolandd@cisco.com>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>
-In-Reply-To: <4D0A4372.2010503@kernel.org>
-References: <1292086307-19211-1-git-send-email-tj@kernel.org>
-	 <1292086307-19211-2-git-send-email-tj@kernel.org>
-	 <adad3p2hony.fsf@cisco.com>  <4D0A4372.2010503@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Dec 2010 16:47:08 -0500
-Message-ID: <1293140828.2896.9.camel@obelisk.thedillows.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Dec 2010 17:13:22 -0500
+Date: Thu, 23 Dec 2010 15:13:19 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: dirk.brandewie@gmail.com
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linuxppc-dev@lists.ozlabs.org, microblaze-uclinux@itee.uq.edu.au,
+        linux-arch@vger.kernel.org, mmarek@suse.cz,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 4/4] microblaze/of: Use generic rule to build dtb's
+Message-ID: <20101223221319.GI20384@angua.secretlab.ca>
+References: <1293047849-26078-1-git-send-email-dirk.brandewie@gmail.com>
+ <1293047849-26078-5-git-send-email-dirk.brandewie@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1293047849-26078-5-git-send-email-dirk.brandewie@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-16 at 17:50 +0100, Tejun Heo wrote:
-> On 12/15/2010 07:33 PM, Roland Dreier wrote:
-> > 
-> >  > * qib_wq is removed and ib_wq is used instead.
-> > 
-> > You obviously looked at the comment
-> > 
-> > -	/*
-> > -	 * We create our own workqueue mainly because we want to be
-> > -	 * able to flush it when devices are being removed.  We can't
-> > -	 * use schedule_work()/flush_scheduled_work() because both
-> > -	 * unregister_netdev() and linkwatch_event take the rtnl lock,
-> > -	 * so flush_scheduled_work() can deadlock during device
-> > -	 * removal.
-> > -	 */
-> > -	qib_wq = create_workqueue("qib");
-> > 
-> > and know that with the new workqueue stuff, this issue no longer
-> > exists.  But for both my education and also the clarity of the changelog
-> > for this patch, perhaps you could expand on why ib_wq is safe here.
+On Wed, Dec 22, 2010 at 11:57:29AM -0800, dirk.brandewie@gmail.com wrote:
+> From: Dirk Brandewie <dirk.brandewie@gmail.com>
 > 
-> I think I got confused.  I thought the comment was indicating the
-> separation between qib_wq and qib_cq_wq.  It's between system_wq and
-> qib_wq, right?  I'll drop this part from the series, but then again
-> what's the difference from ib_srp, which flushes the common workqueue?
-> Why doesn't ib_srp have the same problem?
+> Modify arch/powerpc/boot/Makefile to use dtc command in
+> scripts/Makefile.lib
+> 
+> Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-Looking at qib, I'm not sure the comment isn't confused -- the only
-place I see where qib_wq or qib_cq_wq get flushed is by
-destroy_workqueue() when the module is being unloaded. And we shouldn't
-be there with rtnl_lock held by the caller.
+applied, thanks
 
-Roland, please let me know how plan to proceed -- I need to update
-ib_srp to get rid of *scheduled_work(), and I can either use the IB
-core's queue, or define my own. Since it's cheap, I don't suppose it
-matters much, but I think I'd prefer to share if possible.
+g.
 
-Thanks,
-Dave
-
-
+> ---
+>  arch/microblaze/boot/Makefile |   12 +++---------
+>  1 files changed, 3 insertions(+), 9 deletions(-)
+> 
+> diff --git a/arch/microblaze/boot/Makefile b/arch/microblaze/boot/Makefile
+> index be01d78..4c4e58e 100644
+> --- a/arch/microblaze/boot/Makefile
+> +++ b/arch/microblaze/boot/Makefile
+> @@ -10,9 +10,6 @@ targets := linux.bin linux.bin.gz simpleImage.%
+>  
+>  OBJCOPYFLAGS := -O binary
+>  
+> -# Where the DTS files live
+> -dtstree         := $(srctree)/$(src)/dts
+> -
+>  # Ensure system.dtb exists
+>  $(obj)/linked_dtb.o: $(obj)/system.dtb
+>  
+> @@ -51,14 +48,11 @@ $(obj)/simpleImage.%: vmlinux FORCE
+>  	$(call if_changed,strip)
+>  	@echo 'Kernel: $@ is ready' ' (#'`cat .version`')'
+>  
+> -# Rule to build device tree blobs
+> -DTC = $(objtree)/scripts/dtc/dtc
+>  
+>  # Rule to build device tree blobs
+> -quiet_cmd_dtc = DTC     $@
+> -	cmd_dtc = $(DTC) -O dtb -o $(obj)/$*.dtb -b 0 -p 1024 $(dtstree)/$*.dts
+> +DTC_FLAGS := -p 1024
+>  
+> -$(obj)/%.dtb: $(dtstree)/%.dts FORCE
+> -	$(call if_changed,dtc)
+> +$(obj)/%.dtb: $(src)/dts/%.dts FORCE
+> +	$(call cmd,dtc)
+>  
+>  clean-files += *.dtb simpleImage.*.unstrip linux.bin.ub
+> -- 
+> 1.7.2.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
