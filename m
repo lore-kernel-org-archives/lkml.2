@@ -1,72 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061Ab0LWMds (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 07:33:48 -0500
-Received: from casper.infradead.org ([85.118.1.10]:47034 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277Ab0LWMdr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 07:33:47 -0500
-Subject: Re: [PATCH] avoid race condition in pick_next_task_fair in
- kernel/sched_fair.c
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Miklos Vajna <vmiklos@frugalware.org>, Mike Galbraith <efault@gmx.de>,
-        shenghui <crosslonelyover@gmail.com>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, Greg KH <greg@kroah.com>,
-        Paul Turner <pjt@google.com>
-In-Reply-To: <1293106330.2170.618.camel@laptop>
-References: <AANLkTin49UHeVhfS-iFwWvPIg29HPhXaP3DorBAa-a0I@mail.gmail.com>
-	 <1277808215.1868.5.camel@laptop>
-	 <20101219020313.GJ31750@genesis.frugalware.org>
-	 <20101222002248.GP10557@genesis.frugalware.org>
-	 <1293006589.2170.41.camel@laptop>
-	 <1293007311.11370.172.camel@marge.simson.net>
-	 <1293008842.2170.70.camel@laptop>
-	 <20101222133154.GS10557@genesis.frugalware.org>
-	 <1293026422.2170.136.camel@laptop> <1293027112.2170.140.camel@laptop>
-	 <20101222151434.GW10557@genesis.frugalware.org>
-	 <1293037718.2170.155.camel@laptop> <1293050173.2170.389.camel@laptop>
-	 <AANLkTi=1GMKF4emms0Qpx31=xk-FZXOTaeONmCohzWb2@mail.gmail.com>
-	 <1293106330.2170.618.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 23 Dec 2010 13:33:44 +0100
-Message-ID: <1293107624.2170.642.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753171Ab0LWMd5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 07:33:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22255 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753117Ab0LWMdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 07:33:54 -0500
+Date: Thu, 23 Dec 2010 13:26:34 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
+        jan.kratochvil@redhat.com
+Subject: Re: [PATCH 09/16] ptrace: make do_signal_stop() use ptrace_stop()
+	if the task is being ptraced
+Message-ID: <20101223122634.GA365@redhat.com>
+References: <1291654624-6230-1-git-send-email-tj@kernel.org> <1291654624-6230-10-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291654624-6230-10-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-23 at 13:12 +0100, Peter Zijlstra wrote:
-> On Thu, 2010-12-23 at 10:08 +0800, Yong Zhang wrote:
-> > > systemd--1251    0d..5. 2015398us : enqueue_task_fair <-enqueue_task
-> > > systemd--1251    0d..5. 2015398us : print_runqueue <-enqueue_task_fair
-> > > systemd--1251    0d..5. 2015399us : __print_runqueue:  cfs_rq: c2407c34, nr: 3, load: 3072
-> > > systemd--1251    0d..5. 2015400us : __print_runqueue:  curr: f6a8de5c, comm: systemd-cgroups/1251, load: 1024
-> > > systemd--1251    0d..5. 2015401us : __print_runqueue:  se: f69e6300, load: 1024,
-> > > systemd--1251    0d..5. 2015401us : __print_runqueue:    cfs_rq: f69e6540, nr: 2, load: 2048
-> > > systemd--1251    0d..5. 2015402us : __print_runqueue:    curr: (null)
-> > > systemd--1251    0d..5. 2015402us : __print_runqueue:    se: f69e65a0, load: 4137574976,
-> > 
-> > the load == f69e65a0 == address of se, odd
-> 
-> This appears to be consistently true, I've also found that in between
-> these two prints, there is a free_sched_group() freeing that exact
-> entry. So post-print is a use-after-free artifact.
-> 
-> What's interesting is that its freeing a cfs_rq struct with
-> nr_running=1, that should not be possible...
-> 
-> /me goes stare at the whole cgroup task attach vs cgroup destruction
-> muck.
+Jan, Roland, this change needs your review.
 
- systemd-1       0d..1. 2070793us : sched_destroy_group: se: f69e43c0, load: 1024
- systemd-1       0d..1. 2070794us : sched_destroy_group: cfs_rq: f69e4720, nr: 1, load: 1024
- systemd-1       0d..1. 2070794us : __print_runqueue:  cfs_rq: f69e4720, nr: 1, load: 1024
- systemd-1       0d..1. 2070795us : __print_runqueue:  curr: (null)
- systemd-1       0d..1. 2070796us : __print_runqueue:  se: f6a8eb4c, comm: systemd-tmpfile/1243, load: 1024
- systemd-1       0d..1. 2070796us : _raw_spin_unlock_irqrestore <-sched_destroy_group
+As it was already discussed, this is the user-visible change, and
+I am starting to worry we can underestimate it.
 
-So somehow it manages to destroy a group with a task attached.
+Again, I am not saying this can break something, I simply do not
+know. However, I think there is something non-consistent in the
+new behaviour, please see below.
+
+On 12/06, Tejun Heo wrote:
+>
+> This patch makes do_signal_stop() test whether the task is ptraced and
+> use ptrace_stop() if so.
+
+In short: suppose that the tracee recieves a signal, reports it
+to debugger, and the debugger does ptrace(PTRACE_CONT, pid, SIGSTOP).
+
+Before the patch the tracee sleeps in TASK_STOPPED, after the patch
+it becomes TASK_TRACED.
+
+> Oleg spotted a minor userland visible change.  In some cases, the
+> ptracee's state would now be TASK_TRACED where it used to be
+> TASK_STOPPED, which is visible via fs/proc.
+
+I missed this part of the changelog. "visible via fs/proc" is not
+the only change. Another change is how the tracee reacts to SIGCONT
+after that. With this patch it can't wake the tracee up.
+
+Consider the simplest example. The tracee is single-threaded and
+debugger == parent. Something like
+
+	int main(void)
+	{
+		int child, status;
+
+		child = fork();
+		if (!child) {
+			ptrace(PTRACE_TRACEME);
+
+			kill(getpid(), SIGSTOP);
+
+			return 0;
+		}
+
+		wait(&status)
+		// the tracee reports the signal
+		assert(WIFSTOPPED() && WSTOPSIG() == SIGSTOP);
+		// it should stop after that
+		ptrace(PTRACE_CONT, child, SIGSTOP);
+
+		wait(&status);
+		// now it is stopped
+		assert(WIFSTOPPED() && WSTOPSIG() == SIGSTOP);
+
+		kill(child, SIGCONT);
+
+		wait(&status);
+		assert(WIFSTOPPED() && WSTOPSIG() == SIGCONT);
+
+This won't work with this patch. the last do_wait() will hang forever.
+Probably this is fine, I do not know. Please take a look and ack/nack
+explicitly.
+
+
+However. There is something I missed previously, and this small
+detail doesn't look good to me: the behaviour of SIGCONT becomes
+a bit unpredictable. Suppose it races with do_signal_stop() and
+clears GROUP_STOP_PENDING or SIGNAL_STOP_DEQUEUED before, in this
+case in can "wakeup" the tracee.
+
+IOW. Let's remove the 2nd wait() in the code above, the parent
+does
+
+		wait(&status)
+		// the tracee reports the signal
+		assert(WIFSTOPPED() && WSTOPSIG() == SIGSTOP);
+		// it should stop after that
+		ptrace(PTRACE_CONT, child, SIGSTOP);
+
+		kill(child, SIGCONT);
+
+Now we can't know id this SIGCONT works or not. If the tracee
+is already parked in ptrace_stop() - it doesn't. If the parent
+wins - the tracee doesn't stop.
+
+
+
+OTOH. Looking at this patch, I can no longer understand why
+ptrace_check_attach() can silently do s/STOPPED/TRACED/. Indeed,
+as Tejun pointed out, if ptrace_stop() needs arch_ptrace_stop(),
+then ptrace_check_attach() should be arch-friendly as well.
+
+So, the patch looks like the bugfix, but I do not understand this
+ia64/sparc magic and thus I do not know how important this fix.
+Nobody complained so far, though.
+
+Roland, could you comment this part?
+
+Oleg.
+
