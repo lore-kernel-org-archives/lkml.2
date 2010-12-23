@@ -1,191 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132Ab0LWPcH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 10:32:07 -0500
-Received: from tomasu.net ([64.85.170.234]:43054 "EHLO mail.tomasu.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752421Ab0LWPcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 10:32:05 -0500
-From: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Reply-To: thomas@fjellstrom.ca
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: Wake On lan and ATL1 nic
-Date: Thu, 23 Dec 2010 08:32:00 -0700
-User-Agent: KMail/1.13.5 (Linux/2.6.36.1+; KDE/4.5.2; x86_64; svn-1188918; 2010-10-21)
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-References: <201012141756.59591.thomas@fjellstrom.ca> <201012221423.29719.rjw@sisk.pl>
-In-Reply-To: <201012221423.29719.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012230832.00443.thomas@fjellstrom.ca>
+	id S1753345Ab0LWPfe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 10:35:34 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:16265 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752829Ab0LWPfd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 10:35:33 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=ISO-8859-1
+Date: Thu, 23 Dec 2010 16:35:30 +0100
+From: Tomasz Fujak <t.fujak@samsung.com>
+Subject: Re: [PATCHv8 00/12] Contiguous Memory Allocator
+In-reply-to: <20101223142053.GN3636@n2100.arm.linux.org.uk>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kmpark@infradead.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Johan MOSSBERG <johan.xx.mossberg@stericsson.com>,
+        Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Ankita Garg <ankita@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-media@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Message-id: <4D136C42.6090601@samsung.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.13)
+ Gecko/20101207 Thunderbird/3.1.7
+References: <cover.1292443200.git.m.nazarewicz@samsung.com>
+ <AANLkTim8_=0+-zM5z4j0gBaw3PF3zgpXQNetEn-CfUGb@mail.gmail.com>
+ <20101223100642.GD3636@n2100.arm.linux.org.uk>
+ <87k4j0ehdl.fsf@erwin.mina86.com>
+ <20101223135120.GL3636@n2100.arm.linux.org.uk> <4D1357D5.9000507@samsung.com>
+ <20101223142053.GN3636@n2100.arm.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On December 22, 2010, Rafael J. Wysocki wrote:
-> On Wednesday, December 15, 2010, Thomas Fjellstrom wrote:
-> > I can't seem to get wol to work with my desktop, which has an integrated
-> > ATL1 GbE nic. I can't be absolutely sure if it ever worked, but I think
-> > it did at one point. I can use ethtool to look at the wol status, that
-> > it supports magic-packet wol, and I can enable it, which is done at boot
-> > using an init script. But No matter how many times I try to send a wol
-> > packet to that machine it never wakes up.
-> > 
-> > Looking around on the net seems to say it is supported, and should work,
-> > but I'm not having any luck. Anyone have any hints?
-> 
-> It works for me with 2.6.37-rc7 and the appended patch applied (at least
-> the machine is woken up from suspend to RAM).  Of course, the adapter
-> needs to be configured for that with the help of ethtool.
+On 2010-12-23 15:20, Russell King - ARM Linux wrote:
+> On Thu, Dec 23, 2010 at 03:08:21PM +0100, Tomasz Fujak wrote:
+>> On 2010-12-23 14:51, Russell King - ARM Linux wrote:
+>>> On Thu, Dec 23, 2010 at 02:41:26PM +0100, Michal Nazarewicz wrote:
+>>>> Russell King - ARM Linux <linux@arm.linux.org.uk> writes:
+>>>>> Has anyone addressed my issue with it that this is wide-open for
+>>>>> abuse by allocating large chunks of memory, and then remapping
+>>>>> them in some way with different attributes, thereby violating the
+>>>>> ARM architecture specification?
+>>>>>
+>>>>> In other words, do we _actually_ have a use for this which doesn't
+>>>>> involve doing something like allocating 32MB of memory from it,
+>>>>> remapping it so that it's DMA coherent, and then performing DMA
+>>>>> on the resulting buffer?
+>>>> Huge pages.
+>>>>
+>>>> Also, don't treat it as coherent memory and just flush/clear/invalidate
+>>>> cache before and after each DMA transaction.  I never understood what's
+>>>> wrong with that approach.
+>>> If you've ever used an ARM system with a VIVT cache, you'll know what's
+>>> wrong with this approach.
+>>>
+>>> ARM systems with VIVT caches have extremely poor task switching
+>>> performance because they flush the entire data cache at every task switch
+>>> - to the extent that it makes system performance drop dramatically when
+>>> they become loaded.
+>>>
+>>> Doing that for every DMA operation will kill the advantage we've gained
+>>> from having VIPT caches and ASIDs stone dead.
+>> This statement effectively means: don't map dma-able memory to the CPU
+>> unless it's uncached. Have I missed anything?
+> I'll give you another solution to the problem - lobby ARM Ltd to have
+> this restriction lifted from the architecture specification, which
+> will probably result in the speculative prefetching also having to be
+> removed.
+>
+Isn't disabling Speculative Accesses forwarding to the AXI bus the
+solution to our woes?
+At least on the A8, which happens to be paired with non-IOMMU capable
+IPs on our SoCs.
+On A9 the bit is gone (or has it moved?), but we have IOMMU here so the
+CMA isn't needed.
 
-Hi, thanks for making quick work of this. I have one slight problem, my nic 
-seems to use the atl1 driver, and not atl1c. I've tried using atl1c and atl1e, 
-both will load if I modprobe them, but neither actually bring up the device. 
-Even tried blacklisting atl1 first.
+http://infocenter.arm.com/
+Cortex-A8 Technical Reference Manual    Revision: r3p2
+3.2.26. c1, Auxiliary Control Register
+CP15, c1, c0, bit 4: Enables speculative accesses on AXI
 
-> Thanks,
-> Rafael
-> 
-> ---
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Subject: atl1c: Do not use legacy PCI power management
-> 
-> The atl1c driver uses the legacy PCI power management, so it has to
-> do some PCI-specific things in its ->suspend() and ->resume()
-> callbacks and they are not done correctly.
-> 
-> Convert atl1c to the new PCI power management framework and make it
-> let the PCI subsystem handle all of the PCI-specific aspects of
-> device handling during system power transitions.
-> 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
->  drivers/net/atl1c/atl1c_main.c |   39
-> +++++++++++++++------------------------ 1 file changed, 15 insertions(+),
-> 24 deletions(-)
-> 
-> Index: linux-2.6/drivers/net/atl1c/atl1c_main.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/net/atl1c/atl1c_main.c
-> +++ linux-2.6/drivers/net/atl1c/atl1c_main.c
-> @@ -702,6 +702,7 @@ static int __devinit atl1c_sw_init(struc
-> 
-> 
->  	adapter->wol = 0;
-> +	device_set_wakeup_enable(&pdev->dev, false);
->  	adapter->link_speed = SPEED_0;
->  	adapter->link_duplex = FULL_DUPLEX;
->  	adapter->num_rx_queues = AT_DEF_RECEIVE_QUEUE;
-> @@ -2444,8 +2445,9 @@ static int atl1c_close(struct net_device
->  	return 0;
->  }
-> 
-> -static int atl1c_suspend(struct pci_dev *pdev, pm_message_t state)
-> +static int atl1c_suspend(struct device *dev)
->  {
-> +	struct pci_dev *pdev = to_pci_dev(dev);
->  	struct net_device *netdev = pci_get_drvdata(pdev);
->  	struct atl1c_adapter *adapter = netdev_priv(netdev);
->  	struct atl1c_hw *hw = &adapter->hw;
-> @@ -2454,7 +2456,6 @@ static int atl1c_suspend(struct pci_dev
->  	u32 wol_ctrl_data = 0;
->  	u16 mii_intr_status_data = 0;
->  	u32 wufc = adapter->wol;
-> -	int retval = 0;
-> 
->  	atl1c_disable_l0s_l1(hw);
->  	if (netif_running(netdev)) {
-> @@ -2462,9 +2463,6 @@ static int atl1c_suspend(struct pci_dev
->  		atl1c_down(adapter);
->  	}
->  	netif_device_detach(netdev);
-> -	retval = pci_save_state(pdev);
-> -	if (retval)
-> -		return retval;
-> 
->  	if (wufc)
->  		if (atl1c_phy_power_saving(hw) != 0)
-> @@ -2525,12 +2523,8 @@ static int atl1c_suspend(struct pci_dev
->  		AT_WRITE_REG(hw, REG_WOL_CTRL, wol_ctrl_data);
->  		AT_WRITE_REG(hw, REG_MAC_CTRL, mac_ctrl_data);
-> 
-> -		/* pcie patch */
-> -		device_set_wakeup_enable(&pdev->dev, 1);
-> -
->  		AT_WRITE_REG(hw, REG_GPHY_CTRL, GPHY_CTRL_DEFAULT |
->  			GPHY_CTRL_EXT_RESET);
-> -		pci_prepare_to_sleep(pdev);
->  	} else {
->  		AT_WRITE_REG(hw, REG_GPHY_CTRL, GPHY_CTRL_POWER_SAVING);
->  		master_ctrl_data |= MASTER_CTRL_CLK_SEL_DIS;
-> @@ -2540,25 +2534,17 @@ static int atl1c_suspend(struct pci_dev
->  		AT_WRITE_REG(hw, REG_MAC_CTRL, mac_ctrl_data);
->  		AT_WRITE_REG(hw, REG_WOL_CTRL, 0);
->  		hw->phy_configured = false; /* re-init PHY when resume */
-> -		pci_enable_wake(pdev, pci_choose_state(pdev, state), 0);
->  	}
-> 
-> -	pci_disable_device(pdev);
-> -	pci_set_power_state(pdev, pci_choose_state(pdev, state));
-> -
->  	return 0;
->  }
-> 
-> -static int atl1c_resume(struct pci_dev *pdev)
-> +static int atl1c_resume(struct device *dev)
->  {
-> +	struct pci_dev *pdev = to_pci_dev(dev);
->  	struct net_device *netdev = pci_get_drvdata(pdev);
->  	struct atl1c_adapter *adapter = netdev_priv(netdev);
-> 
-> -	pci_set_power_state(pdev, PCI_D0);
-> -	pci_restore_state(pdev);
-> -	pci_enable_wake(pdev, PCI_D3hot, 0);
-> -	pci_enable_wake(pdev, PCI_D3cold, 0);
-> -
->  	AT_WRITE_REG(&adapter->hw, REG_WOL_CTRL, 0);
->  	atl1c_reset_pcie(&adapter->hw, ATL1C_PCIE_L0S_L1_DISABLE |
->  			ATL1C_PCIE_PHY_RESET);
-> @@ -2582,7 +2568,12 @@ static int atl1c_resume(struct pci_dev *
-> 
->  static void atl1c_shutdown(struct pci_dev *pdev)
->  {
-> -	atl1c_suspend(pdev, PMSG_SUSPEND);
-> +	struct net_device *netdev = pci_get_drvdata(pdev);
-> +	struct atl1c_adapter *adapter = netdev_priv(netdev);
-> +
-> +	atl1c_suspend(&pdev->dev);
-> +	pci_wake_from_d3(pdev, adapter->wol);
-> +	pci_set_power_state(pdev, PCI_D3hot);
->  }
-> 
->  static const struct net_device_ops atl1c_netdev_ops = {
-> @@ -2886,16 +2877,16 @@ static struct pci_error_handlers atl1c_e
->  	.resume = atl1c_io_resume,
->  };
-> 
-> +static SIMPLE_DEV_PM_OPS(atl1c_pm_ops, atl1c_suspend, atl1c_resume);
-> +
->  static struct pci_driver atl1c_driver = {
->  	.name     = atl1c_driver_name,
->  	.id_table = atl1c_pci_tbl,
->  	.probe    = atl1c_probe,
->  	.remove   = __devexit_p(atl1c_remove),
-> -	/* Power Managment Hooks */
-> -	.suspend  = atl1c_suspend,
-> -	.resume   = atl1c_resume,
->  	.shutdown = atl1c_shutdown,
-> -	.err_handler = &atl1c_err_handler
-> +	.err_handler = &atl1c_err_handler,
-> +	.driver.pm = &atl1c_pm_ops,
->  };
-> 
->  /*
+> That would be my preferred solution if I had the power to do so, but
+> I have to live with what ARM Ltd (and their partners such as yourselves)
+> decide should end up in the architecture specification.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-
--- 
-Thomas Fjellstrom
-thomas@fjellstrom.ca
