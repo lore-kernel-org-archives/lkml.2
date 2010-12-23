@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491Ab0LWJ6Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 04:58:25 -0500
-Received: from smtp4-g21.free.fr ([212.27.42.4]:45603 "EHLO smtp4-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752004Ab0LWJ6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 04:58:24 -0500
-From: Florian Fainelli <ffainelli@freebox.fr>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] coretemp: fix junction temperature for Intel CE4100
-Date: Thu, 23 Dec 2010 10:57:11 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.35-23-server; KDE/4.5.1; x86_64; ; )
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>, sodaville@linutronix.de,
-        Fenghua Yu <fenghua.yu@intel.com>
-References: <201012142217.07194.ffainelli@freebox.fr>
-In-Reply-To: <201012142217.07194.ffainelli@freebox.fr>
-Organization: Freebox
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012231057.11940.ffainelli@freebox.fr>
+	id S1752599Ab0LWJ6i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 04:58:38 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:52949 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752519Ab0LWJ6a convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 04:58:30 -0500
+Subject: Re: + kmap-types-clean-up-and-optimization.patch added to -mm tree
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: akpm@linux-foundation.org
+Cc: mm-commits@vger.kernel.org, JBeulich@novell.com, hpa@zytor.com,
+        mingo@elte.hu, tglx@linutronix.de, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <201012222248.oBMMmbcF023808@imap1.linux-foundation.org>
+References: <201012222248.oBMMmbcF023808@imap1.linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 23 Dec 2010 10:58:30 +0100
+Message-ID: <1293098310.2170.415.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 14 December 2010 22:17:07 Florian Fainelli wrote:
-> From: Florian Fainelli <ffainelli@freebox.fr>
+On Wed, 2010-12-22 at 14:48 -0800, akpm@linux-foundation.org wrote:
+> The patch titled
+>      kmap-types: clean up and optimization
+> has been added to the -mm tree.  Its filename is
+>      kmap-types-clean-up-and-optimization.patch
 > 
-> The Intel CE4100 System-on-a-Chip has a slightly higher junction
-> temperature (110 degrees Celsius) than other Atom-based hardware.
+> Before you just go and hit "reply", please:
+>    a) Consider who else should be cc'ed
+>    b) Prefer to cc a suitable mailing list as well
+>    c) Ideally: find the original patch on the mailing list and do a
+>       reply-to-all to that, adding suitable additional cc's
 > 
-> Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
-> Cc: sodaville@linutronix.de
-> Cc: Fenghua Yu <fenghua.yu@intel.com>
-> Signed-off-by: Florian Fainelli <ffainelli@freebox.fr>
 
-Fenghua, is there anything wrong with that patch? Thank you.
+> ------------------------------------------------------
+> Subject: kmap-types: clean up and optimization
+> From: "Jan Beulich" <JBeulich@novell.com>
+> 
+> Several of the types aren't being used at all anymore - those can be
+> deleted altogether.  
 
-> ---
-> diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-> index 42de98d..e47b405 100644
-> --- a/drivers/hwmon/coretemp.c
-> +++ b/drivers/hwmon/coretemp.c
-> @@ -178,12 +178,23 @@ static int __devinit adjust_tjmax(struct cpuinfo_x86
-> *c, u32 id, struct device *
+NO! That's wrong, in fact non of them are being used, but removing them
+will decrease the number of kmap_atomic slots, but those are still being
+used.
+
+> Others are used only by single components that can be
+> assumed to be enabled everywhere, so those are made dependent upon
+> CONFIG_* settings.  Since this somewhat conflicts with the sequential gap
+> markers used under __WITH_KM_FENCE, and since this can be simplified
+> anyway, fold the enumerator definitions with the (modified accordingly)
+> KMAP_D() macro always.
 > 
->  		host_bridge = pci_get_bus_and_slot(0, PCI_DEVFN(0, 0));
-> 
-> -		if (host_bridge && host_bridge->vendor == PCI_VENDOR_ID_INTEL
-> -		    && (host_bridge->device == 0xa000	/* NM10 based nettop */
-> -		    || host_bridge->device == 0xa010))	/* NM10 based netbook */
-> -			tjmax = 100000;
-> -		else
-> -			tjmax = 90000;
-> +		if (host_bridge && host_bridge->vendor == PCI_VENDOR_ID_INTEL) {
-> +			switch (host_bridge->device) {
-> +			/* NM10 based nettop */
-> +			case 0xa000:
-> +			/* NM10 based netbook */
-> +			case 0xa010:
-> +				tjmax = 100000;
-> +				break;
-> +			/* IntelCE Sodaville (CE4100) */
-> +			case 0x0708:
-> +				tjmax = 110000;
-> +				break;
-> +			default:
-> +				tjmax = 90000;
-> +				break;
-> +			}
-> +		}
-> 
->  		pci_dev_put(host_bridge);
->  	}
+> The whole point of the reduction is that, at least on ix86, the number of
+> kmap types can (depending on configuration) affect the amount of low
+> memory, and thus unused types should be avoided if possible.
+
+Feh, its only a few pages and since there is no way to actually tell if
+you've got enough kmap atomic pages other than experiencing runtime
+errors, removing them must be done with utmost prudence.
+
+> Signed-off-by: Jan Beulich <jbeulich@novell.com>
+
+Nacked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
