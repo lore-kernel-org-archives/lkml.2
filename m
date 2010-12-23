@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944Ab0LWGfd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 01:35:33 -0500
-Received: from mga01.intel.com ([192.55.52.88]:36219 "EHLO mga01.intel.com"
+	id S1751820Ab0LWGug (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 01:50:36 -0500
+Received: from shutemov.name ([188.40.19.243]:51778 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751655Ab0LWGfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 01:35:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,218,1291622400"; 
-   d="scan'208";a="871192014"
-Date: Thu, 23 Dec 2010 13:10:47 +0800
-From: Shaohui Zheng <shaohui.zheng@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: shaohui.zheng@intel.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        haicheng.li@linux.intel.com, lethal@linux-sh.org, ak@linux.intel.com,
-        rientjes@google.com, dave@linux.vnet.ibm.com, gregkh@suse.de,
-        Sam Ravnborg <sam@ravnborg.org>, Haicheng Li <haicheng.li@intel.com>
-Subject: Re: [6/7, v9] NUMA Hotplug Emulator: Fake CPU socket with logical
- CPU on x86
-Message-ID: <20101223051047.GA13060@shaohui>
-References: <20101210073119.156388875@intel.com>
- <20101210073242.773689101@intel.com>
- <20101222162732.bef6904e.akpm@linux-foundation.org>
+	id S1751469Ab0LWGue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 01:50:34 -0500
+Date: Thu, 23 Dec 2010 08:50:33 +0200
+From: "Kirill A. Shutemov" <kas@openvz.org>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: "Kirill A. Shutemov" <kas@openvz.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Pavel Emelyanov <xemul@parallels.com>,
+        linux-nfs@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/12] make rpc_pipefs be mountable multiple times
+Message-ID: <20101223065033.GA14006@shutemov.name>
+References: <1292846078-31793-1-git-send-email-kirill@shutemov.name>
+ <20101220144644.GC20643@fieldses.org>
+ <20101221233215.GC7092@shutemov.name>
+ <20101221234520.GA30525@fieldses.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101222162732.bef6904e.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101221234520.GA30525@fieldses.org>
+User-Agent: Mutt/1.5.20 (2010-08-04)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 22, 2010 at 04:27:32PM -0800, Andrew Morton wrote:
-> >  static struct task_struct *idle_thread_array[NR_CPUS] __cpuinitdata ;
-> > @@ -198,6 +200,8 @@
-> >  {
-> >  	int cpuid, phys_id;
-> >  	unsigned long timeout;
-> > +	u8 cpu_probe_on = 0;
+On Tue, Dec 21, 2010 at 06:45:21PM -0500, J. Bruce Fields wrote:
+> On Wed, Dec 22, 2010 at 01:32:15AM +0200, Kirill A. Shutemov wrote:
+> > On Mon, Dec 20, 2010 at 09:46:44AM -0500, J. Bruce Fields wrote:
+> > > By the way, was there ever a resolution to Trond's question?:
+> > > 
+> > > 	http://marc.info/?l=linux-nfs&m=128655758712817&w=2
+> > > 
+> > > 	"The keyring upcalls are currently initiated through the same
+> > > 	mechanism as module_request and therefore get started with the
+> > > 	init_nsproxy namespace. We'd really like them to run inside the
+> > > 	same container as the process.  As part of the same problem,
+> > > 	there is the issue of what to do with the dns resolver and
+> > > 	Bryan's new keyring based idmapper code."
+> > 
+> > I'm not sure that I understand the problem correctly.
+> > 
+> > Currently, idmap uses dentry taken from client's cl_rpcclient->cl_path
+> > (see nfs_idmap_new()). cl_rpcclient (and cl_path) is initialized with
+> > rpcmount resolved against mount namespace of mount process (see
+> > nfs_create_rpc_client()).
+> > I assume it's correct.
 > 
-> Unneeded initialisation.
-> 
-> Does this cause an unused var warning when
-> CONFIG_ARCH_CPU_PROBE_RELEASE=n?
-> 
+> There's actually two separate sets of idmapper code; look at
+> fs/nfs/idmapper.c, the first part of the file (between #ifdef
+> CONFIG_NFS_USE_NEW_IDMAPPER and #else) is idmapping code that uses
+> request_key().  The code you're looking at (including nfs_idmap_new())
+> is later in the file, and deprecated.
 
-I am trying to avoid too much ifdef here, it seems it take an unused var
-warining when CONFIG_ARCH_CPU_PROBE_RELEASE=n. good catching.
-
-I will figure out a better method.
-
-> > +	struct cpuinfo_x86 *c;
-> >  
-> >  	/*
-> >  	 * If waken up by an INIT in an 82489DX configuration
-> >
-> > ...
-> >
-> > +#ifdef CONFIG_ARCH_CPU_PROBE_RELEASE
-> > +/*
-> > + * Put the logical cpu into a new sokect, and encapsule it into core 0.
-> 
-> That comment needs help.
-> 
-
-Agree, the comment is too simple, should add better documents for function
-fake_cpu_socket_info.
+IIUC, we need to save nsproxy of mount process in struct nfs_client and
+pass it down to request_key(). I think it's outside of this patchset.
 
 -- 
-Thanks & Regards,
-Shaohui
-
+ Kirill A. Shutemov
