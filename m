@@ -1,57 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751820Ab0LWTYW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 14:24:22 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55633
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751213Ab0LWTYV (ORCPT
+	id S1751996Ab0LWTiD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 14:38:03 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:58191 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849Ab0LWTiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 14:24:21 -0500
-Date: Thu, 23 Dec 2010 11:24:50 -0800 (PST)
-Message-Id: <20101223.112450.246547841.davem@davemloft.net>
-To: jhautbois@gmail.com
-Cc: richard.cochran@omicron.at, shemminger@vyatta.com, tj@kernel.org,
-        randy.dunlap@oracle.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] net: phy: balance disable/enable irq on change
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1292756331-3735-1-git-send-email-jhautbois@gmail.com>
-References: <1292756331-3735-1-git-send-email-jhautbois@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Dec 2010 14:38:01 -0500
+MIME-Version: 1.0
+Date: Thu, 23 Dec 2010 19:38:00 +0000
+Message-ID: <AANLkTinwWpT3S0bNOjX-wTk_wfQ-56Wd7q6WfMmUTO9_@mail.gmail.com>
+Subject: Oddity with Kconfig behaviour when using a type definition and no prompt
+From: David Peverley <pev@sketchymonkey.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean-Michel Hautbois <jhautbois@gmail.com>
-Date: Sun, 19 Dec 2010 11:58:48 +0100
+Hi All,
 
-> When phy interface changes its status, it calls phy_change() function.
-> This function calls the interrupt disabling functions for the driver
-> registered, but if this driver doesn't implement it, there is no IRQ
-> disabling. After doing the work, we call enable_irq and not the
-> respective driver function. This fixes it, as it could lead to an
-> unbalanced IRQ. Error code changed to EOPNOTSUPP.
-> 
-> Signed-off-by: Jean-Michel Hautbois <jhautbois@gmail.com>
+I've been investigating behaviour in the kbuild config system that I don't
+really understand. It feels like its a bug to me but it's so fundamental I
+would have expected it to have been picked up before so I'm a bit confused,
+hence I thought I'd throw it at the list for comment / review!
 
-This is completely bogus.
+The good news is that I've reproduced it with all of the 2.6 kernels and a
+couple of different GCC versions. Hopefully it should be easy to understand
+just by reading this email though.
 
-First of all, there are 5 call sites for phy_change_interrupt() but
-you've only implemented the new semantics for two of those.
+The behaviour that I didn't understand is that if you add a new variable
+to a Kconfig file it can behave in different ways depending on the state of
+the input prompt. "kconfig-language.txt" states :
 
-Therefore, if we even wanted this, we should implement the behavior in
-phy_change_interrupt() itself instead of duplicating the logic at
-each and every call site.
+  The type definition optionally accepts an input prompt, so these two
+  examples are equivalent:
+     bool "Networking support"
+  and
+     bool
+     prompt "Networking support"
 
-But we don't want this.
+This is what I've always expected. Trying the following with a clean
+kernel. However, what happens in the (often used) case of a type definition
+with no prompt e.g.
+     bool
+is not defined in this doc. My _assumption_ would be that it should still
+be used by the config system though :
 
-It's not appropriate at all.  If a device lacks a way to turn
-interrupt off and on, using disable_irq() and enable_irq() is not
-necessarily correct.
+  bob:linux-2.6.31.14 $ make defconfig
+  *** Default configuration is based on 'x86_64_defconfig'
+  #
+  # configuration written to .config
+  #
+  bob:linux-2.6.31.14 $ printf "\nconfig PEV_TEST\n\tbool\n" >> lib/Kconfig
+  bob:linux-2.6.31.14 $ make oldconfig
+  scripts/kconfig/conf -o arch/x86/Kconfig
+  #
+  # configuration written to .config
+  #
 
-If the interrupt line is shared, for example, this will break
-everything.
+"make oldconfig" ignores the new variable and as far as the newly generated
+.config is concerned, it is ignored. According to "kconfig.txt" :
 
+  To see a list of new config symbols when using "make oldconfig", use
+        cp user/some/old.config .config
+        yes "" | make oldconfig >conf.new
+
+So to my mind this isn't correct as oldconfig should have known about the
+new variable "PEV_TEST"?
+
+Now, if you add a new variable with a prompt :
+
+  bob:linux-2.6.31.14 $ printf "\nconfig PEV_TEST_PROMPT\n\tbool
+\"test\"\n" >> lib/Kconfig
+  bob:linux-2.6.31.14 $ make oldconfig
+  scripts/kconfig/conf -o arch/x86/Kconfig
+  *
+  * Restart config...
+  *
+  *
+  * Linux Kernel Configuration
+  *
+  test (PEV_TEST_PROMPT) [N/y] (NEW)
+
+Now oldconfig acknowledges the new variable and asks us to set a value.
+Shouldn't this be consistant with the previous example?
+
+This becomes a problem in the following scenarion. If your tree is as
+we've left it (i.e. added the two new variables as above) and now you add
+to add the new variable into a defconfig file - I'm using "x86_64_defconfig"
+as it's what we've used so far :
+
+  linux $ echo "CONFIG_PEV_TEST=y" >> arch/x86/configs/x86_64_defconfig
+  linux $ echo "CONFIG_PEV_TEST_PROMPT=y" >> arch/x86/configs/x86_64_defconfig
+  linux $ rm -f .config
+  linux $  make x86_64_defconfig
+  #
+  # configuration written to .config
+  #
+  linux $ grep PEV .config
+  CONFIG_PEV_TEST_PROMPT=y
+  linux $
+
+The variable we added with a prompt is correctly put in .config, but the
+other one is discarded!
+
+So... I fear this isn't correct, can anyone sanity-check my train of
+thought here? I've seen this happening for various variables in the kernel
+such as "CONFIG_LOCKDEP" and "TRACE_IRQFLAGS" when I've been hacking my
+.config so I suspect this can be a real-world issue!]
+
+This also seems to be reproducable with types such as int and tristate and
+seems to be reproducable from 2.6.1 !
+
+Cheers,
+
+~Pev
