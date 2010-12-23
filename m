@@ -1,104 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398Ab0LWRBM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 12:01:12 -0500
-Received: from dtp.xs4all.nl ([80.101.171.8]:60803 "HELO abra2.bitwizard.nl"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752973Ab0LWRBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 12:01:11 -0500
-Date: Thu, 23 Dec 2010 18:01:09 +0100
-From: Rogier Wolff <R.E.Wolff@BitWizard.nl>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Rogier Wolff <R.E.Wolff@BitWizard.nl>,
-        Greg Freemyer <greg.freemyer@gmail.com>,
-        Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: Slow disks.
-Message-ID: <20101223170109.GA31591@bitwizard.nl>
-References: <20101220141553.GA6088@bitwizard.nl> <20101220190630.66084e1d@neptune.home> <AANLkTi=VAJbVSzX_DH9_==a3RonLJmawYu3MzF-uqGXC@mail.gmail.com> <20101222104306.GB30941@bitwizard.nl> <x49aajxsrh3.fsf@segfault.boston.devel.redhat.com> <20101222224416.GE30941@bitwizard.nl> <x494oa48scp.fsf@segfault.boston.devel.redhat.com>
+	id S1753361Ab0LWRET (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 12:04:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9166 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752286Ab0LWRES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 12:04:18 -0500
+Message-ID: <4D13810B.8000304@redhat.com>
+Date: Thu, 23 Dec 2010 18:04:11 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20091014 Fedora/3.0-2.8.b4.fc11 Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <x494oa48scp.fsf@segfault.boston.devel.redhat.com>
-Organization: BitWizard.nl
-User-Agent: Mutt/1.5.13 (2006-08-11)
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Jens Axboe <jaxboe@fusionio.com>,
+        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] block: fix accounting bug on cross partition merges
+References: <4CFF3AD6.6010904@jp.fujitsu.com> <4CFF3C86.2070504@fusionio.com> <4CFF3DA4.5060705@jp.fujitsu.com> <4CFF9A2C.1070401@fusionio.com> <4D025154.8030400@redhat.com> <20101210165553.GE31737@redhat.com> <4D07D2AC.6000500@fusionio.com> <4D0B68AF.80804@redhat.com> <4D0BB4A1.8080305@fusionio.com> <4D13664C.3020500@redhat.com> <20101223153915.GE9502@redhat.com>
+In-Reply-To: <20101223153915.GE9502@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 23, 2010 at 09:40:54AM -0500, Jeff Moyer wrote:
-> > In my performance calculations, 10ms average seek (should be around
-> > 7), 4ms average rotational latency for a total of 14ms. This would
-> > degrade for read-modify-write to 10+4+8 = 22ms. Still 10 times better
-> > than what we observe: service times on the order of 200-300ms. 
+On 12/23/2010 04:39 PM, Vivek Goyal wrote:
+>> diff --git a/block/blk-core.c b/block/blk-core.c
+>> index 4ce953f..72d12d2 100644
+>> --- a/block/blk-core.c
+>> +++ b/block/blk-core.c
+>> @@ -64,13 +64,21 @@ static void drive_stat_acct(struct request *rq, int new_io)
+>>  		return;
+>>  
+>>  	cpu = part_stat_lock();
+>> -	part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
+>>  
+>> -	if (!new_io)
+>> +	if (!new_io) {
+>> +		part = rq->part;
+>>  		part_stat_inc(cpu, part, merges[rw]);
+>> -	else {
+>> +	} else {
+>> +		part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
+>> +		if(part->partno && !kref_test_and_get(&part->ref))
+>> +			/*
 > 
-> I didn't say it would account for all of your degradation, just that it
-> could affect performance.  I'm sorry if I wasn't clear on that.
-
-We can live with a "2x performance degradation" due to stupid
-configuration. But not with the 10x -30x that we're seeing now. 
-
-> >  > md1 : active raid5 sda2[0] sdd2[3](S) sdb2[1] sdc2[4]
-> >> >       39067648 blocks super 1.2 level 5, 512k chunk, algorithm 2 [3/3]
-> >> > [UUU]
-> >> 
-> >> A 512KB raid5 chunk with 4KB I/Os?  That is a recipe for inefficiency.
-> >> Again, blktrace data would be helpful.
-> >
-> > Where did you get the 4kb IOs from? You mean from the iostat -x
-> > output?
+> Do we have to check this part->partno both while taking and releasing
+> reference. Can't we take one extra reference for disk->part0, at
+> alloc_disk_node() time so that it is never freed and only freed when
+> disk is going away and gendisk is being freed.
 > 
-> Yes, since that's all I have to go on at the moment.
+> That way, you don't have to differentiate between disk->part0 and rest
+> of the partitions while taking or dropping references.
+
+We could do it in any way, as long as we don't end up trying to free
+disk->part0. I choose not to touch part0->ref at all, but we could also
+drop all the part->partno test, and get a reference on part0 when we use
+it as a backup. I have no strong opinion about a way or an other.
+
+Jerome
+
 > 
-> > The system/filesystem decided to do those small IOs. With the
-> > throughput we're getting on the filesystem, it better not try to write
-> > larger chuncks...
-> 
-> Your logic is a bit flawed, for so many reasons I'm not even going to
-> try to enumerate them here.  Anyway, I'll continue to sound like a
-> broken record and ask for blktrace data.
-
-Here it is. 
-
-http://prive.bitwizard.nl/blktrace.log
-
-I can't read those yet... Manual is unclear. 
-
-I'd guess that "D" means "submitted to driver". and "C" means
-"completed". I very often see a D followed VERY shortly by a C. Also I
-see more C's than "D"s.
-
-Anohter way of looking at it, was to sort on the "ID" field. I would
-expect each "transaction" to follow similar steps. But many IDs only
-occur twice, and not the same for each. 
-
-> > I have benchmarked my own "high bandwidth" raid arrays. I benchmarked
-> > them with 128k, 256, 512 and 1024k blocksize. I got the best
-> > throughput (for my benchmark: dd if=/dev/md0 of=/dev/null bs=1024k)
-> > with 512k blocksize. (and yes that IS a valid benchmark for my
-> > usage of the array.)
-> 
-> Sorry, I'm not sure I understand how this is relevant.  I thought we
-> were troubleshooting a problem on someone else's system.  Further, the
-> window into the workload we saw via iostat definitely shows that smaller
-> I/Os are issued.
-
-My friend confessed to me today that he determined the "optimal" RAID
-block size with the exact same test as I had done, and reached the
-same conclusion. So that explains his raid blocksize of 512k. 
-
-The system is a mailserver running on a raid on three of the disks.
-most of the IOs are generated by the mail server software through the
-FS driver, and the raid system. It's not that we're running a database
-that inherently requires 4k IOs. Apparently what the
-system needs are those small IOs. 
-
-	Roger. 
-
--- 
-** R.E.Wolff@BitWizard.nl ** http://www.BitWizard.nl/ ** +31-15-2600998 **
-**    Delftechpark 26 2628 XH  Delft, The Netherlands. KVK: 27239233    **
-*-- BitWizard writes Linux device drivers for any device you may have! --*
-Q: It doesn't work. A: Look buddy, doesn't work is an ambiguous statement. 
-Does it sit on the couch all day? Is it unemployed? Please be specific! 
-Define 'it' and what it isn't doing. --------- Adapted from lxrbot FAQ
+> Thanks
+> Vivek
