@@ -1,74 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751957Ab0LWFoZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 00:44:25 -0500
-Received: from mga11.intel.com ([192.55.52.93]:61580 "EHLO mga11.intel.com"
+	id S1752078Ab0LWFo2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 00:44:28 -0500
+Received: from mga11.intel.com ([192.55.52.93]:26203 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751774Ab0LWFoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 00:44:24 -0500
+	id S1751952Ab0LWFoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 00:44:25 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,217,1291622400"; 
-   d="scan'208";a="639642739"
+   d="scan'208";a="639642770"
 From: Huang Ying <ying.huang@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
         ying.huang@intel.com, Peter Zijlstra <peterz@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@elte.hu>
-Subject: [RFC -v9 0/4] Lock-less list
-Date: Thu, 23 Dec 2010 13:43:19 +0800
-Message-Id: <1293083003-19577-1-git-send-email-ying.huang@intel.com>
+Subject: [RFC -v9 3/4] irq_work, Use llist in irq_work
+Date: Thu, 23 Dec 2010 13:43:22 +0800
+Message-Id: <1293083003-19577-4-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1293083003-19577-1-git-send-email-ying.huang@intel.com>
+References: <1293083003-19577-1-git-send-email-ying.huang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a lock-less NULL-terminated linked list implementation.  And use
-that in irq_work and replace net/rds/xlist.h.
+Use llist in irq_work instead of the lock-less linked list
+implementation in irq_work to avoid the code duplication.
 
-v9:
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+---
+ include/linux/irq_work.h |   15 ++++---
+ init/Kconfig             |    1 
+ kernel/irq_work.c        |   90 ++++++++++++++++++-----------------------------
+ 3 files changed, 46 insertions(+), 60 deletions(-)
 
-- Split out lock-less allocator, will repost allocator with its user
-  in another patchset.
-- Use lock-less list in irq_work and replace net/rds/xlist.h
-
-v8:
-
-- Rebased on mmotm 2010-12-02
-
-v7:
-
-- Revise ARCH_HAVE_NMI_SAFE_CMPXCHG definition for some architectures
-  according to architecture maitainers' comments.
-- Remove spin_trylock_irqsave based fallback for lockless memory allocator,
-  because it does not work for !CONFIG_SMP and is not likely to be used.
-- Make lockless memory allocator and list does not depend on
-  ARCH_HAVE_NMI_SAFE_CMPXCHG.  Instead, require the user to depend on it
-  when needed. And BUG_ON(in_nmi()) is added in necessary place to prevent
-  silent race.
-
-v6:
-
-- Revise ARCH_HAVE_NMI_SAFE_CMPXCHG definition for some architectures
-  according to architecture maitainers' comments.
-
-v5:
-
-- Add ARCH_HAVE_NMI_SAFE_CMPXCHG
-- Add spin_trylock_irqsave based fallback in lockless memory allocator
-  if ARCH_HAVE_NMI_SAFE_CMPXCHG=n
-- Make lockless list depends on ARCH_HAVE_NMI_SAFE_CMPXCHG
-
-v4:
-
-- Split from APEI patchset
-- Update patch description and comments according to ML comments
-
-v3:
-
-- Rework lockless memory allocator and list according to ML comments
-
-[RFC -v9 1/4] Add Kconfig option ARCH_HAVE_NMI_SAFE_CMPXCHG
-[RFC -v9 2/4] lib, Add lock-less NULL terminated single list
-[RFC -v9 3/4] irq_work, Use llist in irq_work
-[RFC -v9 4/4] net, rds, Replace xlist in net/rds/xlist.h with llist
+--- a/include/linux/irq_work.h
++++ b/include/linux/irq_work.h
+@@ -1,20 +1,23 @@
+ #ifndef _LINUX_IRQ_WORK_H
+ #define _LINUX_IRQ_WORK_H
+ 
++#include <linux/llist.h>
++
+ struct irq_work {
+-	struct irq_work *next;
++	unsigned long flags;
++	struct llist_node llnode;
+ 	void (*func)(struct irq_work *);
+ };
+ 
+ static inline
+-void init_irq_work(struct irq_work *entry, void (*func)(struct irq_work *))
++void init_irq_work(struct irq_work *work, void (*func)(struct irq_work *))
+ {
+-	entry->next = NULL;
+-	entry->func = func;
++	work->flags = 0;
++	work->func = func;
+ }
+ 
+-bool irq_work_queue(struct irq_work *entry);
++bool irq_work_queue(struct irq_work *work);
+ void irq_work_run(void);
+-void irq_work_sync(struct irq_work *entry);
++void irq_work_sync(struct irq_work *work);
+ 
+ #endif /* _LINUX_IRQ_WORK_H */
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -27,6 +27,7 @@ config HAVE_IRQ_WORK
+ config IRQ_WORK
+ 	bool
+ 	depends on HAVE_IRQ_WORK
++	select LLIST
+ 
+ menu "General setup"
+ 
+--- a/kernel/irq_work.c
++++ b/kernel/irq_work.c
+@@ -17,49 +17,34 @@
+  * claimed   NULL, 3 -> {pending}       : claimed to be enqueued
+  * pending   next, 3 -> {busy}          : queued, pending callback
+  * busy      NULL, 2 -> {free, claimed} : callback in progress, can be claimed
+- *
+- * We use the lower two bits of the next pointer to keep PENDING and BUSY
+- * flags.
+  */
+ 
+ #define IRQ_WORK_PENDING	1UL
+ #define IRQ_WORK_BUSY		2UL
+ #define IRQ_WORK_FLAGS		3UL
+ 
+-static inline bool irq_work_is_set(struct irq_work *entry, int flags)
+-{
+-	return (unsigned long)entry->next & flags;
+-}
++#define LIST_NONEMPTY_BIT	0
+ 
+-static inline struct irq_work *irq_work_next(struct irq_work *entry)
+-{
+-	unsigned long next = (unsigned long)entry->next;
+-	next &= ~IRQ_WORK_FLAGS;
+-	return (struct irq_work *)next;
+-}
++struct irq_work_list {
++	unsigned long flags;
++	struct llist_head llist;
++};
+ 
+-static inline struct irq_work *next_flags(struct irq_work *entry, int flags)
+-{
+-	unsigned long next = (unsigned long)entry;
+-	next |= flags;
+-	return (struct irq_work *)next;
+-}
+-
+-static DEFINE_PER_CPU(struct irq_work *, irq_work_list);
++static DEFINE_PER_CPU(struct irq_work_list, irq_work_lists);
+ 
+ /*
+  * Claim the entry so that no one else will poke at it.
+  */
+-static bool irq_work_claim(struct irq_work *entry)
++static bool irq_work_claim(struct irq_work *work)
+ {
+-	struct irq_work *next, *nflags;
++	unsigned long flags, nflags;
+ 
+ 	do {
+-		next = entry->next;
+-		if ((unsigned long)next & IRQ_WORK_PENDING)
++		flags = work->flags;
++		if (flags & IRQ_WORK_PENDING)
+ 			return false;
+-		nflags = next_flags(next, IRQ_WORK_FLAGS);
+-	} while (cmpxchg(&entry->next, next, nflags) != next);
++		nflags = flags | IRQ_WORK_FLAGS;
++	} while (cmpxchg(&work->flags, flags, nflags) != flags);
+ 
+ 	return true;
+ }
+@@ -75,20 +60,16 @@ void __weak arch_irq_work_raise(void)
+ /*
+  * Queue the entry and raise the IPI if needed.
+  */
+-static void __irq_work_queue(struct irq_work *entry)
++static void __irq_work_queue(struct irq_work *work)
+ {
+-	struct irq_work **head, *next;
++	struct irq_work_list *irq_work_list;
+ 
+-	head = &get_cpu_var(irq_work_list);
++	irq_work_list = &get_cpu_var(irq_work_lists);
+ 
+-	do {
+-		next = *head;
+-		/* Can assign non-atomic because we keep the flags set. */
+-		entry->next = next_flags(next, IRQ_WORK_FLAGS);
+-	} while (cmpxchg(head, next, entry) != next);
++	llist_add(&work->llnode, &irq_work_list->llist);
+ 
+ 	/* The list was empty, raise self-interrupt to start processing. */
+-	if (!irq_work_next(entry))
++	if (!test_and_set_bit(LIST_NONEMPTY_BIT, &irq_work_list->flags))
+ 		arch_irq_work_raise();
+ 
+ 	put_cpu_var(irq_work_list);
+@@ -100,16 +81,16 @@ static void __irq_work_queue(struct irq_
+  *
+  * Can be re-enqueued while the callback is still in progress.
+  */
+-bool irq_work_queue(struct irq_work *entry)
++bool irq_work_queue(struct irq_work *work)
+ {
+-	if (!irq_work_claim(entry)) {
++	if (!irq_work_claim(work)) {
+ 		/*
+ 		 * Already enqueued, can't do!
+ 		 */
+ 		return false;
+ 	}
+ 
+-	__irq_work_queue(entry);
++	__irq_work_queue(work);
+ 	return true;
+ }
+ EXPORT_SYMBOL_GPL(irq_work_queue);
+@@ -120,34 +101,35 @@ EXPORT_SYMBOL_GPL(irq_work_queue);
+  */
+ void irq_work_run(void)
+ {
+-	struct irq_work *list, **head;
++	struct irq_work_list *irq_work_list;
++	struct llist_node *llnode;
++	struct irq_work *work;
+ 
+-	head = &__get_cpu_var(irq_work_list);
+-	if (*head == NULL)
++	irq_work_list = &__get_cpu_var(irq_work_lists);
++	if (llist_empty(&irq_work_list->llist))
+ 		return;
+ 
+ 	BUG_ON(!in_irq());
+ 	BUG_ON(!irqs_disabled());
+ 
+-	list = xchg(head, NULL);
+-	while (list != NULL) {
+-		struct irq_work *entry = list;
++	clear_bit(LIST_NONEMPTY_BIT, &irq_work_list->flags);
++	llnode = llist_del_all(&irq_work_list->llist);
++	while (llnode != NULL) {
++		work = llist_entry(llnode, struct irq_work, llnode);
+ 
+-		list = irq_work_next(list);
++		llnode = llnode->next;
+ 
+ 		/*
+-		 * Clear the PENDING bit, after this point the @entry
++		 * Clear the PENDING bit, after this point the @work
+ 		 * can be re-used.
+ 		 */
+-		entry->next = next_flags(NULL, IRQ_WORK_BUSY);
+-		entry->func(entry);
++		work->flags = IRQ_WORK_BUSY;
++		work->func(work);
+ 		/*
+ 		 * Clear the BUSY bit and return to the free state if
+ 		 * no-one else claimed it meanwhile.
+ 		 */
+-		(void)cmpxchg(&entry->next,
+-			      next_flags(NULL, IRQ_WORK_BUSY),
+-			      NULL);
++		(void)cmpxchg(&work->flags, IRQ_WORK_BUSY, 0);
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(irq_work_run);
+@@ -156,11 +138,11 @@ EXPORT_SYMBOL_GPL(irq_work_run);
+  * Synchronize against the irq_work @entry, ensures the entry is not
+  * currently in use.
+  */
+-void irq_work_sync(struct irq_work *entry)
++void irq_work_sync(struct irq_work *work)
+ {
+ 	WARN_ON_ONCE(irqs_disabled());
+ 
+-	while (irq_work_is_set(entry, IRQ_WORK_BUSY))
++	while (work->flags & IRQ_WORK_BUSY)
+ 		cpu_relax();
+ }
+ EXPORT_SYMBOL_GPL(irq_work_sync);
