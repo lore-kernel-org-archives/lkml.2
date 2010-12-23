@@ -1,129 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482Ab0LWByF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 20:54:05 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:54303 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752127Ab0LWByD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 20:54:03 -0500
-Date: Thu, 23 Dec 2010 12:53:56 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Nicholas Bellinger <nab@linux-iscsi.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: linux-next: build failure after merge of the block tree
-Message-Id: <20101223125356.9ce57329.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1752560Ab0LWCDU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 21:03:20 -0500
+Received: from mx1.vsecurity.com ([209.67.252.12]:65332 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751661Ab0LWCDS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 21:03:18 -0500
+Subject: [PATCH v7] kptr_restrict for hiding kernel pointers
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Cc: jmorris@namei.org, eric.dumazet@gmail.com, tgraf@infradead.org,
+        eugeneteo@kernel.org, kees.cook@canonical.com, mingo@elte.hu,
+        davem@davemloft.net, a.p.zijlstra@chello.nl, akpm@linux-foundation.org,
+        eparis@parisplace.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Dec 2010 21:03:12 -0500
+Message-ID: <1293069792.9820.342.camel@dan>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
+Add the %pK printk format specifier and
+the /proc/sys/kernel/kptr_restrict sysctl.
 
-After merging the block tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+The %pK format specifier is designed to hide exposed kernel pointers,
+specifically via /proc interfaces. Exposing these pointers provides an
+easy target for kernel write vulnerabilities, since they reveal the
+locations of writable structures containing easily triggerable function
+pointers. The behavior of %pK depends on the kptr_restrict sysctl.
 
-drivers/target/target_core_iblock.c: In function 'iblock_create_virtdevice':
-drivers/target/target_core_iblock.c:155: error: implicit declaration of function 'open_bdev_exclusive'
-drivers/target/target_core_iblock.c:156: warning: assignment makes pointer from integer without a cast
-drivers/target/target_core_iblock.c: In function 'iblock_free_device':
-drivers/target/target_core_iblock.c:223: error: implicit declaration of function 'close_bdev_exclusive'
-drivers/target/target_core_pscsi.c: In function 'pscsi_create_type_disk':
-drivers/target/target_core_pscsi.c:463: error: implicit declaration of function 'open_bdev_exclusive'
-drivers/target/target_core_pscsi.c:464: warning: assignment makes pointer from integer without a cast
-drivers/target/target_core_pscsi.c:474: error: implicit declaration of function 'close_bdev_exclusive'
+If kptr_restrict is set to 0, no deviation from the standard %p behavior
+occurs.  If kptr_restrict is set to 1, the default, if the current user
+(intended to be a reader via seq_printf(), etc.) does not have
+CAP_SYSLOG (currently in the LSM tree), kernel pointers using %pK are
+printed as 0's.  If kptr_restrict is set to 2, kernel pointers using %pK
+are printed as 0's regardless of privileges.  Replacing with 0's was
+chosen over the default "(null)", which cannot be parsed by userland %p,
+which expects "(nil)".
 
-Caused by commit 759026ddf4bdcfc68d1d330c7a5a9aee026a77c3 ("[SCSI]
-target: Add LIO target core v4.0.0-rc6") from the scsi tree interacting
-with commits e525fd89d380c4a94c0d63913a1dd1a593ed25e7 ("block: make
-blkdev_get/put() handle exclusive access") and
-d4d77629953eabd3c14f6fa5746f6b28babfc55f ("block: clean up blkdev_get()
-wrappers and their users") from the block tree.
 
-We have better ways of deprecating/replacing interfaces ...
+v7 moves the extern to printk.h and cleans up the conditional statements
+based on the suggestions of Joe Perches.
 
-I have added the following fix up patch for today ... and can carry it as
-necessary, though someone needs to remember to tell Linus when the latter
-of the block and scsi trees get merged.
+v6 removes the WARN_ONCE in favor of returning "pK-error" to avoid
+breaking in certain cases, thanks to Ingo Molnar.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 23 Dec 2010 12:34:11 +1100
-Subject: [PATCH] scsi: fix for open/close_bdev_exclusive going away
+v5 sets kptr_restrict to a default value of 1, and properly handles the
+case where it's incorrectly used in IRQ context. 
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+v4 incorporates Eric Paris' suggestion of using
+has_capability_noaudit(), since failing this capability check is not a
+policy violation but rather a code path choice and shouldn't generate
+potentially excessive log noise.  Adjusted IRQ comment for clarity.
+
+v3 adds the "2" setting, cleans up documentation, removes the CONFIG,
+and incorporates changes and suggestions from Andrew Morton.
+
+v2 improves checking for inappropriate context, on suggestion by Peter
+Zijlstra.  Thanks to Thomas Graf for suggesting use of a centralized
+format specifier.
+
+
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Thomas Graf <tgraf@infradead.org>
+Cc: Eugene Teo <eugeneteo@kernel.org>
+Cc: Kees Cook <kees.cook@canonical.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Eric Paris <eparis@parisplace.org>
 ---
- drivers/target/target_core_iblock.c |    6 +++---
- drivers/target/target_core_pscsi.c  |   12 ++++++------
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ Documentation/sysctl/kernel.txt |   14 ++++++++++++++
+ include/linux/printk.h          |    1 +
+ kernel/sysctl.c                 |    9 +++++++++
+ lib/vsprintf.c                  |   24 ++++++++++++++++++++++++
+ 4 files changed, 48 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
-index e99bfc2..0d55188 100644
---- a/drivers/target/target_core_iblock.c
-+++ b/drivers/target/target_core_iblock.c
-@@ -152,8 +152,8 @@ static struct se_device *iblock_create_virtdevice(
- 	printk(KERN_INFO  "IBLOCK: Claiming struct block_device: %s\n",
- 			ib_dev->ibd_udev_path);
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index 209e158..8ace8c4 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -34,6 +34,7 @@ show up in /proc/sys/kernel:
+ - hotplug
+ - java-appletviewer           [ binfmt_java, obsolete ]
+ - java-interpreter            [ binfmt_java, obsolete ]
++- kptr_restrict
+ - kstack_depth_to_print       [ X86 only ]
+ - l2cr                        [ PPC only ]
+ - modprobe                    ==> Documentation/debugging-modules.txt
+@@ -261,6 +262,19 @@ This flag controls the L2 cache of G3 processor boards. If
  
--	bd = open_bdev_exclusive(ib_dev->ibd_udev_path,
--			FMODE_WRITE|FMODE_READ, ib_dev);
-+	bd = blkdev_get_by_path(ib_dev->ibd_udev_path,
-+			FMODE_WRITE|FMODE_READ|FMODE_EXCL, ib_dev);
- 	if (!(bd))
- 		goto failed;
- 	/*
-@@ -220,7 +220,7 @@ static void iblock_free_device(void *p)
- {
- 	struct iblock_dev *ib_dev = p;
+ ==============================================================
  
--	close_bdev_exclusive(ib_dev->ibd_bd, FMODE_WRITE|FMODE_READ);
-+	blkdev_put(ib_dev->ibd_bd, FMODE_WRITE|FMODE_READ|FMODE_EXCL);
- 	bioset_free(ib_dev->ibd_bio_set);
- 	kfree(ib_dev);
++kptr_restrict:
++
++This toggle indicates whether restrictions are placed on
++exposing kernel addresses via /proc and other interfaces.  When
++kptr_restrict is set to (0), there are no restrictions.  When
++kptr_restrict is set to (1), the default, kernel pointers
++printed using the %pK format specifier will be replaced with 0's
++unless the user has CAP_SYSLOG.  When kptr_restrict is set to
++(2), kernel pointers printed using %pK will be replaced with 0's
++regardless of privileges.
++
++==============================================================
++
+ kstack_depth_to_print: (X86 only)
+ 
+ Controls the number of words to print when dumping the raw
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index b772ca5..9adfba6 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -83,6 +83,7 @@ extern bool printk_timed_ratelimit(unsigned long *caller_jiffies,
+ 
+ extern int printk_delay_msec;
+ extern int dmesg_restrict;
++extern int kptr_restrict;
+ 
+ /*
+  * Print a one-time message (analogous to WARN_ONCE() et al):
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 5abfa15..236fa91 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -713,6 +713,15 @@ static struct ctl_table kern_table[] = {
+ 	},
+ #endif
+ 	{
++		.procname	= "kptr_restrict",
++		.data		= &kptr_restrict,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &zero,
++		.extra2		= &two,
++	},
++	{
+ 		.procname	= "ngroups_max",
+ 		.data		= &ngroups_max,
+ 		.maxlen		= sizeof (int),
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index c150d3d..ea556da 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -936,6 +936,8 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
+ 	return string(buf, end, uuid, spec);
  }
-diff --git a/drivers/target/target_core_pscsi.c b/drivers/target/target_core_pscsi.c
-index 6a7495b..05924d1 100644
---- a/drivers/target/target_core_pscsi.c
-+++ b/drivers/target/target_core_pscsi.c
-@@ -460,10 +460,10 @@ static struct se_device *pscsi_create_type_disk(
- 	 * Claim exclusive struct block_device access to struct scsi_device
- 	 * for TYPE_DISK using supplied udev_path
- 	 */
--	bd = open_bdev_exclusive(se_dev->se_dev_udev_path,
--				FMODE_WRITE|FMODE_READ, pdv);
-+	bd = blkdev_get_by_path(se_dev->se_dev_udev_path,
-+				FMODE_WRITE|FMODE_READ|FMODE_EXCL, pdv);
- 	if (!(bd)) {
--		printk("pSCSI: open_bdev_exclusive() failed\n");
-+		printk("pSCSI: blkdev_get_by_path() failed\n");
- 		scsi_device_put(sd);
- 		return NULL;
- 	}
-@@ -471,7 +471,7 @@ static struct se_device *pscsi_create_type_disk(
  
- 	dev = pscsi_add_device_to_list(hba, se_dev, pdv, sd, dev_flags);
- 	if (!(dev)) {
--		close_bdev_exclusive(pdv->pdv_bd, FMODE_WRITE|FMODE_READ);
-+		blkdev_put(pdv->pdv_bd, FMODE_WRITE|FMODE_READ|FMODE_EXCL);
- 		scsi_device_put(sd);
- 		return NULL;
++int kptr_restrict = 1;
++
+ /*
+  * Show a '%p' thing.  A kernel extension is that the '%p' is followed
+  * by an extra set of alphanumeric characters that are extended format
+@@ -979,6 +981,7 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
+  *       Implements a "recursive vsnprintf".
+  *       Do not use this feature without some mechanism to verify the
+  *       correctness of the format string and va_list arguments.
++ * - 'K' For a kernel pointer that should be hidden from unprivileged users
+  *
+  * Note: The difference between 'S' and 'F' is that on ia64 and ppc64
+  * function pointers are really function descriptors, which contain a
+@@ -1035,6 +1038,27 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+ 		return buf + vsnprintf(buf, end - buf,
+ 				       ((struct va_format *)ptr)->fmt,
+ 				       *(((struct va_format *)ptr)->va));
++	case 'K':
++		/*
++		 * %pK cannot be used in IRQ context because its test
++		 * for CAP_SYSLOG would be meaningless.
++		 */
++		if (in_irq() || in_serving_softirq() || in_nmi()) {
++			if (spec.field_width == -1)
++				spec.field_width = 2 * sizeof(void *);
++			return string(buf, end, "pK-error", spec);
++		}
++
++		else if ((kptr_restrict == 0) ||
++			 (kptr_restrict == 1 &&
++			  has_capability_noaudit(current, CAP_SYSLOG)))
++			break;
++
++		if (spec.field_width == -1) {
++			spec.field_width = 2 * sizeof(void *);
++			spec.flags |= ZEROPAD;
++		}
++		return number(buf, end, 0, spec);
  	}
-@@ -680,8 +680,8 @@ static void pscsi_free_device(void *p)
- 		 * struct scsi_device with TYPE_DISK from pscsi_create_type_disk()
- 		 */
- 		if ((sd->type == TYPE_DISK) && pdv->pdv_bd) {
--			close_bdev_exclusive(pdv->pdv_bd,
--					FMODE_WRITE|FMODE_READ);
-+			blkdev_put(pdv->pdv_bd,
-+					FMODE_WRITE|FMODE_READ|FMODE_EXCL);
- 			pdv->pdv_bd = NULL;
- 		}
- 		/*
+ 	spec.flags |= SMALL;
+ 	if (spec.field_width == -1) {
 
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+
