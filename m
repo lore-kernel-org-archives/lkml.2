@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751902Ab0LWTNP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 14:13:15 -0500
-Received: from void.printf.net ([89.145.121.20]:51723 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751081Ab0LWTNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 14:13:14 -0500
-Date: Thu, 23 Dec 2010 19:13:11 +0000
-From: Chris Ball <cjb@laptop.org>
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>
-Subject: Re: [GIT PULL] MMC fixes for 2.6.37
-Message-ID: <20101223191311.GA9220@void.printf.net>
-References: <m3pqss50lr.fsf@pullcord.laptop.org> <AANLkTine-9YC7062cNaPG+iieBD2bcttx2b3sf3sveKP@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTine-9YC7062cNaPG+iieBD2bcttx2b3sf3sveKP@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751820Ab0LWTYW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 14:24:22 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55633
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751213Ab0LWTYV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 14:24:21 -0500
+Date: Thu, 23 Dec 2010 11:24:50 -0800 (PST)
+Message-Id: <20101223.112450.246547841.davem@davemloft.net>
+To: jhautbois@gmail.com
+Cc: richard.cochran@omicron.at, shemminger@vyatta.com, tj@kernel.org,
+        randy.dunlap@oracle.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] net: phy: balance disable/enable irq on change
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1292756331-3735-1-git-send-email-jhautbois@gmail.com>
+References: <1292756331-3735-1-git-send-email-jhautbois@gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kyungmin,
+From: Jean-Michel Hautbois <jhautbois@gmail.com>
+Date: Sun, 19 Dec 2010 11:58:48 +0100
 
-On Thu, Dec 23, 2010 at 06:17:50PM +0900, Kyungmin Park wrote:
-> Can you include the s5pc210 external clock support?
+> When phy interface changes its status, it calls phy_change() function.
+> This function calls the interrupt disabling functions for the driver
+> registered, but if this driver doesn't implement it, there is no IRQ
+> disabling. After doing the work, we call enable_irq and not the
+> respective driver function. This fixes it, as it could lead to an
+> unbalanced IRQ. Error code changed to EOPNOTSUPP.
+> 
+> Signed-off-by: Jean-Michel Hautbois <jhautbois@gmail.com>
 
-As I said:
+This is completely bogus.
 
-If Ben agrees, I'm happy to send it on.
+First of all, there are 5 call sites for phy_change_interrupt() but
+you've only implemented the new semantics for two of those.
 
-If Ben stays silent, then I have to overrule him -- he's the maintainer
-of this driver.  I'm okay with doing that, but I'd like to do it by
-shipping these patches in the next merge window and giving him (and
-others who test the -rc series) time to disagree.
+Therefore, if we even wanted this, we should implement the behavior in
+phy_change_interrupt() itself instead of duplicating the logic at
+each and every call site.
 
-> without this, s5pc210 boards doesn't use the SDHCI.
+But we don't want this.
 
-But that's not a regression from earlier kernels (correct me if I'm
-wrong).  Adding support for a new board is a merge window task, not
-a final-fixes-before-release task.
+It's not appropriate at all.  If a device lacks a way to turn
+interrupt off and on, using disable_irq() and enable_irq() is not
+necessarily correct.
 
-I'm sorry these patches have been waiting so long.  I didn't realize
-Ben would stay silent on them -- in future, I'll shorten my timeout
-for an ACK from Ben.
+If the interrupt line is shared, for example, this will break
+everything.
 
-Thanks,
-
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
