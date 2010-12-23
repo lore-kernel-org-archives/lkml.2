@@ -1,130 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab0LWLFf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 06:05:35 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:56328 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752595Ab0LWLFe convert rfc822-to-8bit (ORCPT
+	id S1752796Ab0LWLME (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 06:12:04 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:51331 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752513Ab0LWLMC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 06:05:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=VkOVkfouvmNxtUIKwleGMD+oADa9c6ysftznu8Rxl8iDVosM3wOZLcjsv/R+vzF7jc
-         o1tQ4pqJ09UkhkP2vQTg==
-MIME-Version: 1.0
-In-Reply-To: <1293101280.2170.501.camel@laptop>
-References: <1293005543.2565.156.camel@minggr.sh.intel.com>
-	<1293008431.2170.63.camel@laptop>
-	<AANLkTintfpyvx=Pj1+uu8kCkFn3zT6b36h27Hb7pm=ZF@mail.gmail.com>
-	<1293014701.2170.111.camel@laptop>
-	<1293014967.2170.114.camel@laptop>
-	<1293094781.2565.197.camel@minggr.sh.intel.com>
-	<1293099498.2170.452.camel@laptop>
-	<AANLkTi=LJB1zA-Kt8KE_qaSNga9iJqnR=FMDRq38Zq5_@mail.gmail.com>
-	<1293101280.2170.501.camel@laptop>
-Date: Thu, 23 Dec 2010 12:05:30 +0100
-Message-ID: <AANLkTi==HfPX1J7yRW=9nbDJfY7Bd4=kZhphq+SoU+-k@mail.gmail.com>
-Subject: Re: [RFC PATCH] perf: Add load latency monitoring on Intel Nehalem/Westmere
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, paulus <paulus@samba.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Thu, 23 Dec 2010 06:12:02 -0500
+Date: Thu, 23 Dec 2010 20:11:56 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: linux-next: manual merge of the sound tree with the s5p tree
+In-reply-to: <s5hk4j0n43g.wl%tiwai@suse.de>
+To: "'Takashi Iwai'" <tiwai@suse.de>
+Cc: "'Stephen Rothwell'" <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "'Jassi Brar'" <jassi.brar@samsung.com>
+Message-id: <004001cba292$3827d2d0$a8777870$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=US-ASCII
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: AcuikQsTjpyuh7ByQAOAvq5HWHtwKgAAEFrQ
+References: <20101223115339.1ce18216.sfr@canb.auug.org.au>
+ <003f01cba28c$872214f0$95663ed0$%kim@samsung.com>
+ <s5hk4j0n43g.wl%tiwai@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 23, 2010 at 11:48 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, 2010-12-23 at 11:31 +0100, Stephane Eranian wrote:
->> On Thu, Dec 23, 2010 at 11:18 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->> > On Thu, 2010-12-23 at 16:59 +0800, Lin Ming wrote:
->> >> > {L1, L2, L3, RAM}x{snoop, local, remote}x{shared, exclusive} + {unknown,
->> >> > uncached, IO}
->> >> >
->> >> > Which takes all of 5 bits to encode.
->> >>
->> >> Do you mean below encoding?
->> >>
->> >> bits4 3 2 1 0
->> >>     + + + + +
->> >>     | | | | |
->> >>     | | | {L1, L2, L3, RAM} or {unknown, uncached, IO}
->> >>     | | |
->> >>     | {snoop, local, remote, OTHER}
->> >>     |
->> >>     {shared, exclusive}
->> >>
->> >> If bits(2-3) is OTHER, then bits(0-1) is the encoding of {unknown,
->> >> uncached, IO}.
->> >
->> > That is most certainly a very valid encoding, and a rather nice one at
->> > that. I hadn't really gone further than: 4*3*2 + 3 < 2^5 :-)
->> >
->> > If you also make OTHER=0, then a valid encoding for unknown is also 0,
->> > which is a nice meaning for 0...
->> >
->> I am not sure how you would cover the 9 possibilities for data source as
->> shown in Table 10-13 using this encoding. Could you show me?
->
-> Ah, I think I see the problem, there's multiple L3-snoops, I guess we
-> can fix that by extending the {shared, exclusive} to full MESI, growing
-> us to 6 bits.
->
-> I'm assuming you mean "Table 30-13. Data Source Encoding for Load
-> Latency Record", which has 14 values defined.
->
-Yes.
+Takashi Iwai wrote:
+> 
+> At Thu, 23 Dec 2010 19:31:12 +0900,
+> Kukjin Kim wrote:
+> >
+> > Stephen Rothwell wrote:
+> > >
+> > > Hi Takashi,
+> > >
+> > > Today's linux-next merge of the sound tree got a conflict in
+> > > sound/soc/samsung/smdk_wm8580.c sound/soc/samsung/smdk_wm9713.c
+between
+> > > commit 7ca825bed699c77b218ead402202df384556950b ("ASoC: Samsung:
+Rename
+> > > DMA device") from the s5p tree and various commits from the sound
+tree.
+> > >
+> > > I used the versions from the sound tree that seemed to be supersets of
+> the
+> > > ones from the s5p tree.
+> >
+> > Merry Xmas Stephen :-)
+> >
+> > Thanks for your information.
+> >
+> > As I said to Mark, I did 'cherry-pick' following 2 commits in my tree
+for
+> > avoiding build error from sound-2.6.git.
+> > I couldn't 'merge' into my tree because there is no suitable branch in
+your
+> > tree...
+> >
+> > --
+> >
+> > commit 83e37b8e400ca51cc97946815b3055daacd92fa8
+> > Author: Jassi Brar <jassi.brar@samsung.com>
+> > Date:   Mon Nov 22 15:35:53 2010 +0900
+> >
+> >     ARM: Samsung: Define common audio-dma device
+> >
+> >     The ASoC uses common DMA driver for Audio devices. So it makes
+> >     sense to a common audio-dma device shared across all platforms.
+> >
+> >     Signed-off-by: Jassi Brar <jassi.brar@samsung.com>
+> >     Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+> >     Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+> >     Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> >
+> > commit 58bb4072132c54d832082cc6eac396a6db009cbd
+> > Author: Jassi Brar <jassi.brar@samsung.com>
+> > Date:   Mon Nov 22 15:35:50 2010 +0900
+> >
+> >     ASoC: Samsung: Rename DMA device
+> >
+> >     Some Samsung SoCs have a PCM(DSP) controller. So the name
+> >     s3c24xx-pcm-audio for DMA driver is not very appropraite.
+> >     This patch moves :-
+> >         s3c24xx-pcm-audio -> samsung-audio
+> >
+> >     Signed-off-by: Jassi Brar <jassi.brar@samsung.com>
+> >     Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+> >     Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+> >     Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> >
+> > --
+> >
+> > Maybe happened conflict from latter commit.
+> >
+> > Anyway I need above commits from sound-2.6.git in my tree...
+> > so how method is better to me instead of cherry-pick it?
+> 
+> You can merge topic/asoc branch of sound git tree.
+> This brach contains the all necessary commits for ASoC and is almost
+> never rebased.
 
-> Value   Intel                           Perf
-> 0x0     Unknown L3                      Unknown
->
-> 0x1     L1                              L1-local
->
-> 0x2     Pending core cache HIT          L2-snoop
->        Outstanding core cache miss to
+Hi,
 
-Not clear how you know this is snoop or L2?
+But I can't merge it because there is no 'topic/asoc' branch in
+sound-2.6.git.
+(git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound-2.6.git)
 
-I suspect this one is saying you have a request for a line
-for which there is already a pending request underway. Could
-be the first came from prefetchers, the 2nd is actual demand.
+Is there another repository?
 
-Let me check with Intel. The table is unclear.
+And should I merge it in my tree even though don't need all of ASoC commits
+:-( ?
+I'm not sure how many commits are in there...
 
->        the same line was underway
-> 0x3     L2                              L2-local
->
-> 0x4     L3-snoop, no coherency actions  L3-snoop-I
+Thanks.
 
-I am not sure I understand what you mean by local vs. remote
-in your terminology.
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
-
-> 0x5     L3-snoop, found no M            L3-snoop-S
-> 0x6     L3-snoop, found M               L3-snoop-M
->
-> 0x8     L3-miss, snoop, shared          RAM-snoop-S
-> 0xA     L3-miss, local, shared          RAM-local-S
-> 0xB     L3-miss, remote, shared         RAM-remote-S
->
-> 0xC     L3-miss, local, exclusive       RAM-local-E
-> 0xD     L3-miss, remote, exclusive      RAM-remote-E
->
-> 0xE     IO                              IO
-> 0xF     uncached                        uncached
->
->
-> Leaving us with:
->
-> {L1, L2, L3, RAM}x{snoop, local, remote}x{modified, exclusive, shared, invalid} + {unknown, uncached, IO}
->
-> Now the question is, is this sufficient to map all data sources from
-> other archs as well?
->
