@@ -1,94 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452Ab0LWNRl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 08:17:41 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:30420 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493Ab0LWNRk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 08:17:40 -0500
-References: <201012142219.40062.ffainelli@freebox.fr> <201012231057.35021.ffainelli@freebox.fr>
-In-Reply-To: <201012231057.35021.ffainelli@freebox.fr>
-Mime-Version: 1.0 (iPhone Mail 8C148)
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <7A03AE18-9737-41D6-8EF5-6C6C29C1BF0D@kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        "sodaville@linutronix.de" <sodaville@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>
-X-Mailer: iPhone Mail (8C148)
-From: Yinghai <yinghai@kernel.org>
-Subject: Re: [PATCH] x86/trampoline: fallback to fixed trampoline address if no e820 map is provided
-Date: Thu, 23 Dec 2010 05:16:35 -0800
-To: Florian Fainelli <ffainelli@freebox.fr>
+	id S1752848Ab0LWNRw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 08:17:52 -0500
+Received: from ms01.sssup.it ([193.205.80.99]:33553 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752717Ab0LWNRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 08:17:51 -0500
+Subject: Re: Sending some form of notifaction when sched_fifo throttling
+ kicks in...
+From: Dario Faggioli <raistlin@linux.it>
+To: torbenh <torbenh@gmx.de>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Gregory Haskins <ghaskins@novell.com>,
+        Nick Piggin <nickpiggin@yahoo.com.au>
+In-Reply-To: <20101223113926.GH14960@siel.b>
+References: <20101223113926.GH14960@siel.b>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-Zzgdzrh6Z2wZ3hPlpwwF"
+Date: Thu, 23 Dec 2010 14:17:37 +0100
+Message-ID: <1293110258.3390.41.camel@Palantir>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--=-Zzgdzrh6Z2wZ3hPlpwwF
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Dec 23, 2010, at 1:57 AM, Florian Fainelli <ffainelli@freebox.fr> wrote:
+On Thu, 2010-12-23 at 12:39 +0100, torbenh wrote:=20
+> hi...
+>=20
+Hi,
 
-> On Tuesday 14 December 2010 22:19:39 Florian Fainelli wrote:
->> From: Florian Fainelli <ffainelli@freebox.fr>
->> 
->> Since 893f38d1 (x86: Use find_e820() instead of hard coded trampoline
->> address), the trampoline base address should be provided by the BIOS as an
->> e820 area. Some minimalistic BIOSes (like CEFDK on CE4100) may not provide
->> any e820 area, still we should fallback to a fixed trampoline base address
->> for SMP to work correctly.
+> when the rt_runtime budget is exceeded, the kernel silently stops
+> scheduling RT tasks. there is no way to distinguish this from=20
+> a task taking very long to complete.
+>=20
+Well, this depends on how you do the accounting in your (user-level)
+code.
 
-No e820 memmap ?
+> it would be very nice, if the kernel would send some form of notifaction
+> when it starts throttling things.
+>=20
+This might be tricky, if the meaning is signals or something to the
+throttled tasks, since you can have a (or more!) runqueue full of
+them... Are we signalling them all? Moreover, they'll get the
+notification only after resuming, and it's not guaranteed that this
+helps in finding out who is "responsible for" the throttling and... By
+the way...
 
-Not sure how does it work
+> recording the timestamp of the last occurence of throttling
+> in a /proc file would be sufficient, if there were no cgroups.
+>=20
+> would it be possible to add a readonly property to the cpu subsystem ?
+>
+... If you think you're fine with some /proc (and perhaps cpuacct, if
+cgroups are being used) readable, I can try to come up with something.
 
-Do you have boot log with debug ?
+I think that the number of times that throttling fired and the last
+throttling instant could be exported this way without much issues.
 
-Also recent kernel is using memblock already for finding free area.
+Do others have some idea and/or comments about that? This is
+ABI/interface, and that really scares me! :-P
 
-Thanks
+Thanks and Regards,
+Dario
 
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
 
+http://retis.sssup.it/people/faggioli -- dario.faggioli@jabber.org
 
->> 
->> Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
->> Cc: sodaville@linutronix.de
->> Cc: Ingo Molnar <mingo@elte.hu>
->> Cc: Yinghai Lu <yinghai@kernel.org>
->> Signed-off-by: Florian Fainelli <ffainelli@freebox.fr>
-> 
-> Ingo, Yinghai, anything wrong with that patch? Thank you.
-> 
->> ---
->> diff --git a/arch/x86/include/asm/trampoline.h
->> b/arch/x86/include/asm/trampoline.h index f4500fb..908b395 100644
->> --- a/arch/x86/include/asm/trampoline.h
->> +++ b/arch/x86/include/asm/trampoline.h
->> @@ -16,6 +16,7 @@ extern unsigned long initial_code;
->> extern unsigned long initial_gs;
->> 
->> #define TRAMPOLINE_SIZE roundup(trampoline_end - trampoline_data,
->> PAGE_SIZE) +#define TRAMPOLINE_BASE 0x6000
->> 
->> extern unsigned long setup_trampoline(void);
->> extern void __init reserve_trampoline_memory(void);
->> diff --git a/arch/x86/kernel/trampoline.c b/arch/x86/kernel/trampoline.c
->> index f1488a3..d025aae 100644
->> --- a/arch/x86/kernel/trampoline.c
->> +++ b/arch/x86/kernel/trampoline.c
->> @@ -21,8 +21,11 @@ void __init reserve_trampoline_memory(void)
->> 
->>    /* Has to be in very low memory so we can execute real-mode AP code. */
->>    mem = find_e820_area(0, 1<<20, TRAMPOLINE_SIZE, PAGE_SIZE);
->> -    if (mem == -1L)
->> -        panic("Cannot allocate trampoline\n");
->> +    if (mem == -1L) {
->> +        printk(KERN_INFO "BIOS did not provide e820 area for trampoline"
->> +                " ,using static trampoline address\n");
->> +        mem = TRAMPOLINE_BASE;
->> +    }
->> 
->>    trampoline_base = __va(mem);
->>    reserve_early(mem, mem + TRAMPOLINE_SIZE, "TRAMPOLINE");
+--=-Zzgdzrh6Z2wZ3hPlpwwF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAk0TS/EACgkQk4XaBE3IOsTBagCfQ4EUw70ITrpr784gTx81Nc2r
+vMEAnR8SBI/PBaz7T61ecUEa7j4YsE7X
+=5xjs
+-----END PGP SIGNATURE-----
+
+--=-Zzgdzrh6Z2wZ3hPlpwwF--
+
