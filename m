@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709Ab0LWIz5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 03:55:57 -0500
-Received: from mga09.intel.com ([134.134.136.24]:54976 "EHLO mga09.intel.com"
+	id S1752713Ab0LWJDX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 04:03:23 -0500
+Received: from cantor.suse.de ([195.135.220.2]:48454 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752450Ab0LWIz4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 03:55:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,218,1291622400"; 
-   d="scan'208";a="586577268"
-Subject: Re: [RFC PATCH] perf: Add load latency monitoring on Intel
- Nehalem/Westmere
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, paulus <paulus@samba.org>
-In-Reply-To: <1293014967.2170.114.camel@laptop>
-References: <1293005543.2565.156.camel@minggr.sh.intel.com>
-	 <1293008431.2170.63.camel@laptop>
-	 <AANLkTintfpyvx=Pj1+uu8kCkFn3zT6b36h27Hb7pm=ZF@mail.gmail.com>
-	 <1293014701.2170.111.camel@laptop>  <1293014967.2170.114.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Dec 2010 16:59:41 +0800
-Message-ID: <1293094781.2565.197.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1752453Ab0LWJDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 04:03:20 -0500
+Date: Thu, 23 Dec 2010 10:03:18 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Vojtech Pavlik <vojtech@suse.cz>,
+        =?ISO-8859-15?Q?Ilpo_J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>
+Subject: Re: [PATCH] tcp: cleanup of cwnd initialization in
+ tcp_init_metrics()
+In-Reply-To: <1293092671.2679.44.camel@edumazet-laptop>
+Message-ID: <alpine.LNX.2.00.1012231002310.16569@pobox.suse.cz>
+References: <alpine.LNX.2.00.1012221938030.16569@pobox.suse.cz> <1293092671.2679.44.camel@edumazet-laptop>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-22 at 18:49 +0800, Peter Zijlstra wrote:
-> On Wed, 2010-12-22 at 11:45 +0100, Peter Zijlstra wrote:
-> > On Wed, 2010-12-22 at 11:08 +0100, Stephane Eranian wrote:
-> > > Yes, I think there is more to it than just data source, unfortunately.
-> > > If you want to avoid returning an opaque u64 (PERF_SAMPLE_EXTRA), then
-> > > you need to break it down: PERF_SAMPLE_DATA_SRC, PERF_SAMPLE_XX
-> > > and so on. 
+On Thu, 23 Dec 2010, Eric Dumazet wrote:
+
+> Le mercredi 22 décembre 2010 à 19:39 +0100, Jiri Kosina a écrit :
+> > Commit 86bcebafc5e7f5 ("tcp: fix >2 iw selection") fixed a case when 
+> > congestion window initialization has been mistakenly omitted by 
+> > introducing cwnd label and putting backwards jump from the end of the 
+> > function.
 > > 
-> > I guess we can do things like:
+> > This makes the code unnecessarily tricky to read and understand on a first 
+> > sight.
 > > 
-> > Satisfied by {L1, L2, L3, RAM}x{snoop, local, remote} + unknown, and
-> > encode "Pending core cache HIT" as L2-snoop or something, whatever is
-> > most appropriate.
+> > Shuffle the code around a little bit to make it more obvious.
 > 
-> Ah, I just saw my email window covered part of the spec and we can also
-> have x{shared,exclusive}, so we end up with:
+> Well in fine you have
 > 
-> {L1, L2, L3, RAM}x{snoop, local, remote}x{shared, exclusive} + {unknown,
-> uncached, IO}
+> 	if (inet_csk(sk)->icsk_rto < TCP_TIMEOUT_INIT && !tp->rx_opt.saw_tstamp)
+> 		goto reset;
+> 	goto out;
+> reset:
 > 
-> Which takes all of 5 bits to encode.
+> Is that really more obvious ? ;)
 
-Do you mean below encoding?
+To me it seems much more obvious than goto from the very end of the 
+function somewhere into the middle and returning from there, but 
+definitely a matter of personal taste.
 
-bits4 3 2 1 0
-    + + + + +
-    | | | | |
-    | | | {L1, L2, L3, RAM} or {unknown, uncached, IO}
-    | | |
-    | {snoop, local, remote, OTHER}
-    |
-    {shared, exclusive}
-
-If bits(2-3) is OTHER, then bits(0-1) is the encoding of {unknown,
-uncached, IO}.
-
-> 
-> > But does that cover every architecture?
-> > 
-> > Also, since that doesn't require more that 4 bits to encode, we could
-> > try and categorize what else is around and try and create a well
-> > specified _EXTRA register, I mean, we still got 60bits left after this.
-> 
-> Leaving us with 59 bits to consider.
-
-
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
