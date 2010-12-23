@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753021Ab0LWABH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 19:01:07 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:36490 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751567Ab0LWABF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 19:01:05 -0500
-Date: Thu, 23 Dec 2010 11:00:48 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnaud Lacombe <lacombar@gmail.com>
-Subject: linux-next: build warning after merge of the kbuild tree
-Message-Id: <20101223110048.09ff9f40.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__23_Dec_2010_11_00_48_+1100_PF5e8DQFeM4u/F7i"
+	id S1752442Ab0LWALh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 19:11:37 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49499 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751857Ab0LWALg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Dec 2010 19:11:36 -0500
+Date: Thu, 23 Dec 2010 00:10:12 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Viresh Kumar <viresh.kumar@st.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        yuanyabin1978@sina.com, linux-kernel@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>, Peter Pearse <peter.pearse@arm.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Alessandro Rubini <rubini@unipv.it>
+Subject: Re: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081
+	PrimeCells
+Message-ID: <20101223001012.GF29368@n2100.arm.linux.org.uk>
+References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com> <20101221182037.GA4783@n2100.arm.linux.org.uk> <20101222122904.GC14693@n2100.arm.linux.org.uk> <AANLkTikpyAggDCPef1pS=_QHnu9-FyLcpddGyVHnGwWx@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikpyAggDCPef1pS=_QHnu9-FyLcpddGyVHnGwWx@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__23_Dec_2010_11_00_48_+1100_PF5e8DQFeM4u/F7i
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Dec 22, 2010 at 03:45:39PM -0800, Dan Williams wrote:
+> 3.6 Constraints:
+> 1/ Calls to async_<operation> are not permitted in IRQ context.  Other
+>    contexts are permitted provided constraint #2 is not violated.
 
-Hi Michal,
+BTW, this is misleading.  Have the functions been renamed dma_async_xxx(),
+eg dma_async_memcpy_buf_to_buf etc, or are you referring just to:
 
-After merging the kbuild tree, today's linux-next build (powerpc
-ppc64_defconfig) produced this warning:
+	async_dmaengine_get
+	async_dmaengine_put
+	async_dma_find_channel
+	async_dma_find_channel
+	async_tx_ack
+	async_tx_clear_ack
+	async_tx_test_ack
 
-In file included from scripts/kconfig/zconf.tab.c:2502:
-scripts/kconfig/expr.c:1033: warning: no previous prototype for 'expr_simpl=
-ify_unmet_dep'
+Beware of just renaming it to dma_async_<operation> as there's other
+functions in that namespace which may not be appropriate.
 
-Introduced by commit 1137c56b7420c801147e0863845c03b07554721a ("kconfig:
-simplify select-with-unmet-direct-dependency warning").
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__23_Dec_2010_11_00_48_+1100_PF5e8DQFeM4u/F7i
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNEpEwAAoJEDMEi1NhKgbs9EEIAKMumuD1o0ZmG04Xb6LeymVS
-ApbQbpA2Mdh6kqX0dJNYw5g3SE5gFlomT/iwGQqDGsr4py5Uar4HvElXA2YJ51Bv
-60ZwIJiMcxm27O7Hz6T2Mxr8TKc1036SwkH2siRKO0GBgjWj9XImbKALh5i73HSL
-97DzNvqU6rh+fwDM1n4a8+wtYoWFkFv/CEE/0AHOA3DO6hm2buP/4cSpEVB5BUHp
-T0K/ibsxeSJYsn/J824bNh6N09cmjY5I7GMshSL+COcE7jP+Mz90xsUIN1dxG8q8
-RhGkHhFiLw0B0ZS+ZWiXAO4s7eVRRI0xCDmQSi2JxO0L/Tralz+bL1uiPAFVSlE=
-=ZuVQ
------END PGP SIGNATURE-----
-
---Signature=_Thu__23_Dec_2010_11_00_48_+1100_PF5e8DQFeM4u/F7i--
+Eg, is it really illegal to issue call dma_async_issue_pending() from
+IRQ context?  That'd make it exceedingly difficult to use the DMA
+engine with the slave API in a lot of device drivers.
