@@ -1,116 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077Ab0LWIMO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 03:12:14 -0500
-Received: from smtp.nokia.com ([147.243.128.26]:60011 "EHLO mgw-da02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751582Ab0LWIMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 03:12:14 -0500
-Message-ID: <4D130452.2010706@nokia.com>
-Date: Thu, 23 Dec 2010 10:12:02 +0200
-From: =?UTF-8?B?SnVoYW5pIE3DpGtlbMOk?= <ext-juhani.3.makela@nokia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1752095Ab0LWIRJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 03:17:09 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:38811 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751743Ab0LWIRI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 03:17:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=xzLhk9vl2HzmAlbIPWXayE4lO2IqFXbgeDgCiSMU5br76QE0OwbfSvHPINdy2iO5bC
+         aRgqmOmDI1vYAkS0cgZNk8lMigaSSqmPa8SP33GedGRpQEHJCdG47N9uwdRPgNududIq
+         ropkCa490Q5cN4MDVgguOGS0OzNmqKbfthJOs=
 MIME-Version: 1.0
-To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Kprobe: Fixed a leak when a retprobe entry function returns
- non-zero
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Nokia-AV: Clean
+In-Reply-To: <AANLkTikpyAggDCPef1pS=_QHnu9-FyLcpddGyVHnGwWx@mail.gmail.com>
+References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com>
+	<20101221182037.GA4783@n2100.arm.linux.org.uk>
+	<20101222122904.GC14693@n2100.arm.linux.org.uk>
+	<AANLkTikpyAggDCPef1pS=_QHnu9-FyLcpddGyVHnGwWx@mail.gmail.com>
+Date: Thu, 23 Dec 2010 09:17:07 +0100
+Message-ID: <AANLkTinOMOkY6AUW8Z6FWMMWU9u0_sNjA2r_31u9-A8v@mail.gmail.com>
+Subject: Re: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081 PrimeCells
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Viresh Kumar <viresh.kumar@st.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        yuanyabin1978@sina.com, linux-kernel@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>, Peter Pearse <peter.pearse@arm.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Alessandro Rubini <rubini@unipv.it>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Sirs,
+2010/12/23 Dan Williams <dan.j.williams@intel.com>:
+> On Wed, Dec 22, 2010 at 4:29 AM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+>> As described above in my code analysis, pl08x_tasklet takes the spinlock,
+>> calls pl011_dma_tx_callback and eventually back to pl08x_prep_slave_sg
+>> and pl08x_prep_channel_resources which then try to take the spinlock
+>> again, leading to deadlock.
+>
+> This is listed in the dmaengine documentation [1], but I obviously
+> missed this before merging. †This also would have been caught by
+> lockdep as required by SubmitChecklist.
 
-Here is a little fix I found necessary to implement in order to perform
-some probing:
+Yeah, my bad. I'll get better at this... :-(
+(I blame it partially on inaccessible hardware, sob sob. I do like to
+run lockdep.)
 
-----
-A kretprobe can install an optional entry probe that is called when
-the probed function is entered. If the callback returns non zero,
-the return probe will not be called and the instance is forgotten.
-However, the allocated instance of struct kretprobe_instance was
-not returned in the free_instances list. Fixed this by returning
-the unused instance to the free list if it was not needed.
+>†It looks like this driver needs a full scrub
+> which seems unreasonable to complete and test over the holidays before
+> .37 lands. †Linus we either need to mark this "depends on BROKEN" or
+> revert it.
+
+Isn't it really as simple as to release the spinlock during callbacks?
+That lock is only intended to protect the plchan variables, not to block
+anyone from queueing new stuff during the callback (as happens now).
+
+It can release that lock, make a callback where a new descriptor
+gets queued, and then take it again and start looking at the queue,
+at which point it discovers the new desc and process it.
+
+So something like this:
+
+
+From: Linus Walleij <linus.walleij@stericsson.com>
+Date: Thu, 23 Dec 2010 09:06:14 +0100
+Subject: [PATCH] dma: release pl08x channel lock during callback
+
+The spinlock is not really safeguarding any resources during the
+callback, so let's release it before that and take it back
+afterwards so as to avoid deadlocks.
+
+Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
 ---
- kernel/kprobes.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+ drivers/dma/amba-pl08x.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 5240d75..69d0ca9 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -971,8 +971,16 @@ static int __kprobes pre_handler_kretprobe(struct
-kprobe *p,
- 		ri->rp = rp;
- 		ri->task = current;
+diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
+index b605cc9..7879a22 100644
+--- a/drivers/dma/amba-pl08x.c
++++ b/drivers/dma/amba-pl08x.c
+@@ -1651,8 +1651,11 @@ static void pl08x_tasklet(unsigned long data)
+ 		/*
+ 		 * Callback to signal completion
+ 		 */
+-		if (callback)
+-			callback(callback_param);
++		if (callback) {
++                        spin_unlock(&plchan->lock);
++                        callback(callback_param);
++                        spin_lock(&plchan->lock);
++                }
 
--		if (rp->entry_handler && rp->entry_handler(ri, regs))
-+		if (rp->entry_handler && rp->entry_handler(ri, regs)) {
-+			/*
-+			 * Restore the instance to the free list
-+			 * if it is not needed any more.
-+			 */
-+			spin_lock_irqsave(&rp->lock, flags);
-+			hlist_add_head(&ri->hlist, &rp->free_instances);
-+			spin_unlock_irqrestore(&rp->lock, flags);
- 			return 0;
-+		}
+ 		/*
+ 		 * Device callbacks should NOT clear
+-- 
+1.7.2.3
 
- 		arch_prepare_kretprobe(ri, regs);
-----
-
-I'm not at all positive that this is the right fix, but at least in our
-environment it seems to help. Here is some background info:
-
-We have implemented a kernel module that implements capability check
-tracing by adding a kretprobe in the "capable" function. Every time a
-capability check is made, it gathers some data about the process being
-checked, the capability number and the result of the check. If the check
-comes with current->mm == NULL, it's disregarded by the tracer to avoid
-unnecessary overhead, and the entry_handler returns value 1.
-
-Normally this works fine, but this week we noticed that if the module is
-compiled in and activated in an early phase in the boot it doesn't work
-at all. It appeared that our entry_handler was called as many times as
-was set in the maxactive field of the registered probe, and every time
-it returned 1 because current->mm was NULL in all of the calls. Then no
-more callbacks were made. When the probe was de-registered, the nmissed
-counter had a large value (>6000), and after registering it again the
-probing started to work.
-
-This made me suspect a resource leak, and as far as I can see there
-indeed is one in kprobe.c::pre_handler_kretprobe. The fix above solved
-the problem and seems not to have any undesired side effects.
-
-We are using kernel version 2.6.32, but it seems to me that the same
-problem exists in more current kernels judging by a quick look.
-
-Why the problem manifests itself only if the tracing is enabled early in
-the boot I cannot say. Could it be that if the entry_handler returns 0
-at least once before the free list has been exhausted, it resets the
-situation somehow? Or is it that after some point after userspace
-initialization current->mm is never NULL?
-
-The capability tracing module itself is ment for upstream, but I have
-been told its code is not kernel quality (not enough comments) and the
-implementation lacks obvious features so we have not dared to offer it
-yet. It is used for defining profiles for daemon processes currently
-running as root by checking what capabilities they actually need and
-then assigning them only those, in the context of the MSSF security
-framework project:
-
-http://conference2010.meego.com/session/mobile-simplified-security-framework-overview
-
-In case you are interested I'm happy to make the code and documentation
-available at the forum of your choice.
-
-Yours sincerely,
-Juhani M√§kel√§
-Nixu OPEN - https://www.nixuopen.org
+Yours,
+Linus Walleij
