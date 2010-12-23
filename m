@@ -1,94 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147Ab0LWQgK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 11:36:10 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:40564 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751927Ab0LWQgI (ORCPT
+	id S1753285Ab0LWQvL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 11:51:11 -0500
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:60975 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752286Ab0LWQvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 11:36:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=t9jgD51EvthnKhXtcakcC8sYKy5bPfCgUIPnQd68O+YsFb8qA/QDUKPiBOf/t+nQrM
-         RY6V8/MOY4gVlgFnXxc/O32DnR31rEIFk1Tqz7ffSjI/vwF7i0AKiLXixLYQHwOVWwWw
-         KjwMfTKFJEgP3dEVeZxOPNLLWwkR2vXqzFTMQ=
-Date: Thu, 23 Dec 2010 17:33:15 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
-        jan.kratochvil@redhat.com
-Subject: Re: [PATCH 09/16] ptrace: make do_signal_stop() use ptrace_stop()
- if the task is being ptraced
-Message-ID: <20101223163315.GD18482@htj.dyndns.org>
-References: <1291654624-6230-1-git-send-email-tj@kernel.org>
- <1291654624-6230-10-git-send-email-tj@kernel.org>
- <20101223122634.GA365@redhat.com>
- <20101223135330.GA18482@htj.dyndns.org>
- <20101223160648.GA10096@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101223160648.GA10096@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 23 Dec 2010 11:51:09 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Afj+62QPlB/t1FS7M/VTwKi0QyDt8KkSpzqnHUTvhQHFh28RZicSVaPQpK0L6/SCwKYl7bLAybq2opLV9JQm0hsGN46+Q7TKipXX3HVKgNQhWcalq26+V6HBa8eglLhA;
+Date: Thu, 23 Dec 2010 08:51:06 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, Takashi Iwai <tiwai@suse.de>,
+        linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Subject: Re: [git pull] drm fixes
+Message-ID: <20101223085106.6e53c427@jbarnes-desktop>
+In-Reply-To: <AANLkTik4N5Caw2f4nNFgYXDjxwCMvkyLGyTrkz+vDfXS@mail.gmail.com>
+References: <alpine.DEB.2.00.1012212339090.30885@skynet.skynet.ie>
+	<s5hei99vkqj.wl%tiwai@suse.de>
+	<c6d829$pujifv@fmsmga001.fm.intel.com>
+	<AANLkTik4N5Caw2f4nNFgYXDjxwCMvkyLGyTrkz+vDfXS@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 23, 2010 at 05:06:48PM +0100, Oleg Nesterov wrote:
-> > Yes, before the change, the task would respond to SIGCONT before the
-> > first ptrace request succeeds after attach.
+On Wed, 22 Dec 2010 19:54:31 -0800
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> >                         The Lenovo U160's or the
+> > Sandybridge SDV? And why does it work for that other OS? <Insert
+> > rhetorical question of the day here.>
 > 
-> Not exactly. But perhaps you meant that even without this change,
-> any ptrace() request after ptrace(PTRACE_CONT, SIGSTOP) will change
-> child->state = TASK_TRACED, and kill(SIGCONT) won't work after that.
-
-Yeap, exactly.
-
-> > To me, this doesn't seem to be anything intentional tho.  It seems
-> > a lot of ptrace and group stop interactions is in the grey area
-> > with only the current (quirky, I'm afraid) behavior drawing almost
-> > arbitrary lines across different behaviors.
+> Quite frankly, I don't think the question should *ever* be "whose BIOS
+> is wrong?"
 > 
-> Agreed.
+> You should always take for granted that the BIOS is wrong. It's not a
+> question of "blame the BIOS", it's a question of facts of life.
 > 
-> However. Strangely, I didn't think about this before. With this
-> change, it is not possible to trace/debug the application so that
-> it can properly react to SIGCONT. Yes, currently we have a lot
-> more problems here, including do_wait, so probably this doesn't
-> matter.
+> It's 100% pointless to point fingers and say "the HP BIOS is wrong" or
+> "the Lenovo BIOS is wrong". Buggy BIOSes happen. ALWAYS. Any code that
+> relies on the BIOS to such a degree that it either works or not based
+> on it is by definition broken.
 > 
-> Still I'd like to know what Jan and Roland think. I am paranoid,
-> yes ;)
+> Why does that code need to figure out some LVDS clock from the BIOS?
+> Why can't the code look at the actual hardware state or similar, since
+> presumably the screen is on after boot. THAT we can rely on, since a
+> BIOS that doesn't initialize LVDS is not going to ever ship even as
+> pre-release.
 
-Definitely.
+Oh I wish we could just do that.  Strictly speaking though this isn't
+so much of a BIOS issue as it is a ROM issue.  Platform vendors provide
+no way of getting at platform configuration details related to graphics
+aside from the tables they flash into ROM along with the VBIOS.  The
+tables are just like an EDID ROM on a display: they communicate data we
+have no other way of getting.
 
-Hmm... the mention of SIGCONT behavior reminds me of your mention of
-notification behavior on the other message.  I might write a more
-detailed reply there but, anyways, I don't think we'll be able to find
-one good behavior with the current set of operations.  If we hide the
-group stop handling and notification from the ptracer, it would allow,
-for example, transparent strace, but it will at the same time restrict
-what a debugger can do behind the tracee's back in a regressive way
-(ie. the current users would notice).
+In the particular case of SSC, there's a board down spread spectrum
+clock reference source at a fixed frequency.  We can't automatically
+determine it at runtime (asking the user "can you see this" at boot
+time isn't really an option), so we need to rely on the VBT to tell
+us.  The Windows driver uses this data as well, but obviously either
+it's incorrect on our SDV (possible) or we're failing to parse the data
+correctly (likely).  It's also possible we're failing to look at a bit
+that says "use/don't use SSC on this platform" making the frequency
+field meaningless.
 
-I think it would be better to introduce a few new ptrace operations
-and give them more control in clearly defined and hopefully intutive
-way.  For example, a ptracer is notified when a task is stopping for
-group stop and it should be able to decide and tell the kernel whether
-to participate in the group stop or not.  For SIGCONT, likewise, the
-kernel can notify all ptracers in the group and can notify the real
-parent if all ptracers decide to participate in the continuation.
-
-That way, debuggers can still work behind the real parent's back (they
-often want to) while audit type tools can sniff transparently.  I
-think the trickier part would be adapting the existing operations so
-that they have clearly defined (mostly) compatible behavior while not
-hindering too much with addition of new capabilities.
-
-Thanks.
+We'll figure it out or disable SSC enabling altogether failing that
+(risking interference with other components like wireless and sound).
 
 -- 
-tejun
+Jesse Barnes, Intel Open Source Technology Center
