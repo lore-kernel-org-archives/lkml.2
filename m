@@ -1,73 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994Ab0LWOV1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 09:21:27 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59503 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752323Ab0LWOV0 (ORCPT
+	id S1753021Ab0LWO3p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 09:29:45 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60335 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752735Ab0LWO3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 09:21:26 -0500
-Date: Thu, 23 Dec 2010 14:20:53 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Tomasz Fujak <t.fujak@samsung.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kmpark@infradead.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Johan MOSSBERG <johan.xx.mossberg@stericsson.com>,
-        Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Ankita Garg <ankita@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-media@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCHv8 00/12] Contiguous Memory Allocator
-Message-ID: <20101223142053.GN3636@n2100.arm.linux.org.uk>
-References: <cover.1292443200.git.m.nazarewicz@samsung.com> <AANLkTim8_=0+-zM5z4j0gBaw3PF3zgpXQNetEn-CfUGb@mail.gmail.com> <20101223100642.GD3636@n2100.arm.linux.org.uk> <87k4j0ehdl.fsf@erwin.mina86.com> <20101223135120.GL3636@n2100.arm.linux.org.uk> <4D1357D5.9000507@samsung.com>
+	Thu, 23 Dec 2010 09:29:45 -0500
+Date: Thu, 23 Dec 2010 15:29:34 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Richard Genoud <richard.genoud@gmail.com>
+Cc: spi-devel-general@lists.sourceforge.net,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] spi_imx.c: TRIVIAL mx25 & mx35 SPI_VER is 0.7
+Message-ID: <20101223142934.GU14221@pengutronix.de>
+References: <1293102730-32528-1-git-send-email-richard.genoud@gmail.com> <1293102730-32528-2-git-send-email-richard.genoud@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4D1357D5.9000507@samsung.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1293102730-32528-2-git-send-email-richard.genoud@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 23, 2010 at 03:08:21PM +0100, Tomasz Fujak wrote:
-> On 2010-12-23 14:51, Russell King - ARM Linux wrote:
-> > On Thu, Dec 23, 2010 at 02:41:26PM +0100, Michal Nazarewicz wrote:
-> >> Russell King - ARM Linux <linux@arm.linux.org.uk> writes:
-> >>> Has anyone addressed my issue with it that this is wide-open for
-> >>> abuse by allocating large chunks of memory, and then remapping
-> >>> them in some way with different attributes, thereby violating the
-> >>> ARM architecture specification?
-> >>>
-> >>> In other words, do we _actually_ have a use for this which doesn't
-> >>> involve doing something like allocating 32MB of memory from it,
-> >>> remapping it so that it's DMA coherent, and then performing DMA
-> >>> on the resulting buffer?
-> >> Huge pages.
-> >>
-> >> Also, don't treat it as coherent memory and just flush/clear/invalidate
-> >> cache before and after each DMA transaction.  I never understood what's
-> >> wrong with that approach.
-> > If you've ever used an ARM system with a VIVT cache, you'll know what's
-> > wrong with this approach.
-> >
-> > ARM systems with VIVT caches have extremely poor task switching
-> > performance because they flush the entire data cache at every task switch
-> > - to the extent that it makes system performance drop dramatically when
-> > they become loaded.
-> >
-> > Doing that for every DMA operation will kill the advantage we've gained
-> > from having VIPT caches and ASIDs stone dead.
-> This statement effectively means: don't map dma-able memory to the CPU
-> unless it's uncached. Have I missed anything?
+On Thu, Dec 23, 2010 at 12:12:10PM +0100, Richard Genoud wrote:
+> The check on cpu_is_mx25 and cpu_is_mx35 was made twice.
+> This is obviously wrong.
+obviously wrong but no wrong behaviour.  Your patch only makes the code
+consistent, but IMHO it doesn't qualify as a bugfix.
 
-I'll give you another solution to the problem - lobby ARM Ltd to have
-this restriction lifted from the architecture specification, which
-will probably result in the speculative prefetching also having to be
-removed.
+> Anyway, this patch won't change the previous behaviour which is
+> SPI_IMX_VER_0_7 for mx25 and mx35.
+This conflicts with
+http://mid.gmane.org/1290589546-21662-1-git-send-email-u.kleine-koenig@pengutronix.de
 
-That would be my preferred solution if I had the power to do so, but
-I have to live with what ARM Ltd (and their partners such as yourselves)
-decide should end up in the architecture specification.
+which I prefer.  The platform IDs have it correct (i.e.
+
+	imx25-cspi -> 0.7
+	imx31-cspi -> 0.4
+	imx35-cspi -> 0.7
+
+)
+
+Best regards
+Uwe
+
+> 
+> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+> ---
+>  drivers/spi/spi_imx.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/spi/spi_imx.c b/drivers/spi/spi_imx.c
+> index 793ae99..96be9d1 100644
+> --- a/drivers/spi/spi_imx.c
+> +++ b/drivers/spi/spi_imx.c
+> @@ -806,7 +806,7 @@ static int __devinit spi_imx_probe(struct platform_device *pdev)
+>  		if (cpu_is_mx25() || cpu_is_mx35())
+>  			spi_imx->devtype_data =
+>  				spi_imx_devtype_data[SPI_IMX_VER_0_7];
+> -		else if (cpu_is_mx25() || cpu_is_mx31() || cpu_is_mx35())
+> +		else if (cpu_is_mx31())
+>  			spi_imx->devtype_data =
+>  				spi_imx_devtype_data[SPI_IMX_VER_0_4];
+>  		else if (cpu_is_mx27() || cpu_is_mx21())
+> -- 
+> 1.7.1
+> 
+> 
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
