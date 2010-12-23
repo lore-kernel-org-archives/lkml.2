@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316Ab0LWBep (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Dec 2010 20:34:45 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50834
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751505Ab0LWBeo (ORCPT
+	id S1752392Ab0LWBiw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Dec 2010 20:38:52 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:7816 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751877Ab0LWBiu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Dec 2010 20:34:44 -0500
-Date: Wed, 22 Dec 2010 17:35:13 -0800 (PST)
-Message-Id: <20101222.173513.102576612.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless-2.6 2010-12-22
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20101222195209.GD10046@tuxdriver.com>
-References: <20101222195209.GD10046@tuxdriver.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 22 Dec 2010 20:38:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=EIFgeWgk5gurAMEYe2nnGBGYKa3BMxrtFLxvsb+NNTO4T4GvPfxT+qo676TNPqAzBx
+         DJ+0IhUFpBdljq4flrTg==
+Date: Wed, 22 Dec 2010 17:38:44 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Haicheng Li <haicheng.li@linux.intel.com>, lethal@linux-sh.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Shaohui Zheng <shaohui.zheng@linux.intel.com>, dave@linux.vnet.ibm.com,
+        Greg KH <gregkh@suse.de>
+Subject: Re: [3/7, v9] NUMA Hotplug Emulator: Add node hotplug emulation
+In-Reply-To: <20101222162723.72075372.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1012221736110.13932@chino.kir.corp.google.com>
+References: <20101210073119.156388875@intel.com> <20101210073242.462037866@intel.com> <20101222162723.72075372.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Wed, 22 Dec 2010 14:52:09 -0500
+On Wed, 22 Dec 2010, Andrew Morton wrote:
 
-> Dave,
+> > Index: linux-hpe4/mm/memory_hotplug.c
+> > ===================================================================
+> > --- linux-hpe4.orig/mm/memory_hotplug.c	2010-11-30 12:40:43.757622001 +0800
+> > +++ linux-hpe4/mm/memory_hotplug.c	2010-11-30 14:02:33.877622002 +0800
+> > @@ -924,3 +924,63 @@
+> >  }
+> >  #endif /* CONFIG_MEMORY_HOTREMOVE */
+> >  EXPORT_SYMBOL_GPL(remove_memory);
+> > +
+> > +#ifdef CONFIG_DEBUG_FS
+> > +#include <linux/debugfs.h>
+> > +
+> > +static struct dentry *memhp_debug_root;
+> > +
+> > +static ssize_t add_node_store(struct file *file, const char __user *buf,
+> > +				size_t count, loff_t *ppos)
+> > +{
+> > +	nodemask_t mask;
 > 
-> Three more fixes intended for 2.6.37...
+> NODEMASK_ALLOC()?
 > 
-> The one from Johannes Berg avoids a NULL pointer dereference in the mesh
-> code.  The one from Johannes Stezenbach fixes bug 24892, which is a
-> lock-up caused by rt2x00.  Finally, you probably recognize the one from
-> Meelis Roos which removes some log spam coming from hostap.  These have
-> all spent several days in linux-next without any adverse effects.
-> 
-> Please let me know if there are problems!
 
-Pulled, thanks John.
+We traditionally haven't been using NODEMASK_ALLOC() in sysfs (or, in this 
+case, debugfs) functions because they're never deep in a call chain.  Even 
+for 4K node support, which isn't a supported config on any arch that 
+allows CONFIG_MEMORY_HOTPLUG, this would only be 512 bytes on the short 
+stack.
+
+I agree with the remainder of the points in your review and will be 
+sending fixes against -mm, thanks!
