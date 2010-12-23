@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599Ab0LWJ6i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 04:58:38 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:52949 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752519Ab0LWJ6a convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 04:58:30 -0500
-Subject: Re: + kmap-types-clean-up-and-optimization.patch added to -mm tree
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: akpm@linux-foundation.org
-Cc: mm-commits@vger.kernel.org, JBeulich@novell.com, hpa@zytor.com,
-        mingo@elte.hu, tglx@linutronix.de, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <201012222248.oBMMmbcF023808@imap1.linux-foundation.org>
-References: <201012222248.oBMMmbcF023808@imap1.linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 23 Dec 2010 10:58:30 +0100
-Message-ID: <1293098310.2170.415.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752634Ab0LWJ6t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 04:58:49 -0500
+Received: from smtp4-g21.free.fr ([212.27.42.4]:46300 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752103Ab0LWJ6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 04:58:47 -0500
+From: Florian Fainelli <ffainelli@freebox.fr>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86/trampoline: fallback to fixed trampoline address if no e820 map is provided
+Date: Thu, 23 Dec 2010 10:57:34 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.35-23-server; KDE/4.5.1; x86_64; ; )
+Cc: Dirk Brandewie <dirk.brandewie@gmail.com>, sodaville@linutronix.de,
+        Ingo Molnar <mingo@elte.hu>, Yinghai Lu <yinghai@kernel.org>
+References: <201012142219.40062.ffainelli@freebox.fr>
+In-Reply-To: <201012142219.40062.ffainelli@freebox.fr>
+Organization: Freebox
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012231057.35021.ffainelli@freebox.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-22 at 14:48 -0800, akpm@linux-foundation.org wrote:
-> The patch titled
->      kmap-types: clean up and optimization
-> has been added to the -mm tree.  Its filename is
->      kmap-types-clean-up-and-optimization.patch
+On Tuesday 14 December 2010 22:19:39 Florian Fainelli wrote:
+> From: Florian Fainelli <ffainelli@freebox.fr>
 > 
-> Before you just go and hit "reply", please:
->    a) Consider who else should be cc'ed
->    b) Prefer to cc a suitable mailing list as well
->    c) Ideally: find the original patch on the mailing list and do a
->       reply-to-all to that, adding suitable additional cc's
+> Since 893f38d1 (x86: Use find_e820() instead of hard coded trampoline
+> address), the trampoline base address should be provided by the BIOS as an
+> e820 area. Some minimalistic BIOSes (like CEFDK on CE4100) may not provide
+> any e820 area, still we should fallback to a fixed trampoline base address
+> for SMP to work correctly.
 > 
+> Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
+> Cc: sodaville@linutronix.de
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Signed-off-by: Florian Fainelli <ffainelli@freebox.fr>
 
-> ------------------------------------------------------
-> Subject: kmap-types: clean up and optimization
-> From: "Jan Beulich" <JBeulich@novell.com>
+Ingo, Yinghai, anything wrong with that patch? Thank you.
+
+> ---
+> diff --git a/arch/x86/include/asm/trampoline.h
+> b/arch/x86/include/asm/trampoline.h index f4500fb..908b395 100644
+> --- a/arch/x86/include/asm/trampoline.h
+> +++ b/arch/x86/include/asm/trampoline.h
+> @@ -16,6 +16,7 @@ extern unsigned long initial_code;
+>  extern unsigned long initial_gs;
 > 
-> Several of the types aren't being used at all anymore - those can be
-> deleted altogether.  
-
-NO! That's wrong, in fact non of them are being used, but removing them
-will decrease the number of kmap_atomic slots, but those are still being
-used.
-
-> Others are used only by single components that can be
-> assumed to be enabled everywhere, so those are made dependent upon
-> CONFIG_* settings.  Since this somewhat conflicts with the sequential gap
-> markers used under __WITH_KM_FENCE, and since this can be simplified
-> anyway, fold the enumerator definitions with the (modified accordingly)
-> KMAP_D() macro always.
+>  #define TRAMPOLINE_SIZE roundup(trampoline_end - trampoline_data,
+> PAGE_SIZE) +#define TRAMPOLINE_BASE 0x6000
 > 
-> The whole point of the reduction is that, at least on ix86, the number of
-> kmap types can (depending on configuration) affect the amount of low
-> memory, and thus unused types should be avoided if possible.
-
-Feh, its only a few pages and since there is no way to actually tell if
-you've got enough kmap atomic pages other than experiencing runtime
-errors, removing them must be done with utmost prudence.
-
-> Signed-off-by: Jan Beulich <jbeulich@novell.com>
-
-Nacked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>  extern unsigned long setup_trampoline(void);
+>  extern void __init reserve_trampoline_memory(void);
+> diff --git a/arch/x86/kernel/trampoline.c b/arch/x86/kernel/trampoline.c
+> index f1488a3..d025aae 100644
+> --- a/arch/x86/kernel/trampoline.c
+> +++ b/arch/x86/kernel/trampoline.c
+> @@ -21,8 +21,11 @@ void __init reserve_trampoline_memory(void)
+> 
+>  	/* Has to be in very low memory so we can execute real-mode AP code. */
+>  	mem = find_e820_area(0, 1<<20, TRAMPOLINE_SIZE, PAGE_SIZE);
+> -	if (mem == -1L)
+> -		panic("Cannot allocate trampoline\n");
+> +	if (mem == -1L) {
+> +		printk(KERN_INFO "BIOS did not provide e820 area for trampoline"
+> +				" ,using static trampoline address\n");
+> +		mem = TRAMPOLINE_BASE;
+> +	}
+> 
+>  	trampoline_base = __va(mem);
+>  	reserve_early(mem, mem + TRAMPOLINE_SIZE, "TRAMPOLINE");
