@@ -1,81 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007Ab0LWXTo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 18:19:44 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36152 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751619Ab0LWXTn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 18:19:43 -0500
-Date: Thu, 23 Dec 2010 15:17:46 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Kyle McMartin <kyle@mcmartin.ca>, Shaohua Li <shaohua.li@intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 1/2] mm: page allocator: Adjust the per-cpu counter
- threshold when memory is low
-Message-Id: <20101223151746.d67e94bf.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1012231456520.2116@chino.kir.corp.google.com>
-References: <1288169256-7174-1-git-send-email-mel@csn.ul.ie>
-	<1288169256-7174-2-git-send-email-mel@csn.ul.ie>
-	<20101126160619.GP22651@bombadil.infradead.org>
-	<20101129095618.GB13268@csn.ul.ie>
-	<20101129131626.GF15818@bombadil.infradead.org>
-	<20101129150824.GF13268@csn.ul.ie>
-	<20101129152230.GH15818@bombadil.infradead.org>
-	<20101129155801.GG13268@csn.ul.ie>
-	<alpine.DEB.2.00.1012231413560.2116@chino.kir.corp.google.com>
-	<20101223143521.f94a5106.akpm@linux-foundation.org>
-	<alpine.DEB.2.00.1012231456520.2116@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752134Ab0LWXW0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 18:22:26 -0500
+Received: from hera.kernel.org ([140.211.167.34]:44212 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751656Ab0LWXWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 18:22:25 -0500
+Date: Thu, 23 Dec 2010 23:22:04 GMT
+From: tip-bot for Yinghai Lu <yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        yinghai@kernel.org, bjorn.helgaas@hp.com, myron.stowe@hp.com,
+        tglx@linutronix.de, hpa@linux.intel.com, fengguang.wu@intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, bjorn.helgaas@hp.com, myron.stowe@hp.com,
+        tglx@linutronix.de, fengguang.wu@intel.com, hpa@linux.intel.com
+In-Reply-To: <4D0AD486.9020704@kernel.org>
+References: <4D0AD486.9020704@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] x86, acpi: Parse all SRAT cpu entries even above the cpu number limitation
+Message-ID: <tip-d3bd058826aa8b79590cca6c8e6d1557bf576ada@git.kernel.org>
+Git-Commit-ID: d3bd058826aa8b79590cca6c8e6d1557bf576ada
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 23 Dec 2010 23:22:05 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Dec 2010 15:07:02 -0800 (PST)
-David Rientjes <rientjes@google.com> wrote:
+Commit-ID:  d3bd058826aa8b79590cca6c8e6d1557bf576ada
+Gitweb:     http://git.kernel.org/tip/d3bd058826aa8b79590cca6c8e6d1557bf576ada
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Thu, 16 Dec 2010 19:09:58 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 23 Dec 2010 13:16:18 -0800
 
-> On Thu, 23 Dec 2010, Andrew Morton wrote:
-> 
-> > > We had to pull aa454840 "mm: page allocator: calculate a better estimate 
-> > > of NR_FREE_PAGES when memory is low and kswapd is awake" from 2.6.36 
-> > > internally because tests showed that it would cause the machine to stall 
-> > > as the result of heavy kswapd activity.  I merged it back with this fix as 
-> > > it is pending in the -mm tree and it solves the issue we were seeing, so I 
-> > > definitely think this should be pushed to -stable (and I would seriously 
-> > > consider it for 2.6.37 inclusion even at this late date).
-> > 
-> > How's about I send
-> > mm-page-allocator-adjust-the-per-cpu-counter-threshold-when-memory-is-low.patch
-> > in for 2.6.38 and tag it for backporting into 2.6.37.1 and 2.6.36.x? 
-> > That way it'll get a bit of 2.6.38-rc testing before being merged into
-> > 2.6.37.x.
-> > 
-> 
-> I don't think anyone would be able to answer that judgment call other than 
-> you or Linus, it's a trade-off on whether 2.6.37 should be released with 
-> the knowledge that it regresses just like 2.6.36 does (rendering both 
-> unusable on some of our machines out of the box) because we're late in the 
-> cycle.
-> 
-> I personally think the testing is already sufficient since it's been 
-> sitting in -mm for two months, it's been suggested as stable material by a 
-> couple different parties, it was a prerequisite for the transparent 
-> hugepage series, and we've tested and merged it as fixing the regression 
-> in 2.6.36 (as Fedora has, as far as I know).  We've already merged the fix 
-> internally, though, so it's not for selfish reasons :)
+x86, acpi: Parse all SRAT cpu entries even above the cpu number limitation
 
-Wibble, wobble.  It's good that the patch has been used in RH kernels. 
-otoh, the patch is really quite big and the problem was present in
-2.6.36 without a lot of complaints and we're very late in -rc and not
-many people will be testing over xmas/newyear, and it would be most sad
-to put badness into mainline at this time.
+Recent Intel new system have different order in MADT, aka will list all thread0
+at first, then all thread1.
+But SRAT table still old order, it will list cpus in one socket all together.
 
-So I'm still inclined to go with (discretion > valour).
+If the user have compiled limited NR_CPUS or boot with nr_cpus=, could have missed
+to put some cpus apic id to node mapping into apicid_to_node[].
+
+for example for 4 sockets system with 64 cpus with nr_cpus=32 will get crash...
+
+[    9.106288] Total of 32 processors activated (136190.88 BogoMIPS).
+[    9.235021] divide error: 0000 [#1] SMP
+[    9.235315] last sysfs file:
+[    9.235481] CPU 1
+[    9.235592] Modules linked in:
+[    9.245398]
+[    9.245478] Pid: 2, comm: kthreadd Not tainted 2.6.37-rc1-tip-yh-01782-ge92ef79-dirty #274      /Sun Fire x4800
+[    9.265415] RIP: 0010:[<ffffffff81075a8f>]  [<ffffffff81075a8f>] select_task_rq_fair+0x4f0/0x623
+...
+[    9.645938] RIP  [<ffffffff81075a8f>] select_task_rq_fair+0x4f0/0x623
+[    9.665356]  RSP <ffff88103f8d1c40>
+[    9.665568] ---[ end trace 2296156d35fdfc87 ]---
+
+So let just parse all cpu entries in SRAT.
+
+Also add apicid checking with MAX_LOCAL_APIC, in case We could out of boundaries of
+apicid_to_node[].
+
+it fixes following bug too.
+https://bugzilla.kernel.org/show_bug.cgi?id=22662
+
+-v2: expand to 32bit according to hpa
+   need to add MAX_LOCAL_APIC for 32bit
+
+Reported-and-Tested-by: Wu Fengguang <fengguang.wu@intel.com>
+Reported-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Tested-by: Myron Stowe <myron.stowe@hp.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+LKML-Reference: <4D0AD486.9020704@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/acpi/boot.c |    5 +++++
+ arch/x86/mm/srat_32.c       |    1 +
+ arch/x86/mm/srat_64.c       |   10 ++++++++++
+ drivers/acpi/numa.c         |   14 ++++++++++++--
+ 4 files changed, 28 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index c05872a..f19d667 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -198,6 +198,11 @@ static void __cpuinit acpi_register_lapic(int id, u8 enabled)
+ {
+ 	unsigned int ver = 0;
+ 
++	if (id >= (MAX_LOCAL_APIC-1)) {
++		printk(KERN_INFO PREFIX "skipped apicid that is too big\n");
++		return;
++	}
++
+ 	if (!enabled) {
+ 		++disabled_cpus;
+ 		return;
+diff --git a/arch/x86/mm/srat_32.c b/arch/x86/mm/srat_32.c
+index a17dffd..f164345 100644
+--- a/arch/x86/mm/srat_32.c
++++ b/arch/x86/mm/srat_32.c
+@@ -92,6 +92,7 @@ acpi_numa_processor_affinity_init(struct acpi_srat_cpu_affinity *cpu_affinity)
+ 	/* mark this node as "seen" in node bitmap */
+ 	BMAP_SET(pxm_bitmap, cpu_affinity->proximity_domain_lo);
+ 
++	/* don't need to check apic_id here, because it is always 8 bits */
+ 	apicid_to_pxm[cpu_affinity->apic_id] = cpu_affinity->proximity_domain_lo;
+ 
+ 	printk(KERN_DEBUG "CPU %02x in proximity domain %02x\n",
+diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
+index a35cb9d..171a0aa 100644
+--- a/arch/x86/mm/srat_64.c
++++ b/arch/x86/mm/srat_64.c
+@@ -134,6 +134,10 @@ acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
+ 	}
+ 
+ 	apic_id = pa->apic_id;
++	if (apic_id >= MAX_LOCAL_APIC) {
++		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
++		return;
++	}
+ 	apicid_to_node[apic_id] = node;
+ 	node_set(node, cpu_nodes_parsed);
+ 	acpi_numa = 1;
+@@ -168,6 +172,12 @@ acpi_numa_processor_affinity_init(struct acpi_srat_cpu_affinity *pa)
+ 		apic_id = (pa->apic_id << 8) | pa->local_sapic_eid;
+ 	else
+ 		apic_id = pa->apic_id;
++
++	if (apic_id >= MAX_LOCAL_APIC) {
++		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%02x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
++		return;
++	}
++
+ 	apicid_to_node[apic_id] = node;
+ 	node_set(node, cpu_nodes_parsed);
+ 	acpi_numa = 1;
+diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
+index 5718566..d9926af 100644
+--- a/drivers/acpi/numa.c
++++ b/drivers/acpi/numa.c
+@@ -275,13 +275,23 @@ acpi_table_parse_srat(enum acpi_srat_type id,
+ int __init acpi_numa_init(void)
+ {
+ 	int ret = 0;
++	int nr_cpu_entries = nr_cpu_ids;
++
++#ifdef CONFIG_X86
++	/*
++	 * Should not limit number with cpu num that is from NR_CPUS or nr_cpus=
++	 * SRAT cpu entries could have different order with that in MADT.
++	 * So go over all cpu entries in SRAT to get apicid to node mapping.
++	 */
++	nr_cpu_entries = MAX_LOCAL_APIC;
++#endif
+ 
+ 	/* SRAT: Static Resource Affinity Table */
+ 	if (!acpi_table_parse(ACPI_SIG_SRAT, acpi_parse_srat)) {
+ 		acpi_table_parse_srat(ACPI_SRAT_TYPE_X2APIC_CPU_AFFINITY,
+-				     acpi_parse_x2apic_affinity, nr_cpu_ids);
++				     acpi_parse_x2apic_affinity, nr_cpu_entries);
+ 		acpi_table_parse_srat(ACPI_SRAT_TYPE_CPU_AFFINITY,
+-				     acpi_parse_processor_affinity, nr_cpu_ids);
++				     acpi_parse_processor_affinity, nr_cpu_entries);
+ 		ret = acpi_table_parse_srat(ACPI_SRAT_TYPE_MEMORY_AFFINITY,
+ 					    acpi_parse_memory_affinity,
+ 					    NR_NODE_MEMBLKS);
