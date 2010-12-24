@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805Ab0LXNtI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 08:49:08 -0500
-Received: from smtp-out-045.synserver.de ([212.40.180.45]:1154 "HELO
+	id S1752821Ab0LXNuf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 08:50:35 -0500
+Received: from smtp-out-045.synserver.de ([212.40.180.45]:1176 "HELO
 	smtp-out-045.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752625Ab0LXNsv (ORCPT
+	with SMTP id S1752685Ab0LXNsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 08:48:51 -0500
+	Fri, 24 Dec 2010 08:48:55 -0500
 X-SynServer-TrustedSrc: 1
 X-SynServer-AuthUser: lars@laprican.de
 X-SynServer-PPID: 27157
@@ -15,10 +15,11 @@ To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@slimlogic.co.uk>
 Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
         Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Hsiang <Peter.Hsiang@maxim-ic.com>
-Subject: [PATCH 2/9] ASoC: codecs: max98088: Fix register cache incoherency
-Date: Fri, 24 Dec 2010 14:47:57 +0100
-Message-Id: <1293198484-1902-3-git-send-email-lars@metafoo.de>
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Subject: [PATCH 6/9] ASoC: codecs: wm8955: Fix register cache incoherency
+Date: Fri, 24 Dec 2010 14:48:01 +0100
+Message-Id: <1293198484-1902-7-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1293198484-1902-1-git-send-email-lars@metafoo.de>
 References: <1293198484-1902-1-git-send-email-lars@metafoo.de>
@@ -29,70 +30,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 The multi-component patch(commit f0fba2ad1) introduced a generic register cache
 framework. But the wm8753 driver still uses its own register cache for its
 private functions, while functions from the ASoC core use the generic cache.
-Thus we end up with two from each other incoherent caches, which leads to undefined
-behaviour.
-This pachtes fixes the issue by changing the max98088 driver to use the generic
+Thus we end up with two from each other incoherent caches, which leads to
+undefined behaviour.
+This pachtes fixes the issue by changing the wm8955 driver to use the generic
 cache framework.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Peter Hsiang <Peter.Hsiang@maxim-ic.com>
+Cc: Ian Lartey <ian@opensource.wolfsonmicro.com>
+Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
 
 ---
 Compile tested only
 ---
- sound/soc/codecs/max98088.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
+ sound/soc/codecs/wm8955.c |   30 +++++++++++++++---------------
+ 1 files changed, 15 insertions(+), 15 deletions(-)
 
-diff --git a/sound/soc/codecs/max98088.c b/sound/soc/codecs/max98088.c
-index 335a002..c7e57fb 100644
---- a/sound/soc/codecs/max98088.c
-+++ b/sound/soc/codecs/max98088.c
-@@ -39,7 +39,6 @@ struct max98088_cdata {
- };
+diff --git a/sound/soc/codecs/wm8955.c b/sound/soc/codecs/wm8955.c
+index ca0265f..70e9516 100644
+--- a/sound/soc/codecs/wm8955.c
++++ b/sound/soc/codecs/wm8955.c
+@@ -41,8 +41,6 @@ static const char *wm8955_supply_names[WM8955_NUM_SUPPLIES] = {
+ struct wm8955_priv {
+ 	enum snd_soc_control_type control_type;
  
- struct max98088_priv {
--       u8 reg_cache[M98088_REG_CNT];
-        enum max98088_type devtype;
-        void *control_data;
-        struct max98088_pdata *pdata;
-@@ -1589,7 +1588,7 @@ static int max98088_dai2_set_fmt(struct snd_soc_dai *codec_dai,
+-	u16 reg_cache[WM8955_MAX_REGISTER + 1];
+-
+ 	unsigned int mclk_rate;
  
- static void max98088_sync_cache(struct snd_soc_codec *codec)
+ 	int deemph;
+@@ -768,6 +766,7 @@ static int wm8955_set_bias_level(struct snd_soc_codec *codec,
+ 				 enum snd_soc_bias_level level)
  {
--       struct max98088_priv *max98088 = snd_soc_codec_get_drvdata(codec);
-+       unsigned int val;
-        int i;
+ 	struct wm8955_priv *wm8955 = snd_soc_codec_get_drvdata(codec);
++	u16 *reg_cache = codec->reg_cache;
+ 	int ret, i;
  
-        if (!codec->cache_sync)
-@@ -1600,14 +1599,17 @@ static void max98088_sync_cache(struct snd_soc_codec *codec)
-        /* write back cached values if they're writeable and
-         * different from the hardware default.
-         */
--       for (i = 1; i < ARRAY_SIZE(max98088->reg_cache); i++) {
-+       for (i = 1; i < codec->driver->reg_cache_size; i++) {
-                if (!max98088_access[i].writable)
-                        continue;
+ 	switch (level) {
+@@ -800,14 +799,14 @@ static int wm8955_set_bias_level(struct snd_soc_codec *codec,
+ 			/* Sync back cached values if they're
+ 			 * different from the hardware default.
+ 			 */
+-			for (i = 0; i < ARRAY_SIZE(wm8955->reg_cache); i++) {
++			for (i = 0; i < codec->driver->reg_cache_size; i++) {
+ 				if (i == WM8955_RESET)
+ 					continue;
  
--               if (max98088->reg_cache[i] == max98088_reg[i])
-+               if (snd_soc_cache_read(codec, i, &val))
-+                       continue;
-+
-+               if (val == max98088_reg[i])
-                        continue;
+-				if (wm8955->reg_cache[i] == wm8955_reg[i])
++				if (reg_cache[i] == wm8955_reg[i])
+ 					continue;
  
--               snd_soc_write(codec, i, max98088->reg_cache[i]);
-+               snd_soc_write(codec, i, val);
-        }
+-				snd_soc_write(codec, i, wm8955->reg_cache[i]);
++				snd_soc_write(codec, i, reg_cache[i]);
+ 			}
  
-        codec->cache_sync = 0;
-@@ -1952,7 +1954,6 @@ static int max98088_probe(struct snd_soc_codec *codec)
-        int ret = 0;
+ 			/* Enable VREF and VMID */
+@@ -902,6 +901,7 @@ static int wm8955_probe(struct snd_soc_codec *codec)
+ {
+ 	struct wm8955_priv *wm8955 = snd_soc_codec_get_drvdata(codec);
+ 	struct wm8955_pdata *pdata = dev_get_platdata(codec->dev);
++	u16 *reg_cache = codec->reg_cache;
+ 	int ret, i;
  
-        codec->cache_sync = 1;
--       memcpy(codec->reg_cache, max98088_reg, sizeof(max98088_reg));
+ 	ret = snd_soc_codec_set_cache_io(codec, 7, 9, wm8955->control_type);
+@@ -934,25 +934,25 @@ static int wm8955_probe(struct snd_soc_codec *codec)
+ 	}
  
-        ret = snd_soc_codec_set_cache_io(codec, 8, 8, SND_SOC_I2C);
-        if (ret != 0) {
+ 	/* Change some default settings - latch VU and enable ZC */
+-	wm8955->reg_cache[WM8955_LEFT_DAC_VOLUME] |= WM8955_LDVU;
+-	wm8955->reg_cache[WM8955_RIGHT_DAC_VOLUME] |= WM8955_RDVU;
+-	wm8955->reg_cache[WM8955_LOUT1_VOLUME] |= WM8955_LO1VU | WM8955_LO1ZC;
+-	wm8955->reg_cache[WM8955_ROUT1_VOLUME] |= WM8955_RO1VU | WM8955_RO1ZC;
+-	wm8955->reg_cache[WM8955_LOUT2_VOLUME] |= WM8955_LO2VU | WM8955_LO2ZC;
+-	wm8955->reg_cache[WM8955_ROUT2_VOLUME] |= WM8955_RO2VU | WM8955_RO2ZC;
+-	wm8955->reg_cache[WM8955_MONOOUT_VOLUME] |= WM8955_MOZC;
++	reg_cache[WM8955_LEFT_DAC_VOLUME] |= WM8955_LDVU;
++	reg_cache[WM8955_RIGHT_DAC_VOLUME] |= WM8955_RDVU;
++	reg_cache[WM8955_LOUT1_VOLUME] |= WM8955_LO1VU | WM8955_LO1ZC;
++	reg_cache[WM8955_ROUT1_VOLUME] |= WM8955_RO1VU | WM8955_RO1ZC;
++	reg_cache[WM8955_LOUT2_VOLUME] |= WM8955_LO2VU | WM8955_LO2ZC;
++	reg_cache[WM8955_ROUT2_VOLUME] |= WM8955_RO2VU | WM8955_RO2ZC;
++	reg_cache[WM8955_MONOOUT_VOLUME] |= WM8955_MOZC;
+ 
+ 	/* Also enable adaptive bass boost by default */
+-	wm8955->reg_cache[WM8955_BASS_CONTROL] |= WM8955_BB;
++	reg_cache[WM8955_BASS_CONTROL] |= WM8955_BB;
+ 
+ 	/* Set platform data values */
+ 	if (pdata) {
+ 		if (pdata->out2_speaker)
+-			wm8955->reg_cache[WM8955_ADDITIONAL_CONTROL_2]
++			reg_cache[WM8955_ADDITIONAL_CONTROL_2]
+ 				|= WM8955_ROUT2INV;
+ 
+ 		if (pdata->monoin_diff)
+-			wm8955->reg_cache[WM8955_MONO_OUT_MIX_1]
++			reg_cache[WM8955_MONO_OUT_MIX_1]
+ 				|= WM8955_DMEN;
+ 	}
+ 
 -- 
 1.7.2.3
 
