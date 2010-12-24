@@ -1,97 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab0LXBhk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 20:37:40 -0500
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:59667 "EHLO
-	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752697Ab0LXBhh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 20:37:37 -0500
-X-Spam-ASN: 
-Date: Fri, 24 Dec 2010 04:37:26 +0300
-From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "Nikita V\. Youshchenko" <yoush@cs.msu.su>,
-        linuxpps@ml.enneenne.com, Rodolfo Giometti <giometti@enneenne.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
-        john stultz <johnstul@us.ibm.com>
-Subject: Re: [PATCHv7 16/16] pps: add parallel port PPS signal generator
-Message-ID: <20101224043726.15042d0b@tornado.gnet>
-In-Reply-To: <20101223163549.86a73ae8.akpm@linux-foundation.org>
-References: <cover.1292604060.git.lasaine@lvk.cs.msu.su>
-	<cover.1292844387.git.lasaine@lvk.cs.msu.su>
-	<bbca0f7138c0814482a1d907833b7de1b7e70f25.1292844387.git.lasaine@lvk.cs.msu.su>
-	<20101223163549.86a73ae8.akpm@linux-foundation.org>
-Organization: LVK
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA256;
- boundary="Sig_/hW7CAywfzO/PhZbl5iTm6fL"; protocol="application/pgp-signature"
-X-AV-Checked: ClamAV using ClamSMTP
+	id S1752709Ab0LXBid (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 20:38:33 -0500
+Received: from hera.kernel.org ([140.211.167.34]:37538 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752038Ab0LXBib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 20:38:31 -0500
+Date: Fri, 24 Dec 2010 01:38:12 GMT
+From: tip-bot for David Rientjes <rientjes@google.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, hpa@linux.intel.com, rientjes@google.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, rientjes@google.com, hpa@linux.intel.com
+In-Reply-To: <alpine.DEB.2.00.1012221702090.3701@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1012221702090.3701@chino.kir.corp.google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/numa] x86, numa: Fix cpu to node mapping for sparse node ids
+Message-ID: <tip-a387e95a49743cf9835c5299ca549232618d8249@git.kernel.org>
+Git-Commit-ID: a387e95a49743cf9835c5299ca549232618d8249
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 24 Dec 2010 01:38:13 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/hW7CAywfzO/PhZbl5iTm6fL
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  a387e95a49743cf9835c5299ca549232618d8249
+Gitweb:     http://git.kernel.org/tip/a387e95a49743cf9835c5299ca549232618d8249
+Author:     David Rientjes <rientjes@google.com>
+AuthorDate: Wed, 22 Dec 2010 17:23:56 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 23 Dec 2010 15:27:16 -0800
 
-=D0=92 Thu, 23 Dec 2010 16:35:49 -0800
-Andrew Morton <akpm@linux-foundation.org> =D0=BF=D0=B8=D1=88=D0=B5=D1=82:
+x86, numa: Fix cpu to node mapping for sparse node ids
 
-> On Mon, 20 Dec 2010 14:54:56 +0300
-> Alexander Gordeev <lasaine@lvk.cs.msu.su> wrote:
->=20
-> > +	expire_time =3D ktime_to_timespec(timer->_expires);
->=20
-> It's bad to play around with internal fields, especially when an
-> accessor API was provided to access those fields.
->=20
-> And lo, hrtimers got changed in linux-next:
->=20
-> drivers/pps/generators/pps_gen_parport.c: In function 'hrtimer_event':
-> drivers/pps/generators/pps_gen_parport.c:92: error: 'struct hrtimer'
-> has no member named '_expires'
->=20
-> The documentation in hrtimer.h is of course complete crap and
-> Documentation/timers/hrtimers.txt appears to be bitrot, but with a
-> little sleuthing and guesswork, it seems that what you want here is
+NUMA boot code assumes that physical node ids start at 0, but the DIMMs
+that the apic id represents may not be reachable.  If this is the case,
+node 0 is never online and cpus never end up getting appropriately
+assigned to a node.  This causes the cpumask of all online nodes to be
+empty and machines crash with kernel code assuming online nodes have
+valid cpus.
 
-Ah, cool, thanks for the fix!
+The fix is to appropriately map all the address ranges for physical nodes
+and ensure the cpu to node mapping function checks all possible nodes (up
+to MAX_NUMNODES) instead of simply checking nodes 0-N, where N is the
+number of physical nodes, for valid address ranges.
 
-> ---
-> a/drivers/pps/generators/pps_gen_parport.c~pps-add-parallel-port-pps-sign=
-al-generator-fix
-> +++ a/drivers/pps/generators/pps_gen_parport.c @@ -82,7 +82,7 @@
-> static enum hrtimer_restart hrtimer_even=20
->  	/* first of all we get the time stamp... */
->  	getnstimeofday(&ts1);
-> -	expire_time =3D ktime_to_timespec(timer->_expires);
-> +	expire_time =3D
-> ktime_to_timespec(hrtimer_get_softexpires(timer)); dev =3D
-> container_of(timer, struct pps_generator_pp, timer); lim =3D
-> NSEC_PER_SEC - send_delay - dev->port_write_time;=20
-> _
->=20
+This requires no longer "compressing" the address ranges of nodes in the
+physical node map from 0-N, but rather leave indices in physnodes[] to
+represent the actual node id of the physical node.  Accordingly, the
+topology exported by both amd_get_nodes() and acpi_get_nodes() no longer
+must return the number of nodes to iterate through; all such iterations
+will now be to MAX_NUMNODES.
 
+This change also passes the end address of system RAM (which may be
+different from normal operation if mem= is specified on the command line)
+before the physnodes[] array is populated.  ACPI parsed nodes are
+truncated to fit within the address range that respect the mem=
+boundaries and even some physical nodes may become unreachable in such
+cases.
 
---=20
-  Alexander
+When NUMA emulation does succeed, any apicid to node mapping that exists
+for unreachable nodes are given default values so that proximity domains
+can still be assigned.  This is important for node_distance() to
+function as desired.
 
---Sig_/hW7CAywfzO/PhZbl5iTm6fL
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Signed-off-by: David Rientjes <rientjes@google.com>
+LKML-Reference: <alpine.DEB.2.00.1012221702090.3701@chino.kir.corp.google.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/acpi.h   |    3 ++-
+ arch/x86/include/asm/amd_nb.h |    2 +-
+ arch/x86/mm/amdtopology_64.c  |    9 +++------
+ arch/x86/mm/numa_64.c         |   18 +++---------------
+ arch/x86/mm/srat_64.c         |   22 ++++++++++++++++------
+ 5 files changed, 25 insertions(+), 29 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBCAAGBQJNE/lWAAoJEElrwznyooJbg/sH/2MFvnzY/e4aCKpaujpPs1s/
-LzKFzSTrm7sUB1VNDfyie97zxJDe4yxF3N3D0xENMLox729VkMj8WZt3JlaGHjNc
-63oxInbtBUxD/8jSPWAhDyG2qZX/jxQiQFUKtG7v/ufulvLATcV8+eUZVCV0BwOd
-IqEXwNx2DvwLmEhYIsPPP/z9nD6aJkrtg835MHOuiNQkK4RHu021aDP5ek4J9WSw
-2CIxkdoHEZr8xJ/fGXaNRHAMQd6e74EauRzWx8gq6RaV420xepamssc8N5oKsurU
-lqd+YBkwDH4VdLp7bh/TdgFjjLSYHmMWy3sRgPzafL95XmEr57ycl7YnPVvOrTY=
-=kJRq
------END PGP SIGNATURE-----
-
---Sig_/hW7CAywfzO/PhZbl5iTm6fL--
+diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+index 8288daf..211ca3f 100644
+--- a/arch/x86/include/asm/acpi.h
++++ b/arch/x86/include/asm/acpi.h
+@@ -185,7 +185,8 @@ struct bootnode;
+ 
+ #ifdef CONFIG_ACPI_NUMA
+ extern int acpi_numa;
+-extern int acpi_get_nodes(struct bootnode *physnodes);
++extern void acpi_get_nodes(struct bootnode *physnodes, unsigned long start,
++				unsigned long end);
+ extern int acpi_scan_nodes(unsigned long start, unsigned long end);
+ #define NR_NODE_MEMBLKS (MAX_NUMNODES*2)
+ 
+diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
+index 8f6192c..980f225 100644
+--- a/arch/x86/include/asm/amd_nb.h
++++ b/arch/x86/include/asm/amd_nb.h
+@@ -14,7 +14,7 @@ extern int amd_scan_nodes(void);
+ 
+ #ifdef CONFIG_NUMA_EMU
+ extern void amd_fake_nodes(const struct bootnode *nodes, int nr_nodes);
+-extern int amd_get_nodes(struct bootnode *nodes);
++extern void amd_get_nodes(struct bootnode *nodes);
+ #endif
+ 
+ struct amd_northbridge {
+diff --git a/arch/x86/mm/amdtopology_64.c b/arch/x86/mm/amdtopology_64.c
+index eb5cbb9..0df2623 100644
+--- a/arch/x86/mm/amdtopology_64.c
++++ b/arch/x86/mm/amdtopology_64.c
+@@ -187,17 +187,14 @@ static s16 fake_apicid_to_node[MAX_LOCAL_APIC] __initdata = {
+ 	[0 ... MAX_LOCAL_APIC-1] = NUMA_NO_NODE
+ };
+ 
+-int __init amd_get_nodes(struct bootnode *physnodes)
++void __init amd_get_nodes(struct bootnode *physnodes)
+ {
+ 	int i;
+-	int ret = 0;
+ 
+ 	for_each_node_mask(i, nodes_parsed) {
+-		physnodes[ret].start = nodes[i].start;
+-		physnodes[ret].end = nodes[i].end;
+-		ret++;
++		physnodes[i].start = nodes[i].start;
++		physnodes[i].end = nodes[i].end;
+ 	}
+-	return ret;
+ }
+ 
+ static int __init find_node_by_addr(unsigned long addr)
+diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+index dd300c4..3d73201 100644
+--- a/arch/x86/mm/numa_64.c
++++ b/arch/x86/mm/numa_64.c
+@@ -266,25 +266,24 @@ static char *cmdline __initdata;
+ static int __init setup_physnodes(unsigned long start, unsigned long end,
+ 					int acpi, int amd)
+ {
+-	int nr_nodes = 0;
+ 	int ret = 0;
+ 	int i;
+ 
+ 	memset(physnodes, 0, sizeof(physnodes));
+ #ifdef CONFIG_ACPI_NUMA
+ 	if (acpi)
+-		nr_nodes = acpi_get_nodes(physnodes);
++		acpi_get_nodes(physnodes, start, end);
+ #endif
+ #ifdef CONFIG_AMD_NUMA
+ 	if (amd)
+-		nr_nodes = amd_get_nodes(physnodes);
++		amd_get_nodes(physnodes);
+ #endif
+ 	/*
+ 	 * Basic sanity checking on the physical node map: there may be errors
+ 	 * if the SRAT or AMD code incorrectly reported the topology or the mem=
+ 	 * kernel parameter is used.
+ 	 */
+-	for (i = 0; i < nr_nodes; i++) {
++	for (i = 0; i < MAX_NUMNODES; i++) {
+ 		if (physnodes[i].start == physnodes[i].end)
+ 			continue;
+ 		if (physnodes[i].start > end) {
+@@ -299,17 +298,6 @@ static int __init setup_physnodes(unsigned long start, unsigned long end,
+ 			physnodes[i].start = start;
+ 		if (physnodes[i].end > end)
+ 			physnodes[i].end = end;
+-	}
+-
+-	/*
+-	 * Remove all nodes that have no memory or were truncated because of the
+-	 * limited address range.
+-	 */
+-	for (i = 0; i < nr_nodes; i++) {
+-		if (physnodes[i].start == physnodes[i].end)
+-			continue;
+-		physnodes[ret].start = physnodes[i].start;
+-		physnodes[ret].end = physnodes[i].end;
+ 		ret++;
+ 	}
+ 
+diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
+index c48b443..a756bcf 100644
+--- a/arch/x86/mm/srat_64.c
++++ b/arch/x86/mm/srat_64.c
+@@ -340,17 +340,16 @@ static int __init nodes_cover_memory(const struct bootnode *nodes)
+ void __init acpi_numa_arch_fixup(void) {}
+ 
+ #ifdef CONFIG_NUMA_EMU
+-int __init acpi_get_nodes(struct bootnode *physnodes)
++void __init acpi_get_nodes(struct bootnode *physnodes, unsigned long start,
++				unsigned long end)
+ {
+ 	int i;
+-	int ret = 0;
+ 
+ 	for_each_node_mask(i, nodes_parsed) {
+-		physnodes[ret].start = nodes[i].start;
+-		physnodes[ret].end = nodes[i].end;
+-		ret++;
++		cutoff_node(i, start, end);
++		physnodes[i].start = nodes[i].start;
++		physnodes[i].end = nodes[i].end;
+ 	}
+-	return ret;
+ }
+ #endif /* CONFIG_NUMA_EMU */
+ 
+@@ -516,6 +515,17 @@ void __init acpi_fake_nodes(const struct bootnode *fake_nodes, int num_nodes)
+ 			    fake_apicid_to_node[j] == NUMA_NO_NODE)
+ 				fake_apicid_to_node[j] = i;
+ 	}
++
++	/*
++	 * If there are apicid-to-node mappings for physical nodes that do not
++	 * have a corresponding emulated node, it should default to a guaranteed
++	 * value.
++	 */
++	for (i = 0; i < MAX_LOCAL_APIC; i++)
++		if (apicid_to_node[i] != NUMA_NO_NODE &&
++		    fake_apicid_to_node[i] == NUMA_NO_NODE)
++			fake_apicid_to_node[i] = 0;
++
+ 	for (i = 0; i < num_nodes; i++)
+ 		__acpi_map_pxm_to_node(fake_node_to_pxm_map[i], i);
+ 	memcpy(apicid_to_node, fake_apicid_to_node, sizeof(apicid_to_node));
