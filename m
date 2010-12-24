@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147Ab0LXOB7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 09:01:59 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62333 "EHLO
+	id S1753193Ab0LXOCB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 09:02:01 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33324 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752778Ab0LXOBL (ORCPT
+	with ESMTP id S1752616Ab0LXOBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 09:01:11 -0500
+	Fri, 24 Dec 2010 09:01:10 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=cbraE26a/jv92aRkQsSDYtOqT4OgYvX2iVecye+9qRsJmx5bLICjepEHSAEEF19f7P
-         LQTOZ2nKiZsh/VRtPHUe33Xd2kX8Ui+4UwkcO4RnG/mP6Fv0kDmuSnRTrH4PAZEthATv
-         qZyDQqVueJYnUpz1Gn+v0bhttHd6FrzG8vcJU=
+        b=oBxsPPhvNmDpwS2SXvzwq5SfOnEC3GsCKsKx17kSemCHh+H+dwMJoycDddgn/YhPp+
+         PKC2zGqbMCgfEm1O1X4IwMUpuQvYXkgRtLwQthx6knRR/L/gHFhm8et253+eHdLUVCHh
+         vEZbTOzI7H12UkjJ/o36n1Ds53fhmB2rmKdzI=
 From: Tejun Heo <tj@kernel.org>
 To: oleg@redhat.com, roland@redhat.com, jan.kratochvil@redhat.com,
         linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 4/7] signal: use GROUP_STOP_PENDING to stop once for a single group stop
-Date: Fri, 24 Dec 2010 15:00:54 +0100
-Message-Id: <1293199257-11255-5-git-send-email-tj@kernel.org>
+Subject: [PATCH 3/7] signal: fix premature completion of group stop when interfered by ptrace
+Date: Fri, 24 Dec 2010 15:00:53 +0100
+Message-Id: <1293199257-11255-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1293199257-11255-1-git-send-email-tj@kernel.org>
 References: <1293199257-11255-1-git-send-email-tj@kernel.org>
@@ -29,212 +29,215 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently task->signal->group_stop_count is used to decide whether to
-stop for group stop.  However, if there is a task in the group which
-is taking a long time to stop, other tasks which are continued by
-ptrace would repeatedly stop for the same group stop until the group
-stop is complete.
+task->signal->group_stop_count is used to track the progress of group
+stop.  It's initialized to the number of tasks which need to stop for
+group stop to finish and each stopping or trapping task decrements.
+However, each task doesn't keep track of whether it decremented the
+counter or not and if woken up before the group stop is complete and
+stops again, it can decrement the counter multiple times.
 
-Conversely, if a ptraced task is in TASK_TRACED state, the debugger
-won't get notified of group stops which is inconsistent compared to
-the ptraced task in any other state.
+Please consider the following example code.
 
-This patch introduces GROUP_STOP_PENDING which tracks whether a task
-is yet to stop for the group stop in progress.  The flag is set when a
-group stop starts and cleared when the task stops the first time for
-the group stop, and consulted whenever whether the task should
-participate in a group stop needs to be determined.  Note that now
-tasks in TASK_TRACED also participate in group stop.
+ static void *worker(void *arg)
+ {
+	 while (1) ;
+	 return NULL;
+ }
 
-This results in the following behavior changes.
+ int main(void)
+ {
+	 pthread_t thread;
+	 pid_t pid;
+	 int i;
 
-* For a single group stop, a ptracer would see at most one stop
-  reported.
+	 pid = fork();
+	 if (!pid) {
+		 for (i = 0; i < 5; i++)
+			 pthread_create(&thread, NULL, worker, NULL);
+		 while (1) ;
+		 return 0;
+	 }
 
-* A ptracee in TASK_TRACED now also participates in group stop and the
-  tracer would get the notification.  However, as a ptraced task could
-  be in TASK_STOPPED state or any ptrace trap could consume group
-  stop, the notification may still be missing.  These will be
-  addressed with further patches.
+	 ptrace(PTRACE_ATTACH, pid, NULL, NULL);
+	 while (1) {
+		 waitid(P_PID, pid, NULL, WSTOPPED);
+		 ptrace(PTRACE_SINGLESTEP, pid, NULL, (void *)(long)SIGSTOP);
+	 }
+	 return 0;
+ }
 
-* A ptracee may start a group stop while one is still in progress if
-  the tracer let it continue with stop signal delivery.  Group stop
-  code handles this correctly.
+The child creates five threads and the parent continuously traps the
+first thread and whenever the child gets a signal, SIGSTOP is
+delivered.  If an external process sends SIGSTOP to the child, all
+other threads in the process should reliably stop.  However, due to
+the above bug, the first thread will often end up consuming
+group_stop_count multiple times and SIGSTOP often ends up stopping
+none or part of the other four threads.
 
-Oleg:
+This patch adds a new field task->group_stop which is protected by
+siglock and uses GROUP_STOP_CONSUME flag to track which task is still
+to consume group_stop_count to fix this bug.
 
-* Spotted that a task might skip signal check even when its
-  GROUP_STOP_PENDING is set.  Fixed by updating
-  recalc_sigpending_tsk() to check GROUP_STOP_PENDING instead of
-  group_stop_count.
+task_clear_group_stop() and task_participate_group_stop() are added to
+help manipulating group stop states.  As ptrace_stop() now also uses
+task_participate_group_stop(), it will set SIGNAL_STOP_STOPPED if it
+completes a group stop.
 
-* Pointed out that task->group_stop should be cleared whenever
-  task->signal->group_stop_count is cleared.  Fixed accordingly.
+There still are many issues regarding the interaction between group
+stop and ptrace.  Patches to address them will follow.
 
-* Pointed out the behavior inconsistency between TASK_TRACED and
-  RUNNING and the last behavior change.
+- Oleg spotted duplicate GROUP_STOP_CONSUME.  Dropped.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Roland McGrath <roland@redhat.com>
 ---
- fs/exec.c             |    1 +
- include/linux/sched.h |    3 +++
- kernel/signal.c       |   36 +++++++++++++++++++++---------------
- 3 files changed, 25 insertions(+), 15 deletions(-)
+ include/linux/sched.h |    6 ++++
+ kernel/signal.c       |   62 ++++++++++++++++++++++++++++++++++++++++++------
+ 2 files changed, 60 insertions(+), 8 deletions(-)
 
-diff --git a/fs/exec.c b/fs/exec.c
-index c62efcb..03cafa3 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1653,6 +1653,7 @@ static int zap_process(struct task_struct *start, int exit_code)
- 
- 	t = start;
- 	do {
-+		task_clear_group_stop(t);
- 		if (t != current && t->mm) {
- 			sigaddset(&t->pending.signal, SIGKILL);
- 			signal_wake_up(t, 1);
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 4790cf9..f97ba1b 100644
+index 653644d..4790cf9 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1759,8 +1759,11 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
- /*
-  * task->group_stop flags
-  */
-+#define GROUP_STOP_PENDING	(1 << 16) /* task should stop for group stop */
- #define GROUP_STOP_CONSUME	(1 << 17) /* consume group stop count */
+@@ -1244,6 +1244,7 @@ struct task_struct {
+ 	int exit_state;
+ 	int exit_code, exit_signal;
+ 	int pdeath_signal;  /*  The signal sent when the parent dies  */
++	unsigned int group_stop;	/* GROUP_STOP_*, siglock protected */
+ 	/* ??? */
+ 	unsigned int personality;
+ 	unsigned did_exec:1;
+@@ -1755,6 +1756,11 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
+ #define tsk_used_math(p) ((p)->flags & PF_USED_MATH)
+ #define used_math() tsk_used_math(current)
  
-+extern void task_clear_group_stop(struct task_struct *task);
++/*
++ * task->group_stop flags
++ */
++#define GROUP_STOP_CONSUME	(1 << 17) /* consume group stop count */
 +
  #ifdef CONFIG_PREEMPT_RCU
  
  #define RCU_READ_UNLOCK_BLOCKED (1 << 0) /* blocked while in RCU read-side. */
 diff --git a/kernel/signal.c b/kernel/signal.c
-index 89aad36..7e85e42 100644
+index 4569801..89aad36 100644
 --- a/kernel/signal.c
 +++ b/kernel/signal.c
-@@ -124,7 +124,7 @@ static inline int has_pending_signals(sigset_t *signal, sigset_t *blocked)
- 
- static int recalc_sigpending_tsk(struct task_struct *t)
- {
--	if (t->signal->group_stop_count > 0 ||
-+	if ((t->group_stop & GROUP_STOP_PENDING) ||
- 	    PENDING(&t->pending, &t->blocked) ||
- 	    PENDING(&t->signal->shared_pending, &t->blocked)) {
- 		set_tsk_thread_flag(t, TIF_SIGPENDING);
-@@ -232,19 +232,19 @@ static inline void print_dropped_signal(int sig)
-  * CONTEXT:
-  * Must be called with @task->sighand->siglock held.
-  */
--static void task_clear_group_stop(struct task_struct *task)
-+void task_clear_group_stop(struct task_struct *task)
- {
--	task->group_stop &= ~GROUP_STOP_CONSUME;
-+	task->group_stop &= ~(GROUP_STOP_PENDING | GROUP_STOP_CONSUME);
+@@ -223,6 +223,52 @@ static inline void print_dropped_signal(int sig)
+ 				current->comm, current->pid, sig);
  }
  
- /**
-  * task_participate_group_stop - participate in a group stop
-  * @task: task participating in a group stop
-  *
-- * @task is participating in a group stop.  Group stop states are cleared
-- * and the group stop count is consumed if %GROUP_STOP_CONSUME was set.  If
-- * the consumption completes the group stop, the appropriate %SIGNAL_*
-- * flags are set.
-+ * @task has GROUP_STOP_PENDING set and is participating in a group stop.
-+ * Group stop states are cleared and the group stop count is consumed if
-+ * %GROUP_STOP_CONSUME was set.  If the consumption completes the group
-+ * stop, the appropriate %SIGNAL_* flags are set.
-  *
-  * CONTEXT:
-  * Must be called with @task->sighand->siglock held.
-@@ -254,6 +254,8 @@ static bool task_participate_group_stop(struct task_struct *task)
- 	struct signal_struct *sig = task->signal;
- 	bool consume = task->group_stop & GROUP_STOP_CONSUME;
- 
-+	WARN_ON_ONCE(!(task->group_stop & GROUP_STOP_PENDING));
++/**
++ * task_clear_group_stop - clear pending group stop
++ * @task: target task
++ *
++ * Clear group stop states for @task.
++ *
++ * CONTEXT:
++ * Must be called with @task->sighand->siglock held.
++ */
++static void task_clear_group_stop(struct task_struct *task)
++{
++	task->group_stop &= ~GROUP_STOP_CONSUME;
++}
 +
- 	task_clear_group_stop(task);
- 
- 	if (!consume)
-@@ -765,6 +767,9 @@ static int prepare_signal(int sig, struct task_struct *p, int from_ancestor_ns)
- 		t = p;
- 		do {
- 			unsigned int state;
++/**
++ * task_participate_group_stop - participate in a group stop
++ * @task: task participating in a group stop
++ *
++ * @task is participating in a group stop.  Group stop states are cleared
++ * and the group stop count is consumed if %GROUP_STOP_CONSUME was set.  If
++ * the consumption completes the group stop, the appropriate %SIGNAL_*
++ * flags are set.
++ *
++ * CONTEXT:
++ * Must be called with @task->sighand->siglock held.
++ */
++static bool task_participate_group_stop(struct task_struct *task)
++{
++	struct signal_struct *sig = task->signal;
++	bool consume = task->group_stop & GROUP_STOP_CONSUME;
 +
-+			task_clear_group_stop(t);
++	task_clear_group_stop(task);
 +
- 			rm_from_queue(SIG_KERNEL_STOP_MASK, &t->pending);
- 			/*
- 			 * If there is a handler for SIGCONT, we must make
-@@ -906,6 +911,7 @@ static void complete_signal(int sig, struct task_struct *p, int group)
- 			signal->group_stop_count = 0;
- 			t = p;
- 			do {
-+				task_clear_group_stop(t);
- 				sigaddset(&t->pending.signal, SIGKILL);
- 				signal_wake_up(t, 1);
- 			} while_each_thread(p, t);
-@@ -1139,6 +1145,7 @@ int zap_other_threads(struct task_struct *p)
- 	p->signal->group_stop_count = 0;
- 
- 	while_each_thread(p, t) {
-+		task_clear_group_stop(t);
- 		count++;
- 
- 		/* Don't bother with already dead threads */
-@@ -1690,7 +1697,7 @@ static void ptrace_stop(int exit_code, int why, int clear_code, siginfo_t *info)
- 	 * If there is a group stop in progress,
++	if (!consume)
++		return false;
++
++	if (!WARN_ON_ONCE(sig->group_stop_count == 0))
++		sig->group_stop_count--;
++
++	if (!sig->group_stop_count) {
++		sig->flags = SIGNAL_STOP_STOPPED;
++		return true;
++	}
++	return false;
++}
++
+ /*
+  * allocate a new signal queue record
+  * - this may be called without locks if and only if t == current, otherwise an
+@@ -1645,7 +1691,7 @@ static void ptrace_stop(int exit_code, int why, int clear_code, siginfo_t *info)
  	 * we must participate in the bookkeeping.
  	 */
--	if (current->signal->group_stop_count > 0)
-+	if (current->group_stop & GROUP_STOP_PENDING)
- 		task_participate_group_stop(current);
+ 	if (current->signal->group_stop_count > 0)
+-		--current->signal->group_stop_count;
++		task_participate_group_stop(current);
  
  	current->last_siginfo = info;
-@@ -1775,8 +1782,8 @@ static int do_signal_stop(int signr)
- 	struct signal_struct *sig = current->signal;
+ 	current->exit_code = exit_code;
+@@ -1730,6 +1776,7 @@ static int do_signal_stop(int signr)
  	int notify = 0;
  
--	if (!sig->group_stop_count) {
--		unsigned int gstop = GROUP_STOP_CONSUME;
-+	if (!(current->group_stop & GROUP_STOP_PENDING)) {
-+		unsigned int gstop = GROUP_STOP_PENDING | GROUP_STOP_CONSUME;
+ 	if (!sig->group_stop_count) {
++		unsigned int gstop = GROUP_STOP_CONSUME;
  		struct task_struct *t;
  
  		if (!likely(sig->flags & SIGNAL_STOP_DEQUEUED) ||
-@@ -1796,8 +1803,7 @@ static int do_signal_stop(int signr)
- 			 * stop is always done with the siglock held,
- 			 * so this check has no races.
+@@ -1741,6 +1788,7 @@ static int do_signal_stop(int signr)
+ 		 */
+ 		sig->group_exit_code = signr;
+ 
++		current->group_stop = gstop;
+ 		sig->group_stop_count = 1;
+ 		for (t = next_thread(current); t != current; t = next_thread(t))
+ 			/*
+@@ -1750,19 +1798,19 @@ static int do_signal_stop(int signr)
  			 */
--			if (!(t->flags & PF_EXITING) &&
--			    !task_is_stopped_or_traced(t)) {
-+			if (!(t->flags & PF_EXITING) && !task_is_stopped(t)) {
- 				t->group_stop = gstop;
+ 			if (!(t->flags & PF_EXITING) &&
+ 			    !task_is_stopped_or_traced(t)) {
++				t->group_stop = gstop;
  				sig->group_stop_count++;
  				signal_wake_up(t, 0);
-@@ -1926,8 +1932,8 @@ relock:
- 		if (unlikely(signr != 0))
- 			ka = return_ka;
- 		else {
--			if (unlikely(signal->group_stop_count > 0) &&
--			    do_signal_stop(0))
-+			if (unlikely(current->group_stop &
-+				     GROUP_STOP_PENDING) && do_signal_stop(0))
- 				goto relock;
+-			}
++			} else
++				task_clear_group_stop(t);
+ 	}
+ 	/*
+ 	 * If there are no other threads in the group, or if there is
+ 	 * a group stop in progress and we are the last to stop, report
+ 	 * to the parent.  When ptraced, every thread reports itself.
+ 	 */
+-	if (!--sig->group_stop_count) {
+-		sig->flags = SIGNAL_STOP_STOPPED;
++	if (task_participate_group_stop(current))
+ 		notify = CLD_STOPPED;
+-	}
+ 	if (task_ptrace(current))
+ 		notify = CLD_STOPPED;
  
- 			signr = dequeue_signal(current, &current->blocked,
-@@ -2073,7 +2079,7 @@ void exit_signals(struct task_struct *tsk)
- 		if (!signal_pending(t) && !(t->flags & PF_EXITING))
+@@ -2026,10 +2074,8 @@ void exit_signals(struct task_struct *tsk)
  			recalc_sigpending_and_wake(t);
  
--	if (unlikely(tsk->signal->group_stop_count) &&
-+	if (unlikely(tsk->group_stop & GROUP_STOP_PENDING) &&
- 	    task_participate_group_stop(tsk))
+ 	if (unlikely(tsk->signal->group_stop_count) &&
+-			!--tsk->signal->group_stop_count) {
+-		tsk->signal->flags = SIGNAL_STOP_STOPPED;
++	    task_participate_group_stop(tsk))
  		group_stop = CLD_STOPPED;
+-	}
  out:
+ 	spin_unlock_irq(&tsk->sighand->siglock);
+ 
 -- 
 1.7.1
 
