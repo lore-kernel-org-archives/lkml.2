@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994Ab0LXSbI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 13:31:08 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:46111 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752854Ab0LXSbF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 13:31:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=OaCuE281HVEjEd45yxIeP1tFjjZAv5zxgieXPjDTHlAcf5LdB1tJLKps3Fb/kk8Z2p
-         hXI+UiTRYU8xFzTfRSDzmlxKJ0nyoPghua0kPmOAfT1ZfPFdXttQBO1Z5RPNXTje3gjW
-         74mEBe85O9vNeIfY5HB5qrRXl7D/bxLh5NmuE=
-Message-ID: <4D14E6E2.3080501@pobox.com>
-Date: Fri, 24 Dec 2010 13:30:58 -0500
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1753052Ab0LXSde (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 13:33:34 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53948 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752664Ab0LXSdd convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Dec 2010 13:33:33 -0500
 MIME-Version: 1.0
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-CC: plyatov@gmail.com, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        geomatsi@gmail.com, nicolas.ferre@atmel.com, linux@maxim.org.za,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        christian.glindkamp@taskit.de, ryan@bluewatersys.com,
-        pgsellmann@portner-elektronik.at
-Subject: Re: [PATCH v2] ata: pata_at91.c bugfix for high master clock
-References: <1292099846-24528-1-git-send-email-plyatov@gmail.com>	 <4D04D2E2.20100@ru.mvista.com> <1292180579.8737.12.camel@homepc> <4D05FD4C.9040200@ru.mvista.com>
-In-Reply-To: <4D05FD4C.9040200@ru.mvista.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20101224123742.724459093@chello.nl>
+References: <20101224122338.172750730@chello.nl> <20101224123742.724459093@chello.nl>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 24 Dec 2010 10:26:05 -0800
+Message-ID: <AANLkTikGBsh0-QTe9CA2gwDtwzpdMi+fbDsTEKiJAL0P@mail.gmail.com>
+Subject: Re: [RFC][PATCH 05/17] x86: Optimize arch_spin_unlock_wait()
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
+        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
+        linux-kernel@vger.kernel.org, Nick Piggin <npiggin@kernel.dk>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2010 06:02 AM, Sergei Shtylyov wrote:
-> On 12-12-2010 22:02, Igor Plyatov wrote:
->>>> static const struct ata_timing initial_timing =
->>>> - {XFER_PIO_0, 70, 290, 240, 600, 165, 150, 600, 0};
->>>> + {XFER_PIO_0, 70, 290, 240, 600, 165, 150, 0, 600, 0};
+On Fri, Dec 24, 2010 at 4:23 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> Only wait for the current holder to release the lock.
 >
->>> BTW, you haven't described this in the changelog...
->
->> Here is just a typo fixed for the ata_timing structure. This typo does
->> not have influence on the driver operation, but I do not like to leave
->> such a negligible problem as it is.
->
-> You at least should have noted that in the changelog. And as the change
-> is unrelated to the other changes you're doing, it's a good practice to
-> put it into a separate patch.
+> spin_unlock_wait() can only be about the current holder, since
+> completion of this function is inherently racy with new contenders.
+> Therefore, there is no reason to wait until the lock is completely
+> unlocked.
 
-Agreed...
+Is there really any reason for this patch? I'd rather keep the simpler
+and more straightforward code unless you have actual numbers.
 
+> +static inline void __ticket_spin_unlock_wait(arch_spinlock_t *lock)
+> +{
+> +       int tmp = ACCESS_ONCE(lock->slock);
+> +
+> +       if (!(((tmp >> TICKET_SHIFT) ^ tmp) & TICKET_MASK))
+> +               return; /* not locked */
+> +
+> +       /* wait until the current lock holder goes away */
+> +       while ((lock->slock & TICKET_MASK) == (tmp & TICKET_MASK))
+> +               cpu_relax();
+>  }
 
+Also, the above is just ugly. You've lost the ACCESS_ONCE() on the
+lock access, and it's using another model of masking than the regular
+one. Both of which may be intentional (maybe you are _trying_ to get
+the compiler to just load the low bytes and avoid the 'and'), but the
+whole open-coding of the logic - twice, and with different looking
+masking - just makes my skin itch.
+
+                                  Linus
