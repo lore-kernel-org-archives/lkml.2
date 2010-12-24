@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856Ab0LXPCn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 10:02:43 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:32971 "EHLO
+	id S1752935Ab0LXPOF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 10:14:05 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58729 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752281Ab0LXPCm (ORCPT
+	with ESMTP id S1752281Ab0LXPOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 10:02:42 -0500
+	Fri, 24 Dec 2010 10:14:03 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+        h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=Us773MChOM74/I9BkpIAaCEk758igIODIB7G5ixRTBmVkxWP15T79Z1gHSJRg5oIci
-         5X2lXgdlRt9r6HYHPal2P/BRSvnjCRK5Ba6y8Iip9f38H/hmh6LwtthxrrkhLooIRebJ
-         MHaMky1bH/IxDU3SC3jSD1iZ5jtBmIlj5R1I0=
-Date: Fri, 24 Dec 2010 16:02:36 +0100
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>, Roland Dreier <rolandd@cisco.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>
-Subject: Re: [PATCHSET] workqueue: remove flush_scheduled_work() usage
-Message-ID: <20101224150236.GB11419@htj.dyndns.org>
-References: <1292086307-19211-1-git-send-email-tj@kernel.org>
+        b=o5DGZZNx9WusMNpJscT7zobeLe3raxIwzXFu1Gw4r8CyHSYmSRByKODHe1neCk5Qbe
+         2RW88a6FnzodCeq05l/3lIhucHQYIEvSpDxNOeNDaKE9cU4KMhXM6FWNfZZn2GJJ8rt8
+         oSPw7LwqiBwofUP6Jxg8Fh+73/BilTKKeimZA=
+Date: Fri, 24 Dec 2010 16:13:25 +0100
+From: Jarek Poplawski <jarkao2@gmail.com>
+To: Joel Soete <soete.joel@scarlet.be>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Subject: Re: Help: major pppoe regression since 2.6.35 (panic on first ppp
+ conection)?
+Message-ID: <20101224151325.GA1895@del.dom.local>
+References: <20101222110021.GA8985@ff.dom.local>
+ <4D122093.6060900@scarlet.be>
+ <1293035100.3027.247.camel@edumazet-laptop>
+ <4D132C5F.8090404@scarlet.be>
+ <1293106348.7789.5.camel@edumazet-laptop>
+ <20101223202523.GA1913@del.dom.local>
+ <4D148271.8030509@scarlet.be>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1292086307-19211-1-git-send-email-tj@kernel.org>
+In-Reply-To: <4D148271.8030509@scarlet.be>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 11, 2010 at 05:51:17PM +0100, Tejun Heo wrote:
-> Hello,
-> 
-> This patchset removes flush_scheduled_work() usage to prepare for
-> deprecation of the interface.  Patches in this series are self
-> contained and mostly straight-forward.  More complex conversions will
-> be done in separate patchsets.
-> 
-> This patchset contains the following 30 patches.
-> 
->  0001-infiniband-update-workqueue-usage.patch
->  0002-isdn-capi-unregister-capictr-notifier-after-init-fai.patch
->  0003-isdn-capi-make-kcapi-use-a-separate-workqueue.patch
->  0004-drm-ttm-use-cancel_delayed_work_sync-in-ttm_bo.patch
->  0005-net-dsa-don-t-use-flush_scheduled_work.patch
->  0006-ncpfs-don-t-use-flush_scheduled_work.patch
->  0007-ocfs2-don-t-use-flush_scheduled_work.patch
->  0008-afs-add-afs_wq-and-use-it-instead-of-the-system-work.patch
->  0009-sound-don-t-use-flush_scheduled_work.patch
->  0010-arm-sharpsl-don-t-use-flush_scheduled_work.patch
->  0011-sh-don-t-use-flush_scheduled_work.patch
->  0012-floppy-don-t-use-flush_scheduled_work.patch
->  0013-gdrom-don-t-use-flush_scheduled_work.patch
->  0014-xen-don-t-use-flush_scheduled_work.patch
->  0015-hvsi-don-t-use-flush_scheduled_work.patch
->  0016-sonypi-don-t-use-flush_scheduled_work.patch
->  0017-tpm-don-t-use-flush_scheduled_work.patch
->  0018-vmwgfx-don-t-use-flush_scheduled_work.patch
->  0019-hid-picolcd-don-t-use-flush_scheduled_work.patch
->  0020-macintosh-ams-don-t-use-flush_scheduled_work.patch
->  0021-pcmcia-ipwireless-don-t-use-flush_scheduled_work.patch
->  0022-mISDN-don-t-use-flush_scheduled_work.patch
->  0023-leds-wm8350-don-t-use-flush_scheduled_work.patch
->  0024-dvb-don-t-use-flush_scheduled_work.patch
->  0025-mfd-update-workqueue-usages.patch
->  0026-mmc-update-workqueue-usages.patch
->  0027-mtd-don-t-use-flush_scheduled_work.patch
->  0028-battery-don-t-use-flush_scheduled_work.patch
->  0029-rtc-don-t-use-flush_scheduled_work.patch
->  0030-s390-don-t-use-flush_scheduled_work.patch
+On Fri, Dec 24, 2010 at 11:22:25AM +0000, Joel Soete wrote:
+> Hello Jarek,
+Hi Joel,
 
-Patches other than 0001 and 0008 are merged into wq#for-next.
+> Ok I get a clean 2.6.37-rc7 vanilla src and apply your debugging
+> patch and grab the attached syslog-2.6.37-rc7-t2.gz with obviously a
+> lot of "warning" (but as well as with Eric's patch, kernel survived
+> to a lynx connection to ftp.eu.kernel.org to download of a snapshot
+> patch ;<) )
 
-Thanks.
+Yes, even more than I expected... I hope the list will forgive us ;-)
 
--- 
-tejun
+> I copy my all /etc/ppp dir into a PPP.ANONYM dir in which I replaced letters of my account and passwd by '.'
+> To give more details, I am using a debian 'testing' distro with following ppp pkg:
+> # dpkg -l ppp\*
+> Desired=Unknown/Install/Remove/Purge/Hold
+> | Status=Not/Inst/Conf-files/Unpacked/halF-conf/Half-inst/trig-aWait/Trig-pend
+> |/ Err?=(none)/Reinst-required (Status,Err: uppercase=bad)
+> ||/ Name                        Version                     Description
+> +++-===========================-===========================-======================================================================
+> ii  ppp                         2.4.5-4                     Point-to-Point Protocol (PPP) - daemon
+> ii  pppconfig                   2.3.18+nmu2                 A text menu based utility for configuring ppp
+> ii  pppoe                       3.8-3                       PPP over Ethernet driver
+> ii  pppoeconf                   1.19                        configures PPPoE/ADSL connections
+> ii  pppstatus                   0.4.2-10                    console-based PPP status monitor
+> 
+> and I used pppoeconf to configure my ADSL connection to my ISP using
+> all defaults and just the recommended mtu of 1492 (which seems
+> effectively to works fine to me) and I don't remember to have change
+> anything else excepted my account and passwd.
+
+Should be enough reading to me for the next day or two.
+
+> Thanks for help and have Happy Christmas,
+> 	J.
+
+Thanks and Happy Holidays!
+Jarek P.
