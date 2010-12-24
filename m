@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147Ab0LXWdx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 17:33:53 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:46182 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752848Ab0LXWdw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 17:33:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=wu+FpIrpZhRlZ/mlQYcflwH2s4Y6ud/DEwz585GT1OK4MQW6vWUuFHQO8/p3uQ/ssO
-         R+cWVjI4l6fjsU4s6nh8rh8hShJfH1tMbi/pFrPnEl2XwRUpv7H97jYoAlKByIR5a44W
-         mkS+XCrc5N09AkTmW1KWteQ4rlb+uee7Hn9tg=
-Message-ID: <4D151FCC.4060202@pobox.com>
-Date: Fri, 24 Dec 2010 17:33:48 -0500
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1753171Ab0LXWnb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 17:43:31 -0500
+Received: from smtp.infotech.no ([82.134.31.41]:53490 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752736Ab0LXWna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Dec 2010 17:43:30 -0500
+Message-ID: <4D15220C.30705@interlog.com>
+Date: Fri, 24 Dec 2010 17:43:24 -0500
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Jesper Juhl <jj@chaosbits.net>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] gen_init_cpio: Avoid race between call to stat() and
- call to open()
-References: <alpine.LNX.2.00.1012242125170.28973@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1012242125170.28973@swampdragon.chaosbits.net>
+To: SCSI development list <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] lsscsi-0.24 released
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/24/2010 03:28 PM, Jesper Juhl wrote:
-> Hi,
->
-> In usr/gen_init_cpio.c::cpio_mkfile() a call to stat() is made based on
-> pathname, subsequently the file is open()'ed and then the value of the
-> initial stat() call is used to allocate a buffer. This is not safe since
-> the file may change between the call to stat() and the call to open().
-> Safer to just open() the file and then do fstat() using the filedescriptor
-> returned by open.
->
->
-> Signed-off-by: Jesper Juhl<jj@chaosbits.net>
+lsscsi is a utility that uses sysfs in linux 2.6 series kernels
+to list information about SCSI devices and SCSI hosts. Both a
+compact format which is one line per device and a "classic"
+format (like the output of 'cat /proc/scsi/scsi') are supported.
 
-Acked-by: Jeff Garzik <jgarzik@redhat.com>
+Version 0.24 is available at:
+     http://sg.danny.cz/scsi/lsscsi.html
+More information can be found on that page including examples
+and a Download section for tarballs, rpm and deb packages.
 
+There have only been superficial changes to the beta release
+of 0.24 made in June 2010.
 
+ChangeLog:
+Version 0.24 2010/06/12 [svn: r83]
+   - FC transport syntax changes (colon to slash)
+   - add "(null)" to the currently accepted "<NULL>" as
+     the string representation of NULL
+   - add AM_MAINTAINER_MODE to configure.ac
+   - scandir() library function has changed its signature
+     in its 4th argument, use newer (non-void) variant
+Version 0.23 2009/12/01 [svn: r76]
+...
+
+Doug Gilbert
