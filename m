@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab0LXMmj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 07:42:39 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:54555 "EHLO
+	id S1752995Ab0LXMmk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 07:42:40 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:54556 "EHLO
 	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752616Ab0LXMm1 (ORCPT
+	with ESMTP id S1752618Ab0LXMm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 24 Dec 2010 07:42:27 -0500
-Message-Id: <20101224123743.153269445@chello.nl>
+Message-Id: <20101224123742.673313138@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Fri, 24 Dec 2010 13:23:51 +0100
+Date: Fri, 24 Dec 2010 13:23:42 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Chris Mason <chris.mason@oracle.com>,
         Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
@@ -17,152 +17,135 @@ To: Chris Mason <chris.mason@oracle.com>,
         Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
         Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 13/17] sched: Remove rq->lock from the first half of ttwu()
+Subject: [RFC][PATCH 04/17] sched: Clean up ttwu stats
 References: <20101224122338.172750730@chello.nl>
-Content-Disposition: inline; filename=sched-ttwu-optimize.patch
+Content-Disposition: inline; filename=sched-ttwu-stat.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently ttwu() does two rq->lock acquisitions, once on the task's
-old rq, holding it over the p->state fiddling and load-balance pass.
-Then it drops the old rq->lock to acquire the new rq->lock.
-
-By having serialized ttwu(), p->sched_class, p->cpus_allowed with
-p->pi_lock, we can now drop the whole first rq->lock acquisition.
-
-The p->pi_lock serializing concurrent ttwu() calls protects p->state,
-which we will set to TASK_WAKING to bridge possible p->pi_lock to
-rq->lock gaps and serialize set_task_cpu() calls against
-task_rq_lock().
-
-The p->pi_lock serialization of p->sched_class allows us to call
-scheduling class methods without holding the rq->lock, and the
-serialization of p->cpus_allowed allows us to do the load-balancing
-bits without races.
+Collect all ttwu stat code into a single function and ensure its
+always called for an actual wakeup (changing p->state to
+TASK_RUNNING).
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- kernel/sched.c      |   57 ++++++++++++++++++++++++++--------------------------
- kernel/sched_fair.c |    3 --
- 2 files changed, 30 insertions(+), 30 deletions(-)
+ kernel/sched.c |   67 +++++++++++++++++++++++++++------------------------------
+ 1 file changed, 32 insertions(+), 35 deletions(-)
 
 Index: linux-2.6/kernel/sched.c
 ===================================================================
 --- linux-2.6.orig/kernel/sched.c
 +++ linux-2.6/kernel/sched.c
-@@ -2440,69 +2440,70 @@ ttwu_post_activation(struct task_struct 
-  * Returns %true if @p was woken up, %false if it was already running
-  * or @state didn't match @p's state.
-  */
--static int try_to_wake_up(struct task_struct *p, unsigned int state,
--			  int wake_flags)
-+static int
-+try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+@@ -2366,21 +2366,36 @@ static void update_avg(u64 *avg, u64 sam
+ }
+ #endif
+ 
+-static inline void ttwu_activate(struct task_struct *p, struct rq *rq,
+-				 bool is_sync, bool is_migrate, bool is_local,
+-				 unsigned long en_flags)
++static void
++ttwu_stat(struct rq *rq, struct task_struct *p, int cpu, int wake_flags)
  {
--	int cpu, orig_cpu, this_cpu, success = 0;
-+	int cpu, this_cpu, success = 0;
- 	unsigned long flags;
--	unsigned long en_flags = ENQUEUE_WAKEUP;
- 	struct rq *rq;
++#ifdef CONFIG_SCHEDSTATS
++	int this_cpu = smp_processor_id();
++
++	schedstat_inc(rq, ttwu_count);
+ 	schedstat_inc(p, se.statistics.nr_wakeups);
+-	if (is_sync)
++
++	if (wake_flags & WF_SYNC)
+ 		schedstat_inc(p, se.statistics.nr_wakeups_sync);
+-	if (is_migrate)
++
++	if (cpu != task_cpu(p))
+ 		schedstat_inc(p, se.statistics.nr_wakeups_migrate);
+-	if (is_local)
++
++	if (cpu == this_cpu) {
++		schedstat_inc(rq, ttwu_local);
+ 		schedstat_inc(p, se.statistics.nr_wakeups_local);
+-	else
+-		schedstat_inc(p, se.statistics.nr_wakeups_remote);
++	} else {
++		struct sched_domain *sd;
  
- 	this_cpu = get_cpu();
+-	activate_task(rq, p, en_flags);
++		schedstat_inc(p, se.statistics.nr_wakeups_remote);
++		for_each_domain(this_cpu, sd) {
++			if (cpumask_test_cpu(cpu, sched_domain_span(sd))) {
++				schedstat_inc(sd, ttwu_wake_remote);
++				break;
++			}
++		}
++	}
++#endif /* CONFIG_SCHEDSTATS */
+ }
  
- 	smp_wmb();
- 	raw_spin_lock_irqsave(&p->pi_lock, flags);
--	rq = __task_rq_lock(p);
+ static void
+@@ -2440,12 +2455,12 @@ static int try_to_wake_up(struct task_st
  	if (!(p->state & state))
  		goto out;
  
- 	cpu = task_cpu(p);
++	cpu = task_cpu(p);
++
+ 	if (p->se.on_rq)
+ 		goto out_running;
  
--	if (p->on_rq)
--		goto out_running;
-+	if (p->on_rq) {
-+		rq = __task_rq_lock(p);
-+		if (p->on_rq)
-+			goto out_running;
-+		__task_rq_unlock(rq);
-+	}
- 
--	orig_cpu = cpu;
+-	cpu = task_cpu(p);
+ 	orig_cpu = cpu;
+-
  #ifdef CONFIG_SMP
--	if (unlikely(task_running(rq, p)))
--		goto out_activate;
-+	while (p->on_cpu)
-+		cpu_relax();
+ 	if (unlikely(task_running(rq, p)))
+ 		goto out_activate;
+@@ -2486,27 +2501,12 @@ static int try_to_wake_up(struct task_st
+ 	WARN_ON(task_cpu(p) != cpu);
+ 	WARN_ON(p->state != TASK_WAKING);
  
- 	p->sched_contributes_to_load = !!task_contributes_to_load(p);
- 	p->state = TASK_WAKING;
-+	/*
-+	 * Separate the TASK_WAKING write from the rq->lock unlock wait.
-+	 *
-+	 * We need to wait for the current rq->lock owner to finish because
-+	 * existing task_rq_lock() holders will not have observed
-+	 * TASK_WAKING yet and we don't want to move the task from under
-+	 * their feet.
-+	 */
-+	smp_mb();
-+	raw_spin_unlock_wait(&task_rq(p)->lock);
- 
--	if (p->sched_class->task_waking) {
-+	if (p->sched_class->task_waking)
- 		p->sched_class->task_waking(p);
--		en_flags |= ENQUEUE_WAKING;
+-#ifdef CONFIG_SCHEDSTATS
+-	schedstat_inc(rq, ttwu_count);
+-	if (cpu == this_cpu)
+-		schedstat_inc(rq, ttwu_local);
+-	else {
+-		struct sched_domain *sd;
+-		for_each_domain(this_cpu, sd) {
+-			if (cpumask_test_cpu(cpu, sched_domain_span(sd))) {
+-				schedstat_inc(sd, ttwu_wake_remote);
+-				break;
+-			}
+-		}
 -	}
- 
- 	cpu = select_task_rq(p, SD_BALANCE_WAKE, wake_flags);
--	if (cpu != orig_cpu)
--		set_task_cpu(p, cpu);
--	__task_rq_unlock(rq);
-+#endif /* CONFIG_SMP */
- 
- 	rq = cpu_rq(cpu);
- 	raw_spin_lock(&rq->lock);
- 
--	/*
--	 * We migrated the task without holding either rq->lock, however
--	 * since the task is not on the task list itself, nobody else
--	 * will try and migrate the task, hence the rq should match the
--	 * cpu we just moved it to.
--	 */
--	WARN_ON(task_cpu(p) != cpu);
--	WARN_ON(p->state != TASK_WAKING);
-+#ifdef CONFIG_SMP
-+	if (cpu != task_cpu(p))
-+		set_task_cpu(p, cpu);
- 
- 	if (p->sched_contributes_to_load)
- 		rq->nr_uninterruptible--;
-+#endif
- 
--out_activate:
--#endif /* CONFIG_SMP */
--	activate_task(rq, p, en_flags);
-+	activate_task(rq, p, ENQUEUE_WAKEUP | ENQUEUE_WAKING);
+-#endif /* CONFIG_SCHEDSTATS */
+-
+ out_activate:
+ #endif /* CONFIG_SMP */
+-	ttwu_activate(p, rq, wake_flags & WF_SYNC, orig_cpu != cpu,
+-		      cpu == this_cpu, en_flags);
++	activate_task(rq, p, en_flags);
  out_running:
  	ttwu_post_activation(p, rq, wake_flags);
- 	ttwu_stat(rq, p, cpu, wake_flags);
++	ttwu_stat(rq, p, cpu, wake_flags);
  	success = 1;
--out:
- 	__task_rq_unlock(rq);
-+out:
- 	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
- 	put_cpu();
+ out:
+ 	task_rq_unlock(rq, &flags);
+@@ -2534,14 +2534,11 @@ static void try_to_wake_up_local(struct 
+ 	if (!(p->state & TASK_NORMAL))
+ 		return;
  
-Index: linux-2.6/kernel/sched_fair.c
-===================================================================
---- linux-2.6.orig/kernel/sched_fair.c
-+++ linux-2.6/kernel/sched_fair.c
-@@ -1343,8 +1343,7 @@ static void task_waking_fair(struct task
- 	struct sched_entity *se = &p->se;
- 	struct cfs_rq *cfs_rq = cfs_rq_of(se);
- 
--	lockdep_assert_held(&task_rq(p)->lock);
--
-+	// XXX racy on 32bit
- 	se->vruntime -= cfs_rq->min_vruntime;
+-	if (!p->se.on_rq) {
+-		if (likely(!task_running(rq, p))) {
+-			schedstat_inc(rq, ttwu_count);
+-			schedstat_inc(rq, ttwu_local);
+-		}
+-		ttwu_activate(p, rq, false, false, true, ENQUEUE_WAKEUP);
+-	}
++	if (!p->se.on_rq)
++		activate_task(rq, p, ENQUEUE_WAKEUP);
++
+ 	ttwu_post_activation(p, rq, 0);
++	ttwu_stat(rq, p, smp_processor_id(), 0);
  }
  
+ /**
 
 
