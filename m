@@ -1,77 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621Ab0LXNPo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 08:15:44 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:43654 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752001Ab0LXNPn convert rfc822-to-8bit (ORCPT
+	id S1752914Ab0LXNtM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 08:49:12 -0500
+Received: from smtp-out-045.synserver.de ([212.40.180.45]:1031 "HELO
+	smtp-out-045.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752684Ab0LXNsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 08:15:43 -0500
-Subject: Re: [RFC][PATCH 00/17] sched: Reduce runqueue lock contention -v3
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Chris Mason <chris.mason@oracle.com>
-Cc: Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
-        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101224122338.172750730@chello.nl>
-References: <20101224122338.172750730@chello.nl>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 24 Dec 2010 14:15:41 +0100
-Message-ID: <1293196541.29444.42.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 24 Dec 2010 08:48:54 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 27157
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Subject: [PATCH 5/9] ASoC: codecs: wm8904: Fix register cache incoherency
+Date: Fri, 24 Dec 2010 14:48:00 +0100
+Message-Id: <1293198484-1902-6-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1293198484-1902-1-git-send-email-lars@metafoo.de>
+References: <1293198484-1902-1-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-24 at 13:23 +0100, Peter Zijlstra wrote:
-> This is the latest incarnation of my scary ttwu patch, its split up into
-> tiny little pieces because at some point while working on the feedback from
-> the last posting it all stopped working and tiny changes was the only way
-> to find out wth I done wrong (I never did find out though, when I
-> completely rewrote everything in tiny chunks it all magically worked again
-> -- so I guess tglx is chuckling now).
-> 
-> Anyway, it still need a few more loose ends fixed, esp on 32bit there is
-> the whole unlocked remote min_vruntime access where we can read partial
-> updates and screw the timeline like problem. And I suppose there's a few
-> more XXXs in there where I know things are needing TLC.
-> 
-> Also, I bet the eagle eyed lot Cc'ed will spot more holes, as all this is
-> scary stuff :-)
-> 
-> Anyway, lots of thanks to Frank, Oleg, Ingo and others who commented on
-> the last posting.
-> 
-> I guess most everybody is out having x-mas celebrations (and I will too not
-> too long from now), so I expect replies to this won't happen until the new
-> year, but who knows, maybe in between eating and drinking too much we all
-> get an urge to stare at code.
-> 
-> Happy Holidays!
+The multi-component patch(commit f0fba2ad1) introduced a generic register cache
+framework. But the wm8753 driver still uses its own register cache for its
+private functions, while functions from the ASoC core use the generic cache.
+Thus we end up with two from each other incoherent caches, which leads to
+undefined behaviour.
+This pachtes fixes the issue by changing the wm8904 driver to use the generic
+cache framework.
 
-Also available from (once the mirror catches up):
-
-git://git.kernel.org/pub/scm/linux/kernel/git/peterz/linux-2.6-sched.git
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Ian Lartey <ian@opensource.wolfsonmicro.com>
+Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
 
 ---
- arch/x86/include/asm/spinlock.h |   26 ++-
- arch/x86/kernel/smp.c           |    1 +
- include/linux/mutex.h           |    2 +-
- include/linux/sched.h           |   23 +-
- kernel/mutex-debug.c            |    2 +-
- kernel/mutex-debug.h            |    2 +-
- kernel/mutex.c                  |    2 +-
- kernel/mutex.h                  |    2 +-
- kernel/sched.c                  |  542 ++++++++++++++++++++++-----------------
- kernel/sched_debug.c            |    2 +-
- kernel/sched_fair.c             |    5 +-
- kernel/sched_features.h         |    2 +
- kernel/sched_idletask.c         |    2 +-
- kernel/sched_rt.c               |   20 +-
- kernel/sched_stoptask.c         |    5 +-
- 15 files changed, 371 insertions(+), 267 deletions(-)
+Compile tested only
+---
+ sound/soc/codecs/wm8904.c |   37 ++++++++++++++++++-------------------
+ 1 files changed, 18 insertions(+), 19 deletions(-)
+
+diff --git a/sound/soc/codecs/wm8904.c b/sound/soc/codecs/wm8904.c
+index 8ba142a..9de44a4 100644
+--- a/sound/soc/codecs/wm8904.c
++++ b/sound/soc/codecs/wm8904.c
+@@ -49,8 +49,6 @@ static const char *wm8904_supply_names[WM8904_NUM_SUPPLIES] = {
+ /* codec private data */
+ struct wm8904_priv {
+ 
+-	u16 reg_cache[WM8904_MAX_REGISTER + 1];
+-
+ 	enum wm8904_type devtype;
+ 	void *control_data;
+ 
+@@ -2094,7 +2092,7 @@ static int wm8904_digital_mute(struct snd_soc_dai *codec_dai, int mute)
+ 
+ static void wm8904_sync_cache(struct snd_soc_codec *codec)
+ {
+-	struct wm8904_priv *wm8904 = snd_soc_codec_get_drvdata(codec);
++	u16 *reg_cache = codec->reg_cache;
+ 	int i;
+ 
+ 	if (!codec->cache_sync)
+@@ -2105,14 +2103,14 @@ static void wm8904_sync_cache(struct snd_soc_codec *codec)
+ 	/* Sync back cached values if they're different from the
+ 	 * hardware default.
+ 	 */
+-	for (i = 1; i < ARRAY_SIZE(wm8904->reg_cache); i++) {
++	for (i = 1; i < codec->driver->reg_cache_size; i++) {
+ 		if (!wm8904_access[i].writable)
+ 			continue;
+ 
+-		if (wm8904->reg_cache[i] == wm8904_reg[i])
++		if (reg_cache[i] == wm8904_reg[i])
+ 			continue;
+ 
+-		snd_soc_write(codec, i, wm8904->reg_cache[i]);
++		snd_soc_write(codec, i, reg_cache[i]);
+ 	}
+ 
+ 	codec->cache_sync = 0;
+@@ -2371,6 +2369,7 @@ static int wm8904_probe(struct snd_soc_codec *codec)
+ {
+ 	struct wm8904_priv *wm8904 = snd_soc_codec_get_drvdata(codec);
+ 	struct wm8904_pdata *pdata = wm8904->pdata;
++	u16 *reg_cache = codec->reg_cache;
+ 	int ret, i;
+ 
+ 	codec->cache_sync = 1;
+@@ -2437,19 +2436,19 @@ static int wm8904_probe(struct snd_soc_codec *codec)
+ 	}
+ 
+ 	/* Change some default settings - latch VU and enable ZC */
+-	wm8904->reg_cache[WM8904_ADC_DIGITAL_VOLUME_LEFT] |= WM8904_ADC_VU;
+-	wm8904->reg_cache[WM8904_ADC_DIGITAL_VOLUME_RIGHT] |= WM8904_ADC_VU;
+-	wm8904->reg_cache[WM8904_DAC_DIGITAL_VOLUME_LEFT] |= WM8904_DAC_VU;
+-	wm8904->reg_cache[WM8904_DAC_DIGITAL_VOLUME_RIGHT] |= WM8904_DAC_VU;
+-	wm8904->reg_cache[WM8904_ANALOGUE_OUT1_LEFT] |= WM8904_HPOUT_VU |
++	reg_cache[WM8904_ADC_DIGITAL_VOLUME_LEFT] |= WM8904_ADC_VU;
++	reg_cache[WM8904_ADC_DIGITAL_VOLUME_RIGHT] |= WM8904_ADC_VU;
++	reg_cache[WM8904_DAC_DIGITAL_VOLUME_LEFT] |= WM8904_DAC_VU;
++	reg_cache[WM8904_DAC_DIGITAL_VOLUME_RIGHT] |= WM8904_DAC_VU;
++	reg_cache[WM8904_ANALOGUE_OUT1_LEFT] |= WM8904_HPOUT_VU |
+ 		WM8904_HPOUTLZC;
+-	wm8904->reg_cache[WM8904_ANALOGUE_OUT1_RIGHT] |= WM8904_HPOUT_VU |
++	reg_cache[WM8904_ANALOGUE_OUT1_RIGHT] |= WM8904_HPOUT_VU |
+ 		WM8904_HPOUTRZC;
+-	wm8904->reg_cache[WM8904_ANALOGUE_OUT2_LEFT] |= WM8904_LINEOUT_VU |
++	reg_cache[WM8904_ANALOGUE_OUT2_LEFT] |= WM8904_LINEOUT_VU |
+ 		WM8904_LINEOUTLZC;
+-	wm8904->reg_cache[WM8904_ANALOGUE_OUT2_RIGHT] |= WM8904_LINEOUT_VU |
++	reg_cache[WM8904_ANALOGUE_OUT2_RIGHT] |= WM8904_LINEOUT_VU |
+ 		WM8904_LINEOUTRZC;
+-	wm8904->reg_cache[WM8904_CLOCK_RATES_0] &= ~WM8904_SR_MODE;
++	reg_cache[WM8904_CLOCK_RATES_0] &= ~WM8904_SR_MODE;
+ 
+ 	/* Apply configuration from the platform data. */
+ 	if (wm8904->pdata) {
+@@ -2457,23 +2456,23 @@ static int wm8904_probe(struct snd_soc_codec *codec)
+ 			if (!pdata->gpio_cfg[i])
+ 				continue;
+ 
+-			wm8904->reg_cache[WM8904_GPIO_CONTROL_1 + i]
++			reg_cache[WM8904_GPIO_CONTROL_1 + i]
+ 				= pdata->gpio_cfg[i] & 0xffff;
+ 		}
+ 
+ 		/* Zero is the default value for these anyway */
+ 		for (i = 0; i < WM8904_MIC_REGS; i++)
+-			wm8904->reg_cache[WM8904_MIC_BIAS_CONTROL_0 + i]
++			reg_cache[WM8904_MIC_BIAS_CONTROL_0 + i]
+ 				= pdata->mic_cfg[i];
+ 	}
+ 
+ 	/* Set Class W by default - this will be managed by the Class
+ 	 * G widget at runtime where bypass paths are available.
+ 	 */
+-	wm8904->reg_cache[WM8904_CLASS_W_0] |= WM8904_CP_DYN_PWR;
++	reg_cache[WM8904_CLASS_W_0] |= WM8904_CP_DYN_PWR;
+ 
+ 	/* Use normal bias source */
+-	wm8904->reg_cache[WM8904_BIAS_CONTROL_0] &= ~WM8904_POBCTRL;
++	reg_cache[WM8904_BIAS_CONTROL_0] &= ~WM8904_POBCTRL;
+ 
+ 	wm8904_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+ 
+-- 
+1.7.2.3
 
