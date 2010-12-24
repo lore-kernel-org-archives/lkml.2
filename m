@@ -1,247 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211Ab0LXMoz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 07:44:55 -0500
-Received: from casper.infradead.org ([85.118.1.10]:52595 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752458Ab0LXMmX (ORCPT
+	id S1753182Ab0LXMoy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 07:44:54 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:54524 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484Ab0LXMmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 24 Dec 2010 07:42:23 -0500
-Message-Id: <20101224123742.887559254@chello.nl>
+Message-Id: <20101224123742.559954064@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Fri, 24 Dec 2010 13:23:46 +0100
+Date: Fri, 24 Dec 2010 13:23:40 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Chris Mason <chris.mason@oracle.com>,
         Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
         Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
         Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
-        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
+        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 08/17] sched: Drop the rq argument to sched_class::select_task_rq()
+Subject: [RFC][PATCH 02/17] mutex: Use p->on_cpu for the adaptive spin
 References: <20101224122338.172750730@chello.nl>
-Content-Disposition: inline; filename=sched-select_task_rq.patch
+Content-Disposition: inline; filename=sched-on_cpu-use.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation of calling select_task_rq() without rq->lock held, drop
-the dependency on the rq argument.
+Since we now have p->on_cpu unconditionally available, use it to
+re-implement mutex_spin_on_owner.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/linux/sched.h   |    3 +--
- kernel/sched.c          |   40 ++++++++++++++--------------------------
- kernel/sched_fair.c     |    2 +-
- kernel/sched_idletask.c |    2 +-
- kernel/sched_rt.c       |   10 +++++++++-
- kernel/sched_stoptask.c |    3 +--
- 6 files changed, 27 insertions(+), 33 deletions(-)
+ include/linux/mutex.h |    2 -
+ include/linux/sched.h |    2 -
+ kernel/mutex-debug.c  |    2 -
+ kernel/mutex-debug.h  |    2 -
+ kernel/mutex.c        |    2 -
+ kernel/mutex.h        |    2 -
+ kernel/sched.c        |   83 +++++++++++++++++++-------------------------------
+ 7 files changed, 39 insertions(+), 56 deletions(-)
 
-Index: linux-2.6/include/linux/sched.h
+Index: linux-2.6/include/linux/mutex.h
 ===================================================================
---- linux-2.6.orig/include/linux/sched.h
-+++ linux-2.6/include/linux/sched.h
-@@ -1063,8 +1063,7 @@ struct sched_class {
- 	void (*put_prev_task) (struct rq *rq, struct task_struct *p);
+--- linux-2.6.orig/include/linux/mutex.h
++++ linux-2.6/include/linux/mutex.h
+@@ -51,7 +51,7 @@ struct mutex {
+ 	spinlock_t		wait_lock;
+ 	struct list_head	wait_list;
+ #if defined(CONFIG_DEBUG_MUTEXES) || defined(CONFIG_SMP)
+-	struct thread_info	*owner;
++	struct task_struct	*owner;
+ #endif
+ #ifdef CONFIG_DEBUG_MUTEXES
+ 	const char 		*name;
+Index: linux-2.6/kernel/mutex-debug.c
+===================================================================
+--- linux-2.6.orig/kernel/mutex-debug.c
++++ linux-2.6/kernel/mutex-debug.c
+@@ -75,7 +75,7 @@ void debug_mutex_unlock(struct mutex *lo
+ 		return;
  
+ 	DEBUG_LOCKS_WARN_ON(lock->magic != lock);
+-	DEBUG_LOCKS_WARN_ON(lock->owner != current_thread_info());
++	DEBUG_LOCKS_WARN_ON(lock->owner != current);
+ 	DEBUG_LOCKS_WARN_ON(!lock->wait_list.prev && !lock->wait_list.next);
+ 	mutex_clear_owner(lock);
+ }
+Index: linux-2.6/kernel/mutex-debug.h
+===================================================================
+--- linux-2.6.orig/kernel/mutex-debug.h
++++ linux-2.6/kernel/mutex-debug.h
+@@ -29,7 +29,7 @@ extern void debug_mutex_init(struct mute
+ 
+ static inline void mutex_set_owner(struct mutex *lock)
+ {
+-	lock->owner = current_thread_info();
++	lock->owner = current;
+ }
+ 
+ static inline void mutex_clear_owner(struct mutex *lock)
+Index: linux-2.6/kernel/mutex.c
+===================================================================
+--- linux-2.6.orig/kernel/mutex.c
++++ linux-2.6/kernel/mutex.c
+@@ -160,7 +160,7 @@ __mutex_lock_common(struct mutex *lock, 
+ 	 */
+ 
+ 	for (;;) {
+-		struct thread_info *owner;
++		struct task_struct *owner;
+ 
+ 		/*
+ 		 * If we own the BKL, then don't spin. The owner of
+Index: linux-2.6/kernel/mutex.h
+===================================================================
+--- linux-2.6.orig/kernel/mutex.h
++++ linux-2.6/kernel/mutex.h
+@@ -19,7 +19,7 @@
  #ifdef CONFIG_SMP
--	int  (*select_task_rq)(struct rq *rq, struct task_struct *p,
--			       int sd_flag, int flags);
-+	int  (*select_task_rq)(struct task_struct *p, int sd_flag, int flags);
+ static inline void mutex_set_owner(struct mutex *lock)
+ {
+-	lock->owner = current_thread_info();
++	lock->owner = current;
+ }
  
- 	void (*pre_schedule) (struct rq *this_rq, struct task_struct *task);
- 	void (*post_schedule) (struct rq *this_rq);
+ static inline void mutex_clear_owner(struct mutex *lock)
 Index: linux-2.6/kernel/sched.c
 ===================================================================
 --- linux-2.6.orig/kernel/sched.c
 +++ linux-2.6/kernel/sched.c
-@@ -2138,13 +2138,14 @@ static int migration_cpu_stop(void *data
-  * The task's runqueue lock must be held.
-  * Returns true if you have to wait for migration thread.
-  */
--static bool migrate_task(struct task_struct *p, struct rq *rq)
-+static bool need_migrate_task(struct task_struct *p)
- {
- 	/*
- 	 * If the task is not on a runqueue (and not running), then
- 	 * the next wake-up will properly place the task.
- 	 */
--	return p->on_rq || task_running(rq, p);
-+	smp_rmb(); /* finish_lock_switch() */
-+	return p->on_rq || p->on_cpu;
- }
+@@ -4034,70 +4034,53 @@ asmlinkage void __sched schedule(void)
+ EXPORT_SYMBOL(schedule);
  
- /*
-@@ -2337,9 +2338,9 @@ static int select_fallback_rq(int cpu, s
-  * The caller (fork, wakeup) owns p->pi_lock, ->cpus_allowed is stable.
-  */
- static inline
--int select_task_rq(struct rq *rq, struct task_struct *p, int sd_flags, int wake_flags)
-+int select_task_rq(struct task_struct *p, int sd_flags, int wake_flags)
- {
--	int cpu = p->sched_class->select_task_rq(rq, p, sd_flags, wake_flags);
-+	int cpu = p->sched_class->select_task_rq(p, sd_flags, wake_flags);
- 
- 	/*
- 	 * In order not to call set_task_cpu() on a blocking task we need
-@@ -2484,7 +2485,7 @@ static int try_to_wake_up(struct task_st
- 		en_flags |= ENQUEUE_WAKING;
- 	}
- 
--	cpu = select_task_rq(rq, p, SD_BALANCE_WAKE, wake_flags);
-+	cpu = select_task_rq(p, SD_BALANCE_WAKE, wake_flags);
- 	if (cpu != orig_cpu)
- 		set_task_cpu(p, cpu);
- 	__task_rq_unlock(rq);
-@@ -2680,24 +2681,17 @@ void wake_up_new_task(struct task_struct
- {
- 	unsigned long flags;
- 	struct rq *rq;
--	int cpu __maybe_unused = get_cpu();
- 
- #ifdef CONFIG_SMP
- 	rq = task_rq_lock(p, &flags);
--	p->state = TASK_WAKING;
- 
- 	/*
- 	 * Fork balancing, do it here and not earlier because:
- 	 *  - cpus_allowed can change in the fork path
- 	 *  - any previously selected cpu might disappear through hotplug
--	 *
--	 * We set TASK_WAKING so that select_task_rq() can drop rq->lock
--	 * without people poking at ->cpus_allowed.
- 	 */
--	cpu = select_task_rq(rq, p, SD_BALANCE_FORK, 0);
--	set_task_cpu(p, cpu);
-+	set_task_cpu(p, select_task_rq(p, SD_BALANCE_FORK, 0));
- 
--	p->state = TASK_RUNNING;
- 	task_rq_unlock(rq, &flags);
- #endif
- 
-@@ -2710,7 +2704,6 @@ void wake_up_new_task(struct task_struct
- 		p->sched_class->task_woken(rq, p);
- #endif
- 	task_rq_unlock(rq, &flags);
--	put_cpu();
- }
- 
- #ifdef CONFIG_PREEMPT_NOTIFIERS
-@@ -3416,27 +3409,22 @@ void sched_exec(void)
- {
- 	struct task_struct *p = current;
- 	unsigned long flags;
+ #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+-/*
+- * Look out! "owner" is an entirely speculative pointer
+- * access and not reliable.
+- */
+-int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner)
+-{
+-	unsigned int cpu;
 -	struct rq *rq;
- 	int dest_cpu;
  
--	rq = task_rq_lock(p, &flags);
--	dest_cpu = p->sched_class->select_task_rq(rq, p, SD_BALANCE_EXEC, 0);
-+	raw_spin_lock_irqsave(&p->pi_lock, flags);
-+	dest_cpu = p->sched_class->select_task_rq(p, SD_BALANCE_EXEC, 0);
- 	if (dest_cpu == smp_processor_id())
- 		goto unlock;
+-	if (!sched_feat(OWNER_SPIN))
+-		return 0;
++static inline bool owner_running(struct mutex *lock, struct task_struct *owner)
++{
++	bool ret = false;
+ 
+-#ifdef CONFIG_DEBUG_PAGEALLOC
+-	/*
+-	 * Need to access the cpu field knowing that
+-	 * DEBUG_PAGEALLOC could have unmapped it if
+-	 * the mutex owner just released it and exited.
+-	 */
+-	if (probe_kernel_address(&owner->cpu, cpu))
+-		return 0;
+-#else
+-	cpu = owner->cpu;
+-#endif
++	rcu_read_lock();
++	if (lock->owner != owner)
++		goto fail;
+ 
+ 	/*
+-	 * Even if the access succeeded (likely case),
+-	 * the cpu field may no longer be valid.
++	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
++	 * lock->owner still matches owner, if that fails, owner might
++	 * point to free()d memory, if it still matches, the rcu_read_lock()
++	 * ensures the memory stays valid.
+ 	 */
+-	if (cpu >= nr_cpumask_bits)
+-		return 0;
++	barrier();
  
 -	/*
--	 * select_task_rq() can race against ->cpus_allowed
+-	 * We need to validate that we can do a
+-	 * get_cpu() and that we have the percpu area.
 -	 */
--	if (cpumask_test_cpu(dest_cpu, &p->cpus_allowed) &&
--	    likely(cpu_active(dest_cpu)) && migrate_task(p, rq)) {
-+	if (likely(cpu_active(dest_cpu)) && need_migrate_task(p)) {
- 		struct migration_arg arg = { p, dest_cpu };
+-	if (!cpu_online(cpu))
+-		return 0;
++	ret = owner->on_cpu;
++fail:
++	rcu_read_unlock();
  
--		task_rq_unlock(rq, &flags);
--		stop_one_cpu(cpu_of(rq), migration_cpu_stop, &arg);
-+		raw_spin_unlock_irqrestore(&p->pi_lock, flags);
-+		stop_one_cpu(task_cpu(p), migration_cpu_stop, &arg);
- 		return;
+-	rq = cpu_rq(cpu);
++	return ret;
++}
+ 
+-	for (;;) {
+-		/*
+-		 * Owner changed, break to re-assess state.
+-		 */
+-		if (lock->owner != owner) {
+-			/*
+-			 * If the lock has switched to a different owner,
+-			 * we likely have heavy contention. Return 0 to quit
+-			 * optimistic spinning and not contend further:
+-			 */
+-			if (lock->owner)
+-				return 0;
+-			break;
+-		}
++/*
++ * Look out! "owner" is an entirely speculative pointer
++ * access and not reliable.
++ */
++int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
++{
++	if (!sched_feat(OWNER_SPIN))
++		return 0;
+ 
+-		/*
+-		 * Is that owner really running on that cpu?
+-		 */
+-		if (task_thread_info(rq->curr) != owner || need_resched())
++	while (owner_running(lock, owner)) {
++		if (need_resched())
+ 			return 0;
+ 
+ 		arch_mutex_cpu_relax();
  	}
- unlock:
--	task_rq_unlock(rq, &flags);
-+	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
- }
  
- #endif
-@@ -5681,7 +5669,7 @@ int set_cpus_allowed_ptr(struct task_str
- 		goto out;
- 
- 	dest_cpu = cpumask_any_and(cpu_active_mask, new_mask);
--	if (migrate_task(p, rq)) {
-+	if (need_migrate_task(p)) {
- 		struct migration_arg arg = { p, dest_cpu };
- 		/* Need help from migration thread: drop lock and wait. */
- 		__task_rq_unlock(rq);
-Index: linux-2.6/kernel/sched_fair.c
-===================================================================
---- linux-2.6.orig/kernel/sched_fair.c
-+++ linux-2.6/kernel/sched_fair.c
-@@ -1623,7 +1623,7 @@ static int select_idle_sibling(struct ta
-  * preempt must be disabled.
-  */
- static int
--select_task_rq_fair(struct rq *rq, struct task_struct *p, int sd_flag, int wake_flags)
-+select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
- {
- 	struct sched_domain *tmp, *affine_sd = NULL, *sd = NULL;
- 	int cpu = smp_processor_id();
-Index: linux-2.6/kernel/sched_idletask.c
-===================================================================
---- linux-2.6.orig/kernel/sched_idletask.c
-+++ linux-2.6/kernel/sched_idletask.c
-@@ -7,7 +7,7 @@
- 
- #ifdef CONFIG_SMP
- static int
--select_task_rq_idle(struct rq *rq, struct task_struct *p, int sd_flag, int flags)
-+select_task_rq_idle(struct task_struct *p, int sd_flag, int flags)
- {
- 	return task_cpu(p); /* IDLE tasks as never migrated */
- }
-Index: linux-2.6/kernel/sched_rt.c
-===================================================================
---- linux-2.6.orig/kernel/sched_rt.c
-+++ linux-2.6/kernel/sched_rt.c
-@@ -973,11 +973,18 @@ static void yield_task_rt(struct rq *rq)
- static int find_lowest_rq(struct task_struct *task);
- 
- static int
--select_task_rq_rt(struct rq *rq, struct task_struct *p, int sd_flag, int flags)
-+select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
- {
- 	if (sd_flag != SD_BALANCE_WAKE)
- 		return smp_processor_id();
- 
-+#if 0
 +	/*
-+	 * XXX without holding rq->lock the below is racy, need to
-+	 * rewrite it in a racy but non-dangerous way so that we mostly
-+	 * get the benefit of the heuristic but don't crash the kernel
-+	 * if we get it wrong ;-)
++	 * If the owner changed to another task there is likely
++	 * heavy contention, stop spinning.
 +	 */
- 	/*
- 	 * If the current task is an RT task, then
- 	 * try to see if we can wake this RT task up on another
-@@ -1002,6 +1009,7 @@ select_task_rq_rt(struct rq *rq, struct 
- 
- 		return (cpu == -1) ? task_cpu(p) : cpu;
- 	}
-+#endif
- 
- 	/*
- 	 * Otherwise, just let it ride on the affined RQ and the
-Index: linux-2.6/kernel/sched_stoptask.c
-===================================================================
---- linux-2.6.orig/kernel/sched_stoptask.c
-+++ linux-2.6/kernel/sched_stoptask.c
-@@ -9,8 +9,7 @@
- 
- #ifdef CONFIG_SMP
- static int
--select_task_rq_stop(struct rq *rq, struct task_struct *p,
--		    int sd_flag, int flags)
-+select_task_rq_stop(struct task_struct *p, int sd_flag, int flags)
- {
- 	return task_cpu(p); /* stop tasks as never migrate */
++	if (lock->owner)
++		return 0;
++
+ 	return 1;
  }
+ #endif
+Index: linux-2.6/include/linux/sched.h
+===================================================================
+--- linux-2.6.orig/include/linux/sched.h
++++ linux-2.6/include/linux/sched.h
+@@ -360,7 +360,7 @@ extern signed long schedule_timeout_inte
+ extern signed long schedule_timeout_killable(signed long timeout);
+ extern signed long schedule_timeout_uninterruptible(signed long timeout);
+ asmlinkage void schedule(void);
+-extern int mutex_spin_on_owner(struct mutex *lock, struct thread_info *owner);
++extern int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner);
+ 
+ struct nsproxy;
+ struct user_namespace;
 
 
