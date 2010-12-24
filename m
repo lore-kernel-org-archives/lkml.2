@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752443Ab0LXAgX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 19:36:23 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:46560 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981Ab0LXAgW (ORCPT
+	id S1752550Ab0LXAhC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 19:37:02 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49134 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752455Ab0LXAhA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 19:36:22 -0500
-X-AuditID: b753bd60-9d951ba00000044b-e1-4d13eb045f16
-Message-ID: <4D13EB01.8030908@hitachi.com>
-Date: Fri, 24 Dec 2010 09:36:17 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Franck Bui-Huu <vagabon.xyz@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH 0/6] Minor cleanups & fixes for perf-probe(1)
-References: <1292854685-8230-1-git-send-email-fbuihuu@gmail.com>	<4D10A795.9040809@hitachi.com> <m3aajzc8f1.fsf@gmail.com>	<20101221210502.GA29079@ghostprotocols.net> <m38vzit0ja.fsf@gmail.com>
-In-Reply-To: <m38vzit0ja.fsf@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+	Thu, 23 Dec 2010 19:37:00 -0500
+Date: Thu, 23 Dec 2010 16:35:49 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+Cc: linux-kernel@vger.kernel.org, "Nikita V\. Youshchenko" <yoush@cs.msu.su>,
+        linuxpps@ml.enneenne.com, Rodolfo Giometti <giometti@enneenne.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
+        john stultz <johnstul@us.ibm.com>
+Subject: Re: [PATCHv7 16/16] pps: add parallel port PPS signal generator
+Message-Id: <20101223163549.86a73ae8.akpm@linux-foundation.org>
+In-Reply-To: <bbca0f7138c0814482a1d907833b7de1b7e70f25.1292844387.git.lasaine@lvk.cs.msu.su>
+References: <cover.1292604060.git.lasaine@lvk.cs.msu.su>
+	<cover.1292844387.git.lasaine@lvk.cs.msu.su>
+	<bbca0f7138c0814482a1d907833b7de1b7e70f25.1292844387.git.lasaine@lvk.cs.msu.su>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/12/22 22:11), Franck Bui-Huu wrote:
-> Arnaldo Carvalho de Melo <acme@ghostprotocols.net> writes:
-> 
-> [...]
-> 
->>
->> I did just that s/fprintf/color_fprintf/g change Masami asked and
->> stashed everything in my perf/core branch.
-> 
-> Thanks.
-> 
-> Should I still send some details about what patches do ?
-> 
+On Mon, 20 Dec 2010 14:54:56 +0300
+Alexander Gordeev <lasaine@lvk.cs.msu.su> wrote:
 
-No, it seems that Arnaldo has already fixed it in his tree.
+> +	expire_time = ktime_to_timespec(timer->_expires);
 
-Thank you,
+It's bad to play around with internal fields, especially when an
+accessor API was provided to access those fields.
 
--- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+And lo, hrtimers got changed in linux-next:
+
+drivers/pps/generators/pps_gen_parport.c: In function 'hrtimer_event':
+drivers/pps/generators/pps_gen_parport.c:92: error: 'struct hrtimer' has no member named '_expires'
+
+The documentation in hrtimer.h is of course complete crap and
+Documentation/timers/hrtimers.txt appears to be bitrot, but with a little
+sleuthing and guesswork, it seems that what you want here is
+
+
+
+--- a/drivers/pps/generators/pps_gen_parport.c~pps-add-parallel-port-pps-signal-generator-fix
++++ a/drivers/pps/generators/pps_gen_parport.c
+@@ -82,7 +82,7 @@ static enum hrtimer_restart hrtimer_even
+ 
+ 	/* first of all we get the time stamp... */
+ 	getnstimeofday(&ts1);
+-	expire_time = ktime_to_timespec(timer->_expires);
++	expire_time = ktime_to_timespec(hrtimer_get_softexpires(timer));
+ 	dev = container_of(timer, struct pps_generator_pp, timer);
+ 	lim = NSEC_PER_SEC - send_delay - dev->port_write_time;
+ 
+_
+
