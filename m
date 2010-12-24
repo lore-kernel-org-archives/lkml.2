@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab0LXCig (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 21:38:36 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:43835 "EHLO
+	id S1752822Ab0LXCnb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 21:43:31 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:8398 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752601Ab0LXCif (ORCPT
+	by vger.kernel.org with ESMTP id S1752601Ab0LXCna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 21:38:35 -0500
+	Thu, 23 Dec 2010 21:43:30 -0500
 From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 To: David Brownell <dbrownell@users.sourceforge.net>,
         Grant Likely <grant.likely@secretlab.ca>,
         spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Cc: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 Subject: [PATCH] spi_topcliff_pch: Fix data transfer issue
-Date: Fri, 24 Dec 2010 11:40:50 +0900
-Message-Id: <1293158450-3168-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+Date: Fri, 24 Dec 2010 11:45:47 +0900
+Message-Id: <1293158747-3270-1-git-send-email-tomoya-linux@dsn.okisemi.com>
 X-Mailer: git-send-email 1.6.0.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+Sorry, I forget to add "--CCs"
 
 It seems spi_topcliff_pch of linux-2.6.37-rc6 degraded by previous patch.
 In fact, data transfer fails on evaluation board testing.
