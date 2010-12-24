@@ -1,114 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab0LXPmJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 10:42:09 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:32891 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752733Ab0LXPmH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 10:42:07 -0500
-Date: Fri, 24 Dec 2010 15:41:20 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Cc: linux-arch@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>, Dan Williams <dan.j.williams@intel.com>,
-        linux-sh@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
-        Sascha Hauer <kernel@pengutronix.de>, linux-usb@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        linux-media@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH] dma_declare_coherent_memory: push ioremap() up to
-	caller
-Message-ID: <20101224154120.GH20587@n2100.arm.linux.org.uk>
-References: <201012240020.37208.jkrzyszt@tis.icnet.pl> <20101224130200.GG20587@n2100.arm.linux.org.uk> <201012241455.30430.jkrzyszt@tis.icnet.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201012241455.30430.jkrzyszt@tis.icnet.pl>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1752736Ab0LXPpx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 10:45:53 -0500
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:34418 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752161Ab0LXPpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Dec 2010 10:45:52 -0500
+Subject: Re: [RFC][PATCH 1/6] encrypted-keys: fixed valid_master_desc()
+ function description
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Roberto Sassu <roberto.sassu@polito.it>
+Cc: linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Gianluca Ramunno <ramunno@polito.it>,
+        Tyler Hicks <tyhicks@linux.vnet.ibm.com>, kirkland@canonical.com
+In-Reply-To: <201012231833.59016.roberto.sassu@polito.it>
+References: <201012231833.59016.roberto.sassu@polito.it>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 24 Dec 2010 10:45:28 -0500
+Message-ID: <1293205528.3196.22.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 24, 2010 at 02:55:25PM +0100, Janusz Krzysztofik wrote:
-> Friday 24 December 2010 14:02:00 Russell King - ARM Linux wrote:
-> > On Fri, Dec 24, 2010 at 12:20:32AM +0100, Janusz Krzysztofik wrote:
-> > > The patch tries to implement a solution suggested by Russell King,
-> > > http://lists.infradead.org/pipermail/linux-arm-kernel/2010-December
-> > >/035264.html. It is expected to solve video buffer allocation issues
-> > > for at least a few soc_camera I/O memory less host interface
-> > > drivers, designed around the videobuf_dma_contig layer, which
-> > > allocates video buffers using dma_alloc_coherent().
-> > >
-> > > Created against linux-2.6.37-rc5.
-> > >
-> > > Tested on ARM OMAP1 based Amstrad Delta with a WIP OMAP1 camera
-> > > patch, patterned upon two mach-mx3 machine types which already try
-> > > to use the dma_declare_coherent_memory() method for reserving a
-> > > region of system RAM preallocated with another
-> > > dma_alloc_coherent(). Compile tested for all modified files except
-> > > arch/sh/drivers/pci/fixups-dreamcast.c.
-> >
-> > Another note: with the pair of patches I've sent to the
-> > linux-arm-kernel list earlier today changing the DMA coherent
-> > allocator to steal memory from the system at boot.
-> >
-> > This means there's less need to pre-allocate DMA memory - if there's
-> > sufficient contiguous space in the DMA region to satisfy the
-> > allocation, then the allocation will succeed.  It's also independent
-> > of the maximum page size from the kernel's memory allocators too.
-> >
-> > So I suspect that mach-mx3 (and others) no longer need to do their
-> > own pre-allocation anymore if both of these patches go in.
+On Thu, 2010-12-23 at 18:33 +0100, Roberto Sassu wrote:
+> Valid key type prefixes for the parameter 'key-type' are: 'trusted' and
+> 'user'.
 > 
-> Then, my rationale will no longer be valid. So, either drop my patch if 
-> you think you have finally come out with a better solution which 
-> doesn't touch any system-wide API, or suggest a new justification for 
-> use in the commit log if you think still the patch solves something 
-> important.
+> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 
-No.  It's not clear whether my pair of patches are both going to make it
-into the kernel, or even what timeframe they're going to make it in.
+Thanks Roberto!
 
-Irrespective of that, we do need a solution to this problem so that this
-stuff starts working again.
+Acked-by: Mimi Zohar <zohar@us.ibm.com>
 
-In any case, your patch makes complete sense through and through:
+> ---
+>  security/keys/encrypted_defined.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/security/keys/encrypted_defined.c b/security/keys/encrypted_defined.c
+> index 32d27c8..c1c5e27 100644
+> --- a/security/keys/encrypted_defined.c
+> +++ b/security/keys/encrypted_defined.c
+> @@ -84,7 +84,7 @@ static int aes_get_sizes(void)
+>  /*
+>   * valid_master_desc - verify the 'key-type:desc' of a new/updated master-key
+>   *
+> - * key-type:= "trusted:" | "encrypted:"
+> + * key-type:= "trusted:" | "user:"
+>   * desc:= master-key description
+>   *
+>   * Verify that 'key-type' is valid and that 'desc' exists. On key update,
 
-1. if other architecture/machine wants to reserve a chunk of DMA-able
-   memory for a specific device (eg, because of a restriction on the
-   number of DMA address bits available) and it's completely DMA
-   coherent, it shouldn't have to go through the pains of having that
-   memory unconditionally ioremap'd.
 
-2. What if the memory being provided from some source where you already
-   have the mapping setup in a specific way for a reason?
-
-For example, say I have an ARM design, and all peripherals are in a
-single 256MB memory region, which includes a chunk of SRAM set aside
-for DMA purposes.  Let's say I can map that really efficiently by a
-few page table entries, which means relatively little TLB usage for
-accessing this region.
-
-With the current API, it becomes difficult to pass that mapping through
-the dma_declare_coherent_memory() because the physical address goes
-through ioremap(), which obfuscates what's going on.  However, if I
-could pass the bus and virtual address, then there's no ambiguity over
-what I want to do.
-
-What if I want to declare memory to the DMA coherent allocator with
-attributes different from what ioremap() gives me, maybe with write
-combining properties (because it happens to be safe for the specific
-device) ?
-
-Passing the virtual address allows the API to become much more flexible.
-Not only that, it allows it to be used on ARM, rather than becoming (as
-it currently stands) prohibited on ARM.
-
-I believe that putting ioremap() inside this API was the wrong thing to
-do, and moving it outside makes the API much more flexible and usable.
-It's something I still fully support.
