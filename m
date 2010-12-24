@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900Ab0LXOBR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 09:01:17 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62333 "EHLO
+	id S1752941Ab0LXOBS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 09:01:18 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33324 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752281Ab0LXOBO (ORCPT
+	with ESMTP id S1752816Ab0LXOBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 09:01:14 -0500
+	Fri, 24 Dec 2010 09:01:13 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=D25RPO7/hDAPthUBCiydmLVVgnbYV2jOmM1iO04fdz0DnyhFClgDlQ+SVHw/e7oXUP
-         eMUp/2aCIhm0gxaznyALPlfHD3zZG+V+JGUuCmagNIATvAiyktNRZoT6I8EYSzgZIflS
-         ad3/vq4qD9zN8sHPXKYydzwJGvAwyDM9gNZVQ=
+        b=xmsmW+UPFFyYW5UBypyjjO9OL+5ZRhEHl0XaeFX//NCwNaUB7No8JSk1FER6lfEEK2
+         xYX0vmeGGdMqXYauc8Rfhf/RRDjwiNkk4xjIvDrt26w1xnxJY5DJ+OES3VqvxWF5GtDH
+         ByRXIx+VNpB5H1Id+FUVutUSa+IdNQVHWqDI8=
 From: Tejun Heo <tj@kernel.org>
 To: oleg@redhat.com, roland@redhat.com, jan.kratochvil@redhat.com,
         linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 6/7] ptrace: make do_signal_stop() use ptrace_stop() if the task is being ptraced
-Date: Fri, 24 Dec 2010 15:00:56 +0100
-Message-Id: <1293199257-11255-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 5/7] ptrace: participate in group stop from ptrace_stop() iff the task is trapping for group stop
+Date: Fri, 24 Dec 2010 15:00:55 +0100
+Message-Id: <1293199257-11255-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1293199257-11255-1-git-send-email-tj@kernel.org>
 References: <1293199257-11255-1-git-send-email-tj@kernel.org>
@@ -29,110 +29,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A ptraced task would still stop at do_signal_stop() when it's stopping
-for stop signals and do_signal_stop() behaves the same whether the
-task is ptraced or not.  However, in addition to stopping,
-ptrace_stop() also does ptrace specific stuff like calling
-architecture specific callbacks, so this behavior makes the code more
-fragile and difficult to understand.
+Currently, ptrace_stop() unconditionally participates in group stop
+bookkeeping.  This is unnecessary and inaccurate.  Make it only
+participate if the task is trapping for group stop - ie. if @why is
+CLD_STOPPED.  As ptrace_stop() currently is not used when trapping for
+group stop, this equals to disabling group stop participation from
+ptrace_stop().
 
-This patch makes do_signal_stop() test whether the task is ptraced and
-use ptrace_stop() if so.  This renders tracehook_notify_jctl() rather
-pointless as the ptrace notification is now handled by ptrace_stop()
-regardless of the return value from the tracehook.  It probably is a
-good idea to update it.
+A visible behavior change is increased likelihood of delayed group
+stop completion if the thread group contains one or more ptraced
+tasks.
 
-This doesn't solve the whole problem as tasks already in stopped state
-would stay in the regular stop when ptrace attached.  That part will
-be handled by the next patch.
-
-Oleg pointed out that this makes a userland-visible change.  Before,
-SIGCONT would be able to wake up a task in group stop even if the task
-is ptraced if the tracer hasn't issued another ptrace command
-afterwards (as the next ptrace commands transitions the state into
-TASK_TRACED which ignores SIGCONT wakeups).  With this and the next
-patch, SIGCONT may race with the transition into TASK_TRACED and is
-ignored if the tracee already entered TASK_TRACED.
-
-Another userland visible change of this and the next patch is that the
-ptracee's state would now be TASK_TRACED where it used to be
-TASK_STOPPED, which is visible via fs/proc.
+This is to preapre for further cleanup of the interaction between
+group stop and ptrace.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Roland McGrath <roland@redhat.com>
-Cc: Jan Kratochvil <jan.kratochvil@redhat.com>
 ---
- kernel/signal.c |   43 +++++++++++++++++++++++++------------------
- 1 files changed, 25 insertions(+), 18 deletions(-)
+ kernel/signal.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/signal.c b/kernel/signal.c
-index 0b36f1b..6656145 100644
+index 7e85e42..0b36f1b 100644
 --- a/kernel/signal.c
 +++ b/kernel/signal.c
-@@ -1783,7 +1783,6 @@ void ptrace_notify(int exit_code)
- static int do_signal_stop(int signr)
- {
- 	struct signal_struct *sig = current->signal;
--	int notify = 0;
- 
- 	if (!(current->group_stop & GROUP_STOP_PENDING)) {
- 		unsigned int gstop = GROUP_STOP_PENDING | GROUP_STOP_CONSUME;
-@@ -1813,29 +1812,37 @@ static int do_signal_stop(int signr)
- 			} else
- 				task_clear_group_stop(t);
+@@ -1694,10 +1694,13 @@ static void ptrace_stop(int exit_code, int why, int clear_code, siginfo_t *info)
  	}
--	/*
--	 * If there are no other threads in the group, or if there is
--	 * a group stop in progress and we are the last to stop, report
--	 * to the parent.  When ptraced, every thread reports itself.
--	 */
--	if (task_participate_group_stop(current))
--		notify = CLD_STOPPED;
--	if (task_ptrace(current))
--		notify = CLD_STOPPED;
  
- 	current->exit_code = sig->group_exit_code;
- 	__set_current_state(TASK_STOPPED);
+ 	/*
+-	 * If there is a group stop in progress,
+-	 * we must participate in the bookkeeping.
++	 * If @why is CLD_STOPPED, we're trapping to participate in a group
++	 * stop.  Do the bookkeeping.  Note that if SIGCONT was delievered
++	 * while siglock was released for the arch hook, PENDING could be
++	 * clear now.  We act as if SIGCONT is received after TASK_TRACED
++	 * is entered - ignore it.
+ 	 */
+-	if (current->group_stop & GROUP_STOP_PENDING)
++	if (why == CLD_STOPPED && (current->group_stop & GROUP_STOP_PENDING))
+ 		task_participate_group_stop(current);
  
--	spin_unlock_irq(&current->sighand->siglock);
-+	if (likely(!task_ptrace(current))) {
-+		int notify = 0;
- 
--	if (notify) {
--		read_lock(&tasklist_lock);
--		do_notify_parent_cldstop(current, notify);
--		read_unlock(&tasklist_lock);
--	}
-+		/*
-+		 * If there are no other threads in the group, or if there
-+		 * is a group stop in progress and we are the last to stop,
-+		 * report to the parent.
-+		 */
-+		if (task_participate_group_stop(current))
-+			notify = CLD_STOPPED;
- 
--	/* Now we don't run again until woken by SIGCONT or SIGKILL */
--	schedule();
-+		spin_unlock_irq(&current->sighand->siglock);
-+
-+		if (notify) {
-+			read_lock(&tasklist_lock);
-+			do_notify_parent_cldstop(current, notify);
-+			read_unlock(&tasklist_lock);
-+		}
-+
-+		/* Now we don't run again until woken by SIGCONT or SIGKILL */
-+		schedule();
-+
-+		spin_lock_irq(&current->sighand->siglock);
-+	} else
-+		ptrace_stop(current->exit_code, CLD_STOPPED, 0, NULL);
-+
-+	spin_unlock_irq(&current->sighand->siglock);
- 
- 	tracehook_finish_jctl();
- 	current->exit_code = 0;
+ 	current->last_siginfo = info;
 -- 
 1.7.1
 
