@@ -1,436 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab0LXBcP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 20:32:15 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55951 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752387Ab0LXBcN (ORCPT
+	id S1752685Ab0LXBcm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 20:32:42 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:44173 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038Ab0LXBcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 20:32:13 -0500
-Message-Id: <201012240132.oBO1W8Ub022207@imap1.linux-foundation.org>
-Subject: mmotm 2010-12-23-16-58 uploaded
-To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-From: akpm@linux-foundation.org
-Date: Thu, 23 Dec 2010 16:58:58 -0800
+	Thu, 23 Dec 2010 20:32:41 -0500
+Date: Fri, 24 Dec 2010 10:32:33 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: linux-next: manual merge of the sound tree with the s5p tree
+In-reply-to: <s5h7hf0tvct.wl%tiwai@suse.de>
+To: "'Takashi Iwai'" <tiwai@suse.de>,
+        "'Russell King'" <rmk+kernel@arm.linux.org.uk>
+Cc: "'Stephen Rothwell'" <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "'Jassi Brar'" <jassi.brar@samsung.com>
+Message-id: <008f01cba30a$72f5c160$58e14420$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=US-ASCII
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: AcuirfQvcOjcqakeR7GggfoJbWGviwAWoaYQ
+References: <20101223115339.1ce18216.sfr@canb.auug.org.au>
+ <003f01cba28c$872214f0$95663ed0$%kim@samsung.com>
+ <s5hk4j0n43g.wl%tiwai@suse.de>
+ <004001cba292$3827d2d0$a8777870$%kim@samsung.com>
+ <s5hvd2ku49r.wl%tiwai@suse.de>
+ <004101cba294$8639de30$92ad9a90$%kim@samsung.com>
+ <s5h7hf0tvct.wl%tiwai@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mm-of-the-moment snapshot 2010-12-23-16-58 has been uploaded to
+Takashi Iwai wrote:
+> 
+> At Thu, 23 Dec 2010 20:28:27 +0900,
+> Kukjin Kim wrote:
+> >
+> > Takashi Iwai wrote:
+> > >
+> >
+> > (snip)
+> >
+> > > > > > Anyway I need above commits from sound-2.6.git in my tree...
+> > > > > > so how method is better to me instead of cherry-pick it?
+> > > > >
+> > > > > You can merge topic/asoc branch of sound git tree.
+> > > > > This brach contains the all necessary commits for ASoC and is
+almost
+> > > > > never rebased.
+> > > >
+> > > > Hi,
+> > > >
+> > > > But I can't merge it because there is no 'topic/asoc' branch in
+> > > > sound-2.6.git.
+> > > >
+(git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound-2.6.git)
+> > > >
+> > > > Is there another repository?
+> > >
+> > > OK, Mark's tree doesn't contain.  But you can merge for-2.6.38 tree
+there.
+> > >
+> > > The main sound git tree is found in
+> > >     git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6.git
+> > >
+> > Aha~ :-)
+> >
+> > > > And should I merge it in my tree even though don't need all of ASoC
+> > commits
+> > > > :-( ?
+> > >
+> > > In general yes because this is the tree to be merged to 2.6.38.
+> > >
+> > Yeah, I know it.
+> >
+> > > > I'm not sure how many commits are in there...
+> > >
+> > > You can keep two branches.  One contains only your fixes, and another
+> > > is the merged branch from yours and from sound git tree.  Expose the
+> > > latter merged tree for linux-next.
+> > >
+> > Yeah...however, firstly, my tree will be sent to rmk during 38 merge
+window,
+> > if I merge from sound git, for avoiding build error I should send all
+> > including them not only my patches. I think there is no need to
+rmk...hmm
+> >
+> > So I did 'cherry-pick' only needed 2 commits in my tree.
+> 
+> And that caused problems :)
+> 
+Yup...you're right. As I said, I couldn't suitable some branch for me.
 
-   http://userweb.kernel.org/~akpm/mmotm/
+> > > There are many other ways to manage such things, but the above has
+> > > worked for me well, at least.
+> >
+> > Yeah I think so...but is there another better way in this case?
+Hehehe...
+> 
+> Well, ideally, create a separate branch containing these cross-tree
+> commits based on vanilla.  Then pull this branch to both arm (or your)
+> and sound trees.  In that way, both trees share the same commits in
+> the least amount.
+> 
+Yeah...
 
-and will soon be available at
+> I basically don't like to rebase and the commits have been already in
+> sound tree, but if this is the only way and Russell prefers this, it
+> can be a possible option.
+> 
+I agree with you...now, rebase stuff is unnecessary load to you.
 
-   git://zen-kernel.org/kernel/mmotm.git
+Ok...firstly, need to ask to Russell.
+(Added Russell in To)
 
-It contains the following patches against 2.6.37-rc7:
+Hi Russell,
 
-origin.patch
-linux-next.patch
-linux-next-git-rejects.patch
-next-remove-localversion.patch
-i-need-old-gcc.patch
-arch-alpha-kernel-systblss-remove-debug-check.patch
-ima-fix-add-lsm-rule-bug.patch
-keys-dont-call-up_write-if-__key_link_begin-returns-an-error.patch
-arch-alpha-include-asm-ioh-s-extern-inline-static-inline.patch
-memblock-fix-memblock_is_region_memory.patch
-mm-vmap-area-cache.patch
-pata_mpc52xx-driver-needs-bmdma.patch
-backlight-fix-88pm860x_bl-macro-collision.patch
-cciss-fix-botched-tag-masking-for-scsi-tape-commands.patch
-arch-x86-oprofile-op_model_amdc-perform-initialisation-on-a-single-cpu.patch
-acerhdf-add-support-for-aspire-1410-bios-v13314.patch
-arm-translate-delays-into-mostly-c.patch
-arm-allow-machines-to-override-__delay.patch
-arm-implement-a-timer-based-__delay-loop.patch
-msm-timer-migrate-to-timer-based-__delay.patch
-fs-btrfs-inodec-eliminate-memory-leak.patch
-btrfs-dont-dereference-extent_mapping-if-null.patch
-cpufreq-fix-ondemand-governor-powersave_bias-execution-time-misuse.patch
-debugfs-remove-module_exit.patch
-drivers-gpu-drm-radeon-atomc-fix-warning.patch
-irq-use-per_cpu-kstat_irqs.patch
-modpost-fix-address-calculation-in-reloc_location.patch
-drivers-leds-leds-lp5521c-fix-potential-buffer-overflow.patch
-leds-leds-pca9532-cleanups.patch
-leds-route-kbd-leds-through-the-generic-leds-layer.patch
-mips-enable-arch_dma_addr_t_64bit-with-highmem-64bit_phys_addr-64bit.patch
-isdn-capi-unregister-capictr-notifier-after-init-failure.patch
-isdn-capi-make-kcapi-use-a-separate-workqueue.patch
-drivers-video-backlight-l4f00242t03c-make-1-bit-signed-field-unsigned.patch
-drivers-video-backlight-l4f00242t03c-full-implement-fb-power-states-for-this-lcd.patch
-drivers-video-backlight-l4f00242t03c-prevent-unbalanced-calls-to-regulator-enable-disable.patch
-btusb-patch-add_apple_macbookpro62.patch
-atmel_serial-fix-rts-high-after-initialization-in-rs485-mode.patch
-atmel_serial-fix-rts-high-after-initialization-in-rs485-mode-fix.patch
-drivers-message-fusion-mptsasc-fix-warning.patch
-scsi-fix-a-header-to-include-linux-typesh.patch
-drivers-block-makefile-replace-the-use-of-module-objs-with-module-y.patch
-drivers-block-aoe-makefile-replace-the-use-of-module-objs-with-module-y.patch
-vfs-remove-a-warning-on-open_fmode.patch
-vfs-add-__fmode_exec.patch
-fs-make-block-fiemap-mapping-length-at-least-blocksize-long.patch
-n_hdlc-fix-read-and-write-locking.patch
-n_hdlc-fix-read-and-write-locking-update.patch
-mm.patch
-mm-page-allocator-adjust-the-per-cpu-counter-threshold-when-memory-is-low.patch
-mm-vmstat-use-a-single-setter-function-and-callback-for-adjusting-percpu-thresholds.patch
-mm-vmstat-use-a-single-setter-function-and-callback-for-adjusting-percpu-thresholds-fix.patch
-mm-vmstat-use-a-single-setter-function-and-callback-for-adjusting-percpu-thresholds-update.patch
-mm-vmstat-use-a-single-setter-function-and-callback-for-adjusting-percpu-thresholds-fix-set_pgdat_percpu_threshold-dont-use-for_each_online_cpu.patch
-writeback-integrated-background-writeback-work.patch
-writeback-trace-wakeup-event-for-background-writeback.patch
-writeback-stop-background-kupdate-works-from-livelocking-other-works.patch
-writeback-stop-background-kupdate-works-from-livelocking-other-works-update.patch
-writeback-avoid-livelocking-wb_sync_all-writeback.patch
-writeback-avoid-livelocking-wb_sync_all-writeback-update.patch
-writeback-check-skipped-pages-on-wb_sync_all.patch
-writeback-check-skipped-pages-on-wb_sync_all-update.patch
-writeback-check-skipped-pages-on-wb_sync_all-update-fix.patch
-writeback-io-less-balance_dirty_pages.patch
-writeback-consolidate-variable-names-in-balance_dirty_pages.patch
-writeback-per-task-rate-limit-on-balance_dirty_pages.patch
-writeback-per-task-rate-limit-on-balance_dirty_pages-fix.patch
-writeback-prevent-duplicate-balance_dirty_pages_ratelimited-calls.patch
-writeback-account-per-bdi-accumulated-written-pages.patch
-writeback-bdi-write-bandwidth-estimation.patch
-writeback-bdi-write-bandwidth-estimation-fix.patch
-writeback-show-bdi-write-bandwidth-in-debugfs.patch
-writeback-quit-throttling-when-bdi-dirty-pages-dropped-low.patch
-writeback-reduce-per-bdi-dirty-threshold-ramp-up-time.patch
-writeback-make-reasonable-gap-between-the-dirty-background-thresholds.patch
-writeback-scale-down-max-throttle-bandwidth-on-concurrent-dirtiers.patch
-writeback-add-trace-event-for-balance_dirty_pages.patch
-writeback-make-nr_to_write-a-per-file-limit.patch
-writeback-make-nr_to_write-a-per-file-limit-fix.patch
-sync_inode_metadata-fix-comment.patch
-mm-page-writebackc-fix-__set_page_dirty_no_writeback-return-value.patch
-vmscan-factor-out-kswapd-sleeping-logic-from-kswapd.patch
-mm-find_get_pages_contig-fixlet.patch
-fs-mpagec-consolidate-code.patch
-fs-mpagec-consolidate-code-checkpatch-fixes.patch
-mm-convert-sprintf_symbol-to-%ps.patch
-mm-smaps-export-mlock-information.patch
-mm-compaction-add-trace-events-for-memory-compaction-activity.patch
-mm-vmscan-convert-lumpy_mode-into-a-bitmask.patch
-mm-vmscan-reclaim-order-0-and-use-compaction-instead-of-lumpy-reclaim.patch
-mm-vmscan-reclaim-order-0-and-use-compaction-instead-of-lumpy-reclaim-fix.patch
-mm-migration-allow-migration-to-operate-asynchronously-and-avoid-synchronous-compaction-in-the-faster-path.patch
-mm-migration-allow-migration-to-operate-asynchronously-and-avoid-synchronous-compaction-in-the-faster-path-fix.patch
-mm-migration-cleanup-migrate_pages-api-by-matching-types-for-offlining-and-sync.patch
-mm-compaction-perform-a-faster-migration-scan-when-migrating-asynchronously.patch
-mm-vmscan-rename-lumpy_mode-to-reclaim_mode.patch
-mm-vmscan-rename-lumpy_mode-to-reclaim_mode-fix.patch
-mm-deactivate-invalidated-pages.patch
-mm-deactivate-invalidated-pages-fix.patch
-mm-remove-unused-get_vm_area_node.patch
-mm-remove-gfp-mask-from-pcpu_get_vm_areas.patch
-mm-unify-module_alloc-code-for-vmalloc.patch
-oom-allow-a-non-cap_sys_resource-proces-to-oom_score_adj-down.patch
-mm-clear-pageerror-bit-in-msync-fsync.patch
-do_wp_page-remove-the-reuse-flag.patch
-do_wp_page-clarify-dirty_page-handling.patch
-mlock-avoid-dirtying-pages-and-triggering-writeback.patch
-mlock-only-hold-mmap_sem-in-shared-mode-when-faulting-in-pages.patch
-mlock-only-hold-mmap_sem-in-shared-mode-when-faulting-in-pages-fix.patch
-mm-add-foll_mlock-follow_page-flag.patch
-mm-move-vm_locked-check-to-__mlock_vma_pages_range.patch
-mlock-do-not-hold-mmap_sem-for-extended-periods-of-time.patch
-mlock-do-not-hold-mmap_sem-for-extended-periods-of-time-fix.patch
-mlock-do-not-hold-mmap_sem-for-extended-periods-of-time-fix2.patch
-mempolicy-remove-tasklist_lock-from-migrate_pages.patch
-vmalloc-remove-redundant-unlikely.patch
-mm-remove-likely-from-mapping_unevictable.patch
-mm-remove-unlikely-from-page_mapping.patch
-mm-remove-likely-from-grab_cache_page_write_begin.patch
-mm-kswapd-stop-high-order-balancing-when-any-suitable-zone-is-balanced.patch
-mm-kswapd-keep-kswapd-awake-for-high-order-allocations-until-a-percentage-of-the-node-is-balanced.patch
-mm-kswapd-use-the-order-that-kswapd-was-reclaiming-at-for-sleeping_prematurely.patch
-mm-kswapd-reset-kswapd_max_order-and-classzone_idx-after-reading.patch
-mm-kswapd-treat-zone-all_unreclaimable-in-sleeping_prematurely-similar-to-balance_pgdat.patch
-mm-kswapd-use-the-classzone-idx-that-kswapd-was-using-for-sleeping_prematurely.patch
-mm-set-correct-numa_zonelist_order-string-when-configured-on-the-kernel-command-line.patch
-thp-ksm-free-swap-when-swapcache-page-is-replaced.patch
-thp-fix-bad_page-to-show-the-real-reason-the-page-is-bad.patch
-thp-transparent-hugepage-support-documentation.patch
-thp-mm-define-madv_hugepage.patch
-thp-compound_lock.patch
-thp-alter-compound-get_page-put_page.patch
-thp-put_page-recheck-pagehead-after-releasing-the-compound_lock.patch
-thp-update-futex-compound-knowledge.patch
-thp-clear-compound-mapping.patch
-thp-add-native_set_pmd_at.patch
-thp-add-pmd-paravirt-ops.patch
-thp-no-paravirt-version-of-pmd-ops.patch
-thp-export-maybe_mkwrite.patch
-thp-comment-reminder-in-destroy_compound_page.patch
-thp-config_transparent_hugepage.patch
-thp-config_transparent_hugepage-fix.patch
-thp-special-pmd_trans_-functions.patch
-thp-add-pmd-mangling-generic-functions.patch
-thp-add-pmd-mangling-generic-functions-fix-pgtableh-build-for-um.patch
-thp-add-pmd-mangling-functions-to-x86.patch
-thp-bail-out-gup_fast-on-splitting-pmd.patch
-thp-pte-alloc-trans-splitting.patch
-thp-pte-alloc-trans-splitting-fix.patch
-thp-pte-alloc-trans-splitting-fix-checkpatch-fixes.patch
-thp-add-pmd-mmu_notifier-helpers.patch
-thp-clear-page-compound.patch
-thp-add-pmd_huge_pte-to-mm_struct.patch
-thp-split_huge_page_mm-vma.patch
-thp-split_huge_page-paging.patch
-thp-clear_copy_huge_page.patch
-thp-kvm-mmu-transparent-hugepage-support.patch
-thp-_gfp_no_kswapd.patch
-thp-dont-alloc-harder-for-gfp-nomemalloc-even-if-nowait.patch
-thp-transparent-hugepage-core.patch
-thp-split_huge_page-anon_vma-ordering-dependency.patch
-thp-verify-pmd_trans_huge-isnt-leaking.patch
-thp-madvisemadv_hugepage.patch
-thp-add-pagetranscompound.patch
-thp-pmd_trans_huge-migrate-bugcheck.patch
-thp-memcg-compound.patch
-thp-transhuge-memcg-commit-tail-pages-at-charge.patch
-thp-memcg-huge-memory.patch
-thp-transparent-hugepage-vmstat.patch
-thp-khugepaged.patch
-thp-khugepaged-vma-merge.patch
-thp-skip-transhuge-pages-in-ksm-for-now.patch
-thp-remove-pg_buddy.patch
-thp-add-x86-32bit-support.patch
-thp-mincore-transparent-hugepage-support.patch
-thp-add-pmd_modify.patch
-thp-mprotect-pass-vma-down-to-page-table-walkers.patch
-thp-mprotect-transparent-huge-page-support.patch
-thp-set-recommended-min-free-kbytes.patch
-thp-enable-direct-defrag.patch
-thp-add-numa-awareness-to-hugepage-allocations.patch
-thp-allocate-memory-in-khugepaged-outside-of-mmap_sem-write-mode.patch
-thp-allocate-memory-in-khugepaged-outside-of-mmap_sem-write-mode-fix.patch
-thp-transparent-hugepage-config-choice.patch
-thp-select-config_compaction-if-transparent_hugepage-enabled.patch
-thp-transhuge-isolate_migratepages.patch
-thp-avoid-breaking-huge-pmd-invariants-in-case-of-vma_adjust-failures.patch
-thp-dont-allow-transparent-hugepage-support-without-pse.patch
-thp-mmu_notifier_test_young.patch
-thp-freeze-khugepaged-and-ksmd.patch
-thp-use-compaction-in-kswapd-for-gfp_atomic-order-0.patch
-thp-use-compaction-for-all-allocation-orders.patch
-thp-disable-transparent-hugepages-by-default-on-small-systems.patch
-thp-fix-anon-memory-statistics-with-transparent-hugepages.patch
-thp-scale-nr_rotated-to-balance-memory-pressure.patch
-thp-transparent-hugepage-sysfs-meminfo.patch
-thp-add-debug-checks-for-mapcount-related-invariants.patch
-thp-fix-memory-failure-hugetlbfs-vs-thp-collision.patch
-thp-compound_trans_order.patch
-thp-compound_trans_order-fix.patch
-thp-mm-define-madv_nohugepage.patch
-thp-madvisemadv_nohugepage.patch
-thp-khugepaged-make-khugepaged-aware-of-madvise.patch
-thp-khugepaged-make-khugepaged-aware-of-madvise-fix.patch
-mm-migration-use-rcu_dereference_protected-when-dereferencing-the-radix-tree-slot-during-file-page-migration.patch
-mm-migration-use-rcu_dereference_protected-when-dereferencing-the-radix-tree-slot-during-file-page-migration-fix.patch
-mm-hugetlbc-fix-error-path-memory-leak-in-nr_hugepages_store_common.patch
-mm-hugetlbc-fix-error-path-memory-leak-in-nr_hugepages_store_common-fix.patch
-frv-duplicate-output_buffer-of-e03.patch
-frv-duplicate-output_buffer-of-e03-checkpatch-fixes.patch
-hpet-factor-timer-allocate-from-open.patch
-um-mark-config_highmem-as-broken.patch
-arch-um-drivers-linec-safely-iterate-over-list-of-winch-handlers.patch
-uml-mmapper_kern-needs-module_license.patch
-kmsg_dump-constrain-mtdoops-and-ramoops-to-perform-their-actions-only-for-kmsg_dump_panic.patch
-kmsg_dump-add-kmsg_dump-calls-to-the-reboot-halt-poweroff-and-emergency_restart-paths.patch
-set_rtc_mmss-show-warning-message-only-once.patch
-include-linux-kernelh-abs-fix-handling-of-32-bit-unsigneds-on-64-bit.patch
-include-linux-kernelh-abs-fix-handling-of-32-bit-unsigneds-on-64-bit-fix.patch
-add-the-common-dma_addr_t-typedef-to-include-linux-typesh.patch
-toshibah-hide-a-function-prototypes-behind-__kernel__-macro.patch
-include-linux-unaligned-packed_structh-use-__packed.patch
-kernel-clean-up-use_generic_smp_helpers.patch
-mm-numa-aware-alloc_task_struct_node.patch
-mm-numa-aware-alloc_thread_info_node.patch
-kthread-numa-aware-kthread_create_on_cpu.patch
-kthread-use-kthread_create_on_cpu.patch
-kptr_restrict-for-hiding-kernel-pointers-from-unprivileged-users.patch
-kptr_restrict-for-hiding-kernel-pointers-from-unprivileged-users-fix.patch
-kptr_restrict-for-hiding-kernel-pointers-v4.patch
-kptr_restrict-for-hiding-kernel-pointers-v6.patch
-kptr_restrict-for-hiding-kernel-pointers-v7.patch
-kptr_restrict-for-hiding-kernel-pointers-v7-fix.patch
-net-convert-%p-usage-to-%pk.patch
-dca-remove-unneeded-null-check.patch
-include-asm-generic-vmlinuxldsh-make-readmostly-section-correctly-align.patch
-percpu-add-new-macros-to-make-percpu-readmostly-section-correctly-align.patch
-printk-use-rcu-to-prevent-potential-lock-contention-in-kmsg_dump.patch
-include-linux-printkh-move-console-functions-and-variables-together.patch
-include-linux-printkh-use-space-after-define.patch
-include-linux-printkh-use-and-neaten-no_printk.patch
-include-linux-printkh-add-pr_level_once-macros.patch
-include-linux-printkh-lib-hexdumpc-neatening-and-add-config_printk-guard.patch
-include-linux-printkh-organize-printk_ratelimited-macros.patch
-include-linux-printkh-use-tab-not-spaces-for-indent.patch
-vfs-remove-unlikely-from-fput_light.patch
-vfs-remove-unlikely-from-fget_light.patch
-scripts-get_maintainerpl-make-rolestats-the-default.patch
-scripts-get_maintainerpl-use-git-fallback-more-often.patch
-maintainers-openwrt-devel-is-subscribers-only.patch
-flex_array-export-symbols-to-modules.patch
-drivers-mmc-host-omapc-use-resource_size.patch
-drivers-mmc-host-omap_hsmmcc-use-resource_size.patch
-scripts-checkpatchpl-add-check-for-multiple-terminating-semicolons-and-casts-of-vmalloc.patch
-checkpatchpl-fix-cast-detection.patch
-checkpatch-check-for-world-writeable-sysfs-debugfs-files.patch
-fs-select-fix-information-leak-to-userspace.patch
-fs-select-fix-information-leak-to-userspace-fix.patch
-epoll-convert-max_user_watches-to-long.patch
-binfmt_elf-cleanups.patch
-drivers-rtc-rtc-omapc-fix-a-memory-leak.patch
-rtc-cmos-fix-suspend-resume.patch
-rtc-add-real-time-clock-driver-for-nvidia-tegra.patch
-drivers-gpio-cs5535-gpioc-add-some-additional-cs5535-specific-gpio-functionality.patch
-drivers-staging-olpc_dcon-convert-to-new-cs5535-gpio-api.patch
-cs5535-deprecate-older-cs5535_gpio-driver.patch
-gpio-adp5588-gpio-irq_data-conversion.patch
-gpio-langwell_gpio-irq_data-conversion.patch
-gpio-max732x-irq_data-conversion.patch
-gpio-pca953x-irq_data-conversion.patch
-gpio-pl061-irq_data-conversion.patch
-gpio-stmpe-gpio-irq_data-conversion.patch
-gpio-sx150x-irq_data-conversion.patch
-gpio-tc35892-gpio-irq_data-conversion.patch
-gpio-timbgpio-irq_data-conversion.patch
-gpio-vr41xx_giu-irq_data-conversion.patch
-gpio_rdc321x-select-mfd_support-to-squelch-kconfig-warning.patch
-gpio_vx855-eliminate-kconfig-dependency-warning.patch
-drivers-power-gpio-chargerc-check-for-kzalloc-failure.patch
-cyber2000fb-avoid-palette-corruption-at-higher-clocks.patch
-drivers-telephony-ixjc-fix-warning.patch
-ext2-speed-up-file-creates-by-optimizing-rec_len-functions.patch
-ext3-speed-up-file-creates-by-optimizing-rec_len-functions.patch
-ext3-remove-redundant-unlikely.patch
-jbd-remove-dependency-on-__gfp_nofail.patch
-cgroups-remove-deprecated-subsystem-from-examples.patch
-memcg-add-page_cgroup-flags-for-dirty-page-tracking.patch
-memcg-document-cgroup-dirty-memory-interfaces.patch
-memcg-document-cgroup-dirty-memory-interfaces-fix.patch
-memcg-create-extensible-page-stat-update-routines.patch
-memcg-add-lock-to-synchronize-page-accounting-and-migration.patch
-memcg-fix-unit-mismatch-in-memcg-oom-limit-calculation.patch
-memcg-remove-unnecessary-return-from-void-returning-mem_cgroup_del_lru_list.patch
-memcg-use-zalloc-rather-than-mallocmemset.patch
-fs-proc-basec-kernel-latencytopc-convert-sprintf_symbol-to-%ps.patch
-fs-proc-basec-kernel-latencytopc-convert-sprintf_symbol-to-%ps-checkpatch-fixes.patch
-proc-use-unsigned-long-inside-proc-statm.patch
-proc-use-seq_puts-seq_putc-where-possible.patch
-proc-low_ino-cleanup.patch
-proc-use-single_open-correctly.patch
-exec_domain-establish-a-linux32-domain-on-config_compat-systems.patch
-rapidio-use-common-destid-storage-for-endpoints-and-switches.patch
-rapidio-integrate-rio_switch-into-rio_dev.patch
-rapidio-add-definitions-of-component-tag-fields.patch
-rapidio-add-device-object-linking-into-discovery.patch
-rapidio-use-component-tag-for-unified-switch-identification.patch
-rapidio-add-new-idt-srio-switches.patch
-rapidio-add-new-sysfs-attributes.patch
-sysctl-fix-ifdef-guard-comment.patch
-sysctl-remove-obsolete-comments.patch
-sysctl-remove-obsolete-comments-fix.patch
-user_ns-improve-the-user_ns-on-the-slab-packaging.patch
-user_ns-improve-the-user_ns-on-the-slab-packaging-fix.patch
-fs-execc-provide-the-correct-process-pid-to-the-pipe-helper.patch
-nfc-driver-for-nxp-semiconductors-pn544-nfc-chip.patch
-nfc-driver-for-nxp-semiconductors-pn544-nfc-chip-update.patch
-remove-dma64_addr_t.patch
-pps-trivial-fixes.patch
-pps-declare-variables-where-they-are-used-in-switch.patch
-pps-fix-race-in-pps_fetch-handler.patch
-pps-unify-timestamp-gathering.patch
-pps-access-pps-device-by-direct-pointer.patch
-pps-convert-printk-pr_-to-dev_.patch
-pps-move-idr-stuff-to-ppsc.patch
-pps-make-idr-lock-a-mutex-and-protect-idr_pre_get.patch
-pps-use-bug_on-for-kernel-api-safety-checks.patch
-pps-simplify-conditions-a-bit.patch
-pps-timestamp-is-always-passed-to-dcd_change.patch
-ntp-add-hardpps-implementation.patch
-ntp-add-hardpps-implementation-update-v7.patch
-pps-capture-monotonic_raw-timestamps-as-well.patch
-pps-capture-monotonic_raw-timestamps-as-well-v7.patch
-pps-add-kernel-consumer-support.patch
-pps-add-kernel-consumer-support-v7.patch
-pps-add-parallel-port-pps-client.patch
-pps-add-parallel-port-pps-client-v7.patch
-pps-add-parallel-port-pps-signal-generator.patch
-pps-add-parallel-port-pps-signal-generator-fix.patch
-pps-add-parallel-port-pps-signal-generator-v7.patch
-memstick-core-fix-device_register-error-handling.patch
-memstick-fix-setup-for-jmicron-38x-controllers.patch
-memstick-set-pmos-values-propery-for-jmicron-38x-controllers.patch
-memstick-add-support-for-jmicron-jmb-385-and-390-controllers.patch
-memstick-avert-possible-race-condition-between-idr_pre_get-and-idr_get_new.patch
-memstick-remove-mspro_block_mutex.patch
-memstick-factor-out-transfer-initiating-functionality-in-mspro_blockc.patch
-memstick-add-support-for-mspro-specific-data-transfer-method.patch
-w1-ds2423-counter-driver-and-documentation.patch
-w1-ds2423-counter-driver-and-documentation-fix.patch
-vmware-balloon-stop-locking-pages-when-hypervisor-tells-us-enough.patch
-cramfs-hide-function-prototypes-behind-__kernel__-macro.patch
-romfs-have-romfs_fsh-pull-in-necessary-headers.patch
-decompressors-add-missing-init-ie-__init.patch
-decompressors-get-rid-of-set_error_fn-macro.patch
-decompressors-include-linux-slabh-in-linux-decompress-mmh.patch
-decompressors-remove-unused-function-from-lib-decompress_unlzmac.patch
-decompressors-fix-header-validation-in-decompress_unlzmac.patch
-decompressors-check-for-read-errors-in-decompress_unlzmac.patch
-decompressors-check-for-write-errors-in-decompress_unlzmac.patch
-decompressors-validate-match-distance-in-decompress_unlzmac.patch
-decompressors-check-for-write-errors-in-decompress_unlzoc.patch
-decompressors-check-input-size-in-decompress_unlzoc.patch
-decompressors-fix-callback-to-callback-mode-in-decompress_unlzoc.patch
-decompressors-add-xz-decompressor-module.patch
-decompressors-add-boot-time-xz-support.patch
-decompressors-add-boot-time-xz-support-update.patch
-x86-support-xz-compressed-kernel.patch
-bitops-merge-little-and-big-endian-definisions-in-asm-generic-bitops-leh.patch
-bitops-rename-generic-little-endian-bitops-functions.patch
-s390-introduce-little-endian-bitops.patch
-arm-introduce-little-endian-bitops.patch
-m68k-introduce-little-endian-bitops.patch
-bitops-introduce-config_generic_find_le_bit.patch
-m68knommu-introduce-little-endian-bitops.patch
-m68knommu-introduce-little-endian-bitops-build-fix.patch
-bitops-introduce-little-endian-bitops-for-most-architectures.patch
-rds-stop-including-asm-generic-bitops-leh.patch
-kvm-stop-including-asm-generic-bitops-leh.patch
-asm-generic-use-little-endian-bitops.patch
-ext3-use-little-endian-bitops.patch
-ext4-use-little-endian-bitops.patch
-ocfs2-use-little-endian-bitops.patch
-nilfs2-use-little-endian-bitops.patch
-reiserfs-use-little-endian-bitops.patch
-udf-use-little-endian-bitops.patch
-ufs-use-little-endian-bitops.patch
-md-use-little-endian-bit-operations.patch
-dm-use-little-endian-bit-operations.patch
-bitops-remove-ext2-non-atomic-bitops-from-asm-bitopsh.patch
-m68k-remove-inline-asm-from-minix_find_first_zero_bit.patch
-bitops-remove-minix-bitops-from-asm-bitopsh.patch
-bitops-use-find_first_zero_bit-instead-of-find_next_zero_bitaddr-size-0.patch
-make-sure-nobodys-leaking-resources.patch
-journal_add_journal_head-debug.patch
-releasing-resources-with-children.patch
-make-frame_pointer-default=y.patch
-mutex-subsystem-synchro-test-module.patch
-mutex-subsystem-synchro-test-module-add-missing-header-file.patch
-slab-leaks3-default-y.patch
-put_bh-debug.patch
-add-debugging-aid-for-memory-initialisation-problems.patch
-workaround-for-a-pci-restoring-bug.patch
-prio_tree-debugging-patch.patch
-single_open-seq_release-leak-diagnostics.patch
-add-a-refcount-check-in-dput.patch
-memblock-add-input-size-checking-to-memblock_find_region.patch
-memblock-add-input-size-checking-to-memblock_find_region-fix.patch
+Sorry for bothering...
+If possible, please read this thread :-)
+
+So...
+
+May/Should I merge sound tree for avoiding build error and conflict between
+each other for 37 merge window instead of cherry-pick?
+Or sound maintainer should rebase his tree so that can make some branch
+which can support to avoid build error for me?
+...Or because Stephen already informed about that so you or Linus can care
+just current tree during merge window?
+
+Which one is better to us? Or another method? Please let me know.
+
+Thanks and Merry Christmas everyone :-)
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
