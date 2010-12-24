@@ -1,46 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751333Ab0LYLXR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 06:23:17 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39665 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832Ab0LYLXQ (ORCPT
+	id S1751356Ab0LYL5m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 06:57:42 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:57419 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915Ab0LYL5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 06:23:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=xW8KLFFU0S9A3HAIf4tJWJw9jPJ8ruTodD/wlpY+G2u0B3CnVWKGDSrBJ1yTnfk1Vu
-         AaAf7NRJdaTsPmPvZRmOtKrOpLc3Gat9I/AFUyt6hzwEzaG0HshKvQAk5Mjod7hS024Z
-         aZJbqWKTxCATtPKpvrq/mp1TCE1KmYxMO3dZU=
-Message-ID: <4D15D347.6050500@gmail.com>
-Date: Sat, 25 Dec 2010 12:19:35 +0100
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	Sat, 25 Dec 2010 06:57:41 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Brown <davidb@codeaurora.org>
+Subject: Re: [PATCH 1/7] msm: io: I/O register definitions for MSM8960
+Date: Fri, 24 Dec 2010 14:29:28 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Miao <eric.y.miao@gmail.com>
+References: <1292384961-8851-1-git-send-email-stepanm@codeaurora.org> <201012152337.19475.arnd@arndb.de> <20101217001658.GA5880@huya.qualcomm.com>
+In-Reply-To: <20101217001658.GA5880@huya.qualcomm.com>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: "Ahmed S. Darwish" <darwish.07@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        David Woodhouse <David.Woodhouse@intel.com>, Greg KH <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH, Bugfix] RAMOOPS: Don't overflow over non-allocated regions
-References: <20101225095709.GA1345@laptop>
-In-Reply-To: <20101225095709.GA1345@laptop>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201012241429.28901.arnd@arndb.de>
+X-Provags-ID: V02:K0:zQTXAjt4LQtfb6bkN3Syn1jnVbNh5LWqG4TlX7AZxcT
+ bmaCVEcMbZV4U1WXZS/Z2TKbtyO+tbqaGAZcnqp9v7PNRmsze9
+ /wKK7VnVTEQiblhCHE9sSmX21d0g4oEur6xO0UH79Fq3NMT/Q2
+ 3Vhj3HgNmdOeduPTYidcWz+eLdYIhGioFOVgAoQo9ZGrcCwJrB
+ /Xqb19gOwSyupRS6hxh4w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 25/12/2010 10:57, Ahmed S. Darwish ha scritto:
-> Hi,
+On Friday 17 December 2010, David Brown wrote:
+> I agree with this goal, and I think I have a plan to get us there.
 > 
-> Current code mis-calculates the ramoops header size, leading to an
-> overflow over the next record at best, or over a non-allocated region
-> at worst. Fix that calculation.
-> 
-> Signed-off-by: Ahmed S. Darwish <darwish.07@gmail.com>
-> --
+> For example, the iomap constants.  To fix this, this data needs to be
+> moved into platform data, or something similar.  It seems to me to
+> make the most sense to move the individual devices out of the iomap
+> until at least the devices used so far on 8960 are all done
+> dynamically.  Then at least these constants aren't needed for this
+> target.
 
-Acked-by: Marco Stornelli <marco.stornelli@gmail.com>
+This is something that would get a lot easier if we already had
+device tree support, no idea if it's worth waiting for that for you.
+Doing it with extensive platform data involves much of the same
+work, but may be more of it.
+
+> There are similar things that need to be done for irqs, and timer
+> offsets.
+
+Yes. Eric has spent a lot of time looking into all these issues,
+he probably has a good overview of the potential problems.
+
+> I'm not sure really what to do about PHYS_OFFSET.  This is kind of the
+> big thing that has kept us so far from making our SOCs multiply
+> selectable.  I could move this into a Kconfig option, but it would
+> still need to be selected by the SOC.  It is unfortunate that most of
+> our SOCs have different enough memory configurations that these are
+> mostly different.  Even 8960/8660 will probably have future variants
+> that are at different addresses.
+
+I think there are people working on relocatable kernels already,
+and we definitely need this for the other work in progress of
+doing kernel binaries that work across different SoC families,
+as well as for doing a single kernel that can be used both for
+booting the system and for kdump.
+
+You don't need to worry about PHYS_OFFSET at the platform level,
+we'll get there in a few months for all ARM platforms.
+
+> My question, then is, should we hold off on getting 8960 support into
+> the kernel until enough things are improved to get rid of the 8960
+> ifdefs?  We can certainly do it that way, but it will keep the code
+> out of the kernel longer.
+
+My personal recommendation would be to fix all the places that you
+can do without significant reworks of the existing code, and
+just add TODO comments in the other places, so we can find them
+easily. There is no reason to hold up merging the code too long for
+this, but I wouldn't add code now that I know needs to be changed
+soon to something that can already be done easily.
+
+	Arnd
