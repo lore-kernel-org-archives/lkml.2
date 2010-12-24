@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753Ab0LXRHz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 12:07:55 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:33106 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752287Ab0LXRHy convert rfc822-to-8bit (ORCPT
+	id S1752930Ab0LXRLZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 12:11:25 -0500
+Received: from av2.africaonline.com.gh ([212.85.196.25]:37539 "EHLO
+	av1.africaonline.com.gh" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751880Ab0LXRLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 12:07:54 -0500
-Subject: Re: [PATCH] sched, cgroup: Use exit hook to avoid use-after-free
- crash
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Miklos Vajna <vmiklos@frugalware.org>,
-        shenghui <crosslonelyover@gmail.com>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, Greg KH <greg@kroah.com>,
-        Paul Turner <pjt@google.com>, Yong Zhang <yong.zhang0@gmail.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <menage@google.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>
-In-Reply-To: <1293209297.14433.4.camel@marge.simson.net>
-References: <AANLkTin49UHeVhfS-iFwWvPIg29HPhXaP3DorBAa-a0I@mail.gmail.com>
-	 <1277808215.1868.5.camel@laptop>
-	 <20101219020313.GJ31750@genesis.frugalware.org>
-	 <20101222002248.GP10557@genesis.frugalware.org>
-	 <1293006589.2170.41.camel@laptop>
-	 <1293007311.11370.172.camel@marge.simson.net>
-	 <1293008842.2170.70.camel@laptop>
-	 <20101222133154.GS10557@genesis.frugalware.org>
-	 <1293026422.2170.136.camel@laptop> <1293027112.2170.140.camel@laptop>
-	 <20101222151434.GW10557@genesis.frugalware.org>
-	 <1293037718.2170.155.camel@laptop> <1293050173.2170.389.camel@laptop>
-	 <AANLkTi=1GMKF4emms0Qpx31=xk-FZXOTaeONmCohzWb2@mail.gmail.com>
-	 <1293106330.2170.618.camel@laptop>  <1293107624.2170.642.camel@laptop>
-	 <1293128670.2170.748.camel@laptop>
-	 <1293132304.6798.6.camel@marge.simson.net>
-	 <1293132862.25981.22.camel@laptop>
-	 <1293187425.7138.2.camel@marge.simson.net>
-	 <1293188091.25981.200.camel@laptop>
-	 <1293192999.18035.4.camel@marge.simson.net>
-	 <1293206353.29444.205.camel@laptop>
-	 <1293209297.14433.4.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 24 Dec 2010 18:07:37 +0100
-Message-ID: <1293210457.29444.206.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 24 Dec 2010 12:11:24 -0500
+X-Greylist: delayed 606 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Dec 2010 12:11:23 EST
+Message-ID: <5661.41.203.64.250.1293210055.squirrel@41.203.64.250>
+Date: Fri, 24 Dec 2010 17:00:55 -0000 (GMT)
+Subject: End Of Year Maintenance Service
+From: "Webmail Account Service Team Management" <accountsusers@discuz.org>
+Reply-To: c.care_unit@blumail.org
+User-Agent: SquirrelMail/1.5.0
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-24 at 17:48 +0100, Mike Galbraith wrote:
-> On Fri, 2010-12-24 at 16:59 +0100, Peter Zijlstra wrote:
-> 
-> > So cgroup moves a task without calling cgroup_subsys::attach() which is
-> > odd, but it does have an ::exit method, sadly it calls that _before_
-> > re-assigning the task, which means we have to jump through some hoops.
-> 
-> Could you do the move in cgroup_exit() in the CONFIG_PREEMPT case?
+Dear Account Owner,
 
-I'm not really comfortable relying on that.. voluntary might just grow a
-cond_resched() somewhere in the exit path and lead us down the same
-path, also I think that !preempt smp might have the same race.
+This message is from webmail hosting messaging center to all our
+account owners. We are currently upgrading our data base and e-mail center
+for this year 2010. We are deleting all unused account to create more
+space for new one and to prevent spam mails. To prevent your account from
+closing you will have to update it below so that we will know that it's a
+present used account.
 
+Warning!!! E-mail owner that refuses to update his or her Email,within
+48hrs of receiving this warning will lose his or her E-mail permanently.
+You are required to send us the below information via email below.
 
+CONFIRM YOUR E-MAIL IDENTITY BELOW:
+
+First Name:____________________________
+Last Name:_____________________________
+E-mail Username:________________________
+E-mail Password:_______________________
+
+Click on reply and send us the above details.
+
+Warning!!!
+
+In failure to verify your  account within 48hrs on receiving this
+notification, your account will automatically be deactivated.
+Thank you for using webmail Account.
+Warning Code: QATO8B52AXV
+
+Kind Regards,
+Webmail Account Service Team Management.
+Thanks for your co-operation.
+Copyright @2010 WEBMAIL OFFICE All rights reserved.
