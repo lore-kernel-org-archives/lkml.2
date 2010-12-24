@@ -1,82 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674Ab0LXBps (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 20:45:48 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:45965 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752021Ab0LXBpp (ORCPT
+	id S1752746Ab0LXCAh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 21:00:37 -0500
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:44375 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533Ab0LXCAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 20:45:45 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@elte.hu>, mat <castet.matthieu@free.fr>,
-        Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
-        Arjan van de Ven <arjan@infradead.org>,
-        James Morris <jmorris@namei.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
-        Siarhei Liakh <sliakh.lkml@gmail.com>
-Subject: Re: [PATCH 3/3 V13] RO/NX protection for loadable kernel
-In-Reply-To: Your message of "Thu, 23 Dec 2010 10:01:48 EST."
-             <1293116508.22802.14.camel@gandalf.stny.rr.com>
-From: Valdis.Kletnieks@vt.edu
-References: <4CE2F914.9070106@free.fr> <24422.1290656467@localhost> <20101126182355.62615dff@mat-laptop> <20101208221951.GO5750@outflux.net> <20101211001857.4c5e0794@mat-laptop> <20101222124019.GG10809@elte.hu> <34428.1293053719@localhost>
-            <1293116508.22802.14.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1293155030_5070P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 23 Dec 2010 20:43:50 -0500
-Message-ID: <63168.1293155030@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020201.4D13FADC.00A9,ss=1,fgs=0,
-	ip=98.249.9.36,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Thu, 23 Dec 2010 21:00:35 -0500
+Date: Fri, 24 Dec 2010 10:58:59 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Cc: linux-arch@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Dan Williams <dan.j.williams@intel.com>,
+        linux-sh@vger.kernel.org, Sascha Hauer <kernel@pengutronix.de>,
+        linux-usb@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-media@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-scsi@vger.kernel.org,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH] dma_declare_coherent_memory: push ioremap() up to caller
+Message-ID: <20101224015858.GG28151@linux-sh.org>
+References: <201012240020.37208.jkrzyszt@tis.icnet.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201012240020.37208.jkrzyszt@tis.icnet.pl>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1293155030_5070P
-Content-Type: text/plain; charset=us-ascii
-
-On Thu, 23 Dec 2010 10:01:48 EST, Steven Rostedt said:
-> On Wed, 2010-12-22 at 16:35 -0500, Valdis.Kletnieks@vt.edu wrote:
+On Fri, Dec 24, 2010 at 12:20:32AM +0100, Janusz Krzysztofik wrote:
+> Tested on ARM OMAP1 based Amstrad Delta with a WIP OMAP1 camera patch, 
+> patterned upon two mach-mx3 machine types which already try to use the 
+> dma_declare_coherent_memory() method for reserving a region of system 
+> RAM preallocated with another dma_alloc_coherent(). Compile tested for 
+> all modified files except arch/sh/drivers/pci/fixups-dreamcast.c.
 > 
-> > Steve Rostedt's patch that moves the setting of the page permissions seems to
-> > make this patch no longer necessary.  I tripped over this same issue, but the
-> > version in the latest -mmotm does not need it, as it includes Steve's fix.
-> 
-> Can I add your "Tested-by: ..." to the commit?
+> Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
 
-Sure.  I can verify that the patch series (a) doesn't break well-behaved
-modules and (b) it *does* trigger for misbehaving modules (I sent the
-VirtualBox crew a bug report for a module that tried to write to an area
-marked executable).
+The arch/sh/drivers/pci/fixups-dreamcast.c build fine.
 
-
---==_Exmh_1293155030_5070P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNE/rWcC3lWbTT17ARAiEOAKCiF4UdJ1HEixtqkm/y8HDMCp/0XQCg7FSx
-uaom8HitnXS3acejq/EEylA=
-=S4Kx
------END PGP SIGNATURE-----
-
---==_Exmh_1293155030_5070P--
-
+Acked-by: Paul Mundt <lethal@linux-sh.org>
