@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157Ab0LXAQr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 19:16:47 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:64572 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689Ab0LXAQq (ORCPT
+	id S1752365Ab0LXAQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 19:16:58 -0500
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:26070 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751619Ab0LXAQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 19:16:46 -0500
-Date: Thu, 23 Dec 2010 16:16:37 -0800
-From: Joel Becker <joel.becker@Oracle.COM>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Fasheh <mfasheh@suse.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, ocfs2-devel@oss.oracle.com
-Subject: [GIT PULL] ocfs2 fixes for 2.6.37-rc7
-Message-ID: <20101224001637.GA25361@mail.oracle.com>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	Mark Fasheh <mfasheh@suse.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, ocfs2-devel@oss.oracle.com
+	Thu, 23 Dec 2010 19:16:57 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: oSjHFUUVM1k7Vh1m6zS91h0r4pDjqCn.RFjJmUHOrgH_xex
+ Eia77sy1befLIJmku5Z11pPPOmU48Kjdzu_0OqlHasNSF_Mn.HEnA3ThZ7GN
+ x2xcbD0KoBeN_k9ZoQl1dJzEJME57X6_ZmbcJUHNhJffjJA.jgeOzF11Z.ne
+ 7dQylJ57xCm2P9GoOFS15SGak551o_KtPYpkGLB9oHNnZBL0HiZkLsjNz9X5
+ NzEMGWqRNNZVTbJ4gxZoxUJaq7iS._csoSf9gOifhMB7tViFdG6SFruAkfW.
+ Z24PqBzr70ZRfPUMV1h5Sji7t_Hyn.dDnIVlfdsjEcMEr0l8-
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 23 Dec 2010 18:16:52 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Tejun Heo <tj@kernel.org>
+cc: "H. Peter Anvin" <hpa@zytor.com>, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [cpuops cmpxchg double V1 1/4] Generic support for
+ this_cpu_cmpxchg_double
+In-Reply-To: <20101222091358.GC27861@htj.dyndns.org>
+Message-ID: <alpine.DEB.2.00.1012231812280.22549@router.home>
+References: <20101214174847.887713690@linux.com> <20101214174900.058235985@linux.com> <4D0CC982.3030905@kernel.org> <alpine.DEB.2.00.1012211634560.3769@router.home> <4D11373D.9010205@zytor.com> <20101222091358.GC27861@htj.dyndns.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 22 Dec 2010, Tejun Heo wrote:
 
-Dear Linus et al,
-	Here are hopefully the last remaining ocfs2 fixes for 2.6.37-rc.
-The most important are a fix for the new coherency mode added in the
-merge window and a regression fix for users with quota enabled.
-	Please pull.
+> > I'm a bit confused on this one.  The standard cmpxchg() takes a scalar
+> > and a pointer, and returns a scalar.  The equivalent for the "double"
+> > variety would be to return a compound object, basically:
+> >
+> > struct double_ulong {
+> > 	unsigned long v[2];
+> > };
+> >
+> > ... which can be returned in registers on both i386 and x86-64.
 
-Joel
+Really? How would that work? I tried with uint128 but could not get the
+compiler to do the right thing.
 
-The following changes since commit b0c3844d8af6b9f3f18f31e1b0502fbefa2166be:
+> > It's a bit clumsy from a type perspective, but I'm not sure that that is
+> > a bad thing.  Doing too much type genericity has caused us problems in
+> > the past.
+>
+> Yeah, the above might be better too.  Is there any reason to use
+> cmpxchg_double on anything smaller?
 
-  Linux 2.6.37-rc6 (2010-12-15 17:24:48 -0800)
+Yes. You may want to use cmpxchg_double on 32 bit entities for backwards
+compatibilities sake or any other smaller unit size. But those could also
+be realized using this_cpu_cmpxchg_<double the size> by just aggregating
+the amount.
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/ocfs2.git upstream-linus
+If we can indeed pass 128 bit entities (as claimed by hpa) via registers
+then the logical choice would be to do
 
-Sunil Mushran (2):
-      ocfs2/dlm: Migrate lockres with no locks if it has a reference
-      ocfs2: Adjust masklog flag values
+	this_cpu_cmpxchg_16(pcp, old, new)
 
-Tao Ma (2):
-      ocfs2: Hold ip_lock when set/clear flags for indexed dir.
-      ocfs2: Fix system inodes cache overflow.
+instead of cmpxchg_double. All parameters would have to be bit.
+Then we can avoid the strange cmpxchg_double semantics and can completely
+avoid introducing those.
 
-Tristan Ye (1):
-      Ocfs2: Teach 'coherency=full' O_DIRECT writes to correctly up_read i_alloc_sem.
 
- fs/ocfs2/aops.c            |    7 +++++--
- fs/ocfs2/aops.h            |   23 +++++++++++++++++++++--
- fs/ocfs2/cluster/masklog.c |    3 ++-
- fs/ocfs2/cluster/masklog.h |   15 ++++++++-------
- fs/ocfs2/dir.c             |    4 ++++
- fs/ocfs2/dlm/dlmmaster.c   |   40 +++++++++++++++++++++++++++-------------
- fs/ocfs2/file.c            |   15 +++++++++++++--
- fs/ocfs2/ocfs2_fs.h        |    2 +-
- 8 files changed, 81 insertions(+), 28 deletions(-)
+
+
