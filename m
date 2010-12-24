@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab0LXDzs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 22:55:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39339 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753350Ab0LXDzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 22:55:48 -0500
-Date: Thu, 23 Dec 2010 19:55:23 -0800
-From: Greg KH <gregkh@suse.de>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fix freeing user_struct in user cache
-Message-ID: <20101224035523.GC25057@suse.de>
-References: <AANLkTi=vfO-rs_iStXkPC7STSqfgUEW_JKt2w1=Wmf6Z@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=vfO-rs_iStXkPC7STSqfgUEW_JKt2w1=Wmf6Z@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753209Ab0LXEf3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 23:35:29 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:35892 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752601Ab0LXEf2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 23:35:28 -0500
+X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=pPXw3_qIy5IA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=49WD_Y0i5dF8x-k797kA:9 a=ebJNC-J2ff51WBzfJkWLAYAPiuwA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: ftrace: trace_pipe_raw interface broken
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Sharp <dhsharp@google.com>
+Cc: linux-kernel@vger.kernel.org, Michael Rubin <mrubin@google.com>
+In-Reply-To: <AANLkTi=_VJcDmpdfy=nfo_771iHjdVHTHnciUe8DrZme@mail.gmail.com>
+References: <AANLkTik6RfWWqjtuBUWRGZ0e+DHHm02opR9FAQJPdTR1@mail.gmail.com>
+	 <1292903569.22905.123.camel@gandalf.stny.rr.com>
+	 <AANLkTin7nLrRPc9qGjdjHbeVDDWiJjAiYyb-L=gH85bx@mail.gmail.com>
+	 <AANLkTikkwQC8pHPw=dvf5h++MnSOo9YY0dagNhv6s11B@mail.gmail.com>
+	 <AANLkTinFjuFFAp3ayeF8L5x813248zeVJbPbgKK02Rjv@mail.gmail.com>
+	 <AANLkTinEFVeVfMj9HgfO90wHVgCrzK+RSaDyXqeJuHUh@mail.gmail.com>
+	 <1293119853.22802.33.camel@gandalf.stny.rr.com>
+	 <AANLkTi=_VJcDmpdfy=nfo_771iHjdVHTHnciUe8DrZme@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 23 Dec 2010 23:35:26 -0500
+Message-ID: <1293165326.22802.411.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 23, 2010 at 08:52:34PM +0800, Hillf Danton wrote:
-> When racing on adding into user cache, the new allocated from mm slab
-> is freed without putting user namespace.
-> 
-> Since the user namespace is already operated by getting, putting has
-> to be issued.
-> 
-> btw, it could be freed out of lock?
-> 
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> ---
-> 
-> --- a/kernel/user.c	2010-11-01 19:54:12.000000000 +0800
-> +++ b/kernel/user.c	2010-12-23 20:42:00.000000000 +0800
-> @@ -158,6 +158,7 @@ struct user_struct *alloc_uid(struct use
->  		spin_lock_irq(&uidhash_lock);
->  		up = uid_hash_find(uid, hashent);
->  		if (up) {
-> +			put_user_ns(ns);
->  			key_put(new->uid_keyring);
->  			key_put(new->session_keyring);
->  			kmem_cache_free(uid_cachep, new);
+On Thu, 2010-12-23 at 15:06 -0800, David Sharp wrote:
+> On Thu, Dec 23, 2010 at 7:57 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Hm, are you sure about this?  Also, why send this to me, did I last
-touch this?
+> > Not quite intended, but not something to worry about either. We mask off
+> > the 30 bits to determine the size.
+> 
+> in trace-cmd you mean?
 
-confused,
+Yeah, but if you find that strange, I guess we could mask it off too.
 
-greg k-h
+> 
+> >> By my count that leaves only one mystery: why are we seeing this extra
+> >> page at the beginning with pre-overflow data?
+> >
+> > If you did not reset the buffer, there's a chance that the writer is on
+> > the reader page. The reader page is always outside the ring buffer, but
+> > it points into the ring buffer. If this occurs, then you will get the
+> > reader page data, plus the rest of the ring buffer (which is the full
+> > size you asked for).
+> 
+> Okay, that's a surprising behavior to me, but resetting the buffer
+> seems like a fine workaround.
+
+Getting a little more trace than you asked for seems like a good thing
+to me ;-)
+
+> 
+> btw, corroborating this is that reading the formatted output of
+> "trace" also shows the page of pre-overflow data.
+
+Yep, that's already known.
+
+-- Steve
+
+
