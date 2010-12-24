@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708Ab0LXMm3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 07:42:29 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:54539 "EHLO
+	id S1752879Ab0LXMoj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 07:44:39 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:54565 "EHLO
 	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752582Ab0LXMmZ (ORCPT
+	with ESMTP id S1752625Ab0LXMm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 07:42:25 -0500
-Message-Id: <20101224123743.253497432@chello.nl>
+	Fri, 24 Dec 2010 07:42:28 -0500
+Message-Id: <20101224123743.303699501@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Fri, 24 Dec 2010 13:23:53 +0100
+Date: Fri, 24 Dec 2010 13:23:54 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Chris Mason <chris.mason@oracle.com>,
         Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
@@ -17,55 +17,274 @@ To: Chris Mason <chris.mason@oracle.com>,
         Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
         Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 15/17] sched: Rename ttwu_post_activation
+Subject: [RFC][PATCH 16/17] sched: Move the second half of ttwu() to the remote cpu
 References: <20101224122338.172750730@chello.nl>
-Content-Disposition: inline; filename=sched-ttwu_do_wakeup.patch
+Content-Disposition: inline; filename=sched-ttwu-queue-remote.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ttwu_post_actication() does the core wakeup, it sets TASK_RUNNING
-and performs wakeup-preemption, so give is a more descriptive name.
+Now that we've removed the rq->lock requirement from the first part of
+ttwu() and can compute placement without holding any rq->lock, ensure
+we execute the second half of ttwu() on the actual cpu we want the
+task to run on.
+
+This avoids having to take rq->lock and doing the task enqueue
+remotely, saving lots on cacheline transfers.
+
+As measured using: http://oss.oracle.com/~mason/sembench.c
+
+$ echo 4096 32000 64 128 > /proc/sys/kernel/sem
+$ ./sembench -t 2048 -w 1900 -o 0
+
+unpatched: run time 30 seconds 537953 worker burns per second
+patched:   run time 30 seconds 657336 worker burns per second
+
+Still need to sort out all the races marked XXX (non-trivial), and its
+x86 only for the moment.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- kernel/sched.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ arch/x86/kernel/smp.c   |    1 
+ include/linux/sched.h   |    2 
+ kernel/sched.c          |  143 ++++++++++++++++++++++++++++++++++++------------
+ kernel/sched_features.h |    2 
+ 4 files changed, 114 insertions(+), 34 deletions(-)
 
+Index: linux-2.6/arch/x86/kernel/smp.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/smp.c
++++ linux-2.6/arch/x86/kernel/smp.c
+@@ -205,6 +205,7 @@ void smp_reschedule_interrupt(struct pt_
+ 	/*
+ 	 * KVM uses this interrupt to force a cpu out of guest mode
+ 	 */
++	sched_ttwu_pending();
+ }
+ 
+ void smp_call_function_interrupt(struct pt_regs *regs)
+Index: linux-2.6/include/linux/sched.h
+===================================================================
+--- linux-2.6.orig/include/linux/sched.h
++++ linux-2.6/include/linux/sched.h
+@@ -1020,6 +1020,7 @@ partition_sched_domains(int ndoms_new, c
+ }
+ #endif	/* !CONFIG_SMP */
+ 
++void sched_ttwu_pending(void);
+ 
+ struct io_context;			/* See blkdev.h */
+ 
+@@ -1201,6 +1202,7 @@ struct task_struct {
+ 	int lock_depth;		/* BKL lock depth */
+ 
+ #ifdef CONFIG_SMP
++	struct task_struct *wake_entry;
+ 	int on_cpu;
+ #endif
+ 	int on_rq;
 Index: linux-2.6/kernel/sched.c
 ===================================================================
 --- linux-2.6.orig/kernel/sched.c
 +++ linux-2.6/kernel/sched.c
-@@ -2399,8 +2399,11 @@ ttwu_stat(struct task_struct *p, int cpu
- #endif /* CONFIG_SCHEDSTATS */
+@@ -559,6 +559,10 @@ struct rq {
+ 	/* BKL stats */
+ 	unsigned int bkl_count;
+ #endif
++
++#ifdef CONFIG_SMP
++	struct task_struct *wake_list;
++#endif
+ };
+ 
+ static DEFINE_PER_CPU_SHARED_ALIGNED(struct rq, runqueues);
+@@ -2429,6 +2433,100 @@ ttwu_do_wakeup(struct rq *rq, struct tas
+ 		wq_worker_waking_up(p, cpu_of(rq));
  }
  
-+/*
-+ * Mark the task runnable and perform wakeup-preemption.
-+ */
- static void
--ttwu_post_activation(struct task_struct *p, struct rq *rq, int wake_flags)
-+ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
- {
- 	trace_sched_wakeup(p, true);
- 	check_preempt_curr(rq, p, wake_flags);
-@@ -2492,7 +2495,7 @@ try_to_wake_up(struct task_struct *p, un
- 
- 	activate_task(rq, p, ENQUEUE_WAKEUP | ENQUEUE_WAKING);
- out_running:
--	ttwu_post_activation(p, rq, wake_flags);
++static void
++ttwu_do_activate(struct rq *rq, struct task_struct *p, int wake_flags)
++{
++#ifdef CONFIG_SMP
++	if (task_cpu(p) != cpu_of(rq))
++		set_task_cpu(p, cpu_of(rq));
++#endif
++
++	if (p->sched_contributes_to_load)
++		rq->nr_uninterruptible--;
++
++	activate_task(rq, p, ENQUEUE_WAKEUP | ENQUEUE_WAKING);
 +	ttwu_do_wakeup(rq, p, wake_flags);
- 	success = 1;
- 	__task_rq_unlock(rq);
++}
++
++/*
++ * Called in case the task @p isn't fully descheduled from its runqueue,
++ * in this case we must do a remote wakeup. Its a 'light' wakeup though,
++ * since all we need to do is flip p->state to TASK_RUNNING, since
++ * the task is still ->on_rq.
++ */
++static int ttwu_remote(struct task_struct *p, int wake_flags)
++{
++	struct rq *rq;
++	int ret = 0;
++
++	rq = __task_rq_lock(p);
++	if (p->on_rq) {
++		ttwu_do_wakeup(rq, p, wake_flags);
++		ttwu_stat(p, task_cpu(p), wake_flags);
++		ret = 1;
++	}
++	__task_rq_unlock(rq);
++
++	return ret;
++}
++
++void sched_ttwu_pending(void)
++{
++#ifdef CONFIG_SMP
++	struct rq *rq = this_rq();
++	struct task_struct *list = xchg(&rq->wake_list, NULL);
++
++	if (!list)
++		return;
++
++	raw_spin_lock(&rq->lock);
++
++	while (list) {
++		struct task_struct *p = list;
++		list = list->wake_entry;
++		ttwu_do_activate(rq, p, 0);
++	}
++
++	raw_spin_unlock(&rq->lock);
++#endif
++}
++
++#ifdef CONFIG_SMP
++static void ttwu_queue_remote(struct task_struct *p, int cpu)
++{
++	struct task_struct *next = NULL;
++	struct rq *rq = cpu_rq(cpu);
++
++	for (;;) {
++		struct task_struct *old = next;
++
++		p->wake_entry = next;
++		next = cmpxchg(&rq->wake_list, old, p);
++		if (next == old)
++			break;
++	}
++
++	if (!next)
++		smp_send_reschedule(cpu);
++}
++#endif
++
++static void ttwu_queue(struct task_struct *p, int cpu)
++{
++	struct rq *rq = cpu_rq(cpu);
++
++#ifdef CONFIG_SMP
++	if (!sched_feat(TTWU_FORCE_REMOTE) && cpu != smp_processor_id()) {
++		ttwu_queue_remote(p, cpu);
++		return;
++	}
++#endif
++
++	raw_spin_lock(&rq->lock);
++	ttwu_do_activate(rq, p, 0);
++	raw_spin_unlock(&rq->lock);
++}
++
+ /**
+  * try_to_wake_up - wake up a thread
+  * @p: the thread to be awakened
+@@ -2447,29 +2545,18 @@ ttwu_do_wakeup(struct rq *rq, struct tas
+ static int
+ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+ {
+-	int cpu, this_cpu, success = 0;
+ 	unsigned long flags;
+-	struct rq *rq;
+-
+-	this_cpu = get_cpu();
++	int cpu, success = 0;
  
-@@ -2529,7 +2532,7 @@ static void try_to_wake_up_local(struct 
- 	if (!p->on_rq)
- 		activate_task(rq, p, ENQUEUE_WAKEUP);
+ 	smp_wmb();
+ 	raw_spin_lock_irqsave(&p->pi_lock, flags);
+ 	if (!(p->state & state))
+ 		goto out;
  
--	ttwu_post_activation(p, rq, 0);
-+	ttwu_do_wakeup(rq, p, 0);
- 	ttwu_stat(p, smp_processor_id(), 0);
+-	cpu = task_cpu(p);
+-
+-	if (p->on_rq) {
+-		rq = __task_rq_lock(p);
+-		if (p->on_rq)
+-			goto out_running;
+-		__task_rq_unlock(rq);
+-	}
++	success = 1; /* we're going to change ->state */
+ 
+-#ifdef CONFIG_SMP
+-	while (p->on_cpu)
+-		cpu_relax();
++	if (p->on_rq && ttwu_remote(p, wake_flags))
++		goto out;
+ 
+ 	p->sched_contributes_to_load = !!task_contributes_to_load(p);
+ 	p->state = TASK_WAKING;
+@@ -2482,7 +2569,12 @@ try_to_wake_up(struct task_struct *p, un
+ 	 * their feet.
+ 	 */
+ 	smp_mb();
+-	raw_spin_unlock_wait(&task_rq(p)->lock);
++	cpu = task_cpu(p);
++	raw_spin_unlock_wait(&cpu_rq(cpu)->lock);
++
++#ifdef CONFIG_SMP
++	while (p->on_cpu)
++		cpu_relax();
+ 
+ 	if (p->sched_class->task_waking)
+ 		p->sched_class->task_waking(p);
+@@ -2490,27 +2582,10 @@ try_to_wake_up(struct task_struct *p, un
+ 	cpu = select_task_rq(p, SD_BALANCE_WAKE, wake_flags);
+ #endif /* CONFIG_SMP */
+ 
+-	rq = cpu_rq(cpu);
+-	raw_spin_lock(&rq->lock);
+-
+-#ifdef CONFIG_SMP
+-	if (cpu != task_cpu(p))
+-		set_task_cpu(p, cpu);
+-
+-	if (p->sched_contributes_to_load)
+-		rq->nr_uninterruptible--;
+-#endif
+-
+-	activate_task(rq, p, ENQUEUE_WAKEUP | ENQUEUE_WAKING);
+-out_running:
+-	ttwu_do_wakeup(rq, p, wake_flags);
+-	success = 1;
+-	__task_rq_unlock(rq);
+-
++	ttwu_queue(p, cpu);
+ 	ttwu_stat(p, cpu, wake_flags);
  out:
- 	raw_spin_unlock(&p->pi_lock);
+ 	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+-	put_cpu();
+ 
+ 	return success;
+ }
+Index: linux-2.6/kernel/sched_features.h
+===================================================================
+--- linux-2.6.orig/kernel/sched_features.h
++++ linux-2.6/kernel/sched_features.h
+@@ -64,3 +64,5 @@ SCHED_FEAT(OWNER_SPIN, 1)
+  * Decrement CPU power based on irq activity
+  */
+ SCHED_FEAT(NONIRQ_POWER, 1)
++
++SCHED_FEAT(TTWU_FORCE_REMOTE, 0)
 
 
