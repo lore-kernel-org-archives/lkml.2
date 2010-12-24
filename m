@@ -1,110 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022Ab0LXPsh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 10:48:37 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:55603 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab0LXPsf (ORCPT
+	id S1753056Ab0LXPub (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 10:50:31 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35888 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752621Ab0LXPua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 10:48:35 -0500
-Subject: Re: [RFC][PATCH 6/6] ecryptfs: added support for the encrypted key
- type
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Roberto Sassu <roberto.sassu@polito.it>
-Cc: linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Gianluca Ramunno <ramunno@polito.it>,
-        Tyler Hicks <tyhicks@linux.vnet.ibm.com>, kirkland@canonical.com
-In-Reply-To: <201012231836.28220.roberto.sassu@polito.it>
-References: <201012231836.28220.roberto.sassu@polito.it>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 24 Dec 2010 10:47:57 -0500
-Message-ID: <1293205677.3196.25.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	Fri, 24 Dec 2010 10:50:30 -0500
+Date: Fri, 24 Dec 2010 15:50:41 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 9/9] ASoC: codecs: wm8753: Fix register cache
+ incoherency
+Message-ID: <20101224155040.GB16614@opensource.wolfsonmicro.com>
+References: <1293198484-1902-1-git-send-email-lars@metafoo.de>
+ <1293198484-1902-10-git-send-email-lars@metafoo.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1293198484-1902-10-git-send-email-lars@metafoo.de>
+X-Cookie: You will soon forget this.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-23 at 18:36 +0100, Roberto Sassu wrote: 
-> The function ecryptfs_keyring_auth_tok_for_sig() has been modified in order
-> to search keys of both 'user' and 'encrypted' types.
-> 
-> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
-> ---
->  fs/ecryptfs/ecryptfs_kernel.h |   11 +++++++++--
->  fs/ecryptfs/keystore.c        |   15 +++++++++++----
->  2 files changed, 20 insertions(+), 6 deletions(-)
-> 
-> diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
-> index a27cad4..068eade 100644
-> --- a/fs/ecryptfs/ecryptfs_kernel.h
-> +++ b/fs/ecryptfs/ecryptfs_kernel.h
-> @@ -29,6 +29,7 @@
->  #define ECRYPTFS_KERNEL_H
->  
->  #include <keys/user-type.h>
-> +#include <keys/encrypted-type.h>
->  #include <linux/fs.h>
->  #include <linux/fs_stack.h>
->  #include <linux/namei.h>
-> @@ -81,8 +82,14 @@ struct ecryptfs_page_crypt_context {
->  static inline struct ecryptfs_auth_tok *
->  ecryptfs_get_key_payload_data(struct key *key)
->  {
-> -	return (struct ecryptfs_auth_tok *)
-> -		(((struct user_key_payload*)key->payload.data)->data);
-> +#if defined(CONFIG_ENCRYPTED_KEYS) || defined(CONFIG_ENCRYPTED_KEYS_MODULE)
-> +	if (key->type == &key_type_encrypted)
-> +		return (struct ecryptfs_auth_tok *)
-> +			(&((struct encrypted_key_payload *)key->payload.data)->payload_data);
-> +	else
-> +#endif
-> +		return (struct ecryptfs_auth_tok *)
-> +			(((struct user_key_payload *)key->payload.data)->data);
->  }
+On Fri, Dec 24, 2010 at 02:48:04PM +0100, Lars-Peter Clausen wrote:
+> The multi-component patch(commit f0fba2ad1) introduced a generic register cache
+> framework. But the wm8753 driver still uses its own register cache for its
 
-'ifdefs' belong in include files. How about defining
-ecryptfs_get_encrypted_key_payload_data() with stub function?
+So, the actual relevant thing that the multi component patch did was to
+introduce a new way of initialising the cache and setting up the pointer
+that soc-cache uses to reference it, with some of the drivers being
+partially converted.  
 
+Since most of the drivers were already using the soc-cache code they
+mostly have some initialisation errors, others (like WM8753) weren't
+using soc-cache at all and probably shouldn't have been flipped over.
 
-> #define ECRYPTFS_SUPER_MAGIC 0xf15f
-> diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
-> index 73811cf..8d72635 100644
-> --- a/fs/ecryptfs/keystore.c
-> +++ b/fs/ecryptfs/keystore.c
-> @@ -1542,10 +1542,17 @@ int ecryptfs_keyring_auth_tok_for_sig(struct key **auth_tok_key,
->  
->  	(*auth_tok_key) = request_key(&key_type_user, sig, NULL);
->  	if (!(*auth_tok_key) || IS_ERR(*auth_tok_key)) {
-> -		printk(KERN_ERR "Could not find key with description: [%s]\n",
-> -		       sig);
-> -		rc = process_request_key_err(PTR_ERR(*auth_tok_key));
-> -		goto out;
-> +#if defined(CONFIG_ENCRYPTED_KEYS) || defined(CONFIG_ENCRYPTED_KEYS_MODULE)
-> +		(*auth_tok_key) = request_key(&key_type_encrypted, sig, NULL);
-> +		if (!(*auth_tok_key) || IS_ERR(*auth_tok_key)) {
-> +#endif
-> +			printk(KERN_ERR "Could not find key with description: [%s]\n",
-> +			      sig);
-> +			rc = process_request_key_err(PTR_ERR(*auth_tok_key));
-> +			goto out;
-> +#if defined(CONFIG_ENCRYPTED_KEYS) || defined(CONFIG_ENCRYPTED_KEYS_MODULE)
-> +		}
-> +#endif
+>  	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
+>  	case SND_SOC_DAIFMT_I2S:
+> -		voice |= 0x0002;
+> +		voice = 0x0002;
+>  		break;
 
-Same here.
+This is more than a straight conversion of the driver - since changes
+like this aren't simple substitutions they're much harder to review, if
+you want to make changes such as this they should be split out into
+separate patches.  There's quite a few other bits like this in the
+patch, some of which make it pretty confusing.
 
-thanks,
+> -	u16 voice, ioctl;
+> +	u16 voice, ioctl = 0;
 
-Mimi
+Please don't mix variable declarations of initialised and uninitialised
+variables like this.
 
-> 	}
->  	(*auth_tok) = ecryptfs_get_key_payload_data(*auth_tok_key);
->  	if (ecryptfs_verify_version((*auth_tok)->version)) {
+> -	wm8753_write(codec, WM8753_PCM, voice);
+> -	wm8753_write(codec, WM8753_IOCTL, ioctl);
+> +	snd_soc_write(codec, WM8753_PCM, voice);
+> +	snd_soc_update_bits(codec, WM8753_IOCTL, 0x00a2, ioctl);
 
+This bit is especially confusing, we've now got a mixture of both
+writing the full register and use of update_bits.
 
+> +	for (i = 1; i < ARRAY_SIZE(wm8753_reg); i++) {
+> +		if (i == WM8753_RESET)
+> +			continue;
+> +
 
+If you make the register reset function write the default value of the
+reset register you can use the standard cache sync implementation.
