@@ -1,94 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791Ab0LXO24 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 09:28:56 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48941 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752585Ab0LXO2z convert rfc822-to-8bit (ORCPT
+	id S1752838Ab0LXObF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 09:31:05 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39364 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752577Ab0LXObD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 09:28:55 -0500
+	Fri, 24 Dec 2010 09:31:03 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=TD8TmIT98mn+evyskec1r9N+EThU7rZ4b1RRYRL1vnA/hKZ+eXBnwQghawzv8k2Ri9
-         O/n2+AolVfnMN6tgjL3uvhWdgjrQzZmac7fHjeE8jZ/U+2mF5Z7c98m1eVJqGFGeq9v9
-         Hy1S+lxjfR74gq858gjqw6SW6JkNyOD+tPwzQ=
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=WA6/9qRhw5ref7s/VqzAo6wW1yb7JtYNHJ0fSzop10kxPIzPulaf2hF7nvt0csBdHg
+         N7qe2Or8CYxr7fWXaLXoDL1I4hKHb+GfCo3SoaxubQuWFZHqwoSmX0NcGI3nlF7BJfe7
+         fEg8b+EYxafx+3gPz69z4rH9/U2E8E42w4Fjw=
+Date: Fri, 24 Dec 2010 15:30:58 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, Yong Zhang <yong.zhang0@gmail.com>
+Subject: [GIT PULL] percpu: fixes for v2.6.37-rc7
+Message-ID: <20101224143058.GA11419@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikVQU6ozp0H1u7ghd0=miYyUJL62uP=0FBZSLok@mail.gmail.com>
-References: <AANLkTinvHP4rZ6PSyEOJ_ZJ2chRJX0ZyzuhNoCRrO1wK@mail.gmail.com>
-	<AANLkTikVQU6ozp0H1u7ghd0=miYyUJL62uP=0FBZSLok@mail.gmail.com>
-Date: Fri, 24 Dec 2010 22:28:52 +0800
-Message-ID: <AANLkTimc0FwBhj5MsnibTTq94AgaQgqCKEXNSOvM_XjE@mail.gmail.com>
-Subject: Re: [PATCH] fix unsafe operation in high resolution timer
-From: Hillf Danton <dhillf@gmail.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 24, 2010 at 3:17 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
-> On Thu, Dec 23, 2010 at 9:29 PM, Hillf Danton <dhillf@gmail.com> wrote:
->> After calling the callback function of hrtimer, the timer could become
->> unreliable in corner cases where the timer will no longer be queued
->> and the mm segment, in which the timer is embedded, could be reclaimed
->> in the callback.
->>
->> The unreliability is fixed by checking the result of callback before
->> operating the timer again.
->
-> Though the patch is buggy. But it actually explores a real problem.
->
+Please pull from the following branch to receive percpu changes for
+v2.6.37-rc7.
 
-Would you please finger out why the patch is buggy?
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-linus
 
-Hillf
+It contains two commits.  One to make init_kthread_work[er]() lockdep
+friendly and add _ONSTACK variants of DEFINE macros.  This removes
+spurious lockdep warnings from ivtv.
 
-> We can't deference a maybe freed object. I'm not sure how
-> to fix it. Or we just prevent the hrtimer->fn free the object which
-> contains hrtimer?
->
-> Thomas, what's your comment?
->
-> Thanks,
-> Yong
->>
->> Signed-off-by: Hillf Danton <dhillf@gmail.com>
->> ---
->>
->> --- a/kernel/hrtimer.c  2010-11-01 19:54:12.000000000 +0800
->> +++ b/kernel/hrtimer.c  2010-12-23 21:17:02.000000000 +0800
->> @@ -1225,6 +1225,7 @@ static void __run_hrtimer(struct hrtimer
->>        raw_spin_unlock(&cpu_base->lock);
->>        trace_hrtimer_expire_entry(timer, now);
->>        restart = fn(timer);
->> +       if (restart != HRTIMER_NORESTART)
->>        trace_hrtimer_expire_exit(timer);
->>        raw_spin_lock(&cpu_base->lock);
->>
->> @@ -1236,11 +1237,8 @@ static void __run_hrtimer(struct hrtimer
->>        if (restart != HRTIMER_NORESTART) {
->>                BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
->>                enqueue_hrtimer(timer, base);
->> +               timer->state &= ~HRTIMER_STATE_CALLBACK;
->>        }
->> -
->> -       WARN_ON_ONCE(!(timer->state & HRTIMER_STATE_CALLBACK));
->> -
->> -       timer->state &= ~HRTIMER_STATE_CALLBACK;
->>  }
->>
->>  #ifdef CONFIG_HIGH_RES_TIMERS
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->
-> --
-> Only stand for myself.
->
+The other one lowers the priority of the percpu allocation table
+printout from KERN_INFO to KERN_DEBUG.  As percpu don't usually cause
+boot failures these days, having access to the information post-boot
+is good enough.
+
+Thanks.
+
+Tejun Heo (1):
+	percpu: print out alloc information with KERN_DEBUG instead of KERN_INFO
+
+Yong Zhang (1):
+	kthread_work: make lockdep happy
+
+ include/linux/kthread.h |   45 +++++++++++++++++++++++++++++++++++----------
+ kernel/kthread.c        |   11 +++++++++++
+ mm/percpu.c             |    2 +-
+ 3 files changed, 47 insertions(+), 11 deletions(-)
+
+-- 
+tejun
