@@ -1,260 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522Ab0LXBjO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 20:39:14 -0500
-Received: from hera.kernel.org ([140.211.167.34]:37550 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752455Ab0LXBjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 20:39:12 -0500
-Date: Fri, 24 Dec 2010 01:37:53 GMT
-From: tip-bot for David Rientjes <rientjes@google.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de, hpa@linux.intel.com, rientjes@google.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, rientjes@google.com, hpa@linux.intel.com
-In-Reply-To: <alpine.DEB.2.00.1012221701520.3701@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1012221701520.3701@chino.kir.corp.google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/numa] x86, numa: Fake node-to-cpumask for NUMA emulation
-Message-ID: <tip-c1c3443c9c5e9be92641029ed229a41563e44506@git.kernel.org>
-Git-Commit-ID: c1c3443c9c5e9be92641029ed229a41563e44506
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 24 Dec 2010 01:37:54 +0000 (UTC)
+	id S1752674Ab0LXBps (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 20:45:48 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:45965 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021Ab0LXBpp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 20:45:45 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>, mat <castet.matthieu@free.fr>,
+        Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
+        Arjan van de Ven <arjan@infradead.org>,
+        James Morris <jmorris@namei.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
+        Siarhei Liakh <sliakh.lkml@gmail.com>
+Subject: Re: [PATCH 3/3 V13] RO/NX protection for loadable kernel
+In-Reply-To: Your message of "Thu, 23 Dec 2010 10:01:48 EST."
+             <1293116508.22802.14.camel@gandalf.stny.rr.com>
+From: Valdis.Kletnieks@vt.edu
+References: <4CE2F914.9070106@free.fr> <24422.1290656467@localhost> <20101126182355.62615dff@mat-laptop> <20101208221951.GO5750@outflux.net> <20101211001857.4c5e0794@mat-laptop> <20101222124019.GG10809@elte.hu> <34428.1293053719@localhost>
+            <1293116508.22802.14.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1293155030_5070P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 23 Dec 2010 20:43:50 -0500
+Message-ID: <63168.1293155030@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020201.4D13FADC.00A9,ss=1,fgs=0,
+	ip=98.249.9.36,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c1c3443c9c5e9be92641029ed229a41563e44506
-Gitweb:     http://git.kernel.org/tip/c1c3443c9c5e9be92641029ed229a41563e44506
-Author:     David Rientjes <rientjes@google.com>
-AuthorDate: Wed, 22 Dec 2010 17:23:54 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 23 Dec 2010 15:27:15 -0800
+--==_Exmh_1293155030_5070P
+Content-Type: text/plain; charset=us-ascii
 
-x86, numa: Fake node-to-cpumask for NUMA emulation
+On Thu, 23 Dec 2010 10:01:48 EST, Steven Rostedt said:
+> On Wed, 2010-12-22 at 16:35 -0500, Valdis.Kletnieks@vt.edu wrote:
+> 
+> > Steve Rostedt's patch that moves the setting of the page permissions seems to
+> > make this patch no longer necessary.  I tripped over this same issue, but the
+> > version in the latest -mmotm does not need it, as it includes Steve's fix.
+> 
+> Can I add your "Tested-by: ..." to the commit?
 
-It's necessary to fake the node-to-cpumask mapping so that an emulated
-node ID returns a cpumask that includes all cpus that have affinity to
-the memory it represents.
+Sure.  I can verify that the patch series (a) doesn't break well-behaved
+modules and (b) it *does* trigger for misbehaving modules (I sent the
+VirtualBox crew a bug report for a module that tried to write to an area
+marked executable).
 
-This is a little intrusive because it requires knowledge of the physical
-topology of the system.  setup_physnodes() gives us that information, but
-since NUMA emulation ends up altering the physnodes array, it's necessary
-to reset it before cpus are brought online.
 
-Accordingly, the physnodes array is moved out of init.data and into
-cpuinit.data since it will be needed on cpuup callbacks.
+--==_Exmh_1293155030_5070P
+Content-Type: application/pgp-signature
 
-This works regardless of whether numa=fake is used on the command line,
-or the setup of the fake node succeeds or fails.  The physnodes array
-always contains the physical topology of the machine if CONFIG_NUMA_EMU
-is enabled and can be used to setup the correct node-to-cpumask mappings
-in all cases since setup_physnodes() is called whenever the array needs
-to be repopulated with the correct data.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-To fake the actual mappings, numa_add_cpu() and numa_remove_cpu() are
-rewritten for CONFIG_NUMA_EMU so that we first find the physical node to
-which each cpu has local affinity, then iterate through all online nodes
-to find the emulated nodes that have local affinity to that physical
-node, and then finally map the cpu to each of those emulated nodes.
+iD8DBQFNE/rWcC3lWbTT17ARAiEOAKCiF4UdJ1HEixtqkm/y8HDMCp/0XQCg7FSx
+uaom8HitnXS3acejq/EEylA=
+=S4Kx
+-----END PGP SIGNATURE-----
 
-Signed-off-by: David Rientjes <rientjes@google.com>
-LKML-Reference: <alpine.DEB.2.00.1012221701520.3701@chino.kir.corp.google.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/mm/numa_64.c |   99 +++++++++++++++++++++++++++++++++++++++----------
- 1 files changed, 79 insertions(+), 20 deletions(-)
+--==_Exmh_1293155030_5070P--
 
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index cc390f3..dd300c4 100644
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -260,7 +260,7 @@ void __init numa_init_array(void)
- #ifdef CONFIG_NUMA_EMU
- /* Numa emulation */
- static struct bootnode nodes[MAX_NUMNODES] __initdata;
--static struct bootnode physnodes[MAX_NUMNODES] __initdata;
-+static struct bootnode physnodes[MAX_NUMNODES] __cpuinitdata;
- static char *cmdline __initdata;
- 
- static int __init setup_physnodes(unsigned long start, unsigned long end,
-@@ -270,6 +270,7 @@ static int __init setup_physnodes(unsigned long start, unsigned long end,
- 	int ret = 0;
- 	int i;
- 
-+	memset(physnodes, 0, sizeof(physnodes));
- #ifdef CONFIG_ACPI_NUMA
- 	if (acpi)
- 		nr_nodes = acpi_get_nodes(physnodes);
-@@ -370,8 +371,7 @@ static int __init setup_node_range(int nid, u64 *addr, u64 size, u64 max_addr)
-  * Sets up nr_nodes fake nodes interleaved over physical nodes ranging from addr
-  * to max_addr.  The return value is the number of nodes allocated.
-  */
--static int __init split_nodes_interleave(u64 addr, u64 max_addr,
--						int nr_phys_nodes, int nr_nodes)
-+static int __init split_nodes_interleave(u64 addr, u64 max_addr, int nr_nodes)
- {
- 	nodemask_t physnode_mask = NODE_MASK_NONE;
- 	u64 size;
-@@ -402,7 +402,7 @@ static int __init split_nodes_interleave(u64 addr, u64 max_addr,
- 		return -1;
- 	}
- 
--	for (i = 0; i < nr_phys_nodes; i++)
-+	for (i = 0; i < MAX_NUMNODES; i++)
- 		if (physnodes[i].start != physnodes[i].end)
- 			node_set(i, physnode_mask);
- 
-@@ -571,11 +571,9 @@ static int __init numa_emulation(unsigned long start_pfn,
- {
- 	u64 addr = start_pfn << PAGE_SHIFT;
- 	u64 max_addr = last_pfn << PAGE_SHIFT;
--	int num_phys_nodes;
- 	int num_nodes;
- 	int i;
- 
--	num_phys_nodes = setup_physnodes(addr, max_addr, acpi, amd);
- 	/*
- 	 * If the numa=fake command-line contains a 'M' or 'G', it represents
- 	 * the fixed node size.  Otherwise, if it is just a single number N,
-@@ -590,7 +588,7 @@ static int __init numa_emulation(unsigned long start_pfn,
- 		unsigned long n;
- 
- 		n = simple_strtoul(cmdline, NULL, 0);
--		num_nodes = split_nodes_interleave(addr, max_addr, num_phys_nodes, n);
-+		num_nodes = split_nodes_interleave(addr, max_addr, n);
- 	}
- 
- 	if (num_nodes < 0)
-@@ -613,6 +611,7 @@ static int __init numa_emulation(unsigned long start_pfn,
- 						nodes[i].end >> PAGE_SHIFT);
- 		setup_node_bootmem(i, nodes[i].start, nodes[i].end);
- 	}
-+	setup_physnodes(addr, max_addr, acpi, amd);
- 	fake_physnodes(acpi, amd, num_nodes);
- 	numa_init_array();
- 	return 0;
-@@ -628,8 +627,12 @@ void __init initmem_init(unsigned long start_pfn, unsigned long last_pfn,
- 	nodes_clear(node_online_map);
- 
- #ifdef CONFIG_NUMA_EMU
-+	setup_physnodes(start_pfn << PAGE_SHIFT, last_pfn << PAGE_SHIFT,
-+			acpi, amd);
- 	if (cmdline && !numa_emulation(start_pfn, last_pfn, acpi, amd))
- 		return;
-+	setup_physnodes(start_pfn << PAGE_SHIFT, last_pfn << PAGE_SHIFT,
-+			acpi, amd);
- 	nodes_clear(node_possible_map);
- 	nodes_clear(node_online_map);
- #endif
-@@ -785,6 +788,7 @@ void __cpuinit numa_clear_node(int cpu)
- 
- #ifndef CONFIG_DEBUG_PER_CPU_MAPS
- 
-+#ifndef CONFIG_NUMA_EMU
- void __cpuinit numa_add_cpu(int cpu)
- {
- 	cpumask_set_cpu(cpu, node_to_cpumask_map[early_cpu_to_node(cpu)]);
-@@ -794,6 +798,51 @@ void __cpuinit numa_remove_cpu(int cpu)
- {
- 	cpumask_clear_cpu(cpu, node_to_cpumask_map[early_cpu_to_node(cpu)]);
- }
-+#else
-+void __cpuinit numa_add_cpu(int cpu)
-+{
-+	unsigned long addr;
-+	u16 apicid;
-+	int physnid;
-+	int nid = NUMA_NO_NODE;
-+
-+	apicid = early_per_cpu(x86_cpu_to_apicid, cpu);
-+	if (apicid != BAD_APICID)
-+		nid = apicid_to_node[apicid];
-+	if (nid == NUMA_NO_NODE)
-+		nid = early_cpu_to_node(cpu);
-+	BUG_ON(nid == NUMA_NO_NODE || !node_online(nid));
-+
-+	/*
-+	 * Use the starting address of the emulated node to find which physical
-+	 * node it is allocated on.
-+	 */
-+	addr = node_start_pfn(nid) << PAGE_SHIFT;
-+	for (physnid = 0; physnid < MAX_NUMNODES; physnid++)
-+		if (addr >= physnodes[physnid].start &&
-+		    addr < physnodes[physnid].end)
-+			break;
-+
-+	/*
-+	 * Map the cpu to each emulated node that is allocated on the physical
-+	 * node of the cpu's apic id.
-+	 */
-+	for_each_online_node(nid) {
-+		addr = node_start_pfn(nid) << PAGE_SHIFT;
-+		if (addr >= physnodes[physnid].start &&
-+		    addr < physnodes[physnid].end)
-+			cpumask_set_cpu(cpu, node_to_cpumask_map[nid]);
-+	}
-+}
-+
-+void __cpuinit numa_remove_cpu(int cpu)
-+{
-+	int i;
-+
-+	for_each_online_node(i)
-+		cpumask_clear_cpu(cpu, node_to_cpumask_map[i]);
-+}
-+#endif /* !CONFIG_NUMA_EMU */
- 
- #else /* CONFIG_DEBUG_PER_CPU_MAPS */
- 
-@@ -805,22 +854,32 @@ static void __cpuinit numa_set_cpumask(int cpu, int enable)
- 	int node = early_cpu_to_node(cpu);
- 	struct cpumask *mask;
- 	char buf[64];
-+	int i;
- 
--	mask = node_to_cpumask_map[node];
--	if (mask == NULL) {
--		printk(KERN_ERR "node_to_cpumask_map[%i] NULL\n", node);
--		dump_stack();
--		return;
--	}
-+	for_each_online_node(i) {
-+		unsigned long addr;
- 
--	if (enable)
--		cpumask_set_cpu(cpu, mask);
--	else
--		cpumask_clear_cpu(cpu, mask);
-+		addr = node_start_pfn(i) << PAGE_SHIFT;
-+		if (addr < physnodes[node].start ||
-+					addr >= physnodes[node].end)
-+			continue;
-+		mask = node_to_cpumask_map[node];
-+		if (mask == NULL) {
-+			pr_err("node_to_cpumask_map[%i] NULL\n", i);
-+			dump_stack();
-+			return;
-+		}
-+
-+		if (enable)
-+			cpumask_set_cpu(cpu, mask);
-+		else
-+			cpumask_clear_cpu(cpu, mask);
- 
--	cpulist_scnprintf(buf, sizeof(buf), mask);
--	printk(KERN_DEBUG "%s cpu %d node %d: mask now %s\n",
--		enable ? "numa_add_cpu" : "numa_remove_cpu", cpu, node, buf);
-+		cpulist_scnprintf(buf, sizeof(buf), mask);
-+		printk(KERN_DEBUG "%s cpu %d node %d: mask now %s\n",
-+			enable ? "numa_add_cpu" : "numa_remove_cpu",
-+			cpu, node, buf);
-+	}
- }
- 
- void __cpuinit numa_add_cpu(int cpu)
