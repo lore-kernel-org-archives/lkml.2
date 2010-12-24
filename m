@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752458Ab0LXNOv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 08:14:51 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:33723 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752001Ab0LXNOu (ORCPT
+	id S1752621Ab0LXNPo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 08:15:44 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:43654 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752001Ab0LXNPn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 08:14:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=ctwzZRRXkszh27IHQjVcCsNMUUOUJ5S7pykitgbLh+a0i7JND41D6NjrQdrqnZ1Qjy
-         cBc8Ciwawttq7Q47mJ187KJPVv0f/dhyeAXR3yjJS3P/c9Q+PdVZAF8bH+baSWUqhD06
-         Af/D2+1YaEDdd0wn+EgcLbCtbSpSNXpQkCRyo=
-Date: Fri, 24 Dec 2010 11:14:41 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Franck Bui-Huu <vagabon.xyz@gmail.com>, linux-kernel@vger.kernel.org,
-        2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH] perf-probe: no need to initialize the entire temporary
- buffers in synthesize_perf_probe_point()
-Message-ID: <20101224131441.GA3128@ghostprotocols.net>
-References: <m3wrn07blu.fsf@gmail.com>
- <4D142591.2030101@hitachi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D142591.2030101@hitachi.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 24 Dec 2010 08:15:43 -0500
+Subject: Re: [RFC][PATCH 00/17] sched: Reduce runqueue lock contention -v3
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
+        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101224122338.172750730@chello.nl>
+References: <20101224122338.172750730@chello.nl>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 24 Dec 2010 14:15:41 +0100
+Message-ID: <1293196541.29444.42.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Dec 24, 2010 at 01:46:09PM +0900, Masami Hiramatsu escreveu:
-> (2010/12/24 0:27), Franck Bui-Huu wrote:
-> > This patches only put a single null byte at the beginning of each
-> > temporary buffers line[], offs[], file[] instead of filling their
-> > full contents with null bytes.
+On Fri, 2010-12-24 at 13:23 +0100, Peter Zijlstra wrote:
+> This is the latest incarnation of my scary ttwu patch, its split up into
+> tiny little pieces because at some point while working on the feedback from
+> the last posting it all stopped working and tiny changes was the only way
+> to find out wth I done wrong (I never did find out though, when I
+> completely rewrote everything in tiny chunks it all magically worked again
+> -- so I guess tglx is chuckling now).
+> 
+> Anyway, it still need a few more loose ends fixed, esp on 32bit there is
+> the whole unlocked remote min_vruntime access where we can read partial
+> updates and screw the timeline like problem. And I suppose there's a few
+> more XXXs in there where I know things are needing TLC.
+> 
+> Also, I bet the eagle eyed lot Cc'ed will spot more holes, as all this is
+> scary stuff :-)
+> 
+> Anyway, lots of thanks to Frank, Oleg, Ingo and others who commented on
+> the last posting.
+> 
+> I guess most everybody is out having x-mas celebrations (and I will too not
+> too long from now), so I expect replies to this won't happen until the new
+> year, but who knows, maybe in between eating and drinking too much we all
+> get an urge to stare at code.
+> 
+> Happy Holidays!
 
-> Hmm, sorry but NAK it.
+Also available from (once the mirror catches up):
 
-> IMHO, with modern chips, the original code has no problem from the
-> viewpoint of memory access (all are cached and no need to access just
-> one byte) nor a bottleneck.
-> I'd rather use '= ""' style initialization for local variables from the
-> viewpoint of readability.
+git://git.kernel.org/pub/scm/linux/kernel/git/peterz/linux-2.6-sched.git
 
-No strong feelings here, not really a fast path, just learned something
-new, I thought that that kind of initialization would be equivalent to
-what Franck proposed, but gcc really uses the most efficient way of
-zeroing the whole string (movq for things like that, and rep stos for
-bigger arrays, etc).
- 
-> Anyway, thank you for looking into the code :-)
+---
+ arch/x86/include/asm/spinlock.h |   26 ++-
+ arch/x86/kernel/smp.c           |    1 +
+ include/linux/mutex.h           |    2 +-
+ include/linux/sched.h           |   23 +-
+ kernel/mutex-debug.c            |    2 +-
+ kernel/mutex-debug.h            |    2 +-
+ kernel/mutex.c                  |    2 +-
+ kernel/mutex.h                  |    2 +-
+ kernel/sched.c                  |  542 ++++++++++++++++++++++-----------------
+ kernel/sched_debug.c            |    2 +-
+ kernel/sched_fair.c             |    5 +-
+ kernel/sched_features.h         |    2 +
+ kernel/sched_idletask.c         |    2 +-
+ kernel/sched_rt.c               |   20 +-
+ kernel/sched_stoptask.c         |    5 +-
+ 15 files changed, 371 insertions(+), 267 deletions(-)
 
-Yes, please continue sending your improvements and fixes!
-
-Masami, what about the fixes Franck sent, clould you please send ACK or
-NACKs for those?
-
-- Arnaldo
