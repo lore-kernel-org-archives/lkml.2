@@ -1,161 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751035Ab0LXFqM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 00:46:12 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:53993 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722Ab0LXFqK (ORCPT
+	id S1751327Ab0LXGuM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 01:50:12 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:51548 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731Ab0LXGuK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 00:46:10 -0500
-X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=lV3WA_CbahYA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=dv7CPVFoCm7xYpV2jM0A:9 a=V_1AkjA5BBj1QbE7tk4A:7 a=L42ohZRUlB3vkY8oHW1sqoBJWXUA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: [PATCH][GIT PULL] powerpc64/tracing: Add frame buffer to calls of
- trace_hardirqs_on/off
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joerg Sommer <joerg@alea.gnuu.de>,
-        linuxppc-dev <linuxppc-dev@ozlabs.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 24 Dec 2010 00:46:06 -0500
-Message-ID: <1293169566.22802.420.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 24 Dec 2010 01:50:10 -0500
+X-AuditID: b753bd60-a4ba2ba000003e7d-7e-4d14429f7abc
+Message-ID: <4D14429A.3090606@hitachi.com>
+Date: Fri, 24 Dec 2010 15:50:02 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: =?UTF-8?B?SnVoYW5pIE3DpGtlbMOk?= <ext-juhani.3.makela@nokia.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Kprobe: Fixed a leak when a retprobe entry function returns
+ non-zero
+References: <4D130452.2010706@nokia.com>
+In-Reply-To: <4D130452.2010706@nokia.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben,
+(2010/12/23 17:12), Juhani Mäkelä wrote:
+> Dear Sirs,
+> 
+> Here is a little fix I found necessary to implement in order to perform
+> some probing:
+> 
+> ----
+> A kretprobe can install an optional entry probe that is called when
+> the probed function is entered. If the callback returns non zero,
+> the return probe will not be called and the instance is forgotten.
+> However, the allocated instance of struct kretprobe_instance was
+> not returned in the free_instances list. Fixed this by returning
+> the unused instance to the free list if it was not needed.
 
-Joerg reported a crash with the irqsoff tracer with PPC32.
-Unfortunately, I don't have a ppc32 that I can work with (my kids took
-it from me). I posted a test patch on the BZ that was opened for it:
+Right. That must be a memory-leak path!
+Thank you very much for pointing it out :-)
 
-https://bugzilla.kernel.org/show_bug.cgi?id=16573
+BTW, it seems that other paths have initialized hlist by
+INIT_HLIST_NODE(). However, actually there is no need to
+init a node for adding on a hlist again. Just from the viewpoint
+of maintaining the code, coding style should have coherence and
+it's better to init by INIT_HLIST_NODE().
 
-Anyway, I was also able to reproduce the crash on PPC64. This patch
-handles that case.
+(In this function, a node deleted from free_instances hlist is
+ always added on a hlist again. So maybe it's enough to use
+ hlist_del_init() instead of hlist_del() at least here.)
 
-The following patch is in:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-
-    branch: ppc/ftrace
-
-
-Steven Rostedt (1):
-      powerpc64/tracing: Add frame buffer to calls of trace_hardirqs_on/off
-
-----
- arch/powerpc/include/asm/irqflags.h |   40 ++++++++++++++++++++++++++--------
- 1 files changed, 30 insertions(+), 10 deletions(-)
----------------------------
-commit 5025019505da6731f8be13940bb978617599c935
-Author: Steven Rostedt <srostedt@redhat.com>
-Date:   Thu Dec 23 21:07:39 2010 -0800
-
-    powerpc64/tracing: Add frame buffer to calls of trace_hardirqs_on/off
-    
-    When an interrupt occurs in userspace, we can call trace_hardirqs_on/off()
-    With one level stack. But if we have irqsoff tracing enabled,
-    it checks both CALLER_ADDR0 and CALLER_ADDR1. The second call
-    goes two stack frames up. If this is from user space, then there may
-    not exist a second stack.
-    
-    Add a second stack when calling trace_hardirqs_on/off() otherwise
-    the following oops might occur:
-    
-    Oops: Kernel access of bad area, sig: 11 [#1]
-    PREEMPT SMP NR_CPUS=2 PA Semi PWRficient
-    last sysfs file: /sys/block/sda/size
-    Modules linked in: ohci_hcd ehci_hcd usbcore
-    NIP: c0000000000e1c00 LR: c0000000000034d4 CTR: 000000011012c440
-    REGS: c00000003e2f3af0 TRAP: 0300   Not tainted  (2.6.37-rc6+)
-    MSR: 9000000000001032 <ME,IR,DR>  CR: 48044444  XER: 20000000
-    DAR: 00000001ffb9db50, DSISR: 0000000040000000
-    TASK = c00000003e1a00a0[2088] 'emacs' THREAD: c00000003e2f0000 CPU: 1
-    GPR00: 0000000000000001 c00000003e2f3d70 c00000000084e0d0 c0000000008816e8
-    GPR04: 000000001034c678 000000001032e8f9 0000000010336540 0000000040020000
-    GPR08: 0000000040020000 00000001ffb9db40 c00000003e2f3e30 0000000060000000
-    GPR12: 100000000000f032 c00000000fff0280 000000001032e8c9 0000000000000008
-    GPR16: 00000000105be9c0 00000000105be950 00000000105be9b0 00000000105be950
-    GPR20: 00000000ffb9dc50 00000000ffb9dbf0 00000000102f0000 00000000102f0000
-    GPR24: 00000000102e0000 00000000102f0000 0000000010336540 c0000000009ded38
-    GPR28: 00000000102e0000 c0000000000034d4 c0000000007ccb10 c00000003e2f3d70
-    NIP [c0000000000e1c00] .trace_hardirqs_off+0xb0/0x1d0
-    LR [c0000000000034d4] decrementer_common+0xd4/0x100
-    Call Trace:
-    [c00000003e2f3d70] [c00000003e2f3e30] 0xc00000003e2f3e30 (unreliable)
-    [c00000003e2f3e30] [c0000000000034d4] decrementer_common+0xd4/0x100
-    Instruction dump:
-    81690000 7f8b0000 419e0018 f84a0028 60000000 60000000 60000000 e95f0000
-    80030000 e92a0000 eb6301f8 2f800000 <eb890010> 41fe00dc a06d000a eb1e8050
-    ---[ end trace 4ec7fd2be9240928 ]---
-    
-    Reported-by: Joerg Sommer <joerg@alea.gnuu.de>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/arch/powerpc/include/asm/irqflags.h b/arch/powerpc/include/asm/irqflags.h
-index b85d8dd..b0b06d8 100644
---- a/arch/powerpc/include/asm/irqflags.h
-+++ b/arch/powerpc/include/asm/irqflags.h
-@@ -12,24 +12,44 @@
- 
- #else
- #ifdef CONFIG_TRACE_IRQFLAGS
-+#ifdef CONFIG_IRQSOFF_TRACER
-+/*
-+ * Since the ftrace irqsoff latency trace checks CALLER_ADDR1,
-+ * which is the stack frame here, we need to force a stack frame
-+ * in case we came from user space.
-+ */
-+#define TRACE_WITH_FRAME_BUFFER(func)		\
-+	mflr	r0;				\
-+	stdu	r1, -32(r1);			\
-+	std	r0, 16(r1);			\
-+	stdu	r1, -32(r1);			\
-+	bl func;				\
-+	ld	r1, 0(r1);			\
-+	ld	r1, 0(r1);
-+#else
-+#define TRACE_WITH_FRAME_BUFFER(func)		\
-+	bl func;
-+#endif
-+
- /*
-  * Most of the CPU's IRQ-state tracing is done from assembly code; we
-  * have to call a C function so call a wrapper that saves all the
-  * C-clobbered registers.
-  */
--#define TRACE_ENABLE_INTS	bl .trace_hardirqs_on
--#define TRACE_DISABLE_INTS	bl .trace_hardirqs_off
--#define TRACE_AND_RESTORE_IRQ_PARTIAL(en,skip)	\
--	cmpdi	en,0;				\
--	bne	95f;				\
--	stb	en,PACASOFTIRQEN(r13);		\
--	bl	.trace_hardirqs_off;		\
--	b	skip;				\
--95:	bl	.trace_hardirqs_on;		\
-+#define TRACE_ENABLE_INTS	TRACE_WITH_FRAME_BUFFER(.trace_hardirqs_on)
-+#define TRACE_DISABLE_INTS	TRACE_WITH_FRAME_BUFFER(.trace_hardirqs_off)
-+
-+#define TRACE_AND_RESTORE_IRQ_PARTIAL(en,skip)		\
-+	cmpdi	en,0;					\
-+	bne	95f;					\
-+	stb	en,PACASOFTIRQEN(r13);			\
-+	TRACE_WITH_FRAME_BUFFER(.trace_hardirqs_off)	\
-+	b	skip;					\
-+95:	TRACE_WITH_FRAME_BUFFER(.trace_hardirqs_on)	\
- 	li	en,1;
- #define TRACE_AND_RESTORE_IRQ(en)		\
- 	TRACE_AND_RESTORE_IRQ_PARTIAL(en,96f);	\
--	stb	en,PACASOFTIRQEN(r13);	        \
-+	stb	en,PACASOFTIRQEN(r13);		\
- 96:
- #else
- #define TRACE_ENABLE_INTS
+Anyway, this should fix the problem, and should be an urgent fix.
+Thanks!
 
 
+> ---
+>  kernel/kprobes.c |   10 +++++++++-
+>  1 files changed, 9 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index 5240d75..69d0ca9 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -971,8 +971,16 @@ static int __kprobes pre_handler_kretprobe(struct
+> kprobe *p,
+>  		ri->rp = rp;
+>  		ri->task = current;
+> 
+> -		if (rp->entry_handler && rp->entry_handler(ri, regs))
+> +		if (rp->entry_handler && rp->entry_handler(ri, regs)) {
+> +			/*
+> +			 * Restore the instance to the free list
+> +			 * if it is not needed any more.
+> +			 */
+> +			spin_lock_irqsave(&rp->lock, flags);
+> +			hlist_add_head(&ri->hlist, &rp->free_instances);
+> +			spin_unlock_irqrestore(&rp->lock, flags);
+>  			return 0;
+> +		}
+> 
+>  		arch_prepare_kretprobe(ri, regs);
+> ----
+> 
+> I'm not at all positive that this is the right fix, but at least in our
+> environment it seems to help. Here is some background info:
+> 
+> We have implemented a kernel module that implements capability check
+> tracing by adding a kretprobe in the "capable" function. Every time a
+> capability check is made, it gathers some data about the process being
+> checked, the capability number and the result of the check. If the check
+> comes with current->mm == NULL, it's disregarded by the tracer to avoid
+> unnecessary overhead, and the entry_handler returns value 1.
+> 
+> Normally this works fine, but this week we noticed that if the module is
+> compiled in and activated in an early phase in the boot it doesn't work
+> at all. It appeared that our entry_handler was called as many times as
+> was set in the maxactive field of the registered probe, and every time
+> it returned 1 because current->mm was NULL in all of the calls. Then no
+> more callbacks were made. When the probe was de-registered, the nmissed
+> counter had a large value (>6000), and after registering it again the
+> probing started to work.
+> 
+> This made me suspect a resource leak, and as far as I can see there
+> indeed is one in kprobe.c::pre_handler_kretprobe. The fix above solved
+> the problem and seems not to have any undesired side effects.
+> 
+> We are using kernel version 2.6.32, but it seems to me that the same
+> problem exists in more current kernels judging by a quick look.
+> 
+> Why the problem manifests itself only if the tracing is enabled early in
+> the boot I cannot say. Could it be that if the entry_handler returns 0
+> at least once before the free list has been exhausted, it resets the
+> situation somehow? Or is it that after some point after userspace
+> initialization current->mm is never NULL?
+> 
+> The capability tracing module itself is ment for upstream, but I have
+> been told its code is not kernel quality (not enough comments) and the
+> implementation lacks obvious features so we have not dared to offer it
+> yet. It is used for defining profiles for daemon processes currently
+> running as root by checking what capabilities they actually need and
+> then assigning them only those, in the context of the MSSF security
+> framework project:
+> 
+> http://conference2010.meego.com/session/mobile-simplified-security-framework-overview
+> 
+> In case you are interested I'm happy to make the code and documentation
+> available at the forum of your choice.
+> 
+> Yours sincerely,
+> Juhani Mäkelä
+> Nixu OPEN - https://www.nixuopen.org
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
+-- 
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
