@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752930Ab0LXRLZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 12:11:25 -0500
-Received: from av2.africaonline.com.gh ([212.85.196.25]:37539 "EHLO
-	av1.africaonline.com.gh" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751880Ab0LXRLY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 12:11:24 -0500
-X-Greylist: delayed 606 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Dec 2010 12:11:23 EST
-Message-ID: <5661.41.203.64.250.1293210055.squirrel@41.203.64.250>
-Date: Fri, 24 Dec 2010 17:00:55 -0000 (GMT)
-Subject: End Of Year Maintenance Service
-From: "Webmail Account Service Team Management" <accountsusers@discuz.org>
-Reply-To: c.care_unit@blumail.org
-User-Agent: SquirrelMail/1.5.0
+	id S1752928Ab0LXRTY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 12:19:24 -0500
+Received: from cantor.suse.de ([195.135.220.2]:35958 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752204Ab0LXRTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Dec 2010 12:19:23 -0500
+Date: Fri, 24 Dec 2010 09:14:59 -0800
+From: Greg KH <gregkh@suse.de>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fix freeing user_struct in user cache
+Message-ID: <20101224171459.GA31815@suse.de>
+References: <AANLkTi=vfO-rs_iStXkPC7STSqfgUEW_JKt2w1=Wmf6Z@mail.gmail.com>
+ <20101224035523.GC25057@suse.de>
+ <AANLkTi=PwGXTKKyXDA1sckosbGmeo+D0bGuXt3Jb-ttc@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3
-Importance: Normal
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=PwGXTKKyXDA1sckosbGmeo+D0bGuXt3Jb-ttc@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Account Owner,
+On Fri, Dec 24, 2010 at 10:24:02PM +0800, Hillf Danton wrote:
+> On Fri, Dec 24, 2010 at 11:55 AM, Greg KH <gregkh@suse.de> wrote:
+> > On Thu, Dec 23, 2010 at 08:52:34PM +0800, Hillf Danton wrote:
+> >> When racing on adding into user cache, the new allocated from mm slab
+> >> is freed without putting user namespace.
+> >>
+> >> Since the user namespace is already operated by getting, putting has
+> >> to be issued.
+> >>
+> >> btw, it could be freed out of lock?
+> >>
+> >> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+> >> ---
+> >>
+> >> --- a/kernel/user.c   2010-11-01 19:54:12.000000000 +0800
+> >> +++ b/kernel/user.c   2010-12-23 20:42:00.000000000 +0800
+> >> @@ -158,6 +158,7 @@ struct user_struct *alloc_uid(struct use
+> >>               spin_lock_irq(&uidhash_lock);
+> >>               up = uid_hash_find(uid, hashent);
+> >>               if (up) {
+> >> +                     put_user_ns(ns);
+> >>                       key_put(new->uid_keyring);
+> >>                       key_put(new->session_keyring);
+> >>                       kmem_cache_free(uid_cachep, new);
+> >
+> > Hm, are you sure about this?  Also, why send this to me, did I last
+> > touch this?
+> >
+> 
+> sure with no doubt.
+> 
+> I do not know if you touched that last, but I received the following message,
+> 
+> On Tue, Dec 21, 2010 at 3:42 AM,  <gregkh@suse.de> wrote:
+> >
+> > This is a note to let you know that I've just added the patch titled
+> >
+> >    bonding: Fix slave selection bug.
+> >
+> > to the 2.6.36-stable tree which can be found at:
+> >    http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
+> 
+> so you were Cced since you charge patch delivered.
 
-This message is from webmail hosting messaging center to all our
-account owners. We are currently upgrading our data base and e-mail center
-for this year 2010. We are deleting all unused account to create more
-space for new one and to prevent spam mails. To prevent your account from
-closing you will have to update it below so that we will know that it's a
-present used account.
+That was a stable patch, I send all of those out :)
 
-Warning!!! E-mail owner that refuses to update his or her Email,within
-48hrs of receiving this warning will lose his or her E-mail permanently.
-You are required to send us the below information via email below.
+Use scripts/get_maintainer.pl to determine the best person to send this
+patch to (hint, it's not me.)
 
-CONFIRM YOUR E-MAIL IDENTITY BELOW:
+thanks,
 
-First Name:____________________________
-Last Name:_____________________________
-E-mail Username:________________________
-E-mail Password:_______________________
-
-Click on reply and send us the above details.
-
-Warning!!!
-
-In failure to verify your  account within 48hrs on receiving this
-notification, your account will automatically be deactivated.
-Thank you for using webmail Account.
-Warning Code: QATO8B52AXV
-
-Kind Regards,
-Webmail Account Service Team Management.
-Thanks for your co-operation.
-Copyright @2010 WEBMAIL OFFICE All rights reserved.
+greg k-h
