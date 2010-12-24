@@ -1,70 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752404Ab0LXM3W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 07:29:22 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42566 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752214Ab0LXM3U (ORCPT
+	id S1752379Ab0LXMmW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 07:42:22 -0500
+Received: from casper.infradead.org ([85.118.1.10]:52587 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752214Ab0LXMmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 07:29:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=sAyBECmwYYanmSUK+NzwIGY6+FW8btZF2L8WqLG7Px5OGy5r5qVk4p1M45BqvO8YNc
-         dhx2I1Dtp0Zfviq8xm3I7+MBm4dV77wa9oSX3Jz+odTh4QO4gPocD11rGDhvwBiz0yVI
-         tytSi5YOWtMp6ln95prJ7yoXValb+5oxLPFXA=
-Date: Fri, 24 Dec 2010 13:29:14 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Dario Faggioli <raistlin@linux.it>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 01/15] nohz_task: New mask for cpus having nohz task
-Message-ID: <20101224122903.GA1879@nowhere>
-References: <1292858662-5650-1-git-send-email-fweisbec@gmail.com>
- <1292858662-5650-2-git-send-email-fweisbec@gmail.com>
- <4D145339.1080205@cn.fujitsu.com>
- <1293178796.3182.2.camel@Palantir>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1293178796.3182.2.camel@Palantir>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 24 Dec 2010 07:42:21 -0500
+Message-Id: <20101224123742.502354261@chello.nl>
+User-Agent: quilt/0.48-1
+Date: Fri, 24 Dec 2010 13:23:39 +0100
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
+        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [RFC][PATCH 01/17] sched: Always provide p->on_cpu
+References: <20101224122338.172750730@chello.nl>
+Content-Disposition: inline; filename=sched-on_cpu.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 24, 2010 at 09:19:56AM +0100, Dario Faggioli wrote:
-> On Fri, 2010-12-24 at 16:00 +0800, Lai Jiangshan wrote: 
-> > On 12/20/2010 11:24 PM, Frederic Weisbecker wrote:
-> > >  
-> > > +config NO_HZ_TASK
-> > > +       bool "Tickless task"
-> > > +       depends on HAVE_NO_HZ_TASK && NO_HZ && SMP && HIGH_RES_TIMERS
-> > > +       help
-> > > +         When a task runs alone on a CPU and switches into this mode,
-> > > +         the timer interrupt will only trigger when it is strictly
-> > > +         needed.
-> > 
-> > Why it depends on SMP?
-> > 
-> I guess that's because you need at least a ticking CPU for timekeeping
-> and stuff... Right?
-> 
-> Regards,
-> Dario
+Always provide p->on_cpu so that we can determine if its on a cpu
+without having to lock the rq.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ include/linux/sched.h |    4 +---
+ kernel/sched.c        |   46 +++++++++++++++++++++++++++++-----------------
+ 2 files changed, 30 insertions(+), 20 deletions(-)
+
+Index: linux-2.6/kernel/sched.c
+===================================================================
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -845,18 +845,39 @@ static inline int task_current(struct rq
+ 	return rq->curr == p;
+ }
+ 
+-#ifndef __ARCH_WANT_UNLOCKED_CTXSW
+ static inline int task_running(struct rq *rq, struct task_struct *p)
+ {
++#ifdef CONFIG_SMP
++	return p->on_cpu;
++#else
+ 	return task_current(rq, p);
++#endif
+ }
+ 
++#ifndef __ARCH_WANT_UNLOCKED_CTXSW
+ static inline void prepare_lock_switch(struct rq *rq, struct task_struct *next)
+ {
++#ifdef CONFIG_SMP
++	/*
++	 * We can optimise this out completely for !SMP, because the
++	 * SMP rebalancing from interrupt is the only thing that cares
++	 * here.
++	 */
++	next->on_cpu = 1;
++#endif
+ }
+ 
+ static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
+ {
++#ifdef CONFIG_SMP
++	/*
++	 * After ->on_cpu is cleared, the task can be moved to a different CPU.
++	 * We must ensure this doesn't happen until the switch is completely
++	 * finished.
++	 */
++	smp_wmb();
++	prev->on_cpu = 0;
++#endif
+ #ifdef CONFIG_DEBUG_SPINLOCK
+ 	/* this is a valid case when another task releases the spinlock */
+ 	rq->lock.owner = current;
+@@ -872,15 +893,6 @@ static inline void finish_lock_switch(st
+ }
+ 
+ #else /* __ARCH_WANT_UNLOCKED_CTXSW */
+-static inline int task_running(struct rq *rq, struct task_struct *p)
+-{
+-#ifdef CONFIG_SMP
+-	return p->oncpu;
+-#else
+-	return task_current(rq, p);
+-#endif
+-}
+-
+ static inline void prepare_lock_switch(struct rq *rq, struct task_struct *next)
+ {
+ #ifdef CONFIG_SMP
+@@ -889,7 +901,7 @@ static inline void prepare_lock_switch(s
+ 	 * SMP rebalancing from interrupt is the only thing that cares
+ 	 * here.
+ 	 */
+-	next->oncpu = 1;
++	next->on_cpu = 1;
+ #endif
+ #ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
+ 	raw_spin_unlock_irq(&rq->lock);
+@@ -902,12 +914,12 @@ static inline void finish_lock_switch(st
+ {
+ #ifdef CONFIG_SMP
+ 	/*
+-	 * After ->oncpu is cleared, the task can be moved to a different CPU.
++	 * After ->on_cpu is cleared, the task can be moved to a different CPU.
+ 	 * We must ensure this doesn't happen until the switch is completely
+ 	 * finished.
+ 	 */
+ 	smp_wmb();
+-	prev->oncpu = 0;
++	prev->on_cpu = 0;
+ #endif
+ #ifndef __ARCH_WANT_INTERRUPTS_ON_CTXSW
+ 	local_irq_enable();
+@@ -2645,8 +2657,8 @@ void sched_fork(struct task_struct *p, i
+ 	if (likely(sched_info_on()))
+ 		memset(&p->sched_info, 0, sizeof(p->sched_info));
+ #endif
+-#if defined(CONFIG_SMP) && defined(__ARCH_WANT_UNLOCKED_CTXSW)
+-	p->oncpu = 0;
++#if defined(CONFIG_SMP)
++	p->on_cpu = 0;
+ #endif
+ #ifdef CONFIG_PREEMPT
+ 	/* Want to start with kernel preemption disabled. */
+@@ -5557,8 +5569,8 @@ void __cpuinit init_idle(struct task_str
+ 	rcu_read_unlock();
+ 
+ 	rq->curr = rq->idle = idle;
+-#if defined(CONFIG_SMP) && defined(__ARCH_WANT_UNLOCKED_CTXSW)
+-	idle->oncpu = 1;
++#if defined(CONFIG_SMP)
++	idle->on_cpu = 1;
+ #endif
+ 	raw_spin_unlock_irqrestore(&rq->lock, flags);
+ 
+Index: linux-2.6/include/linux/sched.h
+===================================================================
+--- linux-2.6.orig/include/linux/sched.h
++++ linux-2.6/include/linux/sched.h
+@@ -1198,9 +1198,7 @@ struct task_struct {
+ 	int lock_depth;		/* BKL lock depth */
+ 
+ #ifdef CONFIG_SMP
+-#ifdef __ARCH_WANT_UNLOCKED_CTXSW
+-	int oncpu;
+-#endif
++	int on_cpu;
+ #endif
+ 
+ 	int prio, static_prio, normal_prio;
 
 
-Exactly.
-
-In the next version I'll probably drop that requirement. On UP a single task
-must still be able to be in nohz mode when it is in userspace, as timekeeping
-doesn't matter there until we reenter the kernel.
-
-Dunno, I'll see what I can do.
