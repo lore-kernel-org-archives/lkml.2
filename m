@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752794Ab0LXMmd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 07:42:33 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:54543 "EHLO
+	id S1752822Ab0LXMmf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 07:42:35 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:54550 "EHLO
 	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752595Ab0LXMmZ (ORCPT
+	with ESMTP id S1752601Ab0LXMm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 07:42:25 -0500
-Message-Id: <20101224123743.353816314@chello.nl>
+	Fri, 24 Dec 2010 07:42:26 -0500
+Message-Id: <20101224123743.043920917@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Fri, 24 Dec 2010 13:23:55 +0100
+Date: Fri, 24 Dec 2010 13:23:49 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Chris Mason <chris.mason@oracle.com>,
         Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
@@ -17,70 +17,68 @@ To: Chris Mason <chris.mason@oracle.com>,
         Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
         Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 17/17] sched: Sort hotplug vs ttwu queueing
+Subject: [RFC][PATCH 11/17] sched: Delay task_contributes_to_load() 
 References: <20101224122338.172750730@chello.nl>
-Content-Disposition: inline; filename=sched-ttwu-hotplug.patch
+Content-Disposition: inline; filename=sched-ttwu-contribute-to-load.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In prepratation of having to call task_contributes_to_load() without
+holding rq->lock, we need to store the result until we do and can
+update the rq accounting accordingly.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- kernel/sched.c |   20 ++++++++++++++++++--
- 1 file changed, 18 insertions(+), 2 deletions(-)
+ include/linux/sched.h |    1 +
+ kernel/sched.c        |   16 ++++------------
+ 2 files changed, 5 insertions(+), 12 deletions(-)
 
+Index: linux-2.6/include/linux/sched.h
+===================================================================
+--- linux-2.6.orig/include/linux/sched.h
++++ linux-2.6/include/linux/sched.h
+@@ -1264,6 +1264,7 @@ struct task_struct {
+ 
+ 	/* Revert to default priority/policy when forking */
+ 	unsigned sched_reset_on_fork:1;
++	unsigned sched_contributes_to_load:1;
+ 
+ 	pid_t pid;
+ 	pid_t tgid;
 Index: linux-2.6/kernel/sched.c
 ===================================================================
 --- linux-2.6.orig/kernel/sched.c
 +++ linux-2.6/kernel/sched.c
-@@ -2470,15 +2470,15 @@ static int ttwu_remote(struct task_struc
- 	return ret;
- }
+@@ -2467,18 +2467,7 @@ static int try_to_wake_up(struct task_st
+ 	if (unlikely(task_running(rq, p)))
+ 		goto out_activate;
  
--void sched_ttwu_pending(void)
-+static void __sched_ttwu_pending(struct rq *rq)
- {
- #ifdef CONFIG_SMP
--	struct rq *rq = this_rq();
- 	struct task_struct *list = xchg(&rq->wake_list, NULL);
+-	/*
+-	 * In order to handle concurrent wakeups and release the rq->lock
+-	 * we put the task in TASK_WAKING state.
+-	 *
+-	 * First fix up the nr_uninterruptible count:
+-	 */
+-	if (task_contributes_to_load(p)) {
+-		if (likely(cpu_online(orig_cpu)))
+-			rq->nr_uninterruptible--;
+-		else
+-			this_rq()->nr_uninterruptible--;
+-	}
++	p->sched_contributes_to_load = !!task_contributes_to_load(p);
+ 	p->state = TASK_WAKING;
  
- 	if (!list)
- 		return;
+ 	if (p->sched_class->task_waking) {
+@@ -2503,6 +2492,9 @@ static int try_to_wake_up(struct task_st
+ 	WARN_ON(task_cpu(p) != cpu);
+ 	WARN_ON(p->state != TASK_WAKING);
  
-+	rq = this_rq(); /* always enqueue locally */
- 	raw_spin_lock(&rq->lock);
- 
- 	while (list) {
-@@ -2491,6 +2491,11 @@ void sched_ttwu_pending(void)
- #endif
- }
- 
-+void sched_ttwu_pending(void)
-+{
-+	__sched_ttwu_pending(this_rq());
-+}
++	if (p->sched_contributes_to_load)
++		rq->nr_uninterruptible--;
 +
- #ifdef CONFIG_SMP
- static void ttwu_queue_remote(struct task_struct *p, int cpu)
- {
-@@ -6162,6 +6167,17 @@ migration_call(struct notifier_block *nf
- 		migrate_nr_uninterruptible(rq);
- 		calc_global_load_remove(rq);
- 		break;
-+
-+	case CPU_DEAD:
-+		/*
-+		 * Queue any possible remaining pending wakeups on this cpu.
-+		 * Load-balancing will sort it out eventually.
-+		 */
-+		local_irq_save(flags);
-+		__sched_ttwu_pending(cpu_rq(cpu));
-+		local_irq_restore(flags);
-+		break;
-+
- #endif
- 	}
- 	return NOTIFY_OK;
+ out_activate:
+ #endif /* CONFIG_SMP */
+ 	activate_task(rq, p, en_flags);
 
 
