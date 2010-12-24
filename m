@@ -1,54 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209Ab0LXIzE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 03:55:04 -0500
-Received: from gretel.risen.be ([78.46.99.137]:50829 "EHLO gretel.risen.be"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751425Ab0LXIzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 03:55:02 -0500
-X-Greylist: delayed 302 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Dec 2010 03:55:02 EST
-Message-ID: <4D145EB5.7090205@aquazul.com>
-Date: Fri, 24 Dec 2010 09:49:57 +0100
-From: Mourad De Clerck <mourad@aquazul.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Icedove/3.1.7
+	id S1752138Ab0LXJBp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 04:01:45 -0500
+Received: from mail-pz0-f66.google.com ([209.85.210.66]:63056 "EHLO
+	mail-pz0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751519Ab0LXJBo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Dec 2010 04:01:44 -0500
+Date: Fri, 24 Dec 2010 02:01:41 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Kristoffer Glembo <kristoffer@gaisler.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [patch] drivers: serial: apbuart: Handle OF failures gracefully
+Message-ID: <20101224090141.GJ5544@angua.secretlab.ca>
+References: <20101216124806.327116790@linutronix.de>
 MIME-Version: 1.0
-To: Richard Purdie <rpurdie@linux.intel.com>
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH,RESEND] backlight: mbp_nvidia_bl - add support for MacBookPro7,1
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101216124806.327116790@linutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the MacBookPro7,1 (13" mid 2010) to the mbp_nvidia_bl
-driver.
+On Thu, Dec 16, 2010 at 01:06:35PM -0000, Thomas Gleixner wrote:
+> The apbuart driver depends on OF and relies on everything being
+> available. So if it's probed on a platform which has OF support, but
+> no device tree is available it crashes. Triggered by the upcoming x86
+> OF support in randconfig testing.
+> 
+> Further it's inconsistent vs. the probing and exiting from the
+> of_match loop.
+> 
+> Make it robust and consistent:
+> 
+>  - check the availablility of OF nodes before dereferencing
+>  - return -ENODEV when the device tree lookup fails
+>  - return -ENODEV when no uart port configuration is found
+>  - return -ENODEV when invalid uart port configuration is found
+> 
+> Remove the enum_done check while at it. Driver init functions are only
+> called once. Remove the pointless vendor and device queries as well.
+> 
+> Reported-by: Ingo Molnar <mingo.elte.hu>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Kristoffer Glembo <kristoffer@gaisler.com>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> 
 
-Signed-off-by: Mourad De Clerck <mourad@aquazul.com>
----
- drivers/video/backlight/mbp_nvidia_bl.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-diff --git a/drivers/video/backlight/mbp_nvidia_bl.c
-b/drivers/video/backlight/mbp_nvidia_bl.c
-index 9fb533f..9c44314 100644
---- a/drivers/video/backlight/mbp_nvidia_bl.c
-+++ b/drivers/video/backlight/mbp_nvidia_bl.c
-@@ -335,6 +335,15 @@ static const struct dmi_system_id __initdata
-mbp_device_table[] = {
- 		},
- 		.driver_data	= (void *)&nvidia_chipset_data,
- 	},
-+	{
-+		.callback	= mbp_dmi_match,
-+		.ident		= "MacBookPro 7,1",
-+		.matches	= {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro7,1"),
-+		},
-+		.driver_data	= (void *)&nvidia_chipset_data,
-+	},
- 	{ }
- };
-
+> ---
+>  drivers/serial/apbuart.c |   48 ++++++++++++++++++-----------------------------
+>  1 file changed, 19 insertions(+), 29 deletions(-)
+> 
+> Index: linux-2.6-tip/drivers/serial/apbuart.c
+> ===================================================================
+> --- linux-2.6-tip.orig/drivers/serial/apbuart.c
+> +++ linux-2.6-tip/drivers/serial/apbuart.c
+> @@ -593,54 +593,44 @@ static struct of_platform_driver grlib_a
+>  };
+>  
+>  
+> -static void grlib_apbuart_configure(void)
+> +static int grlib_apbuart_configure(void)
+>  {
+> -	static int enum_done;
+>  	struct device_node *np, *rp;
+> -	struct uart_port *port = NULL;
+>  	const u32 *prop;
+> -	int freq_khz;
+> -	int v = 0, d = 0;
+> -	unsigned int addr;
+> -	int irq, line;
+> -	struct amba_prom_registers *regs;
+> -
+> -	if (enum_done)
+> -		return;
+> +	int freq_khz, line = 0;
+>  
+>  	/* Get bus frequency */
+>  	rp = of_find_node_by_path("/");
+> +	if (!rp)
+> +		return -ENODEV;
+>  	rp = of_get_next_child(rp, NULL);
+> +	if (!rp)
+> +		return -ENODEV;
+>  	prop = of_get_property(rp, "clock-frequency", NULL);
+> +	if (!prop)
+> +		return -ENODEV;
+>  	freq_khz = *prop;
+>  
+> -	line = 0;
+>  	for_each_matching_node(np, apbuart_match) {
+> +		const int *irqs = of_get_property(np, "interrupts", NULL);
+> +		const struct amba_prom_registers *regs;
+> +		struct uart_port *port;
+> +		unsigned long addr;
+>  
+> -		int *vendor = (int *) of_get_property(np, "vendor", NULL);
+> -		int *device = (int *) of_get_property(np, "device", NULL);
+> -		int *irqs = (int *) of_get_property(np, "interrupts", NULL);
+> -		regs = (struct amba_prom_registers *)
+> -		    of_get_property(np, "reg", NULL);
+> -
+> -		if (vendor)
+> -			v = *vendor;
+> -		if (device)
+> -			d = *device;
+> +		regs = of_get_property(np, "reg", NULL);
+>  
+>  		if (!irqs || !regs)
+> -			return;
+> +			return -ENODEV;
+>  
+>  		grlib_apbuart_nodes[line] = np;
+>  
+>  		addr = regs->phys_addr;
+> -		irq = *irqs;
+>  
+>  		port = &grlib_apbuart_ports[line];
+>  
+>  		port->mapbase = addr;
+>  		port->membase = ioremap(addr, sizeof(struct grlib_apbuart_regs_map));
+> -		port->irq = irq;
+> +		port->irq = *irqs;
+>  		port->iotype = UPIO_MEM;
+>  		port->ops = &grlib_apbuart_ops;
+>  		port->flags = UPF_BOOT_AUTOCONF;
+> @@ -652,12 +642,10 @@ static void grlib_apbuart_configure(void
+>  		/* We support maximum UART_NR uarts ... */
+>  		if (line == UART_NR)
+>  			break;
+> -
+>  	}
+>  
+> -	enum_done = 1;
+> -
+>  	grlib_apbuart_driver.nr = grlib_apbuart_port_nr = line;
+> +	return line ? 0 : -ENODEV;
+>  }
+>  
+>  static int __init grlib_apbuart_init(void)
+> @@ -665,7 +653,9 @@ static int __init grlib_apbuart_init(voi
+>  	int ret;
+>  
+>  	/* Find all APBUARTS in device the tree and initialize their ports */
+> -	grlib_apbuart_configure();
+> +	ret = grlib_apbuart_configure();
+> +	if (ret)
+> +		return ret;
+>  
+>  	printk(KERN_INFO "Serial: GRLIB APBUART driver\n");
+>  
+> 
