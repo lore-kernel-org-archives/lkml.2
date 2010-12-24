@@ -1,88 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134Ab0LXLKb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 06:10:31 -0500
-Received: from fallback2.mail.ru ([94.100.176.87]:60762 "EHLO
-	fallback2.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200Ab0LXLKa (ORCPT
+	id S1752205Ab0LXLcj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 06:32:39 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:56005 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752111Ab0LXLci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 06:10:30 -0500
-X-Greylist: delayed 335 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Dec 2010 06:10:30 EST
-Date: Fri, 24 Dec 2010 14:04:58 +0300
-From: Evgeniy Dushistov <dushistov@mail.ru>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] BKL removal follow-up
-Message-ID: <20101224110458.GA18894@maclin>
-Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>,
-	Nick Bowler <nbowler@elliptictech.com>,
-	linux-kernel@vger.kernel.org
-References: <1290007619-5787-1-git-send-email-arnd@arndb.de>
- <AANLkTi=qvOHwgsbaCO6_Eu2Uik7MP5=C64+WW8R-RR8B@mail.gmail.com>
- <20101122151723.GA8732@elliptictech.com>
- <201012212354.06895.arnd@arndb.de>
+	Fri, 24 Dec 2010 06:32:38 -0500
+Message-ID: <4D148495.4030703@mvista.com>
+Date: Fri, 24 Dec 2010 14:31:33 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201012212354.06895.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Mras: Ok
+To: Anoop P A <anoop.pa@gmail.com>
+CC: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Select R4K timer lib for all MSP platforms
+References: <1290067948.9091.14.camel@paanoop1-desktop>
+In-Reply-To: <1290067948.9091.14.camel@paanoop1-desktop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 21, 2010 at 11:54:06PM +0100, Arnd Bergmann wrote:
-> On Monday 22 November 2010 16:17:23 Nick Bowler wrote:
-> > On 2010-11-21 09:45 -0800, Linus Torvalds wrote:
-> > > Yes, I'd be ok with UDF doing a "select BKL" along with a "default n"
-> > > for BKL itself.
-> > > 
-> > > I think UDF currently is the only sane reason to have BKL enabled any
-> > > more, and yes, it would probably make it easier to configure things.
-> > 
-> > UFS (which I use) also relies on BKL.
-> 
-> Would you mind running a kernel with this patch and lockdep enabled then?
-> 
-> It's quite likely that this doesn't work, but the easiest way to find
-> out is to just try it if you don't understand the code. I can't see anything
-> in the code that relies on the release-on-sleep semantics and there
-> are no obvious recursive lock_kernel() calls.
-> 
+Hello.
 
-I see one without looking at code (am I missed something?). See below.
+On 18-11-2010 11:12, Anoop P A wrote:
 
-> @@ -922,22 +922,22 @@ void ufs_evict_inode(struct inode * inode)
->  	if (want_delete) {
->  		loff_t old_i_size;
->  		/*UFS_I(inode)->i_dtime = CURRENT_TIME;*/
-> -		lock_kernel();
-> +		lock_ufs();
+>> From c872cbbe5f475d3bb3cb7f821270cb466eead1f7 Mon Sep 17 00:00:00 2001
+> From: Anoop P A<anoop.pa@gmail.com>
+> Signed-off-by: Anoop P A<anoop.pa@gmail.com>
+> Date: Thu, 18 Nov 2010 01:33:36 +0530
+> Subject: [PATCH] Select R4K timer lib for all MSP platforms
 
-lock
->  		mark_inode_dirty(inode);
->  		ufs_update_inode(inode, IS_SYNC(inode));
->  		old_i_size = inode->i_size;
->  		inode->i_size = 0;
->  		if (inode->i_blocks && ufs_truncate(inode, old_i_size))
-call truncate with lock
->  			ufs_warning(inode->i_sb, __func__, "ufs_truncate failed\n");
-> -		unlock_kernel();
-> +		unlock_ufs();
->  	}
+    Please don't include this header (except the signoff line) -- Ralf will 
+have to manually edit it out.
 
-> diff --git a/fs/ufs/truncate.c b/fs/ufs/truncate.c
-> index a58f915..9f22d00 100644
-> --- a/fs/ufs/truncate.c
-> +++ b/fs/ufs/truncate.c
-> @@ -467,7 +467,7 @@ int ufs_truncate(struct inode *inode, loff_t old_i_size)
->  
->  	block_truncate_page(inode->i_mapping, inode->i_size, ufs_getfrag_block);
->  
-> -	lock_kernel();
-> +	lock_ufs();
-call lock again
-
--- 
-/Evgeniy
-
+WBR, Sergei
