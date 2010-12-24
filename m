@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab0LXUgw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 15:36:52 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:38708 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752330Ab0LXUgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 15:36:50 -0500
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1956BAcCgN5OCYL39Sxe9jXdkUCvQOx4GuHETXcAP
-	3lzqVRRnDvUX1p
-Message-ID: <4D15045C.90909@gmx.de>
-Date: Fri, 24 Dec 2010 21:36:44 +0100
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+	id S1752980Ab0LXUis (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 15:38:48 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:21077 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752519Ab0LXUir (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Dec 2010 15:38:47 -0500
+Date: Fri, 24 Dec 2010 21:28:56 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: jgarzik@pobox.com
+Subject: [PATCH] gen_init_cpio: Avoid race between call to stat() and call
+ to open()
+Message-ID: <alpine.LNX.2.00.1012242125170.28973@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: BruceChang@via.com.tw
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        BenjaminPan@viatech.com
-Subject: Re: [PATCH] MAINTAINERS: update entries affecting VIA Technologies
- (resent as plaintext with hopefully all broken formatting fixed; merry Christmas)
-References: <88652C7DDEB86A45A61D4100C612CD731E8CFB@exchtp12.taipei.via.com.tw>
-In-Reply-To: <88652C7DDEB86A45A61D4100C612CD731E8CFB@exchtp12.taipei.via.com.tw>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bruce Chang <BruceChang@via.com.tw>
-Date: Fri, 17 Dec 2010 21:05:57 +0800
-Subject: [PATCH] MAINTAINERS: update entries affecting VIA Technologies
+Hi,
 
-Since the original maintainer-Joseph Chan (josephchan@via.com.tw)
-doesn't handle the Linux driver for VIA now, I would like to request to
-update the maintainer for the SD/MMC CARD CONTROLLER DRIVER and VIA
-UNICHROME(PRO)/CHROME9 FRAMEBUFFER DRIVER before we find a better one.
-Thank you very much for help.
+In usr/gen_init_cpio.c::cpio_mkfile() a call to stat() is made based on 
+pathname, subsequently the file is open()'ed and then the value of the 
+initial stat() call is used to allocate a buffer. This is not safe since 
+the file may change between the call to stat() and the call to open().
+Safer to just open() the file and then do fstat() using the filedescriptor 
+returned by open.
 
-Sign-off by: Bruce Chang < brucechang@via.com.tw >
 
---- linux-b4-modified/MAINTAINERS       2010-12-16 09:24:48.000000000 +0800
-+++ linux-aftr-modified/MAINTAINERS     2010-12-17 16:50:00.793647029 +0800
-@@ -6384,13 +6384,12 @@
-  F:	drivers/i2c/busses/i2c-viapro.c
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ gen_init_cpio.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-  VIA SD/MMC CARD CONTROLLER DRIVER
--M:	Joseph Chan <JosephChan@via.com.tw>
-+M:	Bruce Chang <brucechang@via.com.tw>
-  M:	Harald Welte <HaraldWelte@viatech.com>
-  S:	Maintained
-  F:	drivers/mmc/host/via-sdmmc.c
+diff --git a/usr/gen_init_cpio.c b/usr/gen_init_cpio.c
+index b2b3c2d..7cd4538 100644
+--- a/usr/gen_init_cpio.c
++++ b/usr/gen_init_cpio.c
+@@ -303,18 +303,18 @@ static int cpio_mkfile(const char *name, const char *location,
+ 
+ 	mode |= S_IFREG;
+ 
+-	retval = stat (location, &buf);
+-	if (retval) {
+-		fprintf (stderr, "File %s could not be located\n", location);
+-		goto error;
+-	}
+-
+ 	file = open (location, O_RDONLY);
+ 	if (file < 0) {
+ 		fprintf (stderr, "File %s could not be opened for reading\n", location);
+ 		goto error;
+ 	}
+ 
++	retval = fstat (file, &buf);
++	if (retval) {
++		fprintf (stderr, "File %s could not be stat()'ed\n", location);
++		goto error;
++	}
++
+ 	filebuf = malloc(buf.st_size);
+ 	if (!filebuf) {
+ 		fprintf (stderr, "out of memory\n");
 
-  VIA UNICHROME(PRO)/CHROME9 FRAMEBUFFER DRIVER
--M:	Joseph Chan <JosephChan@via.com.tw>
-  M:	Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-  L:	linux-fbdev@vger.kernel.org
-  S:	Maintained
+
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
