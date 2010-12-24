@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900Ab0LXRyU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 12:54:20 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:34300 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645Ab0LXRyT (ORCPT
+	id S1752994Ab0LXSbI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 13:31:08 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:46111 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752854Ab0LXSbF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 12:54:19 -0500
-Date: Fri, 24 Dec 2010 09:52:26 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: akpm@linux-foundation.org, Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Subject: [PATCH -mmotm] kptr_restrict: fix build when PRINTK not enabled
-Message-Id: <20101224095226.2129fa9c.randy.dunlap@oracle.com>
-In-Reply-To: <201012240132.oBO1W8Ub022207@imap1.linux-foundation.org>
-References: <201012240132.oBO1W8Ub022207@imap1.linux-foundation.org>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 24 Dec 2010 13:31:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=OaCuE281HVEjEd45yxIeP1tFjjZAv5zxgieXPjDTHlAcf5LdB1tJLKps3Fb/kk8Z2p
+         hXI+UiTRYU8xFzTfRSDzmlxKJ0nyoPghua0kPmOAfT1ZfPFdXttQBO1Z5RPNXTje3gjW
+         74mEBe85O9vNeIfY5HB5qrRXl7D/bxLh5NmuE=
+Message-ID: <4D14E6E2.3080501@pobox.com>
+Date: Fri, 24 Dec 2010 13:30:58 -0500
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: plyatov@gmail.com, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        geomatsi@gmail.com, nicolas.ferre@atmel.com, linux@maxim.org.za,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        christian.glindkamp@taskit.de, ryan@bluewatersys.com,
+        pgsellmann@portner-elektronik.at
+Subject: Re: [PATCH v2] ata: pata_at91.c bugfix for high master clock
+References: <1292099846-24528-1-git-send-email-plyatov@gmail.com>	 <4D04D2E2.20100@ru.mvista.com> <1292180579.8737.12.camel@homepc> <4D05FD4C.9040200@ru.mvista.com>
+In-Reply-To: <4D05FD4C.9040200@ru.mvista.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On 12/13/2010 06:02 AM, Sergei Shtylyov wrote:
+> On 12-12-2010 22:02, Igor Plyatov wrote:
+>>>> static const struct ata_timing initial_timing =
+>>>> - {XFER_PIO_0, 70, 290, 240, 600, 165, 150, 600, 0};
+>>>> + {XFER_PIO_0, 70, 290, 240, 600, 165, 150, 0, 600, 0};
+>
+>>> BTW, you haven't described this in the changelog...
+>
+>> Here is just a typo fixed for the ata_timing structure. This typo does
+>> not have influence on the driver operation, but I do not like to leave
+>> such a negligible problem as it is.
+>
+> You at least should have noted that in the changelog. And as the change
+> is unrelated to the other changes you're doing, it's a good practice to
+> put it into a separate patch.
 
-#include <linux/printk.h> since that is where kptr_restrict is externed.
-
-Put kptr_restrict inside #ifdef CONFIG_PRINTK block to fix build error
-when CONFIG_PRINTK is not enabled:
-
-kernel/sysctl.c:712: error: 'kptr_restrict' undeclared here (not in a function)
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Dan Rosenberg <drosenberg@vsecurity.com>
----
- kernel/sysctl.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- mmotm-2010-1223-1658.orig/kernel/sysctl.c
-+++ mmotm-2010-1223-1658/kernel/sysctl.c
-@@ -24,6 +24,7 @@
- #include <linux/slab.h>
- #include <linux/sysctl.h>
- #include <linux/signal.h>
-+#include <linux/printk.h>
- #include <linux/proc_fs.h>
- #include <linux/security.h>
- #include <linux/ctype.h>
-@@ -706,7 +707,6 @@ static struct ctl_table kern_table[] = {
- 		.extra1		= &zero,
- 		.extra2		= &one,
- 	},
--#endif
- 	{
- 		.procname	= "kptr_restrict",
- 		.data		= &kptr_restrict,
-@@ -716,6 +716,7 @@ static struct ctl_table kern_table[] = {
- 		.extra1		= &zero,
- 		.extra2		= &two,
- 	},
-+#endif
- 	{
- 		.procname	= "ngroups_max",
- 		.data		= &ngroups_max,
+Agreed...
 
 
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
-desserts:  http://www.xenotime.net/linux/recipes/
