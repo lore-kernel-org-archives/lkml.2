@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484Ab0LXA37 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Dec 2010 19:29:59 -0500
-Received: from mga11.intel.com ([192.55.52.93]:48639 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752245Ab0LXA36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Dec 2010 19:29:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,221,1291622400"; 
-   d="scan'208";a="639957214"
-Subject: Re: [RFC -v9 4/4] net, rds, Replace xlist in net/rds/xlist.h with
- llist
-From: Huang Ying <ying.huang@intel.com>
-To: Chris Mason <chris.mason@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1293140819-sup-9361@think>
-References: <1293083003-19577-1-git-send-email-ying.huang@intel.com>
-	 <1293083003-19577-5-git-send-email-ying.huang@intel.com>
-	 <1293140819-sup-9361@think>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 24 Dec 2010 08:29:16 +0800
-Message-ID: <1293150556.22308.1.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752443Ab0LXAgX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Dec 2010 19:36:23 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:46560 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981Ab0LXAgW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Dec 2010 19:36:22 -0500
+X-AuditID: b753bd60-9d951ba00000044b-e1-4d13eb045f16
+Message-ID: <4D13EB01.8030908@hitachi.com>
+Date: Fri, 24 Dec 2010 09:36:17 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Franck Bui-Huu <vagabon.xyz@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH 0/6] Minor cleanups & fixes for perf-probe(1)
+References: <1292854685-8230-1-git-send-email-fbuihuu@gmail.com>	<4D10A795.9040809@hitachi.com> <m3aajzc8f1.fsf@gmail.com>	<20101221210502.GA29079@ghostprotocols.net> <m38vzit0ja.fsf@gmail.com>
+In-Reply-To: <m38vzit0ja.fsf@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-24 at 05:51 +0800, Chris Mason wrote:
-> Excerpts from Huang Ying's message of 2010-12-23 00:43:23 -0500:
-> > The functionality of xlist and llist is almost same.  This patch
-> > replace xlist with llist to avoid code duplication.
+(2010/12/22 22:11), Franck Bui-Huu wrote:
+> Arnaldo Carvalho de Melo <acme@ghostprotocols.net> writes:
 > 
-> I'm not against it, the goal was always to move this to include/linux as
-> more users popped up.  We can test it out here with rds RDMA.
+> [...]
+> 
+>>
+>> I did just that s/fprintf/color_fprintf/g change Masami asked and
+>> stashed everything in my perf/core branch.
+> 
+> Thanks.
+> 
+> Should I still send some details about what patches do ?
+> 
 
-Thanks for your helping.
+No, it seems that Arnaldo has already fixed it in his tree.
 
-Best Regards,
-Huang Ying
+Thank you,
 
-
+-- 
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
