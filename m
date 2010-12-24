@@ -1,54 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142Ab0LXWzO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 17:55:14 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:22757 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752736Ab0LXWzM (ORCPT
+	id S1753204Ab0LXX0V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 18:26:21 -0500
+Received: from d1.icnet.pl ([212.160.220.21]:45960 "EHLO d1.icnet.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752848Ab0LXX0S convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 17:55:12 -0500
-Date: Fri, 24 Dec 2010 23:45:21 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-btrfs@vger.kernel.org
-cc: Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] BTRFS: Don't leak memory in btrfs_get_acl()
-Message-ID: <alpine.LNX.2.00.1012242342280.28973@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Fri, 24 Dec 2010 18:26:18 -0500
+From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Organization: Tele-Info-System, Poznan, PL
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] dma_declare_coherent_memory: push ioremap() up to caller
+Date: Sat, 25 Dec 2010 00:24:34 +0100
+User-Agent: KMail/1.9.10
+Cc: linux-arch@vger.kernel.org, "Greg Kroah-Hartman" <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>, Dan Williams <dan.j.williams@intel.com>,
+        linux-sh@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
+        Sascha Hauer <kernel@pengutronix.de>, linux-usb@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-media@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-scsi@vger.kernel.org,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Catalin Marinas <catalin.marinas@arm.com>
+References: <201012240020.37208.jkrzyszt@tis.icnet.pl> <201012241455.30430.jkrzyszt@tis.icnet.pl> <20101224154120.GH20587@n2100.arm.linux.org.uk>
+In-Reply-To: <20101224154120.GH20587@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+Message-Id: <201012250024.38576.jkrzyszt@tis.icnet.pl>
+X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Friday 24 December 2010 16:41:20 Russell King - ARM Linux napisał(a):
+> On Fri, Dec 24, 2010 at 02:55:25PM +0100, Janusz Krzysztofik wrote:
+> > Friday 24 December 2010 14:02:00 Russell King - ARM Linux wrote:
+> > > On Fri, Dec 24, 2010 at 12:20:32AM +0100, Janusz Krzysztofik 
+wrote:
+> > > > The patch tries to implement a solution suggested by Russell
+> > > > King,
+> > > > http://lists.infradead.org/pipermail/linux-arm-kernel/2010-Dece
+> > > >mber /035264.html. It is expected to solve video buffer
+> > > > allocation issues for at least a few soc_camera I/O memory less
+> > > > host interface drivers, designed around the videobuf_dma_contig
+> > > > layer, which allocates video buffers using
+> > > > dma_alloc_coherent().
+> > > >
+> > > > Created against linux-2.6.37-rc5.
+> > > >
+> > > > Tested on ARM OMAP1 based Amstrad Delta with a WIP OMAP1 camera
+> > > > patch, patterned upon two mach-mx3 machine types which already
+> > > > try to use the dma_declare_coherent_memory() method for
+> > > > reserving a region of system RAM preallocated with another
+> > > > dma_alloc_coherent(). Compile tested for all modified files
+> > > > except arch/sh/drivers/pci/fixups-dreamcast.c.
+> > >
+> > > Another note: with the pair of patches I've sent to the
+> > > linux-arm-kernel list earlier today changing the DMA coherent
+> > > allocator to steal memory from the system at boot.
+> > >
+> > > This means there's less need to pre-allocate DMA memory - if
+> > > there's sufficient contiguous space in the DMA region to satisfy
+> > > the allocation, then the allocation will succeed.  It's also
+> > > independent of the maximum page size from the kernel's memory
+> > > allocators too.
+> > >
+> > > So I suspect that mach-mx3 (and others) no longer need to do
+> > > their own pre-allocation anymore if both of these patches go in.
+> >
+> > Then, my rationale will no longer be valid. So, either drop my
+> > patch if you think you have finally come out with a better solution
+> > which doesn't touch any system-wide API, or suggest a new
+> > justification for use in the commit log if you think still the
+> > patch solves something important.
+>
+> No.  It's not clear whether my pair of patches are both going to make
+> it into the kernel, or even what timeframe they're going to make it
+> in.
+>
+> Irrespective of that, we do need a solution to this problem so that
+> this stuff starts working again.
+>
+> In any case, your patch makes complete sense through and through:
+>
+> 1. if other architecture/machine wants to reserve a chunk of DMA-able
+>    memory for a specific device (eg, because of a restriction on the
+>    number of DMA address bits available) and it's completely DMA
+>    coherent, it shouldn't have to go through the pains of having that
+>    memory unconditionally ioremap'd.
+>
+> 2. What if the memory being provided from some source where you
+> already have the mapping setup in a specific way for a reason?
+>
+> For example, say I have an ARM design, and all peripherals are in a
+> single 256MB memory region, which includes a chunk of SRAM set aside
+> for DMA purposes.  Let's say I can map that really efficiently by a
+> few page table entries, which means relatively little TLB usage for
+> accessing this region.
+>
+> With the current API, it becomes difficult to pass that mapping
+> through the dma_declare_coherent_memory() because the physical
+> address goes through ioremap(), which obfuscates what's going on. 
+> However, if I could pass the bus and virtual address, then there's no
+> ambiguity over what I want to do.
+>
+> What if I want to declare memory to the DMA coherent allocator with
+> attributes different from what ioremap() gives me, maybe with write
+> combining properties (because it happens to be safe for the specific
+> device) ?
+>
+> Passing the virtual address allows the API to become much more
+> flexible. Not only that, it allows it to be used on ARM, rather than
+> becoming (as it currently stands) prohibited on ARM.
+>
+> I believe that putting ioremap() inside this API was the wrong thing
+> to do, and moving it outside makes the API much more flexible and
+> usable. It's something I still fully support.
 
-Currrently we leak memory in btrfs_get_acl::btrfs_get_acl() if 
-posix_acl_from_xattr() fails. With this patch we do not.
+Thanks, this is what I was missing, having my point of view rather my 
+machine centric, with not much wider experience. I'll quote your 
+argumentation in next iteration of this patch if required.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- acl.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-diff --git a/fs/btrfs/acl.c b/fs/btrfs/acl.c
-index 2222d16..6d1410e 100644
---- a/fs/btrfs/acl.c
-+++ b/fs/btrfs/acl.c
-@@ -60,8 +60,10 @@ static struct posix_acl *btrfs_get_acl(struct inode *inode, int type)
- 		size = __btrfs_getxattr(inode, name, value, size);
- 		if (size > 0) {
- 			acl = posix_acl_from_xattr(value, size);
--			if (IS_ERR(acl))
-+			if (IS_ERR(acl)) {
-+				kfree(value);
- 				return acl;
-+			}
- 			set_cached_acl(inode, type, acl);
- 		}
- 		kfree(value);
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Thanks,
+Janusz
