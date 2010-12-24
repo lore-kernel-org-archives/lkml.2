@@ -1,130 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204Ab0LXX0V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 18:26:21 -0500
-Received: from d1.icnet.pl ([212.160.220.21]:45960 "EHLO d1.icnet.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752848Ab0LXX0S convert rfc822-to-8bit (ORCPT
+	id S1753163Ab0LXXnB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 18:43:01 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:41679 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752979Ab0LXXm7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 18:26:18 -0500
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Organization: Tele-Info-System, Poznan, PL
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] dma_declare_coherent_memory: push ioremap() up to caller
-Date: Sat, 25 Dec 2010 00:24:34 +0100
-User-Agent: KMail/1.9.10
-Cc: linux-arch@vger.kernel.org, "Greg Kroah-Hartman" <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>, Dan Williams <dan.j.williams@intel.com>,
-        linux-sh@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
-        Sascha Hauer <kernel@pengutronix.de>, linux-usb@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        linux-media@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Catalin Marinas <catalin.marinas@arm.com>
-References: <201012240020.37208.jkrzyszt@tis.icnet.pl> <201012241455.30430.jkrzyszt@tis.icnet.pl> <20101224154120.GH20587@n2100.arm.linux.org.uk>
-In-Reply-To: <20101224154120.GH20587@n2100.arm.linux.org.uk>
+	Fri, 24 Dec 2010 18:42:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=eMe+3CEaKzhNkDv7H7Ltc38Y6pG8VzbYOVb6LJf3Is46xSKtmZEDU8TCcGRxmsI0TY
+         3PDK2iLsNdesGSqc5LbE9HCXg/aBJq2s86Ym1xIdwjZXG1M/CDUIrjq1Q0CRpE8yuSU2
+         F510Iejw86iHRsl0nDB7HHi1cJsk/JI4bhiiA=
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
+In-Reply-To: <4D145016.60906@free.fr>
+References: <Pine.LNX.4.44L0.1012231755180.11535-100000@netrider.rowland.org>
+	<36f50535272fab60e974dc75e172bf29@secure211.sgcpanel.com>
+	<4D145016.60906@free.fr>
+Date: Sat, 25 Dec 2010 00:42:58 +0100
+Message-ID: <AANLkTik9ByQpPCf3jNsotB__a_p3JxaiK7fA-E-K91U3@mail.gmail.com>
+Subject: Re: 2.6.37-rc7: no more shutdown on DELL E6400
+From: Alessandro Suardi <alessandro.suardi@gmail.com>
+To: eric.valette@free.fr
+Cc: Felipe Balbi <me@felipebalbi.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Randy Dunlap <rdunlap@xenotime.net>, lud <linux-usb@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-Message-Id: <201012250024.38576.jkrzyszt@tis.icnet.pl>
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Friday 24 December 2010 16:41:20 Russell King - ARM Linux napisaÅ‚(a):
-> On Fri, Dec 24, 2010 at 02:55:25PM +0100, Janusz Krzysztofik wrote:
-> > Friday 24 December 2010 14:02:00 Russell King - ARM Linux wrote:
-> > > On Fri, Dec 24, 2010 at 12:20:32AM +0100, Janusz Krzysztofik 
-wrote:
-> > > > The patch tries to implement a solution suggested by Russell
-> > > > King,
-> > > > http://lists.infradead.org/pipermail/linux-arm-kernel/2010-Dece
-> > > >mber /035264.html. It is expected to solve video buffer
-> > > > allocation issues for at least a few soc_camera I/O memory less
-> > > > host interface drivers, designed around the videobuf_dma_contig
-> > > > layer, which allocates video buffers using
-> > > > dma_alloc_coherent().
-> > > >
-> > > > Created against linux-2.6.37-rc5.
-> > > >
-> > > > Tested on ARM OMAP1 based Amstrad Delta with a WIP OMAP1 camera
-> > > > patch, patterned upon two mach-mx3 machine types which already
-> > > > try to use the dma_declare_coherent_memory() method for
-> > > > reserving a region of system RAM preallocated with another
-> > > > dma_alloc_coherent(). Compile tested for all modified files
-> > > > except arch/sh/drivers/pci/fixups-dreamcast.c.
-> > >
-> > > Another note: with the pair of patches I've sent to the
-> > > linux-arm-kernel list earlier today changing the DMA coherent
-> > > allocator to steal memory from the system at boot.
-> > >
-> > > This means there's less need to pre-allocate DMA memory - if
-> > > there's sufficient contiguous space in the DMA region to satisfy
-> > > the allocation, then the allocation will succeed.  It's also
-> > > independent of the maximum page size from the kernel's memory
-> > > allocators too.
-> > >
-> > > So I suspect that mach-mx3 (and others) no longer need to do
-> > > their own pre-allocation anymore if both of these patches go in.
-> >
-> > Then, my rationale will no longer be valid. So, either drop my
-> > patch if you think you have finally come out with a better solution
-> > which doesn't touch any system-wide API, or suggest a new
-> > justification for use in the commit log if you think still the
-> > patch solves something important.
+On Fri, Dec 24, 2010 at 8:47 AM, Eric Valette <eric.valette@free.fr> wrote:
+> On 24/12/2010 00:56, Felipe Balbi wrote:
+>>
+>> Hi,
 >
-> No.  It's not clear whether my pair of patches are both going to make
-> it into the kernel, or even what timeframe they're going to make it
-> in.
+>> I've got an E6400 myself and the only time I could get
+>> it to hang was when trying to use brcm80211 driver from
+>> staging. The problem appears when I rmmod/modprobe the
+>> driver after it looses connection to my wifi router.
+>>
+>> Since the driver is still in staging and buggy as hell
+>> I didn't bother notifying anyone. But it's true that
+>> shutdown truly hangs.
+>>
+>> Are you using brcm80211 driver too ?
+>>
 >
-> Irrespective of that, we do need a solution to this problem so that
-> this stuff starts working again.
+> No. Mine has an Intel WiFi chipset. With DELL the same reference can be used
+> for multiple different hardware instantiation (I have a nvidia vido chipset
+> some seems now to have an intel one).
 >
-> In any case, your patch makes complete sense through and through:
+> PS: For me the hang appeared with 2.6.37-rc7. I run linux on it for more
+> than a year changing stable kernel as soon as they appear and usually trying
+> future kernel around rc6 stage.
 >
-> 1. if other architecture/machine wants to reserve a chunk of DMA-able
->    memory for a specific device (eg, because of a restriction on the
->    number of DMA address bits available) and it's completely DMA
->    coherent, it shouldn't have to go through the pains of having that
->    memory unconditionally ioremap'd.
->
-> 2. What if the memory being provided from some source where you
-> already have the mapping setup in a specific way for a reason?
->
-> For example, say I have an ARM design, and all peripherals are in a
-> single 256MB memory region, which includes a chunk of SRAM set aside
-> for DMA purposes.  Let's say I can map that really efficiently by a
-> few page table entries, which means relatively little TLB usage for
-> accessing this region.
->
-> With the current API, it becomes difficult to pass that mapping
-> through the dma_declare_coherent_memory() because the physical
-> address goes through ioremap(), which obfuscates what's going on. 
-> However, if I could pass the bus and virtual address, then there's no
-> ambiguity over what I want to do.
->
-> What if I want to declare memory to the DMA coherent allocator with
-> attributes different from what ioremap() gives me, maybe with write
-> combining properties (because it happens to be safe for the specific
-> device) ?
->
-> Passing the virtual address allows the API to become much more
-> flexible. Not only that, it allows it to be used on ARM, rather than
-> becoming (as it currently stands) prohibited on ARM.
->
-> I believe that putting ioremap() inside this API was the wrong thing
-> to do, and moving it outside makes the API much more flexible and
-> usable. It's something I still fully support.
+> 2.6.36.2 works perfectly. I did not change my config except maybe if the
+> make oldconfig was proposing something obvious (e.g new generic MII
+> support).
 
-Thanks, this is what I was missing, having my point of view rather my 
-machine centric, with not much wider experience. I'll quote your 
-argumentation in next iteration of this patch if required.
+Just as a data point, my Dell E6400 still shuts down fine in both 2.6.37-rc7
+ and -rc7-git2. This one has integrated Intel video (i915) and I use the
+ out-of-tree broadcom-sta driver for the wireless interface. If needed, I can
+ post my .config in the bugzilla entry (but won't, unless asked - in order to
+ avoid possible bug noise).
 
-Thanks,
-Janusz
+--alessandro
+
+ "There's always a siren singing you to shipwreck"
+
+   (Radiohead, "There There")
