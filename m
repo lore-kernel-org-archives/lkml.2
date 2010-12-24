@@ -1,48 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601Ab0LXPjF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 10:39:05 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:34010 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752161Ab0LXPjD (ORCPT
+	id S1752830Ab0LXPmJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 10:42:09 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:32891 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752733Ab0LXPmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 10:39:03 -0500
-Message-ID: <4D14BE81.6000907@metafoo.de>
-Date: Fri, 24 Dec 2010 16:38:41 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101030 Icedove/3.0.10
+	Fri, 24 Dec 2010 10:42:07 -0500
+Date: Fri, 24 Dec 2010 15:41:20 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Cc: linux-arch@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>, Dan Williams <dan.j.williams@intel.com>,
+        linux-sh@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
+        Sascha Hauer <kernel@pengutronix.de>, linux-usb@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-media@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-scsi@vger.kernel.org,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH] dma_declare_coherent_memory: push ioremap() up to
+	caller
+Message-ID: <20101224154120.GH20587@n2100.arm.linux.org.uk>
+References: <201012240020.37208.jkrzyszt@tis.icnet.pl> <20101224130200.GG20587@n2100.arm.linux.org.uk> <201012241455.30430.jkrzyszt@tis.icnet.pl>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/9] ASoC: codecs: Fix register cache incoherencies
-References: <1293198484-1902-1-git-send-email-lars@metafoo.de> <20101224145706.GA16614@opensource.wolfsonmicro.com>
-In-Reply-To: <20101224145706.GA16614@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201012241455.30430.jkrzyszt@tis.icnet.pl>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/24/2010 03:57 PM, Mark Brown wrote:
-> > On Fri, Dec 24, 2010 at 02:47:55PM +0100, Lars-Peter Clausen wrote:
->> >> The multi-component patch(commit f0fba2ad1) introduced a generic register cache
->> >> framework. Most of the drivers where converted to use this new framework. But
+On Fri, Dec 24, 2010 at 02:55:25PM +0100, Janusz Krzysztofik wrote:
+> Friday 24 December 2010 14:02:00 Russell King - ARM Linux wrote:
+> > On Fri, Dec 24, 2010 at 12:20:32AM +0100, Janusz Krzysztofik wrote:
+> > > The patch tries to implement a solution suggested by Russell King,
+> > > http://lists.infradead.org/pipermail/linux-arm-kernel/2010-December
+> > >/035264.html. It is expected to solve video buffer allocation issues
+> > > for at least a few soc_camera I/O memory less host interface
+> > > drivers, designed around the videobuf_dma_contig layer, which
+> > > allocates video buffers using dma_alloc_coherent().
+> > >
+> > > Created against linux-2.6.37-rc5.
+> > >
+> > > Tested on ARM OMAP1 based Amstrad Delta with a WIP OMAP1 camera
+> > > patch, patterned upon two mach-mx3 machine types which already try
+> > > to use the dma_declare_coherent_memory() method for reserving a
+> > > region of system RAM preallocated with another
+> > > dma_alloc_coherent(). Compile tested for all modified files except
+> > > arch/sh/drivers/pci/fixups-dreamcast.c.
 > >
-> > No it didn't - soc-cache.c has been present since the middle of 2009.
-Hm. Ok, you are right, I've should have checked more closely. Only the allocation of
-the register cache was moved from the drivers to the core.
+> > Another note: with the pair of patches I've sent to the
+> > linux-arm-kernel list earlier today changing the DMA coherent
+> > allocator to steal memory from the system at boot.
+> >
+> > This means there's less need to pre-allocate DMA memory - if there's
+> > sufficient contiguous space in the DMA region to satisfy the
+> > allocation, then the allocation will succeed.  It's also independent
+> > of the maximum page size from the kernel's memory allocators too.
+> >
+> > So I suspect that mach-mx3 (and others) no longer need to do their
+> > own pre-allocation anymore if both of these patches go in.
+> 
+> Then, my rationale will no longer be valid. So, either drop my patch if 
+> you think you have finally come out with a better solution which 
+> doesn't touch any system-wide API, or suggest a new justification for 
+> use in the commit log if you think still the patch solves something 
+> important.
 
-So the commit messages should have been along the lines of:
-	The multi-component patch(commit f0fba2ad1) moved the alloction of the
-	register cache from drivers to the ASoC core. While most of the drivers were
-	converted to respect this change, some still maintain their own register
-	cache besides the one used and allocated by the core.
-	Thus the device ends up with two from each other incoherent caches, which
-	can lead to undefined behaviour.
+No.  It's not clear whether my pair of patches are both going to make it
+into the kernel, or even what timeframe they're going to make it in.
 
-If there are no other issues with this series, I'll resend it with adjusted commit
-messages in a few days.
+Irrespective of that, we do need a solution to this problem so that this
+stuff starts working again.
 
-- Lars
+In any case, your patch makes complete sense through and through:
+
+1. if other architecture/machine wants to reserve a chunk of DMA-able
+   memory for a specific device (eg, because of a restriction on the
+   number of DMA address bits available) and it's completely DMA
+   coherent, it shouldn't have to go through the pains of having that
+   memory unconditionally ioremap'd.
+
+2. What if the memory being provided from some source where you already
+   have the mapping setup in a specific way for a reason?
+
+For example, say I have an ARM design, and all peripherals are in a
+single 256MB memory region, which includes a chunk of SRAM set aside
+for DMA purposes.  Let's say I can map that really efficiently by a
+few page table entries, which means relatively little TLB usage for
+accessing this region.
+
+With the current API, it becomes difficult to pass that mapping through
+the dma_declare_coherent_memory() because the physical address goes
+through ioremap(), which obfuscates what's going on.  However, if I
+could pass the bus and virtual address, then there's no ambiguity over
+what I want to do.
+
+What if I want to declare memory to the DMA coherent allocator with
+attributes different from what ioremap() gives me, maybe with write
+combining properties (because it happens to be safe for the specific
+device) ?
+
+Passing the virtual address allows the API to become much more flexible.
+Not only that, it allows it to be used on ARM, rather than becoming (as
+it currently stands) prohibited on ARM.
+
+I believe that putting ioremap() inside this API was the wrong thing to
+do, and moving it outside makes the API much more flexible and usable.
+It's something I still fully support.
