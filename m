@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752078Ab0LXJog (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 04:44:36 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:60570 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab0LXJoc (ORCPT
+	id S1751585Ab0LXJob (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 04:44:31 -0500
+Received: from mail-iw0-f194.google.com ([209.85.214.194]:54961 "EHLO
+	mail-iw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab0LXJoa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 04:44:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=dAO7ct11FZ2vPCERKcFsxKGXN6Ccou/PgE88P5ABQv07N3h2xxosUNq/Vsnp7kz0SK
-         YkKbKrVHRWBGH8UtYDXQ8V8j5PY6O1XkJFk/DKrxKrGJE4msq7A1HmikwqNTwGGgegqc
-         7DMOmOADY5VkYYmiH1s8WbGIZxy7wEhY+fWZ8=
+	Fri, 24 Dec 2010 04:44:30 -0500
 MIME-Version: 1.0
-In-Reply-To: <1293028561-22125-1-git-send-email-anoop.pa@gmail.com>
-References: <1292929580-5829-1-git-send-email-anoop.pa@gmail.com>
-	<1293028561-22125-1-git-send-email-anoop.pa@gmail.com>
-Date: Fri, 24 Dec 2010 03:44:31 -0600
-Message-ID: <AANLkTimu_gzsd3NY+HDp7jV+EMtrHGZq7qNc3OedyT3C@mail.gmail.com>
-Subject: Re: [PATCH V2 1/2] EHCI support for on-chip PMC MSP USB controller.
-From: Shane McDonald <mcdonald.shane@gmail.com>
-To: "Anoop P.A" <anoop.pa@gmail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Anatolij Gustschin <agust@denx.de>, Anand Gadiyar <gadiyar@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 24 Dec 2010 02:44:09 -0700
+X-Google-Sender-Auth: 8LCjH6zS_vndGpOTSvA03rVPcbg
+Message-ID: <AANLkTi=TErzg+_2u1sPCpOepAGnzv6KNT6uPT_KSFLZ=@mail.gmail.com>
+Subject: [git pull] bug fixes for 2.6.37
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Daney <ddaney@caviumnetworks.com>,
+        Mingkai Hu <Mingkai.hu@freescale.com>,
+        Wolfram Sang <w.sang@pengutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anoop:
+Hi Linus,
 
-On Wed, Dec 22, 2010 at 8:36 AM, Anoop P.A <anoop.pa@gmail.com> wrote:
-> From: Anoop P A <anoop.pa@gmail.com>
->
-> This patch includes.
->
-> 1. USB host driver for MSP71xx family SoC on-chip USB controller.
-> 2. Platform support for USB controller.
->
-> Signed-off-by: Anoop P A <anoop.pa@gmail.com>
+A handful of last minute bug fix commits.
 
-I tried to apply this patch to a pristine linux-mips.org 2.6.37-rc6 kernel,
-but the patch failed on arch/mips/pmc-sierra/msp71xx/Makefile.
-I think you must have applied an SMP patch to your tree before
-generating this patch.  That was easy to fix, and once I did that,
-I tried testing this on a PMC-Sierra MSP7120 Garibaldi evaluation
-board.  Using your original changes to drivers/usb/core/hub.c in
-addition to this patch, I was able to boot a system, plug a USB hard
-drive in, and that drive was recognized by the Garibaldi.
+g.
 
-You can add my:
+The following changes since commit 90a8a73c06cc32b609a880d48449d7083327e11a:
 
-Tested-by: Shane McDonald <mcdonald.shane@gmail.com>
+  Linux 2.6.37-rc7 (2010-12-21 11:26:40 -0800)
+
+are available in the git repository at:
+  git://git.secretlab.ca/git/linux-2.6 merge
+
+David Daney (1):
+      of/i2c: Fix request module by alias
+
+Mingkai Hu (2):
+      spi/fsl_espi: change the read behaviour of the SPIRF
+      spi/fsl_espi: fix wrong setting of the address in the command buffer
+
+Wolfram Sang (2):
+      powerpc/mpc5200: include fs.h in mpc52xx_gpt.c
+      spi/mpc52xx-spi: fix annotation for remove()-pointer
+
+ arch/powerpc/platforms/52xx/mpc52xx_gpt.c |    1 +
+ drivers/of/of_i2c.c                       |    2 +-
+ drivers/spi/mpc52xx_spi.c                 |    2 +-
+ drivers/spi/spi_fsl_espi.c                |   35 ++++++++++++++++++++--------
+ 4 files changed, 28 insertions(+), 12 deletions(-)
+
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
