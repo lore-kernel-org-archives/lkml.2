@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050Ab0LXKqY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 05:46:24 -0500
-Received: from mga14.intel.com ([143.182.124.37]:39386 "EHLO mga14.intel.com"
+	id S1751952Ab0LXKxv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 05:53:51 -0500
+Received: from mga09.intel.com ([134.134.136.24]:26969 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750964Ab0LXKqX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 05:46:23 -0500
+	id S1751036Ab0LXKxt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Dec 2010 05:53:49 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,223,1291622400"; 
-   d="scan'208";a="366161049"
-Date: Fri, 24 Dec 2010 11:45:19 +0100
+   d="scan'208";a="586920052"
+Date: Fri, 24 Dec 2010 11:53:46 +0100
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Daniel Drake <dsd@laptop.org>
-Cc: Paul Fox <pgf@laptop.org>, Andres Salomon <dilinger@queued.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: MFD cell structure and sharing of resources
-Message-ID: <20101224104518.GB27832@sortiz-mobl>
-References: <AANLkTinrF-dxiw7OQ=dMhQPgKSqS6yYfDzdcnHfhMtyf@mail.gmail.com>
- <20101216103550.GA5946@sortiz-mobl>
- <AANLkTi=ypose5day4=ypV8_SsiFq4vf9vqZh-OWret0x@mail.gmail.com>
+To: Linus Walleij <linus.ml.walleij@gmail.com>
+Cc: Sundar R IYER <sundar.iyer@stericsson.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/20] mfd/ab8500: remove spi support
+Message-ID: <20101224105345.GC27832@sortiz-mobl>
+References: <1291388753-14662-1-git-send-email-sundar.iyer@stericsson.com>
+ <1291388753-14662-2-git-send-email-sundar.iyer@stericsson.com>
+ <20101209142912.GM8884@sortiz-mobl>
+ <33A307AF30D7BF4F811B1568FE7A9B18047C7D405F@EXDCVYMBSTM006.EQ1STM.local>
+ <20101209153634.GQ8884@sortiz-mobl>
+ <AANLkTikG7CY9hcuSy6+na+xrjbJYdKE3tRysT0FKw5kD@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=ypose5day4=ypV8_SsiFq4vf9vqZh-OWret0x@mail.gmail.com>
+In-Reply-To: <AANLkTikG7CY9hcuSy6+na+xrjbJYdKE3tRysT0FKw5kD@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+Hi Linus,
 
-On Thu, Dec 16, 2010 at 03:38:52PM +0000, Daniel Drake wrote:
-> Hi Samuel,
+On Sun, Dec 19, 2010 at 09:48:46PM +0100, Linus Walleij wrote:
+> 2010/12/9 Samuel Ortiz <sameo@linux.intel.com>:
 > 
-> Thanks for your valuable input here!
-Thanks for your patience. I've been swamped at work with other projects, sorry
-for the delay.
-
-> I have one solution in mind but I'm not sure if it goes beyond your
-> definition of what a mfd cell should be:
+> >> [Sundar]
+> >> >> Since the Ab8500 v1.0, the SPI support is deprecated on the HW.
+> >> >I'm fine with that, but you really don't want to be able to support pre 1.0
+> >> >devices ?
+> >>
+> >> AFAIK, there aren't active pieces of those outside STE :)
+> > Ok, that's a good reason. Please add my:
+> > Acked-by: Samuel Ortiz <sameo@linux.intel.com>
 > 
-> cs5535-mfd creates and registers a MFD cell specifically for
-> olpc-xo1-pm if it finds itself running on an XO laptop. The cell has
-> the 2 resources that are needed by that driver, and has name
-> "olpc-xo1-pm". Therefore our sysfs paths start with:
-> /sys/devices/pci0000:00/0000:00:0f.0/olpc-xo1-pm/
-That is stretching things a bit, but I'd be ok with that solution.
-In theory, you wouldn't even need to check if you're on an XO laptop, except
-for saving a few bytes at runtime.
-
-One more thing: What about my proposal of defining IO routines from the MFD
-driver, and using those from your subdevices driver ?
+> This better be merged through the MFD tree. It touches a line in
+> the Makefile that has been changed since, the fixup is trivial but
+> it's orthogonal to the stuff I have in ux500-core anyway so Sam,
+> can you merge this into MFD?
+Sure, patch applied now.
 
 Cheers,
 Samuel.
