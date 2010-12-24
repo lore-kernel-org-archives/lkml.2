@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739Ab0LXMAw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 07:00:52 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:46285 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752379Ab0LXMAv (ORCPT
+	id S1752194Ab0LXMP3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 07:15:29 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:33724 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836Ab0LXMP2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 07:00:51 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Greg KH <gregkh@suse.de>
-Subject: Re: [RFC/PATCH v7 02/12] media: Media device
-Date: Fri, 24 Dec 2010 13:01:05 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r3; KDE/4.5.3; x86_64; ; )
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
-        clemens@ladisch.de, sakari.ailus@maxwell.research.nokia.com
-References: <1292844995-7900-1-git-send-email-laurent.pinchart@ideasonboard.com> <1292844995-7900-3-git-send-email-laurent.pinchart@ideasonboard.com> <20101223033346.GB14692@suse.de>
-In-Reply-To: <20101223033346.GB14692@suse.de>
+	Fri, 24 Dec 2010 07:15:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=lKYqD3BHnqb3hu9TcyBGkxlBF/HkVsBUXgJxDlYix8GbqOyosw2iUUqNLi443RHUTJ
+         AY/sEFGZgANIz8pynC6B5H4UKzUVm0jvtGHt8XHhunQhm9MPl6/9Ci1W7ryD1zoler31
+         cB2ej5RAX8xLCV5I70dWru2WbYaa5xZAMvjek=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012241301.05834.laurent.pinchart@ideasonboard.com>
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <201012240132.oBO1W8Ub022207@imap1.linux-foundation.org>
+References: <201012240132.oBO1W8Ub022207@imap1.linux-foundation.org>
+Date: Fri, 24 Dec 2010 13:15:26 +0100
+Message-ID: <AANLkTinegsqmSzXqqrF930abQfOBu6_MH1EToupKV214@mail.gmail.com>
+Subject: Re: mmotm 2010-12-23-16-58 uploaded
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: akpm@linux-foundation.org
+Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Fri, Dec 24, 2010 at 1:58 AM,  <akpm@linux-foundation.org> wrote:
+> The mm-of-the-moment snapshot 2010-12-23-16-58 has been uploaded to
+>
+>   http://userweb.kernel.org/~akpm/mmotm/
+>
+> and will soon be available at
+>
+>   git://zen-kernel.org/kernel/mmotm.git
+>
 
-Thanks for the review.
+The readme in [1] lists a wrong browseable GIT-repo URL:
 
-On Thursday 23 December 2010 04:33:46 Greg KH wrote:
-> On Mon, Dec 20, 2010 at 12:36:25PM +0100, Laurent Pinchart wrote:
-> > The media_device structure abstracts functions common to all kind of
-> > media devices (v4l2, dvb, alsa, ...). It manages media entities and
-> > offers a userspace API to discover and configure the media device
-> > internal topology.
-> 
-> As you create sysfs files, please also create Documentation/ABI/ entries
-> for those sysfs files at the same time.
+"Alternatively, these patches are available in a git repository at
 
-Sorry for having forgotten that. I will fix it.
+git:	git://zen-kernel.org/kernel/mmotm.git
+gitweb:	http://git.zen-kernel.org/?p=kernel/mmotm.git;a=summary"
 
--- 
-Regards,
+Correct would be [2]:
 
-Laurent Pinchart
+gitweb: http://git.zen-kernel.org/mmotm/
+
+> It contains the following patches against 2.6.37-rc7:
+>
+[...]
+> linux-next-git-rejects.patch
+
+Hm, the content of this patch looks a bit strange.
+Is that a post-cleanup patch to linux-next merge?
+
+- Sedat -
+
+[1] http://userweb.kernel.org/~akpm/mmotm/mmotm-readme.txt
+[2] http://git.zen-kernel.org/mmotm/
