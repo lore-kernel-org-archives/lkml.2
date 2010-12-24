@@ -1,18 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869Ab0LXQs3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 11:48:29 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:35538 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752404Ab0LXQs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 11:48:27 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+WloRbTMOW7kjTXjF94DkgM5xLuWyJiD7PXOsXzv
-	+lFQmwjyt1M6a5
+	id S1752753Ab0LXRHz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 12:07:55 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:33106 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287Ab0LXRHy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Dec 2010 12:07:54 -0500
 Subject: Re: [PATCH] sched, cgroup: Use exit hook to avoid use-after-free
  crash
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <peterz@infradead.org>
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <efault@gmx.de>
 Cc: Miklos Vajna <vmiklos@frugalware.org>,
         shenghui <crosslonelyover@gmail.com>, kernel-janitors@vger.kernel.org,
         linux-kernel@vger.kernel.org, mingo@elte.hu, Greg KH <greg@kroah.com>,
@@ -20,7 +18,7 @@ Cc: Miklos Vajna <vmiklos@frugalware.org>,
         Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <menage@google.com>,
         Balbir Singh <balbir@linux.vnet.ibm.com>,
         Srivatsa Vaddagiri <vatsa@in.ibm.com>
-In-Reply-To: <1293206353.29444.205.camel@laptop>
+In-Reply-To: <1293209297.14433.4.camel@marge.simson.net>
 References: <AANLkTin49UHeVhfS-iFwWvPIg29HPhXaP3DorBAa-a0I@mail.gmail.com>
 	 <1277808215.1868.5.camel@laptop>
 	 <20101219020313.GJ31750@genesis.frugalware.org>
@@ -41,25 +39,28 @@ References: <AANLkTin49UHeVhfS-iFwWvPIg29HPhXaP3DorBAa-a0I@mail.gmail.com>
 	 <1293188091.25981.200.camel@laptop>
 	 <1293192999.18035.4.camel@marge.simson.net>
 	 <1293206353.29444.205.camel@laptop>
+	 <1293209297.14433.4.camel@marge.simson.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 24 Dec 2010 17:48:17 +0100
-Message-ID: <1293209297.14433.4.camel@marge.simson.net>
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 24 Dec 2010 18:07:37 +0100
+Message-ID: <1293210457.29444.206.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-24 at 16:59 +0100, Peter Zijlstra wrote:
+On Fri, 2010-12-24 at 17:48 +0100, Mike Galbraith wrote:
+> On Fri, 2010-12-24 at 16:59 +0100, Peter Zijlstra wrote:
+> 
+> > So cgroup moves a task without calling cgroup_subsys::attach() which is
+> > odd, but it does have an ::exit method, sadly it calls that _before_
+> > re-assigning the task, which means we have to jump through some hoops.
+> 
+> Could you do the move in cgroup_exit() in the CONFIG_PREEMPT case?
 
-> So cgroup moves a task without calling cgroup_subsys::attach() which is
-> odd, but it does have an ::exit method, sadly it calls that _before_
-> re-assigning the task, which means we have to jump through some hoops.
-
-Could you do the move in cgroup_exit() in the CONFIG_PREEMPT case?
-
-	-Mike
+I'm not really comfortable relying on that.. voluntary might just grow a
+cond_resched() somewhere in the exit path and lead us down the same
+path, also I think that !preempt smp might have the same race.
 
 
