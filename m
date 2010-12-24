@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751270Ab0LXJRb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 04:17:31 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:38640 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775Ab0LXJR3 (ORCPT
+	id S1751476Ab0LXJSh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 04:18:37 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:46254 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab0LXJSe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 04:17:29 -0500
+	Fri, 24 Dec 2010 04:18:34 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=aWAJ5qlp8V2aClOa270m9XqCWCkftKu4LjaKeuWLkcse8pOk1h1+jIWQO5IBORS27F
-         LQPYYxe/OeGuWamQmh7+43J3fkW7L3PT8WkEAEmyoS4WkBqyN07iO8xd7Tw5xRe0pfMS
-         OKhvLv2AhQZ1zBHl0SwbQrL88QClPf7UGpxZw=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeff Moyer <jmoyer@redhat.com>
-Subject: [PATCH] compat: fix use of an uninitialized variable in compat_sys_io_setup()
-Date: Fri, 24 Dec 2010 18:16:26 +0900
-Message-Id: <1293182186-23462-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.3.4.600.g982838b0
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :content-type:content-transfer-encoding;
+        b=XF/PKFRw4WtM25z1yAja3hULDQPD52Im2cvNqSJVngoBXXNUWqN8dOVvW8/cb4ST8g
+         0J5O8zWP2o0FU17us6tQ==
+MIME-Version: 1.0
+In-Reply-To: <20101220061041.GA8512@bicker>
+References: <20101220061041.GA8512@bicker>
+From: Paul Turner <pjt@google.com>
+Date: Fri, 24 Dec 2010 04:17:59 -0500
+Message-ID: <AANLkTimPAsFv5AAN+7qo4kmFEOm4k21zYgrh-k77_5CO@mail.gmail.com>
+Subject: Re: [smatch] sched_fair: check after dereference
+To: Dan Carpenter <error27@gmail.com>, Paul Turner <pjt@google.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The upper bytes of ctx64 might contain garbages because it was
-set by get_user() which copied only lower 4 bytes as its second
-argument points to. Since sys_io_setup() requires its argumet
-is properly initialized to 0 we should set it explicitly.
+Sorry for delayed response -- was travelling, currently home for
+holidays on terrible (satellite) internet.
 
-On x86, this was not a problem since its implementation of
-get_user() does a C assignment so that it can fill upper bytes
-with 0's. But other archs that use __get_user_asm() or something
-might have a problem.
+On Mon, Dec 20, 2010 at 1:10 AM, Dan Carpenter <error27@gmail.com> wrote:
+> Hi Paul,
+>
+> In linux-next e33078baa4 "sched: Fix update_cfs_load() synchronization"
+> introduced a dereference before the check for NULL.  I don't know the
+> code well enough to say if it's a bug or if the check can be removed.
+>
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>
----
- fs/compat.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+This should be stale.  Now that we issue versus the queuing cfs_rq as
+opposed to the group cfs_rq the passed pointer should always be valid.
 
-diff --git a/fs/compat.c b/fs/compat.c
-index 4376e07febbb..b074e9f79148 100644
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -526,7 +526,7 @@ asmlinkage long
- compat_sys_io_setup(unsigned nr_reqs, u32 __user *ctx32p)
- {
- 	long ret;
--	aio_context_t ctx64;
-+	aio_context_t ctx64 = 0;
- 
- 	mm_segment_t oldfs = get_fs();
- 	if (unlikely(get_user(ctx64, ctx32p)))
--- 
-1.7.3.4.600.g982838b0
+If you want to send a patch I'll ack it, otherwise I can send one out
+in the morning.
 
+Thanks!
+
+- Paul
+
+> kernel/sched_fair.c +728 update_cfs_load(6)
+>        warn: variable dereferenced before check 'cfs_rq'
+>
+>   722  static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
+>   723  {
+>   724          u64 period = sysctl_sched_shares_window;
+>   725          u64 now, delta;
+>   726          unsigned long load = cfs_rq->load.weight;
+>                                     ^^^^^^^^^^^^^^^^^^^
+>   727
+>   728          if (!cfs_rq)
+>                     ^^^^^^
+>   729                  return;
+>
+> Can you take a look?
+>
+> regards,
+> dan carpenter
+>
+>
