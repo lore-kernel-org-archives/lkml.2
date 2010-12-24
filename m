@@ -1,83 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab0LXOYG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 09:24:06 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51969 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564Ab0LXOYE convert rfc822-to-8bit (ORCPT
+	id S1752791Ab0LXO24 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 09:28:56 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48941 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752585Ab0LXO2z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 09:24:04 -0500
+	Fri, 24 Dec 2010 09:28:55 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=MlYphyqmTu52dicrUfGzpwHSwDWlkKglIHdNateQbASwFw9BY4RXetl5fgqomDKx8x
-         GwhMp3pZP0kXnT2fOdACtgv/AcV2ZIcoojciCh4ri/5qIvSepVl5BNosvUIsQroZi51X
-         lQ4wA7K39btI44W9HKtY2qykX7jNMsh5JOhNU=
+        b=TD8TmIT98mn+evyskec1r9N+EThU7rZ4b1RRYRL1vnA/hKZ+eXBnwQghawzv8k2Ri9
+         O/n2+AolVfnMN6tgjL3uvhWdgjrQzZmac7fHjeE8jZ/U+2mF5Z7c98m1eVJqGFGeq9v9
+         Hy1S+lxjfR74gq858gjqw6SW6JkNyOD+tPwzQ=
 MIME-Version: 1.0
-In-Reply-To: <20101224035523.GC25057@suse.de>
-References: <AANLkTi=vfO-rs_iStXkPC7STSqfgUEW_JKt2w1=Wmf6Z@mail.gmail.com>
-	<20101224035523.GC25057@suse.de>
-Date: Fri, 24 Dec 2010 22:24:02 +0800
-Message-ID: <AANLkTi=PwGXTKKyXDA1sckosbGmeo+D0bGuXt3Jb-ttc@mail.gmail.com>
-Subject: Re: [PATCH] fix freeing user_struct in user cache
+In-Reply-To: <AANLkTikVQU6ozp0H1u7ghd0=miYyUJL62uP=0FBZSLok@mail.gmail.com>
+References: <AANLkTinvHP4rZ6PSyEOJ_ZJ2chRJX0ZyzuhNoCRrO1wK@mail.gmail.com>
+	<AANLkTikVQU6ozp0H1u7ghd0=miYyUJL62uP=0FBZSLok@mail.gmail.com>
+Date: Fri, 24 Dec 2010 22:28:52 +0800
+Message-ID: <AANLkTimc0FwBhj5MsnibTTq94AgaQgqCKEXNSOvM_XjE@mail.gmail.com>
+Subject: Re: [PATCH] fix unsafe operation in high resolution timer
 From: Hillf Danton <dhillf@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 24, 2010 at 11:55 AM, Greg KH <gregkh@suse.de> wrote:
-> On Thu, Dec 23, 2010 at 08:52:34PM +0800, Hillf Danton wrote:
->> When racing on adding into user cache, the new allocated from mm slab
->> is freed without putting user namespace.
+On Fri, Dec 24, 2010 at 3:17 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
+> On Thu, Dec 23, 2010 at 9:29 PM, Hillf Danton <dhillf@gmail.com> wrote:
+>> After calling the callback function of hrtimer, the timer could become
+>> unreliable in corner cases where the timer will no longer be queued
+>> and the mm segment, in which the timer is embedded, could be reclaimed
+>> in the callback.
 >>
->> Since the user namespace is already operated by getting, putting has
->> to be issued.
->>
->> btw, it could be freed out of lock?
+>> The unreliability is fixed by checking the result of callback before
+>> operating the timer again.
+>
+> Though the patch is buggy. But it actually explores a real problem.
+>
+
+Would you please finger out why the patch is buggy?
+
+Hillf
+
+> We can't deference a maybe freed object. I'm not sure how
+> to fix it. Or we just prevent the hrtimer->fn free the object which
+> contains hrtimer?
+>
+> Thomas, what's your comment?
+>
+> Thanks,
+> Yong
 >>
 >> Signed-off-by: Hillf Danton <dhillf@gmail.com>
 >> ---
 >>
->> --- a/kernel/user.c   2010-11-01 19:54:12.000000000 +0800
->> +++ b/kernel/user.c   2010-12-23 20:42:00.000000000 +0800
->> @@ -158,6 +158,7 @@ struct user_struct *alloc_uid(struct use
->>               spin_lock_irq(&uidhash_lock);
->>               up = uid_hash_find(uid, hashent);
->>               if (up) {
->> +                     put_user_ns(ns);
->>                       key_put(new->uid_keyring);
->>                       key_put(new->session_keyring);
->>                       kmem_cache_free(uid_cachep, new);
+>> --- a/kernel/hrtimer.c  2010-11-01 19:54:12.000000000 +0800
+>> +++ b/kernel/hrtimer.c  2010-12-23 21:17:02.000000000 +0800
+>> @@ -1225,6 +1225,7 @@ static void __run_hrtimer(struct hrtimer
+>>        raw_spin_unlock(&cpu_base->lock);
+>>        trace_hrtimer_expire_entry(timer, now);
+>>        restart = fn(timer);
+>> +       if (restart != HRTIMER_NORESTART)
+>>        trace_hrtimer_expire_exit(timer);
+>>        raw_spin_lock(&cpu_base->lock);
+>>
+>> @@ -1236,11 +1237,8 @@ static void __run_hrtimer(struct hrtimer
+>>        if (restart != HRTIMER_NORESTART) {
+>>                BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
+>>                enqueue_hrtimer(timer, base);
+>> +               timer->state &= ~HRTIMER_STATE_CALLBACK;
+>>        }
+>> -
+>> -       WARN_ON_ONCE(!(timer->state & HRTIMER_STATE_CALLBACK));
+>> -
+>> -       timer->state &= ~HRTIMER_STATE_CALLBACK;
+>>  }
+>>
+>>  #ifdef CONFIG_HIGH_RES_TIMERS
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
 >
-> Hm, are you sure about this?  Also, why send this to me, did I last
-> touch this?
->
-
-sure with no doubt.
-
-I do not know if you touched that last, but I received the following message,
-
-On Tue, Dec 21, 2010 at 3:42 AM,  <gregkh@suse.de> wrote:
->
-> This is a note to let you know that I've just added the patch titled
->
->    bonding: Fix slave selection bug.
->
-> to the 2.6.36-stable tree which can be found at:
->    http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
-
-so you were Cced since you charge patch delivered.
-
-Cheers
-
-Hillf
-
-> confused,
->
-> greg k-h
+> --
+> Only stand for myself.
 >
