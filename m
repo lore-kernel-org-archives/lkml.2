@@ -1,74 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947Ab0LXLDe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 06:03:34 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58194 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751036Ab0LXLDd (ORCPT
+	id S1752134Ab0LXLKb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 06:10:31 -0500
+Received: from fallback2.mail.ru ([94.100.176.87]:60762 "EHLO
+	fallback2.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751200Ab0LXLKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 06:03:33 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=kvn5BdFHkMriinCZ7zf9WUD5k4ruSWo2zFAGR584qOAzxFI2JN3QIXYs2peIa+xnco
-         f7cVYmAy/KYKoRRxRcG1ZhzgAugX8YuoE8TkvElrJgqboo4RpKYfWHXlsEtz4mCDiOWH
-         VSIHRp5zMklaPnzwhm2mt30xbtBDfKPkPuZAY=
-Date: Fri, 24 Dec 2010 12:03:27 +0100
-From: Tejun Heo <htejun@gmail.com>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Boot failure with block/for-next
-Message-ID: <20101224110327.GB8781@htj.dyndns.org>
-References: <1293038823.3019.89.camel@mulgrave.site>
- <1293078673.3019.765.camel@mulgrave.site>
- <20101223100956.GA15625@htj.dyndns.org>
- <1293118041.3029.3.camel@mulgrave.site>
- <20101223155239.GB18482@htj.dyndns.org>
- <1293120614.7776.0.camel@mulgrave.site>
- <20101223161312.GC18482@htj.dyndns.org>
- <1293128717.7776.68.camel@mulgrave.site>
+	Fri, 24 Dec 2010 06:10:30 -0500
+X-Greylist: delayed 335 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Dec 2010 06:10:30 EST
+Date: Fri, 24 Dec 2010 14:04:58 +0300
+From: Evgeniy Dushistov <dushistov@mail.ru>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/7] BKL removal follow-up
+Message-ID: <20101224110458.GA18894@maclin>
+Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>,
+	Nick Bowler <nbowler@elliptictech.com>,
+	linux-kernel@vger.kernel.org
+References: <1290007619-5787-1-git-send-email-arnd@arndb.de>
+ <AANLkTi=qvOHwgsbaCO6_Eu2Uik7MP5=C64+WW8R-RR8B@mail.gmail.com>
+ <20101122151723.GA8732@elliptictech.com>
+ <201012212354.06895.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1293128717.7776.68.camel@mulgrave.site>
+In-Reply-To: <201012212354.06895.arnd@arndb.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, James.
-
-On Thu, Dec 23, 2010 at 12:25:17PM -0600, James Bottomley wrote:
-> On Thu, 2010-12-23 at 17:13 +0100, Tejun Heo wrote:
-> > On Thu, Dec 23, 2010 at 10:10:14AM -0600, James Bottomley wrote:
-> > > > Can you please apply the debug patch I posted in the other message and
-> > > > post the boot log?  Let's see how the partition read is failing.
+On Tue, Dec 21, 2010 at 11:54:06PM +0100, Arnd Bergmann wrote:
+> On Monday 22 November 2010 16:17:23 Nick Bowler wrote:
+> > On 2010-11-21 09:45 -0800, Linus Torvalds wrote:
+> > > Yes, I'd be ok with UDF doing a "select BKL" along with a "default n"
+> > > for BKL itself.
 > > > 
-> > > That's actually a red herring ... the disk isn't spinning up, so the
-> > > partition read is getting a not ready.
+> > > I think UDF currently is the only sane reason to have BKL enabled any
+> > > more, and yes, it would probably make it easier to configure things.
 > > 
-> > Oh, yay, but at any rate I think the don't-clear-media-presence patch
-> > is probably a good idea just in case UA gets reported somehow.
+> > UFS (which I use) also relies on BKL.
 > 
-> Well, it wasn't this either.  It turns out that this disk alone reports
-> UNIT_ATTENTION RESET_OCCURRED on the first TEST UNIT READY of spin up.
-> Ordinarily this is harmless, but the new medium change code wrongly
-> interprets any UNIT_ATTENTION as medium changed (and then refuses to
-> talk to the disk).  This is actually a change from the previous code, so
-> the fix is to put it back the way it was.
+> Would you mind running a kernel with this patch and lockdep enabled then?
+> 
+> It's quite likely that this doesn't work, but the easiest way to find
+> out is to just try it if you don't understand the code. I can't see anything
+> in the code that relies on the release-on-sleep semantics and there
+> are no obvious recursive lock_kernel() calls.
+> 
 
-I see.  I wonder why the previous patch didn't work.  It should have
-had about the same effect.  I think the UA change went in there while
-trying to bring sr and sd behaviors closer to each other, but yes it
-seems the original code didn't have that.  That said, now there are
-paths where UA would be consumed without setting ->changed and thus sd
-may miss media change events.  This has been like this for quite some
-time and there aren't many removable sd devices these days, so maybe
-this doesn't matter too much.
+I see one without looking at code (am I missed something?). See below.
 
-Anyways, for now, the change looks good to me too.  Thanks.
+> @@ -922,22 +922,22 @@ void ufs_evict_inode(struct inode * inode)
+>  	if (want_delete) {
+>  		loff_t old_i_size;
+>  		/*UFS_I(inode)->i_dtime = CURRENT_TIME;*/
+> -		lock_kernel();
+> +		lock_ufs();
+
+lock
+>  		mark_inode_dirty(inode);
+>  		ufs_update_inode(inode, IS_SYNC(inode));
+>  		old_i_size = inode->i_size;
+>  		inode->i_size = 0;
+>  		if (inode->i_blocks && ufs_truncate(inode, old_i_size))
+call truncate with lock
+>  			ufs_warning(inode->i_sb, __func__, "ufs_truncate failed\n");
+> -		unlock_kernel();
+> +		unlock_ufs();
+>  	}
+
+> diff --git a/fs/ufs/truncate.c b/fs/ufs/truncate.c
+> index a58f915..9f22d00 100644
+> --- a/fs/ufs/truncate.c
+> +++ b/fs/ufs/truncate.c
+> @@ -467,7 +467,7 @@ int ufs_truncate(struct inode *inode, loff_t old_i_size)
+>  
+>  	block_truncate_page(inode->i_mapping, inode->i_size, ufs_getfrag_block);
+>  
+> -	lock_kernel();
+> +	lock_ufs();
+call lock again
 
 -- 
-tejun
+/Evgeniy
+
