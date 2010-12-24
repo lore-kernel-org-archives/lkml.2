@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928Ab0LXRTY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 12:19:24 -0500
-Received: from cantor.suse.de ([195.135.220.2]:35958 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752204Ab0LXRTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 12:19:23 -0500
-Date: Fri, 24 Dec 2010 09:14:59 -0800
-From: Greg KH <gregkh@suse.de>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fix freeing user_struct in user cache
-Message-ID: <20101224171459.GA31815@suse.de>
-References: <AANLkTi=vfO-rs_iStXkPC7STSqfgUEW_JKt2w1=Wmf6Z@mail.gmail.com>
- <20101224035523.GC25057@suse.de>
- <AANLkTi=PwGXTKKyXDA1sckosbGmeo+D0bGuXt3Jb-ttc@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=PwGXTKKyXDA1sckosbGmeo+D0bGuXt3Jb-ttc@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752955Ab0LXRZC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 12:25:02 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:38057 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752522Ab0LXRZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Dec 2010 12:25:00 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX182v3V7HJE2I3ULNSJpYWHziNwInWp4bjPBWGX1hz
+	Gajzm8QPXkWvD3
+Subject: Re: [PATCH] sched, cgroup: Use exit hook to avoid use-after-free
+ crash
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Miklos Vajna <vmiklos@frugalware.org>,
+        shenghui <crosslonelyover@gmail.com>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, Greg KH <greg@kroah.com>,
+        Paul Turner <pjt@google.com>, Yong Zhang <yong.zhang0@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <menage@google.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>
+In-Reply-To: <1293210457.29444.206.camel@laptop>
+References: <AANLkTin49UHeVhfS-iFwWvPIg29HPhXaP3DorBAa-a0I@mail.gmail.com>
+	 <1277808215.1868.5.camel@laptop>
+	 <20101219020313.GJ31750@genesis.frugalware.org>
+	 <20101222002248.GP10557@genesis.frugalware.org>
+	 <1293006589.2170.41.camel@laptop>
+	 <1293007311.11370.172.camel@marge.simson.net>
+	 <1293008842.2170.70.camel@laptop>
+	 <20101222133154.GS10557@genesis.frugalware.org>
+	 <1293026422.2170.136.camel@laptop> <1293027112.2170.140.camel@laptop>
+	 <20101222151434.GW10557@genesis.frugalware.org>
+	 <1293037718.2170.155.camel@laptop> <1293050173.2170.389.camel@laptop>
+	 <AANLkTi=1GMKF4emms0Qpx31=xk-FZXOTaeONmCohzWb2@mail.gmail.com>
+	 <1293106330.2170.618.camel@laptop>  <1293107624.2170.642.camel@laptop>
+	 <1293128670.2170.748.camel@laptop>
+	 <1293132304.6798.6.camel@marge.simson.net>
+	 <1293132862.25981.22.camel@laptop>
+	 <1293187425.7138.2.camel@marge.simson.net>
+	 <1293188091.25981.200.camel@laptop>
+	 <1293192999.18035.4.camel@marge.simson.net>
+	 <1293206353.29444.205.camel@laptop>
+	 <1293209297.14433.4.camel@marge.simson.net>
+	 <1293210457.29444.206.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 24 Dec 2010 18:24:51 +0100
+Message-ID: <1293211491.15747.3.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 24, 2010 at 10:24:02PM +0800, Hillf Danton wrote:
-> On Fri, Dec 24, 2010 at 11:55 AM, Greg KH <gregkh@suse.de> wrote:
-> > On Thu, Dec 23, 2010 at 08:52:34PM +0800, Hillf Danton wrote:
-> >> When racing on adding into user cache, the new allocated from mm slab
-> >> is freed without putting user namespace.
-> >>
-> >> Since the user namespace is already operated by getting, putting has
-> >> to be issued.
-> >>
-> >> btw, it could be freed out of lock?
-> >>
-> >> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> >> ---
-> >>
-> >> --- a/kernel/user.c   2010-11-01 19:54:12.000000000 +0800
-> >> +++ b/kernel/user.c   2010-12-23 20:42:00.000000000 +0800
-> >> @@ -158,6 +158,7 @@ struct user_struct *alloc_uid(struct use
-> >>               spin_lock_irq(&uidhash_lock);
-> >>               up = uid_hash_find(uid, hashent);
-> >>               if (up) {
-> >> +                     put_user_ns(ns);
-> >>                       key_put(new->uid_keyring);
-> >>                       key_put(new->session_keyring);
-> >>                       kmem_cache_free(uid_cachep, new);
-> >
-> > Hm, are you sure about this?  Also, why send this to me, did I last
-> > touch this?
-> >
+On Fri, 2010-12-24 at 18:07 +0100, Peter Zijlstra wrote:
+> On Fri, 2010-12-24 at 17:48 +0100, Mike Galbraith wrote:
+> > On Fri, 2010-12-24 at 16:59 +0100, Peter Zijlstra wrote:
+> > 
+> > > So cgroup moves a task without calling cgroup_subsys::attach() which is
+> > > odd, but it does have an ::exit method, sadly it calls that _before_
+> > > re-assigning the task, which means we have to jump through some hoops.
+> > 
+> > Could you do the move in cgroup_exit() in the CONFIG_PREEMPT case?
 > 
-> sure with no doubt.
-> 
-> I do not know if you touched that last, but I received the following message,
-> 
-> On Tue, Dec 21, 2010 at 3:42 AM,  <gregkh@suse.de> wrote:
-> >
-> > This is a note to let you know that I've just added the patch titled
-> >
-> >    bonding: Fix slave selection bug.
-> >
-> > to the 2.6.36-stable tree which can be found at:
-> >    http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
-> 
-> so you were Cced since you charge patch delivered.
+> I'm not really comfortable relying on that.. voluntary might just grow a
+> cond_resched() somewhere in the exit path and lead us down the same
+> path, also I think that !preempt smp might have the same race.
 
-That was a stable patch, I send all of those out :)
+Yeah, good point.
 
-Use scripts/get_maintainer.pl to determine the best person to send this
-patch to (hint, it's not me.)
+	-Mike
 
-thanks,
 
-greg k-h
