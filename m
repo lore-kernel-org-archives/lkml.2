@@ -1,65 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab0LXX4q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 18:56:46 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:60021 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753056Ab0LXX4p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 18:56:45 -0500
-Date: Fri, 24 Dec 2010 15:56:41 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: Daniel Drake <dsd@laptop.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Paul Fox <pgf@laptop.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: MFD cell structure and sharing of resources
-Message-ID: <20101224155641.209fe64a@queued.net>
-In-Reply-To: <AANLkTi=ypose5day4=ypV8_SsiFq4vf9vqZh-OWret0x@mail.gmail.com>
-References: <AANLkTinrF-dxiw7OQ=dMhQPgKSqS6yYfDzdcnHfhMtyf@mail.gmail.com>
-	<20101216103550.GA5946@sortiz-mobl>
-	<AANLkTi=ypose5day4=ypV8_SsiFq4vf9vqZh-OWret0x@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753229Ab0LYA1T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 19:27:19 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:34725 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753028Ab0LYA1S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Dec 2010 19:27:18 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=hXW+xIolTD+Lv8ZkU60JJkRSMJ+NdHi3T5VUbnqDDCuTQ2tZ7dM5c3OCYnmK7zhNAG
+         sKZ7OsOfZIeOQRPsn80w==
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Ranjit Manomohan <ranjitm@google.com>,
+        Venkatesh Pallipadi <venki@google.com>
+Subject: [PATCH] sched: Buggy comparison in check_preempt_tick
+Date: Fri, 24 Dec 2010 16:26:53 -0800
+Message-Id: <1293236813-31550-1-git-send-email-venki@google.com>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Dec 2010
-15:38:52 +0000 Daniel Drake <dsd@laptop.org> wrote:
-[...]
-> 
-> Secondly, the olpc-xo1-pm driver is going to have a couple of sysfs
-> nodes that will be used by userspace.
-> 
-> Under the current design they appear as e.g.:
-> /sys/devices/pci0000:00/0000:00:0f.0/cs5535-acpi/wakeup_reason
-> 
-> However, it only appears under cs5535-acpi because that's the device
-> that appeared second (out of acpi + pms). If the probe order ever
-> changed, the path would change too.
-> This could be worked around by storing both pointers (acpi + pms) and
-> choosing one that the olpc-xo1-pm parts will always live under. But as
-> this detail represents an interface to userspace we should be careful
-> and try and get it right first time. That wakeup_reason node is not
-> really related to cs5535, it's an OLPC-specific thing (since the
-> wakeups can be caused by things totally separate from the geode hw).
-> So I'd feel a lot more comfortable if that path was less related to
-> cs5535.
+A preempt comparison line in check_preempt_tick has two bugs.
+* It compares signed and unsigned quantities, which breaks when signed
+  quantity happens to be negative
+* It compares runtime and vruntime, which breaks when there are niced tasks
 
-I'd just like to point out that power_kobj is available (from
-linux/kobject.h) as an option.  If we're short on
-options, /sys/power/wakeup_reason is a potential solution that
-would be extremely simple for userspace to deal with.
+The bug was initially found by linsched[1]. Change here fixes both
+the problems.
 
-Currently OLPC patches throw random strings like "lid" and "key press"
-into wakeup_reason (well, wackup_source in the ancient patches that I'm
-looking at), but one can imagine a more structured approach that's
-more generally useful.  Perhaps a list of sources that are
-registered, with each being a kobj - either defined specifically for
-the purpose of being a wakeup source, or an existing device object
-(eg, a wlan object for WOL events).
+On x86-64, the signed unsigned compare results in tasks running _longer_
+than their expected time slice as a false resched_task() gets signalled after
+4 ticks (on tick after preceding sysctl_sched_min_granularity check) and
+currently running task gets picked again and runs for another ideal_slice
+interval.
 
-That said, I'm failing to recall why we need a sysfs file exporting a
-wakeup reason in the first place; can't we just send netlink/udev events
-when a wakeup occurs with the reason for the wakeup?
+With 2 busy loops on a single CPU and trace_printks inside this buggy check
+triggering resched task and in pick_next_task shows this:
+
+ [001]   510.524336: pick_next_task_fair: loop (5939)
+ [001]   510.536326: pick_next_task_fair: loop (5883)
+ [001]   510.540319: task_tick_fair: delta -4897059, ideal_runtime 11994146
+ [001]   510.540321: pick_next_task_fair: loop (5883)
+ [001]   510.544306: task_tick_fair: delta -906540, ideal_runtime 11994146
+ [001]   510.544309: pick_next_task_fair: loop (5883)
+ [001]   510.556306: pick_next_task_fair: loop (5939)
+ [001]   510.560301: task_tick_fair: delta -7105824, ideal_runtime 11994146
+ [001]   510.560304: pick_next_task_fair: loop (5939)
+ [001]   510.564298: task_tick_fair: delta -3105461, ideal_runtime 11994146
+ [001]   510.564300: pick_next_task_fair: loop (5939)
+ [001]   510.576288: pick_next_task_fair: loop (5883)
+ [001]   510.580282: task_tick_fair: delta -4897210, ideal_runtime 11994146
+ [001]   510.580285: pick_next_task_fair: loop (5883)
+ [001]   510.584278: task_tick_fair: delta -897348, ideal_runtime 11994146
+ [001]   510.584281: pick_next_task_fair: loop (5883)
+ [001]   510.596269: pick_next_task_fair: loop (5939)
+
+That is 20 ms slice for each task, with some redundant resched_tasks and
+with the fix it is expected ~12ms slices (on 16 cpu system).
+
+[1] - http://lwn.net/Articles/409680/
+
+Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+---
+ kernel/sched_fair.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 00ebd76..fc5ffbd 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -871,8 +871,10 @@ check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
+ 	if (cfs_rq->nr_running > 1) {
+ 		struct sched_entity *se = __pick_next_entity(cfs_rq);
+ 		s64 delta = curr->vruntime - se->vruntime;
++		unsigned long ideal_vruntime;
+ 
+-		if (delta > ideal_runtime)
++		ideal_vruntime = calc_delta_fair(ideal_runtime, curr);
++		if (delta > (s64)ideal_vruntime)
+ 			resched_task(rq_of(cfs_rq)->curr);
+ 	}
+ }
+-- 
+1.7.3.1
+
