@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017Ab0LYPmx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 10:42:53 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:44622 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751479Ab0LYPmw (ORCPT
+	id S1751833Ab0LYPua (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 10:50:30 -0500
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:60159 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138Ab0LYPu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 10:42:52 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 25 Dec 2010 16:42:07 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Frank Rowand <frank.rowand@am.sony.com>
-Subject: Re: [PATCH] Prevent users from disabling tickless
-Message-ID: <20101225164207.1dcd9e58@stein>
-In-Reply-To: <20101221233942.GL1263@parisc-linux.org>
-References: <20101221233942.GL1263@parisc-linux.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 25 Dec 2010 10:50:28 -0500
+Date: Sat, 25 Dec 2010 16:50:27 +0100
+From: Andreas Mohr <andi@lisas.de>
+To: Ozgur Karatas <kaigeek@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Linux distribution
+Message-ID: <20101225155027.GA4076@rhlx01.hs-esslingen.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTim3zeSvWfxXK_F8W_igCncEjP38tOOVCBXhQfsL@mail.gmail.com>
+X-Priority: none
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dec 21 Matthew Wilcox wrote:
-> --- a/kernel/time/Kconfig
-> +++ b/kernel/time/Kconfig
-> @@ -5,13 +5,9 @@ config TICK_ONESHOT
->  	bool
->  
->  config NO_HZ
-> -	bool "Tickless System (Dynamic Ticks)"
-> +	def_bool y
->  	depends on !ARCH_USES_GETTIMEOFFSET && GENERIC_CLOCKEVENTS
->  	select TICK_ONESHOT
-> -	help
-> -	  This option enables a tickless system: timer interrupts will
-> -	  only trigger on an as-needed basis both when the system is
-> -	  busy and when the system is idle.
->  
->  config HIGH_RES_TIMERS
->  	bool "High Resolution Timer Support"
-> 
+Hi,
 
-Even at a kconfig variable without prompt, a help section may be useful.
-In case of this one, you should rather add to the text than remove it.
--- 
-Stefan Richter
--=====-==-=- ==-- ==--=
-http://arcgraph.de/sr/
+[picking up this orphan posting ;)]
+
+choice of Linux distribution is a quite subjective thing.
+
+Myself, I'm tending towards Debian-based distributions.
+If your email handle is true to the core, then perhaps Debian stable
+would be a good idea, otherwise choose an "easier on the user" variant
+like SimplyMEPIS, MINT or even Ubuntu.
+
+Reason being that with Debian installation of all kernel-related
+packages (build-essential, libncurses5-dev etc.) is a simple matter
+(which OTOH I'm sure is the case with many non-Debian distros as well).
+
+Or if you want to be right at the forefront of Linux development,
+then perhaps choosing a nicely integrated source-based distribution
+such as Arch is a good idea to always have fresh packages.
+
+But generally choice of distribution shouldn't really matter (in case
+one is using a capable desktop distribution, of course).
+
+HTH,
+
+Andreas Mohr
