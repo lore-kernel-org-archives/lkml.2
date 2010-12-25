@@ -1,127 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751532Ab0LYRkJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 12:40:09 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48770 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750807Ab0LYRkG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 12:40:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=aXXLk+3L4aoo8WUvMhQKLWYzabTqVky8pRrOEUxxbRuLP6h/IgDUgQOAqqTFMmXsWD
-         kfkqw1olryapZtGOU+pH8Xj9Ztv13kyHaBwbI4mzIc34JF1VbXOUyPHfg5MVUW/DUBJM
-         6y1hPPsrGXfBob2k7oxehUN/eIT2sV6GwcgUY=
-Date: Sat, 25 Dec 2010 18:39:59 +0100
-From: Jarek Poplawski <jarkao2@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: Joel Soete <soete.joel@scarlet.be>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
-Subject: [PATCH net-2.6 v2] epic100: hamachi: yellowfin: Fix skb allocation
- size
-Message-ID: <20101225173959.GB2264@del.dom.local>
-References: <4D122093.6060900@scarlet.be>
- <1293035100.3027.247.camel@edumazet-laptop>
- <4D132C5F.8090404@scarlet.be>
- <1293106348.7789.5.camel@edumazet-laptop>
- <20101223202523.GA1913@del.dom.local>
- <4D148271.8030509@scarlet.be>
- <20101224151325.GA1895@del.dom.local>
- <20101225121044.GA1841@del.dom.local>
- <4D15F6C9.50700@scarlet.be>
- <20101225151217.GA1994@del.dom.local>
+	id S1751745Ab0LYRst (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 12:48:49 -0500
+Received: from mail.aknet.ru ([78.158.192.28]:44447 "EHLO mail.aknet.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750807Ab0LYRst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Dec 2010 12:48:49 -0500
+X-Greylist: delayed 84795 seconds by postgrey-1.27 at vger.kernel.org; Sat, 25 Dec 2010 12:48:48 EST
+Message-ID: <4D162DB6.1000808@aknet.ru>
+Date: Sat, 25 Dec 2010 20:45:26 +0300
+From: Stas Sergeev <stsp@aknet.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101225151217.GA1994@del.dom.local>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-kernel@vger.kernel.org
+Subject: [RFC][patch] PR_DETACH: detach from parent
+Content-Type: multipart/mixed;
+ boundary="------------050802030201040309050401"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joel Soete reported oopses during pppoe over sundance NIC, caused by
-a bug in skb allocation and dma mapping code, where skb_reserve()
-bytes weren't taken into account. As a followup to the patch:
-"sundance: Fix oopses with corrupted skb_shared_info" very similar
-code is fixed here for three other drivers.
+This is a multi-part message in MIME format.
+--------------050802030201040309050401
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Signed-off-by: Jarek Poplawski <jarkao2@gmail.com>
-Cc: Joel Soete <soete.joel@scarlet.be>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Hi.
+
+I was trying to use daemon() library call to daemonize the process, and 
+found out that it is not suitable
+for the process that have threads: all the threads are simply being killed.
+The reason is that the daemon() function does fork(), then exit() in 
+parent and setsid() in child, which is
+a bit ugly, and doesn't work with threads (fork() doesn't fork threads).
+I've found no solution to that, and just hacked up one instead.
+The attached patch adds the PR_DETACH prctl command, which detaches the 
+process from its parent.
+With that, the daemon() function can be implemented without the 
+fork/exit/setsid hacks, and here is an
+example of it:
+
 ---
-v2: a tiny changelog fix only
+#include <stdio.h>
+#include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <sys/prctl.h>
 
- drivers/net/epic100.c   |    4 ++--
- drivers/net/hamachi.c   |    4 ++--
- drivers/net/yellowfin.c |    4 ++--
- 3 files changed, 6 insertions(+), 6 deletions(-)
+#ifndef PR_DETACH
+#define PR_DETACH 35
+#endif
 
-diff --git a/drivers/net/epic100.c b/drivers/net/epic100.c
-index aa56963..c353bf3 100644
---- a/drivers/net/epic100.c
-+++ b/drivers/net/epic100.c
-@@ -935,7 +935,7 @@ static void epic_init_ring(struct net_device *dev)
- 
- 	/* Fill in the Rx buffers.  Handle allocation failure gracefully. */
- 	for (i = 0; i < RX_RING_SIZE; i++) {
--		struct sk_buff *skb = dev_alloc_skb(ep->rx_buf_sz);
-+		struct sk_buff *skb = dev_alloc_skb(ep->rx_buf_sz + 2);
- 		ep->rx_skbuff[i] = skb;
- 		if (skb == NULL)
- 			break;
-@@ -1233,7 +1233,7 @@ static int epic_rx(struct net_device *dev, int budget)
- 		entry = ep->dirty_rx % RX_RING_SIZE;
- 		if (ep->rx_skbuff[entry] == NULL) {
- 			struct sk_buff *skb;
--			skb = ep->rx_skbuff[entry] = dev_alloc_skb(ep->rx_buf_sz);
-+			skb = ep->rx_skbuff[entry] = dev_alloc_skb(ep->rx_buf_sz + 2);
- 			if (skb == NULL)
- 				break;
- 			skb_reserve(skb, 2);	/* Align IP on 16 byte boundaries */
-diff --git a/drivers/net/hamachi.c b/drivers/net/hamachi.c
-index 9a64858..80d25ed 100644
---- a/drivers/net/hamachi.c
-+++ b/drivers/net/hamachi.c
-@@ -1202,7 +1202,7 @@ static void hamachi_init_ring(struct net_device *dev)
- 	}
- 	/* Fill in the Rx buffers.  Handle allocation failure gracefully. */
- 	for (i = 0; i < RX_RING_SIZE; i++) {
--		struct sk_buff *skb = dev_alloc_skb(hmp->rx_buf_sz);
-+		struct sk_buff *skb = dev_alloc_skb(hmp->rx_buf_sz + 2);
- 		hmp->rx_skbuff[i] = skb;
- 		if (skb == NULL)
- 			break;
-@@ -1669,7 +1669,7 @@ static int hamachi_rx(struct net_device *dev)
- 		entry = hmp->dirty_rx % RX_RING_SIZE;
- 		desc = &(hmp->rx_ring[entry]);
- 		if (hmp->rx_skbuff[entry] == NULL) {
--			struct sk_buff *skb = dev_alloc_skb(hmp->rx_buf_sz);
-+			struct sk_buff *skb = dev_alloc_skb(hmp->rx_buf_sz + 2);
- 
- 			hmp->rx_skbuff[entry] = skb;
- 			if (skb == NULL)
-diff --git a/drivers/net/yellowfin.c b/drivers/net/yellowfin.c
-index cd1b3dc..ec47e22 100644
---- a/drivers/net/yellowfin.c
-+++ b/drivers/net/yellowfin.c
-@@ -744,7 +744,7 @@ static int yellowfin_init_ring(struct net_device *dev)
- 	}
- 
- 	for (i = 0; i < RX_RING_SIZE; i++) {
--		struct sk_buff *skb = dev_alloc_skb(yp->rx_buf_sz);
-+		struct sk_buff *skb = dev_alloc_skb(yp->rx_buf_sz + 2);
- 		yp->rx_skbuff[i] = skb;
- 		if (skb == NULL)
- 			break;
-@@ -1157,7 +1157,7 @@ static int yellowfin_rx(struct net_device *dev)
- 	for (; yp->cur_rx - yp->dirty_rx > 0; yp->dirty_rx++) {
- 		entry = yp->dirty_rx % RX_RING_SIZE;
- 		if (yp->rx_skbuff[entry] == NULL) {
--			struct sk_buff *skb = dev_alloc_skb(yp->rx_buf_sz);
-+			struct sk_buff *skb = dev_alloc_skb(yp->rx_buf_sz + 2);
- 			if (skb == NULL)
- 				break;				/* Better luck next round. */
- 			yp->rx_skbuff[entry] = skb;
+int daemon2(int nochdir, int noclose)
+{
+      int err, fd;
+
+      err = prctl(PR_DETACH);
+      if (err == -1) {
+          if (errno == EINVAL)
+              errno = ENOTSUP;
+          return -1;
+      }
+
+      fd = open("/dev/tty", O_RDWR);
+      if (fd != -1) {
+          ioctl(fd, TIOCNOTTY, NULL);
+          close(fd);
+      }
+
+      if (!nochdir && chdir("/") == -1)
+          return -1;
+
+      if (!noclose) {
+          fd = open("/dev/null", O_RDWR, 0);
+          if (fd == -1)
+              return -1;
+          if (dup2(fd, STDIN_FILENO) == -1)
+              return -1;
+          if (dup2(fd, STDOUT_FILENO) == -1)
+              return -1;
+          if (dup2(fd, STDERR_FILENO) == -1)
+              return -1;
+          if (fd > 2)
+              close(fd);
+      }
+      return 0;
+}
+---
+
+With this implementation, all threads survive the daemonization.
+Thoughts?
+
+
+--------------050802030201040309050401
+Content-Type: text/plain;
+ name="pr_detach.diff"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="pr_detach.diff"
+
+ZGlmZiAtLWdpdCBhL2luY2x1ZGUvbGludXgvcHJjdGwuaCBiL2luY2x1ZGUvbGludXgvcHJj
+dGwuaAppbmRleCBhM2JhZWIyLi5mYmQyNDUxIDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4
+L3ByY3RsLmgKKysrIGIvaW5jbHVkZS9saW51eC9wcmN0bC5oCkBAIC0xMDIsNCArMTAyLDYg
+QEAKIAogI2RlZmluZSBQUl9NQ0VfS0lMTF9HRVQgMzQKIAorI2RlZmluZSBQUl9ERVRBQ0gg
+MzUKKwogI2VuZGlmIC8qIF9MSU5VWF9QUkNUTF9IICovCmRpZmYgLS1naXQgYS9rZXJuZWwv
+c2lnbmFsLmMgYi9rZXJuZWwvc2lnbmFsLmMKaW5kZXggNGUzY2ZmMS4uMmNkNDk1YSAxMDA2
+NDQKLS0tIGEva2VybmVsL3NpZ25hbC5jCisrKyBiL2tlcm5lbC9zaWduYWwuYwpAQCAtMTQ1
+MCwxMCArMTQ1MCwxMCBAQCBpbnQgZG9fbm90aWZ5X3BhcmVudChzdHJ1Y3QgdGFza19zdHJ1
+Y3QgKnRzaywgaW50IHNpZykKIAogCUJVR19PTihzaWcgPT0gLTEpOwogCi0gCS8qIGRvX25v
+dGlmeV9wYXJlbnRfY2xkc3RvcCBzaG91bGQgaGF2ZSBiZWVuIGNhbGxlZCBpbnN0ZWFkLiAg
+Ki8KLSAJQlVHX09OKHRhc2tfaXNfc3RvcHBlZF9vcl90cmFjZWQodHNrKSk7CisJLyogZG9f
+bm90aWZ5X3BhcmVudF9jbGRzdG9wIHNob3VsZCBoYXZlIGJlZW4gY2FsbGVkIGluc3RlYWQu
+ICAqLworCUJVR19PTih0YXNrX2lzX3N0b3BwZWRfb3JfdHJhY2VkKHRzaykpOwogCi0JQlVH
+X09OKCF0YXNrX3B0cmFjZSh0c2spICYmCisJQlVHX09OKCF0YXNrX3B0cmFjZSh0c2spICYm
+ICh0c2stPmZsYWdzICYgUEZfRVhJVElORykgJiYKIAkgICAgICAgKHRzay0+Z3JvdXBfbGVh
+ZGVyICE9IHRzayB8fCAhdGhyZWFkX2dyb3VwX2VtcHR5KHRzaykpKTsKIAogCWluZm8uc2lf
+c2lnbm8gPSBzaWc7CmRpZmYgLS1naXQgYS9rZXJuZWwvc3lzLmMgYi9rZXJuZWwvc3lzLmMK
+aW5kZXggN2Y1YTBjZC4uZmExMDczMiAxMDA2NDQKLS0tIGEva2VybmVsL3N5cy5jCisrKyBi
+L2tlcm5lbC9zeXMuYwpAQCAtMTcyNyw2ICsxNzI3LDIxIEBAIFNZU0NBTExfREVGSU5FNShw
+cmN0bCwgaW50LCBvcHRpb24sIHVuc2lnbmVkIGxvbmcsIGFyZzIsIHVuc2lnbmVkIGxvbmcs
+IGFyZzMsCiAJCQllbHNlCiAJCQkJZXJyb3IgPSBQUl9NQ0VfS0lMTF9ERUZBVUxUOwogCQkJ
+YnJlYWs7CisJCWNhc2UgUFJfREVUQUNIOgorCQkJZXJyb3IgPSAtRVBFUk07CisJCQlpZiAo
+bWUtPnJlYWxfcGFyZW50ID09IGluaXRfcGlkX25zLmNoaWxkX3JlYXBlcikKKwkJCQlicmVh
+azsKKwkJCWlmIChtZS0+Z3JvdXBfbGVhZGVyICE9IG1lKQorCQkJCWJyZWFrOworCQkJZXhp
+dF9wdHJhY2UobWUpOworCQkJZG9fbm90aWZ5X3BhcmVudChtZSwgbWUtPmV4aXRfc2lnbmFs
+KTsKKwkJCW1lLT5leGl0X3NpZ25hbCA9IFNJR0NITEQ7CisJCQltZS0+cGFyZW50ID0gbWUt
+PnJlYWxfcGFyZW50ID0KKwkJCQlpbml0X3BpZF9ucy5jaGlsZF9yZWFwZXI7CisJCQlsaXN0
+X21vdmVfdGFpbCgmbWUtPnNpYmxpbmcsCisJCQkJJm1lLT5yZWFsX3BhcmVudC0+Y2hpbGRy
+ZW4pOworCQkJZXJyb3IgPSAwOworCQkJYnJlYWs7CiAJCWRlZmF1bHQ6CiAJCQllcnJvciA9
+IC1FSU5WQUw7CiAJCQlicmVhazsK
+--------------050802030201040309050401--
