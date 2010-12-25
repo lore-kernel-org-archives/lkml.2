@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140Ab0LYWrR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 17:47:17 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64032 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541Ab0LYWrO (ORCPT
+	id S1751402Ab0LYXz1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 18:55:27 -0500
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:47805 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751107Ab0LYXz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 17:47:14 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=kd/yXC0bKXaZ6WFMrTfhrD/rynI/PkWqDGB6cjqcGP6ogmPn5+1RKehCsG4qrq11sB
-         YSKPf6fOTdsTSwgtDDzxkdCva4/MSVc5p3RDIFMh+JlAtExa3IZUxdsfEmsWko630QCl
-         Vd63PxUJMNQWUlYjBhMKm5ws+qi5NjBW4NgRw=
-Date: Sun, 26 Dec 2010 01:46:58 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Sage Weil <sage@newdream.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH] Ceph: Fix a use-after-free bug in
- ceph_destroy_client().
-Message-ID: <20101225224658.GC19019@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Jesper Juhl <jj@chaosbits.net>,
-	richard -rw- weinberger <richard.weinberger@gmail.com>,
-	ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-	netdev@vger.kernel.org, Sage Weil <sage@newdream.net>,
-	"David S. Miller" <davem@davemloft.net>
-References: <alpine.LNX.2.00.1012251914370.10759@swampdragon.chaosbits.net>
- <AANLkTik+yrpY8T69w_RQ84ZbRqwkjvFhvxHLBvU14N3f@mail.gmail.com>
- <alpine.LNX.2.00.1012252223380.10759@swampdragon.chaosbits.net>
+	Sat, 25 Dec 2010 18:55:26 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: tVIltT0VM1luiCzmiCwUjbxaA355q1WHmTEWPU7AV8rnRyw
+ vCdSPwk1QBaMjLFEqd7rB3au87KR9p52DyHCzSKfFCwLgBNFmedpmRjJ4r.x
+ dtzGqb7MEAGg4Wara14nOsieKu5LCAsOuZfdpWVVe6qG.tmDjNGzOg54D2yo
+ kzZLUwlRAGAmoBADZl2cWbIpLSPr4IpUjv9qel9Yal46EUTlD.K0DFEbC3OK
+ z_eNlqAgm.qw2aEHgLzEvgkud5KbXB4_j5K8neY1nFyDd5NGudX5U4EaCRcC
+ CG1k93sWk2OjJVRpp3tEl5iWCShkqpkjwauGmFZWjhK4mbbs-
+X-Yahoo-Newman-Property: ymail-3
+Date: Sat, 25 Dec 2010 17:55:22 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Tejun Heo <tj@kernel.org>
+cc: "H. Peter Anvin" <hpa@zytor.com>, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [cpuops cmpxchg double V1 1/4] Generic support for
+ this_cpu_cmpxchg_double
+In-Reply-To: <AANLkTikSwwMtDwx4wGM8hO4riZFVmtkq_bihVvPirO8F@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1012251753530.8506@router.home>
+References: <20101214174847.887713690@linux.com> <20101214174900.058235985@linux.com> <4D0CC982.3030905@kernel.org> <alpine.DEB.2.00.1012211634560.3769@router.home> <4D11373D.9010205@zytor.com> <20101222091358.GC27861@htj.dyndns.org>
+ <alpine.DEB.2.00.1012231812280.22549@router.home> <4D13E7D5.7020503@zytor.com> <alpine.DEB.2.00.1012242251090.23107@router.home> <AANLkTikSwwMtDwx4wGM8hO4riZFVmtkq_bihVvPirO8F@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1012252223380.10759@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 25, 2010 at 10:24:57PM +0100, Jesper Juhl wrote:
-> On Sat, 25 Dec 2010, richard -rw- weinberger wrote:
-> 
-> > On Sat, Dec 25, 2010 at 7:17 PM, Jesper Juhl <jj@chaosbits.net> wrote:
-> > > Hello,
-> > >
-> > > In net/ceph/ceph_common.c::ceph_destroy_client() the pointer 'client' is
-> > > freed by kfree() and subsequently used in a call to dout() - use after
-> > > free bug.
-> > 
-> > Not really. %p reads only the address of "client".
-> > kfree() does not alter this address.
-> > 
-> 
-> Ok, I see your point and you are correct. But still, the patch does not 
-> change behaviour and it makes it absolutely clear that there's no 
-> use-after-free bug, so it might still have merit... or?
-> 
+On Sat, 25 Dec 2010, Tejun Heo wrote:
 
-I see these with Smatch as well.  This type of usage is quite common.
-People do it deliberately and I guess they feel it's readable.  Don't
-change them.
+> ABI.  But that said, it might still be problematic on other
+> architectures when we try to apply it to different architectures.  Is
+> everyone against just taking a scalar for the first variable instead
+> of taking a pointer?  I'd be happier with that than the current one.
 
-If it were something that a static checker couldn't figure out, then
-I'd say change it, but really the static checkers should just be made
-smarter.  Some day I'm going to make Smatch complain if it's a %s in
-the string instead of a %p, but for now I just ignore the false
-positives.
+How about replacing that with two scalars? Macro will check that the
+scalaers are properly aligned and that the second follows the first. Then
+there is also better symmetry in the parameters.
 
-regards,
-dan carpenter
+bool this_cpu_cmpxchg_double(
+          percpu_1, percpu_2
+          old_1, old_2
+          new_1, new_2
+)
+
