@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752377Ab0LYSpn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 13:45:43 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:46533 "EHLO mprc.pku.edu.cn"
+	id S1752440Ab0LYSrC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 13:47:02 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:35973 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751438Ab0LYSpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 13:45:39 -0500
+	id S1752052Ab0LYSq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Dec 2010 13:46:58 -0500
 From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 Cc: =?gb2312?B?0anMziC53A==?= <guanxuetao@mprc.pku.edu.cn>
-Subject: [PATCHv1 03/12] unicore32 core architecture: processor and system headers
-Date: Sun, 26 Dec 2010 02:45:31 +0800
-Message-ID: <00ca01cba463$e818fb60$b84af220$@mprc.pku.edu.cn>
+Subject: [PATCHv1 04/12] unicore32 core architecture: low level entry and setup code
+Date: Sun, 26 Dec 2010 02:46:49 +0800
+Message-ID: <00cc01cba464$16e6a410$44b3ec30$@mprc.pku.edu.cn>
 MIME-Version: 1.0
 Content-Type: text/plain;
 	charset="gb2312"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AcukY8L427zsRILHQAuwiTTuk7QuHw==
+Thread-Index: AcukY/bVl1jW2m85Qc22MXoAuIxTHQ==
 Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,64 +25,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 
-This patch includes processor and system headers. System call interface is here.
-  We used the similar syscall interface as ARM formerly, so the similar calls.S, unistd.h
-   and sys_unicore.c. While we are defining new ABI, it will use the syscall numbers in
-   asm-generic/unistd.h.
+This patch implements low level entry and setup codes.
 
 Signed-off-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 ---
- arch/unicore32/include/asm/byteorder.h  |   24 ++
- arch/unicore32/include/asm/cpu-single.h |   45 +++
- arch/unicore32/include/asm/cputype.h    |   33 +++
- arch/unicore32/include/asm/hwcap.h      |   32 +++
- arch/unicore32/include/asm/processor.h  |   92 +++++++
- arch/unicore32/include/asm/system.h     |  171 ++++++++++++
- arch/unicore32/include/asm/unistd.h     |  450 +++++++++++++++++++++++++++++++
- arch/unicore32/kernel/calls.S           |  390 ++++++++++++++++++++++++++
- arch/unicore32/kernel/sys_unicore.c     |  132 +++++++++
- arch/unicore32/mm/proc-macros.S         |  145 ++++++++++
- arch/unicore32/mm/proc-ucv2.S           |  134 +++++++++
- 11 files changed, 1648 insertions(+), 0 deletions(-)
+ arch/unicore32/include/asm/setup.h |   51 +++
+ arch/unicore32/include/asm/traps.h |   32 ++
+ arch/unicore32/kernel/entry.S      |  875 ++++++++++++++++++++++++++++++++++++
+ arch/unicore32/kernel/head.S       |  261 +++++++++++
+ arch/unicore32/kernel/setup.c      |  360 +++++++++++++++
+ arch/unicore32/kernel/setup.h      |   28 ++
+ arch/unicore32/kernel/traps.c      |  498 ++++++++++++++++++++
+ 7 files changed, 2105 insertions(+), 0 deletions(-)
 
-diff --git a/arch/unicore32/include/asm/byteorder.h b/arch/unicore32/include/asm/byteorder.h
+diff --git a/arch/unicore32/include/asm/setup.h b/arch/unicore32/include/asm/setup.h
 new file mode 100644
-index 0000000..ebe1b3f
+index 0000000..297a6d1
 --- /dev/null
-+++ b/arch/unicore32/include/asm/byteorder.h
-@@ -0,0 +1,24 @@
++++ b/arch/unicore32/include/asm/setup.h
+@@ -0,0 +1,51 @@
 +/*
-+ * linux/arch/unicore32/include/asm/byteorder.h
-+ *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * UniCore ONLY support Little Endian mode, the data bus is connected such
-+ * that byte accesses appear as:
-+ *  0 = d0...d7, 1 = d8...d15, 2 = d16...d23, 3 = d24...d31
-+ * and word accesses (data or instruction) appear as:
-+ *  d0...d31
-+ */
-+#ifndef __UNICORE_BYTEORDER_H__
-+#define __UNICORE_BYTEORDER_H__
-+
-+#include <linux/byteorder/little_endian.h>
-+
-+#endif
-+
-diff --git a/arch/unicore32/include/asm/cpu-single.h b/arch/unicore32/include/asm/cpu-single.h
-new file mode 100644
-index 0000000..0f55d18
---- /dev/null
-+++ b/arch/unicore32/include/asm/cpu-single.h
-@@ -0,0 +1,45 @@
-+/*
-+ * linux/arch/unicore32/include/asm/cpu-single.h
++ * linux/arch/unicore32/include/asm/setup.h
 + *
 + * Code specific to PKUnity SoC and UniCore ISA
 + *
@@ -92,87 +55,54 @@ index 0000000..0f55d18
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
-+#ifndef __UNICORE_CPU_SINGLE_H__
-+#define __UNICORE_CPU_SINGLE_H__
++#ifndef __UNICORE_SETUP_H__
++#define __UNICORE_SETUP_H__
 +
-+#include <asm/page.h>
-+#include <asm/memory.h>
++#include <linux/types.h>
++
++#define COMMAND_LINE_SIZE 1024
 +
 +#ifdef __KERNEL__
-+#ifndef __ASSEMBLY__
 +
-+#define cpu_switch_mm(pgd, mm) cpu_do_switch_mm(virt_to_phys(pgd), mm)
-+
-+#define cpu_get_pgd()					\
-+	({						\
-+		unsigned long pg;			\
-+		__asm__("movc	%0, p0.c2, #0"		\
-+			 : "=r" (pg) : : "cc");		\
-+		pg &= ~0x0fff;				\
-+		(pgd_t *)phys_to_virt(pg);		\
-+	})
-+
-+struct mm_struct;
-+
-+/* declare all the functions as extern */
-+extern void cpu_proc_fin(void);
-+extern int cpu_do_idle(void);
-+extern void cpu_dcache_clean_area(void *, int);
-+extern void cpu_do_switch_mm(unsigned long pgd_phys, struct mm_struct *mm);
-+extern void cpu_set_pte(pte_t *ptep, pte_t pte);
-+extern void cpu_reset(unsigned long addr) __attribute__((noreturn));
-+
-+#endif /* __ASSEMBLY__ */
-+#endif /* __KERNEL__ */
-+
-+#endif /* __UNICORE_CPU_SINGLE_H__ */
-diff --git a/arch/unicore32/include/asm/cputype.h b/arch/unicore32/include/asm/cputype.h
-new file mode 100644
-index 0000000..ec1a30f
---- /dev/null
-+++ b/arch/unicore32/include/asm/cputype.h
-@@ -0,0 +1,33 @@
 +/*
-+ * linux/arch/unicore32/include/asm/cputype.h
-+ *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * Memory map description
 + */
-+#ifndef __UNICORE_CPUTYPE_H__
-+#define __UNICORE_CPUTYPE_H__
++# define NR_BANKS 8
 +
-+#include <linux/stringify.h>
++struct membank {
++	unsigned long start;
++	unsigned long size;
++	unsigned int highmem;
++};
 +
-+#define CPUID_CPUID	0
-+#define CPUID_CACHETYPE	1
++struct meminfo {
++	int nr_banks;
++	struct membank bank[NR_BANKS];
++};
 +
-+#define read_cpuid(reg)							\
-+	({								\
-+		unsigned int __val;					\
-+		asm("movc	%0, p0.c0, #" __stringify(reg)		\
-+		    : "=r" (__val)					\
-+		    :							\
-+		    : "cc");						\
-+		__val;							\
-+	})
++extern struct meminfo meminfo;
 +
-+#define uc32_cpuid		read_cpuid(CPUID_CPUID)
-+#define uc32_cachetype		read_cpuid(CPUID_CACHETYPE)
++#define for_each_bank(iter, mi)				\
++	for (iter = 0; iter < (mi)->nr_banks; iter++)
++
++#define bank_pfn_start(bank)	__phys_to_pfn((bank)->start)
++#define bank_pfn_end(bank)	__phys_to_pfn((bank)->start + (bank)->size)
++#define bank_pfn_size(bank)	((bank)->size >> PAGE_SHIFT)
++#define bank_phys_start(bank)	((bank)->start)
++#define bank_phys_end(bank)	((bank)->start + (bank)->size)
++#define bank_phys_size(bank)	((bank)->size)
++
++#endif  /*  __KERNEL__  */
 +
 +#endif
-diff --git a/arch/unicore32/include/asm/hwcap.h b/arch/unicore32/include/asm/hwcap.h
+diff --git a/arch/unicore32/include/asm/traps.h b/arch/unicore32/include/asm/traps.h
 new file mode 100644
-index 0000000..97bd40f
+index 0000000..72cd49d
 --- /dev/null
-+++ b/arch/unicore32/include/asm/hwcap.h
++++ b/arch/unicore32/include/asm/traps.h
 @@ -0,0 +1,32 @@
 +/*
-+ * linux/arch/unicore32/include/asm/hwcap.h
++ * linux/arch/unicore32/include/asm/traps.h
 + *
 + * Code specific to PKUnity SoC and UniCore ISA
 + *
@@ -182,35 +112,35 @@ index 0000000..97bd40f
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
-+#ifndef __UNICORE_HWCAP_H__
-+#define __UNICORE_HWCAP_H__
++#ifndef __UNICORE_TRAP_H__
++#define __UNICORE_TRAP_H__
 +
-+/*
-+ * HWCAP flags
-+ */
-+#define HWCAP_MSP		1
-+#define HWCAP_UNICORE16		2
-+#define HWCAP_CMOV		4
-+#define HWCAP_UNICORE_F64       8
-+#define HWCAP_TLS		0x80
++#include <linux/list.h>
 +
-+#if defined(__KERNEL__) && !defined(__ASSEMBLY__)
-+/*
-+ * This yields a mask that user programs can use to figure out what
-+ * instruction set this cpu supports.
-+ */
-+#define ELF_HWCAP		(HWCAP_CMOV | HWCAP_UNICORE_F64)
++static inline int in_exception_text(unsigned long ptr)
++{
++	extern char __exception_text_start[];
++	extern char __exception_text_end[];
++
++	return ptr >= (unsigned long)&__exception_text_start &&
++	       ptr < (unsigned long)&__exception_text_end;
++}
++
++extern void __init early_trap_init(void);
++extern void dump_backtrace_entry(unsigned long where,
++		unsigned long from, unsigned long frame);
++
++extern void do_DataAbort(unsigned long addr, unsigned int fsr,
++		 struct pt_regs *regs);
 +#endif
-+
-+#endif
-diff --git a/arch/unicore32/include/asm/processor.h b/arch/unicore32/include/asm/processor.h
+diff --git a/arch/unicore32/kernel/entry.S b/arch/unicore32/kernel/entry.S
 new file mode 100644
-index 0000000..e11cb07
+index 0000000..741cc06
 --- /dev/null
-+++ b/arch/unicore32/include/asm/processor.h
-@@ -0,0 +1,92 @@
++++ b/arch/unicore32/kernel/entry.S
+@@ -0,0 +1,875 @@
 +/*
-+ * linux/arch/unicore32/include/asm/processor.h
++ * linux/arch/unicore32/kernel/entry.S
 + *
 + * Code specific to PKUnity SoC and UniCore ISA
 + *
@@ -219,1544 +149,2040 @@ index 0000000..e11cb07
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
-+ */
-+
-+#ifndef __UNICORE_PROCESSOR_H__
-+#define __UNICORE_PROCESSOR_H__
-+
-+/*
-+ * Default implementation of macro that returns current
-+ * instruction pointer ("program counter").
-+ */
-+#define current_text_addr() ({ __label__ _l; _l: &&_l; })
-+
-+#ifdef __KERNEL__
-+
-+#include <asm/ptrace.h>
-+#include <asm/types.h>
-+
-+#ifdef __KERNEL__
-+#define STACK_TOP	TASK_SIZE
-+#define STACK_TOP_MAX	TASK_SIZE
-+#endif
-+
-+struct debug_entry {
-+	u32			address;
-+	u32			insn;
-+};
-+
-+struct debug_info {
-+	int			nsaved;
-+	struct debug_entry	bp[2];
-+};
-+
-+struct thread_struct {
-+							/* fault info	  */
-+	unsigned long		address;
-+	unsigned long		trap_no;
-+	unsigned long		error_code;
-+							/* debugging	  */
-+	struct debug_info	debug;
-+};
-+
-+#define INIT_THREAD  {	}
-+
-+#define start_thread(regs, pc, sp)					\
-+({									\
-+	unsigned long *stack = (unsigned long *)sp;			\
-+	set_fs(USER_DS);						\
-+	memset(regs->uregs, 0, sizeof(regs->uregs));			\
-+	regs->UCreg_asr = USER_MODE;					\
-+	regs->UCreg_pc = pc & ~1;	/* pc */                        \
-+	regs->UCreg_sp = sp;		/* sp */                        \
-+	regs->UCreg_02 = stack[2];	/* r2 (envp) */                 \
-+	regs->UCreg_01 = stack[1];	/* r1 (argv) */                 \
-+	regs->UCreg_00 = stack[0];	/* r0 (argc) */                 \
-+})
-+
-+/* Forward declaration, a strange C thing */
-+struct task_struct;
-+
-+/* Free all resources held by a thread. */
-+extern void release_thread(struct task_struct *);
-+
-+/* Prepare to copy thread state - unlazy all lazy status */
-+#define prepare_to_copy(tsk)	do { } while (0)
-+
-+unsigned long get_wchan(struct task_struct *p);
-+
-+#define cpu_relax()			barrier()
-+
-+/*
-+ * Create a new kernel thread
-+ */
-+extern int kernel_thread(int (*fn)(void *), void *arg, unsigned long flags);
-+
-+#define task_pt_regs(p) \
-+	((struct pt_regs *)(THREAD_START_SP + task_stack_page(p)) - 1)
-+
-+#define KSTK_EIP(tsk)	(task_pt_regs(tsk)->UCreg_pc)
-+#define KSTK_ESP(tsk)	(task_pt_regs(tsk)->UCreg_sp)
-+
-+#endif
-+
-+#endif /* __UNICORE_PROCESSOR_H__ */
-diff --git a/arch/unicore32/include/asm/system.h b/arch/unicore32/include/asm/system.h
-new file mode 100644
-index 0000000..17532c2
---- /dev/null
-+++ b/arch/unicore32/include/asm/system.h
-@@ -0,0 +1,171 @@
-+/*
-+ * linux/arch/unicore32/include/asm/system.h
 + *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ *  Low-level vector interface routines
 + */
-+#ifndef __UNICORE_SYSTEM_H__
-+#define __UNICORE_SYSTEM_H__
-+
-+#ifdef __KERNEL__
-+
-+/*
-+ * CR1 bits (CP#0 CR1)
-+ */
-+#define CR_M	(1 << 0)	/* MMU enable				*/
-+#define CR_A	(1 << 1)	/* Alignment abort enable		*/
-+#define CR_D	(1 << 2)	/* Dcache enable			*/
-+#define CR_I	(1 << 3)	/* Icache enable			*/
-+#define CR_B	(1 << 4)	/* Dcache write mechanism: write back	*/
-+#define CR_T	(1 << 5)	/* Burst enable				*/
-+#define CR_V	(1 << 13)	/* Vectors relocated to 0xffff0000	*/
-+
-+#ifndef __ASSEMBLY__
-+
++#include <linux/init.h>
 +#include <linux/linkage.h>
-+#include <linux/irqflags.h>
 +
-+#define __exception	__attribute__((section(".exception.text")))
++#include <asm/assembler.h>
++#include <asm/errno.h>
++#include <asm/thread_info.h>
++#include <asm/memory.h>
++#include <asm/mach/debug-macro.S>
++#include <asm/unistd.h>
 +
-+struct thread_info;
-+struct task_struct;
++#include <generated/asm-offsets.h>
 +
-+struct pt_regs;
-+
-+void die(const char *msg, struct pt_regs *regs, int err);
-+
-+struct siginfo;
-+void uc32_notify_die(const char *str, struct pt_regs *regs,
-+		struct siginfo *info, unsigned long err, unsigned long trap);
-+
-+void hook_fault_code(int nr, int (*fn)(unsigned long, unsigned int,
-+				       struct pt_regs *),
-+		     int sig, int code, const char *name);
-+
-+#define xchg(ptr, x) \
-+	((__typeof__(*(ptr)))__xchg((unsigned long)(x), (ptr), sizeof(*(ptr))))
-+
-+extern asmlinkage void __backtrace(void);
-+extern asmlinkage void c_backtrace(unsigned long fp, int pmode);
-+
-+struct mm_struct;
-+extern void show_pte(struct mm_struct *mm, unsigned long addr);
-+extern void __show_regs(struct pt_regs *);
-+
-+extern int cpu_architecture(void);
-+extern void cpu_init(void);
-+
-+#define UDBG_UNDEFINED	(1 << 0)
-+#define UDBG_SYSCALL	(1 << 1)
-+#define UDBG_BADABORT	(1 << 2)
-+#define UDBG_SEGV	(1 << 3)
-+#define UDBG_BUS	(1 << 4)
-+
-+extern unsigned int user_debug;
-+
-+#define vectors_high()	(cr_alignment & CR_V)
-+
-+#define isb() __asm__ __volatile__ ("" : : : "memory")
-+#define dsb() __asm__ __volatile__ ("" : : : "memory")
-+#define dmb() __asm__ __volatile__ ("" : : : "memory")
-+
-+#define mb()		barrier()
-+#define rmb()		barrier()
-+#define wmb()		barrier()
-+#define smp_mb()	barrier()
-+#define smp_rmb()	barrier()
-+#define smp_wmb()	barrier()
-+#define read_barrier_depends()		do { } while (0)
-+#define smp_read_barrier_depends()	do { } while (0)
-+
-+#define set_mb(var, value)	do { var = value; smp_mb(); } while (0)
-+#define nop() __asm__ __volatile__("mov\tr0,r0\t@ nop\n\t");
-+
-+extern unsigned long cr_no_alignment;	/* defined in entry-unicore.S */
-+extern unsigned long cr_alignment;	/* defined in entry-unicore.S */
-+
-+static inline unsigned int get_cr(void)
-+{
-+	unsigned int val;
-+	asm("movc %0, p0.c1, #0" : "=r" (val) : : "cc");
-+	return val;
-+}
-+
-+static inline void set_cr(unsigned int val)
-+{
-+	asm volatile("movc p0.c1, %0, #0	@set CR"
-+	  : : "r" (val) : "cc");
-+	isb();
-+}
-+
-+extern void adjust_cr(unsigned long mask, unsigned long set);
++@
++@ Most of the stack format comes from struct pt_regs, but with
++@ the addition of 8 bytes for storing syscall args 5 and 6.
++@
++#define S_OFF		8
 +
 +/*
-+ * switch_to(prev, next) should switch from task `prev' to `next'
-+ * `prev' will never be the same as `next'.  schedule() itself
-+ * contains the memory barrier to tell GCC not to cache `current'.
++ * The SWI code relies on the fact that R0 is at the bottom of the stack
++ * (due to slow/fast restore user regs).
 + */
-+extern struct task_struct *__switch_to(struct task_struct *,
-+		struct thread_info *, struct thread_info *);
-+extern void panic(const char *fmt, ...);
++#if S_R0 != 0
++#error "Please fix"
++#endif
 +
-+#define switch_to(prev, next, last)					\
-+do {									\
-+	last = __switch_to(prev,					\
-+		task_thread_info(prev), task_thread_info(next));	\
-+} while (0)
++	.macro	zero_fp
++#ifdef CONFIG_FRAME_POINTER
++	mov	fp, #0
++#endif
++	.endm
 +
-+static inline unsigned long
-+__xchg(unsigned long x, volatile void *ptr, int size)
++	.macro	alignment_trap, rtemp
++#ifdef CONFIG_ALIGNMENT_TRAP
++	ldw	\rtemp, .LCcralign
++	ldw	\rtemp, [\rtemp]
++	movc	p0.c1, \rtemp, #0
++#endif
++	.endm
++
++	.macro	load_user_sp_lr, rd, rtemp, offset = 0
++	mov	\rtemp, asr
++	xor	\rtemp, \rtemp, #(PRIV_MODE ^ SUSR_MODE)
++	mov.a	asr, \rtemp			@ switch to the SUSR mode
++
++	ldw	sp, [\rd+], #\offset		@ load sp_user
++	ldw	lr, [\rd+], #\offset + 4	@ load lr_user
++
++	xor	\rtemp, \rtemp, #(PRIV_MODE ^ SUSR_MODE)
++	mov.a	asr, \rtemp			@ switch back to the PRIV mode
++	.endm
++
++	.macro	priv_exit, rpsr
++	mov.a	bsr, \rpsr
++	ldm.w	(r0 - r15), [sp]+
++	ldm.b	(r16 - pc), [sp]+		@ load r0 - pc, asr
++	.endm
++
++	.macro	restore_user_regs, fast = 0, offset = 0
++	ldw	r1, [sp+], #\offset + S_PSR	@ get calling asr
++	ldw	lr, [sp+], #\offset + S_PC	@ get pc
++	mov.a	bsr, r1				@ save in bsr_priv
++	.if	\fast
++	add	sp, sp, #\offset + S_R1		@ r0 is syscall return value
++	ldm.w	(r1 - r15), [sp]+		@ get calling r1 - r15
++	ldur	(r16 - lr), [sp]+		@ get calling r16 - lr
++	.else
++	ldm.w	(r0 - r15), [sp]+		@ get calling r0 - r15
++	ldur	(r16 - lr), [sp]+		@ get calling r16 - lr
++	.endif
++	nop
++	add	sp, sp, #S_FRAME_SIZE - S_R16
++	mov.a	pc, lr				@ return
++						@ and move bsr_priv into asr
++	.endm
++
++	.macro	get_thread_info, rd
++	mov	\rd, sp >> #13
++	mov	\rd, \rd << #13
++	.endm
++
++	.macro	get_irqnr_and_base, irqnr, irqstat, base, tmp
++	ldw	\base, =(io_p2v(PKUNITY_INTC_BASE))
++	ldw	\irqstat, [\base+], #0xC	@ INTC_ICIP
++	ldw	\tmp,	  [\base+], #0x4	@ INTC_ICMR
++	and.a	\irqstat, \irqstat, \tmp
++	beq	1001f
++	cntlz	\irqnr, \irqstat
++	rsub	\irqnr, \irqnr, #31
++1001:	/* EQ will be set if no irqs pending */
++	.endm
++
++#ifdef CONFIG_DEBUG_LL
++	.macro	printreg, reg, temp
++		adr	\temp, 901f
++		stm	(r0-r3), [\temp]+
++		stw	lr, [\temp+], #0x10
++		mov	r0, \reg
++		b.l	printhex8
++		mov	r0, #':'
++		b.l	printch
++		mov	r0, pc
++		b.l	printhex8
++		adr	r0, 902f
++		b.l	printascii
++		adr	\temp, 901f
++		ldm	(r0-r3), [\temp]+
++		ldw	lr, [\temp+], #0x10
++		b	903f
++901:	.word	0, 0, 0, 0, 0	@ r0-r3, lr
++902:	.asciz	": epip4d\n"
++	.align
++903:
++	.endm
++#endif
++
++/*
++ * These are the registers used in the syscall handler, and allow us to
++ * have in theory up to 7 arguments to a function - r0 to r6.
++ *
++ * Note that tbl == why is intentional.
++ *
++ * We must set at least "tsk" and "why" when calling ret_with_reschedule.
++ */
++scno	.req	r21		@ syscall number
++tbl	.req	r22		@ syscall table pointer
++why	.req	r22		@ Linux syscall (!= 0)
++tsk	.req	r23		@ current thread_info
++
++/*
++ * Interrupt handling.  Preserves r17, r18, r19
++ */
++	.macro	intr_handler
++1:	get_irqnr_and_base r0, r6, r5, lr
++	beq	2f
++	mov	r1, sp
++	@
++	@ routine called with r0 = irq number, r1 = struct pt_regs *
++	@
++	adr	lr, 1b
++	b	asm_do_IRQ
++2:
++	.endm
++
++/*
++ * PRIV mode handlers
++ */
++	.macro	priv_entry
++	sub	sp, sp, #(S_FRAME_SIZE - 4)
++	stm	(r1 - r15), [sp]+
++	add	r5, sp, #S_R15
++	stm	(r16 - r28), [r5]+
++
++	ldm	(r1 - r3), [r0]+
++	add	r5, sp, #S_SP - 4	@ here for interlock avoidance
++	mov	r4, #-1			@  ""  ""      ""       ""
++	add	r0, sp, #(S_FRAME_SIZE - 4)
++	stw.w	r1, [sp+], #-4		@ save the "real" r0 copied
++					@ from the exception stack
++
++	mov	r1, lr
++
++	@
++	@ We are now ready to fill in the remaining blanks on the stack:
++	@
++	@  r0 - sp_priv
++	@  r1 - lr_priv
++	@  r2 - lr_<exception>, already fixed up for correct return/restart
++	@  r3 - bsr_<exception>
++	@  r4 - orig_r0 (see pt_regs definition in ptrace.h)
++	@
++	stm	(r0 - r4), [r5]+
++	.endm
++
++/*
++ * User mode handlers
++ *
++ */
++	.macro	user_entry
++	sub	sp, sp, #S_FRAME_SIZE
++	stm	(r1 - r15), [sp+]
++	add	r4, sp, #S_R16
++	stm	(r16 - r28), [r4]+
++
++	ldm	(r1 - r3), [r0]+
++	add	r0, sp, #S_PC		@ here for interlock avoidance
++	mov	r4, #-1			@  ""  ""     ""        ""
++
++	stw	r1, [sp]		@ save the "real" r0 copied
++					@ from the exception stack
++
++	@
++	@ We are now ready to fill in the remaining blanks on the stack:
++	@
++	@  r2 - lr_<exception>, already fixed up for correct return/restart
++	@  r3 - bsr_<exception>
++	@  r4 - orig_r0 (see pt_regs definition in ptrace.h)
++	@
++	@ Also, separately save sp_user and lr_user
++	@
++	stm	(r2 - r4), [r0]+
++	stur	(sp, lr), [r0-]
++
++	@
++	@ Enable the alignment trap while in kernel mode
++	@
++	alignment_trap r0
++
++	@
++	@ Clear FP to mark the first stack frame
++	@
++	zero_fp
++	.endm
++
++	.text
++
++@
++@ __invalid - generic code for failed exception
++@			(re-entrant version of handlers)
++@
++__invalid:
++	sub	sp, sp, #S_FRAME_SIZE
++	stm	(r1 - r15), [sp+]
++	add	r1, sp, #S_R16
++	stm	(r16 - r28, sp, lr), [r1]+
++
++	zero_fp
++
++	ldm	(r4 - r6), [r0]+
++	add	r0, sp, #S_PC		@ here for interlock avoidance
++	mov	r7, #-1			@  ""   ""    ""        ""
++	stw	r4, [sp]		@ save preserved r0
++	stm	(r5 - r7), [r0]+	@ lr_<exception>,
++					@ asr_<exception>, "old_r0"
++
++	mov	r0, sp
++	mov	r1, asr
++	b	bad_mode
++ENDPROC(__invalid)
++
++	.align	5
++__dabt_priv:
++	priv_entry
++
++	@
++	@ get ready to re-enable interrupts if appropriate
++	@
++	mov	r17, asr
++	cand.a	r3, #PSR_I_BIT
++	bne	1f
++	andn	r17, r17, #PSR_I_BIT
++1:
++
++	@
++	@ Call the processor-specific abort handler:
++	@
++	@  r2 - aborted context pc
++	@  r3 - aborted context asr
++	@
++	@ The abort handler must return the aborted address in r0, and
++	@ the fault status register in r1.
++	@
++	movc	r1, p0.c3, #0		@ get FSR
++	movc	r0, p0.c4, #0		@ get FAR
++
++	@
++	@ set desired INTR state, then call main handler
++	@
++	mov.a	asr, r17
++	mov	r2, sp
++	b.l	do_DataAbort
++
++	@
++	@ INTRs off again before pulling preserved data off the stack
++	@
++	disable_irq r0
++
++	@
++	@ restore BSR and restart the instruction
++	@
++	ldw	r2, [sp+], #S_PSR
++	priv_exit r2				@ return from exception
++ENDPROC(__dabt_priv)
++
++	.align	5
++__intr_priv:
++	priv_entry
++
++	intr_handler
++
++	mov	r0, #0				@ epip4d
++	movc	p0.c5, r0, #14
++	nop; nop; nop; nop; nop; nop; nop; nop
++
++	ldw	r4, [sp+], #S_PSR		@ irqs are already disabled
++
++	priv_exit r4				@ return from exception
++ENDPROC(__intr_priv)
++
++	.ltorg
++
++	.align	5
++__extn_priv:
++	priv_entry
++
++	mov	r0, sp				@ struct pt_regs *regs
++	mov	r1, asr
++	b	bad_mode			@ not supported
++ENDPROC(__extn_priv)
++
++	.align	5
++__pabt_priv:
++	priv_entry
++
++	@
++	@ re-enable interrupts if appropriate
++	@
++	mov	r17, asr
++	cand.a	r3, #PSR_I_BIT
++	bne	1f
++	andn	r17, r17, #PSR_I_BIT
++1:
++
++	@
++	@ set args, then call main handler
++	@
++	@  r0 - address of faulting instruction
++	@  r1 - pointer to registers on stack
++	@
++	mov	r0, r2			@ pass address of aborted instruction
++	mov	r1, #5
++	mov.a	asr, r17
++	mov	r2, sp			@ regs
++	b.l	do_PrefetchAbort	@ call abort handler
++
++	@
++	@ INTRs off again before pulling preserved data off the stack
++	@
++	disable_irq r0
++
++	@
++	@ restore BSR and restart the instruction
++	@
++	ldw	r2, [sp+], #S_PSR
++	priv_exit r2			@ return from exception
++ENDPROC(__pabt_priv)
++
++	.align	5
++.LCcralign:
++	.word	cr_alignment
++
++	.align	5
++__dabt_user:
++	user_entry
++
++#ifdef CONFIG_UNICORE_FPU_F64
++	cff	ip, s31
++	cand.a	ip, #0x08000000		@ FPU execption traps?
++	beq	209f
++
++	ldw	ip, [sp+], #S_PC
++	add	ip, ip, #4
++	stw	ip, [sp+], #S_PC
++	@
++	@ fall through to the emulation code, which returns using r19 if
++	@ it has emulated the instruction, or the more conventional lr
++	@ if we are to treat this as a real extended instruction
++	@
++	@  r0 - instruction
++	@
++1:	ldw.u	r0, [r2]
++	adr	r19, ret_from_exception
++	adr	lr, 209f
++	@
++	@ fallthrough to call do_uc_f64
++	@
++/*
++ * Check whether the instruction is a co-processor instruction.
++ * If yes, we need to call the relevant co-processor handler.
++ *
++ * Note that we don't do a full check here for the co-processor
++ * instructions; all instructions with bit 27 set are well
++ * defined.  The only instructions that should fault are the
++ * co-processor instructions.
++ *
++ * Emulators may wish to make use of the following registers:
++ *  r0  = instruction opcode.
++ *  r2  = PC
++ *  r19 = normal "successful" return address
++ *  r20 = this threads thread_info structure.
++ *  lr  = unrecognised instruction return address
++ */
++	get_thread_info r20			@ get current thread
++	and	r8, r0, #0x00003c00		@ mask out CP number
++	mov	r7, #1
++	stb	r7, [r20+], #TI_USED_CP + 2	@ set appropriate used_cp[]
++
++	b	do_uc_f64
++209:
++#endif
++	@
++	@ Call the processor-specific abort handler:
++	@
++	@  r2 - aborted context pc
++	@  r3 - aborted context asr
++	@
++	@ The abort handler must return the aborted address in r0, and
++	@ the fault status register in r1.
++	@
++	movc	r1, p0.c3, #0		@ get FSR
++	movc	r0, p0.c4, #0		@ get FAR
++
++	@
++	@ INTRs on, then call the main handler
++	@
++	enable_irq r2
++	mov	r2, sp
++	adr	lr, ret_from_exception
++	b	do_DataAbort
++ENDPROC(__dabt_user)
++
++	.align	5
++__intr_user:
++	user_entry
++
++	get_thread_info tsk
++
++	intr_handler
++
++	mov	why, #0
++	b	ret_to_user
++ENDPROC(__intr_user)
++
++	.ltorg
++
++	.align	5
++__extn_user:
++	user_entry
++
++	mov	r0, sp
++	mov	r1, asr
++	b	bad_mode
++ENDPROC(__extn_user)
++
++	.align	5
++__pabt_user:
++	user_entry
++
++	mov	r0, r2			@ pass address of aborted instruction.
++	mov	r1, #5
++	enable_irq r1			@ Enable interrupts
++	mov	r2, sp			@ regs
++	b.l	do_PrefetchAbort	@ call abort handler
++	/* fall through */
++/*
++ * This is the return code to user mode for abort handlers
++ */
++ENTRY(ret_from_exception)
++	get_thread_info tsk
++	mov	why, #0
++	b	ret_to_user
++ENDPROC(__pabt_user)
++ENDPROC(ret_from_exception)
++
++/*
++ * Register switch for UniCore V2 processors
++ * r0 = previous task_struct, r1 = previous thread_info, r2 = next thread_info
++ * previous and next are guaranteed not to be the same.
++ */
++ENTRY(__switch_to)
++	add	ip, r1, #TI_CPU_SAVE
++	stm.w	(r4 - r15), [ip]+
++	stm.w	(r16 - r27, sp, lr), [ip]+
++
++#ifdef	CONFIG_UNICORE_FPU_F64
++	add	ip, r1, #TI_FPSTATE
++	sfm.w	(f0  - f7 ), [ip]+
++	sfm.w	(f8  - f15), [ip]+
++	sfm.w	(f16 - f23), [ip]+
++	sfm.w	(f24 - f31), [ip]+
++	cff	r4, s31
++	stw	r4, [ip]
++
++	add	ip, r2, #TI_FPSTATE
++	lfm.w	(f0  - f7 ), [ip]+
++	lfm.w	(f8  - f15), [ip]+
++	lfm.w	(f16 - f23), [ip]+
++	lfm.w	(f24 - f31), [ip]+
++	ldw	r4, [ip]
++	ctf	r4, s31
++#endif
++	add	ip, r2, #TI_CPU_SAVE
++	ldm.w	(r4 - r15), [ip]+
++	ldm	(r16 - r27, sp, pc), [ip]+	@ Load all regs saved previously
++ENDPROC(__switch_to)
++
++	.align	5
++/*
++ * This is the fast syscall return path.  We do as little as
++ * possible here, and this includes saving r0 back into the PRIV
++ * stack.
++ */
++ret_fast_syscall:
++	disable_irq r1				@ disable interrupts
++	ldw	r1, [tsk+], #TI_FLAGS
++	cand.a	r1, #_TIF_WORK_MASK
++	bne	fast_work_pending
++
++	@ fast_restore_user_regs
++	restore_user_regs fast = 1, offset = S_OFF
++
++/*
++ * Ok, we need to do extra processing, enter the slow path.
++ */
++fast_work_pending:
++	stw.w	r0, [sp+], #S_R0+S_OFF		@ returned r0
++work_pending:
++	cand.a	r1, #_TIF_NEED_RESCHED
++	bne	work_resched
++	cand.a	r1, #_TIF_SIGPENDING|_TIF_NOTIFY_RESUME
++	beq	no_work_pending
++	mov	r0, sp				@ 'regs'
++	mov	r2, why				@ 'syscall'
++	cand.a	r1, #_TIF_SIGPENDING		@ delivering a signal?
++	cmovne	why, #0				@ prevent further restarts
++	b.l	do_notify_resume
++	b	ret_slow_syscall		@ Check work again
++
++work_resched:
++	b.l	schedule
++/*
++ * "slow" syscall return path.  "why" tells us if this was a real syscall.
++ */
++ENTRY(ret_to_user)
++ret_slow_syscall:
++	disable_irq r1				@ disable interrupts
++	get_thread_info tsk			@ epip4d, one path error?!
++	ldw	r1, [tsk+], #TI_FLAGS
++	cand.a	r1, #_TIF_WORK_MASK
++	bne	work_pending
++no_work_pending:
++	@ slow_restore_user_regs
++	restore_user_regs fast = 0, offset = 0
++ENDPROC(ret_to_user)
++
++/*
++ * This is how we return from a fork.
++ */
++ENTRY(ret_from_fork)
++	b.l	schedule_tail
++	get_thread_info tsk
++	ldw	r1, [tsk+], #TI_FLAGS		@ check for syscall tracing
++	mov	why, #1
++	cand.a	r1, #_TIF_SYSCALL_TRACE		@ are we tracing syscalls?
++	beq	ret_slow_syscall
++	mov	r1, sp
++	mov	r0, #1				@ trace exit [IP = 1]
++	b.l	syscall_trace
++	b	ret_slow_syscall
++ENDPROC(ret_from_fork)
++
++	.equ NR_syscalls,0
++#define CALL(x) .equ NR_syscalls,NR_syscalls+1
++#include "calls.S"
++#undef CALL
++#define CALL(x) .long x
++
++/*=============================================================================
++ * SWI handler
++ *-----------------------------------------------------------------------------
++ */
++	.align	5
++ENTRY(vector_swi)
++	sub	sp, sp, #S_FRAME_SIZE
++	stm	(r0 - r15), [sp]+		@ Calling r0 - r15
++	add	r8, sp, #S_R16
++	stm	(r16 - r28), [r8]+		@ Calling r16 - r28
++	add	r8, sp, #S_PC
++	stur	(sp, lr), [r8-]			@ Calling sp, lr
++	mov	r8, bsr				@ called from non-REAL mode
++	stw	lr, [sp+], #S_PC		@ Save calling PC
++	stw	r8, [sp+], #S_PSR		@ Save ASR
++	stw	r0, [sp+], #S_OLD_R0		@ Save OLD_R0
++	zero_fp
++
++	/*
++	 * Get the system call number.
++	 */
++	sub	ip, lr, #4
++	ldw.u	scno, [ip]			@ get SWI instruction
++
++#ifdef CONFIG_ALIGNMENT_TRAP
++	ldw	ip, __cr_alignment
++	ldw	ip, [ip]
++	movc	p0.c1, ip, #0                   @ update control register
++#endif
++	enable_irq ip
++
++	get_thread_info tsk
++	adr	tbl, sys_call_table		@ load syscall table pointer
++
++	andn	scno, scno, #0xff000000		@ mask off SWI op-code
++	xor	scno, scno, #__NR_SYSCALL_BASE	@ check OS number
++
++	stm.w	(r4, r5), [sp-]			@ push fifth and sixth args
++	ldw	ip, [tsk+], #TI_FLAGS		@ check for syscall tracing
++	cand.a	ip, #_TIF_SYSCALL_TRACE		@ are we tracing syscalls?
++	bne	__sys_trace
++
++	csub.a	scno, #NR_syscalls		@ check upper syscall limit
++	adr	lr, ret_fast_syscall		@ return address
++	bea	1f
++	ldw	pc, [tbl+], scno << #2		@ call sys_* routine
++1:
++	add	r1, sp, #S_OFF
++2:	mov	why, #0				@ no longer a real syscall
++	csub.a	scno, #(__UNICORE_NR_BASE - __NR_SYSCALL_BASE)
++	xor	r0, scno, #__NR_SYSCALL_BASE	@ put OS number back
++	bea	uc32_syscall
++	b	sys_ni_syscall			@ not private func
++
++	/*
++	 * This is the really slow path.  We're going to be doing
++	 * context switches, and waiting for our parent to respond.
++	 */
++__sys_trace:
++	mov	r2, scno
++	add	r1, sp, #S_OFF
++	mov	r0, #0				@ trace entry [IP = 0]
++	b.l	syscall_trace
++
++	adr	lr, __sys_trace_return		@ return address
++	mov	scno, r0			@ syscall number (possibly new)
++	add	r1, sp, #S_R0 + S_OFF		@ pointer to regs
++	csub.a	scno, #NR_syscalls		@ check upper syscall limit
++	bea	2b
++	ldm	(r0 - r3), [r1]+		@ have to reload r0 - r3
++	ldw	pc, [tbl+], scno << #2		@ call sys_* routine
++
++__sys_trace_return:
++	stw.w	r0, [sp+], #S_R0 + S_OFF	@ save returned r0
++	mov	r2, scno
++	mov	r1, sp
++	mov	r0, #1				@ trace exit [IP = 1]
++	b.l	syscall_trace
++	b	ret_slow_syscall
++
++	.align	5
++#ifdef CONFIG_ALIGNMENT_TRAP
++	.type	__cr_alignment, #object
++__cr_alignment:
++	.word	cr_alignment
++#endif
++	.ltorg
++
++/*
++ * This is the syscall table declaration for native ABI syscalls.
++ */
++	.type	sys_call_table, #object
++ENTRY(sys_call_table)
++#include "calls.S"
++
++/*============================================================================
++ * Special system call wrappers
++ */
++@ r0 = syscall number
++@ r8 = syscall table
++sys_syscall:
++		andn	scno, r0, #__NR_SYSCALL_BASE
++		csub.a	scno, #__NR_syscall - __NR_SYSCALL_BASE
++		beq	1f
++		csub.a	scno, #NR_syscalls	@ check range
++1:
++		bea	2f
++		stm	(r5, r6), [sp]+		@ shuffle args
++		mov	r0, r1
++		mov	r1, r2
++		mov	r2, r3
++		mov	r3, r4
++		ldw	pc, [tbl+], scno << #2
++2:		b	sys_ni_syscall
++ENDPROC(sys_syscall)
++
++sys_fork_wrapper:
++		add	r0, sp, #S_OFF
++		b	sys_fork
++ENDPROC(sys_fork_wrapper)
++
++sys_vfork_wrapper:
++		add	r0, sp, #S_OFF
++		b	sys_vfork
++ENDPROC(sys_vfork_wrapper)
++
++sys_execve_wrapper:
++		add	r3, sp, #S_OFF
++		b	sys_execve
++ENDPROC(sys_execve_wrapper)
++
++sys_clone_wrapper:
++		add	ip, sp, #S_OFF
++		stw	ip, [sp+], #4
++		b	sys_clone
++ENDPROC(sys_clone_wrapper)
++
++sys_sigreturn_wrapper:
++		add	r0, sp, #S_OFF
++		mov	why, #0		@ prevent syscall restart handling
++		b	sys_sigreturn
++ENDPROC(sys_sigreturn_wrapper)
++
++sys_rt_sigreturn_wrapper:
++		add	r0, sp, #S_OFF
++		mov	why, #0		@ prevent syscall restart handling
++		b	sys_rt_sigreturn
++ENDPROC(sys_rt_sigreturn_wrapper)
++
++sys_sigaltstack_wrapper:
++		ldw	r2, [sp+], #S_OFF + S_SP
++		b	do_sigaltstack
++ENDPROC(sys_sigaltstack_wrapper)
++
++sys_statfs64_wrapper:
++		cxor.a	r1, #88
++		cmoveq	r1, #84
++		b	sys_statfs64
++ENDPROC(sys_statfs64_wrapper)
++
++sys_fstatfs64_wrapper:
++		cxor.a	r1, #88
++		cmoveq	r1, #84
++		b	sys_fstatfs64
++ENDPROC(sys_fstatfs64_wrapper)
++
++	__INIT
++
++/*
++ * Vector stubs.
++ *
++ * This code is copied to 0xffff0200 so we can use branches in the
++ * vectors, rather than ldr's.  Note that this code must not
++ * exceed 0x300 bytes.
++ *
++ * Common stub entry macro:
++ *   Enter in INTR mode, bsr = PRIV/USER ASR, lr = PRIV/USER PC
++ *
++ * SP points to a minimal amount of processor-private memory, the address
++ * of which is copied into r0 for the mode specific abort handler.
++ */
++	.macro	vector_stub, name, mode
++	.align	5
++
++vector_\name:
++	@
++	@ Save r0, lr_<exception> (parent PC) and bsr_<exception>
++	@ (parent ASR)
++	@
++	stw	r0, [sp]
++	stw	lr, [sp+], #4		@ save r0, lr
++	mov	lr, bsr
++	stw	lr, [sp+], #8		@ save bsr
++
++	@
++	@ Prepare for PRIV mode.  INTRs remain disabled.
++	@
++	mov	r0, asr
++	xor	r0, r0, #(\mode ^ PRIV_MODE)
++	mov.a	bsr, r0
++
++	@
++	@ the branch table must immediately follow this code
++	@
++	and	lr, lr, #0x03
++	add	lr, lr, #1
++	mov	r0, sp
++	ldw	lr, [pc+], lr << #2
++	mov.a	pc, lr			@ branch to handler in PRIV mode
++ENDPROC(vector_\name)
++	.align	2
++	@ handler addresses follow this label
++	.endm
++
++	.globl	__stubs_start
++__stubs_start:
++/*
++ * Interrupt dispatcher
++ */
++	vector_stub	intr, INTR_MODE
++
++	.long	__intr_user			@  0  (USER)
++	.long	__invalid			@  1
++	.long	__invalid			@  2
++	.long	__intr_priv			@  3  (PRIV)
++
++/*
++ * Data abort dispatcher
++ * Enter in ABT mode, bsr = USER ASR, lr = USER PC
++ */
++	vector_stub	dabt, ABRT_MODE
++
++	.long	__dabt_user			@  0  (USER)
++	.long	__invalid			@  1
++	.long	__invalid			@  2  (INTR)
++	.long	__dabt_priv			@  3  (PRIV)
++
++/*
++ * Prefetch abort dispatcher
++ * Enter in ABT mode, bsr = USER ASR, lr = USER PC
++ */
++	vector_stub	pabt, ABRT_MODE
++
++	.long	__pabt_user			@  0 (USER)
++	.long	__invalid			@  1
++	.long	__invalid			@  2 (INTR)
++	.long	__pabt_priv			@  3 (PRIV)
++
++/*
++ * Undef instr entry dispatcher
++ * Enter in EXTN mode, bsr = PRIV/USER ASR, lr = PRIV/USER PC
++ */
++	vector_stub	extn, EXTN_MODE
++
++	.long	__extn_user			@  0 (USER)
++	.long	__invalid			@  1
++	.long	__invalid			@  2 (INTR)
++	.long	__extn_priv			@  3 (PRIV)
++
++/*
++ * We group all the following data together to optimise
++ * for CPUs with separate I & D caches.
++ */
++	.align	5
++
++.LCvswi:
++	.word	vector_swi
++
++	.globl	__stubs_end
++__stubs_end:
++
++	.equ	stubs_offset, __vectors_start + 0x200 - __stubs_start
++
++	.globl	__vectors_start
++__vectors_start:
++	jepriv	SYS_ERROR0
++	b	vector_extn + stubs_offset
++	ldw	pc, .LCvswi + stubs_offset
++	b	vector_pabt + stubs_offset
++	b	vector_dabt + stubs_offset
++	jepriv	SYS_ERROR0
++	b	vector_intr + stubs_offset
++	jepriv	SYS_ERROR0
++
++	.globl	__vectors_end
++__vectors_end:
++
++	.data
++
++	.globl	cr_alignment
++	.globl	cr_no_alignment
++cr_alignment:
++	.space	4
++cr_no_alignment:
++	.space	4
+diff --git a/arch/unicore32/kernel/head.S b/arch/unicore32/kernel/head.S
+new file mode 100644
+index 0000000..379393a
+--- /dev/null
++++ b/arch/unicore32/kernel/head.S
+@@ -0,0 +1,261 @@
++/*
++ * linux/arch/unicore32/kernel/head.S
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/linkage.h>
++#include <linux/init.h>
++
++#include <asm/assembler.h>
++#include <asm/ptrace.h>
++#include <generated/asm-offsets.h>
++#include <asm/memory.h>
++#include <asm/thread_info.h>
++#include <asm/system.h>
++#include <asm/pgtable-hwdef.h>
++
++#if (PHYS_OFFSET & 0x003fffff)
++#error "PHYS_OFFSET must be at an even 4MiB boundary!"
++#endif
++
++#define KERNEL_RAM_VADDR	(PAGE_OFFSET + TEXT_OFFSET)
++#define KERNEL_RAM_PADDR	(PHYS_OFFSET + TEXT_OFFSET)
++
++#define KERNEL_PGD_PADDR	(KERNEL_RAM_PADDR - 0x1000)
++#define KERNEL_PGD_VADDR	(KERNEL_RAM_VADDR - 0x1000)
++
++#define KERNEL_START		KERNEL_RAM_VADDR
++#define KERNEL_END		_end
++
++/*
++ * swapper_pg_dir is the virtual address of the initial page table.
++ * We place the page tables 4K below KERNEL_RAM_VADDR.  Therefore, we must
++ * make sure that KERNEL_RAM_VADDR is correctly set.  Currently, we expect
++ * the least significant 16 bits to be 0x8000, but we could probably
++ * relax this restriction to KERNEL_RAM_VADDR >= PAGE_OFFSET + 0x1000.
++ */
++#if (KERNEL_RAM_VADDR & 0xffff) != 0x8000
++#error KERNEL_RAM_VADDR must start at 0xXXXX8000
++#endif
++
++	.globl	swapper_pg_dir
++	.equ	swapper_pg_dir, KERNEL_RAM_VADDR - 0x1000
++
++/*
++ * Kernel startup entry point.
++ * ---------------------------
++ *
++ * This is normally called from the decompressor code.  The requirements
++ * are: MMU = off, D-cache = off, I-cache = dont care
++ *
++ * This code is mostly position independent, so if you link the kernel at
++ * 0xc0008000, you call this at __pa(0xc0008000).
++ */
++	__HEAD
++ENTRY(stext)
++	@ set asr
++	mov	r0, #PRIV_MODE			@ ensure priv mode
++	or	r0, #PSR_R_BIT | PSR_I_BIT	@ disable irqs
++	mov.a	asr, r0
++
++	@ process identify
++	movc	r0, p0.c0, #0			@ cpuid
++	movl	r1, 0xff00ffff			@ mask
++	movl	r2, 0x4d000863			@ value
++	and	r0, r1, r0
++	cxor.a	r0, r2
++	bne	__error_p			@ invalid processor id
++
++	/*
++	 * Clear the 4K level 1 swapper page table
++	 */
++	movl	r0, #KERNEL_PGD_PADDR		@ page table address
++	mov	r1, #0
++	add	r2, r0, #0x1000
++101:	stw.w	r1, [r0]+, #4
++	stw.w	r1, [r0]+, #4
++	stw.w	r1, [r0]+, #4
++	stw.w	r1, [r0]+, #4
++	cxor.a	r0, r2
++	bne	101b
++
++	movl	r4, #KERNEL_PGD_PADDR		@ page table address
++	mov	r7, #PMD_TYPE_SECT | PMD_PRESENT	@ page size: section
++	or	r7, r7, #PMD_SECT_CACHEABLE		@ cacheable
++	or	r7, r7, #PMD_SECT_READ | PMD_SECT_WRITE | PMD_SECT_EXEC
++
++	/*
++	 * Create identity mapping for first 4MB of kernel to
++	 * cater for the MMU enable.  This identity mapping
++	 * will be removed by paging_init().  We use our current program
++	 * counter to determine corresponding section base address.
++	 */
++	mov	r6, pc
++	mov	r6, r6 >> #22			@ start of kernel section
++	or	r1, r7, r6 << #22		@ flags + kernel base
++	stw	r1, [r4+], r6 << #2		@ identity mapping
++
++	/*
++	 * Now setup the pagetables for our kernel direct
++	 * mapped region.
++	 */
++	add	r0, r4,  #(KERNEL_START & 0xff000000) >> 20
++	stw.w	r1, [r0+], #(KERNEL_START & 0x00c00000) >> 20
++	movl	r6, #(KERNEL_END - 1)
++	add	r0, r0, #4
++	add	r6, r4, r6 >> #20
++102:	csub.a	r0, r6
++	add	r1, r1, #1 << 22
++	bua	103f
++	stw.w	r1, [r0]+, #4
++	b	102b
++103:
++	/*
++	 * Then map first 4MB of ram in case it contains our boot params.
++	 */
++	add	r0, r4, #PAGE_OFFSET >> 20
++	or	r6, r7, #(PHYS_OFFSET & 0xffc00000)
++	stw	r6, [r0]
++
++	ldw	r15, __switch_data		@ address to jump to after
++
++	/*
++	 * Initialise TLB, Caches, and MMU state ready to switch the MMU
++	 * on.
++	 */
++	mov	r0, #0
++	movc	p0.c5, r0, #28			@ cache invalidate all
++	nop8
++	movc	p0.c6, r0, #6			@ TLB invalidate all
++	nop8
++
++	/*
++	 * ..V. .... ..TB IDAM
++	 * ..1. .... ..01 1111
++	 */
++	movl	r0, #0x201f			@ control register setting
++
++	/*
++	 * Setup common bits before finally enabling the MMU.  Essentially
++	 * this is just loading the page table pointer and domain access
++	 * registers.
++	 */
++	#ifndef CONFIG_ALIGNMENT_TRAP
++		andn	r0, r0, #CR_A
++	#endif
++	#ifdef CONFIG_CPU_DCACHE_DISABLE
++		andn	r0, r0, #CR_D
++	#endif
++	#ifdef CONFIG_CPU_DCACHE_WRITETHROUGH
++		andn	r0, r0, #CR_B
++	#endif
++	#ifdef CONFIG_CPU_ICACHE_DISABLE
++		andn	r0, r0, #CR_I
++	#endif
++
++	movc	p0.c2, r4, #0			@ set pgd
++	b	__turn_mmu_on
++ENDPROC(stext)
++
++/*
++ * Enable the MMU.  This completely changes the stucture of the visible
++ * memory space.  You will not be able to trace execution through this.
++ *
++ *  r0  = cp#0 control register
++ *  r15 = *virtual* address to jump to upon completion
++ */
++	.align	5
++__turn_mmu_on:
++	mov	r0, r0
++	movc	p0.c1, r0, #0			@ write control reg
++	nop					@ fetch inst by phys addr
++	mov	pc, r15
++	nop8					@ fetch inst by phys addr
++ENDPROC(__turn_mmu_on)
++
++/*
++ * Setup the initial page tables.  We only setup the barest
++ * amount which are required to get the kernel running, which
++ * generally means mapping in the kernel code.
++ *
++ * r9  = cpuid
++ * r10 = procinfo
++ *
++ * Returns:
++ *  r0, r3, r6, r7 corrupted
++ *  r4 = physical page table address
++ */
++	.ltorg
++
++	.align	2
++	.type	__switch_data, %object
++__switch_data:
++	.long	__mmap_switched
++	.long	__data_loc			@ r4
++	.long	_data				@ r5
++	.long	__bss_start			@ r6
++	.long	_end				@ r7
++	.long	cr_alignment			@ r8
++	.long	init_thread_union + THREAD_START_SP @ sp
++
++/*
++ * The following fragment of code is executed with the MMU on in MMU mode,
++ * and uses absolute addresses; this is not position independent.
++ *
++ *  r0  = cp#0 control register
++ */
++__mmap_switched:
++	adr	r3, __switch_data + 4
++
++	ldm.w	(r4, r5, r6, r7, r8), [r3]+
++	ldw	sp, [r3]
++	csub.a	r4, r5				@ Copy data segment if needed
++	beq	202f
++201:	csub.a	r5, r6
++	beq	202f
++	ldw.w	fp, [r4]+, #4
++	stw.w	fp, [r5]+, #4
++	b	201b
++202:
++	mov	fp, #0				@ Clear BSS (and zero fp)
++203:	csub.a	r6, r7
++	bea	204f
++	stw.w	fp, [r6]+,#4
++	b	203b
++204:
++	andn	r1, r0, #CR_A			@ Clear 'A' bit
++	stm	(r0, r1), [r8]+			@ Save control register values
++	b	start_kernel
++ENDPROC(__mmap_switched)
++
++/*
++ * Exception handling.  Something went wrong and we can't proceed.  We
++ * ought to tell the user, but since we don't have any guarantee that
++ * we're even running on the right architecture, we do virtually nothing.
++ *
++ * If CONFIG_DEBUG_LL is set we try to print out something about the error
++ * and hope for the best (useful if bootloader fails to pass a proper
++ * machine ID for example).
++ */
++__error_p:
++#ifdef CONFIG_DEBUG_LL
++	adr	r0, str_p1
++	b.l	printascii
++	mov	r0, r9
++	b.l	printhex8
++	adr	r0, str_p2
++	b.l	printascii
++901:	nop8
++	b	901b
++str_p1:	.asciz	"\nError: unrecognized processor variant (0x"
++str_p2:	.asciz	").\n"
++	.align
++#endif
++ENDPROC(__error_p)
++
+diff --git a/arch/unicore32/kernel/setup.c b/arch/unicore32/kernel/setup.c
+new file mode 100644
+index 0000000..ba4d34e
+--- /dev/null
++++ b/arch/unicore32/kernel/setup.c
+@@ -0,0 +1,360 @@
++/*
++ * linux/arch/unicore32/kernel/setup.c
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/stddef.h>
++#include <linux/ioport.h>
++#include <linux/delay.h>
++#include <linux/utsname.h>
++#include <linux/initrd.h>
++#include <linux/console.h>
++#include <linux/bootmem.h>
++#include <linux/seq_file.h>
++#include <linux/screen_info.h>
++#include <linux/init.h>
++#include <linux/root_dev.h>
++#include <linux/cpu.h>
++#include <linux/interrupt.h>
++#include <linux/smp.h>
++#include <linux/fs.h>
++#include <linux/proc_fs.h>
++#include <linux/memblock.h>
++#include <linux/elf.h>
++#include <linux/io.h>
++
++#include <asm/cputype.h>
++#include <asm/sections.h>
++#include <asm/setup.h>
++#include <asm/cacheflush.h>
++#include <asm/tlbflush.h>
++#include <asm/traps.h>
++
++#include "setup.h"
++
++#ifndef MEM_SIZE
++#define MEM_SIZE	(16*1024*1024)
++#endif
++
++struct stack {
++	u32 irq[3];
++	u32 abt[3];
++	u32 und[3];
++} ____cacheline_aligned;
++
++static struct stack stacks[NR_CPUS];
++
++char elf_platform[ELF_PLATFORM_SIZE];
++EXPORT_SYMBOL(elf_platform);
++
++static char __initdata cmd_line[COMMAND_LINE_SIZE];
++
++static char default_command_line[COMMAND_LINE_SIZE] __initdata = CONFIG_CMDLINE;
++
++/*
++ * Standard memory resources
++ */
++static struct resource mem_res[] = {
++	{
++		.name = "Video RAM",
++		.start = 0,
++		.end = 0,
++		.flags = IORESOURCE_MEM
++	},
++	{
++		.name = "Kernel text",
++		.start = 0,
++		.end = 0,
++		.flags = IORESOURCE_MEM
++	},
++	{
++		.name = "Kernel data",
++		.start = 0,
++		.end = 0,
++		.flags = IORESOURCE_MEM
++	}
++};
++
++#define video_ram   mem_res[0]
++#define kernel_code mem_res[1]
++#define kernel_data mem_res[2]
++
++/*
++ * These functions re-use the assembly code in head.S, which
++ * already provide the required functionality.
++ */
++static void __init setup_processor(void)
 +{
-+	unsigned long ret;
++	printk(KERN_DEFAULT "CPU: UniCore-II [%08x] revision %d, cr=%08lx\n",
++	       uc32_cpuid, (int)(uc32_cpuid >> 16) & 15, cr_alignment);
 +
-+	switch (size) {
-+	case 1:
-+		asm volatile("@	__xchg1\n"
-+		"	swapb	%0, %1, [%2]"
-+			: "=&r" (ret)
-+			: "r" (x), "r" (ptr)
-+			: "memory", "cc");
-+		break;
-+	case 4:
-+		asm volatile("@	__xchg4\n"
-+		"	swapw	%0, %1, [%2]"
-+			: "=&r" (ret)
-+			: "r" (x), "r" (ptr)
-+			: "memory", "cc");
-+		break;
-+	default:
-+		panic("xchg: bad data size: ptr 0x%p, size %d\n",
-+			ptr, size);
++	sprintf(init_utsname()->machine, "puv3");
++	sprintf(elf_platform, "ucv2");
++}
++
++/*
++ * cpu_init - initialise one CPU.
++ *
++ * cpu_init sets up the per-CPU stacks.
++ */
++void cpu_init(void)
++{
++	unsigned int cpu = smp_processor_id();
++	struct stack *stk = &stacks[cpu];
++
++	/*
++	 * setup stacks for re-entrant exception handlers
++	 */
++	__asm__ (
++	"mov.a	asr, %1\n\t"
++	"add	sp, %0, %2\n\t"
++	"mov.a	asr, %3\n\t"
++	"add	sp, %0, %4\n\t"
++	"mov.a	asr, %5\n\t"
++	"add	sp, %0, %6\n\t"
++	"mov.a	asr, %7"
++	    :
++	    : "r" (stk),
++	      "r" (PSR_R_BIT | PSR_I_BIT | INTR_MODE),
++	      "I" (offsetof(struct stack, irq[0])),
++	      "r" (PSR_R_BIT | PSR_I_BIT | ABRT_MODE),
++	      "I" (offsetof(struct stack, abt[0])),
++	      "r" (PSR_R_BIT | PSR_I_BIT | EXTN_MODE),
++	      "I" (offsetof(struct stack, und[0])),
++	      "r" (PSR_R_BIT | PSR_I_BIT | PRIV_MODE)
++	: "r30", "cc");
++}
++
++static int __init uc32_add_memory(unsigned long start, unsigned long size)
++{
++	struct membank *bank = &meminfo.bank[meminfo.nr_banks];
++
++	if (meminfo.nr_banks >= NR_BANKS) {
++		printk(KERN_CRIT "NR_BANKS too low, "
++			"ignoring memory at %#lx\n", start);
++		return -EINVAL;
++	}
++
++	/*
++	 * Ensure that start/size are aligned to a page boundary.
++	 * Size is appropriately rounded down, start is rounded up.
++	 */
++	size -= start & ~PAGE_MASK;
++
++	bank->start = PAGE_ALIGN(start);
++	bank->size  = size & PAGE_MASK;
++
++	/*
++	 * Check whether this memory region has non-zero size or
++	 * invalid node number.
++	 */
++	if (bank->size == 0)
++		return -EINVAL;
++
++	meminfo.nr_banks++;
++	return 0;
++}
++
++/*
++ * Pick out the memory size.  We look for mem=size@start,
++ * where start and size are "size[KkMm]"
++ */
++static int __init early_mem(char *p)
++{
++	static int usermem __initdata = 1;
++	unsigned long size, start;
++	char *endp;
++
++	/*
++	 * If the user specifies memory size, we
++	 * blow away any automatically generated
++	 * size.
++	 */
++	if (usermem) {
++		usermem = 0;
++		meminfo.nr_banks = 0;
++	}
++
++	start = PHYS_OFFSET;
++	size  = memparse(p, &endp);
++	if (*endp == '@')
++		start = memparse(endp + 1, NULL);
++
++	uc32_add_memory(start, size);
++
++	return 0;
++}
++early_param("mem", early_mem);
++
++static void __init
++request_standard_resources(struct meminfo *mi)
++{
++	struct resource *res;
++	int i;
++
++	kernel_code.start   = virt_to_phys(_text);
++	kernel_code.end     = virt_to_phys(_etext - 1);
++	kernel_data.start   = virt_to_phys(_sdata);
++	kernel_data.end     = virt_to_phys(_end - 1);
++
++	for (i = 0; i < mi->nr_banks; i++) {
++		if (mi->bank[i].size == 0)
++			continue;
++
++		res = alloc_bootmem_low(sizeof(*res));
++		res->name  = "System RAM";
++		res->start = mi->bank[i].start;
++		res->end   = mi->bank[i].start + mi->bank[i].size - 1;
++		res->flags = IORESOURCE_MEM | IORESOURCE_BUSY;
++
++		request_resource(&iomem_resource, res);
++
++		if (kernel_code.start >= res->start &&
++		    kernel_code.end <= res->end)
++			request_resource(res, &kernel_code);
++		if (kernel_data.start >= res->start &&
++		    kernel_data.end <= res->end)
++			request_resource(res, &kernel_data);
++	}
++
++	video_ram.start = PKUNITY_UNIGFX_MMAP_BASE;
++	video_ram.end   = PKUNITY_UNIGFX_MMAP_BASE + PKUNITY_UNIGFX_MMAP_SIZE;
++	request_resource(&iomem_resource, &video_ram);
++}
++
++static void (*init_machine)(void) __initdata;
++
++static int __init customize_machine(void)
++{
++	/* customizes platform devices, or adds new ones */
++	if (init_machine)
++		init_machine();
++	return 0;
++}
++arch_initcall(customize_machine);
++
++void __init setup_arch(char **cmdline_p)
++{
++	char *from = default_command_line;
++
++	setup_processor();
++
++	init_mm.start_code = (unsigned long) _text;
++	init_mm.end_code   = (unsigned long) _etext;
++	init_mm.end_data   = (unsigned long) _edata;
++	init_mm.brk	   = (unsigned long) _end;
++
++	/* parse_early_param needs a boot_command_line */
++	strlcpy(boot_command_line, from, COMMAND_LINE_SIZE);
++
++	/* populate cmd_line too for later use, preserving boot_command_line */
++	strlcpy(cmd_line, boot_command_line, COMMAND_LINE_SIZE);
++	*cmdline_p = cmd_line;
++
++	parse_early_param();
++
++	uc32_memblock_init(&meminfo);
++
++	paging_init();
++	request_standard_resources(&meminfo);
++
++	cpu_init();
++
++	/*
++	 * Set up various architecture-specific pointers
++	 */
++	init_machine = puv3_core_init;
++
++#ifdef CONFIG_VT
++#if defined(CONFIG_VGA_CONSOLE)
++	conswitchp = &vga_con;
++#elif defined(CONFIG_DUMMY_CONSOLE)
++	conswitchp = &dummy_con;
++#endif
++#endif
++	early_trap_init();
++}
++
++static struct cpu cpuinfo_unicore;
++
++static int __init topology_init(void)
++{
++	int i;
++
++	for_each_possible_cpu(i)
++		register_cpu(&cpuinfo_unicore, i);
++
++	return 0;
++}
++subsys_initcall(topology_init);
++
++#ifdef CONFIG_HAVE_PROC_CPU
++static int __init proc_cpu_init(void)
++{
++	struct proc_dir_entry *res;
++
++	res = proc_mkdir("cpu", NULL);
++	if (!res)
++		return -ENOMEM;
++	return 0;
++}
++fs_initcall(proc_cpu_init);
++#endif
++
++static int c_show(struct seq_file *m, void *v)
++{
++	seq_printf(m, "Processor\t: UniCore-II rev %d (%s)\n",
++		   (int)(uc32_cpuid >> 16) & 15, elf_platform);
++
++	seq_printf(m, "BogoMIPS\t: %lu.%02lu\n",
++		   loops_per_jiffy / (500000/HZ),
++		   (loops_per_jiffy / (5000/HZ)) % 100);
++
++	/* dump out the processor features */
++	seq_puts(m, "Features\t: CMOV UC-F64");
++
++	seq_printf(m, "\nCPU implementer\t: 0x%02x\n", uc32_cpuid >> 24);
++	seq_printf(m, "CPU architecture: 2\n");
++	seq_printf(m, "CPU revision\t: %d\n", (uc32_cpuid >> 16) & 15);
++
++	seq_printf(m, "Cache type\t: write-back\n"
++			"Cache clean\t: cp0 c5 ops\n"
++			"Cache lockdown\t: not support\n"
++			"Cache format\t: Harvard\n");
++
++	seq_puts(m, "\n");
++
++	seq_printf(m, "Hardware\t: PKUnity v3\n");
++
++	return 0;
++}
++
++static void *c_start(struct seq_file *m, loff_t *pos)
++{
++	return *pos < 1 ? (void *)1 : NULL;
++}
++
++static void *c_next(struct seq_file *m, void *v, loff_t *pos)
++{
++	++*pos;
++	return NULL;
++}
++
++static void c_stop(struct seq_file *m, void *v)
++{
++}
++
++const struct seq_operations cpuinfo_op = {
++	.start	= c_start,
++	.next	= c_next,
++	.stop	= c_stop,
++	.show	= c_show
++};
+diff --git a/arch/unicore32/kernel/setup.h b/arch/unicore32/kernel/setup.h
+new file mode 100644
+index 0000000..34db75b
+--- /dev/null
++++ b/arch/unicore32/kernel/setup.h
+@@ -0,0 +1,28 @@
++/*
++ * linux/arch/unicore32/kernel/setup.h
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#ifndef __UNICORE_KERNEL_SETUP_H__
++#define __UNICORE_KERNEL_SETUP_H__
++
++extern void paging_init(void);
++extern void puv3_core_init(void);
++
++extern void puv3_ps2_init(void);
++extern void pci_puv3_preinit(void);
++extern void __init puv3_init_gpio(void);
++
++extern void setup_mm_for_reboot(char mode);
++
++extern char __stubs_start[], __stubs_end[];
++extern char __vectors_start[], __vectors_end[];
++
++extern void kernel_thread_helper(void);
++#endif
+diff --git a/arch/unicore32/kernel/traps.c b/arch/unicore32/kernel/traps.c
+new file mode 100644
+index 0000000..f3210ba
+--- /dev/null
++++ b/arch/unicore32/kernel/traps.c
+@@ -0,0 +1,498 @@
++/*
++ * linux/arch/unicore32/kernel/traps.c
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ *  'traps.c' handles hardware exceptions after we have saved some state.
++ *  Mostly a debugging aid, but will probably kill the offending process.
++ *
++ * Contributors & Additions/Fixes:
++ *     2009-09-08: add TLS & atomic_op support by Wu Dongxia
++ */
++#include <linux/module.h>
++#include <linux/signal.h>
++#include <linux/spinlock.h>
++#include <linux/personality.h>
++#include <linux/kallsyms.h>
++#include <linux/kdebug.h>
++#include <linux/uaccess.h>
++#include <linux/delay.h>
++#include <linux/hardirq.h>
++#include <linux/init.h>
++#include <linux/uaccess.h>
++#include <linux/atomic.h>
++#include <linux/unistd.h>
++
++#include <asm/cacheflush.h>
++#include <asm/system.h>
++#include <asm/traps.h>
++
++#include "ptrace.h"
++#include "signal.h"
++#include "setup.h"
++
++#ifdef CONFIG_DEBUG_USER
++unsigned int user_debug;
++
++static int __init user_debug_setup(char *str)
++{
++	get_option(&str, &user_debug);
++	return 1;
++}
++__setup("user_debug=", user_debug_setup);
++#endif
++
++static void dump_mem(const char *, const char *, unsigned long, unsigned long);
++
++void dump_backtrace_entry(unsigned long where,
++		unsigned long from, unsigned long frame)
++{
++#ifdef CONFIG_KALLSYMS
++	printk(KERN_DEFAULT "[<%08lx>] (%pS) from [<%08lx>] (%pS)\n",
++			where, (void *)where, from, (void *)from);
++#else
++	printk(KERN_DEFAULT "Function entered at [<%08lx>] from [<%08lx>]\n",
++			where, from);
++#endif
++
++	if (in_exception_text(where))
++		dump_mem("", "Exception stack",
++				frame + 4, frame + 4 + sizeof(struct pt_regs));
++}
++
++/*
++ * Stack pointers should always be within the kernels view of
++ * physical memory.  If it is not there, then we can't dump
++ * out any information relating to the stack.
++ */
++static int verify_stack(unsigned long sp)
++{
++	if (sp < PAGE_OFFSET ||
++	    (sp > (unsigned long)high_memory && high_memory != NULL))
++		return -EFAULT;
++
++	return 0;
++}
++
++/*
++ * Dump out the contents of some memory nicely...
++ */
++static void dump_mem(const char *lvl, const char *str, unsigned long bottom,
++		     unsigned long top)
++{
++	unsigned long first;
++	mm_segment_t fs;
++	int i;
++
++	/*
++	 * We need to switch to kernel mode so that we can use __get_user
++	 * to safely read from kernel space.  Note that we now dump the
++	 * code first, just in case the backtrace kills us.
++	 */
++	fs = get_fs();
++	set_fs(KERNEL_DS);
++
++	printk(KERN_DEFAULT "%s%s(0x%08lx to 0x%08lx)\n",
++			lvl, str, bottom, top);
++
++	for (first = bottom & ~31; first < top; first += 32) {
++		unsigned long p;
++		char str[sizeof(" 12345678") * 8 + 1];
++
++		memset(str, ' ', sizeof(str));
++		str[sizeof(str) - 1] = '\0';
++
++		for (p = first, i = 0; i < 8 && p < top; i++, p += 4) {
++			if (p >= bottom && p < top) {
++				unsigned long val;
++				if (__get_user(val, (unsigned long *)p) == 0)
++					sprintf(str + i * 9, " %08lx", val);
++				else
++					sprintf(str + i * 9, " ????????");
++			}
++		}
++		printk(KERN_DEFAULT "%s%04lx:%s\n", lvl, first & 0xffff, str);
++	}
++
++	set_fs(fs);
++}
++
++static void dump_instr(const char *lvl, struct pt_regs *regs)
++{
++	unsigned long addr = instruction_pointer(regs);
++	const int width = 8;
++	mm_segment_t fs;
++	char str[sizeof("00000000 ") * 5 + 2 + 1], *p = str;
++	int i;
++
++	/*
++	 * We need to switch to kernel mode so that we can use __get_user
++	 * to safely read from kernel space.  Note that we now dump the
++	 * code first, just in case the backtrace kills us.
++	 */
++	fs = get_fs();
++	set_fs(KERNEL_DS);
++
++	for (i = -4; i < 1; i++) {
++		unsigned int val, bad;
++
++		bad = __get_user(val, &((u32 *)addr)[i]);
++
++		if (!bad)
++			p += sprintf(p, i == 0 ? "(%0*x) " : "%0*x ",
++					width, val);
++		else {
++			p += sprintf(p, "bad PC value");
++			break;
++		}
++	}
++	printk(KERN_DEFAULT "%sCode: %s\n", lvl, str);
++
++	set_fs(fs);
++}
++
++static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
++{
++	unsigned int fp, mode;
++	int ok = 1;
++
++	printk(KERN_DEFAULT "Backtrace: ");
++
++	if (!tsk)
++		tsk = current;
++
++	if (regs) {
++		fp = regs->UCreg_fp;
++		mode = processor_mode(regs);
++	} else if (tsk != current) {
++		fp = thread_saved_fp(tsk);
++		mode = 0x10;
++	} else {
++		asm("mov %0, fp" : "=r" (fp) : : "cc");
++		mode = 0x10;
++	}
++
++	if (!fp) {
++		printk("no frame pointer");
++		ok = 0;
++	} else if (verify_stack(fp)) {
++		printk("invalid frame pointer 0x%08x", fp);
++		ok = 0;
++	} else if (fp < (unsigned long)end_of_stack(tsk))
++		printk("frame pointer underflow");
++	printk("\n");
++
++	if (ok)
++		c_backtrace(fp, mode);
++}
++
++void dump_stack(void)
++{
++	dump_backtrace(NULL, NULL);
++}
++EXPORT_SYMBOL(dump_stack);
++
++void show_stack(struct task_struct *tsk, unsigned long *sp)
++{
++	dump_backtrace(NULL, tsk);
++	barrier();
++}
++
++static int __die(const char *str, int err, struct thread_info *thread,
++		struct pt_regs *regs)
++{
++	struct task_struct *tsk = thread->task;
++	static int die_counter;
++	int ret;
++
++	printk(KERN_EMERG "Internal error: %s: %x [#%d]\n",
++	       str, err, ++die_counter);
++	sysfs_printk_last_file();
++
++	/* trap and error numbers are mostly meaningless on UniCore */
++	ret = notify_die(DIE_OOPS, str, regs, err, tsk->thread.trap_no, \
++			SIGSEGV);
++	if (ret == NOTIFY_STOP)
++		return ret;
++
++	print_modules();
++	__show_regs(regs);
++	printk(KERN_EMERG "Process %.*s (pid: %d, stack limit = 0x%p)\n",
++		TASK_COMM_LEN, tsk->comm, task_pid_nr(tsk), thread + 1);
++
++	if (!user_mode(regs) || in_interrupt()) {
++		dump_mem(KERN_EMERG, "Stack: ", regs->UCreg_sp,
++			 THREAD_SIZE + (unsigned long)task_stack_page(tsk));
++		dump_backtrace(regs, tsk);
++		dump_instr(KERN_EMERG, regs);
 +	}
 +
 +	return ret;
 +}
 +
-+#include <asm-generic/cmpxchg-local.h>
++DEFINE_SPINLOCK(die_lock);
 +
 +/*
-+ * cmpxchg_local and cmpxchg64_local are atomic wrt current CPU. Always make
-+ * them available.
++ * This function is protected against re-entrancy.
 + */
-+#define cmpxchg_local(ptr, o, n)					\
-+		((__typeof__(*(ptr)))__cmpxchg_local_generic((ptr),	\
-+		(unsigned long)(o), (unsigned long)(n), sizeof(*(ptr))))
-+#define cmpxchg64_local(ptr, o, n)					\
-+		__cmpxchg64_local_generic((ptr), (o), (n))
-+
-+#include <asm-generic/cmpxchg.h>
-+
-+#endif /* __ASSEMBLY__ */
-+
-+#define arch_align_stack(x) (x)
-+
-+#endif /* __KERNEL__ */
-+
-+#endif
-diff --git a/arch/unicore32/include/asm/unistd.h b/arch/unicore32/include/asm/unistd.h
-new file mode 100644
-index 0000000..0f298d6
---- /dev/null
-+++ b/arch/unicore32/include/asm/unistd.h
-@@ -0,0 +1,450 @@
-+/*
-+ * linux/arch/unicore32/include/asm/unistd.h
-+ *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __UNICORE_UNISTD_H__
-+#define __UNICORE_UNISTD_H__
-+
-+#define __NR_SYSCALL_BASE	0x900000
-+
-+/*
-+ * This file contains the system call numbers.
-+ */
-+
-+#define __NR_restart_syscall		(__NR_SYSCALL_BASE +  0)
-+#define __NR_exit			(__NR_SYSCALL_BASE +  1)
-+#define __NR_fork			(__NR_SYSCALL_BASE +  2)
-+#define __NR_read			(__NR_SYSCALL_BASE +  3)
-+#define __NR_write			(__NR_SYSCALL_BASE +  4)
-+#define __NR_open			(__NR_SYSCALL_BASE +  5)
-+#define __NR_close			(__NR_SYSCALL_BASE +  6)
-+					/* 7 was sys_waitpid */
-+#define __NR_creat			(__NR_SYSCALL_BASE +  8)
-+#define __NR_link			(__NR_SYSCALL_BASE +  9)
-+#define __NR_unlink			(__NR_SYSCALL_BASE + 10)
-+#define __NR_execve			(__NR_SYSCALL_BASE + 11)
-+#define __NR_chdir			(__NR_SYSCALL_BASE + 12)
-+#define __NR_time			(__NR_SYSCALL_BASE + 13)
-+#define __NR_mknod			(__NR_SYSCALL_BASE + 14)
-+#define __NR_chmod			(__NR_SYSCALL_BASE + 15)
-+#define __NR_lchown			(__NR_SYSCALL_BASE + 16)
-+					/* 17 was sys_break */
-+					/* 18 was sys_stat */
-+#define __NR_lseek			(__NR_SYSCALL_BASE + 19)
-+#define __NR_getpid			(__NR_SYSCALL_BASE + 20)
-+#define __NR_mount			(__NR_SYSCALL_BASE + 21)
-+#define __NR_umount			(__NR_SYSCALL_BASE + 22)
-+#define __NR_setuid			(__NR_SYSCALL_BASE + 23)
-+#define __NR_getuid			(__NR_SYSCALL_BASE + 24)
-+#define __NR_stime			(__NR_SYSCALL_BASE + 25)
-+#define __NR_ptrace			(__NR_SYSCALL_BASE + 26)
-+#define __NR_alarm			(__NR_SYSCALL_BASE + 27)
-+					/* 28 was sys_fstat */
-+#define __NR_pause			(__NR_SYSCALL_BASE + 29)
-+#define __NR_utime			(__NR_SYSCALL_BASE + 30)
-+					/* 31 was sys_stty */
-+					/* 32 was sys_gtty */
-+#define __NR_access			(__NR_SYSCALL_BASE + 33)
-+#define __NR_nice			(__NR_SYSCALL_BASE + 34)
-+					/* 35 was sys_ftime */
-+#define __NR_sync			(__NR_SYSCALL_BASE + 36)
-+#define __NR_kill			(__NR_SYSCALL_BASE + 37)
-+#define __NR_rename			(__NR_SYSCALL_BASE + 38)
-+#define __NR_mkdir			(__NR_SYSCALL_BASE + 39)
-+#define __NR_rmdir			(__NR_SYSCALL_BASE + 40)
-+#define __NR_dup			(__NR_SYSCALL_BASE + 41)
-+#define __NR_pipe			(__NR_SYSCALL_BASE + 42)
-+#define __NR_times			(__NR_SYSCALL_BASE + 43)
-+					/* 44 was sys_prof */
-+#define __NR_brk			(__NR_SYSCALL_BASE + 45)
-+#define __NR_setgid			(__NR_SYSCALL_BASE + 46)
-+#define __NR_getgid			(__NR_SYSCALL_BASE + 47)
-+					/* 48 was sys_signal */
-+#define __NR_geteuid			(__NR_SYSCALL_BASE + 49)
-+#define __NR_getegid			(__NR_SYSCALL_BASE + 50)
-+#define __NR_acct			(__NR_SYSCALL_BASE + 51)
-+#define __NR_umount2			(__NR_SYSCALL_BASE + 52)
-+					/* 53 was sys_lock */
-+#define __NR_ioctl			(__NR_SYSCALL_BASE + 54)
-+#define __NR_fcntl			(__NR_SYSCALL_BASE + 55)
-+					/* 56 was sys_mpx */
-+#define __NR_setpgid			(__NR_SYSCALL_BASE + 57)
-+					/* 58 was sys_ulimit */
-+					/* 59 was sys_olduname */
-+#define __NR_umask			(__NR_SYSCALL_BASE + 60)
-+#define __NR_chroot			(__NR_SYSCALL_BASE + 61)
-+#define __NR_ustat			(__NR_SYSCALL_BASE + 62)
-+#define __NR_dup2			(__NR_SYSCALL_BASE + 63)
-+#define __NR_getppid			(__NR_SYSCALL_BASE + 64)
-+#define __NR_getpgrp			(__NR_SYSCALL_BASE + 65)
-+#define __NR_setsid			(__NR_SYSCALL_BASE + 66)
-+#define __NR_sigaction			(__NR_SYSCALL_BASE + 67)
-+					/* 68 was sys_sgetmask */
-+					/* 69 was sys_ssetmask */
-+#define __NR_setreuid			(__NR_SYSCALL_BASE + 70)
-+#define __NR_setregid			(__NR_SYSCALL_BASE + 71)
-+#define __NR_sigsuspend			(__NR_SYSCALL_BASE + 72)
-+#define __NR_sigpending			(__NR_SYSCALL_BASE + 73)
-+#define __NR_sethostname		(__NR_SYSCALL_BASE + 74)
-+#define __NR_setrlimit			(__NR_SYSCALL_BASE + 75)
-+#define __NR_getrlimit			(__NR_SYSCALL_BASE + 76)
-+					/* Back compat 2GB limited rlimit */
-+#define __NR_getrusage			(__NR_SYSCALL_BASE + 77)
-+#define __NR_gettimeofday		(__NR_SYSCALL_BASE + 78)
-+#define __NR_settimeofday		(__NR_SYSCALL_BASE + 79)
-+#define __NR_getgroups			(__NR_SYSCALL_BASE + 80)
-+#define __NR_setgroups			(__NR_SYSCALL_BASE + 81)
-+#define __NR_select			(__NR_SYSCALL_BASE + 82)
-+#define __NR_symlink			(__NR_SYSCALL_BASE + 83)
-+					/* 84 was sys_lstat */
-+#define __NR_readlink			(__NR_SYSCALL_BASE + 85)
-+#define __NR_uselib			(__NR_SYSCALL_BASE + 86)
-+#define __NR_swapon			(__NR_SYSCALL_BASE + 87)
-+#define __NR_reboot			(__NR_SYSCALL_BASE + 88)
-+#define __NR_readdir			(__NR_SYSCALL_BASE + 89)
-+#define __NR_mmap			(__NR_SYSCALL_BASE + 90)
-+#define __NR_munmap			(__NR_SYSCALL_BASE + 91)
-+#define __NR_truncate			(__NR_SYSCALL_BASE + 92)
-+#define __NR_ftruncate			(__NR_SYSCALL_BASE + 93)
-+#define __NR_fchmod			(__NR_SYSCALL_BASE + 94)
-+#define __NR_fchown			(__NR_SYSCALL_BASE + 95)
-+#define __NR_getpriority		(__NR_SYSCALL_BASE + 96)
-+#define __NR_setpriority		(__NR_SYSCALL_BASE + 97)
-+					/* 98 was sys_profil */
-+#define __NR_statfs			(__NR_SYSCALL_BASE + 99)
-+#define __NR_fstatfs			(__NR_SYSCALL_BASE+100)
-+					/* 101 was sys_ioperm */
-+#define __NR_socketcall			(__NR_SYSCALL_BASE+102)
-+#define __NR_syslog			(__NR_SYSCALL_BASE+103)
-+#define __NR_setitimer			(__NR_SYSCALL_BASE+104)
-+#define __NR_getitimer			(__NR_SYSCALL_BASE+105)
-+#define __NR_stat			(__NR_SYSCALL_BASE+106)
-+#define __NR_lstat			(__NR_SYSCALL_BASE+107)
-+#define __NR_fstat			(__NR_SYSCALL_BASE+108)
-+					/* 109 was sys_uname */
-+					/* 110 was sys_iopl */
-+#define __NR_vhangup			(__NR_SYSCALL_BASE+111)
-+					/* 112 was sys_idle */
-+#define __NR_syscall			(__NR_SYSCALL_BASE+113)
-+					/* syscall to call a syscall! */
-+#define __NR_wait4			(__NR_SYSCALL_BASE+114)
-+#define __NR_swapoff			(__NR_SYSCALL_BASE+115)
-+#define __NR_sysinfo			(__NR_SYSCALL_BASE+116)
-+#define __NR_ipc			(__NR_SYSCALL_BASE+117)
-+#define __NR_fsync			(__NR_SYSCALL_BASE+118)
-+#define __NR_sigreturn			(__NR_SYSCALL_BASE+119)
-+#define __NR_clone			(__NR_SYSCALL_BASE+120)
-+#define __NR_setdomainname		(__NR_SYSCALL_BASE+121)
-+#define __NR_uname			(__NR_SYSCALL_BASE+122)
-+					/* 123 was sys_modify_ldt */
-+#define __NR_adjtimex			(__NR_SYSCALL_BASE+124)
-+#define __NR_mprotect			(__NR_SYSCALL_BASE+125)
-+#define __NR_sigprocmask		(__NR_SYSCALL_BASE+126)
-+					/* 127 was sys_create_module */
-+#define __NR_init_module		(__NR_SYSCALL_BASE+128)
-+#define __NR_delete_module		(__NR_SYSCALL_BASE+129)
-+					/* 130 was sys_get_kernel_syms */
-+#define __NR_quotactl			(__NR_SYSCALL_BASE+131)
-+#define __NR_getpgid			(__NR_SYSCALL_BASE+132)
-+#define __NR_fchdir			(__NR_SYSCALL_BASE+133)
-+#define __NR_bdflush			(__NR_SYSCALL_BASE+134)
-+#define __NR_sysfs			(__NR_SYSCALL_BASE+135)
-+#define __NR_personality		(__NR_SYSCALL_BASE+136)
-+					/* 137 was sys_afs_syscall */
-+#define __NR_setfsuid			(__NR_SYSCALL_BASE+138)
-+#define __NR_setfsgid			(__NR_SYSCALL_BASE+139)
-+#define __NR__llseek			(__NR_SYSCALL_BASE+140)
-+#define __NR_getdents			(__NR_SYSCALL_BASE+141)
-+#define __NR__newselect			(__NR_SYSCALL_BASE+142)
-+#define __NR_flock			(__NR_SYSCALL_BASE+143)
-+#define __NR_msync			(__NR_SYSCALL_BASE+144)
-+#define __NR_readv			(__NR_SYSCALL_BASE+145)
-+#define __NR_writev			(__NR_SYSCALL_BASE+146)
-+#define __NR_getsid			(__NR_SYSCALL_BASE+147)
-+#define __NR_fdatasync			(__NR_SYSCALL_BASE+148)
-+#define __NR__sysctl			(__NR_SYSCALL_BASE+149)
-+#define __NR_mlock			(__NR_SYSCALL_BASE+150)
-+#define __NR_munlock			(__NR_SYSCALL_BASE+151)
-+#define __NR_mlockall			(__NR_SYSCALL_BASE+152)
-+#define __NR_munlockall			(__NR_SYSCALL_BASE+153)
-+#define __NR_sched_setparam		(__NR_SYSCALL_BASE+154)
-+#define __NR_sched_getparam		(__NR_SYSCALL_BASE+155)
-+#define __NR_sched_setscheduler		(__NR_SYSCALL_BASE+156)
-+#define __NR_sched_getscheduler		(__NR_SYSCALL_BASE+157)
-+#define __NR_sched_yield		(__NR_SYSCALL_BASE+158)
-+#define __NR_sched_get_priority_max	(__NR_SYSCALL_BASE+159)
-+#define __NR_sched_get_priority_min	(__NR_SYSCALL_BASE+160)
-+#define __NR_sched_rr_get_interval	(__NR_SYSCALL_BASE+161)
-+#define __NR_nanosleep			(__NR_SYSCALL_BASE+162)
-+#define __NR_mremap			(__NR_SYSCALL_BASE+163)
-+#define __NR_setresuid			(__NR_SYSCALL_BASE+164)
-+#define __NR_getresuid			(__NR_SYSCALL_BASE+165)
-+					/* 166 was sys_vm86 */
-+					/* 167 was sys_query_module */
-+#define __NR_poll			(__NR_SYSCALL_BASE+168)
-+#define __NR_nfsservctl			(__NR_SYSCALL_BASE+169)
-+#define __NR_setresgid			(__NR_SYSCALL_BASE+170)
-+#define __NR_getresgid			(__NR_SYSCALL_BASE+171)
-+#define __NR_prctl			(__NR_SYSCALL_BASE+172)
-+#define __NR_rt_sigreturn		(__NR_SYSCALL_BASE+173)
-+#define __NR_rt_sigaction		(__NR_SYSCALL_BASE+174)
-+#define __NR_rt_sigprocmask		(__NR_SYSCALL_BASE+175)
-+#define __NR_rt_sigpending		(__NR_SYSCALL_BASE+176)
-+#define __NR_rt_sigtimedwait		(__NR_SYSCALL_BASE+177)
-+#define __NR_rt_sigqueueinfo		(__NR_SYSCALL_BASE+178)
-+#define __NR_rt_sigsuspend		(__NR_SYSCALL_BASE+179)
-+#define __NR_pread64			(__NR_SYSCALL_BASE+180)
-+#define __NR_pwrite64			(__NR_SYSCALL_BASE+181)
-+#define __NR_chown			(__NR_SYSCALL_BASE+182)
-+#define __NR_getcwd			(__NR_SYSCALL_BASE+183)
-+#define __NR_capget			(__NR_SYSCALL_BASE+184)
-+#define __NR_capset			(__NR_SYSCALL_BASE+185)
-+#define __NR_sigaltstack		(__NR_SYSCALL_BASE+186)
-+#define __NR_sendfile			(__NR_SYSCALL_BASE+187)
-+					/* 188 reserved */
-+					/* 189 reserved */
-+#define __NR_vfork			(__NR_SYSCALL_BASE+190)
-+#define __NR_ugetrlimit			(__NR_SYSCALL_BASE+191)
-+					/* SuS compliant getrlimit */
-+#define __NR_mmap2			(__NR_SYSCALL_BASE+192)
-+#define __NR_truncate64			(__NR_SYSCALL_BASE+193)
-+#define __NR_ftruncate64		(__NR_SYSCALL_BASE+194)
-+#define __NR_stat64			(__NR_SYSCALL_BASE+195)
-+#define __NR_lstat64			(__NR_SYSCALL_BASE+196)
-+#define __NR_fstat64			(__NR_SYSCALL_BASE+197)
-+#define __NR_lchown32			(__NR_SYSCALL_BASE+198)
-+#define __NR_getuid32			(__NR_SYSCALL_BASE+199)
-+#define __NR_getgid32			(__NR_SYSCALL_BASE+200)
-+#define __NR_geteuid32			(__NR_SYSCALL_BASE+201)
-+#define __NR_getegid32			(__NR_SYSCALL_BASE+202)
-+#define __NR_setreuid32			(__NR_SYSCALL_BASE+203)
-+#define __NR_setregid32			(__NR_SYSCALL_BASE+204)
-+#define __NR_getgroups32		(__NR_SYSCALL_BASE+205)
-+#define __NR_setgroups32		(__NR_SYSCALL_BASE+206)
-+#define __NR_fchown32			(__NR_SYSCALL_BASE+207)
-+#define __NR_setresuid32		(__NR_SYSCALL_BASE+208)
-+#define __NR_getresuid32		(__NR_SYSCALL_BASE+209)
-+#define __NR_setresgid32		(__NR_SYSCALL_BASE+210)
-+#define __NR_getresgid32		(__NR_SYSCALL_BASE+211)
-+#define __NR_chown32			(__NR_SYSCALL_BASE+212)
-+#define __NR_setuid32			(__NR_SYSCALL_BASE+213)
-+#define __NR_setgid32			(__NR_SYSCALL_BASE+214)
-+#define __NR_setfsuid32			(__NR_SYSCALL_BASE+215)
-+#define __NR_setfsgid32			(__NR_SYSCALL_BASE+216)
-+#define __NR_getdents64			(__NR_SYSCALL_BASE+217)
-+#define __NR_pivot_root			(__NR_SYSCALL_BASE+218)
-+#define __NR_mincore			(__NR_SYSCALL_BASE+219)
-+#define __NR_madvise			(__NR_SYSCALL_BASE+220)
-+#define __NR_fcntl64			(__NR_SYSCALL_BASE+221)
-+					/* 222 for tux */
-+					/* 223 is unused */
-+#define __NR_gettid			(__NR_SYSCALL_BASE+224)
-+#define __NR_readahead			(__NR_SYSCALL_BASE+225)
-+#define __NR_setxattr			(__NR_SYSCALL_BASE+226)
-+#define __NR_lsetxattr			(__NR_SYSCALL_BASE+227)
-+#define __NR_fsetxattr			(__NR_SYSCALL_BASE+228)
-+#define __NR_getxattr			(__NR_SYSCALL_BASE+229)
-+#define __NR_lgetxattr			(__NR_SYSCALL_BASE+230)
-+#define __NR_fgetxattr			(__NR_SYSCALL_BASE+231)
-+#define __NR_listxattr			(__NR_SYSCALL_BASE+232)
-+#define __NR_llistxattr			(__NR_SYSCALL_BASE+233)
-+#define __NR_flistxattr			(__NR_SYSCALL_BASE+234)
-+#define __NR_removexattr		(__NR_SYSCALL_BASE+235)
-+#define __NR_lremovexattr		(__NR_SYSCALL_BASE+236)
-+#define __NR_fremovexattr		(__NR_SYSCALL_BASE+237)
-+#define __NR_tkill			(__NR_SYSCALL_BASE+238)
-+#define __NR_sendfile64			(__NR_SYSCALL_BASE+239)
-+#define __NR_futex			(__NR_SYSCALL_BASE+240)
-+#define __NR_sched_setaffinity		(__NR_SYSCALL_BASE+241)
-+#define __NR_sched_getaffinity		(__NR_SYSCALL_BASE+242)
-+#define __NR_io_setup			(__NR_SYSCALL_BASE+243)
-+#define __NR_io_destroy			(__NR_SYSCALL_BASE+244)
-+#define __NR_io_getevents		(__NR_SYSCALL_BASE+245)
-+#define __NR_io_submit			(__NR_SYSCALL_BASE+246)
-+#define __NR_io_cancel			(__NR_SYSCALL_BASE+247)
-+#define __NR_exit_group			(__NR_SYSCALL_BASE+248)
-+#define __NR_lookup_dcookie		(__NR_SYSCALL_BASE+249)
-+#define __NR_epoll_create		(__NR_SYSCALL_BASE+250)
-+#define __NR_epoll_ctl			(__NR_SYSCALL_BASE+251)
-+#define __NR_epoll_wait			(__NR_SYSCALL_BASE+252)
-+#define __NR_remap_file_pages		(__NR_SYSCALL_BASE+253)
-+					/* 254 for set_thread_area */
-+					/* 255 for get_thread_area */
-+#define __NR_set_tid_address		(__NR_SYSCALL_BASE+256)
-+#define __NR_timer_create		(__NR_SYSCALL_BASE+257)
-+#define __NR_timer_settime		(__NR_SYSCALL_BASE+258)
-+#define __NR_timer_gettime		(__NR_SYSCALL_BASE+259)
-+#define __NR_timer_getoverrun		(__NR_SYSCALL_BASE+260)
-+#define __NR_timer_delete		(__NR_SYSCALL_BASE+261)
-+#define __NR_clock_settime		(__NR_SYSCALL_BASE+262)
-+#define __NR_clock_gettime		(__NR_SYSCALL_BASE+263)
-+#define __NR_clock_getres		(__NR_SYSCALL_BASE+264)
-+#define __NR_clock_nanosleep		(__NR_SYSCALL_BASE+265)
-+#define __NR_statfs64			(__NR_SYSCALL_BASE+266)
-+#define __NR_fstatfs64			(__NR_SYSCALL_BASE+267)
-+#define __NR_tgkill			(__NR_SYSCALL_BASE+268)
-+#define __NR_utimes			(__NR_SYSCALL_BASE+269)
-+#define __NR_uc32_fadvise64_64		(__NR_SYSCALL_BASE+270)
-+#define __NR_pciconfig_iobase		(__NR_SYSCALL_BASE+271)
-+#define __NR_pciconfig_read		(__NR_SYSCALL_BASE+272)
-+#define __NR_pciconfig_write		(__NR_SYSCALL_BASE+273)
-+#define __NR_mq_open			(__NR_SYSCALL_BASE+274)
-+#define __NR_mq_unlink			(__NR_SYSCALL_BASE+275)
-+#define __NR_mq_timedsend		(__NR_SYSCALL_BASE+276)
-+#define __NR_mq_timedreceive		(__NR_SYSCALL_BASE+277)
-+#define __NR_mq_notify			(__NR_SYSCALL_BASE+278)
-+#define __NR_mq_getsetattr		(__NR_SYSCALL_BASE+279)
-+#define __NR_waitid			(__NR_SYSCALL_BASE+280)
-+#define __NR_socket			(__NR_SYSCALL_BASE+281)
-+#define __NR_bind			(__NR_SYSCALL_BASE+282)
-+#define __NR_connect			(__NR_SYSCALL_BASE+283)
-+#define __NR_listen			(__NR_SYSCALL_BASE+284)
-+#define __NR_accept			(__NR_SYSCALL_BASE+285)
-+#define __NR_getsockname		(__NR_SYSCALL_BASE+286)
-+#define __NR_getpeername		(__NR_SYSCALL_BASE+287)
-+#define __NR_socketpair			(__NR_SYSCALL_BASE+288)
-+#define __NR_send			(__NR_SYSCALL_BASE+289)
-+#define __NR_sendto			(__NR_SYSCALL_BASE+290)
-+#define __NR_recv			(__NR_SYSCALL_BASE+291)
-+#define __NR_recvfrom			(__NR_SYSCALL_BASE+292)
-+#define __NR_shutdown			(__NR_SYSCALL_BASE+293)
-+#define __NR_setsockopt			(__NR_SYSCALL_BASE+294)
-+#define __NR_getsockopt			(__NR_SYSCALL_BASE+295)
-+#define __NR_sendmsg			(__NR_SYSCALL_BASE+296)
-+#define __NR_recvmsg			(__NR_SYSCALL_BASE+297)
-+#define __NR_semop			(__NR_SYSCALL_BASE+298)
-+#define __NR_semget			(__NR_SYSCALL_BASE+299)
-+#define __NR_semctl			(__NR_SYSCALL_BASE+300)
-+#define __NR_msgsnd			(__NR_SYSCALL_BASE+301)
-+#define __NR_msgrcv			(__NR_SYSCALL_BASE+302)
-+#define __NR_msgget			(__NR_SYSCALL_BASE+303)
-+#define __NR_msgctl			(__NR_SYSCALL_BASE+304)
-+#define __NR_shmat			(__NR_SYSCALL_BASE+305)
-+#define __NR_shmdt			(__NR_SYSCALL_BASE+306)
-+#define __NR_shmget			(__NR_SYSCALL_BASE+307)
-+#define __NR_shmctl			(__NR_SYSCALL_BASE+308)
-+#define __NR_add_key			(__NR_SYSCALL_BASE+309)
-+#define __NR_request_key		(__NR_SYSCALL_BASE+310)
-+#define __NR_keyctl			(__NR_SYSCALL_BASE+311)
-+#define __NR_semtimedop			(__NR_SYSCALL_BASE+312)
-+#define __NR_vserver			(__NR_SYSCALL_BASE+313)
-+#define __NR_ioprio_set			(__NR_SYSCALL_BASE+314)
-+#define __NR_ioprio_get			(__NR_SYSCALL_BASE+315)
-+#define __NR_inotify_init		(__NR_SYSCALL_BASE+316)
-+#define __NR_inotify_add_watch		(__NR_SYSCALL_BASE+317)
-+#define __NR_inotify_rm_watch		(__NR_SYSCALL_BASE+318)
-+#define __NR_mbind			(__NR_SYSCALL_BASE+319)
-+#define __NR_get_mempolicy		(__NR_SYSCALL_BASE+320)
-+#define __NR_set_mempolicy		(__NR_SYSCALL_BASE+321)
-+#define __NR_openat			(__NR_SYSCALL_BASE+322)
-+#define __NR_mkdirat			(__NR_SYSCALL_BASE+323)
-+#define __NR_mknodat			(__NR_SYSCALL_BASE+324)
-+#define __NR_fchownat			(__NR_SYSCALL_BASE+325)
-+#define __NR_futimesat			(__NR_SYSCALL_BASE+326)
-+#define __NR_fstatat64			(__NR_SYSCALL_BASE+327)
-+#define __NR_unlinkat			(__NR_SYSCALL_BASE+328)
-+#define __NR_renameat			(__NR_SYSCALL_BASE+329)
-+#define __NR_linkat			(__NR_SYSCALL_BASE+330)
-+#define __NR_symlinkat			(__NR_SYSCALL_BASE+331)
-+#define __NR_readlinkat			(__NR_SYSCALL_BASE+332)
-+#define __NR_fchmodat			(__NR_SYSCALL_BASE+333)
-+#define __NR_faccessat			(__NR_SYSCALL_BASE+334)
-+#define __NR_pselect6			(__NR_SYSCALL_BASE+335)
-+#define __NR_ppoll			(__NR_SYSCALL_BASE+336)
-+#define __NR_unshare			(__NR_SYSCALL_BASE+337)
-+#define __NR_set_robust_list		(__NR_SYSCALL_BASE+338)
-+#define __NR_get_robust_list		(__NR_SYSCALL_BASE+339)
-+#define __NR_splice			(__NR_SYSCALL_BASE+340)
-+#define __NR_uc32_sync_file_range	(__NR_SYSCALL_BASE+341)
-+#define __NR_sync_file_range2		__NR_uc32_sync_file_range
-+#define __NR_tee			(__NR_SYSCALL_BASE+342)
-+#define __NR_vmsplice			(__NR_SYSCALL_BASE+343)
-+#define __NR_move_pages			(__NR_SYSCALL_BASE+344)
-+#define __NR_getcpu			(__NR_SYSCALL_BASE+345)
-+#define __NR_epoll_pwait		(__NR_SYSCALL_BASE+346)
-+#define __NR_kexec_load			(__NR_SYSCALL_BASE+347)
-+#define __NR_utimensat			(__NR_SYSCALL_BASE+348)
-+#define __NR_signalfd			(__NR_SYSCALL_BASE+349)
-+#define __NR_timerfd_create		(__NR_SYSCALL_BASE+350)
-+#define __NR_eventfd			(__NR_SYSCALL_BASE+351)
-+#define __NR_fallocate			(__NR_SYSCALL_BASE+352)
-+#define __NR_timerfd_settime		(__NR_SYSCALL_BASE+353)
-+#define __NR_timerfd_gettime		(__NR_SYSCALL_BASE+354)
-+#define __NR_signalfd4			(__NR_SYSCALL_BASE+355)
-+#define __NR_eventfd2			(__NR_SYSCALL_BASE+356)
-+#define __NR_epoll_create1		(__NR_SYSCALL_BASE+357)
-+#define __NR_dup3			(__NR_SYSCALL_BASE+358)
-+#define __NR_pipe2			(__NR_SYSCALL_BASE+359)
-+#define __NR_inotify_init1		(__NR_SYSCALL_BASE+360)
-+#define __NR_preadv			(__NR_SYSCALL_BASE+361)
-+#define __NR_pwritev			(__NR_SYSCALL_BASE+362)
-+#define __NR_rt_tgsigqueueinfo		(__NR_SYSCALL_BASE+363)
-+#define __NR_perf_event_open		(__NR_SYSCALL_BASE+364)
-+#define __NR_recvmmsg			(__NR_SYSCALL_BASE+365)
-+#define __NR_accept4			(__NR_SYSCALL_BASE+366)
-+#define __NR_fanotify_init		(__NR_SYSCALL_BASE+367)
-+#define __NR_fanotify_mark		(__NR_SYSCALL_BASE+368)
-+#define __NR_prlimit64			(__NR_SYSCALL_BASE+369)
-+
-+/*
-+ * The following SWIs are UNICORE private.
-+ */
-+#define __UNICORE_NR_BASE		(__NR_SYSCALL_BASE+0x0f0000)
-+#define __UNICORE_NR_cacheflush		(__UNICORE_NR_BASE+2)
-+
-+/*
-+ * *NOTE*: This is a ghost syscall private to the kernel.
-+ * Don't ever use this from user code.
-+ */
-+#ifdef __KERNEL__
-+#define __UNICORE_NR_cmpxchg		(__UNICORE_NR_BASE+0x00fff0)
-+#endif
-+
-+#ifdef __KERNEL__
-+
-+#define __ARCH_WANT_IPC_PARSE_VERSION
-+#define __ARCH_WANT_STAT64
-+#define __ARCH_WANT_SYS_GETHOSTNAME
-+#define __ARCH_WANT_SYS_PAUSE
-+#define __ARCH_WANT_SYS_GETPGRP
-+#define __ARCH_WANT_SYS_LLSEEK
-+#define __ARCH_WANT_SYS_NICE
-+#define __ARCH_WANT_SYS_SIGPENDING
-+#define __ARCH_WANT_SYS_SIGPROCMASK
-+#define __ARCH_WANT_SYS_RT_SIGACTION
-+#define __ARCH_WANT_SYS_RT_SIGSUSPEND
-+#define __ARCH_WANT_SYS_OLD_MMAP
-+#define __ARCH_WANT_SYS_OLD_SELECT
-+
-+#define __ARCH_WANT_SYS_TIME
-+#define __ARCH_WANT_SYS_IPC
-+#define __ARCH_WANT_SYS_OLDUMOUNT
-+#define __ARCH_WANT_SYS_ALARM
-+#define __ARCH_WANT_SYS_UTIME
-+#define __ARCH_WANT_SYS_OLD_GETRLIMIT
-+#define __ARCH_WANT_OLD_READDIR
-+#define __ARCH_WANT_SYS_SOCKETCALL
-+
-+/*
-+ * "Conditional" syscalls
-+ *
-+ * What we want is __attribute__((weak,alias("sys_ni_syscall"))),
-+ * but it doesn't work on all toolchains, so we just do it by hand
-+ */
-+#define cond_syscall(x) asm(".weak\t" #x "\n\t.set\t" #x ",sys_ni_syscall")
-+
-+/*
-+ * Unimplemented (or alternatively implemented) syscalls
-+ */
-+#define __IGNORE_fadvise64_64		1
-+#define __IGNORE_migrate_pages		1
-+
-+#endif /* __KERNEL__ */
-+#endif /* __UNICORE_UNISTD_H__ */
-diff --git a/arch/unicore32/kernel/calls.S b/arch/unicore32/kernel/calls.S
-new file mode 100644
-index 0000000..2f966f8
---- /dev/null
-+++ b/arch/unicore32/kernel/calls.S
-@@ -0,0 +1,390 @@
-+/*
-+ * linux/arch/unicore32/kernel/calls.S
-+ *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ *  This file is included thrice in entry-common.S
-+ */
-+/* 0 */		CALL(sys_restart_syscall)
-+		CALL(sys_exit)
-+		CALL(sys_fork_wrapper)
-+		CALL(sys_read)
-+		CALL(sys_write)
-+/* 5 */		CALL(sys_open)
-+		CALL(sys_close)
-+		CALL(sys_ni_syscall)		/* was sys_waitpid */
-+		CALL(sys_creat)
-+		CALL(sys_link)
-+/* 10 */	CALL(sys_unlink)
-+		CALL(sys_execve_wrapper)
-+		CALL(sys_chdir)
-+		CALL(sys_time)			/* used by libc4 */
-+		CALL(sys_mknod)
-+/* 15 */	CALL(sys_chmod)
-+		CALL(sys_lchown16)
-+		CALL(sys_ni_syscall)		/* was sys_break */
-+		CALL(sys_ni_syscall)		/* was sys_stat */
-+		CALL(sys_lseek)
-+/* 20 */	CALL(sys_getpid)
-+		CALL(sys_mount)
-+		CALL(sys_oldumount)		/* used by libc4 */
-+		CALL(sys_setuid16)
-+		CALL(sys_getuid16)
-+/* 25 */	CALL(sys_stime)
-+		CALL(sys_ptrace)
-+		CALL(sys_alarm)			/* used by libc4 */
-+		CALL(sys_ni_syscall)		/* was sys_fstat */
-+		CALL(sys_pause)
-+/* 30 */	CALL(sys_utime)			/* used by libc4 */
-+		CALL(sys_ni_syscall)		/* was sys_stty */
-+		CALL(sys_ni_syscall)		/* was sys_getty */
-+		CALL(sys_access)
-+		CALL(sys_nice)
-+/* 35 */	CALL(sys_ni_syscall)		/* was sys_ftime */
-+		CALL(sys_sync)
-+		CALL(sys_kill)
-+		CALL(sys_rename)
-+		CALL(sys_mkdir)
-+/* 40 */	CALL(sys_rmdir)
-+		CALL(sys_dup)
-+		CALL(sys_pipe)
-+		CALL(sys_times)
-+		CALL(sys_ni_syscall)		/* was sys_prof */
-+/* 45 */	CALL(sys_brk)
-+		CALL(sys_setgid16)
-+		CALL(sys_getgid16)
-+		CALL(sys_ni_syscall)		/* was sys_signal */
-+		CALL(sys_geteuid16)
-+/* 50 */	CALL(sys_getegid16)
-+		CALL(sys_acct)
-+		CALL(sys_umount)
-+		CALL(sys_ni_syscall)		/* was sys_lock */
-+		CALL(sys_ioctl)
-+/* 55 */	CALL(sys_fcntl)
-+		CALL(sys_ni_syscall)		/* was sys_mpx */
-+		CALL(sys_setpgid)
-+		CALL(sys_ni_syscall)		/* was sys_ulimit */
-+		CALL(sys_ni_syscall)		/* was sys_olduname */
-+/* 60 */	CALL(sys_umask)
-+		CALL(sys_chroot)
-+		CALL(sys_ustat)
-+		CALL(sys_dup2)
-+		CALL(sys_getppid)
-+/* 65 */	CALL(sys_getpgrp)
-+		CALL(sys_setsid)
-+		CALL(sys_sigaction)
-+		CALL(sys_ni_syscall)		/* was sys_sgetmask */
-+		CALL(sys_ni_syscall)		/* was sys_ssetmask */
-+/* 70 */	CALL(sys_setreuid16)
-+		CALL(sys_setregid16)
-+		CALL(sys_sigsuspend)
-+		CALL(sys_sigpending)
-+		CALL(sys_sethostname)
-+/* 75 */	CALL(sys_setrlimit)
-+		CALL(sys_old_getrlimit)		 /* used by libc4 */
-+		CALL(sys_getrusage)
-+		CALL(sys_gettimeofday)
-+		CALL(sys_settimeofday)
-+/* 80 */	CALL(sys_getgroups16)
-+		CALL(sys_setgroups16)
-+		CALL(sys_old_select)		/* used by libc4 */
-+		CALL(sys_symlink)
-+		CALL(sys_ni_syscall)		/* was sys_lstat */
-+/* 85 */	CALL(sys_readlink)
-+		CALL(sys_uselib)
-+		CALL(sys_swapon)
-+		CALL(sys_reboot)
-+		CALL(sys_old_readdir)		/* used by libc4 */
-+/* 90 */	CALL(sys_old_mmap)		/* used by libc4 */
-+		CALL(sys_munmap)
-+		CALL(sys_truncate)
-+		CALL(sys_ftruncate)
-+		CALL(sys_fchmod)
-+/* 95 */	CALL(sys_fchown16)
-+		CALL(sys_getpriority)
-+		CALL(sys_setpriority)
-+		CALL(sys_ni_syscall)		/* was sys_profil */
-+		CALL(sys_statfs)
-+/* 100 */	CALL(sys_fstatfs)
-+		CALL(sys_ni_syscall)		/* sys_ioperm */
-+		CALL(sys_socketcall)
-+		CALL(sys_syslog)
-+		CALL(sys_setitimer)
-+/* 105 */	CALL(sys_getitimer)
-+		CALL(sys_newstat)
-+		CALL(sys_newlstat)
-+		CALL(sys_newfstat)
-+		CALL(sys_ni_syscall)		/* was sys_uname */
-+/* 110 */	CALL(sys_ni_syscall)		/* was sys_iopl */
-+		CALL(sys_vhangup)
-+		CALL(sys_ni_syscall)
-+		CALL(sys_syscall)		/* call a syscall */
-+		CALL(sys_wait4)
-+/* 115 */	CALL(sys_swapoff)
-+		CALL(sys_sysinfo)
-+		CALL(sys_ipc)
-+		CALL(sys_fsync)
-+		CALL(sys_sigreturn_wrapper)
-+/* 120 */	CALL(sys_clone_wrapper)
-+		CALL(sys_setdomainname)
-+		CALL(sys_newuname)
-+		CALL(sys_ni_syscall)		/* modify_ldt */
-+		CALL(sys_adjtimex)
-+/* 125 */	CALL(sys_mprotect)
-+		CALL(sys_sigprocmask)
-+		CALL(sys_ni_syscall)		/* was sys_create_module */
-+		CALL(sys_init_module)
-+		CALL(sys_delete_module)
-+/* 130 */	CALL(sys_ni_syscall)		/* was sys_get_kernel_syms */
-+		CALL(sys_quotactl)
-+		CALL(sys_getpgid)
-+		CALL(sys_fchdir)
-+		CALL(sys_bdflush)
-+/* 135 */	CALL(sys_sysfs)
-+		CALL(sys_personality)
-+		CALL(sys_ni_syscall)		/* reserved for afs_syscall */
-+		CALL(sys_setfsuid16)
-+		CALL(sys_setfsgid16)
-+/* 140 */	CALL(sys_llseek)
-+		CALL(sys_getdents)
-+		CALL(sys_select)
-+		CALL(sys_flock)
-+		CALL(sys_msync)
-+/* 145 */	CALL(sys_readv)
-+		CALL(sys_writev)
-+		CALL(sys_getsid)
-+		CALL(sys_fdatasync)
-+		CALL(sys_sysctl)
-+/* 150 */	CALL(sys_mlock)
-+		CALL(sys_munlock)
-+		CALL(sys_mlockall)
-+		CALL(sys_munlockall)
-+		CALL(sys_sched_setparam)
-+/* 155 */	CALL(sys_sched_getparam)
-+		CALL(sys_sched_setscheduler)
-+		CALL(sys_sched_getscheduler)
-+		CALL(sys_sched_yield)
-+		CALL(sys_sched_get_priority_max)
-+/* 160 */	CALL(sys_sched_get_priority_min)
-+		CALL(sys_sched_rr_get_interval)
-+		CALL(sys_nanosleep)
-+		CALL(sys_mremap)
-+		CALL(sys_setresuid16)
-+/* 165 */	CALL(sys_getresuid16)
-+		CALL(sys_ni_syscall)		/* vm86 */
-+		CALL(sys_ni_syscall)		/* was sys_query_module */
-+		CALL(sys_poll)
-+		CALL(sys_nfsservctl)
-+/* 170 */	CALL(sys_setresgid16)
-+		CALL(sys_getresgid16)
-+		CALL(sys_prctl)
-+		CALL(sys_rt_sigreturn_wrapper)
-+		CALL(sys_rt_sigaction)
-+/* 175 */	CALL(sys_rt_sigprocmask)
-+		CALL(sys_rt_sigpending)
-+		CALL(sys_rt_sigtimedwait)
-+		CALL(sys_rt_sigqueueinfo)
-+		CALL(sys_rt_sigsuspend)
-+/* 180 */	CALL(sys_pread64)
-+		CALL(sys_pwrite64)
-+		CALL(sys_chown16)
-+		CALL(sys_getcwd)
-+		CALL(sys_capget)
-+/* 185 */	CALL(sys_capset)
-+		CALL(sys_sigaltstack_wrapper)
-+		CALL(sys_sendfile)
-+		CALL(sys_ni_syscall)		/* getpmsg */
-+		CALL(sys_ni_syscall)		/* putpmsg */
-+/* 190 */	CALL(sys_vfork_wrapper)
-+		CALL(sys_getrlimit)
-+		CALL(sys_mmap_pgoff)
-+		CALL(sys_truncate64)
-+		CALL(sys_ftruncate64)
-+/* 195 */	CALL(sys_stat64)
-+		CALL(sys_lstat64)
-+		CALL(sys_fstat64)
-+		CALL(sys_lchown)
-+		CALL(sys_getuid)
-+/* 200 */	CALL(sys_getgid)
-+		CALL(sys_geteuid)
-+		CALL(sys_getegid)
-+		CALL(sys_setreuid)
-+		CALL(sys_setregid)
-+/* 205 */	CALL(sys_getgroups)
-+		CALL(sys_setgroups)
-+		CALL(sys_fchown)
-+		CALL(sys_setresuid)
-+		CALL(sys_getresuid)
-+/* 210 */	CALL(sys_setresgid)
-+		CALL(sys_getresgid)
-+		CALL(sys_chown)
-+		CALL(sys_setuid)
-+		CALL(sys_setgid)
-+/* 215 */	CALL(sys_setfsuid)
-+		CALL(sys_setfsgid)
-+		CALL(sys_getdents64)
-+		CALL(sys_pivot_root)
-+		CALL(sys_mincore)
-+/* 220 */	CALL(sys_madvise)
-+		CALL(sys_fcntl64)
-+		CALL(sys_ni_syscall) /* TUX */
-+		CALL(sys_ni_syscall)
-+		CALL(sys_gettid)
-+/* 225 */	CALL(sys_readahead)
-+		CALL(sys_setxattr)
-+		CALL(sys_lsetxattr)
-+		CALL(sys_fsetxattr)
-+		CALL(sys_getxattr)
-+/* 230 */	CALL(sys_lgetxattr)
-+		CALL(sys_fgetxattr)
-+		CALL(sys_listxattr)
-+		CALL(sys_llistxattr)
-+		CALL(sys_flistxattr)
-+/* 235 */	CALL(sys_removexattr)
-+		CALL(sys_lremovexattr)
-+		CALL(sys_fremovexattr)
-+		CALL(sys_tkill)
-+		CALL(sys_sendfile64)
-+/* 240 */	CALL(sys_futex)
-+		CALL(sys_sched_setaffinity)
-+		CALL(sys_sched_getaffinity)
-+		CALL(sys_io_setup)
-+		CALL(sys_io_destroy)
-+/* 245 */	CALL(sys_io_getevents)
-+		CALL(sys_io_submit)
-+		CALL(sys_io_cancel)
-+		CALL(sys_exit_group)
-+		CALL(sys_lookup_dcookie)
-+/* 250 */	CALL(sys_epoll_create)
-+		CALL(sys_epoll_ctl)
-+		CALL(sys_epoll_wait)
-+		CALL(sys_remap_file_pages)
-+		CALL(sys_ni_syscall)	/* sys_set_thread_area */
-+/* 255 */	CALL(sys_ni_syscall)	/* sys_get_thread_area */
-+		CALL(sys_set_tid_address)
-+		CALL(sys_timer_create)
-+		CALL(sys_timer_settime)
-+		CALL(sys_timer_gettime)
-+/* 260 */	CALL(sys_timer_getoverrun)
-+		CALL(sys_timer_delete)
-+		CALL(sys_clock_settime)
-+		CALL(sys_clock_gettime)
-+		CALL(sys_clock_getres)
-+/* 265 */	CALL(sys_clock_nanosleep)
-+		CALL(sys_statfs64_wrapper)
-+		CALL(sys_fstatfs64_wrapper)
-+		CALL(sys_tgkill)
-+		CALL(sys_utimes)
-+/* 270 */	CALL(sys_uc32_fadvise64_64)
-+		CALL(sys_pciconfig_iobase)
-+		CALL(sys_pciconfig_read)
-+		CALL(sys_pciconfig_write)
-+		CALL(sys_mq_open)
-+/* 275 */	CALL(sys_mq_unlink)
-+		CALL(sys_mq_timedsend)
-+		CALL(sys_mq_timedreceive)
-+		CALL(sys_mq_notify)
-+		CALL(sys_mq_getsetattr)
-+/* 280 */	CALL(sys_waitid)
-+		CALL(sys_socket)
-+		CALL(sys_bind)
-+		CALL(sys_connect)
-+		CALL(sys_listen)
-+/* 285 */	CALL(sys_accept)
-+		CALL(sys_getsockname)
-+		CALL(sys_getpeername)
-+		CALL(sys_socketpair)
-+		CALL(sys_send)
-+/* 290 */	CALL(sys_sendto)
-+		CALL(sys_recv)
-+		CALL(sys_recvfrom)
-+		CALL(sys_shutdown)
-+		CALL(sys_setsockopt)
-+/* 295 */	CALL(sys_getsockopt)
-+		CALL(sys_sendmsg)
-+		CALL(sys_recvmsg)
-+		CALL(sys_semop)
-+		CALL(sys_semget)
-+/* 300 */	CALL(sys_semctl)
-+		CALL(sys_msgsnd)
-+		CALL(sys_msgrcv)
-+		CALL(sys_msgget)
-+		CALL(sys_msgctl)
-+/* 305 */	CALL(sys_shmat)
-+		CALL(sys_shmdt)
-+		CALL(sys_shmget)
-+		CALL(sys_shmctl)
-+		CALL(sys_add_key)
-+/* 310 */	CALL(sys_request_key)
-+		CALL(sys_keyctl)
-+		CALL(sys_semtimedop)
-+/* vserver */	CALL(sys_ni_syscall)
-+		CALL(sys_ioprio_set)
-+/* 315 */	CALL(sys_ioprio_get)
-+		CALL(sys_inotify_init)
-+		CALL(sys_inotify_add_watch)
-+		CALL(sys_inotify_rm_watch)
-+		CALL(sys_mbind)
-+/* 320 */	CALL(sys_get_mempolicy)
-+		CALL(sys_set_mempolicy)
-+		CALL(sys_openat)
-+		CALL(sys_mkdirat)
-+		CALL(sys_mknodat)
-+/* 325 */	CALL(sys_fchownat)
-+		CALL(sys_futimesat)
-+		CALL(sys_fstatat64)
-+		CALL(sys_unlinkat)
-+		CALL(sys_renameat)
-+/* 330 */	CALL(sys_linkat)
-+		CALL(sys_symlinkat)
-+		CALL(sys_readlinkat)
-+		CALL(sys_fchmodat)
-+		CALL(sys_faccessat)
-+/* 335 */	CALL(sys_pselect6)
-+		CALL(sys_ppoll)
-+		CALL(sys_unshare)
-+		CALL(sys_set_robust_list)
-+		CALL(sys_get_robust_list)
-+/* 340 */	CALL(sys_splice)
-+		CALL(sys_sync_file_range2)
-+		CALL(sys_tee)
-+		CALL(sys_vmsplice)
-+		CALL(sys_move_pages)
-+/* 345 */	CALL(sys_getcpu)
-+		CALL(sys_epoll_pwait)
-+		CALL(sys_kexec_load)
-+		CALL(sys_utimensat)
-+		CALL(sys_signalfd)
-+/* 350 */	CALL(sys_timerfd_create)
-+		CALL(sys_eventfd)
-+		CALL(sys_fallocate)
-+		CALL(sys_timerfd_settime)
-+		CALL(sys_timerfd_gettime)
-+/* 355 */	CALL(sys_signalfd4)
-+		CALL(sys_eventfd2)
-+		CALL(sys_epoll_create1)
-+		CALL(sys_dup3)
-+		CALL(sys_pipe2)
-+/* 360 */	CALL(sys_inotify_init1)
-+		CALL(sys_preadv)
-+		CALL(sys_pwritev)
-+		CALL(sys_rt_tgsigqueueinfo)
-+		CALL(sys_perf_event_open)
-+/* 365 */	CALL(sys_recvmmsg)
-+		CALL(sys_accept4)
-+		CALL(sys_fanotify_init)
-+		CALL(sys_fanotify_mark)
-+		CALL(sys_prlimit64)
-+#ifndef syscalls_counted
-+.equ syscalls_padding, ((NR_syscalls + 3) & ~3) - NR_syscalls
-+#define syscalls_counted
-+#endif
-+.rept syscalls_padding
-+		CALL(sys_ni_syscall)
-+.endr
-diff --git a/arch/unicore32/kernel/sys_unicore.c b/arch/unicore32/kernel/sys_unicore.c
-new file mode 100644
-index 0000000..7641fab
---- /dev/null
-+++ b/arch/unicore32/kernel/sys_unicore.c
-@@ -0,0 +1,132 @@
-+/*
-+ * linux/arch/unicore32/kernel/sys_unicore.c
-+ *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ *  This file contains various random system calls that
-+ *  have a non-standard calling sequence on the Linux/unicore
-+ *  platform.
-+ */
-+#include <linux/module.h>
-+#include <linux/errno.h>
-+#include <linux/sched.h>
-+#include <linux/slab.h>
-+#include <linux/mm.h>
-+#include <linux/sem.h>
-+#include <linux/msg.h>
-+#include <linux/shm.h>
-+#include <linux/stat.h>
-+#include <linux/syscalls.h>
-+#include <linux/mman.h>
-+#include <linux/fs.h>
-+#include <linux/file.h>
-+#include <linux/ipc.h>
-+#include <linux/uaccess.h>
-+
-+/* Fork a new task - this creates a new program thread.
-+ * This is called indirectly via a small wrapper
-+ */
-+asmlinkage int sys_fork(struct pt_regs *regs)
++void die(const char *str, struct pt_regs *regs, int err)
 +{
-+	return do_fork(SIGCHLD, regs->UCreg_sp, regs, 0, NULL, NULL);
-+}
-+
-+/* Clone a task - this clones the calling program thread.
-+ * This is called indirectly via a small wrapper
-+ */
-+asmlinkage int sys_clone(unsigned long clone_flags, unsigned long newsp,
-+			 int __user *parent_tidptr, int tls_val,
-+			 int __user *child_tidptr, struct pt_regs *regs)
-+{
-+	if (!newsp)
-+		newsp = regs->UCreg_sp;
-+
-+	return do_fork(clone_flags, newsp, regs, 0,
-+			parent_tidptr, child_tidptr);
-+}
-+
-+asmlinkage int sys_vfork(struct pt_regs *regs)
-+{
-+	return do_fork(CLONE_VFORK | CLONE_VM | SIGCHLD,
-+			regs->UCreg_sp, regs, 0, NULL, NULL);
-+}
-+
-+/* sys_execve() executes a new program.
-+ * This is called indirectly via a small wrapper
-+ */
-+asmlinkage int sys_execve(const char __user *filenamei,
-+			  const char __user *const __user *argv,
-+			  const char __user *const __user *envp,
-+			  struct pt_regs *regs)
-+{
-+	int error;
-+	char *filename;
-+
-+	filename = getname(filenamei);
-+	error = PTR_ERR(filename);
-+	if (IS_ERR(filename))
-+		goto out;
-+	error = do_execve(filename, argv, envp, regs);
-+	putname(filename);
-+out:
-+	return error;
-+}
-+
-+int kernel_execve(const char *filename,
-+		  const char *const argv[],
-+		  const char *const envp[])
-+{
-+	struct pt_regs regs;
++	struct thread_info *thread = current_thread_info();
 +	int ret;
 +
-+	memset(&regs, 0, sizeof(struct pt_regs));
-+	ret = do_execve(filename,
-+			(const char __user *const __user *)argv,
-+			(const char __user *const __user *)envp, &regs);
-+	if (ret < 0)
-+		goto out;
++	oops_enter();
 +
-+	/*
-+	 * Save argc to the register structure for userspace.
-+	 */
-+	regs.UCreg_00 = ret;
++	spin_lock_irq(&die_lock);
++	console_verbose();
++	bust_spinlocks(1);
++	ret = __die(str, err, thread, regs);
 +
-+	/*
-+	 * We were successful.  We won't be returning to our caller, but
-+	 * instead to user space by manipulating the kernel stack.
-+	 */
-+	asm("add	r0, %0, %1\n\t"
-+		"mov	r1, %2\n\t"
-+		"mov	r2, %3\n\t"
-+		"mov	r22, #0\n\t"	/* not a syscall */
-+		"mov	r23, %0\n\t"	/* thread structure */
-+		"b.l	memmove\n\t"	/* copy regs to top of stack */
-+		"mov	sp, r0\n\t"	/* reposition stack pointer */
-+		"b	ret_to_user"
-+		:
-+		: "r" (current_thread_info()),
-+		  "Ir" (THREAD_START_SP - sizeof(regs)),
-+		  "r" (&regs),
-+		  "Ir" (sizeof(regs))
-+		: "r0", "r1", "r2", "r3", "ip", "lr", "memory");
++	bust_spinlocks(0);
++	add_taint(TAINT_DIE);
++	spin_unlock_irq(&die_lock);
++	oops_exit();
 +
-+ out:
-+	return ret;
++	if (in_interrupt())
++		panic("Fatal exception in interrupt");
++	if (panic_on_oops)
++		panic("Fatal exception");
++	if (ret != NOTIFY_STOP)
++		do_exit(SIGSEGV);
 +}
-+EXPORT_SYMBOL(kernel_execve);
 +
-+/*
-+ * Since loff_t is a 64 bit type we avoid a lot of ABI hassle
-+ * with a different argument ordering.
-+ */
-+asmlinkage long sys_uc32_fadvise64_64(int fd, int advice,
-+				     loff_t offset, loff_t len)
++void uc32_notify_die(const char *str, struct pt_regs *regs,
++		struct siginfo *info, unsigned long err, unsigned long trap)
 +{
-+	return sys_fadvise64_64(fd, offset, len, advice);
++	if (user_mode(regs)) {
++		current->thread.error_code = err;
++		current->thread.trap_no = trap;
++
++		force_sig_info(info->si_signo, info, current);
++	} else
++		die(str, regs, err);
 +}
-diff --git a/arch/unicore32/mm/proc-macros.S b/arch/unicore32/mm/proc-macros.S
-new file mode 100644
-index 0000000..eb12e3f
---- /dev/null
-+++ b/arch/unicore32/mm/proc-macros.S
-@@ -0,0 +1,145 @@
-+/*
-+ * linux/arch/unicore32/mm/proc-macros.S
-+ *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * We need constants.h for:
-+ *  VMA_VM_MM
-+ *  VMA_VM_FLAGS
-+ *  VM_EXEC
-+ */
-+#include <generated/asm-offsets.h>
-+#include <asm/thread_info.h>
-+#include <asm/memory.h>
 +
 +/*
-+ * the cache line sizes of the I and D cache are the same
++ * bad_mode handles the impossible case in the vectors.  If you see one of
++ * these, then it's extremely serious, and could mean you have buggy hardware.
++ * It never returns, and never tries to sync.  We hope that we can at least
++ * dump out some state information...
 + */
-+#define CACHE_LINESIZE	32
++asmlinkage void bad_mode(struct pt_regs *regs, unsigned int reason)
++{
++	console_verbose();
++
++	printk(KERN_CRIT "Bad mode detected with reason 0x%x\n", reason);
++
++	die("Oops - bad mode", regs, 0);
++	local_irq_disable();
++	panic("bad mode");
++}
++
++static inline void
++do_cache_op(unsigned long start, unsigned long end, int flags)
++{
++	struct mm_struct *mm = current->active_mm;
++	struct vm_area_struct *vma;
++
++	if (end < start || flags)
++		return;
++
++	down_read(&mm->mmap_sem);
++	vma = find_vma(mm, start);
++	if (vma && vma->vm_start < end) {
++		if (start < vma->vm_start)
++			start = vma->vm_start;
++		if (end > vma->vm_end)
++			end = vma->vm_end;
++
++		flush_cache_user_range(vma, start, end);
++	}
++	up_read(&mm->mmap_sem);
++}
 +
 +/*
-+ * This is the maximum size of an area which will be invalidated
-+ * using the single invalidate entry instructions.  Anything larger
-+ * than this, and we go for the whole cache.
-+ *
-+ * This value should be chosen such that we choose the cheapest
-+ * alternative.
++ * Atomically store r1 in *r2 if *r2 is equal to r0 for user space.
++ * Return zero in r0 if *MEM was changed or non-zero if no exchange
++ * happened.  Also set the user C flag accordingly.
++ * If access permissions have to be fixed up then non-zero is
++ * returned and the operation has to be re-attempted.
 + */
-+#ifdef CONFIG_CPU_UCV2
-+#define MAX_AREA_SIZE	0x800		/* 64 cache line */
++static inline int do_cmpxchg_op(struct pt_regs *regs)
++{
++	unsigned long val;
++	unsigned long addr = regs->UCreg_02;
++	struct mm_struct *mm = current->mm;
++	pgd_t *pgd; pmd_t *pmd; pte_t *pte;
++	spinlock_t *ptl;
++
++	for (;;) {
++		regs->UCreg_asr &= ~PSR_C_BIT;
++		down_read(&mm->mmap_sem);
++		pgd = pgd_offset(mm, addr);
++		if (!pgd_present(*pgd))
++			goto bad_access;
++		pmd = pmd_offset((pud_t *)pgd, addr);
++		if (!pmd_present(*pmd))
++			goto bad_access;
++		pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
++		if (!pte_present(*pte) || !pte_dirty(*pte)) {
++			pte_unmap_unlock(pte, ptl);
++			goto bad_access;
++		}
++		__asm__ __volatile__(
++			"ldw.u %0, [%1]\n"
++			: "=&r"(val)
++			: "r"(addr));
++		val -= regs->UCreg_00;
++		if (val == 0) {
++			__asm__ __volatile__(
++				"stw.u %0, [%1]\n"
++				:
++				: "r"(regs->UCreg_01), "r"(addr));
++			regs->UCreg_asr |= PSR_C_BIT;
++		}
++		pte_unmap_unlock(pte, ptl);
++		up_read(&mm->mmap_sem);
++		return val;
++
++bad_access:
++		up_read(&mm->mmap_sem);
++		/* simulate a write access fault */
++		do_DataAbort(addr, 0x12, regs);
++	}
++}
++
++/*
++ * Handle all unrecognised system calls.
++ *  0x9f0000 - 0x9fffff are some more esoteric system calls
++ */
++#define NR(x) ((__UNICORE_NR_##x) - __UNICORE_NR_BASE)
++asmlinkage int uc32_syscall(int no, struct pt_regs *regs)
++{
++	if ((no >> 16) != (__UNICORE_NR_BASE >> 16))
++		return -ENOSYS;
++
++	switch (no & 0xffff) {
++	/*
++	 * Flush a region from virtual address 'r0' to virtual address 'r1'
++	 * _exclusive_.  There is no alignment requirement on either address;
++	 * user space does not need to know the hardware cache layout.
++	 *
++	 * r2 contains flags.  It should ALWAYS be passed as ZERO until it
++	 * is defined to be something else.  For now we ignore it, but may
++	 * the fires of hell burn in your belly if you break this rule. ;)
++	 *
++	 * (at a later date, we may want to allow this call to not flush
++	 * various aspects of the cache.  Passing '0' will guarantee that
++	 * everything necessary gets flushed to maintain consistency in
++	 * the specified region).
++	 */
++	case NR(cacheflush):
++		do_cache_op(regs->UCreg_00, regs->UCreg_01, regs->UCreg_02);
++		return 0;
++
++	case NR(cmpxchg):
++		return do_cmpxchg_op(regs);
++
++	default:
++		return -ENOSYS;
++	}
++}
++
++/*
++ * A data abort trap was taken, but we did not handle the instruction.
++ * Try to abort the user program, or panic if it was the kernel.
++ */
++asmlinkage void
++baddataabort(int code, unsigned long instr, struct pt_regs *regs)
++{
++	unsigned long addr = instruction_pointer(regs);
++	siginfo_t info;
++
++#ifdef CONFIG_DEBUG_USER
++	if (user_debug & UDBG_BADABORT) {
++		printk(KERN_ERR "[%d] %s: bad data abort: code %d instr 0x%08lx\n",
++			task_pid_nr(current), current->comm, code, instr);
++		dump_instr(KERN_ERR, regs);
++		show_pte(current->mm, addr);
++	}
 +#endif
 +
-+/*
-+ * vma_vm_mm - get mm pointer from vma pointer (vma->vm_mm)
-+ */
-+	.macro	vma_vm_mm, rd, rn
-+	ldw	\rd, [\rn+], #VMA_VM_MM
-+	.endm
++	info.si_signo = SIGILL;
++	info.si_errno = 0;
++	info.si_code  = ILL_ILLOPC;
++	info.si_addr  = (void __user *)addr;
 +
-+/*
-+ * vma_vm_flags - get vma->vm_flags
-+ */
-+	.macro	vma_vm_flags, rd, rn
-+	ldw	\rd, [\rn+], #VMA_VM_FLAGS
-+	.endm
++	uc32_notify_die("unknown data abort code", regs, &info, instr, 0);
++}
 +
-+	.macro	tsk_mm, rd, rn
-+	ldw	\rd, [\rn+], #TI_TASK
-+	ldw	\rd, [\rd+], #TSK_ACTIVE_MM
-+	.endm
++void __pte_error(const char *file, int line, unsigned long val)
++{
++	printk(KERN_DEFAULT "%s:%d: bad pte %08lx.\n", file, line, val);
++}
 +
-+/*
-+ * act_mm - get current->active_mm
-+ */
-+	.macro	act_mm, rd
-+	andn	\rd, sp, #8128
-+	andn	\rd, \rd, #63
-+	ldw	\rd, [\rd+], #TI_TASK
-+	ldw	\rd, [\rd+], #TSK_ACTIVE_MM
-+	.endm
++void __pmd_error(const char *file, int line, unsigned long val)
++{
++	printk(KERN_DEFAULT "%s:%d: bad pmd %08lx.\n", file, line, val);
++}
 +
-+/*
-+ * mmid - get context id from mm pointer (mm->context.id)
-+ */
-+	.macro	mmid, rd, rn
-+	ldw	\rd, [\rn+], #MM_CONTEXT_ID
-+	.endm
++void __pgd_error(const char *file, int line, unsigned long val)
++{
++	printk(KERN_DEFAULT "%s:%d: bad pgd %08lx.\n", file, line, val);
++}
 +
-+/*
-+ * mask_asid - mask the ASID from the context ID
-+ */
-+	.macro	asid, rd, rn
-+	and	\rd, \rn, #255
-+	.endm
++asmlinkage void __div0(void)
++{
++	printk(KERN_DEFAULT "Division by zero in kernel.\n");
++	dump_stack();
++}
++EXPORT_SYMBOL(__div0);
 +
-+	.macro	crval, clear, mmuset, ucset
-+	.word	\clear
-+	.word	\mmuset
-+	.endm
++void abort(void)
++{
++	BUG();
 +
-+#ifndef CONFIG_CPU_DCACHE_LINE_DISABLE
-+/*
-+ * va2pa va, pa, tbl, msk, off, err
-+ *	This macro is used to translate virtual address to its physical address.
-+ *
-+ *	va: virtual address
-+ *	pa: physical address, result is stored in this register
-+ *	tbl, msk, off:	temp registers, will be destroyed
-+ *	err: jump to error label if the physical address not exist
-+ * NOTE: all regs must be different
-+ */
-+	.macro	va2pa, va, pa, tbl, msk, off, err=990f
-+	movc	\pa, p0.c2, #0
-+	mov	\off, \va >> #22		@ off <- index of 1st page table
-+	adr	\tbl, 910f			@ tbl <- table of 1st page table
-+900:						@ ---- handle 1, 2 page table
-+	add	\pa, \pa, #PAGE_OFFSET		@ pa <- virt addr of page table
-+	ldw	\pa, [\pa+], \off << #2		@ pa <- the content of pt
-+	cand.a	\pa, #4				@ test exist bit
-+	beq	\err				@ if not exist
-+	and	\off, \pa, #3			@ off <- the last 2 bits
-+	add	\tbl, \tbl, \off << #3		@ cmove table pointer
-+	ldw	\msk, [\tbl+], #0		@ get the mask
-+	ldw	pc, [\tbl+], #4
-+930:						@ ---- handle 2nd page table
-+	and	\pa, \pa, \msk			@ pa <- phys addr of 2nd pt
-+	mov	\off, \va << #10
-+	cntlo	\tbl, \msk			@ use tbl as temp reg
-+	mov	\off, \off >> \tbl
-+	mov	\off, \off >> #2		@ off <- index of 2nd pt
-+	adr	\tbl, 920f			@ tbl <- table of 2nd pt
-+	b	900b
-+910:						@ 1st level page table
-+	.word	0xfffff000, 930b		@ second level page table
-+	.word	0xfffffc00, 930b		@ second level large page table
-+	.word	0x00000000, \err		@ invalid
-+	.word	0xffc00000, 980f		@ super page
++	/* if that doesn't kill us, halt */
++	panic("Oops failed to kill thread");
++}
++EXPORT_SYMBOL(abort);
 +
-+920:						@ 2nd level page table
-+	.word	0xfffff000, 980f		@ page
-+	.word	0xffffc000, 980f		@ middle page
-+	.word	0xffff0000, 980f		@ large page
-+	.word	0x00000000, \err		@ invalid
-+980:
-+	andn	\tbl, \va, \msk
-+	and	\pa, \pa, \msk
-+	or	\pa, \pa, \tbl
-+990:
-+	.endm
-+#endif
++void __init trap_init(void)
++{
++	return;
++}
 +
-+	.macro dcacheline_flush, addr, t1, t2
-+	mov	\t1, \addr << #20
-+	ldw	\t2, =_text			@ _text must ALIGN(4096)
-+	add	\t2, \t2, \t1 >> #20
-+	ldw	\t1, [\t2+], #0x0000
-+	ldw	\t1, [\t2+], #0x1000
-+	ldw	\t1, [\t2+], #0x2000
-+	ldw	\t1, [\t2+], #0x3000
-+	.endm
-diff --git a/arch/unicore32/mm/proc-ucv2.S b/arch/unicore32/mm/proc-ucv2.S
-new file mode 100644
-index 0000000..9d29609
---- /dev/null
-+++ b/arch/unicore32/mm/proc-ucv2.S
-@@ -0,0 +1,134 @@
-+/*
-+ * linux/arch/unicore32/mm/proc-ucv2.S
-+ *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#include <linux/init.h>
-+#include <linux/linkage.h>
-+#include <asm/assembler.h>
-+#include <asm/hwcap.h>
-+#include <asm/pgtable-hwdef.h>
-+#include <asm/pgtable.h>
++void __init early_trap_init(void)
++{
++	unsigned long vectors = VECTORS_BASE;
 +
-+#include "proc-macros.S"
++	/*
++	 * Copy the vectors, stubs (in entry-unicore.S)
++	 * into the vector page, mapped at 0xffff0000, and ensure these
++	 * are visible to the instruction stream.
++	 */
++	memcpy((void *)vectors,
++			__vectors_start,
++			__vectors_end - __vectors_start);
++	memcpy((void *)vectors + 0x200,
++			__stubs_start,
++			__stubs_end - __stubs_start);
 +
-+ENTRY(cpu_proc_fin)
-+	stm.w	(lr), [sp-]
-+	mov	ip, #PSR_R_BIT | PSR_I_BIT | PRIV_MODE
-+	mov.a	asr, ip
-+	b.l	__cpuc_flush_kern_all
-+	ldm.w	(pc), [sp]+
++	/*
++	 * Copy signal return handlers into the vector page, and
++	 * set sigreturn to be a pointer to these.
++	 */
++	memcpy((void *)kuser_vecpage_to_vectors(KERN_SIGRETURN_CODE),
++			sigreturn_codes, sizeof(sigreturn_codes));
++	memcpy((void *)kuser_vecpage_to_vectors(KERN_RESTART_CODE),
++			syscall_restart_code, sizeof(syscall_restart_code));
 +
-+/*
-+ *	cpu_reset(loc)
-+ *
-+ *	Perform a soft reset of the system.  Put the CPU into the
-+ *	same state as it would be if it had been reset, and branch
-+ *	to what would be the reset vector.
-+ *
-+ *	- loc   - location to jump to for soft reset
-+ */
-+	.align	5
-+ENTRY(cpu_reset)
-+	mov	ip, #0
-+	movc	p0.c5, ip, #28			@ Cache invalidate all
-+	nop8
-+
-+	movc	p0.c6, ip, #6			@ TLB invalidate all
-+	nop8
-+
-+	movc	ip, p0.c1, #0			@ ctrl register
-+	or	ip, ip, #0x2000			@ vector base address
-+	andn	ip, ip, #0x000f			@ ............idam
-+	movc	p0.c1, ip, #0			@ disable caches and mmu
-+	nop
-+	mov	pc, r0				@ jump to loc
-+	nop8
-+
-+/*
-+ *	cpu_do_idle()
-+ *
-+ *	Idle the processor (eg, wait for interrupt).
-+ *
-+ *	IRQs are already disabled.
-+ */
-+ENTRY(cpu_do_idle)
-+	mov	r0, #0				@ PCI address
-+	.rept	8
-+	ldw	r1, [r0]
-+	.endr
-+	mov	pc, lr
-+
-+ENTRY(cpu_dcache_clean_area)
-+#ifndef CONFIG_CPU_DCACHE_LINE_DISABLE
-+	csub.a	r1, #MAX_AREA_SIZE
-+	bsg	101f
-+	mov	r9, #PAGE_SZ
-+	sub	r9, r9, #1			@ PAGE_MASK
-+1:	va2pa	r0, r10, r11, r12, r13		@ r10 is PA
-+	b	3f
-+2:	cand.a	r0, r9
-+	beq	1b
-+3:	movc	p0.c5, r10, #11			@ clean D entry
-+	nop8
-+	add	r0, r0, #CACHE_LINESIZE
-+	add	r10, r10, #CACHE_LINESIZE
-+	sub.a	r1, r1, #CACHE_LINESIZE
-+	bua	2b
-+	mov	pc, lr
-+#endif
-+101:	mov	ip, #0
-+	movc	p0.c5, ip, #10			@ Dcache clean all
-+	nop8
-+
-+	mov	pc, lr
-+
-+/*
-+ *	cpu_do_switch_mm(pgd_phys)
-+ *
-+ *	Set the translation table base pointer to be pgd_phys
-+ *
-+ *	- pgd_phys - physical address of new pgd
-+ *
-+ *	It is assumed that:
-+ *	- we are not using split page tables
-+ */
-+	.align	5
-+ENTRY(cpu_do_switch_mm)
-+	movc	p0.c2, r0, #0			@ update page table ptr
-+	nop8
-+
-+	movc	p0.c6, ip, #6			@ TLB invalidate all
-+	nop8
-+
-+	mov	pc, lr
-+
-+/*
-+ *	cpu_set_pte(ptep, pte)
-+ *
-+ *	Set a level 2 translation table entry.
-+ *
-+ *	- ptep  - pointer to level 2 translation table entry
-+ *	- pte   - PTE value to store
-+ */
-+	.align	5
-+ENTRY(cpu_set_pte)
-+	stw	r1, [r0]
-+#ifndef CONFIG_CPU_DCACHE_LINE_DISABLE
-+	sub	r2, r0, #PAGE_OFFSET
-+	movc	p0.c5, r2, #11				@ Dcache clean line
-+	nop8
-+#else
-+	mov	ip, #0
-+	movc	p0.c5, ip, #10				@ Dcache clean all
-+	nop8
-+	@dcacheline_flush	r0, r2, ip
-+#endif
-+	mov	pc, lr
-+
++	flush_icache_range(vectors, vectors + PAGE_SIZE);
++}
 
