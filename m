@@ -1,40 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735Ab0LYMdr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 07:33:47 -0500
-Received: from swm.pp.se ([212.247.200.143]:38020 "EHLO uplift.swm.pp.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751479Ab0LYMdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 07:33:46 -0500
-X-Greylist: delayed 878 seconds by postgrey-1.27 at vger.kernel.org; Sat, 25 Dec 2010 07:33:45 EST
-Date: Sat, 25 Dec 2010 13:19:05 +0100 (CET)
-From: Mikael Abrahamsson <swmike@swm.pp.se>
-To: Rogier Wolff <R.E.Wolff@BitWizard.nl>
-cc: Michael Tokarev <mjt@tls.msk.ru>, Krzysztof Halasa <khc@pm.waw.pl>,
-        Greg Freemyer <greg.freemyer@gmail.com>,
-        =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: Slow disks.
-In-Reply-To: <20101225121407.GA2116@bitwizard.nl>
-Message-ID: <alpine.DEB.1.10.1012251317420.27193@uplift.swm.pp.se>
-References: <20101220141553.GA6088@bitwizard.nl> <20101220190630.66084e1d@neptune.home> <AANLkTi=VAJbVSzX_DH9_==a3RonLJmawYu3MzF-uqGXC@mail.gmail.com> <20101222104306.GB30941@bitwizard.nl> <m3aajvz5na.fsf@intrepid.localdomain> <4D14BB36.1030304@msgid.tls.msk.ru>
- <20101225121407.GA2116@bitwizard.nl>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
-Organization: People's Front Against WWW
+	id S1751996Ab0LYNNu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 08:13:50 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39193 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751903Ab0LYNNt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Dec 2010 08:13:49 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=N1sl/QHznnq4rJ+cZV5YoOw7aD68NNLKMGkAPu9wtscTPSgSkLf2ZNmG2TwVPjI6Bs
+         kk527QDwHxmNOdNm44mEH4MIhc/VL1wCSVE3pZOb3lJgVPsTRffw+eLfgznUkny5V9Wb
+         upbMF6hUNAmY2p5YKPk9XDD78Sl7eVqlvHwJ0=
+Date: Sat, 25 Dec 2010 14:13:43 +0100
+From: Jarek Poplawski <jarkao2@gmail.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: [2.6.37-rc7] drivers/gpu/drm/drm_edid.c:1303: warning: array
+ subscript is above array bounds
+Message-ID: <20101225131343.GA1960@del.dom.local>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 25 Dec 2010, Rogier Wolff wrote:
+Hi,
+There is this compile warning in Linus' tree (gcc version 4.3.3):
 
-> If you'd use a RAID drive that DOES report error quickly, you'll be on
-> your way maybe 113 seconds quicker, but still with a degraded array.
+drivers/gpu/drm/drm_edid.c: In function 'drm_detect_hdmi_monitor':
+drivers/gpu/drm/drm_edid.c:1303: warning: array subscript is above array bounds
+drivers/gpu/drm/drm_edid.c: In function 'drm_detect_monitor_audio':
+drivers/gpu/drm/drm_edid.c:1303: warning: array subscript is above array bounds
 
-Read errors will use parity drive and be re-written by the md layer.
-
-Write errors will cause the drive to be kicked.
-
--- 
-Mikael Abrahamsson    email: swmike@swm.pp.se
+Cheers,
+Jarek P.
