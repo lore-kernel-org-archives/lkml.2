@@ -1,84 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516Ab0LYTCz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 14:02:55 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:59218 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438Ab0LYTCy convert rfc822-to-8bit (ORCPT
+	id S1752225Ab0LYTH1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 14:07:27 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:15060 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125Ab0LYTH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 14:02:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=S/XHClpFKFyordtft3VhCY2nN3/S3fGoPxPKPdNcN51s/x8TvcM0r+Uos61fL88aeH
-         psNQsWNbXSLGRKhTgP4whIzHT7SleFBHv4UvGu0Mh13vXH99D8gQ+/gKoVKKZHAaCX7+
-         pkVVQZDjKWvZ8xs9wdo3JZo4jlCj+yfW+sf4Y=
+	Sat, 25 Dec 2010 14:07:26 -0500
+Date: Sat, 25 Dec 2010 19:57:41 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Tigran Aivazian <tigran@veritas.com>
+Subject: [PATCH] Intel CPU Microcode Update Driver: Fix double vfree() and
+ remove redundant pointer checks before vfree()
+Message-ID: <alpine.LNX.2.00.1012251946100.10759@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20101225155027.GA4076@rhlx01.hs-esslingen.de>
-References: <AANLkTim3zeSvWfxXK_F8W_igCncEjP38tOOVCBXhQfsL@mail.gmail.com>
-	<20101225155027.GA4076@rhlx01.hs-esslingen.de>
-Date: Sat, 25 Dec 2010 20:02:50 +0100
-Message-ID: <AANLkTikyu5vGLKnMXEcPPsQWrFAe7SmXMPHo5iCzPYMg@mail.gmail.com>
-Subject: Re: Linux distribution
-From: Zimny Lech <napohybelskurwysynom2010@gmail.com>
-To: Andreas Mohr <andi@lisas.de>
-Cc: Ozgur Karatas <kaigeek@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ave
+Hi,
 
-2010/12/25 Andreas Mohr <andi@lisas.de>:
-> Hi,
->
-> [picking up this orphan posting ;)]
->
-> choice of Linux distribution is a quite subjective thing.
->
-> Myself, I'm tending towards Debian-based distributions.
-> If your email handle is true to the core, then perhaps Debian stable
-> would be a good idea, otherwise choose an "easier on the user" variant
-> like SimplyMEPIS, MINT or even Ubuntu.
->
-> Reason being that with Debian installation of all kernel-related
-> packages (build-essential, libncurses5-dev etc.) is a simple matter
-> (which OTOH I'm sure is the case with many non-Debian distros as well).
->
-> Or if you want to be right at the forefront of Linux development,
-> then perhaps choosing a nicely integrated source-based distribution
-> such as Arch is a good idea to always have fresh packages.
->
-> But generally choice of distribution shouldn't really matter (in case
-> one is using a capable desktop distribution, of course).
+In arch/x86/kernel/microcode_intel.c::generic_load_microcode() we have 
+this:
 
-Agreed - it doesn't really matter. But if he want a distro that is
-used by developers, he may want to take a look at page 13 of
-http://www.linuxfoundation.org/docs/lf_linux_kernel_development_2010.pdf
-top kernel contributors by company.
+	while (leftover) {
+		...
+		if (get_ucode_data(mc, ucode_ptr, mc_size) ||
+		    microcode_sanity_check(mc) < 0) {
+			vfree(mc);
+			break;
+		}
+		...
+	}
 
-I don't see anything related to distros that you proposed :P
+	if (mc)
+		vfree(mc);
 
->
-> HTH,
->
-> Andreas Mohr
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+This will cause a double free of 'mc'. This patch fixes that by just 
+removing the vfree() call in the loop since 'mc' will be freed nicely just 
+after we break out of the loop.
+
+There's also a second change in the patch. I noticed a lot of checks for 
+pointers being NULL before passing them to vfree(). That's completely 
+redundant since vfree() deals gracefully with being passed a NULL pointer. 
+Removing the redundant checks yields a nice size decrease for the object 
+file.
+
+Size before the patch:
+   text    data     bss     dec     hex filename
+   4578     240    1032    5850    16da arch/x86/kernel/microcode_intel.o
+Size after the patch:
+   text    data     bss     dec     hex filename
+   4489     240     984    5713    1651 arch/x86/kernel/microcode_intel.o
+
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ microcode_intel.c |   16 +++++-----------
+ 1 file changed, 5 insertions(+), 11 deletions(-)
+
+diff --git a/arch/x86/kernel/microcode_intel.c b/arch/x86/kernel/microcode_intel.c
+index dcb65cc..1a1b606 100644
+--- a/arch/x86/kernel/microcode_intel.c
++++ b/arch/x86/kernel/microcode_intel.c
+@@ -364,8 +364,7 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
+ 
+ 		/* For performance reasons, reuse mc area when possible */
+ 		if (!mc || mc_size > curr_mc_size) {
+-			if (mc)
+-				vfree(mc);
++			vfree(mc);
+ 			mc = vmalloc(mc_size);
+ 			if (!mc)
+ 				break;
+@@ -374,13 +373,11 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
+ 
+ 		if (get_ucode_data(mc, ucode_ptr, mc_size) ||
+ 		    microcode_sanity_check(mc) < 0) {
+-			vfree(mc);
+ 			break;
+ 		}
+ 
+ 		if (get_matching_microcode(&uci->cpu_sig, mc, new_rev)) {
+-			if (new_mc)
+-				vfree(new_mc);
++			vfree(new_mc);
+ 			new_rev = mc_header.rev;
+ 			new_mc  = mc;
+ 			mc = NULL;	/* trigger new vmalloc */
+@@ -390,12 +387,10 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
+ 		leftover  -= mc_size;
+ 	}
+ 
+-	if (mc)
+-		vfree(mc);
++	vfree(mc);
+ 
+ 	if (leftover) {
+-		if (new_mc)
+-			vfree(new_mc);
++		vfree(new_mc);
+ 		state = UCODE_ERROR;
+ 		goto out;
+ 	}
+@@ -405,8 +400,7 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
+ 		goto out;
+ 	}
+ 
+-	if (uci->mc)
+-		vfree(uci->mc);
++	vfree(uci->mc);
+ 	uci->mc = (struct microcode_intel *)new_mc;
+ 
+ 	pr_debug("CPU%d found a matching microcode update with version 0x%x (current=0x%x)\n",
 
 
 
 -- 
-Slawa!
-Zimny "Spie dziadu!" Lech z Wawelu
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-Hej, tam!
-Wydar³em klejnot szans
-http://www.youtube.com/watch?v=VXWTlYzVFUA
