@@ -1,91 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753125Ab0LYCMT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 21:12:19 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:49766 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752612Ab0LYCMS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 21:12:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=DQJgk8u2JXY2lSxDshkKSKloxn0Dz6t2A51Tzj6EfYfL7pn35COWswnQEiMCAlKTd7
-         Rurwg8G+IK5jtxCd1Bi1KhKMJnWAzR76WuMyA/uVTLhBzzCZ5oTr3Z7ccIjSvGIUkBs0
-         t0zaB0EFNnlromDDJ/tVdO08yDrQGSY9smCns=
-Date: Sat, 25 Dec 2010 10:12:09 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fix unsafe operation in high resolution timer
-Message-ID: <20101225021209.GA11183@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <AANLkTinvHP4rZ6PSyEOJ_ZJ2chRJX0ZyzuhNoCRrO1wK@mail.gmail.com>
- <AANLkTikVQU6ozp0H1u7ghd0=miYyUJL62uP=0FBZSLok@mail.gmail.com>
- <AANLkTimc0FwBhj5MsnibTTq94AgaQgqCKEXNSOvM_XjE@mail.gmail.com>
+	id S1753169Ab0LYCSQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 21:18:16 -0500
+Received: from cantor.suse.de ([195.135.220.2]:45505 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752013Ab0LYCSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Dec 2010 21:18:15 -0500
+Message-ID: <4D15545A.3020800@suse.com>
+Date: Fri, 24 Dec 2010 21:18:02 -0500
+From: Jeff Mahoney <jeffm@suse.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimc0FwBhj5MsnibTTq94AgaQgqCKEXNSOvM_XjE@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dan Carpenter <error27@gmail.com>, David Miller <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: taskstats alignment...
+References: <20101223.093022.193727098.davem@davemloft.net> <4D14EA49.3070005@suse.com> <20101224211529.GA19019@bicker>
+In-Reply-To: <20101224211529.GA19019@bicker>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 24, 2010 at 10:28:52PM +0800, Hillf Danton wrote:
-> On Fri, Dec 24, 2010 at 3:17 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
-> > On Thu, Dec 23, 2010 at 9:29 PM, Hillf Danton <dhillf@gmail.com> wrote:
-> >> After calling the callback function of hrtimer, the timer could become
-> >> unreliable in corner cases where the timer will no longer be queued
-> >> and the mm segment, in which the timer is embedded, could be reclaimed
-> >> in the callback.
-> >>
-> >> The unreliability is fixed by checking the result of callback before
-> >> operating the timer again.
-> >
-> > Though the patch is buggy. But it actually explores a real problem.
-> >
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+On 12/24/2010 04:16 PM, Dan Carpenter wrote:
+> On Fri, Dec 24, 2010 at 01:45:29PM -0500, Jeff Mahoney wrote:
+> v> -----BEGIN PGP SIGNED MESSAGE-----
+>> Hash: SHA1
+>>
+>> On 12/23/2010 12:30 PM, David Miller wrote:
+>>>
+>>> Re: commit 4be2c95d1f7706ca0e74499f2bd118e1cee19669
+>>>
+>>> Pretty much every 64-bit architecture other than
+>>> powerpc64 and x86-64 needs that code, not just
+>>> IA64.
+>>>
+>>> Better check would be:
+>>>
+>>> CONFIG_64BIT && !CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
+>>>
+>>> Otherwise we'll be twiddling that ifdef endlessly as each
+>>> and every other 64-bit platform bumps into this issue.
+>>>
+>>> So please could you change this to use a more sane check?
+>>
+>> I don't have an objection to it, but I've been pushing that we make the
+>> change universal from the beginning of the discussion.
+>>
+>> The issue is that it causes breakage on apps that aren't following the
+>> interface properly. iotop, in particular, has hard-coded offsets into
+>> the packet to fish out the taskstats structure.
+>>
+>> So, if the goal of not breaking x86_64 is good enough, I'm fine with
+>> this change.
 > 
-> Would you please finger out why the patch is buggy?
+> Didn't you say something along the lines that if they don't have
+> CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS then there is a warning message
+> printed in dmesg?  I thought that was what prompted you to change the
+> alignment in the first place.  It sound like those arches are already
+> broken so David's suggestion would be a clear improvement over the 
+> current code.
 
-No problem.
+Yes, that is the original reason for the patch. The discussion was
+surrounding which arches to break, since I made it universal. Changing
+it to CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS (didn't know that existed
+before) makes sense.
 
-Actually the patch change the behavior of current hrtimer.
-See comments below :)
+> BTW, since you're redoing the patch, it would be good if you pasted the
+> warning message into the changelog.
 
-> >> ---
-> >>
-> >> --- a/kernel/hrtimer.c  2010-11-01 19:54:12.000000000 +0800
-> >> +++ b/kernel/hrtimer.c  2010-12-23 21:17:02.000000000 +0800
-> >> @@ -1225,6 +1225,7 @@ static void __run_hrtimer(struct hrtimer
-> >>        raw_spin_unlock(&cpu_base->lock);
-> >>        trace_hrtimer_expire_entry(timer, now);
-> >>        restart = fn(timer);
-> >> +       if (restart != HRTIMER_NORESTART)
-> >>        trace_hrtimer_expire_exit(timer);
-> >>        raw_spin_lock(&cpu_base->lock);
-> >>
-> >> @@ -1236,11 +1237,8 @@ static void __run_hrtimer(struct hrtimer
-> >>        if (restart != HRTIMER_NORESTART) {
-> >>                BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
-> >>                enqueue_hrtimer(timer, base);
-> >> +               timer->state &= ~HRTIMER_STATE_CALLBACK;
+Ok, that's easy enough.
 
-HRTIMER_STATE_CALLBACK is only cleared for RESTART hrtimer with
-your modification.
+- -Jeff
 
-> >>        }
-> >> -
-> >> -       WARN_ON_ONCE(!(timer->state & HRTIMER_STATE_CALLBACK));
-> >> -
-> >> -       timer->state &= ~HRTIMER_STATE_CALLBACK;
+- -- 
+Jeff Mahoney
+SUSE Labs
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
+Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
 
-But for a hrtimer which is not free in its callback, like a
-static defined one. the hrtimer could be referenced at the same
-time. So here you cann't just delete the two lines.
-
-Thanks,
-Yong
+iEYEARECAAYFAk0VVFgACgkQLPWxlyuTD7JD2gCgi99mSqA29g5k9b9yj7od67mk
+rkAAnR5Stz8fY4eYZbRJetz+fyH8D3iz
+=zgux
+-----END PGP SIGNATURE-----
