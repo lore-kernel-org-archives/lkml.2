@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221Ab0LYEyB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 23:54:01 -0500
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:44611 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752115Ab0LYEyA (ORCPT
+	id S1753309Ab0LYEy6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 23:54:58 -0500
+Received: from eagle.jhcloos.com ([207.210.242.212]:47197 "EHLO
+	eagle.jhcloos.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753248Ab0LYEy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 23:54:00 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 0loLBhQVM1lKVVMB7u6tX_iH46JbiKRnDM_f4eQQ7Fg6m5W
- 4zNLPWWpm1mMS77TgycvE2JHomX9a54z8xYldn8uRk_OU6Ge.4n.3.9G1H6.
- CLmFUDyZOJ9ofeCSHDPbXnvvh9fN1sF3ymF3eKvxtjlXhmwp17Vxc32CV_62
- TuBcNHMOI125WOj9aSOMs1CBN3rhyyc0dm.16cGIM32MvoyQ0dwzskx.JuEt
- RvXhyYg7UrRHOu5_ljLWQQ9AsLXIDNzukZuB2eGNUoUSBQ8S.2dYAx4omoo2
- pEIu8z76h3PR4bXL_m_54IAR3ETX1CvArgC0cJkOCLBJGxP0-
-X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 24 Dec 2010 22:53:55 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: "H. Peter Anvin" <hpa@zytor.com>
-cc: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [cpuops cmpxchg double V1 1/4] Generic support for
- this_cpu_cmpxchg_double
-In-Reply-To: <4D13E7D5.7020503@zytor.com>
-Message-ID: <alpine.DEB.2.00.1012242251090.23107@router.home>
-References: <20101214174847.887713690@linux.com> <20101214174900.058235985@linux.com> <4D0CC982.3030905@kernel.org> <alpine.DEB.2.00.1012211634560.3769@router.home> <4D11373D.9010205@zytor.com> <20101222091358.GC27861@htj.dyndns.org>
- <alpine.DEB.2.00.1012231812280.22549@router.home> <4D13E7D5.7020503@zytor.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 24 Dec 2010 23:54:56 -0500
+X-Greylist: delayed 477 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Dec 2010 23:54:56 EST
+From: James Cloos <cloos@jhcloos.com>
+To: Dominik Brodowski <linux@dominikbrodowski.net>
+Cc: Dave Jones <davej@redhat.com>, Youquan Song <youquan.song@intel.com>,
+        cpufreq@vger.kernel.org, venki@google.com, arjan@linux.intel.com,
+        lenb@kernel.org, suresh.b.siddha@intel.com, kent.liu@intel.com,
+        chaohong.guo@intel.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org,
+        Youquan Song <youquan.song@linux.intel.com>
+Subject: Re: [PATCH 0/6] cpufreq: Add sampling window to enhance ondemand governor power efficiency
+In-Reply-To: <20101223205148.GB6441@comet.dominikbrodowski.net> (Dominik
+	Brodowski's message of "Thu, 23 Dec 2010 21:51:48 +0100")
+References: <1293085424-18212-1-git-send-email-youquan.song@intel.com>
+	<20101223110020.GC18363@comet.dominikbrodowski.net>
+	<20101223173402.GA3821@redhat.com>
+	<20101223205148.GB6441@comet.dominikbrodowski.net>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/24.0.50 (gnu/linux)
+Face: iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAI1J
+ REFUOE+lU9ESgCAIg64P1y+ngUdxhl5H8wFbbM0OmUiEhKkCYaZThXCo6KE5sCbA1DDX3genvO4d
+ eBQgEMaM5qy6uWk4SfBYfdu9jvBN9nSVDOKRtwb+I3epboOsOX5pZbJNsBJFvmQQ05YMfieIBnYX
+ FK2N6dOawd97r/e8RjkTLzmMsiVgrAoEugtviCM3v2WzjgAAAABJRU5ErkJggg==
+Copyright: Copyright 2009 James Cloos
+OpenPGP: ED7DAEA6; url=http://jhcloos.com/public_key/0xED7DAEA6.asc
+OpenPGP-Fingerprint: E9E9 F828 61A4 6EA9 0F2B  63E7 997A 9F17 ED7D AEA6
+Date: Fri, 24 Dec 2010 23:24:48 -0500
+Message-ID: <m3zkrueaxj.fsf@jhcloos.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-Hashcash: 1:30:101225:linux@dominikbrodowski.net::gzLtlcbAjIT9xjsI:0000000000000000000000000000000000hfqTA
+X-Hashcash: 1:30:101225:davej@redhat.com::7cii0icWH9OMhUn7:a6QrD
+X-Hashcash: 1:30:101225:youquan.song@intel.com::MRChgV/+Ys395I2T:00000000000000000000000000000000000000IPrQQ
+X-Hashcash: 1:30:101225:cpufreq@vger.kernel.org::JheffWoAReD16mHy:0000000000000000000000000000000000000eexmP
+X-Hashcash: 1:30:101225:venki@google.com::h91niayxFPzDcpld:3Wf35
+X-Hashcash: 1:30:101225:arjan@linux.intel.com::JQ8Lnv2NkHNLoX83:0000000000000000000000000000000000000008j+of
+X-Hashcash: 1:30:101225:lenb@kernel.org::Ve5/GX5lCjuWUWAu:0EyIX9
+X-Hashcash: 1:30:101225:suresh.b.siddha@intel.com::Zl5fR3ltEd00/LEd:00000000000000000000000000000000000OL7kk
+X-Hashcash: 1:30:101225:kent.liu@intel.com::1KPUrHg2bmOQZD99:000000000000000000000000000000000000000000f2FO+
+X-Hashcash: 1:30:101225:chaohong.guo@intel.com::VluEX3ybjnBkCpGd:00000000000000000000000000000000000000XZMm3
+X-Hashcash: 1:30:101225:linux-kernel@vger.kernel.org::jBAvV+5QZMhS+fEC:00000000000000000000000000000000OP3Qp
+X-Hashcash: 1:30:101225:linux-acpi@vger.kernel.org::cGMnoKS0WwehdHA1:0000000000000000000000000000000000KXK5s
+X-Hashcash: 1:30:101225:youquan.song@linux.intel.com::TPPxo4CVZEnyh6rQ:00000000000000000000000000000000WoQuk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Dec 2010, H. Peter Anvin wrote:
+>>>>> "DB" == Dominik Brodowski <linux@dominikbrodowski.net> writes:
 
-> There are two return registers; two machine registers can be returned in
-> registers.  [u]int128 is poorly implemented in a lot of gcc versions,
-> since it really hasn't been exercised.  However, two-word structures
-> should work.  I do not believe a two-word *array* works, though.
+DB> AFAICS, we have two in-kernel dynamic frequency scaling governors, one of
+DB> which doesn't seem to get much usage (conservative)...
 
-Oh gosh. So we would be using a tight corner case for gcc that may only
-work with certain versions of gcc? Note that the current version does only
-return a boolean. There is no need for returning double words. I'd be
-happy if we could *pass* double words.
+Isn't conservative the recommended choice for AMD processors?
 
-> > If we can indeed pass 128 bit entities (as claimed by hpa) via registers
-> > then the logical choice would be to do
-> >
-> > 	this_cpu_cmpxchg_16(pcp, old, new)
-> >
-> > instead of cmpxchg_double. All parameters would have to be bit.
-> > Then we can avoid the strange cmpxchg_double semantics and can completely
-> > avoid introducing those.
->
-> I'm not sure it works with passing in a structure.
+Or has that changed?
 
-I think then we better leave it as is. The use case so far is minimal so
-we could easily change that if we get to a better solution later.
+-JimC
+-- 
+James Cloos <cloos@jhcloos.com>         OpenPGP: 1024D/ED7DAEA6
