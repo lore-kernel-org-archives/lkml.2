@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751438Ab0LYQge (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 11:36:34 -0500
-Received: from torres.zugschlus.de ([85.214.131.164]:41488 "EHLO
-	torres.zugschlus.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750807Ab0LYQge (ORCPT
+	id S1751831Ab0LYQww (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 11:52:52 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:40181 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751550Ab0LYQwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 11:36:34 -0500
-Date: Sat, 25 Dec 2010 17:36:32 +0100
-From: Marc Haber <mh+linux-kernel@zugschlus.de>
-To: linux-kernel@vger.kernel.org
-Subject: Re: NetXen NX3031 failing test, reporting link down, not working
-Message-ID: <20101225163632.GA27786@torres.zugschlus.de>
-References: <20101206171727.GA30695@torres.zugschlus.de>
+	Sat, 25 Dec 2010 11:52:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=t3MGK5rynbHfpxeFp/mAyWzZ0HtVoelbyRq5oeFge15H/wXsjqpKvpjPoRnOH7sXpz
+         zsEp89omw5yeA1sw5dc6cR3hDvJJYpZA9CuZVHi2wfIMJSs8u6UUdzBAqvQRQJd3vjwf
+         Bn4pLlC3/b3z25UgUt7D0yRUouoLW7YxJzyW4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20101206171727.GA30695@torres.zugschlus.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.DEB.2.00.1012242251090.23107@router.home>
+References: <20101214174847.887713690@linux.com>
+	<20101214174900.058235985@linux.com>
+	<4D0CC982.3030905@kernel.org>
+	<alpine.DEB.2.00.1012211634560.3769@router.home>
+	<4D11373D.9010205@zytor.com>
+	<20101222091358.GC27861@htj.dyndns.org>
+	<alpine.DEB.2.00.1012231812280.22549@router.home>
+	<4D13E7D5.7020503@zytor.com>
+	<alpine.DEB.2.00.1012242251090.23107@router.home>
+Date: Sat, 25 Dec 2010 17:52:50 +0100
+X-Google-Sender-Auth: XXTEId5qBaIdoCr8LkRYiMMwdps
+Message-ID: <AANLkTikSwwMtDwx4wGM8hO4riZFVmtkq_bihVvPirO8F@mail.gmail.com>
+Subject: Re: [cpuops cmpxchg double V1 1/4] Generic support for this_cpu_cmpxchg_double
+From: Tejun Heo <tj@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, Dec 25, 2010 at 5:53 AM, Christoph Lameter <cl@linux.com> wrote:
+> Oh gosh. So we would be using a tight corner case for gcc that may only
+> work with certain versions of gcc? Note that the current version does only
+> return a boolean. There is no need for returning double words. I'd be
+> happy if we could *pass* double words.
 
-On Mon, Dec 06, 2010 at 06:17:27PM +0100, Marc Haber wrote:
-> I have HP DL 120 G6 with two Quad-GE Cards based on NetXen NX3031 (rev
-> 42) [4040:0100]. The boxes are running with a grml daily image with
-> kernel 2.6.36.1 for the time being, and the NetXens are giving me a
-> hard time.
+I wouldn't call it a corner case.  It's pretty clearly defined in the
+ABI.  But that said, it might still be problematic on other
+architectures when we try to apply it to different architectures.  Is
+everyone against just taking a scalar for the first variable instead
+of taking a pointer?  I'd be happier with that than the current one.
 
-it's a pity that nobody cared to even point me into the right
-direction. I am not aware of having done anything wrong.
-
-Anyway, the issue could be solved by updating the on-card flashed
-firmware from 4.0.530 to 4.0.539. With this firmware, everything seems
-to be fine.
-
-Maybe the Linux driver should be adapted to not fail silently if it
-doesn't like the on-card firmware but instead log an error message so
-that people know they need to update their firmware.
-
-Greetings
-Marc
+Thanks.
 
 -- 
------------------------------------------------------------------------------
-Marc Haber         | "I don't trust Computers. They | Mailadresse im Header
-Mannheim, Germany  |  lose things."    Winona Ryder | Fon: *49 621 72739834
-Nordisch by Nature |  How to make an American Quilt | Fax: *49 3221 2323190
+tejun
