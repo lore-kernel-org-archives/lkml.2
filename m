@@ -1,92 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771Ab0LYI7a (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 03:59:30 -0500
-Received: from hera.kernel.org ([140.211.167.34]:51285 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751142Ab0LYI72 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 03:59:28 -0500
-Date: Sat, 25 Dec 2010 08:59:15 GMT
-From: tip-bot for David Sharp <dhsharp@google.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        rostedt@goodmis.org, dhsharp@google.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, dhsharp@google.com, tglx@linutronix.de
-In-Reply-To: <AANLkTin7nLrRPc9qGjdjHbeVDDWiJjAiYyb-L=gH85bx@mail.gmail.com>
-References: <1293064704-8101-1-git-send-email-dhsharp@google.com>
-	<AANLkTin7nLrRPc9qGjdjHbeVDDWiJjAiYyb-L=gH85bx@mail.gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] ring_buffer: Off-by-one and duplicate events in ring_buffer_read_page
-Message-ID: <tip-e1e359273576ee8fe27021356b064c772ed29af3@git.kernel.org>
-Git-Commit-ID: e1e359273576ee8fe27021356b064c772ed29af3
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1751659Ab0LYJ5Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 04:57:16 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63328 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836Ab0LYJ5O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Dec 2010 04:57:14 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=eJ0bgZjO11zLMXQ386h5p9dU2p75VDo0saRxgV+21/7cec76bejVcpc1mV7aYPxGgb
+         NVP7291Ml2+GupAiS/yzXojPzIo/TTCJ4kFsNBjlVwRPC+G58SzQezA6ivMR+phMGbd9
+         p6YTMoHV80dx4zrHRilxrMqyaYJmqKGQRFVz4=
+Date: Sat, 25 Dec 2010 11:57:09 +0200
+From: "Ahmed S. Darwish" <darwish.07@gmail.com>
+To: Marco Stornelli <marco.stornelli@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        David Woodhouse <David.Woodhouse@intel.com>, Greg KH <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH, Bugfix] RAMOOPS: Don't overflow over non-allocated regions
+Message-ID: <20101225095709.GA1345@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 25 Dec 2010 08:59:16 +0000 (UTC)
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e1e359273576ee8fe27021356b064c772ed29af3
-Gitweb:     http://git.kernel.org/tip/e1e359273576ee8fe27021356b064c772ed29af3
-Author:     David Sharp <dhsharp@google.com>
-AuthorDate: Wed, 22 Dec 2010 16:38:24 -0800
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Thu, 23 Dec 2010 12:09:30 -0500
+Hi,
 
-ring_buffer: Off-by-one and duplicate events in ring_buffer_read_page
+Current code mis-calculates the ramoops header size, leading to an
+overflow over the next record at best, or over a non-allocated region
+at worst. Fix that calculation.
 
-Fix two related problems in the event-copying loop of
-ring_buffer_read_page.
+Signed-off-by: Ahmed S. Darwish <darwish.07@gmail.com>
+--
 
-The loop condition for copying events is off-by-one.
-"len" is the remaining space in the caller-supplied page.
-"size" is the size of the next event (or two events).
-If len == size, then there is just enough space for the next event.
+Shouldn't this be added to -stable too?
 
-size was set to rb_event_ts_length, which may include the size of two
-events if the first event is a time-extend, in order to assure time-
-extends are kept together with the event after it. However,
-rb_advance_reader always advances by one event. This would result in the
-event after any time-extend being duplicated. Instead, get the size of
-a single event for the memcpy, but use rb_event_ts_length for the loop
-condition.
+Happy New Year!
 
-Signed-off-by: David Sharp <dhsharp@google.com>
-LKML-Reference: <1293064704-8101-1-git-send-email-dhsharp@google.com>
-LKML-Reference: <AANLkTin7nLrRPc9qGjdjHbeVDDWiJjAiYyb-L=gH85bx@mail.gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/ring_buffer.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+ drivers/char/ramoops.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 9ed509a..bd1c35a 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -3853,6 +3853,13 @@ int ring_buffer_read_page(struct ring_buffer *buffer,
+diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c
+index 73dcb0e..d3d63be 100644
+--- a/drivers/char/ramoops.c
++++ b/drivers/char/ramoops.c
+@@ -29,7 +29,6 @@
+ #include <linux/ramoops.h>
  
- 		/* Need to copy one event at a time */
- 		do {
-+			/* We need the size of one event, because
-+			 * rb_advance_reader only advances by one event,
-+			 * whereas rb_event_ts_length may include the size of
-+			 * one or two events.
-+			 * We have already ensured there's enough space if this
-+			 * is a time extend. */
-+			size = rb_event_length(event);
- 			memcpy(bpage->data + pos, rpage->data + rpos, size);
+ #define RAMOOPS_KERNMSG_HDR "===="
+-#define RAMOOPS_HEADER_SIZE   (5 + sizeof(struct timeval))
  
- 			len -= size;
-@@ -3867,7 +3874,7 @@ int ring_buffer_read_page(struct ring_buffer *buffer,
- 			event = rb_reader_event(cpu_buffer);
- 			/* Always keep the time extend and data together */
- 			size = rb_event_ts_length(event);
--		} while (len > size);
-+		} while (len >= size);
+ #define RECORD_SIZE 4096
  
- 		/* update bpage */
- 		local_set(&bpage->commit, pos);
+@@ -65,8 +64,8 @@ static void ramoops_do_dump(struct kmsg_dumper *dumper,
+ 			struct ramoops_context, dump);
+ 	unsigned long s1_start, s2_start;
+ 	unsigned long l1_cpy, l2_cpy;
+-	int res;
+-	char *buf;
++	int res, hdr_size;
++	char *buf, *buf_orig;
+ 	struct timeval timestamp;
+ 
+ 	/* Only dump oopses if dump_oops is set */
+@@ -74,6 +73,8 @@ static void ramoops_do_dump(struct kmsg_dumper *dumper,
+ 		return;
+ 
+ 	buf = (char *)(cxt->virt_addr + (cxt->count * RECORD_SIZE));
++	buf_orig = buf;
++
+ 	memset(buf, '\0', RECORD_SIZE);
+ 	res = sprintf(buf, "%s", RAMOOPS_KERNMSG_HDR);
+ 	buf += res;
+@@ -81,8 +82,9 @@ static void ramoops_do_dump(struct kmsg_dumper *dumper,
+ 	res = sprintf(buf, "%lu.%lu\n", (long)timestamp.tv_sec, (long)timestamp.tv_usec);
+ 	buf += res;
+ 
+-	l2_cpy = min(l2, (unsigned long)(RECORD_SIZE - RAMOOPS_HEADER_SIZE));
+-	l1_cpy = min(l1, (unsigned long)(RECORD_SIZE - RAMOOPS_HEADER_SIZE) - l2_cpy);
++	hdr_size = buf - buf_orig;
++	l2_cpy = min(l2, (unsigned long)(RECORD_SIZE - hdr_size));
++	l1_cpy = min(l1, (unsigned long)(RECORD_SIZE - hdr_size) - l2_cpy);
+ 
+ 	s2_start = l2 - l2_cpy;
+ 	s1_start = l1 - l1_cpy;
+
+-- 
+Darwish
+http://darwish.07.googlepages.com
