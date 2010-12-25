@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751751Ab0LYSzk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 13:55:40 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:38698 "EHLO mprc.pku.edu.cn"
+	id S1752418Ab0LYS4e (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 13:56:34 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:38700 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751101Ab0LYSzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 13:55:37 -0500
+	id S1751385Ab0LYS4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Dec 2010 13:56:31 -0500
 From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 Cc: =?gb2312?B?0anMziC53A==?= <guanxuetao@mprc.pku.edu.cn>
-Subject: [PATCHv1 10/12] unicore32 core architecture: interrupts ang gpio
-Date: Sun, 26 Dec 2010 02:55:28 +0800
-Message-ID: <00d801cba465$4c2f6de0$e48e49a0$@mprc.pku.edu.cn>
+Subject: [PATCHv1 11/12] unicore32 core architecture: signals
+Date: Sun, 26 Dec 2010 02:56:24 +0800
+Message-ID: <00da01cba465$6d6e52f0$484af8d0$@mprc.pku.edu.cn>
 MIME-Version: 1.0
 Content-Type: text/plain;
 	charset="gb2312"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AcukZTixbaLorQEtR3yrpVjlQJ+xoQ==
+Thread-Index: AcukZVqiU7ttRnasTFuFXfV8DMNZdg==
 Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,26 +25,23 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 
-Patch 10 implements interrupts and gpio. UniCore32 has 9 gpio interrupt sources.
-  And gpio device operations are also here.
+Patch 11 implements signals.
 
 Signed-off-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 ---
- arch/unicore32/include/asm/gpio.h     |  103 ++++++++
- arch/unicore32/include/asm/irq.h      |  107 ++++++++
- arch/unicore32/include/asm/irqflags.h |   53 ++++
- arch/unicore32/kernel/irq.c           |  440 +++++++++++++++++++++++++++++++++
- drivers/staging/puv3/puv3_gpio.c      |  129 ++++++++++
- 5 files changed, 832 insertions(+), 0 deletions(-)
+ arch/unicore32/include/asm/sigcontext.h |   61 ++++
+ arch/unicore32/kernel/signal.c          |  571 +++++++++++++++++++++++++++++++
+ arch/unicore32/kernel/signal.h          |   16 +
+ 3 files changed, 648 insertions(+), 0 deletions(-)
 
-diff --git a/arch/unicore32/include/asm/gpio.h b/arch/unicore32/include/asm/gpio.h
+diff --git a/arch/unicore32/include/asm/sigcontext.h b/arch/unicore32/include/asm/sigcontext.h
 new file mode 100644
-index 0000000..7292b3c
+index 0000000..68e05e7
 --- /dev/null
-+++ b/arch/unicore32/include/asm/gpio.h
-@@ -0,0 +1,103 @@
++++ b/arch/unicore32/include/asm/sigcontext.h
+@@ -0,0 +1,61 @@
 +/*
-+ * linux/arch/unicore32/include/asm/gpio.h
++ * linux/arch/unicore32/include/asm/sigcontext.h
 + *
 + * Code specific to PKUnity SoC and UniCore ISA
 + *
@@ -54,106 +51,64 @@ index 0000000..7292b3c
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
++#ifndef __UNICORE_SIGCONTEXT_H__
++#define __UNICORE_SIGCONTEXT_H__
 +
-+#ifndef __UNICORE_GPIO_H__
-+#define __UNICORE_GPIO_H__
-+
-+#include <asm/mach/hardware.h>
-+#include <asm/irq.h>
-+#include <asm-generic/gpio.h>
-+
-+#define GPI_OTP_INT             0
-+#define GPI_PCI_INTA            1
-+#define GPI_PCI_INTB            2
-+#define GPI_PCI_INTC            3
-+#define GPI_PCI_INTD            4
-+#define GPI_BAT_DET             5
-+#define GPI_SD_CD               6
-+#define GPI_SOFF_REQ            7
-+#define GPI_SD_WP               8
-+#define GPI_LCD_CASE_OFF        9
-+#define GPO_WIFI_EN             10
-+#define GPO_HDD_LED             11
-+#define GPO_VGA_EN              12
-+#define GPO_LCD_EN              13
-+#define GPO_LED_DATA            14
-+#define GPO_LED_CLK             15
-+#define GPO_CAM_PWR_EN          16
-+#define GPO_LCD_VCC_EN          17
-+#define GPO_SOFT_OFF            18
-+#define GPO_BT_EN               19
-+#define GPO_FAN_ON              20
-+#define GPO_SPKR                21
-+#define GPO_SET_V1              23
-+#define GPO_SET_V2              24
-+#define GPO_CPU_HEALTH          25
-+#define GPO_LAN_SEL             26
-+
-+#ifdef CONFIG_PUV3_NB0916
-+#define GPI_BTN_TOUCH		14
-+#define GPIO_IN			0x000043ff /* 1 for input */
-+#define GPIO_OUT		0x0fffbc00 /* 1 for output */
-+#endif	/* CONFIG_PUV3_NB0916 */
-+
-+#ifdef CONFIG_PUV3_SMW0919
-+#define GPIO_IN			0x000003ff /* 1 for input */
-+#define GPIO_OUT		0x0ffffc00 /* 1 for output */
-+#endif  /* CONFIG_PUV3_SMW0919 */
-+
-+#ifdef CONFIG_PUV3_DB0913
-+#define GPIO_IN			0x000001df /* 1 for input */
-+#define GPIO_OUT		0x03fee800 /* 1 for output */
-+#endif  /* CONFIG_PUV3_DB0913 */
-+
-+#define GPIO_DIR                (~((GPIO_IN) | 0xf0000000))
-+				/* 0 input, 1 output */
-+
-+static inline int gpio_get_value(unsigned gpio)
-+{
-+	if (__builtin_constant_p(gpio) && (gpio <= GPIO_MAX))
-+		return GPIO_GPLR & GPIO_GPIO(gpio);
-+	else
-+		return __gpio_get_value(gpio);
-+}
-+
-+static inline void gpio_set_value(unsigned gpio, int value)
-+{
-+	if (__builtin_constant_p(gpio) && (gpio <= GPIO_MAX))
-+		if (value)
-+			GPIO_GPSR = GPIO_GPIO(gpio);
-+		else
-+			GPIO_GPCR = GPIO_GPIO(gpio);
-+	else
-+		__gpio_set_value(gpio, value);
-+}
-+
-+#define gpio_cansleep	__gpio_cansleep
-+
-+static inline unsigned gpio_to_irq(unsigned gpio)
-+{
-+	if ((gpio < IRQ_GPIOHIGH) && (FIELD(1, 1, gpio) & GPIO_GPIR))
-+		return IRQ_GPIOLOW0 + gpio;
-+	else
-+		return IRQ_GPIO0 + gpio;
-+}
-+
-+static inline unsigned irq_to_gpio(unsigned irq)
-+{
-+	if (irq < IRQ_GPIOHIGH)
-+		return irq - IRQ_GPIOLOW0;
-+	else
-+		return irq - IRQ_GPIO0;
-+}
-+
-+#endif /* __UNICORE_GPIO_H__ */
-diff --git a/arch/unicore32/include/asm/irq.h b/arch/unicore32/include/asm/irq.h
-new file mode 100644
-index 0000000..ade8bb8
---- /dev/null
-+++ b/arch/unicore32/include/asm/irq.h
-@@ -0,0 +1,107 @@
 +/*
-+ * linux/arch/unicore32/include/asm/irq.h
++ * Signal context structure - contains all info to do with the state
++ * before the signal handler was invoked.  Note: only add new entries
++ * to the end of the structure.
++ */
++struct sigcontext {
++	unsigned long trap_no;
++	unsigned long error_code;
++	unsigned long oldmask;
++	unsigned long ucreg_00;
++	unsigned long ucreg_01;
++	unsigned long ucreg_02;
++	unsigned long ucreg_03;
++	unsigned long ucreg_04;
++	unsigned long ucreg_05;
++	unsigned long ucreg_06;
++	unsigned long ucreg_07;
++	unsigned long ucreg_08;
++	unsigned long ucreg_09;
++	unsigned long ucreg_10;
++	unsigned long ucreg_11;
++	unsigned long ucreg_12;
++	unsigned long ucreg_13;
++	unsigned long ucreg_14;
++	unsigned long ucreg_15;
++	unsigned long ucreg_16;
++	unsigned long ucreg_17;
++	unsigned long ucreg_18;
++	unsigned long ucreg_19;
++	unsigned long ucreg_20;
++	unsigned long ucreg_21;
++	unsigned long ucreg_22;
++	unsigned long ucreg_23;
++	unsigned long ucreg_24;
++	unsigned long ucreg_25;
++	unsigned long ucreg_26;
++	unsigned long ucreg_fp;
++	unsigned long ucreg_ip;
++	unsigned long ucreg_sp;
++	unsigned long ucreg_lr;
++	unsigned long ucreg_pc;
++	unsigned long ucreg_asr;
++	unsigned long fault_address;
++};
++
++
++#endif
+diff --git a/arch/unicore32/kernel/signal.c b/arch/unicore32/kernel/signal.c
+new file mode 100644
+index 0000000..c7deecc
+--- /dev/null
++++ b/arch/unicore32/kernel/signal.c
+@@ -0,0 +1,571 @@
++/*
++ * linux/arch/unicore32/kernel/signal.c
 + *
 + * Code specific to PKUnity SoC and UniCore ISA
 + *
@@ -163,740 +118,586 @@ index 0000000..ade8bb8
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
-+#ifndef __UNICORE_IRQ_H__
-+#define __UNICORE_IRQ_H__
-+
-+#include <asm-generic/irq.h>
-+
-+#define	IRQ_GPIOLOW0		0x00
-+#define	IRQ_GPIOLOW1		0x01
-+#define	IRQ_GPIOLOW2		0x02
-+#define	IRQ_GPIOLOW3		0x03
-+#define	IRQ_GPIOLOW4		0x04
-+#define	IRQ_GPIOLOW5		0x05
-+#define	IRQ_GPIOLOW6		0x06
-+#define	IRQ_GPIOLOW7		0x07
-+#define IRQ_GPIOHIGH		0x08
-+#define IRQ_USB			0x09
-+#define IRQ_SDC			0x0a
-+#define IRQ_AC97		0x0b
-+#define IRQ_SATA		0x0c
-+#define IRQ_MME			0x0d
-+#define IRQ_PCI_BRIDGE		0x0e
-+#define	IRQ_DDR			0x0f
-+#define	IRQ_SPI			0x10
-+#define	IRQ_UNIGFX		0x11
-+#define	IRQ_I2C			0x11
-+#define	IRQ_UART1		0x12
-+#define	IRQ_UART0		0x13
-+#define IRQ_UMAL		0x14
-+#define IRQ_NAND		0x15
-+#define IRQ_PS2_KBD		0x16
-+#define IRQ_PS2_AUX		0x17
-+#define IRQ_DMA			0x18
-+#define IRQ_DMAERR		0x19
-+#define	IRQ_TIMER0		0x1a
-+#define	IRQ_TIMER1		0x1b
-+#define	IRQ_TIMER2		0x1c
-+#define	IRQ_TIMER3		0x1d
-+#define	IRQ_RTC			0x1e
-+#define	IRQ_RTCAlarm		0x1f
-+
-+#define	IRQ_GPIO0		0x20
-+#define	IRQ_GPIO1		0x21
-+#define	IRQ_GPIO2		0x22
-+#define	IRQ_GPIO3		0x23
-+#define	IRQ_GPIO4		0x24
-+#define	IRQ_GPIO5		0x25
-+#define	IRQ_GPIO6		0x26
-+#define	IRQ_GPIO7		0x27
-+#define IRQ_GPIO8		0x28
-+#define IRQ_GPIO9		0x29
-+#define IRQ_GPIO10		0x2a
-+#define IRQ_GPIO11		0x2b
-+#define IRQ_GPIO12		0x2c
-+#define IRQ_GPIO13		0x2d
-+#define IRQ_GPIO14		0x2e
-+#define IRQ_GPIO15		0x2f
-+#define IRQ_GPIO16		0x30
-+#define IRQ_GPIO17		0x31
-+#define IRQ_GPIO18		0x32
-+#define IRQ_GPIO19		0x33
-+#define IRQ_GPIO20		0x34
-+#define IRQ_GPIO21		0x35
-+#define IRQ_GPIO22		0x36
-+#define IRQ_GPIO23		0x37
-+#define IRQ_GPIO24		0x38
-+#define IRQ_GPIO25		0x39
-+#define IRQ_GPIO26		0x3a
-+#define IRQ_GPIO27		0x3b
-+
-+#ifdef CONFIG_ARCH_FPGA
-+#define IRQ_PCIINTA             IRQ_GPIOLOW2
-+#define IRQ_PCIINTB             IRQ_GPIOLOW1
-+#define IRQ_PCIINTC             IRQ_GPIOLOW0
-+#define IRQ_PCIINTD             IRQ_GPIOLOW6
-+#endif
-+
-+#if defined(CONFIG_PUV3_DB0913) || defined(CONFIG_PUV3_NB0916)	\
-+	|| defined(CONFIG_PUV3_SMW0919)
-+#define IRQ_PCIINTA             IRQ_GPIOLOW1
-+#define IRQ_PCIINTB             IRQ_GPIOLOW2
-+#define IRQ_PCIINTC             IRQ_GPIOLOW3
-+#define IRQ_PCIINTD             IRQ_GPIOLOW4
-+#endif
-+
-+#define IRQ_SD_CD               IRQ_GPIO6 /* falling or rising trigger */
-+
-+#ifndef __ASSEMBLY__
-+struct irqaction;
-+struct pt_regs;
-+extern void migrate_irqs(void);
-+
-+extern void asm_do_IRQ(unsigned int, struct pt_regs *);
-+
-+#endif
-+
-+#endif
-+
-diff --git a/arch/unicore32/include/asm/irqflags.h b/arch/unicore32/include/asm/irqflags.h
-new file mode 100644
-index 0000000..6d8a28d
---- /dev/null
-+++ b/arch/unicore32/include/asm/irqflags.h
-@@ -0,0 +1,53 @@
-+/*
-+ * linux/arch/unicore32/include/asm/irqflags.h
-+ *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __UNICORE_IRQFLAGS_H__
-+#define __UNICORE_IRQFLAGS_H__
-+
-+#ifdef __KERNEL__
-+
-+#include <asm/ptrace.h>
-+
-+#define ARCH_IRQ_DISABLED	(PRIV_MODE | PSR_I_BIT)
-+#define ARCH_IRQ_ENABLED	(PRIV_MODE)
-+
-+/*
-+ * Save the current interrupt enable state.
-+ */
-+static inline unsigned long arch_local_save_flags(void)
-+{
-+	unsigned long temp;
-+
-+	asm volatile("mov %0, asr" : "=r" (temp) : : "memory", "cc");
-+
-+	return temp & PSR_c;
-+}
-+
-+/*
-+ * restore saved IRQ state
-+ */
-+static inline void arch_local_irq_restore(unsigned long flags)
-+{
-+	unsigned long temp;
-+
-+	asm volatile(
-+		"mov	%0, asr\n"
-+		"mov.a	asr, %1\n"
-+		"mov.f	asr, %0"
-+		: "=&r" (temp)
-+		: "r" (flags)
-+		: "memory", "cc");
-+}
-+
-+#include <asm-generic/irqflags.h>
-+
-+#endif
-+#endif
-diff --git a/arch/unicore32/kernel/irq.c b/arch/unicore32/kernel/irq.c
-new file mode 100644
-index 0000000..17c30b3
---- /dev/null
-+++ b/arch/unicore32/kernel/irq.c
-@@ -0,0 +1,440 @@
-+/*
-+ * linux/arch/unicore32/kernel/irq.c
-+ *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ *  This file contains the code used by various IRQ handling routines:
-+ *  asking for different IRQ's should be done through these routines
-+ *  instead of just grabbing them. Thus setups with different IRQ numbers
-+ *  shouldn't result in any weird surprises, and installing new handlers
-+ *  should be easier.
-+ *
-+ *  IRQ's are in fact implemented a bit like signal handlers for the kernel.
-+ *  Naturally it's not a 1:1 relation, but there are similarities.
-+ *
-+ * Contributors & Additions/Fixes:
-+ *	2010-12-05: combine machine-specific codes by GUAN Xue-tao
-+ *	2009-05-11: add gpio-irq support by GUAN Xue-tao
-+ *	2002-2009 GUAN Xue-tao: First version
-+ */
-+#include <linux/kernel_stat.h>
-+#include <linux/module.h>
-+#include <linux/signal.h>
-+#include <linux/ioport.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+#include <linux/random.h>
-+#include <linux/smp.h>
-+#include <linux/init.h>
-+#include <linux/seq_file.h>
 +#include <linux/errno.h>
-+#include <linux/list.h>
-+#include <linux/kallsyms.h>
-+#include <linux/proc_fs.h>
-+#include <linux/sysdev.h>
-+#include <linux/gpio.h>
++#include <linux/signal.h>
++#include <linux/personality.h>
++#include <linux/freezer.h>
++#include <linux/uaccess.h>
++#include <linux/tracehook.h>
++#include <linux/elf.h>
++#include <linux/unistd.h>
 +
-+#include <asm/system.h>
-+#include <asm/mach/hardware.h>
++#include <asm/cacheflush.h>
++#include <asm/ucontext.h>
 +
-+#include "setup.h"
++#include "ptrace.h"
++#include "signal.h"
 +
-+/*
-+ * PKUnity GPIO edge detection for IRQs:
-+ * IRQs are generated on Falling-Edge, Rising-Edge, or both.
-+ * Use this instead of directly setting GRER/GFER.
-+ */
-+static int GPIO_IRQ_rising_edge;
-+static int GPIO_IRQ_falling_edge;
-+static int GPIO_IRQ_mask = 0;
-+
-+#define GPIO_MASK(irq)		(1 << (irq - IRQ_GPIO0))
-+
-+static int puv3_gpio_type(unsigned int irq, unsigned int type)
-+{
-+	unsigned int mask;
-+
-+	if (irq < IRQ_GPIOHIGH)
-+		mask = 1 << irq;
-+	else
-+		mask = GPIO_MASK(irq);
-+
-+	if (type == IRQ_TYPE_PROBE) {
-+		if ((GPIO_IRQ_rising_edge | GPIO_IRQ_falling_edge) & mask)
-+			return 0;
-+		type = IRQ_TYPE_EDGE_RISING | IRQ_TYPE_EDGE_FALLING;
-+	}
-+
-+	if (type & IRQ_TYPE_EDGE_RISING)
-+		GPIO_IRQ_rising_edge |= mask;
-+	else
-+		GPIO_IRQ_rising_edge &= ~mask;
-+	if (type & IRQ_TYPE_EDGE_FALLING)
-+		GPIO_IRQ_falling_edge |= mask;
-+	else
-+		GPIO_IRQ_falling_edge &= ~mask;
-+
-+	GPIO_GRER = GPIO_IRQ_rising_edge & GPIO_IRQ_mask;
-+	GPIO_GFER = GPIO_IRQ_falling_edge & GPIO_IRQ_mask;
-+
-+	return 0;
-+}
++#define _BLOCKABLE (~(sigmask(SIGKILL) | sigmask(SIGSTOP)))
 +
 +/*
-+ * GPIO IRQs must be acknowledged.  This is for IRQs from 0 to 7.
++ * For UniCore syscalls, we encode the syscall number into the instruction.
 + */
-+static void puv3_low_gpio_ack(unsigned int irq)
-+{
-+	GPIO_GEDR = (1 << irq);
-+}
++#define SWI_SYS_SIGRETURN	(0xff000000 | (__NR_SYSCALL_BASE)	\
++					| (__NR_sigreturn))
++#define SWI_SYS_RT_SIGRETURN	(0xff000000 | (__NR_SYSCALL_BASE)	\
++					| (__NR_rt_sigreturn))
++#define SWI_SYS_RESTART		(0xff000000 | (__NR_SYSCALL_BASE)	\
++					| (__NR_restart_syscall))
 +
-+static void puv3_low_gpio_mask(unsigned int irq)
-+{
-+	INTC_ICMR &= ~(1 << irq);
-+}
++const unsigned long sigreturn_codes[3] = {
++	SWI_SYS_SIGRETURN, SWI_SYS_RT_SIGRETURN,
++};
 +
-+static void puv3_low_gpio_unmask(unsigned int irq)
-+{
-+	INTC_ICMR |= 1 << irq;
-+}
-+
-+static int puv3_low_gpio_wake(unsigned int irq, unsigned int on)
-+{
-+	if (on)
-+		PM_PWER |= 1 << irq;
-+	else
-+		PM_PWER &= ~(1 << irq);
-+	return 0;
-+}
-+
-+static struct irq_chip puv3_low_gpio_chip = {
-+	.name		= "GPIO-low",
-+	.ack		= puv3_low_gpio_ack,
-+	.mask		= puv3_low_gpio_mask,
-+	.unmask		= puv3_low_gpio_unmask,
-+	.set_type	= puv3_gpio_type,
-+	.set_wake	= puv3_low_gpio_wake,
++const unsigned long syscall_restart_code[2] = {
++	SWI_SYS_RESTART,	/* swi	__NR_restart_syscall */
++	0x69efc004,		/* ldr	pc, [sp], #4 */
 +};
 +
 +/*
-+ * IRQ8 (GPIO0 through 27) handler.  We enter here with the
-+ * irq_controller_lock held, and IRQs disabled.  Decode the IRQ
-+ * and call the handler.
++ * atomically swap in the new signal mask, and wait for a signal.
 + */
-+static void
-+puv3_gpio_handler(unsigned int irq, struct irq_desc *desc)
++asmlinkage int sys_sigsuspend(int restart, unsigned long oldmask,
++		old_sigset_t mask)
 +{
-+	unsigned int mask;
++	mask &= _BLOCKABLE;
++	spin_lock_irq(&current->sighand->siglock);
++	current->saved_sigmask = current->blocked;
++	siginitset(&current->blocked, mask);
++	recalc_sigpending();
++	spin_unlock_irq(&current->sighand->siglock);
 +
-+	mask = GPIO_GEDR;
-+	do {
++	current->state = TASK_INTERRUPTIBLE;
++	schedule();
++	set_restore_sigmask();
++	return -ERESTARTNOHAND;
++}
++
++asmlinkage int sys_sigaction(int sig, const struct sigaction __user *act,
++	      struct sigaction __user *oact)
++{
++	struct k_sigaction new_ka, old_ka;
++	int ret;
++
++	if (act) {
++		old_sigset_t mask;
++		if (!access_ok(VERIFY_READ, act, sizeof(*act)) ||
++		    __get_user(new_ka.sa.sa_handler, &act->sa_handler))
++			return -EFAULT;
++		__get_user(new_ka.sa.sa_flags, &act->sa_flags);
++		__get_user(mask, &act->sa_mask.sig[0]);
++		siginitset(&new_ka.sa.sa_mask, mask);
++	}
++
++	ret = do_sigaction(sig, act ? &new_ka : NULL, oact ? &old_ka : NULL);
++
++	if (!ret && oact) {
++		if (!access_ok(VERIFY_WRITE, oact, sizeof(*oact)) ||
++		    __put_user(old_ka.sa.sa_handler, &oact->sa_handler))
++			return -EFAULT;
++		__put_user(old_ka.sa.sa_flags, &oact->sa_flags);
++		__put_user(old_ka.sa.sa_mask.sig[0], &oact->sa_mask.sig[0]);
++		__put_user(old_ka.sa.sa_mask.sig[1], &oact->sa_mask.sig[1]);
++	}
++
++	return ret;
++}
++
++/*
++ * Do a signal return; undo the signal stack.  These are aligned to 64-bit.
++ */
++struct sigframe {
++	struct ucontext uc;
++	unsigned long retcode[2];
++};
++
++struct rt_sigframe {
++	struct siginfo info;
++	struct sigframe sig;
++};
++
++static int restore_sigframe(struct pt_regs *regs, struct sigframe __user *sf)
++{
++	sigset_t set;
++	int err;
++
++	err = __copy_from_user(&set, &sf->uc.uc_sigmask, sizeof(set));
++	if (err == 0) {
++		sigdelsetmask(&set, ~_BLOCKABLE);
++		spin_lock_irq(&current->sighand->siglock);
++		current->blocked = set;
++		recalc_sigpending();
++		spin_unlock_irq(&current->sighand->siglock);
++	}
++
++	__get_user_error(regs->UCreg_00, &sf->uc.uc_mcontext.ucreg_00, err);
++	__get_user_error(regs->UCreg_01, &sf->uc.uc_mcontext.ucreg_01, err);
++	__get_user_error(regs->UCreg_02, &sf->uc.uc_mcontext.ucreg_02, err);
++	__get_user_error(regs->UCreg_03, &sf->uc.uc_mcontext.ucreg_03, err);
++	__get_user_error(regs->UCreg_04, &sf->uc.uc_mcontext.ucreg_04, err);
++	__get_user_error(regs->UCreg_05, &sf->uc.uc_mcontext.ucreg_05, err);
++	__get_user_error(regs->UCreg_06, &sf->uc.uc_mcontext.ucreg_06, err);
++	__get_user_error(regs->UCreg_07, &sf->uc.uc_mcontext.ucreg_07, err);
++	__get_user_error(regs->UCreg_08, &sf->uc.uc_mcontext.ucreg_08, err);
++	__get_user_error(regs->UCreg_09, &sf->uc.uc_mcontext.ucreg_09, err);
++	__get_user_error(regs->UCreg_10, &sf->uc.uc_mcontext.ucreg_10, err);
++	__get_user_error(regs->UCreg_11, &sf->uc.uc_mcontext.ucreg_11, err);
++	__get_user_error(regs->UCreg_12, &sf->uc.uc_mcontext.ucreg_12, err);
++	__get_user_error(regs->UCreg_13, &sf->uc.uc_mcontext.ucreg_13, err);
++	__get_user_error(regs->UCreg_14, &sf->uc.uc_mcontext.ucreg_14, err);
++	__get_user_error(regs->UCreg_15, &sf->uc.uc_mcontext.ucreg_15, err);
++	__get_user_error(regs->UCreg_16, &sf->uc.uc_mcontext.ucreg_16, err);
++	__get_user_error(regs->UCreg_17, &sf->uc.uc_mcontext.ucreg_17, err);
++	__get_user_error(regs->UCreg_18, &sf->uc.uc_mcontext.ucreg_18, err);
++	__get_user_error(regs->UCreg_19, &sf->uc.uc_mcontext.ucreg_19, err);
++	__get_user_error(regs->UCreg_20, &sf->uc.uc_mcontext.ucreg_20, err);
++	__get_user_error(regs->UCreg_21, &sf->uc.uc_mcontext.ucreg_21, err);
++	__get_user_error(regs->UCreg_22, &sf->uc.uc_mcontext.ucreg_22, err);
++	__get_user_error(regs->UCreg_23, &sf->uc.uc_mcontext.ucreg_23, err);
++	__get_user_error(regs->UCreg_24, &sf->uc.uc_mcontext.ucreg_24, err);
++	__get_user_error(regs->UCreg_25, &sf->uc.uc_mcontext.ucreg_25, err);
++	__get_user_error(regs->UCreg_26, &sf->uc.uc_mcontext.ucreg_26, err);
++	__get_user_error(regs->UCreg_fp, &sf->uc.uc_mcontext.ucreg_fp, err);
++	__get_user_error(regs->UCreg_ip, &sf->uc.uc_mcontext.ucreg_ip, err);
++	__get_user_error(regs->UCreg_sp, &sf->uc.uc_mcontext.ucreg_sp, err);
++	__get_user_error(regs->UCreg_lr, &sf->uc.uc_mcontext.ucreg_lr, err);
++	__get_user_error(regs->UCreg_pc, &sf->uc.uc_mcontext.ucreg_pc, err);
++	__get_user_error(regs->UCreg_asr, &sf->uc.uc_mcontext.ucreg_asr, err);
++
++	err |= !valid_user_regs(regs);
++
++	return err;
++}
++
++asmlinkage int sys_sigreturn(struct pt_regs *regs)
++{
++	struct sigframe __user *frame;
++
++	/* Always make any pending restarted system calls return -EINTR */
++	current_thread_info()->restart_block.fn = do_no_restart_syscall;
++
++	/*
++	 * Since we stacked the signal on a 64-bit boundary,
++	 * then 'sp' should be word aligned here.  If it's
++	 * not, then the user is trying to mess with us.
++	 */
++	if (regs->UCreg_sp & 7)
++		goto badframe;
++
++	frame = (struct sigframe __user *)regs->UCreg_sp;
++
++	if (!access_ok(VERIFY_READ, frame, sizeof(*frame)))
++		goto badframe;
++
++	if (restore_sigframe(regs, frame))
++		goto badframe;
++
++	single_step_trap(current);
++
++	return regs->UCreg_00;
++
++badframe:
++	force_sig(SIGSEGV, current);
++	return 0;
++}
++
++asmlinkage int sys_rt_sigreturn(struct pt_regs *regs)
++{
++	struct rt_sigframe __user *frame;
++
++	/* Always make any pending restarted system calls return -EINTR */
++	current_thread_info()->restart_block.fn = do_no_restart_syscall;
++
++	/*
++	 * Since we stacked the signal on a 64-bit boundary,
++	 * then 'sp' should be word aligned here.  If it's
++	 * not, then the user is trying to mess with us.
++	 */
++	if (regs->UCreg_sp & 7)
++		goto badframe;
++
++	frame = (struct rt_sigframe __user *)regs->UCreg_sp;
++
++	if (!access_ok(VERIFY_READ, frame, sizeof(*frame)))
++		goto badframe;
++
++	if (restore_sigframe(regs, &frame->sig))
++		goto badframe;
++
++	if (do_sigaltstack(&frame->sig.uc.uc_stack, NULL, regs->UCreg_sp)
++			== -EFAULT)
++		goto badframe;
++
++	single_step_trap(current);
++
++	return regs->UCreg_00;
++
++badframe:
++	force_sig(SIGSEGV, current);
++	return 0;
++}
++
++static int setup_sigframe(struct sigframe __user *sf, struct pt_regs *regs,
++		sigset_t *set)
++{
++	int err = 0;
++
++	__put_user_error(regs->UCreg_00, &sf->uc.uc_mcontext.ucreg_00, err);
++	__put_user_error(regs->UCreg_01, &sf->uc.uc_mcontext.ucreg_01, err);
++	__put_user_error(regs->UCreg_02, &sf->uc.uc_mcontext.ucreg_02, err);
++	__put_user_error(regs->UCreg_03, &sf->uc.uc_mcontext.ucreg_03, err);
++	__put_user_error(regs->UCreg_04, &sf->uc.uc_mcontext.ucreg_04, err);
++	__put_user_error(regs->UCreg_05, &sf->uc.uc_mcontext.ucreg_05, err);
++	__put_user_error(regs->UCreg_06, &sf->uc.uc_mcontext.ucreg_06, err);
++	__put_user_error(regs->UCreg_07, &sf->uc.uc_mcontext.ucreg_07, err);
++	__put_user_error(regs->UCreg_08, &sf->uc.uc_mcontext.ucreg_08, err);
++	__put_user_error(regs->UCreg_09, &sf->uc.uc_mcontext.ucreg_09, err);
++	__put_user_error(regs->UCreg_10, &sf->uc.uc_mcontext.ucreg_10, err);
++	__put_user_error(regs->UCreg_11, &sf->uc.uc_mcontext.ucreg_11, err);
++	__put_user_error(regs->UCreg_12, &sf->uc.uc_mcontext.ucreg_12, err);
++	__put_user_error(regs->UCreg_13, &sf->uc.uc_mcontext.ucreg_13, err);
++	__put_user_error(regs->UCreg_14, &sf->uc.uc_mcontext.ucreg_14, err);
++	__put_user_error(regs->UCreg_15, &sf->uc.uc_mcontext.ucreg_15, err);
++	__put_user_error(regs->UCreg_16, &sf->uc.uc_mcontext.ucreg_16, err);
++	__put_user_error(regs->UCreg_17, &sf->uc.uc_mcontext.ucreg_17, err);
++	__put_user_error(regs->UCreg_18, &sf->uc.uc_mcontext.ucreg_18, err);
++	__put_user_error(regs->UCreg_19, &sf->uc.uc_mcontext.ucreg_19, err);
++	__put_user_error(regs->UCreg_20, &sf->uc.uc_mcontext.ucreg_20, err);
++	__put_user_error(regs->UCreg_21, &sf->uc.uc_mcontext.ucreg_21, err);
++	__put_user_error(regs->UCreg_22, &sf->uc.uc_mcontext.ucreg_22, err);
++	__put_user_error(regs->UCreg_23, &sf->uc.uc_mcontext.ucreg_23, err);
++	__put_user_error(regs->UCreg_24, &sf->uc.uc_mcontext.ucreg_24, err);
++	__put_user_error(regs->UCreg_25, &sf->uc.uc_mcontext.ucreg_25, err);
++	__put_user_error(regs->UCreg_26, &sf->uc.uc_mcontext.ucreg_26, err);
++	__put_user_error(regs->UCreg_fp, &sf->uc.uc_mcontext.ucreg_fp, err);
++	__put_user_error(regs->UCreg_ip, &sf->uc.uc_mcontext.ucreg_ip, err);
++	__put_user_error(regs->UCreg_sp, &sf->uc.uc_mcontext.ucreg_sp, err);
++	__put_user_error(regs->UCreg_lr, &sf->uc.uc_mcontext.ucreg_lr, err);
++	__put_user_error(regs->UCreg_pc, &sf->uc.uc_mcontext.ucreg_pc, err);
++	__put_user_error(regs->UCreg_asr, &sf->uc.uc_mcontext.ucreg_asr, err);
++
++	__put_user_error(current->thread.trap_no,
++			&sf->uc.uc_mcontext.trap_no, err);
++	__put_user_error(current->thread.error_code,
++			&sf->uc.uc_mcontext.error_code, err);
++	__put_user_error(current->thread.address,
++			&sf->uc.uc_mcontext.fault_address, err);
++	__put_user_error(set->sig[0], &sf->uc.uc_mcontext.oldmask, err);
++
++	err |= __copy_to_user(&sf->uc.uc_sigmask, set, sizeof(*set));
++
++	return err;
++}
++
++static inline void __user *get_sigframe(struct k_sigaction *ka,
++		struct pt_regs *regs, int framesize)
++{
++	unsigned long sp = regs->UCreg_sp;
++	void __user *frame;
++
++	/*
++	 * This is the X/Open sanctioned signal stack switching.
++	 */
++	if ((ka->sa.sa_flags & SA_ONSTACK) && !sas_ss_flags(sp))
++		sp = current->sas_ss_sp + current->sas_ss_size;
++
++	/*
++	 * ATPCS B01 mandates 8-byte alignment
++	 */
++	frame = (void __user *)((sp - framesize) & ~7);
++
++	/*
++	 * Check that we can actually write to the signal frame.
++	 */
++	if (!access_ok(VERIFY_WRITE, frame, framesize))
++		frame = NULL;
++
++	return frame;
++}
++
++static int setup_return(struct pt_regs *regs, struct k_sigaction *ka,
++	     unsigned long __user *rc, void __user *frame, int usig)
++{
++	unsigned long handler = (unsigned long)ka->sa.sa_handler;
++	unsigned long retcode;
++	unsigned long asr = regs->UCreg_asr & ~PSR_f;
++
++	unsigned int idx = 0;
++
++	if (ka->sa.sa_flags & SA_SIGINFO)
++		idx += 1;
++
++	if (__put_user(sigreturn_codes[idx],   rc) ||
++	    __put_user(sigreturn_codes[idx+1], rc+1))
++		return 1;
++
++	retcode = KERN_SIGRETURN_CODE + (idx << 2);
++
++	regs->UCreg_00 = usig;
++	regs->UCreg_sp = (unsigned long)frame;
++	regs->UCreg_lr = retcode;
++	regs->UCreg_pc = handler;
++	regs->UCreg_asr = asr;
++
++	return 0;
++}
++
++static int setup_frame(int usig, struct k_sigaction *ka,
++		sigset_t *set, struct pt_regs *regs)
++{
++	struct sigframe __user *frame = get_sigframe(ka, regs, sizeof(*frame));
++	int err = 0;
++
++	if (!frame)
++		return 1;
++
++	/*
++	 * Set uc.uc_flags to a value which sc.trap_no would never have.
++	 */
++	__put_user_error(0x5ac3c35a, &frame->uc.uc_flags, err);
++
++	err |= setup_sigframe(frame, regs, set);
++	if (err == 0)
++		err = setup_return(regs, ka, frame->retcode, frame, usig);
++
++	return err;
++}
++
++static int setup_rt_frame(int usig, struct k_sigaction *ka, siginfo_t *info,
++	       sigset_t *set, struct pt_regs *regs)
++{
++	struct rt_sigframe __user *frame =
++			get_sigframe(ka, regs, sizeof(*frame));
++	stack_t stack;
++	int err = 0;
++
++	if (!frame)
++		return 1;
++
++	err |= copy_siginfo_to_user(&frame->info, info);
++
++	__put_user_error(0, &frame->sig.uc.uc_flags, err);
++	__put_user_error(NULL, &frame->sig.uc.uc_link, err);
++
++	memset(&stack, 0, sizeof(stack));
++	stack.ss_sp = (void __user *)current->sas_ss_sp;
++	stack.ss_flags = sas_ss_flags(regs->UCreg_sp);
++	stack.ss_size = current->sas_ss_size;
++	err |= __copy_to_user(&frame->sig.uc.uc_stack, &stack, sizeof(stack));
++
++	err |= setup_sigframe(&frame->sig, regs, set);
++	if (err == 0)
++		err = setup_return(regs, ka, frame->sig.retcode, frame, usig);
++
++	if (err == 0) {
 +		/*
-+		 * clear down all currently active IRQ sources.
-+		 * We will be processing them all.
++		 * For realtime signals we must also set the second and third
++		 * arguments for the signal handler.
 +		 */
-+		GPIO_GEDR = mask;
++		regs->UCreg_01 = (unsigned long)&frame->info;
++		regs->UCreg_02 = (unsigned long)&frame->sig.uc;
++	}
 +
-+		irq = IRQ_GPIO0;
-+		do {
-+			if (mask & 1)
-+				generic_handle_irq(irq);
-+			mask >>= 1;
-+			irq++;
-+		} while (mask);
-+		mask = GPIO_GEDR;
-+	} while (mask);
++	return err;
++}
++
++static inline void setup_syscall_restart(struct pt_regs *regs)
++{
++	regs->UCreg_00 = regs->UCreg_ORIG_00;
++	regs->UCreg_pc -= 4;
 +}
 +
 +/*
-+ * GPIO0-27 edge IRQs need to be handled specially.
-+ * In addition, the IRQs are all collected up into one bit in the
-+ * interrupt controller registers.
++ * OK, we're invoking a handler
 + */
-+static void puv3_high_gpio_ack(unsigned int irq)
++static int handle_signal(unsigned long sig, struct k_sigaction *ka,
++	      siginfo_t *info, sigset_t *oldset,
++	      struct pt_regs *regs, int syscall)
 +{
-+	unsigned int mask = GPIO_MASK(irq);
-+
-+	GPIO_GEDR = mask;
-+}
-+
-+static void puv3_high_gpio_mask(unsigned int irq)
-+{
-+	unsigned int mask = GPIO_MASK(irq);
-+
-+	GPIO_IRQ_mask &= ~mask;
-+
-+	GPIO_GRER &= ~mask;
-+	GPIO_GFER &= ~mask;
-+}
-+
-+static void puv3_high_gpio_unmask(unsigned int irq)
-+{
-+	unsigned int mask = GPIO_MASK(irq);
-+
-+	GPIO_IRQ_mask |= mask;
-+
-+	GPIO_GRER = GPIO_IRQ_rising_edge & GPIO_IRQ_mask;
-+	GPIO_GFER = GPIO_IRQ_falling_edge & GPIO_IRQ_mask;
-+}
-+
-+static int puv3_high_gpio_wake(unsigned int irq, unsigned int on)
-+{
-+	if (on)
-+		PM_PWER |= PM_PWER_GPIOHIGH;
-+	else
-+		PM_PWER &= ~PM_PWER_GPIOHIGH;
-+	return 0;
-+}
-+
-+static struct irq_chip puv3_high_gpio_chip = {
-+	.name		= "GPIO-high",
-+	.ack		= puv3_high_gpio_ack,
-+	.mask		= puv3_high_gpio_mask,
-+	.unmask		= puv3_high_gpio_unmask,
-+	.set_type	= puv3_gpio_type,
-+	.set_wake	= puv3_high_gpio_wake,
-+};
-+
-+/*
-+ * We don't need to ACK IRQs on the PKUnity unless they're GPIOs
-+ * this is for internal IRQs i.e. from 8 to 31.
-+ */
-+static void puv3_mask_irq(unsigned int irq)
-+{
-+	INTC_ICMR &= ~(1 << irq);
-+}
-+
-+static void puv3_unmask_irq(unsigned int irq)
-+{
-+	INTC_ICMR |= (1 << irq);
-+}
-+
-+/*
-+ * Apart form GPIOs, only the RTC alarm can be a wakeup event.
-+ */
-+static int puv3_set_wake(unsigned int irq, unsigned int on)
-+{
-+	if (irq == IRQ_RTCAlarm) {
-+		if (on)
-+			PM_PWER |= PM_PWER_RTC;
-+		else
-+			PM_PWER &= ~PM_PWER_RTC;
-+		return 0;
-+	}
-+	return -EINVAL;
-+}
-+
-+static struct irq_chip puv3_normal_chip = {
-+	.name		= "PKUnity-v3",
-+	.ack		= puv3_mask_irq,
-+	.mask		= puv3_mask_irq,
-+	.unmask		= puv3_unmask_irq,
-+	.set_wake	= puv3_set_wake,
-+};
-+
-+static struct resource irq_resource = {
-+	.name	= "irqs",
-+	.start	= PKUNITY_INTC_BASE,
-+	.end	= PKUNITY_INTC_BASE + 0xFFFFF,
-+};
-+
-+static struct puv3_irq_state {
-+	unsigned int	saved;
-+	unsigned int	icmr;
-+	unsigned int	iclr;
-+	unsigned int	iccr;
-+} puv3_irq_state;
-+
-+static int puv3_irq_suspend(struct sys_device *dev, pm_message_t state)
-+{
-+	struct puv3_irq_state *st = &puv3_irq_state;
-+
-+	st->saved = 1;
-+	st->icmr = INTC_ICMR;
-+	st->iclr = INTC_ICLR;
-+	st->iccr = INTC_ICCR;
++	struct thread_info *thread = current_thread_info();
++	struct task_struct *tsk = current;
++	int usig = sig;
++	int ret;
 +
 +	/*
-+	 * Disable all GPIO-based interrupts.
++	 * If we were from a system call, check for system call restarting...
 +	 */
-+	INTC_ICMR &= ~(0x1ff);
-+
-+	/*
-+	 * Set the appropriate edges for wakeup.
-+	 */
-+	GPIO_GRER = PM_PWER & GPIO_IRQ_rising_edge;
-+	GPIO_GFER = PM_PWER & GPIO_IRQ_falling_edge;
-+
-+	/*
-+	 * Clear any pending GPIO interrupts.
-+	 */
-+	GPIO_GEDR = GPIO_GEDR;
-+
-+	return 0;
-+}
-+
-+static int puv3_irq_resume(struct sys_device *dev)
-+{
-+	struct puv3_irq_state *st = &puv3_irq_state;
-+
-+	if (st->saved) {
-+		INTC_ICCR = st->iccr;
-+		INTC_ICLR = st->iclr;
-+
-+		GPIO_GRER = GPIO_IRQ_rising_edge & GPIO_IRQ_mask;
-+		GPIO_GFER = GPIO_IRQ_falling_edge & GPIO_IRQ_mask;
-+
-+		INTC_ICMR = st->icmr;
-+	}
-+	return 0;
-+}
-+
-+static struct sysdev_class puv3_irq_sysclass = {
-+	.name		= "pkunity-irq",
-+	.suspend	= puv3_irq_suspend,
-+	.resume		= puv3_irq_resume,
-+};
-+
-+static struct sys_device puv3_irq_device = {
-+	.id		= 0,
-+	.cls		= &puv3_irq_sysclass,
-+};
-+
-+static int __init puv3_irq_init_devicefs(void)
-+{
-+	sysdev_class_register(&puv3_irq_sysclass);
-+	return sysdev_register(&puv3_irq_device);
-+}
-+
-+device_initcall(puv3_irq_init_devicefs);
-+
-+void __init init_IRQ(void)
-+{
-+	unsigned int irq;
-+
-+	request_resource(&iomem_resource, &irq_resource);
-+
-+	/* disable all IRQs */
-+	INTC_ICMR = 0;
-+
-+	/* all IRQs are IRQ, not REAL */
-+	INTC_ICLR = 0;
-+
-+	/* clear all GPIO edge detects */
-+	GPIO_GPIR = FMASK(8, 0) & ~FIELD(1, 1, GPI_SOFF_REQ);
-+	GPIO_GFER = 0;
-+	GPIO_GRER = 0;
-+	GPIO_GEDR = 0x0FFFFFFF;
-+
-+	INTC_ICCR = 1;
-+
-+	for (irq = 0; irq < IRQ_GPIOHIGH; irq++) {
-+		set_irq_chip(irq, &puv3_low_gpio_chip);
-+		set_irq_handler(irq, handle_edge_irq);
-+		irq_modify_status(irq,
-+			IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN,
-+			0);
-+	}
-+
-+	for (irq = IRQ_GPIOHIGH + 1; irq < IRQ_GPIO0; irq++) {
-+		set_irq_chip(irq, &puv3_normal_chip);
-+		set_irq_handler(irq, handle_level_irq);
-+		irq_modify_status(irq,
-+			IRQ_NOREQUEST | IRQ_NOAUTOEN,
-+			IRQ_NOPROBE);
-+	}
-+
-+	for (irq = IRQ_GPIO0; irq <= IRQ_GPIO27; irq++) {
-+		set_irq_chip(irq, &puv3_high_gpio_chip);
-+		set_irq_handler(irq, handle_edge_irq);
-+		irq_modify_status(irq,
-+			IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN,
-+			0);
-+	}
-+
-+	/*
-+	 * Install handler for GPIO 0-27 edge detect interrupts
-+	 */
-+	set_irq_chip(IRQ_GPIOHIGH, &puv3_normal_chip);
-+	set_irq_chained_handler(IRQ_GPIOHIGH, puv3_gpio_handler);
-+
-+#ifdef CONFIG_PUV3_GPIO
-+	puv3_init_gpio();
-+#endif
-+}
-+
-+int show_interrupts(struct seq_file *p, void *v)
-+{
-+	int i = *(loff_t *) v, cpu;
-+	struct irq_desc *desc;
-+	struct irqaction *action;
-+	unsigned long flags;
-+
-+	if (i == 0) {
-+		char cpuname[12];
-+
-+		seq_printf(p, "    ");
-+		for_each_present_cpu(cpu) {
-+			sprintf(cpuname, "CPU%d", cpu);
-+			seq_printf(p, " %10s", cpuname);
++	if (syscall) {
++		switch (regs->UCreg_00) {
++		case -ERESTART_RESTARTBLOCK:
++		case -ERESTARTNOHAND:
++			regs->UCreg_00 = -EINTR;
++			break;
++		case -ERESTARTSYS:
++			if (!(ka->sa.sa_flags & SA_RESTART)) {
++				regs->UCreg_00 = -EINTR;
++				break;
++			}
++			/* fallthrough */
++		case -ERESTARTNOINTR:
++			setup_syscall_restart(regs);
 +		}
-+		seq_putc(p, '\n');
 +	}
 +
-+	if (i < nr_irqs) {
-+		desc = irq_to_desc(i);
-+		raw_spin_lock_irqsave(&desc->lock, flags);
-+		action = desc->action;
-+		if (!action)
-+			goto unlock;
++	/*
++	 * translate the signal
++	 */
++	if (usig < 32 && thread->exec_domain
++			&& thread->exec_domain->signal_invmap)
++		usig = thread->exec_domain->signal_invmap[usig];
 +
-+		seq_printf(p, "%3d: ", i);
-+		for_each_present_cpu(cpu)
-+			seq_printf(p, "%10u ", kstat_irqs_cpu(i, cpu));
-+		seq_printf(p, " %10s", desc->chip->name ? : "-");
-+		seq_printf(p, "  %s", action->name);
-+		for (action = action->next; action; action = action->next)
-+			seq_printf(p, ", %s", action->name);
++	/*
++	 * Set up the stack frame
++	 */
++	if (ka->sa.sa_flags & SA_SIGINFO)
++		ret = setup_rt_frame(usig, ka, info, oldset, regs);
++	else
++		ret = setup_frame(usig, ka, oldset, regs);
 +
-+		seq_putc(p, '\n');
-+unlock:
-+		raw_spin_unlock_irqrestore(&desc->lock, flags);
-+	} else if (i == nr_irqs) {
-+		seq_printf(p, "Error in interrupt!\n");
++	/*
++	 * Check that the resulting registers are actually sane.
++	 */
++	ret |= !valid_user_regs(regs);
++
++	if (ret != 0) {
++		force_sigsegv(sig, tsk);
++		return ret;
 +	}
++
++	/*
++	 * Block the signal if we were successful.
++	 */
++	spin_lock_irq(&tsk->sighand->siglock);
++	sigorsets(&tsk->blocked, &tsk->blocked,
++		  &ka->sa.sa_mask);
++	if (!(ka->sa.sa_flags & SA_NODEFER))
++		sigaddset(&tsk->blocked, sig);
++	recalc_sigpending();
++	spin_unlock_irq(&tsk->sighand->siglock);
++
 +	return 0;
 +}
 +
 +/*
-+ * do_IRQ handles all hardware IRQ's.  Decoded IRQs should not
-+ * come via this function.  Instead, they should provide their
-+ * own 'handler'
++ * Note that 'init' is a special process: it doesn't get signals it doesn't
++ * want to handle. Thus you cannot kill init even with a SIGKILL even by
++ * mistake.
++ *
++ * Note that we go through the signals twice: once to check the signals that
++ * the kernel can handle, and then we build all the user-level signal handling
++ * stack-frames in one go after that.
 + */
-+asmlinkage void __exception asm_do_IRQ(unsigned int irq, struct pt_regs *regs)
++static void do_signal(struct pt_regs *regs, int syscall)
 +{
-+	struct pt_regs *old_regs = set_irq_regs(regs);
-+
-+	irq_enter();
++	struct k_sigaction ka;
++	siginfo_t info;
++	int signr;
 +
 +	/*
-+	 * Some hardware gives randomly wrong interrupts.  Rather
-+	 * than crashing, do something sensible.
++	 * We want the common case to go fast, which
++	 * is why we may in certain cases get here from
++	 * kernel mode. Just return without doing anything
++	 * if so.
 +	 */
-+	if (unlikely(irq >= nr_irqs)) {
-+		if (printk_ratelimit())
-+			printk(KERN_WARNING "Bad IRQ%u\n", irq);
-+		ack_bad_irq(irq);
-+	} else {
-+		generic_handle_irq(irq);
++	if (!user_mode(regs))
++		return;
++
++	if (try_to_freeze())
++		goto no_signal;
++
++	single_step_clear(current);
++
++	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
++	if (signr > 0) {
++		sigset_t *oldset;
++
++		if (test_thread_flag(TIF_RESTORE_SIGMASK))
++			oldset = &current->saved_sigmask;
++		else
++			oldset = &current->blocked;
++		if (handle_signal(signr, &ka, &info, oldset, regs, syscall)
++				== 0) {
++			/*
++			 * A signal was successfully delivered; the saved
++			 * sigmask will have been stored in the signal frame,
++			 * and will be restored by sigreturn, so we can simply
++			 * clear the TIF_RESTORE_SIGMASK flag.
++			 */
++			if (test_thread_flag(TIF_RESTORE_SIGMASK))
++				clear_thread_flag(TIF_RESTORE_SIGMASK);
++		}
++		single_step_set(current);
++		return;
 +	}
 +
-+	irq_exit();
-+	set_irq_regs(old_regs);
++ no_signal:
++	/*
++	 * No signal to deliver to the process - restart the syscall.
++	 */
++	if (syscall) {
++		if (regs->UCreg_00 == -ERESTART_RESTARTBLOCK) {
++				u32 __user *usp;
++
++				regs->UCreg_sp -= 4;
++				usp = (u32 __user *)regs->UCreg_sp;
++
++				if (put_user(regs->UCreg_pc, usp) == 0) {
++					regs->UCreg_pc = KERN_RESTART_CODE;
++				} else {
++					regs->UCreg_sp += 4;
++					force_sigsegv(0, current);
++				}
++		}
++		if (regs->UCreg_00 == -ERESTARTNOHAND ||
++		    regs->UCreg_00 == -ERESTARTSYS ||
++		    regs->UCreg_00 == -ERESTARTNOINTR) {
++			setup_syscall_restart(regs);
++		}
++
++		/* If there's no signal to deliver, we just put the saved
++		 * sigmask back.
++		 */
++		if (test_thread_flag(TIF_RESTORE_SIGMASK)) {
++			clear_thread_flag(TIF_RESTORE_SIGMASK);
++			sigprocmask(SIG_SETMASK, &current->saved_sigmask, NULL);
++		}
++	}
++	single_step_set(current);
 +}
 +
-diff --git a/drivers/staging/puv3/puv3_gpio.c b/drivers/staging/puv3/puv3_gpio.c
++asmlinkage void do_notify_resume(struct pt_regs *regs,
++		unsigned int thread_flags, int syscall)
++{
++	if (thread_flags & _TIF_SIGPENDING)
++		do_signal(regs, syscall);
++
++	if (thread_flags & _TIF_NOTIFY_RESUME) {
++		clear_thread_flag(TIF_NOTIFY_RESUME);
++		tracehook_notify_resume(regs);
++		if (current->replacement_session_keyring)
++			key_replace_session_keyring();
++	}
++}
+diff --git a/arch/unicore32/kernel/signal.h b/arch/unicore32/kernel/signal.h
 new file mode 100644
-index 0000000..d8f2e6a
+index 0000000..4b56698
 --- /dev/null
-+++ b/drivers/staging/puv3/puv3_gpio.c
-@@ -0,0 +1,129 @@
++++ b/arch/unicore32/kernel/signal.h
+@@ -0,0 +1,16 @@
 +/*
-+ * linux/drivers/pkunity/puv3/puv3_gpio.c
++ * linux/arch/unicore32/kernel/signal.h
 + *
 + * Code specific to PKUnity SoC and UniCore ISA
 + *
-+ *	Maintained by GUAN Xue-tao <gxt@mprc.pku.edu.cn>
-+ *	Copyright (C) 2001-2010 Guan Xuetao
++ * Copyright (C) 2001-2010 GUAN Xue-tao
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
-+ *
-+ * Based on: arch/arm/mach-sa1100/gpio.c
-+ *
-+ * Contributors & Additions/Fixes:
-+ *	2009-04: First version by GUAN Xue-tao
-+ *
-+ * TODO:
 + */
-+/* in FPGA, no GPIO support */
++#define KERN_SIGRETURN_CODE	(KUSER_VECPAGE_BASE + 0x00000500)
++#define KERN_RESTART_CODE	(KERN_SIGRETURN_CODE + sizeof(sigreturn_codes))
 +
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/gpio.h>
-+#include <asm/mach/hardware.h>
-+
-+#ifdef CONFIG_LEDS
-+#include <linux/leds.h>
-+#include <linux/platform_device.h>
-+
-+static const struct gpio_led puv3_gpio_leds[] = {
-+	{ .name = "cpuhealth", .gpio = GPO_CPU_HEALTH, .active_low = 0,
-+		.default_trigger = "heartbeat",	},
-+	{ .name = "hdd_led", .gpio = GPO_HDD_LED, .active_low = 1,
-+		.default_trigger = "ide-disk", },
-+};
-+
-+static const struct gpio_led_platform_data puv3_gpio_led_data = {
-+	.num_leds =	ARRAY_SIZE(puv3_gpio_leds),
-+	.leds =		(void *) puv3_gpio_leds,
-+};
-+
-+static struct platform_device puv3_gpio_gpio_leds = {
-+	.name =		"leds-gpio",
-+	.id =		-1,
-+	.dev = {
-+		.platform_data = (void *) &puv3_gpio_led_data,
-+	}
-+};
-+
-+static int __init puv3_gpio_leds_init(void)
-+{
-+	platform_device_register(&puv3_gpio_gpio_leds);
-+	return 0;
-+}
-+
-+device_initcall(puv3_gpio_leds_init);
-+#endif
-+
-+static int puv3_gpio_get(struct gpio_chip *chip, unsigned offset)
-+{
-+	return GPIO_GPLR & GPIO_GPIO(offset);
-+}
-+
-+static void puv3_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
-+{
-+	if (value)
-+		GPIO_GPSR = GPIO_GPIO(offset);
-+	else
-+		GPIO_GPCR = GPIO_GPIO(offset);
-+}
-+
-+static int puv3_direction_input(struct gpio_chip *chip, unsigned offset)
-+{
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+	GPIO_GPDR &= ~GPIO_GPIO(offset);
-+	local_irq_restore(flags);
-+	return 0;
-+}
-+
-+static int puv3_direction_output(struct gpio_chip *chip, unsigned offset,
-+		int value)
-+{
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+	puv3_gpio_set(chip, offset, value);
-+	GPIO_GPDR |= GPIO_GPIO(offset);
-+	local_irq_restore(flags);
-+	return 0;
-+}
-+
-+static struct gpio_chip puv3_gpio_chip = {
-+	.label			= "gpio",
-+	.direction_input	= puv3_direction_input,
-+	.direction_output	= puv3_direction_output,
-+	.set			= puv3_gpio_set,
-+	.get			= puv3_gpio_get,
-+	.base			= 0,
-+	.ngpio			= GPIO_MAX + 1,
-+};
-+
-+void __init puv3_init_gpio(void)
-+{
-+	GPIO_GPDR = GPIO_DIR;
-+#if	defined(CONFIG_PUV3_NB0916) || defined(CONFIG_PUV3_SMW0919)	\
-+	|| defined(CONFIG_PUV3_DB0913)
-+	gpio_set_value(GPO_WIFI_EN, 1);
-+	gpio_set_value(GPO_HDD_LED, 1);
-+	gpio_set_value(GPO_VGA_EN, 1);
-+	gpio_set_value(GPO_LCD_EN, 1);
-+	gpio_set_value(GPO_CAM_PWR_EN, 0);
-+	gpio_set_value(GPO_LCD_VCC_EN, 1);
-+	gpio_set_value(GPO_SOFT_OFF, 1);
-+	gpio_set_value(GPO_BT_EN, 1);
-+	gpio_set_value(GPO_FAN_ON, 0);
-+	gpio_set_value(GPO_SPKR, 0);
-+	gpio_set_value(GPO_CPU_HEALTH, 1);
-+	gpio_set_value(GPO_LAN_SEL, 1);
-+/*
-+ * DO NOT modify the GPO_SET_V1 and GPO_SET_V2 in kernel
-+ *	gpio_set_value(GPO_SET_V1, 1);
-+ *	gpio_set_value(GPO_SET_V2, 1);
-+ */
-+#endif
-+	gpiochip_add(&puv3_gpio_chip);
-+}
++extern const unsigned long sigreturn_codes[3];
++extern const unsigned long syscall_restart_code[2];
 
