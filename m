@@ -1,88 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab0LYVAv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 16:00:51 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:48976 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660Ab0LYVAt convert rfc822-to-8bit (ORCPT
+	id S1752540Ab0LYVEJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 16:04:09 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:49560 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751412Ab0LYVEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 16:00:49 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=nZH/tcZGbUA6aGMwuHxsaBy5R6cGR0VCEZc98uYu8CrggJBLT6i2C+aE5WbatmWCU+
-         tBEXr/lY7r5yzfbMeKqs+4DIu8l8BB6H8fBQz5LbbDwc1VBHAq3mGRuUsGAwzp4ASOVX
-         r4JK2bEdec73scwbgahJlDSPQOWSKWl166aEc=
-MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1012252144030.10759@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1012252125410.10759@swampdragon.chaosbits.net>
-	<AANLkTi=Y4wDG6+AY1=8NuFLGuCidgqaU1LginfB1YpZH@mail.gmail.com>
-	<alpine.LNX.2.00.1012252144030.10759@swampdragon.chaosbits.net>
-Date: Sat, 25 Dec 2010 22:00:48 +0100
-Message-ID: <AANLkTi=yFm+kwXJbFrotTNmWky1J7O8=qVg7rhq=HxZG@mail.gmail.com>
-Subject: Re: [PATCH] 3c59x: Don't assign when a comparison is intended
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: netdev@vger.kernel.org,
-        Steffen Klassert <klassert@mathematik.tu-chemnitz.de>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sat, 25 Dec 2010 16:04:07 -0500
+X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=iccGfwQ975kA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=CjelIn3KpEkIF_VrK-MA:9 a=WFDK0MPvaKxCBlfQ9Dpyl_5ILI8A:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH][GIT PULL] powerpc64/tracing: Add frame buffer to calls
+ of trace_hardirqs_on/off
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joerg Sommer <joerg@alea.gnuu.de>,
+        linuxppc-dev <linuxppc-dev@ozlabs.org>
+In-Reply-To: <1293225065.16694.796.camel@pasglop>
+References: <1293169566.22802.420.camel@gandalf.stny.rr.com>
+	 <1293225065.16694.796.camel@pasglop>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Sat, 25 Dec 2010 16:04:03 -0500
+Message-ID: <1293311043.22802.434.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 25, 2010 at 9:45 PM, Jesper Juhl <jj@chaosbits.net> wrote:
-> On Sat, 25 Dec 2010, richard -rw- weinberger wrote:
->
->> On Sat, Dec 25, 2010 at 9:30 PM, Jesper Juhl <jj@chaosbits.net> wrote:
->> > Hi,
->> >
->> > In drivers/net/3c59x.c::vortex_probe1() we have this code:
->> >
->> >        if (gendev) {
->> >                if ((pdev = DEVICE_PCI(gendev))) {
->> >                        print_name = pci_name(pdev);
->> >                }
->> >
->> >                if ((edev = DEVICE_EISA(gendev))) {
->> >                        print_name = dev_name(&edev->dev);
->> >                }
->> >        }
->> >
->> > I believe these assignments were intended to be comparisons.
->> > If I'm correct, then here's a patch to fix that up.
->>
->> I don't think so. Look at the extra brackets.
->>
->> The code can also written as:
->>
->> pdev = DEVICE_PCI(gendev);
->> if(pdev)
->>   print_name = pci_name(pdev);
->>
->
-> Arrgh, I completely missed that - damn.
-> You are correct I think and my patch is wrong.
-> Thanks for taking a look.
+On Sat, 2010-12-25 at 08:11 +1100, Benjamin Herrenschmidt wrote:
+> On Fri, 2010-12-24 at 00:46 -0500, Steven Rostedt wrote:
+> 
+> >  arch/powerpc/include/asm/irqflags.h |   40 ++++++++++++++++++++++++++--------
+> >  1 files changed, 30 insertions(+), 10 deletions(-)
+> > ---------------------------
+> > commit 5025019505da6731f8be13940bb978617599c935
+> > Author: Steven Rostedt <srostedt@redhat.com>
+> > Date:   Thu Dec 23 21:07:39 2010 -0800
+> > 
+> >     powerpc64/tracing: Add frame buffer to calls of trace_hardirqs_on/off
+> >     
+> >     When an interrupt occurs in userspace, we can call trace_hardirqs_on/off()
+> >     With one level stack. But if we have irqsoff tracing enabled,
+> >     it checks both CALLER_ADDR0 and CALLER_ADDR1. The second call
+> >     goes two stack frames up. If this is from user space, then there may
+> >     not exist a second stack.
+> >     
+> >     Add a second stack when calling trace_hardirqs_on/off() otherwise
+> >     the following oops might occur:
+> 
+> Hrm... this is really gross :-) So we add gratuituous overhead because
+> the code below is dumb :-) What about making the code less stupid
+> instead when poking at the stack and detect it's coming from userspace
+> instead ?
 
-BTW: gcc is smart enough to catch such typos.
+Note, when CONFIG_IRQSOFF_TRACE is set, there's already a bit of
+overhead :-)
 
-if(x = 3){
- ...
-}
+Anyway, I'll have to take a look at how the frame pointer is set up. Or
+we could also set up all stacks coming into the kernel to have a "dummy"
+frame pointer that wont hurt anything if we index into it.
 
-...would trigger a warning like this one:
-"warning: suggest parentheses around assignment used as truth value"
+Anyway, I'm off till the new year, so I'll worry about it then ;-)
 
->
-> --
-> Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-> Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-> Plain text mails only, please.
->
+-- Steve
 
--- 
-Thanks,
-//richard
+
