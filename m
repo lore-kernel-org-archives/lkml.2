@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751776Ab0LYOXk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 09:23:40 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:33526 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023Ab0LYOXj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 09:23:39 -0500
-Date: Sat, 25 Dec 2010 14:23:29 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Andres Salomon <dilinger@queued.net>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Daniel Drake <dsd@laptop.org>,
-        Paul Fox <pgf@laptop.org>, linux-kernel@vger.kernel.org
-Subject: Re: MFD cell structure and sharing of resources
-Message-ID: <20101225142329.GA25641@sirena.org.uk>
-References: <AANLkTinrF-dxiw7OQ=dMhQPgKSqS6yYfDzdcnHfhMtyf@mail.gmail.com> <20101216103550.GA5946@sortiz-mobl> <AANLkTi=ypose5day4=ypV8_SsiFq4vf9vqZh-OWret0x@mail.gmail.com> <20101224104518.GB27832@sortiz-mobl> <20101224224851.61942d75@queued.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101224224851.61942d75@queued.net>
-X-Cookie: To err is human, to forgive unusual.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	id S1752070Ab0LYO3P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 09:29:15 -0500
+Received: from unix.wroclaw.pl ([94.23.28.62]:43064 "EHLO unix.wroclaw.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751138Ab0LYO3O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Dec 2010 09:29:14 -0500
+From: Mariusz Kozlowski <mk@lab.zgora.pl>
+To: Chris Wilson <chris@chris-wilson.co.uk>, David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Mariusz Kozlowski <mk@lab.zgora.pl>
+Subject: [PATCH] i915: use plane enumerators in intel_pipe_set_base()
+Date: Sat, 25 Dec 2010 15:29:03 +0100
+Message-Id: <1293287343-7751-1-git-send-email-mk@lab.zgora.pl>
+X-Mailer: git-send-email 1.7.0.4
+X-SA-Report: SpamAssassin 3.2.5 (2008-06-10) on unix.wroclaw.pl
+	Spam=No score=-1.4 bayes=0.5 autolearn=disabled
+	Spam Tests:
+	* -1.4 ALL_TRUSTED Passed through trusted hosts only via SMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 24, 2010 at 10:48:51PM -0800, Andres Salomon wrote:
+'plane' is enumerated type so lets use proper enumerators.
 
-> Having looked at the twl4030 driver, I do like that approach.  Is this
-> something you want to see for cs5535 only, or are enough other mfd
-> drivers doing this that you'd like the mfd framework itself to define
-> hooks for cell/resource sharing?
+Signed-off-by: Mariusz Kozlowski <mk@lab.zgora.pl>
+---
+ drivers/gpu/drm/i915/intel_display.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-This is extremely common - all the I2C/SPI attached embedded PMICs have
-register access functions like this.  We have some factored out code for
-this in ASoC but I'm not sure how worthwhile it is pulling that out into
-something more generic as there's often a lot of special tweaks needed
-for the register maps in PMICs (for things like locked registers),
-though things like read/modify/write are quite common.
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index d9b7092..4515d2c 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -1588,8 +1588,8 @@ intel_pipe_set_base(struct drm_crtc *crtc, int x, int y,
+ 	}
+ 
+ 	switch (intel_crtc->plane) {
+-	case 0:
+-	case 1:
++	case PLANE_A:
++	case PLANE_B:
+ 		break;
+ 	default:
+ 		return -EINVAL;
+-- 
+1.7.0.4
+
