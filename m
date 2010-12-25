@@ -1,58 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751831Ab0LYQww (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 11:52:52 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:40181 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550Ab0LYQwv (ORCPT
+	id S1752117Ab0LYRcA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 12:32:00 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59607 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807Ab0LYRb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 11:52:51 -0500
+	Sat, 25 Dec 2010 12:31:58 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=t3MGK5rynbHfpxeFp/mAyWzZ0HtVoelbyRq5oeFge15H/wXsjqpKvpjPoRnOH7sXpz
-         zsEp89omw5yeA1sw5dc6cR3hDvJJYpZA9CuZVHi2wfIMJSs8u6UUdzBAqvQRQJd3vjwf
-         Bn4pLlC3/b3z25UgUt7D0yRUouoLW7YxJzyW4=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Eha4zQNfwQUIAH12l8X/UUAPen1z+gkJ85F8H5EC1r6Jwj78QCN9tM9NMXUOrN9oPD
+         n7WzlEgHZFzT+dwt+Bm/SOYPEtdqg/621lf2QbIezoaCkzoCBiQl8RXJ1uGVGCgDpcep
+         1dchaDc+Z7A9rRYqwxZ6ehpSelWQ9OIKCqQmE=
+Date: Sat, 25 Dec 2010 18:31:51 +0100
+From: Jarek Poplawski <jarkao2@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: Joel Soete <soete.joel@scarlet.be>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Subject: [PATCH net-2.6] epic100: hamachi: yellowfin: Fix skb allocation
+ size
+Message-ID: <20101225173151.GA2264@del.dom.local>
+References: <4D122093.6060900@scarlet.be>
+ <1293035100.3027.247.camel@edumazet-laptop>
+ <4D132C5F.8090404@scarlet.be>
+ <1293106348.7789.5.camel@edumazet-laptop>
+ <20101223202523.GA1913@del.dom.local>
+ <4D148271.8030509@scarlet.be>
+ <20101224151325.GA1895@del.dom.local>
+ <20101225121044.GA1841@del.dom.local>
+ <4D15F6C9.50700@scarlet.be>
+ <20101225151217.GA1994@del.dom.local>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1012242251090.23107@router.home>
-References: <20101214174847.887713690@linux.com>
-	<20101214174900.058235985@linux.com>
-	<4D0CC982.3030905@kernel.org>
-	<alpine.DEB.2.00.1012211634560.3769@router.home>
-	<4D11373D.9010205@zytor.com>
-	<20101222091358.GC27861@htj.dyndns.org>
-	<alpine.DEB.2.00.1012231812280.22549@router.home>
-	<4D13E7D5.7020503@zytor.com>
-	<alpine.DEB.2.00.1012242251090.23107@router.home>
-Date: Sat, 25 Dec 2010 17:52:50 +0100
-X-Google-Sender-Auth: XXTEId5qBaIdoCr8LkRYiMMwdps
-Message-ID: <AANLkTikSwwMtDwx4wGM8hO4riZFVmtkq_bihVvPirO8F@mail.gmail.com>
-Subject: Re: [cpuops cmpxchg double V1 1/4] Generic support for this_cpu_cmpxchg_double
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101225151217.GA1994@del.dom.local>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 25, 2010 at 5:53 AM, Christoph Lameter <cl@linux.com> wrote:
-> Oh gosh. So we would be using a tight corner case for gcc that may only
-> work with certain versions of gcc? Note that the current version does only
-> return a boolean. There is no need for returning double words. I'd be
-> happy if we could *pass* double words.
+Joel Soete reported oopses during pppoe over sundance NIC, caused by
+a bug in skb allocation and dma mapping code, where skb_reserve()
+bytes weren't taken into account. As a followup to the patch:
+"sundance: Fix oopses with corrupted" very similar code is fixed here
+for three other drivers.
 
-I wouldn't call it a corner case.  It's pretty clearly defined in the
-ABI.  But that said, it might still be problematic on other
-architectures when we try to apply it to different architectures.  Is
-everyone against just taking a scalar for the first variable instead
-of taking a pointer?  I'd be happier with that than the current one.
+Signed-off-by: Jarek Poplawski <jarkao2@gmail.com>
+Cc: Joel Soete <soete.joel@scarlet.be>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+---
 
-Thanks.
+ drivers/net/epic100.c   |    4 ++--
+ drivers/net/hamachi.c   |    4 ++--
+ drivers/net/yellowfin.c |    4 ++--
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
--- 
-tejun
+diff --git a/drivers/net/epic100.c b/drivers/net/epic100.c
+index aa56963..c353bf3 100644
+--- a/drivers/net/epic100.c
++++ b/drivers/net/epic100.c
+@@ -935,7 +935,7 @@ static void epic_init_ring(struct net_device *dev)
+ 
+ 	/* Fill in the Rx buffers.  Handle allocation failure gracefully. */
+ 	for (i = 0; i < RX_RING_SIZE; i++) {
+-		struct sk_buff *skb = dev_alloc_skb(ep->rx_buf_sz);
++		struct sk_buff *skb = dev_alloc_skb(ep->rx_buf_sz + 2);
+ 		ep->rx_skbuff[i] = skb;
+ 		if (skb == NULL)
+ 			break;
+@@ -1233,7 +1233,7 @@ static int epic_rx(struct net_device *dev, int budget)
+ 		entry = ep->dirty_rx % RX_RING_SIZE;
+ 		if (ep->rx_skbuff[entry] == NULL) {
+ 			struct sk_buff *skb;
+-			skb = ep->rx_skbuff[entry] = dev_alloc_skb(ep->rx_buf_sz);
++			skb = ep->rx_skbuff[entry] = dev_alloc_skb(ep->rx_buf_sz + 2);
+ 			if (skb == NULL)
+ 				break;
+ 			skb_reserve(skb, 2);	/* Align IP on 16 byte boundaries */
+diff --git a/drivers/net/hamachi.c b/drivers/net/hamachi.c
+index 9a64858..80d25ed 100644
+--- a/drivers/net/hamachi.c
++++ b/drivers/net/hamachi.c
+@@ -1202,7 +1202,7 @@ static void hamachi_init_ring(struct net_device *dev)
+ 	}
+ 	/* Fill in the Rx buffers.  Handle allocation failure gracefully. */
+ 	for (i = 0; i < RX_RING_SIZE; i++) {
+-		struct sk_buff *skb = dev_alloc_skb(hmp->rx_buf_sz);
++		struct sk_buff *skb = dev_alloc_skb(hmp->rx_buf_sz + 2);
+ 		hmp->rx_skbuff[i] = skb;
+ 		if (skb == NULL)
+ 			break;
+@@ -1669,7 +1669,7 @@ static int hamachi_rx(struct net_device *dev)
+ 		entry = hmp->dirty_rx % RX_RING_SIZE;
+ 		desc = &(hmp->rx_ring[entry]);
+ 		if (hmp->rx_skbuff[entry] == NULL) {
+-			struct sk_buff *skb = dev_alloc_skb(hmp->rx_buf_sz);
++			struct sk_buff *skb = dev_alloc_skb(hmp->rx_buf_sz + 2);
+ 
+ 			hmp->rx_skbuff[entry] = skb;
+ 			if (skb == NULL)
+diff --git a/drivers/net/yellowfin.c b/drivers/net/yellowfin.c
+index cd1b3dc..ec47e22 100644
+--- a/drivers/net/yellowfin.c
++++ b/drivers/net/yellowfin.c
+@@ -744,7 +744,7 @@ static int yellowfin_init_ring(struct net_device *dev)
+ 	}
+ 
+ 	for (i = 0; i < RX_RING_SIZE; i++) {
+-		struct sk_buff *skb = dev_alloc_skb(yp->rx_buf_sz);
++		struct sk_buff *skb = dev_alloc_skb(yp->rx_buf_sz + 2);
+ 		yp->rx_skbuff[i] = skb;
+ 		if (skb == NULL)
+ 			break;
+@@ -1157,7 +1157,7 @@ static int yellowfin_rx(struct net_device *dev)
+ 	for (; yp->cur_rx - yp->dirty_rx > 0; yp->dirty_rx++) {
+ 		entry = yp->dirty_rx % RX_RING_SIZE;
+ 		if (yp->rx_skbuff[entry] == NULL) {
+-			struct sk_buff *skb = dev_alloc_skb(yp->rx_buf_sz);
++			struct sk_buff *skb = dev_alloc_skb(yp->rx_buf_sz + 2);
+ 			if (skb == NULL)
+ 				break;				/* Better luck next round. */
+ 			yp->rx_skbuff[entry] = skb;
