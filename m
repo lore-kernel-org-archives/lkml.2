@@ -1,41 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996Ab0LYNNu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 08:13:50 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39193 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751903Ab0LYNNt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 08:13:49 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=N1sl/QHznnq4rJ+cZV5YoOw7aD68NNLKMGkAPu9wtscTPSgSkLf2ZNmG2TwVPjI6Bs
-         kk527QDwHxmNOdNm44mEH4MIhc/VL1wCSVE3pZOb3lJgVPsTRffw+eLfgznUkny5V9Wb
-         upbMF6hUNAmY2p5YKPk9XDD78Sl7eVqlvHwJ0=
-Date: Sat, 25 Dec 2010 14:13:43 +0100
-From: Jarek Poplawski <jarkao2@gmail.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
+	id S1752088Ab0LYNkq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 08:40:46 -0500
+Received: from mga11.intel.com ([192.55.52.93]:29407 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751521Ab0LYNkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Dec 2010 08:40:45 -0500
+Message-Id: <c6d829$pvchrr@fmsmga001.fm.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,227,1291622400"; 
+   d="scan'208";a="871778171"
+Date: Sat, 25 Dec 2010 13:38:56 +0000
+To: Jarek Poplawski <jarkao2@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [2.6.37-rc7] drivers/gpu/drm/drm_edid.c:1303: warning: array subscript is above array bounds
 Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Subject: [2.6.37-rc7] drivers/gpu/drm/drm_edid.c:1303: warning: array
- subscript is above array bounds
-Message-ID: <20101225131343.GA1960@del.dom.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101225131343.GA1960@del.dom.local>
+References: <20101225131343.GA1960@del.dom.local>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-There is this compile warning in Linus' tree (gcc version 4.3.3):
+On Sat, 25 Dec 2010 14:13:43 +0100, Jarek Poplawski <jarkao2@gmail.com> wrote:
+> Hi,
+> There is this compile warning in Linus' tree (gcc version 4.3.3):
+> 
+> drivers/gpu/drm/drm_edid.c: In function 'drm_detect_hdmi_monitor':
+> drivers/gpu/drm/drm_edid.c:1303: warning: array subscript is above array bounds
+> drivers/gpu/drm/drm_edid.c: In function 'drm_detect_monitor_audio':
+> drivers/gpu/drm/drm_edid.c:1303: warning: array subscript is above array bounds
 
-drivers/gpu/drm/drm_edid.c: In function 'drm_detect_hdmi_monitor':
-drivers/gpu/drm/drm_edid.c:1303: warning: array subscript is above array bounds
-drivers/gpu/drm/drm_edid.c: In function 'drm_detect_monitor_audio':
-drivers/gpu/drm/drm_edid.c:1303: warning: array subscript is above array bounds
+What array? It's declared as "u8 *edid_ext;". At first glance looks like a
+compiler bug, applying subscript testing to an object with unknown bounds.
+-Chris
 
-Cheers,
-Jarek P.
+-- 
+Chris Wilson, Intel Open Source Technology Centre
