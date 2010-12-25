@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117Ab0LYRcA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 12:32:00 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59607 "EHLO
+	id S1751532Ab0LYRkJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 12:40:09 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48770 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750807Ab0LYRb6 (ORCPT
+	with ESMTP id S1750807Ab0LYRkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 12:31:58 -0500
+	Sat, 25 Dec 2010 12:40:06 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=Eha4zQNfwQUIAH12l8X/UUAPen1z+gkJ85F8H5EC1r6Jwj78QCN9tM9NMXUOrN9oPD
-         n7WzlEgHZFzT+dwt+Bm/SOYPEtdqg/621lf2QbIezoaCkzoCBiQl8RXJ1uGVGCgDpcep
-         1dchaDc+Z7A9rRYqwxZ6ehpSelWQ9OIKCqQmE=
-Date: Sat, 25 Dec 2010 18:31:51 +0100
+        b=aXXLk+3L4aoo8WUvMhQKLWYzabTqVky8pRrOEUxxbRuLP6h/IgDUgQOAqqTFMmXsWD
+         kfkqw1olryapZtGOU+pH8Xj9Ztv13kyHaBwbI4mzIc34JF1VbXOUyPHfg5MVUW/DUBJM
+         6y1hPPsrGXfBob2k7oxehUN/eIT2sV6GwcgUY=
+Date: Sat, 25 Dec 2010 18:39:59 +0100
 From: Jarek Poplawski <jarkao2@gmail.com>
 To: David Miller <davem@davemloft.net>
 Cc: Joel Soete <soete.joel@scarlet.be>, Eric Dumazet <eric.dumazet@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux Kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
-Subject: [PATCH net-2.6] epic100: hamachi: yellowfin: Fix skb allocation
+Subject: [PATCH net-2.6 v2] epic100: hamachi: yellowfin: Fix skb allocation
  size
-Message-ID: <20101225173151.GA2264@del.dom.local>
+Message-ID: <20101225173959.GB2264@del.dom.local>
 References: <4D122093.6060900@scarlet.be>
  <1293035100.3027.247.camel@edumazet-laptop>
  <4D132C5F.8090404@scarlet.be>
@@ -45,13 +45,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Joel Soete reported oopses during pppoe over sundance NIC, caused by
 a bug in skb allocation and dma mapping code, where skb_reserve()
 bytes weren't taken into account. As a followup to the patch:
-"sundance: Fix oopses with corrupted" very similar code is fixed here
-for three other drivers.
+"sundance: Fix oopses with corrupted skb_shared_info" very similar
+code is fixed here for three other drivers.
 
 Signed-off-by: Jarek Poplawski <jarkao2@gmail.com>
 Cc: Joel Soete <soete.joel@scarlet.be>
 Cc: Eric Dumazet <eric.dumazet@gmail.com>
 ---
+v2: a tiny changelog fix only
 
  drivers/net/epic100.c   |    4 ++--
  drivers/net/hamachi.c   |    4 ++--
