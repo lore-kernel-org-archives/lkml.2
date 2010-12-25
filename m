@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751521Ab0LYGDr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 01:03:47 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49554 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741Ab0LYGDe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 01:03:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=n1BP9lEpdJL2xLfREWgbCqGab+99dIpw6sD9Fvt2FwC9BZOKBeMSQr+nOU3EKf0Vr/
-         BSDR1t0pRj3qgwMk0fA8RVEDRDw3cn3nMlbr0ypkSiGsZI+llxvVygkSRfCMSpP9IVnn
-         n5tcR+wooyycOEXBo2vwETs+xKaXGplbzNKZk=
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Jeff Dike <jdike@addtoit.com>,
-        user-mode-linux-devel@lists.sourceforge.net
-Subject: [PATCH] uml: use simple_write_to_buffer
-Date: Sat, 25 Dec 2010 15:03:57 +0900
-Message-Id: <1293257039-2580-2-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <n>
-References: <n>
+	id S1751368Ab0LYGMG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 01:12:06 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38577 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750832Ab0LYGMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Dec 2010 01:12:05 -0500
+Message-ID: <4D158AFA.4000607@zytor.com>
+Date: Fri, 24 Dec 2010 22:11:06 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [cpuops cmpxchg double V1 1/4] Generic support for this_cpu_cmpxchg_double
+References: <20101214174847.887713690@linux.com> <20101214174900.058235985@linux.com> <4D0CC982.3030905@kernel.org> <alpine.DEB.2.00.1012211634560.3769@router.home> <4D11373D.9010205@zytor.com> <20101222091358.GC27861@htj.dyndns.org> <alpine.DEB.2.00.1012231812280.22549@router.home> <4D13E7D5.7020503@zytor.com> <alpine.DEB.2.00.1012242251090.23107@router.home>
+In-Reply-To: <alpine.DEB.2.00.1012242251090.23107@router.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simplify write file operation for mmapper by using
-simple_write_to_buffer().
+On 12/24/2010 08:53 PM, Christoph Lameter wrote:
+> On Thu, 23 Dec 2010, H. Peter Anvin wrote:
+> 
+>> There are two return registers; two machine registers can be returned in
+>> registers.  [u]int128 is poorly implemented in a lot of gcc versions,
+>> since it really hasn't been exercised.  However, two-word structures
+>> should work.  I do not believe a two-word *array* works, though.
+> 
+> Oh gosh. So we would be using a tight corner case for gcc that may only
+> work with certain versions of gcc? Note that the current version does only
+> return a boolean. There is no need for returning double words. I'd be
+> happy if we could *pass* double words.
+> 
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Jeff Dike <jdike@addtoit.com>
-Cc: user-mode-linux-devel@lists.sourceforge.net
----
- arch/um/drivers/mmapper_kern.c |    8 +-------
- 1 files changed, 1 insertions(+), 7 deletions(-)
 
-diff --git a/arch/um/drivers/mmapper_kern.c b/arch/um/drivers/mmapper_kern.c
-index 8501e7d..4ad91c6 100644
---- a/arch/um/drivers/mmapper_kern.c
-+++ b/arch/um/drivers/mmapper_kern.c
-@@ -37,13 +37,7 @@ static ssize_t mmapper_write(struct file *file, const char __user *buf,
- 	if (*ppos > mmapper_size)
- 		return -EINVAL;
- 
--	if (count > mmapper_size - *ppos)
--		count = mmapper_size - *ppos;
--
--	if (copy_from_user(&v_buf[*ppos], buf, count))
--		return -EFAULT;
--
--	return count;
-+	return simple_write_to_buffer(v_buf, mmapper_size, ppos, buf, count);
- }
- 
- static long mmapper_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+A structure is not a corner case; a uint128 would be.
+
+	-hpa
+
 -- 
-1.7.3.4
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
