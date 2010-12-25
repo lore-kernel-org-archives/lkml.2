@@ -1,88 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752091Ab0LYWRt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 17:17:49 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54873 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049Ab0LYWRs (ORCPT
+	id S1751841Ab0LYWcA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 17:32:00 -0500
+Received: from mga01.intel.com ([192.55.52.88]:34315 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751049Ab0LYWb7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 17:17:48 -0500
-Date: Sat, 25 Dec 2010 23:17:00 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Jesper Juhl <jj@chaosbits.net>, netdev@vger.kernel.org, vortex@scyld.com,
-        becker@scyld.com,
-        Steffen Klassert <klassert@mathematik.tu-chemnitz.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] 3c59x: Don't assign when a comparison is intended
-Message-ID: <20101225221700.GA8612@pengutronix.de>
-References: <alpine.LNX.2.00.1012252125410.10759@swampdragon.chaosbits.net> <AANLkTi=Y4wDG6+AY1=8NuFLGuCidgqaU1LginfB1YpZH@mail.gmail.com>
+	Sat, 25 Dec 2010 17:31:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,229,1291622400"; 
+   d="scan'208";a="640381125"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: Florian Fainelli <florian@openwrt.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        "sodaville@linutronix.de" <sodaville@linutronix.de>
+Date: Sat, 25 Dec 2010 14:28:33 -0800
+Subject: RE: [PATCH] coretemp: fix junction temperature for Intel CE4100
+Thread-Topic: [PATCH] coretemp: fix junction temperature for Intel CE4100
+Thread-Index: Acub1Etmxm5/dMsZQD6KcACPCmH5UgIrdw3w
+Message-ID: <493994B35A117E4F832F97C4719C4C04D781EF3F@orsmsx505.amr.corp.intel.com>
+References: <201012142217.07194.ffainelli@freebox.fr>
+In-Reply-To: <201012142217.07194.ffainelli@freebox.fr>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lrZ03NoBR/3+SXJZ"
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=Y4wDG6+AY1=8NuFLGuCidgqaU1LginfB1YpZH@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> -----Original Message-----
+> From: Florian Fainelli [mailto:f.fainelli@gmail.com] On Behalf Of
+> Florian Fainelli
+> Sent: Tuesday, December 14, 2010 1:17 PM
+> To: linux-kernel@vger.kernel.org; Dirk Brandewie;
+> sodaville@linutronix.de; Yu, Fenghua
+> Subject: [PATCH] coretemp: fix junction temperature for Intel CE4100
+> 
+> From: Florian Fainelli <ffainelli@freebox.fr>
+> 
+> The Intel CE4100 System-on-a-Chip has a slightly higher junction
+> temperature
+> (110 degrees Celsius) than other Atom-based hardware.
+> 
+> Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
+> Cc: sodaville@linutronix.de
+> Cc: Fenghua Yu <fenghua.yu@intel.com>
+> Signed-off-by: Florian Fainelli <ffainelli@freebox.fr>
+> ---
+> diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+> index 42de98d..e47b405 100644
+> --- a/drivers/hwmon/coretemp.c
+> +++ b/drivers/hwmon/coretemp.c
+> @@ -178,12 +178,23 @@ static int __devinit adjust_tjmax(struct
+> cpuinfo_x86 *c, u32 id, struct device *
+> 
+>  		host_bridge = pci_get_bus_and_slot(0, PCI_DEVFN(0, 0));
+> 
+> -		if (host_bridge && host_bridge->vendor ==
+> PCI_VENDOR_ID_INTEL
+> -		    && (host_bridge->device == 0xa000	/* NM10 based
+> nettop */
+> -		    || host_bridge->device == 0xa010))	/* NM10 based
+> netbook */
+> -			tjmax = 100000;
+> -		else
+> -			tjmax = 90000;
+> +		if (host_bridge && host_bridge->vendor ==
+> PCI_VENDOR_ID_INTEL) {
+> +			switch (host_bridge->device) {
+> +			/* NM10 based nettop */
+> +			case 0xa000:
+> +			/* NM10 based netbook */
+> +			case 0xa010:
+> +				tjmax = 100000;
+> +				break;
+> +			/* IntelCE Sodaville (CE4100) */
+> +			case 0x0708:
+> +				tjmax = 110000;
+> +				break;
+> +			default:
+> +				tjmax = 90000;
+> +				break;
+> +			}
+> +		}
+> 
+>  		pci_dev_put(host_bridge);
+>  	}
+When host_bridge && host_bridge->vendor == PCI_VENDOR_ID_INTEL is not true, tjmax is not assigned to 90000. This is different from original code.
 
---lrZ03NoBR/3+SXJZ
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Could you add public spec URL or public spec name for 110 degrees C in your comments? People may get lost to find this info.
 
-On Sat, Dec 25, 2010 at 09:50:56PM +0100, richard -rw- weinberger wrote:
-> On Sat, Dec 25, 2010 at 9:30 PM, Jesper Juhl <jj@chaosbits.net> wrote:
-> > Hi,
-> >
-> > In drivers/net/3c59x.c::vortex_probe1() we have this code:
-> >
-> > =A0 =A0 =A0 =A0if (gendev) {
-> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0if ((pdev =3D DEVICE_PCI(gendev))) {
-> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0print_name =3D pci_name(=
-pdev);
-> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0}
-> >
-> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0if ((edev =3D DEVICE_EISA(gendev))) {
-> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0print_name =3D dev_name(=
-&edev->dev);
-> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0}
-> > =A0 =A0 =A0 =A0}
-> >
-> > I believe these assignments were intended to be comparisons.
-> > If I'm correct, then here's a patch to fix that up.
->=20
-> I don't think so. Look at the extra brackets.
->=20
-> The code can also written as:
->=20
-> pdev =3D DEVICE_PCI(gendev);
-> if(pdev)
->   print_name =3D pci_name(pdev);
+Thanks.
 
-=2E.. which looks much better and could be worth a patch as well.
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---lrZ03NoBR/3+SXJZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAk0WbVwACgkQD27XaX1/VRuTRACfWd1/1j2rueStgVeJJxDVb3qT
-F1IAniAFUAlpz/PMfkvFRf1HUbWapqBc
-=mi1C
------END PGP SIGNATURE-----
-
---lrZ03NoBR/3+SXJZ--
+-Fenghua
