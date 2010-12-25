@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117Ab0LYUYj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 15:24:39 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:16005 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751286Ab0LYUYi (ORCPT
+	id S1752388Ab0LYUjl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 15:39:41 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54718 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752209Ab0LYUjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 15:24:38 -0500
-Date: Sat, 25 Dec 2010 21:14:53 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: xfs@oss.sgi.com
-cc: xfs-masters@oss.sgi.com, linux-kernel@vger.kernel.org,
-        Alex Elder <aelder@sgi.com>
-Subject: [PATCH] XFS: Compare, don't assign in ASSERT() in
- xfs_trans_unreserve_and_mod_sb()
-Message-ID: <alpine.LNX.2.00.1012252110490.10759@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sat, 25 Dec 2010 15:39:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=un3AfhS7pJ5MpuvWkSWeTkR3KMOt11OXJdKmW/4VdvOAX5E6lAGMx/fr+qFCTV5wIJ
+         kclJ/ODzRJvPGgIxiiWr0U3IUyExExOw8Meq8j0F3WCrPaHMnbNW0xFkSC2S112Kzrzp
+         hWdn/lM0csgusMtUCw8YK0epir9oPKCr0c1h0=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20101223061359.GA7169@riccoc20.at.omicron.at>
+References: <cover.1292512461.git.richard.cochran@omicron.at>
+ <880d82bb8120f73973db27e0c48e949014b1a106.1292512461.git.richard.cochran@omicron.at>
+ <AANLkTi=yGoFwYt4p_LeHtAQyYgmURspO-p57UdL0sUEZ@mail.gmail.com>
+ <20101221075612.GA13626@riccoc20.at.omicron.at> <AANLkTimJd5pScKTiDxuYd-h+NevYbCusyvUAqmUDXe8h@mail.gmail.com>
+ <1292970355.2618.76.camel@work-vm> <AANLkTimmTzH8+fSYmbajqZ+hU5Ps-UZaTp_1TYzjHB6P@mail.gmail.com>
+ <20101223061359.GA7169@riccoc20.at.omicron.at>
+From: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>
+Date: Sun, 26 Dec 2010 05:38:57 +0900
+Message-ID: <AANLkTind84BVd=2Z07Sz+JfpVRH7m8wdx37YhRcqkCZv@mail.gmail.com>
+Subject: Re: [PATCH V7 1/8] ntp: add ADJ_SETOFFSET mode bit
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: john stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-In fs/xfs/xfs_trans.c::xfs_trans_unreserve_and_mod_sb() at the out: label 
-we have this:
-	ASSERT(error = 0);
-I believe a comparison was intended, not an assignment. If I'm right, the 
-patch below fixes that up.
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- xfs_trans.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-  compile tested only.
-
-diff --git a/fs/xfs/xfs_trans.c b/fs/xfs/xfs_trans.c
-index f6d956b..0e312b9 100644
---- a/fs/xfs/xfs_trans.c
-+++ b/fs/xfs/xfs_trans.c
-@@ -1137,7 +1137,7 @@ out_undo_fdblocks:
- 	if (blkdelta)
- 		xfs_icsb_modify_counters(mp, XFS_SBS_FDBLOCKS, -blkdelta, rsvd);
- out:
--	ASSERT(error = 0);
-+	ASSERT(error == 0);
- 	return;
- }
- 
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+After all, I'd prefer your earlier patchset.  Leaving aside the
+compatibility issue, there's no particular reason we have to re-use
+the struct timex, which requires otherwise unnecessary conditional
+branches as well as unit conversions.  Don't you agree?
