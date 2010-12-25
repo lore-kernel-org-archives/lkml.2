@@ -1,71 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660Ab0LYTds (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 14:33:48 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:47713 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124Ab0LYTdq (ORCPT
+	id S1752074Ab0LYTgr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 14:36:47 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:15426 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137Ab0LYTgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 14:33:46 -0500
-Date: Sun, 26 Dec 2010 00:35:04 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Dario Faggioli <raistlin@linux.it>
-Cc: Dhaval Giani <dhaval.giani@gmail.com>, torbenh <torbenh@gmx.de>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Gregory Haskins <ghaskins@novell.com>,
-        Nick Piggin <nickpiggin@yahoo.com.au>, vatsa@in.ibm.com
-Subject: Re: Sending some form of notifaction when sched_fifo throttling
- kicks in...
-Message-ID: <20101225190504.GB3393@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20101223113926.GH14960@siel.b>
- <1293110258.3390.41.camel@Palantir>
- <AANLkTi=1v6YG-Vc7uZFvqO6K0fAuZ-o9A7hxeZVVAHm3@mail.gmail.com>
- <1293115496.3390.49.camel@Palantir>
+	Sat, 25 Dec 2010 14:36:46 -0500
+Date: Sat, 25 Dec 2010 20:27:01 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: Will Dyson <will_dyson@pobox.com>, Makoto Kato <m_kato@ga2.so-net.ne.jp>,
+        "Sergey S. Kostyliov" <rathamahata@php4.ru>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] befs: Don't pass huge structs by value.
+Message-ID: <alpine.LNX.2.00.1012252020000.10759@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1293115496.3390.49.camel@Palantir>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Dario Faggioli <raistlin@linux.it> [2010-12-23 15:44:56]:
+Hi there,
 
-> On Thu, 2010-12-23 at 15:04 +0100, Dhaval Giani wrote: 
-> > > ... If you think you're fine with some /proc (and perhaps cpuacct, if
-> > > cgroups are being used) readable, I can try to come up with something.
-> > >
-> > 
-> > There is no point in putting it in cpuacct since cpuacct can be used
-> > separately from cpu.
-> > 
-> Which would mean that you'd need both for having such stat. Anyway, I'm
-> fine with putting this in 'cpu' as well, just trying to find a consensus
-> on what the right place is.
-> 
-> > > Do others have some idea and/or comments about that? This is
-> > > ABI/interface, and that really scares me! :-P
-> > 
-> > IIRC, your patchset had something like this for getting the
-> > statistics? Starting fromt hre, would schedstats be the right place?
-> > 
-> SCHED_DEADLINE patchset has both signaling capabilities and some
-> statistic reporting, bat it's a different thing.
-> 
-> I think schedstat could be the right place for _this_ thing here, but
-> since each cgroup could be throttled, we also need something which is
-> per-cgroup... Don't you agree?
->
+'struct befs_disk_data_stream' is huge (~144 bytes) and it's being passed 
+by value in fs/befs/endian.h::cpu_to_fsrun().
 
-You definitely need something per cgroup, have you looked at the
-events framework in cgroups and its implementation in memcgroup?
+It seems to me that it would be better to pass a pointer, no?
+This patch changes the function to take a pointer to the large struct.
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ endian.h   |   16 ++++++++--------
+ linuxvfs.c |    2 +-
+ 2 files changed, 9 insertions(+), 9 deletions(-)
+
+ Compile tested only. I have no way to test this.
+
+diff --git a/fs/befs/endian.h b/fs/befs/endian.h
+index 6cb84d8..a99caa0 100644
+--- a/fs/befs/endian.h
++++ b/fs/befs/endian.h
+@@ -102,22 +102,22 @@ cpu_to_fsrun(const struct super_block *sb, befs_block_run n)
+ }
+ 
+ static inline befs_data_stream
+-fsds_to_cpu(const struct super_block *sb, befs_disk_data_stream n)
++fsds_to_cpu(const struct super_block *sb, befs_disk_data_stream *n)
+ {
+ 	befs_data_stream data;
+ 	int i;
+ 
+ 	for (i = 0; i < BEFS_NUM_DIRECT_BLOCKS; ++i)
+-		data.direct[i] = fsrun_to_cpu(sb, n.direct[i]);
++		data.direct[i] = fsrun_to_cpu(sb, n->direct[i]);
+ 
+-	data.max_direct_range = fs64_to_cpu(sb, n.max_direct_range);
+-	data.indirect = fsrun_to_cpu(sb, n.indirect);
+-	data.max_indirect_range = fs64_to_cpu(sb, n.max_indirect_range);
+-	data.double_indirect = fsrun_to_cpu(sb, n.double_indirect);
++	data.max_direct_range = fs64_to_cpu(sb, n->max_direct_range);
++	data.indirect = fsrun_to_cpu(sb, n->indirect);
++	data.max_indirect_range = fs64_to_cpu(sb, n->max_indirect_range);
++	data.double_indirect = fsrun_to_cpu(sb, n->double_indirect);
+ 	data.max_double_indirect_range = fs64_to_cpu(sb,
+-						     n.
++						     n->
+ 						     max_double_indirect_range);
+-	data.size = fs64_to_cpu(sb, n.size);
++	data.size = fs64_to_cpu(sb, n->size);
+ 
+ 	return data;
+ }
+diff --git a/fs/befs/linuxvfs.c b/fs/befs/linuxvfs.c
+index aa4e7c7..d5fbc09 100644
+--- a/fs/befs/linuxvfs.c
++++ b/fs/befs/linuxvfs.c
+@@ -384,7 +384,7 @@ static struct inode *befs_iget(struct super_block *sb, unsigned long ino)
+ 		int num_blks;
+ 
+ 		befs_ino->i_data.ds =
+-		    fsds_to_cpu(sb, raw_inode->data.datastream);
++		    fsds_to_cpu(sb, &raw_inode->data.datastream);
+ 
+ 		num_blks = befs_count_blocks(sb, &befs_ino->i_data.ds);
+ 		inode->i_blocks =
 
 
 
 -- 
-	Three Cheers,
-	Balbir
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
