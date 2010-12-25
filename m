@@ -1,91 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab0LYA1T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Dec 2010 19:27:19 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:34725 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753028Ab0LYA1S (ORCPT
+	id S1753125Ab0LYCMT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Dec 2010 21:12:19 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:49766 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752612Ab0LYCMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Dec 2010 19:27:18 -0500
+	Fri, 24 Dec 2010 21:12:18 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=hXW+xIolTD+Lv8ZkU60JJkRSMJ+NdHi3T5VUbnqDDCuTQ2tZ7dM5c3OCYnmK7zhNAG
-         sKZ7OsOfZIeOQRPsn80w==
-From: Venkatesh Pallipadi <venki@google.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Ranjit Manomohan <ranjitm@google.com>,
-        Venkatesh Pallipadi <venki@google.com>
-Subject: [PATCH] sched: Buggy comparison in check_preempt_tick
-Date: Fri, 24 Dec 2010 16:26:53 -0800
-Message-Id: <1293236813-31550-1-git-send-email-venki@google.com>
-X-Mailer: git-send-email 1.7.3.1
-X-System-Of-Record: true
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=DQJgk8u2JXY2lSxDshkKSKloxn0Dz6t2A51Tzj6EfYfL7pn35COWswnQEiMCAlKTd7
+         Rurwg8G+IK5jtxCd1Bi1KhKMJnWAzR76WuMyA/uVTLhBzzCZ5oTr3Z7ccIjSvGIUkBs0
+         t0zaB0EFNnlromDDJ/tVdO08yDrQGSY9smCns=
+Date: Sat, 25 Dec 2010 10:12:09 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fix unsafe operation in high resolution timer
+Message-ID: <20101225021209.GA11183@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <AANLkTinvHP4rZ6PSyEOJ_ZJ2chRJX0ZyzuhNoCRrO1wK@mail.gmail.com>
+ <AANLkTikVQU6ozp0H1u7ghd0=miYyUJL62uP=0FBZSLok@mail.gmail.com>
+ <AANLkTimc0FwBhj5MsnibTTq94AgaQgqCKEXNSOvM_XjE@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimc0FwBhj5MsnibTTq94AgaQgqCKEXNSOvM_XjE@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A preempt comparison line in check_preempt_tick has two bugs.
-* It compares signed and unsigned quantities, which breaks when signed
-  quantity happens to be negative
-* It compares runtime and vruntime, which breaks when there are niced tasks
+On Fri, Dec 24, 2010 at 10:28:52PM +0800, Hillf Danton wrote:
+> On Fri, Dec 24, 2010 at 3:17 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
+> > On Thu, Dec 23, 2010 at 9:29 PM, Hillf Danton <dhillf@gmail.com> wrote:
+> >> After calling the callback function of hrtimer, the timer could become
+> >> unreliable in corner cases where the timer will no longer be queued
+> >> and the mm segment, in which the timer is embedded, could be reclaimed
+> >> in the callback.
+> >>
+> >> The unreliability is fixed by checking the result of callback before
+> >> operating the timer again.
+> >
+> > Though the patch is buggy. But it actually explores a real problem.
+> >
+> 
+> Would you please finger out why the patch is buggy?
 
-The bug was initially found by linsched[1]. Change here fixes both
-the problems.
+No problem.
 
-On x86-64, the signed unsigned compare results in tasks running _longer_
-than their expected time slice as a false resched_task() gets signalled after
-4 ticks (on tick after preceding sysctl_sched_min_granularity check) and
-currently running task gets picked again and runs for another ideal_slice
-interval.
+Actually the patch change the behavior of current hrtimer.
+See comments below :)
 
-With 2 busy loops on a single CPU and trace_printks inside this buggy check
-triggering resched task and in pick_next_task shows this:
+> >> ---
+> >>
+> >> --- a/kernel/hrtimer.c  2010-11-01 19:54:12.000000000 +0800
+> >> +++ b/kernel/hrtimer.c  2010-12-23 21:17:02.000000000 +0800
+> >> @@ -1225,6 +1225,7 @@ static void __run_hrtimer(struct hrtimer
+> >>        raw_spin_unlock(&cpu_base->lock);
+> >>        trace_hrtimer_expire_entry(timer, now);
+> >>        restart = fn(timer);
+> >> +       if (restart != HRTIMER_NORESTART)
+> >>        trace_hrtimer_expire_exit(timer);
+> >>        raw_spin_lock(&cpu_base->lock);
+> >>
+> >> @@ -1236,11 +1237,8 @@ static void __run_hrtimer(struct hrtimer
+> >>        if (restart != HRTIMER_NORESTART) {
+> >>                BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
+> >>                enqueue_hrtimer(timer, base);
+> >> +               timer->state &= ~HRTIMER_STATE_CALLBACK;
 
- [001]   510.524336: pick_next_task_fair: loop (5939)
- [001]   510.536326: pick_next_task_fair: loop (5883)
- [001]   510.540319: task_tick_fair: delta -4897059, ideal_runtime 11994146
- [001]   510.540321: pick_next_task_fair: loop (5883)
- [001]   510.544306: task_tick_fair: delta -906540, ideal_runtime 11994146
- [001]   510.544309: pick_next_task_fair: loop (5883)
- [001]   510.556306: pick_next_task_fair: loop (5939)
- [001]   510.560301: task_tick_fair: delta -7105824, ideal_runtime 11994146
- [001]   510.560304: pick_next_task_fair: loop (5939)
- [001]   510.564298: task_tick_fair: delta -3105461, ideal_runtime 11994146
- [001]   510.564300: pick_next_task_fair: loop (5939)
- [001]   510.576288: pick_next_task_fair: loop (5883)
- [001]   510.580282: task_tick_fair: delta -4897210, ideal_runtime 11994146
- [001]   510.580285: pick_next_task_fair: loop (5883)
- [001]   510.584278: task_tick_fair: delta -897348, ideal_runtime 11994146
- [001]   510.584281: pick_next_task_fair: loop (5883)
- [001]   510.596269: pick_next_task_fair: loop (5939)
+HRTIMER_STATE_CALLBACK is only cleared for RESTART hrtimer with
+your modification.
 
-That is 20 ms slice for each task, with some redundant resched_tasks and
-with the fix it is expected ~12ms slices (on 16 cpu system).
+> >>        }
+> >> -
+> >> -       WARN_ON_ONCE(!(timer->state & HRTIMER_STATE_CALLBACK));
+> >> -
+> >> -       timer->state &= ~HRTIMER_STATE_CALLBACK;
 
-[1] - http://lwn.net/Articles/409680/
+But for a hrtimer which is not free in its callback, like a
+static defined one. the hrtimer could be referenced at the same
+time. So here you cann't just delete the two lines.
 
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
----
- kernel/sched_fair.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 00ebd76..fc5ffbd 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -871,8 +871,10 @@ check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
- 	if (cfs_rq->nr_running > 1) {
- 		struct sched_entity *se = __pick_next_entity(cfs_rq);
- 		s64 delta = curr->vruntime - se->vruntime;
-+		unsigned long ideal_vruntime;
- 
--		if (delta > ideal_runtime)
-+		ideal_vruntime = calc_delta_fair(ideal_runtime, curr);
-+		if (delta > (s64)ideal_vruntime)
- 			resched_task(rq_of(cfs_rq)->curr);
- 	}
- }
--- 
-1.7.3.1
-
+Thanks,
+Yong
