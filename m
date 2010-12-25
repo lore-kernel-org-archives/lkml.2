@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752418Ab0LYS4e (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 13:56:34 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:38700 "EHLO mprc.pku.edu.cn"
+	id S1752547Ab0LYS6O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 13:58:14 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:49049 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751385Ab0LYS4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 13:56:31 -0500
+	id S1752162Ab0LYS6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Dec 2010 13:58:11 -0500
 From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 Cc: =?gb2312?B?0anMziC53A==?= <guanxuetao@mprc.pku.edu.cn>
-Subject: [PATCHv1 11/12] unicore32 core architecture: signals
-Date: Sun, 26 Dec 2010 02:56:24 +0800
-Message-ID: <00da01cba465$6d6e52f0$484af8d0$@mprc.pku.edu.cn>
+Subject: [PATCHv1 12/12] unicore32 core architecture: booting process
+Date: Sun, 26 Dec 2010 02:58:03 +0800
+Message-ID: <00dc01cba465$a8357940$f8a06bc0$@mprc.pku.edu.cn>
 MIME-Version: 1.0
 Content-Type: text/plain;
 	charset="gb2312"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AcukZVqiU7ttRnasTFuFXfV8DMNZdg==
+Thread-Index: AcukZYYm4zAOgY4hTFGD509B/LnoBw==
 Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,23 +25,510 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 
-Patch 11 implements signals.
+Patch 12 implements booting process before uncompressed.
 
 Signed-off-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 ---
- arch/unicore32/include/asm/sigcontext.h |   61 ++++
- arch/unicore32/kernel/signal.c          |  571 +++++++++++++++++++++++++++++++
- arch/unicore32/kernel/signal.h          |   16 +
- 3 files changed, 648 insertions(+), 0 deletions(-)
+ arch/unicore32/boot/Makefile                  |   47 ++++++
+ arch/unicore32/boot/compressed/Makefile       |   71 +++++++++
+ arch/unicore32/boot/compressed/head.S         |  203 +++++++++++++++++++++++++
+ arch/unicore32/boot/compressed/misc.c         |  126 +++++++++++++++
+ arch/unicore32/boot/compressed/piggy.S.in     |    6 +
+ arch/unicore32/boot/compressed/vmlinux.lds.in |   61 ++++++++
+ arch/unicore32/include/asm/mach/uncompress.h  |   34 ++++
+ 7 files changed, 548 insertions(+), 0 deletions(-)
 
-diff --git a/arch/unicore32/include/asm/sigcontext.h b/arch/unicore32/include/asm/sigcontext.h
+diff --git a/arch/unicore32/boot/Makefile b/arch/unicore32/boot/Makefile
 new file mode 100644
-index 0000000..68e05e7
+index 0000000..79e5f88
 --- /dev/null
-+++ b/arch/unicore32/include/asm/sigcontext.h
++++ b/arch/unicore32/boot/Makefile
+@@ -0,0 +1,47 @@
++#
++# arch/unicore32/boot/Makefile
++#
++# This file is included by the global makefile so that you can add your own
++# architecture-specific flags and dependencies.
++#
++# This file is subject to the terms and conditions of the GNU General Public
++# License.  See the file "COPYING" in the main directory of this archive
++# for more details.
++#
++# Copyright (C) 2001~2010 GUAN Xue-tao
++#
++
++MKIMAGE := $(srctree)/scripts/mkuboot.sh
++
++targets := Image zImage uImage
++
++$(obj)/Image: vmlinux FORCE
++	$(call if_changed,objcopy)
++	@echo '  Kernel: $@ is ready'
++
++$(obj)/compressed/vmlinux: $(obj)/Image FORCE
++	$(Q)$(MAKE) $(build)=$(obj)/compressed $@
++
++$(obj)/zImage: $(obj)/compressed/vmlinux FORCE
++	$(call if_changed,objcopy)
++	@echo '  Kernel: $@ is ready'
++
++quiet_cmd_uimage = UIMAGE  $@
++      cmd_uimage = $(CONFIG_SHELL) $(MKIMAGE) -A unicore -O linux -T kernel \
++		   -C none -a $(LOADADDR) -e $(STARTADDR) \
++		   -n 'Linux-$(KERNELRELEASE)' -d $< $@
++
++$(obj)/uImage: LOADADDR=0x0
++
++$(obj)/uImage: STARTADDR=$(LOADADDR)
++
++$(obj)/uImage: $(obj)/zImage FORCE
++	$(call if_changed,uimage)
++	@echo '  Image $@ is ready'
++
++PHONY += initrd FORCE
++initrd:
++	@test "$(INITRD)" != "" || \
++	(echo You must specify INITRD; exit -1)
++
++subdir- := compressed
+diff --git a/arch/unicore32/boot/compressed/Makefile b/arch/unicore32/boot/compressed/Makefile
+new file mode 100644
+index 0000000..79f8889
+--- /dev/null
++++ b/arch/unicore32/boot/compressed/Makefile
+@@ -0,0 +1,71 @@
++#
++# linux/arch/unicore32/boot/compressed/Makefile
++#
++# create a compressed vmlinuz image from the original vmlinux
++#
++# This file is subject to the terms and conditions of the GNU General Public
++# License.  See the file "COPYING" in the main directory of this archive
++# for more details.
++#
++# Copyright (C) 2001~2010 GUAN Xue-tao
++#
++
++EXTRA_CFLAGS	:= -fpic -fno-builtin
++EXTRA_AFLAGS	:= -Wa,-march=all
++
++AFLAGS_head.o	+= -DTEXT_OFFSET=$(TEXT_OFFSET)
++OBJS		:= misc.o
++
++# font.c and font.o
++CFLAGS_font.o	:= -Dstatic=
++$(obj)/font.c: $(srctree)/drivers/video/console/font_8x8.c
++	$(call cmd,shipped)
++
++# piggy.S and piggy.o
++suffix_$(CONFIG_KERNEL_GZIP)	:= gzip
++suffix_$(CONFIG_KERNEL_BZIP2)	:= bz2
++suffix_$(CONFIG_KERNEL_LZO)	:= lzo
++suffix_$(CONFIG_KERNEL_LZMA)	:= lzma
++
++$(obj)/piggy.$(suffix_y): $(obj)/../Image FORCE
++	$(call if_changed,$(suffix_y))
++
++SEDFLAGS_piggy	= s/DECOMP_SUFFIX/$(suffix_y)/
++$(obj)/piggy.S: $(obj)/piggy.S.in
++	@sed "$(SEDFLAGS_piggy)" < $< > $@
++
++$(obj)/piggy.o:  $(obj)/piggy.$(suffix_y) $(obj)/piggy.S FORCE
++
++targets		:= vmlinux vmlinux.lds font.o font.c head.o misc.o \
++			piggy.$(suffix_y) piggy.o piggy.S \
++
++# Make sure files are removed during clean
++extra-y		+= piggy.gzip piggy.bz2 piggy.lzo piggy.lzma
++
++# Supply zreladdr to the decompressor via a linker symbol.
++LDFLAGS_vmlinux := --defsym zreladdr=$(TEXT_OFFSET)
++# ?
++LDFLAGS_vmlinux += -p
++# Report unresolved symbol references
++LDFLAGS_vmlinux += --no-undefined
++# Delete all temporary local symbols
++LDFLAGS_vmlinux += -X
++# Next argument is a linker script
++LDFLAGS_vmlinux += -T
++
++# For uidivmod
++$(obj)/vmlinux: $(obj)/vmlinux.lds $(obj)/head.o $(obj)/piggy.o \
++		$(obj)/misc.o FORCE
++	$(call if_changed,ld)
++	@:
++
++# We now have a PIC decompressor implementation.  Decompressors running
++# from RAM should not define ZTEXTADDR.  Decompressors running directly
++# from ROM or Flash must define ZTEXTADDR (preferably via the config)
++ZTEXTADDR	:= 0
++ZBSSADDR	:= ALIGN(4)
++
++SEDFLAGS_lds	= s/TEXT_START/$(ZTEXTADDR)/;s/BSS_START/$(ZBSSADDR)/
++$(obj)/vmlinux.lds: $(obj)/vmlinux.lds.in arch/unicore32/boot/Makefile $(KCONFIG_CONFIG)
++	@sed "$(SEDFLAGS_lds)" < $< > $@
++
+diff --git a/arch/unicore32/boot/compressed/head.S b/arch/unicore32/boot/compressed/head.S
+new file mode 100644
+index 0000000..ced47bd
+--- /dev/null
++++ b/arch/unicore32/boot/compressed/head.S
+@@ -0,0 +1,203 @@
++/*
++ * linux/arch/unicore32/boot/compressed/head.S
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/linkage.h>
++
++#define csub	cmpsub
++#define cand	cmpand
++#define nop8	nop; nop; nop; nop; nop; nop; nop; nop
++
++		.section ".start", #alloc, #execinstr
++		.text
++start:
++		.type	start,#function
++
++		/* Initialize ASR, PRIV mode and INTR off */
++		mov	r0, #0xD3
++		mov.a	asr, r0
++
++		adr	r0, LC0
++		ldm	(r1, r2, r3, r5, r6, r7, r8), [r0]+
++		ldw	sp, [r0+], #28
++		sub.a	r0, r0, r1		@ calculate the delta offset
++
++		/*
++		 * if delta is zero, we are running at the address
++		 * we were linked at.
++		 */
++		beq	not_relocated
++
++		/*
++		 * We're running at a different address.  We need to fix
++		 * up various pointers:
++		 *   r5 - zImage base address (_start)
++		 *   r7 - GOT start
++		 *   r8 - GOT end
++		 */
++		add	r5, r5, r0
++		add	r7, r7, r0
++		add	r8, r8, r0
++
++		/*
++		 * we need to fix up pointers into the BSS region.
++		 *   r2 - BSS start
++		 *   r3 - BSS end
++		 *   sp - stack pointer
++		 */
++		add	r2, r2, r0
++		add	r3, r3, r0
++		add	sp, sp, r0
++
++		/*
++		 * Relocate all entries in the GOT table.
++		 * This fixes up the C references.
++		 *   r7 - GOT start
++		 *   r8 - GOT end
++		 */
++1001:		ldw	r1, [r7+], #0
++		add	r1, r1, r0
++		stw.w	r1, [r7]+, #4
++		csub.a	r7, r8
++		bub	1001b
++
++not_relocated:
++		/*
++		 * Clear BSS region.
++		 *   r2 - BSS start
++		 *   r3 - BSS end
++		 */
++		mov	r0, #0
++1002:		stw.w	r0, [r2]+, #4
++		csub.a	r2, r3
++		bub	1002b
++
++		/*
++		 * Turn on the cache.
++		 */
++                mov     r0, #0
++                movc    p0.c5, r0, #28		@ cache invalidate all
++                nop8
++                movc    p0.c6, r0, #6		@ tlb invalidate all
++                nop8
++
++                mov     r0, #0x1c		@ en icache and wb dcache
++                movc    p0.c1, r0, #0
++                nop8
++
++		/*
++		 * Set up some pointers, for starting decompressing.
++		 */
++
++		mov	r1, sp			@ malloc space above stack
++		add	r2, sp, #0x10000	@ 64k max
++
++		/*
++		 * Check to see if we will overwrite ourselves.
++		 *   r4 = final kernel address
++		 *   r5 = start of this image
++		 *   r6 = size of decompressed image
++		 *   r2 = end of malloc space (and therefore this image)
++		 * We basically want:
++		 *   r4 >= r2 -> OK
++		 *   r4 + image length <= r5 -> OK
++		 */
++		ldw	r4, =zreladdr
++		csub.a	r4, r2
++		bea	wont_overwrite
++		add	r0, r4, r6
++		csub.a	r0, r5
++		beb	wont_overwrite
++
++		/*
++		 * If overwrite, just print error message
++		 */
++		b	__error_overwrite
++
++		/*
++		 * We're not in danger of overwriting ourselves.
++		 * Do this the simple way.
++		 */
++wont_overwrite:
++		/*
++		 * decompress_kernel:
++		 *   r0: output_start
++		 *   r1: free_mem_ptr_p
++		 *   r2: free_mem_ptr_end_p
++		 */
++		mov	r0, r4
++		b.l	decompress_kernel	@ C functions
++
++		/*
++		 * Clean and flush the cache to maintain consistency.
++		 */
++		mov	r0, #0
++                movc    p0.c5, r0, #14		@ flush dcache
++		nop8
++                movc    p0.c5, r0, #20		@ icache invalidate all
++                nop8
++
++		/*
++		 * Turn off the Cache and MMU.
++		 */
++		mov	r0, #0			@ disable i/d cache and MMU
++		movc	p0.c1, r0, #0
++                nop8
++
++		mov	r0, #0			@ must be zero
++		ldw	r4, =zreladdr
++		mov	pc, r4			@ call kernel
++
++
++		.align	2
++		.type	LC0, #object
++LC0:		.word	LC0			@ r1
++		.word	__bss_start		@ r2
++		.word	_end			@ r3
++		.word	_start			@ r5
++		.word	_image_size		@ r6
++		.word	_got_start		@ r7
++		.word	_got_end		@ r8
++		.word	decompress_stack_end	@ sp
++		.size	LC0, . - LC0
++
++print_string:
++#ifdef CONFIG_DEBUG_OCD
++2001:		ldb.w	r1, [r0]+, #1
++		csub.a	r1, #0
++		bne	2002f
++		mov	pc, lr
++2002:
++		movc	r2, p1.c0, #0
++		cand.a	r2, #2
++		bne	2002b
++		movc	p1.c1, r1, #1
++		csub.a	r1, #'\n'
++		cmoveq	r1, #'\r'
++		beq	2002b
++		b	2001b
++#else
++		mov	pc, lr
++#endif
++
++__error_overwrite:
++		adr	r0, str_error
++		b.l	print_string
++2001:		nop8
++		b	2001b
++str_error:	.asciz	"\nError: Kernel address OVERWRITE\n"
++		.align
++
++		.ltorg
++
++		.align	4
++		.section ".stack", "aw", %nobits
++decompress_stack:	.space	4096
++decompress_stack_end:
+diff --git a/arch/unicore32/boot/compressed/misc.c b/arch/unicore32/boot/compressed/misc.c
+new file mode 100644
+index 0000000..7b80508
+--- /dev/null
++++ b/arch/unicore32/boot/compressed/misc.c
+@@ -0,0 +1,126 @@
++/*
++ * linux/arch/unicore32/boot/compressed/misc.c
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <asm/unaligned.h>
++#include <asm/mach/uncompress.h>
++
++/*
++ * gzip delarations
++ */
++unsigned char *output_data;
++unsigned long output_ptr;
++
++unsigned int free_mem_ptr;
++unsigned int free_mem_end_ptr;
++
++#define STATIC static
++#define STATIC_RW_DATA	/* non-static please */
++
++/*
++ * arch-dependent implementations
++ */
++#ifndef ARCH_HAVE_DECOMP_ERROR
++#define arch_decomp_error(x)
++#endif
++
++#ifndef ARCH_HAVE_DECOMP_SETUP
++#define arch_decomp_setup()
++#endif
++
++#ifndef ARCH_HAVE_DECOMP_PUTS
++#define arch_decomp_puts(p)
++#endif
++
++void *memcpy(void *dest, const void *src, size_t n)
++{
++	int i = 0;
++	unsigned char *d = (unsigned char *)dest, *s = (unsigned char *)src;
++
++	for (i = n >> 3; i > 0; i--) {
++		*d++ = *s++;
++		*d++ = *s++;
++		*d++ = *s++;
++		*d++ = *s++;
++		*d++ = *s++;
++		*d++ = *s++;
++		*d++ = *s++;
++		*d++ = *s++;
++	}
++
++	if (n & 1 << 2) {
++		*d++ = *s++;
++		*d++ = *s++;
++		*d++ = *s++;
++		*d++ = *s++;
++	}
++
++	if (n & 1 << 1) {
++		*d++ = *s++;
++		*d++ = *s++;
++	}
++
++	if (n & 1)
++		*d++ = *s++;
++
++	return dest;
++}
++
++void error(char *x)
++{
++	arch_decomp_puts("\n\n");
++	arch_decomp_puts(x);
++	arch_decomp_puts("\n\n -- System halted");
++
++	arch_decomp_error(x);
++
++	for (;;)
++		; /* Halt */
++}
++
++/* Heap size should be adjusted for different decompress method */
++#ifdef CONFIG_KERNEL_GZIP
++#include "../../../../lib/decompress_inflate.c"
++#endif
++
++#ifdef CONFIG_KERNEL_BZIP2
++#include "../../../../lib/decompress_bunzip2.c"
++#endif
++
++#ifdef CONFIG_KERNEL_LZO
++#include "../../../../lib/decompress_unlzo.c"
++#endif
++
++#ifdef CONFIG_KERNEL_LZMA
++#include "../../../../lib/decompress_unlzma.c"
++#endif
++
++unsigned long decompress_kernel(unsigned long output_start,
++		unsigned long free_mem_ptr_p,
++		unsigned long free_mem_ptr_end_p)
++{
++	unsigned char *tmp;
++
++	output_data		= (unsigned char *)output_start;
++	free_mem_ptr		= free_mem_ptr_p;
++	free_mem_end_ptr	= free_mem_ptr_end_p;
++
++	arch_decomp_setup();
++
++	tmp = (unsigned char *) (((unsigned long)input_data_end) - 4);
++	output_ptr = get_unaligned_le32(tmp);
++
++	arch_decomp_puts("Uncompressing Linux...");
++	decompress(input_data, input_data_end - input_data, NULL, NULL,
++			output_data, NULL, error);
++	arch_decomp_puts(" done, booting the kernel.\n");
++	return output_ptr;
++}
+diff --git a/arch/unicore32/boot/compressed/piggy.S.in b/arch/unicore32/boot/compressed/piggy.S.in
+new file mode 100644
+index 0000000..b79704d
+--- /dev/null
++++ b/arch/unicore32/boot/compressed/piggy.S.in
+@@ -0,0 +1,6 @@
++	.section .piggydata,#alloc
++	.globl	input_data
++input_data:
++	.incbin	"arch/unicore32/boot/compressed/piggy.DECOMP_SUFFIX"
++	.globl	input_data_end
++input_data_end:
+diff --git a/arch/unicore32/boot/compressed/vmlinux.lds.in b/arch/unicore32/boot/compressed/vmlinux.lds.in
+new file mode 100644
+index 0000000..d5a3ce2
+--- /dev/null
++++ b/arch/unicore32/boot/compressed/vmlinux.lds.in
 @@ -0,0 +1,61 @@
 +/*
-+ * linux/arch/unicore32/include/asm/sigcontext.h
++ * linux/arch/unicore/boot/compressed/vmlinux.lds.in
 + *
 + * Code specific to PKUnity SoC and UniCore ISA
 + *
@@ -51,64 +538,64 @@ index 0000000..68e05e7
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
-+#ifndef __UNICORE_SIGCONTEXT_H__
-+#define __UNICORE_SIGCONTEXT_H__
++OUTPUT_ARCH(unicore32)
++ENTRY(_start)
++SECTIONS
++{
++  /DISCARD/ : {
++    /*
++     * Discard any r/w data - this produces a link error if we have any,
++     * which is required for PIC decompression.  Local data generates
++     * GOTOFF relocations, which prevents it being relocated independently
++     * of the text/got segments.
++     */
++    *(.data)
++  }
 +
-+/*
-+ * Signal context structure - contains all info to do with the state
-+ * before the signal handler was invoked.  Note: only add new entries
-+ * to the end of the structure.
-+ */
-+struct sigcontext {
-+	unsigned long trap_no;
-+	unsigned long error_code;
-+	unsigned long oldmask;
-+	unsigned long ucreg_00;
-+	unsigned long ucreg_01;
-+	unsigned long ucreg_02;
-+	unsigned long ucreg_03;
-+	unsigned long ucreg_04;
-+	unsigned long ucreg_05;
-+	unsigned long ucreg_06;
-+	unsigned long ucreg_07;
-+	unsigned long ucreg_08;
-+	unsigned long ucreg_09;
-+	unsigned long ucreg_10;
-+	unsigned long ucreg_11;
-+	unsigned long ucreg_12;
-+	unsigned long ucreg_13;
-+	unsigned long ucreg_14;
-+	unsigned long ucreg_15;
-+	unsigned long ucreg_16;
-+	unsigned long ucreg_17;
-+	unsigned long ucreg_18;
-+	unsigned long ucreg_19;
-+	unsigned long ucreg_20;
-+	unsigned long ucreg_21;
-+	unsigned long ucreg_22;
-+	unsigned long ucreg_23;
-+	unsigned long ucreg_24;
-+	unsigned long ucreg_25;
-+	unsigned long ucreg_26;
-+	unsigned long ucreg_fp;
-+	unsigned long ucreg_ip;
-+	unsigned long ucreg_sp;
-+	unsigned long ucreg_lr;
-+	unsigned long ucreg_pc;
-+	unsigned long ucreg_asr;
-+	unsigned long fault_address;
-+};
++  . = TEXT_START;
++  _text = .;
 +
++  .text : {
++    _start = .;
++    *(.start)
++    *(.text)
++    *(.text.*)
++    *(.fixup)
++    *(.gnu.warning)
++    *(.rodata)
++    *(.rodata.*)
++    *(.piggydata)
++    . = ALIGN(4);
++  }
 +
-+#endif
-diff --git a/arch/unicore32/kernel/signal.c b/arch/unicore32/kernel/signal.c
++  _etext = .;
++
++  /* Assume size of decompressed image is 4x the compressed image */
++  _image_size = (_etext - _text) * 4;
++
++  _got_start = .;
++  .got			: { *(.got) }
++  _got_end = .;
++  .got.plt		: { *(.got.plt) }
++  _edata = .;
++
++  . = BSS_START;
++  __bss_start = .;
++  .bss			: { *(.bss) }
++  _end = .;
++
++  .stack		: { *(.stack) }
++  .comment 0		: { *(.comment) }
++}
++
+diff --git a/arch/unicore32/include/asm/mach/uncompress.h b/arch/unicore32/include/asm/mach/uncompress.h
 new file mode 100644
-index 0000000..c7deecc
+index 0000000..4610e3d
 --- /dev/null
-+++ b/arch/unicore32/kernel/signal.c
-@@ -0,0 +1,571 @@
++++ b/arch/unicore32/include/asm/mach/uncompress.h
+@@ -0,0 +1,34 @@
 +/*
-+ * linux/arch/unicore32/kernel/signal.c
++ * linux/arch/unicore32/mach-puv3/include/mach/uncompress.h
 + *
 + * Code specific to PKUnity SoC and UniCore ISA
 + *
@@ -118,586 +605,27 @@ index 0000000..c7deecc
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
-+#include <linux/errno.h>
-+#include <linux/signal.h>
-+#include <linux/personality.h>
-+#include <linux/freezer.h>
-+#include <linux/uaccess.h>
-+#include <linux/tracehook.h>
-+#include <linux/elf.h>
-+#include <linux/unistd.h>
 +
-+#include <asm/cacheflush.h>
-+#include <asm/ucontext.h>
++#ifndef __MACH_PUV3_UNCOMPRESS_H__
++#define __MACH_PUV3_UNCOMPRESS_H__
 +
-+#include "ptrace.h"
-+#include "signal.h"
++#include "hardware.h"
++#include "ocd.h"
 +
-+#define _BLOCKABLE (~(sigmask(SIGKILL) | sigmask(SIGSTOP)))
++extern char input_data[];
++extern char input_data_end[];
 +
-+/*
-+ * For UniCore syscalls, we encode the syscall number into the instruction.
-+ */
-+#define SWI_SYS_SIGRETURN	(0xff000000 | (__NR_SYSCALL_BASE)	\
-+					| (__NR_sigreturn))
-+#define SWI_SYS_RT_SIGRETURN	(0xff000000 | (__NR_SYSCALL_BASE)	\
-+					| (__NR_rt_sigreturn))
-+#define SWI_SYS_RESTART		(0xff000000 | (__NR_SYSCALL_BASE)	\
-+					| (__NR_restart_syscall))
-+
-+const unsigned long sigreturn_codes[3] = {
-+	SWI_SYS_SIGRETURN, SWI_SYS_RT_SIGRETURN,
-+};
-+
-+const unsigned long syscall_restart_code[2] = {
-+	SWI_SYS_RESTART,	/* swi	__NR_restart_syscall */
-+	0x69efc004,		/* ldr	pc, [sp], #4 */
-+};
-+
-+/*
-+ * atomically swap in the new signal mask, and wait for a signal.
-+ */
-+asmlinkage int sys_sigsuspend(int restart, unsigned long oldmask,
-+		old_sigset_t mask)
++static void arch_decomp_puts(const char *ptr)
 +{
-+	mask &= _BLOCKABLE;
-+	spin_lock_irq(&current->sighand->siglock);
-+	current->saved_sigmask = current->blocked;
-+	siginitset(&current->blocked, mask);
-+	recalc_sigpending();
-+	spin_unlock_irq(&current->sighand->siglock);
-+
-+	current->state = TASK_INTERRUPTIBLE;
-+	schedule();
-+	set_restore_sigmask();
-+	return -ERESTARTNOHAND;
-+}
-+
-+asmlinkage int sys_sigaction(int sig, const struct sigaction __user *act,
-+	      struct sigaction __user *oact)
-+{
-+	struct k_sigaction new_ka, old_ka;
-+	int ret;
-+
-+	if (act) {
-+		old_sigset_t mask;
-+		if (!access_ok(VERIFY_READ, act, sizeof(*act)) ||
-+		    __get_user(new_ka.sa.sa_handler, &act->sa_handler))
-+			return -EFAULT;
-+		__get_user(new_ka.sa.sa_flags, &act->sa_flags);
-+		__get_user(mask, &act->sa_mask.sig[0]);
-+		siginitset(&new_ka.sa.sa_mask, mask);
-+	}
-+
-+	ret = do_sigaction(sig, act ? &new_ka : NULL, oact ? &old_ka : NULL);
-+
-+	if (!ret && oact) {
-+		if (!access_ok(VERIFY_WRITE, oact, sizeof(*oact)) ||
-+		    __put_user(old_ka.sa.sa_handler, &oact->sa_handler))
-+			return -EFAULT;
-+		__put_user(old_ka.sa.sa_flags, &oact->sa_flags);
-+		__put_user(old_ka.sa.sa_mask.sig[0], &oact->sa_mask.sig[0]);
-+		__put_user(old_ka.sa.sa_mask.sig[1], &oact->sa_mask.sig[1]);
-+	}
-+
-+	return ret;
-+}
-+
-+/*
-+ * Do a signal return; undo the signal stack.  These are aligned to 64-bit.
-+ */
-+struct sigframe {
-+	struct ucontext uc;
-+	unsigned long retcode[2];
-+};
-+
-+struct rt_sigframe {
-+	struct siginfo info;
-+	struct sigframe sig;
-+};
-+
-+static int restore_sigframe(struct pt_regs *regs, struct sigframe __user *sf)
-+{
-+	sigset_t set;
-+	int err;
-+
-+	err = __copy_from_user(&set, &sf->uc.uc_sigmask, sizeof(set));
-+	if (err == 0) {
-+		sigdelsetmask(&set, ~_BLOCKABLE);
-+		spin_lock_irq(&current->sighand->siglock);
-+		current->blocked = set;
-+		recalc_sigpending();
-+		spin_unlock_irq(&current->sighand->siglock);
-+	}
-+
-+	__get_user_error(regs->UCreg_00, &sf->uc.uc_mcontext.ucreg_00, err);
-+	__get_user_error(regs->UCreg_01, &sf->uc.uc_mcontext.ucreg_01, err);
-+	__get_user_error(regs->UCreg_02, &sf->uc.uc_mcontext.ucreg_02, err);
-+	__get_user_error(regs->UCreg_03, &sf->uc.uc_mcontext.ucreg_03, err);
-+	__get_user_error(regs->UCreg_04, &sf->uc.uc_mcontext.ucreg_04, err);
-+	__get_user_error(regs->UCreg_05, &sf->uc.uc_mcontext.ucreg_05, err);
-+	__get_user_error(regs->UCreg_06, &sf->uc.uc_mcontext.ucreg_06, err);
-+	__get_user_error(regs->UCreg_07, &sf->uc.uc_mcontext.ucreg_07, err);
-+	__get_user_error(regs->UCreg_08, &sf->uc.uc_mcontext.ucreg_08, err);
-+	__get_user_error(regs->UCreg_09, &sf->uc.uc_mcontext.ucreg_09, err);
-+	__get_user_error(regs->UCreg_10, &sf->uc.uc_mcontext.ucreg_10, err);
-+	__get_user_error(regs->UCreg_11, &sf->uc.uc_mcontext.ucreg_11, err);
-+	__get_user_error(regs->UCreg_12, &sf->uc.uc_mcontext.ucreg_12, err);
-+	__get_user_error(regs->UCreg_13, &sf->uc.uc_mcontext.ucreg_13, err);
-+	__get_user_error(regs->UCreg_14, &sf->uc.uc_mcontext.ucreg_14, err);
-+	__get_user_error(regs->UCreg_15, &sf->uc.uc_mcontext.ucreg_15, err);
-+	__get_user_error(regs->UCreg_16, &sf->uc.uc_mcontext.ucreg_16, err);
-+	__get_user_error(regs->UCreg_17, &sf->uc.uc_mcontext.ucreg_17, err);
-+	__get_user_error(regs->UCreg_18, &sf->uc.uc_mcontext.ucreg_18, err);
-+	__get_user_error(regs->UCreg_19, &sf->uc.uc_mcontext.ucreg_19, err);
-+	__get_user_error(regs->UCreg_20, &sf->uc.uc_mcontext.ucreg_20, err);
-+	__get_user_error(regs->UCreg_21, &sf->uc.uc_mcontext.ucreg_21, err);
-+	__get_user_error(regs->UCreg_22, &sf->uc.uc_mcontext.ucreg_22, err);
-+	__get_user_error(regs->UCreg_23, &sf->uc.uc_mcontext.ucreg_23, err);
-+	__get_user_error(regs->UCreg_24, &sf->uc.uc_mcontext.ucreg_24, err);
-+	__get_user_error(regs->UCreg_25, &sf->uc.uc_mcontext.ucreg_25, err);
-+	__get_user_error(regs->UCreg_26, &sf->uc.uc_mcontext.ucreg_26, err);
-+	__get_user_error(regs->UCreg_fp, &sf->uc.uc_mcontext.ucreg_fp, err);
-+	__get_user_error(regs->UCreg_ip, &sf->uc.uc_mcontext.ucreg_ip, err);
-+	__get_user_error(regs->UCreg_sp, &sf->uc.uc_mcontext.ucreg_sp, err);
-+	__get_user_error(regs->UCreg_lr, &sf->uc.uc_mcontext.ucreg_lr, err);
-+	__get_user_error(regs->UCreg_pc, &sf->uc.uc_mcontext.ucreg_pc, err);
-+	__get_user_error(regs->UCreg_asr, &sf->uc.uc_mcontext.ucreg_asr, err);
-+
-+	err |= !valid_user_regs(regs);
-+
-+	return err;
-+}
-+
-+asmlinkage int sys_sigreturn(struct pt_regs *regs)
-+{
-+	struct sigframe __user *frame;
-+
-+	/* Always make any pending restarted system calls return -EINTR */
-+	current_thread_info()->restart_block.fn = do_no_restart_syscall;
-+
-+	/*
-+	 * Since we stacked the signal on a 64-bit boundary,
-+	 * then 'sp' should be word aligned here.  If it's
-+	 * not, then the user is trying to mess with us.
-+	 */
-+	if (regs->UCreg_sp & 7)
-+		goto badframe;
-+
-+	frame = (struct sigframe __user *)regs->UCreg_sp;
-+
-+	if (!access_ok(VERIFY_READ, frame, sizeof(*frame)))
-+		goto badframe;
-+
-+	if (restore_sigframe(regs, frame))
-+		goto badframe;
-+
-+	single_step_trap(current);
-+
-+	return regs->UCreg_00;
-+
-+badframe:
-+	force_sig(SIGSEGV, current);
-+	return 0;
-+}
-+
-+asmlinkage int sys_rt_sigreturn(struct pt_regs *regs)
-+{
-+	struct rt_sigframe __user *frame;
-+
-+	/* Always make any pending restarted system calls return -EINTR */
-+	current_thread_info()->restart_block.fn = do_no_restart_syscall;
-+
-+	/*
-+	 * Since we stacked the signal on a 64-bit boundary,
-+	 * then 'sp' should be word aligned here.  If it's
-+	 * not, then the user is trying to mess with us.
-+	 */
-+	if (regs->UCreg_sp & 7)
-+		goto badframe;
-+
-+	frame = (struct rt_sigframe __user *)regs->UCreg_sp;
-+
-+	if (!access_ok(VERIFY_READ, frame, sizeof(*frame)))
-+		goto badframe;
-+
-+	if (restore_sigframe(regs, &frame->sig))
-+		goto badframe;
-+
-+	if (do_sigaltstack(&frame->sig.uc.uc_stack, NULL, regs->UCreg_sp)
-+			== -EFAULT)
-+		goto badframe;
-+
-+	single_step_trap(current);
-+
-+	return regs->UCreg_00;
-+
-+badframe:
-+	force_sig(SIGSEGV, current);
-+	return 0;
-+}
-+
-+static int setup_sigframe(struct sigframe __user *sf, struct pt_regs *regs,
-+		sigset_t *set)
-+{
-+	int err = 0;
-+
-+	__put_user_error(regs->UCreg_00, &sf->uc.uc_mcontext.ucreg_00, err);
-+	__put_user_error(regs->UCreg_01, &sf->uc.uc_mcontext.ucreg_01, err);
-+	__put_user_error(regs->UCreg_02, &sf->uc.uc_mcontext.ucreg_02, err);
-+	__put_user_error(regs->UCreg_03, &sf->uc.uc_mcontext.ucreg_03, err);
-+	__put_user_error(regs->UCreg_04, &sf->uc.uc_mcontext.ucreg_04, err);
-+	__put_user_error(regs->UCreg_05, &sf->uc.uc_mcontext.ucreg_05, err);
-+	__put_user_error(regs->UCreg_06, &sf->uc.uc_mcontext.ucreg_06, err);
-+	__put_user_error(regs->UCreg_07, &sf->uc.uc_mcontext.ucreg_07, err);
-+	__put_user_error(regs->UCreg_08, &sf->uc.uc_mcontext.ucreg_08, err);
-+	__put_user_error(regs->UCreg_09, &sf->uc.uc_mcontext.ucreg_09, err);
-+	__put_user_error(regs->UCreg_10, &sf->uc.uc_mcontext.ucreg_10, err);
-+	__put_user_error(regs->UCreg_11, &sf->uc.uc_mcontext.ucreg_11, err);
-+	__put_user_error(regs->UCreg_12, &sf->uc.uc_mcontext.ucreg_12, err);
-+	__put_user_error(regs->UCreg_13, &sf->uc.uc_mcontext.ucreg_13, err);
-+	__put_user_error(regs->UCreg_14, &sf->uc.uc_mcontext.ucreg_14, err);
-+	__put_user_error(regs->UCreg_15, &sf->uc.uc_mcontext.ucreg_15, err);
-+	__put_user_error(regs->UCreg_16, &sf->uc.uc_mcontext.ucreg_16, err);
-+	__put_user_error(regs->UCreg_17, &sf->uc.uc_mcontext.ucreg_17, err);
-+	__put_user_error(regs->UCreg_18, &sf->uc.uc_mcontext.ucreg_18, err);
-+	__put_user_error(regs->UCreg_19, &sf->uc.uc_mcontext.ucreg_19, err);
-+	__put_user_error(regs->UCreg_20, &sf->uc.uc_mcontext.ucreg_20, err);
-+	__put_user_error(regs->UCreg_21, &sf->uc.uc_mcontext.ucreg_21, err);
-+	__put_user_error(regs->UCreg_22, &sf->uc.uc_mcontext.ucreg_22, err);
-+	__put_user_error(regs->UCreg_23, &sf->uc.uc_mcontext.ucreg_23, err);
-+	__put_user_error(regs->UCreg_24, &sf->uc.uc_mcontext.ucreg_24, err);
-+	__put_user_error(regs->UCreg_25, &sf->uc.uc_mcontext.ucreg_25, err);
-+	__put_user_error(regs->UCreg_26, &sf->uc.uc_mcontext.ucreg_26, err);
-+	__put_user_error(regs->UCreg_fp, &sf->uc.uc_mcontext.ucreg_fp, err);
-+	__put_user_error(regs->UCreg_ip, &sf->uc.uc_mcontext.ucreg_ip, err);
-+	__put_user_error(regs->UCreg_sp, &sf->uc.uc_mcontext.ucreg_sp, err);
-+	__put_user_error(regs->UCreg_lr, &sf->uc.uc_mcontext.ucreg_lr, err);
-+	__put_user_error(regs->UCreg_pc, &sf->uc.uc_mcontext.ucreg_pc, err);
-+	__put_user_error(regs->UCreg_asr, &sf->uc.uc_mcontext.ucreg_asr, err);
-+
-+	__put_user_error(current->thread.trap_no,
-+			&sf->uc.uc_mcontext.trap_no, err);
-+	__put_user_error(current->thread.error_code,
-+			&sf->uc.uc_mcontext.error_code, err);
-+	__put_user_error(current->thread.address,
-+			&sf->uc.uc_mcontext.fault_address, err);
-+	__put_user_error(set->sig[0], &sf->uc.uc_mcontext.oldmask, err);
-+
-+	err |= __copy_to_user(&sf->uc.uc_sigmask, set, sizeof(*set));
-+
-+	return err;
-+}
-+
-+static inline void __user *get_sigframe(struct k_sigaction *ka,
-+		struct pt_regs *regs, int framesize)
-+{
-+	unsigned long sp = regs->UCreg_sp;
-+	void __user *frame;
-+
-+	/*
-+	 * This is the X/Open sanctioned signal stack switching.
-+	 */
-+	if ((ka->sa.sa_flags & SA_ONSTACK) && !sas_ss_flags(sp))
-+		sp = current->sas_ss_sp + current->sas_ss_size;
-+
-+	/*
-+	 * ATPCS B01 mandates 8-byte alignment
-+	 */
-+	frame = (void __user *)((sp - framesize) & ~7);
-+
-+	/*
-+	 * Check that we can actually write to the signal frame.
-+	 */
-+	if (!access_ok(VERIFY_WRITE, frame, framesize))
-+		frame = NULL;
-+
-+	return frame;
-+}
-+
-+static int setup_return(struct pt_regs *regs, struct k_sigaction *ka,
-+	     unsigned long __user *rc, void __user *frame, int usig)
-+{
-+	unsigned long handler = (unsigned long)ka->sa.sa_handler;
-+	unsigned long retcode;
-+	unsigned long asr = regs->UCreg_asr & ~PSR_f;
-+
-+	unsigned int idx = 0;
-+
-+	if (ka->sa.sa_flags & SA_SIGINFO)
-+		idx += 1;
-+
-+	if (__put_user(sigreturn_codes[idx],   rc) ||
-+	    __put_user(sigreturn_codes[idx+1], rc+1))
-+		return 1;
-+
-+	retcode = KERN_SIGRETURN_CODE + (idx << 2);
-+
-+	regs->UCreg_00 = usig;
-+	regs->UCreg_sp = (unsigned long)frame;
-+	regs->UCreg_lr = retcode;
-+	regs->UCreg_pc = handler;
-+	regs->UCreg_asr = asr;
-+
-+	return 0;
-+}
-+
-+static int setup_frame(int usig, struct k_sigaction *ka,
-+		sigset_t *set, struct pt_regs *regs)
-+{
-+	struct sigframe __user *frame = get_sigframe(ka, regs, sizeof(*frame));
-+	int err = 0;
-+
-+	if (!frame)
-+		return 1;
-+
-+	/*
-+	 * Set uc.uc_flags to a value which sc.trap_no would never have.
-+	 */
-+	__put_user_error(0x5ac3c35a, &frame->uc.uc_flags, err);
-+
-+	err |= setup_sigframe(frame, regs, set);
-+	if (err == 0)
-+		err = setup_return(regs, ka, frame->retcode, frame, usig);
-+
-+	return err;
-+}
-+
-+static int setup_rt_frame(int usig, struct k_sigaction *ka, siginfo_t *info,
-+	       sigset_t *set, struct pt_regs *regs)
-+{
-+	struct rt_sigframe __user *frame =
-+			get_sigframe(ka, regs, sizeof(*frame));
-+	stack_t stack;
-+	int err = 0;
-+
-+	if (!frame)
-+		return 1;
-+
-+	err |= copy_siginfo_to_user(&frame->info, info);
-+
-+	__put_user_error(0, &frame->sig.uc.uc_flags, err);
-+	__put_user_error(NULL, &frame->sig.uc.uc_link, err);
-+
-+	memset(&stack, 0, sizeof(stack));
-+	stack.ss_sp = (void __user *)current->sas_ss_sp;
-+	stack.ss_flags = sas_ss_flags(regs->UCreg_sp);
-+	stack.ss_size = current->sas_ss_size;
-+	err |= __copy_to_user(&frame->sig.uc.uc_stack, &stack, sizeof(stack));
-+
-+	err |= setup_sigframe(&frame->sig, regs, set);
-+	if (err == 0)
-+		err = setup_return(regs, ka, frame->sig.retcode, frame, usig);
-+
-+	if (err == 0) {
-+		/*
-+		 * For realtime signals we must also set the second and third
-+		 * arguments for the signal handler.
-+		 */
-+		regs->UCreg_01 = (unsigned long)&frame->info;
-+		regs->UCreg_02 = (unsigned long)&frame->sig.uc;
-+	}
-+
-+	return err;
-+}
-+
-+static inline void setup_syscall_restart(struct pt_regs *regs)
-+{
-+	regs->UCreg_00 = regs->UCreg_ORIG_00;
-+	regs->UCreg_pc -= 4;
-+}
-+
-+/*
-+ * OK, we're invoking a handler
-+ */
-+static int handle_signal(unsigned long sig, struct k_sigaction *ka,
-+	      siginfo_t *info, sigset_t *oldset,
-+	      struct pt_regs *regs, int syscall)
-+{
-+	struct thread_info *thread = current_thread_info();
-+	struct task_struct *tsk = current;
-+	int usig = sig;
-+	int ret;
-+
-+	/*
-+	 * If we were from a system call, check for system call restarting...
-+	 */
-+	if (syscall) {
-+		switch (regs->UCreg_00) {
-+		case -ERESTART_RESTARTBLOCK:
-+		case -ERESTARTNOHAND:
-+			regs->UCreg_00 = -EINTR;
-+			break;
-+		case -ERESTARTSYS:
-+			if (!(ka->sa.sa_flags & SA_RESTART)) {
-+				regs->UCreg_00 = -EINTR;
-+				break;
-+			}
-+			/* fallthrough */
-+		case -ERESTARTNOINTR:
-+			setup_syscall_restart(regs);
-+		}
-+	}
-+
-+	/*
-+	 * translate the signal
-+	 */
-+	if (usig < 32 && thread->exec_domain
-+			&& thread->exec_domain->signal_invmap)
-+		usig = thread->exec_domain->signal_invmap[usig];
-+
-+	/*
-+	 * Set up the stack frame
-+	 */
-+	if (ka->sa.sa_flags & SA_SIGINFO)
-+		ret = setup_rt_frame(usig, ka, info, oldset, regs);
-+	else
-+		ret = setup_frame(usig, ka, oldset, regs);
-+
-+	/*
-+	 * Check that the resulting registers are actually sane.
-+	 */
-+	ret |= !valid_user_regs(regs);
-+
-+	if (ret != 0) {
-+		force_sigsegv(sig, tsk);
-+		return ret;
-+	}
-+
-+	/*
-+	 * Block the signal if we were successful.
-+	 */
-+	spin_lock_irq(&tsk->sighand->siglock);
-+	sigorsets(&tsk->blocked, &tsk->blocked,
-+		  &ka->sa.sa_mask);
-+	if (!(ka->sa.sa_flags & SA_NODEFER))
-+		sigaddset(&tsk->blocked, sig);
-+	recalc_sigpending();
-+	spin_unlock_irq(&tsk->sighand->siglock);
-+
-+	return 0;
-+}
-+
-+/*
-+ * Note that 'init' is a special process: it doesn't get signals it doesn't
-+ * want to handle. Thus you cannot kill init even with a SIGKILL even by
-+ * mistake.
-+ *
-+ * Note that we go through the signals twice: once to check the signals that
-+ * the kernel can handle, and then we build all the user-level signal handling
-+ * stack-frames in one go after that.
-+ */
-+static void do_signal(struct pt_regs *regs, int syscall)
-+{
-+	struct k_sigaction ka;
-+	siginfo_t info;
-+	int signr;
-+
-+	/*
-+	 * We want the common case to go fast, which
-+	 * is why we may in certain cases get here from
-+	 * kernel mode. Just return without doing anything
-+	 * if so.
-+	 */
-+	if (!user_mode(regs))
-+		return;
-+
-+	if (try_to_freeze())
-+		goto no_signal;
-+
-+	single_step_clear(current);
-+
-+	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
-+	if (signr > 0) {
-+		sigset_t *oldset;
-+
-+		if (test_thread_flag(TIF_RESTORE_SIGMASK))
-+			oldset = &current->saved_sigmask;
-+		else
-+			oldset = &current->blocked;
-+		if (handle_signal(signr, &ka, &info, oldset, regs, syscall)
-+				== 0) {
-+			/*
-+			 * A signal was successfully delivered; the saved
-+			 * sigmask will have been stored in the signal frame,
-+			 * and will be restored by sigreturn, so we can simply
-+			 * clear the TIF_RESTORE_SIGMASK flag.
-+			 */
-+			if (test_thread_flag(TIF_RESTORE_SIGMASK))
-+				clear_thread_flag(TIF_RESTORE_SIGMASK);
-+		}
-+		single_step_set(current);
-+		return;
-+	}
-+
-+ no_signal:
-+	/*
-+	 * No signal to deliver to the process - restart the syscall.
-+	 */
-+	if (syscall) {
-+		if (regs->UCreg_00 == -ERESTART_RESTARTBLOCK) {
-+				u32 __user *usp;
-+
-+				regs->UCreg_sp -= 4;
-+				usp = (u32 __user *)regs->UCreg_sp;
-+
-+				if (put_user(regs->UCreg_pc, usp) == 0) {
-+					regs->UCreg_pc = KERN_RESTART_CODE;
-+				} else {
-+					regs->UCreg_sp += 4;
-+					force_sigsegv(0, current);
-+				}
-+		}
-+		if (regs->UCreg_00 == -ERESTARTNOHAND ||
-+		    regs->UCreg_00 == -ERESTARTSYS ||
-+		    regs->UCreg_00 == -ERESTARTNOINTR) {
-+			setup_syscall_restart(regs);
-+		}
-+
-+		/* If there's no signal to deliver, we just put the saved
-+		 * sigmask back.
-+		 */
-+		if (test_thread_flag(TIF_RESTORE_SIGMASK)) {
-+			clear_thread_flag(TIF_RESTORE_SIGMASK);
-+			sigprocmask(SIG_SETMASK, &current->saved_sigmask, NULL);
-+		}
-+	}
-+	single_step_set(current);
-+}
-+
-+asmlinkage void do_notify_resume(struct pt_regs *regs,
-+		unsigned int thread_flags, int syscall)
-+{
-+	if (thread_flags & _TIF_SIGPENDING)
-+		do_signal(regs, syscall);
-+
-+	if (thread_flags & _TIF_NOTIFY_RESUME) {
-+		clear_thread_flag(TIF_NOTIFY_RESUME);
-+		tracehook_notify_resume(regs);
-+		if (current->replacement_session_keyring)
-+			key_replace_session_keyring();
++	char c;
++
++	while ((c = *ptr++) != '\0') {
++		if (c == '\n')
++			putc('\r');
++		putc(c);
 +	}
 +}
-diff --git a/arch/unicore32/kernel/signal.h b/arch/unicore32/kernel/signal.h
-new file mode 100644
-index 0000000..4b56698
---- /dev/null
-+++ b/arch/unicore32/kernel/signal.h
-@@ -0,0 +1,16 @@
-+/*
-+ * linux/arch/unicore32/kernel/signal.h
-+ *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#define KERN_SIGRETURN_CODE	(KUSER_VECPAGE_BASE + 0x00000500)
-+#define KERN_RESTART_CODE	(KERN_SIGRETURN_CODE + sizeof(sigreturn_codes))
++#define ARCH_HAVE_DECOMP_PUTS
 +
-+extern const unsigned long sigreturn_codes[3];
-+extern const unsigned long syscall_restart_code[2];
++#endif /* __MACH_PUV3_UNCOMPRESS_H__ */
 
