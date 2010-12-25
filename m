@@ -1,101 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751841Ab0LYWcA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 17:32:00 -0500
-Received: from mga01.intel.com ([192.55.52.88]:34315 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751049Ab0LYWb7 convert rfc822-to-8bit (ORCPT
+	id S1752000Ab0LYWnL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 17:43:11 -0500
+Received: from astoria.ccjclearline.com ([64.235.106.9]:52047 "EHLO
+	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125Ab0LYWnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 17:31:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,229,1291622400"; 
-   d="scan'208";a="640381125"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: Florian Fainelli <florian@openwrt.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        "sodaville@linutronix.de" <sodaville@linutronix.de>
-Date: Sat, 25 Dec 2010 14:28:33 -0800
-Subject: RE: [PATCH] coretemp: fix junction temperature for Intel CE4100
-Thread-Topic: [PATCH] coretemp: fix junction temperature for Intel CE4100
-Thread-Index: Acub1Etmxm5/dMsZQD6KcACPCmH5UgIrdw3w
-Message-ID: <493994B35A117E4F832F97C4719C4C04D781EF3F@orsmsx505.amr.corp.intel.com>
-References: <201012142217.07194.ffainelli@freebox.fr>
-In-Reply-To: <201012142217.07194.ffainelli@freebox.fr>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sat, 25 Dec 2010 17:43:09 -0500
+Date: Sat, 25 Dec 2010 17:42:59 -0500 (EST)
+From: "Robert P. J. Day" <rpjday@crashcourse.ca>
+X-X-Sender: rpjday@localhost6.localdomain6
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: recurring problem, booting to black screen with intel GPU
+Message-ID: <alpine.DEB.2.00.1012251737030.4626@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - crashcourse.ca
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Florian Fainelli [mailto:f.fainelli@gmail.com] On Behalf Of
-> Florian Fainelli
-> Sent: Tuesday, December 14, 2010 1:17 PM
-> To: linux-kernel@vger.kernel.org; Dirk Brandewie;
-> sodaville@linutronix.de; Yu, Fenghua
-> Subject: [PATCH] coretemp: fix junction temperature for Intel CE4100
-> 
-> From: Florian Fainelli <ffainelli@freebox.fr>
-> 
-> The Intel CE4100 System-on-a-Chip has a slightly higher junction
-> temperature
-> (110 degrees Celsius) than other Atom-based hardware.
-> 
-> Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
-> Cc: sodaville@linutronix.de
-> Cc: Fenghua Yu <fenghua.yu@intel.com>
-> Signed-off-by: Florian Fainelli <ffainelli@freebox.fr>
-> ---
-> diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-> index 42de98d..e47b405 100644
-> --- a/drivers/hwmon/coretemp.c
-> +++ b/drivers/hwmon/coretemp.c
-> @@ -178,12 +178,23 @@ static int __devinit adjust_tjmax(struct
-> cpuinfo_x86 *c, u32 id, struct device *
-> 
->  		host_bridge = pci_get_bus_and_slot(0, PCI_DEVFN(0, 0));
-> 
-> -		if (host_bridge && host_bridge->vendor ==
-> PCI_VENDOR_ID_INTEL
-> -		    && (host_bridge->device == 0xa000	/* NM10 based
-> nettop */
-> -		    || host_bridge->device == 0xa010))	/* NM10 based
-> netbook */
-> -			tjmax = 100000;
-> -		else
-> -			tjmax = 90000;
-> +		if (host_bridge && host_bridge->vendor ==
-> PCI_VENDOR_ID_INTEL) {
-> +			switch (host_bridge->device) {
-> +			/* NM10 based nettop */
-> +			case 0xa000:
-> +			/* NM10 based netbook */
-> +			case 0xa010:
-> +				tjmax = 100000;
-> +				break;
-> +			/* IntelCE Sodaville (CE4100) */
-> +			case 0x0708:
-> +				tjmax = 110000;
-> +				break;
-> +			default:
-> +				tjmax = 90000;
-> +				break;
-> +			}
-> +		}
-> 
->  		pci_dev_put(host_bridge);
->  	}
-When host_bridge && host_bridge->vendor == PCI_VENDOR_ID_INTEL is not true, tjmax is not assigned to 90000. This is different from original code.
 
-Could you add public spec URL or public spec name for 110 degrees C in your comments? People may get lost to find this info.
+  on my ubuntu laptop (gateway NV79), a 2.6.37-rc7+ kernel i just
+built now boots to a black screen.  no text mode, no virtual consoles,
+nothing.
 
-Thanks.
+  this is probably the best explanation:
 
--Fenghua
+http://www.oblurb.com/ubuntu-dell-latitude-e6510-intel-gpu-blank-screen.html
+
+annoyingly, i'm currently running a 2.6.37-rc5+ hand-rolled kernel
+that works fine, but this more recent kernel doesn't, and a kernel
+*earlier* also doesn't work, so this issue seems to come and go.
+
+  here's another extended conversation on the same topic:
+
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/600453
+
+here's the relevant output from lspci:
+
+00:02.0 VGA compatible controller: Intel Corporation Core Processor
+Integrated Graphics Controller (rev 12) (prog-if 00 [VGA controller])
+        Subsystem: Acer Incorporated [ALI] Device 031c
+        Flags: bus master, fast devsel, latency 0, IRQ 41
+        Memory at d0000000 (64-bit, non-prefetchable) [size=4M]
+        Memory at c0000000 (64-bit, prefetchable) [size=256M]
+        I/O ports at 3050 [size=8]
+        Expansion ROM at <unassigned> [disabled]
+        Capabilities: <access denied>
+        Kernel driver in use: i915
+        Kernel modules: i915
+
+if i use "nomodeset", i can boot to the command line and no further.
+i'm open to suggestions.
+
+rday
+
+-- 
+
+========================================================================
+Robert P. J. Day                               Waterloo, Ontario, CANADA
+                        http://crashcourse.ca
+
+Twitter:                                       http://twitter.com/rpjday
+LinkedIn:                               http://ca.linkedin.com/in/rpjday
+========================================================================
