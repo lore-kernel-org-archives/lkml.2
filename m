@@ -1,130 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225Ab0LYTH1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 14:07:27 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:15060 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751125Ab0LYTH0 (ORCPT
+	id S1752565Ab0LYTUS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 14:20:18 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33066 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752443Ab0LYTUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 14:07:26 -0500
-Date: Sat, 25 Dec 2010 19:57:41 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Tigran Aivazian <tigran@veritas.com>
-Subject: [PATCH] Intel CPU Microcode Update Driver: Fix double vfree() and
- remove redundant pointer checks before vfree()
-Message-ID: <alpine.LNX.2.00.1012251946100.10759@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sat, 25 Dec 2010 14:20:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=SpndtzR2TbbKSE/qqu4vxWUXQ9GaHem8f9tRAKHIMUd64V45J53ic5e1/e9TGp4eyC
+         os8btxC7pLmG7J/ri/ZiY35Ecu8qWVhKzcn1LKcKoWcvODyUcxetPSCCXbOwcfEdrs3M
+         YE0RK99hzM/ki5IJtkMzXRZSCbl3OHiAaoSXk=
+Date: Sat, 25 Dec 2010 20:20:08 +0100
+From: Jarek Poplawski <jarkao2@gmail.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: Re: [2.6.37-rc7] drivers/gpu/drm/drm_edid.c:1303: warning: array
+ subscript is above array bounds
+Message-ID: <20101225192008.GA2325@del.dom.local>
+References: <20101225131343.GA1960@del.dom.local>
+ <c6d829$pvchrr@fmsmga001.fm.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <c6d829$pvchrr@fmsmga001.fm.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, Dec 25, 2010 at 01:38:56PM +0000, Chris Wilson wrote:
+> On Sat, 25 Dec 2010 14:13:43 +0100, Jarek Poplawski <jarkao2@gmail.com> wrote:
+> > Hi,
+> > There is this compile warning in Linus' tree (gcc version 4.3.3):
+> > 
+> > drivers/gpu/drm/drm_edid.c: In function 'drm_detect_hdmi_monitor':
+> > drivers/gpu/drm/drm_edid.c:1303: warning: array subscript is above array bounds
+> > drivers/gpu/drm/drm_edid.c: In function 'drm_detect_monitor_audio':
+> > drivers/gpu/drm/drm_edid.c:1303: warning: array subscript is above array bounds
+> 
+> What array? It's declared as "u8 *edid_ext;". At first glance looks like a
+> compiler bug, applying subscript testing to an object with unknown bounds.
 
-In arch/x86/kernel/microcode_intel.c::generic_load_microcode() we have 
-this:
+Maybe a bug but then also something very unique in this place wrt the
+rest of the kernel (at least in my config). Btw, a patch below removes
+this warning.
 
-	while (leftover) {
-		...
-		if (get_ucode_data(mc, ucode_ptr, mc_size) ||
-		    microcode_sanity_check(mc) < 0) {
-			vfree(mc);
-			break;
-		}
-		...
-	}
+Jarek P.
 
-	if (mc)
-		vfree(mc);
-
-This will cause a double free of 'mc'. This patch fixes that by just 
-removing the vfree() call in the loop since 'mc' will be freed nicely just 
-after we break out of the loop.
-
-There's also a second change in the patch. I noticed a lot of checks for 
-pointers being NULL before passing them to vfree(). That's completely 
-redundant since vfree() deals gracefully with being passed a NULL pointer. 
-Removing the redundant checks yields a nice size decrease for the object 
-file.
-
-Size before the patch:
-   text    data     bss     dec     hex filename
-   4578     240    1032    5850    16da arch/x86/kernel/microcode_intel.o
-Size after the patch:
-   text    data     bss     dec     hex filename
-   4489     240     984    5713    1651 arch/x86/kernel/microcode_intel.o
-
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- microcode_intel.c |   16 +++++-----------
- 1 file changed, 5 insertions(+), 11 deletions(-)
-
-diff --git a/arch/x86/kernel/microcode_intel.c b/arch/x86/kernel/microcode_intel.c
-index dcb65cc..1a1b606 100644
---- a/arch/x86/kernel/microcode_intel.c
-+++ b/arch/x86/kernel/microcode_intel.c
-@@ -364,8 +364,7 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
+--- drm_edid.c-	2010-12-25 19:24:55.000000000 +0100
++++ drm_edid.c	2010-12-25 19:51:45.000000000 +0100
+@@ -1290,7 +1290,7 @@ add_detailed_modes(struct drm_connector 
+  */
+ static u8 *drm_find_cea_extension(struct edid *edid)
+ {
+-	u8 *edid_ext = NULL;
++	char *edid_ext = NULL;
+ 	int i;
  
- 		/* For performance reasons, reuse mc area when possible */
- 		if (!mc || mc_size > curr_mc_size) {
--			if (mc)
--				vfree(mc);
-+			vfree(mc);
- 			mc = vmalloc(mc_size);
- 			if (!mc)
- 				break;
-@@ -374,13 +373,11 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
+ 	/* No EDID or EDID extensions */
+@@ -1299,7 +1299,7 @@ static u8 *drm_find_cea_extension(struct
  
- 		if (get_ucode_data(mc, ucode_ptr, mc_size) ||
- 		    microcode_sanity_check(mc) < 0) {
--			vfree(mc);
+ 	/* Find CEA extension */
+ 	for (i = 0; i < edid->extensions; i++) {
+-		edid_ext = (u8 *)edid + EDID_LENGTH * (i + 1);
++		edid_ext = (char *)edid + EDID_LENGTH * (i + 1);
+ 		if (edid_ext[0] == CEA_EXT)
  			break;
- 		}
- 
- 		if (get_matching_microcode(&uci->cpu_sig, mc, new_rev)) {
--			if (new_mc)
--				vfree(new_mc);
-+			vfree(new_mc);
- 			new_rev = mc_header.rev;
- 			new_mc  = mc;
- 			mc = NULL;	/* trigger new vmalloc */
-@@ -390,12 +387,10 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
- 		leftover  -= mc_size;
  	}
- 
--	if (mc)
--		vfree(mc);
-+	vfree(mc);
- 
- 	if (leftover) {
--		if (new_mc)
--			vfree(new_mc);
-+		vfree(new_mc);
- 		state = UCODE_ERROR;
- 		goto out;
- 	}
-@@ -405,8 +400,7 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
- 		goto out;
- 	}
- 
--	if (uci->mc)
--		vfree(uci->mc);
-+	vfree(uci->mc);
- 	uci->mc = (struct microcode_intel *)new_mc;
- 
- 	pr_debug("CPU%d found a matching microcode update with version 0x%x (current=0x%x)\n",
-
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
