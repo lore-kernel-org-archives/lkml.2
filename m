@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911Ab0LYGDs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 01:03:48 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49554 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138Ab0LYGDh (ORCPT
+	id S1751138Ab0LYGDt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 01:03:49 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:47502 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751248Ab0LYGDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 01:03:37 -0500
+	Sat, 25 Dec 2010 01:03:42 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=HoKfogtNA85Dhz8VXP0EMy6PhwqsqM/hNt/xSMPrBF7RQ3K/Rhf6B3lxZnMzqM9T3Z
-         1eUQ/C+NGKtaYe+fGqJ6zmJhMDeaRwN/sLNfzLxCWkTc9OoRdju+XXJA59o9wViUSm5R
-         MBWXjkwLDFZ7VgI9ogRM8CxInpHWcHeTQpJDA=
+        b=X9+RIfD+UsriI3RYR6+8VPzJg7Bhm0VxxH43J0ChBGNYNFQtIEpdBMM5B9J6dVW1Iv
+         UwvXdaPKBMyyExRwCUaqRDvt8C3YvCrFMZwEirNaKOI3tCZekdAAnlnPDNCtzFVZZhAq
+         oEE7SBmDHFjO8mlooLkPqGhJjsqVGobg2EZwc=
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH] airo: use simple_write_to_buffer
-Date: Sat, 25 Dec 2010 15:03:58 +0900
-Message-Id: <1293257039-2580-3-git-send-email-akinobu.mita@gmail.com>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH] powerpc: use simple_read_from_buffer
+Date: Sat, 25 Dec 2010 15:03:59 +0900
+Message-Id: <1293257039-2580-4-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <n>
 References: <n>
@@ -28,53 +28,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simplify write file operation for /proc files by using
-simple_write_to_buffer().
+Simplify read file operation for /proc/powerpc/rtas/* interface
+by using simple_read_from_buffer.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org
-Cc: netdev@vger.kernel.org
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org
 ---
- drivers/net/wireless/airo.c |   20 +++++++-------------
- 1 files changed, 7 insertions(+), 13 deletions(-)
+ arch/powerpc/kernel/rtas_flash.c |   53 ++++---------------------------------
+ 1 files changed, 6 insertions(+), 47 deletions(-)
 
-diff --git a/drivers/net/wireless/airo.c b/drivers/net/wireless/airo.c
-index a36e787..57a79b0 100644
---- a/drivers/net/wireless/airo.c
-+++ b/drivers/net/wireless/airo.c
-@@ -4652,24 +4652,18 @@ static ssize_t proc_write( struct file *file,
- 			   size_t len,
- 			   loff_t *offset )
- {
--	loff_t pos = *offset;
-+	ssize_t ret;
- 	struct proc_data *priv = file->private_data;
+diff --git a/arch/powerpc/kernel/rtas_flash.c b/arch/powerpc/kernel/rtas_flash.c
+index 2b442e6..bf5f5ce 100644
+--- a/arch/powerpc/kernel/rtas_flash.c
++++ b/arch/powerpc/kernel/rtas_flash.c
+@@ -256,31 +256,16 @@ static ssize_t rtas_flash_read(struct file *file, char __user *buf,
+ 	struct proc_dir_entry *dp = PDE(file->f_path.dentry->d_inode);
+ 	struct rtas_update_flash_t *uf;
+ 	char msg[RTAS_MSG_MAXLEN];
+-	int msglen;
  
- 	if (!priv->wbuffer)
- 		return -EINVAL;
+-	uf = (struct rtas_update_flash_t *) dp->data;
++	uf = dp->data;
  
--	if (pos < 0)
+ 	if (!strcmp(dp->name, FIRMWARE_FLASH_NAME)) {
+ 		get_flash_status_msg(uf->status, msg);
+ 	} else {	   /* FIRMWARE_UPDATE_NAME */
+ 		sprintf(msg, "%d\n", uf->status);
+ 	}
+-	msglen = strlen(msg);
+-	if (msglen > count)
+-		msglen = count;
+-
+-	if (ppos && *ppos != 0)
+-		return 0;	/* be cheap */
+-
+-	if (!access_ok(VERIFY_WRITE, buf, msglen))
 -		return -EINVAL;
--	if (pos >= priv->maxwritelen)
--		return 0;
--	if (len > priv->maxwritelen - pos)
--		len = priv->maxwritelen - pos;
--	if (copy_from_user(priv->wbuffer + pos, buffer, len))
+ 
+-	if (copy_to_user(buf, msg, msglen))
 -		return -EFAULT;
--	if ( pos + len > priv->writelen )
--		priv->writelen = len + file->f_pos;
--	*offset = pos + len;
--	return len;
-+	ret = simple_write_to_buffer(priv->wbuffer, priv->maxwritelen, offset,
-+					buffer, len);
-+	if (ret > 0)
-+		priv->writelen = max_t(int, priv->writelen, *offset);
-+
-+	return ret;
+-
+-	if (ppos)
+-		*ppos = msglen;
+-	return msglen;
++	return simple_read_from_buffer(buf, count, ppos, msg, strlen(msg));
  }
  
- static int proc_status_open(struct inode *inode, struct file *file)
+ /* constructor for flash_block_cache */
+@@ -394,26 +379,13 @@ static ssize_t manage_flash_read(struct file *file, char __user *buf,
+ 	char msg[RTAS_MSG_MAXLEN];
+ 	int msglen;
+ 
+-	args_buf = (struct rtas_manage_flash_t *) dp->data;
++	args_buf = dp->data;
+ 	if (args_buf == NULL)
+ 		return 0;
+ 
+ 	msglen = sprintf(msg, "%d\n", args_buf->status);
+-	if (msglen > count)
+-		msglen = count;
+ 
+-	if (ppos && *ppos != 0)
+-		return 0;	/* be cheap */
+-
+-	if (!access_ok(VERIFY_WRITE, buf, msglen))
+-		return -EINVAL;
+-
+-	if (copy_to_user(buf, msg, msglen))
+-		return -EFAULT;
+-
+-	if (ppos)
+-		*ppos = msglen;
+-	return msglen;
++	return simple_read_from_buffer(buf, count, ppos, msg, msglen);
+ }
+ 
+ static ssize_t manage_flash_write(struct file *file, const char __user *buf,
+@@ -495,24 +467,11 @@ static ssize_t validate_flash_read(struct file *file, char __user *buf,
+ 	char msg[RTAS_MSG_MAXLEN];
+ 	int msglen;
+ 
+-	args_buf = (struct rtas_validate_flash_t *) dp->data;
++	args_buf = dp->data;
+ 
+-	if (ppos && *ppos != 0)
+-		return 0;	/* be cheap */
+-	
+ 	msglen = get_validate_flash_msg(args_buf, msg);
+-	if (msglen > count)
+-		msglen = count;
+-
+-	if (!access_ok(VERIFY_WRITE, buf, msglen))
+-		return -EINVAL;
+-
+-	if (copy_to_user(buf, msg, msglen))
+-		return -EFAULT;
+ 
+-	if (ppos)
+-		*ppos = msglen;
+-	return msglen;
++	return simple_read_from_buffer(buf, count, ppos, msg, msglen);
+ }
+ 
+ static ssize_t validate_flash_write(struct file *file, const char __user *buf,
 -- 
 1.7.3.4
 
