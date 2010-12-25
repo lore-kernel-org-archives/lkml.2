@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751356Ab0LYL5m (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 06:57:42 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:57419 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915Ab0LYL5l (ORCPT
+	id S1751608Ab0LYMKy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 07:10:54 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63740 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101Ab0LYMKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 06:57:41 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: David Brown <davidb@codeaurora.org>
-Subject: Re: [PATCH 1/7] msm: io: I/O register definitions for MSM8960
-Date: Fri, 24 Dec 2010 14:29:28 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Miao <eric.y.miao@gmail.com>
-References: <1292384961-8851-1-git-send-email-stepanm@codeaurora.org> <201012152337.19475.arnd@arndb.de> <20101217001658.GA5880@huya.qualcomm.com>
-In-Reply-To: <20101217001658.GA5880@huya.qualcomm.com>
+	Sat, 25 Dec 2010 07:10:52 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=LJqfpmSNZfOxLSI6K/gLj1majZ8fPE04vMCvWbBz1rd6dYG/Qyz8TA41MdkB0OzFu0
+         x/31s73QgnKoygTi/eZALIBV0tV52SXRvY2TplPPliSZhW3YD3XSHPFqvEysDRXOsxpA
+         SxtgLFx8Os3WGYd/CuQggcKlW6zXZgVBe6sqk=
+Date: Sat, 25 Dec 2010 13:10:44 +0100
+From: Jarek Poplawski <jarkao2@gmail.com>
+To: Joel Soete <soete.joel@scarlet.be>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Subject: Re: Help: major pppoe regression since 2.6.35 (panic on first ppp
+ conection)?
+Message-ID: <20101225121044.GA1841@del.dom.local>
+References: <20101222110021.GA8985@ff.dom.local>
+ <4D122093.6060900@scarlet.be>
+ <1293035100.3027.247.camel@edumazet-laptop>
+ <4D132C5F.8090404@scarlet.be>
+ <1293106348.7789.5.camel@edumazet-laptop>
+ <20101223202523.GA1913@del.dom.local>
+ <4D148271.8030509@scarlet.be>
+ <20101224151325.GA1895@del.dom.local>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012241429.28901.arnd@arndb.de>
-X-Provags-ID: V02:K0:zQTXAjt4LQtfb6bkN3Syn1jnVbNh5LWqG4TlX7AZxcT
- bmaCVEcMbZV4U1WXZS/Z2TKbtyO+tbqaGAZcnqp9v7PNRmsze9
- /wKK7VnVTEQiblhCHE9sSmX21d0g4oEur6xO0UH79Fq3NMT/Q2
- 3Vhj3HgNmdOeduPTYidcWz+eLdYIhGioFOVgAoQo9ZGrcCwJrB
- /Xqb19gOwSyupRS6hxh4w==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101224151325.GA1895@del.dom.local>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 17 December 2010, David Brown wrote:
-> I agree with this goal, and I think I have a plan to get us there.
+On Fri, Dec 24, 2010 at 04:13:25PM +0100, Jarek Poplawski wrote:
+> On Fri, Dec 24, 2010 at 11:22:25AM +0000, Joel Soete wrote:
+> > Hello Jarek,
+> Hi Joel,
 > 
-> For example, the iomap constants.  To fix this, this data needs to be
-> moved into platform data, or something similar.  It seems to me to
-> make the most sense to move the individual devices out of the iomap
-> until at least the devices used so far on 8960 are all done
-> dynamically.  Then at least these constants aren't needed for this
-> target.
+> > Ok I get a clean 2.6.37-rc7 vanilla src and apply your debugging
+> > patch and grab the attached syslog-2.6.37-rc7-t2.gz with obviously a
+> > lot of "warning" (but as well as with Eric's patch, kernel survived
+> > to a lynx connection to ftp.eu.kernel.org to download of a snapshot
+> > patch ;<) )
+> 
+> Yes, even more than I expected... I hope the list will forgive us ;-)
 
-This is something that would get a lot easier if we already had
-device tree support, no idea if it's worth waiting for that for you.
-Doing it with extensive platform data involves much of the same
-work, but may be more of it.
+Alas the list rejected your message (try to limit it to ~200kb next
+time).
 
-> There are similar things that need to be done for irqs, and timer
-> offsets.
+Anyway, it looks like the sundance driver is the main guilty. The
+patch below removes one obvious bug but there could be something more.
+Please, apply this one and my previous debugging patch to the clean
+2.6.37-rc7. (If there're still warnings the first ~20kb should do.)
 
-Yes. Eric has spent a lot of time looking into all these issues,
-he probably has a good overview of the potential problems.
+Thanks,
+Jarek P.
+---
 
-> I'm not sure really what to do about PHYS_OFFSET.  This is kind of the
-> big thing that has kept us so far from making our SOCs multiply
-> selectable.  I could move this into a Kconfig option, but it would
-> still need to be selected by the SOC.  It is unfortunate that most of
-> our SOCs have different enough memory configurations that these are
-> mostly different.  Even 8960/8660 will probably have future variants
-> that are at different addresses.
-
-I think there are people working on relocatable kernels already,
-and we definitely need this for the other work in progress of
-doing kernel binaries that work across different SoC families,
-as well as for doing a single kernel that can be used both for
-booting the system and for kdump.
-
-You don't need to worry about PHYS_OFFSET at the platform level,
-we'll get there in a few months for all ARM platforms.
-
-> My question, then is, should we hold off on getting 8960 support into
-> the kernel until enough things are improved to get rid of the 8960
-> ifdefs?  We can certainly do it that way, but it will keep the code
-> out of the kernel longer.
-
-My personal recommendation would be to fix all the places that you
-can do without significant reworks of the existing code, and
-just add TODO comments in the other places, so we can find them
-easily. There is no reason to hold up merging the code too long for
-this, but I wouldn't add code now that I know needs to be changed
-soon to something that can already be done easily.
-
-	Arnd
+diff --git a/drivers/net/sundance.c b/drivers/net/sundance.c
+index 3ed2a67..b409d7e 100644
+--- a/drivers/net/sundance.c
++++ b/drivers/net/sundance.c
+@@ -1016,7 +1016,7 @@ static void init_ring(struct net_device *dev)
+ 
+ 	/* Fill in the Rx buffers.  Handle allocation failure gracefully. */
+ 	for (i = 0; i < RX_RING_SIZE; i++) {
+-		struct sk_buff *skb = dev_alloc_skb(np->rx_buf_sz);
++		struct sk_buff *skb = dev_alloc_skb(np->rx_buf_sz + 2);
+ 		np->rx_skbuff[i] = skb;
+ 		if (skb == NULL)
+ 			break;
+@@ -1407,7 +1407,7 @@ static void refill_rx (struct net_device *dev)
+ 		struct sk_buff *skb;
+ 		entry = np->dirty_rx % RX_RING_SIZE;
+ 		if (np->rx_skbuff[entry] == NULL) {
+-			skb = dev_alloc_skb(np->rx_buf_sz);
++			skb = dev_alloc_skb(np->rx_buf_sz + 2);
+ 			np->rx_skbuff[entry] = skb;
+ 			if (skb == NULL)
+ 				break;		/* Better luck next round. */
