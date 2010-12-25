@@ -1,39 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088Ab0LYNkq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 08:40:46 -0500
-Received: from mga11.intel.com ([192.55.52.93]:29407 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751521Ab0LYNkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 08:40:45 -0500
-Message-Id: <c6d829$pvchrr@fmsmga001.fm.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,227,1291622400"; 
-   d="scan'208";a="871778171"
-Date: Sat, 25 Dec 2010 13:38:56 +0000
-To: Jarek Poplawski <jarkao2@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [2.6.37-rc7] drivers/gpu/drm/drm_edid.c:1303: warning: array subscript is above array bounds
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-In-Reply-To: <20101225131343.GA1960@del.dom.local>
-References: <20101225131343.GA1960@del.dom.local>
-From: Chris Wilson <chris@chris-wilson.co.uk>
+	id S1752088Ab0LYNvo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 08:51:44 -0500
+Received: from payne.is.scarlet.be ([193.74.71.226]:33983 "EHLO
+	payne.is.scarlet.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171Ab0LYNvn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Dec 2010 08:51:43 -0500
+Message-ID: <4D15F6C9.50700@scarlet.be>
+Date: Sat, 25 Dec 2010 13:51:05 +0000
+From: Joel Soete <soete.joel@scarlet.be>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.15) Gecko/20101030 Icedove/3.0.10
+MIME-Version: 1.0
+To: Jarek Poplawski <jarkao2@gmail.com>
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Subject: Re: Help: major pppoe regression since 2.6.35 (panic on first ppp
+ conection)?
+References: <20101222110021.GA8985@ff.dom.local> <4D122093.6060900@scarlet.be> <1293035100.3027.247.camel@edumazet-laptop> <4D132C5F.8090404@scarlet.be> <1293106348.7789.5.camel@edumazet-laptop> <20101223202523.GA1913@del.dom.local> <4D148271.8030509@scarlet.be> <20101224151325.GA1895@del.dom.local> <20101225121044.GA1841@del.dom.local>
+In-Reply-To: <20101225121044.GA1841@del.dom.local>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 25 Dec 2010 14:13:43 +0100, Jarek Poplawski <jarkao2@gmail.com> wrote:
-> Hi,
-> There is this compile warning in Linus' tree (gcc version 4.3.3):
-> 
-> drivers/gpu/drm/drm_edid.c: In function 'drm_detect_hdmi_monitor':
-> drivers/gpu/drm/drm_edid.c:1303: warning: array subscript is above array bounds
-> drivers/gpu/drm/drm_edid.c: In function 'drm_detect_monitor_audio':
-> drivers/gpu/drm/drm_edid.c:1303: warning: array subscript is above array bounds
+Hello Jarek,
 
-What array? It's declared as "u8 *edid_ext;". At first glance looks like a
-compiler bug, applying subscript testing to an object with unknown bounds.
--Chris
+On 12/25/2010 12:10 PM, Jarek Poplawski wrote:
+> On Fri, Dec 24, 2010 at 04:13:25PM +0100, Jarek Poplawski wrote:
+>> On Fri, Dec 24, 2010 at 11:22:25AM +0000, Joel Soete wrote:
+>>> Hello Jarek,
+>> Hi Joel,
+>>
+[snip]
+>
+> Alas the list rejected your message (try to limit it to ~200kb next
+> time).
+>
+Ah ok I will take care next ;<)
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+> Anyway, it looks like the sundance driver is the main guilty. The
+> patch below removes one obvious bug but there could be something more.
+> Please, apply this one and my previous debugging patch to the clean
+> 2.6.37-rc7. (If there're still warnings the first ~20kb should do.)
+>
+> Thanks,
+> Jarek P.
+> ---
+>
+> diff --git a/drivers/net/sundance.c b/drivers/net/sundance.c
+> index 3ed2a67..b409d7e 100644
+> --- a/drivers/net/sundance.c
+> +++ b/drivers/net/sundance.c
+> @@ -1016,7 +1016,7 @@ static void init_ring(struct net_device *dev)
+>
+>   	/* Fill in the Rx buffers.  Handle allocation failure gracefully. */
+>   	for (i = 0; i<  RX_RING_SIZE; i++) {
+> -		struct sk_buff *skb = dev_alloc_skb(np->rx_buf_sz);
+> +		struct sk_buff *skb = dev_alloc_skb(np->rx_buf_sz + 2);
+>   		np->rx_skbuff[i] = skb;
+>   		if (skb == NULL)
+>   			break;
+> @@ -1407,7 +1407,7 @@ static void refill_rx (struct net_device *dev)
+>   		struct sk_buff *skb;
+>   		entry = np->dirty_rx % RX_RING_SIZE;
+>   		if (np->rx_skbuff[entry] == NULL) {
+> -			skb = dev_alloc_skb(np->rx_buf_sz);
+> +			skb = dev_alloc_skb(np->rx_buf_sz + 2);
+>   			np->rx_skbuff[entry] = skb;
+>   			if (skb == NULL)
+>   				break;		/* Better luck next round. */
+>
+I don't have any more warnings :<)
+
+Awesome job.
+
+Thanks a lot for help and I wish you a Happy new year,
+	J.
