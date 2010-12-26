@@ -1,48 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752173Ab0LZMUw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Dec 2010 07:20:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18483 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751951Ab0LZMUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Dec 2010 07:20:51 -0500
-Message-ID: <4D17331A.6090802@redhat.com>
-Date: Sun, 26 Dec 2010 14:20:42 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1752175Ab0LZM4f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Dec 2010 07:56:35 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59283 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab0LZM4e convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Dec 2010 07:56:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=fBvF8tksZpflO+JgR9FmesTM9Ewa2kyKUKKpzYl4IlxtyJpltMLzToh5Au2jWCOzHt
+         /8ptxX1EzlSE015dxPArLcRFZJWTg6t0udULSo/QPRXTxRlCY6kdn0S1116NIytSrhmR
+         gaRnrt/9BEM000DYZrO3YqVqQVgOw9Di1ZQrA=
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] KVM: MMU: handle 'map_writable' in set_spte() function
-References: <4D130383.30406@cn.fujitsu.com> <4D1303B9.3080801@cn.fujitsu.com>
-In-Reply-To: <4D1303B9.3080801@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTi=FOz1UZw8pbYA7Tb7b1q4O1=WRL3fzOuN0E0wX@mail.gmail.com>
+References: <AANLkTim0Xmsnzz5yMLAx_+w-c7sSSReu0SKMAmjpbS+1@mail.gmail.com>
+	<AANLkTi==ahwQXGK-hPq+2KVRRwQiL9j7vVakAwi=NTiq@mail.gmail.com>
+	<AANLkTinye4NY6D=pHWRKTW=smhS3qg1kfBW7wncQgXSU@mail.gmail.com>
+	<AANLkTinNhupY59gYJNi_za8UvgGkjFA9mbdkKfwfKWeQ@mail.gmail.com>
+	<AANLkTi=FOz1UZw8pbYA7Tb7b1q4O1=WRL3fzOuN0E0wX@mail.gmail.com>
+Date: Sun, 26 Dec 2010 18:56:32 +0600
+Message-ID: <AANLkTi=cDqAz_9+0358uZ2F0W8==+hCHVJxUsWhcNaVC@mail.gmail.com>
+Subject: Re: [PATCH v0] add nano semaphore in kernel
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/2010 10:09 AM, Xiao Guangrong wrote:
-> Move the operation of 'writable' to set_spte() to clean up code
+On Sun, Dec 26, 2010 at 6:05 PM, Hillf Danton <dhillf@gmail.com> wrote:
+> On Sun, Dec 26, 2010 at 5:08 PM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
+>> On Sun, Dec 26, 2010 at 1:04 PM, Hillf Danton <dhillf@gmail.com> wrote:
+>>> On Sun, Dec 26, 2010 at 2:46 PM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
+>>>> On Sun, Dec 26, 2010 at 11:13 AM, Hillf Danton <dhillf@gmail.com> wrote:
+>>>> Above description tells how its done, what it is but its not clear why
+>>>> we should use it. Can I know why should we use it or its benefits?
+>>>>
+>>>
+>>> The outstanding benefit looks that nano semaphore could be used in
+>>> cases where callers want to wait not only more than one jiffy, but far
+>>> less than one jiffy also.
+>>>
+>> But, how do we know that resources are going to be available within
+>> one jiffy or far less than one jiffy? We we be deterministic?
+>>
+> This is a really hard question.
 >
-
-Thanks, applied.
-> @@ -809,12 +806,8 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
+> Though I could not answer as fine as Ingo Molnar could, the
+> deterministic has to be faced by most contentions for resources in
+> kernel, simply because deadlock could occur in spin lock for instance.
 >
->   		nr_present++;
->   		pte_access = sp->role.access&  FNAME(gpte_access)(vcpu, gpte);
-> -		if (!(sp->spt[i]&  SPTE_HOST_WRITEABLE)) {
-> -			pte_access&= ~ACC_WRITE_MASK;
-> -			host_writable = 0;
-> -		} else {
-> -			host_writable = 1;
-> -		}
-> +		host_writable = !!(sp->spt[i]&  SPTE_HOST_WRITEABLE);
-> + 		
+Yes, if its not handled carefully.
 
-Note, !! is unneeded when assigning to a boolean variable.  I removed it.
+> On the other hand, this question explores a byproduct advantage, not
+> seriously considered before,  of nano semaphore, that the caller could
+> learn that there is something out of track if she waited over 100
+> microseconds in 5 consequent steps, 20 microseconds a step, if she
+> think the resource should be available in 60 microseconds.
+>
+Why should caller think such a way, that resource will be available in
+60 microseconds?
 
--- 
-error compiling committee.c: too many arguments to function
+> And in nano semaphore method is available for callers to select
+> waiting over one second, one millisecond, one microsecond, one
+> nanosecond, depending on what the underlying system could offer. After
+> waiting, the caller is free to determine what to do next if the
+> resource is not available.
+>
+How do we know that, what the underlying system will offer? Its an
+NP-type problem. We cannot determine what will happen on a systems
+context. When a caller need resource, without that resource is it
+possible to accomplish its job? If its not, then the ultimate way to
+deal with it, is simply waiting until it gets the resource.
 
+> Here is another sample, if taxi will not come in two minutes, I could
+> either give up shopping downtown, or wait another three minutes,
+> depending on what will happen two minutes later.
+
+But what, if your mother told you not to come home until you done shopping? :)
+
+thanks,
+rakib
+
+>
+> thanks
+> Hillf
+>
