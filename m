@@ -1,65 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab0LZVXl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Dec 2010 16:23:41 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:18929 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752634Ab0LZVXj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Dec 2010 16:23:39 -0500
-Date: Sun, 26 Dec 2010 22:14:01 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: DL-MPTFusionLinux@lsi.com
-cc: Eric Moore <Eric.Moore@lsi.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, support@lsi.com
-Subject: [PATCH] SCSI, LSI Fusion MPT: Fix memory leak in
- mptctl_getiocinfo()
-Message-ID: <alpine.LNX.2.00.1012262207380.20797@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752540Ab0LZVaQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Dec 2010 16:30:16 -0500
+Received: from xenotime.net ([72.52.115.56]:43921 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752259Ab0LZVaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Dec 2010 16:30:14 -0500
+Date: Sun, 26 Dec 2010 13:30:11 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Tsozik <tsozik@yahoo.com>
+Cc: Greg KH <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] mct_u232: IOCTL implementation
+Message-Id: <20101226133011.c7a3508d.rdunlap@xenotime.net>
+In-Reply-To: <620568.36178.qm@web65706.mail.ac4.yahoo.com>
+References: <20101226184124.GA29774@suse.de>
+	<620568.36178.qm@web65706.mail.ac4.yahoo.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, 26 Dec 2010 11:51:28 -0800 (PST) Tsozik wrote:
 
-A 'kfree(karg)' is missing in a failure path in 
-drivers/message/fusion/mptctl.c::mptctl_getiocinfo() which can cause a 
-memory leak. This patch should take care of that.
-
-Hope I didn't miss something obvious, but to me it looks like adding this 
-kfree() is the right thing to do. If you disagree feel free to correct me 
-:-)
+> Greg,
+> 
+> Many thanks for your reply. I will try to install git and download the latest release candidate. I see that 2.6.37.rc7 is already available. I think I will also hope to find get_icount there to address Pete's concern,
 
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+You can use git if you want to, but it certainly is not required for this.
+
 ---
- mptctl.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-  compile tested only since I don't have proper hardware to test for real.
-
-diff --git a/drivers/message/fusion/mptctl.c b/drivers/message/fusion/mptctl.c
-index a3856ed..1dcc13a 100644
---- a/drivers/message/fusion/mptctl.c
-+++ b/drivers/message/fusion/mptctl.c
-@@ -1307,8 +1307,10 @@ mptctl_getiocinfo (unsigned long arg, unsigned int data_size)
- 	else
- 		karg->adapterType = MPT_IOCTL_INTERFACE_SCSI;
- 
--	if (karg->hdr.port > 1)
-+	if (karg->hdr.port > 1) {
-+		kfree(karg);
- 		return -EINVAL;
-+	}
- 	port = karg->hdr.port;
- 
- 	karg->port = port;
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
+desserts:  http://www.xenotime.net/linux/recipes/
