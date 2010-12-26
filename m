@@ -1,72 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114Ab0LZMF7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Dec 2010 07:05:59 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49437 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752008Ab0LZMF6 (ORCPT
+	id S1752111Ab0LZMKL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Dec 2010 07:10:11 -0500
+Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.95]:59079 "EHLO
+	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751951Ab0LZMKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Dec 2010 07:05:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=I3PZYv74SEajrpbmHSEld3t7C9e7ubncV04z8+bN5wc/O2VeL2z/E/By8QSVfwHJuA
-         m5DWxBXboGeLPMAouTZX2k22UD9LQbdhcEle7O8BArtr3OIC7ym/iw0Xv2hnO1QBi3FM
-         auCOoOSu9egEmCtek7pj/qE0ro5h1woWdC1co=
+	Sun, 26 Dec 2010 07:10:09 -0500
+Date: Sun, 26 Dec 2010 07:09:19 -0500
+From: Ben Blum <bblum@andrew.cmu.edu>
+To: Ben Blum <bblum@andrew.cmu.edu>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        akpm@linux-foundation.org, ebiederm@xmission.com, lizf@cn.fujitsu.com,
+        matthltc@us.ibm.com, menage@google.com, oleg@redhat.com,
+        David Rientjes <rientjes@google.com>, Miao Xie <miaox@cn.fujitsu.com>
+Subject: [PATCH v7 0/3] cgroups: implement moving a threadgroup's threads
+ atomically with cgroup.procs
+Message-ID: <20101226120919.GA28529@ghc17.ghc.andrew.cmu.edu>
+References: <20101224082226.GA13872@ghc17.ghc.andrew.cmu.edu>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinNhupY59gYJNi_za8UvgGkjFA9mbdkKfwfKWeQ@mail.gmail.com>
-References: <AANLkTim0Xmsnzz5yMLAx_+w-c7sSSReu0SKMAmjpbS+1@mail.gmail.com>
-	<AANLkTi==ahwQXGK-hPq+2KVRRwQiL9j7vVakAwi=NTiq@mail.gmail.com>
-	<AANLkTinye4NY6D=pHWRKTW=smhS3qg1kfBW7wncQgXSU@mail.gmail.com>
-	<AANLkTinNhupY59gYJNi_za8UvgGkjFA9mbdkKfwfKWeQ@mail.gmail.com>
-Date: Sun, 26 Dec 2010 20:05:57 +0800
-Message-ID: <AANLkTi=FOz1UZw8pbYA7Tb7b1q4O1=WRL3fzOuN0E0wX@mail.gmail.com>
-Subject: Re: [PATCH v0] add nano semaphore in kernel
-From: Hillf Danton <dhillf@gmail.com>
-To: Rakib Mullick <rakib.mullick@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101224082226.GA13872@ghc17.ghc.andrew.cmu.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.12.26.115715
+X-SMTP-Spam-Clean: 8% (
+ FROM_SAME_AS_TO 0.05, BODY_SIZE_6000_6999 0, BODY_SIZE_7000_LESS 0, __CD 0, __CP_URI_IN_BODY 0, __CT 0, __CT_TEXT_PLAIN 0, __FROM_SAME_AS_TO2 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_MAILTO 0, __USER_AGENT 0)
+X-SMTP-Spam-Score: 8%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 26, 2010 at 5:08 PM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
-> On Sun, Dec 26, 2010 at 1:04 PM, Hillf Danton <dhillf@gmail.com> wrote:
->> On Sun, Dec 26, 2010 at 2:46 PM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
->>> On Sun, Dec 26, 2010 at 11:13 AM, Hillf Danton <dhillf@gmail.com> wrote:
->>> Above description tells how its done, what it is but its not clear why
->>> we should use it. Can I know why should we use it or its benefits?
->>>
->>
->> The outstanding benefit looks that nano semaphore could be used in
->> cases where callers want to wait not only more than one jiffy, but far
->> less than one jiffy also.
->>
-> But, how do we know that resources are going to be available within
-> one jiffy or far less than one jiffy? We we be deterministic?
->
-This is a really hard question.
+On Fri, Dec 24, 2010 at 03:22:26AM -0500, Ben Blum wrote:
+> On Wed, Aug 11, 2010 at 01:46:04AM -0400, Ben Blum wrote:
+> > On Fri, Jul 30, 2010 at 07:56:49PM -0400, Ben Blum wrote:
+> > > This patch series is a revision of http://lkml.org/lkml/2010/6/25/11 .
+> > > 
+> > > This patch series implements a write function for the 'cgroup.procs'
+> > > per-cgroup file, which enables atomic movement of multithreaded
+> > > applications between cgroups. Writing the thread-ID of any thread in a
+> > > threadgroup to a cgroup's procs file causes all threads in the group to
+> > > be moved to that cgroup safely with respect to threads forking/exiting.
+> > > (Possible usage scenario: If running a multithreaded build system that
+> > > sucks up system resources, this lets you restrict it all at once into a
+> > > new cgroup to keep it under control.)
+> > > 
+> > > Example: Suppose pid 31337 clones new threads 31338 and 31339.
+> > > 
+> > > # cat /dev/cgroup/tasks
+> > > ...
+> > > 31337
+> > > 31338
+> > > 31339
+> > > # mkdir /dev/cgroup/foo
+> > > # echo 31337 > /dev/cgroup/foo/cgroup.procs
+> > > # cat /dev/cgroup/foo/tasks
+> > > 31337
+> > > 31338
+> > > 31339
+> > > 
+> > > A new lock, called threadgroup_fork_lock and living in signal_struct, is
+> > > introduced to ensure atomicity when moving threads between cgroups. It's
+> > > taken for writing during the operation, and taking for reading in fork()
+> > > around the calls to cgroup_fork() and cgroup_post_fork(). I put calls to
+> > > down_read/up_read directly in copy_process(), since new inline functions
+> > > seemed like overkill.
+> > > 
+> > > -- Ben
+> > > 
+> > > ---
+> > >  Documentation/cgroups/cgroups.txt |   13 -
+> > >  include/linux/init_task.h         |    9
+> > >  include/linux/sched.h             |   10
+> > >  kernel/cgroup.c                   |  426 +++++++++++++++++++++++++++++++++-----
+> > >  kernel/cgroup_freezer.c           |    4
+> > >  kernel/cpuset.c                   |    4
+> > >  kernel/fork.c                     |   16 +
+> > >  kernel/ns_cgroup.c                |    4
+> > >  kernel/sched.c                    |    4
+> > >  9 files changed, 440 insertions(+), 50 deletions(-)
+> > 
+> > Here's an updated patchset. I've added an extra patch to implement the 
+> > callback scheme Paul suggested (note how there are twice as many deleted
+> > lines of code as before :) ), and also moved the up_read/down_read calls
+> > to static inline functions in sched.h near the other threadgroup-related
+> > calls.
+> 
+> One more go at this. I've refreshed the patches for some conflicts in
+> cgroup_freezer.c, by adding an extra argument to the per_thread() call,
+> "need_rcu", which makes the function take rcu_read_lock even around the
+> single-task case (like freezer now requires). So no semantics have been
+> changed.
+> 
+> I also poked around at some attach() calls which also iterate over the
+> threadgroup (blkiocg_attach, cpuset_attach, cpu_cgroup_attach). I was
+> borderline about making another function, cgroup_attach_per_thread(),
+> but decided against.
+> 
+> There is a big issue in cpuset_attach, as explained in this email:
+> http://www.spinics.net/lists/linux-containers/msg22223.html
+> but the actual code/diffs for this patchset are independent of that
+> getting fixed, so I'm putting this up for consideration now.
+> 
+> -- Ben
 
-Though I could not answer as fine as Ingo Molnar could, the
-deterministic has to be faced by most contentions for resources in
-kernel, simply because deadlock could occur in spin lock for instance.
+Well this time everything here is actually safe and correct, as far as
+my best efforts and keen eyes can tell. I dropped the per_thread call
+from the last series in favour of revising the subsystem callback
+interface. It now looks like this:
 
-On the other hand, this question explores a byproduct advantage, not
-seriously considered before,  of nano semaphore, that the caller could
-learn that there is something out of track if she waited over 100
-microseconds in 5 consequent steps, 20 microseconds a step, if she
-think the resource should be available in 60 microseconds.
+ss->can_attach()
+ - Thread-independent, possibly expensive/sleeping.
 
-And in nano semaphore method is available for callers to select
-waiting over one second, one millisecond, one microsecond, one
-nanosecond, depending on what the underlying system could offer. After
-waiting, the caller is free to determine what to do next if the
-resource is not available.
+ss->can_attach_task()
+ - Called per-thread, run with rcu_read so must not sleep.
 
-Here is another sample, if taxi will not come in two minutes, I could
-either give up shopping downtown, or wait another three minutes,
-depending on what will happen two minutes later.
+ss->pre_attach()
+ - Thread independent, must be atomic, happens before attach_task.
 
-thanks
-Hillf
+ss->attach_task()
+ - Called per-thread, run with tasklist_lock so must not sleep.
+
+ss->attach()
+ - Thread independent, possibly expensive/sleeping, called last.
+
+I think this makes the most sense, since it keeps all of the threadgroup
+logic confined to cgroup_attach_proc, and also by splitting up the
+callbacks, many subsystems get to have less code about stuff they don't
+need to worry about. It makes the issue mentioned here:
+http://www.spinics.net/lists/linux-containers/msg22236.html decoupled
+from this patchset (since mmap_sem stuff is done in thread-independent
+callbacks, and also fixes (this particular case of) this problem:
+http://www.spinics.net/lists/linux-containers/msg22223.html (by using
+global nodemasks for the three attach callbacks).
+
+One final bullet to dodge: cpuset_change_task_nodemask() is implemented
+using a loop around yield() to synchronize the mems_allowed, so it can't
+be used in the atomic attach_task(). (It looks like a total mess to me -
+can anybody justify why it was done that way, instead of using a better
+concurrency primitive?) Rather than dirty my hands by changing any of
+it, I just moved it out of the per-thread function - explained more in
+the second patch. If it gets rewritten to avoid yielding, it can be
+moved back to attach_task (I left a TODO).
+
+Other than that, a quick review of why everything here is safe:
+ - Iterating over the thread_group is done only under rcu_read_lock or
+   tasklist_lock, always checking first that thread_group_leader(task).
+   (And, a reference is held on that task the whole time.)
+ - All allocation is done outside of rcu_read/tasklist_lock.
+ - All subsystem callbacks for can_attach_task() and attach_task() never
+   call any function that can block or otherwise yield.
+
+(It'd be really nice if the functions that might sleep and regions of
+code that must not sleep could be checked for automatically at build.)
+
+-- Ben
+
+---
+ Documentation/cgroups/cgroups.txt |   44 ++-
+ Documentation/cgroups/cpusets.txt |    9 
+ block/blk-cgroup.c                |   18 -
+ include/linux/cgroup.h            |   10 
+ include/linux/init_task.h         |    9 
+ include/linux/sched.h             |   35 ++
+ kernel/cgroup.c                   |  489 ++++++++++++++++++++++++++++++++++----
+ kernel/cgroup_freezer.c           |   27 --
+ kernel/cpuset.c                   |  116 ++++-----
+ kernel/fork.c                     |   10 
+ kernel/ns_cgroup.c                |   23 -
+ kernel/sched.c                    |   38 --
+ mm/memcontrol.c                   |   18 -
+ security/device_cgroup.c          |    3 
+ 14 files changed, 635 insertions(+), 214 deletions(-)
