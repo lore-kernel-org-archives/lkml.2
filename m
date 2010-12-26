@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531Ab0LZBD3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 20:03:29 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:37348 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751333Ab0LZBD2 (ORCPT
+	id S1751541Ab0LZB0G (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 20:26:06 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:51892 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab0LZB0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 20:03:28 -0500
-X-Sasl-enc: VZJTPiuVTQYxLW08dDBuEa8/26TWGXtTJpT+jovEQ/Od 1293325406
-Date: Sat, 25 Dec 2010 23:03:22 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: ibm-acpi-devel@lists.sourceforge.net,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI Thinkpad: We must always call va_end() after
- va_start() but do not do so in thinkpad_acpi.c::acpi_evalf()
-Message-ID: <20101226010322.GB16593@khazad-dum.debian.net>
-References: <alpine.LNX.2.00.1012241952200.28973@swampdragon.chaosbits.net>
+	Sat, 25 Dec 2010 20:26:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=mChvYKferVhFnh4BNFs7LqOjrg/FRJ+3zivZg26BPQeLolj1BovaMA/ytQn8QmwUET
+         4RdyshonGatuftRdQXN/4bY9mCiU3iBNZav1pVdqndN2qgpDMYBs1PdI4Lzetzr59i0G
+         zf6zEQ19VeUfXbrMMEScQafTLs/KGYCkA4b1c=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1012241952200.28973@swampdragon.chaosbits.net>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LNX.2.00.1012252020000.10759@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1012252020000.10759@swampdragon.chaosbits.net>
+Date: Sat, 25 Dec 2010 20:26:03 -0500
+X-Google-Sender-Auth: K2eRu6DuqixrpmmhvQ2dS3ZtNnk
+Message-ID: <AANLkTinkzVs3XSp7cHP0Qhhd8+wuZs-X-yKt1dnZeSiO@mail.gmail.com>
+Subject: Re: [PATCH] befs: Don't pass huge structs by value.
+From: Will Dyson <will_dyson@pobox.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, Makoto Kato <m_kato@ga2.so-net.ne.jp>,
+        "Sergey S. Kostyliov" <rathamahata@php4.ru>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Dec 2010, Jesper Juhl wrote:
-> In drivers/platform/x86/thinkpad_acpi.c::acpi_evalf() we don't always call 
-> va_end() after va_start(). This patch corrects that.
+On Sat, Dec 25, 2010 at 2:27 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+> Hi there,
+>
+> 'struct befs_disk_data_stream' is huge (~144 bytes) and it's being passed
+> by value in fs/befs/endian.h::cpu_to_fsrun().
+>
+> It seems to me that it would be better to pass a pointer, no?
+> This patch changes the function to take a pointer to the large struct.
+>
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-
-Although that codepath is for a driver source bug, so arguably it would
-be better to just BUG().
-
-It has never been tested (or hit in practice), I think.
+Seems very reasonable to me. Unfortunately, I have no longer have any
+befs filesystems to test on either.
 
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Will Dyson
