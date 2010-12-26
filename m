@@ -1,107 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202Ab0LZOaa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Dec 2010 09:30:30 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:37135 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971Ab0LZOa3 (ORCPT
+	id S1752390Ab0LZQmh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Dec 2010 11:42:37 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:46309 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752294Ab0LZQmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Dec 2010 09:30:29 -0500
-X-AuditID: b753bd60-a30f9ba000000f8d-43-4d175182a669
-Message-ID: <4D17517F.6060701@hitachi.com>
-Date: Sun, 26 Dec 2010 23:30:23 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Franck Bui-Huu <vagabon.xyz@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH] perf-probe: fix perf-probe(1)'s report
-References: <m31v588r9k.fsf@gmail.com>
-In-Reply-To: <m31v588r9k.fsf@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+	Sun, 26 Dec 2010 11:42:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ZNpOSnUiiblznBlMs8y1ZXSHoji9ndEx3hIgchLBKFnt+vtQsElgYq9Flrof6KnJ5g
+         +jG9vg2Gnc5ECV+DQBQvuGDKOyjMquapk4t6mO6zocikgvwSK1Sx2bH8j0Zq2DZE+mFc
+         ddxwu2aNN8b3TkH8c5shpgSniwo/4ICobsSX8=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff Moyer <jmoyer@redhat.com>
+Subject: [PATCH 1/3] compat: remove unnecessary assignment in compat_rw_copy_check_uvector()
+Date: Mon, 27 Dec 2010 01:41:52 +0900
+Message-Id: <1293381714-5264-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.3.4.600.g982838b0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/12/24 0:04), Franck Bui-Huu wrote:
-> From: Franck Bui-Huu <fbuihuu@gmail.com>
-> 
-> After adding probes, perf-probe(1) reports the probes locations which
-> include filenames for certain cases.
-> 
-> But for short file names (whose length < 32), perf-probe didn't display
-> the name correctly. It actually skipped the first character.
-> 
-> Here's an example where 'icmp.c' was screwed:
-> 
->    $ perf probe -n -a "icmp.c;sk=*"
->    Add new events:
->      probe:icmp_push_reply (on @cmp.c)
->      probe:icmp_reply     (on @cmp.c)
->      probe:icmp_reply_1   (on @cmp.c)
->      probe:icmp_send      (on @cmp.c)
->      probe:icmp_send_1    (on @cmp.c)
->      probe:icmp_error     (on @cmp.c)
->      probe:icmp_error_1   (on @cmp.c)
->      probe:icmp_error_2   (on @cmp.c)
->      probe:icmp_error_3   (on @cmp.c)
-> 
-> This patch fixes this bug in synthesize_perf_probe_point().
+*@ret_pointer is initialized to @fast_pointer thus the assignment is
+redundant.
 
-Oops, I've missed that.
-Thanks! that's really good catch!
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>
+---
+ fs/compat.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-> 
-> Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
-> ---
->  tools/perf/util/probe-event.c |   16 ++++++++--------
->  1 files changed, 8 insertions(+), 8 deletions(-)
-> 
-> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> index 10ad1ad..adc2620 100644
-> --- a/tools/perf/util/probe-event.c
-> +++ b/tools/perf/util/probe-event.c
-> @@ -1077,13 +1077,13 @@ static char *synthesize_perf_probe_point(struct perf_probe_point *pp)
->  			goto error;
->  	}
->  	if (pp->file) {
-> -		len = strlen(pp->file) - 31;
-> -		if (len < 0)
-> -			len = 0;
-> -		tmp = strchr(pp->file + len, '/');
-> -		if (!tmp)
-> -			tmp = pp->file + len;
-> -		ret = e_snprintf(file, 32, "@%s", tmp + 1);
-> +		tmp = pp->file;
-> +		len = strlen(tmp);
-> +		if (len > 30) {
-> +			tmp = strchr(pp->file + len - 30, '/');
-> +			tmp = tmp ? tmp + 1 : pp->file + len - 30;
-> +		}
-> +		ret = e_snprintf(file, 32, "@%s", tmp);
->  		if (ret <= 0)
->  			goto error;
->  	}
-> @@ -1099,7 +1099,7 @@ static char *synthesize_perf_probe_point(struct perf_probe_point *pp)
->  
->  	return buf;
->  error:
-> -	pr_debug("Failed to synthesize perf probe point: %s",
-> +	pr_debug("Failed to synthesize perf probe point: %s\n",
->  		 strerror(-ret));
->  	if (buf)
->  		free(buf);
-
-
+diff --git a/fs/compat.c b/fs/compat.c
+index b074e9f79148..0a22f973f4b5 100644
+--- a/fs/compat.c
++++ b/fs/compat.c
+@@ -597,10 +597,8 @@ ssize_t compat_rw_copy_check_uvector(int type,
+ 	if (nr_segs > fast_segs) {
+ 		ret = -ENOMEM;
+ 		iov = kmalloc(nr_segs*sizeof(struct iovec), GFP_KERNEL);
+-		if (iov == NULL) {
+-			*ret_pointer = fast_pointer;
++		if (iov == NULL)
+ 			goto out;
+-		}
+ 	}
+ 	*ret_pointer = iov;
+ 
 -- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+1.7.3.4.600.g982838b0
+
