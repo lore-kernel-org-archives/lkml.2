@@ -1,93 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175Ab0LZM4f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Dec 2010 07:56:35 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59283 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813Ab0LZM4e convert rfc822-to-8bit (ORCPT
+	id S1752188Ab0LZNMQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Dec 2010 08:12:16 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39468 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab0LZNMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Dec 2010 07:56:34 -0500
+	Sun, 26 Dec 2010 08:12:15 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=fBvF8tksZpflO+JgR9FmesTM9Ewa2kyKUKKpzYl4IlxtyJpltMLzToh5Au2jWCOzHt
-         /8ptxX1EzlSE015dxPArLcRFZJWTg6t0udULSo/QPRXTxRlCY6kdn0S1116NIytSrhmR
-         gaRnrt/9BEM000DYZrO3YqVqQVgOw9Di1ZQrA=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=FOz1UZw8pbYA7Tb7b1q4O1=WRL3fzOuN0E0wX@mail.gmail.com>
-References: <AANLkTim0Xmsnzz5yMLAx_+w-c7sSSReu0SKMAmjpbS+1@mail.gmail.com>
-	<AANLkTi==ahwQXGK-hPq+2KVRRwQiL9j7vVakAwi=NTiq@mail.gmail.com>
-	<AANLkTinye4NY6D=pHWRKTW=smhS3qg1kfBW7wncQgXSU@mail.gmail.com>
-	<AANLkTinNhupY59gYJNi_za8UvgGkjFA9mbdkKfwfKWeQ@mail.gmail.com>
-	<AANLkTi=FOz1UZw8pbYA7Tb7b1q4O1=WRL3fzOuN0E0wX@mail.gmail.com>
-Date: Sun, 26 Dec 2010 18:56:32 +0600
-Message-ID: <AANLkTi=cDqAz_9+0358uZ2F0W8==+hCHVJxUsWhcNaVC@mail.gmail.com>
-Subject: Re: [PATCH v0] add nano semaphore in kernel
-From: Rakib Mullick <rakib.mullick@gmail.com>
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=pcc2bS6sfI1lM2uqB8WbKAh7p0GCZI7fH6o6HpopLR8BqBhDpovKAE/TRdmCdqCy18
+         GiRiiQM6lxtNfy3ZwQsdysy1jMHNAa5XXHMqI37mdLjrHi22heeHF8s1itlBp5uoF+F4
+         PKpzyl1axLdytArV3sQJvJkSL9uBFZ9ZQ6eX8=
+Date: Sun, 26 Dec 2010 21:12:05 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
 To: Hillf Danton <dhillf@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fix unsafe operation in high resolution timer
+Message-ID: <20101226131205.GA5757@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <AANLkTinvHP4rZ6PSyEOJ_ZJ2chRJX0ZyzuhNoCRrO1wK@mail.gmail.com>
+ <AANLkTikVQU6ozp0H1u7ghd0=miYyUJL62uP=0FBZSLok@mail.gmail.com>
+ <AANLkTimc0FwBhj5MsnibTTq94AgaQgqCKEXNSOvM_XjE@mail.gmail.com>
+ <20101225021209.GA11183@zhy>
+ <AANLkTimez6segEYEsdsvELqvHjrfY4rPQg6CG_7vyxCq@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <AANLkTimez6segEYEsdsvELqvHjrfY4rPQg6CG_7vyxCq@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 26, 2010 at 6:05 PM, Hillf Danton <dhillf@gmail.com> wrote:
-> On Sun, Dec 26, 2010 at 5:08 PM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
->> On Sun, Dec 26, 2010 at 1:04 PM, Hillf Danton <dhillf@gmail.com> wrote:
->>> On Sun, Dec 26, 2010 at 2:46 PM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
->>>> On Sun, Dec 26, 2010 at 11:13 AM, Hillf Danton <dhillf@gmail.com> wrote:
->>>> Above description tells how its done, what it is but its not clear why
->>>> we should use it. Can I know why should we use it or its benefits?
->>>>
->>>
->>> The outstanding benefit looks that nano semaphore could be used in
->>> cases where callers want to wait not only more than one jiffy, but far
->>> less than one jiffy also.
->>>
->> But, how do we know that resources are going to be available within
->> one jiffy or far less than one jiffy? We we be deterministic?
->>
-> This is a really hard question.
->
-> Though I could not answer as fine as Ingo Molnar could, the
-> deterministic has to be faced by most contentions for resources in
-> kernel, simply because deadlock could occur in spin lock for instance.
->
-Yes, if its not handled carefully.
+On Sat, Dec 25, 2010 at 10:19:11PM +0800, Hillf Danton wrote:
+> > But for a hrtimer which is not free in its callback, like a
+> > static defined one. the hrtimer could be referenced at the same
+> > time. So here you cann't just delete the two lines.
+> 
+> After callback, as you agree, it is hard to determine in the current
+> implementation if the hrtimer is static defined, though another bit
+> could be added, say, in the flag word of hrtimer
 
-> On the other hand, this question explores a byproduct advantage, not
-> seriously considered before,  of nano semaphore, that the caller could
-> learn that there is something out of track if she waited over 100
-> microseconds in 5 consequent steps, 20 microseconds a step, if she
-> think the resource should be available in 60 microseconds.
->
-Why should caller think such a way, that resource will be available in
-60 microseconds?
+Yeah, that is an option, like a flag FREE_IN_CALLBACK/ONESHOT which
+indicate that. Or just let the callback return another value like
+HRTIMER_FREED. But as I said before I'm not sure what's the best way
+to fix that. And maybe there's more suitable method.
 
-> And in nano semaphore method is available for callers to select
-> waiting over one second, one millisecond, one microsecond, one
-> nanosecond, depending on what the underlying system could offer. After
-> waiting, the caller is free to determine what to do next if the
-> resource is not available.
->
-How do we know that, what the underlying system will offer? Its an
-NP-type problem. We cannot determine what will happen on a systems
-context. When a caller need resource, without that resource is it
-possible to accomplish its job? If its not, then the ultimate way to
-deal with it, is simply waiting until it gets the resource.
+BTW, is there any user who free the hrtimer in its callback?
 
-> Here is another sample, if taxi will not come in two minutes, I could
-> either give up shopping downtown, or wait another three minutes,
-> depending on what will happen two minutes later.
+> , so cutting the two
+> lines off is deserved.
+> And more, who will take care of the NORESTART again after callback?
 
-But what, if your mother told you not to come home until you done shopping? :)
+It's not related to NORESTART, just HRTIMER_STATE_CALLBACK.
+hrtimer'strategy somehow depends on HRTIMER_STATE_CALLBACK.
+You can take a look at the caller of hrtimer_callback_running().
 
-thanks,
-rakib
-
->
-> thanks
-> Hillf
->
+Thanks,
+Yong
