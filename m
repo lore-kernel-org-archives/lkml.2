@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390Ab0LZQmh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Dec 2010 11:42:37 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:46309 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752294Ab0LZQmf (ORCPT
+	id S1752483Ab0LZQmt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Dec 2010 11:42:49 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64249 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752397Ab0LZQmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Dec 2010 11:42:35 -0500
+	Sun, 26 Dec 2010 11:42:38 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ZNpOSnUiiblznBlMs8y1ZXSHoji9ndEx3hIgchLBKFnt+vtQsElgYq9Flrof6KnJ5g
-         +jG9vg2Gnc5ECV+DQBQvuGDKOyjMquapk4t6mO6zocikgvwSK1Sx2bH8j0Zq2DZE+mFc
-         ddxwu2aNN8b3TkH8c5shpgSniwo/4ICobsSX8=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=wqZYmyOcLG/6bRJCcc1nmqsLWJeKXkXEM10cNqgF2qOEgaolNDw/qo9DLAyBWv1sr1
+         fJ1rx4ARY5LDiNW77s5kDdsiBpRS7S2vly6B4LJBU7tVrUAGIeuWLF5eWqNYq/ifx6Mh
+         wmlO0G9k92ffXB/q530t5ZuJbHZyfQ+FYF25w=
 From: Namhyung Kim <namhyung@gmail.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeff Moyer <jmoyer@redhat.com>
-Subject: [PATCH 1/3] compat: remove unnecessary assignment in compat_rw_copy_check_uvector()
-Date: Mon, 27 Dec 2010 01:41:52 +0900
-Message-Id: <1293381714-5264-1-git-send-email-namhyung@gmail.com>
+        Jiri Kosina <trivial@kernel.org>
+Subject: [PATCH 2/3] compat: update comment of compat statfs syscalls
+Date: Mon, 27 Dec 2010 01:41:53 +0900
+Message-Id: <1293381714-5264-2-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.3.4.600.g982838b0
+In-Reply-To: <1293381714-5264-1-git-send-email-namhyung@gmail.com>
+References: <1293381714-5264-1-git-send-email-namhyung@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-*@ret_pointer is initialized to @fast_pointer thus the assignment is
-redundant.
+The commit 7ed1ee6118ae ("Take statfs variants to fs/statfs.c")
+separates out statfs syscalls from fs/open.c. Thus the comment
+should be changed also.
 
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>
+Cc: Jiri Kosina <trivial@kernel.org>
 ---
- fs/compat.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ fs/compat.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/fs/compat.c b/fs/compat.c
-index b074e9f79148..0a22f973f4b5 100644
+index 0a22f973f4b5..037df434b038 100644
 --- a/fs/compat.c
 +++ b/fs/compat.c
-@@ -597,10 +597,8 @@ ssize_t compat_rw_copy_check_uvector(int type,
- 	if (nr_segs > fast_segs) {
- 		ret = -ENOMEM;
- 		iov = kmalloc(nr_segs*sizeof(struct iovec), GFP_KERNEL);
--		if (iov == NULL) {
--			*ret_pointer = fast_pointer;
-+		if (iov == NULL)
- 			goto out;
--		}
- 	}
- 	*ret_pointer = iov;
+@@ -257,7 +257,7 @@ static int put_compat_statfs(struct compat_statfs __user *ubuf, struct kstatfs *
+ }
  
+ /*
+- * The following statfs calls are copies of code from fs/open.c and
++ * The following statfs calls are copies of code from fs/statfs.c and
+  * should be checked against those from time to time
+  */
+ asmlinkage long compat_sys_statfs(const char __user *pathname, struct compat_statfs __user *buf)
 -- 
 1.7.3.4.600.g982838b0
 
