@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab0LZOL0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Dec 2010 09:11:26 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:41989 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768Ab0LZOLZ (ORCPT
+	id S1752290Ab0LZOPE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Dec 2010 09:15:04 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39347 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752175Ab0LZOPB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Dec 2010 09:11:25 -0500
-X-AuditID: b753bd60-a1557ba00000044b-20-4d174d09615b
-Message-ID: <4D174D07.6030706@hitachi.com>
-Date: Sun, 26 Dec 2010 23:11:19 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Sun, 26 Dec 2010 09:15:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=tLRmS3RRwpUlssl42M1TEk5FbSEs/ETc0JOCTKxVsQ0FTYKy32hu64tErNgilewLvx
+         xKP+KMagWolvF6rC+VS5N+wycs65xIzrvlSOoRJDcSgENlkI3WdbCppMtTkCOlrsct4c
+         ugOvbGZWLmpw6iSzDKQfnsdjnglawCpFnixhU=
+Date: Sun, 26 Dec 2010 15:14:47 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>
+Cc: john stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH V7 1/8] ntp: add ADJ_SETOFFSET mode bit
+Message-ID: <20101226141447.GA4830@riccoc20.at.omicron.at>
+References: <cover.1292512461.git.richard.cochran@omicron.at>
+ <880d82bb8120f73973db27e0c48e949014b1a106.1292512461.git.richard.cochran@omicron.at>
+ <AANLkTi=yGoFwYt4p_LeHtAQyYgmURspO-p57UdL0sUEZ@mail.gmail.com>
+ <20101221075612.GA13626@riccoc20.at.omicron.at>
+ <AANLkTimJd5pScKTiDxuYd-h+NevYbCusyvUAqmUDXe8h@mail.gmail.com>
+ <1292970355.2618.76.camel@work-vm>
+ <AANLkTimmTzH8+fSYmbajqZ+hU5Ps-UZaTp_1TYzjHB6P@mail.gmail.com>
+ <20101223061359.GA7169@riccoc20.at.omicron.at>
+ <AANLkTind84BVd=2Z07Sz+JfpVRH7m8wdx37YhRcqkCZv@mail.gmail.com>
 MIME-Version: 1.0
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, masami.hiramatsu.pt@hitachi.com, fbuihuu@gmail.com,
-        tglx@linutronix.de, vagabon.xyz@gmail.com, mingo@elte.hu
-Cc: linux-tip-commits@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [tip:perf/core] perf probe: Fix wrong warning in __show_one_line()
- if read(1) errors happen
-References: <m3y67hsr0m.fsf@gmail.com> <tip-32b2b6ec57a3adb3ab7215fbf36ec61c15de06ee@git.kernel.org>
-In-Reply-To: <tip-32b2b6ec57a3adb3ab7215fbf36ec61c15de06ee@git.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTind84BVd=2Z07Sz+JfpVRH7m8wdx37YhRcqkCZv@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/12/25 17:58), tip-bot for Franck Bui-Huu wrote:
-> Commit-ID:  32b2b6ec57a3adb3ab7215fbf36ec61c15de06ee
-> Gitweb:     http://git.kernel.org/tip/32b2b6ec57a3adb3ab7215fbf36ec61c15de06ee
-> Author:     Franck Bui-Huu <vagabon.xyz@gmail.com>
-> AuthorDate: Wed, 22 Dec 2010 17:37:13 +0100
-> Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-> CommitDate: Wed, 22 Dec 2010 20:32:08 -0200
-> 
-> perf probe: Fix wrong warning in __show_one_line() if read(1) errors happen
-> 
-> This was introduced by commit fde52dbd7f71934aba4e150f3d1d51e826a08850.
-> 
+On Sun, Dec 26, 2010 at 05:38:57AM +0900, Kuwahara,T. wrote:
+> After all, I'd prefer your earlier patchset.  Leaving aside the
+> compatibility issue, there's no particular reason we have to re-use
+> the struct timex, which requires otherwise unnecessary conditional
+> branches as well as unit conversions.  Don't you agree?
 
-It's a good fix for me.
+Well, from my point of view of wanting to allow a user space clock
+servo to be able to adjust a hardware clock, it would be sufficient to
+offer a way to jump the clock and to adjust the frequency via one or
+perhaps two new system calls.
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+That is indeed what I first suggested, and I still think it would be a
+clean and simple interface. The NTP call is quite gross, since it
+multiplexes a whole bunch of different functions through the timex
+structure.
 
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> LKML-Reference: <m3y67hsr0m.fsf@gmail.com>
-> Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> ---
->  tools/perf/util/probe-event.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> index 099336e..4bde988 100644
-> --- a/tools/perf/util/probe-event.c
-> +++ b/tools/perf/util/probe-event.c
-> @@ -309,7 +309,7 @@ static int __show_one_line(FILE *fp, int l, bool skip, bool show_num)
->  	return 1;
->  error:
->  	if (ferror(fp)) {
-> -		pr_warning("Source file is shorter than expected.\n");
-> +		pr_warning("File read error: %s\n", strerror(errno));
->  		return -1;
->  	}
->  	return 0;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+However, several reviewers on the lkml prefered to keep with the NTP
+interface. It offers the needed functionality and is already well
+established, despite its ugliness.
 
+To me, the proposed ADJ_SETOFFSET is a simple and logical extenstion
+of the NTP interface. Also, the implementation is straightforward. In
+contrast, using a special -INF value seems a bit obtuse to me.
 
--- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Richard
