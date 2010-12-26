@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752867Ab0LZXSE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Dec 2010 18:18:04 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:46612 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752333Ab0LZXSC convert rfc822-to-8bit (ORCPT
+	id S1752992Ab0LZXUX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Dec 2010 18:20:23 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34768 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752333Ab0LZXUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Dec 2010 18:18:02 -0500
+	Sun, 26 Dec 2010 18:20:22 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=RAOpXmgLB7U5l4El/vz/19BH4cYOgxTh62CTsuL+LAEUzqKu3YRU3F8U6rOvmnsg0s
-         jVw8uiOQvTU8Bo3CD3/redqNhKdhQCPLdBYiewPDoZQnztj+LOOl1p8rAwwBGn27tBhI
-         vBJoVGj5ERIeRWIbN3PWdbbvaF1Ax6CXIP+jY=
+        h=from:to:cc:subject:date:organization:message-id:references
+         :in-reply-to:x-mailer:mime-version:content-type
+         :content-transfer-encoding;
+        b=WVp0Es10ZafzkNxIIBbWfScwXCCkeF7pqnYpcKzRW5xp2X3ynNyPHyha2CJ0Eg99i+
+         FbyNHZPCeBWNPuw9KASvV2nq16Jn3nSuMw1cdtWtZvGN1p8+oP9lbm6lq8Sdzzzrkda6
+         VHYHTlEi6eAwK6W15UJkxfhz3Yd8sqmPY0PiA=
+From: Grant Coady <gcoady.lk@gmail.com>
+To: Len Brown <lenb@kernel.org>
+Cc: Frank Rowand <frank.rowand@am.sony.com>, Matthew Wilcox <matthew@wil.cx>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Prevent users from disabling tickless
+Date: Mon, 27 Dec 2010 10:20:16 +1100
+Organization: scattered
+Message-ID: <1uifh69q88k2g1j0sbn6vk3ii72upqvms7@4ax.com>
+References: <20101221233942.GL1263@parisc-linux.org> <4D1266F5.8040702@am.sony.com> <alpine.LFD.2.00.1012261708070.2945@x980>
+In-Reply-To: <alpine.LFD.2.00.1012261708070.2945@x980>
+X-Mailer: Forte Agent 6.00/32.1186
 MIME-Version: 1.0
-In-Reply-To: <20101226214037.GB18227@bitwizard.nl>
-References: <20101220141553.GA6088@bitwizard.nl> <20101220190630.66084e1d@neptune.home>
- <AANLkTi=VAJbVSzX_DH9_==a3RonLJmawYu3MzF-uqGXC@mail.gmail.com>
- <20101222104306.GB30941@bitwizard.nl> <m3aajvz5na.fsf@intrepid.localdomain>
- <4D14BB36.1030304@msgid.tls.msk.ru> <20101225121407.GA2116@bitwizard.nl> <20101226214037.GB18227@bitwizard.nl>
-From: Greg Freemyer <greg.freemyer@gmail.com>
-Date: Sun, 26 Dec 2010 18:17:40 -0500
-Message-ID: <AANLkTinKgW_Jpph5NtstCJxA6ZhuTgEc+Juc8YrvE7CE@mail.gmail.com>
-Subject: Re: Slow disks.
-To: Rogier Wolff <R.E.Wolff@bitwizard.nl>
-Cc: Michael Tokarev <mjt@tls.msk.ru>, Krzysztof Halasa <khc@pm.waw.pl>,
-        =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 26, 2010 at 4:40 PM, Rogier Wolff <R.E.Wolff@bitwizard.nl> wrote:
-> On Sat, Dec 25, 2010 at 01:14:07PM +0100, Rogier Wolff wrote:
->> Out of four partitions on the drive, two are aligned, two are not.
+On Sun, 26 Dec 2010 17:22:40 -0500 (EST), you wrote:
+
+>> Why remove the ability to make the configuration choice?  Why not
+>> just add the info about performance impact to the help text and
+>> let me shoot myself in the foot (that is the unix way (tm)) if
+>> I desire to?
 >
-> Ooops. I looked wrong. Sorry. All four partitions are mis aligned.
+>One can argue that configurability is one of the greatest
+>strengths of Linux.  OTOH, one can also argue that users
+>tend to get lost and hang themselves when given too
+>much rope; and that the burden of support and maintenance
+>of unnecessary config options squanders valuable resources.
 >
->        Roger.
+>Personally, I have two bugs filed against my code that
+>can be reproduced only in tickfull mode that almost
+>nobody uses.  Is it a good use of my time to be
+>distracted by by configurations that 0.01% use,
+>or focus on issues seen by the other 99.99%?
+>
+>I'm in favor of deleting the config option,
+>and the cmdline option with it, and I applaud
+>Matthew for proposing such.
 
-It sounds like you have 3 or 4 separate issues that are each costing
-you a factor of 3 or so of pain.
+I always disable tickless since early on it crashed.  I guess I haven't 
+bothered to risk that again, and, updating the kernel via 'make oldconfig' 
+means I'm not often presented with the option, apart from first custom 
+kernel after a new install.
 
-3 * 3 * 3 *3 = 81  ( I don't recall how bad your overall problem was).
+There are many items in .cong need better help info, to inform on the 
+consequences, how we (the users) supposed to know the 'new' way is now 
+better than the old?
 
-I can remember:
+I'll try tickless, if only to gain back some unexpected performance loss on 
+a RAID6 system I built recently, I've not done RAID benchmarking for five 
+years ;)  I expect twice the throughput I'm getting based on a Linux NAS 
+device I looked at recently.  
 
-Raid 5 - poor choice for 4KB random writes - a factor of 2-4
-Misaligned 4KB physical sectors - a factor of 2+
-Excessive Head Parking  (You show 100K plus head parks in your smart
-data) - (who knows.  It takes a while to un-park the heads and your
-heads are parking way too often.)
+I ask for the better help text, unless you can show tickful operation is 
+no longer required anywhere?  A better help explanation plus scheduled 
+removal?  (I didn't view the patch to know if that's what it does).
 
-I think you said it was a 8TB, I know its a pain, but I'd rebuild.  I
-don't know how reliable various large drives are currently.  in
-2008/2009 they seemed to be horrible and the advice was to use drives
-from different vendors, etc so you would be less likely to have a
-batch of drives go bad all at once.
-
-Good Luck
-Greg
+Grant.
+>
+>Len Brown, Intel Open Source Technology Center
