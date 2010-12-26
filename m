@@ -1,72 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752290Ab0LZOPE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Dec 2010 09:15:04 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:39347 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752175Ab0LZOPB (ORCPT
+	id S1752202Ab0LZOaa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Dec 2010 09:30:30 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:37135 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971Ab0LZOa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Dec 2010 09:15:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=tLRmS3RRwpUlssl42M1TEk5FbSEs/ETc0JOCTKxVsQ0FTYKy32hu64tErNgilewLvx
-         xKP+KMagWolvF6rC+VS5N+wycs65xIzrvlSOoRJDcSgENlkI3WdbCppMtTkCOlrsct4c
-         ugOvbGZWLmpw6iSzDKQfnsdjnglawCpFnixhU=
-Date: Sun, 26 Dec 2010 15:14:47 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>
-Cc: john stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, netdev@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
-        Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH V7 1/8] ntp: add ADJ_SETOFFSET mode bit
-Message-ID: <20101226141447.GA4830@riccoc20.at.omicron.at>
-References: <cover.1292512461.git.richard.cochran@omicron.at>
- <880d82bb8120f73973db27e0c48e949014b1a106.1292512461.git.richard.cochran@omicron.at>
- <AANLkTi=yGoFwYt4p_LeHtAQyYgmURspO-p57UdL0sUEZ@mail.gmail.com>
- <20101221075612.GA13626@riccoc20.at.omicron.at>
- <AANLkTimJd5pScKTiDxuYd-h+NevYbCusyvUAqmUDXe8h@mail.gmail.com>
- <1292970355.2618.76.camel@work-vm>
- <AANLkTimmTzH8+fSYmbajqZ+hU5Ps-UZaTp_1TYzjHB6P@mail.gmail.com>
- <20101223061359.GA7169@riccoc20.at.omicron.at>
- <AANLkTind84BVd=2Z07Sz+JfpVRH7m8wdx37YhRcqkCZv@mail.gmail.com>
+	Sun, 26 Dec 2010 09:30:29 -0500
+X-AuditID: b753bd60-a30f9ba000000f8d-43-4d175182a669
+Message-ID: <4D17517F.6060701@hitachi.com>
+Date: Sun, 26 Dec 2010 23:30:23 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTind84BVd=2Z07Sz+JfpVRH7m8wdx37YhRcqkCZv@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Franck Bui-Huu <vagabon.xyz@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH] perf-probe: fix perf-probe(1)'s report
+References: <m31v588r9k.fsf@gmail.com>
+In-Reply-To: <m31v588r9k.fsf@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 26, 2010 at 05:38:57AM +0900, Kuwahara,T. wrote:
-> After all, I'd prefer your earlier patchset.  Leaving aside the
-> compatibility issue, there's no particular reason we have to re-use
-> the struct timex, which requires otherwise unnecessary conditional
-> branches as well as unit conversions.  Don't you agree?
+(2010/12/24 0:04), Franck Bui-Huu wrote:
+> From: Franck Bui-Huu <fbuihuu@gmail.com>
+> 
+> After adding probes, perf-probe(1) reports the probes locations which
+> include filenames for certain cases.
+> 
+> But for short file names (whose length < 32), perf-probe didn't display
+> the name correctly. It actually skipped the first character.
+> 
+> Here's an example where 'icmp.c' was screwed:
+> 
+>    $ perf probe -n -a "icmp.c;sk=*"
+>    Add new events:
+>      probe:icmp_push_reply (on @cmp.c)
+>      probe:icmp_reply     (on @cmp.c)
+>      probe:icmp_reply_1   (on @cmp.c)
+>      probe:icmp_send      (on @cmp.c)
+>      probe:icmp_send_1    (on @cmp.c)
+>      probe:icmp_error     (on @cmp.c)
+>      probe:icmp_error_1   (on @cmp.c)
+>      probe:icmp_error_2   (on @cmp.c)
+>      probe:icmp_error_3   (on @cmp.c)
+> 
+> This patch fixes this bug in synthesize_perf_probe_point().
 
-Well, from my point of view of wanting to allow a user space clock
-servo to be able to adjust a hardware clock, it would be sufficient to
-offer a way to jump the clock and to adjust the frequency via one or
-perhaps two new system calls.
+Oops, I've missed that.
+Thanks! that's really good catch!
 
-That is indeed what I first suggested, and I still think it would be a
-clean and simple interface. The NTP call is quite gross, since it
-multiplexes a whole bunch of different functions through the timex
-structure.
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-However, several reviewers on the lkml prefered to keep with the NTP
-interface. It offers the needed functionality and is already well
-established, despite its ugliness.
+> 
+> Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
+> ---
+>  tools/perf/util/probe-event.c |   16 ++++++++--------
+>  1 files changed, 8 insertions(+), 8 deletions(-)
+> 
+> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+> index 10ad1ad..adc2620 100644
+> --- a/tools/perf/util/probe-event.c
+> +++ b/tools/perf/util/probe-event.c
+> @@ -1077,13 +1077,13 @@ static char *synthesize_perf_probe_point(struct perf_probe_point *pp)
+>  			goto error;
+>  	}
+>  	if (pp->file) {
+> -		len = strlen(pp->file) - 31;
+> -		if (len < 0)
+> -			len = 0;
+> -		tmp = strchr(pp->file + len, '/');
+> -		if (!tmp)
+> -			tmp = pp->file + len;
+> -		ret = e_snprintf(file, 32, "@%s", tmp + 1);
+> +		tmp = pp->file;
+> +		len = strlen(tmp);
+> +		if (len > 30) {
+> +			tmp = strchr(pp->file + len - 30, '/');
+> +			tmp = tmp ? tmp + 1 : pp->file + len - 30;
+> +		}
+> +		ret = e_snprintf(file, 32, "@%s", tmp);
+>  		if (ret <= 0)
+>  			goto error;
+>  	}
+> @@ -1099,7 +1099,7 @@ static char *synthesize_perf_probe_point(struct perf_probe_point *pp)
+>  
+>  	return buf;
+>  error:
+> -	pr_debug("Failed to synthesize perf probe point: %s",
+> +	pr_debug("Failed to synthesize perf probe point: %s\n",
+>  		 strerror(-ret));
+>  	if (buf)
+>  		free(buf);
 
-To me, the proposed ADJ_SETOFFSET is a simple and logical extenstion
-of the NTP interface. Also, the implementation is straightforward. In
-contrast, using a special -INF value seems a bit obtuse to me.
 
-Richard
+-- 
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
