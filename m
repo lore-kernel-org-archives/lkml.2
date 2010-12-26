@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751541Ab0LZB0G (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Dec 2010 20:26:06 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:51892 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368Ab0LZB0F (ORCPT
+	id S1751794Ab0LZDll (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Dec 2010 22:41:41 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34844
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751471Ab0LZDlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Dec 2010 20:26:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=mChvYKferVhFnh4BNFs7LqOjrg/FRJ+3zivZg26BPQeLolj1BovaMA/ytQn8QmwUET
-         4RdyshonGatuftRdQXN/4bY9mCiU3iBNZav1pVdqndN2qgpDMYBs1PdI4Lzetzr59i0G
-         zf6zEQ19VeUfXbrMMEScQafTLs/KGYCkA4b1c=
-MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1012252020000.10759@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1012252020000.10759@swampdragon.chaosbits.net>
-Date: Sat, 25 Dec 2010 20:26:03 -0500
-X-Google-Sender-Auth: K2eRu6DuqixrpmmhvQ2dS3ZtNnk
-Message-ID: <AANLkTinkzVs3XSp7cHP0Qhhd8+wuZs-X-yKt1dnZeSiO@mail.gmail.com>
-Subject: Re: [PATCH] befs: Don't pass huge structs by value.
-From: Will Dyson <will_dyson@pobox.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, Makoto Kato <m_kato@ga2.so-net.ne.jp>,
-        "Sergey S. Kostyliov" <rathamahata@php4.ru>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 25 Dec 2010 22:41:40 -0500
+Date: Sat, 25 Dec 2010 19:42:10 -0800 (PST)
+Message-Id: <20101225.194210.104056075.davem@davemloft.net>
+To: jarkao2@gmail.com
+Cc: soete.joel@scarlet.be, eric.dumazet@gmail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH net-2.6] sundance: Fix oopses with corrupted
+ skb_shared_info
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20101225151217.GA1994@del.dom.local>
+References: <20101225121044.GA1841@del.dom.local>
+	<4D15F6C9.50700@scarlet.be>
+	<20101225151217.GA1994@del.dom.local>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 25, 2010 at 2:27 PM, Jesper Juhl <jj@chaosbits.net> wrote:
-> Hi there,
->
-> 'struct befs_disk_data_stream' is huge (~144 bytes) and it's being passed
-> by value in fs/befs/endian.h::cpu_to_fsrun().
->
-> It seems to me that it would be better to pass a pointer, no?
-> This patch changes the function to take a pointer to the large struct.
->
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+From: Jarek Poplawski <jarkao2@gmail.com>
+Date: Sat, 25 Dec 2010 16:12:17 +0100
 
-Seems very reasonable to me. Unfortunately, I have no longer have any
-befs filesystems to test on either.
+> [PATCH net-2.6] sundance: Fix oopses with corrupted skb_shared_info
+> 
+> Joel Soete reported oopses at the beginning of pppoe connections since
+> v2.6.35. After debugging the bug was found in sundance skb allocation
+> and dma mapping code, where skb_reserve() bytes aren't taken into
+> account. This is an old bug, only uncovered by some change in 2.6.35.
+> 
+> Initial debugging patch by: Eric Dumazet <eric.dumazet@gmail.com>
+> 
+> Reported-by: Joel Soete <soete.joel@scarlet.be>
+> Tested-by: Joel Soete <soete.joel@scarlet.be>
+> Signed-off-by: Jarek Poplawski <jarkao2@gmail.com>
+> Cc: Eric Dumazet <eric.dumazet@gmail.com>
 
--- 
-Will Dyson
+Applied, great work Jarek.
+
+I was auditing ppp_generic.c hoping I'd find something, but
+if I had that backtrace I wouldn't have bothered :-)
