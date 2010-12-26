@@ -1,115 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753070Ab0LZWmU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Dec 2010 17:42:20 -0500
-Received: from vms173013pub.verizon.net ([206.46.173.13]:40796 "EHLO
-	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753028Ab0LZWmI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Dec 2010 17:42:08 -0500
-Date: Sun, 26 Dec 2010 17:41:49 -0500 (EST)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [git pull] ACPI patches for 2.6.27-rc7
-Message-id: <alpine.LFD.2.00.1012261740390.2945@x980>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S1753123Ab0LZWp4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Dec 2010 17:45:56 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:60388 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753082Ab0LZWpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Dec 2010 17:45:54 -0500
+Date: Mon, 27 Dec 2010 09:45:46 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the sh tree with the sh-current tree
+Message-Id: <20101227094546.63f76577.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__27_Dec_2010_09_45_46_+1100_WDlnhwlptebDKf=F"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+--Signature=_Mon__27_Dec_2010_09_45_46_+1100_WDlnhwlptebDKf=F
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-please pull from: 
+Hi Paul,
 
-git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git release
+Today's linux-next merge of the sh tree got a conflict in
+arch/sh/kernel/cpu/sh2a/clock-sh7201.c between commit
+27f1acccd4d310e941d2e879445324595e2fe463 ("sh: Fix up SH7201 clkfwk
+build") from the sh-current tree and commit
+16b259203c513ed28bd31cc9a981e0d3ad517943 ("sh: migrate SH_CLK_MD to mode
+pin API") from the sh tree.
 
-Some regression fixes for your stocking:-)
+The latter includes the fix from the former, so I used that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-This will update the files shown below.
+--Signature=_Mon__27_Dec_2010_09_45_46_+1100_WDlnhwlptebDKf=F
+Content-Type: application/pgp-signature
 
-thanks!
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
---
-Len Brown
-Intel Open Source Technology Center
+iQEcBAEBAgAGBQJNF8WaAAoJEDMEi1NhKgbswoQH/R6JFLc9csScpiV9WDq1HP+B
+WWVNCjGcIYgtdonm03p6E0erDTUW5aifA+2QGSPEsNV4mHgl+sa/DqHjDUigl+id
+/xGQbpYiRXiZzc+g9L/mThYiOOugLf4nDXdARglZVyiDCPebUHr7/D4I0KhxBiw6
+GwIeOTw9XqL63UoGM3+R03IVy8NE4OIwr36F78S0Z9PKl7CXnzbdB5VqNpxVaKMX
+uf+uSmHhABINzyWpkld4NHGa6VywIaPtuszMVE4lURw5D9ZXw/FyILHAkrGovAyc
+IG6+Cz4yN0fEUE8lMSqfRBNhA6kOtWhjSaQBjqw8AdRZizhcdjppD2WASMARUHY=
+=PRUz
+-----END PGP SIGNATURE-----
 
-
-ps. individual patches are available on linux-acpi@vger.kernel.org
-and a consolidated plain patch is available here:
-http://ftp.kernel.org/pub/linux/kernel/people/lenb/acpi/patches/2.6.37/acpi-release-20101013-2.6.37-rc7.diff.gz
-
- drivers/acpi/acpica/evgpeinit.c |    3 +
- drivers/acpi/battery.c          |    5 --
- drivers/acpi/scan.c             |   97 ++++++++++++++++++++++++---------------
- 3 files changed, 63 insertions(+), 42 deletions(-)
-
-through these commits:
-
-Len Brown (1):
-      Revert "ACPI battery: update status upon sysfs query"
-
-Rafael J. Wysocki (2):
-      ACPI: Execute _PRW for devices reported as inactive or not present
-      ACPI / ACPICA: Disable GPEs during initialization
-
-with this log:
-
-commit bbbcde9d9614683fbeb41f00728cfbfb7f75a7ad
-Merge: d7c1255 5acdb1a cde44d1
-Author: Len Brown <len.brown@intel.com>
-Date:   Sun Dec 26 17:05:07 2010 -0500
-
-    Merge branches 'bugzilla-25412' and 'bugzilla-25302' into release
-
-commit 5acdb1af907d5908b4942d425c0983f353dd8fc5
-Author: Rafael J. Wysocki <rjw@sisk.pl>
-Date:   Sun Dec 26 12:47:06 2010 +0100
-
-    ACPI / ACPICA: Disable GPEs during initialization
-    
-    GPEs with corresponding _Lxx/_Exx control methods need to be disabled
-    during initialization in case they have been enabled by the BIOS, so
-    that they don't fire up until they are enabled by acpi_update_gpes().
-    
-    References: https://bugzilla.kernel.org/show_bug.cgi?id=25412
-    Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-commit cde44d1740bcb3dcfecbf792a71826431e61686e
-Author: Len Brown <len.brown@intel.com>
-Date:   Fri Dec 24 21:43:16 2010 -0500
-
-    Revert "ACPI battery: update status upon sysfs query"
-    
-    This reverts commit 3138b32d5e0998ba3cbd1c74bdc1887d74c5279b.
-    
-    as it caused a crash upon battery removal:
-    https://bugzilla.kernel.org/show_bug.cgi?id=25302
-    
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-commit b581a7f9c3abc6c7afacd021747543d32ff17adb
-Author: Rafael J. Wysocki <rjw@sisk.pl>
-Date:   Fri Dec 17 22:34:01 2010 +0100
-
-    ACPI: Execute _PRW for devices reported as inactive or not present
-    
-    If a device is reported as inactive or not present by its _STA
-    control method, acpi_bus_check_add() skips it without evaluating its
-    _PRW method.  This leads to a problem when the device's _PRW method
-    points to a GPE, because in that case the GPE may be enabled by
-    ACPICA during the subsequent acpi_update_gpes() call which, in
-    turn, may cause a GPE storm to appear.
-    
-    To avoid this issue, make acpi_bus_check_add() evaluate _PRW for
-    inactive or not present devices and register the wakeup GPE
-    information returned by them, so that acpi_update_gpes() does not
-    enable their GPEs unnecessarily.
-    
-    Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-    Reported-by: Matthew Garrett <mjg@redhat.com>
-    Signed-off-by: Len Brown <len.brown@intel.com>
+--Signature=_Mon__27_Dec_2010_09_45_46_+1100_WDlnhwlptebDKf=F--
