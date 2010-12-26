@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696Ab0LZUJk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Dec 2010 15:09:40 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:18127 "EHLO
+	id S1752716Ab0LZUkW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Dec 2010 15:40:22 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:18421 "EHLO
 	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752210Ab0LZUJg (ORCPT
+	with ESMTP id S1752621Ab0LZUkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Dec 2010 15:09:36 -0500
-Date: Sun, 26 Dec 2010 20:59:58 +0100 (CET)
+	Sun, 26 Dec 2010 15:40:21 -0500
+Date: Sun, 26 Dec 2010 21:30:43 +0100 (CET)
 From: Jesper Juhl <jj@chaosbits.net>
-To: gigaset307x-common@lists.sourceforge.net
-cc: Tilman Schmidt <tilman@imap.cc>, Hansjoerg Lipp <hjlipp@web.de>,
-        Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ISDN, Gigaset: Fix memory leak in do_disconnect_req()
-Message-ID: <alpine.LNX.2.00.1012262053130.20797@swampdragon.chaosbits.net>
+To: netdev@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, "John(Zongxi) Chen" <zongxi@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>
+Subject: [PATCH] Broadcom CNIC core network driver: fix mem leak on allocation
+ failures in cnic_alloc_uio_rings()
+Message-ID: <alpine.LNX.2.00.1012262124320.20797@swampdragon.chaosbits.net>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -24,53 +24,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-In drivers/isdn/gigaset/capi.c::do_disconnect_req() we will leak the 
-memory allocated (with kmalloc) to 'b3cmsg' if the call to alloc_skb() 
-fails.
-
-...
-		b3cmsg = kmalloc(sizeof(*b3cmsg), GFP_KERNEL);
-	allocation here ------^
-		if (!b3cmsg) {
-			dev_err(cs->dev, "%s: out of memory\n", __func__);
-			send_conf(iif, ap, skb, CAPI_MSGOSRESOURCEERR);
-			return;
-		}
-		capi_cmsg_header(b3cmsg, ap->id, CAPI_DISCONNECT_B3, CAPI_IND,
-				 ap->nextMessageNumber++,
-				 cmsg->adr.adrPLCI | (1 << 16));
-		b3cmsg->Reason_B3 = CapiProtocolErrorLayer1;
-		b3skb = alloc_skb(CAPI_DISCONNECT_B3_IND_BASELEN, GFP_KERNEL);
-		if (b3skb == NULL) {
-			dev_err(cs->dev, "%s: out of memory\n", __func__);
-			send_conf(iif, ap, skb, CAPI_MSGOSRESOURCEERR);
-			return;
-	leak here ------^
-...
-
-This leak is easily fixed by just kfree()'ing the memory allocated to 
-'b3cmsg' right before we return. The following patch does that.
+We are leaking memory in drivers/net/cnic.c::cnic_alloc_uio_rings() if 
+either of the calls to dma_alloc_coherent() fail. This patch fixes it by 
+freeing both the memory allocated with kzalloc() and memory allocated with 
+previous calls to dma_alloc_coherent() when there's a failure.
 
 
 Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- capi.c |    1 +
- 1 file changed, 1 insertion(+)
+ cnic.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-  compile tested only since I have no way to actually test this.
+  compile tested only since I don't have the hardware to do a proper test.
 
-diff --git a/drivers/isdn/gigaset/capi.c b/drivers/isdn/gigaset/capi.c
-index bcc174e..658e75f 100644
---- a/drivers/isdn/gigaset/capi.c
-+++ b/drivers/isdn/gigaset/capi.c
-@@ -1900,6 +1900,7 @@ static void do_disconnect_req(struct gigaset_capi_ctr *iif,
- 		if (b3skb == NULL) {
- 			dev_err(cs->dev, "%s: out of memory\n", __func__);
- 			send_conf(iif, ap, skb, CAPI_MSGOSRESOURCEERR);
-+			kfree(b3cmsg);
- 			return;
- 		}
- 		capi_cmsg2message(b3cmsg,
+diff --git a/drivers/net/cnic.c b/drivers/net/cnic.c
+index 92bac19..f094159 100644
+--- a/drivers/net/cnic.c
++++ b/drivers/net/cnic.c
+@@ -939,16 +939,22 @@ static int cnic_alloc_uio_rings(struct cnic_dev *dev, int pages)
+ 	udev->l2_ring = dma_alloc_coherent(&udev->pdev->dev, udev->l2_ring_size,
+ 					   &udev->l2_ring_map,
+ 					   GFP_KERNEL | __GFP_COMP);
+-	if (!udev->l2_ring)
++	if (!udev->l2_ring) {
++		kfree(udev);
+ 		return -ENOMEM;
++	}
+ 
+ 	udev->l2_buf_size = (cp->l2_rx_ring_size + 1) * cp->l2_single_buf_size;
+ 	udev->l2_buf_size = PAGE_ALIGN(udev->l2_buf_size);
+ 	udev->l2_buf = dma_alloc_coherent(&udev->pdev->dev, udev->l2_buf_size,
+ 					  &udev->l2_buf_map,
+ 					  GFP_KERNEL | __GFP_COMP);
+-	if (!udev->l2_buf)
++	if (!udev->l2_buf) {
++		dma_free_coherent(&udev->pdev->dev, udev->l2_ring_size,
++				  udev->l2_ring, udev->l2_ring_map);
++		kfree(udev);
+ 		return -ENOMEM;
++	}
+ 
+ 	write_lock(&cnic_dev_lock);
+ 	list_add(&udev->list, &cnic_udev_list);
 
 
 -- 
