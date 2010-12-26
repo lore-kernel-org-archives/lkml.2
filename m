@@ -1,73 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752447Ab0LZRpI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Dec 2010 12:45:08 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:64125 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752304Ab0LZRpF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Dec 2010 12:45:05 -0500
-Date: Sun, 26 Dec 2010 18:45:00 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arch@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>, Dan Williams <dan.j.williams@intel.com>,
-        linux-sh@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
-        Sascha Hauer <kernel@pengutronix.de>, linux-usb@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        linux-media@vger.kernel.org, linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH] dma_declare_coherent_memory: push ioremap() up to caller
-In-Reply-To: <201012250024.38576.jkrzyszt@tis.icnet.pl>
-Message-ID: <Pine.LNX.4.64.1012261837450.20458@axis700.grange>
-References: <201012240020.37208.jkrzyszt@tis.icnet.pl>
- <201012241455.30430.jkrzyszt@tis.icnet.pl> <20101224154120.GH20587@n2100.arm.linux.org.uk>
- <201012250024.38576.jkrzyszt@tis.icnet.pl>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:e9Cu2GpJdwUA/rs+zckniJE90wAnbZUagSG+XYoIyTL
- B5bZlRuM5yKYX8e2pNojWjC55ozrzVWsoYHiWjukqVDHvqfg+2
- b5dYsJiTnIRWuO1df30v12yBdIH7adJBx++9SJX2KgOmq147gv
- ZWbxHB6chJXGPxcXjTKVmiFRhCwcnycYFyu3QohcDBd/wrzx4t
- KDdwveTa16AdeL3W68bqqJEpR1xP4NHZVlKMWmkvnY=
+	id S1752513Ab0LZRsy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Dec 2010 12:48:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10375 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752412Ab0LZRsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Dec 2010 12:48:53 -0500
+Date: Sun, 26 Dec 2010 10:49:05 -0700
+From: Pete Zaitcev <zaitcev@redhat.com>
+To: Tsozik <tsozik@yahoo.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] mct_u232: IOCTL implementation
+Message-ID: <20101226104905.6801612f@lembas.zaitcev.lan>
+In-Reply-To: <985550.24725.qm@web65704.mail.ac4.yahoo.com>
+References: <985550.24725.qm@web65704.mail.ac4.yahoo.com>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 25 Dec 2010, Janusz Krzysztofik wrote:
+On Sat, 25 Dec 2010 21:39:39 -0800 (PST)
+Tsozik <tsozik@yahoo.com> wrote:
 
-[snip]
+> +++ mct_u232.c  2010-12-25 21:44:57.714640343 -0500
+> +static int  mct_u232_ioctl(struct tty_struct *tty, struct file *file,
+> +                        unsigned int cmd, unsigned long arg)
+> +{
+> +       case TIOCGICOUNT:
+> +                dbg("%s - (%d) TIOCGICOUNT RX=%d, TX=%d", __func__,
+> +                    port->number, mct_u232_port->icount.rx, mct_u232_port->icount.tx);
+> +                if (copy_to_user((void __user *)arg, &mct_u232_port->icount,
+> +                    sizeof(mct_u232_port->icount)))
+> +                        return -EFAULT;
 
-> > Passing the virtual address allows the API to become much more
-> > flexible. Not only that, it allows it to be used on ARM, rather than
-> > becoming (as it currently stands) prohibited on ARM.
-> >
-> > I believe that putting ioremap() inside this API was the wrong thing
-> > to do, and moving it outside makes the API much more flexible and
-> > usable. It's something I still fully support.
-> 
-> Thanks, this is what I was missing, having my point of view rather my 
-> machine centric, with not much wider experience. I'll quote your 
-> argumentation in next iteration of this patch if required.
+This looks suspicious. Didn't we relocate the machinery for TIOCGICOUNT
+into a generic place? Please examine how ->get_icount works before
+hand-rolling the ioctl.
 
-AFAIU, this patch is similar to the previous two attempts:
-
-http://www.spinics.net/lists/linux-sh/msg05482.html
-and
-http://thread.gmane.org/gmane.linux.drivers.video-input-infrastructure/22271
-
-but is even more intrusive, because those two previous attempts added new 
-functions, whereas this one is modifying an existing one. Both those two 
-attempts have been NACKed by FUJITA Tomonori, btw, he is not on the 
-otherwise extensive CC list for this patch.
-
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+-- Pete
