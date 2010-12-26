@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab0LZWIC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Dec 2010 17:08:02 -0500
-Received: from lo.gmane.org ([80.91.229.12]:42719 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752332Ab0LZWIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Dec 2010 17:08:00 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Niels <zorglub_olsen@hotmail.com>
-Subject: Re: Slow disks.
-Date: Sun, 26 Dec 2010 23:07:45 +0100
-Message-ID: <if8ebj$nf8$1@dough.gmane.org>
-References: <20101220141553.GA6088@bitwizard.nl>	<20101220190630.66084e1d@neptune.home>	<AANLkTi=VAJbVSzX_DH9_==a3RonLJmawYu3MzF-uqGXC@mail.gmail.com>	<20101222104306.GB30941@bitwizard.nl> <m3aajvz5na.fsf@intrepid.localdomain> <4D14BB36.1030304@msgid.tls.msk.ru>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7Bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 0x4dd52733.adsl.cybercity.dk
-User-Agent: KNode/0.10.9
+	id S1752863Ab0LZWMy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Dec 2010 17:12:54 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:19723 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752377Ab0LZWMx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Dec 2010 17:12:53 -0500
+Date: Sun, 26 Dec 2010 23:03:15 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Tsozik <tsozik@yahoo.com>
+cc: Randy Dunlap <rdunlap@xenotime.net>, Greg KH <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] mct_u232: IOCTL implementation
+In-Reply-To: <489629.5504.qm@web65703.mail.ac4.yahoo.com>
+Message-ID: <alpine.LNX.2.00.1012262255080.20797@swampdragon.chaosbits.net>
+References: <489629.5504.qm@web65703.mail.ac4.yahoo.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 24 December 2010 16:24, Michael Tokarev wrote:
+On Sun, 26 Dec 2010, Tsozik wrote:
 
-[snip]
-> The thing is, for these WD*EARS drivers, it is _vital_ to get
-> proper alignment of all partitions and operations.  They've
-> 4Kb sectors physically but report 512bytes sectors to the OS.
-> It is _essential_ to ensure all partitions are aligned to the
-> 4Kb sectors.  Be it LVM, raid-something, etc - each filesystem
-> must start at a 4kb boundary at least, or else you'll see
-> _dramatic_ write speed problems.
+> Randy,
 > 
-> So.. check the whole storage stack and ensure proper alignment
-> everywhere.  In particular, check that your partitions are not
-> aligned to 63 sectors (512b), or starts at N+1 sector - the
-> most problematic mode for these drives.
-[snip]
+> Greg referred to git as to place where change log comments are now 
+> checked in. I googled it and found that one can also check out latest 
+> kernel source code as opposed to tarball download. However, You're 
+> right, looking at 
+> http://kernelnewbies.org/UpstreamMerge/SubmittingPatches documentation I 
+> don't see how one can use git to check in comments or code directly to 
+> git repository,
+> 
 
-I have several of these drives, in various sizes. They seem to be aligned to
-63 as you mention:
+Only Linus can check code into the final official tree. But, you can use 
+git to get a copy of the latest Linus tree (and many other trees run by 
+various maintainers and others). Git is also useful for maintaining your 
+own local branch with your changes.
 
-   Device Boot      Start         End      Blocks   Id  System
-/dev/sda1              63      208844      104391   83  Linux
-/dev/sda2          208845    19759949     9775552+  82  Linux swap / Solaris
-/dev/sda3        19759950   215094284    97667167+  83  Linux
-/dev/sda4       215094285   781417664   283161690   83  Linux
+The way it usually works is that you create a patch and send it off to 
+some sub-system maintainer via email patch ('git diff' generated usually) 
+or via email pull request for your personal repository. The sub-system 
+maintainer then merges your patch with his tree and, at a later date, 
+submits his tree (including your patch) to Linus.
 
-   Device Boot      Start         End      Blocks   Id  System
-/dev/sdb1              63  1953520064   976760001   83  Linux
-
-
-Is that bad?
-
-What can I do to repair it?
-
-What can I do to prevent it from happening again?
-
-
-Thanks,
-Niels
-
+Changelog comments are tracked with git. Once your patch is accepted it 
+will eventually make its way to Linus' tree and your changelog comments in 
+the patch mail (or git commit message - if you send a pull request) will 
+eventually turn into a git commit message in the official tree. So there's 
+no need to add changelog info in the files themselves.
+Check http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=shortlog 
+(or git log after cloning the tree) to see commit messages.
 
 
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
 
