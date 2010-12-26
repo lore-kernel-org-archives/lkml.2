@@ -1,113 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182Ab0LZXbQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Dec 2010 18:31:16 -0500
-Received: from nm29.bullet.mail.ac4.yahoo.com ([98.139.52.226]:40966 "HELO
-	nm29.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752798Ab0LZXbO convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Dec 2010 18:31:14 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 919023.85680.bm@omp1049.mail.ac4.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=4xxWZCXtOiZTUcpp7fprsY0Jng24B0a2OYZXH4Z3w4g0fLFiHZae49ejYwNU8AVmqepjNcoycACAjhSNJZa+BnG7EbsgmddG3pBg1Rwe3mhQ66S8wjk76+vKUKJ0m00yx8aDb8gJ5vj3VQgvtljrPxBpKAnYCRXmjJQOConi25w=;
-Message-ID: <761934.79777.qm@web65716.mail.ac4.yahoo.com>
-X-YMail-OSG: 4eVbPG4VM1n6zeMCwyNl9vcFFrvDlvn0v0MJhNjemAfMXVT
- 30x2gWI52PyBhymyLeSmKXVgWRKEVNkGZQ8Kbdv.sezo5sP4GDNu4RMq_8ph
- lSZS0A5353k.oERXsSaHVCkzARlPRyiqTPyuNDgdyeJPiZqaGmHNYvDdswki
- mKAHZkDppzzWk9GZOsH5uOjSgEd2UjKCWQgkUtPae1SaP0PGRyBouktTMCtz
- KmudjZn.IP0tjznhvFJRz.56_HmDS1NRcaQixmVxXQw9gnt0f1bOYcIGpm5_
- 9UMJrIjb5uoV6tax0azkJkMhkYQm9kNkAGA8smz_X_Gos4xf4TPjTmwxmfMT
- WRucsSrb8X.XofHQLhDrnF7lARqJPT_4qqnaY0QBn4QurFm3xwp1v
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.285259
-Date: Sun, 26 Dec 2010 15:31:13 -0800 (PST)
-From: Tsozik <tsozik@yahoo.com>
-Subject: Re: [PATCH 1/1] mct_u232: IOCTL implementation
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Greg KH <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.LNX.2.00.1012262255080.20797@swampdragon.chaosbits.net>
+	id S1753176Ab0LZXi4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Dec 2010 18:38:56 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55658 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752588Ab0LZXix convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Dec 2010 18:38:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=cgWVufVV+Iy3aB1aaOVTmfpXfdKwbZnkkYZHKvSLOs+z0URruHuHVJRYQkitQJ7Pj/
+         QY4txBdsjnMrg3Kbztw/PrH9ShX0H4O3ParkRGfI8LEPyWzo02jouT7cZoFF0KWGyM5d
+         SUnjGu5UZeD69TLknmQH3Qu7y9M20tNl+1WAU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+In-Reply-To: <x49aajxsrh3.fsf@segfault.boston.devel.redhat.com>
+References: <20101220141553.GA6088@bitwizard.nl>
+	<20101220190630.66084e1d@neptune.home>
+	<AANLkTi=VAJbVSzX_DH9_==a3RonLJmawYu3MzF-uqGXC@mail.gmail.com>
+	<20101222104306.GB30941@bitwizard.nl>
+	<x49aajxsrh3.fsf@segfault.boston.devel.redhat.com>
+Date: Sun, 26 Dec 2010 15:38:51 -0800
+Message-ID: <AANLkTi=qAGCFU0u8joKVR4o4QQaRZt1XWfOPSt8eiD3r@mail.gmail.com>
+Subject: Re: Slow disks.
+From: Mark Knecht <markknecht@gmail.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Rogier Wolff <R.E.Wolff@bitwizard.nl>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
+        =?UTF-8?Q?Bruno_Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jesper,
+On Wed, Dec 22, 2010 at 8:27 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
+> Rogier Wolff <R.E.Wolff@BitWizard.nl> writes:
+>
+>> Unquoted text below is from either me or from my friend.
+>>
+>>
+>> Someone suggested we try an older kernel as if kernel 2.6.32 would not
+>> have this problem. We do NOT think it suddenly started with a certain
+>> kernel version. I was just hoping to have you kernel-guys help with
+>> prodding the kernel into revealing which component was screwing things
+>> up....
+> [...]
+>> ata3.00: ATA-8: WDC WD10EARS-00Y5B1, 80.00A80, max UDMA/133
+>
+> This is an "Advanced format" drive, which, in this case, means it
+> internally has a 4KB sector size and exports a 512byte logical sector
+> size.  If your partitions are misaligned, this can cause performance
+> problems.
+>
+>> MDstat:
+>>
+>> Personalities : [raid1] [raid6] [raid5] [raid4]
+>> md125 : active raid5 sdd3[5](S) sdb3[4] sda3[0] sdc3[3]
+>>       3903488 blocks super 1.1 level 5, 512k chunk, algorithm 2 [3/3] [UUU]
+>>
+>> md126 : active raid5 sda4[0] sdd4[3] sdc4[5](S) sdb4[4]
+>>       1910063104 blocks super 1.1 level 5, 512k chunk, algorithm 2
+>> [3/3] [UUU]
+>>
+>> md1 : active raid5 sda2[0] sdd2[3](S) sdb2[1] sdc2[4]
+>>       39067648 blocks super 1.2 level 5, 512k chunk, algorithm 2 [3/3]
+>> [3/3] [UUU]
+>>
+>> md1 : active raid5 sda2[0] sdd2[3](S) sdb2[1] sdc2[4]
+>>       39067648 blocks super 1.2 level 5, 512k chunk, algorithm 2 [3/3]
+>> [UUU]
+>
+> A 512KB raid5 chunk with 4KB I/Os?  That is a recipe for inefficiency.
+> Again, blktrace data would be helpful.
+>
+> Cheers,
+> Jeff
 
-Many thanks for the info. After reading your post I realized that Greg meant that change log comments will be stored in git repository comment section like in any other source control system (e.g. cvs, rcs, ...). So no need to duplicate them in actual file. I will only provide comments in description section of canonical patch format. I'm also wondering if it's OK to provide "git diffs" instead of diffs as a part of patch email? 
+I am late to this thread but I'd like to give a +1 to everything Jeff said.
 
-Thank you in advance,
- Vadim.
+I tried to build many different mdadm RAID configurations using the
+WD10EARS. They simply didn't work. There were huge delays and mdadm
+would take drives off line. It was a mess.
 
---- On Sun, 12/26/10, Jesper Juhl <jj@chaosbits.net> wrote:
+First, the drives are 4K sector so it's really important to get them
+on the right partition boundary. Installing Gentoo requires that we
+un-tar some large-ish files. IIRC on a 512 byte boundary these drives
+took 20-30 minutes to do this. On a 4K boundary they took about 1
+minute. I know that doesn't make sense but those were my numbers, and
+it's a very high end Intel i7-980x MB so there wasn't any other
+problem I could find.
 
-> From: Jesper Juhl <jj@chaosbits.net>
-> Subject: Re: [PATCH 1/1] mct_u232: IOCTL implementation
-> To: "Tsozik" <tsozik@yahoo.com>
-> Cc: "Randy Dunlap" <rdunlap@xenotime.net>, "Greg KH" <gregkh@suse.de>, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-> Date: Sunday, December 26, 2010, 5:03 PM
-> On Sun, 26 Dec 2010, Tsozik wrote:
-> 
-> > Randy,
-> > 
-> > Greg referred to git as to place where change log
-> comments are now 
-> > checked in. I googled it and found that one can also
-> check out latest 
-> > kernel source code as opposed to tarball download.
-> However, You're 
-> > right, looking at 
-> > http://kernelnewbies.org/UpstreamMerge/SubmittingPatches
-> documentation I 
-> > don't see how one can use git to check in comments or
-> code directly to 
-> > git repository,
-> > 
-> 
-> Only Linus can check code into the final official tree.
-> But, you can use 
-> git to get a copy of the latest Linus tree (and many other
-> trees run by 
-> various maintainers and others). Git is also useful for
-> maintaining your 
-> own local branch with your changes.
-> 
-> The way it usually works is that you create a patch and
-> send it off to 
-> some sub-system maintainer via email patch ('git diff'
-> generated usually) 
-> or via email pull request for your personal repository. The
-> sub-system 
-> maintainer then merges your patch with his tree and, at a
-> later date, 
-> submits his tree (including your patch) to Linus.
-> 
-> Changelog comments are tracked with git. Once your patch is
-> accepted it 
-> will eventually make its way to Linus' tree and your
-> changelog comments in 
-> the patch mail (or git commit message - if you send a pull
-> request) will 
-> eventually turn into a git commit message in the official
-> tree. So there's 
-> no need to add changelog info in the files themselves.
-> Check http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=shortlog
-> 
-> (or git log after cloning the tree) to see commit
-> messages.
-> 
-> 
-> -- 
-> Jesper Juhl <jj@chaosbits.net>�
-> � � � � � http://www.chaosbits.net/
-> Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-> Plain text mails only, please.
-> 
-> 
+Even when I got that part worked out I found that the drives just
+didn't work well in a RAID. The mdadm list led me to believe that the
+root cause was the lack of TLER in the firmware. I don't know how to
+show that's true or not...
 
+When all that was determined I dropped RAID and I still ran into Load
+Count issue that's discussed elsewhere in this thread.
 
-      
+I then bought 5 WD RAID Edition drives and everything works perfectly.
+> 100MB/Sec on RAID1 and about 180MB/S on RAID0.
+
+Overall the WD10EARS drives were very disappointing, at least as
+shipped. I have 5 of them sitting here unused. I would like to find
+some time to try them again one of these days but I don't have high
+hopes.
+
+Cheers,
+Mark
