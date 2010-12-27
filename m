@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752002Ab0L0VjG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 16:39:06 -0500
-Received: from gate.crashing.org ([63.228.1.57]:49964 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750846Ab0L0VjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 16:39:04 -0500
-Subject: Re: [PATCH][GIT PULL] powerpc64/tracing: Add frame buffer to calls
- of trace_hardirqs_on/off
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joerg Sommer <joerg@alea.gnuu.de>,
-        linuxppc-dev <linuxppc-dev@ozlabs.org>
-In-Reply-To: <1293311043.22802.434.camel@gandalf.stny.rr.com>
-References: <1293169566.22802.420.camel@gandalf.stny.rr.com>
-	 <1293225065.16694.796.camel@pasglop>
-	 <1293311043.22802.434.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 28 Dec 2010 08:38:37 +1100
-Message-ID: <1293485917.16694.821.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752011Ab0L0Vnu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 16:43:50 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59935 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939Ab0L0Vnt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 16:43:49 -0500
+Message-ID: <4D19081A.3050801@oracle.com>
+Date: Mon, 27 Dec 2010 13:41:46 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Mark Fasheh <mfasheh@suse.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        ocfs2-devel@oss.oracle.com
+Subject: Re: [PATCH -next] ocfs2: fix build for OCFS2_FS_STATS not enabled
+References: <20101227170451.a9a9f873.sfr@canb.auug.org.au> <20101227115508.8136331b.randy.dunlap@oracle.com> <20101227205242.GA30474@mail.oracle.com>
+In-Reply-To: <20101227205242.GA30474@mail.oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-12-25 at 16:04 -0500, Steven Rostedt wrote:
+On 12/27/10 12:52, Joel Becker wrote:
+> On Mon, Dec 27, 2010 at 11:55:08AM -0800, Randy Dunlap wrote:
+>> From: Randy Dunlap <randy.dunlap@oracle.com>
+>>
+>> When CONFIG_OCFS2_FS_STATS is not enabled:
+>>
+>> fs/ocfs2/cluster/tcp.c:1254: error: implicit declaration of function 'o2net_update_recv_stats'
+>>
+>> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+>> Cc:	Mark Fasheh <mfasheh@suse.com>
+>> Cc:	Joel Becker <joel.becker@oracle.com>
+>> Cc:	ocfs2-devel@oss.oracle.com
 > 
-> Note, when CONFIG_IRQSOFF_TRACE is set, there's already a bit of
-> overhead :-)
+> Acked-by: Joel Becker <joel.becker@oracle.com>
 > 
-> Anyway, I'll have to take a look at how the frame pointer is set up.
-> Or
-> we could also set up all stacks coming into the kernel to have a
-> "dummy"
-> frame pointer that wont hurt anything if we index into it.
-> 
-> Anyway, I'm off till the new year, so I'll worry about it then ;-)
+> Do you want to push it or would you like me to?
 
-Right, might be simpler to just make them loop back onto themselves or
-something like that. I can have a look too if I get a chance.
+You, please.
 
-Cheers,
-Ben.
-
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
+desserts:  http://www.xenotime.net/linux/recipes/
