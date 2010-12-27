@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab0L0PjS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 10:39:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58994 "EHLO mx2.suse.de"
+	id S1754239Ab0L0Pjl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 10:39:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59004 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754153Ab0L0PjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 10:39:17 -0500
-From: David Sterba <dsterba@suse.cz>
-To: mchehab@redhat.com
-Cc: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Sterba <dsterba@suse.cz>
-Subject: [PATCH] i7core_edac: fix misuse of logical operation in place of bitop
-Date: Mon, 27 Dec 2010 16:39:12 +0100
-Message-Id: <1293464352-21804-1-git-send-email-dsterba@suse.cz>
-X-Mailer: git-send-email 1.7.3.4.578.g6068a
+	id S1754157Ab0L0Pjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 10:39:39 -0500
+Date: Mon, 27 Dec 2010 16:39:38 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: David Sterba <dsterba@suse.cz>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+Subject: Re: [PATCH 1/3] HID: picolcd: fix misuse of logical operation in
+ place of bitop
+In-Reply-To: <1293463663-21198-1-git-send-email-dsterba@suse.cz>
+Message-ID: <alpine.LNX.2.00.1012271638490.16569@pobox.suse.cz>
+References: <1293463663-21198-1-git-send-email-dsterba@suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC: Mauro Carvalho Chehab <mchehab@redhat.com>
-Signed-off-by: David Sterba <dsterba@suse.cz>
----
- drivers/edac/i7core_edac.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+On Mon, 27 Dec 2010, David Sterba wrote:
 
-diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-index 362861c..f41a34e 100644
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -731,7 +731,7 @@ static int get_dimm_config(const struct mem_ctl_info *mci)
- 			debugf1("\t\t%#x\t%#x\t%#x\n",
- 				(value[j] >> 27) & 0x1,
- 				(value[j] >> 24) & 0x7,
--				(value[j] && ((1 << 24) - 1)));
-+				(value[j] & ((1 << 24) - 1)));
- 	}
- 
- 	return 0;
-@@ -1670,7 +1670,7 @@ static void i7core_mce_output_error(struct mem_ctl_info *mci,
- 	char *type, *optype, *err, *msg;
- 	unsigned long error = m->status & 0x1ff0000l;
- 	u32 optypenum = (m->status >> 4) & 0x07;
--	u32 core_err_cnt = (m->status >> 38) && 0x7fff;
-+	u32 core_err_cnt = (m->status >> 38) & 0x7fff;
- 	u32 dimm = (m->misc >> 16) & 0x3;
- 	u32 channel = (m->misc >> 18) & 0x3;
- 	u32 syndrome = m->misc >> 32;
+> CC: Bruno Prémont <bonbons@linux-vserver.org>
+> CC: Jiri Kosina <jkosina@suse.cz>
+> Signed-off-by: David Sterba <dsterba@suse.cz>
+> ---
+>  drivers/hid/hid-picolcd.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-picolcd.c b/drivers/hid/hid-picolcd.c
+> index bc2e077..0aff3cd 100644
+> --- a/drivers/hid/hid-picolcd.c
+> +++ b/drivers/hid/hid-picolcd.c
+> @@ -1544,7 +1544,7 @@ static ssize_t picolcd_debug_eeprom_read(struct file *f, char __user *u,
+>  
+>  	/* prepare buffer with info about what we want to read (addr & len) */
+>  	raw_data[0] = *off & 0xff;
+> -	raw_data[1] = (*off >> 8) && 0xff;
+> +	raw_data[1] = (*off >> 8) & 0xff;
+>  	raw_data[2] = s < 20 ? s : 20;
+>  	if (*off + raw_data[2] > 0xff)
+>  		raw_data[2] = 0x100 - *off;
+> @@ -1583,7 +1583,7 @@ static ssize_t picolcd_debug_eeprom_write(struct file *f, const char __user *u,
+>  
+>  	memset(raw_data, 0, sizeof(raw_data));
+>  	raw_data[0] = *off & 0xff;
+> -	raw_data[1] = (*off >> 8) && 0xff;
+> +	raw_data[1] = (*off >> 8) & 0xff;
+>  	raw_data[2] = s < 20 ? s : 20;
+>  	if (*off + raw_data[2] > 0xff)
+>  		raw_data[2] = 0x100 - *off;
+
+Applied, thank you.
+
 -- 
-1.7.3.4.578.g6068a
-
+Jiri Kosina
+SUSE Labs, Novell Inc.
