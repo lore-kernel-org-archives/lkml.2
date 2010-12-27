@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696Ab0L0Mz1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 07:55:27 -0500
-Received: from mail506.e-mail-system.com ([62.93.9.254]:51597 "EHLO
-	mail506.e-mail-system.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753659Ab0L0Mz1 convert rfc822-to-8bit (ORCPT
+	id S1753738Ab0L0NMx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 08:12:53 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:50429 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753717Ab0L0NMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 07:55:27 -0500
+	Mon, 27 Dec 2010 08:12:52 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=U80qoBf3TZb/8csYkqHITCCk7LPHGkjaCdgLaix0/M7MIHOOWwWeWDh0bXolkI3N47
+         K++31q3TDw6JpcqNoaSuAMS1gfiRlpeUuzeGSGSpU2sthwYdrkSPPZYg+ZXEbkqbRz1Y
+         //EbAtKH33fuzACu6XWiDHanpiQJKV6R7seKQ=
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-From: "M. Ahlberg" <info@gut-verdienen.net>
-To: linux-kernel@vger.kernel.org
-Subject: =?ISO-8859-1?Q?=DCberweisung=2C_Art=2ENr=2E_239475694?=
-Message-Id: <20101227134902.7583714577C@mail506.e-mail-system.com>
-Date: Mon, 27 Dec 2010 14:49:02 +0100 (CET)
+In-Reply-To: <20101226131205.GA5757@zhy>
+References: <AANLkTinvHP4rZ6PSyEOJ_ZJ2chRJX0ZyzuhNoCRrO1wK@mail.gmail.com>
+	<AANLkTikVQU6ozp0H1u7ghd0=miYyUJL62uP=0FBZSLok@mail.gmail.com>
+	<AANLkTimc0FwBhj5MsnibTTq94AgaQgqCKEXNSOvM_XjE@mail.gmail.com>
+	<20101225021209.GA11183@zhy>
+	<AANLkTimez6segEYEsdsvELqvHjrfY4rPQg6CG_7vyxCq@mail.gmail.com>
+	<20101226131205.GA5757@zhy>
+Date: Mon, 27 Dec 2010 21:12:50 +0800
+Message-ID: <AANLkTimO-dACVbTtLWEPLVWwN_dgNOaEb-1JDv+8ku+_@mail.gmail.com>
+Subject: Re: [PATCH] fix unsafe operation in high resolution timer
+From: Hillf Danton <dhillf@gmail.com>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guten Tag Kundennummer KK-238286, 
+On Sun, Dec 26, 2010 at 9:12 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
+> On Sat, Dec 25, 2010 at 10:19:11PM +0800, Hillf Danton wrote:
+>> > But for a hrtimer which is not free in its callback, like a
+>> > static defined one. the hrtimer could be referenced at the same
+>> > time. So here you cann't just delete the two lines.
+>>
+>> After callback, as you agree, it is hard to determine in the current
+>> implementation if the hrtimer is static defined, though another bit
+>> could be added, say, in the flag word of hrtimer
+>
+> Yeah, that is an option, like a flag FREE_IN_CALLBACK/ONESHOT which
+> indicate that. Or just let the callback return another value like
 
-E-Mails mit einem solchen Betreff könnten ab sofort täglich in Ihrem Postfach landen.
+The result of callback sounds fine.
+Hillf
 
-Ich zeige Ihnen wie Sie täglich 150,00 Euro verdienen können:
-
-- Garantiert kostenlos
-- Keine Abzocke / kein Abo
-- Kein Geld erforderlich
-
-Sie können mein System jeden Tag anwenden, und so jeden Tag völlig kostenlos Geld verdienen. 
-
-Bitte klicken Sie hier:
-http://c.gut-verdienen.net/k-641-5493753.htm
-
-
-Ihr Moritz Ahlberg
-
-P.S. Testen Sie es gleich heute, dann haben Sie vor Silvester bereits das erste Geld verdient.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Sie erhalten dieses E-Mailing, da Sie uns oder einem unserer Partner Ihre Einwilligung dazu gegeben haben. Gerne können Sie Ihre E-Mail Adresse löschen. Klicken Sie dazu einfach hier:
-
-http://c.gut-verdienen.net/a/?i=7125193&e=linux-kernel%40vger.kernel.org&c=5493753
-
-
-
+> HRTIMER_FREED. But as I said before I'm not sure what's the best way
+> to fix that. And maybe there's more suitable method.
+>
+> BTW, is there any user who free the hrtimer in its callback?
+>
+>> , so cutting the two
+>> lines off is deserved.
+>> And more, who will take care of the NORESTART again after callback?
+>
+> It's not related to NORESTART, just HRTIMER_STATE_CALLBACK.
+> hrtimer'strategy somehow depends on HRTIMER_STATE_CALLBACK.
+> You can take a look at the caller of hrtimer_callback_running().
+>
+> Thanks,
+> Yong
+>
