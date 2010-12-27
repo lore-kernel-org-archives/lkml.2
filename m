@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279Ab0L0ESA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Dec 2010 23:18:00 -0500
-Received: from atl.turmel.org ([74.117.157.138]:56476 "EHLO atl.turmel.org"
+	id S1753082Ab0L0EiS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Dec 2010 23:38:18 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:58486 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752703Ab0L0ER6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Dec 2010 23:17:58 -0500
-Message-ID: <4D181373.3070107@turmel.org>
-Date: Sun, 26 Dec 2010 23:17:55 -0500
-From: Phil Turmel <philip@turmel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101212 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Marc Haber <mh+linux-kernel@zugschlus.de>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: NetXen NX3031 failing test, reporting link down, not working
-References: <20101206171727.GA30695@torres.zugschlus.de> <20101225163632.GA27786@torres.zugschlus.de>
-In-Reply-To: <20101225163632.GA27786@torres.zugschlus.de>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752703Ab0L0EiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Dec 2010 23:38:17 -0500
+Date: Mon, 27 Dec 2010 15:38:05 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: linux-next: manual merge of the workqueues tree with the tip tree
+Message-Id: <20101227153805.a5447f74.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__27_Dec_2010_15_38_05_+1100_7qk_TMdP.bEUFc+N"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marc,
+--Signature=_Mon__27_Dec_2010_15_38_05_+1100_7qk_TMdP.bEUFc+N
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 12/25/2010 11:36 AM, Marc Haber wrote:
-> On Mon, Dec 06, 2010 at 06:17:27PM +0100, Marc Haber wrote:
->> I have HP DL 120 G6 with two Quad-GE Cards based on NetXen NX3031 (rev
->> 42) [4040:0100]. The boxes are running with a grml daily image with
->> kernel 2.6.36.1 for the time being, and the NetXens are giving me a
->> hard time.
-> 
-> it's a pity that nobody cared to even point me into the right
-> direction. I am not aware of having done anything wrong.
+Hi Tejun,
 
-Poor signal-to-noise ratio on lkml itself, so don't take it personally.  The net folk don't listen too closely, but akpm usually tosses these over the wall to 'em.  He seems to have missed this one, so I've added the most important CC.
+Today's linux-next merge of the workqueues tree got a conflict in
+drivers/rtc/rtc-dev.c between commit
+042620a018afcfba1d678062b62e463b9e43a68d ("RTC: Remove UIE emulation")
+from the  tree and commit 9db8995be5e1869b5effa117909bc285e06fc09b ("rtc:
+don't use flush_scheduled_work()") from the workqueues tree.
 
-> Anyway, the issue could be solved by updating the on-card flashed
-> firmware from 4.0.530 to 4.0.539. With this firmware, everything seems
-> to be fine.
-> 
-> Maybe the Linux driver should be adapted to not fail silently if it
-> doesn't like the on-card firmware but instead log an error message so
-> that people know they need to update their firmware.
+The former removes the code that the latter modifies, so I used the
+former.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-I'm just a lurker, tester, and occasional bug reporter, so I can't speak to this.
+--Signature=_Mon__27_Dec_2010_15_38_05_+1100_7qk_TMdP.bEUFc+N
+Content-Type: application/pgp-signature
 
-Phil
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNGBgtAAoJEDMEi1NhKgbs3sgH/ikwmqL6e7rUcbvcUb8dkPZC
+cgYxSxb5Dulxsby1kGNb5sgkTEruYaoxVR3ibste8kBRuxVzQZo7kuRRTIwT14ZP
+PxzlO/zGmL8jjmsozOEs7HIrM6/Q6LMtxLgkoKFoCVztn1HYew5pJvLBnsBcxC1s
+BqcuxTKVXwkEkmYnFwHJsPOcvdzORu5qK3Z5/rIkc5utt/YFlFDvRP4pOmkMvJqU
+0WHq562zgnArE+yRyLBMmbn+fGgiKKWZvgoQDIZLQnJS78P8+fbyJwk7S7j8pq7X
+Q9atcSCoZo1VFuMIrJKWf+FZonp8LMjhTPriOTbOXIlA0g8QS4Jif44KUDWZNzo=
+=LsPF
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__27_Dec_2010_15_38_05_+1100_7qk_TMdP.bEUFc+N--
