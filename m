@@ -1,83 +1,408 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794Ab0L0NgM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 08:36:12 -0500
-Received: from nm12.bullet.mail.sp2.yahoo.com ([98.139.91.82]:39719 "HELO
-	nm12.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753772Ab0L0NgK convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 08:36:10 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 153206.48357.bm@omp1036.mail.sp2.yahoo.com
-Message-ID: <617424.28541.qm@web180213.mail.gq1.yahoo.com>
-X-YMail-OSG: .lh.sjcVM1lR5Lk1gB6GlhrA2.7pQ9eY75fcOxYsZYe5fpQ
- kCsyjldromPvVZZ0VdmM0vYq8pCnqMlB.sfBizmAxJN6i.16dU4.EqkcKmwv
- VHr52RCxrN6JV3Mf3bXGrs3wLi.fRMe9kiz9krtFG1rOgZYWhYGtAxewwLe_
- Kn9e43Kq3WBiabtKJkK1cTYyaCxkzs0h5aBVl53JLhpqadWAse2i4X8hR7Gb
- 9d_JE7Q.BAoIJc4z029I6ylQOh1.qmIt.kvIpWiSKcm9RQZrwOad_y6hNTBl
- 2Gu0txctDUstAVAuehm4M880Ilp68J3ldxyYpUbDwdFGB5skQ2l0tfYXW0gj
- TZmHLR_SOhK6DUA9cuFW9x7ZXQOA4nPkhs6S9rvJEOTovSyIwbStlKekm12y
- 9ZlBM2HohXZOsrHONbPOYPfbouMvzvMwWPcAUVu4WTuNQnyj8moHq2uSjOaF
- nTP7fWA4K0xdQaylvtBUv6RYQGiiVue.JfRKorcd8lI4qPZJCzCL0cNk7NMD
- wFwWFh5QkeMpBm7by3YrnWeSeXjLkF_JGi4EvSyD5IhrTRlz8skivHG2nWhe
- uXAjwc1uTIOvGlTO9MLND_6vAWfUY2wA4Gk2QlMKmnsn7yosuTEDZNSgvkOA
- D9gdsT.b69Fop6Xmhamy8ulHq1wH3FhGQz4Pku2qhs0XvLzENae1Kk.jZaGA
- I.mMspdMVrbXOOXNZBCK_wmbKFJX_kx5GzvLdmiGoU4c_LY1uz9axjRe4ef1
- 5kRdmA7clkCyLy5yhOmpdweNg8RgcM9AXTN7kMA4iGYKpGw77_8u061Bnr1V
- 41gEhV1o6nPmBdqLoTdZ.jUQBovRr341xDqYniQ3sxombZN1sw2m2gNCcfnB
- obJXZnvj34f1F4VhpXZReJplUphpIOCglRfZ2trtGDXtdzHyNjvjL35uzWmQ
- m1s6T26NRe0KMgl7ZzCVBDBpn3QxPM8om09MI5S6PVULXAltJMNwf4g52zoi
- Zz7OQVSzGas9xcRHrDYx_tbmH3ryJ95CWDgcPWrSftqMJVfi_3mIjx4p_FTj
- Xg1RNl.1m1ulpNgKoxE1bhID93YHqMTK5UQK2k7vGz4SH6W_dVXojVil8Koj
- jGfJv8Nih1UNMB9c463wQ0Kw005uyGvd.LMxo7RN_RHz3PxgSBg0wP.XQW9d
- Oe2Ld8W.C_wlBs2lsptTS1hXWKDWPrjm2n0unMv5G1F2Comn9OZn5oCx80bi
- iay1.4p8kyLnoG673drZXW1GO0xXpXkl2tX1M9QW..DLj6Y4.9Yfm5Tsc3.4
- SSvWth_sFDpJE9NxHg4w_VWlUAbgbgzh2sQigm39S382yycynsh6no_.7zf.
- Ahy4XLXkQeEA9NTOAxhZCPDg13CiOvqM0K68Wmyr8QYTaSdIDpMHWIRzRdor
- 6IDbXqlW12WLQTiDzTcu3qpX_fQlW1hTEmMKglJWXaALcayiiiCJLtujjln1
- .YmPL4Z51w9uZgOTtWsf5HdQEWIJ_5oPG0Pc2_hLHVd6a_ZkrNz5BZOhtxbC
- rH96iD.XKdIy14ScOQyDVoxrcOszx_L6TzPsPkWl8t.IloMFnhKmGou3Wram
- lOkSn.PF8eOAVI4E0GFBhGl6FLFXCIpC__.aHgLmEhpaV2850I_yZek.omUt
- vhPQxmK_Y.M8vjJVM1y0RMuuxUpmM7L5oqhiU2SYQLPfiinZL_mYoRlUgU9_
- u56YcdQ5dCjOkHBvmnD73VgolINIpBDqneJ3MLlEjoWNi8vZODbFkMbY2u.p
- hEiCtktDiZ.BJw.WPeORreL.5RalOqkHSGaM3alsxkoeUW3UPLZzqL2G79vD
- r2I_dW5AEfe537XGhMohMQnK2fkBwDl0tGUXHFvT5cbHSQOOPL0mdwrGjOHU
- .aKfngOxDZwQFGWpC0o3a0m9AKNTh_Jo1STQiIIF2cNC_aFzV7YKIXXIXFra
- ClxHrg5YtZQNWi0.fwVlfz0yYAOe5XxEGwAvLtQmWEpqEMjZQgWg2jlAnObS
- kKhpkSdG1t.tadqj7evHQqfxt6HN8cMh8zJ153TlJRfLETiHuhEGwnOOULtd
- _JD58yBlgZNX3zeop8oo18lsP0oNcMrxyRLAjNg1aKlwddQahAFTulpghc38
- ABHTzMOsJTgDKxJ0qnNcU0ujXe1_nifwwu9jOIbvrk6F_HnwQ9bM6YdqMxgV
- uKRbx4c8IxhCdKmi.8Jw2u43S1G9BQqp4QLED5nfmjQYmr8dnrHSa01dHKfc
- ilpAdJaGzH0pMp6D9A19WgqO1zzpwASFVX5hc95.3gNsinnr.IPfgh2oNW0.
- RXriPoDVANjcmsc4BQ7gLpCpTSRHcgPmJm.peiL.xJnQFUmQZWBVj_iI2S7p
- c7IXOf7F8hPwABR6OMnRwFwVBrzmf10lfMbtL2IEVvD2XvLPPe9QJkcq7fB0
- RwfjXC3kRf_jOxjQp71o2BwwbXmSU2bmLwBPMk375Siw05NztA7q1zB2b3A9
- LUgUBoA_AbtTEzubSHR_NtTj05DKWVWzzKjru1fhpuqVtAiNQ8jnq5wzIVfJ
- gsho7BujMF8S0JKdUOHZRSq0mU9GMXlVP4p1w9qXqqXYu2p3dqCrnmus1xLo
- PWpzVEbFKkBewp8GsUv5kW.kVhikamW28hNU24S1dkBYiblB2U.mce_IXjZB
- Vtq8AfmWJpwxJtLlGRd6bUoBeV6If3IWbttW6Z4xoF.xcqwZDlwqhhDuc1Iu
- Kqhl4XmE0RKGawzgTiZKt8UFRK1hyO4zfmuf1qG01qXCOTLCsgBEPHLQDDza
- cLZSYlYYtPlGYrUkAfP1U8XdHRuX1Axph7E57t1nEQpFES49wXpefsOyGwdm
- EVEe8o3W7FUdZNsAy5c5L6HyeMuWUwuuhM6UYwsXb60sZmu9mmRbSUTtgiCc
- b02d2Otg4d7SM0.wSw.YM4yHg6hAjmAVqXrkZ_35Wj.reWEER5H249rYHxLk
- x0YXUpixz97EzpIegIS5_4L26l070UxcUgujymW2AIKtV7YM07uYWWloXgUS
- 9qYZ1Xub6lBKsV1RSSc0AszWWE3QCbYhHF43w.PX4rHxNbu2nMHzifxDWZNA
- ZTU4_pxayGKK3AT0BTdRh3_ZVJVXYZRWKWQK.EdgeXsT3sDHEcVSJBWxTA5y
- Zo56DYX2PdUash4xqROjCrXPxm.43_n2c7KufyVYR5cwh
-X-RocketYMMF: i-high@att.net
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.285259
-Date: Mon, 27 Dec 2010 05:36:09 -0800 (PST)
-From: Important Notice <ielott@hotmail.com>
-Reply-To: irs.claimsdirectory@hotmail.com
-To: undisclosed recipients:;
+	id S1753805Ab0L0Nh2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 08:37:28 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57809 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753669Ab0L0NhZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 08:37:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:sender:to:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=eyRT+bXW7N1PQ3jdOk4qQfpRSiTWwsDx1xDR/1kOelbMWwloRCvo6Ff/ndOg1gdXBn
+         psilIf5/ZWi0w7tgwhfuxvXaxEYIABkUl7XPnzasBd6RdM+htBZ1POWTBr4pn3wbfe6j
+         g3KUyVYZHd+F6Yig+cLiliC3cUmrDQqUbf+0M=
+Date: Mon, 27 Dec 2010 14:37:19 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Shaohua Li <shaohua.li@intel.com>, Sam Ravnborg <sam@ravnborg.org>,
+        lkml <linux-kernel@vger.kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, eric.dumazet@gmail.com,
+        linux-arch@vger.kernel.org
+Subject: [PATCH RESEND percpu#for-next] percpu: align percpu readmostly
+ subsection to cacheline
+Message-ID: <20101227133719.GD488@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your email has won £891,934.00 Pound Sterlings  in the Irish National Lottery Draws For Internet Users.
-To Begin Send:Name,Age, Address, Tel, Country
+Currently percpu readmostly subsection may share cachelines with other
+percpu subsections which may result in unnecessary cacheline bounce
+and performance degradation.
 
-To Mr. Sean James
+This patch adds @cacheline parameter to PERCPU() and PERCPU_VADDR()
+linker macros, makes each arch linker scripts specify its cacheline
+size and use it to align percpu subsections.
+
+This is based on Shaohua's x86 only patch.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Shaohua Li <shaohua.li@intel.com>
+---
+Shaohua, can you please verify this achieves the same result?  If no
+one objects, I'll route it through the percpu tree.
+
+Thanks.
+
+(arch ML address was wrong, resending with the correct one)
+
+ arch/alpha/kernel/vmlinux.lds.S    |    2 +-
+ arch/arm/kernel/vmlinux.lds.S      |    2 +-
+ arch/blackfin/kernel/vmlinux.lds.S |    2 +-
+ arch/cris/kernel/vmlinux.lds.S     |    2 +-
+ arch/frv/kernel/vmlinux.lds.S      |    2 +-
+ arch/ia64/kernel/vmlinux.lds.S     |    2 +-
+ arch/m32r/kernel/vmlinux.lds.S     |    2 +-
+ arch/mips/kernel/vmlinux.lds.S     |    2 +-
+ arch/mn10300/kernel/vmlinux.lds.S  |    2 +-
+ arch/parisc/kernel/vmlinux.lds.S   |    2 +-
+ arch/powerpc/kernel/vmlinux.lds.S  |    2 +-
+ arch/s390/kernel/vmlinux.lds.S     |    2 +-
+ arch/sh/kernel/vmlinux.lds.S       |    2 +-
+ arch/sparc/kernel/vmlinux.lds.S    |    2 +-
+ arch/tile/kernel/vmlinux.lds.S     |    2 +-
+ arch/um/include/asm/common.lds.S   |    2 +-
+ arch/x86/kernel/vmlinux.lds.S      |    4 ++--
+ arch/xtensa/kernel/vmlinux.lds.S   |    2 +-
+ include/asm-generic/vmlinux.lds.h  |   35 ++++++++++++++++++++++-------------
+ 19 files changed, 41 insertions(+), 32 deletions(-)
+
+diff --git a/arch/alpha/kernel/vmlinux.lds.S b/arch/alpha/kernel/vmlinux.lds.S
+index 003ef4c..173518f 100644
+--- a/arch/alpha/kernel/vmlinux.lds.S
++++ b/arch/alpha/kernel/vmlinux.lds.S
+@@ -38,7 +38,7 @@ SECTIONS
+ 	__init_begin = ALIGN(PAGE_SIZE);
+ 	INIT_TEXT_SECTION(PAGE_SIZE)
+ 	INIT_DATA_SECTION(16)
+-	PERCPU(PAGE_SIZE)
++	PERCPU(64, PAGE_SIZE)
+ 	/* Align to THREAD_SIZE rather than PAGE_SIZE here so any padding page
+ 	   needed for the THREAD_SIZE aligned init_task gets freed after init */
+ 	. = ALIGN(THREAD_SIZE);
+diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
+index cead889..67417d0 100644
+--- a/arch/arm/kernel/vmlinux.lds.S
++++ b/arch/arm/kernel/vmlinux.lds.S
+@@ -70,7 +70,7 @@ SECTIONS
+ #endif
+ 	}
+ 
+-	PERCPU(PAGE_SIZE)
++	PERCPU(32, PAGE_SIZE)
+ 
+ #ifndef CONFIG_XIP_KERNEL
+ 	. = ALIGN(PAGE_SIZE);
+diff --git a/arch/blackfin/kernel/vmlinux.lds.S b/arch/blackfin/kernel/vmlinux.lds.S
+index 4122678..c40d07f 100644
+--- a/arch/blackfin/kernel/vmlinux.lds.S
++++ b/arch/blackfin/kernel/vmlinux.lds.S
+@@ -136,7 +136,7 @@ SECTIONS
+ 
+ 	. = ALIGN(16);
+ 	INIT_DATA_SECTION(16)
+-	PERCPU(4)
++	PERCPU(32, 4)
+ 
+ 	.exit.data :
+ 	{
+diff --git a/arch/cris/kernel/vmlinux.lds.S b/arch/cris/kernel/vmlinux.lds.S
+index 4422189..c62e134 100644
+--- a/arch/cris/kernel/vmlinux.lds.S
++++ b/arch/cris/kernel/vmlinux.lds.S
+@@ -107,7 +107,7 @@ SECTIONS
+ #endif
+ 	__vmlinux_end = .;		/* Last address of the physical file. */
+ #ifdef CONFIG_ETRAX_ARCH_V32
+-	PERCPU(PAGE_SIZE)
++	PERCPU(32, PAGE_SIZE)
+ 
+ 	.init.ramfs : {
+ 		INIT_RAM_FS
+diff --git a/arch/frv/kernel/vmlinux.lds.S b/arch/frv/kernel/vmlinux.lds.S
+index 8b973f3..0daae8a 100644
+--- a/arch/frv/kernel/vmlinux.lds.S
++++ b/arch/frv/kernel/vmlinux.lds.S
+@@ -37,7 +37,7 @@ SECTIONS
+   _einittext = .;
+ 
+   INIT_DATA_SECTION(8)
+-  PERCPU(4096)
++  PERCPU(L1_CACHE_BYTES, 4096)
+ 
+   . = ALIGN(PAGE_SIZE);
+   __init_end = .;
+diff --git a/arch/ia64/kernel/vmlinux.lds.S b/arch/ia64/kernel/vmlinux.lds.S
+index 5a4d044..787de4a 100644
+--- a/arch/ia64/kernel/vmlinux.lds.S
++++ b/arch/ia64/kernel/vmlinux.lds.S
+@@ -198,7 +198,7 @@ SECTIONS {
+ 
+ 	/* Per-cpu data: */
+ 	. = ALIGN(PERCPU_PAGE_SIZE);
+-	PERCPU_VADDR(PERCPU_ADDR, :percpu)
++	PERCPU_VADDR(SMP_CACHE_BYTES, PERCPU_ADDR, :percpu)
+ 	__phys_per_cpu_start = __per_cpu_load;
+ 	/*
+ 	 * ensure percpu data fits
+diff --git a/arch/m32r/kernel/vmlinux.lds.S b/arch/m32r/kernel/vmlinux.lds.S
+index 7da94ea..c194d64 100644
+--- a/arch/m32r/kernel/vmlinux.lds.S
++++ b/arch/m32r/kernel/vmlinux.lds.S
+@@ -53,7 +53,7 @@ SECTIONS
+   __init_begin = .;
+   INIT_TEXT_SECTION(PAGE_SIZE)
+   INIT_DATA_SECTION(16)
+-  PERCPU(PAGE_SIZE)
++  PERCPU(32, PAGE_SIZE)
+   . = ALIGN(PAGE_SIZE);
+   __init_end = .;
+   /* freed after init ends here */
+diff --git a/arch/mips/kernel/vmlinux.lds.S b/arch/mips/kernel/vmlinux.lds.S
+index f25df73..fd5d045 100644
+--- a/arch/mips/kernel/vmlinux.lds.S
++++ b/arch/mips/kernel/vmlinux.lds.S
+@@ -108,7 +108,7 @@ SECTIONS
+ 		EXIT_DATA
+ 	}
+ 
+-	PERCPU(PAGE_SIZE)
++	PERCPU(1 << CONFIG_MIPS_L1_CACHE_SHIFT, PAGE_SIZE)
+ 	. = ALIGN(PAGE_SIZE);
+ 	__init_end = .;
+ 	/* freed after init ends here */
+diff --git a/arch/mn10300/kernel/vmlinux.lds.S b/arch/mn10300/kernel/vmlinux.lds.S
+index febbeee..968bcd2 100644
+--- a/arch/mn10300/kernel/vmlinux.lds.S
++++ b/arch/mn10300/kernel/vmlinux.lds.S
+@@ -70,7 +70,7 @@ SECTIONS
+ 	.exit.text : { EXIT_TEXT; }
+ 	.exit.data : { EXIT_DATA; }
+ 
+-  PERCPU(PAGE_SIZE)
++  PERCPU(32, PAGE_SIZE)
+   . = ALIGN(PAGE_SIZE);
+   __init_end = .;
+   /* freed after init ends here */
+diff --git a/arch/parisc/kernel/vmlinux.lds.S b/arch/parisc/kernel/vmlinux.lds.S
+index d64a6bb..8f1e4ef 100644
+--- a/arch/parisc/kernel/vmlinux.lds.S
++++ b/arch/parisc/kernel/vmlinux.lds.S
+@@ -145,7 +145,7 @@ SECTIONS
+ 		EXIT_DATA
+ 	}
+ 
+-	PERCPU(PAGE_SIZE)
++	PERCPU(L1_CACHE_BYTES, PAGE_SIZE)
+ 	. = ALIGN(PAGE_SIZE);
+ 	__init_end = .;
+ 	/* freed after init ends here */
+diff --git a/arch/powerpc/kernel/vmlinux.lds.S b/arch/powerpc/kernel/vmlinux.lds.S
+index 8a0deef..b9150f0 100644
+--- a/arch/powerpc/kernel/vmlinux.lds.S
++++ b/arch/powerpc/kernel/vmlinux.lds.S
+@@ -160,7 +160,7 @@ SECTIONS
+ 		INIT_RAM_FS
+ 	}
+ 
+-	PERCPU(PAGE_SIZE)
++	PERCPU(L1_CACHE_BYTES, PAGE_SIZE)
+ 
+ 	. = ALIGN(8);
+ 	.machine.desc : AT(ADDR(.machine.desc) - LOAD_OFFSET) {
+diff --git a/arch/s390/kernel/vmlinux.lds.S b/arch/s390/kernel/vmlinux.lds.S
+index a68ac10..1bc18cd 100644
+--- a/arch/s390/kernel/vmlinux.lds.S
++++ b/arch/s390/kernel/vmlinux.lds.S
+@@ -77,7 +77,7 @@ SECTIONS
+ 	. = ALIGN(PAGE_SIZE);
+ 	INIT_DATA_SECTION(0x100)
+ 
+-	PERCPU(PAGE_SIZE)
++	PERCPU(0x100, PAGE_SIZE)
+ 	. = ALIGN(PAGE_SIZE);
+ 	__init_end = .;		/* freed after init ends here */
+ 
+diff --git a/arch/sh/kernel/vmlinux.lds.S b/arch/sh/kernel/vmlinux.lds.S
+index 7f8a709..af4d461 100644
+--- a/arch/sh/kernel/vmlinux.lds.S
++++ b/arch/sh/kernel/vmlinux.lds.S
+@@ -66,7 +66,7 @@ SECTIONS
+ 		__machvec_end = .;
+ 	}
+ 
+-	PERCPU(PAGE_SIZE)
++	PERCPU(L1_CACHE_BYTES, PAGE_SIZE)
+ 
+ 	/*
+ 	 * .exit.text is discarded at runtime, not link time, to deal with
+diff --git a/arch/sparc/kernel/vmlinux.lds.S b/arch/sparc/kernel/vmlinux.lds.S
+index 0c1e678..92b557a 100644
+--- a/arch/sparc/kernel/vmlinux.lds.S
++++ b/arch/sparc/kernel/vmlinux.lds.S
+@@ -108,7 +108,7 @@ SECTIONS
+ 		__sun4v_2insn_patch_end = .;
+ 	}
+ 
+-	PERCPU(PAGE_SIZE)
++	PERCPU(SMP_CACHE_BYTES, PAGE_SIZE)
+ 
+ 	. = ALIGN(PAGE_SIZE);
+ 	__init_end = .;
+diff --git a/arch/tile/kernel/vmlinux.lds.S b/arch/tile/kernel/vmlinux.lds.S
+index 25fdc0c..c6ce378 100644
+--- a/arch/tile/kernel/vmlinux.lds.S
++++ b/arch/tile/kernel/vmlinux.lds.S
+@@ -63,7 +63,7 @@ SECTIONS
+     *(.init.page)
+   } :data =0
+   INIT_DATA_SECTION(16)
+-  PERCPU(PAGE_SIZE)
++  PERCPU(L2_CACHE_BYTES, PAGE_SIZE)
+   . = ALIGN(PAGE_SIZE);
+   VMLINUX_SYMBOL(_einitdata) = .;
+ 
+diff --git a/arch/um/include/asm/common.lds.S b/arch/um/include/asm/common.lds.S
+index ac55b9e..34bede8 100644
+--- a/arch/um/include/asm/common.lds.S
++++ b/arch/um/include/asm/common.lds.S
+@@ -42,7 +42,7 @@
+ 	INIT_SETUP(0)
+   }
+ 
+-  PERCPU(32)
++  PERCPU(32, 32)
+ 	
+   .initcall.init : {
+ 	INIT_CALLS
+diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
+index e03530a..68cf1c0 100644
+--- a/arch/x86/kernel/vmlinux.lds.S
++++ b/arch/x86/kernel/vmlinux.lds.S
+@@ -226,7 +226,7 @@ SECTIONS
+ 	 * output PHDR, so the next output section - .init.text - should
+ 	 * start another segment - init.
+ 	 */
+-	PERCPU_VADDR(0, :percpu)
++	PERCPU_VADDR(INTERNODE_CACHE_BYTES, 0, :percpu)
+ #endif
+ 
+ 	INIT_TEXT_SECTION(PAGE_SIZE)
+@@ -301,7 +301,7 @@ SECTIONS
+ 	}
+ 
+ #if !defined(CONFIG_X86_64) || !defined(CONFIG_SMP)
+-	PERCPU(THREAD_SIZE)
++	PERCPU(INTERNODE_CACHE_BYTES, THREAD_SIZE)
+ #endif
+ 
+ 	. = ALIGN(PAGE_SIZE);
+diff --git a/arch/xtensa/kernel/vmlinux.lds.S b/arch/xtensa/kernel/vmlinux.lds.S
+index 9b52615..a282006 100644
+--- a/arch/xtensa/kernel/vmlinux.lds.S
++++ b/arch/xtensa/kernel/vmlinux.lds.S
+@@ -155,7 +155,7 @@ SECTIONS
+     INIT_RAM_FS
+   }
+ 
+-  PERCPU(PAGE_SIZE)
++  PERCPU(XCHAL_ICACHE_LINESIZE, PAGE_SIZE)
+ 
+   /* We need this dummy segment here */
+ 
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index bd69d79..aa1339e 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -15,7 +15,7 @@
+  *	HEAD_TEXT_SECTION
+  *	INIT_TEXT_SECTION(PAGE_SIZE)
+  *	INIT_DATA_SECTION(...)
+- *	PERCPU(PAGE_SIZE)
++ *	PERCPU(CACHELINE_SIZE, PAGE_SIZE)
+  *	__init_end = .;
+  *
+  *	_stext = .;
+@@ -666,13 +666,18 @@
+ 
+ /**
+  * PERCPU_VADDR - define output section for percpu area
++ * @cacheline: cacheline size
+  * @vaddr: explicit base address (optional)
+  * @phdr: destination PHDR (optional)
+  *
+- * Macro which expands to output section for percpu area.  If @vaddr
+- * is not blank, it specifies explicit base address and all percpu
+- * symbols will be offset from the given address.  If blank, @vaddr
+- * always equals @laddr + LOAD_OFFSET.
++ * Macro which expands to output section for percpu area.
++ *
++ * @cacheline is used to align subsections to avoid false cacheline
++ * sharing between subsections for different purposes.
++ *
++ * If @vaddr is not blank, it specifies explicit base address and all
++ * percpu symbols will be offset from the given address.  If blank,
++ * @vaddr always equals @laddr + LOAD_OFFSET.
+  *
+  * @phdr defines the output PHDR to use if not blank.  Be warned that
+  * output PHDR is sticky.  If @phdr is specified, the next output
+@@ -683,7 +688,7 @@
+  * If there is no need to put the percpu section at a predetermined
+  * address, use PERCPU().
+  */
+-#define PERCPU_VADDR(vaddr, phdr)					\
++#define PERCPU_VADDR(cacheline, vaddr, phdr)				\
+ 	VMLINUX_SYMBOL(__per_cpu_load) = .;				\
+ 	.data..percpu vaddr : AT(VMLINUX_SYMBOL(__per_cpu_load)		\
+ 				- LOAD_OFFSET) {			\
+@@ -691,7 +696,9 @@
+ 		*(.data..percpu..first)					\
+ 		. = ALIGN(PAGE_SIZE);					\
+ 		*(.data..percpu..page_aligned)				\
++		. = ALIGN(cacheline);					\
+ 		*(.data..percpu..readmostly)				\
++		. = ALIGN(cacheline);					\
+ 		*(.data..percpu)					\
+ 		*(.data..percpu..shared_aligned)			\
+ 		VMLINUX_SYMBOL(__per_cpu_end) = .;			\
+@@ -700,18 +707,18 @@
+ 
+ /**
+  * PERCPU - define output section for percpu area, simple version
++ * @cacheline: cacheline size
+  * @align: required alignment
+  *
+- * Align to @align and outputs output section for percpu area.  This
+- * macro doesn't maniuplate @vaddr or @phdr and __per_cpu_load and
++ * Align to @align and outputs output section for percpu area.  This macro
++ * doesn't manipulate @vaddr or @phdr and __per_cpu_load and
+  * __per_cpu_start will be identical.
+  *
+- * This macro is equivalent to ALIGN(align); PERCPU_VADDR( , ) except
+- * that __per_cpu_load is defined as a relative symbol against
+- * .data..percpu which is required for relocatable x86_32
+- * configuration.
++ * This macro is equivalent to ALIGN(@align); PERCPU_VADDR(@cacheline,,)
++ * except that __per_cpu_load is defined as a relative symbol against
++ * .data..percpu which is required for relocatable x86_32 configuration.
+  */
+-#define PERCPU(align)							\
++#define PERCPU(cacheline, align)					\
+ 	. = ALIGN(align);						\
+ 	.data..percpu	: AT(ADDR(.data..percpu) - LOAD_OFFSET) {	\
+ 		VMLINUX_SYMBOL(__per_cpu_load) = .;			\
+@@ -719,7 +726,9 @@
+ 		*(.data..percpu..first)					\
+ 		. = ALIGN(PAGE_SIZE);					\
+ 		*(.data..percpu..page_aligned)				\
++		. = ALIGN(cacheline);					\
+ 		*(.data..percpu..readmostly)				\
++		. = ALIGN(cacheline);					\
+ 		*(.data..percpu)					\
+ 		*(.data..percpu..shared_aligned)			\
+ 		VMLINUX_SYMBOL(__per_cpu_end) = .;			\
