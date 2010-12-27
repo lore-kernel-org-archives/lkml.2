@@ -1,83 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab0L0Jzf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 04:55:35 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:53452 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752965Ab0L0Jzc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 04:55:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=reiys6rHrorUCeekuafbx7UE/snmhgBeFBd+tnR5WVx5DUt/Xa8fJBbtg/CIw0f9r1
-         1DjkBZiMTb3M8R5EPXovW2TmKdxglWey/p5Si0nlhl02S9KXNabcYJ02MNyTtPbOruPH
-         t0M9B7+LMUGdmMovMPlVfcLf9Y0g2i9ORx66c=
+	id S1753397Ab0L0KEX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 05:04:23 -0500
+Received: from smtp4-g21.free.fr ([212.27.42.4]:37590 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752965Ab0L0KEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 05:04:22 -0500
+From: Florian Fainelli <ffainelli@freebox.fr>
+Organization: Freebox
+To: "Yu, Fenghua" <fenghua.yu@intel.com>
+Subject: Re: [PATCH] coretemp: fix junction temperature for Intel CE4100
+Date: Mon, 27 Dec 2010 11:04:43 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.35-24-server; KDE/4.5.1; x86_64; ; )
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        "sodaville@linutronix.de" <sodaville@linutronix.de>
+References: <201012142217.07194.ffainelli@freebox.fr> <493994B35A117E4F832F97C4719C4C04D781EF3F@orsmsx505.amr.corp.intel.com>
+In-Reply-To: <493994B35A117E4F832F97C4719C4C04D781EF3F@orsmsx505.amr.corp.intel.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20101227201155.ee8cd1ab.sfr@canb.auug.org.au>
-References: <20101227170451.a9a9f873.sfr@canb.auug.org.au>
-	<AANLkTikbiART+SX_JwM=pcAg0NJffVgX1oU=aO42dmbC@mail.gmail.com>
-	<20101227201155.ee8cd1ab.sfr@canb.auug.org.au>
-Date: Mon, 27 Dec 2010 10:55:30 +0100
-Message-ID: <AANLkTinVO8Mf4LnSj5fbtpHXHtwc8Wf306XEDgaqH437@mail.gmail.com>
-Subject: Re: linux-next: Tree for December 27
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012271104.43416.ffainelli@freebox.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 27, 2010 at 10:11 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi,
->
-> On Mon, 27 Dec 2010 09:04:06 +0100 Sedat Dilek <sedat.dilek@googlemail.com> wrote:
->>
->> Can you try to upload/push via IPADDR?
->
-> I can only upload to master.kernel.org, the rest is done by the mirroring
-> software.  I have no access to any of the other kernel.org machines.
->
+Hello,
 
-I was wondering about still "slow mirrors" as also checking out before
-Xmas was very slow.
-Now, seeing from an end-users point, the checking-out is just fine.
-I tried to clone
-"$GIT_MIRROR/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git" where
-GIT_MIRROR was:
+On Saturday 25 December 2010 23:28:33 Yu, Fenghua wrote:
+> > -----Original Message-----
+> > From: Florian Fainelli [mailto:f.fainelli@gmail.com] On Behalf Of
+> > Florian Fainelli
+> > Sent: Tuesday, December 14, 2010 1:17 PM
+> > To: linux-kernel@vger.kernel.org; Dirk Brandewie;
+> > sodaville@linutronix.de; Yu, Fenghua
+> > Subject: [PATCH] coretemp: fix junction temperature for Intel CE4100
+> > 
+> > From: Florian Fainelli <ffainelli@freebox.fr>
+> > 
+> > The Intel CE4100 System-on-a-Chip has a slightly higher junction
+> > temperature
+> > (110 degrees Celsius) than other Atom-based hardware.
+> > 
+> > Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
+> > Cc: sodaville@linutronix.de
+> > Cc: Fenghua Yu <fenghua.yu@intel.com>
+> > Signed-off-by: Florian Fainelli <ffainelli@freebox.fr>
+> > ---
+> > diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+> > index 42de98d..e47b405 100644
+> > --- a/drivers/hwmon/coretemp.c
+> > +++ b/drivers/hwmon/coretemp.c
+> > @@ -178,12 +178,23 @@ static int __devinit adjust_tjmax(struct
+> > cpuinfo_x86 *c, u32 id, struct device *
+> > 
+> >  		host_bridge = pci_get_bus_and_slot(0, PCI_DEVFN(0, 0));
+> > 
+> > -		if (host_bridge && host_bridge->vendor ==
+> > PCI_VENDOR_ID_INTEL
+> > -		    && (host_bridge->device == 0xa000	/* NM10 based
+> > nettop */
+> > -		    || host_bridge->device == 0xa010))	/* NM10 based
+> > netbook */
+> > -			tjmax = 100000;
+> > -		else
+> > -			tjmax = 90000;
+> > +		if (host_bridge && host_bridge->vendor ==
+> > PCI_VENDOR_ID_INTEL) {
+> > +			switch (host_bridge->device) {
+> > +			/* NM10 based nettop */
+> > +			case 0xa000:
+> > +			/* NM10 based netbook */
+> > +			case 0xa010:
+> > +				tjmax = 100000;
+> > +				break;
+> > +			/* IntelCE Sodaville (CE4100) */
+> > +			case 0x0708:
+> > +				tjmax = 110000;
+> > +				break;
+> > +			default:
+> > +				tjmax = 90000;
+> > +				break;
+> > +			}
+> > +		}
+> > 
+> >  		pci_dev_put(host_bridge);
+> >  	
+> >  	}
+> 
+> When host_bridge && host_bridge->vendor == PCI_VENDOR_ID_INTEL is not true,
+> tjmax is not assigned to 90000. This is different from original code.
 
-1. git://130.239.17.7
-2. git://199.6.1.166
-3. git//git.kernel.org
-4. git//git.eu.kernel.org
+Whoops, I will post a second version of that patch.
 
-All checkouts had around 680-690KiB/s.
+> 
+> Could you add public spec URL or public spec name for 110 degrees C in your
+> comments? People may get lost to find this info.
 
-[...]
-
->> Can you please upload the patch-diff to
->> <http://www.kernel.org/pub/linux/kernel/v2.6/next/>?
->
-> If you mean for next-20101223, then there wasn't one.  I ran out of time
-> and just threw away what I had done.
->
-> If you mean generally, then (see above) it depends on the mirroring
-> software.
->
-
-Dunno what you mean with "mirroring software", but I am primarily
-interested in the patch-v2.6.37-rc7-next-20101227 than in an updated
-linux-next GIT repo.
-IMHO, it should be possible to generate this patch from your local GIT
-repo and upload the diff-patch to whereever is fast and accessible by
-you.
-My kernel-build-system has as base a vanilla upstream (here:
-2.6.37-rc7) against which I apply an individual patch-series incl. the
-linux-next diff-patch.
-Hope this helps a bit to understand what I was talking about.
-
-- Sedat -
+I will try to find a public documentation stating that, but that was in the SDK
+we received and I could not find any public information about this yet.
+--
+Florian
