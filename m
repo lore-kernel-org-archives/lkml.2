@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892Ab0L0VGk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 16:06:40 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:63973 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007Ab0L0VGj (ORCPT
+	id S1751918Ab0L0VPo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 16:15:44 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:51089 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939Ab0L0VPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 16:06:39 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type;
-        b=nn1vkDanrJD9IXJLPqlL1KglowS6+KsP80aRTRPdMPwDDPDZu96dzI1NHgSpRV8Ctf
-         Q4AhvfsbuzXqrchsyOu8E67prGHG6u5ciAUadO4q7GTIjNkOPxEKpWMStSdhYOsm7HQI
-         Cb1tL+JUkhTpYhJf8tN7qcRH9IGKfnpjs31RI=
-From: Franck Bui-Huu <vagabon.xyz@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH] perf-probe: no need to initialize the entire temporary buffers in synthesize_perf_probe_point()
-References: <m3wrn07blu.fsf@gmail.com> <4D142591.2030101@hitachi.com>
-	<20101224131441.GA3128@ghostprotocols.net>
-Date: Mon, 27 Dec 2010 22:06:35 +0100
-In-Reply-To: <20101224131441.GA3128@ghostprotocols.net> (Arnaldo Carvalho de
-	Melo's message of "Fri, 24 Dec 2010 11:14:41 -0200")
-Message-ID: <m3pqsnvsbo.fsf@gmail.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.2 (gnu/linux)
+	Mon, 27 Dec 2010 16:15:43 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH v0] add nano semaphore in kernel
+Date: Mon, 27 Dec 2010 22:15:52 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.35-16-generic; KDE/4.5.1; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <AANLkTim0Xmsnzz5yMLAx_+w-c7sSSReu0SKMAmjpbS+1@mail.gmail.com>
+In-Reply-To: <AANLkTim0Xmsnzz5yMLAx_+w-c7sSSReu0SKMAmjpbS+1@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012272215.52642.arnd@arndb.de>
+X-Provags-ID: V02:K0:oIpoSj6LYD3c6aTUm7tRAfozc+iamBXhenjvO9TIubK
+ MUtsSrP0+VwZeT3Qkn5cmpKuOagSOflg9t96n/iMeU0SKad7cl
+ 3KNgRNEkipdPCIzXWojbQZVcSXMI4vBfuiaYGxyXuPIkSI8yHe
+ 9+kXBmHhkXCqwRvPfFm7mzqbcMLeYgPk9kLx1UKp9cIMhsn4Mk
+ 5gWh3PAfE2tGvGqPzly1A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo Carvalho de Melo <acme@ghostprotocols.net> writes:
-
-> Em Fri, Dec 24, 2010 at 01:46:09PM +0900, Masami Hiramatsu escreveu:
->> (2010/12/24 0:27), Franck Bui-Huu wrote:
->> > This patches only put a single null byte at the beginning of each
->> > temporary buffers line[], offs[], file[] instead of filling their
->> > full contents with null bytes.
->
->> Hmm, sorry but NAK it.
->
->> IMHO, with modern chips, the original code has no problem from the
->> viewpoint of memory access (all are cached and no need to access just
->> one byte) nor a bottleneck.
->> I'd rather use '= ""' style initialization for local variables from the
->> viewpoint of readability.
->
-> No strong feelings here, not really a fast path, just learned something
-> new, I thought that that kind of initialization would be equivalent to
-> what Franck proposed, but gcc really uses the most efficient way of
-> zeroing the whole string (movq for things like that, and rep stos for
-> bigger arrays, etc).
+On Sunday 26 December 2010, Hillf Danton wrote:
 > 
+> Based upon high resolution timer and idea borrowed from semaphore,
+> nano semaphore is created.
+> 
+> Nano semaphore provides finer time resolution depending on system
+> configuration and capabilities.
+> 
+> Nano semaphore is not to replace semaphore, but used in application
+> environments where nano seconds are required.
+> 
+> Three methods, nano_semaphore_try_down, nano_semaphore_down and
+> nano_semaphore_up are implemented in a header file, and there is no
+> corresponding C file since nano semaphore is not complex.
+> 
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
 
-gcc has no other choice than clearing the whole buffers here since it's
-how C initialisation works.
+There are very few users of real semaphores today, and we're trying to
+get rid of them. It's not clear what your requirements are, since you
+have not posted any new users of this, but instead of adding more
+locking primitives, I would recommend changing one of the existing
+ones (mutex, semaphore, rwsem) to have nanosecond timeouts instead
+of jiffies.
 
-Thanks
--- 
-		Franck
+The easiest way would certainly be to change the three users of
+down_timeout() to use nanoseconds.
+
+	Arnd
