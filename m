@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440Ab0L0XDU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 18:03:20 -0500
-Received: from hera.kernel.org ([140.211.167.34]:49141 "EHLO hera.kernel.org"
+	id S1752451Ab0L0Xcu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 18:32:50 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:37276 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751503Ab0L0XDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 18:03:18 -0500
-Date: Mon, 27 Dec 2010 23:00:51 GMT
-From: tip-bot for Cliff Wickman <cpw@sgi.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com, cpw@sgi.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        cpw@sgi.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <E1PSBcz-0001g1-FM@eag09.americas.sgi.com>
-References: <E1PSBcz-0001g1-FM@eag09.americas.sgi.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/paravirt] x86, paravirt: Use native_halt on a halt, not native_safe_halt
-Message-ID: <tip-c8217b8305e5e75c23617f2f4cd262527d952c0a@git.kernel.org>
-Git-Commit-ID: c8217b8305e5e75c23617f2f4cd262527d952c0a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 27 Dec 2010 23:00:52 +0000 (UTC)
+	id S1751530Ab0L0Xcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 18:32:48 -0500
+Date: Tue, 28 Dec 2010 10:32:34 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Ujfalusi <peter.ujfalusi@nokia.com>
+Subject: linux-next: build warning after merge of the sound-asoc tree
+Message-Id: <20101228103234.29e09106.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__28_Dec_2010_10_32_34_+1100_UZm.mAUBLfDnpSgF"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c8217b8305e5e75c23617f2f4cd262527d952c0a
-Gitweb:     http://git.kernel.org/tip/c8217b8305e5e75c23617f2f4cd262527d952c0a
-Author:     Cliff Wickman <cpw@sgi.com>
-AuthorDate: Mon, 13 Dec 2010 10:51:57 -0600
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 27 Dec 2010 14:02:11 -0800
+--Signature=_Tue__28_Dec_2010_10_32_34_+1100_UZm.mAUBLfDnpSgF
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-x86, paravirt: Use native_halt on a halt, not native_safe_halt
+Hi all,
 
-halt() should use native_halt()
-safe_halt() uses native_safe_halt()
+After merging the sound-asoc tree, today's linux-next build (x86_64
+allmodconfig) produced this warning:
 
-If CONFIG_PARAVIRT=y, halt() is defined in arch/x86/include/asm/paravirt.h as
+sound/soc/codecs/tpa6130a2.c: In function 'tpa6130a2_add_controls':
+sound/soc/codecs/tpa6130a2.c:342: warning: unused variable 'dapm'
 
-static inline void halt(void)
-{
-        PVOP_VCALL0(pv_irq_ops.safe_halt);
-}
+Introduced by commit 39646871a47fd8808c08de0ce7d7ca8393af2805 ("ASoC:
+tpa6130a2: Replace DAPM code with direct interface").
 
-Otherwise (no CONFIG_PARAVIRT) halt() in arch/x86/include/asm/irqflags.h is
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-static inline void halt(void)
-{
-        native_halt();
-}
+--Signature=_Tue__28_Dec_2010_10_32_34_+1100_UZm.mAUBLfDnpSgF
+Content-Type: application/pgp-signature
 
-So it looks to me like the CONFIG_PARAVIRT case of using native_safe_halt()
-for a halt() is an oversight.
-Am I missing something?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-It probably hasn't shown up as a problem because the local apic is disabled
-on a shutdown or restart.  But if we disable interrupts and call halt()
-we shouldn't expect that the halt() will re-enable interrupts.
+iQEcBAEBAgAGBQJNGSISAAoJEDMEi1NhKgbsM/YH/RUL+9ZY/c4VStBfKrdA0lju
+OKKK7Nade7c/7r77ohOLsFsBa5leELoA9upfsTc1XYDIBPBWHAlMbP6prvkBD6ft
+857PD1iZvSyjDZV3emnZQZ0Awu16r7uNoeE/uutjfEh0tojrBMUma8/H8zCGrLIn
+zku4PSY/WBDlCEyNJXpb4mgAx+Jr+9hVGGVhsJ5YxI5gbjcdb2dHuc3mHrfnvc3i
+11wEiVnBkbtctcUf9PF/bXSVgsVeINtLtbx5XAD4PJfrvnNIf1Mke0Xl1SLA+iHu
++NDU8oRG+ziVsKynEjELBlOstYO3eTjtqRId/FaOtfWgkF5CYpRgp3KQf9dfwC0=
+=59yk
+-----END PGP SIGNATURE-----
 
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
-LKML-Reference: <E1PSBcz-0001g1-FM@eag09.americas.sgi.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/paravirt.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-index ef99758..7709c12 100644
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -112,7 +112,7 @@ static inline void arch_safe_halt(void)
- 
- static inline void halt(void)
- {
--	PVOP_VCALL0(pv_irq_ops.safe_halt);
-+	PVOP_VCALL0(pv_irq_ops.halt);
- }
- 
- static inline void wbinvd(void)
+--Signature=_Tue__28_Dec_2010_10_32_34_+1100_UZm.mAUBLfDnpSgF--
