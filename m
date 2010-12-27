@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751338Ab0L0UyR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 15:54:17 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:32295 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750958Ab0L0UyP (ORCPT
+	id S1751642Ab0L0VBu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 16:01:50 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:65512 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873Ab0L0VBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 15:54:15 -0500
-Date: Mon, 27 Dec 2010 12:52:42 -0800
-From: Joel Becker <Joel.Becker@oracle.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Mark Fasheh <mfasheh@suse.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        ocfs2-devel@oss.oracle.com
-Subject: Re: [PATCH -next] ocfs2: fix build for OCFS2_FS_STATS not enabled
-Message-ID: <20101227205242.GA30474@mail.oracle.com>
-Mail-Followup-To: Randy Dunlap <randy.dunlap@oracle.com>,
-	Stephen Rothwell <sfr@canb.auug.org.au>,
-	Mark Fasheh <mfasheh@suse.com>, linux-next@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>, ocfs2-devel@oss.oracle.com
-References: <20101227170451.a9a9f873.sfr@canb.auug.org.au>
- <20101227115508.8136331b.randy.dunlap@oracle.com>
+	Mon, 27 Dec 2010 16:01:49 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=vY4y9F0XAs2mLPePrOe0HzK6jSydW/C7JP0UZDKfNqmJ+ILpkmQ/1s3buBQoVyj76r
+         b8zgoGqZftuXToz2uHjTwYNH3utrEoYvnIFoijeyrr4bK++wC8VY23LO7m1XLlBCCAxy
+         1EFEvpgOkVYOyRMW/QwVMT7r4JN7AvZVjTp7s=
+From: Franck Bui-Huu <vagabon.xyz@gmail.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH] perf-probe: no need to initialize the entire temporary buffers in synthesize_perf_probe_point()
+References: <m3wrn07blu.fsf@gmail.com> <4D142591.2030101@hitachi.com>
+Date: Mon, 27 Dec 2010 22:01:44 +0100
+In-Reply-To: <4D142591.2030101@hitachi.com> (Masami Hiramatsu's message of
+	"Fri, 24 Dec 2010 13:46:09 +0900")
+Message-ID: <m3tyhzvsjr.fsf@gmail.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101227115508.8136331b.randy.dunlap@oracle.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 27, 2010 at 11:55:08AM -0800, Randy Dunlap wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> When CONFIG_OCFS2_FS_STATS is not enabled:
-> 
-> fs/ocfs2/cluster/tcp.c:1254: error: implicit declaration of function 'o2net_update_recv_stats'
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Cc:	Mark Fasheh <mfasheh@suse.com>
-> Cc:	Joel Becker <joel.becker@oracle.com>
-> Cc:	ocfs2-devel@oss.oracle.com
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
 
-Acked-by: Joel Becker <joel.becker@oracle.com>
+> (2010/12/24 0:27), Franck Bui-Huu wrote:
+>> From: Franck Bui-Huu <fbuihuu@gmail.com>
+>> 
+>> This patches only put a single null byte at the beginning of each
+>> temporary buffers line[], offs[], file[] instead of filling their full
+>> contents with null bytes.
+>
+> Hmm, sorry but NAK it.
+>
 
-Do you want to push it or would you like me to?
+No problem :)
 
-Joel
+>
+> IMHO, with modern chips, the original code has no problem from the
+> viewpoint of memory access (all are cached and no need to access just
+> one byte) nor a bottleneck.
 
+I'm not sure to understand this.
+
+But my point is that you're clearing the whole buffers with 0 although
+you just need to initialize them with the null string (a single null
+byte at the beginning).
+
+So you're doing useless memory accesses (cached or not).
+
+I agree with you that it won't make any speed improvements though, but
+it was just clearer for me, since what you want are null strings and not
+a char arrays fill with 0.
+
+Thanks.
 -- 
-
-"But all my words come back to me
- In shades of mediocrity.
- Like emptiness in harmony
- I need someone to comfort me."
-
-Joel Becker
-Senior Development Manager
-Oracle
-E-mail: joel.becker@oracle.com
-Phone: (650) 506-8127
+		Franck
