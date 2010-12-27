@@ -1,35 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab0L0OWn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 09:22:43 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:34136 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753951Ab0L0OWb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 09:22:31 -0500
-Date: Mon, 27 Dec 2010 23:20:50 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] nommu updates for 2.6.37-rc8
-Message-ID: <20101227142050.GA6583@linux-sh.org>
+	id S1753880Ab0L0O0X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 09:26:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57539 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753774Ab0L0O0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 09:26:22 -0500
+Message-ID: <4D18A211.8050202@suse.cz>
+Date: Mon, 27 Dec 2010 15:26:25 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.13 (2006-08-11)
+To: David Peverley <pev@sketchymonkey.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Oddity with Kconfig behaviour when using a type definition and
+ no prompt
+References: <AANLkTinwWpT3S0bNOjX-wTk_wfQ-56Wd7q6WfMmUTO9_@mail.gmail.com>
+In-Reply-To: <AANLkTinwWpT3S0bNOjX-wTk_wfQ-56Wd7q6WfMmUTO9_@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull from:
+On 23.12.2010 20:38, David Peverley wrote:
+> This is what I've always expected. Trying the following with a clean
+> kernel. However, what happens in the (often used) case of a type definition
+> with no prompt e.g.
+>       bool
+> is not defined in this doc. My _assumption_ would be that it should still
+> be used by the config system though :
+>
+>    bob:linux-2.6.31.14 $ make defconfig
+>    *** Default configuration is based on 'x86_64_defconfig'
+>    #
+>    # configuration written to .config
+>    #
+>    bob:linux-2.6.31.14 $ printf "\nconfig PEV_TEST\n\tbool\n">>  lib/Kconfig
+>    bob:linux-2.6.31.14 $ make oldconfig
+>    scripts/kconfig/conf -o arch/x86/Kconfig
+>    #
+>    # configuration written to .config
+>    #
 
-	master.kernel.org:/pub/scm/linux/kernel/git/lethal/nommu-2.6.git nommu-fixes-for-linus
 
-Which contains:
+Symbols with no prompt are not prompted for, these can only be set if 
+they have a default value or if some other symbol selects them.
 
-Paul Mundt (2):
-      nommu: Fix up vmalloc_node() symbol export regression.
-      nommu: Provide stubbed alloc/free_vm_area() implementation.
-
- mm/nommu.c |   28 +++++++++++++++++++++++++++-
- 1 files changed, 27 insertions(+), 1 deletions(-)
+Michal
