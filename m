@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668Ab0L0XlE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 18:41:04 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:46578 "EHLO e5.ny.us.ibm.com"
+	id S1752634Ab0L0Xsr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 18:48:47 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:33215 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752068Ab0L0XlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 18:41:02 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>,
-        Richard Cochran <richard.cochran@omicron.at>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 0/3] Cleanup ADJ_SETOFFSET patch
-Date: Mon, 27 Dec 2010 15:40:41 -0800
-Message-Id: <1293493244-17583-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1752068Ab0L0Xsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 18:48:46 -0500
+Date: Tue, 28 Dec 2010 10:48:34 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>
+Subject: Re: linux-next: build failure after merge of the sound-asoc tree
+Message-Id: <20101228104834.84202d88.sfr@canb.auug.org.au>
+In-Reply-To: <20101228104024.fb0e9e34.sfr@canb.auug.org.au>
+References: <20101228104024.fb0e9e34.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__28_Dec_2010_10_48_34_+1100_PDaUxtZHv7JtR+n0"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was looking to queue Richard's ADJ_SETOFFSET patch to see
-if it could be merged into -tip for 2.6.38, but on second 
-glance I noticed the ugly local_irq_disable bits as well
-as the fact that adding the offset uses a gettime/add/settime
-pattern which will also add a small error as the action isn't
-atomic.
+--Signature=_Tue__28_Dec_2010_10_48_34_+1100_PDaUxtZHv7JtR+n0
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-So I implemented a timekeeping function to add a fixed offset:
-timekeeping_inject_offset(), and reworked Richard's code to
-make use of it.
+Hi Mark, Takashi,
 
-Richard: Any objection here? Mind testing this with the rest
-of your patch queue?
+On Tue, 28 Dec 2010 10:40:24 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> After merging the sound-asoc tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+>=20
+> ERROR: "__tracepoint_snd_soc_jack_irq" [sound/soc/codecs/snd-soc-wm8962.k=
+o] undefined!
+>=20
+> In sound/soc/codecs/wm8962.c, the tracepoint is protected by
+> CONFIG_SOUND_SOC_WM8962_MODULE, it should be CONFIG_SND_SOC_WM8962_MODULE.
 
-Thomas: Any comments? Does this seem reasonable for 2.6.38? 
-Should I fold my cleanups into Richard's patch?
+I also got the same error in the sound tree, so I used the version of the
+sound tree that would have been in next-20101223 again today.
 
-thanks
--john
+Mark, I reversed the order of the trees today ...
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Tue__28_Dec_2010_10_48_34_+1100_PDaUxtZHv7JtR+n0
+Content-Type: application/pgp-signature
 
-CC: Richard Cochran <richard.cochran@omicron.at>
-CC: Thomas Gleixner <tglx@linutronix.de>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-John Stultz (2):
-  time: Introduce timekeeping_inject_offset
-  ntp: Change ADJ_SETOFFSET implementation to use
-    timekeeping_inject_offset
+iQEcBAEBAgAGBQJNGSXSAAoJEDMEi1NhKgbs0HMH/1jLhLBHu/+/uGbjpZpU7sXj
+sCnO4VA4UbLeyNviVUnf/Dpd0HpddQFIOBhKHrnQN2J0ak7YoshlsvwiODqbAMZ2
+5ZFqku9koHbWnMMtk+0GOal/bL47BBP81GI69as5aXFCf7axGnPrK0rwThUq9uVC
+F+4/2qlp9jF0YGsoiHXNAN58MPBPFBdfu4DiE1n/sojnwPcKBzIp6FiVfVkRRgSy
+xxedLX+kmsO63ySfFs2jsMCH8ugrcDhpJ2noN4GASmYu4CJG75/DioCKw9b+PAZU
+o3yQNj4abTsVBMQiptXwkwGVrQ3OLd2YXcqQNWRN9La2fo9c72vAPTQM8bkiwdo=
+=T80E
+-----END PGP SIGNATURE-----
 
-Richard Cochran (1):
-  ntp: add ADJ_SETOFFSET mode bit
-
- include/linux/time.h      |    1 +
- include/linux/timex.h     |    3 ++-
- kernel/time/ntp.c         |   13 +++++++++++++
- kernel/time/timekeeping.c |   36 ++++++++++++++++++++++++++++++++++++
- 4 files changed, 52 insertions(+), 1 deletions(-)
-
--- 
-1.7.3.2.146.gca209
-
+--Signature=_Tue__28_Dec_2010_10_48_34_+1100_PDaUxtZHv7JtR+n0--
