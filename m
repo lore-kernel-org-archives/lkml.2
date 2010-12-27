@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578Ab0L0XlB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 18:41:01 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:53631 "EHLO e9.ny.us.ibm.com"
+	id S1752716Ab0L0XlF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 18:41:05 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:38780 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752068Ab0L0XlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 18:41:00 -0500
+	id S1752465Ab0L0XlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 18:41:01 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: linux-kernel@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richard.cochran@omicron.at>
-Subject: [PATCH 1/3] time: Introduce timekeeping_inject_offset
-Date: Mon, 27 Dec 2010 15:40:42 -0800
-Message-Id: <1293493244-17583-2-git-send-email-john.stultz@linaro.org>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Cochran <richard.cochran@omicron.at>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 2/3] ntp: add ADJ_SETOFFSET mode bit
+Date: Mon, 27 Dec 2010 15:40:43 -0800
+Message-Id: <1293493244-17583-3-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1293493244-17583-1-git-send-email-john.stultz@linaro.org>
 References: <1293493244-17583-1-git-send-email-john.stultz@linaro.org>
@@ -21,80 +23,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a kernel-internal timekeeping interface to add or subtract
-a fixed amount from CLOCK_REALTIME. This makes it so kernel users or
-interfaces trying to do so do not have to read the time, then add an
-offset and then call settimeofday(), which adds some extra error in
-comparision to just simply adding the offset in the kernel timekeeping
-core.
+From: Richard Cochran <richardcochran@gmail.com>
+
+This patch adds a new mode bit into the timex structure. When set, the bit
+instructs the kernel to add the given time value to the current time.
 
 CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Richard Cochran <richard.cochran@omicron.at>
+LKML-Reference: <880d82bb8120f73973db27e0c48e949014b1a106.1292512461.git.richard.cochran@omicron.at>
+Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- include/linux/time.h      |    1 +
- kernel/time/timekeeping.c |   36 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 37 insertions(+), 0 deletions(-)
+ include/linux/timex.h |    3 ++-
+ kernel/time/ntp.c     |   26 ++++++++++++++++++++++++++
+ 2 files changed, 28 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/time.h b/include/linux/time.h
-index 9f15ac7..b402134 100644
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -166,6 +166,7 @@ extern int timekeeping_valid_for_hres(void);
- extern u64 timekeeping_max_deferment(void);
- extern void update_wall_time(void);
- extern void timekeeping_leap_insert(int leapsecond);
-+extern int timekeeping_inject_offset(struct timespec *ts);
+diff --git a/include/linux/timex.h b/include/linux/timex.h
+index 32d852f..82d4b24 100644
+--- a/include/linux/timex.h
++++ b/include/linux/timex.h
+@@ -73,7 +73,7 @@ struct timex {
+ 	long tolerance;		/* clock frequency tolerance (ppm)
+ 				 * (read only)
+ 				 */
+-	struct timeval time;	/* (read only) */
++	struct timeval time;	/* (read only, except for ADJ_SETOFFSET) */
+ 	long tick;		/* (modified) usecs between clock ticks */
  
- struct tms;
- extern void do_sys_times(struct tms *);
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 49010d8..77e79b3 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -340,6 +340,42 @@ int do_settimeofday(struct timespec *tv)
+ 	long ppsfreq;           /* pps frequency (scaled ppm) (ro) */
+@@ -101,6 +101,7 @@ struct timex {
+ #define ADJ_ESTERROR		0x0008	/* estimated time error */
+ #define ADJ_STATUS		0x0010	/* clock status */
+ #define ADJ_TIMECONST		0x0020	/* pll time constant */
++#define ADJ_SETOFFSET		0x0040  /* add 'time' to current time */
+ #define ADJ_TAI			0x0080	/* set TAI offset */
+ #define ADJ_MICRO		0x1000	/* select microsecond resolution */
+ #define ADJ_NANO		0x2000	/* select nanosecond resolution */
+diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
+index d232189..e9e3915 100644
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -454,6 +454,7 @@ static inline void process_adjtimex_modes(struct timex *txc, struct timespec *ts
+ int do_adjtimex(struct timex *txc)
+ {
+ 	struct timespec ts;
++	ktime_t delta, kt;
+ 	int result;
  
- EXPORT_SYMBOL(do_settimeofday);
+ 	/* Validate the data before disabling interrupts */
+@@ -482,8 +483,33 @@ int do_adjtimex(struct timex *txc)
+ 			hrtimer_cancel(&leap_timer);
+ 	}
  
++	if (txc->modes & ADJ_SETOFFSET) {
++		/* Validate the delta value. */
++		if (txc->time.tv_sec && txc->time.tv_usec < 0)
++			return -EINVAL;
 +
-+/**
-+ * timekeeping_inject_offset - Adds or subtracts from the current time.
-+ * @tv:		pointer to the timespec variable containing the offset
-+ *
-+ * Adds or subtracts an offset value from the current time.
-+ */
-+int timekeeping_inject_offset(struct timespec *ts)
-+{
-+	unsigned long flags;
++		if (txc->modes & ADJ_NANO) {
++			struct timespec tmp;
++			tmp.tv_sec  = txc->time.tv_sec;
++			tmp.tv_nsec = txc->time.tv_usec;
++			delta = timespec_to_ktime(tmp);
++		} else
++			delta = timeval_to_ktime(txc->time);
 +
-+	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
-+		return -EINVAL;
++		/* Adding the delta should be an "atomic" operation. */
++		local_irq_disable();
++	}
 +
-+	write_seqlock_irqsave(&xtime_lock, flags);
+ 	getnstimeofday(&ts);
+ 
++	if (txc->modes & ADJ_SETOFFSET) {
++		kt = timespec_to_ktime(ts);
++		kt = ktime_add(kt, delta);
++		ts = ktime_to_timespec(kt);
++		do_settimeofday(&ts);
++		local_irq_enable();
++	}
 +
-+	timekeeping_forward_now();
-+
-+	xtime = timespec_add(xtime, *ts);
-+	wall_to_monotonic = timespec_sub(wall_to_monotonic, *ts);
-+
-+	timekeeper.ntp_error = 0;
-+	ntp_clear();
-+
-+	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
-+				timekeeper.mult);
-+
-+	write_sequnlock_irqrestore(&xtime_lock, flags);
-+
-+	/* signal hrtimers about time change */
-+	clock_was_set();
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(timekeeping_inject_offset);
-+
- /**
-  * change_clocksource - Swaps clocksources if a new one is available
-  *
+ 	write_seqlock_irq(&xtime_lock);
+ 
+ 	if (txc->modes & ADJ_ADJTIME) {
 -- 
 1.7.3.2.146.gca209
 
