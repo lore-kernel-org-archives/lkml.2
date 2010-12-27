@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab0L0K4J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 05:56:09 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35965 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753502Ab0L0K4I (ORCPT
+	id S1753558Ab0L0LUA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 06:20:00 -0500
+Received: from mtagate6.uk.ibm.com ([194.196.100.166]:56823 "EHLO
+	mtagate6.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753043Ab0L0LT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 05:56:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=GUH8t3Rjcz7pjT74oTSdhNXZw3acoR2UgZ6auv09wuPWyf6JfROk65K1FC5Mkww1PT
-         a0zN1+tx00aCGRY8+pPlbJW0OhFiFJtYf2Dn6tdy38GoCLLC333zNnqBMv+xRuooA1yJ
-         uznbAgnLnnmuEMmwloOjO3p2txjn3wwRpKEVM=
-Date: Mon, 27 Dec 2010 11:56:04 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Niels <zorglub_olsen@hotmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Slow disks.
-Message-ID: <20101227105604.GF11419@htj.dyndns.org>
-References: <20101220141553.GA6088@bitwizard.nl>
- <20101220190630.66084e1d@neptune.home>
- <AANLkTi=VAJbVSzX_DH9_==a3RonLJmawYu3MzF-uqGXC@mail.gmail.com>
- <20101222104306.GB30941@bitwizard.nl>
- <m3aajvz5na.fsf@intrepid.localdomain>
- <4D14BB36.1030304@msgid.tls.msk.ru>
- <if8ebj$nf8$1@dough.gmane.org>
+	Mon, 27 Dec 2010 06:19:59 -0500
+From: Mustafa Mesanovic <mume@linux.vnet.ibm.com>
+Organization: IBM
+To: dm-devel@redhat.com, akpm@linux-foundation.org, snitzer@redhat.com,
+        neilb@suse.de
+Subject: [RFC][PATCH] dm: improve read performance
+Date: Mon, 27 Dec 2010 12:19:55 +0100
+User-Agent: KMail/1.13.2 (Linux/2.6.35-22-customkernel; KDE/4.4.2; i686; ; )
+Cc: linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com, cotte@de.ibm.com,
+        ehrhardt@linux.vnet.ibm.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <if8ebj$nf8$1@dough.gmane.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012271219.56476.mume@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 26, 2010 at 11:07:45PM +0100, Niels wrote:
-> I have several of these drives, in various sizes. They seem to be aligned to
-> 63 as you mention:
-> 
->    Device Boot      Start         End      Blocks   Id  System
-> /dev/sda1              63      208844      104391   83  Linux
-> /dev/sda2          208845    19759949     9775552+  82  Linux swap / Solaris
-> /dev/sda3        19759950   215094284    97667167+  83  Linux
-> /dev/sda4       215094285   781417664   283161690   83  Linux
-> 
->    Device Boot      Start         End      Blocks   Id  System
-> /dev/sdb1              63  1953520064   976760001   83  Linux
-> 
-> Is that bad?
+From: Mustafa Mesanovic <mume@linux.vnet.ibm.com>
 
-Yes.
+A short explanation in prior: in this case we have "stacked" dm devices. 
+Two multipathed luns combined together to one striped logical volume.
 
-> What can I do to repair it?
+I/O throughput degradation happens at __bio_add_page when bio's get checked 
+upon max_sectors. In this setup max_sectors is always set to 8 -> what is 
+4KiB.
+A standalone striped logical volume on luns which are not multipathed do not 
+have the problem: the logical volume will take over the max_sectors from luns 
+below. 
 
-Repartition it.
+Same happens with luns which are multipathed -> the multipathed targets have 
+the same max_sectors as the luns below.
 
-> What can I do to prevent it from happening again?
+So "magic" happens only when target has no own merge_fn and below lying 
+devices
+have a merge function -> we got then max_sectors=PAGE_SIZE >> 9.
+This patch prevents that max_sectors will be set to PAGE_SIZE >> 9.
+Instead it will use the minimum max_sectors value from below devices.
 
-Use more recent distros.  Most distros released in the past six month
-have partition utilties which honor partition alignment requirements.
+Using the patch improves read I/O up to 3x. In this specific case from 600MiB/s
+up to 1800MiB/s.
 
-Good luck.
+Signed-off-by: Mustafa Mesanovic <mume@linux.vnet.ibm.com>
+---
 
--- 
-tejun
+ dm-table.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-2.6/drivers/md/dm-table.c
+===================================================================
+--- linux-2.6.orig/drivers/md/dm-table.c	2010-12-23 13:49:18.000000000 +0100
++++ linux-2.6/drivers/md/dm-table.c	2010-12-23 13:50:22.000000000 +0100
+@@ -518,7 +518,7 @@
+ 
+ 	if (q->merge_bvec_fn && !ti->type->merge)
+ 		blk_limits_max_hw_sectors(limits,
+-					  (unsigned int) (PAGE_SIZE >> 9));
++					  q->limits.max_sectors);
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(dm_set_device_limits);
