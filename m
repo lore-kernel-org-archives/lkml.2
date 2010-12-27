@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217Ab0L0WAW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 17:00:22 -0500
-Received: from casper.infradead.org ([85.118.1.10]:40042 "EHLO
+	id S1752414Ab0L0WAf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 17:00:35 -0500
+Received: from casper.infradead.org ([85.118.1.10]:40069 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043Ab0L0WAV (ORCPT
+	with ESMTP id S1752127Ab0L0WAd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 17:00:21 -0500
+	Mon, 27 Dec 2010 17:00:33 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Franck Bui-Huu <fbuihuu@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 4/4] perf probe: Fix short file name probe location reporting
-Date: Mon, 27 Dec 2010 20:00:13 -0200
-Message-Id: <1293487213-533-5-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ian Munsie <imunsie@au1.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>, Torok Edwin <edwintorok@gmail.com>
+Subject: [PATCH 3/4] perf script: Fix event ordering settings to work with older kernels
+Date: Mon, 27 Dec 2010 20:00:12 -0200
+Message-Id: <1293487213-533-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1293487213-533-1-git-send-email-acme@infradead.org>
 References: <1293487213-533-1-git-send-email-acme@infradead.org>
@@ -24,64 +28,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Franck Bui-Huu <fbuihuu@gmail.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-After adding probes, perf-probe(1) reports the probes locations which include
-filenames for certain cases.
+If we don't use .ordering_requires_timestamps we'll end up trying to order
+events with no timestamps when running on older kernels.
 
-But for short file names (whose length < 32), perf-probe didn't display the
-name correctly. It actually skipped the first character.
+Problem introduced in eac23d1c.
 
-Here's an example where 'icmp.c' was screwed:
+After the last three fixes, perf scripting is back working, tested with
+new perf userspace on old and new (with sample_id_all) kernels.
 
-   $ perf probe -n -a "icmp.c;sk=*"
-   Add new events:
-     probe:icmp_push_reply (on @cmp.c)
-     probe:icmp_reply     (on @cmp.c)
-     probe:icmp_reply_1   (on @cmp.c)
-     probe:icmp_send      (on @cmp.c)
-     probe:icmp_send_1    (on @cmp.c)
-     probe:icmp_error     (on @cmp.c)
-     probe:icmp_error_1   (on @cmp.c)
-     probe:icmp_error_2   (on @cmp.c)
-     probe:icmp_error_3   (on @cmp.c)
-
-This patch fixes this bug in synthesize_perf_probe_point().
-
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-LKML-Reference: <m31v588r9k.fsf@gmail.com>
-Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ian Munsie <imunsie@au1.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Cc: Torok Edwin <edwintorok@gmail.com>
+LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/probe-event.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ tools/perf/builtin-script.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 4bde988..d3af30d 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -1068,13 +1068,13 @@ static char *synthesize_perf_probe_point(struct perf_probe_point *pp)
- 			goto error;
- 	}
- 	if (pp->file) {
--		len = strlen(pp->file) - 31;
--		if (len < 0)
--			len = 0;
--		tmp = strchr(pp->file + len, '/');
--		if (!tmp)
--			tmp = pp->file + len;
--		ret = e_snprintf(file, 32, "@%s", tmp + 1);
-+		tmp = pp->file;
-+		len = strlen(tmp);
-+		if (len > 30) {
-+			tmp = strchr(pp->file + len - 30, '/');
-+			tmp = tmp ? tmp + 1 : pp->file + len - 30;
-+		}
-+		ret = e_snprintf(file, 32, "@%s", tmp);
- 		if (ret <= 0)
- 			goto error;
- 	}
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 6ef65c0..43480fd 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -117,6 +117,7 @@ static struct perf_event_ops event_ops = {
+ 	.tracing_data = event__process_tracing_data,
+ 	.build_id = event__process_build_id,
+ 	.lost = process_lost_event,
++	.ordering_requires_timestamps = true,
+ 	.ordered_samples = true,
+ };
+ 
 -- 
 1.6.2.5
 
