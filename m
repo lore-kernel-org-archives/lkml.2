@@ -1,298 +1,356 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905Ab0L0Iu2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 03:50:28 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:56532 "EHLO song.cn.fujitsu.com"
+	id S1753144Ab0L0Iuh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 03:50:37 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:60884 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752430Ab0L0Iu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 03:50:27 -0500
-Message-ID: <4D185357.7090304@cn.fujitsu.com>
-Date: Mon, 27 Dec 2010 16:50:31 +0800
+	id S1752965Ab0L0Iue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 03:50:34 -0500
+Message-ID: <4D185360.2010504@cn.fujitsu.com>
+Date: Mon, 27 Dec 2010 16:50:40 +0800
 From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
 User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
 To: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>
-CC: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+CC: Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
         Corrado Zoccolo <czoccolo@gmail.com>,
         Chad Talbott <ctalbott@google.com>, Nauman Rafique <nauman@google.com>,
         Divyesh Shah <dpshah@google.com>, jmoyer@redhat.com,
-        Shaohua Li <shaohua.li@intel.com>, guijianfeng@cn.fujitsu.com
-Subject: [PATCH 0/6 v3] Introduce CFQ group hierarchical scheduling and "use_hierarchy"
- interface
+        Shaohua Li <shaohua.li@intel.com>
+Subject: [PATCH 1/6 v3] cfq-iosched: Introduce cfq_entity for CFQ queue
+References: <4D180ECE.4000305@cn.fujitsu.com>
+In-Reply-To: <4D180ECE.4000305@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-27 16:50:11,
+ 2010-12-27 16:50:20,
 	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-27 16:50:14
-Content-Type: multipart/mixed;
- boundary="------------050509060807050506030007"
+ 2010-12-27 16:50:21,
+	Serialize complete at 2010-12-27 16:50:21
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Introduce cfq_entity for CFQ queue.
 
---------------050509060807050506030007
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+---
+ block/cfq-iosched.c |  119 ++++++++++++++++++++++++++++++++------------------
+ 1 files changed, 76 insertions(+), 43 deletions(-)
 
-Hi
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index c19d015..6b74302 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -91,20 +91,31 @@ struct cfq_rb_root {
+ #define CFQ_RB_ROOT	(struct cfq_rb_root) { .rb = RB_ROOT, .left = NULL, \
+ 			.count = 0, .min_vdisktime = 0, }
+ 
++
++/*
++ * This's the CFQ queue schedule entity which is scheduled on  service tree.
++ */
++struct cfq_entity {
++	/* service tree */
++	struct cfq_rb_root *service_tree;
++	/* service_tree member */
++	struct rb_node rb_node;
++	/* service_tree key, represent the position on the tree */
++	unsigned long rb_key;
++};
++
+ /*
+  * Per process-grouping structure
+  */
+ struct cfq_queue {
++	/* The schedule entity */
++	struct cfq_entity cfqe;
+ 	/* reference count */
+ 	atomic_t ref;
+ 	/* various state flags, see below */
+ 	unsigned int flags;
+ 	/* parent cfq_data */
+ 	struct cfq_data *cfqd;
+-	/* service_tree member */
+-	struct rb_node rb_node;
+-	/* service_tree key */
+-	unsigned long rb_key;
+ 	/* prio tree member */
+ 	struct rb_node p_node;
+ 	/* prio tree root we belong to, if any */
+@@ -143,7 +154,6 @@ struct cfq_queue {
+ 	u32 seek_history;
+ 	sector_t last_request_pos;
+ 
+-	struct cfq_rb_root *service_tree;
+ 	struct cfq_queue *new_cfqq;
+ 	struct cfq_group *cfqg;
+ 	struct cfq_group *orig_cfqg;
+@@ -302,6 +312,15 @@ struct cfq_data {
+ 	struct rcu_head rcu;
+ };
+ 
++static inline struct cfq_queue *
++cfqq_of_entity(struct cfq_entity *cfqe)
++{
++	if (cfqe)
++		return container_of(cfqe, struct cfq_queue, cfqe);
++
++	return NULL;
++}
++
+ static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd);
+ 
+ static struct cfq_rb_root *service_tree_for(struct cfq_group *cfqg,
+@@ -743,7 +762,7 @@ cfq_choose_req(struct cfq_data *cfqd, struct request *rq1, struct request *rq2,
+ /*
+  * The below is leftmost cache rbtree addon
+  */
+-static struct cfq_queue *cfq_rb_first(struct cfq_rb_root *root)
++static struct cfq_entity *cfq_rb_first(struct cfq_rb_root *root)
+ {
+ 	/* Service tree is empty */
+ 	if (!root->count)
+@@ -753,7 +772,7 @@ static struct cfq_queue *cfq_rb_first(struct cfq_rb_root *root)
+ 		root->left = rb_first(&root->rb);
+ 
+ 	if (root->left)
+-		return rb_entry(root->left, struct cfq_queue, rb_node);
++		return rb_entry(root->left, struct cfq_entity, rb_node);
+ 
+ 	return NULL;
+ }
+@@ -1170,21 +1189,24 @@ static inline void cfq_put_cfqg(struct cfq_group *cfqg) {}
+ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 				 bool add_front)
+ {
++	struct cfq_entity *cfqe;
+ 	struct rb_node **p, *parent;
+-	struct cfq_queue *__cfqq;
++	struct cfq_entity *__cfqe;
+ 	unsigned long rb_key;
+ 	struct cfq_rb_root *service_tree;
+ 	int left;
+ 	int new_cfqq = 1;
+ 	int group_changed = 0;
+ 
++	cfqe = &cfqq->cfqe;
++
+ #ifdef CONFIG_CFQ_GROUP_IOSCHED
+ 	if (!cfqd->cfq_group_isolation
+ 	    && cfqq_type(cfqq) == SYNC_NOIDLE_WORKLOAD
+ 	    && cfqq->cfqg && cfqq->cfqg != &cfqd->root_group) {
+ 		/* Move this cfq to root group */
+ 		cfq_log_cfqq(cfqd, cfqq, "moving to root group");
+-		if (!RB_EMPTY_NODE(&cfqq->rb_node))
++		if (!RB_EMPTY_NODE(&cfqe->rb_node))
+ 			cfq_group_service_tree_del(cfqd, cfqq->cfqg);
+ 		cfqq->orig_cfqg = cfqq->cfqg;
+ 		cfqq->cfqg = &cfqd->root_group;
+@@ -1194,7 +1216,7 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 		   && cfqq_type(cfqq) == SYNC_WORKLOAD && cfqq->orig_cfqg) {
+ 		/* cfqq is sequential now needs to go to its original group */
+ 		BUG_ON(cfqq->cfqg != &cfqd->root_group);
+-		if (!RB_EMPTY_NODE(&cfqq->rb_node))
++		if (!RB_EMPTY_NODE(&cfqe->rb_node))
+ 			cfq_group_service_tree_del(cfqd, cfqq->cfqg);
+ 		cfq_put_cfqg(cfqq->cfqg);
+ 		cfqq->cfqg = cfqq->orig_cfqg;
+@@ -1209,9 +1231,9 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 	if (cfq_class_idle(cfqq)) {
+ 		rb_key = CFQ_IDLE_DELAY;
+ 		parent = rb_last(&service_tree->rb);
+-		if (parent && parent != &cfqq->rb_node) {
+-			__cfqq = rb_entry(parent, struct cfq_queue, rb_node);
+-			rb_key += __cfqq->rb_key;
++		if (parent && parent != &cfqe->rb_node) {
++			__cfqe = rb_entry(parent, struct cfq_entity, rb_node);
++			rb_key += __cfqe->rb_key;
+ 		} else
+ 			rb_key += jiffies;
+ 	} else if (!add_front) {
+@@ -1226,37 +1248,37 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 		cfqq->slice_resid = 0;
+ 	} else {
+ 		rb_key = -HZ;
+-		__cfqq = cfq_rb_first(service_tree);
+-		rb_key += __cfqq ? __cfqq->rb_key : jiffies;
++		__cfqe = cfq_rb_first(service_tree);
++		rb_key += __cfqe ? __cfqe->rb_key : jiffies;
+ 	}
+ 
+-	if (!RB_EMPTY_NODE(&cfqq->rb_node)) {
++	if (!RB_EMPTY_NODE(&cfqe->rb_node)) {
+ 		new_cfqq = 0;
+ 		/*
+ 		 * same position, nothing more to do
+ 		 */
+-		if (rb_key == cfqq->rb_key &&
+-		    cfqq->service_tree == service_tree)
++		if (rb_key == cfqe->rb_key &&
++		    cfqe->service_tree == service_tree)
+ 			return;
+ 
+-		cfq_rb_erase(&cfqq->rb_node, cfqq->service_tree);
+-		cfqq->service_tree = NULL;
++		cfq_rb_erase(&cfqe->rb_node, cfqe->service_tree);
++		cfqe->service_tree = NULL;
+ 	}
+ 
+ 	left = 1;
+ 	parent = NULL;
+-	cfqq->service_tree = service_tree;
++	cfqe->service_tree = service_tree;
+ 	p = &service_tree->rb.rb_node;
+ 	while (*p) {
+ 		struct rb_node **n;
+ 
+ 		parent = *p;
+-		__cfqq = rb_entry(parent, struct cfq_queue, rb_node);
++		__cfqe = rb_entry(parent, struct cfq_entity, rb_node);
+ 
+ 		/*
+ 		 * sort by key, that represents service time.
+ 		 */
+-		if (time_before(rb_key, __cfqq->rb_key))
++		if (time_before(rb_key, __cfqe->rb_key))
+ 			n = &(*p)->rb_left;
+ 		else {
+ 			n = &(*p)->rb_right;
+@@ -1267,11 +1289,11 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 	}
+ 
+ 	if (left)
+-		service_tree->left = &cfqq->rb_node;
++		service_tree->left = &cfqe->rb_node;
+ 
+-	cfqq->rb_key = rb_key;
+-	rb_link_node(&cfqq->rb_node, parent, p);
+-	rb_insert_color(&cfqq->rb_node, &service_tree->rb);
++	cfqe->rb_key = rb_key;
++	rb_link_node(&cfqe->rb_node, parent, p);
++	rb_insert_color(&cfqe->rb_node, &service_tree->rb);
+ 	service_tree->count++;
+ 	if ((add_front || !new_cfqq) && !group_changed)
+ 		return;
+@@ -1373,13 +1395,16 @@ static void cfq_add_cfqq_rr(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+  */
+ static void cfq_del_cfqq_rr(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+ {
++	struct cfq_entity *cfqe;
+ 	cfq_log_cfqq(cfqd, cfqq, "del_from_rr");
+ 	BUG_ON(!cfq_cfqq_on_rr(cfqq));
+ 	cfq_clear_cfqq_on_rr(cfqq);
+ 
+-	if (!RB_EMPTY_NODE(&cfqq->rb_node)) {
+-		cfq_rb_erase(&cfqq->rb_node, cfqq->service_tree);
+-		cfqq->service_tree = NULL;
++	cfqe = &cfqq->cfqe;
++
++	if (!RB_EMPTY_NODE(&cfqe->rb_node)) {
++		cfq_rb_erase(&cfqe->rb_node, cfqe->service_tree);
++		cfqe->service_tree = NULL;
+ 	}
+ 	if (cfqq->p_root) {
+ 		rb_erase(&cfqq->p_node, cfqq->p_root);
+@@ -1707,13 +1732,13 @@ static struct cfq_queue *cfq_get_next_queue(struct cfq_data *cfqd)
+ 		return NULL;
+ 	if (RB_EMPTY_ROOT(&service_tree->rb))
+ 		return NULL;
+-	return cfq_rb_first(service_tree);
++	return cfqq_of_entity(cfq_rb_first(service_tree));
+ }
+ 
+ static struct cfq_queue *cfq_get_next_queue_forced(struct cfq_data *cfqd)
+ {
+ 	struct cfq_group *cfqg;
+-	struct cfq_queue *cfqq;
++	struct cfq_entity *cfqe;
+ 	int i, j;
+ 	struct cfq_rb_root *st;
+ 
+@@ -1724,9 +1749,11 @@ static struct cfq_queue *cfq_get_next_queue_forced(struct cfq_data *cfqd)
+ 	if (!cfqg)
+ 		return NULL;
+ 
+-	for_each_cfqg_st(cfqg, i, j, st)
+-		if ((cfqq = cfq_rb_first(st)) != NULL)
+-			return cfqq;
++	for_each_cfqg_st(cfqg, i, j, st) {
++		cfqe = cfq_rb_first(st);
++		if (cfqe != NULL)
++			return cfqq_of_entity(cfqe);
++	}
+ 	return NULL;
+ }
+ 
+@@ -1863,9 +1890,12 @@ static struct cfq_queue *cfq_close_cooperator(struct cfq_data *cfqd,
+ 
+ static bool cfq_should_idle(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+ {
++	struct cfq_entity *cfqe;
+ 	enum wl_prio_t prio = cfqq_prio(cfqq);
+-	struct cfq_rb_root *service_tree = cfqq->service_tree;
++	struct cfq_rb_root *service_tree;
+ 
++	cfqe = &cfqq->cfqe;
++	service_tree = cfqe->service_tree;
+ 	BUG_ON(!service_tree);
+ 	BUG_ON(!service_tree->count);
+ 
+@@ -2075,7 +2105,7 @@ static void cfq_setup_merge(struct cfq_queue *cfqq, struct cfq_queue *new_cfqq)
+ static enum wl_type_t cfq_choose_wl(struct cfq_data *cfqd,
+ 				struct cfq_group *cfqg, enum wl_prio_t prio)
+ {
+-	struct cfq_queue *queue;
++	struct cfq_entity *cfqe;
+ 	int i;
+ 	bool key_valid = false;
+ 	unsigned long lowest_key = 0;
+@@ -2083,10 +2113,10 @@ static enum wl_type_t cfq_choose_wl(struct cfq_data *cfqd,
+ 
+ 	for (i = 0; i <= SYNC_WORKLOAD; ++i) {
+ 		/* select the one with lowest rb_key */
+-		queue = cfq_rb_first(service_tree_for(cfqg, prio, i));
+-		if (queue &&
+-		    (!key_valid || time_before(queue->rb_key, lowest_key))) {
+-			lowest_key = queue->rb_key;
++		cfqe = cfq_rb_first(service_tree_for(cfqg, prio, i));
++		if (cfqe &&
++		    (!key_valid || time_before(cfqe->rb_key, lowest_key))) {
++			lowest_key = cfqe->rb_key;
+ 			cur_best = i;
+ 			key_valid = true;
+ 		}
+@@ -2833,7 +2863,10 @@ static void cfq_ioc_set_ioprio(struct io_context *ioc)
+ static void cfq_init_cfqq(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 			  pid_t pid, bool is_sync)
+ {
+-	RB_CLEAR_NODE(&cfqq->rb_node);
++	struct cfq_entity *cfqe;
++
++	cfqe = &cfqq->cfqe;
++	RB_CLEAR_NODE(&cfqe->rb_node);
+ 	RB_CLEAR_NODE(&cfqq->p_node);
+ 	INIT_LIST_HEAD(&cfqq->fifo);
+ 
+@@ -3242,7 +3275,7 @@ cfq_should_preempt(struct cfq_data *cfqd, struct cfq_queue *new_cfqq,
+ 	/* Allow preemption only if we are idling on sync-noidle tree */
+ 	if (cfqd->serving_type == SYNC_NOIDLE_WORKLOAD &&
+ 	    cfqq_type(new_cfqq) == SYNC_NOIDLE_WORKLOAD &&
+-	    new_cfqq->service_tree->count == 2 &&
++	    new_cfqq->cfqe.service_tree->count == 2 &&
+ 	    RB_EMPTY_ROOT(&cfqq->sort_list))
+ 		return true;
+ 
+-- 
+1.6.5.2
 
-Previously, I posted a patchset to add support of CFQ group hierarchical scheduling
-in the way that it puts all CFQ queues in a hidden group and schedules with other 
-CFQ group under their parent. The patchset is available here,
-http://lkml.org/lkml/2010/8/30/30
-
-Vivek think this approach isn't so instinct that we should treat CFQ queues
-and groups at the same level. Here is the new approach for hierarchical 
-scheduling based on Vivek's suggestion. The most big change of CFQ is that
-it gets rid of cfq_slice_offset logic, and makes use of vdisktime for CFQ
-queue scheduling just like CFQ group does. But I still give cfqq some jump 
-in vdisktime based on ioprio, thanks for Vivek to point out this. Now CFQ 
-queue and CFQ group use the same scheduling algorithm. 
-
-"use_hierarchy" interface is now added to switch between hierarchical mode
-and flat mode. It works as memcg.
-
---
-V2 -> V3 Changes:
-- Starting from cfqd->grp_service_tree for both hierarchical mode and flat mode
-- Avoid recursion when allocating cfqg and force dispatch logic
-- Fix a bug when boosting vdisktime
-- Adjusting total_weight accordingly when changing weight
-- Change group slice calculation into a hierarchical way
-- Keep flat mode rather than deleting it first then adding it later
-- kfree the parent cfqg if there nobody references to it
-- Simplify select_queue logic by using some wrap function
-- Make "use_hierarchy" interface work as memcg
-- Make use of time_before() for vdisktime compare
-- Update Document
-- Fix some code style problems
-
---
-V1 -> V2 Changes:
-- Raname "struct io_sched_entity" to "struct cfq_entity" and don't differentiate
-  queue_entity and group_entity, just use cfqe instead. 
-- Give newly added cfqq a small vdisktime jump accord to its ioprio.
-- Make flat mode as default CFQ group scheduling mode.
-- Introduce "use_hierarchy" interface.
-- Update blkio cgroup documents
-
-Benchmarks:
-I made use of Vivek's iostest to perform some benchmarks on my box. I tested different workloads with
-idling on and off. I didn't see any performance drop comparing to vanilla kernel. The attached files
-are some performance numbers on vanilla Kernel and patched Kernel.
-
-[PATCH 1/6 v3] cfq-iosched: Introduce cfq_entity for CFQ queue
-[PATCH 2/6 v3] cfq-iosched: Introduce cfq_entity for CFQ group
-[PATCH 3/6 v3] cfq-iosched: Introduce vdisktime and io weight for CFQ queue
-[PATCH 4/6 v3] cfq-iosched: Extract some common code of service tree handling for CFQ queue and CFQ group
-[PATCH 5/6 v3] cfq-iosched: CFQ group hierarchical scheduling and use_hierarchy interface
-[PATCH 6/6 v3] blkio-cgroup: Document for blkio.use_hierarchy interface
 
 
 
 
 
 
---------------050509060807050506030007
-Content-Type: text/plain;
- name="Hier_v3.log"
-Content-Disposition: inline;
- filename="Hier_v3.log"
-Content-Transfer-Encoding: quoted-printable
 
-Host=3Dlocalhost.localdomain     Kernel=3D2.6.37-rc2-Block-+     =0AGROUPMO=
-DE=3D1          NRGRP=3D4             =0ADIR=3D/mnt/iostestmnt/fio        D=
-EV=3D/dev/sdb2                 =0AWorkload=3Dbrr      iosched=3Dcfq     Fil=
-esz=3D512M bs=3D32k  =0Agroup=5Fisolation=3D1 slice=5Fidle=3D0    group=5Fi=
-dle=3D0    quantum=3D8    =0A=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=0AAVERAGE[brr]    [bw in KB/s]    =0A------- =0Ajo=
-b     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  total  =0A---     --- --  -------=
-----------------------------=0Abrr     1   1   748    748    749    747    =
-2992   =0Abrr     1   2   256    566    865    896    2583   =0Abrr     1  =
- 4   154    318    560    1084   2116   =0A=0A=0AHost=3Dlocalhost.localdoma=
-in     Kernel=3D2.6.37-rc2-Block-+     =0AGROUPMODE=3D1          NRGRP=3D4 =
-            =0ADIR=3D/mnt/iostestmnt/fio        DEV=3D/dev/sdb2            =
-     =0AWorkload=3Dbrr      iosched=3Dcfq     Filesz=3D512M bs=3D32k  =0Agr=
-oup=5Fisolation=3D1 slice=5Fidle=3D8    group=5Fidle=3D8    quantum=3D8    =
-=0A=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=0A=
-AVERAGE[brr]    [bw in KB/s]    =0A------- =0Ajob     Set NR  cgrp1  cgrp2 =
- cgrp3  cgrp4  total  =0A---     --- --  ----------------------------------=
--=0Abrr     1   1   380    728    1074   1443   3625   =0Abrr     1   2   2=
-01    427    713    1252   2593   =0Abrr     1   4   146    327    551    1=
-111   2135   =0A=0A=0AHost=3Dlocalhost.localdomain     Kernel=3D2.6.37-rc2-=
-Block-+     =0AGROUPMODE=3D1          NRGRP=3D4             =0ADIR=3D/mnt/i=
-ostestmnt/fio        DEV=3D/dev/sdb2                 =0AWorkload=3Dbsr     =
- iosched=3Dcfq     Filesz=3D512M bs=3D32k  =0Agroup=5Fisolation=3D1 slice=
-=5Fidle=3D0    group=5Fidle=3D0    quantum=3D8    =0A=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=0AAVERAGE[bsr]    [bw in K=
-B/s]    =0A------- =0Ajob     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  total  =
-=0A---     --- --  -----------------------------------=0Absr     1   1   77=
-97   7799   7788   7805   31189  =0Absr     1   2   3026   6433   9643   99=
-53   29055  =0Absr     1   4   2302   4582   7507   13557  27948  =0A=0A=0A=
-Host=3Dlocalhost.localdomain     Kernel=3D2.6.37-rc2-Block-+     =0AGROUPMO=
-DE=3D1          NRGRP=3D4             =0ADIR=3D/mnt/iostestmnt/fio        D=
-EV=3D/dev/sdb2                 =0AWorkload=3Dbsr      iosched=3Dcfq     Fil=
-esz=3D512M bs=3D32k  =0Agroup=5Fisolation=3D1 slice=5Fidle=3D8    group=5Fi=
-dle=3D8    quantum=3D8    =0A=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=0AAVERAGE[bsr]    [bw in KB/s]    =0A------- =0Ajo=
-b     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  total  =0A---     --- --  -------=
-----------------------------=0Absr     1   1   6288   10419  15332  20832  =
-52871  =0A=0A=0AHost=3Dlocalhost.localdomain     Kernel=3D2.6.37-rc2-Block-=
-+     =0AGROUPMODE=3D1          NRGRP=3D4             =0ADIR=3D/mnt/iostest=
-mnt/fio        DEV=3D/dev/sdb2                 =0AWorkload=3Ddrr      iosch=
-ed=3Dcfq     Filesz=3D512M bs=3D32k  =0Agroup=5Fisolation=3D1 slice=5Fidle=
-=3D0    group=5Fidle=3D0    quantum=3D8    =0A=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=0AAVERAGE[drr]    [bw in KB/s]  =
-  =0A------- =0Ajob     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  total  =0A---  =
-   --- --  -----------------------------------=0Adrr     1   1   757    757=
-    757    755    3026   =0Adrr     1   2   233    547    829    919    252=
-8   =0Adrr     1   4   143    306    574    1071   2094   =0A=0A=0AHost=3Dl=
-ocalhost.localdomain     Kernel=3D2.6.37-rc2-Block-+     =0AGROUPMODE=3D1  =
-        NRGRP=3D4             =0ADIR=3D/mnt/iostestmnt/fio        DEV=3D/de=
-v/sdb2                 =0AWorkload=3Ddrr      iosched=3Dcfq     Filesz=3D51=
-2M bs=3D32k  =0Agroup=5Fisolation=3D1 slice=5Fidle=3D8    group=5Fidle=3D8 =
-   quantum=3D8    =0A=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=0AAVERAGE[drr]    [bw in KB/s]    =0A------- =0Ajob     Set=
- NR  cgrp1  cgrp2  cgrp3  cgrp4  total  =0A---     --- --  ----------------=
--------------------=0Adrr     1   1   371    729    1080   1429   3609   =
-=0Adrr     1   2   192    409    793    1260   2654   =0Adrr     1   4   15=
-3    316    578    1066   2113   =0A=0A=0AHost=3Dlocalhost.localdomain     =
-Kernel=3D2.6.37-rc2-Block-+     =0AGROUPMODE=3D1          NRGRP=3D4        =
-     =0ADIR=3D/mnt/iostestmnt/fio        DEV=3D/dev/sdb2                 =
-=0AWorkload=3Ddrw      iosched=3Dcfq     Filesz=3D512M bs=3D32k  =0Agroup=
-=5Fisolation=3D1 slice=5Fidle=3D0    group=5Fidle=3D0    quantum=3D8    =0A=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=0AAVE=
-RAGE[drw]    [bw in KB/s]    =0A------- =0Ajob     Set NR  cgrp1  cgrp2  cg=
-rp3  cgrp4  total  =0A---     --- --  -----------------------------------=
-=0Adrw     1   1   1529   1530   1531   1532   6122   =0Adrw     1   2   52=
-1    931    1185   1224   3861   =0Adrw     1   4   150    382    988    15=
-88   3108   =0A=0A=0AHost=3Dlocalhost.localdomain     Kernel=3D2.6.37-rc2-B=
-lock-+     =0AGROUPMODE=3D1          NRGRP=3D4             =0ADIR=3D/mnt/io=
-stestmnt/fio        DEV=3D/dev/sdb2                 =0AWorkload=3Ddrw      =
-iosched=3Dcfq     Filesz=3D512M bs=3D32k  =0Agroup=5Fisolation=3D1 slice=5F=
-idle=3D8    group=5Fidle=3D8    quantum=3D8    =0A=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=0AAVERAGE[drw]    [bw in KB/s=
-]    =0A------- =0Ajob     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  total  =0A--=
--     --- --  -----------------------------------=0Adrw     1   1   529    =
-1243   1887   2778   6437   =0Adrw     1   2   296    717    1259   1817   =
-4089   =0Adrw     1   4   164    403    937    1662   3166   =0A=0A=0A=
-
---------------050509060807050506030007
-Content-Type: text/plain;
- name="Vanilla.log"
-Content-Disposition: inline;
- filename="Vanilla.log"
-Content-Transfer-Encoding: quoted-printable
-
-Host=3Dlocalhost.localdomain     Kernel=3D2.6.37-rc2-Block-+     =0AGROUPMO=
-DE=3D1          NRGRP=3D4             =0ADIR=3D/mnt/iostestmnt/fio        D=
-EV=3D/dev/sdb2                 =0AWorkload=3Dbrr      iosched=3Dcfq     Fil=
-esz=3D512M bs=3D32k  =0Agroup=5Fisolation=3D1 slice=5Fidle=3D0    group=5Fi=
-dle=3D0    quantum=3D8    =0A=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=0AAVERAGE[brr]    [bw in KB/s]    =0A------- =0Ajo=
-b     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  total  =0A---     --- --  -------=
-----------------------------=0Abrr     1   1   759    759    760    758    =
-3036   =0Abrr     1   2   224    549    849    903    2525   =0Abrr     1  =
- 4   146    307    558    1090   2101   =0A=0A=0AHost=3Dlocalhost.localdoma=
-in     Kernel=3D2.6.37-rc2-Block-+     =0AGROUPMODE=3D1          NRGRP=3D4 =
-            =0ADIR=3D/mnt/iostestmnt/fio        DEV=3D/dev/sdb2            =
-     =0AWorkload=3Dbrr      iosched=3Dcfq     Filesz=3D512M bs=3D32k  =0Agr=
-oup=5Fisolation=3D1 slice=5Fidle=3D8    group=5Fidle=3D8    quantum=3D8    =
-=0A=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=0A=
-AVERAGE[brr]    [bw in KB/s]    =0A------- =0Ajob     Set NR  cgrp1  cgrp2 =
- cgrp3  cgrp4  total  =0A---     --- --  ----------------------------------=
--=0Abrr     1   1   375    734    1080   1426   3615   =0Abrr     1   2   1=
-68    418    767    1233   2586   =0Abrr     1   4   151    333    581    1=
-068   2133   =0A=0A=0AHost=3Dlocalhost.localdomain     Kernel=3D2.6.37-rc2-=
-Block-+     =0AGROUPMODE=3D1          NRGRP=3D4             =0ADIR=3D/mnt/i=
-ostestmnt/fio        DEV=3D/dev/sdb2                 =0AWorkload=3Dbsr     =
- iosched=3Dcfq     Filesz=3D512M bs=3D32k  =0Agroup=5Fisolation=3D1 slice=
-=5Fidle=3D0    group=5Fidle=3D0    quantum=3D8    =0A=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=0AAVERAGE[bsr]    [bw in K=
-B/s]    =0A------- =0Ajob     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  total  =
-=0A---     --- --  -----------------------------------=0Absr     1   1   80=
-00   8015   8027   8159   32201  =0Absr     1   2   3200   6302   9612   10=
-018  29132  =0Absr     1   4   2153   4408   7857   13590  28008  =0A=0A=0A=
-Host=3Dlocalhost.localdomain     Kernel=3D2.6.37-rc2-Block-+     =0AGROUPMO=
-DE=3D1          NRGRP=3D4             =0ADIR=3D/mnt/iostestmnt/fio        D=
-EV=3D/dev/sdb2                 =0AWorkload=3Dbsr      iosched=3Dcfq     Fil=
-esz=3D512M bs=3D32k  =0Agroup=5Fisolation=3D1 slice=5Fidle=3D8    group=5Fi=
-dle=3D8    quantum=3D8    =0A=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=0AAVERAGE[bsr]    [bw in KB/s]    =0A------- =0Ajo=
-b     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  total  =0A---     --- --  -------=
-----------------------------=0Absr     1   1   6988   11575  17883  23389  =
-59835  =0Absr     1   2   6808   11453  15979  19838  54078  =0Absr     1  =
- 4   5352   10986  14529  18189  49056  =0A=0A=0AHost=3Dlocalhost.localdoma=
-in     Kernel=3D2.6.37-rc2-Block-+     =0AGROUPMODE=3D1          NRGRP=3D4 =
-            =0ADIR=3D/mnt/iostestmnt/fio        DEV=3D/dev/sdb2            =
-     =0AWorkload=3Ddrr      iosched=3Dcfq     Filesz=3D512M bs=3D32k  =0Agr=
-oup=5Fisolation=3D1 slice=5Fidle=3D0    group=5Fidle=3D0    quantum=3D8    =
-=0A=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=0A=
-AVERAGE[drr]    [bw in KB/s]    =0A------- =0Ajob     Set NR  cgrp1  cgrp2 =
- cgrp3  cgrp4  total  =0A---     --- --  ----------------------------------=
--=0Adrr     1   1   736    737    737    735    2945   =0Adrr     1   2   2=
-14    550    854    912    2530   =0Adrr     1   4   148    312    591    1=
-069   2120   =0A=0A=0AHost=3Dlocalhost.localdomain     Kernel=3D2.6.37-rc2-=
-Block-+     =0AGROUPMODE=3D1          NRGRP=3D4             =0ADIR=3D/mnt/i=
-ostestmnt/fio        DEV=3D/dev/sdb2                 =0AWorkload=3Ddrr     =
- iosched=3Dcfq     Filesz=3D512M bs=3D32k  =0Agroup=5Fisolation=3D1 slice=
-=5Fidle=3D8    group=5Fidle=3D8    quantum=3D8    =0A=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=0AAVERAGE[drr]    [bw in K=
-B/s]    =0A------- =0Ajob     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  total  =
-=0A---     --- --  -----------------------------------=0Adrr     1   1   37=
-1    722    1059   1423   3575   =0Adrr     1   2   173    412    805    12=
-58   2648   =0Adrr     1   4   155    305    555    1075   2090   =0A=0A=0A=
-Host=3Dlocalhost.localdomain     Kernel=3D2.6.37-rc2-Block-+     =0AGROUPMO=
-DE=3D1          NRGRP=3D4             =0ADIR=3D/mnt/iostestmnt/fio        D=
-EV=3D/dev/sdb2                 =0AWorkload=3Ddrw      iosched=3Dcfq     Fil=
-esz=3D512M bs=3D32k  =0Agroup=5Fisolation=3D1 slice=5Fidle=3D0    group=5Fi=
-dle=3D0    quantum=3D8    =0A=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=0AAVERAGE[drw]    [bw in KB/s]    =0A------- =0Ajo=
-b     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  total  =0A---     --- --  -------=
-----------------------------=0Adrw     1   1   1491   1491   1491   1491   =
-5964   =0Adrw     1   2   556    869    1082   1201   3708   =0Adrw     1  =
- 4   160    335    830    1690   3015   =0A=0A=0AHost=3Dlocalhost.localdoma=
-in     Kernel=3D2.6.37-rc2-Block-+     =0AGROUPMODE=3D1          NRGRP=3D4 =
-            =0ADIR=3D/mnt/iostestmnt/fio        DEV=3D/dev/sdb2            =
-     =0AWorkload=3Ddrw      iosched=3Dcfq     Filesz=3D512M bs=3D32k  =0Agr=
-oup=5Fisolation=3D1 slice=5Fidle=3D8    group=5Fidle=3D8    quantum=3D8    =
-=0A=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=0A=
-AVERAGE[drw]    [bw in KB/s]    =0A------- =0Ajob     Set NR  cgrp1  cgrp2 =
- cgrp3  cgrp4  total  =0A---     --- --  ----------------------------------=
--=0Adrw     1   1   545    1343   2016   2743   6647   =0Adrw     1   2   2=
-68    696    1361   1942   4267   =0Adrw     1   4   140    357    775    1=
-880   3152   =0A=0A=0A=
-
---------------050509060807050506030007--
