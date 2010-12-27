@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab0L0PRJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 10:17:09 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:52043 "EHLO smtps.tip.net.au"
+	id S1754081Ab0L0PUe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 10:20:34 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:52083 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754022Ab0L0PRH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 10:17:07 -0500
-Date: Tue, 28 Dec 2010 02:16:57 +1100
+	id S1754022Ab0L0PUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 10:20:33 -0500
+Date: Tue, 28 Dec 2010 02:20:27 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Takashi Iwai <tiwai@suse.de>, Liam Girdwood <lrg@slimlogic.co.uk>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the sound tree (Was:
- Re: linux-next: build failure after merge of the sound-asoc tree)
-Message-Id: <20101228021657.44144877.sfr@canb.auug.org.au>
-In-Reply-To: <20101226235928.GA18334@opensource.wolfsonmicro.com>
-References: <20101223120243.1617cd40.sfr@canb.auug.org.au>
-	<20101223021212.GA25886@opensource.wolfsonmicro.com>
-	<20101227104951.1ecad371.sfr@canb.auug.org.au>
-	<20101226235928.GA18334@opensource.wolfsonmicro.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for December 27
+Message-Id: <20101228022027.8519be82.sfr@canb.auug.org.au>
+In-Reply-To: <20101227113857.GA31293@sirena.org.uk>
+References: <20101227170451.a9a9f873.sfr@canb.auug.org.au>
+	<20101227113857.GA31293@sirena.org.uk>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA1";
- boundary="Signature=_Tue__28_Dec_2010_02_16_57_+1100_hJ4snbJNj4roWo1K"
+ boundary="Signature=_Tue__28_Dec_2010_02_20_27_+1100_KZy/X7wM6iv3CquZ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__28_Dec_2010_02_16_57_+1100_hJ4snbJNj4roWo1K
+--Signature=_Tue__28_Dec_2010_02_20_27_+1100_KZy/X7wM6iv3CquZ
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi Mark,
 
-On Sun, 26 Dec 2010 23:59:29 +0000 Mark Brown <broonie@opensource.wolfsonmi=
+On Mon, 27 Dec 2010 11:38:58 +0000 Mark Brown <broonie@opensource.wolfsonmi=
 cro.com> wrote:
 >
-> Hrm?  I thought you merged the ASoC tree before the sound tree, in which
-> case the above is somehwat surprising.  If the ASoC tree merged OK then
-> Takashi it should be a simple case of pulling my for-2.6.38 branch to
-> resolve the issue.
+> On Mon, Dec 27, 2010 at 05:04:51PM +1100, Stephen Rothwell wrote:
+>=20
+> > The sound-asoc tree also had a build failure, so I used the version from
+> > next-20101221.
+>=20
+> What is the problem you are seeing in the sound-asoc tree?  I saw a mail
+> about the sound tree but didn't see any failures reported for ASoC.
 
-I started merging the sound-asoc tree *after* the sound tree when the
-sound-asoc tree started to be merged into the sound tree.
+I got this error after merging the sound tree:
+
+ERROR: "__tracepoint_snd_soc_jack_irq" [sound/soc/codecs/snd-soc-wm8962.ko]=
+ undefined!
+
+after that, I merged the old version of the sound tree.  I then merged
+the sound-asoc tree and go the same error.  I presumed that you had fixed
+the other error:
+
+ERROR: "__tracepoint_snd_soc_jack_irq" [sound/soc/codecs/snd-soc-wm8903.ko]=
+ undefined!
+
+in the sound-asoc tree and then that version of the sound-asoc tree had
+been merged into the sound tree.
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 http://www.canb.auug.org.au/~sfr/
 
---Signature=_Tue__28_Dec_2010_02_16_57_+1100_hJ4snbJNj4roWo1K
+--Signature=_Tue__28_Dec_2010_02_20_27_+1100_KZy/X7wM6iv3CquZ
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQEcBAEBAgAGBQJNGK3pAAoJEDMEi1NhKgbs1IAH/R0mZ468vdqkBjxBuVMpSEdm
-P3ySoAnSBqaOfDuKy+46kw4b3qgdUsGdOUe7AXX9XpqGrKvLltUMvgiEb/xl873D
-piLasHhuO9QDSKAewgHUVtn4kytv2MCia1ylqSOjdAx70fW1CjUoNuRHfvv+YcCD
-OgJrYopV+BgHnNEMuXOvivaySppBiKhw5gaLsnMO8r0DWpjnK7H3ZlLcDW6d+OWu
-NOGHdSKymdboL4+9sJ1hlsqRLqBtW95Iu5AozhxBXH8Xic8M14HTqfMHEyvw/3GL
-wMfAim/eQ/d3IjmbDDIA/yOVPgUffDzMtFfxU2oicH3JasE02SRAF+UlDowtVOA=
-=vZQp
+iQEcBAEBAgAGBQJNGK67AAoJEDMEi1NhKgbsRIkH+wV3B4T0MFY4rmrd3v/znaF9
+wZXVLZpGvqFelWpH98RoJuaXBixntkjqMK4Bclki0UoxmZqWjGUhGLTnp+NIz00D
+cLXvyrEkUocXVJb/g1e/behoAiw0BTRn5uaYZzS/mzEyc9gHTYtsnVmW9tR8bsUB
+4K3UGMA3VeupIyUBQsgZpuoUITfOQTSwxvKupBrMBlWPIsdtskXZxktS7MTq2xA1
+q+X6Rohr1PFrsZMicd1I5ambensnSfvuAhpJLYmrm6O1TfSccTbqIziMp0k6irRn
+LmXnYLWmPYFJGFAAmq4eZPrDOc8KD3FulS+mfPNR5HcwHb9nTpqZBAknFT/auf8=
+=TYom
 -----END PGP SIGNATURE-----
 
---Signature=_Tue__28_Dec_2010_02_16_57_+1100_hJ4snbJNj4roWo1K--
+--Signature=_Tue__28_Dec_2010_02_20_27_+1100_KZy/X7wM6iv3CquZ--
