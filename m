@@ -1,54 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518Ab0L0UTw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 15:19:52 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57318 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873Ab0L0UTv (ORCPT
+	id S1751680Ab0L0UnN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 15:43:13 -0500
+Received: from pfepa.post.tele.dk ([195.41.46.235]:49065 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751571Ab0L0UnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 15:19:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=qql4l4LLu2XHBRpV0DTvspOghJ2Thv58tdCtsU0NOXvU+809Mxswsr4TH0bFyvzVkU
-         IXHjFQTxFCbh2CEM078asB09e9z6QyWi3C+qgBixAXxrXmv9LHKn4lGgnJf+kHhovgQ4
-         69fU34HAUpDm/HMfwWwqszUWNXuBAzAxbjtpI=
-Date: Mon, 27 Dec 2010 23:19:27 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: David Sterba <dsterba@suse.cz>
-Cc: mcarlson@broadcom.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michael Chan <mchan@broadcom.com>
-Subject: Re: [PATCH] tg3: fix return value check in tg3_read_vpd()
-Message-ID: <20101227201927.GA6365@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	David Sterba <dsterba@suse.cz>, mcarlson@broadcom.com,
-	netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Michael Chan <mchan@broadcom.com>
-References: <1293471094-28976-1-git-send-email-dsterba@suse.cz>
+	Mon, 27 Dec 2010 15:43:12 -0500
+Date: Mon, 27 Dec 2010 21:43:09 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, eric.dumazet@gmail.com,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH RESEND percpu#for-next] percpu: align percpu readmostly
+	subsection to cacheline
+Message-ID: <20101227204309.GA3878@merkur.ravnborg.org>
+References: <20101227133719.GD488@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1293471094-28976-1-git-send-email-dsterba@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101227133719.GD488@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 27, 2010 at 06:31:34PM +0100, David Sterba wrote:
-> CC: Matt Carlson <mcarlson@broadcom.com>
-> CC: Michael Chan <mchan@broadcom.com>
-> Signed-off-by: David Sterba <dsterba@suse.cz>
+On Mon, Dec 27, 2010 at 02:37:19PM +0100, Tejun Heo wrote:
+> Currently percpu readmostly subsection may share cachelines with other
+> percpu subsections which may result in unnecessary cacheline bounce
+> and performance degradation.
+> 
+> This patch adds @cacheline parameter to PERCPU() and PERCPU_VADDR()
+> linker macros, makes each arch linker scripts specify its cacheline
+> size and use it to align percpu subsections.
+> 
+> This is based on Shaohua's x86 only patch.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Shaohua Li <shaohua.li@intel.com>
 > ---
+> Shaohua, can you please verify this achieves the same result?  If no
+> one objects, I'll route it through the percpu tree.
+> 
+> Thanks.
+> 
+> (arch ML address was wrong, resending with the correct one)
+> 
+>  arch/alpha/kernel/vmlinux.lds.S    |    2 +-
+>  arch/arm/kernel/vmlinux.lds.S      |    2 +-
+>  arch/blackfin/kernel/vmlinux.lds.S |    2 +-
+>  arch/cris/kernel/vmlinux.lds.S     |    2 +-
+>  arch/frv/kernel/vmlinux.lds.S      |    2 +-
+>  arch/ia64/kernel/vmlinux.lds.S     |    2 +-
+>  arch/m32r/kernel/vmlinux.lds.S     |    2 +-
+>  arch/mips/kernel/vmlinux.lds.S     |    2 +-
+>  arch/mn10300/kernel/vmlinux.lds.S  |    2 +-
+>  arch/parisc/kernel/vmlinux.lds.S   |    2 +-
+>  arch/powerpc/kernel/vmlinux.lds.S  |    2 +-
+>  arch/s390/kernel/vmlinux.lds.S     |    2 +-
+>  arch/sh/kernel/vmlinux.lds.S       |    2 +-
+>  arch/sparc/kernel/vmlinux.lds.S    |    2 +-
+>  arch/tile/kernel/vmlinux.lds.S     |    2 +-
+>  arch/um/include/asm/common.lds.S   |    2 +-
+>  arch/x86/kernel/vmlinux.lds.S      |    4 ++--
+>  arch/xtensa/kernel/vmlinux.lds.S   |    2 +-
+>  include/asm-generic/vmlinux.lds.h  |   35 ++++++++++++++++++++++-------------
+>  19 files changed, 41 insertions(+), 32 deletions(-)
+> 
+> diff --git a/arch/alpha/kernel/vmlinux.lds.S b/arch/alpha/kernel/vmlinux.lds.S
+> index 003ef4c..173518f 100644
+> --- a/arch/alpha/kernel/vmlinux.lds.S
+> +++ b/arch/alpha/kernel/vmlinux.lds.S
+> @@ -38,7 +38,7 @@ SECTIONS
+>  	__init_begin = ALIGN(PAGE_SIZE);
+>  	INIT_TEXT_SECTION(PAGE_SIZE)
+>  	INIT_DATA_SECTION(16)
+> -	PERCPU(PAGE_SIZE)
+> +	PERCPU(64, PAGE_SIZE)
+>  	/* Align to THREAD_SIZE rather than PAGE_SIZE here so any padding page
+>  	   needed for the THREAD_SIZE aligned init_task gets freed after init */
+>  	. = ALIGN(THREAD_SIZE);
 
-Your fix is obviously correct, but could you describe the symptoms
-in your changelog instead of leaving it blank?  In the original code,
-negative error values are ignored so we never goto out_not_found.  Can
-pci_read_vpd() return any errors we care about besides -ENODEV?  What I
-mean is, did you find this through analysing the code or did it cause a
-bug at runtime?
+It would have been better to include cache.h and then use L1_CACHE_BYTES,
+as the value differs for EV4.
+It will work with 64 as this is the bigger of the two.
 
-regards,
-dan carpenter
+It looks like we could do this for almost all archs.
+But then I am not sure if "L1_CACHE_BYTES" is the same as
+a cacheline on the different archs.
 
+	Sam
