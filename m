@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901Ab0L0OKZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 09:10:25 -0500
-Received: from cantor.suse.de ([195.135.220.2]:49298 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753885Ab0L0OKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 09:10:24 -0500
-Date: Mon, 27 Dec 2010 15:10:18 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
+	id S1753907Ab0L0OOJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 09:14:09 -0500
+Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:44349 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753885Ab0L0OOH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 09:14:07 -0500
+Date: Tue, 28 Dec 2010 01:13:57 +1100
+From: Dave Chinner <david@fromorbit.com>
 To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org,
-        James Courtier-Dutton <James@superbug.demon.co.uk>,
-        alsa-devel@alsa-project.org, Alexey Dobriyan <adobriyan@gmail.com>,
-        Andy Owen <andy-alsa@ultra-premium.com>, Takashi Iwai <tiwai@suse.de>,
-        Jaroslav Kysela <perex@perex.cz>
-Subject: Re: [PATCH][Trivial] sound, ca0106: Fix assignment to 'channel'.
-In-Reply-To: <alpine.LNX.2.00.1012242152030.28973@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1012271509560.16569@pobox.suse.cz>
-References: <alpine.LNX.2.00.1012242152030.28973@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+Cc: xfs@oss.sgi.com, xfs-masters@oss.sgi.com, linux-kernel@vger.kernel.org,
+        Alex Elder <aelder@sgi.com>
+Subject: Re: [PATCH] XFS: Compare, don't assign in ASSERT() in
+ xfs_trans_unreserve_and_mod_sb()
+Message-ID: <20101227141357.GC24828@dastard>
+References: <alpine.LNX.2.00.1012252110490.10759@swampdragon.chaosbits.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1012252110490.10759@swampdragon.chaosbits.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Dec 2010, Jesper Juhl wrote:
-
+On Sat, Dec 25, 2010 at 09:14:53PM +0100, Jesper Juhl wrote:
 > Hi,
 > 
-> The assignment to the local variable 'channel' in 
-> snd_ca0106_pcm_pointer_capture() is a little crazy.
-> Order of assignment is undefined. This fixes it.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  ca0106_main.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> diff --git a/sound/pci/ca0106/ca0106_main.c b/sound/pci/ca0106/ca0106_main.c
-> index d2d12c0..01b4938 100644
-> --- a/sound/pci/ca0106/ca0106_main.c
-> +++ b/sound/pci/ca0106/ca0106_main.c
-> @@ -1082,7 +1082,7 @@ snd_ca0106_pcm_pointer_capture(struct snd_pcm_substream *substream)
->  	struct snd_pcm_runtime *runtime = substream->runtime;
->  	struct snd_ca0106_pcm *epcm = runtime->private_data;
->  	snd_pcm_uframes_t ptr, ptr1, ptr2 = 0;
-> -	int channel = channel=epcm->channel_id;
-> +	int channel = epcm->channel_id;
->  
->  	if (!epcm->running)
->  		return 0;
-> 
+> In fs/xfs/xfs_trans.c::xfs_trans_unreserve_and_mod_sb() at the out: label 
+> we have this:
+> 	ASSERT(error = 0);
+> I believe a comparison was intended, not an assignment. If I'm right, the 
+> patch below fixes that up.
 
-As this doesn't seem to be present in linux-next as of today, I have 
-picked it up for trivial queue. Thanks,
+Already fixed in this patch pending for 2.6.38:
 
+http://git.kernel.org/?p=linux/kernel/git/dgc/xfsdev.git;a=commitdiff;h=831ef3cf682a1f9d8fc7c16dace55137751c0410
+
+Cheers,
+
+Dave.
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Dave Chinner
+david@fromorbit.com
