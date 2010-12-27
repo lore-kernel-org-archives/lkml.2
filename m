@@ -1,62 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545Ab0L0Xkb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 18:40:31 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:38985 "EHLO smtps.tip.net.au"
+	id S1752578Ab0L0XlB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 18:41:01 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:53631 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752068Ab0L0Xka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 18:40:30 -0500
-Date: Tue, 28 Dec 2010 10:40:24 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the sound-asoc tree
-Message-Id: <20101228104024.fb0e9e34.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__28_Dec_2010_10_40_24_+1100_rwTzY_/5iQbLn0IR"
+	id S1752068Ab0L0XlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 18:41:00 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Richard Cochran <richard.cochran@omicron.at>
+Subject: [PATCH 1/3] time: Introduce timekeeping_inject_offset
+Date: Mon, 27 Dec 2010 15:40:42 -0800
+Message-Id: <1293493244-17583-2-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
+In-Reply-To: <1293493244-17583-1-git-send-email-john.stultz@linaro.org>
+References: <1293493244-17583-1-git-send-email-john.stultz@linaro.org>
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__28_Dec_2010_10_40_24_+1100_rwTzY_/5iQbLn0IR
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This adds a kernel-internal timekeeping interface to add or subtract
+a fixed amount from CLOCK_REALTIME. This makes it so kernel users or
+interfaces trying to do so do not have to read the time, then add an
+offset and then call settimeofday(), which adds some extra error in
+comparision to just simply adding the offset in the kernel timekeeping
+core.
 
-Hi all,
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Richard Cochran <richard.cochran@omicron.at>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ include/linux/time.h      |    1 +
+ kernel/time/timekeeping.c |   36 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 37 insertions(+), 0 deletions(-)
 
-After merging the sound-asoc tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+diff --git a/include/linux/time.h b/include/linux/time.h
+index 9f15ac7..b402134 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -166,6 +166,7 @@ extern int timekeeping_valid_for_hres(void);
+ extern u64 timekeeping_max_deferment(void);
+ extern void update_wall_time(void);
+ extern void timekeeping_leap_insert(int leapsecond);
++extern int timekeeping_inject_offset(struct timespec *ts);
+ 
+ struct tms;
+ extern void do_sys_times(struct tms *);
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 49010d8..77e79b3 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -340,6 +340,42 @@ int do_settimeofday(struct timespec *tv)
+ 
+ EXPORT_SYMBOL(do_settimeofday);
+ 
++
++/**
++ * timekeeping_inject_offset - Adds or subtracts from the current time.
++ * @tv:		pointer to the timespec variable containing the offset
++ *
++ * Adds or subtracts an offset value from the current time.
++ */
++int timekeeping_inject_offset(struct timespec *ts)
++{
++	unsigned long flags;
++
++	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
++		return -EINVAL;
++
++	write_seqlock_irqsave(&xtime_lock, flags);
++
++	timekeeping_forward_now();
++
++	xtime = timespec_add(xtime, *ts);
++	wall_to_monotonic = timespec_sub(wall_to_monotonic, *ts);
++
++	timekeeper.ntp_error = 0;
++	ntp_clear();
++
++	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
++				timekeeper.mult);
++
++	write_sequnlock_irqrestore(&xtime_lock, flags);
++
++	/* signal hrtimers about time change */
++	clock_was_set();
++
++	return 0;
++}
++EXPORT_SYMBOL(timekeeping_inject_offset);
++
+ /**
+  * change_clocksource - Swaps clocksources if a new one is available
+  *
+-- 
+1.7.3.2.146.gca209
 
-ERROR: "__tracepoint_snd_soc_jack_irq" [sound/soc/codecs/snd-soc-wm8962.ko]=
- undefined!
-
-In sound/soc/codecs/wm8962.c, the tracepoint is protected by
-CONFIG_SOUND_SOC_WM8962_MODULE, it should be CONFIG_SND_SOC_WM8962_MODULE.
-
-I have used the sound-asoc tree from next-20101221 again for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__28_Dec_2010_10_40_24_+1100_rwTzY_/5iQbLn0IR
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNGSPoAAoJEDMEi1NhKgbsgQwH/0hrYZhm6kIb+NUO4/fVDZ0F
-v1oqnwOC6RoLIoricDTrkyFJHCLS3HbyqME+H0tBSVaZRLlQkXdGa/ba/hUPa2wv
-xh6yKKhIUOqiCbdd77aowrMD3BO2BZaBtLfDLMf10gZRvqprgQuBCFJw5eCx7KTX
-hmW8/l8khYSkbziom+bXYJy+2iRkgN9Q1StlNKCSRn5zymoI/HvrdQ2BOVcaoNbo
-7DJVyqL5gHq7oxC7LGokYVWc7FWKgb0WKF/0tcNl8Xry+wQKVFfcasRtKYSIwBEX
-4npvUZ3dsgW2cLo6db8qkIDuMBP4/ucqO8fgsj67aSdTc9LqIa8nzcQfn2KYAFA=
-=TdLr
------END PGP SIGNATURE-----
-
---Signature=_Tue__28_Dec_2010_10_40_24_+1100_rwTzY_/5iQbLn0IR--
