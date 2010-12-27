@@ -1,41 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177Ab0L0PgU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 10:36:20 -0500
-Received: from verein.lst.de ([213.95.11.210]:34177 "EHLO verein.lst.de"
+	id S1754189Ab0L0PgX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 10:36:23 -0500
+Received: from mga09.intel.com ([134.134.136.24]:57484 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754161Ab0L0PgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 10:36:17 -0500
-Date: Mon, 27 Dec 2010 16:36:15 +0100
-From: Christoph Hellwig <hch@lst.de>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH 3/3] compat: copy missing fields in compat_statfs64 to user
-Message-ID: <20101227153615.GB22676@lst.de>
-References: <1293381714-5264-1-git-send-email-namhyung@gmail.com> <1293381714-5264-3-git-send-email-namhyung@gmail.com>
+	id S1754161Ab0L0PgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 10:36:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,234,1291622400"; 
+   d="scan'208";a="691089139"
+Subject: [PATCH 3/7] perf-events: Fix LLC-* events on Intel
+ Nehalem/Westmere v2
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 27 Dec 2010 23:36:19 +0800
+Message-Id: <1293464179.2695.103.camel@localhost>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1293381714-5264-3-git-send-email-namhyung@gmail.com>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 27, 2010 at 01:41:54AM +0900, Namhyung Kim wrote:
-> f_flags and f_spare fields were not copied to userspace when
-> compat_sys_[f]statfs64 called.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> Cc: Christoph Hellwig <hch@lst.de>
-> ---
-> It seems struct compat_statfs lacks the f_flags field in it but I'm not
-> sure whether it is intended or not. Is it useful if I make a patch for
-> it too?
+From: Andi Kleen <ak@linux.intel.com>
 
-Looks good.  We discussed this a while back before it fell under the
-table again.
+The generic perf LLC-* events do count the L2 caches, not the real
+L3 LLC on Intel Nehalem and Westmere. This lead to quite some confusion.
 
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+Fixing this properly requires use of the special OFFCORE_RESPONSE
+events which need a separate mask register. This has been implemented
+in a earlier patch.
+
+Now use this infrastructure to set correct events for the LLC-*
+on Nehalem and Westmere
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/cpu/perf_event.c       |   12 ++++----
+ arch/x86/kernel/cpu/perf_event_intel.c |   46 +++++++++++++++++++++++---------
+ 2 files changed, 39 insertions(+), 19 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index df971ea..ed6ff11 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -510,8 +510,9 @@ static inline int x86_pmu_initialized(void)
+ }
+ 
+ static inline int
+-set_ext_hw_attr(struct hw_perf_event *hwc, struct perf_event_attr *attr)
++set_ext_hw_attr(struct hw_perf_event *hwc, struct perf_event *event)
+ {
++	struct perf_event_attr *attr = &event->attr;
+ 	unsigned int cache_type, cache_op, cache_result;
+ 	u64 config, val;
+ 
+@@ -537,9 +538,8 @@ set_ext_hw_attr(struct hw_perf_event *hwc, struct perf_event_attr *attr)
+ 	if (val == -1)
+ 		return -EINVAL;
+ 
+-	hwc->config |= val;
+-
+-	return 0;
++	hwc->config |= val & X86_RAW_EVENT_MASK;
++	return x86_pmu_extra_regs(val, event);
+ }
+ 
+ static int x86_setup_perfctr(struct perf_event *event)
+@@ -564,10 +564,10 @@ static int x86_setup_perfctr(struct perf_event *event)
+ 	}
+ 
+ 	if (attr->type == PERF_TYPE_RAW)
+-		return 0;
++		return x86_pmu_extra_regs(event->attr.config, event);
+ 
+ 	if (attr->type == PERF_TYPE_HW_CACHE)
+-		return set_ext_hw_attr(hwc, attr);
++		return set_ext_hw_attr(hwc, event);
+ 
+ 	if (attr->config >= x86_pmu.max_events)
+ 		return -EINVAL;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 32569d4..bc4afb1 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -88,7 +88,7 @@ static struct event_constraint intel_nehalem_event_constraints[] =
+ 
+ static struct extra_reg intel_nehalem_extra_regs[] =
+ {
+-	INTEL_EVENT_EXTRA_REG(0xb7, 0x1a6, 0xffff, 32), /* OFFCORE_RESPONSE_0 */
++	INTEL_EVENT_EXTRA_REG(0xb7, 0x1a6, 0xffff, 32), /* OFFCORE_RESPONSE */
+ 	EVENT_EXTRA_END
+ };
+ 
+@@ -172,16 +172,26 @@ static __initconst const u64 westmere_hw_cache_event_ids
+  },
+  [ C(LL  ) ] = {
+ 	[ C(OP_READ) ] = {
+-		[ C(RESULT_ACCESS) ] = 0x0324, /* L2_RQSTS.LOADS               */
+-		[ C(RESULT_MISS)   ] = 0x0224, /* L2_RQSTS.LD_MISS             */
++		/* OFFCORE_RESPONSE_0.ANY_DATA.LOCAL_CACHE */
++		[ C(RESULT_ACCESS) ] = 0x00000711004301b7,
++		/* OFFCORE_RESPONSE_1.ANY_DATA.ANY_LLC_MISS */
++		[ C(RESULT_MISS)   ] = 0x0000f811004301bb,
+ 	},
++	/*
++	 * Use RFO, not WRITEBACK, because a write miss would typically occur
++	 * on RFO.
++	 */
+ 	[ C(OP_WRITE) ] = {
+-		[ C(RESULT_ACCESS) ] = 0x0c24, /* L2_RQSTS.RFOS                */
+-		[ C(RESULT_MISS)   ] = 0x0824, /* L2_RQSTS.RFO_MISS            */
++		/* OFFCORE_RESPONSE_1.ANY_RFO.LOCAL_CACHE */
++		[ C(RESULT_ACCESS) ] = 0x00000722004301bb,
++		/* OFFCORE_RESPONSE_0.ANY_RFO.ANY_LLC_MISS */
++		[ C(RESULT_MISS)   ] = 0x0000f822004301b7,
+ 	},
+ 	[ C(OP_PREFETCH) ] = {
+-		[ C(RESULT_ACCESS) ] = 0x4f2e, /* LLC Reference                */
+-		[ C(RESULT_MISS)   ] = 0x412e, /* LLC Misses                   */
++		/* OFFCORE_RESPONSE_0.PREFETCH.LOCAL_CACHE */
++		[ C(RESULT_ACCESS) ] = 0x00000770004301b7,
++		/* OFFCORE_RESPONSE_1.PREFETCH.ANY_LLC_MISS */
++		[ C(RESULT_MISS)   ] = 0x0000f870004301bb,
+ 	},
+  },
+  [ C(DTLB) ] = {
+@@ -263,16 +273,26 @@ static __initconst const u64 nehalem_hw_cache_event_ids
+  },
+  [ C(LL  ) ] = {
+ 	[ C(OP_READ) ] = {
+-		[ C(RESULT_ACCESS) ] = 0x0324, /* L2_RQSTS.LOADS               */
+-		[ C(RESULT_MISS)   ] = 0x0224, /* L2_RQSTS.LD_MISS             */
++		/* OFFCORE_RESPONSE.ANY_DATA.LOCAL_CACHE */
++		[ C(RESULT_ACCESS) ] = 0x00000711004301b7,
++		/* OFFCORE_RESPONSE.ANY_DATA.ANY_LLC_MISS */
++		[ C(RESULT_MISS)   ] = 0x0000f811004301b7,
+ 	},
++	/*
++	 * Use RFO, not WRITEBACK, because a write miss would typically occur
++	 * on RFO.
++	 */
+ 	[ C(OP_WRITE) ] = {
+-		[ C(RESULT_ACCESS) ] = 0x0c24, /* L2_RQSTS.RFOS                */
+-		[ C(RESULT_MISS)   ] = 0x0824, /* L2_RQSTS.RFO_MISS            */
++		/* OFFCORE_RESPONSE.ANY_RFO.LOCAL_CACHE */
++		[ C(RESULT_ACCESS) ] = 0x00000722004301b7,
++		/* OFFCORE_RESPONSE.ANY_RFO.ANY_LLC_MISS */
++		[ C(RESULT_MISS)   ] = 0x0000f822004301b7,
+ 	},
+ 	[ C(OP_PREFETCH) ] = {
+-		[ C(RESULT_ACCESS) ] = 0x4f2e, /* LLC Reference                */
+-		[ C(RESULT_MISS)   ] = 0x412e, /* LLC Misses                   */
++		/* OFFCORE_RESPONSE.PREFETCH.LOCAL_CACHE */
++		[ C(RESULT_ACCESS) ] = 0x00000770004301b7,
++		/* OFFCORE_RESPONSE.PREFETCH.ANY_LLC_MISS */
++		[ C(RESULT_MISS)   ] = 0x0000f870004301b7,
+ 	},
+  },
+  [ C(DTLB) ] = {
+-- 
+1.7.3
+
+
+
+
+
