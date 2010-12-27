@@ -1,61 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752079Ab0L0Vse (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 16:48:34 -0500
-Received: from legolas.restena.lu ([158.64.1.34]:55608 "EHLO
-	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846Ab0L0Vsd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 16:48:33 -0500
-Date: Mon, 27 Dec 2010 22:47:58 +0100
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: David Sterba <dsterba@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH 1/3] HID: picolcd: fix misuse of logical operation in
- place of bitop
-Message-ID: <20101227224758.79f0f3c5@neptune.home>
-In-Reply-To: <1293463663-21198-1-git-send-email-dsterba@suse.cz>
-References: <1293463663-21198-1-git-send-email-dsterba@suse.cz>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1751872Ab0L0Vwm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 16:52:42 -0500
+Received: from mxs.selfip.ru ([77.221.143.26]:40061 "EHLO mxs.selfmail.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750873Ab0L0Vwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 16:52:41 -0500
+X-ACL-SPF: 
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 7bit
+Date: Tue, 28 Dec 2010 00:52:03 +0300
+From: Vasiliy G Tolstov <v.tolstov@selfip.ru>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: <jeremy@goop.org>, <xen-devel@lists.xensource.com>,
+        <haicheng.li@linux.intel.com>, <dan.magenheimer@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <andi.kleen@intel.com>, <akpm@linux-foundation.org>,
+        <fengguang.wu@intel.com>, Daniel Kiper <dkiper@net-space.pl>
+Subject: Re: [Xen-devel] Re: [PATCH 2/3] drivers/xen/balloon.c: Various
+ balloon features and fixes
+Reply-To: v.tolstov@selfip.ru
+In-Reply-To: <20101227163918.GB7189@dumpdata.com>
+References: <20101220134724.GC6749@router-fw-old.local.net-space.pl>
+ <20101227150847.GA3728@dumpdata.com>
+ <947c7677e042b3fd1ca22d775ca9aeb9@imap.selfip.ru>
+ <20101227163918.GB7189@dumpdata.com>
+Message-ID: <92e9dd494cc640c04fdac03fa6d10e8d@imap.selfip.ru>
+User-Agent: Roundcube Webmail/0.4-trunk
+X-CSA: fail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for spotting,
-
-Acked-by: Bruno Prémont <bonbons@linux-vserver.org>
-
-On Mon, 27 December 2010 David Sterba <dsterba@suse.cz> wrote:
-> CC: Bruno Prémont <bonbons@linux-vserver.org>
-> CC: Jiri Kosina <jkosina@suse.cz>
-> Signed-off-by: David Sterba <dsterba@suse.cz>
-> ---
->  drivers/hid/hid-picolcd.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+On Mon, 27 Dec 2010 11:39:18 -0500, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> On Mon, Dec 27, 2010 at 07:27:56PM +0300, Vasiliy G Tolstov wrote:
+>> On Mon, 27 Dec 2010 10:08:47 -0500, Konrad Rzeszutek Wilk
+>> <konrad.wilk@oracle.com> wrote:
+>> > On Mon, Dec 20, 2010 at 02:47:24PM +0100, Daniel Kiper wrote:
+>> >> Features and fixes:
+>> >>   - HVM mode is supported now,
+>> >>   - migration from mod_timer() to schedule_delayed_work(),
+>> >>   - removal of driver_pages (I do not have seen any
+>> >>     references to it),
+>> >>   - protect before CPU exhaust by event/x process during
+>> >>     errors by adding some delays in scheduling next event,
+>> >>   - some other minor fixes.
+>>
+>> I have apply this patch to bare 2.6.36.2 kernel from kernel.org. If
+>> memory=maxmemory pv guest run's on migrating fine.
+>> If on already running domU i have xm mem-max xxx 1024 (before that it
+>> has 768) and do xm mem-set 1024 guest now have 1024 memory, but after
+>> that it can't migrate to another host.
+>>
+>> Step to try to start guest with memory=512 and maxmemory=1024 it boot
+>> fine, xm mem-set work's fine, but.. it can't migrate. Sorry but nothing
+>> on screen , how can i help to debug this problem?
 > 
-> diff --git a/drivers/hid/hid-picolcd.c b/drivers/hid/hid-picolcd.c
-> index bc2e077..0aff3cd 100644
-> --- a/drivers/hid/hid-picolcd.c
-> +++ b/drivers/hid/hid-picolcd.c
-> @@ -1544,7 +1544,7 @@ static ssize_t picolcd_debug_eeprom_read(struct file *f, char __user *u,
->  
->  	/* prepare buffer with info about what we want to read (addr & len) */
->  	raw_data[0] = *off & 0xff;
-> -	raw_data[1] = (*off >> 8) && 0xff;
-> +	raw_data[1] = (*off >> 8) & 0xff;
->  	raw_data[2] = s < 20 ? s : 20;
->  	if (*off + raw_data[2] > 0xff)
->  		raw_data[2] = 0x100 - *off;
-> @@ -1583,7 +1583,7 @@ static ssize_t picolcd_debug_eeprom_write(struct file *f, const char __user *u,
->  
->  	memset(raw_data, 0, sizeof(raw_data));
->  	raw_data[0] = *off & 0xff;
-> -	raw_data[1] = (*off >> 8) && 0xff;
-> +	raw_data[1] = (*off >> 8) & 0xff;
->  	raw_data[2] = s < 20 ? s : 20;
->  	if (*off + raw_data[2] > 0xff)
->  		raw_data[2] = 0x100 - *off;
+> You can play with 'xenctx' to see where the guest is stuck. You can also
+> look in the 'xm dmesg' to see if there is something odd. Lastly, if you
+> mean by 'can't migrate to another host' as the command hangs stops, look
+> at the error code (or in /var/log/xen files) and also look in the source
+> code.
+> 
+
+xm dmesg and /var/log/xen/* provide nothing useful. can't migrate meand
+- xm migrate --live start migration process, on destination node domain
+constucted all memory copied and after that in xentop picture like this:
+1) some second after migration xentop displays line like this:
+
+test_domain -----r          2  109.8     262144    0.4    1048576      
+1.7    14    1        0        0    2        0        0        0        
+0          0    0
+
+2) after that some second line changed to this:
+
+test_domain ---c--          3  245.6     262144    0.4    1048576      
+1.7    14    1        0        0    2        0        0        0        
+0          0    0
+
+3) after some milli seconds:
+
+test_domain ---cp-          3    0.0     111460    0.2    1048576      
+1.7    14    1        0        0    2        0        0        0        
+0          0    0
+
+4) after 2 or 3 seconds like this:
+
+test_domain d--cp-          3    0.0          4    0.0    1048576      
+1.7    14    1        0        0    2        0        0        0        
+0          0    0
+
+after step 4 domain is crushed. If i don't use Daniel's patch - this
+not happening.
