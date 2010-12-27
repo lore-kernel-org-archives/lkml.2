@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab0L0PgX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 10:36:23 -0500
-Received: from mga09.intel.com ([134.134.136.24]:57484 "EHLO mga09.intel.com"
+	id S1754183Ab0L0Pgy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 10:36:54 -0500
+Received: from mga09.intel.com ([134.134.136.24]:10013 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754161Ab0L0PgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 10:36:21 -0500
+	id S1754114Ab0L0Pgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 10:36:53 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,234,1291622400"; 
-   d="scan'208";a="691089139"
-Subject: [PATCH 3/7] perf-events: Fix LLC-* events on Intel
- Nehalem/Westmere v2
+   d="scan'208";a="587539421"
+Subject: [PATCH 4/7] perf: Check if HT is supported and enabled
 From: Lin Ming <ming.m.lin@intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Andi Kleen <andi@firstfloor.org>,
         Stephane Eranian <eranian@google.com>
 Cc: lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 27 Dec 2010 23:36:19 +0800
-Message-Id: <1293464179.2695.103.camel@localhost>
+Date: Mon, 27 Dec 2010 23:36:51 +0800
+Message-Id: <1293464211.2695.104.camel@localhost>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
 Content-Transfer-Encoding: 7bit
@@ -26,143 +25,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Avoid the percore allocations if HT is not supported or disabled.
 
-The generic perf LLC-* events do count the L2 caches, not the real
-L3 LLC on Intel Nehalem and Westmere. This lead to quite some confusion.
-
-Fixing this properly requires use of the special OFFCORE_RESPONSE
-events which need a separate mask register. This has been implemented
-in a earlier patch.
-
-Now use this infrastructure to set correct events for the LLC-*
-on Nehalem and Westmere
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c       |   12 ++++----
- arch/x86/kernel/cpu/perf_event_intel.c |   46 +++++++++++++++++++++++---------
- 2 files changed, 39 insertions(+), 19 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |   44 +++++++++++++++++++++++++++----
+ 1 files changed, 38 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index df971ea..ed6ff11 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -510,8 +510,9 @@ static inline int x86_pmu_initialized(void)
- }
- 
- static inline int
--set_ext_hw_attr(struct hw_perf_event *hwc, struct perf_event_attr *attr)
-+set_ext_hw_attr(struct hw_perf_event *hwc, struct perf_event *event)
- {
-+	struct perf_event_attr *attr = &event->attr;
- 	unsigned int cache_type, cache_op, cache_result;
- 	u64 config, val;
- 
-@@ -537,9 +538,8 @@ set_ext_hw_attr(struct hw_perf_event *hwc, struct perf_event_attr *attr)
- 	if (val == -1)
- 		return -EINVAL;
- 
--	hwc->config |= val;
--
--	return 0;
-+	hwc->config |= val & X86_RAW_EVENT_MASK;
-+	return x86_pmu_extra_regs(val, event);
- }
- 
- static int x86_setup_perfctr(struct perf_event *event)
-@@ -564,10 +564,10 @@ static int x86_setup_perfctr(struct perf_event *event)
- 	}
- 
- 	if (attr->type == PERF_TYPE_RAW)
--		return 0;
-+		return x86_pmu_extra_regs(event->attr.config, event);
- 
- 	if (attr->type == PERF_TYPE_HW_CACHE)
--		return set_ext_hw_attr(hwc, attr);
-+		return set_ext_hw_attr(hwc, event);
- 
- 	if (attr->config >= x86_pmu.max_events)
- 		return -EINVAL;
 diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 32569d4..bc4afb1 100644
+index bc4afb1..354d1de 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -88,7 +88,7 @@ static struct event_constraint intel_nehalem_event_constraints[] =
- 
- static struct extra_reg intel_nehalem_extra_regs[] =
- {
--	INTEL_EVENT_EXTRA_REG(0xb7, 0x1a6, 0xffff, 32), /* OFFCORE_RESPONSE_0 */
-+	INTEL_EVENT_EXTRA_REG(0xb7, 0x1a6, 0xffff, 32), /* OFFCORE_RESPONSE */
- 	EVENT_EXTRA_END
+@@ -1053,9 +1053,38 @@ static __initconst const struct x86_pmu core_pmu = {
+ 	.event_constraints	= intel_core_event_constraints,
  };
  
-@@ -172,16 +172,26 @@ static __initconst const u64 westmere_hw_cache_event_ids
-  },
-  [ C(LL  ) ] = {
- 	[ C(OP_READ) ] = {
--		[ C(RESULT_ACCESS) ] = 0x0324, /* L2_RQSTS.LOADS               */
--		[ C(RESULT_MISS)   ] = 0x0224, /* L2_RQSTS.LD_MISS             */
-+		/* OFFCORE_RESPONSE_0.ANY_DATA.LOCAL_CACHE */
-+		[ C(RESULT_ACCESS) ] = 0x00000711004301b7,
-+		/* OFFCORE_RESPONSE_1.ANY_DATA.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x0000f811004301bb,
- 	},
++/*
++ * Check if HT is capable and enabled
++ * TBD: move it to generic place, so it can be used by others
++ */
++
++static bool ht_enabled(int cpu)
++{
++	int total_logical_processors, total_cores;
++	unsigned int eax, ebx, ecx, edx;
++
++	cpuid(1, &eax, &ebx, &ecx, &edx);
++
++	/* Bit 28 in EDX indicates if it's HT capable */
++	if (!(edx & 0x10000000))
++		return false;
++
++	total_logical_processors = (ebx >> 16) & 0xff;
++
++	ecx = 0;
++	cpuid(4, &eax, &ebx, &ecx, &edx);
++	total_cores = ((eax >> 26) & 0x3f) + 1;
++
++	/* Thread nums per core */
++	return (total_logical_processors / total_cores) > 1;
++}
++
+ static int intel_pmu_cpu_prepare(int cpu)
+ {
+ 	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
++
++	if (!ht_enabled(cpu))
++		return NOTIFY_OK;
+ 	
+ 	cpuc->per_core = kzalloc_node(sizeof(struct intel_percore), 
+ 				      GFP_KERNEL, cpu_to_node(cpu));
+@@ -1073,6 +1102,15 @@ static void intel_pmu_cpu_starting(int cpu)
+ 	int core_id = topology_core_id(cpu);
+ 	int i;
+ 
++	init_debug_store_on_cpu(cpu);
 +	/*
-+	 * Use RFO, not WRITEBACK, because a write miss would typically occur
-+	 * on RFO.
++	 * Deal with CPUs that don't clear their LBRs on power-up.
 +	 */
- 	[ C(OP_WRITE) ] = {
--		[ C(RESULT_ACCESS) ] = 0x0c24, /* L2_RQSTS.RFOS                */
--		[ C(RESULT_MISS)   ] = 0x0824, /* L2_RQSTS.RFO_MISS            */
-+		/* OFFCORE_RESPONSE_1.ANY_RFO.LOCAL_CACHE */
-+		[ C(RESULT_ACCESS) ] = 0x00000722004301bb,
-+		/* OFFCORE_RESPONSE_0.ANY_RFO.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x0000f822004301b7,
- 	},
- 	[ C(OP_PREFETCH) ] = {
--		[ C(RESULT_ACCESS) ] = 0x4f2e, /* LLC Reference                */
--		[ C(RESULT_MISS)   ] = 0x412e, /* LLC Misses                   */
-+		/* OFFCORE_RESPONSE_0.PREFETCH.LOCAL_CACHE */
-+		[ C(RESULT_ACCESS) ] = 0x00000770004301b7,
-+		/* OFFCORE_RESPONSE_1.PREFETCH.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x0000f870004301bb,
- 	},
-  },
-  [ C(DTLB) ] = {
-@@ -263,16 +273,26 @@ static __initconst const u64 nehalem_hw_cache_event_ids
-  },
-  [ C(LL  ) ] = {
- 	[ C(OP_READ) ] = {
--		[ C(RESULT_ACCESS) ] = 0x0324, /* L2_RQSTS.LOADS               */
--		[ C(RESULT_MISS)   ] = 0x0224, /* L2_RQSTS.LD_MISS             */
-+		/* OFFCORE_RESPONSE.ANY_DATA.LOCAL_CACHE */
-+		[ C(RESULT_ACCESS) ] = 0x00000711004301b7,
-+		/* OFFCORE_RESPONSE.ANY_DATA.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x0000f811004301b7,
- 	},
-+	/*
-+	 * Use RFO, not WRITEBACK, because a write miss would typically occur
-+	 * on RFO.
-+	 */
- 	[ C(OP_WRITE) ] = {
--		[ C(RESULT_ACCESS) ] = 0x0c24, /* L2_RQSTS.RFOS                */
--		[ C(RESULT_MISS)   ] = 0x0824, /* L2_RQSTS.RFO_MISS            */
-+		/* OFFCORE_RESPONSE.ANY_RFO.LOCAL_CACHE */
-+		[ C(RESULT_ACCESS) ] = 0x00000722004301b7,
-+		/* OFFCORE_RESPONSE.ANY_RFO.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x0000f822004301b7,
- 	},
- 	[ C(OP_PREFETCH) ] = {
--		[ C(RESULT_ACCESS) ] = 0x4f2e, /* LLC Reference                */
--		[ C(RESULT_MISS)   ] = 0x412e, /* LLC Misses                   */
-+		/* OFFCORE_RESPONSE.PREFETCH.LOCAL_CACHE */
-+		[ C(RESULT_ACCESS) ] = 0x00000770004301b7,
-+		/* OFFCORE_RESPONSE.PREFETCH.ANY_LLC_MISS */
-+		[ C(RESULT_MISS)   ] = 0x0000f870004301b7,
- 	},
-  },
-  [ C(DTLB) ] = {
++	intel_pmu_lbr_reset();
++
++	if (!ht_enabled(cpu))
++		return;
++
+ 	for_each_online_cpu(i) {
+ 		struct intel_percore *pc = per_cpu(cpu_hw_events, i).per_core;
+ 
+@@ -1085,12 +1123,6 @@ static void intel_pmu_cpu_starting(int cpu)
+ 
+ 	cpuc->per_core->core_id = core_id;
+ 	cpuc->per_core->refcnt++;
+-
+-	init_debug_store_on_cpu(cpu);
+-	/*
+-	 * Deal with CPUs that don't clear their LBRs on power-up.
+-	 */
+-	intel_pmu_lbr_reset();
+ }
+ 
+ static void intel_pmu_cpu_dying(int cpu)
 -- 
 1.7.3
 
