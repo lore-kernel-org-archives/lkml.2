@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209Ab0L0PiU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 10:38:20 -0500
-Received: from mga11.intel.com ([192.55.52.93]:1480 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754142Ab0L0PiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 10:38:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,234,1291622400"; 
-   d="scan'208";a="640775713"
-Subject: [PATCH 6/7] perf: Use MSR names in the extra reg lists
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 27 Dec 2010 23:38:16 +0800
-Message-Id: <1293464296.2695.107.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1754228Ab0L0Pid (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 10:38:33 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36608 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754197Ab0L0Pic (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 10:38:32 -0500
+Date: Mon, 27 Dec 2010 15:38:43 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for December 27
+Message-ID: <20101227153843.GA13400@opensource.wolfsonmicro.com>
+References: <20101227170451.a9a9f873.sfr@canb.auug.org.au>
+ <20101227113857.GA31293@sirena.org.uk>
+ <20101228022027.8519be82.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101228022027.8519be82.sfr@canb.auug.org.au>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MSR names is much more readable.
+On Tue, Dec 28, 2010 at 02:20:27AM +1100, Stephen Rothwell wrote:
 
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
----
- arch/x86/include/asm/msr-index.h       |    3 +++
- arch/x86/kernel/cpu/perf_event_intel.c |    9 ++++++---
- 2 files changed, 9 insertions(+), 3 deletions(-)
+> I got this error after merging the sound tree:
 
-diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
-index 6b89f5e..c3c42b1 100644
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -47,6 +47,9 @@
- #define MSR_IA32_MCG_STATUS		0x0000017a
- #define MSR_IA32_MCG_CTL		0x0000017b
- 
-+#define MSR_OFFCORE_RSP_0		0x000001a6
-+#define MSR_OFFCORE_RSP_1		0x000001a7
-+
- #define MSR_IA32_PEBS_ENABLE		0x000003f1
- #define MSR_IA32_DS_AREA		0x00000600
- #define MSR_IA32_PERF_CAPABILITIES	0x00000345
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index ad70c2c..0a67425 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -88,7 +88,8 @@ static struct event_constraint intel_nehalem_event_constraints[] =
- 
- static struct extra_reg intel_nehalem_extra_regs[] =
- {
--	INTEL_EVENT_EXTRA_REG(0xb7, 0x1a6, 0xffff, 32), /* OFFCORE_RESPONSE */
-+	/* OFFCORE_RESPONSE */
-+	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0xffff, 32),
- 	EVENT_EXTRA_END
- };
- 
-@@ -112,8 +113,10 @@ static struct event_constraint intel_westmere_event_constraints[] =
- 
- static struct extra_reg intel_westmere_extra_regs[] =
- {
--	INTEL_EVENT_EXTRA_REG(0xb7, 0x1a6, 0xffff, 32), /* OFFCORE_RESPONSE_0 */
--	INTEL_EVENT_EXTRA_REG(0xbb, 0x1a7, 0xffff, 32), /* OFFCORE_RESPONSE_1 */
-+	/* OFFCORE_RESPONSE_0 */
-+	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0xffff, 32),
-+	/* OFFCORE_RESPONSE_1 */
-+	INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0xffff, 32),
- 	EVENT_EXTRA_END
- };
- 
--- 
-1.7.3
+> ERROR: "__tracepoint_snd_soc_jack_irq" [sound/soc/codecs/snd-soc-wm8962.ko] undefined!
 
+> after that, I merged the old version of the sound tree.  I then merged
+> the sound-asoc tree and go the same error.  I presumed that you had fixed
+> the other error:
 
+> ERROR: "__tracepoint_snd_soc_jack_irq" [sound/soc/codecs/snd-soc-wm8903.ko] undefined!
 
+> in the sound-asoc tree and then that version of the sound-asoc tree had
+> been merged into the sound tree.
 
+To my knowledge I'd fixed everything.  However, it looks like there's a
+typo in the wm8962 ifdef to work around the x86 failure which was
+causing the problem; since you hadn't mentioned that you'd encountered
+any issue after I'd done the previous fix I'd no idea that this had
+happened and it had appeared that the problem with Takashi's tree was
+simply that he'd not merged up the fix.
 
+Fixed now, anyway.  Please do report if you see any more issues.
