@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228Ab0L0Pid (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 10:38:33 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36608 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754197Ab0L0Pic (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 10:38:32 -0500
-Date: Mon, 27 Dec 2010 15:38:43 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for December 27
-Message-ID: <20101227153843.GA13400@opensource.wolfsonmicro.com>
-References: <20101227170451.a9a9f873.sfr@canb.auug.org.au>
- <20101227113857.GA31293@sirena.org.uk>
- <20101228022027.8519be82.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101228022027.8519be82.sfr@canb.auug.org.au>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754229Ab0L0PjS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 10:39:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58994 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754153Ab0L0PjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 10:39:17 -0500
+From: David Sterba <dsterba@suse.cz>
+To: mchehab@redhat.com
+Cc: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Sterba <dsterba@suse.cz>
+Subject: [PATCH] i7core_edac: fix misuse of logical operation in place of bitop
+Date: Mon, 27 Dec 2010 16:39:12 +0100
+Message-Id: <1293464352-21804-1-git-send-email-dsterba@suse.cz>
+X-Mailer: git-send-email 1.7.3.4.578.g6068a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 28, 2010 at 02:20:27AM +1100, Stephen Rothwell wrote:
+CC: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: David Sterba <dsterba@suse.cz>
+---
+ drivers/edac/i7core_edac.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> I got this error after merging the sound tree:
+diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
+index 362861c..f41a34e 100644
+--- a/drivers/edac/i7core_edac.c
++++ b/drivers/edac/i7core_edac.c
+@@ -731,7 +731,7 @@ static int get_dimm_config(const struct mem_ctl_info *mci)
+ 			debugf1("\t\t%#x\t%#x\t%#x\n",
+ 				(value[j] >> 27) & 0x1,
+ 				(value[j] >> 24) & 0x7,
+-				(value[j] && ((1 << 24) - 1)));
++				(value[j] & ((1 << 24) - 1)));
+ 	}
+ 
+ 	return 0;
+@@ -1670,7 +1670,7 @@ static void i7core_mce_output_error(struct mem_ctl_info *mci,
+ 	char *type, *optype, *err, *msg;
+ 	unsigned long error = m->status & 0x1ff0000l;
+ 	u32 optypenum = (m->status >> 4) & 0x07;
+-	u32 core_err_cnt = (m->status >> 38) && 0x7fff;
++	u32 core_err_cnt = (m->status >> 38) & 0x7fff;
+ 	u32 dimm = (m->misc >> 16) & 0x3;
+ 	u32 channel = (m->misc >> 18) & 0x3;
+ 	u32 syndrome = m->misc >> 32;
+-- 
+1.7.3.4.578.g6068a
 
-> ERROR: "__tracepoint_snd_soc_jack_irq" [sound/soc/codecs/snd-soc-wm8962.ko] undefined!
-
-> after that, I merged the old version of the sound tree.  I then merged
-> the sound-asoc tree and go the same error.  I presumed that you had fixed
-> the other error:
-
-> ERROR: "__tracepoint_snd_soc_jack_irq" [sound/soc/codecs/snd-soc-wm8903.ko] undefined!
-
-> in the sound-asoc tree and then that version of the sound-asoc tree had
-> been merged into the sound tree.
-
-To my knowledge I'd fixed everything.  However, it looks like there's a
-typo in the wm8962 ifdef to work around the x86 failure which was
-causing the problem; since you hadn't mentioned that you'd encountered
-any issue after I'd done the previous fix I'd no idea that this had
-happened and it had appeared that the problem with Takashi's tree was
-simply that he'd not merged up the fix.
-
-Fixed now, anyway.  Please do report if you see any more issues.
