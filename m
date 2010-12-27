@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab0L0SAS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 13:00:18 -0500
-Received: from cantor.suse.de ([195.135.220.2]:53680 "EHLO mx1.suse.de"
+	id S1753896Ab0L0SBK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 13:01:10 -0500
+Received: from mail.colab.de ([195.226.127.114]:39550 "EHLO mail.colab.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752263Ab0L0SAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 13:00:17 -0500
-From: David Sterba <dsterba@suse.cz>
-To: padovan@profusion.mobi
-Cc: linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Sterba <dsterba@suse.cz>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        =?UTF-8?q?Jo=C3=A3o=20Paulo=20Rechi=20Vita?= 
-	<jprvita@profusion.mobi>
-Subject: [PATCH] Bluetooth: l2cap: fix misuse of logical operation in place of bitop
-Date: Mon, 27 Dec 2010 19:00:10 +0100
-Message-Id: <1293472810-30233-1-git-send-email-dsterba@suse.cz>
-X-Mailer: git-send-email 1.7.3.4.626.g73e7b
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1752798Ab0L0SBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 13:01:09 -0500
+X-Greylist: delayed 678 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Dec 2010 13:01:08 EST
+X-Spam-Flag: NO
+X-Spam-Score: -2.676
+From: Jochen Friedrich <jochen@scram.de>
+To: linux-arm-kernel@lists.infradead.org, kristoffer.ericson@gmail.com
+Cc: linux-kernel@vger.kernel.org, jochen@scram.de
+Subject: [PATCH 2.6.37 RESEND] sa1100: Fix platform device registration
+Date: Mon, 27 Dec 2010 18:49:30 +0100
+Message-Id: <1293472170-14130-1-git-send-email-jochen@scram.de>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC: Marcel Holtmann <marcel@holtmann.org>
-CC: "Gustavo F. Padovan" <padovan@profusion.mobi>
-CC: João Paulo Rechi Vita <jprvita@profusion.mobi>
-Signed-off-by: David Sterba <dsterba@suse.cz>
----
- net/bluetooth/l2cap.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Since commit 7a5b4e16c880f8350d255dc188f81622905618c1, simpad devices don't
+boot anymore, since platform devices are registered too early. Fix by moving
+the registration from map_io to arch_initcall as done on other sa1100 boards.
 
-diff --git a/net/bluetooth/l2cap.c b/net/bluetooth/l2cap.c
-index cd8f6ea..bdfdfdc 100644
---- a/net/bluetooth/l2cap.c
-+++ b/net/bluetooth/l2cap.c
-@@ -1893,8 +1893,8 @@ static int l2cap_sock_sendmsg(struct kiocb *iocb, struct socket *sock, struct ms
- 		if (pi->mode == L2CAP_MODE_STREAMING) {
- 			l2cap_streaming_send(sk);
- 		} else {
--			if (pi->conn_state & L2CAP_CONN_REMOTE_BUSY &&
--					pi->conn_state && L2CAP_CONN_WAIT_F) {
-+			if ((pi->conn_state & L2CAP_CONN_REMOTE_BUSY) &&
-+					(pi->conn_state & L2CAP_CONN_WAIT_F)) {
- 				err = len;
- 				break;
- 			}
+Signed-off-by: Jochen Friedrich <jochen@scram.de>
+Acked-by: Kristoffer Ericson <kristoffer.ericson@gmail.com>
+---
+ arch/arm/mach-sa1100/simpad.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/mach-sa1100/simpad.c b/arch/arm/mach-sa1100/simpad.c
+index 27692d0..cfb7607 100644
+--- a/arch/arm/mach-sa1100/simpad.c
++++ b/arch/arm/mach-sa1100/simpad.c
+@@ -166,9 +166,6 @@ static void __init simpad_map_io(void)
+ 	PCFR = 0;
+ 	PSDR = 0;
+ 
+-	sa11x0_register_mtd(&simpad_flash_data, simpad_flash_resources,
+-			      ARRAY_SIZE(simpad_flash_resources));
+-	sa11x0_register_mcp(&simpad_mcp_data);
+ }
+ 
+ static void simpad_power_off(void)
+@@ -216,6 +213,10 @@ static int __init simpad_init(void)
+ 
+ 	pm_power_off = simpad_power_off;
+ 
++	sa11x0_register_mtd(&simpad_flash_data, simpad_flash_resources,
++			      ARRAY_SIZE(simpad_flash_resources));
++	sa11x0_register_mcp(&simpad_mcp_data);
++
+ 	ret = platform_add_devices(devices, ARRAY_SIZE(devices));
+ 	if(ret)
+ 		printk(KERN_WARNING "simpad: Unable to register mq200 framebuffer device");
 -- 
-1.7.3.4.626.g73e7b
+1.7.2.3
 
