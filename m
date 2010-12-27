@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752208Ab0L0WMY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 17:12:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2718 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750846Ab0L0WMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 17:12:22 -0500
-Date: Mon, 27 Dec 2010 15:12:37 -0700
-From: Pete Zaitcev <zaitcev@redhat.com>
-To: Tsozik <tsozik@yahoo.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, zaitcev@redhat.com
-Subject: Re: [PATCH 1/1] mct_u232: added _ioctl, _msr_to_icount and
- _get_icount functions
-Message-ID: <20101227151237.744bbb6e@lembas.zaitcev.lan>
-In-Reply-To: <87086.58416.qm@web65703.mail.ac4.yahoo.com>
-References: <87086.58416.qm@web65703.mail.ac4.yahoo.com>
-Organization: Red Hat, Inc.
+	id S1752138Ab0L0Wxi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 17:53:38 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:49102 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751495Ab0L0Wxh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 17:53:37 -0500
+Subject: Re: linux-next: Tree for December 27 (drivers/target/)
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, scsi <linux-scsi@vger.kernel.org>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101227112114.634c6e60.randy.dunlap@oracle.com>
+References: <20101227170451.a9a9f873.sfr@canb.auug.org.au>
+	 <20101227112114.634c6e60.randy.dunlap@oracle.com>
+Content-Type: text/plain
+Date: Mon, 27 Dec 2010 14:47:41 -0800
+Message-Id: <1293490061.4649.205.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Dec 2010 12:55:38 -0800 (PST)
-Tsozik <tsozik@yahoo.com> wrote:
+On Mon, 2010-12-27 at 11:21 -0800, Randy Dunlap wrote:
+> On Mon, 27 Dec 2010 17:04:51 +1100 Stephen Rothwell wrote:
+> 
+> > Hi all,
+> > 
+> > [The mirroring on kernel.org is running slowly]
+> 
+> yep :(
+> 
+> > Changes since 20101221:
+> 
+> 
+> When CONFIG_SCSI is not enabled:
+> 
+> ERROR: "scsi_device_type" [drivers/target/target_core_mod.ko] undefined!
+> 
+> from target_core_transport.c::1586:
+> 
+> 	printk("  Type:   %s ", scsi_device_type(device_type));
+> 
 
-> +static void mct_u232_msr_to_icount(struct async_icount *icount,
-> +						unsigned char msr)
-> +{
-> +	/* Translate Control Line states */
-> +	if (msr & MCT_U232_MSR_DDSR)
-> +		icount->dsr++;
-> +	if (msr & MCT_U232_MSR_DCTS)
-> +		icount->cts++;
-> +	if (msr & MCT_U232_MSR_DRI)
-> +		icount->rng++;
-> +	if (msr & MCT_U232_MSR_DCD)
-> +		icount->dcd++;
-> +} /* mct_u232_msr_to_icount */
+Hi Randy and Stephen,
 
-This looks good to me, but since it's a new hardware facility that
-we did not use previously, I'd like to make sure this works for you.
+As there is really no a reason for building CONFIG_TARGET_CORE w/o
+CONFIG_SCSI && CONFIG_BLOCK, the following patch has been added to the
+new linux-next target tree here:
 
-> mct_u232_msr_to_icount uses delta nibble to track state changes.
-> RM-60 testing showed the same levels as measured by PDM-2 in close
-> proximity to RM-60.
+target: Add SCSI and BLOCK depends for TARGET_CORE
+http://git.kernel.org/?p=linux/kernel/git/nab/linux-next.git;a=commitdiff;h=15c8da9639029ac337dd2f0bb67010de62d4b724
 
-Right, this is good. I have just one request for you: could you find
-somewhere a computer with a built-in 8250-compatible serial port,
-attach RM-60 to it, and run your counting application there?
-I think your patch looks just fine, but I would like to make sure
-that we (e.g. mct_u232+patch) are truly compatible now.
+> 
+> Also please update MAINTAINERS for drivers/target/.
+> 
 
--- Pete
+Also added here, thanks for the reminder:
+
+target: Add drivers/target/ entry to MAINTAINERS
+http://git.kernel.org/?p=linux/kernel/git/nab/linux-next.git;a=commitdiff;h=85356c6c328b3c4add3d240e387087a76a469028
+
+Best Regards,
+
+--nab
+
