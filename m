@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754496Ab0L0QZH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 11:25:07 -0500
-Received: from srv010071.webreus.nl ([212.61.10.71]:35395 "EHLO
-	srv010071.webreus.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753592Ab0L0QZG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 11:25:06 -0500
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Dec 2010 11:25:05 EST
-Date: Mon, 27 Dec 2010 17:18:22 +0100
-From: Michel Roelofs <michel@michelroelofs.nl>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] LinuxPPS: Fix nanoseconds field in timestamp debug output
-Message-ID: <20101227161821.GA21789@ster.michelroelofs.nl>
+	id S1754506Ab0L0Q2o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 11:28:44 -0500
+Received: from [77.221.143.26] ([77.221.143.26]:60051 "EHLO mxs.selfmail.ru"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753721Ab0L0Q2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 11:28:43 -0500
+X-ACL-SPF: 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 7bit
+Date: Mon, 27 Dec 2010 19:27:56 +0300
+From: Vasiliy G Tolstov <v.tolstov@selfip.ru>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Daniel Kiper <dkiper@net-space.pl>, <akpm@linux-foundation.org>,
+        <andi.kleen@intel.com>, <haicheng.li@linux.intel.com>,
+        <fengguang.wu@intel.com>, <jeremy@goop.org>,
+        <dan.magenheimer@oracle.com>, <xen-devel@lists.xensource.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH 2/3] drivers/xen/balloon.c: Various balloon features and
+ fixes
+Reply-To: v.tolstov@selfip.ru
+In-Reply-To: <20101227150847.GA3728@dumpdata.com>
+References: <20101220134724.GC6749@router-fw-old.local.net-space.pl>
+ <20101227150847.GA3728@dumpdata.com>
+Message-ID: <947c7677e042b3fd1ca22d775ca9aeb9@imap.selfip.ru>
+User-Agent: Roundcube Webmail/0.4-trunk
+X-CSA: fail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes the debug output print at least nine digits for the
-nanoseconds field, instead of at least six.
+On Mon, 27 Dec 2010 10:08:47 -0500, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> On Mon, Dec 20, 2010 at 02:47:24PM +0100, Daniel Kiper wrote:
+>> Features and fixes:
+>>   - HVM mode is supported now,
+>>   - migration from mod_timer() to schedule_delayed_work(),
+>>   - removal of driver_pages (I do not have seen any
+>>     references to it),
+>>   - protect before CPU exhaust by event/x process during
+>>     errors by adding some delays in scheduling next event,
+>>   - some other minor fixes.
 
-Signed-off-by: Michel Roelofs <michel@michelroelofs.nl>
-Acked-by: Rodolfo Giometti <giometti@linux.it>
----
-    drivers/pps/kapi.c |    2 +-
-    1 files changed, 1 insertions(+), 1 deletions(-)
+I have apply this patch to bare 2.6.36.2 kernel from kernel.org. If
+memory=maxmemory pv guest run's on migrating fine.
+If on already running domU i have xm mem-max xxx 1024 (before that it
+has 768) and do xm mem-set 1024 guest now have 1024 memory, but after
+that it can't migrate to another host.
 
-diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
-index 1aa02db..b0e347c 100644
---- a/drivers/pps/kapi.c
-+++ b/drivers/pps/kapi.c
-@@ -284,7 +284,7 @@ void pps_event(int source, struct pps_ktime *ts, int event, void *data)
-    	if (!pps)
-    		return;
-    
--	pr_debug("PPS event on source %d at %llu.%06u\n",
-+	pr_debug("PPS event on source %d at %llu.%09u\n",
-    			pps->id, (unsigned long long) ts->sec, ts->nsec);
-    
-    	spin_lock_irqsave(&pps->lock, flags);
--- 
-1.7.0.4
+Step to try to start guest with memory=512 and maxmemory=1024 it boot
+fine, xm mem-set work's fine, but.. it can't migrate. Sorry but nothing
+on screen , how can i help to debug this problem?
