@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082Ab0L0Ds6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Dec 2010 22:48:58 -0500
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:54149 "EHLO sabe.cs.wisc.edu"
+	id S1753226Ab0L0D5o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Dec 2010 22:57:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752703Ab0L0Ds5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Dec 2010 22:48:57 -0500
-Message-ID: <4D180BBA.3050709@cs.wisc.edu>
-Date: Sun, 26 Dec 2010 21:44:58 -0600
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: open-iscsi@googlegroups.com
-CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Matthew Wilcox <matthew@wil.cx>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jeff Garzik <jeff@garzik.org>, Christoph Hellwig <hch@lst.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>
-Subject: Re: [PATCH 01/12] libiscsi: Convert to host_lock less	w/	interrupts
- disabled internally
-References: <1292793727-31957-1-git-send-email-nab@linux-iscsi.org>	 <1292793727-31957-2-git-send-email-nab@linux-iscsi.org>	 <20101219233835.GJ1263@parisc-linux.org>	 <1292807703.20840.29.camel@haakon2.linux-iscsi.org>	 <1292808126.20840.33.camel@haakon2.linux-iscsi.org>	 <20101220020758.GK1263@parisc-linux.org>	 <1292837413.20840.47.camel@haakon2.linux-iscsi.org>	 <4D0FF6A5.9040209@cs.wisc.edu> <1293139434.4649.122.camel@haakon2.linux-iscsi.org>
-In-Reply-To: <1293139434.4649.122.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752769Ab0L0D5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Dec 2010 22:57:43 -0500
+Date: Sun, 26 Dec 2010 20:57:56 -0700
+From: Pete Zaitcev <zaitcev@redhat.com>
+To: Tsozik <tsozik@yahoo.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, zaitcev@redhat.com
+Subject: Re: [PATCH 1/1] mct_u232: added _ioctl and _get_icount functions
+Message-ID: <20101226205756.78f4d21a@lembas.zaitcev.lan>
+In-Reply-To: <342039.62488.qm@web65711.mail.ac4.yahoo.com>
+References: <342039.62488.qm@web65711.mail.ac4.yahoo.com>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/2010 03:23 PM, Nicholas A. Bellinger wrote:
-> On Mon, 2010-12-20 at 18:36 -0600, Mike Christie wrote:
->> On 12/20/2010 03:30 AM, Nicholas A. Bellinger wrote:
->>> After a quick audit of iscsi_session->lock usage, and I see that
->>> iscsi_complete_pdu(), iscsi_tmf_timedout(), iscsi_eh_cmd_timed_out(),
->>> iscsi_check_transport_timeouts() are using spin_lock(), and
->>> iscsi_session_failure() and iscsi_conn_failure() are using
->>> spin_lock_irqsave().
->>>
->>> Mike and Hannes, would you guys mind commenting on this..?  From what I
->>> can determine these should all be converted to use spin_lock_bh(),
->>> yes..?
->>>
->>
->> Yeah, they can use _bh locking. I was going to use them for qla4xxx eh,
->> which does iscsi processing in its irq, but we never did.
->
-> Thanks for the clarification.  I would be happy to submit a patch next
-> week for this seperately from the host_lock-less conversion pieces, or
-> would you prefer handle this yourself..?
->
+On Sun, 26 Dec 2010 18:58:46 -0800 (PST)
+Tsozik <tsozik@yahoo.com> wrote:
 
-I am testing something now. Do not worry about it. Thanks for the work 
-on this.
+> Please let me know if there's anything else I need to correct before
+> it can be rolled out,
+
+I am hardly an expert here, but I looked it up as much as I could,
+and this looks like a wrong way to do it:
+
+> @@ -386,27 +396,41 @@ static int mct_u232_get_modem_stat(struc
+>  	/* Translate Control Line states */
+> +	if (msr & MCT_U232_MSR_DSR) {
+>  		*control_state |=  TIOCM_DSR;
+> +		icount->dsr++;
+> +	} else {
+>  		*control_state &= ~TIOCM_DSR;
+> +	}
+
+Unfortunately, Kerrisk's manpages do not seem to offer an authoritative
+definition, but the expectations across the code seems that the counter
+actually counts the changes. I know that some people talked about
+counting "interrupts", but the way it's implemented in trustworthy
+drivers suggests something like this:
+
+	unsigned int old_ctl_state;
+
+	old_ctl_state = *control_state;
+	if (msr & MCT_U232_MSR_DSR)
+		*control_state |=  TIOCM_DSR;
+	else
+		*control_state &= ~TIOCM_DSR;
+	if (old_ctl_state != *control_state)
+		icount->dsr++;
+	...... repeat for all bits
+
+E.g. for DSR going down too, although perhaps I'm not suggesting the
+best way to do it. Could you re-implement it like the above and
+check that your radiation counter works the same with it and
+when driven by a built-in serial port?
+
+Another thing, you should take priv->lock around fetching of
+mct_u232_port->icount in mct_u232_ioctl. It seems superfluous,
+I know, because the API itself is racy, but just to be nice
+and doing the expected thing...
+
+-- Pete
