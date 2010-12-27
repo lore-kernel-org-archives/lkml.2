@@ -1,349 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316Ab0L0Cgq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Dec 2010 21:36:46 -0500
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:24039
-	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752867Ab0L0Cgo convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Dec 2010 21:36:44 -0500
-X-SpamScore: -47
-X-BigFish: VPS-47(z6c9Mz542N1432N98dNef8K4015L1447R9371P10d1Izz1202hzz1497iz32i668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LE2F8Y-01-FAM-02
-X-M-MSG: 
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
+	id S1753182Ab0L0DE4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Dec 2010 22:04:56 -0500
+Received: from nm23-vm0.bullet.mail.ac4.yahoo.com ([98.139.53.220]:38796 "HELO
+	nm23-vm0.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751535Ab0L0DEz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Dec 2010 22:04:55 -0500
+X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Sun, 26 Dec 2010 22:04:55 EST
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 492912.31245.bm@omp1055.mail.ac4.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type;
+  b=gQT0T7F+StED0LWA5nUzizyLiz/f7b4QXDDtTGbfxxa+nBfa5MsRM5wzqQb8ZYtD1Ys5Ouda+/ouD2kyY3Is8NivVytqnj7svkGnM7lGGm4zp2LwoDXmSfFcOUufYg/jKcPYHg5ZB00Ljhd0iyrZDaKCYc1Ddi0uW6S1V8zTNho=;
+Message-ID: <342039.62488.qm@web65711.mail.ac4.yahoo.com>
+X-YMail-OSG: UuPFngUVM1nwJwckA2wOSYgivqT90reJZVzwHacGnuxfdOH
+ rkZTAbsseZex.rZFT8QSAJTqsqtu_roXYjNhE08RDDU5JcTQ3UwJbiVNFACN
+ euIMr69A_kP4PneJ.myXDdElbV4zURH3ydbcFMr90IbOYZgr7KTs8U9U5ip.
+ 6DDNZdNbasHSPdVRIhhij5h1NdtWynIXy9oOFq6fF92XUU..LN4obXhBjKvl
+ 6FPvGUo31IS8cSCYQsM2mixKIgaFi3HP09H6DcxIBJtpTtiVuri1jyu7.TQD
+ zDpPmVnZBkuRVAElZjW1h.a_HQwOKmi85jBkpqXkOrH.QQhFg564gjIB2PbG
+ V3NjqUDAilqzQ6yp90JOtYLK.IkmVAMG5pMC5opvpNjBMSC.2DE3sP1rN48h
+ dmN1_11naaYU3nYiOnHucxwutHA--
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.285259
+Date: Sun, 26 Dec 2010 18:58:46 -0800 (PST)
+From: Tsozik <tsozik@yahoo.com>
+Subject: [PATCH 1/1] mct_u232: added _ioctl and _get_icount functions
+To: Greg Kroah-Hartman <gregkh@suse.de>, Pete Zaitcev <zaitcev@redhat.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: Scary warnings from xhci_hcd on rmmod and during shutdown/suspend/resume
-Date: Mon, 27 Dec 2010 10:36:31 +0800
-Message-ID: <2DEEA3AB13739D45A22ADDB5086AEA0BC91CBB@sshaexmb1.amd.com>
-In-Reply-To: <201012262306.48266.rjw@sisk.pl>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Scary warnings from xhci_hcd on rmmod and during shutdown/suspend/resume
-Thread-Index: AculSVSFh8nliCMMRUyTBLlITeTncgAJO6kQ
-References: <201012170039.16185.rjw@sisk.pl> <2DEEA3AB13739D45A22ADDB5086AEA0BC080D3@sshaexmb1.amd.com> <201012171421.45367.rjw@sisk.pl> <201012262306.48266.rjw@sisk.pl>
-From: "Xu, Andiry" <Andiry.Xu@amd.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        Matthew Garrett <mjg@redhat.com>
-X-OriginalArrivalTime: 27 Dec 2010 02:36:34.0601 (UTC) FILETIME=[E0C25990:01CBA56E]
-X-OriginatorOrg: amd.com
+Content-Type: multipart/mixed; boundary="0-757389922-1293418726=:62488"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> Sent: Monday, December 27, 2010 6:07 AM
-> To: Xu, Andiry
-> Cc: Sarah Sharp; linux-kernel@vger.kernel.org;
-linux-usb@vger.kernel.org;
-> Greg Kroah-Hartman; Alan Stern; Linux-pm mailing list; Matthew Garrett
-> Subject: Re: Scary warnings from xhci_hcd on rmmod and during
-> shutdown/suspend/resume
-> 
-> On Friday, December 17, 2010, Rafael J. Wysocki wrote:
-> > On Friday, December 17, 2010, Xu, Andiry wrote:
-> > > >
-> > > > and during shutdown (I believe the warnings are the same or
-> analogous
-> > > to
-> > > > the
-> > > > above).
-> > > >
-> > > > I tested with the attached patch from Andiry applied and I got
-the
-> > > > following
-> > > > BUG during resume:
-> > >
-> > > Does this bug occurs without the synchronize irq patch?
-> >
-> > Yes, it does.
-> >
-> > > Seems the rmmod, shutdown and resume bugs are caused by
-> xhci_cleanup_msix().
-> > >
-> > > >
-> > > > [   91.703778] sd 0:0:0:0: [sda] Starting disk
-> > > > [   91.704054] sd 2:0:0:0: [sdb] Starting disk
-> > > > [   91.703680] xhci_hcd 0000:04:00.0: Host controller not
-halted,
-> > > aborting
-> > > > reset.
-> > > > [   91.703680] BUG: sleeping function called from invalid
-context at
-> > > > /home/rafael/src/linux-2.6/kernel/mutex.c:278
-> > > > [   91.703680] in_atomic(): 1, irqs_disabled(): 1, pid: 1234,
-name:
-> > > > kworker/u:6
-> > > > [   91.703680] INFO: lockdep is turned off.
-> > > > [   91.703680] irq event stamp: 24060
-> > > > [   91.703680] hardirqs last  enabled at (24059):
-> [<ffffffff810aa071>]
-> > > > rcu_note_context_switch+0xa1/0x1c0
-> > > > [   91.703680] hardirqs last disabled at (24060):
-> [<ffffffff81494e92>]
-> > > > _raw_spin_lock_irq+0x12/0x50
-> > > > [   91.703680] softirqs last  enabled at (20026):
-> [<ffffffff8105056e>]
-> > > > __do_softirq+0x11e/0x160
-> > > > [   91.703680] softirqs last disabled at (20011):
-> [<ffffffff8100368c>]
-> > > > call_softirq+0x1c/0x30
-> > > > [   91.703680] Pid: 1234, comm: kworker/u:6 Tainted: G        W
-> > > 2.6.37-
-> > > > rc6+ #12
-> > > > [   91.703680] Call Trace:
-> > > > [   91.703680]  [<ffffffff81079290>] ?
-> print_irqtrace_events+0xd0/0xe0
-> > > > [   91.703680]  [<ffffffff81036783>] __might_sleep+0x103/0x130
-> > > > [   91.703680]  [<ffffffff81492f73>]
-mutex_lock_nested+0x33/0x380
-> > > > [   91.703680]  [<ffffffff81495727>] ?
-> > > > _raw_spin_unlock_irqrestore+0x67/0x70
-> > > > [   91.703680]  [<ffffffff810a39de>] ?
-> dynamic_irq_cleanup+0xde/0x100
-> > > > [   91.703680]  [<ffffffff810a3a58>] irq_free_descs+0x58/0x90
-> > > > [   91.703680]  [<ffffffff81022008>] destroy_irq+0x78/0x90
-> > > > [   91.703680]  [<ffffffff810222c9>]
-> native_teardown_msi_irq+0x9/0x10
-> > > > [   91.703680]  [<ffffffff811ee0b0>]
-> > > default_teardown_msi_irqs+0x70/0xa0
-> > > > [   91.703680]  [<ffffffff811edb41>] free_msi_irqs+0xa1/0x110
-> > > > [   91.703680]  [<ffffffff811eec1d>] pci_disable_msix+0x3d/0x50
-> > > > [   91.703680]  [<ffffffffa03f0609>] xhci_cleanup_msix+0x39/0x80
-> > > [xhci_hcd]
-> > > > [   91.703680]  [<ffffffffa03f111c>] xhci_resume+0x1ac/0x250
-> > > [xhci_hcd]
-> > > > [   91.703680]  [<ffffffffa03f65c4>] xhci_pci_resume+0x14/0x20
-> > > [xhci_hcd]
-> > > > [   91.703680]  [<ffffffff8138996b>] resume_common+0xbb/0x140
-> > > > [   91.703680]  [<ffffffff81389a5e>] hcd_pci_restore+0xe/0x10
-> > > > [   91.703680]  [<ffffffff811e36f3>] pci_pm_restore+0x63/0xb0
-> > > > [   91.703680]  [<ffffffff813334bd>] pm_op+0x19d/0x1c0
-> > > > [   91.703680]  [<ffffffff81333be4>] device_resume+0x94/0x220
-> > > > [   91.703680]  [<ffffffff81333d8c>] async_resume+0x1c/0x50
-> > > > [   91.703680]  [<ffffffff8106e6e6>]
-async_run_entry_fn+0x86/0x160
-> > > > [   91.703680]  [<ffffffff81060672>]
-process_one_work+0x1a2/0x450
-> > > > [   91.703680]  [<ffffffff81060614>] ?
-process_one_work+0x144/0x450
-> > > > [   91.703680]  [<ffffffff811d2704>] ?
-do_raw_spin_lock+0x104/0x170
-> > > > [   91.703680]  [<ffffffff8106e660>] ?
-async_run_entry_fn+0x0/0x160
-> > > > [   91.703680]  [<ffffffff81061e32>] worker_thread+0x162/0x340
-> > > > [   91.703680]  [<ffffffff81061cd0>] ? worker_thread+0x0/0x340
-> > > > [   91.703680]  [<ffffffff81066836>] kthread+0x96/0xa0
-> > > > [   91.703680]  [<ffffffff81003594>]
-kernel_thread_helper+0x4/0x10
-> > > > [   91.703680]  [<ffffffff81036fdb>] ?
-finish_task_switch+0x7b/0xe0
-> > > > [   91.703680]  [<ffffffff81495d00>] ? restore_args+0x0/0x30
-> > > > [   91.703680]  [<ffffffff810667a0>] ? kthread+0x0/0xa0
-> > > > [   91.703680]  [<ffffffff81003590>] ?
-kernel_thread_helper+0x0/0x10
-> > > > [   91.706248] xhci_hcd 0000:04:00.0: irq 81 for MSI/MSI-X
-> > > > [   91.706251] xhci_hcd 0000:04:00.0: irq 82 for MSI/MSI-X
-> > > > [   91.706253] xhci_hcd 0000:04:00.0: irq 83 for MSI/MSI-X
-> > > > [   91.706256] xhci_hcd 0000:04:00.0: irq 84 for MSI/MSI-X
-> > > > [   91.706258] xhci_hcd 0000:04:00.0: irq 85 for MSI/MSI-X
-> > > > [   91.706260] xhci_hcd 0000:04:00.0: irq 86 for MSI/MSI-X
-> > > > [   91.706262] xhci_hcd 0000:04:00.0: irq 87 for MSI/MSI-X
-> > > >
-> > > > The issues appear to be 100% reproducible.
-> > > >
-> > >
-> > > I'm not able to reproduce the issue. Can you specify your kernel
-> version
-> > > and attach your .config?
-> >
-> > The kernel is basically 2.6.37-rc6, but I was able to reproduce this
-> with
-> > previous 2.6.37-rc too.
-> >
-> > Attached are the full dmesg containing the traces I sent before
-> and .config.
-> 
-> OK, so the problem seems to be that xhci_cleanup_msix() cannot be
-called
-> under
-> a spinlock, because it causes a mutex to be acquired somewhere up the
-call
-> chain.
-> 
-> Also, you don't really need to do this "drop MSI-X and acquire a
-'normal'
-> IRQ
-> to fool the USB core" thing during suspend.
-> 
-> The appended patch works on my test machine, where I mean that (a) the
-> reported
-> warnings don't appear and (b) it doesn't crash the system during
-resume
-> (from
-> hibernation).
-> 
+--0-757389922-1293418726=:62488
+Content-Type: text/plain; charset=us-ascii
 
-Thanks for the patch. Actually I already have a patch in modification
-about synchronize_irq() in xhci_suspend() and I'll submit it later. The
-patch will fix your suspend/hibernation issue.
+Pete, Greg,
 
-Sarah will submit another patch, move the xhci_cleanup_msix() out of
-spinlock to fix the rmmod issue. They are actually two bugs so we use
-two patches.
+Again thank you very much for your valuable feedback. I generated another patch (based on linux-2.6.37-rc7) and ran it against scripts/checkpatch.pl script which didn't produce any errors or warnings:
 
-Thanks,
-Andiry
+[vtsozik@SR71 2.6.37-rc7]$ /usr/src/kernels/2.6.37-rc7/scripts/checkpatch.pl mct_u232.c.patch.submit 
+total: 0 errors, 0 warnings, 191 lines checked
+
+mct_u232.c.patch.submit has no obvious style problems and is ready for submission.
+[vtsozik@SR71 2.6.37-rc7]$
+
+I attached mct_u232.c.patch.submit file to this email, so tabs will not be expanded into spaces. Please let me know if there's anything else I need to correct before it can be rolled out,
+
+Again thank you for your help with this,
+ Vadim.
 
 
-> ---
->  drivers/usb/core/hcd-pci.c |    3 ++-
->  drivers/usb/host/xhci.c    |   38
-++++++++------------------------------
->  include/linux/usb/hcd.h    |    1 +
->  3 files changed, 11 insertions(+), 31 deletions(-)
-> 
-> Index: linux-2.6/include/linux/usb/hcd.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/usb/hcd.h
-> +++ linux-2.6/include/linux/usb/hcd.h
-> @@ -119,6 +119,7 @@ struct usb_hcd {
->  	unsigned		wireless:1;	/* Wireless USB HCD */
->  	unsigned		authorized_default:1;
->  	unsigned		has_tt:1;	/* Integrated TT in root
-hub */
-> +	unsigned		multiple_irqs:1;	/* Multiple IRQs
-used */
-> 
->  	int			irq;		/* irq allocated */
->  	void __iomem		*regs;		/* device memory/io */
-> Index: linux-2.6/drivers/usb/core/hcd-pci.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/usb/core/hcd-pci.c
-> +++ linux-2.6/drivers/usb/core/hcd-pci.c
-> @@ -406,7 +406,8 @@ static int suspend_common(struct device
->  			return retval;
->  	}
-> 
-> -	synchronize_irq(pci_dev->irq);
-> +	if (!hcd->multiple_irqs)
-> +		synchronize_irq(pci_dev->irq);
-> 
->  	/* Downstream ports from this root hub should already be
-quiesced,
-> so
->  	 * there will be no DMA activity.  Now we can shut down the
-upstream
-> Index: linux-2.6/drivers/usb/host/xhci.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/usb/host/xhci.c
-> +++ linux-2.6/drivers/usb/host/xhci.c
-> @@ -263,6 +263,8 @@ static int xhci_setup_msix(struct xhci_h
->  				0, "xhci_hcd", xhci_to_hcd(xhci));
->  		if (ret)
->  			goto disable_msix;
-> +		else
-> +			xhci_to_hcd(xhci)->multiple_irqs = true;
->  	}
-> 
->  	return ret;
-> @@ -508,9 +510,10 @@ void xhci_stop(struct usb_hcd *hcd)
->  	spin_lock_irq(&xhci->lock);
->  	xhci_halt(xhci);
->  	xhci_reset(xhci);
-> -	xhci_cleanup_msix(xhci);
->  	spin_unlock_irq(&xhci->lock);
-> 
-> +	xhci_cleanup_msix(xhci);
-> +
->  #ifdef CONFIG_USB_XHCI_HCD_DEBUGGING
->  	/* Tell the event ring poll function not to reschedule */
->  	xhci->zombie = 1;
-> @@ -544,9 +547,10 @@ void xhci_shutdown(struct usb_hcd *hcd)
-> 
->  	spin_lock_irq(&xhci->lock);
->  	xhci_halt(xhci);
-> -	xhci_cleanup_msix(xhci);
->  	spin_unlock_irq(&xhci->lock);
-> 
-> +	xhci_cleanup_msix(xhci);
-> +
->  	xhci_dbg(xhci, "xhci_shutdown completed - status = %x\n",
->  		    xhci_readl(xhci, &xhci->op_regs->status));
->  }
-> @@ -677,8 +681,6 @@ int xhci_suspend(struct xhci_hcd *xhci)
->  		spin_unlock_irq(&xhci->lock);
->  		return -ETIMEDOUT;
->  	}
-> -	/* step 5: remove core well power */
-> -	xhci_cleanup_msix(xhci);
->  	spin_unlock_irq(&xhci->lock);
-> 
->  	return rc;
-> @@ -694,7 +696,6 @@ int xhci_resume(struct xhci_hcd *xhci, b
->  {
->  	u32			command, temp = 0;
->  	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
-> -	struct pci_dev		*pdev =
-to_pci_dev(hcd->self.controller);
->  	int	old_state, retval;
-> 
->  	old_state = hcd->state;
-> @@ -729,9 +730,10 @@ int xhci_resume(struct xhci_hcd *xhci, b
->  		xhci_dbg(xhci, "Stop HCD\n");
->  		xhci_halt(xhci);
->  		xhci_reset(xhci);
-> +		spin_unlock_irq(&xhci->lock);
-> +
->  		if (hibernated)
->  			xhci_cleanup_msix(xhci);
-> -		spin_unlock_irq(&xhci->lock);
-> 
->  #ifdef CONFIG_USB_XHCI_HCD_DEBUGGING
->  		/* Tell the event ring poll function not to reschedule
-*/
-> @@ -765,30 +767,6 @@ int xhci_resume(struct xhci_hcd *xhci, b
->  		return retval;
->  	}
-> 
-> -	spin_unlock_irq(&xhci->lock);
-> -	/* Re-setup MSI-X */
-> -	if (hcd->irq)
-> -		free_irq(hcd->irq, hcd);
-> -	hcd->irq = -1;
-> -
-> -	retval = xhci_setup_msix(xhci);
-> -	if (retval)
-> -		/* fall back to msi*/
-> -		retval = xhci_setup_msi(xhci);
-> -
-> -	if (retval) {
-> -		/* fall back to legacy interrupt*/
-> -		retval = request_irq(pdev->irq, &usb_hcd_irq,
-IRQF_SHARED,
-> -					hcd->irq_descr, hcd);
-> -		if (retval) {
-> -			xhci_err(xhci, "request interrupt %d failed\n",
-> -					pdev->irq);
-> -			return retval;
-> -		}
-> -		hcd->irq = pdev->irq;
-> -	}
-> -
-> -	spin_lock_irq(&xhci->lock);
->  	/* step 4: set Run/Stop bit */
->  	command = xhci_readl(xhci, &xhci->op_regs->command);
->  	command |= CMD_RUN;
+      
+--0-757389922-1293418726=:62488
+Content-Type: application/octet-stream; name="mct_u232.c.patch.submit"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="mct_u232.c.patch.submit"
 
+RnJvbTogRnJvbTogVmFkaW0gVHNvemlrIDx0c296aWtAeWFob28uY29tPgoK
+QWRkZWQgbWN0X3UyMzJfaW9jdGwgKGltcGxlbWVudHMgVElPQ01JV0FJVCBj
+b21tYW5kKSBhbmQgbWN0X3UyMzJfZ2V0X2ljb3VudCAoaW1wbGVtZW50cyBU
+SU9DR0lDT1VOVCBjb21tYW5kKSBmdW5jdGlvbnMuIE1DVCB1MjMyIHA5IGlz
+IG9uZSBvZiBhIGZldyB1c2IgdG8gc2VyYWlsIGFkYXB0ZXJzIHdoaWNoIGNv
+bnZlcnRzIFVTQiArLy01diB2b2x0YWdlIGxldmVscyB0byBDT00gKy8tMTUg
+dm9sdGFnZXMuIFNvIGl0IGNhbiBhbHNvIHBvd2VyIENPTSBpbnRlcmZhY2Vk
+IGRldmljZXMuIFRoaXMgbWFrZXMgaXQgdmVyeSB1c2FibGUgZm9yIGxlZ2Fj
+eSBDT00gaW50ZXJmYWNlZCBkYXRhLWFjcXVpc2l0aW9uIGhhcmR3YXJlLiBJ
+IHRlc3RlZCBuZXcgaW1wbGVtZW50YXRpb24gd2l0aCBBV0FSRSBFbGVjdHJv
+bmljcyBSTS02MCByYWRpYXRpb24gbWV0ZXIsIHdoaWNoIHNlbmRzIHB1bHNl
+IHZpYSBSTkcgQ09NIGxpbmUgd2hlbmV2ZXIgbmV3IHBhcnRpY2xlIGlzIHJl
+Z2lzdGVyZWQuCgpTaWduZWQtb2ZmLWJ5OiBWYWRpbSBUc296aWsgPHRzb3pp
+a0B5YWhvby5jb20+CgotLS0KClBhdGNoIGJlbG93IGlzIGJhc2VkIG9uIGxp
+bnV4LTIuNi4zNy1yYzcKCi0tLSB1c2Ivc2VyaWFsL21jdF91MjMyLmMub3Jp
+ZwkyMDEwLTEyLTI2IDE2OjU0OjE2LjY2MDI5NDkyNCAtMDUwMAorKysgdXNi
+L3NlcmlhbC9tY3RfdTIzMi5jCTIwMTAtMTItMjYgMjA6NDU6NDEuNzExNjgy
+MTI3IC0wNTAwCkBAIC03OCw2ICs3OCw4IEBACiAjaW5jbHVkZSA8YXNtL3Vu
+YWxpZ25lZC5oPgogI2luY2x1ZGUgPGxpbnV4L3VzYi5oPgogI2luY2x1ZGUg
+PGxpbnV4L3VzYi9zZXJpYWwuaD4KKyNpbmNsdWRlIDxsaW51eC9zZXJpYWwu
+aD4KKyNpbmNsdWRlIDxsaW51eC9pb2N0bC5oPgogI2luY2x1ZGUgIm1jdF91
+MjMyLmgiCiAKIC8qCkBAIC0xMDQsNiArMTA2LDEwIEBAIHN0YXRpYyB2b2lk
+IG1jdF91MjMyX2JyZWFrX2N0bChzdHJ1Y3QgdHQKIHN0YXRpYyBpbnQgIG1j
+dF91MjMyX3Rpb2NtZ2V0KHN0cnVjdCB0dHlfc3RydWN0ICp0dHksIHN0cnVj
+dCBmaWxlICpmaWxlKTsKIHN0YXRpYyBpbnQgIG1jdF91MjMyX3Rpb2Ntc2V0
+KHN0cnVjdCB0dHlfc3RydWN0ICp0dHksIHN0cnVjdCBmaWxlICpmaWxlLAog
+CQkJdW5zaWduZWQgaW50IHNldCwgdW5zaWduZWQgaW50IGNsZWFyKTsKK3N0
+YXRpYyBpbnQgIG1jdF91MjMyX2lvY3RsKHN0cnVjdCB0dHlfc3RydWN0ICp0
+dHksIHN0cnVjdCBmaWxlICpmaWxlLAorCQkJdW5zaWduZWQgaW50IGNtZCwg
+dW5zaWduZWQgbG9uZyBhcmcpOworc3RhdGljIGludCAgbWN0X3UyMzJfZ2V0
+X2ljb3VudChzdHJ1Y3QgdHR5X3N0cnVjdCAqdHR5LAorCQkJc3RydWN0IHNl
+cmlhbF9pY291bnRlcl9zdHJ1Y3QgKmljb3VudCk7CiBzdGF0aWMgdm9pZCBt
+Y3RfdTIzMl90aHJvdHRsZShzdHJ1Y3QgdHR5X3N0cnVjdCAqdHR5KTsKIHN0
+YXRpYyB2b2lkIG1jdF91MjMyX3VudGhyb3R0bGUoc3RydWN0IHR0eV9zdHJ1
+Y3QgKnR0eSk7CiAKQEAgLTE1MCw5ICsxNTYsMTAgQEAgc3RhdGljIHN0cnVj
+dCB1c2Jfc2VyaWFsX2RyaXZlciBtY3RfdTIzMgogCS50aW9jbXNldCA9CSAg
+ICAgbWN0X3UyMzJfdGlvY21zZXQsCiAJLmF0dGFjaCA9CSAgICAgbWN0X3Uy
+MzJfc3RhcnR1cCwKIAkucmVsZWFzZSA9CSAgICAgbWN0X3UyMzJfcmVsZWFz
+ZSwKKwkuaW9jdGwgPSAgICAgICAgICAgICBtY3RfdTIzMl9pb2N0bCwKKwku
+Z2V0X2ljb3VudCA9ICAgICAgICBtY3RfdTIzMl9nZXRfaWNvdW50LAogfTsK
+IAotCiBzdHJ1Y3QgbWN0X3UyMzJfcHJpdmF0ZSB7CiAJc3BpbmxvY2tfdCBs
+b2NrOwogCXVuc2lnbmVkIGludAkgICAgIGNvbnRyb2xfc3RhdGU7IC8qIE1v
+ZGVtIExpbmUgU2V0dGluZyAoVElPQ00pICovCkBAIC0xNjAsNiArMTY3LDkg
+QEAgc3RydWN0IG1jdF91MjMyX3ByaXZhdGUgewogCXVuc2lnbmVkIGNoYXIJ
+ICAgICBsYXN0X2xzcjsgICAgICAvKiBMaW5lIFN0YXR1cyBSZWdpc3RlciAq
+LwogCXVuc2lnbmVkIGNoYXIJICAgICBsYXN0X21zcjsgICAgICAvKiBNb2Rl
+bSBTdGF0dXMgUmVnaXN0ZXIgKi8KIAl1bnNpZ25lZCBpbnQJICAgICByeF9m
+bGFnczsgICAgICAvKiBUaHJvdHRsaW5nIGZsYWdzICovCisJc3RydWN0IGFz
+eW5jX2ljb3VudCAgaWNvdW50OworCXdhaXRfcXVldWVfaGVhZF90ICAgIG1z
+cl93YWl0OwkvKiBmb3IgaGFuZGxpbmcgc2xlZXBpbmcgd2hpbGUgd2FpdGlu
+ZworCQkJCQkJZm9yIG1zciBjaGFuZ2UgdG8gaGFwcGVuICovCiB9OwogCiAj
+ZGVmaW5lIFRIUk9UVExFRAkJMHgwMQpAQCAtMzg2LDI3ICszOTYsNDEgQEAg
+c3RhdGljIGludCBtY3RfdTIzMl9nZXRfbW9kZW1fc3RhdChzdHJ1YwogCXJl
+dHVybiByYzsKIH0gLyogbWN0X3UyMzJfZ2V0X21vZGVtX3N0YXQgKi8KIAot
+c3RhdGljIHZvaWQgbWN0X3UyMzJfbXNyX3RvX3N0YXRlKHVuc2lnbmVkIGlu
+dCAqY29udHJvbF9zdGF0ZSwKLQkJCQkJCXVuc2lnbmVkIGNoYXIgbXNyKQor
+c3RhdGljIHZvaWQgbWN0X3UyMzJfbXNyX3RvX3N0YXRlKHN0cnVjdCBtY3Rf
+dTIzMl9wcml2YXRlICpwcml2KQogeworCXVuc2lnbmVkIGNoYXIgbXNyID0g
+cHJpdi0+bGFzdF9tc3I7CisJdW5zaWduZWQgaW50ICpjb250cm9sX3N0YXRl
+ID0gJnByaXYtPmNvbnRyb2xfc3RhdGU7CisJc3RydWN0IGFzeW5jX2ljb3Vu
+dCAqaWNvdW50ID0gJnByaXYtPmljb3VudDsKKwogCS8qIFRyYW5zbGF0ZSBD
+b250cm9sIExpbmUgc3RhdGVzICovCi0JaWYgKG1zciAmIE1DVF9VMjMyX01T
+Ul9EU1IpCisJaWYgKG1zciAmIE1DVF9VMjMyX01TUl9EU1IpIHsKIAkJKmNv
+bnRyb2xfc3RhdGUgfD0gIFRJT0NNX0RTUjsKLQllbHNlCisJCWljb3VudC0+
+ZHNyKys7CisJfSBlbHNlIHsKIAkJKmNvbnRyb2xfc3RhdGUgJj0gflRJT0NN
+X0RTUjsKLQlpZiAobXNyICYgTUNUX1UyMzJfTVNSX0NUUykKKwl9CisJaWYg
+KG1zciAmIE1DVF9VMjMyX01TUl9DVFMpIHsKIAkJKmNvbnRyb2xfc3RhdGUg
+fD0gIFRJT0NNX0NUUzsKLQllbHNlCisJCWljb3VudC0+Y3RzKys7CisJfSBl
+bHNlIHsKIAkJKmNvbnRyb2xfc3RhdGUgJj0gflRJT0NNX0NUUzsKLQlpZiAo
+bXNyICYgTUNUX1UyMzJfTVNSX1JJKQorCX0KKwlpZiAobXNyICYgTUNUX1Uy
+MzJfTVNSX1JJKSB7CiAJCSpjb250cm9sX3N0YXRlIHw9ICBUSU9DTV9SSTsK
+LQllbHNlCisJCWljb3VudC0+cm5nKys7CisJfSBlbHNlIHsKIAkJKmNvbnRy
+b2xfc3RhdGUgJj0gflRJT0NNX1JJOwotCWlmIChtc3IgJiBNQ1RfVTIzMl9N
+U1JfQ0QpCisJfQorCWlmIChtc3IgJiBNQ1RfVTIzMl9NU1JfQ0QpIHsKIAkJ
+KmNvbnRyb2xfc3RhdGUgfD0gIFRJT0NNX0NEOwotCWVsc2UKKwkJaWNvdW50
+LT5kY2QrKzsKKwl9IGVsc2UgewogCQkqY29udHJvbF9zdGF0ZSAmPSB+VElP
+Q01fQ0Q7CisJfQorCiAJZGJnKCJtc3JfdG9fc3RhdGU6IG1zcj0weCV4ID09
+PiBzdGF0ZT0weCV4IiwgbXNyLCAqY29udHJvbF9zdGF0ZSk7CisKKwl3YWtl
+X3VwX2ludGVycnVwdGlibGUoJnByaXYtPm1zcl93YWl0KTsKIH0gLyogbWN0
+X3UyMzJfbXNyX3RvX3N0YXRlICovCiAKIC8qCkBAIC00MjIsNiArNDQ2LDcg
+QEAgc3RhdGljIGludCBtY3RfdTIzMl9zdGFydHVwKHN0cnVjdCB1c2Jfcwog
+CWlmICghcHJpdikKIAkJcmV0dXJuIC1FTk9NRU07CiAJc3Bpbl9sb2NrX2lu
+aXQoJnByaXYtPmxvY2spOworCWluaXRfd2FpdHF1ZXVlX2hlYWQoJnByaXYt
+Pm1zcl93YWl0KTsKIAl1c2Jfc2V0X3NlcmlhbF9wb3J0X2RhdGEoc2VyaWFs
+LT5wb3J0WzBdLCBwcml2KTsKIAogCWluaXRfd2FpdHF1ZXVlX2hlYWQoJnNl
+cmlhbC0+cG9ydFswXS0+d3JpdGVfd2FpdCk7CkBAIC00OTgsNyArNTIzLDcg
+QEAgc3RhdGljIGludCAgbWN0X3UyMzJfb3BlbihzdHJ1Y3QgdHR5X3N0cgog
+CW1jdF91MjMyX2dldF9tb2RlbV9zdGF0KHNlcmlhbCwgJmxhc3RfbXNyKTsK
+IAlzcGluX2xvY2tfaXJxc2F2ZSgmcHJpdi0+bG9jaywgZmxhZ3MpOwogCXBy
+aXYtPmxhc3RfbXNyID0gbGFzdF9tc3I7Ci0JbWN0X3UyMzJfbXNyX3RvX3N0
+YXRlKCZwcml2LT5jb250cm9sX3N0YXRlLCBwcml2LT5sYXN0X21zcik7CisJ
+bWN0X3UyMzJfbXNyX3RvX3N0YXRlKHByaXYpOwogCXNwaW5fdW5sb2NrX2ly
+cXJlc3RvcmUoJnByaXYtPmxvY2ssIGZsYWdzKTsKIAogCXBvcnQtPnJlYWRf
+dXJiLT5kZXYgPSBwb3J0LT5zZXJpYWwtPmRldjsKQEAgLTYxOSw3ICs2NDQs
+NyBAQCBzdGF0aWMgdm9pZCBtY3RfdTIzMl9yZWFkX2ludF9jYWxsYmFjayhz
+CiAJcHJpdi0+bGFzdF9tc3IgPSBkYXRhW01DVF9VMjMyX01TUl9JTkRFWF07
+CiAKIAkvKiBSZWNvcmQgQ29udHJvbCBMaW5lIHN0YXRlcyAqLwotCW1jdF91
+MjMyX21zcl90b19zdGF0ZSgmcHJpdi0+Y29udHJvbF9zdGF0ZSwgcHJpdi0+
+bGFzdF9tc3IpOworCW1jdF91MjMyX21zcl90b19zdGF0ZShwcml2KTsKIAog
+I2lmIDAKIAkvKiBOb3QgeWV0IGhhbmRsZWQuIFNlZSBiZWxraW5fc2EuYyBm
+b3IgZnVydGhlciBpbmZvcm1hdGlvbiAqLwpAQCAtODI2LDcgKzg1MSw2IEBA
+IHN0YXRpYyB2b2lkIG1jdF91MjMyX3Rocm90dGxlKHN0cnVjdCB0dHkKIAl9
+CiB9CiAKLQogc3RhdGljIHZvaWQgbWN0X3UyMzJfdW50aHJvdHRsZShzdHJ1
+Y3QgdHR5X3N0cnVjdCAqdHR5KQogewogCXN0cnVjdCB1c2Jfc2VyaWFsX3Bv
+cnQgKnBvcnQgPSB0dHktPmRyaXZlcl9kYXRhOwpAQCAtODQ3LDYgKzg3MSw3
+MiBAQCBzdGF0aWMgdm9pZCBtY3RfdTIzMl91bnRocm90dGxlKHN0cnVjdCB0
+CiAJfQogfQogCitzdGF0aWMgaW50ICBtY3RfdTIzMl9pb2N0bChzdHJ1Y3Qg
+dHR5X3N0cnVjdCAqdHR5LCBzdHJ1Y3QgZmlsZSAqZmlsZSwKKwkJCXVuc2ln
+bmVkIGludCBjbWQsIHVuc2lnbmVkIGxvbmcgYXJnKQoreworCURFRklORV9X
+QUlUKHdhaXQpOworCXN0cnVjdCB1c2Jfc2VyaWFsX3BvcnQgKnBvcnQgPSB0
+dHktPmRyaXZlcl9kYXRhOworCXN0cnVjdCBtY3RfdTIzMl9wcml2YXRlICpt
+Y3RfdTIzMl9wb3J0ID0gdXNiX2dldF9zZXJpYWxfcG9ydF9kYXRhKHBvcnQp
+OworCXN0cnVjdCBhc3luY19pY291bnQgY25vdywgY3ByZXY7CisKKwlkYmco
+IiVzIC0gcG9ydCAlZCwgY21kID0gMHgleCIsIF9fZnVuY19fLCBwb3J0LT5u
+dW1iZXIsIGNtZCk7CisKKwlzd2l0Y2ggKGNtZCkgeworCisJY2FzZSBUSU9D
+TUlXQUlUOgorCisJCWRiZygiJXMgKCVkKSBUSU9DTUlXQUlUIiwgX19mdW5j
+X18sICBwb3J0LT5udW1iZXIpOworCisJCWNwcmV2ID0gbWN0X3UyMzJfcG9y
+dC0+aWNvdW50OworCQlmb3IgKCA7IDsgKSB7CisJCQlwcmVwYXJlX3RvX3dh
+aXQoJm1jdF91MjMyX3BvcnQtPm1zcl93YWl0LAorCQkJCQkmd2FpdCwgVEFT
+S19JTlRFUlJVUFRJQkxFKTsKKwkJCXNjaGVkdWxlKCk7CisJCQlmaW5pc2hf
+d2FpdCgmbWN0X3UyMzJfcG9ydC0+bXNyX3dhaXQsICZ3YWl0KTsKKwkJCS8q
+IHNlZSBpZiBhIHNpZ25hbCBkaWQgaXQgKi8KKwkJCWlmIChzaWduYWxfcGVu
+ZGluZyhjdXJyZW50KSkKKwkJCQlyZXR1cm4gLUVSRVNUQVJUU1lTOworCQkJ
+Y25vdyA9IG1jdF91MjMyX3BvcnQtPmljb3VudDsKKwkJCWlmIChjbm93LnJu
+ZyA9PSBjcHJldi5ybmcgJiYgY25vdy5kc3IgPT0gY3ByZXYuZHNyICYmCisJ
+CQkgICAgY25vdy5kY2QgPT0gY3ByZXYuZGNkICYmIGNub3cuY3RzID09IGNw
+cmV2LmN0cykKKwkJCQlyZXR1cm4gLUVJTzsgLyogbm8gY2hhbmdlID0+IGVy
+cm9yICovCisJCQlpZiAoKChhcmcgJiBUSU9DTV9STkcpICYmIChjbm93LnJu
+ZyAhPSBjcHJldi5ybmcpKSB8fAorCQkJICAgICgoYXJnICYgVElPQ01fRFNS
+KSAmJiAoY25vdy5kc3IgIT0gY3ByZXYuZHNyKSkgfHwKKwkJCSAgICAoKGFy
+ZyAmIFRJT0NNX0NEKSAgJiYgKGNub3cuZGNkICE9IGNwcmV2LmRjZCkpIHx8
+CisJCQkgICAgKChhcmcgJiBUSU9DTV9DVFMpICYmIChjbm93LmN0cyAhPSBj
+cHJldi5jdHMpKSkgeworCQkJCXJldHVybiAwOworCQkJfQorCQkJY3ByZXYg
+PSBjbm93OworCQl9CisKKwl9CisJcmV0dXJuIC1FTk9JT0NUTENNRDsKK30K
+Kworc3RhdGljIGludCAgbWN0X3UyMzJfZ2V0X2ljb3VudChzdHJ1Y3QgdHR5
+X3N0cnVjdCAqdHR5LAorCQkJc3RydWN0IHNlcmlhbF9pY291bnRlcl9zdHJ1
+Y3QgKmljb3VudCkKK3sKKwlzdHJ1Y3QgdXNiX3NlcmlhbF9wb3J0ICpwb3J0
+ID0gdHR5LT5kcml2ZXJfZGF0YTsKKwlzdHJ1Y3QgbWN0X3UyMzJfcHJpdmF0
+ZSAqbWN0X3UyMzJfcG9ydCA9IHVzYl9nZXRfc2VyaWFsX3BvcnRfZGF0YShw
+b3J0KTsKKwlzdHJ1Y3QgYXN5bmNfaWNvdW50ICppYyA9ICZtY3RfdTIzMl9w
+b3J0LT5pY291bnQ7CisKKwlpY291bnQtPmN0cyA9IGljLT5jdHM7CisJaWNv
+dW50LT5kc3IgPSBpYy0+ZHNyOworCWljb3VudC0+cm5nID0gaWMtPnJuZzsK
+KwlpY291bnQtPmRjZCA9IGljLT5kY2Q7CisJaWNvdW50LT5yeCA9IGljLT5y
+eDsKKwlpY291bnQtPnR4ID0gaWMtPnR4OworCWljb3VudC0+ZnJhbWUgPSBp
+Yy0+ZnJhbWU7CisJaWNvdW50LT5vdmVycnVuID0gaWMtPm92ZXJydW47CisJ
+aWNvdW50LT5wYXJpdHkgPSBpYy0+cGFyaXR5OworCWljb3VudC0+YnJrID0g
+aWMtPmJyazsKKwlpY291bnQtPmJ1Zl9vdmVycnVuID0gaWMtPmJ1Zl9vdmVy
+cnVuOworCisJZGJnKCIlcyAoJWQpIFRJT0NHSUNPVU5UIFJYPSVkLCBUWD0l
+ZCIsCisJCV9fZnVuY19fLCAgcG9ydC0+bnVtYmVyLCBpY291bnQtPnJ4LCBp
+Y291bnQtPnR4KTsKKwlyZXR1cm4gMDsKK30KKwogc3RhdGljIGludCBfX2lu
+aXQgbWN0X3UyMzJfaW5pdCh2b2lkKQogewogCWludCByZXR2YWw7Cg==
 
+--0-757389922-1293418726=:62488--
