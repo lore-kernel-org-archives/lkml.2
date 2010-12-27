@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884Ab0L0DMg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Dec 2010 22:12:36 -0500
-Received: from minerva.fmed.edu.uy ([164.73.144.2]:54169 "EHLO
-	minerva.fmed.edu.uy" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751535Ab0L0DMf convert rfc822-to-8bit (ORCPT
+	id S1753331Ab0L0DMs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Dec 2010 22:12:48 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:39851 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752969Ab0L0DMj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Dec 2010 22:12:35 -0500
-Message-ID: <20101222201640.6692781bfi13l2ww@correo.fmed.edu.uy>
-Date: Wed, 22 Dec 2010 20:16:40 -0200
-From: "Dr.Rod Thompson" <rodthompson222@aol.com>
-To: undisclosed-recipients:;
+	Sun, 26 Dec 2010 22:12:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=edbpAjRjcWHh/f2CsStfFv5eXzdTOP3W3j5ZLRttnFDeCLuPXFMbctxl+DzYf5b+b6
+         AOgUDJZZjezldOvAy9ak0lSjFFnqEkqdn72YepsIJFUcQzWr2kSh3Ovj7VB3dbywXw/l
+         9n/NaqROc2iVYleElAHwsM6/P7VMG68tiURuQ=
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
+In-Reply-To: <20101227003456.GG18227@bitwizard.nl>
+References: <20101220141553.GA6088@bitwizard.nl>
+	<20101220190630.66084e1d@neptune.home>
+	<AANLkTi=VAJbVSzX_DH9_==a3RonLJmawYu3MzF-uqGXC@mail.gmail.com>
+	<20101222104306.GB30941@bitwizard.nl>
+	<x49aajxsrh3.fsf@segfault.boston.devel.redhat.com>
+	<AANLkTi=qAGCFU0u8joKVR4o4QQaRZt1XWfOPSt8eiD3r@mail.gmail.com>
+	<20101227003456.GG18227@bitwizard.nl>
+Date: Sun, 26 Dec 2010 19:12:37 -0800
+Message-ID: <AANLkTi=O+jZoo9K3idxMTHfd-dCBr-8Gd-+sDjHg6hor@mail.gmail.com>
+Subject: Re: Slow disks.
+From: Mark Knecht <markknecht@gmail.com>
+To: Rogier Wolff <R.E.Wolff@bitwizard.nl>
+Cc: Jeff Moyer <jmoyer@redhat.com>, Greg Freemyer <greg.freemyer@gmail.com>,
+        =?UTF-8?Q?Bruno_Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
-X-Spam-Score: 6.2
-X-Spam-Report: Spam detection software, running on the system "minerva.fmed.edu.uy", has
-	identified this incoming email as possible spam.  The original message
-	has been attached to this so you can view it (if it isn't spam) or label
-	similar future email.  If you have any questions, see
-	the administrator of that system for details.
-	Content analysis details:   (6.2 points, 4.0 required)
-	pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	-1.4 ALL_TRUSTED            Passed through trusted hosts only via SMTP
-	2.7 DEAR_FRIEND            BODY: Dear Friend? That's not very dear!
-	2.0 ADVANCE_FEE_2          Appears to be advance fee fraud (Nigerian 419)
-	1.4 ADVANCE_FEE_3          Appears to be advance fee fraud (Nigerian 419)
-	1.5 ADVANCE_FEE_4          Appears to be advance fee fraud (Nigerian 419)
-X-Spam: YES
-Subject: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Dec 26, 2010 at 4:34 PM, Rogier Wolff <R.E.Wolff@bitwizard.nl> wrote:
+> On Sun, Dec 26, 2010 at 03:38:51PM -0800, Mark Knecht wrote:
+>> First, the drives are 4K sector so it's really important to get them
+>> on the right partition boundary. Installing Gentoo requires that we
+>> un-tar some large-ish files. IIRC on a 512 byte boundary these drives
+>> took 20-30 minutes to do this. On a 4K boundary they took about 1
+>> minute. I know that doesn't make sense but those were my numbers, and
+>> it's a very high end Intel i7-980x MB so there wasn't any other
+>> problem I could find.
+>
+> Mark,
+>
+> Thanks for your contribution. You're seeing a 20-30 fold performance
+> issue, where only about 2x would be expected. So to test this theory
+> I'll see if we can evacuate a partition, untar a large-ish file as a
+> benchmark, and then see if we can improve that by changing the
+> alignment of the partition. (hmm. Maybe we should do things the other
+> way around. First find a tar-workload that takes about 1 minute on a
+> properly working drive, and then we can wait up to 30 minutes for it
+> to finish on the improper setup.).
+>
+> Being able to reproduce a problem at will is a great progress to being
+> able to solve it!
+>
+>        Roger.
 
+I hope my memory isn't way off on those numbers. I can certainly
+recall that the difference was remarkable and was very easy to
+demonstrate.
 
-Dear Friend, Business request
+1) Partition the disk with fdisk placing a partition at sector 63, the
+typical first address we're given. Untar a Gentoo Stage 3 release
+snapshot such as
 
-LET'S BE  BUSINESS PARTNER.
+http://gentoo.osuosl.org/releases/amd64/current-stage3/stage3-amd64-20101223.tar.bz2
 
-My Name is Mr.Rod Thompson, Staff of ING BANK THE NETHERLANDS. I would  
-like you to indicate your interest to receive the transfer of � 8.5  
-Million Euros. I will like you to stand as the next of kin to my late  
-client whose account is presently dormant for claims. Please once you  
-are interested in my business proposal, further details of the  
-transfer will be forwarded to you as soon as I receive your return  
-mail. You can click on the blow link to confirm the genuineness of the  
-deceased death. http://news.bbc.co.uk/1/hi/world/europe/859479.stm
-If you are interested in my business proposal, get back to me with the  
-information's below so that i can forward to you the details and text  
-of application and the banks contacts for you to apply immediately for  
-the transfer of the � 8.5 Million euros into your bank account.
-                      Update me with your personal information such as;
+2) Create a second partition starting at sector 1000 and do it again.
 
-             1.Your name in Full:
-             2.Your Complete Address :
-             3.Your Occupation
-             4.Your Nationality
-             5.Your direct phone number;
+It was day and night.
 
-Please reply to my private email:  rodthompson222@aol.com
-Regards
+If it was only the performance difference that would be one thing but
+the problem i had with these WD10EARS drives was sometimes they would
+just hang for long periods. In a RAID they just got kicked.
 
-Mr.Rod Thompson
-rodthompson222@aol.com
+The kernel was modern for the time I was building the machines, maybe
+7-9 months ago.
 
-----------------------------------------------------------------
-Facultad de Medicina - Universidad de la Rep&uacute;blica
-Montevideo Uruguay
-
+Hope this helps,
+Mark
