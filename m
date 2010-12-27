@@ -1,66 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523Ab0L0QlH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 11:41:07 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:23874 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753721Ab0L0QlG (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 27 Dec 2010 11:41:06 -0500
-Date: Mon, 27 Dec 2010 11:39:18 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Vasiliy G Tolstov <v.tolstov@selfip.ru>
-Cc: jeremy@goop.org, xen-devel@lists.xensource.com,
-        haicheng.li@linux.intel.com, dan.magenheimer@oracle.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, andi.kleen@intel.com,
-        akpm@linux-foundation.org, fengguang.wu@intel.com,
-        Daniel Kiper <dkiper@net-space.pl>
-Subject: Re: [Xen-devel] Re: [PATCH 2/3] drivers/xen/balloon.c: Various
- balloon features and fixes
-Message-ID: <20101227163918.GB7189@dumpdata.com>
-References: <20101220134724.GC6749@router-fw-old.local.net-space.pl>
- <20101227150847.GA3728@dumpdata.com>
- <947c7677e042b3fd1ca22d775ca9aeb9@imap.selfip.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <947c7677e042b3fd1ca22d775ca9aeb9@imap.selfip.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753488Ab0L0RIF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 12:08:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23071 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752395Ab0L0RIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 12:08:02 -0500
+Date: Mon, 27 Dec 2010 10:08:17 -0700
+From: Pete Zaitcev <zaitcev@redhat.com>
+To: Tsozik <tsozik@yahoo.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] mct_u232: added _ioctl and _get_icount functions
+Message-ID: <20101227100817.10a53243@lembas.zaitcev.lan>
+In-Reply-To: <466840.5514.qm@web65716.mail.ac4.yahoo.com>
+References: <466840.5514.qm@web65716.mail.ac4.yahoo.com>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 27, 2010 at 07:27:56PM +0300, Vasiliy G Tolstov wrote:
-> On Mon, 27 Dec 2010 10:08:47 -0500, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com> wrote:
-> > On Mon, Dec 20, 2010 at 02:47:24PM +0100, Daniel Kiper wrote:
-> >> Features and fixes:
-> >>   - HVM mode is supported now,
-> >>   - migration from mod_timer() to schedule_delayed_work(),
-> >>   - removal of driver_pages (I do not have seen any
-> >>     references to it),
-> >>   - protect before CPU exhaust by event/x process during
-> >>     errors by adding some delays in scheduling next event,
-> >>   - some other minor fixes.
-> 
-> I have apply this patch to bare 2.6.36.2 kernel from kernel.org. If
-> memory=maxmemory pv guest run's on migrating fine.
-> If on already running domU i have xm mem-max xxx 1024 (before that it
-> has 768) and do xm mem-set 1024 guest now have 1024 memory, but after
-> that it can't migrate to another host.
-> 
-> Step to try to start guest with memory=512 and maxmemory=1024 it boot
-> fine, xm mem-set work's fine, but.. it can't migrate. Sorry but nothing
-> on screen , how can i help to debug this problem?
+On Sun, 26 Dec 2010 22:34:23 -0800 (PST)
+Tsozik <tsozik@yahoo.com> wrote:
 
-You can play with 'xenctx' to see where the guest is stuck. You can also
-look in the 'xm dmesg' to see if there is something odd. Lastly, if you
-mean by 'can't migrate to another host' as the command hangs stops, look
-at the error code (or in /var/log/xen files) and also look in the source
-code.
+> Usually MSR contains information about both states which are raised and
+> states which are changed. It looks like we use upper MSR nibble which
+> contains information about 4 states which were raised, not lower MSR
+> nibble which contains information about 4 states which were changed.
 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xensource.com
-> http://lists.xensource.com/xen-devel
+Sure, I know how typical UART works. Does the MCT device deliver the
+change states? If it does and you want to use those, go ahead.
+
+> I also researched implementations under usb/serial and saw that all of
+> them are rely on the current states (not change states) to increment
+> the respective counter variables.
+
+Here's drivers/usb/serial/io_edgeport.c:
+
+static void handle_new_msr(struct edgeport_port *edge_port, __u8 newMsr)
+{
+	struct  async_icount *icount;
+
+	dbg("%s %02x", __func__, newMsr);
+
+	if (newMsr & (EDGEPORT_MSR_DELTA_CTS | EDGEPORT_MSR_DELTA_DSR |
+			EDGEPORT_MSR_DELTA_RI | EDGEPORT_MSR_DELTA_CD)) {
+		icount = &edge_port->icount;
+
+		/* update input line counters */
+		if (newMsr & EDGEPORT_MSR_DELTA_CTS)
+			icount->cts++;
+		if (newMsr & EDGEPORT_MSR_DELTA_DSR)
+			icount->dsr++;
+		if (newMsr & EDGEPORT_MSR_DELTA_CD)
+			icount->dcd++;
+		if (newMsr & EDGEPORT_MSR_DELTA_RI)
+			icount->rng++;
+		wake_up_interruptible(&edge_port->delta_msr_wait);
+	}
+
+Looks like it counts changes to me. And in any case, the gold standard
+is in drivers/serial/8250.c:
+
+static unsigned int check_modem_status(struct uart_8250_port *up)
+{
+	unsigned int status = serial_in(up, UART_MSR);
+
+	status |= up->msr_saved_flags;
+	up->msr_saved_flags = 0;
+	if (status & UART_MSR_ANY_DELTA && up->ier & UART_IER_MSI &&
+	    up->port.state != NULL) {
+		if (status & UART_MSR_TERI)
+			up->port.icount.rng++;
+		if (status & UART_MSR_DDSR)
+			up->port.icount.dsr++;
+		if (status & UART_MSR_DDCD)
+			uart_handle_dcd_change(&up->port, status & UART_MSR_DCD);
+		if (status & UART_MSR_DCTS)
+			uart_handle_cts_change(&up->port, status & UART_MSR_CTS);
+
+		wake_up_interruptible(&up->port.state->port.delta_msr_wait);
+	}
+
+I only proposed accomplishing the same result by comparing states
+in place of relying on hardware change reports like both of the
+above do.
+
+-- Pete
