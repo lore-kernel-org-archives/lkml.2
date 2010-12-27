@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab0L0Lvf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 06:51:35 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:37943 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752921Ab0L0Lvd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 06:51:33 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=V4xJ4zx7Ak2h3V1FNu4ht5yWNbmjyjta57H/3fmO32NufE+nYB86YXwikJGv8aNciR
-         n265/4tRSBhVVgVm9nKF1wmwEsL1EUEMHaWr3BwCZHVS+ae7QKM7XbfrxZItfDtBRFlg
-         CSsDrXRbhbzcqyueKr4FrRgynBg9GI/yEu7Yg=
-MIME-Version: 1.0
-In-Reply-To: <41EFD7A46E18724CAB128DAD00733480193D2AE61C@shsmsx502.ccr.corp.intel.com>
-References: <1293023621-3077-1-git-send-email-tardyp@gmail.com>
-	<41EFD7A46E18724CAB128DAD00733480193D2AE61C@shsmsx502.ccr.corp.intel.com>
-Date: Mon, 27 Dec 2010 12:51:32 +0100
-Message-ID: <AANLkTinYWODS785AefQ7hV+urPkAn1+En-fZEaFQygLG@mail.gmail.com>
-Subject: Re: [RFC] sdhci: use ios->clock to know when sdhci is idle
-From: Pierre Tardy <tardyp@gmail.com>
-To: "Yuan, Hang" <hang.yuan@intel.com>
-Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Ball <cjb@laptop.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>, Takashi Iwai <tiwai@suse.de>,
-        Maxim Levitsky <maximlevitsky@gmail.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        "Gao, Yunpeng" <yunpeng.gao@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753644Ab0L0LzO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 06:55:14 -0500
+Received: from cantor.suse.de ([195.135.220.2]:46415 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753609Ab0L0LzM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 06:55:12 -0500
+Date: Mon, 27 Dec 2010 22:54:59 +1100
+From: Neil Brown <neilb@suse.de>
+To: Mustafa Mesanovic <mume@linux.vnet.ibm.com>
+Cc: dm-devel@redhat.com, akpm@linux-foundation.org, snitzer@redhat.com,
+        linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
+        cotte@de.ibm.com, ehrhardt@linux.vnet.ibm.com
+Subject: Re: [RFC][PATCH] dm: improve read performance
+Message-ID: <20101227225459.5a5150ab@notabene.brown>
+In-Reply-To: <201012271219.56476.mume@linux.vnet.ibm.com>
+References: <201012271219.56476.mume@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 23, 2010 at 8:02 AM, Yuan, Hang <hang.yuan@intel.com> wrote:
-> Just have a question why not let sdio card driver call pm_runtime_get/put instead of host
-> controller driver itself?
-Because sdio card maintain its own power via runtime_pm, and sdhci
-wants to manage its power more independantly, and go suspended more
-often than the sdio card. A wifi sdio card would be active when
-background scanning for network. During that time, the sdio bus is
-completly inactive (for full-mac wifi device), and sdhci can go
-suspended during that time.
-Lowest SoC platform state can be achieved during that time.
+On Mon, 27 Dec 2010 12:19:55 +0100 Mustafa Mesanovic
+<mume@linux.vnet.ibm.com> wrote:
 
-> This patch may suspend host controller without cooperation of sdio card driver. But suspending
-> host controller will change controller's registers and then impact sdio card. I think it's
-> safer to suspend host controller according to sdio card driver's notification following runtime
-> PM framework.
-The sdhci must suspend itself without impacting the sdio card.
+> From: Mustafa Mesanovic <mume@linux.vnet.ibm.com>
+> 
+> A short explanation in prior: in this case we have "stacked" dm devices. 
+> Two multipathed luns combined together to one striped logical volume.
+> 
+> I/O throughput degradation happens at __bio_add_page when bio's get checked 
+> upon max_sectors. In this setup max_sectors is always set to 8 -> what is 
+> 4KiB.
+> A standalone striped logical volume on luns which are not multipathed do not 
+> have the problem: the logical volume will take over the max_sectors from luns 
+> below. 
+> 
+> Same happens with luns which are multipathed -> the multipathed targets have 
+> the same max_sectors as the luns below.
+> 
+> So "magic" happens only when target has no own merge_fn and below lying 
+> devices
+> have a merge function -> we got then max_sectors=PAGE_SIZE >> 9.
+> This patch prevents that max_sectors will be set to PAGE_SIZE >> 9.
+> Instead it will use the minimum max_sectors value from below devices.
+> 
+> Using the patch improves read I/O up to 3x. In this specific case from 600MiB/s
+> up to 1800MiB/s.
 
-> Another question is why to call pm_runtime_get/put when ios-clock changes? Is it based on
-> Linus Walleij's aggressive clock gating framework patch? Linus' patch doesn't gate SDIO cards.
-runtime_suspend of sdhci should *not* gate the sdio card. It should
-only gate the sdhci.
-An sdio bus inactive does not mean that the sdio card is inactive.
-(think wifi Idle, bluetooth idle, ethernet idle)
+and using this patch will cause IO to fail sometimes.
+If an IO request which is larger than a page crosses a device boundary in the
+underlying e.g. RAID0, the RAID0 will return an error as such things should
+not happen - they are prevented by merge_bvec_fn.
 
-We need to suspend the sdhci as soon as the sdio bus is inactive,
-which is what clock gating framework is trying to detect. It does not
-do usage counting via runtime_pm because it is generic enough to allow
-clock gating *and* power gating.
+If merge_bvec_fn is not being honoured, then you MUST limit requests to a
+single entry iovec of at most one page.
 
-Regards,
-Pierre
+NeilBrown
+
+
+> 
+> Signed-off-by: Mustafa Mesanovic <mume@linux.vnet.ibm.com>
+> ---
+> 
+>  dm-table.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> Index: linux-2.6/drivers/md/dm-table.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/md/dm-table.c	2010-12-23 13:49:18.000000000 +0100
+> +++ linux-2.6/drivers/md/dm-table.c	2010-12-23 13:50:22.000000000 +0100
+> @@ -518,7 +518,7 @@
+>  
+>  	if (q->merge_bvec_fn && !ti->type->merge)
+>  		blk_limits_max_hw_sectors(limits,
+> -					  (unsigned int) (PAGE_SIZE >> 9));
+> +					  q->limits.max_sectors);
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL_GPL(dm_set_device_limits);
+
