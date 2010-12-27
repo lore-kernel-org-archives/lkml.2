@@ -1,53 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567Ab0L0MPB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 07:15:01 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43714 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753176Ab0L0MPA (ORCPT
+	id S1753675Ab0L0MXQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 07:23:16 -0500
+Received: from mtagate2.uk.ibm.com ([194.196.100.162]:32854 "EHLO
+	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753076Ab0L0MXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 07:15:00 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=xVApancoIIcAnHHeIYsvpvHcuvJg9Kkv3L+ZLuJnda+1wtkYDwCpLbvTyVnhF14waU
-         TYVs4FzLCMhYgsptqpa3zsqcP5kYVNsMv/UyMu5DxGGWzGFep/kFjeStKIjimX1LTRHR
-         5EwnciSRn+paPN8Xpl/X9Lf7uPVAAz//nleoM=
-Date: Mon, 27 Dec 2010 13:14:54 +0100
-From: Tejun Heo <htejun@gmail.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Sam Ravnborg <sam@ravnborg.org>, lkml <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
-Subject: Re: [patch 2/3] add new macros to make percpu readmostly section
- correctly align
-Message-ID: <20101227121454.GB488@htj.dyndns.org>
-References: <4D073FA9.9020801@gmail.com>
- <1292378268.2323.464.camel@sli10-conroe>
- <4D08CBF4.6040102@gmail.com>
- <1292460817.2323.465.camel@sli10-conroe>
- <20101216054620.GA3241@merkur.ravnborg.org>
- <1292479000.2323.468.camel@sli10-conroe>
- <4D09E0EE.7040605@gmail.com>
- <1292808518.10593.8.camel@sli10-conroe>
- <4D0F7C5A.1060107@gmail.com>
- <1293071914.10593.10.camel@sli10-conroe>
+	Mon, 27 Dec 2010 07:23:15 -0500
+From: Mustafa Mesanovic <mume@linux.vnet.ibm.com>
+Organization: IBM
+To: Neil Brown <neilb@suse.de>
+Subject: Re: [RFC][PATCH] dm: improve read performance
+Date: Mon, 27 Dec 2010 13:23:12 +0100
+User-Agent: KMail/1.13.2 (Linux/2.6.35-22-customkernel; KDE/4.4.2; i686; ; )
+Cc: dm-devel@redhat.com, akpm@linux-foundation.org, snitzer@redhat.com,
+        linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
+        cotte@de.ibm.com, ehrhardt@linux.vnet.ibm.com
+References: <201012271219.56476.mume@linux.vnet.ibm.com> <20101227225459.5a5150ab@notabene.brown>
+In-Reply-To: <20101227225459.5a5150ab@notabene.brown>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1293071914.10593.10.camel@sli10-conroe>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012271323.13406.mume@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 23, 2010 at 10:38:34AM +0800, Shaohua Li wrote:
-> The first patch in the series isn't related to this issue, please
-> consider merge it.
+On Mon December 27 2010 12:54:59 Neil Brown wrote:
+> On Mon, 27 Dec 2010 12:19:55 +0100 Mustafa Mesanovic
+> 
+> <mume@linux.vnet.ibm.com> wrote:
+> > From: Mustafa Mesanovic <mume@linux.vnet.ibm.com>
+> > 
+> > A short explanation in prior: in this case we have "stacked" dm devices.
+> > Two multipathed luns combined together to one striped logical volume.
+> > 
+> > I/O throughput degradation happens at __bio_add_page when bio's get
+> > checked upon max_sectors. In this setup max_sectors is always set to 8
+> > -> what is 4KiB.
+> > A standalone striped logical volume on luns which are not multipathed do
+> > not have the problem: the logical volume will take over the max_sectors
+> > from luns below.
+> > 
+> > Same happens with luns which are multipathed -> the multipathed targets
+> > have the same max_sectors as the luns below.
+> > 
+> > So "magic" happens only when target has no own merge_fn and below lying
+> > devices
+> > have a merge function -> we got then max_sectors=PAGE_SIZE >> 9.
+> > This patch prevents that max_sectors will be set to PAGE_SIZE >> 9.
+> > Instead it will use the minimum max_sectors value from below devices.
+> > 
+> > Using the patch improves read I/O up to 3x. In this specific case from
+> > 600MiB/s up to 1800MiB/s.
+> 
+> and using this patch will cause IO to fail sometimes.
+> If an IO request which is larger than a page crosses a device boundary in
+> the underlying e.g. RAID0, the RAID0 will return an error as such things
+> should not happen - they are prevented by merge_bvec_fn.
+> 
+> If merge_bvec_fn is not being honoured, then you MUST limit requests to a
+> single entry iovec of at most one page.
+> 
+> NeilBrown
+> 
 
-Can you please re-post it?  Thanks.
+Thank you for that hint, I will try to write a merge_bvec_fn for dm-stripe.c
+which solves the problem, if that is ok?
 
--- 
-tejun
+Mustafa Mesanovic
+
+> > Signed-off-by: Mustafa Mesanovic <mume@linux.vnet.ibm.com>
+> > ---
+> > 
+> >  dm-table.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > Index: linux-2.6/drivers/md/dm-table.c
+> > ===================================================================
+> > --- linux-2.6.orig/drivers/md/dm-table.c	2010-12-23 13:49:18.000000000
+> > +0100 +++ linux-2.6/drivers/md/dm-table.c	2010-12-23 13:50:22.000000000
+> > +0100 @@ -518,7 +518,7 @@
+> > 
+> >  	if (q->merge_bvec_fn && !ti->type->merge)
+> >  	
+> >  		blk_limits_max_hw_sectors(limits,
+> > 
+> > -					  (unsigned int) (PAGE_SIZE >> 9));
+> > +					  q->limits.max_sectors);
+> > 
+> >  	return 0;
+> >  
+> >  }
+> >  EXPORT_SYMBOL_GPL(dm_set_device_limits);
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
