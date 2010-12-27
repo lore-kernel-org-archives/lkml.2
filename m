@@ -1,138 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab0L0OQl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 09:16:41 -0500
-Received: from hera.kernel.org ([140.211.167.34]:59275 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753880Ab0L0OQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 09:16:40 -0500
-Date: Mon, 27 Dec 2010 14:16:03 GMT
-From: tip-bot for Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        jj@chaosbits.net, tigran@aivazian.fsnet.co.uk, shaohua.li@intel.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jj@chaosbits.net, tigran@aivazian.fsnet.co.uk, tglx@linutronix.de,
-        shaohua.li@intel.com, mingo@elte.hu
-In-Reply-To: <alpine.LNX.2.00.1012251946100.10759@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1012251946100.10759@swampdragon.chaosbits.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/microcode: Fix double vfree() and remove redundant pointer checks before vfree()
-Message-ID: <tip-5cdd2de0a76d0ac47f107c8a7b32d75d25768dc1@git.kernel.org>
-Git-Commit-ID: 5cdd2de0a76d0ac47f107c8a7b32d75d25768dc1
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1753947Ab0L0OW3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 09:22:29 -0500
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:34126 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753919Ab0L0OW2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 09:22:28 -0500
+Date: Mon, 27 Dec 2010 23:20:46 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] fbdev updates for 2.6.37-rc8
+Message-ID: <20101227142046.GD16946@linux-sh.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 27 Dec 2010 14:16:05 +0000 (UTC)
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5cdd2de0a76d0ac47f107c8a7b32d75d25768dc1
-Gitweb:     http://git.kernel.org/tip/5cdd2de0a76d0ac47f107c8a7b32d75d25768dc1
-Author:     Jesper Juhl <jj@chaosbits.net>
-AuthorDate: Sat, 25 Dec 2010 19:57:41 +0100
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 27 Dec 2010 14:33:30 +0100
+This is a fairly straightforward set of bugfixes and regression fixes.
 
-x86/microcode: Fix double vfree() and remove redundant pointer checks before vfree()
+When the SH-Mobile driver underwent some rework the userspace-facing var
+info ceased propagating accurate mode information to userspace tools,
+which is now corrected. A further patch for the LCDC fixes up bounding
+for invalid mode settings that was triggered on older platforms, which
+previously had a working fbcon but broken application interface.
 
-In arch/x86/kernel/microcode_intel.c::generic_load_microcode()
-we have  this:
+Please pull from:
 
-	while (leftover) {
-		...
-		if (get_ucode_data(mc, ucode_ptr, mc_size) ||
-		    microcode_sanity_check(mc) < 0) {
-			vfree(mc);
-			break;
-		}
-		...
-	}
+	master.kernel.org:/pub/scm/linux/kernel/git/lethal/fbdev-2.6.git fbdev-fixes-for-linus
 
-	if (mc)
-		vfree(mc);
+Which contains:
 
-This will cause a double free of 'mc'. This patch fixes that by
-just  removing the vfree() call in the loop since 'mc' will be
-freed nicely just  after we break out of the loop.
+Dave Airlie (1):
+      fb: fix overlapping test off-by-one.
 
-There's also a second change in the patch. I noticed a lot of
-checks for  pointers being NULL before passing them to vfree().
-That's completely  redundant since vfree() deals gracefully with
-being passed a NULL pointer.  Removing the redundant checks
-yields a nice size decrease for the object  file.
+Fabio Estevam (1):
+      video: imxfb: Fix the maximum value for yres
 
-Size before the patch:
-   text    data     bss     dec     hex filename
-   4578     240    1032    5850    16da arch/x86/kernel/microcode_intel.o
-Size after the patch:
-   text    data     bss     dec     hex filename
-   4489     240     984    5713    1651 arch/x86/kernel/microcode_intel.o
+Guennadi Liakhovetski (3):
+      fbdev: sh-mobile: restore display size configuration
+      fbdev: sh-mobile: retrieve and propagate display sizes from EDID
+      fbdev: sh_mobile_lcdc: increase maximum framebuffer size to support 1080p
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-Acked-by: Tigran Aivazian <tigran@aivazian.fsnet.co.uk>
-Cc: Shaohua Li <shaohua.li@intel.com>
-LKML-Reference: <alpine.LNX.2.00.1012251946100.10759@swampdragon.chaosbits.net>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/microcode_intel.c |   16 +++++-----------
- 1 files changed, 5 insertions(+), 11 deletions(-)
-
-diff --git a/arch/x86/kernel/microcode_intel.c b/arch/x86/kernel/microcode_intel.c
-index dcb65cc..1a1b606 100644
---- a/arch/x86/kernel/microcode_intel.c
-+++ b/arch/x86/kernel/microcode_intel.c
-@@ -364,8 +364,7 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
- 
- 		/* For performance reasons, reuse mc area when possible */
- 		if (!mc || mc_size > curr_mc_size) {
--			if (mc)
--				vfree(mc);
-+			vfree(mc);
- 			mc = vmalloc(mc_size);
- 			if (!mc)
- 				break;
-@@ -374,13 +373,11 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
- 
- 		if (get_ucode_data(mc, ucode_ptr, mc_size) ||
- 		    microcode_sanity_check(mc) < 0) {
--			vfree(mc);
- 			break;
- 		}
- 
- 		if (get_matching_microcode(&uci->cpu_sig, mc, new_rev)) {
--			if (new_mc)
--				vfree(new_mc);
-+			vfree(new_mc);
- 			new_rev = mc_header.rev;
- 			new_mc  = mc;
- 			mc = NULL;	/* trigger new vmalloc */
-@@ -390,12 +387,10 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
- 		leftover  -= mc_size;
- 	}
- 
--	if (mc)
--		vfree(mc);
-+	vfree(mc);
- 
- 	if (leftover) {
--		if (new_mc)
--			vfree(new_mc);
-+		vfree(new_mc);
- 		state = UCODE_ERROR;
- 		goto out;
- 	}
-@@ -405,8 +400,7 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
- 		goto out;
- 	}
- 
--	if (uci->mc)
--		vfree(uci->mc);
-+	vfree(uci->mc);
- 	uci->mc = (struct microcode_intel *)new_mc;
- 
- 	pr_debug("CPU%d found a matching microcode update with version 0x%x (current=0x%x)\n",
+ drivers/video/fbmem.c            |    2 +-
+ drivers/video/imxfb.c            |    9 +++------
+ drivers/video/sh_mobile_hdmi.c   |   16 +++++++++++++---
+ drivers/video/sh_mobile_lcdcfb.c |   30 +++++++++++-------------------
+ 4 files changed, 28 insertions(+), 29 deletions(-)
