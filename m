@@ -1,113 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753618Ab0L1OHJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 09:07:09 -0500
-Received: from novprvoes0310.provo.novell.com ([137.65.248.74]:60863 "EHLO
-	novprvoes0310.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753038Ab0L1OHF convert rfc822-to-8bit
-	(ORCPT <rfc822;groupwise-ghaskins@novell.com:7:1>);
-	Tue, 28 Dec 2010 09:07:05 -0500
-Message-Id: <4D19A8B20200005A00079658@novprvoes0310.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Tue, 28 Dec 2010 07:06:58 -0700
-From: "Gregory Haskins" <ghaskins@novell.com>
-To: "Steven Rostedt" <rostedt@goodmis.org>
-Cc: "Lai Jiangshan" <laijs@cn.fujitsu.com>, "Ingo Molnar" <mingo@elte.hu>,
-        "Peter Zijlstra" <peterz@infradead.org>,
-        "ThomasGleixner" <tglx@linutronix.de>,
-        "Peter Morreale" <PMorreale@novell.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][RT][PATCH 3/4] rtmutex: Revert Optimize rt lock
- wakeup
-References: <20101223224755.078983538@goodmis.org>
- <20101223225116.729981172@goodmis.org>
- <4D13DF250200005A000793E1@novprvoes0310.provo.novell.com>
- <1293166464.22802.415.camel@gandalf.stny.rr.com>
-In-Reply-To: <1293166464.22802.415.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1753822Ab0L1O13 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 09:27:29 -0500
+Received: from 31.mail-out.ovh.net ([213.186.62.10]:44068 "HELO
+	31.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753561Ab0L1O11 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Dec 2010 09:27:27 -0500
+Message-ID: <4D19F3C1.8010208@example.com>
+Date: Tue, 28 Dec 2010 15:27:13 +0100
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101211 Icedove/3.0.11
+MIME-Version: 1.0
+To: sedat.dilek@gmail.com
+CC: Sedat Dilek <sedat.dilek@googlemail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for December 27
+References: <20101227170451.a9a9f873.sfr@canb.auug.org.au>	<4D18A480.2060309@example.com>	<AANLkTi=WhSP1ceHBW95n1e-gHwwnt36h3czFGuKsEny6@mail.gmail.com>	<4D18A972.1020205@example.com>	<AANLkTikCeqCLmDJAnf9uT6wW+OLkRop-FJ9MDrMM_oX7@mail.gmail.com>	<4D18AD30.9070707@example.com>	<4D18B4A2.1030107@example.com> <AANLkTim1Cj1rbgnFr6C7==UP+jiriJ55Kcu9wmgd+DKh@mail.gmail.com>
+In-Reply-To: <AANLkTim1Cj1rbgnFr6C7==UP+jiriJ55Kcu9wmgd+DKh@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 17566290347453804960
+X-Ovh-Remote: 178.42.66.207 (afmo207.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 12/23/2010 at 11:54 PM, in message
-<1293166464.22802.415.camel@gandalf.stny.rr.com>, Steven Rostedt
-<rostedt@goodmis.org> wrote: 
-> On Thu, 2010-12-23 at 21:45 -0700, Gregory Haskins wrote:
->> Hey Steve,
->> 
->> >>> On 12/23/2010 at 05:47 PM, in message <20101223225116.729981172@goodmis.org>,
->> Steven Rostedt <rostedt@goodmis.org> wrote: 
->> > From: Steven Rostedt <srostedt@redhat.com>
->> > 
->> > The commit: rtmutex: Optimize rt lock wakeup
->> > 
->> > Does not do what it was suppose to do.
->> > This is because the adaptive waiter sets its state to 
-> TASK_(UN)INTERRUPTIBLE
->> > before going into the loop. Thus, the test in wakeup_next_waiter()
->> > will always fail on an adaptive waiter, as it only tests to see if
->> > the pending waiter never has its state set ot TASK_RUNNING unless
->> > something else had woke it up.
->> > 
->> > The smp_mb() added to make this test work is just as expensive as
->> > just calling wakeup. And since we we fail to wake up anyway, we are
->> > doing both a smp_mb() and wakeup as well.
->> > 
->> > I tested this with dbench and we run faster without this patch.
->> > I also tried a variant that instead fixed the loop, to change the state
->> > only if the spinner was to go to sleep, and that still did not show
->> > any improvement.
->> 
->> Just a quick note to say I am a bit skeptical of this patch.  I know you are 
-> offline next week, so lets plan on hashing it out after the new year before I 
-> ack it.
-> 
-> Sure, but as I said, it is mostly broken anyway. I could even insert
-> some tracepoints to show that this is always missed (heck I'll add an
-> unlikely and do the branch profiler ;-)
+On 27.12.2010 17:16, Sedat Dilek wrote:
+> 2010/12/27 Piotr Hosowicz<piotr@hosowicz.com>:
+>> On 27.12.2010 16:13, Piotr Hosowicz wrote:
+>>>
+>>> On 27.12.2010 16:08, Sedat Dilek wrote:
+>>>>
+>>>> 2010/12/27 Piotr Hosowicz<piotr@hosowicz.com>:
+>>>>>
+>>>>> On 27.12.2010 15:48, Sedat Dilek wrote:
+>>>>>>
+>>>>>> 2010/12/27 Piotr Hosowicz<piotr@hosowicz.com>:
+>>>>>>>
+>>>>>>> On 27.12.2010 07:04, Stephen Rothwell wrote:
+>>>>>>>
+>>>>>>> Hello,
+>>>>>>>
+>>>>>>> I noticed that after first reboot with this kernel that my MP3
+>>>>>>> collection
+>>>>>>> in
+>>>>>>> mocp layed on Ext4 fs opens painfully slow. It is not my mistake,
+>>>>>>> because
+>>>>>>> I
+>>>>>>> always do it the same way, new kernel, then music on. The problem
+>>>>>>> is not
+>>>>>>> present in rc7-git4. I could measure it in some way (timing ls -la
+>>>>>>> in tht
+>>>>>>> dir?) if somebody needs it.
+>>>>>>>
+>>>>>>> Regards,
+>>>>>>>
+>>>>>>> Piotr Hosowicz
+>>>>>>>
+>>>>>>
+>>>>>> You tried mblk_io_submit mount-option for that partition?
+>>>>>
+>>>>> No, I do not use it, I do not even know what it is. My options are:
+>>>>>
+>>>>> /dev/sda2 on / type ext4 (rw,errors=remount-ro)
+>>>>>
+>>>>
+>>>> Have a closer look at "ext4: Turn off multiple page-io submission by
+>>>> default"
+>>>
+>>> I tried to Google for mblk_io_submit but I didn't find anything helpful.
+>>> Could you tell me how should I add this option in fstab and what will be
+>>> its effect?
+>>
+>> As far as I understand that option regards writing, not reading. The
+>> symptoms I described occured while reading only.
+>>
+>
+> That's the only performance issue I am aware of in ext4 in recent time.
+> Why don't you try it and present some numbers in transfer ratio (write, read)?
 
-Well, I think that would be a good datapoint and is one of the things I'd like to see.
+Ok, I'll try to measure it in shell. Now I am building newest non-next 
+kernel and the trial script is:
 
-> 
-> The reason is that adaptive spinners spin in some other state than
-> TASK_RUNNING, thus it does not help adaptive spinners at all. I first
-> tried to fix that, but it made dbench run even slower.
+#!/bin/bash
 
-This is why I am skeptical.  You are essentially asserting there are two issues here, IIUC:
+uname -a
+mount
+cd /data/music
+time ls -d *
+cd -
 
-1) The intent of avoiding a wakeup is broken and we take the double whammy of a mb()
-plus the wakeup() anyway.
+This is basically what mocp does when it enters my music directory, 
+apart from displaying the results in ncurses based UI. Then I'll reboot 
+with next kernel and run it again. Will it do?
 
-2) mb() is apparently slower than wakeup().
+Regards,
 
-I agree (1) is plausible, though I would like to see the traces to confirm.  Its been a long time
-since I looked at that code, but I think the original code either ran in RUNNING_MUTEX and was
-inadvertently broken in the mean time or the other cpu would have transitioned to RUNNING on
-its own when we flipped the owner before the release-side check was performed.  Or perhaps
-we just plain screwed this up and it was racy ;)  I'm not sure.  But as Peter (M) stated, it seems
-like a shame to walk away from the concept without further investigation.  I think everyone can
-agree that at the very least, if it is in fact taking a double whammy we should fix that.
+Piotr Hosowicz
 
-For (2), I am skeptical in two parts ;).  You stated you thought mb() was just as expensive as a
-wakeup which seems suspect to me, given a wakeup needs to be a superset of a barrier
-II[R|U]C.  Lets call this "2a".  In addition, your results when you removed the logic and went 
-straight to a wakeup() and found dbench actually was faster than the "fixed mb()" path would 
-imply wakeup() is actually _faster_ than mb().  Lets call this "2b".
-
-For (2a), I would like to see some traces that compare mb() to wakeup() (of a presumably 
-already running task that happens in the INTERRUPTIBLE state) to be convinced that wakeup() is 
-equal/faster.  I suspect it isn't
-
-For (2b), I would suggest that we don't rely on dbench alone in evaluating the merit of the 
-change.  In some ways, its a great test for this type of change since it leans heavily on the coarse 
-VFS locks.  However, dbench is also pretty odd and thrives on somewhat chaotic behavior.  For 
-instance, it loves the "lateral steal" logic, even though this patch technically breaks fairness.  So
-I would therefore propose a suite of benchmarks known for creating as much lock contention as
-possible should be run in addition to dbench alone.
-
-Happy new year, all,
--Greg
-
+-- 
+Kto¶ zapuka³ do drzwi.
+-Bormann - pomy¶la³ Stirlitz
+-Tak, to ja - pomy¶la³ Bormann
+NP: Peter Green Splinter Group - Madison Blues
+NB: 2.6.37-rc7-20101227-pztidm+
