@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab0L1LtJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 06:49:09 -0500
+	id S1753786Ab0L1Lvk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 06:51:40 -0500
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:38779 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753501Ab0L1LtE (ORCPT
+	with ESMTP id S1753504Ab0L1LtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 06:49:04 -0500
+	Tue, 28 Dec 2010 06:49:08 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=VT8iYLA5xkDsro/fiw3/Vh0RFeJtctf+HiW4/CDBONroA568+4UMKZ5VzrYffXeVRt
-         rPvYSGHmjHgugxgPwHMaT+Y73E9mDL4ha5+iLZD6Cwu76YH+Iop1tFkbvT1jZkbSY51p
-         ycB/7viqj6DVEtEzgd6j6HU+EVWh7nUZ40lkw=
+        b=Cp90RW3lcBTjsiJ3dbyMDIanT8NWTD9JqGULPO4XTzM05iMXMdVRFkpUkQgeMlR6kN
+         ifd7Png0V3LLUDEQ1bjXblpgz4L2JnsB0G27hkNJMleN5xr79M0RTnHgDWmSzbhepU0a
+         u60qUUBhv3DGW47o/x6PLSst2J2uNojf9ZOhY=
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
         hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
         yinghai@kernel.org, brgerst@gmail.com, gorcunov@gmail.com,
         penberg@kernel.org, shaohui.zheng@intel.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 04/16] x86: Replace cpu_2_logical_apicid[] with early percpu variable
-Date: Tue, 28 Dec 2010 12:48:37 +0100
-Message-Id: <1293536929-31683-5-git-send-email-tj@kernel.org>
+Subject: [PATCH 06/16] x86: Kill apic->cpu_to_logical_apicid()
+Date: Tue, 28 Dec 2010 12:48:39 +0100
+Message-Id: <1293536929-31683-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1293536929-31683-1-git-send-email-tj@kernel.org>
 References: <1293536929-31683-1-git-send-email-tj@kernel.org>
@@ -30,176 +30,332 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unlike x86_64, on x86_32, the mapping from cpu to logical apicid may
-vary depending on apic in use.  cpu_2_logical_apicid[] array is used
-for this mapping.  Replace it with early percpu variable
-x86_cpu_to_logical_apicid to make it better aligned with other
-mappings.
+After the previous patch, apic->cpu_to_logical_apicid() is no longer
+used.  Kill it.
+
+For apic types with custom cpu_to_logical_apicid() which is also used
+for other purposes, remove the function and modify its users to do the
+mapping directly.
+
+#ifdef's on CONFIG_SMP in es7000_32 and summit_32 are ignored during
+conversion as they are not used for UP kernels.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- arch/x86/include/asm/apic.h      |    4 ----
- arch/x86/include/asm/smp.h       |    3 +++
- arch/x86/kernel/apic/apic.c      |   11 +++++++++++
- arch/x86/kernel/apic/es7000_32.c |    2 +-
- arch/x86/kernel/apic/numaq_32.c  |    2 +-
- arch/x86/kernel/apic/summit_32.c |    4 ++--
- arch/x86/kernel/setup_percpu.c   |    7 +++++++
- arch/x86/kernel/smpboot.c        |    7 ++-----
- 8 files changed, 27 insertions(+), 13 deletions(-)
+ arch/x86/include/asm/apic.h           |    7 -------
+ arch/x86/kernel/apic/apic_flat_64.c   |    2 --
+ arch/x86/kernel/apic/apic_noop.c      |    6 ------
+ arch/x86/kernel/apic/bigsmp_32.c      |   19 +++++++------------
+ arch/x86/kernel/apic/es7000_32.c      |   18 ++----------------
+ arch/x86/kernel/apic/numaq_32.c       |    8 --------
+ arch/x86/kernel/apic/probe_32.c       |    1 -
+ arch/x86/kernel/apic/summit_32.c      |   17 ++---------------
+ arch/x86/kernel/apic/x2apic_cluster.c |    1 -
+ arch/x86/kernel/apic/x2apic_phys.c    |    1 -
+ arch/x86/kernel/apic/x2apic_uv_x.c    |    1 -
+ 11 files changed, 11 insertions(+), 70 deletions(-)
 
 diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index 5e3969c..eb139ec 100644
+index eb139ec..d1aa0c3 100644
 --- a/arch/x86/include/asm/apic.h
 +++ b/arch/x86/include/asm/apic.h
-@@ -595,8 +595,4 @@ extern int default_check_phys_apicid_present(int phys_apicid);
+@@ -307,7 +307,6 @@ struct apic {
+ 	void (*setup_apic_routing)(void);
+ 	int (*multi_timer_check)(int apic, int irq);
+ 	int (*apicid_to_node)(int logical_apicid);
+-	int (*cpu_to_logical_apicid)(int cpu);
+ 	int (*cpu_present_to_apicid)(int mps_cpu);
+ 	void (*apicid_to_cpu_present)(int phys_apicid, physid_mask_t *retmap);
+ 	void (*setup_portio_remap)(void);
+@@ -557,12 +556,6 @@ static inline void default_ioapic_phys_id_map(physid_mask_t *phys_map, physid_ma
+ 	*retmap = *phys_map;
+ }
  
- #endif /* CONFIG_X86_LOCAL_APIC */
- 
--#ifdef CONFIG_X86_32
--extern u8 cpu_2_logical_apicid[NR_CPUS];
--#endif
+-/* Mapping from cpu number to logical apicid */
+-static inline int default_cpu_to_logical_apicid(int cpu)
+-{
+-	return 1 << cpu;
+-}
 -
- #endif /* _ASM_X86_APIC_H */
-diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
-index 4c2f63c..dc7c46a 100644
---- a/arch/x86/include/asm/smp.h
-+++ b/arch/x86/include/asm/smp.h
-@@ -38,6 +38,9 @@ static inline struct cpumask *cpu_core_mask(int cpu)
+ static inline int __default_cpu_present_to_apicid(int mps_cpu)
+ {
+ 	if (mps_cpu < nr_cpu_ids && cpu_present(mps_cpu))
+diff --git a/arch/x86/kernel/apic/apic_flat_64.c b/arch/x86/kernel/apic/apic_flat_64.c
+index 09d3b17..5a9d11a 100644
+--- a/arch/x86/kernel/apic/apic_flat_64.c
++++ b/arch/x86/kernel/apic/apic_flat_64.c
+@@ -186,7 +186,6 @@ struct apic apic_flat =  {
+ 	.setup_apic_routing		= NULL,
+ 	.multi_timer_check		= NULL,
+ 	.apicid_to_node			= NULL,
+-	.cpu_to_logical_apicid		= NULL,
+ 	.cpu_present_to_apicid		= default_cpu_present_to_apicid,
+ 	.apicid_to_cpu_present		= NULL,
+ 	.setup_portio_remap		= NULL,
+@@ -338,7 +337,6 @@ struct apic apic_physflat =  {
+ 	.setup_apic_routing		= NULL,
+ 	.multi_timer_check		= NULL,
+ 	.apicid_to_node			= NULL,
+-	.cpu_to_logical_apicid		= NULL,
+ 	.cpu_present_to_apicid		= default_cpu_present_to_apicid,
+ 	.apicid_to_cpu_present		= NULL,
+ 	.setup_portio_remap		= NULL,
+diff --git a/arch/x86/kernel/apic/apic_noop.c b/arch/x86/kernel/apic/apic_noop.c
+index e31b9ff..f3d19b2 100644
+--- a/arch/x86/kernel/apic/apic_noop.c
++++ b/arch/x86/kernel/apic/apic_noop.c
+@@ -54,11 +54,6 @@ static u64 noop_apic_icr_read(void)
+ 	return 0;
+ }
  
- DECLARE_EARLY_PER_CPU(u16, x86_cpu_to_apicid);
- DECLARE_EARLY_PER_CPU(u16, x86_bios_cpu_apicid);
-+#if defined(CONFIG_SMP) && defined(CONFIG_X86_32)
-+DECLARE_EARLY_PER_CPU(int, x86_cpu_to_logical_apicid);
-+#endif
+-static int noop_cpu_to_logical_apicid(int cpu)
+-{
+-	return 0;
+-}
+-
+ static int noop_phys_pkg_id(int cpuid_apic, int index_msb)
+ {
+ 	return 0;
+@@ -155,7 +150,6 @@ struct apic apic_noop = {
+ 	.multi_timer_check		= NULL,
+ 	.apicid_to_node			= noop_apicid_to_node,
  
- /* Static state in head.S used to set up a CPU */
- extern struct {
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index c0f6426..ba78b1e 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -79,6 +79,17 @@ EXPORT_EARLY_PER_CPU_SYMBOL(x86_cpu_to_apicid);
- EXPORT_EARLY_PER_CPU_SYMBOL(x86_bios_cpu_apicid);
+-	.cpu_to_logical_apicid		= noop_cpu_to_logical_apicid,
+ 	.cpu_present_to_apicid		= default_cpu_present_to_apicid,
+ 	.apicid_to_cpu_present		= physid_set_mask_of_physid,
  
- #ifdef CONFIG_X86_32
+diff --git a/arch/x86/kernel/apic/bigsmp_32.c b/arch/x86/kernel/apic/bigsmp_32.c
+index cb804c5..4c62592 100644
+--- a/arch/x86/kernel/apic/bigsmp_32.c
++++ b/arch/x86/kernel/apic/bigsmp_32.c
+@@ -93,14 +93,6 @@ static int bigsmp_cpu_present_to_apicid(int mps_cpu)
+ 	return BAD_APICID;
+ }
+ 
+-/* Mapping from cpu number to logical apicid */
+-static inline int bigsmp_cpu_to_logical_apicid(int cpu)
+-{
+-	if (cpu >= nr_cpu_ids)
+-		return BAD_APICID;
+-	return cpu_physical_id(cpu);
+-}
+-
+ static void bigsmp_ioapic_phys_id_map(physid_mask_t *phys_map, physid_mask_t *retmap)
+ {
+ 	/* For clustered we don't have a good way to do this yet - hack */
+@@ -115,7 +107,11 @@ static int bigsmp_check_phys_apicid_present(int phys_apicid)
+ /* As we are using single CPU as destination, pick only one CPU here */
+ static unsigned int bigsmp_cpu_mask_to_apicid(const struct cpumask *cpumask)
+ {
+-	return bigsmp_cpu_to_logical_apicid(cpumask_first(cpumask));
++	int cpu = cpumask_first(cpumask);
 +
-+#ifdef CONFIG_SMP
-+/*
-+ * On x86_32, the mapping between cpu and logical apicid may vary
-+ * depending on apic in use.  The following early percpu variable is
-+ * used for the mapping.  This is where the behaviors of x86_64 and 32
-+ * actually diverge.  Let's keep it ugly for now.
-+ */
-+DEFINE_EARLY_PER_CPU(int, x86_cpu_to_logical_apicid, BAD_APICID);
-+#endif
-+
- /*
-  * Knob to control our willingness to enable the local APIC.
-  *
++	if (cpu < nr_cpu_ids)
++		return cpu_physical_id(cpu);
++	return BAD_APICID;
+ }
+ 
+ static unsigned int bigsmp_cpu_mask_to_apicid_and(const struct cpumask *cpumask,
+@@ -129,9 +125,9 @@ static unsigned int bigsmp_cpu_mask_to_apicid_and(const struct cpumask *cpumask,
+ 	 */
+ 	for_each_cpu_and(cpu, cpumask, andmask) {
+ 		if (cpumask_test_cpu(cpu, cpu_online_mask))
+-			break;
++			return cpu_physical_id(cpu);
+ 	}
+-	return bigsmp_cpu_to_logical_apicid(cpu);
++	return BAD_APICID;
+ }
+ 
+ static int bigsmp_phys_pkg_id(int cpuid_apic, int index_msb)
+@@ -220,7 +216,6 @@ struct apic apic_bigsmp = {
+ 	.setup_apic_routing		= bigsmp_setup_apic_routing,
+ 	.multi_timer_check		= NULL,
+ 	.apicid_to_node			= bigsmp_apicid_to_node,
+-	.cpu_to_logical_apicid		= bigsmp_cpu_to_logical_apicid,
+ 	.cpu_present_to_apicid		= bigsmp_cpu_present_to_apicid,
+ 	.apicid_to_cpu_present		= physid_set_mask_of_physid,
+ 	.setup_portio_remap		= NULL,
 diff --git a/arch/x86/kernel/apic/es7000_32.c b/arch/x86/kernel/apic/es7000_32.c
-index 8593582..7cb73e1 100644
+index 7cb73e1..6840681 100644
 --- a/arch/x86/kernel/apic/es7000_32.c
 +++ b/arch/x86/kernel/apic/es7000_32.c
-@@ -534,7 +534,7 @@ static int es7000_cpu_to_logical_apicid(int cpu)
- #ifdef CONFIG_SMP
- 	if (cpu >= nr_cpu_ids)
- 		return BAD_APICID;
--	return cpu_2_logical_apicid[cpu];
-+	return early_per_cpu(x86_cpu_to_logical_apicid, cpu);
- #else
- 	return logical_smp_processor_id();
- #endif
+@@ -528,18 +528,6 @@ static void es7000_apicid_to_cpu_present(int phys_apicid, physid_mask_t *retmap)
+ 	++cpu_id;
+ }
+ 
+-/* Mapping from cpu number to logical apicid */
+-static int es7000_cpu_to_logical_apicid(int cpu)
+-{
+-#ifdef CONFIG_SMP
+-	if (cpu >= nr_cpu_ids)
+-		return BAD_APICID;
+-	return early_per_cpu(x86_cpu_to_logical_apicid, cpu);
+-#else
+-	return logical_smp_processor_id();
+-#endif
+-}
+-
+ static void es7000_ioapic_phys_id_map(physid_mask_t *phys_map, physid_mask_t *retmap)
+ {
+ 	/* For clustered we don't have a good way to do this yet - hack */
+@@ -561,7 +549,7 @@ static unsigned int es7000_cpu_mask_to_apicid(const struct cpumask *cpumask)
+ 	 * The cpus in the mask must all be on the apic cluster.
+ 	 */
+ 	for_each_cpu(cpu, cpumask) {
+-		int new_apicid = es7000_cpu_to_logical_apicid(cpu);
++		int new_apicid = early_per_cpu(x86_cpu_to_logical_apicid, cpu);
+ 
+ 		if (round && APIC_CLUSTER(apicid) != APIC_CLUSTER(new_apicid)) {
+ 			WARN(1, "Not a valid mask!");
+@@ -578,7 +566,7 @@ static unsigned int
+ es7000_cpu_mask_to_apicid_and(const struct cpumask *inmask,
+ 			      const struct cpumask *andmask)
+ {
+-	int apicid = es7000_cpu_to_logical_apicid(0);
++	int apicid = early_per_cpu(x86_cpu_to_logical_apicid, 0);
+ 	cpumask_var_t cpumask;
+ 
+ 	if (!alloc_cpumask_var(&cpumask, GFP_ATOMIC))
+@@ -656,7 +644,6 @@ struct apic __refdata apic_es7000_cluster = {
+ 	.setup_apic_routing		= es7000_setup_apic_routing,
+ 	.multi_timer_check		= NULL,
+ 	.apicid_to_node			= es7000_apicid_to_node,
+-	.cpu_to_logical_apicid		= es7000_cpu_to_logical_apicid,
+ 	.cpu_present_to_apicid		= es7000_cpu_present_to_apicid,
+ 	.apicid_to_cpu_present		= es7000_apicid_to_cpu_present,
+ 	.setup_portio_remap		= NULL,
+@@ -721,7 +708,6 @@ struct apic __refdata apic_es7000 = {
+ 	.setup_apic_routing		= es7000_setup_apic_routing,
+ 	.multi_timer_check		= NULL,
+ 	.apicid_to_node			= es7000_apicid_to_node,
+-	.cpu_to_logical_apicid		= es7000_cpu_to_logical_apicid,
+ 	.cpu_present_to_apicid		= es7000_cpu_present_to_apicid,
+ 	.apicid_to_cpu_present		= es7000_apicid_to_cpu_present,
+ 	.setup_portio_remap		= NULL,
 diff --git a/arch/x86/kernel/apic/numaq_32.c b/arch/x86/kernel/apic/numaq_32.c
-index 960f26a..4ed90c4 100644
+index 4ed90c4..2b434d5 100644
 --- a/arch/x86/kernel/apic/numaq_32.c
 +++ b/arch/x86/kernel/apic/numaq_32.c
-@@ -377,7 +377,7 @@ static inline int numaq_cpu_to_logical_apicid(int cpu)
- {
- 	if (cpu >= nr_cpu_ids)
- 		return BAD_APICID;
--	return cpu_2_logical_apicid[cpu];
-+	return early_per_cpu(x86_cpu_to_logical_apicid, cpu);
+@@ -373,13 +373,6 @@ static inline void numaq_ioapic_phys_id_map(physid_mask_t *phys_map, physid_mask
+ 	return physids_promote(0xFUL, retmap);
  }
  
+-static inline int numaq_cpu_to_logical_apicid(int cpu)
+-{
+-	if (cpu >= nr_cpu_ids)
+-		return BAD_APICID;
+-	return early_per_cpu(x86_cpu_to_logical_apicid, cpu);
+-}
+-
  /*
+  * Supporting over 60 cpus on NUMA-Q requires a locality-dependent
+  * cpu to APIC ID relation to properly interact with the intelligent
+@@ -509,7 +502,6 @@ struct apic __refdata apic_numaq = {
+ 	.setup_apic_routing		= numaq_setup_apic_routing,
+ 	.multi_timer_check		= numaq_multi_timer_check,
+ 	.apicid_to_node			= numaq_apicid_to_node,
+-	.cpu_to_logical_apicid		= numaq_cpu_to_logical_apicid,
+ 	.cpu_present_to_apicid		= numaq_cpu_present_to_apicid,
+ 	.apicid_to_cpu_present		= numaq_apicid_to_cpu_present,
+ 	.setup_portio_remap		= numaq_setup_portio_remap,
+diff --git a/arch/x86/kernel/apic/probe_32.c b/arch/x86/kernel/apic/probe_32.c
+index 99d2fe0..24a6828 100644
+--- a/arch/x86/kernel/apic/probe_32.c
++++ b/arch/x86/kernel/apic/probe_32.c
+@@ -131,7 +131,6 @@ struct apic apic_default = {
+ 	.setup_apic_routing		= setup_apic_flat_routing,
+ 	.multi_timer_check		= NULL,
+ 	.apicid_to_node			= default_apicid_to_node,
+-	.cpu_to_logical_apicid		= default_cpu_to_logical_apicid,
+ 	.cpu_present_to_apicid		= default_cpu_present_to_apicid,
+ 	.apicid_to_cpu_present		= physid_set_mask_of_physid,
+ 	.setup_portio_remap		= NULL,
 diff --git a/arch/x86/kernel/apic/summit_32.c b/arch/x86/kernel/apic/summit_32.c
-index 9b41926..82cfc3e 100644
+index 82cfc3e..1ef4c14 100644
 --- a/arch/x86/kernel/apic/summit_32.c
 +++ b/arch/x86/kernel/apic/summit_32.c
-@@ -206,7 +206,7 @@ static void summit_init_apic_ldr(void)
+@@ -241,18 +241,6 @@ static int summit_apicid_to_node(int logical_apicid)
+ #endif
+ }
  
- 	/* Create logical APIC IDs by counting CPUs already in cluster. */
- 	for (count = 0, i = nr_cpu_ids; --i >= 0; ) {
--		lid = cpu_2_logical_apicid[i];
-+		lid = early_per_cpu(x86_cpu_to_logical_apicid, i);
- 		if (lid != BAD_APICID && APIC_CLUSTER(lid) == my_cluster)
- 			++count;
- 	}
-@@ -247,7 +247,7 @@ static inline int summit_cpu_to_logical_apicid(int cpu)
- #ifdef CONFIG_SMP
- 	if (cpu >= nr_cpu_ids)
- 		return BAD_APICID;
--	return cpu_2_logical_apicid[cpu];
-+	return early_per_cpu(x86_cpu_to_logical_apicid, cpu);
- #else
- 	return logical_smp_processor_id();
- #endif
-diff --git a/arch/x86/kernel/setup_percpu.c b/arch/x86/kernel/setup_percpu.c
-index 002b796..b5147f0 100644
---- a/arch/x86/kernel/setup_percpu.c
-+++ b/arch/x86/kernel/setup_percpu.c
-@@ -225,6 +225,10 @@ void __init setup_per_cpu_areas(void)
- 		per_cpu(x86_bios_cpu_apicid, cpu) =
- 			early_per_cpu_map(x86_bios_cpu_apicid, cpu);
- #endif
-+#ifdef CONFIG_X86_32
-+		per_cpu(x86_cpu_to_logical_apicid, cpu) =
-+			early_per_cpu_map(x86_cpu_to_logical_apicid, cpu);
-+#endif
- #ifdef CONFIG_X86_64
- 		per_cpu(irq_stack_ptr, cpu) =
- 			per_cpu(irq_stack_union.irq_stack, cpu) +
-@@ -256,6 +260,9 @@ void __init setup_per_cpu_areas(void)
- 	early_per_cpu_ptr(x86_cpu_to_apicid) = NULL;
- 	early_per_cpu_ptr(x86_bios_cpu_apicid) = NULL;
- #endif
-+#ifdef CONFIG_X86_32
-+	early_per_cpu_ptr(x86_cpu_to_logical_apicid) = NULL;
-+#endif
- #if defined(CONFIG_X86_64) && defined(CONFIG_NUMA)
- 	early_per_cpu_ptr(x86_cpu_to_node_map) = NULL;
- #endif
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 0b32f17..eb04f30 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -165,9 +165,6 @@ static void unmap_cpu_to_node(int cpu)
- #endif
- 
- #ifdef CONFIG_X86_32
--u8 cpu_2_logical_apicid[NR_CPUS] __read_mostly =
--					{ [0 ... NR_CPUS-1] = BAD_APICID };
+-/* Mapping from cpu number to logical apicid */
+-static inline int summit_cpu_to_logical_apicid(int cpu)
+-{
+-#ifdef CONFIG_SMP
+-	if (cpu >= nr_cpu_ids)
+-		return BAD_APICID;
+-	return early_per_cpu(x86_cpu_to_logical_apicid, cpu);
+-#else
+-	return logical_smp_processor_id();
+-#endif
+-}
 -
- static void map_cpu_to_logical_apicid(void)
+ static int summit_cpu_present_to_apicid(int mps_cpu)
  {
- 	int cpu = smp_processor_id();
-@@ -177,13 +174,13 @@ static void map_cpu_to_logical_apicid(void)
- 	if (!node_online(node))
- 		node = first_online_node;
+ 	if (mps_cpu < nr_cpu_ids)
+@@ -286,7 +274,7 @@ static unsigned int summit_cpu_mask_to_apicid(const struct cpumask *cpumask)
+ 	 * The cpus in the mask must all be on the apic cluster.
+ 	 */
+ 	for_each_cpu(cpu, cpumask) {
+-		int new_apicid = summit_cpu_to_logical_apicid(cpu);
++		int new_apicid = early_per_cpu(x86_cpu_to_logical_apicid, cpu);
  
--	cpu_2_logical_apicid[cpu] = apicid;
-+	early_per_cpu(x86_cpu_to_logical_apicid, cpu) = apicid;
- 	map_cpu_to_node(cpu, node);
- }
- 
- void numa_remove_cpu(int cpu)
+ 		if (round && APIC_CLUSTER(apicid) != APIC_CLUSTER(new_apicid)) {
+ 			printk("%s: Not a valid mask!\n", __func__);
+@@ -301,7 +289,7 @@ static unsigned int summit_cpu_mask_to_apicid(const struct cpumask *cpumask)
+ static unsigned int summit_cpu_mask_to_apicid_and(const struct cpumask *inmask,
+ 			      const struct cpumask *andmask)
  {
--	cpu_2_logical_apicid[cpu] = BAD_APICID;
-+	early_per_cpu(x86_cpu_to_logical_apicid, cpu) = BAD_APICID;
- 	unmap_cpu_to_node(cpu);
- }
- #else
+-	int apicid = summit_cpu_to_logical_apicid(0);
++	int apicid = early_per_cpu(x86_cpu_to_logical_apicid, 0);
+ 	cpumask_var_t cpumask;
+ 
+ 	if (!alloc_cpumask_var(&cpumask, GFP_ATOMIC))
+@@ -529,7 +517,6 @@ struct apic apic_summit = {
+ 	.setup_apic_routing		= summit_setup_apic_routing,
+ 	.multi_timer_check		= NULL,
+ 	.apicid_to_node			= summit_apicid_to_node,
+-	.cpu_to_logical_apicid		= summit_cpu_to_logical_apicid,
+ 	.cpu_present_to_apicid		= summit_cpu_present_to_apicid,
+ 	.apicid_to_cpu_present		= summit_apicid_to_cpu_present,
+ 	.setup_portio_remap		= NULL,
+diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
+index cf69c59..badc1fd 100644
+--- a/arch/x86/kernel/apic/x2apic_cluster.c
++++ b/arch/x86/kernel/apic/x2apic_cluster.c
+@@ -207,7 +207,6 @@ struct apic apic_x2apic_cluster = {
+ 	.setup_apic_routing		= NULL,
+ 	.multi_timer_check		= NULL,
+ 	.apicid_to_node			= NULL,
+-	.cpu_to_logical_apicid		= NULL,
+ 	.cpu_present_to_apicid		= default_cpu_present_to_apicid,
+ 	.apicid_to_cpu_present		= NULL,
+ 	.setup_portio_remap		= NULL,
+diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
+index 8972f38..f28bf4c 100644
+--- a/arch/x86/kernel/apic/x2apic_phys.c
++++ b/arch/x86/kernel/apic/x2apic_phys.c
+@@ -196,7 +196,6 @@ struct apic apic_x2apic_phys = {
+ 	.setup_apic_routing		= NULL,
+ 	.multi_timer_check		= NULL,
+ 	.apicid_to_node			= NULL,
+-	.cpu_to_logical_apicid		= NULL,
+ 	.cpu_present_to_apicid		= default_cpu_present_to_apicid,
+ 	.apicid_to_cpu_present		= NULL,
+ 	.setup_portio_remap		= NULL,
+diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
+index 194539a..365f53d 100644
+--- a/arch/x86/kernel/apic/x2apic_uv_x.c
++++ b/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -316,7 +316,6 @@ struct apic __refdata apic_x2apic_uv_x = {
+ 	.setup_apic_routing		= NULL,
+ 	.multi_timer_check		= NULL,
+ 	.apicid_to_node			= NULL,
+-	.cpu_to_logical_apicid		= NULL,
+ 	.cpu_present_to_apicid		= default_cpu_present_to_apicid,
+ 	.apicid_to_cpu_present		= NULL,
+ 	.setup_portio_remap		= NULL,
 -- 
 1.7.1
 
