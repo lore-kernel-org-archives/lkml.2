@@ -1,64 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993Ab0L1VgK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 16:36:10 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:42825 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867Ab0L1VgI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 16:36:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=sjNYQ7v0Z6aeDadB9tqlDsnFEJna1yOzuPpLSY8w3DgsKEUkhpKENqB9ClRQJwx2+D
-         aqtAXPCawwA5Wtua9wXCjXGikqbRgZRAQa6L6EHCO/xMP5zo4XRkkPEfAFQ70PMSjh8Z
-         hVnYHsl1fKwFLAsJYPvuCh5MCTnDDMk0B7zoc=
-MIME-Version: 1.0
-In-Reply-To: <4D1A46D2.1000702@zytor.com>
-References: <4D0C072D.1040201@kernel.org>
-	<4D1A46D2.1000702@zytor.com>
-Date: Tue, 28 Dec 2010 13:36:07 -0800
-X-Google-Sender-Auth: HMDpx6QRJgNsG_ecM3xIUCtAvZA
-Message-ID: <AANLkTik7Zbc4KW0rS1h=qsLwm-NCxHNjLUZnLi1t0sr5@mail.gmail.com>
-Subject: Re: [PATCH 0/3] memblock related top down
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752217Ab0L1Vil (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 16:38:41 -0500
+Received: from ms01.sssup.it ([193.205.80.99]:39308 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751016Ab0L1Vik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Dec 2010 16:38:40 -0500
+Subject: Re: [PATCH resend] Reading POSIX CPU timer from outside the
+ process.
+From: Dario Faggioli <raistlin@linux.it>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>, torbenh <torbenh@gmx.de>,
+        john.stultz@linaro.org, roland@redhat.com, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+In-Reply-To: <20101228163829.GA26533@redhat.com>
+References: <1293121303.3390.185.camel@Palantir>
+	 <1293533742.2899.1028.camel@Palantir>  <20101228163829.GA26533@redhat.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-k17XL+3jgXoim0gF6uvO"
+Date: Tue, 28 Dec 2010 22:38:24 +0100
+Message-ID: <1293572304.2899.1214.camel@Palantir>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 28, 2010 at 12:21 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 12/17/2010 04:58 PM, Yinghai Lu wrote:
->> Please check
->>
->> Those three patches to make memblock allocation more top to down.
->>
+
+--=-k17XL+3jgXoim0gF6uvO
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, 2010-12-28 at 17:38 +0100, Oleg Nesterov wrote:=20
+> This patch doesn't look right,
+>=20
+Sorry then... :-(
+
+> > All that because clock_getcpuclockid forbids accessing thread
+> > specific CPU-time clocks from outside the thread group,
+>=20
+> First of all, linux has no clock_getcpuclockid() system call, so
+> the changelog looks confusing.
+>=20
+Sure, you're right, this could have been more clear.
+
+> >  	rcu_read_lock();
+> >  	p =3D find_task_by_vpid(pid);
+> > -	if (!p || !(CPUCLOCK_PERTHREAD(which_clock) ?
+> > -		   same_thread_group(p, current) : has_group_leader_pid(p))) {
+> > +	if (!p || (CPUCLOCK_PERTHREAD(which_clock) &&
+> > +		   same_thread_group(p, current) && !has_group_leader_pid(p)))
+> >  		error =3D -EINVAL;
+> > -	}
+> >  	rcu_read_unlock();
+>=20
+> How so? For example, with this change
+> clock_getres(MAKE_THREAD_CPUCLOCK(pid_of_sub_thread)) won't work, no?
+>=20
+I tested all the clock_getres() calls that came to my mind (at least the
+one that are possible from an userspace program), and they always worked
+because of this (still in check_clock):
+
+        const pid_t pid =3D CPUCLOCK_PID(which_clock);
+
+        if (pid =3D=3D 0)
+                return 0;
+
+Which triggers all the times, except when you actually try to get a CPU
+clockid from outside the process, but that's not possible with getres.
+
+Anyway, looking at the code again I agree, it may work, but it's not
+something I really like! :-|
+
+The whole point was about, given the current implementation of
+clock_getcpuclockid done by glibc, can we remove that "failed with
+success" (showed in the changelog) thing and come up with some
+meaningful clockid for that situation? It's more than possible for the
+answer to be no!!! :-P
+
+> I think, if we want to remove this limitation, we need something
+> like the patch below. If it doesn't help, we should fix glibc.
+>=20
+> --- x/kernel/posix-cpu-timers.c
+> +++ x/kernel/posix-cpu-timers.c
+> @@ -39,10 +39,8 @@ static int check_clock(const clockid_t w
+> =20
+>  	rcu_read_lock();
+>  	p =3D find_task_by_vpid(pid);
+> -	if (!p || !(CPUCLOCK_PERTHREAD(which_clock) ?
+> -		   same_thread_group(p, current) : has_group_leader_pid(p))) {
+> +	if (!p || !(CPUCLOCK_PERTHREAD(which_clock) || has_group_leader_pid(p))=
+)
+>  		error =3D -EINVAL;
+> -	}
+>  	rcu_read_unlock();
 >
-> Please explain what you mean with "more top to down".  Not what the code
-> does, but what is the goal of the patchset.
+Which won't work because CPUCLOCK_PERTHREAD(which_clock) is always false
+in this case.=20
 
-for example first node with 16g ram, it is into two parts: [0, 2g),
-and [4g, 18g).
+> 	return error;
+> @@ -350,10 +348,7 @@ int posix_cpu_clock_get(const clockid_t=20
+>  		p =3D find_task_by_vpid(pid);
+>  		if (p) {
+>  			if (CPUCLOCK_PERTHREAD(which_clock)) {
+> -				if (same_thread_group(p, current)) {
+> -					error =3D cpu_clock_sample(which_clock,
+> -								 p, &rtn);
+> -				}
+> +				error =3D cpu_clock_sample(which_clock, p, &rtn);
+Same as above... To the point that I'm now wondering if we ever take
+this branch here...
 
-alloc_bootmem will get allocation from [0, 2g) always until we have
-can not find more.
+BTW, again, I see your point, the fix might need to happen at glibc
+level. I'll check that and come back if I find something interesting.
 
-with third patch, it will try to get from [4g, 18g) at first.
+Thanks anyway,
+Dario
 
-second patch is need to applied before third patch, because old way
-happenly get under 4g for generic bootmem under 4g
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
 
-First one is trying not to put page table for [0, 4g) under 512M.
+http://retis.sssup.it/people/faggioli -- dario.faggioli@jabber.org
 
-Thanks
+--=-k17XL+3jgXoim0gF6uvO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Yinghai
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAk0aWMgACgkQk4XaBE3IOsToRQCfXvTuRt5pIQ33biAp3p9nDe2m
+WxkAnRjWMRkSgbemBixLY4HZYyL+SAA4
+=yqxW
+-----END PGP SIGNATURE-----
+
+--=-k17XL+3jgXoim0gF6uvO--
+
