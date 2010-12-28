@@ -1,145 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab0L1IvX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 03:51:23 -0500
-Received: from mga03.intel.com ([143.182.124.21]:63393 "EHLO mga03.intel.com"
+	id S1752541Ab0L1JJe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 04:09:34 -0500
+Received: from home.kolivas.org ([59.167.196.135]:39989 "EHLO home.kolivas.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752225Ab0L1IvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 03:51:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,238,1291622400"; 
-   d="scan'208";a="367199963"
-Subject: Re: [PATCH 4/7] perf: Check if HT is supported and enabled
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTimp9VgD4qhOVmq-k1Ckzti9eeV8pf6Jvt5YB6nx@mail.gmail.com>
-References: <1293464211.2695.104.camel@localhost>
-	 <AANLkTimp9VgD4qhOVmq-k1Ckzti9eeV8pf6Jvt5YB6nx@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 28 Dec 2010 16:51:28 +0800
-Message-ID: <1293526288.2457.4.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+	id S1751588Ab0L1JJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Dec 2010 04:09:33 -0500
+From: Con Kolivas <kernel@kolivas.org>
+To: Rogier Wolff <R.E.Wolff@bitwizard.nl>
+Subject: Re: Regular ext4 error warning with HD in USB dock
+Date: Tue, 28 Dec 2010 20:09:21 +1100
+User-Agent: KMail/1.13.5 (Linux/2.6.36.2-ck1; KDE/4.4.5; x86_64; ; )
+Cc: "Ted Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
+        linux-usb@vger.kernel.org
+References: <201012280953.46149.kernel@kolivas.org> <20101228025343.GD10149@thunk.org> <20101228081917.GA1351@bitwizard.nl>
+In-Reply-To: <20101228081917.GA1351@bitwizard.nl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201012282009.21890.kernel@kolivas.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-12-28 at 16:44 +0800, Lin Ming wrote:
+On Tue, 28 Dec 2010 19:19:17 Rogier Wolff wrote:
+> On Mon, Dec 27, 2010 at 09:53:43PM -0500, Ted Ts'o wrote:
+> > On Tue, Dec 28, 2010 at 09:53:45AM +1100, Con Kolivas wrote:
+> > > [1048401.773270] EXT4-fs (sde8): mounted filesystem with writeback data
+> > > mode. Opts: (null)
+> > > [1048702.736011] EXT4-fs (sde8): error count: 3
+> > > [1048702.736016] EXT4-fs (sde8): initial error at 1289053677:
+> > > ext4_journal_start_sb:251
+> > > [1048702.736018] EXT4-fs (sde8): last error at 1289080948:
+> > > ext4_put_super:719
+> > 
+> > That's actually not an error.  It's a report which is generated every
+> > 24 hours, indicating that there has been 3 errors since the last time
+> > the error count has been cleared, with the first error taking place at
+> > Sat Nov 6 10:27:57 2010 (US/Eastern) in the function
+> > ext4_journal_start_sb(), at line 251, and the most recent error taking
+> > place at Sat Nov 6 18:02:28 2010 (US/Eastern), in the function
+> > ext4_put_super() at line 719.  This is a new feature which was added
+> > in 2.6.36.
 > 
-> Avoid the percore allocations if HT is not supported or disabled.
+> Nice. But the issue you're not mentioning is: What errors could have
+> happened on the 6th of november? Should Con worry about those errors?
 > 
-> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> ---
->  arch/x86/kernel/cpu/perf_event_intel.c |   44 +++++++++++++++++++++++++++----
->  1 files changed, 38 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c
-> b/arch/x86/kernel/cpu/perf_event_intel.c
-> index bc4afb1..354d1de 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -1053,9 +1053,38 @@ static __initconst const struct x86_pmu core_pmu = {
->        .event_constraints      = intel_core_event_constraints,
->  };
-> 
-> +/*
-> + * Check if HT is capable and enabled
-> + * TBD: move it to generic place, so it can be used by others
-> + */
-> +
-> +static bool ht_enabled(int cpu)
-> +{
-> +       int total_logical_processors, total_cores;
-> +       unsigned int eax, ebx, ecx, edx;
-> +
-> +       cpuid(1, &eax, &ebx, &ecx, &edx);
-> +
-> +       /* Bit 28 in EDX indicates if it's HT capable */
-> +       if (!(edx & 0x10000000))
-> +               return false;
-> +
-> +       total_logical_processors = (ebx >> 16) & 0xff;
-> +
-> +       ecx = 0;
-> +       cpuid(4, &eax, &ebx, &ecx, &edx);
-> +       total_cores = ((eax >> 26) & 0x3f) + 1;
-> +
-> +       /* Thread nums per core */
-> +       return (total_logical_processors / total_cores) > 1;
-> +}
-> +
+> OK, the chances are that he has rebooted since november, and that an
+> older fsck fixed the errors, but not cleared the "fs errror log". Would
+> these errors have triggered a "remount-readonly" if the fs was mounted
+> like that?
 
-This function can be simplified as below,
-
-static bool ht_enabled()
-{
-        if (!cpu_has(&boot_cpu_data, X86_FEATURE_HT))
-                return false;
-
-        return smp_num_siblings > 1;
-}
-
-But this still can't detect if HT is on or off.
-smp_num_siblings is always 2 even if HT is disabled in BIOS.
-
-Any idea how to detect if HT is on or not?
+Indeed the FS was remounted as RO at the time. I had to power down the USB 
+device and power it up again after umounting the FS and then doing an FSCK 
+before it was usable again, and the machine had about a month of uptime when 
+it happened. It has not caused a problem since.
 
 Thanks,
-Lin Ming
-
->  static int intel_pmu_cpu_prepare(int cpu)
->  {
->        struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
-> +
-> +       if (!ht_enabled(cpu))
-> +               return NOTIFY_OK;
-> 
->        cpuc->per_core = kzalloc_node(sizeof(struct intel_percore),
->                                      GFP_KERNEL, cpu_to_node(cpu));
-> @@ -1073,6 +1102,15 @@ static void intel_pmu_cpu_starting(int cpu)
->        int core_id = topology_core_id(cpu);
->        int i;
-> 
-> +       init_debug_store_on_cpu(cpu);
-> +       /*
-> +        * Deal with CPUs that don't clear their LBRs on power-up.
-> +        */
-> +       intel_pmu_lbr_reset();
-> +
-> +       if (!ht_enabled(cpu))
-> +               return;
-> +
->        for_each_online_cpu(i) {
->                struct intel_percore *pc = per_cpu(cpu_hw_events, i).per_core;
-> 
-> @@ -1085,12 +1123,6 @@ static void intel_pmu_cpu_starting(int cpu)
-> 
->        cpuc->per_core->core_id = core_id;
->        cpuc->per_core->refcnt++;
-> -
-> -       init_debug_store_on_cpu(cpu);
-> -       /*
-> -        * Deal with CPUs that don't clear their LBRs on power-up.
-> -        */
-> -       intel_pmu_lbr_reset();
->  }
-> 
->  static void intel_pmu_cpu_dying(int cpu)
-> --
-> 1.7.3
-> 
-> 
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+Con
+-- 
+-ck
