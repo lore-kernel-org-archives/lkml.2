@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174Ab0L1PqY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 10:46:24 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:45139 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382Ab0L1PqW (ORCPT
+	id S1754176Ab0L1Pvk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 10:51:40 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:15022 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751991Ab0L1Pvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 10:46:22 -0500
-Date: Tue, 28 Dec 2010 15:46:17 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, David Brownell <david-b@pacbell.net>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC/PATCH 1/2] mfd: twl6030-irq: move to threaded_irq
-Message-ID: <20101228154617.GC14860@sirena.org.uk>
-References: <1293544790-793-1-git-send-email-balbi@ti.com> <1293544790-793-2-git-send-email-balbi@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1293544790-793-2-git-send-email-balbi@ti.com>
-X-Cookie: George Orwell was an optimist.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Tue, 28 Dec 2010 10:51:38 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6209"; a="68509824"
+Subject: Re: [PATCH v0] add nano semaphore in kernel
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <201012272215.52642.arnd@arndb.de>
+References: <AANLkTim0Xmsnzz5yMLAx_+w-c7sSSReu0SKMAmjpbS+1@mail.gmail.com>
+	 <201012272215.52642.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 28 Dec 2010 07:51:30 -0800
+Message-ID: <1293551490.24601.10.camel@m0nster>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 28, 2010 at 03:59:49PM +0200, Felipe Balbi wrote:
+On Mon, 2010-12-27 at 22:15 +0100, Arnd Bergmann wrote:
+> On Sunday 26 December 2010, Hillf Danton wrote:
+> > 
+> > Based upon high resolution timer and idea borrowed from semaphore,
+> > nano semaphore is created.
+> > 
+> > Nano semaphore provides finer time resolution depending on system
+> > configuration and capabilities.
+> > 
+> > Nano semaphore is not to replace semaphore, but used in application
+> > environments where nano seconds are required.
+> > 
+> > Three methods, nano_semaphore_try_down, nano_semaphore_down and
+> > nano_semaphore_up are implemented in a header file, and there is no
+> > corresponding C file since nano semaphore is not complex.
+> > 
+> > Signed-off-by: Hillf Danton <dhillf@gmail.com>
+> 
+> There are very few users of real semaphores today, and we're trying to
+> get rid of them. It's not clear what your requirements are, since you
+> have not posted any new users of this, but instead of adding more
+> locking primitives, I would recommend changing one of the existing
+> ones (mutex, semaphore, rwsem) to have nanosecond timeouts instead
+> of jiffies.
+> 
+> The easiest way would certainly be to change the three users of
+> down_timeout() to use nanoseconds.
 
-> +	disable_irq_nosync(irq);
+We for sure don't want new semaphores, or new semaphore usage in the
+kernel ..
 
-You shouldn't need this any more; the driver used to be faffing around
-with this because it wasn't using genirq for this in the past.
+It should also be noted that the rtmutex (kernel/rtmutex.c) already has
+this capability. Although I don't think you can use an rtmutex from
+inside the kernel.
 
-> +	for (i = 0; sts.int_sts; sts.int_sts >>= 1, i++) {
-> +		local_irq_disable();
+If you really want this you should look into the rtmutex, and the
+regular mutex API's .
 
-Simiarly here as far as I know; the original code predates genirq
-support for this so is doing some hairy stuff that is no longer
-required and may actually be harmful.
+Daniel
 
-What I'd expect to see from a conversion like this would be that most of
-the locking/IRQ management stuff would be dropped and the bus_lock() and
-bus_sync_unlock() operations would be implemented.
+
+-- 
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
+Forum.
+
+
