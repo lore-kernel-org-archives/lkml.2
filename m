@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068Ab0L1At0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 19:49:26 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:32450 "EHLO
+	id S1753137Ab0L1Atb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 19:49:31 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32458 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753045Ab0L1AtZ (ORCPT
+	with ESMTP id S1753082Ab0L1Ata (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 19:49:25 -0500
-Message-ID: <4D1933E5.9000300@kernel.org>
-Date: Mon, 27 Dec 2010 16:48:37 -0800
+	Mon, 27 Dec 2010 19:49:30 -0500
+Message-ID: <4D1933BA.8000508@kernel.org>
+Date: Mon, 27 Dec 2010 16:47:54 -0800
 From: Yinghai Lu <yinghai@kernel.org>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 6/6] x86: Rename e820_table_* to pgt_buf_*
+Subject: [PATCH 1/6] x86: Change get_max_mapped() to inline
 References: <4D0C072D.1040201@kernel.org> <4D19320B.7030007@kernel.org>
 In-Reply-To: <4D19320B.7030007@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
@@ -25,136 +25,48 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Now it is found from memblock way.
-
-Change the name to purpose related.
+Move it into head file. to prepare use it in other files.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
 ---
- arch/x86/include/asm/init.h |    6 +++---
- arch/x86/mm/init.c          |   20 ++++++++++----------
- arch/x86/mm/init_32.c       |    8 ++++----
- arch/x86/mm/init_64.c       |    4 ++--
- arch/x86/xen/mmu.c          |    2 +-
- 5 files changed, 20 insertions(+), 20 deletions(-)
+ arch/x86/include/asm/page_types.h |    5 +++++
+ arch/x86/kernel/setup.c           |    9 ---------
+ 2 files changed, 5 insertions(+), 9 deletions(-)
 
-Index: linux-2.6/arch/x86/include/asm/init.h
+Index: linux-2.6/arch/x86/include/asm/page_types.h
 ===================================================================
---- linux-2.6.orig/arch/x86/include/asm/init.h
-+++ linux-2.6/arch/x86/include/asm/init.h
-@@ -11,8 +11,8 @@ kernel_physical_mapping_init(unsigned lo
- 			     unsigned long page_size_mask);
+--- linux-2.6.orig/arch/x86/include/asm/page_types.h
++++ linux-2.6/arch/x86/include/asm/page_types.h
+@@ -45,6 +45,11 @@ extern int devmem_is_allowed(unsigned lo
+ extern unsigned long max_low_pfn_mapped;
+ extern unsigned long max_pfn_mapped;
  
++static inline u64 get_max_mapped(void)
++{
++	return (u64)max_pfn_mapped<<PAGE_SHIFT;
++}
++
+ extern unsigned long init_memory_mapping(unsigned long start,
+ 					 unsigned long end);
  
--extern unsigned long __meminitdata e820_table_start;
--extern unsigned long __initdata e820_table_end;
--extern unsigned long __meminitdata e820_table_bottom;
-+extern unsigned long __meminitdata pgt_buf_start;
-+extern unsigned long __initdata pgt_buf_end;
-+extern unsigned long __meminitdata pgt_buf_bottom;
- 
- #endif /* _ASM_X86_INIT_32_H */
-Index: linux-2.6/arch/x86/mm/init.c
+Index: linux-2.6/arch/x86/kernel/setup.c
 ===================================================================
---- linux-2.6.orig/arch/x86/mm/init.c
-+++ linux-2.6/arch/x86/mm/init.c
-@@ -18,9 +18,9 @@
+--- linux-2.6.orig/arch/x86/kernel/setup.c
++++ linux-2.6/arch/x86/kernel/setup.c
+@@ -680,15 +680,6 @@ static int __init parse_reservelow(char
  
- DEFINE_PER_CPU(struct mmu_gather, mmu_gathers);
+ early_param("reservelow", parse_reservelow);
  
--unsigned long __meminitdata e820_table_start;
--unsigned long __initdata e820_table_end;
--unsigned long __meminitdata e820_table_bottom;
-+unsigned long __meminitdata pgt_buf_start;
-+unsigned long __initdata pgt_buf_end;
-+unsigned long __meminitdata pgt_buf_bottom;
- 
- int after_bootmem;
- 
-@@ -73,12 +73,12 @@ static void __init find_early_table_spac
- 	if (base == MEMBLOCK_ERROR)
- 		panic("Cannot find space for the kernel page tables");
- 
--	e820_table_start = (base + tables) >> PAGE_SHIFT;
--	e820_table_end = e820_table_start;
--	e820_table_bottom = base >> PAGE_SHIFT;
-+	pgt_buf_start = (base + tables) >> PAGE_SHIFT;
-+	pgt_buf_end = pgt_buf_start;
-+	pgt_buf_bottom = base >> PAGE_SHIFT;
- 
- 	printk(KERN_DEBUG "kernel direct mapping tables up to %lx @ %lx-%lx\n",
--		end, e820_table_bottom << PAGE_SHIFT, e820_table_end << PAGE_SHIFT);
-+		end, pgt_buf_bottom << PAGE_SHIFT, pgt_buf_end << PAGE_SHIFT);
- }
- 
- struct map_range {
-@@ -272,9 +272,9 @@ unsigned long __init_refok init_memory_m
- 
- 	__flush_tlb_all();
- 
--	if (!after_bootmem && e820_table_end > e820_table_start)
--		memblock_x86_reserve_range(e820_table_start << PAGE_SHIFT,
--				 e820_table_end << PAGE_SHIFT, "PGTABLE");
-+	if (!after_bootmem && pgt_buf_end > pgt_buf_start)
-+		memblock_x86_reserve_range(pgt_buf_start << PAGE_SHIFT,
-+				 pgt_buf_end << PAGE_SHIFT, "PGTABLE");
- 
- 	if (!after_bootmem)
- 		early_memtest(start, end);
-Index: linux-2.6/arch/x86/mm/init_32.c
-===================================================================
---- linux-2.6.orig/arch/x86/mm/init_32.c
-+++ linux-2.6/arch/x86/mm/init_32.c
-@@ -61,10 +61,10 @@ bool __read_mostly __vmalloc_start_set =
- 
- static __init void *alloc_low_page(void)
- {
--	unsigned long pfn = --e820_table_start;
-+	unsigned long pfn = --pgt_buf_start;
- 	void *adr;
- 
--	if (pfn < e820_table_bottom)
-+	if (pfn < pgt_buf_bottom)
- 		panic("alloc_low_page: ran out of memory");
- 
- 	adr = __va(pfn * PAGE_SIZE);
-@@ -162,8 +162,8 @@ static pte_t *__init page_table_kmap_che
- 	if (pmd_idx_kmap_begin != pmd_idx_kmap_end
- 	    && (vaddr >> PMD_SHIFT) >= pmd_idx_kmap_begin
- 	    && (vaddr >> PMD_SHIFT) <= pmd_idx_kmap_end
--	    && ((__pa(pte) >> PAGE_SHIFT) < e820_table_start
--		|| (__pa(pte) >> PAGE_SHIFT) >= e820_table_end)) {
-+	    && ((__pa(pte) >> PAGE_SHIFT) < pgt_buf_start
-+		|| (__pa(pte) >> PAGE_SHIFT) >= pgt_buf_end)) {
- 		pte_t *newpte;
- 		int i;
- 
-Index: linux-2.6/arch/x86/mm/init_64.c
-===================================================================
---- linux-2.6.orig/arch/x86/mm/init_64.c
-+++ linux-2.6/arch/x86/mm/init_64.c
-@@ -324,8 +324,8 @@ static __ref void *alloc_low_page(unsign
- 		return adr;
- 	}
- 
--	pfn = --e820_table_start;
--	if (pfn < e820_table_bottom)
-+	pfn = --pgt_buf_start;
-+	if (pfn < pgt_buf_bottom)
- 		panic("alloc_low_page: ran out of memory");
- 
- 	adr = early_memremap(pfn * PAGE_SIZE, PAGE_SIZE);
-Index: linux-2.6/arch/x86/xen/mmu.c
-===================================================================
---- linux-2.6.orig/arch/x86/xen/mmu.c
-+++ linux-2.6/arch/x86/xen/mmu.c
-@@ -1807,7 +1807,7 @@ static __init pte_t mask_rw_pte(pte_t *p
- 	 * early_ioremap fixmap slot, make sure it is RO.
- 	 */
- 	if (!is_early_ioremap_ptep(ptep) &&
--	    pfn >= e820_table_start && pfn < e820_table_end)
-+	    pfn >= pgt_buf_start && pfn < pgt_buf_end)
- 		pte = pte_wrprotect(pte);
- 
- 	return pte;
+-static u64 __init get_max_mapped(void)
+-{
+-	u64 end = max_pfn_mapped;
+-
+-	end <<= PAGE_SHIFT;
+-
+-	return end;
+-}
+-
+ /*
+  * Determine if we were loaded by an EFI loader.  If so, then we have also been
+  * passed the efi memmap, systab, etc., so we should use these data structures
