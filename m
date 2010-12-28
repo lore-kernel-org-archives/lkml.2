@@ -1,189 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752919Ab0L1K2v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 05:28:51 -0500
-Received: from cantor.suse.de ([195.135.220.2]:43250 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752162Ab0L1K2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 05:28:50 -0500
-Date: Tue, 28 Dec 2010 11:28:48 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Synaptics touchpad on Dell Vostro V13
-In-Reply-To: <201012151523.09476.dmitry.torokhov@gmail.com>
-Message-ID: <alpine.LNX.2.00.1012281124030.16569@pobox.suse.cz>
-References: <alpine.LNX.2.00.1012141547570.15140@pobox.suse.cz> <20101214170027.GA11318@core.coreip.homeip.net> <alpine.LNX.2.00.1012152348440.16569@pobox.suse.cz> <201012151523.09476.dmitry.torokhov@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752954Ab0L1Ka0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 05:30:26 -0500
+Received: from ms01.sssup.it ([193.205.80.99]:39837 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752225Ab0L1KaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Dec 2010 05:30:25 -0500
+Subject: Re: Sending some form of notifaction when sched_fifo throttling
+ kicks in...
+From: Dario Faggioli <raistlin@linux.it>
+To: Bharata B Rao <bharata.rao@gmail.com>
+Cc: torbenh <torbenh@gmx.de>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Gregory Haskins <ghaskins@novell.com>,
+        Nick Piggin <nickpiggin@yahoo.com.au>,
+        Dhaval Giani <dhaval.giani@gmail.com>
+In-Reply-To: <AANLkTinch3-FHaOKTnfYnFLnG5uyRNfmpZP=RpLzJOrf@mail.gmail.com>
+References: <20101223113926.GH14960@siel.b>
+	 <1293110258.3390.41.camel@Palantir>
+	 <AANLkTinch3-FHaOKTnfYnFLnG5uyRNfmpZP=RpLzJOrf@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-p2VBI/GKwgL2GSPzUz0A"
+Date: Tue, 28 Dec 2010 11:30:10 +0100
+Message-ID: <1293532210.2899.1002.camel@Palantir>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Dec 2010, Dmitry Torokhov wrote:
 
-> > > > Looking at the i8042.debug output, the device is clearly buggy, as it
-> > > > 
-> > > > doesn't identify itself by 0x47 when queried:
-> > > > 	91 -> i8042 (command) [58]
-> > > > 	e8 -> i8042 (parameter) [58]
-> > > > 	fa <- i8042 (interrupt, 3, 12) [59]
-> > > > 	91 -> i8042 (command) [59]
-> > > > 	00 -> i8042 (parameter) [59]
-> > > > 	fa <- i8042 (interrupt, 3, 12) [59]
-> > > > 	91 -> i8042 (command) [59]
-> > > > 	e8 -> i8042 (parameter) [59]
-> > > > 	fa <- i8042 (interrupt, 3, 12) [60]
-> > > > 	91 -> i8042 (command) [60]
-> > > > 	00 -> i8042 (parameter) [60]
-> > > > 	fa <- i8042 (interrupt, 3, 12) [61]
-> > > > 	91 -> i8042 (command) [61]
-> > > > 	e8 -> i8042 (parameter) [61]
-> > > > 	fa <- i8042 (interrupt, 3, 12) [61]
-> > > > 	91 -> i8042 (command) [61]
-> > > > 	00 -> i8042 (parameter) [61]
-> > > > 	fa <- i8042 (interrupt, 3, 12) [62]
-> > > > 	91 -> i8042 (command) [62]
-> > > > 	e8 -> i8042 (parameter) [62]
-> > > > 	fa <- i8042 (interrupt, 3, 12) [63]
-> > > > 	91 -> i8042 (command) [63]
-> > > > 	00 -> i8042 (parameter) [63]
-> > > > 	fa <- i8042 (interrupt, 3, 12) [64]
-> > > > 	91 -> i8042 (command) [64]
-> > > > 	e9 -> i8042 (parameter) [64]
-> > > > 	fa <- i8042 (interrupt, 3, 12) [64]
-> > > > 
-> > > > ... and here we time out after approximately 0.5s. nomux doesn't really
-> > > > fix it, we start getting a lot of timeouts on i8042 with that.
-> > > > 
-> > > > Apparently the device works with Synaptics driver in Other OS(TM)
-> > > > though. Do you have any idea what they might be doing differently so
-> > > > that they make the touchpad identify itself properly?
-> > > 
-> > > Do you have the device in your possession? If so can you check if the
-> > > driver installed in Other OS uses active multiplexing? I think you can
-> > > infer whether it does or not by looking at the pointer properties - I
-> > > think it would "Synaptics Blah at port X" or something like that...
-> > 
-> > Unfortunately I don't have the hardware myself, it's only bugreport that
-> > reached me. I will check this, thanks.
-> > 
-> > > Also you could try combining nomux with reset and see if it makes any
-> > > sense...
-> > 
-> > Yes, I have already had the reporter to do this, but that's even better --
-> > a lot of commands time out, as you can see below
-> > 
-> >  20 -> i8042 (command) [0]
-> >  47 <- i8042 (return) [0]
-> >  20 -> i8042 (command) [0]
-> >  47 <- i8042 (return) [0]
-> >  60 -> i8042 (command) [0]
-> >  56 -> i8042 (parameter) [0]
-> >  d3 -> i8042 (command) [0]
-> >  5a -> i8042 (parameter) [0]
-> >  5a <- i8042 (return) [0]
-> >  a7 -> i8042 (command) [0]
-> >  20 -> i8042 (command) [0]
-> >  76 <- i8042 (return) [0]
-> >  a8 -> i8042 (command) [0]
-> >  20 -> i8042 (command) [0]
-> >  56 <- i8042 (return) [0]
-> >  60 -> i8042 (command) [0]
-> >  56 -> i8042 (parameter) [0]
-> >  d3 -> i8042 (command) [0]
-> >  a5 -> i8042 (parameter) [0]
-> >  a5 <- i8042 (aux_test_irq, aux) [1]
-> >  60 -> i8042 (command) [1]
-> >  74 -> i8042 (parameter) [1]
-> >  60 -> i8042 (command) [1]
-> >  56 -> i8042 (parameter) [1]
-> >  60 -> i8042 (command) [1]
-> >  47 -> i8042 (parameter) [1]
-> > serio: i8042 KBD port at 0x60,0x64 irq 1
-> > serio: i8042 AUX port at 0x60,0x64 irq 12
-> > mice: PS/2 mouse device common for all mice
-> >  f2 -> i8042 (kbd-data) [1]
-> >  fa <- i8042 (interrupt, 0, 1, timeout) [1]
-> >  ab <- i8042 (interrupt, 0, 1, timeout) [1]
-> >  83 <- i8042 (interrupt, 0, 1, timeout) [1]
-> >  ed -> i8042 (kbd-data) [1]
-> >  fa <- i8042 (interrupt, 0, 1, timeout) [1]
-> >  00 -> i8042 (kbd-data) [1]
-> >  fa <- i8042 (interrupt, 0, 1, timeout) [1]
-> >  f3 -> i8042 (kbd-data) [1]
-> >  fa <- i8042 (interrupt, 0, 1, timeout) [1]
-> >  00 -> i8042 (kbd-data) [1]
-> >  fa <- i8042 (interrupt, 0, 1, timeout) [1]
-> >  f4 -> i8042 (kbd-data) [1]
-> >  fa <- i8042 (interrupt, 0, 1, timeout) [1]
-> > input: AT Translated Set 2 keyboard as
-> > /devices/platform/i8042/serio0/input/input0 d4 -> i8042 (command) [2]
-> >  f2 -> i8042 (parameter) [2]
-> >  fa <- i8042 (interrupt, 1, 12, timeout) [2]
-> >  00 <- i8042 (interrupt, 1, 12, timeout) [3]
-> >  60 -> i8042 (command) [3]
-> >  45 -> i8042 (parameter) [3]
-> >  60 -> i8042 (command) [3]
-> >  47 -> i8042 (parameter) [3]
-> >  d4 -> i8042 (command) [3]
-> >  f2 -> i8042 (parameter) [3]
-> >  fa <- i8042 (interrupt, 1, 12, timeout) [4]
-> >  60 -> i8042 (command) [4]
-> >  45 -> i8042 (parameter) [4]
-> >  60 -> i8042 (command) [4]
-> >  47 -> i8042 (parameter) [4]
-> >  00 <- i8042 (interrupt, 1, 12, timeout) [5]
-> > 
-> > ...
-> > 
-> >  f3 -> i8042 (kbd-data) [6323]
-> >  fa <- i8042 (interrupt, 0, 1, timeout) [6323]
-> >  20 -> i8042 (kbd-data) [6323]
-> >  fa <- i8042 (interrupt, 0, 1, timeout) [6323]
-> >  2d <- i8042 (interrupt, 0, 1, timeout) [10631]
-> >  10 <- i8042 (interrupt, 0, 1, timeout) [10669]
-> >  ad <- i8042 (interrupt, 0, 1, timeout) [10674]
-> >  90 <- i8042 (interrupt, 0, 1, timeout) [10692]
-> >  2f <- i8042 (interrupt, 0, 1, timeout) [10737]
-> >  af <- i8042 (interrupt, 0, 1, timeout) [10760]
-> >  17 <- i8042 (interrupt, 0, 1, timeout) [10922]
-> >  97 <- i8042 (interrupt, 0, 1, timeout) [10945]
-> >  12 <- i8042 (interrupt, 0, 1, timeout) [10998]
-> >  92 <- i8042 (interrupt, 0, 1, timeout) [11025]
-> >  13 <- i8042 (interrupt, 0, 1, timeout) [11317]
-> >  93 <- i8042 (interrupt, 0, 1, timeout) [11345]
-> >  1c <- i8042 (interrupt, 0, 1, timeout) [11422]
-> >  9c <- i8042 (interrupt, 0, 1, timeout) [11449]
-> >  31 <- i8042 (interrupt, 0, 1, timeout) [11672]
-> >  b1 <- i8042 (interrupt, 0, 1, timeout) [11697]
-> >  18 <- i8042 (interrupt, 0, 1, timeout) [11704]
-> >  98 <- i8042 (interrupt, 0, 1, timeout) [11729]
-> >  2f <- i8042 (interrupt, 0, 1, timeout) [11800]
-> >  af <- i8042 (interrupt, 0, 1, timeout) [11821]
-> >  12 <- i8042 (interrupt, 0, 1, timeout) [11842]
-> >  92 <- i8042 (interrupt, 0, 1, timeout) [11866]
-> >  27 <- i8042 (interrupt, 0, 1, timeout) [11951]
-> >  a7 <- i8042 (interrupt, 0, 1, timeout) [11969]
-> >  0e <- i8042 (interrupt, 0, 1, timeout) [12061]
-> >  8e <- i8042 (interrupt, 0, 1, timeout) [12089]
-> >  26 <- i8042 (interrupt, 0, 1, timeout) [12169]
-> >  a6 <- i8042 (interrupt, 0, 1, timeout) [12187]
-> >  26 <- i8042 (interrupt, 0, 1, timeout) [12207]
-> >  a6 <- i8042 (interrupt, 0, 1, timeout) [12227]
-> >  1c <- i8042 (interrupt, 0, 1, timeout) [12428]
-> >  9c <- i8042 (interrupt, 0, 1, timeout) [12456]
-> > 
-> > ... and a lot of other timeouts.
-> 
-> Hmm, and what happens if you force dfl = 0 in i8042_interrupt()? It looks
-> like controller FW screwed up...
+--=-p2VBI/GKwgL2GSPzUz0A
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Yeah, that makes the thing work correctly (together with nomux). This all 
-is really strange, isn't it? I doubt other OS discards I8042_STR_TIMEOUT 
-completely :)
+On Mon, 2010-12-27 at 12:13 +0530, Bharata B Rao wrote:=20
+> > Do others have some idea and/or comments about that? This is
+> > ABI/interface, and that really scares me! :-P
+>=20
+> You might want to note that CFS bandwidth control patches export some
+> such stats via a new per-cgroup file cpu.stat. It exports 3 statistics:
+>=20
+Yeah, I saw that. What can be also done is to extend schedstats and then
+apply it to cgroups as well... I think Dhaval told me he has some plans
+about that, am I wrong?
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+> nr_periods: Number of enforcement intervals that have elapsed.
+> nr_throttled: Number of times the group has been throttled/limited.
+> throttled_time: The total time duration (in nanoseconds) for which the gr=
+oup
+> remained throttled.
+>=20
+More than reasonable reporting, to me at least. :-)
+
+Regards,
+Dario
+
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
+
+http://retis.sssup.it/people/faggioli -- dario.faggioli@jabber.org
+
+--=-p2VBI/GKwgL2GSPzUz0A
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAk0ZvDIACgkQk4XaBE3IOsQnGQCgpeDJR/SfMmy1quC2MFdvroIB
+Nc4An2vs2yvLZ/KD/1YYGQdROTiX2Tt/
+=8nXh
+-----END PGP SIGNATURE-----
+
+--=-p2VBI/GKwgL2GSPzUz0A--
+
