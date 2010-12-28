@@ -1,53 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab0L1Mhs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 07:37:48 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52604 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753099Ab0L1Mhr (ORCPT
+	id S1753675Ab0L1Mxn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 07:53:43 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52314 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753643Ab0L1Mxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 07:37:47 -0500
+	Tue, 28 Dec 2010 07:53:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=YnFJwSZlMC1fKtLJwrHDZCPYWRgavIxfJ1dpT/aEWa/FHhIpPNQ94xax/Z9n+SMZ/I
+         M+P2r52fiawLWFRIWgNEg3zP0L2dHB0gCI3pySDLj/IpNjniEyYA02Sq4+XT9KxcO694
+         v/0c+K74kDShghteV/kbiO1rRr0ejMwGfhbiE=
+Date: Tue, 28 Dec 2010 13:53:32 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Richard Cochran <richard.cochran@omicron.at>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/3] Cleanup ADJ_SETOFFSET patch
+Message-ID: <20101228125332.GA26363@riccoc20.at.omicron.at>
+References: <1293493244-17583-1-git-send-email-john.stultz@linaro.org>
+ <20101228112000.GA17470@riccoc20.at.omicron.at>
 MIME-Version: 1.0
-X-Originating-IP: [93.172.188.89]
-In-Reply-To: <AANLkTinZ0Uwp8jbmsSwm6ut75A06CxrkESTRJT-GoPkP@mail.gmail.com>
-References: <1292870624-25450-1-git-send-email-felipe.contreras@nokia.com>
- <AANLkTikisHaAMZphRJVYdcokVbaZXVF9COrwkdGTDg__@mail.gmail.com>
- <AANLkTi=9AL3aWUsMeih+Gb-sMov=MgBZ1eTp8wb=q1hZ@mail.gmail.com>
- <AANLkTinX8t=3b48e2sxPU-V_G-nGm_1DyEg6B-CeqXDa@mail.gmail.com>
- <1293452486-notmuch-felipe.contreras@nokia.com> <AANLkTinz0HuhGB_WzTQbK8XkfkGALjtg928WdOUYsySf@mail.gmail.com>
- <AANLkTimCB5g29gzWFzaFU1N8+doROTpWaXy18VU5AJyH@mail.gmail.com>
- <AANLkTi=xmxkWnhuYcjtDNDHgep_2EztfGXDv+winW2Y5@mail.gmail.com>
- <AANLkTiksjHKjKQ+mWE=Zf0+967_E46V3+RURcMC-s5cD@mail.gmail.com>
- <AANLkTi=ZY09yJ=pK4ejqOZjh7YjJp1UemRdMgMfpsz2f@mail.gmail.com> <AANLkTinZ0Uwp8jbmsSwm6ut75A06CxrkESTRJT-GoPkP@mail.gmail.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 28 Dec 2010 14:37:26 +0200
-Message-ID: <AANLkTi=wBG9AXvDva-_uNjGbRphrb356gZ6ChMJjP8aL@mail.gmail.com>
-Subject: Re: [PATCH v2] staging: tidspbridge: protect dmm_map properly
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Felipe Contreras <felipe.contreras@nokia.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        greg@kroah.com, omar.ramirez@ti.com, fernando.lugo@ti.com, nm@ti.com,
-        ameya.palande@nokia.com, h-kanigeri2@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101228112000.GA17470@riccoc20.at.omicron.at>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 28, 2010 at 2:24 PM, Felipe Contreras
-<felipe.contreras@gmail.com> wrote:
-> user-space crashed, not kernel-space; the code would continue to run
-> and eventually release the lock.
+On Tue, Dec 28, 2010 at 12:20:00PM +0100, Richard Cochran wrote:
+> The exisiting code seems to assume that a timespec can only have the
+> sign in one field. In other words, if tv_sec is non-zero, then tv_nsec
+> must be non-negative. (I added a check for this into my patch).
 
-So you'll have to be more specific about the scenario you are describing.
+Looking at ktime.h we find:
 
-If there's a user thread that is still running the proc_*_dma()
-function, and we agree that this thread keeps running until completion
-and then returns to user space, what's the problem ?
+ * Be especially aware that negative values are represented in a way
+ * that the tv.sec field is negative and the tv.nsec field is greater
+ * or equal to zero but less than nanoseconds per second. This is the
+ * same representation which is used by timespecs.
+ *
+ *   tv.sec < 0 and 0 >= tv.nsec < NSEC_PER_SEC
 
-If that user thread will crash, drv_remove_all_resources() will clean
-up all map_obj's.
+So it seems that the time values (or time intervals) in the range
+-1 < x < 0 are not even possible, from the point of view of ktime.
 
-> Yeah, so the chances of getting this fixed on 2.6.37 are dimmed.
+> So it seems that I have now way to correctly encode a negative offset
 
-I wouldn't worry about that.. In the worst case, "Cc:
-stable@kernel.org" will push the fix into 2.6.37.x..
+I meant, "no way"---------^
+
+> less than -1.0 into a timespec. Perhaps we could specify new rules for
+> timespecs.
+
+> 1. Time Values:
+>    If tv_sec is non-zero, then tv_nsec must be non-negative.
+> 
+> 2. Time Deltas:
+>    The sign of tv_sec and tv_nsec must be the same.
+
+For me, the confusion gets worse when you consider the timespec values
+delivered by the system for dates before the 1970 epoch. In that case,
+the kernel always gives the tv_nsec value as a positive number. The
+value makes sense when interpreted as a sum.
+
+Reading consecutive clock values every 0.1 seconds produces, for
+example:
+
+{sec, nsec}        sum
+-------------------------
+{-2, +600000000}  -1.4
+{-2, +700000000}  -1.3
+{-2, +800000000}  -1.2
+{-2, +900000000}  -1.1
+{-1,  000000000}  -1.0
+{-1, +100000000}  -0.9
+{-1, +200000000}  -0.8
+{-1, +300000000}  -0.7
+
+If we say that the time value or interval in a timespec is always the
+sum of the fields, still it would seem that the ktime code is broken
+according to that assumption.
+
+Perhaps someone can clarify?
+
+Thanks,
+Richard
+
+
+
+
+
+
+
+
