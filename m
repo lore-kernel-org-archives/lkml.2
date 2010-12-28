@@ -1,37 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab0L1HxH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 02:53:07 -0500
-Received: from cantor.suse.de ([195.135.220.2]:39776 "EHLO mx1.suse.de"
+	id S1752132Ab0L1H4L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 02:56:11 -0500
+Received: from mga09.intel.com ([134.134.136.24]:47211 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751073Ab0L1HxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 02:53:04 -0500
-Date: Mon, 27 Dec 2010 23:52:05 -0800
-From: Greg KH <gregkh@suse.de>
-To: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-Cc: linux-usb <linux-usb@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
-        Andrew <andrew.chih.howe.khor@intel.com>,
-        Intel OTC <joel.clark@intel.com>,
-        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>
-Subject: Re: [PATCH] usb: pch_udc: Fixed issue which does not work with
- g_serial
-Message-ID: <20101228075205.GA8411@suse.de>
-References: <4D197433.2000800@dsn.okisemi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D197433.2000800@dsn.okisemi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751073Ab0L1H4K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Dec 2010 02:56:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,238,1291622400"; 
+   d="scan'208";a="691276237"
+Subject: Re: [PATCH] apic: use GFP_ATOMIC in lapic_resume
+From: Zhang Rui <rui.zhang@intel.com>
+To: David Rientjes <rientjes@google.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+In-Reply-To: <alpine.DEB.2.00.1012272336001.25826@chino.kir.corp.google.com>
+References: <1293518922.14005.601.camel@rui>
+	 <alpine.DEB.2.00.1012272300070.24243@chino.kir.corp.google.com>
+	 <1293520922.14005.616.camel@rui>
+	 <alpine.DEB.2.00.1012272336001.25826@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 28 Dec 2010 15:56:23 +0800
+Message-ID: <1293522983.14005.624.camel@rui>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 28, 2010 at 02:22:59PM +0900, Toshiharu Okada wrote:
-> This patch fixes an issue which does not work with g_serial gadget.
+On Tue, 2010-12-28 at 15:39 +0800, David Rientjes wrote:
+> On Tue, 28 Dec 2010, Zhang Rui wrote:
+> 
+> > > > Index: linux-2.6/arch/x86/kernel/apic/apic.c
+> > > > ===================================================================
+> > > > --- linux-2.6.orig/arch/x86/kernel/apic/apic.c
+> > > > +++ linux-2.6/arch/x86/kernel/apic/apic.c
+> > > > @@ -1459,7 +1459,7 @@ void __init enable_IR_x2apic(void)
+> > > >  	if (dmar_table_init_ret && !x2apic_supported())
+> > > >  		return;
+> > > >  
+> > > > -	ioapic_entries = alloc_ioapic_entries();
+> > > > +	ioapic_entries = alloc_ioapic_entries(GFP_KERNEL);
+> > > >  	if (!ioapic_entries) {
+> > > >  		pr_err("Allocate ioapic_entries failed\n");
+> > > >  		goto out;
+> > > > @@ -2084,7 +2084,7 @@ static int lapic_resume(struct sys_devic
+> > > >  
+> > > >  	local_irq_save(flags);
+> > > >  	if (intr_remapping_enabled) {
+> > > > -		ioapic_entries = alloc_ioapic_entries();
+> > > > +		ioapic_entries = alloc_ioapic_entries(GFP_ATOMIC);
+> > > >  		if (!ioapic_entries) {
+> > > >  			WARN(1, "Alloc ioapic_entries in lapic resume failed.");
+> > > >  			ret = -ENOMEM;
+> > > 
+> > > You can't do the allocation before disabling irqs when 
+> > > intr_remapping_enabled is set?
+> > 
+> > yes, we can. The first idea came into my mind is to register a pm
+> > notifier callback to allocate/free the memory. But that one duplicates
+> > the code of alloc_ioapic_entries, which doesn't look nice, neither.
+> > Plus, is there any problem with this one?
+> > 
+> 
+> We try to avoid GFP_ATOMIC whenever possible and this seems like a 
+> particularly trivial case.  You can simply move the alloc_ioapic_entries() 
+> and NULL check before local_irq_save() and GFP_KERNEL will work fine.
 
-What does that mean?  Please explain this better.
+I'm afraid not.
+lapic_resume is invoked in sysdev_resume, which is done with irq
+disabled, please refer to the code in kernel/power/suspend.c.
+
+        arch_suspend_disable_irqs();
+        BUG_ON(!irqs_disabled()); 
+
+        error = sysdev_suspend(PMSG_SUSPEND);
+        if (!error) {    
+                if (!suspend_test(TEST_CORE) &&
+pm_check_wakeup_events()) {
+                        error = suspend_ops->enter(state);
+                        events_check_enabled = false;
+                }
+                sysdev_resume();
+        }       
+        
+        arch_suspend_enable_irqs();
+        BUG_ON(irqs_disabled());
+
+To pre-allocate the memory, we need to build a notifier bloack and call
+register_pm_notifier.
 
 thanks,
+rui
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-greg k-h
+
