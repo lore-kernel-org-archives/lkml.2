@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151Ab0L1C2Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 21:28:25 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:35841 "EHLO
+	id S1753237Ab0L1CgW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 21:36:22 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:60272 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752822Ab0L1C2Y (ORCPT
+	by vger.kernel.org with ESMTP id S1752988Ab0L1CgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 21:28:24 -0500
-X-Sasl-enc: quJsJuqAZuNOzi6XwsZC3OYfdHHIjlsHyMTffx4yqmMo 1293503303
-Date: Tue, 28 Dec 2010 00:28:20 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jj@chaosbits.net, tigran@aivazian.fsnet.co.uk, tglx@linutronix.de,
-        shaohua.li@intel.com, mingo@elte.hu
-Subject: Re: [tip:x86/urgent] x86/microcode: Fix double vfree() and remove
- redundant pointer checks before vfree()
-Message-ID: <20101228022820.GA24251@khazad-dum.debian.net>
-References: <alpine.LNX.2.00.1012251946100.10759@swampdragon.chaosbits.net>
- <tip-5cdd2de0a76d0ac47f107c8a7b32d75d25768dc1@git.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <tip-5cdd2de0a76d0ac47f107c8a7b32d75d25768dc1@git.kernel.org>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 27 Dec 2010 21:36:21 -0500
+X-Sasl-enc: syAYKxhpsKADKB+Neb5AGkdOELVtbTAu5bUY8eDtRYtT 1293503779
+Subject: Re: [PATCH] autofs4: Do not potentially dereference NULL pointer
+ returned by fget() in autofs_dev_ioctl_setpipefd()
+From: Ian Kent <raven@themaw.net>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: autofs@linux.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.LNX.2.00.1012182238560.17400@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1012182238560.17400@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 28 Dec 2010 10:36:13 +0800
+Message-ID: <1293503773.5923.3.camel@perseus>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Dec 2010, tip-bot for Jesper Juhl wrote:
-> In arch/x86/kernel/microcode_intel.c::generic_load_microcode()
-> we have  this:
+On Sat, 2010-12-18 at 22:43 +0100, Jesper Juhl wrote:
+> Hi,
 > 
-> 	while (leftover) {
-> 		...
-> 		if (get_ucode_data(mc, ucode_ptr, mc_size) ||
-> 		    microcode_sanity_check(mc) < 0) {
-> 			vfree(mc);
-> 			break;
-> 		}
-> 		...
-> 	}
+> In fs/autofs4/dev-ioctl.c::autofs_dev_ioctl_setpipefd() we call fget(), 
+> which may return NULL, but we do not explicitly test for that NULL return 
+> so we may end up dereferencing a NULL pointer - bad.
 > 
-> 	if (mc)
-> 		vfree(mc);
+> When I originally submitted this patch I had chosen EBUSY as the return 
+> value to use if this happens. Ian Kent was kind enough to explain why that 
+> would most likely be wrong and why EBADF should most likely be used 
+> instead. This version of the patch uses EBADF.
+> 
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Acked-by: Ian Kent <raven@themaw.net>
 
-Which is trivial to trigger from userspace, fortunately limited to root in
-any sane distro (and by default).
+> ---
+>  dev-ioctl.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/fs/autofs4/dev-ioctl.c b/fs/autofs4/dev-ioctl.c
+> index eff9a41..a650d7e 100644
+> --- a/fs/autofs4/dev-ioctl.c
+> +++ b/fs/autofs4/dev-ioctl.c
+> @@ -372,6 +372,10 @@ static int autofs_dev_ioctl_setpipefd(struct file *fp,
+>  		return -EBUSY;
+>  	} else {
+>  		struct file *pipe = fget(pipefd);
+> +		if (!pipe) {
+> +			err = -EBADF;
+> +			goto out;
+> +		}
+>  		if (!pipe->f_op || !pipe->f_op->write) {
+>  			err = -EPIPE;
+>  			fput(pipe);
+> 
+> 
+> 
 
-Please send it to -stable after it gets merged in mainline and is deemed
-safe...
 
-The Intel microcode driver will also accept a bogus microcode which has a
-valid header, but all zeros for the cyphertext.  This is a design defect on
-the current Intel microcode format, but can be worked around by the driver
-if one assumes such a cyphertext will never be valid (seems like a safe
-assumption).  I sure hope the processors will reject that kind of bogosity
-even if the kernel doesn't and tries to upload it, though...  I was not
-crazy enough to try.
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
