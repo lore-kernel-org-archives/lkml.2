@@ -1,43 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab0L1LNo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 06:13:44 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48268 "EHLO
+	id S1753257Ab0L1LSa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 06:18:30 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47632 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753194Ab0L1LNi (ORCPT
+	with ESMTP id S1753084Ab0L1LS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 06:13:38 -0500
+	Tue, 28 Dec 2010 06:18:27 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=bGQQArclUNW6Fev4fkcOjZuam5zg+QeG0Q7bsrxs50czKOpb+8kyUM0LvFHvjxhAMy
-         2PiwkaWZDvGqyw7xXEEwhcITCpYDLeFyggd1kC2B3kLfSb0zo86/Pkn2+Bo2mlDTOd2K
-         X0ddKKCRiy0unSg7Ci+jKKWsX7vka51Xf9XN0=
-Date: Tue, 28 Dec 2010 12:13:32 +0100
-From: Tejun Heo <htejun@gmail.com>
-To: Shaohua Li <shaohua.li@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Sam Ravnborg <sam@ravnborg.org>, lkml <linux-kernel@vger.kernel.org>,
+        b=ZXbKNM8+dyXeVE4XbwQMzy4nXVYwEwuVtVu1AyfFFc4Q03yYtGYlCEsVzHkSSrwxLj
+         nkYIrouuj+bashoEyEVlZxZTvm30kP4yJm9Pt09jb3yzMaZK33Nvm2Yfmg+PrgUDdgtf
+         WUPM8Mt+OpJwfJgidCXWkABJ+1JNs9Fn7Fe7A=
+Date: Tue, 28 Dec 2010 12:18:22 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
         "hpa@zytor.com" <hpa@zytor.com>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
-Subject: Re: [patch 2/3] add new macros to make percpu readmostly section
- correctly align
-Message-ID: <20101228111332.GE488@htj.dyndns.org>
-References: <4D08CBF4.6040102@gmail.com>
- <1292460817.2323.465.camel@sli10-conroe>
- <20101216054620.GA3241@merkur.ravnborg.org>
- <1292479000.2323.468.camel@sli10-conroe>
- <4D09E0EE.7040605@gmail.com>
- <1292808518.10593.8.camel@sli10-conroe>
- <4D0F7C5A.1060107@gmail.com>
- <1293071914.10593.10.camel@sli10-conroe>
- <20101227121454.GB488@htj.dyndns.org>
- <1293496017.10593.26.camel@sli10-conroe>
+        Andrew Morton <akpm@linux-foundation.org>, eric.dumazet@gmail.com,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH RESEND percpu#for-next] percpu: align percpu readmostly
+ subsection to cacheline
+Message-ID: <20101228111822.GF488@htj.dyndns.org>
+References: <20101227133719.GD488@htj.dyndns.org>
+ <20101227204309.GA3878@merkur.ravnborg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1293496017.10593.26.camel@sli10-conroe>
+In-Reply-To: <20101227204309.GA3878@merkur.ravnborg.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -45,27 +37,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hello,
 
-On Tue, Dec 28, 2010 at 08:26:57AM +0800, Shaohua Li wrote:
-> Subject: make readmostly section correctly align
+On Mon, Dec 27, 2010 at 09:43:09PM +0100, Sam Ravnborg wrote:
+> > diff --git a/arch/alpha/kernel/vmlinux.lds.S b/arch/alpha/kernel/vmlinux.lds.S
+> > index 003ef4c..173518f 100644
+> > --- a/arch/alpha/kernel/vmlinux.lds.S
+> > +++ b/arch/alpha/kernel/vmlinux.lds.S
+> > @@ -38,7 +38,7 @@ SECTIONS
+> >  	__init_begin = ALIGN(PAGE_SIZE);
+> >  	INIT_TEXT_SECTION(PAGE_SIZE)
+> >  	INIT_DATA_SECTION(16)
+> > -	PERCPU(PAGE_SIZE)
+> > +	PERCPU(64, PAGE_SIZE)
+> >  	/* Align to THREAD_SIZE rather than PAGE_SIZE here so any padding page
+> >  	   needed for the THREAD_SIZE aligned init_task gets freed after init */
+> >  	. = ALIGN(THREAD_SIZE);
 > 
-> readmostly section should end at cache line aligned address, otherwise the last
-> several data might share cachline with other data and make the readmostly data
-> still have cache bounce.
-> For example, in ia64, secpath_cachep is the last readmostly data, and it shares
-> cacheline with init_uts_ns.
-> a000000100e80480 d secpath_cachep
-> a000000100e80488 D init_uts_ns
-> 
-> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> It would have been better to include cache.h and then use L1_CACHE_BYTES,
+> as the value differs for EV4.
+> It will work with 64 as this is the bigger of the two.
 
-Yeap, this looks good to me.
+Hmmm... I took the 64 from RW_DATA_SECTION() macro.  If L1_CACHE_BYTES
+is better fit for PERCPU, I'm pretty sure we would be better off with
+that for RW_DATA_SECTION() too.  I'll follow up with a patch to change
+both to L1_CACHE_BYTES.
 
- Acked-by: Tejun Heo <tj@kernel.org>
+> It looks like we could do this for almost all archs.
+> But then I am not sure if "L1_CACHE_BYTES" is the same as
+> a cacheline on the different archs.
 
-I can route this through percpu tree but think -mm is the better fit.
-Andrew, can you please take this one?
+hpa already replied but it seems that different archs have subtle
+differences regarding which cacheline size determines what.  If we
+want to unify this, it probably would be best to define
+INTERNODE_CACHE_BYTES on all archs and use it for all places where
+false sharing should be avoided.
 
-Thank you.
+Thanks.
 
 -- 
 tejun
