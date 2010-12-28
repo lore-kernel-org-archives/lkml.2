@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753596Ab0L1LtT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 06:49:19 -0500
+	id S1753623Ab0L1LtX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 06:49:23 -0500
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:59564 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753523Ab0L1LtL (ORCPT
+	with ESMTP id S1753576Ab0L1LtT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 06:49:11 -0500
+	Tue, 28 Dec 2010 06:49:19 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=E3KLeImvYa8ZoqIAgZIth7USKNmcmExOYCVInfmRjoLNRhDWboHlS9Ss0BQxaOKEzk
-         3ifVSgXUa62EZGdAaPV6LAAEJfwygtEGdP6k2tqfyJcPIyNFjyUj2bdHt+O9E9/0+7lP
-         Pb64ZnrMBrweLf8VQ2ngFIhdF2TsX90IkZbr0=
+        b=Q+3Ou/yBLBN7l30k9rrJtl9P22FxtPsdC/ZQwLaUVPGvoSCjsskDLd2/+MsDl/2Hot
+         mDB6HRjoU+Do416SS80GD0Fh00/uQ1EI2jGxbZYNR+/WsZI5p9XWTdll2sjDcg8gfzQV
+         sbnpwq+FRZ6T96e3d6EHxiv3Sk//tnByYXPIw=
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
         hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
         yinghai@kernel.org, brgerst@gmail.com, gorcunov@gmail.com,
         penberg@kernel.org, shaohui.zheng@intel.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 07/16] x86: Add apic->x86_32_early_logical_apicid()
-Date: Tue, 28 Dec 2010 12:48:40 +0100
-Message-Id: <1293536929-31683-8-git-send-email-tj@kernel.org>
+Subject: [PATCH 13/16] x86: Unify cpu/apicid <-> NUMA node mapping between 32 and 64bit
+Date: Tue, 28 Dec 2010 12:48:46 +0100
+Message-Id: <1293536929-31683-14-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1293536929-31683-1-git-send-email-tj@kernel.org>
 References: <1293536929-31683-1-git-send-email-tj@kernel.org>
@@ -30,178 +30,450 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On x86_32, the mapping between cpu and logical apic ID differs
-depending on the specific apic implementation in use.  The mapping is
-initialized while bringing up CPUs; however, this makes early inits
-ignore memory topology.
+The mapping between cpu/apicid and node is done via apicid_to_node[]
+on 64bit and apicid_2_node[] + apic->x86_32_numa_cpu_node() on 32bit.
+This difference makes it difficult to further unify 32 and 64bit NUMA
+handling.
 
-Add a x86_32 specific apic->x86_32_early_logical_apicid() which is
-called early during boot to query the mapping.  The mapping is later
-verified against the result of init_apic_ldr().  The method is allowed
-to return BAD_APICID if it can't be determined early.
+This patch unifies it by replacing both apicid_to_node[] and
+apicid_2_node[] with __apicid_to_node[] array, which is accessed by
+two accessors - set_apicid_to_node() and numa_cpu_node().  On 64bit,
+numa_cpu_node() always consults __apicid_to_node[] directly while
+32bit goes through apic->numa_cpu_node() method to allow apic
+implementations to override it.
 
-noop variant which always returns BAD_APICID is implemented and added
-to all x86_32 apic implementations.
+srat_detect_node() for amd cpus contains workaround for broken NUMA
+configuration which assumes relationship between APIC ID, HT node ID
+and NUMA topology.  Leave it to access __apicid_to_node[] directly as
+mapping through CPU might result in undesirable behavior change.  The
+comment is reformatted and updated to note the ugliness.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
 ---
- arch/x86/include/asm/apic.h      |   19 +++++++++++++++++++
- arch/x86/kernel/apic/apic.c      |   12 ++++++++++--
- arch/x86/kernel/apic/apic_noop.c |    4 ++++
- arch/x86/kernel/apic/bigsmp_32.c |    2 ++
- arch/x86/kernel/apic/es7000_32.c |    4 ++++
- arch/x86/kernel/apic/numaq_32.c  |    2 ++
- arch/x86/kernel/apic/probe_32.c  |    2 ++
- arch/x86/kernel/apic/summit_32.c |    2 ++
- 8 files changed, 45 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/mpspec.h  |    1 -
+ arch/x86/include/asm/numa.h    |   28 +++++++++++++++++++++++
+ arch/x86/include/asm/numa_32.h |    6 +++++
+ arch/x86/include/asm/numa_64.h |    5 +--
+ arch/x86/kernel/acpi/boot.c    |    3 +-
+ arch/x86/kernel/apic/apic.c    |    2 +-
+ arch/x86/kernel/cpu/amd.c      |   47 +++++++++++++++++++++++++--------------
+ arch/x86/kernel/cpu/intel.c    |    3 +-
+ arch/x86/kernel/smpboot.c      |    6 +----
+ arch/x86/mm/amdtopology_64.c   |    2 +-
+ arch/x86/mm/numa.c             |    6 ++++-
+ arch/x86/mm/numa_32.c          |    6 +++++
+ arch/x86/mm/numa_64.c          |   18 +++++++-------
+ arch/x86/mm/srat_32.c          |    2 +-
+ arch/x86/mm/srat_64.c          |   10 ++++----
+ 15 files changed, 97 insertions(+), 48 deletions(-)
 
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index d1aa0c3..efb073b 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -354,6 +354,20 @@ struct apic {
- 	void (*icr_write)(u32 low, u32 high);
- 	void (*wait_icr_idle)(void);
- 	u32 (*safe_wait_icr_idle)(void);
+diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
+index 018ffc1..ae78732 100644
+--- a/arch/x86/include/asm/mpspec.h
++++ b/arch/x86/include/asm/mpspec.h
+@@ -24,7 +24,6 @@ extern int pic_mode;
+ #define MAX_IRQ_SOURCES		256
+ 
+ extern unsigned int def_to_bigsmp;
+-extern u8 apicid_2_node[];
+ 
+ #ifdef CONFIG_X86_NUMAQ
+ extern int mp_bus_id_to_node[MAX_MP_BUSSES];
+diff --git a/arch/x86/include/asm/numa.h b/arch/x86/include/asm/numa.h
+index 27da400..5e01c76 100644
+--- a/arch/x86/include/asm/numa.h
++++ b/arch/x86/include/asm/numa.h
+@@ -1,5 +1,33 @@
++#ifndef _ASM_X86_NUMA_H
++#define _ASM_X86_NUMA_H
 +
-+#ifdef CONFIG_X86_32
-+	/*
-+	 * Called very early during boot from get_smp_config().  It should
-+	 * return the logical apicid.  x86_[bios]_cpu_to_apicid is
-+	 * initialized before this function is called.
-+	 *
-+	 * If logical apicid can't be determined that early, the function
-+	 * may return BAD_APICID.  Logical apicid will be configured after
-+	 * init_apic_ldr() while bringing up CPUs.  Note that NUMA affinity
-+	 * won't be applied properly during early boot in this case.
-+	 */
-+	int (*x86_32_early_logical_apicid)(int cpu);
-+#endif
- };
++#include <asm/apicdef.h>
++
++#ifdef CONFIG_NUMA
++/*
++ * __apicid_to_node[] stores the raw mapping between physical apicid and
++ * node and is used to initialize cpu_to_node mapping.
++ *
++ * The mapping may be overridden by apic->numa_cpu_node() on 32bit and thus
++ * should be accessed by the accessors - set_apicid_to_node() and
++ * numa_cpu_node().
++ */
++extern s16 __apicid_to_node[MAX_LOCAL_APIC];
++
++static inline void set_apicid_to_node(int apicid, s16 node)
++{
++	__apicid_to_node[apicid] = node;
++}
++#else	/* CONFIG_NUMA */
++static inline void set_apicid_to_node(int apicid, s16 node)
++{
++}
++#endif	/* CONFIG_NUMA */
++
+ #ifdef CONFIG_X86_32
+ # include "numa_32.h"
+ #else
+ # include "numa_64.h"
+ #endif
++
++#endif	/* _ASM_X86_NUMA_H */
+diff --git a/arch/x86/include/asm/numa_32.h b/arch/x86/include/asm/numa_32.h
+index a372290..d30eb6c 100644
+--- a/arch/x86/include/asm/numa_32.h
++++ b/arch/x86/include/asm/numa_32.h
+@@ -4,6 +4,12 @@
+ extern int pxm_to_nid(int pxm);
+ extern void numa_remove_cpu(int cpu);
+ 
++#ifdef CONFIG_NUMA
++extern int __cpuinit numa_cpu_node(int apicid);
++#else	/* CONFIG_NUMA */
++static inline int numa_cpu_node(int cpu)		{ return NUMA_NO_NODE; }
++#endif	/* CONFIG_NUMA */
++
+ #ifdef CONFIG_HIGHMEM
+ extern void set_highmem_pages_init(void);
+ #else
+diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
+index 823e070..17171ee 100644
+--- a/arch/x86/include/asm/numa_64.h
++++ b/arch/x86/include/asm/numa_64.h
+@@ -2,7 +2,6 @@
+ #define _ASM_X86_NUMA_64_H
+ 
+ #include <linux/nodemask.h>
+-#include <asm/apicdef.h>
+ 
+ struct bootnode {
+ 	u64 start;
+@@ -17,8 +16,6 @@ extern int compute_hash_shift(struct bootnode *nodes, int numblks,
+ extern void numa_init_array(void);
+ extern int numa_off;
+ 
+-extern s16 apicid_to_node[MAX_LOCAL_APIC];
+-
+ extern unsigned long numa_free_all_bootmem(void);
+ extern void setup_node_bootmem(int nodeid, unsigned long start,
+ 			       unsigned long end);
+@@ -32,6 +29,7 @@ extern void setup_node_bootmem(int nodeid, unsigned long start,
+ #define NODE_MIN_SIZE (4*1024*1024)
+ 
+ extern void __init init_cpu_to_node(void);
++extern int __cpuinit numa_cpu_node(int cpu);
+ extern void __cpuinit numa_set_node(int cpu, int node);
+ extern void __cpuinit numa_clear_node(int cpu);
+ extern void __cpuinit numa_add_cpu(int cpu);
+@@ -43,6 +41,7 @@ extern void __cpuinit numa_remove_cpu(int cpu);
+ #endif /* CONFIG_NUMA_EMU */
+ #else
+ static inline void init_cpu_to_node(void)		{ }
++static inline int numa_cpu_node(int cpu)		{ return NUMA_NO_NODE; }
+ static inline void numa_set_node(int cpu, int node)	{ }
+ static inline void numa_clear_node(int cpu)		{ }
+ static inline void numa_add_cpu(int cpu, int node)	{ }
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 1a5b9a8..de3308b 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -583,11 +583,10 @@ static void acpi_map_cpu2node(acpi_handle handle, int cpu, int physid)
+ 	nid = acpi_get_node(handle);
+ 	if (nid == -1 || !node_online(nid))
+ 		return;
++	set_apicid_to_node(physid, nid);
+ #ifdef CONFIG_X86_64
+-	apicid_to_node[physid] = nid;
+ 	numa_set_node(cpu, nid);
+ #else /* CONFIG_X86_32 */
+-	apicid_2_node[physid] = nid;
+ 	cpu_to_node_map[cpu] = nid;
+ #endif
+ 
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 5e097e5..4f2f210 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -2029,7 +2029,7 @@ int default_x86_32_numa_cpu_node(int cpu)
+ 	int apicid = early_per_cpu(x86_cpu_to_apicid, cpu);
+ 
+ 	if (apicid != BAD_APICID)
+-		return apicid_2_node[apicid];
++		return __apicid_to_node[apicid];
+ 	return NUMA_NO_NODE;
+ #else
+ 	return 0;
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 9e093f8..d8e81e5 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -234,17 +234,21 @@ static void __cpuinit init_amd_k7(struct cpuinfo_x86 *c)
+ #endif
+ 
+ #if defined(CONFIG_NUMA) && defined(CONFIG_X86_64)
++/*
++ * To workaround broken NUMA config.  Read the comment in
++ * srat_detect_node().
++ */
+ static int __cpuinit nearby_node(int apicid)
+ {
+ 	int i, node;
+ 
+ 	for (i = apicid - 1; i >= 0; i--) {
+-		node = apicid_to_node[i];
++		node = __apicid_to_node[i];
+ 		if (node != NUMA_NO_NODE && node_online(node))
+ 			return node;
+ 	}
+ 	for (i = apicid + 1; i < MAX_LOCAL_APIC; i++) {
+-		node = apicid_to_node[i];
++		node = __apicid_to_node[i];
+ 		if (node != NUMA_NO_NODE && node_online(node))
+ 			return node;
+ 	}
+@@ -339,26 +343,35 @@ static void __cpuinit srat_detect_node(struct cpuinfo_x86 *c)
+ 	int node;
+ 	unsigned apicid = c->apicid;
+ 
+-	node = per_cpu(cpu_llc_id, cpu);
++	node = numa_cpu_node(cpu);
++	if (node == NUMA_NO_NODE)
++		node = per_cpu(cpu_llc_id, cpu);
+ 
+-	if (apicid_to_node[apicid] != NUMA_NO_NODE)
+-		node = apicid_to_node[apicid];
+ 	if (!node_online(node)) {
+-		/* Two possibilities here:
+-		   - The CPU is missing memory and no node was created.
+-		   In that case try picking one from a nearby CPU
+-		   - The APIC IDs differ from the HyperTransport node IDs
+-		   which the K8 northbridge parsing fills in.
+-		   Assume they are all increased by a constant offset,
+-		   but in the same order as the HT nodeids.
+-		   If that doesn't result in a usable node fall back to the
+-		   path for the previous case.  */
+-
++		/*
++		 * Two possibilities here:
++		 *
++		 * - The CPU is missing memory and no node was created.  In
++		 *   that case try picking one from a nearby CPU.
++		 *
++		 * - The APIC IDs differ from the HyperTransport node IDs
++		 *   which the K8 northbridge parsing fills in.  Assume
++		 *   they are all increased by a constant offset, but in
++		 *   the same order as the HT nodeids.  If that doesn't
++		 *   result in a usable node fall back to the path for the
++		 *   previous case.
++		 *
++		 * This workaround operates directly on the mapping between
++		 * APIC ID and NUMA node, assuming certain relationship
++		 * between APIC ID, HT node ID and NUMA topology.  As going
++		 * through CPU mapping may alter the outcome, directly
++		 * access __apicid_to_node[].
++		 */
+ 		int ht_nodeid = c->initial_apicid;
+ 
+ 		if (ht_nodeid >= 0 &&
+-		    apicid_to_node[ht_nodeid] != NUMA_NO_NODE)
+-			node = apicid_to_node[ht_nodeid];
++		    __apicid_to_node[ht_nodeid] != NUMA_NO_NODE)
++			node = __apicid_to_node[ht_nodeid];
+ 		/* Pick a nearby node */
+ 		if (!node_online(node))
+ 			node = nearby_node(apicid);
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index d16c2c5..6052004 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -279,11 +279,10 @@ static void __cpuinit srat_detect_node(struct cpuinfo_x86 *c)
+ #if defined(CONFIG_NUMA) && defined(CONFIG_X86_64)
+ 	unsigned node;
+ 	int cpu = smp_processor_id();
+-	int apicid = cpu_has_apic ? hard_smp_processor_id() : c->apicid;
+ 
+ 	/* Don't do the funky fallback heuristics the AMD version employs
+ 	   for now. */
+-	node = apicid_to_node[apicid];
++	node = numa_cpu_node(cpu);
+ 	if (node == NUMA_NO_NODE || !node_online(node)) {
+ 		/* reuse the value from init_cpu_to_node() */
+ 		node = cpu_to_node(cpu);
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 031d2e1..4b8b72d 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -71,10 +71,6 @@
+ #include <asm/smpboot_hooks.h>
+ #include <asm/i8259.h>
+ 
+-#ifdef CONFIG_X86_32
+-u8 apicid_2_node[MAX_LOCAL_APIC];
+-#endif
+-
+ /* State of each CPU */
+ DEFINE_PER_CPU(int, cpu_state) = { 0 };
+ 
+@@ -170,7 +166,7 @@ static void map_cpu_to_logical_apicid(void)
+ 	int cpu = smp_processor_id();
+ 	int node;
+ 
+-	node = apic->x86_32_numa_cpu_node(cpu);
++	node = numa_cpu_node(cpu);
+ 	if (!node_online(node))
+ 		node = first_online_node;
+ 
+diff --git a/arch/x86/mm/amdtopology_64.c b/arch/x86/mm/amdtopology_64.c
+index 08a0069..3555d93 100644
+--- a/arch/x86/mm/amdtopology_64.c
++++ b/arch/x86/mm/amdtopology_64.c
+@@ -227,7 +227,7 @@ int __init amd_scan_nodes(void)
+ 				nodes[i].start >> PAGE_SHIFT,
+ 				nodes[i].end >> PAGE_SHIFT);
+ 		for (j = apicid_base; j < cores + apicid_base; j++)
+-			apicid_to_node[(i << bits) + j] = i;
++			set_apicid_to_node((i << bits) + j, i);
+ 		setup_node_bootmem(i, nodes[i].start, nodes[i].end);
+ 	}
+ 
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 787c52c..63db99c 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -4,8 +4,12 @@
+ #include <linux/bootmem.h>
  
  /*
-@@ -501,6 +515,11 @@ extern struct apic apic_noop;
+- * Which logical CPUs are on which nodes
++ * apicid, cpu, node mappings
+  */
++s16 __apicid_to_node[MAX_LOCAL_APIC] __cpuinitdata = {
++	[0 ... MAX_LOCAL_APIC-1] = NUMA_NO_NODE
++};
++
+ cpumask_var_t node_to_cpumask_map[MAX_NUMNODES];
+ EXPORT_SYMBOL(node_to_cpumask_map);
  
- extern struct apic apic_default;
+diff --git a/arch/x86/mm/numa_32.c b/arch/x86/mm/numa_32.c
+index 84a3e4c..8d91d22 100644
+--- a/arch/x86/mm/numa_32.c
++++ b/arch/x86/mm/numa_32.c
+@@ -110,6 +110,12 @@ void set_pmd_pfn(unsigned long vaddr, unsigned long pfn, pgprot_t flags);
  
-+static inline int noop_x86_32_early_logical_apicid(int cpu)
+ static unsigned long kva_start_pfn;
+ static unsigned long kva_pages;
++
++int __cpuinit numa_cpu_node(int cpu)
 +{
-+	return BAD_APICID;
++	return apic->x86_32_numa_cpu_node(cpu);
 +}
 +
  /*
-  * Set up the logical destination ID.
-  *
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 8ad231c..6a82dc6 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1254,8 +1254,13 @@ void __cpuinit setup_local_APIC(void)
+  * FLAT - support for basic PC memory model with discontig enabled, essentially
+  *        a single node with all available processors in it with a flat
+diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+index 7762a51..989f23b 100644
+--- a/arch/x86/mm/numa_64.c
++++ b/arch/x86/mm/numa_64.c
+@@ -26,10 +26,6 @@ EXPORT_SYMBOL(node_data);
  
- #ifdef CONFIG_X86_32
- 	/*
--	 * APIC LDR is initialized.  Fetch and store logical_apic_id.
-+	 * APIC LDR is initialized.  If logical_apicid mapping was
-+	 * initialized during get_smp_config(), make sure it matches the
-+	 * actual value.
- 	 */
-+	i = early_per_cpu(x86_cpu_to_logical_apicid, cpu);
-+	WARN_ON(i != BAD_APICID && i != logical_smp_processor_id());
-+	/* always use the value from LDR */
- 	early_per_cpu(x86_cpu_to_logical_apicid, cpu) =
- 		logical_smp_processor_id();
- #endif
-@@ -1994,7 +1999,10 @@ void __cpuinit generic_processor_info(int apicid, int version)
- 	early_per_cpu(x86_cpu_to_apicid, cpu) = apicid;
- 	early_per_cpu(x86_bios_cpu_apicid, cpu) = apicid;
- #endif
+ struct memnode memnode;
+ 
+-s16 apicid_to_node[MAX_LOCAL_APIC] __cpuinitdata = {
+-	[0 ... MAX_LOCAL_APIC-1] = NUMA_NO_NODE
+-};
 -
-+#ifdef CONFIG_X86_32
-+	early_per_cpu(x86_cpu_to_logical_apicid, cpu) =
-+		apic->x86_32_early_logical_apicid(cpu);
-+#endif
- 	set_cpu_possible(cpu, true);
- 	set_cpu_present(cpu, true);
+ int numa_off __initdata;
+ static unsigned long __initdata nodemap_addr;
+ static unsigned long __initdata nodemap_size;
+@@ -721,12 +717,8 @@ void __init init_cpu_to_node(void)
+ 	BUG_ON(cpu_to_apicid == NULL);
+ 
+ 	for_each_possible_cpu(cpu) {
+-		int node;
+-		u16 apicid = cpu_to_apicid[cpu];
++		int node = numa_cpu_node(cpu);
+ 
+-		if (apicid == BAD_APICID)
+-			continue;
+-		node = apicid_to_node[apicid];
+ 		if (node == NUMA_NO_NODE)
+ 			continue;
+ 		if (!node_online(node))
+@@ -736,6 +728,14 @@ void __init init_cpu_to_node(void)
  }
-diff --git a/arch/x86/kernel/apic/apic_noop.c b/arch/x86/kernel/apic/apic_noop.c
-index f3d19b2..0309c58 100644
---- a/arch/x86/kernel/apic/apic_noop.c
-+++ b/arch/x86/kernel/apic/apic_noop.c
-@@ -191,4 +191,8 @@ struct apic apic_noop = {
- 	.icr_write			= noop_apic_icr_write,
- 	.wait_icr_idle			= noop_apic_wait_icr_idle,
- 	.safe_wait_icr_idle		= noop_safe_apic_wait_icr_idle,
-+
-+#ifdef CONFIG_X86_32
-+	.x86_32_early_logical_apicid	= noop_x86_32_early_logical_apicid,
-+#endif
- };
-diff --git a/arch/x86/kernel/apic/bigsmp_32.c b/arch/x86/kernel/apic/bigsmp_32.c
-index 4c62592..dd32a9b 100644
---- a/arch/x86/kernel/apic/bigsmp_32.c
-+++ b/arch/x86/kernel/apic/bigsmp_32.c
-@@ -251,4 +251,6 @@ struct apic apic_bigsmp = {
- 	.icr_write			= native_apic_icr_write,
- 	.wait_icr_idle			= native_apic_wait_icr_idle,
- 	.safe_wait_icr_idle		= native_safe_apic_wait_icr_idle,
-+
-+	.x86_32_early_logical_apicid	= noop_x86_32_early_logical_apicid,
- };
-diff --git a/arch/x86/kernel/apic/es7000_32.c b/arch/x86/kernel/apic/es7000_32.c
-index 6840681..0ffc1ec 100644
---- a/arch/x86/kernel/apic/es7000_32.c
-+++ b/arch/x86/kernel/apic/es7000_32.c
-@@ -682,6 +682,8 @@ struct apic __refdata apic_es7000_cluster = {
- 	.icr_write			= native_apic_icr_write,
- 	.wait_icr_idle			= native_apic_wait_icr_idle,
- 	.safe_wait_icr_idle		= native_safe_apic_wait_icr_idle,
-+
-+	.x86_32_early_logical_apicid	= noop_x86_32_early_logical_apicid,
- };
+ #endif
  
- struct apic __refdata apic_es7000 = {
-@@ -744,4 +746,6 @@ struct apic __refdata apic_es7000 = {
- 	.icr_write			= native_apic_icr_write,
- 	.wait_icr_idle			= native_apic_wait_icr_idle,
- 	.safe_wait_icr_idle		= native_safe_apic_wait_icr_idle,
++int __cpuinit numa_cpu_node(int cpu)
++{
++	int apicid = early_per_cpu(x86_cpu_to_apicid, cpu);
 +
-+	.x86_32_early_logical_apicid	= noop_x86_32_early_logical_apicid,
- };
-diff --git a/arch/x86/kernel/apic/numaq_32.c b/arch/x86/kernel/apic/numaq_32.c
-index 2b434d5..f1a8b12 100644
---- a/arch/x86/kernel/apic/numaq_32.c
-+++ b/arch/x86/kernel/apic/numaq_32.c
-@@ -539,4 +539,6 @@ struct apic __refdata apic_numaq = {
- 	.icr_write			= native_apic_icr_write,
- 	.wait_icr_idle			= native_apic_wait_icr_idle,
- 	.safe_wait_icr_idle		= native_safe_apic_wait_icr_idle,
-+
-+	.x86_32_early_logical_apicid	= noop_x86_32_early_logical_apicid,
- };
-diff --git a/arch/x86/kernel/apic/probe_32.c b/arch/x86/kernel/apic/probe_32.c
-index 24a6828..40be7c3 100644
---- a/arch/x86/kernel/apic/probe_32.c
-+++ b/arch/x86/kernel/apic/probe_32.c
-@@ -166,6 +166,8 @@ struct apic apic_default = {
- 	.icr_write			= native_apic_icr_write,
- 	.wait_icr_idle			= native_apic_wait_icr_idle,
- 	.safe_wait_icr_idle		= native_safe_apic_wait_icr_idle,
-+
-+	.x86_32_early_logical_apicid	= noop_x86_32_early_logical_apicid,
- };
++	if (apicid != BAD_APICID)
++		return __apicid_to_node[apicid];
++	return NUMA_NO_NODE;
++}
  
- extern struct apic apic_numaq;
-diff --git a/arch/x86/kernel/apic/summit_32.c b/arch/x86/kernel/apic/summit_32.c
-index 1ef4c14..172c498 100644
---- a/arch/x86/kernel/apic/summit_32.c
-+++ b/arch/x86/kernel/apic/summit_32.c
-@@ -552,4 +552,6 @@ struct apic apic_summit = {
- 	.icr_write			= native_apic_icr_write,
- 	.wait_icr_idle			= native_apic_wait_icr_idle,
- 	.safe_wait_icr_idle		= native_safe_apic_wait_icr_idle,
-+
-+	.x86_32_early_logical_apicid	= noop_x86_32_early_logical_apicid,
- };
+ void __cpuinit numa_set_node(int cpu, int node)
+ {
+diff --git a/arch/x86/mm/srat_32.c b/arch/x86/mm/srat_32.c
+index e55e748..7fcae55 100644
+--- a/arch/x86/mm/srat_32.c
++++ b/arch/x86/mm/srat_32.c
+@@ -255,7 +255,7 @@ int __init get_memcfg_from_srat(void)
+ 			 num_memory_chunks);
+ 
+ 	for (i = 0; i < MAX_LOCAL_APIC; i++)
+-		apicid_2_node[i] = pxm_to_node(apicid_to_pxm[i]);
++		set_apicid_to_node(i, pxm_to_node(apicid_to_pxm[i]));
+ 
+ 	for (j = 0; j < num_memory_chunks; j++){
+ 		struct node_memory_chunk_s * chunk = &node_memory_chunk[j];
+diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
+index a35cb9d..1af9c6e 100644
+--- a/arch/x86/mm/srat_64.c
++++ b/arch/x86/mm/srat_64.c
+@@ -79,7 +79,7 @@ static __init void bad_srat(void)
+ 	printk(KERN_ERR "SRAT: SRAT not used.\n");
+ 	acpi_numa = -1;
+ 	for (i = 0; i < MAX_LOCAL_APIC; i++)
+-		apicid_to_node[i] = NUMA_NO_NODE;
++		set_apicid_to_node(i, NUMA_NO_NODE);
+ 	for (i = 0; i < MAX_NUMNODES; i++) {
+ 		nodes[i].start = nodes[i].end = 0;
+ 		nodes_add[i].start = nodes_add[i].end = 0;
+@@ -134,7 +134,7 @@ acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
+ 	}
+ 
+ 	apic_id = pa->apic_id;
+-	apicid_to_node[apic_id] = node;
++	set_apicid_to_node(apic_id, node);
+ 	node_set(node, cpu_nodes_parsed);
+ 	acpi_numa = 1;
+ 	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u\n",
+@@ -168,7 +168,7 @@ acpi_numa_processor_affinity_init(struct acpi_srat_cpu_affinity *pa)
+ 		apic_id = (pa->apic_id << 8) | pa->local_sapic_eid;
+ 	else
+ 		apic_id = pa->apic_id;
+-	apicid_to_node[apic_id] = node;
++	set_apicid_to_node(apic_id, node);
+ 	node_set(node, cpu_nodes_parsed);
+ 	acpi_numa = 1;
+ 	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%02x -> Node %u\n",
+@@ -512,13 +512,13 @@ void __init acpi_fake_nodes(const struct bootnode *fake_nodes, int num_nodes)
+ 		 * node, it must now point to the fake node ID.
+ 		 */
+ 		for (j = 0; j < MAX_LOCAL_APIC; j++)
+-			if (apicid_to_node[j] == nid &&
++			if (__apicid_to_node[j] == nid &&
+ 			    fake_apicid_to_node[j] == NUMA_NO_NODE)
+ 				fake_apicid_to_node[j] = i;
+ 	}
+ 	for (i = 0; i < num_nodes; i++)
+ 		__acpi_map_pxm_to_node(fake_node_to_pxm_map[i], i);
+-	memcpy(apicid_to_node, fake_apicid_to_node, sizeof(apicid_to_node));
++	memcpy(__apicid_to_node, fake_apicid_to_node, sizeof(__apicid_to_node));
+ 
+ 	nodes_clear(nodes_parsed);
+ 	for (i = 0; i < num_nodes; i++)
 -- 
 1.7.1
 
