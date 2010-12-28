@@ -1,72 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753152Ab0L1PKQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 10:10:16 -0500
-Received: from cantor.suse.de ([195.135.220.2]:49668 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752771Ab0L1PKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 10:10:14 -0500
-Subject: Re: linux-next: Tree for December 27 (drivers/target)
-From: James Bottomley <James.Bottomley@suse.de>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        scsi <linux-scsi@vger.kernel.org>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1293490179.4649.208.camel@haakon2.linux-iscsi.org>
-References: <20101227170451.a9a9f873.sfr@canb.auug.org.au>
-	 <20101227115755.ffcdfc4f.randy.dunlap@oracle.com>
-	 <1293490179.4649.208.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 28 Dec 2010 09:08:35 -0600
-Message-ID: <1293548915.2371.0.camel@fuzzy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	id S1751808Ab0L1POU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 10:14:20 -0500
+Received: from postman.sesda2.com ([63.68.157.115]:49790 "HELO sesda2.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1750972Ab0L1POS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Dec 2010 10:14:18 -0500
+X-Greylist: delayed 1895 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Dec 2010 10:14:08 EST
+Message-ID: <58915.128.183.168.54.1293547325.squirrel@mail.sesda2.com>
+Date: Tue, 28 Dec 2010 09:42:05 -0500 (EST)
+Subject: server load extremely high
+From: "Michael Alaimo" <malaimo@sesda2.com>
+To: linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.8-5.el4.centos.8
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+X-Priority: 3 (Normal)
+Importance: Normal
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-12-27 at 14:49 -0800, Nicholas A. Bellinger wrote:
-> On Mon, 2010-12-27 at 11:57 -0800, Randy Dunlap wrote:
-> > On Mon, 27 Dec 2010 17:04:51 +1100 Stephen Rothwell wrote:
-> > 
-> > > Hi all,
-> > > 
-> > > [The mirroring on kernel.org is running slowly]
-> > > 
-> > > Changes since 20101221:
-> > > 
-> > > Linus' tree lost its build failure.
-> > 
-> > 
-> > Hi Nick,
-> > 
-> > Please test building target code when CONFIG_BLOCK is not enabled.
-> > 
-> > When CONFIG_BLOCK is not enabled, drivers/target/ gets a boat load of build errors.
-> > 
-> > Should TCM_IBLOCK depend on BLOCK?  That fixes lots of the build errors,
-> > but not all of them.
-> > 
-> > 
-> > The header file include/target/target_core_base.h uses struct queue_limits,
-> > so it should #include <linux/blkdev.h>.
-> > 
-> > 
-> 
-> Added the missing include here:
-> 
-> target: Add linux/blkdev.h include in target_core_base.h
-> http://git.kernel.org/?p=linux/kernel/git/nab/linux-next.git;a=commitdiff;h=e8bd07d3a525e71b424d308fc5084b89a6456bb2
-> 
-> Thanks Randy!
+Hello,
 
-Could you just do mod patches inline to the list, please?  It's much
-less convenient trying to pull them out of a web page.
+I have a server that is getting loads of 300+.  The cpu is idle and memory
+is not being fully utilized.  At least that is what htop reports.  The
+system subsequently crashes.
 
-Thanks,
+I believe the issue started when we attached the "LSI Logic / Symbios
+Logic 53c1030 PCI-X Fusion-MPT Dual Ultra320 SCSI (rev 07)" controller.
 
-James
+There are no messages in the system logs related to this at all.
 
+Has anyone ever seen this problem before?
 
+Mike
