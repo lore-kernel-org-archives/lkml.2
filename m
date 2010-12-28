@@ -1,69 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281Ab0L1ITV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 03:19:21 -0500
-Received: from dtp.xs4all.nl ([80.101.171.8]:56313 "HELO abra2.bitwizard.nl"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751527Ab0L1ITU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 03:19:20 -0500
-Date: Tue, 28 Dec 2010 09:19:17 +0100
-From: Rogier Wolff <R.E.Wolff@BitWizard.nl>
-To: "Ted Ts'o" <tytso@mit.edu>, Con Kolivas <kernel@kolivas.org>,
-        linux-kernel@vger.kernel.org, adilger.kernel@dilger.ca,
-        linux-ext4@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: Regular ext4 error warning with HD in USB dock
-Message-ID: <20101228081917.GA1351@bitwizard.nl>
-References: <201012280953.46149.kernel@kolivas.org> <20101228025343.GD10149@thunk.org>
+	id S1752355Ab0L1I1m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 03:27:42 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40882 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141Ab0L1I1j convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Dec 2010 03:27:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Lir5ROAgIWO9X6UD0zbAv+J1hVoHvZ74JE7rHEtvsR+syoi+xdp2UqOaO55CsPrnzJ
+         xCzUzqkW/ZmpBbd6+OtyjQYujIx+N0TsEO4VQsvaFoL2jxgQovmCQCiJrYbhWsk5gOSj
+         G8OrMbgTALOUCnyTSHpkrXviO0xGR553GyM74=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101228025343.GD10149@thunk.org>
-Organization: BitWizard.nl
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <s5h62umnpxb.wl%tiwai@suse.de>
+References: <s5hfwtzbj8v.wl%tiwai@suse.de>
+	<20101216234032.GA17239@void.printf.net>
+	<50D31EC8-BD9E-4920-8CEB-2AD10DF9C5C5@marvell.com>
+	<20101217034342.GA19673@void.printf.net>
+	<s5hy67o95to.wl%tiwai@suse.de>
+	<AANLkTimSt5a998m1oqdppsWjGCVid0-Ub81pKgsPR36f@mail.gmail.com>
+	<E81C83FE-E3AD-49DA-86BE-95631F1B81CD@marvell.com>
+	<AANLkTim6pQW0sDtZRNbXbgbvzuXKCdsju7z_ADBxvXPd@mail.gmail.com>
+	<s5h62umnpxb.wl%tiwai@suse.de>
+Date: Tue, 28 Dec 2010 03:27:37 -0500
+Message-ID: <AANLkTinkskR0_3LsZtjy_iA6ti1cKDWCe=Verq8DSkvs@mail.gmail.com>
+Subject: Re: [PATCH] mmc: Test bus-width for old MMC devices (v2)
+From: zhangfei gao <zhangfei.gao@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Philip Rakity <prakity@marvell.com>, Chris Ball <cjb@laptop.org>,
+        Aries Lee <arieslee@jmicron.com>, Qiming Wu <wuqm@marvell.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 27, 2010 at 09:53:43PM -0500, Ted Ts'o wrote:
-> On Tue, Dec 28, 2010 at 09:53:45AM +1100, Con Kolivas wrote:
-> > [1048401.773270] EXT4-fs (sde8): mounted filesystem with writeback data mode. 
-> > Opts: (null)
-> > [1048702.736011] EXT4-fs (sde8): error count: 3
-> > [1048702.736016] EXT4-fs (sde8): initial error at 1289053677: 
-> > ext4_journal_start_sb:251
-> > [1048702.736018] EXT4-fs (sde8): last error at 1289080948: ext4_put_super:719
-> 
-> That's actually not an error.  It's a report which is generated every
-> 24 hours, indicating that there has been 3 errors since the last time
-> the error count has been cleared, with the first error taking place at
-> Sat Nov 6 10:27:57 2010 (US/Eastern) in the function
-> ext4_journal_start_sb(), at line 251, and the most recent error taking
-> place at Sat Nov 6 18:02:28 2010 (US/Eastern), in the function
-> ext4_put_super() at line 719.  This is a new feature which was added
-> in 2.6.36.
+On Wed, Dec 22, 2010 at 3:59 AM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Tue, 21 Dec 2010 22:56:32 -0500,
+> zhangfei gao wrote:
+>>
+>> On Tue, Dec 21, 2010 at 11:36 AM, Philip Rakity <prakity@marvell.com> wrote:
+>> >
+>> >
+>> > Can you please try this diff and see if it works for you.
+>> >
+>> > Will do formal patch after your testing.  What card is failing ?
+>> >
+>> > Please let me know the manufacturing information so can add card to my test suite.
+>> >
+>> > Philip
+>> >
+>> > diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+>> > index 1d8409f..77072c8 100644
+>> > --- a/drivers/mmc/core/mmc.c
+>> > +++ b/drivers/mmc/core/mmc.c
+>> > @@ -558,6 +558,8 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
+>> >                                         EXT_CSD_BUS_WIDTH,
+>> >                                         ext_csd_bits[idx][0]);
+>> >                        if (!err) {
+>> > +                               mmc_set_bus_width_ddr(card->host,
+>> > +                                                     bus_width, MMC_SDR_MODE);
+>> Test OK,
+>> Curious why move here, then mmc_set_bus_width_ddr is called twice in
+>> fact when ddr=0 &&  (!(host->caps & MMC_CAP_BUS_WIDTH_TEST)), though
+>> not impact function.
+>> mmc_set_bus_width is mmc_set_bus_width_ddr(host, width, MMC_SDR_MODE).
+>
+> Right.  How about the patch below?  This one just moves the call
+> before caps test, so it's simpler (and avoiding double calls).
+>
+>
+> thanks,
+>
+> Takashi
+>
+> ===
+> From b66b9704f8d2fefa402741fb17949224b2766b4f Mon Sep 17 00:00:00 2001
+> From: Takashi Iwai <tiwai@suse.de>
+> Date: Wed, 22 Dec 2010 09:54:33 +0100
+> Subject: [PATCH] mmc: fix mmc_set_bus_width_ddr() call without bus-width-test cap
+>
+> With the bus-width test patch, mmc_set_bus_width*() isn't called properly
+> when the driver doesn't set MMC_CAP_BUS_WIDTH and no DDR mode.
+> This patch fixes the regression by moving the call up before the cap test.
+>
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> ---
+>  drivers/mmc/core/mmc.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+> index 1d8409f..c86dd73 100644
+> --- a/drivers/mmc/core/mmc.c
+> +++ b/drivers/mmc/core/mmc.c
+> @@ -558,6 +558,8 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
+>                                         EXT_CSD_BUS_WIDTH,
+>                                         ext_csd_bits[idx][0]);
+>                        if (!err) {
+> +                               mmc_set_bus_width_ddr(card->host,
+> +                                                     bus_width, MMC_SDR_MODE);
+>                                /*
+>                                 * If controller can't handle bus width test,
+>                                 * use the highest bus width to maintain
+> @@ -565,8 +567,6 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
+>                                 */
+>                                if (!(host->caps & MMC_CAP_BUS_WIDTH_TEST))
+>                                        break;
+> -                               mmc_set_bus_width_ddr(card->host,
+> -                                                     bus_width, MMC_SDR_MODE);
+>                                err = mmc_bus_test(card, bus_width);
+>                                if (!err)
+>                                        break;
+> --
+> 1.7.3.4
 
-Nice. But the issue you're not mentioning is: What errors could have 
-happened on the 6th of november? Should Con worry about those errors?
+It's also works, solve (ddr=0 & (!(host->caps & MMC_CAP_BUS_WIDTH_TEST))) issue.
+Is it possible to merge to original patch.
 
-OK, the chances are that he has rebooted since november, and that an
-older fsck fixed the errors, but not cleared the "fs errror log". Would
-these errors have triggered a "remount-readonly" if the fs was mounted 
-like that?
-
-I don't reboot that often: 
-
-obelix:~> uptime
- 09:16:19 up 175 days, 19:04, 19 users,  load average: 110.10, 110.61, 111.22
-
-(and yes, the load is quite high on that machine. I won't polute this
-thread about that....)
-
-	Roger. 
-
--- 
-** R.E.Wolff@BitWizard.nl ** http://www.BitWizard.nl/ ** +31-15-2600998 **
-**    Delftechpark 26 2628 XH  Delft, The Netherlands. KVK: 27239233    **
-*-- BitWizard writes Linux device drivers for any device you may have! --*
-Q: It doesn't work. A: Look buddy, doesn't work is an ambiguous statement. 
-Does it sit on the couch all day? Is it unemployed? Please be specific! 
-Define 'it' and what it isn't doing. --------- Adapted from lxrbot FAQ
+Thanks
+>
+>
+>
