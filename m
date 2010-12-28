@@ -1,513 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab0L1KtY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 05:49:24 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:46031 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753273Ab0L1KtW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 05:49:22 -0500
-X-Sasl-enc: JlnR7cyMbTTwBSiCFzkigZBmFXFxUCaU8ZsxqWVDt/3J 1293533361
-From: Roberto Sassu <roberto.sassu@polito.it>
-To: linux-security-module@vger.kernel.org
-Cc: keyrings@linux-nfs.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, zohar@linux.vnet.ibm.com,
-        dhowells@redhat.com, jmorris@namei.org, safford@watson.ibm.com,
-        ramunno@polito.it, tyhicks@linux.vnet.ibm.com, kirkland@canonical.com,
-        Roberto Sassu <roberto.sassu@polito.it>
-Subject: [RFC][PATCH v2 5/6] encrypted-keys: add ecryptfs format support
-Date: Tue, 28 Dec 2010 11:48:15 +0100
-Message-Id: <1293533302-22868-6-git-send-email-roberto.sassu@polito.it>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1293533302-22868-1-git-send-email-roberto.sassu@polito.it>
-References: <1293533302-22868-1-git-send-email-roberto.sassu@polito.it>
-MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----931A825C2797C0081177ECBDFC4DDF76"
+	id S1753203Ab0L1Kz5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 05:55:57 -0500
+Received: from ms01.sssup.it ([193.205.80.99]:56241 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753084Ab0L1Kz4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Dec 2010 05:55:56 -0500
+Subject: [PATCH resend] Reading POSIX CPU timer from outside the process.
+From: Dario Faggioli <raistlin@linux.it>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, torbenh <torbenh@gmx.de>,
+        oleg <oleg@redhat.com>, john.stultz@linaro.org, roland@redhat.com,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+In-Reply-To: <1293121303.3390.185.camel@Palantir>
+References: <1293121303.3390.185.camel@Palantir>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-hYqsFq3P+KifBzEvCZob"
+Date: Tue, 28 Dec 2010 11:55:42 +0100
+Message-ID: <1293533742.2899.1028.camel@Palantir>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This is an S/MIME signed message
+--=-hYqsFq3P+KifBzEvCZob
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-------931A825C2797C0081177ECBDFC4DDF76
-Content-Type: text/plain
+Trying to call clock_getcpuclockid (and then clock_gettime) on a thread
+from outside the process that spawned it results in this:
+  ### Testing tid 24207: CPU-time clock for PID 24207 is 1.132371729 second=
+s
+  ### Testing tid 24209: clock_getcpuclockid: Success
 
-The 'encrypted' key type defines its own payload format which contains a
-symmetric key randomly generated that cannot be used directly to mount
-an eCryptfs filesystem, because it expects an authentication token
-structure.
+OTOH, if full-fledged processes are involved, the behaviour is this:
+  ### Testing tid 24218: CPU-time clock for PID 24218 is 0.001059305 second=
+s
+  ### Testing tid 24220: CPU-time clock for PID 24220 is 1.044057391 second=
+s
 
-This patch introduces the new format 'ecryptfs' that allows to store an
-authentication token structure inside the encrypted key payload containing
-a randomly generated symmetric key, as the same for the format 'default'.
+Test programs available here: http://gitorious.org/clockid
 
-More details about the usage of encrypted keys with the eCryptfs
-filesystem can be found in the file 'Documentation/keys-ecryptfs.txt'.
+All that because clock_getcpuclockid forbids accessing thread
+specific CPU-time clocks from outside the thread group, but this is not
+requested (e.g., by POSIX), or at least no indication that it should fail
+can be found in `man clock_getcpuclockid' and alike.
+Moreover, having such capability could be useful, if you want to monitor
+the execution of a bunch of thread from some kind of "manager" which might
+not be part of the same process. A typical example is the JACK graph-manage=
+r.
 
-Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+Therefore, this commit makes clock_getcpuclockid behave as follows:
+ - if it's called on a tid which is also a PID (i.e., the thread is
+   a thread group leader), it returns the CLOCK_PROCESS_CPUTIME_ID of
+   the process;
+ - if it's called on a tid of a non-group leader, it returns the
+   CLOCK_THREAD_CPUTIME_ID of such specific thread.
+
+This enables the following behaviour, for the threaded and process-based
+scenarios, respectively:
+
+  ### Testing tid 24704: CPU-time clock for PID 24704 is 1.049570008 second=
+s
+  ### Testing tid 24706: CPU-time clock for PID 24706 is 1.028650801 second=
+s
+
+  ### Testing tid 24715: CPU-time clock for PID 24715 is 0.000957685 second=
+s
+  ### Testing tid 24717: CPU-time clock for PID 24717 is 1.045351509 second=
+s
+
+Signed-off-by: Dario Faggioli <raistlin@linux.it>
 ---
- Documentation/keys-ecryptfs.txt          |   68 +++++++++++++++++++++++++
- Documentation/keys-trusted-encrypted.txt |    6 ++-
- security/keys/Makefile                   |    2 +-
- security/keys/encrypted_defined.c        |   75 +++++++++++++++++++++++++---
- security/keys/keys_ecryptfs.c            |   81 ++++++++++++++++++++++++++++++
- security/keys/keys_ecryptfs.h            |   30 +++++++++++
- 6 files changed, 252 insertions(+), 10 deletions(-)
- create mode 100644 Documentation/keys-ecryptfs.txt
- create mode 100644 security/keys/keys_ecryptfs.c
- create mode 100644 security/keys/keys_ecryptfs.h
+ kernel/posix-cpu-timers.c |   13 +++++--------
+ 1 files changed, 5 insertions(+), 8 deletions(-)
 
-diff --git a/Documentation/keys-ecryptfs.txt b/Documentation/keys-ecryptfs.txt
-new file mode 100644
-index 0000000..c3bbeba
---- /dev/null
-+++ b/Documentation/keys-ecryptfs.txt
-@@ -0,0 +1,68 @@
-+		Encrypted keys for the eCryptfs filesystem
-+
-+ECryptfs is a stacked filesystem which transparently encrypts and decrypts each
-+file using a randomly generated File Encryption Key (FEK).
-+
-+Each FEK is in turn encrypted with a File Encryption Key Encryption Key (FEFEK)
-+either in kernel space or in user space with a daemon called 'ecryptfsd'.  In
-+the former case the operation is performed directly by the kernel CryptoAPI
-+using a key, the FEFEK, derived from a user prompted passphrase;  in the latter
-+the FEK is encrypted by 'ecryptfsd' with the help of external libraries in order
-+to support other mechanisms like public key cryptography, PKCS#11 and TPM based
-+operations.
-+
-+The data structure defined by eCryptfs to contain information required for the
-+FEK decryption is called authentication token and, currently, can be stored in a
-+kernel key of the 'user' type, inserted in the user's session specific keyring
-+by the userspace utility 'mount.ecryptfs' shipped with the package
-+'ecryptfs-utils'.
-+
-+The 'encrypted' key type has been extended with the introduction of the new
-+format 'ecryptfs' in order to be used in conjunction with the eCryptfs
-+filesystem.  Encrypted keys of the newly introduced format store an
-+authentication token in its payload with a FEFEK randomly generated by the
-+kernel and protected by the parent master key.
-+
-+In order to avoid known-plaintext attacks, the datablob obtained through
-+commands 'keyctl print' or 'keyctl pipe' does not contain the overall
-+authentication token, which content is well known, but only the FEFEK in
-+encrypted form.
-+
-+The eCryptfs filesystem may really benefit from using encrypted keys in that the
-+required key can be securely generated by an Administrator and provided at boot
-+time after the unsealing of a 'trusted' key in order to perform the mount in a
-+controlled environment.  Another advantage is that the key is not exposed to
-+threats of malicious software, because it is available in clear form only at
-+kernel level.
-+
-+Usage:
-+   keyctl add encrypted name "new ecryptfs key-type:master-key-name keylen" ring
-+   keyctl add encrypted name "load hex_blob" ring
-+   keyctl update keyid "update key-type:master-key-name"
-+
-+name:= '<16 hexadecimal characters>'
-+key-type:= 'trusted' | 'user'
-+keylen:= 64
-+
-+
-+Example of encrypted key usage with the eCryptfs filesystem:
-+
-+Create an encrypted key "1000100010001000" of length 64 bytes with format
-+'ecryptfs' and save it using a previously loaded user key "test":
-+
-+    $ keyctl add encrypted 1000100010001000 "new ecryptfs user:test 64" @u
-+    19184530
-+
-+    $ keyctl print 19184530
-+    ecryptfs user:test 64 490045d4bfe48c99f0d465fbbbb79e7500da954178e2de0697
-+    dd85091f5450a0511219e9f7cd70dcd498038181466f78ac8d4c19504fcc72402bfc41c2
-+    f253a41b7507ccaa4b2b03fff19a69d1cc0b16e71746473f023a95488b6edfd86f7fdd40
-+    9d292e4bacded1258880122dd553a661
-+
-+    $ keyctl pipe 19184530 > ecryptfs.blob
-+
-+Mount an eCryptfs filesystem using the created encrypted key "1000100010001000"
-+into the '/secret' directory:
-+
-+    $ mount -i -t ecryptfs -oecryptfs_sig=1000100010001000,\
-+      ecryptfs_cipher=aes,ecryptfs_key_bytes=32 /secret /secret
-diff --git a/Documentation/keys-trusted-encrypted.txt b/Documentation/keys-trusted-encrypted.txt
-index 0afcb50..5f50cca 100644
---- a/Documentation/keys-trusted-encrypted.txt
-+++ b/Documentation/keys-trusted-encrypted.txt
-@@ -63,7 +63,7 @@ Usage:
-     keyctl add encrypted name "load hex_blob" ring
-     keyctl update keyid "update key-type:master-key-name"
- 
--format:= 'default'
-+format:= 'default | ecryptfs'
- key-type:= 'trusted' | 'user'
- 
- 
-@@ -154,4 +154,6 @@ Load an encrypted key "evm" from saved blob:
-     24717c64 5972dcb82ab2dde83376d82b2e3c09ffc
- 
- Other uses for trusted and encrypted keys, such as for disk and file encryption
--are anticipated.
-+are anticipated.  In particular the new format 'ecryptfs' has been defined in
-+in order to use encrypted keys to mount an eCryptfs filesystem.  More details
-+about the usage can be found in the file 'Documentation/keys-ecryptfs.txt'.
-diff --git a/security/keys/Makefile b/security/keys/Makefile
-index 6c94105..c50b422 100644
---- a/security/keys/Makefile
-+++ b/security/keys/Makefile
-@@ -14,7 +14,7 @@ obj-y := \
- 	user_defined.o
- 
- obj-$(CONFIG_TRUSTED_KEYS) += trusted_defined.o
--obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted_defined.o
-+obj-$(CONFIG_ENCRYPTED_KEYS) += keys_ecryptfs.o encrypted_defined.o
- obj-$(CONFIG_KEYS_COMPAT) += compat.o
- obj-$(CONFIG_PROC_FS) += proc.o
- obj-$(CONFIG_SYSCTL) += sysctl.o
-diff --git a/security/keys/encrypted_defined.c b/security/keys/encrypted_defined.c
-index 7a914ab..2f7f314 100644
---- a/security/keys/encrypted_defined.c
-+++ b/security/keys/encrypted_defined.c
-@@ -29,11 +29,13 @@
- #include <linux/rcupdate.h>
- #include <linux/scatterlist.h>
- #include <linux/crypto.h>
-+#include <linux/ctype.h>
- #include <crypto/hash.h>
- #include <crypto/sha.h>
- #include <crypto/aes.h>
- 
- #include "encrypted_defined.h"
-+#include "keys_ecryptfs.h"
- 
- static const char KEY_TRUSTED_PREFIX[] = "trusted:";
- static const char KEY_USER_PREFIX[] = "user:";
-@@ -41,11 +43,13 @@ static const char hash_alg[] = "sha256";
- static const char hmac_alg[] = "hmac(sha256)";
- static const char blkcipher_alg[] = "cbc(aes)";
- static const char key_format_default[] = "default";
-+static const char key_format_ecryptfs[] = "ecryptfs";
- static unsigned int ivsize;
- static int blksize;
- 
- #define KEY_TRUSTED_PREFIX_LEN (sizeof (KEY_TRUSTED_PREFIX) - 1)
- #define KEY_USER_PREFIX_LEN (sizeof (KEY_USER_PREFIX) - 1)
-+#define KEY_ECRYPTFS_DESC_LEN 16
- #define HASH_SIZE SHA256_DIGEST_SIZE
- #define MAX_DATA_SIZE 4096
- #define MIN_DATA_SIZE  20
-@@ -63,11 +67,12 @@ enum {
- };
- 
- enum {
--	Opt_error = -1, Opt_default
-+	Opt_error = -1, Opt_default, Opt_ecryptfs
- };
- 
- static const match_table_t key_format_tokens = {
- 	{Opt_default, "default"},
-+	{Opt_ecryptfs, "ecryptfs"},
- 	{Opt_error, NULL}
- };
- 
-@@ -95,6 +100,34 @@ static int aes_get_sizes(void)
- }
- 
- /*
-+ * valid_ecryptfs_desc - verify the description of a new/loaded encrypted key
-+ *
-+ * The description of a encrypted key with format 'ecryptfs' must contain
-+ * exactly 16 hexadecimal characters.
-+ *
-+ */
-+static int valid_ecryptfs_desc(const char *ecryptfs_desc)
-+{
-+	int i;
-+
-+	if (strlen(ecryptfs_desc) != KEY_ECRYPTFS_DESC_LEN) {
-+		pr_err("encrypted_key: key description must be %d hexadecimal "
-+		       "characters long\n", KEY_ECRYPTFS_DESC_LEN);
-+		return -EINVAL;
-+	}
-+
-+	for (i = 0; i < KEY_ECRYPTFS_DESC_LEN; i++) {
-+		if (!isxdigit(ecryptfs_desc[i])) {
-+			pr_err("encrypted_key: key description must contain "
-+			       "only hexadecimal characters\n");
-+			return -EINVAL;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-  * valid_master_desc - verify the 'key-type:desc' of a new/updated master-key
-  *
-  * key-type:= "trusted:" | "user:"
-@@ -158,7 +191,7 @@ static int datablob_parse(char *datablob, const char **format,
- 	}
- 	key_cmd = match_token(keyword, key_tokens, args);
- 
--	/* Get optional format: default */
-+	/* Get optional format: default | ecryptfs */
- 	p = strsep(&datablob, " \t");
- 	if (!p) {
- 		pr_err("encrypted_key: insufficient parameters specified\n");
-@@ -167,6 +200,7 @@ static int datablob_parse(char *datablob, const char **format,
- 
- 	key_format = match_token(p, key_format_tokens, args);
- 	switch (key_format) {
-+	case Opt_ecryptfs:
- 	case Opt_default:
- 		*format = p;
- 		*master_desc = strsep(&datablob, " \t");
-@@ -598,6 +632,17 @@ static struct encrypted_key_payload *encrypted_key_alloc(struct key *key,
- 	format_len = (!format) ? strlen(key_format_default) : strlen(format);
- 	decrypted_datalen = dlen;
- 	payload_datalen = decrypted_datalen;
-+	if (format && !strcmp(format, key_format_ecryptfs)) {
-+		if (dlen != ECRYPTFS_MAX_KEY_BYTES) {
-+			pr_err("encrypted_key: keylen for the ecryptfs format "
-+			       "must be equal to %d bytes\n",
-+			       ECRYPTFS_MAX_KEY_BYTES);
-+			return ERR_PTR(-EINVAL);
-+		}
-+		decrypted_datalen = ECRYPTFS_MAX_KEY_BYTES;
-+		payload_datalen = sizeof(struct ecryptfs_auth_tok);
-+	}
-+
- 	encrypted_datalen = roundup(decrypted_datalen, blksize);
- 
- 	datablob_len = format_len + 1 + strlen(master_desc) + 1
-@@ -683,8 +728,14 @@ static void __ekey_init(struct encrypted_key_payload *epayload,
- 
- 	if (!format)
- 		memcpy(epayload->format, key_format_default, format_len);
--	else
-+	else {
-+		if (!strcmp(format, key_format_ecryptfs))
-+			epayload->decrypted_data =
-+				ecryptfs_get_auth_tok_key((struct ecryptfs_auth_tok *)epayload->payload_data);
-+
- 		memcpy(epayload->format, format, format_len);
-+	}
-+
- 	memcpy(epayload->master_desc, master_desc, strlen(master_desc));
- 	memcpy(epayload->datalen, datalen, strlen(datalen));
- }
-@@ -696,11 +747,21 @@ static void __ekey_init(struct encrypted_key_payload *epayload,
-  * itself.  For an old key, decrypt the hex encoded data.
-  */
- static int encrypted_init(struct encrypted_key_payload *epayload,
--			  const char *format, const char *master_desc,
--			  const char *datalen, const char *hex_encoded_iv)
-+			  const char *key_desc, const char *format,
-+			  const char *master_desc, const char *datalen,
-+			  const char *hex_encoded_iv)
- {
- 	int ret = 0;
- 
-+	if (format && !strcmp(format, key_format_ecryptfs)) {
-+		ret = valid_ecryptfs_desc(key_desc);
-+		if (ret < 0)
-+			return ret;
-+
-+		ecryptfs_fill_auth_tok((struct ecryptfs_auth_tok *)epayload->payload_data,
-+				       key_desc);
-+	}
-+
- 	__ekey_init(epayload, format, master_desc, datalen);
- 	if (!hex_encoded_iv) {
- 		get_random_bytes(epayload->iv, ivsize);
-@@ -750,8 +811,8 @@ static int encrypted_instantiate(struct key *key, const void *data,
- 		ret = PTR_ERR(epayload);
- 		goto out;
- 	}
--	ret = encrypted_init(epayload, format, master_desc, decrypted_datalen,
--			     hex_encoded_iv);
-+	ret = encrypted_init(epayload, key->description, format, master_desc,
-+			     decrypted_datalen, hex_encoded_iv);
- 	if (ret < 0) {
- 		kfree(epayload);
- 		goto out;
-diff --git a/security/keys/keys_ecryptfs.c b/security/keys/keys_ecryptfs.c
-new file mode 100644
-index 0000000..6144b91
---- /dev/null
-+++ b/security/keys/keys_ecryptfs.c
-@@ -0,0 +1,81 @@
-+/*
-+ * keys_ecryptfs.c: helper functions for the encrypted key type
-+ *
-+ * Copyright (C) 2006 International Business Machines Corp.
-+ * Copyright (C) 2010 Politecnico di Torino, Italy
-+ *                    TORSEC group -- http://security.polito.it
-+ *
-+ * Authors:
-+ * Michael A. Halcrow <mahalcro@us.ibm.com>
-+ * Tyler Hicks <tyhicks@ou.edu>
-+ * Roberto Sassu <roberto.sassu@polito.it>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, version 2 of the License.
-+ */
-+
-+#include <linux/module.h>
-+#include "keys_ecryptfs.h"
-+
-+u8 *ecryptfs_get_auth_tok_key(struct ecryptfs_auth_tok *auth_tok)
-+{
-+	return auth_tok->token.password.session_key_encryption_key;
-+}
-+EXPORT_SYMBOL(ecryptfs_get_auth_tok_key);
-+
-+/*
-+ * ecryptfs_get_versions()
-+ *
-+ * Source code taken from the software 'ecryptfs-utils' version 83.
-+ *
-+ */
-+void ecryptfs_get_versions(int *major, int *minor, int *file_version)
-+{
-+	*major = ECRYPTFS_VERSION_MAJOR;
-+	*minor = ECRYPTFS_VERSION_MINOR;
-+	if (file_version)
-+		*file_version = ECRYPTFS_SUPPORTED_FILE_VERSION;
-+}
-+EXPORT_SYMBOL(ecryptfs_get_versions);
-+
-+/*
-+ * ecryptfs_fill_auth_tok - fill the ecryptfs_auth_tok structure
-+ *
-+ * Fill the ecryptfs_auth_tok structure with required ecryptfs data.
-+ * The source code is inspired to the original function generate_payload()
-+ * shipped with the software 'ecryptfs-utils' version 83.
-+ *
-+ */
-+int ecryptfs_fill_auth_tok(struct ecryptfs_auth_tok *auth_tok,
-+			   const char *key_desc)
-+{
-+	int major, minor;
-+
-+	ecryptfs_get_versions(&major, &minor, NULL);
-+	auth_tok->version = (((uint16_t)(major << 8) & 0xFF00)
-+			     | ((uint16_t)minor & 0x00FF));
-+	auth_tok->token_type = ECRYPTFS_PASSWORD;
-+	strncpy((char *)auth_tok->token.password.signature, key_desc,
-+		ECRYPTFS_PASSWORD_SIG_SIZE);
-+	auth_tok->token.password.session_key_encryption_key_bytes =
-+		ECRYPTFS_MAX_KEY_BYTES;
-+	/*
-+	 * Removed auth_tok->token.password.salt and
-+	 * auth_tok->token.password.session_key_encryption_key
-+	 * initialization from the original code
-+	 */
-+	/* TODO: Make the hash parameterizable via policy */
-+	auth_tok->token.password.flags |=
-+		ECRYPTFS_SESSION_KEY_ENCRYPTION_KEY_SET;
-+	/* The kernel code will encrypt the session key. */
-+	auth_tok->session_key.encrypted_key[0] = 0;
-+	auth_tok->session_key.encrypted_key_size = 0;
-+	/* Default; subject to change by kernel eCryptfs */
-+	auth_tok->token.password.hash_algo = PGP_DIGEST_ALGO_SHA512;
-+	auth_tok->token.password.flags &= ~(ECRYPTFS_PERSISTENT_PASSWORD);
-+	return 0;
-+}
-+EXPORT_SYMBOL(ecryptfs_fill_auth_tok);
-+
-+MODULE_LICENSE("GPL");
-diff --git a/security/keys/keys_ecryptfs.h b/security/keys/keys_ecryptfs.h
-new file mode 100644
-index 0000000..87f77ca
---- /dev/null
-+++ b/security/keys/keys_ecryptfs.h
-@@ -0,0 +1,30 @@
-+/*
-+ * keys_ecryptfs.h: helper functions for the encrypted key type
-+ *
-+ * Copyright (C) 2006 International Business Machines Corp.
-+ * Copyright (C) 2010 Politecnico di Torino, Italy
-+ *                    TORSEC group -- http://security.polito.it
-+ *
-+ * Authors:
-+ * Michael A. Halcrow <mahalcro@us.ibm.com>
-+ * Tyler Hicks <tyhicks@ou.edu>
-+ * Roberto Sassu <roberto.sassu@polito.it>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, version 2 of the License.
-+ */
-+
-+#ifndef __KEYS_ECRYPTFS_H
-+#define __KEYS_ECRYPTFS_H
-+
-+#include <linux/ecryptfs.h>
-+
-+#define PGP_DIGEST_ALGO_SHA512   10
-+
-+u8 *ecryptfs_get_auth_tok_key(struct ecryptfs_auth_tok *auth_tok);
-+void ecryptfs_get_versions(int *major, int *minor, int *file_version);
-+int ecryptfs_fill_auth_tok(struct ecryptfs_auth_tok *auth_tok,
-+			   const char *key_desc);
-+
-+#endif /* __KEYS_ECRYPTFS_H */
--- 
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index 05bb717..ddbbabc 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -39,10 +39,9 @@ static int check_clock(const clockid_t which_clock)
+=20
+ 	rcu_read_lock();
+ 	p =3D find_task_by_vpid(pid);
+-	if (!p || !(CPUCLOCK_PERTHREAD(which_clock) ?
+-		   same_thread_group(p, current) : has_group_leader_pid(p))) {
++	if (!p || (CPUCLOCK_PERTHREAD(which_clock) &&
++		   same_thread_group(p, current) && !has_group_leader_pid(p)))
+ 		error =3D -EINVAL;
+-	}
+ 	rcu_read_unlock();
+=20
+ 	return error;
+@@ -349,11 +348,9 @@ int posix_cpu_clock_get(const clockid_t which_clock, s=
+truct timespec *tp)
+ 		rcu_read_lock();
+ 		p =3D find_task_by_vpid(pid);
+ 		if (p) {
+-			if (CPUCLOCK_PERTHREAD(which_clock)) {
+-				if (same_thread_group(p, current)) {
+-					error =3D cpu_clock_sample(which_clock,
+-								 p, &rtn);
+-				}
++			if (CPUCLOCK_PERTHREAD(which_clock) ||
++			    !thread_group_leader(p)) {
++				error =3D cpu_clock_sample(which_clock, p, &rtn);
+ 			} else {
+ 				read_lock(&tasklist_lock);
+ 				if (thread_group_leader(p) && p->sighand) {
+--=20
 1.7.2.3
 
 
-------931A825C2797C0081177ECBDFC4DDF76
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
 
-MIIICQYJKoZIhvcNAQcCoIIH+jCCB/YCAQExCzAJBgUrDgMCGgUAMAsGCSqGSIb3
-DQEHAaCCBWQwggVgMIIESKADAgECAgICuzANBgkqhkiG9w0BAQUFADBlMQswCQYD
-VQQGEwJJVDEeMBwGA1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMTYwNAYDVQQD
-Ey1Qb2xpdGVjbmljbyBkaSBUb3Jpbm8gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkw
-HhcNMTAxMjIwMTExOTU0WhcNMTUxMjMxMjM1OTU5WjBfMQswCQYDVQQGEwJJVDEe
-MBwGA1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMRcwFQYDVQQDEw5Sb2JlcnRv
-ICBTYXNzdTEXMBUGCgmSJomT8ixkAQETB2QwMjEzMDUwggEiMA0GCSqGSIb3DQEB
-AQUAA4IBDwAwggEKAoIBAQDS6p4SaJdmmJHJu9On9ZohhBFE2GgYiY7YtRnhhQJA
-NfOtHEhSbpUMaSOfq/Pna6ipR5nAFrlM8cOGcSHZdxrPcgzeJU7F2v1fl2ThvFOc
-TIkcC1aAJGQUuCaCXDlQt+KFecJWTrRZnalMHZueO+J6cgHcvR1CQz5e88dSzo3Q
-XZy0w/hxGL9Ht9velqsl48ohBk2rs/svAOCp6GfqT1Yxwx1p87d3ViTrmuZB4/X+
-da39nJqmo6AZ/y3Zg+r91BgNcfsHVqFT0JTcG6qRIaeqTtqVYpYl+rH1rZzYCakD
-yQyys66sBvaXyaiMr0M+SpyH+LaGz5bDn5Odq16FYEq7AgMBAAGjggIeMIICGjAO
-BgNVHQ8BAf8EBAMCA/gwJwYDVR0lBCAwHgYIKwYBBQUHAwIGCCsGAQUFBwMDBggr
-BgEFBQcDBDAiBgNVHREEGzAZgRdyb2JlcnRvLnNhc3N1QHBvbGl0by5pdDAMBgNV
-HRMBAf8EAjAAMB0GA1UdDgQWBBQgKbXSXn+j769x0tsZQ9pSOzIIdDAfBgNVHSME
-GDAWgBTNm1tbnup2IcQQaOjSLTfbHy/I5DCBywYDVR0gBIHDMIHAMD4GCisGAQQB
-qQcBAQIwMDAuBggrBgEFBQcCARYiaHR0cDovL3d3dy5ldXJvcGtpLm9yZy9jYS9j
-cHMvMS4yLzBEBgorBgEEAakHAgECMDYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
-aXRhbHkuZXVyb3BraS5vcmcvY2EvY3BzLzEuMi8wOAYKKwYBBAGVYgECAjAqMCgG
-CCsGAQUFBwIBFhxodHRwOi8vY2EucG9saXRvLml0L2Nwcy8yLjIvMGYGCCsGAQUF
-BwEBBFowWDAhBggrBgEFBQcwAYYVaHR0cDovL29jc3AucG9saXRvLml0MDMGCCsG
-AQUFBzAChidodHRwOi8vY2EucG9saXRvLml0L2NlcnRzL3BvbGl0b19jYS5jZXIw
-NwYDVR0fBDAwLjAsoCqgKIYmaHR0cDovL2NhLnBvbGl0by5pdC9jcmwvcG9saXRv
-X2NybC5jcmwwDQYJKoZIhvcNAQEFBQADggEBADMe0aHcBJXV6pMJPVVSt1Vazd8Y
-LuTLO45Igs9Sb2LuaO6pvcDGvq9dEJnBhP1B+zBAK6WEA1PWb66xC4QXaJnlGZTX
-S3XeBivHWm6BNOH2kNeU0HBeGZCV/n5r70TPxkEAcc7u8YY2i6CiMM428YhZK8Zj
-oN9D3QNIRf4HZgh0FTbf8eL/XvBbK/oPC+Rew+Qql6M3DHnaS1q2SKUwwO/4VXA4
-JsOdatFI68AMXH0Xx9UIcjRi+kvsyvwHlc0Z8AoAtfRMoIl4zFF4Qaowec2UunBK
-YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
-MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
-aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
-Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMDEyMjgxMDQ5MTVaMCMGCSqG
-SIb3DQEJBDEWBBQXgjCr0I3on2EjRdiufyg33jfAxjB5BgkqhkiG9w0BCQ8xbDBq
-MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
-DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQBwIIRYP8YSyrUo5aNw1d0bs5P4
-fKmLuyt3sP2vVwPW4JjZhn1cQr16+AiYuynLoYguoKIYf/W+3sL/8tGZG5bK3lki
-LyQDc8ilfeFHqvmUD+zViJ0MWT0FGmMb62a8fieW7yjoCRDWubcCdYlI1xw+eg/Y
-O8o34kxlGYyBwH4cr0wvVKHvZQuTTHkMgPResiVVa1u1NHGZvveRruYvCJ2fJT5a
-L2IjRs0vDe0L6KQ8XRe1bxSL9Bceghe7ne66F6GrM3bJKhok/c8HbTG85PvO6gDO
-cJTJ6vP84Nl99N+jLm4OxByW8PU1AXRCD0sB1eIZa9j3QrvCQJ6R7CcNsEJd
+http://retis.sssup.it/people/faggioli -- dario.faggioli@jabber.org
 
-------931A825C2797C0081177ECBDFC4DDF76--
+--=-hYqsFq3P+KifBzEvCZob
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAk0Zwi4ACgkQk4XaBE3IOsQmYQCgiU0A06P/Vs5L3T+FAE0mTmdy
+Ff4An28oBkwpx3urdAKNGgl2HFsU8/KQ
+=F+2T
+-----END PGP SIGNATURE-----
+
+--=-hYqsFq3P+KifBzEvCZob--
 
