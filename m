@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944Ab0L1QKm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 11:10:42 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:32958 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344Ab0L1QKk (ORCPT
+	id S1754051Ab0L1QRG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 11:17:06 -0500
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:60849 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751991Ab0L1QRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 11:10:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=fPTesvJKK7CmOg8haDL3Dk+8+iy5BU3uQ02CyH+COs7ymqTRTUIv7PRuPozO/uC/CW
-         DdwqY6nT5dMg60pDk5cl94hNfoSDAmZJKpB9Gjs/gIzjjH+rWIq3VmoyCSiYbdnC0/uv
-         d4IR+SmfOzmt39aBCiuIxkrlB8RAmTOdWvN8w=
-Message-ID: <4D1A0B1C.70406@gmail.com>
-Date: Tue, 28 Dec 2010 17:06:52 +0100
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	Tue, 28 Dec 2010 11:17:04 -0500
+Date: Tue, 28 Dec 2010 18:16:57 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, David Brownell <david-b@pacbell.net>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC/PATCH 1/2] mfd: twl6030-irq: move to threaded_irq
+Message-ID: <20101228161657.GF2239@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1293544790-793-1-git-send-email-balbi@ti.com>
+ <1293544790-793-2-git-send-email-balbi@ti.com>
+ <20101228154617.GC14860@sirena.org.uk>
 MIME-Version: 1.0
-To: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>, tytso@mit.edu,
-        chris.mason@oracle.com
-Subject: Bug in ext4/btrfs fallocate?
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <20101228154617.GC14860@sirena.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-it seems that ext4/btrfs code for fallocate doesn't check for
-immutable/append inode flag. I think it's possible to do an fallocate
-operation even if the immutable flag is turned on. You can think about
-this case: an application opens a file for read/write, meanwhile a user
-set the immutable flag and then the application calls fallocate. Other
-cases shouldn't happen because if the immutable flag is turned on before
-the application opens the file, then the application can't open the file
-in read/write mode and therefore it can't do an fallocate operation.
-Sincerely I haven't tried but I saw this kind of error in my own fs that
-have a similar code.
+On Tue, Dec 28, 2010 at 03:46:17PM +0000, Mark Brown wrote:
+>On Tue, Dec 28, 2010 at 03:59:49PM +0200, Felipe Balbi wrote:
+>
+>> +	disable_irq_nosync(irq);
+>
+>You shouldn't need this any more; the driver used to be faffing around
+>with this because it wasn't using genirq for this in the past.
+>
+>> +	for (i = 0; sts.int_sts; sts.int_sts >>= 1, i++) {
+>> +		local_irq_disable();
+>
+>Simiarly here as far as I know; the original code predates genirq
+>support for this so is doing some hairy stuff that is no longer
+>required and may actually be harmful.
 
-Regards,
+Aa, true. Forgot that one.
 
-Marco
+>What I'd expect to see from a conversion like this would be that most of
+>the locking/IRQ management stuff would be dropped and the bus_lock() and
+>bus_sync_unlock() operations would be implemented.
+
+I'll look into it, thanks.
+
+-- 
+balbi
