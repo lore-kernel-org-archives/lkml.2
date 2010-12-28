@@ -1,71 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680Ab0L1Fs2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 00:48:28 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:43606 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1750739Ab0L1Fs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 00:48:27 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/C9Xo83KLCBV0UDy38Sn+NcGDrsPnaA2lKa8Ykg7
-	V41NEGk9o3kUuj
-Subject: Re: [PATCH] sched: Buggy comparison in check_preempt_tick
-From: Mike Galbraith <efault@gmx.de>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Ranjit Manomohan <ranjitm@google.com>
-In-Reply-To: <1293348184.6942.72.camel@marge.simson.net>
-References: <1293236813-31550-1-git-send-email-venki@google.com>
-	 <1293263418.6896.54.camel@marge.simson.net>
-	 <AANLkTintN2e-NHB=USQ4RSi1LMrC8TxB7BB0MNpPscSB@mail.gmail.com>
-	 <1293348184.6942.72.camel@marge.simson.net>
+	id S1752509Ab0L1FzI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 00:55:08 -0500
+Received: from cantor.suse.de ([195.135.220.2]:38070 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751169Ab0L1FzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Dec 2010 00:55:06 -0500
+Subject: Re: [RFC -v2 PATCH 2/3] sched: add yield_to function
+From: Mike Galbraith <mgalbraith@suse.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Avi Kiviti <avi@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Chris Wright <chrisw@sous-sol.org>
+In-Reply-To: <1292861059.15207.7.camel@marge.simson.net>
+References: <20101213224434.7495edb2@annuminas.surriel.com>
+	 <20101213224657.7e141746@annuminas.surriel.com>
+	 <1292306896.7448.157.camel@marge.simson.net> <4D0A6D34.6070806@redhat.com>
+	 <1292569018.7772.75.camel@marge.simson.net>
+	 <1292570143.7772.84.camel@marge.simson.net>  <4D0F78DF.9010908@redhat.com>
+	 <1292861059.15207.7.camel@marge.simson.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 28 Dec 2010 06:48:13 +0100
-Message-ID: <1293515293.6930.11.camel@marge.simson.net>
+Date: Tue, 28 Dec 2010 06:54:43 +0100
+Message-ID: <1293515683.6930.16.camel@marge.simson.net>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-12-26 at 08:23 +0100, Mike Galbraith wrote:
+On Mon, 2010-12-20 at 17:04 +0100, Mike Galbraith wrote:
+> On Mon, 2010-12-20 at 10:40 -0500, Rik van Riel wrote:
+> > On 12/17/2010 02:15 AM, Mike Galbraith wrote:
+> > 
+> > > BTW, with this vruntime donation thingy, what prevents a task from
+> > > forking off accomplices who do nothing but wait for a wakeup and
+> > > yield_to(exploit)?
+> > >
+> > > Even swapping vruntimes in the same cfs_rq is dangerous as hell, because
+> > > one party is going backward.
+> > 
+> > I just realized the answer to this question.
+> > 
+> > We only give cpu time to tasks that are runnable, but not
+> > currently running.  That ensures one task cannot block others
+> > from running by having time yielded to it constantly.
+> 
+> Hm.  Don't think that will 100% sure prevent clock stoppage, because the
+> running task doesn't necessarily advance min_vruntime.
+> 
+> What about something like the below instead?  It compiles, but may eat
+> your first born child.
 
-> But anyway..
-> 
-> echo NO_WAKEUP_PREEMPT > sched_features
-> echo NO_TESTME > sched_features
-> two hogs running on isolcpu 3, pid 6890 at nice -2
-> 
-> while sleep 1; do  grep 'pert.*6890' /proc/sched_debug; done
-> 
-> runnable tasks:
->             task   PID         tree-key  switches  prio
-> -------------------------------------------------------
-> R           pert  6890     50201.071851      7453   118
-> R           pert  6890     50596.171290      7513   118  +60
-> R           pert  6890     50991.265264      7572   118  +59
-> R           pert  6890     51383.781965      7631   118  +59
->             pert  6890     51781.463129      7691   118  +60
-> 
-> echo TESTME > sched_features
->             pert  6890    126881.306733     18977   118
-> R           pert  6890    127273.825719     19036   118  +59
-> R           pert  6890    127668.928218     19095   118  +59
-> R           pert  6890    128064.031372     19154   118  +59
-> R           pert  6890    128459.134339     19213   118  +59
-> 
-> ...with a compute load, the thing should be a noop, and appears to be so
-> (with busted compare fixed anyway;).  You have to be well overloaded for
-> buddies to kick in these days, so it's probably pretty hard to get
-> enough spread for the thing to fire.
+(either it's christmas, or nobody cares to try it.  ho ho hum:)
 
-I did a bit more testing yesterday with wakeup loads.  There's enough
-spread for the test to nudge things a few [0..4] times per second/core.
+> sched: implement fair class yield_to(task) using cfs_rq->next as a selection hint.
+> 
+> <CHANGELOG>
+> 
+> Not-signed-off-by: Mike Galbraith <efault@gmx.de>
+> ---
+>  include/linux/sched.h |    1 
+>  kernel/sched.c        |   47 +++++++++++++++++++++++++++++++++++++++++
+>  kernel/sched_fair.c   |   56 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 104 insertions(+)
+> 
+> Index: linux-2.6/include/linux/sched.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/sched.h
+> +++ linux-2.6/include/linux/sched.h
+> @@ -1056,6 +1056,7 @@ struct sched_class {
+>  	void (*enqueue_task) (struct rq *rq, struct task_struct *p, int flags);
+>  	void (*dequeue_task) (struct rq *rq, struct task_struct *p, int flags);
+>  	void (*yield_task) (struct rq *rq);
+> +	int (*yield_to_task) (struct task_struct *p, int preempt);
+>  
+>  	void (*check_preempt_curr) (struct rq *rq, struct task_struct *p, int flags);
+>  
+> Index: linux-2.6/kernel/sched.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/sched.c
+> +++ linux-2.6/kernel/sched.c
+> @@ -5325,6 +5325,53 @@ void __sched yield(void)
+>  }
+>  EXPORT_SYMBOL(yield);
+>  
+> +/**
+> + * yield_to - yield the current processor to another thread in
+> + * your thread group, or accelerate that thread toward the
+> + * processor it's on.
+> + *
+> + * It's the caller's job to ensure that the target task struct
+> + * can't go away on us before we can do any checks.
+> + */
+> +void __sched yield_to(struct task_struct *p, int preempt)
+> +{
+> +	struct task_struct *curr = current;
+> +	struct rq *rq, *p_rq;
+> +	unsigned long flags;
+> +	int yield = 0;
+> +
+> +	local_irq_save(flags);
+> +	rq = this_rq();
+> +
+> +again:
+> +	p_rq = task_rq(p);
+> +	double_rq_lock(rq, p_rq);
+> +	while (task_rq(p) != p_rq) {
+> +		double_rq_unlock(rq, p_rq);
+> +		goto again;
+> +	}
+> +
+> +	if (task_running(p_rq, p) || p->state || !p->se.on_rq ||
+> +			!same_thread_group(p, curr) ||
+> +			!curr->sched_class->yield_to_task ||
+> +			curr->sched_class != p->sched_class) {
+> +		goto out;
+> +	}
+> +
+> +	yield = curr->sched_class->yield_to_task(p, preempt);
+> +
+> +out:
+> +	double_rq_unlock(rq, p_rq);
+> +	local_irq_restore(flags);
+> +
+> +	if (yield) {
+> +		set_current_state(TASK_RUNNING);
+> +		schedule();
+> +	}
+> +}
+> +EXPORT_SYMBOL(yield_to);
+> +
+> +
+>  /*
+>   * This task is about to go to sleep on IO. Increment rq->nr_iowait so
+>   * that process accounting knows that this is a task in IO wait state.
+> Index: linux-2.6/kernel/sched_fair.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/sched_fair.c
+> +++ linux-2.6/kernel/sched_fair.c
+> @@ -1320,6 +1320,61 @@ static void yield_task_fair(struct rq *r
+>  }
+>  
+>  #ifdef CONFIG_SMP
+> +static void pull_task(struct rq *src_rq, struct task_struct *p,
+> +		      struct rq *this_rq, int this_cpu);
+> +#endif
+> +
+> +static int yield_to_task_fair(struct task_struct *p, int preempt)
+> +{
+> +	struct sched_entity *se = &current->se;
+> +	struct sched_entity *pse = &p->se;
+> +	struct sched_entity *curr = &(task_rq(p)->curr)->se;
+> +	struct cfs_rq *cfs_rq = cfs_rq_of(se);
+> +	struct cfs_rq *p_cfs_rq = cfs_rq_of(pse);
+> +	int yield = this_rq() == task_rq(p);
+> +	int want_preempt = preempt;
+> +
+> +#ifdef CONFIG_FAIR_GROUP_SCHED
+> +	if (cfs_rq->tg != p_cfs_rq->tg)
+> +		return 0;
+> +
+> +	/* Preemption only allowed within the same task group. */
+> +	if (preempt && cfs_rq->tg != cfs_rq_of(curr)->tg)
+> +		preempt = 0;
+> +#endif
+> +	/* Preemption only allowed within the same thread group. */
+> +	if (preempt && !same_thread_group(current, task_of(p_cfs_rq->curr)))
+> +		preempt = 0;
+> +
+> +#ifdef CONFIG_SMP
+> +	/*
+> +	 * If this yield is important enough to want to preempt instead
+> +	 * of only dropping a ->next hint, we're alone, and the target
+> +	 * is not alone, pull the target to this cpu.
+> +	 */
+> +	if (want_preempt && !yield && cfs_rq->nr_running == 1 &&
+> +			cpumask_test_cpu(smp_processor_id(), &p->cpus_allowed)) {
+> +		pull_task(task_rq(p), p, this_rq(), smp_processor_id());
+> +		p_cfs_rq = cfs_rq_of(pse);
+> +		yield = 1;
+> +	}
+> +#endif
+> +
+> +	if (yield)
+> +		clear_buddies(cfs_rq, se);
+> +	else if (preempt)
+> +		clear_buddies(p_cfs_rq, curr);
+> +
+> +	/* Tell the scheduler that we'd really like pse to run next. */
+> +	p_cfs_rq->next = pse;
+> +
+> +	if (!yield && preempt)
+> +		resched_task(task_of(p_cfs_rq->curr));
+> +
+> +	return yield;
+> +}
+> +
+> +#ifdef CONFIG_SMP
+>  
+>  static void task_waking_fair(struct rq *rq, struct task_struct *p)
+>  {
+> @@ -4126,6 +4181,7 @@ static const struct sched_class fair_sch
+>  	.enqueue_task		= enqueue_task_fair,
+>  	.dequeue_task		= dequeue_task_fair,
+>  	.yield_task		= yield_task_fair,
+> +	.yield_to_task		= yield_to_task_fair,
+>  
+>  	.check_preempt_curr	= check_preempt_wakeup,
+>  
+> 
+> 
 
-I'd either fix the comparison, and let it keep on nudging once in a
-while, or whack the whole thing.
-
-	-Mike
 
