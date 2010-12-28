@@ -1,36 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753108Ab0L1Xnc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 18:43:32 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40401 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752862Ab0L1Xnb (ORCPT
+	id S1753143Ab0L1Xvq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 18:51:46 -0500
+Received: from smtprelay03.ispgateway.de ([80.67.29.7]:46720 "EHLO
+	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752862Ab0L1Xvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 18:43:31 -0500
-Date: Tue, 28 Dec 2010 23:43:43 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 9/9] ASoC: codecs: wm8753: Fix register cache
- incoherency
-Message-ID: <20101228234342.GD3591@opensource.wolfsonmicro.com>
-References: <1293568684-9626-1-git-send-email-lars@metafoo.de>
- <1293568684-9626-10-git-send-email-lars@metafoo.de>
+	Tue, 28 Dec 2010 18:51:45 -0500
+X-Greylist: delayed 486 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Dec 2010 18:51:44 EST
+Message-ID: <4D1A7628.3050704@steffen-moser.de>
+Date: Wed, 29 Dec 2010 00:43:36 +0100
+From: Steffen Moser <lists@steffen-moser.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1293568684-9626-10-git-send-email-lars@metafoo.de>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-kernel@vger.kernel.org
+Subject: IOMMU and DMA mode of pata_jmicron
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: lists@steffen-moser.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 28, 2010 at 09:38:03PM +0100, Lars-Peter Clausen wrote:
+Hi all,
 
-> Furthermore the generic cache uses zero-based numbering while the wm8753 cache
-> uses one-based numbering.
+I've encountered a problem with my AMD 890FX based system
+and linux-2.6.35.10 (x86_64 platform).
 
-This is why the driver never got updated to use the generic code, FWIW -
-the cleverness made it more effort to convert.
+After activating the option "IOMMU" in the mainboard's BIOS
+setup, the onboard P-ATA controller "JMicron Technology Corp.
+JMB361 AHCI/IDE (rev 02)" puts itself back in the PIO mode.
+When loading the module, the kernel reports:
+
+  pata_jmicron 0000:06:00.1: BMDMA: failed to set dma mask, \
+                             falling back to PIO
+
+This results, as expected, in a much too low data throughput
+between the system and the optical drives connected to the
+P-ATA controller.
+
+As soon as I deactivate IOMMU in BIOS setup, the P-ATA channel
+runs in the DMA mode again. The S-ATA controllers don't seem
+to be affected.
+
+My question is: Is this a known behavior? Are there any
+things I have to consider when activating IOMMU (which seems
+to be AMD-Vi) on an 890FX based system? Is it a problem of
+the chipset and/or the controller or is it related to a
+problem in the libata area?
+
+Some information about the affected system:
+
+ - Mainboard:    ASUS M4A89TD Pro/USB3
+ - BIOS version: 1101 (most recent version)
+ - Chipset:      AMD 890FX
+ - Processor:    AMD Phenom 1090T
+ - Memory:       4 x 4 GB (Kingston KVR1333D3E9S/4G)
+ - Distribution: openSUSE 11.3
+ - Kernel:       2.6.35.10 (from "kernel.org"), x86_64
+
+Earlier versions of 2.6.35.x are affected, too. I haven't
+tested other kernel versions besides 2.6.35.x, yet.
+
+If you need further information (log files, information from
+"/proc", lspci, and so on), please let me know.
+
+Thank you very much in advance for any hint!
+
+Best regards,
+Steffen
