@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176Ab0L1W1b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 17:27:31 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37993 "EHLO mx3.mail.elte.hu"
+	id S1752758Ab0L1W3S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 17:29:18 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:39943 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751338Ab0L1W1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 17:27:30 -0500
-Date: Tue, 28 Dec 2010 23:27:18 +0100
+	id S1751642Ab0L1W3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Dec 2010 17:29:17 -0500
+Date: Tue, 28 Dec 2010 23:29:03 +0100
 From: Ingo Molnar <mingo@elte.hu>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86 fix
-Message-ID: <20101228222718.GA27822@elte.hu>
+Subject: [GIT PULL] tracing fix
+Message-ID: <20101228222903.GB29245@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -31,73 +34,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest x86-fixes-for-linus git tree from:
+Please pull the latest perf-fixes-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-fixes-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-fixes-for-linus
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Jesper Juhl (1):
-      x86/microcode: Fix double vfree() and remove redundant pointer checks before vfree()
+David Sharp (1):
+      ring_buffer: Off-by-one and duplicate events in ring_buffer_read_page
 
 
- arch/x86/kernel/microcode_intel.c |   16 +++++-----------
- 1 files changed, 5 insertions(+), 11 deletions(-)
+ kernel/trace/ring_buffer.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/microcode_intel.c b/arch/x86/kernel/microcode_intel.c
-index dcb65cc..1a1b606 100644
---- a/arch/x86/kernel/microcode_intel.c
-+++ b/arch/x86/kernel/microcode_intel.c
-@@ -364,8 +364,7 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 9ed509a..bd1c35a 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -3853,6 +3853,13 @@ int ring_buffer_read_page(struct ring_buffer *buffer,
  
- 		/* For performance reasons, reuse mc area when possible */
- 		if (!mc || mc_size > curr_mc_size) {
--			if (mc)
--				vfree(mc);
-+			vfree(mc);
- 			mc = vmalloc(mc_size);
- 			if (!mc)
- 				break;
-@@ -374,13 +373,11 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
+ 		/* Need to copy one event at a time */
+ 		do {
++			/* We need the size of one event, because
++			 * rb_advance_reader only advances by one event,
++			 * whereas rb_event_ts_length may include the size of
++			 * one or two events.
++			 * We have already ensured there's enough space if this
++			 * is a time extend. */
++			size = rb_event_length(event);
+ 			memcpy(bpage->data + pos, rpage->data + rpos, size);
  
- 		if (get_ucode_data(mc, ucode_ptr, mc_size) ||
- 		    microcode_sanity_check(mc) < 0) {
--			vfree(mc);
- 			break;
- 		}
+ 			len -= size;
+@@ -3867,7 +3874,7 @@ int ring_buffer_read_page(struct ring_buffer *buffer,
+ 			event = rb_reader_event(cpu_buffer);
+ 			/* Always keep the time extend and data together */
+ 			size = rb_event_ts_length(event);
+-		} while (len > size);
++		} while (len >= size);
  
- 		if (get_matching_microcode(&uci->cpu_sig, mc, new_rev)) {
--			if (new_mc)
--				vfree(new_mc);
-+			vfree(new_mc);
- 			new_rev = mc_header.rev;
- 			new_mc  = mc;
- 			mc = NULL;	/* trigger new vmalloc */
-@@ -390,12 +387,10 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
- 		leftover  -= mc_size;
- 	}
- 
--	if (mc)
--		vfree(mc);
-+	vfree(mc);
- 
- 	if (leftover) {
--		if (new_mc)
--			vfree(new_mc);
-+		vfree(new_mc);
- 		state = UCODE_ERROR;
- 		goto out;
- 	}
-@@ -405,8 +400,7 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
- 		goto out;
- 	}
- 
--	if (uci->mc)
--		vfree(uci->mc);
-+	vfree(uci->mc);
- 	uci->mc = (struct microcode_intel *)new_mc;
- 
- 	pr_debug("CPU%d found a matching microcode update with version 0x%x (current=0x%x)\n",
+ 		/* update bpage */
+ 		local_set(&bpage->commit, pos);
