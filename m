@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402Ab0L1R3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 12:29:37 -0500
-Received: from mail-bw0-f66.google.com ([209.85.214.66]:47220 "EHLO
+	id S1754371Ab0L1R3f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 12:29:35 -0500
+Received: from mail-bw0-f66.google.com ([209.85.214.66]:44628 "EHLO
 	mail-bw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754188Ab0L1R3e (ORCPT
+	with ESMTP id S1754316Ab0L1R3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 12:29:34 -0500
+	Tue, 28 Dec 2010 12:29:32 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=VbqnF4Sn6Feb/DBopycpRzplxFfRT8M9caNzPaYpp74nUKPuU/T7RDW9vj+VQesL2l
-         iHfwNkinWQn9qcNGhm5tUGuTyAq/otNuJ0y25upFF9zAJkX5tcNdgNwDIsFgrhF9RZMB
-         qostYweWgha2uCyGbwLH+iVu4MAHqtOItFkTk=
+        b=nSlcQw91iC5q/ZUCDqgapdUvOrN9ObbAmbDJ1aaOD/x+7v/2K+KJJwMkpc0yw/ONUD
+         aQmY5FsixJyN3rnRaCPKRSja3fXicHkIniEEuUx09feM7TrVXLwjxJKo4VBdb3Oty2oz
+         oSbjIhAThSquwMSZvww1khy3MoOaqDh7Uy4uI=
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
         hch@infradead.org
-Cc: Tejun Heo <tj@kernel.org>, Laurent Vivier <laurent@lvivier.info>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 09/16] swim[3]: convert to bdops->check_events()
-Date: Tue, 28 Dec 2010 18:29:05 +0100
-Message-Id: <1293557352-10592-10-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 08/16] dac960: convert to bdops->check_events()
+Date: Tue, 28 Dec 2010 18:29:04 +0100
+Message-Id: <1293557352-10592-9-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1293557352-10592-1-git-send-email-tj@kernel.org>
 References: <1293557352-10592-1-git-send-email-tj@kernel.org>
@@ -31,100 +30,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Convert from ->media_changed() to ->check_events().
 
-Both swim and swim3 buffer media changed state and clear it on
-revalidation.  They will behave correctly with kernel event polling.
+DAC960 media change notification seems to be one way (once set, never
+cleared) and will generate spurious events when polled once the
+condition triggers.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Jens Axboe <axboe@kernel.dk>
 Cc: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Laurent Vivier <laurent@lvivier.info>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- drivers/block/swim.c  |    8 +++++---
- drivers/block/swim3.c |   11 +++++++----
- 2 files changed, 12 insertions(+), 7 deletions(-)
+ drivers/block/DAC960.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/block/swim.c b/drivers/block/swim.c
-index 75333d0..24a482f 100644
---- a/drivers/block/swim.c
-+++ b/drivers/block/swim.c
-@@ -741,11 +741,12 @@ static int floppy_getgeo(struct block_device *bdev, struct hd_geometry *geo)
+diff --git a/drivers/block/DAC960.c b/drivers/block/DAC960.c
+index 1f286ab..7988210 100644
+--- a/drivers/block/DAC960.c
++++ b/drivers/block/DAC960.c
+@@ -140,13 +140,14 @@ static int DAC960_getgeo(struct block_device *bdev, struct hd_geometry *geo)
  	return 0;
  }
  
--static int floppy_check_change(struct gendisk *disk)
-+static unsigned int floppy_check_events(struct gendisk *disk,
+-static int DAC960_media_changed(struct gendisk *disk)
++static unsigned int DAC960_check_events(struct gendisk *disk,
 +					unsigned int clearing)
  {
- 	struct floppy_state *fs = disk->private_data;
+ 	DAC960_Controller_T *p = disk->queue->queuedata;
+ 	int drive_nr = (long)disk->private_data;
  
--	return fs->ejected;
-+	return fs->ejected ? DISK_EVENT_MEDIA_CHANGE : 0;
- }
- 
- static int floppy_revalidate(struct gendisk *disk)
-@@ -772,7 +773,7 @@ static const struct block_device_operations floppy_fops = {
- 	.release	 = floppy_release,
- 	.ioctl		 = floppy_ioctl,
- 	.getgeo		 = floppy_getgeo,
--	.media_changed	 = floppy_check_change,
-+	.check_events	 = floppy_check_events,
- 	.revalidate_disk = floppy_revalidate,
- };
- 
-@@ -857,6 +858,7 @@ static int __devinit swim_floppy_init(struct swim_priv *swd)
- 		swd->unit[drive].disk->first_minor = drive;
- 		sprintf(swd->unit[drive].disk->disk_name, "fd%d", drive);
- 		swd->unit[drive].disk->fops = &floppy_fops;
-+		swd->unit[drive].disk->events = DISK_EVENT_MEDIA_CHANGE;
- 		swd->unit[drive].disk->private_data = &swd->unit[drive];
- 		swd->unit[drive].disk->queue = swd->queue;
- 		set_capacity(swd->unit[drive].disk, 2880);
-diff --git a/drivers/block/swim3.c b/drivers/block/swim3.c
-index bf3a5b8..4c10f56 100644
---- a/drivers/block/swim3.c
-+++ b/drivers/block/swim3.c
-@@ -250,7 +250,8 @@ static int floppy_ioctl(struct block_device *bdev, fmode_t mode,
- 			unsigned int cmd, unsigned long param);
- static int floppy_open(struct block_device *bdev, fmode_t mode);
- static int floppy_release(struct gendisk *disk, fmode_t mode);
--static int floppy_check_change(struct gendisk *disk);
-+static unsigned int floppy_check_events(struct gendisk *disk,
-+					unsigned int clearing);
- static int floppy_revalidate(struct gendisk *disk);
- 
- static bool swim3_end_request(int err, unsigned int nr_bytes)
-@@ -975,10 +976,11 @@ static int floppy_release(struct gendisk *disk, fmode_t mode)
+ 	if (!p->LogicalDriveInitiallyAccessible[drive_nr])
+-		return 1;
++		return DISK_EVENT_MEDIA_CHANGE;
  	return 0;
  }
  
--static int floppy_check_change(struct gendisk *disk)
-+static unsigned int floppy_check_events(struct gendisk *disk,
-+					unsigned int clearing)
- {
- 	struct floppy_state *fs = disk->private_data;
--	return fs->ejected;
-+	return fs->ejected ? DISK_EVENT_MEDIA_CHANGE : 0;
- }
- 
- static int floppy_revalidate(struct gendisk *disk)
-@@ -1025,7 +1027,7 @@ static const struct block_device_operations floppy_fops = {
- 	.open		= floppy_unlocked_open,
- 	.release	= floppy_release,
- 	.ioctl		= floppy_ioctl,
--	.media_changed	= floppy_check_change,
-+	.check_events	= floppy_check_events,
- 	.revalidate_disk= floppy_revalidate,
+@@ -163,7 +164,7 @@ static const struct block_device_operations DAC960_BlockDeviceOperations = {
+ 	.owner			= THIS_MODULE,
+ 	.open			= DAC960_open,
+ 	.getgeo			= DAC960_getgeo,
+-	.media_changed		= DAC960_media_changed,
++	.check_events		= DAC960_check_events,
+ 	.revalidate_disk	= DAC960_revalidate_disk,
  };
  
-@@ -1161,6 +1163,7 @@ static int __devinit swim3_attach(struct macio_dev *mdev, const struct of_device
- 	disk->major = FLOPPY_MAJOR;
- 	disk->first_minor = i;
- 	disk->fops = &floppy_fops;
+@@ -2546,6 +2547,7 @@ static bool DAC960_RegisterBlockDevice(DAC960_Controller_T *Controller)
+ 	disk->major = MajorNumber;
+ 	disk->first_minor = n << DAC960_MaxPartitionsBits;
+ 	disk->fops = &DAC960_BlockDeviceOperations;
 +	disk->events = DISK_EVENT_MEDIA_CHANGE;
- 	disk->private_data = &floppy_states[i];
- 	disk->queue = swim3_queue;
- 	disk->flags |= GENHD_FL_REMOVABLE;
+    }
+   /*
+     Indicate the Block Device Registration completed successfully,
 -- 
 1.7.1
 
