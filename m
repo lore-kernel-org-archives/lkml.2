@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752053Ab0L1F02 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 00:26:28 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:48933 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750739Ab0L1F01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 00:26:27 -0500
-Date: Tue, 28 Dec 2010 16:26:15 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: linux-next: manual merge of the bkl-config tree with the v4l-dvb
- tree
-Message-Id: <20101228162615.f94b1478.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1752680Ab0L1Fs2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 00:48:28 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:43606 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1750739Ab0L1Fs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Dec 2010 00:48:27 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/C9Xo83KLCBV0UDy38Sn+NcGDrsPnaA2lKa8Ykg7
+	V41NEGk9o3kUuj
+Subject: Re: [PATCH] sched: Buggy comparison in check_preempt_tick
+From: Mike Galbraith <efault@gmx.de>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Ranjit Manomohan <ranjitm@google.com>
+In-Reply-To: <1293348184.6942.72.camel@marge.simson.net>
+References: <1293236813-31550-1-git-send-email-venki@google.com>
+	 <1293263418.6896.54.camel@marge.simson.net>
+	 <AANLkTintN2e-NHB=USQ4RSi1LMrC8TxB7BB0MNpPscSB@mail.gmail.com>
+	 <1293348184.6942.72.camel@marge.simson.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 28 Dec 2010 06:48:13 +0100
+Message-ID: <1293515293.6930.11.camel@marge.simson.net>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__28_Dec_2010_16_26_15_+1100_p.zK.WV..c/Sk_7s"
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__28_Dec_2010_16_26_15_+1100_p.zK.WV..c/Sk_7s
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, 2010-12-26 at 08:23 +0100, Mike Galbraith wrote:
 
-Hi Arnd,
+> But anyway..
+> 
+> echo NO_WAKEUP_PREEMPT > sched_features
+> echo NO_TESTME > sched_features
+> two hogs running on isolcpu 3, pid 6890 at nice -2
+> 
+> while sleep 1; do  grep 'pert.*6890' /proc/sched_debug; done
+> 
+> runnable tasks:
+>             task   PID         tree-key  switches  prio
+> -------------------------------------------------------
+> R           pert  6890     50201.071851      7453   118
+> R           pert  6890     50596.171290      7513   118  +60
+> R           pert  6890     50991.265264      7572   118  +59
+> R           pert  6890     51383.781965      7631   118  +59
+>             pert  6890     51781.463129      7691   118  +60
+> 
+> echo TESTME > sched_features
+>             pert  6890    126881.306733     18977   118
+> R           pert  6890    127273.825719     19036   118  +59
+> R           pert  6890    127668.928218     19095   118  +59
+> R           pert  6890    128064.031372     19154   118  +59
+> R           pert  6890    128459.134339     19213   118  +59
+> 
+> ...with a compute load, the thing should be a noop, and appears to be so
+> (with busted compare fixed anyway;).  You have to be well overloaded for
+> buddies to kick in these days, so it's probably pretty hard to get
+> enough spread for the thing to fire.
 
-Today's linux-next merge of the bkl-config tree got a conflict in
-drivers/staging/stradis/Kconfig between commit
-aef01debdfad83ab71a83b7af8cd90203404c1aa ("[media] cpia, stradis: remove
-deprecated V4L1 drivers") from the v4l-dvb tree and commit
-f2fed18d2a61afa5592b3002407e432c689c33f4 ("staging/stradis: mark as
-"depends on BKL"") from the bkl-config tree.
+I did a bit more testing yesterday with wakeup loads.  There's enough
+spread for the test to nudge things a few [0..4] times per second/core.
 
-The former removed the file that the latter modified, so I removed the
-file as well.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+I'd either fix the comparison, and let it keep on nudging once in a
+while, or whack the whole thing.
 
---Signature=_Tue__28_Dec_2010_16_26_15_+1100_p.zK.WV..c/Sk_7s
-Content-Type: application/pgp-signature
+	-Mike
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNGXT3AAoJEDMEi1NhKgbslzEH/16OgmTfRxV+CYUS3063t1+z
-IIFeHoPqtjNwXhIED8NNpQSm5OeaBtyF6A7Anr1wHA50VFcR58MweOBZWcJl7rKO
-me5bkYoRnoy/Wefy1faU3xxytqB8S8B2mKjES/BQDzTbNQxaRmvc8EjSYcMghyAS
-WbMuT1s2PLb/Suh4c23BFgkvWkS69ZHT+62qIsCWm364aUQrpzK3g0WsHVr0Ht7C
-gkuKfgUHnbfEjWlk2LG3Xzs6E0Zrwqhn+wTwCFRYsLjE0LShgzWILQ3XqaBE0YUC
-L3EdtrmqNWcps4fgCCPryPkdnQsZ9gd8EL+fgQoMNqIOhrLbrhkGbh64Ndd/aZM=
-=inRo
------END PGP SIGNATURE-----
-
---Signature=_Tue__28_Dec_2010_16_26_15_+1100_p.zK.WV..c/Sk_7s--
