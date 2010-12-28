@@ -1,99 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab0L1DYs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 22:24:48 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:39814 "EHLO mx2.mail.elte.hu"
+	id S1753281Ab0L1Dfj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 22:35:39 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60671 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753246Ab0L1DYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 22:24:47 -0500
-Date: Tue, 28 Dec 2010 04:24:26 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Franck Bui-Huu <fbuihuu@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ian Munsie <imunsie@au1.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>, Torok Edwin <edwintorok@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [GIT PULL 0/4] perf/core fixes
-Message-ID: <20101228032426.GC24500@elte.hu>
-References: <1293487213-533-1-git-send-email-acme@infradead.org>
+	id S1752240Ab0L1Dfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 22:35:37 -0500
+Message-ID: <4D195AFF.9020106@zytor.com>
+Date: Mon, 27 Dec 2010 19:35:27 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1293487213-533-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Shaohua Li <shaohua.li@intel.com>
+CC: Len Brown <lenb@kernel.org>, Jack Steiner <steiner@sgi.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        "tony.luck@gmail.com" <tony.luck@gmail.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gbeshers@sgi.com" <gbeshers@sgi.com>
+Subject: Re: [PATCH] ACPI: use ioremap_cache()
+References: <20101214220932.GA1206@sgi.com>	 <alpine.LFD.2.00.1012141903210.25387@x980> <20101215024136.GB19601@sgi.com>	 <alpine.LFD.2.00.1012142302110.4878@x980> <20101215164635.GA27373@sgi.com>	 <alpine.LFD.2.00.1012151536510.21167@x980>	 <alpine.LFD.2.00.1012162149370.20940@x980>	 <alpine.LFD.2.00.1012170307080.20940@x980> <1293506460.10593.43.camel@sli10-conroe>
+In-Reply-To: <1293506460.10593.43.camel@sli10-conroe>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/27/2010 07:21 PM, Shaohua Li wrote:
+> RCRB is a memory mapped io. In ICH, it's chipset configuration
+> registers. this range can't be cached.
+> I thought we should add a check like
+> if page is E820_RAM or E820_ACPI then
+> 	cached_map
+> else
+> 	uncached_map
+> we have page_is_ram() API which just checks E820_RAM, I thought we can
+> add a new API to check E820_ACPI.
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+For x86, that is handled by the MTRRs; for ia64, I would assume
+ioremap() handles that somehow, otherwise it wouldn't be able to handle
+existing drivers with ioremap() in them.
 
-> Hi Ingo,
-> 
->         Please consider pulling from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Arnaldo Carvalho de Melo (3):
->   perf script: Finish the rename from trace to script
->   perf record: Fix use of sample_id_all userspace with !sample_id_all kernels
->   perf script: Fix event ordering settings to work with older kernels
-> 
-> Franck Bui-Huu (1):
->   perf probe: Fix short file name probe location reporting
-> 
->  tools/perf/builtin-record.c                        |   24 +++++++++++++++----
->  tools/perf/builtin-script.c                        |    1 +
->  tools/perf/scripts/perl/Perf-Trace-Util/Context.c  |    2 +-
->  tools/perf/scripts/perl/Perf-Trace-Util/Context.xs |    4 +-
->  tools/perf/scripts/perl/Perf-Trace-Util/README     |    4 +-
->  .../perl/Perf-Trace-Util/lib/Perf/Trace/Context.pm |    2 +-
->  .../perl/Perf-Trace-Util/lib/Perf/Trace/Core.pm    |    4 +-
->  .../perl/Perf-Trace-Util/lib/Perf/Trace/Util.pm    |    4 +-
->  tools/perf/scripts/perl/bin/failed-syscalls-report |    2 +-
->  tools/perf/scripts/perl/bin/rw-by-file-report      |    5 +---
->  tools/perf/scripts/perl/bin/rw-by-pid-report       |    5 +---
->  tools/perf/scripts/perl/bin/rwtop-report           |    5 +---
->  tools/perf/scripts/perl/bin/wakeup-latency-report  |    5 +---
->  tools/perf/scripts/perl/bin/workqueue-stats-report |    6 +----
->  tools/perf/scripts/perl/check-perf-trace.pl        |    2 +-
->  tools/perf/scripts/perl/rw-by-file.pl              |    2 +-
->  tools/perf/scripts/perl/workqueue-stats.pl         |    2 +-
->  .../python/Perf-Trace-Util/lib/Perf/Trace/Core.py  |    2 +-
->  .../Perf-Trace-Util/lib/Perf/Trace/SchedGui.py     |    2 +-
->  .../python/Perf-Trace-Util/lib/Perf/Trace/Util.py  |    2 +-
->  .../python/bin/failed-syscalls-by-pid-report       |    2 +-
->  .../scripts/python/bin/futex-contention-report     |    2 +-
->  tools/perf/scripts/python/bin/netdev-times-report  |    2 +-
->  .../perf/scripts/python/bin/sched-migration-report |    2 +-
->  tools/perf/scripts/python/bin/sctop-report         |    2 +-
->  .../python/bin/syscall-counts-by-pid-report        |    2 +-
->  .../perf/scripts/python/bin/syscall-counts-report  |    2 +-
->  tools/perf/scripts/python/check-perf-trace.py      |    2 +-
->  .../perf/scripts/python/failed-syscalls-by-pid.py  |    2 +-
->  tools/perf/scripts/python/sched-migration.py       |    2 +-
->  tools/perf/scripts/python/sctop.py                 |    2 +-
->  tools/perf/scripts/python/syscall-counts-by-pid.py |    2 +-
->  tools/perf/scripts/python/syscall-counts.py        |    2 +-
->  tools/perf/util/probe-event.c                      |   14 +++++-----
->  34 files changed, 62 insertions(+), 63 deletions(-)
+	-hpa
 
-Pulled, thanks a lot Arnaldo!
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-	Ingo
