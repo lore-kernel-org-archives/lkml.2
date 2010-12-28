@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753117Ab0L1NNW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 08:13:22 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60245 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752719Ab0L1NNU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 08:13:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=VQ0LMKmVp/lTqvzYFEhH4j9WOzaR4Sk8fWCSkW2xXmArs1FBqvV2nGf0SwtBlomTd6
-         4BaZCSxSIYHI5CNNSpBrdkqu1pFFxNu/BKJMERziMnFDEtD+xkzUVUkIYpMiKZ3UiG1/
-         dQBIzVu6bKLz53djnOFMw3w1ni8gLNjNiAggU=
+	id S1753201Ab0L1NS2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 08:18:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52477 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752719Ab0L1NSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Dec 2010 08:18:25 -0500
+Date: Tue, 28 Dec 2010 14:18:23 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hans Verkuil <hverkuil@xs4all.nl>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: linux-next: manual merge of the trivial tree with the v4l-dvb
+ tree
+In-Reply-To: <20101228114744.e628825a.sfr@canb.auug.org.au>
+Message-ID: <alpine.LNX.2.00.1012281417570.16569@pobox.suse.cz>
+References: <20101228114744.e628825a.sfr@canb.auug.org.au>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <201012272215.52642.arnd@arndb.de>
-References: <AANLkTim0Xmsnzz5yMLAx_+w-c7sSSReu0SKMAmjpbS+1@mail.gmail.com>
-	<201012272215.52642.arnd@arndb.de>
-Date: Tue, 28 Dec 2010 21:13:19 +0800
-Message-ID: <AANLkTimG6EPdy+crpxc_HDzAMd-4WCaivsTMiQkiFFns@mail.gmail.com>
-Subject: Re: [PATCH v0] add nano semaphore in kernel
-From: Hillf Danton <dhillf@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 28, 2010 at 5:15 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Sunday 26 December 2010, Hillf Danton wrote:
->>
->> Based upon high resolution timer and idea borrowed from semaphore,
->> nano semaphore is created.
->>
->> Nano semaphore provides finer time resolution depending on system
->> configuration and capabilities.
->>
->> Nano semaphore is not to replace semaphore, but used in application
->> environments where nano seconds are required.
->>
->> Three methods, nano_semaphore_try_down, nano_semaphore_down and
->> nano_semaphore_up are implemented in a header file, and there is no
->> corresponding C file since nano semaphore is not complex.
->>
->> Signed-off-by: Hillf Danton <dhillf@gmail.com>
->
-> There are very few users of real semaphores today, and we're trying to
-> get rid of them. It's not clear what your requirements are, since you
-> have not posted any new users of this, but instead of adding more
+On Tue, 28 Dec 2010, Stephen Rothwell wrote:
 
-I want to add new way to do semaphore with finer time resolution,
-without considering much about its potential usage.
+> Hi Jiri,
+> 
+> Today's linux-next merge of the trivial tree got a conflict in
+> drivers/media/video/zoran/zoran.h between commit
+> 8221f9b5fa3e08ba35378f08f2a606156e685916 ("[media] zoran: remove V4L1
+> compat code and zoran custom ioctls") from the v4l-dvb tree and commit
+> b595076a180a56d1bb170e6eceda6eb9d76f4cd3 ("tree-wide: fix comment/printk
+> typos") from the trivial tree.
+> 
+> The former removed the code modified by the latter, so I used the former.
 
-And I learn from your comments there is more to do, thanks.
+On Tue, 28 Dec 2010, Stephen Rothwell wrote:
 
-> locking primitives, I would recommend changing one of the existing
-> ones (mutex, semaphore, rwsem) to have nanosecond timeouts instead
-> of jiffies.
->
-> The easiest way would certainly be to change the three users of
-> down_timeout() to use nanoseconds.
->
+> Hi Jiri,
+> 
+> Today's linux-next merge of the trivial tree got a conflict in
+> drivers/staging/stradis/stradis.c between commit
+> aef01debdfad83ab71a83b7af8cd90203404c1aa ("[media] cpia, stradis: remove
+> deprecated V4L1 drivers") from the v4l-dvb tree and commit
+> b595076a180a56d1bb170e6eceda6eb9d76f4cd3 ("tree-wide: fix comment/printk
+> typos") from the trivial tree.
+> 
+> The former removed the file modified by the latter, so I removed the file.
 
-I will try the three instances of down_timeout() soon.
+Hi Stephen,
 
-Thanks
-Hillf
+I have dropped both hunks, so the conflict should be gone now.
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
