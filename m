@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746Ab0L1AVY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 19:21:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39930 "EHLO mx2.suse.de"
+	id S1752695Ab0L1A1U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 19:27:20 -0500
+Received: from mga01.intel.com ([192.55.52.88]:30850 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752465Ab0L1AVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 19:21:23 -0500
-Date: Tue, 28 Dec 2010 01:21:21 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: David Sterba <dsterba@suse.cz>
-Cc: mchehab@redhat.com, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [TRIVIAL] i7core_edac: fix typos in comments
-In-Reply-To: <1293465075-26572-1-git-send-email-dsterba@suse.cz>
-Message-ID: <alpine.LNX.2.00.1012280121060.16569@pobox.suse.cz>
-References: <1293465075-26572-1-git-send-email-dsterba@suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752094Ab0L1A1U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 19:27:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,237,1291622400"; 
+   d="scan'208";a="872301230"
+Subject: Re: [patch 2/3] add new macros to make percpu readmostly section
+ correctly align
+From: Shaohua Li <shaohua.li@intel.com>
+To: Tejun Heo <htejun@gmail.com>
+Cc: Sam Ravnborg <sam@ravnborg.org>, lkml <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
+In-Reply-To: <20101227121454.GB488@htj.dyndns.org>
+References: <4D073FA9.9020801@gmail.com>
+	 <1292378268.2323.464.camel@sli10-conroe> <4D08CBF4.6040102@gmail.com>
+	 <1292460817.2323.465.camel@sli10-conroe>
+	 <20101216054620.GA3241@merkur.ravnborg.org>
+	 <1292479000.2323.468.camel@sli10-conroe> <4D09E0EE.7040605@gmail.com>
+	 <1292808518.10593.8.camel@sli10-conroe> <4D0F7C5A.1060107@gmail.com>
+	 <1293071914.10593.10.camel@sli10-conroe>
+	 <20101227121454.GB488@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 28 Dec 2010 08:26:57 +0800
+Message-ID: <1293496017.10593.26.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Dec 2010, David Sterba wrote:
-
-> ---
->  drivers/edac/i7core_edac.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
+On Mon, 2010-12-27 at 20:14 +0800, Tejun Heo wrote:
+> On Thu, Dec 23, 2010 at 10:38:34AM +0800, Shaohua Li wrote:
+> > The first patch in the series isn't related to this issue, please
+> > consider merge it.
 > 
-> diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-> index f41a34e..340efb0 100644
-> --- a/drivers/edac/i7core_edac.c
-> +++ b/drivers/edac/i7core_edac.c
-> @@ -1,6 +1,6 @@
->  /* Intel i7 core/Nehalem Memory Controller kernel module
->   *
-> - * This driver supports yhe memory controllers found on the Intel
-> + * This driver supports the memory controllers found on the Intel
->   * processor families i7core, i7core 7xx/8xx, i5core, Xeon 35xx,
->   * Xeon 55xx and Xeon 56xx also known as Nehalem, Nehalem-EP, Lynnfield
->   * and Westmere-EP.
-> @@ -1271,7 +1271,7 @@ static void __init i7core_xeon_pci_fixup(const struct pci_id_table *table)
->  	int i;
->  
->  	/*
-> -	 * On Xeon 55xx, the Intel Quckpath Arch Generic Non-core pci buses
-> +	 * On Xeon 55xx, the Intel Quick Path Arch Generic Non-core pci buses
->  	 * aren't announced by acpi. So, we need to use a legacy scan probing
->  	 * to detect them
->  	 */
-> @@ -1864,7 +1864,7 @@ static int i7core_mce_check_error(void *priv, struct mce *mce)
->  	if (mce->mcgstatus & 1)
->  		i7core_check_error(mci);
->  
-> -	/* Advice mcelog that the error were handled */
-> +	/* Advise mcelog that the errors were handled */
->  	return 1;
->  }
+> Can you please re-post it?  Thanks.
+here it is.
 
-Applied, thanks David.
+Subject: make readmostly section correctly align
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+readmostly section should end at cache line aligned address, otherwise the last
+several data might share cachline with other data and make the readmostly data
+still have cache bounce.
+For example, in ia64, secpath_cachep is the last readmostly data, and it shares
+cacheline with init_uts_ns.
+a000000100e80480 d secpath_cachep
+a000000100e80488 D init_uts_ns
+
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+
+---
+ include/asm-generic/vmlinux.lds.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+Index: linux/include/asm-generic/vmlinux.lds.h
+===================================================================
+--- linux.orig/include/asm-generic/vmlinux.lds.h	2010-12-01 16:49:48.000000000 +0800
++++ linux/include/asm-generic/vmlinux.lds.h	2010-12-02 09:22:32.000000000 +0800
+@@ -192,7 +192,8 @@
+ 
+ #define READ_MOSTLY_DATA(align)						\
+ 	. = ALIGN(align);						\
+-	*(.data..read_mostly)
++	*(.data..read_mostly)						\
++	. = ALIGN(align);
+ 
+ #define CACHELINE_ALIGNED_DATA(align)					\
+ 	. = ALIGN(align);						\
+
+
