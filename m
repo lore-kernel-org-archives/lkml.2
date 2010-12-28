@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371Ab0L1R3f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 12:29:35 -0500
+	id S1754556Ab0L1RbF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 12:31:05 -0500
 Received: from mail-bw0-f66.google.com ([209.85.214.66]:44628 "EHLO
 	mail-bw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754316Ab0L1R3c (ORCPT
+	with ESMTP id S1754348Ab0L1R3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 12:29:32 -0500
+	Tue, 28 Dec 2010 12:29:35 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=nSlcQw91iC5q/ZUCDqgapdUvOrN9ObbAmbDJ1aaOD/x+7v/2K+KJJwMkpc0yw/ONUD
-         aQmY5FsixJyN3rnRaCPKRSja3fXicHkIniEEuUx09feM7TrVXLwjxJKo4VBdb3Oty2oz
-         oSbjIhAThSquwMSZvww1khy3MoOaqDh7Uy4uI=
+        b=uU9HvPVkL6RU2cYxzv6M93iCE6MHUEeNDr1Y7pjSF5caH4n6B7DIKCsXXXdC29P7Fa
+         df6LJ1qhbpze+TiOn847Zqbjt0+nQXGhz1olyPnNx/bwDjTqbcpHVqXXfcXYnSIrUJ1n
+         GPNP+2aKwre2oEAXwI2d11sVWcnwdfBIO0zag=
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
         hch@infradead.org
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 08/16] dac960: convert to bdops->check_events()
-Date: Tue, 28 Dec 2010 18:29:04 +0100
-Message-Id: <1293557352-10592-9-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>, Pete Zaitcev <zaitcev@redhat.com>
+Subject: [PATCH 10/16] ub: convert to bdops->check_events()
+Date: Tue, 28 Dec 2010 18:29:06 +0100
+Message-Id: <1293557352-10592-11-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1293557352-10592-1-git-send-email-tj@kernel.org>
 References: <1293557352-10592-1-git-send-email-tj@kernel.org>
@@ -30,55 +30,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Convert from ->media_changed() to ->check_events().
 
-DAC960 media change notification seems to be one way (once set, never
-cleared) and will generate spurious events when polled once the
-condition triggers.
+ub buffers media changed state and clears it on revalidation.  It will
+behave correctly with kernel event polling.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Jens Axboe <axboe@kernel.dk>
 Cc: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Pete Zaitcev <zaitcev@redhat.com>
 ---
- drivers/block/DAC960.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
+ drivers/block/ub.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/block/DAC960.c b/drivers/block/DAC960.c
-index 1f286ab..7988210 100644
---- a/drivers/block/DAC960.c
-+++ b/drivers/block/DAC960.c
-@@ -140,13 +140,14 @@ static int DAC960_getgeo(struct block_device *bdev, struct hd_geometry *geo)
- 	return 0;
- }
- 
--static int DAC960_media_changed(struct gendisk *disk)
-+static unsigned int DAC960_check_events(struct gendisk *disk,
-+					unsigned int clearing)
+diff --git a/drivers/block/ub.c b/drivers/block/ub.c
+index 9ae3bb7..68b9430 100644
+--- a/drivers/block/ub.c
++++ b/drivers/block/ub.c
+@@ -1788,7 +1788,8 @@ static int ub_bd_revalidate(struct gendisk *disk)
+  *
+  * The return code is bool!
+  */
+-static int ub_bd_media_changed(struct gendisk *disk)
++static unsigned int ub_bd_check_events(struct gendisk *disk,
++				       unsigned int clearing)
  {
- 	DAC960_Controller_T *p = disk->queue->queuedata;
- 	int drive_nr = (long)disk->private_data;
+ 	struct ub_lun *lun = disk->private_data;
  
- 	if (!p->LogicalDriveInitiallyAccessible[drive_nr])
+@@ -1806,10 +1807,10 @@ static int ub_bd_media_changed(struct gendisk *disk)
+ 	 */
+ 	if (ub_sync_tur(lun->udev, lun) != 0) {
+ 		lun->changed = 1;
 -		return 1;
 +		return DISK_EVENT_MEDIA_CHANGE;
- 	return 0;
+ 	}
+ 
+-	return lun->changed;
++	return lun->changed ? DISK_EVENT_MEDIA_CHANGE : 0;
  }
  
-@@ -163,7 +164,7 @@ static const struct block_device_operations DAC960_BlockDeviceOperations = {
- 	.owner			= THIS_MODULE,
- 	.open			= DAC960_open,
- 	.getgeo			= DAC960_getgeo,
--	.media_changed		= DAC960_media_changed,
-+	.check_events		= DAC960_check_events,
- 	.revalidate_disk	= DAC960_revalidate_disk,
+ static const struct block_device_operations ub_bd_fops = {
+@@ -1817,7 +1818,7 @@ static const struct block_device_operations ub_bd_fops = {
+ 	.open		= ub_bd_unlocked_open,
+ 	.release	= ub_bd_release,
+ 	.ioctl		= ub_bd_ioctl,
+-	.media_changed	= ub_bd_media_changed,
++	.check_events	= ub_bd_check_events,
+ 	.revalidate_disk = ub_bd_revalidate,
  };
  
-@@ -2546,6 +2547,7 @@ static bool DAC960_RegisterBlockDevice(DAC960_Controller_T *Controller)
- 	disk->major = MajorNumber;
- 	disk->first_minor = n << DAC960_MaxPartitionsBits;
- 	disk->fops = &DAC960_BlockDeviceOperations;
+@@ -2333,6 +2334,7 @@ static int ub_probe_lun(struct ub_dev *sc, int lnum)
+ 	disk->major = UB_MAJOR;
+ 	disk->first_minor = lun->id * UB_PARTS_PER_LUN;
+ 	disk->fops = &ub_bd_fops;
 +	disk->events = DISK_EVENT_MEDIA_CHANGE;
-    }
-   /*
-     Indicate the Block Device Registration completed successfully,
+ 	disk->private_data = lun;
+ 	disk->driverfs_dev = &sc->intf->dev;
+ 
 -- 
 1.7.1
 
