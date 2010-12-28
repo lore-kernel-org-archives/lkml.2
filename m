@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499Ab0L1R3o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 12:29:44 -0500
-Received: from mail-bw0-f66.google.com ([209.85.214.66]:47220 "EHLO
+	id S1754480Ab0L1RaU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 12:30:20 -0500
+Received: from mail-bw0-f66.google.com ([209.85.214.66]:44628 "EHLO
 	mail-bw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754455Ab0L1R3l (ORCPT
+	with ESMTP id S1754449Ab0L1R3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 12:29:41 -0500
+	Tue, 28 Dec 2010 12:29:40 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=vX53KIppX+vtWw7yhiA0SA9bkbAwuvXcCVVW9aOuvTUfbSpDCUlgb9QmJqCuCR/HQQ
-         pv7CCAKLC/1xr6qbufuzujgDFXoqKUsU+1T08NoqF/QrKyYrhjQXZqBCWlhk3RpmO3Ou
-         FEK4+0btZR6T7xdWl0KW+NDvNX4bCIybSpXFc=
+        b=MA31Xr5qeOxr8Ht5Yr2ndY41Y8FiaVGIpSDYNMcRBSjYLF7qNJ1mBOHphddjQjhotZ
+         3Uktv0vGl8hLYSK7Irti8QpJM1LDplhs5VTyoaUvvzseQZ8h79fCcKZS7QKXUQaY4cQ2
+         TVPA6fMp1Z0lPCTtG+YmPG2rtSd3XLE/6R2Xk=
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
         hch@infradead.org
-Cc: Tejun Heo <tj@kernel.org>, Peter Osterlund <petero2@telia.com>
-Subject: [PATCH 15/16] pktcdvd: convert to bdops->check_events()
-Date: Tue, 28 Dec 2010 18:29:11 +0100
-Message-Id: <1293557352-10592-16-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 14/16] umem: drop dummy ->media_changed()
+Date: Tue, 28 Dec 2010 18:29:10 +0100
+Message-Id: <1293557352-10592-15-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1293557352-10592-1-git-send-email-tj@kernel.org>
 References: <1293557352-10592-1-git-send-email-tj@kernel.org>
@@ -28,66 +28,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert from ->media_changed() to ->check_events().
-
-pktcdvd needs to forward all event related operations to the
-underlying device.  Forward ->check_events() instead of
-->media_changed() and inherit disk->[async_]events.
+umem doesn't implement media changed detection and there's no need to
+implement dummy callback anymore.  Remove it.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Jens Axboe <axboe@kernel.dk>
 Cc: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Peter Osterlund <petero2@telia.com>
 ---
- drivers/block/pktcdvd.c |   13 +++++++++----
- 1 files changed, 9 insertions(+), 4 deletions(-)
+ drivers/block/umem.c |   10 ----------
+ 1 files changed, 0 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
-index 77d70ee..a077db2 100644
---- a/drivers/block/pktcdvd.c
-+++ b/drivers/block/pktcdvd.c
-@@ -2796,7 +2796,8 @@ static int pkt_ioctl(struct block_device *bdev, fmode_t mode, unsigned int cmd,
- 	return ret;
+diff --git a/drivers/block/umem.c b/drivers/block/umem.c
+index 8be5715..9b102ab 100644
+--- a/drivers/block/umem.c
++++ b/drivers/block/umem.c
+@@ -779,20 +779,10 @@ static int mm_getgeo(struct block_device *bdev, struct hd_geometry *geo)
+ 	return 0;
  }
  
--static int pkt_media_changed(struct gendisk *disk)
-+static unsigned int pkt_check_events(struct gendisk *disk,
-+				     unsigned int clearing)
- {
- 	struct pktcdvd_device *pd = disk->private_data;
- 	struct gendisk *attached_disk;
-@@ -2806,9 +2807,9 @@ static int pkt_media_changed(struct gendisk *disk)
- 	if (!pd->bdev)
- 		return 0;
- 	attached_disk = pd->bdev->bd_disk;
--	if (!attached_disk)
-+	if (!attached_disk || !attached_disk->fops->check_events)
- 		return 0;
--	return attached_disk->fops->media_changed(attached_disk);
-+	return attached_disk->fops->check_events(attached_disk, clearing);
- }
- 
- static const struct block_device_operations pktcdvd_ops = {
-@@ -2816,7 +2817,7 @@ static const struct block_device_operations pktcdvd_ops = {
- 	.open =			pkt_open,
- 	.release =		pkt_close,
- 	.ioctl =		pkt_ioctl,
--	.media_changed =	pkt_media_changed,
-+	.check_events =		pkt_check_events,
+-/*
+- * Future support for removable devices
+- */
+-static int mm_check_change(struct gendisk *disk)
+-{
+-/*  struct cardinfo *dev = disk->private_data; */
+-	return 0;
+-}
+-
+ static const struct block_device_operations mm_fops = {
+ 	.owner		= THIS_MODULE,
+ 	.getgeo		= mm_getgeo,
+ 	.revalidate_disk = mm_revalidate,
+-	.media_changed	= mm_check_change,
  };
  
- static char *pktcdvd_devnode(struct gendisk *gd, mode_t *mode)
-@@ -2889,6 +2890,10 @@ static int pkt_setup_dev(dev_t dev, dev_t* pkt_dev)
- 	if (ret)
- 		goto out_new_dev;
- 
-+	/* inherit events of the host device */
-+	disk->events = pd->bdev->bd_disk->events;
-+	disk->async_events = pd->bdev->bd_disk->async_events;
-+
- 	add_disk(disk);
- 
- 	pkt_sysfs_dev_new(pd);
+ static int __devinit mm_pci_probe(struct pci_dev *dev,
 -- 
 1.7.1
 
