@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab0L1Ksq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 05:48:46 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:36608 "EHLO
+	id S1753344Ab0L1Ks4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 05:48:56 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:46308 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753192Ab0L1Kso (ORCPT
+	by vger.kernel.org with ESMTP id S1753273Ab0L1Ksw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 05:48:44 -0500
-X-Sasl-enc: U9QlZLfkA5KXMucNbiPFbhPp8CIWne2XW56scHPlsaEX 1293533322
+	Tue, 28 Dec 2010 05:48:52 -0500
+X-Sasl-enc: gqr7MwNO5EZdQxzivwFzSwaIiIn3fpp1M8QKefmpe2fi 1293533331
 From: Roberto Sassu <roberto.sassu@polito.it>
 To: linux-security-module@vger.kernel.org
 Cc: keyrings@linux-nfs.org, linux-fsdevel@vger.kernel.org,
@@ -15,14 +15,14 @@ Cc: keyrings@linux-nfs.org, linux-fsdevel@vger.kernel.org,
         dhowells@redhat.com, jmorris@namei.org, safford@watson.ibm.com,
         ramunno@polito.it, tyhicks@linux.vnet.ibm.com, kirkland@canonical.com,
         Roberto Sassu <roberto.sassu@polito.it>
-Subject: [RFC][PATCH v2 1/6] encrypted-keys: fixed valid_master_desc() function description
-Date: Tue, 28 Dec 2010 11:48:11 +0100
-Message-Id: <1293533302-22868-2-git-send-email-roberto.sassu@polito.it>
+Subject: [RFC][PATCH v2 2/6] encrypted-keys: added additional debug messages
+Date: Tue, 28 Dec 2010 11:48:12 +0100
+Message-Id: <1293533302-22868-3-git-send-email-roberto.sassu@polito.it>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1293533302-22868-1-git-send-email-roberto.sassu@polito.it>
 References: <1293533302-22868-1-git-send-email-roberto.sassu@polito.it>
 MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----4DB0DC78906D175F95F3E30C42BC6C8C"
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----5A975E96756A7F79DA8A40F5CF096F6A"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,35 +30,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an S/MIME signed message
 
-------4DB0DC78906D175F95F3E30C42BC6C8C
+------5A975E96756A7F79DA8A40F5CF096F6A
 Content-Type: text/plain
 
-Valid key type prefixes for the parameter 'key-type' are: 'trusted' and
-'user'.
+Some debug messages have been added in the function datablob_parse() in
+order to better identify errors returned when dealing with 'encrypted'
+keys.
 
 Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 ---
- security/keys/encrypted_defined.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ security/keys/encrypted_defined.c |   44 +++++++++++++++++++++++++++---------
+ 1 files changed, 33 insertions(+), 11 deletions(-)
 
 diff --git a/security/keys/encrypted_defined.c b/security/keys/encrypted_defined.c
-index 32d27c8..c1c5e27 100644
+index c1c5e27..0f3c159 100644
 --- a/security/keys/encrypted_defined.c
 +++ b/security/keys/encrypted_defined.c
-@@ -84,7 +84,7 @@ static int aes_get_sizes(void)
- /*
-  * valid_master_desc - verify the 'key-type:desc' of a new/updated master-key
-  *
-- * key-type:= "trusted:" | "encrypted:"
-+ * key-type:= "trusted:" | "user:"
-  * desc:= master-key description
-  *
-  * Verify that 'key-type' is valid and that 'desc' exists. On key update,
+@@ -133,46 +133,68 @@ static int datablob_parse(char *datablob, char **master_desc,
+ 	substring_t args[MAX_OPT_ARGS];
+ 	int ret = -EINVAL;
+ 	int key_cmd;
+-	char *p;
++	char *keyword;
+ 
+-	p = strsep(&datablob, " \t");
+-	if (!p)
++	keyword = strsep(&datablob, " \t");
++	if (!keyword) {
++		pr_err("encrypted_key: insufficient parameters specified\n");
+ 		return ret;
+-	key_cmd = match_token(p, key_tokens, args);
++	}
++	key_cmd = match_token(keyword, key_tokens, args);
+ 
+ 	*master_desc = strsep(&datablob, " \t");
+-	if (!*master_desc)
++	if (!*master_desc) {
++		pr_err("encrypted_key: master key parameter is missing\n");
+ 		goto out;
++	}
+ 
+-	if (valid_master_desc(*master_desc, NULL) < 0)
++	if (valid_master_desc(*master_desc, NULL) < 0) {
++		pr_err("encrypted_key: master key parameter \'%s\' "
++		       "is invalid\n", *master_desc);
+ 		goto out;
++	}
+ 
+ 	if (decrypted_datalen) {
+ 		*decrypted_datalen = strsep(&datablob, " \t");
+-		if (!*decrypted_datalen)
++		if (!*decrypted_datalen) {
++			pr_err("encrypted_key: keylen parameter is missing\n");
+ 			goto out;
++		}
+ 	}
+ 
+ 	switch (key_cmd) {
+ 	case Opt_new:
+-		if (!decrypted_datalen)
++		if (!decrypted_datalen) {
++			pr_err("encrypted_key: keyword \'%s\' not allowed when "
++			       "updating an existent key\n", keyword);
+ 			break;
++		}
+ 		ret = 0;
+ 		break;
+ 	case Opt_load:
+-		if (!decrypted_datalen)
++		if (!decrypted_datalen) {
++			pr_err("encrypted_key: keyword \'%s\' not allowed when "
++			       "updating an existent key\n", keyword);
+ 			break;
++		}
+ 		*hex_encoded_iv = strsep(&datablob, " \t");
+-		if (!*hex_encoded_iv)
++		if (!*hex_encoded_iv) {
++			pr_err("encrypted_key: hex blob is missing\n");
+ 			break;
++		}
+ 		ret = 0;
+ 		break;
+ 	case Opt_update:
+-		if (decrypted_datalen)
++		if (decrypted_datalen) {
++			pr_err("encrypted_key: keyword \'%s\' not allowed when "
++			       "instantiating a new key\n", keyword);
+ 			break;
++		}
+ 		ret = 0;
+ 		break;
+ 	case Opt_err:
++		pr_err("encrypted_key: keyword \'%s\' not recognized\n",
++		       keyword);
+ 		break;
+ 	}
+ out:
 -- 
 1.7.2.3
 
 
-------4DB0DC78906D175F95F3E30C42BC6C8C
+------5A975E96756A7F79DA8A40F5CF096F6A
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -96,16 +168,16 @@ YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
 MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
 aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
 Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMDEyMjgxMDQ4MzlaMCMGCSqG
-SIb3DQEJBDEWBBR2cLnlajjqrbuRm7du7pkPHUuqCzB5BgkqhkiG9w0BCQ8xbDBq
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMDEyMjgxMDQ4NDdaMCMGCSqG
+SIb3DQEJBDEWBBRAMv2bV3asA+GTcm55DBmaSRq/RzB5BgkqhkiG9w0BCQ8xbDBq
 MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
 DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQBIMqim6HndW0ksnub86wNt3JdZ
-/olX38n84APjsCFarxznaJ8++JYpMViOpUbhIobHXsmn5KNl24U7a3LCDRNSxljj
-wZiBAKPuLwsSNBGogX7uslfHZpCD4FAPGJfSBiq+GKVY52lemTJvjRb/7d1eqETJ
-UElao4TScENxLRqHBWVrpeQtMvcTQw+sUEJTkjipaAUfNS7T12rlhMBLPADz9Am2
-qbJb9oXxaYZjVZ2La4DEbSgepxpJFLB0G7pcS6IdxhYdZTNFiQZwzNGEqO7MhdwQ
-NqKbA3a/H6N5IAKzuyucjo9ofdeunq4CT21Omttkh3RvIb7xrO5iQr34mkWg
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQDRI9+B/B19lT0lZrNy+OvBgnzV
+ihCBHaFc3XtPBOtdXP6zDx9MiWWnAi8+Rx+p0vVwgPMfNtymVWyHL18FIaIfmpvX
+97d7jXXAnqr57i9CzHpOCZz7NHs/K0mz2+BC4kUj5wJz5ZTQzRvyClsh1BBg2Ziy
+LDir3wUeRJRx5J7W1pNTWIqFi57B0RQf4fad0YWU8vNNCga8/Pfc7ctLRC44VNHp
+kyxLxtQAOyfx4qQ3TQ7wTJXkF4D7f9I1UhIDFeMr6OCzkzZkcAXKv/f/M2ph1YFN
+SRIoxwOUbIWjG/hjp8rcJ0DddL4aTWal7VtAgj/gnce0+RKnmoQuUkrA4dDf
 
-------4DB0DC78906D175F95F3E30C42BC6C8C--
+------5A975E96756A7F79DA8A40F5CF096F6A--
 
