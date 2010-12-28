@@ -1,105 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744Ab0L1UJT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 15:09:19 -0500
-Received: from smtp-out-091.synserver.de ([212.40.180.91]:1048 "HELO
-	smtp-out-089.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1751033Ab0L1UJS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 15:09:18 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 10063
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH] ASoC: codecs: Add missing control_type initialization
-Date: Tue, 28 Dec 2010 21:08:57 +0100
-Message-Id: <1293566937-7937-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.2.3
+	id S1751993Ab0L1UM1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 15:12:27 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56619 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750837Ab0L1UM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Dec 2010 15:12:26 -0500
+Message-ID: <4D1A449F.50002@zytor.com>
+Date: Tue, 28 Dec 2010 12:12:15 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Shaohua Li <shaohua.li@intel.com>
+CC: Len Brown <lenb@kernel.org>, Jack Steiner <steiner@sgi.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        "tony.luck@gmail.com" <tony.luck@gmail.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gbeshers@sgi.com" <gbeshers@sgi.com>
+Subject: Re: [PATCH] ACPI: use ioremap_cache()
+References: <20101214220932.GA1206@sgi.com>	 <alpine.LFD.2.00.1012141903210.25387@x980> <20101215024136.GB19601@sgi.com>	 <alpine.LFD.2.00.1012142302110.4878@x980> <20101215164635.GA27373@sgi.com>	 <alpine.LFD.2.00.1012151536510.21167@x980>	 <alpine.LFD.2.00.1012162149370.20940@x980>	 <alpine.LFD.2.00.1012170307080.20940@x980>	 <1293506460.10593.43.camel@sli10-conroe>  <4D195AFF.9020106@zytor.com> <1293512540.10593.46.camel@sli10-conroe>
+In-Reply-To: <1293512540.10593.46.camel@sli10-conroe>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some codec drivers do not initialize the control_type field in their private
-device struct, but still use it when calling snd_soc_codec_set_cache_io.
-This patch fixes the issue by properly initializing it in the drivers probe
-functions.
+On 12/27/2010 09:02 PM, Shaohua Li wrote:
+>>
+>> For x86, that is handled by the MTRRs; 
+> does it cause any problem if the pat and mtrr doesn't match?
+> 
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+No, the interaction rules between PAT and MTRR are well-defined; see the
+SDM 3A.  If they weren't we would have huge problems with SMM.
 
----
-Compile tested only
----
- sound/soc/codecs/wm8940.c |    1 +
- sound/soc/codecs/wm8955.c |    1 +
- sound/soc/codecs/wm8960.c |    1 +
- sound/soc/codecs/wm8971.c |    1 +
- sound/soc/codecs/wm9081.c |    1 +
- 5 files changed, 5 insertions(+), 0 deletions(-)
+	-hpa
 
-diff --git a/sound/soc/codecs/wm8940.c b/sound/soc/codecs/wm8940.c
-index f8c33b6..a2c788f 100644
---- a/sound/soc/codecs/wm8940.c
-+++ b/sound/soc/codecs/wm8940.c
-@@ -767,6 +767,7 @@ static __devinit int wm8940_i2c_probe(struct i2c_client *i2c,
- 
- 	i2c_set_clientdata(i2c, wm8940);
- 	wm8940->control_data = i2c;
-+	wm8940->control_type = SND_SOC_I2C;
- 
- 	ret = snd_soc_register_codec(&i2c->dev,
- 			&soc_codec_dev_wm8940, &wm8940_dai, 1);
-diff --git a/sound/soc/codecs/wm8955.c b/sound/soc/codecs/wm8955.c
-index fdc7c8a..2ac35b0 100644
---- a/sound/soc/codecs/wm8955.c
-+++ b/sound/soc/codecs/wm8955.c
-@@ -1003,6 +1003,7 @@ static __devinit int wm8955_i2c_probe(struct i2c_client *i2c,
- 		return -ENOMEM;
- 
- 	i2c_set_clientdata(i2c, wm8955);
-+	wm8955->control_type = SND_SOC_I2C;
- 
- 	ret = snd_soc_register_codec(&i2c->dev,
- 			&soc_codec_dev_wm8955, &wm8955_dai, 1);
-diff --git a/sound/soc/codecs/wm8960.c b/sound/soc/codecs/wm8960.c
-index 6983502..4a99b766 100644
---- a/sound/soc/codecs/wm8960.c
-+++ b/sound/soc/codecs/wm8960.c
-@@ -1012,6 +1012,7 @@ static __devinit int wm8960_i2c_probe(struct i2c_client *i2c,
- 		return -ENOMEM;
- 
- 	i2c_set_clientdata(i2c, wm8960);
-+	wm8960->control_type = SND_SOC_I2C;
- 	wm8960->control_data = i2c;
- 
- 	ret = snd_soc_register_codec(&i2c->dev,
-diff --git a/sound/soc/codecs/wm8971.c b/sound/soc/codecs/wm8971.c
-index 63f6dbf..9f18db6 100644
---- a/sound/soc/codecs/wm8971.c
-+++ b/sound/soc/codecs/wm8971.c
-@@ -718,6 +718,7 @@ static __devinit int wm8971_i2c_probe(struct i2c_client *i2c,
- 	if (wm8971 == NULL)
- 		return -ENOMEM;
- 
-+	wm8971->control_type = SND_SOC_I2C;
- 	i2c_set_clientdata(i2c, wm8971);
- 
- 	ret = snd_soc_register_codec(&i2c->dev,
-diff --git a/sound/soc/codecs/wm9081.c b/sound/soc/codecs/wm9081.c
-index 11018e2..badc8ee 100644
---- a/sound/soc/codecs/wm9081.c
-+++ b/sound/soc/codecs/wm9081.c
-@@ -1334,6 +1334,7 @@ static __devinit int wm9081_i2c_probe(struct i2c_client *i2c,
- 		return -ENOMEM;
- 
- 	i2c_set_clientdata(i2c, wm9081);
-+	wm9081->control_type = SND_SOC_I2C;
- 	wm9081->control_data = i2c;
- 
- 	ret = snd_soc_register_codec(&i2c->dev,
 -- 
-1.7.2.3
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
