@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541Ab0L1JJe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 04:09:34 -0500
-Received: from home.kolivas.org ([59.167.196.135]:39989 "EHLO home.kolivas.org"
+	id S1752618Ab0L1JNy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 04:13:54 -0500
+Received: from smtp.nokia.com ([147.243.128.24]:32431 "EHLO mgw-da01.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751588Ab0L1JJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 04:09:33 -0500
-From: Con Kolivas <kernel@kolivas.org>
-To: Rogier Wolff <R.E.Wolff@bitwizard.nl>
-Subject: Re: Regular ext4 error warning with HD in USB dock
-Date: Tue, 28 Dec 2010 20:09:21 +1100
-User-Agent: KMail/1.13.5 (Linux/2.6.36.2-ck1; KDE/4.4.5; x86_64; ; )
-Cc: "Ted Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-        adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
-        linux-usb@vger.kernel.org
-References: <201012280953.46149.kernel@kolivas.org> <20101228025343.GD10149@thunk.org> <20101228081917.GA1351@bitwizard.nl>
-In-Reply-To: <20101228081917.GA1351@bitwizard.nl>
+	id S1751588Ab0L1JNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Dec 2010 04:13:51 -0500
+Message-ID: <4D19AB5C.3000608@nokia.com>
+Date: Tue, 28 Dec 2010 11:18:20 +0200
+From: Peter Ujfalusi <peter.ujfalusi@nokia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101215 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012282009.21890.kernel@kolivas.org>
+To: ext Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the sound-asoc tree
+References: <20101228103234.29e09106.sfr@canb.auug.org.au>
+In-Reply-To: <20101228103234.29e09106.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Dec 2010 19:19:17 Rogier Wolff wrote:
-> On Mon, Dec 27, 2010 at 09:53:43PM -0500, Ted Ts'o wrote:
-> > On Tue, Dec 28, 2010 at 09:53:45AM +1100, Con Kolivas wrote:
-> > > [1048401.773270] EXT4-fs (sde8): mounted filesystem with writeback data
-> > > mode. Opts: (null)
-> > > [1048702.736011] EXT4-fs (sde8): error count: 3
-> > > [1048702.736016] EXT4-fs (sde8): initial error at 1289053677:
-> > > ext4_journal_start_sb:251
-> > > [1048702.736018] EXT4-fs (sde8): last error at 1289080948:
-> > > ext4_put_super:719
-> > 
-> > That's actually not an error.  It's a report which is generated every
-> > 24 hours, indicating that there has been 3 errors since the last time
-> > the error count has been cleared, with the first error taking place at
-> > Sat Nov 6 10:27:57 2010 (US/Eastern) in the function
-> > ext4_journal_start_sb(), at line 251, and the most recent error taking
-> > place at Sat Nov 6 18:02:28 2010 (US/Eastern), in the function
-> > ext4_put_super() at line 719.  This is a new feature which was added
-> > in 2.6.36.
-> 
-> Nice. But the issue you're not mentioning is: What errors could have
-> happened on the 6th of november? Should Con worry about those errors?
-> 
-> OK, the chances are that he has rebooted since november, and that an
-> older fsck fixed the errors, but not cleared the "fs errror log". Would
-> these errors have triggered a "remount-readonly" if the fs was mounted
-> like that?
+Hi,
 
-Indeed the FS was remounted as RO at the time. I had to power down the USB 
-device and power it up again after umounting the FS and then doing an FSCK 
-before it was usable again, and the machine had about a month of uptime when 
-it happened. It has not caused a problem since.
+On 12/28/2010 01:32 AM, ext Stephen Rothwell wrote:
+> Hi all,
+> 
+> After merging the sound-asoc tree, today's linux-next build (x86_64
+> allmodconfig) produced this warning:
+> 
+> sound/soc/codecs/tpa6130a2.c: In function 'tpa6130a2_add_controls':
+> sound/soc/codecs/tpa6130a2.c:342: warning: unused variable 'dapm'
+> 
+> Introduced by commit 39646871a47fd8808c08de0ce7d7ca8393af2805 ("ASoC:
+> tpa6130a2: Replace DAPM code with direct interface").
 
-Thanks,
-Con
+Sorry about that.
+I'll send the fix in a few minutes.
+
 -- 
--ck
+Péter
