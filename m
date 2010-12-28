@@ -1,81 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134Ab0L1Km1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 05:42:27 -0500
-Received: from blade3.isti.cnr.it ([194.119.192.19]:52123 "EHLO
-	BLADE3.ISTI.CNR.IT" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752988Ab0L1KmZ (ORCPT
+	id S1753187Ab0L1Ksi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 05:48:38 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:41380 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752719Ab0L1Ksg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 05:42:25 -0500
-Date: Tue, 28 Dec 2010 11:41:53 +0100
-From: torn5 <torn5@shiftmail.org>
-Subject: Re: Regular ext4 error warning with HD in USB dock
-In-reply-to: <20101228025343.GD10149@thunk.org>
-To: "Ted Ts'o" <tytso@mit.edu>, Con Kolivas <kernel@kolivas.org>,
-        linux-kernel@vger.kernel.org, adilger.kernel@dilger.ca,
-        linux-ext4@vger.kernel.org, linux-usb@vger.kernel.org
-Message-id: <4D19BEF1.9010708@shiftmail.org>
-MIME-version: 1.0
-Content-type: text/plain; format=flowed; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11)
- Gecko/20100713 Thunderbird/3.0.6
-X-INSM-ip-source: 155.253.6.254 Auth Done
-References: <201012280953.46149.kernel@kolivas.org>
- <20101228025343.GD10149@thunk.org>
+	Tue, 28 Dec 2010 05:48:36 -0500
+X-Sasl-enc: EcCfuAqKev3shtY7IIgG404IdgpyWGrrQPnWWCeh69w4 1293533315
+From: Roberto Sassu <roberto.sassu@polito.it>
+To: linux-security-module@vger.kernel.org
+Cc: keyrings@linux-nfs.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, zohar@linux.vnet.ibm.com,
+        dhowells@redhat.com, jmorris@namei.org, safford@watson.ibm.com,
+        ramunno@polito.it, tyhicks@linux.vnet.ibm.com, kirkland@canonical.com,
+        Roberto Sassu <roberto.sassu@polito.it>
+Subject: [RFC][PATCH v2 0/6] eCryptfs: added support for the encrypted key type
+Date: Tue, 28 Dec 2010 11:48:10 +0100
+Message-Id: <1293533302-22868-1-git-send-email-roberto.sassu@polito.it>
+X-Mailer: git-send-email 1.7.2.3
+MIME-Version: 1.0
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----CE58403B3E7E2514B1A662BC83190689"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/28/2010 03:53 AM, Ted Ts'o wrote:
-> On Tue, Dec 28, 2010 at 09:53:45AM +1100, Con Kolivas wrote:
->    
->> Since I moved my internal HD into a USB dock externally and mount the ext4
->> filesystem on it, I regularly get the following errors after it has been
->> mounted for a while (see timecode). It doesn't seem to matter which recent
->> kernel I use.
->>
->> [1048401.773270] EXT4-fs (sde8): mounted filesystem with writeback data mode.
->> Opts: (null)
->> [1048702.736011] EXT4-fs (sde8): error count: 3
->> [1048702.736016] EXT4-fs (sde8): initial error at 1289053677:
->> ext4_journal_start_sb:251
->> [1048702.736018] EXT4-fs (sde8): last error at 1289080948: ext4_put_super:719
->>      
-> That's actually not an error.  It's a report which is generated every
-> 24 hours, indicating that there has been 3 errors since the last time
-> the error count has been cleared, with the first error taking place at
-> Sat Nov 6 10:27:57 2010 (US/Eastern) in the function
-> ext4_journal_start_sb(), at line 251, and the most recent error taking
-> place at Sat Nov 6 18:02:28 2010 (US/Eastern), in the function
-> ext4_put_super() at line 719.  This is a new feature which was added
-> in 2.6.36.
->    
+
+This is an S/MIME signed message
+
+------CE58403B3E7E2514B1A662BC83190689
+Content-Type: text/plain
+
+This patch set adds support for the 'encrypted' key type in the eCryptfs
+filesystem.
+
+Changelog from version v1:
+- added title and fixed text formatting in Documentation/keys-ecryptfs.txt;
+- using isxdigit() in the function valid_ecryptfs_desc().
+
+Roberto Sassu
 
 
-This is going to be a faq...
-I suppose the datetime is encoded (what format is that?) in that long 
-number after "at".
-May I suggest the datetime gets decoded in the printing?
-Also may I suggest that the error happens immediately after mount and 
-not after 300 seconds from mount?
+Roberto Sassu (6):
+  encrypted-keys: fixed valid_master_desc() function description
+  encrypted-keys: added additional debug messages
+  encrypted-keys: add key format support
+  eCryptfs: export global eCryptfs definitions to
+    include/linux/ecryptfs.h
+  encrypted-keys: add ecryptfs format support
+  eCryptfs: added support for the encrypted key type
 
-I just subscribed to this list exactly to report the same kind of error.
+ Documentation/keys-ecryptfs.txt          |   68 +++++++++
+ Documentation/keys-trusted-encrypted.txt |   52 ++++---
+ fs/ecryptfs/ecryptfs_kernel.h            |  120 ++--------------
+ fs/ecryptfs/keystore.c                   |   15 ++-
+ include/keys/encrypted-type.h            |   13 ++-
+ include/linux/ecryptfs.h                 |  113 ++++++++++++++
+ security/keys/Makefile                   |    2 +-
+ security/keys/encrypted_defined.c        |  242 ++++++++++++++++++++++++------
+ security/keys/keys_ecryptfs.c            |   81 ++++++++++
+ security/keys/keys_ecryptfs.h            |   30 ++++
+ 10 files changed, 551 insertions(+), 185 deletions(-)
+ create mode 100644 Documentation/keys-ecryptfs.txt
+ create mode 100644 include/linux/ecryptfs.h
+ create mode 100644 security/keys/keys_ecryptfs.c
+ create mode 100644 security/keys/keys_ecryptfs.h
 
-Last week I was doing reliability tests for open-iscsi and this error 
-drove me crazy. I spent days in tests where I thought I could reproduce 
-an error in open-iscsi by disconnecting and reconnecting the network; I 
-even reported this to the open-iscsi mailing list, but in fact it was an 
-old error of the filesystem and it was not getting cleared by my older 
-e2fsck 1.41.11 .
+-- 
+1.7.2.3
 
-If that happened immediately after mount or if it spitted the datetime 
-in human readable format, I would have immediately guessed it was due to 
-an existing "filesystem problem" (even though I was running fsck.ext4 -f 
-prior to each mount) but instead I thought it was due to my 5 minutes of 
-"networks disconnection tests" I was doing after each mount. DOH!
 
-Anyway thanks for your work: excellent filesystem.
+------CE58403B3E7E2514B1A662BC83190689
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
 
-PS: I have a question for you regarding ext4 behaviour with SCSI 
-commands resubmissions... ok I am opening another thread for that.
+MIIICQYJKoZIhvcNAQcCoIIH+jCCB/YCAQExCzAJBgUrDgMCGgUAMAsGCSqGSIb3
+DQEHAaCCBWQwggVgMIIESKADAgECAgICuzANBgkqhkiG9w0BAQUFADBlMQswCQYD
+VQQGEwJJVDEeMBwGA1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMTYwNAYDVQQD
+Ey1Qb2xpdGVjbmljbyBkaSBUb3Jpbm8gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkw
+HhcNMTAxMjIwMTExOTU0WhcNMTUxMjMxMjM1OTU5WjBfMQswCQYDVQQGEwJJVDEe
+MBwGA1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMRcwFQYDVQQDEw5Sb2JlcnRv
+ICBTYXNzdTEXMBUGCgmSJomT8ixkAQETB2QwMjEzMDUwggEiMA0GCSqGSIb3DQEB
+AQUAA4IBDwAwggEKAoIBAQDS6p4SaJdmmJHJu9On9ZohhBFE2GgYiY7YtRnhhQJA
+NfOtHEhSbpUMaSOfq/Pna6ipR5nAFrlM8cOGcSHZdxrPcgzeJU7F2v1fl2ThvFOc
+TIkcC1aAJGQUuCaCXDlQt+KFecJWTrRZnalMHZueO+J6cgHcvR1CQz5e88dSzo3Q
+XZy0w/hxGL9Ht9velqsl48ohBk2rs/svAOCp6GfqT1Yxwx1p87d3ViTrmuZB4/X+
+da39nJqmo6AZ/y3Zg+r91BgNcfsHVqFT0JTcG6qRIaeqTtqVYpYl+rH1rZzYCakD
+yQyys66sBvaXyaiMr0M+SpyH+LaGz5bDn5Odq16FYEq7AgMBAAGjggIeMIICGjAO
+BgNVHQ8BAf8EBAMCA/gwJwYDVR0lBCAwHgYIKwYBBQUHAwIGCCsGAQUFBwMDBggr
+BgEFBQcDBDAiBgNVHREEGzAZgRdyb2JlcnRvLnNhc3N1QHBvbGl0by5pdDAMBgNV
+HRMBAf8EAjAAMB0GA1UdDgQWBBQgKbXSXn+j769x0tsZQ9pSOzIIdDAfBgNVHSME
+GDAWgBTNm1tbnup2IcQQaOjSLTfbHy/I5DCBywYDVR0gBIHDMIHAMD4GCisGAQQB
+qQcBAQIwMDAuBggrBgEFBQcCARYiaHR0cDovL3d3dy5ldXJvcGtpLm9yZy9jYS9j
+cHMvMS4yLzBEBgorBgEEAakHAgECMDYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
+aXRhbHkuZXVyb3BraS5vcmcvY2EvY3BzLzEuMi8wOAYKKwYBBAGVYgECAjAqMCgG
+CCsGAQUFBwIBFhxodHRwOi8vY2EucG9saXRvLml0L2Nwcy8yLjIvMGYGCCsGAQUF
+BwEBBFowWDAhBggrBgEFBQcwAYYVaHR0cDovL29jc3AucG9saXRvLml0MDMGCCsG
+AQUFBzAChidodHRwOi8vY2EucG9saXRvLml0L2NlcnRzL3BvbGl0b19jYS5jZXIw
+NwYDVR0fBDAwLjAsoCqgKIYmaHR0cDovL2NhLnBvbGl0by5pdC9jcmwvcG9saXRv
+X2NybC5jcmwwDQYJKoZIhvcNAQEFBQADggEBADMe0aHcBJXV6pMJPVVSt1Vazd8Y
+LuTLO45Igs9Sb2LuaO6pvcDGvq9dEJnBhP1B+zBAK6WEA1PWb66xC4QXaJnlGZTX
+S3XeBivHWm6BNOH2kNeU0HBeGZCV/n5r70TPxkEAcc7u8YY2i6CiMM428YhZK8Zj
+oN9D3QNIRf4HZgh0FTbf8eL/XvBbK/oPC+Rew+Qql6M3DHnaS1q2SKUwwO/4VXA4
+JsOdatFI68AMXH0Xx9UIcjRi+kvsyvwHlc0Z8AoAtfRMoIl4zFF4Qaowec2UunBK
+YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
+MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
+aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
+Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMDEyMjgxMDQ4MjJaMCMGCSqG
+SIb3DQEJBDEWBBSqPlKF5XELggnT97LwDvTyKBNsvDB5BgkqhkiG9w0BCQ8xbDBq
+MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
+DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQCwSz6cRjthvsuiJMhddkyrUUyb
+FXSS8CvNtk77ZEu0rW6hEsrRGeYVMBQT+2coTzDCLjTlcDFhBR22Kjoih9Guvrwx
+2q08OtADXz9Ysd1XwHFwz5f+1oVI+O2RvtfJmSLzw9vx9eVeRTrxSo3EZd/BAeu5
+FD3PGhhp6OVZIgpN4x4UtXJyx2hokymOjSRwLS4wFsowEh+2CSOrLVtVoKY70GHK
+40eMEVb/7nvKFnF3kyjoDROzzuCaPddD78KQ9uFVNvcd3dCQxUdy8fNTOqgl22ft
+8uueJ8cfsto22e/BWy3BYGqg62Eqme3dP+DWvjDwIi2UA296o6xGymQYySlf
+
+------CE58403B3E7E2514B1A662BC83190689--
+
