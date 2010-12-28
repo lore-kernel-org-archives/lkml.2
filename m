@@ -1,46 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab0L1TAl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 14:00:41 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38969
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753247Ab0L1TAi (ORCPT
+	id S1751744Ab0L1Too (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 14:44:44 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:37951 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939Ab0L1Ton (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 14:00:38 -0500
-Date: Tue, 28 Dec 2010 11:01:06 -0800 (PST)
-Message-Id: <20101228.110106.226787796.davem@davemloft.net>
-To: tj@kernel.org
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
-        hch@infradead.org, linux-ide@vger.kernel.org
-Subject: Re: [PATCH 04/16] ide: convert to bdops->check_events()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1293557352-10592-5-git-send-email-tj@kernel.org>
-References: <1293557352-10592-1-git-send-email-tj@kernel.org>
-	<1293557352-10592-5-git-send-email-tj@kernel.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 28 Dec 2010 14:44:43 -0500
+Subject: Re: linux-next: Tree for December 28 (drivers/target/)
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: James Bottomley <James.Bottomley@suse.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        scsi <linux-scsi@vger.kernel.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Joel Becker <joel.becker@oracle.com>
+In-Reply-To: <20101228085016.dedc8b18.randy.dunlap@oracle.com>
+References: <20101228173049.217c192d.sfr@canb.auug.org.au>
+	 <20101228082947.70b09534.randy.dunlap@oracle.com>
+	 <1293554355.2371.1.camel@fuzzy>
+	 <20101228085016.dedc8b18.randy.dunlap@oracle.com>
+Content-Type: text/plain
+Date: Tue, 28 Dec 2010 11:38:45 -0800
+Message-Id: <1293565125.4649.217.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tejun Heo <tj@kernel.org>
-Date: Tue, 28 Dec 2010 18:29:00 +0100
-
-> Convert ->media_changed() to the new ->check_events() method.  The
-> conversion is mostly mechanical.  The only notable change is that
-> cdrom now doesn't generate any event if @slot_nr isn't CDSL_CURRENT.
-> It used to return -EINVAL which would be treated as media changed.  As
-> media changer isn't supported anyway, this doesn't make any
-> difference.
+On Tue, 2010-12-28 at 08:50 -0800, Randy Dunlap wrote:
+> On Tue, 28 Dec 2010 10:39:14 -0600 James Bottomley wrote:
 > 
-> This makes ide emit the standard disk events and allows kernel event
-> polling.  Currently, only MEDIA_CHANGE event is implemented.  Adding
-> support for EJECT_REQUEST shouldn't be difficult; however, given that
-> ide driver is already deprecated, it probably is best to leave it
-> alone.
+> > On Tue, 2010-12-28 at 08:29 -0800, Randy Dunlap wrote:
+> > > On Tue, 28 Dec 2010 17:30:49 +1100 Stephen Rothwell wrote:
+> > > 
+> > > > Hi all,
+> > > > 
+> > > > [The mirroring on kernel.org is running slowly]
+> > > > 
+> > > > Changes since 20101227:
+> > > 
+> > > 
+> > > warning: (TARGET_CORE && GFS2_FS) selects CONFIGFS_FS which has unmet direct dependencies (SYSFS)
+> > > 
+> > > from:
+> > > 
+> > > menuconfig TARGET_CORE
+> > > 	tristate "Generic Target Core Mod (TCM) and ConfigFS Infrastructure"
+> > > 	select CONFIGFS_FS
+> > > 
+> > > but CONFIGFS_FS depends on SYSFS, so TARGET_CORE should either depend on SYSFS
+> > > or (eek) it should select SYSFS.
+> > 
+> > The latter, I think (and actually, configfs should select sysfs).  All
+> > these unmet dependencies are a minefield.
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+> It's just another language to deal with.  Not a big deal, except for the
+> twists that EXPERIMENTAL injects into it.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+I agree with James on this one..  Attached is a patch to select SYSFS
+and fix up some extra whitespace breakage. (jlbec CC'ed)
+
+Thanks,
+
+--nab
+
+diff --git a/fs/configfs/Kconfig b/fs/configfs/Kconfig
+index 13587cc..6874d75 100644
+--- a/fs/configfs/Kconfig
++++ b/fs/configfs/Kconfig
+@@ -1,11 +1,11 @@
+ config CONFIGFS_FS
+ 	tristate "Userspace-driven configuration filesystem"
+-	depends on SYSFS
++	select SYSFS
+ 	help
+-	  configfs is a ram-based filesystem that provides the converse
+-	  of sysfs's functionality. Where sysfs is a filesystem-based
+-	  view of kernel objects, configfs is a filesystem-based manager
+-	  of kernel objects, or config_items.
++	configfs is a ram-based filesystem that provides the converse
++	of sysfs's functionality. Where sysfs is a filesystem-based
++	view of kernel objects, configfs is a filesystem-based manager
++	of kernel objects, or config_items.
+ 
+-	  Both sysfs and configfs can and should exist together on the
+-	  same system. One is not a replacement for the other.
++	Both sysfs and configfs can and should exist together on the
++	same system. One is not a replacement for the other.
+
+
