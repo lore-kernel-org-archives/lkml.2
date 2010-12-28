@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143Ab0L1Xvq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 18:51:46 -0500
-Received: from smtprelay03.ispgateway.de ([80.67.29.7]:46720 "EHLO
-	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752862Ab0L1Xvp (ORCPT
+	id S1753137Ab0L1X60 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 18:58:26 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59195 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751807Ab0L1X6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 18:51:45 -0500
-X-Greylist: delayed 486 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Dec 2010 18:51:44 EST
-Message-ID: <4D1A7628.3050704@steffen-moser.de>
-Date: Wed, 29 Dec 2010 00:43:36 +0100
-From: Steffen Moser <lists@steffen-moser.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Tue, 28 Dec 2010 18:58:25 -0500
+Date: Tue, 28 Dec 2010 23:58:36 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, David Brownell <david-b@pacbell.net>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC/PATCH 3/3] mfd: twl4030-irq: implement bus_*lock
+Message-ID: <20101228235836.GA2609@opensource.wolfsonmicro.com>
+References: <20101228161657.GF2239@legolas.emea.dhcp.ti.com>
+ <1293556459-28613-1-git-send-email-balbi@ti.com>
+ <1293556459-28613-4-git-send-email-balbi@ti.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: IOMMU and DMA mode of pata_jmicron
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: lists@steffen-moser.de
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1293556459-28613-4-git-send-email-balbi@ti.com>
+X-Cookie: You are standing on my toes.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Tue, Dec 28, 2010 at 07:14:19PM +0200, Felipe Balbi wrote:
 
-I've encountered a problem with my AMD 890FX based system
-and linux-2.6.35.10 (x86_64 platform).
+> +static void twl4030_sih_bus_sync_unlock(unsigned int irq)
+> +{
+> +       struct sih_agent        *agent = get_irq_chip_data(irq);
+> +
+> +       mutex_unlock(&agent->irq_lock);
+> +}
 
-After activating the option "IOMMU" in the mainboard's BIOS
-setup, the onboard P-ATA controller "JMicron Technology Corp.
-JMB361 AHCI/IDE (rev 02)" puts itself back in the PIO mode.
-When loading the module, the kernel reports:
+I suspect you need to do some sort of sync with the hardware here - the
+_sync bit of the name comes from the fact that the mask and unmask stuff
+is still called with IRQs disabled and so can't touch and I2C chip, this
+is called after reenabling them give a chance for the updates done to
+be reflected in the hardware.  The implementation everyone else has done
+is to update a register cache in the other functions then write that
+out here before dropping the mutex.
 
-  pata_jmicron 0000:06:00.1: BMDMA: failed to set dma mask, \
-                             falling back to PIO
+>  static struct irq_chip twl4030_sih_irq_chip = {
+>  	.name		= "twl4030",
+>  	.mask		= twl4030_sih_mask,
+>  	.unmask		= twl4030_sih_unmask,
+>  	.set_type	= twl4030_sih_set_type,
+> +	.bus_lock	= twl4030_sih_bus_lock,
+> +	.bus_sync_unlock = twl4030_sih_bus_sync_unlock,
+>  };
 
-This results, as expected, in a much too low data throughput
-between the system and the optical drives connected to the
-P-ATA controller.
-
-As soon as I deactivate IOMMU in BIOS setup, the P-ATA channel
-runs in the DMA mode again. The S-ATA controllers don't seem
-to be affected.
-
-My question is: Is this a known behavior? Are there any
-things I have to consider when activating IOMMU (which seems
-to be AMD-Vi) on an 890FX based system? Is it a problem of
-the chipset and/or the controller or is it related to a
-problem in the libata area?
-
-Some information about the affected system:
-
- - Mainboard:    ASUS M4A89TD Pro/USB3
- - BIOS version: 1101 (most recent version)
- - Chipset:      AMD 890FX
- - Processor:    AMD Phenom 1090T
- - Memory:       4 x 4 GB (Kingston KVR1333D3E9S/4G)
- - Distribution: openSUSE 11.3
- - Kernel:       2.6.35.10 (from "kernel.org"), x86_64
-
-Earlier versions of 2.6.35.x are affected, too. I haven't
-tested other kernel versions besides 2.6.35.x, yet.
-
-If you need further information (log files, information from
-"/proc", lspci, and so on), please let me know.
-
-Thank you very much in advance for any hint!
-
-Best regards,
-Steffen
+I just realised that this collides with the conversion to the irq_
+versions that has been done on the driver in -next by either myself or
+Lennart (we both submitted essentially the same patches and a couple of
+his went in) - that was a purely mechanical conversion that didn't
+address any of the issues this patch addresses but they're touching the
+same code.
