@@ -1,42 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918Ab0L1UEh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 15:04:37 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:48600 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033Ab0L1UEg (ORCPT
+	id S1752104Ab0L1UFB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 15:05:01 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:62836 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751535Ab0L1UE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 15:04:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=r7ld7vt3iLOom6zqALB414zlLv+bwGIgVR9E8HjbqDNxvqMFZHEQMRr1Lefg/26d/G
-         DuYKznOZ4ofbZy8O/EtRXayeIynOxVrDVFs6XLp8XVDuZMRtkssM3fjyqtg2sKhNa9X3
-         RbCNGyhikF1lLiQVWOBlDjqo6T6Z5Fp8wPUdw=
-Message-ID: <4D1A42D1.1000309@garzik.org>
-Date: Tue, 28 Dec 2010 15:04:33 -0500
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	Tue, 28 Dec 2010 15:04:58 -0500
+Message-ID: <4D1A42BF.4070401@oracle.com>
+Date: Tue, 28 Dec 2010 12:04:15 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: axboe@kernel.dk, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
-        hch@infradead.org
-Subject: Re: [PATCHSET] block: convert block drivers to ->check_events()
-References: <1293557352-10592-1-git-send-email-tj@kernel.org>
-In-Reply-To: <1293557352-10592-1-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: James Bottomley <James.Bottomley@suse.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        scsi <linux-scsi@vger.kernel.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Joel Becker <joel.becker@oracle.com>
+Subject: Re: linux-next: Tree for December 28 (drivers/target/)
+References: <20101228173049.217c192d.sfr@canb.auug.org.au>	 <20101228082947.70b09534.randy.dunlap@oracle.com>	 <1293554355.2371.1.camel@fuzzy>	 <20101228085016.dedc8b18.randy.dunlap@oracle.com> <1293565125.4649.217.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1293565125.4649.217.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/28/2010 12:28 PM, Tejun Heo wrote:
-> This patchset converts all in-kernel block drivers from
-> ->media_changed() to ->check_events().  Most conversions are fairly
-> mechanical.  The only notable exceptions are,
+On 12/28/10 11:38, Nicholas A. Bellinger wrote:
+> On Tue, 2010-12-28 at 08:50 -0800, Randy Dunlap wrote:
+>> On Tue, 28 Dec 2010 10:39:14 -0600 James Bottomley wrote:
+>>
+>>> On Tue, 2010-12-28 at 08:29 -0800, Randy Dunlap wrote:
+>>>> On Tue, 28 Dec 2010 17:30:49 +1100 Stephen Rothwell wrote:
+>>>>
+>>>>> Hi all,
+>>>>>
+>>>>> [The mirroring on kernel.org is running slowly]
+>>>>>
+>>>>> Changes since 20101227:
+>>>>
+>>>>
+>>>> warning: (TARGET_CORE && GFS2_FS) selects CONFIGFS_FS which has unmet direct dependencies (SYSFS)
+>>>>
+>>>> from:
+>>>>
+>>>> menuconfig TARGET_CORE
+>>>> 	tristate "Generic Target Core Mod (TCM) and ConfigFS Infrastructure"
+>>>> 	select CONFIGFS_FS
+>>>>
+>>>> but CONFIGFS_FS depends on SYSFS, so TARGET_CORE should either depend on SYSFS
+>>>> or (eek) it should select SYSFS.
+>>>
+>>> The latter, I think (and actually, configfs should select sysfs).  All
+>>> these unmet dependencies are a minefield.
+>>
+>> It's just another language to deal with.  Not a big deal, except for the
+>> twists that EXPERIMENTAL injects into it.
+> 
+> I agree with James on this one..  Attached is a patch to select SYSFS
+> and fix up some extra whitespace breakage. (jlbec CC'ed)
 
-Even though this does not directly touch libata, I feel compelled to add 
-an 'ACK' to this patch series.  Good stuff.
+and I am not surprised.  James is a more liberal 'select'or than I am.
+
+> Thanks,
+> 
+> --nab
+> 
+> diff --git a/fs/configfs/Kconfig b/fs/configfs/Kconfig
+> index 13587cc..6874d75 100644
+> --- a/fs/configfs/Kconfig
+> +++ b/fs/configfs/Kconfig
+> @@ -1,11 +1,11 @@
+>  config CONFIGFS_FS
+>  	tristate "Userspace-driven configuration filesystem"
+> -	depends on SYSFS
+> +	select SYSFS
+>  	help
+> -	  configfs is a ram-based filesystem that provides the converse
+> -	  of sysfs's functionality. Where sysfs is a filesystem-based
+> -	  view of kernel objects, configfs is a filesystem-based manager
+> -	  of kernel objects, or config_items.
+> +	configfs is a ram-based filesystem that provides the converse
+
+	              RAM-based
+
+> +	of sysfs's functionality. Where sysfs is a filesystem-based
+> +	view of kernel objects, configfs is a filesystem-based manager
+> +	of kernel objects, or config_items.
+>  
+> -	  Both sysfs and configfs can and should exist together on the
+> -	  same system. One is not a replacement for the other.
+> +	Both sysfs and configfs can and should exist together on the
+> +	same system. One is not a replacement for the other.
+> 
+> 
 
 
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
+desserts:  http://www.xenotime.net/linux/recipes/
