@@ -1,108 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758Ab0L1Unc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 15:43:32 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:16543 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752483Ab0L1Unb (ORCPT
+	id S1752586Ab0L1UsB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 15:48:01 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:51024 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751903Ab0L1UsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 15:43:31 -0500
+	Tue, 28 Dec 2010 15:48:00 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=AcWqf4pefC2lpwcM0BNUcS3DQ5+Dj2kTh6PHYsEuVVNyhczOMgdwFrxgpQD/WOCh6r
-         AXyXpzJKTyChT1nQ3C2g==
-Date: Tue, 28 Dec 2010 12:43:24 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Tejun Heo <tj@kernel.org>
-cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        eric.dumazet@gmail.com, yinghai@kernel.org, brgerst@gmail.com,
-        gorcunov@gmail.com, Pekka Enberg <penberg@kernel.org>,
-        shaohui.zheng@intel.com
-Subject: Re: [PATCH 15/16] x86: Unify node_to_cpumask_map handling between
- 32 and 64bit
-In-Reply-To: <1293536929-31683-16-git-send-email-tj@kernel.org>
-Message-ID: <alpine.DEB.2.00.1012281240000.8883@chino.kir.corp.google.com>
-References: <1293536929-31683-1-git-send-email-tj@kernel.org> <1293536929-31683-16-git-send-email-tj@kernel.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=OFEIK4ZlrO5e3ICZsGpZFk32OOnGk+2v68lwcq92v53a3xiMpS0mGCciJn2BiqXEd+
+         DmlXlQoJEP7AI5lxHxrXJ71JKc0ixfYWgJXg0r1qfdLR/SeFyaGAfmBa3P4ONDdBEaGg
+         oP3U4hA9F43SB3ISREhoAFfG2W4RCKtgjbUIU=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+In-Reply-To: <1293493244-17583-3-git-send-email-john.stultz@linaro.org>
+References: <1293493244-17583-1-git-send-email-john.stultz@linaro.org> <1293493244-17583-3-git-send-email-john.stultz@linaro.org>
+From: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>
+Date: Wed, 29 Dec 2010 05:47:19 +0900
+Message-ID: <AANLkTi=LqkC-tKzbb6y=iL0UvFYcfcHSuX=jVVFCk1uR@mail.gmail.com>
+Subject: Re: [PATCH 2/3] ntp: add ADJ_SETOFFSET mode bit
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Richard Cochran <richardcochran@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Cochran <richard.cochran@omicron.at>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Dec 2010, Tejun Heo wrote:
+On Tue, Dec 28, 2010 at 8:40 AM, John Stultz <john.stultz@linaro.org> wrote:
+> From: Richard Cochran <richardcochran@gmail.com>
+>
+> This patch adds a new mode bit into the timex structure. When set, the
+> bit instructs the kernel to add the given time value to the current time.
 
-> diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-> index ce33f69..6013aca 100644
-> --- a/arch/x86/mm/numa_64.c
-> +++ b/arch/x86/mm/numa_64.c
-> @@ -730,58 +730,3 @@ int __cpuinit numa_cpu_node(int cpu)
->  		return __apicid_to_node[apicid];
->  	return NUMA_NO_NODE;
->  }
-> -
-> -#ifndef CONFIG_DEBUG_PER_CPU_MAPS
-> -
-> -void __cpuinit numa_add_cpu(int cpu)
-> -{
-> -	cpumask_set_cpu(cpu, node_to_cpumask_map[early_cpu_to_node(cpu)]);
-> -}
-> -
-> -void __cpuinit numa_remove_cpu(int cpu)
-> -{
-> -	cpumask_clear_cpu(cpu, node_to_cpumask_map[early_cpu_to_node(cpu)]);
-> -}
-> -
-> -#else /* CONFIG_DEBUG_PER_CPU_MAPS */
-> -
-> -/*
-> - * --------- debug versions of the numa functions ---------
-> - */
-> -static void __cpuinit numa_set_cpumask(int cpu, int enable)
-> -{
-> -	int node = early_cpu_to_node(cpu);
-> -	struct cpumask *mask;
-> -	char buf[64];
-> -
-> -	mask = node_to_cpumask_map[node];
-> -	if (mask == NULL) {
-> -		printk(KERN_ERR "node_to_cpumask_map[%i] NULL\n", node);
-> -		dump_stack();
-> -		return;
-> -	}
-> -
-> -	if (enable)
-> -		cpumask_set_cpu(cpu, mask);
-> -	else
-> -		cpumask_clear_cpu(cpu, mask);
-> -
-> -	cpulist_scnprintf(buf, sizeof(buf), mask);
-> -	printk(KERN_DEBUG "%s cpu %d node %d: mask now %s\n",
-> -		enable ? "numa_add_cpu" : "numa_remove_cpu", cpu, node, buf);
-> -}
-> -
-> -void __cpuinit numa_add_cpu(int cpu)
-> -{
-> -	numa_set_cpumask(cpu, 1);
-> -}
-> -
-> -void __cpuinit numa_remove_cpu(int cpu)
-> -{
-> -	numa_set_cpumask(cpu, 0);
-> -}
-> -/*
-> - * --------- end of debug versions of the numa functions ---------
-> - */
-> -
-> -#endif /* CONFIG_DEBUG_PER_CPU_MAPS */
+I came up with this simple solution: "Just use ADJ_OFFSET as usual,
+but don't forget to disable the kernel PLL."
 
-This has been almost entirely rewritten in x86/numa by c1c3443c ("x86, 
-numa: Fake node-to-cpumask for NUMA emulation") and the pending fix 
-http://marc.info/?l=linux-kernel&m=129340072128297 ("x86, numa: Fix 
-CONFIG_DEBUG_PER_CPU_MAPS without NUMA").  Since this is only moving those 
-functions to numa.c, it should be trivial to fix once based on x86/numa.
+Here's my (untested) patch.
+
+---
+diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
+index c631168..d492887 100644
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -119,14 +119,21 @@
+ 	return div_s64(offset64 << (NTP_SCALE_SHIFT - SHIFT_FLL), secs);
+ }
+
+-static void ntp_update_offset(long offset)
++static void ntp_update_offset(long offset, struct timespec *ts)
+ {
+ 	s64 freq_adj;
+ 	s64 offset64;
+ 	long secs;
+
+-	if (!(time_status & STA_PLL))
++	if (!(time_status & STA_PLL)) {
++		offset64 = (s64)offset;
++		if (!(time_status & STA_NANO))
++			offset64 *= NSEC_PER_USEC;
++
++		set_normalized_timespec(ts, ts->tv_sec, offset64 + ts->tv_nsec);
++
+ 		return;
++	}
+
+ 	if (!(time_status & STA_NANO))
+ 		offset *= NSEC_PER_USEC;
+@@ -430,7 +437,7 @@
+ 		time_tai = txc->constant;
+
+ 	if (txc->modes & ADJ_OFFSET)
+-		ntp_update_offset(txc->offset);
++		ntp_update_offset(txc->offset, ts);
+
+ 	if (txc->modes & ADJ_TICK)
+ 		tick_usec = txc->tick;
+@@ -526,6 +533,9 @@
+
+ 	write_sequnlock_irq(&xtime_lock);
+
++	if ((txc->modes & ADJ_OFFSET) && !(time_status & STA_PLL))
++		do_settimeofday(&ts);
++
+ 	txc->time.tv_sec = ts.tv_sec;
+ 	txc->time.tv_usec = ts.tv_nsec;
+ 	if (!(time_status & STA_NANO))
+--
