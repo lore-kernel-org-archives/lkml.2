@@ -1,144 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab0L1DVF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 22:21:05 -0500
-Received: from mga02.intel.com ([134.134.136.20]:60954 "EHLO mga02.intel.com"
+	id S1753363Ab0L1DYs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 22:24:48 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:39814 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753246Ab0L1DVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 22:21:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,237,1291622400"; 
-   d="scan'208";a="691226865"
-Subject: Re: [PATCH] ACPI: use ioremap_cache()
-From: Shaohua Li <shaohua.li@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: Jack Steiner <steiner@sgi.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        "tony.luck@gmail.com" <tony.luck@gmail.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gbeshers@sgi.com" <gbeshers@sgi.com>
-In-Reply-To: <alpine.LFD.2.00.1012170307080.20940@x980>
-References: <20101214220932.GA1206@sgi.com>
-	 <alpine.LFD.2.00.1012141903210.25387@x980> <20101215024136.GB19601@sgi.com>
-	 <alpine.LFD.2.00.1012142302110.4878@x980> <20101215164635.GA27373@sgi.com>
-	 <alpine.LFD.2.00.1012151536510.21167@x980>
-	 <alpine.LFD.2.00.1012162149370.20940@x980>
-	 <alpine.LFD.2.00.1012170307080.20940@x980>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 28 Dec 2010 11:21:00 +0800
-Message-ID: <1293506460.10593.43.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753246Ab0L1DYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 22:24:47 -0500
+Date: Tue, 28 Dec 2010 04:24:26 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Franck Bui-Huu <fbuihuu@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ian Munsie <imunsie@au1.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>, Torok Edwin <edwintorok@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [GIT PULL 0/4] perf/core fixes
+Message-ID: <20101228032426.GC24500@elte.hu>
+References: <1293487213-533-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1293487213-533-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-17 at 16:08 +0800, Len Brown wrote:
-> From: Len Brown <len.brown@intel.com>
-> 
-> Although the temporary boot-time ACPI table mappings
-> were set up with CPU caching enabled, the permanent table
-> mappings and AML run-time region memory accesses were
-> set up with ioremap(), which on x86 is a synonym for
-> ioremap_nocache().
-> 
-> Changing this to ioremap_cache() improves performance as
-> seen when accessing the tables via acpidump,
-> or /sys/firmware/acpi/tables.  It should also improve
-> AML run-time performance.
-> 
-> No change on ia64.
-> 
-> Reported-by: Jack Steiner <steiner@sgi.com>
-> Signed-off-by: Len Brown <len.brown@intel.com>
-> ---
->  arch/ia64/include/asm/io.h |    5 +++++
->  drivers/acpi/osl.c         |    6 +++---
->  2 files changed, 8 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/ia64/include/asm/io.h b/arch/ia64/include/asm/io.h
-> index cc8335e..009a7e0 100644
-> --- a/arch/ia64/include/asm/io.h
-> +++ b/arch/ia64/include/asm/io.h
-> @@ -426,6 +426,11 @@ extern void __iomem * ioremap_nocache (unsigned long offset, unsigned long size)
->  extern void iounmap (volatile void __iomem *addr);
->  extern void __iomem * early_ioremap (unsigned long phys_addr, unsigned long size);
->  extern void early_iounmap (volatile void __iomem *addr, unsigned long size);
-> +static inline void __iomem * ioremap_cache (unsigned long phys_addr, unsigned long size)
-> +{
-> +	return ioremap(unsigned long phys_addr, unsigned long size);
-> +}
-> +
->  
->  /*
->   * String version of IO memory access ops:
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index 966fedd..85eba53 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -324,7 +324,7 @@ acpi_os_map_memory(acpi_physical_address phys, acpi_size size)
->  
->  	pg_off = round_down(phys, PAGE_SIZE);
->  	pg_sz = round_up(phys + size, PAGE_SIZE) - pg_off;
-> -	virt = ioremap(pg_off, pg_sz);
-> +	virt = ioremap_cache(pg_off, pg_sz);
->  	if (!virt) {
->  		kfree(map);
->  		return NULL;
-> @@ -646,7 +646,7 @@ acpi_os_read_memory(acpi_physical_address phys_addr, u32 * value, u32 width)
->  	virt_addr = acpi_map_vaddr_lookup(phys_addr, size);
->  	rcu_read_unlock();
->  	if (!virt_addr) {
-> -		virt_addr = ioremap(phys_addr, size);
-> +		virt_addr = ioremap_cache(phys_addr, size);
->  		unmap = 1;
->  	}
->  	if (!value)
-> @@ -682,7 +682,7 @@ acpi_os_write_memory(acpi_physical_address phys_addr, u32 value, u32 width)
->  	virt_addr = acpi_map_vaddr_lookup(phys_addr, size);
->  	rcu_read_unlock();
->  	if (!virt_addr) {
-> -		virt_addr = ioremap(phys_addr, size);
-> +		virt_addr = ioremap_cache(phys_addr, size);
->  		unmap = 1;
->  	}
-blindly map the range as cache is not ok. for example:
-    OperationRegion (RCRB, SystemMemory, 0xFED1C000, 0x4000)
-    Field (RCRB, DWordAcc, Lock, Preserve)
-    {
-        Offset (0x1000),
-        Offset (0x3000),
-        Offset (0x3404),
-        HPAS,   2,
-            ,   5,
-        HPAE,   1,
-        Offset (0x3418),
-            ,   1,
-        PATD,   1,
-        SATD,   1,
-        SMBD,   1,
-        HDAD,   1,
-        A97D,   1,
-        Offset (0x341A),
-        RP1D,   1,
-        RP2D,   1,
-        RP3D,   1,
-        RP4D,   1,
-        RP5D,   1,
-        RP6D,   1
-    }
-RCRB is a memory mapped io. In ICH, it's chipset configuration
-registers. this range can't be cached.
-I thought we should add a check like
-if page is E820_RAM or E820_ACPI then
-	cached_map
-else
-	uncached_map
-we have page_is_ram() API which just checks E820_RAM, I thought we can
-add a new API to check E820_ACPI.
 
-Thanks,
-Shaohua
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
+> Hi Ingo,
+> 
+>         Please consider pulling from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+> 
+> Regards,
+> 
+> - Arnaldo
+> 
+> Arnaldo Carvalho de Melo (3):
+>   perf script: Finish the rename from trace to script
+>   perf record: Fix use of sample_id_all userspace with !sample_id_all kernels
+>   perf script: Fix event ordering settings to work with older kernels
+> 
+> Franck Bui-Huu (1):
+>   perf probe: Fix short file name probe location reporting
+> 
+>  tools/perf/builtin-record.c                        |   24 +++++++++++++++----
+>  tools/perf/builtin-script.c                        |    1 +
+>  tools/perf/scripts/perl/Perf-Trace-Util/Context.c  |    2 +-
+>  tools/perf/scripts/perl/Perf-Trace-Util/Context.xs |    4 +-
+>  tools/perf/scripts/perl/Perf-Trace-Util/README     |    4 +-
+>  .../perl/Perf-Trace-Util/lib/Perf/Trace/Context.pm |    2 +-
+>  .../perl/Perf-Trace-Util/lib/Perf/Trace/Core.pm    |    4 +-
+>  .../perl/Perf-Trace-Util/lib/Perf/Trace/Util.pm    |    4 +-
+>  tools/perf/scripts/perl/bin/failed-syscalls-report |    2 +-
+>  tools/perf/scripts/perl/bin/rw-by-file-report      |    5 +---
+>  tools/perf/scripts/perl/bin/rw-by-pid-report       |    5 +---
+>  tools/perf/scripts/perl/bin/rwtop-report           |    5 +---
+>  tools/perf/scripts/perl/bin/wakeup-latency-report  |    5 +---
+>  tools/perf/scripts/perl/bin/workqueue-stats-report |    6 +----
+>  tools/perf/scripts/perl/check-perf-trace.pl        |    2 +-
+>  tools/perf/scripts/perl/rw-by-file.pl              |    2 +-
+>  tools/perf/scripts/perl/workqueue-stats.pl         |    2 +-
+>  .../python/Perf-Trace-Util/lib/Perf/Trace/Core.py  |    2 +-
+>  .../Perf-Trace-Util/lib/Perf/Trace/SchedGui.py     |    2 +-
+>  .../python/Perf-Trace-Util/lib/Perf/Trace/Util.py  |    2 +-
+>  .../python/bin/failed-syscalls-by-pid-report       |    2 +-
+>  .../scripts/python/bin/futex-contention-report     |    2 +-
+>  tools/perf/scripts/python/bin/netdev-times-report  |    2 +-
+>  .../perf/scripts/python/bin/sched-migration-report |    2 +-
+>  tools/perf/scripts/python/bin/sctop-report         |    2 +-
+>  .../python/bin/syscall-counts-by-pid-report        |    2 +-
+>  .../perf/scripts/python/bin/syscall-counts-report  |    2 +-
+>  tools/perf/scripts/python/check-perf-trace.py      |    2 +-
+>  .../perf/scripts/python/failed-syscalls-by-pid.py  |    2 +-
+>  tools/perf/scripts/python/sched-migration.py       |    2 +-
+>  tools/perf/scripts/python/sctop.py                 |    2 +-
+>  tools/perf/scripts/python/syscall-counts-by-pid.py |    2 +-
+>  tools/perf/scripts/python/syscall-counts.py        |    2 +-
+>  tools/perf/util/probe-event.c                      |   14 +++++-----
+>  34 files changed, 62 insertions(+), 63 deletions(-)
+
+Pulled, thanks a lot Arnaldo!
+
+	Ingo
