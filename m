@@ -1,49 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647Ab0L1RDQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 12:03:16 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:58984 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751592Ab0L1RDP (ORCPT
+	id S1754187Ab0L1RQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 12:16:57 -0500
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:54447 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753447Ab0L1RQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 12:03:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=hgh8P+5kjf8pze6H7FQs1nRm36RhAnL1m9hyaEDEVIwUQKpIWPvYH4O47wAvdl/Byq
-         X6sGvkbaHj7BPXjI4EAhWKiVvOfFIpN/a7fMmRPTEFGewIxRfnsv6D1U7wlewtRbr4r8
-         7bEas3Uv0yrd9PjbCUioSeOdGS8qAb2Vv7Y5w=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] NFS: use ERR_CAST()
-Date: Wed, 29 Dec 2010 02:02:46 +0900
-Message-Id: <1293555766-14333-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.3.4.600.g982838b0
+	Tue, 28 Dec 2010 12:16:55 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
+Cc: Tony Lindgren <tony@atomide.com>, David Brownell <david-b@pacbell.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [RFC/PATCH 1/3] mfd: twl4030-irq: move to threaded_irq
+Date: Tue, 28 Dec 2010 19:14:17 +0200
+Message-Id: <1293556459-28613-2-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.7.3.4.598.g85356
+In-Reply-To: <1293556459-28613-1-git-send-email-balbi@ti.com>
+References: <20101228161657.GF2239@legolas.emea.dhcp.ti.com>
+ <1293556459-28613-1-git-send-email-balbi@ti.com>
+Organization: Texas Instruments\n
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use ERR_CAST() intead of wierd-looking cast.
+... and while at that, also start using
+handle_nested_irq() as we should.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- fs/nfs/dir.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/mfd/twl4030-irq.c |  131 +++++++++++++--------------------------------
+ 1 files changed, 38 insertions(+), 93 deletions(-)
 
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index 996dd8989a91..fece122cdd65 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1217,7 +1217,7 @@ static struct dentry *nfs_lookup(struct inode *dir, struct dentry * dentry, stru
- 		goto out_unblock_sillyrename;
- 	}
- 	inode = nfs_fhget(dentry->d_sb, fhandle, fattr);
--	res = (struct dentry *)inode;
-+	res = ERR_CAST(inode);
- 	if (IS_ERR(res))
- 		goto out_unblock_sillyrename;
+diff --git a/drivers/mfd/twl4030-irq.c b/drivers/mfd/twl4030-irq.c
+index 5d3a147..91331a7 100644
+--- a/drivers/mfd/twl4030-irq.c
++++ b/drivers/mfd/twl4030-irq.c
+@@ -30,7 +30,6 @@
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
+-#include <linux/kthread.h>
+ #include <linux/slab.h>
  
+ #include <linux/i2c/twl.h>
+@@ -278,91 +277,50 @@ static const struct sih sih_modules_twl5031[8] = {
+ 
+ static unsigned twl4030_irq_base;
+ 
+-static struct completion irq_event;
+-
+ /*
+  * This thread processes interrupts reported by the Primary Interrupt Handler.
+  */
+-static int twl4030_irq_thread(void *data)
++static irqreturn_t twl4030_irq_thread(int irq, void *unused)
+ {
+-	long irq = (long)data;
+-	static unsigned i2c_errors;
+-	static const unsigned max_i2c_errors = 100;
+-
+-
+-	current->flags |= PF_NOFREEZE;
+-
+-	while (!kthread_should_stop()) {
+-		int ret;
+-		int module_irq;
+-		u8 pih_isr;
+-
+-		/* Wait for IRQ, then read PIH irq status (also blocking) */
+-		wait_for_completion_interruptible(&irq_event);
+-
+-		ret = twl_i2c_read_u8(TWL4030_MODULE_PIH, &pih_isr,
+-					  REG_PIH_ISR_P1);
+-		if (ret) {
+-			pr_warning("twl4030: I2C error %d reading PIH ISR\n",
+-					ret);
+-			if (++i2c_errors >= max_i2c_errors) {
+-				printk(KERN_ERR "Maximum I2C error count"
+-						" exceeded.  Terminating %s.\n",
+-						__func__);
+-				break;
+-			}
+-			complete(&irq_event);
+-			continue;
+-		}
++	int ret;
++	int module_irq;
++	u8 pih_isr;
++
++	ret = twl_i2c_read_u8(TWL4030_MODULE_PIH, &pih_isr,
++			REG_PIH_ISR_P1);
++	if (ret) {
++		pr_warning("twl4030: I2C error %d reading PIH ISR\n",
++				ret);
++		return IRQ_NONE;
++	}
+ 
+-		/* these handlers deal with the relevant SIH irq status */
+-		local_irq_disable();
+-		for (module_irq = twl4030_irq_base;
+-				pih_isr;
+-				pih_isr >>= 1, module_irq++) {
+-			if (pih_isr & 0x1) {
+-				struct irq_desc *d = irq_to_desc(module_irq);
+-
+-				if (!d) {
+-					pr_err("twl4030: Invalid SIH IRQ: %d\n",
+-					       module_irq);
+-					return -EINVAL;
+-				}
+-
+-				/* These can't be masked ... always warn
+-				 * if we get any surprises.
+-				 */
+-				if (d->status & IRQ_DISABLED)
+-					note_interrupt(module_irq, d,
+-							IRQ_NONE);
+-				else
+-					d->handle_irq(module_irq, d);
++	/* these handlers deal with the relevant SIH irq status */
++	for (module_irq = twl4030_irq_base;
++			pih_isr;
++			pih_isr >>= 1, module_irq++) {
++		if (pih_isr & 0x1) {
++			struct irq_desc *d = irq_to_desc(module_irq);
++
++			if (!d) {
++				pr_err("twl4030: Invalid SIH IRQ: %d\n",
++						module_irq);
++				return IRQ_NONE;
+ 			}
+-		}
+-		local_irq_enable();
+ 
+-		enable_irq(irq);
++			/* These can't be masked ... always warn
++			 * if we get any surprises.
++			 */
++			if (d->status & IRQ_DISABLED)
++				note_interrupt(module_irq, d,
++						IRQ_NONE);
++			else
++				handle_nested_irq(module_irq);
++		}
+ 	}
+ 
+-	return 0;
+-}
+-
+-/*
+- * handle_twl4030_pih() is the desc->handle method for the twl4030 interrupt.
+- * This is a chained interrupt, so there is no desc->action method for it.
+- * Now we need to query the interrupt controller in the twl4030 to determine
+- * which module is generating the interrupt request.  However, we can't do i2c
+- * transactions in interrupt context, so we must defer that work to a kernel
+- * thread.  All we do here is acknowledge and mask the interrupt and wakeup
+- * the kernel thread.
+- */
+-static irqreturn_t handle_twl4030_pih(int irq, void *devid)
+-{
+-	/* Acknowledge, clear *AND* mask the interrupt... */
+-	disable_irq_nosync(irq);
+-	complete(devid);
+ 	return IRQ_HANDLED;
+ }
++
+ /*----------------------------------------------------------------------*/
+ 
+ /*
+@@ -788,7 +746,6 @@ int twl4030_init_irq(int irq_num, unsigned irq_base, unsigned irq_end)
+ 
+ 	int			status;
+ 	int			i;
+-	struct task_struct	*task;
+ 
+ 	/*
+ 	 * Mask and clear all TWL4030 interrupts since initially we do
+@@ -817,6 +774,7 @@ int twl4030_init_irq(int irq_num, unsigned irq_base, unsigned irq_end)
+ 	for (i = irq_base; i < irq_end; i++) {
+ 		set_irq_chip_and_handler(i, &twl4030_irq_chip,
+ 				handle_simple_irq);
++		set_irq_nested_thread(i, 1);
+ 		activate_irq(i);
+ 	}
+ 	twl4030_irq_next = i;
+@@ -830,28 +788,15 @@ int twl4030_init_irq(int irq_num, unsigned irq_base, unsigned irq_end)
+ 		goto fail;
+ 	}
+ 
+-	/* install an irq handler to demultiplex the TWL4030 interrupt */
+-
+-
+-	init_completion(&irq_event);
+-
+-	status = request_irq(irq_num, handle_twl4030_pih, IRQF_DISABLED,
+-				"TWL4030-PIH", &irq_event);
++	status = request_threaded_irq(irq_num, NULL, twl4030_irq_thread,
++			IRQF_DISABLED, "TWL4030-PIH", NULL);
+ 	if (status < 0) {
+ 		pr_err("twl4030: could not claim irq%d: %d\n", irq_num, status);
+ 		goto fail_rqirq;
+ 	}
+ 
+-	task = kthread_run(twl4030_irq_thread, (void *)(long)irq_num,
+-								"twl4030-irq");
+-	if (IS_ERR(task)) {
+-		pr_err("twl4030: could not create irq %d thread!\n", irq_num);
+-		status = PTR_ERR(task);
+-		goto fail_kthread;
+-	}
+-	return status;
+-fail_kthread:
+-	free_irq(irq_num, &irq_event);
++	return 0;
++
+ fail_rqirq:
+ 	/* clean up twl4030_sih_setup */
+ fail:
 -- 
-1.7.3.4.600.g982838b0
+1.7.3.4.598.g85356
 
