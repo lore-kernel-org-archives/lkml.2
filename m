@@ -1,134 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163Ab0L1Uj5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 15:39:57 -0500
-Received: from smtp-out-091.synserver.de ([212.40.180.91]:1082 "HELO
-	smtp-out-089.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1752386Ab0L1UiW (ORCPT
+	id S1753129Ab0L1Uj4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 15:39:56 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:14639 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752599Ab0L1Ujy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 15:38:22 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 9841
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Ian Lartey <ian@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-Subject: [PATCH 6/9] ASoC: codecs: wm8955: Fix register cache incoherency
-Date: Tue, 28 Dec 2010 21:38:00 +0100
-Message-Id: <1293568684-9626-7-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1293568684-9626-1-git-send-email-lars@metafoo.de>
-References: <1293568684-9626-1-git-send-email-lars@metafoo.de>
+	Tue, 28 Dec 2010 15:39:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=YTUjyaM06p8MWF2GmgdoFKwFn0J+f91KtGcKL+ed733MSS9Uuiaar5BgYTS0fqVQzg
+         AKoy2k6+QQHpk98+9xQw==
+Date: Tue, 28 Dec 2010 12:39:47 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Tejun Heo <tj@kernel.org>
+cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        eric.dumazet@gmail.com, yinghai@kernel.org, brgerst@gmail.com,
+        gorcunov@gmail.com, Pekka Enberg <penberg@kernel.org>,
+        shaohui.zheng@intel.com
+Subject: Re: [PATCH 14/16] x86: Unify CPU -> NUMA node mapping between 32
+ and 64bit
+In-Reply-To: <1293536929-31683-15-git-send-email-tj@kernel.org>
+Message-ID: <alpine.DEB.2.00.1012281236080.8883@chino.kir.corp.google.com>
+References: <1293536929-31683-1-git-send-email-tj@kernel.org> <1293536929-31683-15-git-send-email-tj@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The multi-component patch(commit f0fba2ad1) moved the allocation of the
-register cache from the driver to the ASoC core. Most drivers where adjusted to
-this, but the wm8955 driver still uses its own register cache for its
-private functions, while functions from the ASoC core use the generic cache.
-Thus we end up with two from each other incoherent caches, which can lead to
-undefined behaviour.
-This patch fixes the issue by changing the wm8955 driver to use the
-generic register cache in its private functions.
+On Tue, 28 Dec 2010, Tejun Heo wrote:
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Ian Lartey <ian@opensource.wolfsonmicro.com>
-Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+> diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+> index 989f23b..ce33f69 100644
+> --- a/arch/x86/mm/numa_64.c
+> +++ b/arch/x86/mm/numa_64.c
+> @@ -31,12 +31,6 @@ static unsigned long __initdata nodemap_addr;
+>  static unsigned long __initdata nodemap_size;
+>  
+>  /*
+> - * Map cpu index to node index
+> - */
+> -DEFINE_EARLY_PER_CPU(int, x86_cpu_to_node_map, NUMA_NO_NODE);
+> -EXPORT_EARLY_PER_CPU_SYMBOL(x86_cpu_to_node_map);
+> -
+> -/*
+>   * Given a shift value, try to populate memnodemap[]
+>   * Returns :
+>   * 1 if OK
+> @@ -737,34 +731,6 @@ int __cpuinit numa_cpu_node(int cpu)
+>  	return NUMA_NO_NODE;
+>  }
+>  
+> -void __cpuinit numa_set_node(int cpu, int node)
+> -{
+> -	int *cpu_to_node_map = early_per_cpu_ptr(x86_cpu_to_node_map);
+> -
+> -	/* early setting, no percpu area yet */
+> -	if (cpu_to_node_map) {
+> -		cpu_to_node_map[cpu] = node;
+> -		return;
+> -	}
+> -
+> -#ifdef CONFIG_DEBUG_PER_CPU_MAPS
+> -	if (cpu >= nr_cpu_ids || !cpu_possible(cpu)) {
+> -		printk(KERN_ERR "numa_set_node: invalid cpu# (%d)\n", cpu);
+> -		dump_stack();
+> -		return;
+> -	}
+> -#endif
+> -	per_cpu(x86_cpu_to_node_map, cpu) = node;
+> -
+> -	if (node != NUMA_NO_NODE)
+> -		set_cpu_numa_node(cpu, node);
+> -}
+> -
+> -void __cpuinit numa_clear_node(int cpu)
+> -{
+> -	numa_set_node(cpu, NUMA_NO_NODE);
+> -}
+> -
+>  #ifndef CONFIG_DEBUG_PER_CPU_MAPS
+>  
+>  void __cpuinit numa_add_cpu(int cpu)
 
----
-Compile tested only
----
- sound/soc/codecs/wm8955.c |   30 +++++++++++++++---------------
- 1 files changed, 15 insertions(+), 15 deletions(-)
-
-diff --git a/sound/soc/codecs/wm8955.c b/sound/soc/codecs/wm8955.c
-index 9cbab8e..fdc7c8a 100644
---- a/sound/soc/codecs/wm8955.c
-+++ b/sound/soc/codecs/wm8955.c
-@@ -42,8 +42,6 @@ static const char *wm8955_supply_names[WM8955_NUM_SUPPLIES] = {
- struct wm8955_priv {
- 	enum snd_soc_control_type control_type;
- 
--	u16 reg_cache[WM8955_MAX_REGISTER + 1];
--
- 	unsigned int mclk_rate;
- 
- 	int deemph;
-@@ -768,6 +766,7 @@ static int wm8955_set_bias_level(struct snd_soc_codec *codec,
- 				 enum snd_soc_bias_level level)
- {
- 	struct wm8955_priv *wm8955 = snd_soc_codec_get_drvdata(codec);
-+	u16 *reg_cache = codec->reg_cache;
- 	int ret, i;
- 
- 	switch (level) {
-@@ -800,14 +799,14 @@ static int wm8955_set_bias_level(struct snd_soc_codec *codec,
- 			/* Sync back cached values if they're
- 			 * different from the hardware default.
- 			 */
--			for (i = 0; i < ARRAY_SIZE(wm8955->reg_cache); i++) {
-+			for (i = 0; i < codec->driver->reg_cache_size; i++) {
- 				if (i == WM8955_RESET)
- 					continue;
- 
--				if (wm8955->reg_cache[i] == wm8955_reg[i])
-+				if (reg_cache[i] == wm8955_reg[i])
- 					continue;
- 
--				snd_soc_write(codec, i, wm8955->reg_cache[i]);
-+				snd_soc_write(codec, i, reg_cache[i]);
- 			}
- 
- 			/* Enable VREF and VMID */
-@@ -902,6 +901,7 @@ static int wm8955_probe(struct snd_soc_codec *codec)
- {
- 	struct wm8955_priv *wm8955 = snd_soc_codec_get_drvdata(codec);
- 	struct wm8955_pdata *pdata = dev_get_platdata(codec->dev);
-+	u16 *reg_cache = codec->reg_cache;
- 	int ret, i;
- 
- 	ret = snd_soc_codec_set_cache_io(codec, 7, 9, wm8955->control_type);
-@@ -934,25 +934,25 @@ static int wm8955_probe(struct snd_soc_codec *codec)
- 	}
- 
- 	/* Change some default settings - latch VU and enable ZC */
--	wm8955->reg_cache[WM8955_LEFT_DAC_VOLUME] |= WM8955_LDVU;
--	wm8955->reg_cache[WM8955_RIGHT_DAC_VOLUME] |= WM8955_RDVU;
--	wm8955->reg_cache[WM8955_LOUT1_VOLUME] |= WM8955_LO1VU | WM8955_LO1ZC;
--	wm8955->reg_cache[WM8955_ROUT1_VOLUME] |= WM8955_RO1VU | WM8955_RO1ZC;
--	wm8955->reg_cache[WM8955_LOUT2_VOLUME] |= WM8955_LO2VU | WM8955_LO2ZC;
--	wm8955->reg_cache[WM8955_ROUT2_VOLUME] |= WM8955_RO2VU | WM8955_RO2ZC;
--	wm8955->reg_cache[WM8955_MONOOUT_VOLUME] |= WM8955_MOZC;
-+	reg_cache[WM8955_LEFT_DAC_VOLUME] |= WM8955_LDVU;
-+	reg_cache[WM8955_RIGHT_DAC_VOLUME] |= WM8955_RDVU;
-+	reg_cache[WM8955_LOUT1_VOLUME] |= WM8955_LO1VU | WM8955_LO1ZC;
-+	reg_cache[WM8955_ROUT1_VOLUME] |= WM8955_RO1VU | WM8955_RO1ZC;
-+	reg_cache[WM8955_LOUT2_VOLUME] |= WM8955_LO2VU | WM8955_LO2ZC;
-+	reg_cache[WM8955_ROUT2_VOLUME] |= WM8955_RO2VU | WM8955_RO2ZC;
-+	reg_cache[WM8955_MONOOUT_VOLUME] |= WM8955_MOZC;
- 
- 	/* Also enable adaptive bass boost by default */
--	wm8955->reg_cache[WM8955_BASS_CONTROL] |= WM8955_BB;
-+	reg_cache[WM8955_BASS_CONTROL] |= WM8955_BB;
- 
- 	/* Set platform data values */
- 	if (pdata) {
- 		if (pdata->out2_speaker)
--			wm8955->reg_cache[WM8955_ADDITIONAL_CONTROL_2]
-+			reg_cache[WM8955_ADDITIONAL_CONTROL_2]
- 				|= WM8955_ROUT2INV;
- 
- 		if (pdata->monoin_diff)
--			wm8955->reg_cache[WM8955_MONO_OUT_MIX_1]
-+			reg_cache[WM8955_MONO_OUT_MIX_1]
- 				|= WM8955_DMEN;
- 	}
- 
--- 
-1.7.2.3
-
+This is also going to conflict with c1c3443c ("x86, numa: Fake 
+node-to-cpumask for NUMA emulation") in x86/numa, but it's trival to merge 
+because there's no actual implementation change.
