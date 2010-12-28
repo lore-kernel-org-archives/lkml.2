@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469Ab0L1Rnp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 12:43:45 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:36399 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753905Ab0L1Rno (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 28 Dec 2010 12:43:44 -0500
-Date: Tue, 28 Dec 2010 12:42:04 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, sparseirq: let nr_irqs equal to NR_IRQS
-Message-ID: <20101228174204.GB13488@dumpdata.com>
-References: <4CEB877D.9060709@kernel.org>
- <4CF75626.6000306@kernel.org>
- <alpine.LFD.2.00.1012021019060.2653@localhost6.localdomain6>
- <4CF7FA58.8070803@kernel.org>
- <alpine.LFD.2.00.1012022112400.2653@localhost6.localdomain6>
- <4CF7FF66.3010802@kernel.org>
- <alpine.LFD.2.00.1012022125401.2653@localhost6.localdomain6>
- <20101222125711.GI10809@elte.hu>
- <4D193533.6060103@kernel.org>
+	id S1754597Ab0L1Roy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 12:44:54 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35404 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754343Ab0L1Row (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Dec 2010 12:44:52 -0500
+Date: Tue, 28 Dec 2010 17:45:03 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: David Brownell <david-b@pacbell.net>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC/PATCH 1/2] mfd: twl6030-irq: move to threaded_irq
+Message-ID: <20101228174503.GB3089@opensource.wolfsonmicro.com>
+References: <20101228154617.GC14860@sirena.org.uk>
+ <704478.32838.qm@web180316.mail.gq1.yahoo.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D193533.6060103@kernel.org>
+In-Reply-To: <704478.32838.qm@web180316.mail.gq1.yahoo.com>
+X-Cookie: You will have a long and boring life.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 27, 2010 at 04:54:11PM -0800, Yinghai Lu wrote:
-> 
-> 
-> For x86_64 system:
-> when we have 128 cpus with 5 ioapics, will have nr_irqs = 3064
-> 	120 + 8 * 128 + 120 * 16
-> systems could take 20 pcie,  when intel 10g are used with
-> sriov and ixgbevf, every vf will need 3 irqs, and one device
-> have 64 vf. so will need 20 * 3 * 64 = 3840.
-> some 6 ports Intel 10gb may need more.
-> 
-> Just remove that function for x86, and let nr_irqs to NR_IRQS
-> because We already have radix-tree and bit_map for searching desc for irq.
+On Tue, Dec 28, 2010 at 09:40:03AM -0800, David Brownell wrote:
 
-Won't that make the arch_probe_nr_irqs be NR_IRQS_LEGACY?
+> > What I'd expect to see from a conversion like this would be
+> > that most of
+> > the locking/IRQ management stuff would be dropped
 
-I am looking at Linus's today tree, or is this patch based on some other tree?
+> I'd expect that genirq solve all the issues and
+> that its support be used.  That's not the same
+> as dropping anything except the initial code to
+> handle what genirq didn't ... some locking/etc
+> would still mostly need doing, but where genirq
+> now handles it, that'd be preferable.
 
-> 
-> Notes: long before same vresion cause one of Ingo's setup udev hang...
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> ---
->  arch/x86/kernel/apic/io_apic.c |   22 ----------------------
->  1 file changed, 22 deletions(-)
-> 
-> Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c
-> +++ linux-2.6/arch/x86/kernel/apic/io_apic.c
-> @@ -3637,28 +3637,6 @@ int get_nr_irqs_gsi(void)
->  	return nr_irqs_gsi;
->  }
->  
-> -#ifdef CONFIG_SPARSE_IRQ
-> -int __init arch_probe_nr_irqs(void)
-> -{
-> -	int nr;
-> -
-> -	if (nr_irqs > (NR_VECTORS * nr_cpu_ids))
-> -		nr_irqs = NR_VECTORS * nr_cpu_ids;
-> -
-> -	nr = nr_irqs_gsi + 8 * nr_cpu_ids;
-> -#if defined(CONFIG_PCI_MSI) || defined(CONFIG_HT_IRQ)
-> -	/*
-> -	 * for MSI and HT dyn irq
-> -	 */
-> -	nr += nr_irqs_gsi * 16;
-> -#endif
-> -	if (nr < nr_irqs)
-> -		nr_irqs = nr;
-> -
-> -	return NR_IRQS_LEGACY;
-> -}
-> -#endif
-> -
->  static int __io_apic_set_pci_routing(struct device *dev, int irq,
->  				struct io_apic_irq_attr *irq_attr)
->  {
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+It should solve everything - there's rather a lot of I2C/SPI connected
+MFDs using genirq fully now without any hassle, the APIs are really
+straightforward and easy to use.
+
+>  and the
+> > bus_lock() and
+> > bus_sync_unlock() operations would be implemented.
+
+> ISTR maybe four or five genirq updates in the
+> area of threaded IRQ management, added so that
+> issues the twl4030 driver needed to be solved
+> could be solved in generic ways.
+
+Yup - the main one on top of threaded IRQs was the bus_lock() and
+bus_sync_unlock() methods.
+
+> The first was just having threaded IRQ handlers,
+> and another was I think removing the initial
+> quick'n'dirty thread-per-irq restriction; there
+> was no point in having a few dozen IRQ threads
+> in e.g. a twl4030 driver, since two could never
+> do constructive work concurrently.
+
+The thread per IRQ thing is dealt with too, the secondary IRQs share the
+thread used for demux.
