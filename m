@@ -1,74 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350Ab0L1CyJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 21:54:09 -0500
-Received: from thunk.org ([69.25.196.29]:39518 "EHLO thunker.thunk.org"
+	id S1753327Ab0L1DVF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 22:21:05 -0500
+Received: from mga02.intel.com ([134.134.136.20]:60954 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753055Ab0L1CyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 21:54:07 -0500
-Date: Mon, 27 Dec 2010 21:53:43 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Con Kolivas <kernel@kolivas.org>
-Cc: linux-kernel@vger.kernel.org, adilger.kernel@dilger.ca,
-        linux-ext4@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: Regular ext4 error warning with HD in USB dock
-Message-ID: <20101228025343.GD10149@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Con Kolivas <kernel@kolivas.org>, linux-kernel@vger.kernel.org,
-	adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
-	linux-usb@vger.kernel.org
-References: <201012280953.46149.kernel@kolivas.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201012280953.46149.kernel@kolivas.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1753246Ab0L1DVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 22:21:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,237,1291622400"; 
+   d="scan'208";a="691226865"
+Subject: Re: [PATCH] ACPI: use ioremap_cache()
+From: Shaohua Li <shaohua.li@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: Jack Steiner <steiner@sgi.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        "tony.luck@gmail.com" <tony.luck@gmail.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gbeshers@sgi.com" <gbeshers@sgi.com>
+In-Reply-To: <alpine.LFD.2.00.1012170307080.20940@x980>
+References: <20101214220932.GA1206@sgi.com>
+	 <alpine.LFD.2.00.1012141903210.25387@x980> <20101215024136.GB19601@sgi.com>
+	 <alpine.LFD.2.00.1012142302110.4878@x980> <20101215164635.GA27373@sgi.com>
+	 <alpine.LFD.2.00.1012151536510.21167@x980>
+	 <alpine.LFD.2.00.1012162149370.20940@x980>
+	 <alpine.LFD.2.00.1012170307080.20940@x980>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 28 Dec 2010 11:21:00 +0800
+Message-ID: <1293506460.10593.43.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 28, 2010 at 09:53:45AM +1100, Con Kolivas wrote:
+On Fri, 2010-12-17 at 16:08 +0800, Len Brown wrote:
+> From: Len Brown <len.brown@intel.com>
 > 
-> Since I moved my internal HD into a USB dock externally and mount the ext4 
-> filesystem on it, I regularly get the following errors after it has been 
-> mounted for a while (see timecode). It doesn't seem to matter which recent 
-> kernel I use. 
+> Although the temporary boot-time ACPI table mappings
+> were set up with CPU caching enabled, the permanent table
+> mappings and AML run-time region memory accesses were
+> set up with ioremap(), which on x86 is a synonym for
+> ioremap_nocache().
 > 
-> [1048401.773270] EXT4-fs (sde8): mounted filesystem with writeback data mode. 
-> Opts: (null)
-> [1048702.736011] EXT4-fs (sde8): error count: 3
-> [1048702.736016] EXT4-fs (sde8): initial error at 1289053677: 
-> ext4_journal_start_sb:251
-> [1048702.736018] EXT4-fs (sde8): last error at 1289080948: ext4_put_super:719
+> Changing this to ioremap_cache() improves performance as
+> seen when accessing the tables via acpidump,
+> or /sys/firmware/acpi/tables.  It should also improve
+> AML run-time performance.
+> 
+> No change on ia64.
+> 
+> Reported-by: Jack Steiner <steiner@sgi.com>
+> Signed-off-by: Len Brown <len.brown@intel.com>
+> ---
+>  arch/ia64/include/asm/io.h |    5 +++++
+>  drivers/acpi/osl.c         |    6 +++---
+>  2 files changed, 8 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/ia64/include/asm/io.h b/arch/ia64/include/asm/io.h
+> index cc8335e..009a7e0 100644
+> --- a/arch/ia64/include/asm/io.h
+> +++ b/arch/ia64/include/asm/io.h
+> @@ -426,6 +426,11 @@ extern void __iomem * ioremap_nocache (unsigned long offset, unsigned long size)
+>  extern void iounmap (volatile void __iomem *addr);
+>  extern void __iomem * early_ioremap (unsigned long phys_addr, unsigned long size);
+>  extern void early_iounmap (volatile void __iomem *addr, unsigned long size);
+> +static inline void __iomem * ioremap_cache (unsigned long phys_addr, unsigned long size)
+> +{
+> +	return ioremap(unsigned long phys_addr, unsigned long size);
+> +}
+> +
+>  
+>  /*
+>   * String version of IO memory access ops:
+> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+> index 966fedd..85eba53 100644
+> --- a/drivers/acpi/osl.c
+> +++ b/drivers/acpi/osl.c
+> @@ -324,7 +324,7 @@ acpi_os_map_memory(acpi_physical_address phys, acpi_size size)
+>  
+>  	pg_off = round_down(phys, PAGE_SIZE);
+>  	pg_sz = round_up(phys + size, PAGE_SIZE) - pg_off;
+> -	virt = ioremap(pg_off, pg_sz);
+> +	virt = ioremap_cache(pg_off, pg_sz);
+>  	if (!virt) {
+>  		kfree(map);
+>  		return NULL;
+> @@ -646,7 +646,7 @@ acpi_os_read_memory(acpi_physical_address phys_addr, u32 * value, u32 width)
+>  	virt_addr = acpi_map_vaddr_lookup(phys_addr, size);
+>  	rcu_read_unlock();
+>  	if (!virt_addr) {
+> -		virt_addr = ioremap(phys_addr, size);
+> +		virt_addr = ioremap_cache(phys_addr, size);
+>  		unmap = 1;
+>  	}
+>  	if (!value)
+> @@ -682,7 +682,7 @@ acpi_os_write_memory(acpi_physical_address phys_addr, u32 value, u32 width)
+>  	virt_addr = acpi_map_vaddr_lookup(phys_addr, size);
+>  	rcu_read_unlock();
+>  	if (!virt_addr) {
+> -		virt_addr = ioremap(phys_addr, size);
+> +		virt_addr = ioremap_cache(phys_addr, size);
+>  		unmap = 1;
+>  	}
+blindly map the range as cache is not ok. for example:
+    OperationRegion (RCRB, SystemMemory, 0xFED1C000, 0x4000)
+    Field (RCRB, DWordAcc, Lock, Preserve)
+    {
+        Offset (0x1000),
+        Offset (0x3000),
+        Offset (0x3404),
+        HPAS,   2,
+            ,   5,
+        HPAE,   1,
+        Offset (0x3418),
+            ,   1,
+        PATD,   1,
+        SATD,   1,
+        SMBD,   1,
+        HDAD,   1,
+        A97D,   1,
+        Offset (0x341A),
+        RP1D,   1,
+        RP2D,   1,
+        RP3D,   1,
+        RP4D,   1,
+        RP5D,   1,
+        RP6D,   1
+    }
+RCRB is a memory mapped io. In ICH, it's chipset configuration
+registers. this range can't be cached.
+I thought we should add a check like
+if page is E820_RAM or E820_ACPI then
+	cached_map
+else
+	uncached_map
+we have page_is_ram() API which just checks E820_RAM, I thought we can
+add a new API to check E820_ACPI.
 
-That's actually not an error.  It's a report which is generated every
-24 hours, indicating that there has been 3 errors since the last time
-the error count has been cleared, with the first error taking place at
-Sat Nov 6 10:27:57 2010 (US/Eastern) in the function
-ext4_journal_start_sb(), at line 251, and the most recent error taking
-place at Sat Nov 6 18:02:28 2010 (US/Eastern), in the function
-ext4_put_super() at line 719.  This is a new feature which was added
-in 2.6.36.
+Thanks,
+Shaohua
 
-This information (which is stored in the ext4 superblock) gets cleared
-by e2fsck version 1.41.13 or newer (1.41.14 is the most recently
-released version).  If you are using an older version of e2fsck, this
-information won't get cleared, which is not a disaster, although it
-could potentially get annoying.  The solution is to simply to upgrade
-to the newest version of e2fsprogs if you are using the 2.6.36 or
-newer kernel.
-
-The idea behind this feature is to make sure that if there was a file
-system corruption detected, it wouldn't be lost due to log files
-getting overflowed.  It's also helpful when users report problems to
-distribution support lines, since it makes it more likely support
-personnel will be able to determine that there has been some file
-system corrutpion issues, perhaps caused by hardware problems, or some
-other cause, including kernel bugs.
-
-Hope this helps explain what you're seeing!
-
-						- Ted
