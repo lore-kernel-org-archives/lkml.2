@@ -1,102 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132Ab0L1H4L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 02:56:11 -0500
-Received: from mga09.intel.com ([134.134.136.24]:47211 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751073Ab0L1H4K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 02:56:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,238,1291622400"; 
-   d="scan'208";a="691276237"
-Subject: Re: [PATCH] apic: use GFP_ATOMIC in lapic_resume
-From: Zhang Rui <rui.zhang@intel.com>
-To: David Rientjes <rientjes@google.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-In-Reply-To: <alpine.DEB.2.00.1012272336001.25826@chino.kir.corp.google.com>
-References: <1293518922.14005.601.camel@rui>
-	 <alpine.DEB.2.00.1012272300070.24243@chino.kir.corp.google.com>
-	 <1293520922.14005.616.camel@rui>
-	 <alpine.DEB.2.00.1012272336001.25826@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 28 Dec 2010 15:56:23 +0800
-Message-ID: <1293522983.14005.624.camel@rui>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1752281Ab0L1ITV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 03:19:21 -0500
+Received: from dtp.xs4all.nl ([80.101.171.8]:56313 "HELO abra2.bitwizard.nl"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751527Ab0L1ITU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Dec 2010 03:19:20 -0500
+Date: Tue, 28 Dec 2010 09:19:17 +0100
+From: Rogier Wolff <R.E.Wolff@BitWizard.nl>
+To: "Ted Ts'o" <tytso@mit.edu>, Con Kolivas <kernel@kolivas.org>,
+        linux-kernel@vger.kernel.org, adilger.kernel@dilger.ca,
+        linux-ext4@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: Regular ext4 error warning with HD in USB dock
+Message-ID: <20101228081917.GA1351@bitwizard.nl>
+References: <201012280953.46149.kernel@kolivas.org> <20101228025343.GD10149@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101228025343.GD10149@thunk.org>
+Organization: BitWizard.nl
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-12-28 at 15:39 +0800, David Rientjes wrote:
-> On Tue, 28 Dec 2010, Zhang Rui wrote:
+On Mon, Dec 27, 2010 at 09:53:43PM -0500, Ted Ts'o wrote:
+> On Tue, Dec 28, 2010 at 09:53:45AM +1100, Con Kolivas wrote:
+> > [1048401.773270] EXT4-fs (sde8): mounted filesystem with writeback data mode. 
+> > Opts: (null)
+> > [1048702.736011] EXT4-fs (sde8): error count: 3
+> > [1048702.736016] EXT4-fs (sde8): initial error at 1289053677: 
+> > ext4_journal_start_sb:251
+> > [1048702.736018] EXT4-fs (sde8): last error at 1289080948: ext4_put_super:719
 > 
-> > > > Index: linux-2.6/arch/x86/kernel/apic/apic.c
-> > > > ===================================================================
-> > > > --- linux-2.6.orig/arch/x86/kernel/apic/apic.c
-> > > > +++ linux-2.6/arch/x86/kernel/apic/apic.c
-> > > > @@ -1459,7 +1459,7 @@ void __init enable_IR_x2apic(void)
-> > > >  	if (dmar_table_init_ret && !x2apic_supported())
-> > > >  		return;
-> > > >  
-> > > > -	ioapic_entries = alloc_ioapic_entries();
-> > > > +	ioapic_entries = alloc_ioapic_entries(GFP_KERNEL);
-> > > >  	if (!ioapic_entries) {
-> > > >  		pr_err("Allocate ioapic_entries failed\n");
-> > > >  		goto out;
-> > > > @@ -2084,7 +2084,7 @@ static int lapic_resume(struct sys_devic
-> > > >  
-> > > >  	local_irq_save(flags);
-> > > >  	if (intr_remapping_enabled) {
-> > > > -		ioapic_entries = alloc_ioapic_entries();
-> > > > +		ioapic_entries = alloc_ioapic_entries(GFP_ATOMIC);
-> > > >  		if (!ioapic_entries) {
-> > > >  			WARN(1, "Alloc ioapic_entries in lapic resume failed.");
-> > > >  			ret = -ENOMEM;
-> > > 
-> > > You can't do the allocation before disabling irqs when 
-> > > intr_remapping_enabled is set?
-> > 
-> > yes, we can. The first idea came into my mind is to register a pm
-> > notifier callback to allocate/free the memory. But that one duplicates
-> > the code of alloc_ioapic_entries, which doesn't look nice, neither.
-> > Plus, is there any problem with this one?
-> > 
-> 
-> We try to avoid GFP_ATOMIC whenever possible and this seems like a 
-> particularly trivial case.  You can simply move the alloc_ioapic_entries() 
-> and NULL check before local_irq_save() and GFP_KERNEL will work fine.
+> That's actually not an error.  It's a report which is generated every
+> 24 hours, indicating that there has been 3 errors since the last time
+> the error count has been cleared, with the first error taking place at
+> Sat Nov 6 10:27:57 2010 (US/Eastern) in the function
+> ext4_journal_start_sb(), at line 251, and the most recent error taking
+> place at Sat Nov 6 18:02:28 2010 (US/Eastern), in the function
+> ext4_put_super() at line 719.  This is a new feature which was added
+> in 2.6.36.
 
-I'm afraid not.
-lapic_resume is invoked in sysdev_resume, which is done with irq
-disabled, please refer to the code in kernel/power/suspend.c.
+Nice. But the issue you're not mentioning is: What errors could have 
+happened on the 6th of november? Should Con worry about those errors?
 
-        arch_suspend_disable_irqs();
-        BUG_ON(!irqs_disabled()); 
+OK, the chances are that he has rebooted since november, and that an
+older fsck fixed the errors, but not cleared the "fs errror log". Would
+these errors have triggered a "remount-readonly" if the fs was mounted 
+like that?
 
-        error = sysdev_suspend(PMSG_SUSPEND);
-        if (!error) {    
-                if (!suspend_test(TEST_CORE) &&
-pm_check_wakeup_events()) {
-                        error = suspend_ops->enter(state);
-                        events_check_enabled = false;
-                }
-                sysdev_resume();
-        }       
-        
-        arch_suspend_enable_irqs();
-        BUG_ON(irqs_disabled());
+I don't reboot that often: 
 
-To pre-allocate the memory, we need to build a notifier bloack and call
-register_pm_notifier.
+obelix:~> uptime
+ 09:16:19 up 175 days, 19:04, 19 users,  load average: 110.10, 110.61, 111.22
 
-thanks,
-rui
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+(and yes, the load is quite high on that machine. I won't polute this
+thread about that....)
 
+	Roger. 
 
+-- 
+** R.E.Wolff@BitWizard.nl ** http://www.BitWizard.nl/ ** +31-15-2600998 **
+**    Delftechpark 26 2628 XH  Delft, The Netherlands. KVK: 27239233    **
+*-- BitWizard writes Linux device drivers for any device you may have! --*
+Q: It doesn't work. A: Look buddy, doesn't work is an ambiguous statement. 
+Does it sit on the couch all day? Is it unemployed? Please be specific! 
+Define 'it' and what it isn't doing. --------- Adapted from lxrbot FAQ
