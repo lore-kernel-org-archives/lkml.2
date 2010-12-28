@@ -1,42 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab0L1GRB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 01:17:01 -0500
-Received: from cantor.suse.de ([195.135.220.2]:38351 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751060Ab0L1GRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 01:17:00 -0500
-Subject: Re: [RFC -v2 PATCH 2/3] sched: add yield_to function
-From: Mike Galbraith <mgalbraith@suse.de>
-To: Gene Heskett <gene.heskett@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <201012280108.12807.gene.heskett@gmail.com>
-References: <20101213224434.7495edb2@annuminas.surriel.com>
-	 <1292861059.15207.7.camel@marge.simson.net>
-	 <1293515683.6930.16.camel@marge.simson.net>
-	 <201012280108.12807.gene.heskett@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 28 Dec 2010 07:16:48 +0100
-Message-ID: <1293517008.6930.21.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S1753375Ab0L1GWl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 01:22:41 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:36432 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753218Ab0L1GWk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Dec 2010 01:22:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=CxtLc8jIhNjUEBnntJWfEQTTzqRSX7iF+xJSCPWuPgbMRJ7Eh1uwF2wMlz5oP83qSe
+         LX1/YVinetgEjE4meEGrl5orZFSwGv/nH0gZNlJdZlmaxYHJ/8fyRnqH8yCAfYFWt8Cj
+         W9q1prgt+pX92JBBfw1pZdI/oiCERgckbFn1M=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH]staging:zram:xvmalloc.c Fix a typo.
+Date: Mon, 27 Dec 2010 22:22:31 -0800
+Message-Id: <1293517351-3158-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.6.5.2.180.gc5b3e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-12-28 at 01:08 -0500, Gene Heskett wrote:
-> On Tuesday, December 28, 2010, Mike Galbraith wrote:
+Not exactly sure if this is a typo or not, due to my search
+results comming up with not that many hits. Either its dereferenceable
+or dereferencable from the two I choose the later. if it's wrong let me know
+and I'll resend.
 
-> >(either it's christmas, or nobody cares to try it.  ho ho hum:)
-> 
-> Mike, I'd be glad to try it, but the last kernel I was able to make the 
-> nvidia drivers install on was 2.6.36.1-latencyfix, which had your earier 
-> patches in it, and it is working _very_ well.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-It wouldn't do diddly spit by itself anyway, needs someone to stick
-yield_to(amigo) in interesting spots.  Might not do diddly spit even
-then :)
+---
+ drivers/staging/zram/xvmalloc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-	-Mike
+diff --git a/drivers/staging/zram/xvmalloc.c b/drivers/staging/zram/xvmalloc.c
+index 3fdbb8a..4f07439 100644
+--- a/drivers/staging/zram/xvmalloc.c
++++ b/drivers/staging/zram/xvmalloc.c
+@@ -46,7 +46,7 @@ static void clear_flag(struct block_header *block, enum blockflags flag)
+ }
+ 
+ /*
+- * Given <page, offset> pair, provide a derefrencable pointer.
++ * Given <page, offset> pair, provide a dereferencable pointer.
+  * This is called from xv_malloc/xv_free path, so it
+  * needs to be fast.
+  */
+-- 
+1.6.5.2.180.gc5b3e
 
