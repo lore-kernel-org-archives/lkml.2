@@ -1,239 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab0L1J6q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 04:58:46 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:58579 "EHLO ogre.sisk.pl"
+	id S1752522Ab0L1KZN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 05:25:13 -0500
+Received: from mga01.intel.com ([192.55.52.88]:13793 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751588Ab0L1J6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 04:58:45 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [PATCH] apic: use GFP_ATOMIC in lapic_resume
-Date: Tue, 28 Dec 2010 10:57:54 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc7+; KDE/4.4.4; x86_64; ; )
-Cc: David Rientjes <rientjes@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <1293518922.14005.601.camel@rui> <1293522983.14005.624.camel@rui> <1293526102.14005.632.camel@rui>
-In-Reply-To: <1293526102.14005.632.camel@rui>
+	id S1751535Ab0L1KZK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Dec 2010 05:25:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,238,1291622400"; 
+   d="scan'208";a="872405668"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>
+CC: "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Date: Tue, 28 Dec 2010 15:55:04 +0530
+Subject: Patch[1/2]X86:Adding_Notification_Support_to_therm_throt.c
+Thread-Topic: Patch[1/2]X86:Adding_Notification_Support_to_therm_throt.c
+Thread-Index: AcugDBMTicIrz2YwQ9eglTpUbpNqewGbRnBg
+Message-ID: <D6D887BA8C9DFF48B5233887EF04654105C11DB939@bgsmsx502.gar.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012281057.54647.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 28, 2010, Zhang Rui wrote:
-> On Tue, 2010-12-28 at 15:56 +0800, Zhang Rui wrote:
-> > On Tue, 2010-12-28 at 15:39 +0800, David Rientjes wrote:
-> > > On Tue, 28 Dec 2010, Zhang Rui wrote:
-> > > 
-> > > > > > Index: linux-2.6/arch/x86/kernel/apic/apic.c
-> > > > > > ===================================================================
-> > > > > > --- linux-2.6.orig/arch/x86/kernel/apic/apic.c
-> > > > > > +++ linux-2.6/arch/x86/kernel/apic/apic.c
-> > > > > > @@ -1459,7 +1459,7 @@ void __init enable_IR_x2apic(void)
-> > > > > >  	if (dmar_table_init_ret && !x2apic_supported())
-> > > > > >  		return;
-> > > > > >  
-> > > > > > -	ioapic_entries = alloc_ioapic_entries();
-> > > > > > +	ioapic_entries = alloc_ioapic_entries(GFP_KERNEL);
-> > > > > >  	if (!ioapic_entries) {
-> > > > > >  		pr_err("Allocate ioapic_entries failed\n");
-> > > > > >  		goto out;
-> > > > > > @@ -2084,7 +2084,7 @@ static int lapic_resume(struct sys_devic
-> > > > > >  
-> > > > > >  	local_irq_save(flags);
-> > > > > >  	if (intr_remapping_enabled) {
-> > > > > > -		ioapic_entries = alloc_ioapic_entries();
-> > > > > > +		ioapic_entries = alloc_ioapic_entries(GFP_ATOMIC);
-> > > > > >  		if (!ioapic_entries) {
-> > > > > >  			WARN(1, "Alloc ioapic_entries in lapic resume failed.");
-> > > > > >  			ret = -ENOMEM;
-> > > > > 
-> > > > > You can't do the allocation before disabling irqs when 
-> > > > > intr_remapping_enabled is set?
-> > > > 
-> > > > yes, we can. The first idea came into my mind is to register a pm
-> > > > notifier callback to allocate/free the memory. But that one duplicates
-> > > > the code of alloc_ioapic_entries, which doesn't look nice, neither.
-> > > > Plus, is there any problem with this one?
-> > > > 
-> > > 
-> > > We try to avoid GFP_ATOMIC whenever possible and this seems like a 
-> > > particularly trivial case.  You can simply move the alloc_ioapic_entries() 
-> > > and NULL check before local_irq_save() and GFP_KERNEL will work fine.
-> > 
-> > I'm afraid not.
-> > lapic_resume is invoked in sysdev_resume, which is done with irq
-> > disabled, please refer to the code in kernel/power/suspend.c.
-> > 
-> >         arch_suspend_disable_irqs();
-> >         BUG_ON(!irqs_disabled()); 
-> > 
-> >         error = sysdev_suspend(PMSG_SUSPEND);
-> >         if (!error) {    
-> >                 if (!suspend_test(TEST_CORE) &&
-> > pm_check_wakeup_events()) {
-> >                         error = suspend_ops->enter(state);
-> >                         events_check_enabled = false;
-> >                 }
-> >                 sysdev_resume();
-> >         }       
-> >         
-> >         arch_suspend_enable_irqs();
-> >         BUG_ON(irqs_disabled());
-> > 
-> > To pre-allocate the memory, we need to build a notifier bloack and call
-> > register_pm_notifier.
-> 
-> what about this one?
+Hi,
 
-Quite frankly, I very much prefer the simple patch doing an atomic allocation.
+I am submitting a patch to add core thermal threshold notification
+Support to therm_throt.c. These thresholds are supported by the 
+IA32_THERM_INTERRUPT register. The status/log for the same is monitored
+using the IA32_THERM_STATUS register. The necessary #defines are in
+msr-index.h. A call back is added to mce.h, to further notify the
+thermal stack, about the threshold events.
 
-Using GFP_KERNEL in a sysdev callback is a plain bug and should be fixed,
-preferably in the simplest possible way (ie. replace GFP_KERNEL with
-GFP_ATOMIC).
+This patch is generated against stable Linux-2.6 kernel.
 
-The question whether or not we can avoid allocating memory in there is a
-different one and I'm not sure if the solution below is the most
-straightforward one.
+Kindly review and merge.
+---------------------------------------------------------------------------------
+From: Durgadoss R <durgadoss.r@intel.com>
 
-Thanks,
-Rafael
+Date: Sun, 19 Dec 2010 22:42:45 +0530
+Subject: [PATCH 1/2] X86:Adding_core_threshold_notification_to_therm_throt.c
 
+This patch adds code to therm_throt.c to notify core thermal threshold
+events. These thresholds are supported by the IA32_THERM_INTERRUPT register.
+The status/log for the same is monitored using the IA32_THERM_STATUS register.
+The necessary #defines are in msr-index.h. A call back is added to mce.h, to
+further notify the thermal stack, about the threshold events.
 
-> Note that it just builds okay, I have not test the patch yet.
-> 
-> pre-allocate the memory used in lapic_resume because lapic_resume, as a
-> sysdev .resume callback, is always invoked with irq disabled.
-> 
-> Without this patch, I got the following warning messages after resume.
-> [  109.780371] BUG: sleeping function called from invalid context at
-> mm/slub.c:793
-> [  109.780782] in_atomic(): 0, irqs_disabled(): 1, pid: 1391, name: bash
-> [  109.781024] Pid: 1391, comm: bash Not tainted 2.6.37-rc5+ #182
-> [  109.781264] Call Trace:
-> [  109.781501]  [<ffffffff8104156a>] __might_sleep+0xeb/0xf0
-> [  109.781743]  [<ffffffff8110d5e2>] slab_pre_alloc_hook.clone.33
-> +0x28/0x31
-> [  109.781987]  [<ffffffff8110dcef>] __kmalloc+0x88/0x115
-> [  109.782224]  [<ffffffff81025e4a>] ? kzalloc.clone.19+0x13/0x15
-> [  109.782465]  [<ffffffff81025e4a>] kzalloc.clone.19+0x13/0x15
-> [  109.782704]  [<ffffffff81025ff0>] alloc_ioapic_entries+0x20/0x82
-> [  109.782948]  [<ffffffff81024201>] lapic_resume+0x3a/0x245
-> [  109.783189]  [<ffffffff813a8329>] ? cpufreq_resume+0x30/0xb0
-> [  109.783431]  [<ffffffff812ec4ee>] __sysdev_resume+0x25/0xc5
-> [  109.783673]  [<ffffffff812ec644>] sysdev_resume+0xb6/0xfb
-> [  109.783914]  [<ffffffff81083256>] suspend_devices_and_enter
-> +0x13c/0x1c1
-> [  109.784159]  [<ffffffff810833b8>] enter_state+0xdd/0x12e
-> [  109.784398]  [<ffffffff81082a61>] state_store+0xae/0xcb
-> [  109.784640]  [<ffffffff81225737>] kobj_attr_store+0x17/0x19
-> [  109.784882]  [<ffffffff81173311>] sysfs_write_file+0x114/0x150
-> [  109.785124]  [<ffffffff8111aebb>] vfs_write+0xac/0xff
-> [  109.785365]  [<ffffffff8111b0c2>] sys_write+0x4a/0x6e
-> [  109.785604]  [<ffffffff8100ac82>] system_call_fastpath+0x16/0x1b
-> 
-> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-> ---
->  arch/x86/kernel/apic/apic.c |   38 +++++++++++++++++++++++++++++++++-----
->  1 file changed, 33 insertions(+), 5 deletions(-)
-> 
-> Index: linux-2.6/arch/x86/kernel/apic/apic.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/apic/apic.c
-> +++ linux-2.6/arch/x86/kernel/apic/apic.c
-> @@ -34,6 +34,7 @@
->  #include <linux/nmi.h>
->  #include <linux/smp.h>
->  #include <linux/mm.h>
-> +#include <linux/suspend.h>
->  
->  #include <asm/perf_event.h>
->  #include <asm/x86_init.h>
-> @@ -2033,6 +2034,34 @@ static struct {
->  	unsigned int apic_thmr;
->  } apic_pm_state;
->  
-> +static struct IO_APIC_route_entry **ioapic_entries;
-> +
-> +static int lapic_notifier_cb(struct notifier_block *nb,
-> +			unsigned long val, void *unused)
-> +{
-> +	switch(val) {
-> +	case PM_HIBERNATION_PREPARE:
-> +	case PM_SUSPEND_PREPARE:
-> +	case PM_RESTORE_PREPARE:
-> +		ioapic_entries = alloc_ioapic_entries();
-> +		if (!ioapic_entries)
-> +			return NOTIFY_BAD;
-> +		return NOTIFY_OK;
-> +	case PM_POST_HIBERNATION:
-> +	case PM_POST_SUSPEND:
-> +	case PM_POST_RESTORE:
-> +		free_ioapic_entries(ioapic_entries);
-> +		ioapic_entries = NULL;
-> +		return NOTIFY_OK;
-> +	}
-> +	return NOTIFY_BAD;
-> +}
-> +
-> +static struct notifier_block lapic_pm_nb = {
-> +	.notifier_call = lapic_notifier_cb,
-> +	.priority = 0,
-> +};
-> +
->  static int lapic_suspend(struct sys_device *dev, pm_message_t state)
->  {
->  	unsigned long flags;
-> @@ -2077,14 +2106,12 @@ static int lapic_resume(struct sys_devic
->  	unsigned long flags;
->  	int maxlvt;
->  	int ret = 0;
-> -	struct IO_APIC_route_entry **ioapic_entries = NULL;
->  
->  	if (!apic_pm_state.active)
->  		return 0;
->  
->  	local_irq_save(flags);
->  	if (intr_remapping_enabled) {
-> -		ioapic_entries = alloc_ioapic_entries();
->  		if (!ioapic_entries) {
->  			WARN(1, "Alloc ioapic_entries in lapic resume failed.");
->  			ret = -ENOMEM;
-> @@ -2094,7 +2121,6 @@ static int lapic_resume(struct sys_devic
->  		ret = save_IO_APIC_setup(ioapic_entries);
->  		if (ret) {
->  			WARN(1, "Saving IO-APIC state failed: %d\n", ret);
-> -			free_ioapic_entries(ioapic_entries);
->  			goto restore;
->  		}
->  
-> @@ -2145,7 +2171,6 @@ static int lapic_resume(struct sys_devic
->  		reenable_intr_remapping(x2apic_mode);
->  		legacy_pic->restore_mask();
->  		restore_IO_APIC_setup(ioapic_entries);
-> -		free_ioapic_entries(ioapic_entries);
->  	}
->  restore:
->  	local_irq_restore(flags);
-> @@ -2183,8 +2208,11 @@ static int __init init_lapic_sysfs(void)
->  	/* XXX: remove suspend/resume procs if !apic_pm_state.active? */
->  
->  	error = sysdev_class_register(&lapic_sysclass);
-> -	if (!error)
-> +	if (!error) {
->  		error = sysdev_register(&device_lapic);
-> +        	if (!error)
-> +			error = register_pm_notifier(&lapic_pm_nb);
-> +	}
->  	return error;
->  }
->  
-> 
-> 
-> 
-> 
+Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
 
+---
+ arch/x86/include/asm/mce.h               |    3 ++
+ arch/x86/include/asm/msr-index.h         |   12 +++++++++
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |   40 ++++++++++++++++++++++++++++++
+ 3 files changed, 55 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index c62c13c..eb16e94 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -223,6 +223,9 @@ void intel_init_thermal(struct cpuinfo_x86 *c);
+ 
+ void mce_log_therm_throt_event(__u64 status);
+ 
++/* Interrupt Handler for core thermal thresholds */
++extern int (*platform_thermal_notify)(__u64 msr_val);
++
+ #ifdef CONFIG_X86_THERMAL_VECTOR
+ extern void mcheck_intel_therm_init(void);
+ #else
+diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
+index 3ea3dc4..a9de090 100644
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -253,6 +253,18 @@
+ #define PACKAGE_THERM_INT_LOW_ENABLE		(1 << 1)
+ #define PACKAGE_THERM_INT_PLN_ENABLE		(1 << 24)
+ 
++/* Thermal Thresholds Support */
++#define THERM_INT_THRESHOLD0_ENABLE    (1 << 15)
++#define THERM_SHIFT_THRESHOLD0        8
++#define THERM_MASK_THRESHOLD0          (0x7f << THERM_SHIFT_THRESHOLD0)
++#define THERM_INT_THRESHOLD1_ENABLE    (1 << 23)
++#define THERM_SHIFT_THRESHOLD1        16
++#define THERM_MASK_THRESHOLD1          (0x7f << THERM_SHIFT_THRESHOLD1)
++#define THERM_STATUS_THRESHOLD0        (1 << 6)
++#define THERM_LOG_THRESHOLD0           (1 << 7)
++#define THERM_STATUS_THRESHOLD1        (1 << 8)
++#define THERM_LOG_THRESHOLD1           (1 << 9)
++
+ /* MISC_ENABLE bits: architectural */
+ #define MSR_IA32_MISC_ENABLE_FAST_STRING	(1ULL << 0)
+ #define MSR_IA32_MISC_ENABLE_TCC		(1ULL << 1)
+diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+index 4b68326..e12246f 100644
+--- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -53,8 +53,13 @@ struct thermal_state {
+ 	struct _thermal_state core_power_limit;
+ 	struct _thermal_state package_throttle;
+ 	struct _thermal_state package_power_limit;
++	struct _thermal_state core_thresh0;
++	struct _thermal_state core_thresh1;
+ };
+ 
++/* Callback to handle core threshold interrupts */
++int (*platform_thermal_notify)(__u64 msr_val);
++
+ static DEFINE_PER_CPU(struct thermal_state, thermal_state);
+ 
+ static atomic_t therm_throt_en	= ATOMIC_INIT(0);
+@@ -200,6 +205,22 @@ static int therm_throt_process(bool new_event, int event, int level)
+ 	return 0;
+ }
+ 
++static int thresh_event_valid(int event)
++{
++	struct _thermal_state *state;
++	unsigned int this_cpu = smp_processor_id();
++	struct thermal_state *pstate = &per_cpu(thermal_state, this_cpu);
++	u64 now = get_jiffies_64();
++
++	state = (event == 0) ? &pstate->core_thresh0 : &pstate->core_thresh1;
++
++	if (time_before64(now, state->next_check))
++		return 0;
++
++	state->next_check = now + CHECK_INTERVAL;
++	return 1;
++}
++
+ #ifdef CONFIG_SYSFS
+ /* Add/Remove thermal_throttle interface for CPU device: */
+ static __cpuinit int thermal_throttle_add_dev(struct sys_device *sys_dev,
+@@ -313,6 +334,22 @@ device_initcall(thermal_throttle_init_device);
+ #define PACKAGE_THROTTLED	((__u64)2 << 62)
+ #define PACKAGE_POWER_LIMIT	((__u64)3 << 62)
+ 
++static void notify_thresholds(__u64 msr_val)
++{
++	/* check whether the interrupt handler is defined;
++	 * otherwise simply return
++	 */
++	if (!platform_thermal_notify)
++		return;
++
++	/* lower threshold reached */
++	if ((msr_val & THERM_LOG_THRESHOLD0) &&	thresh_event_valid(0))
++		platform_thermal_notify(msr_val);
++	/* higher threshold reached */
++	if ((msr_val & THERM_LOG_THRESHOLD1) && thresh_event_valid(1))
++		platform_thermal_notify(msr_val);
++}
++
+ /* Thermal transition interrupt handler */
+ static void intel_thermal_interrupt(void)
+ {
+@@ -321,6 +358,9 @@ static void intel_thermal_interrupt(void)
+ 
+ 	rdmsrl(MSR_IA32_THERM_STATUS, msr_val);
+ 
++	/* Check for violation of core thermal thresholds*/
++	notify_thresholds(msr_val);
++
+ 	if (therm_throt_process(msr_val & THERM_STATUS_PROCHOT,
+ 				THERMAL_THROTTLING_EVENT,
+ 				CORE_LEVEL) != 0)
