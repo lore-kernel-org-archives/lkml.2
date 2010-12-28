@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400Ab0L1Gdw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 01:33:52 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:46892 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344Ab0L1Gdv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 01:33:51 -0500
-MIME-Version: 1.0
-X-Originating-IP: [93.172.188.89]
-In-Reply-To: <1293452486-notmuch-felipe.contreras@nokia.com>
-References: <1292870624-25450-1-git-send-email-felipe.contreras@nokia.com>
- <AANLkTikisHaAMZphRJVYdcokVbaZXVF9COrwkdGTDg__@mail.gmail.com>
- <AANLkTi=9AL3aWUsMeih+Gb-sMov=MgBZ1eTp8wb=q1hZ@mail.gmail.com>
- <AANLkTinX8t=3b48e2sxPU-V_G-nGm_1DyEg6B-CeqXDa@mail.gmail.com> <1293452486-notmuch-felipe.contreras@nokia.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 28 Dec 2010 08:33:30 +0200
-Message-ID: <AANLkTinz0HuhGB_WzTQbK8XkfkGALjtg928WdOUYsySf@mail.gmail.com>
-Subject: Re: [PATCH v2] staging: tidspbridge: protect dmm_map properly
-To: Felipe Contreras <felipe.contreras@nokia.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org, greg@kroah.com,
-        omar.ramirez@ti.com, fernando.lugo@ti.com, nm@ti.com,
-        ameya.palande@nokia.com, h-kanigeri2@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753410Ab0L1Gke (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 01:40:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56186 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750718Ab0L1Gkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Dec 2010 01:40:32 -0500
+Date: Mon, 27 Dec 2010 23:40:47 -0700
+From: Pete Zaitcev <zaitcev@redhat.com>
+To: Tsozik <tsozik@yahoo.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, zaitcev@redhat.com
+Subject: Re: [PATCH 1/1] mct_u232: added _ioctl, _msr_to_icount and
+ _get_icount functions
+Message-ID: <20101227234047.3f70a515@lembas.zaitcev.lan>
+In-Reply-To: <711019.98747.qm@web65713.mail.ac4.yahoo.com>
+References: <20101227151237.744bbb6e@lembas.zaitcev.lan>
+	<711019.98747.qm@web65713.mail.ac4.yahoo.com>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 27, 2010 at 3:55 PM, Felipe Contreras
-<felipe.contreras@nokia.com> wrote:
-> So, effectively, serializing the proc_begin_dma() and proc_end_dma()
-> would not affect anyone negatively for the time being.
+On Mon, 27 Dec 2010 20:04:51 -0800 (PST)
+Tsozik <tsozik@yahoo.com> wrote:
 
-You can never really tell who is using the kernel (or will be using
-this kernel version), how and under which workload.
+> So I ran geiger counter against /dev/ttyS0 device for 20 minutes and
+> acquired 20 measurements. Then I compared last average with last 20
+> minute measurement average acquired via mct_u232 on the laptop placed
+> nearby. The error was ~4% (rounded up).
 
-> For the long-term goal I agree with that approach, however, first, I
-> think my patch should be applied, since it's fixing a problem using an
-> already existing and actively excersised mechanism. In fact, I think
-> this should be pushed to 2.6.37 as:
->
->  1) prevents a kernel panic
->  2) the issue is reproducible and clearly identified
->  3) the patch is small and obvious
+Great, I'm ready to ack.
 
-Both patches are (IMHO). But frankly I don't mind your patch will be
-applied now as long as it doesn't stay. I can rebase my patch against
-it after it is applied, and send separately.
+There's just one thing that is bugging me... I think it would be best
+if Alan Cox or Greg Kroah commented on it. The edgeport does the
+following, which we copied:
 
-> This approach looks cleaner, however, we need a flag in
-> remove_mapping_information() in order to force the removal, otherwise
-> there will be memory leaks. Imagine a process crashes, and
-> remove_mapping_information() returns -EBUSY.
 
-Can't happen; both proc_*_dma() operations decrease the reference
-count before exiting, so it's not up to the application.
+		schedule();
+		........
+		if (cnow.rng == cprev.rng && cnow.dsr == cprev.dsr &&
+		    cnow.dcd == cprev.dcd && cnow.cts == cprev.cts)
+			return -EIO; /* no change => error */
+		if (((arg & TIOCM_RNG) && (cnow.rng != cprev.rng)) ||
+		    ((arg & TIOCM_DSR) && (cnow.dsr != cprev.dsr)) ||
+		    ((arg & TIOCM_CD)  && (cnow.dcd != cprev.dcd)) ||
+		    ((arg & TIOCM_CTS) && (cnow.cts != cprev.cts))) {
+			return 0;
+		}
 
-> Sure, but I see this as a broader effort to have finer locking, part of
-> this should be to remove the already existing proc_lock.
+So, if there was a status report, but no change to bits, the ioctl
+TIOCMIWAIT would return with -EIO. In serial_core.c, that serves
+conventional non-USB UARTs, nothing like this occurs. I am not quite
+sure what the point of doing this -EIO check is.
 
-Having bad locking is not an excuse for adding more.
+Oh and BTW, I'm wondering what is going to happen if the device is
+disconnected while an application is blocked waiting for the status
+change. The patch is not particularly bad here, it just copies
+an existing code from elsewhere.
 
-Anyway, as I said, I don't really mind your patch will be applied as
-long as it is a temporary workaround.
-
-Thanks,
-Ohad.
+-- Pete
