@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519Ab0L1R3x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 12:29:53 -0500
+	id S1754542Ab0L1Rao (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 12:30:44 -0500
 Received: from mail-bw0-f66.google.com ([209.85.214.66]:44628 "EHLO
 	mail-bw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754478Ab0L1R3n (ORCPT
+	with ESMTP id S1754188Ab0L1R3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 12:29:43 -0500
+	Tue, 28 Dec 2010 12:29:37 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=sVCCOxHviSJq43XnACzTN3prwgC8L/2R8p2y5/LfG5tNgUI/5hLG44VshsIRVPgqiR
-         NS9HxSHv48IOqZoLqyWXavZubVYrg3awjs3JFYXaUn6a8/NJ8vscnEBKfdbptUgbSuyd
-         cUc+10XnVQvH2qCeCEHGO2PIGUeQIwgiU+yLY=
+        b=uRbkSZVetQQbU4lLkRnwNUT7yyJUD4dh7wXOcR8zGsNia+JmFIyYZzyvXAGjLv2pgJ
+         8trc1WXyDcqGCtK5KhSoRkegPIguDfzi9oWQwjHQQ9IucFN+jqfterMEoj0xs12pFUf0
+         nrbtUMatLj4NXvJyoqgW5mjwDwHbdUE0jY5fY=
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
         hch@infradead.org
-Cc: Tejun Heo <tj@kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 16/16] staging: convert to bdops->check_events()
-Date: Tue, 28 Dec 2010 18:29:12 +0100
-Message-Id: <1293557352-10592-17-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>, Markus Lidel <Markus.Lidel@shadowconnect.com>
+Subject: [PATCH 12/16] i2o_block: convert to bdops->check_events()
+Date: Tue, 28 Dec 2010 18:29:08 +0100
+Message-Id: <1293557352-10592-13-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1293557352-10592-1-git-send-email-tj@kernel.org>
 References: <1293557352-10592-1-git-send-email-tj@kernel.org>
@@ -28,125 +28,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert two staging drivers - blkvsc_drv and cyasblkdev_block - from
-->media_changed() to ->check_events().  The former always indicated
-media changed while the latter always indicated media not changed.
-Not sure what the drivers are trying to achieve but keep the original
-behavior.
+Convert from ->media_changed() to ->check_events().
+
+i2o_block buffers media changed state and clears it after reporting.
+It will behave correctly with kernel event polling.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Jens Axboe <axboe@kernel.dk>
 Cc: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Markus Lidel <Markus.Lidel@shadowconnect.com>
 ---
- drivers/staging/hv/blkvsc_drv.c                    |   11 +++++++----
- .../westbridge/astoria/block/cyasblkdev_block.c    |   11 +++++++----
- 2 files changed, 14 insertions(+), 8 deletions(-)
+ drivers/message/i2o/i2o_block.c |   11 +++++++----
+ 1 files changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index 3f81ca5..9944385 100644
---- a/drivers/staging/hv/blkvsc_drv.c
-+++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -131,7 +131,8 @@ static void blkvsc_shutdown(struct device *device);
+diff --git a/drivers/message/i2o/i2o_block.c b/drivers/message/i2o/i2o_block.c
+index f87a9d4..729d3b6 100644
+--- a/drivers/message/i2o/i2o_block.c
++++ b/drivers/message/i2o/i2o_block.c
+@@ -695,20 +695,22 @@ static int i2o_block_ioctl(struct block_device *bdev, fmode_t mode,
+ };
  
- static int blkvsc_open(struct block_device *bdev,  fmode_t mode);
- static int blkvsc_release(struct gendisk *disk, fmode_t mode);
--static int blkvsc_media_changed(struct gendisk *gd);
-+static unsigned int blkvsc_check_events(struct gendisk *gd,
-+					unsigned int clearing);
- static int blkvsc_revalidate_disk(struct gendisk *gd);
- static int blkvsc_getgeo(struct block_device *bd, struct hd_geometry *hg);
- static int blkvsc_ioctl(struct block_device *bd, fmode_t mode,
-@@ -162,7 +163,7 @@ static const struct block_device_operations block_ops = {
- 	.owner = THIS_MODULE,
- 	.open = blkvsc_open,
- 	.release = blkvsc_release,
--	.media_changed = blkvsc_media_changed,
-+	.check_events = blkvsc_check_events,
- 	.revalidate_disk = blkvsc_revalidate_disk,
- 	.getgeo = blkvsc_getgeo,
- 	.ioctl  = blkvsc_ioctl,
-@@ -367,6 +368,7 @@ static int blkvsc_probe(struct device *device)
- 	else
- 		blkdev->gd->first_minor = 0;
- 	blkdev->gd->fops = &block_ops;
-+	blkdev->gd->events = DISK_EVENT_MEDIA_CHANGE;
- 	blkdev->gd->private_data = blkdev;
- 	sprintf(blkdev->gd->disk_name, "hd%c", 'a' + devnum);
- 
-@@ -1346,10 +1348,11 @@ static int blkvsc_release(struct gendisk *disk, fmode_t mode)
- 	return 0;
- }
- 
--static int blkvsc_media_changed(struct gendisk *gd)
-+static unsigned int blkvsc_check_events(struct gendisk *gd,
-+					unsigned int clearing)
+ /**
+- *	i2o_block_media_changed - Have we seen a media change?
++ *	i2o_block_check_events - Have we seen a media change?
+  *	@disk: gendisk which should be verified
++ *	@clearing: events being cleared
+  *
+  *	Verifies if the media has changed.
+  *
+  *	Returns 1 if the media was changed or 0 otherwise.
+  */
+-static int i2o_block_media_changed(struct gendisk *disk)
++static unsigned int i2o_block_check_events(struct gendisk *disk,
++					   unsigned int clearing)
  {
- 	DPRINT_DBG(BLKVSC_DRV, "- enter\n");
--	return 1;
-+	return DISK_EVENT_MEDIA_CHANGE;
- }
+ 	struct i2o_block_device *p = disk->private_data;
  
- static int blkvsc_revalidate_disk(struct gendisk *gd)
-diff --git a/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c b/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c
-index e1851f0..842cd92 100644
---- a/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c
-+++ b/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c
-@@ -381,10 +381,10 @@ static int cyasblkdev_blk_ioctl(
- 	return -ENOTTY;
- }
- 
--/* Media_changed block_device opp
-+/* check_events block_device opp
-  * this one is called by kernel to confirm if the media really changed
-  * as we indicated by issuing check_disk_change() call */
--int cyasblkdev_media_changed(struct gendisk *gd)
-+unsigned int cyasblkdev_check_events(struct gendisk *gd, unsigned int clearing)
- {
- 	struct cyasblkdev_blk_data *bd;
- 
-@@ -402,7 +402,7 @@ int cyasblkdev_media_changed(struct gendisk *gd)
- 		#endif
+ 	if (p->media_change_flag) {
+ 		p->media_change_flag = 0;
+-		return 1;
++		return DISK_EVENT_MEDIA_CHANGE;
  	}
- 
--	/* return media change state "1" yes, 0 no */
-+	/* return media change state - DISK_EVENT_MEDIA_CHANGE yes, 0 no */
  	return 0;
  }
+@@ -950,7 +952,7 @@ static const struct block_device_operations i2o_block_fops = {
+ 	.ioctl = i2o_block_ioctl,
+ 	.compat_ioctl = i2o_block_ioctl,
+ 	.getgeo = i2o_block_getgeo,
+-	.media_changed = i2o_block_media_changed
++	.check_events = i2o_block_check_events,
+ };
  
-@@ -432,7 +432,7 @@ static struct block_device_operations cyasblkdev_bdops = {
- 	.ioctl			= cyasblkdev_blk_ioctl,
- 	/* .getgeo		= cyasblkdev_blk_getgeo, */
- 	/* added to support media removal( real and simulated) media */
--	.media_changed  = cyasblkdev_media_changed,
-+	.check_events		= cyasblkdev_check_events,
- 	/* added to support media removal( real and simulated) media */
- 	.revalidate_disk = cyasblkdev_revalidate_disk,
- 	.owner			= THIS_MODULE,
-@@ -1090,6 +1090,7 @@ static int cyasblkdev_add_disks(int bus_num,
- 		bd->user_disk_0->first_minor = devidx << CYASBLKDEV_SHIFT;
- 		bd->user_disk_0->minors = 8;
- 		bd->user_disk_0->fops = &cyasblkdev_bdops;
-+		bd->user_disk_0->events = DISK_EVENT_MEDIA_CHANGE;
- 		bd->user_disk_0->private_data = bd;
- 		bd->user_disk_0->queue = bd->queue.queue;
- 		bd->dbgprn_flags = DBGPRN_RD_RQ;
-@@ -1190,6 +1191,7 @@ static int cyasblkdev_add_disks(int bus_num,
- 		bd->user_disk_1->first_minor = (devidx + 1) << CYASBLKDEV_SHIFT;
- 		bd->user_disk_1->minors = 8;
- 		bd->user_disk_1->fops = &cyasblkdev_bdops;
-+		bd->user_disk_0->events = DISK_EVENT_MEDIA_CHANGE;
- 		bd->user_disk_1->private_data = bd;
- 		bd->user_disk_1->queue = bd->queue.queue;
- 		bd->dbgprn_flags = DBGPRN_RD_RQ;
-@@ -1278,6 +1280,7 @@ static int cyasblkdev_add_disks(int bus_num,
- 				(devidx + 2) << CYASBLKDEV_SHIFT;
- 			bd->system_disk->minors = 8;
- 			bd->system_disk->fops = &cyasblkdev_bdops;
-+			bd->system_disk->events = DISK_EVENT_MEDIA_CHANGE;
- 			bd->system_disk->private_data = bd;
- 			bd->system_disk->queue = bd->queue.queue;
- 			/* don't search for vfat
+ /**
+@@ -1002,6 +1004,7 @@ static struct i2o_block_device *i2o_block_device_alloc(void)
+ 	gd->major = I2O_MAJOR;
+ 	gd->queue = queue;
+ 	gd->fops = &i2o_block_fops;
++	gd->events = DISK_EVENT_MEDIA_CHANGE;
+ 	gd->private_data = dev;
+ 
+ 	dev->gd = gd;
 -- 
 1.7.1
 
