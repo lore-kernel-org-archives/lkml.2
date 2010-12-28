@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab0L1PkD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 10:40:03 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60389 "EHLO
+	id S1754174Ab0L1PqY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 10:46:24 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:45139 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751646Ab0L1Pj5 (ORCPT
+	with ESMTP id S1751382Ab0L1PqW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 10:39:57 -0500
-Date: Tue, 28 Dec 2010 15:39:48 +0000
+	Tue, 28 Dec 2010 10:46:22 -0500
+Date: Tue, 28 Dec 2010 15:46:17 +0000
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: "'Russell King'" <rmk@arm.linux.org.uk>, "'Takashi Iwai'" <tiwai@suse.de>,
-        "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Jassi Brar'" <jassi.brar@samsung.com>
-Subject: Re: linux-next: manual merge of the sound tree with the s5p tree
-Message-ID: <20101228153948.GB14860@sirena.org.uk>
-References: <20101223115339.1ce18216.sfr@canb.auug.org.au> <003f01cba28c$872214f0$95663ed0$%kim@samsung.com> <s5hk4j0n43g.wl%tiwai@suse.de> <004001cba292$3827d2d0$a8777870$%kim@samsung.com> <s5hvd2ku49r.wl%tiwai@suse.de> <004101cba294$8639de30$92ad9a90$%kim@samsung.com> <s5h7hf0tvct.wl%tiwai@suse.de> <008f01cba30a$72f5c160$58e14420$%kim@samsung.com> <20101224082736.GA31540@flint.arm.linux.org.uk> <018b01cba636$6c3a8390$44af8ab0$%kim@samsung.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, David Brownell <david-b@pacbell.net>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC/PATCH 1/2] mfd: twl6030-irq: move to threaded_irq
+Message-ID: <20101228154617.GC14860@sirena.org.uk>
+References: <1293544790-793-1-git-send-email-balbi@ti.com> <1293544790-793-2-git-send-email-balbi@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <018b01cba636$6c3a8390$44af8ab0$%kim@samsung.com>
+In-Reply-To: <1293544790-793-2-git-send-email-balbi@ti.com>
 X-Cookie: George Orwell was an optimist.
 User-Agent: Mutt/1.5.18 (2008-05-17)
 X-SA-Exim-Connect-IP: <locally generated>
@@ -30,21 +30,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 28, 2010 at 11:24:49AM +0900, Kukjin Kim wrote:
+On Tue, Dec 28, 2010 at 03:59:49PM +0200, Felipe Balbi wrote:
 
-> Takashi, as Russell's first option, could you please make some branch which
-> includes following to me?
+> +	disable_irq_nosync(irq);
 
-Please keep myself and Liam in the CC on all ASoC discussion.
+You shouldn't need this any more; the driver used to be faffing around
+with this because it wasn't using genirq for this in the past.
 
-> Of course, I know you need rebase you tree for it...so sorry for bothering.
+> +	for (i = 0; sts.int_sts; sts.int_sts >>= 1, i++) {
+> +		local_irq_disable();
 
-This isn't going to help as it will just introduce the same duplicate
-commits issue into the sound tree.  I'm still not clear what the
-affected commits actually are but given that Stephen's original report
-indicated that the ASoC changes are subsets of your changes would it not
-make sense to just drop the relevant commits from your tree (which seems
-to be rebased often, unlike the sound tree which doesn't rebase)?
+Simiarly here as far as I know; the original code predates genirq
+support for this so is doing some hairy stuff that is no longer
+required and may actually be harmful.
 
-Another option is to do a second round of merges after both sound and
-ALSA trees with whatever the dependant commits are.
+What I'd expect to see from a conversion like this would be that most of
+the locking/IRQ management stuff would be dropped and the bus_lock() and
+bus_sync_unlock() operations would be implemented.
