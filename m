@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085Ab0L1PeE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 10:34:04 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:60273 "EHLO ogre.sisk.pl"
+	id S1754109Ab0L1PeG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 10:34:06 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:60272 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752377Ab0L1Pc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752292Ab0L1Pc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 28 Dec 2010 10:32:26 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Len Brown <lenb@kernel.org>
-Subject: [PATCH 4/4] ACPI / PM: Report wakeup events from buttons
-Date: Tue, 28 Dec 2010 16:31:26 +0100
+Subject: [PATCH 3/4] ACPI / PM: Drop special ACPI wakeup flags
+Date: Tue, 28 Dec 2010 16:30:39 +0100
 User-Agent: KMail/1.13.5 (Linux/2.6.37-rc7+; KDE/4.4.4; x86_64; ; )
 Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
@@ -20,42 +20,63 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012281631.26958.rjw@sisk.pl>
+Message-Id: <201012281630.39826.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Since ACPI buttons and lids can be configured to wake up the system
-from sleep states, report wakeup events from these devices.
+Drop special ACPI wakeup flags, wakeup.state.enabled and
+wakeup.flags.always_enabled, that aren't necessary any more after
+we've started to use standard device wakeup flags for handling ACPI
+wakeup devices.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/acpi/button.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/acpi/glue.c     |    5 +----
+ include/acpi/acpi_bus.h |    6 ------
+ 2 files changed, 1 insertion(+), 10 deletions(-)
 
-Index: linux-2.6/drivers/acpi/button.c
+Index: linux-2.6/drivers/acpi/glue.c
 ===================================================================
---- linux-2.6.orig/drivers/acpi/button.c
-+++ linux-2.6/drivers/acpi/button.c
-@@ -279,6 +279,9 @@ static int acpi_lid_send_state(struct ac
- 	input_report_switch(button->input, SW_LID, !state);
- 	input_sync(button->input);
+--- linux-2.6.orig/drivers/acpi/glue.c
++++ linux-2.6/drivers/acpi/glue.c
+@@ -167,11 +167,8 @@ static int acpi_bind_one(struct device *
+ 				"firmware_node");
+ 		ret = sysfs_create_link(&acpi_dev->dev.kobj, &dev->kobj,
+ 				"physical_node");
+-		if (acpi_dev->wakeup.flags.valid) {
++		if (acpi_dev->wakeup.flags.valid)
+ 			device_set_wakeup_capable(dev, true);
+-			device_set_wakeup_enable(dev,
+-						acpi_dev->wakeup.state.enabled);
+-		}
+ 	}
  
-+	if (state)
-+		pm_wakeup_event(&device->dev, 0);
-+
- 	ret = blocking_notifier_call_chain(&acpi_lid_notifier, state, device);
- 	if (ret == NOTIFY_DONE)
- 		ret = blocking_notifier_call_chain(&acpi_lid_notifier, state,
-@@ -314,6 +317,8 @@ static void acpi_button_notify(struct ac
- 			input_sync(input);
- 			input_report_key(input, keycode, 0);
- 			input_sync(input);
-+
-+			pm_wakeup_event(&device->dev, 0);
- 		}
+ 	return 0;
+Index: linux-2.6/include/acpi/acpi_bus.h
+===================================================================
+--- linux-2.6.orig/include/acpi/acpi_bus.h
++++ linux-2.6/include/acpi/acpi_bus.h
+@@ -241,20 +241,14 @@ struct acpi_device_perf {
+ struct acpi_device_wakeup_flags {
+ 	u8 valid:1;		/* Can successfully enable wakeup? */
+ 	u8 run_wake:1;		/* Run-Wake GPE devices */
+-	u8 always_enabled:1;	/* Run-wake devices that are always enabled */
+ 	u8 notifier_present:1;  /* Wake-up notify handler has been installed */
+ };
  
- 		acpi_bus_generate_proc_event(device, event, ++button->pushed);
-
+-struct acpi_device_wakeup_state {
+-	u8 enabled:1;
+-};
+-
+ struct acpi_device_wakeup {
+ 	acpi_handle gpe_device;
+ 	u64 gpe_number;
+ 	u64 sleep_state;
+ 	struct acpi_handle_list resources;
+-	struct acpi_device_wakeup_state state;
+ 	struct acpi_device_wakeup_flags flags;
+ 	int prepare_count;
+ 	int run_wake_count;
