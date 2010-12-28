@@ -1,72 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507Ab0L1MFY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 07:05:24 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:37278 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752972Ab0L1MFX (ORCPT
+	id S1753509Ab0L1MMp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 07:12:45 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:34487 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966Ab0L1MMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 07:05:23 -0500
+	Tue, 28 Dec 2010 07:12:43 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=NlsrAG/jKjJtggkQhJU3q5uVPZZE+QEBpvStScDkMU9usiefrtpGMYrsKzHUIF/AwT
-         x/FzWTB8jD1elY8rpPxQWWWjaC2abJay28S77XO9yknUU6LPfkyOyL1d+SOSAVBv0OhS
-         a0F9gA7AGQPgg/uq7G7UBJuGlNrLnOZdMmtOI=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ZZsfG5O8myGNUXUwHCgRqU4Be9tdNXV+uBqBuhWuBLqxooWjK8leB8SdUkzId8ROrd
+         HNBYXxYgcwZQ+niXnRjAT6pE9KoOYnGZutcbhd+g0A5ITE97c7ANA94lWK4FM5LlGh2K
+         O1zEcverlpLJD327lj1Pznm8/dz5rnz9AHt+8=
 MIME-Version: 1.0
-Date: Tue, 28 Dec 2010 17:35:22 +0530
-Message-ID: <AANLkTim4zbBvTyc4hNurCmPN7GisXe1mmzR6P4aj3xzA@mail.gmail.com>
-Subject: Drift when measuring time using add_timer
-From: Mohan V <mohanvforum@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <AANLkTi=xmxkWnhuYcjtDNDHgep_2EztfGXDv+winW2Y5@mail.gmail.com>
+References: <1292870624-25450-1-git-send-email-felipe.contreras@nokia.com>
+	<AANLkTikisHaAMZphRJVYdcokVbaZXVF9COrwkdGTDg__@mail.gmail.com>
+	<AANLkTi=9AL3aWUsMeih+Gb-sMov=MgBZ1eTp8wb=q1hZ@mail.gmail.com>
+	<AANLkTinX8t=3b48e2sxPU-V_G-nGm_1DyEg6B-CeqXDa@mail.gmail.com>
+	<1293452486-notmuch-felipe.contreras@nokia.com>
+	<AANLkTinz0HuhGB_WzTQbK8XkfkGALjtg928WdOUYsySf@mail.gmail.com>
+	<AANLkTimCB5g29gzWFzaFU1N8+doROTpWaXy18VU5AJyH@mail.gmail.com>
+	<AANLkTi=xmxkWnhuYcjtDNDHgep_2EztfGXDv+winW2Y5@mail.gmail.com>
+Date: Tue, 28 Dec 2010 14:12:41 +0200
+Message-ID: <AANLkTiksjHKjKQ+mWE=Zf0+967_E46V3+RURcMC-s5cD@mail.gmail.com>
+Subject: Re: [PATCH v2] staging: tidspbridge: protect dmm_map properly
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Felipe Contreras <felipe.contreras@nokia.com>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        greg@kroah.com, omar.ramirez@ti.com, fernando.lugo@ti.com, nm@ti.com,
+        ameya.palande@nokia.com, h-kanigeri2@ti.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello All,
+On Tue, Dec 28, 2010 at 12:56 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+> On Tue, Dec 28, 2010 at 12:36 PM, Felipe Contreras
+> <felipe.contreras@gmail.com> wrote:
+>>> You can never really tell who is using the kernel (or will be using
+>>> this kernel version), how and under which workload.
+>>
+>> No, but it's better to address real issues rather than hypothetical.
+>
+> Right. and both patches do that. one adds locks, and one doesn't.
+>
+>> However, as I sad, everybody is using proc_map() and proc_un_map()
+>> which take a lock, and there are no complaints.
+>
+> I didn't complain about that; I didn't like you adding locks to the DMA API.
+>
+>> Ok, can I get your Ack?
+>
+> Frankly, I don't like the locks you are adding. But as I said, I
+> wouldn't resist them as long as it's temporary.
+>
+>> Then why did you add that check for is_map_obj_used(), and then return
+>> -EBUSY? If that can happen, then it can happen when the application is
+>> crashing; user-space crashes while kernel-space is in the middle of a
+>> proc_*_dma() operation.
+>
+> I still don't know how exactly you triggered the bug: is gst-dsp
+> multithreaded ? and one of its threads invoked proc_un_map() while
+> another thread called proc_begin_dma() ?
 
-I am testing the timers on a OMAP4 based board. I am seeing a drift or
-the time difference between the timer value and when the function callback
-happens. This drift is around 1000ms or 1s for a expiry value of >=5mins.
-Is the time drift expected? Is this way of measuring right or is there
-any other way?
+I haven't investigated why that happens, but kernel-space should not
+panic regardless of what user-space does.
 
-OMAP4 as you may know is a multi-core processor and CONFIG_SMP is enabled
-along with the following:
-CONFIG_NO_HZ, CONFIG_HIGH_RES_TIMERS
+> Anyhow, a thread that is calling proc_*_dma() will both increase the
+> reference count and decrease it back before going back to user space.
+> Otherwise your patch would be problematic as well - who will unlock
+> the mutex you take in proc_*_dma() ?
 
-My kernel configurations:
-kernel: 2.6.37-rc7 (commit id: ffc96d)
-config: omap2plus_defconfig
+I'm saying that user-space might crash *before* proc_*_dma() finishes,
+before the reference count has been decreased.
 
-My driver does the following:
+In my patch there would be no issue because proc_un_map() would wait
+until proc_*_dma() has released the lock.
 
-struct timeval tv;
-test_timer_proc_write()
-{
-           del_timer_sync(&my_timer);
-           period = 300000; /* 5min */
-           my_timer.expires = jiffies + msecs_to_jiffies(period);
-           my_timer.function = func_timeout; /* Call back function*/
-           /* Save the current time in global variable */
-           do_gettimeofday(&timeval);
-           /* add timer with an expiry value of 5mins*/
-           add_timer(&my_timer);
-}
+>>>> Sure, but I see this as a broader effort to have finer locking, part of
+>>>> this should be to remove the already existing proc_lock.
+>>>
+>>> Having bad locking is not an excuse for adding more.
+>>
+>> No, but not being a permanent solution is not an excuse for not fixing
+>> a kernel panic right away.
+>
+> Right. But we have a fix that doesn't add any additional locking... I
+> don't see why it can't be taken now, but as I said, I wouldn't resist
+> staging it for the next cycle.
 
-/* Get the current time and print the difference between the two values */
-func_timeout()
-{
-           struct timeval tv1;
-           do_gettimeofday(&tv);
-           /* take the difference between current time and saved time */
-           ms = (tv.tv_sec - tv1.tv_sec) * 1000 + \
-                   (tv.tv_usec - tv1.tv_usec) / 1000;
-           printk("Interval = %d\n", ms);
-}
+Because:
+ 1) Your patch changes 114 lines, mine 18
+ 2) It hasn't been reviewed, nor tested by other people
+ 3) At least I see a potential issue
+ 4) 2.6.37 is imminent
 
-Thanks for your time.
+IMO one patch has chances going into 2.6.37, the other one doesn't. I
+don't see the problem of pushing my patch to 2.6.37, and once your
+patch has been properly reviewed, and tested, put it for the 2.6.38
+merge window. Anyway, it's looking more and more that this patch would
+not be ack'ed in time, so I guess we would have to wait to see what
+other people (Omar?) say, which would probably be 2.6.38 timeline.
 
-Regards,
-Mohan
+Cheers.
+
+-- 
+Felipe Contreras
