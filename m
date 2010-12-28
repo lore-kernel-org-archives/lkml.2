@@ -1,63 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752844Ab0L1Arv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Dec 2010 19:47:51 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:33035 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752127Ab0L1Aru (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Dec 2010 19:47:50 -0500
-Date: Tue, 28 Dec 2010 11:47:44 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        =?UTF-8?B?IlV3ZSBLbGVpbmUtS8O2bmlnIg==?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: linux-next: manual merge of the trivial tree with the v4l-dvb tree
-Message-Id: <20101228114744.e628825a.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__28_Dec_2010_11_47_44_+1100_5cDqwOU/tCDYr/m3"
+	id S1752868Ab0L1AtK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Dec 2010 19:49:10 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32080 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752127Ab0L1AtJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Dec 2010 19:49:09 -0500
+Message-ID: <4D1933D8.4020201@kernel.org>
+Date: Mon, 27 Dec 2010 16:48:24 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 4/6] x86: Use early pre-allocated page table buffer top-down
+References: <4D0C072D.1040201@kernel.org> <4D19320B.7030007@kernel.org>
+In-Reply-To: <4D19320B.7030007@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__28_Dec_2010_11_47_44_+1100_5cDqwOU/tCDYr/m3
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Jiri,
+We pre-allocate those buffer from top, so should use it top-down, so could
+return unused part will be bottom side.
+Will get less one hole in not used RAM.
 
-Today's linux-next merge of the trivial tree got a conflict in
-drivers/staging/stradis/stradis.c between commit
-aef01debdfad83ab71a83b7af8cd90203404c1aa ("[media] cpia, stradis: remove
-deprecated V4L1 drivers") from the v4l-dvb tree and commit
-b595076a180a56d1bb170e6eceda6eb9d76f4cd3 ("tree-wide: fix comment/printk
-typos") from the trivial tree.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-The former removed the file modified by the latter, so I removed the file.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+---
+ arch/x86/include/asm/init.h |    6 +++---
+ arch/x86/mm/init.c          |   12 ++++++------
+ arch/x86/mm/init_32.c       |    4 ++--
+ arch/x86/mm/init_64.c       |    5 +++--
+ 4 files changed, 14 insertions(+), 13 deletions(-)
 
---Signature=_Tue__28_Dec_2010_11_47_44_+1100_5cDqwOU/tCDYr/m3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNGTOwAAoJEDMEi1NhKgbsqA0H/2Uevp9YBZglZYk9Lv/yJfJr
-ud28MKrgiHKhMusdbH5zR5F0cBZeqzvhmjV+Jbsb+tI1mmdInwj/vrerfnQmWsn1
-IFci2SxfjzW2yn0MCDSC69huhJQm8OtvWA0H342XRKCH9Obk74zttFvBnEBgvkjT
-AP4EolQREyzd+RYCkKTMgnCP8Nk5xvVfu6rsqswNm6GBKTPCjry+QpB3iO/5DHmi
-yGCXmDmkmlg1YNJ4NVnicJeBNxRlPQtY2J4aIICJhx1Gq9R56aR7l3Zu96362JmW
-D0qFxJppTgJ3xd2lDmNh+MXThLQXQZ7khxfzuUBIFpOx3bRBMQBMoQdRPr9Qg8M=
-=MCy2
------END PGP SIGNATURE-----
-
---Signature=_Tue__28_Dec_2010_11_47_44_+1100_5cDqwOU/tCDYr/m3--
+Index: linux-2.6/arch/x86/include/asm/init.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/init.h
++++ linux-2.6/arch/x86/include/asm/init.h
+@@ -11,8 +11,8 @@ kernel_physical_mapping_init(unsigned lo
+ 			     unsigned long page_size_mask);
+ 
+ 
+-extern unsigned long __initdata e820_table_start;
+-extern unsigned long __meminitdata e820_table_end;
+-extern unsigned long __meminitdata e820_table_top;
++extern unsigned long __meminitdata e820_table_start;
++extern unsigned long __initdata e820_table_end;
++extern unsigned long __meminitdata e820_table_bottom;
+ 
+ #endif /* _ASM_X86_INIT_32_H */
+Index: linux-2.6/arch/x86/mm/init.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/init.c
++++ linux-2.6/arch/x86/mm/init.c
+@@ -18,9 +18,9 @@
+ 
+ DEFINE_PER_CPU(struct mmu_gather, mmu_gathers);
+ 
+-unsigned long __initdata e820_table_start;
+-unsigned long __meminitdata e820_table_end;
+-unsigned long __meminitdata e820_table_top;
++unsigned long __meminitdata e820_table_start;
++unsigned long __initdata e820_table_end;
++unsigned long __meminitdata e820_table_bottom;
+ 
+ int after_bootmem;
+ 
+@@ -73,12 +73,12 @@ static void __init find_early_table_spac
+ 	if (base == MEMBLOCK_ERROR)
+ 		panic("Cannot find space for the kernel page tables");
+ 
+-	e820_table_start = base >> PAGE_SHIFT;
++	e820_table_start = (base + tables) >> PAGE_SHIFT;
+ 	e820_table_end = e820_table_start;
+-	e820_table_top = e820_table_start + (tables >> PAGE_SHIFT);
++	e820_table_bottom = base >> PAGE_SHIFT;
+ 
+ 	printk(KERN_DEBUG "kernel direct mapping tables up to %lx @ %lx-%lx\n",
+-		end, e820_table_start << PAGE_SHIFT, e820_table_top << PAGE_SHIFT);
++		end, e820_table_bottom << PAGE_SHIFT, e820_table_end << PAGE_SHIFT);
+ }
+ 
+ struct map_range {
+Index: linux-2.6/arch/x86/mm/init_32.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/init_32.c
++++ linux-2.6/arch/x86/mm/init_32.c
+@@ -61,10 +61,10 @@ bool __read_mostly __vmalloc_start_set =
+ 
+ static __init void *alloc_low_page(void)
+ {
+-	unsigned long pfn = e820_table_end++;
++	unsigned long pfn = --e820_table_start;
+ 	void *adr;
+ 
+-	if (pfn >= e820_table_top)
++	if (pfn < e820_table_bottom)
+ 		panic("alloc_low_page: ran out of memory");
+ 
+ 	adr = __va(pfn * PAGE_SIZE);
+Index: linux-2.6/arch/x86/mm/init_64.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/init_64.c
++++ linux-2.6/arch/x86/mm/init_64.c
+@@ -314,7 +314,7 @@ void __init cleanup_highmap(void)
+ 
+ static __ref void *alloc_low_page(unsigned long *phys)
+ {
+-	unsigned long pfn = e820_table_end++;
++	unsigned long pfn;
+ 	void *adr;
+ 
+ 	if (after_bootmem) {
+@@ -324,7 +324,8 @@ static __ref void *alloc_low_page(unsign
+ 		return adr;
+ 	}
+ 
+-	if (pfn >= e820_table_top)
++	pfn = --e820_table_start;
++	if (pfn < e820_table_bottom)
+ 		panic("alloc_low_page: ran out of memory");
+ 
+ 	adr = early_memremap(pfn * PAGE_SIZE, PAGE_SIZE);
