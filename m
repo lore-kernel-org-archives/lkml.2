@@ -1,96 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab0L1Pej (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 10:34:39 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:60271 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752263Ab0L1PcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 10:32:25 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Len Brown <lenb@kernel.org>
-Subject: [PATCH 1/4] ACPI / PM: Do not enable multiple devices to wake up simultaneously
-Date: Tue, 28 Dec 2010 16:28:58 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc7+; KDE/4.4.4; x86_64; ; )
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-References: <201012281625.36191.rjw@sisk.pl>
-In-Reply-To: <201012281625.36191.rjw@sisk.pl>
+	id S1754162Ab0L1PkD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 10:40:03 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60389 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751646Ab0L1Pj5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Dec 2010 10:39:57 -0500
+Date: Tue, 28 Dec 2010 15:39:48 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: "'Russell King'" <rmk@arm.linux.org.uk>, "'Takashi Iwai'" <tiwai@suse.de>,
+        "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Jassi Brar'" <jassi.brar@samsung.com>
+Subject: Re: linux-next: manual merge of the sound tree with the s5p tree
+Message-ID: <20101228153948.GB14860@sirena.org.uk>
+References: <20101223115339.1ce18216.sfr@canb.auug.org.au> <003f01cba28c$872214f0$95663ed0$%kim@samsung.com> <s5hk4j0n43g.wl%tiwai@suse.de> <004001cba292$3827d2d0$a8777870$%kim@samsung.com> <s5hvd2ku49r.wl%tiwai@suse.de> <004101cba294$8639de30$92ad9a90$%kim@samsung.com> <s5h7hf0tvct.wl%tiwai@suse.de> <008f01cba30a$72f5c160$58e14420$%kim@samsung.com> <20101224082736.GA31540@flint.arm.linux.org.uk> <018b01cba636$6c3a8390$44af8ab0$%kim@samsung.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012281628.59239.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <018b01cba636$6c3a8390$44af8ab0$%kim@samsung.com>
+X-Cookie: George Orwell was an optimist.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Tue, Dec 28, 2010 at 11:24:49AM +0900, Kukjin Kim wrote:
 
-If a device is enabled to wake up the system from sleep states via
-/proc/acpi/wakeup and there are other devices associated with the
-same wakeup GPE, all of these devices are automatically enabled to
-wake up the system.  This isn't correct, because the fact that the
-GPE is shared need not imply that wakeup power has to be enabled for
-all the devices at the same time (i.e. it is possible that one device
-will have its wakeup power enabled and it will wake up the system
-from sleep states if the shared wakeup GPE is enabled, while another
-device having its wakeup power disabled will not wake up the system
-even though the GPE is enabled).
+> Takashi, as Russell's first option, could you please make some branch which
+> includes following to me?
 
-Rework acpi_system_write_wakeup_device() so that it only enables
-wakeup for one device at a time.
+Please keep myself and Liam in the CC on all ASoC discussion.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/acpi/proc.c |   26 +-------------------------
- 1 file changed, 1 insertion(+), 25 deletions(-)
+> Of course, I know you need rebase you tree for it...so sorry for bothering.
 
-Index: linux-2.6/drivers/acpi/proc.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/proc.c
-+++ linux-2.6/drivers/acpi/proc.c
-@@ -341,7 +341,6 @@ acpi_system_write_wakeup_device(struct f
- 	char strbuf[5];
- 	char str[5] = "";
- 	unsigned int len = count;
--	struct acpi_device *found_dev = NULL;
- 
- 	if (len > 4)
- 		len = 4;
-@@ -363,33 +362,10 @@ acpi_system_write_wakeup_device(struct f
- 		if (!strncmp(dev->pnp.bus_id, str, 4)) {
- 			dev->wakeup.state.enabled =
- 			    dev->wakeup.state.enabled ? 0 : 1;
--			found_dev = dev;
-+			physical_device_enable_wakeup(dev);
- 			break;
- 		}
- 	}
--	if (found_dev) {
--		physical_device_enable_wakeup(found_dev);
--		list_for_each_safe(node, next, &acpi_wakeup_device_list) {
--			struct acpi_device *dev = container_of(node,
--							       struct
--							       acpi_device,
--							       wakeup_list);
--
--			if ((dev != found_dev) &&
--			    (dev->wakeup.gpe_number ==
--			     found_dev->wakeup.gpe_number)
--			    && (dev->wakeup.gpe_device ==
--				found_dev->wakeup.gpe_device)) {
--				printk(KERN_WARNING
--				       "ACPI: '%s' and '%s' have the same GPE, "
--				       "can't disable/enable one separately\n",
--				       dev->pnp.bus_id, found_dev->pnp.bus_id);
--				dev->wakeup.state.enabled =
--				    found_dev->wakeup.state.enabled;
--				physical_device_enable_wakeup(dev);
--			}
--		}
--	}
- 	mutex_unlock(&acpi_device_lock);
- 	return count;
- }
+This isn't going to help as it will just introduce the same duplicate
+commits issue into the sound tree.  I'm still not clear what the
+affected commits actually are but given that Stephen's original report
+indicated that the ASoC changes are subsets of your changes would it not
+make sense to just drop the relevant commits from your tree (which seems
+to be rebased often, unlike the sound tree which doesn't rebase)?
 
+Another option is to do a second round of merges after both sound and
+ALSA trees with whatever the dependant commits are.
