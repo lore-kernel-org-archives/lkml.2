@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729Ab0L1JYO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 04:24:14 -0500
-Received: from mxs.selfip.ru ([77.221.143.26]:32804 "EHLO mxs.selfmail.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751632Ab0L1JYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 04:24:11 -0500
-X-ACL-SPF: 
-Subject: change partition table on live disk (resize root partition)
-From: Vasiliy G Tolstov <v.tolstov@selfip.ru>
-Reply-To: v.tolstov@selfip.ru
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Organization: Selfip.Ru
-Date: Tue, 28 Dec 2010 12:24:09 +0300
-Message-ID: <1293528249.8310.8.camel@vase>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	id S1752799Ab0L1Jog (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 04:44:36 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:9671 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752169Ab0L1Joe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Dec 2010 04:44:34 -0500
+Message-ID: <870E44F246C4486293DB2812E8DFD4BF@hacdom.okisemi.com>
+From: "Toshiharu Okada" <toshiharu-linux@dsn.okisemi.com>
+To: "Greg KH" <gregkh@suse.de>
+Cc: "linux-usb" <linux-usb@vger.kernel.org>,
+        "LKML" <linux-kernel@vger.kernel.org>, "Wang, Qi" <qi.wang@intel.com>,
+        "Wang, Yong Y" <yong.y.wang@intel.com>,
+        "Andrew" <andrew.chih.howe.khor@intel.com>,
+        "Intel OTC" <joel.clark@intel.com>,
+        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>
+References: <4D197433.2000800@dsn.okisemi.com> <20101228075205.GA8411@suse.de>
+Subject: Re: [PATCH] usb: pch_udc: Fixed issue which does not work with g_serial
+Date: Tue, 28 Dec 2010 18:44:20 +0900
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-ACL-DATA: Invalid Message-Id
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.5931
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi greg k-h
 
-If i need to resize root partition on live file system i do
-fdisk /dev/sda delete old partition table and write new. After that
-fdisk say's that system use old partition table before reread it via
-partprobe or something else.
+I got to know that the PCH_UDC driver does not work normally when "Serial 
+gadget" is used.
+The receiving (EP0 OUT) data of control transmission had not received 
+correctly.
 
-But if i modify root partition partprobe say's that it is already in use
-and i need to reboot system to see changes and do resize fs.
+This patch fixed this issue.
+So the PCH_UDC driver can work normally with "Serial gadget".
 
-Is that possible to reread partition table for root fs without
-rebooting? I ca'n use lvm on something else, i'm use plain ext3 fs.
+Thanks
 
-
-P.S. This is need for xen domU, i see that in blkfront_connect function
-this code:
-
-                /*
-                 * Potentially, the back-end may be signalling
-                 * a capacity change; update the capacity.
-                 */
-                err = xenbus_scanf(XBT_NIL, info->xbdev->otherend,
-                                   "sectors", "%Lu", &sectors);
-                if (XENBUS_EXIST_ERR(err))
-                        return;
-                printk(KERN_INFO "Setting capacity to %Lu\n",
-                       sectors);
-                set_capacity(info->gd, sectors);
-                revalidate_disk(info->gd);
-
-If i'm add after revalidate disk some function to reread partiotion
-table does it can work?
-
-Sorry for may be stupid question...
+Best regards
+Toshiharu Okada (OKI SEMICONDUCTOR)
+----- Original Message ----- 
+From: "Greg KH" <gregkh@suse.de>
+To: "Toshiharu Okada" <toshiharu-linux@dsn.okisemi.com>
+Cc: "linux-usb" <linux-usb@vger.kernel.org>; "LKML" 
+<linux-kernel@vger.kernel.org>; "Wang, Qi" <qi.wang@intel.com>; "Wang, Yong 
+Y" <yong.y.wang@intel.com>; "Andrew" <andrew.chih.howe.khor@intel.com>; 
+"Intel OTC" <joel.clark@intel.com>; "Ewe, Kok Howg" <kok.howg.ewe@intel.com>
+Sent: Tuesday, December 28, 2010 4:52 PM
+Subject: Re: [PATCH] usb: pch_udc: Fixed issue which does not work with 
+g_serial
 
 
--- 
-Vasiliy G Tolstov <v.tolstov@selfip.ru>
-Selfip.Ru
+On Tue, Dec 28, 2010 at 02:22:59PM +0900, Toshiharu Okada wrote:
+> This patch fixes an issue which does not work with g_serial gadget.
+
+What does that mean?  Please explain this better.
+
+thanks,
+
+greg k-h
 
