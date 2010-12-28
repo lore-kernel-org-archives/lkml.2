@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584Ab0L1Rbi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 12:31:38 -0500
-Received: from mail-bw0-f66.google.com ([209.85.214.66]:44628 "EHLO
+	id S1754301Ab0L1R3a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 12:29:30 -0500
+Received: from mail-bw0-f66.google.com ([209.85.214.66]:47220 "EHLO
 	mail-bw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754294Ab0L1R3b (ORCPT
+	with ESMTP id S1754269Ab0L1R32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 12:29:31 -0500
+	Tue, 28 Dec 2010 12:29:28 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=tMQKPah5M23DO7Nn4inTCMwiXIrSOVrRwaiKsLQF9FKEGcFOL3N1N7qymjKsofPONg
-         GAKHLri7/w90DTKOjle4R28FiMgli78dQWbPi0MCPjFg10Y9Mc0Zm7OTlI7K4U3q0NH2
-         Q9EZnIEpG36PCJrmZFKWDoxippg8WSNKQSmJA=
+        b=cFTV+rhKiFNLVs4ORlVpa8qQcjo3iEUHIyWiGS2F3nP4zXxgDc0slSGhwer3obHOM2
+         VN3W4cExn9r0eq4W3pO80/cubF1oDTzC/QVcbb0wX+8nTrdmoXAXNpf8ndt/Iz+DdRCB
+         KRpA03ob/nxMuAD/1YTSAr1fuHJavNgYVZ8Qw=
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
         hch@infradead.org
-Cc: Tejun Heo <tj@kernel.org>, Tim Waugh <tim@cyberelk.net>
-Subject: [PATCH 07/16] paride: convert to bdops->check_events()
-Date: Tue, 28 Dec 2010 18:29:03 +0100
-Message-Id: <1293557352-10592-8-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 05/16] floppy,{ami|ata}flop: convert to bdops->check_events()
+Date: Tue, 28 Dec 2010 18:29:01 +0100
+Message-Id: <1293557352-10592-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1293557352-10592-1-git-send-email-tj@kernel.org>
 References: <1293557352-10592-1-git-send-email-tj@kernel.org>
@@ -28,174 +28,173 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert paride drivers from ->media_changed() to ->check_events().
+Convert the floppy drivers from ->media_changed() to ->check_events().
+Both floppy and ataflop buffer media changed state bit and clear them
+on revalidation and will behave correctly with kernel event polling.
 
-pcd and pd buffer and clear events after reporting; however, pf
-unconditionally reports MEDIA_CHANGE and will generate spurious events
-when polled.
+I can't tell how amiflop clears its event and it's possible that it
+may generate spurious events when polled.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Jens Axboe <axboe@kernel.dk>
 Cc: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Tim Waugh <tim@cyberelk.net>
 ---
- drivers/block/paride/pcd.c |   18 +++++++++++-------
- drivers/block/paride/pd.c  |    7 ++++---
- drivers/block/paride/pf.c  |   10 ++++++----
- 3 files changed, 21 insertions(+), 14 deletions(-)
+ drivers/block/amiflop.c |    9 +++++----
+ drivers/block/ataflop.c |   14 ++++++++------
+ drivers/block/floppy.c  |   10 ++++++----
+ 3 files changed, 19 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/block/paride/pcd.c b/drivers/block/paride/pcd.c
-index 62cec6a..2f2ccf6 100644
---- a/drivers/block/paride/pcd.c
-+++ b/drivers/block/paride/pcd.c
-@@ -172,7 +172,8 @@ module_param_array(drive3, int, NULL, 0);
- static int pcd_open(struct cdrom_device_info *cdi, int purpose);
- static void pcd_release(struct cdrom_device_info *cdi);
- static int pcd_drive_status(struct cdrom_device_info *cdi, int slot_nr);
--static int pcd_media_changed(struct cdrom_device_info *cdi, int slot_nr);
-+static unsigned int pcd_check_events(struct cdrom_device_info *cdi,
-+				     unsigned int clearing, int slot_nr);
- static int pcd_tray_move(struct cdrom_device_info *cdi, int position);
- static int pcd_lock_door(struct cdrom_device_info *cdi, int lock);
- static int pcd_drive_reset(struct cdrom_device_info *cdi);
-@@ -257,10 +258,11 @@ static int pcd_block_ioctl(struct block_device *bdev, fmode_t mode,
- 	return ret;
+diff --git a/drivers/block/amiflop.c b/drivers/block/amiflop.c
+index a1725e6..b988cb2 100644
+--- a/drivers/block/amiflop.c
++++ b/drivers/block/amiflop.c
+@@ -1658,12 +1658,12 @@ static int floppy_release(struct gendisk *disk, fmode_t mode)
  }
  
--static int pcd_block_media_changed(struct gendisk *disk)
-+static unsigned int pcd_block_check_events(struct gendisk *disk,
-+					   unsigned int clearing)
+ /*
+- * floppy-change is never called from an interrupt, so we can relax a bit
++ * check_events is never called from an interrupt, so we can relax a bit
+  * here, sleep etc. Note that floppy-on tries to set current_DOR to point
+  * to the desired drive, but it will probably not survive the sleep if
+  * several floppies are used at the same time: thus the loop.
+  */
+-static int amiga_floppy_change(struct gendisk *disk)
++static unsigned amiga_check_events(struct gendisk *disk, unsigned int clearing)
  {
- 	struct pcd_unit *cd = disk->private_data;
--	return cdrom_media_changed(&cd->info);
-+	return cdrom_check_events(&cd->info, clearing);
+ 	struct amiga_floppy_struct *p = disk->private_data;
+ 	int drive = p - unit;
+@@ -1686,7 +1686,7 @@ static int amiga_floppy_change(struct gendisk *disk)
+ 		p->dirty = 0;
+ 		writepending = 0; /* if this was true before, too bad! */
+ 		writefromint = 0;
+-		return 1;
++		return DISK_EVENT_MEDIA_CHANGE;
+ 	}
+ 	return 0;
  }
- 
- static const struct block_device_operations pcd_bdops = {
-@@ -268,14 +270,14 @@ static const struct block_device_operations pcd_bdops = {
- 	.open		= pcd_block_open,
- 	.release	= pcd_block_release,
- 	.ioctl		= pcd_block_ioctl,
--	.media_changed	= pcd_block_media_changed,
-+	.check_events	= pcd_block_check_events,
+@@ -1697,7 +1697,7 @@ static const struct block_device_operations floppy_fops = {
+ 	.release	= floppy_release,
+ 	.ioctl		= fd_ioctl,
+ 	.getgeo		= fd_getgeo,
+-	.media_changed	= amiga_floppy_change,
++	.check_events	= amiga_check_events,
  };
  
- static struct cdrom_device_ops pcd_dops = {
- 	.open		= pcd_open,
- 	.release	= pcd_release,
- 	.drive_status	= pcd_drive_status,
--	.media_changed	= pcd_media_changed,
-+	.check_events	= pcd_check_events,
- 	.tray_move	= pcd_tray_move,
- 	.lock_door	= pcd_lock_door,
- 	.get_mcn	= pcd_get_mcn,
-@@ -318,6 +320,7 @@ static void pcd_init_units(void)
- 		disk->first_minor = unit;
- 		strcpy(disk->disk_name, cd->name);	/* umm... */
- 		disk->fops = &pcd_bdops;
+ static int __init fd_probe_drives(void)
+@@ -1736,6 +1736,7 @@ static int __init fd_probe_drives(void)
+ 		disk->major = FLOPPY_MAJOR;
+ 		disk->first_minor = drive;
+ 		disk->fops = &floppy_fops;
 +		disk->events = DISK_EVENT_MEDIA_CHANGE;
- 	}
- }
+ 		sprintf(disk->disk_name, "fd%d", drive);
+ 		disk->private_data = &unit[drive];
+ 		set_capacity(disk, 880*2);
+diff --git a/drivers/block/ataflop.c b/drivers/block/ataflop.c
+index 4e4cc6c..0fce4c3 100644
+--- a/drivers/block/ataflop.c
++++ b/drivers/block/ataflop.c
+@@ -1324,23 +1324,24 @@ static void finish_fdc_done( int dummy )
+  * due to unrecognised disk changes.
+  */
  
-@@ -502,13 +505,14 @@ static int pcd_packet(struct cdrom_device_info *cdi, struct packet_command *cgc)
- 
- #define DBMSG(msg)	((verbose>1)?(msg):NULL)
- 
--static int pcd_media_changed(struct cdrom_device_info *cdi, int slot_nr)
-+static unsigned int pcd_check_events(struct cdrom_device_info *cdi,
-+				     unsigned int clearing, int slot_nr)
+-static int check_floppy_change(struct gendisk *disk)
++static unsigned int floppy_check_events(struct gendisk *disk,
++					unsigned int clearing)
  {
- 	struct pcd_unit *cd = cdi->handle;
- 	int res = cd->changed;
- 	if (res)
- 		cd->changed = 0;
--	return res;
-+	return res ? DISK_EVENT_MEDIA_CHANGE : 0;
- }
+ 	struct atari_floppy_struct *p = disk->private_data;
+ 	unsigned int drive = p - unit;
+ 	if (test_bit (drive, &fake_change)) {
+ 		/* simulated change (e.g. after formatting) */
+-		return 1;
++		return DISK_EVENT_MEDIA_CHANGE;
+ 	}
+ 	if (test_bit (drive, &changed_floppies)) {
+ 		/* surely changed (the WP signal changed at least once) */
+-		return 1;
++		return DISK_EVENT_MEDIA_CHANGE;
+ 	}
+ 	if (UD.wpstat) {
+ 		/* WP is on -> could be changed: to be sure, buffers should be
+ 		 * invalidated...
+ 		 */
+-		return 1;
++		return DISK_EVENT_MEDIA_CHANGE;
+ 	}
  
- static int pcd_lock_door(struct cdrom_device_info *cdi, int lock)
-diff --git a/drivers/block/paride/pd.c b/drivers/block/paride/pd.c
-index c0ee155..21dfdb7 100644
---- a/drivers/block/paride/pd.c
-+++ b/drivers/block/paride/pd.c
-@@ -794,7 +794,7 @@ static int pd_release(struct gendisk *p, fmode_t mode)
+ 	return 0;
+@@ -1570,7 +1571,7 @@ static int fd_locked_ioctl(struct block_device *bdev, fmode_t mode,
+ 		 * or the next access will revalidate - and clear UDT :-(
+ 		 */
+ 
+-		if (check_floppy_change(disk))
++		if (floppy_check_events(disk, 0))
+ 		        floppy_revalidate(disk);
+ 
+ 		if (UD.flags & FTD_MSG)
+@@ -1904,7 +1905,7 @@ static const struct block_device_operations floppy_fops = {
+ 	.open		= floppy_unlocked_open,
+ 	.release	= floppy_release,
+ 	.ioctl		= fd_ioctl,
+-	.media_changed	= check_floppy_change,
++	.check_events	= floppy_check_events,
+ 	.revalidate_disk= floppy_revalidate,
+ };
+ 
+@@ -1963,6 +1964,7 @@ static int __init atari_floppy_init (void)
+ 		unit[i].disk->first_minor = i;
+ 		sprintf(unit[i].disk->disk_name, "fd%d", i);
+ 		unit[i].disk->fops = &floppy_fops;
++		unit[i].disk->events = DISK_EVENT_MEDIA_CHANGE;
+ 		unit[i].disk->private_data = &unit[i];
+ 		unit[i].disk->queue = blk_init_queue(do_fd_request,
+ 					&ataflop_lock);
+diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
+index 3951020..317db28 100644
+--- a/drivers/block/floppy.c
++++ b/drivers/block/floppy.c
+@@ -3765,13 +3765,14 @@ out2:
+ /*
+  * Check if the disk has been changed or if a change has been faked.
+  */
+-static int check_floppy_change(struct gendisk *disk)
++static unsigned int floppy_check_events(struct gendisk *disk,
++					unsigned int clearing)
+ {
+ 	int drive = (long)disk->private_data;
+ 
+ 	if (test_bit(FD_DISK_CHANGED_BIT, &UDRS->flags) ||
+ 	    test_bit(FD_VERIFY_BIT, &UDRS->flags))
+-		return 1;
++		return DISK_EVENT_MEDIA_CHANGE;
+ 
+ 	if (time_after(jiffies, UDRS->last_checked + UDP->checkfreq)) {
+ 		lock_fdc(drive, false);
+@@ -3783,7 +3784,7 @@ static int check_floppy_change(struct gendisk *disk)
+ 	    test_bit(FD_VERIFY_BIT, &UDRS->flags) ||
+ 	    test_bit(drive, &fake_change) ||
+ 	    (!ITYPE(UDRS->fd_device) && !current_type[drive]))
+-		return 1;
++		return DISK_EVENT_MEDIA_CHANGE;
  	return 0;
  }
  
--static int pd_check_media(struct gendisk *p)
-+static unsigned int pd_check_events(struct gendisk *p, unsigned int clearing)
- {
- 	struct pd_unit *disk = p->private_data;
- 	int r;
-@@ -803,7 +803,7 @@ static int pd_check_media(struct gendisk *p)
- 	pd_special_command(disk, pd_media_check);
- 	r = disk->changed;
- 	disk->changed = 0;
--	return r;
-+	return r ? DISK_EVENT_MEDIA_CHANGE : 0;
- }
- 
- static int pd_revalidate(struct gendisk *p)
-@@ -822,7 +822,7 @@ static const struct block_device_operations pd_fops = {
- 	.release	= pd_release,
- 	.ioctl		= pd_ioctl,
- 	.getgeo		= pd_getgeo,
--	.media_changed	= pd_check_media,
-+	.check_events	= pd_check_events,
- 	.revalidate_disk= pd_revalidate
+@@ -3893,7 +3894,7 @@ static const struct block_device_operations floppy_fops = {
+ 	.release		= floppy_release,
+ 	.ioctl			= fd_ioctl,
+ 	.getgeo			= fd_getgeo,
+-	.media_changed		= check_floppy_change,
++	.check_events		= floppy_check_events,
+ 	.revalidate_disk	= floppy_revalidate,
  };
  
-@@ -837,6 +837,7 @@ static void pd_probe_drive(struct pd_unit *disk)
- 	p->fops = &pd_fops;
- 	p->major = major;
- 	p->first_minor = (disk - pd) << PD_BITS;
-+	p->events = DISK_EVENT_MEDIA_CHANGE;
- 	disk->gd = p;
- 	p->private_data = disk;
- 	p->queue = pd_queue;
-diff --git a/drivers/block/paride/pf.c b/drivers/block/paride/pf.c
-index 635f25d..7adeb1e 100644
---- a/drivers/block/paride/pf.c
-+++ b/drivers/block/paride/pf.c
-@@ -243,7 +243,8 @@ static struct pf_unit units[PF_UNITS];
- static int pf_identify(struct pf_unit *pf);
- static void pf_lock(struct pf_unit *pf, int func);
- static void pf_eject(struct pf_unit *pf);
--static int pf_check_media(struct gendisk *disk);
-+static unsigned int pf_check_events(struct gendisk *disk,
-+				    unsigned int clearing);
+@@ -4200,6 +4201,7 @@ static int __init floppy_init(void)
+ 		disks[dr]->major = FLOPPY_MAJOR;
+ 		disks[dr]->first_minor = TOMINOR(dr);
+ 		disks[dr]->fops = &floppy_fops;
++		disks[dr]->events = DISK_EVENT_MEDIA_CHANGE;
+ 		sprintf(disks[dr]->disk_name, "fd%d", dr);
  
- static char pf_scratch[512];	/* scratch block buffer */
- 
-@@ -270,7 +271,7 @@ static const struct block_device_operations pf_fops = {
- 	.release	= pf_release,
- 	.ioctl		= pf_ioctl,
- 	.getgeo		= pf_getgeo,
--	.media_changed	= pf_check_media,
-+	.check_events	= pf_check_events,
- };
- 
- static void __init pf_init_units(void)
-@@ -293,6 +294,7 @@ static void __init pf_init_units(void)
- 		disk->first_minor = unit;
- 		strcpy(disk->disk_name, pf->name);
- 		disk->fops = &pf_fops;
-+		disk->events = DISK_EVENT_MEDIA_CHANGE;
- 		if (!(*drives[unit])[D_PRT])
- 			pf_drive_count++;
- 	}
-@@ -377,9 +379,9 @@ static int pf_release(struct gendisk *disk, fmode_t mode)
- 
- }
- 
--static int pf_check_media(struct gendisk *disk)
-+static unsigned int pf_check_events(struct gendisk *disk, unsigned int clearing)
- {
--	return 1;
-+	return DISK_EVENT_MEDIA_CHANGE;
- }
- 
- static inline int status_reg(struct pf_unit *pf)
+ 		init_timer(&motor_off_timer[dr]);
 -- 
 1.7.1
 
