@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539Ab0L1LtL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 06:49:11 -0500
+	id S1753596Ab0L1LtT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 06:49:19 -0500
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:59564 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753503Ab0L1LtG (ORCPT
+	with ESMTP id S1753523Ab0L1LtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 06:49:06 -0500
+	Tue, 28 Dec 2010 06:49:11 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=XTpqwAxHlamv1JG0et9nAFRrsB0PgK3i5FhmZx/cbnEEl2Ha2hPQprQ2DxKjBUswcH
-         y3K/j2ysb0sdiRmlU75e7CjtSylMkgLIgEal2mtL2fPJkGbizx9/zcmm4iLKF0Rkfb1J
-         dhBl/Z5BGbFEf1YN2+qLl7GvYlp9B34mA3QbA=
+        b=E3KLeImvYa8ZoqIAgZIth7USKNmcmExOYCVInfmRjoLNRhDWboHlS9Ss0BQxaOKEzk
+         3ifVSgXUa62EZGdAaPV6LAAEJfwygtEGdP6k2tqfyJcPIyNFjyUj2bdHt+O9E9/0+7lP
+         Pb64ZnrMBrweLf8VQ2ngFIhdF2TsX90IkZbr0=
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
         hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
         yinghai@kernel.org, brgerst@gmail.com, gorcunov@gmail.com,
         penberg@kernel.org, shaohui.zheng@intel.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 05/16] x86: Always use x86_cpu_to_logical_apicid for cpu -> logical apic id
-Date: Tue, 28 Dec 2010 12:48:38 +0100
-Message-Id: <1293536929-31683-6-git-send-email-tj@kernel.org>
+Subject: [PATCH 07/16] x86: Add apic->x86_32_early_logical_apicid()
+Date: Tue, 28 Dec 2010 12:48:40 +0100
+Message-Id: <1293536929-31683-8-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1293536929-31683-1-git-send-email-tj@kernel.org>
 References: <1293536929-31683-1-git-send-email-tj@kernel.org>
@@ -30,95 +30,178 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, cpu -> logical apic id translation is done by
-apic->cpu_to_logical_apicid() callback which may or may not use
-x86_cpu_to_logical_apicid.  This is unnecessary as it should always
-equal logical_smp_processor_id() which is known early during CPU bring
-up.
+On x86_32, the mapping between cpu and logical apic ID differs
+depending on the specific apic implementation in use.  The mapping is
+initialized while bringing up CPUs; however, this makes early inits
+ignore memory topology.
 
-Initialize x86_cpu_to_logical_apicid after apic->init_apic_ldr() in
-setup_local_APIC() and always use x86_cpu_to_logical_apicid for cpu ->
-logical apic id mapping.
+Add a x86_32 specific apic->x86_32_early_logical_apicid() which is
+called early during boot to query the mapping.  The mapping is later
+verified against the result of init_apic_ldr().  The method is allowed
+to return BAD_APICID if it can't be determined early.
+
+noop variant which always returns BAD_APICID is implemented and added
+to all x86_32 apic implementations.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- arch/x86/kernel/apic/apic.c |    8 ++++++++
- arch/x86/kernel/apic/ipi.c  |    8 ++++----
- arch/x86/kernel/smpboot.c   |    7 +++----
- 3 files changed, 15 insertions(+), 8 deletions(-)
+ arch/x86/include/asm/apic.h      |   19 +++++++++++++++++++
+ arch/x86/kernel/apic/apic.c      |   12 ++++++++++--
+ arch/x86/kernel/apic/apic_noop.c |    4 ++++
+ arch/x86/kernel/apic/bigsmp_32.c |    2 ++
+ arch/x86/kernel/apic/es7000_32.c |    4 ++++
+ arch/x86/kernel/apic/numaq_32.c  |    2 ++
+ arch/x86/kernel/apic/probe_32.c  |    2 ++
+ arch/x86/kernel/apic/summit_32.c |    2 ++
+ 8 files changed, 45 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index ba78b1e..8ad231c 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1252,6 +1252,14 @@ void __cpuinit setup_local_APIC(void)
- 	 */
- 	apic->init_apic_ldr();
- 
+diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+index d1aa0c3..efb073b 100644
+--- a/arch/x86/include/asm/apic.h
++++ b/arch/x86/include/asm/apic.h
+@@ -354,6 +354,20 @@ struct apic {
+ 	void (*icr_write)(u32 low, u32 high);
+ 	void (*wait_icr_idle)(void);
+ 	u32 (*safe_wait_icr_idle)(void);
++
 +#ifdef CONFIG_X86_32
 +	/*
-+	 * APIC LDR is initialized.  Fetch and store logical_apic_id.
++	 * Called very early during boot from get_smp_config().  It should
++	 * return the logical apicid.  x86_[bios]_cpu_to_apicid is
++	 * initialized before this function is called.
++	 *
++	 * If logical apicid can't be determined that early, the function
++	 * may return BAD_APICID.  Logical apicid will be configured after
++	 * init_apic_ldr() while bringing up CPUs.  Note that NUMA affinity
++	 * won't be applied properly during early boot in this case.
 +	 */
-+	early_per_cpu(x86_cpu_to_logical_apicid, cpu) =
-+		logical_smp_processor_id();
++	int (*x86_32_early_logical_apicid)(int cpu);
 +#endif
+ };
+ 
+ /*
+@@ -501,6 +515,11 @@ extern struct apic apic_noop;
+ 
+ extern struct apic apic_default;
+ 
++static inline int noop_x86_32_early_logical_apicid(int cpu)
++{
++	return BAD_APICID;
++}
 +
+ /*
+  * Set up the logical destination ID.
+  *
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 8ad231c..6a82dc6 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1254,8 +1254,13 @@ void __cpuinit setup_local_APIC(void)
+ 
+ #ifdef CONFIG_X86_32
  	/*
- 	 * Set Task Priority to 'accept all'. We never change this
- 	 * later on.
-diff --git a/arch/x86/kernel/apic/ipi.c b/arch/x86/kernel/apic/ipi.c
-index 5037736..cce91bf 100644
---- a/arch/x86/kernel/apic/ipi.c
-+++ b/arch/x86/kernel/apic/ipi.c
-@@ -73,8 +73,8 @@ void default_send_IPI_mask_sequence_logical(const struct cpumask *mask,
- 	local_irq_save(flags);
- 	for_each_cpu(query_cpu, mask)
- 		__default_send_IPI_dest_field(
--			apic->cpu_to_logical_apicid(query_cpu), vector,
--			apic->dest_logical);
-+			early_per_cpu(x86_cpu_to_logical_apicid, query_cpu),
-+			vector, apic->dest_logical);
- 	local_irq_restore(flags);
+-	 * APIC LDR is initialized.  Fetch and store logical_apic_id.
++	 * APIC LDR is initialized.  If logical_apicid mapping was
++	 * initialized during get_smp_config(), make sure it matches the
++	 * actual value.
+ 	 */
++	i = early_per_cpu(x86_cpu_to_logical_apicid, cpu);
++	WARN_ON(i != BAD_APICID && i != logical_smp_processor_id());
++	/* always use the value from LDR */
+ 	early_per_cpu(x86_cpu_to_logical_apicid, cpu) =
+ 		logical_smp_processor_id();
+ #endif
+@@ -1994,7 +1999,10 @@ void __cpuinit generic_processor_info(int apicid, int version)
+ 	early_per_cpu(x86_cpu_to_apicid, cpu) = apicid;
+ 	early_per_cpu(x86_bios_cpu_apicid, cpu) = apicid;
+ #endif
+-
++#ifdef CONFIG_X86_32
++	early_per_cpu(x86_cpu_to_logical_apicid, cpu) =
++		apic->x86_32_early_logical_apicid(cpu);
++#endif
+ 	set_cpu_possible(cpu, true);
+ 	set_cpu_present(cpu, true);
  }
+diff --git a/arch/x86/kernel/apic/apic_noop.c b/arch/x86/kernel/apic/apic_noop.c
+index f3d19b2..0309c58 100644
+--- a/arch/x86/kernel/apic/apic_noop.c
++++ b/arch/x86/kernel/apic/apic_noop.c
+@@ -191,4 +191,8 @@ struct apic apic_noop = {
+ 	.icr_write			= noop_apic_icr_write,
+ 	.wait_icr_idle			= noop_apic_wait_icr_idle,
+ 	.safe_wait_icr_idle		= noop_safe_apic_wait_icr_idle,
++
++#ifdef CONFIG_X86_32
++	.x86_32_early_logical_apicid	= noop_x86_32_early_logical_apicid,
++#endif
+ };
+diff --git a/arch/x86/kernel/apic/bigsmp_32.c b/arch/x86/kernel/apic/bigsmp_32.c
+index 4c62592..dd32a9b 100644
+--- a/arch/x86/kernel/apic/bigsmp_32.c
++++ b/arch/x86/kernel/apic/bigsmp_32.c
+@@ -251,4 +251,6 @@ struct apic apic_bigsmp = {
+ 	.icr_write			= native_apic_icr_write,
+ 	.wait_icr_idle			= native_apic_wait_icr_idle,
+ 	.safe_wait_icr_idle		= native_safe_apic_wait_icr_idle,
++
++	.x86_32_early_logical_apicid	= noop_x86_32_early_logical_apicid,
+ };
+diff --git a/arch/x86/kernel/apic/es7000_32.c b/arch/x86/kernel/apic/es7000_32.c
+index 6840681..0ffc1ec 100644
+--- a/arch/x86/kernel/apic/es7000_32.c
++++ b/arch/x86/kernel/apic/es7000_32.c
+@@ -682,6 +682,8 @@ struct apic __refdata apic_es7000_cluster = {
+ 	.icr_write			= native_apic_icr_write,
+ 	.wait_icr_idle			= native_apic_wait_icr_idle,
+ 	.safe_wait_icr_idle		= native_safe_apic_wait_icr_idle,
++
++	.x86_32_early_logical_apicid	= noop_x86_32_early_logical_apicid,
+ };
  
-@@ -92,8 +92,8 @@ void default_send_IPI_mask_allbutself_logical(const struct cpumask *mask,
- 		if (query_cpu == this_cpu)
- 			continue;
- 		__default_send_IPI_dest_field(
--			apic->cpu_to_logical_apicid(query_cpu), vector,
--			apic->dest_logical);
-+			early_per_cpu(x86_cpu_to_logical_apicid, query_cpu),
-+			vector, apic->dest_logical);
- 		}
- 	local_irq_restore(flags);
- }
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index eb04f30..0768761 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -168,19 +168,18 @@ static void unmap_cpu_to_node(int cpu)
- static void map_cpu_to_logical_apicid(void)
- {
- 	int cpu = smp_processor_id();
--	int apicid = logical_smp_processor_id();
--	int node = apic->apicid_to_node(apicid);
-+	int logical_apicid = early_per_cpu(x86_cpu_to_logical_apicid, cpu);
-+	int node;
+ struct apic __refdata apic_es7000 = {
+@@ -744,4 +746,6 @@ struct apic __refdata apic_es7000 = {
+ 	.icr_write			= native_apic_icr_write,
+ 	.wait_icr_idle			= native_apic_wait_icr_idle,
+ 	.safe_wait_icr_idle		= native_safe_apic_wait_icr_idle,
++
++	.x86_32_early_logical_apicid	= noop_x86_32_early_logical_apicid,
+ };
+diff --git a/arch/x86/kernel/apic/numaq_32.c b/arch/x86/kernel/apic/numaq_32.c
+index 2b434d5..f1a8b12 100644
+--- a/arch/x86/kernel/apic/numaq_32.c
++++ b/arch/x86/kernel/apic/numaq_32.c
+@@ -539,4 +539,6 @@ struct apic __refdata apic_numaq = {
+ 	.icr_write			= native_apic_icr_write,
+ 	.wait_icr_idle			= native_apic_wait_icr_idle,
+ 	.safe_wait_icr_idle		= native_safe_apic_wait_icr_idle,
++
++	.x86_32_early_logical_apicid	= noop_x86_32_early_logical_apicid,
+ };
+diff --git a/arch/x86/kernel/apic/probe_32.c b/arch/x86/kernel/apic/probe_32.c
+index 24a6828..40be7c3 100644
+--- a/arch/x86/kernel/apic/probe_32.c
++++ b/arch/x86/kernel/apic/probe_32.c
+@@ -166,6 +166,8 @@ struct apic apic_default = {
+ 	.icr_write			= native_apic_icr_write,
+ 	.wait_icr_idle			= native_apic_wait_icr_idle,
+ 	.safe_wait_icr_idle		= native_safe_apic_wait_icr_idle,
++
++	.x86_32_early_logical_apicid	= noop_x86_32_early_logical_apicid,
+ };
  
-+	node = apic->apicid_to_node(logical_apicid);
- 	if (!node_online(node))
- 		node = first_online_node;
- 
--	early_per_cpu(x86_cpu_to_logical_apicid, cpu) = apicid;
- 	map_cpu_to_node(cpu, node);
- }
- 
- void numa_remove_cpu(int cpu)
- {
--	early_per_cpu(x86_cpu_to_logical_apicid, cpu) = BAD_APICID;
- 	unmap_cpu_to_node(cpu);
- }
- #else
+ extern struct apic apic_numaq;
+diff --git a/arch/x86/kernel/apic/summit_32.c b/arch/x86/kernel/apic/summit_32.c
+index 1ef4c14..172c498 100644
+--- a/arch/x86/kernel/apic/summit_32.c
++++ b/arch/x86/kernel/apic/summit_32.c
+@@ -552,4 +552,6 @@ struct apic apic_summit = {
+ 	.icr_write			= native_apic_icr_write,
+ 	.wait_icr_idle			= native_apic_wait_icr_idle,
+ 	.safe_wait_icr_idle		= native_safe_apic_wait_icr_idle,
++
++	.x86_32_early_logical_apicid	= noop_x86_32_early_logical_apicid,
+ };
 -- 
 1.7.1
 
