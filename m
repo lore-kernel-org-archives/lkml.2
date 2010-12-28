@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051Ab0L1QRG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 11:17:06 -0500
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:60849 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751991Ab0L1QRE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 11:17:04 -0500
-Date: Tue, 28 Dec 2010 18:16:57 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, David Brownell <david-b@pacbell.net>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC/PATCH 1/2] mfd: twl6030-irq: move to threaded_irq
-Message-ID: <20101228161657.GF2239@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1293544790-793-1-git-send-email-balbi@ti.com>
- <1293544790-793-2-git-send-email-balbi@ti.com>
- <20101228154617.GC14860@sirena.org.uk>
+	id S1754179Ab0L1QSU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 11:18:20 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:54265 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751991Ab0L1QSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Dec 2010 11:18:16 -0500
+From: Gene Heskett <gene.heskett@gmail.com>
+To: Mike Galbraith <mgalbraith@suse.de>
+Subject: Re: [RFC -v2 PATCH 2/3] sched: add yield_to function
+Date: Tue, 28 Dec 2010 11:18:11 -0500
+User-Agent: KMail/1.13.5 (Linux/2.6.36.1-latencyfix; KDE/4.5.4; i686; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <20101213224434.7495edb2@annuminas.surriel.com> <201012280108.12807.gene.heskett@gmail.com> <1293517008.6930.21.camel@marge.simson.net>
+In-Reply-To: <1293517008.6930.21.camel@marge.simson.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <20101228154617.GC14860@sirena.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012281118.11760.gene.heskett@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, Dec 28, 2010 at 03:46:17PM +0000, Mark Brown wrote:
->On Tue, Dec 28, 2010 at 03:59:49PM +0200, Felipe Balbi wrote:
+On Tuesday, December 28, 2010, Mike Galbraith wrote:
+>On Tue, 2010-12-28 at 01:08 -0500, Gene Heskett wrote:
+>> On Tuesday, December 28, 2010, Mike Galbraith wrote:
+>> >(either it's christmas, or nobody cares to try it.  ho ho hum:)
+>> 
+>> Mike, I'd be glad to try it, but the last kernel I was able to make the
+>> nvidia drivers install on was 2.6.36.1-latencyfix, which had your
+>> earier patches in it, and it is working _very_ well.
 >
->> +	disable_irq_nosync(irq);
+>It wouldn't do diddly spit by itself anyway, needs someone to stick
+>yield_to(amigo) in interesting spots.  Might not do diddly spit even
+>then :)
 >
->You shouldn't need this any more; the driver used to be faffing around
->with this because it wasn't using genirq for this in the past.
->
->> +	for (i = 0; sts.int_sts; sts.int_sts >>= 1, i++) {
->> +		local_irq_disable();
->
->Simiarly here as far as I know; the original code predates genirq
->support for this so is doing some hairy stuff that is no longer
->required and may actually be harmful.
+>	-Mike
 
-Aa, true. Forgot that one.
+Oh, in that case it will eventually filter down to me anyway after the rest 
+of this list beats on it to see what falls out.  But I occasionally like to 
+be part of the filtering media as long as I don't bleed too much. ;-)
 
->What I'd expect to see from a conversion like this would be that most of
->the locking/IRQ management stuff would be dropped and the bus_lock() and
->bus_sync_unlock() operations would be implemented.
-
-I'll look into it, thanks.
+Thanks Mike.
 
 -- 
-balbi
+Cheers, Gene
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Without facts, the decision cannot be made logically.  You must rely on
+your human intuition.
+		-- Spock, "Assignment: Earth", stardate unknown
