@@ -1,93 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab0L1RkK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 12:40:10 -0500
-Received: from nm28.bullet.mail.sp2.yahoo.com ([98.139.91.98]:45449 "HELO
-	nm28.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754526Ab0L1RkH (ORCPT
+	id S1754529Ab0L1Rla (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 12:41:30 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35383 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753844Ab0L1Rl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 12:40:07 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 79619.5935.bm@omp1024.mail.sp2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
-  b=4xSl1DBBnbZ97AkI9EgT3hRMugWU6xwLHI+ZC4VO+bakgcENG633VJpqJ2hkCGytuvQZYMbfJl2HOLGG5nnb9mHKnsrRWcSh4nDBuTCwr5SXr0ejMiyaoVYCjyVTEYp+9HzgWiDw9wpbE84THcwxiCtLprP6GgKlAofsG1JMxU0=;
-Message-ID: <704478.32838.qm@web180316.mail.gq1.yahoo.com>
-X-YMail-OSG: 6D0h1kUVM1mxy1YxR8_zzyQjGVc1O4UBuxruT7LB7P0bCek
- 3DEu5UoTP8d_faVi4_p6gB7yulnbDF5ZrzbTRySF1YBaDfSbEUhHz3rGU1h4
- NuPlAmY5qDdUxX8GaoEVYAI5Oej50.PDEdfK.iEJpckbBc0yAik64pVrN21W
- ft3DUxHGSvZ7TZ3z78UpB_nQ4zL1ua52VMzdaOnY7dnkgipggR7JRTh.msA2
- KZMduH03lY1LgzouEAY3hOXFU59xqS7hjCGcHCB.Ef.8_5Ndb4BIpuISlGBE
- kkgY_MA2G01qG1FROqfqMnS0yFua9p_M6yZFdzWtXMwKbKScTcwXh7tB8HXe
- sMhzuv3mjDAhQ_1CTlVf3_z5yBQyYggixRn0p0SNxLLmNWWeWPK28GQQSTcB
- 2V.4qxHiMLEB_UXQx.4E0cA--
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.285259
-Date: Tue, 28 Dec 2010 09:40:03 -0800 (PST)
-From: David Brownell <david-b@pacbell.net>
-Subject: Re: [RFC/PATCH 1/2] mfd: twl6030-irq: move to threaded_irq
-To: Felipe Balbi <balbi@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
+	Tue, 28 Dec 2010 12:41:28 -0500
+Date: Tue, 28 Dec 2010 17:41:39 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Felipe Balbi <balbi@ti.com>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20101228154617.GC14860@sirena.org.uk>
+        Tony Lindgren <tony@atomide.com>, David Brownell <david-b@pacbell.net>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC/PATCH 0/3] TWL4030 IRQ Changes
+Message-ID: <20101228174138.GA3089@opensource.wolfsonmicro.com>
+References: <20101228161657.GF2239@legolas.emea.dhcp.ti.com>
+ <1293556459-28613-1-git-send-email-balbi@ti.com>
+ <20101228173604.GH2239@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101228173604.GH2239@legolas.emea.dhcp.ti.com>
+X-Cookie: You will have a long and boring life.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 28, 2010 at 07:36:04PM +0200, Felipe Balbi wrote:
 
+> when we finally move to struct irq_data, the below could
+> be used. BTW, Thomas do you have any plans for exposing
+> irq_data_to_desc() ?
 
---- On Tue, 12/28/10, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+The general idea is to move to struct irq_data sooner rather than later
+(all the existing MFD drivers have already been converted).
 
-> F
+> -static void twl4030_sih_mask(unsigned irq)
+> +/* REVISIT define it here until IRQ Subsystem exports its implementation */
+> +#define irq_data_to_desc(data)	container_of(data, struct irq_desc, irq_data)
 
-> You shouldn't need this any more; the driver used to be
-> faffing around
-> with this because it wasn't using genirq for
-> this in the past.
-
-Originally it couldn't, since genirq didn't
-support threaded IRQ handling...
-
-...
-
-> 
-> Simiarly here as far as I know; the original code predates
-> genirq
-> support for this so is doing some hairy stuff that is no
-> longer
-> required and may actually be harmful.
-> 
-> What I'd expect to see from a conversion like this would be
-> that most of
-> the locking/IRQ management stuff would be dropped
-
-I'd expect that genirq solve all the issues and
-that its support be used.  That's not the same
-as dropping anything except the initial code to
-handle what genirq didn't ... some locking/etc
-would still mostly need doing, but where genirq
-now handles it, that'd be preferable.
- and the
-> bus_lock() and
-> bus_sync_unlock() operations would be implemented.
-h
-ISTR maybe four or five genirq updates in the
-area of threaded IRQ management, added so that
-issues the twl4030 driver needed to be solved
-could be solved in generic ways.
-
-The first was just having threaded IRQ handlers,
-and another was I think removing the initial
-quick'n'dirty thread-per-irq restriction; there
-was no point in having a few dozen IRQ threads
-in e.g. a twl4030 driver, since two could never
-do constructive work concurrently.
-
-I'm glad to see this conversion finally start.
-Even if all the threaded IRQ hooks don't get used
-to best advantage, it'll be an improvement.
-
+It looks like all you're using this for is to get the chip_data?  If
+that is the case you're looking for irq_data_get_irq_chip_data() which
+will go directly from the irq_data to the chip_data.  I may have missed
+something, I only scanned the code.
