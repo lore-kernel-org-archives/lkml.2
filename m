@@ -1,48 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875Ab0L1OtJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Dec 2010 09:49:09 -0500
-Received: from mail-iy0-f194.google.com ([209.85.210.194]:48221 "EHLO
-	mail-iy0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753796Ab0L1OtH (ORCPT
+	id S1752587Ab0L1Owu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Dec 2010 09:52:50 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50437 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144Ab0L1Owt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Dec 2010 09:49:07 -0500
+	Tue, 28 Dec 2010 09:52:49 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=hcMMFs0rzCelHyyk/5e0ZOExDYxi65+/6zeSipcVj9EgDzz0PxYDVSM6I2eb6Mag59
+         OcWztleY6iRtfeaBjy0iCKmVKX3kV2bukKGt4zSo163RzfHzBLkVCSc0+97Jkix51MKq
+         mFIBVKIRpzAX1+/MgORoK513VvTpEtIYErnNs=
 MIME-Version: 1.0
-X-Originating-IP: [93.172.188.89]
-In-Reply-To: <AANLkTiksjHKjKQ+mWE=Zf0+967_E46V3+RURcMC-s5cD@mail.gmail.com>
-References: <1292870624-25450-1-git-send-email-felipe.contreras@nokia.com>
- <AANLkTikisHaAMZphRJVYdcokVbaZXVF9COrwkdGTDg__@mail.gmail.com>
- <AANLkTi=9AL3aWUsMeih+Gb-sMov=MgBZ1eTp8wb=q1hZ@mail.gmail.com>
- <AANLkTinX8t=3b48e2sxPU-V_G-nGm_1DyEg6B-CeqXDa@mail.gmail.com>
- <1293452486-notmuch-felipe.contreras@nokia.com> <AANLkTinz0HuhGB_WzTQbK8XkfkGALjtg928WdOUYsySf@mail.gmail.com>
- <AANLkTimCB5g29gzWFzaFU1N8+doROTpWaXy18VU5AJyH@mail.gmail.com>
- <AANLkTi=xmxkWnhuYcjtDNDHgep_2EztfGXDv+winW2Y5@mail.gmail.com> <AANLkTiksjHKjKQ+mWE=Zf0+967_E46V3+RURcMC-s5cD@mail.gmail.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 28 Dec 2010 16:48:46 +0200
-Message-ID: <AANLkTi=X=Av0SaqphXUfiXMNX_tD8OF1CWes34keZ8O1@mail.gmail.com>
-Subject: Re: [PATCH v2] staging: tidspbridge: protect dmm_map properly
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Felipe Contreras <felipe.contreras@nokia.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        greg@kroah.com, omar.ramirez@ti.com, fernando.lugo@ti.com, nm@ti.com,
-        ameya.palande@nokia.com, h-kanigeri2@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20101222233821.GA20893@alchark-u3s>
+References: <AANLkTikAWjK7ACyt=LedhyyrhsCk1WCiyWz182CXMe9C@mail.gmail.com>
+	<4D0FE546.7050302@bluewatersys.com>
+	<AANLkTinyYKrhTcBMMCE4A2oFQHm11cqSZQozytGu+d6o@mail.gmail.com>
+	<4D1011CF.9080800@bluewatersys.com>
+	<AANLkTi=7O-HwQRcybnLSt+r+A64g=D7rZY7NbdEMFys3@mail.gmail.com>
+	<4D110269.9030805@bluewatersys.com>
+	<20101222211815.GA31054@alchark-u3s>
+	<4D12730B.2030909@bluewatersys.com>
+	<20101222222501.GA32693@alchark-u3s>
+	<4D1282DA.4020804@bluewatersys.com>
+	<20101222233821.GA20893@alchark-u3s>
+Date: Tue, 28 Dec 2010 17:52:45 +0300
+Message-ID: <AANLkTik1tcL_ABdnq5r=MCxmLJtdP0nhOzA8irP1n0CC@mail.gmail.com>
+Subject: Re: [PATCH 1/6 v12] ARM: Add basic architecture support for
+ VIA/WonderMedia 85xx SoC's
+From: Alexey Charkov <alchark@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Alexey Charkov <alchark@gmail.com>, Ryan Mallon <ryan@bluewatersys.com>,
+        linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        Eric Miao <eric.y.miao@gmail.com>,
+        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 28, 2010 at 2:12 PM, Felipe Contreras
-<felipe.contreras@gmail.com> wrote:
-> On Tue, Dec 28, 2010 at 12:56 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
->> I still don't know how exactly you triggered the bug: is gst-dsp
->> multithreaded ? and one of its threads invoked proc_un_map() while
->> another thread called proc_begin_dma() ?
+2010/12/23 Alexey Charkov <alchark@gmail.com>:
+> This adds support for the family of Systems-on-Chip produced initially
+> by VIA and now its subsidiary WonderMedia that have recently become
+> widespread in lower-end Chinese ARM-based tablets and netbooks.
 >
-> I haven't investigated why that happens
+> Support is included for both VT8500 and WM8505, selectable by a
+> configuration switch at kernel build time.
+>
+> Included are basic machine initialization files, register and
+> interrupt definitions, support for the on-chip interrupt controller,
+> high-precision OS timer, GPIO lines, necessary macros for early debug,
+> pulse-width-modulated outputs control, as well as platform device
+> configurations for the specific drivers implemented elsewhere.
+>
+> Signed-off-by: Alexey Charkov <alchark@gmail.com>
 
-Btw, I still think you should look into this.
+Russell, will you take this for .38? Please note that the last
+revision of this patch was also submitted to the ARM Linux patch
+tracking system:
 
-The kernel panic will be solved, but you may still have a race there
-that can lead to data corruption: if proc_un_map will be fast enough,
-it will acquire the proc_lock mutex before proc_begin_dma(), and then
-you will miss a cache operation.
+http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6597/1
+
+Best regards,
+Alexey
