@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754375Ab0L2XfT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 18:35:19 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:45026 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754130Ab0L2XfR convert rfc822-to-8bit (ORCPT
+	id S1754473Ab0L2XhT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 18:37:19 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:54860 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754186Ab0L2XhR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 18:35:17 -0500
+	Wed, 29 Dec 2010 18:37:17 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=GorkHhptl8KLSe5bPtkPjsJCniKQkv12Rll1/QIJEzbp2Q7baBOO9N6bsxgrx5kA/M
-         5/wLUGFQL3AJqpYWodKaCdzYiygl91bhWWp6d4lok/nLOjeH4ovEJ1quxgYfZNxjMq8X
-         Nnj0pciTRi25fifmSt/JIcdZGxuznmMThvYH0=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=kBs/R2hglCe+UU1wUSxpJfs6PCCxHBad2ktxo6mrbWKjOap/AFJAHQZVh1oD2uxk0T
+         lxLpX9puYbKVgi2867lD1XcA1zc0opbEfDns4xak0XdujV8NXpE1w/0wGBtG0DMvu+Cv
+         S7mIOtHuFXTa4t1hmg3inYKDbSm8iUugg1D/Y=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTim=NTUtuAG=Gk=GeBHfTNM73xw6F8gjry6xsHs7@mail.gmail.com>
-References: <AANLkTi=-dNeeDjcSoznKtwcaNyw1mMXSqepFY89R2i+2@mail.gmail.com>
-	<20101229102127.06c0e505.randy.dunlap@oracle.com>
-	<AANLkTims54zDXZYjZiiHfSOwy0W=gOF2jV8yopQxFBny@mail.gmail.com>
-	<20101229121601.179983b7@jbarnes-desktop>
-	<AANLkTikMMpdMr66n-VL9xdNVhmGMaWR74UdF5UB7cdCW@mail.gmail.com>
-	<20101229131852.0792aac0@jbarnes-desktop>
-	<20101229135315.5fe5c4e5@jbarnes-desktop>
-	<AANLkTikk3Z_p+-uRB4iF8CUuMAyuKVtPbuht=hQOm2uH@mail.gmail.com>
-	<20101229151323.4a675097@jbarnes-desktop>
-	<AANLkTim=NTUtuAG=Gk=GeBHfTNM73xw6F8gjry6xsHs7@mail.gmail.com>
-Date: Thu, 30 Dec 2010 00:35:15 +0100
-Message-ID: <AANLkTim51EAwzUqSJGQ4LnJbbPNCqbhyJumUd=_WkB+T@mail.gmail.com>
-Subject: Re: Linux 2.6.37-rc8 (no fb)
-From: Alex Riesen <raa.lkml@gmail.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Jeff Chua <jeff.chua.linux@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <AANLkTineB4n7mjotECPK_VsHvP9xGt=SMJ-GSC_6nZAZ@mail.gmail.com>
+References: <4D0C072D.1040201@kernel.org>
+	<4D19320B.7030007@kernel.org>
+	<4D1933BA.8000508@kernel.org>
+	<4D1BBEB7.3010901@zytor.com>
+	<AANLkTineB4n7mjotECPK_VsHvP9xGt=SMJ-GSC_6nZAZ@mail.gmail.com>
+Date: Wed, 29 Dec 2010 15:37:16 -0800
+X-Google-Sender-Auth: uPGGXjBf2wf73OcApEJnstqu1TE
+Message-ID: <AANLkTi=NU1UM3N6bbPSqqS+7UbvTY6YDNyn2s4tKURMY@mail.gmail.com>
+Subject: Re: [PATCH 1/6] x86: Change get_max_mapped() to inline
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 30, 2010 at 00:20, Alex Riesen <raa.lkml@gmail.com> wrote:
-> On Thu, Dec 30, 2010 at 00:13, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
->>> After closing and opening the lid (displays backlight is back)
->>>
->>> Â  http://vin-soft.org/~raa/public/test/intel_gpu_dump-after-lid
->>
->> I need the intel_reg_dumper output, not intel_gpu_dump. :)
->>
->
-> Hmm, there is no intel_reg_dumper in intel-gpu-tools-1.0.2, which is
-> the latest on http://xorg.freedesktop.org/archive/individual/app/,
-> so I assumed you just mistyped the name. Is it in git only? ...
-> Yeah, look like it is in git only, which I have problems to compile
-> (I have a bit of obsoleted system).
->
+On Wed, Dec 29, 2010 at 3:30 PM, Yinghai Lu <yinghai@kernel.org> wrote:
 
-Is there any other way to get at the dump? Because it looks like
-it is plainly impossible to build the tools. A lot of dependencies,
-all really hard to get at on Ubuntu Jaunty.
+>>> Index: linux-2.6/arch/x86/include/asm/page_types.h
+>>> ===================================================================
+>>> --- linux-2.6.orig/arch/x86/include/asm/page_types.h
+>>> +++ linux-2.6/arch/x86/include/asm/page_types.h
+>>> @@ -45,6 +45,11 @@ extern int devmem_is_allowed(unsigned lo
+>>>  extern unsigned long max_low_pfn_mapped;
+>>>  extern unsigned long max_pfn_mapped;
+>>>
+>>> +static inline u64 get_max_mapped(void)
+>>> +{
+>>> +     return (u64)max_pfn_mapped<<PAGE_SHIFT;
+>>> +}
+>>> +
+>>>  extern unsigned long init_memory_mapping(unsigned long start,
+>>>                                        unsigned long end);
+>>>
+>>
+>
+>> Furthermore, it seems to me that it would make more
+>> sense for this to be phys_addr_t instead of u64; would you agree?
+>
+> yes.
+
+or could just use unsigned long instead.
+
+on 32bit it will be under 4g
+on 64bit unsigned long  is 64bit already.
+
+Thanks
+
+Yinghai
