@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751723Ab0L2Jbx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 04:31:53 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55351 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750847Ab0L2Jbv (ORCPT
+	id S1751883Ab0L2JjL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 04:39:11 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37729 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176Ab0L2JjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 04:31:51 -0500
+	Wed, 29 Dec 2010 04:39:07 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type;
-        b=m2+N9h+WxhMxa5W9Zsj7LNSW5a0J77oVzyss9Ug9zYrpz7yCOiE93TPvfOwGzCrg0s
-         /DVxhnYC0X/U0DoJvnJIiw+bYl4zTlVF9de+94Y5SG3WTULq+t1wcIuTOMAcvC3zg7nD
-         3qv+vuxSu5mpOOtXtW9WhL4ZN9oyoRJ1VriY8=
+        b=de5Aa/SQ7ruCbXtiW/G1eQ2qWRdH+tegyDy0q7KwH5Nx87qh2bNWs4o6tqIRuUSzu7
+         ZzMvQZLuKoB+3WM1GB0sF8s1n2+Uit0sGCtBb9Tf3k/LwcyMWGS6UMKKJTW8ZyB9xQla
+         nBh3HO6epcLTruE4owNIPDdfcpgdbErk/g0uw=
 MIME-Version: 1.0
-In-Reply-To: <CE761E84DADF2947A4AF22FB8D97A47331E86F6E@shsmsx501.ccr.corp.intel.com>
-References: <1293023621-3077-1-git-send-email-tardyp@gmail.com>
-	<41EFD7A46E18724CAB128DAD00733480193D2AE61C@shsmsx502.ccr.corp.intel.com>
-	<AANLkTinYWODS785AefQ7hV+urPkAn1+En-fZEaFQygLG@mail.gmail.com>
-	<CE761E84DADF2947A4AF22FB8D97A47331E86F6E@shsmsx501.ccr.corp.intel.com>
-Date: Wed, 29 Dec 2010 10:31:50 +0100
-Message-ID: <AANLkTimB7h0ZxvSOt2dUkO90RxE2c3Bu3CRqpasgzxw=@mail.gmail.com>
-Subject: Re: [RFC] sdhci: use ios->clock to know when sdhci is idle
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: "Gao, Yunpeng" <yunpeng.gao@intel.com>
-Cc: Pierre Tardy <tardyp@gmail.com>, "Yuan, Hang" <hang.yuan@intel.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Ball <cjb@laptop.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>, Takashi Iwai <tiwai@suse.de>,
-        Maxim Levitsky <maximlevitsky@gmail.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <AANLkTi=wBG9AXvDva-_uNjGbRphrb356gZ6ChMJjP8aL@mail.gmail.com>
+References: <1292870624-25450-1-git-send-email-felipe.contreras@nokia.com>
+	<AANLkTikisHaAMZphRJVYdcokVbaZXVF9COrwkdGTDg__@mail.gmail.com>
+	<AANLkTi=9AL3aWUsMeih+Gb-sMov=MgBZ1eTp8wb=q1hZ@mail.gmail.com>
+	<AANLkTinX8t=3b48e2sxPU-V_G-nGm_1DyEg6B-CeqXDa@mail.gmail.com>
+	<1293452486-notmuch-felipe.contreras@nokia.com>
+	<AANLkTinz0HuhGB_WzTQbK8XkfkGALjtg928WdOUYsySf@mail.gmail.com>
+	<AANLkTimCB5g29gzWFzaFU1N8+doROTpWaXy18VU5AJyH@mail.gmail.com>
+	<AANLkTi=xmxkWnhuYcjtDNDHgep_2EztfGXDv+winW2Y5@mail.gmail.com>
+	<AANLkTiksjHKjKQ+mWE=Zf0+967_E46V3+RURcMC-s5cD@mail.gmail.com>
+	<AANLkTi=ZY09yJ=pK4ejqOZjh7YjJp1UemRdMgMfpsz2f@mail.gmail.com>
+	<AANLkTinZ0Uwp8jbmsSwm6ut75A06CxrkESTRJT-GoPkP@mail.gmail.com>
+	<AANLkTi=wBG9AXvDva-_uNjGbRphrb356gZ6ChMJjP8aL@mail.gmail.com>
+Date: Wed, 29 Dec 2010 11:39:05 +0200
+Message-ID: <AANLkTimMe97QECEJ+T6Eh7SFKqOi8xo08ZB+S+8Yzuww@mail.gmail.com>
+Subject: Re: [PATCH v2] staging: tidspbridge: protect dmm_map properly
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Felipe Contreras <felipe.contreras@nokia.com>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        greg@kroah.com, omar.ramirez@ti.com, fernando.lugo@ti.com, nm@ti.com,
+        ameya.palande@nokia.com, h-kanigeri2@ti.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/12/29 Gao, Yunpeng <yunpeng.gao@intel.com>:
+On Tue, Dec 28, 2010 at 2:37 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+> On Tue, Dec 28, 2010 at 2:24 PM, Felipe Contreras
+> <felipe.contreras@gmail.com> wrote:
+>> user-space crashed, not kernel-space; the code would continue to run
+>> and eventually release the lock.
+>
+> So you'll have to be more specific about the scenario you are describing.
+>
+> If there's a user thread that is still running the proc_*_dma()
+> function, and we agree that this thread keeps running until completion
+> and then returns to user space, what's the problem ?
 
-> So, why we have to move to the 'aggressive clock gating framework'?
+The problem is if the user-space process crashes exactly in the middle
+of it, *before* completing. With locks there's no problem, as
+proc_un_map() would wait for the lock in my patch. In your patch it
+would not wait, just return -EBUSY.
 
-The aggressive clock gating makes more sense since the different
-drivers will know better how to handle the gating. ios with f=0 can
-be interpreted differently. Else every driver has to register
-runtime PM hooks for this, which is less elegant.
+> If that user thread will crash, drv_remove_all_resources() will clean
+> up all map_obj's.
 
-A better question is why the clock gating does not use runtime
-PM abstractions.
+Not if a proc_*_dma() is still running.
 
-The hysteresis (timeout after inactivity, in the MMC spec >= 8 MCLK
-cycles) can possibly be handled by refactoring the runtime PM
-framework, someone offered to look at this later actually.
+There's a very narrow timing window where this could happen, but it is there.
 
-> Also, I noticed that in the current 'aggressive clock gating
-> framework' patch, the clock gating of SDIO card has been
-> disabled (please reference code and comments of function
-> mmc_host_may_gate_card() in that patch).
-
-We discussed different approaches to this, from marking an
-SDIO slot as suspendable by using platform data, or whitelisting
-the SDIO cards that can handle clock gating.
-
-It was decided to keep SDIO cards out of it until we have this
-infrastructure in place. So now you will have the opportunity
-to fix this!
-
-Not all SDIO cards will work properly if you try to gate them
-so we need a mechanism to selectively do this.
-Any suggestions?
-
-Yours,
-Linus Walleij
+-- 
+Felipe Contreras
