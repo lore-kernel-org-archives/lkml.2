@@ -1,52 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab0L2WFd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 17:05:33 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:42769 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752906Ab0L2WFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 17:05:30 -0500
-Message-ID: <4D1BB092.7030609@zytor.com>
-Date: Wed, 29 Dec 2010 14:05:06 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1754057Ab0L2WH1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 17:07:27 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:26238 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752906Ab0L2WHZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Dec 2010 17:07:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=VPKei7aqi06DFMmtOHY76fu4FaxEcEDZAJuOKFTkrSzJapk44sebznPEpMCuRORZsK
+         VnmH7zhGoPl8gae801dw==
+Date: Wed, 29 Dec 2010 14:07:11 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan.kim@gmail.com>,
+        Thomas Meyer <thomas@m3y3r.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [PATCH] memcg: fix wrong VM_BUG_ON() in try_charge()'s mm->owner
+ check
+In-Reply-To: <20101222164151.GA2048@cmpxchg.org>
+Message-ID: <alpine.LSU.2.00.1012291355080.22872@sister.anvils>
+References: <1293020757.1998.2.camel@localhost.localdomain> <AANLkTin6GMiXHuoVzNWPcj0jXDqWyfWCwW9fd-v=pq=X@mail.gmail.com> <20101222164151.GA2048@cmpxchg.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, tglx@linutronix.de, x86@kernel.org,
-        eric.dumazet@gmail.com, yinghai@kernel.org, brgerst@gmail.com,
-        gorcunov@gmail.com, Pekka Enberg <penberg@kernel.org>,
-        shaohui.zheng@intel.com
-Subject: Re: [PATCH 13/16] x86: Unify cpu/apicid <-> NUMA node mapping between
- 32 and 64bit
-References: <1293536929-31683-1-git-send-email-tj@kernel.org> <1293536929-31683-14-git-send-email-tj@kernel.org> <alpine.DEB.2.00.1012281231070.8883@chino.kir.corp.google.com> <20101229105253.GK488@htj.dyndns.org> <4D1B8DC8.6000104@zytor.com>
-In-Reply-To: <4D1B8DC8.6000104@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/29/2010 11:36 AM, H. Peter Anvin wrote:
-> On 12/29/2010 02:52 AM, Tejun Heo wrote:
->> On Tue, Dec 28, 2010 at 12:35:45PM -0800, David Rientjes wrote:
->>> This is going to conflict with a387e95a ("") in x86/numa, so you'll need 
->>> the following hunk for acpi_fake_nodes().  I'm not sure why this patchset 
->>> is being based on x86/apic-cleanup rather than x86/numa?
->>
->> Because several patches from the patchset have already been committed
->> into x86/apic-cleanup.  Thomas, Peter, if this needs to be rebased
->> somewhere, let me know.
->>
-> 
-> x86/numa is already a dependent branch (on x86/amd-nb), so I'm fine
-> merging x86/apic-cleanup into that branch and then if you could rebase
-> it on top of the new x86/numa then I'll push it out tomorrow.
-> 
-> OK?
-> 
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-I have pushed out this merge onto x86/numa, so waiting for your rebase.
- If you don't have time, then I'll rebase.
+At __mem_cgroup_try_charge(), VM_BUG_ON(!mm->owner) is checked.
+But as commented in mem_cgroup_from_task(), mm->owner can be NULL
+in some racy case. This check of VM_BUG_ON() is bad.
 
-	-hpa
+A possible story to hit this is at swapoff()->try_to_unuse(). It passes
+mm_struct to mem_cgroup_try_charge_swapin() while mm->owner is NULL. If we
+can't get proper mem_cgroup from swap_cgroup information, mm->owner is used
+as charge target and we see NULL.
+
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reported-by: Hugh Dickins <hughd@google.com>
+Reported-by: Thomas Meyer <thomas@m3y3r.de>
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: stable@kernel.org
+---
+Sorry, I hit this on 2.6.36, and we lined up this patch early in
+November, but never really pushed it: now Thomas hit it on 37-rc7.
+
+ mm/memcontrol.c |   19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
+
+--- 2.6.37-rc8/mm/memcontrol.c	2010-11-29 22:29:32.000000000 -0800
++++ linux/mm/memcontrol.c	2010-12-28 21:42:29.000000000 -0800
+@@ -1925,19 +1925,18 @@ again:
+ 
+ 		rcu_read_lock();
+ 		p = rcu_dereference(mm->owner);
+-		VM_BUG_ON(!p);
+ 		/*
+-		 * because we don't have task_lock(), "p" can exit while
+-		 * we're here. In that case, "mem" can point to root
+-		 * cgroup but never be NULL. (and task_struct itself is freed
+-		 * by RCU, cgroup itself is RCU safe.) Then, we have small
+-		 * risk here to get wrong cgroup. But such kind of mis-account
+-		 * by race always happens because we don't have cgroup_mutex().
+-		 * It's overkill and we allow that small race, here.
++		 * Because we don't have task_lock(), "p" can exit.
++		 * In that case, "mem" can point to root or p can be NULL with
++		 * race with swapoff. Then, we have small risk of mis-accouning.
++		 * But such kind of mis-account by race always happens because
++		 * we don't have cgroup_mutex(). It's overkill and we allo that
++		 * small race, here.
++		 * (*) swapoff at el will charge against mm-struct not against
++		 * task-struct. So, mm->owner can be NULL.
+ 		 */
+ 		mem = mem_cgroup_from_task(p);
+-		VM_BUG_ON(!mem);
+-		if (mem_cgroup_is_root(mem)) {
++		if (!mem || mem_cgroup_is_root(mem)) {
+ 			rcu_read_unlock();
+ 			goto done;
+ 		}
