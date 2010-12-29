@@ -1,191 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751447Ab0L2FjE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 00:39:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37387 "EHLO mx1.redhat.com"
+	id S1750885Ab0L2GGz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 01:06:55 -0500
+Received: from tango.tkos.co.il ([62.219.50.35]:54841 "EHLO tango.tkos.co.il"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750916Ab0L2Fii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 00:38:38 -0500
-From: Zachary Amsden <zamsden@redhat.com>
-To: kvm@vger.kernel.org
-Cc: Zachary Amsden <zamsden@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Glauber Costa <glommer@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [KVM Clock Synchronization 3/4] Refactor KVM clock update code
-Date: Tue, 28 Dec 2010 19:38:19 -1000
-Message-Id: <1293601100-32109-4-git-send-email-zamsden@redhat.com>
-In-Reply-To: <1293601100-32109-1-git-send-email-zamsden@redhat.com>
-References: <1293601100-32109-1-git-send-email-zamsden@redhat.com>
+	id S1750699Ab0L2GGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Dec 2010 01:06:54 -0500
+Date: Wed, 29 Dec 2010 08:06:38 +0200
+From: Baruch Siach <baruch@tkos.co.il>
+To: Angelo Dureghello <angelo70@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: dm9000 patch
+Message-ID: <20101229060637.GA31010@jasper.tkos.co.il>
+References: <4D1A5C2A.5050606@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D1A5C2A.5050606@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Refactor this to make upcoming steps easier to follow.
-This should be 100% code motion and renaming.
+Hi Angelo,
 
-Signed-off-by: Zachary Amsden <zamsden@redhat.com>
----
- arch/x86/include/asm/kvm_host.h |    2 +-
- arch/x86/kvm/x86.c              |   77 +++++++++++++++++++++++----------------
- 2 files changed, 46 insertions(+), 33 deletions(-)
+On Tue, Dec 28, 2010 at 10:52:42PM +0100, Angelo Dureghello wrote:
+> sorry to contact you directly but i couldn't get any help from the
+> kernel.org mailing list, since i am not a developer my mails are
+> generally skipped.
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 63a82b0..8d829b8 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -444,7 +444,7 @@ struct kvm_arch {
- 
- 	unsigned long irq_sources_bitmap;
- 	s64 kvmclock_offset;
--	spinlock_t tsc_write_lock;
-+	spinlock_t clock_lock;
- 	u64 last_tsc_nsec;
- 	u64 last_tsc_offset;
- 	u64 last_tsc_write;
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index b509c01..59d5999 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -996,7 +996,7 @@ void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
- 	s64 sdiff;
- 	u64 delta;
- 
--	spin_lock_irqsave(&kvm->arch.tsc_write_lock, flags);
-+	spin_lock_irqsave(&kvm->arch.clock_lock, flags);
- 	offset = data - native_read_tsc();
- 	ns = get_kernel_ns();
- 	elapsed = ns - kvm->arch.last_tsc_nsec;
-@@ -1034,7 +1034,7 @@ void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
- 		kvm->arch.last_tsc_offset = offset;
- 	}
- 	kvm_x86_ops->write_tsc_offset(vcpu, offset);
--	spin_unlock_irqrestore(&kvm->arch.tsc_write_lock, flags);
-+	spin_unlock_irqrestore(&kvm->arch.clock_lock, flags);
- 
- 	/* Reset of TSC must disable overshoot protection below */
- 	vcpu->arch.hv_clock.tsc_timestamp = 0;
-@@ -1043,22 +1043,50 @@ void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
- }
- EXPORT_SYMBOL_GPL(kvm_write_tsc);
- 
-+static void update_pvclock(struct kvm_vcpu *v,
-+			   struct pvclock_vcpu_time_info *pvclock,
-+			   u64 tsc_timestamp,
-+			   s64 kernel_ns,
-+			   unsigned long tsc_khz)
-+{
-+	if (unlikely(v->arch.hw_tsc_khz != tsc_khz)) {
-+		kvm_get_time_scale(NSEC_PER_SEC / 1000, tsc_khz,
-+				   &pvclock->tsc_shift,
-+				   &pvclock->tsc_to_system_mul);
-+		v->arch.hw_tsc_khz = tsc_khz;
-+	}
-+	pvclock->tsc_timestamp = tsc_timestamp;
-+	pvclock->system_time = kernel_ns + v->kvm->arch.kvmclock_offset;
-+	pvclock->flags = 0;
-+}
-+
-+static void update_user_kvmclock(struct kvm_vcpu *v,
-+				 struct pvclock_vcpu_time_info *pvclock)
-+{
-+	struct kvm_vcpu_arch *vcpu = &v->arch;
-+	void *shared_kaddr;
-+
-+	shared_kaddr = kmap_atomic(vcpu->time_page, KM_USER0);
-+	memcpy(shared_kaddr + vcpu->time_offset, pvclock, sizeof(*pvclock));
-+	kunmap_atomic(shared_kaddr, KM_USER0);
-+	mark_page_dirty(v->kvm, vcpu->time >> PAGE_SHIFT);
-+}
-+
- static int kvm_guest_time_update(struct kvm_vcpu *v)
- {
- 	unsigned long flags;
- 	struct kvm_vcpu_arch *vcpu = &v->arch;
--	void *shared_kaddr;
--	unsigned long this_tsc_khz;
--	s64 kernel_ns, max_kernel_ns;
-+	unsigned long tsc_khz;
-+	s64 kernel_ns;
- 	u64 tsc_timestamp;
- 
- 	/* Keep irq disabled to prevent changes to the clock */
- 	local_irq_save(flags);
- 	kvm_get_msr(v, MSR_IA32_TSC, &tsc_timestamp);
- 	kernel_ns = get_kernel_ns();
--	this_tsc_khz = __get_cpu_var(cpu_tsc_khz);
-+	tsc_khz = __get_cpu_var(cpu_tsc_khz);
- 
--	if (unlikely(this_tsc_khz == 0)) {
-+	if (unlikely(tsc_khz == 0)) {
- 		local_irq_restore(flags);
- 		kvm_make_request(KVM_REQ_CLOCK_UPDATE, v);
- 		return 1;
-@@ -1108,32 +1136,23 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
- 	 * guest.  To protect against this, we must compute the system time as
- 	 * observed by the guest and ensure the new system time is greater.
- 	 */
--	max_kernel_ns = 0;
- 	if (vcpu->hv_clock.tsc_timestamp && vcpu->last_guest_tsc) {
--		max_kernel_ns = vcpu->last_guest_tsc -
--				vcpu->hv_clock.tsc_timestamp;
-+		s64 max_kernel_ns = vcpu->last_guest_tsc -
-+				    vcpu->hv_clock.tsc_timestamp;
- 		max_kernel_ns = pvclock_scale_delta(max_kernel_ns,
- 				    vcpu->hv_clock.tsc_to_system_mul,
- 				    vcpu->hv_clock.tsc_shift);
- 		max_kernel_ns += vcpu->last_kernel_ns;
-+		if (max_kernel_ns > kernel_ns)
-+			kernel_ns = max_kernel_ns;
- 	}
- 
--	if (unlikely(vcpu->hw_tsc_khz != this_tsc_khz)) {
--		kvm_get_time_scale(NSEC_PER_SEC / 1000, this_tsc_khz,
--				   &vcpu->hv_clock.tsc_shift,
--				   &vcpu->hv_clock.tsc_to_system_mul);
--		vcpu->hw_tsc_khz = this_tsc_khz;
--	}
--
--	if (max_kernel_ns > kernel_ns)
--		kernel_ns = max_kernel_ns;
--
--	/* With all the info we got, fill in the values */
--	vcpu->hv_clock.tsc_timestamp = tsc_timestamp;
--	vcpu->hv_clock.system_time = kernel_ns + v->kvm->arch.kvmclock_offset;
-+	/* Record the last values observed for next time */
- 	vcpu->last_kernel_ns = kernel_ns;
- 	vcpu->last_guest_tsc = tsc_timestamp;
--	vcpu->hv_clock.flags = 0;
-+
-+	/* Compute new clock values */
-+	update_pvclock(v, &vcpu->hv_clock, tsc_timestamp, kernel_ns, tsc_khz);
- 
- 	/*
- 	 * The interface expects us to write an even number signaling that the
-@@ -1142,14 +1161,8 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
- 	 */
- 	vcpu->hv_clock.version += 2;
- 
--	shared_kaddr = kmap_atomic(vcpu->time_page, KM_USER0);
--
--	memcpy(shared_kaddr + vcpu->time_offset, &vcpu->hv_clock,
--	       sizeof(vcpu->hv_clock));
-+	update_user_kvmclock(v, &vcpu->hv_clock);
- 
--	kunmap_atomic(shared_kaddr, KM_USER0);
--
--	mark_page_dirty(v->kvm, vcpu->time >> PAGE_SHIFT);
- 	return 0;
- }
- 
-@@ -5951,7 +5964,7 @@ struct  kvm *kvm_arch_create_vm(void)
- 	/* Reserve bit 0 of irq_sources_bitmap for userspace irq source */
- 	set_bit(KVM_USERSPACE_IRQ_SOURCE_ID, &kvm->arch.irq_sources_bitmap);
- 
--	spin_lock_init(&kvm->arch.tsc_write_lock);
-+	spin_lock_init(&kvm->arch.clock_lock);
- 
- 	return kvm;
- }
+The best way to get the contact info for a piece of kernel code, is using the 
+get_maintainer.pl script. Running 'scripts/get_maintainer.pl -f 
+drivers/net/dm9000.c' gives the following output:
+
+netdev@vger.kernel.org
+linux-kernel@vger.kernel.org
+
+I added both to Cc.
+
+> I am very near to have a custom board working with MCF5307 cpu and dm9000.
+> I am using kernel 2.6.36-rc3 with your last patch about
+> spinlock-recursion already included.
+
+You should try to update to the latest .36 kernel, which is currently 
+2.6.36.2. The problem that you experience might be unrelated to the dm9000 
+driver (or to networking at all), so it might have been fixed in this version.
+
+> I have "ping" and "telnet" to the embedded board fully working.
+> If i try to get a sample web page with some images from the board
+> httpd with a browser, in 80% of cases i get a trap/oops:
+
+Try to enable KALLSYMS in your kernel .config to make your stack trace more 
+meaningful. This is under 'General setup -> Configure standard kernel features 
+(for small systems) -> Load all symbols for debugging/ksymoops'.
+
+I hope this helps.
+
+baruch
+
+> [    4.590000] eth0: link up, 100Mbps, full-duplex, lpa 0x45E1
+> [   67.630000] BUG: spinlock recursion on CPU#0, httpd/29
+> [   67.630000]  lock: 00c42c06, .magic: dead4ead, .owner: httpd/29,
+> .owner_cpu: 0
+> [   67.630000] Stack from 00d7b914:
+> [   67.630000]         00d7b940 000a8cf0 0015f693 00c42c06 dead4ead
+> 00dec1d4 0000001d 00000000
+> [   67.630000]         00c42c06 00006188 00c42800 00d7b974 000a8ec2
+> 00c42c06 0015f6f9 00002704
+> [   67.630000]         00000000 0000001f 00146fa4 00152f0c 00c42b60
+> 00006188 00c42800 0002b312
+> [   67.630000]         00d7b984 0014701e 00c42c06 00000000 00d7b9c4
+> 000df21c 00c42c06 00000000
+> [   67.630000]         00000000 0000001f 00146fa4 00152f0c 000005ea
+> 00cfc640 00006188 000096e8
+> [   67.630000]         0002b312 00146fa4 00c42b60 00002704 00d7b9ec
+> 00029d3a 0000001f 00c42800
+> [   67.630000] Call Trace:
+> [   67.630000]  [000a8cf0]  [000a8ec2]  [0014701e]  [000df21c]  [00029d3a]
+> [   67.630000]  [00029e84]  [00000bb6]  [0000336e]  [000df162]  [000effd6]
+> [   67.630000]  [00100482]  [000f312e]  [000f9ebc]  [0010dd2a]  [0010e4a0]
+> [   67.630000]  [0010dfb2]  [0010ef80]  [0011fed6]  [00121170]  [0012188e]
+> [   67.630000]  [0011ecc6]  [001249fe]  [000e4084]  [0011621c]  [00131a44]
+> [   67.630000]  [000e11ee]  [00041944]  [00041a1c]  [00041e46]  [00003218]
+> [   67.630000] BUG: spinlock lockup on CPU#0, httpd/29, 00c42c06
+> [   67.630000] Stack from 00d7b934:
+> [   67.630000]         00d7b974 000a8f66 0015f703 00000000 00dec1d4
+> 0000001d 00c42c06 00002704
+> [   67.630000]         00000000 0000001f 00146fa4 00152f0c 00c42b60
+> 00006188 00c42800 0002b312
+> [   67.630000]         00d7b984 0014701e 00c42c06 00000000 00d7b9c4
+> 000df21c 00c42c06 00000000
+> [   67.630000]         00000000 0000001f 00146fa4 00152f0c 000005ea
+> 00cfc640 00006188 000096e8
+> [   67.630000]         0002b312 00146fa4 00c42b60 00002704 00d7b9ec
+> 00029d3a 0000001f 00c42800
+> [   67.630000]         0016c1b4 00cfc640 0000001f 0016c178 00029d10
+> 00146fb8 00d7ba20 00029e84
+> [   67.630000] Call Trace:
+> [   67.630000]  [000a8f66]  [0014701e]  [000df21c]  [00029d3a]  [00029e84]
+> [   67.630000]  [00000bb6]  [0000336e]  [000df162]  [000effd6]  [00100482]
+> [   67.630000]  [000f312e]  [000f9ebc]  [0010dd2a]  [0010e4a0]  [0010dfb2]
+> [   67.630000]  [0010ef80]  [0011fed6]  [00121170]  [0012188e]  [0011ecc6]
+> [   67.630000]  [001249fe]  [000e4084]  [0011621c]  [00131a44]  [000e11ee]
+> [   67.630000]  [00041944]  [00041a1c]  [00041e46]  [00003218]
+> 
+> As i said, i was hoping in your patch but i sadly discovered it is
+> already included in this kernel version.
+> Hope you can give me some help or can forward me to an appropriate
+> mailing list.
+
 -- 
-1.7.1
-
+                                                     ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
