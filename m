@@ -1,105 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751665Ab0L2KUy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 05:20:54 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:53299 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750914Ab0L2KUw convert rfc822-to-8bit (ORCPT
+	id S1751897Ab0L2KZd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 05:25:33 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:43344 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914Ab0L2KZb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 05:20:52 -0500
+	Wed, 29 Dec 2010 05:25:31 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=XSMC4eQVtWoDQ+jZnkFwCgUISOXjflenhFvDWSvtgWh2x/vgmbGArZ4aDW0of3vHx6
-         w9FyP+l70mmyUVFKoFPsElXFKk097a1dG2oCwR9Q3+QxAlzIJg95qNyFCJaUFdmYQBjD
-         yEXSacI58ywVUnA8ZhTd8tXZIXNLk04gAeOIM=
+        b=U0QhkrYcZYmMrPyyAZULJoWuogDZBCQLYN1UZ6ECPQjRsOp/pkFyO/4CGQX6qnHah5
+         GpVpH2QqGSMwNiW90W/b9ocNw0I134RSIUNtE+geL8BlelmegcHdCzqx+BO+MNOauZ3e
+         XRKrfGf70uYyP4MwZO1WUKvNQ19lppNd8WX9w=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTim6QkyMMtcQT1mfBMUDwirYg636xhBv4p77Uf4k@mail.gmail.com>
-References: <AANLkTim4zbBvTyc4hNurCmPN7GisXe1mmzR6P4aj3xzA@mail.gmail.com>
-	<AANLkTim6QkyMMtcQT1mfBMUDwirYg636xhBv4p77Uf4k@mail.gmail.com>
-Date: Wed, 29 Dec 2010 15:50:51 +0530
-Message-ID: <AANLkTinq4MTrLek8DE5SAR=-eFk==4VX-+ui0kVtrV_L@mail.gmail.com>
-Subject: Re: Drift when measuring time using add_timer
-From: Mohan V <mohanvforum@gmail.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <Pine.LNX.4.64.1012291435580.10939@boston.corp.fedex.com>
+References: <Pine.LNX.4.64.1012291435580.10939@boston.corp.fedex.com>
+Date: Wed, 29 Dec 2010 11:25:30 +0100
+Message-ID: <AANLkTi=qRmRGCff_8_t-VyOjcP0pcFLxA-Y+XYdcoPOo@mail.gmail.com>
+Subject: Re: Linux 2.6.37-rc8
+From: Alex Riesen <raa.lkml@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>,
+        Jeff Chua <jeff.chua.linux@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 29, 2010 at 2:15 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
-> On Tue, Dec 28, 2010 at 8:05 PM, Mohan V <mohanvforum@gmail.com> wrote:
->> Hello All,
+On Wed, Dec 29, 2010 at 07:51, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+> On Wed, Dec 29, 2010 at 9:18 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
 >>
->> I am testing the timers on a OMAP4 based board. I am seeing a drift or
->> the time difference between the timer value and when the function callback
->> happens. This drift is around 1000ms or 1s for a expiry value of >=5mins.
->> Is the time drift expected? Is this way of measuring right or is there
->> any other way?
->>
->> OMAP4 as you may know is a multi-core processor and CONFIG_SMP is enabled
->> along with the following:
->> CONFIG_NO_HZ, CONFIG_HIGH_RES_TIMERS
->>
->> My kernel configurations:
->> kernel: 2.6.37-rc7 (commit id: ffc96d)
->> config: omap2plus_defconfig
->>
->> My driver does the following:
->>
->> struct timeval tv;
->> test_timer_proc_write()
->> {
->>           del_timer_sync(&my_timer);
->>           period = 300000; /* 5min */
->>           my_timer.expires = jiffies + msecs_to_jiffies(period);
->>           my_timer.function = func_timeout; /* Call back function*/
+>> The -rc8 release shouldn't be all that exciting. The most noticeable
+>> is probably the fact that hopefully the "blank screen" problem with
+>> intel graphics is fixed. But on the whole, it's all just a collection
+>> of random fixes all over.
 >
-> what's the slack of your timer?
-> And what about setting my_timer.slack = 0; ?
+>> Chris Wilson (5):
+>> Â  Â  drm/i915/bios: Reverse order of 100/120 Mhz SSC clocks
 >
-I hadn't set the slack value for the timer. Setting it to "0", gives me
-much better results. Thanks a lot Yong.
+>
+> For some reason, this does not work on my Lenovo X201s. Reverting the commit
+> solves the "blank screen" problem.
+>
 
-Regards,
-Mohan
+-rc8 does not fix the problem for this Dell XPS M1330 (GM965/GL960) too.
 
-> Thanks,
-> Yong
+> # lspci -v
+
+00:02.0 VGA compatible controller: Intel Corporation Mobile
+GM965/GL960 Integrated Graphics Controller (rev 0c)
+	Subsystem: Dell Device 0209
+	Flags: bus master, fast devsel, latency 0, IRQ 40
+	Memory at f6e00000 (64-bit, non-prefetchable) [size=1M]
+	Memory at e0000000 (64-bit, prefetchable) [size=256M]
+	I/O ports at eff8 [size=8]
+	Capabilities: [90] Message Signalled Interrupts: Mask- 64bit- Queue=0/0 Enable+
+	Capabilities: [d0] Power Management version 3
+	Kernel driver in use: i915
+
+00:02.1 Display controller: Intel Corporation Mobile GM965/GL960
+Integrated Graphics Controller (rev 0c)
+	Subsystem: Dell Device 0209
+	Flags: bus master, fast devsel, latency 0
+	Memory at f6f00000 (64-bit, non-prefetchable) [size=1M]
+	Capabilities: [d0] Power Management version 3
+
+> # dmesg
+
+I afraid mine is not as full as Jeff's, but here it is:
+
+[    0.376455] Linux agpgart interface v0.103
+[    0.376717] agpgart-intel 0000:00:00.0: Intel 965GM Chipset
+[    0.376960] agpgart-intel 0000:00:00.0: detected gtt size: 524288K
+total, 262144K mappable
+[    0.377981] agpgart-intel 0000:00:00.0: detected 8192K stolen memory
+[    0.381891] ACPI: Battery Slot [BAT0] (battery present)
+[    0.385140] agpgart-intel 0000:00:00.0: AGP aperture is 256M @ 0xe0000000
+[    0.385283] [drm] Initialized drm 1.1.0 20060810
+[    0.385328] i915 0000:00:02.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
+[    0.385358] i915 0000:00:02.0: setting latency timer to 64
+[    0.414146] i915 0000:00:02.0: irq 40 for MSI/MSI-X
+[    0.630199] vgaarb: device changed decodes:
+PCI:0000:00:02.0,olddecodes=io+mem,decodes=io+mem:owns=io+mem
+[    0.630554] [drm] initialized overlay support
+[    0.914282] Console: switching to colour frame buffer device 160x50
+[    0.916905] fb0: inteldrmfb frame buffer device
+[    0.916928] drm: registered panic notifier
+[    0.929874] acpi device:35: registered as cooling_device2
+[    0.930341] input: Video Bus as
+/devices/LNXSYSTM:00/device:00/PNP0A03:00/LNXVIDEO:01/input/input3
+[    0.930395] ACPI: Video Device [VID1] (multi-head: yes  rom: no  post: no)
+[    0.930446] [Firmware Bug]: Duplicate ACPI video bus devices for
+the same VGA controller, please try module parameter
+"video.allow_duplicates=1"if the current driver doesn't work.
+[    0.930573] [drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on minor 0
+
+> commit 448f53a1ede54eb854d036abf54573281412d650
+> Author: Chris Wilson <chris@chris-wilson.co.uk>
+> Date: Â  Tue Dec 14 20:06:20 2010 +0000
 >
->>           /* Save the current time in global variable */
->>           do_gettimeofday(&timeval);
->>           /* add timer with an expiry value of 5mins*/
->>           add_timer(&my_timer);
->> }
->>
->> /* Get the current time and print the difference between the two values */
->> func_timeout()
->> {
->>           struct timeval tv1;
->>           do_gettimeofday(&tv);
->>           /* take the difference between current time and saved time */
->>           ms = (tv.tv_sec - tv1.tv_sec) * 1000 + \
->>                   (tv.tv_usec - tv1.tv_usec) / 1000;
->>           printk("Interval = %d\n", ms);
->> }
->>
->> Thanks for your time.
->>
->> Regards,
->> Mohan
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->
->
->
-> --
-> Only stand for myself.
->
+> Â  Â drm/i915/bios: Reverse order of 100/120 Mhz SSC clocks
+
+Reverting this commit does not change anything on the laptop.
+Still blank (well, no backlight) after DPMS suspend. I use this
+line to test:
+
+  $ xset dpms force standby; sleep 1; xset dpms force on
+
+The screen is always back on in 2.6.35 and always comes back with
+backlight off in 2.6.36.
