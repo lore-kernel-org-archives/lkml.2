@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204Ab0L2U1k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 15:27:40 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:60895 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018Ab0L2U1j (ORCPT
+	id S1753263Ab0L2UiK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 15:38:10 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60458 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751018Ab0L2UiI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 15:27:39 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=rz3mp3RDC1dXwirYOPwsXCgUTOuT0kGiQVuElg+U6FigAZREMjwj3bNz5DPOonAgbt
-         dEKrD/pKTH7zdApwzmtjUd39RjJS7j9Ak2RyPtLmutLZv7m4VG0lPhxB6Bi0wA2enXbX
-         enFUeVYw+mZpoqVQ1XIAgaGLz+YjZ1e+gxlI4=
-MIME-Version: 1.0
-Date: Wed, 29 Dec 2010 15:27:38 -0500
-Message-ID: <AANLkTi=jnHFThon6pApmozJ0dmu5Wimd46=t-NrmOWDW@mail.gmail.com>
-Subject: Question about in_interrupt() semantics with regard to softirqs.
-From: Justin Seyster <jrseys@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 29 Dec 2010 15:38:08 -0500
+Date: Wed, 29 Dec 2010 12:37:40 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: (arm-)global platform device registration functions
+Message-Id: <20101229123740.c39238f8.akpm@linux-foundation.org>
+In-Reply-To: <20101229162512.GI14221@pengutronix.de>
+References: <20101229162512.GI14221@pengutronix.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm trying to understand the in_interrupt() function, and it seems
-that it will return true for normal, non-interrupt code that disables
-bottom half processing.  It looks like that behavior is intentional,
-but I don't understand why it's designed that way.  I'm sorry if I'm
-stating something obvious here; it would help me a lot if somebody
-double checked my reasoning!
+On Wed, 29 Dec 2010 17:25:12 +0100
+Uwe Kleine-K__nig <u.kleine-koenig@pengutronix.de> wrote:
 
-in_interrupt() checks a hardirq count and a softirq count, but I found
-out that these two counts behave very differently.  The hardirq count
-tracks the nesting depth of hardware interrupts (which is what I would
-expect), but the softirq count behaves like the preempt count,
-tracking whether softirqs are currently enabled.
+> Hello,
+> 
+> some time ago I started to dynamically allocate platform_devices for
+> arm/plat-mxc.  For that purpose I added many functions, see
+> arch/arm/plat-mxc/include/mach/devices-common.h [1].  Now arm/arch-mxs
+> want to do the same, so I wonder if it would be sensible to do something
+> like this more globally (either for arm or better kernel global).
+> 
 
-So if normal code (executing on behalf of a user process) disables
-softirqs with local_bh_disable(), it will get a true return value from
-in_interrupt() until it finally reenables them.  But disabling
-hardirqs will not have the same effect: the hardirq count is
-unchanged, and in_interrupt() will still return false.
+Sounds sensible to me, although I don't really understand what you've
+done - didn't platform_device_alloc() already "dynamically allocate
+platform_devices"?
 
-My question is: is there a design decision for this asymmetry between
-hard and softirqs?  Also, is there a function that does what I really
-wanted, which is to return true iff execution is actually in
-bottom-half context?  Thanks!
-        --Justin
+If you were to implement this common infrastructure, there may be
+already-existing code which could use it.  How would we locate that?
+
