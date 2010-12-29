@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752423Ab0L3Ej3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 23:39:29 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:58503 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259Ab0L3Ej2 (ORCPT
+	id S1751061Ab0L3FSv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 00:18:51 -0500
+Received: from wnl.lk ([203.143.12.196]:53355 "HELO mail.wnl.lk"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1750745Ab0L3FSu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 23:39:28 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6211"; a="68493155"
-Message-ID: <4D1C0CFE.5010008@codeaurora.org>
-Date: Wed, 29 Dec 2010 20:39:26 -0800
-From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Thu, 30 Dec 2010 00:18:50 -0500
+X-Greylist: delayed 27983 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Dec 2010 00:18:38 EST
+Message-ID: <3461.41.138.172.138.1293637432.squirrel@wnl.lk>
+Date: Wed, 29 Dec 2010 21:13:52 +0530 (IST)
+Subject: Your File Number:UN-0712
+From: "United Nations (#111091)" <notice@unescap.org>
+Reply-To: 2011-Cashpayment@unservicecam.com
+User-Agent: SquirrelMail/1.4.8-4.0.1.el5
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jean Delvare <khali@linux-fr.org>, Rajendra Nayak <rnayak@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Vishwanath BS <vishwanath.bs@ti.com>, Partha Basak <p-basak2@ti.com>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: i2c runtime suspend and system wide suspend
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The i2c-core driver mixes runtime suspend and system wide suspend, in 
-that, during a system wide suspend, it skips calling ->suspend if the 
-device is runtime suspended.
+***********************
+This message has been scanned by the InterScan for CSC SSM and found to be free of known security risks.
+***********************
 
-I have an interrupt controller running over the i2c bus and that driver 
-is oblivious of the runtime pm framework, IOW, it doesn't do any runtime 
-pm calls. CONFIG_RUNTIME_PM is enabled however (for some other bus 
-drivers). The issue I am facing is that all such i2c devices are assumed 
-runtime suspended and the ->suspend for these devices is not invoked 
-during systemwide suspend.
 
-Looking around in pci and platform busses, they don't skip calling the 
-->suspend callback, actually, they dont check if the device is runtime 
-suspended.
 
-The question is, why do we have this special check in i2c bus driver?
+Attention: Beneficiary,
 
-Pasted below is the relevant commit.
+I am writing to confirm the fact if you are (DEAD) or (ALIVE) and failure
+to reply back in the next 72hrs simply means what Mrs. Monica Chang said
+was right that you are dead. Dr. Jim Long has agreed to close your file,
+based on the payment of $317.00dollars required for the File Activation
+Fee for CCTB-online transfer.
 
-commit 2f60ba706bd9af84c4eab704243b262e69556f2e
+Your E-mail address prize won , with file Number (UN-0712)  payment
+donation of Two Million Dollars ($2,000.000.00) form United Nations Cash
+Grant/Donation for your own personal, education and business development
+for Next Year 2011 Cash Prize.
 
-     i2c: Fix bus-level power management callbacks
+But we have not closed your file yet as we want to find out if you are
+dead or not, so if you are still (ALIVE) you are advice in your own best
+interest to reply back in less than 72hrs.
 
-     There are three issues with the i2c bus type's power management
-     callbacks at the moment.  ....
-     ....
-     ....
-     ....  Finally, the system sleep PM
-     (ie. suspend/resume) callbacks don't check if the device has been
-     already suspended at run time, in which case they should skip
-     suspending it.  Also, it looks like the i2c bus type can use the
-     generic subsystem-level runtime PM callbacks.
+Contact our Director General for File Activation with below E-mail address=
+Barr. Goodluck S. Alin
+Email:2011-cashpayment@unservicecam.com
 
-     For these reasons, rework the system sleep PM callbacks provided by
-     the i2c bus type to handle hibernation correctly and to invoke the
-     "legacy" callbacks for drivers that provide them.  In addition to
-     that make the i2c bus type use the generic subsystem-level runtime
-     PM callbacks.
+PAYMENT DETAILS
+File Number: UN-0712/ (Prize won date 06 march 2010)
+Password Pin: #7657! 900
+UN/IMF Pin: 00000100107.
 
-Thanks,
-Abhijeet
+Best Regards,
+Mrs. Lipi Begum
+UNITED NATIONS ASIA SECRETARY GENERAL
+Tell-(+855-978-939-706)
+**********************************************************************************************
 
---
-Sent by an employee of Qualcomm Innovation Center, Inc. The Qualcomm 
-Innovation Center, Inc. is a member of Code Aurora Forum.
 
+The information contained in this email and any attachments is confidential and may be subject to copyright or other intellectual property protection. If you are not the intended recipient, you are not authorized to use or disclose this information, and we request that you notify us by reply mail or telephone and delete the original message from your mail system.
+
+E-mail transmission cannot be guaranteed to be secure or error-free as information could be
+intercepted, corrupted, lost, destroyed, arrive late or incomplete or contain viruses.
+The sender therefore does not accept liability for any errors or omissions in the contents of this message which arise as a result of e-mail transmission.
+
+Wijeya Newspapers Ltd : 2010
 
