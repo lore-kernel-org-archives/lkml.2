@@ -1,120 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab0L2O6C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 09:58:02 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:60900 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753108Ab0L2O56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 09:57:58 -0500
-Date: Wed, 29 Dec 2010 15:57:54 +0100 (CET)
-From: Julia Lawall <julia@diku.dk>
-To: Achim Leubner <achim_leubner@adaptec.com>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [PATCH] drivers/scsi/gdth{_proc.c}.c: Add missing call to gdth_ioctl_free
-Message-ID: <Pine.LNX.4.64.1012291557270.8559@pc-004.diku.dk>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753398Ab0L2O6Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 09:58:16 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:44290 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753330Ab0L2O6O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Dec 2010 09:58:14 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6210"; a="68640658"
+Subject: Re: [PATCH v0] add nano semaphore in kernel
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Mike Christie <michaelc@cs.wisc.edu>
+In-Reply-To: <AANLkTikGe3D-ujM9jqcOtk1cGmtLtUiV3kMkam1N8fyM@mail.gmail.com>
+References: <AANLkTim0Xmsnzz5yMLAx_+w-c7sSSReu0SKMAmjpbS+1@mail.gmail.com>
+	 <201012272215.52642.arnd@arndb.de> <1293551490.24601.10.camel@m0nster>
+	 <201012291247.27663.arnd@arndb.de>
+	 <AANLkTikGe3D-ujM9jqcOtk1cGmtLtUiV3kMkam1N8fyM@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 29 Dec 2010 06:58:07 -0800
+Message-ID: <1293634687.4128.10.camel@m0nster>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On Wed, 2010-12-29 at 22:42 +0800, Hillf Danton wrote:
+> On Wed, Dec 29, 2010 at 7:47 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Tuesday 28 December 2010 16:51:30 Daniel Walker wrote:
+> >> We for sure don't want new semaphores, or new semaphore usage in the
+> >> kernel ..
+> 
+> Would you please, Daniel, explain why there are so my file systems under
+> the fs directory? Would you think the ext file system is better than others?
+> 
+> And why there are in kernel spin lock, read/write lock, mutex, rw_mutex,
+> rtmutx, and semaphore, timer and hrtimer?
+> 
+> Could timer be removed tonight?
 
-Add missing call to gdth_ioctl_free before aborting.
+The problem with semaphores is that people use them in ways that are not
+very nice, and not very efficient.. Since they are so flexible they can
+be used in all sorts of ways, many of which are not clean. This is why,
+if you read the kernel history, most semaphore have been removed from
+the kernel and replaced with much nicer and cleaner mutexes.
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+Daniel
 
-// <smpl>
-@@
-expression buf,ha,len,addr,E;
-@@
+-- 
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
+Forum.
 
-buf = gdth_ioctl_alloc(ha, len, FALSE, &addr)
-... when != false buf != NULL
-    when != true buf == NULL
-    when != \(E = buf\|buf = E\)
-    when != gdth_ioctl_free(ha, len, buf, addr)
-*return ...;
-// </smpl>
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
-This code is badly indented throughout, making the patch look like it is
-badly indented.
-
- drivers/scsi/gdth.c      |    4 +++-
- drivers/scsi/gdth_proc.c |   16 ++++++++++++----
- 2 files changed, 15 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/scsi/gdth_proc.c b/drivers/scsi/gdth_proc.c
-index 0572b9b..6527543 100644
---- a/drivers/scsi/gdth_proc.c
-+++ b/drivers/scsi/gdth_proc.c
-@@ -365,8 +365,10 @@ static int gdth_get_info(char *buffer,char **start,off_t offset,int length,
-                     len = 0;
-                     begin = pos;
-                 }
--                if (pos > offset + length)
-+		if (pos > offset + length) {
-+		    gdth_ioctl_free(ha, GDTH_SCRATCH, buf, paddr);
-                     goto stop_output;
-+		}
-             }
-         }
-         gdth_ioctl_free(ha, GDTH_SCRATCH, buf, paddr);
-@@ -450,8 +452,10 @@ static int gdth_get_info(char *buffer,char **start,off_t offset,int length,
-                     len = 0;
-                     begin = pos;
-                 }
--                if (pos > offset + length)
-+		if (pos > offset + length) {
-+		    gdth_ioctl_free(ha, GDTH_SCRATCH, buf, paddr);
-                     goto stop_output;
-+		}
-             } while (drv_no != -1);
-              
-             if (is_mirr) {
-@@ -472,8 +476,10 @@ static int gdth_get_info(char *buffer,char **start,off_t offset,int length,
-                 len = 0;
-                 begin = pos;
-             }
--            if (pos > offset + length)
-+	    if (pos > offset + length) {
-+		gdth_ioctl_free(ha, GDTH_SCRATCH, buf, paddr);
-                 goto stop_output;
-+	    }
-         }       
-         gdth_ioctl_free(ha, GDTH_SCRATCH, buf, paddr);
-         
-@@ -542,8 +548,10 @@ static int gdth_get_info(char *buffer,char **start,off_t offset,int length,
-                     len = 0;
-                     begin = pos;
-                 }
--                if (pos > offset + length)
-+		if (pos > offset + length) {
-+		    gdth_ioctl_free(ha, GDTH_SCRATCH, buf, paddr);
-                     goto stop_output;
-+		}
-             }
-         }
-         gdth_ioctl_free(ha, GDTH_SCRATCH, buf, paddr);
-diff --git a/drivers/scsi/gdth.c b/drivers/scsi/gdth.c
-index 7636570..3242bca 100644
---- a/drivers/scsi/gdth.c
-+++ b/drivers/scsi/gdth.c
-@@ -4273,8 +4273,10 @@ static int ioc_general(void __user *arg, char *cmnd)
-     }
- 
-     rval = __gdth_execute(ha->sdev, &gen.command, cmnd, gen.timeout, &gen.info);
--    if (rval < 0)
-+    if (rval < 0) {
-+	gdth_ioctl_free(ha, gen.data_len+gen.sense_len, buf, paddr);
-         return rval;
-+    }
-     gen.status = rval;
- 
-     if (copy_to_user(arg + sizeof(gdth_ioctl_general), buf, 
