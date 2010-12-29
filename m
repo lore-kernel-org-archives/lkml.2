@@ -1,191 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab0L2NNd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 08:13:33 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47804 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752301Ab0L2NNa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 08:13:30 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=AAPjxnQS+u8k4chAknsZcgqqU2xBKbV4d7cQGfrECuG2NeCVV+Bvs4ldjYmnNOkcPE
-         +6a8GSNtEaLNgWYUAQTRcYnuyA3uol0apOqYZrrosSNKagmeosOC2xTbsDzOmFevJexM
-         r/GmonDkhiNWmw5uWWkCWoV/lVT+GKUkJIDHs=
-Message-ID: <4D1B33F2.5060600@gmail.com>
-Date: Wed, 29 Dec 2010 14:13:22 +0100
-From: Angelo Dureghello <angelo70@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101030 Icedove/3.0.10
-MIME-Version: 1.0
-To: Baruch Siach <baruch@tkos.co.il>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: dm9000 patch
-References: <4D1A5C2A.5050606@gmail.com> <20101229060637.GA31010@jasper.tkos.co.il>
-In-Reply-To: <20101229060637.GA31010@jasper.tkos.co.il>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752906Ab0L2NOm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 08:14:42 -0500
+Received: from shutemov.name ([188.40.19.243]:33557 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752437Ab0L2NOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Dec 2010 08:14:32 -0500
+From: "Kirill A. Shutemov" <kas@openvz.org>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>
+Cc: Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kas@openvz.org>
+Subject: [PATCH v2 02/12] sunrpc: introduce init_rpc_pipefs
+Date: Wed, 29 Dec 2010 15:14:20 +0200
+Message-Id: <1293628470-28386-3-git-send-email-kas@openvz.org>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1293628470-28386-1-git-send-email-kas@openvz.org>
+References: <1293628470-28386-1-git-send-email-kas@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Introduce global variable init_rpc_pipefs and use it instead of
+rpc_get_mount()/rpc_put_mount().
 
-just FYI, i tested kernel 2.6.36.2, unfortunately the issue is still 
-there, below the call stack trace.
+Signed-off-by: Kirill A. Shutemov <kas@openvz.org>
+---
+ fs/nfs/cache_lib.c                 |    6 +++---
+ include/linux/sunrpc/rpc_pipe_fs.h |    4 ++--
+ net/sunrpc/clnt.c                  |   10 ++++------
+ net/sunrpc/rpc_pipe.c              |   23 ++++++-----------------
+ 4 files changed, 15 insertions(+), 28 deletions(-)
 
-[    4.620000] eth0: link up, 100Mbps, full-duplex, lpa 0x45E1
-[   39.390000] BUG: spinlock recursion on CPU#0, httpd/29
-[   39.390000]  lock: 00189c44, .magic: dead4ead, .owner: httpd/29, 
-.owner_cpu: 0
-[   39.390000] Stack from 00d6a990:
-[   39.390000]         00d6a9bc 000a9710 0017cac7 00189c44 dead4ead 
-00de48f4 0000001d 00000000
-[   39.390000]         00189c44 0002a646 00145f70 00d6a9f0 000a98e2 
-00189c44 0017cb2d 00189c44
-[   39.390000]         00d6aad8 0000001f 00145f5c 001523f6 00189c08 
-0002a646 00145f70 0002bc52
-[   39.390000]         00d6a9fc 00145f7e 00189c44 00d6aa28 0002a75e 
-00189c44 0000001f 00d6aad8
-[   39.390000]         0000001f 00145f5c 00189c08 0002a646 00145f70 
-0002bc52 00d6aa3c 00000bb6
-[   39.390000]         0000001f 00189c44 00cfc780 00d6aa84 0000337a 
-0000001f 00d6aa4c 00000001
-[   39.390000] Call Trace:
-[   39.390000]  [000a9710] spin_bug+0x86/0x11a
-[   39.390000]  [000a98e2] do_raw_spin_lock+0x58/0x120
-[   39.390000]  [00145f7e] _raw_spin_lock+0xe/0x14
-[   39.390000]  [0002a75e] __do_IRQ+0x2c/0x108
-[   39.390000]  [00000bb6] do_IRQ+0x48/0x62
-[   39.390000]  [0000337a] inthandler+0x6a/0x74
-[   39.390000]  [0002a82e] __do_IRQ+0xfc/0x108
-[   39.390000]  [00000bb6] do_IRQ+0x48/0x62
-[   39.390000]  [0000337a] inthandler+0x6a/0x74
-[   39.390000]  [000ef0ce] skb_release_all+0x10/0x20
-[   39.390000]  [000ee6bc] __kfree_skb+0x10/0x92
-[   39.390000]  [000ee75e] consume_skb+0x20/0x34
-[   39.390000]  [000e004e] dm9000_start_xmit+0xdc/0xec
-[   39.390000]  [000f67a2] dev_hard_start_xmit+0x146/0x472
-[   39.390000]  [00106506] sch_direct_xmit+0xc0/0x1bc
-[   39.390000]  [000f9914] dev_queue_xmit+0x160/0x3e4
-[   39.390000]  [00113b3e] ip_finish_output+0xee/0x318
-[   39.390000]  [001142b4] ip_output+0x7c/0x88
-[   39.390000]  [00113dc6] ip_local_out+0x26/0x30
-[   39.390000]  [00114d9a] ip_queue_xmit+0x152/0x374
-[   39.390000]  [00125c8c] tcp_transmit_skb+0x3f0/0x732
-[   39.390000]  [00126f26] tcp_write_xmit+0x178/0x868
-[   39.390000]  [00127644] __tcp_push_pending_frames+0x2e/0x9a
-[   39.390000]  [0011c3d6] tcp_sendmsg+0x82e/0x98c
-[   39.390000]  [00137544] inet_sendmsg+0x32/0x54
-[   39.390000]  [000e79a6] sock_aio_write+0xc8/0x138
-[   39.390000]  [00042590] do_sync_write+0x9e/0xfe
-[   39.390000]  [00042668] vfs_write+0x78/0x84
-[   39.390000]  [00042a92] sys_write+0x40/0x7a
-[   39.390000]  [00003224] system_call+0x84/0xc2
-[   39.390000]
-
-dm9000e is as default not visible/selectable in menuconfig for Coldfire 
-architectures, so this probably cannot be considered as a kernel bug.
-
-I going forward in investigations, every help is appreciated,
-
-regards,
-angelo
-
-
-
-On 29/12/2010 07:06, Baruch Siach wrote:
-> Hi Angelo,
->
-> On Tue, Dec 28, 2010 at 10:52:42PM +0100, Angelo Dureghello wrote:
->    
->> sorry to contact you directly but i couldn't get any help from the
->> kernel.org mailing list, since i am not a developer my mails are
->> generally skipped.
->>      
-> The best way to get the contact info for a piece of kernel code, is using the
-> get_maintainer.pl script. Running 'scripts/get_maintainer.pl -f
-> drivers/net/dm9000.c' gives the following output:
->
-> netdev@vger.kernel.org
-> linux-kernel@vger.kernel.org
->
-> I added both to Cc.
->
->    
->> I am very near to have a custom board working with MCF5307 cpu and dm9000.
->> I am using kernel 2.6.36-rc3 with your last patch about
->> spinlock-recursion already included.
->>      
-> You should try to update to the latest .36 kernel, which is currently
-> 2.6.36.2. The problem that you experience might be unrelated to the dm9000
-> driver (or to networking at all), so it might have been fixed in this version.
->
->    
->> I have "ping" and "telnet" to the embedded board fully working.
->> If i try to get a sample web page with some images from the board
->> httpd with a browser, in 80% of cases i get a trap/oops:
->>      
-> Try to enable KALLSYMS in your kernel .config to make your stack trace more
-> meaningful. This is under 'General setup ->  Configure standard kernel features
-> (for small systems) ->  Load all symbols for debugging/ksymoops'.
->
-> I hope this helps.
->
-> baruch
->
->    
->> [    4.590000] eth0: link up, 100Mbps, full-duplex, lpa 0x45E1
->> [   67.630000] BUG: spinlock recursion on CPU#0, httpd/29
->> [   67.630000]  lock: 00c42c06, .magic: dead4ead, .owner: httpd/29,
->> .owner_cpu: 0
->> [   67.630000] Stack from 00d7b914:
->> [   67.630000]         00d7b940 000a8cf0 0015f693 00c42c06 dead4ead
->> 00dec1d4 0000001d 00000000
->> [   67.630000]         00c42c06 00006188 00c42800 00d7b974 000a8ec2
->> 00c42c06 0015f6f9 00002704
->> [   67.630000]         00000000 0000001f 00146fa4 00152f0c 00c42b60
->> 00006188 00c42800 0002b312
->> [   67.630000]         00d7b984 0014701e 00c42c06 00000000 00d7b9c4
->> 000df21c 00c42c06 00000000
->> [   67.630000]         00000000 0000001f 00146fa4 00152f0c 000005ea
->> 00cfc640 00006188 000096e8
->> [   67.630000]         0002b312 00146fa4 00c42b60 00002704 00d7b9ec
->> 00029d3a 0000001f 00c42800
->> [   67.630000] Call Trace:
->> [   67.630000]  [000a8cf0]  [000a8ec2]  [0014701e]  [000df21c]  [00029d3a]
->> [   67.630000]  [00029e84]  [00000bb6]  [0000336e]  [000df162]  [000effd6]
->> [   67.630000]  [00100482]  [000f312e]  [000f9ebc]  [0010dd2a]  [0010e4a0]
->> [   67.630000]  [0010dfb2]  [0010ef80]  [0011fed6]  [00121170]  [0012188e]
->> [   67.630000]  [0011ecc6]  [001249fe]  [000e4084]  [0011621c]  [00131a44]
->> [   67.630000]  [000e11ee]  [00041944]  [00041a1c]  [00041e46]  [00003218]
->> [   67.630000] BUG: spinlock lockup on CPU#0, httpd/29, 00c42c06
->> [   67.630000] Stack from 00d7b934:
->> [   67.630000]         00d7b974 000a8f66 0015f703 00000000 00dec1d4
->> 0000001d 00c42c06 00002704
->> [   67.630000]         00000000 0000001f 00146fa4 00152f0c 00c42b60
->> 00006188 00c42800 0002b312
->> [   67.630000]         00d7b984 0014701e 00c42c06 00000000 00d7b9c4
->> 000df21c 00c42c06 00000000
->> [   67.630000]         00000000 0000001f 00146fa4 00152f0c 000005ea
->> 00cfc640 00006188 000096e8
->> [   67.630000]         0002b312 00146fa4 00c42b60 00002704 00d7b9ec
->> 00029d3a 0000001f 00c42800
->> [   67.630000]         0016c1b4 00cfc640 0000001f 0016c178 00029d10
->> 00146fb8 00d7ba20 00029e84
->> [   67.630000] Call Trace:
->> [   67.630000]  [000a8f66]  [0014701e]  [000df21c]  [00029d3a]  [00029e84]
->> [   67.630000]  [00000bb6]  [0000336e]  [000df162]  [000effd6]  [00100482]
->> [   67.630000]  [000f312e]  [000f9ebc]  [0010dd2a]  [0010e4a0]  [0010dfb2]
->> [   67.630000]  [0010ef80]  [0011fed6]  [00121170]  [0012188e]  [0011ecc6]
->> [   67.630000]  [001249fe]  [000e4084]  [0011621c]  [00131a44]  [000e11ee]
->> [   67.630000]  [00041944]  [00041a1c]  [00041e46]  [00003218]
->>
->> As i said, i was hoping in your patch but i sadly discovered it is
->> already included in this kernel version.
->> Hope you can give me some help or can forward me to an appropriate
->> mailing list.
->>      
->    
+diff --git a/fs/nfs/cache_lib.c b/fs/nfs/cache_lib.c
+index 8469031..dd7ca5f 100644
+--- a/fs/nfs/cache_lib.c
++++ b/fs/nfs/cache_lib.c
+@@ -117,7 +117,7 @@ int nfs_cache_register(struct cache_detail *cd)
+ 	struct vfsmount *mnt;
+ 	int ret;
+ 
+-	mnt = rpc_get_mount();
++	mnt = mntget(init_rpc_pipefs);
+ 	if (IS_ERR(mnt))
+ 		return PTR_ERR(mnt);
+ 	ret = vfs_path_lookup(mnt->mnt_root, mnt, "/cache", 0, &nd);
+@@ -129,13 +129,13 @@ int nfs_cache_register(struct cache_detail *cd)
+ 	if (!ret)
+ 		return ret;
+ err:
+-	rpc_put_mount();
++	mntput(mnt);
+ 	return ret;
+ }
+ 
+ void nfs_cache_unregister(struct cache_detail *cd)
+ {
+ 	sunrpc_cache_unregister_pipefs(cd);
+-	rpc_put_mount();
++	mntput(init_rpc_pipefs);
+ }
+ 
+diff --git a/include/linux/sunrpc/rpc_pipe_fs.h b/include/linux/sunrpc/rpc_pipe_fs.h
+index cf14db9..b09bfa5 100644
+--- a/include/linux/sunrpc/rpc_pipe_fs.h
++++ b/include/linux/sunrpc/rpc_pipe_fs.h
+@@ -44,6 +44,8 @@ RPC_I(struct inode *inode)
+ 	return container_of(inode, struct rpc_inode, vfs_inode);
+ }
+ 
++extern struct vfsmount *init_rpc_pipefs;
++
+ extern int rpc_queue_upcall(struct inode *, struct rpc_pipe_msg *);
+ 
+ struct rpc_clnt;
+@@ -60,8 +62,6 @@ extern void rpc_remove_cache_dir(struct dentry *);
+ extern struct dentry *rpc_mkpipe(struct dentry *, const char *, void *,
+ 				 const struct rpc_pipe_ops *, int flags);
+ extern int rpc_unlink(struct dentry *);
+-extern struct vfsmount *rpc_get_mount(void);
+-extern void rpc_put_mount(void);
+ extern int register_rpc_pipefs(void);
+ extern void unregister_rpc_pipefs(void);
+ 
+diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
+index 92ce94f..da2507a 100644
+--- a/net/sunrpc/clnt.c
++++ b/net/sunrpc/clnt.c
+@@ -112,9 +112,7 @@ rpc_setup_pipedir(struct rpc_clnt *clnt, char *dir_name)
+ 	if (dir_name == NULL)
+ 		return 0;
+ 
+-	path.mnt = rpc_get_mount();
+-	if (IS_ERR(path.mnt))
+-		return PTR_ERR(path.mnt);
++	path.mnt = mntget(init_rpc_pipefs);
+ 	error = vfs_path_lookup(path.mnt->mnt_root, path.mnt, dir_name, 0, &nd);
+ 	if (error)
+ 		goto err;
+@@ -140,7 +138,7 @@ rpc_setup_pipedir(struct rpc_clnt *clnt, char *dir_name)
+ err_path_put:
+ 	path_put(&nd.path);
+ err:
+-	rpc_put_mount();
++	mntput(path.mnt);
+ 	return error;
+ }
+ 
+@@ -251,7 +249,7 @@ static struct rpc_clnt * rpc_new_client(const struct rpc_create_args *args, stru
+ out_no_auth:
+ 	if (!IS_ERR(clnt->cl_path.dentry)) {
+ 		rpc_remove_client_dir(clnt->cl_path.dentry);
+-		rpc_put_mount();
++		mntput(clnt->cl_path.mnt);
+ 	}
+ out_no_path:
+ 	kfree(clnt->cl_principal);
+@@ -472,7 +470,7 @@ rpc_free_client(struct rpc_clnt *clnt)
+ 			clnt->cl_protname, clnt->cl_server);
+ 	if (!IS_ERR(clnt->cl_path.dentry)) {
+ 		rpc_remove_client_dir(clnt->cl_path.dentry);
+-		rpc_put_mount();
++		mntput(clnt->cl_path.mnt);
+ 	}
+ 	if (clnt->cl_parent != clnt) {
+ 		rpc_release_client(clnt->cl_parent);
+diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
+index 7f3fbdd..b1e299b 100644
+--- a/net/sunrpc/rpc_pipe.c
++++ b/net/sunrpc/rpc_pipe.c
+@@ -28,9 +28,10 @@
+ #include <linux/sunrpc/rpc_pipe_fs.h>
+ #include <linux/sunrpc/cache.h>
+ 
+-static struct vfsmount *rpc_mnt __read_mostly;
++struct vfsmount *init_rpc_pipefs __read_mostly;
+ 
+ static struct file_system_type rpc_pipe_fs_type;
++EXPORT_SYMBOL_GPL(init_rpc_pipefs);
+ 
+ 
+ static struct kmem_cache *rpc_inode_cachep __read_mostly;
+@@ -412,18 +413,6 @@ struct rpc_filelist {
+ 	umode_t mode;
+ };
+ 
+-struct vfsmount *rpc_get_mount(void)
+-{
+-	return mntget(rpc_mnt);
+-}
+-EXPORT_SYMBOL_GPL(rpc_get_mount);
+-
+-void rpc_put_mount(void)
+-{
+-	mntput(rpc_mnt);
+-}
+-EXPORT_SYMBOL_GPL(rpc_put_mount);
+-
+ static int rpc_delete_dentry(struct dentry *dentry)
+ {
+ 	return 1;
+@@ -1060,9 +1049,9 @@ int register_rpc_pipefs(void)
+ 	if (err)
+ 		goto destroy_cache;
+ 
+-	rpc_mnt = kern_mount(&rpc_pipe_fs_type);
+-	if (IS_ERR(rpc_mnt)) {
+-		err = PTR_ERR(rpc_mnt);
++	init_rpc_pipefs = kern_mount(&rpc_pipe_fs_type);
++	if (IS_ERR(init_rpc_pipefs)) {
++		err = PTR_ERR(init_rpc_pipefs);
+ 		goto unregister_fs;
+ 	}
+ 
+@@ -1077,7 +1066,7 @@ destroy_cache:
+ 
+ void unregister_rpc_pipefs(void)
+ {
+-	mntput(rpc_mnt);
++	mntput(init_rpc_pipefs);
+ 	kmem_cache_destroy(rpc_inode_cachep);
+ 	unregister_filesystem(&rpc_pipe_fs_type);
+ }
+-- 
+1.7.3.4
 
