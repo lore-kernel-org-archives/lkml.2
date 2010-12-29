@@ -1,99 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775Ab0L2TMM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 14:12:12 -0500
-Received: from mtaout01-winn.ispmail.ntl.com ([81.103.221.47]:16253 "EHLO
-	mtaout01-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753559Ab0L2TMJ (ORCPT
+	id S1753798Ab0L2TQs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 14:16:48 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:64508 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753562Ab0L2TQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 14:12:09 -0500
-From: Daniel Drake <dsd@laptop.org>
-To: cbou@mail.ru
-To: dwmw2@infradead.org
-Cc: linux-kernel@vger.kernel.org
-Cc: pgf@laptop.org
-Subject: [PATCH] olpc_battery: Ambient temperature is not available on XO-1.5
-Message-Id: <20101229191201.ED8019D401D@zog.reactivated.net>
-Date: Wed, 29 Dec 2010 19:12:01 +0000 (GMT)
-X-Cloudmark-Analysis: v=1.1 cv=X0sWjjQ37bMP4yB/pNNinY3VxVB2n/hmdAjhihaCFGs= c=1 sm=0 a=yNWVPPRSaTsA:10 a=Op-mwl0xAAAA:8 a=0QMw9UIezUt00b1oUQkA:9 a=YT1_uhctfUj7owxLOr1DN_zmxBcA:4 a=d4CUUju0HPYA:10 a=lGdnjl07UuxZYpzI:21 a=k6nCzJAu7AWYXe-U:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	Wed, 29 Dec 2010 14:16:46 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH v0] add nano semaphore in kernel
+Date: Wed, 29 Dec 2010 20:16:41 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6-next-20101220+; KDE/4.5.1; x86_64; ; )
+Cc: Daniel Walker <dwalker@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Mike Christie <michaelc@cs.wisc.edu>
+References: <AANLkTim0Xmsnzz5yMLAx_+w-c7sSSReu0SKMAmjpbS+1@mail.gmail.com> <201012291247.27663.arnd@arndb.de> <AANLkTikGe3D-ujM9jqcOtk1cGmtLtUiV3kMkam1N8fyM@mail.gmail.com>
+In-Reply-To: <AANLkTikGe3D-ujM9jqcOtk1cGmtLtUiV3kMkam1N8fyM@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012292016.41880.arnd@arndb.de>
+X-Provags-ID: V02:K0:bcABXOaQFRxGgjZxDZNj24Plsqj2F3y1iBlJtS+lkMc
+ KDUAhPUQ6iiWASiwmqE0X5ZNR0KEYXLtQFQq+/wwJQH0d+MrJk
+ cJtQAcr5g26sB7rVsOGI9mad4MiSjQ5rdJh9UZyrcc/duAHx6X
+ 69qs/YPUakioSy7JZ33+CoPyWb+atKtBk4Gv8WPRJk/4C2l1ug
+ IcLT0VordYjEvtC0YHCTg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The XO-1.5 does not support the ambient temperature property.
-Create a separate list of properties for that configuration where
-ambient temperature is not included, and apply the correct property
-list at runtime.
+On Wednesday 29 December 2010 15:42:36 Hillf Danton wrote:
+> On Wed, Dec 29, 2010 at 7:47 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Tuesday 28 December 2010 16:51:30 Daniel Walker wrote:
+> >> We for sure don't want new semaphores, or new semaphore usage in the
+> >> kernel ..
+> 
+> Would you please, Daniel, explain why there are so my file systems under
+> the fs directory? Would you think the ext file system is better than others?
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
----
- drivers/power/olpc_battery.c |   28 +++++++++++++++++++++++++---
- 1 files changed, 25 insertions(+), 3 deletions(-)
+Most of the file systems are for compatibility with other operating systems.
+The ones that duplicate Linux-only functionality are there in order to provide
+backwards-compatibility with existing users. We can't remove them in the
+same way that we would remove code that is only used in the kernel itself.
 
-Obsoletes earlier submissions:
-[PATCH 1/2] power_supply: allow control of attribute visibility
-[PATCH 2/2] olpc_battery: Hide ambient temperature attribute on XO-1.5
+> And why there are in kernel spin lock, read/write lock, mutex, rw_mutex,
+> rtmutx, and semaphore
 
-diff --git a/drivers/power/olpc_battery.c b/drivers/power/olpc_battery.c
-index 5bc1dcf..0cd4f15 100644
---- a/drivers/power/olpc_battery.c
-+++ b/drivers/power/olpc_battery.c
-@@ -331,7 +331,7 @@ static int olpc_bat_get_property(struct power_supply *psy,
- 	return ret;
- }
- 
--static enum power_supply_property olpc_bat_props[] = {
-+static enum power_supply_property olpc_xo1_bat_props[] = {
- 	POWER_SUPPLY_PROP_STATUS,
- 	POWER_SUPPLY_PROP_CHARGE_TYPE,
- 	POWER_SUPPLY_PROP_PRESENT,
-@@ -348,6 +348,23 @@ static enum power_supply_property olpc_bat_props[] = {
- 	POWER_SUPPLY_PROP_CHARGE_COUNTER,
- };
- 
-+/* XO-1.5 does not have ambient temperature property */
-+static enum power_supply_property olpc_xo15_bat_props[] = {
-+	POWER_SUPPLY_PROP_STATUS,
-+	POWER_SUPPLY_PROP_CHARGE_TYPE,
-+	POWER_SUPPLY_PROP_PRESENT,
-+	POWER_SUPPLY_PROP_HEALTH,
-+	POWER_SUPPLY_PROP_TECHNOLOGY,
-+	POWER_SUPPLY_PROP_VOLTAGE_AVG,
-+	POWER_SUPPLY_PROP_CURRENT_AVG,
-+	POWER_SUPPLY_PROP_CAPACITY,
-+	POWER_SUPPLY_PROP_CAPACITY_LEVEL,
-+	POWER_SUPPLY_PROP_TEMP,
-+	POWER_SUPPLY_PROP_MANUFACTURER,
-+	POWER_SUPPLY_PROP_SERIAL_NUMBER,
-+	POWER_SUPPLY_PROP_CHARGE_COUNTER,
-+};
-+
- /* EEPROM reading goes completely around the power_supply API, sadly */
- 
- #define EEPROM_START	0x20
-@@ -419,8 +436,6 @@ static struct device_attribute olpc_bat_error = {
- static struct platform_device *bat_pdev;
- 
- static struct power_supply olpc_bat = {
--	.properties = olpc_bat_props,
--	.num_properties = ARRAY_SIZE(olpc_bat_props),
- 	.get_property = olpc_bat_get_property,
- 	.use_for_apm = 1,
- };
-@@ -466,6 +481,13 @@ static int __init olpc_bat_init(void)
- 		goto ac_failed;
- 
- 	olpc_bat.name = bat_pdev->name;
-+	if (olpc_board_at_least(olpc_board_pre(0xd0))) { /* XO-1.5 */
-+		olpc_bat.properties = olpc_xo15_bat_props;
-+		olpc_bat.num_properties = ARRAY_SIZE(olpc_xo15_bat_props);
-+	} else { /* XO-1 */
-+		olpc_bat.properties = olpc_xo1_bat_props;
-+		olpc_bat.num_properties = ARRAY_SIZE(olpc_xo1_bat_props);
-+	}
- 
- 	ret = power_supply_register(&bat_pdev->dev, &olpc_bat);
- 	if (ret)
--- 
-1.7.3.4
+There are more of these, and they partly exist because it has been hard
+to change all the old users. We did remove some others though.
 
+> timer and hrtimer?
+> 
+> Could timer be removed tonight?
+
+These two are subtly different, timers are optimized for not expiring, while
+hrtimer is optimized for actually expiring.
+
+> > Yes. I once even tried unifying the semaphore and rwsem implementation,
+> > but gave up on that for a number of reasons.
+> 
+> It looks hard to change rwsem, almost impossible, since it is based upon
+> asm, at least under the x86 dir.
+
+That could be changed using the C implementation everywhere,
+but there are other problems.
+
+> >> It should also be noted that the rtmutex (kernel/rtmutex.c) already has
+> >> this capability. Although I don't think you can use an rtmutex from
+> >> inside the kernel.
+> >
+> > I wasn't aware we had already grown another one ;-)
+> >
+> > AFAICT, you can only use it inside of the kernel, but it's very
+> > specific and I wouldn't recommend using it unless a regular mutex
+> > cannot be used for some reason. The only user besides the futex
+> > code seems to be the i2c layer at this moment.
+> >
+> >> If you really want this you should look into the rtmutex, and the
+> >> regular mutex API's .
+> 
+> But greping "struct semaphore" include/linux and fs dirs may tell us
+> more about semaphore.
+
+There are three classes of semaphore users today:
+
+1. Those that initialize the semaphore to >1, guarding access to a
+   resource that has multiple users: acpi/osl, mthca, mlx4, megaraid,
+   comedi/vmk80xx, udlfb, usblc, usb-skeleton, blizzard, hwa742, and 9p.
+2. Those that use the semaphore as some sort of completion, or a combination
+   of completion and mutex.
+3. Those that can and should be converted to mutex: most of the staging
+   drivers, plus some more.
+
+IMHO it would be nice to separate the first two classes in some way, so we
+can make the counting semaphores stricter and apply the same rules as
+mutexes and make the completion-like semaphores non-counting.
+
+> > If Hillf relies on counting semaphores, that won't work, but very
+> > few such users exist in code outside of textbooks.
+> >
+> 
+> Though capable in rtmutex, why mutex should no longer stay in Kernel?
+> 
+> However mutex could be changed based on hrtimer if needed for some reason.
+
+There is currently no mutex_lock_timeout(), so that would be meaningless.
+
+> --- a/kernel/mutex.c	2010-11-01 19:54:12.000000000 +0800
+> +++ b/kernel/mutex.c	2010-12-29 22:35:40.000000000 +0800
+> @@ -23,6 +23,7 @@
+>  #include <linux/spinlock.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/debug_locks.h>
+> +#include <linux/hrtimer.h>
+> 
+>  /*
+>   * In the DEBUG case we are using the "NULL fastpath" for mutexes,
+> @@ -248,7 +249,11 @@ __mutex_lock_common(struct mutex *lock,
+>  		/* didnt get the lock, go to sleep: */
+>  		spin_unlock_mutex(&lock->wait_lock, flags);
+>  		preempt_enable_no_resched();
+> -		schedule();
+> +		do {
+> +			/* sleep 10,000 nanoseconds per loop */
+> +			ktime_t kt = ktime_set(0, 10000);
+> +			schedule_hrtimeout(&kt, HRTIMER_MODE_REL);
+> +		} while (0);
+>  		preempt_disable();
+>  		spin_lock_mutex(&lock->wait_lock, flags);
+>  	}
+> 
+
+Doing this would be extremely inefficient, because now the mutex wait
+function would wake up very frequently instead of just once when the
+mutex has been released by another thread.
+
+	Arnd
