@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751914Ab0L2Jqr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 04:46:47 -0500
-Received: from mail-iy0-f194.google.com ([209.85.210.194]:37416 "EHLO
-	mail-iy0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758Ab0L2Jqq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 04:46:46 -0500
-MIME-Version: 1.0
-X-Originating-IP: [93.172.188.89]
-In-Reply-To: <AANLkTimMe97QECEJ+T6Eh7SFKqOi8xo08ZB+S+8Yzuww@mail.gmail.com>
-References: <1292870624-25450-1-git-send-email-felipe.contreras@nokia.com>
- <AANLkTikisHaAMZphRJVYdcokVbaZXVF9COrwkdGTDg__@mail.gmail.com>
- <AANLkTi=9AL3aWUsMeih+Gb-sMov=MgBZ1eTp8wb=q1hZ@mail.gmail.com>
- <AANLkTinX8t=3b48e2sxPU-V_G-nGm_1DyEg6B-CeqXDa@mail.gmail.com>
- <1293452486-notmuch-felipe.contreras@nokia.com> <AANLkTinz0HuhGB_WzTQbK8XkfkGALjtg928WdOUYsySf@mail.gmail.com>
- <AANLkTimCB5g29gzWFzaFU1N8+doROTpWaXy18VU5AJyH@mail.gmail.com>
- <AANLkTi=xmxkWnhuYcjtDNDHgep_2EztfGXDv+winW2Y5@mail.gmail.com>
- <AANLkTiksjHKjKQ+mWE=Zf0+967_E46V3+RURcMC-s5cD@mail.gmail.com>
- <AANLkTi=ZY09yJ=pK4ejqOZjh7YjJp1UemRdMgMfpsz2f@mail.gmail.com>
- <AANLkTinZ0Uwp8jbmsSwm6ut75A06CxrkESTRJT-GoPkP@mail.gmail.com>
- <AANLkTi=wBG9AXvDva-_uNjGbRphrb356gZ6ChMJjP8aL@mail.gmail.com> <AANLkTimMe97QECEJ+T6Eh7SFKqOi8xo08ZB+S+8Yzuww@mail.gmail.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Wed, 29 Dec 2010 11:46:25 +0200
-Message-ID: <AANLkTi=s03AA5wJaUzp7KkQDBcBVceSn4QvwH8CyRRyO@mail.gmail.com>
-Subject: Re: [PATCH v2] staging: tidspbridge: protect dmm_map properly
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Felipe Contreras <felipe.contreras@nokia.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        greg@kroah.com, omar.ramirez@ti.com, fernando.lugo@ti.com, nm@ti.com,
-        ameya.palande@nokia.com, h-kanigeri2@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752009Ab0L2Jqz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 04:46:55 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:53396 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751216Ab0L2Jqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Dec 2010 04:46:53 -0500
+Date: Wed, 29 Dec 2010 20:46:41 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Anca Emanuel <anca.emanuel@gmail.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: Re: linux-next: Tree for December 29
+Message-Id: <20101229204641.ead941fc.sfr@canb.auug.org.au>
+In-Reply-To: <AANLkTin1pizZM5LttTpYQOo0gPEeV7Jd5uD5RXwnj37Z@mail.gmail.com>
+References: <20101229130700.0ef93735.sfr@canb.auug.org.au>
+	<AANLkTikq50KLGwS1_=uA=TXz2b=LNzr_TKUSiZu-an1m@mail.gmail.com>
+	<AANLkTin1pizZM5LttTpYQOo0gPEeV7Jd5uD5RXwnj37Z@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__29_Dec_2010_20_46_41_+1100_X+EW7Of6OFPaEz7/"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 29, 2010 at 11:39 AM, Felipe Contreras
-<felipe.contreras@gmail.com> wrote:
-> On Tue, Dec 28, 2010 at 2:37 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
->> On Tue, Dec 28, 2010 at 2:24 PM, Felipe Contreras
->> <felipe.contreras@gmail.com> wrote:
->>> user-space crashed, not kernel-space; the code would continue to run
->>> and eventually release the lock.
->>
->> So you'll have to be more specific about the scenario you are describing.
->>
->> If there's a user thread that is still running the proc_*_dma()
->> function, and we agree that this thread keeps running until completion
->> and then returns to user space, what's the problem ?
+--Signature=_Wed__29_Dec_2010_20_46_41_+1100_X+EW7Of6OFPaEz7/
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Anca,
+
+On Wed, 29 Dec 2010 10:58:02 +0200 Anca Emanuel <anca.emanuel@gmail.com> wr=
+ote:
 >
-> The problem is if the user-space process crashes exactly in the middle
-> of it, *before* completing. With locks there's no problem, as
-> proc_un_map() would wait for the lock in my patch. In your patch it
-> would not wait, just return -EBUSY.
+>   Building modules, stage 2.
+>   MODPOST 2808 modules
+> ERROR: "__tracepoint_snd_soc_jack_irq"
+> [sound/soc/codecs/snd-soc-wm8994.ko] undefined!
+> ERROR: "__tracepoint_snd_soc_jack_irq"
+> [sound/soc/codecs/snd-soc-wm8350.ko] undefined!
+> ERROR: "__tracepoint_snd_soc_jack_irq"
+> [sound/soc/codecs/snd-soc-88pm860x.ko] undefined!
+> WARNING: modpost: Found 59 section mismatch(es).
+> To see full details build your kernel with:
+> 'make CONFIG_DEBUG_SECTION_MISMATCH=3Dy'
+> make[2]: *** [__modpost] Error 1
+> make[1]: *** [modules] Error 2
 
-We have two threads.
+It would be good if you could publish your config files with these
+reports.  I have cc'd this to those who may be able to fix this.
 
-One called proc_un_map(), and one called proc_begin_dma().
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-The first crashed, but the second didn't. it still holds the bridge
-device open. When it will exit, and release the device, then
-drv_remove_all_resources() will be called, and all the map_obj's will
-be cleaned.
+--Signature=_Wed__29_Dec_2010_20_46_41_+1100_X+EW7Of6OFPaEz7/
+Content-Type: application/pgp-signature
 
->
->> If that user thread will crash, drv_remove_all_resources() will clean
->> up all map_obj's.
->
-> Not if a proc_*_dma() is still running.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-It will be called after it will return, and its thread will exit (or crash).
+iQEcBAEBAgAGBQJNGwOBAAoJEDMEi1NhKgbsghUH/iVgysSm039WYRJIo9qmUyRl
+8lAZOt3FC3boWe3TtNqtJ33QxDmws/PhKdHmC8VBkyr9BYkSJKGiZeG+G/ed/BES
+7WcUVb0AGcOLCMvlmmJ45HQIxWBeYLVsUCva8oM4jGePGHt3oiNyi2ZzjY1xWjZB
+esEn2yVwwuAFiFyDRrBZLgKYgzZSY+6COWcgZZzC/C4NOB9T05dfd2jnNNSD3Pw5
+/ADOd3IcTukYx71dKqOS8QOjqSzLcwI8ThM2ILFw/2IoHA4io5VGg9n6bKn/2gfK
+Qw/rJXtqcgU/sqJvSwD5qD6JGILcWR9sZNvRHYCN2dMWKsZW+x7WiwklgylxkcI=
+=U5jk
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__29_Dec_2010_20_46_41_+1100_X+EW7Of6OFPaEz7/--
