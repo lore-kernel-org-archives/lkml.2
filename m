@@ -1,115 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750885Ab0L2GGz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 01:06:55 -0500
-Received: from tango.tkos.co.il ([62.219.50.35]:54841 "EHLO tango.tkos.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750699Ab0L2GGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 01:06:54 -0500
-Date: Wed, 29 Dec 2010 08:06:38 +0200
-From: Baruch Siach <baruch@tkos.co.il>
-To: Angelo Dureghello <angelo70@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: dm9000 patch
-Message-ID: <20101229060637.GA31010@jasper.tkos.co.il>
-References: <4D1A5C2A.5050606@gmail.com>
+	id S1750920Ab0L2Ghs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 01:37:48 -0500
+Received: from mail-pz0-f66.google.com ([209.85.210.66]:62494 "EHLO
+	mail-pz0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808Ab0L2Ghr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Dec 2010 01:37:47 -0500
+Date: Tue, 28 Dec 2010 23:37:44 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
+        hch@infradead.org
+Subject: Re: [PATCH 11/16] xsysace: convert to bdops->check_events()
+Message-ID: <20101229063744.GB8172@angua.secretlab.ca>
+References: <1293557352-10592-1-git-send-email-tj@kernel.org>
+ <1293557352-10592-12-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D1A5C2A.5050606@gmail.com>
+In-Reply-To: <1293557352-10592-12-git-send-email-tj@kernel.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Angelo,
-
-On Tue, Dec 28, 2010 at 10:52:42PM +0100, Angelo Dureghello wrote:
-> sorry to contact you directly but i couldn't get any help from the
-> kernel.org mailing list, since i am not a developer my mails are
-> generally skipped.
-
-The best way to get the contact info for a piece of kernel code, is using the 
-get_maintainer.pl script. Running 'scripts/get_maintainer.pl -f 
-drivers/net/dm9000.c' gives the following output:
-
-netdev@vger.kernel.org
-linux-kernel@vger.kernel.org
-
-I added both to Cc.
-
-> I am very near to have a custom board working with MCF5307 cpu and dm9000.
-> I am using kernel 2.6.36-rc3 with your last patch about
-> spinlock-recursion already included.
-
-You should try to update to the latest .36 kernel, which is currently 
-2.6.36.2. The problem that you experience might be unrelated to the dm9000 
-driver (or to networking at all), so it might have been fixed in this version.
-
-> I have "ping" and "telnet" to the embedded board fully working.
-> If i try to get a sample web page with some images from the board
-> httpd with a browser, in 80% of cases i get a trap/oops:
-
-Try to enable KALLSYMS in your kernel .config to make your stack trace more 
-meaningful. This is under 'General setup -> Configure standard kernel features 
-(for small systems) -> Load all symbols for debugging/ksymoops'.
-
-I hope this helps.
-
-baruch
-
-> [    4.590000] eth0: link up, 100Mbps, full-duplex, lpa 0x45E1
-> [   67.630000] BUG: spinlock recursion on CPU#0, httpd/29
-> [   67.630000]  lock: 00c42c06, .magic: dead4ead, .owner: httpd/29,
-> .owner_cpu: 0
-> [   67.630000] Stack from 00d7b914:
-> [   67.630000]         00d7b940 000a8cf0 0015f693 00c42c06 dead4ead
-> 00dec1d4 0000001d 00000000
-> [   67.630000]         00c42c06 00006188 00c42800 00d7b974 000a8ec2
-> 00c42c06 0015f6f9 00002704
-> [   67.630000]         00000000 0000001f 00146fa4 00152f0c 00c42b60
-> 00006188 00c42800 0002b312
-> [   67.630000]         00d7b984 0014701e 00c42c06 00000000 00d7b9c4
-> 000df21c 00c42c06 00000000
-> [   67.630000]         00000000 0000001f 00146fa4 00152f0c 000005ea
-> 00cfc640 00006188 000096e8
-> [   67.630000]         0002b312 00146fa4 00c42b60 00002704 00d7b9ec
-> 00029d3a 0000001f 00c42800
-> [   67.630000] Call Trace:
-> [   67.630000]  [000a8cf0]  [000a8ec2]  [0014701e]  [000df21c]  [00029d3a]
-> [   67.630000]  [00029e84]  [00000bb6]  [0000336e]  [000df162]  [000effd6]
-> [   67.630000]  [00100482]  [000f312e]  [000f9ebc]  [0010dd2a]  [0010e4a0]
-> [   67.630000]  [0010dfb2]  [0010ef80]  [0011fed6]  [00121170]  [0012188e]
-> [   67.630000]  [0011ecc6]  [001249fe]  [000e4084]  [0011621c]  [00131a44]
-> [   67.630000]  [000e11ee]  [00041944]  [00041a1c]  [00041e46]  [00003218]
-> [   67.630000] BUG: spinlock lockup on CPU#0, httpd/29, 00c42c06
-> [   67.630000] Stack from 00d7b934:
-> [   67.630000]         00d7b974 000a8f66 0015f703 00000000 00dec1d4
-> 0000001d 00c42c06 00002704
-> [   67.630000]         00000000 0000001f 00146fa4 00152f0c 00c42b60
-> 00006188 00c42800 0002b312
-> [   67.630000]         00d7b984 0014701e 00c42c06 00000000 00d7b9c4
-> 000df21c 00c42c06 00000000
-> [   67.630000]         00000000 0000001f 00146fa4 00152f0c 000005ea
-> 00cfc640 00006188 000096e8
-> [   67.630000]         0002b312 00146fa4 00c42b60 00002704 00d7b9ec
-> 00029d3a 0000001f 00c42800
-> [   67.630000]         0016c1b4 00cfc640 0000001f 0016c178 00029d10
-> 00146fb8 00d7ba20 00029e84
-> [   67.630000] Call Trace:
-> [   67.630000]  [000a8f66]  [0014701e]  [000df21c]  [00029d3a]  [00029e84]
-> [   67.630000]  [00000bb6]  [0000336e]  [000df162]  [000effd6]  [00100482]
-> [   67.630000]  [000f312e]  [000f9ebc]  [0010dd2a]  [0010e4a0]  [0010dfb2]
-> [   67.630000]  [0010ef80]  [0011fed6]  [00121170]  [0012188e]  [0011ecc6]
-> [   67.630000]  [001249fe]  [000e4084]  [0011621c]  [00131a44]  [000e11ee]
-> [   67.630000]  [00041944]  [00041a1c]  [00041e46]  [00003218]
+On Tue, Dec 28, 2010 at 06:29:07PM +0100, Tejun Heo wrote:
+> Convert from ->media_changed() to ->check_events().
 > 
-> As i said, i was hoping in your patch but i sadly discovered it is
-> already included in this kernel version.
-> Hope you can give me some help or can forward me to an appropriate
-> mailing list.
+> xsysace buffers media changed state and clears it on revalidation.  It
+> will behave correctly with kernel event polling.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Kay Sievers <kay.sievers@vrfy.org>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
 
--- 
-                                                     ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+
+g.
+
+> ---
+>  drivers/block/xsysace.c |    9 +++++----
+>  1 files changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/block/xsysace.c b/drivers/block/xsysace.c
+> index 829161e..16a2fa9 100644
+> --- a/drivers/block/xsysace.c
+> +++ b/drivers/block/xsysace.c
+> @@ -867,12 +867,12 @@ static void ace_request(struct request_queue * q)
+>  	}
+>  }
+>  
+> -static int ace_media_changed(struct gendisk *gd)
+> +static unsigned int ace_check_events(struct gendisk *gd, unsigned int clearing)
+>  {
+>  	struct ace_device *ace = gd->private_data;
+> -	dev_dbg(ace->dev, "ace_media_changed(): %i\n", ace->media_change);
+> +	dev_dbg(ace->dev, "ace_check_events(): %i\n", ace->media_change);
+>  
+> -	return ace->media_change;
+> +	return ace->media_change ? DISK_EVENT_MEDIA_CHANGE : 0;
+>  }
+>  
+>  static int ace_revalidate_disk(struct gendisk *gd)
+> @@ -953,7 +953,7 @@ static const struct block_device_operations ace_fops = {
+>  	.owner = THIS_MODULE,
+>  	.open = ace_open,
+>  	.release = ace_release,
+> -	.media_changed = ace_media_changed,
+> +	.check_events = ace_check_events,
+>  	.revalidate_disk = ace_revalidate_disk,
+>  	.getgeo = ace_getgeo,
+>  };
+> @@ -1005,6 +1005,7 @@ static int __devinit ace_setup(struct ace_device *ace)
+>  	ace->gd->major = ace_major;
+>  	ace->gd->first_minor = ace->id * ACE_NUM_MINORS;
+>  	ace->gd->fops = &ace_fops;
+> +	ace->gd->events = DISK_EVENT_MEDIA_CHANGE;
+>  	ace->gd->queue = ace->queue;
+>  	ace->gd->private_data = ace;
+>  	snprintf(ace->gd->disk_name, 32, "xs%c", ace->id + 'a');
+> -- 
+> 1.7.1
+> 
