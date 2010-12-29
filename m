@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab0L2QTd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 11:19:33 -0500
-Received: from mga02.intel.com ([134.134.136.20]:60051 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753345Ab0L2QTb convert rfc822-to-8bit (ORCPT
+	id S1753451Ab0L2QXL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 11:23:11 -0500
+Received: from 30.mail-out.ovh.net ([213.186.62.213]:58765 "HELO
+	30.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753357Ab0L2QXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 11:19:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,245,1291622400"; 
-   d="scan'208";a="588100888"
-From: "Gorby, Russ" <russ.gorby@intel.com>
-To: "Dan Carpenter " <IMCEAMAILTO-error27+40gmail+2Ecom@intel.com>
-CC: "Cox, Alan" <alan.cox@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 29 Dec 2010 08:19:30 -0800
-Subject: RE: smatch stuff: serial: ifx6x60: oops on load
-Thread-Topic: smatch stuff: serial: ifx6x60: oops on load
-Thread-Index: AcugJqrX5fJlqy2PQMmWSeGMkq+ukgAMuVjAAAI3J4AABKf50AAAFLNAAb9GzIA=
-Message-ID: <4C5E6457CD7911469A07260381288C28CB5F5F85@orsmsx502.amr.corp.intel.com>
-References: <4C5E6457CD7911469A07260381288C28CB379310@orsmsx502.amr.corp.intel.com>
- <E1A1564674E5754FB00AB9AC949D5E3260EB004322@rrsmsx501.amr.corp.intel.com>
- <72D8A09E39A89147BE9CFBB6F0C73C3061F523A532@rrsmsx501.amr.corp.intel.com>
- <E1A1564674E5754FB00AB9AC949D5E3260EB09CDD7@rrsmsx501.amr.corp.intel.com>
-In-Reply-To: <E1A1564674E5754FB00AB9AC949D5E3260EB09CDD7@rrsmsx501.amr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 29 Dec 2010 11:23:06 -0500
+Message-ID: <4D1B6066.9000701@example.com>
+Date: Wed, 29 Dec 2010 17:23:02 +0100
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
 MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: GIT question - am I doing it correctly?
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 6946520951010128152
+X-Ovh-Remote: 83.24.111.204 (dod204.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-Yes, unfortunately there are a few issues with this driver that prevent it from loading and running properly.
-I will be proving follow-on patches to address this and other issues that have been discovered that should address this. 
+Everytime I git pull tyhe Linus' sources but before I build I apply 
+Peter Zijlstra's fixes, Takashi Iwai's sources and Dave Miller's 
+sources. The sequence is:
 
->>-----Original Message-----
->>From: Dan Carpenter [mailto:error27@gmail.com]
->>Sent: Monday, December 20, 2010 1:16 AM
->>To: Gorby, Russ
->>Cc: Alan Cox; linux-kernel@vger.kernel.org
->>Subject: smatch stuff: serial: ifx6x60: oops on load
->>
->>Smatch complains that the ifx6x60 driver in linux-next has a NULL
->>dereference.
->>
->>drivers/serial/ifx6x60.c +986 ifx_spi_spi_probe(27)
->>	error: potential null derefence 'pl_data'.
->>
->>   984          ifx_dev->spi_timer.function = ifx_spi_timeout;
->>   985          ifx_dev->spi_timer.data = (unsigned long)ifx_dev;
->>   986          ifx_dev->is_6160 = pl_data->is_6160;
->>                                   ^^^^^^^
->>"pl_data" is always NULL at this point.  Presumably this crashes on
->load
->>every time.
->>
->>regards,
->>dan carpenter
+# the Linus' sources
+git pull
 
+# external sources
+git remote add some_name git://some_URL.git
+
+# update
+git remote update
+
+Then configure and I build. I noticed that especially Peter's git-update 
+very quickly, not as long as they did before.
+
+Is my procedure correct? I am new to GIT.
+
+Regards,
+
+Piotr Hosowicz
+
+-- 
+W trosce o najm³odsze pokolenie, nasi ustawodawcy winni znowelizowaæ
+ustawê o wychowaniu w trze¼wo¶ci i przeciwdzia³aniu alkoholizmowi tak,
+¿eby zakazaæ wprowadzania na rynek gier planszowych, których celem
+jest jak najszybsze dotarcie do mety.
+NP: Peter Green Splinter Group - Turn Your Love Away
+NB: 2.6.37-rc8
