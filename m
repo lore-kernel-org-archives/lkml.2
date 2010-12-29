@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab0L2OPA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 09:15:00 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43484 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752386Ab0L2OO7 (ORCPT
+	id S1752996Ab0L2OUc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 09:20:32 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:57505 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752522Ab0L2OUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 09:14:59 -0500
+	Wed, 29 Dec 2010 09:20:31 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=dnZhuXX3/TCjrrHB8SQ4ZyQLuGEKfm+OMyzKQlhdLHWP5XpIXHXifdkMA/rbXPUj+8
-         ZBgwioTQ49jUOsjP5BIOF7xqIOQH8+Tsn5VGAtFahywasl165F5n6idvDOqwQTDoX7fy
-         4EE5F5bZQdNgQC1Fn/1Zj5Ubn14xaCVD1WMAY=
-Date: Wed, 29 Dec 2010 22:14:46 +0800
+        b=lxoTrpTOAyyVlvpuKbgIbLJye1mgYXwT116/MvCXZ5g3LkPNSa8a6Cx1n9nEZ3Pqm/
+         DA2h9GeXkiYHBv0w3UgX4N5G4ErEe+2tRp3Y3uyquvblngVv3AU6HBuhQuKi+Jq60lyw
+         eonlsErIP1wougV6KgEe7vfRjrvDuuGBYNq6g=
+Date: Wed, 29 Dec 2010 22:20:19 +0800
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Chris Mason <chris.mason@oracle.com>,
@@ -22,53 +22,54 @@ Cc: Chris Mason <chris.mason@oracle.com>,
         Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
         Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
         Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 06/17] sched: Provide p->on_rq
-Message-ID: <20101229141445.GA2728@zhy>
+Subject: Re: [RFC][PATCH 07/17] sched: Serialize p->cpus_allowed and ttwu()
+ using p->pi_lock
+Message-ID: <20101229142019.GB2728@zhy>
 Reply-To: Yong Zhang <yong.zhang0@gmail.com>
 References: <20101224122338.172750730@chello.nl>
- <20101224123742.782732530@chello.nl>
+ <20101224123742.833040935@chello.nl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20101224123742.782732530@chello.nl>
+In-Reply-To: <20101224123742.833040935@chello.nl>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 24, 2010 at 01:23:44PM +0100, Peter Zijlstra wrote:
-> Provide a generic p->on_rq because the p->se.on_rq semantics are
-> unfavourable for lockless wakeups but needed for sched_fair.
-> 
-> In particular, p->on_rq is only cleared when we actually dequeue the
-> task in schedule() and not on any random dequeue as done by things
-> like __migrate_task() and __sched_setscheduler().
-> 
-> This also allows us to remove p->se usage from !sched_fair code.
+On Fri, Dec 24, 2010 at 01:23:45PM +0100, Peter Zijlstra wrote:
+> Currently p->pi_lock already serializes p->sched_class, also put
+> p->cpus_allowed and try_to_wake_up() under it, this prepares the way
+> to do the first part of ttwu() without holding rq->lock.
 > 
 > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 > ---
->  include/linux/sched.h   |    1 +
->  kernel/sched.c          |   36 ++++++++++++++++++------------------
->  kernel/sched_debug.c    |    2 +-
->  kernel/sched_rt.c       |   10 +++++-----
-> Index: linux-2.6/kernel/sched_rt.c
+>  kernel/sched.c |   37 ++++++++++++++++---------------------
+>  1 file changed, 16 insertions(+), 21 deletions(-)
+> 
+> Index: linux-2.6/kernel/sched.c
 > ===================================================================
-> --- linux-2.6.orig/kernel/sched_rt.c
-> +++ linux-2.6/kernel/sched_rt.c
-> @@ -1132,7 +1132,7 @@ static void put_prev_task_rt(struct rq *
->  	 * The previous task needs to be made eligible for pushing
->  	 * if it is still active
->  	 */
-> -	if (p->se.on_rq && p->rt.nr_cpus_allowed > 1)
-> +	if (p->on_rq && p->rt.nr_cpus_allowed > 1)
->  		enqueue_pushable_task(rq, p);
+> --- linux-2.6.orig/kernel/sched.c
+> +++ linux-2.6/kernel/sched.c
+> @@ -2301,7 +2301,7 @@ void task_oncpu_function_call(struct tas
+>  
+>  #ifdef CONFIG_SMP
+>  /*
+> - * ->cpus_allowed is protected by either TASK_WAKING or rq->lock held.
+> + * ->cpus_allowed is protected by both rq->lock and p->pi_lock
+>   */
+>  static int select_fallback_rq(int cpu, struct task_struct *p)
+>  {
+> @@ -2334,7 +2334,7 @@ static int select_fallback_rq(int cpu, s
+>  }
+>  
+>  /*
+> - * The caller (fork, wakeup) owns TASK_WAKING, ->cpus_allowed is stable.
+> + * The caller (fork, wakeup) owns p->pi_lock, ->cpus_allowed is stable.
 
-Seems we need on_rt_rq(&p->rt) here, otherwise we enqueue the
-task to pushable list when called from rt_mutex_setprio()/
-__sched_setscheduler() etc. Thus add a little overhead.
-Though we call dequeue_pushable_task() in set_curr_task_rt()
-unconditionally.
+Yes for wakeup, but not true for fork.
+I don't see protection in wake_up_new_task().
+Or am I missing something?
 
 Thanks,
 Yong
