@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893Ab0L2ThM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 14:37:12 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58513 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753752Ab0L2ThK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 14:37:10 -0500
-Message-ID: <4D1B8DC8.6000104@zytor.com>
-Date: Wed, 29 Dec 2010 11:36:40 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1753898Ab0L2Tk1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 14:40:27 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56837 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753656Ab0L2Tk0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Dec 2010 14:40:26 -0500
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, tglx@linutronix.de, x86@kernel.org,
-        eric.dumazet@gmail.com, yinghai@kernel.org, brgerst@gmail.com,
-        gorcunov@gmail.com, Pekka Enberg <penberg@kernel.org>,
-        shaohui.zheng@intel.com
-Subject: Re: [PATCH 13/16] x86: Unify cpu/apicid <-> NUMA node mapping between
- 32 and 64bit
-References: <1293536929-31683-1-git-send-email-tj@kernel.org> <1293536929-31683-14-git-send-email-tj@kernel.org> <alpine.DEB.2.00.1012281231070.8883@chino.kir.corp.google.com> <20101229105253.GK488@htj.dyndns.org>
-In-Reply-To: <20101229105253.GK488@htj.dyndns.org>
+In-Reply-To: <20101229102127.06c0e505.randy.dunlap@oracle.com>
+References: <AANLkTi=-dNeeDjcSoznKtwcaNyw1mMXSqepFY89R2i+2@mail.gmail.com> <20101229102127.06c0e505.randy.dunlap@oracle.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 29 Dec 2010 11:40:04 -0800
+Message-ID: <AANLkTims54zDXZYjZiiHfSOwy0W=gOF2jV8yopQxFBny@mail.gmail.com>
+Subject: Re: Linux 2.6.37-rc8 (no fb)
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: dri-devel@lists.freedesktop.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>,
+        Chris Wilson <chris@chris-wilson.co.uk>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/29/2010 02:52 AM, Tejun Heo wrote:
-> On Tue, Dec 28, 2010 at 12:35:45PM -0800, David Rientjes wrote:
->> This is going to conflict with a387e95a ("") in x86/numa, so you'll need 
->> the following hunk for acpi_fake_nodes().  I'm not sure why this patchset 
->> is being based on x86/apic-cleanup rather than x86/numa?
-> 
-> Because several patches from the patchset have already been committed
-> into x86/apic-cleanup.  Thomas, Peter, if this needs to be rebased
-> somewhere, let me know.
-> 
+On Wed, Dec 29, 2010 at 10:21 AM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>
+> The only significant difference that I can see in the kernel message log
+> is this:
 
-x86/numa is already a dependent branch (on x86/amd-nb), so I'm fine
-merging x86/apic-cleanup into that branch and then if you could rebase
-it on top of the new x86/numa then I'll push it out tomorrow.
+Hmm. I suspect that difference should have gone away with commit
+92971021c6328 (Revert "drm: Don't try and disable an encoder that was
+never enabled"), but clearly that didn't fix your blank screen.
 
-OK?
+Does reverting commit 448f53a1ede54eb854d036abf54573281412d650
+("drm/i915/bios: Reverse order of 100/120 Mhz SSC clocks") fix it for
+you? It does for some people..
 
-	-hpa
+Chris - why did that lvds_ssc_freq thing suddenly start mattering? Can
+we please just disable spread-spectrum entirely? Or perhaps only if we
+notice that it was enabled already? Or something?
+
+                         Linus
