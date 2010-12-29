@@ -1,81 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751760Ab0L2KG2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 05:06:28 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44334 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867Ab0L2KG0 (ORCPT
+	id S1751665Ab0L2KUy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 05:20:54 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:53299 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914Ab0L2KUw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 05:06:26 -0500
+	Wed, 29 Dec 2010 05:20:52 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=xH9GHEt66sKX2TzYX0tvY68OrkLFkJGAaelM3SQFUlwX311yWyqtKM9ijJbjohVt1q
-         BI1+OF9g4Z6ELRUjwXUFBEUjTy5HVvYMnB8CDQ6irn8lNQ2coZLcbwJm7/3oIQCpbO53
-         CJ3c4Aym2RLFSGe6VGILdXrAbnnFITFA1szHA=
+         :cc:content-type:content-transfer-encoding;
+        b=XSMC4eQVtWoDQ+jZnkFwCgUISOXjflenhFvDWSvtgWh2x/vgmbGArZ4aDW0of3vHx6
+         w9FyP+l70mmyUVFKoFPsElXFKk097a1dG2oCwR9Q3+QxAlzIJg95qNyFCJaUFdmYQBjD
+         yEXSacI58ywVUnA8ZhTd8tXZIXNLk04gAeOIM=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=s03AA5wJaUzp7KkQDBcBVceSn4QvwH8CyRRyO@mail.gmail.com>
-References: <1292870624-25450-1-git-send-email-felipe.contreras@nokia.com>
-	<AANLkTikisHaAMZphRJVYdcokVbaZXVF9COrwkdGTDg__@mail.gmail.com>
-	<AANLkTi=9AL3aWUsMeih+Gb-sMov=MgBZ1eTp8wb=q1hZ@mail.gmail.com>
-	<AANLkTinX8t=3b48e2sxPU-V_G-nGm_1DyEg6B-CeqXDa@mail.gmail.com>
-	<1293452486-notmuch-felipe.contreras@nokia.com>
-	<AANLkTinz0HuhGB_WzTQbK8XkfkGALjtg928WdOUYsySf@mail.gmail.com>
-	<AANLkTimCB5g29gzWFzaFU1N8+doROTpWaXy18VU5AJyH@mail.gmail.com>
-	<AANLkTi=xmxkWnhuYcjtDNDHgep_2EztfGXDv+winW2Y5@mail.gmail.com>
-	<AANLkTiksjHKjKQ+mWE=Zf0+967_E46V3+RURcMC-s5cD@mail.gmail.com>
-	<AANLkTi=ZY09yJ=pK4ejqOZjh7YjJp1UemRdMgMfpsz2f@mail.gmail.com>
-	<AANLkTinZ0Uwp8jbmsSwm6ut75A06CxrkESTRJT-GoPkP@mail.gmail.com>
-	<AANLkTi=wBG9AXvDva-_uNjGbRphrb356gZ6ChMJjP8aL@mail.gmail.com>
-	<AANLkTimMe97QECEJ+T6Eh7SFKqOi8xo08ZB+S+8Yzuww@mail.gmail.com>
-	<AANLkTi=s03AA5wJaUzp7KkQDBcBVceSn4QvwH8CyRRyO@mail.gmail.com>
-Date: Wed, 29 Dec 2010 12:06:24 +0200
-Message-ID: <AANLkTik1T_CktRwQz0JjTAY0s1hOOage=veOo1-Cb3Pn@mail.gmail.com>
-Subject: Re: [PATCH v2] staging: tidspbridge: protect dmm_map properly
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Felipe Contreras <felipe.contreras@nokia.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        greg@kroah.com, omar.ramirez@ti.com, fernando.lugo@ti.com, nm@ti.com,
-        ameya.palande@nokia.com, h-kanigeri2@ti.com
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <AANLkTim6QkyMMtcQT1mfBMUDwirYg636xhBv4p77Uf4k@mail.gmail.com>
+References: <AANLkTim4zbBvTyc4hNurCmPN7GisXe1mmzR6P4aj3xzA@mail.gmail.com>
+	<AANLkTim6QkyMMtcQT1mfBMUDwirYg636xhBv4p77Uf4k@mail.gmail.com>
+Date: Wed, 29 Dec 2010 15:50:51 +0530
+Message-ID: <AANLkTinq4MTrLek8DE5SAR=-eFk==4VX-+ui0kVtrV_L@mail.gmail.com>
+Subject: Re: Drift when measuring time using add_timer
+From: Mohan V <mohanvforum@gmail.com>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 29, 2010 at 11:46 AM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> On Wed, Dec 29, 2010 at 11:39 AM, Felipe Contreras
-> <felipe.contreras@gmail.com> wrote:
->> On Tue, Dec 28, 2010 at 2:37 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
->>> On Tue, Dec 28, 2010 at 2:24 PM, Felipe Contreras
->>> <felipe.contreras@gmail.com> wrote:
->>>> user-space crashed, not kernel-space; the code would continue to run
->>>> and eventually release the lock.
->>>
->>> So you'll have to be more specific about the scenario you are describing.
->>>
->>> If there's a user thread that is still running the proc_*_dma()
->>> function, and we agree that this thread keeps running until completion
->>> and then returns to user space, what's the problem ?
+On Wed, Dec 29, 2010 at 2:15 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
+> On Tue, Dec 28, 2010 at 8:05 PM, Mohan V <mohanvforum@gmail.com> wrote:
+>> Hello All,
 >>
->> The problem is if the user-space process crashes exactly in the middle
->> of it, *before* completing. With locks there's no problem, as
->> proc_un_map() would wait for the lock in my patch. In your patch it
->> would not wait, just return -EBUSY.
+>> I am testing the timers on a OMAP4 based board. I am seeing a drift or
+>> the time difference between the timer value and when the function callback
+>> happens. This drift is around 1000ms or 1s for a expiry value of >=5mins.
+>> Is the time drift expected? Is this way of measuring right or is there
+>> any other way?
+>>
+>> OMAP4 as you may know is a multi-core processor and CONFIG_SMP is enabled
+>> along with the following:
+>> CONFIG_NO_HZ, CONFIG_HIGH_RES_TIMERS
+>>
+>> My kernel configurations:
+>> kernel: 2.6.37-rc7 (commit id: ffc96d)
+>> config: omap2plus_defconfig
+>>
+>> My driver does the following:
+>>
+>> struct timeval tv;
+>> test_timer_proc_write()
+>> {
+>>           del_timer_sync(&my_timer);
+>>           period = 300000; /* 5min */
+>>           my_timer.expires = jiffies + msecs_to_jiffies(period);
+>>           my_timer.function = func_timeout; /* Call back function*/
 >
-> We have two threads.
+> what's the slack of your timer?
+> And what about setting my_timer.slack = 0; ?
 >
-> One called proc_un_map(), and one called proc_begin_dma().
->
-> The first crashed, but the second didn't. it still holds the bridge
-> device open. When it will exit, and release the device, then
-> drv_remove_all_resources() will be called, and all the map_obj's will
-> be cleaned.
+I hadn't set the slack value for the timer. Setting it to "0", gives me
+much better results. Thanks a lot Yong.
 
-I'm not familiar how crashes are handled; if you say as long as one
-task is still running the device release is not called, then I guess
-there's no issue.
+Regards,
+Mohan
 
--- 
-Felipe Contreras
+> Thanks,
+> Yong
+>
+>>           /* Save the current time in global variable */
+>>           do_gettimeofday(&timeval);
+>>           /* add timer with an expiry value of 5mins*/
+>>           add_timer(&my_timer);
+>> }
+>>
+>> /* Get the current time and print the difference between the two values */
+>> func_timeout()
+>> {
+>>           struct timeval tv1;
+>>           do_gettimeofday(&tv);
+>>           /* take the difference between current time and saved time */
+>>           ms = (tv.tv_sec - tv1.tv_sec) * 1000 + \
+>>                   (tv.tv_usec - tv1.tv_usec) / 1000;
+>>           printk("Interval = %d\n", ms);
+>> }
+>>
+>> Thanks for your time.
+>>
+>> Regards,
+>> Mohan
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
+>
+>
+> --
+> Only stand for myself.
+>
