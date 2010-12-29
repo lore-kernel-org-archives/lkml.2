@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751255Ab0L2Gqp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 01:46:45 -0500
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:60252 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822Ab0L2Gqn convert rfc822-to-8bit (ORCPT
+	id S1751429Ab0L2GrG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 01:47:06 -0500
+Received: from mga11.intel.com ([192.55.52.93]:63628 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750823Ab0L2GrD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 01:46:43 -0500
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=sma64emKALigICJU+V2L7RL3kPAolu7RCFSKDgo279k= c=1 sm=1
- a=SU0sOTISozAA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=xqWC_Br6kY4A:10
- a=c23vf5CSMVc0QQz9B4a6RA==:17 a=VpzQvIIsWBTNGwlY5poA:9
- a=K6rGnwgf-_7bXpRsIiFxJ-i660oA:4 a=CjuIK1q_8ugA:10
- a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: Bug in ext4/btrfs fallocate?
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <4D1A0B1C.70406@gmail.com>
-Date: Tue, 28 Dec 2010 23:46:39 -0700
-Cc: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>, tytso@mit.edu,
-        chris.mason@oracle.com
+	Wed, 29 Dec 2010 01:47:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,243,1291622400"; 
+   d="scan'208";a="641324905"
+From: "Gao, Yunpeng" <yunpeng.gao@intel.com>
+To: Pierre Tardy <tardyp@gmail.com>, "Yuan, Hang" <hang.yuan@intel.com>
+CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Ball <cjb@laptop.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>, Takashi Iwai <tiwai@suse.de>,
+        Maxim Levitsky <maximlevitsky@gmail.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 29 Dec 2010 14:45:21 +0800
+Subject: RE: [RFC] sdhci: use ios->clock to know when sdhci is idle
+Thread-Topic: [RFC] sdhci: use ios->clock to know when sdhci is idle
+Thread-Index: AculvG5tHyypHlwtS56A2BTLrlhlXQBX5O7Q
+Message-ID: <CE761E84DADF2947A4AF22FB8D97A47331E86F6E@shsmsx501.ccr.corp.intel.com>
+References: <1293023621-3077-1-git-send-email-tardyp@gmail.com>
+	<41EFD7A46E18724CAB128DAD00733480193D2AE61C@shsmsx502.ccr.corp.intel.com>
+ <AANLkTinYWODS785AefQ7hV+urPkAn1+En-fZEaFQygLG@mail.gmail.com>
+In-Reply-To: <AANLkTinYWODS785AefQ7hV+urPkAn1+En-fZEaFQygLG@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <6A86E6B8-E14E-484B-BBF5-F3C580337661@dilger.ca>
-References: <4D1A0B1C.70406@gmail.com>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-X-Mailer: Apple Mail (2.1082)
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-12-28, at 09:06, Marco Stornelli wrote:
-> it seems that ext4/btrfs code for fallocate doesn't check for
-> immutable/append inode flag.
+>> Another question is why to call pm_runtime_get/put when ios-clock changes?
+>Is it based on
+>> Linus Walleij's aggressive clock gating framework patch? Linus' patch doesn't
+>gate SDIO cards.
+>runtime_suspend of sdhci should *not* gate the sdio card. It should
+>only gate the sdhci.
+>An sdio bus inactive does not mean that the sdio card is inactive.
+>(think wifi Idle, bluetooth idle, ethernet idle)
+>
+>We need to suspend the sdhci as soon as the sdio bus is inactive,
+>which is what clock gating framework is trying to detect. 
 
-fallocate() probably shouldn't be allowed for immutable files, but it makes a lot of sense to call fallocate() on append-only files to avoid fragmentation, though it should only be called with the KEEP_SIZE flag.
+If the wifi sdio card enters into some low power state which will not use the sdio bus, then the wifi driver can notify the sdhci host controller driver to power down the host controller only by calling the pm_runtime_put() and pm_suspend_ignore_children(). That is, it can be handled well in the current runtime pm framework. So, why we have to move to the 'aggressive clock gating framework'?
 
-Cheers, Andreas
+Also, I noticed that in the current 'aggressive clock gating framework' patch, the clock gating of SDIO card has been disabled (please reference code and comments of function mmc_host_may_gate_card() in that patch). That means, if discard the runtime PM framework and move to the aggressive clock gating framework, then all the SDIO cards (including the wifi sdio card) will fail to notify its host controller to enter into any low power mode.
 
+Thanks.
 
-
-
+Regards,
+Yunpeng
 
