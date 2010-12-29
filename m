@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133Ab0L2Nzc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 08:55:32 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:35789 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752539Ab0L2Nza (ORCPT
+	id S1753179Ab0L2N7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 08:59:11 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:59716 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708Ab0L2N7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 08:55:30 -0500
+	Wed, 29 Dec 2010 08:59:07 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=BuA4XNxiae7R9ngiKXMQ6Lh4F6qcde6uLxzv5ok6Ed1CcCZwrj4F7dbmdy+e9ICQl5
-         hqEe45e45hkn2MGwa9CVK/7uxX8K6evM1Jz8dxW6txqdfV2EpIh+QEuDS4s0kpCOZ2Fo
-         sNEOZAz36AMiExG3BjsAbV2HH1SMGDRF51kp8=
-MIME-Version: 1.0
-In-Reply-To: <20101229030936.GA9275@mail.hallyn.com>
-References: <AANLkTi=vfO-rs_iStXkPC7STSqfgUEW_JKt2w1=Wmf6Z@mail.gmail.com>
-	<20101224035523.GC25057@suse.de>
-	<AANLkTi=PwGXTKKyXDA1sckosbGmeo+D0bGuXt3Jb-ttc@mail.gmail.com>
-	<20101224171459.GA31815@suse.de>
-	<AANLkTimvjGvoSs2T0BmdaMdKyAsnttSXXRiJp0wB4+bG@mail.gmail.com>
-	<20101229030936.GA9275@mail.hallyn.com>
-Date: Wed, 29 Dec 2010 21:55:28 +0800
-Message-ID: <AANLkTinD9OUjmYpUwnCX47YeL6-DRwWyw=pwmiiZJQNH@mail.gmail.com>
-Subject: [PATCH] fix freeing user_struct in user cache
-From: Hillf Danton <dhillf@gmail.com>
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Eb/DX/38jEY4+TW+M+zA9ubZy0DeIfwHc41FsIx8qMIGsUMBX4gwkiOnY/TduxDEiA
+         afk4MtP8y3dqSZKc3Ec0SiSRwSCpEvHcJhixSs9WdkmRer/Ao7+wr33aqNUr2SVMG266
+         5hqAqwWUdy6XcMhkAc3oConqz66MgyQA1y7rE=
+From: yangsheng <sickamd@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, stable@kernel.org
-Content-Type: text/plain; charset=UTF-8
+Cc: linux-fsdevel@vger.kernel.org, adilger.kernel@dilger.ca,
+        linux-ext4@vger.kernel.org, yangsheng <sickamd@gmail.com>
+Subject: [PATCH] Update atime from future.
+Date: Wed, 29 Dec 2010 21:58:41 +0800
+Message-Id: <1293631121-12667-1-git-send-email-sickamd@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When racing on adding into user cache, the new allocated from mm slab
-is freed without putting user namespace.
-
-Since the user namespace is already operated by getting, putting has
-to be issued.
-
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
+Signed-off-by: sickamd@gmail.com
 ---
+ fs/inode.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
---- a/kernel/user.c	2010-11-01 19:54:12.000000000 +0800
-+++ b/kernel/user.c	2010-12-23 20:42:00.000000000 +0800
-@@ -158,6 +158,7 @@ struct user_struct *alloc_uid(struct use
- 		spin_lock_irq(&uidhash_lock);
- 		up = uid_hash_find(uid, hashent);
- 		if (up) {
-+			put_user_ns(ns);
- 			key_put(new->uid_keyring);
- 			key_put(new->session_keyring);
- 			kmem_cache_free(uid_cachep, new);
+diff --git a/fs/inode.c b/fs/inode.c
+index da85e56..6c8effd 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -1469,7 +1469,13 @@ static int relatime_need_update(struct vfsmount *mnt, struct inode *inode,
+ 		return 1;
+ 
+ 	/*
+-	 * Is the previous atime value older than a day? If yes,
++	 * Is the previous atime value in future? If yes,
++	 * update atime:
++	 */
++	if ((long)(now.tv_sec - inode->i_atime.tv_sec) < 0)
++		return 1;
++	/*
++	 * Is the previous atime value old than a day? If yes,
+ 	 * update atime:
+ 	 */
+ 	if ((long)(now.tv_sec - inode->i_atime.tv_sec) >= 24*60*60)
+-- 
+1.7.2.3
+
