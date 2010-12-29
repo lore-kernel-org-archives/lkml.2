@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab0L2RBh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 12:01:37 -0500
+	id S1753515Ab0L2RBr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 12:01:47 -0500
 Received: from router-fw.net-space.pl ([89.174.63.77]:47272 "EHLO
 	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753424Ab0L2RBg (ORCPT
+	with ESMTP id S1753428Ab0L2RBg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 29 Dec 2010 12:01:36 -0500
-Date: Wed, 29 Dec 2010 17:49:10 +0100
+Date: Wed, 29 Dec 2010 18:00:59 +0100
 From: Daniel Kiper <dkiper@net-space.pl>
-To: Vasiliy G Tolstov <v.tolstov@selfip.ru>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, jeremy@goop.org,
-        xen-devel@lists.xensource.com, haicheng.li@linux.intel.com,
-        dan.magenheimer@oracle.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, andi.kleen@intel.com, akpm@linux-foundation.org,
-        fengguang.wu@intel.com, Daniel Kiper <dkiper@net-space.pl>
-Subject: Re: [Xen-devel] Re: [PATCH 2/3] drivers/xen/balloon.c: Various balloon features and fixes
-Message-ID: <20101229164910.GD2743@router-fw-old.local.net-space.pl>
-References: <20101220134724.GC6749@router-fw-old.local.net-space.pl> <20101227150847.GA3728@dumpdata.com> <947c7677e042b3fd1ca22d775ca9aeb9@imap.selfip.ru> <20101227163918.GB7189@dumpdata.com> <92e9dd494cc640c04fdac03fa6d10e8d@imap.selfip.ru>
+To: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
+        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
+        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
+        v.tolstov@selfip.ru, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH R2 0/7] Xen memory balloon driver with memory hotplug support
+Message-ID: <20101229170059.GE2743@router-fw-old.local.net-space.pl>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <92e9dd494cc640c04fdac03fa6d10e8d@imap.selfip.ru>
 User-Agent: Mutt/1.3.28i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,36 +26,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Tue, Dec 28, 2010 at 12:52:03AM +0300, Vasiliy G Tolstov wrote:
-> On Mon, 27 Dec 2010 11:39:18 -0500, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com> wrote:
-> > On Mon, Dec 27, 2010 at 07:27:56PM +0300, Vasiliy G Tolstov wrote:
-> >> On Mon, 27 Dec 2010 10:08:47 -0500, Konrad Rzeszutek Wilk
-> >> <konrad.wilk@oracle.com> wrote:
-> >> > On Mon, Dec 20, 2010 at 02:47:24PM +0100, Daniel Kiper wrote:
-> >> >> Features and fixes:
-> >> >>   - HVM mode is supported now,
-> >> >>   - migration from mod_timer() to schedule_delayed_work(),
-> >> >>   - removal of driver_pages (I do not have seen any
-> >> >>     references to it),
-> >> >>   - protect before CPU exhaust by event/x process during
-> >> >>     errors by adding some delays in scheduling next event,
-> >> >>   - some other minor fixes.
-> >>
-> >> I have apply this patch to bare 2.6.36.2 kernel from kernel.org. If
-> >> memory=maxmemory pv guest run's on migrating fine.
-> >> If on already running domU i have xm mem-max xxx 1024 (before that it
-> >> has 768) and do xm mem-set 1024 guest now have 1024 memory, but after
-> >> that it can't migrate to another host.
-
-Do you still need memory hotplug patch for jeremy stable-2.6.32.x ???
-
-> >> Step to try to start guest with memory=512 and maxmemory=1024 it boot
-> >> fine, xm mem-set work's fine, but.. it can't migrate. Sorry but nothing
-> >> on screen , how can i help to debug this problem?
-
-I will try to investigate that problem. Could you send me as much
-info as possible about that issue (Xen version, kernel version,
-config files, log files, etc.) ???
+This patch (r2) is new implementation of Xen memory balloon driver
+with memory hotplug support. Additionally, it contains some
+balloon driver extra features and fixes. It cleanly applies
+to Linux kernel Ver. 2.6.36.
 
 Daniel
