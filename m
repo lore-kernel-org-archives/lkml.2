@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629Ab0L2RUT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 12:20:19 -0500
+	id S1753506Ab0L2RTb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 12:19:31 -0500
 Received: from router-fw.net-space.pl ([89.174.63.77]:47397 "EHLO
 	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753518Ab0L2RTd (ORCPT
+	with ESMTP id S1753403Ab0L2RTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 12:19:33 -0500
-Date: Wed, 29 Dec 2010 18:05:41 +0100
+	Wed, 29 Dec 2010 12:19:30 -0500
+Date: Wed, 29 Dec 2010 18:02:12 +0100
 From: Daniel Kiper <dkiper@net-space.pl>
 To: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
         haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
         konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
         v.tolstov@selfip.ru, xen-devel@lists.xensource.com,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH R2 5/7] xen/balloon: Protect before CPU exhaust by event/x process
-Message-ID: <20101229170541.GJ2743@router-fw-old.local.net-space.pl>
+Subject: [PATCH R2 1/7] mm: Add add_registered_memory() to memory hotplug API
+Message-ID: <20101229170212.GF2743@router-fw-old.local.net-space.pl>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,231 +24,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Protect before CPU exhaust by event/x process during
-errors by adding some delays in scheduling next event.
+add_registered_memory() adds memory ealier registered
+as memory resource. It is required by memory hotplug
+for Xen guests, however it could be used also by other
+modules.
 
 Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
 ---
- drivers/xen/balloon.c |  100 ++++++++++++++++++++++++++++++++++++++++---------
- 1 files changed, 82 insertions(+), 18 deletions(-)
+ include/linux/memory_hotplug.h |    1 +
+ mm/memory_hotplug.c            |   50 ++++++++++++++++++++++++++++++---------
+ 2 files changed, 39 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
-index 11143af..a62427d 100644
---- a/drivers/xen/balloon.c
-+++ b/drivers/xen/balloon.c
-@@ -65,6 +65,20 @@
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index 864035f..2458b2f 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -203,6 +203,7 @@ static inline int is_mem_section_removable(unsigned long pfn,
+ #endif /* CONFIG_MEMORY_HOTREMOVE */
  
- #define BALLOON_CLASS_NAME "xen_memory"
- 
-+/*
-+ * balloon_process() state:
-+ *
-+ * BP_ERROR: error, go to sleep,
-+ * BP_DONE: done or nothing to do,
-+ * BP_HUNGRY: hungry.
-+ */
-+
-+enum bp_state {
-+	BP_ERROR,
-+	BP_DONE,
-+	BP_HUNGRY
-+};
-+
- struct balloon_stats {
- 	/* We aim for 'current allocation' == 'target allocation'. */
- 	unsigned long current_pages;
-@@ -72,6 +86,8 @@ struct balloon_stats {
- 	/* Number of pages in high- and low-memory balloons. */
- 	unsigned long balloon_low;
- 	unsigned long balloon_high;
-+	unsigned long schedule_delay;
-+	unsigned long max_schedule_delay;
- };
- 
- static DEFINE_MUTEX(balloon_mutex);
-@@ -166,6 +182,25 @@ static struct page *balloon_next_page(struct page *page)
- 	return list_entry(next, struct page, lru);
+ extern int mem_online_node(int nid);
++extern int add_registered_memory(int nid, u64 start, u64 size);
+ extern int add_memory(int nid, u64 start, u64 size);
+ extern int arch_add_memory(int nid, u64 start, u64 size);
+ extern int remove_memory(u64 start, u64 size);
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index dd186c1..b642f26 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -509,20 +509,12 @@ out:
  }
  
-+static void update_schedule_delay(enum bp_state state)
-+{
-+	unsigned long new_schedule_delay;
+ /* we are OK calling __meminit stuff here - we have CONFIG_MEMORY_HOTPLUG */
+-int __ref add_memory(int nid, u64 start, u64 size)
++static int __ref __add_memory(int nid, u64 start, u64 size)
+ {
+ 	pg_data_t *pgdat = NULL;
+ 	int new_pgdat = 0;
+-	struct resource *res;
+ 	int ret;
+ 
+-	lock_system_sleep();
+-
+-	res = register_memory_resource(start, size);
+-	ret = -EEXIST;
+-	if (!res)
+-		goto out;
+-
+ 	if (!node_online(nid)) {
+ 		pgdat = hotadd_new_pgdat(nid, start);
+ 		ret = -ENOMEM;
+@@ -556,14 +548,48 @@ int __ref add_memory(int nid, u64 start, u64 size)
+ 	goto out;
+ 
+ error:
+-	/* rollback pgdat allocation and others */
++	/* rollback pgdat allocation */
+ 	if (new_pgdat)
+ 		rollback_node_hotadd(nid, pgdat);
+-	if (res)
+-		release_memory_resource(res);
 +
-+	if (state != BP_ERROR) {
-+		balloon_stats.schedule_delay = 1;
-+		return;
-+	}
-+
-+	new_schedule_delay = balloon_stats.schedule_delay << 1;
-+
-+	if (new_schedule_delay > balloon_stats.max_schedule_delay) {
-+		balloon_stats.schedule_delay = balloon_stats.max_schedule_delay;
-+		return;
-+	}
-+
-+	balloon_stats.schedule_delay = new_schedule_delay;
++out:
++	return ret;
 +}
 +
- static unsigned long current_target(void)
- {
- 	unsigned long target = balloon_stats.target_pages;
-@@ -178,11 +213,12 @@ static unsigned long current_target(void)
- 	return target;
- }
- 
--static int increase_reservation(unsigned long nr_pages)
-+static enum bp_state increase_reservation(unsigned long nr_pages)
- {
-+	enum bp_state state = BP_DONE;
-+	int rc;
- 	unsigned long  pfn, i, flags;
- 	struct page   *page;
--	long           rc;
- 	struct xen_memory_reservation reservation = {
- 		.address_bits = 0,
- 		.extent_order = 0,
-@@ -195,8 +231,17 @@ static int increase_reservation(unsigned long nr_pages)
- 	spin_lock_irqsave(&xen_reservation_lock, flags);
- 
- 	page = balloon_first_page();
++int add_registered_memory(int nid, u64 start, u64 size)
++{
++	int ret;
 +
-+	if (!page) {
-+		state = BP_ERROR;
++	lock_system_sleep();
++	ret = __add_memory(nid, start, size);
++	unlock_system_sleep();
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(add_registered_memory);
++
++int add_memory(int nid, u64 start, u64 size)
++{
++	int ret = -EEXIST;
++	struct resource *res;
++
++	lock_system_sleep();
++
++	res = register_memory_resource(start, size);
++
++	if (!res)
 +		goto out;
-+	}
 +
- 	for (i = 0; i < nr_pages; i++) {
--		BUG_ON(page == NULL);
-+		if (!page) {
-+			nr_pages = i;
-+			break;
-+		}
- 		frame_list[i] = page_to_pfn(page);
- 		page = balloon_next_page(page);
- 	}
-@@ -204,8 +249,11 @@ static int increase_reservation(unsigned long nr_pages)
- 	set_xen_guest_handle(reservation.extent_start, frame_list);
- 	reservation.nr_extents = nr_pages;
- 	rc = HYPERVISOR_memory_op(XENMEM_populate_physmap, &reservation);
--	if (rc < 0)
--		goto out;
-+	if (rc < nr_pages) {
-+		state = (rc <= 0) ? BP_ERROR : BP_HUNGRY;
-+		if (rc <= 0)
-+			goto out;
-+	}
++	ret = __add_memory(nid, start, size);
++
++	if (!ret)
++		goto out;
++
++	release_memory_resource(res);
  
- 	for (i = 0; i < rc; i++) {
- 		page = balloon_retrieve();
-@@ -238,14 +286,14 @@ static int increase_reservation(unsigned long nr_pages)
-  out:
- 	spin_unlock_irqrestore(&xen_reservation_lock, flags);
- 
--	return rc < 0 ? rc : rc != nr_pages;
-+	return state;
+ out:
+ 	unlock_system_sleep();
++
+ 	return ret;
  }
- 
--static int decrease_reservation(unsigned long nr_pages)
-+static enum bp_state decrease_reservation(unsigned long nr_pages)
- {
-+	enum bp_state state = BP_DONE;
- 	unsigned long  pfn, i, flags;
- 	struct page   *page;
--	int            need_sleep = 0;
- 	int ret;
- 	struct xen_memory_reservation reservation = {
- 		.address_bits = 0,
-@@ -259,7 +307,7 @@ static int decrease_reservation(unsigned long nr_pages)
- 	for (i = 0; i < nr_pages; i++) {
- 		if ((page = alloc_page(GFP_BALLOON)) == NULL) {
- 			nr_pages = i;
--			need_sleep = 1;
-+			state = BP_ERROR;
- 			break;
- 		}
- 
-@@ -299,7 +347,7 @@ static int decrease_reservation(unsigned long nr_pages)
- 
- 	spin_unlock_irqrestore(&xen_reservation_lock, flags);
- 
--	return need_sleep;
-+	return state;
- }
- 
- /*
-@@ -310,27 +358,35 @@ static int decrease_reservation(unsigned long nr_pages)
-  */
- static void balloon_process(struct work_struct *work)
- {
--	int need_sleep = 0;
-+	enum bp_state rc, state = BP_DONE;
- 	long credit;
- 
- 	mutex_lock(&balloon_mutex);
- 
- 	do {
- 		credit = current_target() - balloon_stats.current_pages;
--		if (credit > 0)
--			need_sleep = (increase_reservation(credit) != 0);
--		if (credit < 0)
--			need_sleep = (decrease_reservation(-credit) != 0);
-+
-+		if (credit > 0) {
-+			rc = increase_reservation(credit);
-+			state = (rc == BP_ERROR) ? BP_ERROR : state;
-+		}
-+
-+		if (credit < 0) {
-+			rc = decrease_reservation(-credit);
-+			state = (rc == BP_ERROR) ? BP_ERROR : state;
-+		}
-+
-+		update_schedule_delay(state);
- 
- #ifndef CONFIG_PREEMPT
- 		if (need_resched())
- 			schedule();
- #endif
--	} while ((credit != 0) && !need_sleep);
-+	} while (credit && state != BP_ERROR);
- 
- 	/* Schedule more work if there is some still to be done. */
--	if (current_target() != balloon_stats.current_pages)
--		schedule_delayed_work(&balloon_worker, HZ);
-+	if (state == BP_ERROR)
-+		schedule_delayed_work(&balloon_worker, balloon_stats.schedule_delay * HZ);
- 
- 	mutex_unlock(&balloon_mutex);
- }
-@@ -399,6 +455,9 @@ static int __init balloon_init(void)
- 	balloon_stats.balloon_low   = 0;
- 	balloon_stats.balloon_high  = 0;
- 
-+	balloon_stats.schedule_delay = 1;
-+	balloon_stats.max_schedule_delay = 32;
-+
- 	register_balloon(&balloon_sysdev);
- 
- 	/* Initialise the balloon with excess memory space. */
-@@ -439,6 +498,9 @@ BALLOON_SHOW(current_kb, "%lu\n", PAGES2KB(balloon_stats.current_pages));
- BALLOON_SHOW(low_kb, "%lu\n", PAGES2KB(balloon_stats.balloon_low));
- BALLOON_SHOW(high_kb, "%lu\n", PAGES2KB(balloon_stats.balloon_high));
- 
-+static SYSDEV_ULONG_ATTR(schedule_delay, 0644, balloon_stats.schedule_delay);
-+static SYSDEV_ULONG_ATTR(max_schedule_delay, 0644, balloon_stats.max_schedule_delay);
-+
- static ssize_t show_target_kb(struct sys_device *dev, struct sysdev_attribute *attr,
- 			      char *buf)
- {
-@@ -500,6 +562,8 @@ static SYSDEV_ATTR(target, S_IRUGO | S_IWUSR,
- static struct sysdev_attribute *balloon_attrs[] = {
- 	&attr_target_kb,
- 	&attr_target,
-+	&attr_schedule_delay.attr,
-+	&attr_max_schedule_delay.attr
- };
- 
- static struct attribute *balloon_info_attrs[] = {
+ EXPORT_SYMBOL_GPL(add_memory);
 -- 
 1.4.4.4
 
