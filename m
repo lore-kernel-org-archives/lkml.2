@@ -1,101 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753755Ab0L2VQX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 16:16:23 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:38541 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752811Ab0L2VQT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 16:16:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=PRlxb87iKWau6VXZiQx3KH2t/VndzMY2+kjFyeH9YWslPdYtVfQ/WtpBIM65SQRRnk
-         hRcEMLIu3gEhtO10Dt9ZnBIx8N0f/lKSAxgB0HUc9xetV9piBe3l0u+sTqZs7GtB+q3+
-         F/qi4vhbZVpN2dSSFD0vC6iVDSWtFkSEo0pW0=
-MIME-Version: 1.0
-Date: Thu, 30 Dec 2010 06:16:17 +0900
-Message-ID: <AANLkTimK9gh_LVW2faCbVMpwMeBFOJLRXHJkA4_3Oi6=@mail.gmail.com>
-Subject: [PATCH 0/4] elf core: Write section header table first
-From: HATAYAMA Daisuke <d.hatayama@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: tony.luck@intel.com, jdike@addtoit.com, dhowells@redhat.com,
-        gerg@snapgear.com, roland@redhat.com, oleg@redhat.com, mingo@elte.hu,
-        viro@zeniv.linux.org.uk, andi@firstfloor.org, alan@lxorguk.ukuu.org.uk,
-        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
-        kamezawa.hiroyu@jp.fujitsu.com, suzuki@in.ibm.com,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753862Ab0L2VQg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 16:16:36 -0500
+Received: from mail.perches.com ([173.55.12.10]:2871 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753412Ab0L2VQe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Dec 2010 16:16:34 -0500
+Subject: Re: dm9000 patch
+From: Joe Perches <joe@perches.com>
+To: Angelo Dureghello <angelo70@gmail.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Baruch Siach <baruch@tkos.co.il>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org,
+        uClinux development list <uclinux-dev@uclinux.org>
+In-Reply-To: <4D1BA0D0.1060407@gmail.com>
+References: <4D1A5C2A.5050606@gmail.com>
+	 <20101229060637.GA31010@jasper.tkos.co.il>	<4D1B33F2.5060600@gmail.com>
+	 <20101229180650.GE6067@tarshish>
+	 <AANLkTim0+GbddLdkPFoggeCKpU7on7mta0V2mZZLgviE@mail.gmail.com>
+	 <4D1BA0D0.1060407@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 29 Dec 2010 13:16:32 -0800
+Message-ID: <1293657392.31071.15.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset changes a position of section header table, if exists,
-from the last to the next to ELF header. According to ELF
-specification, the order of ELF component layout is not specified
-except for ELF header. See:
+On Wed, 2010-12-29 at 21:57 +0100, Angelo Dureghello wrote:
+> the kernel is a main line kernel. Then yes, i am still using uclinux 
+> tree for libc/tools.
 
-  http://www.sco.com/developers/gabi/latest/ch4.intro.html#file_format
+Does it still occur if you remove the debug line below?
+---
+ drivers/net/dm9000.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-The merits are:
- - reducing tracing memory maps from 3 times to 2 times.
- - simple offset handling that makes the code easier to read.
+diff --git a/drivers/net/dm9000.c b/drivers/net/dm9000.c
+index 2d4c4fc..c774430 100644
+--- a/drivers/net/dm9000.c
++++ b/drivers/net/dm9000.c
+@@ -1077,8 +1077,6 @@ static irqreturn_t dm9000_interrupt(int irq, void *dev_id)
+ 	unsigned long flags;
+ 	u8 reg_save;
+ 
+-	dm9000_dbg(db, 3, "entering %s\n", __func__);
+-
+ 	/* A real interrupt coming */
+ 
+ 	/* holders of db->lock must always block IRQs */
 
- arch/ia64/kernel/elfcore.c |   16 -----
- arch/um/sys-i386/elfcore.c |   16 -----
- fs/binfmt_elf.c            |  136 +++++++++++++++++-------------------------
- fs/binfmt_elf_fdpic.c      |  141 ++++++++++++++++++--------------------------
- include/linux/elfcore.h    |    1 -
- kernel/elfcore.c           |    5 --
- 6 files changed, 111 insertions(+), 204 deletions(-)
 
-I built and tested this patchset on x86_64. I also built it on ia64,
-um-i386 and frv using cross compilers to cover the range.
-
-Here's a program useful to generate ELF core with many program header
-entries, and three steps to produce such ELF core:
-
- $ sysctl vm.max_map_count=70000
- $ ulimit -c unlimted
- $ mkmmap 65535
-
-== mkmmap.c
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/mman.h>
-#include <fcntl.h>
-#include <unistd.h>
-int main(int argc, char **argv)
-{
-        int maps_num;
-        if (argc < 2) {
-                fprintf(stderr, "mkmmaps [number of maps to be created]\n");
-                exit(1);
-        }
-        if (sscanf(argv[1], "%d", &maps_num) == EOF) {
-                perror("sscanf");
-                exit(2);
-        }
-        if (maps_num < 0) {
-                fprintf(stderr, "%d is invalid\n", maps_num);
-                exit(3);
-        }
-        for (; maps_num > 0; --maps_num) {
-                if (MAP_FAILED == mmap((void *)NULL, (size_t) 1, PROT_READ,
-                                       MAP_SHARED | MAP_ANONYMOUS, (int) -1,
-                                       (off_t) NULL)) {
-                        perror("mmap");
-                        exit(4);
-                }
-        }
-        abort();
-        {
-                char buffer[128];
-                sprintf(buffer, "wc -l /proc/%u/maps", getpid());
-                system(buffer);
-        }
-        return 0;
-}
-==
-
-Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
