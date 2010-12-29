@@ -1,280 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869Ab0L2TSK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 14:18:10 -0500
-Received: from ns2.cypress.com ([157.95.67.5]:50513 "EHLO ns2.cypress.com"
+	id S1753876Ab0L2TTX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 14:19:23 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:39800 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753774Ab0L2TSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 14:18:06 -0500
-From: Kevin McNeely <kev@cypress.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: David Brown <davidb@codeaurora.org>, Trilok Soni <tsoni@codeaurora.org>,
-        Kevin McNeely <kev@cypress.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Eric Miao <eric.y.miao@gmail.com>, Mike Frysinger <vapier@gentoo.org>,
-        Henrik Rydberg <rydberg@euromail.se>, Alan Cox <alan@linux.intel.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [v3 2/3] 2/3 i2c: Cypress TTSP G3 MTDEV I2C Device Driver
-Date: Wed, 29 Dec 2010 11:17:46 -0800
-Message-Id: <1293650268-1561-2-git-send-email-kev@cypress.com>
-X-Mailer: git-send-email 1.7.2.1
-In-Reply-To: <Kevin McNeely <kev@cypress.com>
-References: <Kevin McNeely <kev@cypress.com>
-X-Brightmail-Tracker: AAAAAA==
+	id S1753773Ab0L2TTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Dec 2010 14:19:18 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [PATCH] PCI / ACPI: Request _OSC control once for each root bridge (v2)
+Date: Wed, 29 Dec 2010 20:18:29 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc8+; KDE/4.4.4; x86_64; ; )
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        linux-pci@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+References: <201012291324.45074.rjw@sisk.pl>
+In-Reply-To: <201012291324.45074.rjw@sisk.pl>
 MIME-Version: 1.0
-X-MailScanner: 
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012292018.29382.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cypress TTSP Gen3 I2C Device Driver.
-Provides i2c communications modules for the
-Cypress TTSP Gen3 MTDEV Core Driver.
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Signed-off-by: Kevin McNeely <kev@cypress.com>
+Move the evaluation of acpi_pci_osc_control_set() (to request control
+of PCI Express native features) into acpi_pci_root_add() to avoid
+calling it many times for the same root complex with the same
+arguments.  Additionally, check if all of the requisite _OSC
+support bits are set before calling acpi_pci_osc_control_set() for
+a given root complex.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
-Changes since v2:
-- Fixed first line of multi-line comments to follow style guide
 
- drivers/input/touchscreen/Kconfig      |   12 ++
- drivers/input/touchscreen/Makefile     |    1 +
- drivers/input/touchscreen/cyttsp_i2c.c |  183 ++++++++++++++++++++++++++++++++
- 3 files changed, 196 insertions(+), 0 deletions(-)
- create mode 100644 drivers/input/touchscreen/cyttsp_i2c.c
+Hi,
 
-diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
-index 7d886bc..e1a37f5 100644
---- a/drivers/input/touchscreen/Kconfig
-+++ b/drivers/input/touchscreen/Kconfig
-@@ -129,6 +129,18 @@ config TOUCHSCREEN_CYTTSP_CORE
- 	help
- 	  Always activated for Cypress TTSP touchscreen
+The previous version wouldn't work correctly with pcie_ports=compat.
+
+Thanks,
+Rafael
+
+---
+ drivers/acpi/pci_root.c         |   32 ++++++++++++++++++++++++++++++++
+ drivers/pci/pci.h               |    8 --------
+ drivers/pci/pcie/aer/aerdrv.c   |    1 +
+ drivers/pci/pcie/aer/aerdrv.h   |    3 ---
+ drivers/pci/pcie/portdrv.h      |    3 ---
+ drivers/pci/pcie/portdrv_acpi.c |   23 ++++-------------------
+ include/linux/pci-acpi.h        |    6 ++++++
+ include/linux/pci.h             |   11 +++++++++++
+ 8 files changed, 54 insertions(+), 33 deletions(-)
+
+Index: linux-2.6/drivers/acpi/pci_root.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/pci_root.c
++++ linux-2.6/drivers/acpi/pci_root.c
+@@ -47,6 +47,11 @@ static int acpi_pci_root_add(struct acpi
+ static int acpi_pci_root_remove(struct acpi_device *device, int type);
+ static int acpi_pci_root_start(struct acpi_device *device);
  
-+config TOUCHSCREEN_CYTTSP_I2C
-+	tristate "Cypress TTSP i2c touchscreen"
-+	depends on I2C && TOUCHSCREEN_CYTTSP_CORE
-+	help
-+	  Say Y here if you have a Cypress TTSP touchscreen
-+	  connected to your system with an I2C interface.
++#define ACPI_PCIE_REQ_SUPPORT (OSC_EXT_PCI_CONFIG_SUPPORT \
++				| OSC_ACTIVE_STATE_PWR_SUPPORT \
++				| OSC_CLOCK_PWR_CAPABILITY_SUPPORT \
++				| OSC_MSI_SUPPORT)
 +
-+	  If unsure, say N.
+ static const struct acpi_device_id root_device_ids[] = {
+ 	{"PNP0A03", 0},
+ 	{"", 0},
+@@ -566,6 +571,33 @@ static int __devinit acpi_pci_root_add(s
+ 	if (flags != base_flags)
+ 		acpi_pci_osc_support(root, flags);
+ 
++	if (!pcie_ports_disabled
++	    && (flags & ACPI_PCIE_REQ_SUPPORT) == ACPI_PCIE_REQ_SUPPORT) {
++		flags = OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL
++			| OSC_PCI_EXPRESS_NATIVE_HP_CONTROL
++			| OSC_PCI_EXPRESS_PME_CONTROL;
 +
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called cyttsp-i2c.
++		if (pci_aer_available()) {
++			if (aer_acpi_firmware_first())
++				dev_dbg(root->bus->bridge,
++					"PCIe errors handled by BIOS.\n");
++			else
++				flags |= OSC_PCI_EXPRESS_AER_CONTROL;
++		}
 +
- config TOUCHSCREEN_DA9034
- 	tristate "Touchscreen support for Dialog Semiconductor DA9034"
- 	depends on PMIC_DA903X
-diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
-index b6f1ba8..88ee091 100644
---- a/drivers/input/touchscreen/Makefile
-+++ b/drivers/input/touchscreen/Makefile
-@@ -17,6 +17,7 @@ obj-$(CONFIG_TOUCHSCREEN_BITSY)		+= h3600_ts_input.o
- obj-$(CONFIG_TOUCHSCREEN_BU21013)       += bu21013_ts.o
- obj-$(CONFIG_TOUCHSCREEN_CY8CTMG110)	+= cy8ctmg110_ts.o
- obj-$(CONFIG_TOUCHSCREEN_CYTTSP_CORE)   += cyttsp_core.o
-+obj-$(CONFIG_TOUCHSCREEN_CYTTSP_I2C)    += cyttsp_i2c.o
- obj-$(CONFIG_TOUCHSCREEN_DA9034)	+= da9034-ts.o
- obj-$(CONFIG_TOUCHSCREEN_DYNAPRO)	+= dynapro.o
- obj-$(CONFIG_TOUCHSCREEN_HAMPSHIRE)	+= hampshire.o
-diff --git a/drivers/input/touchscreen/cyttsp_i2c.c b/drivers/input/touchscreen/cyttsp_i2c.c
-new file mode 100644
-index 0000000..a83efd3
---- /dev/null
-+++ b/drivers/input/touchscreen/cyttsp_i2c.c
-@@ -0,0 +1,183 @@
-+/*
-+ * Source for:
-+ * Cypress TrueTouch(TM) Standard Product (TTSP) I2C touchscreen driver.
-+ * For use with Cypress Txx3xx parts.
-+ * Supported parts include:
-+ * CY8CTST341
-+ * CY8CTMA340
-+ *
-+ * Copyright (C) 2009, 2010 Cypress Semiconductor, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2, and only version 2, as published by the
-+ * Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-+ *
-+ * Contact Cypress Semiconductor at www.cypress.com <kev@cypress.com>
-+ *
-+ */
++		dev_info(root->bus->bridge,
++			"Requesting ACPI _OSC control (0x%02x)\n", flags);
 +
-+#include "cyttsp_core.h"
-+
-+#include <linux/i2c.h>
-+#include <linux/slab.h>
-+
-+#define CY_I2C_DATA_SIZE  128
-+
-+struct cyttsp_i2c {
-+	struct cyttsp_bus_ops ops;
-+	struct i2c_client *client;
-+	void *ttsp_client;
-+	u8 wr_buf[CY_I2C_DATA_SIZE];
-+};
-+
-+static s32 ttsp_i2c_read_block_data(void *handle, u8 addr,
-+	u8 length, void *values)
-+{
-+	struct cyttsp_i2c *ts = container_of(handle, struct cyttsp_i2c, ops);
-+	int retval = 0;
-+
-+	retval = i2c_master_send(ts->client, &addr, 1);
-+	if (retval < 0)
-+		return retval;
-+
-+	retval = i2c_master_recv(ts->client, values, length);
-+
-+	return (retval < 0) ? retval : 0;
-+}
-+
-+static s32 ttsp_i2c_write_block_data(void *handle, u8 addr,
-+	u8 length, const void *values)
-+{
-+	struct cyttsp_i2c *ts = container_of(handle, struct cyttsp_i2c, ops);
-+	int retval;
-+
-+	ts->wr_buf[0] = addr;
-+	memcpy(&ts->wr_buf[1], values, length);
-+
-+	retval = i2c_master_send(ts->client, ts->wr_buf, length+1);
-+
-+	return (retval < 0) ? retval : 0;
-+}
-+
-+static s32 ttsp_i2c_tch_ext(void *handle, void *values)
-+{
-+	struct cyttsp_i2c *ts = container_of(handle, struct cyttsp_i2c, ops);
-+	int retval = 0;
-+
-+	/*
-+	 * TODO: Add custom touch extension handling code here
-+	 * set: retval < 0 for any returned system errors,
-+	 *	retval = 0 if normal touch handling is required,
-+	 *	retval > 0 if normal touch handling is *not* required
-+	 */
-+	if (!ts || !values)
-+		retval = -EIO;
-+
-+	return retval;
-+}
-+static int __devinit cyttsp_i2c_probe(struct i2c_client *client,
-+	const struct i2c_device_id *id)
-+{
-+	struct cyttsp_i2c *ts;
-+
-+	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C))
-+		return -EIO;
-+
-+	/* allocate and clear memory */
-+	ts = kzalloc(sizeof(*ts), GFP_KERNEL);
-+	if (!ts) {
-+		dev_dbg(&client->dev, "%s: Error, kzalloc.\n", __func__);
-+		return -ENOMEM;
++		status = acpi_pci_osc_control_set(device->handle, &flags,
++					OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL);
++		if (ACPI_SUCCESS(status))
++			dev_info(root->bus->bridge,
++				"ACPI _OSC control (0x%02x) granted\n", flags);
++		else
++			dev_dbg(root->bus->bridge,
++				"ACPI _OSC request failed (code %d)\n", status);
 +	}
 +
-+	/* register driver_data */
-+	ts->client = client;
-+	i2c_set_clientdata(client, ts);
-+	ts->ops.write = ttsp_i2c_write_block_data;
-+	ts->ops.read = ttsp_i2c_read_block_data;
-+	ts->ops.ext = ttsp_i2c_tch_ext;
-+	ts->ops.dev = &client->dev;
-+	ts->ops.dev->bus = &i2c_bus_type;
+ 	pci_acpi_add_bus_pm_notifier(device, root->bus);
+ 	if (device->wakeup.flags.run_wake)
+ 		device_set_run_wake(root->bus->bridge, true);
+Index: linux-2.6/drivers/pci/pcie/portdrv_acpi.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/pcie/portdrv_acpi.c
++++ linux-2.6/drivers/pci/pcie/portdrv_acpi.c
+@@ -33,7 +33,7 @@
+  */
+ int pcie_port_acpi_setup(struct pci_dev *port, int *srv_mask)
+ {
+-	acpi_status status;
++	struct acpi_pci_root *root;
+ 	acpi_handle handle;
+ 	u32 flags;
+ 
+@@ -44,26 +44,11 @@ int pcie_port_acpi_setup(struct pci_dev
+ 	if (!handle)
+ 		return -EINVAL;
+ 
+-	flags = OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL
+-		| OSC_PCI_EXPRESS_NATIVE_HP_CONTROL
+-		| OSC_PCI_EXPRESS_PME_CONTROL;
+-
+-	if (pci_aer_available()) {
+-		if (aer_acpi_firmware_first())
+-			dev_dbg(&port->dev, "PCIe errors handled by BIOS.\n");
+-		else
+-			flags |= OSC_PCI_EXPRESS_AER_CONTROL;
+-	}
+-
+-	status = acpi_pci_osc_control_set(handle, &flags,
+-					OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL);
+-	if (ACPI_FAILURE(status)) {
+-		dev_dbg(&port->dev, "ACPI _OSC request failed (code %d)\n",
+-			status);
++	root = acpi_pci_find_root(handle);
++	if (!root)
+ 		return -ENODEV;
+-	}
+ 
+-	dev_info(&port->dev, "ACPI _OSC control granted for 0x%02x\n", flags);
++	flags = root->osc_control_set;
+ 
+ 	*srv_mask = PCIE_PORT_SERVICE_VC;
+ 	if (flags & OSC_PCI_EXPRESS_NATIVE_HP_CONTROL)
+Index: linux-2.6/drivers/pci/pci.h
+===================================================================
+--- linux-2.6.orig/drivers/pci/pci.h
++++ linux-2.6/drivers/pci/pci.h
+@@ -146,14 +146,6 @@ static inline void pci_no_msi(void) { }
+ static inline void pci_msi_init_pci_dev(struct pci_dev *dev) { }
+ #endif
+ 
+-#ifdef CONFIG_PCIEAER
+-void pci_no_aer(void);
+-bool pci_aer_available(void);
+-#else
+-static inline void pci_no_aer(void) { }
+-static inline bool pci_aer_available(void) { return false; }
+-#endif
+-
+ static inline int pci_no_d1d2(struct pci_dev *dev)
+ {
+ 	unsigned int parent_dstates = 0;
+Index: linux-2.6/include/linux/pci.h
+===================================================================
+--- linux-2.6.orig/include/linux/pci.h
++++ linux-2.6/include/linux/pci.h
+@@ -993,6 +993,9 @@ extern void pci_restore_msi_state(struct
+ extern int pci_msi_enabled(void);
+ #endif
+ 
++extern bool pcie_ports_disabled;
++extern bool pcie_ports_auto;
 +
-+	ts->ttsp_client = cyttsp_core_init(&ts->ops, &client->dev);
-+	if (IS_ERR(ts->ttsp_client)) {
-+		int retval = PTR_ERR(ts->ttsp_client);
-+		kfree(ts);
-+		return retval;
-+	}
-+
-+	dev_dbg(ts->ops.dev, "%s: Registration complete\n", __func__);
-+
-+	return 0;
-+}
-+
-+
-+/* registered in driver struct */
-+static int __devexit cyttsp_i2c_remove(struct i2c_client *client)
-+{
-+	struct cyttsp_i2c *ts;
-+
-+	ts = i2c_get_clientdata(client);
-+	cyttsp_core_release(ts->ttsp_client);
-+	kfree(ts);
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM
-+static int cyttsp_i2c_suspend(struct i2c_client *client, pm_message_t message)
-+{
-+	return cyttsp_suspend(dev_get_drvdata(&client->dev));
-+}
-+
-+static int cyttsp_i2c_resume(struct i2c_client *client)
-+{
-+	return cyttsp_resume(dev_get_drvdata(&client->dev));
-+}
+ #ifndef CONFIG_PCIEASPM
+ static inline int pcie_aspm_enabled(void)
+ {
+@@ -1002,6 +1005,14 @@ static inline int pcie_aspm_enabled(void
+ extern int pcie_aspm_enabled(void);
+ #endif
+ 
++#ifdef CONFIG_PCIEAER
++void pci_no_aer(void);
++bool pci_aer_available(void);
++#else
++static inline void pci_no_aer(void) { }
++static inline bool pci_aer_available(void) { return false; }
 +#endif
 +
-+static const struct i2c_device_id cyttsp_i2c_id[] = {
-+	{ CY_I2C_NAME, 0 },  { }
-+};
-+
-+static struct i2c_driver cyttsp_i2c_driver = {
-+	.driver = {
-+		.name = CY_I2C_NAME,
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = cyttsp_i2c_probe,
-+	.remove = __devexit_p(cyttsp_i2c_remove),
-+	.id_table = cyttsp_i2c_id,
-+#ifdef CONFIG_PM
-+	.suspend = cyttsp_i2c_suspend,
-+	.resume = cyttsp_i2c_resume,
+ #ifndef CONFIG_PCIE_ECRC
+ static inline void pcie_set_ecrc_checking(struct pci_dev *dev)
+ {
+Index: linux-2.6/drivers/pci/pcie/aer/aerdrv.h
+===================================================================
+--- linux-2.6.orig/drivers/pci/pcie/aer/aerdrv.h
++++ linux-2.6/drivers/pci/pcie/aer/aerdrv.h
+@@ -132,7 +132,6 @@ static inline int aer_osc_setup(struct p
+ 
+ #ifdef CONFIG_ACPI_APEI
+ extern int pcie_aer_get_firmware_first(struct pci_dev *pci_dev);
+-extern bool aer_acpi_firmware_first(void);
+ #else
+ static inline int pcie_aer_get_firmware_first(struct pci_dev *pci_dev)
+ {
+@@ -140,8 +139,6 @@ static inline int pcie_aer_get_firmware_
+ 		return pci_dev->__aer_firmware_first;
+ 	return 0;
+ }
+-
+-static inline bool aer_acpi_firmware_first(void) { return false; }
+ #endif
+ 
+ static inline void pcie_aer_force_firmware_first(struct pci_dev *pci_dev,
+Index: linux-2.6/include/linux/pci-acpi.h
+===================================================================
+--- linux-2.6.orig/include/linux/pci-acpi.h
++++ linux-2.6/include/linux/pci-acpi.h
+@@ -40,4 +40,10 @@ static inline acpi_handle acpi_find_root
+ { return NULL; }
+ #endif
+ 
++#ifdef CONFIG_ACPI_APEI
++extern bool aer_acpi_firmware_first(void);
++#else
++static inline bool aer_acpi_firmware_first(void) { return false; }
 +#endif
-+};
 +
-+static int __init cyttsp_i2c_init(void)
-+{
-+	return i2c_add_driver(&cyttsp_i2c_driver);
-+}
-+
-+static void __exit cyttsp_i2c_exit(void)
-+{
-+	return i2c_del_driver(&cyttsp_i2c_driver);
-+}
-+
-+module_init(cyttsp_i2c_init);
-+module_exit(cyttsp_i2c_exit);
-+
-+MODULE_ALIAS("i2c:cyttsp");
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("Cypress TrueTouch(R) Standard Product (TTSP) I2C driver");
-+MODULE_AUTHOR("Cypress");
-+MODULE_DEVICE_TABLE(i2c, cyttsp_i2c_id);
--- 
-1.7.2.1
-
-
----------------------------------------------------------------
-This message and any attachments may contain Cypress (or its
-subsidiaries) confidential information. If it has been received
-in error, please advise the sender and immediately delete this
-message.
----------------------------------------------------------------
+ #endif	/* _PCI_ACPI_H_ */
+Index: linux-2.6/drivers/pci/pcie/aer/aerdrv.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/pcie/aer/aerdrv.c
++++ linux-2.6/drivers/pci/pcie/aer/aerdrv.c
+@@ -17,6 +17,7 @@
+ 
+ #include <linux/module.h>
+ #include <linux/pci.h>
++#include <linux/pci-acpi.h>
+ #include <linux/sched.h>
+ #include <linux/kernel.h>
+ #include <linux/errno.h>
+Index: linux-2.6/drivers/pci/pcie/portdrv.h
+===================================================================
+--- linux-2.6.orig/drivers/pci/pcie/portdrv.h
++++ linux-2.6/drivers/pci/pcie/portdrv.h
+@@ -20,9 +20,6 @@
+ 
+ #define get_descriptor_id(type, service) (((type - 4) << 4) | service)
+ 
+-extern bool pcie_ports_disabled;
+-extern bool pcie_ports_auto;
+-
+ extern struct bus_type pcie_port_bus_type;
+ extern int pcie_port_device_register(struct pci_dev *dev);
+ #ifdef CONFIG_PM
 
