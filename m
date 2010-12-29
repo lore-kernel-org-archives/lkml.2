@@ -1,69 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249Ab0L2Xme (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 18:42:34 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:23094 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754133Ab0L2Xmd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 18:42:33 -0500
-Date: Wed, 29 Dec 2010 15:40:53 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Jeff Chua <jeff.chua.linux@gmail.com>,
-        Alex Riesen <raa.lkml@gmail.com>
-Subject: Re: Linux 2.6.37-rc8 (no fb)
-Message-Id: <20101229154053.a3036c53.randy.dunlap@oracle.com>
-In-Reply-To: <20101229144614.484b64ef@jbarnes-desktop>
-References: <AANLkTi=-dNeeDjcSoznKtwcaNyw1mMXSqepFY89R2i+2@mail.gmail.com>
-	<20101229102127.06c0e505.randy.dunlap@oracle.com>
-	<AANLkTims54zDXZYjZiiHfSOwy0W=gOF2jV8yopQxFBny@mail.gmail.com>
-	<20101229121601.179983b7@jbarnes-desktop>
-	<20101229141253.5ff91e3e.randy.dunlap@oracle.com>
-	<20101229144614.484b64ef@jbarnes-desktop>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754294Ab0L2XnN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 18:43:13 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56970 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752006Ab0L2XnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Dec 2010 18:43:11 -0500
+Message-ID: <4D1BC77C.3040205@zytor.com>
+Date: Wed, 29 Dec 2010 15:42:52 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/6] x86: Change get_max_mapped() to inline
+References: <4D0C072D.1040201@kernel.org>	<4D19320B.7030007@kernel.org>	<4D1933BA.8000508@kernel.org>	<4D1BBEB7.3010901@zytor.com>	<AANLkTineB4n7mjotECPK_VsHvP9xGt=SMJ-GSC_6nZAZ@mail.gmail.com> <AANLkTi=NU1UM3N6bbPSqqS+7UbvTY6YDNyn2s4tKURMY@mail.gmail.com>
+In-Reply-To: <AANLkTi=NU1UM3N6bbPSqqS+7UbvTY6YDNyn2s4tKURMY@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Dec 2010 14:46:14 -0800 Jesse Barnes wrote:
-
-> > > diff --git a/drivers/gpu/drm/i915/intel_bios.c b/drivers/gpu/drm/i915/intel_bios
-> > > index 2b20786..d27d016 100644
-> > > --- a/drivers/gpu/drm/i915/intel_bios.c
-> > > +++ b/drivers/gpu/drm/i915/intel_bios.c
-> > > @@ -263,6 +263,9 @@ parse_general_features(struct drm_i915_private *dev_priv,
-> > >                 dev_priv->int_tv_support = general->int_tv_support;
-> > >                 dev_priv->int_crt_support = general->int_crt_support;
-> > >                 dev_priv->lvds_use_ssc = general->enable_ssc;
-> > > +               /* force disable until we can parse this correctly */
-> > > +               if (IS_GEN5(dev) || IS_GEN6(dev))
-> > > +                       dev_priv->lvds_use_ssc = 0;
-> > >  
-> > >                 if (dev_priv->lvds_use_ssc) {
-> > >                         if (IS_I85X(dev))
-> > > 
-> > > 
-> > > -- 
-> > 
-> > Ugh, looks like I have confused things horribly.  Sorry about this.
-> > 
-> > 2.6.37-rc8 with no patches works for me.  My original report was incorrect --
-> > I was using -rc7 when I thought I was using -rc8.  :(
+On 12/29/2010 03:37 PM, Yinghai Lu wrote:
 > 
-> Can you confirm that the above doesn't break your setup just in case we
-> need to apply it?
+> or could just use unsigned long instead.
+> 
+> on 32bit it will be under 4g
+> on 64bit unsigned long  is 64bit already.
+> 
 
+This is true, although it seems fragile -- the whole terminology and the
+differences between 32 and 64 bits are just a huge headache.
 
-Yes, confirmed, my test platform still works with this patch applied.
+	-hpa
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
-desserts:  http://www.xenotime.net/linux/recipes/
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
