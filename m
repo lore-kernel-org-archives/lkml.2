@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570Ab0L2SeF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 13:34:05 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:33252 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752077Ab0L2SeC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 13:34:02 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=A7RnVBVR6NRENzgoIk2bezRFpEdf2IlPDlAlgdcCqr9AnVW/R1tRhoGTATSlebjsth
-         vJMCqcfQGWJ6fsRXPPHdPbSdRf+/I2mg0lF2rSfVgPsoR6JBuZmssXawVIlKJ3Vvj99u
-         DQ9fbOsbob77rEbiv+IT7bQEcAJzJ/0j9SC7A=
+	id S1753612Ab0L2Sh4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 13:37:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14099 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752717Ab0L2Shx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Dec 2010 13:37:53 -0500
+Date: Wed, 29 Dec 2010 19:30:16 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Dario Faggioli <raistlin@linux.it>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>, torbenh <torbenh@gmx.de>,
+        john.stultz@linaro.org, roland@redhat.com, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH resend] Reading POSIX CPU timer from outside the
+	process.
+Message-ID: <20101229183016.GA455@redhat.com>
+References: <1293121303.3390.185.camel@Palantir> <1293533742.2899.1028.camel@Palantir> <20101228163829.GA26533@redhat.com> <1293572304.2899.1214.camel@Palantir> <20101229132130.GA16349@redhat.com> <1293631815.2899.1238.camel@Palantir>
 MIME-Version: 1.0
-In-Reply-To: <20101222141947.94322b9c.akpm@linux-foundation.org>
-References: <20101219190828.A6C189D401C@zog.reactivated.net>
-	<20101222141947.94322b9c.akpm@linux-foundation.org>
-Date: Wed, 29 Dec 2010 18:34:01 +0000
-X-Google-Sender-Auth: qW3owmfLaAgy6FaDdxcEGlhhD38
-Message-ID: <AANLkTinMXCmmR1T74JqNJC_HsWwuqhuYbj0fdJHMQgTh@mail.gmail.com>
-Subject: Re: [PATCH v3] rtc-cmos: fix suspend/resume
-From: Daniel Drake <dsd@laptop.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: a.zummo@towertech.it, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, pgf@laptop.org, rjw@sisk.pl,
-        stable@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1293631815.2899.1238.camel@Palantir>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 December 2010 22:19, Andrew Morton <akpm@linux-foundation.org> wrote:
-> It's unclear what the user-visible effects of this bug were.  Machine
-> fails to suspend?  RTC loses its brains on resume?  Something else?
+On 12/29, Dario Faggioli wrote:
 >
-> That's really important information for a bugfix's changelog.  Please
-> never omit it.
+> On Wed, 2010-12-29 at 14:21 +0100, Oleg Nesterov wrote:
+>
+> > You do not need clock_getcpuclockid() at all. In fact I do not really
+> > understand what this helper should actually do, probably it is only
+> > needed to validate the pid. You can simply use MAKE_THREAD_CPUCLOCK()
+> > to sample a single thread via clock_gettime().
+> >
+> Fine, but, is that macro available for an application developer? Because
+> I can find it in kernel and glibc sources, but not in my /usr/include/*,
+> which is the motivation behind this attempt... But it might be my
+> fault! :-P
 
-Sorry about that.
-After looking in more detail, I agree with Paul. This bug only affects
-setups where no PNP RTC is available, or where CONFIG_PNP is disabled.
-It also affects OLPC's coming-soon addition of an XO-specific RTC
-driver.
+Yes, I do not see MAKE_*_CPUCLOCK() in /usr/include.
 
-So, a clear and simple fix, but not a wide-reaching bug in the first place.
-2.6.38 would be fine, no real need for -stable backporting IMO.
+> > IOW. Unless I missed something, with this patch, the only problem
+> > is that getcpuclockid() always assumes MAKE_PROCESS_CPUCLOCK(),
+> > I do not think this is the kernel problem.
+> >
+> Agreed, sorry for wasting (hopefully not too much) people's time. :-(
 
-Thanks,
-Daniel
+No, I think you have a point. I'd suggest you to re-send the
+patch which removes this limitation from kernel side.
+
+My only objection was, we shouldn't add the hacks to overcome
+the limitations in glibc. Say, posix_cpu_clock_get() should only
+check CPUCLOCK_PERTHREAD(), it should not treat !group_leader
+specially just because getcpuclockid() can construct the proper
+clock id. This should be solved in userland.
+
+Oleg.
+
