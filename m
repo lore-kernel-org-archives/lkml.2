@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754398Ab0L2XQL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 18:16:11 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:40114 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754251Ab0L2XQD convert rfc822-to-8bit (ORCPT
+	id S1754606Ab0L2XUK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 18:20:10 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36333 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754526Ab0L2XUH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 18:16:03 -0500
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "Dave Chinner" <david@fromorbit.com>
-References: <96DQe4a_2tH.A.4RE.497GNB@chimera>
-In-Reply-To: <96DQe4a_2tH.A.4RE.497GNB@chimera>
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+	Wed, 29 Dec 2010 18:20:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=lWkx4l7mKUgpzSWyyut2PDno76z1x1lhtALn+NCu6rUk4Wbz1KSQFXEca/o/Y1xlVZ
+         Of7Mx2oA0mEootjGY/pIC8o9EAcvVwEWfXk1M4XRAlSxTjHhZk3KPxPtqj3WW0E74U4W
+         aXGYrfcX9m9RZh6XnBaTgua6XFW7qip7I6IPo=
 MIME-Version: 1.0
-Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20101229151323.4a675097@jbarnes-desktop>
+References: <AANLkTi=-dNeeDjcSoznKtwcaNyw1mMXSqepFY89R2i+2@mail.gmail.com>
+	<20101229102127.06c0e505.randy.dunlap@oracle.com>
+	<AANLkTims54zDXZYjZiiHfSOwy0W=gOF2jV8yopQxFBny@mail.gmail.com>
+	<20101229121601.179983b7@jbarnes-desktop>
+	<AANLkTikMMpdMr66n-VL9xdNVhmGMaWR74UdF5UB7cdCW@mail.gmail.com>
+	<20101229131852.0792aac0@jbarnes-desktop>
+	<20101229135315.5fe5c4e5@jbarnes-desktop>
+	<AANLkTikk3Z_p+-uRB4iF8CUuMAyuKVtPbuht=hQOm2uH@mail.gmail.com>
+	<20101229151323.4a675097@jbarnes-desktop>
+Date: Thu, 30 Dec 2010 00:20:04 +0100
+Message-ID: <AANLkTim=NTUtuAG=Gk=GeBHfTNM73xw6F8gjry6xsHs7@mail.gmail.com>
+Subject: Re: Linux 2.6.37-rc8 (no fb)
+From: Alex Riesen <raa.lkml@gmail.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, Jeff Chua <jeff.chua.linux@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Message-ID: <sV7shrPOroO.A.vbG.8_7GNB@chimera>
-Subject: [Bug #22942] [2.6.37-rc1, OOM] virtblk: OOM in do_virtblk_request()
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Thu, 30 Dec 2010 00:06:59 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message has been generated automatically as a part of a summary report
-of recent regressions.
+On Thu, Dec 30, 2010 at 00:13, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+>> After closing and opening the lid (displays backlight is back)
+>>
+>>   http://vin-soft.org/~raa/public/test/intel_gpu_dump-after-lid
+>
+> I need the intel_reg_dumper output, not intel_gpu_dump. :)
+>
 
-The following bug entry is on the current list of known regressions
-from 2.6.36.  Please verify if it still should be listed and let the tracking team
-know (either way).
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22942
-Subject		: [2.6.37-rc1, OOM] virtblk: OOM in do_virtblk_request()
-Submitter	: Dave Chinner <david@fromorbit.com>
-Date		: 2010-11-05 1:30 (55 days old)
-Message-ID	: <20101105013003.GE13830@dastard>
-References	: http://marc.info/?l=linux-kernel&m=128892062917641&w=2
-
-
+Hmm, there is no intel_reg_dumper in intel-gpu-tools-1.0.2, which is
+the latest on http://xorg.freedesktop.org/archive/individual/app/,
+so I assumed you just mistyped the name. Is it in git only? ...
+Yeah, look like it is in git only, which I have problems to compile
+(I have a bit of obsoleted system).
