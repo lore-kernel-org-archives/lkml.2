@@ -1,127 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750885Ab0L2Fie (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 00:38:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33828 "EHLO mx1.redhat.com"
+	id S1751057Ab0L2Fik (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 00:38:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63489 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750808Ab0L2Fic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 00:38:32 -0500
+	id S1750892Ab0L2Fif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Dec 2010 00:38:35 -0500
 From: Zachary Amsden <zamsden@redhat.com>
 To: kvm@vger.kernel.org
 Cc: Zachary Amsden <zamsden@redhat.com>, Avi Kivity <avi@redhat.com>,
         Marcelo Tosatti <mtosatti@redhat.com>,
         Glauber Costa <glommer@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [KVM Clock Synchronization 1/4] Make cyc_to_nsec conversions more reliable
-Date: Tue, 28 Dec 2010 19:38:17 -1000
-Message-Id: <1293601100-32109-2-git-send-email-zamsden@redhat.com>
+Subject: [KVM Clock Synchronization 2/4] Keep TSC synchronized across host suspend
+Date: Tue, 28 Dec 2010 19:38:18 -1000
+Message-Id: <1293601100-32109-3-git-send-email-zamsden@redhat.com>
 In-Reply-To: <1293601100-32109-1-git-send-email-zamsden@redhat.com>
 References: <1293601100-32109-1-git-send-email-zamsden@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rather than use the host CPU TSC rate, which can change, compute
-cycle to nanosecond conversion in the guest TSC rate, which is
-fixed.  This allows the math for write compensation detection
-to be made more reliable.
+During a host suspend, TSC may go backwards, which KVM interprets
+as an unstable TSC.  Technically, KVM should not be marking the
+TSC unstable, which causes the TSC clocksource to go bad, but
+should be adjusting the TSC offsets in such a case.
 
 Signed-off-by: Zachary Amsden <zamsden@redhat.com>
 ---
- arch/x86/kvm/x86.c |   58 +++++++++++++++++++++------------------------------
- 1 files changed, 24 insertions(+), 34 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    1 +
+ arch/x86/kvm/x86.c              |   66 +++++++++++++++++++++++++++++++++++---
+ 2 files changed, 61 insertions(+), 6 deletions(-)
 
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 9e6fe39..63a82b0 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -386,6 +386,7 @@ struct kvm_vcpu_arch {
+ 	u64 last_kernel_ns;
+ 	u64 last_tsc_nsec;
+ 	u64 last_tsc_write;
++	u64 tsc_offset_adjustment;
+ 	bool tsc_catchup;
+ 
+ 	bool nmi_pending;
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index bfcf8fd..b9118f4 100644
+index b9118f4..b509c01 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -964,26 +964,10 @@ static inline u64 get_kernel_ns(void)
- static DEFINE_PER_CPU(unsigned long, cpu_tsc_khz);
- unsigned long max_tsc_khz;
+@@ -2042,12 +2042,20 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+ 	}
  
--static inline int kvm_tsc_changes_freq(void)
-+static inline u64 nsec_to_cycles(struct kvm *kvm, u64 nsec)
+ 	kvm_x86_ops->vcpu_load(vcpu, cpu);
++
++	/* Apply any externally detected TSC adjustments (due to suspend) */
++	if (unlikely(vcpu->arch.tsc_offset_adjustment)) {
++		kvm_x86_ops->adjust_tsc_offset(vcpu,
++			vcpu->arch.tsc_offset_adjustment);
++		vcpu->arch.tsc_offset_adjustment = 0;
++		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
++	}
+ 	if (unlikely(vcpu->cpu != cpu) || check_tsc_unstable()) {
+ 		/* Make sure TSC doesn't go backwards */
+ 		s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 :
+ 				native_read_tsc() - vcpu->arch.last_host_tsc;
+ 		if (tsc_delta < 0)
+-			mark_tsc_unstable("KVM discovered backwards TSC");
++			WARN_ON(!check_tsc_unstable());
+ 		if (check_tsc_unstable()) {
+ 			kvm_x86_ops->adjust_tsc_offset(vcpu, -tsc_delta);
+ 			vcpu->arch.tsc_catchup = 1;
+@@ -5778,14 +5786,60 @@ int kvm_arch_hardware_enable(void *garbage)
  {
--	int cpu = get_cpu();
--	int ret = !boot_cpu_has(X86_FEATURE_CONSTANT_TSC) &&
--		  cpufreq_quick_get(cpu) != 0;
--	put_cpu();
--	return ret;
--}
--
--static inline u64 nsec_to_cycles(u64 nsec)
--{
--	u64 ret;
--
--	WARN_ON(preemptible());
--	if (kvm_tsc_changes_freq())
--		printk_once(KERN_WARNING
--		 "kvm: unreliable cycle conversion on adjustable rate TSC\n");
--	ret = nsec * __get_cpu_var(cpu_tsc_khz);
--	do_div(ret, USEC_PER_SEC);
--	return ret;
-+	return pvclock_scale_delta(nsec, kvm->arch.virtual_tsc_mult,
-+				   kvm->arch.virtual_tsc_shift);
+ 	struct kvm *kvm;
+ 	struct kvm_vcpu *vcpu;
+-	int i;
++	int i, ret;
++	u64 local_tsc;
++	u64 max_tsc = 0;
++	bool stable, backwards_tsc = false;
+ 
+ 	kvm_shared_msr_cpu_online();
+-	list_for_each_entry(kvm, &vm_list, vm_list)
+-		kvm_for_each_vcpu(i, vcpu, kvm)
+-			if (vcpu->cpu == smp_processor_id())
++	local_tsc = native_read_tsc();
++	stable = !check_tsc_unstable();
++	ret = kvm_x86_ops->hardware_enable(garbage);
++	if (ret)
++		return ret;
++
++	list_for_each_entry(kvm, &vm_list, vm_list) {
++		kvm_for_each_vcpu(i, vcpu, kvm) {
++			if (!stable && vcpu->cpu == smp_processor_id())
+ 				kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+-	return kvm_x86_ops->hardware_enable(garbage);
++			if (stable && vcpu->arch.last_host_tsc > local_tsc) {
++				backwards_tsc = true;
++				if (vcpu->arch.last_host_tsc > max_tsc)
++					max_tsc = vcpu->arch.last_host_tsc;
++			}
++		}
++	}
++
++	/*
++	 * Sometimes, reliable TSCs go backwards.  This happens
++	 * on platforms that reset TSC during suspend or hibernate
++	 * actions, but maintain synchronization.  We must compensate.
++	 * Unfortunately, we can't bring the TSCs fully up to date
++	 * with real time.  The reason is that we aren't yet far
++	 * enough into CPU bringup that we know how much real time
++	 * has actually elapsed; our helper function, get_kernel_ns()
++	 * will be using boot variables that haven't been updated yet.
++	 * We simply find the maximum observed TSC above, then record
++	 * the adjustment to TSC in each VCPU.  When the VCPU later
++	 * gets loaded, the adjustment will be applied.  Note that we
++	 * accumulate adjustments, in case multiple suspend cycles
++	 * happen before the VCPU gets a chance to run again.
++	 *
++	 * Note that unreliable TSCs will be compensated already by
++	 * the logic in vcpu_load, which sets the TSC to catchup mode.
++	 * This will catchup all VCPUs to real time, but cannot
++	 * guarantee synchronization.
++	 */
++	if (backwards_tsc) {
++		u64 delta_cyc = max_tsc - local_tsc;
++		list_for_each_entry(kvm, &vm_list, vm_list)
++			kvm_for_each_vcpu(i, vcpu, kvm) {
++				vcpu->arch.tsc_offset_adjustment += delta_cyc;
++				vcpu->arch.last_host_tsc = 0;
++			}
++	}
++
++	return 0;
  }
  
- static void kvm_arch_set_tsc_khz(struct kvm *kvm, u32 this_tsc_khz)
-@@ -1010,6 +994,7 @@ void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
- 	u64 offset, ns, elapsed;
- 	unsigned long flags;
- 	s64 sdiff;
-+	u64 delta;
- 
- 	spin_lock_irqsave(&kvm->arch.tsc_write_lock, flags);
- 	offset = data - native_read_tsc();
-@@ -1020,29 +1005,34 @@ void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
- 		sdiff = -sdiff;
- 
- 	/*
--	 * Special case: close write to TSC within 5 seconds of
--	 * another CPU is interpreted as an attempt to synchronize
--	 * The 5 seconds is to accomodate host load / swapping as
--	 * well as any reset of TSC during the boot process.
-+	 * Special case: TSC write with a small delta (1 second) of virtual
-+	 * cycle time against real time is interpreted as an attempt
-+	 * to synchronize the CPU.
- 	 *
--	 * In that case, for a reliable TSC, we can match TSC offsets,
--	 * or make a best guest using elapsed value.
-+	 * For a reliable TSC, we can match TSC offsets, and for an
-+	 * unstable TSC, we will write the update, but ignore elapsed time
-+	 * in this computation. The reason for this is that unstable TSC
-+	 * will be compensated by the catchup code, and guest loops which
-+	 * continually write the TSC could end up overshooting the TSC if
-+	 * the elapsed time is factored in.
- 	 */
--	if (sdiff < nsec_to_cycles(5ULL * NSEC_PER_SEC) &&
--	    elapsed < 5ULL * NSEC_PER_SEC) {
-+	delta = nsec_to_cycles(kvm, elapsed);
-+	sdiff -= delta;
-+	if (sdiff < 0)
-+		sdiff = -sdiff;
-+	if (sdiff < nsec_to_cycles(kvm, NSEC_PER_SEC) ) {
- 		if (!check_tsc_unstable()) {
- 			offset = kvm->arch.last_tsc_offset;
- 			pr_debug("kvm: matched tsc offset for %llu\n", data);
- 		} else {
--			u64 delta = nsec_to_cycles(elapsed);
--			offset += delta;
--			pr_debug("kvm: adjusted tsc offset by %llu\n", delta);
-+			/* Unstable write; don't add elapsed time */
-+			pr_debug("kvm: matched write on unstable tsc\n");
- 		}
--		ns = kvm->arch.last_tsc_nsec;
-+	} else {
-+		kvm->arch.last_tsc_nsec = ns;
-+		kvm->arch.last_tsc_write = data;
-+		kvm->arch.last_tsc_offset = offset;
- 	}
--	kvm->arch.last_tsc_nsec = ns;
--	kvm->arch.last_tsc_write = data;
--	kvm->arch.last_tsc_offset = offset;
- 	kvm_x86_ops->write_tsc_offset(vcpu, offset);
- 	spin_unlock_irqrestore(&kvm->arch.tsc_write_lock, flags);
- 
+ void kvm_arch_hardware_disable(void *garbage)
 -- 
 1.7.1
 
