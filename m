@@ -1,82 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab0L2WDP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 17:03:15 -0500
-Received: from netnation.com ([204.174.223.2]:47413 "EHLO peace.netnation.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753970Ab0L2WDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 17:03:14 -0500
-Date: Wed, 29 Dec 2010 14:03:13 -0800
-From: Simon Kirby <sim@hostway.ca>
-To: linux-nfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: System CPU increasing on idle 2.6.36
-Message-ID: <20101229220313.GA13688@hostway.ca>
-References: <20101208212505.GA18192@hostway.ca> <20101218010801.GE28367@hostway.ca>
+	id S1754073Ab0L2WFd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 17:05:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:42769 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752906Ab0L2WFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Dec 2010 17:05:30 -0500
+Message-ID: <4D1BB092.7030609@zytor.com>
+Date: Wed, 29 Dec 2010 14:05:06 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101218010801.GE28367@hostway.ca>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Tejun Heo <tj@kernel.org>
+CC: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, tglx@linutronix.de, x86@kernel.org,
+        eric.dumazet@gmail.com, yinghai@kernel.org, brgerst@gmail.com,
+        gorcunov@gmail.com, Pekka Enberg <penberg@kernel.org>,
+        shaohui.zheng@intel.com
+Subject: Re: [PATCH 13/16] x86: Unify cpu/apicid <-> NUMA node mapping between
+ 32 and 64bit
+References: <1293536929-31683-1-git-send-email-tj@kernel.org> <1293536929-31683-14-git-send-email-tj@kernel.org> <alpine.DEB.2.00.1012281231070.8883@chino.kir.corp.google.com> <20101229105253.GK488@htj.dyndns.org> <4D1B8DC8.6000104@zytor.com>
+In-Reply-To: <4D1B8DC8.6000104@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 05:08:01PM -0800, Simon Kirby wrote:
-
-> On Wed, Dec 08, 2010 at 01:25:05PM -0800, Simon Kirby wrote:
+On 12/29/2010 11:36 AM, H. Peter Anvin wrote:
+> On 12/29/2010 02:52 AM, Tejun Heo wrote:
+>> On Tue, Dec 28, 2010 at 12:35:45PM -0800, David Rientjes wrote:
+>>> This is going to conflict with a387e95a ("") in x86/numa, so you'll need 
+>>> the following hunk for acpi_fake_nodes().  I'm not sure why this patchset 
+>>> is being based on x86/apic-cleanup rather than x86/numa?
+>>
+>> Because several patches from the patchset have already been committed
+>> into x86/apic-cleanup.  Thomas, Peter, if this needs to be rebased
+>> somewhere, let me know.
+>>
 > 
-> > Possibly related to the flush-processes-taking-CPU issues I saw
-> > previously, I thought this was interesting.  I found a log-crunching box
-> > that does all of its work via NFS and spends most of the day sleeping. 
-> > It has been using a linearly-increasing amount of system time during the
-> > time where is sleeping.  munin graph:
-> > 
-> > http://0x.ca/sim/ref/2.6.36/cpu_logcrunch_nfs.png
-> >...
-> > Known 2.6.36 issue?  This did not occur on 2.6.35.4, according to the
-> > munin graphs.  I'll try 2.6.37-rc an see if it changes.
+> x86/numa is already a dependent branch (on x86/amd-nb), so I'm fine
+> merging x86/apic-cleanup into that branch and then if you could rebase
+> it on top of the new x86/numa then I'll push it out tomorrow.
 > 
-> So, back on this topic,
+> OK?
 > 
-> It seems that system CPU from "flush" processes is still increasing
-> during and after periods of NFS activity, even with 2.6.37-rc5-git4:
->         
->         http://0x.ca/sim/ref/2.6.37/cpu_nfs.png
-> 
-> Something is definitely going on while NFS is active, and then keeps
-> happening in the idle periods.  top and perf top look the same as in
-> 2.6.36.  No userland activity at all, but the kernel keeps doing stuff.
-> 
-> I could bisect this, but I have to wait a day for each build, unless I
-> can come up with a way to reproduce it more quickly.  The mount points
-> for which the flush processes are active are the two mount points where
-> the logs are read from, rotated, compressed, and unlinked, and where the
-> reports are written, running in parallel under an xargs -P 15.
-> 
-> I'm pretty sure the only syscalls that are reproducing this are read(),
-> readdir(), lstat(), write(), rename(), unlink(), and close().  There's
-> nothing special happening here...
 
-I've noticed nfs_inode_cache is ever-increasing as well with 2.6.37:
+I have pushed out this merge onto x86/numa, so waiting for your rebase.
+ If you don't have time, then I'll rebase.
 
-  OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
-2562514 2541520  99%    0.95K  78739       33   2519648K nfs_inode_cache
-467200 285110  61%    0.02K   1825      256      7300K kmalloc-16
-299397 242350  80%    0.19K  14257       21     57028K dentry
-217434 131978  60%    0.55K   7767       28    124272K radix_tree_node
-215232  81522  37%    0.06K   3363       64     13452K kmalloc-64
-183027 136802  74%    0.10K   4693       39     18772K buffer_head
-101120  71184  70%    0.03K    790      128      3160K kmalloc-32
- 79616  59713  75%    0.12K   2488       32      9952K kmalloc-128
- 66560  41257  61%    0.01K    130      512       520K kmalloc-8
- 42126  26650  63%    0.75K   2006       21     32096K ext3_inode_cache
-
-http://0x.ca/sim/ref/2.6.37/inodes_nfs.png
-http://0x.ca/sim/ref/2.6.37/cpu2_nfs.png
-
-Perhaps I could bisect just fs/nfs changes between 2.6.35 and 2.6.36 to
-try to track this down without having to wait too long, unless somebody
-can see what is happening here.
-
-Simon-
+	-hpa
