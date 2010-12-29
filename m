@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab0L2QCL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 11:02:11 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51065 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709Ab0L2QCH (ORCPT
+	id S1753431Ab0L2QTd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 11:19:33 -0500
+Received: from mga02.intel.com ([134.134.136.20]:60051 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753345Ab0L2QTb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 11:02:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=YoGKZQvNPPDj6vAuMFZ4ZLKhg7mG6oG7djumtsBjOEb3WFVfCnGenAc78k3+7phxjz
-         IrqRs0zObg3ohI1nh4+viKT5/qNQPl5PnoMZg5lNADrv/SfJ/c+V7QyFQbhM7Wm03WPH
-         K8xPApMoHwZYEXTgshzkXEluUcQn8fSr3v1Yw=
-Date: Wed, 29 Dec 2010 17:02:01 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Pete Zaitcev <zaitcev@redhat.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
-        hch@infradead.org
-Subject: Re: [PATCH 10/16] ub: convert to bdops->check_events()
-Message-ID: <20101229160201.GM488@htj.dyndns.org>
-References: <1293557352-10592-1-git-send-email-tj@kernel.org>
- <1293557352-10592-11-git-send-email-tj@kernel.org>
- <20101229085329.772e1dc0@lembas.zaitcev.lan>
+	Wed, 29 Dec 2010 11:19:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,245,1291622400"; 
+   d="scan'208";a="588100888"
+From: "Gorby, Russ" <russ.gorby@intel.com>
+To: "Dan Carpenter " <IMCEAMAILTO-error27+40gmail+2Ecom@intel.com>
+CC: "Cox, Alan" <alan.cox@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 29 Dec 2010 08:19:30 -0800
+Subject: RE: smatch stuff: serial: ifx6x60: oops on load
+Thread-Topic: smatch stuff: serial: ifx6x60: oops on load
+Thread-Index: AcugJqrX5fJlqy2PQMmWSeGMkq+ukgAMuVjAAAI3J4AABKf50AAAFLNAAb9GzIA=
+Message-ID: <4C5E6457CD7911469A07260381288C28CB5F5F85@orsmsx502.amr.corp.intel.com>
+References: <4C5E6457CD7911469A07260381288C28CB379310@orsmsx502.amr.corp.intel.com>
+ <E1A1564674E5754FB00AB9AC949D5E3260EB004322@rrsmsx501.amr.corp.intel.com>
+ <72D8A09E39A89147BE9CFBB6F0C73C3061F523A532@rrsmsx501.amr.corp.intel.com>
+ <E1A1564674E5754FB00AB9AC949D5E3260EB09CDD7@rrsmsx501.amr.corp.intel.com>
+In-Reply-To: <E1A1564674E5754FB00AB9AC949D5E3260EB09CDD7@rrsmsx501.amr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101229085329.772e1dc0@lembas.zaitcev.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 29, 2010 at 08:53:29AM -0700, Pete Zaitcev wrote:
-> On Tue, 28 Dec 2010 18:29:06 +0100
-> Tejun Heo <tj@kernel.org> wrote:
-> 
-> > Convert from ->media_changed() to ->check_events().
-> > 
-> > ub buffers media changed state and clears it on revalidation.  It will
-> > behave correctly with kernel event polling.
-> 
-> If you say so, I don't mind. I reserve the right to come back to you
-> if I find breakage in testing (I have a ZIP drive that has a real
-> media change).
 
-Sure.  :-)
+Yes, unfortunately there are a few issues with this driver that prevent it from loading and running properly.
+I will be proving follow-on patches to address this and other issues that have been discovered that should address this. 
 
--- 
-tejun
+>>-----Original Message-----
+>>From: Dan Carpenter [mailto:error27@gmail.com]
+>>Sent: Monday, December 20, 2010 1:16 AM
+>>To: Gorby, Russ
+>>Cc: Alan Cox; linux-kernel@vger.kernel.org
+>>Subject: smatch stuff: serial: ifx6x60: oops on load
+>>
+>>Smatch complains that the ifx6x60 driver in linux-next has a NULL
+>>dereference.
+>>
+>>drivers/serial/ifx6x60.c +986 ifx_spi_spi_probe(27)
+>>	error: potential null derefence 'pl_data'.
+>>
+>>   984          ifx_dev->spi_timer.function = ifx_spi_timeout;
+>>   985          ifx_dev->spi_timer.data = (unsigned long)ifx_dev;
+>>   986          ifx_dev->is_6160 = pl_data->is_6160;
+>>                                   ^^^^^^^
+>>"pl_data" is always NULL at this point.  Presumably this crashes on
+>load
+>>every time.
+>>
+>>regards,
+>>dan carpenter
+
