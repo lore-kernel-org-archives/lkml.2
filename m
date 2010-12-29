@@ -1,76 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011Ab0L2Vun (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 16:50:43 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:57330 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753917Ab0L2Vuk (ORCPT
+	id S1754047Ab0L2V77 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 16:59:59 -0500
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:37728 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753807Ab0L2V76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 16:50:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=ccmpCJkYUfbJt2ju62OdQlbADnlk/LiHDCVY2Rbv823MVj1iqGRbP/jm/EilEfUv4j
-         xtPxR143V1tAU5tfh1dw==
-Date: Wed, 29 Dec 2010 13:50:22 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Minchan Kim <minchan.kim@gmail.com>, Thomas Meyer <thomas@m3y3r.de>,
+	Wed, 29 Dec 2010 16:59:58 -0500
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Dec 2010 16:59:58 EST
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=UA1hkFu/xWpC5PK3Rgb0Q0INgEd237HyyH3E73Mqhi6VuXBWZnvK7GWwJGQpiwUE44Cp/VCXNJhIhD7p7+bRUw5VxscORNgIDsM2qQSiGwhoPhf2eiZzw3TM9jMYybjB;
+Date: Wed, 29 Dec 2010 13:53:15 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Alex Riesen <raa.lkml@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: 2.6.37-rc7: NULL pointer dereference
-In-Reply-To: <20101222164151.GA2048@cmpxchg.org>
-Message-ID: <alpine.LSU.2.00.1012291344460.22803@sister.anvils>
-References: <1293020757.1998.2.camel@localhost.localdomain> <AANLkTin6GMiXHuoVzNWPcj0jXDqWyfWCwW9fd-v=pq=X@mail.gmail.com> <20101222164151.GA2048@cmpxchg.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-672622310-1293659434=:22803"
-X-System-Of-Record: true
+        dri-devel@lists.freedesktop.org, Jeff Chua <jeff.chua.linux@gmail.com>
+Subject: Re: Linux 2.6.37-rc8 (no fb)
+Message-ID: <20101229135315.5fe5c4e5@jbarnes-desktop>
+In-Reply-To: <20101229131852.0792aac0@jbarnes-desktop>
+References: <AANLkTi=-dNeeDjcSoznKtwcaNyw1mMXSqepFY89R2i+2@mail.gmail.com>
+	<20101229102127.06c0e505.randy.dunlap@oracle.com>
+	<AANLkTims54zDXZYjZiiHfSOwy0W=gOF2jV8yopQxFBny@mail.gmail.com>
+	<20101229121601.179983b7@jbarnes-desktop>
+	<AANLkTikMMpdMr66n-VL9xdNVhmGMaWR74UdF5UB7cdCW@mail.gmail.com>
+	<20101229131852.0792aac0@jbarnes-desktop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+> > Doesn't change anything here. Display stays blank.
+> 
+> Sounds like your problem is separate from SSC then, more likely related
+> to panel power or backlight control.  Have you tried bisecting for the
+> problem between 2.6.35 and 2.6.36?
 
---8323584-672622310-1293659434=:22803
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Nevermind, I just checked out the bug, looks like it is panel power
+related.  Can you try this patch?
 
-On Wed, 22 Dec 2010, Johannes Weiner wrote:
-> On Thu, Dec 23, 2010 at 12:37:11AM +0900, Minchan Kim wrote:
-> > On Wed, Dec 22, 2010 at 9:25 PM, Thomas Meyer <thomas@m3y3r.de> wrote:
-> > > BUG: unable to handle kernel NULL pointer dereference at 00000008
-> > > IP: [<c04eae14>] __mem_cgroup_try_charge+0x234/0x430
-> > > Process swapoff (pid: 8058, ti=3Df2e70000 task=3Df3e55860 task.ti=3Df=
-2e70000)
-> > > Call Trace:
-> > > =A0[<c0456607>] ? ktime_get_ts+0x107/0x140
-> > > =A0[<c04ebb89>] ? mem_cgroup_try_charge_swapin+0x49/0xb0
-> > > =A0[<c04d9b4b>] ? unuse_mm+0x1db/0x300
-> > > =A0[<c04dad9a>] ? sys_swapoff+0x2aa/0x890
-> > > =A0[<c047cd58>] ? audit_syscall_entry+0x218/0x240
-> > > =A0[<c047d043>] ? audit_syscall_exit+0x1f3/0x220
-> > > =A0[<c0403013>] ? sysenter_do_call+0x12/0x22
->=20
-> This could be explained by a kernel without VM_BUG_ON(), where
-> !mm->owner goes uncaught until css_tryget() reads mem.css.flags (eight
-> bytes member offset on 32-bit).
->=20
-> Does
-> =09http://marc.info/?l=3Dlinux-mm&m=3D128889198016021&w=3D2
-> help?
+If it doesn't work, can you send me the output of intel_reg_dumper from
+before you turn off the display and after you try to turn it back on?
 
-I'm sure you're right, Hannes.  Thanks for the prod.  Sadly, Kame
-and I both let the fix drift, expecting it to magick its way into
-Linus's tree.  We're now at rc8: I'd better change my Acked-by to
-a Signed-off-by and try sending it in immediately: will do so now.
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
 
-Hugh
---8323584-672622310-1293659434=:22803--
+diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
+index aa23070..830e3b0 100644
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -82,8 +82,6 @@ static void intel_lvds_enable(struct intel_lvds *intel_lvds)
+ 		lvds_reg = LVDS;
+ 	}
+ 
+-	I915_WRITE(lvds_reg, I915_READ(lvds_reg) | LVDS_PORT_EN);
+-
+ 	if (intel_lvds->pfit_dirty) {
+ 		/*
+ 		 * Enable automatic panel scaling so that non-native modes
+@@ -104,7 +102,7 @@ static void intel_lvds_enable(struct intel_lvds *intel_lvds)
+ 	}
+ 
+ 	I915_WRITE(ctl_reg, I915_READ(ctl_reg) | POWER_TARGET_ON);
+-	POSTING_READ(lvds_reg);
++	POSTING_READ(ctl_reg);
+ 
+ 	intel_panel_set_backlight(dev, dev_priv->backlight_level);
+ }
+@@ -136,8 +134,7 @@ static void intel_lvds_disable(struct intel_lvds *intel_lvds)
+ 		intel_lvds->pfit_dirty = true;
+ 	}
+ 
+-	I915_WRITE(lvds_reg, I915_READ(lvds_reg) & ~LVDS_PORT_EN);
+-	POSTING_READ(lvds_reg);
++	POSTING_READ(ctl_reg);
+ }
+ 
+ static void intel_lvds_dpms(struct drm_encoder *encoder, int mode)
