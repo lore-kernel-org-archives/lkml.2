@@ -1,119 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab0L2OKg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 09:10:36 -0500
-Received: from ms01.sssup.it ([193.205.80.99]:38567 "EHLO sssup.it"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752890Ab0L2OKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 09:10:33 -0500
-Subject: Re: [PATCH resend] Reading POSIX CPU timer from outside the
- process.
-From: Dario Faggioli <raistlin@linux.it>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>, torbenh <torbenh@gmx.de>,
-        john.stultz@linaro.org, roland@redhat.com, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-In-Reply-To: <20101229132130.GA16349@redhat.com>
-References: <1293121303.3390.185.camel@Palantir>
-	 <1293533742.2899.1028.camel@Palantir> <20101228163829.GA26533@redhat.com>
-	 <1293572304.2899.1214.camel@Palantir>  <20101229132130.GA16349@redhat.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-+3EyyFiaKKpF9aFly4/z"
-Date: Wed, 29 Dec 2010 15:10:14 +0100
-Message-ID: <1293631815.2899.1238.camel@Palantir>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753301Ab0L2OMl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 09:12:41 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:54021 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539Ab0L2OMj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Dec 2010 09:12:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=Mfr6JHjdURiCgfoI5k2pZE2m55Qy/Fqp55KY0Z1bd/HboKn9k+A72Axi4RPmlKXB3b
+         tHUkKUBhDy5kwHojC8bfoaCcQ69zwG9giBR2hEq1KuXDOcahsTxVkXyo3MOXCRfI2B8s
+         3cGM9yGRF7/UyYVpE2LfS/ukhesFnEUdxVyhE=
+Date: Wed, 29 Dec 2010 22:12:44 +0800
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] fix return value when mount fail
+Message-ID: <20101229141244.GA11081@darkstar>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I happened to pass swap partition as root partition in cmdline,
+then kernel panic and tell me about "Cannot open root device".
+It is not correct, in fact it is a mount failer instead of 'no device'.
 
---=-+3EyyFiaKKpF9aFly4/z
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Eventually I found btrfs mounting failed with -EIO, it should be -EINVAL.
 
-On Wed, 2010-12-29 at 14:21 +0100, Oleg Nesterov wrote:=20
-> > > How so? For example, with this change
-> > > clock_getres(MAKE_THREAD_CPUCLOCK(pid_of_sub_thread)) won't work, no?
-> > >
-> > I tested all the clock_getres() calls that came to my mind (at least th=
-e
-> > one that are possible from an userspace program), and they always worke=
-d
-> > because of this (still in check_clock):
-> >
-> >         const pid_t pid =3D CPUCLOCK_PID(which_clock);
-> >
-> >         if (pid =3D=3D 0)
-> >                 return 0;
-> >
-> > Which triggers all the times,
->=20
-> No, please note pid_of_sub_thread above.
->=20
-Sure, I saw that... I was referring to all the clock_getres() and
-clock_{get,set}time() I was able to call without using directly
-MAKE_THREAD_CPUCLOCK.
+Here fix the return value as -EINVAL
 
-> > Which won't work because CPUCLOCK_PERTHREAD(which_clock) is always fals=
-e
-> > in this case.
->=20
-> I guess, this is because glibc passes MAKE_PROCESS_CLOCK() id, right?
-> But we shouldn't add the hacks to the kernel to hide the limitations
-> in glibc.
->=20
-Exactly. Actually, I didn't noticed this too when I first started with
-this patch, and the fact that my first version worked -- which was by
-chance, I can say it now :-P -- made me think it was worthwhile to bend
-the semantic a bit, to enable this new capability... But making it work
-is hackish, I see it now. Sorry. :-)
+Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
+---
+ fs/btrfs/disk-io.c |    4 +++-
+ fs/btrfs/volumes.c |    8 +++++---
+ 2 files changed, 8 insertions(+), 4 deletions(-)
 
-> BTW. What is the test-case? I am looking at http://gitorious.org/clockid,
-> I guess it is clockid.c...
->=20
-Yep. A very trivial one, I agree, but it's just to show the issue.
-
-> You do not need clock_getcpuclockid() at all. In fact I do not really
-> understand what this helper should actually do, probably it is only
-> needed to validate the pid. You can simply use MAKE_THREAD_CPUCLOCK()
-> to sample a single thread via clock_gettime().
->=20
-Fine, but, is that macro available for an application developer? Because
-I can find it in kernel and glibc sources, but not in my /usr/include/*,
-which is the motivation behind this attempt... But it might be my
-fault! :-P
-
-> IOW. Unless I missed something, with this patch, the only problem
-> is that getcpuclockid() always assumes MAKE_PROCESS_CPUCLOCK(),
-> I do not think this is the kernel problem.
->=20
-Agreed, sorry for wasting (hopefully not too much) people's time. :-(
-
-Thanks and Regards,
-Dario
-
---=20
-<<This happens because I choose it to happen!>> (Raistlin Majere)
-----------------------------------------------------------------------
-Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
-
-http://retis.sssup.it/people/faggioli -- dario.faggioli@jabber.org
-
---=-+3EyyFiaKKpF9aFly4/z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAk0bQUAACgkQk4XaBE3IOsQjOgCfWfU1pqOtQIbxdwiLBEPlP2kH
-Q9wAmgMWEjQ6DuqDYiPDGoNF6tnf1Dus
-=UH+7
------END PGP SIGNATURE-----
-
---=-+3EyyFiaKKpF9aFly4/z--
-
+--- linux-2.6.orig/fs/btrfs/disk-io.c	2010-12-29 21:53:17.473333338 +0800
++++ linux-2.6/fs/btrfs/disk-io.c	2010-12-29 21:57:37.916666672 +0800
+@@ -1713,8 +1713,10 @@ struct btrfs_root *open_ctree(struct sup
+ 		     fs_info, BTRFS_ROOT_TREE_OBJECTID);
+ 
+ 	bh = btrfs_read_dev_super(fs_devices->latest_bdev);
+-	if (!bh)
++	if (!bh) {
++		err = -EINVAL;
+ 		goto fail_iput;
++	}
+ 
+ 	memcpy(&fs_info->super_copy, bh->b_data, sizeof(fs_info->super_copy));
+ 	memcpy(&fs_info->super_for_commit, &fs_info->super_copy,
+--- linux-2.6.orig/fs/btrfs/volumes.c	2010-12-29 21:53:17.503333338 +0800
++++ linux-2.6/fs/btrfs/volumes.c	2010-12-29 21:57:37.920000005 +0800
+@@ -598,8 +598,10 @@ static int __btrfs_open_devices(struct b
+ 		set_blocksize(bdev, 4096);
+ 
+ 		bh = btrfs_read_dev_super(bdev);
+-		if (!bh)
++		if (!bh) {
++			ret = -EINVAL;
+ 			goto error_close;
++		}
+ 
+ 		disk_super = (struct btrfs_super_block *)bh->b_data;
+ 		devid = btrfs_stack_device_id(&disk_super->dev_item);
+@@ -700,7 +702,7 @@ int btrfs_scan_one_device(const char *pa
+ 		goto error_close;
+ 	bh = btrfs_read_dev_super(bdev);
+ 	if (!bh) {
+-		ret = -EIO;
++		ret = -EINVAL;
+ 		goto error_close;
+ 	}
+ 	disk_super = (struct btrfs_super_block *)bh->b_data;
+@@ -1193,7 +1195,7 @@ int btrfs_rm_device(struct btrfs_root *r
+ 		set_blocksize(bdev, 4096);
+ 		bh = btrfs_read_dev_super(bdev);
+ 		if (!bh) {
+-			ret = -EIO;
++			ret = -EINVAL;
+ 			goto error_close;
+ 		}
+ 		disk_super = (struct btrfs_super_block *)bh->b_data;
