@@ -1,220 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661Ab0L2Spk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 13:45:40 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61537 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753166Ab0L2Sph convert rfc822-to-8bit (ORCPT
+	id S1753775Ab0L2TMM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 14:12:12 -0500
+Received: from mtaout01-winn.ispmail.ntl.com ([81.103.221.47]:16253 "EHLO
+	mtaout01-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753559Ab0L2TMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 13:45:37 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=PO7sGoW74w+MmCaGrdOErKbGtfsvOy0OBhpmX4CFTf41NZn9J1JVsanOuYpbD8ekws
-         huBnJVvlpMbrx9XBWXOmj/1aBY/XBZ2QKfnbhS47QIpm1V6YfE5x2HOhTBufKiWyYh0B
-         qQ+SJ8y5AS6Nver16Cm+w0XT2oJVxNWKT/UxE=
-MIME-Version: 1.0
-In-Reply-To: <20101229180650.GE6067@tarshish>
-References: <4D1A5C2A.5050606@gmail.com>
-	<20101229060637.GA31010@jasper.tkos.co.il>
-	<4D1B33F2.5060600@gmail.com>
-	<20101229180650.GE6067@tarshish>
-Date: Wed, 29 Dec 2010 19:45:34 +0100
-X-Google-Sender-Auth: e5yUkZf3cGXiW2eX2hBEu6IPTYA
-Message-ID: <AANLkTim0+GbddLdkPFoggeCKpU7on7mta0V2mZZLgviE@mail.gmail.com>
-Subject: Re: dm9000 patch
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Baruch Siach <baruch@tkos.co.il>
-Cc: Angelo Dureghello <angelo70@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org,
-        uClinux development list <uclinux-dev@uclinux.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 29 Dec 2010 14:12:09 -0500
+From: Daniel Drake <dsd@laptop.org>
+To: cbou@mail.ru
+To: dwmw2@infradead.org
+Cc: linux-kernel@vger.kernel.org
+Cc: pgf@laptop.org
+Subject: [PATCH] olpc_battery: Ambient temperature is not available on XO-1.5
+Message-Id: <20101229191201.ED8019D401D@zog.reactivated.net>
+Date: Wed, 29 Dec 2010 19:12:01 +0000 (GMT)
+X-Cloudmark-Analysis: v=1.1 cv=X0sWjjQ37bMP4yB/pNNinY3VxVB2n/hmdAjhihaCFGs= c=1 sm=0 a=yNWVPPRSaTsA:10 a=Op-mwl0xAAAA:8 a=0QMw9UIezUt00b1oUQkA:9 a=YT1_uhctfUj7owxLOr1DN_zmxBcA:4 a=d4CUUju0HPYA:10 a=lGdnjl07UuxZYpzI:21 a=k6nCzJAu7AWYXe-U:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 29, 2010 at 19:06, Baruch Siach <baruch@tkos.co.il> wrote:
-> Hi Angelo,
->
-> On Wed, Dec 29, 2010 at 02:13:22PM +0100, Angelo Dureghello wrote:
->> just FYI, i tested kernel 2.6.36.2, unfortunately the issue is still
->> there, below the call stack trace.
->
-> Help from the m68k experts seems to be needed. Adding the relevant list to Cc.
+The XO-1.5 does not support the ambient temperature property.
+Create a separate list of properties for that configuration where
+ambient temperature is not included, and apply the correct property
+list at runtime.
 
-This is uClinux? Added Cc...
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+---
+ drivers/power/olpc_battery.c |   28 +++++++++++++++++++++++++---
+ 1 files changed, 25 insertions(+), 3 deletions(-)
 
->> [    4.620000] eth0: link up, 100Mbps, full-duplex, lpa 0x45E1
->> [   39.390000] BUG: spinlock recursion on CPU#0, httpd/29
->> [   39.390000]  lock: 00189c44, .magic: dead4ead, .owner: httpd/29,
->> .owner_cpu: 0
->> [   39.390000] Stack from 00d6a990:
->> [   39.390000]         00d6a9bc 000a9710 0017cac7 00189c44 dead4ead
->> 00de48f4 0000001d 00000000
->> [   39.390000]         00189c44 0002a646 00145f70 00d6a9f0 000a98e2
->> 00189c44 0017cb2d 00189c44
->> [   39.390000]         00d6aad8 0000001f 00145f5c 001523f6 00189c08
->> 0002a646 00145f70 0002bc52
->> [   39.390000]         00d6a9fc 00145f7e 00189c44 00d6aa28 0002a75e
->> 00189c44 0000001f 00d6aad8
->> [   39.390000]         0000001f 00145f5c 00189c08 0002a646 00145f70
->> 0002bc52 00d6aa3c 00000bb6
->> [   39.390000]         0000001f 00189c44 00cfc780 00d6aa84 0000337a
->> 0000001f 00d6aa4c 00000001
->> [   39.390000] Call Trace:
->> [   39.390000]  [000a9710] spin_bug+0x86/0x11a
->> [   39.390000]  [000a98e2] do_raw_spin_lock+0x58/0x120
->> [   39.390000]  [00145f7e] _raw_spin_lock+0xe/0x14
->> [   39.390000]  [0002a75e] __do_IRQ+0x2c/0x108
->> [   39.390000]  [00000bb6] do_IRQ+0x48/0x62
->> [   39.390000]  [0000337a] inthandler+0x6a/0x74
->> [   39.390000]  [0002a82e] __do_IRQ+0xfc/0x108
->> [   39.390000]  [00000bb6] do_IRQ+0x48/0x62
->> [   39.390000]  [0000337a] inthandler+0x6a/0x74
->> [   39.390000]  [000ef0ce] skb_release_all+0x10/0x20
->> [   39.390000]  [000ee6bc] __kfree_skb+0x10/0x92
->> [   39.390000]  [000ee75e] consume_skb+0x20/0x34
->> [   39.390000]  [000e004e] dm9000_start_xmit+0xdc/0xec
->> [   39.390000]  [000f67a2] dev_hard_start_xmit+0x146/0x472
->> [   39.390000]  [00106506] sch_direct_xmit+0xc0/0x1bc
->> [   39.390000]  [000f9914] dev_queue_xmit+0x160/0x3e4
->> [   39.390000]  [00113b3e] ip_finish_output+0xee/0x318
->> [   39.390000]  [001142b4] ip_output+0x7c/0x88
->> [   39.390000]  [00113dc6] ip_local_out+0x26/0x30
->> [   39.390000]  [00114d9a] ip_queue_xmit+0x152/0x374
->> [   39.390000]  [00125c8c] tcp_transmit_skb+0x3f0/0x732
->> [   39.390000]  [00126f26] tcp_write_xmit+0x178/0x868
->> [   39.390000]  [00127644] __tcp_push_pending_frames+0x2e/0x9a
->> [   39.390000]  [0011c3d6] tcp_sendmsg+0x82e/0x98c
->> [   39.390000]  [00137544] inet_sendmsg+0x32/0x54
->> [   39.390000]  [000e79a6] sock_aio_write+0xc8/0x138
->> [   39.390000]  [00042590] do_sync_write+0x9e/0xfe
->> [   39.390000]  [00042668] vfs_write+0x78/0x84
->> [   39.390000]  [00042a92] sys_write+0x40/0x7a
->> [   39.390000]  [00003224] system_call+0x84/0xc2
->> [   39.390000]
->>
->> dm9000e is as default not visible/selectable in menuconfig for
->> Coldfire architectures, so this probably cannot be considered as a
->> kernel bug.
->>
->> I going forward in investigations, every help is appreciated,
->>
->> regards,
->> angelo
->>
->>
->>
->> On 29/12/2010 07:06, Baruch Siach wrote:
->> >Hi Angelo,
->> >
->> >On Tue, Dec 28, 2010 at 10:52:42PM +0100, Angelo Dureghello wrote:
->> >>sorry to contact you directly but i couldn't get any help from the
->> >>kernel.org mailing list, since i am not a developer my mails are
->> >>generally skipped.
->> >The best way to get the contact info for a piece of kernel code, is using the
->> >get_maintainer.pl script. Running 'scripts/get_maintainer.pl -f
->> >drivers/net/dm9000.c' gives the following output:
->> >
->> >netdev@vger.kernel.org
->> >linux-kernel@vger.kernel.org
->> >
->> >I added both to Cc.
->> >
->> >>I am very near to have a custom board working with MCF5307 cpu and dm9000.
->> >>I am using kernel 2.6.36-rc3 with your last patch about
->> >>spinlock-recursion already included.
->> >You should try to update to the latest .36 kernel, which is currently
->> >2.6.36.2. The problem that you experience might be unrelated to the dm9000
->> >driver (or to networking at all), so it might have been fixed in this version.
->> >
->> >>I have "ping" and "telnet" to the embedded board fully working.
->> >>If i try to get a sample web page with some images from the board
->> >>httpd with a browser, in 80% of cases i get a trap/oops:
->> >Try to enable KALLSYMS in your kernel .config to make your stack trace more
->> >meaningful. This is under 'General setup ->  Configure standard kernel features
->> >(for small systems) ->  Load all symbols for debugging/ksymoops'.
->> >
->> >I hope this helps.
->> >
->> >baruch
->> >
->> >>[    4.590000] eth0: link up, 100Mbps, full-duplex, lpa 0x45E1
->> >>[   67.630000] BUG: spinlock recursion on CPU#0, httpd/29
->> >>[   67.630000]  lock: 00c42c06, .magic: dead4ead, .owner: httpd/29,
->> >>.owner_cpu: 0
->> >>[   67.630000] Stack from 00d7b914:
->> >>[   67.630000]         00d7b940 000a8cf0 0015f693 00c42c06 dead4ead
->> >>00dec1d4 0000001d 00000000
->> >>[   67.630000]         00c42c06 00006188 00c42800 00d7b974 000a8ec2
->> >>00c42c06 0015f6f9 00002704
->> >>[   67.630000]         00000000 0000001f 00146fa4 00152f0c 00c42b60
->> >>00006188 00c42800 0002b312
->> >>[   67.630000]         00d7b984 0014701e 00c42c06 00000000 00d7b9c4
->> >>000df21c 00c42c06 00000000
->> >>[   67.630000]         00000000 0000001f 00146fa4 00152f0c 000005ea
->> >>00cfc640 00006188 000096e8
->> >>[   67.630000]         0002b312 00146fa4 00c42b60 00002704 00d7b9ec
->> >>00029d3a 0000001f 00c42800
->> >>[   67.630000] Call Trace:
->> >>[   67.630000]  [000a8cf0]  [000a8ec2]  [0014701e]  [000df21c]  [00029d3a]
->> >>[   67.630000]  [00029e84]  [00000bb6]  [0000336e]  [000df162]  [000effd6]
->> >>[   67.630000]  [00100482]  [000f312e]  [000f9ebc]  [0010dd2a]  [0010e4a0]
->> >>[   67.630000]  [0010dfb2]  [0010ef80]  [0011fed6]  [00121170]  [0012188e]
->> >>[   67.630000]  [0011ecc6]  [001249fe]  [000e4084]  [0011621c]  [00131a44]
->> >>[   67.630000]  [000e11ee]  [00041944]  [00041a1c]  [00041e46]  [00003218]
->> >>[   67.630000] BUG: spinlock lockup on CPU#0, httpd/29, 00c42c06
->> >>[   67.630000] Stack from 00d7b934:
->> >>[   67.630000]         00d7b974 000a8f66 0015f703 00000000 00dec1d4
->> >>0000001d 00c42c06 00002704
->> >>[   67.630000]         00000000 0000001f 00146fa4 00152f0c 00c42b60
->> >>00006188 00c42800 0002b312
->> >>[   67.630000]         00d7b984 0014701e 00c42c06 00000000 00d7b9c4
->> >>000df21c 00c42c06 00000000
->> >>[   67.630000]         00000000 0000001f 00146fa4 00152f0c 000005ea
->> >>00cfc640 00006188 000096e8
->> >>[   67.630000]         0002b312 00146fa4 00c42b60 00002704 00d7b9ec
->> >>00029d3a 0000001f 00c42800
->> >>[   67.630000]         0016c1b4 00cfc640 0000001f 0016c178 00029d10
->> >>00146fb8 00d7ba20 00029e84
->> >>[   67.630000] Call Trace:
->> >>[   67.630000]  [000a8f66]  [0014701e]  [000df21c]  [00029d3a]  [00029e84]
->> >>[   67.630000]  [00000bb6]  [0000336e]  [000df162]  [000effd6]  [00100482]
->> >>[   67.630000]  [000f312e]  [000f9ebc]  [0010dd2a]  [0010e4a0]  [0010dfb2]
->> >>[   67.630000]  [0010ef80]  [0011fed6]  [00121170]  [0012188e]  [0011ecc6]
->> >>[   67.630000]  [001249fe]  [000e4084]  [0011621c]  [00131a44]  [000e11ee]
->> >>[   67.630000]  [00041944]  [00041a1c]  [00041e46]  [00003218]
->> >>
->> >>As i said, i was hoping in your patch but i sadly discovered it is
->> >>already included in this kernel version.
->> >>Hope you can give me some help or can forward me to an appropriate
->> >>mailing list.
->>
->
-> --
->                                                     ~. .~   Tk Open Systems
-> =}------------------------------------------------ooO--U--Ooo------------{=
->   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Obsoletes earlier submissions:
+[PATCH 1/2] power_supply: allow control of attribute visibility
+[PATCH 2/2] olpc_battery: Hide ambient temperature attribute on XO-1.5
 
-
-
+diff --git a/drivers/power/olpc_battery.c b/drivers/power/olpc_battery.c
+index 5bc1dcf..0cd4f15 100644
+--- a/drivers/power/olpc_battery.c
++++ b/drivers/power/olpc_battery.c
+@@ -331,7 +331,7 @@ static int olpc_bat_get_property(struct power_supply *psy,
+ 	return ret;
+ }
+ 
+-static enum power_supply_property olpc_bat_props[] = {
++static enum power_supply_property olpc_xo1_bat_props[] = {
+ 	POWER_SUPPLY_PROP_STATUS,
+ 	POWER_SUPPLY_PROP_CHARGE_TYPE,
+ 	POWER_SUPPLY_PROP_PRESENT,
+@@ -348,6 +348,23 @@ static enum power_supply_property olpc_bat_props[] = {
+ 	POWER_SUPPLY_PROP_CHARGE_COUNTER,
+ };
+ 
++/* XO-1.5 does not have ambient temperature property */
++static enum power_supply_property olpc_xo15_bat_props[] = {
++	POWER_SUPPLY_PROP_STATUS,
++	POWER_SUPPLY_PROP_CHARGE_TYPE,
++	POWER_SUPPLY_PROP_PRESENT,
++	POWER_SUPPLY_PROP_HEALTH,
++	POWER_SUPPLY_PROP_TECHNOLOGY,
++	POWER_SUPPLY_PROP_VOLTAGE_AVG,
++	POWER_SUPPLY_PROP_CURRENT_AVG,
++	POWER_SUPPLY_PROP_CAPACITY,
++	POWER_SUPPLY_PROP_CAPACITY_LEVEL,
++	POWER_SUPPLY_PROP_TEMP,
++	POWER_SUPPLY_PROP_MANUFACTURER,
++	POWER_SUPPLY_PROP_SERIAL_NUMBER,
++	POWER_SUPPLY_PROP_CHARGE_COUNTER,
++};
++
+ /* EEPROM reading goes completely around the power_supply API, sadly */
+ 
+ #define EEPROM_START	0x20
+@@ -419,8 +436,6 @@ static struct device_attribute olpc_bat_error = {
+ static struct platform_device *bat_pdev;
+ 
+ static struct power_supply olpc_bat = {
+-	.properties = olpc_bat_props,
+-	.num_properties = ARRAY_SIZE(olpc_bat_props),
+ 	.get_property = olpc_bat_get_property,
+ 	.use_for_apm = 1,
+ };
+@@ -466,6 +481,13 @@ static int __init olpc_bat_init(void)
+ 		goto ac_failed;
+ 
+ 	olpc_bat.name = bat_pdev->name;
++	if (olpc_board_at_least(olpc_board_pre(0xd0))) { /* XO-1.5 */
++		olpc_bat.properties = olpc_xo15_bat_props;
++		olpc_bat.num_properties = ARRAY_SIZE(olpc_xo15_bat_props);
++	} else { /* XO-1 */
++		olpc_bat.properties = olpc_xo1_bat_props;
++		olpc_bat.num_properties = ARRAY_SIZE(olpc_xo1_bat_props);
++	}
+ 
+ 	ret = power_supply_register(&bat_pdev->dev, &olpc_bat);
+ 	if (ret)
 -- 
-Gr{oetje,eeting}s,
+1.7.3.4
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
