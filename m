@@ -1,81 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375Ab0L2PEY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 10:04:24 -0500
-Received: from router-fw.net-space.pl ([89.174.63.77]:46668 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694Ab0L2PEX (ORCPT
+	id S1752330Ab0L2PMu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 10:12:50 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:38284 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750885Ab0L2PMr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 10:04:23 -0500
-Date: Wed, 29 Dec 2010 16:01:26 +0100
-From: Daniel Kiper <dkiper@net-space.pl>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Daniel Kiper <dkiper@net-space.pl>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "andi.kleen@intel.com" <andi.kleen@intel.com>,
-        "haicheng.li@linux.intel.com" <haicheng.li@linux.intel.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        "v.tolstov@selfip.ru" <v.tolstov@selfip.ru>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [Xen-devel] [PATCH 2/3] drivers/xen/balloon.c: Various balloon features and fixes
-Message-ID: <20101229150126.GA2743@router-fw-old.local.net-space.pl>
-References: <20101220134724.GC6749@router-fw-old.local.net-space.pl> <1292856704.4500.249.camel@zakaz.uk.xensource.com>
-Mime-Version: 1.0
+	Wed, 29 Dec 2010 10:12:47 -0500
+Date: Wed, 29 Dec 2010 10:12:46 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch 8/8] fs: add i_op->sync_inode
+Message-ID: <20101229151246.GA22033@infradead.org>
+References: <20101218014634.943276411@kernel.dk>
+ <20101218015117.759480620@kernel.dk>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1292856704.4500.249.camel@zakaz.uk.xensource.com>
-User-Agent: Mutt/1.3.28i
+In-Reply-To: <20101218015117.759480620@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+ - the sync_inodes_sb export removal looks fine to, but should be a
+   separate patch with a good changelog
+ - why is the sync_inode_metadata wait parameter removed?  Especially
+   as we would need it for some callers that need to be converted to it.
+   E.g. in this patch converts writeback_inode from non-blocking to
+   blocking behaviour.
+ - except for that the sync_inode() removal is fine, I had planned for
+   that already.  But again, please a separate and well-documented
+   patch.
 
-On Mon, Dec 20, 2010 at 02:51:44PM +0000, Ian Campbell wrote:
-> On Mon, 2010-12-20 at 13:47 +0000, Daniel Kiper wrote:
-> > Features and fixes:
-> >   - HVM mode is supported now,
-> >   - migration from mod_timer() to schedule_delayed_work(),
-> >   - removal of driver_pages (I do not have seen any
-> >     references to it),
-> >   - protect before CPU exhaust by event/x process during
-> >     errors by adding some delays in scheduling next event,
-> >   - some other minor fixes.
->
-> Each of those bullets should be a separate patch (or several if
-> appropriate). I didn't review most of the rest because it mixed so much
-> stuff together but a couple of minor things jumped out.
+As for the actualy sync_inode operation:  I don't think it's helpful.
+The *_sync_inode helpers in ext2 and fat are fine, but there's little
+point in going through an iops vector for it.  Also adding the file
+syncing really complicates the API for now reason, epecially with
+the range interface.
 
-Done. I will send new patch release today.
-
-> > -static void scrub_page(struct page *page)
-> > +static inline void scrub_page(struct page *page)
->
-> Is there some reason we need to override the compiler's decision here?
-> There is some discussion of the (over)use of inline in CodingStyle.
-
-Done.
-
-> >  static struct attribute_group balloon_info_group = {
-> >         .name = "info",
-> > -       .attrs = balloon_info_attrs,
-> > +       .attrs = balloon_info_attrs
-> >  };
-> >
-> >  static struct sysdev_class balloon_sysdev_class = {
-> > -       .name = BALLOON_CLASS_NAME,
-> > +       .name = BALLOON_CLASS_NAME
-> >  };
->
-> I don't think there is anything wrong with the existing style here.
-
-I do not insist on applying this patch however, this notation
-is more readable for me. I am not confused by
-comma which suggest that next attribut follow it.
-
-Daniel
