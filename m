@@ -1,55 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751291Ab0L2HoS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 02:44:18 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:48547 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750787Ab0L2HoR (ORCPT
+	id S1751537Ab0L2IpN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 03:45:13 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43472 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967Ab0L2IpL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 02:44:17 -0500
+	Wed, 29 Dec 2010 03:45:11 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=YgbEm0qdjfgyqlHLPkXSm5xYgb118EInCz3fy2L0sfCTQEiybO3Yg7ejVQxqyHfzNX
-         teZxpkwZSGVzxqOzqpZZ98G9bHXfo2PA1ESk9iFERxT8CbEqiHzlfGldiiqYFujnV0wi
-         1/FszOqXvDSKnh/tXG1M8IPHuIHQK8MGktWZQ=
-Date: Tue, 28 Dec 2010 23:44:11 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Synaptics touchpad on Dell Vostro V13
-Message-ID: <20101229074410.GC13061@core.coreip.homeip.net>
-References: <alpine.LNX.2.00.1012141547570.15140@pobox.suse.cz>
- <20101214170027.GA11318@core.coreip.homeip.net>
- <alpine.LNX.2.00.1012152348440.16569@pobox.suse.cz>
- <201012151523.09476.dmitry.torokhov@gmail.com>
- <alpine.LNX.2.00.1012281124030.16569@pobox.suse.cz>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=qIuUirT5UzPZw5ZAUGobzvcb3yjkgV76NGhtt1UeQzfj2G3Z38E/sA1nAaYWywEoRU
+         gppTN6yj3Lva4XrJziCspPz2hiQFpvxTUhdtKTIvSS2t39T69ndApMjoufB3CG6Sv/OK
+         mbH4ifwgsjHWTIDHvdPJqdv8/KKDsRNjX7z4I=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1012281124030.16569@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <AANLkTim4zbBvTyc4hNurCmPN7GisXe1mmzR6P4aj3xzA@mail.gmail.com>
+References: <AANLkTim4zbBvTyc4hNurCmPN7GisXe1mmzR6P4aj3xzA@mail.gmail.com>
+Date: Wed, 29 Dec 2010 16:45:09 +0800
+Message-ID: <AANLkTim6QkyMMtcQT1mfBMUDwirYg636xhBv4p77Uf4k@mail.gmail.com>
+Subject: Re: Drift when measuring time using add_timer
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Mohan V <mohanvforum@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 28, 2010 at 11:28:48AM +0100, Jiri Kosina wrote:
-> On Wed, 15 Dec 2010, Dmitry Torokhov wrote:
-> 
-> > 
-> > Hmm, and what happens if you force dfl = 0 in i8042_interrupt()? It looks
-> > like controller FW screwed up...
-> 
-> Yeah, that makes the thing work correctly (together with nomux). This all 
-> is really strange, isn't it? I doubt other OS discards I8042_STR_TIMEOUT 
-> completely :)
-> 
+On Tue, Dec 28, 2010 at 8:05 PM, Mohan V <mohanvforum@gmail.com> wrote:
+> Hello All,
+>
+> I am testing the timers on a OMAP4 based board. I am seeing a drift or
+> the time difference between the timer value and when the function callback
+> happens. This drift is around 1000ms or 1s for a expiry value of >=5mins.
+> Is the time drift expected? Is this way of measuring right or is there
+> any other way?
+>
+> OMAP4 as you may know is a multi-core processor and CONFIG_SMP is enabled
+> along with the following:
+> CONFIG_NO_HZ, CONFIG_HIGH_RES_TIMERS
+>
+> My kernel configurations:
+> kernel: 2.6.37-rc7 (commit id: ffc96d)
+> config: omap2plus_defconfig
+>
+> My driver does the following:
+>
+> struct timeval tv;
+> test_timer_proc_write()
+> {
+>           del_timer_sync(&my_timer);
+>           period = 300000; /* 5min */
+>           my_timer.expires = jiffies + msecs_to_jiffies(period);
+>           my_timer.function = func_timeout; /* Call back function*/
 
-Looking at the latest bugzilla comment for this laptop it appears
-exactly what custome Dell drivers do ;)
+what's the slack of your timer?
+And what about setting my_timer.slack = 0; ?
 
-Well, another blacklist in i8042 I guess...
+Thanks,
+Yong
+
+>           /* Save the current time in global variable */
+>           do_gettimeofday(&timeval);
+>           /* add timer with an expiry value of 5mins*/
+>           add_timer(&my_timer);
+> }
+>
+> /* Get the current time and print the difference between the two values */
+> func_timeout()
+> {
+>           struct timeval tv1;
+>           do_gettimeofday(&tv);
+>           /* take the difference between current time and saved time */
+>           ms = (tv.tv_sec - tv1.tv_sec) * 1000 + \
+>                   (tv.tv_usec - tv1.tv_usec) / 1000;
+>           printk("Interval = %d\n", ms);
+> }
+>
+> Thanks for your time.
+>
+> Regards,
+> Mohan
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
+
 
 -- 
-Dmitry
+Only stand for myself.
