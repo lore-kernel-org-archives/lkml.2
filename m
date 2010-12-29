@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752009Ab0L2Jqz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 04:46:55 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:53396 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751216Ab0L2Jqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 04:46:53 -0500
-Date: Wed, 29 Dec 2010 20:46:41 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Anca Emanuel <anca.emanuel@gmail.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: linux-next: Tree for December 29
-Message-Id: <20101229204641.ead941fc.sfr@canb.auug.org.au>
-In-Reply-To: <AANLkTin1pizZM5LttTpYQOo0gPEeV7Jd5uD5RXwnj37Z@mail.gmail.com>
-References: <20101229130700.0ef93735.sfr@canb.auug.org.au>
-	<AANLkTikq50KLGwS1_=uA=TXz2b=LNzr_TKUSiZu-an1m@mail.gmail.com>
-	<AANLkTin1pizZM5LttTpYQOo0gPEeV7Jd5uD5RXwnj37Z@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__29_Dec_2010_20_46_41_+1100_X+EW7Of6OFPaEz7/"
+	id S1751229Ab0L2Jv5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 04:51:57 -0500
+Received: from mail-iw0-f194.google.com ([209.85.214.194]:50924 "EHLO
+	mail-iw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758Ab0L2Jvz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Dec 2010 04:51:55 -0500
+MIME-Version: 1.0
+X-Originating-IP: [93.172.188.89]
+In-Reply-To: <AANLkTin3A__2OU+N-tQYJ_xOMz7-GXwia1yw10nzpU3V@mail.gmail.com>
+References: <1292870624-25450-1-git-send-email-felipe.contreras@nokia.com>
+ <AANLkTikisHaAMZphRJVYdcokVbaZXVF9COrwkdGTDg__@mail.gmail.com>
+ <AANLkTi=9AL3aWUsMeih+Gb-sMov=MgBZ1eTp8wb=q1hZ@mail.gmail.com>
+ <AANLkTinX8t=3b48e2sxPU-V_G-nGm_1DyEg6B-CeqXDa@mail.gmail.com>
+ <1293452486-notmuch-felipe.contreras@nokia.com> <AANLkTinz0HuhGB_WzTQbK8XkfkGALjtg928WdOUYsySf@mail.gmail.com>
+ <AANLkTimCB5g29gzWFzaFU1N8+doROTpWaXy18VU5AJyH@mail.gmail.com>
+ <AANLkTi=xmxkWnhuYcjtDNDHgep_2EztfGXDv+winW2Y5@mail.gmail.com>
+ <AANLkTiksjHKjKQ+mWE=Zf0+967_E46V3+RURcMC-s5cD@mail.gmail.com>
+ <AANLkTi=X=Av0SaqphXUfiXMNX_tD8OF1CWes34keZ8O1@mail.gmail.com> <AANLkTin3A__2OU+N-tQYJ_xOMz7-GXwia1yw10nzpU3V@mail.gmail.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 29 Dec 2010 11:51:34 +0200
+Message-ID: <AANLkTim6kkxV8Bts=CNQqWmCgT+NUi4YoxZYPGCX7ttD@mail.gmail.com>
+Subject: Re: [PATCH v2] staging: tidspbridge: protect dmm_map properly
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Felipe Contreras <felipe.contreras@nokia.com>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        greg@kroah.com, omar.ramirez@ti.com, fernando.lugo@ti.com, nm@ti.com,
+        ameya.palande@nokia.com, h-kanigeri2@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__29_Dec_2010_20_46_41_+1100_X+EW7Of6OFPaEz7/
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Anca,
-
-On Wed, 29 Dec 2010 10:58:02 +0200 Anca Emanuel <anca.emanuel@gmail.com> wr=
-ote:
+On Wed, Dec 29, 2010 at 11:42 AM, Felipe Contreras
+<felipe.contreras@gmail.com> wrote:
+> On Tue, Dec 28, 2010 at 4:48 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+>> On Tue, Dec 28, 2010 at 2:12 PM, Felipe Contreras
+>> <felipe.contreras@gmail.com> wrote:
+>>> On Tue, Dec 28, 2010 at 12:56 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+>>>> I still don't know how exactly you triggered the bug: is gst-dsp
+>>>> multithreaded ? and one of its threads invoked proc_un_map() while
+>>>> another thread called proc_begin_dma() ?
+>>>
+>>> I haven't investigated why that happens
+>>
+>> Btw, I still think you should look into this.
+>>
+>> The kernel panic will be solved, but you may still have a race there
+>> that can lead to data corruption: if proc_un_map will be fast enough,
+>> it will acquire the proc_lock mutex before proc_begin_dma(), and then
+>> you will miss a cache operation.
 >
->   Building modules, stage 2.
->   MODPOST 2808 modules
-> ERROR: "__tracepoint_snd_soc_jack_irq"
-> [sound/soc/codecs/snd-soc-wm8994.ko] undefined!
-> ERROR: "__tracepoint_snd_soc_jack_irq"
-> [sound/soc/codecs/snd-soc-wm8350.ko] undefined!
-> ERROR: "__tracepoint_snd_soc_jack_irq"
-> [sound/soc/codecs/snd-soc-88pm860x.ko] undefined!
-> WARNING: modpost: Found 59 section mismatch(es).
-> To see full details build your kernel with:
-> 'make CONFIG_DEBUG_SECTION_MISMATCH=3Dy'
-> make[2]: *** [__modpost] Error 1
-> make[1]: *** [modules] Error 2
+> Aquiring the lock is the first thing done; if proc_un_map() aquires
+> the lock first, it's because it was run first
 
-It would be good if you could publish your config files with these
-reports.  I have cc'd this to those who may be able to fix this.
+Not true.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Again, we have two threads:
 
---Signature=_Wed__29_Dec_2010_20_46_41_+1100_X+EW7Of6OFPaEz7/
-Content-Type: application/pgp-signature
+T1 - called proc_begin_dma()
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+T2 - called proc_un_map()
 
-iQEcBAEBAgAGBQJNGwOBAAoJEDMEi1NhKgbsghUH/iVgysSm039WYRJIo9qmUyRl
-8lAZOt3FC3boWe3TtNqtJ33QxDmws/PhKdHmC8VBkyr9BYkSJKGiZeG+G/ed/BES
-7WcUVb0AGcOLCMvlmmJ45HQIxWBeYLVsUCva8oM4jGePGHt3oiNyi2ZzjY1xWjZB
-esEn2yVwwuAFiFyDRrBZLgKYgzZSY+6COWcgZZzC/C4NOB9T05dfd2jnNNSD3Pw5
-/ADOd3IcTukYx71dKqOS8QOjqSzLcwI8ThM2ILFw/2IoHA4io5VGg9n6bKn/2gfK
-Qw/rJXtqcgU/sqJvSwD5qD6JGILcWR9sZNvRHYCN2dMWKsZW+x7WiwklgylxkcI=
-=U5jk
------END PGP SIGNATURE-----
+Let's say T1 called proc_begin_dma() first, but it still didn't
+acquire the lock.
 
---Signature=_Wed__29_Dec_2010_20_46_41_+1100_X+EW7Of6OFPaEz7/--
+At this point the scheduler let T2 run. It calls proc_un_map() and
+acquire the lock, and free all map_obj's.
+
+Then the scheduler let T1 continue to execute, but it can't find any
+map_obj, and the required cache operation is not performed.
+
+Of course the kernel has nothing to do with this, and don't care really.
+
+That's why I said it's a user space race - you need to make sure T2
+will not call proc_un_map() before T1 (or any other thread you have)
+completed executing all DMA operations (that you care about).
+
+>, and thus a problem for
+> user-space. If user-space wants the cache operation, it must run
+> proc_begin_dma() first, there's nothing kernel-space can do to fix
+> that.
+>
+> --
+> Felipe Contreras
+>
