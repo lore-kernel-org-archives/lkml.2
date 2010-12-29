@@ -1,117 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751605Ab0L2Gvv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 01:51:51 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:41948 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363Ab0L2Gvt (ORCPT
+	id S1751707Ab0L2Hde (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 02:33:34 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42895 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083Ab0L2Hdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 01:51:49 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:x-x-sender:to:cc:subject:message-id:mime-version
-         :content-type;
-        b=cVNKrX8vSYCBv6bFY+QJePIkhqj2YpEQZgxTkLy/fofMsnmuWAud2j416daiviTA7j
-         RXPPrmsK6i4skVNRGS6yeuI7MkOdviSzrjjr3W3fp4zf5tk1Bz8qUwdCT8BStFmGWO2H
-         K0eT5znoZGek2KNZvtt19W1yNRXWD2N2q8PAk=
-Date: Wed, 29 Dec 2010 14:51:39 +0800 (SGT)
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-X-X-Sender: root@boston.corp.fedex.com
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.37-rc8
-Message-ID: <Pine.LNX.4.64.1012291435580.10939@boston.corp.fedex.com>
+	Wed, 29 Dec 2010 02:33:33 -0500
+Date: Wed, 29 Dec 2010 00:33:30 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] spi: Fix rmmod module issue
+Message-ID: <20101229073330.GH8172@angua.secretlab.ca>
+References: <1293022667-2904-1-git-send-email-tomoya-linux@dsn.okisemi.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1293022667-2904-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 22, 2010 at 09:57:47PM +0900, Tomoya MORINAGA wrote:
+> It seems when spi_unregister_master is called,
+> device_unregister is called 2 times.
 
-
-On Wed, Dec 29, 2010 at 9:18 AM, Linus Torvalds 
-<torvalds@linux-foundation.org> wrote:
-> The -rc8 release shouldn't be all that exciting. The most noticeable
-> is probably the fact that hopefully the "blank screen" problem with
-> intel graphics is fixed. But on the whole, it's all just a collection
-> of random fixes all over.
-
-> Chris Wilson (5):
->      drm/i915/bios: Reverse order of 100/120 Mhz SSC clocks
-
-
-For some reason, this does not work on my Lenovo X201s. Reverting the 
-commit solves the "blank screen" problem.
-
-
-# lspci -v
-00:02.0 0300: 8086:0046 (rev 02)
-00:02.0 VGA compatible controller: Intel Corporation Core Processor 
-Integrated Graphics Controller (rev 02) (prog-if 00 [VGA controller])
-         Subsystem: Lenovo Device 215a
-         Flags: bus master, fast devsel, latency 0, IRQ 42
-         Memory at f2000000 (64-bit, non-prefetchable) [size=4M]
-         Memory at d0000000 (64-bit, prefetchable) [size=256M]
-         I/O ports at 1800 [size=8]
-         Expansion ROM at <unassigned> [disabled]
-         Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
-         Capabilities: [d0] Power Management version 2
-         Capabilities: [a4] PCI Advanced Features
-         Kernel driver in use: i915
-         Kernel modules: i915
-
-
-# dmesg
-[drm] Initialized drm 1.1.0 20060810
-i915 0000:00:02.0: power state changed by ACPI to D0
-i915 0000:00:02.0: power state changed by ACPI to D0
-i915 0000:00:02.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-i915 0000:00:02.0: setting latency timer to 64
-i915 0000:00:02.0: irq 42 for MSI/MSI-X
-vgaarb: device changed decodes: 
-PCI:0000:00:02.0,olddecodes=io+mem,decodes=io+mem:owns=io+mem
-Console: switching to colour frame buffer device 180x56
-fb0: inteldrmfb frame buffer device
-drm: registered panic notifier
-acpi device:02: registered as cooling_device4
-input: Video Bus as 
-/devices/LNXSYSTM:00/device:00/PNP0A08:00/LNXVIDEO:00/input/input7
-ACPI: Video Device [VID] (multi-head: yes  rom: no  post: no)
-[drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on minor 0
-
-
-
-commit 448f53a1ede54eb854d036abf54573281412d650
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Tue Dec 14 20:06:20 2010 +0000
-
-     drm/i915/bios: Reverse order of 100/120 Mhz SSC clocks
-
-     Fixes the lack of output on the LVDS panel of the Lenovo U160.
-
-     Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=31596
-     Reported-and-tested-by: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-     Cc: stable@kernel.org
-     Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-
-diff --git a/drivers/gpu/drm/i915/intel_bios.c b/drivers/gpu/drm/i915/intel_bios.c
-index b0b1200..2b20786 100644
---- a/drivers/gpu/drm/i915/intel_bios.c
-+++ b/drivers/gpu/drm/i915/intel_bios.c
-@@ -270,7 +270,7 @@ parse_general_features(struct drm_i915_private *dev_priv,
-  					general->ssc_freq ? 66 : 48;
-  			else if (IS_GEN5(dev) || IS_GEN6(dev))
-  				dev_priv->lvds_ssc_freq =
--					general->ssc_freq ? 100 : 120;
-+					general->ssc_freq ? 120 : 100;
-  			else
-  				dev_priv->lvds_ssc_freq =
-  					general->ssc_freq ? 100 : 96;
-
-
+This should be fixed in mainline now.  Can you please retest?
 
 Thanks,
-Jeff
+g.
 
+> 
+> Fix the following issue when removes SPI module.
+> [ 1355.220625] BUG: unable to handle kernel NULL pointer dereference at 0000001c
+> [ 1355.220642] IP: [<c10fc551>] sysfs_find_dirent+0xa/0x3a
+> [ 1355.220662] *pde = 00000000
+> [ 1355.220671] Oops: 0000 [#1] SMP
+> [ 1355.220679] last sysfs file: /sys/power/state
+> [ 1355.220688] Modules linked in: spi_topcliff_pch(-) spidev
+> [ 1355.220700]
+> [ 1355.220710] Pid: 3838, comm: rmmod Not tainted 2.6.37-rc6+ #7 To be filled by O.E.M./To be filled by O.E.M.
+> [ 1355.220721] EIP: 0060:[<c10fc551>] EFLAGS: 00010286 CPU: 1
+> [ 1355.220730] EIP is at sysfs_find_dirent+0xa/0x3a
+> [ 1355.220739] EAX: 00000000 EBX: c14a2d38 ECX: c14a2d38 EDX: 00000000
+> [ 1355.220748] ESI: 00000000 EDI: c14a2d38 EBP: f6605e60 ESP: f6605e54
+> [ 1355.220757]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+> [ 1355.220767] Process rmmod (pid: 3838, ti=f6604000 task=f1281d40 task.ti=f6604000)
+> [ 1355.220774] Stack:
+> [ 1355.220779]  c14a2d38 00000000 00000000 f6605e74 c10fc5a2 f124ae00 f124ae08 c1643080
+> [ 1355.220801]  f6605e88 c10fdfd4 f124ae00 00000001 f124a200 f6605e90 c1211184 f6605ea4
+> [ 1355.220822]  c120c9d4 f124ae00 00000001 000001f4 f6605eb0 c120cafe f124ae00 f6605ebc
+> [ 1355.220844] Call Trace:
+> [ 1355.220856]  [<c10fc5a2>] ? sysfs_get_dirent+0x21/0x39
+> [ 1355.220868]  [<c10fdfd4>] ? sysfs_remove_group+0x1a/0x85
+> [ 1355.220881]  [<c1211184>] ? dpm_sysfs_remove+0x10/0x12
+> [ 1355.220894]  [<c120c9d4>] ? device_del+0x31/0x150
+> [ 1355.220906]  [<c120cafe>] ? device_unregister+0xb/0x15
+> [ 1355.220917]  [<c1244428>] ? spi_unregister_master+0x54/0x57
+> [ 1355.220932]  [<f80c95e7>] ? pch_spi_remove+0x89/0xb6 [spi_topcliff_pch]
+> [ 1355.220946]  [<c11a0286>] ? pci_device_remove+0x19/0x39
+> [ 1355.220959]  [<c120e6d9>] ? __device_release_driver+0x58/0x8e
+> [ 1355.220971]  [<c120e76c>] ? driver_detach+0x5d/0x7b
+> [ 1355.220983]  [<c120dc81>] ? bus_remove_driver+0x6c/0x92
+> [ 1355.220995]  [<c120eb84>] ? driver_unregister+0x4d/0x54
+> [ 1355.221007]  [<c11a0454>] ? pci_unregister_driver+0x2d/0x6a
+> [ 1355.221019]  [<f80ca095>] ? pch_spi_exit+0xd/0x1b [spi_topcliff_pch]
+> [ 1355.221020]  [<c105ab7b>] ? sys_delete_module+0x180/0x1d8
+> [ 1355.221020]  [<c10a7900>] ? __vma_link_file+0x3d/0x61
+> [ 1355.221020]  [<c10bfbea>] ? path_put+0xe/0x23
+> [ 1355.221020]  [<c100290c>] ? sysenter_do_call+0x12/0x22
+> [ 1355.221020] Code: 89 c3 74 18 8b 00 85 c0 75 0f ba b7 00 00 00 b8 c3 5a 58 c1 e8 10 4b f3 ff f0 ff 03 89 d8 5b 5d c3 55 89 e5 57 89 cf 56 89 d6 53 <8b> 58 1c eb 20 85 f6 74 0b 8
+> b 43 14 85 c0 74 04 39 f0 75 0e 8b
+> [ 1355.221020] EIP: [<c10fc551>] sysfs_find_dirent+0xa/0x3a SS:ESP 0068:f6605e54
+> [ 1355.221020] CR2: 000000000000001c
+> [ 1355.221237] ---[ end trace ac3358f2d325b0b5 ]---
+> 
+> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+> ---
+>  drivers/spi/spi.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+> index 709c836..3c8ff6f 100644
+> --- a/drivers/spi/spi.c
+> +++ b/drivers/spi/spi.c
+> @@ -586,7 +586,6 @@ void spi_unregister_master(struct spi_master *master)
+>  
+>  	dummy = device_for_each_child(master->dev.parent, &master->dev,
+>  					__unregister);
+> -	device_unregister(&master->dev);
+>  }
+>  EXPORT_SYMBOL_GPL(spi_unregister_master);
+>  
+> -- 
+> 1.6.0.6
+> 
