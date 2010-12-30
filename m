@@ -1,241 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900Ab0L3Qmd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 11:42:33 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16851 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754601Ab0L3Qmc (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Thu, 30 Dec 2010 11:42:32 -0500
-Date: Thu, 30 Dec 2010 11:40:51 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Joe Jin <joe.jin@oracle.com>
-Cc: jeremy@goop.org, ian.campbell@citrix.com,
-        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        gurudas.pai@oracle.com, greg.marsden@oracle.com,
-        guru.anbalagane@oracle.com
-Subject: Re: [patch] xenfb: fix xenfb suspend/resume race
-Message-ID: <20101230164051.GC24313@dumpdata.com>
-References: <20101230125616.GA31537@joejin-pc.cn.oracle.com>
+	id S1754928Ab0L3Qrb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 11:47:31 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:49818 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754874Ab0L3Qr2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Dec 2010 11:47:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=AIP1iKt9YvusoXePpawH2B9mdnoThT/iCVO/o0r9aV9cGNTK6hvtWXb55Z0Sji2/PD
+         lnOn3junh5HJgkuZcn4Qg/201NoEvI2Ng+SF8h34mD7D1jWiobQ+YSi34qkitmBd0Q2N
+         hDzsGI8aZ6mD9uXLHpa2suw502+qBbaZVVhfs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101230125616.GA31537@joejin-pc.cn.oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <AANLkTin8Zc4wkx9BjD0vJSNdne8LVHx=JyeSC2YdKTKH@mail.gmail.com>
+References: <20101229130700.0ef93735.sfr@canb.auug.org.au>
+	<20101229085300.1ceac200.randy.dunlap@oracle.com>
+	<AANLkTin8Zc4wkx9BjD0vJSNdne8LVHx=JyeSC2YdKTKH@mail.gmail.com>
+Date: Thu, 30 Dec 2010 17:47:26 +0100
+Message-ID: <AANLkTikPbKOQseJ8qfoSqv4XWgH5fjbg488jd6_Xv22E@mail.gmail.com>
+Subject: Re: linux-next: Tree for December 29 (netfilter build errors)
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Changli Gao <xiaosuo@gmail.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        netfilter-devel@vger.kernel.org, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 30, 2010 at 08:56:16PM +0800, Joe Jin wrote:
-> Hi,
-
-Joe,
-
-Patch looks good, however..
-
-I am unclear from your description whether the patch fixes
-the problem (I would presume so). Or does it take a long time
-to hit this race?
-
-> 
-> when do migration test, we hit the panic as below:
-> <1>BUG: unable to handle kernel paging request at 0000000b819fdb98
-> <1>IP: [<ffffffff812a588f>] notify_remote_via_irq+0x13/0x34
-> <4>PGD 94b10067 PUD 0
-> <0>Oops: 0000 [#1] SMP
-> <0>last sysfs file: /sys/class/misc/autofs/dev
-> <4>CPU 3
-> <4>Modules linked in: autofs4(U) hidp(U) nfs(U) fscache(U) nfs_acl(U)
-> auth_rpcgss(U) rfcomm(U) l2cap(U) bluetooth(U) rfkill(U) lockd(U) sunrpc(U)
-> nf_conntrack_netbios_ns(U) ipt_REJECT(U) nf_conntrack_ipv4(U)
-> nf_defrag_ipv4(U) xt_state(U) nf_conntrack(U) iptable_filter(U) ip_tables(U)
-> ip6t_REJECT(U) xt_tcpudp(U) ip6table_filter(U) ip6_tables(U) x_tables(U)
-> ipv6(U) parport_pc(U) lp(U) parport(U) snd_seq_dummy(U) snd_seq_oss(U)
-> snd_seq_midi_event(U) snd_seq(U) snd_seq_device(U) snd_pcm_oss(U)
-> snd_mixer_oss(U) snd_pcm(U) snd_timer(U) snd(U) soundcore(U)
-> snd_page_alloc(U) joydev(U) xen_netfront(U) pcspkr(U) xen_blkfront(U)
-> uhci_hcd(U) ohci_hcd(U) ehci_hcd(U)
-> Pid: 18, comm: events/3 Not tainted 2.6.32
-> RIP: e030:[<ffffffff812a588f>]  [<ffffffff812a588f>]
-> ify_remote_via_irq+0x13/0x34
-> RSP: e02b:ffff8800e7bf7bd0  EFLAGS: 00010202
-> RAX: ffff8800e61c8000 RBX: ffff8800e62f82c0 RCX: 0000000000000000
-> RDX: 00000000000001e3 RSI: ffff8800e7bf7c68 RDI: 0000000bfffffff4
-> RBP: ffff8800e7bf7be0 R08: 00000000000001e2 R09: ffff8800e62f82c0
-> R10: 0000000000000001 R11: ffff8800e6386110 R12: 0000000000000000
-> R13: 0000000000000007 R14: ffff8800e62f82e0 R15: 0000000000000240
-> FS:  00007f409d3906e0(0000) GS:ffff8800028b8000(0000)
-> GS:0000000000000000
-> CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: 0000000b819fdb98 CR3: 000000003ee3b000 CR4: 0000000000002660
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process events/3 (pid: 18, threadinfo ffff8800e7bf6000, task
-> f8800e7bf4540)
-> Stack:
->  0000000000000200 ffff8800e61c8000 ffff8800e7bf7c00 ffffffff812712c9
-> <0> ffffffff8100ea5f ffffffff81438d80 ffff8800e7bf7cd0 ffffffff812714ee
-> <0> 0000000000000000 ffffffff81270568 000000000000e030 0000000000010202
-> Call Trace:
->  [<ffffffff812712c9>] xenfb_send_event+0x5c/0x5e
->  [<ffffffff8100ea5f>] ? xen_restore_fl_direct_end+0x0/0x1
->  [<ffffffff81438d80>] ? _spin_unlock_irqrestore+0x16/0x18
->  [<ffffffff812714ee>] xenfb_refresh+0x1b1/0x1d7
->  [<ffffffff81270568>] ? sys_imageblit+0x1ac/0x458
->  [<ffffffff81271786>] xenfb_imageblit+0x2f/0x34
->  [<ffffffff8126a3e5>] soft_cursor+0x1b5/0x1c8
->  [<ffffffff8126a137>] bit_cursor+0x4b6/0x4d7
->  [<ffffffff8100ea5f>] ? xen_restore_fl_direct_end+0x0/0x1
->  [<ffffffff81438d80>] ? _spin_unlock_irqrestore+0x16/0x18
->  [<ffffffff81269c81>] ? bit_cursor+0x0/0x4d7
->  [<ffffffff812656b7>] fb_flashcursor+0xff/0x111
->  [<ffffffff812655b8>] ? fb_flashcursor+0x0/0x111
->  [<ffffffff81071812>] worker_thread+0x14d/0x1ed
->  [<ffffffff81075a8c>] ? autoremove_wake_function+0x0/0x3d
->  [<ffffffff81438d80>] ? _spin_unlock_irqrestore+0x16/0x18
->  [<ffffffff810716c5>] ? worker_thread+0x0/0x1ed
->  [<ffffffff810756e3>] kthread+0x6e/0x76
->  [<ffffffff81012dea>] child_rip+0xa/0x20
->  [<ffffffff81011fd1>] ? int_ret_from_sys_call+0x7/0x1b
->  [<ffffffff8101275d>] ? retint_restore_args+0x5/0x6
->  [<ffffffff81012de0>] ? child_rip+0x0/0x20
-> Code: 6b ff 0c 8b 87 a4 db 9f 81 66 85 c0 74 08 0f b7 f8 e8 3b ff ff ff c9
-> c3 55 48 89 e5 48 83 ec 10 0f 1f 44 00 00 89 ff 48 6b ff 0c <8b> 87 a4 db 9f
-> 81 66 85 c0 74 14 48 8d 75 f0 0f b7 c0 bf 04 00
-> RIP  [<ffffffff812a588f>] notify_remote_via_irq+0x13/0x34
->  RSP <ffff8800e7bf7bd0>
-> CR2: 0000000b819fdb98
-> ---[ end trace 098b4b74827595d0 ]---
-> Kernel panic - not syncing: Fatal exception
-> Pid: 18, comm: events/3 Tainted: G      D    2.6.32
-> Call Trace:
->  [<ffffffff812a029e>] ? card_probe+0x99/0x123
->  [<ffffffff81056a96>] panic+0xa5/0x162
->  [<ffffffff8100ea5f>] ? xen_restore_fl_direct_end+0x0/0x1
->  [<ffffffff81438d80>] ? _spin_unlock_irqrestore+0x16/0x18
->  [<ffffffff81079824>] ? down_trylock+0x30/0x38
->  [<ffffffff812a029e>] ? card_probe+0x99/0x123
->  [<ffffffff8105744c>] ? console_unblank+0x23/0x6f
->  [<ffffffff81056763>] ? print_oops_end_marker+0x23/0x25
->  [<ffffffff812a029e>] ? card_probe+0x99/0x123
->  [<ffffffff81439c76>] oops_end+0xb7/0xc7
->  [<ffffffff810366de>] no_context+0x1f1/0x200
->  [<ffffffff812a029e>] ? card_probe+0x99/0x123
->  [<ffffffff81036931>] __bad_area_nosemaphore+0x183/0x1a6
->  [<ffffffff812af119>] ? extract_buf+0xbd/0x134
->  [<ffffffff81030c7b>] ? pvclock_clocksource_read+0x47/0x9e
->  [<ffffffff810369de>] bad_area_nosemaphore+0x13/0x15
->  [<ffffffff8143b0ed>] do_page_fault+0x147/0x26c
->  [<ffffffff81439185>] page_fault+0x25/0x30
->  [<ffffffff812a588f>] ? notify_remote_via_irq+0x13/0x34
->  [<ffffffff812712c9>] xenfb_send_event+0x5c/0x5e
->  [<ffffffff8100ea5f>] ? xen_restore_fl_direct_end+0x0/0x1
->  [<ffffffff81438d80>] ? _spin_unlock_irqrestore+0x16/0x18
->  [<ffffffff812714ee>] xenfb_refresh+0x1b1/0x1d7
->  [<ffffffff81270568>] ? sys_imageblit+0x1ac/0x458
->  [<ffffffff81271786>] xenfb_imageblit+0x2f/0x34
->  [<ffffffff8126a3e5>] soft_cursor+0x1b5/0x1c8
->  [<ffffffff8126a137>] bit_cursor+0x4b6/0x4d7
->  [<ffffffff8100ea5f>] ? xen_restore_fl_direct_end+0x0/0x1
->  [<ffffffff81438d80>] ? _spin_unlock_irqrestore+0x16/0x18
->  [<ffffffff81269c81>] ? bit_cursor+0x0/0x4d7
->  [<ffffffff812656b7>] fb_flashcursor+0xff/0x111
->  [<ffffffff812655b8>] ? fb_flashcursor+0x0/0x111
->  [<ffffffff81071812>] worker_thread+0x14d/0x1ed
->  [<ffffffff81075a8c>] ? autoremove_wake_function+0x0/0x3d
->  [<ffffffff81438d80>] ? _spin_unlock_irqrestore+0x16/0x18
->  [<ffffffff810716c5>] ? worker_thread+0x0/0x1ed
->  [<ffffffff810756e3>] kthread+0x6e/0x76
->  [<ffffffff81012dea>] child_rip+0xa/0x20
->  [<ffffffff81011fd1>] ? int_ret_from_sys_call+0x7/0x1b
->  [<ffffffff8101275d>] ? retint_restore_args+0x5/0x6
->  [<ffffffff81012de0>] ? child_rip+0x0/0x20
->  [<ffffffff81012de0>] ? child_rip+0x0/0x20
-> 
-> Check the source found this maybe caused by kernel tried to used not ready
-> xenfb when resume.
-> 
-> Below is the potential fix, please reivew it
-> 
-> Signed-off-by: Joe Jin <joe.jin@oracle.com>
-> Cc: Ian Campbell <ian.campbell@citrix.com>
-> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> 
-> ---
->  xen-fbfront.c |   19 +++++++++++--------
->  1 file changed, 11 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/video/xen-fbfront.c b/drivers/video/xen-fbfront.c
-> index dc72563..367fb1c 100644
-> --- a/drivers/video/xen-fbfront.c
-> +++ b/drivers/video/xen-fbfront.c
-> @@ -561,26 +561,24 @@ static void xenfb_init_shared_page(struct xenfb_info *info,
->  static int xenfb_connect_backend(struct xenbus_device *dev,
->  				 struct xenfb_info *info)
->  {
-> -	int ret, evtchn;
-> +	int ret, evtchn, irq;
->  	struct xenbus_transaction xbt;
->  
->  	ret = xenbus_alloc_evtchn(dev, &evtchn);
->  	if (ret)
->  		return ret;
-> -	ret = bind_evtchn_to_irqhandler(evtchn, xenfb_event_handler,
-> +	irq = bind_evtchn_to_irqhandler(evtchn, xenfb_event_handler,
->  					0, dev->devicetype, info);
-> -	if (ret < 0) {
-> +	if (irq < 0) {
->  		xenbus_free_evtchn(dev, evtchn);
->  		xenbus_dev_fatal(dev, ret, "bind_evtchn_to_irqhandler");
-> -		return ret;
-> +		return irq;
->  	}
-> -	info->irq = ret;
-> -
->   again:
->  	ret = xenbus_transaction_start(&xbt);
->  	if (ret) {
->  		xenbus_dev_fatal(dev, ret, "starting transaction");
-> -		return ret;
-> +		goto unbind_irq;
->  	}
->  	ret = xenbus_printf(xbt, dev->nodename, "page-ref", "%lu",
->  			    virt_to_mfn(info->page));
-> @@ -602,15 +600,20 @@ static int xenfb_connect_backend(struct xenbus_device *dev,
->  		if (ret == -EAGAIN)
->  			goto again;
->  		xenbus_dev_fatal(dev, ret, "completing transaction");
-> -		return ret;
-> +		goto unbind_irq;
->  	}
->  
->  	xenbus_switch_state(dev, XenbusStateInitialised);
-> +	info->irq = irq;
->  	return 0;
->  
->   error_xenbus:
->  	xenbus_transaction_end(xbt, 1);
->  	xenbus_dev_fatal(dev, ret, "writing xenstore");
-> + unbind_irq:
-> +	printk(KERN_ERR "xenfb_connect_backend failed!\n");
-> +	unbind_from_irqhandler(irq, info);
-> +	xenbus_free_evtchn(dev, evtchn);
->  	return ret;
->  }
->  
-> 
-> 
-> -- 
-> Oracle <http://www.oracle.com>
-> Joe Jin | Team Leader, Software Development | +8610.8278.6295
-> ORACLE | Linux and Virtualization
-> Incubator Building 2-A ZPark | Beijing China, 100094
-> 
-> 
+On Thu, Dec 30, 2010 at 3:18 AM, Changli Gao <xiaosuo@gmail.com> wrote:
+> On Thu, Dec 30, 2010 at 12:53 AM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>> On Wed, 29 Dec 2010 13:07:00 +1100 Stephen Rothwell wrote:
+>>
+>>> Hi all,
+>>>
+>>> Changes since 20101228:
+>>
+>>
+>> In file included from linux-next-20101229/net/ipv6/netfilter/nf_defrag_ipv6_hooks.c:22:
+>> linux-next-20101229/include/net/netfilter/nf_conntrack.h:94: error: field 'ct_general' has incomplete type
+>> linux-next-20101229/include/net/netfilter/nf_conntrack.h: In function 'nf_ct_get':
+>> linux-next-20101229/include/net/netfilter/nf_conntrack.h:174: error: 'const struct sk_buff' has no member named 'nfct'
+>> linux-next-20101229/include/net/netfilter/nf_conntrack.h: In function 'nf_ct_put':
+>> linux-next-20101229/include/net/netfilter/nf_conntrack.h:181: error: implicit declaration of function 'nf_conntrack_put'
+>>  CC      net/ipv6/exthdrs_core.o
+>> In file included from linux-next-20101229/include/net/netfilter/nf_conntrack_core.h:18,
+>>                 from linux-next-20101229/net/ipv6/netfilter/nf_defrag_ipv6_hooks.c:26:
+>> linux-next-20101229/include/net/netfilter/nf_conntrack_ecache.h: In function 'nf_ct_ecache_ext_add':
+>> linux-next-20101229/include/net/netfilter/nf_conntrack_ecache.h:35: error: 'struct net' has no member named 'ct'
+>> In file included from linux-next-20101229/net/ipv6/netfilter/nf_defrag_ipv6_hooks.c:26:
+>> linux-next-20101229/include/net/netfilter/nf_conntrack_core.h: In function 'nf_conntrack_confirm':
+>> linux-next-20101229/include/net/netfilter/nf_conntrack_core.h:60: error: 'struct sk_buff' has no member named 'nfct'
+>> linux-next-20101229/net/ipv6/netfilter/nf_defrag_ipv6_hooks.c: In function 'nf_ct6_defrag_user':
+>> linux-next-20101229/net/ipv6/netfilter/nf_defrag_ipv6_hooks.c:36: error: 'struct sk_buff' has no member named 'nfct'
+>> linux-next-20101229/net/ipv6/netfilter/nf_defrag_ipv6_hooks.c:37: error: implicit declaration of function 'nf_ct_zone'
+>> linux-next-20101229/net/ipv6/netfilter/nf_defrag_ipv6_hooks.c:37: error: 'struct sk_buff' has no member named 'nfct'
+>> linux-next-20101229/net/ipv6/netfilter/nf_defrag_ipv6_hooks.c: In function 'ipv6_defrag':
+>> linux-next-20101229/net/ipv6/netfilter/nf_defrag_ipv6_hooks.c:60: error: 'struct sk_buff' has no member named 'nfct'
+>> linux-next-20101229/net/ipv6/netfilter/nf_defrag_ipv6_hooks.c:60: error: 'struct sk_buff' has no member named 'nfct'
+>> make[4]: *** [net/ipv6/netfilter/nf_defrag_ipv6_hooks.o] Error 1
+>> make[3]: *** [net/ipv6/netfilter] Error 2
+>>
+>>
+>>
+>
+> This bug has been already fixed in nf-next-2.6:
+> http://git.kernel.org/?p=linux/kernel/git/kaber/nf-next-2.6.git;a=commitdiff;h=ae90bdeaeac6b964b7a1e853a90a19f358a9ac20;hp=f1c722295e029eace7960fc687efd5afd67dc555
+>
+> Thanks.
+>
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Regards,
+> Changli Gao(xiaosuo@gmail.com)
+>
+
+Does not look like the nf-next-2.6 is triggered by linux-next... Does
+this tree passes net-next-2.6 and then enters linux-next?
+
+- Sedat -
+
+P.S.:
+
+sd@tbox:/mnt/sdb5/linux-kernel/linux-next$ git pull
+git://git.kernel.org/pub/scm/linux/kernel/git/kaber/nf-next-2.6.git
+master:nf-next-2.6
+remote: Counting objects: 705, done.
+remote: Compressing objects: 100% (415/415), done.
+remote: Total 545 (delta 475), reused 149 (delta 130)
+Receiving objects: 100% (545/545), 88.80 KiB | 47 KiB/s, done.
+Resolving deltas: 100% (475/475), completed with 136 local objects.
+>From git://git.kernel.org/pub/scm/linux/kernel/git/kaber/nf-next-2.6
+ * [new branch]      master     -> nf-next-2.6
+warning: too many files (created: 931 deleted: 428), skipping inexact
+rename detection
+Auto-merging include/linux/netfilter.h
+Auto-merging include/linux/skbuff.h
+Auto-merging net/core/skbuff.c
+Auto-merging net/ipv6/netfilter/nf_conntrack_reasm.c
+Auto-merging net/netfilter/core.c
+Auto-merging net/netfilter/ipvs/ip_vs_ctl.c
+Auto-merging net/netfilter/ipvs/ip_vs_xmit.c
+Merge made by recursive.
+ include/linux/ip_vs.h                              |    8 +
+ include/linux/netfilter.h                          |    6 +-
+ include/linux/netfilter/xt_CT.h                    |   10 +-
+ include/linux/netfilter/xt_TCPOPTSTRIP.h           |    2 +-
+ include/linux/netfilter/xt_TPROXY.h                |    8 +-
+ include/linux/netfilter/xt_cluster.h               |    8 +-
+ include/linux/netfilter/xt_quota.h                 |    6 +-
+ include/linux/netfilter/xt_time.h                  |   14 +-
+ include/linux/netfilter/xt_u32.h                   |   16 +-
+ include/linux/skbuff.h                             |   15 +
+ include/net/ip_vs.h                                |   25 +-
+ include/net/netfilter/ipv6/nf_conntrack_ipv6.h     |   10 -
+ include/net/netfilter/ipv6/nf_defrag_ipv6.h        |   10 +
+ include/net/netfilter/nf_conntrack.h               |   19 +-
+ include/net/netfilter/nf_conntrack_ecache.h        |   12 +-
+ include/net/netfilter/nf_conntrack_extend.h        |    6 +
+ include/net/netfilter/nf_conntrack_l3proto.h       |    2 +-
+ include/net/netfilter/nf_nat.h                     |    6 +
+ include/net/netfilter/nf_nat_core.h                |    4 +-
+ net/core/skbuff.c                                  |    2 +
+ net/ipv4/netfilter/ipt_LOG.c                       |    3 +-
+ .../netfilter/nf_conntrack_l3proto_ipv4_compat.c   |   17 +-
+ net/ipv4/netfilter/nf_nat_amanda.c                 |    8 +-
+ net/ipv4/netfilter/nf_nat_core.c                   |    9 +-
+ net/ipv6/netfilter/ip6t_LOG.c                      |    3 +-
+ net/ipv6/netfilter/nf_conntrack_reasm.c            |    2 +-
+ net/ipv6/netfilter/nf_defrag_ipv6_hooks.c          |    8 +-
+ net/netfilter/core.c                               |    4 +-
+ net/netfilter/ipvs/ip_vs_conn.c                    |   36 +-
+ net/netfilter/ipvs/ip_vs_core.c                    |   94 ++-
+ net/netfilter/ipvs/ip_vs_ctl.c                     |   36 +-
+ net/netfilter/ipvs/ip_vs_ftp.c                     |    5 +-
+ net/netfilter/ipvs/ip_vs_pe.c                      |   17 +-
+ net/netfilter/ipvs/ip_vs_pe_sip.c                  |    3 +
+ net/netfilter/ipvs/ip_vs_proto_sctp.c              |   11 +-
+ net/netfilter/ipvs/ip_vs_proto_tcp.c               |   10 +-
+ net/netfilter/ipvs/ip_vs_proto_udp.c               |   10 +-
+ net/netfilter/ipvs/ip_vs_sync.c                    |  962 +++++++++++++++++---
+ net/netfilter/ipvs/ip_vs_xmit.c                    |   26 +-
+ net/netfilter/nf_conntrack_core.c                  |    3 +-
+ net/netfilter/nf_conntrack_expect.c                |   25 +-
+ net/netfilter/nf_conntrack_extend.c                |   11 +-
+ net/netfilter/nf_conntrack_helper.c                |   10 +-
+ net/netfilter/nf_conntrack_netlink.c               |    1 +
+ net/netfilter/nf_conntrack_proto.c                 |   24 +-
+ net/netfilter/nf_conntrack_proto_dccp.c            |    3 +
+ net/netfilter/nf_conntrack_proto_sctp.c            |    1 +
+ net/netfilter/nf_conntrack_proto_tcp.c             |   14 +-
+ net/netfilter/nf_conntrack_standalone.c            |    9 +-
+ net/netfilter/nf_log.c                             |    6 +-
+ net/netfilter/nf_queue.c                           |   18 +-
+ net/netfilter/nfnetlink_log.c                      |    6 +-
+ net/netfilter/xt_CLASSIFY.c                        |   36 +-
+ net/netfilter/xt_NFQUEUE.c                         |    6 +-
+ 54 files changed, 1258 insertions(+), 368 deletions(-)
+sd@tbox:/mnt/sdb5/linux-kernel/linux-next$
