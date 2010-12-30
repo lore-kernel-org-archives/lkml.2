@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab0L3UOi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 15:14:38 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50401 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755041Ab0L3UOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 15:14:37 -0500
-Message-ID: <4D1CE80D.3050503@zytor.com>
-Date: Thu, 30 Dec 2010 12:14:05 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1755326Ab0L3UbV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 15:31:21 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:65108 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755208Ab0L3UbU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Dec 2010 15:31:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :organization:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=LAVo7OFruKphIiJLGuEYKe1rkLffh0xlU7cc7+V+kVK8P6DN5mcf2huSY7KtIzW19a
+         FLe6YfmrEhxY59hBMNbD6xEnhSEKAGXizXvmMdhAQPolzVOU/BJ5Pd4siORJ/h6Br5o8
+         keiH7NrVSZCv4m0p1G5HFf7Kh8UYnxqECkS5Y=
+From: webmaster <jason.vas.dias@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: per-chroot clock module ?
+Date: Thu, 30 Dec 2010 20:31:15 +0000
+User-Agent: KMail/1.12.4 (Linux/2.6.36.2-jvd+; KDE/4.3.4; x86_64; svn-1073138; 2010-01-11)
+Cc: linux-kernel@vger.kernel.org
+References: <201011271821.35039.jason.vas.dias@gmail.com> <20101203193658.GB2371@ucw.cz>
+In-Reply-To: <20101203193658.GB2371@ucw.cz>
+Organization: Text2Car Inc.
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
-        x86@kernel.org, eric.dumazet@gmail.com, yinghai@kernel.org,
-        brgerst@gmail.com, gorcunov@gmail.com, penberg@kernel.org,
-        shaohui.zheng@intel.com, rientjes@google.com
-Subject: Re: [PATCHSET] x86: unify x86_32 and 64 NUMA init paths, take#4
-References: <1293731369-10851-1-git-send-email-tj@kernel.org>
-In-Reply-To: <1293731369-10851-1-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201012302031.15545.webmaster@www.text2car.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/30/2010 09:49 AM, Tejun Heo wrote:
+On Friday 03 December 2010 19:36:59 Pavel Machek wrote:
+> Hi!
 > 
-> The only change from the last take[L] is that it's now based on
-> tip/x86/numa.  Unfortunately, some of the collisions weren't trivial
-> and led to some ugliness.
+> > I'd really like to be able to set a distinct "clock" for a specific chroot environment, 
+> > such that the super-user could call :
+> >    const char *my_chroot_directory = "/some_chroot";
+> >    struct stat st;
+> >    if(stat( my_chroot_directory, &st) ==0)
+> >          sys_clock_settime ((clockid_t) st.st_inode,  (struct timespec *)tp)
+> >    ( from glibc )
 > 
-> Commit c1c3443c ("x86, numa: Fake node-to-cpumask for NUMA emulation")
-> introduced hard dependency on x86_64 into numa_add/remove_cpu() when
-> CONFIG_NUMA_EMU is enabled.  0015 has been updated so that the 32/64
-> bit common versions used when !CONFIG_NUMA_EMU are in numa.c while
-> CONFIG_NUMA_EMU variants are in numa_64.c.
+> See subterfugue.net... it can do this.
 > 
-> This is ugly but still better than before.  IIUC, Shaohui's patchsets
-> is going to unify NUMA emulation across 32 and 64bit, which should
-> remove the above ugliness.  I haven't looked through the patchset yet
-> but after skimming through the current NUMA_EMU code, here are some of
-> my thoughts, FWIW.
-> 
-> * There's no reason for different NUMA config methods to construct
->   different data structures.  They all, including 32bit, can build a
->   single set of data structures.
-> 
-> * Then, unification of NUMA_EMU would naturally follow.  There's no
->   reason to think about whether the underlying NUMA and proximity
->   information is provided by ACPI, AMD or whatever.  It just needs to
->   manipulate the processed data.
-> 
-> Let's _please_ head that way instead of adding more gluing codes and
-> hacks everywhere.  It would be a bit more churn but I don't think
-> there's any other sustainable way.
-> 
+Sorry for the delay in responding - 
+but I've been very busy, amongst other things working on the "per-chroot" module, which
+now works in a very basic but sufficient mode.
+If anyone else would find it useful,  I'll fill it out some more and post it to this list. 
 
-Agreed 100%.
+I'd like to see this "subterfuge.net" - but I'm unable to connect with HTTP:
+  
+$ curl http://subterfuge.net --trace-ascii /dev/fd/2
+== Info: About to connect() to subterfuge.net port 80 (#0)
+== Info:   Trying 184.82.15.90... == Info: No route to host
+== Info: couldn't connect to host
+== Info: Closing connection #0
+curl: (7) couldn't connect to host
 
-	-hpa
+while google just finds "subterfuge.com" which appears to be a Spanish record company ...
+Is this server now down / being blocked ? 
+Did I get the URL incorrect ? What is / was the software at subterfuge.net ?
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+All the best & happy new year to all ,
+Jason
