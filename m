@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349Ab0L3TuX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 14:50:23 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:39091 "EHLO
+	id S1755362Ab0L3TuZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 14:50:25 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:39098 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755265Ab0L3TuW (ORCPT
+	with ESMTP id S1755336Ab0L3TuW (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
 	Thu, 30 Dec 2010 14:50:22 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -14,9 +14,9 @@ Cc: Jan Beulich <JBeulich@novell.com>, xen-devel@lists.xensource.com,
         Konrad Rzeszutek Wilk <konrad@kernel.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 6/8] xen/debug: WARN_ON when 1-1 but no _PAGE_IOMAP flag set.
-Date: Thu, 30 Dec 2010 14:48:35 -0500
-Message-Id: <1293738517-7287-7-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 3/8] xen/setup: Set identity mapping for non-RAM E820 and E820 gaps.
+Date: Thu, 30 Dec 2010 14:48:32 -0500
+Message-Id: <1293738517-7287-4-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1293738517-7287-1-git-send-email-konrad.wilk@oracle.com>
 References: <1293738517-7287-1-git-send-email-konrad.wilk@oracle.com>
@@ -24,72 +24,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only enabled if XEN_DEBUG_FS is enabled. We print a warning
-when:
+We walk the E820 region and start at 0 (for PV guests we start
+at ISA_END_ADDRESS) and skip any E820 RAM regions. For all other
+regions and as well the gaps we set them to be identity mappings.
 
- pfn_to_mfn(pfn) == pfn, but no VM_IO (_PAGE_IOMAP) flag
- pfn_to_mfn(pfn) != pfn, and VM_IO flag is set.
+The reasons we do not want to set the identity mapping from 0->
+ISA_END_ADDRESS when running as PV is b/c that the kernel would
+try to read DMI information and fail (no permissions to read that).
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/mmu.c |   37 +++++++++++++++++++++++++++++++++++++
- 1 files changed, 37 insertions(+), 0 deletions(-)
+ arch/x86/xen/setup.c |   39 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 39 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index e9dfdd6..d98bd43 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -944,6 +944,40 @@ pte_t xen_make_pte(pteval_t pte)
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index 7201800..643b3fc 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -143,6 +143,38 @@ static unsigned long __init xen_return_unused_memory(unsigned long max_pfn,
+ 	return released;
  }
- PV_CALLEE_SAVE_REGS_THUNK(xen_make_pte);
  
-+#ifdef CONFIG_XEN_DEBUG_FS
-+pte_t xen_make_pte_debug(pteval_t pte)
++static unsigned long __init xen_set_identity(const struct e820map *e820)
 +{
-+	phys_addr_t addr = (pte & PTE_PFN_MASK);
-+	phys_addr_t other_addr;
-+	bool io_page = false;
-+	pte_t _pte;
++	phys_addr_t last = xen_initial_domain() ? 0 : ISA_END_ADDRESS;
++	int i;
++	unsigned long identity = 0;
++	unsigned long pfn;
 +
-+	if (pte & _PAGE_IOMAP)
-+		io_page = true;
++	for (i = 0; i < e820->nr_map; i++) {
++		phys_addr_t start = e820->map[i].addr;
++		phys_addr_t end = start + e820->map[i].size;
 +
-+	_pte = xen_make_pte(pte);
++		if (end < start)
++			continue;
 +
-+	if (!addr)
-+		return _pte;
++		/* Skip over the 1MB region. */
++		if (last > end)
++			continue;
 +
-+	if (io_page &&
-+	    (xen_initial_domain() || addr >= ISA_END_ADDRESS)) {
-+		other_addr = pfn_to_mfn(addr >> PAGE_SHIFT) << PAGE_SHIFT;
-+		WARN(addr != other_addr,
-+			"0x%lx is using VM_IO, but it is 0x%lx!\n",
-+			(unsigned long)addr, (unsigned long)other_addr);
-+	} else {
-+		other_addr = (_pte.pte & PTE_PFN_MASK);
-+		WARN((addr == other_addr) && (!io_page),
-+			"0x%lx is missing VM_IO!\n",
-+			(unsigned long)addr);
++		if (e820->map[i].type == E820_RAM) {
++			/* Without saving 'last' we would gooble RAM too. */
++			last = end;
++			continue;
++		}
++
++		for (pfn = PFN_UP(last); pfn < PFN_DOWN(end); pfn++)
++			__set_phys_to_machine(pfn, pfn);
++		identity += pfn - PFN_UP(last);
++
++		last = end;
 +	}
-+
-+	return _pte;
++	return identity;
 +}
-+PV_CALLEE_SAVE_REGS_THUNK(xen_make_pte_debug);
-+#endif
-+
- pgd_t xen_make_pgd(pgdval_t pgd)
- {
- 	pgd = pte_pfn_to_mfn(pgd);
-@@ -2354,6 +2388,9 @@ __init void xen_ident_map_ISA(void)
+ /**
+  * machine_specific_memory_setup - Hook for machine specific memory setup.
+  **/
+@@ -156,6 +188,7 @@ char * __init xen_memory_setup(void)
+ 	struct xen_memory_map memmap;
+ 	unsigned long extra_pages = 0;
+ 	unsigned long extra_limit;
++	unsigned long identity_pages = 0;
+ 	int i;
+ 	int op;
  
- static __init void xen_post_allocator_init(void)
- {
-+#ifdef CONFIG_XEN_DEBUG_FS
-+	pv_mmu_ops.make_pte = PV_CALLEE_SAVE(xen_make_pte_debug);
-+#endif
- 	pv_mmu_ops.set_pte = xen_set_pte;
- 	pv_mmu_ops.set_pmd = xen_set_pmd;
- 	pv_mmu_ops.set_pud = xen_set_pud;
+@@ -251,6 +284,12 @@ char * __init xen_memory_setup(void)
+ 
+ 	xen_add_extra_mem(extra_pages);
+ 
++	/*
++	 * Set P2M for all non-RAM pages and E820 gaps to be identity
++	 * type PFNs.
++	 */
++	identity_pages = xen_set_identity(&e820);
++	printk(KERN_INFO "Set %ld page(s) to 1-1 mapping.\n", identity_pages);
+ 	return "Xen";
+ }
+ 
 -- 
 1.7.1
 
