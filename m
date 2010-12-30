@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179Ab0L3OqF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 09:46:05 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:43815 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753128Ab0L3OqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 09:46:04 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Krzysztof Halasa <khc@pm.waw.pl>
-Subject: Re: [Bug #25442] ixp4xx defines FREQ macro; conflicts with gspca/ov519 driver
-Date: Thu, 30 Dec 2010 15:45:15 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc8+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "Ben Hutchings" <ben@decadent.org.uk>
-References: <96DQe4a_2tH.A.4RE.497GNB@chimera> <sV7shrPOroO.A.CqE.K-7GNB@chimera> <m3zkrnv1x9.fsf@intrepid.localdomain>
-In-Reply-To: <m3zkrnv1x9.fsf@intrepid.localdomain>
+	id S1754253Ab0L3OrH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 09:47:07 -0500
+Received: from keetweej.vanheusden.com ([83.163.219.98]:59422 "EHLO
+	keetweej.vanheusden.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752574Ab0L3OrF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Dec 2010 09:47:05 -0500
+X-Greylist: delayed 572 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Dec 2010 09:47:05 EST
+Date: Thu, 30 Dec 2010 15:37:31 +0100
+From: folkert <folkert@vanheusden.com>
+To: linux-kernel@vger.kernel.org
+Subject: block device without page cache buffering
+Message-ID: <20101230143731.GO9658@belle.intranet.vanheusden.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012301545.15667.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: www.unixexpert.nl
+X-Chameleon-Return-To: folkert@vanheusden.com
+X-Xfmail-Return-To: folkert@vanheusden.com
+X-Phonenumber: +31-6-41278122
+X-URL: http://www.vanheusden.com/
+X-PGP-KeyID: 1F28D8AE
+X-GPG-fingerprint: AC89 09CE 41F2 00B4 FCF2  B174 3019 0E8C 1F28 D8AE
+X-Key: http://pgp.surfnet.nl:11371/pks/lookup?op=get&search=0x1F28D8AE
+Read-Receipt-To: <folkert@vanheusden.com>
+Reply-By: Wed Dec 22 20:04:01 CET 2010
+X-Message-Flag: PGP key-id: 0x1f28d8ae - consider encrypting your e-mail to
+	me with PGP!
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, December 30, 2010, Krzysztof Halasa wrote:
-> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
-> 
-> > The following bug entry is on the current list of known regressions
-> > from 2.6.36.  Please verify if it still should be listed and let the tracking team
-> > know (either way).
-> >
-> >
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=25442
-> > Subject		: ixp4xx defines FREQ macro; conflicts with gspca/ov519 driver
-> 
-> This FREQ has been there for years. Not that it makes it smart, and
-> I'll obviously send Ben's patch upstream for 2.6.38. Still processing
-> incoming mail queue :-(
+Hi,
 
-Well, the patch is in the mainline, which is why it's still listed.
+What should a block device driver need to do to get all read/write
+requests without any buffering from the page cache?
+I think the iscsi initiation does this.
+This is needed to get an existing pseudo block device to function as a
+shared storage so that a cluster filesystem (gpfs/ocfs) can be put on it (nbd).
 
-Thanks,
-Rafael
+
+Folkert van Heusden
+
+-- 
+Nagios user? Check out CoffeeSaint - the versatile Nagios status
+viewer! http://www.vanheusden.com/java/CoffeeSaint/
+----------------------------------------------------------------------
+Phone: +31-6-41278122, PGP-key: 1F28D8AE, www.vanheusden.com
