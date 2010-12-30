@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162Ab0L3Stk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 13:49:40 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:41706 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754770Ab0L3Stj (ORCPT
+	id S1755197Ab0L3Sv3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 13:51:29 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59044 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755039Ab0L3Sv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 13:49:39 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=KmD6+zyIAVAq71a1xxP/1tGnR2BGU6TAy6yP0bN3aTb7t7CuYHkxpRIE1SvuMhRTXx
-         J5DjmHo1z5ZGfxJ5ubfg==
-Date: Thu, 30 Dec 2010 10:49:29 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Daniel Kiper <dkiper@net-space.pl>
-cc: ian.campbell@citrix.com, Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi.kleen@intel.com>, haicheng.li@linux.intel.com,
-        fengguang.wu@intel.com, jeremy@goop.org, konrad.wilk@oracle.com,
-        dan.magenheimer@oracle.com, v.tolstov@selfip.ru,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH R2 1/7] mm: Add add_registered_memory() to memory hotplug
- API
-In-Reply-To: <20101230123013.GA12765@router-fw-old.local.net-space.pl>
-Message-ID: <alpine.DEB.2.00.1012301048550.12995@chino.kir.corp.google.com>
-References: <20101229170212.GF2743@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1012291643290.6040@chino.kir.corp.google.com> <20101230123013.GA12765@router-fw-old.local.net-space.pl>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 30 Dec 2010 13:51:28 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+In-Reply-To: <1293733460.4919.21.camel@heimdal.trondhjem.org>
+References: <AANLkTi=-dNeeDjcSoznKtwcaNyw1mMXSqepFY89R2i+2@mail.gmail.com>
+ <20101230171453.GA5787@pengutronix.de> <AANLkTikvZF6Q1k0rETLHUffkUT3grxAh3FoB_0vs96B8@mail.gmail.com>
+ <1293733460.4919.21.camel@heimdal.trondhjem.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 30 Dec 2010 10:50:34 -0800
+Message-ID: <AANLkTi=sO9M8m1Fpntu_YscVU4SrppKfxBf2eRZ2Dr+L@mail.gmail.com>
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Chuck Lever <chuck.lever@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-nfs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Dec 2010, Daniel Kiper wrote:
+On Thu, Dec 30, 2010 at 10:24 AM, Trond Myklebust
+<Trond.Myklebust@netapp.com> wrote:
+>
+> There is nothing we can do to protect ourselves against an infinite loop
+> if the server (or underlying filesystem) is breaking the rules w.r.t.
+> cookie generation. It should be possible to recover from all other
+> situations.
 
-> > Looks like this patch was based on a kernel before 2.6.37-rc4 since it
-> > doesn't have 20d6c96b5f (mem-hotplug: introduce {un}lock_memory_hotplug())
-> 
-> As I wrote in "[PATCH R2 0/7] Xen memory balloon driver with memoryhotplug
-> support" this patch applies to Linux kernel Ver. 2.6.36.
-> 
+Umm. Sure there is. Just make sure that you return the uncached entry
+to user space, rather than loop forever.
 
-I'd suggest posting patches against the latest -git.
+Looping forever in kernel space is a bad idea. How about just changing
+the "continue" into a "break" for the "uncached readdir returned
+success".
+
+No halting problems, no excuses. There is absolutely _no_ excuse for
+an endless loop in kernel mode. Certainly not "the other end is
+incompetent".
+
+EVERYBODY is incompetent sometimes. That just means that you must
+never trust the other end too much. You can't say "we require the
+server to be sane in order not to lock up".
+
+                    Linus
