@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab0L3K6N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 05:58:13 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:41502 "EHLO ogre.sisk.pl"
+	id S1754124Ab0L3LAi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 06:00:38 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:41520 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753477Ab0L3K6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 05:58:12 -0500
+	id S1753514Ab0L3LAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Dec 2010 06:00:37 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Larry Finger <Larry.Finger@lwfinger.net>
 Subject: Re: [Bug #22672] Regression in 2.6.37-rc1 for Intel 945 Graphics Adapter - bisected to commit e9e331a
-Date: Thu, 30 Dec 2010 11:57:23 +0100
+Date: Thu, 30 Dec 2010 12:00:07 +0100
 User-Agent: KMail/1.13.5 (Linux/2.6.37-rc8+; KDE/4.4.4; x86_64; ; )
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Kernel Testers List <kernel-testers@vger.kernel.org>,
@@ -23,7 +23,7 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012301157.23780.rjw@sisk.pl>
+Message-Id: <201012301200.07333.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -50,6 +50,7 @@ On Thursday, December 30, 2010, Larry Finger wrote:
 > 
 > Neither 2.6.37-rc8 nor the patches listed above fix my system.
 
-Thanks for the update.
+Does reverting commit 448f53a "drm/i915/bios: Reverse order of 100/120 Mhz SSC
+clocks" help?
 
 Rafael
