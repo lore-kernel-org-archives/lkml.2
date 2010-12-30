@@ -1,56 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754124Ab0L3LAi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 06:00:38 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:41520 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753514Ab0L3LAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 06:00:37 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [Bug #22672] Regression in 2.6.37-rc1 for Intel 945 Graphics Adapter - bisected to commit e9e331a
-Date: Thu, 30 Dec 2010 12:00:07 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc8+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Keith Packard <keithp@keithp.com>
-References: <96DQe4a_2tH.A.4RE.497GNB@chimera> <sV7shrPOroO.A.F4G.VA8GNB@chimera> <4D1BD308.4030103@lwfinger.net>
-In-Reply-To: <4D1BD308.4030103@lwfinger.net>
+	id S1753792Ab0L3LB4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 06:01:56 -0500
+Received: from smtp-vbr7.xs4all.nl ([194.109.24.27]:2491 "EHLO
+	smtp-vbr7.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752799Ab0L3LBz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Dec 2010 06:01:55 -0500
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: manjunatha_halli@ti.com
+Subject: Re: [RFC V8 1/7] drivers:media:radio: wl128x: fmdrv common header file
+Date: Thu, 30 Dec 2010 12:01:46 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc7-durdane; KDE/4.4.5; x86_64; ; )
+Cc: mchehab@infradead.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+References: <1293707507-3376-1-git-send-email-manjunatha_halli@ti.com> <1293707507-3376-2-git-send-email-manjunatha_halli@ti.com>
+In-Reply-To: <1293707507-3376-2-git-send-email-manjunatha_halli@ti.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012301200.07333.rjw@sisk.pl>
+Message-Id: <201012301201.46449.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, December 30, 2010, Larry Finger wrote:
-> On 12/29/2010 05:06 PM, Rafael J. Wysocki wrote:
-> > This message has been generated automatically as a part of a summary report
-> > of recent regressions.
-> > 
-> > The following bug entry is on the current list of known regressions
-> > from 2.6.36.  Please verify if it still should be listed and let the tracking team
-> > know (either way).
-> > 
-> > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22672
-> > Subject		: Regression in 2.6.37-rc1 for Intel 945 Graphics Adapter - bisected to commit e9e331a
-> > Submitter	: Larry Finger <Larry.Finger@lwfinger.net>
-> > Date		: 2010-11-11 01:56 (49 days old)
-> > References	: https://bugs.freedesktop.org/show_bug.cgi?id=31803
-> > 		  http://marc.info/?l=linux-kernel&m=128944001311444&w=2
-> > 		  http://www.mail-archive.com/intel-gfx@lists.freedesktop.org/msg02235.html
-> > Patch		: https://patchwork.kernel.org/patch/359472/
-> > 		  https://patchwork.kernel.org/patch/359502/
+On Thursday, December 30, 2010 12:11:41 manjunatha_halli@ti.com wrote:
+> From: Manjunatha Halli <manjunatha_halli@ti.com>
 > 
-> Neither 2.6.37-rc8 nor the patches listed above fix my system.
+> These are common headers used in FM submodules (FM V4L2,
+> FM common, FM Rx,and FM TX).
+> 
+> Signed-off-by: Manjunatha Halli <manjunatha_halli@ti.com>
+> ---
+>  drivers/media/radio/wl128x/fmdrv.h |  248 ++++++++++++++++++++++++++++++++++++
+>  1 files changed, 248 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/media/radio/wl128x/fmdrv.h
+> 
+> diff --git a/drivers/media/radio/wl128x/fmdrv.h b/drivers/media/radio/wl128x/fmdrv.h
+> new file mode 100644
+> index 0000000..3d73f76
+> --- /dev/null
+> +++ b/drivers/media/radio/wl128x/fmdrv.h
+> @@ -0,0 +1,248 @@
+> +/*
+> + *  FM Driver for Connectivity chip of Texas Instruments.
+> + *
+> + *  Common header for all FM driver sub-modules.
+> + *
+> + *  Copyright (C) 2009 Texas Instruments
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License version 2 as
+> + *  published by the Free Software Foundation.
+> + *
+> + *  This program is distributed in the hope that it will be useful,
+> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + *  GNU General Public License for more details.
+> + *
+> + *  You should have received a copy of the GNU General Public License
+> + *  along with this program; if not, write to the Free Software
+> + *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+> + *
+> + */
+> +
+> +#ifndef _FM_DRV_H
+> +#define _FM_DRV_H
+> +
+> +#include <linux/skbuff.h>
+> +#include <linux/interrupt.h>
+> +#include <sound/core.h>
+> +#include <sound/initval.h>
+> +#include <linux/timer.h>
+> +#include <linux/version.h>
+> +#include <media/v4l2-ioctl.h>
+> +#include <media/v4l2-common.h>
+> +#include <media/v4l2-ctrls.h>
+> +
+> +#define FM_DRV_VERSION            "0.01"
+> +/* Should match with FM_DRV_VERSION */
+> +#define FM_DRV_RADIO_VERSION      KERNEL_VERSION(0, 0, 1)
+> +#define FM_DRV_NAME               "ti_fmdrv"
+> +#define FM_DRV_CARD_SHORT_NAME    "TI FM Radio"
+> +#define FM_DRV_CARD_LONG_NAME     "Texas Instruments FM Radio"
+> +
+> +/* Flag info */
+> +#define FM_INTTASK_RUNNING            0
+> +#define FM_INTTASK_SCHEDULE_PENDING   1
+> +#define FM_FIRMWARE_DW_INPROGRESS     2
+> +#define FM_CORE_READY                 3
+> +#define FM_CORE_TRANSPORT_READY       4
+> +#define FM_AF_SWITCH_INPROGRESS	      5
+> +#define FM_CORE_TX_XMITING	      6
+> +
+> +#define FM_TUNE_COMPLETE	      0x1
+> +#define FM_BAND_LIMIT		      0x2
+> +
+> +#define FM_DRV_TX_TIMEOUT      (5*HZ)	/* 5 seconds */
+> +#define FM_DRV_RX_SEEK_TIMEOUT (20*HZ)	/* 20 seconds */
+> +
+> +#define NO_OF_ENTRIES_IN_ARRAY(array) (sizeof(array) / sizeof(array[0]))
+> +
+> +enum {
+> +	FM_MODE_OFF,
+> +	FM_MODE_TX,
+> +	FM_MODE_RX,
+> +	FM_MODE_ENTRY_MAX
+> +};
+> +
+> +#define FM_RX_RDS_INFO_FIELD_MAX	8	/* 4 Group * 2 Bytes */
+> +
+> +/*
+> + * define private CIDs for V4L2
+> + */
+> +#define V4L2_CID_CHANNEL_SPACING (V4L2_CID_PRIVATE_BASE + 0)
 
-Does reverting commit 448f53a "drm/i915/bios: Reverse order of 100/120 Mhz SSC
-clocks" help?
+This define seems to be a leftover from previous versions and should be removed.
 
-Rafael
+Regards,
+
+	Hans
+
+-- 
+Hans Verkuil - video4linux developer - sponsored by Cisco
