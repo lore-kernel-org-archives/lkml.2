@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755282Ab0L3TtU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 14:49:20 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:37495 "EHLO
+	id S1755334Ab0L3TuV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 14:50:21 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:38925 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755041Ab0L3TtT (ORCPT
+	with ESMTP id S1755265Ab0L3TuR (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Thu, 30 Dec 2010 14:49:19 -0500
+	Thu, 30 Dec 2010 14:50:17 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
         <hpa@zytor.com>, Ian Campbell <Ian.Campbell@citrix.com>
@@ -14,9 +14,9 @@ Cc: Jan Beulich <JBeulich@novell.com>, xen-devel@lists.xensource.com,
         Konrad Rzeszutek Wilk <konrad@kernel.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 5/8] xen/debug: Print out all pages in the P2M.
-Date: Thu, 30 Dec 2010 14:48:34 -0500
-Message-Id: <1293738517-7287-6-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 1/8] xen: Mark all initial reserved pages for the balloon as INVALID_P2M_ENTRY.
+Date: Thu, 30 Dec 2010 14:48:30 -0500
+Message-Id: <1293738517-7287-2-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1293738517-7287-1-git-send-email-konrad.wilk@oracle.com>
 References: <1293738517-7287-1-git-send-email-konrad.wilk@oracle.com>
@@ -24,123 +24,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We walk over the whole P2M and constructing a simplified view of which
-regions belong to what level and what type they are.
+With this patch, we diligently set regions that will be used by the
+balloon driver to be INVALID_P2M_ENTRY and under the ownership
+of the balloon driver. We are OK using the __set_phys_to_machine
+as we do not expect to be allocating any P2M middle or entries pages.
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/mmu.c |   84 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 84 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/xen/page.h |    1 +
+ arch/x86/xen/mmu.c              |   12 ++++++------
+ arch/x86/xen/setup.c            |    7 ++++++-
+ drivers/xen/balloon.c           |    2 +-
+ 4 files changed, 14 insertions(+), 8 deletions(-)
 
+diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
+index 8760cc6..be671f6 100644
+--- a/arch/x86/include/asm/xen/page.h
++++ b/arch/x86/include/asm/xen/page.h
+@@ -41,6 +41,7 @@ extern unsigned int   machine_to_phys_order;
+ 
+ extern unsigned long get_phys_to_machine(unsigned long pfn);
+ extern bool set_phys_to_machine(unsigned long pfn, unsigned long mfn);
++extern bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn);
+ 
+ static inline unsigned long pfn_to_mfn(unsigned long pfn)
+ {
 diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 36bdd2d..e9dfdd6 100644
+index 44924e5..8e9c669 100644
 --- a/arch/x86/xen/mmu.c
 +++ b/arch/x86/xen/mmu.c
-@@ -46,6 +46,7 @@
- #include <linux/module.h>
- #include <linux/gfp.h>
- #include <linux/memblock.h>
-+#include <linux/seq_file.h>
+@@ -503,6 +503,11 @@ bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+ {
+ 	unsigned topidx, mididx, idx;
  
- #include <asm/pgtable.h>
- #include <asm/tlbflush.h>
-@@ -2764,6 +2765,88 @@ EXPORT_SYMBOL_GPL(xen_remap_domain_mfn_range);
- 
- #ifdef CONFIG_XEN_DEBUG_FS
- 
-+static int p2m_dump_show(struct seq_file *m, void *v)
-+{
-+	static const char * const level_name[] = { "top", "middle",
-+						"entry", "abnormal" };
-+	static const char * const type_name[] = { "identity", "missing",
-+						"pfn", "abnormal"};
-+#define TYPE_IDENTITY 0
-+#define TYPE_MISSING 1
-+#define TYPE_PFN 2
-+#define TYPE_UNKN 3
-+	unsigned long pfn, prev_pfn_type = 0, prev_pfn_level = 0;
-+	unsigned int prev_level = 0;
-+	unsigned int prev_type = TYPE_UNKN;
-+
-+	if (!p2m_top)
-+		return 0;
-+
-+	for (pfn = 0; pfn < MAX_DOMAIN_PAGES; pfn++) {
-+		unsigned topidx = p2m_top_index(pfn);
-+		unsigned mididx = p2m_mid_index(pfn);
-+		unsigned idx = p2m_index(pfn);
-+		unsigned lvl, type;
-+
-+		lvl = 4;
-+		type = TYPE_UNKN;
-+		if (p2m_top[topidx] == p2m_mid_missing) {
-+			lvl = 0; type = TYPE_MISSING;
-+		} else if (p2m_top[topidx] == p2m_mid_identity) {
-+			lvl = 0; type = TYPE_IDENTITY;
-+		} else if (p2m_top[topidx][mididx] == p2m_identity) {
-+			lvl = 1; type = TYPE_IDENTITY;
-+		} else if (p2m_top[topidx][mididx][idx] == pfn) {
-+			lvl = 2; type = TYPE_IDENTITY;
-+		} else if (p2m_top[topidx] == NULL) {
-+			lvl = 0; type = TYPE_UNKN;
-+		} else if (p2m_top[topidx][mididx] == NULL) {
-+			lvl = 1; type = TYPE_UNKN;
-+		} else if (p2m_top[topidx][mididx][idx] == 0) {
-+			lvl = 2; type = TYPE_UNKN;
-+		} else if (p2m_top[topidx][mididx] == p2m_missing) {
-+			lvl = 1; type = TYPE_MISSING;
-+		} else if (p2m_top[topidx][mididx][idx] == INVALID_P2M_ENTRY) {
-+			lvl = 2; type = TYPE_MISSING;
-+		} else if (p2m_top[topidx][mididx][idx] != pfn) {
-+			lvl = 2; type = TYPE_PFN;
-+		}
-+		if (pfn == 0) {
-+			prev_level = lvl;
-+			prev_type = type;
-+		}
-+		if (pfn == MAX_DOMAIN_PAGES-1) {
-+			lvl = 3;
-+			type = TYPE_UNKN;
-+		}
-+		if (prev_type != type) {
-+			seq_printf(m, " [0x%lx->0x%lx] %s\n",
-+				prev_pfn_type, pfn, type_name[prev_type]);
-+			prev_pfn_type = pfn;
-+			prev_type = type;
-+		}
-+		if (prev_level != lvl) {
-+			seq_printf(m, " [0x%lx->0x%lx] level %s\n",
-+				prev_pfn_level, pfn, level_name[prev_level]);
-+			prev_pfn_level = pfn;
-+			prev_level = lvl;
-+		}
++	if (unlikely(xen_feature(XENFEAT_auto_translated_physmap))) {
++		BUG_ON(pfn != mfn && mfn != INVALID_P2M_ENTRY);
++		return true;
 +	}
-+	return 0;
-+}
 +
-+static int p2m_dump_open(struct inode *inode, struct file *filp)
-+{
-+	return single_open(filp, p2m_dump_show, NULL);
-+}
-+
-+static const struct file_operations p2m_dump_fops = {
-+	.open		= p2m_dump_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
- static struct dentry *d_mmu_debug;
+ 	if (unlikely(pfn >= MAX_P2M_PFN)) {
+ 		BUG_ON(mfn != INVALID_P2M_ENTRY);
+ 		return true;
+@@ -522,11 +527,6 @@ bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn)
  
- static int __init xen_mmu_debugfs(void)
-@@ -2819,6 +2902,7 @@ static int __init xen_mmu_debugfs(void)
- 	debugfs_create_u32("prot_commit_batched", 0444, d_mmu_debug,
- 			   &mmu_stats.prot_commit_batched);
+ bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+ {
+-	if (unlikely(xen_feature(XENFEAT_auto_translated_physmap))) {
+-		BUG_ON(pfn != mfn && mfn != INVALID_P2M_ENTRY);
+-		return true;
+-	}
+-
+ 	if (unlikely(!__set_phys_to_machine(pfn, mfn)))  {
+ 		if (!alloc_p2m(pfn))
+ 			return false;
+@@ -2438,7 +2438,7 @@ static void xen_zap_pfn_range(unsigned long vaddr, unsigned int order,
+ 			in_frames[i] = virt_to_mfn(vaddr);
  
-+	debugfs_create_file("p2m", 0600, d_mmu_debug, NULL, &p2m_dump_fops);
- 	return 0;
+ 		MULTI_update_va_mapping(mcs.mc, vaddr, VOID_PTE, 0);
+-		set_phys_to_machine(virt_to_pfn(vaddr), INVALID_P2M_ENTRY);
++		__set_phys_to_machine(virt_to_pfn(vaddr), INVALID_P2M_ENTRY);
+ 
+ 		if (out_frames)
+ 			out_frames[i] = virt_to_pfn(vaddr);
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index b5a7f92..7201800 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -52,6 +52,8 @@ phys_addr_t xen_extra_mem_start, xen_extra_mem_size;
+ 
+ static __init void xen_add_extra_mem(unsigned long pages)
+ {
++	unsigned long pfn;
++
+ 	u64 size = (u64)pages * PAGE_SIZE;
+ 	u64 extra_start = xen_extra_mem_start + xen_extra_mem_size;
+ 
+@@ -66,6 +68,9 @@ static __init void xen_add_extra_mem(unsigned long pages)
+ 	xen_extra_mem_size += size;
+ 
+ 	xen_max_p2m_pfn = PFN_DOWN(extra_start + size);
++
++	for (pfn = PFN_DOWN(extra_start); pfn <= xen_max_p2m_pfn; pfn++)
++		__set_phys_to_machine(pfn, INVALID_P2M_ENTRY);
  }
- fs_initcall(xen_mmu_debugfs);
+ 
+ static unsigned long __init xen_release_chunk(phys_addr_t start_addr,
+@@ -104,7 +109,7 @@ static unsigned long __init xen_release_chunk(phys_addr_t start_addr,
+ 		WARN(ret != 1, "Failed to release memory %lx-%lx err=%d\n",
+ 		     start, end, ret);
+ 		if (ret == 1) {
+-			set_phys_to_machine(pfn, INVALID_P2M_ENTRY);
++			__set_phys_to_machine(pfn, INVALID_P2M_ENTRY);
+ 			len++;
+ 		}
+ 	}
+diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
+index 43f9f02..b1661cd 100644
+--- a/drivers/xen/balloon.c
++++ b/drivers/xen/balloon.c
+@@ -296,7 +296,7 @@ static int decrease_reservation(unsigned long nr_pages)
+ 	/* No more mappings: invalidate P2M and add to balloon. */
+ 	for (i = 0; i < nr_pages; i++) {
+ 		pfn = mfn_to_pfn(frame_list[i]);
+-		set_phys_to_machine(pfn, INVALID_P2M_ENTRY);
++		__set_phys_to_machine(pfn, INVALID_P2M_ENTRY);
+ 		balloon_append(pfn_to_page(pfn));
+ 	}
+ 
 -- 
 1.7.1
 
