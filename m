@@ -1,71 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab0L3LeA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 06:34:00 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:33427 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751933Ab0L3Ld6 (ORCPT
+	id S1753659Ab0L3LfH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 06:35:07 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41601 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751326Ab0L3LfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 06:33:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=fk7g83GGW3b91DrotwMI7mIXQKoXt4uwEdt5AWZP7m3Is/0ThszzZLtHQ7bzwJeOAx
-         c2qNBoubt054KfK35MS/uh6gyW2uaTH5L0i5Kw/nmBxQM9TLKMhcT5h1lZ9w2rs87bJe
-         umDnqHJbs3k2Mcu75Wj7kJ0rrt4H3fQvYwV+w=
-Date: Thu, 30 Dec 2010 12:33:54 +0100
-From: Tejun Heo <tj@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, tglx@linutronix.de, x86@kernel.org,
-        eric.dumazet@gmail.com, yinghai@kernel.org, brgerst@gmail.com,
-        gorcunov@gmail.com, Pekka Enberg <penberg@kernel.org>,
-        shaohui.zheng@intel.com
-Subject: Re: [PATCH 13/16] x86: Unify cpu/apicid <-> NUMA node mapping
- between 32 and 64bit
-Message-ID: <20101230113354.GC18831@htj.dyndns.org>
-References: <1293536929-31683-1-git-send-email-tj@kernel.org>
- <1293536929-31683-14-git-send-email-tj@kernel.org>
- <alpine.DEB.2.00.1012281231070.8883@chino.kir.corp.google.com>
- <20101229105253.GK488@htj.dyndns.org>
- <4D1B8DC8.6000104@zytor.com>
- <4D1BB092.7030609@zytor.com>
+	Thu, 30 Dec 2010 06:35:05 -0500
+Date: Thu, 30 Dec 2010 11:35:03 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Rabin Vincent <rabin@rab.in>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        Jean Delvare <khali@linux-fr.org>, Rajendra Nayak <rnayak@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Vishwanath BS <vishwanath.bs@ti.com>, Partha Basak <p-basak2@ti.com>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, linux-i2c@vger.kernel.org
+Subject: Re: i2c runtime suspend and system wide suspend
+Message-ID: <20101230113502.GA8537@opensource.wolfsonmicro.com>
+References: <4D1C0CFE.5010008@codeaurora.org> <AANLkTinqqgNwgFCMVL-2T83zKnNLGLF007atJ4-EDEW5@mail.gmail.com> <201012301149.30888.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D1BB092.7030609@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201012301149.30888.rjw@sisk.pl>
+X-Cookie: Chess tonight.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 29, 2010 at 02:05:06PM -0800, H. Peter Anvin wrote:
-> On 12/29/2010 11:36 AM, H. Peter Anvin wrote:
-> > On 12/29/2010 02:52 AM, Tejun Heo wrote:
-> >> On Tue, Dec 28, 2010 at 12:35:45PM -0800, David Rientjes wrote:
-> >>> This is going to conflict with a387e95a ("") in x86/numa, so you'll need 
-> >>> the following hunk for acpi_fake_nodes().  I'm not sure why this patchset 
-> >>> is being based on x86/apic-cleanup rather than x86/numa?
-> >>
-> >> Because several patches from the patchset have already been committed
-> >> into x86/apic-cleanup.  Thomas, Peter, if this needs to be rebased
-> >> somewhere, let me know.
-> >>
-> > 
-> > x86/numa is already a dependent branch (on x86/amd-nb), so I'm fine
-> > merging x86/apic-cleanup into that branch and then if you could rebase
-> > it on top of the new x86/numa then I'll push it out tomorrow.
-> > 
-> > OK?
-> > 
-> 
-> I have pushed out this merge onto x86/numa, so waiting for your rebase.
->  If you don't have time, then I'll rebase.
+On Thu, Dec 30, 2010 at 11:49:30AM +0100, Rafael J. Wysocki wrote:
+> On Thursday, December 30, 2010, Rabin Vincent wrote:
 
-Will rebase & repost soon.
+> > https://lists.linux-foundation.org/pipermail/linux-pm/2010-December/029658.html
 
-Thanks.
+> I'm not sure what happened to the last patch.  Is there a new version?
+> If so, is it going to be pushed through the i2c tree, or should I take it?
 
--- 
-tejun
+Jean appears to be on holiday for the Christmas vacation.  I do have a
+new version which I'll post later today.  Since it depends on the patch
+protoyping the generic API calls which the SPI patch also depends on
+it'd probably be best to merge via your tree.
