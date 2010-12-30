@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402Ab0L3ALo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 19:11:44 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:57264 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752118Ab0L3ALn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 19:11:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=ZMHZoKK0rNlRruUZfO+rHPFEIECmLqZbhAr6jATEpqb2dsDvEK5Y5ObN5VkKWB/Gxa
-         3beiDH4WxzX8o0nIcrrmGPfKFeeUF+EZrdcgaEgfRoJMPGgTLFmhx93RlKxlk/W8M+KZ
-         92l6NdKKhgWdMBfRCvSSV2Ky6bCmuQ9FLhHtY=
+	id S1754492Ab0L3AMV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 19:12:21 -0500
+Received: from cantor.suse.de ([195.135.220.2]:36457 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754123Ab0L3AMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Dec 2010 19:12:20 -0500
+Message-ID: <4D1BCE58.4000902@suse.com>
+Date: Wed, 29 Dec 2010 19:12:08 -0500
+From: Jeff Mahoney <jeffm@suse.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <4D1BC94C.5040100@zytor.com>
-References: <4D0C072D.1040201@kernel.org>
-	<4D19320B.7030007@kernel.org>
-	<4D1933D1.9020609@kernel.org>
-	<4D1BC856.4010202@kernel.org>
-	<4D1BC94C.5040100@zytor.com>
-Date: Wed, 29 Dec 2010 16:11:40 -0800
-X-Google-Sender-Auth: jRJaEbXDTWKQklcDbRjPMJjZI2M
-Message-ID: <AANLkTikknHfA4TQw+SMH-EyJBHoNHXk8Rheq4=K4jNWA@mail.gmail.com>
-Subject: Re: [PATCH -v2 3/6] x86, 64bit, numa: Put pgtable to local node memory
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dan Carpenter <error27@gmail.com>, balbir@linux.vnet.ibm.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] taskstats: Use better ifdef for alignment
+X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 29, 2010 at 3:50 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 12/29/2010 03:46 PM, Yinghai Lu wrote:
->>
->> -v2: update it to recent numa-emulation change
->>
->
-> Lovely, yet another interbranch conflict.  This makes me very concerned.
->
-> What is the delta between these?
->
+ Commit 4be2c95d added a null field to align the taskstats structure but
+ the discussion centered around ia64. The issue exists on other platforms
+ with inefficient unaligned access and adding them piecemeal would be
+ an unmaintainable mess.
 
-your new x86/numa have
+ This patch uses Dave Miller's suggestion of using a combination of
+ CONFIG_64BIT && !CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS to determine
+ whether alignment is needed.
 
-       setup_physnodes(addr, max_addr, acpi, amd);
-       fake_physnodes(acpi, amd, num_nodes);
+ Note that this will cause breakage on those platforms with applications
+ like iotop which had hard-coded offsets into the packet to access the
+ taskstats structure.
 
-instead of
+ The message seen on systems without the alignment fixes looks like:
+ kernel unaligned access to 0xe000023879dca9bc, ip=0xa000000100133d10
 
-        acpi_fake_nodes(nodes, num_nodes);
+ The addresses may vary but resolve to locations inside __delayacct_add_tsk.
 
-in  numa_emulation()
+Reported-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+---
+ kernel/taskstats.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks
-
-Yinghai
+--- a/kernel/taskstats.c
++++ b/kernel/taskstats.c
+@@ -349,7 +349,7 @@ static int parse(struct nlattr *na, stru
+ 	return ret;
+ }
+ 
+-#ifdef CONFIG_IA64
++#if defined(CONFIG_64BIT) && !defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+ #define TASKSTATS_NEEDS_PADDING 1
+ #endif
+ 
