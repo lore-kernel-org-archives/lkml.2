@@ -1,68 +1,485 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575Ab0L3Ajs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 19:39:48 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:27338 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754182Ab0L3Ajr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 19:39:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=CB+A0ZFHzB7mmx2S66lGfovQGdX0ABvnJ1lJPcD/q0N9cVyn/BjC6CqXCbLT/viOY3
-         BMVRL8ihSU852HR6DkRQ==
-Date: Wed, 29 Dec 2010 16:39:41 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Yinghai Lu <yinghai@kernel.org>
-cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -v2 3/6] x86, 64bit, numa: Put pgtable to local node
- memory
-In-Reply-To: <AANLkTikknHfA4TQw+SMH-EyJBHoNHXk8Rheq4=K4jNWA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1012291637270.6040@chino.kir.corp.google.com>
-References: <4D0C072D.1040201@kernel.org> <4D19320B.7030007@kernel.org> <4D1933D1.9020609@kernel.org> <4D1BC856.4010202@kernel.org> <4D1BC94C.5040100@zytor.com> <AANLkTikknHfA4TQw+SMH-EyJBHoNHXk8Rheq4=K4jNWA@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="531368966-1639487692-1293669583=:6040"
-X-System-Of-Record: true
+	id S1754613Ab0L3Ani (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 19:43:38 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:57636 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754078Ab0L3Ang (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Dec 2010 19:43:36 -0500
+Date: Thu, 30 Dec 2010 11:43:32 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Gregory Haskins <gregory.haskins@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the alacrity tree with the  tree
+Message-Id: <20101230114332.c19ba13b.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi Gregory,
 
---531368966-1639487692-1293669583=:6040
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Today's linux-next merge of the alacrity tree got a conflict in
+include/linux/Kbuild between various commits from various trees and
+various commits from the alacrity tree.
 
-On Wed, 29 Dec 2010, Yinghai Lu wrote:
+I fixed it up (again - see below).  I must ask, though, since the commits
+in the alacrity tree have been there since May, is there is any progress
+towards getting them integrated into Llinus' tree?
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> >> -v2: update it to recent numa-emulation change
-> >>
-> >
-> > Lovely, yet another interbranch conflict.  This makes me very concerned.
-> >
-> > What is the delta between these?
-> >
-> 
-> your new x86/numa have
-> 
->        setup_physnodes(addr, max_addr, acpi, amd);
->        fake_physnodes(acpi, amd, num_nodes);
-> 
-> instead of
-> 
->         acpi_fake_nodes(nodes, num_nodes);
-> 
-> in  numa_emulation()
-> 
-
-That's from f51bf3073a1 (x86, numa: Fake apicid and pxm mappings for NUMA 
-emulation) and c1c3443c9c (x86, numa: Fake node-to-cpumask for NUMA 
-emulation) in x86/numa.  Given the subject line, I think your patchset is 
-targeted to the same branch so I'm not sure what's concerning?
---531368966-1639487692-1293669583=:6040--
+diff --cc include/linux/Kbuild
+index 2296d8b,1a31099..0000000
+--- a/include/linux/Kbuild
++++ b/include/linux/Kbuild
+@@@ -128,106 -70,43 +128,107 @@@ header-y += fd.
+  header-y += fdreg.h
+  header-y += fib_rules.h
+  header-y += fiemap.h
+ +header-y += filter.h
+  header-y += firewire-cdev.h
+  header-y += firewire-constants.h
+ +header-y += flat.h
+ +header-y += fs.h
+  header-y += fuse.h
+ -header-y += genetlink.h
+ +header-y += futex.h
+ +header-y += gameport.h
+  header-y += gen_stats.h
+ +header-y += generic_serial.h
+ +header-y += genetlink.h
+  header-y += gfs2_ondisk.h
+  header-y += gigaset_dev.h
+ +header-y += hdlc.h
+ +header-y += hdlcdrv.h
+ +header-y += hdreg.h
+ +header-y += hid.h
+ +header-y += hiddev.h
+ +header-y += hidraw.h
+ +header-y += hpet.h
+  header-y += hysdn_if.h
+ +header-y += i2c-dev.h
+ +header-y += i2c.h
+  header-y += i2o-dev.h
+  header-y += i8k.h
+ +header-y += icmp.h
+ +header-y += icmpv6.h
+ +header-y += if.h
+ +header-y += if_addr.h
+  header-y += if_addrlabel.h
+ +header-y += if_alg.h
+  header-y += if_arcnet.h
+ +header-y += if_arp.h
+  header-y += if_bonding.h
+ +header-y += if_bridge.h
+  header-y += if_cablemodem.h
+ +header-y += if_ec.h
+ +header-y += if_eql.h
+ +header-y += if_ether.h
+  header-y += if_fc.h
+ -header-y += if.h
+ +header-y += if_fddi.h
+ +header-y += if_frad.h
+  header-y += if_hippi.h
+  header-y += if_infiniband.h
+ +header-y += if_link.h
+ +header-y += if_ltalk.h
+  header-y += if_packet.h
+ +header-y += if_phonet.h
+  header-y += if_plip.h
+  header-y += if_ppp.h
+ +header-y += if_pppol2tp.h
+ +header-y += if_pppox.h
+  header-y += if_slip.h
+  header-y += if_strip.h
+ +header-y += if_tr.h
+  header-y += if_tun.h
+ +header-y += if_tunnel.h
+ +header-y += if_vlan.h
+ +header-y += if_x25.h
+ +header-y += igmp.h
+ +header-y += in.h
+ +header-y += in6.h
+  header-y += in_route.h
+ +header-y += inet_diag.h
+ +header-y += inotify.h
+ +header-y += input.h
+  header-y += ioctl.h
+++header-y += ioq.h
+ +header-y += ip.h
+  header-y += ip6_tunnel.h
+ +header-y += ip_vs.h
+ +header-y += ipc.h
+ +header-y += ipmi.h
+  header-y += ipmi_msgdefs.h
+  header-y += ipsec.h
+ -header-y += ip_vs.h
+ +header-y += ipv6.h
+ +header-y += ipv6_route.h
+  header-y += ipx.h
+  header-y += irda.h
+ +header-y += irqnr.h
+ +header-y += isdn.h
+ +header-y += isdn_divertif.h
+ +header-y += isdn_ppp.h
+ +header-y += isdnif.h
+  header-y += iso_fs.h
+ +header-y += ivtv.h
+ +header-y += ivtvfb.h
+  header-y += ixjuser.h
+  header-y += jffs2.h
+ +header-y += joystick.h
+ +header-y += kd.h
+ +header-y += kdev_t.h
+ +header-y += kernel.h
+ +header-y += kernelcapi.h
+ +header-y += keyboard.h
+  header-y += keyctl.h
+ +header-y += l2tp.h
+  header-y += limits.h
+ +header-y += llc.h
+ +header-y += loop.h
+ +header-y += lp.h
+  header-y += magic.h
+  header-y += major.h
+  header-y += map_to_7segment.h
+@@@ -290,104 -136,259 +291,107 @@@ header-y += phantom.
+  header-y += phonet.h
+  header-y += pkt_cls.h
+  header-y += pkt_sched.h
+ +header-y += pktcdvd.h
+ +header-y += pmu.h
+ +header-y += poll.h
+  header-y += posix_types.h
+  header-y += ppdev.h
+ +header-y += ppp-comp.h
+ +header-y += ppp_defs.h
+ +header-y += pps.h
+  header-y += prctl.h
+ -header-y += qnxtypes.h
+ +header-y += ptrace.h
+  header-y += qnx4_fs.h
+ +header-y += qnxtypes.h
+ +header-y += quota.h
+  header-y += radeonfb.h
+ +header-y += random.h
+  header-y += raw.h
+ +header-y += rds.h
+ +header-y += reboot.h
+ +header-y += reiserfs_fs.h
+ +header-y += reiserfs_xattr.h
+  header-y += resource.h
+ +header-y += rfkill.h
+  header-y += romfs_fs.h
+  header-y += rose.h
+ +header-y += route.h
+ +header-y += rtc.h
+ +header-y += rtnetlink.h
+ +header-y += scc.h
+ +header-y += sched.h
+ +header-y += screen_info.h
+ +header-y += sdla.h
+ +header-y += securebits.h
+ +header-y += selinux_netlink.h
+ +header-y += sem.h
+ +header-y += serial.h
+ +header-y += serial_core.h
+  header-y += serial_reg.h
+ -header-y += smbno.h
+ +header-y += serio.h
+ +header-y += shm.h
+++header-y += shm_signal.h
+ +header-y += signal.h
+ +header-y += signalfd.h
+  header-y += snmp.h
+ +header-y += socket.h
+  header-y += sockios.h
+  header-y += som.h
+ +header-y += sonet.h
+ +header-y += sonypi.h
+  header-y += sound.h
+ +header-y += soundcard.h
+ +header-y += stat.h
+ +header-y += stddef.h
+ +header-y += string.h
+  header-y += suspend_ioctls.h
+ +header-y += swab.h
+ +header-y += synclink.h
+ +header-y += sysctl.h
+  header-y += taskstats.h
+ +header-y += tcp.h
+  header-y += telephony.h
+  header-y += termios.h
+ +header-y += time.h
+  header-y += times.h
+ +header-y += timex.h
+  header-y += tiocl.h
+  header-y += tipc.h
+  header-y += tipc_config.h
+  header-y += toshiba.h
+ +header-y += tty.h
+ +header-y += types.h
+  header-y += udf_fs_i.h
+ +header-y += udp.h
+ +header-y += uinput.h
+ +header-y += uio.h
+  header-y += ultrasound.h
+  header-y += un.h
+ +header-y += unistd.h
+ +header-y += usbdevice_fs.h
+  header-y += utime.h
+ +header-y += utsname.h
+++header-y += vbus_pci.h
+++header-y += venet.h
+  header-y += veth.h
+ -header-y += videotext.h
+ -header-y += x25.h
+ -
+ -unifdef-y += acct.h
+ -unifdef-y += adb.h
+ -unifdef-y += adfs_fs.h
+ -unifdef-y += agpgart.h
+ -ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/a.out.h \
+ -      		  $(srctree)/include/asm-$(SRCARCH)/a.out.h),)
+ -unifdef-y += a.out.h
+ -endif
+ -unifdef-y += apm_bios.h
+ -unifdef-y += atalk.h
+ -unifdef-y += atmdev.h
+ -unifdef-y += atm.h
+ -unifdef-y += atm_tcp.h
+ -unifdef-y += audit.h
+ -unifdef-y += auto_fs.h
+ -unifdef-y += auxvec.h
+ -unifdef-y += binfmts.h
+ -unifdef-y += blktrace_api.h
+ -unifdef-y += capability.h
+ -unifdef-y += capi.h
+ -unifdef-y += cciss_ioctl.h
+ -unifdef-y += cdrom.h
+ -unifdef-y += cm4000_cs.h
+ -unifdef-y += cn_proc.h
+ -unifdef-y += coda.h
+ -unifdef-y += connector.h
+ -unifdef-y += cuda.h
+ -unifdef-y += cyclades.h
+ -unifdef-y += dccp.h
+ -unifdef-y += dlm.h
+ -unifdef-y += dlm_plock.h
+ -unifdef-y += edd.h
+ -unifdef-y += elf.h
+ -unifdef-y += elfcore.h
+ -unifdef-y += errno.h
+ -unifdef-y += errqueue.h
+ -unifdef-y += ethtool.h
+ -unifdef-y += eventpoll.h
+ -unifdef-y += signalfd.h
+ -unifdef-y += ext2_fs.h
+ -unifdef-y += fb.h
+ -unifdef-y += fcntl.h
+ -unifdef-y += filter.h
+ -unifdef-y += flat.h
+ -unifdef-y += futex.h
+ -unifdef-y += fs.h
+ -unifdef-y += gameport.h
+ -unifdef-y += generic_serial.h
+ -unifdef-y += hdlcdrv.h
+ -unifdef-y += hdlc.h
+ -unifdef-y += hdreg.h
+ -unifdef-y += hid.h
+ -unifdef-y += hiddev.h
+ -unifdef-y += hidraw.h
+ -unifdef-y += hpet.h
+ -unifdef-y += i2c.h
+ -unifdef-y += i2c-dev.h
+ -unifdef-y += icmp.h
+ -unifdef-y += icmpv6.h
+ -unifdef-y += if_addr.h
+ -unifdef-y += if_arp.h
+ -unifdef-y += if_bridge.h
+ -unifdef-y += if_ec.h
+ -unifdef-y += if_eql.h
+ -unifdef-y += if_ether.h
+ -unifdef-y += if_fddi.h
+ -unifdef-y += if_frad.h
+ -unifdef-y += if_ltalk.h
+ -unifdef-y += if_link.h
+ -unifdef-y += if_phonet.h
+ -unifdef-y += if_pppol2tp.h
+ -unifdef-y += if_pppox.h
+ -unifdef-y += if_tr.h
+ -unifdef-y += if_tunnel.h
+ -unifdef-y += if_vlan.h
+ -unifdef-y += igmp.h
+ -unifdef-y += inet_diag.h
+ -unifdef-y += in.h
+ -unifdef-y += in6.h
+ -unifdef-y += inotify.h
+ -unifdef-y += input.h
+ -unifdef-y += ioq.h
+ -unifdef-y += ip.h
+ -unifdef-y += ipc.h
+ -unifdef-y += ipmi.h
+ -unifdef-y += ipv6.h
+ -unifdef-y += ipv6_route.h
+ -unifdef-y += isdn.h
+ -unifdef-y += isdnif.h
+ -unifdef-y += isdn_divertif.h
+ -unifdef-y += isdn_ppp.h
+ -unifdef-y += ivtv.h
+ -unifdef-y += ivtvfb.h
+ -unifdef-y += joystick.h
+ -unifdef-y += kdev_t.h
+ -unifdef-y += kd.h
+ -unifdef-y += kernelcapi.h
+ -unifdef-y += kernel.h
+ -unifdef-y += keyboard.h
+ -ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm.h \
+ -      		  $(srctree)/include/asm-$(SRCARCH)/kvm.h),)
+ -unifdef-y += kvm.h
+ -endif
+ -ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm_para.h \
+ -		  $(srctree)/include/asm-$(SRCARCH)/kvm_para.h),)
+ -unifdef-y += kvm_para.h
+ -endif
+ -unifdef-y += llc.h
+ -unifdef-y += loop.h
+ -unifdef-y += lp.h
+ -unifdef-y += mempolicy.h
+ -unifdef-y += mii.h
+ -unifdef-y += mman.h
+ -unifdef-y += mroute.h
+ -unifdef-y += mroute6.h
+ -unifdef-y += msdos_fs.h
+ -unifdef-y += msg.h
+ -unifdef-y += nbd.h
+ -unifdef-y += ncp_fs.h
+ -unifdef-y += ncp.h
+ -unifdef-y += ncp_mount.h
+ -unifdef-y += netdevice.h
+ -unifdef-y += netfilter_bridge.h
+ -unifdef-y += netfilter_decnet.h
+ -unifdef-y += netfilter.h
+ -unifdef-y += netfilter_ipv4.h
+ -unifdef-y += netfilter_ipv6.h
+ -unifdef-y += net.h
+ -unifdef-y += netlink.h
+ -unifdef-y += nfs3.h
+ -unifdef-y += nfs4.h
+ -unifdef-y += nfsacl.h
+ -unifdef-y += nfs_fs.h
+ -unifdef-y += nfs.h
+ -unifdef-y += nfs_idmap.h
+ -unifdef-y += n_r3964.h
+ -unifdef-y += nubus.h
+ -unifdef-y += nvram.h
+ -unifdef-y += oom.h
+ -unifdef-y += parport.h
+ -unifdef-y += patchkey.h
+ -unifdef-y += pci.h
+ -unifdef-y += personality.h
+ -unifdef-y += pktcdvd.h
+ -unifdef-y += pmu.h
+ -unifdef-y += poll.h
+ -unifdef-y += ppp_defs.h
+ -unifdef-y += ppp-comp.h
+ -unifdef-y += pps.h
+ -unifdef-y += ptrace.h
+ -unifdef-y += quota.h
+ -unifdef-y += random.h
+ -unifdef-y += rfkill.h
+ -unifdef-y += irqnr.h
+ -unifdef-y += reboot.h
+ -unifdef-y += reiserfs_fs.h
+ -unifdef-y += reiserfs_xattr.h
+ -unifdef-y += route.h
+ -unifdef-y += rtc.h
+ -unifdef-y += rtnetlink.h
+ -unifdef-y += scc.h
+ -unifdef-y += sched.h
+ -unifdef-y += screen_info.h
+ -unifdef-y += sdla.h
+ -unifdef-y += securebits.h
+ -unifdef-y += selinux_netlink.h
+ -unifdef-y += sem.h
+ -unifdef-y += serial_core.h
+ -unifdef-y += serial.h
+ -unifdef-y += serio.h
+ -unifdef-y += shm.h
+ -unifdef-y += shm_signal.h
+ -unifdef-y += signal.h
+ -unifdef-y += smb_fs.h
+ -unifdef-y += smb.h
+ -unifdef-y += smb_mount.h
+ -unifdef-y += socket.h
+ -unifdef-y += sonet.h
+ -unifdef-y += sonypi.h
+ -unifdef-y += soundcard.h
+ -unifdef-y += stat.h
+ -unifdef-y += stddef.h
+ -unifdef-y += string.h
+ -unifdef-y += swab.h
+ -unifdef-y += synclink.h
+ -unifdef-y += sysctl.h
+ -unifdef-y += tcp.h
+ -unifdef-y += time.h
+ -unifdef-y += timex.h
+ -unifdef-y += tty.h
+ -unifdef-y += types.h
+ -unifdef-y += udp.h
+ -unifdef-y += uinput.h
+ -unifdef-y += uio.h
+ -unifdef-y += unistd.h
+ -unifdef-y += usbdevice_fs.h
+ -unifdef-y += utsname.h
+ -unifdef-y += vhost.h
+ -unifdef-y += vbus_pci.h
+ -unifdef-y += venet.h
+ -unifdef-y += videodev2.h
+ -unifdef-y += videodev.h
+ -unifdef-y += virtio_config.h
+ -unifdef-y += virtio_ids.h
+ -unifdef-y += virtio_blk.h
+ -unifdef-y += virtio_net.h
+ -unifdef-y += virtio_9p.h
+ -unifdef-y += virtio_balloon.h
+ -unifdef-y += virtio_console.h
+ -unifdef-y += virtio_pci.h
+ -unifdef-y += virtio_ring.h
+ -unifdef-y += virtio_rng.h
+ -unifdef-y += vt.h
+ -unifdef-y += wait.h
+ -unifdef-y += wanrouter.h
+ -unifdef-y += watchdog.h
+ -unifdef-y += wireless.h
+ -unifdef-y += xattr.h
+ -unifdef-y += xfrm.h
+ -
+ -objhdr-y += version.h
+ +header-y += vhost.h
+ +header-y += videodev2.h
+ +header-y += virtio_9p.h
+ +header-y += virtio_balloon.h
+ +header-y += virtio_blk.h
+ +header-y += virtio_config.h
+ +header-y += virtio_console.h
+ +header-y += virtio_ids.h
+ +header-y += virtio_net.h
+ +header-y += virtio_pci.h
+ +header-y += virtio_ring.h
+ +header-y += virtio_rng.h
+ +header-y += vt.h
+ +header-y += wait.h
+ +header-y += wanrouter.h
+ +header-y += watchdog.h
+  header-y += wimax.h
+ -header-y += wimax/
+ +header-y += wireless.h
+ +header-y += x25.h
+ +header-y += xattr.h
+ +header-y += xfrm.h
