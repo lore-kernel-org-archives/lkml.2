@@ -1,176 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab0L3UJZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 15:09:25 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48190 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755043Ab0L3UJY (ORCPT
+	id S1755322Ab0L3UKl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 15:10:41 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59244 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755041Ab0L3UKk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 15:09:24 -0500
+	Thu, 30 Dec 2010 15:10:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=J7ZMOlNJsZOYC1AkIIJRG/a6LsxNK5re9/CpTdgaUmJ2WYvivWdLriQeyxEfJ/HIUF
+         xtP7udXu18pcIQtdCmLEnUIIM5pbBrBPGhuo2DeiCs5VCVgcudndKO0d5ip7Q2rhXj0G
+         w47RTsPFm33lnQJTWnhGExw+0WbLzaE0IWy2o=
 MIME-Version: 1.0
-In-Reply-To: <4D1CD751.4000509@vflare.org>
-References: <1293700078-5141-1-git-send-email-ngupta@vflare.org>
- <AANLkTi=R0sOvSZqu+Va=W2xJMKEw+kJXufuDwNe8o5NL@mail.gmail.com> <4D1CD751.4000509@vflare.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 30 Dec 2010 12:09:00 -0800
-Message-ID: <AANLkTikyf+EzCGX2t-qiOPPRcrxz_1rSoO8Fx4Pr=ibq@mail.gmail.com>
-Subject: Re: [PATCH][zram] Do not check for init flag before starting I/O
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Greg KH <greg@kroah.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Dennis Jansen <dennis.jansen@web.de>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Anton Blanchard <anton@samba.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: multipart/mixed; boundary=000325575c96dacdae0498a64261
+In-Reply-To: <AANLkTik3M2msXQA2Q--r492Oohph9cD7=JYBWx=vNzg-@mail.gmail.com>
+References: <20101229125129.d48fb6fc.sfr@canb.auug.org.au>
+	<20101229023457.GA4206@core.coreip.homeip.net>
+	<20101230105130.5d27a82b.sfr@canb.auug.org.au>
+	<AANLkTik38TzE_L_m8KpG-PmWGPeHjC8FYU=reRN8L7E5@mail.gmail.com>
+	<AANLkTik3M2msXQA2Q--r492Oohph9cD7=JYBWx=vNzg-@mail.gmail.com>
+Date: Thu, 30 Dec 2010 12:10:38 -0800
+Message-ID: <AANLkTi=icbrfOT_gvEwcLJO94wtuF8QF=aOx8z-LajeB@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree (input
+ tree related)
+From: Ping Cheng <pinglinux@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---000325575c96dacdae0498a64261
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, Dec 30, 2010 at 11:02 AM, Nitin Gupta <ngupta@vflare.org> wrote:
+On Thu, Dec 30, 2010 at 11:58 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Thu, Dec 30, 2010 at 19:06, Ping Cheng <pinglinux@gmail.com> wrote:
+>> On Wed, Dec 29, 2010 at 3:51 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>> On Tue, 28 Dec 2010 18:34:58 -0800 Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+>>>> On Wed, Dec 29, 2010 at 12:51:29PM +1100, Stephen Rothwell wrote:
+>>>> > After merging the final tree, today's linux-next build (powerpc
+>>>> > allyesconfig) failed like this:
+>>>> >
+>>>> > drivers/input/touchscreen/wacom_w8001.c: In function 'w8001_setup':
+>>>> > drivers/input/touchscreen/wacom_w8001.c:287: error: implicit declaration of function 'mdelay'
+>>>> >
+>>>> > Caused by commit b8fe15cb1b435928f9967d660e925fe7afb32787 ("Input:
+>>>> > wacom_w8001 - support pen or touch only devices").  See Rule 1 in
+>>>> > Documentation/SubmitChecklist.
+>>
+>> I do not see the error on my testing systems somehow. Does adding the
+>> following line resolve the issue?
+>>
+>> #include < include/linux/delay.h>
 >
-> This commit shows oops in zram_inc_stat() which does not exist in staging
-> tree version of zram. Its actually a problem with zram version as present=
- in
-> project's own repository where we allocate struct zram_stats_cpu upon dev=
-ice
-> initialization. OTOH, In mainline/staging version of zram, we allocate
-> struct stats upfront, so this oops cannot happen in mainline version.
->
-> So, this commit is not even applicable for mainline/staging tree. =A0My b=
-ad, I
-> didn't get a chance to review that patch.
+> "#include <linux/delay.h>", I assume?
 
-Ok. So it really is a revert, and the commit message for the revert
-should have explained that.
+You are right. Take it as a typo or copy/paste error ;).
 
-I changed the commit message appropriately, and committed it as the
-attached commit.
-
-                            Linus
-
---000325575c96dacdae0498a64261
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gic37bti0
-
-IGFyY2gvYXZyMzIva2VybmVsL21vZHVsZS5jICAgfCAgICAzICstLQogYXJjaC9oODMwMC9rZXJu
-ZWwvbW9kdWxlLmMgICB8ICAgIDMgKy0tCiBhcmNoL21uMTAzMDAva2VybmVsL21vZHVsZS5jIHwg
-ICAgMyArLS0KIGFyY2gvcGFyaXNjL2tlcm5lbC9tb2R1bGUuYyAgfCAgICAzICstLQogYXJjaC9w
-b3dlcnBjL2tlcm5lbC9tb2R1bGUuYyB8ICAgIDUgLS0tLS0KIGFyY2gvczM5MC9rZXJuZWwvbW9k
-dWxlLmMgICAgfCAgICAzICstLQogYXJjaC9zaC9rZXJuZWwvbW9kdWxlLmMgICAgICB8ICAgIDIg
-LS0KIGFyY2gveDg2L2tlcm5lbC9tb2R1bGUuYyAgICAgfCAgICAzICstLQogaW5jbHVkZS9saW51
-eC9tb2R1bGUuaCAgICAgICB8ICAgIDUgKystLS0KIGtlcm5lbC9tb2R1bGUuYyAgICAgICAgICAg
-ICAgfCAgICAzICsrKwogbGliL2J1Zy5jICAgICAgICAgICAgICAgICAgICB8ICAgIDYgKystLS0t
-CiAxMSBmaWxlcyBjaGFuZ2VkLCAxMyBpbnNlcnRpb25zKCspLCAyNiBkZWxldGlvbnMoLSkKCmRp
-ZmYgLS1naXQgYS9hcmNoL2F2cjMyL2tlcm5lbC9tb2R1bGUuYyBiL2FyY2gvYXZyMzIva2VybmVs
-L21vZHVsZS5jCmluZGV4IDk4Zjk0ZDAuLmE3MjdmNTQgMTAwNjQ0Ci0tLSBhL2FyY2gvYXZyMzIv
-a2VybmVsL21vZHVsZS5jCisrKyBiL2FyY2gvYXZyMzIva2VybmVsL21vZHVsZS5jCkBAIC0zMTQs
-MTAgKzMxNCw5IEBAIGludCBtb2R1bGVfZmluYWxpemUoY29uc3QgRWxmX0VoZHIgKmhkciwgY29u
-c3QgRWxmX1NoZHIgKnNlY2hkcnMsCiAJdmZyZWUobW9kdWxlLT5hcmNoLnN5bWluZm8pOwogCW1v
-ZHVsZS0+YXJjaC5zeW1pbmZvID0gTlVMTDsKIAotCXJldHVybiBtb2R1bGVfYnVnX2ZpbmFsaXpl
-KGhkciwgc2VjaGRycywgbW9kdWxlKTsKKwlyZXR1cm4gMDsKIH0KIAogdm9pZCBtb2R1bGVfYXJj
-aF9jbGVhbnVwKHN0cnVjdCBtb2R1bGUgKm1vZHVsZSkKIHsKLQltb2R1bGVfYnVnX2NsZWFudXAo
-bW9kdWxlKTsKIH0KZGlmZiAtLWdpdCBhL2FyY2gvaDgzMDAva2VybmVsL21vZHVsZS5jIGIvYXJj
-aC9oODMwMC9rZXJuZWwvbW9kdWxlLmMKaW5kZXggMDg2NWUyOS4uZGI0OTUzZCAxMDA2NDQKLS0t
-IGEvYXJjaC9oODMwMC9rZXJuZWwvbW9kdWxlLmMKKysrIGIvYXJjaC9oODMwMC9rZXJuZWwvbW9k
-dWxlLmMKQEAgLTExMiwxMCArMTEyLDkgQEAgaW50IG1vZHVsZV9maW5hbGl6ZShjb25zdCBFbGZf
-RWhkciAqaGRyLAogCQkgICAgY29uc3QgRWxmX1NoZHIgKnNlY2hkcnMsCiAJCSAgICBzdHJ1Y3Qg
-bW9kdWxlICptZSkKIHsKLQlyZXR1cm4gbW9kdWxlX2J1Z19maW5hbGl6ZShoZHIsIHNlY2hkcnMs
-IG1lKTsKKwlyZXR1cm4gMDsKIH0KIAogdm9pZCBtb2R1bGVfYXJjaF9jbGVhbnVwKHN0cnVjdCBt
-b2R1bGUgKm1vZCkKIHsKLQltb2R1bGVfYnVnX2NsZWFudXAobW9kKTsKIH0KZGlmZiAtLWdpdCBh
-L2FyY2gvbW4xMDMwMC9rZXJuZWwvbW9kdWxlLmMgYi9hcmNoL21uMTAzMDAva2VybmVsL21vZHVs
-ZS5jCmluZGV4IDZhZWE3ZmQuLjE5NmExMTEgMTAwNjQ0Ci0tLSBhL2FyY2gvbW4xMDMwMC9rZXJu
-ZWwvbW9kdWxlLmMKKysrIGIvYXJjaC9tbjEwMzAwL2tlcm5lbC9tb2R1bGUuYwpAQCAtMjA2LDcg
-KzIwNiw3IEBAIGludCBtb2R1bGVfZmluYWxpemUoY29uc3QgRWxmX0VoZHIgKmhkciwKIAkJICAg
-IGNvbnN0IEVsZl9TaGRyICpzZWNoZHJzLAogCQkgICAgc3RydWN0IG1vZHVsZSAqbWUpCiB7Ci0J
-cmV0dXJuIG1vZHVsZV9idWdfZmluYWxpemUoaGRyLCBzZWNoZHJzLCBtZSk7CisJcmV0dXJuIDA7
-CiB9CiAKIC8qCkBAIC0yMTQsNSArMjE0LDQgQEAgaW50IG1vZHVsZV9maW5hbGl6ZShjb25zdCBF
-bGZfRWhkciAqaGRyLAogICovCiB2b2lkIG1vZHVsZV9hcmNoX2NsZWFudXAoc3RydWN0IG1vZHVs
-ZSAqbW9kKQogewotCW1vZHVsZV9idWdfY2xlYW51cChtb2QpOwogfQpkaWZmIC0tZ2l0IGEvYXJj
-aC9wYXJpc2Mva2VybmVsL21vZHVsZS5jIGIvYXJjaC9wYXJpc2Mva2VybmVsL21vZHVsZS5jCmlu
-ZGV4IDE1OWEyYjguLjZlODFiYjUgMTAwNjQ0Ci0tLSBhL2FyY2gvcGFyaXNjL2tlcm5lbC9tb2R1
-bGUuYworKysgYi9hcmNoL3BhcmlzYy9rZXJuZWwvbW9kdWxlLmMKQEAgLTk0MSwxMSArOTQxLDEw
-IEBAIGludCBtb2R1bGVfZmluYWxpemUoY29uc3QgRWxmX0VoZHIgKmhkciwKIAluc3ltcyA9IG5l
-d3B0ciAtIChFbGZfU3ltICopc3ltaGRyLT5zaF9hZGRyOwogCURFQlVHUCgiTkVXIG51bV9zeW10
-YWIgJWx1XG4iLCBuc3ltcyk7CiAJc3ltaGRyLT5zaF9zaXplID0gbnN5bXMgKiBzaXplb2YoRWxm
-X1N5bSk7Ci0JcmV0dXJuIG1vZHVsZV9idWdfZmluYWxpemUoaGRyLCBzZWNoZHJzLCBtZSk7CisJ
-cmV0dXJuIDA7CiB9CiAKIHZvaWQgbW9kdWxlX2FyY2hfY2xlYW51cChzdHJ1Y3QgbW9kdWxlICpt
-b2QpCiB7CiAJZGVyZWdpc3Rlcl91bndpbmRfdGFibGUobW9kKTsKLQltb2R1bGVfYnVnX2NsZWFu
-dXAobW9kKTsKIH0KZGlmZiAtLWdpdCBhL2FyY2gvcG93ZXJwYy9rZXJuZWwvbW9kdWxlLmMgYi9h
-cmNoL3Bvd2VycGMva2VybmVsL21vZHVsZS5jCmluZGV4IDQ3N2M2NjMuLjRlZjkzYWUgMTAwNjQ0
-Ci0tLSBhL2FyY2gvcG93ZXJwYy9rZXJuZWwvbW9kdWxlLmMKKysrIGIvYXJjaC9wb3dlcnBjL2tl
-cm5lbC9tb2R1bGUuYwpAQCAtNjUsMTAgKzY1LDYgQEAgaW50IG1vZHVsZV9maW5hbGl6ZShjb25z
-dCBFbGZfRWhkciAqaGRyLAogCWNvbnN0IEVsZl9TaGRyICpzZWN0OwogCWludCBlcnI7CiAKLQll
-cnIgPSBtb2R1bGVfYnVnX2ZpbmFsaXplKGhkciwgc2VjaGRycywgbWUpOwotCWlmIChlcnIpCi0J
-CXJldHVybiBlcnI7Ci0KIAkvKiBBcHBseSBmZWF0dXJlIGZpeHVwcyAqLwogCXNlY3QgPSBmaW5k
-X3NlY3Rpb24oaGRyLCBzZWNoZHJzLCAiX19mdHJfZml4dXAiKTsKIAlpZiAoc2VjdCAhPSBOVUxM
-KQpAQCAtMTAxLDUgKzk3LDQgQEAgaW50IG1vZHVsZV9maW5hbGl6ZShjb25zdCBFbGZfRWhkciAq
-aGRyLAogCiB2b2lkIG1vZHVsZV9hcmNoX2NsZWFudXAoc3RydWN0IG1vZHVsZSAqbW9kKQogewot
-CW1vZHVsZV9idWdfY2xlYW51cChtb2QpOwogfQpkaWZmIC0tZ2l0IGEvYXJjaC9zMzkwL2tlcm5l
-bC9tb2R1bGUuYyBiL2FyY2gvczM5MC9rZXJuZWwvbW9kdWxlLmMKaW5kZXggMjJjZmQ2My4uZjcx
-NjdlZSAxMDA2NDQKLS0tIGEvYXJjaC9zMzkwL2tlcm5lbC9tb2R1bGUuYworKysgYi9hcmNoL3Mz
-OTAva2VybmVsL21vZHVsZS5jCkBAIC00MDcsMTAgKzQwNyw5IEBAIGludCBtb2R1bGVfZmluYWxp
-emUoY29uc3QgRWxmX0VoZHIgKmhkciwKIHsKIAl2ZnJlZShtZS0+YXJjaC5zeW1pbmZvKTsKIAlt
-ZS0+YXJjaC5zeW1pbmZvID0gTlVMTDsKLQlyZXR1cm4gbW9kdWxlX2J1Z19maW5hbGl6ZShoZHIs
-IHNlY2hkcnMsIG1lKTsKKwlyZXR1cm4gMDsKIH0KIAogdm9pZCBtb2R1bGVfYXJjaF9jbGVhbnVw
-KHN0cnVjdCBtb2R1bGUgKm1vZCkKIHsKLQltb2R1bGVfYnVnX2NsZWFudXAobW9kKTsKIH0KZGlm
-ZiAtLWdpdCBhL2FyY2gvc2gva2VybmVsL21vZHVsZS5jIGIvYXJjaC9zaC9rZXJuZWwvbW9kdWxl
-LmMKaW5kZXggNDNhZGRkZi4uYWUwYmU2OSAxMDA2NDQKLS0tIGEvYXJjaC9zaC9rZXJuZWwvbW9k
-dWxlLmMKKysrIGIvYXJjaC9zaC9rZXJuZWwvbW9kdWxlLmMKQEAgLTE0OSwxMyArMTQ5LDExIEBA
-IGludCBtb2R1bGVfZmluYWxpemUoY29uc3QgRWxmX0VoZHIgKmhkciwKIAlpbnQgcmV0ID0gMDsK
-IAogCXJldCB8PSBtb2R1bGVfZHdhcmZfZmluYWxpemUoaGRyLCBzZWNoZHJzLCBtZSk7Ci0JcmV0
-IHw9IG1vZHVsZV9idWdfZmluYWxpemUoaGRyLCBzZWNoZHJzLCBtZSk7CiAKIAlyZXR1cm4gcmV0
-OwogfQogCiB2b2lkIG1vZHVsZV9hcmNoX2NsZWFudXAoc3RydWN0IG1vZHVsZSAqbW9kKQogewot
-CW1vZHVsZV9idWdfY2xlYW51cChtb2QpOwogCW1vZHVsZV9kd2FyZl9jbGVhbnVwKG1vZCk7CiB9
-CmRpZmYgLS1naXQgYS9hcmNoL3g4Ni9rZXJuZWwvbW9kdWxlLmMgYi9hcmNoL3g4Ni9rZXJuZWwv
-bW9kdWxlLmMKaW5kZXggZTBiYzE4Ni4uMWMzNTVjNSAxMDA2NDQKLS0tIGEvYXJjaC94ODYva2Vy
-bmVsL21vZHVsZS5jCisrKyBiL2FyY2gveDg2L2tlcm5lbC9tb2R1bGUuYwpAQCAtMjM5LDExICsy
-MzksMTAgQEAgaW50IG1vZHVsZV9maW5hbGl6ZShjb25zdCBFbGZfRWhkciAqaGRyLAogCQlhcHBs
-eV9wYXJhdmlydChwc2VnLCBwc2VnICsgcGFyYS0+c2hfc2l6ZSk7CiAJfQogCi0JcmV0dXJuIG1v
-ZHVsZV9idWdfZmluYWxpemUoaGRyLCBzZWNoZHJzLCBtZSk7CisJcmV0dXJuIDA7CiB9CiAKIHZv
-aWQgbW9kdWxlX2FyY2hfY2xlYW51cChzdHJ1Y3QgbW9kdWxlICptb2QpCiB7CiAJYWx0ZXJuYXRp
-dmVzX3NtcF9tb2R1bGVfZGVsKG1vZCk7Ci0JbW9kdWxlX2J1Z19jbGVhbnVwKG1vZCk7CiB9CmRp
-ZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L21vZHVsZS5oIGIvaW5jbHVkZS9saW51eC9tb2R1bGUu
-aAppbmRleCA4YTZiOWZkLi5hYWNlMDY2IDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4L21vZHVs
-ZS5oCisrKyBiL2luY2x1ZGUvbGludXgvbW9kdWxlLmgKQEAgLTY4NiwxNyArNjg2LDE2IEBAIGV4
-dGVybiBpbnQgbW9kdWxlX3N5c2ZzX2luaXRpYWxpemVkOwogCiAKICNpZmRlZiBDT05GSUdfR0VO
-RVJJQ19CVUcKLWludCAgbW9kdWxlX2J1Z19maW5hbGl6ZShjb25zdCBFbGZfRWhkciAqLCBjb25z
-dCBFbGZfU2hkciAqLAordm9pZCBtb2R1bGVfYnVnX2ZpbmFsaXplKGNvbnN0IEVsZl9FaGRyICos
-IGNvbnN0IEVsZl9TaGRyICosCiAJCQkgc3RydWN0IG1vZHVsZSAqKTsKIHZvaWQgbW9kdWxlX2J1
-Z19jbGVhbnVwKHN0cnVjdCBtb2R1bGUgKik7CiAKICNlbHNlCS8qICFDT05GSUdfR0VORVJJQ19C
-VUcgKi8KIAotc3RhdGljIGlubGluZSBpbnQgIG1vZHVsZV9idWdfZmluYWxpemUoY29uc3QgRWxm
-X0VoZHIgKmhkciwKK3N0YXRpYyBpbmxpbmUgdm9pZCBtb2R1bGVfYnVnX2ZpbmFsaXplKGNvbnN0
-IEVsZl9FaGRyICpoZHIsCiAJCQkJCWNvbnN0IEVsZl9TaGRyICpzZWNoZHJzLAogCQkJCQlzdHJ1
-Y3QgbW9kdWxlICptb2QpCiB7Ci0JcmV0dXJuIDA7CiB9CiBzdGF0aWMgaW5saW5lIHZvaWQgbW9k
-dWxlX2J1Z19jbGVhbnVwKHN0cnVjdCBtb2R1bGUgKm1vZCkge30KICNlbmRpZgkvKiBDT05GSUdf
-R0VORVJJQ19CVUcgKi8KZGlmZiAtLWdpdCBhL2tlcm5lbC9tb2R1bGUuYyBiL2tlcm5lbC9tb2R1
-bGUuYwppbmRleCBkMGI1ZjhkLi5lMmFlZGRkIDEwMDY0NAotLS0gYS9rZXJuZWwvbW9kdWxlLmMK
-KysrIGIva2VybmVsL21vZHVsZS5jCkBAIC0yNjI1LDYgKzI2MjUsNyBAQCBzdGF0aWMgc3RydWN0
-IG1vZHVsZSAqbG9hZF9tb2R1bGUodm9pZCBfX3VzZXIgKnVtb2QsCiAJaWYgKGVyciA8IDApCiAJ
-CWdvdG8gZGRlYnVnOwogCisJbW9kdWxlX2J1Z19maW5hbGl6ZShpbmZvLmhkciwgaW5mby5zZWNo
-ZHJzLCBtb2QpOwogCWxpc3RfYWRkX3JjdSgmbW9kLT5saXN0LCAmbW9kdWxlcyk7CiAJbXV0ZXhf
-dW5sb2NrKCZtb2R1bGVfbXV0ZXgpOwogCkBAIC0yNjUwLDYgKzI2NTEsOCBAQCBzdGF0aWMgc3Ry
-dWN0IG1vZHVsZSAqbG9hZF9tb2R1bGUodm9pZCBfX3VzZXIgKnVtb2QsCiAJbXV0ZXhfbG9jaygm
-bW9kdWxlX211dGV4KTsKIAkvKiBVbmxpbmsgY2FyZWZ1bGx5OiBrYWxsc3ltcyBjb3VsZCBiZSB3
-YWxraW5nIGxpc3QuICovCiAJbGlzdF9kZWxfcmN1KCZtb2QtPmxpc3QpOworCW1vZHVsZV9idWdf
-Y2xlYW51cChtb2QpOworCiAgZGRlYnVnOgogCWlmICghbW9kLT50YWludHMpCiAJCWR5bmFtaWNf
-ZGVidWdfcmVtb3ZlKGluZm8uZGVidWcpOwpkaWZmIC0tZ2l0IGEvbGliL2J1Zy5jIGIvbGliL2J1
-Zy5jCmluZGV4IDdjZGZhZDguLjE5NTUyMDkgMTAwNjQ0Ci0tLSBhL2xpYi9idWcuYworKysgYi9s
-aWIvYnVnLmMKQEAgLTcyLDggKzcyLDggQEAgc3RhdGljIGNvbnN0IHN0cnVjdCBidWdfZW50cnkg
-Km1vZHVsZV9maW5kX2J1Zyh1bnNpZ25lZCBsb25nIGJ1Z2FkZHIpCiAJcmV0dXJuIE5VTEw7CiB9
-CiAKLWludCBtb2R1bGVfYnVnX2ZpbmFsaXplKGNvbnN0IEVsZl9FaGRyICpoZHIsIGNvbnN0IEVs
-Zl9TaGRyICpzZWNoZHJzLAotCQkJc3RydWN0IG1vZHVsZSAqbW9kKQordm9pZCBtb2R1bGVfYnVn
-X2ZpbmFsaXplKGNvbnN0IEVsZl9FaGRyICpoZHIsIGNvbnN0IEVsZl9TaGRyICpzZWNoZHJzLAor
-CQkJIHN0cnVjdCBtb2R1bGUgKm1vZCkKIHsKIAljaGFyICpzZWNzdHJpbmdzOwogCXVuc2lnbmVk
-IGludCBpOwpAQCAtOTcsOCArOTcsNiBAQCBpbnQgbW9kdWxlX2J1Z19maW5hbGl6ZShjb25zdCBF
-bGZfRWhkciAqaGRyLCBjb25zdCBFbGZfU2hkciAqc2VjaGRycywKIAkgKiBjb3VsZCBwb3RlbnRp
-YWxseSBsZWFkIHRvIGRlYWRsb2NrIGFuZCB0aHVzIGJlIGNvdW50ZXItcHJvZHVjdGl2ZS4KIAkg
-Ki8KIAlsaXN0X2FkZCgmbW9kLT5idWdfbGlzdCwgJm1vZHVsZV9idWdfbGlzdCk7Ci0KLQlyZXR1
-cm4gMDsKIH0KIAogdm9pZCBtb2R1bGVfYnVnX2NsZWFudXAoc3RydWN0IG1vZHVsZSAqbW9kKQo=
---000325575c96dacdae0498a64261--
+Ping
