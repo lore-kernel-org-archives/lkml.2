@@ -1,485 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613Ab0L3Ani (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 19:43:38 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:57636 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754078Ab0L3Ang (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 19:43:36 -0500
-Date: Thu, 30 Dec 2010 11:43:32 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Gregory Haskins <gregory.haskins@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the alacrity tree with the  tree
-Message-Id: <20101230114332.c19ba13b.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754644Ab0L3Atm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 19:49:42 -0500
+Received: from sncsmrelay2.nai.com ([67.97.80.206]:18542 "EHLO
+	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754182Ab0L3Ati (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Dec 2010 19:49:38 -0500
+X-Greylist: delayed 601 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Dec 2010 19:49:38 EST
+Message-ID: <4D1BD461.4070104@snapgear.com>
+Date: Thu, 30 Dec 2010 10:37:53 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: uClinux development list <uclinux-dev@uclinux.org>
+CC: Angelo Dureghello <angelo70@gmail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, <netdev@vger.kernel.org>,
+        Baruch Siach <baruch@tkos.co.il>, <linux-kernel@vger.kernel.org>,
+        <linux-m68k@vger.kernel.org>
+Subject: Re: [uClinux-dev] Re: dm9000 patch
+References: <4D1A5C2A.5050606@gmail.com>	<20101229060637.GA31010@jasper.tkos.co.il>	<4D1B33F2.5060600@gmail.com>	<20101229180650.GE6067@tarshish>	<AANLkTim0+GbddLdkPFoggeCKpU7on7mta0V2mZZLgviE@mail.gmail.com> <4D1BA0D0.1060407@gmail.com>
+In-Reply-To: <4D1BA0D0.1060407@gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gregory,
+Hi Angelo,
 
-Today's linux-next merge of the alacrity tree got a conflict in
-include/linux/Kbuild between various commits from various trees and
-various commits from the alacrity tree.
+On 30/12/10 06:57, Angelo Dureghello wrote:
+> Hi all,
+> thanks for the help,
+> the kernel is a main line kernel. Then yes, i am still using uclinux
+> tree for libc/tools.
 
-I fixed it up (again - see below).  I must ask, though, since the commits
-in the alacrity tree have been there since May, is there is any progress
-towards getting them integrated into Llinus' tree?
+How is the DM9000 hardware connected to the 5307?
+I am wondering how you connected the interrupt (and to
+which interrupt) and the addressing (direct of a chip select)?
+
+(For example NETtel based 5307 platform support of the SMC91x code is
+in mainline as arch/m68knommu/platform/5307/nettel.c). Can you show
+the code you used to setup your dm9000 hardware?
+(Specifically I guess I want to know if you use the "auto-vectored"
+interrupt mode?)
+
+Thanks
+Greg
+
+
+> I collected another spinlock recursion with a slightly different call
+> stack trace, as always, the spinlock recursion issue happen on a high
+> tx/rx traffic of the dm9000e, in this case just asking an index.html
+> with some images and texts:
+>
+> [ 1108.930000] BUG: spinlock recursion on CPU#0, httpd/29
+> [ 1108.930000] lock: 00c42c06, .magic: dead4ead, .owner: httpd/29,
+> .owner_cpu: 0
+> [ 1108.930000] Stack from 00d7a688:
+> [ 1108.930000] 00d7a6b4 000ad988 001840ca 00c42c06 dead4ead 00d641d4
+> 0000001d 00000000
+> [ 1108.930000] 00c42c06 000064f0 00c42800 00d7a6e8 000adb5a 00c42c06
+> 00184130 00002704
+> [ 1108.930000] 00000000 0000001f 0014d17e 00159912 00c42b60 000064f0
+> 00c42800 0002cb16
+> [ 1108.930000] 00d7a6f8 0014d24e 00c42c06 00000000 00d7a738 000e485c
+> 00c42c06 00000000
+> [ 1108.930000] 00000000 0000001f 0014d17e 00159912 0000004a 00cfc600
+> 000064f0 00009a74
+> [ 1108.930000] 0002cb16 00191204 00d7a760 0002b6f2 00d7a760 0002b514
+> 0000001f 00c42800
+> [ 1108.930000] Call Trace:
+> [ 1108.930000] [000ad988] spin_bug+0x86/0x11a
+> [ 1108.930000] [000adb5a] do_raw_spin_lock+0x58/0x120
+> [ 1108.930000] [0014d24e] _raw_spin_lock_irqsave+0x28/0x32
+> [ 1108.930000] [000e485c] dm9000_interrupt+0x1a/0x2e0
+> [ 1108.930000] [0002b514] handle_IRQ_event+0x2a/0xec
+> [ 1108.930000] [0002b680] __do_IRQ+0xaa/0x128
+> [ 1108.930000] [00000bb6] do_IRQ+0x48/0x62
+> [ 1108.930000] [000033c6] inthandler+0x6a/0x74
+> [ 1108.930000] [000fb626] dev_hard_start_xmit+0x170/0x4c4
+> [ 1108.930000] [0010b80e] sch_direct_xmit+0xc0/0x1bc
+> [ 1108.930000] [000fe9de] dev_queue_xmit+0x160/0x3e6
+> [ 1108.930000] [001195c4] ip_finish_output+0xec/0x320
+> [ 1108.930000] [0011a768] ip_output+0x9e/0xa8
+> [ 1108.930000] [00119856] ip_local_out+0x26/0x30
+> [ 1108.930000] [0011a56e] ip_build_and_send_pkt+0x16e/0x178
+> [ 1108.930000] [0012fc96] tcp_v4_send_synack+0x52/0x90
+> [ 1108.930000] [00130f86] tcp_v4_conn_request+0x3fa/0x57c
+> [ 1108.930000] [0012a1c6] tcp_rcv_state_process+0x25e/0xa66
+> [ 1108.930000] [001309a4] tcp_v4_do_rcv+0x7c/0x1c8
+> [ 1108.930000] [00132854] tcp_v4_rcv+0x546/0x6d2
+> [ 1108.930000] [001153a8] ip_local_deliver+0x9c/0x1b0
+> [ 1108.930000] [001158e8] ip_rcv+0x42c/0x5f0
+> [ 1108.930000] [000fa74e] __netif_receive_skb+0x196/0x2ec
+> [ 1108.930000] [000fe142] process_backlog+0x72/0x11e
+> [ 1108.930000] [000fe290] net_rx_action+0xa2/0x150
+> [ 1108.930000] [0000e13c] __do_softirq+0x74/0xe4
+> [ 1108.930000] [0000e1e2] do_softirq+0x36/0x40
+> [ 1108.930000] [0000e6c6] local_bh_enable+0x7a/0xa4
+> [ 1108.930000] [000fe972] dev_queue_xmit+0xf4/0x3e6
+> [ 1108.930000] [001195c4] ip_finish_output+0xec/0x320
+> [ 1108.930000] [0011a768] ip_output+0x9e/0xa8
+> [ 1108.930000] [00119856] ip_local_out+0x26/0x30
+> [ 1108.930000] [0011a90a] ip_queue_xmit+0x198/0x426
+> [ 1108.930000] [0012bcc8] tcp_transmit_skb+0x3f0/0x76c
+> [ 1108.930000] [0012cfda] tcp_write_xmit+0x178/0x868
+> [ 1108.930000] [0012d6f8] __tcp_push_pending_frames+0x2e/0x9a
+> [ 1108.930000] [001222be] tcp_sendmsg+0x82e/0x98c
+> [ 1108.930000] [0013d9c0] inet_sendmsg+0x32/0x54
+> [ 1108.930000] [000ec25e] sock_aio_write+0xc8/0x138
+> [ 1108.930000] [00043e7e] do_sync_write+0x9e/0xfe
+> [ 1108.930000] [00043f56] vfs_write+0x78/0x84
+> [ 1108.930000] [0004446c] sys_write+0x40/0x7a
+> [ 1108.930000] [00003244] system_call+0x84/0xc2
+> [ 1108.930000]
+>
+> seems like while i transmit a packet, dm9000_interrupt try to acquire
+> the spinlock owned from the same task.
+>
+> Compiling the kernel i am getting:
+> CC kernel/irq/handle.o
+> kernel/irq/handle.c:432:3: warning: #warning __do_IRQ is deprecated.
+> Please convert to proper flow handlers
+>
+> Could the usage of __do_IRQ super-handler be a cause of the issue ?
+>
+>
+> many thanks,
+> angelo
+>
+> On 29/12/2010 19:45, Geert Uytterhoeven wrote:
+>> On Wed, Dec 29, 2010 at 19:06, Baruch Siach<baruch@tkos.co.il> wrote:
+>>> Hi Angelo,
+>>>
+>>> On Wed, Dec 29, 2010 at 02:13:22PM +0100, Angelo Dureghello wrote:
+>>>> just FYI, i tested kernel 2.6.36.2, unfortunately the issue is still
+>>>> there, below the call stack trace.
+>>> Help from the m68k experts seems to be needed. Adding the relevant
+>>> list to Cc.
+>> This is uClinux? Added Cc...
+>>
+>>>> [ 4.620000] eth0: link up, 100Mbps, full-duplex, lpa 0x45E1
+>>>> [ 39.390000] BUG: spinlock recursion on CPU#0, httpd/29
+>>>> [ 39.390000] lock: 00189c44, .magic: dead4ead, .owner: httpd/29,
+>>>> .owner_cpu: 0
+>>>> [ 39.390000] Stack from 00d6a990:
+>>>> [ 39.390000] 00d6a9bc 000a9710 0017cac7 00189c44 dead4ead
+>>>> 00de48f4 0000001d 00000000
+>>>> [ 39.390000] 00189c44 0002a646 00145f70 00d6a9f0 000a98e2
+>>>> 00189c44 0017cb2d 00189c44
+>>>> [ 39.390000] 00d6aad8 0000001f 00145f5c 001523f6 00189c08
+>>>> 0002a646 00145f70 0002bc52
+>>>> [ 39.390000] 00d6a9fc 00145f7e 00189c44 00d6aa28 0002a75e
+>>>> 00189c44 0000001f 00d6aad8
+>>>> [ 39.390000] 0000001f 00145f5c 00189c08 0002a646 00145f70
+>>>> 0002bc52 00d6aa3c 00000bb6
+>>>> [ 39.390000] 0000001f 00189c44 00cfc780 00d6aa84 0000337a
+>>>> 0000001f 00d6aa4c 00000001
+>>>> [ 39.390000] Call Trace:
+>>>> [ 39.390000] [000a9710] spin_bug+0x86/0x11a
+>>>> [ 39.390000] [000a98e2] do_raw_spin_lock+0x58/0x120
+>>>> [ 39.390000] [00145f7e] _raw_spin_lock+0xe/0x14
+>>>> [ 39.390000] [0002a75e] __do_IRQ+0x2c/0x108
+>>>> [ 39.390000] [00000bb6] do_IRQ+0x48/0x62
+>>>> [ 39.390000] [0000337a] inthandler+0x6a/0x74
+>>>> [ 39.390000] [0002a82e] __do_IRQ+0xfc/0x108
+>>>> [ 39.390000] [00000bb6] do_IRQ+0x48/0x62
+>>>> [ 39.390000] [0000337a] inthandler+0x6a/0x74
+>>>> [ 39.390000] [000ef0ce] skb_release_all+0x10/0x20
+>>>> [ 39.390000] [000ee6bc] __kfree_skb+0x10/0x92
+>>>> [ 39.390000] [000ee75e] consume_skb+0x20/0x34
+>>>> [ 39.390000] [000e004e] dm9000_start_xmit+0xdc/0xec
+>>>> [ 39.390000] [000f67a2] dev_hard_start_xmit+0x146/0x472
+>>>> [ 39.390000] [00106506] sch_direct_xmit+0xc0/0x1bc
+>>>> [ 39.390000] [000f9914] dev_queue_xmit+0x160/0x3e4
+>>>> [ 39.390000] [00113b3e] ip_finish_output+0xee/0x318
+>>>> [ 39.390000] [001142b4] ip_output+0x7c/0x88
+>>>> [ 39.390000] [00113dc6] ip_local_out+0x26/0x30
+>>>> [ 39.390000] [00114d9a] ip_queue_xmit+0x152/0x374
+>>>> [ 39.390000] [00125c8c] tcp_transmit_skb+0x3f0/0x732
+>>>> [ 39.390000] [00126f26] tcp_write_xmit+0x178/0x868
+>>>> [ 39.390000] [00127644] __tcp_push_pending_frames+0x2e/0x9a
+>>>> [ 39.390000] [0011c3d6] tcp_sendmsg+0x82e/0x98c
+>>>> [ 39.390000] [00137544] inet_sendmsg+0x32/0x54
+>>>> [ 39.390000] [000e79a6] sock_aio_write+0xc8/0x138
+>>>> [ 39.390000] [00042590] do_sync_write+0x9e/0xfe
+>>>> [ 39.390000] [00042668] vfs_write+0x78/0x84
+>>>> [ 39.390000] [00042a92] sys_write+0x40/0x7a
+>>>> [ 39.390000] [00003224] system_call+0x84/0xc2
+>>>> [ 39.390000]
+>>>>
+>>>> dm9000e is as default not visible/selectable in menuconfig for
+>>>> Coldfire architectures, so this probably cannot be considered as a
+>>>> kernel bug.
+>>>>
+>>>> I going forward in investigations, every help is appreciated,
+>>>>
+>>>> regards,
+>>>> angelo
+>>>>
+>>>>
+>>>>
+>>>> On 29/12/2010 07:06, Baruch Siach wrote:
+>>>>> Hi Angelo,
+>>>>>
+>>>>> On Tue, Dec 28, 2010 at 10:52:42PM +0100, Angelo Dureghello wrote:
+>>>>>> sorry to contact you directly but i couldn't get any help from the
+>>>>>> kernel.org mailing list, since i am not a developer my mails are
+>>>>>> generally skipped.
+>>>>> The best way to get the contact info for a piece of kernel code, is
+>>>>> using the
+>>>>> get_maintainer.pl script. Running 'scripts/get_maintainer.pl -f
+>>>>> drivers/net/dm9000.c' gives the following output:
+>>>>>
+>>>>> netdev@vger.kernel.org
+>>>>> linux-kernel@vger.kernel.org
+>>>>>
+>>>>> I added both to Cc.
+>>>>>
+>>>>>> I am very near to have a custom board working with MCF5307 cpu and
+>>>>>> dm9000.
+>>>>>> I am using kernel 2.6.36-rc3 with your last patch about
+>>>>>> spinlock-recursion already included.
+>>>>> You should try to update to the latest .36 kernel, which is currently
+>>>>> 2.6.36.2. The problem that you experience might be unrelated to the
+>>>>> dm9000
+>>>>> driver (or to networking at all), so it might have been fixed in
+>>>>> this version.
+>>>>>
+>>>>>> I have "ping" and "telnet" to the embedded board fully working.
+>>>>>> If i try to get a sample web page with some images from the board
+>>>>>> httpd with a browser, in 80% of cases i get a trap/oops:
+>>>>> Try to enable KALLSYMS in your kernel .config to make your stack
+>>>>> trace more
+>>>>> meaningful. This is under 'General setup -> Configure standard
+>>>>> kernel features
+>>>>> (for small systems) -> Load all symbols for debugging/ksymoops'.
+>>>>>
+>>>>> I hope this helps.
+>>>>>
+>>>>> baruch
+>>>>>
+>>>>>> [ 4.590000] eth0: link up, 100Mbps, full-duplex, lpa 0x45E1
+>>>>>> [ 67.630000] BUG: spinlock recursion on CPU#0, httpd/29
+>>>>>> [ 67.630000] lock: 00c42c06, .magic: dead4ead, .owner: httpd/29,
+>>>>>> .owner_cpu: 0
+>>>>>> [ 67.630000] Stack from 00d7b914:
+>>>>>> [ 67.630000] 00d7b940 000a8cf0 0015f693 00c42c06 dead4ead
+>>>>>> 00dec1d4 0000001d 00000000
+>>>>>> [ 67.630000] 00c42c06 00006188 00c42800 00d7b974 000a8ec2
+>>>>>> 00c42c06 0015f6f9 00002704
+>>>>>> [ 67.630000] 00000000 0000001f 00146fa4 00152f0c 00c42b60
+>>>>>> 00006188 00c42800 0002b312
+>>>>>> [ 67.630000] 00d7b984 0014701e 00c42c06 00000000 00d7b9c4
+>>>>>> 000df21c 00c42c06 00000000
+>>>>>> [ 67.630000] 00000000 0000001f 00146fa4 00152f0c 000005ea
+>>>>>> 00cfc640 00006188 000096e8
+>>>>>> [ 67.630000] 0002b312 00146fa4 00c42b60 00002704 00d7b9ec
+>>>>>> 00029d3a 0000001f 00c42800
+>>>>>> [ 67.630000] Call Trace:
+>>>>>> [ 67.630000] [000a8cf0] [000a8ec2] [0014701e] [000df21c] [00029d3a]
+>>>>>> [ 67.630000] [00029e84] [00000bb6] [0000336e] [000df162] [000effd6]
+>>>>>> [ 67.630000] [00100482] [000f312e] [000f9ebc] [0010dd2a] [0010e4a0]
+>>>>>> [ 67.630000] [0010dfb2] [0010ef80] [0011fed6] [00121170] [0012188e]
+>>>>>> [ 67.630000] [0011ecc6] [001249fe] [000e4084] [0011621c] [00131a44]
+>>>>>> [ 67.630000] [000e11ee] [00041944] [00041a1c] [00041e46] [00003218]
+>>>>>> [ 67.630000] BUG: spinlock lockup on CPU#0, httpd/29, 00c42c06
+>>>>>> [ 67.630000] Stack from 00d7b934:
+>>>>>> [ 67.630000] 00d7b974 000a8f66 0015f703 00000000 00dec1d4
+>>>>>> 0000001d 00c42c06 00002704
+>>>>>> [ 67.630000] 00000000 0000001f 00146fa4 00152f0c 00c42b60
+>>>>>> 00006188 00c42800 0002b312
+>>>>>> [ 67.630000] 00d7b984 0014701e 00c42c06 00000000 00d7b9c4
+>>>>>> 000df21c 00c42c06 00000000
+>>>>>> [ 67.630000] 00000000 0000001f 00146fa4 00152f0c 000005ea
+>>>>>> 00cfc640 00006188 000096e8
+>>>>>> [ 67.630000] 0002b312 00146fa4 00c42b60 00002704 00d7b9ec
+>>>>>> 00029d3a 0000001f 00c42800
+>>>>>> [ 67.630000] 0016c1b4 00cfc640 0000001f 0016c178 00029d10
+>>>>>> 00146fb8 00d7ba20 00029e84
+>>>>>> [ 67.630000] Call Trace:
+>>>>>> [ 67.630000] [000a8f66] [0014701e] [000df21c] [00029d3a] [00029e84]
+>>>>>> [ 67.630000] [00000bb6] [0000336e] [000df162] [000effd6] [00100482]
+>>>>>> [ 67.630000] [000f312e] [000f9ebc] [0010dd2a] [0010e4a0] [0010dfb2]
+>>>>>> [ 67.630000] [0010ef80] [0011fed6] [00121170] [0012188e] [0011ecc6]
+>>>>>> [ 67.630000] [001249fe] [000e4084] [0011621c] [00131a44] [000e11ee]
+>>>>>> [ 67.630000] [00041944] [00041a1c] [00041e46] [00003218]
+>>>>>>
+>>>>>> As i said, i was hoping in your patch but i sadly discovered it is
+>>>>>> already included in this kernel version.
+>>>>>> Hope you can give me some help or can forward me to an appropriate
+>>>>>> mailing list.
+>>> --
+>>> ~. .~ Tk Open Systems
+>>> =}------------------------------------------------ooO--U--Ooo------------{=
+>>>
+>>> - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe
+>>> linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at http://www.tux.org/lkml/
+>>>
+>>
+>>
+>
+> _______________________________________________
+> uClinux-dev mailing list
+> uClinux-dev@uclinux.org
+> http://mailman.uclinux.org/mailman/listinfo/uclinux-dev
+> This message was resent by uclinux-dev@uclinux.org
+> To unsubscribe see:
+> http://mailman.uclinux.org/mailman/options/uclinux-dev
+>
+
+
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc include/linux/Kbuild
-index 2296d8b,1a31099..0000000
---- a/include/linux/Kbuild
-+++ b/include/linux/Kbuild
-@@@ -128,106 -70,43 +128,107 @@@ header-y += fd.
-  header-y += fdreg.h
-  header-y += fib_rules.h
-  header-y += fiemap.h
- +header-y += filter.h
-  header-y += firewire-cdev.h
-  header-y += firewire-constants.h
- +header-y += flat.h
- +header-y += fs.h
-  header-y += fuse.h
- -header-y += genetlink.h
- +header-y += futex.h
- +header-y += gameport.h
-  header-y += gen_stats.h
- +header-y += generic_serial.h
- +header-y += genetlink.h
-  header-y += gfs2_ondisk.h
-  header-y += gigaset_dev.h
- +header-y += hdlc.h
- +header-y += hdlcdrv.h
- +header-y += hdreg.h
- +header-y += hid.h
- +header-y += hiddev.h
- +header-y += hidraw.h
- +header-y += hpet.h
-  header-y += hysdn_if.h
- +header-y += i2c-dev.h
- +header-y += i2c.h
-  header-y += i2o-dev.h
-  header-y += i8k.h
- +header-y += icmp.h
- +header-y += icmpv6.h
- +header-y += if.h
- +header-y += if_addr.h
-  header-y += if_addrlabel.h
- +header-y += if_alg.h
-  header-y += if_arcnet.h
- +header-y += if_arp.h
-  header-y += if_bonding.h
- +header-y += if_bridge.h
-  header-y += if_cablemodem.h
- +header-y += if_ec.h
- +header-y += if_eql.h
- +header-y += if_ether.h
-  header-y += if_fc.h
- -header-y += if.h
- +header-y += if_fddi.h
- +header-y += if_frad.h
-  header-y += if_hippi.h
-  header-y += if_infiniband.h
- +header-y += if_link.h
- +header-y += if_ltalk.h
-  header-y += if_packet.h
- +header-y += if_phonet.h
-  header-y += if_plip.h
-  header-y += if_ppp.h
- +header-y += if_pppol2tp.h
- +header-y += if_pppox.h
-  header-y += if_slip.h
-  header-y += if_strip.h
- +header-y += if_tr.h
-  header-y += if_tun.h
- +header-y += if_tunnel.h
- +header-y += if_vlan.h
- +header-y += if_x25.h
- +header-y += igmp.h
- +header-y += in.h
- +header-y += in6.h
-  header-y += in_route.h
- +header-y += inet_diag.h
- +header-y += inotify.h
- +header-y += input.h
-  header-y += ioctl.h
-++header-y += ioq.h
- +header-y += ip.h
-  header-y += ip6_tunnel.h
- +header-y += ip_vs.h
- +header-y += ipc.h
- +header-y += ipmi.h
-  header-y += ipmi_msgdefs.h
-  header-y += ipsec.h
- -header-y += ip_vs.h
- +header-y += ipv6.h
- +header-y += ipv6_route.h
-  header-y += ipx.h
-  header-y += irda.h
- +header-y += irqnr.h
- +header-y += isdn.h
- +header-y += isdn_divertif.h
- +header-y += isdn_ppp.h
- +header-y += isdnif.h
-  header-y += iso_fs.h
- +header-y += ivtv.h
- +header-y += ivtvfb.h
-  header-y += ixjuser.h
-  header-y += jffs2.h
- +header-y += joystick.h
- +header-y += kd.h
- +header-y += kdev_t.h
- +header-y += kernel.h
- +header-y += kernelcapi.h
- +header-y += keyboard.h
-  header-y += keyctl.h
- +header-y += l2tp.h
-  header-y += limits.h
- +header-y += llc.h
- +header-y += loop.h
- +header-y += lp.h
-  header-y += magic.h
-  header-y += major.h
-  header-y += map_to_7segment.h
-@@@ -290,104 -136,259 +291,107 @@@ header-y += phantom.
-  header-y += phonet.h
-  header-y += pkt_cls.h
-  header-y += pkt_sched.h
- +header-y += pktcdvd.h
- +header-y += pmu.h
- +header-y += poll.h
-  header-y += posix_types.h
-  header-y += ppdev.h
- +header-y += ppp-comp.h
- +header-y += ppp_defs.h
- +header-y += pps.h
-  header-y += prctl.h
- -header-y += qnxtypes.h
- +header-y += ptrace.h
-  header-y += qnx4_fs.h
- +header-y += qnxtypes.h
- +header-y += quota.h
-  header-y += radeonfb.h
- +header-y += random.h
-  header-y += raw.h
- +header-y += rds.h
- +header-y += reboot.h
- +header-y += reiserfs_fs.h
- +header-y += reiserfs_xattr.h
-  header-y += resource.h
- +header-y += rfkill.h
-  header-y += romfs_fs.h
-  header-y += rose.h
- +header-y += route.h
- +header-y += rtc.h
- +header-y += rtnetlink.h
- +header-y += scc.h
- +header-y += sched.h
- +header-y += screen_info.h
- +header-y += sdla.h
- +header-y += securebits.h
- +header-y += selinux_netlink.h
- +header-y += sem.h
- +header-y += serial.h
- +header-y += serial_core.h
-  header-y += serial_reg.h
- -header-y += smbno.h
- +header-y += serio.h
- +header-y += shm.h
-++header-y += shm_signal.h
- +header-y += signal.h
- +header-y += signalfd.h
-  header-y += snmp.h
- +header-y += socket.h
-  header-y += sockios.h
-  header-y += som.h
- +header-y += sonet.h
- +header-y += sonypi.h
-  header-y += sound.h
- +header-y += soundcard.h
- +header-y += stat.h
- +header-y += stddef.h
- +header-y += string.h
-  header-y += suspend_ioctls.h
- +header-y += swab.h
- +header-y += synclink.h
- +header-y += sysctl.h
-  header-y += taskstats.h
- +header-y += tcp.h
-  header-y += telephony.h
-  header-y += termios.h
- +header-y += time.h
-  header-y += times.h
- +header-y += timex.h
-  header-y += tiocl.h
-  header-y += tipc.h
-  header-y += tipc_config.h
-  header-y += toshiba.h
- +header-y += tty.h
- +header-y += types.h
-  header-y += udf_fs_i.h
- +header-y += udp.h
- +header-y += uinput.h
- +header-y += uio.h
-  header-y += ultrasound.h
-  header-y += un.h
- +header-y += unistd.h
- +header-y += usbdevice_fs.h
-  header-y += utime.h
- +header-y += utsname.h
-++header-y += vbus_pci.h
-++header-y += venet.h
-  header-y += veth.h
- -header-y += videotext.h
- -header-y += x25.h
- -
- -unifdef-y += acct.h
- -unifdef-y += adb.h
- -unifdef-y += adfs_fs.h
- -unifdef-y += agpgart.h
- -ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/a.out.h \
- -      		  $(srctree)/include/asm-$(SRCARCH)/a.out.h),)
- -unifdef-y += a.out.h
- -endif
- -unifdef-y += apm_bios.h
- -unifdef-y += atalk.h
- -unifdef-y += atmdev.h
- -unifdef-y += atm.h
- -unifdef-y += atm_tcp.h
- -unifdef-y += audit.h
- -unifdef-y += auto_fs.h
- -unifdef-y += auxvec.h
- -unifdef-y += binfmts.h
- -unifdef-y += blktrace_api.h
- -unifdef-y += capability.h
- -unifdef-y += capi.h
- -unifdef-y += cciss_ioctl.h
- -unifdef-y += cdrom.h
- -unifdef-y += cm4000_cs.h
- -unifdef-y += cn_proc.h
- -unifdef-y += coda.h
- -unifdef-y += connector.h
- -unifdef-y += cuda.h
- -unifdef-y += cyclades.h
- -unifdef-y += dccp.h
- -unifdef-y += dlm.h
- -unifdef-y += dlm_plock.h
- -unifdef-y += edd.h
- -unifdef-y += elf.h
- -unifdef-y += elfcore.h
- -unifdef-y += errno.h
- -unifdef-y += errqueue.h
- -unifdef-y += ethtool.h
- -unifdef-y += eventpoll.h
- -unifdef-y += signalfd.h
- -unifdef-y += ext2_fs.h
- -unifdef-y += fb.h
- -unifdef-y += fcntl.h
- -unifdef-y += filter.h
- -unifdef-y += flat.h
- -unifdef-y += futex.h
- -unifdef-y += fs.h
- -unifdef-y += gameport.h
- -unifdef-y += generic_serial.h
- -unifdef-y += hdlcdrv.h
- -unifdef-y += hdlc.h
- -unifdef-y += hdreg.h
- -unifdef-y += hid.h
- -unifdef-y += hiddev.h
- -unifdef-y += hidraw.h
- -unifdef-y += hpet.h
- -unifdef-y += i2c.h
- -unifdef-y += i2c-dev.h
- -unifdef-y += icmp.h
- -unifdef-y += icmpv6.h
- -unifdef-y += if_addr.h
- -unifdef-y += if_arp.h
- -unifdef-y += if_bridge.h
- -unifdef-y += if_ec.h
- -unifdef-y += if_eql.h
- -unifdef-y += if_ether.h
- -unifdef-y += if_fddi.h
- -unifdef-y += if_frad.h
- -unifdef-y += if_ltalk.h
- -unifdef-y += if_link.h
- -unifdef-y += if_phonet.h
- -unifdef-y += if_pppol2tp.h
- -unifdef-y += if_pppox.h
- -unifdef-y += if_tr.h
- -unifdef-y += if_tunnel.h
- -unifdef-y += if_vlan.h
- -unifdef-y += igmp.h
- -unifdef-y += inet_diag.h
- -unifdef-y += in.h
- -unifdef-y += in6.h
- -unifdef-y += inotify.h
- -unifdef-y += input.h
- -unifdef-y += ioq.h
- -unifdef-y += ip.h
- -unifdef-y += ipc.h
- -unifdef-y += ipmi.h
- -unifdef-y += ipv6.h
- -unifdef-y += ipv6_route.h
- -unifdef-y += isdn.h
- -unifdef-y += isdnif.h
- -unifdef-y += isdn_divertif.h
- -unifdef-y += isdn_ppp.h
- -unifdef-y += ivtv.h
- -unifdef-y += ivtvfb.h
- -unifdef-y += joystick.h
- -unifdef-y += kdev_t.h
- -unifdef-y += kd.h
- -unifdef-y += kernelcapi.h
- -unifdef-y += kernel.h
- -unifdef-y += keyboard.h
- -ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm.h \
- -      		  $(srctree)/include/asm-$(SRCARCH)/kvm.h),)
- -unifdef-y += kvm.h
- -endif
- -ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm_para.h \
- -		  $(srctree)/include/asm-$(SRCARCH)/kvm_para.h),)
- -unifdef-y += kvm_para.h
- -endif
- -unifdef-y += llc.h
- -unifdef-y += loop.h
- -unifdef-y += lp.h
- -unifdef-y += mempolicy.h
- -unifdef-y += mii.h
- -unifdef-y += mman.h
- -unifdef-y += mroute.h
- -unifdef-y += mroute6.h
- -unifdef-y += msdos_fs.h
- -unifdef-y += msg.h
- -unifdef-y += nbd.h
- -unifdef-y += ncp_fs.h
- -unifdef-y += ncp.h
- -unifdef-y += ncp_mount.h
- -unifdef-y += netdevice.h
- -unifdef-y += netfilter_bridge.h
- -unifdef-y += netfilter_decnet.h
- -unifdef-y += netfilter.h
- -unifdef-y += netfilter_ipv4.h
- -unifdef-y += netfilter_ipv6.h
- -unifdef-y += net.h
- -unifdef-y += netlink.h
- -unifdef-y += nfs3.h
- -unifdef-y += nfs4.h
- -unifdef-y += nfsacl.h
- -unifdef-y += nfs_fs.h
- -unifdef-y += nfs.h
- -unifdef-y += nfs_idmap.h
- -unifdef-y += n_r3964.h
- -unifdef-y += nubus.h
- -unifdef-y += nvram.h
- -unifdef-y += oom.h
- -unifdef-y += parport.h
- -unifdef-y += patchkey.h
- -unifdef-y += pci.h
- -unifdef-y += personality.h
- -unifdef-y += pktcdvd.h
- -unifdef-y += pmu.h
- -unifdef-y += poll.h
- -unifdef-y += ppp_defs.h
- -unifdef-y += ppp-comp.h
- -unifdef-y += pps.h
- -unifdef-y += ptrace.h
- -unifdef-y += quota.h
- -unifdef-y += random.h
- -unifdef-y += rfkill.h
- -unifdef-y += irqnr.h
- -unifdef-y += reboot.h
- -unifdef-y += reiserfs_fs.h
- -unifdef-y += reiserfs_xattr.h
- -unifdef-y += route.h
- -unifdef-y += rtc.h
- -unifdef-y += rtnetlink.h
- -unifdef-y += scc.h
- -unifdef-y += sched.h
- -unifdef-y += screen_info.h
- -unifdef-y += sdla.h
- -unifdef-y += securebits.h
- -unifdef-y += selinux_netlink.h
- -unifdef-y += sem.h
- -unifdef-y += serial_core.h
- -unifdef-y += serial.h
- -unifdef-y += serio.h
- -unifdef-y += shm.h
- -unifdef-y += shm_signal.h
- -unifdef-y += signal.h
- -unifdef-y += smb_fs.h
- -unifdef-y += smb.h
- -unifdef-y += smb_mount.h
- -unifdef-y += socket.h
- -unifdef-y += sonet.h
- -unifdef-y += sonypi.h
- -unifdef-y += soundcard.h
- -unifdef-y += stat.h
- -unifdef-y += stddef.h
- -unifdef-y += string.h
- -unifdef-y += swab.h
- -unifdef-y += synclink.h
- -unifdef-y += sysctl.h
- -unifdef-y += tcp.h
- -unifdef-y += time.h
- -unifdef-y += timex.h
- -unifdef-y += tty.h
- -unifdef-y += types.h
- -unifdef-y += udp.h
- -unifdef-y += uinput.h
- -unifdef-y += uio.h
- -unifdef-y += unistd.h
- -unifdef-y += usbdevice_fs.h
- -unifdef-y += utsname.h
- -unifdef-y += vhost.h
- -unifdef-y += vbus_pci.h
- -unifdef-y += venet.h
- -unifdef-y += videodev2.h
- -unifdef-y += videodev.h
- -unifdef-y += virtio_config.h
- -unifdef-y += virtio_ids.h
- -unifdef-y += virtio_blk.h
- -unifdef-y += virtio_net.h
- -unifdef-y += virtio_9p.h
- -unifdef-y += virtio_balloon.h
- -unifdef-y += virtio_console.h
- -unifdef-y += virtio_pci.h
- -unifdef-y += virtio_ring.h
- -unifdef-y += virtio_rng.h
- -unifdef-y += vt.h
- -unifdef-y += wait.h
- -unifdef-y += wanrouter.h
- -unifdef-y += watchdog.h
- -unifdef-y += wireless.h
- -unifdef-y += xattr.h
- -unifdef-y += xfrm.h
- -
- -objhdr-y += version.h
- +header-y += vhost.h
- +header-y += videodev2.h
- +header-y += virtio_9p.h
- +header-y += virtio_balloon.h
- +header-y += virtio_blk.h
- +header-y += virtio_config.h
- +header-y += virtio_console.h
- +header-y += virtio_ids.h
- +header-y += virtio_net.h
- +header-y += virtio_pci.h
- +header-y += virtio_ring.h
- +header-y += virtio_rng.h
- +header-y += vt.h
- +header-y += wait.h
- +header-y += wanrouter.h
- +header-y += watchdog.h
-  header-y += wimax.h
- -header-y += wimax/
- +header-y += wireless.h
- +header-y += x25.h
- +header-y += xattr.h
- +header-y += xfrm.h
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
