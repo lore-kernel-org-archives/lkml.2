@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327Ab0L2Xvj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Dec 2010 18:51:39 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:50698 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752006Ab0L2Xvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Dec 2010 18:51:38 -0500
-Date: Thu, 30 Dec 2010 10:51:30 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ping Cheng <pinglinux@gmail.com>
-Subject: Re: linux-next: build failure after merge of the final tree (input
- tree related)
-Message-Id: <20101230105130.5d27a82b.sfr@canb.auug.org.au>
-In-Reply-To: <20101229023457.GA4206@core.coreip.homeip.net>
-References: <20101229125129.d48fb6fc.sfr@canb.auug.org.au>
-	<20101229023457.GA4206@core.coreip.homeip.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1754475Ab0L3ACT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Dec 2010 19:02:19 -0500
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:41272 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754284Ab0L3ACS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Dec 2010 19:02:18 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=TP9NGQDvt40M12AOBjmRP9Z3itwI26vToXkqjBTuYfDVPqOres/MJXXHSvCIq0oNHrKzyigkLUVTiHBhvRChUBvPK62ThS8Xf9UVkNTRdpagwG0XGDXioCXaH98RjdcT;
+Date: Wed, 29 Dec 2010 16:02:15 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Alex Riesen <raa.lkml@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, Jeff Chua <jeff.chua.linux@gmail.com>
+Subject: Re: Linux 2.6.37-rc8 (no fb)
+Message-ID: <20101229160215.1a67d71a@jbarnes-desktop>
+In-Reply-To: <AANLkTim51EAwzUqSJGQ4LnJbbPNCqbhyJumUd=_WkB+T@mail.gmail.com>
+References: <AANLkTi=-dNeeDjcSoznKtwcaNyw1mMXSqepFY89R2i+2@mail.gmail.com>
+	<20101229102127.06c0e505.randy.dunlap@oracle.com>
+	<AANLkTims54zDXZYjZiiHfSOwy0W=gOF2jV8yopQxFBny@mail.gmail.com>
+	<20101229121601.179983b7@jbarnes-desktop>
+	<AANLkTikMMpdMr66n-VL9xdNVhmGMaWR74UdF5UB7cdCW@mail.gmail.com>
+	<20101229131852.0792aac0@jbarnes-desktop>
+	<20101229135315.5fe5c4e5@jbarnes-desktop>
+	<AANLkTikk3Z_p+-uRB4iF8CUuMAyuKVtPbuht=hQOm2uH@mail.gmail.com>
+	<20101229151323.4a675097@jbarnes-desktop>
+	<AANLkTim=NTUtuAG=Gk=GeBHfTNM73xw6F8gjry6xsHs7@mail.gmail.com>
+	<AANLkTim51EAwzUqSJGQ4LnJbbPNCqbhyJumUd=_WkB+T@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__30_Dec_2010_10_51_30_+1100_TYfNkWvLShv5dawP"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__30_Dec_2010_10_51_30_+1100_TYfNkWvLShv5dawP
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 30 Dec 2010 00:35:15 +0100
+Alex Riesen <raa.lkml@gmail.com> wrote:
 
-Hi Dmitry,
+> On Thu, Dec 30, 2010 at 00:20, Alex Riesen <raa.lkml@gmail.com> wrote:
+> > On Thu, Dec 30, 2010 at 00:13, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> >>> After closing and opening the lid (displays backlight is back)
+> >>>
+> >>>   http://vin-soft.org/~raa/public/test/intel_gpu_dump-after-lid
+> >>
+> >> I need the intel_reg_dumper output, not intel_gpu_dump. :)
+> >>
+> >
+> > Hmm, there is no intel_reg_dumper in intel-gpu-tools-1.0.2, which is
+> > the latest on http://xorg.freedesktop.org/archive/individual/app/,
+> > so I assumed you just mistyped the name. Is it in git only? ...
+> > Yeah, look like it is in git only, which I have problems to compile
+> > (I have a bit of obsoleted system).
+> >
+> 
+> Is there any other way to get at the dump? Because it looks like
+> it is plainly impossible to build the tools. A lot of dependencies,
+> all really hard to get at on Ubuntu Jaunty.
 
-On Tue, 28 Dec 2010 18:34:58 -0800 Dmitry Torokhov <dmitry.torokhov@gmail.c=
-om> wrote:
->
-> On Wed, Dec 29, 2010 at 12:51:29PM +1100, Stephen Rothwell wrote:
-> >=20
-> > After merging the final tree, today's linux-next build (powerpc
-> > allyesconfig) failed like this:
-> >=20
-> > drivers/input/touchscreen/wacom_w8001.c: In function 'w8001_setup':
-> > drivers/input/touchscreen/wacom_w8001.c:287: error: implicit declaratio=
-n of function 'mdelay'
-> >=20
-> > Caused by commit b8fe15cb1b435928f9967d660e925fe7afb32787 ("Input:
-> > wacom_w8001 - support pen or touch only devices").  See Rule 1 in
-> > Documentation/SubmitChecklist.
-> >=20
-> > I have reverted that commit for today.
->=20
-> Thank you Stephen, I'll fix this up in my tree.
+That's the easiest way; I think there are existing packages available
+as well, but you may have to check Karmic or newer.
 
-I note that this commit has been redone in your tree (as commit
-11a862ed9f04558e222fa15a5fbd76698fed11ff) but there have been no changes
-to it at all (except the commit date).
-
-I have reverted that commit from today's linux-next.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__30_Dec_2010_10_51_30_+1100_TYfNkWvLShv5dawP
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEbBAEBAgAGBQJNG8mCAAoJEDMEi1NhKgbsDT4H+J1AvUYDmIp7PPTRZz8p8fCd
-csHb5LpEdkwtgzieOx1pfs3Yl+YO/1XpQk+7edRBDme1zmDWrE/4iBdr1No45ADi
-1TCkkxNLC4bhFv5JOefkN9vYkJBJmgWddls2YS1IPc9Eop6Gd1gVGO+gcakiat3J
-zauoSI5CW1x6rbAb55wglXY9zZGdIy9cRt5IImxMbKZUeBl1x5nAKxfK/YrbaAa5
-cFin4NnJz/PLUidqNcTEEpxIVzzQi4/wvgclu69FpBl6GMDQd//yJaC10redG7Qk
-sP+vHITmW32ZTizxHccCPv+I+TPSbzNKGPzOQjb9GndgrdyYbZoyEfAFwBZ2gQ==
-=5GyO
------END PGP SIGNATURE-----
-
---Signature=_Thu__30_Dec_2010_10_51_30_+1100_TYfNkWvLShv5dawP--
+-- 
+Jesse Barnes, Intel Open Source Technology Center
