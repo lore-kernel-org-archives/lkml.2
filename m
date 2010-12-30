@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751189Ab0L3F0q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 00:26:46 -0500
-Received: from cantor.suse.de ([195.135.220.2]:41686 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750745Ab0L3F0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 00:26:45 -0500
-Message-ID: <4D1C180A.20000@suse.com>
-Date: Thu, 30 Dec 2010 00:26:34 -0500
-From: Jeff Mahoney <jeffm@suse.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "David S. Miller" <davem@davemloft.net>, Dan Carpenter <error27@gmail.com>,
-        balbir@linux.vnet.ibm.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] taskstats: Use better ifdef for alignment
-References: <4D1BCE58.4000902@suse.com> <20101229161418.d34bf0d4.akpm@linux-foundation.org>
-In-Reply-To: <20101229161418.d34bf0d4.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751269Ab0L3F3c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 00:29:32 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:55650 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750728Ab0L3F3b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Dec 2010 00:29:31 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6211"; a="68495974"
+From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Chao Xie <chao.xie@marvell.com>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] GIC: Assign correct flow handler type in set_type callback
+Date: Wed, 29 Dec 2010 21:29:20 -0800
+Message-Id: <1293686960-12581-1-git-send-email-adharmap@codeaurora.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+There are some interrupts that are true edge triggered in nature. If not
+marked IRQ_PENDING, when disabled, they will be lost.
 
-On 12/29/2010 07:14 PM, Andrew Morton wrote:
-> On Wed, 29 Dec 2010 19:12:08 -0500 Jeff Mahoney <jeffm@suse.com> wrote:
-> 
->>  Commit 4be2c95d added a null field to align the taskstats structure but
->>  the discussion centered around ia64. The issue exists on other platforms
->>  with inefficient unaligned access and adding them piecemeal would be
->>  an unmaintainable mess.
->>
->>  This patch uses Dave Miller's suggestion of using a combination of
->>  CONFIG_64BIT && !CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS to determine
->>  whether alignment is needed.
->>
->>  Note that this will cause breakage on those platforms with applications
->>  like iotop which had hard-coded offsets into the packet to access the
->>  taskstats structure.
-> 
-> That seems a very good reason to not apply the patch.
-> 
-> Tell us more, please...
+Use the set_type callback to assign the correct flow type handler for
+shared peripheral interrupts.
 
-I don't want to rehash the same discussion, but any argument that
-applied to ia64 applies any other 64-bit arch other than powerpc and x86_64.
+Signed-off-by: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+---
+This came to light when a edge triggered interrupt was supposed to wakeup the
+sytem. The flow handler was set to the default handle_level_irq. On the resume
+path the flow handler was invoked right after the I bit was cleared but before
+each individual interrupts were enabled. This made the handle_level_irq ignore
+the interrupt (mask_ack it) and it was lost. handle_edge_irq does the right
+thing by marking the interrupt as IRQ_PENDING and when the resume code gets to
+enabling each interrupt this interrupt is resent again.
 
-- -Jeff
+ arch/arm/common/gic.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
->>  The message seen on systems without the alignment fixes looks like:
->>  kernel unaligned access to 0xe000023879dca9bc, ip=0xa000000100133d10
->>
->>  The addresses may vary but resolve to locations inside __delayacct_add_tsk.
->>
->> Reported-by: David S. Miller <davem@davemloft.net>
->> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
->> ---
->>  kernel/taskstats.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> --- a/kernel/taskstats.c
->> +++ b/kernel/taskstats.c
->> @@ -349,7 +349,7 @@ static int parse(struct nlattr *na, stru
->>  	return ret;
->>  }
->>  
->> -#ifdef CONFIG_IA64
->> +#if defined(CONFIG_64BIT) && !defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
->>  #define TASKSTATS_NEEDS_PADDING 1
->>  #endif
->>  
+diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
+index e6388dc..a83594a 100644
+--- a/arch/arm/common/gic.c
++++ b/arch/arm/common/gic.c
+@@ -136,6 +136,9 @@ static int gic_set_type(unsigned int irq, unsigned int type)
+ 
+ 	spin_unlock(&irq_controller_lock);
+ 
++	if ((type & IRQ_TYPE_EDGE_RISING) && gicirq > 31)
++		__set_irq_handler_unlocked(irq, handle_edge_irq);
++
+ 	return 0;
+ }
+ 
+-- 
+1.7.1
+Sent by an employee of Qualcomm Innovation Center, Inc. Qualcomm Innovation
+Center, Inc. is a member of Code Aurora Forum.
 
-
-- -- 
-Jeff Mahoney
-SUSE Labs
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk0cGAoACgkQLPWxlyuTD7IdTwCfXZ0KfZ3N/zafSzGCSa4cHEbN
-EU8AoI/JK/1nkv5xHw4XP79wZAGo4hqk
-=jAGp
------END PGP SIGNATURE-----
