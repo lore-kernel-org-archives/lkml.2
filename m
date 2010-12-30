@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412Ab0L3V4d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 16:56:33 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:56255 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab0L3V4a (ORCPT
+	id S1755408Ab0L3WBJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 17:01:09 -0500
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:45640 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751342Ab0L3WBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 16:56:30 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: David Rientjes <rientjes@google.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Robin Holt <holt@sgi.com>, Ingo Molnar <mingo@elte.hu>,
-        Greg KH <gregkh@suse.de>, "David S. Miller" <davem@davemloft.net>,
-        Jens Axboe <axboe@kernel.dk>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/8] init: rename CONFIG_EMBEDDED to CONFIG_EXPERT
-In-Reply-To: Your message of "Thu, 30 Dec 2010 11:17:32 PST."
-             <alpine.DEB.2.00.1012301055340.12995@chino.kir.corp.google.com>
-From: Valdis.Kletnieks@vt.edu
-References: <alpine.DEB.2.00.1012291959200.27241@chino.kir.corp.google.com> <20101230124535.GA3306@sgi.com> <201012301350.28862.arnd@arndb.de>
-            <alpine.DEB.2.00.1012301055340.12995@chino.kir.corp.google.com>
+	Thu, 30 Dec 2010 17:01:08 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Oig9Ru11YpPYudPGf6SAqFxErKEcIwzleQ541akRK9Zwcx4tNQ+3qx13iJ81o0C2HgKdWlKrGPa1N9kGDc32cbDwhEc8pQghLkLNBAKBYEQte+0LSIYtT1rpOH1+oKG3;
+Date: Thu, 30 Dec 2010 14:01:03 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Airlie <airlied@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [git pull] i915 fixes
+Message-ID: <20101230140103.1189c545@jbarnes-desktop>
+In-Reply-To: <0d30dc$kjvpke@orsmga001.jf.intel.com>
+References: <0d30dc$kjvpke@orsmga001.jf.intel.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1293746165_4931P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Date: Thu, 30 Dec 2010 16:56:05 -0500
-Message-ID: <15080.1293746165@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020208.4D1CFFF7.00CC,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1293746165_4931P
-Content-Type: text/plain; charset=us-ascii
+On Thu, 30 Dec 2010 19:01:34 +0000
+Chris Wilson <chris@chris-wilson.co.uk> wrote:
 
-On Thu, 30 Dec 2010 11:17:32 PST, David Rientjes said:
+> Hi Linus,
+> 
+> Dave asked to me send this pull request directly to you as he is on
+> holiday over the New Year. In this batch, there are a few regression
+> fixes. The most notable being the revert of the SSC frequency switch,
+> along with a use-before-initialisation introduced much earlier in the
+> sdvo/hdmi audio enabling and a fix for the loss of correct modesetting on
+> one particular DVO chipset. Eric also found another instance where we were
+> not adhering to the specs when setting up Ironlake. The impact is not
+> conclusively known but we did find a few scenarios where it delayed a
+> hang.
+> -Chris
+> 
+> The following changes since commit 387c31c7e5c9805b0aef8833d1731a5fe7bdea14:
+> 
+>   Linux 2.6.37-rc8 (2010-12-28 17:05:48 -0800)
+> 
+> are available in the git repository at:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/ickle/drm-intel.git drm-intel-fixes
+> 
+> Chris Wilson (4):
+>       drm/i915/sdvo: Add hdmi connector properties after initing the connector
+>       drm/i915: Verify Ironlake eDP presence on DP_A using the capability fuse
+>       Revert "drm/i915/bios: Reverse order of 100/120 Mhz SSC clocks"
+>       drm/i915/dvo: Report LVDS attached to ch701x as connected
 
-> Instead of CONFIG_EXPERT select CONFIG_EMBEDDED, we could add a ninth 
-> patch which does CONFIG_EMBEDDED select CONFIG_EXPERT and tag it in some 
-> way so we know it's only temporary for the merge window to find new 
-> CONFIG_EMBEDDED entries.
+Did you want to disable SSC entirely on gen5+ just so we can get all
+the known machines working?  It's possible it could add some wifi or
+sound interference, but that's better than not having a display (most
+of the time).
 
-What's the plan for those people who are currently on (say) 2.6.35, next
-upgrade to 2.6.39 or .40, and thus miss the 9th temporary patch? They'll run
-'make oldconfig' - if they get prompted, do we want to add a line to the help
-text that says "This used to be called EMBEDDED"?
-
-
---==_Exmh_1293746165_4931P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNHP/1cC3lWbTT17ARAr1IAKClAKlktw6RhWYaKrnfzgncvlFFpACfe6Pz
-w2MAmh0VPM7c7jqWxPO4fdU=
-=/lEf
------END PGP SIGNATURE-----
-
---==_Exmh_1293746165_4931P--
-
+-- 
+Jesse Barnes, Intel Open Source Technology Center
