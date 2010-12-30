@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab0L3UKl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 15:10:41 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59244 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755041Ab0L3UKk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 15:10:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=J7ZMOlNJsZOYC1AkIIJRG/a6LsxNK5re9/CpTdgaUmJ2WYvivWdLriQeyxEfJ/HIUF
-         xtP7udXu18pcIQtdCmLEnUIIM5pbBrBPGhuo2DeiCs5VCVgcudndKO0d5ip7Q2rhXj0G
-         w47RTsPFm33lnQJTWnhGExw+0WbLzaE0IWy2o=
+	id S1755314Ab0L3UOi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 15:14:38 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:50401 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755041Ab0L3UOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Dec 2010 15:14:37 -0500
+Message-ID: <4D1CE80D.3050503@zytor.com>
+Date: Thu, 30 Dec 2010 12:14:05 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <AANLkTik3M2msXQA2Q--r492Oohph9cD7=JYBWx=vNzg-@mail.gmail.com>
-References: <20101229125129.d48fb6fc.sfr@canb.auug.org.au>
-	<20101229023457.GA4206@core.coreip.homeip.net>
-	<20101230105130.5d27a82b.sfr@canb.auug.org.au>
-	<AANLkTik38TzE_L_m8KpG-PmWGPeHjC8FYU=reRN8L7E5@mail.gmail.com>
-	<AANLkTik3M2msXQA2Q--r492Oohph9cD7=JYBWx=vNzg-@mail.gmail.com>
-Date: Thu, 30 Dec 2010 12:10:38 -0800
-Message-ID: <AANLkTi=icbrfOT_gvEwcLJO94wtuF8QF=aOx8z-LajeB@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the final tree (input
- tree related)
-From: Ping Cheng <pinglinux@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
+        x86@kernel.org, eric.dumazet@gmail.com, yinghai@kernel.org,
+        brgerst@gmail.com, gorcunov@gmail.com, penberg@kernel.org,
+        shaohui.zheng@intel.com, rientjes@google.com
+Subject: Re: [PATCHSET] x86: unify x86_32 and 64 NUMA init paths, take#4
+References: <1293731369-10851-1-git-send-email-tj@kernel.org>
+In-Reply-To: <1293731369-10851-1-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 30, 2010 at 11:58 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> On Thu, Dec 30, 2010 at 19:06, Ping Cheng <pinglinux@gmail.com> wrote:
->> On Wed, Dec 29, 2010 at 3:51 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>> On Tue, 28 Dec 2010 18:34:58 -0800 Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
->>>> On Wed, Dec 29, 2010 at 12:51:29PM +1100, Stephen Rothwell wrote:
->>>> > After merging the final tree, today's linux-next build (powerpc
->>>> > allyesconfig) failed like this:
->>>> >
->>>> > drivers/input/touchscreen/wacom_w8001.c: In function 'w8001_setup':
->>>> > drivers/input/touchscreen/wacom_w8001.c:287: error: implicit declaration of function 'mdelay'
->>>> >
->>>> > Caused by commit b8fe15cb1b435928f9967d660e925fe7afb32787 ("Input:
->>>> > wacom_w8001 - support pen or touch only devices").  See Rule 1 in
->>>> > Documentation/SubmitChecklist.
->>
->> I do not see the error on my testing systems somehow. Does adding the
->> following line resolve the issue?
->>
->> #include < include/linux/delay.h>
->
-> "#include <linux/delay.h>", I assume?
+On 12/30/2010 09:49 AM, Tejun Heo wrote:
+> 
+> The only change from the last take[L] is that it's now based on
+> tip/x86/numa.  Unfortunately, some of the collisions weren't trivial
+> and led to some ugliness.
+> 
+> Commit c1c3443c ("x86, numa: Fake node-to-cpumask for NUMA emulation")
+> introduced hard dependency on x86_64 into numa_add/remove_cpu() when
+> CONFIG_NUMA_EMU is enabled.  0015 has been updated so that the 32/64
+> bit common versions used when !CONFIG_NUMA_EMU are in numa.c while
+> CONFIG_NUMA_EMU variants are in numa_64.c.
+> 
+> This is ugly but still better than before.  IIUC, Shaohui's patchsets
+> is going to unify NUMA emulation across 32 and 64bit, which should
+> remove the above ugliness.  I haven't looked through the patchset yet
+> but after skimming through the current NUMA_EMU code, here are some of
+> my thoughts, FWIW.
+> 
+> * There's no reason for different NUMA config methods to construct
+>   different data structures.  They all, including 32bit, can build a
+>   single set of data structures.
+> 
+> * Then, unification of NUMA_EMU would naturally follow.  There's no
+>   reason to think about whether the underlying NUMA and proximity
+>   information is provided by ACPI, AMD or whatever.  It just needs to
+>   manipulate the processed data.
+> 
+> Let's _please_ head that way instead of adding more gluing codes and
+> hacks everywhere.  It would be a bit more churn but I don't think
+> there's any other sustainable way.
+> 
 
-You are right. Take it as a typo or copy/paste error ;).
+Agreed 100%.
 
-Ping
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
