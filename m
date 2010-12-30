@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754257Ab0L3Kt5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 05:49:57 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42779 "EHLO arroyo.ext.ti.com"
+	id S1754177Ab0L3KuS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 05:50:18 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:41436 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753677Ab0L3Ks0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 05:48:26 -0500
-From: manjunatha_halli@ti.com
-To: mchehab@infradead.org, hverkuil@xs4all.nl
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        Manjunatha Halli <manjunatha_halli@ti.com>
-Subject: [RFC V8 0/7] FM V4L2 drivers for WL128x
-Date: Thu, 30 Dec 2010 06:11:40 -0500
-Message-Id: <1293707507-3376-1-git-send-email-manjunatha_halli@ti.com>
-X-Mailer: git-send-email 1.5.6.5
+	id S1753677Ab0L3KuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Dec 2010 05:50:14 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Rabin Vincent <rabin@rab.in>
+Subject: Re: i2c runtime suspend and system wide suspend
+Date: Thu, 30 Dec 2010 11:49:30 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc8+; KDE/4.4.4; x86_64; ; )
+Cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jean Delvare <khali@linux-fr.org>, Rajendra Nayak <rnayak@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Vishwanath BS <vishwanath.bs@ti.com>, Partha Basak <p-basak2@ti.com>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, linux-i2c@vger.kernel.org
+References: <4D1C0CFE.5010008@codeaurora.org> <AANLkTinqqgNwgFCMVL-2T83zKnNLGLF007atJ4-EDEW5@mail.gmail.com>
+In-Reply-To: <AANLkTinqqgNwgFCMVL-2T83zKnNLGLF007atJ4-EDEW5@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012301149.30888.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Manjunatha Halli <manjunatha_halli@ti.com>
+On Thursday, December 30, 2010, Rabin Vincent wrote:
+> On Thu, Dec 30, 2010 at 10:09 AM, Abhijeet Dharmapurikar
+> <adharmap@codeaurora.org> wrote:
+> > The i2c-core driver mixes runtime suspend and system wide suspend, in that,
+> > during a system wide suspend, it skips calling ->suspend if the device is
+> > runtime suspended.
+> >
+> > I have an interrupt controller running over the i2c bus and that driver is
+> > oblivious of the runtime pm framework, IOW, it doesn't do any runtime pm
+> > calls. CONFIG_RUNTIME_PM is enabled however (for some other bus drivers).
+> > The issue I am facing is that all such i2c devices are assumed runtime
+> > suspended and the ->suspend for these devices is not invoked during
+> > systemwide suspend.
+> 
+> This was discussed on linux-pm recently.  Rafael had a fix, I'm don't know
+> whether it's applied yet:
+> 
+> https://lists.linux-foundation.org/pipermail/linux-pm/2010-December/029567.html
+> https://lists.linux-foundation.org/pipermail/linux-pm/2010-December/029596.html
 
-Mauro and the list,
+Yes, the fix is already in the Linus' tree:
 
-This is the v8 version of the TI WL128x FM V4L2 drivers patchset.
-This introduces wl128x folder under the drivers/media/radio which cater
-to FM core on Texas Instrument's WL128x (also compatible with WL127x)
-WiLink chipsets.
-WL128x's FM can work in either Rx or Tx mode, and V4L2 interfaces are
-provided for both.
+f08f5a0 PM / Runtime: Fix pm_runtime_suspended()
+ 
+> Also relevant:
+> 
+> https://lists.linux-foundation.org/pipermail/linux-pm/2010-December/029600.html
+> https://lists.linux-foundation.org/pipermail/linux-pm/2010-December/029658.html
 
-** patch description **
+I'm not sure what happened to the last patch.  Is there a new version?
+If so, is it going to be pushed through the i2c tree, or should I take it?
 
-Texas Instrument's WL128x chipset packs BT, FM, GPS and WLAN in a single
-die with BT, FM and GPS being interfaced over a single UART.
-This driver works on top of the shared transport line discipline driver.
-This driver can also be made use for the WL127x version of the chip which packs
-BT, FM and WLAN only.
-
-Comments on the last version of the patches have been taken care,
-such as,
-- Using .unlocked_ioctl instead of .ioctl in fmdrv_v4l2.c
-
-Thanks & Regards,
-Manjunatha Halli
-
-Manjunatha Halli (7):
-  drivers:media:radio: wl128x: fmdrv common header file
-  drivers:media:radio: wl128x: fmdrv_v4l2 sources
-  drivers:media:radio: wl128x: fmdrv_common sources
-  drivers:media:radio: wl128x: FM driver RX sources
-  drivers:media:radio: wl128x: FM driver TX sources
-  drivers:media:radio: wl128x: Kconfig & Makefile for wl128x driver
-  drivers:media:radio: Update Kconfig and Makefile for wl128x FM
-    driver.
-
- drivers/media/radio/Kconfig               |    3 +
- drivers/media/radio/Makefile              |    1 +
- drivers/media/radio/wl128x/Kconfig        |   17 +
- drivers/media/radio/wl128x/Makefile       |    6 +
- drivers/media/radio/wl128x/fmdrv.h        |  248 ++++
- drivers/media/radio/wl128x/fmdrv_common.c | 1970 +++++++++++++++++++++++++++++
- drivers/media/radio/wl128x/fmdrv_common.h |  402 ++++++
- drivers/media/radio/wl128x/fmdrv_rx.c     |  904 +++++++++++++
- drivers/media/radio/wl128x/fmdrv_rx.h     |   59 +
- drivers/media/radio/wl128x/fmdrv_tx.c     |  438 +++++++
- drivers/media/radio/wl128x/fmdrv_tx.h     |   37 +
- drivers/media/radio/wl128x/fmdrv_v4l2.c   |  593 +++++++++
- drivers/media/radio/wl128x/fmdrv_v4l2.h   |   33 +
- 13 files changed, 4711 insertions(+), 0 deletions(-)
- create mode 100644 drivers/media/radio/wl128x/Kconfig
- create mode 100644 drivers/media/radio/wl128x/Makefile
- create mode 100644 drivers/media/radio/wl128x/fmdrv.h
- create mode 100644 drivers/media/radio/wl128x/fmdrv_common.c
- create mode 100644 drivers/media/radio/wl128x/fmdrv_common.h
- create mode 100644 drivers/media/radio/wl128x/fmdrv_rx.c
- create mode 100644 drivers/media/radio/wl128x/fmdrv_rx.h
- create mode 100644 drivers/media/radio/wl128x/fmdrv_tx.c
- create mode 100644 drivers/media/radio/wl128x/fmdrv_tx.h
- create mode 100644 drivers/media/radio/wl128x/fmdrv_v4l2.c
- create mode 100644 drivers/media/radio/wl128x/fmdrv_v4l2.h
-
+Rafael
