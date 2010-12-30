@@ -1,73 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751061Ab0L3FSv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 00:18:51 -0500
-Received: from wnl.lk ([203.143.12.196]:53355 "HELO mail.wnl.lk"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1750745Ab0L3FSu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 00:18:50 -0500
-X-Greylist: delayed 27983 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Dec 2010 00:18:38 EST
-Message-ID: <3461.41.138.172.138.1293637432.squirrel@wnl.lk>
-Date: Wed, 29 Dec 2010 21:13:52 +0530 (IST)
-Subject: Your File Number:UN-0712
-From: "United Nations (#111091)" <notice@unescap.org>
-Reply-To: 2011-Cashpayment@unservicecam.com
-User-Agent: SquirrelMail/1.4.8-4.0.1.el5
+	id S1751189Ab0L3F0q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 00:26:46 -0500
+Received: from cantor.suse.de ([195.135.220.2]:41686 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750745Ab0L3F0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Dec 2010 00:26:45 -0500
+Message-ID: <4D1C180A.20000@suse.com>
+Date: Thu, 30 Dec 2010 00:26:34 -0500
+From: Jeff Mahoney <jeffm@suse.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
-Content-Transfer-Encoding: 7BIT
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "David S. Miller" <davem@davemloft.net>, Dan Carpenter <error27@gmail.com>,
+        balbir@linux.vnet.ibm.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] taskstats: Use better ifdef for alignment
+References: <4D1BCE58.4000902@suse.com> <20101229161418.d34bf0d4.akpm@linux-foundation.org>
+In-Reply-To: <20101229161418.d34bf0d4.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-***********************
-This message has been scanned by the InterScan for CSC SSM and found to be free of known security risks.
-***********************
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+On 12/29/2010 07:14 PM, Andrew Morton wrote:
+> On Wed, 29 Dec 2010 19:12:08 -0500 Jeff Mahoney <jeffm@suse.com> wrote:
+> 
+>>  Commit 4be2c95d added a null field to align the taskstats structure but
+>>  the discussion centered around ia64. The issue exists on other platforms
+>>  with inefficient unaligned access and adding them piecemeal would be
+>>  an unmaintainable mess.
+>>
+>>  This patch uses Dave Miller's suggestion of using a combination of
+>>  CONFIG_64BIT && !CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS to determine
+>>  whether alignment is needed.
+>>
+>>  Note that this will cause breakage on those platforms with applications
+>>  like iotop which had hard-coded offsets into the packet to access the
+>>  taskstats structure.
+> 
+> That seems a very good reason to not apply the patch.
+> 
+> Tell us more, please...
+
+I don't want to rehash the same discussion, but any argument that
+applied to ia64 applies any other 64-bit arch other than powerpc and x86_64.
+
+- -Jeff
+
+>>  The message seen on systems without the alignment fixes looks like:
+>>  kernel unaligned access to 0xe000023879dca9bc, ip=0xa000000100133d10
+>>
+>>  The addresses may vary but resolve to locations inside __delayacct_add_tsk.
+>>
+>> Reported-by: David S. Miller <davem@davemloft.net>
+>> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+>> ---
+>>  kernel/taskstats.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> --- a/kernel/taskstats.c
+>> +++ b/kernel/taskstats.c
+>> @@ -349,7 +349,7 @@ static int parse(struct nlattr *na, stru
+>>  	return ret;
+>>  }
+>>  
+>> -#ifdef CONFIG_IA64
+>> +#if defined(CONFIG_64BIT) && !defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+>>  #define TASKSTATS_NEEDS_PADDING 1
+>>  #endif
+>>  
 
 
+- -- 
+Jeff Mahoney
+SUSE Labs
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
+Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
 
-Attention: Beneficiary,
-
-I am writing to confirm the fact if you are (DEAD) or (ALIVE) and failure
-to reply back in the next 72hrs simply means what Mrs. Monica Chang said
-was right that you are dead. Dr. Jim Long has agreed to close your file,
-based on the payment of $317.00dollars required for the File Activation
-Fee for CCTB-online transfer.
-
-Your E-mail address prize won , with file Number (UN-0712)  payment
-donation of Two Million Dollars ($2,000.000.00) form United Nations Cash
-Grant/Donation for your own personal, education and business development
-for Next Year 2011 Cash Prize.
-
-But we have not closed your file yet as we want to find out if you are
-dead or not, so if you are still (ALIVE) you are advice in your own best
-interest to reply back in less than 72hrs.
-
-Contact our Director General for File Activation with below E-mail address=
-Barr. Goodluck S. Alin
-Email:2011-cashpayment@unservicecam.com
-
-PAYMENT DETAILS
-File Number: UN-0712/ (Prize won date 06 march 2010)
-Password Pin: #7657! 900
-UN/IMF Pin: 00000100107.
-
-Best Regards,
-Mrs. Lipi Begum
-UNITED NATIONS ASIA SECRETARY GENERAL
-Tell-(+855-978-939-706)
-**********************************************************************************************
-
-
-The information contained in this email and any attachments is confidential and may be subject to copyright or other intellectual property protection. If you are not the intended recipient, you are not authorized to use or disclose this information, and we request that you notify us by reply mail or telephone and delete the original message from your mail system.
-
-E-mail transmission cannot be guaranteed to be secure or error-free as information could be
-intercepted, corrupted, lost, destroyed, arrive late or incomplete or contain viruses.
-The sender therefore does not accept liability for any errors or omissions in the contents of this message which arise as a result of e-mail transmission.
-
-Wijeya Newspapers Ltd : 2010
-
+iEYEARECAAYFAk0cGAoACgkQLPWxlyuTD7IdTwCfXZ0KfZ3N/zafSzGCSa4cHEbN
+EU8AoI/JK/1nkv5xHw4XP79wZAGo4hqk
+=jAGp
+-----END PGP SIGNATURE-----
