@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096Ab0L3XIg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 18:08:36 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:58873 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752898Ab0L3XIc (ORCPT
+	id S1753414Ab0L3XIx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 18:08:53 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:59254 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753275Ab0L3XIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 18:08:32 -0500
+	Thu, 30 Dec 2010 18:08:47 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=tgiQVtHYxlRXUK+n5knwvfmcH0oQGs647iwCZR5oBRFU2v81Z6213EGnGrlXyVgkqn
-         WovHrmVOCjCWfvwsoGRa1NpUdcjslE4vbjaJ/Vl2lJesjtpp4wikTSZt2QlyZyKveGE6
-         x5/4i88/MBTITeKN7ulH5Gg00GRPM1J62rcqM=
+        b=wZbE82k0Zz+cVAmWfr+xLNEb7tuvXozPg0IwTFZvNcy0RyTlS+bFVMOZtMke3jMr2h
+         I+4VXfFIZvfTVXY3OMv3OTFvbhaW+KspxHXjCXbLm7kc7CrVGmppti/g8xYwr6WPtY32
+         RN/SLOIssYxRSMWxmZUm8PBjl+jQf4GHEegSc=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -21,11 +21,11 @@ Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-scsi@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
         devel@driverdev.osuosl.org, linux-usb@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 08/15]drivers:scsi:lpfc:lpfc_init.c Typo change diable to disable.
-Date: Thu, 30 Dec 2010 15:07:57 -0800
-Message-Id: <1293750484-1161-8-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 12/15]drivers:media:video:tvp7002.c Typo change diable to disable.
+Date: Thu, 30 Dec 2010 15:08:01 -0800
+Message-Id: <1293750484-1161-12-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.6.5.2.180.gc5b3e
-In-Reply-To: <1293750484-1161-7-git-send-email-justinmattock@gmail.com>
+In-Reply-To: <1293750484-1161-11-git-send-email-justinmattock@gmail.com>
 References: <1293750484-1161-1-git-send-email-justinmattock@gmail.com>
  <1293750484-1161-2-git-send-email-justinmattock@gmail.com>
  <1293750484-1161-3-git-send-email-justinmattock@gmail.com>
@@ -33,6 +33,10 @@ References: <1293750484-1161-1-git-send-email-justinmattock@gmail.com>
  <1293750484-1161-5-git-send-email-justinmattock@gmail.com>
  <1293750484-1161-6-git-send-email-justinmattock@gmail.com>
  <1293750484-1161-7-git-send-email-justinmattock@gmail.com>
+ <1293750484-1161-8-git-send-email-justinmattock@gmail.com>
+ <1293750484-1161-9-git-send-email-justinmattock@gmail.com>
+ <1293750484-1161-10-git-send-email-justinmattock@gmail.com>
+ <1293750484-1161-11-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -43,22 +47,22 @@ is correct or not.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/scsi/lpfc/lpfc_init.c |    2 +-
+ drivers/media/video/tvp7002.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
-index b306579..a921f16 100644
---- a/drivers/scsi/lpfc/lpfc_init.c
-+++ b/drivers/scsi/lpfc/lpfc_init.c
-@@ -7661,7 +7661,7 @@ lpfc_pci_remove_one_s3(struct pci_dev *pdev)
- 	 * the HBA.
- 	 */
- 
--	/* HBA interrupt will be diabled after this call */
-+	/* HBA interrupt will be disabled after this call */
- 	lpfc_sli_hba_down(phba);
- 	/* Stop kthread signal shall trigger work_done one more time */
- 	kthread_stop(phba->worker_thread);
+diff --git a/drivers/media/video/tvp7002.c b/drivers/media/video/tvp7002.c
+index e63b40f..c799e4e 100644
+--- a/drivers/media/video/tvp7002.c
++++ b/drivers/media/video/tvp7002.c
+@@ -789,7 +789,7 @@ static int tvp7002_query_dv_preset(struct v4l2_subdev *sd,
+  * Get the value of a TVP7002 decoder device register.
+  * Returns zero when successful, -EINVAL if register read fails or
+  * access to I2C client fails, -EPERM if the call is not allowed
+- * by diabled CAP_SYS_ADMIN.
++ * by disabled CAP_SYS_ADMIN.
+  */
+ static int tvp7002_g_register(struct v4l2_subdev *sd,
+ 						struct v4l2_dbg_register *reg)
 -- 
 1.6.5.2.180.gc5b3e
 
