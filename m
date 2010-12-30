@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552Ab0L3NKe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 08:10:34 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:41066 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751775Ab0L3NKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 08:10:33 -0500
-Date: Thu, 30 Dec 2010 07:10:31 -0600
-From: Robin Holt <holt@sgi.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Robin Holt <holt@sgi.com>, David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Greg KH <gregkh@suse.de>, "David S. Miller" <davem@davemloft.net>,
-        Jens Axboe <axboe@kernel.dk>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/8] init: rename CONFIG_EMBEDDED to CONFIG_EXPERT
-Message-ID: <20101230131031.GF3260@sgi.com>
-References: <alpine.DEB.2.00.1012291959200.27241@chino.kir.corp.google.com>
- <20101230124535.GA3306@sgi.com>
- <201012301350.28862.arnd@arndb.de>
+	id S1754374Ab0L3NN7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 08:13:59 -0500
+Received: from inx.pm.waw.pl ([195.116.170.130]:48739 "EHLO inx.pm.waw.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750786Ab0L3NN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Dec 2010 08:13:58 -0500
+From: Krzysztof Halasa <khc@pm.waw.pl>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        "Ben Hutchings" <ben@decadent.org.uk>
+Subject: Re: [Bug #25442] ixp4xx defines FREQ macro; conflicts with gspca/ov519 driver
+References: <96DQe4a_2tH.A.4RE.497GNB@chimera>
+	<sV7shrPOroO.A.CqE.K-7GNB@chimera>
+Date: Thu, 30 Dec 2010 14:13:38 +0100
+In-Reply-To: <sV7shrPOroO.A.CqE.K-7GNB@chimera> (Rafael J. Wysocki's message
+	of "Thu, 30 Dec 2010 00:07:02 +0100 (CET)")
+Message-ID: <m3zkrnv1x9.fsf@intrepid.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201012301350.28862.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 30, 2010 at 01:50:28PM +0100, Arnd Bergmann wrote:
-> On Thursday 30 December 2010, Robin Holt wrote:
-> > Doesn't this patch series break the 'bisectable' rule for patches?
-> > I think you can get by with adding a CONFIG_EXPERT selects CONFIG_EMBEDDED
-> > in the first patch and the last patch removing that same selects.
-> 
-> How about leaving it that way during the merge window even? That would
-> help people sending git pull requests that add new dependencies on
-> CONFIG_EMBEDDED. David can submit another patch that removes the
-> temporary CONFIG_EMBEDDED option along with any new users in -rc2
-> or for 2.6.39 then.
+"Rafael J. Wysocki" <rjw@sisk.pl> writes:
 
-That would be fine with me, but I don't think my vote counts for much.
-I was just trying to help prevent the bisectability of your patchset.
+> The following bug entry is on the current list of known regressions
+> from 2.6.36.  Please verify if it still should be listed and let the tracking team
+> know (either way).
+>
+>
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=25442
+> Subject		: ixp4xx defines FREQ macro; conflicts with gspca/ov519 driver
 
-Robin
+This FREQ has been there for years. Not that it makes it smart, and
+I'll obviously send Ben's patch upstream for 2.6.38. Still processing
+incoming mail queue :-(
+-- 
+Krzysztof Halasa
