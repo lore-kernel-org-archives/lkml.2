@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391Ab0L3Khp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 05:37:45 -0500
-Received: from mga01.intel.com ([192.55.52.88]:59873 "EHLO mga01.intel.com"
+	id S1753574Ab0L3KoT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 05:44:19 -0500
+Received: from shutemov.name ([188.40.19.243]:54103 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752977Ab0L3Khn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 05:37:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,248,1291622400"; 
-   d="scan'208";a="641734044"
-From: "Gao, Yunpeng" <yunpeng.gao@intel.com>
-To: Linus Walleij <linus.ml.walleij@gmail.com>
-CC: Pierre Tardy <tardyp@gmail.com>, "Yuan, Hang" <hang.yuan@intel.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Ball <cjb@laptop.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>, Takashi Iwai <tiwai@suse.de>,
-        Maxim Levitsky <maximlevitsky@gmail.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Date: Thu, 30 Dec 2010 18:37:39 +0800
-Subject: RE: [RFC] sdhci: use ios->clock to know when sdhci is idle
-Thread-Topic: [RFC] sdhci: use ios->clock to know when sdhci is idle
-Thread-Index: AcunO1QKQqWpJ8cpRrWywB3soazTSQAzKDdg
-Message-ID: <CE761E84DADF2947A4AF22FB8D97A47331E875CD@shsmsx501.ccr.corp.intel.com>
-References: <1293023621-3077-1-git-send-email-tardyp@gmail.com>
-	<41EFD7A46E18724CAB128DAD00733480193D2AE61C@shsmsx502.ccr.corp.intel.com>
-	<AANLkTinYWODS785AefQ7hV+urPkAn1+En-fZEaFQygLG@mail.gmail.com>
-	<CE761E84DADF2947A4AF22FB8D97A47331E86F6E@shsmsx501.ccr.corp.intel.com>
- <AANLkTimB7h0ZxvSOt2dUkO90RxE2c3Bu3CRqpasgzxw=@mail.gmail.com>
-In-Reply-To: <AANLkTimB7h0ZxvSOt2dUkO90RxE2c3Bu3CRqpasgzxw=@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752890Ab0L3KoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Dec 2010 05:44:17 -0500
+Date: Thu, 30 Dec 2010 12:44:16 +0200
+From: "Kirill A. Shutemov" <kas@openvz.org>
+To: Rob Landley <rlandley@parallels.com>
+Cc: "Kirill A. Shutemov" <kas@openvz.org>, Rob Landley <rob@landley.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 00/12] make rpc_pipefs be mountable multiple time
+Message-ID: <20101230104416.GA31824@shutemov.name>
+References: <1293628470-28386-1-git-send-email-kas@openvz.org>
+ <AANLkTi=AXz21wDeE1vPVD-6cEtj6faXN9x09eHDCsTkB@mail.gmail.com>
+ <20101230085139.GA29697@shutemov.name>
+ <4D1C4C7C.6050606@parallels.com>
+ <20101230094433.GB29697@shutemov.name>
+ <4D1C5953.6020200@parallels.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D1C5953.6020200@parallels.com>
+User-Agent: Mutt/1.5.20 (2010-08-04)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> So, why we have to move to the 'aggressive clock gating framework'?
->
->The aggressive clock gating makes more sense since the different
->drivers will know better how to handle the gating. ios with f=0 can
->be interpreted differently. Else every driver has to register
->runtime PM hooks for this, which is less elegant.
+On Thu, Dec 30, 2010 at 04:05:07AM -0600, Rob Landley wrote:
+> On 12/30/2010 03:44 AM, Kirill A. Shutemov wrote:
+> >>> If no rpcmount mountoption, no rpc_pipefs was found at
+> >>> '/var/lib/nfs/rpc_pipefs' and we are in init's mount namespace, we use
+> >>> init_rpc_pipefs.
+> >>
+> >> It's the "we are in init's mount namespace" that I was wondering about.
+> >>
+> >> So if I naievely chroot, nfs mount stops working the way it did before I
+> >> chrooted unless I do an extra setup step?
+> >
+> > No. It will work as before since you are still in init's mount namespace.
+> > Creating new mount namespace changes rules.
+> 
+> Ah, CLONE_NEWNS and then you need /var/lib/nfs/rpc_pipefs.  Got it.
+> 
+> I'm kind of surprised that the kernel cares about a specific path under 
+> /var/lib.  (Seems like policy in the kernel somehow.)
 
-Thanks for the response. I just curious that is this the only reason to change the framework? To my understanding, seems it's not a very strong reason :-)
+Yep. It's bad, but there is way to overwrite the default.
 
-Take the example of sd/mmc card -
-by using the aggressive clock gating framework, it means the host controller will gate (clock gating or power gating) itself if not receiving requests for 8 clocks even if the request queue of mmc block driver is not empty at that time. So the host controller has to be gated / ungated repeatedly until the current request queue of mmc block driver becomes empty. I don't think this is elegant since most of the gating / ungating operations are not necessary.
+Other way is to leave 'rpcmount' mountoption without default.
+get_rpc_pipefs(NULL) in init's mount namespace will always return
+init_rpc_pipefs, without filesystem lookup.
+get_rpc_pipefs(NULL) in non-init's mount namespace will always return
+error.
 
-Instead, if we do it in the mmc block driver by just call the pm_runtime_put() once the current request queue is empty and call pm_runtime_get() once any new request comes, then the host controller can be gated/ungated appropriately.
+So you will have to specify 'rpcmount' mountoption for every nfs mount in
+container. Hmm, I guess, it may confuse user.
 
-Thanks.
+Or we can try to move the default to userspace. /sbin/mount.nfs?
 
-Regards,
-Yunpeng
+> Can't it just 
+> check the current process's mount list to see if an instance of 
+> rpc_pipefs is mounted in the current namespace the way lxc looks for 
+> cgroups?  Or are there potential performance/scalability issues with that?
+
+What should we do if we have several rpc_pipefs mounts in the namespace?
+
+-- 
+ Kirill A. Shutemov
