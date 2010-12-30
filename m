@@ -1,55 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371Ab0L3VZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 16:25:27 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:50233 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131Ab0L3VZ0 convert rfc822-to-8bit (ORCPT
+	id S1755393Ab0L3VdD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 16:33:03 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:51107 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131Ab0L3VdB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 16:25:26 -0500
+	Thu, 30 Dec 2010 16:33:01 -0500
+Date: Thu, 30 Dec 2010 14:32:56 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>
+Cc: Dirk Brandewie <dirk.brandewie@gmail.com>, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH] of/fdt: add kernel command line option for dtb_compat
+ string
+Message-ID: <20101230213256.GB3220@angua.secretlab.ca>
+References: <1291658059-383-1-git-send-email-dirk.brandewie@gmail.com>
+ <4bb36a12-8d95-4d4e-936c-c1c74a9372cc@VA3EHSMHS025.ehs.local>
+ <4CFD3322.1000503@gmail.com>
+ <4CFD3371.3080807@gmail.com>
+ <805e9139-7c09-45f5-a5a9-0ed0cbf64f2f@VA3EHSMHS025.ehs.local>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1012291231540.22566@sister.anvils>
-References: <AANLkTinbqG7sXxf82wc516snLoae1DtCWjo+VtsPx2P3@mail.gmail.com>
-	<20101122154754.e022d935.akpm@linux-foundation.org>
-	<AANLkTi=AiJ1MekBXZbVj3f2pBtFe52BtCxtbRq=u-YOR@mail.gmail.com>
-	<20101129152500.000c380b.akpm@linux-foundation.org>
-	<alpine.LSU.2.00.1011300939520.6633@tigran.mtv.corp.google.com>
-	<alpine.LSU.2.00.1012291231540.22566@sister.anvils>
-Date: Thu, 30 Dec 2010 22:25:25 +0100
-Message-ID: <AANLkTi=ZuOJ07yN-nqso_pX_NS90eKrPD=vG9-_a59vG@mail.gmail.com>
-Subject: Re: kernel BUG at /build/buildd/linux-2.6.35/mm/filemap.c:128!
-From: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
-To: Hugh Dickins <hughd@google.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <805e9139-7c09-45f5-a5a9-0ed0cbf64f2f@VA3EHSMHS025.ehs.local>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> I guess the latter is the more likely: maybe the truncate_count/restart
->> logic isn't working properly.  I'll try to check over that again later -
->> but will be happy if someone else beats me to it.
->
-> I have since found an omission in the restart_addr logic: looking back
-> at the October 2004 history of vm_truncate_count, I see that originally
-> I designed it to work one way, but hurriedly added a 7/6 redesign when
-> vma splitting turned out to leave an ambiguity.  I should have updated
-> the protection in mremap move at that time, but missed it.
->
-> Robert, please try out the patch below (should apply fine to 2.6.35):
+On Mon, Dec 06, 2010 at 01:50:47PM -0800, Stephen Neuendorffer wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Dirk Brandewie [mailto:dirk.brandewie@gmail.com]
+> > Sent: Monday, December 06, 2010 11:03 AM
+> > To: Stephen Neuendorffer
+> > Cc: linux-kernel@vger.kernel.org; Randy Dunlap;
+> devicetree-discuss@lists.ozlabs.org; linux-
+> > doc@vger.kernel.org; grant.likely@secretlab.ca
+> > Subject: Re: [PATCH] of/fdt: add kernel command line option for
+> dtb_compat string
+> > 
+> > On 12/06/2010 11:01 AM, Dirk Brandewie wrote:
+> > > On 12/06/2010 10:37 AM, Stephen Neuendorffer wrote:
+> > >>
+> > >>
+> > >>> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+> > >>> index c1360e0..ca1318c 100644
+> > >>> --- a/drivers/of/fdt.c
+> > >>> +++ b/drivers/of/fdt.c
+> > >>> @@ -15,6 +15,8 @@
+> > >>> #include<linux/of_fdt.h>
+> > >>> #include<linux/string.h>
+> > >>> #include<linux/errno.h>
+> > >>> +#include<asm-generic/vmlinux.lds.h>
+> > >>> +
+> > >>>
+> > >>> #ifdef CONFIG_PPC
+> > >>> #include<asm/machdep.h>
+> > >>> @@ -604,3 +606,49 @@ void __init unflatten_device_tree(void)
+> > >>>
+> > >>> pr_debug("<- unflatten_device_tree()\n");
+> > >>> }
+> > >>> +
+> > >>> +extern uint8_t __dtb_start[];
+> > >>> +extern uint8_t __dtb_end[];
+> > >>> +static void __init *of_flat_dt_find_compatible_dtb(char *name)
+> > >>> +{
+> > >>> + void *rc = NULL;
+> > >>> + unsigned long root, size;
+> > >>> + struct boot_param_header *orig_initial_boot_params;
+> > >>> + uint8_t *blob;
+> > >>> +
+> > >>> + orig_initial_boot_params = initial_boot_params;
+> > >>> + blob = __dtb_start;
+> > >>> + initial_boot_params = (struct boot_param_header *)blob;
+> > >>
+> > >> Oy... can you avoid the pointer dance by using
+> of_fdt_is_compatible()
+> > >> from my recent set of patches?
+> > >
+> > > I would like to get rid of the pointer dance. Is your patch set
+> going to make it
+> > > into .37? I didn't see any acks.
+> > >
+> > Obviously I meant .38 :-)
+> 
+> I'd like it too, but that's up to Grant.  I imagine some of the
+> bottleneck is that I don't have
+> an easy way to test on powerpc or microblaze at the moment, so it's not
+> clear that the code doesn't
+> break anything.
 
-In the beginning  of Jan (3-4) at earliest I'm afraid, i.e. when I
-manage to get to my console-over-rs232 setup.
+It's in my -next branch now.
 
-> I'm hoping this will fix what the fuzzer found, but it's still quite
-> possible that it found something else wrong that I've not yet noticed.
-> The patch could probably be cleverer (if we exported the notion of
-> restart_addr out of mm/memory.c), but I'm more in the mood for being
-> safe than clever at the moment.
+g.
 
--- 
-Robert Święcki
