@@ -1,238 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345Ab0L3IzA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 03:55:00 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:39651 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752902Ab0L3Iy7 (ORCPT
+	id S1753444Ab0L3I5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 03:57:34 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33606 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753359Ab0L3I5d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 03:54:59 -0500
-Date: Thu, 30 Dec 2010 01:54:51 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, sodaville@linutronix.de, x86@kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 05/15] x86/dtb: add early parsing of APIC and IO APIC
-Message-ID: <20101230085451.GF11721@angua.secretlab.ca>
-References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de>
- <1292600033-12271-6-git-send-email-bigeasy@linutronix.de>
+	Thu, 30 Dec 2010 03:57:33 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292600033-12271-6-git-send-email-bigeasy@linutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [24.27.19.110]
+In-Reply-To: <20101230075901.GA4115@glandium.org>
+References: <20101230075901.GA4115@glandium.org>
+Date: Thu, 30 Dec 2010 02:57:31 -0600
+Message-ID: <AANLkTim-GyefzpYwCqUhoKMQrVFiuE+NKRWYG493ZYP=@mail.gmail.com>
+Subject: Re: Containers and /proc/sys/vm/drop_caches
+From: Rob Landley <rob@landley.net>
+To: Mike Hommey <mh@glandium.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 04:33:43PM +0100, Sebastian Andrzej Siewior wrote:
-> The apic & ioapic have to be added to system early because
-> native_init_IRQ() requires it. In order to obtain the address of the
-> ioapic the device tree has to be unflattened because
-> of_address_to_resource() has to work.
-> The device tree is relocated to ensure it is always covered by the
-> kernel and the boot loader does not have to make assumptions about
-> kernel's memory layout.
-> 
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> ---
->  arch/x86/include/asm/prom.h |    7 +++
->  arch/x86/kernel/irqinit.c   |    2 +-
->  arch/x86/kernel/prom.c      |  123 +++++++++++++++++++++++++++++++++++++++++-
->  3 files changed, 128 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/prom.h b/arch/x86/include/asm/prom.h
-> index 9076ae4..3bc8ed5 100644
-> --- a/arch/x86/include/asm/prom.h
-> +++ b/arch/x86/include/asm/prom.h
-> @@ -22,10 +22,17 @@
->  #include <asm/irq_controller.h>
->  
->  #ifdef CONFIG_OF
-> +extern int of_ioapic;
-> +extern u64 initial_dtb;
->  extern void add_dtb(u64 data);
-> +void x86_dtb_find_config(void);
-> +void x86_dtb_get_config(unsigned int unused);
->  void add_interrupt_host(struct irq_domain *ih);
->  #else
->  static inline void add_dtb(u64 data) { }
-> +#define x86_dtb_find_config x86_init_noop
-> +#define x86_dtb_get_config x86_init_uint_noop
-> +#define of_ioapic 0
->  #endif
->  
->  extern char cmd_line[COMMAND_LINE_SIZE];
-> diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
-> index 149c87f..4cadf86 100644
-> --- a/arch/x86/kernel/irqinit.c
-> +++ b/arch/x86/kernel/irqinit.c
-> @@ -244,7 +244,7 @@ void __init native_init_IRQ(void)
->  			set_intr_gate(i, interrupt[i-FIRST_EXTERNAL_VECTOR]);
->  	}
->  
-> -	if (!acpi_ioapic)
-> +	if (!acpi_ioapic && !of_ioapic)
->  		setup_irq(2, &irq2);
->  
->  #ifdef CONFIG_X86_32
-> diff --git a/arch/x86/kernel/prom.c b/arch/x86/kernel/prom.c
-> index 53948cb..9cbb52b 100644
-> --- a/arch/x86/kernel/prom.c
-> +++ b/arch/x86/kernel/prom.c
-> @@ -6,15 +6,20 @@
->  #include <linux/interrupt.h>
->  #include <linux/list.h>
->  #include <linux/of.h>
-> +#include <linux/of_address.h>
->  #include <linux/of_platform.h>
->  #include <linux/slab.h>
->  
->  #include <asm/irq_controller.h>
-> +#include <asm/io_apic.h>
->  
-> +__initdata u64 initial_dtb;
->  char __initdata cmd_line[COMMAND_LINE_SIZE];
->  static LIST_HEAD(irq_domains);
->  static DEFINE_RAW_SPINLOCK(big_irq_lock);
->  
-> +int __initdata of_ioapic;
-> +
->  void add_interrupt_host(struct irq_domain *ih)
->  {
->  	unsigned long flags;
-> @@ -93,7 +98,119 @@ u64 __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
->  
->  void __init add_dtb(u64 data)
->  {
-> -	initial_boot_params = (struct boot_param_header *)
-> -		phys_to_virt((u64) (u32) data +
-> -				offsetof(struct setup_data, data));
-> +	initial_dtb = data + offsetof(struct setup_data, data);
-> +}
-> +
-> +static void __init dtb_lapic_setup(void)
-> +{
-> +#ifdef CONFIG_X86_LOCAL_APIC
-> +	if (apic_force_enable())
-> +		return;
-> +
-> +	smp_found_config = 1;
-> +	pic_mode = 1;
-> +	/* Required for ioapic registration */
-> +	set_fixmap_nocache(FIX_APIC_BASE, mp_lapic_addr);
-> +	if (boot_cpu_physical_apicid == -1U)
-> +		boot_cpu_physical_apicid = read_apic_id();
-> +
-> +	generic_processor_info(boot_cpu_physical_apicid,
-> +			GET_APIC_VERSION(apic_read(APIC_LVR)));
-> +#endif
-> +}
-> +
-> +#ifdef CONFIG_X86_IO_APIC
-> +static void __init dtb_add_ioapic(struct device_node *dn)
-> +{
-> +	unsigned int ioapic_id;
-> +	const __be32 *cell;
-> +	int len;
-> +	struct resource r;
-> +	int ret;
-> +
-> +	cell = of_get_property(dn, "id", &len);
-> +	if (!cell) {
-> +		printk(KERN_ERR "Node %s is missing id property.\n",
-> +				dn->full_name);
-> +		return;
-> +	}
-> +	ioapic_id = of_read_ulong(cell, len / 4);
-> +
-> +	ret = of_address_to_resource(dn, 0, &r);
-> +	if (ret) {
-> +		printk(KERN_ERR "Can't obtain address from node %s.\n",
-> +				dn->full_name);
-> +		return;
-> +	}
-> +	mp_register_ioapic(ioapic_id, r.start, gsi_top);
-> +}
-> +
-> +static void __init dtb_ioapic_setup(void)
-> +{
-> +	struct device_node *dn;
-> +
-> +	if (!smp_found_config)
-> +		return;
-> +
-> +	for_each_compatible_node(dn, NULL, "intel,ioapic")
-> +		dtb_add_ioapic(dn);
-> +
-> +	if (nr_ioapics) {
-> +		of_ioapic = 1;
-> +		return;
-> +	}
-> +	printk(KERN_ERR "Error: No information about IO-APIC in OF.\n");
-> +	smp_found_config = 0;
-> +}
-> +#else
-> +static void __init dtb_ioapic_setup(void) {}
-> +#endif
-> +
-> +static void __init dtb_apic_setup(void)
-> +{
-> +	dtb_lapic_setup();
-> +	dtb_ioapic_setup();
-> +}
-> +
-> +void __init x86_dtb_find_config(void)
-> +{
-> +	if (initial_dtb)
-> +		smp_found_config = 1;
-> +	else
-> +		printk(KERN_ERR "Missing device tree!.\n");
-> +}
-> +
-> +void __init x86_dtb_get_config(unsigned int unused)
-> +{
-> +	u32 size;
-> +	u32 map_len;
-> +	void *new_dtb;
-> +
-> +	if (!initial_dtb)
-> +		return;
-> +
-> +	map_len = max(PAGE_SIZE - (initial_dtb & ~PAGE_MASK),
-> +			(u64)sizeof(struct boot_param_header));
-> +
-> +	initial_boot_params = early_memremap(initial_dtb, map_len);
-> +	size = be32_to_cpu(initial_boot_params->totalsize);
-> +	if (map_len < size) {
-> +		early_iounmap(initial_boot_params, map_len);
-> +		initial_boot_params = early_memremap(initial_dtb, size);
+On Thu, Dec 30, 2010 at 1:59 AM, Mike Hommey <mh@glandium.org> wrote:
+> Hi,
+>
+> I noticed that from within a lxc container, writing "3" to
+> /proc/sys/vm/drop_caches would flush the host page cache. That sounds a
+> little dangerous for VPS offerings that would be based on lxc, as in one
+> VPS instance root user could impact the overall performance of the host.
 
-Add "map_len = size;" here eliminate the early_iounmap() dance done below.
+There's a containers@vger mailing list for this stuff, you might have better
+luck asking there.
 
-> +	}
-> +
-> +	new_dtb = alloc_bootmem(size);
-> +	memcpy(new_dtb, initial_boot_params, size);
-> +	if (map_len < size)
-> +		early_iounmap(initial_boot_params, size);
-> +	else
-> +		early_iounmap(initial_boot_params, map_len);
-> +
-> +	initial_boot_params = new_dtb;
-> +
-> +	/* root level address cells */
-> +	of_scan_flat_dt(early_init_dt_scan_root, NULL);
-> +
-> +	unflatten_device_tree();
-> +	dtb_apic_setup();
->  }
-> -- 
-> 1.7.3.2
-> 
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
+> I don't know about other containers but I've been told openvz isn't
+> subject to this problem.
+
+I've been coming up to speed on this area recently: openvz has a lot of stuff
+that isn't in the main kernel, but it's based on an approach that didn't get
+merged into the kernel (using new syscalls to control container stuff).
+
+Instead Google's rewrite of sgi's cgroup stuff went in for process grouping
+(based on the cgroup filesystem), and a half-dozen different types of
+namespaces are based on flags to clone(), and various other filesystems
+(proc, sys, devpts) grew some kind of -o newinstance flag (see
+http://lkml.indiana.edu/hypermail//linux/kernel/1012.3/00777.html for a pending
+example, although why they can't detect they're the first instance in
+the current
+container rather than containers having to be specially set up by the host, I
+still don't understand yet)... and so on.
+
+The rest of the stuff openvz does is still being redesigned to go into
+vanilla based on those mechanisms.  It seems a bit like squashfs: vanilla should
+be able to do this someday, but when it gets merged it may not be
+compatible with
+the out of tree version.  LXC is an attempt to make a userspace tool to drive
+containers in the vanilla kernel.  It doesn't do half of what openvz does yet,
+but they're working on it.
+
+Rob
