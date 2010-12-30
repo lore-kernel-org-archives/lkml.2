@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452Ab0L3XIO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 18:08:14 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:59254 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967Ab0L3XIJ (ORCPT
+	id S1752248Ab0L3XIH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 18:08:07 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:64019 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967Ab0L3XIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 18:08:09 -0500
+	Thu, 30 Dec 2010 18:08:05 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ZfLKtM2+CiteZK4V1gQ4WesVsSCveFKR9VoB5fsYU3rYn/gu4QVlGshwUUD97zz3mX
-         xRp+WJSyMVX6rFYwsDlo9jEQpGC16X3q0U+qw8v77edat1Ejl1WeOg71BS8UTiJQmAuv
-         Cm+yUqiygnEdp2nAj2WSRRgyPSeti0ip8R6PQ=
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Voss64lOxYFG73f2PnnBpEW6i2LvV5y5FLwSTufahThlz66ReTrQSW4dKqxwQL41+A
+         tRHrw0sXzvSOcBNd9vJPW5DYI/WYT0CgCmZBkZy1bRrBcaVVE9fl32VHpSm2F83zaUQt
+         rcrgj28Y/E2xcMFsqdHSpJMRIIRYkceqinPEs=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -21,12 +21,10 @@ Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-scsi@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
         devel@driverdev.osuosl.org, linux-usb@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 02/15]drivers:spi:dw_spi.c Typo change diable to disable.
-Date: Thu, 30 Dec 2010 15:07:51 -0800
-Message-Id: <1293750484-1161-2-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 01/15]arch:m68k:ifpsp060:src:fpsp.S Typo change diable to disable.
+Date: Thu, 30 Dec 2010 15:07:50 -0800
+Message-Id: <1293750484-1161-1-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.6.5.2.180.gc5b3e
-In-Reply-To: <1293750484-1161-1-git-send-email-justinmattock@gmail.com>
-References: <1293750484-1161-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -37,22 +35,22 @@ is correct or not.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/spi/dw_spi.c |    2 +-
+ arch/m68k/ifpsp060/src/fpsp.S |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/spi/dw_spi.c b/drivers/spi/dw_spi.c
-index 0838c79..7c3cf21 100644
---- a/drivers/spi/dw_spi.c
-+++ b/drivers/spi/dw_spi.c
-@@ -592,7 +592,7 @@ static void pump_transfers(unsigned long data)
- 		spi_set_clk(dws, clk_div ? clk_div : chip->clk_div);
- 		spi_chip_sel(dws, spi->chip_select);
- 
--		/* Set the interrupt mask, for poll mode just diable all int */
-+		/* Set the interrupt mask, for poll mode just disable all int */
- 		spi_mask_intr(dws, 0xff);
- 		if (imask)
- 			spi_umask_intr(dws, imask);
+diff --git a/arch/m68k/ifpsp060/src/fpsp.S b/arch/m68k/ifpsp060/src/fpsp.S
+index 73613b5..26e85e2 100644
+--- a/arch/m68k/ifpsp060/src/fpsp.S
++++ b/arch/m68k/ifpsp060/src/fpsp.S
+@@ -3881,7 +3881,7 @@ _fpsp_fline:
+ # FP Unimplemented Instruction stack frame and jump to that entry
+ # point.
+ #
+-# but, if the FPU is disabled, then we need to jump to the FPU diabled
++# but, if the FPU is disabled, then we need to jump to the FPU disabled
+ # entry point.
+ 	movc		%pcr,%d0
+ 	btst		&0x1,%d0
 -- 
 1.6.5.2.180.gc5b3e
 
