@@ -1,58 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755073Ab0L3TCs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 14:02:48 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:53557 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754051Ab0L3TCr (ORCPT
+	id S1755240Ab0L3TNn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 14:13:43 -0500
+Received: from nm19.bullet.mail.ac4.yahoo.com ([98.139.52.216]:37633 "HELO
+	nm19.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754941Ab0L3TNi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 14:02:47 -0500
-Message-ID: <4D1CD751.4000509@vflare.org>
-Date: Fri, 31 Dec 2010 00:32:41 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	Thu, 30 Dec 2010 14:13:38 -0500
+X-Yahoo-Newman-Id: 905709.79048.bm@omp1016.mail.ac4.yahoo.com
+Cc: recipient list not shown:;
+Message-ID: <674126.95417.qm@smtp101.sbc.mail.ac4.yahoo.com>
+X-Yahoo-SMTP: V8ewJX2swBByYnfVBE59jl819sxWnrvatP6Gpcb0
+X-YMail-OSG: CWYCt3EVM1nZMV7oLA7178UWgwL9R50hnkEOZM3Xgv62MwU
+ _W83TrFbUKrTHO5e8JkLJjdI1ig4eVcEEkTheemIES3RnSzh3PuddNGYRpm8
+ PfqS2sPB_n520WGPbGMPHeiCxIUb3FZgzwgtltAiagl6_4kl5tmOotju0Nnx
+ SSHFCO5nyGqxRqh4DzO8OV9E4BKoOYKfPQ2FH94wcWF2xjJ6mBSL1Dcfz8RE
+ QZPHTQ8bgwCuHJbTTY0F_PAhRPtv3bMdPLzkCoD7Dz7vFnISnChzYDqrUWS7
+ UX06k0lhmhX307L.BvBErHG5xvnaI6IE.C1QkdykwleHm1MWK6aUGkFzW1L6
+ HM.0QOFQUvFqw3KBcujHcS_smM0.QM3H7krZz.OCCRz0QsZ34FUdnnHtDZeO
+ 8l4bbpKe0ELYjJWaDzU4mgwbI3rpMwookqVKyjOGNkrcfo0q3AXDZ_qRcwcu
+ 29hek9EjGQD5PNbmOUznUl86rOBY423niaB5AQKVJtT_somrzvQE.2HDvG30
+ SZRWlTrgaDDF1Gmds5FVUykBh.gABosemIpGucYPDD3i6nAUnIuO0f.cD6A2
+ bxPb6UPElRm6FUNtqYpwGZROORGcSiJSMDjCuAaVgimYHaBiQ8KSqgNS7AEs
+ qSZnr
+X-Yahoo-Newman-Property: ymail-3
+Reply-To: <mrs.joywilford1@live.com>
+From: "Mrs. Joy Wilford" <kooman098@att.net>
+Subject: I URGE YOU TO THIS FOR THE WORK OF GOD AND HELP THE POOR?
+Date: Thu, 30 Dec 2010 14:13:08 +0100
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Greg KH <greg@kroah.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Dennis Jansen <dennis.jansen@web.de>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH][zram] Do not check for init flag before starting I/O
-References: <1293700078-5141-1-git-send-email-ngupta@vflare.org> <AANLkTi=R0sOvSZqu+Va=W2xJMKEw+kJXufuDwNe8o5NL@mail.gmail.com>
-In-Reply-To: <AANLkTi=R0sOvSZqu+Va=W2xJMKEw+kJXufuDwNe8o5NL@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_004A_01C2A9A6.668C65FA"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/30/2010 10:47 PM, Linus Torvalds wrote:
-> On Thu, Dec 30, 2010 at 1:07 AM, Nitin Gupta<ngupta@vflare.org>  wrote:
->> zram module is unusable without this fix.
->
-> .. and apparently it oopses without it.
->
-> See commit 7e24cce38a99f3 which added the code that you now remove.
-> You were cc'd on it, I don't think we got any reply to it.
->
+This is a multi-part message in MIME format.
 
-This commit shows oops in zram_inc_stat() which does not exist in 
-staging tree version of zram. Its actually a problem with zram version 
-as present in project's own repository where we allocate struct 
-zram_stats_cpu upon device initialization. OTOH, In mainline/staging 
-version of zram, we allocate struct stats upfront, so this oops cannot 
-happen in mainline version.
+------=_NextPart_000_004A_01C2A9A6.668C65FA
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
 
-So, this commit is not even applicable for mainline/staging tree.  My 
-bad, I didn't get a chance to review that patch.
+Read Attachment File For More Details About the donation Fund, Thank You.
 
-> So no. I'm not taking this without way more explanations of why the
-> original problem isn't a problem any more.
->
+------=_NextPart_000_004A_01C2A9A6.668C65FA
+Content-Type: application/octet-stream;
+	name="PLEASE ENDEAVOR TO USE IT ON CHURCHES AND ORPHANAGES.txt"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="PLEASE ENDEAVOR TO USE IT ON CHURCHES AND ORPHANAGES.txt"
 
-I will now end development on local project repository and sync it with 
-the mainline version, so all future development happens on 
-mainline/staging only, avoiding such confusions in future.
+RlJPTSBNUlMuIEpPWSBXSUxGT1JEIE9GIE5FVEhFUkxBTkRTDQpQTEVBU0Ug
+RU5ERUFWT1IgVE8gVVNFIElUIE9OIENIVVJDSEVTIEFORCBPUlBIQU5BR0VT
+DQoNCkRlYXIgSW4gVGhlIExvcmQsDQoNCkkgYW0gdGhlIGFib3ZlIG5hbWVk
+IHBlcnNvbiBmcm9tIE5ldGhlcmxhbmRzIC5JIGFtIG1hcnJpZWQgdG8gRHIu
+RnJhbmtseW4gV2lsZm9yZCwgd2hvIHdvcmtlZCB3aXRoIE5ldGhlcmxhbmRz
+IEVtYmFzc3kgaW4gdGhlIFVTQSBmb3IgbmluZSB5ZWFycyBiZWZvcmUgaGlz
+IGRlYXRoIG9uIERlY2VtYmVyIDIwMDkuV2Ugd2VyZSBtYXJyaWVkIGZvciBl
+bGV2ZW4geWVhcnMgd2l0aG91dCBhIGNoaWxkLiBIZSBkaWVkIGFmdGVyIGEg
+YnJpZWYgaWxsbmVzcyB0aGF0IGxhc3RlZCBmb3Igb25seSBmb3VyIGRheXMu
+IEJlZm9yZSBoaXMgZGVhdGgsIHdlIHdlcmUgYm90aCBib3JuIGFnYWluIENo
+cmlzdGlhbnMuIFdoZW4gbXkgbGF0ZSBodXNiYW5kIHdhcyBhbGl2ZSBoZSBk
+ZXBvc2l0ZWQgdGhlIHN1bSBvZiAkMjUuNiBNaWxsaW9uIERvbGxhcnMgd2l0
+aCBFcXVhdG9yaWFsIEJhbmsgb2YgRmxvcmlkYSBJbmMgaW4gVW5pdGVkIFN0
+YXRlcyBvZiBBbWVyaWNhLg0KDQpQcmVzZW50bHksIHRoaXMgbW9uZXkgaXMg
+c3RpbGwgd2l0aCB0aGUgYmFuayB0aGVyZSBpbiBVUy4gQW5kIHRoZSBtYW5h
+Z2VtZW50IGp1c3Qgd3JvdGUgbWUgYXMgdGhlIGJlbmVmaWNpYXJ5IHRvIHN0
+ZXAgZm9yd2FyZCAgZm9yIGNsYWltcyBvZiBteSBsYXRlIGh1c2JhbmQgIEZV
+TkQsIG9yIHJhdGhlciBpc3N1ZSBhIGxldHRlciBvZiBhdXRob3JpemF0aW9u
+IHRvIHNvbWVib2R5ICB0byByZWNlaXZlIGl0IG9uIG15IGJlaGFsZiBzaW5j
+ZSBJIGNhbm5vdCBjb21lIHRvIFVzLCBkdWUgdG8gbXkgaWxsbmVzcyBoZXJl
+IGluIGxvbmRvbiwgQW5kIGFnYWluLCBJJ20gd2l0aCBteSBsYXB0b3AgaW4g
+YSBob3NwaXRhbCB3aGVyZSBJIGhhdmUgIGJlZW4gdW5kZXJnb2luZyAgdHJl
+YXRtZW50IGZvciBjYW5jZXIgd2hpY2ggaGFkIGluZGljYXRlZCB0byBteSBE
+b2N0b3IgdGhhdCBJIHdvdWxkIG5vdCBsYXN0IGZvciB0aGUgbmV4dCBmb3Vy
+IG1vbnRocyBhY2NvcmRpbmcgdG8gaGlzIHN0YXRlbWVudC4NCg0KSXQgaXMg
+bXkgbGFzdCB3aXNoIHRvIHNlZSB0aGlzIG1vbmV5IGRpc3RyaWJ1dGVkIHRv
+IGNoYXJpdHkgb3JnYW5pemF0aW9ucywgY2h1cmNoZXMgYmVjYXVzZSBvdXIg
+cmVsYXRpdmVzIGhhdmUgcGx1bmRlcmVkIHNvIG11Y2ggb2Ygb3VyIHdlYWx0
+aCBzaW5jZSBteSBodXNiYW5kJ3MgZGVhdGggYW5kIG15IGlsbG5lc3MgdG9v
+LiAgSSBjYW5ub3QgbGl2ZSB3aXRoIHRoZSBhZ29ueSBvZiBlbnRydXN0aW5n
+IHRoaXMgaHVnZSByZXNwb25zaWJpbGl0eSB0byBhbnkgb2YgdGhlbS4gUGxl
+YXNlLCBJIGJlZyB5b3UgaW4gdGhlIG5hbWUgb2YgR29kIHRvIGhlbHAgbWUg
+YW5kIHV0aWxpemUgdGhlIGFib3ZlIG1lbnRpb25lZCBmdW5kcyBhbmQgaXRz
+IGludGVyZXN0IGFuZCBkaXN0cmlidXRlIGl0IGFjY29yZGluZ2x5Lg0KDQpI
+YXZpbmcga25vd25zIG15IENvbmRpdGlvbiBJIGRlY2lkZWQgdG8gZG9uYXRl
+IHRoaXMgZnVuZCB0byBjaHVyY2ggb3IgYSBDaHJpc3RpYW4gaW5kaXZpZHVh
+bCB0aGF0IHdpbGwgdXRpbGl6ZSB0aGlzIG1vbmV5IHRoZSB3YXkgSSBhbSBn
+b2luZyB0byBpbnN0cnVjdCBoZXJlLiBJIHdhbnQgYSBwZXJzb24gdGhhdCBo
+YXMgR29kIGZlYXJpbmcgaW4gaGltL2hlci4gU29tZW9uZSB0aGF0IHdpbGwg
+dXNlIHRoaXMgbW9uZXkgb24gY2h1cmNoZXMsIG9yIG9ycGhhbmFnZXMgZXRj
+IHByb3BhZ2F0aW5nIHRoZSB3b3JkIG9mIEdvZCBhbmQgdG8gZW5zdXJlIHRo
+YXQgdGhlIGhvdXNlIG9mIEdvZCBpcyBtYWludGFpbmVkLiBCZWNhdXNlIG15
+IEJpYmxlIG1hZGUgbWUgdG8gdW5kZXJzdGFuZCB0aGF0IGJsZXNzZWQgaXMg
+dGhlIGhhbmQgdGhhdCBnaXZldGguIEkgdG9vayB0aGlzIGRlY2lzaW9uIGJl
+Y2F1c2UgSSBkb26SdCBoYXZlIGFueSBjaGlsZCB0aGF0IHdpbGwgaW5oZXJp
+dCB0aGlzIG1vbmV5LiBNeSBodXNiYW5kIHJlbGF0aXZlcyBhcmUgbm90IENo
+cmlzdGlhbnMgYW5kIEkgRG9uJ3Qgd2FudCB0aGlzIGhhcmQgZWFybmVkIG1v
+bmV5IHRvIGJlIG1pc3VzZWQgYnkgVW5iZWxpZXZlcnMuIEkgZG9uJ3Qgd2Fu
+dCBhIFNpdHVhdGlvbiB3aGVyZSB0aGlzIG1vbmV5IHdpbGwgYmUgdXNlZCBp
+biBhbiB1bmdvZGx5IE1hbm5lci4NCg0KTXkgaGFwcGluZXNzIGlzIHRoYXQg
+SSBsaXZlZCBhIGxpZmUgb2YgYSB3b3J0aHkgQ2hyaXN0aWFuLiBTbyBJIGFt
+IG5vdCBhZnJhaWQgb2YgZGVhdGggaGVuY2UgSSBrbm93IHdoZXJlIEkgYW0g
+Z29pbmcuIEkga25vdyB0aGF0IEkgYW0gZ29pbmcgdG8gYmUgaW4gdGhlIEJv
+c29tIG9mIHRoZSBMb3JkLiBFeG9kdXMgMTQgVlMgMTQgc2F5cyB0aGF0OyB0
+aGUgbG9yZCB3aWxsIGZpZ2h0IG15IGNhc2UgYW5kIEkgc2hhbGwgaG9sZCBt
+eSBwZWFjZS4gV2hvZXZlciB0aGF0IHdhbnRzIHRvIHNlcnZlIHRoZSBMb3Jk
+IG11c3Qgc2VydmUgaGltIGluIHNwaXJpdCBhbmQgdHJ1dGguIFBsZWFzZSBh
+bHdheXMgYmUgcHJheWVyZnVsIGFsbCB0aHJvdWdoIHlvdXIgbGlmZS4NCg0K
+QXMgc29vbiBBcyBJIHJlY2VpdmUgeW91ciByZXBseSBJIHNoYWxsIGludHJv
+ZHVjZSB5b3UgdG8gb3VyIGZhbWlseSBhdHRvcm5leSB0byBpbnRyb2R1Y2Ug
+eW91IHRvIHRoZSBiYW5rIHdoZXJlIHRoZSBGdW5kIGlzIGJlaW5nIGRlcG9z
+aXRlZCBieSBteSBsYXRlIEh1c2JhbmQuIEkgd2lsbCBBbHNvIGlzc3VlIHlv
+dSBhIGxldHRlciBvZiBhdXRob3JpemF0aW9uIHRoYXQgd2lsbCBlbXBvd2Vy
+IFlvdSBhcyB0aGUgcmlnaHRmdWwgIGJlbmVmaWNpYXJ5ICBuZXh0IG9mIGtp
+bSB0byBteSBsYXRlIGh1c2JhbmQsIEkgd2FudCB5b3UgYW5kIHRoZSBjaHVy
+Y2ggdG8gYWx3YXlzIHByYXkgZm9yIG1lIGJlY2F1c2UgdGhlIGxvcmQgaXMg
+bXkgU2hlcGhlcmQNCg0KUGxlYXNlIEkgZG9uknQgbmVlZCBhbnkgdGVsZXBo
+b25lIENvbW11bmljYXRpb24gaW4gdGhpcyByZWdhcmQgYmVjYXVzZSBvZiBt
+eSBoZWFsdGggYW5kIHRoZSBwcmVzZW5jZSBvZiBteSBodXNiYW5kJ3MgcmVs
+YXRpdmVzIGFyb3VuZCBtZSBhbHdheXMuIEkgZG9uknQgd2FudCB0aGVtIHRv
+IGtub3cgYWJvdXQgdGhpcyBEZXZlbG9wbWVudC4gQW55IGRlbGF5IGluIHlv
+dXIgUmVwbHkgd2lsbCBnaXZlIG1lIHJvb20gaW4gc2VhcmNoaW5nIGZvciBh
+IGNodXJjaCBvciBDaHJpc3RpYW4gaW5kaXZpZHVhbCBmb3IgdGhpcyBzYW1l
+IHB1cnBvc2Ugc28geW91ciB1cmdlbnQgcmVzcG9uc2UgaXMgbmVlZGVkIGlt
+bWVkaWF0ZWx5Lg0KDQpLaW5kbHkgeW91IHJlcGx5IGRpcmVjdCB0byBteSBw
+cml2YXRlIGVtYWlsIGZvciBmdXJ0aGVyIGRldGFpbHMobXJzLmpveXdpbGZv
+cmQxQGxpdmUuY29tKSANCg0KWW91cnMgU2lzdGVyIGluIHRoZSBMb3JkLA0K
+TXJzLiBKb3kgV2lsZm9yZCAgDQogDQogDQogDQo=
 
-
-Nitin
+------=_NextPart_000_004A_01C2A9A6.668C65FA--
