@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755030Ab0L3SRB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 13:17:01 -0500
-Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:60591 "HELO
-	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754614Ab0L3SRA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 13:17:00 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=V76iWoJsT58sKtA9nZZa7qWnNJAZc1TAXw6OQRVeGTjXpkw7MWBe979ErbCKJS/5RzHeJa5ccWRgC02ZzJ+tMtVkaVQbBZhJXS7krj2xWkaradvUkRKersNOQgPYPekw;
-Date: Thu, 30 Dec 2010 10:16:58 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Alex Riesen <raa.lkml@gmail.com>
-Subject: Re: Linux 2.6.37-rc8 (no fb)
-Message-ID: <20101230101658.1d3a7837@jbarnes-desktop>
-In-Reply-To: <Pine.LNX.4.64.1012301045170.5207@boston.corp.fedex.com>
-References: <Pine.LNX.4.64.1012301045170.5207@boston.corp.fedex.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755015Ab0L3SVW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 13:21:22 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56419 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754812Ab0L3SVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Dec 2010 13:21:22 -0500
+Message-ID: <4D1CCD48.5000702@zytor.com>
+Date: Thu, 30 Dec 2010 10:19:52 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Tejun Heo <htejun@gmail.com>
+CC: Christoph Lameter <cl@linux.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: x86: Use this_cpu_has for thermal_interrupt
+References: <4D07A7CB.7010205@zytor.com> <4D07A95C.7030703@kernel.org> <4D0814AF.7080209@zytor.com> <4D08ECEF.3040909@kernel.org> <4D08EE57.8010602@zytor.com> <4D08EF4E.8070403@kernel.org> <4D0A3AF2.50508@gmail.com> <alpine.DEB.2.00.1012161212130.21588@router.home> <4D0CD4C6.5010309@gmail.com> <4D0FFB33.8020309@zytor.com> <20101230112933.GB18831@htj.dyndns.org>
+In-Reply-To: <20101230112933.GB18831@htj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Dec 2010 10:49:33 +0800 (SGT)
-Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+On 12/30/2010 03:29 AM, Tejun Heo wrote:
+> On Mon, Dec 20, 2010 at 04:56:19PM -0800, H. Peter Anvin wrote:
+>> On 12/18/2010 07:35 AM, Tejun Heo wrote:
+>>> On 12/16/2010 07:13 PM, Christoph Lameter wrote:
+>>>> It is more effective to use a segment prefix instead of calculating the
+>>>> address of the current cpu area amd then testing flags.
+>>>>
+>>>> Signed-off-by: Christoph Lameter <cl@linux.com>
+>>>
+>>> For this and the other x86 patch.
+>>>
+>>> Acked-by: Tejun Heo <tj@kernel.org>
+>>>
+>>> I suppose these two x86 patches and the gameport one would go through
+>>> the x86 tree, right?
+>>>
+>>
+>> Yes, as long as I can get a stable base to pull into -tip.
+> 
+> I suppose I should take the two x86 and the gameport patches here into
+> percpu tree with your ACKs too.  Would that be okay with you?
+> 
 
-> 
-> On Thu, Dec 30, 2010 at 4:16 AM, Jesse Barnes <jbarnes@virtuousgeek.org> 
-> wrote:
-> 
-> > Randy, Jeff and Alex, does the below help at all?  If so, it may be the
-> > minimal fix we want for 2.6.37.
-> 
-> Jesse,
-> 
-> Yes, that worked for me. I improved on the patch a bit below.
-> 
-> Thanks,
-> Jeff
-> 
-> 
-> --- a/drivers/gpu/drm/i915/intel_bios.c	2010-12-29 13:35:57.000000000 +0800
-> +++ a/drivers/gpu/drm/i915/intel_bios.c	2010-12-30 10:18:39.000000000 +0800
-> @@ -262,7 +262,10 @@
->   	if (general) {
->   		dev_priv->int_tv_support = general->int_tv_support;
->   		dev_priv->int_crt_support = general->int_crt_support;
-> -		dev_priv->lvds_use_ssc = general->enable_ssc;
-> +
-> +		/* force disable until we can parse this correctly */
-> +		dev_priv->lvds_use_ssc = (IS_GEN5(dev) || IS_GEN6(dev)) ?
-> +			0 : general->enable_ssc;
+Yes, please.
 
-For some expressions, the ternary operator is more compact & readable.
-For others (like this one imo) it doesn't really add anything, so I
-prefer the if statement.  In this case I think the if statement is more
-readable since it communicates that we're overriding the default value
-on certain generations (i.e. it's a standalone clause).
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+
+	-hpa
 
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
