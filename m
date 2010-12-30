@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194Ab0L3XIm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 18:08:42 -0500
+	id S1753335Ab0L3XIr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 18:08:47 -0500
 Received: from mail-yw0-f46.google.com ([209.85.213.46]:58873 "EHLO
 	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750847Ab0L3XIj (ORCPT
+	with ESMTP id S1753213Ab0L3XIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 18:08:39 -0500
+	Thu, 30 Dec 2010 18:08:43 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=tbUDs50I+Bh4F+unsNlJN9c9yoNWABCkf2yD0f8toH8bQdbrb5WS+/CrKhA9ua3s8J
-         VsAx9xAOWFPw7GBFmNmJeTzIGuES1qOjazLXecmToqPSXVpoJEbQTMLVYrwsJOchRoQT
-         CwpXiXBNv5BrVDqDpB3SR74zcnzsn/AVzaY18=
+        b=XGbl31MD/iteDsyNEcwQ3mCdZU3LUKJt+U9gos3aPPQt0IAJFpN6ouJiu7nkyOBNS5
+         GsKcbY2ppeVydZAM3mwdzuOp9/fE/Dybjb9OVxiZ3MbKntoG0GZbLjtT4+cZ50IBRpex
+         RgTL0oIH80sVrCZHhJ8S28vCGEOzUWEsgO+9I=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -21,11 +21,11 @@ Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-scsi@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
         devel@driverdev.osuosl.org, linux-usb@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 10/15]drivers:usb:gadget:langwell Typo change diable to disable.
-Date: Thu, 30 Dec 2010 15:07:59 -0800
-Message-Id: <1293750484-1161-10-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 11/15]drivers:media:video:cx18:cx23418.h Typo change diable to disable.
+Date: Thu, 30 Dec 2010 15:08:00 -0800
+Message-Id: <1293750484-1161-11-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.6.5.2.180.gc5b3e
-In-Reply-To: <1293750484-1161-9-git-send-email-justinmattock@gmail.com>
+In-Reply-To: <1293750484-1161-10-git-send-email-justinmattock@gmail.com>
 References: <1293750484-1161-1-git-send-email-justinmattock@gmail.com>
  <1293750484-1161-2-git-send-email-justinmattock@gmail.com>
  <1293750484-1161-3-git-send-email-justinmattock@gmail.com>
@@ -35,41 +35,33 @@ References: <1293750484-1161-1-git-send-email-justinmattock@gmail.com>
  <1293750484-1161-7-git-send-email-justinmattock@gmail.com>
  <1293750484-1161-8-git-send-email-justinmattock@gmail.com>
  <1293750484-1161-9-git-send-email-justinmattock@gmail.com>
+ <1293750484-1161-10-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 The below patch fixes a typo "diable" to "disable". Please let me know if this 
-is correct or not. 
+is correct or not.
 
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/usb/gadget/langwell_udc.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/media/video/cx18/cx23418.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/usb/gadget/langwell_udc.c b/drivers/usb/gadget/langwell_udc.c
-index b8ec954..dad278f 100644
---- a/drivers/usb/gadget/langwell_udc.c
-+++ b/drivers/usb/gadget/langwell_udc.c
-@@ -3063,7 +3063,7 @@ static void langwell_udc_remove(struct pci_dev *pdev)
+diff --git a/drivers/media/video/cx18/cx23418.h b/drivers/media/video/cx18/cx23418.h
+index 2c00980..7e40035 100644
+--- a/drivers/media/video/cx18/cx23418.h
++++ b/drivers/media/video/cx18/cx23418.h
+@@ -177,7 +177,7 @@
+    IN[0] - Task handle.
+    IN[1] - luma type: 0 = disable, 1 = 1D horizontal only, 2 = 1D vertical only,
+ 		      3 = 2D H/V separable, 4 = 2D symmetric non-separable
+-   IN[2] - chroma type: 0 - diable, 1 = 1D horizontal
++   IN[2] - chroma type: 0 - disable, 1 = 1D horizontal
+    ReturnCode - One of the ERR_CAPTURE_... */
+ #define CX18_CPU_SET_SPATIAL_FILTER_TYPE     	(CPU_CMD_MASK_CAPTURE | 0x000C)
  
- 	kfree(dev->ep);
- 
--	/* diable IRQ handler */
-+	/* disable IRQ handler */
- 	if (dev->got_irq)
- 		free_irq(pdev->irq, dev);
- 
-@@ -3383,7 +3383,7 @@ static int langwell_udc_suspend(struct pci_dev *pdev, pm_message_t state)
- 	/* disable interrupt and set controller to stop state */
- 	langwell_udc_stop(dev);
- 
--	/* diable IRQ handler */
-+	/* disable IRQ handler */
- 	if (dev->got_irq)
- 		free_irq(pdev->irq, dev);
- 	dev->got_irq = 0;
 -- 
 1.6.5.2.180.gc5b3e
 
