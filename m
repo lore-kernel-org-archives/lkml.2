@@ -1,213 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231Ab0L3Mb1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 07:31:27 -0500
-Received: from router-fw.net-space.pl ([89.174.63.77]:50445 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761Ab0L3Mb0 (ORCPT
+	id S1752541Ab0L3MkB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 07:40:01 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34061 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750786Ab0L3MkA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 07:31:26 -0500
-Date: Thu, 30 Dec 2010 13:30:13 +0100
-From: Daniel Kiper <dkiper@net-space.pl>
-To: David Rientjes <rientjes@google.com>
-Cc: Daniel Kiper <dkiper@net-space.pl>, ian.campbell@citrix.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi.kleen@intel.com>, haicheng.li@linux.intel.com,
-        fengguang.wu@intel.com, jeremy@goop.org, konrad.wilk@oracle.com,
-        dan.magenheimer@oracle.com, v.tolstov@selfip.ru,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH R2 1/7] mm: Add add_registered_memory() to memory hotplug API
-Message-ID: <20101230123013.GA12765@router-fw-old.local.net-space.pl>
-References: <20101229170212.GF2743@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1012291643290.6040@chino.kir.corp.google.com>
-Mime-Version: 1.0
-Content-Type: multipart/mixed; boundary="nFreZHaLTZJo0R7j"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1012291643290.6040@chino.kir.corp.google.com>
-User-Agent: Mutt/1.3.28i
+	Thu, 30 Dec 2010 07:40:00 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jean Delvare <khali@linux-fr.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-i2c@vger.kernel.org, Rabin Vincent <rabin@rab.in>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] i2c: Factor out runtime suspend checks from PM operations
+Date: Thu, 30 Dec 2010 12:40:13 +0000
+Message-Id: <1293712813-4090-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When devices use dev_pm_ops the I2C API is implementing standard functionality
+for integration with runtime PM and for checking for the presence of a per
+device op. The PM core provides pm_generic_ functions implementing this
+behaviour - use them to reduce coupling with future PM updates.
 
---nFreZHaLTZJo0R7j
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-Hi,
-
-On Wed, Dec 29, 2010 at 04:50:25PM -0800, David Rientjes wrote:
-> On Wed, 29 Dec 2010, Daniel Kiper wrote:
->
-> > diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-> > index 864035f..2458b2f 100644
-> > --- a/include/linux/memory_hotplug.h
-> > +++ b/include/linux/memory_hotplug.h
-> > @@ -203,6 +203,7 @@ static inline int is_mem_section_removable(unsigned long pfn,
-> >  #endif /* CONFIG_MEMORY_HOTREMOVE */
-> >
-> >  extern int mem_online_node(int nid);
-> > +extern int add_registered_memory(int nid, u64 start, u64 size);
-> >  extern int add_memory(int nid, u64 start, u64 size);
-> >  extern int arch_add_memory(int nid, u64 start, u64 size);
-> >  extern int remove_memory(u64 start, u64 size);
-> > diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> > index dd186c1..b642f26 100644
-> > --- a/mm/memory_hotplug.c
-> > +++ b/mm/memory_hotplug.c
-> > @@ -509,20 +509,12 @@ out:
-> >  }
-> >
-> >  /* we are OK calling __meminit stuff here - we have CONFIG_MEMORY_HOTPLUG */
-> > -int __ref add_memory(int nid, u64 start, u64 size)
-> > +static int __ref __add_memory(int nid, u64 start, u64 size)
-> >  {
-> >  	pg_data_t *pgdat = NULL;
-> >  	int new_pgdat = 0;
-> > -	struct resource *res;
-> >  	int ret;
-> >
-> > -	lock_system_sleep();
-> > -
-> > -	res = register_memory_resource(start, size);
-> > -	ret = -EEXIST;
-> > -	if (!res)
-> > -		goto out;
-> > -
-> >  	if (!node_online(nid)) {
-> >  		pgdat = hotadd_new_pgdat(nid, start);
-> >  		ret = -ENOMEM;
->
-> Looks like this patch was based on a kernel before 2.6.37-rc4 since it
-> doesn't have 20d6c96b5f (mem-hotplug: introduce {un}lock_memory_hotplug())
-
-As I wrote in "[PATCH R2 0/7] Xen memory balloon driver with memoryhotplug
-support" this patch applies to Linux kernel Ver. 2.6.36.
-
-> Lots of unnecessary empty lines here, and scripts/checkpatch.pl says there
-> are trailing whitespaces as well.
-
-Strange. I tested it with this script and I received:
-
-0001-mm-Add-add_registered_memory-to-memory-hotplug-API.txt has no
-obvious style problems and is ready for submission.
-
-I do not know why my e-mail was mangled. For your convenience
-I am sending this patch as attachment.
-
-Empty lines are added for better readability (it is my
-opinion) however, I do not insist to leave this patch
-with that formating.
-
-Daniel
-
---nFreZHaLTZJo0R7j
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="0001-mm-Add-add_registered_memory-to-memory-hotplug-API.txt"
-
-add_registered_memory() adds memory ealier registered
-as memory resource. It is required by memory hotplug
-for Xen guests, however it could be used also by other
-modules.
-
-Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- include/linux/memory_hotplug.h |    1 +
- mm/memory_hotplug.c            |   50 ++++++++++++++++++++++++++++++---------
- 2 files changed, 39 insertions(+), 12 deletions(-)
+ drivers/i2c/i2c-core.c |   68 ++++++++++++++---------------------------------
+ 1 files changed, 20 insertions(+), 48 deletions(-)
 
-diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-index 864035f..2458b2f 100644
---- a/include/linux/memory_hotplug.h
-+++ b/include/linux/memory_hotplug.h
-@@ -203,6 +203,7 @@ static inline int is_mem_section_removable(unsigned long pfn,
- #endif /* CONFIG_MEMORY_HOTREMOVE */
- 
- extern int mem_online_node(int nid);
-+extern int add_registered_memory(int nid, u64 start, u64 size);
- extern int add_memory(int nid, u64 start, u64 size);
- extern int arch_add_memory(int nid, u64 start, u64 size);
- extern int remove_memory(u64 start, u64 size);
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index dd186c1..b642f26 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -509,20 +509,12 @@ out:
- }
- 
- /* we are OK calling __meminit stuff here - we have CONFIG_MEMORY_HOTPLUG */
--int __ref add_memory(int nid, u64 start, u64 size)
-+static int __ref __add_memory(int nid, u64 start, u64 size)
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index 6b4cc56..6793c51 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -196,88 +196,60 @@ static int i2c_device_pm_suspend(struct device *dev)
  {
- 	pg_data_t *pgdat = NULL;
- 	int new_pgdat = 0;
--	struct resource *res;
- 	int ret;
+ 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
  
--	lock_system_sleep();
+-	if (pm) {
+-		if (pm_runtime_suspended(dev))
+-			return 0;
+-		else
+-			return pm->suspend ? pm->suspend(dev) : 0;
+-	}
 -
--	res = register_memory_resource(start, size);
--	ret = -EEXIST;
--	if (!res)
--		goto out;
--
- 	if (!node_online(nid)) {
- 		pgdat = hotadd_new_pgdat(nid, start);
- 		ret = -ENOMEM;
-@@ -556,14 +548,48 @@ int __ref add_memory(int nid, u64 start, u64 size)
- 	goto out;
- 
- error:
--	/* rollback pgdat allocation and others */
-+	/* rollback pgdat allocation */
- 	if (new_pgdat)
- 		rollback_node_hotadd(nid, pgdat);
--	if (res)
--		release_memory_resource(res);
-+
-+out:
-+	return ret;
-+}
-+
-+int add_registered_memory(int nid, u64 start, u64 size)
-+{
-+	int ret;
-+
-+	lock_system_sleep();
-+	ret = __add_memory(nid, start, size);
-+	unlock_system_sleep();
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(add_registered_memory);
-+
-+int add_memory(int nid, u64 start, u64 size)
-+{
-+	int ret = -EEXIST;
-+	struct resource *res;
-+
-+	lock_system_sleep();
-+
-+	res = register_memory_resource(start, size);
-+
-+	if (!res)
-+		goto out;
-+
-+	ret = __add_memory(nid, start, size);
-+
-+	if (!ret)
-+		goto out;
-+
-+	release_memory_resource(res);
- 
- out:
- 	unlock_system_sleep();
-+
- 	return ret;
+-	return i2c_legacy_suspend(dev, PMSG_SUSPEND);
++	if (pm)
++		return pm_generic_suspend(dev);
++	else
++		return i2c_legacy_suspend(dev, PMSG_SUSPEND);
  }
- EXPORT_SYMBOL_GPL(add_memory);
+ 
+ static int i2c_device_pm_resume(struct device *dev)
+ {
+ 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+-	int ret;
+ 
+ 	if (pm)
+-		ret = pm->resume ? pm->resume(dev) : 0;
++		return pm_generic_resume(dev);
+ 	else
+-		ret = i2c_legacy_resume(dev);
+-
+-	return ret;
++		return i2c_legacy_resume(dev);
+ }
+ 
+ static int i2c_device_pm_freeze(struct device *dev)
+ {
+ 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+ 
+-	if (pm) {
+-		if (pm_runtime_suspended(dev))
+-			return 0;
+-		else
+-			return pm->freeze ? pm->freeze(dev) : 0;
+-	}
+-
+-	return i2c_legacy_suspend(dev, PMSG_FREEZE);
++	if (pm)
++		return pm_generic_freeze(dev);
++	else
++		return i2c_legacy_suspend(dev, PMSG_FREEZE);
+ }
+ 
+ static int i2c_device_pm_thaw(struct device *dev)
+ {
+ 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+ 
+-	if (pm) {
+-		if (pm_runtime_suspended(dev))
+-			return 0;
+-		else
+-			return pm->thaw ? pm->thaw(dev) : 0;
+-	}
+-
+-	return i2c_legacy_resume(dev);
++	if (pm)
++		return pm_generic_thaw(dev);
++	else
++		return i2c_legacy_resume(dev);
+ }
+ 
+ static int i2c_device_pm_poweroff(struct device *dev)
+ {
+ 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+ 
+-	if (pm) {
+-		if (pm_runtime_suspended(dev))
+-			return 0;
+-		else
+-			return pm->poweroff ? pm->poweroff(dev) : 0;
+-	}
+-
+-	return i2c_legacy_suspend(dev, PMSG_HIBERNATE);
++	if (pm)
++		return pm_generic_poweroff(dev);
++	else
++		return i2c_legacy_suspend(dev, PMSG_HIBERNATE);
+ }
+ 
+ static int i2c_device_pm_restore(struct device *dev)
+ {
+ 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+-	int ret;
+ 
+ 	if (pm)
+-		ret = pm->restore ? pm->restore(dev) : 0;
++		return pm_generic_restore(dev);
+ 	else
+-		ret = i2c_legacy_resume(dev);
+-
+-	if (!ret) {
+-		pm_runtime_disable(dev);
+-		pm_runtime_set_active(dev);
+-		pm_runtime_enable(dev);
+-	}
+-
+-	return ret;
++		return i2c_legacy_resume(dev);
+ }
+ #else /* !CONFIG_PM_SLEEP */
+ #define i2c_device_pm_suspend	NULL
 -- 
-1.4.4.4
+1.7.2.3
 
-
---nFreZHaLTZJo0R7j--
