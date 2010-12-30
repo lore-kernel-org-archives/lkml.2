@@ -1,38 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754955Ab0L3RRy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 12:17:54 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33134 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754897Ab0L3RRx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 12:17:53 -0500
+	id S1754976Ab0L3Ri4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 12:38:56 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:60343 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754942Ab0L3Riz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Dec 2010 12:38:55 -0500
+Date: Thu, 30 Dec 2010 18:38:47 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Robert Richter <robert.richter@amd.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "oprofile-list@lists.sourceforge.net" 
+	<oprofile-list@lists.sourceforge.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Subject: Re: [GIT PULL] oprofile fixes for v2.6.37
+Message-ID: <20101230173847.GA2734@elte.hu>
+References: <20101229144702.GL4739@erda.amd.com>
+ <20101229163743.GA27109@elte.hu>
+ <20101230130853.GA21073@erda.amd.com>
 MIME-Version: 1.0
-In-Reply-To: <1293700078-5141-1-git-send-email-ngupta@vflare.org>
-References: <1293700078-5141-1-git-send-email-ngupta@vflare.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 30 Dec 2010 09:17:31 -0800
-Message-ID: <AANLkTi=R0sOvSZqu+Va=W2xJMKEw+kJXufuDwNe8o5NL@mail.gmail.com>
-Subject: Re: [PATCH][zram] Do not check for init flag before starting I/O
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Greg KH <greg@kroah.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Dennis Jansen <dennis.jansen@web.de>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101230130853.GA21073@erda.amd.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 30, 2010 at 1:07 AM, Nitin Gupta <ngupta@vflare.org> wrote:
-> zram module is unusable without this fix.
 
-.. and apparently it oopses without it.
+* Robert Richter <robert.richter@amd.com> wrote:
 
-See commit 7e24cce38a99f3 which added the code that you now remove.
-You were cc'd on it, I don't think we got any reply to it.
+> On 29.12.10 11:37:43, Ingo Molnar wrote:
+> 
+> > Hm, i'm not sure this fix is correct:
+> > 
+> >  static int op_amd_init(struct oprofile_operations *ops)
+> >  {
+> > +       /*
+> > +        * init_ibs() preforms implictly cpu-local operations, so pin this
+> > +        * thread to its current CPU
+> > +        */
+> > +       preempt_disable();
+> >         init_ibs();
+> > +       preempt_enable();
+> > 
+> > If init_ibs() is indeed CPU local, then it needs to be called on all CPUs. Does 
+> > that happen and if not why not? AFAICS it's only called on one CPU.
+> 
+> It is correct to run init_ibs() only on one cpu.  It only checks the ibs 
+> capabilities and sets up pci devices (if necessary). It runs only on one cpu but 
+> operates with the local APIC and some MSRs, thus it is better to disable 
+> preemption.
 
-So no. I'm not taking this without way more explanations of why the
-original problem isn't a problem any more.
+Ok, but in that case the prempt_disable()/enable() should be put into init_ibs(), 
+not be open-coded at the caller like that.
 
-                            Linus
+The comment about its cpu-localness could move to init_ibs() as well.
+
+Thanks,
+
+	Ingo
