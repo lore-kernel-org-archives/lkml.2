@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925Ab0L3WwM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 17:52:12 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:45396 "EHLO ogre.sisk.pl"
+	id S1752053Ab0L3WxG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 17:53:06 -0500
+Received: from mga09.intel.com ([134.134.136.24]:7927 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750967Ab0L3WwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 17:52:11 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: carlos palma <carlos.palma@ono.com>
-Subject: Re: [Bug #25402] kernel (2.6.37-8-generic_amd64) panic on boot (with message "map_single: bounce buffer is not DMA'ble) - possible regression !!!
-Date: Thu, 30 Dec 2010 23:51:48 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc8+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-References: <96DQe4a_2tH.A.4RE.497GNB@chimera> <sV7shrPOroO.A.txE.R-7GNB@chimera> <4D1CFA99.1070701@ono.com>
-In-Reply-To: <4D1CFA99.1070701@ono.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012302351.48156.rjw@sisk.pl>
+	id S1751392Ab0L3WxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Dec 2010 17:53:04 -0500
+Message-Id: <b9dded$hh72bl@orsmga002.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,251,1291622400"; 
+   d="scan'208";a="588482933"
+Date: Thu, 30 Dec 2010 22:53:00 +0000
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [git pull] i915 fixes
+Cc: Dave Airlie <airlied@redhat.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTik4j48eUg=EuL1OzcjQ2hXRGMYNwQcKxpudxKxB@mail.gmail.com>
+References: <0d30dc$kjvpke@orsmga001.jf.intel.com> <20101230140103.1189c545@jbarnes-desktop> <AANLkTik4j48eUg=EuL1OzcjQ2hXRGMYNwQcKxpudxKxB@mail.gmail.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, December 30, 2010, carlos palma wrote:
-> I can confirm that this "regression" still exists with the kernel 
-> 2.6.37-rc8.
-> The Call Trace is basically the same:
+On Thu, 30 Dec 2010 14:29:34 -0800, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> On Thu, Dec 30, 2010 at 2:01 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> >
+> > Did you want to disable SSC entirely on gen5+ just so we can get all
+> > the known machines working?  It's possible it could add some wifi or
+> > sound interference, but that's better than not having a display (most
+> > of the time).
 > 
-> ...
-> Kernel panic - not syncing: map_single ...
-> Pid 935, comm: NetworkManager Tainted
-> call trace
-> panic+oxbf/0x200
-> ? default_spin_lock_flags+0x9/0x10
-> ?swiotlb_tlb_map_single+0x1ce/0x250
-> ?map_single+0x46/0x60
-> swiotlb_map_page+0xa6/0xf
-> ... and then the FREEZE ... only a hard reset brings to live (with 
-> 2.6.36-2) Linux.
+> It would be sad to possibly add more electrical noise to machines that
+> already work with it, but at the same time I do think that "working
+> screen" tends to be a lot more important than "try to avoid RF noise".
+> 
+> Also, are you sure it's really the fact that we enable spread-spectrum
+> that causes this? The code is really confused, and seems to mix up
+> "lvds_use_ssc" not just with the enabling of SSC, but it also with how
+> impacts the reference clock itself.
+> 
+> And it impacts the reference clock in really odd ways, that look buggy
+> and confusing, where the tests are repeated in multiple places: first
+> to set the reference frequency, and then later to set the bits that
+> choose the reference input frequency.
+> 
+> In particular, look at how 'refclk' is calculated in
+> intel_crtc_mode_set(), vs how we actually set the input frequency
+> later in the function. The two don't actually *match*. That sounds
+> bogus to me - since it means that the pll values have been calculated
+> for a reference clock that isn't actually used. No?
+> 
+> Look at the code for the "!is_lvds" case, for example. It uses
+> "IS_GEN2()" to determine what refclk to use, but then when setting the
+> PLL_REF_INPUT_xyz bits, we actually take "is_tv" into account - which
+> the code didn't when it calculated refclk. That strikes me as odd. No?
+> 
+> Now, that shouldn't matter for the LVDS case, but I'm wondering
+> whether something similar is going on where the conditionals just
+> don't match up, and we end up calculating the plls for a different
+> frequency than the one we actually end up _using_.
+> 
+> There's also this very odd special refclock magic for ironlake
+> limiting that only happens for ssc_freq == 100 when ssc is enabled.
+> Maybe the problem is in the limiting tables, and the ssc frequency
+> change just ends up then picking the "wrong" limiter table? So even if
+> the frequency is correct, and the pll calculations are using that
+> correct frequency, the 120-vs-100Mhz frequency change ended up
+> switching the tables around?
 
-Thanks for the info.
+Switching those tables around was the reason why the one-line change had
+any impact at all, and I hoped that it was the leniency in our pll finder
+that enabled us to bring up any SSC-enabled panel. I also made one pass at
+removing the confusion surrounding refclk, which wasn't -fixes material.
+Now I have several more concerns about the code.
 
-Why did you put "regression" into double quotes?
+However, switching the SSC refclk back to 100MHz we do end up choosing the
+same PLL clocks as the BIOS does on the U160, but modesetting still fails.
+So the discrepancy is not likely to be in the limit tables themselves.
+-Chris
 
-Rafael
+-- 
+Chris Wilson, Intel Open Source Technology Centre
