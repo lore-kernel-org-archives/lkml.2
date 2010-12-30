@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575Ab0L3XJN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 18:09:13 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:59254 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967Ab0L3XI6 (ORCPT
+	id S1753629Ab0L3XJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 18:09:59 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:34556 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753213Ab0L3XIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 18:08:58 -0500
+	Thu, 30 Dec 2010 18:08:51 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=X3YBLE3EPbfri9ZTObYrybiXbL8SOiox4Qxn+nDgz2yRKeBBrZmv8qm4VRN8MZlGjk
-         vl/TpurdJSI1SNHS6xVIra+RAVsQEHbuo7tSBt8VZ2zTtzRFMwN/oq9vVja6Bnsn+oMU
-         Uq6PMBBXr4WCcYoYb4qwCrpnBxcRFdvtbJC/g=
+        b=c/pdiNsnx9szf19DHOUOC4RFXfhKHtxlC9BjdVO1Poewq9IiJEV56xSNvGLODCahhA
+         hYtGMSFH8K2XekHjkUsExdhKzU70evCSY0iH4JFhSlus5ipn/E7Kf716XYb5/AjjvdBi
+         pGpSau9lpOKIb/rttyeLgjEfbbXCK9Jt0kP24=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -21,11 +21,11 @@ Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-scsi@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
         devel@driverdev.osuosl.org, linux-usb@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 15/15]drivers:spi:dw_spi.c Typo change diable to disable.
-Date: Thu, 30 Dec 2010 15:08:04 -0800
-Message-Id: <1293750484-1161-15-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 13/15]drivers:isdn:mISDN:dsp_cmx.c Typo change diable to disable.
+Date: Thu, 30 Dec 2010 15:08:02 -0800
+Message-Id: <1293750484-1161-13-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.6.5.2.180.gc5b3e
-In-Reply-To: <1293750484-1161-14-git-send-email-justinmattock@gmail.com>
+In-Reply-To: <1293750484-1161-12-git-send-email-justinmattock@gmail.com>
 References: <1293750484-1161-1-git-send-email-justinmattock@gmail.com>
  <1293750484-1161-2-git-send-email-justinmattock@gmail.com>
  <1293750484-1161-3-git-send-email-justinmattock@gmail.com>
@@ -38,49 +38,32 @@ References: <1293750484-1161-1-git-send-email-justinmattock@gmail.com>
  <1293750484-1161-10-git-send-email-justinmattock@gmail.com>
  <1293750484-1161-11-git-send-email-justinmattock@gmail.com>
  <1293750484-1161-12-git-send-email-justinmattock@gmail.com>
- <1293750484-1161-13-git-send-email-justinmattock@gmail.com>
- <1293750484-1161-14-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The below patch fixes a typo "diable" to "disable". Please let me know if this
+The below patch fixes a typo "diable" to "disable". Please let me know if this 
 is correct or not.
 
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/spi/dw_spi.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/isdn/mISDN/dsp_cmx.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/spi/dw_spi.c b/drivers/spi/dw_spi.c
-index 7c3cf21..a3a065f 100644
---- a/drivers/spi/dw_spi.c
-+++ b/drivers/spi/dw_spi.c
-@@ -910,12 +910,12 @@ int __devinit dw_spi_add_host(struct dw_spi *dws)
- 	ret = init_queue(dws);
- 	if (ret) {
- 		dev_err(&master->dev, "problem initializing queue\n");
--		goto err_diable_hw;
-+		goto err_disable_hw;
- 	}
- 	ret = start_queue(dws);
- 	if (ret) {
- 		dev_err(&master->dev, "problem starting queue\n");
--		goto err_diable_hw;
-+		goto err_disable_hw;
- 	}
- 
- 	spi_master_set_devdata(master, dws);
-@@ -930,7 +930,7 @@ int __devinit dw_spi_add_host(struct dw_spi *dws)
- 
- err_queue_alloc:
- 	destroy_queue(dws);
--err_diable_hw:
-+err_disable_hw:
- 	spi_enable_chip(dws, 0);
- 	free_irq(dws->irq, dws);
- err_free_master:
+diff --git a/drivers/isdn/mISDN/dsp_cmx.c b/drivers/isdn/mISDN/dsp_cmx.c
+index 76d9e67..309bacf 100644
+--- a/drivers/isdn/mISDN/dsp_cmx.c
++++ b/drivers/isdn/mISDN/dsp_cmx.c
+@@ -112,7 +112,7 @@
+  * Disable rx-data:
+  * If cmx is realized in hardware, rx data will be disabled if requested by
+  * the upper layer. If dtmf decoding is done by software and enabled, rx data
+- * will not be diabled but blocked to the upper layer.
++ * will not be disabled but blocked to the upper layer.
+  *
+  * HFC conference engine:
+  * If it is possible to realize all features using hardware, hardware will be
 -- 
 1.6.5.2.180.gc5b3e
 
