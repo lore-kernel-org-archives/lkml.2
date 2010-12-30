@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206Ab0L3TBj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 14:01:39 -0500
-Received: from mga02.intel.com ([134.134.136.20]:19667 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754770Ab0L3TBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 14:01:38 -0500
-Message-Id: <0d30dc$kjvpke@orsmga001.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,251,1291622400"; 
-   d="scan'208";a="692053646"
-Date: Thu, 30 Dec 2010 19:01:34 +0000
+	id S1755073Ab0L3TCs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 14:02:48 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:53557 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754051Ab0L3TCr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Dec 2010 14:02:47 -0500
+Message-ID: <4D1CD751.4000509@vflare.org>
+Date: Fri, 31 Dec 2010 00:32:41 +0530
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [git pull] i915 fixes
-Cc: Dave Airlie <airlied@redhat.com>, linux-kernel@vger.kernel.org
-From: Chris Wilson <chris@chris-wilson.co.uk>
+CC: Greg KH <greg@kroah.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Dennis Jansen <dennis.jansen@web.de>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH][zram] Do not check for init flag before starting I/O
+References: <1293700078-5141-1-git-send-email-ngupta@vflare.org> <AANLkTi=R0sOvSZqu+Va=W2xJMKEw+kJXufuDwNe8o5NL@mail.gmail.com>
+In-Reply-To: <AANLkTi=R0sOvSZqu+Va=W2xJMKEw+kJXufuDwNe8o5NL@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 12/30/2010 10:47 PM, Linus Torvalds wrote:
+> On Thu, Dec 30, 2010 at 1:07 AM, Nitin Gupta<ngupta@vflare.org>  wrote:
+>> zram module is unusable without this fix.
+>
+> .. and apparently it oopses without it.
+>
+> See commit 7e24cce38a99f3 which added the code that you now remove.
+> You were cc'd on it, I don't think we got any reply to it.
+>
 
-Dave asked to me send this pull request directly to you as he is on
-holiday over the New Year. In this batch, there are a few regression
-fixes. The most notable being the revert of the SSC frequency switch,
-along with a use-before-initialisation introduced much earlier in the
-sdvo/hdmi audio enabling and a fix for the loss of correct modesetting on
-one particular DVO chipset. Eric also found another instance where we were
-not adhering to the specs when setting up Ironlake. The impact is not
-conclusively known but we did find a few scenarios where it delayed a
-hang.
--Chris
+This commit shows oops in zram_inc_stat() which does not exist in 
+staging tree version of zram. Its actually a problem with zram version 
+as present in project's own repository where we allocate struct 
+zram_stats_cpu upon device initialization. OTOH, In mainline/staging 
+version of zram, we allocate struct stats upfront, so this oops cannot 
+happen in mainline version.
 
-The following changes since commit 387c31c7e5c9805b0aef8833d1731a5fe7bdea14:
+So, this commit is not even applicable for mainline/staging tree.  My 
+bad, I didn't get a chance to review that patch.
 
-  Linux 2.6.37-rc8 (2010-12-28 17:05:48 -0800)
+> So no. I'm not taking this without way more explanations of why the
+> original problem isn't a problem any more.
+>
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/ickle/drm-intel.git drm-intel-fixes
+I will now end development on local project repository and sync it with 
+the mainline version, so all future development happens on 
+mainline/staging only, avoiding such confusions in future.
 
-Chris Wilson (4):
-      drm/i915/sdvo: Add hdmi connector properties after initing the connector
-      drm/i915: Verify Ironlake eDP presence on DP_A using the capability fuse
-      Revert "drm/i915/bios: Reverse order of 100/120 Mhz SSC clocks"
-      drm/i915/dvo: Report LVDS attached to ch701x as connected
 
-Eric Anholt (2):
-      drm/i915: Set the required VFMUNIT clock gating disable on Ironlake.
-      drm/i915, intel_ips: When i915 loads after IPS, make IPS relink to i915.
-
- drivers/gpu/drm/i915/dvo_ch7017.c    |    2 +-
- drivers/gpu/drm/i915/i915_dma.c      |   23 +++++++++++++++++++++
- drivers/gpu/drm/i915/i915_reg.h      |   10 +++++++++
- drivers/gpu/drm/i915/intel_bios.c    |    2 +-
- drivers/gpu/drm/i915/intel_display.c |   21 ++++++++++++++++++-
- drivers/gpu/drm/i915/intel_sdvo.c    |    3 +-
- drivers/platform/x86/intel_ips.c     |   36 +++++++++++++++++++++++++++++++--
- drivers/platform/x86/intel_ips.h     |   21 +++++++++++++++++++
- 8 files changed, 111 insertions(+), 7 deletions(-)
- create mode 100644 drivers/platform/x86/intel_ips.h
-
--- 
-Chris Wilson, Intel Open Source Technology Centre
+Nitin
