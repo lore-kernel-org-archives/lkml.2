@@ -1,75 +1,587 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab0L3KoT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 05:44:19 -0500
-Received: from shutemov.name ([188.40.19.243]:54103 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752890Ab0L3KoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 05:44:17 -0500
-Date: Thu, 30 Dec 2010 12:44:16 +0200
-From: "Kirill A. Shutemov" <kas@openvz.org>
-To: Rob Landley <rlandley@parallels.com>
-Cc: "Kirill A. Shutemov" <kas@openvz.org>, Rob Landley <rob@landley.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/12] make rpc_pipefs be mountable multiple time
-Message-ID: <20101230104416.GA31824@shutemov.name>
-References: <1293628470-28386-1-git-send-email-kas@openvz.org>
- <AANLkTi=AXz21wDeE1vPVD-6cEtj6faXN9x09eHDCsTkB@mail.gmail.com>
- <20101230085139.GA29697@shutemov.name>
- <4D1C4C7C.6050606@parallels.com>
- <20101230094433.GB29697@shutemov.name>
- <4D1C5953.6020200@parallels.com>
+	id S1753827Ab0L3Kof (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 05:44:35 -0500
+Received: from 27.mail-out.ovh.net ([91.121.30.210]:53769 "HELO
+	27.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753674Ab0L3Kod (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Dec 2010 05:44:33 -0500
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Dec 2010 05:44:32 EST
+Message-ID: <4D1C60F1.5090305@armadeus.com>
+Date: Thu, 30 Dec 2010 11:37:37 +0100
+From: Fabien Marteau <fabien.marteau@armadeus.com>
+Reply-To: fabien.marteau@armadeus.com
+Organization: ARMadeus Systems
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D1C5953.6020200@parallels.com>
-User-Agent: Mutt/1.5.20 (2010-08-04)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Scott Moreau <oreaus@gmail.com>
+CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] input: joystick:   Adding Austria Microsystem AS5011 joystick
+ driver (second version)
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 6987053348642054555
+X-Ovh-Remote: 82.232.255.99 (arc68-6-82-232-255-99.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 30, 2010 at 04:05:07AM -0600, Rob Landley wrote:
-> On 12/30/2010 03:44 AM, Kirill A. Shutemov wrote:
-> >>> If no rpcmount mountoption, no rpc_pipefs was found at
-> >>> '/var/lib/nfs/rpc_pipefs' and we are in init's mount namespace, we use
-> >>> init_rpc_pipefs.
-> >>
-> >> It's the "we are in init's mount namespace" that I was wondering about.
-> >>
-> >> So if I naievely chroot, nfs mount stops working the way it did before I
-> >> chrooted unless I do an extra setup step?
-> >
-> > No. It will work as before since you are still in init's mount namespace.
-> > Creating new mount namespace changes rules.
-> 
-> Ah, CLONE_NEWNS and then you need /var/lib/nfs/rpc_pipefs.  Got it.
-> 
-> I'm kind of surprised that the kernel cares about a specific path under 
-> /var/lib.  (Seems like policy in the kernel somehow.)
+Driver for EasyPoint AS5011 2 axis joystick chip. This chip is plugged
+on an I2C bus. It has been tested on ARM processor (i.MX27).
 
-Yep. It's bad, but there is way to overwrite the default.
+Interruptions are now managed by threaded irq.
 
-Other way is to leave 'rpcmount' mountoption without default.
-get_rpc_pipefs(NULL) in init's mount namespace will always return
-init_rpc_pipefs, without filesystem lookup.
-get_rpc_pipefs(NULL) in non-init's mount namespace will always return
-error.
+Signed-off-by: Fabien Marteau <fabien.marteau@armadeus.com>
+---
+ drivers/input/joystick/Kconfig  |    9 +
+ drivers/input/joystick/Makefile |    1 +
+ drivers/input/joystick/as5011.c |  417 +++++++++++++++++++++++++++++++++++++++
+ include/linux/as5011.h          |   76 +++++++
+ 4 files changed, 503 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/input/joystick/as5011.c
+ create mode 100644 include/linux/as5011.h
 
-So you will have to specify 'rpcmount' mountoption for every nfs mount in
-container. Hmm, I guess, it may confuse user.
+diff --git a/drivers/input/joystick/Kconfig b/drivers/input/joystick/Kconfig
+index 5b59616..5fad03e 100644
+--- a/drivers/input/joystick/Kconfig
++++ b/drivers/input/joystick/Kconfig
+@@ -255,6 +255,15 @@ config JOYSTICK_AMIGA
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called amijoy.
 
-Or we can try to move the default to userspace. /sbin/mount.nfs?
-
-> Can't it just 
-> check the current process's mount list to see if an instance of 
-> rpc_pipefs is mounted in the current namespace the way lxc looks for 
-> cgroups?  Or are there potential performance/scalability issues with that?
-
-What should we do if we have several rpc_pipefs mounts in the namespace?
-
++config JOYSTICK_AS5011
++	tristate "Austria Microsystem AS5011 joystick"
++	depends on I2C
++	help
++	  Say Y here if you have an AS5011 digital joystick.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called as5011.
++
+ config JOYSTICK_JOYDUMP
+ 	tristate "Gameport data dumper"
+ 	select GAMEPORT
+diff --git a/drivers/input/joystick/Makefile b/drivers/input/joystick/Makefile
+index f3a8cbe..92dc0de 100644
+--- a/drivers/input/joystick/Makefile
++++ b/drivers/input/joystick/Makefile
+@@ -7,6 +7,7 @@
+ obj-$(CONFIG_JOYSTICK_A3D)		+= a3d.o
+ obj-$(CONFIG_JOYSTICK_ADI)		+= adi.o
+ obj-$(CONFIG_JOYSTICK_AMIGA)		+= amijoy.o
++obj-$(CONFIG_JOYSTICK_AS5011)		+= as5011.o
+ obj-$(CONFIG_JOYSTICK_ANALOG)		+= analog.o
+ obj-$(CONFIG_JOYSTICK_COBRA)		+= cobra.o
+ obj-$(CONFIG_JOYSTICK_DB9)		+= db9.o
+diff --git a/drivers/input/joystick/as5011.c b/drivers/input/joystick/as5011.c
+new file mode 100644
+index 0000000..9f65357
+--- /dev/null
++++ b/drivers/input/joystick/as5011.c
+@@ -0,0 +1,417 @@
++/*
++ * Copyright (c) 2010 Fabien Marteau <fabien.marteau@armadeus.com>
++ *
++ * Sponsored by ARMadeus Systems
++ */
++
++/*
++ * Driver for Austria Microsystems joysticks AS5011
++ */
++
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ *
++ * TODO:
++ *	- Manage power mode
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/string.h>
++#include <linux/list.h>
++#include <linux/sysfs.h>
++#include <linux/ctype.h>
++#include <linux/hwmon-sysfs.h>
++
++#include <linux/types.h>
++#include <linux/errno.h>
++#include <linux/kernel.h>
++#include <linux/input.h>
++#include <linux/interrupt.h>
++#include <linux/mutex.h>
++
++#include <linux/input.h>
++#include <linux/gpio.h>
++#include <linux/delay.h>
++
++#include <linux/as5011.h>
++#define DRIVER_DESC "Driver for Austria Microsystems AS5011 joystick"
++
++MODULE_AUTHOR("Fabien Marteau <fabien.marteau@armadeus.com>");
++MODULE_DESCRIPTION(DRIVER_DESC);
++MODULE_LICENSE("GPL");
++
++#define SIZE_NAME 30
++#define SIZE_EVENT_PATH 40
++#define AS5011_MAX_AXIS	80
++#define AS5011_MIN_AXIS	(-80)
++#define AS5011_FUZZ	8
++#define AS5011_FLAT	40
++
++static int g_num = 1; /* device counter */
++
++static signed char as5011_i2c_read(struct i2c_client *client,
++			   uint8_t aRegAddr);
++static int as5011_i2c_write(struct i2c_client *client,
++			    uint8_t aRegAddr,
++			    uint8_t aValue);
++
++/*
++ * interrupts operations
++ */
++
++static irqreturn_t button_interrupt(int irq, void *dev_id)
++{
++	struct as5011_platform_data *plat_dat =
++		(struct as5011_platform_data *)dev_id;
++	int ret;
++
++	mutex_lock(&plat_dat->button_lock);
++	ret = gpio_get_value(plat_dat->button_gpio);
++	if (ret)
++		input_report_key(plat_dat->input_dev, BTN_JOYSTICK, 0);
++	else
++		input_report_key(plat_dat->input_dev, BTN_JOYSTICK, 1);
++	input_sync(plat_dat->input_dev);
++	mutex_unlock(&plat_dat->button_lock);
++
++	return IRQ_HANDLED;
++}
++
++static void as5011_update_axes(struct as5011_platform_data *plat_dat)
++{
++	signed char x, y;
++
++	x = as5011_i2c_read(plat_dat->i2c_client, AS5011_X_RES_INT);
++	y = as5011_i2c_read(plat_dat->i2c_client, AS5011_Y_RES_INT);
++	input_report_abs(plat_dat->input_dev, ABS_X, x);
++	input_report_abs(plat_dat->input_dev, ABS_Y, y);
++	input_sync(plat_dat->input_dev);
++}
++
++static irqreturn_t as5011_int_interrupt(int irq, void *dev_id)
++{
++	struct as5011_platform_data *plat_dat =
++		(struct as5011_platform_data *)dev_id;
++
++	mutex_lock(&plat_dat->update_lock);
++	as5011_update_axes(plat_dat);
++	mutex_unlock(&plat_dat->update_lock);
++
++	return IRQ_HANDLED;
++}
++
++/*
++ * I2C bus operation
++ */
++
++static int as5011_i2c_write(struct i2c_client *client,
++			    uint8_t aRegAddr,
++			    uint8_t aValue)
++{
++	int ret;
++	uint8_t data[2] = { aRegAddr, aValue };
++
++	struct i2c_msg msg = {	client->addr,
++				I2C_M_IGNORE_NAK,
++				2,
++				(uint8_t *)data };
++
++	ret = i2c_transfer(client->adapter, &msg, 1);
++
++	if (ret < 0)
++		return ret;
++	return 1;
++}
++
++static signed char as5011_i2c_read(struct i2c_client *client,
++			   uint8_t aRegAddr)
++{
++	int ret;
++	uint8_t data[2];
++	struct i2c_msg msg_set[2];
++	struct i2c_msg msg1 = {	client->addr,
++				I2C_M_REV_DIR_ADDR,
++				1,
++				(uint8_t *)data};
++	struct i2c_msg msg2 = {	client->addr,
++				I2C_M_RD|I2C_M_NOSTART,
++				1,
++				(uint8_t *)data};
++
++	data[0] = aRegAddr;
++	msg_set[0] = msg1;
++	msg_set[1] = msg2;
++	ret = i2c_transfer(client->adapter, msg_set, 2);
++	if (ret < 0)
++		return ret;
++
++	if (data[0] & 0x80)
++		return -1*(1+(~data[0]));
++	else
++		return data[0];
++}
++
++static int __devinit as5011_probe(struct i2c_client *client,
++			const struct i2c_device_id *id)
++{
++	struct as5011_platform_data *plat_dat = client->dev.platform_data;
++	int retval = 0;
++
++	plat_dat->num = g_num;
++	g_num++;
++
++	if (!i2c_check_functionality(client->adapter,
++				     I2C_FUNC_PROTOCOL_MANGLING)) {
++		dev_err(&client->dev,
++		"i2c bus does not support protocol mangling, as5011 can't work\n");
++		retval = -ENODEV;
++		goto err_out;
++	}
++	plat_dat->i2c_client = client;
++
++
++	plat_dat->input_dev = input_allocate_device();
++	if (plat_dat->input_dev == NULL) {
++		dev_err(&client->dev,
++		"not enough memory for input devices structure\n");
++		retval = -ENOMEM;
++		goto err_out;
++	}
++
++	plat_dat->input_dev->name = "Austria Microsystem as5011 joystick";
++	plat_dat->input_dev->uniq = "Austria0";
++	plat_dat->input_dev->id.bustype = BUS_I2C;
++	plat_dat->input_dev->phys = NULL;
++	plat_dat->input_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
++	plat_dat->input_dev->keybit[BIT_WORD(BTN_JOYSTICK)] =
++					BIT_MASK(BTN_JOYSTICK);
++
++	input_set_abs_params(plat_dat->input_dev,
++			     ABS_X,
++			     AS5011_MIN_AXIS,
++			     AS5011_MAX_AXIS,
++			     AS5011_FUZZ,
++			     AS5011_FLAT);
++	input_set_abs_params(plat_dat->input_dev,
++			     ABS_Y,
++			     AS5011_MIN_AXIS,
++			     AS5011_MAX_AXIS,
++			     AS5011_FUZZ,
++			     AS5011_FLAT);
++
++	plat_dat->button_irq_name = kmalloc(SIZE_NAME, GFP_KERNEL);
++	if (plat_dat->button_irq_name == NULL) {
++		dev_err(&client->dev,
++		"not enough memory for input devices irq name\n");
++		retval = -ENOMEM;
++		goto err_input_free_device;
++	}
++
++	scnprintf(plat_dat->button_irq_name,
++		  SIZE_NAME,
++		  "as5011_%d_button",
++		  plat_dat->num);
++
++	retval = request_threaded_irq(plat_dat->button_irq,
++					NULL, button_interrupt,
++					0, plat_dat->button_irq_name,
++					(void *)plat_dat);
++	if (retval < 0) {
++		dev_err(&client->dev, "Can't allocate irq %d\n",
++			plat_dat->button_irq);
++		retval = -EBUSY;
++		goto err_free_button_irq_name;
++	}
++
++	if (plat_dat->init_gpio != NULL) {
++		retval = plat_dat->init_gpio();
++		if (retval < 0) {
++			dev_err(&client->dev, "Failed to init gpios\n");
++			goto err_free_irq_button_interrupt;
++		}
++	}
++
++	/* chip soft reset */
++	retval = as5011_i2c_write(plat_dat->i2c_client,
++				  AS5011_CTRL1,
++				  AS5011_CTRL1_SOFT_RST);
++	if (retval < 0) {
++		dev_err(&plat_dat->i2c_client->dev,
++			"Soft reset failed\n");
++		goto err_exit_gpio;
++	}
++
++	mdelay(10);
++
++	retval = as5011_i2c_write(plat_dat->i2c_client,
++				  AS5011_CTRL1,
++				  AS5011_CTRL1_LP_PULSED |
++				  AS5011_CTRL1_LP_ACTIVE |
++				  AS5011_CTRL1_INT_ACT_EN
++				  );
++	if (retval < 0) {
++		dev_err(&plat_dat->i2c_client->dev,
++			"Power config failed\n");
++		goto err_exit_gpio;
++	}
++
++	retval = as5011_i2c_write(plat_dat->i2c_client,
++				  AS5011_CTRL2,
++				  AS5011_CTRL2_INV_SPINNING);
++	if (retval < 0) {
++		dev_err(&plat_dat->i2c_client->dev,
++			"Can't invert spinning\n");
++		goto err_exit_gpio;
++	}
++
++	/* write threshold */
++	retval = as5011_i2c_write(plat_dat->i2c_client,
++				  AS5011_XP,
++				  plat_dat->Xp);
++	if (retval < 0) {
++		dev_err(&plat_dat->i2c_client->dev,
++			"Can't write threshold\n");
++		goto err_exit_gpio;
++	}
++
++	retval = as5011_i2c_write(plat_dat->i2c_client,
++				  AS5011_XN,
++				  plat_dat->Xn);
++	if (retval < 0) {
++		dev_err(&plat_dat->i2c_client->dev,
++			"Can't write threshold\n");
++		goto err_exit_gpio;
++	}
++
++	retval = as5011_i2c_write(plat_dat->i2c_client,
++				  AS5011_YP,
++				  plat_dat->Yp);
++	if (retval < 0) {
++		dev_err(&plat_dat->i2c_client->dev,
++			"Can't write threshold\n");
++		goto err_exit_gpio;
++	}
++
++	retval = as5011_i2c_write(plat_dat->i2c_client,
++				  AS5011_YN,
++				  plat_dat->Yn);
++	if (retval < 0) {
++		dev_err(&plat_dat->i2c_client->dev,
++			"Can't write threshold\n");
++		goto err_exit_gpio;
++	}
++
++	/* request irq */
++	plat_dat->int_irq_name = kmalloc(SIZE_NAME, GFP_KERNEL);
++	if (plat_dat->int_irq_name == NULL) {
++		dev_err(&client->dev,
++		"not enough memory for input devices int irq name\n");
++		retval = -ENOMEM;
++		goto err_exit_gpio;
++	}
++
++
++	/* to free irq gpio in chip*/
++	as5011_i2c_read(plat_dat->i2c_client, AS5011_X_RES_INT);
++
++	/* initialize mutex */
++	mutex_init(&plat_dat->update_lock);
++	mutex_init(&plat_dat->button_lock);
++
++	scnprintf(plat_dat->int_irq_name,
++		  SIZE_NAME,
++		  "as5011_%d_int",
++		  plat_dat->num);
++
++	if (request_threaded_irq(plat_dat->int_irq, NULL,
++				as5011_int_interrupt,
++				0, plat_dat->int_irq_name, (void *)plat_dat)) {
++		dev_err(&client->dev, "Can't allocate int irq %d\n",
++			plat_dat->int_irq);
++		retval = -EBUSY;
++		goto err_free_int_irq_name;
++	}
++
++	retval = input_register_device(plat_dat->input_dev);
++	if (retval) {
++		dev_err(&client->dev, "Failed to register device\n");
++		goto err_free_irq_int;
++	}
++
++	return 0;
++
++	/* Error management */
++err_free_irq_int:
++	free_irq(plat_dat->int_irq, as5011_int_interrupt);
++err_free_int_irq_name:
++	kfree(plat_dat->int_irq_name);
++err_exit_gpio:
++	if (plat_dat->exit_gpio != NULL)
++		plat_dat->exit_gpio();
++err_free_irq_button_interrupt:
++	free_irq(plat_dat->button_irq, button_interrupt);
++err_free_button_irq_name:
++	kfree(plat_dat->button_irq_name);
++err_input_free_device:
++	input_free_device(plat_dat->input_dev);
++err_out:
++	return retval;
++}
++static int as5011_remove(struct i2c_client *client)
++{
++	struct as5011_platform_data *plat_dat = client->dev.platform_data;
++
++	input_unregister_device(plat_dat->input_dev);
++	free_irq(plat_dat->button_irq, plat_dat);
++	free_irq(plat_dat->int_irq, plat_dat);
++	kfree(plat_dat->button_irq_name);
++	if (plat_dat->exit_gpio != NULL)
++		plat_dat->exit_gpio();
++
++	return 0;
++}
++static const struct i2c_device_id as5011_id[] = {
++	{ "as5011", 0 },
++	{ }
++};
++
++static struct i2c_driver as5011_driver = {
++	.driver = {
++		.name = "as5011",
++	},
++	.probe		= as5011_probe,
++	.remove		= __devexit_p(as5011_remove),
++	.id_table	= as5011_id,
++};
++
++/*
++ * Module initialization
++ */
++
++static int __init as5011_init(void)
++{
++	return i2c_add_driver(&as5011_driver);
++}
++
++static void __exit as5011_exit(void)
++{
++	i2c_del_driver(&as5011_driver);
++}
++
++module_init(as5011_init);
++module_exit(as5011_exit);
+diff --git a/include/linux/as5011.h b/include/linux/as5011.h
+new file mode 100644
+index 0000000..c224752
+--- /dev/null
++++ b/include/linux/as5011.h
+@@ -0,0 +1,76 @@
++#ifndef _AS5011_H
++#define _AS5011_H
++
++/*
++ * Copyright (c) 2010 Fabien Marteau
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ */
++
++#include <linux/mutex.h>
++
++#define AS5011_MAX_NAME_LENGTH	64
++#define AS5011_MAX_CNAME_LENGTH	16
++#define AS5011_MAX_PHYS_LENGTH	64
++#define AS5011_MAX_LENGTH	64
++
++/* registers */
++#define AS5011_CTRL1		0x76
++#define AS5011_CTRL2		0x75
++#define AS5011_XP		0x43
++#define AS5011_XN		0x44
++#define AS5011_YP		0x53
++#define AS5011_YN		0x54
++#define AS5011_X_REG		0x41
++#define AS5011_Y_REG		0x42
++#define AS5011_X_RES_INT	0x51
++#define AS5011_Y_RES_INT	0x52
++
++/* CTRL1 bits */
++#define AS5011_CTRL1_LP_PULSED		0x80
++#define AS5011_CTRL1_LP_ACTIVE		0x40
++#define AS5011_CTRL1_LP_CONTINUE	0x20
++#define AS5011_CTRL1_INT_WUP_EN		0x10
++#define AS5011_CTRL1_INT_ACT_EN		0x08
++#define AS5011_CTRL1_EXT_CLK_EN		0x04
++#define AS5011_CTRL1_SOFT_RST		0x02
++#define AS5011_CTRL1_DATA_VALID		0x01
++
++/* CTRL2 bits */
++#define AS5011_CTRL2_EXT_SAMPLE_EN	0x08
++#define AS5011_CTRL2_RC_BIAS_ON		0x04
++#define AS5011_CTRL2_INV_SPINNING	0x02
++
++
++struct as5011_platform_data {
++	/* public */
++	int button_gpio;
++	int button_irq;
++	int int_gpio;
++	int int_irq;
++	char Xp, Xn; /* threshold for x axis */
++	char Yp, Yn; /* threshold for y axis */
++
++	int (*init_gpio)(void); /* init interrupts gpios */
++	void (*exit_gpio)(void);/* exit gpios */
++
++	/* private */
++	int num;
++	struct input_dev *input_dev;
++	struct i2c_client *i2c_client;
++	unsigned char *button_irq_name;
++	unsigned char *int_irq_name;
++	char name[AS5011_MAX_NAME_LENGTH];
++	char cname[AS5011_MAX_CNAME_LENGTH];
++	char phys[AS5011_MAX_PHYS_LENGTH];
++	unsigned char data[AS5011_MAX_LENGTH];
++	char workqueue_name[AS5011_MAX_NAME_LENGTH];
++	struct workqueue_struct *workqueue;
++	struct work_struct update_axes_work;
++	struct mutex update_lock;
++	struct mutex button_lock;
++};
++
++#endif /* _AS5011_H */
 -- 
- Kirill A. Shutemov
+1.7.0.4
