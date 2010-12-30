@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197Ab0L3Sv3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 13:51:29 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59044 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755039Ab0L3Sv2 (ORCPT
+	id S1755215Ab0L3SyD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 13:54:03 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:42837 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754863Ab0L3SyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 13:51:28 -0500
+	Thu, 30 Dec 2010 13:54:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=Ii3afQzF3yhDplRW3/wmq47KThMIS+SWeRNPLMGMerjXoLbpSjJYdVGrYxhjD51edk
+         TRA3mdFgjDFPTA8sGUfg==
+Date: Thu, 30 Dec 2010 10:53:54 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Ingo Molnar <mingo@elte.hu>
+cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [build failure] Re: [PATCH -v2 3/6] x86, 64bit, numa: Put pgtable
+ to local node memory
+In-Reply-To: <20101230120153.GA16476@elte.hu>
+Message-ID: <alpine.DEB.2.00.1012301052050.12995@chino.kir.corp.google.com>
+References: <4D1BC856.4010202@kernel.org> <4D1BC94C.5040100@zytor.com> <AANLkTikknHfA4TQw+SMH-EyJBHoNHXk8Rheq4=K4jNWA@mail.gmail.com> <alpine.DEB.2.00.1012291637270.6040@chino.kir.corp.google.com> <4D1BD928.50701@zytor.com> <alpine.DEB.2.00.1012291702180.7374@chino.kir.corp.google.com>
+ <4D1BE615.4000700@zytor.com> <20101230090648.GB7306@elte.hu> <20101230102815.GA29822@elte.hu> <20101230103002.GA30020@elte.hu> <20101230120153.GA16476@elte.hu>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1293733460.4919.21.camel@heimdal.trondhjem.org>
-References: <AANLkTi=-dNeeDjcSoznKtwcaNyw1mMXSqepFY89R2i+2@mail.gmail.com>
- <20101230171453.GA5787@pengutronix.de> <AANLkTikvZF6Q1k0rETLHUffkUT3grxAh3FoB_0vs96B8@mail.gmail.com>
- <1293733460.4919.21.camel@heimdal.trondhjem.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 30 Dec 2010 10:50:34 -0800
-Message-ID: <AANLkTi=sO9M8m1Fpntu_YscVU4SrppKfxBf2eRZ2Dr+L@mail.gmail.com>
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Chuck Lever <chuck.lever@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-nfs@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: MULTIPART/MIXED; BOUNDARY="531368966-942838037-1293735235=:12995"
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 30, 2010 at 10:24 AM, Trond Myklebust
-<Trond.Myklebust@netapp.com> wrote:
->
-> There is nothing we can do to protect ourselves against an infinite loop
-> if the server (or underlying filesystem) is breaking the rules w.r.t.
-> cookie generation. It should be possible to recover from all other
-> situations.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Umm. Sure there is. Just make sure that you return the uncached entry
-to user space, rather than loop forever.
+--531368966-942838037-1293735235=:12995
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 
-Looping forever in kernel space is a bad idea. How about just changing
-the "continue" into a "break" for the "uncached readdir returned
-success".
+On Thu, 30 Dec 2010, Ingo Molnar wrote:
 
-No halting problems, no excuses. There is absolutely _no_ excuse for
-an endless loop in kernel mode. Certainly not "the other end is
-incompetent".
+> 
+> and x86/numa has this build failure:
+> 
+> arch/x86/mm/numa_64.c: In function ‘numa_set_cpumask’:
+> arch/x86/mm/numa_64.c:851:14: error: ‘physnodes’ undeclared (first use in this function)
+> arch/x86/mm/numa_64.c:851:14: note: each undeclared identifier is reported only once for each function it appears in
+> 
+> config attached.
+> 
 
-EVERYBODY is incompetent sometimes. That just means that you must
-never trust the other end too much. You can't say "we require the
-server to be sane in order not to lock up".
+Yeah, you reported this one earlier and I sent a patch four days ago to 
+fix it (http://marc.info/?l=linux-kernel&m=129340072128297).  I'll reply 
+to this email with it again.
 
-                    Linus
+Thanks!
+--531368966-942838037-1293735235=:12995--
