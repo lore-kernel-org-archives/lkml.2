@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752053Ab0L3WxG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 17:53:06 -0500
-Received: from mga09.intel.com ([134.134.136.24]:7927 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751392Ab0L3WxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 17:53:04 -0500
-Message-Id: <b9dded$hh72bl@orsmga002.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,251,1291622400"; 
-   d="scan'208";a="588482933"
-Date: Thu, 30 Dec 2010 22:53:00 +0000
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [git pull] i915 fixes
-Cc: Dave Airlie <airlied@redhat.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTik4j48eUg=EuL1OzcjQ2hXRGMYNwQcKxpudxKxB@mail.gmail.com>
-References: <0d30dc$kjvpke@orsmga001.jf.intel.com> <20101230140103.1189c545@jbarnes-desktop> <AANLkTik4j48eUg=EuL1OzcjQ2hXRGMYNwQcKxpudxKxB@mail.gmail.com>
-From: Chris Wilson <chris@chris-wilson.co.uk>
+	id S1752002Ab0L3W5n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 17:57:43 -0500
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:14324 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750847Ab0L3W5m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Dec 2010 17:57:42 -0500
+Message-ID: <4D1D0E62.5010609@caviumnetworks.com>
+Date: Thu, 30 Dec 2010 14:57:38 -0800
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>, ralf@linux-mips.org
+CC: a.p.zijlstra@chello.nl, fweisbec@gmail.com, will.deacon@arm.com,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        wuzhangjin@gmail.com, paulus@samba.org, mingo@elte.hu, acme@redhat.com,
+        matt@console-pimps.org, sshtylyov@mvista.com
+Subject: Re: [PATCH v3 0/5] MIPS/Perf-events: Sync with mainline upper layer
+ (v3)
+References: <1291022351-13152-1-git-send-email-dengcheng.zhu@gmail.com>
+In-Reply-To: <1291022351-13152-1-git-send-email-dengcheng.zhu@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 30 Dec 2010 22:57:38.0866 (UTC) FILETIME=[F4E74120:01CBA874]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Dec 2010 14:29:34 -0800, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> On Thu, Dec 30, 2010 at 2:01 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> >
-> > Did you want to disable SSC entirely on gen5+ just so we can get all
-> > the known machines working?  It's possible it could add some wifi or
-> > sound interference, but that's better than not having a display (most
-> > of the time).
-> 
-> It would be sad to possibly add more electrical noise to machines that
-> already work with it, but at the same time I do think that "working
-> screen" tends to be a lot more important than "try to avoid RF noise".
-> 
-> Also, are you sure it's really the fact that we enable spread-spectrum
-> that causes this? The code is really confused, and seems to mix up
-> "lvds_use_ssc" not just with the enabling of SSC, but it also with how
-> impacts the reference clock itself.
-> 
-> And it impacts the reference clock in really odd ways, that look buggy
-> and confusing, where the tests are repeated in multiple places: first
-> to set the reference frequency, and then later to set the bits that
-> choose the reference input frequency.
-> 
-> In particular, look at how 'refclk' is calculated in
-> intel_crtc_mode_set(), vs how we actually set the input frequency
-> later in the function. The two don't actually *match*. That sounds
-> bogus to me - since it means that the pll values have been calculated
-> for a reference clock that isn't actually used. No?
-> 
-> Look at the code for the "!is_lvds" case, for example. It uses
-> "IS_GEN2()" to determine what refclk to use, but then when setting the
-> PLL_REF_INPUT_xyz bits, we actually take "is_tv" into account - which
-> the code didn't when it calculated refclk. That strikes me as odd. No?
-> 
-> Now, that shouldn't matter for the LVDS case, but I'm wondering
-> whether something similar is going on where the conditionals just
-> don't match up, and we end up calculating the plls for a different
-> frequency than the one we actually end up _using_.
-> 
-> There's also this very odd special refclock magic for ironlake
-> limiting that only happens for ssc_freq == 100 when ssc is enabled.
-> Maybe the problem is in the limiting tables, and the ssc frequency
-> change just ends up then picking the "wrong" limiter table? So even if
-> the frequency is correct, and the pll calculations are using that
-> correct frequency, the 120-vs-100Mhz frequency change ended up
-> switching the tables around?
+On 11/29/2010 01:19 AM, Deng-Cheng Zhu wrote:
+> Current MIPS Perf-events uses older interfaces to the generic layer. So it
+> will not work. This patch set fixes this issue (reported by Wu Zhangjin) by
+> adding MIPS counterparts for a list of previous commits that went to
+> mainline earlier.
+>
+> Changes:
+> v3 - v2:
+> o Keep all mentioned commits in the form of number + title + original
+> summary + (MIPS specific info when needed).
+> v2 - v1:
+> o Corrected the return value of the event check in validate_event().
+>
+> Deng-Cheng Zhu (5):
+>    MIPS/Perf-events: Work with irq_work
+>    MIPS/Perf-events: Work with the new PMU interface
+>    MIPS/Perf-events: Fix event check in validate_event()
+>    MIPS/Perf-events: Work with the new callchain interface
+>    MIPS/Perf-events: Use unsigned delta for right shift in event update
+>
+>   arch/mips/Kconfig                    |    1 +
+>   arch/mips/include/asm/perf_event.h   |   12 +-
+>   arch/mips/kernel/perf_event.c        |  345 ++++++++++++++++------------------
+>   arch/mips/kernel/perf_event_mipsxx.c |    4 +-
+>   4 files changed, 171 insertions(+), 191 deletions(-)
+>
 
-Switching those tables around was the reason why the one-line change had
-any impact at all, and I hoped that it was the leniency in our pll finder
-that enabled us to bring up any SSC-enabled panel. I also made one pass at
-removing the confusion surrounding refclk, which wasn't -fixes material.
-Now I have several more concerns about the code.
+Entire set:
 
-However, switching the SSC refclk back to 100MHz we do end up choosing the
-same PLL clocks as the BIOS does on the U160, but modesetting still fails.
-So the discrepancy is not likely to be in the limit tables themselves.
--Chris
+Acked-by: David Daney <ddaney@caviumnetworks.com>
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+I am basing my modifications for Octeon perf counters on this set.
+
+David Daney
