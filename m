@@ -1,32 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755081Ab0L3Snk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 13:43:40 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:18786 "EHLO
+	id S1755162Ab0L3Stk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 13:49:40 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:41706 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754905Ab0L3Snj (ORCPT
+	with ESMTP id S1754770Ab0L3Stj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 13:43:39 -0500
+	Thu, 30 Dec 2010 13:49:39 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
          :references:user-agent:mime-version:content-type;
-        b=T0uvMmTr7XJwjAn7MO4uu4XgT2C8fB72n6GwHFoYFBxC+qzV6FG/RhcaYNeUb91hT8
-         uQSJYRMjxwwJhwyrWhzg==
-Date: Thu, 30 Dec 2010 10:43:33 -0800 (PST)
+        b=KmD6+zyIAVAq71a1xxP/1tGnR2BGU6TAy6yP0bN3aTb7t7CuYHkxpRIE1SvuMhRTXx
+         J5DjmHo1z5ZGfxJ5ubfg==
+Date: Thu, 30 Dec 2010 10:49:29 -0800 (PST)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Tejun Heo <tj@kernel.org>
-cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        eric.dumazet@gmail.com, yinghai@kernel.org, brgerst@gmail.com,
-        gorcunov@gmail.com, Pekka Enberg <penberg@kernel.org>,
-        shaohui.zheng@intel.com
-Subject: Re: [PATCH 15/16] x86: Unify node_to_cpumask_map handling between
- 32 and 64bit
-In-Reply-To: <20101230124800.GD18831@htj.dyndns.org>
-Message-ID: <alpine.DEB.2.00.1012301040420.12207@chino.kir.corp.google.com>
-References: <1293536929-31683-1-git-send-email-tj@kernel.org> <1293536929-31683-16-git-send-email-tj@kernel.org> <alpine.DEB.2.00.1012281240000.8883@chino.kir.corp.google.com> <20101230124800.GD18831@htj.dyndns.org>
+To: Daniel Kiper <dkiper@net-space.pl>
+cc: ian.campbell@citrix.com, Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi.kleen@intel.com>, haicheng.li@linux.intel.com,
+        fengguang.wu@intel.com, jeremy@goop.org, konrad.wilk@oracle.com,
+        dan.magenheimer@oracle.com, v.tolstov@selfip.ru,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH R2 1/7] mm: Add add_registered_memory() to memory hotplug
+ API
+In-Reply-To: <20101230123013.GA12765@router-fw-old.local.net-space.pl>
+Message-ID: <alpine.DEB.2.00.1012301048550.12995@chino.kir.corp.google.com>
+References: <20101229170212.GF2743@router-fw-old.local.net-space.pl> <alpine.DEB.2.00.1012291643290.6040@chino.kir.corp.google.com> <20101230123013.GA12765@router-fw-old.local.net-space.pl>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -35,19 +36,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Dec 2010, Tejun Heo wrote:
+On Thu, 30 Dec 2010, Daniel Kiper wrote:
 
-> Sigh, the new NUMA emulation thing is 64bit only. :-( I'll see if it
-> can be applied to 32bit too.  BTW, how does this interact with the
-> Shaohui's patchset.  Isn't that about NUMA emulation too?  Are these
-> the same patches?
+> > Looks like this patch was based on a kernel before 2.6.37-rc4 since it
+> > doesn't have 20d6c96b5f (mem-hotplug: introduce {un}lock_memory_hotplug())
+> 
+> As I wrote in "[PATCH R2 0/7] Xen memory balloon driver with memoryhotplug
+> support" this patch applies to Linux kernel Ver. 2.6.36.
 > 
 
-There's nothing new about NUMA emulation on x86_64, it's existed for well 
-over four years (we've been using it at Google since 2.6.18, see 
-Documentation/x86/x86_64/fake-numa-for-cpusets).  Shaohui's patches are 
-completely seperate and add hotplug emulation.  You _could_ boot with a 
-very minimal amount of memory and then hotplug all the emulated nodes like 
-numa=fake does, but you may find it difficult to parse the e820 and 
-interleave the nodes appropriately over the set of physical nodes in 
-userspace.
+I'd suggest posting patches against the latest -git.
