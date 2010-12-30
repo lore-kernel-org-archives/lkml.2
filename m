@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755133Ab0L3Rt6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 12:49:58 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46520 "EHLO
+	id S1755143Ab0L3RuB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 12:50:01 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62444 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754962Ab0L3Rtz (ORCPT
+	with ESMTP id S1755132Ab0L3Rt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 12:49:55 -0500
+	Thu, 30 Dec 2010 12:49:58 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=KQ/SC2BuWa5uKlsiIGPuoN1zHC+gmiiZ7sGIxzAEQPiRttfckr27aGR2JQHmNRM1lT
-         AGukpj3rFE6wO1K9EQAi9we+CFVeuKpc4qkKhtULrVjWL2WAKN4ykWTsZPxcA46xY5+l
-         XQmDbwLrsEbx5cvqXsA9sEU9z6mfz2A6Sw76Q=
+        b=GwlgrWL9Y3g+GgftSCoqwK0ErrHG1ch5qVCzS2Ead5RW3NvCLGaL/2wfYwJ2XOmdg9
+         d5uUV7US5+3BgiSg/GdJwicy+WJrMNnmuRrxw5CrE3LpYNypuFuh8LeuNk9xDuf/1pFV
+         KLR76V8QAagCeG7/NFXCrDj3iyNc5GoLjqJtI=
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
         hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
         yinghai@kernel.org, brgerst@gmail.com, gorcunov@gmail.com,
         penberg@kernel.org, shaohui.zheng@intel.com, rientjes@google.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 13/16] x86: Unify cpu/apicid <-> NUMA node mapping between 32 and 64bit
-Date: Thu, 30 Dec 2010 18:49:26 +0100
-Message-Id: <1293731369-10851-14-git-send-email-tj@kernel.org>
+Subject: [PATCH 15/16] x86: Unify node_to_cpumask_map handling between 32 and 64bit
+Date: Thu, 30 Dec 2010 18:49:28 +0100
+Message-Id: <1293731369-10851-16-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1293731369-10851-1-git-send-email-tj@kernel.org>
 References: <1293731369-10851-1-git-send-email-tj@kernel.org>
@@ -30,485 +30,328 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mapping between cpu/apicid and node is done via apicid_to_node[]
-on 64bit and apicid_2_node[] + apic->x86_32_numa_cpu_node() on 32bit.
-This difference makes it difficult to further unify 32 and 64bit NUMA
-handling.
+x86_32 has been managing node_to_cpumask_map explicitly from
+map_cpu_to_node() and friends in a rather ugly way.  With previous
+changes, it's now possible to share the code with 64bit.
 
-This patch unifies it by replacing both apicid_to_node[] and
-apicid_2_node[] with __apicid_to_node[] array, which is accessed by
-two accessors - set_apicid_to_node() and numa_cpu_node().  On 64bit,
-numa_cpu_node() always consults __apicid_to_node[] directly while
-32bit goes through apic->numa_cpu_node() method to allow apic
-implementations to override it.
+* When CONFIG_NUMA_EMU is disabled, numa_add/remove_cpu() are
+  implemented in numa.c and shared by 32 and 64bit.  The !NUMA_EMU
+  implementation is taken from numa_64.c right before c1c3443c ("x86,
+  numa: Fake node-to-cpumask for NUMA emulation").  CONFIG_NUMA_EMU
+  versions still live in numa_64.c.
 
-srat_detect_node() for amd cpus contains workaround for broken NUMA
-configuration which assumes relationship between APIC ID, HT node ID
-and NUMA topology.  Leave it to access __apicid_to_node[] directly as
-mapping through CPU might result in undesirable behavior change.  The
-comment is reformatted and updated to note the ugliness.
+  NUMA_EMU's dependency on 64bit is planned to be removed and the
+  above should go away together.
+
+* identify_cpu() now calls numa_add_cpu() for 32bit too.  This makes
+  the explicit mask management from map_cpu_to_node() unnecessary.
+
+* The whole x86_32 specific map_cpu_to_node() chunk is no longer
+  necessary.  Dropped.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Reviewed-by: Pekka Enberg <penberg@kernel.org>
 Cc: David Rientjes <rientjes@google.com>
+Cc: Shaohui Zheng <shaohui.zheng@intel.com>
 ---
- arch/x86/include/asm/mpspec.h  |    1 -
- arch/x86/include/asm/numa.h    |   28 +++++++++++++++++++++++
- arch/x86/include/asm/numa_32.h |    6 +++++
- arch/x86/include/asm/numa_64.h |    5 +--
- arch/x86/kernel/acpi/boot.c    |    3 +-
- arch/x86/kernel/apic/apic.c    |    2 +-
- arch/x86/kernel/cpu/amd.c      |   47 +++++++++++++++++++++++++--------------
- arch/x86/kernel/cpu/intel.c    |    3 +-
- arch/x86/kernel/smpboot.c      |    6 +----
- arch/x86/mm/amdtopology_64.c   |    4 +-
- arch/x86/mm/numa.c             |    6 ++++-
- arch/x86/mm/numa_32.c          |    6 +++++
- arch/x86/mm/numa_64.c          |   26 +++++++++------------
- arch/x86/mm/srat_32.c          |    2 +-
- arch/x86/mm/srat_64.c          |   12 +++++-----
- 15 files changed, 101 insertions(+), 56 deletions(-)
+ arch/x86/include/asm/numa.h    |    5 ++++
+ arch/x86/include/asm/numa_32.h |    1 -
+ arch/x86/include/asm/numa_64.h |    4 ---
+ arch/x86/kernel/cpu/common.c   |    2 +-
+ arch/x86/kernel/smpboot.c      |   47 -----------------------------------
+ arch/x86/mm/numa.c             |   53 ++++++++++++++++++++++++++++++++++++++-
+ arch/x86/mm/numa_64.c          |   40 +++++++++++-------------------
+ 7 files changed, 72 insertions(+), 80 deletions(-)
 
-diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
-index 018ffc1..ae78732 100644
---- a/arch/x86/include/asm/mpspec.h
-+++ b/arch/x86/include/asm/mpspec.h
-@@ -24,7 +24,6 @@ extern int pic_mode;
- #define MAX_IRQ_SOURCES		256
- 
- extern unsigned int def_to_bigsmp;
--extern u8 apicid_2_node[];
- 
- #ifdef CONFIG_X86_NUMAQ
- extern int mp_bus_id_to_node[MAX_MP_BUSSES];
 diff --git a/arch/x86/include/asm/numa.h b/arch/x86/include/asm/numa.h
-index 27da400..5e01c76 100644
+index 2b21fff..7012e64 100644
 --- a/arch/x86/include/asm/numa.h
 +++ b/arch/x86/include/asm/numa.h
-@@ -1,5 +1,33 @@
-+#ifndef _ASM_X86_NUMA_H
-+#define _ASM_X86_NUMA_H
-+
-+#include <asm/apicdef.h>
-+
-+#ifdef CONFIG_NUMA
-+/*
-+ * __apicid_to_node[] stores the raw mapping between physical apicid and
-+ * node and is used to initialize cpu_to_node mapping.
-+ *
-+ * The mapping may be overridden by apic->numa_cpu_node() on 32bit and thus
-+ * should be accessed by the accessors - set_apicid_to_node() and
-+ * numa_cpu_node().
-+ */
-+extern s16 __apicid_to_node[MAX_LOCAL_APIC];
-+
-+static inline void set_apicid_to_node(int apicid, s16 node)
-+{
-+	__apicid_to_node[apicid] = node;
-+}
-+#else	/* CONFIG_NUMA */
-+static inline void set_apicid_to_node(int apicid, s16 node)
-+{
-+}
-+#endif	/* CONFIG_NUMA */
-+
- #ifdef CONFIG_X86_32
- # include "numa_32.h"
- #else
- # include "numa_64.h"
- #endif
-+
-+#endif	/* _ASM_X86_NUMA_H */
-diff --git a/arch/x86/include/asm/numa_32.h b/arch/x86/include/asm/numa_32.h
-index a372290..d30eb6c 100644
---- a/arch/x86/include/asm/numa_32.h
-+++ b/arch/x86/include/asm/numa_32.h
-@@ -4,6 +4,12 @@
- extern int pxm_to_nid(int pxm);
- extern void numa_remove_cpu(int cpu);
+@@ -1,6 +1,7 @@
+ #ifndef _ASM_X86_NUMA_H
+ #define _ASM_X86_NUMA_H
  
-+#ifdef CONFIG_NUMA
-+extern int __cpuinit numa_cpu_node(int apicid);
-+#else	/* CONFIG_NUMA */
-+static inline int numa_cpu_node(int cpu)		{ return NUMA_NO_NODE; }
-+#endif	/* CONFIG_NUMA */
-+
- #ifdef CONFIG_HIGHMEM
- extern void set_highmem_pages_init(void);
- #else
-diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
-index 5ae8728..17abf80 100644
---- a/arch/x86/include/asm/numa_64.h
-+++ b/arch/x86/include/asm/numa_64.h
-@@ -2,7 +2,6 @@
- #define _ASM_X86_NUMA_64_H
++#include <asm/topology.h>
+ #include <asm/apicdef.h>
  
- #include <linux/nodemask.h>
--#include <asm/apicdef.h>
- 
- struct bootnode {
- 	u64 start;
-@@ -17,8 +16,6 @@ extern int compute_hash_shift(struct bootnode *nodes, int numblks,
- extern void numa_init_array(void);
- extern int numa_off;
- 
--extern s16 apicid_to_node[MAX_LOCAL_APIC];
--
- extern unsigned long numa_free_all_bootmem(void);
- extern void setup_node_bootmem(int nodeid, unsigned long start,
- 			       unsigned long end);
-@@ -32,6 +29,7 @@ extern void setup_node_bootmem(int nodeid, unsigned long start,
- #define NODE_MIN_SIZE (4*1024*1024)
- 
- extern void __init init_cpu_to_node(void);
-+extern int __cpuinit numa_cpu_node(int cpu);
+ #ifdef CONFIG_NUMA
+@@ -33,9 +34,13 @@ static inline void set_apicid_to_node(int apicid, s16 node)
+ #ifdef CONFIG_NUMA
  extern void __cpuinit numa_set_node(int cpu, int node);
  extern void __cpuinit numa_clear_node(int cpu);
- extern void __cpuinit numa_add_cpu(int cpu);
-@@ -43,6 +41,7 @@ extern void __cpuinit numa_remove_cpu(int cpu);
- #endif /* CONFIG_NUMA_EMU */
- #else
- static inline void init_cpu_to_node(void)		{ }
-+static inline int numa_cpu_node(int cpu)		{ return NUMA_NO_NODE; }
++extern void __cpuinit numa_add_cpu(int cpu);
++extern void __cpuinit numa_remove_cpu(int cpu);
+ #else	/* CONFIG_NUMA */
  static inline void numa_set_node(int cpu, int node)	{ }
  static inline void numa_clear_node(int cpu)		{ }
- static inline void numa_add_cpu(int cpu, int node)	{ }
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 1a5b9a8..de3308b 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -583,11 +583,10 @@ static void acpi_map_cpu2node(acpi_handle handle, int cpu, int physid)
- 	nid = acpi_get_node(handle);
- 	if (nid == -1 || !node_online(nid))
- 		return;
-+	set_apicid_to_node(physid, nid);
- #ifdef CONFIG_X86_64
--	apicid_to_node[physid] = nid;
- 	numa_set_node(cpu, nid);
- #else /* CONFIG_X86_32 */
--	apicid_2_node[physid] = nid;
- 	cpu_to_node_map[cpu] = nid;
- #endif
++static inline void numa_add_cpu(int cpu)		{ }
++static inline void numa_remove_cpu(int cpu)		{ }
+ #endif	/* CONFIG_NUMA */
  
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 5e097e5..4f2f210 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -2029,7 +2029,7 @@ int default_x86_32_numa_cpu_node(int cpu)
- 	int apicid = early_per_cpu(x86_cpu_to_apicid, cpu);
+ #endif	/* _ASM_X86_NUMA_H */
+diff --git a/arch/x86/include/asm/numa_32.h b/arch/x86/include/asm/numa_32.h
+index d30eb6c..ba0ea62 100644
+--- a/arch/x86/include/asm/numa_32.h
++++ b/arch/x86/include/asm/numa_32.h
+@@ -2,7 +2,6 @@
+ #define _ASM_X86_NUMA_32_H
  
- 	if (apicid != BAD_APICID)
--		return apicid_2_node[apicid];
-+		return __apicid_to_node[apicid];
- 	return NUMA_NO_NODE;
+ extern int pxm_to_nid(int pxm);
+-extern void numa_remove_cpu(int cpu);
+ 
+ #ifdef CONFIG_NUMA
+ extern int __cpuinit numa_cpu_node(int apicid);
+diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
+index f92b8e7..f624229 100644
+--- a/arch/x86/include/asm/numa_64.h
++++ b/arch/x86/include/asm/numa_64.h
+@@ -30,8 +30,6 @@ extern void setup_node_bootmem(int nodeid, unsigned long start,
+ 
+ extern void __init init_cpu_to_node(void);
+ extern int __cpuinit numa_cpu_node(int cpu);
+-extern void __cpuinit numa_add_cpu(int cpu);
+-extern void __cpuinit numa_remove_cpu(int cpu);
+ 
+ #ifdef CONFIG_NUMA_EMU
+ #define FAKE_NODE_MIN_SIZE	((u64)32 << 20)
+@@ -40,8 +38,6 @@ extern void __cpuinit numa_remove_cpu(int cpu);
  #else
- 	return 0;
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 9e093f8..d8e81e5 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -234,17 +234,21 @@ static void __cpuinit init_amd_k7(struct cpuinfo_x86 *c)
+ static inline void init_cpu_to_node(void)		{ }
+ static inline int numa_cpu_node(int cpu)		{ return NUMA_NO_NODE; }
+-static inline void numa_add_cpu(int cpu, int node)	{ }
+-static inline void numa_remove_cpu(int cpu)		{ }
  #endif
  
- #if defined(CONFIG_NUMA) && defined(CONFIG_X86_64)
-+/*
-+ * To workaround broken NUMA config.  Read the comment in
-+ * srat_detect_node().
-+ */
- static int __cpuinit nearby_node(int apicid)
- {
- 	int i, node;
+ #endif /* _ASM_X86_NUMA_64_H */
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 4b68bda..0e9a1d7 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -869,7 +869,7 @@ static void __cpuinit identify_cpu(struct cpuinfo_x86 *c)
  
- 	for (i = apicid - 1; i >= 0; i--) {
--		node = apicid_to_node[i];
-+		node = __apicid_to_node[i];
- 		if (node != NUMA_NO_NODE && node_online(node))
- 			return node;
- 	}
- 	for (i = apicid + 1; i < MAX_LOCAL_APIC; i++) {
--		node = apicid_to_node[i];
-+		node = __apicid_to_node[i];
- 		if (node != NUMA_NO_NODE && node_online(node))
- 			return node;
- 	}
-@@ -339,26 +343,35 @@ static void __cpuinit srat_detect_node(struct cpuinfo_x86 *c)
- 	int node;
- 	unsigned apicid = c->apicid;
+ 	select_idle_routine(c);
  
--	node = per_cpu(cpu_llc_id, cpu);
-+	node = numa_cpu_node(cpu);
-+	if (node == NUMA_NO_NODE)
-+		node = per_cpu(cpu_llc_id, cpu);
- 
--	if (apicid_to_node[apicid] != NUMA_NO_NODE)
--		node = apicid_to_node[apicid];
- 	if (!node_online(node)) {
--		/* Two possibilities here:
--		   - The CPU is missing memory and no node was created.
--		   In that case try picking one from a nearby CPU
--		   - The APIC IDs differ from the HyperTransport node IDs
--		   which the K8 northbridge parsing fills in.
--		   Assume they are all increased by a constant offset,
--		   but in the same order as the HT nodeids.
--		   If that doesn't result in a usable node fall back to the
--		   path for the previous case.  */
--
-+		/*
-+		 * Two possibilities here:
-+		 *
-+		 * - The CPU is missing memory and no node was created.  In
-+		 *   that case try picking one from a nearby CPU.
-+		 *
-+		 * - The APIC IDs differ from the HyperTransport node IDs
-+		 *   which the K8 northbridge parsing fills in.  Assume
-+		 *   they are all increased by a constant offset, but in
-+		 *   the same order as the HT nodeids.  If that doesn't
-+		 *   result in a usable node fall back to the path for the
-+		 *   previous case.
-+		 *
-+		 * This workaround operates directly on the mapping between
-+		 * APIC ID and NUMA node, assuming certain relationship
-+		 * between APIC ID, HT node ID and NUMA topology.  As going
-+		 * through CPU mapping may alter the outcome, directly
-+		 * access __apicid_to_node[].
-+		 */
- 		int ht_nodeid = c->initial_apicid;
- 
- 		if (ht_nodeid >= 0 &&
--		    apicid_to_node[ht_nodeid] != NUMA_NO_NODE)
--			node = apicid_to_node[ht_nodeid];
-+		    __apicid_to_node[ht_nodeid] != NUMA_NO_NODE)
-+			node = __apicid_to_node[ht_nodeid];
- 		/* Pick a nearby node */
- 		if (!node_online(node))
- 			node = nearby_node(apicid);
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index d16c2c5..6052004 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -279,11 +279,10 @@ static void __cpuinit srat_detect_node(struct cpuinfo_x86 *c)
- #if defined(CONFIG_NUMA) && defined(CONFIG_X86_64)
- 	unsigned node;
- 	int cpu = smp_processor_id();
--	int apicid = cpu_has_apic ? hard_smp_processor_id() : c->apicid;
- 
- 	/* Don't do the funky fallback heuristics the AMD version employs
- 	   for now. */
--	node = apicid_to_node[apicid];
-+	node = numa_cpu_node(cpu);
- 	if (node == NUMA_NO_NODE || !node_online(node)) {
- 		/* reuse the value from init_cpu_to_node() */
- 		node = cpu_to_node(cpu);
+-#if defined(CONFIG_NUMA) && defined(CONFIG_X86_64)
++#ifdef CONFIG_NUMA
+ 	numa_add_cpu(smp_processor_id());
+ #endif
+ }
 diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 031d2e1..4b8b72d 100644
+index b78ce8c..b152077 100644
 --- a/arch/x86/kernel/smpboot.c
 +++ b/arch/x86/kernel/smpboot.c
-@@ -71,10 +71,6 @@
- #include <asm/smpboot_hooks.h>
- #include <asm/i8259.h>
+@@ -132,49 +132,6 @@ EXPORT_PER_CPU_SYMBOL(cpu_info);
  
--#ifdef CONFIG_X86_32
--u8 apicid_2_node[MAX_LOCAL_APIC];
+ atomic_t init_deasserted;
+ 
+-#if defined(CONFIG_NUMA) && defined(CONFIG_X86_32)
+-/* set up a mapping between cpu and node. */
+-static void map_cpu_to_node(int cpu, int node)
+-{
+-	printk(KERN_INFO "Mapping cpu %d to node %d\n", cpu, node);
+-	cpumask_set_cpu(cpu, node_to_cpumask_map[node]);
+-}
+-
+-/* undo a mapping between cpu and node. */
+-static void unmap_cpu_to_node(int cpu)
+-{
+-	int node;
+-
+-	printk(KERN_INFO "Unmapping cpu %d from all nodes\n", cpu);
+-	for (node = 0; node < MAX_NUMNODES; node++)
+-		cpumask_clear_cpu(cpu, node_to_cpumask_map[node]);
+-}
+-#else /* !(CONFIG_NUMA && CONFIG_X86_32) */
+-#define map_cpu_to_node(cpu, node)	({})
+-#define unmap_cpu_to_node(cpu)	({})
 -#endif
 -
- /* State of each CPU */
- DEFINE_PER_CPU(int, cpu_state) = { 0 };
+-#ifdef CONFIG_X86_32
+-static void map_cpu_to_logical_apicid(void)
+-{
+-	int cpu = smp_processor_id();
+-	int node;
+-
+-	node = numa_cpu_node(cpu);
+-	if (!node_online(node))
+-		node = first_online_node;
+-
+-	map_cpu_to_node(cpu, node);
+-}
+-
+-void numa_remove_cpu(int cpu)
+-{
+-	unmap_cpu_to_node(cpu);
+-}
+-#else
+-#define map_cpu_to_logical_apicid()  do {} while (0)
+-#endif
+-
+ /*
+  * Report back to the Boot Processor.
+  * Running on AP.
+@@ -242,7 +199,6 @@ static void __cpuinit smp_callin(void)
+ 		apic->smp_callin_clear_local_apic();
+ 	setup_local_APIC();
+ 	end_local_APIC_setup();
+-	map_cpu_to_logical_apicid();
  
-@@ -170,7 +166,7 @@ static void map_cpu_to_logical_apicid(void)
- 	int cpu = smp_processor_id();
- 	int node;
- 
--	node = apic->x86_32_numa_cpu_node(cpu);
-+	node = numa_cpu_node(cpu);
- 	if (!node_online(node))
- 		node = first_online_node;
- 
-diff --git a/arch/x86/mm/amdtopology_64.c b/arch/x86/mm/amdtopology_64.c
-index f21962c..c7fae38 100644
---- a/arch/x86/mm/amdtopology_64.c
-+++ b/arch/x86/mm/amdtopology_64.c
-@@ -247,7 +247,7 @@ void __init amd_fake_nodes(const struct bootnode *nodes, int nr_nodes)
- 		__acpi_map_pxm_to_node(nid, i);
- #endif
- 	}
--	memcpy(apicid_to_node, fake_apicid_to_node, sizeof(apicid_to_node));
-+	memcpy(__apicid_to_node, fake_apicid_to_node, sizeof(__apicid_to_node));
+ 	/*
+ 	 * Need to setup vector mappings before we enable interrupts.
+@@ -946,7 +902,6 @@ static __init void disable_smp(void)
+ 		physid_set_mask_of_physid(boot_cpu_physical_apicid, &phys_cpu_present_map);
+ 	else
+ 		physid_set_mask_of_physid(0, &phys_cpu_present_map);
+-	map_cpu_to_logical_apicid();
+ 	cpumask_set_cpu(0, cpu_sibling_mask(0));
+ 	cpumask_set_cpu(0, cpu_core_mask(0));
  }
- #endif /* CONFIG_NUMA_EMU */
+@@ -1125,8 +1080,6 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
  
-@@ -285,7 +285,7 @@ int __init amd_scan_nodes(void)
- 				nodes[i].start >> PAGE_SHIFT,
- 				nodes[i].end >> PAGE_SHIFT);
- 		for (j = apicid_base; j < cores + apicid_base; j++)
--			apicid_to_node[(i << bits) + j] = i;
-+			set_apicid_to_node((i << bits) + j, i);
- 		setup_node_bootmem(i, nodes[i].start, nodes[i].end);
- 	}
+ 	end_local_APIC_setup();
+ 
+-	map_cpu_to_logical_apicid();
+-
+ 	if (apic->setup_portio_remap)
+ 		apic->setup_portio_remap();
  
 diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 787c52c..63db99c 100644
+index b23b5fe..61dcdcd 100644
 --- a/arch/x86/mm/numa.c
 +++ b/arch/x86/mm/numa.c
-@@ -4,8 +4,12 @@
- #include <linux/bootmem.h>
+@@ -77,7 +77,21 @@ void __init setup_node_to_cpumask_map(void)
+ 	pr_debug("Node to cpumask map for %d nodes\n", nr_node_ids);
+ }
  
- /*
-- * Which logical CPUs are on which nodes
-+ * apicid, cpu, node mappings
-  */
-+s16 __apicid_to_node[MAX_LOCAL_APIC] __cpuinitdata = {
-+	[0 ... MAX_LOCAL_APIC-1] = NUMA_NO_NODE
-+};
+-#ifdef CONFIG_DEBUG_PER_CPU_MAPS
++#ifndef CONFIG_DEBUG_PER_CPU_MAPS
 +
- cpumask_var_t node_to_cpumask_map[MAX_NUMNODES];
- EXPORT_SYMBOL(node_to_cpumask_map);
- 
-diff --git a/arch/x86/mm/numa_32.c b/arch/x86/mm/numa_32.c
-index 84a3e4c..8d91d22 100644
---- a/arch/x86/mm/numa_32.c
-+++ b/arch/x86/mm/numa_32.c
-@@ -110,6 +110,12 @@ void set_pmd_pfn(unsigned long vaddr, unsigned long pfn, pgprot_t flags);
- 
- static unsigned long kva_start_pfn;
- static unsigned long kva_pages;
-+
-+int __cpuinit numa_cpu_node(int cpu)
++# ifndef CONFIG_NUMA_EMU
++void __cpuinit numa_add_cpu(int cpu)
 +{
-+	return apic->x86_32_numa_cpu_node(cpu);
++	cpumask_set_cpu(cpu, node_to_cpumask_map[early_cpu_to_node(cpu)]);
 +}
 +
++void __cpuinit numa_remove_cpu(int cpu)
++{
++	cpumask_clear_cpu(cpu, node_to_cpumask_map[early_cpu_to_node(cpu)]);
++}
++# endif	/* !CONFIG_NUMA_EMU */
++
++#else	/* !CONFIG_DEBUG_PER_CPU_MAPS */
+ 
+ int __cpu_to_node(int cpu)
+ {
+@@ -109,6 +123,41 @@ int early_cpu_to_node(int cpu)
+ 	return per_cpu(x86_cpu_to_node_map, cpu);
+ }
+ 
++# ifndef CONFIG_NUMA_EMU
++static void __cpuinit numa_set_cpumask(int cpu, int enable)
++{
++	int node = early_cpu_to_node(cpu);
++	struct cpumask *mask;
++	char buf[64];
++
++	mask = node_to_cpumask_map[node];
++	if (mask == NULL) {
++		printk(KERN_ERR "node_to_cpumask_map[%i] NULL\n", node);
++		dump_stack();
++		return;
++	}
++
++	if (enable)
++		cpumask_set_cpu(cpu, mask);
++	else
++		cpumask_clear_cpu(cpu, mask);
++
++	cpulist_scnprintf(buf, sizeof(buf), mask);
++	printk(KERN_DEBUG "%s cpu %d node %d: mask now %s\n",
++		enable ? "numa_add_cpu" : "numa_remove_cpu", cpu, node, buf);
++}
++
++void __cpuinit numa_add_cpu(int cpu)
++{
++	numa_set_cpumask(cpu, 1);
++}
++
++void __cpuinit numa_remove_cpu(int cpu)
++{
++	numa_set_cpumask(cpu, 0);
++}
++# endif	/* !CONFIG_NUMA_EMU */
++
  /*
-  * FLAT - support for basic PC memory model with discontig enabled, essentially
-  *        a single node with all available processors in it with a flat
+  * Returns a pointer to the bitmask of CPUs on Node 'node'.
+  */
+@@ -132,4 +181,4 @@ const struct cpumask *cpumask_of_node(int node)
+ }
+ EXPORT_SYMBOL(cpumask_of_node);
+ 
+-#endif	/* CONFIG_DEBUG_PER_CPU_MAPS */
++#endif	/* !CONFIG_DEBUG_PER_CPU_MAPS */
 diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 3d73201..e32b405 100644
+index ede4608..d58dc4d 100644
 --- a/arch/x86/mm/numa_64.c
 +++ b/arch/x86/mm/numa_64.c
-@@ -26,10 +26,6 @@ EXPORT_SYMBOL(node_data);
- 
- struct memnode memnode;
- 
--s16 apicid_to_node[MAX_LOCAL_APIC] __cpuinitdata = {
--	[0 ... MAX_LOCAL_APIC-1] = NUMA_NO_NODE
--};
--
- int numa_off __initdata;
- static unsigned long __initdata nodemap_addr;
- static unsigned long __initdata nodemap_size;
-@@ -730,12 +726,8 @@ void __init init_cpu_to_node(void)
- 	BUG_ON(cpu_to_apicid == NULL);
- 
- 	for_each_possible_cpu(cpu) {
--		int node;
--		u16 apicid = cpu_to_apicid[cpu];
-+		int node = numa_cpu_node(cpu);
- 
--		if (apicid == BAD_APICID)
--			continue;
--		node = apicid_to_node[apicid];
- 		if (node == NUMA_NO_NODE)
- 			continue;
- 		if (!node_online(node))
-@@ -745,6 +737,14 @@ void __init init_cpu_to_node(void)
+@@ -740,19 +740,18 @@ int __cpuinit numa_cpu_node(int cpu)
+ 	return NUMA_NO_NODE;
  }
- #endif
  
-+int __cpuinit numa_cpu_node(int cpu)
-+{
-+	int apicid = early_per_cpu(x86_cpu_to_apicid, cpu);
-+
-+	if (apicid != BAD_APICID)
-+		return __apicid_to_node[apicid];
-+	return NUMA_NO_NODE;
-+}
- 
- void __cpuinit numa_set_node(int cpu, int node)
- {
-@@ -790,13 +790,9 @@ void __cpuinit numa_remove_cpu(int cpu)
+-#ifndef CONFIG_DEBUG_PER_CPU_MAPS
+-
+-#ifndef CONFIG_NUMA_EMU
+-void __cpuinit numa_add_cpu(int cpu)
+-{
+-	cpumask_set_cpu(cpu, node_to_cpumask_map[early_cpu_to_node(cpu)]);
+-}
+-
+-void __cpuinit numa_remove_cpu(int cpu)
+-{
+-	cpumask_clear_cpu(cpu, node_to_cpumask_map[early_cpu_to_node(cpu)]);
+-}
+-#else
++/*
++ * UGLINESS AHEAD: Currently, CONFIG_NUMA_EMU is 64bit only and makes use
++ * of 64bit specific data structures.  The distinction is artificial and
++ * should be removed.  numa_{add|remove}_cpu() are implemented in numa.c
++ * for both 32 and 64bit when CONFIG_NUMA_EMU is disabled but here when
++ * enabled.
++ *
++ * NUMA emulation is planned to be made generic and the following and other
++ * related code should be moved to numa.c.
++ */
++#ifdef CONFIG_NUMA_EMU
++# ifndef CONFIG_DEBUG_PER_CPU_MAPS
  void __cpuinit numa_add_cpu(int cpu)
  {
  	unsigned long addr;
--	u16 apicid;
--	int physnid;
--	int nid = NUMA_NO_NODE;
-+	int physnid, nid;
- 
--	apicid = early_per_cpu(x86_cpu_to_apicid, cpu);
--	if (apicid != BAD_APICID)
--		nid = apicid_to_node[apicid];
-+	nid = numa_cpu_node(cpu);
- 	if (nid == NUMA_NO_NODE)
- 		nid = early_cpu_to_node(cpu);
- 	BUG_ON(nid == NUMA_NO_NODE || !node_online(nid));
-diff --git a/arch/x86/mm/srat_32.c b/arch/x86/mm/srat_32.c
-index e55e748..7fcae55 100644
---- a/arch/x86/mm/srat_32.c
-+++ b/arch/x86/mm/srat_32.c
-@@ -255,7 +255,7 @@ int __init get_memcfg_from_srat(void)
- 			 num_memory_chunks);
- 
- 	for (i = 0; i < MAX_LOCAL_APIC; i++)
--		apicid_2_node[i] = pxm_to_node(apicid_to_pxm[i]);
-+		set_apicid_to_node(i, pxm_to_node(apicid_to_pxm[i]));
- 
- 	for (j = 0; j < num_memory_chunks; j++){
- 		struct node_memory_chunk_s * chunk = &node_memory_chunk[j];
-diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
-index a756bcf..8b3a81e 100644
---- a/arch/x86/mm/srat_64.c
-+++ b/arch/x86/mm/srat_64.c
-@@ -79,7 +79,7 @@ static __init void bad_srat(void)
- 	printk(KERN_ERR "SRAT: SRAT not used.\n");
- 	acpi_numa = -1;
- 	for (i = 0; i < MAX_LOCAL_APIC; i++)
--		apicid_to_node[i] = NUMA_NO_NODE;
-+		set_apicid_to_node(i, NUMA_NO_NODE);
- 	for (i = 0; i < MAX_NUMNODES; i++) {
- 		nodes[i].start = nodes[i].end = 0;
- 		nodes_add[i].start = nodes_add[i].end = 0;
-@@ -134,7 +134,7 @@ acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
- 	}
- 
- 	apic_id = pa->apic_id;
--	apicid_to_node[apic_id] = node;
-+	set_apicid_to_node(apic_id, node);
- 	node_set(node, cpu_nodes_parsed);
- 	acpi_numa = 1;
- 	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u\n",
-@@ -168,7 +168,7 @@ acpi_numa_processor_affinity_init(struct acpi_srat_cpu_affinity *pa)
- 		apic_id = (pa->apic_id << 8) | pa->local_sapic_eid;
- 	else
- 		apic_id = pa->apic_id;
--	apicid_to_node[apic_id] = node;
-+	set_apicid_to_node(apic_id, node);
- 	node_set(node, cpu_nodes_parsed);
- 	acpi_numa = 1;
- 	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%02x -> Node %u\n",
-@@ -511,7 +511,7 @@ void __init acpi_fake_nodes(const struct bootnode *fake_nodes, int num_nodes)
- 		 * node, it must now point to the fake node ID.
- 		 */
- 		for (j = 0; j < MAX_LOCAL_APIC; j++)
--			if (apicid_to_node[j] == nid &&
-+			if (__apicid_to_node[j] == nid &&
- 			    fake_apicid_to_node[j] == NUMA_NO_NODE)
- 				fake_apicid_to_node[j] = i;
- 	}
-@@ -522,13 +522,13 @@ void __init acpi_fake_nodes(const struct bootnode *fake_nodes, int num_nodes)
- 	 * value.
- 	 */
- 	for (i = 0; i < MAX_LOCAL_APIC; i++)
--		if (apicid_to_node[i] != NUMA_NO_NODE &&
-+		if (__apicid_to_node[i] != NUMA_NO_NODE &&
- 		    fake_apicid_to_node[i] == NUMA_NO_NODE)
- 			fake_apicid_to_node[i] = 0;
- 
- 	for (i = 0; i < num_nodes; i++)
- 		__acpi_map_pxm_to_node(fake_node_to_pxm_map[i], i);
--	memcpy(apicid_to_node, fake_apicid_to_node, sizeof(apicid_to_node));
-+	memcpy(__apicid_to_node, fake_apicid_to_node, sizeof(__apicid_to_node));
- 
- 	nodes_clear(nodes_parsed);
- 	for (i = 0; i < num_nodes; i++)
+@@ -792,13 +791,7 @@ void __cpuinit numa_remove_cpu(int cpu)
+ 	for_each_online_node(i)
+ 		cpumask_clear_cpu(cpu, node_to_cpumask_map[i]);
+ }
+-#endif /* !CONFIG_NUMA_EMU */
+-
+-#else /* CONFIG_DEBUG_PER_CPU_MAPS */
+-
+-/*
+- * --------- debug versions of the numa functions ---------
+- */
++# else	/* !CONFIG_DEBUG_PER_CPU_MAPS */
+ static void __cpuinit numa_set_cpumask(int cpu, int enable)
+ {
+ 	int node = early_cpu_to_node(cpu);
+@@ -841,8 +834,5 @@ void __cpuinit numa_remove_cpu(int cpu)
+ {
+ 	numa_set_cpumask(cpu, 0);
+ }
+-/*
+- * --------- end of debug versions of the numa functions ---------
+- */
+-
+-#endif /* CONFIG_DEBUG_PER_CPU_MAPS */
++# endif	/* !CONFIG_DEBUG_PER_CPU_MAPS */
++#endif	/* CONFIG_NUMA_EMU */
 -- 
 1.7.1
 
