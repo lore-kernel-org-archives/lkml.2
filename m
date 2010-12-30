@@ -1,69 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab0L3IxT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 03:53:19 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:53949 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543Ab0L3IxR (ORCPT
+	id S1753345Ab0L3IzA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 03:55:00 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:39651 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752902Ab0L3Iy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 03:53:17 -0500
-Subject: Re: [PATCH] mac80211: fix mesh forwarding when ratelimited too
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Milton Miller <miltonm@bga.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        Javier Cardona <javier@cozybit.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <mac80211-rx-ratelimit-goto@mdm.bga.com>
-References: <1293009307.3531.13.camel@jlt3.sipsolutions.net>
-	 <AANLkTik9PS-wKYg=XC0bUaZ=a99d-FdUmzZfvALVQ9Tv@mail.gmail.com>
-	 <201012262159.oBQLxOsw008865@hera.kernel.org>
-	 <mac80211-rx-ratelimit-goto@mdm.bga.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 30 Dec 2010 09:53:09 +0100
-Message-ID: <1293699189.4055.0.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 30 Dec 2010 03:54:59 -0500
+Date: Thu, 30 Dec 2010 01:54:51 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, sodaville@linutronix.de, x86@kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 05/15] x86/dtb: add early parsing of APIC and IO APIC
+Message-ID: <20101230085451.GF11721@angua.secretlab.ca>
+References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de>
+ <1292600033-12271-6-git-send-email-bigeasy@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292600033-12271-6-git-send-email-bigeasy@linutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-30 at 02:01 -0600, Milton Miller wrote:
-> Commit b51aff057c9d0ef6c529dc25fd9f775faf7b6c63 said:
+On Fri, Dec 17, 2010 at 04:33:43PM +0100, Sebastian Andrzej Siewior wrote:
+> The apic & ioapic have to be added to system early because
+> native_init_IRQ() requires it. In order to obtain the address of the
+> ioapic the device tree has to be unflattened because
+> of_address_to_resource() has to work.
+> The device tree is relocated to ensure it is always covered by the
+> kernel and the boot loader does not have to make assumptions about
+> kernel's memory layout.
 > 
->     Under memory pressure, the mac80211 mesh code
->     may helpfully print a message that it failed
->     to clone a mesh frame and then will proceed
->     to crash trying to use it anyway. Fix that.
->     
-> Avoid the reference whenever the frame copy is unsuccessful
-> regardless of the debug message being suppressed or printed.
-> 
-> Cc: stable@kernel.org [2.6.27+] 
-> Signed-off-by: Milton Miller <miltonm@bga.com>
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 > ---
-> I chose a seperate if vs nesting the ratelimit check to avoid shifting
-> the printk further to the right.
+>  arch/x86/include/asm/prom.h |    7 +++
+>  arch/x86/kernel/irqinit.c   |    2 +-
+>  arch/x86/kernel/prom.c      |  123 +++++++++++++++++++++++++++++++++++++++++-
+>  3 files changed, 128 insertions(+), 4 deletions(-)
 > 
-> diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
-> index b01e467..e98668f 100644
-> --- a/net/mac80211/rx.c
-> +++ b/net/mac80211/rx.c
-> @@ -1788,11 +1788,11 @@ ieee80211_rx_h_mesh_fwding(struct ieee80211_rx_data *rx)
+> diff --git a/arch/x86/include/asm/prom.h b/arch/x86/include/asm/prom.h
+> index 9076ae4..3bc8ed5 100644
+> --- a/arch/x86/include/asm/prom.h
+> +++ b/arch/x86/include/asm/prom.h
+> @@ -22,10 +22,17 @@
+>  #include <asm/irq_controller.h>
 >  
->  			fwd_skb = skb_copy(skb, GFP_ATOMIC);
+>  #ifdef CONFIG_OF
+> +extern int of_ioapic;
+> +extern u64 initial_dtb;
+>  extern void add_dtb(u64 data);
+> +void x86_dtb_find_config(void);
+> +void x86_dtb_get_config(unsigned int unused);
+>  void add_interrupt_host(struct irq_domain *ih);
+>  #else
+>  static inline void add_dtb(u64 data) { }
+> +#define x86_dtb_find_config x86_init_noop
+> +#define x86_dtb_get_config x86_init_uint_noop
+> +#define of_ioapic 0
+>  #endif
 >  
-> -			if (!fwd_skb && net_ratelimit()) {
-> +			if (!fwd_skb && net_ratelimit())
->  				printk(KERN_DEBUG "%s: failed to clone mesh frame\n",
->  						   sdata->name);
-> +			if (!fwd_skb)
->  				goto out;
-> -			}
+>  extern char cmd_line[COMMAND_LINE_SIZE];
+> diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
+> index 149c87f..4cadf86 100644
+> --- a/arch/x86/kernel/irqinit.c
+> +++ b/arch/x86/kernel/irqinit.c
+> @@ -244,7 +244,7 @@ void __init native_init_IRQ(void)
+>  			set_intr_gate(i, interrupt[i-FIRST_EXTERNAL_VECTOR]);
+>  	}
+>  
+> -	if (!acpi_ioapic)
+> +	if (!acpi_ioapic && !of_ioapic)
+>  		setup_irq(2, &irq2);
+>  
+>  #ifdef CONFIG_X86_32
+> diff --git a/arch/x86/kernel/prom.c b/arch/x86/kernel/prom.c
+> index 53948cb..9cbb52b 100644
+> --- a/arch/x86/kernel/prom.c
+> +++ b/arch/x86/kernel/prom.c
+> @@ -6,15 +6,20 @@
+>  #include <linux/interrupt.h>
+>  #include <linux/list.h>
+>  #include <linux/of.h>
+> +#include <linux/of_address.h>
+>  #include <linux/of_platform.h>
+>  #include <linux/slab.h>
+>  
+>  #include <asm/irq_controller.h>
+> +#include <asm/io_apic.h>
+>  
+> +__initdata u64 initial_dtb;
+>  char __initdata cmd_line[COMMAND_LINE_SIZE];
+>  static LIST_HEAD(irq_domains);
+>  static DEFINE_RAW_SPINLOCK(big_irq_lock);
+>  
+> +int __initdata of_ioapic;
+> +
+>  void add_interrupt_host(struct irq_domain *ih)
+>  {
+>  	unsigned long flags;
+> @@ -93,7 +98,119 @@ u64 __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
+>  
+>  void __init add_dtb(u64 data)
+>  {
+> -	initial_boot_params = (struct boot_param_header *)
+> -		phys_to_virt((u64) (u32) data +
+> -				offsetof(struct setup_data, data));
+> +	initial_dtb = data + offsetof(struct setup_data, data);
+> +}
+> +
+> +static void __init dtb_lapic_setup(void)
+> +{
+> +#ifdef CONFIG_X86_LOCAL_APIC
+> +	if (apic_force_enable())
+> +		return;
+> +
+> +	smp_found_config = 1;
+> +	pic_mode = 1;
+> +	/* Required for ioapic registration */
+> +	set_fixmap_nocache(FIX_APIC_BASE, mp_lapic_addr);
+> +	if (boot_cpu_physical_apicid == -1U)
+> +		boot_cpu_physical_apicid = read_apic_id();
+> +
+> +	generic_processor_info(boot_cpu_physical_apicid,
+> +			GET_APIC_VERSION(apic_read(APIC_LVR)));
+> +#endif
+> +}
+> +
+> +#ifdef CONFIG_X86_IO_APIC
+> +static void __init dtb_add_ioapic(struct device_node *dn)
+> +{
+> +	unsigned int ioapic_id;
+> +	const __be32 *cell;
+> +	int len;
+> +	struct resource r;
+> +	int ret;
+> +
+> +	cell = of_get_property(dn, "id", &len);
+> +	if (!cell) {
+> +		printk(KERN_ERR "Node %s is missing id property.\n",
+> +				dn->full_name);
+> +		return;
+> +	}
+> +	ioapic_id = of_read_ulong(cell, len / 4);
+> +
+> +	ret = of_address_to_resource(dn, 0, &r);
+> +	if (ret) {
+> +		printk(KERN_ERR "Can't obtain address from node %s.\n",
+> +				dn->full_name);
+> +		return;
+> +	}
+> +	mp_register_ioapic(ioapic_id, r.start, gsi_top);
+> +}
+> +
+> +static void __init dtb_ioapic_setup(void)
+> +{
+> +	struct device_node *dn;
+> +
+> +	if (!smp_found_config)
+> +		return;
+> +
+> +	for_each_compatible_node(dn, NULL, "intel,ioapic")
+> +		dtb_add_ioapic(dn);
+> +
+> +	if (nr_ioapics) {
+> +		of_ioapic = 1;
+> +		return;
+> +	}
+> +	printk(KERN_ERR "Error: No information about IO-APIC in OF.\n");
+> +	smp_found_config = 0;
+> +}
+> +#else
+> +static void __init dtb_ioapic_setup(void) {}
+> +#endif
+> +
+> +static void __init dtb_apic_setup(void)
+> +{
+> +	dtb_lapic_setup();
+> +	dtb_ioapic_setup();
+> +}
+> +
+> +void __init x86_dtb_find_config(void)
+> +{
+> +	if (initial_dtb)
+> +		smp_found_config = 1;
+> +	else
+> +		printk(KERN_ERR "Missing device tree!.\n");
+> +}
+> +
+> +void __init x86_dtb_get_config(unsigned int unused)
+> +{
+> +	u32 size;
+> +	u32 map_len;
+> +	void *new_dtb;
+> +
+> +	if (!initial_dtb)
+> +		return;
+> +
+> +	map_len = max(PAGE_SIZE - (initial_dtb & ~PAGE_MASK),
+> +			(u64)sizeof(struct boot_param_header));
+> +
+> +	initial_boot_params = early_memremap(initial_dtb, map_len);
+> +	size = be32_to_cpu(initial_boot_params->totalsize);
+> +	if (map_len < size) {
+> +		early_iounmap(initial_boot_params, map_len);
+> +		initial_boot_params = early_memremap(initial_dtb, size);
 
-Oops, good catch! Thanks.
+Add "map_len = size;" here eliminate the early_iounmap() dance done below.
 
-johannes
-
+> +	}
+> +
+> +	new_dtb = alloc_bootmem(size);
+> +	memcpy(new_dtb, initial_boot_params, size);
+> +	if (map_len < size)
+> +		early_iounmap(initial_boot_params, size);
+> +	else
+> +		early_iounmap(initial_boot_params, map_len);
+> +
+> +	initial_boot_params = new_dtb;
+> +
+> +	/* root level address cells */
+> +	of_scan_flat_dt(early_init_dt_scan_root, NULL);
+> +
+> +	unflatten_device_tree();
+> +	dtb_apic_setup();
+>  }
+> -- 
+> 1.7.3.2
+> 
+> _______________________________________________
+> devicetree-discuss mailing list
+> devicetree-discuss@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/devicetree-discuss
