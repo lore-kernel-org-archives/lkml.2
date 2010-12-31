@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab0LaPxA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 10:53:00 -0500
-Received: from astoria.ccjclearline.com ([64.235.106.9]:43474 "EHLO
-	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837Ab0LaPw7 (ORCPT
+	id S1753644Ab0LaQPT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 11:15:19 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60416 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751682Ab0LaQPS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 10:52:59 -0500
-Date: Fri, 31 Dec 2010 10:52:48 -0500 (EST)
-From: "Robert P. J. Day" <rpjday@crashcourse.ca>
-X-X-Sender: rpjday@localhost6.localdomain6
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Paul Rolland <rol@witbe.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Dave Airlie <airlied@redhat.com>, Keith Packard <keithp@keithp.com>
-Subject: Re: [Bug #22542] [2.6.37-rc1] drm:i195 errors
-In-Reply-To: <201012311647.24673.rjw@sisk.pl>
-Message-ID: <alpine.DEB.2.00.1012311050530.3688@localhost6.localdomain6>
-References: <96DQe4a_2tH.A.4RE.497GNB@chimera> <sV7shrPOroO.A.3WH.nA8GNB@chimera> <20101231113021.1f086baa@tux.DEF.witbe.net> <201012311647.24673.rjw@sisk.pl>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 31 Dec 2010 11:15:18 -0500
+Date: Fri, 31 Dec 2010 17:15:12 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: linux-next: manual merge of the trivial tree with the ext4 tree
+Message-ID: <20101231161512.GG14221@pengutronix.de>
+References: <20101231125721.3c3f4604.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - crashcourse.ca
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101231125721.3c3f4604.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 Dec 2010, Rafael J. Wysocki wrote:
+Hi Stephen,
 
-> On Friday, December 31, 2010, Paul Rolland wrote:
-> > Hello,
-> >
-> > I'm now running 2.6.37-rc8, and I still have :
-> > Dec 31 11:03:10 tux kernel: [drm:i915_gem_mmap_gtt_ioctl] *ERROR* Attempting to mmap a purgeable buffer
-> >
-> > as well as :
-> >
-> > Dec 31 10:44:53 tux kernel: [drm:intel_panel_get_max_backlight] *ERROR* fixme: max PWM is zero.
-> > Dec 31 10:49:34 tux kernel: [drm:intel_panel_get_max_backlight] *ERROR* fixme: max PWM is zero.
->
-> There were some last-minute fixes related to i915 added to the
-> Linus' tree after 2.6.37-rc8.  Perhaps you can give them a try?
+On Fri, Dec 31, 2010 at 12:57:21PM +1100, Stephen Rothwell wrote:
+> diff --cc fs/ext4/ext4.h
+> index 2a73925,1f253a9..0000000
+> --- a/fs/ext4/ext4.h
+> +++ b/fs/ext4/ext4.h
+> @@@ -561,7 -561,23 +561,7 @@@ struct ext4_new_group_data 
+>   #define EXT4_IOC32_SETVERSION_OLD	FS_IOC32_SETVERSION
+>   #endif
+>   
+> - /* Max physical block we can addres w/o extents */
+>  -
+>  -/*
+>  - *  Mount options
+>  - */
+>  -struct ext4_mount_options {
+>  -	unsigned long s_mount_opt;
+>  -	uid_t s_resuid;
+>  -	gid_t s_resgid;
+>  -	unsigned long s_commit_interval;
+>  -	u32 s_min_batch_time, s_max_batch_time;
+>  -#ifdef CONFIG_QUOTA
+>  -	int s_jquota_fmt;
+>  -	char *s_qf_names[MAXQUOTAS];
+>  -#endif
+>  -};
+>  -
+> + /* Max physical block we can address w/o extents */
+>   #define EXT4_MAX_BLOCK_FILE_PHYS	0xFFFFFFFF
+>   
+>   /*
+> 
+Looks correct.
 
-  if this is in any way related to various systems booting to a black
-screen (as i described earlier), i built an absolutely up-to-date
-kernel from the latest tree and that didn't solve the problem.  i'm
-open to testing suggestions.
+Independant of this I think it would be better to define
+EXT4_MAX_BLOCK_FILE_PHYS to 0xFFFFFFFFUL to have the same type on all
+platforms.
 
-rday
+Best regards
+Uwe
 
 -- 
-
-========================================================================
-Robert P. J. Day                               Waterloo, Ontario, CANADA
-                        http://crashcourse.ca
-
-Twitter:                                       http://twitter.com/rpjday
-LinkedIn:                               http://ca.linkedin.com/in/rpjday
-========================================================================
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
