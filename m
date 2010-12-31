@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754012Ab0LaRkM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 12:40:12 -0500
-Received: from mail-gw0-f66.google.com ([74.125.83.66]:43912 "EHLO
-	mail-gw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871Ab0LaRkK (ORCPT
+	id S1753996Ab0LaRlT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 12:41:19 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48302 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753871Ab0LaRlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 12:40:10 -0500
+	Fri, 31 Dec 2010 12:41:16 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=DAA15TZiyyQPdfSNZqexQCZl1o8G0b/MBcCuRRrP0fVFuVYNLQgEY9n1C0llf1FbZ9
-         mRcT5lJvpa8VfuTOBFbPpO17mT5njysiebOIM6/W87WSgGZllzAlGqvL5PO9MhTsVGf3
-         elreOX1uYN0tlf7dy30U4g9eH6ZW8HfwYSotE=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 7/7]wusbcore/rh.c Typo change desciptor to descriptor.
-Date: Fri, 31 Dec 2010 09:40:21 -0800
-Message-Id: <1293817221-8148-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.6.5.2.180.gc5b3e
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=UW7fglT+3gVLOKjzgZ3eerKU6lNC9ZzUbq53HqtLbW33lH3Hd67w+DTilHTgzg5db+
+         9D0jWf73g2rqXfx7DkgxN4KBPd4ZPMUoSSjfu/E8ApzfZ5RVxySlmDDLxKkqbQCWTIKX
+         MNF1EqfWSK7mYHpaMdTNjOoWqw2Qn0KJnOvsM=
+Date: Fri, 31 Dec 2010 20:41:00 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, trivial@kernel.org,
+        devel@driverdev.osuosl.org, linux-scsi@vger.kernel.org,
+        netdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ivtv-devel@ivtvdriver.org, linux-m68k@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net, linux-media@vger.kernel.org
+Subject: Re: [PATCH 02/15]drivers:spi:dw_spi.c Typo change diable to
+ disable.
+Message-ID: <20101231174100.GF1886@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	"Justin P. Mattock" <justinmattock@gmail.com>,
+	Grant Likely <grant.likely@secretlab.ca>, trivial@kernel.org,
+	devel@driverdev.osuosl.org, linux-scsi@vger.kernel.org,
+	netdev@vger.kernel.org, linux-usb@vger.kernel.org,
+	linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+	ivtv-devel@ivtvdriver.org, linux-m68k@lists.linux-m68k.org,
+	spi-devel-general@lists.sourceforge.net,
+	linux-media@vger.kernel.org
+References: <1293750484-1161-1-git-send-email-justinmattock@gmail.com>
+ <1293750484-1161-2-git-send-email-justinmattock@gmail.com>
+ <20101231064515.GC3733@angua.secretlab.ca>
+ <4D1D7DAE.7060504@gmail.com>
+ <20101231091136.GC1886@bicker>
+ <4D1DE616.7010105@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D1DE616.7010105@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Below is a patch, that changes a typo from "desciptor" to "descriptor".
-Let me know if I missed anything. 
+On Fri, Dec 31, 2010 at 06:17:58AM -0800, Justin P. Mattock wrote:
+> >Wrong:  [PATCH 02/15]drivers:spi:dw_spi.c Typo change diable to disable.
+> >
+> >Right:  [PATCH 02/15] spi/dw_spi: Typo change diable to disable
+> >
+> >regards,
+> >dan carpenter
+> >
+> 
+> alright.. so having the backlash is alright for the subject
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Well really my point is not so much about backslashes vs colons, it's
+about getting the *one* correct prefix.  This stuff is probably
+scriptable most of the time, but you may still be required to think a
+little on the corner cases.
 
----
- drivers/usb/wusbcore/rh.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Here is a script to get you started.
 
-diff --git a/drivers/usb/wusbcore/rh.c b/drivers/usb/wusbcore/rh.c
-index a68ad7a..785772e 100644
---- a/drivers/usb/wusbcore/rh.c
-+++ b/drivers/usb/wusbcore/rh.c
-@@ -156,7 +156,7 @@ int wusbhc_rh_status_data(struct usb_hcd *usb_hcd, char *_buf)
- EXPORT_SYMBOL_GPL(wusbhc_rh_status_data);
- 
- /*
-- * Return the hub's desciptor
-+ * Return the hub's descriptor
-  *
-  * NOTE: almost cut and paste from ehci-hub.c
-  *
--- 
-1.6.5.2.180.gc5b3e
+git log --format="%s" drivers/spi/dw_spi.c | \
+	head -n 20 |                         \
+	perl -ne 's/(.*):.*/$1/; print' |    \
+	sort | uniq -c | sort -rn |          \
+	perl -ne 's/^\W+\d+ //; print' |     \
+	head -n 1
 
+regards,
+dan carpenter
