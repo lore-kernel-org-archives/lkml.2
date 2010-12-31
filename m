@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035Ab0LaR7C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 12:59:02 -0500
-Received: from mail-pz0-f66.google.com ([209.85.210.66]:51243 "EHLO
-	mail-pz0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753721Ab0LaR67 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 12:58:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject:references
-         :in-reply-to:content-type:content-transfer-encoding;
-        b=v+X8RlgtAHXl5EH78SLcKGgX0mU3ic0rTMXF12hGE0909Kx+mV+TK1D4tvV57gbnqO
-         wnLVVdQmtkIApT6uTt8RFvnbolc0tkCnChrJtdXFWaV2t0KElk0P53ant45s1BT50dGN
-         fqs6fHQuRUQzqxeNtzToI+Gk2pCR4tNzTJpnY=
-Message-ID: <4D1E19F7.6000608@gmail.com>
-Date: Fri, 31 Dec 2010 09:59:19 -0800
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101220 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Dan Carpenter <error27@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>, trivial@kernel.org,
-        devel@driverdev.osuosl.org, linux-scsi@vger.kernel.org,
-        netdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ivtv-devel@ivtvdriver.org, linux-m68k@vger.kernel.org,
-        spi-devel-general@lists.sourceforge.net, linux-media@vger.kernel.org
-Subject: Re: [PATCH 02/15]drivers:spi:dw_spi.c Typo change diable to disable.
-References: <1293750484-1161-1-git-send-email-justinmattock@gmail.com> <1293750484-1161-2-git-send-email-justinmattock@gmail.com> <20101231064515.GC3733@angua.secretlab.ca> <4D1D7DAE.7060504@gmail.com> <20101231091136.GC1886@bicker> <4D1DE616.7010105@gmail.com> <20101231174100.GF1886@bicker>
-In-Reply-To: <20101231174100.GF1886@bicker>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754044Ab0LaSNJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 13:13:09 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:32955 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753721Ab0LaSNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Dec 2010 13:13:07 -0500
+Date: Fri, 31 Dec 2010 10:13:03 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: David <david@unsolicited.net>
+Cc: netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Sky2 - problems with VLANs - kernel 2.6.36
+Message-ID: <20101231101303.6caed8ab@s6510>
+In-Reply-To: <4CD48DE6.7060906@unsolicited.net>
+References: <4CD48DE6.7060906@unsolicited.net>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/31/2010 09:41 AM, Dan Carpenter wrote:
-> On Fri, Dec 31, 2010 at 06:17:58AM -0800, Justin P. Mattock wrote:
->>> Wrong:  [PATCH 02/15]drivers:spi:dw_spi.c Typo change diable to disable.
->>>
->>> Right:  [PATCH 02/15] spi/dw_spi: Typo change diable to disable
->>>
->>> regards,
->>> dan carpenter
->>>
->>
->> alright.. so having the backlash is alright for the subject
->
-> Well really my point is not so much about backslashes vs colons, it's
-> about getting the *one* correct prefix.  This stuff is probably
-> scriptable most of the time, but you may still be required to think a
-> little on the corner cases.
->
-> Here is a script to get you started.
->
-> git log --format="%s" drivers/spi/dw_spi.c | \
-> 	head -n 20 |                         \
-> 	perl -ne 's/(.*):.*/$1/; print' |    \
-> 	sort | uniq -c | sort -rn |          \
-> 	perl -ne 's/^\W+\d+ //; print' |     \
-> 	head -n 1
->
-> regards,
-> dan carpenter
->
+On Fri, 05 Nov 2010 23:06:14 +0000
+David <david@unsolicited.net> wrote:
 
-thats a nice little script there(just ran it) any way you want to add 
-this into to getmaintainers.pl or something? (this way people get the 
-maintainers address plus a subject line in the mix)
+> I've just installed a Lycom dual port gigabit ethernet card, picked up
+> as follows :-
+> 
+> 03:00.0 Ethernet controller: Marvell Technology Group Ltd. 88E8062 PCI-E
+> IPMI Gigabit Ethernet Controller (rev 14)
+>     Subsystem: Marvell Technology Group Ltd. Device 6222
+>     Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
+> Stepping- SERR+ FastB2B- DisINTx+
+>     Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+> <TAbort- <MAbort- >SERR- <PERR- INTx-
+>     Latency: 0, Cache Line Size: 64 bytes
+>     Interrupt: pin A routed to IRQ 41
+>     Region 0: Memory at fe8fc000 (64-bit, non-prefetchable) [size=16K]
+>     Region 2: I/O ports at c800 [size=256]
+>     Expansion ROM at fe8c0000 [disabled] [size=128K]
+>     Capabilities: <access denied>
+>     Kernel driver in use: sky2
+>     Kernel modules: sky2
+> 
+> I'm having a problem with VLANs. Outgoing packets are tagged correctly
+> and devices on the VLAN are responding. Unfortunately all of the
+> response packets stay on the raw device and are not allocated to the VLAN.
+> 
+> I've done some investigation (printks etc.), and have found that neither
+> of the following cases in sky2_status_intr() are being triggered...
+> 
+>                 case OP_RXVLAN:
+>                         printk("RXVLAN, length=%u, status=%u\n", length,
+> status);
+>                         sky2->rx_tag = length;
+>                         break;
+> 
+>                 case OP_RXCHKSVLAN:
+>                         printk("RXCHKSVLAN, length=%u, status=%u\n",
+> length, status);
+>                         sky2->rx_tag = length;
+>                         /* fall through */
+> 
+> ... however the status when calling sky2_skb_rx() does have GMR_FS_VLAN
+> set, it's just we haven't been able to find out which VLAN the packet
+> comes from (and sky2->rx_tag is zero). Does anyone have any suggestions
+> as to how I proceed from here? I'm happy to test patches etc.
 
-Justin P. Mattock
+Did it work with older kernels? 
