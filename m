@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167Ab1AAJcL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jan 2011 04:32:11 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:44191 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676Ab1AAJcJ (ORCPT
+	id S1752251Ab1AAJc0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jan 2011 04:32:26 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:48009 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751964Ab1AAJcY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jan 2011 04:32:09 -0500
-Message-ID: <4d1ef497.52790e0a.1192.06a8@mx.google.com>
+	Sat, 1 Jan 2011 04:32:24 -0500
+Message-ID: <4d1ef4a6.ca7a0e0a.3fb5.0561@mx.google.com>
 From: "Igor M. Liplianin" <liplianin@me.by>
 Date: Fri, 31 Dec 2010 13:37:00 +0200
-Subject: [PATCH 09/18] stv0367: Fix potential divide error
+Subject: [PATCH 10/18] cx23885: remove duplicate set interrupt mask
 To: <mchehab@infradead.org>, <linux-media@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -19,29 +19,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Igor M. Liplianin <liplianin@netup.ru>
 ---
- drivers/media/dvb/frontends/stv0367.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ drivers/media/video/cx23885/cx23885-core.c |   10 ++--------
+ 1 files changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/media/dvb/frontends/stv0367.c b/drivers/media/dvb/frontends/stv0367.c
-index 0575741..e6bee7f 100644
---- a/drivers/media/dvb/frontends/stv0367.c
-+++ b/drivers/media/dvb/frontends/stv0367.c
-@@ -3275,12 +3275,14 @@ static int stv0367cab_read_snr(struct dvb_frontend *fe, u16 *snr)
- 		power = 1;
+diff --git a/drivers/media/video/cx23885/cx23885-core.c b/drivers/media/video/cx23885/cx23885-core.c
+index 307eaf4..3a09dd2 100644
+--- a/drivers/media/video/cx23885/cx23885-core.c
++++ b/drivers/media/video/cx23885/cx23885-core.c
+@@ -904,12 +904,6 @@ static int cx23885_dev_setup(struct cx23885_dev *dev)
+ 	dev->pci_bus  = dev->pci->bus->number;
+ 	dev->pci_slot = PCI_SLOT(dev->pci->devfn);
+ 	cx23885_irq_add(dev, 0x001f00);
+-	if (cx23885_boards[dev->board].ci_type == 1)
+-		cx23885_irq_add(dev, 0x01800000); /* for CiMaxes */
+-
+-	if (cx23885_boards[dev->board].ci_type == 2)
+-		cx23885_irq_add(dev, 0x00800000); /* for FPGA */
+-
+ 
+ 	/* External Master 1 Bus */
+ 	dev->i2c_bus[0].nr = 0;
+@@ -2074,10 +2068,10 @@ static int __devinit cx23885_initdev(struct pci_dev *pci_dev,
+ 
+ 	switch (dev->board) {
+ 	case CX23885_BOARD_NETUP_DUAL_DVBS2_CI:
+-		cx23885_irq_add_enable(dev, 0x01800000); /* for NetUP */
++		cx23885_irq_add_enable(dev, PCI_MSK_GPIO1 | PCI_MSK_GPIO0);
+ 		break;
+ 	case CX23885_BOARD_NETUP_DUAL_DVB_T_C_CI_RF:
+-		cx23885_irq_add_enable(dev, 0x00800000);
++		cx23885_irq_add_enable(dev, PCI_MSK_GPIO0);
  		break;
  	}
-+
- 	for (i = 0; i < 10; i++) {
- 		regval += (stv0367_readbits(state, F367CAB_SNR_LO)
- 			+ 256 * stv0367_readbits(state, F367CAB_SNR_HI));
- 	}
-+
-+	regval /= 10; /*for average over 10 times in for loop above*/
- 	if (regval != 0) {
--		regval /= 10; /*for average over 10 times in for loop above*/
- 		temp = power
- 			* (1 << (3 + stv0367_readbits(state, F367CAB_SNR_PER)));
- 		temp /= regval;
+ 
 -- 
 1.7.1
 
