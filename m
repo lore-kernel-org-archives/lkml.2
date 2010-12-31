@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754269Ab0LaWLK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 17:11:10 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:38679 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753902Ab0LaWLJ convert rfc822-to-8bit (ORCPT
+	id S1754324Ab0LaWQC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 17:16:02 -0500
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:18027 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754152Ab0LaWQA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 17:11:09 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=maZX3G4e1cqp/8tQI0Uurn989RGTTHFP7vAmptOsw1iIAVRtzBoS10bLdX8POFYkr4
-         vntUVj3B6lD80vQ457gbjAm3kCmskj48znyQkJ4IQzyh9UzGoDW8n0CRCVhsZSVyJh+e
-         qs47FLbLGw60rgtY/S7sh4zUC5woaW3rlXAJE=
-MIME-Version: 1.0
-In-Reply-To: <20110101000558.56c77a55@janini.home>
-References: <20101231193858.2c742025@janini.home> <20101231103345.baba0f8c.rdunlap@xenotime.net>
- <20101231212800.1e47f200@janini.home> <20101231113954.dc9adbdf.rdunlap@xenotime.net>
- <20101231234010.0165f0e8@janini.home> <AANLkTi=GY+ZFNMCdCQAj7aL6smUmiJZ=a-kcc76EECj7@mail.gmail.com>
- <20110101000558.56c77a55@janini.home>
-From: Avery Pennarun <apenwarr@alumnit.ca>
-Date: Fri, 31 Dec 2010 14:10:48 -0800
-X-Google-Sender-Auth: DpgnHH4Ck59LJvcwcQ8iiiHC45E
-Message-ID: <AANLkTi=0nGnr9Hp9RuXpRJjCvoHxK-DsYgK3AWa3Rr5w@mail.gmail.com>
-Subject: Re: APM_CONFIG on x86 - Is it possible?
-To: yotam.medini@gmail.com
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 31 Dec 2010 17:16:00 -0500
+Subject: Re: [PATCH 11/15]drivers:media:video:cx18:cx23418.h Typo change
+ diable to disable.
+From: Andy Walls <awalls@md.metrocast.net>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: trivial@kernel.org, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-scsi@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net, devel@driverdev.osuosl.org,
+        linux-usb@vger.kernel.org
+In-Reply-To: <1293750484-1161-11-git-send-email-justinmattock@gmail.com>
+References: <1293750484-1161-1-git-send-email-justinmattock@gmail.com>
+	 <1293750484-1161-2-git-send-email-justinmattock@gmail.com>
+	 <1293750484-1161-3-git-send-email-justinmattock@gmail.com>
+	 <1293750484-1161-4-git-send-email-justinmattock@gmail.com>
+	 <1293750484-1161-5-git-send-email-justinmattock@gmail.com>
+	 <1293750484-1161-6-git-send-email-justinmattock@gmail.com>
+	 <1293750484-1161-7-git-send-email-justinmattock@gmail.com>
+	 <1293750484-1161-8-git-send-email-justinmattock@gmail.com>
+	 <1293750484-1161-9-git-send-email-justinmattock@gmail.com>
+	 <1293750484-1161-10-git-send-email-justinmattock@gmail.com>
+	 <1293750484-1161-11-git-send-email-justinmattock@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 31 Dec 2010 16:15:20 -0500
+Message-ID: <1293830120.2410.11.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2010-12-31_11:2010-12-31,2010-12-31,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=0
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ engine=5.0.0-1010190000 definitions=main-1012310099
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 31, 2010 at 2:05 PM, Yotam Medini <yotam.medini@gmail.com> wrote:
-> On Fri, 31 Dec 2010 13:54:59 -0800
-> Avery Pennarun <apenwarr@alumnit.ca> wrote:
->> > I do get:
->> >
->> >  $ sudo modprobe apm
->> >  FATAL: Error inserting apm
->> >    (/lib/modules/2.6.32.yumax/kernel/arch/x86/kernel/apm.ko): No such device
->>
->> The output of 'dmesg' might be revealing here.  However, it's likely
->> that your PC doesn't actually support APM unless it's *very* old.  You
->> might want to try ACPI instead.
->
-> Indeed:
->    $ dmesg  | grep -i apm
->    [   52.897795] apm: BIOS not found.
-> I will try to investigate this.
->
-> But I clearly remember that a few years ago, I could issue:
->    $ cat /proc/apm
-> and see the battery status.
-> Then, I believe, the kernel tree used to have arch/i386.
+On Thu, 2010-12-30 at 15:08 -0800, Justin P. Mattock wrote:
+> The below patch fixes a typo "diable" to "disable". Please let me know if this 
+> is correct or not.
+     ^^^^^^^^^^^^^^
 
-arch/i386 is named arch/x86 nowadays.
+What, else could it be?  The "diablo" chroma spatial filter type? ;)
 
-It might be interesting to try an older kernel and see if you get
-different results.  Since APM is so rare nowadays, I wouldn't be
-surprised to find out that the kernel has accumulated some bugs there
-in the intervening years.
+Looks fine.
 
-Avery
+Acked-by: Andy Walls <awalls@md.metrocast.net>
+
+> 
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> 
+> ---
+>  drivers/media/video/cx18/cx23418.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/media/video/cx18/cx23418.h b/drivers/media/video/cx18/cx23418.h
+> index 2c00980..7e40035 100644
+> --- a/drivers/media/video/cx18/cx23418.h
+> +++ b/drivers/media/video/cx18/cx23418.h
+> @@ -177,7 +177,7 @@
+>     IN[0] - Task handle.
+>     IN[1] - luma type: 0 = disable, 1 = 1D horizontal only, 2 = 1D vertical only,
+>  		      3 = 2D H/V separable, 4 = 2D symmetric non-separable
+> -   IN[2] - chroma type: 0 - diable, 1 = 1D horizontal
+> +   IN[2] - chroma type: 0 - disable, 1 = 1D horizontal
+>     ReturnCode - One of the ERR_CAPTURE_... */
+>  #define CX18_CPU_SET_SPATIAL_FILTER_TYPE     	(CPU_CMD_MASK_CAPTURE | 0x000C)
+>  
+
+
