@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036Ab1AAJfl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jan 2011 04:35:41 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:41338 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758Ab1AAJfk (ORCPT
+	id S1752213Ab1AAJgT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jan 2011 04:36:19 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:65324 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892Ab1AAJgS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jan 2011 04:35:40 -0500
-Message-ID: <4d1ef56a.857a0e0a.5005.0d21@mx.google.com>
+	Sat, 1 Jan 2011 04:36:18 -0500
+Message-ID: <4d1ef590.cc7e0e0a.7c81.08b4@mx.google.com>
 From: "Igor M. Liplianin" <liplianin@me.by>
 Date: Fri, 31 Dec 2010 13:37:00 +0200
 Subject: [PATCH 14/18] cx25840: Fix subdev registration in cx25840-core.c
