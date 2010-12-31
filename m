@@ -1,52 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab0LaP0v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 10:26:51 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:49407 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923Ab0LaP0u (ORCPT
+	id S1753131Ab0LaP1w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 10:27:52 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35339 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750923Ab0LaP1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 10:26:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=Jf2WzVCKnD23c8i4pLS1qouPUUCEF7iPmj2S8vZEKclMRPLstvm5l9tyi0HYzmsAxk
-         J8nOYv5GpwTaEvcJR5kDTKc/nqNuZpzYgFV7MMn8MySoNFYJKzkOWWIpV3chQ8iaZ9Ra
-         lgmqc9d40deheCkvBNaG9ObdZUi6M44LfuH/I=
-Message-ID: <4D1DF637.1060609@gmail.com>
-Date: Fri, 31 Dec 2010 16:26:47 +0100
-From: roel kluin <roel.kluin@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+	Fri, 31 Dec 2010 10:27:51 -0500
+From: Ben Hutchings <ben@decadent.org.uk>
+To: roel kluin <roel.kluin@gmail.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] regulator: missing index in PTR_ERR() in isl6271a_probe()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4D1DECFC.8020701@gmail.com>
+References: <4D1DECFC.8020701@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-jYbOy25JKJQuq2mVCUlZ"
+Date: Fri, 31 Dec 2010 15:27:42 +0000
+Message-ID: <1293809262.2870.45.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+X-SA-Exim-Connect-IP: 192.168.4.185
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [PATCH] net: eepro testing positive EBUSY return by
+ request_irq()?
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The index is missing so the return is wrong.
 
-Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
----
- drivers/regulator/isl6271a-regulator.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+--=-jYbOy25JKJQuq2mVCUlZ
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/regulator/isl6271a-regulator.c b/drivers/regulator/isl6271a-regulator.c
-index b8cc638..13e2073 100644
---- a/drivers/regulator/isl6271a-regulator.c
-+++ b/drivers/regulator/isl6271a-regulator.c
-@@ -169,7 +169,7 @@ static int __devinit isl6271a_probe(struct i2c_client *i2c,
- 						init_data, pmic);
- 		if (IS_ERR(pmic->rdev[i])) {
- 			dev_err(&i2c->dev, "failed to register %s\n", id->name);
--			err = PTR_ERR(pmic->rdev);
-+			err = PTR_ERR(pmic->rdev[i]);
- 			goto error;
- 		}
- 	}
+On Fri, 2010-12-31 at 15:47 +0100, roel kluin wrote:
+> Fix -EBUSY test for request_irq().
+>=20
+> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+> ---
+>  drivers/net/eepro.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>=20
+> I just found this in the code, no bug was observed. Is this patch needed?=
+ the test
+> for an -EBUSY return by request_irq() occurs much more frequently in kern=
+el code.
+>=20
+> diff --git a/drivers/net/eepro.c b/drivers/net/eepro.c
+> index 7c82631..47cfecb 100644
+> --- a/drivers/net/eepro.c
+> +++ b/drivers/net/eepro.c
+> @@ -920,7 +920,7 @@ static int	eepro_grab_irq(struct net_device *dev)
+> =20
+>  		eepro_sw2bank0(ioaddr); /* Switch back to Bank 0 */
+> =20
+> -		if (request_irq (*irqp, NULL, IRQF_SHARED, "bogus", dev) !=3D EBUSY) {
+> +		if (request_irq (*irqp, NULL, IRQF_SHARED, "bogus", dev) !=3D -EBUSY) =
+{
+>  			unsigned long irq_mask;
+>  			/* Twinkle the interrupt, and check if it's seen */
+>  			irq_mask =3D probe_irq_on();
+
+This condition is completely bogus - request_irq() with a NULL handler
+now returns -EINVAL before even checking whether the IRQ is in use.  The
+code should be fixed along the lines of what I did for 3c503 in commit
+b0cf4dfb7cd21556efd9a6a67edcba0840b4d98d.
+
+The e2100 and hp net drivers have the same bug.
+
+Ben.
+
+--=20
+Ben Hutchings
+Once a job is fouled up, anything done to improve it makes it worse.
+
+--=-jYbOy25JKJQuq2mVCUlZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIVAwUATR32YOe/yOyVhhEJAQJRGRAAvRDwjYHPvS/fx8b2IDaj/aNUUVQ7pbrc
+ev4HUASdN1KlNzDji2RvUSH9xZJP2F68gJwgEOeLf9aEbPEiDDOqQuNtiIq56cY+
+kkYTENnV+fnrVEWxyyhIu6sNyZloZsxywx/tgTKMhXy8b4Aho1sehgOauEfNgJM+
+oYS2LeHaeJVsjTHcllfcDTWBQOKSbjMuusEISl2CVaRmMhu1d7+ooU3meM2aIkB8
+2D5PEnukgwqoEws/GDPygmq9uerL00HVM3IE+5f4HH3Hzf9W4g21KlCCoLK6Kaiu
+kpg3/FWX4JbkpJkyz6pUGwdC0t0HkZHGLT6K/7phLZ2uCM05DBeLD7jp6uBRIIw3
+e8PuSXaK3Z4fljmRh90/v6poVD5BXnT2H5R/uOQEV3awWA1xYsXc7KcCxUU3klCW
+IQK++swfM5qr/I9VL2/+lDs/WmNd58pjIUbo5Odc7EXYzefuQP2VbE6p7qxo5XPu
+VbAb8eMjM1TifjLOY1hM0FWEGR5zCyIvOFZ5TqklpDAtg2TWxLB7fj5ymirHFqqo
+r5XosF3rnx9RwhNmRv+Z5OxFxuPOsvTUUOmxvUt9nNlYhX6gKPEJT+bKpEZTmZrz
+N2iSwpROAAVfwltN11407wHP/KbFmtDi305KCfJpnLD1zfk7JygCobpYJAcAUxg7
+qBsfH37V8U4=
+=iQ9R
+-----END PGP SIGNATURE-----
+
+--=-jYbOy25JKJQuq2mVCUlZ--
