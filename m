@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208Ab0LaTOX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 14:14:23 -0500
+	id S1754243Ab0LaTOm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 14:14:42 -0500
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:50440 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754190Ab0LaTOT (ORCPT
+	with ESMTP id S1754139Ab0LaTOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 14:14:19 -0500
+	Fri, 31 Dec 2010 14:14:40 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=LoWqaanF96Y0p+xpi/JyV7f2J3+gL2Dn/ev17mZ7fjZ309kC0g43+Ia6O240qTFIMI
-         ArLSEC2qz++Wfd0CYvdAoNnQ5pps8UCLjmSjKzNmqcnH9XBPZd2l6jZ+qtJ8Gja4XVcE
-         KyLCKG6sQ9knRMrq06i0VM0YyetvS9m7k0omc=
-Date: Fri, 31 Dec 2010 20:14:07 +0100
+        b=Zgk/Kb3mNNeY43QtoA8I/JfAFoxlkjWEjGGhWITCmHJrwoyDs1IC7nVLFsry01Pfwb
+         58nrkJJOEHxsJASBnQPmTPYStzTnkWdBSKtYkFtk89jA9dnVv2gb34kPQmOGH3NeP8mg
+         Kyvx8Uw62gvaBaCsxK94deQujdW0UQSD8Lvjc=
+Date: Fri, 31 Dec 2010 20:14:26 +0100
 From: Richard Cochran <richardcochran@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-api@vger.kernel.org, netdev@vger.kernel.org,
@@ -24,8 +24,8 @@ Cc: linux-api@vger.kernel.org, netdev@vger.kernel.org,
         Peter Zijlstra <peterz@infradead.org>,
         Rodolfo Giometti <giometti@linux.it>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH V8 05/13] posix_clocks: add clock_adjtime for blackfin
-Message-ID: <0a011917c6a869ca9dd22d56f95bc2c3aeb5621a.1293820862.git.richard.cochran@omicron.at>
+Subject: [PATCH V8 06/13] posix_clocks: add clock_adjtime for powerpc
+Message-ID: <2e9f64e263d709be48b4fd14c1af11c6c92d4b0d.1293820862.git.richard.cochran@omicron.at>
 References: <cover.1293820862.git.richard.cochran@omicron.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -36,41 +36,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the clock_adjtime system call to the blackfin architecture.
+This patch adds the clock_adjtime system call to the powerpc architecture.
 
 Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
 ---
- arch/blackfin/include/asm/unistd.h |    3 ++-
- arch/blackfin/mach-common/entry.S  |    1 +
+ arch/powerpc/include/asm/systbl.h |    1 +
+ arch/powerpc/include/asm/unistd.h |    3 ++-
  2 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/arch/blackfin/include/asm/unistd.h b/arch/blackfin/include/asm/unistd.h
-index 928ae97..e640c51 100644
---- a/arch/blackfin/include/asm/unistd.h
-+++ b/arch/blackfin/include/asm/unistd.h
-@@ -393,8 +393,9 @@
- #define __NR_fanotify_mark	372
- #define __NR_prlimit64		373
- #define __NR_cacheflush		374
-+#define __NR_clock_adjtime	375
+diff --git a/arch/powerpc/include/asm/systbl.h b/arch/powerpc/include/asm/systbl.h
+index aa0f1eb..6a1152c 100644
+--- a/arch/powerpc/include/asm/systbl.h
++++ b/arch/powerpc/include/asm/systbl.h
+@@ -348,3 +348,4 @@ COMPAT_SYS_SPU(sendmsg)
+ COMPAT_SYS_SPU(recvmsg)
+ COMPAT_SYS_SPU(recvmmsg)
+ SYSCALL_SPU(accept4)
++COMPAT_SYS_SPU(clock_adjtime)
+diff --git a/arch/powerpc/include/asm/unistd.h b/arch/powerpc/include/asm/unistd.h
+index 6151937..386de07 100644
+--- a/arch/powerpc/include/asm/unistd.h
++++ b/arch/powerpc/include/asm/unistd.h
+@@ -367,10 +367,11 @@
+ #define __NR_recvmsg		342
+ #define __NR_recvmmsg		343
+ #define __NR_accept4		344
++#define __NR_clock_adjtime	345
  
--#define __NR_syscall		375
-+#define __NR_syscall		376
- #define NR_syscalls		__NR_syscall
+ #ifdef __KERNEL__
  
- /* Old optional stuff no one actually uses */
-diff --git a/arch/blackfin/mach-common/entry.S b/arch/blackfin/mach-common/entry.S
-index 2ca915e..cb6cc1e 100644
---- a/arch/blackfin/mach-common/entry.S
-+++ b/arch/blackfin/mach-common/entry.S
-@@ -1738,6 +1738,7 @@ ENTRY(_sys_call_table)
- 	.long _sys_fanotify_mark
- 	.long _sys_prlimit64
- 	.long _sys_cacheflush
-+	.long _sys_clock_adjtime	/* 375 */
+-#define __NR_syscalls		345
++#define __NR_syscalls		346
  
- 	.rept NR_syscalls-(.-_sys_call_table)/4
- 	.long _sys_ni_syscall
+ #define __NR__exit __NR_exit
+ #define NR_syscalls	__NR_syscalls
 -- 
 1.7.0.4
 
