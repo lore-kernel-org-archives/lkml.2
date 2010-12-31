@@ -1,30 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105Ab0LaFs5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 00:48:57 -0500
+	id S1752374Ab0LaFvK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 00:51:10 -0500
 Received: from mail-iw0-f174.google.com ([209.85.214.174]:54214 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888Ab0LaFsx (ORCPT
+	with ESMTP id S1751888Ab0LaFs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 00:48:53 -0500
+	Fri, 31 Dec 2010 00:48:58 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=wFuk2NvM1c6GerJFhfY+60LCStP+lL3YfcLoD6zwAkJWrSujAhFkDmhGdvhQDB4XTX
-         y66FwQxteTAARxthiTIPkibxuCAf0Q6HrDWNHDSuGqPMKSkoDXCWhk5AdoB15EtDDZKH
-         Fsq3pf0jfwd0s1P0WX2iYJcfAS+Jo9gcH/Wpc=
+        b=kI9a9Kvp3cBj8IqrlpjOBf/ekx7eZdv/tDUVn71964uhiPO8bQBBI20b3ygiI6nBpq
+         mVv7lurRWkfVUQz0/V75R6yuxAXBGF+hSK9m1NIFlF4erFR8jFn/lGqVhAqXSRslIq6s
+         2FWAjxwJIflZncHvUo2YPcIgBZF+uYoeYAq8c=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org, gregkh@suse.de,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 03/15]drivers:staging:rtl8187se:r8180_dm.c Fix some comments.
-Date: Thu, 30 Dec 2010 21:48:39 -0800
-Message-Id: <1293774531-5294-4-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 05/15]drivers:staging:rtl8187se:r8180_hw.h Fix some comments.
+Date: Thu, 30 Dec 2010 21:48:41 -0800
+Message-Id: <1293774531-5294-6-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.6.5.2.180.gc5b3e
-In-Reply-To: <1293774531-5294-3-git-send-email-justinmattock@gmail.com>
+In-Reply-To: <1293774531-5294-5-git-send-email-justinmattock@gmail.com>
 References: <1293774531-5294-1-git-send-email-justinmattock@gmail.com>
  <1293774531-5294-2-git-send-email-justinmattock@gmail.com>
  <1293774531-5294-3-git-send-email-justinmattock@gmail.com>
+ <1293774531-5294-4-git-send-email-justinmattock@gmail.com>
+ <1293774531-5294-5-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -36,109 +38,49 @@ and I'll resend.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/staging/rtl8187se/r8180_dm.c |   24 ++++++++++++------------
- 1 files changed, 12 insertions(+), 12 deletions(-)
+ drivers/staging/rtl8187se/r8180_hw.h |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/rtl8187se/r8180_dm.c b/drivers/staging/rtl8187se/r8180_dm.c
-index fc49078..a0619b8 100644
---- a/drivers/staging/rtl8187se/r8180_dm.c
-+++ b/drivers/staging/rtl8187se/r8180_dm.c
-@@ -6,7 +6,7 @@
+diff --git a/drivers/staging/rtl8187se/r8180_hw.h b/drivers/staging/rtl8187se/r8180_hw.h
+index 3fca144..34aa664 100644
+--- a/drivers/staging/rtl8187se/r8180_hw.h
++++ b/drivers/staging/rtl8187se/r8180_hw.h
+@@ -10,7 +10,7 @@
+ 	Parts of this driver are based on the Intel Pro Wireless
+ 	2100 GPL driver.
  
- //
- //	Description:
--//		Return TRUE if we shall perform High Power Mecahnism, FALSE otherwise.
-+//		Return TRUE if we shall perform High Power Mechanism, FALSE otherwise.
- //
- //+by amy 080312
- #define RATE_ADAPTIVE_TIMER_PERIOD      300
-@@ -35,7 +35,7 @@ bool CheckHighPower(struct net_device *dev)
- //		See also DoRxHighPower() and SetTxPowerLevel8185() for reference.
- //
- //	Note:
--//		The reason why we udpate Tx power level here instead of DoRxHighPower()
-+//		The reason why we update Tx power level here instead of DoRxHighPower()
- //		is the number of IO to change Tx power is much more than channel TR switch
- //		and they are related to OFDM and MAC registers.
- //		So, we don't want to update it so frequently in per-Rx packet base.
-@@ -78,7 +78,7 @@ DoTxHighPower(
- 		priv->bToUpdateTxPwr = true;
- 		u1bTmp= read_nic_byte(dev, CCK_TXAGC);
+-	We want to tanks the Authors of those projects
++	We want to thanks the Authors of those projects
+ 	and the Ndiswrapper project Authors.
+ */
  
--		// If it never enter High Power.
-+		// If it never enters High Power.
- 		if( CckTxPwrIdx == u1bTmp)
- 		{
- 		u1bTmp = (u1bTmp > 16) ? (u1bTmp -16): 0;  // 8dbm
-@@ -145,7 +145,7 @@ void rtl8180_tx_pw_wq (struct work_struct *work)
+@@ -181,7 +181,7 @@
+ #define RF_SW_CFG_SI		BIT1
+ #define EIFS			0x2D			/* Extended InterFrame Space Timer, in unit of 4 us.	*/
  
- //
- //	Description:
--//		Return TRUE if we shall perform DIG Mecahnism, FALSE otherwise.
-+//		Return TRUE if we shall perform DIG Mechanism, FALSE otherwise.
- //
- bool
- CheckDig(
-@@ -650,7 +650,7 @@ StaRateAdaptive87SE(
+-#define BRSR			0x34			/* Basic rate set										*/
++#define BRSR			0x34			/* Basic rate set */
  
- 	//
- 	// For Netgear case, I comment out the following signal strength estimation,
--	// which can results in lower rate to transmit when sample is NOT enough (e.g. PING request).
-+	// which can result in lower rate to transmit when sample is NOT enough (e.g. PING request).
- 	// 2007.04.09, by Roger.
- 	//
+ #define IMR 0x006C
+ #define ISR 0x003C
+@@ -286,7 +286,7 @@
+ #define CR_MulRW    ((1 << 0))
  
-@@ -687,7 +687,7 @@ StaRateAdaptive87SE(
- 	{
- 		//2 For Test Upgrading mechanism
- 		// Note:
--		// 	Sometimes the throughput is upon on the capability bwtween the AP and NIC,
-+		// 	Sometimes the throughput is upon on the capability between the AP and NIC,
- 		// 	thus the low data rate does not improve the performance.
- 		// 	We randomly upgrade the data rate and check if the retry rate is improved.
- 
-@@ -990,7 +990,7 @@ StaRateAdaptive87SE(
- 				bUpdateInitialGain = true;
- 
- 			// The difference in throughput between 48Mbps and 36Mbps is 8M.
--			// So, we must be carefully in this rate scale. Isaiah 2008-02-15.
-+			// So, we must be careful in this rate scale. Isaiah 2008-02-15.
- 			//
- 			if(  ((priv->CurrentOperaRate == 72) || (priv->CurrentOperaRate == 48) || (priv->CurrentOperaRate == 36)) &&
- 				(priv->FailTxRateCount > 2) )
-@@ -1498,11 +1498,11 @@ SwAntennaDiversity(
- 		// didn't changed by HW evaluation.
- 		// 2008.02.27.
- 		//
--		// [TRC Dell Lab] SignalStrength is inaccuracy. Isaiah 2008-03-05
-+		// [TRC Dell Lab] SignalStrength is inaccurate. Isaiah 2008-03-05
- 		// For example, Throughput of aux is better than main antenna(about 10M v.s 2M),
- 		// but AdRxSignalStrength is less than main.
--		// Our guess is that main antenna have lower throughput and get many change
--		// to receive more CCK packets(ex.Beacon) which have stronger SignalStrength.
-+		// Our guess is that main antenna has lower throughput and gets many changes
-+		// to receive more CCK packets(ex.Beacon) which has stronger SignalStrength.
- 		//
- 		if( (!priv->bHWAdSwitched) && (bSwCheckSS))
- 		{
-@@ -1526,7 +1526,7 @@ SwAntennaDiversity(
- 			priv->bAdSwitchedChecking = false;
- 			// Increase Rx signal strength threshold if necessary.
- 			if(	(priv->AdRxSignalStrength > (priv->AdRxSsThreshold + 10)) && // Signal is much stronger than current threshold
--				priv->AdRxSsThreshold <= priv->AdMaxRxSsThreshold) // Current threhold is not yet reach upper limit.
-+				priv->AdRxSsThreshold <= priv->AdMaxRxSsThreshold) // Current threshold is not yet reach upper limit.
- 			{
- 				priv->AdRxSsThreshold = (priv->AdRxSsThreshold + priv->AdRxSignalStrength) / 2;
- 				priv->AdRxSsThreshold = (priv->AdRxSsThreshold > priv->AdMaxRxSsThreshold) ?
-@@ -1555,7 +1555,7 @@ SwAntennaDiversity(
- 
- //
- //	Description:
--//		Return TRUE if we shall perform Tx Power Tracking Mecahnism, FALSE otherwise.
-+//		Return TRUE if we shall perform Tx Power Tracking Mechanism, FALSE otherwise.
- //
- bool
- CheckTxPwrTracking(	struct net_device *dev)
+ #define IMR_Dot11hInt	((1 << 25))			/*802.11h Measurement Interrupt					*/
+-#define IMR_BcnDmaInt	((1 << 24))			/*Beacon DMA Interrupt */ /*What differenct between BcnDmaInt and BcnInt???	*/
++#define IMR_BcnDmaInt	((1 << 24))			/*Beacon DMA Interrupt */ /*What difference between BcnDmaInt and BcnInt???	*/
+ #define IMR_WakeInt		((1 << 23))			/*Wake Up Interrupt								*/
+ #define IMR_TXFOVW		((1 << 22))			/*Tx FIFO Overflow Interrupt					*/
+ #define IMR_TimeOut1	((1 << 21))			/*Time Out Interrupt 1							*/
+@@ -313,7 +313,7 @@
+ #define IMR_TimeOut3	((1 << 0))			/*Time Out Interrupt 3							*/
+ #define IMR_TMGDOK      ((1 << 30))
+ #define ISR_Dot11hInt	((1 << 25))			/*802.11h Measurement Interrupt					*/
+-#define ISR_BcnDmaInt	((1 << 24))			/*Beacon DMA Interrupt	*/ /*What differenct between BcnDmaInt and BcnInt???	*/
++#define ISR_BcnDmaInt	((1 << 24))			/*Beacon DMA Interrupt	*/ /*What difference between BcnDmaInt and BcnInt???	*/
+ #define ISR_WakeInt		((1 << 23))			/*Wake Up Interrupt								*/
+ #define ISR_TXFOVW		((1 << 22))			/*Tx FIFO Overflow Interrupt					*/
+ #define ISR_TimeOut1	((1 << 21))			/*Time Out Interrupt 1							*/
 -- 
 1.6.5.2.180.gc5b3e
 
