@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab0LaEdJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 23:33:09 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:58263 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750827Ab0LaEdI convert rfc822-to-8bit (ORCPT
+	id S1750919Ab0LaFGJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 00:06:09 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:42161 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766Ab0LaFGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 23:33:08 -0500
-X-IronPort-AV: E=Sophos;i="4.60,253,1291622400"; 
-   d="scan'208";a="500518798"
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: George Spelvin <linux@horizon.com>
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-In-Reply-To: <20101231031748.5006.qmail@science.horizon.com>
-References: <20101231031748.5006.qmail@science.horizon.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Thu, 30 Dec 2010 23:32:48 -0500
-Message-ID: <1293769968.32633.19.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 31 Dec 2010 04:32:50.0157 (UTC) FILETIME=[C82AB9D0:01CBA8A3]
+	Fri, 31 Dec 2010 00:06:07 -0500
+Subject: [PATCH] cx23885, cimax2.c: Fix case of two CAM insertion irq.
+From: "Igor M. Liplianin" <liplianin@me.by>
+To: Mauro Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
+        Abylai Ospan <aospan@netup.ru>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Fri, 31 Dec 2010 07:04:38 +0200
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012310704.38591.liplianin@me.by>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-30 at 22:17 -0500, George Spelvin wrote: 
-> > Uncached_readdir is not really a problem. The real problem is
-> > filesystems that generate "infinite directories" by producing looping
-> > combinations of cookies.
-> > 
-> > IOW: I've seen servers that generate cookies in a sequence of a form
-> > vaguely resembling
-> > 
-> > 1 2 3 4 5 6 7 8 9 10 11 12 3...
-> > 
-> > (with possibly a thousand or so entries between the first and second
-> > copy of '3')
-> > 
-> > The kernel won't loop forever with something like that (because
-> > eventually filldir() will declare it is out of buffer space), but
-> > userland has a halting problem: it needs to detect that every
-> > sys_getdents() call it is making is generating another copy of the
-> > sequence associated with '4 5 6 7 8 9 10 11 12 3'...
-> 
-> Huh?  This is not only an easy problem, it's a well-known problem.
-> http://en.wikipedia.org/wiki/Cycle_detection
-> 
-> 	Here's Brent's algorithm:
-> 
-> 	n = 0;
-> 	saved_cookie = <invalid>
-> 	For each cookie {
-> 		if (n && cookie == saved_cookie)
-> 			die("Loop detected!");
-> 		if (++n is a power of 2)
-> 			saved_cookie = cookie;
-> 	}
-> 
-> You can tweak the performance with other exponentially-growing
-> functions, saving k > 1 old cookies for comparison, etc., but the
-> above will work very well.
+For example  boot up with two CAM inserted.
 
+Signed-off-by: Abylay Ospan <aospan@netup.ru>
+---
+ drivers/media/video/cx23885/cimax2.c |   24 ++++++++++++++++--------
+ 1 files changed, 16 insertions(+), 8 deletions(-)
 
-...and your point would be that an exponentially increasing addition to
-the existing number of tests is an acceptable tradeoff in a situation
-where the >99.999999999999999% case is that of sane servers with no
-looping? I don't think so...
-
-Trond
-
+diff --git a/drivers/media/video/cx23885/cimax2.c b/drivers/media/video/cx23885/cimax2.c
+index c95e7bc..209b971 100644
+--- a/drivers/media/video/cx23885/cimax2.c
++++ b/drivers/media/video/cx23885/cimax2.c
+@@ -368,7 +368,7 @@ static void netup_read_ci_status(struct work_struct *work)
+ 				DVB_CA_EN50221_POLL_CAM_READY;
+ 		else
+ 			state->status = 0;
+-	};
++	}
+ }
+ 
+ /* CI irq handler */
+@@ -377,16 +377,24 @@ int netup_ci_slot_status(struct cx23885_dev *dev, u32 pci_status)
+ 	struct cx23885_tsport *port = NULL;
+ 	struct netup_ci_state *state = NULL;
+ 
+-	if (pci_status & PCI_MSK_GPIO0)
+-		port = &dev->ts1;
+-	else if (pci_status & PCI_MSK_GPIO1)
+-		port = &dev->ts2;
+-	else /* who calls ? */
++	ci_dbg_print("%s:\n", __func__);
++
++	if (0 == (pci_status & (PCI_MSK_GPIO0 | PCI_MSK_GPIO1)))
+ 		return 0;
+ 
+-	state = port->port_priv;
++	if (pci_status & PCI_MSK_GPIO0) {
++		port = &dev->ts1;
++		state = port->port_priv;
++		schedule_work(&state->work);
++		ci_dbg_print("%s: Wakeup CI0\n", __func__);
++	}
+ 
+-	schedule_work(&state->work);
++	if (pci_status & PCI_MSK_GPIO1) {
++		port = &dev->ts2;
++		state = port->port_priv;
++		schedule_work(&state->work);
++		ci_dbg_print("%s: Wakeup CI1\n", __func__);
++	}
+ 
+ 	return 1;
+ }
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+1.7.1
 
