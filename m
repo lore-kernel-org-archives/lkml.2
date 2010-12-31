@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab0LaL0I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 06:26:08 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:56931 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758Ab0LaL0F (ORCPT
+	id S1753353Ab0LaL1v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 06:27:51 -0500
+Received: from casper.infradead.org ([85.118.1.10]:45438 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752919Ab0LaL1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 06:26:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=OG9uFnSpHGY+3H0OLtMp7A0FjvZcfzHRVj+COwsVHIkPHlLGoeNhUT8aJlciZjjRxA
-         L6vb+D2nHFcqiqG+hDAVLbj8mA47jnLxW5AOzEcVNFKYKpHb4cPgZ6tP48cn+L40CGIE
-         9I+4f88HqbNJD0+MVVB7Xd+NTBTeCn4PC0EOU=
-Subject: Re: [PATCH] UDPCP Communication Protocol
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: stefani@seibold.net
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        davem@davemloft.net, netdev@vger.kernel.org
-In-Reply-To: <1293787785-3834-1-git-send-email-stefani@seibold.net>
-References: <1293787785-3834-1-git-send-email-stefani@seibold.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 31 Dec 2010 12:25:58 +0100
-Message-ID: <1293794758.2973.49.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Fri, 31 Dec 2010 06:27:50 -0500
+Message-ID: <4D1DBE2A.5080003@infradead.org>
+Date: Fri, 31 Dec 2010 09:27:38 -0200
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+CC: "Igor M. Liplianin" <liplianin@me.by>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, aospan@netup.ru
+Subject: Re: [PATCH 01/18] Altera FPGA firmware download module.
+References: <201012310726.31851.liplianin@netup.ru> <201012311212.19715.laurent.pinchart@ideasonboard.com>
+In-Reply-To: <201012311212.19715.laurent.pinchart@ideasonboard.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 31 décembre 2010 à 10:29 +0100, stefani@seibold.net a
-écrit :
-> +		if (!list_empty(&usk->destlist)) {
-> +			state->sk = (struct sock *)usk;
-> +			state->dest = list_first_entry(&usk->destlist,
-> +					struct udpcp_dest, list);
-> +			sock_hold(state->sk);
-> +
-> +			if (atomic_read(&state->sk->sk_refcnt) != 1) {
-> +				spin_unlock_irqrestore(&spinlock, flags);
-> +				return state;
-> +			}
-> +			atomic_dec(&state->sk->sk_refcnt);
-> +		}
-> +
+Em 31-12-2010 09:12, Laurent Pinchart escreveu:
+> Hi Igor,
+> 
+> On Friday 31 December 2010 06:26:31 Igor M. Liplianin wrote:
+>> It uses STAPL files and programs Altera FPGA through JTAG.
+>> Interface to JTAG must be provided from main device module,
+>> for example through cx23885 GPIO.
+> 
+> It might be a bit late for this comment (sorry for not having noticed the 
+> patch set earlier), but...
+> 
+> Do we really need a complete JTAG implementation in the kernel ? Wouldn't it 
+> better to handle this in userspace with a tiny kernel driver to access the 
+> JTAG signals ?
+> 
+Laurent,
 
-I am trying to understand what you are doing here.
+Igor already explained it. From what I understood, the device he is 
+working has a firmware that needs to be loaded via JTAG/FPGA.
 
-It seems racy to me.
+Actually, I liked the idea, as the FPGA programming driver could be
+useful if other drivers have similar usecases.
 
-Apparently, what you want is to take a reference only if actual
-sk_refcnt is not zero.
-
-I suggest using atomic_inc_notzero(&state->sk->sk_refcnt) to avoid the
-race in atomic_dec().
-
-
-
+Cheers,
+Mauro
