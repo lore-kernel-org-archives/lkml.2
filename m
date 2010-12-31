@@ -1,349 +1,371 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746Ab0LaD6h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 22:58:37 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:45220 "EHLO smtps.tip.net.au"
+	id S1752763Ab0LaE1i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 23:27:38 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:37567 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750812Ab0LaD6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 22:58:35 -0500
-Date: Fri, 31 Dec 2010 14:58:27 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for December 31
-Message-Id: <20101231145827.7cfa13f9.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1750827Ab0LaE1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Dec 2010 23:27:38 -0500
+Date: Thu, 30 Dec 2010 20:27:33 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Jim Cromie <jim.cromie@gmail.com>, khali@linux-fr.org, ben-linux@fluff.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org
+Subject: [PATCH] mfd: i2c: convert SCx200 driver from using raw PCI to
+ platform device
+Message-ID: <20101230202733.2f01b62d@queued.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__31_Dec_2010_14_58_27_+1100_=gGmShrA9uWUSSPh"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__31_Dec_2010_14_58_27_+1100_=gGmShrA9uWUSSPh
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Note: this relies on the cs5535-mfd patches that are currently in the
+MFD next tree.  It's been tested on CS5536 hardware, but I don't have
+access to any old SCx200 hardware to verify that I didn't break the ISA
+stuff.
 
-Hi all,
 
-Have a happy New Year!
+From: Andres Salomon <dilinger@queued.net>
 
-Changes since 20101230:
+The SCx200 ACB driver supports ISA hardware as well as PCI.  The PCI hardware
+is CS5535/CS5536 based, and the device that it grabs is handled by the
+cs5535-mfd driver.  This converts the SCx200 driver to use a platform_driver
+rather than the previous PCI hackery.
 
-The vfs-scale tree gained a conflict against Linus' tree.
+The driver used to manually track the iface list (via linked list); now it
+only does this for ISA devices.  PCI ifaces are handled through standard
+driver model lists.
 
-The sound-asoc tree lost its conflicts, but gained another against the
-s5p tree.
+It's unclear what happens in case of errors in the old ISA code; rather than
+pretending the code actually cares, I've dropped the (implicit) ignorance
+of return values and marked it with a comment.
 
-The input tree lost its build failure.
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ drivers/i2c/busses/scx200_acb.c |  200 ++++++++++++++++-----------------------
+ 1 files changed, 80 insertions(+), 120 deletions(-)
 
-The trivial tree gained a conflict against the ext4 tree.
+diff --git a/drivers/i2c/busses/scx200_acb.c b/drivers/i2c/busses/scx200_acb.c
+index 53fab51..986e5f6 100644
+--- a/drivers/i2c/busses/scx200_acb.c
++++ b/drivers/i2c/busses/scx200_acb.c
+@@ -29,6 +29,7 @@
+ #include <linux/init.h>
+ #include <linux/i2c.h>
+ #include <linux/pci.h>
++#include <linux/platform_device.h>
+ #include <linux/delay.h>
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
+@@ -40,6 +41,7 @@
+ 
+ MODULE_AUTHOR("Christer Weinigel <wingel@nano-system.com>");
+ MODULE_DESCRIPTION("NatSemi SCx200 ACCESS.bus Driver");
++MODULE_ALIAS("platform:cs5535-smb");
+ MODULE_LICENSE("GPL");
+ 
+ #define MAX_DEVICES 4
+@@ -84,10 +86,6 @@ struct scx200_acb_iface {
+ 	u8 *ptr;
+ 	char needs_reset;
+ 	unsigned len;
+-
+-	/* PCI device info */
+-	struct pci_dev *pdev;
+-	int bar;
+ };
+ 
+ /* Register Definitions */
+@@ -391,7 +389,7 @@ static const struct i2c_algorithm scx200_acb_algorithm = {
+ static struct scx200_acb_iface *scx200_acb_list;
+ static DEFINE_MUTEX(scx200_acb_list_mutex);
+ 
+-static __init int scx200_acb_probe(struct scx200_acb_iface *iface)
++static __devinit int scx200_acb_probe(struct scx200_acb_iface *iface)
+ {
+ 	u8 val;
+ 
+@@ -427,7 +425,7 @@ static __init int scx200_acb_probe(struct scx200_acb_iface *iface)
+ 	return 0;
+ }
+ 
+-static __init struct scx200_acb_iface *scx200_create_iface(const char *text,
++static __devinit struct scx200_acb_iface *scx200_create_iface(const char *text,
+ 		struct device *dev, int index)
+ {
+ 	struct scx200_acb_iface *iface;
+@@ -452,7 +450,7 @@ static __init struct scx200_acb_iface *scx200_create_iface(const char *text,
+ 	return iface;
+ }
+ 
+-static int __init scx200_acb_create(struct scx200_acb_iface *iface)
++static int __devinit scx200_acb_create(struct scx200_acb_iface *iface)
+ {
+ 	struct i2c_adapter *adapter;
+ 	int rc;
+@@ -472,183 +470,145 @@ static int __init scx200_acb_create(struct scx200_acb_iface *iface)
+ 		return -ENODEV;
+ 	}
+ 
+-	mutex_lock(&scx200_acb_list_mutex);
+-	iface->next = scx200_acb_list;
+-	scx200_acb_list = iface;
+-	mutex_unlock(&scx200_acb_list_mutex);
++	if (!adapter->dev.parent) {
++		/* If there's no dev, we're tracking (ISA) ifaces manually */
++		mutex_lock(&scx200_acb_list_mutex);
++		iface->next = scx200_acb_list;
++		scx200_acb_list = iface;
++		mutex_unlock(&scx200_acb_list_mutex);
++	}
+ 
+ 	return 0;
+ }
+ 
+-static __init int scx200_create_pci(const char *text, struct pci_dev *pdev,
+-		int bar)
++static struct scx200_acb_iface * __devinit scx200_create_dev(const char *text,
++		unsigned long base, int index, struct device *dev)
+ {
+ 	struct scx200_acb_iface *iface;
+ 	int rc;
+ 
+-	iface = scx200_create_iface(text, &pdev->dev, 0);
++	iface = scx200_create_iface(text, dev, index);
+ 
+ 	if (iface == NULL)
+-		return -ENOMEM;
+-
+-	iface->pdev = pdev;
+-	iface->bar = bar;
+-
+-	rc = pci_enable_device_io(iface->pdev);
+-	if (rc)
+-		goto errout_free;
++		return NULL;
+ 
+-	rc = pci_request_region(iface->pdev, iface->bar, iface->adapter.name);
+-	if (rc) {
+-		printk(KERN_ERR NAME ": can't allocate PCI BAR %d\n",
+-				iface->bar);
++	if (!request_region(base, 8, iface->adapter.name)) {
++		printk(KERN_ERR NAME ": can't allocate io 0x%lx-0x%lx\n",
++		       base, base + 8 - 1);
+ 		goto errout_free;
+ 	}
+ 
+-	iface->base = pci_resource_start(iface->pdev, iface->bar);
++	iface->base = base;
+ 	rc = scx200_acb_create(iface);
+ 
+ 	if (rc == 0)
+-		return 0;
++		return iface;
+ 
+-	pci_release_region(iface->pdev, iface->bar);
+-	pci_dev_put(iface->pdev);
++	release_region(base, 8);
+  errout_free:
+ 	kfree(iface);
+-	return rc;
++	return NULL;
+ }
+ 
+-static int __init scx200_create_isa(const char *text, unsigned long base,
+-		int index)
++static int __devinit scx200_probe(struct platform_device *pdev)
+ {
+ 	struct scx200_acb_iface *iface;
+-	int rc;
+-
+-	iface = scx200_create_iface(text, NULL, index);
+-
+-	if (iface == NULL)
+-		return -ENOMEM;
++	struct resource *res;
+ 
+-	if (!request_region(base, 8, iface->adapter.name)) {
+-		printk(KERN_ERR NAME ": can't allocate io 0x%lx-0x%lx\n",
+-		       base, base + 8 - 1);
+-		rc = -EBUSY;
+-		goto errout_free;
++	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
++	if (!res) {
++		dev_err(&pdev->dev, "can't fetch device resource info\n");
++		return -ENODEV;
+ 	}
+ 
+-	iface->base = base;
+-	rc = scx200_acb_create(iface);
++	iface = scx200_create_dev("CS5535", res->start, 0, &pdev->dev);
++	if (!iface)
++		return -EIO;
+ 
+-	if (rc == 0)
+-		return 0;
++	dev_info(&pdev->dev, "SCx200 device '%s' registered\n",
++			iface->adapter.name);
++	platform_set_drvdata(pdev, iface);
+ 
+-	release_region(base, 8);
+- errout_free:
+-	kfree(iface);
+-	return rc;
++	return 0;
+ }
+ 
+-/* Driver data is an index into the scx200_data array that indicates
+- * the name and the BAR where the I/O address resource is located.  ISA
+- * devices are flagged with a bar value of -1 */
+-
+-static const struct pci_device_id scx200_pci[] __initconst = {
+-	{ PCI_DEVICE(PCI_VENDOR_ID_NS, PCI_DEVICE_ID_NS_SCx200_BRIDGE),
+-	  .driver_data = 0 },
+-	{ PCI_DEVICE(PCI_VENDOR_ID_NS, PCI_DEVICE_ID_NS_SC1100_BRIDGE),
+-	  .driver_data = 0 },
+-	{ PCI_DEVICE(PCI_VENDOR_ID_NS, PCI_DEVICE_ID_NS_CS5535_ISA),
+-	  .driver_data = 1 },
+-	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_CS5536_ISA),
+-	  .driver_data = 2 },
+-	{ 0, }
+-};
+-
+-static struct {
+-	const char *name;
+-	int bar;
+-} scx200_data[] = {
+-	{ "SCx200", -1 },
+-	{ "CS5535",  0 },
+-	{ "CS5536",  0 }
+-};
++static void __devexit scx200_cleanup_iface(struct scx200_acb_iface *iface)
++{
++	i2c_del_adapter(&iface->adapter);
++	release_region(iface->base, 8);
++	kfree(iface);
++}
+ 
+-static __init int scx200_scan_pci(void)
++static int __devexit scx200_remove(struct platform_device *pdev)
+ {
+-	int data, dev;
+-	int rc = -ENODEV;
+-	struct pci_dev *pdev;
++	struct scx200_acb_iface *iface;
+ 
+-	for(dev = 0; dev < ARRAY_SIZE(scx200_pci); dev++) {
+-		pdev = pci_get_device(scx200_pci[dev].vendor,
+-				scx200_pci[dev].device, NULL);
++	iface = platform_get_drvdata(pdev);
++	platform_set_drvdata(pdev, NULL);
++	scx200_cleanup_iface(iface);
+ 
+-		if (pdev == NULL)
+-			continue;
++	return 0;
++}
+ 
+-		data = scx200_pci[dev].driver_data;
++static struct platform_driver scx200_pci_drv = {
++	.driver = {
++		.name = "cs5535-smb",
++		.owner = THIS_MODULE,
++	},
++	.probe = scx200_probe,
++	.remove = __devexit_p(scx200_remove),
++};
+ 
+-		/* if .bar is greater or equal to zero, this is a
+-		 * PCI device - otherwise, we assume
+-		   that the ports are ISA based
+-		*/
++static const struct pci_device_id scx200_isa[] __initconst = {
++	{ PCI_DEVICE(PCI_VENDOR_ID_NS, PCI_DEVICE_ID_NS_SCx200_BRIDGE) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_NS, PCI_DEVICE_ID_NS_SC1100_BRIDGE) },
++	{ 0, }
++};
+ 
+-		if (scx200_data[data].bar >= 0)
+-			rc = scx200_create_pci(scx200_data[data].name, pdev,
+-					scx200_data[data].bar);
+-		else {
+-			int i;
++static __init void scx200_scan_isa(void)
++{
++	int i;
+ 
+-			pci_dev_put(pdev);
+-			for (i = 0; i < MAX_DEVICES; ++i) {
+-				if (base[i] == 0)
+-					continue;
++	if (!pci_dev_present(scx200_isa))
++		return;
+ 
+-				rc = scx200_create_isa(scx200_data[data].name,
+-						base[i],
+-						i);
+-			}
+-		}
++	for (i = 0; i < MAX_DEVICES; ++i) {
++		if (base[i] == 0)
++			continue;
+ 
+-		break;
++		/* XXX: should we care about failures? */
++		scx200_create_dev("SCx200", base[i], i, NULL);
+ 	}
+-
+-	return rc;
+ }
+ 
+ static int __init scx200_acb_init(void)
+ {
+-	int rc;
+-
+ 	pr_debug(NAME ": NatSemi SCx200 ACCESS.bus Driver\n");
+ 
+-	rc = scx200_scan_pci();
++	/* First scan for ISA-based devices */
++	scx200_scan_isa();	/* XXX: should we care about errors? */
+ 
+ 	/* If at least one bus was created, init must succeed */
+ 	if (scx200_acb_list)
+ 		return 0;
+-	return rc;
++
++	/* No ISA devices; register the platform driver for PCI-based devices */
++	return platform_driver_register(&scx200_pci_drv);
+ }
+ 
+ static void __exit scx200_acb_cleanup(void)
+ {
+ 	struct scx200_acb_iface *iface;
+ 
++	platform_driver_unregister(&scx200_pci_drv);
++
+ 	mutex_lock(&scx200_acb_list_mutex);
+ 	while ((iface = scx200_acb_list) != NULL) {
+ 		scx200_acb_list = iface->next;
+ 		mutex_unlock(&scx200_acb_list_mutex);
+ 
+-		i2c_del_adapter(&iface->adapter);
+-
+-		if (iface->pdev) {
+-			pci_release_region(iface->pdev, iface->bar);
+-			pci_dev_put(iface->pdev);
+-		}
+-		else
+-			release_region(iface->base, 8);
++		scx200_cleanup_iface(iface);
+ 
+-		kfree(iface);
+ 		mutex_lock(&scx200_acb_list_mutex);
+ 	}
+ 	mutex_unlock(&scx200_acb_list_mutex);
+-- 
+1.7.2.3
 
-The percpu tree gained conflicts against the tip tree.
-
-The tty tree still has its build failure for which I reverted a commit.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 183 trees (counting Linus' and 26 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/rc-fixes
-Merging driver-core.current/driver-core-linus
-Merging tty.current/tty-linus
-Merging usb.current/usb-linus
-Merging staging.current/staging-linus
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging sh-current/sh-fixes-for-linus
-Merging rmobile-current/rmobile-fixes-for-linus
-Merging fbdev-current/fbdev-fixes-for-linus
-Merging gcl-current/merge
-Merging arm/devel
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging linux-spec/for-next
-Merging msm/for-next
-Merging omap/for-next
-CONFLICT (content): Merge conflict in arch/arm/plat-omap/Kconfig
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-CONFLICT (content): Merge conflict in arch/arm/mach-tegra/timer.c
-Merging ux500-core/ux500-core
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/next
-Merging galak/next
-Merging s390/features
-Merging sh/sh-latest
-CONFLICT (content): Merge conflict in arch/sh/kernel/cpu/sh2a/clock-sh7201.c
-Merging rmobile/rmobile-latest
-CONFLICT (content): Merge conflict in arch/arm/mach-shmobile/Kconfig
-Applying: rmobile: merge fixup for clkdev changes
-Merging sparc/master
-Merging tile/master
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging vfs-scale/vfs-scale-working
-CONFLICT (content): Merge conflict in Documentation/filesystems/Locking
-CONFLICT (content): Merge conflict in fs/cifs/dir.c
-CONFLICT (content): Merge conflict in fs/fuse/inode.c
-CONFLICT (content): Merge conflict in fs/hfsplus/hfsplus_fs.h
-CONFLICT (content): Merge conflict in fs/hfsplus/unicode.c
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-CONFLICT (content): Merge conflict in net/9p/protocol.c
-Merging wireless/master
-Merging bluetooth/master
-CONFLICT (content): Merge conflict in net/bluetooth/Makefile
-Merging mtd/master
-Merging crypto/master
-Merging sound-asoc/for-next
-CONFLICT (content): Merge conflict in arch/arm/plat-samsung/include/plat/de=
-vs.h
-Merging sound/for-next
-Merging cpufreq/next
-Merging quilt/rr
-Merging input/next
-CONFLICT (content): Merge conflict in drivers/input/keyboard/Kconfig
-CONFLICT (content): Merge conflict in include/linux/input.h
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-CONFLICT (content): Merge conflict in drivers/leds/Kconfig
-Merging backlight/for-mm
-Merging mmc/mmc-next
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-CONFLICT (content): Merge conflict in drivers/mfd/Makefile
-CONFLICT (content): Merge conflict in drivers/mfd/wm8994-core.c
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging fbdev/master
-CONFLICT (content): Merge conflict in drivers/video/sh_mobile_lcdcfb.c
-Merging viafb/viafb-next
-Merging omap_dss2/for-next
-Merging voltage/for-next
-CONFLICT (content): Merge conflict in drivers/regulator/core.c
-CONFLICT (content): Merge conflict in drivers/regulator/mc13783-regulator.c
-Merging security-testing/next
-Merging selinux/master
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-CONFLICT (content): Merge conflict in fs/ext4/ext4.h
-Merging audit/for-next
-Merging suspend/linux-next
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging catalin/for-next
-Merging alacrity/linux-next
-CONFLICT (content): Merge conflict in drivers/Makefile
-CONFLICT (content): Merge conflict in include/linux/Kbuild
-CONFLICT (content): Merge conflict in lib/Kconfig
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-Merging devicetree/next-devicetree
-Merging spi/next-spi
-Merging tip/auto-latest
-Merging rcu/rcu/next
-Merging oprofile/for-next
-Merging xen/upstream/xen
-Merging swiotlb-xen/master
-CONFLICT (content): Merge conflict in drivers/xen/Kconfig
-CONFLICT (content): Merge conflict in drivers/xen/Makefile
-Merging xen-pvhvm/linux-next
-Merging edac-amd/for-next
-Merging percpu/for-next
-CONFLICT (delete/modify): arch/x86/kernel/apic/nmi.c deleted in HEAD and mo=
-dified in percpu/for-next. Version percpu/for-next of arch/x86/kernel/apic/=
-nmi.c left in tree.
-CONFLICT (content): Merge conflict in arch/x86/kernel/apic/x2apic_uv_x.c
-$ git rm -f arch/x86/kernel/apic/nmi.c
-Merging workqueues/for-next
-CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
-e.txt
-CONFLICT (content): Merge conflict in drivers/media/video/bt8xx/bttv-input.c
-CONFLICT (content): Merge conflict in drivers/rtc/rtc-dev.c
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging driver-core/driver-core-next
-Merging tty/tty-next
-[master 2f1c611] Revert "drivers: serial: apbuart: Handle OF failures grace=
-fully"
-Merging usb/usb-next
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/Kconfig
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/clock3xxx_data.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/clock44xx_data.c
-CONFLICT (content): Merge conflict in arch/sh/Kconfig
-Merging staging/staging-next
-Merging slabh/slabh
-Merging bkl-trivial/trivial
-Merging bkl-llseek/llseek
-Merging bkl-vfs/vfs
-Merging bkl-config/config
-CONFLICT (content): Merge conflict in arch/powerpc/kernel/setup_64.c
-CONFLICT (delete/modify): drivers/staging/stradis/Kconfig deleted in HEAD a=
-nd modified in bkl-config/config. Version bkl-config/config of drivers/stag=
-ing/stradis/Kconfig left in tree.
-CONFLICT (content): Merge conflict in include/linux/hardirq.h
-CONFLICT (content): Merge conflict in include/linux/smp_lock.h
-$ git rm -f drivers/staging/stradis/Kconfig
-Merging irqflags/master
-Merging cleancache/linux-next
-CONFLICT (content): Merge conflict in fs/ocfs2/super.c
-CONFLICT (content): Merge conflict in fs/super.c
-CONFLICT (content): Merge conflict in include/linux/fs.h
-CONFLICT (content): Merge conflict in mm/Kconfig
-Merging scsi-post-merge/merge-base:master
-$ git checkout scsi-post-merge/master
-Applying: [SCSI] sd: implement sd_check_events()
-Applying: [SCSI] target: Add LIO target core v4.0.0-rc6
-
---Signature=_Fri__31_Dec_2010_14_58_27_+1100_=gGmShrA9uWUSSPh
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNHVTjAAoJEDMEi1NhKgbsQOgIAI789M7zYpLDlBTSEkz9J35V
-JU6TXwACY/0b1ns2raatWSrvJw3ZLBoKnh+Dca8qKntWG+hd6dviKPR6htCH4Rj7
-/henV3KTH05EJVDvNpAc4kU7k62QKkAjAhijf7/MOTqi0q5XJRiuZ7UDjaJuzFAa
-kNJEMo+YEhKaFC8FdQUSN1Q+ynktCG3vOaolSthadxCPvtIMLJq+E3mGE8H12Egs
-8ctd/RorA1gfWlPbO6Ca7RXtYL2CAYOQqfWh8nbyF0RtWUbt5Y1cycdwzAoDCMCj
-DMUbtVCT2re4VhY3YGTRjVfTLMiPv7bmoEJflO610iXr4KiacRd0vAG6Oqgph2s=
-=LH4V
------END PGP SIGNATURE-----
-
---Signature=_Fri__31_Dec_2010_14_58_27_+1100_=gGmShrA9uWUSSPh--
