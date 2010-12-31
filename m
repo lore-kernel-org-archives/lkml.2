@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952Ab0LaFt1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 00:49:27 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52549 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752809Ab0LaFtX (ORCPT
+	id S1752913Ab0LaFt7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 00:49:59 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:54214 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752344Ab0LaFtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 00:49:23 -0500
+	Fri, 31 Dec 2010 00:49:14 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=vAEfAgn89ZQSMjqKW3bFh/sjTSsArTGm51YbjxqbP8kRKunCRvFNQXE/cxoS6iU6A0
-         KztpFYjFYmpaNuZvCAHQzE82/9H538SgNNfg+1b0/k3vPviBKdom1Hs45dZ+JCtezjFK
-         z6tJfacy0wA8QhMZnbR2p5eUJxqoqu+IBzYPY=
+        b=co9MITsG/G49AlFM92sAXocfp+o4hDXX+NMyb2pIrP/zqJrlcnIoep6xKqGvARPT3M
+         yFCaFKF4WWDYGd2zKK3J526QVC17SHtuugJ/zsBiy67+4xnPO8hP5n+7aOgz6DdmymeQ
+         2izvNAdhhJE2vkTNZ5PiKl0X4/iq5pyU8RZyI=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org, gregkh@suse.de,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 15/15]drivers:staging:rtl8187se:ieee80211:ieee80211_tx.c Fix some comments.
-Date: Thu, 30 Dec 2010 21:48:51 -0800
-Message-Id: <1293774531-5294-16-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 11/15]drivers:staging:rtl8187se:ieee80211:ieee80211_crypt.c Fix some comments.
+Date: Thu, 30 Dec 2010 21:48:47 -0800
+Message-Id: <1293774531-5294-12-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.6.5.2.180.gc5b3e
-In-Reply-To: <1293774531-5294-15-git-send-email-justinmattock@gmail.com>
+In-Reply-To: <1293774531-5294-11-git-send-email-justinmattock@gmail.com>
 References: <1293774531-5294-1-git-send-email-justinmattock@gmail.com>
  <1293774531-5294-2-git-send-email-justinmattock@gmail.com>
  <1293774531-5294-3-git-send-email-justinmattock@gmail.com>
@@ -33,10 +33,6 @@ References: <1293774531-5294-1-git-send-email-justinmattock@gmail.com>
  <1293774531-5294-9-git-send-email-justinmattock@gmail.com>
  <1293774531-5294-10-git-send-email-justinmattock@gmail.com>
  <1293774531-5294-11-git-send-email-justinmattock@gmail.com>
- <1293774531-5294-12-git-send-email-justinmattock@gmail.com>
- <1293774531-5294-13-git-send-email-justinmattock@gmail.com>
- <1293774531-5294-14-git-send-email-justinmattock@gmail.com>
- <1293774531-5294-15-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -48,22 +44,24 @@ and I'll resend.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ .../staging/rtl8187se/ieee80211/ieee80211_crypt.c  |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c b/drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c
-index 6cb31e1..552115c 100644
---- a/drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c
-+++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c
-@@ -445,7 +445,7 @@ int ieee80211_rtl_xmit(struct sk_buff *skb,
- 		(CFG_IEEE80211_COMPUTE_FCS | CFG_IEEE80211_RESERVE_FCS))
- 			bytes_per_frag -= IEEE80211_FCS_LEN;
+diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211_crypt.c b/drivers/staging/rtl8187se/ieee80211/ieee80211_crypt.c
+index c8dbcb9..60b2f7e 100644
+--- a/drivers/staging/rtl8187se/ieee80211/ieee80211_crypt.c
++++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_crypt.c
+@@ -89,8 +89,8 @@ void ieee80211_crypt_delayed_deinit(struct ieee80211_device *ieee,
+ 	*crypt = NULL;
  
--		/* Each fragment may need to have room for encryptiong pre/postfix */
-+		/* Each fragment may need to have room for encryption pre/postfix */
- 		if (encrypt)
- 			bytes_per_frag -= crypt->ops->extra_prefix_len +
- 				crypt->ops->extra_postfix_len;
+ 	/* must not run ops->deinit() while there may be pending encrypt or
+-	 * decrypt operations. Use a list of delayed deinits to avoid needing
+-	 * locking. */
++	 * decrypt operations. Use a list of delayed deinits to avoid locking. 
++	 */
+ 
+ 	spin_lock_irqsave(&ieee->lock, flags);
+ 	list_add(&tmp->list, &ieee->crypt_deinit_list);
 -- 
 1.6.5.2.180.gc5b3e
 
