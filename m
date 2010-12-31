@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751608Ab0LaAJp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 19:09:45 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:37332 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429Ab0LaAJo (ORCPT
+	id S1751571Ab0LaAW7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 19:22:59 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:57370
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750892Ab0LaAW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 19:09:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=e2qxFUvt+iMdqchHrUCiS9YPAQRpTOpaT/hNdVNyZo2yDmPQmY7gZtKqKjUfIpG+jJ
-         wWZEEaXWSP8quKGdMacheKurdYsOvE+BqkcGhH1ZKrMP9rqkSaiyAZw0AxPnv1rVQYI+
-         8+yIyKtYN+9Y4A7wiW17OSjk+Quv5jchL1MSI=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        gregkh@suse.de, "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 4/5]drivers:staging:rtl8192u:ieee80211:rtl819x_HTProc.c Typo change singal to signal
-Date: Thu, 30 Dec 2010 16:09:43 -0800
-Message-Id: <1293754184-1928-4-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.6.5.2.180.gc5b3e
-In-Reply-To: <1293754184-1928-3-git-send-email-justinmattock@gmail.com>
-References: <1293754184-1928-1-git-send-email-justinmattock@gmail.com>
- <1293754184-1928-2-git-send-email-justinmattock@gmail.com>
- <1293754184-1928-3-git-send-email-justinmattock@gmail.com>
+	Thu, 30 Dec 2010 19:22:58 -0500
+Date: Thu, 30 Dec 2010 16:23:28 -0800 (PST)
+Message-Id: <20101230.162328.104050033.davem@davemloft.net>
+To: jeffm@suse.com
+Cc: akpm@linux-foundation.org, error27@gmail.com, balbir@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] taskstats: Use better ifdef for alignment
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4D1BCE58.4000902@suse.com>
+References: <4D1BCE58.4000902@suse.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patches below fixes a typo "singal" to "signal". Please let me 
-know if anything needs to be changed.
+From: Jeff Mahoney <jeffm@suse.com>
+Date: Wed, 29 Dec 2010 19:12:08 -0500
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+>  Commit 4be2c95d added a null field to align the taskstats structure but
+>  the discussion centered around ia64. The issue exists on other platforms
+>  with inefficient unaligned access and adding them piecemeal would be
+>  an unmaintainable mess.
+> 
+>  This patch uses Dave Miller's suggestion of using a combination of
+>  CONFIG_64BIT && !CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS to determine
+>  whether alignment is needed.
+> 
+>  Note that this will cause breakage on those platforms with applications
+>  like iotop which had hard-coded offsets into the packet to access the
+>  taskstats structure.
+> 
+>  The message seen on systems without the alignment fixes looks like:
+>  kernel unaligned access to 0xe000023879dca9bc, ip=0xa000000100133d10
+> 
+>  The addresses may vary but resolve to locations inside __delayacct_add_tsk.
+> 
+> Reported-by: David S. Miller <davem@davemloft.net>
+> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 
----
- .../staging/rtl8192u/ieee80211/rtl819x_HTProc.c    |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/staging/rtl8192u/ieee80211/rtl819x_HTProc.c b/drivers/staging/rtl8192u/ieee80211/rtl819x_HTProc.c
-index 50f4f59..5ef816f 100644
---- a/drivers/staging/rtl8192u/ieee80211/rtl819x_HTProc.c
-+++ b/drivers/staging/rtl8192u/ieee80211/rtl819x_HTProc.c
-@@ -921,7 +921,7 @@ u8 HTFilterMCSRate( struct ieee80211_device* ieee, u8* pSupportMCS, u8* pOperate
- 	// TODO: adjust our operational rate set  according to our channel bandwidth, STBC and Antenna number
- 
- 	// TODO: fill suggested rate adaptive rate index and give firmware info using Tx command packet
--	// we also shall suggested the first start rate set according to our singal strength
-+	// we also shall suggested the first start rate set according to our signal strength
- 	HT_PickMCSRate(ieee, pOperateMCS);
- 
- 	// For RTL819X, if pairwisekey = wep/tkip, we support only MCS0~7.
--- 
-1.6.5.2.180.gc5b3e
-
+Acked-by: David S. Miller <davem@davemloft.net>
