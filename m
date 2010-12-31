@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744Ab0LaQyY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 11:54:24 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:55749 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752936Ab0LaQyW convert rfc822-to-8bit (ORCPT
+	id S1753797Ab0LaRCG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 12:02:06 -0500
+Received: from astoria.ccjclearline.com ([64.235.106.9]:46905 "EHLO
+	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023Ab0LaRCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 11:54:22 -0500
-X-IronPort-AV: E=Sophos;i="4.60,255,1291622400"; 
-   d="scan'208";a="500639277"
-Subject: Re: [PATCH v2 00/12] make rpc_pipefs be mountable multiple time
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Rob Landley <rlandley@parallels.com>
-Cc: "Kirill A. Shutemov" <kas@openvz.org>, Rob Landley <rob@landley.net>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <4D1C5953.6020200@parallels.com>
-References: <1293628470-28386-1-git-send-email-kas@openvz.org>
-	 <AANLkTi=AXz21wDeE1vPVD-6cEtj6faXN9x09eHDCsTkB@mail.gmail.com>
-	 <20101230085139.GA29697@shutemov.name> <4D1C4C7C.6050606@parallels.com>
-	 <20101230094433.GB29697@shutemov.name>  <4D1C5953.6020200@parallels.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Fri, 31 Dec 2010 11:54:01 -0500
-Message-ID: <1293814441.2980.4.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 31 Dec 2010 16:54:02.0863 (UTC) FILETIME=[53F71FF0:01CBA90B]
+	Fri, 31 Dec 2010 12:02:04 -0500
+Date: Fri, 31 Dec 2010 12:01:54 -0500 (EST)
+From: "Robert P. J. Day" <rpjday@crashcourse.ca>
+X-X-Sender: rpjday@localhost6.localdomain6
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+cc: Anca Emanuel <anca.emanuel@gmail.com>,
+        Ubuntu kernel team mailing list 
+	<kernel-team@lists.ubuntu.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>
+Subject: Re: is there a fix for ubuntu with intel GPU booting to blank
+ screen?
+In-Reply-To: <1293814089.6993.4.camel@maxim-laptop>
+Message-ID: <alpine.DEB.2.00.1012311153190.3495@localhost6.localdomain6>
+References: <alpine.DEB.2.00.1012270640240.3071@localhost6.localdomain6>  <AANLkTiktLCVQgGPCyt-fwVSkVmr8Ljr08UmvtkNG_zdp@mail.gmail.com>  <alpine.DEB.2.00.1012310836370.23681@localhost6.localdomain6> <1293814089.6993.4.camel@maxim-laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - crashcourse.ca
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-30 at 04:05 -0600, Rob Landley wrote: 
-> On 12/30/2010 03:44 AM, Kirill A. Shutemov wrote:
-> >>> If no rpcmount mountoption, no rpc_pipefs was found at
-> >>> '/var/lib/nfs/rpc_pipefs' and we are in init's mount namespace, we use
-> >>> init_rpc_pipefs.
-> >>
-> >> It's the "we are in init's mount namespace" that I was wondering about.
-> >>
-> >> So if I naievely chroot, nfs mount stops working the way it did before I
-> >> chrooted unless I do an extra setup step?
-> >
-> > No. It will work as before since you are still in init's mount namespace.
-> > Creating new mount namespace changes rules.
-> 
-> Ah, CLONE_NEWNS and then you need /var/lib/nfs/rpc_pipefs.  Got it.
-> 
-> I'm kind of surprised that the kernel cares about a specific path under 
-> /var/lib.  (Seems like policy in the kernel somehow.)  Can't it just 
-> check the current process's mount list to see if an instance of 
-> rpc_pipefs is mounted in the current namespace the way lxc looks for 
-> cgroups?  Or are there potential performance/scalability issues with that?
+On Fri, 31 Dec 2010, Maxim Levitsky wrote:
 
-The kernel doesn't give a damn about the /var/lib/nfs/rpc_pipefs bit.
-That's all for the benefit of the userland utilities.
+... snip related to i915 blank screen issues ...
 
-  Trond
+> Since you know how to compile kernel, and even have a close working
+> version, you really should just bisect the bug.
+>
+> Bisection is a built-in in the git binary search that allows you to
+> find the first commit that introduced the bug.
+>
+> For example, quick google gives,
+> http://www.kernel.org/pub/software/scm/git-core/docs/v1.0.13/howto/isolate-bugs-with-bisect.txt
+
+  oh, i know how to do bisection but, to be frank, i just don't have
+the time.  i'm under a brutal deadline for some billable work and,
+even if i had the time, i suspect that when i eventually tracked down
+the commit, i probably wouldn't really appreciate what i was looking
+at, anyway.
+
+  i've done some searching on the issue and, among other pages, i've
+come up with this one:
+
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/683775
+
+so i downloaded the kernel mentioned there and tested that, but no
+luck.  mostly, i understand that there top men -- *top* *men* --
+working on this :-) who know far more about the graphics subsystem
+than i do so i'm just going to stay out of their way, but i'm willing
+to test any proposed solutions if they come up.  my biggest worry is
+that, given that we're already at -rc8, will this issue be fixed
+before the next official release?
+
+rday
 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+========================================================================
+Robert P. J. Day                               Waterloo, Ontario, CANADA
+                        http://crashcourse.ca
 
+Twitter:                                       http://twitter.com/rpjday
+LinkedIn:                               http://ca.linkedin.com/in/rpjday
+========================================================================
