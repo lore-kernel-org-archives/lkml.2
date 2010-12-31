@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab0LaRrF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 12:47:05 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:58864 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753838Ab0LaRrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 12:47:02 -0500
-Date: Fri, 31 Dec 2010 09:46:58 -0800
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: stefani@seibold.net
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        davem@davemloft.net, netdev@vger.kernel.org
-Subject: Re: [PATCH] UDPCP Communication Protocol
-Message-ID: <20101231094658.1881c113@s6510>
-In-Reply-To: <1293787785-3834-1-git-send-email-stefani@seibold.net>
-References: <1293787785-3834-1-git-send-email-stefani@seibold.net>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753896Ab0LaRuZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 12:50:25 -0500
+Received: from mail-gy0-f194.google.com ([209.85.160.194]:61546 "EHLO
+	mail-gy0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753721Ab0LaRuY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Dec 2010 12:50:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=dc0nrxnLw7/49fAK+ppdaHMG6BOxWOHchhyvhWxMxSSN20pnCpsBthyZiOcfgegqpw
+         G1RSFtgr7HluXAG93Fhq2kt5PP4ojEnldiPYIuLHxJJvq6Lug82IEA+6NTjF3MI1q4HY
+         FW0VIyRSA1wegOYxJW7U2IbQfAtCGYiJz3oxI=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        grant.likely@secretlab.ca,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH] spi/spi_topcliff_pch.c Typo change threhold to threshold
+Date: Fri, 31 Dec 2010 09:50:31 -0800
+Message-Id: <1293817831-8263-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.6.5.2.180.gc5b3e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 Dec 2010 10:29:45 +0100
-stefani@seibold.net wrote:
+The below patch changes a typo from "threhold" to "threshold".
+Let me know if I missed anything.
 
-> +/*
-> + * UDPCP destination descriptor
-> + *
-> + * For each communication address an individual destination descriptor will
-> + * be create.
-> + *
-> + * The fields has the following meanings:
-> + *
-> + * list:		link list: part of udpcp_sock.destlist
-> + * xmit:		messages fragments to be transmit
-> + * tx_time:		timestamp of the last transmitted message fragment
-> + * rx_time:		timestamp ot the last received message fragment
-> + * txTimeout:		statistic use only: number of transmit timeout
-> + * rxTimeout:		statistic use only: number of receive timeout
-> + * txRetries:		statistic use only: number of transmit retries
-> + * rxDiscardedFrags:	statistic use only: number of discarded messages
-> + * xmit_wait:		message fragment which is waiting for an ACK
-> + * xmit_last:		last fragment transmitted
-> + * recv_msg:		first fragment of the received message
-> + * recv_last:		last fragment of the received message
-> + * lastmsg:		last messages fragment header received
-> + * ipc:			linux internal ipc cookie
-> + * fl:			flow/routing information
-> + * rt:			routing entry currently used for this destination
-> + * addr:		ipv4 destination address
-> + * port:		destination port number
-> + * msgid:		current message id for outgoing data messages
-> + * use_flag:		statistic use only: flag for dest using TX and/or RX
-> + * insync:		flag for protocol synchronization
-> + * ackmode;		ack mode for the current assembled message
-> + * chkmode;		checksum mode for the current assembled message
-> + * try:			current number of retries xmit_wait message
-> + * acks:		number of outstandig ack's
-> + */
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-Why not use docbook format comments for this?
+---
+ drivers/spi/spi_topcliff_pch.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/spi/spi_topcliff_pch.c b/drivers/spi/spi_topcliff_pch.c
+index 58e187f..be451e3 100644
+--- a/drivers/spi/spi_topcliff_pch.c
++++ b/drivers/spi/spi_topcliff_pch.c
+@@ -677,7 +677,7 @@ static void pch_spi_set_ir(struct pch_spi_data *data)
+ {
+ 	/* enable interrupts */
+ 	if ((data->bpw_len) > PCH_MAX_FIFO_DEPTH) {
+-		/* set receive threhold to PCH_RX_THOLD */
++		/* set receive threshold to PCH_RX_THOLD */
+ 		pch_spi_setclr_reg(data->master, PCH_SPCR,
+ 				   PCH_RX_THOLD << SPCR_TFIC_FIELD,
+ 				   ~MASK_TFIC_SPCR_BITS);
+@@ -685,7 +685,7 @@ static void pch_spi_set_ir(struct pch_spi_data *data)
+ 		pch_spi_setclr_reg(data->master, PCH_SPCR,
+ 				   SPCR_RFIE_BIT | SPCR_TFIE_BIT, 0);
+ 	} else {
+-		/* set receive threhold to maximum */
++		/* set receive threshold to maximum */
+ 		pch_spi_setclr_reg(data->master, PCH_SPCR,
+ 				   PCH_RX_THOLD_MAX << SPCR_TFIC_FIELD,
+ 				   ~MASK_TFIC_SPCR_BITS);
+-- 
+1.6.5.2.180.gc5b3e
+
