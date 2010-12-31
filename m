@@ -1,160 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab0LaLy0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 06:54:26 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53490 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752740Ab0LaLyZ (ORCPT
+	id S1753394Ab0LaL66 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 06:58:58 -0500
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:37553 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752758Ab0LaL65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 06:54:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Y4VnmQTc1ZYoUJHjGDgLm5+6OUxfDWFQ+jUXzQ2dk5jZ2K8xFgFg5VqIsWkSM6Blo3
-         CK7/ck+O1cDnxAQGwGmlWPMFv6Z7VYmOk2GNsthtT33LFe5N2ItY9QjV1fE5jlExc1WZ
-         ziizTtOCaVZ7y0f610ScCWbC+Hu5DTRccJ9/g=
-Subject: Re: [PATCH] UDPCP Communication Protocol
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        davem@davemloft.net, netdev@vger.kernel.org
-In-Reply-To: <1293794589.5285.16.camel@wall-e>
-References: <1293787785-3834-1-git-send-email-stefani@seibold.net>
-	 <1293789629.2973.26.camel@edumazet-laptop>
-	 <1293790979.4787.10.camel@wall-e>
-	 <1293792066.2973.43.camel@edumazet-laptop>
-	 <1293794589.5285.16.camel@wall-e>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 31 Dec 2010 12:54:18 +0100
-Message-ID: <1293796458.2973.59.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Fri, 31 Dec 2010 06:58:57 -0500
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Fri, 31 Dec 2010 12:53:23 +0100
+To: Kevin McNeely <kev@cypress.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        David Brown <davidb@codeaurora.org>,
+        Trilok Soni <tsoni@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Eric Miao <eric.y.miao@gmail.com>, Mike Frysinger <vapier@gentoo.org>,
+        Alan Cox <alan@linux.intel.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [v3 1/3] 1/3 Touchscreen: Cypress TTSP G3 MTDEV Core Driver
+Message-ID: <20101231115323.GA9709@polaris.bitmath.org>
+References: <kev@cypress.com>
+ <1293650268-1561-1-git-send-email-kev@cypress.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1293650268-1561-1-git-send-email-kev@cypress.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 83.248.200.95
+X-Scan-Result: No virus found in message 1PYdY0-0003KN-3f.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PYdY0-0003KN-3f 311a2e05550699dce00ed1b6d13b1ba8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 31 décembre 2010 à 12:23 +0100, Stefani Seibold a écrit :
-> Am Freitag, den 31.12.2010, 11:41 +0100 schrieb Eric Dumazet:
-> > Le vendredi 31 décembre 2010 à 11:22 +0100, Stefani Seibold a écrit :
-> > > Am Freitag, den 31.12.2010, 11:00 +0100 schrieb Eric Dumazet:
-> > > > Le vendredi 31 décembre 2010 à 10:29 +0100, stefani@seibold.net a
-> > > > écrit :
-> > > > > From: Stefani Seibold <stefani@seibold.net>
-> > > > > 
-> > > > >  
-> > > > >  /*
-> > > > >   *	Handle MSG_ERRQUEUE
-> > > > > diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-> > > > > index 2d3ded4..f9890a2 100644
-> > > > > --- a/net/ipv4/udp.c
-> > > > > +++ b/net/ipv4/udp.c
-> > > > > @@ -1310,7 +1310,7 @@ static int __udp_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
-> > > > >  	if (inet_sk(sk)->inet_daddr)
-> > > > >  		sock_rps_save_rxhash(sk, skb->rxhash);
-> > > > >  
-> > > > > -	rc = ip_queue_rcv_skb(sk, skb);
-> > > > > +	rc = sock_queue_rcv_skb(sk, skb);
-> > > > 
-> > > > Ouch... Care to explain why you changed this part ???
-> > > > 
-> > > > You just destroyed commit f84af32cbca70a intent, without any word in
-> > > > your changelog. Making UDP slower, while others try to speed it must be
-> > > > explained and advertised.
-> > > >  
-> > > > In general, we prefer a preliminary patch introducing all the changes in
-> > > > current stack, then another one with the new protocol.
-> > > > 
-> > > 
-> > > I reverted this for two reasons:
-> > > 
-> > > First ip_queue_rcv_skb drops the dst entry, which breaks the user land
-> > > application which expect packet info after a
-> > > 
-> > > setsockopt(handle, IPPROTO_IP, IP_PKTINFO, &const_int_1, sizeof(int));
-> > > 
-> > > But for packets already in the queue this information will be lost. So
-> > > it is a potential race condition.
-> > > 
-> > 
-> > Exactly same race with packet filters. 
-> > 
-> > If your life depends on that, you must flush incoming queue _after_
-> > issuing setsockopt(handle, IPPROTO_IP, IP_PKTINFO, &const_int_1,
-> > sizeof(int)). So that all following packets have the information needed.
-> > 
-> > 
-> 
-> I though always that the linux kernel never breaks user land. This is a
-> break!
-> 
+Hi Kevin,
 
-Only if user land is buggy it breaks. Where is your user land code so
-that I can show you the bug ?
+Thanks for the changes, it looks much better now. Some comments on the MT
+part inline.
 
-This dst refcount avoidance is absolutely crucial and we worked hard on
-it.
+> diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+> index 06ea8da..7d886bc 100644
+> --- a/drivers/input/touchscreen/Kconfig
+> +++ b/drivers/input/touchscreen/Kconfig
+> @@ -124,6 +124,11 @@ config TOUCHSCREEN_CY8CTMG110
+>  	  To compile this driver as a module, choose M here: the
+>  	  module will be called cy8ctmg110_ts.
+>  
+> +config TOUCHSCREEN_CYTTSP_CORE
+> +	bool "Cypress TTSP touchscreen core"
+> +	help
+> +	  Always activated for Cypress TTSP touchscreen
+> +
 
-> > 
-> > > Second it breaks my UDPCP communication protocol stack module, which
-> > > works very well till 2.6.35. I need this information in the data_ready()
-> > > function to generate an ACK.
-> > > 
-> > > 
-> > 
-> > See now why you should not proceed like that ?
-> > 
-> > You know _perfectly_ there is a problem but prefer to keep it for you,
-> > and hope this bit will be unnoticed ?
-> > 
-> 
-> Stop to accuse me. There was a feature that was gone. An it took me six
-> hours to figure out whats going wrong. I did not saw and see a real
-> problem with this patch. It looked for me like an easy and clean
-> solution. It was never my intention to trick somebody, especially u.
-> 
+Tristate please.
 
-Silently doing a revert is not an option. How must I tell this to you ?
+[...]
+> +
+> +struct cyttsp_tch {
+> +	u16 x;
+> +	u16 y;
+> +	u8 z;
+> +};
 
+Does not appear to be used anywhere.
 
-> > This is not how things are dealed in linux, really.
-> > 
-> > You'll have to find a way so that things work well for everybody, not
-> > only for you.
-> > 
-> > I guess you must fix UDPCP protocol stack, not 'fix linux'
-> > 
-> 
-> I cannot fix it, because the information is still lost, and i need it. 
-> 
+[...]
+> +struct cyttsp {
+> +	struct device *dev;
+> +	int irq;
+> +	struct input_dev *input;
+> +	struct mutex mutex;
 
-You can fix it. Really. If not, you can pay me and I'll fix it for you.
+Is this really used?
 
-> In my opinion it was a very bad idea to throw away important
-> information. I checked it and Linux handle this since 2.6.0 in this way.
-> 
-> It would be better not to accuse than to work on a solution. 
-> 
+> +	char phys[32];
+> +	const struct bus_type *bus_type;
+> +	const struct cyttsp_platform_data *platform_data;
+> +	struct cyttsp_bus_ops *bus_ops;
+> +	struct cyttsp_xydata xy_data;
+> +	struct cyttsp_bootloader_data bl_data;
+> +	struct cyttsp_sysinfo_data sysinfo_data;
+> +	struct completion bl_ready;
+> +	enum cyttsp_powerstate power_state;
+> +};
+> +
+> +static const u8 bl_command[] = {
+> +	CY_BL_FILE0, CY_BL_CMD, CY_BL_EXIT,
+> +	CY_BL_KEY0, CY_BL_KEY1, CY_BL_KEY2,
+> +	CY_BL_KEY3, CY_BL_KEY4, CY_BL_KEY5,
+> +	CY_BL_KEY6, CY_BL_KEY7
+> +};
 
-Where do you see an "accuse" ? Because you tried to silently "fix" the
-thing without telling us how the damn thing was broken ? Come on !
+If the CY_BL* values are only used here, how about putting the numbers here directly?
 
-> Question: How much performace gain does the early drop give. Are there
-> benchmark results?
+[...]
+> +static int ttsp_read_block_data(struct cyttsp *ts, u8 command,
+> +	u8 length, void *buf)
+> +{
+> +	int retval;
+> +	int tries;
+> +
+> +	if (!buf || !length)
+> +		return -EIO;
 
-Thats pretty simple. dst refcount was the only contention point in UDP
-stack. Yes, its not a joke.
+-EINVAL?
 
-Re introducing an atomic_inc() at each incoming packet, and atomic_dec()
-each time user process dequeues the packet can have a huge impact.
+> +
+> +	for (tries = 0, retval = -1;
+> +		tries < CY_NUM_RETRY && (retval < 0);
+> +		tries++)
+> +		retval = ts->bus_ops->read(ts->bus_ops, command, length, buf);
+> +
+> +	return retval;
+> +}
 
-One order of magnitude actually. Depending on number of cpus fighting on
-this cache line, this ranges from 20% to 4000% slowdown.
+[...]
+> +/* process current touches */
+> +static int cyttsp_xy_worker(struct cyttsp *ts)
+> +{
+> +	u8 num_cur_tch = 0;
 
-Some people handle thousands of UDP sockets on one machine. Your UDPCP
-apparently handle very few sockets (you have one central linked list),
-so your use case probably dont care of performance.
+Does not appear to need initialization.
 
+> +	u16 x;
+> +	u16 y;
+> +	u8 z;
 
+Perhaps x[2], y[2] etc here.
 
+> +
+> +	/* Get touch data from CYTTSP device */
+> +	if (ttsp_read_block_data(ts,
+> +		CY_REG_BASE, sizeof(struct cyttsp_xydata), &ts->xy_data))
+> +		return 0;
+> +
+> +	/* touch extension handling */
+> +	if (ttsp_tch_ext(ts, &ts->xy_data))
+> +		return 0;
+> +
+> +	/* provide flow control handshake */
+> +	if (ts->platform_data->use_hndshk)
+> +		if (cyttsp_hndshk(ts, ts->xy_data.hst_mode))
+> +			return 0;
+> +
+> +	/* determine number of currently active touches */
+> +	num_cur_tch = GET_NUM_TOUCHES(ts->xy_data.tt_stat);
+> +
+> +	/* check for any error conditions */
+> +	if (ts->power_state == CY_IDLE_STATE)
+> +		return 0;
+> +	else if (GET_BOOTLOADERMODE(ts->xy_data.tt_mode)) {
+> +		return -1;
+> +	} else if (IS_LARGE_AREA(ts->xy_data.tt_stat) == 1) {
+> +		/* terminate all active tracks */
+> +		num_cur_tch = 0;
+> +		dev_dbg(ts->dev, "%s: Large area detected\n", __func__);
+> +	} else if (num_cur_tch > 2) {
+> +		/* terminate all active tracks */
+> +		num_cur_tch = 0;
+> +		dev_dbg(ts->dev, "%s: Num touch error detected\n", __func__);
+> +	} else if (IS_BAD_PKT(ts->xy_data.tt_mode)) {
+> +		/* terminate all active tracks */
+> +		num_cur_tch = 0;
+> +		dev_dbg(ts->dev, "%s: Invalid buffer detected\n", __func__);
+> +	}
+> +
+> +	/* send touches */
+> +	if (!num_cur_tch)
+> +		/* terminate previous active touch */
+> +		input_mt_sync(ts->input);
+> +
+> +	if (num_cur_tch) {
+> +		/* send touch 1 */
+> +		/*
+> +		 * If there is only one current active touch,
+> +		 * it will be reported in the touch 1 regardless
+> +		 * if it was reported in the touch 2 previously
+> +		 */
+
+Perhaps "touch" should be "track" or "slot" here?
+
+> +		x = (ts->xy_data.tch1_xhi << 8) + ts->xy_data.tch1_xlo;
+> +		y = (ts->xy_data.tch1_yhi << 8) + ts->xy_data.tch1_ylo;
+> +		z = ts->xy_data.tch1_z;
+
+Perhaps x[0] = ... here
+
+> +		input_report_abs(ts->input, ABS_MT_POSITION_X, x);
+> +		input_report_abs(ts->input, ABS_MT_POSITION_Y, y);
+> +		input_report_abs(ts->input, ABS_MT_TOUCH_MAJOR, z);
+> +		input_mt_sync(ts->input);
+
+Then these could still be collected in a loop.
+
+> +	}
+> +
+> +	if (num_cur_tch > 1) {
+> +		/* send touch 2 */
+> +		x = (ts->xy_data.tch2_xhi << 8) + ts->xy_data.tch2_xlo;
+> +		y = (ts->xy_data.tch2_yhi << 8) + ts->xy_data.tch2_ylo;
+> +		z = ts->xy_data.tch2_z;
+
+And x[1] = ...
+
+> +		input_report_abs(ts->input, ABS_MT_POSITION_X, x);
+> +		input_report_abs(ts->input, ABS_MT_POSITION_Y, y);
+> +		input_report_abs(ts->input, ABS_MT_TOUCH_MAJOR, z);
+> +		input_mt_sync(ts->input);
+> +	}
+
+Ditto.
+
+> +
+> +	input_sync(ts->input);
+> +
+> +	return 0;
+> +}
+
+If the in-kernel tracking module was in place, would you consider switching to the slots protocol?
+
+Thanks,
+Henrik
