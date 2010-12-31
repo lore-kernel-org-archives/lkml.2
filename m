@@ -1,240 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499Ab0LaNDc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 08:03:32 -0500
-Received: from shutemov.name ([188.40.19.243]:55322 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753435Ab0LaNDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 08:03:30 -0500
-Date: Fri, 31 Dec 2010 15:03:29 +0200
-From: "Kirill A. Shutemov" <kas@openvz.org>
-To: Rob Landley <rlandley@parallels.com>
-Cc: "Kirill A. Shutemov" <kas@openvz.org>, Rob Landley <rob@landley.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/12] make rpc_pipefs be mountable multiple time
-Message-ID: <20101231130329.GA3610@shutemov.name>
-References: <1293628470-28386-1-git-send-email-kas@openvz.org>
- <AANLkTi=AXz21wDeE1vPVD-6cEtj6faXN9x09eHDCsTkB@mail.gmail.com>
- <20101230085139.GA29697@shutemov.name>
- <4D1C4C7C.6050606@parallels.com>
- <20101230094433.GB29697@shutemov.name>
- <4D1C5953.6020200@parallels.com>
- <20101230104416.GA31824@shutemov.name>
- <AANLkTim2QrkSW0HufD5wp=-8ikwydN5SUS+fdWK6JHqb@mail.gmail.com>
- <20101230114514.GA31976@shutemov.name>
- <4D1C809B.30405@parallels.com>
+	id S1753507Ab0LaNUl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 08:20:41 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54841 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753436Ab0LaNUk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Dec 2010 08:20:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=C27orYdAXRs0bBMXqyS0W/Qd6uPAbS/wM7JZAstE6SGZcfRX05To12N5WSLW411y3v
+         8geKjstVsxB7Bf7Hmz3bcz5zqCCCO9JEsEuWhPokLCTAUB/ZEyNPKzHzuAHcmoKoqtnI
+         sS4VCqn3V/kVGDZDmMN9nb9btJZFjY60wu06Y=
+Date: Fri, 31 Dec 2010 14:20:34 +0100
+From: Tejun Heo <tj@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        eric.dumazet@gmail.com, yinghai@kernel.org, brgerst@gmail.com,
+        gorcunov@gmail.com, Pekka Enberg <penberg@kernel.org>,
+        shaohui.zheng@intel.com
+Subject: Re: [PATCH 15/16] x86: Unify node_to_cpumask_map handling between
+ 32 and 64bit
+Message-ID: <20101231132034.GK18831@htj.dyndns.org>
+References: <1293536929-31683-1-git-send-email-tj@kernel.org>
+ <1293536929-31683-16-git-send-email-tj@kernel.org>
+ <alpine.DEB.2.00.1012281240000.8883@chino.kir.corp.google.com>
+ <20101230124800.GD18831@htj.dyndns.org>
+ <20101230145858.GE18831@htj.dyndns.org>
+ <alpine.DEB.2.00.1012301028590.12207@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="24zk1gE8NUlDmwG9"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D1C809B.30405@parallels.com>
-User-Agent: Mutt/1.5.20 (2010-08-04)
+In-Reply-To: <alpine.DEB.2.00.1012301028590.12207@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---24zk1gE8NUlDmwG9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Thu, Dec 30, 2010 at 06:52:43AM -0600, Rob Landley wrote:
-> On 12/30/2010 05:45 AM, Kirill A. Shutemov wrote:
-> > Currently, there is no association between rpc_pipefs and mount namespace,
+On Thu, Dec 30, 2010 at 10:40:33AM -0800, David Rientjes wrote:
+> On Thu, 30 Dec 2010, Tejun Heo wrote:
 > 
-> There is in that the root context doesn't need to have this mounted, and 
-> new namespaces do.  So there's an existing association between a LACK of 
-> a namespace and a different default behavior.
->
-> My understanding (correct me if I'm wrong) is that the historical 
-> behavior is that there's only one, and it doesn't actually live anywhere 
-> in the filesystem tree.  You're adding a special location.  I'm 
-> wondering if there's any way for that location not to be special.
-
-/var/lib/net/rpc_pipefs is default path where userspace part of NFS stack
-(gssd, idmapd) want to see rpc_pipefs
-
-> > so I don't see simple way to restrict number of rpc_pipefs per mount
-> > namespace. Associating mount namespace with rpc_pipefs is not a good idea,
-> > I think.
+> > > Sigh, the new NUMA emulation thing is 64bit only. :-( I'll see if it
+> > > can be applied to 32bit too.  BTW, how does this interact with the
+> > > Shaohui's patchset.  Isn't that about NUMA emulation too?  Are these
+> > > the same patches?
 > 
-> I'm talking about associating a default rpc_pipefs instance with a 
-> namespace, which it seems to me you're already doing by emulating the 
-> legacy behavior.  Before you CLONE_NEWNS you get a magic default mount 
-> that doesn't exist in the tree.  After you CLONE_NEWNS you get something 
-> like -EINVAL unless you supply your own default.
+> Shaohui's patchset is for node hotplug emulation, not for NUMA emulation 
+> which has existed for x86_64 for at least over four years.
 
-Root namespace is special. In case of nfsroot you need rpc_pipefs before
-root available.
+I see.  Yeah, I should have actually read the patchset before talking
+about it.
 
-> (I'm actually not sure 
-> why new namespaces don't fall back to the magic global one...)
+> I agree that unification is in our best interest but the patches as they 
+> sit in x86/numa right now actually fix real bugs when using numa=fake on 
+> the command line and adding i386 NUMA emulation is an additional feature 
 
-It breaks isolation. Container should not use host's rpc_pipefs without
-host's permission.
- 
-> I'm suggesting that if the user doesn't specify -o rpcmount then the 
-> default could be the first rpc_pipefs mount visible to the current 
-> process context, rather than a specific path.  Logic to do that exists 
-> in the proc/self/mounts code (which I'm reading through now...).
+I'm not really arguing against you and as said before the patches were
+fine given the current state of the code, but I still want to point
+out that it's through these mostly innocent series of changes which
+build upon existing complications which eventually lead to
+unsustainable pile of mess.  No one is particularly wrong but then
+again none does what really needs to be done.
 
-static int check_rpc_pipefs(struct vfsmount *mnt, void *arg)
-{
-        struct vfsmount **rpcmount = arg;
-        struct path path = {
-                .mnt = mnt,
-                .dentry = mnt->mnt_root,
-        };
+> (and the unification that can be done in the meantime would only be the 
+> actual apicid-to-node and pxm-to-node mappings after it is exported from 
+> amd and acpi specific functions), so I'd prefer to handle cleanups as 
+> incremental patches on top of those.
 
-        if (!mnt->mnt_sb)
-                return 0;
-        if (mnt->mnt_sb->s_magic != RPCAUTH_GSSMAGIC)
-                return 0;
+The problem is that those "incremental" patches often don't happen
+once the itch is gone while the immediate fixes/improvements aggravate
+existing complications.  If you were/are planning to clean it up, I
+have nothing to whine about.  :-)
 
-        if (!path_is_under(&path, &current->fs->root))
-                return 0;
-
-        *rpcmount = mntget(mnt);
-        return 1;
-}
-
-struct vfsmount *get_rpc_pipefs(const char *p)
-{
-        int error;
-        struct vfsmount *rpcmount = ERR_PTR(-EINVAL);
-        struct path path;
-
-        if (!p) {
-                iterate_mounts(check_rpc_pipefs, &rpcmount,
-                                current->nsproxy->mnt_ns->root);
-
-                if (IS_ERR(rpcmount) && (current->nsproxy->mnt_ns ==
-                                        init_task.nsproxy->mnt_ns))
-                        return mntget(init_rpc_pipefs);
-
-                return rpcmount;
-        }
-
-        error = kern_path(p, LOOKUP_FOLLOW | LOOKUP_DIRECTORY, &path);
-        if (error)
-                return ERR_PTR(error);
-
-        check_rpc_pipefs(path.mnt, &rpcmount);
-        path_put(&path);
-
-        return rpcmount;
-}
-EXPORT_SYMBOL_GPL(get_rpc_pipefs);
-
-Something like this? Patch to replace patch #10 attached.
+Thanks.
 
 -- 
- Kirill A. Shutemov
-
---24zk1gE8NUlDmwG9
-Content-Type: text/plain; charset=us-ascii; name="sunrpc-introduce-get_rpc_pipefs.patch"
-Content-Disposition: attachment; filename="sunrpc-introduce-get_rpc_pipefs.patch"
-
->From 36bdb502360461a8426821a37728aef3a3b8c738 Mon Sep 17 00:00:00 2001
-From: Kirill A. Shutemov <kas@openvz.org>
-Date: Mon, 20 Dec 2010 04:03:52 +0200
-Subject: [PATCH] sunrpc: introduce get_rpc_pipefs()
-
-Get rpc_pipefs mount point by path.
-
-Signed-off-by: Kirill A. Shutemov <kas@openvz.org>
----
- include/linux/sunrpc/rpc_pipe_fs.h |    2 +
- net/sunrpc/rpc_pipe.c              |   51 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 53 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/sunrpc/rpc_pipe_fs.h b/include/linux/sunrpc/rpc_pipe_fs.h
-index b09bfa5..922057c 100644
---- a/include/linux/sunrpc/rpc_pipe_fs.h
-+++ b/include/linux/sunrpc/rpc_pipe_fs.h
-@@ -46,6 +46,8 @@ RPC_I(struct inode *inode)
- 
- extern struct vfsmount *init_rpc_pipefs;
- 
-+struct vfsmount *get_rpc_pipefs(const char *path);
-+
- extern int rpc_queue_upcall(struct inode *, struct rpc_pipe_msg *);
- 
- struct rpc_clnt;
-diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-index b1e299b..4e09a90 100644
---- a/net/sunrpc/rpc_pipe.c
-+++ b/net/sunrpc/rpc_pipe.c
-@@ -16,6 +16,9 @@
- #include <linux/namei.h>
- #include <linux/fsnotify.h>
- #include <linux/kernel.h>
-+#include <linux/nsproxy.h>
-+#include <linux/mnt_namespace.h>
-+#include <linux/fs_struct.h>
- 
- #include <asm/ioctls.h>
- #include <linux/fs.h>
-@@ -931,6 +934,54 @@ static const struct super_operations s_ops = {
- 
- #define RPCAUTH_GSSMAGIC 0x67596969
- 
-+static int check_rpc_pipefs(struct vfsmount *mnt, void *arg)
-+{
-+	struct vfsmount **rpcmount = arg;
-+	struct path path = {
-+		.mnt = mnt,
-+		.dentry = mnt->mnt_root,
-+	};
-+
-+	if (!mnt->mnt_sb)
-+		return 0;
-+	if (mnt->mnt_sb->s_magic != RPCAUTH_GSSMAGIC)
-+		return 0;
-+
-+	if (!path_is_under(&path, &current->fs->root))
-+		return 0;
-+
-+	*rpcmount = mntget(mnt);
-+	return 1;
-+}
-+
-+struct vfsmount *get_rpc_pipefs(const char *p)
-+{
-+	int error;
-+	struct vfsmount *rpcmount = ERR_PTR(-EINVAL);
-+	struct path path;
-+
-+	if (!p) {
-+		iterate_mounts(check_rpc_pipefs, &rpcmount,
-+				current->nsproxy->mnt_ns->root);
-+
-+		if (IS_ERR(rpcmount) && (current->nsproxy->mnt_ns ==
-+					init_task.nsproxy->mnt_ns))
-+			return mntget(init_rpc_pipefs);
-+
-+		return rpcmount;
-+	}
-+
-+	error = kern_path(p, LOOKUP_FOLLOW | LOOKUP_DIRECTORY, &path);
-+	if (error)
-+		return ERR_PTR(error);
-+
-+	check_rpc_pipefs(path.mnt, &rpcmount);
-+	path_put(&path);
-+
-+	return rpcmount;
-+}
-+EXPORT_SYMBOL_GPL(get_rpc_pipefs);
-+
- /*
-  * We have a single directory with 1 node in it.
-  */
--- 
-1.7.3.4
-
-
---24zk1gE8NUlDmwG9--
+tejun
