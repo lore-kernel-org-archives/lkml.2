@@ -1,73 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752065Ab1AAJbi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jan 2011 04:31:38 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:61142 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751296Ab1AAJbh (ORCPT
+	id S1752167Ab1AAJcL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jan 2011 04:32:11 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:44191 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676Ab1AAJcJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jan 2011 04:31:37 -0500
-Message-ID: <4d1ef477.017b0e0a.28f5.0d41@mx.google.com>
-From: Abylay Ospan <liplianin@me.by>
+	Sat, 1 Jan 2011 04:32:09 -0500
+Message-ID: <4d1ef497.52790e0a.1192.06a8@mx.google.com>
+From: "Igor M. Liplianin" <liplianin@me.by>
 Date: Fri, 31 Dec 2010 13:37:00 +0200
-Subject: [PATCH 08/18] cx23885: Altera FPGA CI interface reworked.
+Subject: [PATCH 09/18] stv0367: Fix potential divide error
 To: <mchehab@infradead.org>, <linux-media@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It decreases I2C traffic.
-
-Signed-off-by: Abylay Ospan <aospan@netup.ru>
 Signed-off-by: Igor M. Liplianin <liplianin@netup.ru>
 ---
- drivers/media/video/cx23885/cx23885-dvb.c |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
+ drivers/media/dvb/frontends/stv0367.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/media/video/cx23885/cx23885-dvb.c b/drivers/media/video/cx23885/cx23885-dvb.c
-index 6c144f7..53c2b6d 100644
---- a/drivers/media/video/cx23885/cx23885-dvb.c
-+++ b/drivers/media/video/cx23885/cx23885-dvb.c
-@@ -620,29 +620,29 @@ int netup_altera_fpga_rw(void *device, int flag, int data, int read)
- {
- 	struct cx23885_dev *dev = (struct cx23885_dev *)device;
- 	unsigned long timeout = jiffies + msecs_to_jiffies(1);
--	int mem = 0;
-+	uint32_t mem = 0;
- 
--	cx_set(MC417_RWD, ALT_RD | ALT_WR | ALT_CS);
-+	mem = cx_read(MC417_RWD);
- 	if (read)
- 		cx_set(MC417_OEN, ALT_DATA);
- 	else {
- 		cx_clear(MC417_OEN, ALT_DATA);/* D0-D7 out */
--		mem = cx_read(MC417_RWD);
- 		mem &= ~ALT_DATA;
- 		mem |= (data & ALT_DATA);
--		cx_write(MC417_RWD, mem);
+diff --git a/drivers/media/dvb/frontends/stv0367.c b/drivers/media/dvb/frontends/stv0367.c
+index 0575741..e6bee7f 100644
+--- a/drivers/media/dvb/frontends/stv0367.c
++++ b/drivers/media/dvb/frontends/stv0367.c
+@@ -3275,12 +3275,14 @@ static int stv0367cab_read_snr(struct dvb_frontend *fe, u16 *snr)
+ 		power = 1;
+ 		break;
  	}
- 
- 	if (flag)
--		cx_set(MC417_RWD, ALT_AD_RG);/* ADDR */
-+		mem |= ALT_AD_RG;
- 	else
--		cx_clear(MC417_RWD, ALT_AD_RG);/* VAL */
-+		mem &= ~ALT_AD_RG;
- 
--	cx_clear(MC417_RWD, ALT_CS);/* ~CS */
-+	mem &= ~ALT_CS;
- 	if (read)
--		cx_clear(MC417_RWD, ALT_RD);
-+		mem = (mem & ~ALT_RD) | ALT_WR;
- 	else
--		cx_clear(MC417_RWD, ALT_WR);
-+		mem = (mem & ~ALT_WR) | ALT_RD;
 +
-+	cx_write(MC417_RWD, mem);  /* start RW cycle */
- 
- 	for (;;) {
- 		mem = cx_read(MC417_RWD);
+ 	for (i = 0; i < 10; i++) {
+ 		regval += (stv0367_readbits(state, F367CAB_SNR_LO)
+ 			+ 256 * stv0367_readbits(state, F367CAB_SNR_HI));
+ 	}
++
++	regval /= 10; /*for average over 10 times in for loop above*/
+ 	if (regval != 0) {
+-		regval /= 10; /*for average over 10 times in for loop above*/
+ 		temp = power
+ 			* (1 << (3 + stv0367_readbits(state, F367CAB_SNR_PER)));
+ 		temp /= regval;
 -- 
 1.7.1
 
