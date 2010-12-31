@@ -1,144 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147Ab0LaVvF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 16:51:05 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53593 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753902Ab0LaVvE (ORCPT
+	id S1754169Ab0LaVzW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 16:55:22 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:32786 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754052Ab0LaVzU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 16:51:04 -0500
-Date: Fri, 31 Dec 2010 21:50:18 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Viresh Kumar <viresh.kumar@st.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        yuanyabin1978@sina.com, linux-kernel@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>, Peter Pearse <peter.pearse@arm.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Alessandro Rubini <rubini@unipv.it>
-Subject: Re: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081
-	PrimeCells
-Message-ID: <20101231215018.GB5012@n2100.arm.linux.org.uk>
-References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com> <20101221182037.GA4783@n2100.arm.linux.org.uk> <20101222122904.GC14693@n2100.arm.linux.org.uk> <AANLkTikpyAggDCPef1pS=_QHnu9-FyLcpddGyVHnGwWx@mail.gmail.com> <20101223001012.GF29368@n2100.arm.linux.org.uk> <AANLkTimirgsuoM2che_ocrkvCZqGu6xEJjrjdmt9-69p@mail.gmail.com> <AANLkTikP+JZkN7AjqaNfHY8jZ7bVsV-af=YR=MTdfnNU@mail.gmail.com>
+	Fri, 31 Dec 2010 16:55:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=HLS3nkpQk7MQDJxpwMkYWZnR2jhS6sMM4++xHgo8oHqq6D6RGB5D7iMo/mZan2Frrb
+         Ol0cPwnJLsTVXhZJd20BN0zjtYLL9uPWqRKnWYW5iEB3tKtn+5Cc2yQpB8pxE1T0na7r
+         0tsbbcQ1XfR4Il2Qb3G4DHuj7jiNWL1m2NEmY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikP+JZkN7AjqaNfHY8jZ7bVsV-af=YR=MTdfnNU@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20101231234010.0165f0e8@janini.home>
+References: <20101231193858.2c742025@janini.home> <20101231103345.baba0f8c.rdunlap@xenotime.net>
+ <20101231212800.1e47f200@janini.home> <20101231113954.dc9adbdf.rdunlap@xenotime.net>
+ <20101231234010.0165f0e8@janini.home>
+From: Avery Pennarun <apenwarr@alumnit.ca>
+Date: Fri, 31 Dec 2010 13:54:59 -0800
+X-Google-Sender-Auth: 2AWLlRwl8KktiYYD8faEXNXu5js
+Message-ID: <AANLkTi=GY+ZFNMCdCQAj7aL6smUmiJZ=a-kcc76EECj7@mail.gmail.com>
+Subject: Re: APM_CONFIG on x86 - Is it possible?
+To: yotam.medini@gmail.com
+Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 22, 2010 at 05:31:25PM -0800, Dan Williams wrote:
-> On Wed, Dec 22, 2010 at 5:11 PM, Dan Williams <dan.j.williams@intel.com> wrote:
-> > Drivers that do not
-> > want to meet the constraints expected by the opportunistic offload
-> > clients should do what ste_dma40 does and add "depends on !(NET_DMA ||
-> > ASYNC_TX_DMA)"
-> 
-> Sorry I was looking at a local change it does not do this today, but I
-> recommended it to workaround the broken >64k transfer support that was
-> reported recently.
+On Fri, Dec 31, 2010 at 1:40 PM, Yotam Medini <yotam.medini@gmail.com> wrote:
+> For a target ancient UMAX-ActionBook 530T, I am trying to compile
+...
+> The .config I ended up with does have:
+>   CONFIG_APM=m
+> But no CONFIG_APM_POWER setting,
 
-Dan,
+I don't think CONFIG_APM_POWER does what you think it does.  I don't
+know exactly what it does, either, but if you just want to use native
+apm on your machine, you don't need it.
 
-Is there any documentation on the DMA engine APIs than what's in
-crypto/async-tx-api.txt?
+> When booting the kernel, I do not have /proc/apm.
 
-Reason for asking is that there's no way at the moment to tell what the
-expectations are from a lot of the DMA engine support code - and that is
-_very_ bad news if you want DMA engine drivers to behave the same.
+Well, you compiled it as a module, so it's not surprising that it
+wouldn't show up at boot time.
 
-I can already see that drivers on both sides of the DMA engine API have
-different expectations between their respective implementations, and this
-is just adding to confusion.
+> I do get:
+>
+>  $ sudo modprobe apm
+>  FATAL: Error inserting apm
+>    (/lib/modules/2.6.32.yumax/kernel/arch/x86/kernel/apm.ko): No such device
 
-For instance, the sequence in a driver:
+The output of 'dmesg' might be revealing here.  However, it's likely
+that your PC doesn't actually support APM unless it's *very* old.  You
+might want to try ACPI instead.
 
-	desc = dmadev->device_prep_slave_sg(chan, ...);
-	if (!desc)
-		/* what DMA engine cleanup is expected here? */
+Hope this helps.
 
-	cookie = dmaengine_submit(desc);
-	if (dma_submit_error(cookie))
-		/* what DMA engine cleanup of desc is expected here? */
-
-Note: I don't trust what's written in 3.3 of async-tx-api.txt, because
-that seems to be talking about the the async_* APIs rather than the
-DMA engine API. (see below.)
-
-1. Is it valid to call dmaengine_terminate_all(chan) in those paths?
-
-2. What is the expectations wrt the callback of a previously submitted
-   job at the point that dmaengine_terminate_all() returns?
-
-3. What if the callback is running on a different CPU, waiting for a
-   spinlock you're holding at the time you call dmaengine_terminate_all()
-   within that very same spinlock?
-
-4. What if dmaengine_terminate_all() is running, but parallel with it
-   the tasklet runs on a different CPU, and queues another DMA job?
-
-These can all be solved by requiring that the termination implementations
-call tasklet_disable(), then clean up the DMA state, followed by
-tasklet_enable().  tasklet_disable() will prevent the tasklet being
-scheduled, and wait for the tasklet to finish running before proceeding.
-This means that (2) becomes "the tasklet will not be running", (3)
-becomes illegal (due to deadlock), and (4) becomes predictable as we
-know that after tasklet_disable() we have consistent DMA engine state
-and we can terminate everything that's been queued.
-
-That still leaves the issue of (1), and also what cleanup is expected.
-
-
-I'm not entirely clear about the usage of DMA_CTRL_ACK:
- * @DMA_CTRL_ACK - if clear, the descriptor cannot be reused until the client
- *  acknowledges receipt, i.e. has has a chance to establish any dependency
- *  chains
-
-Some DMA engine using drivers set DMA_CTRL_ACK, others don't.
-
-Should drivers using prep_slave_sg() be requesting their descriptors
-with DMA_CTRL_ACK in the flags argument?  Doesn't that mean that the
-DMA engine driver is free to re-use this descriptor beneath the driver?
-
-Almost no one checks the result of dmaengine_submit() (or its open-coded
-equivalent).  Are all such drivers potentially leaking descriptors?  If
-not, how are the failed descriptors re-used?
-
-Also, I think that the DMA engine core code needs to provide some
-essential helper functions to prevent buggy bodgerations such as
-what's happening in amba-pl08x.c, such as:
-
-dma_cookie_t dmaengine_alloc_cookie(struct dma_async_tx_descriptor *tx)
-{
-	struct dma_chan *chan = tx->chan;
-
-	chan->cookie += 1;
-	if (chan->cookie < 0)
-		chan->cookie = 1;
-	return (tx->cookie = chan->cookie);
-}
-
-What should be the initial value of tx->cookie after a successful
-prep_slave_sg() call?
-
-Also a helper function for dmaengine drivers to call when a descriptor
-is complete to handle all the tx descriptor cleanup on completion, so
-that all dmaengine drivers don't have to re-implement the cleanup in
-their own ways, each with differing behaviour.  (Can the TX desciptor
-structure be expanded to hold all the information needed so that core
-code can implement the DMA unmapping for the asynctx stuff there?)
-
-I think that's enough to think about for the time being - I'm sure
-there's lots more...
-
-As it is, even if I thought trying to fix the PL08x driver was worth the
-effort (in spite of the hardware issues), I don't think there's enough
-documentation on the DMA engine API to be able to do so at the present
-time.
-
-So, given all these questions (some of which can lead to deadlocks), and
-we're now at -rc8, I see no way that I can sanely (or safely) queue up
-the PL011 UART and PL180 MMCI DMA engine code for this coming merge
-window.  (Sorry Linus.)
+Avery
