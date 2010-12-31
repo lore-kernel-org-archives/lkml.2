@@ -1,144 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751832Ab0LaFcH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 00:32:07 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:52748 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050Ab0LaFcE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 00:32:04 -0500
-Message-ID: <4d1d6ad2.857a0e0a.45e5.ffffd918@mx.google.com>
-From: "Igor M. Liplianin" <liplianin@me.by>
-Date: Mon, 16 Aug 2010 21:15:56 +0300
-Subject: [PATCH 06/18] cx23885: implement tuner_bus parameter for cx23885_board structure.
-To: <mchehab@infradead.org>, linux-media@vger.kernel.org,
-        <linux-kernel@vger.kernel.org>, <aospan@netup.ru>
+	id S1751514Ab0LaFjS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 00:39:18 -0500
+Received: from xenotime.net ([72.52.115.56]:49862 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750973Ab0LaFjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Dec 2010 00:39:17 -0500
+Date: Thu, 30 Dec 2010 21:39:15 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: "Igor M. Liplianin" <liplianin@me.by>
+Cc: mchehab@infradead.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, aospan@netup.ru
+Subject: Re: [PATCH 01/18] Altera FPGA firmware download module.
+Message-Id: <20101230213915.3842b3ca.rdunlap@xenotime.net>
+In-Reply-To: <201012310726.31851.liplianin@netup.ru>
+References: <201012310726.31851.liplianin@netup.ru>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is two external I2C buses in cx23885 chip.
-Currently, analog tuners supported for second I2C bus only
-In NetUP Dual DVB-T/C CI RF card tuners connected to first bus
-So, in order to support analog tuners sitting on first bus
-we need modifications.
+On Fri, 31 Dec 2010 08:26:31 +0300 Igor M. Liplianin wrote:
 
-Signed-off-by: Igor M. Liplianin <liplianin@netup.ru>
+> It uses STAPL files and programs Altera FPGA through JTAG.
+> Interface to JTAG must be provided from main device module,
+> for example through cx23885 GPIO.
+> 
+> Signed-off-by: Igor M. Liplianin <liplianin@netup.ru>
+> ---
+>  drivers/misc/Kconfig                     |    1 +
+>  drivers/misc/Makefile                    |    1 +
+>  drivers/misc/altera-stapl/Kconfig        |    8 +
+>  drivers/misc/altera-stapl/Makefile       |    3 +
+>  drivers/misc/altera-stapl/altera-comp.c  |  142 ++
+>  drivers/misc/altera-stapl/altera-exprt.h |   33 +
+>  drivers/misc/altera-stapl/altera-jtag.c  | 1010 ++++++++++++
+>  drivers/misc/altera-stapl/altera-jtag.h  |  113 ++
+>  drivers/misc/altera-stapl/altera-lpt.c   |   70 +
+>  drivers/misc/altera-stapl/altera.c       | 2484 ++++++++++++++++++++++++++++++
+>  include/misc/altera.h                    |   49 +
+>  11 files changed, 3914 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/misc/altera-stapl/Kconfig
+>  create mode 100644 drivers/misc/altera-stapl/Makefile
+>  create mode 100644 drivers/misc/altera-stapl/altera-comp.c
+>  create mode 100644 drivers/misc/altera-stapl/altera-exprt.h
+>  create mode 100644 drivers/misc/altera-stapl/altera-jtag.c
+>  create mode 100644 drivers/misc/altera-stapl/altera-jtag.h
+>  create mode 100644 drivers/misc/altera-stapl/altera-lpt.c
+>  create mode 100644 drivers/misc/altera-stapl/altera.c
+>  create mode 100644 include/misc/altera.h
+> 
+> diff --git a/drivers/misc/altera-stapl/Kconfig b/drivers/misc/altera-stapl/Kconfig
+> new file mode 100644
+> index 0000000..711a4a2
+> --- /dev/null
+> +++ b/drivers/misc/altera-stapl/Kconfig
+> @@ -0,0 +1,8 @@
+> +comment "Altera FPGA firmware download module"
+> +
+> +config ALTERA_STAPL
+> +	tristate "Altera FPGA firmware download module"
+> +	depends on I2C
+> +	default m
+> +	help
+
+Please do not enable random drivers to build by default.
+
+
+> +static int altera_get_note(u8 *p, s32 program_size,
+> +			s32 *offset, char *key, char *value, int length)
+> +/*
+> +Gets key and value of NOTE fields in the JBC file.
+> +Can be called in two modes:  if offset pointer is NULL,
+> +then the function searches for note fields which match
+> +the key string provided.  If offset is not NULL, then
+> +the function finds the next note field of any key,
+> +starting at the offset specified by the offset pointer.
+> +Returns 0 for success, else appropriate error code	*/
+> +{
+
+
+/*
+ * Throughout all source files:
+ * The multi-line comment format for Linux kernel is like this multi-line comment.
+ */
+
+
+
 ---
- drivers/media/video/cx23885/cx23885-cards.c |    5 +++++
- drivers/media/video/cx23885/cx23885-core.c  |    5 +++--
- drivers/media/video/cx23885/cx23885-video.c |    7 ++++---
- drivers/media/video/cx23885/cx23885.h       |    2 ++
- 4 files changed, 14 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/media/video/cx23885/cx23885-cards.c b/drivers/media/video/cx23885/cx23885-cards.c
-index 1ef4f7b..7de6379 100644
---- a/drivers/media/video/cx23885/cx23885-cards.c
-+++ b/drivers/media/video/cx23885/cx23885-cards.c
-@@ -94,6 +94,7 @@ struct cx23885_board cx23885_boards[] = {
- 		.portc		= CX23885_MPEG_DVB,
- 		.tuner_type	= TUNER_PHILIPS_TDA8290,
- 		.tuner_addr	= 0x42, /* 0x84 >> 1 */
-+		.tuner_bus	= 1,
- 		.input          = {{
- 			.type   = CX23885_VMUX_TELEVISION,
- 			.vmux   =	CX25840_VIN7_CH3 |
-@@ -216,6 +217,7 @@ struct cx23885_board cx23885_boards[] = {
- 		.name		= "Mygica X8506 DMB-TH",
- 		.tuner_type = TUNER_XC5000,
- 		.tuner_addr = 0x61,
-+		.tuner_bus	= 1,
- 		.porta		= CX23885_ANALOG_VIDEO,
- 		.portb		= CX23885_MPEG_DVB,
- 		.input		= {
-@@ -245,6 +247,7 @@ struct cx23885_board cx23885_boards[] = {
- 		.name		= "Magic-Pro ProHDTV Extreme 2",
- 		.tuner_type = TUNER_XC5000,
- 		.tuner_addr = 0x61,
-+		.tuner_bus	= 1,
- 		.porta		= CX23885_ANALOG_VIDEO,
- 		.portb		= CX23885_MPEG_DVB,
- 		.input		= {
-@@ -293,6 +296,7 @@ struct cx23885_board cx23885_boards[] = {
- 		.porta          = CX23885_ANALOG_VIDEO,
- 		.tuner_type     = TUNER_XC2028,
- 		.tuner_addr     = 0x61,
-+		.tuner_bus	= 1,
- 		.input          = {{
- 			.type   = CX23885_VMUX_TELEVISION,
- 			.vmux   = CX25840_VIN2_CH1 |
-@@ -317,6 +321,7 @@ struct cx23885_board cx23885_boards[] = {
- 		.name		= "GoTView X5 3D Hybrid",
- 		.tuner_type	= TUNER_XC5000,
- 		.tuner_addr	= 0x64,
-+		.tuner_bus	= 1,
- 		.porta		= CX23885_ANALOG_VIDEO,
- 		.portb		= CX23885_MPEG_DVB,
- 		.input          = {{
-diff --git a/drivers/media/video/cx23885/cx23885-core.c b/drivers/media/video/cx23885/cx23885-core.c
-index 7c6f08e..a5998dd 100644
---- a/drivers/media/video/cx23885/cx23885-core.c
-+++ b/drivers/media/video/cx23885/cx23885-core.c
-@@ -976,11 +976,12 @@ static int cx23885_dev_setup(struct cx23885_dev *dev)
- 	/* Assume some sensible defaults */
- 	dev->tuner_type = cx23885_boards[dev->board].tuner_type;
- 	dev->tuner_addr = cx23885_boards[dev->board].tuner_addr;
-+	dev->tuner_bus = cx23885_boards[dev->board].tuner_bus;
- 	dev->radio_type = cx23885_boards[dev->board].radio_type;
- 	dev->radio_addr = cx23885_boards[dev->board].radio_addr;
- 
--	dprintk(1, "%s() tuner_type = 0x%x tuner_addr = 0x%x\n",
--		__func__, dev->tuner_type, dev->tuner_addr);
-+	dprintk(1, "%s() tuner_type = 0x%x tuner_addr = 0x%x tuner_bus = 0x%x\n",
-+		__func__, dev->tuner_type, dev->tuner_addr, dev->tuner_bus);
- 	dprintk(1, "%s() radio_type = 0x%x radio_addr = 0x%x\n",
- 		__func__, dev->radio_type, dev->radio_addr);
- 
-diff --git a/drivers/media/video/cx23885/cx23885-video.c b/drivers/media/video/cx23885/cx23885-video.c
-index 644fcb8..ee57f6b 100644
---- a/drivers/media/video/cx23885/cx23885-video.c
-+++ b/drivers/media/video/cx23885/cx23885-video.c
-@@ -1468,16 +1468,17 @@ int cx23885_video_register(struct cx23885_dev *dev)
- 
- 	cx23885_irq_add_enable(dev, 0x01);
- 
--	if (TUNER_ABSENT != dev->tuner_type) {
-+	if ((TUNER_ABSENT != dev->tuner_type) &&
-+			((dev->tuner_bus == 0) || (dev->tuner_bus == 1))) {
- 		struct v4l2_subdev *sd = NULL;
- 
- 		if (dev->tuner_addr)
- 			sd = v4l2_i2c_new_subdev(&dev->v4l2_dev,
--				&dev->i2c_bus[1].i2c_adap,
-+				&dev->i2c_bus[dev->tuner_bus].i2c_adap,
- 				"tuner", dev->tuner_addr, NULL);
- 		else
- 			sd = v4l2_i2c_new_subdev(&dev->v4l2_dev,
--				&dev->i2c_bus[1].i2c_adap,
-+				&dev->i2c_bus[dev->tuner_bus].i2c_adap,
- 				"tuner", 0, v4l2_i2c_tuner_addrs(ADDRS_TV));
- 		if (sd) {
- 			struct tuner_setup tun_setup;
-diff --git a/drivers/media/video/cx23885/cx23885.h b/drivers/media/video/cx23885/cx23885.h
-index a427f7c..d43f80b 100644
---- a/drivers/media/video/cx23885/cx23885.h
-+++ b/drivers/media/video/cx23885/cx23885.h
-@@ -209,6 +209,7 @@ struct cx23885_board {
- 	unsigned int		radio_type;
- 	unsigned char		tuner_addr;
- 	unsigned char		radio_addr;
-+	unsigned int		tuner_bus;
- 
- 	/* Vendors can and do run the PCIe bridge at different
- 	 * clock rates, driven physically by crystals on the PCBs.
-@@ -364,6 +365,7 @@ struct cx23885_dev {
- 	v4l2_std_id                tvnorm;
- 	unsigned int               tuner_type;
- 	unsigned char              tuner_addr;
-+	unsigned int               tuner_bus;
- 	unsigned int               radio_type;
- 	unsigned char              radio_addr;
- 	unsigned int               has_radio;
--- 
-1.7.1
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
+desserts:  http://www.xenotime.net/linux/recipes/
