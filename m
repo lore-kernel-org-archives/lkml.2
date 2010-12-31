@@ -1,113 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525Ab0LaOBU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 09:01:20 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59595 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753248Ab0LaOBT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 09:01:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=mOgfeGd7zH/5Quy49U3wi41A23zp1G1295XYhRc6fJI+BUKc0SW0Vtyzo1JBGMtri+
-         W3To7eFrJRzCf48c+SUSbC7XjrmINCK3vyTrRKBktlR5hXsXpJqm+ALklOkVTv7ZakQ7
-         nHIYoGmfVTjuynEcocIrKhnoJM8CiuDSxQS5w=
-Date: Fri, 31 Dec 2010 15:01:09 +0100
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: dm-devel@redhat.com, Steven Whitehouse <swhiteho@redhat.com>,
-        Neil Brown <neilb@suse.de>
-Subject: [PATCH wq#for-2.6.38] workqueue: use WQ_MEM_RECLAIM instead of
- WQ_RESCUER
-Message-ID: <20101231140109.GL18831@htj.dyndns.org>
+	id S1753538Ab0LaOIv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 09:08:51 -0500
+Received: from inx.pm.waw.pl ([195.116.170.130]:58450 "EHLO inx.pm.waw.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753249Ab0LaOIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Dec 2010 09:08:50 -0500
+From: Krzysztof Halasa <khc@pm.waw.pl>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        "Ben Hutchings" <ben@decadent.org.uk>
+Subject: Re: [Bug #25442] ixp4xx defines FREQ macro; conflicts with gspca/ov519 driver
+References: <96DQe4a_2tH.A.4RE.497GNB@chimera>
+	<sV7shrPOroO.A.CqE.K-7GNB@chimera>
+	<m3zkrnv1x9.fsf@intrepid.localdomain> <201012301545.15667.rjw@sisk.pl>
+Date: Fri, 31 Dec 2010 15:08:30 +0100
+In-Reply-To: <201012301545.15667.rjw@sisk.pl> (Rafael J. Wysocki's message of
+	"Thu, 30 Dec 2010 15:45:15 +0100")
+Message-ID: <m339pe6nmp.fsf@intrepid.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WQ_RESCUER is now an internal flag and should only be used in the
-workqueue implementation proper.  Use WQ_MEM_RECLAIM instead.
+"Rafael J. Wysocki" <rjw@sisk.pl> writes:
 
-This doesn't introduce any functional difference.
+>> This FREQ has been there for years. Not that it makes it smart, and
+>> I'll obviously send Ben's patch upstream for 2.6.38. Still processing
+>> incoming mail queue :-(
+>
+> Well, the patch is in the mainline, which is why it's still listed.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: dm-devel@redhat.com
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Neil Brown <neilb@suse.de>
----
-As this is trivial, I'd like to carry this through the wq tree if
-there's no objection.
+s/is/isn't/ I assume.
 
-Thank you.
-
- drivers/md/md.c    |    2 +-
- fs/gfs2/glock.c    |    8 ++++----
- fs/nfs/inode.c     |    2 +-
- net/sunrpc/sched.c |    2 +-
- 4 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index 84c46a1..66a01f7 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -7287,7 +7287,7 @@ static int __init md_init(void)
- {
- 	int ret = -ENOMEM;
- 
--	md_wq = alloc_workqueue("md", WQ_RESCUER, 0);
-+	md_wq = alloc_workqueue("md", WQ_MEM_RECLAIM, 0);
- 	if (!md_wq)
- 		goto err_wq;
- 
-diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
-index f92c177..beea184 100644
---- a/fs/gfs2/glock.c
-+++ b/fs/gfs2/glock.c
-@@ -1782,12 +1782,12 @@ int __init gfs2_glock_init(void)
- 	}
- #endif
- 
--	glock_workqueue = alloc_workqueue("glock_workqueue", WQ_RESCUER |
--					  WQ_HIGHPRI | WQ_FREEZEABLE, 0);
-+	glock_workqueue = alloc_workqueue("glock_workqueue",
-+				WQ_MEM_RECLAIM | WQ_HIGHPRI | WQ_FREEZEABLE, 0);
- 	if (IS_ERR(glock_workqueue))
- 		return PTR_ERR(glock_workqueue);
--	gfs2_delete_workqueue = alloc_workqueue("delete_workqueue", WQ_RESCUER |
--						WQ_FREEZEABLE, 0);
-+	gfs2_delete_workqueue = alloc_workqueue("delete_workqueue",
-+					WQ_MEM_RECLAIM | WQ_FREEZEABLE, 0);
- 	if (IS_ERR(gfs2_delete_workqueue)) {
- 		destroy_workqueue(glock_workqueue);
- 		return PTR_ERR(gfs2_delete_workqueue);
-diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-index 314f571..9403f3f 100644
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -1497,7 +1497,7 @@ static int nfsiod_start(void)
- {
- 	struct workqueue_struct *wq;
- 	dprintk("RPC:       creating workqueue nfsiod\n");
--	wq = alloc_workqueue("nfsiod", WQ_RESCUER, 0);
-+	wq = alloc_workqueue("nfsiod", WQ_MEM_RECLAIM, 0);
- 	if (wq == NULL)
- 		return -ENOMEM;
- 	nfsiod_workqueue = wq;
-diff --git a/net/sunrpc/sched.c b/net/sunrpc/sched.c
-index 243fc09..2841cc6 100644
---- a/net/sunrpc/sched.c
-+++ b/net/sunrpc/sched.c
-@@ -908,7 +908,7 @@ static int rpciod_start(void)
- 	 * Create the rpciod thread and wait for it to start.
- 	 */
- 	dprintk("RPC:       creating workqueue rpciod\n");
--	wq = alloc_workqueue("rpciod", WQ_RESCUER, 0);
-+	wq = alloc_workqueue("rpciod", WQ_MEM_RECLAIM, 0);
- 	rpciod_workqueue = wq;
- 	return rpciod_workqueue != NULL;
- }
+I was referring to the "regression" thing only, i.e. there is no any
+regression here, AFAIK at least.
+-- 
+Krzysztof Halasa
