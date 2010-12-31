@@ -1,74 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab0LaLr7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 06:47:59 -0500
-Received: from casper.infradead.org ([85.118.1.10]:55032 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752179Ab0LaLr6 (ORCPT
+	id S1753385Ab0LaLy0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 06:54:26 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53490 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752740Ab0LaLyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 06:47:58 -0500
-Message-ID: <4D1DC2DD.6050400@infradead.org>
-Date: Fri, 31 Dec 2010 09:47:41 -0200
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: "Igor M. Liplianin" <liplianin@me.by>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, aospan@netup.ru
-Subject: Re: [PATCH 01/18] Altera FPGA firmware download module.
-References: <201012310726.31851.liplianin@netup.ru> <201012311212.19715.laurent.pinchart@ideasonboard.com> <4D1DBE2A.5080003@infradead.org> <201012311230.51903.laurent.pinchart@ideasonboard.com>
-In-Reply-To: <201012311230.51903.laurent.pinchart@ideasonboard.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 31 Dec 2010 06:54:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Y4VnmQTc1ZYoUJHjGDgLm5+6OUxfDWFQ+jUXzQ2dk5jZ2K8xFgFg5VqIsWkSM6Blo3
+         CK7/ck+O1cDnxAQGwGmlWPMFv6Z7VYmOk2GNsthtT33LFe5N2ItY9QjV1fE5jlExc1WZ
+         ziizTtOCaVZ7y0f610ScCWbC+Hu5DTRccJ9/g=
+Subject: Re: [PATCH] UDPCP Communication Protocol
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Stefani Seibold <stefani@seibold.net>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        davem@davemloft.net, netdev@vger.kernel.org
+In-Reply-To: <1293794589.5285.16.camel@wall-e>
+References: <1293787785-3834-1-git-send-email-stefani@seibold.net>
+	 <1293789629.2973.26.camel@edumazet-laptop>
+	 <1293790979.4787.10.camel@wall-e>
+	 <1293792066.2973.43.camel@edumazet-laptop>
+	 <1293794589.5285.16.camel@wall-e>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 31 Dec 2010 12:54:18 +0100
+Message-ID: <1293796458.2973.59.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 31-12-2010 09:30, Laurent Pinchart escreveu:
-> Hi Mauro,
+Le vendredi 31 décembre 2010 à 12:23 +0100, Stefani Seibold a écrit :
+> Am Freitag, den 31.12.2010, 11:41 +0100 schrieb Eric Dumazet:
+> > Le vendredi 31 décembre 2010 à 11:22 +0100, Stefani Seibold a écrit :
+> > > Am Freitag, den 31.12.2010, 11:00 +0100 schrieb Eric Dumazet:
+> > > > Le vendredi 31 décembre 2010 à 10:29 +0100, stefani@seibold.net a
+> > > > écrit :
+> > > > > From: Stefani Seibold <stefani@seibold.net>
+> > > > > 
+> > > > >  
+> > > > >  /*
+> > > > >   *	Handle MSG_ERRQUEUE
+> > > > > diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+> > > > > index 2d3ded4..f9890a2 100644
+> > > > > --- a/net/ipv4/udp.c
+> > > > > +++ b/net/ipv4/udp.c
+> > > > > @@ -1310,7 +1310,7 @@ static int __udp_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
+> > > > >  	if (inet_sk(sk)->inet_daddr)
+> > > > >  		sock_rps_save_rxhash(sk, skb->rxhash);
+> > > > >  
+> > > > > -	rc = ip_queue_rcv_skb(sk, skb);
+> > > > > +	rc = sock_queue_rcv_skb(sk, skb);
+> > > > 
+> > > > Ouch... Care to explain why you changed this part ???
+> > > > 
+> > > > You just destroyed commit f84af32cbca70a intent, without any word in
+> > > > your changelog. Making UDP slower, while others try to speed it must be
+> > > > explained and advertised.
+> > > >  
+> > > > In general, we prefer a preliminary patch introducing all the changes in
+> > > > current stack, then another one with the new protocol.
+> > > > 
+> > > 
+> > > I reverted this for two reasons:
+> > > 
+> > > First ip_queue_rcv_skb drops the dst entry, which breaks the user land
+> > > application which expect packet info after a
+> > > 
+> > > setsockopt(handle, IPPROTO_IP, IP_PKTINFO, &const_int_1, sizeof(int));
+> > > 
+> > > But for packets already in the queue this information will be lost. So
+> > > it is a potential race condition.
+> > > 
+> > 
+> > Exactly same race with packet filters. 
+> > 
+> > If your life depends on that, you must flush incoming queue _after_
+> > issuing setsockopt(handle, IPPROTO_IP, IP_PKTINFO, &const_int_1,
+> > sizeof(int)). So that all following packets have the information needed.
+> > 
+> > 
 > 
-> On Friday 31 December 2010 12:27:38 Mauro Carvalho Chehab wrote:
->> Em 31-12-2010 09:12, Laurent Pinchart escreveu:
->>> Hi Igor,
->>>
->>> On Friday 31 December 2010 06:26:31 Igor M. Liplianin wrote:
->>>> It uses STAPL files and programs Altera FPGA through JTAG.
->>>> Interface to JTAG must be provided from main device module,
->>>> for example through cx23885 GPIO.
->>>
->>> It might be a bit late for this comment (sorry for not having noticed the
->>> patch set earlier), but...
->>>
->>> Do we really need a complete JTAG implementation in the kernel ? Wouldn't
->>> it better to handle this in userspace with a tiny kernel driver to
->>> access the JTAG signals ?
->>
->> Laurent,
->>
->> Igor already explained it. From what I understood, the device he is
->> working has a firmware that needs to be loaded via JTAG/FPGA.
-> 
-> I understand this. However, a complete JTAG state machine in the kernel, plus 
-> an Altera firmware parser, seems to be a lot of code that could live in 
-> userspace.
-
-Moving it to userspace would mean a kernel driver that would depend on an
-userspace daemon^Wfirmware loader to work. I would NAK such designs.
-
-The way it is is fine from my POV.
-
->> Actually, I liked the idea, as the FPGA programming driver could be
->> useful if other drivers have similar usecases.
-> 
-> If I understand it correctly the driver assumes the firmware is in an Altera 
-> proprietary format. If we really want JTAG code in the kernel we should at 
-> least split the file parser and the TAP access code.
+> I though always that the linux kernel never breaks user land. This is a
+> break!
 > 
 
-Agreed, but I don't think this would be a good reason to block the code merge
-for .38.
+Only if user land is buggy it breaks. Where is your user land code so
+that I can show you the bug ?
 
-Cheers,
-Mauro
+This dst refcount avoidance is absolutely crucial and we worked hard on
+it.
+
+> > 
+> > > Second it breaks my UDPCP communication protocol stack module, which
+> > > works very well till 2.6.35. I need this information in the data_ready()
+> > > function to generate an ACK.
+> > > 
+> > > 
+> > 
+> > See now why you should not proceed like that ?
+> > 
+> > You know _perfectly_ there is a problem but prefer to keep it for you,
+> > and hope this bit will be unnoticed ?
+> > 
+> 
+> Stop to accuse me. There was a feature that was gone. An it took me six
+> hours to figure out whats going wrong. I did not saw and see a real
+> problem with this patch. It looked for me like an easy and clean
+> solution. It was never my intention to trick somebody, especially u.
+> 
+
+Silently doing a revert is not an option. How must I tell this to you ?
+
+
+> > This is not how things are dealed in linux, really.
+> > 
+> > You'll have to find a way so that things work well for everybody, not
+> > only for you.
+> > 
+> > I guess you must fix UDPCP protocol stack, not 'fix linux'
+> > 
+> 
+> I cannot fix it, because the information is still lost, and i need it. 
+> 
+
+You can fix it. Really. If not, you can pay me and I'll fix it for you.
+
+> In my opinion it was a very bad idea to throw away important
+> information. I checked it and Linux handle this since 2.6.0 in this way.
+> 
+> It would be better not to accuse than to work on a solution. 
+> 
+
+Where do you see an "accuse" ? Because you tried to silently "fix" the
+thing without telling us how the damn thing was broken ? Come on !
+
+> Question: How much performace gain does the early drop give. Are there
+> benchmark results?
+
+Thats pretty simple. dst refcount was the only contention point in UDP
+stack. Yes, its not a joke.
+
+Re introducing an atomic_inc() at each incoming packet, and atomic_dec()
+each time user process dequeues the packet can have a huge impact.
+
+One order of magnitude actually. Depending on number of cpus fighting on
+this cache line, this ranges from 20% to 4000% slowdown.
+
+Some people handle thousands of UDP sockets on one machine. Your UDPCP
+apparently handle very few sockets (you have one central linked list),
+so your use case probably dont care of performance.
+
+
+
