@@ -1,69 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754418Ab0LaTUc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 14:20:32 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:47243
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754118Ab0LaTUa (ORCPT
+	id S1754133Ab0LaT2A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 14:28:00 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:41619 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753166Ab0LaT17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 14:20:30 -0500
-Date: Fri, 31 Dec 2010 11:21:01 -0800 (PST)
-Message-Id: <20101231.112101.70194518.davem@davemloft.net>
-To: tilman@imap.cc
-Cc: jj@chaosbits.net, gigaset307x-common@lists.sourceforge.net, hjlipp@web.de,
-        isdn@linux-pingi.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ISDN, Gigaset: Fix memory leak in do_disconnect_req()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4D1A2185.2010700@imap.cc>
-References: <alpine.LNX.2.00.1012262053130.20797@swampdragon.chaosbits.net>
-	<4D1A2185.2010700@imap.cc>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Fri, 31 Dec 2010 14:27:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:in-reply-to:references:reply-to
+         :x-mailer:mime-version:content-type:content-transfer-encoding;
+        b=N4jypW43Mzkrx6cci/VC0oP0qmrhjp4z5vXlukc01t54PeW/q6esrsGUYC7teVknZO
+         ywfCNFu5xE5FbZ+w8o3ryp/UQL6vnVgy5QprKsZMJIH6yBPFB3Q1jp9y3itfCo50H3y9
+         1dzGtGO1P6kz7AGvmNO3VSHL5ZOZhzGm3+N10=
+Date: Fri, 31 Dec 2010 21:28:00 +0200
+From: Yotam Medini <yotam.medini@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: APM_CONFIG on x86 - Is it possible?
+Message-ID: <20101231212800.1e47f200@janini.home>
+In-Reply-To: <20101231103345.baba0f8c.rdunlap@xenotime.net>
+References: <20101231193858.2c742025@janini.home>
+	<20101231103345.baba0f8c.rdunlap@xenotime.net>
+Reply-To: yotam.medini@gmail.com
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tilman Schmidt <tilman@imap.cc>
-Date: Tue, 28 Dec 2010 18:42:29 +0100
+Randy,
 
-> Quite correct. Thanks for finding and fixing this.
-> 
-> Am 26.12.2010 20:59 schrieb Jesper Juhl:
->> Hi,
->> 
->> In drivers/isdn/gigaset/capi.c::do_disconnect_req() we will leak the 
->> memory allocated (with kmalloc) to 'b3cmsg' if the call to alloc_skb() 
->> fails.
->> 
->> ...
->> 		b3cmsg = kmalloc(sizeof(*b3cmsg), GFP_KERNEL);
->> 	allocation here ------^
->> 		if (!b3cmsg) {
->> 			dev_err(cs->dev, "%s: out of memory\n", __func__);
->> 			send_conf(iif, ap, skb, CAPI_MSGOSRESOURCEERR);
->> 			return;
->> 		}
->> 		capi_cmsg_header(b3cmsg, ap->id, CAPI_DISCONNECT_B3, CAPI_IND,
->> 				 ap->nextMessageNumber++,
->> 				 cmsg->adr.adrPLCI | (1 << 16));
->> 		b3cmsg->Reason_B3 = CapiProtocolErrorLayer1;
->> 		b3skb = alloc_skb(CAPI_DISCONNECT_B3_IND_BASELEN, GFP_KERNEL);
->> 		if (b3skb == NULL) {
->> 			dev_err(cs->dev, "%s: out of memory\n", __func__);
->> 			send_conf(iif, ap, skb, CAPI_MSGOSRESOURCEERR);
->> 			return;
->> 	leak here ------^
->> ...
->> 
->> This leak is easily fixed by just kfree()'ing the memory allocated to 
->> 'b3cmsg' right before we return. The following patch does that.
->> 
->> 
->> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> 
-> Acked-by: Tilman Schmidt <tilman@imap.cc>
+Thanks for your quick reply.
+Sorry, but the subject line should have been:
+  APM_POWER on x86 - Is it possible?
+I do get 
+  CONFIG_APM=m
+in the .config, but I am trying to get 
+  CONFIG_APM_POWER=m
+as well. So far, I do not see how.
 
-Applied.
+regards -- yotam
+
+On Fri, 31 Dec 2010 10:33:45 -0800
+Randy Dunlap <rdunlap@xenotime.net> wrote:
+
+> On Fri, 31 Dec 2010 19:38:58 +0200 Yotam Medini wrote:
+> 
+> > Hello,
+> > 
+> > To an ancient target (my UMAX 530T ActionBook - plz don't laugh...)
+> > I am trying to build a lean kernel based on 2.6.32.24 (~ Ubuntu 10.04).
+> > Battery monitoring used to be based on /proc/apm.
+> > I believe ACPI is not supported on this old notebook.
+> > Now, it seems that  CONFIG_APM_POWER  cannot be set, since:
+> > 
+> > 1. The configuration place for  APM_POWER  is in:
+> >    ./drivers/power/Kconfig:25:
+> > 	config APM_POWER
+> > 		tristate "APM emulation for class batteries"
+> > 		depends on APM_EMULATION
+> > 
+> > 2. The configuration place for  APM_EMULATION  is in:
+> >     ./kernel/power/Kconfig:201:
+> >     config APM_EMULATION
+> > 	    tristate "Advanced Power Management Emulation"
+> > 	    depends on PM && SYS_SUPPORTS_APM_EMULATION
+> > 
+> > 3. But the configuration places for the latter -  
+> >       SYS_SUPPORTS_APM_EMULATION
+> >   - exists only in:
+> >     ./arch/powerpc/Kconfig:185:config SYS_SUPPORTS_APM_EMULATION
+> >     ./arch/sh/Kconfig:120:config SYS_SUPPORTS_APM_EMULATION
+> >     ./arch/mips/Kconfig:896:config SYS_SUPPORTS_APM_EMULATION
+> >     ./arch/arm/Kconfig:32:config SYS_SUPPORTS_APM_EMULATION
+> >   and none under arch/x86 ! :():
+> > 
+> > So my bottom line questions are:
+> > + Am I missing something?
+> > + What is the 'right way' to configure a 2.6.3m.nn kernel
+> >   that should support battery monitoring on such ancient laptops.
+> > 
+> > When replying, please CC: yotam DOT medini AT Gmail DOT c0m
+> > regards -- yotam
+> > --
+> 
+> 
+> arch/x86/Kconfig has the kconfig symbol "APM":
+> 
+> menuconfig APM
+> 	tristate "APM (Advanced Power Management) BIOS support"
+> 	depends on X86_32 && PM_SLEEP
+> => /proc/apm for battery status information
+> 
+> so as long as your target system is 32-bit X86, you should be OK.
+> 
+> PM_SLEEP depends on SUSPEND || HIBERNATION.  PM needs to be enabled,
+> and SWAP has to be enabled for HIBERNATION.
+> 
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> desserts:  http://www.xenotime.net/linux/recipes/
