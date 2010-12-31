@@ -1,44 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845Ab0LaCHG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 21:07:06 -0500
-Received: from mga03.intel.com ([143.182.124.21]:3071 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752585Ab0LaCHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 21:07:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,252,1291622400"; 
-   d="scan'208";a="368290417"
-From: Sheng Yang <sheng@linux.intel.com>
-Organization: Intel Opensource Technology Center
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 1/2] apic: Move hypervisor detection of x2apic to hypervisor.h
-Date: Fri, 31 Dec 2010 10:05:43 +0800
-User-Agent: KMail/1.13.5 (Linux/2.6.35-23-generic; KDE/4.5.1; x86_64; ; )
-Cc: Avi Kivity <avi@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        linux-kernel@vger.kernel.org
-References: <1292912329-12451-1-git-send-email-sheng@linux.intel.com> <4D10E0C2.3020000@goop.org> <4D10EED0.2030507@redhat.com>
-In-Reply-To: <4D10EED0.2030507@redhat.com>
+	id S1752938Ab0LaCZL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 21:25:11 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:39160 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751412Ab0LaCZK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Dec 2010 21:25:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=L9fNkwXVoYEZsXOzTLQKDpJij1PO5j6NRoDYVFOQdkRuErk8/L/CH2Nz6g1N2VAcNw
+         IGOThk6nvjbPDosasDIjp4aN5lDFz4ZXIDwkElSjATb/sRGIllyexZxy8daO1trD1+yl
+         JKjlvv2eImgL4urKtBrhhfkgs8boRd+ieGDDk=
+Message-ID: <4D1D3F01.9000502@lwfinger.net>
+Date: Thu, 30 Dec 2010 20:25:05 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012311005.44001.sheng@linux.intel.com>
+To: =?UTF-8?B?TWljaGFlbCBCw7xzY2g=?= <mb@bu3sch.de>
+CC: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>,
+        LKML <linux-kernel@vger.kernel.org>,
+        wireless <linux-wireless@vger.kernel.org>,
+        b43-dev <b43-dev@lists.infradead.org>
+Subject: Re: 2.6.37-rc7: Regression: b43: crashes in hwrng_register()
+References: <4D1A8200.4010609@lwfinger.net>	 <20101229195440.GD5838@darkside.kls.lan> <4D1BD2B0.4020101@lwfinger.net>	 <20101230012003.GA2665@darkside.kls.lan> <4D1BF056.3060909@lwfinger.net>	 <20101230143406.GA23219@darkside.kls.lan> <4D1CD161.4040107@lwfinger.net>	 <20101230204522.GC23219@darkside.kls.lan>	 (sfid-20101230_214555_989234_FFFFFFFFCC2D4737) <1293760653.6528.78.camel@maggie>
+In-Reply-To: <1293760653.6528.78.camel@maggie>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 22 December 2010 02:15:44 Avi Kivity wrote:
-> On 12/21/2010 07:15 PM, Jeremy Fitzhardinge wrote:
-> > On 12/20/2010 10:18 PM, Sheng Yang wrote:
-> > >  Then we can reuse it for Xen later.
-> > 
-> > You should probably get someone kvm-ish to ack this too.
+On 12/30/2010 07:57 PM, Michael Büsch wrote:
+> On Thu, 2010-12-30 at 21:45 +0100, Mario 'BitKoenig' Holbe wrote: 
+>> On Thu, Dec 30, 2010 at 12:37:21PM -0600, Larry Finger wrote:
+>>> The head of the rng_list is damaged. It is initialized at compile time and
+>>> should be OK. To help discover the order in which hwrng_register() is called,
+>>> apply the attached patch. Run it once with commit 84c164a34ffe67908a installed,
+>>> and once with it reverted.
+>>
+>> All right, 3 dmesg excerpts attached...
+>> 2.6.37-rc7-vanilla.dmesg:
+>> 	2.6.37-rc7 vanilla (i.e. with 84c164a34ffe67908a), crashing
+>> 	via-rng is registered first, b43-rng second
+>> 2.6.37-rc7-without.dmesg:
+>> 	2.6.37-rc7 with 84c164a34ffe67908a reverted, not crashing
+>> 	b43-rng is registered first, via-rng second
+>> 2.6.37-rc7-without+modprobe.dmesg:
+>> 	2.6.37-rc7 with 84c164a34ffe67908a reverted, b43 blacklisted and
+>> 	manually modprobed after via-rng, crashing
+>> 	via-rng is registered first, b43-rng second
+>>
+>> Seems like the crash shows up when b43-rng is registered second, but not
+>> when via-rng is registered second.
+>> Btw.: `cat rng_available' does also not crash when via-rng is registered
+>> second.
 > 
-> Looks good to me.
+> 
+> I suspect that there is some "hw_random.h" header version mixup is going
+> on here. The layout of struct hwrng was changed recently.
+> 
+> Your crash seems to happen on the list head embedded in struct hwrng.
+> 
+> Please make sure that your build environment is clean and you're not
+> using any external stuff such as compat-wireless. All of hwrng-core,
+> rng-via and b43 must be compiled against the same hw_random.h.
 
-Ingo/Peter?
+AFAIK, he is building with the mainline 2.6.37-rc7/8 tree from Linus, thus the
+build should be clean, but thanks for the heads-up.
 
---
-regards
-Yang, Sheng
+In an Email from Herbert Xu that did not go to the wireless or b43 lists, it is
+suspected that the xstore command on a VIA CPU might generate more than 4 bytes
+of output and clobber the list header. We now also know that a second copy of
+via-rng will also fail, thus b43 is cleared.
+
+Larry
