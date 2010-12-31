@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104Ab0LaLRV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 06:17:21 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57059 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752075Ab0LaLRT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 06:17:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=gErPsHj38UVIPG+uBx3i9iSECzzjM9R8TMsOZLepBSVXJfegfH4No52bgFOw2618dM
-         i5yb/cAwWuVWkj4tL9ZLgxU4K03Z8Hm388NHF5BAf7U7QAfvOgIe8xbtYVtyXJtIM0R8
-         mnFee9VO2FNakhzlJqbBrl8ruyg1x1JiB9h3E=
-Date: Fri, 31 Dec 2010 12:17:12 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jack Steiner <steiner@sgi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: manual merge of the percpu tree with the tip tree
-Message-ID: <20101231111712.GF18831@htj.dyndns.org>
-References: <20101231135546.73f318bc.sfr@canb.auug.org.au>
+	id S1753190Ab0LaLVk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 06:21:40 -0500
+Received: from smtp.tele.fi ([192.89.123.25]:38070 "EHLO smtp.tele.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752914Ab0LaLVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Dec 2010 06:21:39 -0500
+X-Originating-Ip: [194.89.68.22]
+Date: Fri, 31 Dec 2010 13:20:43 +0200
+From: Pasi =?iso-8859-1?Q?K=E4rkk=E4inen?= <pasik@iki.fi>
+To: Daniel Kiper <dkiper@net-space.pl>
+Cc: Vasiliy G Tolstov <v.tolstov@selfip.ru>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, jeremy@goop.org,
+        xen-devel@lists.xensource.com, haicheng.li@linux.intel.com,
+        dan.magenheimer@oracle.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, andi.kleen@intel.com, akpm@linux-foundation.org,
+        fengguang.wu@intel.com
+Subject: Re: [Xen-devel] Re: [PATCH 2/3] drivers/xen/balloon.c: Various
+	balloon features and fixes
+Message-ID: <20101231112043.GZ2754@reaktio.net>
+References: <20101220134724.GC6749@router-fw-old.local.net-space.pl> <20101227150847.GA3728@dumpdata.com> <947c7677e042b3fd1ca22d775ca9aeb9@imap.selfip.ru> <20101227163918.GB7189@dumpdata.com> <92e9dd494cc640c04fdac03fa6d10e8d@imap.selfip.ru> <20101229164910.GD2743@router-fw-old.local.net-space.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101231135546.73f318bc.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101229164910.GD2743@router-fw-old.local.net-space.pl>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 31, 2010 at 01:55:46PM +1100, Stephen Rothwell wrote:
-> Hi all,
+On Wed, Dec 29, 2010 at 05:49:10PM +0100, Daniel Kiper wrote:
+> Hi,
 > 
-> Today's linux-next merge of the percpu tree got a conflict in
-> arch/x86/kernel/apic/x2apic_uv_x.c between commit
-> d8850ba425d9823d3184bd52f065899dac4689f9 ("x86, UV: Fix the effect of
-> extra bits in the hub nodeid register") from the tip tree and commit
-> 0a3aee0da4402aa19b66e458038533c896fb80c6 ("x86: Use this_cpu_ops to
-> optimize code") from the percpu tree.
+> On Tue, Dec 28, 2010 at 12:52:03AM +0300, Vasiliy G Tolstov wrote:
+> > On Mon, 27 Dec 2010 11:39:18 -0500, Konrad Rzeszutek Wilk
+> > <konrad.wilk@oracle.com> wrote:
+> > > On Mon, Dec 27, 2010 at 07:27:56PM +0300, Vasiliy G Tolstov wrote:
+> > >> On Mon, 27 Dec 2010 10:08:47 -0500, Konrad Rzeszutek Wilk
+> > >> <konrad.wilk@oracle.com> wrote:
+> > >> > On Mon, Dec 20, 2010 at 02:47:24PM +0100, Daniel Kiper wrote:
+> > >> >> Features and fixes:
+> > >> >>   - HVM mode is supported now,
+> > >> >>   - migration from mod_timer() to schedule_delayed_work(),
+> > >> >>   - removal of driver_pages (I do not have seen any
+> > >> >>     references to it),
+> > >> >>   - protect before CPU exhaust by event/x process during
+> > >> >>     errors by adding some delays in scheduling next event,
+> > >> >>   - some other minor fixes.
+> > >>
+> > >> I have apply this patch to bare 2.6.36.2 kernel from kernel.org. If
+> > >> memory=maxmemory pv guest run's on migrating fine.
+> > >> If on already running domU i have xm mem-max xxx 1024 (before that it
+> > >> has 768) and do xm mem-set 1024 guest now have 1024 memory, but after
+> > >> that it can't migrate to another host.
 > 
-> I fixed it up (see below) and can carry the fix as necessary.
+> Do you still need memory hotplug patch for jeremy stable-2.6.32.x ???
+> 
 
-Thank you.  Looks good to me.
+I think it would be good to have it for xen/stable-2.6.32.x aswell!
+(that's the tree that's used the most atm).
 
--- 
-tejun
+-- Pasi
+
