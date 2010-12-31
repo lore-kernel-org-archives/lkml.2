@@ -1,104 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab0LaKlO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 05:41:14 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62602 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752079Ab0LaKlM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 05:41:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=CCZgnCFRx568B4qFm/zNe4A2/ZHSjr8QQUQvu8cFV8x2cemT6HREsH+GO0MJyvRNNQ
-         MJxmgxoWzsQonVClISWmMBs7j1Q91TCvGCDm9ySceTGME+EvoD864AaPaC90+WmJfVyc
-         AIPe/6CknmlaGUQOiZfCFkLJduRhBusBY8rz4=
-Subject: Re: [PATCH] UDPCP Communication Protocol
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        davem@davemloft.net, netdev@vger.kernel.org
-In-Reply-To: <1293790979.4787.10.camel@wall-e>
-References: <1293787785-3834-1-git-send-email-stefani@seibold.net>
-	 <1293789629.2973.26.camel@edumazet-laptop>
-	 <1293790979.4787.10.camel@wall-e>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 31 Dec 2010 11:41:06 +0100
-Message-ID: <1293792066.2973.43.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1753316Ab0LaKqp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 05:46:45 -0500
+Received: from virgo.iok.hu ([212.40.97.103]:54241 "EHLO virgo.iok.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752885Ab0LaKqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Dec 2010 05:46:43 -0500
+Date: Fri, 31 Dec 2010 11:46:38 +0100
+From: Miklos Vajna <vmiklos@frugalware.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        shenghui <crosslonelyover@gmail.com>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>,
+        Paul Turner <pjt@google.com>, Yong Zhang <yong.zhang0@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <menage@google.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>
+Subject: Re: [PATCH] sched, cgroup: Use exit hook to avoid use-after-free
+ crash
+Message-ID: <20101231104638.GM10557@genesis.frugalware.org>
+References: <1293128670.2170.748.camel@laptop>
+ <1293132304.6798.6.camel@marge.simson.net>
+ <1293132862.25981.22.camel@laptop>
+ <1293187425.7138.2.camel@marge.simson.net>
+ <1293188091.25981.200.camel@laptop>
+ <1293192999.18035.4.camel@marge.simson.net>
+ <1293206353.29444.205.camel@laptop>
+ <20101229152522.GA23825@elte.hu>
+ <20101229230744.GA10557@genesis.frugalware.org>
+ <1293789859.6839.97.camel@marge.simson.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DTI0mi8ndc7Chjpu"
+Content-Disposition: inline
+In-Reply-To: <1293789859.6839.97.camel@marge.simson.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 31 décembre 2010 à 11:22 +0100, Stefani Seibold a écrit :
-> Am Freitag, den 31.12.2010, 11:00 +0100 schrieb Eric Dumazet:
-> > Le vendredi 31 décembre 2010 à 10:29 +0100, stefani@seibold.net a
-> > écrit :
-> > > From: Stefani Seibold <stefani@seibold.net>
-> > > 
-> > >  
-> > >  /*
-> > >   *	Handle MSG_ERRQUEUE
-> > > diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-> > > index 2d3ded4..f9890a2 100644
-> > > --- a/net/ipv4/udp.c
-> > > +++ b/net/ipv4/udp.c
-> > > @@ -1310,7 +1310,7 @@ static int __udp_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
-> > >  	if (inet_sk(sk)->inet_daddr)
-> > >  		sock_rps_save_rxhash(sk, skb->rxhash);
-> > >  
-> > > -	rc = ip_queue_rcv_skb(sk, skb);
-> > > +	rc = sock_queue_rcv_skb(sk, skb);
-> > 
-> > Ouch... Care to explain why you changed this part ???
-> > 
-> > You just destroyed commit f84af32cbca70a intent, without any word in
-> > your changelog. Making UDP slower, while others try to speed it must be
-> > explained and advertised.
-> >  
-> > In general, we prefer a preliminary patch introducing all the changes in
-> > current stack, then another one with the new protocol.
-> > 
-> 
-> I reverted this for two reasons:
-> 
-> First ip_queue_rcv_skb drops the dst entry, which breaks the user land
-> application which expect packet info after a
-> 
-> setsockopt(handle, IPPROTO_IP, IP_PKTINFO, &const_int_1, sizeof(int));
-> 
-> But for packets already in the queue this information will be lost. So
-> it is a potential race condition.
-> 
 
-Exactly same race with packet filters. 
+--DTI0mi8ndc7Chjpu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-If your life depends on that, you must flush incoming queue _after_
-issuing setsockopt(handle, IPPROTO_IP, IP_PKTINFO, &const_int_1,
-sizeof(int)). So that all following packets have the information needed.
+On Fri, Dec 31, 2010 at 11:04:19AM +0100, Mike Galbraith <efault@gmx.de> wrote:
+> Your crash seems to be completely independent of Peter's patch.  It
+> crashes here with your image/config/2.6.36 here regardless, and not 100%
+> repeatably.  Sometimes it boots, sometimes not.
 
+Oh, then ignore that. It's possible it's something qemu-specific, I
+can't reproduce this one on my real machine.
 
+--DTI0mi8ndc7Chjpu
+Content-Type: application/pgp-signature
+Content-Disposition: inline
 
-> Second it breaks my UDPCP communication protocol stack module, which
-> works very well till 2.6.35. I need this information in the data_ready()
-> function to generate an ACK.
-> 
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-See now why you should not proceed like that ?
+iEUEARECAAYFAk0dtI4ACgkQe81tAgORUJbdfQCfcFzQXdA8nFgQ7yOEV7/h3ukQ
+ZMoAmLGc6Z0438WTkGad458vCHbsz3o=
+=73gP
+-----END PGP SIGNATURE-----
 
-You know _perfectly_ there is a problem but prefer to keep it for you,
-and hope this bit will be unnoticed ?
-
-This is not how things are dealed in linux, really.
-
-You'll have to find a way so that things work well for everybody, not
-only for you.
-
-I guess you must fix UDPCP protocol stack, not 'fix linux'
-
-
-
+--DTI0mi8ndc7Chjpu--
