@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab0LaNuP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 08:50:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51724 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752993Ab0LaNuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 08:50:13 -0500
-Date: Fri, 31 Dec 2010 14:50:11 +0100
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: JBeulich@novell.com, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] kconfig fix for 2.6.37
-Message-ID: <20101231135011.GA22046@sepie.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753516Ab0LaN7N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 08:59:13 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41981 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753248Ab0LaN7M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Dec 2010 08:59:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=IXJQjmLHAhw32Lnpq+TQQMueyRuwArsmEh3HClX6BX/Du2+SHE4fUArcMDgtovAF9y
+         OIdhvveRFL8FB0y3W+mtlfYcrlpmv8vG4Vklnr4sGVT94+58giooryeCrPweajjJy1r+
+         8j13+/TwbfW8CrV6eWgFol0EvHwG87hjxEEYs=
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH -tip] sched: remove redundant CONFIG_CGROUP_SCHED ifdef
+Date: Fri, 31 Dec 2010 21:58:58 +0800
+Message-Id: <1293803938-8157-1-git-send-email-yong.zhang0@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+CONFIG_[FAIR|RT]_GROUP_SCHED always means CONFIG_CGROUP_SCHED
 
-there is a fix for a minor regression introduced by the new "visible"
-kconfig keyword. The problem is that entries marked as "invisible" are
-written out to .config and during make all{mod,yes}config are even set
-(although the user cannot set them manually). The fix makes it
-consistent again, i.e. invisible entries are not set by make
-all{mod,yes}config and are not saved to .config. The issue is really
-minor, so if you don't want to merge it now, I'll send the pull request
-again for 2.6.38-rc1.
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+---
+ kernel/sched.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-Michal
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 3925a1b..9f9dd8d 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -7777,7 +7777,6 @@ void __init sched_init(void)
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 		init_task_group.shares = init_task_group_load;
+ 		INIT_LIST_HEAD(&rq->leaf_cfs_rq_list);
+-#ifdef CONFIG_CGROUP_SCHED
+ 		/*
+ 		 * How much cpu bandwidth does init_task_group get?
+ 		 *
+@@ -7798,16 +7797,13 @@ void __init sched_init(void)
+ 		 * directly in rq->cfs (i.e init_task_group->se[] = NULL).
+ 		 */
+ 		init_tg_cfs_entry(&init_task_group, &rq->cfs, NULL, i, NULL);
+-#endif
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
+ 		rq->rt.rt_runtime = def_rt_bandwidth.rt_runtime;
+ #ifdef CONFIG_RT_GROUP_SCHED
+ 		INIT_LIST_HEAD(&rq->leaf_rt_rq_list);
+-#ifdef CONFIG_CGROUP_SCHED
+ 		init_tg_rt_entry(&init_task_group, &rq->rt, NULL, i, NULL);
+ #endif
+-#endif
+ 
+ 		for (j = 0; j < CPU_LOAD_IDX_MAX; j++)
+ 			rq->cpu_load[j] = 0;
+-- 
+1.7.0.4
 
-The following changes since commit 387c31c7e5c9805b0aef8833d1731a5fe7bdea14:
-
-  Linux 2.6.37-rc8 (2010-12-28 17:05:48 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git rc-fixes
-
-Jan Beulich (1):
-      kconfig: fix undesirable side effect of adding "visible" menu attribute
-
- scripts/kconfig/menu.c |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
