@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752399Ab0LaBAD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Dec 2010 20:00:03 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:34062 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751255Ab0LaBAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Dec 2010 20:00:00 -0500
-Date: Fri, 31 Dec 2010 11:59:55 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build warning after merge of the v4l-dvb tree
-Message-Id: <20101231115955.f6a11505.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__31_Dec_2010_11_59_55_+1100_NQEh8hBSOqR29vEc"
+	id S1752465Ab0LaBFw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Dec 2010 20:05:52 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59266 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751447Ab0LaBFv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Dec 2010 20:05:51 -0500
+Message-ID: <4D1D2C4D.4090806@kernel.org>
+Date: Thu, 30 Dec 2010 17:05:17 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86, 64bit: Always make MAX_APICS to 32768
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__31_Dec_2010_11_59_55_+1100_NQEh8hBSOqR29vEc
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Mauro,
+Found one x2apic pre-enabled system, x2apic_mode suddenly get corrupted
+after register some cpus. when compiled CONFIG_NR_CPUS=255 instead of 512
 
-After merging the v4l-dvb tree, today's linux-next build (x86_64
-allmodconfig) produced this warning:
+It turns out that generic_processor_info() ==> phyid_set(apicid, phys_cpu_present_map) cause the problem.
 
-drivers/media/video/ivtv/ivtv-i2c.c: In function 'get_key_adaptec':
-drivers/media/video/ivtv/ivtv-i2c.c:170: warning: cast from pointer to inte=
-ger of different size
-drivers/media/video/ivtv/ivtv-i2c.c:171: warning: cast from pointer to inte=
-ger of different size
+phys_cpu_present_map is with MAX_APICS bits. and pre-enabled system some cpus apic id > 255.
 
-Introduced by commit e1e2c57565635310209566a31a300e593f74cc22 ("[media]
-ivtv: Add Adaptec Remote Controller").
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+the variable after phys_cpu_present_map may get corrupted.... siliently...
 
---Signature=_Fri__31_Dec_2010_11_59_55_+1100_NQEh8hBSOqR29vEc
-Content-Type: application/pgp-signature
+ffffffff828e8420 B phys_cpu_present_map
+ffffffff828e8440 B apic_verbosity
+ffffffff828e8444 B local_apic_timer_c2_ok
+ffffffff828e8448 B disable_apic
+ffffffff828e844c B x2apic_mode
+ffffffff828e8450 B x2apic_disabled
+ffffffff828e8454 B num_processors
+...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Actually phys_cpu_present_map is referenced via apic id, instead index. we should use
+MAX_LOCAL_APIC instead MAX_APICIS. but that is another header.
 
-iQEcBAEBAgAGBQJNHSsLAAoJEDMEi1NhKgbsgvUH/RpcaYQmShLoBTsVLBjUkR2Z
-DK8t05xHgV4vxUxb1UHfyOtVQKcb9B43OJGPoRhExpyxFkXcCnRrsnRofxB07iZL
-prHLpwBtvpxxSU/YCLWLm7pKE4GV7J7Z+oCUzEW66dzhdWPPpUkXJP5lsIKUPDsg
-sQtt548QY5d+hwCcKehn7sM9RT+0SP4NN7732mL870gARvc79gORlgFTe2k7CfbS
-qAy86ewJyL8ky4rIFStw9zOEFQ3dXWQ2SbkJSgoACOa8vpqw/eMdvqQ3VSQmf4Xl
-dPQc7C0DdzfyO4aqfgQhikvMRyKIIwP+KwcZvlaJgepND8enB2GzBSWTEdI2HGg=
-=59Lz
------END PGP SIGNATURE-----
+So just let MAX_APICS equal to MAX_LOCAL_APIC at this point.
+esp for 64 bit will be 32768 in all cases.
 
---Signature=_Fri__31_Dec_2010_11_59_55_+1100_NQEh8hBSOqR29vEc--
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ arch/x86/include/asm/mpspec_def.h |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
+
+Index: linux-2.6/arch/x86/include/asm/mpspec_def.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/mpspec_def.h
++++ linux-2.6/arch/x86/include/asm/mpspec_def.h
+@@ -17,11 +17,7 @@
+ # define MAX_MPC_ENTRY 1024
+ # define MAX_APICS      256
+ #else
+-# if NR_CPUS <= 255
+-#  define MAX_APICS     255
+-# else
+-#  define MAX_APICS   32768
+-# endif
++# define MAX_APICS    32768
+ #endif
+ 
+ /* Intel MP Floating Pointer Structure */
