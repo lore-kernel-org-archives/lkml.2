@@ -1,63 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469Ab0LaMz7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 07:55:59 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:47828 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753432Ab0LaMz5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 07:55:57 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6212"; a="68833742"
-Message-ID: <4D1DD2D7.30108@codeaurora.org>
-Date: Fri, 31 Dec 2010 18:25:51 +0530
-From: Trilok Soni <tsoni@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: Kevin McNeely <kev@cypress.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        David Brown <davidb@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Eric Miao <eric.y.miao@gmail.com>, Mike Frysinger <vapier@gentoo.org>,
-        Alan Cox <alan@linux.intel.com>, linux-input@vger.kernel.org,
+	id S1753499Ab0LaNDc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 08:03:32 -0500
+Received: from shutemov.name ([188.40.19.243]:55322 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753435Ab0LaNDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Dec 2010 08:03:30 -0500
+Date: Fri, 31 Dec 2010 15:03:29 +0200
+From: "Kirill A. Shutemov" <kas@openvz.org>
+To: Rob Landley <rlandley@parallels.com>
+Cc: "Kirill A. Shutemov" <kas@openvz.org>, Rob Landley <rob@landley.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [v3 1/3] 1/3 Touchscreen: Cypress TTSP G3 MTDEV Core Driver
-References: <kev@cypress.com> <1293650268-1561-1-git-send-email-kev@cypress.com> <20101231115323.GA9709@polaris.bitmath.org>
-In-Reply-To: <20101231115323.GA9709@polaris.bitmath.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH v2 00/12] make rpc_pipefs be mountable multiple time
+Message-ID: <20101231130329.GA3610@shutemov.name>
+References: <1293628470-28386-1-git-send-email-kas@openvz.org>
+ <AANLkTi=AXz21wDeE1vPVD-6cEtj6faXN9x09eHDCsTkB@mail.gmail.com>
+ <20101230085139.GA29697@shutemov.name>
+ <4D1C4C7C.6050606@parallels.com>
+ <20101230094433.GB29697@shutemov.name>
+ <4D1C5953.6020200@parallels.com>
+ <20101230104416.GA31824@shutemov.name>
+ <AANLkTim2QrkSW0HufD5wp=-8ikwydN5SUS+fdWK6JHqb@mail.gmail.com>
+ <20101230114514.GA31976@shutemov.name>
+ <4D1C809B.30405@parallels.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="24zk1gE8NUlDmwG9"
+Content-Disposition: inline
+In-Reply-To: <4D1C809B.30405@parallels.com>
+User-Agent: Mutt/1.5.20 (2010-08-04)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik,
 
-On 12/31/2010 5:23 PM, Henrik Rydberg wrote:
-> Hi Kevin,
-> 
-> Thanks for the changes, it looks much better now. Some comments on the MT
-> part inline.
-> 
->> diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
->> index 06ea8da..7d886bc 100644
->> --- a/drivers/input/touchscreen/Kconfig
->> +++ b/drivers/input/touchscreen/Kconfig
->> @@ -124,6 +124,11 @@ config TOUCHSCREEN_CY8CTMG110
->>  	  To compile this driver as a module, choose M here: the
->>  	  module will be called cy8ctmg110_ts.
->>  
->> +config TOUCHSCREEN_CYTTSP_CORE
->> +	bool "Cypress TTSP touchscreen core"
->> +	help
->> +	  Always activated for Cypress TTSP touchscreen
->> +
-> 
-> Tristate please.
+--24zk1gE8NUlDmwG9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This code is just exporting APIs and doesn't need to be modular. No module_init/exit etc.,
+On Thu, Dec 30, 2010 at 06:52:43AM -0600, Rob Landley wrote:
+> On 12/30/2010 05:45 AM, Kirill A. Shutemov wrote:
+> > Currently, there is no association between rpc_pipefs and mount namespace,
+> 
+> There is in that the root context doesn't need to have this mounted, and 
+> new namespaces do.  So there's an existing association between a LACK of 
+> a namespace and a different default behavior.
+>
+> My understanding (correct me if I'm wrong) is that the historical 
+> behavior is that there's only one, and it doesn't actually live anywhere 
+> in the filesystem tree.  You're adding a special location.  I'm 
+> wondering if there's any way for that location not to be special.
 
----Trilok Soni
+/var/lib/net/rpc_pipefs is default path where userspace part of NFS stack
+(gssd, idmapd) want to see rpc_pipefs
+
+> > so I don't see simple way to restrict number of rpc_pipefs per mount
+> > namespace. Associating mount namespace with rpc_pipefs is not a good idea,
+> > I think.
+> 
+> I'm talking about associating a default rpc_pipefs instance with a 
+> namespace, which it seems to me you're already doing by emulating the 
+> legacy behavior.  Before you CLONE_NEWNS you get a magic default mount 
+> that doesn't exist in the tree.  After you CLONE_NEWNS you get something 
+> like -EINVAL unless you supply your own default.
+
+Root namespace is special. In case of nfsroot you need rpc_pipefs before
+root available.
+
+> (I'm actually not sure 
+> why new namespaces don't fall back to the magic global one...)
+
+It breaks isolation. Container should not use host's rpc_pipefs without
+host's permission.
+ 
+> I'm suggesting that if the user doesn't specify -o rpcmount then the 
+> default could be the first rpc_pipefs mount visible to the current 
+> process context, rather than a specific path.  Logic to do that exists 
+> in the proc/self/mounts code (which I'm reading through now...).
+
+static int check_rpc_pipefs(struct vfsmount *mnt, void *arg)
+{
+        struct vfsmount **rpcmount = arg;
+        struct path path = {
+                .mnt = mnt,
+                .dentry = mnt->mnt_root,
+        };
+
+        if (!mnt->mnt_sb)
+                return 0;
+        if (mnt->mnt_sb->s_magic != RPCAUTH_GSSMAGIC)
+                return 0;
+
+        if (!path_is_under(&path, &current->fs->root))
+                return 0;
+
+        *rpcmount = mntget(mnt);
+        return 1;
+}
+
+struct vfsmount *get_rpc_pipefs(const char *p)
+{
+        int error;
+        struct vfsmount *rpcmount = ERR_PTR(-EINVAL);
+        struct path path;
+
+        if (!p) {
+                iterate_mounts(check_rpc_pipefs, &rpcmount,
+                                current->nsproxy->mnt_ns->root);
+
+                if (IS_ERR(rpcmount) && (current->nsproxy->mnt_ns ==
+                                        init_task.nsproxy->mnt_ns))
+                        return mntget(init_rpc_pipefs);
+
+                return rpcmount;
+        }
+
+        error = kern_path(p, LOOKUP_FOLLOW | LOOKUP_DIRECTORY, &path);
+        if (error)
+                return ERR_PTR(error);
+
+        check_rpc_pipefs(path.mnt, &rpcmount);
+        path_put(&path);
+
+        return rpcmount;
+}
+EXPORT_SYMBOL_GPL(get_rpc_pipefs);
+
+Something like this? Patch to replace patch #10 attached.
 
 -- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+ Kirill A. Shutemov
+
+--24zk1gE8NUlDmwG9
+Content-Type: text/plain; charset=us-ascii; name="sunrpc-introduce-get_rpc_pipefs.patch"
+Content-Disposition: attachment; filename="sunrpc-introduce-get_rpc_pipefs.patch"
+
+>From 36bdb502360461a8426821a37728aef3a3b8c738 Mon Sep 17 00:00:00 2001
+From: Kirill A. Shutemov <kas@openvz.org>
+Date: Mon, 20 Dec 2010 04:03:52 +0200
+Subject: [PATCH] sunrpc: introduce get_rpc_pipefs()
+
+Get rpc_pipefs mount point by path.
+
+Signed-off-by: Kirill A. Shutemov <kas@openvz.org>
+---
+ include/linux/sunrpc/rpc_pipe_fs.h |    2 +
+ net/sunrpc/rpc_pipe.c              |   51 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 53 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/sunrpc/rpc_pipe_fs.h b/include/linux/sunrpc/rpc_pipe_fs.h
+index b09bfa5..922057c 100644
+--- a/include/linux/sunrpc/rpc_pipe_fs.h
++++ b/include/linux/sunrpc/rpc_pipe_fs.h
+@@ -46,6 +46,8 @@ RPC_I(struct inode *inode)
+ 
+ extern struct vfsmount *init_rpc_pipefs;
+ 
++struct vfsmount *get_rpc_pipefs(const char *path);
++
+ extern int rpc_queue_upcall(struct inode *, struct rpc_pipe_msg *);
+ 
+ struct rpc_clnt;
+diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
+index b1e299b..4e09a90 100644
+--- a/net/sunrpc/rpc_pipe.c
++++ b/net/sunrpc/rpc_pipe.c
+@@ -16,6 +16,9 @@
+ #include <linux/namei.h>
+ #include <linux/fsnotify.h>
+ #include <linux/kernel.h>
++#include <linux/nsproxy.h>
++#include <linux/mnt_namespace.h>
++#include <linux/fs_struct.h>
+ 
+ #include <asm/ioctls.h>
+ #include <linux/fs.h>
+@@ -931,6 +934,54 @@ static const struct super_operations s_ops = {
+ 
+ #define RPCAUTH_GSSMAGIC 0x67596969
+ 
++static int check_rpc_pipefs(struct vfsmount *mnt, void *arg)
++{
++	struct vfsmount **rpcmount = arg;
++	struct path path = {
++		.mnt = mnt,
++		.dentry = mnt->mnt_root,
++	};
++
++	if (!mnt->mnt_sb)
++		return 0;
++	if (mnt->mnt_sb->s_magic != RPCAUTH_GSSMAGIC)
++		return 0;
++
++	if (!path_is_under(&path, &current->fs->root))
++		return 0;
++
++	*rpcmount = mntget(mnt);
++	return 1;
++}
++
++struct vfsmount *get_rpc_pipefs(const char *p)
++{
++	int error;
++	struct vfsmount *rpcmount = ERR_PTR(-EINVAL);
++	struct path path;
++
++	if (!p) {
++		iterate_mounts(check_rpc_pipefs, &rpcmount,
++				current->nsproxy->mnt_ns->root);
++
++		if (IS_ERR(rpcmount) && (current->nsproxy->mnt_ns ==
++					init_task.nsproxy->mnt_ns))
++			return mntget(init_rpc_pipefs);
++
++		return rpcmount;
++	}
++
++	error = kern_path(p, LOOKUP_FOLLOW | LOOKUP_DIRECTORY, &path);
++	if (error)
++		return ERR_PTR(error);
++
++	check_rpc_pipefs(path.mnt, &rpcmount);
++	path_put(&path);
++
++	return rpcmount;
++}
++EXPORT_SYMBOL_GPL(get_rpc_pipefs);
++
+ /*
+  * We have a single directory with 1 node in it.
+  */
+-- 
+1.7.3.4
+
+
+--24zk1gE8NUlDmwG9--
