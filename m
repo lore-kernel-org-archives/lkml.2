@@ -1,144 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008Ab1AAJao (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jan 2011 04:30:44 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:64001 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751554Ab1AAJam (ORCPT
+	id S1752086Ab1AAJbC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jan 2011 04:31:02 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45947 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751296Ab1AAJbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jan 2011 04:30:42 -0500
-Message-ID: <4d1ef440.857a0e0a.5005.0cfa@mx.google.com>
+	Sat, 1 Jan 2011 04:31:00 -0500
+Message-ID: <4d1ef452.cc7e0e0a.6410.0b4b@mx.google.com>
 From: "Igor M. Liplianin" <liplianin@me.by>
 Date: Fri, 31 Dec 2010 13:37:00 +0200
-Subject: [PATCH 06/18] cx23885: implement tuner_bus parameter for cx23885_board structure.
+Subject: [PATCH 07/18] cx23885: implement num_fds_portb, num_fds_portc parameters for cx23885_board structure.
 To: <mchehab@infradead.org>, <linux-media@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is two external I2C buses in cx23885 chip.
-Currently, analog tuners supported for second I2C bus only
-In NetUP Dual DVB-T/C CI RF card tuners connected to first bus
-So, in order to support analog tuners sitting on first bus
-we need modifications.
+This is needed for multifrontend support.
+NetUP Dual DVB-T/C CI RF card has frontends connected to port B & C
+Each frontend has two switchable cores - DVB-T & DVB-C
 
 Signed-off-by: Igor M. Liplianin <liplianin@netup.ru>
 ---
- drivers/media/video/cx23885/cx23885-cards.c |    5 +++++
- drivers/media/video/cx23885/cx23885-core.c  |    5 +++--
- drivers/media/video/cx23885/cx23885-video.c |    7 ++++---
- drivers/media/video/cx23885/cx23885.h       |    2 ++
- 4 files changed, 14 insertions(+), 5 deletions(-)
+ drivers/media/video/cx23885/cx23885-cards.c |    2 ++
+ drivers/media/video/cx23885/cx23885-core.c  |    4 ++++
+ drivers/media/video/cx23885/cx23885.h       |    1 +
+ 3 files changed, 7 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/media/video/cx23885/cx23885-cards.c b/drivers/media/video/cx23885/cx23885-cards.c
-index 1ef4f7b..7de6379 100644
+index 7de6379..461413a 100644
 --- a/drivers/media/video/cx23885/cx23885-cards.c
 +++ b/drivers/media/video/cx23885/cx23885-cards.c
-@@ -94,6 +94,7 @@ struct cx23885_board cx23885_boards[] = {
+@@ -344,6 +344,8 @@ struct cx23885_board cx23885_boards[] = {
+ 		.porta		= CX23885_ANALOG_VIDEO,
+ 		.portb		= CX23885_MPEG_DVB,
  		.portc		= CX23885_MPEG_DVB,
- 		.tuner_type	= TUNER_PHILIPS_TDA8290,
- 		.tuner_addr	= 0x42, /* 0x84 >> 1 */
-+		.tuner_bus	= 1,
- 		.input          = {{
- 			.type   = CX23885_VMUX_TELEVISION,
- 			.vmux   =	CX25840_VIN7_CH3 |
-@@ -216,6 +217,7 @@ struct cx23885_board cx23885_boards[] = {
- 		.name		= "Mygica X8506 DMB-TH",
- 		.tuner_type = TUNER_XC5000,
- 		.tuner_addr = 0x61,
-+		.tuner_bus	= 1,
- 		.porta		= CX23885_ANALOG_VIDEO,
- 		.portb		= CX23885_MPEG_DVB,
- 		.input		= {
-@@ -245,6 +247,7 @@ struct cx23885_board cx23885_boards[] = {
- 		.name		= "Magic-Pro ProHDTV Extreme 2",
- 		.tuner_type = TUNER_XC5000,
- 		.tuner_addr = 0x61,
-+		.tuner_bus	= 1,
- 		.porta		= CX23885_ANALOG_VIDEO,
- 		.portb		= CX23885_MPEG_DVB,
- 		.input		= {
-@@ -293,6 +296,7 @@ struct cx23885_board cx23885_boards[] = {
- 		.porta          = CX23885_ANALOG_VIDEO,
- 		.tuner_type     = TUNER_XC2028,
- 		.tuner_addr     = 0x61,
-+		.tuner_bus	= 1,
- 		.input          = {{
- 			.type   = CX23885_VMUX_TELEVISION,
- 			.vmux   = CX25840_VIN2_CH1 |
-@@ -317,6 +321,7 @@ struct cx23885_board cx23885_boards[] = {
- 		.name		= "GoTView X5 3D Hybrid",
++		.num_fds_portb	= 2,
++		.num_fds_portc	= 2,
  		.tuner_type	= TUNER_XC5000,
  		.tuner_addr	= 0x64,
-+		.tuner_bus	= 1,
- 		.porta		= CX23885_ANALOG_VIDEO,
- 		.portb		= CX23885_MPEG_DVB,
- 		.input          = {{
+ 		.input          = { {
 diff --git a/drivers/media/video/cx23885/cx23885-core.c b/drivers/media/video/cx23885/cx23885-core.c
-index 7c6f08e..a5998dd 100644
+index a5998dd..307eaf4 100644
 --- a/drivers/media/video/cx23885/cx23885-core.c
 +++ b/drivers/media/video/cx23885/cx23885-core.c
-@@ -976,11 +976,12 @@ static int cx23885_dev_setup(struct cx23885_dev *dev)
- 	/* Assume some sensible defaults */
- 	dev->tuner_type = cx23885_boards[dev->board].tuner_type;
- 	dev->tuner_addr = cx23885_boards[dev->board].tuner_addr;
-+	dev->tuner_bus = cx23885_boards[dev->board].tuner_bus;
- 	dev->radio_type = cx23885_boards[dev->board].radio_type;
- 	dev->radio_addr = cx23885_boards[dev->board].radio_addr;
+@@ -1011,6 +1011,8 @@ static int cx23885_dev_setup(struct cx23885_dev *dev)
+ 	}
  
--	dprintk(1, "%s() tuner_type = 0x%x tuner_addr = 0x%x\n",
--		__func__, dev->tuner_type, dev->tuner_addr);
-+	dprintk(1, "%s() tuner_type = 0x%x tuner_addr = 0x%x tuner_bus = 0x%x\n",
-+		__func__, dev->tuner_type, dev->tuner_addr, dev->tuner_bus);
- 	dprintk(1, "%s() radio_type = 0x%x radio_addr = 0x%x\n",
- 		__func__, dev->radio_type, dev->radio_addr);
+ 	if (cx23885_boards[dev->board].portb == CX23885_MPEG_DVB) {
++		if (cx23885_boards[dev->board].num_fds_portb)
++			dev->ts1.num_frontends = cx23885_boards[dev->board].num_fds_portb;
+ 		if (cx23885_dvb_register(&dev->ts1) < 0) {
+ 			printk(KERN_ERR "%s() Failed to register dvb adapters on VID_B\n",
+ 			       __func__);
+@@ -1025,6 +1027,8 @@ static int cx23885_dev_setup(struct cx23885_dev *dev)
+ 	}
  
-diff --git a/drivers/media/video/cx23885/cx23885-video.c b/drivers/media/video/cx23885/cx23885-video.c
-index 644fcb8..ee57f6b 100644
---- a/drivers/media/video/cx23885/cx23885-video.c
-+++ b/drivers/media/video/cx23885/cx23885-video.c
-@@ -1468,16 +1468,17 @@ int cx23885_video_register(struct cx23885_dev *dev)
- 
- 	cx23885_irq_add_enable(dev, 0x01);
- 
--	if (TUNER_ABSENT != dev->tuner_type) {
-+	if ((TUNER_ABSENT != dev->tuner_type) &&
-+			((dev->tuner_bus == 0) || (dev->tuner_bus == 1))) {
- 		struct v4l2_subdev *sd = NULL;
- 
- 		if (dev->tuner_addr)
- 			sd = v4l2_i2c_new_subdev(&dev->v4l2_dev,
--				&dev->i2c_bus[1].i2c_adap,
-+				&dev->i2c_bus[dev->tuner_bus].i2c_adap,
- 				"tuner", dev->tuner_addr, NULL);
- 		else
- 			sd = v4l2_i2c_new_subdev(&dev->v4l2_dev,
--				&dev->i2c_bus[1].i2c_adap,
-+				&dev->i2c_bus[dev->tuner_bus].i2c_adap,
- 				"tuner", 0, v4l2_i2c_tuner_addrs(ADDRS_TV));
- 		if (sd) {
- 			struct tuner_setup tun_setup;
+ 	if (cx23885_boards[dev->board].portc == CX23885_MPEG_DVB) {
++		if (cx23885_boards[dev->board].num_fds_portc)
++			dev->ts2.num_frontends = cx23885_boards[dev->board].num_fds_portc;
+ 		if (cx23885_dvb_register(&dev->ts2) < 0) {
+ 			printk(KERN_ERR
+ 				"%s() Failed to register dvb on VID_C\n",
 diff --git a/drivers/media/video/cx23885/cx23885.h b/drivers/media/video/cx23885/cx23885.h
-index a427f7c..d43f80b 100644
+index d43f80b..e678667 100644
 --- a/drivers/media/video/cx23885/cx23885.h
 +++ b/drivers/media/video/cx23885/cx23885.h
-@@ -209,6 +209,7 @@ struct cx23885_board {
+@@ -205,6 +205,7 @@ typedef enum {
+ struct cx23885_board {
+ 	char                    *name;
+ 	port_t			porta, portb, portc;
++	int		num_fds_portb, num_fds_portc;
+ 	unsigned int		tuner_type;
  	unsigned int		radio_type;
  	unsigned char		tuner_addr;
- 	unsigned char		radio_addr;
-+	unsigned int		tuner_bus;
- 
- 	/* Vendors can and do run the PCIe bridge at different
- 	 * clock rates, driven physically by crystals on the PCBs.
-@@ -364,6 +365,7 @@ struct cx23885_dev {
- 	v4l2_std_id                tvnorm;
- 	unsigned int               tuner_type;
- 	unsigned char              tuner_addr;
-+	unsigned int               tuner_bus;
- 	unsigned int               radio_type;
- 	unsigned char              radio_addr;
- 	unsigned int               has_radio;
 -- 
 1.7.1
 
