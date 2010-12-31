@@ -1,83 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab0LaSUs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 13:20:48 -0500
-Received: from mail-pw0-f66.google.com ([209.85.160.66]:53612 "EHLO
-	mail-pw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753546Ab0LaSUr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 13:20:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=hyW4xnxickKmpDjDxL+vfzZf39iLROlS/W7dP0xuPpEa7b2jahy5D/j1fpW9IF6t1f
-         nuAJBiw1jT/WF4Bj7sODZu0nycyGSPpBOMAqk97mKDX5cK7tprQK8Ry6J3J8q6s8qkpT
-         XjK7XIcqO9NEO862dPxqUBf8M9i9pzIK/ELlM=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH] staging: tidspbridge Typo change dload_tramp_pkt_udpate to dload_tramp_pkt_update
-Date: Fri, 31 Dec 2010 10:20:55 -0800
-Message-Id: <1293819655-8803-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.6.5.2.180.gc5b3e
+	id S1753772Ab0LaSdt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 13:33:49 -0500
+Received: from xenotime.net ([72.52.115.56]:49275 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751104Ab0LaSds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Dec 2010 13:33:48 -0500
+Date: Fri, 31 Dec 2010 10:33:45 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: yotam.medini@gmail.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: APM_CONFIG on x86 - Is it possible?
+Message-Id: <20101231103345.baba0f8c.rdunlap@xenotime.net>
+In-Reply-To: <20101231193858.2c742025@janini.home>
+References: <20101231193858.2c742025@janini.home>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch below changes a typo "dload_tramp_pkt_udpate" to "dload_tramp_pkt_update".
-Let me know if this is the correct change for this.
-Note:I am unable to compile test this, due to not finding this in my .config
-(not sure where this is located)
+On Fri, 31 Dec 2010 19:38:58 +0200 Yotam Medini wrote:
+
+> Hello,
+> 
+> To an ancient target (my UMAX 530T ActionBook - plz don't laugh...)
+> I am trying to build a lean kernel based on 2.6.32.24 (~ Ubuntu 10.04).
+> Battery monitoring used to be based on /proc/apm.
+> I believe ACPI is not supported on this old notebook.
+> Now, it seems that  CONFIG_APM_POWER  cannot be set, since:
+> 
+> 1. The configuration place for  APM_POWER  is in:
+>    ./drivers/power/Kconfig:25:
+> 	config APM_POWER
+> 		tristate "APM emulation for class batteries"
+> 		depends on APM_EMULATION
+> 
+> 2. The configuration place for  APM_EMULATION  is in:
+>     ./kernel/power/Kconfig:201:
+>     config APM_EMULATION
+> 	    tristate "Advanced Power Management Emulation"
+> 	    depends on PM && SYS_SUPPORTS_APM_EMULATION
+> 
+> 3. But the configuration places for the latter -  
+>       SYS_SUPPORTS_APM_EMULATION
+>   - exists only in:
+>     ./arch/powerpc/Kconfig:185:config SYS_SUPPORTS_APM_EMULATION
+>     ./arch/sh/Kconfig:120:config SYS_SUPPORTS_APM_EMULATION
+>     ./arch/mips/Kconfig:896:config SYS_SUPPORTS_APM_EMULATION
+>     ./arch/arm/Kconfig:32:config SYS_SUPPORTS_APM_EMULATION
+>   and none under arch/x86 ! :():
+> 
+> So my bottom line questions are:
+> + Am I missing something?
+> + What is the 'right way' to configure a 2.6.3m.nn kernel
+>   that should support battery monitoring on such ancient laptops.
+> 
+> When replying, please CC: yotam DOT medini AT Gmail DOT c0m
+> regards -- yotam
+> --
 
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+arch/x86/Kconfig has the kconfig symbol "APM":
+
+menuconfig APM
+	tristate "APM (Advanced Power Management) BIOS support"
+	depends on X86_32 && PM_SLEEP
+=> /proc/apm for battery status information
+
+so as long as your target system is 32-bit X86, you should be OK.
+
+PM_SLEEP depends on SUSPEND || HIBERNATION.  PM needs to be enabled,
+and SWAP has to be enabled for HIBERNATION.
 
 ---
- drivers/staging/tidspbridge/dynload/cload.c        |    2 +-
- .../staging/tidspbridge/dynload/dload_internal.h   |    2 +-
- drivers/staging/tidspbridge/dynload/tramp.c        |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/staging/tidspbridge/dynload/cload.c b/drivers/staging/tidspbridge/dynload/cload.c
-index c85a5e8..3151f3f 100644
---- a/drivers/staging/tidspbridge/dynload/cload.c
-+++ b/drivers/staging/tidspbridge/dynload/cload.c
-@@ -1102,7 +1102,7 @@ static int relocate_packet(struct dload_state *dlthis,
- 	 * trampoline copy of the packet since a 2nd phase relo will be done
- 	 * later. */
- 	if (*tramps_generated == true) {
--		dload_tramp_pkt_udpate(dlthis,
-+		dload_tramp_pkt_update(dlthis,
- 				       (dlthis->image_secn -
- 					dlthis->ldr_sections),
- 				       dlthis->image_offset, ipacket);
-diff --git a/drivers/staging/tidspbridge/dynload/dload_internal.h b/drivers/staging/tidspbridge/dynload/dload_internal.h
-index 302a7c5..0bc219b 100644
---- a/drivers/staging/tidspbridge/dynload/dload_internal.h
-+++ b/drivers/staging/tidspbridge/dynload/dload_internal.h
-@@ -333,7 +333,7 @@ int dload_tramp_generate(struct dload_state *dlthis, s16 secnn,
- 			 u32 image_offset, struct image_packet_t *ipacket,
- 			 struct reloc_record_t *rp);
- 
--extern int dload_tramp_pkt_udpate(struct dload_state *dlthis,
-+extern int dload_tramp_pkt_update(struct dload_state *dlthis,
- 				  s16 secnn, u32 image_offset,
- 				  struct image_packet_t *ipacket);
- 
-diff --git a/drivers/staging/tidspbridge/dynload/tramp.c b/drivers/staging/tidspbridge/dynload/tramp.c
-index 60d22ea..0c20400 100644
---- a/drivers/staging/tidspbridge/dynload/tramp.c
-+++ b/drivers/staging/tidspbridge/dynload/tramp.c
-@@ -1005,7 +1005,7 @@ int dload_tramp_generate(struct dload_state *dlthis, s16 secnn,
-  *	  pass relo is done during finalize the image packet can be
-  *	  written to the target since all relo is done.
-  */
--int dload_tramp_pkt_udpate(struct dload_state *dlthis, s16 secnn,
-+int dload_tramp_pkt_update(struct dload_state *dlthis, s16 secnn,
- 			   u32 image_offset, struct image_packet_t *ipacket)
- {
- 	struct tramp_img_dup_pkt *dup_pkt = NULL;
--- 
-1.6.5.2.180.gc5b3e
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
+desserts:  http://www.xenotime.net/linux/recipes/
