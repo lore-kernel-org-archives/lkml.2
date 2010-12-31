@@ -1,63 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab0LaO5u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 09:57:50 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:37189 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753528Ab0LaO5t (ORCPT
+	id S1753733Ab0LaPAq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 10:00:46 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:14876 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752161Ab0LaPAp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 09:57:49 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=atw8Muq91MFcG/tyv/1d/L48TytwHnDv2b5+707U90CntGa/d7dJ1USEylDfX67Ku8
-         HPBnVa3GUeFnT/r0TfccLoh1ivtH8pkVx3no6Xl3AGC+GkuB7CHsSVjNI8rUcPOTvPU5
-         KbWsiV8QH3T886hmKoQB0HjNoNSASxJ5FlGo8=
-Message-ID: <4D1DEF6A.5090502@gmail.com>
-Date: Fri, 31 Dec 2010 15:57:46 +0100
-From: roel kluin <roel.kluin@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Fri, 31 Dec 2010 10:00:45 -0500
+Date: Fri, 31 Dec 2010 15:51:41 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Malcolm Priestley <tvboxspy@gmail.com>
+cc: linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+Subject: Re: [PATVH] media, dvb, IX2505V: Remember to free allocated memory
+ in failure path (ix2505v_attach()).
+In-Reply-To: <1293758374.10326.7.camel@tvboxspy>
+Message-ID: <alpine.LNX.2.00.1012311541430.16655@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1012310008070.32595@swampdragon.chaosbits.net> <1293758374.10326.7.camel@tvboxspy>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] macintosh: wrong test in fan_{read,write}_reg()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix error test in fan_{read,write}_reg()
+On Fri, 31 Dec 2010, Malcolm Priestley wrote:
 
-Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
----
- drivers/macintosh/therm_pm72.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> On Fri, 2010-12-31 at 00:11 +0100, Jesper Juhl wrote:
+> > Hi,
+> > 
+> > We may leak the storage allocated to 'state' in 
+> > drivers/media/dvb/frontends/ix2505v.c::ix2505v_attach() on error.
+> > This patch makes sure we free the allocated memory in the failure case.
+> > 
+> > 
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > ---
+> >  ix2505v.c |    1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> >   Compile tested only.
+> > 
+> > diff --git a/drivers/media/dvb/frontends/ix2505v.c b/drivers/media/dvb/frontends/ix2505v.c
+> > index 55f2eba..fcb173d 100644
+> > --- a/drivers/media/dvb/frontends/ix2505v.c
+> > +++ b/drivers/media/dvb/frontends/ix2505v.c
+> > @@ -293,6 +293,7 @@ struct dvb_frontend *ix2505v_attach(struct dvb_frontend *fe,
+> >  		ret = ix2505v_read_status_reg(state);
+> >  
+> >  		if (ret & 0x80) {
+> > +			kfree(state);
+> >  			deb_i2c("%s: No IX2505V found\n", __func__);
+> >  			goto error;
+> >  		}
+> > 
+> Memory is freed in... 
+> 
+> error:
+> 	ix2505v_release(fe);
+> 	return NULL;
+> 
+> via...
+> 
+> static int ix2505v_release(struct dvb_frontend *fe)
+> {
+> 	struct ix2505v_state *state = fe->tuner_priv;
+> 
+> 	fe->tuner_priv = NULL;
+> 	kfree(state);
+> 
+> 	return 0;
+> }
+> 
 
-ENODEV and EIO are positive (22 and 8), so the tests did not work.
+Except that 'state' has not been assigned to fe->tuner_priv at this 
+point, so ix2505v_release() cannot free the memory that was just 
+allocated with kzalloc().
 
-diff --git a/drivers/macintosh/therm_pm72.c b/drivers/macintosh/therm_pm72.c
-index 4454927..6256a08 100644
---- a/drivers/macintosh/therm_pm72.c
-+++ b/drivers/macintosh/therm_pm72.c
-@@ -443,7 +443,7 @@ static int fan_read_reg(int reg, unsigned char *buf, int nb)
- 	tries = 0;
- 	for (;;) {
- 		nr = i2c_master_recv(fcu, buf, nb);
--		if (nr > 0 || (nr < 0 && nr != ENODEV) || tries >= 100)
-+		if (nr > 0 || (nr < 0 && nr != -ENODEV) || tries >= 100)
- 			break;
- 		msleep(10);
- 		++tries;
-@@ -464,7 +464,7 @@ static int fan_write_reg(int reg, const unsigned char *ptr, int nb)
- 	tries = 0;
- 	for (;;) {
- 		nw = i2c_master_send(fcu, buf, nb);
--		if (nw > 0 || (nw < 0 && nw != EIO) || tries >= 100)
-+		if (nw > 0 || (nw < 0 && nw != -EIO) || tries >= 100)
- 			break;
- 		msleep(10);
- 		++tries;
+
+  state is a local variable:
+  		struct ix2505v_state *state = NULL;
+		...
+
+  we allocate memory and assign it to 'state' here:
+  		state = kzalloc(sizeof(struct ix2505v_state), GFP_KERNEL);
+  		if (NULL == state)
+  			return NULL;
+  	
+  		state->config = config;
+  		state->i2c = i2c;
+  	
+  here 'state' is used, but not in a way that saves it anywhere:
+  		if (state->config->tuner_write_only) {
+  			if (fe->ops.i2c_gate_ctrl)
+  				fe->ops.i2c_gate_ctrl(fe, 1);
+  	
+  this function call involves 'state' but it does not save it anywhere
+  either:
+  			ret = ix2505v_read_status_reg(state);
+  	
+  			if (ret & 0x80) {
+  				deb_i2c("%s: No IX2505V found\n", __func__);
+  so when we jump to error here 'state' still exists only as the local
+  variable, it has not been assigned to anything else.
+  				goto error;
+  			}
+  		...
+  	error:
+  there is no way this function call can free 'state' on this path since
+  it has not been assigned to fe->tuner_priv. 
+  		ix2505v_release(fe);
+  The local variable state goes out of scope here and leaks the memory it
+  points to:
+  		return NULL;
+  	}
+
+Am I missing something?
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
