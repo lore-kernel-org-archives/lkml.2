@@ -1,61 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151Ab1AABSN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Dec 2010 20:18:13 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:49352 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750808Ab1AABSM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Dec 2010 20:18:12 -0500
-X-IronPort-AV: E=Sophos;i="4.60,257,1291622400"; 
-   d="scan'208";a="500723384"
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: George Spelvin <linux@horizon.com>
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-In-Reply-To: <20110101010349.12974.qmail@science.horizon.com>
-References: <20110101010349.12974.qmail@science.horizon.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Fri, 31 Dec 2010 20:18:10 -0500
-Message-ID: <1293844690.22964.10.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 01 Jan 2011 01:18:11.0762 (UTC) FILETIME=[C1B6D120:01CBA951]
+	id S1752412Ab1AAEo3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Dec 2010 23:44:29 -0500
+Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:45740
+	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750812Ab1AAEo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Dec 2010 23:44:27 -0500
+Date: Sat, 1 Jan 2011 04:45:22 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        LSM <linux-security-module@vger.kernel.org>,
+        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
+        containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [RFC 4/5] user namespaces: allow killing tasks in your own or
+ child userns
+Message-ID: <20110101044522.GA26476@mail.hallyn.com>
+References: <20101217152246.GA8221@mail.hallyn.com>
+ <20101217152458.GA11162@mail.hallyn.com>
+ <20101217152547.GB11162@mail.hallyn.com>
+ <20101217152625.GC11162@mail.hallyn.com>
+ <20101217152659.GD11162@mail.hallyn.com>
+ <m14oacryar.fsf@fess.ebiederm.org>
+ <20101217200903.GA15528@mail.hallyn.com>
+ <m1d3p0qhl5.fsf@fess.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1d3p0qhl5.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-31 at 20:03 -0500, George Spelvin wrote: 
-> > ...and your point would be that an exponentially increasing addition to
-> > the existing number of tests is an acceptable tradeoff in a situation
-> > where the >99.999999999999999% case is that of sane servers with no
-> > looping? I don't think so...
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> "Serge E. Hallyn" <serge@hallyn.com> writes:
 > 
-> 1) Look again; it's O(1) work per entry, or O(n) work for an n-entry
->    directory.  And O(1) space.  With very small constant factors, and
->    very little code.  The only thing exponentially increasing is the
->    interval at which you save the current cookie for future comparison.
-> 2) You said it *was* a problem, so it seemed worth presenting a
->    practical solution.  If you don't think it's worth it, I'm not
->    going to disagree.  But it's not impossible, or even difficult.
+> > Quoting Eric W. Biederman (ebiederm@xmission.com):
+> >> > --- a/kernel/signal.c
+> >> > +++ b/kernel/signal.c
+> >> > @@ -659,11 +686,7 @@ static int check_kill_permission(int sig, struct siginfo *info,
+> >> >  	cred = current_cred();
+> >> >  	tcred = __task_cred(t);
+> >> Nit pick  you don't need to compute cred and tcred here now.
+> >
+> > Just to make sure I understand right: you mean wait until after the
+> > same_thread_group() check to save calculation in that case, right?
+> 
+> I mean cred and tcred are only use in kill_ok_by_cred.
+> So we can eliminate those two variables from check_kill_permission.
 
-Yes. I was thinking about it this morning (after coffee).
+Thanks for the review.  Here is an updated version.
 
-One variant on those algorithms that might make sense here is to save
-the current cookie each time we see that the result of a cookie search
-is a filp->f_pos offset < the current filp->f_pos offset. That means we
-will in general only detect the loop after going through an entire
-cycle, but that should be sufficient...
+Subject: [PATCH 4/5] allow killing tasks in your own or child userns
 
-Trond
+Changelog:
+	Dec 8: Fixed bug in my check_kill_permission pointed out by
+	       Eric Biederman.
+	Dec 13: Apply Eric's suggestion to pass target task into kill_ok_by_cred()
+	        for clarity
+	Dec 31: address comment by Eric Biederman:
+		don't need cred/tcred in check_kill_permission.
 
+Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+---
+ kernel/signal.c |   36 ++++++++++++++++++++++++++++--------
+ 1 files changed, 28 insertions(+), 8 deletions(-)
+
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 4e3cff1..d890c99 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -636,13 +636,39 @@ static inline bool si_fromuser(const struct siginfo *info)
+ }
+ 
+ /*
++ * called with RCU read lock from check_kill_permission()
++ */
++static inline int kill_ok_by_cred(struct task_struct *t)
++{
++	struct cred *cred = current_cred();
++	struct cred *tcred = __task_cred(t);
++
++	if (cred->user->user_ns != tcred->user->user_ns) {
++		/* userids are not equivalent - either you have the
++		   capability to the target user ns or you don't */
++		if (ns_capable(tcred->user->user_ns, CAP_KILL))
++			return 1;
++		return 0;
++	}
++
++	/* same user namespace - usual credentials checks apply */
++	if ((cred->euid ^ tcred->suid) &&
++	    (cred->euid ^ tcred->uid) &&
++	    (cred->uid  ^ tcred->suid) &&
++	    (cred->uid  ^ tcred->uid) &&
++	    !ns_capable(tcred->user->user_ns, CAP_KILL))
++		return 0;
++
++	return 1;
++}
++
++/*
+  * Bad permissions for sending the signal
+  * - the caller must hold the RCU read lock
+  */
+ static int check_kill_permission(int sig, struct siginfo *info,
+ 				 struct task_struct *t)
+ {
+-	const struct cred *cred, *tcred;
+ 	struct pid *sid;
+ 	int error;
+ 
+@@ -656,14 +682,8 @@ static int check_kill_permission(int sig, struct siginfo *info,
+ 	if (error)
+ 		return error;
+ 
+-	cred = current_cred();
+-	tcred = __task_cred(t);
+ 	if (!same_thread_group(current, t) &&
+-	    (cred->euid ^ tcred->suid) &&
+-	    (cred->euid ^ tcred->uid) &&
+-	    (cred->uid  ^ tcred->suid) &&
+-	    (cred->uid  ^ tcred->uid) &&
+-	    !capable(CAP_KILL)) {
++	    !kill_ok_by_cred(t)) {
+ 		switch (sig) {
+ 		case SIGCONT:
+ 			sid = task_session(t);
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+1.7.0.4
 
