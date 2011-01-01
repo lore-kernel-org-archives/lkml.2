@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617Ab1AAMwE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jan 2011 07:52:04 -0500
-Received: from jester.euphonynet.be ([212.87.96.13]:48853 "EHLO
-	mailpush2.euphonynet.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752487Ab1AAMwB (ORCPT
+	id S1752659Ab1AAM7E (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jan 2011 07:59:04 -0500
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:45371 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752487Ab1AAM7C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jan 2011 07:52:01 -0500
-From: Bart Van Assche <bvanassche@acm.org>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] kobject: Add missing format attribute specifications
-Date: Sat, 1 Jan 2011 13:51:52 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.34.6-scst; KDE/4.4.4; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@suse.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101011351.52691.bvanassche@acm.org>
+	Sat, 1 Jan 2011 07:59:02 -0500
+Date: Sat, 01 Jan 2011 07:58:30 -0500
+Subject: Re: [PATCH 14/18] cx25840: Fix subdev registration in
+ cx25840-core.c
+Message-ID: <v38khxmtvlbmmvf5dv0i04b4.1293886218059@email.android.com>
+From: Andy Walls <awalls@md.metrocast.net>
+To: "Igor M. Liplianin" <liplianin@me.by>, mchehab@infradead.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ivtv-devel@ivtvdriver.org
+Content-Type: text/plain; charset=utf-8
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2011-01-01_01:2010-12-31,2011-01-01,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=100
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ engine=5.0.0-1010190000 definitions=main-1101010021
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p01CxT21029536
 
-Several functions in <linux/kobject.h> accept printf-style arguments.
-Some of these functions have been annotated with a format attribute
-declaration while others have not been annotated. Add a format attribute
-specification where it is missing.
+Igor,
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Cc: "Greg Kroah-Hartman" <gregkh@suse.de>
+The proper fix is here:
 
----
- include/linux/kobject.h |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+https://patchwork.kernel.org/patch/376612/
 
-diff --git a/include/linux/kobject.h b/include/linux/kobject.h
-index 8f6d121..15e82c1 100644
---- a/include/linux/kobject.h
-+++ b/include/linux/kobject.h
-@@ -85,11 +85,13 @@ static inline const char *kobject_name(const struct kobject *kobj)
- extern void kobject_init(struct kobject *kobj, struct kobj_type *ktype);
- extern int __must_check kobject_add(struct kobject *kobj,
- 				    struct kobject *parent,
--				    const char *fmt, ...);
-+				    const char *fmt, ...)
-+	__attribute__((format(printf, 3, 4)));
- extern int __must_check kobject_init_and_add(struct kobject *kobj,
- 					     struct kobj_type *ktype,
- 					     struct kobject *parent,
--					     const char *fmt, ...);
-+					     const char *fmt, ...)
-+	__attribute__((format(printf, 4, 5)));
- 
- extern void kobject_del(struct kobject *kobj);
- 
-@@ -226,6 +228,7 @@ static inline int kobject_uevent_env(struct kobject *kobj,
- 
- static inline int add_uevent_var(struct kobj_uevent_env *env,
- 				 const char *format, ...)
-+	__attribute__((format(printf, 2, 3)))
- { return 0; }
- 
- static inline int kobject_action_type(const char *buf, size_t count,
--- 
-1.7.1
+So, NAK on your particular patch.
 
+Mauro,
+
+I do not see the above patch at linux next.  And I couldn't find it in your kernel.org tree.  What is its status?
+
+This fixes a regression that is known to break cx23885 hardware initialization and can break ivtv hardware initialization.
+
+Regards,
+Andy
+
+"Igor M. Liplianin" <liplianin@me.by> wrote:
+
+>On my system, cx23885 based card reports default volume value above 70000.
+>So, register cx25840 subdev fails. Although, the card don't have a/v inputs
+>it needs a/v firmware to be loaded.
+>
+>Signed-off-by: Igor M. Liplianin <liplianin@netup.ru>
+>---
+> drivers/media/video/cx25840/cx25840-core.c |    2 ++
+> 1 files changed, 2 insertions(+), 0 deletions(-)
+>
+>diff --git a/drivers/media/video/cx25840/cx25840-core.c b/drivers/media/video/cx25840/cx25840-core.c
+>index dfb198d..dc0cec7 100644
+>--- a/drivers/media/video/cx25840/cx25840-core.c
+>+++ b/drivers/media/video/cx25840/cx25840-core.c
+>@@ -1991,6 +1991,8 @@ static int cx25840_probe(struct i2c_client *client,
+> 	if (!is_cx2583x(state)) {
+> 		default_volume = 228 - cx25840_read(client, 0x8d4);
+> 		default_volume = ((default_volume / 2) + 23) << 9;
+>+		if (default_volume > 65535)
+>+			default_volume = 65535;
+> 
+> 		state->volume = v4l2_ctrl_new_std(&state->hdl,
+> 			&cx25840_audio_ctrl_ops, V4L2_CID_AUDIO_VOLUME,
+>-- 
+>1.7.1
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-media" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
