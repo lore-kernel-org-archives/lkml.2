@@ -1,53 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab1AAUcd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jan 2011 15:32:33 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:33520 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568Ab1AAUcb (ORCPT
+	id S1753019Ab1AAUjV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jan 2011 15:39:21 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:61404 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab1AAUjT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jan 2011 15:32:31 -0500
+	Sat, 1 Jan 2011 15:39:19 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=fJhuCpNWmLmkSW51gJBUqOR0t9+5n0QSEhKFhYNgFI2vKYF95DFFi1ibvNr5OyY2Xf
-         svbyajXhbVntjy7cLxBggscyv/1TqtiZPrVd5I1ZqVpPbCOeOIV/g0R2ugukmzdOJK2J
-         gfL7F70cI1CgGVL8C1GaQ0t+/NwjfGxzD/DTA=
-Message-ID: <4D1F8F5D.1020705@gmail.com>
-Date: Sat, 01 Jan 2011 21:32:29 +0100
-From: roel kluin <roel.kluin@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=a1u+IKfb/BmwmO52CJHhaHZRhTHUL9N1Zrt8doEzKIV9Y3GOi+AQ7C/KG/LwCZ2PRj
+         4fP5z+CKbs7z/r2XrYeu0xe3I2wGGTuvkObxbNaeMwCW4sCMskRK3bkbDsZShKPWhn1G
+         h5Q8LkR2Jv8AuY5QV3W5HQtQGlu+6swJKnWtQ=
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, khilman@deeprootsystems.com
-Subject: [PATCH] davinci: tests for suitable timings in davinci_aemif_setup_timing()
- fail
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <fe2bec763bec155381d62721aa9da84aeca2785c.1293820862.git.richard.cochran@omicron.at>
+References: <cover.1293820862.git.richard.cochran@omicron.at> <fe2bec763bec155381d62721aa9da84aeca2785c.1293820862.git.richard.cochran@omicron.at>
+From: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>
+Date: Sun, 2 Jan 2011 05:38:19 +0900
+Message-ID: <AANLkTini2WdT-1v4k9V3JOZYDkA59P+SyscTe8-fK2Wk@mail.gmail.com>
+Subject: Re: [PATCH V8 02/13] ntp: add ADJ_SETOFFSET mode bit
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
+        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These have to be signed or the tests for suitable timings always fail.
+On Sat, Jan 1, 2011 at 4:12 AM, Richard Cochran
+<richardcochran@gmail.com> wrote:
+> +#define ADJ_SETOFFSET          0x0040  /* add 'time' to current time */
 
-Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+As you know, it conflicts with MOD_PPSMAX.  And also, it is logically
+the same as ADJ_OFFSET, unless the kernel PLL is enabled explicitly.
+
+So here's my simple solution:
+
 ---
- arch/arm/mach-davinci/aemif.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
+index c631168..d492887 100644
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -119,14 +119,21 @@
+ 	return div_s64(offset64 << (NTP_SCALE_SHIFT - SHIFT_FLL), secs);
+ }
 
-This was not compile tested.
-
-diff --git a/arch/arm/mach-davinci/aemif.c b/arch/arm/mach-davinci/aemif.c
-index 9c3f500..1ce70a9 100644
---- a/arch/arm/mach-davinci/aemif.c
-+++ b/arch/arm/mach-davinci/aemif.c
-@@ -90,7 +90,7 @@ int davinci_aemif_setup_timing(struct davinci_aemif_timing *t,
- 					void __iomem *base, unsigned cs)
+-static void ntp_update_offset(long offset)
++static void ntp_update_offset(long offset, struct timespec *ts)
  {
- 	unsigned set, val;
--	unsigned ta, rhold, rstrobe, rsetup, whold, wstrobe, wsetup;
-+	int ta, rhold, rstrobe, rsetup, whold, wstrobe, wsetup;
- 	unsigned offset = A1CR_OFFSET + cs * 4;
- 	struct clk *aemif_clk;
- 	unsigned long clkrate;
+ 	s64 freq_adj;
+ 	s64 offset64;
+ 	long secs;
+
+-	if (!(time_status & STA_PLL))
++	if (!(time_status & STA_PLL)) {
++		offset64 = offset;
++		if (!(time_status & STA_NANO))
++			offset64 *= NSEC_PER_USEC;
++
++		set_normalized_timespec(ts, ts->tv_sec, offset64 + ts->tv_nsec);
++
+ 		return;
++	}
+
+ 	if (!(time_status & STA_NANO))
+ 		offset *= NSEC_PER_USEC;
+@@ -430,7 +437,7 @@
+ 		time_tai = txc->constant;
+
+ 	if (txc->modes & ADJ_OFFSET)
+-		ntp_update_offset(txc->offset);
++		ntp_update_offset(txc->offset, ts);
+
+ 	if (txc->modes & ADJ_TICK)
+ 		tick_usec = txc->tick;
+@@ -526,6 +533,9 @@
+
+ 	write_sequnlock_irq(&xtime_lock);
+
++	if ((txc->modes & ADJ_OFFSET) && !(time_status & STA_PLL))
++		do_settimeofday(&ts);
++
+ 	txc->time.tv_sec = ts.tv_sec;
+ 	txc->time.tv_usec = ts.tv_nsec;
+ 	if (!(time_status & STA_NANO))
+--
