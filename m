@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751631Ab1AAPt1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jan 2011 10:49:27 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:50221 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab1AAPt0 (ORCPT
+	id S1753099Ab1AAP6O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jan 2011 10:58:14 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59100 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845Ab1AAP6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jan 2011 10:49:26 -0500
+	Sat, 1 Jan 2011 10:58:13 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=TcDC2DK5IiBGN6mxe4aQO98JsBmc/5Bs/prNIJox9iBFlUn0IRrydPs6MRyGQ8fE/m
-         Zepanmuxpjaddr455mtLBiT4G+AwwZl/bdvJQXXC9upZvgyh4hKUupKQ7TSN7E6XsVIY
-         a4fKuaCNbz7fJVLXhh/7mYFUjCrTj6mvxh++0=
-Message-ID: <4D1F4D02.5080800@gmail.com>
-Date: Sat, 01 Jan 2011 16:49:22 +0100
-From: roel kluin <roel.kluin@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=uKnMKlPVSIjju3kQVHfpT4Rza1X7kKbl1Rl1qN99vzWOYWDqzTLcVwin+LLwDlKM//
+         QC3kvTc/Mm7JuDk/K7A/U5qenDYwEu2vy3Mqk7IxW01TUXnW2xVxldDcn7ZdMkEAj4Vr
+         aix2UmQ7oc+bHkbDtJkIhLoZlXnM6sApWQ1Lg=
+Date: Sat, 1 Jan 2011 16:58:08 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com,
+        Neil Brown <neilb@suse.de>
+Subject: Re: [PATCH wq#for-2.6.38] workqueue: use WQ_MEM_RECLAIM instead of
+ WQ_RESCUER
+Message-ID: <20110101155808.GN18831@htj.dyndns.org>
+References: <20101231140109.GL18831@htj.dyndns.org>
+ <1293895476.2432.13.camel@dolmen>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, w.d.hubbs@gmail.com
-Subject: [PATCH] speakup: &&/|| confusion in silent_store()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1293895476.2432.13.camel@dolmen>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix test: the branch is always taken.
+On Sat, Jan 01, 2011 at 03:24:36PM +0000, Steven Whitehouse wrote:
+> The GFS2 part of this is already in the -nmw git tree and you acked the
+> patch when I originally wrote it :-) So it will be merged at the next
+> merge window,
 
-Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
----
- drivers/staging/speakup/kobjects.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Alright, will drop the gfs2 part.  Thank you.
 
-diff --git a/drivers/staging/speakup/kobjects.c b/drivers/staging/speakup/kobjects.c
-index cc79f9e..a082f8d 100644
---- a/drivers/staging/speakup/kobjects.c
-+++ b/drivers/staging/speakup/kobjects.c
-@@ -332,7 +332,7 @@ static ssize_t silent_store(struct kobject *kobj, struct kobj_attribute *attr,
- 	unsigned long flags;
- 
- 	len = strlen(buf);
--	if (len > 0 || len < 3) {
-+	if (len > 0 && len < 3) {
- 		ch = buf[0];
- 		if (ch == '\n')
- 			ch = '0';
+-- 
+tejun
