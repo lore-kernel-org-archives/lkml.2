@@ -1,88 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547Ab1AALpQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jan 2011 06:45:16 -0500
-Received: from av2.africaonline.com.gh ([212.85.196.25]:39303 "EHLO
-	av1.africaonline.com.gh" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752012Ab1AALpO (ORCPT
+	id S1752617Ab1AAMwE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jan 2011 07:52:04 -0500
+Received: from jester.euphonynet.be ([212.87.96.13]:48853 "EHLO
+	mailpush2.euphonynet.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487Ab1AAMwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jan 2011 06:45:14 -0500
-Message-ID: <3262.41.138.191.21.1293879613.squirrel@41.138.191.21>
-Date: Sat, 1 Jan 2011 11:00:13 -0000 (GMT)
-Subject: Questa Financial Services Offer's Loan
-From: "Questa Financial Services" <infoloan@loan.org>
-Reply-To: financialservicesquesta@rocketmail.com
-User-Agent: SquirrelMail/1.5.0
+	Sat, 1 Jan 2011 07:52:01 -0500
+From: Bart Van Assche <bvanassche@acm.org>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] kobject: Add missing format attribute specifications
+Date: Sat, 1 Jan 2011 13:51:52 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.34.6-scst; KDE/4.4.4; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3
-Importance: Normal
-To: undisclosed-recipients:;
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101011351.52691.bvanassche@acm.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Questa Financial Services
-Questa House
-Croft Court, Plumpton Close
-Whitehills Business Park
-Blackpool, Lancashire
-FY4 5PR
-United Kingdom
-FSA Registration #: 459631 (
-http://www.fsa.gov.uk/register/firmSearchForm.do )
+Several functions in <linux/kobject.h> accept printf-style arguments.
+Some of these functions have been annotated with a format attribute
+declaration while others have not been annotated. Add a format attribute
+specification where it is missing.
 
-Hello,
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Cc: "Greg Kroah-Hartman" <gregkh@suse.de>
 
-We are a verifiable Loan/Financial Firm here in The United Kingdom called
-Questa Financial Services Limited, our FSA registration number is 459631.
-Please use this link to verify us
-http://www.fsa.gov.uk/register/firmSearchForm.do
+---
+ include/linux/kobject.h |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-We like to introduce and offer our loan services to you/ your corporation.
+diff --git a/include/linux/kobject.h b/include/linux/kobject.h
+index 8f6d121..15e82c1 100644
+--- a/include/linux/kobject.h
++++ b/include/linux/kobject.h
+@@ -85,11 +85,13 @@ static inline const char *kobject_name(const struct kobject *kobj)
+ extern void kobject_init(struct kobject *kobj, struct kobj_type *ktype);
+ extern int __must_check kobject_add(struct kobject *kobj,
+ 				    struct kobject *parent,
+-				    const char *fmt, ...);
++				    const char *fmt, ...)
++	__attribute__((format(printf, 3, 4)));
+ extern int __must_check kobject_init_and_add(struct kobject *kobj,
+ 					     struct kobj_type *ktype,
+ 					     struct kobject *parent,
+-					     const char *fmt, ...);
++					     const char *fmt, ...)
++	__attribute__((format(printf, 4, 5)));
+ 
+ extern void kobject_del(struct kobject *kobj);
+ 
+@@ -226,6 +228,7 @@ static inline int kobject_uevent_env(struct kobject *kobj,
+ 
+ static inline int add_uevent_var(struct kobj_uevent_env *env,
+ 				 const char *format, ...)
++	__attribute__((format(printf, 2, 3)))
+ { return 0; }
+ 
+ static inline int kobject_action_type(const char *buf, size_t count,
+-- 
+1.7.1
 
-We offer commercial and industrial loans, consumer loans, and mortgage
-loans used to finance different activities and needs ranging from real
-estate, corporate investments, business expansion as well as any other
-kind of business financing. We offer Loans to individuals, firms and
-corporate bodies in need of financial assistance at reduced/ negotiable
-interest rates and flexible loan schedules.
-
-Amounts offered range from £20,000 to a maximum of £100,000,000.00 Pounds
-sterling depending on project/ use. What is unique about our services is
-that you can obtain a loan with/ without collateral provided your
-purpose for the loan is concrete.
-
-We offer to the following loans categories;
-* Auto Loans
-* Payday Loan
-* Student Loan
-* Mortgage Loan
-* Personal Loan
-* Business Loan
-* Bad credit Loan
-* Home equity Loan
-* Debt Consolidation Loan
-
-Please contacts us via email: financialservicesquesta@rocketmail.com
- With the following details of yourself/ company and we would be glad to
-provide our services to you
-immediately with more details and necessary information.
-
-{1} Full Name
-{2} Company Name
-{3} Phone number
-{4} Full contact address
-{5} Country
-{6} Age/ Gender/ Marital status
-{7} Profession
-{8} Purpose of loan
-{9} Amount Required
-{10} Duration
-
-Yours Sincerely,
-Gerhard Ruppel,
-Director, Independent Financial Adviser
-Questa Financial Services.
-+44-703-598-4893.
