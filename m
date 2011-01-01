@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab1AAV1p (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jan 2011 16:27:45 -0500
-Received: from www84.your-server.de ([213.133.104.84]:51403 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322Ab1AAV1o convert rfc822-to-8bit (ORCPT
+	id S1753332Ab1AAVfY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jan 2011 16:35:24 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:47610 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568Ab1AAVfW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jan 2011 16:27:44 -0500
-Subject: Re: [PATCH] UDPCP Communication Protocol
-From: Stefani Seibold <stefani@seibold.net>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        davem@davemloft.net, netdev@vger.kernel.org
-In-Reply-To: <1293796805.2973.62.camel@edumazet-laptop>
-References: <1293787785-3834-1-git-send-email-stefani@seibold.net>
-	 <1293794758.2973.49.camel@edumazet-laptop>
-	 <1293796805.2973.62.camel@edumazet-laptop>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Sat, 01 Jan 2011 22:28:45 +0100
-Message-ID: <1293917325.28510.1.camel@wall-e>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 8BIT
-X-Authenticated-Sender: stefani@seibold.net
+	Sat, 1 Jan 2011 16:35:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=VvNl2NVB9pNhyO0PR+cTeLAFoAyoBNO2+YrCRYnct0PnyT+PUQltLE4MZRfsR4pdx8
+         hc+Aw+jHdVPTuAmQMtdYXSpUw+/8za7xWWcdcZJKDzYuFVwNSq5X7HAzAWYpU+o/FW1V
+         VRQhUaddLAwJ+ZPrXRpzOOYL5AeytpOv1Diw4=
+Message-ID: <4D1F9E12.2060006@gmail.com>
+Date: Sat, 01 Jan 2011 13:35:14 -0800
+From: Stephen Boyd <bebarino@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101230 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Heinz Diehl <htd@fancy-poultry.org>
+CC: users@rt2x00.serialmonkey.com, Ivo van Doorn <IvDoorn@gmail.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: BUG in rt2x00lib_txdone() with 2.6.37-rc8
+References: <4D1DAF0A.40000@gmail.com> <20110101102817.GC6981@fancy-poultry.org>
+In-Reply-To: <20110101102817.GC6981@fancy-poultry.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, den 31.12.2010, 13:00 +0100 schrieb Eric Dumazet:
-> Le vendredi 31 décembre 2010 à 12:25 +0100, Eric Dumazet a écrit :
-> > Le vendredi 31 décembre 2010 à 10:29 +0100, stefani@seibold.net a
-> > écrit :
-> > > +		if (!list_empty(&usk->destlist)) {
-> > > +			state->sk = (struct sock *)usk;
-> > > +			state->dest = list_first_entry(&usk->destlist,
-> > > +					struct udpcp_dest, list);
-> > > +			sock_hold(state->sk);
-> > > +
-> > > +			if (atomic_read(&state->sk->sk_refcnt) != 1) {
-> > > +				spin_unlock_irqrestore(&spinlock, flags);
-> > > +				return state;
-> > > +			}
-> > > +			atomic_dec(&state->sk->sk_refcnt);
-> > > +		}
-> > > +
-> > 
-> > I am trying to understand what you are doing here.
-> > 
-> > It seems racy to me.
-> > 
-> > Apparently, what you want is to take a reference only if actual
-> > sk_refcnt is not zero.
-> > 
-> > I suggest using atomic_inc_notzero(&state->sk->sk_refcnt) to avoid the
-> > race in atomic_dec().
-> > 
-> > 
+On 01/01/11 02:28, Heinz Diehl wrote:
+> On 31.12.2010, Stephen Boyd wrote: 
 > 
-> Before you ask why its racy, this is because UDP sockets are RCU
-> protected, and RCU lookups depend on sk_refcnt being zero or not.
+>> [ 9085.714105] BUG: unable to handle kernel NULL pointer dereference at
+>> 00000000000000a4
+>> [ 9085.714816] IP: [<ffffffffa0025458>] rt2x00lib_txdone+0x36/0x249
+>> [rt2x00lib]
+>> [ 9085.715017] PGD 215fd067 PUD 292f4067 PMD 0
+>> [ 9085.715017] Oops: 0000 [#1] SMP
+>> [ 9085.715017] last sysfs file:
+>> /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq
+>> [ 9085.715017] CPU 1
+>> [ 9085.715017] Modules linked in: usb_storage thermal snd_seq_oss
+>> snd_seq_midi snd_seq_dummy snd_pcm_oss snd_mixer_oss snd_hrtimer
+>> snd_emu10k1_synth snd_emux_synth snd_seq_virmidi snd_seq_midi_event
+>> snd_seq_midi_emul snd_seq scsi_wait_scan powernow_k8 mperf i2c_i801 fuse
+>> fan snd_emu10k1 snd_rawmidi snd_ac97_codec ac97_bus snd_pcm
+>> snd_seq_device snd_timer snd_page_alloc snd_util_mem rt73usb crc_itu_t
+>> rt2x00usb snd_hwdep snd processor r8169 via82cxxx rt2x00lib soundcore
+>> mii button k8temp
+>> [ 9085.715017]
+>> [ 9085.715017] Pid: 11513, comm: kworker/1:0 Not tainted 2.6.37-rc7+ #27
+>> MS-7094/MS-7094
+> [....]
 > 
-> Doing an sk_refcnt increment/decrement opens a race window for the
-> concurrent lookups.
+> I'm not quite shure on this, but it reminds me on this bug here:
+> https://bugzilla.kernel.org/show_bug.cgi?id=24892
 > 
 
-I still revamped the whole /proc/net/udpcp thing and hope it is now race
-free.
-
-
+I believe I had the latest net tree merged into 2.6.37-rc7 in which case
+the patch mentioned in that bugzilla would already be applied.
