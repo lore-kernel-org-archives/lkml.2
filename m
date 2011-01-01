@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753135Ab1AAVVO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jan 2011 16:21:14 -0500
-Received: from fieldses.org ([174.143.236.118]:53343 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752616Ab1AAVVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jan 2011 16:21:13 -0500
-Date: Sat, 1 Jan 2011 16:21:10 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Kirill A. Shutsemov" <kirill@shutemov.name>
-Cc: Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] nfsd: declare several functions of nfs4callback as
- static
-Message-ID: <20110101212110.GA23699@fieldses.org>
-References: <1292505954-26290-1-git-send-email-kirill@shutemov.name>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292505954-26290-1-git-send-email-kirill@shutemov.name>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753327Ab1AAV1p (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jan 2011 16:27:45 -0500
+Received: from www84.your-server.de ([213.133.104.84]:51403 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322Ab1AAV1o convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Jan 2011 16:27:44 -0500
+Subject: Re: [PATCH] UDPCP Communication Protocol
+From: Stefani Seibold <stefani@seibold.net>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        davem@davemloft.net, netdev@vger.kernel.org
+In-Reply-To: <1293796805.2973.62.camel@edumazet-laptop>
+References: <1293787785-3834-1-git-send-email-stefani@seibold.net>
+	 <1293794758.2973.49.camel@edumazet-laptop>
+	 <1293796805.2973.62.camel@edumazet-laptop>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Sat, 01 Jan 2011 22:28:45 +0100
+Message-ID: <1293917325.28510.1.camel@wall-e>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 8BIT
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 16, 2010 at 03:25:54PM +0200, Kirill A. Shutsemov wrote:
-> From: Kirill A. Shutemov <kirill@shutemov.name>
+Am Freitag, den 31.12.2010, 13:00 +0100 schrieb Eric Dumazet:
+> Le vendredi 31 décembre 2010 à 12:25 +0100, Eric Dumazet a écrit :
+> > Le vendredi 31 décembre 2010 à 10:29 +0100, stefani@seibold.net a
+> > écrit :
+> > > +		if (!list_empty(&usk->destlist)) {
+> > > +			state->sk = (struct sock *)usk;
+> > > +			state->dest = list_first_entry(&usk->destlist,
+> > > +					struct udpcp_dest, list);
+> > > +			sock_hold(state->sk);
+> > > +
+> > > +			if (atomic_read(&state->sk->sk_refcnt) != 1) {
+> > > +				spin_unlock_irqrestore(&spinlock, flags);
+> > > +				return state;
+> > > +			}
+> > > +			atomic_dec(&state->sk->sk_refcnt);
+> > > +		}
+> > > +
+> > 
+> > I am trying to understand what you are doing here.
+> > 
+> > It seems racy to me.
+> > 
+> > Apparently, what you want is to take a reference only if actual
+> > sk_refcnt is not zero.
+> > 
+> > I suggest using atomic_inc_notzero(&state->sk->sk_refcnt) to avoid the
+> > race in atomic_dec().
+> > 
+> > 
 > 
-> setup_callback_client(), nfsd4_release_cb() and nfsd4_process_cb_update()
-> do not have users outside the translation unit. Let's declare it as
-> static.
+> Before you ask why its racy, this is because UDP sockets are RCU
+> protected, and RCU lookups depend on sk_refcnt being zero or not.
+> 
+> Doing an sk_refcnt increment/decrement opens a race window for the
+> concurrent lookups.
+> 
 
-Thanks, applying for 2.6.38.--b.
+I still revamped the whole /proc/net/udpcp thing and hope it is now race
+free.
 
-> 
-> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
-> ---
->  fs/nfsd/nfs4callback.c |    7 ++++---
->  1 files changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/nfsd/nfs4callback.c b/fs/nfsd/nfs4callback.c
-> index a95150d..515a9b1 100644
-> --- a/fs/nfsd/nfs4callback.c
-> +++ b/fs/nfsd/nfs4callback.c
-> @@ -474,7 +474,8 @@ static int max_cb_time(void)
->  /* Reference counting, callback cleanup, etc., all look racy as heck.
->   * And why is cl_cb_set an atomic? */
->  
-> -int setup_callback_client(struct nfs4_client *clp, struct nfs4_cb_conn *conn)
-> +static int setup_callback_client(struct nfs4_client *clp,
-> +		struct nfs4_cb_conn *conn)
->  {
->  	struct rpc_timeout	timeparms = {
->  		.to_initval	= max_cb_time(),
-> @@ -750,13 +751,13 @@ void nfsd4_shutdown_callback(struct nfs4_client *clp)
->  	flush_workqueue(callback_wq);
->  }
->  
-> -void nfsd4_release_cb(struct nfsd4_callback *cb)
-> +static void nfsd4_release_cb(struct nfsd4_callback *cb)
->  {
->  	if (cb->cb_ops->rpc_release)
->  		cb->cb_ops->rpc_release(cb);
->  }
->  
-> -void nfsd4_process_cb_update(struct nfsd4_callback *cb)
-> +static void nfsd4_process_cb_update(struct nfsd4_callback *cb)
->  {
->  	struct nfs4_cb_conn conn;
->  	struct nfs4_client *clp = cb->cb_clp;
-> -- 
-> 1.7.3.3
-> 
+
