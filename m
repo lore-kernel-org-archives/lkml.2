@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167Ab1AAQZP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jan 2011 11:25:15 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:34273 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752693Ab1AAQZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jan 2011 11:25:12 -0500
-Date: Sun, 2 Jan 2011 03:25:02 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: yotam.medini@gmail.com
-Cc: Avery Pennarun <apenwarr@alumnit.ca>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: APM_CONFIG on x86 - Is it possible?
-Message-Id: <20110102032502.e579f2d0.sfr@canb.auug.org.au>
-In-Reply-To: <20110101000558.56c77a55@janini.home>
-References: <20101231193858.2c742025@janini.home>
-	<20101231103345.baba0f8c.rdunlap@xenotime.net>
-	<20101231212800.1e47f200@janini.home>
-	<20101231113954.dc9adbdf.rdunlap@xenotime.net>
-	<20101231234010.0165f0e8@janini.home>
-	<AANLkTi=GY+ZFNMCdCQAj7aL6smUmiJZ=a-kcc76EECj7@mail.gmail.com>
-	<20110101000558.56c77a55@janini.home>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sun__2_Jan_2011_03_25_02_+1100_o0cN39iJKPTT4EPe"
+	id S1753157Ab1AAQpQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jan 2011 11:45:16 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:32930 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751616Ab1AAQpO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Jan 2011 11:45:14 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject
+         :content-type:content-transfer-encoding;
+        b=i6yUKod0h5grj1bMxwUzTpZ8kPVI2QcsXVr4SBecwm1T7H0bnt2WKK/uqJbd9hiXqb
+         9ynLkfzUFGyDKsWnBtrvvdnUYLyNMDBdgNd6oaG7lZAOOvWempNbOVg0PtuygEkJgKyt
+         o/qjdHUH7I8xGox+sB2yjKWkdUNLelC9SUI+8=
+Message-ID: <4D1F5A17.4010807@gmail.com>
+Date: Sat, 01 Jan 2011 17:45:11 +0100
+From: roel kluin <roel.kluin@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: nick.cheng@areca.com.tw, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, James.Bottomley@suse.de,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH] [SCSI] arcmsr: &/| confusion in arcmsr_build_ccb()
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sun__2_Jan_2011_03_25_02_+1100_o0cN39iJKPTT4EPe
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The WRITE_{6,10,12} are defined numbers, so the branch was always taken.
 
-Hi,
+Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+---
+ drivers/scsi/arcmsr/arcmsr_hba.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-On Sat, 1 Jan 2011 00:05:58 +0200 Yotam Medini <yotam.medini@gmail.com> wro=
-te:
->
-> Indeed:
->     $ dmesg  | grep -i apm
->     [   52.897795] apm: BIOS not found.
-> I will try to investigate this.
+See include/scsi/scsi.h:58-123 for
+#define WRITE_6               0x0a
+#define WRITE_10              0x2a
+#define WRITE_12              0xaa
 
-Try building APM into your kernel instead of as a module and see if that
-makes any difference.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Sun__2_Jan_2011_03_25_02_+1100_o0cN39iJKPTT4EPe
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNH1VeAAoJEDMEi1NhKgbsoVUH/07JRRmLtad287sYF67gjxza
-4/sCDhxNiQTxd4ock84t83Y03grDHtQ6PtnTS1MrQS7+X56y3Gtqrtj7KSkYx1Ag
-KGw86asVhFGDD3odOijI/XvDk29hZQYJj/ci6FyEVRTb2RHTV0Y+nmKIFVFz0Blf
-E5eEOiuHTvOyLJTANC61lNnaJCxtwOY53dh2y5LaRizHbrFAHeviVMJni0m8UZyR
-kzaeNjLa3lzgzCk3TPLOIg+MsQWJDUzqqNamPjF2vYDNM1BL8pSQcffae/b1NxNZ
-0RlqTyGj2kjwxMRKpCmy8dtjnaGRym9ZfaayU0BsLaPlOS5N3+SJPy+XGF5Kf98=
-=6GT5
------END PGP SIGNATURE-----
-
---Signature=_Sun__2_Jan_2011_03_25_02_+1100_o0cN39iJKPTT4EPe--
+diff --git a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+index 17e3df4..a6e5222 100644
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c
+@@ -1171,7 +1171,8 @@ static int arcmsr_build_ccb(struct AdapterControlBlock *acb,
+ 	arcmsr_cdb->msgPages = arccdbsize/0x100 + (arccdbsize % 0x100 ? 1 : 0);
+ 	if ( arccdbsize > 256)
+ 		arcmsr_cdb->Flags |= ARCMSR_CDB_FLAG_SGL_BSIZE;
+-	if (pcmd->cmnd[0]|WRITE_6 || pcmd->cmnd[0]|WRITE_10 || pcmd->cmnd[0]|WRITE_12 ){
++	if (pcmd->cmnd[0] & WRITE_6 || pcmd->cmnd[0] & WRITE_10 ||
++			pcmd->cmnd[0] & WRITE_12 ){
+ 		arcmsr_cdb->Flags |= ARCMSR_CDB_FLAG_WRITE;
+ 	}
+ 	ccb->arc_cdb_size = arccdbsize;
