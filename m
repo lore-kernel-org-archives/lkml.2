@@ -1,81 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752483Ab1AALSP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jan 2011 06:18:15 -0500
-Received: from astoria.ccjclearline.com ([64.235.106.9]:39857 "EHLO
-	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319Ab1AALSO (ORCPT
+	id S1752547Ab1AALpQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jan 2011 06:45:16 -0500
+Received: from av2.africaonline.com.gh ([212.85.196.25]:39303 "EHLO
+	av1.africaonline.com.gh" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752012Ab1AALpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jan 2011 06:18:14 -0500
-Date: Sat, 1 Jan 2011 06:18:02 -0500 (EST)
-From: "Robert P. J. Day" <rpjday@crashcourse.ca>
-X-X-Sender: rpjday@localhost6.localdomain6
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-cc: Anca Emanuel <anca.emanuel@gmail.com>,
-        Ubuntu kernel team mailing list 
-	<kernel-team@lists.ubuntu.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: is there a fix for ubuntu with intel GPU booting to blank
- screen?
-In-Reply-To: <1293832014.27359.7.camel@maxim-laptop>
-Message-ID: <alpine.DEB.2.00.1101010613320.5796@localhost6.localdomain6>
-References: <alpine.DEB.2.00.1012270640240.3071@localhost6.localdomain6>  <AANLkTiktLCVQgGPCyt-fwVSkVmr8Ljr08UmvtkNG_zdp@mail.gmail.com>  <alpine.DEB.2.00.1012310836370.23681@localhost6.localdomain6>  <1293814089.6993.4.camel@maxim-laptop> 
- <alpine.DEB.2.00.1012311153190.3495@localhost6.localdomain6> <1293832014.27359.7.camel@maxim-laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Sat, 1 Jan 2011 06:45:14 -0500
+Message-ID: <3262.41.138.191.21.1293879613.squirrel@41.138.191.21>
+Date: Sat, 1 Jan 2011 11:00:13 -0000 (GMT)
+Subject: Questa Financial Services Offer's Loan
+From: "Questa Financial Services" <infoloan@loan.org>
+Reply-To: financialservicesquesta@rocketmail.com
+User-Agent: SquirrelMail/1.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - crashcourse.ca
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 Dec 2010, Maxim Levitsky wrote:
+Questa Financial Services
+Questa House
+Croft Court, Plumpton Close
+Whitehills Business Park
+Blackpool, Lancashire
+FY4 5PR
+United Kingdom
+FSA Registration #: 459631 (
+http://www.fsa.gov.uk/register/firmSearchForm.do )
 
-> On Fri, 2010-12-31 at 12:01 -0500, Robert P. J. Day wrote:
-> > On Fri, 31 Dec 2010, Maxim Levitsky wrote:
-> >
-> > ... snip related to i915 blank screen issues ...
-> >
-> > > Since you know how to compile kernel, and even have a close working
-> > > version, you really should just bisect the bug.
-> > >
-> > > Bisection is a built-in in the git binary search that allows you to
-> > > find the first commit that introduced the bug.
-> > >
-> > > For example, quick google gives,
-> > > http://www.kernel.org/pub/software/scm/git-core/docs/v1.0.13/howto/isolate-bugs-with-bisect.txt
-> >
-> >   oh, i know how to do bisection but, to be frank, i just don't have
-> > the time.  i'm under a brutal deadline for some billable work and,
-> > even if i had the time, i suspect that when i eventually tracked down
-> > the commit, i probably wouldn't really appreciate what i was looking
-> > at, anyway.
+Hello,
 
-> You truly underestimate this. Having commit that broke things points
-> perfectly at the issue. Then, developers can even just revert the
-> offending commit until it is understood why it breaks stuff.
+We are a verifiable Loan/Financial Firm here in The United Kingdom called
+Questa Financial Services Limited, our FSA registration number is 459631.
+Please use this link to verify us
+http://www.fsa.gov.uk/register/firmSearchForm.do
 
-  one of the difficulties (if i'm reading this correctly) is that the
-issue isn't even reliably reproducible.  a number of people who have
-reported this claim that *sometimes* the system boots properly but
-it's hit and miss, so it's not even clear you can bisect
-deterministically.
+We like to introduce and offer our loan services to you/ your corporation.
 
-rday
+We offer commercial and industrial loans, consumer loans, and mortgage
+loans used to finance different activities and needs ranging from real
+estate, corporate investments, business expansion as well as any other
+kind of business financing. We offer Loans to individuals, firms and
+corporate bodies in need of financial assistance at reduced/ negotiable
+interest rates and flexible loan schedules.
 
--- 
+Amounts offered range from £20,000 to a maximum of £100,000,000.00 Pounds
+sterling depending on project/ use. What is unique about our services is
+that you can obtain a loan with/ without collateral provided your
+purpose for the loan is concrete.
 
-========================================================================
-Robert P. J. Day                               Waterloo, Ontario, CANADA
-                        http://crashcourse.ca
+We offer to the following loans categories;
+* Auto Loans
+* Payday Loan
+* Student Loan
+* Mortgage Loan
+* Personal Loan
+* Business Loan
+* Bad credit Loan
+* Home equity Loan
+* Debt Consolidation Loan
 
-Twitter:                                       http://twitter.com/rpjday
-LinkedIn:                               http://ca.linkedin.com/in/rpjday
-========================================================================
+Please contacts us via email: financialservicesquesta@rocketmail.com
+ With the following details of yourself/ company and we would be glad to
+provide our services to you
+immediately with more details and necessary information.
+
+{1} Full Name
+{2} Company Name
+{3} Phone number
+{4} Full contact address
+{5} Country
+{6} Age/ Gender/ Marital status
+{7} Profession
+{8} Purpose of loan
+{9} Amount Required
+{10} Duration
+
+Yours Sincerely,
+Gerhard Ruppel,
+Director, Independent Financial Adviser
+Questa Financial Services.
++44-703-598-4893.
