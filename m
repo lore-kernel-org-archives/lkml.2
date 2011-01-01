@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab1AARUQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jan 2011 12:20:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34607 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753163Ab1AARUO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jan 2011 12:20:14 -0500
-Message-ID: <4D1F6244.7050203@redhat.com>
-Date: Sat, 01 Jan 2011 12:20:04 -0500
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1753321Ab1AAR2i (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jan 2011 12:28:38 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:51747 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752493Ab1AAR2g convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Jan 2011 12:28:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=GKEUlJvIQZbZWrdwl86dEN0Y6vrjYF3OR+YJcvsYogRTkLLkgMj92cRqWQYMHUNFSy
+         mAZk7wCjNIZXTyJ1WsmXCO3cGYAsGgkuJzmmk4hqw/LzLEr3LY6lI8XwdIVigzSsZGne
+         /4In3Kn589JbQFDycnWgPqyzN8O1f+wiIIJac=
 MIME-Version: 1.0
-To: Amir Goldstein <amir73il@gmail.com>
-CC: "Ted Ts'o" <tytso@mit.edu>, Rogier Wolff <R.E.Wolff@bitwizard.nl>,
-        Con Kolivas <kernel@kolivas.org>, linux-kernel@vger.kernel.org,
-        adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: Regular ext4 error warning with HD in USB dock
-References: <201012280953.46149.kernel@kolivas.org>	<20101228025343.GD10149@thunk.org>	<20101228081917.GA1351@bitwizard.nl> <AANLkTim_5Yx1RQFHYbmh40xx7c5sU9XsXZEzegC4G=1x@mail.gmail.com>
-In-Reply-To: <AANLkTim_5Yx1RQFHYbmh40xx7c5sU9XsXZEzegC4G=1x@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110101170854.GB32652@parisc-linux.org>
+References: <4D1F5A17.4010807@gmail.com>
+	<20110101170854.GB32652@parisc-linux.org>
+Date: Sat, 1 Jan 2011 18:28:34 +0100
+Message-ID: <AANLkTikxhKXmnmCKr_HUW3dg3=O3qxNK+ThQEr37zEnC@mail.gmail.com>
+Subject: Re: [PATCH] [SCSI] arcmsr: &/| confusion in arcmsr_build_ccb()
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+To: Matthew Wilcox <matthew@wil.cx>
+Cc: roel kluin <roel.kluin@gmail.com>, nick.cheng@areca.com.tw,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, James.Bottomley@suse.de,
+        linux-scsi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/28/2010 05:30 AM, Amir Goldstein wrote:
-> On Tue, Dec 28, 2010 at 10:19 AM, Rogier Wolff<R.E.Wolff@bitwizard.nl>  wrote:
->> On Mon, Dec 27, 2010 at 09:53:43PM -0500, Ted Ts'o wrote:
->>> On Tue, Dec 28, 2010 at 09:53:45AM +1100, Con Kolivas wrote:
->>>> [1048401.773270] EXT4-fs (sde8): mounted filesystem with writeback data mode.
->>>> Opts: (null)
->>>> [1048702.736011] EXT4-fs (sde8): error count: 3
->>>> [1048702.736016] EXT4-fs (sde8): initial error at 1289053677:
->>>> ext4_journal_start_sb:251
->>>> [1048702.736018] EXT4-fs (sde8): last error at 1289080948: ext4_put_super:719
->>> That's actually not an error.  It's a report which is generated every
->>> 24 hours, indicating that there has been 3 errors since the last time
->>> the error count has been cleared, with the first error taking place at
->>> Sat Nov 6 10:27:57 2010 (US/Eastern) in the function
->>> ext4_journal_start_sb(), at line 251, and the most recent error taking
->>> place at Sat Nov 6 18:02:28 2010 (US/Eastern), in the function
->>> ext4_put_super() at line 719.  This is a new feature which was added
->>> in 2.6.36.
->> Nice. But the issue you're not mentioning is: What errors could have
->> happened on the 6th of november? Should Con worry about those errors?
->>
-> Ted,
+On Sat, Jan 1, 2011 at 6:08 PM, Matthew Wilcox <matthew@wil.cx> wrote:
+> On Sat, Jan 01, 2011 at 05:45:11PM +0100, roel kluin wrote:
+>> The WRITE_{6,10,12} are defined numbers, so the branch was always taken.
 >
-> I would like to use this opportunity to remind you about my
-> record_journal_errstr()
-> implementation, see:
-> https://github.com/amir73il/ext4-snapshots/blob/next3-stable/fs/next3/super.c#L157
+> You're right, but even this will basically always set the write flag,
+> since some bits will be set the same, even for reads.  Eg:
 >
-> It records the initial errors messages (which I found to be the most
-> interesting),
-> in a message buffer on the unused space after the journal super block
-> (3K on a 4K block fs).
+> #define READ_10               0x28
+> #define WRITE_10              0x2a
 >
-> fsck prints out those messages and clears the buffer.
-> In under a year of Next3 fs in beta and production, it has helped me many times
-> to analyse bugs post-mortem and find the problem.
+> It should instead be:
 >
-> If there is demand, I can post the patch for Ext4.
+>> +     if (pcmd->cmnd[0] == WRITE_6 || pcmd->cmnd[0] == WRITE_10 ||
+>> +                     pcmd->cmnd[0] == WRITE_12 ){
 >
-> Amir.
+> That will of course miss other commands which do writes, such as UNMAP
+> and WRITE_32.  So we should do it properly:
+>
+>        if (pcmd->sc_data_direction == DMA_TO_DEVICE)
+>                arcmsr_cdb->Flags |= ARCMSR_CDB_FLAG_WRITE;
+>
 
-I do think that this sounds like a useful addition - should be very useful in 
-doing post mortem analysis...
+<http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=ae52e7f09ff509df11cd408eabe90132b6be1231;hp=f034260db330bb3ffc815fcb682b1c84aca09591#patch2>
+@@ -1034,10 +1075,10 @@ static int arcmsr_build_ccb(struct
+AdapterControlBlock *acb,
+                }
+                arcmsr_cdb->sgcount = (uint8_t)cdb_sgcount;
+                arcmsr_cdb->DataLength = scsi_bufflen(pcmd);
++       arcmsr_cdb->msgPages = arccdbsize/0x100 + (arccdbsize % 0x100 ? 1 : 0);
+                if ( arccdbsize > 256)
+                        arcmsr_cdb->Flags |= ARCMSR_CDB_FLAG_SGL_BSIZE;
+-       }
+-       if (pcmd->sc_data_direction == DMA_TO_DEVICE ) {
++       if (pcmd->cmnd[0]|WRITE_6 || pcmd->cmnd[0] | WRITE_10 ||
+pcmd->cmnd[0]|WRITE_12) {
+                arcmsr_cdb->Flags |= ARCMSR_CDB_FLAG_WRITE;
+                ccb->ccb_flags |= CCB_FLAG_WRITE;
+        }
 
-Thanks!
-
-Ric
-
+Until June 2010 it was that way...
