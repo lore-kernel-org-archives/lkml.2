@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751369Ab1AAFoi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jan 2011 00:44:38 -0500
-Received: from science.horizon.com ([71.41.210.146]:29785 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750887Ab1AAFoh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jan 2011 00:44:37 -0500
-Date: 1 Jan 2011 00:44:35 -0500
-Message-ID: <20110101054435.29395.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, Trond.Myklebust@netapp.com
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-In-Reply-To: <1293844690.22964.10.camel@heimdal.trondhjem.org>
+	id S1751625Ab1AAGzs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jan 2011 01:55:48 -0500
+Received: from wormhole.pha.com.au ([203.3.69.5]:50950 "EHLO mail.pha.com.au"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750887Ab1AAGzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Jan 2011 01:55:46 -0500
+X-Greylist: delayed 418 seconds by postgrey-1.27 at vger.kernel.org; Sat, 01 Jan 2011 01:55:46 EST
+Date: Sat, 1 Jan 2011 17:48:32 +1100 (EST)
+From: Finn Thain <fthain@telegraphics.com.au>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+cc: trivial@kernel.org, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-scsi@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net, devel@driverdev.osuosl.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH 03/15]drivers:staging:rtl8187se:r8180_hw.h Typo change
+ diable to disable.
+In-Reply-To: <1293750484-1161-3-git-send-email-justinmattock@gmail.com>
+Message-ID: <alpine.LNX.2.00.1012311722580.24460@nippy.intranet>
+References: <1293750484-1161-1-git-send-email-justinmattock@gmail.com> <1293750484-1161-2-git-send-email-justinmattock@gmail.com> <1293750484-1161-3-git-send-email-justinmattock@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> 1) Look again; it's O(1) work per entry, or O(n) work for an n-entry
->>    directory.  And O(1) space.  With very small constant factors,
 
-> Yes. I was thinking about it this morning (after coffee).
+On Thu, 30 Dec 2010, Justin P. Mattock wrote:
 
-Thank you for the second look.
+> The below patch fixes a typo "diable" to "disable". Please let me know if this 
+> is correct or not.
+> 
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> 
+> ---
+>  drivers/staging/rtl8187se/r8180_hw.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/staging/rtl8187se/r8180_hw.h b/drivers/staging/rtl8187se/r8180_hw.h
+> index 3fca144..2911d40 100644
+> --- a/drivers/staging/rtl8187se/r8180_hw.h
+> +++ b/drivers/staging/rtl8187se/r8180_hw.h
+> @@ -554,7 +554,7 @@
+>  /* by amy for power save		*/
+>  /* by amy for antenna			*/
+>  #define EEPROM_SW_REVD_OFFSET 0x3f
+> -/*  BIT[8-9] is for SW Antenna Diversity. Only the value EEPROM_SW_AD_ENABLE means enable, other values are diable.					*/
+> +/*  BIT[8-9] is for SW Antenna Diversity. Only the value EEPROM_SW_AD_ENABLE means enable, other values are disabled.					*/
 
-> One variant on those algorithms that might make sense here is to save
-> the current cookie each time we see that the result of a cookie search
-> is a filp->f_pos offset < the current filp->f_pos offset. That means we
-> will in general only detect the loop after going through an entire
-> cycle, but that should be sufficient...
+I think, "other values disable" was what you meant?
 
-All of these low-overhead algorithms can take a couple of loop iterations
-before they detect it; their job is to achieve a reasonably low constant
-factor in time using O(1) space.
+Finn
 
-The worst case for the power-of-two algorithm is when the loop is n = 2^k+1
-items long.  When you get to item 2^(k+1), you'll be comparing to item
-2^k, which is a mismatch.  Then you'll save the cookie from 2^(k+1)
-and have to go to 2^(k+1) + 2^k + 1, or about 3*n, before detecting
-it.
-
-I don't consider this a problem, because it wastes a few seconds of
-computer time, to be followed by wasting a few hours trying to pass
-a bug report upstream about the broken NFS server...
-
-I don't quite follow how your proposed variant works.  Pardon my ignorance
-of NFS, but is the f->pos something that comes from the server, or
-something that is synthesized locally?  Obviously, if you keep a record
-of all the server cookies, you can detect loops quite easily.
-
-If it comes from the server, there's a risk that there might be two
-backward jumps in the cycle, and thus you'll never notice it.
-
+>  #define EEPROM_SW_AD_MASK			0x0300
+>  #define EEPROM_SW_AD_ENABLE			0x0100
+>  
+> 
