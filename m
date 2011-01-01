@@ -1,118 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150Ab1AAPYH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jan 2011 10:24:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53022 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753041Ab1AAPYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jan 2011 10:24:06 -0500
-Subject: Re: [PATCH wq#for-2.6.38] workqueue: use WQ_MEM_RECLAIM instead of
- WQ_RESCUER
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com,
-        Neil Brown <neilb@suse.de>
-In-Reply-To: <20101231140109.GL18831@htj.dyndns.org>
-References: <20101231140109.GL18831@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Sat, 01 Jan 2011 15:24:36 +0000
-Message-ID: <1293895476.2432.13.camel@dolmen>
-Mime-Version: 1.0
+	id S1751389Ab1AAPg1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jan 2011 10:36:27 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:63732 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861Ab1AAPg0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Jan 2011 10:36:26 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject
+         :content-type:content-transfer-encoding;
+        b=OrQlSo7mE+Gg7XLVXnqQ0iZgV1ADHRf3308uKM7cmUu8wU9Pp6L+qOyPMAkYldMy5K
+         X79qIu+Uy/UvA5CQiqQknPzY/1dsyQHoObu0fj6RAg74hsvIZ0gEuU6NELyJJJad2HDE
+         I7W4FeO+PcaPqmI1j3ad1DjvLVPT6aF5NIl3M=
+Message-ID: <4D1F49F7.7010401@gmail.com>
+Date: Sat, 01 Jan 2011 16:36:23 +0100
+From: roel kluin <roel.kluin@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, mchehab@redhat.com
+Subject: [PATCH] V4L/DVB: &&/|| confusion in medusa_set_decoderduration()
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Since VDEC_A is defined less than VDEC_H the if-branch was always taken.
 
-The GFS2 part of this is already in the -nmw git tree and you acked the
-patch when I originally wrote it :-) So it will be merged at the next
-merge window,
+Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+---
+ drivers/staging/cx25821/cx25821-medusa-video.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Steve.
+See drivers/staging/cx25821/cx25821-medusa-defines.h:27 for VDEC_* definitions:
+#define VDEC_A		0
+...
+#define VDEC_H		7
 
-On Fri, 2010-12-31 at 15:01 +0100, Tejun Heo wrote:
-> WQ_RESCUER is now an internal flag and should only be used in the
-> workqueue implementation proper.  Use WQ_MEM_RECLAIM instead.
-> 
-> This doesn't introduce any functional difference.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: dm-devel@redhat.com
-> Cc: Steven Whitehouse <swhiteho@redhat.com>
-> Cc: Neil Brown <neilb@suse.de>
-> ---
-> As this is trivial, I'd like to carry this through the wq tree if
-> there's no objection.
-> 
-> Thank you.
-> 
->  drivers/md/md.c    |    2 +-
->  fs/gfs2/glock.c    |    8 ++++----
->  fs/nfs/inode.c     |    2 +-
->  net/sunrpc/sched.c |    2 +-
->  4 files changed, 7 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/md/md.c b/drivers/md/md.c
-> index 84c46a1..66a01f7 100644
-> --- a/drivers/md/md.c
-> +++ b/drivers/md/md.c
-> @@ -7287,7 +7287,7 @@ static int __init md_init(void)
->  {
->  	int ret = -ENOMEM;
->  
-> -	md_wq = alloc_workqueue("md", WQ_RESCUER, 0);
-> +	md_wq = alloc_workqueue("md", WQ_MEM_RECLAIM, 0);
->  	if (!md_wq)
->  		goto err_wq;
->  
-> diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
-> index f92c177..beea184 100644
-> --- a/fs/gfs2/glock.c
-> +++ b/fs/gfs2/glock.c
-> @@ -1782,12 +1782,12 @@ int __init gfs2_glock_init(void)
->  	}
->  #endif
->  
-> -	glock_workqueue = alloc_workqueue("glock_workqueue", WQ_RESCUER |
-> -					  WQ_HIGHPRI | WQ_FREEZEABLE, 0);
-> +	glock_workqueue = alloc_workqueue("glock_workqueue",
-> +				WQ_MEM_RECLAIM | WQ_HIGHPRI | WQ_FREEZEABLE, 0);
->  	if (IS_ERR(glock_workqueue))
->  		return PTR_ERR(glock_workqueue);
-> -	gfs2_delete_workqueue = alloc_workqueue("delete_workqueue", WQ_RESCUER |
-> -						WQ_FREEZEABLE, 0);
-> +	gfs2_delete_workqueue = alloc_workqueue("delete_workqueue",
-> +					WQ_MEM_RECLAIM | WQ_FREEZEABLE, 0);
->  	if (IS_ERR(gfs2_delete_workqueue)) {
->  		destroy_workqueue(glock_workqueue);
->  		return PTR_ERR(gfs2_delete_workqueue);
-> diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-> index 314f571..9403f3f 100644
-> --- a/fs/nfs/inode.c
-> +++ b/fs/nfs/inode.c
-> @@ -1497,7 +1497,7 @@ static int nfsiod_start(void)
->  {
->  	struct workqueue_struct *wq;
->  	dprintk("RPC:       creating workqueue nfsiod\n");
-> -	wq = alloc_workqueue("nfsiod", WQ_RESCUER, 0);
-> +	wq = alloc_workqueue("nfsiod", WQ_MEM_RECLAIM, 0);
->  	if (wq == NULL)
->  		return -ENOMEM;
->  	nfsiod_workqueue = wq;
-> diff --git a/net/sunrpc/sched.c b/net/sunrpc/sched.c
-> index 243fc09..2841cc6 100644
-> --- a/net/sunrpc/sched.c
-> +++ b/net/sunrpc/sched.c
-> @@ -908,7 +908,7 @@ static int rpciod_start(void)
->  	 * Create the rpciod thread and wait for it to start.
->  	 */
->  	dprintk("RPC:       creating workqueue rpciod\n");
-> -	wq = alloc_workqueue("rpciod", WQ_RESCUER, 0);
-> +	wq = alloc_workqueue("rpciod", WQ_MEM_RECLAIM, 0);
->  	rpciod_workqueue = wq;
->  	return rpciod_workqueue != NULL;
->  }
-
-
+diff --git a/drivers/staging/cx25821/cx25821-medusa-video.c b/drivers/staging/cx25821/cx25821-medusa-video.c
+index 1e11e0c..00fb56f 100644
+--- a/drivers/staging/cx25821/cx25821-medusa-video.c
++++ b/drivers/staging/cx25821/cx25821-medusa-video.c
+@@ -564,7 +564,7 @@ static void medusa_set_decoderduration(struct cx25821_dev *dev, int decoder,
+ 	mutex_lock(&dev->lock);
+ 
+ 	/* no support */
+-	if (decoder < VDEC_A && decoder > VDEC_H) {
++	if (decoder < VDEC_A || decoder > VDEC_H) {
+ 		mutex_unlock(&dev->lock);
+ 		return;
+ 	}
