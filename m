@@ -1,87 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab1AANxZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jan 2011 08:53:25 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:55628 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752593Ab1AANxH (ORCPT
+	id S1752932Ab1AANxj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Jan 2011 08:53:39 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:43504 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752793Ab1AANxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jan 2011 08:53:07 -0500
-From: Abylay Ospan <liplianin@tut.by>
-Date: Sat, 1 Jan 2011 15:51:24 +0200
-Subject: [PATCH 16/18] Fix CI code for NetUP Dual DVB-T/C CI RF card
+	Sat, 1 Jan 2011 08:53:37 -0500
+From: "Igor M. Liplianin" <liplianin@tut.by>
+Date: Sat, 1 Jan 2011 15:52:02 +0200
+Subject: [PATCH 18/18] cx23885, altera-ci: enable all PID's less than 0x20 in hardware PID filter.
 To: mchehab@infradead.org, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain;
   charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101011551.24260.aospan@netup.ru>
+Message-Id: <201101011552.02481.liplianin@netup.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CI reset takes several seconds on some CAM,
-so there is no need to lock mutex all that time.
-Also we need not to preserve CI's reset bits in
-CIBUSCTRL register, they are handled automatically by FPGA.
-Set it to 0 explicitly in order to not reset wrong CAM.
+It takes too long time to scan due to low symbol rate PID's
+like PAT, PMT, CAT, NIT.
+For that matter we enabled permanently all PID's
+less 0x20 in hardware PID filter for NetUP Dual DVB-T/C CI RF card
+to combine rates.
 
-Signed-off-by: Abylay Ospan <aospan@netup.ru>
+Signed-off-by: Igor M. Liplianin <liplianin@netup.ru>
 ---
- drivers/media/video/cx23885/altera-ci.c |   14 ++++++++++----
- 1 files changed, 10 insertions(+), 4 deletions(-)
+ drivers/media/video/cx23885/altera-ci.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/media/video/cx23885/altera-ci.c b/drivers/media/video/cx23885/altera-ci.c
-index 019797b..90147d6 100644
+index 90147d6..aa67a33 100644
 --- a/drivers/media/video/cx23885/altera-ci.c
 +++ b/drivers/media/video/cx23885/altera-ci.c
-@@ -283,7 +283,7 @@ int netup_ci_op_cam(struct dvb_ca_en50221 *en50221, int slot,
- 	netup_fpga_op_rw(inter, NETUP_CI_ADDR1, ((addr >> 7) & 0x7f), 0);
- 	store = netup_fpga_op_rw(inter, NETUP_CI_BUSCTRL, 0, NETUP_CI_FLG_RD);
+@@ -652,8 +652,9 @@ static void altera_toggle_fullts_streaming(struct netup_hw_pid_filter 
+*pid_filt,
  
--	store &= 0x3f;
-+	store &= 0x0f;
- 	store |= ((state->nr << 7) | (flag << 6));
- 
- 	netup_fpga_op_rw(inter, NETUP_CI_BUSCTRL, store, 0);
-@@ -340,19 +340,25 @@ int netup_ci_slot_reset(struct dvb_ca_en50221 *en50221, int slot)
- 
- 	ret = netup_fpga_op_rw(inter, NETUP_CI_BUSCTRL, 0, NETUP_CI_FLG_RD);
- 	netup_fpga_op_rw(inter, NETUP_CI_BUSCTRL,
--				ret | (1 << (5 - state->nr)), 0);
-+				(ret & 0xcf) | (1 << (5 - state->nr)), 0);
-+
-+	mutex_unlock(&inter->fpga_mutex);
- 
- 	for (;;) {
- 		mdelay(50);
-+
-+		mutex_lock(&inter->fpga_mutex);
-+
- 		ret = netup_fpga_op_rw(inter, NETUP_CI_BUSCTRL,
- 						0, NETUP_CI_FLG_RD);
-+		mutex_unlock(&inter->fpga_mutex);
-+
- 		if ((ret & (1 << (5 - state->nr))) == 0)
- 			break;
- 		if (time_after(jiffies, t_out))
- 			break;
+ 		netup_fpga_op_rw(inter, NETUP_CI_PID_ADDR1,
+ 				((i >> 8) & 0x03) | (pid_filt->nr << 2), 0);
+-
+-		netup_fpga_op_rw(inter, NETUP_CI_PID_DATA, store, 0);
++		/* pid 0-0x1f always enabled */
++		netup_fpga_op_rw(inter, NETUP_CI_PID_DATA,
++				(i > 3 ? store : 0), 0);
  	}
  
--	mutex_unlock(&inter->fpga_mutex);
- 
- 	printk("%s: %d msecs\n", __func__,
- 		jiffies_to_msecs(jiffies + msecs_to_jiffies(9999) - t_out));
-@@ -381,7 +387,7 @@ int netup_ci_slot_ts_ctl(struct dvb_ca_en50221 *en50221, int slot)
- 
- 	ret = netup_fpga_op_rw(inter, NETUP_CI_BUSCTRL, 0, NETUP_CI_FLG_RD);
- 	netup_fpga_op_rw(inter, NETUP_CI_BUSCTRL,
--				ret | (1 << (3 - state->nr)), 0);
-+				(ret & 0x0f) | (1 << (3 - state->nr)), 0);
- 
  	mutex_unlock(&inter->fpga_mutex);
+@@ -730,8 +731,8 @@ static void altera_pid_control(struct netup_hw_pid_filter *pid_filt,
+ {
+ 	struct fpga_internal *inter = pid_filt->internal;
+ 	u8 store = 0;
+-
+-	if (pid == 0x2000)
++	/* pid 0-0x1f always enabled, don't touch them */
++	if ((pid == 0x2000) || (pid < 0x20))
+ 		return;
  
+ 	mutex_lock(&inter->fpga_mutex);
 -- 
 1.7.1
 
