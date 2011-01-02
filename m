@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab1ABHYx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:24:53 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36615 "EHLO
+	id S1754619Ab1ABHjx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:39:53 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36692 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754520Ab1ABHYr (ORCPT
+	with ESMTP id S1754573Ab1ABHYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:24:47 -0500
+	Sun, 2 Jan 2011 02:24:52 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Yinghai Lu <yhlu.kernel@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: stable-review@kernel.org, Kees Cook <kees.cook@canonical.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 180/260] x86, irq: Plug memory leak in sparse irq
-Date: Sun,  2 Jan 2011 02:17:56 -0500
-Message-Id: <1293952756-15010-181-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 198/260] net: clear heap allocations for privileged ethtool actions
+Date: Sun,  2 Jan 2011 02:18:14 -0500
+Message-Id: <1293952756-15010-199-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:23:27.0885 (UTC) FILETIME=[F3278BD0:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:23:47.0526 (UTC) FILETIME=[FEDC8660:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Kees Cook <kees.cook@canonical.com>
 
-commit 1cf180c94e9166cda083ff65333883ab3648e852 upstream.
+commit b00916b189d13a615ff05c9242201135992fcda3 upstream.
 
-free_irq_cfg() is not freeing the cpumask_vars in irq_cfg. Fixing this
-triggers a use after free caused by the fact that copying struct
-irq_cfg is done with memcpy, which copies the pointer not the cpumask.
+Several other ethtool functions leave heap uncleared (potentially) by
+drivers. Some interfaces appear safe (eeprom, etc), in that the sizes
+are well controlled. In some situations (e.g. unchecked error conditions),
+the heap will remain unchanged in areas before copying back to userspace.
+Note that these are less of an issue since these all require CAP_NET_ADMIN.
 
-Fix both places.
+[PG: 34 doesn't have ethtool_get_rxnfc(), drop that chunk]
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Yinghai Lu <yhlu.kernel@gmail.com>
-LKML-Reference: <alpine.LFD.2.00.1009282052570.2416@localhost6.localdomain6>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Kees Cook <kees.cook@canonical.com>
+Acked-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/kernel/apic/io_apic.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+ net/core/ethtool.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index abb136a..469d45a 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -303,14 +303,19 @@ void arch_init_copy_chip_data(struct irq_desc *old_desc,
+diff --git a/net/core/ethtool.c b/net/core/ethtool.c
+index f4d6a12..5328c62 100644
+--- a/net/core/ethtool.c
++++ b/net/core/ethtool.c
+@@ -464,7 +464,7 @@ static int ethtool_get_rx_ntuple(struct net_device *dev, void __user *useraddr)
  
- 	old_cfg = old_desc->chip_data;
+ 	gstrings.len = ret;
  
--	memcpy(cfg, old_cfg, sizeof(struct irq_cfg));
-+	cfg->vector = old_cfg->vector;
-+	cfg->move_in_progress = old_cfg->move_in_progress;
-+	cpumask_copy(cfg->domain, old_cfg->domain);
-+	cpumask_copy(cfg->old_domain, old_cfg->old_domain);
+-	data = kmalloc(gstrings.len * ETH_GSTRING_LEN, GFP_USER);
++	data = kzalloc(gstrings.len * ETH_GSTRING_LEN, GFP_USER);
+ 	if (!data)
+ 		return -ENOMEM;
  
- 	init_copy_irq_2_pin(old_cfg, cfg, node);
- }
+@@ -701,7 +701,7 @@ static int ethtool_get_regs(struct net_device *dev, char __user *useraddr)
+ 	if (regs.len > reglen)
+ 		regs.len = reglen;
  
--static void free_irq_cfg(struct irq_cfg *old_cfg)
-+static void free_irq_cfg(struct irq_cfg *cfg)
- {
--	kfree(old_cfg);
-+	free_cpumask_var(cfg->domain);
-+	free_cpumask_var(cfg->old_domain);
-+	kfree(cfg);
- }
+-	regbuf = kmalloc(reglen, GFP_USER);
++	regbuf = kzalloc(reglen, GFP_USER);
+ 	if (!regbuf)
+ 		return -ENOMEM;
  
- void arch_free_chip_data(struct irq_desc *old_desc, struct irq_desc *desc)
 -- 
 1.7.3.3
 
