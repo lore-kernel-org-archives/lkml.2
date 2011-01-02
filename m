@@ -1,111 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352Ab1ABIDE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 03:03:04 -0500
-Received: from mail.windriver.com ([147.11.1.11]:34785 "EHLO
+	id S1753276Ab1ABICr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 03:02:47 -0500
+Received: from mail.windriver.com ([147.11.1.11]:34832 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753000Ab1ABHW2 (ORCPT
+	with ESMTP id S1753113Ab1ABHWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:22:28 -0500
+	Sun, 2 Jan 2011 02:22:32 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+Cc: stable-review@kernel.org, Jerome Marchand <jmarchan@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 068/260] mmc: fix the use of kunmap_atomic() in tmio_mmc.h
-Date: Sun,  2 Jan 2011 02:16:04 -0500
-Message-Id: <1293952756-15010-69-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 070/260] kernel/groups.c: fix integer overflow in groups_search
+Date: Sun,  2 Jan 2011 02:16:06 -0500
+Message-Id: <1293952756-15010-71-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:21:20.0882 (UTC) FILETIME=[A7746D20:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:21:23.0523 (UTC) FILETIME=[A9076930:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+From: Jerome Marchand <jmarchan@redhat.com>
 
-commit 5600efb1bc2745d93ae0bc08130117a84f2b9d69 upstream.
+commit 1c24de60e50fb19b94d94225458da17c720f0729 upstream.
 
-kunmap_atomic() takes the cookie, returned by the kmap_atomic() as its
-argument and not the page address, used as an argument to kmap_atomic().
-This patch fixes the compile error:
+gid_t is a unsigned int.  If group_info contains a gid greater than
+MAX_INT, groups_search() function may look on the wrong side of the search
+tree.
 
-In file included from drivers/mmc/host/tmio_mmc.c:37:
-drivers/mmc/host/tmio_mmc.h: In function 'tmio_mmc_kunmap_atomic':
-drivers/mmc/host/tmio_mmc.h:192: error: negative width in bit-field '<anonymous>'
+This solves some unfair "permission denied" problems.
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Acked-by: Eric Miao <eric.y.miao@gmail.com>
-Tested-by: Magnus Damm <damm@opensource.se>
+Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/mmc/host/tmio_mmc.c |    7 ++++---
- drivers/mmc/host/tmio_mmc.h |    8 +++-----
- 2 files changed, 7 insertions(+), 8 deletions(-)
+ kernel/groups.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mmc/host/tmio_mmc.c b/drivers/mmc/host/tmio_mmc.c
-index b2b577f..73f8ba7 100644
---- a/drivers/mmc/host/tmio_mmc.c
-+++ b/drivers/mmc/host/tmio_mmc.c
-@@ -163,6 +163,7 @@ tmio_mmc_start_command(struct tmio_mmc_host *host, struct mmc_command *cmd)
- static inline void tmio_mmc_pio_irq(struct tmio_mmc_host *host)
- {
- 	struct mmc_data *data = host->data;
-+	void *sg_virt;
- 	unsigned short *buf;
- 	unsigned int count;
- 	unsigned long flags;
-@@ -172,8 +173,8 @@ static inline void tmio_mmc_pio_irq(struct tmio_mmc_host *host)
- 		return;
- 	}
- 
--	buf = (unsigned short *)(tmio_mmc_kmap_atomic(host, &flags) +
--	      host->sg_off);
-+	sg_virt = tmio_mmc_kmap_atomic(host->sg_ptr, &flags);
-+	buf = (unsigned short *)(sg_virt + host->sg_off);
- 
- 	count = host->sg_ptr->length - host->sg_off;
- 	if (count > data->blksz)
-@@ -190,7 +191,7 @@ static inline void tmio_mmc_pio_irq(struct tmio_mmc_host *host)
- 
- 	host->sg_off += count;
- 
--	tmio_mmc_kunmap_atomic(host, &flags);
-+	tmio_mmc_kunmap_atomic(sg_virt, &flags);
- 
- 	if (host->sg_off == host->sg_ptr->length)
- 		tmio_mmc_next_sg(host);
-diff --git a/drivers/mmc/host/tmio_mmc.h b/drivers/mmc/host/tmio_mmc.h
-index 1836ed9..87b3517 100644
---- a/drivers/mmc/host/tmio_mmc.h
-+++ b/drivers/mmc/host/tmio_mmc.h
-@@ -161,19 +161,17 @@ static inline int tmio_mmc_next_sg(struct tmio_mmc_host *host)
- 	return --host->sg_len;
- }
- 
--static inline char *tmio_mmc_kmap_atomic(struct tmio_mmc_host *host,
-+static inline char *tmio_mmc_kmap_atomic(struct scatterlist *sg,
- 	unsigned long *flags)
- {
--	struct scatterlist *sg = host->sg_ptr;
--
- 	local_irq_save(*flags);
- 	return kmap_atomic(sg_page(sg), KM_BIO_SRC_IRQ) + sg->offset;
- }
- 
--static inline void tmio_mmc_kunmap_atomic(struct tmio_mmc_host *host,
-+static inline void tmio_mmc_kunmap_atomic(void *virt,
- 	unsigned long *flags)
- {
--	kunmap_atomic(sg_page(host->sg_ptr), KM_BIO_SRC_IRQ);
-+	kunmap_atomic(virt, KM_BIO_SRC_IRQ);
- 	local_irq_restore(*flags);
- }
- 
+diff --git a/kernel/groups.c b/kernel/groups.c
+index 2b45b2e..f0c2528 100644
+--- a/kernel/groups.c
++++ b/kernel/groups.c
+@@ -143,10 +143,9 @@ int groups_search(const struct group_info *group_info, gid_t grp)
+ 	right = group_info->ngroups;
+ 	while (left < right) {
+ 		unsigned int mid = (left+right)/2;
+-		int cmp = grp - GROUP_AT(group_info, mid);
+-		if (cmp > 0)
++		if (grp > GROUP_AT(group_info, mid))
+ 			left = mid + 1;
+-		else if (cmp < 0)
++		else if (grp < GROUP_AT(group_info, mid))
+ 			right = mid;
+ 		else
+ 			return 1;
 -- 
 1.7.3.3
 
