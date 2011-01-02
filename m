@@ -1,120 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110Ab1ABH0b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:26:31 -0500
-Received: from mail.windriver.com ([147.11.1.11]:37267 "EHLO
+	id S1754943Ab1ABHZs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:25:48 -0500
+Received: from mail.windriver.com ([147.11.1.11]:37126 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755093Ab1ABH02 (ORCPT
+	with ESMTP id S1754873Ab1ABHZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:26:28 -0500
+	Sun, 2 Jan 2011 02:25:40 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Robin Holt <holt@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Darren Hart <dvhart@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, John Kacur <jkacur@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 260/260] sgi-xp: incoming XPC channel messages can come in after the channel's partition structures have been torn down
-Date: Sun,  2 Jan 2011 02:19:16 -0500
-Message-Id: <1293952756-15010-261-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 225/260] futex: Fix errors in nested key ref-counting
+Date: Sun,  2 Jan 2011 02:18:41 -0500
+Message-Id: <1293952756-15010-226-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:24:53.0730 (UTC) FILETIME=[26527420:01CBAA4E]
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 02 Jan 2011 07:24:15.0933 (UTC) FILETIME=[0FCB16D0:01CBAA4E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robin Holt <holt@sgi.com>
+From: Darren Hart <dvhart@linux.intel.com>
 
-commit 09358972bff5ce99de496bbba97c85d417b3c054 upstream.
+commit 7ada876a8703f23befbb20a7465a702ee39b1704 upstream.
 
-Under some workloads, some channel messages have been observed being
-delayed on the sending side past the point where the receiving side has
-been able to tear down its partition structures.
+futex_wait() is leaking key references due to futex_wait_setup()
+acquiring an additional reference via the queue_lock() routine. The
+nested key ref-counting has been masking bugs and complicating code
+analysis. queue_lock() is only called with a previously ref-counted
+key, so remove the additional ref-counting from the queue_(un)lock()
+functions.
 
-This condition is already detected in xpc_handle_activate_IRQ_uv(), but
-that information is not given to xpc_handle_activate_mq_msg_uv().  As a
-result, xpc_handle_activate_mq_msg_uv() assumes the structures still exist
-and references them, causing a NULL-pointer deref.
+Also futex_wait_requeue_pi() drops one key reference too many in
+unqueue_me_pi(). Remove the key reference handling from
+unqueue_me_pi(). This was paired with a queue_lock() in
+futex_lock_pi(), so the count remains unchanged.
 
-Signed-off-by: Robin Holt <holt@sgi.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Document remaining nested key ref-counting sites.
+
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Reported-and-tested-by: Matthieu Fertré<matthieu.fertre@kerlabs.com>
+Reported-by: Louis Rilling<louis.rilling@kerlabs.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: John Kacur <jkacur@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+LKML-Reference: <4CBB17A8.70401@linux.intel.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/misc/sgi-xp/xpc_uv.c |   17 +++++++++++++++++
- 1 files changed, 17 insertions(+), 0 deletions(-)
+ kernel/futex.c |   31 ++++++++++++++++---------------
+ 1 files changed, 16 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/misc/sgi-xp/xpc_uv.c b/drivers/misc/sgi-xp/xpc_uv.c
-index 1f59ee2..17bbacb 100644
---- a/drivers/misc/sgi-xp/xpc_uv.c
-+++ b/drivers/misc/sgi-xp/xpc_uv.c
-@@ -417,6 +417,7 @@ xpc_process_activate_IRQ_rcvd_uv(void)
- static void
- xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
- 			      struct xpc_activate_mq_msghdr_uv *msg_hdr,
-+			      int part_setup,
- 			      int *wakeup_hb_checker)
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 6a3a5fa..e328f57 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -1363,7 +1363,6 @@ static inline struct futex_hash_bucket *queue_lock(struct futex_q *q)
  {
- 	unsigned long irq_flags;
-@@ -481,6 +482,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
- 	case XPC_ACTIVATE_MQ_MSG_CHCTL_CLOSEREQUEST_UV: {
- 		struct xpc_activate_mq_msg_chctl_closerequest_uv *msg;
+ 	struct futex_hash_bucket *hb;
  
-+		if (!part_setup)
-+			break;
-+
- 		msg = container_of(msg_hdr, struct
- 				   xpc_activate_mq_msg_chctl_closerequest_uv,
- 				   hdr);
-@@ -497,6 +501,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
- 	case XPC_ACTIVATE_MQ_MSG_CHCTL_CLOSEREPLY_UV: {
- 		struct xpc_activate_mq_msg_chctl_closereply_uv *msg;
+-	get_futex_key_refs(&q->key);
+ 	hb = hash_futex(&q->key);
+ 	q->lock_ptr = &hb->lock;
  
-+		if (!part_setup)
-+			break;
-+
- 		msg = container_of(msg_hdr, struct
- 				   xpc_activate_mq_msg_chctl_closereply_uv,
- 				   hdr);
-@@ -511,6 +518,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
- 	case XPC_ACTIVATE_MQ_MSG_CHCTL_OPENREQUEST_UV: {
- 		struct xpc_activate_mq_msg_chctl_openrequest_uv *msg;
+@@ -1375,7 +1374,6 @@ static inline void
+ queue_unlock(struct futex_q *q, struct futex_hash_bucket *hb)
+ {
+ 	spin_unlock(&hb->lock);
+-	drop_futex_key_refs(&q->key);
+ }
  
-+		if (!part_setup)
-+			break;
-+
- 		msg = container_of(msg_hdr, struct
- 				   xpc_activate_mq_msg_chctl_openrequest_uv,
- 				   hdr);
-@@ -528,6 +538,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
- 	case XPC_ACTIVATE_MQ_MSG_CHCTL_OPENREPLY_UV: {
- 		struct xpc_activate_mq_msg_chctl_openreply_uv *msg;
+ /**
+@@ -1480,8 +1478,6 @@ static void unqueue_me_pi(struct futex_q *q)
+ 	q->pi_state = NULL;
  
-+		if (!part_setup)
-+			break;
-+
- 		msg = container_of(msg_hdr, struct
- 				   xpc_activate_mq_msg_chctl_openreply_uv, hdr);
- 		args = &part->remote_openclose_args[msg->ch_number];
-@@ -545,6 +558,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
- 	case XPC_ACTIVATE_MQ_MSG_CHCTL_OPENCOMPLETE_UV: {
- 		struct xpc_activate_mq_msg_chctl_opencomplete_uv *msg;
+ 	spin_unlock(q->lock_ptr);
+-
+-	drop_futex_key_refs(&q->key);
+ }
  
-+		if (!part_setup)
-+			break;
-+
- 		msg = container_of(msg_hdr, struct
- 				xpc_activate_mq_msg_chctl_opencomplete_uv, hdr);
- 		spin_lock_irqsave(&part->chctl_lock, irq_flags);
-@@ -621,6 +637,7 @@ xpc_handle_activate_IRQ_uv(int irq, void *dev_id)
+ /*
+@@ -1812,7 +1808,10 @@ static int futex_wait(u32 __user *uaddr, int fshared,
+ 	}
  
- 			part_referenced = xpc_part_ref(part);
- 			xpc_handle_activate_mq_msg_uv(part, msg_hdr,
-+						      part_referenced,
- 						      &wakeup_hb_checker);
- 			if (part_referenced)
- 				xpc_part_deref(part);
+ retry:
+-	/* Prepare to wait on uaddr. */
++	/*
++	 * Prepare to wait on uaddr. On success, holds hb lock and increments
++	 * q.key refs.
++	 */
+ 	ret = futex_wait_setup(uaddr, val, fshared, &q, &hb);
+ 	if (ret)
+ 		goto out;
+@@ -1822,24 +1821,23 @@ retry:
+ 
+ 	/* If we were woken (and unqueued), we succeeded, whatever. */
+ 	ret = 0;
++	/* unqueue_me() drops q.key ref */
+ 	if (!unqueue_me(&q))
+-		goto out_put_key;
++		goto out;
+ 	ret = -ETIMEDOUT;
+ 	if (to && !to->task)
+-		goto out_put_key;
++		goto out;
+ 
+ 	/*
+ 	 * We expect signal_pending(current), but we might be the
+ 	 * victim of a spurious wakeup as well.
+ 	 */
+-	if (!signal_pending(current)) {
+-		put_futex_key(fshared, &q.key);
++	if (!signal_pending(current))
+ 		goto retry;
+-	}
+ 
+ 	ret = -ERESTARTSYS;
+ 	if (!abs_time)
+-		goto out_put_key;
++		goto out;
+ 
+ 	restart = &current_thread_info()->restart_block;
+ 	restart->fn = futex_wait_restart;
+@@ -1856,8 +1854,6 @@ retry:
+ 
+ 	ret = -ERESTART_RESTARTBLOCK;
+ 
+-out_put_key:
+-	put_futex_key(fshared, &q.key);
+ out:
+ 	if (to) {
+ 		hrtimer_cancel(&to->timer);
+@@ -2236,7 +2232,10 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, int fshared,
+ 	q.rt_waiter = &rt_waiter;
+ 	q.requeue_pi_key = &key2;
+ 
+-	/* Prepare to wait on uaddr. */
++	/*
++	 * Prepare to wait on uaddr. On success, increments q.key (key1) ref
++	 * count.
++	 */
+ 	ret = futex_wait_setup(uaddr, val, fshared, &q, &hb);
+ 	if (ret)
+ 		goto out_key2;
+@@ -2254,7 +2253,9 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, int fshared,
+ 	 * In order for us to be here, we know our q.key == key2, and since
+ 	 * we took the hb->lock above, we also know that futex_requeue() has
+ 	 * completed and we no longer have to concern ourselves with a wakeup
+-	 * race with the atomic proxy lock acquition by the requeue code.
++	 * race with the atomic proxy lock acquisition by the requeue code. The
++	 * futex_requeue dropped our key1 reference and incremented our key2
++	 * reference count.
+ 	 */
+ 
+ 	/* Check if the requeue code acquired the second futex for us. */
 -- 
 1.7.3.3
 
