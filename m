@@ -1,136 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629Ab1ABWU7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 17:20:59 -0500
-Received: from www84.your-server.de ([213.133.104.84]:52079 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751720Ab1ABWU6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 17:20:58 -0500
-Subject: Re: [PATCH] new UDPCP Communication Protocol
-From: Stefani Seibold <stefani@seibold.net>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        davem@davemloft.net, netdev@vger.kernel.org, eric.dumazet@gmail.com,
-        shemminger@vyatta.com
-In-Reply-To: <alpine.LNX.2.00.1101022300220.11481@swampdragon.chaosbits.net>
-References: <1293982286-15389-1-git-send-email-stefani@seibold.net>
-	 <alpine.LNX.2.00.1101022024200.11481@swampdragon.chaosbits.net>
-	 <1294004772.5675.11.camel@wall-e>
-	 <alpine.LNX.2.00.1101022300220.11481@swampdragon.chaosbits.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Sun, 02 Jan 2011 23:21:54 +0100
-Message-ID: <1294006914.5675.14.camel@wall-e>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	id S1752554Ab1ABWYh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 17:24:37 -0500
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:33946 "HELO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751649Ab1ABWYf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jan 2011 17:24:35 -0500
+From: Philip Rakity <prakity@marvell.com>
+To: Pierre Tardy <tardyp@gmail.com>
+CC: Linus Walleij <linus.ml.walleij@gmail.com>,
+        "Gao, Yunpeng" <yunpeng.gao@intel.com>,
+        "Yuan, Hang" <hang.yuan@intel.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Ball <cjb@laptop.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>, Takashi Iwai <tiwai@suse.de>,
+        Maxim Levitsky <maximlevitsky@gmail.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Date: Sun, 2 Jan 2011 14:23:25 -0800
+Subject: Re: [PATCH] mmc: add MMC_QUIRK_BROKEN_CLK_GATING
+Thread-Topic: [PATCH] mmc: add MMC_QUIRK_BROKEN_CLK_GATING
+Thread-Index: Acuqy61xbixJiydaRXCPCxO42rFirg==
+Message-ID: <14208EBD-49DC-4780-AC65-DF0A042DDBF9@marvell.com>
+References: <AANLkTin7OYXzCYty8pDxyzE_Bg83=+L8jmcaoEMSf4QM@mail.gmail.com>
+ <1294002510-2324-1-git-send-email-tardyp@gmail.com>
+In-Reply-To: <1294002510-2324-1-git-send-email-tardyp@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, den 02.01.2011, 23:04 +0100 schrieb Jesper Juhl:
-> On Sun, 2 Jan 2011, Stefani Seibold wrote:
-> 
-> > Am Sonntag, den 02.01.2011, 20:55 +0100 schrieb Jesper Juhl:
-> > > On Sun, 2 Jan 2011, stefani@seibold.net wrote:
-> > 
-> > 
-> > > > +
-> > > > +#define VERSION	"0.71"
-> > > 
-> > > I personally don't think this makes much sense.
-> > > Version numbers for individual modules tend to not get updated as the code 
-> > > changes over the years, which make them rather meaningless.
-> > > Since this module depends on functionallity of the kernel which it is 
-> > > compiled with, the actual (meaningful) version of this code is that of the 
-> > > kernel tree being compiled that includes this code. Which again makes this 
-> > > specific version define meaningless.
-> > > 
-> > > So, why not save a few lines of code and get rid of this rather pointless 
-> > > thing?
-> > > 
-> > 
-> > I like it, it gives me a better monitoring during development which
-> > version is currently tested.
-> > 
-> Does it really?  If your code is merged, then it's probably going to be
-> changed by various people over the years and not all of them (most) are
-> not going to notice nor change the version number, nor is the version
-> number here going to be changed when other parts of the kernel (that you
-> depend upon) are changed. So when you get a bug report in the future
-> mentioning VERSION xxx.yyy.zzz of your module it's not going to tell you
-> anything. What you want to know is the version of the kernel proper (or
-> git head commit id) - the VERSION defined here is likely going to be next
-> to useless in 1+ years (or less), so why have it at all?
-> 
 
-I said currently, so i agree but not yet. Okay?
+why not just not compile the the code without clock gating defined ?
 
+and if code cannot run with it clock gating defined do a 
+#error ?
+
+Also from the diff I think you patch changes the behavior of SD/eMMC cards which may not be what you want .
+
+
+On Jan 2, 2011, at 1:08 PM, Pierre Tardy wrote:
+
+> Some sdio card are not following sdio standard, and does not work
+> when the sdio bus's clock is gated
 > 
-> > > [...]
-> > > > +static struct udpcp_dest *find_dest(struct sock *sk, __be32 addr, __be16 port)
-> > > > +{
-> > > > +	struct udpcp_dest *dest;
-> > > > +
-> > > > +	dest = __find_dest(sk, addr, port);
-> > > 
-> > > Why not
-> > > 
-> > > static struct udpcp_dest *find_dest(struct sock *sk, __be32 addr, __be16 port)
-> > > {
-> > >      struct udpcp_dest *dest =  __find_dest(sk, addr, port);
-> > > 
-> > > ?
-> > I will fix it but i think this is counting peas.
-> >  
-> Sure, it's a tiny trivial thing. I just took the time to actually read
-> through your patch and then I commented on everything I spotted.
+> To keep functionnality for all legacy driver, we turn this quirk on
+> for every sdio card.
+> Drivers needs to disable the quirk manually when someone verified that their
+> supported card works with clock gating.
 > 
+> Signed-off-by: Pierre Tardy <tardyp@gmail.com>
+> ---
+> drivers/mmc/core/host.c  |    5 +----
+> drivers/mmc/core/sdio.c  |    6 ++++++
+> include/linux/mmc/card.h |    1 +
+> 3 files changed, 8 insertions(+), 4 deletions(-)
 > 
-> > > [...]
-> > > > +static void udpcp_flush_err(struct sock *sk, struct udpcp_dest *dest)
-> > > > +{
-> > > > +	struct inet_sock *inet = inet_sk(sk);
-> > > > +	struct udpcp_sock *usk = udpcp_sk(sk);
-> > > > +
-> > > > +	if (!inet->recverr)
-> > > > +		skb_queue_purge(&dest->xmit);
-> > > > +	else {
-> > > 
-> > > CodingStyle would want this as
-> > > 
-> > >      if (!inet->recverr) {
-> > >              skb_queue_purge(&dest->xmit);
-> > >      } else {
-> > > 
-> > > If one branch needs {} then both should get them.
-> > > 
-> > ./scripts/checkpatch.pl did not complain about this, so i think it is
-> > okay.
-> > 
-> scripts/checkpatch.pl is not the final judge on style issues - not by a 
-> long shot. In any case, if you read Documentation/CodingStyle you'll 
-> notice this : 
-> 
-> "
-> Do not unnecessarily use braces where a single statement will do.
-> 
-> if (condition)
->         action();
-> 
-> This does not apply if one branch of a conditional statement is a single
-> statement. Use braces in both branches.
-> 
-> if (condition) {
->         do_this();
->         do_that();
-> } else {
->         otherwise();
+> diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
+> index 92e3370..54cc461 100644
+> --- a/drivers/mmc/core/host.c
+> +++ b/drivers/mmc/core/host.c
+> @@ -160,10 +160,7 @@ static bool mmc_host_may_gate_card(struct mmc_card *card)
+> 	 * gate the clock, because there is somebody out there that may still
+> 	 * be using it.
+> 	 */
+> -	if (mmc_card_sdio(card))
+> -		return false;
+> -
+> -	return true;
+> +	return !(card->quirks & MMC_QUIRK_BROKEN_CLK_GATING);
 > }
-> "
 > 
-I will fix it but i think this is coding style from hell :-)
-
-
+> /**
+> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
+> index 82f4b90..6df1ead 100644
+> --- a/drivers/mmc/core/sdio.c
+> +++ b/drivers/mmc/core/sdio.c
+> @@ -785,6 +785,12 @@ int mmc_attach_sdio(struct mmc_host *host, u32 ocr)
+> 
+> 	mmc_release_host(host);
+> 
+> +        /*
+> +         * see comments in mmc_host_may_gate_card()
+> +         * this can be overidden by function drivers if they know that
+> +         * their sdio card works with clock gating
+> +         */
+> +        card->quirks |= MMC_QUIRK_BROKEN_CLK_GATING;
+> 	/*
+> 	 * First add the card to the driver model...
+> 	 */
+> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+> index 8ce0827..5071eb1 100644
+> --- a/include/linux/mmc/card.h
+> +++ b/include/linux/mmc/card.h
+> @@ -121,6 +121,7 @@ struct mmc_card {
+> 						/* for byte mode */
+> #define MMC_QUIRK_NONSTD_SDIO	(1<<2)		/* non-standard SDIO card attached */
+> 						/* (missing CIA registers) */
+> +#define MMC_QUIRK_BROKEN_CLK_GATING (1<<3)	/* clock gating the sdio bus will make card fail */
+> 
+> 	unsigned int		erase_size;	/* erase size in sectors */
+>  	unsigned int		erase_shift;	/* if erase unit is power 2 */
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
