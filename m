@@ -1,136 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754992Ab1ABHZz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:25:55 -0500
-Received: from mail.windriver.com ([147.11.1.11]:37174 "EHLO
+	id S1754656Ab1ABHY7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:24:59 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36711 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754968Ab1ABHZw (ORCPT
+	with ESMTP id S1754590Ab1ABHYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:25:52 -0500
+	Sun, 2 Jan 2011 02:24:54 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Daniel Suchy <danny@danysek.cz>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+Cc: stable-review@kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 245/260] USB: ftdi_sio: new VID/PIDs for various Papouch devices
-Date: Sun,  2 Jan 2011 02:19:01 -0500
-Message-Id: <1293952756-15010-246-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 200/260] netxen: dont set skb->truesize
+Date: Sun,  2 Jan 2011 02:18:16 -0500
+Message-Id: <1293952756-15010-201-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:24:37.0527 (UTC) FILETIME=[1CAA1270:01CBAA4E]
+X-OriginalArrivalTime: 02 Jan 2011 07:23:49.0667 (UTC) FILETIME=[00233730:01CBAA4E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Suchy <danny@danysek.cz>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-commit 59c6ccd9f9aecfa59c99ceba6d4d34b180547a05 upstream.
+commit 7e96dc7045bff8758804b047c0dfb6868f182500 upstream.
 
-This patch for FTDI USB serial driver ads new VID/PIDs used on various
-devices manufactured by Papouch (http://www.papouch.com). These devices
-have their own VID/PID, although they're using standard FTDI chip. In
-ftdi_sio.c, I also made small cleanup to have declarations for all
-Papouch devices together.
+skb->truesize is set in core network.
 
-Signed-off-by: Daniel Suchy <danny@danysek.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Dont change it unless dealing with fragments.
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/serial/ftdi_sio.c     |   30 +++++++++++++++++++++++++++++-
- drivers/usb/serial/ftdi_sio_ids.h |   27 ++++++++++++++++++++++++++-
- 2 files changed, 55 insertions(+), 2 deletions(-)
+ drivers/net/netxen/netxen_nic_init.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index f2fbf78..d2ea458 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -681,7 +681,6 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_RRCIRKITS_LOCOBUFFER_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ASK_RDR400_PID) },
- 	{ USB_DEVICE(ICOM_ID1_VID, ICOM_ID1_PID) },
--	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_TMU_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ACG_HFDUAL_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_YEI_SERVOCENTER31_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_THORLABS_PID) },
-@@ -722,8 +721,37 @@ static struct usb_device_id id_table_combined [] = {
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ USB_DEVICE(RATOC_VENDOR_ID, RATOC_PRODUCT_ID_USB60F) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_REU_TINY_PID) },
-+
-+	/* Papouch devices based on FTDI chip */
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_AP485_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB422_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485_2_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_AP485_2_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB422_2_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485S_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485C_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_LEC_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB232_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_TMU_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_IRAMP_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_DRAK5_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO8x8_PID) },
- 	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO4x4_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO2x2_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO10x1_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO30x3_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO60x3_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO2x16_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO3x32_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_DRAK6_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_UPSUSB_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_MU_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SIMUKEY_PID) },
- 	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_AD4USB_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_GMUX_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_GMSR_PID) },
-+
- 	{ USB_DEVICE(FTDI_VID, FTDI_DOMINTELL_DGQG_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_DOMINTELL_DUSB_PID) },
- 	{ USB_DEVICE(ALTI2_VID, ALTI2_N3_PID) },
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index a214917..ff8a8ad 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1030,9 +1030,34 @@
-  */
+diff --git a/drivers/net/netxen/netxen_nic_init.c b/drivers/net/netxen/netxen_nic_init.c
+index 02876f5..00001bf 100644
+--- a/drivers/net/netxen/netxen_nic_init.c
++++ b/drivers/net/netxen/netxen_nic_init.c
+@@ -1402,7 +1402,6 @@ netxen_process_rcv(struct netxen_adapter *adapter,
+ 	if (pkt_offset)
+ 		skb_pull(skb, pkt_offset);
  
- #define PAPOUCH_VID			0x5050	/* Vendor ID */
-+#define PAPOUCH_SB485_PID		0x0100	/* Papouch SB485 USB-485/422 Converter */
-+#define PAPOUCH_AP485_PID		0x0101	/* AP485 USB-RS485 Converter */
-+#define PAPOUCH_SB422_PID		0x0102	/* Papouch SB422 USB-RS422 Converter  */
-+#define PAPOUCH_SB485_2_PID		0x0103	/* Papouch SB485 USB-485/422 Converter */
-+#define PAPOUCH_AP485_2_PID		0x0104	/* AP485 USB-RS485 Converter */
-+#define PAPOUCH_SB422_2_PID		0x0105	/* Papouch SB422 USB-RS422 Converter  */
-+#define PAPOUCH_SB485S_PID		0x0106	/* Papouch SB485S USB-485/422 Converter */
-+#define PAPOUCH_SB485C_PID		0x0107	/* Papouch SB485C USB-485/422 Converter */
-+#define PAPOUCH_LEC_PID			0x0300	/* LEC USB Converter */
-+#define PAPOUCH_SB232_PID		0x0301	/* Papouch SB232 USB-RS232 Converter */
- #define PAPOUCH_TMU_PID			0x0400	/* TMU USB Thermometer */
--#define PAPOUCH_QUIDO4x4_PID		0x0900	/* Quido 4/4 Module */
-+#define PAPOUCH_IRAMP_PID		0x0500	/* Papouch IRAmp Duplex */
-+#define PAPOUCH_DRAK5_PID		0x0700	/* Papouch DRAK5 */
-+#define PAPOUCH_QUIDO8x8_PID		0x0800	/* Papouch Quido 8/8 Module */
-+#define PAPOUCH_QUIDO4x4_PID		0x0900	/* Papouch Quido 4/4 Module */
-+#define PAPOUCH_QUIDO2x2_PID		0x0a00	/* Papouch Quido 2/2 Module */
-+#define PAPOUCH_QUIDO10x1_PID		0x0b00	/* Papouch Quido 10/1 Module */
-+#define PAPOUCH_QUIDO30x3_PID		0x0c00	/* Papouch Quido 30/3 Module */
-+#define PAPOUCH_QUIDO60x3_PID		0x0d00	/* Papouch Quido 60(100)/3 Module */
-+#define PAPOUCH_QUIDO2x16_PID		0x0e00	/* Papouch Quido 2/16 Module */
-+#define PAPOUCH_QUIDO3x32_PID		0x0f00	/* Papouch Quido 3/32 Module */
-+#define PAPOUCH_DRAK6_PID		0x1000	/* Papouch DRAK6 */
-+#define PAPOUCH_UPSUSB_PID		0x8000	/* Papouch UPS-USB adapter */
-+#define PAPOUCH_MU_PID			0x8001	/* MU controller */
-+#define PAPOUCH_SIMUKEY_PID		0x8002	/* Papouch SimuKey */
- #define PAPOUCH_AD4USB_PID		0x8003	/* AD4USB Measurement Module */
-+#define PAPOUCH_GMUX_PID		0x8004	/* Papouch GOLIATH MUX */
-+#define PAPOUCH_GMSR_PID		0x8005	/* Papouch GOLIATH MSR */
+-	skb->truesize = skb->len + sizeof(struct sk_buff);
+ 	skb->protocol = eth_type_trans(skb, netdev);
  
- /*
-  * Marvell SheevaPlug
+ 	napi_gro_receive(&sds_ring->napi, skb);
+@@ -1464,8 +1463,6 @@ netxen_process_lro(struct netxen_adapter *adapter,
+ 
+ 	skb_put(skb, lro_length + data_offset);
+ 
+-	skb->truesize = skb->len + sizeof(struct sk_buff) + skb_headroom(skb);
+-
+ 	skb_pull(skb, l2_hdr_offset);
+ 	skb->protocol = eth_type_trans(skb, netdev);
+ 
 -- 
 1.7.3.3
 
