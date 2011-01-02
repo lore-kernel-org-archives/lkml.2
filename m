@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755211Ab1ABHa1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:30:27 -0500
-Received: from mail.windriver.com ([147.11.1.11]:37168 "EHLO
+	id S1755231Ab1ABHbZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:31:25 -0500
+Received: from mail.windriver.com ([147.11.1.11]:37155 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754953Ab1ABHZu (ORCPT
+	with ESMTP id S1754923Ab1ABHZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:25:50 -0500
+	Sun, 2 Jan 2011 02:25:47 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Roland McGrath <roland@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Rich Mattes <richmattes@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 217/260] execve: make responsive to SIGKILL with large arguments
-Date: Sun,  2 Jan 2011 02:18:33 -0500
-Message-Id: <1293952756-15010-218-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 243/260] USB: ftdi_sio: Add PID for accesio products
+Date: Sun,  2 Jan 2011 02:18:59 -0500
+Message-Id: <1293952756-15010-244-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:24:06.0917 (UTC) FILETIME=[0A6B5B50:01CBAA4E]
+X-OriginalArrivalTime: 02 Jan 2011 07:24:35.0496 (UTC) FILETIME=[1B742A80:01CBAA4E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roland McGrath <roland@redhat.com>
+From: Rich Mattes <richmattes@gmail.com>
 
-commit 9aea5a65aa7a1af9a4236dfaeb0088f1624f9919 upstream.
+commit 3126d8236ca6f68eb8292c6af22c2e59afbeef24 upstream.
 
-An execve with a very large total of argument/environment strings
-can take a really long time in the execve system call.  It runs
-uninterruptibly to count and copy all the strings.  This change
-makes it abort the exec quickly if sent a SIGKILL.
+Adds support for Accesio USB to Serial adapters, which are built around
+FTDI FT232 UARTs.  Tested with the Accesio USB-COM-4SM.
 
-Note that this is the conservative change, to interrupt only for
-SIGKILL, by using fatal_signal_pending().  It would be perfectly
-correct semantics to let any signal interrupt the string-copying in
-execve, i.e. use signal_pending() instead of fatal_signal_pending().
-We'll save that change for later, since it could have user-visible
-consequences, such as having a timer set too quickly make it so that
-an execve can never complete, though it always happened to work before.
-
-Signed-off-by: Roland McGrath <roland@redhat.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Rich Mattes <richmattes@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/exec.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/fs/exec.c b/fs/exec.c
-index b187ab0..afd9977 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -376,6 +376,9 @@ static int count(char __user * __user * argv, int max)
- 			argv++;
- 			if (i++ >= max)
- 				return -E2BIG;
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index fd5c874..9d810e8 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -757,6 +757,7 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, XVERVE_SIGNALYZER_SH4_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(FTDI_VID, SEGWAY_RMP200_PID) },
++	{ USB_DEVICE(FTDI_VID, ACCESIO_COM4SM_PID) },
+ 	{ USB_DEVICE(IONICS_VID, IONICS_PLUGCOMPUTER_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CHAMSYS_24_MASTER_WING_PID) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 6eb1592..d3d2f48 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1070,3 +1070,9 @@
+  * Submitted by John G. Rogers
+  */
+ #define SEGWAY_RMP200_PID	0xe729
 +
-+			if (fatal_signal_pending(current))
-+				return -ERESTARTNOHAND;
- 			cond_resched();
- 		}
- 	}
-@@ -419,6 +422,10 @@ static int copy_strings(int argc, char __user * __user * argv,
- 		while (len > 0) {
- 			int offset, bytes_to_copy;
- 
-+			if (fatal_signal_pending(current)) {
-+				ret = -ERESTARTNOHAND;
-+				goto out;
-+			}
- 			cond_resched();
- 
- 			offset = pos % PAGE_SIZE;
++
++/*
++ * Accesio USB Data Acquisition products (http://www.accesio.com/)
++ */
++#define ACCESIO_COM4SM_PID 	0xD578
 -- 
 1.7.3.3
 
