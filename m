@@ -1,101 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753Ab1ABHZO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:25:14 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36923 "EHLO
+	id S1754850Ab1ABHgA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:36:00 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36951 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754740Ab1ABHZM (ORCPT
+	with ESMTP id S1754756Ab1ABHZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:25:12 -0500
+	Sun, 2 Jan 2011 02:25:15 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Max Vozeler <mvz@vozeler.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 190/260] De-pessimize rds_page_copy_user
-Date: Sun,  2 Jan 2011 02:18:06 -0500
-Message-Id: <1293952756-15010-191-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 220/260] staging: usbip: Process event flags without delay
+Date: Sun,  2 Jan 2011 02:18:36 -0500
+Message-Id: <1293952756-15010-221-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:23:38.0776 (UTC) FILETIME=[F9A56180:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:24:09.0979 (UTC) FILETIME=[0C3E94B0:01CBAA4E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Max Vozeler <mvz@vozeler.com>
 
-commit 799c10559d60f159ab2232203f222f18fa3c4a5f upstream.
+commit 584c5b7cf06194464240280483ee0376cdddbbae upstream.
 
-Don't try to "optimize" rds_page_copy_user() by using kmap_atomic() and
-the unsafe atomic user mode accessor functions.  It's actually slower
-than the straightforward code on any reasonable modern CPU.
+The way the event handler works can cause it to delay
+events until eventual wakeup for another event.
 
-Back when the code was written (although probably not by the time it was
-actually merged, though), 32-bit x86 may have been the dominant
-architecture.  And there kmap_atomic() can be a lot faster than kmap()
-(unless you have very good locality, in which case the virtual address
-caching by kmap() can overcome all the downsides).
+For example, on device detach (vhci):
 
-But these days, x86-64 may not be more populous, but it's getting there
-(and if you care about performance, it's definitely already there -
-you'd have upgraded your CPU's already in the last few years).  And on
-x86-64, the non-kmap_atomic() version is faster, simply because the code
-is simpler and doesn't have the "re-try page fault" case.
+ - Write to sysfs detach file
+    -> usbip_event_add(VDEV_EVENT_DOWN)
+      -> wakeup()
 
-People with old hardware are not likely to care about RDS anyway, and
-the optimization for the 32-bit case is simply buggy, since it doesn't
-verify the user addresses properly.
+#define VDEV_EVENT_DOWN (USBIP_EH_SHUTDOWN | USBIP_EH_RESET).
 
-Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Acked-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+ - Event thread wakes up and passes the event to
+   event_handler() to process.
+
+ - It processes and clears the USBIP_EH_SHUTDOWN
+   flag then returns.
+
+ - The outer event loop (event_handler_loop()) calls
+   wait_event_interruptible().
+
+The processing of the second flag which is part of
+VDEV_EVENT_DOWN (USBIP_EH_RESET) did not happen yet.
+It is delayed until the next event.
+
+This means the ->reset callback may not happen for
+a long time (if ever), leaving the usbip port in a
+weird state which prevents its reuse.
+
+This patch changes the handler to process all flags
+before waiting for another wakeup.
+
+I have verified this change to fix a problem which
+prevented reattach of a usbip device. It also helps
+for socket errors which missed the RESET as well.
+
+The delayed event processing also affects the stub
+side of usbip and the error handling there.
+
+Signed-off-by: Max Vozeler <mvz@vozeler.com>
+Reported-by: Marco Lancione <marco@optikam.com>
+Tested-by: Luc Jalbert <ljalbert@optikam.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/rds/page.c |   27 +++++++--------------------
- 1 files changed, 7 insertions(+), 20 deletions(-)
+ drivers/staging/usbip/usbip_event.c |   16 +++-------------
+ 1 files changed, 3 insertions(+), 13 deletions(-)
 
-diff --git a/net/rds/page.c b/net/rds/page.c
-index 595a952..1dfbfea 100644
---- a/net/rds/page.c
-+++ b/net/rds/page.c
-@@ -57,30 +57,17 @@ int rds_page_copy_user(struct page *page, unsigned long offset,
- 	unsigned long ret;
- 	void *addr;
+diff --git a/drivers/staging/usbip/usbip_event.c b/drivers/staging/usbip/usbip_event.c
+index a2566f1..af3832b 100644
+--- a/drivers/staging/usbip/usbip_event.c
++++ b/drivers/staging/usbip/usbip_event.c
+@@ -38,21 +38,13 @@ static int event_handler(struct usbip_device *ud)
+ 			ud->eh_ops.shutdown(ud);
  
--	if (to_user)
-+	addr = kmap(page);
-+	if (to_user) {
- 		rds_stats_add(s_copy_to_user, bytes);
--	else
-+		ret = copy_to_user(ptr, addr + offset, bytes);
-+	} else {
- 		rds_stats_add(s_copy_from_user, bytes);
+ 			ud->event &= ~USBIP_EH_SHUTDOWN;
 -
--	addr = kmap_atomic(page, KM_USER0);
--	if (to_user)
--		ret = __copy_to_user_inatomic(ptr, addr + offset, bytes);
--	else
--		ret = __copy_from_user_inatomic(addr + offset, ptr, bytes);
--	kunmap_atomic(addr, KM_USER0);
+-			break;
+ 		}
+ 
+-		/* Stop the error handler. */
+-		if (ud->event & USBIP_EH_BYE)
+-			return -1;
 -
--	if (ret) {
--		addr = kmap(page);
--		if (to_user)
--			ret = copy_to_user(ptr, addr + offset, bytes);
--		else
--			ret = copy_from_user(addr + offset, ptr, bytes);
--		kunmap(page);
--		if (ret)
--			return -EFAULT;
-+		ret = copy_from_user(addr + offset, ptr, bytes);
+ 		/* Reset the device. */
+ 		if (ud->event & USBIP_EH_RESET) {
+ 			ud->eh_ops.reset(ud);
+ 
+ 			ud->event &= ~USBIP_EH_RESET;
+-
+-			break;
+ 		}
+ 
+ 		/* Mark the device as unusable. */
+@@ -60,13 +52,11 @@ static int event_handler(struct usbip_device *ud)
+ 			ud->eh_ops.unusable(ud);
+ 
+ 			ud->event &= ~USBIP_EH_UNUSABLE;
+-
+-			break;
+ 		}
+ 
+-		/* NOTREACHED */
+-		printk(KERN_ERR "%s: unknown event\n", __func__);
+-		return -1;
++		/* Stop the error handler. */
++		if (ud->event & USBIP_EH_BYE)
++			return -1;
  	}
-+	kunmap(page);
  
--	return 0;
-+	return ret ? -EFAULT : 0;
- }
- EXPORT_SYMBOL_GPL(rds_page_copy_user);
- 
+ 	return 0;
 -- 
 1.7.3.3
 
