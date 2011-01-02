@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab1ABHXo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:23:44 -0500
-Received: from mail.windriver.com ([147.11.1.11]:35746 "EHLO
+	id S1754080Ab1ABHXu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:23:50 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35801 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753711Ab1ABHXk (ORCPT
+	with ESMTP id S1753966Ab1ABHXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:23:40 -0500
+	Sun, 2 Jan 2011 02:23:44 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Patrick Simmons <linuxrocks123@netscape.net>,
-        Robert Richter <robert.richter@amd.com>,
+Cc: stable-review@kernel.org, Dan Rosenberg <drosenberg@vsecurity.com>,
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Thomas Winischhofer <thomas@winischhofer.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 130/260] oprofile: Add Support for Intel CPU Family 6 / Model 22 (Intel Celeron 540)
-Date: Sun,  2 Jan 2011 02:17:06 -0500
-Message-Id: <1293952756-15010-131-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 133/260] drivers/video/sis/sis_main.c: prevent reading uninitialized stack memory
+Date: Sun,  2 Jan 2011 02:17:09 -0500
+Message-Id: <1293952756-15010-134-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:22:32.0103 (UTC) FILETIME=[D1E7E370:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:22:36.0009 (UTC) FILETIME=[D43BE590:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Patrick Simmons <linuxrocks123@netscape.net>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit c33f543d320843e1732534c3931da4bbd18e6c14 upstream.
+commit fd02db9de73faebc51240619c7c7f99bee9f65c7 upstream.
 
-This patch adds CPU type detection for the Intel Celeron 540, which is
-part of the Core 2 family according to Wikipedia; the family and ID pair
-is absent from the Volume 3B table referenced in the source code
-comments.  I have tested this patch on an Intel Celeron 540 machine
-reporting itself as Family 6 Model 22, and OProfile runs on the machine
-without issue.
+The FBIOGET_VBLANK device ioctl allows unprivileged users to read 16 bytes
+of uninitialized stack memory, because the "reserved" member of the
+fb_vblank struct declared on the stack is not altered or zeroed before
+being copied back to the user.  This patch takes care of it.
 
-Spec:
-
- http://download.intel.com/design/mobile/SPECUPDT/317667.pdf
-
-Signed-off-by: Patrick Simmons <linuxrocks123@netscape.net>
-Acked-by: Andi Kleen <ak@linux.intel.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+Cc: Thomas Winischhofer <thomas@winischhofer.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/oprofile/nmi_int.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ drivers/video/sis/sis_main.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-index 3130a4b..238526b 100644
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -621,7 +621,9 @@ static int __init ppro_init(char **cpu_type)
- 	case 14:
- 		*cpu_type = "i386/core";
+diff --git a/drivers/video/sis/sis_main.c b/drivers/video/sis/sis_main.c
+index a531a0f..900b3a0 100644
+--- a/drivers/video/sis/sis_main.c
++++ b/drivers/video/sis/sis_main.c
+@@ -1701,6 +1701,9 @@ static int	sisfb_ioctl(struct fb_info *info, unsigned int cmd,
  		break;
--	case 15: case 23:
-+	case 0x0f:
-+	case 0x16:
-+	case 0x17:
- 		*cpu_type = "i386/core_2";
- 		break;
- 	case 0x1a:
+ 
+ 	   case FBIOGET_VBLANK:
++
++		memset(&sisvbblank, 0, sizeof(struct fb_vblank));
++
+ 		sisvbblank.count = 0;
+ 		sisvbblank.flags = sisfb_setupvbblankflags(ivideo, &sisvbblank.vcount, &sisvbblank.hcount);
+ 
 -- 
 1.7.3.3
 
