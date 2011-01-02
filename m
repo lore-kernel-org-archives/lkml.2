@@ -1,122 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab1ABHnd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:43:33 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36402 "EHLO
+	id S1754439Ab1ABHYb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:24:31 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36265 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754443Ab1ABHYc (ORCPT
+	with ESMTP id S1754349Ab1ABHYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:24:32 -0500
+	Sun, 2 Jan 2011 02:24:20 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, "Luck, Tony" <tony.luck@intel.com>,
+Cc: stable-review@kernel.org, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 149/260] guard page for stacks that grow upwards
-Date: Sun,  2 Jan 2011 02:17:25 -0500
-Message-Id: <1293952756-15010-150-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 148/260] mm: page allocator: update free page counters after pages are placed on the free list
+Date: Sun,  2 Jan 2011 02:17:24 -0500
+Message-Id: <1293952756-15010-149-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:22:53.0853 (UTC) FILETIME=[DEDEACD0:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:22:52.0665 (UTC) FILETIME=[DE296690:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Luck, Tony <tony.luck@intel.com>
+From: Mel Gorman <mel@csn.ul.ie>
 
-commit 8ca3eb08097f6839b2206e2242db4179aee3cfb3 upstream.
+commit 72853e2991a2702ae93aaf889ac7db743a415dd3 upstream.
 
-pa-risc and ia64 have stacks that grow upwards. Check that
-they do not run into other mappings. By making VM_GROWSUP
-0x0 on architectures that do not ever use it, we can avoid
-some unpleasant #ifdefs in check_stack_guard_page().
+When allocating a page, the system uses NR_FREE_PAGES counters to
+determine if watermarks would remain intact after the allocation was made.
+This check is made without interrupts disabled or the zone lock held and
+so is race-prone by nature.  Unfortunately, when pages are being freed in
+batch, the counters are updated before the pages are added on the list.
+During this window, the counters are misleading as the pages do not exist
+yet.  When under significant pressure on systems with large numbers of
+CPUs, it's possible for processes to make progress even though they should
+have been stalled.  This is particularly problematic if a number of the
+processes are using GFP_ATOMIC as the min watermark can be accidentally
+breached and in extreme cases, the system can livelock.
 
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+This patch updates the counters after the pages have been added to the
+list.  This makes the allocator more cautious with respect to preserving
+the watermarks and mitigates livelock possibilities.
+
+[akpm@linux-foundation.org: avoid modifying incoming args]
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Christoph Lameter <cl@linux.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/mm.h |    8 +++++++-
- mm/memory.c        |   15 +++++++++++----
- mm/mmap.c          |    3 ---
- 3 files changed, 18 insertions(+), 8 deletions(-)
+ mm/page_alloc.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 462acaf..04fb7f6 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -78,7 +78,11 @@ extern unsigned int kobjsize(const void *objp);
- #define VM_MAYSHARE	0x00000080
- 
- #define VM_GROWSDOWN	0x00000100	/* general info on the segment */
-+#if defined(CONFIG_STACK_GROWSUP) || defined(CONFIG_IA64)
- #define VM_GROWSUP	0x00000200
-+#else
-+#define VM_GROWSUP	0x00000000
-+#endif
- #define VM_PFNMAP	0x00000400	/* Page-ranges managed without "struct page", just pure PFN */
- #define VM_DENYWRITE	0x00000800	/* ETXTBSY on write attempts.. */
- 
-@@ -1325,8 +1329,10 @@ unsigned long ra_submit(struct file_ra_state *ra,
- 
- /* Do stack extension */
- extern int expand_stack(struct vm_area_struct *vma, unsigned long address);
--#ifdef CONFIG_IA64
-+#if VM_GROWSUP
- extern int expand_upwards(struct vm_area_struct *vma, unsigned long address);
-+#else
-+  #define expand_upwards(vma, address) do { } while (0)
- #endif
- extern int expand_stack_downwards(struct vm_area_struct *vma,
- 				  unsigned long address);
-diff --git a/mm/memory.c b/mm/memory.c
-index 47fb0a0..3410236 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2751,11 +2751,9 @@ out_release:
- }
- 
- /*
-- * This is like a special single-page "expand_downwards()",
-- * except we must first make sure that 'address-PAGE_SIZE'
-+ * This is like a special single-page "expand_{down|up}wards()",
-+ * except we must first make sure that 'address{-|+}PAGE_SIZE'
-  * doesn't hit another vma.
-- *
-- * The "find_vma()" will do the right thing even if we wrap
-  */
- static inline int check_stack_guard_page(struct vm_area_struct *vma, unsigned long address)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 0de096a..9826a8d 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -551,13 +551,13 @@ static void free_pcppages_bulk(struct zone *zone, int count,
  {
-@@ -2774,6 +2772,15 @@ static inline int check_stack_guard_page(struct vm_area_struct *vma, unsigned lo
+ 	int migratetype = 0;
+ 	int batch_free = 0;
++	int to_free = count;
  
- 		expand_stack(vma, address - PAGE_SIZE);
+ 	spin_lock(&zone->lock);
+ 	zone->all_unreclaimable = 0;
+ 	zone->pages_scanned = 0;
+ 
+-	__mod_zone_page_state(zone, NR_FREE_PAGES, count);
+-	while (count) {
++	while (to_free) {
+ 		struct page *page;
+ 		struct list_head *list;
+ 
+@@ -582,8 +582,9 @@ static void free_pcppages_bulk(struct zone *zone, int count,
+ 			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
+ 			__free_one_page(page, zone, 0, page_private(page));
+ 			trace_mm_page_pcpu_drain(page, 0, page_private(page));
+-		} while (--count && --batch_free && !list_empty(list));
++		} while (--to_free && --batch_free && !list_empty(list));
  	}
-+	if ((vma->vm_flags & VM_GROWSUP) && address + PAGE_SIZE == vma->vm_end) {
-+		struct vm_area_struct *next = vma->vm_next;
-+
-+		/* As VM_GROWSDOWN but s/below/above/ */
-+		if (next && next->vm_start == address + PAGE_SIZE)
-+			return next->vm_flags & VM_GROWSUP ? 0 : -ENOMEM;
-+
-+		expand_upwards(vma, address + PAGE_SIZE);
-+	}
- 	return 0;
++	__mod_zone_page_state(zone, NR_FREE_PAGES, count);
+ 	spin_unlock(&zone->lock);
  }
  
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 3867cfc..10cb197 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1704,9 +1704,6 @@ static int acct_stack_growth(struct vm_area_struct *vma, unsigned long size, uns
-  * PA-RISC uses this for its stack; IA64 for its Register Backing Store.
-  * vma is the last one with address > vma->vm_end.  Have to extend vma.
-  */
--#ifndef CONFIG_IA64
--static
--#endif
- int expand_upwards(struct vm_area_struct *vma, unsigned long address)
- {
- 	int error;
+@@ -594,8 +595,8 @@ static void free_one_page(struct zone *zone, struct page *page, int order,
+ 	zone->all_unreclaimable = 0;
+ 	zone->pages_scanned = 0;
+ 
+-	__mod_zone_page_state(zone, NR_FREE_PAGES, 1 << order);
+ 	__free_one_page(page, zone, order, migratetype);
++	__mod_zone_page_state(zone, NR_FREE_PAGES, 1 << order);
+ 	spin_unlock(&zone->lock);
+ }
+ 
 -- 
 1.7.3.3
 
