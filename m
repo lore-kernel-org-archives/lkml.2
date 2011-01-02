@@ -1,77 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754352Ab1ABUpg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 15:45:36 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:49309 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752886Ab1ABUpf (ORCPT
+	id S1754148Ab1ABU51 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 15:57:27 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:10937 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192Ab1ABU50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 15:45:35 -0500
-Date: Sun, 2 Jan 2011 21:45:32 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: rpurdie@rpsys.net, lenz@cs.wisc.edu,
-        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
-        Cyril Hrubis <metan@ucw.cz>, thommycheck@gmail.com,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
-        Marek Vasut <marek.vasut@gmail.com>, pavel@ucw.cz,
-        yegorslists@googlemail.com, gregkh@suse.de
-Subject: zaurus bluetooth regression
-Message-ID: <20110102204532.GA12860@elf.ucw.cz>
+	Sun, 2 Jan 2011 15:57:26 -0500
+Date: Sun, 2 Jan 2011 21:57:24 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-media@vger.kernel.org
+cc: Huang Shijie <shijie8@gmail.com>, Kang Yong <kangyong@telegent.com>,
+        Zhang Xiaobing <xbzhang@telegent.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] media, tlg2300: Fix memory leak in
+ alloc_bulk_urbs_generic()
+Message-ID: <alpine.LNX.2.00.1101022150120.11481@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi,
 
-It seems this commit
+While reading 
+drivers/media/video/tlg2300/pd-video.c::alloc_bulk_urbs_generic() I 
+noticed that
 
-commit 7a56aa45982bb87bfca98a2832b5ae782c03364a
-Author: Yegor Yefremov <yegor_sub1@visionsystems.de>
-Date:   Wed Jun 16 16:29:55 2010 +0200
+ - We don't free the memory allocated to 'urb' if the call to 
+   usb_alloc_coherent() fails.
+ - If the 'num' argument to the function is ever <= 0 we'll return an 
+   uninitialized variable 'i' to the caller.
 
-    serial: add UART_CAP_EFR and UART_CAP_SLEEP flags to 16C950 UARTs
-definition
+The following patch addresses both of the above by a) calling 
+usb_free_urb() when usb_alloc_coherent() fails and by explicitly 
+initializing 'i' to zero.
+I also moved the variables 'mem' and 'urb' inside the for loop. This does 
+not actually make any difference, it just seemed more correct to me to let 
+variables exist only in the innermost scope they are used.
 
-    Adding UART_CAP_EFR and UART_CAP_SLEEP flags will enable sleep
-mode
-    and automatic CTS flow control for 16C950 UARTs. It will also
-avoid
-    capabilities detection warning like this:
 
-    "ttyS0: detected caps 00000700 should be 00000100"
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ pd-video.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
-    Signed-off-by: Yegor Yefremov <yegorslists@googlemail.com>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+  compile tested only.
 
-...is responsible for my bluetooth problems on zaurus -- at least
-bisect pointed to it,  as I use 16C950-based bluetooth card, it seems
-very logical. I'll try 2.6.37-rc8 with that patch reverted...
+diff --git a/drivers/media/video/tlg2300/pd-video.c b/drivers/media/video/tlg2300/pd-video.c
+index a1ffe18..df33a1d 100644
+--- a/drivers/media/video/tlg2300/pd-video.c
++++ b/drivers/media/video/tlg2300/pd-video.c
+@@ -512,19 +512,20 @@ int alloc_bulk_urbs_generic(struct urb **urb_array, int num,
+ 			int buf_size, gfp_t gfp_flags,
+ 			usb_complete_t complete_fn, void *context)
+ {
+-	struct urb *urb;
+-	void *mem;
+-	int i;
++	int i = 0;
+ 
+-	for (i = 0; i < num; i++) {
+-		urb = usb_alloc_urb(0, gfp_flags);
++	for (; i < num; i++) {
++		void *mem;
++		struct urb *urb = usb_alloc_urb(0, gfp_flags);
+ 		if (urb == NULL)
+ 			return i;
+ 
+ 		mem = usb_alloc_coherent(udev, buf_size, gfp_flags,
+ 					 &urb->transfer_dma);
+-		if (mem == NULL)
++		if (mem == NULL) {
++			usb_free_urb(urb);
+ 			return i;
++		}
+ 
+ 		usb_fill_bulk_urb(urb, udev, usb_rcvbulkpipe(udev, ep_addr),
+ 				mem, buf_size, complete_fn, context);
 
-See https://bugzilla.kernel.org/show_bug.cgi?id=17061  .
 
-								Pavel
-
-diff --git a/drivers/serial/8250.c b/drivers/serial/8250.c
-index 09ef570..bc8ed4b 100644
---- a/drivers/serial/8250.c
-+++ b/drivers/serial/8250.c
-@@ -241,7 +241,7 @@ static const struct serial8250_config uart_config[] = {
- 		.fifo_size	= 128,
- 		.tx_loadsz	= 128,
- 		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
--		.flags		= UART_CAP_FIFO,
-+		.flags		= UART_CAP_FIFO | UART_CAP_EFR | UART_CAP_SLEEP,
- 	},
- 	[PORT_16654] = {
- 		.name		= "ST16654",
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
