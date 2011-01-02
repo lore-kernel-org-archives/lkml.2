@@ -1,108 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab1ABH5h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:57:37 -0500
-Received: from mail.windriver.com ([147.11.1.11]:35299 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753324Ab1ABHXH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:23:07 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 089/260] sched: Optimize task_rq_lock()
-Date: Sun,  2 Jan 2011 02:16:25 -0500
-Message-Id: <1293952756-15010-90-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.3.3
-In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
+	id S1755339Ab1ABH5v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:57:51 -0500
+Received: from thunk.org ([69.25.196.29]:37700 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753939Ab1ABH5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jan 2011 02:57:49 -0500
+Date: Sun, 2 Jan 2011 02:57:35 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: stable@kernel.org, linux-kernel@vger.kernel.org, stable-review@kernel.org
+Subject: Re: [34-longterm 000/260] v2.6.34.8 longterm review
+Message-ID: <20110102075735.GA2901@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Paul Gortmaker <paul.gortmaker@windriver.com>, stable@kernel.org,
+	linux-kernel@vger.kernel.org, stable-review@kernel.org
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:21:47.0680 (UTC) FILETIME=[B76D7A00:01CBAA4D]
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+On Sun, Jan 02, 2011 at 02:14:56AM -0500, Paul Gortmaker wrote:
+> This is the start of the longterm review cycle for the v2.6.34.8 release.
+> There are 260 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let us know.  If anyone is a maintainer of the proper subsystem, and
+> wants to add a Signed-off-by: line to the patch, please respond with it.
 
-commit 65cc8e4859ff29a9ddc989c88557d6059834c2a2 upstream.
+Are these patches going to show up at the 2.6.34 longterm patch queue?
 
-Now that we hold the rq->lock over set_task_cpu() again, we can do
-away with most of the TASK_WAKING checks and reduce them again to
-set_cpus_allowed_ptr().
+git://git.kernel.org/pub/scm/linux/kernel/git/longterm/longterm-queue-2.6.34.git
 
-Removes some conditionals from scheduling hot-paths.
+According to gitweb this tree hasn't been updated in 4 weeks.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Oleg Nesterov <oleg@redhat.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- kernel/sched.c |   23 +++++++++++++++--------
- 1 files changed, 15 insertions(+), 8 deletions(-)
+Thanks,
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 31b0bae..e542c1e 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -914,8 +914,8 @@ static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
- #endif /* __ARCH_WANT_UNLOCKED_CTXSW */
- 
- /*
-- * Check whether the task is waking, we use this to synchronize against
-- * ttwu() so that task_cpu() reports a stable number.
-+ * Check whether the task is waking, we use this to synchronize ->cpus_allowed
-+ * against ttwu().
-  */
- static inline int task_is_waking(struct task_struct *p)
- {
-@@ -932,11 +932,9 @@ static inline struct rq *__task_rq_lock(struct task_struct *p)
- 	struct rq *rq;
- 
- 	for (;;) {
--		while (task_is_waking(p))
--			cpu_relax();
- 		rq = task_rq(p);
- 		raw_spin_lock(&rq->lock);
--		if (likely(rq == task_rq(p) && !task_is_waking(p)))
-+		if (likely(rq == task_rq(p)))
- 			return rq;
- 		raw_spin_unlock(&rq->lock);
- 	}
-@@ -953,12 +951,10 @@ static struct rq *task_rq_lock(struct task_struct *p, unsigned long *flags)
- 	struct rq *rq;
- 
- 	for (;;) {
--		while (task_is_waking(p))
--			cpu_relax();
- 		local_irq_save(*flags);
- 		rq = task_rq(p);
- 		raw_spin_lock(&rq->lock);
--		if (likely(rq == task_rq(p) && !task_is_waking(p)))
-+		if (likely(rq == task_rq(p)))
- 			return rq;
- 		raw_spin_unlock_irqrestore(&rq->lock, *flags);
- 	}
-@@ -5341,7 +5337,18 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
- 	struct rq *rq;
- 	int ret = 0;
- 
-+	/*
-+	 * Serialize against TASK_WAKING so that ttwu() and wunt() can
-+	 * drop the rq->lock and still rely on ->cpus_allowed.
-+	 */
-+again:
-+	while (task_is_waking(p))
-+		cpu_relax();
- 	rq = task_rq_lock(p, &flags);
-+	if (task_is_waking(p)) {
-+		task_rq_unlock(rq, &flags);
-+		goto again;
-+	}
- 
- 	if (!cpumask_intersects(new_mask, cpu_active_mask)) {
- 		ret = -EINVAL;
--- 
-1.7.3.3
-
+	     	    	      	     	  - Ted
