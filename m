@@ -1,72 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687Ab1ABHit (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:38:49 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36742 "EHLO
+	id S1754692Ab1ABHjA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:39:00 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36737 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754623Ab1ABHY5 (ORCPT
+	with ESMTP id S1754618Ab1ABHY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 2 Jan 2011 02:24:57 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Jianzhao Wang <jianzhao.wang@6wind.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+Cc: stable-review@kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Jarek Poplawski <jarkao2@gmail.com>, Patrick McHardy <kaber@trash.net>,
         "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 202/260] net: blackhole route should always be recalculated
-Date: Sun,  2 Jan 2011 02:18:18 -0500
-Message-Id: <1293952756-15010-203-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 197/260] ip: fix truesize mismatch in ip fragmentation
+Date: Sun,  2 Jan 2011 02:18:13 -0500
+Message-Id: <1293952756-15010-198-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:23:51.0713 (UTC) FILETIME=[015B6910:01CBAA4E]
+X-OriginalArrivalTime: 02 Jan 2011 07:23:46.0510 (UTC) FILETIME=[FE417EE0:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jianzhao Wang <jianzhao.wang@6wind.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-commit ae2688d59b5f861dc70a091d003773975d2ae7fb upstream.
+commit 3d13008e7345fa7a79d8f6438150dc15d6ba6e9d upstream.
 
-Blackhole routes are used when xfrm_lookup() returns -EREMOTE (error
-triggered by IKE for example), hence this kind of route is always
-temporary and so we should check if a better route exists for next
-packets.
-Bug has been introduced by commit d11a4dc18bf41719c9f0d7ed494d295dd2973b92.
+Special care should be taken when slow path is hit in ip_fragment() :
 
-Signed-off-by: Jianzhao Wang <jianzhao.wang@6wind.com>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+When walking through frags, we transfert truesize ownership from skb to
+frags. Then if we hit a slow_path condition, we must undo this or risk
+uncharging frags->truesize twice, and in the end, having negative socket
+sk_wmem_alloc counter, or even freeing socket sooner than expected.
+
+Many thanks to Nick Bowler, who provided a very clean bug report and
+test program.
+
+Thanks to Jarek for reviewing my first patch and providing a V2
+
+While Nick bisection pointed to commit 2b85a34e911 (net: No more
+expensive sock_hold()/sock_put() on each tx), underlying bug is older
+(2.6.12-rc5)
+
+A side effect is to extend work done in commit b2722b1c3a893e
+(ip_fragment: also adjust skb->truesize for packets not owned by a
+socket) to ipv6 as well.
+
+Reported-and-bisected-by: Nick Bowler <nbowler@elliptictech.com>
+Tested-by: Nick Bowler <nbowler@elliptictech.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Jarek Poplawski <jarkao2@gmail.com>
+CC: Patrick McHardy <kaber@trash.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/ipv4/route.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+ net/ipv4/ip_output.c  |   19 +++++++++++++------
+ net/ipv6/ip6_output.c |   18 +++++++++++++-----
+ 2 files changed, 26 insertions(+), 11 deletions(-)
 
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index cb562fd..325b43c 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -2758,6 +2758,11 @@ slow_output:
+diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
+index d1bcc9f..e8a6860 100644
+--- a/net/ipv4/ip_output.c
++++ b/net/ipv4/ip_output.c
+@@ -479,9 +479,8 @@ int ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
+ 	 * we can switch to copy when see the first bad fragment.
+ 	 */
+ 	if (skb_has_frags(skb)) {
+-		struct sk_buff *frag;
++		struct sk_buff *frag, *frag2;
+ 		int first_len = skb_pagelen(skb);
+-		int truesizes = 0;
  
- EXPORT_SYMBOL_GPL(__ip_route_output_key);
+ 		if (first_len - hlen > mtu ||
+ 		    ((first_len - hlen) & 7) ||
+@@ -494,18 +493,18 @@ int ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
+ 			if (frag->len > mtu ||
+ 			    ((frag->len & 7) && frag->next) ||
+ 			    skb_headroom(frag) < hlen)
+-			    goto slow_path;
++				goto slow_path_clean;
  
-+static struct dst_entry *ipv4_blackhole_dst_check(struct dst_entry *dst, u32 cookie)
-+{
-+	return NULL;
-+}
+ 			/* Partially cloned skb? */
+ 			if (skb_shared(frag))
+-				goto slow_path;
++				goto slow_path_clean;
+ 
+ 			BUG_ON(frag->sk);
+ 			if (skb->sk) {
+ 				frag->sk = skb->sk;
+ 				frag->destructor = sock_wfree;
+ 			}
+-			truesizes += frag->truesize;
++			skb->truesize -= frag->truesize;
+ 		}
+ 
+ 		/* Everything is OK. Generate! */
+@@ -515,7 +514,6 @@ int ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
+ 		frag = skb_shinfo(skb)->frag_list;
+ 		skb_frag_list_init(skb);
+ 		skb->data_len = first_len - skb_headlen(skb);
+-		skb->truesize -= truesizes;
+ 		skb->len = first_len;
+ 		iph->tot_len = htons(first_len);
+ 		iph->frag_off = htons(IP_MF);
+@@ -567,6 +565,15 @@ int ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
+ 		}
+ 		IP_INC_STATS(dev_net(dev), IPSTATS_MIB_FRAGFAILS);
+ 		return err;
 +
- static void ipv4_rt_blackhole_update_pmtu(struct dst_entry *dst, u32 mtu)
- {
- }
-@@ -2766,7 +2771,7 @@ static struct dst_ops ipv4_dst_blackhole_ops = {
- 	.family			=	AF_INET,
- 	.protocol		=	cpu_to_be16(ETH_P_IP),
- 	.destroy		=	ipv4_dst_destroy,
--	.check			=	ipv4_dst_check,
-+	.check			=	ipv4_blackhole_dst_check,
- 	.update_pmtu		=	ipv4_rt_blackhole_update_pmtu,
- 	.entries		=	ATOMIC_INIT(0),
- };
++slow_path_clean:
++		skb_walk_frags(skb, frag2) {
++			if (frag2 == frag)
++				break;
++			frag2->sk = NULL;
++			frag2->destructor = NULL;
++			skb->truesize += frag2->truesize;
++		}
+ 	}
+ 
+ slow_path:
+diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
+index 75d5ef8..60daecc 100644
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -646,7 +646,7 @@ static int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
+ 
+ 	if (skb_has_frags(skb)) {
+ 		int first_len = skb_pagelen(skb);
+-		int truesizes = 0;
++		struct sk_buff *frag2;
+ 
+ 		if (first_len - hlen > mtu ||
+ 		    ((first_len - hlen) & 7) ||
+@@ -658,18 +658,18 @@ static int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
+ 			if (frag->len > mtu ||
+ 			    ((frag->len & 7) && frag->next) ||
+ 			    skb_headroom(frag) < hlen)
+-			    goto slow_path;
++				goto slow_path_clean;
+ 
+ 			/* Partially cloned skb? */
+ 			if (skb_shared(frag))
+-				goto slow_path;
++				goto slow_path_clean;
+ 
+ 			BUG_ON(frag->sk);
+ 			if (skb->sk) {
+ 				frag->sk = skb->sk;
+ 				frag->destructor = sock_wfree;
+-				truesizes += frag->truesize;
+ 			}
++			skb->truesize -= frag->truesize;
+ 		}
+ 
+ 		err = 0;
+@@ -700,7 +700,6 @@ static int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
+ 
+ 		first_len = skb_pagelen(skb);
+ 		skb->data_len = first_len - skb_headlen(skb);
+-		skb->truesize -= truesizes;
+ 		skb->len = first_len;
+ 		ipv6_hdr(skb)->payload_len = htons(first_len -
+ 						   sizeof(struct ipv6hdr));
+@@ -763,6 +762,15 @@ static int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
+ 			      IPSTATS_MIB_FRAGFAILS);
+ 		dst_release(&rt->u.dst);
+ 		return err;
++
++slow_path_clean:
++		skb_walk_frags(skb, frag2) {
++			if (frag2 == frag)
++				break;
++			frag2->sk = NULL;
++			frag2->destructor = NULL;
++			skb->truesize += frag2->truesize;
++		}
+ 	}
+ 
+ slow_path:
 -- 
 1.7.3.3
 
