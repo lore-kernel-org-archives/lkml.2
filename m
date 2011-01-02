@@ -1,105 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112Ab1ABH2Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:28:25 -0500
-Received: from mail.windriver.com ([147.11.1.11]:37208 "EHLO
+	id S1755209Ab1ABH2u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:28:50 -0500
+Received: from mail.windriver.com ([147.11.1.11]:37198 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755034Ab1ABHZ7 (ORCPT
+	with ESMTP id S1755005Ab1ABHZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:25:59 -0500
+	Sun, 2 Jan 2011 02:25:57 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Christof Schmitt <christof.schmitt@de.ibm.com>,
-        James Bottomley <James.Bottomley@suse.de>,
+Cc: stable-review@kernel.org, Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 258/260] Fix race when removing SCSI devices
-Date: Sun,  2 Jan 2011 02:19:14 -0500
-Message-Id: <1293952756-15010-259-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 248/260] USB: option: Add more ZTE modem USB id's
+Date: Sun,  2 Jan 2011 02:19:04 -0500
+Message-Id: <1293952756-15010-249-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:24:51.0480 (UTC) FILETIME=[24FB2180:01CBAA4E]
+X-OriginalArrivalTime: 02 Jan 2011 07:24:40.0886 (UTC) FILETIME=[1EAA9D60:01CBAA4E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christof Schmitt <christof.schmitt@de.ibm.com>
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-commit 546ae796bfac6399e30da4b5af2cf7a6d0f8a4ec upstream.
+commit ecfa153ef616b901e86d9a051b329fcda7a6ce7b upstream.
 
-Removing SCSI devices through
-echo 1 > /sys/bus/scsi/devices/ ... /delete
+There are lots of ZTE USB id's currently not covered by usb/serial. Adds them,
+to allow those devices to work properly on Linux.
 
-while the FC transport class removes the SCSI target can lead to an
-oops:
+While here, put the USB ID's for 0x2002/0x2003 at the sorted order.
 
-Unable to handle kernel pointer dereference at virtual kernel address 00000000b6815000
-Oops: 0011 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-Modules linked in: sunrpc qeth_l3 binfmt_misc dm_multipath scsi_dh dm_mod ipv6 qeth ccwgroup [last unloaded: scsi_wait_scan]
-CPU: 1 Not tainted 2.6.35.5-45.x.20100924-s390xdefault #1
-Process fc_wq_0 (pid: 861, task: 00000000b7331240, ksp: 00000000b735bac0)
-Krnl PSW : 0704200180000000 00000000003ff6e4 (__scsi_remove_device+0x24/0xd0)
-           R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:0 CC:2 PM:0 EA:3
-Krnl GPRS: 0000000000000001 0000000000000000 00000000b6815000 00000000bc24a8c0
-           00000000003ff7c8 000000000056dbb8 0000000000000002 0000000000835d80
-           ffffffff00000000 0000000000001000 00000000b6815000 00000000bc24a7f0
-           00000000b68151a0 00000000b6815000 00000000b735bc20 00000000b735bbf8
-Krnl Code: 00000000003ff6d6: a7840001            brc 8,3ff6d8
-           00000000003ff6da: a7fbffd8            aghi %r15,-40
-           00000000003ff6de: e3e0f0980024        stg %r14,152(%r15)
-          >00000000003ff6e4: e31021200004        lg %r1,288(%r2)
-           00000000003ff6ea: a71f0000            cghi    %r1,0
-           00000000003ff6ee: a7a40011            brc 10,3ff710
-           00000000003ff6f2: a7390003            lghi    %r3,3
-           00000000003ff6f6: c0e5ffffc8b1        brasl %r14,3f8858
-Call Trace:
-([<0000000000001000>] 0x1000)
- [<00000000003ff7d2>] scsi_remove_device+0x42/0x54
- [<00000000003ff8ba>] __scsi_remove_target+0xca/0xfc
- [<00000000003ff99a>] __remove_child+0x3a/0x48
- [<00000000003e3246>] device_for_each_child+0x72/0xbc
- [<00000000003ff93a>] scsi_remove_target+0x4e/0x74
- [<0000000000406586>] fc_rport_final_delete+0xb2/0x23c
- [<000000000015d080>] worker_thread+0x200/0x344
- [<000000000016330c>] kthread+0xa0/0xa8
- [<0000000000106c1a>] kernel_thread_starter+0x6/0xc
- [<0000000000106c14>] kernel_thread_starter+0x0/0xc
-INFO: lockdep is turned off.
-Last Breaking-Event-Address:
- [<00000000003ff7cc>] scsi_remove_device+0x3c/0x54
+This patch is based on zte.c file found on MF645.
 
-The function __scsi_remove_target iterates through the SCSI devices on
-the host, but it drops the host_lock before calling
-scsi_remove_device. When the SCSI device is deleted from another
-thread, the pointer to the SCSI device in scsi_remove_device can
-become invalid. Fix this by getting a reference to the SCSI device
-before dropping the host_lock to keep the SCSI device alive for the
-call to scsi_remove_device.
+PS.: The ZTE driver is commenting the USB ID for 0x0053. It also adds, commented,
+an USB ID for 0x0026.
 
-Signed-off-by: Christof Schmitt <christof.schmitt@de.ibm.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Not sure why, but I think that 0053 is used by their devices in storage mode only.
+So, I opted to keep the comment on this patch.
+
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/scsi/scsi_sysfs.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ drivers/usb/serial/option.c |   23 ++++++++++++++++++++---
+ 1 files changed, 20 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index 429c9b7..02be251 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -993,10 +993,11 @@ static void __scsi_remove_target(struct scsi_target *starget)
- 	list_for_each_entry(sdev, &shost->__devices, siblings) {
- 		if (sdev->channel != starget->channel ||
- 		    sdev->id != starget->id ||
--		    sdev->sdev_state == SDEV_DEL)
-+		    scsi_device_get(sdev))
- 			continue;
- 		spin_unlock_irqrestore(shost->host_lock, flags);
- 		scsi_remove_device(sdev);
-+		scsi_device_put(sdev);
- 		spin_lock_irqsave(shost->host_lock, flags);
- 		goto restart;
- 	}
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 0e8abb5..0e94896 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -616,6 +616,7 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0011, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0012, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0013, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0014, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF628, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0016, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0017, 0xff, 0xff, 0xff) },
+@@ -627,38 +628,52 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0023, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0024, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0025, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0026, 0xff, 0xff, 0xff) },
++	/* { USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0026, 0xff, 0xff, 0xff) }, */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0028, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0029, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0030, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF626, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0032, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0033, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0034, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0037, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0038, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0039, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0040, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0042, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0043, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0044, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0048, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0049, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0050, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0051, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0052, 0xff, 0xff, 0xff) },
++	/* { USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0053, 0xff, 0xff, 0xff) }, */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0054, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0055, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0056, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0057, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0058, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0059, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0061, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0062, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0063, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0064, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0065, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0066, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0067, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0069, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0070, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0076, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0077, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0078, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0079, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0082, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0083, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0086, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2002, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2003, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0087, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0104, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0105, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0106, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0108, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0113, 0xff, 0xff, 0xff) },
+@@ -874,6 +889,8 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0073, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0130, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0141, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2002, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2003, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_CDMA_TECH, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC8710, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC2726, 0xff, 0xff, 0xff) },
 -- 
 1.7.3.3
 
