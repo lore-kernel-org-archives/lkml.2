@@ -1,124 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab1ABHuZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:50:25 -0500
-Received: from mail.windriver.com ([147.11.1.11]:35836 "EHLO
+	id S1754134Ab1ABHus (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:50:48 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35830 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036Ab1ABHXq (ORCPT
+	with ESMTP id S1754025Ab1ABHXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:23:46 -0500
+	Sun, 2 Jan 2011 02:23:45 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Tony Luck <tony.luck@intel.com>,
+Cc: stable-review@kernel.org, Ryan Kuester <rkuester@metis.kspace.net>,
+        James Bottomley <James.Bottomley@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 139/260] fix siglock
-Date: Sun,  2 Jan 2011 02:17:15 -0500
-Message-Id: <1293952756-15010-140-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 137/260] mptsas: fix hangs caused by ATA pass-through
+Date: Sun,  2 Jan 2011 02:17:13 -0500
+Message-Id: <1293952756-15010-138-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:22:42.0165 (UTC) FILETIME=[D7E73A50:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:22:39.0900 (UTC) FILETIME=[D68D9DC0:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tony Luck <tony.luck@intel.com>
+From: Ryan Kuester <rkuester@kspace.net>
 
-commit f574c843191728d9407b766a027f779dcd27b272 upstream.
+commit 2a1b7e575b80ceb19ea50bfa86ce0053ea57181d upstream.
 
-When ia64 converted to using ticket locks, an inline implementation
-of trylock/unlock in fsys.S was missed.  This was not noticed because
-in most circumstances it simply resulted in using the slow path because
-the siglock was apparently not available (under old spinlock rules).
+I may have an explanation for the LSI 1068 HBA hangs provoked by ATA
+pass-through commands, in particular by smartctl.
 
-Problems occur when the ticket spinlock has value 0x0 (when first
-initialised, or when it wraps around). At this point the fsys.S
-code acquires the lock (changing the 0x0 to 0x1. If another process
-attempts to get the lock at this point, it will change the value from
-0x1 to 0x2 (using new ticket lock rules). Then the fsys.S code will
-free the lock using old spinlock rules by writing 0x0 to it. From
-here a variety of bad things can happen.
+First, my version of the symptoms.  On an LSI SAS1068E B3 HBA running
+01.29.00.00 firmware, with SATA disks, and with smartd running, I'm seeing
+occasional task, bus, and host resets, some of which lead to hard faults of
+the HBA requiring a reboot.  Abusively looping the smartctl command,
 
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+    # while true; do smartctl -a /dev/sdb > /dev/null; done
+
+dramatically increases the frequency of these failures to nearly one per
+minute.  A high IO load through the HBA while looping smartctl seems to
+improve the chance of a full scsi host reset or a non-recoverable hang.
+
+I reduced what smartctl was doing down to a simple test case which
+causes the hang with a single IO when pointed at the sd interface.  See
+the code at the bottom of this e-mail.  It uses an SG_IO ioctl to issue
+a single pass-through ATA identify device command.  If the buffer
+userspace gives for the read data has certain alignments, the task is
+issued to the HBA but the HBA fails to respond.  If run against the sg
+interface, neither the test code nor smartctl causes a hang.
+
+sd and sg handle the SG_IO ioctl slightly differently.  Unless you
+specifically set a flag to do direct IO, sg passes a buffer of its own,
+which is page-aligned, to the block layer and later copies the result
+into the userspace buffer regardless of its alignment.  sd, on the other
+hand, always does direct IO unless the userspace buffer fails an
+alignment test at block/blk-map.c line 57, in which case a page-aligned
+buffer is created and used for the transfer.
+
+The alignment test currently checks for word-alignment, the default
+setup by scsi_lib.c; therefore, userspace buffers of almost any
+alignment are given directly to the HBA as DMA targets.  The LSI 1068
+hardware doesn't seem to like at least a couple of the alignments which
+cross a page boundary (see the test code below).  Curiously, many
+page-boundary-crossing alignments do work just fine.
+
+So, either the hardware has an bug handling certain alignments or the
+hardware has a stricter alignment requirement than the driver is
+advertising.  If stricter alignment is required, then in no case should
+misaligned buffers from userspace be allowed through without being
+bounced or at least causing an error to be returned.
+
+It seems the mptsas driver could use blk_queue_dma_alignment() to advertise
+a stricter alignment requirement.  If it does, sd does the right thing and
+bounces misaligned buffers (see block/blk-map.c line 57).  The following
+patch to 2.6.34-rc5 makes my symptoms go away.  I'm sure this is the wrong
+place for this code, but it gets my idea across.
+
+Acked-by: "Desai, Kashyap" <Kashyap.Desai@lsi.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/ia64/kernel/fsys.S |   46 +++++++++++++++++++++++++++++++++++++++-------
- 1 files changed, 39 insertions(+), 7 deletions(-)
+ drivers/message/fusion/mptscsih.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/arch/ia64/kernel/fsys.S b/arch/ia64/kernel/fsys.S
-index 3567d54..471a1e7 100644
---- a/arch/ia64/kernel/fsys.S
-+++ b/arch/ia64/kernel/fsys.S
-@@ -424,14 +424,26 @@ EX(.fail_efault, ld8 r14=[r33])			// r14 <- *set
- 	andcm r14=r14,r17			// filter out SIGKILL & SIGSTOP
+diff --git a/drivers/message/fusion/mptscsih.c b/drivers/message/fusion/mptscsih.c
+index 6796597..c13726a 100644
+--- a/drivers/message/fusion/mptscsih.c
++++ b/drivers/message/fusion/mptscsih.c
+@@ -2450,6 +2450,8 @@ mptscsih_slave_configure(struct scsi_device *sdev)
+ 		ioc->name,sdev->tagged_supported, sdev->simple_tags,
+ 		sdev->ordered_tags));
  
- #ifdef CONFIG_SMP
--	mov r17=1
--	;;
--	cmpxchg4.acq r18=[r31],r17,ar.ccv	// try to acquire the lock
-+	// __ticket_spin_trylock(r31)
-+	ld4 r17=[r31]
- 	mov r8=EINVAL			// default to EINVAL
- 	;;
-+	extr r9=r17,17,15
-+	;;
-+	xor r18=r17,r9
-+	adds r19=1,r17
-+	;;
-+	extr.u r18=r18,0,15
-+	;;
-+	cmp.eq p0,p7=0,r18
-+(p7)	br.cond.spnt.many .lock_contention
-+	mov.m ar.ccv=r17
-+	;;
-+	cmpxchg4.acq r9=[r31],r19,ar.ccv
-+	;;
-+	cmp4.eq p0,p7=r9,r17
-+(p7)	br.cond.spnt.many .lock_contention
- 	ld8 r3=[r2]			// re-read current->blocked now that we hold the lock
--	cmp4.ne p6,p0=r18,r0
--(p6)	br.cond.spnt.many .lock_contention
- 	;;
- #else
- 	ld8 r3=[r2]			// re-read current->blocked now that we hold the lock
-@@ -490,7 +502,17 @@ EX(.fail_efault, ld8 r14=[r33])			// r14 <- *set
- (p6)	br.cond.spnt.few 1b			// yes -> retry
++	blk_queue_dma_alignment (sdev->request_queue, 512 - 1);
++
+ 	return 0;
+ }
  
- #ifdef CONFIG_SMP
--	st4.rel [r31]=r0			// release the lock
-+	// __ticket_spin_unlock(r31)
-+	adds r31=2,r31
-+	;;
-+	ld2.bias r2=[r31]
-+	mov r3=65534
-+	;;
-+	adds r2=2,r2
-+	;;
-+	and r3=r3,r2
-+	;;
-+	st2.rel [r31]=r3
- #endif
- 	SSM_PSR_I(p0, p9, r31)
- 	;;
-@@ -512,7 +534,17 @@ EX(.fail_efault, (p15) st8 [r34]=r3)
- 
- .sig_pending:
- #ifdef CONFIG_SMP
--	st4.rel [r31]=r0			// release the lock
-+	// __ticket_spin_unlock(r31)
-+	adds r31=2,r31
-+	;;
-+	ld2.bias r2=[r31]
-+	mov r3=65534
-+	;;
-+	adds r2=2,r2
-+	;;
-+	and r3=r3,r2
-+	;;
-+	st2.rel [r31]=r3
- #endif
- 	SSM_PSR_I(p0, p9, r17)
- 	;;
 -- 
 1.7.3.3
 
