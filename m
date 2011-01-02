@@ -1,101 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab1ABHld (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:41:33 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36605 "EHLO
+	id S1754689Ab1ABHle (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:41:34 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36604 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754505Ab1ABHYq (ORCPT
+	with ESMTP id S1754502Ab1ABHYq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 2 Jan 2011 02:24:46 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, "David S. Miller" <davem@davemloft.net>,
+Cc: stable-review@kernel.org, Yegor Yefremov <yegor_sub1@visionsystems.de>,
+        Yegor Yefremov <yegorslists@googlemail.com>,
+        Jean Delvare <khali@linux-fr.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 193/260] tcp: Fix >4GB writes on 64-bit.
-Date: Sun,  2 Jan 2011 02:18:09 -0500
-Message-Id: <1293952756-15010-194-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 185/260] i2c-pca: Fix waitforcompletion() return value
+Date: Sun,  2 Jan 2011 02:18:01 -0500
+Message-Id: <1293952756-15010-186-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 02 Jan 2011 07:23:41.0854 (UTC) FILETIME=[FB7B0BE0:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:23:33.0666 (UTC) FILETIME=[F699A820:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David S. Miller <davem@davemloft.net>
+From: Yegor Yefremov <yegor_sub1@visionsystems.de>
 
-commit 01db403cf99f739f86903314a489fb420e0e254f upstream.
+commit 6abb930af064fb1cf4177d32e2c7bfb89eee0fe5 upstream.
 
-Fixes kernel bugzilla #16603
+ret is still -1, if during the polling read_byte() returns at once
+with I2C_PCA_CON_SI set. So ret > 0 would lead *_waitforcompletion()
+to return 0, in spite of the proper behavior.
 
-tcp_sendmsg() truncates iov_len to an 'int' which a 4GB write to write
-zero bytes, for example.
+The routine was rewritten, so that ret has always a proper value,
+before returning.
 
-There is also the problem higher up of how verify_iovec() works.  It
-wants to prevent the total length from looking like an error return
-value.
-
-However it does this using 'int', but syscalls return 'long' (and
-thus signed 64-bit on 64-bit machines).  So it could trigger
-false-positives on 64-bit as written.  So fix it to use 'long'.
-
-Reported-by: Olaf Bonorden <bono@onlinehome.de>
-Reported-by: Daniel Büse <dbuese@gmx.de>
-Reported-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Yegor Yefremov <yegorslists@googlemail.com>
+Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/socket.h |    2 +-
- net/core/iovec.c       |    5 +++--
- net/ipv4/tcp.c         |    2 +-
- 3 files changed, 5 insertions(+), 4 deletions(-)
+ drivers/i2c/busses/i2c-pca-isa.c      |   12 ++++++++----
+ drivers/i2c/busses/i2c-pca-platform.c |   11 +++++++----
+ 2 files changed, 15 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/socket.h b/include/linux/socket.h
-index 354cc56..1b5034a 100644
---- a/include/linux/socket.h
-+++ b/include/linux/socket.h
-@@ -314,7 +314,7 @@ extern int csum_partial_copy_fromiovecend(unsigned char *kdata,
- 					  int offset, 
- 					  unsigned int len, __wsum *csump);
+diff --git a/drivers/i2c/busses/i2c-pca-isa.c b/drivers/i2c/busses/i2c-pca-isa.c
+index f7346a9..62a5ce5 100644
+--- a/drivers/i2c/busses/i2c-pca-isa.c
++++ b/drivers/i2c/busses/i2c-pca-isa.c
+@@ -71,8 +71,8 @@ static int pca_isa_readbyte(void *pd, int reg)
  
--extern int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr *address, int mode);
-+extern long verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr *address, int mode);
- extern int memcpy_toiovec(struct iovec *v, unsigned char *kdata, int len);
- extern int memcpy_toiovecend(const struct iovec *v, unsigned char *kdata,
- 			     int offset, int len);
-diff --git a/net/core/iovec.c b/net/core/iovec.c
-index 1e7f4e9..b5b28f0 100644
---- a/net/core/iovec.c
-+++ b/net/core/iovec.c
-@@ -35,9 +35,10 @@
-  *	in any case.
-  */
- 
--int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr *address, int mode)
-+long verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr *address, int mode)
+ static int pca_isa_waitforcompletion(void *pd)
  {
--	int size, err, ct;
-+	int size, ct;
-+	long err;
+-	long ret = ~0;
+ 	unsigned long timeout;
++	long ret;
  
- 	if (m->msg_namelen) {
- 		if (mode == VERIFY_READ) {
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 4a638f0..1b40924 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -938,7 +938,7 @@ int tcp_sendmsg(struct kiocb *iocb, struct socket *sock, struct msghdr *msg,
- 	sg = sk->sk_route_caps & NETIF_F_SG;
+ 	if (irq > -1) {
+ 		ret = wait_event_timeout(pca_wait,
+@@ -81,11 +81,15 @@ static int pca_isa_waitforcompletion(void *pd)
+ 	} else {
+ 		/* Do polling */
+ 		timeout = jiffies + pca_isa_ops.timeout;
+-		while (((pca_isa_readbyte(pd, I2C_PCA_CON)
+-				& I2C_PCA_CON_SI) == 0)
+-				&& (ret = time_before(jiffies, timeout)))
++		do {
++			ret = time_before(jiffies, timeout);
++			if (pca_isa_readbyte(pd, I2C_PCA_CON)
++					& I2C_PCA_CON_SI)
++				break;
+ 			udelay(100);
++		} while (ret);
+ 	}
++
+ 	return ret > 0;
+ }
  
- 	while (--iovlen >= 0) {
--		int seglen = iov->iov_len;
-+		size_t seglen = iov->iov_len;
- 		unsigned char __user *from = iov->iov_base;
+diff --git a/drivers/i2c/busses/i2c-pca-platform.c b/drivers/i2c/busses/i2c-pca-platform.c
+index 5b2213d..1d8c208 100644
+--- a/drivers/i2c/busses/i2c-pca-platform.c
++++ b/drivers/i2c/busses/i2c-pca-platform.c
+@@ -80,8 +80,8 @@ static void i2c_pca_pf_writebyte32(void *pd, int reg, int val)
+ static int i2c_pca_pf_waitforcompletion(void *pd)
+ {
+ 	struct i2c_pca_pf_data *i2c = pd;
+-	long ret = ~0;
+ 	unsigned long timeout;
++	long ret;
  
- 		iov++;
+ 	if (i2c->irq) {
+ 		ret = wait_event_timeout(i2c->wait,
+@@ -90,10 +90,13 @@ static int i2c_pca_pf_waitforcompletion(void *pd)
+ 	} else {
+ 		/* Do polling */
+ 		timeout = jiffies + i2c->adap.timeout;
+-		while (((i2c->algo_data.read_byte(i2c, I2C_PCA_CON)
+-				& I2C_PCA_CON_SI) == 0)
+-				&& (ret = time_before(jiffies, timeout)))
++		do {
++			ret = time_before(jiffies, timeout);
++			if (i2c->algo_data.read_byte(i2c, I2C_PCA_CON)
++					& I2C_PCA_CON_SI)
++				break;
+ 			udelay(100);
++		} while (ret);
+ 	}
+ 
+ 	return ret > 0;
 -- 
 1.7.3.3
 
