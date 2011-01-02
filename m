@@ -1,62 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755152Ab1ABH10 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:27:26 -0500
-Received: from mail.windriver.com ([147.11.1.11]:37228 "EHLO
+	id S1755193Ab1ABH1n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:27:43 -0500
+Received: from mail.windriver.com ([147.11.1.11]:37221 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752032Ab1ABH0G (ORCPT
+	with ESMTP id S1754958Ab1ABH0D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:26:06 -0500
+	Sun, 2 Jan 2011 02:26:03 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        Len Brown <len.brown@intel.com>,
+Cc: stable-review@kernel.org, Petr Tesarik <ptesarik@suse.cz>,
+        Tony Luck <tony.luck@intel.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 213/260] ACPI: Disable Windows Vista compatibility for Toshiba P305D
-Date: Sun,  2 Jan 2011 02:18:29 -0500
-Message-Id: <1293952756-15010-214-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 140/260] Optimize ticket spinlocks in fsys_rt_sigprocmask
+Date: Sun,  2 Jan 2011 02:17:16 -0500
+Message-Id: <1293952756-15010-141-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:24:02.0839 (UTC) FILETIME=[07FD1A70:01CBAA4E]
+X-OriginalArrivalTime: 02 Jan 2011 07:22:43.0353 (UTC) FILETIME=[D89C8090:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhang Rui <rui.zhang@intel.com>
+From: Petr Tesarik <ptesarik@suse.cz>
 
-commit 337279ce3aa85d81d34c0f837d1c204df105103b upstream.
+commit 2d2b6901649a62977452be85df53eda2412def24 upstream.
 
-Disable the Windows Vista (SP1) compatibility for Toshiba P305D.
+Tony's fix (f574c843191728d9407b766a027f779dcd27b272) has a small bug,
+it incorrectly uses "r3" as a scratch register in the first of the two
+unlock paths ... it is also inefficient.  Optimize the fast path again.
 
-http://bugzilla.kernel.org/show_bug.cgi?id=14736
-
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/acpi/blacklist.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+ arch/ia64/kernel/fsys.S |   42 +++++++++++-------------------------------
+ 1 files changed, 11 insertions(+), 31 deletions(-)
 
-diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
-index 6931946..ab645bb 100644
---- a/drivers/acpi/blacklist.c
-+++ b/drivers/acpi/blacklist.c
-@@ -233,6 +233,14 @@ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
- 		     DMI_MATCH(DMI_PRODUCT_NAME, "K50IJ"),
- 		},
- 	},
-+	{
-+	.callback = dmi_disable_osi_vista,
-+	.ident = "Toshiba P305D",
-+	.matches = {
-+		     DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
-+		     DMI_MATCH(DMI_PRODUCT_NAME, "Satellite P305D"),
-+		},
-+	},
+diff --git a/arch/ia64/kernel/fsys.S b/arch/ia64/kernel/fsys.S
+index 471a1e7..331d42b 100644
+--- a/arch/ia64/kernel/fsys.S
++++ b/arch/ia64/kernel/fsys.S
+@@ -420,34 +420,31 @@ EX(.fail_efault, ld8 r14=[r33])			// r14 <- *set
+ 	;;
  
- 	/*
- 	 * BIOS invocation of _OSI(Linux) is almost always a BIOS bug.
+ 	RSM_PSR_I(p0, r18, r19)			// mask interrupt delivery
+-	mov ar.ccv=0
+ 	andcm r14=r14,r17			// filter out SIGKILL & SIGSTOP
++	mov r8=EINVAL			// default to EINVAL
+ 
+ #ifdef CONFIG_SMP
+ 	// __ticket_spin_trylock(r31)
+ 	ld4 r17=[r31]
+-	mov r8=EINVAL			// default to EINVAL
+-	;;
+-	extr r9=r17,17,15
+ 	;;
+-	xor r18=r17,r9
++	mov.m ar.ccv=r17
++	extr.u r9=r17,17,15
+ 	adds r19=1,r17
++	extr.u r18=r17,0,15
+ 	;;
+-	extr.u r18=r18,0,15
++	cmp.eq p6,p7=r9,r18
+ 	;;
+-	cmp.eq p0,p7=0,r18
++(p6)	cmpxchg4.acq r9=[r31],r19,ar.ccv
++(p6)	dep.z r20=r19,1,15		// next serving ticket for unlock
+ (p7)	br.cond.spnt.many .lock_contention
+-	mov.m ar.ccv=r17
+-	;;
+-	cmpxchg4.acq r9=[r31],r19,ar.ccv
+ 	;;
+ 	cmp4.eq p0,p7=r9,r17
++	adds r31=2,r31
+ (p7)	br.cond.spnt.many .lock_contention
+ 	ld8 r3=[r2]			// re-read current->blocked now that we hold the lock
+ 	;;
+ #else
+ 	ld8 r3=[r2]			// re-read current->blocked now that we hold the lock
+-	mov r8=EINVAL			// default to EINVAL
+ #endif
+ 	add r18=IA64_TASK_PENDING_OFFSET+IA64_SIGPENDING_SIGNAL_OFFSET,r16
+ 	add r19=IA64_TASK_SIGNAL_OFFSET,r16
+@@ -503,16 +500,8 @@ EX(.fail_efault, ld8 r14=[r33])			// r14 <- *set
+ 
+ #ifdef CONFIG_SMP
+ 	// __ticket_spin_unlock(r31)
+-	adds r31=2,r31
+-	;;
+-	ld2.bias r2=[r31]
+-	mov r3=65534
+-	;;
+-	adds r2=2,r2
+-	;;
+-	and r3=r3,r2
+-	;;
+-	st2.rel [r31]=r3
++	st2.rel [r31]=r20
++	mov r20=0					// i must not leak kernel bits...
+ #endif
+ 	SSM_PSR_I(p0, p9, r31)
+ 	;;
+@@ -535,16 +524,7 @@ EX(.fail_efault, (p15) st8 [r34]=r3)
+ .sig_pending:
+ #ifdef CONFIG_SMP
+ 	// __ticket_spin_unlock(r31)
+-	adds r31=2,r31
+-	;;
+-	ld2.bias r2=[r31]
+-	mov r3=65534
+-	;;
+-	adds r2=2,r2
+-	;;
+-	and r3=r3,r2
+-	;;
+-	st2.rel [r31]=r3
++	st2.rel [r31]=r20			// release the lock
+ #endif
+ 	SSM_PSR_I(p0, p9, r17)
+ 	;;
 -- 
 1.7.3.3
 
