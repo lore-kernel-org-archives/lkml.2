@@ -1,132 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457Ab1ABHYd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:24:33 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36299 "EHLO
+	id S1753785Ab1ABHXa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:23:30 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35544 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754366Ab1ABHYX (ORCPT
+	with ESMTP id S1753740Ab1ABHXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:24:23 -0500
+	Sun, 2 Jan 2011 02:23:25 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Joerg Roedel <joerg.roedel@amd.com>,
+Cc: stable-review@kernel.org, Chris Wilson <chris@chris-wilson.co.uk>,
+        Dave Airlie <airlied@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 171/260] x86/amd-iommu: Set iommu configuration flags in enable-loop
-Date: Sun,  2 Jan 2011 02:17:47 -0500
-Message-Id: <1293952756-15010-172-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 107/260] drm: Only decouple the old_fb from the crtc is we call mode_set*
+Date: Sun,  2 Jan 2011 02:16:43 -0500
+Message-Id: <1293952756-15010-108-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:23:18.0135 (UTC) FILETIME=[ED57D070:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:22:07.0055 (UTC) FILETIME=[C2F9DDF0:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit e9bf51971157e367aabfc111a8219db010f69cd4 upstream.
+commit 356ad3cd616185631235ffb48b3efbf39f9923b3 upstream.
 
-This patch moves the setting of the configuration and
-feature flags out out the acpi table parsing path and moves
-it into the iommu-enable path. This is needed to reliably
-fix resume-from-s3.
+Otherwise when disabling the output we switch to the new fb (which is
+likely NULL) and skip the call to mode_set -- leaking driver private
+state on the old_fb.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=29857
+Reported-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/include/asm/amd_iommu_types.h |    3 ++
- arch/x86/kernel/amd_iommu_init.c       |   49 +++++++++++++++++--------------
- 2 files changed, 30 insertions(+), 22 deletions(-)
+ drivers/gpu/drm/drm_crtc_helper.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/amd_iommu_types.h b/arch/x86/include/asm/amd_iommu_types.h
-index 86a0ff0..a325556 100644
---- a/arch/x86/include/asm/amd_iommu_types.h
-+++ b/arch/x86/include/asm/amd_iommu_types.h
-@@ -334,6 +334,9 @@ struct amd_iommu {
- 	/* capabilities of that IOMMU read from ACPI */
- 	u32 cap;
+diff --git a/drivers/gpu/drm/drm_crtc_helper.c b/drivers/gpu/drm/drm_crtc_helper.c
+index 51103aa..220177a 100644
+--- a/drivers/gpu/drm/drm_crtc_helper.c
++++ b/drivers/gpu/drm/drm_crtc_helper.c
+@@ -921,13 +921,13 @@ int drm_crtc_helper_set_config(struct drm_mode_set *set)
+ 		mode_changed = true;
  
-+	/* flags read from acpi table */
-+	u8 acpi_flags;
-+
- 	/*
- 	 * Capability pointer. There could be more than one IOMMU per PCI
- 	 * device function if there are more than one AMD IOMMU capability
-diff --git a/arch/x86/kernel/amd_iommu_init.c b/arch/x86/kernel/amd_iommu_init.c
-index 6f8ce75..b53f5c2 100644
---- a/arch/x86/kernel/amd_iommu_init.c
-+++ b/arch/x86/kernel/amd_iommu_init.c
-@@ -648,29 +648,9 @@ static void __init init_iommu_from_acpi(struct amd_iommu *iommu,
- 	struct ivhd_entry *e;
- 
- 	/*
--	 * First set the recommended feature enable bits from ACPI
--	 * into the IOMMU control registers
-+	 * First save the recommended feature enable bits from ACPI
- 	 */
--	h->flags & IVHD_FLAG_HT_TUN_EN_MASK ?
--		iommu_feature_enable(iommu, CONTROL_HT_TUN_EN) :
--		iommu_feature_disable(iommu, CONTROL_HT_TUN_EN);
--
--	h->flags & IVHD_FLAG_PASSPW_EN_MASK ?
--		iommu_feature_enable(iommu, CONTROL_PASSPW_EN) :
--		iommu_feature_disable(iommu, CONTROL_PASSPW_EN);
--
--	h->flags & IVHD_FLAG_RESPASSPW_EN_MASK ?
--		iommu_feature_enable(iommu, CONTROL_RESPASSPW_EN) :
--		iommu_feature_disable(iommu, CONTROL_RESPASSPW_EN);
--
--	h->flags & IVHD_FLAG_ISOC_EN_MASK ?
--		iommu_feature_enable(iommu, CONTROL_ISOC_EN) :
--		iommu_feature_disable(iommu, CONTROL_ISOC_EN);
--
--	/*
--	 * make IOMMU memory accesses cache coherent
--	 */
--	iommu_feature_enable(iommu, CONTROL_COHERENT_EN);
-+	iommu->acpi_flags = h->flags;
- 
- 	/*
- 	 * Done. Now parse the device entries
-@@ -1115,6 +1095,30 @@ static void init_device_table(void)
- 	}
- }
- 
-+static void iommu_init_flags(struct amd_iommu *iommu)
-+{
-+	iommu->acpi_flags & IVHD_FLAG_HT_TUN_EN_MASK ?
-+		iommu_feature_enable(iommu, CONTROL_HT_TUN_EN) :
-+		iommu_feature_disable(iommu, CONTROL_HT_TUN_EN);
-+
-+	iommu->acpi_flags & IVHD_FLAG_PASSPW_EN_MASK ?
-+		iommu_feature_enable(iommu, CONTROL_PASSPW_EN) :
-+		iommu_feature_disable(iommu, CONTROL_PASSPW_EN);
-+
-+	iommu->acpi_flags & IVHD_FLAG_RESPASSPW_EN_MASK ?
-+		iommu_feature_enable(iommu, CONTROL_RESPASSPW_EN) :
-+		iommu_feature_disable(iommu, CONTROL_RESPASSPW_EN);
-+
-+	iommu->acpi_flags & IVHD_FLAG_ISOC_EN_MASK ?
-+		iommu_feature_enable(iommu, CONTROL_ISOC_EN) :
-+		iommu_feature_disable(iommu, CONTROL_ISOC_EN);
-+
-+	/*
-+	 * make IOMMU memory accesses cache coherent
-+	 */
-+	iommu_feature_enable(iommu, CONTROL_COHERENT_EN);
-+}
-+
- /*
-  * This function finally enables all IOMMUs found in the system after
-  * they have been initialized
-@@ -1125,6 +1129,7 @@ static void enable_iommus(void)
- 
- 	for_each_iommu(iommu) {
- 		iommu_disable(iommu);
-+		iommu_init_flags(iommu);
- 		iommu_set_device_table(iommu);
- 		iommu_enable_command_buffer(iommu);
- 		iommu_enable_event_buffer(iommu);
+ 	if (mode_changed) {
+-		old_fb = set->crtc->fb;
+-		set->crtc->fb = set->fb;
+ 		set->crtc->enabled = (set->mode != NULL);
+ 		if (set->mode != NULL) {
+ 			DRM_DEBUG_KMS("attempting to set mode from"
+ 					" userspace\n");
+ 			drm_mode_debug_printmodeline(set->mode);
++			old_fb = set->crtc->fb;
++			set->crtc->fb = set->fb;
+ 			if (!drm_crtc_helper_set_mode(set->crtc, set->mode,
+ 						      set->x, set->y,
+ 						      old_fb)) {
 -- 
 1.7.3.3
 
