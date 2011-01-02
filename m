@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab1ABHwX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:52:23 -0500
-Received: from mail.windriver.com ([147.11.1.11]:35663 "EHLO
+	id S1753890Ab1ABHXf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:23:35 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35548 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753739Ab1ABHXd (ORCPT
+	with ESMTP id S1753746Ab1ABHX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:23:33 -0500
+	Sun, 2 Jan 2011 02:23:26 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Dan Carpenter <error27@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: stable-review@kernel.org, Guillem Jover <guillem@hadrons.org>,
+        Riku Voipio <riku.voipio@iki.fi>, Jean Delvare <khali@linux-fr.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 127/260] net/llc: make opt unsigned in llc_ui_setsockopt()
-Date: Sun,  2 Jan 2011 02:17:03 -0500
-Message-Id: <1293952756-15010-128-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 099/260] hwmon: (f75375s) Shift control mode to the correct bit position
+Date: Sun,  2 Jan 2011 02:16:35 -0500
+Message-Id: <1293952756-15010-100-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:22:28.0727 (UTC) FILETIME=[CFE4C070:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:21:58.0946 (UTC) FILETIME=[BE248820:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Carpenter <error27@gmail.com>
+From: Guillem Jover <guillem@hadrons.org>
 
-commit 339db11b219f36cf7da61b390992d95bb6b7ba2e upstream.
+commit 96f3640894012be7dd15a384566bfdc18297bc6c upstream.
 
-The members of struct llc_sock are unsigned so if we pass a negative
-value for "opt" it can cause a sign bug.  Also it can cause an integer
-overflow when we multiply "opt * HZ".
+The spec notes that fan0 and fan1 control mode bits are located in bits
+7-6 and 5-4 respectively, but the FAN_CTRL_MODE macro was making the
+bits shift by 5 instead of by 4.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Guillem Jover <guillem@hadrons.org>
+Cc: Riku Voipio <riku.voipio@iki.fi>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/llc/af_llc.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ drivers/hwmon/f75375s.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/net/llc/af_llc.c b/net/llc/af_llc.c
-index 2db6a9f..ad4296c 100644
---- a/net/llc/af_llc.c
-+++ b/net/llc/af_llc.c
-@@ -1024,7 +1024,8 @@ static int llc_ui_setsockopt(struct socket *sock, int level, int optname,
- {
- 	struct sock *sk = sock->sk;
- 	struct llc_sock *llc = llc_sk(sk);
--	int rc = -EINVAL, opt;
-+	unsigned int opt;
-+	int rc = -EINVAL;
+diff --git a/drivers/hwmon/f75375s.c b/drivers/hwmon/f75375s.c
+index bad2cf3..303160c 100644
+--- a/drivers/hwmon/f75375s.c
++++ b/drivers/hwmon/f75375s.c
+@@ -79,7 +79,7 @@ enum chips { f75373, f75375 };
+ #define F75375_REG_PWM2_DROP_DUTY	0x6C
  
- 	lock_sock(sk);
- 	if (unlikely(level != SOL_LLC || optlen != sizeof(int)))
+ #define FAN_CTRL_LINEAR(nr)		(4 + nr)
+-#define FAN_CTRL_MODE(nr)		(5 + ((nr) * 2))
++#define FAN_CTRL_MODE(nr)		(4 + ((nr) * 2))
+ 
+ /*
+  * Data structures and manipulation thereof
 -- 
 1.7.3.3
 
