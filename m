@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667Ab1ABDJh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Jan 2011 22:09:37 -0500
-Received: from mail.windriver.com ([147.11.1.11]:44717 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840Ab1ABDJg (ORCPT
+	id S1750801Ab1ABFbz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 00:31:55 -0500
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:46658 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750695Ab1ABFby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Jan 2011 22:09:36 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: linux-kernel@vger.kernel.org
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: [PATCH] rtc: delete legacy MAINTAINERS entry
-Date: Sat,  1 Jan 2011 22:08:43 -0500
-Message-Id: <1293937723-15986-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.3.3
-X-OriginalArrivalTime: 02 Jan 2011 03:09:25.0483 (UTC) FILETIME=[75F993B0:01CBAA2A]
+	Sun, 2 Jan 2011 00:31:54 -0500
+Date: Sun, 2 Jan 2011 06:32:06 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: webmaster <jason.vas.dias@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: per-chroot clock module ?
+Message-ID: <20110102053206.GB2635@elf.ucw.cz>
+References: <201011271821.35039.jason.vas.dias@gmail.com>
+ <20101203193658.GB2371@ucw.cz>
+ <201012302031.15545.webmaster@www.text2car.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201012302031.15545.webmaster@www.text2car.com>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-People stumble across the entry for the legacy PC specific
-RTC driver entry in MAINTAINERS when they really want the
-multi-arch, multi-driver RTC subsystem.  So just delete the
-old entry that is causing the confusion.
+Hi!
 
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
----
- MAINTAINERS |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+> > See subterfugue.net... it can do this.
+> > 
+> Sorry for the delay in responding - 
+> but I've been very busy, amongst other things working on the "per-chroot" module, which
+> now works in a very basic but sufficient mode.
+> If anyone else would find it useful,  I'll fill it out some more and post it to this list. 
+> 
+> I'd like to see this "subterfuge.net" - but I'm unable to connect with HTTP:
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index aa835f7..eb7a06b 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4994,11 +4994,6 @@ F:	kernel/rcu*
- F:	kernel/srcu*
- X:	kernel/rcutorture.c
- 
--REAL TIME CLOCK DRIVER (LEGACY)
--M:	Paul Gortmaker <p_gortmaker@yahoo.com>
--S:	Maintained
--F:	drivers/char/rtc.c
--
- REAL TIME CLOCK (RTC) SUBSYSTEM
- M:	Alessandro Zummo <a.zummo@towertech.it>
- L:	rtc-linux@googlegroups.com
+Sorry, it is on 
+
+http://subterfugue.sourceforge.net/
+
+									Pavel
 -- 
-1.7.3.3
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
