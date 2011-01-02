@@ -1,94 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753069Ab1ABXEf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 18:04:35 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:12546 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751720Ab1ABXEe (ORCPT
+	id S1753291Ab1ABXFY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 18:05:24 -0500
+Received: from dm-mail02.mozilla.org ([63.245.208.176]:40742 "EHLO
+	dm-mail02.mozilla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828Ab1ABXFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 18:04:34 -0500
-Date: Mon, 3 Jan 2011 00:04:32 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Stefani Seibold <stefani@seibold.net>
-cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, davem@davemloft.net, netdev@vger.kernel.org,
-        shemminger@vyatta.com, daniel.baluta@gmail.com, jochen@jochen.org
-Subject: Re: [PATCH] new UDPCP Communication Protocol
-In-Reply-To: <1294008917.18963.3.camel@wall-e>
-Message-ID: <alpine.LNX.2.00.1101022356550.11481@swampdragon.chaosbits.net>
-References: <1294007971-18878-1-git-send-email-stefani@seibold.net>  <1294008562.2535.263.camel@edumazet-laptop> <1294008917.18963.3.camel@wall-e>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 2 Jan 2011 18:05:23 -0500
+X-Greylist: delayed 1474 seconds by postgrey-1.27 at vger.kernel.org; Sun, 02 Jan 2011 18:05:23 EST
+Message-ID: <4D20FEF0.5020206@mozilla.com>
+Date: Sun, 02 Jan 2011 14:40:48 -0800
+From: Taras Glek <tglek@mozilla.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:2.0b9pre) Gecko/20101231 Thunderbird/3.3a2pre
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1374685088-1294009472=:11481"
+To: linux-kernel@vger.kernel.org
+Subject: Measuring startup-time from userspace
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi,
+Does Linux provide a reasonable way to measure how long a process has 
+existed for? The goal is to have a function that returns the number of 
+milliseconds since process-creation.
 
---8323328-1374685088-1294009472=:11481
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+We'd like to be able to have Firefox self-diagnose startup times. 
+Unfortunately, it turns out that library loading time adds a lot to 
+startup before application code runs, so a in-application timer would 
+underestimate startup time.
 
-On Sun, 2 Jan 2011, Stefani Seibold wrote:
+It appears that the most precise solution is to read start time from 
+/proc/self/stat. Unfortunately the time is in jiffies-since-startup and 
+there don't seem to be any good counters to compare against (ie 
+/proc/uptime doesn't provide enough resolution). So far the only 
+workable solution seems to create a new thread/process. Then one can do 
+(/proc/<newpid>/stat.starttime - /proc/self/stat.starttime) * 1000 / HZ
+.
 
-> Am Sonntag, den 02.01.2011, 23:49 +0100 schrieb Eric Dumazet:
-> > Le dimanche 02 janvier 2011 à 23:39 +0100, stefani@seibold.net a écrit :
-> > > +
-> > > +/*
-> > > + * Create a new destination descriptor for the given IPV4 address and port
-> > > + */
-> > > +static struct udpcp_dest *new_dest(struct sock *sk, __be32 addr, __be16 port)
-> > > +{
-> > > +	struct udpcp_dest *dest;
-> > > +	struct udpcp_sock *usk = udpcp_sk(sk);
-> > > +
-> > > +	if (usk->connections >= udpcp_max_connections)
-> > > +		return NULL;
-> > > +
-> > > +	dest = kzalloc(sizeof(*dest), sk->sk_allocation);
-> > > +
-> > > +	if (dest) {
-> > > +		usk->connections++;
-> > > +		skb_queue_head_init(&dest->xmit);
-> > > +		dest->addr = addr;
-> > > +		dest->port = port;
-> > > +		dest->ackmode = UDPCP_ACK;
-> > > +		list_add_tail(&dest->list, &usk->destlist);
-> > > +	}
-> > > +
-> > > +	return dest;
-> > > +}
-> > > +
-> > 
-> > Hmm, so 'connections' is increased, never decreased.
-> > 
-> > This seems a fatal flaw in this protocol, since a malicious user can
-> > easily fill the list with garbage, and block regular communications.
-> 
-> You are right, there is now way to detect which connection is no longer
-> needed. I have not designed this protocol, so i cannot fix it. 
-> 
-> But in our environment this will be used together with an firewall
-> and/or ipsec. In this case it it safe.
-> 
-
-Hmm, the first thing that springs into my head as a possible band-aid 
-(which is probbaly wrong for many reasons I've not considered, so feel 
-free to shoot it down) is; couldn't we use a timer (set to some outrageous 
-high value by default and admin tunable) that would decrement 
-'connections' (discount dead connections) when there has not been any 
-acctivity for a huge period of time? Kill off connections that have been 
-idle for ages.
-
-Not perfect, but that would at least let the system recover after a while 
-if a malicious client did something nasty with many connections...
+The question is, there way for a process to measure time-since-startup 
+without horrible hacks like spawning a new processes?
 
 
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
+Taras
 
---8323328-1374685088-1294009472=:11481--
+ps. Perhaps /proc/timer_list contains enough info?
