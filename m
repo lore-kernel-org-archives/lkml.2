@@ -1,113 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab1ABHle (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:41:34 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36604 "EHLO
+	id S1754522Ab1ABHYr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:24:47 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36510 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754502Ab1ABHYq (ORCPT
+	with ESMTP id S1754486Ab1ABHYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:24:46 -0500
+	Sun, 2 Jan 2011 02:24:41 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Yegor Yefremov <yegor_sub1@visionsystems.de>,
-        Yegor Yefremov <yegorslists@googlemail.com>,
-        Jean Delvare <khali@linux-fr.org>,
+Cc: stable-review@kernel.org, Luca Tettamanti <kronos.it@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 185/260] i2c-pca: Fix waitforcompletion() return value
-Date: Sun,  2 Jan 2011 02:18:01 -0500
-Message-Id: <1293952756-15010-186-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 188/260] atl1: fix resume
+Date: Sun,  2 Jan 2011 02:18:04 -0500
+Message-Id: <1293952756-15010-189-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:23:33.0666 (UTC) FILETIME=[F699A820:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:23:36.0823 (UTC) FILETIME=[F87B6070:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yegor Yefremov <yegor_sub1@visionsystems.de>
+From: Luca Tettamanti <kronos.it@gmail.com>
 
-commit 6abb930af064fb1cf4177d32e2c7bfb89eee0fe5 upstream.
+commit ec5a32f67c603b11d68eb283d94eb89a4f6cfce1 upstream.
 
-ret is still -1, if during the polling read_byte() returns at once
-with I2C_PCA_CON_SI set. So ret > 0 would lead *_waitforcompletion()
-to return 0, in spite of the proper behavior.
+adapter->cmb.cmb is initialized when the device is opened and freed when
+it's closed. Accessing it unconditionally during resume results either
+in a crash (NULL pointer dereference, when the interface has not been
+opened yet) or data corruption (when the interface has been used and
+brought down adapter->cmb.cmb points to a deallocated memory area).
 
-The routine was rewritten, so that ret has always a proper value,
-before returning.
-
-Signed-off-by: Yegor Yefremov <yegorslists@googlemail.com>
-Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Luca Tettamanti <kronos.it@gmail.com>
+Acked-by: Chris Snook <chris.snook@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/i2c/busses/i2c-pca-isa.c      |   12 ++++++++----
- drivers/i2c/busses/i2c-pca-platform.c |   11 +++++++----
- 2 files changed, 15 insertions(+), 8 deletions(-)
+ drivers/net/atlx/atl1.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-pca-isa.c b/drivers/i2c/busses/i2c-pca-isa.c
-index f7346a9..62a5ce5 100644
---- a/drivers/i2c/busses/i2c-pca-isa.c
-+++ b/drivers/i2c/busses/i2c-pca-isa.c
-@@ -71,8 +71,8 @@ static int pca_isa_readbyte(void *pd, int reg)
+diff --git a/drivers/net/atlx/atl1.c b/drivers/net/atlx/atl1.c
+index 0ebd820..9d9ba41 100644
+--- a/drivers/net/atlx/atl1.c
++++ b/drivers/net/atlx/atl1.c
+@@ -2849,10 +2849,11 @@ static int atl1_resume(struct pci_dev *pdev)
+ 	pci_enable_wake(pdev, PCI_D3cold, 0);
  
- static int pca_isa_waitforcompletion(void *pd)
- {
--	long ret = ~0;
- 	unsigned long timeout;
-+	long ret;
+ 	atl1_reset_hw(&adapter->hw);
+-	adapter->cmb.cmb->int_stats = 0;
  
- 	if (irq > -1) {
- 		ret = wait_event_timeout(pca_wait,
-@@ -81,11 +81,15 @@ static int pca_isa_waitforcompletion(void *pd)
- 	} else {
- 		/* Do polling */
- 		timeout = jiffies + pca_isa_ops.timeout;
--		while (((pca_isa_readbyte(pd, I2C_PCA_CON)
--				& I2C_PCA_CON_SI) == 0)
--				&& (ret = time_before(jiffies, timeout)))
-+		do {
-+			ret = time_before(jiffies, timeout);
-+			if (pca_isa_readbyte(pd, I2C_PCA_CON)
-+					& I2C_PCA_CON_SI)
-+				break;
- 			udelay(100);
-+		} while (ret);
- 	}
-+
- 	return ret > 0;
- }
+-	if (netif_running(netdev))
++	if (netif_running(netdev)) {
++		adapter->cmb.cmb->int_stats = 0;
+ 		atl1_up(adapter);
++	}
+ 	netif_device_attach(netdev);
  
-diff --git a/drivers/i2c/busses/i2c-pca-platform.c b/drivers/i2c/busses/i2c-pca-platform.c
-index 5b2213d..1d8c208 100644
---- a/drivers/i2c/busses/i2c-pca-platform.c
-+++ b/drivers/i2c/busses/i2c-pca-platform.c
-@@ -80,8 +80,8 @@ static void i2c_pca_pf_writebyte32(void *pd, int reg, int val)
- static int i2c_pca_pf_waitforcompletion(void *pd)
- {
- 	struct i2c_pca_pf_data *i2c = pd;
--	long ret = ~0;
- 	unsigned long timeout;
-+	long ret;
- 
- 	if (i2c->irq) {
- 		ret = wait_event_timeout(i2c->wait,
-@@ -90,10 +90,13 @@ static int i2c_pca_pf_waitforcompletion(void *pd)
- 	} else {
- 		/* Do polling */
- 		timeout = jiffies + i2c->adap.timeout;
--		while (((i2c->algo_data.read_byte(i2c, I2C_PCA_CON)
--				& I2C_PCA_CON_SI) == 0)
--				&& (ret = time_before(jiffies, timeout)))
-+		do {
-+			ret = time_before(jiffies, timeout);
-+			if (i2c->algo_data.read_byte(i2c, I2C_PCA_CON)
-+					& I2C_PCA_CON_SI)
-+				break;
- 			udelay(100);
-+		} while (ret);
- 	}
- 
- 	return ret > 0;
+ 	return 0;
 -- 
 1.7.3.3
 
