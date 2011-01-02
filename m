@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242Ab1ABHce (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:32:34 -0500
-Received: from mail.windriver.com ([147.11.1.11]:37128 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754878Ab1ABHZk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754870Ab1ABHZk (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 2 Jan 2011 02:25:40 -0500
+Received: from mail.windriver.com ([147.11.1.11]:37108 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754849Ab1ABHZh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jan 2011 02:25:37 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Zachary Amsden <zamsden@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
+Cc: stable-review@kernel.org, Paul Fox <pgf@laptop.org>,
+        Daniel Drake <dsd@laptop.org>, dilinger@queued.net,
+        Ingo Molnar <mingo@elte.hu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 237/260] KVM: x86: Move TSC reset out of vmcb_init
-Date: Sun,  2 Jan 2011 02:18:53 -0500
-Message-Id: <1293952756-15010-238-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 229/260] x86, olpc: Don't retry EC commands forever
+Date: Sun,  2 Jan 2011 02:18:45 -0500
+Message-Id: <1293952756-15010-230-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:24:29.0074 (UTC) FILETIME=[17A03F20:01CBAA4E]
+X-OriginalArrivalTime: 02 Jan 2011 07:24:20.0730 (UTC) FILETIME=[12A70DA0:01CBAA4E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zachary Amsden <zamsden@redhat.com>
+From: Paul Fox <pgf@laptop.org>
 
-commit 47008cd887c1836bcadda123ba73e1863de7a6c4 upstream.
+commit 286e5b97eb22baab9d9a41ca76c6b933a484252c upstream.
 
-The VMCB is reset whenever we receive a startup IPI, so Linux is setting
-TSC back to zero happens very late in the boot process and destabilizing
-the TSC.  Instead, just set TSC to zero once at VCPU creation time.
+Avoids a potential infinite loop.
 
-Why the separate patch?  So git-bisect is your friend.
+It was observed once, during an EC hacking/debugging
+session - not in regular operation.
 
-Signed-off-by: Zachary Amsden <zamsden@redhat.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+Cc: dilinger@queued.net
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/kvm/svm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/kernel/olpc.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index 508e136..80453d4 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -632,7 +632,6 @@ static void init_vmcb(struct vcpu_svm *svm)
+diff --git a/arch/x86/kernel/olpc.c b/arch/x86/kernel/olpc.c
+index 8297160..a23b382 100644
+--- a/arch/x86/kernel/olpc.c
++++ b/arch/x86/kernel/olpc.c
+@@ -117,6 +117,7 @@ int olpc_ec_cmd(unsigned char cmd, unsigned char *inbuf, size_t inlen,
+ 	unsigned long flags;
+ 	int ret = -EIO;
+ 	int i;
++	int restarts = 0;
  
- 	control->iopm_base_pa = iopm_base;
- 	control->msrpm_base_pa = __pa(svm->msrpm);
--	control->tsc_offset = 0-native_read_tsc();
- 	control->int_ctl = V_INTR_MASKING_MASK;
+ 	spin_lock_irqsave(&ec_lock, flags);
  
- 	init_seg(&save->es);
-@@ -766,6 +765,7 @@ static struct kvm_vcpu *svm_create_vcpu(struct kvm *kvm, unsigned int id)
- 	svm->vmcb_pa = page_to_pfn(page) << PAGE_SHIFT;
- 	svm->asid_generation = 0;
- 	init_vmcb(svm);
-+	svm->vmcb->control.tsc_offset = 0-native_read_tsc();
- 
- 	fx_init(&svm->vcpu);
- 	svm->vcpu.arch.apic_base = 0xfee00000 | MSR_IA32_APICBASE_ENABLE;
+@@ -173,7 +174,9 @@ restart:
+ 			if (wait_on_obf(0x6c, 1)) {
+ 				printk(KERN_ERR "olpc-ec:  timeout waiting for"
+ 						" EC to provide data!\n");
+-				goto restart;
++				if (restarts++ < 10)
++					goto restart;
++				goto err;
+ 			}
+ 			outbuf[i] = inb(0x68);
+ 			printk(KERN_DEBUG "olpc-ec:  received 0x%x\n",
 -- 
 1.7.3.3
 
