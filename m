@@ -1,55 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752967Ab1ABHW0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:22:26 -0500
-Received: from mail.windriver.com ([147.11.1.11]:34658 "EHLO
+	id S1753550Ab1ABHXE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:23:04 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35182 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449Ab1ABHWS (ORCPT
+	with ESMTP id S1753490Ab1ABHW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:22:18 -0500
+	Sun, 2 Jan 2011 02:22:56 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Przemo Firszt <przemo@firszt.eu>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+Cc: stable-review@kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 052/260] USB: Expose vendor-specific ACM channel on Nokia 5230
-Date: Sun,  2 Jan 2011 02:15:48 -0500
-Message-Id: <1293952756-15010-53-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 085/260] sched: sched_exec(): Remove the select_fallback_rq() logic
+Date: Sun,  2 Jan 2011 02:16:21 -0500
+Message-Id: <1293952756-15010-86-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:21:02.0726 (UTC) FILETIME=[9CA20A60:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:21:42.0883 (UTC) FILETIME=[B4918330:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Przemo Firszt <przemo@firszt.eu>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 83a4eae9aeed4a69e89e323a105e653ae06e7c1f upstream.
+commit 30da688ef6b76e01969b00608202fff1eed2accc upstream.
 
-Nokia S60 phones expose two ACM channels. The first is
-a modem, the second is 'vendor-specific' but is treated
-as a serial device at the S60 end, so we want to expose
-it on Linux too.
+sched_exec()->select_task_rq() reads/updates ->cpus_allowed lockless.
+This can race with other CPUs updating our ->cpus_allowed, and this
+looks meaningless to me.
 
-Signed-off-by: Przemo Firszt <przemo@firszt.eu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+The task is current and running, it must have online cpus in ->cpus_allowed,
+the fallback mode is bogus. And, if ->sched_class returns the "wrong" cpu,
+this likely means we raced with set_cpus_allowed() which was called
+for reason, why should sched_exec() retry and call ->select_task_rq()
+again?
+
+Change the code to call sched_class->select_task_rq() directly and do
+nothing if the returned cpu is wrong after re-checking under rq->lock.
+
+>From now task_struct->cpus_allowed is always stable under TASK_WAKING,
+select_fallback_rq() is always called under rq-lock or the caller or
+the caller owns TASK_WAKING (select_task_rq).
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <20100315091019.GA9141@redhat.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/class/cdc-acm.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ kernel/sched.c |   25 ++++++++-----------------
+ 1 files changed, 8 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 3c73add..bbcdabe 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1596,6 +1596,7 @@ static const struct usb_device_id acm_ids[] = {
- 	{ NOKIA_PCSUITE_ACM_INFO(0x00e9), }, /* Nokia 5320 XpressMusic */
- 	{ NOKIA_PCSUITE_ACM_INFO(0x0108), }, /* Nokia 5320 XpressMusic 2G */
- 	{ NOKIA_PCSUITE_ACM_INFO(0x01f5), }, /* Nokia N97, RM-505 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x02e3), }, /* Nokia 5230, RM-588 */
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 59ef8a1..5ec7687 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2286,6 +2286,9 @@ void task_oncpu_function_call(struct task_struct *p,
+ }
  
- 	/* NOTE: non-Nokia COMM/ACM/0xff is likely MSFT RNDIS... NOT a modem! */
+ #ifdef CONFIG_SMP
++/*
++ * ->cpus_allowed is protected by either TASK_WAKING or rq->lock held.
++ */
+ static int select_fallback_rq(int cpu, struct task_struct *p)
+ {
+ 	int dest_cpu;
+@@ -2322,12 +2325,7 @@ static int select_fallback_rq(int cpu, struct task_struct *p)
+ }
+ 
+ /*
+- * Gets called from 3 sites (exec, fork, wakeup), since it is called without
+- * holding rq->lock we need to ensure ->cpus_allowed is stable, this is done
+- * by:
+- *
+- *  exec:           is unstable, retry loop
+- *  fork & wake-up: serialize ->cpus_allowed against TASK_WAKING
++ * The caller (fork, wakeup) owns TASK_WAKING, ->cpus_allowed is stable.
+  */
+ static inline
+ int select_task_rq(struct task_struct *p, int sd_flags, int wake_flags)
+@@ -3137,9 +3135,8 @@ void sched_exec(void)
+ 	unsigned long flags;
+ 	struct rq *rq;
+ 
+-again:
+ 	this_cpu = get_cpu();
+-	dest_cpu = select_task_rq(p, SD_BALANCE_EXEC, 0);
++	dest_cpu = p->sched_class->select_task_rq(p, SD_BALANCE_EXEC, 0);
+ 	if (dest_cpu == this_cpu) {
+ 		put_cpu();
+ 		return;
+@@ -3147,18 +3144,12 @@ again:
+ 
+ 	rq = task_rq_lock(p, &flags);
+ 	put_cpu();
+-
+ 	/*
+ 	 * select_task_rq() can race against ->cpus_allowed
+ 	 */
+-	if (!cpumask_test_cpu(dest_cpu, &p->cpus_allowed)
+-	    || unlikely(!cpu_active(dest_cpu))) {
+-		task_rq_unlock(rq, &flags);
+-		goto again;
+-	}
+-
+-	/* force the process onto the specified CPU */
+-	if (migrate_task(p, dest_cpu, &req)) {
++	if (cpumask_test_cpu(dest_cpu, &p->cpus_allowed) &&
++	    likely(cpu_active(dest_cpu)) &&
++	    migrate_task(p, dest_cpu, &req)) {
+ 		/* Need to wait for migration thread (might exit: take ref). */
+ 		struct task_struct *mt = rq->migration_thread;
  
 -- 
 1.7.3.3
