@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630Ab1ABHZI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:25:08 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36826 "EHLO
+	id S1754820Ab1ABHgz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:36:55 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36905 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754662Ab1ABHZC (ORCPT
+	with ESMTP id S1754662Ab1ABHZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:25:02 -0500
+	Sun, 2 Jan 2011 02:25:08 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Paul Fertser <fercerpav@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: stable-review@kernel.org, Matt Evans <matt@ozlabs.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 208/260] b44: fix carrier detection on bind
-Date: Sun,  2 Jan 2011 02:18:24 -0500
-Message-Id: <1293952756-15010-209-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 206/260] powerpc: Initialise paca->kstack before early_setup_secondary
+Date: Sun,  2 Jan 2011 02:18:22 -0500
+Message-Id: <1293952756-15010-207-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:23:58.0042 (UTC) FILETIME=[052123A0:01CBAA4E]
+X-OriginalArrivalTime: 02 Jan 2011 07:23:56.0010 (UTC) FILETIME=[03EB14A0:01CBAA4E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Fertser <fercerpav@gmail.com>
+From: Matt Evans <matt@ozlabs.org>
 
-commit bcf64aa379fcadd074449cbf0c049da70071b06f upstream.
+commit f761622e59433130bc33ad086ce219feee9eb961 upstream.
 
-For carrier detection to work properly when binding the driver with a cable
-unplugged, netif_carrier_off() should be called after register_netdev(),
-not before.
+As early setup calls down to slb_initialize(), we must have kstack
+initialised before checking "should we add a bolted SLB entry for our kstack?"
 
-Signed-off-by: Paul Fertser <fercerpav@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Failing to do so means stack access requires an SLB miss exception to refill
+an entry dynamically, if the stack isn't accessible via SLB(0) (kernel text
+& static data).  It's not always allowable to take such a miss, and
+intermittent crashes will result.
+
+Primary CPUs don't have this issue; an SLB entry is not bolted for their
+stack anyway (as that lives within SLB(0)).  This patch therefore only
+affects the init of secondaries.
+
+Signed-off-by: Matt Evans <matt@ozlabs.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/b44.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/head_64.S |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/b44.c b/drivers/net/b44.c
-index 69d9f3d..7a4d680 100644
---- a/drivers/net/b44.c
-+++ b/drivers/net/b44.c
-@@ -2170,8 +2170,6 @@ static int __devinit b44_init_one(struct ssb_device *sdev,
- 	dev->irq = sdev->irq;
- 	SET_ETHTOOL_OPS(dev, &b44_ethtool_ops);
+diff --git a/arch/powerpc/kernel/head_64.S b/arch/powerpc/kernel/head_64.S
+index bed9a29..579751e 100644
+--- a/arch/powerpc/kernel/head_64.S
++++ b/arch/powerpc/kernel/head_64.S
+@@ -572,9 +572,6 @@ __secondary_start:
+ 	/* Set thread priority to MEDIUM */
+ 	HMT_MEDIUM
  
--	netif_carrier_off(dev);
+-	/* Do early setup for that CPU (stab, slb, hash table pointer) */
+-	bl	.early_setup_secondary
 -
- 	err = ssb_bus_powerup(sdev->bus, 0);
- 	if (err) {
- 		dev_err(sdev->dev,
-@@ -2211,6 +2209,8 @@ static int __devinit b44_init_one(struct ssb_device *sdev,
- 		goto err_out_powerdown;
- 	}
+ 	/* Initialize the kernel stack.  Just a repeat for iSeries.	 */
+ 	LOAD_REG_ADDR(r3, current_set)
+ 	sldi	r28,r24,3		/* get current_set[cpu#]	 */
+@@ -582,6 +579,9 @@ __secondary_start:
+ 	addi	r1,r1,THREAD_SIZE-STACK_FRAME_OVERHEAD
+ 	std	r1,PACAKSAVE(r13)
  
-+	netif_carrier_off(dev);
++	/* Do early setup for that CPU (stab, slb, hash table pointer) */
++	bl	.early_setup_secondary
 +
- 	ssb_set_drvdata(sdev, dev);
- 
- 	/* Chip reset provides power to the b44 MAC & PCI cores, which
+ 	/* Clear backchain so we get nice backtraces */
+ 	li	r7,0
+ 	mtlr	r7
 -- 
 1.7.3.3
 
