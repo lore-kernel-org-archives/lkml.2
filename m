@@ -1,105 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684Ab1ABHhy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:37:54 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36888 "EHLO
+	id S1754728Ab1ABHhx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:37:53 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36875 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754653Ab1ABHZG (ORCPT
+	with ESMTP id S1754673Ab1ABHZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:25:06 -0500
+	Sun, 2 Jan 2011 02:25:05 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
 Cc: stable-review@kernel.org, Stanislaw Gruszka <sgruszka@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 204/260] r8169: allocate with GFP_KERNEL flag when able to sleep
-Date: Sun,  2 Jan 2011 02:18:20 -0500
-Message-Id: <1293952756-15010-205-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 203/260] skge: add quirk to limit DMA
+Date: Sun,  2 Jan 2011 02:18:19 -0500
+Message-Id: <1293952756-15010-204-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:23:53.0760 (UTC) FILETIME=[0293C200:01CBAA4E]
+X-OriginalArrivalTime: 02 Jan 2011 07:23:52.0745 (UTC) FILETIME=[01F8E190:01CBAA4E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit aeb19f6052b5e5c8a24aa444fbff73b84341beac upstream.
+commit 392bd0cb000d4aac9e88e4f50823db85e7220688 upstream.
 
-We have fedora bug report where driver fail to initialize after
-suspend/resume because of memory allocation errors:
-https://bugzilla.redhat.com/show_bug.cgi?id=629158
+Skge devices installed on some Gigabyte motherboards are not able to
+perform 64 dma correctly due to board PCI implementation, so limit
+DMA to 32bit if such boards are detected.
 
-To fix use GFP_KERNEL allocation where possible.
+Bug was reported here:
+https://bugzilla.redhat.com/show_bug.cgi?id=447489
 
-Tested-by: Neal Becker <ndbecker2@gmail.com>
 Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Tested-by: Luya Tshimbalanga <luya@fedoraproject.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/r8169.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/net/skge.c |   18 +++++++++++++++++-
+ 1 files changed, 17 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
-index 17382c3..0fa0598 100644
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -3970,7 +3970,7 @@ static inline void rtl8169_map_to_asic(struct RxDesc *desc, dma_addr_t mapping,
- static struct sk_buff *rtl8169_alloc_rx_skb(struct pci_dev *pdev,
- 					    struct net_device *dev,
- 					    struct RxDesc *desc, int rx_buf_sz,
--					    unsigned int align)
-+					    unsigned int align, gfp_t gfp)
- {
- 	struct sk_buff *skb;
- 	dma_addr_t mapping;
-@@ -3978,7 +3978,7 @@ static struct sk_buff *rtl8169_alloc_rx_skb(struct pci_dev *pdev,
+diff --git a/drivers/net/skge.c b/drivers/net/skge.c
+index 50eb706..e13cbd9 100644
+--- a/drivers/net/skge.c
++++ b/drivers/net/skge.c
+@@ -43,6 +43,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/mii.h>
+ #include <linux/slab.h>
++#include <linux/dmi.h>
+ #include <asm/irq.h>
  
- 	pad = align ? align : NET_IP_ALIGN;
- 
--	skb = netdev_alloc_skb(dev, rx_buf_sz + pad);
-+	skb = __netdev_alloc_skb(dev, rx_buf_sz + pad, gfp);
- 	if (!skb)
- 		goto err_out;
- 
-@@ -4009,7 +4009,7 @@ static void rtl8169_rx_clear(struct rtl8169_private *tp)
+ #include "skge.h"
+@@ -3868,6 +3869,8 @@ static void __devinit skge_show_addr(struct net_device *dev)
+ 	netif_info(skge, probe, skge->netdev, "addr %pM\n", dev->dev_addr);
  }
  
- static u32 rtl8169_rx_fill(struct rtl8169_private *tp, struct net_device *dev,
--			   u32 start, u32 end)
-+			   u32 start, u32 end, gfp_t gfp)
++static int only_32bit_dma;
++
+ static int __devinit skge_probe(struct pci_dev *pdev,
+ 				const struct pci_device_id *ent)
  {
- 	u32 cur;
+@@ -3889,7 +3892,7 @@ static int __devinit skge_probe(struct pci_dev *pdev,
  
-@@ -4024,7 +4024,7 @@ static u32 rtl8169_rx_fill(struct rtl8169_private *tp, struct net_device *dev,
+ 	pci_set_master(pdev);
  
- 		skb = rtl8169_alloc_rx_skb(tp->pci_dev, dev,
- 					   tp->RxDescArray + i,
--					   tp->rx_buf_sz, tp->align);
-+					   tp->rx_buf_sz, tp->align, gfp);
- 		if (!skb)
- 			break;
+-	if (!pci_set_dma_mask(pdev, DMA_BIT_MASK(64))) {
++	if (!only_32bit_dma && !pci_set_dma_mask(pdev, DMA_BIT_MASK(64))) {
+ 		using_dac = 1;
+ 		err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(64));
+ 	} else if (!(err = pci_set_dma_mask(pdev, DMA_BIT_MASK(32)))) {
+@@ -4147,8 +4150,21 @@ static struct pci_driver skge_driver = {
+ 	.shutdown =	skge_shutdown,
+ };
  
-@@ -4052,7 +4052,7 @@ static int rtl8169_init_ring(struct net_device *dev)
- 	memset(tp->tx_skb, 0x0, NUM_TX_DESC * sizeof(struct ring_info));
- 	memset(tp->Rx_skbuff, 0x0, NUM_RX_DESC * sizeof(struct sk_buff *));
- 
--	if (rtl8169_rx_fill(tp, dev, 0, NUM_RX_DESC) != NUM_RX_DESC)
-+	if (rtl8169_rx_fill(tp, dev, 0, NUM_RX_DESC, GFP_KERNEL) != NUM_RX_DESC)
- 		goto err_out;
- 
- 	rtl8169_mark_as_last_descriptor(tp->RxDescArray + NUM_RX_DESC - 1);
-@@ -4553,7 +4553,7 @@ static int rtl8169_rx_interrupt(struct net_device *dev,
- 	count = cur_rx - tp->cur_rx;
- 	tp->cur_rx = cur_rx;
- 
--	delta = rtl8169_rx_fill(tp, dev, tp->dirty_rx, tp->cur_rx);
-+	delta = rtl8169_rx_fill(tp, dev, tp->dirty_rx, tp->cur_rx, GFP_ATOMIC);
- 	if (!delta && count)
- 		netif_info(tp, intr, dev, "no Rx buffer allocated\n");
- 	tp->dirty_rx += delta;
++static struct dmi_system_id skge_32bit_dma_boards[] = {
++	{
++		.ident = "Gigabyte nForce boards",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Gigabyte Technology Co"),
++			DMI_MATCH(DMI_BOARD_NAME, "nForce"),
++		},
++	},
++	{}
++};
++
+ static int __init skge_init_module(void)
+ {
++	if (dmi_check_system(skge_32bit_dma_boards))
++		only_32bit_dma = 1;
+ 	skge_debug_init();
+ 	return pci_register_driver(&skge_driver);
+ }
 -- 
 1.7.3.3
 
