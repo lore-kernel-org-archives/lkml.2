@@ -1,86 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab1ABH6y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:58:54 -0500
-Received: from mail.windriver.com ([147.11.1.11]:35248 "EHLO
+	id S1755311Ab1ABH7m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:59:42 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35204 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753536Ab1ABHXC (ORCPT
+	with ESMTP id S1753502Ab1ABHW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:23:02 -0500
+	Sun, 2 Jan 2011 02:22:58 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 073/260] memory hotplug: fix next block calculation in is_removable
-Date: Sun,  2 Jan 2011 02:16:09 -0500
-Message-Id: <1293952756-15010-74-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 086/260] sched: _cpu_down(): Don't play with current->cpus_allowed
+Date: Sun,  2 Jan 2011 02:16:22 -0500
+Message-Id: <1293952756-15010-87-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:21:27.0398 (UTC) FILETIME=[AB56B060:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:21:44.0180 (UTC) FILETIME=[B5576B40:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 0dcc48c15f63ee86c2fcd33968b08d651f0360a5 upstream.
+commit 6a1bdc1b577ebcb65f6603c57f8347309bc4ab13 upstream.
 
-next_active_pageblock() is for finding next _used_ freeblock.  It skips
-several blocks when it finds there are a chunk of free pages lager than
-pageblock.  But it has 2 bugs.
+_cpu_down() changes the current task's affinity and then recovers it at
+the end. The problems are well known: we can't restore old_allowed if it
+was bound to the now-dead-cpu, and we can race with the userspace which
+can change cpu-affinity during unplug.
 
-  1. We have no lock. page_order(page) - pageblock_order can be minus.
-  2. pageblocks_stride += is wrong. it should skip page_order(p) of pages.
+_cpu_down() should not play with current->cpus_allowed at all. Instead,
+take_cpu_down() can migrate the caller of _cpu_down() after __cpu_disable()
+removes the dying cpu from cpu_online_mask.
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <20100315091023.GA9148@redhat.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- mm/memory_hotplug.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+ include/linux/sched.h |    1 +
+ kernel/cpu.c          |   18 ++++++------------
+ kernel/sched.c        |    2 +-
+ 3 files changed, 8 insertions(+), 13 deletions(-)
 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index be211a5..91f7c26 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -558,19 +558,19 @@ static inline int pageblock_free(struct page *page)
- /* Return the start of the next active pageblock after a given page */
- static struct page *next_active_pageblock(struct page *page)
- {
--	int pageblocks_stride;
--
- 	/* Ensure the starting page is pageblock-aligned */
- 	BUG_ON(page_to_pfn(page) & (pageblock_nr_pages - 1));
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 2b7b81d..fbdbc26 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1846,6 +1846,7 @@ extern void sched_clock_idle_sleep_event(void);
+ extern void sched_clock_idle_wakeup_event(u64 delta_ns);
  
--	/* Move forward by at least 1 * pageblock_nr_pages */
--	pageblocks_stride = 1;
--
- 	/* If the entire pageblock is free, move to the end of free page */
--	if (pageblock_free(page))
--		pageblocks_stride += page_order(page) - pageblock_order;
-+	if (pageblock_free(page)) {
-+		int order;
-+		/* be careful. we don't have locks, page_order can be changed.*/
-+		order = page_order(page);
-+		if ((order < MAX_ORDER) && (order >= pageblock_order))
-+			return page + (1 << order);
-+	}
- 
--	return page + (pageblocks_stride * pageblock_nr_pages);
-+	return page + pageblock_nr_pages;
+ #ifdef CONFIG_HOTPLUG_CPU
++extern void move_task_off_dead_cpu(int dead_cpu, struct task_struct *p);
+ extern void idle_task_exit(void);
+ #else
+ static inline void idle_task_exit(void) {}
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 25bba73..914aedc 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -164,6 +164,7 @@ static inline void check_for_tasks(int cpu)
  }
  
- /* Checks if this range of memory is likely to be hot-removable. */
+ struct take_cpu_down_param {
++	struct task_struct *caller;
+ 	unsigned long mod;
+ 	void *hcpu;
+ };
+@@ -172,6 +173,7 @@ struct take_cpu_down_param {
+ static int __ref take_cpu_down(void *_param)
+ {
+ 	struct take_cpu_down_param *param = _param;
++	unsigned int cpu = (unsigned long)param->hcpu;
+ 	int err;
+ 
+ 	/* Ensure this CPU doesn't handle any more interrupts. */
+@@ -182,6 +184,8 @@ static int __ref take_cpu_down(void *_param)
+ 	raw_notifier_call_chain(&cpu_chain, CPU_DYING | param->mod,
+ 				param->hcpu);
+ 
++	if (task_cpu(param->caller) == cpu)
++		move_task_off_dead_cpu(cpu, param->caller);
+ 	/* Force idle task to run as soon as we yield: it should
+ 	   immediately notice cpu is offline and die quickly. */
+ 	sched_idle_next();
+@@ -192,10 +196,10 @@ static int __ref take_cpu_down(void *_param)
+ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ {
+ 	int err, nr_calls = 0;
+-	cpumask_var_t old_allowed;
+ 	void *hcpu = (void *)(long)cpu;
+ 	unsigned long mod = tasks_frozen ? CPU_TASKS_FROZEN : 0;
+ 	struct take_cpu_down_param tcd_param = {
++		.caller = current,
+ 		.mod = mod,
+ 		.hcpu = hcpu,
+ 	};
+@@ -206,9 +210,6 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 	if (!cpu_online(cpu))
+ 		return -EINVAL;
+ 
+-	if (!alloc_cpumask_var(&old_allowed, GFP_KERNEL))
+-		return -ENOMEM;
+-
+ 	cpu_hotplug_begin();
+ 	set_cpu_active(cpu, false);
+ 	err = __raw_notifier_call_chain(&cpu_chain, CPU_DOWN_PREPARE | mod,
+@@ -225,10 +226,6 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 		goto out_release;
+ 	}
+ 
+-	/* Ensure that we are not runnable on dying cpu */
+-	cpumask_copy(old_allowed, &current->cpus_allowed);
+-	set_cpus_allowed_ptr(current, cpu_active_mask);
+-
+ 	err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
+ 	if (err) {
+ 		set_cpu_active(cpu, true);
+@@ -237,7 +234,7 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 					    hcpu) == NOTIFY_BAD)
+ 			BUG();
+ 
+-		goto out_allowed;
++		goto out_release;
+ 	}
+ 	BUG_ON(cpu_online(cpu));
+ 
+@@ -255,8 +252,6 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 
+ 	check_for_tasks(cpu);
+ 
+-out_allowed:
+-	set_cpus_allowed_ptr(current, old_allowed);
+ out_release:
+ 	cpu_hotplug_done();
+ 	if (!err) {
+@@ -264,7 +259,6 @@ out_release:
+ 					    hcpu) == NOTIFY_BAD)
+ 			BUG();
+ 	}
+-	free_cpumask_var(old_allowed);
+ 	return err;
+ }
+ 
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 5ec7687..cc1ba47 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -5521,7 +5521,7 @@ static int migration_thread(void *data)
+ /*
+  * Figure out where task on dead CPU should go, use force if necessary.
+  */
+-static void move_task_off_dead_cpu(int dead_cpu, struct task_struct *p)
++void move_task_off_dead_cpu(int dead_cpu, struct task_struct *p)
+ {
+ 	struct rq *rq = cpu_rq(dead_cpu);
+ 	int needs_cpu, uninitialized_var(dest_cpu);
 -- 
 1.7.3.3
 
