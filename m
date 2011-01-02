@@ -1,100 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753735Ab1ABHXY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:23:24 -0500
-Received: from mail.windriver.com ([147.11.1.11]:35497 "EHLO
+	id S1753950Ab1ABHXi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:23:38 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35541 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753711Ab1ABHXU (ORCPT
+	with ESMTP id S1753711Ab1ABHXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:23:20 -0500
+	Sun, 2 Jan 2011 02:23:25 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: stable-review@kernel.org, "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 115/260] tcp: fix three tcp sysctls tuning
-Date: Sun,  2 Jan 2011 02:16:51 -0500
-Message-Id: <1293952756-15010-116-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 117/260] bridge: Clear INET control block of SKBs passed into ip_fragment().
+Date: Sun,  2 Jan 2011 02:16:53 -0500
+Message-Id: <1293952756-15010-118-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:22:15.0462 (UTC) FILETIME=[C7FCAC60:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:22:17.0587 (UTC) FILETIME=[C940EC30:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: David S. Miller <davem@davemloft.net>
 
-commit c5ed63d66f24fd4f7089b5a6e087b0ce7202aa8e upstream.
+commit 87f94b4e91dc042620c527f3c30c37e5127ef757 upstream.
 
-As discovered by Anton Blanchard, current code to autotune
-tcp_death_row.sysctl_max_tw_buckets, sysctl_tcp_max_orphans and
-sysctl_max_syn_backlog makes little sense.
+In a similar vain to commit 17762060c25590bfddd68cc1131f28ec720f405f
+("bridge: Clear IPCB before possible entry into IP stack")
 
-The bigger a page is, the less tcp_max_orphans is : 4096 on a 512GB
-machine in Anton's case.
+Any time we call into the IP stack we have to make sure the state
+there is as expected by the ipv4 code.
 
-(tcp_hashinfo.bhash_size * sizeof(struct inet_bind_hashbucket))
-is much bigger if spinlock debugging is on. Its wrong to select bigger
-limits in this case (where kernel structures are also bigger)
+With help from Eric Dumazet and Herbert Xu.
 
-bhash_size max is 65536, and we get this value even for small machines.
-
-A better ground is to use size of ehash table, this also makes code
-shorter and more obvious.
-
-Based on a patch from Anton, and another from David.
-
-Reported-and-tested-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Reported-by: Bandan Das <bandan.das@stratus.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/ipv4/tcp.c |   24 +++++++-----------------
- 1 files changed, 7 insertions(+), 17 deletions(-)
+ net/bridge/br_netfilter.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 692f424..4a638f0 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -3192,7 +3192,7 @@ void __init tcp_init(void)
- {
- 	struct sk_buff *skb = NULL;
- 	unsigned long nr_pages, limit;
--	int order, i, max_share;
-+	int i, max_share, cnt;
- 	unsigned long jiffy = jiffies;
- 
- 	BUILD_BUG_ON(sizeof(struct tcp_skb_cb) > sizeof(skb->cb));
-@@ -3241,22 +3241,12 @@ void __init tcp_init(void)
- 		INIT_HLIST_HEAD(&tcp_hashinfo.bhash[i].chain);
- 	}
- 
--	/* Try to be a bit smarter and adjust defaults depending
--	 * on available memory.
--	 */
--	for (order = 0; ((1 << order) << PAGE_SHIFT) <
--			(tcp_hashinfo.bhash_size * sizeof(struct inet_bind_hashbucket));
--			order++)
--		;
--	if (order >= 4) {
--		tcp_death_row.sysctl_max_tw_buckets = 180000;
--		sysctl_tcp_max_orphans = 4096 << (order - 4);
--		sysctl_max_syn_backlog = 1024;
--	} else if (order < 3) {
--		tcp_death_row.sysctl_max_tw_buckets >>= (3 - order);
--		sysctl_tcp_max_orphans >>= (3 - order);
--		sysctl_max_syn_backlog = 128;
--	}
-+
-+	cnt = tcp_hashinfo.ehash_mask + 1;
-+
-+	tcp_death_row.sysctl_max_tw_buckets = cnt / 2;
-+	sysctl_tcp_max_orphans = cnt / 2;
-+	sysctl_max_syn_backlog = max(128, cnt / 256);
- 
- 	/* Set the pressure threshold to be a fraction of global memory that
- 	 * is up to 1/2 at 256 MB, decreasing toward zero with the amount of
+diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
+index 54d812e..641d662 100644
+--- a/net/bridge/br_netfilter.c
++++ b/net/bridge/br_netfilter.c
+@@ -801,9 +801,11 @@ static int br_nf_dev_queue_xmit(struct sk_buff *skb)
+ 	if (skb->nfct != NULL &&
+ 	    (skb->protocol == htons(ETH_P_IP) || IS_VLAN_IP(skb)) &&
+ 	    skb->len > skb->dev->mtu &&
+-	    !skb_is_gso(skb))
++	    !skb_is_gso(skb)) {
++		/* BUG: Should really parse the IP options here. */
++		memset(IPCB(skb), 0, sizeof(struct inet_skb_parm));
+ 		return ip_fragment(skb, br_dev_queue_push_xmit);
+-	else
++	} else
+ 		return br_dev_queue_push_xmit(skb);
+ }
+ #else
 -- 
 1.7.3.3
 
