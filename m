@@ -1,119 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550Ab1ABHXE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:23:04 -0500
-Received: from mail.windriver.com ([147.11.1.11]:35182 "EHLO
+	id S1753735Ab1ABHXY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:23:24 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35497 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753490Ab1ABHW4 (ORCPT
+	with ESMTP id S1753711Ab1ABHXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:22:56 -0500
+	Sun, 2 Jan 2011 02:23:20 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+Cc: stable-review@kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 085/260] sched: sched_exec(): Remove the select_fallback_rq() logic
-Date: Sun,  2 Jan 2011 02:16:21 -0500
-Message-Id: <1293952756-15010-86-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 115/260] tcp: fix three tcp sysctls tuning
+Date: Sun,  2 Jan 2011 02:16:51 -0500
+Message-Id: <1293952756-15010-116-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:21:42.0883 (UTC) FILETIME=[B4918330:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:22:15.0462 (UTC) FILETIME=[C7FCAC60:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-commit 30da688ef6b76e01969b00608202fff1eed2accc upstream.
+commit c5ed63d66f24fd4f7089b5a6e087b0ce7202aa8e upstream.
 
-sched_exec()->select_task_rq() reads/updates ->cpus_allowed lockless.
-This can race with other CPUs updating our ->cpus_allowed, and this
-looks meaningless to me.
+As discovered by Anton Blanchard, current code to autotune
+tcp_death_row.sysctl_max_tw_buckets, sysctl_tcp_max_orphans and
+sysctl_max_syn_backlog makes little sense.
 
-The task is current and running, it must have online cpus in ->cpus_allowed,
-the fallback mode is bogus. And, if ->sched_class returns the "wrong" cpu,
-this likely means we raced with set_cpus_allowed() which was called
-for reason, why should sched_exec() retry and call ->select_task_rq()
-again?
+The bigger a page is, the less tcp_max_orphans is : 4096 on a 512GB
+machine in Anton's case.
 
-Change the code to call sched_class->select_task_rq() directly and do
-nothing if the returned cpu is wrong after re-checking under rq->lock.
+(tcp_hashinfo.bhash_size * sizeof(struct inet_bind_hashbucket))
+is much bigger if spinlock debugging is on. Its wrong to select bigger
+limits in this case (where kernel structures are also bigger)
 
->From now task_struct->cpus_allowed is always stable under TASK_WAKING,
-select_fallback_rq() is always called under rq-lock or the caller or
-the caller owns TASK_WAKING (select_task_rq).
+bhash_size max is 65536, and we get this value even for small machines.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <20100315091019.GA9141@redhat.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+A better ground is to use size of ehash table, this also makes code
+shorter and more obvious.
+
+Based on a patch from Anton, and another from David.
+
+Reported-and-tested-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/sched.c |   25 ++++++++-----------------
- 1 files changed, 8 insertions(+), 17 deletions(-)
+ net/ipv4/tcp.c |   24 +++++++-----------------
+ 1 files changed, 7 insertions(+), 17 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 59ef8a1..5ec7687 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2286,6 +2286,9 @@ void task_oncpu_function_call(struct task_struct *p,
- }
- 
- #ifdef CONFIG_SMP
-+/*
-+ * ->cpus_allowed is protected by either TASK_WAKING or rq->lock held.
-+ */
- static int select_fallback_rq(int cpu, struct task_struct *p)
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 692f424..4a638f0 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -3192,7 +3192,7 @@ void __init tcp_init(void)
  {
- 	int dest_cpu;
-@@ -2322,12 +2325,7 @@ static int select_fallback_rq(int cpu, struct task_struct *p)
- }
+ 	struct sk_buff *skb = NULL;
+ 	unsigned long nr_pages, limit;
+-	int order, i, max_share;
++	int i, max_share, cnt;
+ 	unsigned long jiffy = jiffies;
  
- /*
-- * Gets called from 3 sites (exec, fork, wakeup), since it is called without
-- * holding rq->lock we need to ensure ->cpus_allowed is stable, this is done
-- * by:
-- *
-- *  exec:           is unstable, retry loop
-- *  fork & wake-up: serialize ->cpus_allowed against TASK_WAKING
-+ * The caller (fork, wakeup) owns TASK_WAKING, ->cpus_allowed is stable.
-  */
- static inline
- int select_task_rq(struct task_struct *p, int sd_flags, int wake_flags)
-@@ -3137,9 +3135,8 @@ void sched_exec(void)
- 	unsigned long flags;
- 	struct rq *rq;
+ 	BUILD_BUG_ON(sizeof(struct tcp_skb_cb) > sizeof(skb->cb));
+@@ -3241,22 +3241,12 @@ void __init tcp_init(void)
+ 		INIT_HLIST_HEAD(&tcp_hashinfo.bhash[i].chain);
+ 	}
  
--again:
- 	this_cpu = get_cpu();
--	dest_cpu = select_task_rq(p, SD_BALANCE_EXEC, 0);
-+	dest_cpu = p->sched_class->select_task_rq(p, SD_BALANCE_EXEC, 0);
- 	if (dest_cpu == this_cpu) {
- 		put_cpu();
- 		return;
-@@ -3147,18 +3144,12 @@ again:
- 
- 	rq = task_rq_lock(p, &flags);
- 	put_cpu();
--
- 	/*
- 	 * select_task_rq() can race against ->cpus_allowed
- 	 */
--	if (!cpumask_test_cpu(dest_cpu, &p->cpus_allowed)
--	    || unlikely(!cpu_active(dest_cpu))) {
--		task_rq_unlock(rq, &flags);
--		goto again;
+-	/* Try to be a bit smarter and adjust defaults depending
+-	 * on available memory.
+-	 */
+-	for (order = 0; ((1 << order) << PAGE_SHIFT) <
+-			(tcp_hashinfo.bhash_size * sizeof(struct inet_bind_hashbucket));
+-			order++)
+-		;
+-	if (order >= 4) {
+-		tcp_death_row.sysctl_max_tw_buckets = 180000;
+-		sysctl_tcp_max_orphans = 4096 << (order - 4);
+-		sysctl_max_syn_backlog = 1024;
+-	} else if (order < 3) {
+-		tcp_death_row.sysctl_max_tw_buckets >>= (3 - order);
+-		sysctl_tcp_max_orphans >>= (3 - order);
+-		sysctl_max_syn_backlog = 128;
 -	}
--
--	/* force the process onto the specified CPU */
--	if (migrate_task(p, dest_cpu, &req)) {
-+	if (cpumask_test_cpu(dest_cpu, &p->cpus_allowed) &&
-+	    likely(cpu_active(dest_cpu)) &&
-+	    migrate_task(p, dest_cpu, &req)) {
- 		/* Need to wait for migration thread (might exit: take ref). */
- 		struct task_struct *mt = rq->migration_thread;
++
++	cnt = tcp_hashinfo.ehash_mask + 1;
++
++	tcp_death_row.sysctl_max_tw_buckets = cnt / 2;
++	sysctl_tcp_max_orphans = cnt / 2;
++	sysctl_max_syn_backlog = max(128, cnt / 256);
  
+ 	/* Set the pressure threshold to be a fraction of global memory that
+ 	 * is up to 1/2 at 256 MB, decreasing toward zero with the amount of
 -- 
 1.7.3.3
 
