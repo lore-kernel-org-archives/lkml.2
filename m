@@ -1,127 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab1ABH1n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:27:43 -0500
-Received: from mail.windriver.com ([147.11.1.11]:37221 "EHLO
+	id S1755112Ab1ABH2Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:28:25 -0500
+Received: from mail.windriver.com ([147.11.1.11]:37208 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754958Ab1ABH0D (ORCPT
+	with ESMTP id S1755034Ab1ABHZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:26:03 -0500
+	Sun, 2 Jan 2011 02:25:59 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Petr Tesarik <ptesarik@suse.cz>,
-        Tony Luck <tony.luck@intel.com>,
+Cc: stable-review@kernel.org, Christof Schmitt <christof.schmitt@de.ibm.com>,
+        James Bottomley <James.Bottomley@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 140/260] Optimize ticket spinlocks in fsys_rt_sigprocmask
-Date: Sun,  2 Jan 2011 02:17:16 -0500
-Message-Id: <1293952756-15010-141-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 258/260] Fix race when removing SCSI devices
+Date: Sun,  2 Jan 2011 02:19:14 -0500
+Message-Id: <1293952756-15010-259-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:22:43.0353 (UTC) FILETIME=[D89C8090:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:24:51.0480 (UTC) FILETIME=[24FB2180:01CBAA4E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Petr Tesarik <ptesarik@suse.cz>
+From: Christof Schmitt <christof.schmitt@de.ibm.com>
 
-commit 2d2b6901649a62977452be85df53eda2412def24 upstream.
+commit 546ae796bfac6399e30da4b5af2cf7a6d0f8a4ec upstream.
 
-Tony's fix (f574c843191728d9407b766a027f779dcd27b272) has a small bug,
-it incorrectly uses "r3" as a scratch register in the first of the two
-unlock paths ... it is also inefficient.  Optimize the fast path again.
+Removing SCSI devices through
+echo 1 > /sys/bus/scsi/devices/ ... /delete
 
-Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+while the FC transport class removes the SCSI target can lead to an
+oops:
+
+Unable to handle kernel pointer dereference at virtual kernel address 00000000b6815000
+Oops: 0011 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+Modules linked in: sunrpc qeth_l3 binfmt_misc dm_multipath scsi_dh dm_mod ipv6 qeth ccwgroup [last unloaded: scsi_wait_scan]
+CPU: 1 Not tainted 2.6.35.5-45.x.20100924-s390xdefault #1
+Process fc_wq_0 (pid: 861, task: 00000000b7331240, ksp: 00000000b735bac0)
+Krnl PSW : 0704200180000000 00000000003ff6e4 (__scsi_remove_device+0x24/0xd0)
+           R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:0 CC:2 PM:0 EA:3
+Krnl GPRS: 0000000000000001 0000000000000000 00000000b6815000 00000000bc24a8c0
+           00000000003ff7c8 000000000056dbb8 0000000000000002 0000000000835d80
+           ffffffff00000000 0000000000001000 00000000b6815000 00000000bc24a7f0
+           00000000b68151a0 00000000b6815000 00000000b735bc20 00000000b735bbf8
+Krnl Code: 00000000003ff6d6: a7840001            brc 8,3ff6d8
+           00000000003ff6da: a7fbffd8            aghi %r15,-40
+           00000000003ff6de: e3e0f0980024        stg %r14,152(%r15)
+          >00000000003ff6e4: e31021200004        lg %r1,288(%r2)
+           00000000003ff6ea: a71f0000            cghi    %r1,0
+           00000000003ff6ee: a7a40011            brc 10,3ff710
+           00000000003ff6f2: a7390003            lghi    %r3,3
+           00000000003ff6f6: c0e5ffffc8b1        brasl %r14,3f8858
+Call Trace:
+([<0000000000001000>] 0x1000)
+ [<00000000003ff7d2>] scsi_remove_device+0x42/0x54
+ [<00000000003ff8ba>] __scsi_remove_target+0xca/0xfc
+ [<00000000003ff99a>] __remove_child+0x3a/0x48
+ [<00000000003e3246>] device_for_each_child+0x72/0xbc
+ [<00000000003ff93a>] scsi_remove_target+0x4e/0x74
+ [<0000000000406586>] fc_rport_final_delete+0xb2/0x23c
+ [<000000000015d080>] worker_thread+0x200/0x344
+ [<000000000016330c>] kthread+0xa0/0xa8
+ [<0000000000106c1a>] kernel_thread_starter+0x6/0xc
+ [<0000000000106c14>] kernel_thread_starter+0x0/0xc
+INFO: lockdep is turned off.
+Last Breaking-Event-Address:
+ [<00000000003ff7cc>] scsi_remove_device+0x3c/0x54
+
+The function __scsi_remove_target iterates through the SCSI devices on
+the host, but it drops the host_lock before calling
+scsi_remove_device. When the SCSI device is deleted from another
+thread, the pointer to the SCSI device in scsi_remove_device can
+become invalid. Fix this by getting a reference to the SCSI device
+before dropping the host_lock to keep the SCSI device alive for the
+call to scsi_remove_device.
+
+Signed-off-by: Christof Schmitt <christof.schmitt@de.ibm.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/ia64/kernel/fsys.S |   42 +++++++++++-------------------------------
- 1 files changed, 11 insertions(+), 31 deletions(-)
+ drivers/scsi/scsi_sysfs.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/arch/ia64/kernel/fsys.S b/arch/ia64/kernel/fsys.S
-index 471a1e7..331d42b 100644
---- a/arch/ia64/kernel/fsys.S
-+++ b/arch/ia64/kernel/fsys.S
-@@ -420,34 +420,31 @@ EX(.fail_efault, ld8 r14=[r33])			// r14 <- *set
- 	;;
- 
- 	RSM_PSR_I(p0, r18, r19)			// mask interrupt delivery
--	mov ar.ccv=0
- 	andcm r14=r14,r17			// filter out SIGKILL & SIGSTOP
-+	mov r8=EINVAL			// default to EINVAL
- 
- #ifdef CONFIG_SMP
- 	// __ticket_spin_trylock(r31)
- 	ld4 r17=[r31]
--	mov r8=EINVAL			// default to EINVAL
--	;;
--	extr r9=r17,17,15
- 	;;
--	xor r18=r17,r9
-+	mov.m ar.ccv=r17
-+	extr.u r9=r17,17,15
- 	adds r19=1,r17
-+	extr.u r18=r17,0,15
- 	;;
--	extr.u r18=r18,0,15
-+	cmp.eq p6,p7=r9,r18
- 	;;
--	cmp.eq p0,p7=0,r18
-+(p6)	cmpxchg4.acq r9=[r31],r19,ar.ccv
-+(p6)	dep.z r20=r19,1,15		// next serving ticket for unlock
- (p7)	br.cond.spnt.many .lock_contention
--	mov.m ar.ccv=r17
--	;;
--	cmpxchg4.acq r9=[r31],r19,ar.ccv
- 	;;
- 	cmp4.eq p0,p7=r9,r17
-+	adds r31=2,r31
- (p7)	br.cond.spnt.many .lock_contention
- 	ld8 r3=[r2]			// re-read current->blocked now that we hold the lock
- 	;;
- #else
- 	ld8 r3=[r2]			// re-read current->blocked now that we hold the lock
--	mov r8=EINVAL			// default to EINVAL
- #endif
- 	add r18=IA64_TASK_PENDING_OFFSET+IA64_SIGPENDING_SIGNAL_OFFSET,r16
- 	add r19=IA64_TASK_SIGNAL_OFFSET,r16
-@@ -503,16 +500,8 @@ EX(.fail_efault, ld8 r14=[r33])			// r14 <- *set
- 
- #ifdef CONFIG_SMP
- 	// __ticket_spin_unlock(r31)
--	adds r31=2,r31
--	;;
--	ld2.bias r2=[r31]
--	mov r3=65534
--	;;
--	adds r2=2,r2
--	;;
--	and r3=r3,r2
--	;;
--	st2.rel [r31]=r3
-+	st2.rel [r31]=r20
-+	mov r20=0					// i must not leak kernel bits...
- #endif
- 	SSM_PSR_I(p0, p9, r31)
- 	;;
-@@ -535,16 +524,7 @@ EX(.fail_efault, (p15) st8 [r34]=r3)
- .sig_pending:
- #ifdef CONFIG_SMP
- 	// __ticket_spin_unlock(r31)
--	adds r31=2,r31
--	;;
--	ld2.bias r2=[r31]
--	mov r3=65534
--	;;
--	adds r2=2,r2
--	;;
--	and r3=r3,r2
--	;;
--	st2.rel [r31]=r3
-+	st2.rel [r31]=r20			// release the lock
- #endif
- 	SSM_PSR_I(p0, p9, r17)
- 	;;
+diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
+index 429c9b7..02be251 100644
+--- a/drivers/scsi/scsi_sysfs.c
++++ b/drivers/scsi/scsi_sysfs.c
+@@ -993,10 +993,11 @@ static void __scsi_remove_target(struct scsi_target *starget)
+ 	list_for_each_entry(sdev, &shost->__devices, siblings) {
+ 		if (sdev->channel != starget->channel ||
+ 		    sdev->id != starget->id ||
+-		    sdev->sdev_state == SDEV_DEL)
++		    scsi_device_get(sdev))
+ 			continue;
+ 		spin_unlock_irqrestore(shost->host_lock, flags);
+ 		scsi_remove_device(sdev);
++		scsi_device_put(sdev);
+ 		spin_lock_irqsave(shost->host_lock, flags);
+ 		goto restart;
+ 	}
 -- 
 1.7.3.3
 
