@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725Ab1ABIF4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 03:05:56 -0500
-Received: from mail.windriver.com ([147.11.1.11]:34572 "EHLO
+	id S1753440Ab1ABIGY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 03:06:24 -0500
+Received: from mail.windriver.com ([147.11.1.11]:34534 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752537Ab1ABHWN (ORCPT
+	with ESMTP id S1752181Ab1ABHWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:22:13 -0500
+	Sun, 2 Jan 2011 02:22:10 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Takashi Iwai <tiwai@suse.de>,
+Cc: stable-review@kernel.org, Craig Shelley <craig@microtron.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 056/260] ALSA: seq/oss - Fix double-free at error path of snd_seq_oss_open()
-Date: Sun,  2 Jan 2011 02:15:52 -0500
-Message-Id: <1293952756-15010-57-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 047/260] USB: CP210x Add new device ID
+Date: Sun,  2 Jan 2011 02:15:43 -0500
+Message-Id: <1293952756-15010-48-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:21:07.0163 (UTC) FILETIME=[9F4712B0:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:20:57.0319 (UTC) FILETIME=[9968FF70:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Craig Shelley <craig@microtron.org.uk>
 
-commit 27f7ad53829f79e799a253285318bff79ece15bd upstream.
+commit 541e05ec3add5ab5bcf238d60161b53480280b20 upstream.
 
-The error handling in snd_seq_oss_open() has several bad codes that
-do dereferecing released pointers and double-free of kmalloc'ed data.
-The object dp is release in free_devinfo() that is called via
-private_free callback.  The rest shouldn't touch this object any more.
+New device ID added for Balluff RFID reader.
 
-The patch changes delete_port() to call kfree() in any case, and gets
-rid of unnecessary calls of destructors in snd_seq_oss_open().
-
-Fixes CVE-2010-3080.
-
-Reported-and-tested-by: Tavis Ormandy <taviso@cmpxchg8b.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Craig Shelley <craig@microtron.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- sound/core/seq/oss/seq_oss_init.c |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
+ drivers/usb/serial/cp210x.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/sound/core/seq/oss/seq_oss_init.c b/sound/core/seq/oss/seq_oss_init.c
-index 6857122..69cd7b3 100644
---- a/sound/core/seq/oss/seq_oss_init.c
-+++ b/sound/core/seq/oss/seq_oss_init.c
-@@ -281,13 +281,10 @@ snd_seq_oss_open(struct file *file, int level)
- 	return 0;
+diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+index 2d36ed2..3521aa6 100644
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -111,6 +111,7 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x10C4, 0x83A8) }, /* Amber Wireless AMB2560 */
+ 	{ USB_DEVICE(0x10C4, 0x8411) }, /* Kyocera GPS Module */
+ 	{ USB_DEVICE(0x10C4, 0x846E) }, /* BEI USB Sensor Interface (VCP) */
++	{ USB_DEVICE(0x10C4, 0x8477) }, /* Balluff RFID */
+ 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA61) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA71) }, /* Infinity GPS-MIC-1 Radio Monophone */
+@@ -124,14 +125,14 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x1555, 0x0004) }, /* Owen AC4 USB-RS485 Converter */
+ 	{ USB_DEVICE(0x166A, 0x0303) }, /* Clipsal 5500PCU C-Bus USB interface */
+ 	{ USB_DEVICE(0x16D6, 0x0001) }, /* Jablotron serial interface */
+-	{ USB_DEVICE(0x17F4, 0xAAAA) }, /* Wavesense Jazz blood glucose meter */
+-	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
+-	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
+-	{ USB_DEVICE(0x413C, 0x9500) }, /* DW700 GPS USB interface */
+ 	{ USB_DEVICE(0x16DC, 0x0010) }, /* W-IE-NE-R Plein & Baus GmbH PL512 Power Supply */
+ 	{ USB_DEVICE(0x16DC, 0x0011) }, /* W-IE-NE-R Plein & Baus GmbH RCM Remote Control for MARATON Power Supply */
+ 	{ USB_DEVICE(0x16DC, 0x0012) }, /* W-IE-NE-R Plein & Baus GmbH MPOD Multi Channel Power Supply */
+ 	{ USB_DEVICE(0x16DC, 0x0015) }, /* W-IE-NE-R Plein & Baus GmbH CML Control, Monitoring and Data Logger */
++	{ USB_DEVICE(0x17F4, 0xAAAA) }, /* Wavesense Jazz blood glucose meter */
++	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
++	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
++	{ USB_DEVICE(0x413C, 0x9500) }, /* DW700 GPS USB interface */
+ 	{ } /* Terminating Entry */
+ };
  
-  _error:
--	snd_seq_oss_writeq_delete(dp->writeq);
--	snd_seq_oss_readq_delete(dp->readq);
- 	snd_seq_oss_synth_cleanup(dp);
- 	snd_seq_oss_midi_cleanup(dp);
--	delete_port(dp);
- 	delete_seq_queue(dp->queue);
--	kfree(dp);
-+	delete_port(dp);
- 
- 	return rc;
- }
-@@ -350,8 +347,10 @@ create_port(struct seq_oss_devinfo *dp)
- static int
- delete_port(struct seq_oss_devinfo *dp)
- {
--	if (dp->port < 0)
-+	if (dp->port < 0) {
-+		kfree(dp);
- 		return 0;
-+	}
- 
- 	debug_printk(("delete_port %i\n", dp->port));
- 	return snd_seq_event_port_detach(dp->cseq, dp->port);
 -- 
 1.7.3.3
 
