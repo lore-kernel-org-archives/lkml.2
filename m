@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627Ab1ABHWP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:22:15 -0500
-Received: from mail.windriver.com ([147.11.1.11]:34509 "EHLO
+	id S1753429Ab1ABIEt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 03:04:49 -0500
+Received: from mail.windriver.com ([147.11.1.11]:34601 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752461Ab1ABHWI (ORCPT
+	with ESMTP id S1752616Ab1ABHWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:22:08 -0500
+	Sun, 2 Jan 2011 02:22:15 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Dave Ludlow <dave.ludlow@bay.ws>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+Cc: stable-review@kernel.org, Robert Richter <robert.richter@amd.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 050/260] usb: serial: mos7840: Add USB ID to support the B&B Electronics USOPTL4-2P.
-Date: Sun,  2 Jan 2011 02:15:46 -0500
-Message-Id: <1293952756-15010-51-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 059/260] oprofile, x86: fix init_sysfs error handling
+Date: Sun,  2 Jan 2011 02:15:55 -0500
+Message-Id: <1293952756-15010-60-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:21:00.0601 (UTC) FILETIME=[9B5DCA90:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:21:10.0210 (UTC) FILETIME=[A1180220:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Ludlow <dave.ludlow@bay.ws>
+From: Robert Richter <robert.richter@amd.com>
 
-commit caf3a636a9f809fdca5fa746e6687096457accb1 upstream.
+commit 10f0412f57f2a76a90eff4376f59cbb0a39e4e18 upstream.
 
-Add the USB ID needed to support B&B Electronic's 2-port, optically-isolated,
-powered, USB to RS485 converter.
+On failure init_sysfs() might not properly free resources. The error
+code of the function is not checked. And, when reinitializing the exit
+function might be called twice. This patch fixes all this.
 
-Signed-off-by: Dave Ludlow <dave.ludlow@bay.ws>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/serial/mos7840.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ arch/x86/oprofile/nmi_int.c |   16 +++++++++++++---
+ 1 files changed, 13 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
-index 68f6a1d..0fffcee 100644
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -130,6 +130,7 @@
- #define BANDB_DEVICE_ID_USOPTL4_2	0xAC42
- #define BANDB_DEVICE_ID_USOPTL4_4	0xAC44
- #define BANDB_DEVICE_ID_USOPTL2_4	0xAC24
-+#define BANDB_DEVICE_ID_USOPTL4_2P      0xBC02
+diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+index c41ad50..41b7228 100644
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -518,8 +518,13 @@ static int __init init_sysfs(void)
+ 	int error;
  
- /* This driver also supports
-  * ATEN UC2324 device using Moschip MCS7840
-@@ -193,6 +194,7 @@ static const struct usb_device_id moschip_port_id_table[] = {
- 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_2)},
- 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_4)},
- 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL2_4)},
-+	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL2_4P)},
- 	{USB_DEVICE(USB_VENDOR_ID_ATENINTL, ATENINTL_DEVICE_ID_UC2324)},
- 	{USB_DEVICE(USB_VENDOR_ID_ATENINTL, ATENINTL_DEVICE_ID_UC2322)},
- 	{}			/* terminating entry */
-@@ -210,6 +212,7 @@ static const struct usb_device_id moschip_id_table_combined[] __devinitconst = {
- 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_2)},
- 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_4)},
- 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL2_4)},
-+	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL2_4P)},
- 	{USB_DEVICE(USB_VENDOR_ID_ATENINTL, ATENINTL_DEVICE_ID_UC2324)},
- 	{USB_DEVICE(USB_VENDOR_ID_ATENINTL, ATENINTL_DEVICE_ID_UC2322)},
- 	{}			/* terminating entry */
+ 	error = sysdev_class_register(&oprofile_sysclass);
+-	if (!error)
+-		error = sysdev_register(&device_oprofile);
++	if (error)
++		return error;
++
++	error = sysdev_register(&device_oprofile);
++	if (error)
++		sysdev_class_unregister(&oprofile_sysclass);
++
+ 	return error;
+ }
+ 
+@@ -645,6 +650,8 @@ int __init op_nmi_init(struct oprofile_operations *ops)
+ 	char *cpu_type = NULL;
+ 	int ret = 0;
+ 
++	using_nmi = 0;
++
+ 	if (!cpu_has_apic)
+ 		return -ENODEV;
+ 
+@@ -727,7 +734,10 @@ int __init op_nmi_init(struct oprofile_operations *ops)
+ 
+ 	mux_init(ops);
+ 
+-	init_sysfs();
++	ret = init_sysfs();
++	if (ret)
++		return ret;
++
+ 	using_nmi = 1;
+ 	printk(KERN_INFO "oprofile: using NMI interrupt.\n");
+ 	return 0;
 -- 
 1.7.3.3
 
