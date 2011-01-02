@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283Ab1ABUdf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 15:33:35 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35043 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752077Ab1ABUde convert rfc822-to-8bit (ORCPT
+	id S1754352Ab1ABUpg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 15:45:36 -0500
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:49309 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752886Ab1ABUpf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 15:33:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Tx1JiLhnJffufXCcZAoP/FNF3Gurz8smYl1TR+lQsr8X0iUmWSxDinpz6HRyM4B1BF
-         EKN1Zduv184bxjE+hyBIxTqMyJDm563JJ0tX//CUk562sRlrfRdjsxyydvgKpR79ewaO
-         mQFgsyKqlDR0XzyNM4rw7pfGfZnlUfWCS3sZQ=
+	Sun, 2 Jan 2011 15:45:35 -0500
+Date: Sun, 2 Jan 2011 21:45:32 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: rpurdie@rpsys.net, lenz@cs.wisc.edu,
+        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
+        Cyril Hrubis <metan@ucw.cz>, thommycheck@gmail.com,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
+        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
+        Marek Vasut <marek.vasut@gmail.com>, pavel@ucw.cz,
+        yegorslists@googlemail.com, gregkh@suse.de
+Subject: zaurus bluetooth regression
+Message-ID: <20110102204532.GA12860@elf.ucw.cz>
 MIME-Version: 1.0
-In-Reply-To: <20101231215018.GB5012@n2100.arm.linux.org.uk>
-References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com>
-	<20101221182037.GA4783@n2100.arm.linux.org.uk>
-	<20101222122904.GC14693@n2100.arm.linux.org.uk>
-	<AANLkTikpyAggDCPef1pS=_QHnu9-FyLcpddGyVHnGwWx@mail.gmail.com>
-	<20101223001012.GF29368@n2100.arm.linux.org.uk>
-	<AANLkTimirgsuoM2che_ocrkvCZqGu6xEJjrjdmt9-69p@mail.gmail.com>
-	<AANLkTikP+JZkN7AjqaNfHY8jZ7bVsV-af=YR=MTdfnNU@mail.gmail.com>
-	<20101231215018.GB5012@n2100.arm.linux.org.uk>
-Date: Sun, 2 Jan 2011 21:33:34 +0100
-Message-ID: <AANLkTiktQbR5cm6qKzrhCBEMqmxOq4WhryoZnQ-kge0g@mail.gmail.com>
-Subject: Re: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081 PrimeCells
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        Viresh Kumar <viresh.kumar@st.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        yuanyabin1978@sina.com, linux-kernel@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>, Peter Pearse <peter.pearse@arm.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Alessandro Rubini <rubini@unipv.it>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/12/31 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+Hi!
 
-> So, given all these questions (some of which can lead to deadlocks), and
-> we're now at -rc8, I see no way that I can sanely (or safely) queue up
-> the PL011 UART and PL180 MMCI DMA engine code for this coming merge
-> window.  (Sorry Linus.)
+It seems this commit
 
-Such is life, I am still very happy that you have been taking some
-time to dive into this. I will try to work through the points raised
-as far as I can...
+commit 7a56aa45982bb87bfca98a2832b5ae782c03364a
+Author: Yegor Yefremov <yegor_sub1@visionsystems.de>
+Date:   Wed Jun 16 16:29:55 2010 +0200
 
-As for the in-tree PL08x driver I'd say it's doing pretty well for
-memcpy() so we could add platform data for that on supported
-platforms, then for device transfers we need more elaborative
-work.
+    serial: add UART_CAP_EFR and UART_CAP_SLEEP flags to 16C950 UARTs
+definition
 
-I will also try to get the Nomadik 8815 up to get some reference
-HW for this combo that actually works, including device transfers on
-MMCI etc.
+    Adding UART_CAP_EFR and UART_CAP_SLEEP flags will enable sleep
+mode
+    and automatic CTS flow control for 16C950 UARTs. It will also
+avoid
+    capabilities detection warning like this:
 
-Yours,
-Linus Walleij
+    "ttyS0: detected caps 00000700 should be 00000100"
+
+    Signed-off-by: Yegor Yefremov <yegorslists@googlemail.com>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+...is responsible for my bluetooth problems on zaurus -- at least
+bisect pointed to it,  as I use 16C950-based bluetooth card, it seems
+very logical. I'll try 2.6.37-rc8 with that patch reverted...
+
+See https://bugzilla.kernel.org/show_bug.cgi?id=17061  .
+
+								Pavel
+
+diff --git a/drivers/serial/8250.c b/drivers/serial/8250.c
+index 09ef570..bc8ed4b 100644
+--- a/drivers/serial/8250.c
++++ b/drivers/serial/8250.c
+@@ -241,7 +241,7 @@ static const struct serial8250_config uart_config[] = {
+ 		.fifo_size	= 128,
+ 		.tx_loadsz	= 128,
+ 		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
+-		.flags		= UART_CAP_FIFO,
++		.flags		= UART_CAP_FIFO | UART_CAP_EFR | UART_CAP_SLEEP,
+ 	},
+ 	[PORT_16654] = {
+ 		.name		= "ST16654",
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
