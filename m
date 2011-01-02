@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207Ab1ABH1p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:27:45 -0500
-Received: from mail.windriver.com ([147.11.1.11]:37222 "EHLO
+	id S1755151Ab1ABH22 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:28:28 -0500
+Received: from mail.windriver.com ([147.11.1.11]:37201 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754965Ab1ABH0D (ORCPT
+	with ESMTP id S1755026Ab1ABHZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:26:03 -0500
+	Sun, 2 Jan 2011 02:25:58 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Colin Ian King <colin.king@canonical.com>,
-        Len Brown <len.brown@intel.com>,
+Cc: stable-review@kernel.org, Alon Ziv <alon+git@nolaviz.org>,
+        Alon Ziv <alon-git@nolaviz.org>, Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 209/260] ACPI: enable repeated PCIEXP wakeup by clearing PCIEXP_WAKE_STS on resume
-Date: Sun,  2 Jan 2011 02:18:25 -0500
-Message-Id: <1293952756-15010-210-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 253/260] USB: opticon: Fix long-standing bugs in opticon driver
+Date: Sun,  2 Jan 2011 02:19:09 -0500
+Message-Id: <1293952756-15010-254-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:23:59.0057 (UTC) FILETIME=[05BC0410:01CBAA4E]
+X-OriginalArrivalTime: 02 Jan 2011 07:24:46.0386 (UTC) FILETIME=[21F1D920:01CBAA4E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Ian King <colin.king@canonical.com>
+From: Alon Ziv <alon+git@nolaviz.org>
 
-commit 573b638158029898caf9470c8214b7ddd29751e3 upstream.
+commit 97cd8dc4ca9a1a5efb2cc38758e01492e3b013e2 upstream.
 
-Section 4.7.3.1.1 (PM1 Status Registers) of version 4.0 of
-the ACPI spec concerning PCIEXP_WAKE_STS points out in
-in the final note field in table 4-11 that if this bit is
-set to 1 and the system is put into a sleeping state then
-the system will not automatically wake.
+The bulk-read callback had two bugs:
+a) The bulk-in packet's leading two zeros were returned (and the two last
+   bytes truncated)
+b) The wrong URB was transmitted for the second (and later) read requests,
+   causing further reads to return the entire packet (including leading
+   zeros)
 
-This bit gets set by hardware to indicate that the system
-woke up due to a PCI Express wakeup event, so clear it during
-acpi_hw_clear_acpi_status() calls to enable subsequent
-resumes to work.
-
-BugLink: http://bugs.launchpad.net/bugs/613381
-
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Alon Ziv <alon-git@nolaviz.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/acpi/acpica/aclocal.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/usb/serial/opticon.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/acpi/acpica/aclocal.h b/drivers/acpi/acpica/aclocal.h
-index 24b8faa..3a739ba 100644
---- a/drivers/acpi/acpica/aclocal.h
-+++ b/drivers/acpi/acpica/aclocal.h
-@@ -848,6 +848,7 @@ struct acpi_bit_register_info {
- 	ACPI_BITMASK_POWER_BUTTON_STATUS   | \
- 	ACPI_BITMASK_SLEEP_BUTTON_STATUS   | \
- 	ACPI_BITMASK_RT_CLOCK_STATUS       | \
-+	ACPI_BITMASK_PCIEXP_WAKE_DISABLE   | \
- 	ACPI_BITMASK_WAKE_STATUS)
- 
- #define ACPI_BITMASK_TIMER_ENABLE               0x0001
+diff --git a/drivers/usb/serial/opticon.c b/drivers/usb/serial/opticon.c
+index ed01f3b..9ff19c8 100644
+--- a/drivers/usb/serial/opticon.c
++++ b/drivers/usb/serial/opticon.c
+@@ -96,8 +96,8 @@ static void opticon_bulk_callback(struct urb *urb)
+ 			/* real data, send it to the tty layer */
+ 			tty = tty_port_tty_get(&port->port);
+ 			if (tty) {
+-				tty_insert_flip_string(tty, data,
+-							       data_length);
++				tty_insert_flip_string(tty, data + 2,
++						       data_length);
+ 				tty_flip_buffer_push(tty);
+ 				tty_kref_put(tty);
+ 			}
+@@ -130,7 +130,7 @@ exit:
+ 						  priv->bulk_address),
+ 				  priv->bulk_in_buffer, priv->buffer_size,
+ 				  opticon_bulk_callback, priv);
+-		result = usb_submit_urb(port->read_urb, GFP_ATOMIC);
++		result = usb_submit_urb(priv->bulk_read_urb, GFP_ATOMIC);
+ 		if (result)
+ 			dev_err(&port->dev,
+ 			    "%s - failed resubmitting read urb, error %d\n",
 -- 
 1.7.3.3
 
