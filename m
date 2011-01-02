@@ -1,44 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab1ABNi6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 08:38:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49437 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752644Ab1ABNi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 08:38:56 -0500
-Message-ID: <4D207FEA.9080502@redhat.com>
-Date: Sun, 02 Jan 2011 15:38:50 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1754152Ab1ABNz5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 08:55:57 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49498 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753813Ab1ABNz4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jan 2011 08:55:56 -0500
+Date: Sun, 2 Jan 2011 13:56:13 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>, myungjoo.ham@gmail.com
+Subject: Re: [PATCH v3 3/4] regulator MAX8998/LP3974: Support DVS-GPIO.
+Message-ID: <20110102135612.GH4935@opensource.wolfsonmicro.com>
+References: <1293094419-24221-1-git-send-email-myungjoo.ham@samsung.com>
+ <1293094419-24221-4-git-send-email-myungjoo.ham@samsung.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Subject: [GIT PULL] KVM fixes for 2.6.37-rc8
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1293094419-24221-4-git-send-email-myungjoo.ham@samsung.com>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull a couple of late KVM fixes from
+On Thu, Dec 23, 2010 at 05:53:38PM +0900, MyungJoo Ham wrote:
+> The previous driver did not support BUCK1-DVS3, BUCK1-DVS4, and
+> BUCK2-DVS2 modes. This patch adds such modes and an option to block
+> setting buck1/2 voltages out of the preset values.
 
-   git://git.kernel.org/pub/scm/virt/kvm/kvm.git kvm-updates/2.6.37
-
-The first fixes an issue where a guest with cr0.pg=0, accessing an 
-address above 1GB, that is backed by a large host page, triggers a 
-BUG_ON().  The second is a fix for a long standing virtual i8259 bug 
-that was somehow exposed by the first fix.
-
-Avi Kivity (2):
-       KVM: MMU: Fix incorrect direct gfn for unpaged mode shadow
-       KVM: i8259: initialize isr_ack
-
-  arch/x86/kvm/i8259.c |    2 ++
-  arch/x86/kvm/mmu.c   |    3 ++-
-  2 files changed, 4 insertions(+), 1 deletions(-)
-
--- 
-error compiling committee.c: too many arguments to function
-
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
