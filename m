@@ -1,82 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045Ab1ABXC5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 18:02:57 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54734 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751401Ab1ABXC4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 18:02:56 -0500
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, 599368@bugs.debian.org,
-        608138@bugs.debian.org, Cesare Leonardi <celeonar@gmail.com>
-In-Reply-To: <1294005610.3167.99.camel@localhost>
-References: <1294005610.3167.99.camel@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sun, 02 Jan 2011 23:02:42 +0000
-Message-ID: <1294009362.3167.126.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: [PATCH v2] watchdog: Improve initialisation error message and
- documentation
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+	id S1753069Ab1ABXEf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 18:04:35 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:12546 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720Ab1ABXEe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jan 2011 18:04:34 -0500
+Date: Mon, 3 Jan 2011 00:04:32 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Stefani Seibold <stefani@seibold.net>
+cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, davem@davemloft.net, netdev@vger.kernel.org,
+        shemminger@vyatta.com, daniel.baluta@gmail.com, jochen@jochen.org
+Subject: Re: [PATCH] new UDPCP Communication Protocol
+In-Reply-To: <1294008917.18963.3.camel@wall-e>
+Message-ID: <alpine.LNX.2.00.1101022356550.11481@swampdragon.chaosbits.net>
+References: <1294007971-18878-1-git-send-email-stefani@seibold.net>  <1294008562.2535.263.camel@edumazet-laptop> <1294008917.18963.3.camel@wall-e>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1374685088-1294009472=:11481"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The error message 'NMI watchdog failed to create perf event...'  does
-not make it clear that this is a fatal error for the watchdog.  It
-also currently prints the error value as a pointer, rather than
-extracting the error code with PTR_ERR().  Fix that.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Add a note to the description of the 'nowatchdog' kernel parameter to
-associate it with this message.
+--8323328-1374685088-1294009472=:11481
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
-Reported-by: Cesare Leonardi <celeonar@gmail.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
-Further improved the error message based on Cesare's comments.
+On Sun, 2 Jan 2011, Stefani Seibold wrote:
 
-Ben.
+> Am Sonntag, den 02.01.2011, 23:49 +0100 schrieb Eric Dumazet:
+> > Le dimanche 02 janvier 2011 à 23:39 +0100, stefani@seibold.net a écrit :
+> > > +
+> > > +/*
+> > > + * Create a new destination descriptor for the given IPV4 address and port
+> > > + */
+> > > +static struct udpcp_dest *new_dest(struct sock *sk, __be32 addr, __be16 port)
+> > > +{
+> > > +	struct udpcp_dest *dest;
+> > > +	struct udpcp_sock *usk = udpcp_sk(sk);
+> > > +
+> > > +	if (usk->connections >= udpcp_max_connections)
+> > > +		return NULL;
+> > > +
+> > > +	dest = kzalloc(sizeof(*dest), sk->sk_allocation);
+> > > +
+> > > +	if (dest) {
+> > > +		usk->connections++;
+> > > +		skb_queue_head_init(&dest->xmit);
+> > > +		dest->addr = addr;
+> > > +		dest->port = port;
+> > > +		dest->ackmode = UDPCP_ACK;
+> > > +		list_add_tail(&dest->list, &usk->destlist);
+> > > +	}
+> > > +
+> > > +	return dest;
+> > > +}
+> > > +
+> > 
+> > Hmm, so 'connections' is increased, never decreased.
+> > 
+> > This seems a fatal flaw in this protocol, since a malicious user can
+> > easily fill the list with garbage, and block regular communications.
+> 
+> You are right, there is now way to detect which connection is no longer
+> needed. I have not designed this protocol, so i cannot fix it. 
+> 
+> But in our environment this will be used together with an firewall
+> and/or ipsec. In this case it it safe.
+> 
 
- Documentation/kernel-parameters.txt |    2 +-
- kernel/watchdog.c                   |    3 ++-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+Hmm, the first thing that springs into my head as a possible band-aid 
+(which is probbaly wrong for many reasons I've not considered, so feel 
+free to shoot it down) is; couldn't we use a timer (set to some outrageous 
+high value by default and admin tunable) that would decrement 
+'connections' (discount dead connections) when there has not been any 
+acctivity for a huge period of time? Kill off connections that have been 
+idle for ages.
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 7d0cead..6fc0cf4 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1764,7 +1764,7 @@ and is between 256 and 4096 characters. It is defined in the file
- 
- 	nousb		[USB] Disable the USB subsystem
- 
--	nowatchdog	[KNL] Disable the lockup detector.
-+	nowatchdog	[KNL] Disable the lockup detector (NMI watchdog).
- 
- 	nowb		[ARM]
- 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index d74e866..d7ebdf4 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -366,7 +366,8 @@ static int watchdog_nmi_enable(int cpu)
- 		goto out_save;
- 	}
- 
--	printk(KERN_ERR "NMI watchdog failed to create perf event on cpu%i: %p\n", cpu, event);
-+	printk(KERN_ERR "NMI watchdog disabled for cpu%i: unable to create perf event: %ld\n",
-+	       cpu, PTR_ERR(event));
- 	return PTR_ERR(event);
- 
- 	/* success path */
+Not perfect, but that would at least let the system recover after a while 
+if a malicious client did something nasty with many connections...
+
+
 -- 
-1.7.2.3
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-
+--8323328-1374685088-1294009472=:11481--
