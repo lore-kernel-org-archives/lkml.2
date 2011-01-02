@@ -1,69 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750Ab1ABTw4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 14:52:56 -0500
-Received: from void.printf.net ([89.145.121.20]:36418 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751990Ab1ABTwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 14:52:54 -0500
-Date: Sun, 2 Jan 2011 19:52:46 +0000
-From: Chris Ball <cjb@laptop.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: zhangfei gao <zhangfei.gao@gmail.com>, Philip Rakity <prakity@marvell.com>,
-        Aries Lee <arieslee@jmicron.com>, Qiming Wu <wuqm@marvell.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mmc: Test bus-width for old MMC devices (v2)
-Message-ID: <20110102195246.GD24820@void.printf.net>
-References: <s5hfwtzbj8v.wl%tiwai@suse.de> <20101216234032.GA17239@void.printf.net> <50D31EC8-BD9E-4920-8CEB-2AD10DF9C5C5@marvell.com> <20101217034342.GA19673@void.printf.net> <s5hy67o95to.wl%tiwai@suse.de> <AANLkTimSt5a998m1oqdppsWjGCVid0-Ub81pKgsPR36f@mail.gmail.com> <E81C83FE-E3AD-49DA-86BE-95631F1B81CD@marvell.com> <AANLkTim6pQW0sDtZRNbXbgbvzuXKCdsju7z_ADBxvXPd@mail.gmail.com> <s5h62umnpxb.wl%tiwai@suse.de>
+	id S1754074Ab1ABTzS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 14:55:18 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:10051 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753540Ab1ABTzQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jan 2011 14:55:16 -0500
+Date: Sun, 2 Jan 2011 20:55:15 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: stefani@seibold.net
+cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        davem@davemloft.net, netdev@vger.kernel.org, eric.dumazet@gmail.com,
+        shemminger@vyatta.com
+Subject: Re: [PATCH] new UDPCP Communication Protocol
+In-Reply-To: <1293982286-15389-1-git-send-email-stefani@seibold.net>
+Message-ID: <alpine.LNX.2.00.1101022024200.11481@swampdragon.chaosbits.net>
+References: <1293982286-15389-1-git-send-email-stefani@seibold.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5h62umnpxb.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Takashi,
+On Sun, 2 Jan 2011, stefani@seibold.net wrote:
 
-On Wed, Dec 22, 2010 at 09:59:44AM +0100, Takashi Iwai wrote:
-> Subject: [PATCH] mmc: fix mmc_set_bus_width_ddr() call without bus-width-test cap
+> From: Stefani Seibold <stefani@seibold.net>
 > 
-> With the bus-width test patch, mmc_set_bus_width*() isn't called properly
-> when the driver doesn't set MMC_CAP_BUS_WIDTH and no DDR mode.
-> This patch fixes the regression by moving the call up before the cap test.
+> Changelog:
+> 31.12.2010 first proposal
+> 01.01.2011 code cleanup and fixes suggest by Eric Dumazet
+> 02.01.2011 kick away UDP-Lite support
+>            change spin_lock_irq into spin_lock_bh
+> 	   faster udpcp_release_sock
+> 	   base is now linux-next
 > 
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> ---
->  drivers/mmc/core/mmc.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+> UDPCP is a communication protocol specified by the Open Base Station
+> Architecture Initiative Special Interest Group (OBSAI SIG). The
+> protocol is based on UDP and is designed to meet the needs of "Mobile
+> Communcation Base Station" internal communications. It is widely used by
+> the major networks infrastructure supplier.
 > 
-> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-> index 1d8409f..c86dd73 100644
-> --- a/drivers/mmc/core/mmc.c
-> +++ b/drivers/mmc/core/mmc.c
-> @@ -558,6 +558,8 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
->  					 EXT_CSD_BUS_WIDTH,
->  					 ext_csd_bits[idx][0]);
->  			if (!err) {
-> +				mmc_set_bus_width_ddr(card->host,
-> +						      bus_width, MMC_SDR_MODE);
->  				/*
->  				 * If controller can't handle bus width test,
->  				 * use the highest bus width to maintain
-> @@ -565,8 +567,6 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
->  				 */
->  				if (!(host->caps & MMC_CAP_BUS_WIDTH_TEST))
->  					break;
-> -				mmc_set_bus_width_ddr(card->host,
-> -						      bus_width, MMC_SDR_MODE);
->  				err = mmc_bus_test(card, bus_width);
->  				if (!err)
->  					break;
+> The UDPCP communication service supports the following features:
+> 
+> -Connectionless communication for serial mode data transfer
+> -Acknowledged and unacknowledged transfer modes
+> -Retransmissions Algorithm
+> -Checksum Algorithm using Adler32
+> -Fragmentation of long messages (disassembly/reassembly) to match to the MTU
+>  during transport:
+> -Broadcasting and multicasting messages to multiple peers in unacknowledged
+>   transfer mode
+> 
+> UDPCP supports application level messages up to 64 KBytes (limited by 16-bit
+> packet data length field). Messages that are longer than the MTU will be
+> fragmented to the MTU.
+> 
+> UDPCP provides a reliable transport service that will perform message
+> retransmissions in case transport failures occur.
+> 
+> The code is also a nice example how to implement a UDP based protocol as
+> a kernel socket modules.
+> 
+> Due the nature of UDPCP which has no sliding windows support, the latency has
+> a huge impact. The perfomance increase by implementing as a kernel module is
+> about the factor 10, because there are no context switches and data packets or
+> ACKs will be handled in the interrupt service.
+> 
+> There are no side effects to the network subsystems so i ask for merge it
+> into linux-next. Hope you like it.
+> 
+> The patch is against linux next-20101231
+> 
+> - Stefani
+> 
+> Signed-off-by: Stefani Seibold <stefani@seibold.net>
 
-Thanks, I've pushed this fix to mmc-next now.
+[...]
+> +
+> +#define VERSION	"0.71"
+
+I personally don't think this makes much sense.
+Version numbers for individual modules tend to not get updated as the code 
+changes over the years, which make them rather meaningless.
+Since this module depends on functionallity of the kernel which it is 
+compiled with, the actual (meaningful) version of this code is that of the 
+kernel tree being compiled that includes this code. Which again makes this 
+specific version define meaningless.
+
+So, why not save a few lines of code and get rid of this rather pointless 
+thing?
+
+[...]
+> +static struct udpcp_dest *find_dest(struct sock *sk, __be32 addr, __be16 port)
+> +{
+> +	struct udpcp_dest *dest;
+> +
+> +	dest = __find_dest(sk, addr, port);
+
+Why not
+
+static struct udpcp_dest *find_dest(struct sock *sk, __be32 addr, __be16 port)
+{
+     struct udpcp_dest *dest =  __find_dest(sk, addr, port);
+
+?
+
+
+[...]
+> + * Release a routing table entry if no packed will be assembled
+
+Don't you mean "packet" rather than "packed" here?
+
+
+[...]
+> + * Return true it the passed skb socket buffer is the last in the list
+
+I believe you mean "Return true if the passed ..."
+
+
+[...]
+> +static void udpcp_flush_err(struct sock *sk, struct udpcp_dest *dest)
+> +{
+> +	struct inet_sock *inet = inet_sk(sk);
+> +	struct udpcp_sock *usk = udpcp_sk(sk);
+> +
+> +	if (!inet->recverr)
+> +		skb_queue_purge(&dest->xmit);
+> +	else {
+
+CodingStyle would want this as
+
+     if (!inet->recverr) {
+             skb_queue_purge(&dest->xmit);
+     } else {
+
+If one branch needs {} then both should get them.
+
+
+[...]
+> +	if (!dest->xmit_last)
+> +		_udpcp_xmit(sk, dest);
+> +	else {
+> +		skb = dest->xmit_wait;
+
+Same comment as above.
+There are more occurences of this, I'm not going to point them all out.
+
+
+[...]
+> +static inline void udpcp_release_sock(struct sock *sk)
+> +{
+> +	struct udpcp_sock *usk = udpcp_sk(sk);
+> +
+> +	while (usk->timeout)
+> +		udpcp_handle_timeout(sk);
+> +	release_sock(sk);
+> +        check_timeout(sk);
+
+The line above uses spaces for indentation. It should use one tab.
+
+
+[...]
+> +static unsigned int udpcp_tx_queue_len(struct sock *sk, struct udpcp_dest *dest)
+> +{
+> +	struct sk_buff *skb;
+> +	unsigned int n;
+> +
+> +	n = 0;
+
+Might as well save a few lines and make this
+
+static unsigned int udpcp_tx_queue_len(struct sock *sk, struct udpcp_dest *dest)
+{
+     struct sk_buff *skb;
+     unsigned int n = 0;
+
+
+[...]
+> +static unsigned int udpcp_rx_queue_len(struct sock *sk, struct udpcp_dest *dest)
+> +{
+> +	struct sk_buff *skb;
+> +	unsigned int n;
+> +
+> +	n = 0;
+
+Here as well
+        unsigned int n = 0;
+
+
 
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
