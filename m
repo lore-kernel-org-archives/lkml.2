@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410Ab1ABU6c (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 15:58:32 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:45107 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751192Ab1ABU6b (ORCPT
+	id S1751373Ab1ABVIN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 16:08:13 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:63793 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750695Ab1ABVIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 15:58:31 -0500
-Date: Sun, 2 Jan 2011 21:30:23 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: rpurdie@rpsys.net, lenz@cs.wisc.edu,
-        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
-        Cyril Hrubis <metan@ucw.cz>, thommycheck@gmail.com,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
-        Marek Vasut <marek.vasut@gmail.com>, yegorslists@googlemail.com,
-        gregkh@suse.de
-Subject: Re: zaurus bluetooth regression
-Message-ID: <20110102203023.GA1545@ucw.cz>
-References: <20110102204532.GA12860@elf.ucw.cz>
+	Sun, 2 Jan 2011 16:08:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=yBozCXE/cDKgWqoG5xwPJoYFhBEhLGWGySfACL/qBPCsOdVvbXQEmHBpuL/13852P8
+         h1AEnrBzTck/x3PccJ2PecbtlbmR3MMWvgjJ/95dfNHdJwY3WL+NlXXatwPEal86lH8x
+         oRZ+OtexbSNlP96045M3401hmYzpfy/ylolcc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110102204532.GA12860@elf.ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTimB7h0ZxvSOt2dUkO90RxE2c3Bu3CRqpasgzxw=@mail.gmail.com>
+References: <1293023621-3077-1-git-send-email-tardyp@gmail.com>
+	<41EFD7A46E18724CAB128DAD00733480193D2AE61C@shsmsx502.ccr.corp.intel.com>
+	<AANLkTinYWODS785AefQ7hV+urPkAn1+En-fZEaFQygLG@mail.gmail.com>
+	<CE761E84DADF2947A4AF22FB8D97A47331E86F6E@shsmsx501.ccr.corp.intel.com>
+	<AANLkTimB7h0ZxvSOt2dUkO90RxE2c3Bu3CRqpasgzxw=@mail.gmail.com>
+Date: Sun, 2 Jan 2011 22:08:10 +0100
+Message-ID: <AANLkTin7OYXzCYty8pDxyzE_Bg83=+L8jmcaoEMSf4QM@mail.gmail.com>
+Subject: Re: [RFC] sdhci: use ios->clock to know when sdhci is idle
+From: Pierre Tardy <tardyp@gmail.com>
+To: Linus Walleij <linus.ml.walleij@gmail.com>
+Cc: "Gao, Yunpeng" <yunpeng.gao@intel.com>, "Yuan, Hang" <hang.yuan@intel.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Ball <cjb@laptop.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>, Takashi Iwai <tiwai@suse.de>,
+        Maxim Levitsky <maximlevitsky@gmail.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+> Not all SDIO cards will work properly if you try to gate them
+> so we need a mechanism to selectively do this.
+You are right..##??!! HW vendors that does not support standards...
 
-> It seems this commit
-> 
-> commit 7a56aa45982bb87bfca98a2832b5ae782c03364a
-...
-> ...is responsible for my bluetooth problems on zaurus -- at least
-> bisect pointed to it,  as I use 16C950-based bluetooth card, it seems
-> very logical. I'll try 2.6.37-rc8 with that patch reverted...
-> 
+AFAIK (was working on a sdio HW IP team before), the sdio clock is not
+supposed to be taken as is for a system clock derivative especially
+because it can stop between request.
+SDIO IRQ are asynchronous when a command or data is not ongoing
 
-And yes, 37-rc8 with that reverted results in working bluetooth, so
-yrs, that patch is responsible.
+> Any suggestions?
+I would personally suggest white list from drivers. With a call to
+mmc_host_allow_gate_card(struct mmc_card *card, bool allow)
 
-								Pavel
+see following patch..
 
-> diff --git a/drivers/serial/8250.c b/drivers/serial/8250.c
-> index 09ef570..bc8ed4b 100644
-> --- a/drivers/serial/8250.c
-> +++ b/drivers/serial/8250.c
-> @@ -241,7 +241,7 @@ static const struct serial8250_config uart_config[] = {
->  		.fifo_size	= 128,
->  		.tx_loadsz	= 128,
->  		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
-> -		.flags		= UART_CAP_FIFO,
-> +		.flags		= UART_CAP_FIFO | UART_CAP_EFR | UART_CAP_SLEEP,
->  	},
->  	[PORT_16654] = {
->  		.name		= "ST16654",
-> 
-
+Regards,
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Pierre
