@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588Ab1ABQJa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 11:09:30 -0500
-Received: from mx1.vsecurity.com ([209.67.252.12]:53008 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834Ab1ABQJ3 (ORCPT
+	id S1753802Ab1ABQQG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 11:16:06 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43239 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751339Ab1ABQQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 11:09:29 -0500
-Subject: Re: [PATCH v3] Restrict unprivileged access to kernel syslog
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org, mingo@elte.hu,
-        kees.cook@canonical.com, akpm@linux-foundation.org,
-        security@kernel.org
-In-Reply-To: <20110102090541.GL32469@atrey.karlin.mff.cuni.cz>
-References: <1289431735.3847.9.camel@dan>
-	 <20110102090541.GL32469@atrey.karlin.mff.cuni.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 02 Jan 2011 11:08:55 -0500
-Message-ID: <1293984535.9764.65.camel@Dan>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Sun, 2 Jan 2011 11:16:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=aX9lLVZum4M7J2l2DPsLigHwdXtbLdYqEcxsAu8s2aRmZpUuB7jVbqdGBpjUVv51vt
+         MokPDt5CZPJTutRfwR05BDlGhH+2vsVu9R8buf5hRAewQKYCNTHSlxrBFEQfOzmmHxUN
+         F2W7iOOQXifZlo+VtTkREhSkzMkwrnTGRRgQQ=
+Message-ID: <4D20A3D3.9070404@gmail.com>
+Date: Sun, 02 Jan 2011 17:12:03 +0100
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+CC: Tim Bird <tim.bird@am.sony.com>
+Subject: PRAMFS status update
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-01-02 at 10:05 +0100, Pavel Machek wrote:
-> Hi!
-> 
-> > The kernel syslog contains debugging information that is often useful
-> > during exploitation of other vulnerabilities, such as kernel heap
-> > addresses.  Rather than futilely attempt to sanitize hundreds (or
-> > thousands) of printk statements and simultaneously cripple useful
-> > debugging functionality, it is far simpler to create an option that
-> > prevents unprivileged users from reading the syslog.
-> > 
-> > This patch, loosely based on grsecurity's GRKERNSEC_DMESG, creates the
-> > dmesg_restrict sysctl.  When set to "0", the default, no restrictions
-> > are enforced.  When set to "1", only users with CAP_SYS_ADMIN can read
-> > the kernel syslog via dmesg(8) or other mechanisms.
-> 
-> Ok, this is very very ugly.
-> 
-> You essentially create a bit to control what other bit does. Clean
-> solution would be CAP_SYS_DMESG, and make sure that is given to
-> processes by default...
-> 
-> ...and that would be actually very good thing -- on cellphones, you
-> want some users without ability to connect to network, so you could
-> introduce CAP_NETWORK etc...
-> 
-> 								Pavel
+Hi all,
 
-The CONFIG was added on suggestion that it would make it easier for
-distributions to enable this behavior by default.  The patch was
-modified to use CAP_SYSLOG, which seems in line with what you want.  
+the goal of this email is to update all about the mainlining activity of
+pramfs. In the last review (patch series v5) I didn't receive any
+comments so maybe I can hope for the next merge window. Meanwhile I
+fixed something and added support for others, here a list:
 
-Thanks,
-Dan
+- added support for fallocate
+- added support for splice
+- added ioctl operations for inode flags management
+- improved allocation strategy in direct io path
+- fixed the return value management of pram_iget function
 
+I created a git repo for the code:
+
+git clone git://pramfs.git.sourceforge.net/gitroot/pramfs/pramfs
+
+Regards,
+
+Marco
