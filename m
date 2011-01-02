@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab1ABSyd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 13:54:33 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:29416 "EHLO
+	id S1753113Ab1ABTOG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 14:14:06 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:29620 "EHLO
 	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754488Ab1ABSyc (ORCPT
+	with ESMTP id S1751192Ab1ABTOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 13:54:32 -0500
-Date: Sun, 2 Jan 2011 19:54:31 +0100 (CET)
+	Sun, 2 Jan 2011 14:14:04 -0500
+Date: Sun, 2 Jan 2011 20:14:03 +0100 (CET)
 From: Jesper Juhl <jj@chaosbits.net>
-To: David Miller <davem@davemloft.net>
-cc: joe@perches.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        zongxi@broadcom.com, mchan@broadcom.com
-Subject: Re: [PATCH v2] Broadcom CNIC core network driver: fix mem leak on
- allocation failures in cnic_alloc_uio_rings() 
-In-Reply-To: <20101231.112025.245393392.davem@davemloft.net>
-Message-ID: <alpine.LNX.2.00.1101021952400.11481@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1012262124320.20797@swampdragon.chaosbits.net> <1293396850.7726.14.camel@Joe-Laptop> <alpine.LNX.2.00.1012262154420.20797@swampdragon.chaosbits.net> <20101231.112025.245393392.davem@davemloft.net>
+To: Malcolm Priestley <tvboxspy@gmail.com>
+cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+Subject: Re: [PATVH] media, dvb, IX2505V: Remember to free allocated memory
+ in failure path (ix2505v_attach()).
+In-Reply-To: <alpine.LNX.2.00.1101021948100.11481@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1101022012520.11481@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1012310008070.32595@swampdragon.chaosbits.net>  <1293758374.10326.7.camel@tvboxspy>  <alpine.LNX.2.00.1012311541430.16655@swampdragon.chaosbits.net> <1293820435.29966.59.camel@tvboxspy>
+ <alpine.LNX.2.00.1101021948100.11481@swampdragon.chaosbits.net>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -24,38 +25,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 Dec 2010, David Miller wrote:
+On Sun, 2 Jan 2011, Jesper Juhl wrote:
 
-> From: Jesper Juhl <jj@chaosbits.net>
-> Date: Sun, 26 Dec 2010 21:57:39 +0100 (CET)
+> On Fri, 31 Dec 2010, Malcolm Priestley wrote:
 > 
-> > We are leaking memory in drivers/net/cnic.c::cnic_alloc_uio_rings() if 
-> > either of the calls to dma_alloc_coherent() fail. This patch fixes it by 
-> > freeing both the memory allocated with kzalloc() and memory allocated with 
-> > previous calls to dma_alloc_coherent() when there's a failure.
+> > On Fri, 2010-12-31 at 15:51 +0100, Jesper Juhl wrote:
+> > > On Fri, 31 Dec 2010, Malcolm Priestley wrote:
+> > > 
+> > > > On Fri, 2010-12-31 at 00:11 +0100, Jesper Juhl wrote:
+> > > > > Hi,
+> > > > > 
+> > > > > We may leak the storage allocated to 'state' in 
+> > > > > drivers/media/dvb/frontends/ix2505v.c::ix2505v_attach() on error.
+> > > > > This patch makes sure we free the allocated memory in the failure case.
+> > > > > 
+> > > > > 
+> > > > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > > > > ---
+> > > > >  ix2505v.c |    1 +
+> > > > >  1 file changed, 1 insertion(+)
+> > > > > 
+> > > > >   Compile tested only.
+> > > > > 
+> > > > > diff --git a/drivers/media/dvb/frontends/ix2505v.c b/drivers/media/dvb/frontends/ix2505v.c
+> > > > > index 55f2eba..fcb173d 100644
+> > > > > --- a/drivers/media/dvb/frontends/ix2505v.c
+> > > > > +++ b/drivers/media/dvb/frontends/ix2505v.c
+> > > > > @@ -293,6 +293,7 @@ struct dvb_frontend *ix2505v_attach(struct dvb_frontend *fe,
+> > > > >  		ret = ix2505v_read_status_reg(state);
+> > > > >  
+> > > > >  		if (ret & 0x80) {
+> > > > > +			kfree(state);
+> > > > >  			deb_i2c("%s: No IX2505V found\n", __func__);
+> > > > >  			goto error;
+> > > > >  		}
+> > > > > 
+> > > > Memory is freed in... 
+> > > > 
+> > > > error:
+> > > > 	ix2505v_release(fe);
+> > > > 	return NULL;
+> > > > 
+> > > > via...
+> > > > 
+> > > > static int ix2505v_release(struct dvb_frontend *fe)
+> > > > {
+> > > > 	struct ix2505v_state *state = fe->tuner_priv;
+> > > > 
+> > > > 	fe->tuner_priv = NULL;
+> > > > 	kfree(state);
+> > > > 
+> > > > 	return 0;
+> > > > }
+> > > > 
+> > > 
+> > > Except that 'state' has not been assigned to fe->tuner_priv at this 
+> > > point, so ix2505v_release() cannot free the memory that was just 
+> > > allocated with kzalloc().
+> > > 
+> > > 
+> > >   state is a local variable:
+> > >   		struct ix2505v_state *state = NULL;
+> > > 		...
+> > > 
+> > >   we allocate memory and assign it to 'state' here:
+> > >   		state = kzalloc(sizeof(struct ix2505v_state), GFP_KERNEL);
+> > >   		if (NULL == state)
+> > >   			return NULL;
+> > >   	
+> > >   		state->config = config;
+> > >   		state->i2c = i2c;
+> > >   	
+> > >   here 'state' is used, but not in a way that saves it anywhere:
+> > >   		if (state->config->tuner_write_only) {
+> > >   			if (fe->ops.i2c_gate_ctrl)
+> > >   				fe->ops.i2c_gate_ctrl(fe, 1);
+> > >   	
+> > >   this function call involves 'state' but it does not save it anywhere
+> > >   either:
+> > >   			ret = ix2505v_read_status_reg(state);
+> > >   	
+> > >   			if (ret & 0x80) {
+> > >   				deb_i2c("%s: No IX2505V found\n", __func__);
+> > >   so when we jump to error here 'state' still exists only as the local
+> > >   variable, it has not been assigned to anything else.
+> > >   				goto error;
+> > >   			}
+> > >   		...
+> > >   	error:
+> > >   there is no way this function call can free 'state' on this path since
+> > >   it has not been assigned to fe->tuner_priv. 
+> > >   		ix2505v_release(fe);
+> > >   The local variable state goes out of scope here and leaks the memory it
+> > >   points to:
+> > >   		return NULL;
+> > >   	}
+> > > 
+> > > Am I missing something?
 > > 
-> > Thanks to  Joe Perches <joe@perches.com>  for suggesting a better 
-> > implementation than my initial version.
+> > Oh, Sorry, I see it now.
 > > 
+> > Now there is two options.
 > > 
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > Either;
+> > 
+> > 1) Move fe->tuner_priv = state to below line 287, so it can be released
+> > by ix2505v_release and fe->tuner_priv returned to NULL;
+> > 
+> > 2) or not calling ix2505v_release changing line 314 to kfree(state).
+> > fe->tuner_priv will remain NULL through out.
+> > 
+> [...]
 > 
->  ...
-> > + err_dma:
-> > +	dma_free_coherent(&udev->pdev->dev, udev->l2_ring_size,
-> > +       			  udev->l2_ring, udev->l2_ring_map);
+> How about this?
 > 
-> Space before tab in indentation, improperly positioned third argument
-> indentation.
-> 
-Whoops.
+Or actually, I think this is better:
 
-> I fixed all of this up, but please do not skimp on making sure these
-> details are taken care of when updating your patch in response to feedback.
-> 
-I usually try to take care that such things are in order. I often even 
-point these details out to other people. It slipped past me this time. 
-That was a mistake. Sorry.
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ ix2505v.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/media/dvb/frontends/ix2505v.c b/drivers/media/dvb/frontends/ix2505v.c
+index 55f2eba..846ffd3 100644
+--- a/drivers/media/dvb/frontends/ix2505v.c
++++ b/drivers/media/dvb/frontends/ix2505v.c
+@@ -311,7 +311,7 @@ struct dvb_frontend *ix2505v_attach(struct dvb_frontend *fe,
+ 	return fe;
+ 
+ error:
+-	ix2505v_release(fe);
++	kfree(state);
+ 	return NULL;
+ }
+ EXPORT_SYMBOL(ix2505v_attach);
+
 
 
 -- 
