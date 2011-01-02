@@ -1,92 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739Ab1ABHZM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:25:12 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36904 "EHLO
+	id S1754992Ab1ABHZz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:25:55 -0500
+Received: from mail.windriver.com ([147.11.1.11]:37174 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754697Ab1ABHZI (ORCPT
+	with ESMTP id S1754968Ab1ABHZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:25:08 -0500
+	Sun, 2 Jan 2011 02:25:52 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: stable-review@kernel.org, Daniel Suchy <danny@danysek.cz>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 207/260] powerpc: Don't use kernel stack with translation off
-Date: Sun,  2 Jan 2011 02:18:23 -0500
-Message-Id: <1293952756-15010-208-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 245/260] USB: ftdi_sio: new VID/PIDs for various Papouch devices
+Date: Sun,  2 Jan 2011 02:19:01 -0500
+Message-Id: <1293952756-15010-246-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:23:57.0026 (UTC) FILETIME=[04861C20:01CBAA4E]
+X-OriginalArrivalTime: 02 Jan 2011 07:24:37.0527 (UTC) FILETIME=[1CAA1270:01CBAA4E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Neuling <mikey@neuling.org>
+From: Daniel Suchy <danny@danysek.cz>
 
-commit 54a834043314c257210db2a9d59f8cc605571639 upstream.
+commit 59c6ccd9f9aecfa59c99ceba6d4d34b180547a05 upstream.
 
-In f761622e59433130bc33ad086ce219feee9eb961 we changed
-early_setup_secondary so it's called using the proper kernel stack
-rather than the emergency one.
+This patch for FTDI USB serial driver ads new VID/PIDs used on various
+devices manufactured by Papouch (http://www.papouch.com). These devices
+have their own VID/PID, although they're using standard FTDI chip. In
+ftdi_sio.c, I also made small cleanup to have declarations for all
+Papouch devices together.
 
-Unfortunately, this stack pointer can't be used when translation is off
-on PHYP as this stack pointer might be outside the RMO.  This results in
-the following on all non zero cpus:
-  cpu 0x1: Vector: 300 (Data Access) at [c00000001639fd10]
-      pc: 000000000001c50c
-      lr: 000000000000821c
-      sp: c00000001639ff90
-     msr: 8000000000001000
-     dar: c00000001639ffa0
-   dsisr: 42000000
-    current = 0xc000000016393540
-    paca    = 0xc000000006e00200
-      pid   = 0, comm = swapper
-
-The original patch was only tested on bare metal system, so it never
-caught this problem.
-
-This changes __secondary_start so that we calculate the new stack
-pointer but only start using it after we've called early_setup_secondary.
-
-With this patch, the above problem goes away.
-
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Daniel Suchy <danny@danysek.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/powerpc/kernel/head_64.S |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |   30 +++++++++++++++++++++++++++++-
+ drivers/usb/serial/ftdi_sio_ids.h |   27 ++++++++++++++++++++++++++-
+ 2 files changed, 55 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/kernel/head_64.S b/arch/powerpc/kernel/head_64.S
-index 579751e..ad90636 100644
---- a/arch/powerpc/kernel/head_64.S
-+++ b/arch/powerpc/kernel/head_64.S
-@@ -575,13 +575,19 @@ __secondary_start:
- 	/* Initialize the kernel stack.  Just a repeat for iSeries.	 */
- 	LOAD_REG_ADDR(r3, current_set)
- 	sldi	r28,r24,3		/* get current_set[cpu#]	 */
--	ldx	r1,r3,r28
--	addi	r1,r1,THREAD_SIZE-STACK_FRAME_OVERHEAD
--	std	r1,PACAKSAVE(r13)
-+	ldx	r14,r3,r28
-+	addi	r14,r14,THREAD_SIZE-STACK_FRAME_OVERHEAD
-+	std	r14,PACAKSAVE(r13)
- 
- 	/* Do early setup for that CPU (stab, slb, hash table pointer) */
- 	bl	.early_setup_secondary
- 
-+	/*
-+	 * setup the new stack pointer, but *don't* use this until
-+	 * translation is on.
-+	 */
-+	mr	r1, r14
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index f2fbf78..d2ea458 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -681,7 +681,6 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_RRCIRKITS_LOCOBUFFER_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ASK_RDR400_PID) },
+ 	{ USB_DEVICE(ICOM_ID1_VID, ICOM_ID1_PID) },
+-	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_TMU_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ACG_HFDUAL_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_YEI_SERVOCENTER31_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_THORLABS_PID) },
+@@ -722,8 +721,37 @@ static struct usb_device_id id_table_combined [] = {
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(RATOC_VENDOR_ID, RATOC_PRODUCT_ID_USB60F) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_REU_TINY_PID) },
 +
- 	/* Clear backchain so we get nice backtraces */
- 	li	r7,0
- 	mtlr	r7
++	/* Papouch devices based on FTDI chip */
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_AP485_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB422_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485_2_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_AP485_2_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB422_2_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485S_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485C_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_LEC_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB232_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_TMU_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_IRAMP_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_DRAK5_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO8x8_PID) },
+ 	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO4x4_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO2x2_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO10x1_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO30x3_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO60x3_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO2x16_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO3x32_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_DRAK6_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_UPSUSB_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_MU_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SIMUKEY_PID) },
+ 	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_AD4USB_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_GMUX_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_GMSR_PID) },
++
+ 	{ USB_DEVICE(FTDI_VID, FTDI_DOMINTELL_DGQG_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_DOMINTELL_DUSB_PID) },
+ 	{ USB_DEVICE(ALTI2_VID, ALTI2_N3_PID) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index a214917..ff8a8ad 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1030,9 +1030,34 @@
+  */
+ 
+ #define PAPOUCH_VID			0x5050	/* Vendor ID */
++#define PAPOUCH_SB485_PID		0x0100	/* Papouch SB485 USB-485/422 Converter */
++#define PAPOUCH_AP485_PID		0x0101	/* AP485 USB-RS485 Converter */
++#define PAPOUCH_SB422_PID		0x0102	/* Papouch SB422 USB-RS422 Converter  */
++#define PAPOUCH_SB485_2_PID		0x0103	/* Papouch SB485 USB-485/422 Converter */
++#define PAPOUCH_AP485_2_PID		0x0104	/* AP485 USB-RS485 Converter */
++#define PAPOUCH_SB422_2_PID		0x0105	/* Papouch SB422 USB-RS422 Converter  */
++#define PAPOUCH_SB485S_PID		0x0106	/* Papouch SB485S USB-485/422 Converter */
++#define PAPOUCH_SB485C_PID		0x0107	/* Papouch SB485C USB-485/422 Converter */
++#define PAPOUCH_LEC_PID			0x0300	/* LEC USB Converter */
++#define PAPOUCH_SB232_PID		0x0301	/* Papouch SB232 USB-RS232 Converter */
+ #define PAPOUCH_TMU_PID			0x0400	/* TMU USB Thermometer */
+-#define PAPOUCH_QUIDO4x4_PID		0x0900	/* Quido 4/4 Module */
++#define PAPOUCH_IRAMP_PID		0x0500	/* Papouch IRAmp Duplex */
++#define PAPOUCH_DRAK5_PID		0x0700	/* Papouch DRAK5 */
++#define PAPOUCH_QUIDO8x8_PID		0x0800	/* Papouch Quido 8/8 Module */
++#define PAPOUCH_QUIDO4x4_PID		0x0900	/* Papouch Quido 4/4 Module */
++#define PAPOUCH_QUIDO2x2_PID		0x0a00	/* Papouch Quido 2/2 Module */
++#define PAPOUCH_QUIDO10x1_PID		0x0b00	/* Papouch Quido 10/1 Module */
++#define PAPOUCH_QUIDO30x3_PID		0x0c00	/* Papouch Quido 30/3 Module */
++#define PAPOUCH_QUIDO60x3_PID		0x0d00	/* Papouch Quido 60(100)/3 Module */
++#define PAPOUCH_QUIDO2x16_PID		0x0e00	/* Papouch Quido 2/16 Module */
++#define PAPOUCH_QUIDO3x32_PID		0x0f00	/* Papouch Quido 3/32 Module */
++#define PAPOUCH_DRAK6_PID		0x1000	/* Papouch DRAK6 */
++#define PAPOUCH_UPSUSB_PID		0x8000	/* Papouch UPS-USB adapter */
++#define PAPOUCH_MU_PID			0x8001	/* MU controller */
++#define PAPOUCH_SIMUKEY_PID		0x8002	/* Papouch SimuKey */
+ #define PAPOUCH_AD4USB_PID		0x8003	/* AD4USB Measurement Module */
++#define PAPOUCH_GMUX_PID		0x8004	/* Papouch GOLIATH MUX */
++#define PAPOUCH_GMSR_PID		0x8005	/* Papouch GOLIATH MSR */
+ 
+ /*
+  * Marvell SheevaPlug
 -- 
 1.7.3.3
 
