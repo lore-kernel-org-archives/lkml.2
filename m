@@ -1,164 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751617Ab1ABVpM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 16:45:12 -0500
-Received: from www84.your-server.de ([213.133.104.84]:42335 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab1ABVpL (ORCPT
+	id S1751894Ab1ABVzi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 16:55:38 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:44246 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751302Ab1ABVzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 16:45:11 -0500
+	Sun, 2 Jan 2011 16:55:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=GwAU3OF5IinE18Ro7OXHZhDSPU3cWjktmpkgmlTqvttP4nfWTIn0g1SouhW8J6r/eE
+         h6G6c8UnMYn5N5GYRsPbyTwa0UixU/pe7JjOlqb3NIp/ifXGVB3UVIOr6GLr49CRz6D6
+         VvWzmPlIw2NZV19/1UQ2iHi4aeP6P/Bz7Qo5Y=
 Subject: Re: [PATCH] new UDPCP Communication Protocol
-From: Stefani Seibold <stefani@seibold.net>
-To: Jesper Juhl <jj@chaosbits.net>
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: stefani@seibold.net
 Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        davem@davemloft.net, netdev@vger.kernel.org, eric.dumazet@gmail.com,
-        shemminger@vyatta.com
-In-Reply-To: <alpine.LNX.2.00.1101022024200.11481@swampdragon.chaosbits.net>
+        davem@davemloft.net, netdev@vger.kernel.org, shemminger@vyatta.com
+In-Reply-To: <1293982286-15389-1-git-send-email-stefani@seibold.net>
 References: <1293982286-15389-1-git-send-email-stefani@seibold.net>
-	 <alpine.LNX.2.00.1101022024200.11481@swampdragon.chaosbits.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Sun, 02 Jan 2011 22:46:12 +0100
-Message-ID: <1294004772.5675.11.camel@wall-e>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 02 Jan 2011 22:55:29 +0100
+Message-ID: <1294005329.2535.258.camel@edumazet-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, den 02.01.2011, 20:55 +0100 schrieb Jesper Juhl:
-> On Sun, 2 Jan 2011, stefani@seibold.net wrote:
+Le dimanche 02 janvier 2011 à 16:31 +0100, stefani@seibold.net a écrit :
+> From: Stefani Seibold <stefani@seibold.net>
+> 
+> Changelog:
+> 31.12.2010 first proposal
+> 01.01.2011 code cleanup and fixes suggest by Eric Dumazet
+> 02.01.2011 kick away UDP-Lite support
+>            change spin_lock_irq into spin_lock_bh
+> 	   faster udpcp_release_sock
+> 	   base is now linux-next
 
+Since you depend on zlib_adler32(), you should add a dependence in
+Kconfig so that its available
 
-> > +
-> > +#define VERSION	"0.71"
-> 
-> I personally don't think this makes much sense.
-> Version numbers for individual modules tend to not get updated as the code 
-> changes over the years, which make them rather meaningless.
-> Since this module depends on functionallity of the kernel which it is 
-> compiled with, the actual (meaningful) version of this code is that of the 
-> kernel tree being compiled that includes this code. Which again makes this 
-> specific version define meaningless.
-> 
-> So, why not save a few lines of code and get rid of this rather pointless 
-> thing?
-> 
-
-I like it, it gives me a better monitoring during development which
-version is currently tested.
-
-> [...]
-> > +static struct udpcp_dest *find_dest(struct sock *sk, __be32 addr, __be16 port)
-> > +{
-> > +	struct udpcp_dest *dest;
-> > +
-> > +	dest = __find_dest(sk, addr, port);
-> 
-> Why not
-> 
-> static struct udpcp_dest *find_dest(struct sock *sk, __be32 addr, __be16 port)
-> {
->      struct udpcp_dest *dest =  __find_dest(sk, addr, port);
-> 
-> ?
-I will fix it but i think this is counting peas.
- 
-> 
-> 
-> [...]
-> > + * Release a routing table entry if no packed will be assembled
-> 
-> Don't you mean "packet" rather than "packed" here?
-> 
-> 
-Right.
-
-> [...]
-> > + * Return true it the passed skb socket buffer is the last in the list
-> 
-> I believe you mean "Return true if the passed ..."
-> 
-Right.
-
-> 
-> [...]
-> > +static void udpcp_flush_err(struct sock *sk, struct udpcp_dest *dest)
-> > +{
-> > +	struct inet_sock *inet = inet_sk(sk);
-> > +	struct udpcp_sock *usk = udpcp_sk(sk);
-> > +
-> > +	if (!inet->recverr)
-> > +		skb_queue_purge(&dest->xmit);
-> > +	else {
-> 
-> CodingStyle would want this as
-> 
->      if (!inet->recverr) {
->              skb_queue_purge(&dest->xmit);
->      } else {
-> 
-> If one branch needs {} then both should get them.
-> 
-./scripts/checkpatch.pl did not complain about this, so i think it is
-okay.
-
-> 
-> [...]
-> > +	if (!dest->xmit_last)
-> > +		_udpcp_xmit(sk, dest);
-> > +	else {
-> > +		skb = dest->xmit_wait;
-> 
-> Same comment as above.
-> There are more occurences of this, I'm not going to point them all out.
-> 
-> 
-> [...]
-> > +static inline void udpcp_release_sock(struct sock *sk)
-> > +{
-> > +	struct udpcp_sock *usk = udpcp_sk(sk);
-> > +
-> > +	while (usk->timeout)
-> > +		udpcp_handle_timeout(sk);
-> > +	release_sock(sk);
-> > +        check_timeout(sk);
-> 
-> The line above uses spaces for indentation. It should use one tab.
-> 
-> 
-> [...]
-> > +static unsigned int udpcp_tx_queue_len(struct sock *sk, struct udpcp_dest *dest)
-> > +{
-> > +	struct sk_buff *skb;
-> > +	unsigned int n;
-> > +
-> > +	n = 0;
-> 
-> Might as well save a few lines and make this
-> 
-> static unsigned int udpcp_tx_queue_len(struct sock *sk, struct udpcp_dest *dest)
-> {
->      struct sk_buff *skb;
->      unsigned int n = 0;
-> 
-> 
-> [...]
-> > +static unsigned int udpcp_rx_queue_len(struct sock *sk, struct udpcp_dest *dest)
-> > +{
-> > +	struct sk_buff *skb;
-> > +	unsigned int n;
-> > +
-> > +	n = 0;
-> 
-> Here as well
->         unsigned int n = 0;
-> 
-> 
-
-I fix it in the next release.
-
-Thanks
+select ZLIB_INFLATE
 
 
