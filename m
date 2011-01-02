@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab1ABVRD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 16:17:03 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:11154 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834Ab1ABVRB (ORCPT
+	id S1751559Ab1ABVS5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 16:18:57 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:57955 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750730Ab1ABVS4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 16:17:01 -0500
-Date: Sun, 2 Jan 2011 22:17:00 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-input@vger.kernel.org
-cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
-        "Rick L. Vinyard, Jr." <rvinyard@cs.nmsu.edu>
-Subject: [PATCH] HID, hid-picolcd: Fix memory leak in
- picolcd_debug_out_report()
-Message-ID: <alpine.LNX.2.00.1101022212030.11481@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 2 Jan 2011 16:18:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=cClOwn80Hov6r6/jCgI5wIKD1KENdj6wq0VT2AlNfeNEitvZ/aqKKU9P8dMX3dF1Dh
+         i1WyA8SribcryewE/6SVleVdwP+tAT3duJYuh0DqqcWXmUmjKlcKldH6AKIVdNxMUtc9
+         0N7diVPHn0nl7SpYIgpJRgrv6csuEOccfj8Bw=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <LbeBv-BNQpL.A.KT.IG8GNB@chimera>
+References: <odW4v9b6arG.A.2bH.uE8GNB@chimera>
+	<LbeBv-BNQpL.A.KT.IG8GNB@chimera>
+Date: Sun, 2 Jan 2011 21:18:55 +0000
+Message-ID: <AANLkTi=2PZ81T4_vV4RiXgxZB3PHzpEfEisEN-cO1jjg@mail.gmail.com>
+Subject: Re: [Bug #20332] [LogFS] [2.6.36-rc7] Kernel BUG at lib/btree.c:465!
+From: Prasad Joshi <prasadjoshi124@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello,
 
-We have a memory leak in 
-drivers/hid/hid-picolcd.c::picolcd_debug_out_report() in an error path..
-We are not always freeing the memory allocated to 'buff' - this patch 
-makes sure we always kfree() what we allocate with kmalloc() when it is 
-no longer needed.
+I did not observe this bug with the latest kernel (2.6.37-rc8+).
 
+Thanks and Regards,
+Prasad
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- hid-picolcd.c |    1 +
- 1 file changed, 1 insertion(+)
-
-  compile tested only.
-
-diff --git a/drivers/hid/hid-picolcd.c b/drivers/hid/hid-picolcd.c
-index bc2e077..ad6539a 100644
---- a/drivers/hid/hid-picolcd.c
-+++ b/drivers/hid/hid-picolcd.c
-@@ -1867,6 +1867,7 @@ static void picolcd_debug_out_report(struct picolcd_data *data,
- 			report->id, raw_size);
- 	hid_debug_event(hdev, buff);
- 	if (raw_size + 5 > sizeof(raw_data)) {
-+		kfree(buff);
- 		hid_debug_event(hdev, " TOO BIG\n");
- 		return;
- 	} else {
-
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+On Wed, Dec 29, 2010 at 11:21 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.35 and 2.6.36.
+>
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.35 and 2.6.36.  Please verify if it still should
+> be listed and let the tracking team know (either way).
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=20332
+> Subject         : [LogFS] [2.6.36-rc7] Kernel BUG at lib/btree.c:465!
+> Submitter       : Prasad Joshi <prasadjoshi124@gmail.com>
+> Date            : 2010-10-12 18:56 (79 days old)
+> Message-ID      : <AANLkTimAbCZNhLQ5nADUiAC+7JpAeJBEmjFwdxyZ-FxO@mail.gmail.com>
+> References      : http://marc.info/?l=linux-kernel&m=128690910501830&w=2
+>
+>
+>
