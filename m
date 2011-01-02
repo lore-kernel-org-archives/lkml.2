@@ -1,107 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802Ab1ABHtu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:49:50 -0500
-Received: from mail.windriver.com ([147.11.1.11]:35840 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754036Ab1ABHXr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754043Ab1ABHXr (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 2 Jan 2011 02:23:47 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35816 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754021Ab1ABHXp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jan 2011 02:23:45 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Dmitry Monakhov <dmonakhov@openvz.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
+Cc: stable-review@kernel.org, Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 138/260] ext4: Fix remaining racy updates of EXT4_I(inode)->i_flags
-Date: Sun,  2 Jan 2011 02:17:14 -0500
-Message-Id: <1293952756-15010-139-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 077/260] wireless extensions: fix kernel heap content leak
+Date: Sun,  2 Jan 2011 02:16:13 -0500
+Message-Id: <1293952756-15010-78-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:22:41.0056 (UTC) FILETIME=[D73E0200:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:21:31.0695 (UTC) FILETIME=[ADE65BF0:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Monakhov <dmonakhov@openvz.org>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 84a8dce2710cc425089a2b92acc354d4fbb5788d upstream.
+commit 42da2f948d949efd0111309f5827bf0298bcc9a4 upstream.
 
-A few functions were still modifying i_flags in a racy manner.
+Wireless extensions have an unfortunate, undocumented
+requirement which requires drivers to always fill
+iwp->length when returning a successful status. When
+a driver doesn't do this, it leads to a kernel heap
+content leak when userspace offers a larger buffer
+than would have been necessary.
 
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Arguably, this is a driver bug, as it should, if it
+returns 0, fill iwp->length, even if it separately
+indicated that the buffer contents was not valid.
+
+However, we can also at least avoid the memory content
+leak if the driver doesn't do this by setting the iwp
+length to max_tokens, which then reflects how big the
+buffer is that the driver may fill, regardless of how
+big the userspace buffer is.
+
+To illustrate the point, this patch also fixes a
+corresponding cfg80211 bug (since this requirement
+isn't documented nor was ever pointed out by anyone
+during code review, I don't trust all drivers nor
+all cfg80211 handlers to implement it correctly).
+
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/ext4/inode.c |   40 +++++++++++++++++++++++-----------------
- 1 files changed, 23 insertions(+), 17 deletions(-)
+ net/wireless/wext-compat.c |    3 +++
+ net/wireless/wext-core.c   |   16 ++++++++++++++++
+ 2 files changed, 19 insertions(+), 0 deletions(-)
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 3fd683f..4eced51 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -4932,20 +4932,26 @@ void ext4_set_inode_flags(struct inode *inode)
- /* Propagate flags from i_flags to EXT4_I(inode)->i_flags */
- void ext4_get_inode_flags(struct ext4_inode_info *ei)
+diff --git a/net/wireless/wext-compat.c b/net/wireless/wext-compat.c
+index a60a277..68202f9 100644
+--- a/net/wireless/wext-compat.c
++++ b/net/wireless/wext-compat.c
+@@ -1415,6 +1415,9 @@ int cfg80211_wext_giwessid(struct net_device *dev,
  {
--	unsigned int flags = ei->vfs_inode.i_flags;
--
--	ei->i_flags &= ~(EXT4_SYNC_FL|EXT4_APPEND_FL|
--			EXT4_IMMUTABLE_FL|EXT4_NOATIME_FL|EXT4_DIRSYNC_FL);
--	if (flags & S_SYNC)
--		ei->i_flags |= EXT4_SYNC_FL;
--	if (flags & S_APPEND)
--		ei->i_flags |= EXT4_APPEND_FL;
--	if (flags & S_IMMUTABLE)
--		ei->i_flags |= EXT4_IMMUTABLE_FL;
--	if (flags & S_NOATIME)
--		ei->i_flags |= EXT4_NOATIME_FL;
--	if (flags & S_DIRSYNC)
--		ei->i_flags |= EXT4_DIRSYNC_FL;
-+	unsigned int vfs_fl;
-+	unsigned long old_fl, new_fl;
-+
-+	do {
-+		vfs_fl = ei->vfs_inode.i_flags;
-+		old_fl = ei->i_flags;
-+		new_fl = old_fl & ~(EXT4_SYNC_FL|EXT4_APPEND_FL|
-+				EXT4_IMMUTABLE_FL|EXT4_NOATIME_FL|
-+				EXT4_DIRSYNC_FL);
-+		if (vfs_fl & S_SYNC)
-+			new_fl |= EXT4_SYNC_FL;
-+		if (vfs_fl & S_APPEND)
-+			new_fl |= EXT4_APPEND_FL;
-+		if (vfs_fl & S_IMMUTABLE)
-+			new_fl |= EXT4_IMMUTABLE_FL;
-+		if (vfs_fl & S_NOATIME)
-+			new_fl |= EXT4_NOATIME_FL;
-+		if (vfs_fl & S_DIRSYNC)
-+			new_fl |= EXT4_DIRSYNC_FL;
-+	} while (cmpxchg(&ei->i_flags, old_fl, new_fl) != old_fl);
- }
+ 	struct wireless_dev *wdev = dev->ieee80211_ptr;
  
- static blkcnt_t ext4_inode_blocks(struct ext4_inode *raw_inode,
-@@ -5182,7 +5188,7 @@ static int ext4_inode_blocks_set(handle_t *handle,
- 		 */
- 		raw_inode->i_blocks_lo   = cpu_to_le32(i_blocks);
- 		raw_inode->i_blocks_high = 0;
--		ei->i_flags &= ~EXT4_HUGE_FILE_FL;
-+		ext4_clear_inode_flag(inode, EXT4_INODE_HUGE_FILE);
- 		return 0;
++	data->flags = 0;
++	data->length = 0;
++
+ 	switch (wdev->iftype) {
+ 	case NL80211_IFTYPE_ADHOC:
+ 		return cfg80211_ibss_wext_giwessid(dev, info, data, ssid);
+diff --git a/net/wireless/wext-core.c b/net/wireless/wext-core.c
+index 4f5a470..f916f5a 100644
+--- a/net/wireless/wext-core.c
++++ b/net/wireless/wext-core.c
+@@ -782,6 +782,22 @@ static int ioctl_standard_iw_point(struct iw_point *iwp, unsigned int cmd,
+ 		}
  	}
- 	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb, EXT4_FEATURE_RO_COMPAT_HUGE_FILE))
-@@ -5195,9 +5201,9 @@ static int ext4_inode_blocks_set(handle_t *handle,
- 		 */
- 		raw_inode->i_blocks_lo   = cpu_to_le32(i_blocks);
- 		raw_inode->i_blocks_high = cpu_to_le16(i_blocks >> 32);
--		ei->i_flags &= ~EXT4_HUGE_FILE_FL;
-+		ext4_clear_inode_flag(inode, EXT4_INODE_HUGE_FILE);
- 	} else {
--		ei->i_flags |= EXT4_HUGE_FILE_FL;
-+		ext4_set_inode_flag(inode, EXT4_INODE_HUGE_FILE);
- 		/* i_block is stored in file system block size */
- 		i_blocks = i_blocks >> (inode->i_blkbits - 9);
- 		raw_inode->i_blocks_lo   = cpu_to_le32(i_blocks);
+ 
++	if (IW_IS_GET(cmd) && !(descr->flags & IW_DESCR_FLAG_NOMAX)) {
++		/*
++		 * If this is a GET, but not NOMAX, it means that the extra
++		 * data is not bounded by userspace, but by max_tokens. Thus
++		 * set the length to max_tokens. This matches the extra data
++		 * allocation.
++		 * The driver should fill it with the number of tokens it
++		 * provided, and it may check iwp->length rather than having
++		 * knowledge of max_tokens. If the driver doesn't change the
++		 * iwp->length, this ioctl just copies back max_token tokens
++		 * filled with zeroes. Hopefully the driver isn't claiming
++		 * them to be valid data.
++		 */
++		iwp->length = descr->max_tokens;
++	}
++
+ 	err = handler(dev, info, (union iwreq_data *) iwp, extra);
+ 
+ 	iwp->length += essid_compat;
 -- 
 1.7.3.3
 
