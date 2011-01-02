@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750801Ab1ABFbz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 00:31:55 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:46658 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750695Ab1ABFby (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 00:31:54 -0500
-Date: Sun, 2 Jan 2011 06:32:06 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: webmaster <jason.vas.dias@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: per-chroot clock module ?
-Message-ID: <20110102053206.GB2635@elf.ucw.cz>
-References: <201011271821.35039.jason.vas.dias@gmail.com>
- <20101203193658.GB2371@ucw.cz>
- <201012302031.15545.webmaster@www.text2car.com>
+	id S1750854Ab1ABGUR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 01:20:17 -0500
+Received: from void.printf.net ([89.145.121.20]:36191 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750695Ab1ABGUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jan 2011 01:20:15 -0500
+Date: Sun, 2 Jan 2011 06:20:13 +0000
+From: Chris Ball <cjb@laptop.org>
+To: Will Newton <will.newton@gmail.com>
+Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-mmc@vger.kernel.org, Matt Fleming <matt@console-pimps.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4] dw_mmc: Add Synopsys DesignWare mmc host driver.
+Message-ID: <20110102062013.GB18668@void.printf.net>
+References: <AANLkTi=0RtvsGX+Q3goL3mdG6oKeNidYtiudTZ8ZTpRP@mail.gmail.com> <20101208115510.GD10998@console-pimps.org> <AANLkTi=KqOa-MRQiptCtZGvoafRCgULfE3QFs=hmGpdi@mail.gmail.com> <AANLkTi=PpTi1_JO9Q=ph7w9Jim8iXMf9LbCfmEkWuo-h@mail.gmail.com> <20101209064751.GA21128@void.printf.net> <AANLkTimMgrawcndvUTYYjq9BGFqs-sbRsZkwVQ0Uvhvb@mail.gmail.com> <20101209160157.GA28586@void.printf.net> <AANLkTim3Rj2tTbqvT8nM4L=p=Wx8bdOnGq=EDv+cs02g@mail.gmail.com> <20101211192320.GA24430@void.printf.net> <AANLkTik7cMwgwXR1zK44HXC+1YtzpU3_zW2GUjcBMi8X@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201012302031.15545.webmaster@www.text2car.com>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTik7cMwgwXR1zK44HXC+1YtzpU3_zW2GUjcBMi8X@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi Will,
 
-> > See subterfugue.net... it can do this.
-> > 
-> Sorry for the delay in responding - 
-> but I've been very busy, amongst other things working on the "per-chroot" module, which
-> now works in a very basic but sufficient mode.
-> If anyone else would find it useful,  I'll fill it out some more and post it to this list. 
+On Thu, Dec 16, 2010 at 05:04:36PM +0000, Will Newton wrote:
+> This adds the mmc host driver for the Synopsys DesignWare mmc
+> host controller, found in a number of embedded SoC designs.
 > 
-> I'd like to see this "subterfuge.net" - but I'm unable to connect with HTTP:
+> Signed-off-by: Will Newton <will.newton@imgtec.com>
 
-Sorry, it is on 
+Thanks, I've pushed this to mmc-next for .38 now after adding:
 
-http://subterfugue.sourceforge.net/
+Reviewed-by: Matt Fleming <matt@console-pimps.org>
+Reviewed-by: Chris Ball <cjb@laptop.org>
 
-									Pavel
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
