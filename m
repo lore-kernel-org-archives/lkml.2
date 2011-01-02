@@ -1,106 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754439Ab1ABHYb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:24:31 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36265 "EHLO
+	id S1754427Ab1ABHY3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:24:29 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36275 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754349Ab1ABHYU (ORCPT
+	with ESMTP id S1754361Ab1ABHYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:24:20 -0500
+	Sun, 2 Jan 2011 02:24:21 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Steve Wise <swise@opengridcomputing.com>,
+        Roland Dreier <rolandd@cisco.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 148/260] mm: page allocator: update free page counters after pages are placed on the free list
-Date: Sun,  2 Jan 2011 02:17:24 -0500
-Message-Id: <1293952756-15010-149-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 169/260] RDMA/cxgb3: Turn off RX coalescing for iWARP connections
+Date: Sun,  2 Jan 2011 02:17:45 -0500
+Message-Id: <1293952756-15010-170-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:22:52.0665 (UTC) FILETIME=[DE296690:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:23:15.0978 (UTC) FILETIME=[EC0EAEA0:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mel Gorman <mel@csn.ul.ie>
+From: Steve Wise <swise@opengridcomputing.com>
 
-commit 72853e2991a2702ae93aaf889ac7db743a415dd3 upstream.
+commit bec658ff31453a5726b1c188674d587a5d40c482 upstream.
 
-When allocating a page, the system uses NR_FREE_PAGES counters to
-determine if watermarks would remain intact after the allocation was made.
-This check is made without interrupts disabled or the zone lock held and
-so is race-prone by nature.  Unfortunately, when pages are being freed in
-batch, the counters are updated before the pages are added on the list.
-During this window, the counters are misleading as the pages do not exist
-yet.  When under significant pressure on systems with large numbers of
-CPUs, it's possible for processes to make progress even though they should
-have been stalled.  This is particularly problematic if a number of the
-processes are using GFP_ATOMIC as the min watermark can be accidentally
-breached and in extreme cases, the system can livelock.
+The HW by default has RX coalescing on.  For iWARP connections, this
+causes a 100ms delay in connection establishement due to the ingress
+MPA Start message being stalled in HW.  So explicitly turn RX
+coalescing off when setting up iWARP connections.
 
-This patch updates the counters after the pages have been added to the
-list.  This makes the allocator more cautious with respect to preserving
-the watermarks and mitigates livelock possibilities.
+This was causing very bad performance for NP64 gather operations using
+Open MPI, due to the way it sets up connections on larger jobs.
 
-[akpm@linux-foundation.org: avoid modifying incoming args]
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: Christoph Lameter <cl@linux.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
+Signed-off-by: Steve Wise <swise@opengridcomputing.com>
+Signed-off-by: Roland Dreier <rolandd@cisco.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- mm/page_alloc.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+ drivers/infiniband/hw/cxgb3/iwch_cm.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 0de096a..9826a8d 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -551,13 +551,13 @@ static void free_pcppages_bulk(struct zone *zone, int count,
- {
- 	int migratetype = 0;
- 	int batch_free = 0;
-+	int to_free = count;
+diff --git a/drivers/infiniband/hw/cxgb3/iwch_cm.c b/drivers/infiniband/hw/cxgb3/iwch_cm.c
+index 4fef032..025c3f8 100644
+--- a/drivers/infiniband/hw/cxgb3/iwch_cm.c
++++ b/drivers/infiniband/hw/cxgb3/iwch_cm.c
+@@ -487,7 +487,8 @@ static int send_connect(struct iwch_ep *ep)
+ 	    V_MSS_IDX(mtu_idx) |
+ 	    V_L2T_IDX(ep->l2t->idx) | V_TX_CHANNEL(ep->l2t->smt_idx);
+ 	opt0l = V_TOS((ep->tos >> 2) & M_TOS) | V_RCV_BUFSIZ(rcv_win>>10);
+-	opt2 = V_FLAVORS_VALID(1) | V_CONG_CONTROL_FLAVOR(cong_flavor);
++	opt2 = F_RX_COALESCE_VALID | V_RX_COALESCE(0) | V_FLAVORS_VALID(1) |
++	       V_CONG_CONTROL_FLAVOR(cong_flavor);
+ 	skb->priority = CPL_PRIORITY_SETUP;
+ 	set_arp_failure_handler(skb, act_open_req_arp_failure);
  
- 	spin_lock(&zone->lock);
- 	zone->all_unreclaimable = 0;
- 	zone->pages_scanned = 0;
+@@ -1304,7 +1305,8 @@ static void accept_cr(struct iwch_ep *ep, __be32 peer_ip, struct sk_buff *skb)
+ 	    V_MSS_IDX(mtu_idx) |
+ 	    V_L2T_IDX(ep->l2t->idx) | V_TX_CHANNEL(ep->l2t->smt_idx);
+ 	opt0l = V_TOS((ep->tos >> 2) & M_TOS) | V_RCV_BUFSIZ(rcv_win>>10);
+-	opt2 = V_FLAVORS_VALID(1) | V_CONG_CONTROL_FLAVOR(cong_flavor);
++	opt2 = F_RX_COALESCE_VALID | V_RX_COALESCE(0) | V_FLAVORS_VALID(1) |
++	       V_CONG_CONTROL_FLAVOR(cong_flavor);
  
--	__mod_zone_page_state(zone, NR_FREE_PAGES, count);
--	while (count) {
-+	while (to_free) {
- 		struct page *page;
- 		struct list_head *list;
- 
-@@ -582,8 +582,9 @@ static void free_pcppages_bulk(struct zone *zone, int count,
- 			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
- 			__free_one_page(page, zone, 0, page_private(page));
- 			trace_mm_page_pcpu_drain(page, 0, page_private(page));
--		} while (--count && --batch_free && !list_empty(list));
-+		} while (--to_free && --batch_free && !list_empty(list));
- 	}
-+	__mod_zone_page_state(zone, NR_FREE_PAGES, count);
- 	spin_unlock(&zone->lock);
- }
- 
-@@ -594,8 +595,8 @@ static void free_one_page(struct zone *zone, struct page *page, int order,
- 	zone->all_unreclaimable = 0;
- 	zone->pages_scanned = 0;
- 
--	__mod_zone_page_state(zone, NR_FREE_PAGES, 1 << order);
- 	__free_one_page(page, zone, order, migratetype);
-+	__mod_zone_page_state(zone, NR_FREE_PAGES, 1 << order);
- 	spin_unlock(&zone->lock);
- }
- 
+ 	rpl = cplhdr(skb);
+ 	rpl->wr.wr_hi = htonl(V_WR_OP(FW_WROPCODE_FORWARD));
 -- 
 1.7.3.3
 
