@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754970Ab1ABHZw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:25:52 -0500
-Received: from mail.windriver.com ([147.11.1.11]:37161 "EHLO
+	id S1755050Ab1ABHaC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:30:02 -0500
+Received: from mail.windriver.com ([147.11.1.11]:37169 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754873Ab1ABHZt (ORCPT
+	with ESMTP id S1754954Ab1ABHZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:25:49 -0500
+	Sun, 2 Jan 2011 02:25:51 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Sergei Shtylyov <sshtylyov@ru.mvista.com>,
-        Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+Cc: stable-review@kernel.org, Rainer Keller <mail@rainerkeller.de>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 247/260] usb: musb: blackfin: call gpio_free() on error path in musb_platform_init()
-Date: Sun,  2 Jan 2011 02:19:03 -0500
-Message-Id: <1293952756-15010-248-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 244/260] USB: add PID for FTDI based OpenDCC hardware
+Date: Sun,  2 Jan 2011 02:19:00 -0500
+Message-Id: <1293952756-15010-245-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:24:39.0855 (UTC) FILETIME=[1E0D4BF0:01CBAA4E]
+X-OriginalArrivalTime: 02 Jan 2011 07:24:36.0511 (UTC) FILETIME=[1C0F0AF0:01CBAA4E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+From: Rainer Keller <mail@rainerkeller.de>
 
-commit 00be545e49d83485d49a598d3b7e090088934be8 upstream.
+commit 99c1e4f89d1033444ce4d0c064bd2826e81c3775 upstream.
 
-Blackfin's musb_platform_init() needs to call gpio_free() for error cleanup iff
-otg_get_transceiver() call returns NULL.
+The OpenDCC project is developing a new hardware. This patch adds its
+PID to the list of known FTDI devices. The PID can be found at
+http://www.opendcc.de/elektronik/usb/opendcc_usb.html
 
-Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Acked-by: Mike Frysinger <vapier@gentoo.org>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Rainer Keller <mail@rainerkeller.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/musb/blackfin.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/musb/blackfin.c b/drivers/usb/musb/blackfin.c
-index ec8d324..6a9e891 100644
---- a/drivers/usb/musb/blackfin.c
-+++ b/drivers/usb/musb/blackfin.c
-@@ -289,8 +289,10 @@ int __init musb_platform_init(struct musb *musb)
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 9d810e8..f2fbf78 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -182,6 +182,7 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_SNIFFER_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_THROTTLE_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GATEWAY_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index d3d2f48..a214917 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -61,6 +61,7 @@
+ #define FTDI_OPENDCC_SNIFFER_PID	0xBFD9
+ #define FTDI_OPENDCC_THROTTLE_PID	0xBFDA
+ #define FTDI_OPENDCC_GATEWAY_PID	0xBFDB
++#define FTDI_OPENDCC_GBM_PID	0xBFDC
  
- 	usb_nop_xceiv_register();
- 	musb->xceiv = otg_get_transceiver();
--	if (!musb->xceiv)
-+	if (!musb->xceiv) {
-+		gpio_free(musb->config->gpio_vrsel);
- 		return -ENODEV;
-+	}
- 
- 	if (ANOMALY_05000346) {
- 		bfin_write_USB_APHY_CALIB(ANOMALY_05000346_value);
+ /*
+  * RR-CirKits LocoBuffer USB (http://www.rr-cirkits.com)
 -- 
 1.7.3.3
 
