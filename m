@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476Ab1ABHYh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:24:37 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36445 "EHLO
+	id S1754166Ab1ABHX4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:23:56 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35899 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754378Ab1ABHYe (ORCPT
+	with ESMTP id S1754081Ab1ABHXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:24:34 -0500
+	Sun, 2 Jan 2011 02:23:51 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
+Cc: stable-review@kernel.org, Jeff Moyer <jmoyer@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 174/260] tracing/x86: Don't use mcount in pvclock.c
-Date: Sun,  2 Jan 2011 02:17:50 -0500
-Message-Id: <1293952756-15010-175-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 135/260] aio: check for multiplication overflow in do_io_submit
+Date: Sun,  2 Jan 2011 02:17:11 -0500
+Message-Id: <1293952756-15010-136-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:23:21.0291 (UTC) FILETIME=[EF3961B0:01CBAA4D]
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 02 Jan 2011 07:22:37.0962 (UTC) FILETIME=[D565E6A0:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Fitzhardinge <jeremy@goop.org>
+From: Jeff Moyer <jmoyer@redhat.com>
 
-commit 9ecd4e1689208afe9b059a5ce1333acb2f42c4d2 upstream.
+commit 75e1c70fc31490ef8a373ea2a4bea2524099b478 upstream.
 
-When using a paravirt clock, pvclock.c can be used by sched_clock(),
-which in turn is used by the tracing mechanism for timestamps,
-which leads to infinite recursion.
+Tavis Ormandy pointed out that do_io_submit does not do proper bounds
+checking on the passed-in iocb array:
 
-Disable mcount/tracing for pvclock.o.
+       if (unlikely(nr < 0))
+               return -EINVAL;
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-LKML-Reference: <4C9A9A3F.4040201@goop.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+       if (unlikely(!access_ok(VERIFY_READ, iocbpp, (nr*sizeof(iocbpp)))))
+               return -EFAULT;                      ^^^^^^^^^^^^^^^^^^
+
+The attached patch checks for overflow, and if it is detected, the
+number of iocbs submitted is scaled down to a number that will fit in
+the long.  This is an ok thing to do, as sys_io_submit is documented as
+returning the number of iocbs submitted, so callers should handle a
+return value of less than the 'nr' argument passed in.
+
+Reported-by: Tavis Ormandy <taviso@cmpxchg8b.com>
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/kernel/Makefile |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ fs/aio.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 4c58352..ea3f79b 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -11,6 +11,7 @@ ifdef CONFIG_FUNCTION_TRACER
- CFLAGS_REMOVE_tsc.o = -pg
- CFLAGS_REMOVE_rtc.o = -pg
- CFLAGS_REMOVE_paravirt-spinlocks.o = -pg
-+CFLAGS_REMOVE_pvclock.o = -pg
- CFLAGS_REMOVE_ftrace.o = -pg
- CFLAGS_REMOVE_early_printk.o = -pg
- endif
+diff --git a/fs/aio.c b/fs/aio.c
+index 48fdeeb..94b6cd6 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -1659,6 +1659,9 @@ long do_io_submit(aio_context_t ctx_id, long nr,
+ 	if (unlikely(nr < 0))
+ 		return -EINVAL;
+ 
++	if (unlikely(nr > LONG_MAX/sizeof(*iocbpp)))
++		nr = LONG_MAX/sizeof(*iocbpp);
++
+ 	if (unlikely(!access_ok(VERIFY_READ, iocbpp, (nr*sizeof(*iocbpp)))))
+ 		return -EFAULT;
+ 
 -- 
 1.7.3.3
 
