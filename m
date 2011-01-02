@@ -1,154 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751329Ab1ABHVV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:21:21 -0500
-Received: from mail.windriver.com ([147.11.1.11]:33866 "EHLO
+	id S1751400Ab1ABHVa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:21:30 -0500
+Received: from mail.windriver.com ([147.11.1.11]:33955 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299Ab1ABHVT (ORCPT
+	with ESMTP id S1751037Ab1ABHV0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:21:19 -0500
+	Sun, 2 Jan 2011 02:21:26 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Jing Zhang <zj.barak@gmail.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
+Cc: stable-review@kernel.org, Dan Carpenter <error27@gmail.com>,
+        David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 007/260] ext4: rename ext4_mb_release_desc() to ext4_mb_unload_buddy()
-Date: Sun,  2 Jan 2011 02:15:03 -0500
-Message-Id: <1293952756-15010-8-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 002/260] KEYS: Return more accurate error codes
+Date: Sun,  2 Jan 2011 02:14:58 -0500
+Message-Id: <1293952756-15010-3-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:20:14.0241 (UTC) FILETIME=[7FBBD110:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:20:09.0131 (UTC) FILETIME=[7CB017B0:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jing Zhang <zj.barak@gmail.com>
+From: Dan Carpenter <error27@gmail.com>
 
-commit e39e07fdfd98be8650385f12a7b81d6adc547510 upstream.
+commit 4d09ec0f705cf88a12add029c058b53f288cfaa2 upstream.
 
-This function cleans up after ext4_mb_load_buddy(), so the renaming
-makes the code clearer.
+We were using the wrong variable here so the error codes weren't being returned
+properly.  The original code returns -ENOKEY.
 
-Signed-off-by: Jing Zhang <zj.barak@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: James Morris <jmorris@namei.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/ext4/mballoc.c |   24 ++++++++++++------------
- 1 files changed, 12 insertions(+), 12 deletions(-)
+ security/keys/process_keys.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index 0550ea3..8639d5a6 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -1150,7 +1150,7 @@ err:
- 	return ret;
- }
+diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+index 06c2ccf..20a38fe 100644
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -508,7 +508,7 @@ try_again:
  
--static void ext4_mb_release_desc(struct ext4_buddy *e4b)
-+static void ext4_mb_unload_buddy(struct ext4_buddy *e4b)
- {
- 	if (e4b->bd_bitmap_page)
- 		page_cache_release(e4b->bd_bitmap_page);
-@@ -1617,7 +1617,7 @@ int ext4_mb_try_best_found(struct ext4_allocation_context *ac,
- 	}
- 
- 	ext4_unlock_group(ac->ac_sb, group);
--	ext4_mb_release_desc(e4b);
-+	ext4_mb_unload_buddy(e4b);
- 
- 	return 0;
- }
-@@ -1672,7 +1672,7 @@ int ext4_mb_find_by_goal(struct ext4_allocation_context *ac,
- 		ext4_mb_use_best_found(ac, e4b);
- 	}
- 	ext4_unlock_group(ac->ac_sb, group);
--	ext4_mb_release_desc(e4b);
-+	ext4_mb_unload_buddy(e4b);
- 
- 	return 0;
- }
-@@ -2042,7 +2042,7 @@ repeat:
- 			if (!ext4_mb_good_group(ac, group, cr)) {
- 				/* someone did allocation from this group */
- 				ext4_unlock_group(sb, group);
--				ext4_mb_release_desc(&e4b);
-+				ext4_mb_unload_buddy(&e4b);
- 				continue;
+ 			ret = install_thread_keyring();
+ 			if (ret < 0) {
+-				key = ERR_PTR(ret);
++				key_ref = ERR_PTR(ret);
+ 				goto error;
  			}
+ 			goto reget_creds;
+@@ -526,7 +526,7 @@ try_again:
  
-@@ -2056,7 +2056,7 @@ repeat:
- 				ext4_mb_complex_scan_group(ac, &e4b);
+ 			ret = install_process_keyring();
+ 			if (ret < 0) {
+-				key = ERR_PTR(ret);
++				key_ref = ERR_PTR(ret);
+ 				goto error;
+ 			}
+ 			goto reget_creds;
+@@ -585,7 +585,7 @@ try_again:
  
- 			ext4_unlock_group(sb, group);
--			ext4_mb_release_desc(&e4b);
-+			ext4_mb_unload_buddy(&e4b);
+ 	case KEY_SPEC_GROUP_KEYRING:
+ 		/* group keyrings are not yet supported */
+-		key = ERR_PTR(-EINVAL);
++		key_ref = ERR_PTR(-EINVAL);
+ 		goto error;
  
- 			if (ac->ac_status != AC_STATUS_CONTINUE)
- 				break;
-@@ -2146,7 +2146,7 @@ static int ext4_mb_seq_groups_show(struct seq_file *seq, void *v)
- 	ext4_lock_group(sb, group);
- 	memcpy(&sg, ext4_get_group_info(sb, group), i);
- 	ext4_unlock_group(sb, group);
--	ext4_mb_release_desc(&e4b);
-+	ext4_mb_unload_buddy(&e4b);
- 
- 	seq_printf(seq, "#%-5u: %-5u %-5u %-5u [", group, sg.info.bb_free,
- 			sg.info.bb_fragments, sg.info.bb_first_free);
-@@ -2566,7 +2566,7 @@ static void release_blocks_on_commit(journal_t *journal, transaction_t *txn)
- 		}
- 		ext4_unlock_group(sb, entry->group);
- 		kmem_cache_free(ext4_free_ext_cachep, entry);
--		ext4_mb_release_desc(&e4b);
-+		ext4_mb_unload_buddy(&e4b);
- 	}
- 
- 	mb_debug(1, "freed %u blocks in %u structures\n", count, count2);
-@@ -3695,7 +3695,7 @@ out:
- 	ext4_unlock_group(sb, group);
- 	if (ac)
- 		kmem_cache_free(ext4_ac_cachep, ac);
--	ext4_mb_release_desc(&e4b);
-+	ext4_mb_unload_buddy(&e4b);
- 	put_bh(bitmap_bh);
- 	return free;
- }
-@@ -3799,7 +3799,7 @@ repeat:
- 		if (bitmap_bh == NULL) {
- 			ext4_error(sb, "Error reading block bitmap for %u",
- 					group);
--			ext4_mb_release_desc(&e4b);
-+			ext4_mb_unload_buddy(&e4b);
- 			continue;
- 		}
- 
-@@ -3808,7 +3808,7 @@ repeat:
- 		ext4_mb_release_inode_pa(&e4b, bitmap_bh, pa, ac);
- 		ext4_unlock_group(sb, group);
- 
--		ext4_mb_release_desc(&e4b);
-+		ext4_mb_unload_buddy(&e4b);
- 		put_bh(bitmap_bh);
- 
- 		list_del(&pa->u.pa_tmp_list);
-@@ -4072,7 +4072,7 @@ ext4_mb_discard_lg_preallocations(struct super_block *sb,
- 		ext4_mb_release_group_pa(&e4b, pa, ac);
- 		ext4_unlock_group(sb, group);
- 
--		ext4_mb_release_desc(&e4b);
-+		ext4_mb_unload_buddy(&e4b);
- 		list_del(&pa->u.pa_tmp_list);
- 		call_rcu(&(pa)->u.pa_rcu, ext4_mb_pa_callback);
- 	}
-@@ -4608,7 +4608,7 @@ do_more:
- 		atomic_add(count, &sbi->s_flex_groups[flex_group].free_blocks);
- 	}
- 
--	ext4_mb_release_desc(&e4b);
-+	ext4_mb_unload_buddy(&e4b);
- 
- 	freed += count;
- 
+ 	case KEY_SPEC_REQKEY_AUTH_KEY:
 -- 
 1.7.3.3
 
