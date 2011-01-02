@@ -1,73 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab1ABIHK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 03:07:10 -0500
-Received: from mail.windriver.com ([147.11.1.11]:34464 "EHLO
+	id S1755440Ab1ABIHy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 03:07:54 -0500
+Received: from mail.windriver.com ([147.11.1.11]:34431 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752418Ab1ABHWE (ORCPT
+	with ESMTP id S1752346Ab1ABHWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:22:04 -0500
+	Sun, 2 Jan 2011 02:22:02 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: stable-review@kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 043/260] ath9k_hw: fix parsing of HT40 5 GHz CTLs
-Date: Sun,  2 Jan 2011 02:15:39 -0500
-Message-Id: <1293952756-15010-44-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 034/260] x86, tsc, sched: Recompute cyc2ns_offset's during resume from sleep states
+Date: Sun,  2 Jan 2011 02:15:30 -0500
+Message-Id: <1293952756-15010-35-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:20:53.0319 (UTC) FILETIME=[9706A570:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:20:43.0585 (UTC) FILETIME=[91395B10:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Luis R. Rodriguez <lrodriguez@atheros.com>
+From: Suresh Siddha <suresh.b.siddha@intel.com>
 
-commit 904879748d7439a6dabdc6be9aad983e216b027d upstream.
+commit cd7240c0b900eb6d690ccee088a6c9b46dae815a upstream.
 
-The 5 GHz CTL indexes were not being read for all hardware
-devices due to the masking out through the CTL_MODE_M mask
-being one bit too short. Without this the calibrated regulatory
-maximum values were not being picked up when devices operate
-on 5 GHz in HT40 mode. The final output power used for Atheros
-devices is the minimum between the calibrated CTL values and
-what CRDA provides.
+TSC's get reset after suspend/resume (even on cpu's with invariant TSC
+which runs at a constant rate across ACPI P-, C- and T-states). And in
+some systems BIOS seem to reinit TSC to arbitrary large value (still
+sync'd across cpu's) during resume.
 
-Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This leads to a scenario of scheduler rq->clock (sched_clock_cpu()) less
+than rq->age_stamp (introduced in 2.6.32). This leads to a big value
+returned by scale_rt_power() and the resulting big group power set by the
+update_group_power() is causing improper load balancing between busy and
+idle cpu's after suspend/resume.
+
+This resulted in multi-threaded workloads (like kernel-compilation) go
+slower after suspend/resume cycle on core i5 laptops.
+
+Fix this by recomputing cyc2ns_offset's during resume, so that
+sched_clock() continues from the point where it was left off during
+suspend.
+
+Reported-by: Florian Pritz <flo@xssn.at>
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1282262618.2675.24.camel@sbsiddha-MOBL3.sc.intel.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/wireless/ath/ath9k/eeprom.h |    2 +-
- drivers/net/wireless/ath/regd.h         |    1 -
- 2 files changed, 1 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/tsc.h |    2 ++
+ arch/x86/kernel/tsc.c      |   38 ++++++++++++++++++++++++++++++++++++++
+ arch/x86/power/cpu.c       |    2 ++
+ 3 files changed, 42 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/eeprom.h b/drivers/net/wireless/ath/ath9k/eeprom.h
-index 2f2993b..104e3ea 100644
---- a/drivers/net/wireless/ath/ath9k/eeprom.h
-+++ b/drivers/net/wireless/ath/ath9k/eeprom.h
-@@ -61,7 +61,7 @@
+diff --git a/arch/x86/include/asm/tsc.h b/arch/x86/include/asm/tsc.h
+index c042729..1ca132f 100644
+--- a/arch/x86/include/asm/tsc.h
++++ b/arch/x86/include/asm/tsc.h
+@@ -59,5 +59,7 @@ extern void check_tsc_sync_source(int cpu);
+ extern void check_tsc_sync_target(void);
  
- #define SD_NO_CTL               0xE0
- #define NO_CTL                  0xff
--#define CTL_MODE_M              7
-+#define CTL_MODE_M              0xf
- #define CTL_11A                 0
- #define CTL_11B                 1
- #define CTL_11G                 2
-diff --git a/drivers/net/wireless/ath/regd.h b/drivers/net/wireless/ath/regd.h
-index a1c3952..345dd97 100644
---- a/drivers/net/wireless/ath/regd.h
-+++ b/drivers/net/wireless/ath/regd.h
-@@ -31,7 +31,6 @@ enum ctl_group {
- #define NO_CTL 0xff
- #define SD_NO_CTL               0xE0
- #define NO_CTL                  0xff
--#define CTL_MODE_M              7
- #define CTL_11A                 0
- #define CTL_11B                 1
- #define CTL_11G                 2
+ extern int notsc_setup(char *);
++extern void save_sched_clock_state(void);
++extern void restore_sched_clock_state(void);
+ 
+ #endif /* _ASM_X86_TSC_H */
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index 9faf91a..c65f741 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -626,6 +626,44 @@ static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
+ 	local_irq_restore(flags);
+ }
+ 
++static unsigned long long cyc2ns_suspend;
++
++void save_sched_clock_state(void)
++{
++	if (!sched_clock_stable)
++		return;
++
++	cyc2ns_suspend = sched_clock();
++}
++
++/*
++ * Even on processors with invariant TSC, TSC gets reset in some the
++ * ACPI system sleep states. And in some systems BIOS seem to reinit TSC to
++ * arbitrary value (still sync'd across cpu's) during resume from such sleep
++ * states. To cope up with this, recompute the cyc2ns_offset for each cpu so
++ * that sched_clock() continues from the point where it was left off during
++ * suspend.
++ */
++void restore_sched_clock_state(void)
++{
++	unsigned long long offset;
++	unsigned long flags;
++	int cpu;
++
++	if (!sched_clock_stable)
++		return;
++
++	local_irq_save(flags);
++
++	get_cpu_var(cyc2ns_offset) = 0;
++	offset = cyc2ns_suspend - sched_clock();
++
++	for_each_possible_cpu(cpu)
++		per_cpu(cyc2ns_offset, cpu) = offset;
++
++	local_irq_restore(flags);
++}
++
+ #ifdef CONFIG_CPU_FREQ
+ 
+ /* Frequency scaling support. Adjust the TSC based timer when the cpu frequency
+diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
+index 1290ba5..9c57cb1 100644
+--- a/arch/x86/power/cpu.c
++++ b/arch/x86/power/cpu.c
+@@ -113,6 +113,7 @@ static void __save_processor_state(struct saved_context *ctxt)
+ void save_processor_state(void)
+ {
+ 	__save_processor_state(&saved_context);
++	save_sched_clock_state();
+ }
+ #ifdef CONFIG_X86_32
+ EXPORT_SYMBOL(save_processor_state);
+@@ -229,6 +230,7 @@ static void __restore_processor_state(struct saved_context *ctxt)
+ void restore_processor_state(void)
+ {
+ 	__restore_processor_state(&saved_context);
++	restore_sched_clock_state();
+ }
+ #ifdef CONFIG_X86_32
+ EXPORT_SYMBOL(restore_processor_state);
 -- 
 1.7.3.3
 
