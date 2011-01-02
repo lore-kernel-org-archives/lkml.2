@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab1ABHW7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:22:59 -0500
-Received: from mail.windriver.com ([147.11.1.11]:35174 "EHLO
+	id S1755407Ab1ABH6y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:58:54 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35248 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753465Ab1ABHW4 (ORCPT
+	with ESMTP id S1753536Ab1ABHXC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:22:56 -0500
+	Sun, 2 Jan 2011 02:23:02 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Daniel J Blueman <daniel.blueman@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+Cc: stable-review@kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 092/260] rcu: apply RCU protection to wake_affine()
-Date: Sun,  2 Jan 2011 02:16:28 -0500
-Message-Id: <1293952756-15010-93-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 073/260] memory hotplug: fix next block calculation in is_removable
+Date: Sun,  2 Jan 2011 02:16:09 -0500
+Message-Id: <1293952756-15010-74-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:21:51.0102 (UTC) FILETIME=[B977A1E0:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:21:27.0398 (UTC) FILETIME=[AB56B060:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel J Blueman <daniel.blueman@gmail.com>
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-commit f3b577dec1f2ce32d2db6d2ca6badff7002512af upstream.
+commit 0dcc48c15f63ee86c2fcd33968b08d651f0360a5 upstream.
 
-The task_group() function returns a pointer that must be protected
-by either RCU, the ->alloc_lock, or the cgroup lock (see the
-rcu_dereference_check() in task_subsys_state(), which is invoked by
-task_group()).  The wake_affine() function currently does none of these,
-which means that a concurrent update would be within its rights to free
-the structure returned by task_group().  Because wake_affine() uses this
-structure only to compute load-balancing heuristics, there is no reason
-to acquire either of the two locks.
+next_active_pageblock() is for finding next _used_ freeblock.  It skips
+several blocks when it finds there are a chunk of free pages lager than
+pageblock.  But it has 2 bugs.
 
-Therefore, this commit introduces an RCU read-side critical section that
-starts before the first call to task_group() and ends after the last use
-of the "tg" pointer returned from task_group().  Thanks to Li Zefan for
-pointing out the need to extend the RCU read-side critical section from
-that proposed by the original patch.
+  1. We have no lock. page_order(page) - pageblock_order can be minus.
+  2. pageblocks_stride += is wrong. it should skip page_order(p) of pages.
 
-Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/sched_fair.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ mm/memory_hotplug.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 461d312..94993ac 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1272,6 +1272,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 	 * effect of the currently running task from the load
- 	 * of the current CPU:
- 	 */
-+	rcu_read_lock();
- 	if (sync) {
- 		tg = task_group(current);
- 		weight = current->se.load.weight;
-@@ -1297,6 +1298,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 	balanced = !this_load ||
- 		100*(this_load + effective_load(tg, this_cpu, weight, weight)) <=
- 		imbalance*(load + effective_load(tg, prev_cpu, 0, weight));
-+	rcu_read_unlock();
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index be211a5..91f7c26 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -558,19 +558,19 @@ static inline int pageblock_free(struct page *page)
+ /* Return the start of the next active pageblock after a given page */
+ static struct page *next_active_pageblock(struct page *page)
+ {
+-	int pageblocks_stride;
+-
+ 	/* Ensure the starting page is pageblock-aligned */
+ 	BUG_ON(page_to_pfn(page) & (pageblock_nr_pages - 1));
  
- 	/*
- 	 * If the currently running task will sleep within
+-	/* Move forward by at least 1 * pageblock_nr_pages */
+-	pageblocks_stride = 1;
+-
+ 	/* If the entire pageblock is free, move to the end of free page */
+-	if (pageblock_free(page))
+-		pageblocks_stride += page_order(page) - pageblock_order;
++	if (pageblock_free(page)) {
++		int order;
++		/* be careful. we don't have locks, page_order can be changed.*/
++		order = page_order(page);
++		if ((order < MAX_ORDER) && (order >= pageblock_order))
++			return page + (1 << order);
++	}
+ 
+-	return page + (pageblocks_stride * pageblock_nr_pages);
++	return page + pageblock_nr_pages;
+ }
+ 
+ /* Checks if this range of memory is likely to be hot-removable. */
 -- 
 1.7.3.3
 
