@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751648Ab1ABHVv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:21:51 -0500
-Received: from mail.windriver.com ([147.11.1.11]:34202 "EHLO
+	id S1751935Ab1ABHWI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:22:08 -0500
+Received: from mail.windriver.com ([147.11.1.11]:34393 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751731Ab1ABHVq (ORCPT
+	with ESMTP id S1752181Ab1ABHV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:21:46 -0500
+	Sun, 2 Jan 2011 02:21:59 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Tom Kopec <tek@acm.org>, Daniel Stodden <daniel.stodden@citrix.com>,
+Cc: stable-review@kernel.org, Hank Janssen <hjanssen@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 030/260] xen: handle events as edge-triggered
-Date: Sun,  2 Jan 2011 02:15:26 -0500
-Message-Id: <1293952756-15010-31-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 040/260] staging: hv: Increased storvsc ringbuffer and max_io_requests
+Date: Sun,  2 Jan 2011 02:15:36 -0500
+Message-Id: <1293952756-15010-41-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:20:39.0210 (UTC) FILETIME=[8E9DC8A0:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:20:50.0241 (UTC) FILETIME=[9530FB10:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+From: Hank Janssen <hjanssen@microsoft.com>
 
-commit dffe2e1e1a1ddb566a76266136c312801c66dcf7 upstream.
+commit 15dd1c9f53b31cdc84b8072a88c23fa09527c596 upstream.
 
-Xen events are logically edge triggered, as Xen only calls the event
-upcall when an event is newly set, but not continuously as it remains set.
-As a result, use handle_edge_irq rather than handle_level_irq.
+Increased storvsc ringbuffer and max_io_requests. This now more
+closely mimics the numbers on Hyper-V. And will allow more IO requests
+to take place for the SCSI driver.
 
-This has the important side-effect of fixing a long-standing bug of
-events getting lost if:
- - an event's interrupt handler is running
- - the event is migrated to a different vcpu
- - the event is re-triggered
+Max_IO is set to double from what it was before, Hyper-V allows it and
+we have had appliance builder requests to see if it was a problem to
+increase the number.
 
-The most noticable symptom of these lost events is occasional lockups
-of blkfront.
+Ringbuffer size for storvsc is now increased because I have seen A few buffer
+problems on extremely busy systems. They were Set pretty low before.
+And since max_io_requests is increased I Really needed to increase the buffer
+as well.
 
-Many thanks to Tom Kopec and Daniel Stodden in tracking this down.
-
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Cc: Tom Kopec <tek@acm.org>
-Cc: Daniel Stodden <daniel.stodden@citrix.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/xen/events.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/staging/hv/StorVscApi.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 28f133a..cc72dad 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -363,7 +363,7 @@ int bind_evtchn_to_irq(unsigned int evtchn)
- 		irq = find_unbound_irq();
+diff --git a/drivers/staging/hv/StorVscApi.h b/drivers/staging/hv/StorVscApi.h
+index 126a858..aad90bd 100644
+--- a/drivers/staging/hv/StorVscApi.h
++++ b/drivers/staging/hv/StorVscApi.h
+@@ -28,10 +28,10 @@
+ #include "VmbusApi.h"
  
- 		set_irq_chip_and_handler_name(irq, &xen_dynamic_chip,
--					      handle_level_irq, "event");
-+					      handle_edge_irq, "event");
+ /* Defines */
+-#define STORVSC_RING_BUFFER_SIZE			(10*PAGE_SIZE)
++#define STORVSC_RING_BUFFER_SIZE			(20*PAGE_SIZE)
+ #define BLKVSC_RING_BUFFER_SIZE				(20*PAGE_SIZE)
  
- 		evtchn_to_irq[evtchn] = irq;
- 		irq_info[irq] = mk_evtchn_info(evtchn);
+-#define STORVSC_MAX_IO_REQUESTS				64
++#define STORVSC_MAX_IO_REQUESTS				128
+ 
+ /*
+  * In Hyper-V, each port/path/target maps to 1 scsi host adapter.  In
 -- 
 1.7.3.3
 
