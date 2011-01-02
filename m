@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab1ABHus (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:50:48 -0500
-Received: from mail.windriver.com ([147.11.1.11]:35830 "EHLO
+	id S1753036Ab1ABHvG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:51:06 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35778 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754025Ab1ABHXp (ORCPT
+	with ESMTP id S1753988Ab1ABHXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:23:45 -0500
+	Sun, 2 Jan 2011 02:23:42 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Ryan Kuester <rkuester@metis.kspace.net>,
-        James Bottomley <James.Bottomley@suse.de>,
+Cc: stable-review@kernel.org, Jan Kara <jack@suse.cz>,
+        Jens Axboe <jaxboe@fusionio.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 137/260] mptsas: fix hangs caused by ATA pass-through
-Date: Sun,  2 Jan 2011 02:17:13 -0500
-Message-Id: <1293952756-15010-138-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 131/260] char: Mark /dev/zero and /dev/kmem as not capable of writeback
+Date: Sun,  2 Jan 2011 02:17:07 -0500
+Message-Id: <1293952756-15010-132-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:22:39.0900 (UTC) FILETIME=[D68D9DC0:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:22:33.0462 (UTC) FILETIME=[D2B74160:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ryan Kuester <rkuester@kspace.net>
+From: Jan Kara <jack@suse.cz>
 
-commit 2a1b7e575b80ceb19ea50bfa86ce0053ea57181d upstream.
+commit 371d217ee1ff8b418b8f73fb2a34990f951ec2d4 upstream.
 
-I may have an explanation for the LSI 1068 HBA hangs provoked by ATA
-pass-through commands, in particular by smartctl.
+These devices don't do any writeback but their device inodes still can get
+dirty so mark bdi appropriately so that bdi code does the right thing and files
+inodes to lists of bdi carrying the device inodes.
 
-First, my version of the symptoms.  On an LSI SAS1068E B3 HBA running
-01.29.00.00 firmware, with SATA disks, and with smartd running, I'm seeing
-occasional task, bus, and host resets, some of which lead to hard faults of
-the HBA requiring a reboot.  Abusively looping the smartctl command,
-
-    # while true; do smartctl -a /dev/sdb > /dev/null; done
-
-dramatically increases the frequency of these failures to nearly one per
-minute.  A high IO load through the HBA while looping smartctl seems to
-improve the chance of a full scsi host reset or a non-recoverable hang.
-
-I reduced what smartctl was doing down to a simple test case which
-causes the hang with a single IO when pointed at the sd interface.  See
-the code at the bottom of this e-mail.  It uses an SG_IO ioctl to issue
-a single pass-through ATA identify device command.  If the buffer
-userspace gives for the read data has certain alignments, the task is
-issued to the HBA but the HBA fails to respond.  If run against the sg
-interface, neither the test code nor smartctl causes a hang.
-
-sd and sg handle the SG_IO ioctl slightly differently.  Unless you
-specifically set a flag to do direct IO, sg passes a buffer of its own,
-which is page-aligned, to the block layer and later copies the result
-into the userspace buffer regardless of its alignment.  sd, on the other
-hand, always does direct IO unless the userspace buffer fails an
-alignment test at block/blk-map.c line 57, in which case a page-aligned
-buffer is created and used for the transfer.
-
-The alignment test currently checks for word-alignment, the default
-setup by scsi_lib.c; therefore, userspace buffers of almost any
-alignment are given directly to the HBA as DMA targets.  The LSI 1068
-hardware doesn't seem to like at least a couple of the alignments which
-cross a page boundary (see the test code below).  Curiously, many
-page-boundary-crossing alignments do work just fine.
-
-So, either the hardware has an bug handling certain alignments or the
-hardware has a stricter alignment requirement than the driver is
-advertising.  If stricter alignment is required, then in no case should
-misaligned buffers from userspace be allowed through without being
-bounced or at least causing an error to be returned.
-
-It seems the mptsas driver could use blk_queue_dma_alignment() to advertise
-a stricter alignment requirement.  If it does, sd does the right thing and
-bounces misaligned buffers (see block/blk-map.c line 57).  The following
-patch to 2.6.34-rc5 makes my symptoms go away.  I'm sure this is the wrong
-place for this code, but it gets my idea across.
-
-Acked-by: "Desai, Kashyap" <Kashyap.Desai@lsi.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/message/fusion/mptscsih.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ drivers/char/mem.c |    3 ++-
+ fs/char_dev.c      |    4 +++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/message/fusion/mptscsih.c b/drivers/message/fusion/mptscsih.c
-index 6796597..c13726a 100644
---- a/drivers/message/fusion/mptscsih.c
-+++ b/drivers/message/fusion/mptscsih.c
-@@ -2450,6 +2450,8 @@ mptscsih_slave_configure(struct scsi_device *sdev)
- 		ioc->name,sdev->tagged_supported, sdev->simple_tags,
- 		sdev->ordered_tags));
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index f54dab8..16a4443 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -788,10 +788,11 @@ static const struct file_operations zero_fops = {
+ /*
+  * capabilities for /dev/zero
+  * - permits private mappings, "copies" are taken of the source of zeros
++ * - no writeback happens
+  */
+ static struct backing_dev_info zero_bdi = {
+ 	.name		= "char/mem",
+-	.capabilities	= BDI_CAP_MAP_COPY,
++	.capabilities	= BDI_CAP_MAP_COPY | BDI_CAP_NO_ACCT_AND_WRITEBACK,
+ };
  
-+	blk_queue_dma_alignment (sdev->request_queue, 512 - 1);
-+
- 	return 0;
- }
+ static const struct file_operations full_fops = {
+diff --git a/fs/char_dev.c b/fs/char_dev.c
+index d6db933..be7613e 100644
+--- a/fs/char_dev.c
++++ b/fs/char_dev.c
+@@ -39,7 +39,9 @@ struct backing_dev_info directly_mappable_cdev_bdi = {
+ #endif
+ 		/* permit direct mmap, for read, write or exec */
+ 		BDI_CAP_MAP_DIRECT |
+-		BDI_CAP_READ_MAP | BDI_CAP_WRITE_MAP | BDI_CAP_EXEC_MAP),
++		BDI_CAP_READ_MAP | BDI_CAP_WRITE_MAP | BDI_CAP_EXEC_MAP |
++		/* no writeback happens */
++		BDI_CAP_NO_ACCT_AND_WRITEBACK),
+ };
  
+ static struct kobj_map *cdev_map;
 -- 
 1.7.3.3
 
