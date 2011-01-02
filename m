@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab1ABH40 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:56:26 -0500
-Received: from mail.windriver.com ([147.11.1.11]:35412 "EHLO
+	id S1755130Ab1ABH42 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:56:28 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35409 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753643Ab1ABHXQ (ORCPT
+	with ESMTP id S1753642Ab1ABHXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:23:16 -0500
+	Sun, 2 Jan 2011 02:23:15 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Dan Rosenberg <drosenberg@vsecurity.com>,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+Cc: stable-review@kernel.org, Dan Carpenter <error27@gmail.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 109/260] USB: serial/mos*: prevent reading uninitialized stack memory
-Date: Sun,  2 Jan 2011 02:16:45 -0500
-Message-Id: <1293952756-15010-110-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 105/260] i915: return -EFAULT if copy_to_user fails
+Date: Sun,  2 Jan 2011 02:16:41 -0500
+Message-Id: <1293952756-15010-106-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:22:09.0196 (UTC) FILETIME=[C4408EC0:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:22:05.0102 (UTC) FILETIME=[C1CFDCE0:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Dan Carpenter <error27@gmail.com>
 
-commit a0846f1868b11cd827bdfeaf4527d8b1b1c0b098 upstream.
+commit c877cdce93a44eea96f6cf7fc04be7d0372db2be upstream.
 
-The TIOCGICOUNT device ioctl in both mos7720.c and mos7840.c allows
-unprivileged users to read uninitialized stack memory, because the
-"reserved" member of the serial_icounter_struct struct declared on the
-stack is not altered or zeroed before being copied back to the user.
-This patch takes care of it.
+copy_to_user() returns the number of bytes remaining to be copied and
+I'm pretty sure we want to return a negative error code here.
 
-Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/serial/mos7720.c |    3 +++
- drivers/usb/serial/mos7840.c |    3 +++
- 2 files changed, 6 insertions(+), 0 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/serial/mos7720.c b/drivers/usb/serial/mos7720.c
-index 0d47f2c..623a6d3 100644
---- a/drivers/usb/serial/mos7720.c
-+++ b/drivers/usb/serial/mos7720.c
-@@ -1566,6 +1566,9 @@ static int mos7720_ioctl(struct tty_struct *tty, struct file *file,
- 
- 	case TIOCGICOUNT:
- 		cnow = mos7720_port->icount;
-+
-+		memset(&icount, 0, sizeof(struct serial_icounter_struct));
-+
- 		icount.cts = cnow.cts;
- 		icount.dsr = cnow.dsr;
- 		icount.rng = cnow.rng;
-diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
-index a73f2f5..16f0548 100644
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -2286,6 +2286,9 @@ static int mos7840_ioctl(struct tty_struct *tty, struct file *file,
- 	case TIOCGICOUNT:
- 		cnow = mos7840_port->icount;
- 		smp_rmb();
-+
-+		memset(&icount, 0, sizeof(struct serial_icounter_struct));
-+
- 		icount.cts = cnow.cts;
- 		icount.dsr = cnow.dsr;
- 		icount.rng = cnow.rng;
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 37a9ea3..e07722a 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -3818,6 +3818,7 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
+ 		if (ret != 0) {
+ 			DRM_ERROR("copy %d cliprects failed: %d\n",
+ 				  args->num_cliprects, ret);
++			ret = -EFAULT;
+ 			goto pre_mutex_err;
+ 		}
+ 	}
 -- 
 1.7.3.3
 
