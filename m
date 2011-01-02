@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950Ab1ABHXi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:23:38 -0500
-Received: from mail.windriver.com ([147.11.1.11]:35541 "EHLO
+	id S1754015Ab1ABHXo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:23:44 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35746 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753711Ab1ABHXZ (ORCPT
+	with ESMTP id S1753711Ab1ABHXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:23:25 -0500
+	Sun, 2 Jan 2011 02:23:40 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, "David S. Miller" <davem@davemloft.net>,
+Cc: stable-review@kernel.org, Patrick Simmons <linuxrocks123@netscape.net>,
+        Robert Richter <robert.richter@amd.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 117/260] bridge: Clear INET control block of SKBs passed into ip_fragment().
-Date: Sun,  2 Jan 2011 02:16:53 -0500
-Message-Id: <1293952756-15010-118-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 130/260] oprofile: Add Support for Intel CPU Family 6 / Model 22 (Intel Celeron 540)
+Date: Sun,  2 Jan 2011 02:17:06 -0500
+Message-Id: <1293952756-15010-131-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:22:17.0587 (UTC) FILETIME=[C940EC30:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:22:32.0103 (UTC) FILETIME=[D1E7E370:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David S. Miller <davem@davemloft.net>
+From: Patrick Simmons <linuxrocks123@netscape.net>
 
-commit 87f94b4e91dc042620c527f3c30c37e5127ef757 upstream.
+commit c33f543d320843e1732534c3931da4bbd18e6c14 upstream.
 
-In a similar vain to commit 17762060c25590bfddd68cc1131f28ec720f405f
-("bridge: Clear IPCB before possible entry into IP stack")
+This patch adds CPU type detection for the Intel Celeron 540, which is
+part of the Core 2 family according to Wikipedia; the family and ID pair
+is absent from the Volume 3B table referenced in the source code
+comments.  I have tested this patch on an Intel Celeron 540 machine
+reporting itself as Family 6 Model 22, and OProfile runs on the machine
+without issue.
 
-Any time we call into the IP stack we have to make sure the state
-there is as expected by the ipv4 code.
+Spec:
 
-With help from Eric Dumazet and Herbert Xu.
+ http://download.intel.com/design/mobile/SPECUPDT/317667.pdf
 
-Reported-by: Bandan Das <bandan.das@stratus.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Patrick Simmons <linuxrocks123@netscape.net>
+Acked-by: Andi Kleen <ak@linux.intel.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/bridge/br_netfilter.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+ arch/x86/oprofile/nmi_int.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
-index 54d812e..641d662 100644
---- a/net/bridge/br_netfilter.c
-+++ b/net/bridge/br_netfilter.c
-@@ -801,9 +801,11 @@ static int br_nf_dev_queue_xmit(struct sk_buff *skb)
- 	if (skb->nfct != NULL &&
- 	    (skb->protocol == htons(ETH_P_IP) || IS_VLAN_IP(skb)) &&
- 	    skb->len > skb->dev->mtu &&
--	    !skb_is_gso(skb))
-+	    !skb_is_gso(skb)) {
-+		/* BUG: Should really parse the IP options here. */
-+		memset(IPCB(skb), 0, sizeof(struct inet_skb_parm));
- 		return ip_fragment(skb, br_dev_queue_push_xmit);
--	else
-+	} else
- 		return br_dev_queue_push_xmit(skb);
- }
- #else
+diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+index 3130a4b..238526b 100644
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -621,7 +621,9 @@ static int __init ppro_init(char **cpu_type)
+ 	case 14:
+ 		*cpu_type = "i386/core";
+ 		break;
+-	case 15: case 23:
++	case 0x0f:
++	case 0x16:
++	case 0x17:
+ 		*cpu_type = "i386/core_2";
+ 		break;
+ 	case 0x1a:
 -- 
 1.7.3.3
 
