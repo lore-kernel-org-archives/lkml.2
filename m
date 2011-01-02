@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab1ABIHz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 03:07:55 -0500
-Received: from mail.windriver.com ([147.11.1.11]:34425 "EHLO
+	id S1752567Ab1ABIIm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 03:08:42 -0500
+Received: from mail.windriver.com ([147.11.1.11]:34415 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344Ab1ABHWC (ORCPT
+	with ESMTP id S1752281Ab1ABHWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:22:02 -0500
+	Sun, 2 Jan 2011 02:22:01 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Maxim Osipov <maxim.osipov@gmail.com>,
+Cc: stable-review@kernel.org, Dan Carpenter <error27@gmail.com>,
         Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 046/260] USB: Fix kernel oops with g_ether and Windows
-Date: Sun,  2 Jan 2011 02:15:42 -0500
-Message-Id: <1293952756-15010-47-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 045/260] USB: ehci-ppc-of: problems in unwind
+Date: Sun,  2 Jan 2011 02:15:41 -0500
+Message-Id: <1293952756-15010-46-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:20:56.0288 (UTC) FILETIME=[98CBAE00:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:20:55.0273 (UTC) FILETIME=[9830CD90:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Maxim Osipov <maxim.osipov@gmail.com>
+From: Dan Carpenter <error27@gmail.com>
 
-commit 037d3656adbd7e8cb848f01cf5dec423ed76bbe7 upstream.
+commit 08a3b3b1c2e622e378d9086aee9e2e42ce37591d upstream.
 
-Please find attached patch for
-https://bugzilla.kernel.org/show_bug.cgi?id=16023 problem.
+The iounmap(ehci->ohci_hcctrl_reg); should be the first thing we do
+because the ioremap() was the last thing we did.  Also if we hit any of
+the goto statements in the original code then it would have led to a
+NULL dereference of "ehci".  This bug was introduced in: 796bcae7361c
+"USB: powerpc: Workaround for the PPC440EPX USBH_23 errata [take 3]"
 
-Signed-off-by: Maxim Osipov <maxim.osipov@gmail.com>
+I modified the few lines in front a little so that my code didn't
+obscure the return success code path.
+
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Reviewed-by: Grant Likely <grant.likely@secretlab.ca>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/gadget/rndis.c |   10 +++++++---
- 1 files changed, 7 insertions(+), 3 deletions(-)
+ drivers/usb/host/ehci-ppc-of.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/usb/gadget/rndis.c b/drivers/usb/gadget/rndis.c
-index 5c0d06c..1043da1 100644
---- a/drivers/usb/gadget/rndis.c
-+++ b/drivers/usb/gadget/rndis.c
-@@ -292,9 +292,13 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
- 	/* mandatory */
- 	case OID_GEN_VENDOR_DESCRIPTION:
- 		pr_debug("%s: OID_GEN_VENDOR_DESCRIPTION\n", __func__);
--		length = strlen (rndis_per_dev_params [configNr].vendorDescr);
--		memcpy (outbuf,
--			rndis_per_dev_params [configNr].vendorDescr, length);
-+		if ( rndis_per_dev_params [configNr].vendorDescr ) {
-+			length = strlen (rndis_per_dev_params [configNr].vendorDescr);
-+			memcpy (outbuf,
-+				rndis_per_dev_params [configNr].vendorDescr, length);
-+		} else {
-+			outbuf[0] = 0;
-+		}
- 		retval = 0;
- 		break;
+diff --git a/drivers/usb/host/ehci-ppc-of.c b/drivers/usb/host/ehci-ppc-of.c
+index 8df33b8..5c2fbd1 100644
+--- a/drivers/usb/host/ehci-ppc-of.c
++++ b/drivers/usb/host/ehci-ppc-of.c
+@@ -192,17 +192,19 @@ ehci_hcd_ppc_of_probe(struct of_device *op, const struct of_device_id *match)
+ 	}
+ 
+ 	rv = usb_add_hcd(hcd, irq, 0);
+-	if (rv == 0)
+-		return 0;
++	if (rv)
++		goto err_ehci;
++
++	return 0;
+ 
++err_ehci:
++	if (ehci->has_amcc_usb23)
++		iounmap(ehci->ohci_hcctrl_reg);
+ 	iounmap(hcd->regs);
+ err_ioremap:
+ 	irq_dispose_mapping(irq);
+ err_irq:
+ 	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+-
+-	if (ehci->has_amcc_usb23)
+-		iounmap(ehci->ohci_hcctrl_reg);
+ err_rmr:
+ 	usb_put_hcd(hcd);
  
 -- 
 1.7.3.3
