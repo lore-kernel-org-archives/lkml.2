@@ -1,64 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382Ab1ABL4y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 06:56:54 -0500
-Received: from www84.your-server.de ([213.133.104.84]:37762 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553Ab1ABL4x convert rfc822-to-8bit (ORCPT
+	id S1753467Ab1ABMNV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 07:13:21 -0500
+Received: from astoria.ccjclearline.com ([64.235.106.9]:38145 "EHLO
+	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283Ab1ABMNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 06:56:53 -0500
-Subject: Re: [PATCH] new UDPCP Communication Protocol
-From: Stefani Seibold <stefani@seibold.net>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        davem@davemloft.net, netdev@vger.kernel.org, shemminger@vyatta.com
-In-Reply-To: <1293967996.2535.76.camel@edumazet-laptop>
-References: <1293918276-28773-1-git-send-email-stefani@seibold.net>
-	 <1293920601.2535.64.camel@edumazet-laptop>
-	 <1293967023.29525.16.camel@wall-e>
-	 <1293967996.2535.76.camel@edumazet-laptop>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Sun, 02 Jan 2011 12:57:56 +0100
-Message-ID: <1293969476.29869.2.camel@wall-e>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 8BIT
-X-Authenticated-Sender: stefani@seibold.net
+	Sun, 2 Jan 2011 07:13:20 -0500
+Date: Sun, 2 Jan 2011 07:13:11 -0500 (EST)
+From: "Robert P. J. Day" <rpjday@crashcourse.ca>
+X-X-Sender: rpjday@localhost6.localdomain6
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+cc: Anca Emanuel <anca.emanuel@gmail.com>,
+        Ubuntu kernel team mailing list 
+	<kernel-team@lists.ubuntu.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>
+Subject: Re: is there a fix for ubuntu with intel GPU booting to blank
+ screen?
+In-Reply-To: <1293832014.27359.7.camel@maxim-laptop>
+Message-ID: <alpine.DEB.2.00.1101020700220.4087@localhost6.localdomain6>
+References: <alpine.DEB.2.00.1012270640240.3071@localhost6.localdomain6>  <AANLkTiktLCVQgGPCyt-fwVSkVmr8Ljr08UmvtkNG_zdp@mail.gmail.com>  <alpine.DEB.2.00.1012310836370.23681@localhost6.localdomain6>  <1293814089.6993.4.camel@maxim-laptop> 
+ <alpine.DEB.2.00.1012311153190.3495@localhost6.localdomain6> <1293832014.27359.7.camel@maxim-laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - crashcourse.ca
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, den 02.01.2011, 12:33 +0100 schrieb Eric Dumazet:
-> Le dimanche 02 janvier 2011 à 12:17 +0100, Stefani Seibold a écrit :
-> > Am Samstag, den 01.01.2011, 23:23 +0100 schrieb Eric Dumazet:
-> 
-> > > 3) I see UDPLITE references in your code. Are you sure UDPCP protocol
-> > > can really work on top of UDPLITE ? I think not, so please remove dead
-> > > code.
-> > > 
-> > 
-> > I have not tested it yet. But i think i should work, the code is mostly
-> > stolen from the udp.c file. Since the stack not depend on the len field
-> > of the UDP header, it should not matter if UPD or UDP-Lite is used.
-> > 
-> 
-> Hmm, but isnt your :
-> 
-> udpcp_prot = udp_prot; /* in udpcp_init() */
-> 
-> implies that all UDPCP sockets you are going to provide to user are on
-> top of UDP, not UDPLITE ?
-> 
+On Fri, 31 Dec 2010, Maxim Levitsky wrote:
 
-Okay, i kick to udplite support away!
+> On Fri, 2010-12-31 at 12:01 -0500, Robert P. J. Day wrote:
+> > On Fri, 31 Dec 2010, Maxim Levitsky wrote:
+> >
+> > ... snip related to i915 blank screen issues ...
+> >
+> > > Since you know how to compile kernel, and even have a close working
+> > > version, you really should just bisect the bug.
+> > >
+> > > Bisection is a built-in in the git binary search that allows you to
+> > > find the first commit that introduced the bug.
+> > >
+> > > For example, quick google gives,
+> > > http://www.kernel.org/pub/software/scm/git-core/docs/v1.0.13/howto/isolate-bugs-with-bisect.txt
+> >
+> >   oh, i know how to do bisection but, to be frank, i just don't have
+> > the time.  i'm under a brutal deadline for some billable work and,
+> > even if i had the time, i suspect that when i eventually tracked down
+> > the commit, i probably wouldn't really appreciate what i was looking
+> > at, anyway.
 
-> Also, could you provide a link to UDPCP protocol specs ?
-> 
+> You truly underestimate this. Having commit that broke things points
+> perfectly at the issue. Then, developers can even just revert the
+> offending commit until it is understood why it breaks stuff.
 
-http://read.pudn.com/downloads76/doc/project/283718/OBSAI/OBSAI/RP1_V2.0.PDF
+  i suspect what i'm about to type won't come as a surprise to anyone
+currently working on this problem, but there is a cheap workaround to
+boot to the command line using one of the offending kernels.
 
-> Thanks
-> 
-> 
+  when i boot, say, 2.6.37-rc8+ (or any other kernel, for that
+matter), the first two lines i always see are (paraphrasing):
 
+/dev/pts busy ...
+ureadahead info ...
 
+and that's it, just those two lines.  it's the same no matter which
+kernel i boot.  and here's where things differ.
+
+  for a properly functioning kernel, the display then switches to
+hi-res mode, the two lines are redisplayed in a smaller font and the
+boot continues normally, right up to the desktop (say, with my
+2.6.37-rc5+ kernel).
+
+  for a bad kernel (say, my 2.6.37-rc8+), it's that switch to hi-res
+after those original two lines of output where the display goes black
+and stays that way so it looks like a KMS-related problem.
+
+  a workaround to at least let me boot to the command line is to add
+
+  "i915.modeset=0"
+
+as a kernel parm, but that won't then let me start X once i'm up and
+running.  there are all sorts of reports of this type of behaviour,
+like this:
+
+  https://bbs.archlinux.org/viewtopic.php?id=96759
+
+which is where i got the idea to use that kernel parm and the
+behaviour i saw matches exactly what's in that post.  in any event,
+as i reported, this is still happening with -rc8.
+
+rday
+
+-- 
+
+========================================================================
+Robert P. J. Day                               Waterloo, Ontario, CANADA
+                        http://crashcourse.ca
+
+Twitter:                                       http://twitter.com/rpjday
+LinkedIn:                               http://ca.linkedin.com/in/rpjday
+========================================================================
