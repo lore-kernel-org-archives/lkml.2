@@ -1,170 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab1ABTOG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 14:14:06 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:29620 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab1ABTOE (ORCPT
+	id S1752514Ab1ABTQm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 14:16:42 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:57246 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257Ab1ABTQl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 14:14:04 -0500
-Date: Sun, 2 Jan 2011 20:14:03 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Malcolm Priestley <tvboxspy@gmail.com>
-cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: [PATVH] media, dvb, IX2505V: Remember to free allocated memory
- in failure path (ix2505v_attach()).
-In-Reply-To: <alpine.LNX.2.00.1101021948100.11481@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1101022012520.11481@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1012310008070.32595@swampdragon.chaosbits.net>  <1293758374.10326.7.camel@tvboxspy>  <alpine.LNX.2.00.1012311541430.16655@swampdragon.chaosbits.net> <1293820435.29966.59.camel@tvboxspy>
- <alpine.LNX.2.00.1101021948100.11481@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 2 Jan 2011 14:16:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:in-reply-to:references:reply-to
+         :x-mailer:mime-version:content-type:content-transfer-encoding;
+        b=kLTUk4tH3UxHqYBhNxUDudHlhy6Ts/N44l/uzwYHM9lKxWyb3adtPg1op6pPBOGviW
+         oI0XaiHCi/RVOgGSqZ2pBTc4C3HFA7vrsvnNj6HJJECjmRLgN/CD/o+h5gR+l8c3kmFF
+         AZXaahZ45WA6nGTcHSy93FMkhkIH1/bG8ZTK4=
+Date: Sun, 2 Jan 2011 21:16:57 +0200
+From: Yotam Medini <yotam.medini@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-kernel@vger.kernel.org, Avery Pennarun <apenwarr@alumnit.ca>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: CONFIG_APM_POWER - still possible?
+Message-ID: <20110102211657.164f92c6@janini.home>
+In-Reply-To: <20101231142335.84e00497.rdunlap@xenotime.net>
+References: <20101231193858.2c742025@janini.home>
+	<20101231103345.baba0f8c.rdunlap@xenotime.net>
+	<20101231212800.1e47f200@janini.home>
+	<20101231113954.dc9adbdf.rdunlap@xenotime.net>
+	<20101231234010.0165f0e8@janini.home>
+	<20101231142335.84e00497.rdunlap@xenotime.net>
+Reply-To: yotam.medini@gmail.com
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2 Jan 2011, Jesper Juhl wrote:
+Using the hints I got here, I realized that /proc/apm
+is supposed to be created (for x86) by:
+   apm_init() @ arch/x86/kernel/apm_32.c
+I added some debug printk messages in some places I considered related.
+>From these I learned the following:
 
-> On Fri, 31 Dec 2010, Malcolm Priestley wrote:
-> 
-> > On Fri, 2010-12-31 at 15:51 +0100, Jesper Juhl wrote:
-> > > On Fri, 31 Dec 2010, Malcolm Priestley wrote:
-> > > 
-> > > > On Fri, 2010-12-31 at 00:11 +0100, Jesper Juhl wrote:
-> > > > > Hi,
-> > > > > 
-> > > > > We may leak the storage allocated to 'state' in 
-> > > > > drivers/media/dvb/frontends/ix2505v.c::ix2505v_attach() on error.
-> > > > > This patch makes sure we free the allocated memory in the failure case.
-> > > > > 
-> > > > > 
-> > > > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > > > > ---
-> > > > >  ix2505v.c |    1 +
-> > > > >  1 file changed, 1 insertion(+)
-> > > > > 
-> > > > >   Compile tested only.
-> > > > > 
-> > > > > diff --git a/drivers/media/dvb/frontends/ix2505v.c b/drivers/media/dvb/frontends/ix2505v.c
-> > > > > index 55f2eba..fcb173d 100644
-> > > > > --- a/drivers/media/dvb/frontends/ix2505v.c
-> > > > > +++ b/drivers/media/dvb/frontends/ix2505v.c
-> > > > > @@ -293,6 +293,7 @@ struct dvb_frontend *ix2505v_attach(struct dvb_frontend *fe,
-> > > > >  		ret = ix2505v_read_status_reg(state);
-> > > > >  
-> > > > >  		if (ret & 0x80) {
-> > > > > +			kfree(state);
-> > > > >  			deb_i2c("%s: No IX2505V found\n", __func__);
-> > > > >  			goto error;
-> > > > >  		}
-> > > > > 
-> > > > Memory is freed in... 
-> > > > 
-> > > > error:
-> > > > 	ix2505v_release(fe);
-> > > > 	return NULL;
-> > > > 
-> > > > via...
-> > > > 
-> > > > static int ix2505v_release(struct dvb_frontend *fe)
-> > > > {
-> > > > 	struct ix2505v_state *state = fe->tuner_priv;
-> > > > 
-> > > > 	fe->tuner_priv = NULL;
-> > > > 	kfree(state);
-> > > > 
-> > > > 	return 0;
-> > > > }
-> > > > 
-> > > 
-> > > Except that 'state' has not been assigned to fe->tuner_priv at this 
-> > > point, so ix2505v_release() cannot free the memory that was just 
-> > > allocated with kzalloc().
-> > > 
-> > > 
-> > >   state is a local variable:
-> > >   		struct ix2505v_state *state = NULL;
-> > > 		...
-> > > 
-> > >   we allocate memory and assign it to 'state' here:
-> > >   		state = kzalloc(sizeof(struct ix2505v_state), GFP_KERNEL);
-> > >   		if (NULL == state)
-> > >   			return NULL;
-> > >   	
-> > >   		state->config = config;
-> > >   		state->i2c = i2c;
-> > >   	
-> > >   here 'state' is used, but not in a way that saves it anywhere:
-> > >   		if (state->config->tuner_write_only) {
-> > >   			if (fe->ops.i2c_gate_ctrl)
-> > >   				fe->ops.i2c_gate_ctrl(fe, 1);
-> > >   	
-> > >   this function call involves 'state' but it does not save it anywhere
-> > >   either:
-> > >   			ret = ix2505v_read_status_reg(state);
-> > >   	
-> > >   			if (ret & 0x80) {
-> > >   				deb_i2c("%s: No IX2505V found\n", __func__);
-> > >   so when we jump to error here 'state' still exists only as the local
-> > >   variable, it has not been assigned to anything else.
-> > >   				goto error;
-> > >   			}
-> > >   		...
-> > >   	error:
-> > >   there is no way this function call can free 'state' on this path since
-> > >   it has not been assigned to fe->tuner_priv. 
-> > >   		ix2505v_release(fe);
-> > >   The local variable state goes out of scope here and leaks the memory it
-> > >   points to:
-> > >   		return NULL;
-> > >   	}
-> > > 
-> > > Am I missing something?
-> > 
-> > Oh, Sorry, I see it now.
-> > 
-> > Now there is two options.
-> > 
-> > Either;
-> > 
-> > 1) Move fe->tuner_priv = state to below line 287, so it can be released
-> > by ix2505v_release and fe->tuner_priv returned to NULL;
-> > 
-> > 2) or not calling ix2505v_release changing line 314 to kfree(state).
-> > fe->tuner_priv will remain NULL through out.
-> > 
-> [...]
-> 
-> How about this?
-> 
-Or actually, I think this is better:
+1. In setup_arch(...) @ arch/x86/kernel/setup.c:
+	apm_info.bios = boot_params.apm_bios_info;
+   it has the value:
+        apm_info.bios.version == 0
+
+2. In apm_init() @ arch/x86/kernel/apm_32.c:
+  if (apm_info.bios.version == 0 || paravirt_enabled() || machine_is_olpc()) {
+    printk(KERN_INFO "apm: BIOS not found.\n");
+    return -ENODEV;
+  }
+
+  It gets here with
+     apm_info.bios.version == 0
+  This is why 'dmesg' shows:
+     apm: BIOS not found
+  and thus /proc/apm is not created.
+
+3. In  query_apm_bios() @ arch/x86/boot/apm.c
+   I added debug puts messages.
+   But 'dmesg' showed none of them.
+
+Could it be that some boot-command line parameters are not well passed
+to the kernel?
+Is the 'initrd' involved in this? I am not familiar with the 'black art' of
+constructing 'initrd'. I am using mkinitramfs for this.
+The initrd I get does manage to bring up the kernel, the file-systems
+and a essentially - a running system.
+
+I still have not tried compiling apm directly into the kernel.
+I may try it later, but I believe the problem lies elsewhere.
+
+Thanks for all the tips -- yotam
 
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- ix2505v.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Fri, 31 Dec 2010 14:23:35 -0800
+Randy Dunlap <rdunlap@xenotime.net> wrote:
 
-diff --git a/drivers/media/dvb/frontends/ix2505v.c b/drivers/media/dvb/frontends/ix2505v.c
-index 55f2eba..846ffd3 100644
---- a/drivers/media/dvb/frontends/ix2505v.c
-+++ b/drivers/media/dvb/frontends/ix2505v.c
-@@ -311,7 +311,7 @@ struct dvb_frontend *ix2505v_attach(struct dvb_frontend *fe,
- 	return fe;
- 
- error:
--	ix2505v_release(fe);
-+	kfree(state);
- 	return NULL;
- }
- EXPORT_SYMBOL(ix2505v_attach);
-
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+> On Fri, 31 Dec 2010 23:40:10 +0200 Yotam Medini wrote:
+>
+> > ....
+> >   $ sudo modprobe apm
+> >   FATAL: Error inserting apm
+> >     (/lib/modules/2.6.32.yumax/kernel/arch/x86/kernel/apm.ko): No such device
+> > ....
+> > Also the "/proc/apm" is created in
+> >   drivers/char/Makefile:71
+> >     obj-$(CONFIG_APM_EMULATION)	+= apm-emulation.o
+> >   drivers/char/apm-emulation.c:668-670
+>
+> Hint: This is not the only place that /proc/apm is created.
+> ....
