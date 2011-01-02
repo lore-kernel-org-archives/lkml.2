@@ -1,109 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037Ab1ABHVz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:21:55 -0500
-Received: from mail.windriver.com ([147.11.1.11]:34264 "EHLO
+	id S1755479Ab1ABIKz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 03:10:55 -0500
+Received: from mail.windriver.com ([147.11.1.11]:34285 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751635Ab1ABHVv (ORCPT
+	with ESMTP id S1751731Ab1ABHVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:21:51 -0500
+	Sun, 2 Jan 2011 02:21:52 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Ben Hutchings <bhutchings@solarflare.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
+Cc: stable-review@kernel.org, Eric Sandeen <sandeen@sandeen.net>,
+        Eric Sandeen <sandeen@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 035/260] PCI: MSI: Remove unsafe and unnecessary hardware access
-Date: Sun,  2 Jan 2011 02:15:31 -0500
-Message-Id: <1293952756-15010-36-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 028/260] ext4: fix freeze deadlock under IO
+Date: Sun,  2 Jan 2011 02:15:24 -0500
+Message-Id: <1293952756-15010-29-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:20:44.0600 (UTC) FILETIME=[91D43B80:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:20:36.0741 (UTC) FILETIME=[8D250B50:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Eric Sandeen <sandeen@sandeen.net>
 
-commit fcd097f31a6ee207cc0c3da9cccd2a86d4334785 upstream.
+commit 437f88cc031ffe7f37f3e705367f4fe1f4be8b0f upstream.
+[The 6b0310fb below references the mainline version of what
+has also been cherry picked into this 34-stable branch]
 
-During suspend on an SMP system, {read,write}_msi_msg_desc() may be
-called to mask and unmask interrupts on a device that is already in a
-reduced power state.  At this point memory-mapped registers including
-MSI-X tables are not accessible, and config space may not be fully
-functional either.
+Commit 6b0310fbf087ad6 caused a regression resulting in deadlocks
+when freezing a filesystem which had active IO; the vfs_check_frozen
+level (SB_FREEZE_WRITE) did not let the freeze-related IO syncing
+through.  Duh.
 
-While a device is in a reduced power state its interrupts are
-effectively masked and its MSI(-X) state will be restored when it is
-brought back to D0.  Therefore these functions can simply read and
-write msi_desc::msg for devices not in D0.
+Changing the test to FREEZE_TRANS should let the normal freeze
+syncing get through the fs, but still block any transactions from
+starting once the fs is completely frozen.
 
-Further, read_msi_msg_desc() should only ever be used to update a
-previously written message, so it can always read msi_desc::msg
-and never needs to touch the hardware.
+I tested this by running fsstress in the background while periodically
+snapshotting the fs and running fsck on the result.  I ran into
+occasional deadlocks, but different ones.  I think this is a
+fine fix for the problem at hand, and the other deadlocky things
+will need more investigation.
 
-Tested-by: "Michael Chan" <mchan@broadcom.com>
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Reported-by: Phillip Susi <psusi@cfl.rr.com>
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/pci/msi.c |   34 +++++++++++-----------------------
- 1 files changed, 11 insertions(+), 23 deletions(-)
+ fs/ext4/super.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 77b68ea..03f04dc 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -196,30 +196,15 @@ void unmask_msi_irq(unsigned int irq)
- void read_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg)
- {
- 	struct msi_desc *entry = get_irq_desc_msi(desc);
--	if (entry->msi_attrib.is_msix) {
--		void __iomem *base = entry->mask_base +
--			entry->msi_attrib.entry_nr * PCI_MSIX_ENTRY_SIZE;
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 2aa9314..cd35e34 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -241,7 +241,7 @@ handle_t *ext4_journal_start_sb(struct super_block *sb, int nblocks)
+ 	if (sb->s_flags & MS_RDONLY)
+ 		return ERR_PTR(-EROFS);
  
--		msg->address_lo = readl(base + PCI_MSIX_ENTRY_LOWER_ADDR);
--		msg->address_hi = readl(base + PCI_MSIX_ENTRY_UPPER_ADDR);
--		msg->data = readl(base + PCI_MSIX_ENTRY_DATA);
--	} else {
--		struct pci_dev *dev = entry->dev;
--		int pos = entry->msi_attrib.pos;
--		u16 data;
-+	/* We do not touch the hardware (which may not even be
-+	 * accessible at the moment) but return the last message
-+	 * written.  Assert that this is valid, assuming that
-+	 * valid messages are not all-zeroes. */
-+	BUG_ON(!(entry->msg.address_hi | entry->msg.address_lo |
-+		 entry->msg.data));
+-	vfs_check_frozen(sb, SB_FREEZE_WRITE);
++	vfs_check_frozen(sb, SB_FREEZE_TRANS);
+ 	/* Special case here: if the journal has aborted behind our
+ 	 * backs (eg. EIO in the commit thread), then we still need to
+ 	 * take the FS itself readonly cleanly. */
+@@ -3485,7 +3485,7 @@ int ext4_force_commit(struct super_block *sb)
  
--		pci_read_config_dword(dev, msi_lower_address_reg(pos),
--					&msg->address_lo);
--		if (entry->msi_attrib.is_64) {
--			pci_read_config_dword(dev, msi_upper_address_reg(pos),
--						&msg->address_hi);
--			pci_read_config_word(dev, msi_data_reg(pos, 1), &data);
--		} else {
--			msg->address_hi = 0;
--			pci_read_config_word(dev, msi_data_reg(pos, 0), &data);
--		}
--		msg->data = data;
--	}
-+	*msg = entry->msg;
- }
+ 	journal = EXT4_SB(sb)->s_journal;
+ 	if (journal) {
+-		vfs_check_frozen(sb, SB_FREEZE_WRITE);
++		vfs_check_frozen(sb, SB_FREEZE_TRANS);
+ 		ret = ext4_journal_force_commit(journal);
+ 	}
  
- void read_msi_msg(unsigned int irq, struct msi_msg *msg)
-@@ -232,7 +217,10 @@ void read_msi_msg(unsigned int irq, struct msi_msg *msg)
- void write_msi_msg_desc(struct irq_desc *desc, struct msi_msg *msg)
- {
- 	struct msi_desc *entry = get_irq_desc_msi(desc);
--	if (entry->msi_attrib.is_msix) {
-+
-+	if (entry->dev->current_state != PCI_D0) {
-+		/* Don't touch the hardware now */
-+	} else if (entry->msi_attrib.is_msix) {
- 		void __iomem *base;
- 		base = entry->mask_base +
- 			entry->msi_attrib.entry_nr * PCI_MSIX_ENTRY_SIZE;
 -- 
 1.7.3.3
 
