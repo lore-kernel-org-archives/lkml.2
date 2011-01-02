@@ -1,621 +1,429 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672Ab1ABHWR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:22:17 -0500
-Received: from mail.windriver.com ([147.11.1.11]:34508 "EHLO
+	id S1753082Ab1ABHWa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:22:30 -0500
+Received: from mail.windriver.com ([147.11.1.11]:34762 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449Ab1ABHWI (ORCPT
+	with ESMTP id S1752984Ab1ABHW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:22:08 -0500
+	Sun, 2 Jan 2011 02:22:27 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Dmitry Monakhov <dmonakhov@openvz.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
+Cc: stable-review@kernel.org, Peter Oberparleiter <oberpar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 020/260] ext4: Use bitops to read/modify i_flags in struct ext4_inode_info
-Date: Sun,  2 Jan 2011 02:15:16 -0500
-Message-Id: <1293952756-15010-21-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 066/260] gcov: fix null-pointer dereference for certain module types
+Date: Sun,  2 Jan 2011 02:16:02 -0500
+Message-Id: <1293952756-15010-67-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:20:28.0194 (UTC) FILETIME=[880CE020:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:21:18.0242 (UTC) FILETIME=[A5E19820:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Monakhov <dmonakhov@openvz.org>
+From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
 
-commit 12e9b892002d9af057655d35b44db8ee9243b0dc upstream.
+commit 85a0fdfd0f967507f3903e8419bc7e408f5a59de upstream.
 
-At several places we modify EXT4_I(inode)->i_flags without holding
-i_mutex (ext4_do_update_inode, ...). These modifications are racy and
-we can lose updates to i_flags. So convert handling of i_flags to use
-bitops which are atomic.
+The gcov-kernel infrastructure expects that each object file is loaded
+only once.  This may not be true, e.g.  when loading multiple kernel
+modules which are linked to the same object file.  As a result, loading
+such kernel modules will result in incorrect gcov results while unloading
+will cause a null-pointer dereference.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=15792
+This patch fixes these problems by changing the gcov-kernel infrastructure
+so that multiple profiling data sets can be associated with one debugfs
+entry.  It applies to 2.6.36-rc1.
 
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+Reported-by: Werner Spies <werner.spies@thalesgroup.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/ext4/dir.c         |    4 +-
- fs/ext4/ext4.h        |  109 ++++++++++++++++++++++++++++++++++++++++++-------
- fs/ext4/ext4_jbd2.h   |    8 ++--
- fs/ext4/extents.c     |   10 ++--
- fs/ext4/file.c        |    2 +-
- fs/ext4/ialloc.c      |    4 +-
- fs/ext4/inode.c       |   30 +++++++-------
- fs/ext4/mballoc.c     |    4 +-
- fs/ext4/migrate.c     |    2 +-
- fs/ext4/move_extent.c |    4 +-
- fs/ext4/namei.c       |   10 ++--
- fs/ext4/super.c       |    1 +
- fs/ext4/xattr.c       |    4 +-
- 13 files changed, 136 insertions(+), 56 deletions(-)
+ kernel/gcov/fs.c |  244 ++++++++++++++++++++++++++++++++++++++++--------------
+ 1 files changed, 180 insertions(+), 64 deletions(-)
 
-diff --git a/fs/ext4/dir.c b/fs/ext4/dir.c
-index 86cb6d8..e7ce97b 100644
---- a/fs/ext4/dir.c
-+++ b/fs/ext4/dir.c
-@@ -111,7 +111,7 @@ static int ext4_readdir(struct file *filp,
- 
- 	if (EXT4_HAS_COMPAT_FEATURE(inode->i_sb,
- 				    EXT4_FEATURE_COMPAT_DIR_INDEX) &&
--	    ((EXT4_I(inode)->i_flags & EXT4_INDEX_FL) ||
-+	    ((ext4_test_inode_flag(inode, EXT4_INODE_INDEX)) ||
- 	     ((inode->i_size >> sb->s_blocksize_bits) == 1))) {
- 		err = ext4_dx_readdir(filp, dirent, filldir);
- 		if (err != ERR_BAD_DX_DIR) {
-@@ -122,7 +122,7 @@ static int ext4_readdir(struct file *filp,
- 		 * We don't set the inode dirty flag since it's not
- 		 * critical that it get flushed back to the disk.
- 		 */
--		EXT4_I(filp->f_path.dentry->d_inode)->i_flags &= ~EXT4_INDEX_FL;
-+		ext4_clear_inode_flag(filp->f_path.dentry->d_inode, EXT4_INODE_INDEX);
- 	}
- 	stored = 0;
- 	offset = filp->f_pos & (sb->s_blocksize - 1);
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index d266003..7fe80c5 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -321,6 +321,83 @@ static inline __u32 ext4_mask_flags(umode_t mode, __u32 flags)
- 		return flags & EXT4_OTHER_FLMASK;
- }
- 
-+/*
-+ * Inode flags used for atomic set/get
-+ */
-+enum {
-+	EXT4_INODE_SECRM	= 0,	/* Secure deletion */
-+	EXT4_INODE_UNRM		= 1,	/* Undelete */
-+	EXT4_INODE_COMPR	= 2,	/* Compress file */
-+	EXT4_INODE_SYNC		= 3,	/* Synchronous updates */
-+	EXT4_INODE_IMMUTABLE	= 4,	/* Immutable file */
-+	EXT4_INODE_APPEND	= 5,	/* writes to file may only append */
-+	EXT4_INODE_NODUMP	= 6,	/* do not dump file */
-+	EXT4_INODE_NOATIME	= 7,	/* do not update atime */
-+/* Reserved for compression usage... */
-+	EXT4_INODE_DIRTY	= 8,
-+	EXT4_INODE_COMPRBLK	= 9,	/* One or more compressed clusters */
-+	EXT4_INODE_NOCOMPR	= 10,	/* Don't compress */
-+	EXT4_INODE_ECOMPR	= 11,	/* Compression error */
-+/* End compression flags --- maybe not all used */
-+	EXT4_INODE_INDEX	= 12,	/* hash-indexed directory */
-+	EXT4_INODE_IMAGIC	= 13,	/* AFS directory */
-+	EXT4_INODE_JOURNAL_DATA	= 14,	/* file data should be journaled */
-+	EXT4_INODE_NOTAIL	= 15,	/* file tail should not be merged */
-+	EXT4_INODE_DIRSYNC	= 16,	/* dirsync behaviour (directories only) */
-+	EXT4_INODE_TOPDIR	= 17,	/* Top of directory hierarchies*/
-+	EXT4_INODE_HUGE_FILE	= 18,	/* Set to each huge file */
-+	EXT4_INODE_EXTENTS	= 19,	/* Inode uses extents */
-+	EXT4_INODE_EA_INODE	= 21,	/* Inode used for large EA */
-+	EXT4_INODE_EOFBLOCKS	= 22,	/* Blocks allocated beyond EOF */
-+	EXT4_INODE_RESERVED	= 31,	/* reserved for ext4 lib */
-+};
-+
-+#define TEST_FLAG_VALUE(FLAG) (EXT4_##FLAG##_FL == (1 << EXT4_INODE_##FLAG))
-+#define CHECK_FLAG_VALUE(FLAG) if (!TEST_FLAG_VALUE(FLAG)) { \
-+	printk(KERN_EMERG "EXT4 flag fail: " #FLAG ": %d %d\n", \
-+		EXT4_##FLAG##_FL, EXT4_INODE_##FLAG); BUG_ON(1); }
-+
-+/*
-+ * Since it's pretty easy to mix up bit numbers and hex values, and we
-+ * can't do a compile-time test for ENUM values, we use a run-time
-+ * test to make sure that EXT4_XXX_FL is consistent with respect to
-+ * EXT4_INODE_XXX.  If all is well the printk and BUG_ON will all drop
-+ * out so it won't cost any extra space in the compiled kernel image.
-+ * But it's important that these values are the same, since we are
-+ * using EXT4_INODE_XXX to test for the flag values, but EXT4_XX_FL
-+ * must be consistent with the values of FS_XXX_FL defined in
-+ * include/linux/fs.h and the on-disk values found in ext2, ext3, and
-+ * ext4 filesystems, and of course the values defined in e2fsprogs.
-+ *
-+ * It's not paranoia if the Murphy's Law really *is* out to get you.  :-)
-+ */
-+static inline void ext4_check_flag_values(void)
-+{
-+	CHECK_FLAG_VALUE(SECRM);
-+	CHECK_FLAG_VALUE(UNRM);
-+	CHECK_FLAG_VALUE(COMPR);
-+	CHECK_FLAG_VALUE(SYNC);
-+	CHECK_FLAG_VALUE(IMMUTABLE);
-+	CHECK_FLAG_VALUE(APPEND);
-+	CHECK_FLAG_VALUE(NODUMP);
-+	CHECK_FLAG_VALUE(NOATIME);
-+	CHECK_FLAG_VALUE(DIRTY);
-+	CHECK_FLAG_VALUE(COMPRBLK);
-+	CHECK_FLAG_VALUE(NOCOMPR);
-+	CHECK_FLAG_VALUE(ECOMPR);
-+	CHECK_FLAG_VALUE(INDEX);
-+	CHECK_FLAG_VALUE(IMAGIC);
-+	CHECK_FLAG_VALUE(JOURNAL_DATA);
-+	CHECK_FLAG_VALUE(NOTAIL);
-+	CHECK_FLAG_VALUE(DIRSYNC);
-+	CHECK_FLAG_VALUE(TOPDIR);
-+	CHECK_FLAG_VALUE(HUGE_FILE);
-+	CHECK_FLAG_VALUE(EXTENTS);
-+	CHECK_FLAG_VALUE(EA_INODE);
-+	CHECK_FLAG_VALUE(EOFBLOCKS);
-+	CHECK_FLAG_VALUE(RESERVED);
-+}
-+
- /* Used to pass group descriptor data when online resize is done */
- struct ext4_new_group_input {
- 	__u32 group;		/* Group number for this data */
-@@ -616,9 +693,8 @@ struct ext4_ext_cache {
-  */
- struct ext4_inode_info {
- 	__le32	i_data[15];	/* unconverted */
--	__u32	i_flags;
--	ext4_fsblk_t	i_file_acl;
- 	__u32	i_dtime;
-+	ext4_fsblk_t	i_file_acl;
- 
- 	/*
- 	 * i_block_group is the number of the block group which contains
-@@ -629,6 +705,7 @@ struct ext4_inode_info {
- 	 */
- 	ext4_group_t	i_block_group;
- 	unsigned long	i_state_flags;		/* Dynamic state flags */
-+	unsigned long	i_flags;
- 
- 	ext4_lblk_t		i_dir_start_lookup;
- #ifdef CONFIG_EXT4_FS_XATTR
-@@ -1064,20 +1141,22 @@ enum {
- 	EXT4_STATE_DIO_UNWRITTEN,	/* need convert on dio done*/
+diff --git a/kernel/gcov/fs.c b/kernel/gcov/fs.c
+index ef3c3f8..f83972b 100644
+--- a/kernel/gcov/fs.c
++++ b/kernel/gcov/fs.c
+@@ -33,10 +33,11 @@
+  * @children: child nodes
+  * @all: list head for list of all nodes
+  * @parent: parent node
+- * @info: associated profiling data structure if not a directory
+- * @ghost: when an object file containing profiling data is unloaded we keep a
+- *         copy of the profiling data here to allow collecting coverage data
+- *         for cleanup code. Such a node is called a "ghost".
++ * @loaded_info: array of pointers to profiling data sets for loaded object
++ *   files.
++ * @num_loaded: number of profiling data sets for loaded object files.
++ * @unloaded_info: accumulated copy of profiling data sets for unloaded
++ *   object files. Used only when gcov_persist=1.
+  * @dentry: main debugfs entry, either a directory or data file
+  * @links: associated symbolic links
+  * @name: data file basename
+@@ -51,10 +52,11 @@ struct gcov_node {
+ 	struct list_head children;
+ 	struct list_head all;
+ 	struct gcov_node *parent;
+-	struct gcov_info *info;
+-	struct gcov_info *ghost;
++	struct gcov_info **loaded_info;
++	struct gcov_info *unloaded_info;
+ 	struct dentry *dentry;
+ 	struct dentry **links;
++	int num_loaded;
+ 	char name[0];
  };
  
--static inline int ext4_test_inode_state(struct inode *inode, int bit)
--{
--	return test_bit(bit, &EXT4_I(inode)->i_state_flags);
-+#define EXT4_INODE_BIT_FNS(name, field)					\
-+static inline int ext4_test_inode_##name(struct inode *inode, int bit)	\
-+{									\
-+	return test_bit(bit, &EXT4_I(inode)->i_##field);		\
-+}									\
-+static inline void ext4_set_inode_##name(struct inode *inode, int bit)	\
-+{									\
-+	set_bit(bit, &EXT4_I(inode)->i_##field);			\
-+}									\
-+static inline void ext4_clear_inode_##name(struct inode *inode, int bit) \
-+{									\
-+	clear_bit(bit, &EXT4_I(inode)->i_##field);			\
- }
+@@ -136,16 +138,37 @@ static const struct seq_operations gcov_seq_ops = {
+ };
  
--static inline void ext4_set_inode_state(struct inode *inode, int bit)
--{
--	set_bit(bit, &EXT4_I(inode)->i_state_flags);
--}
--
--static inline void ext4_clear_inode_state(struct inode *inode, int bit)
--{
--	clear_bit(bit, &EXT4_I(inode)->i_state_flags);
--}
-+EXT4_INODE_BIT_FNS(flag, flags)
-+EXT4_INODE_BIT_FNS(state, state_flags)
- #else
- /* Assume that user mode programs are passing in an ext4fs superblock, not
-  * a kernel struct super_block.  This will allow us to call the feature-test
-@@ -1264,7 +1343,7 @@ struct ext4_dir_entry_2 {
- 
- #define is_dx(dir) (EXT4_HAS_COMPAT_FEATURE(dir->i_sb, \
- 				      EXT4_FEATURE_COMPAT_DIR_INDEX) && \
--		      (EXT4_I(dir)->i_flags & EXT4_INDEX_FL))
-+		    ext4_test_inode_flag((dir), EXT4_INODE_INDEX))
- #define EXT4_DIR_LINK_MAX(dir) (!is_dx(dir) && (dir)->i_nlink >= EXT4_LINK_MAX)
- #define EXT4_DIR_LINK_EMPTY(dir) ((dir)->i_nlink == 2 || (dir)->i_nlink == 1)
- 
-diff --git a/fs/ext4/ext4_jbd2.h b/fs/ext4/ext4_jbd2.h
-index b79ad51..dade0c0 100644
---- a/fs/ext4/ext4_jbd2.h
-+++ b/fs/ext4/ext4_jbd2.h
-@@ -273,7 +273,7 @@ static inline int ext4_should_journal_data(struct inode *inode)
- 		return 1;
- 	if (test_opt(inode->i_sb, DATA_FLAGS) == EXT4_MOUNT_JOURNAL_DATA)
- 		return 1;
--	if (EXT4_I(inode)->i_flags & EXT4_JOURNAL_DATA_FL)
-+	if (ext4_test_inode_flag(inode, EXT4_INODE_JOURNAL_DATA))
- 		return 1;
- 	return 0;
- }
-@@ -284,7 +284,7 @@ static inline int ext4_should_order_data(struct inode *inode)
- 		return 0;
- 	if (!S_ISREG(inode->i_mode))
- 		return 0;
--	if (EXT4_I(inode)->i_flags & EXT4_JOURNAL_DATA_FL)
-+	if (ext4_test_inode_flag(inode, EXT4_INODE_JOURNAL_DATA))
- 		return 0;
- 	if (test_opt(inode->i_sb, DATA_FLAGS) == EXT4_MOUNT_ORDERED_DATA)
- 		return 1;
-@@ -297,7 +297,7 @@ static inline int ext4_should_writeback_data(struct inode *inode)
- 		return 0;
- 	if (EXT4_JOURNAL(inode) == NULL)
- 		return 1;
--	if (EXT4_I(inode)->i_flags & EXT4_JOURNAL_DATA_FL)
-+	if (ext4_test_inode_flag(inode, EXT4_INODE_JOURNAL_DATA))
- 		return 0;
- 	if (test_opt(inode->i_sb, DATA_FLAGS) == EXT4_MOUNT_WRITEBACK_DATA)
- 		return 1;
-@@ -321,7 +321,7 @@ static inline int ext4_should_dioread_nolock(struct inode *inode)
- 		return 0;
- 	if (!S_ISREG(inode->i_mode))
- 		return 0;
--	if (!(EXT4_I(inode)->i_flags & EXT4_EXTENTS_FL))
-+	if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)))
- 		return 0;
- 	if (ext4_should_journal_data(inode))
- 		return 0;
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 8a8f9f0..a1d3f7c 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -3509,7 +3509,7 @@ int ext4_ext_get_blocks(handle_t *handle, struct inode *inode,
- 			set_buffer_uninit(bh_result);
- 	}
- 
--	if (unlikely(EXT4_I(inode)->i_flags & EXT4_EOFBLOCKS_FL)) {
-+	if (unlikely(ext4_test_inode_flag(inode, EXT4_INODE_EOFBLOCKS))) {
- 		if (unlikely(!eh->eh_entries)) {
- 			EXT4_ERROR_INODE(inode,
- 					 "eh->eh_entries == 0 ee_block %d",
-@@ -3520,7 +3520,7 @@ int ext4_ext_get_blocks(handle_t *handle, struct inode *inode,
- 		last_ex = EXT_LAST_EXTENT(eh);
- 		if (iblock + ar.len > le32_to_cpu(last_ex->ee_block)
- 		    + ext4_ext_get_actual_len(last_ex))
--			EXT4_I(inode)->i_flags &= ~EXT4_EOFBLOCKS_FL;
-+			ext4_clear_inode_flag(inode, EXT4_INODE_EOFBLOCKS);
- 	}
- 	err = ext4_ext_insert_extent(handle, inode, path, &newex, flags);
- 	if (err) {
-@@ -3661,7 +3661,7 @@ static void ext4_falloc_update_inode(struct inode *inode,
- 		 * can proceed even if the new size is the same as i_size.
- 		 */
- 		if (new_size > i_size_read(inode))
--			EXT4_I(inode)->i_flags |= EXT4_EOFBLOCKS_FL;
-+			ext4_set_inode_flag(inode, EXT4_INODE_EOFBLOCKS);
- 	}
- 
- }
-@@ -3689,7 +3689,7 @@ long ext4_fallocate(struct inode *inode, int mode, loff_t offset, loff_t len)
- 	 * currently supporting (pre)allocate mode for extent-based
- 	 * files _only_
- 	 */
--	if (!(EXT4_I(inode)->i_flags & EXT4_EXTENTS_FL))
-+	if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)))
- 		return -EOPNOTSUPP;
- 
- 	/* preallocation to directories is currently not supported */
-@@ -3939,7 +3939,7 @@ int ext4_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
- 	int error = 0;
- 
- 	/* fallback to generic here if not in extents fmt */
--	if (!(EXT4_I(inode)->i_flags & EXT4_EXTENTS_FL))
-+	if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)))
- 		return generic_block_fiemap(inode, fieinfo, start, len,
- 			ext4_get_block);
- 
-diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-index d0776e4..5313ae4 100644
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -66,7 +66,7 @@ ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
- 	 * is smaller than s_maxbytes, which is for extent-mapped files.
- 	 */
- 
--	if (!(EXT4_I(inode)->i_flags & EXT4_EXTENTS_FL)) {
-+	if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))) {
- 		struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
- 		size_t length = iov_length(iov, nr_segs);
- 
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index 52618d5..7f6b582 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -492,7 +492,7 @@ static int find_group_orlov(struct super_block *sb, struct inode *parent,
- 
- 	if (S_ISDIR(mode) &&
- 	    ((parent == sb->s_root->d_inode) ||
--	     (EXT4_I(parent)->i_flags & EXT4_TOPDIR_FL))) {
-+	     (ext4_test_inode_flag(parent, EXT4_INODE_TOPDIR)))) {
- 		int best_ndir = inodes_per_group;
- 		int ret = -1;
- 
-@@ -1038,7 +1038,7 @@ got:
- 	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_EXTENTS)) {
- 		/* set extent flag only for directory, file and normal symlink*/
- 		if (S_ISDIR(mode) || S_ISREG(mode) || S_ISLNK(mode)) {
--			EXT4_I(inode)->i_flags |= EXT4_EXTENTS_FL;
-+			ext4_set_inode_flag(inode, EXT4_INODE_EXTENTS);
- 			ext4_ext_tree_init(handle, inode);
- 		}
- 	}
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 3c479ef..3fd683f 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -933,7 +933,7 @@ static int ext4_ind_get_blocks(handle_t *handle, struct inode *inode,
- 	int count = 0;
- 	ext4_fsblk_t first_block = 0;
- 
--	J_ASSERT(!(EXT4_I(inode)->i_flags & EXT4_EXTENTS_FL));
-+	J_ASSERT(!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)));
- 	J_ASSERT(handle != NULL || (flags & EXT4_GET_BLOCKS_CREATE) == 0);
- 	depth = ext4_block_to_path(inode, iblock, offsets,
- 				   &blocks_to_boundary);
-@@ -1061,7 +1061,7 @@ static int ext4_indirect_calc_metadata_amount(struct inode *inode,
+ /*
+- * Return the profiling data set for a given node. This can either be the
+- * original profiling data structure or a duplicate (also called "ghost")
+- * in case the associated object file has been unloaded.
++ * Return a profiling data set associated with the given node. This is
++ * either a data set for a loaded object file or a data set copy in case
++ * all associated object files have been unloaded.
   */
- static int ext4_calc_metadata_amount(struct inode *inode, sector_t lblock)
+ static struct gcov_info *get_node_info(struct gcov_node *node)
  {
--	if (EXT4_I(inode)->i_flags & EXT4_EXTENTS_FL)
-+	if (ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))
- 		return ext4_ext_calc_metadata_amount(inode, lblock);
+-	if (node->info)
+-		return node->info;
++	if (node->num_loaded > 0)
++		return node->loaded_info[0];
  
- 	return ext4_indirect_calc_metadata_amount(inode, lblock);
-@@ -1251,7 +1251,7 @@ int ext4_get_blocks(handle_t *handle, struct inode *inode, sector_t block,
- 	 * file system block.
- 	 */
- 	down_read((&EXT4_I(inode)->i_data_sem));
--	if (EXT4_I(inode)->i_flags & EXT4_EXTENTS_FL) {
-+	if (ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)) {
- 		retval =  ext4_ext_get_blocks(handle, inode, block, max_blocks,
- 				bh, 0);
- 	} else {
-@@ -1313,7 +1313,7 @@ int ext4_get_blocks(handle_t *handle, struct inode *inode, sector_t block,
- 	 * We need to check for EXT4 here because migrate
- 	 * could have changed the inode type in between
- 	 */
--	if (EXT4_I(inode)->i_flags & EXT4_EXTENTS_FL) {
-+	if (ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)) {
- 		retval =  ext4_ext_get_blocks(handle, inode, block, max_blocks,
- 					      bh, flags);
- 	} else {
-@@ -2360,7 +2360,7 @@ static void mpage_add_bh_to_extent(struct mpage_da_data *mpd,
- 		goto flush_it;
- 
- 	/* check if thereserved journal credits might overflow */
--	if (!(EXT4_I(mpd->inode)->i_flags & EXT4_EXTENTS_FL)) {
-+	if (!(ext4_test_inode_flag(mpd->inode, EXT4_INODE_EXTENTS))) {
- 		if (nrblocks >= EXT4_MAX_TRANS_DATA) {
- 			/*
- 			 * With non-extent format we are limited by the journal
-@@ -2831,7 +2831,7 @@ static int ext4_da_writepages_trans_blocks(struct inode *inode)
- 	 * number of contiguous block. So we will limit
- 	 * number of contiguous block to a sane value
- 	 */
--	if (!(EXT4_I(inode)->i_flags & EXT4_EXTENTS_FL) &&
-+	if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)) &&
- 	    (max_blocks > EXT4_MAX_TRANS_DATA))
- 		max_blocks = EXT4_MAX_TRANS_DATA;
- 
-@@ -3983,7 +3983,7 @@ static ssize_t ext4_direct_IO(int rw, struct kiocb *iocb,
- 	struct file *file = iocb->ki_filp;
- 	struct inode *inode = file->f_mapping->host;
- 
--	if (EXT4_I(inode)->i_flags & EXT4_EXTENTS_FL)
-+	if (ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))
- 		return ext4_ext_direct_IO(rw, iocb, iov, offset, nr_segs);
- 
- 	return ext4_ind_direct_IO(rw, iocb, iov, offset, nr_segs);
-@@ -4622,12 +4622,12 @@ void ext4_truncate(struct inode *inode)
- 	if (!ext4_can_truncate(inode))
- 		return;
- 
--	EXT4_I(inode)->i_flags &= ~EXT4_EOFBLOCKS_FL;
-+	ext4_clear_inode_flag(inode, EXT4_INODE_EOFBLOCKS);
- 
- 	if (inode->i_size == 0 && !test_opt(inode->i_sb, NO_AUTO_DA_ALLOC))
- 		ext4_set_inode_state(inode, EXT4_STATE_DA_ALLOC_CLOSE);
- 
--	if (EXT4_I(inode)->i_flags & EXT4_EXTENTS_FL) {
-+	if (ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)) {
- 		ext4_ext_truncate(inode);
- 		return;
- 	}
-@@ -5465,7 +5465,7 @@ int ext4_setattr(struct dentry *dentry, struct iattr *attr)
- 	}
- 
- 	if (attr->ia_valid & ATTR_SIZE) {
--		if (!(EXT4_I(inode)->i_flags & EXT4_EXTENTS_FL)) {
-+		if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))) {
- 			struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
- 
- 			if (attr->ia_size > sbi->s_bitmap_maxbytes) {
-@@ -5478,7 +5478,7 @@ int ext4_setattr(struct dentry *dentry, struct iattr *attr)
- 	if (S_ISREG(inode->i_mode) &&
- 	    attr->ia_valid & ATTR_SIZE &&
- 	    (attr->ia_size < inode->i_size ||
--	     (EXT4_I(inode)->i_flags & EXT4_EOFBLOCKS_FL))) {
-+	     (ext4_test_inode_flag(inode, EXT4_INODE_EOFBLOCKS)))) {
- 		handle_t *handle;
- 
- 		handle = ext4_journal_start(inode, 3);
-@@ -5510,7 +5510,7 @@ int ext4_setattr(struct dentry *dentry, struct iattr *attr)
- 			}
- 		}
- 		/* ext4_truncate will clear the flag */
--		if ((EXT4_I(inode)->i_flags & EXT4_EOFBLOCKS_FL))
-+		if ((ext4_test_inode_flag(inode, EXT4_INODE_EOFBLOCKS)))
- 			ext4_truncate(inode);
- 	}
- 
-@@ -5586,7 +5586,7 @@ static int ext4_indirect_trans_blocks(struct inode *inode, int nrblocks,
- 
- static int ext4_index_trans_blocks(struct inode *inode, int nrblocks, int chunk)
- {
--	if (!(EXT4_I(inode)->i_flags & EXT4_EXTENTS_FL))
-+	if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)))
- 		return ext4_indirect_trans_blocks(inode, nrblocks, chunk);
- 	return ext4_ext_index_trans_blocks(inode, nrblocks, chunk);
- }
-@@ -5921,9 +5921,9 @@ int ext4_change_inode_journal_flag(struct inode *inode, int val)
- 	 */
- 
- 	if (val)
--		EXT4_I(inode)->i_flags |= EXT4_JOURNAL_DATA_FL;
-+		ext4_set_inode_flag(inode, EXT4_INODE_JOURNAL_DATA);
- 	else
--		EXT4_I(inode)->i_flags &= ~EXT4_JOURNAL_DATA_FL;
-+		ext4_clear_inode_flag(inode, EXT4_INODE_JOURNAL_DATA);
- 	ext4_set_aops(inode);
- 
- 	jbd2_journal_unlock_updates(journal);
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index aa499fe..917fe78 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -2006,7 +2006,7 @@ ext4_mb_regular_allocator(struct ext4_allocation_context *ac)
- 	sbi = EXT4_SB(sb);
- 	ngroups = ext4_get_groups_count(sb);
- 	/* non-extent files are limited to low blocks/groups */
--	if (!(EXT4_I(ac->ac_inode)->i_flags & EXT4_EXTENTS_FL))
-+	if (!(ext4_test_inode_flag(ac->ac_inode, EXT4_INODE_EXTENTS)))
- 		ngroups = sbi->s_blockfile_groups;
- 
- 	BUG_ON(ac->ac_status == AC_STATUS_FOUND);
-@@ -3171,7 +3171,7 @@ ext4_mb_use_preallocated(struct ext4_allocation_context *ac)
- 			continue;
- 
- 		/* non-extent files can't have physical blocks past 2^32 */
--		if (!(EXT4_I(ac->ac_inode)->i_flags & EXT4_EXTENTS_FL) &&
-+		if (!(ext4_test_inode_flag(ac->ac_inode, EXT4_INODE_EXTENTS)) &&
- 			pa->pa_pstart + pa->pa_len > EXT4_MAX_BLOCK_FILE_PHYS)
- 			continue;
- 
-diff --git a/fs/ext4/migrate.c b/fs/ext4/migrate.c
-index 34dcfc5..6f3a27e 100644
---- a/fs/ext4/migrate.c
-+++ b/fs/ext4/migrate.c
-@@ -475,7 +475,7 @@ int ext4_ext_migrate(struct inode *inode)
- 	 */
- 	if (!EXT4_HAS_INCOMPAT_FEATURE(inode->i_sb,
- 				       EXT4_FEATURE_INCOMPAT_EXTENTS) ||
--	    (EXT4_I(inode)->i_flags & EXT4_EXTENTS_FL))
-+	    (ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)))
- 		return -EINVAL;
- 
- 	if (S_ISLNK(inode->i_mode) && inode->i_blocks == 0)
-diff --git a/fs/ext4/move_extent.c b/fs/ext4/move_extent.c
-index d3d6a64..deff4a5 100644
---- a/fs/ext4/move_extent.c
-+++ b/fs/ext4/move_extent.c
-@@ -979,11 +979,11 @@ mext_check_arguments(struct inode *orig_inode,
- 	}
- 
- 	/* Ext4 move extent supports only extent based file */
--	if (!(EXT4_I(orig_inode)->i_flags & EXT4_EXTENTS_FL)) {
-+	if (!(ext4_test_inode_flag(orig_inode, EXT4_INODE_EXTENTS))) {
- 		ext4_debug("ext4 move extent: orig file is not extents "
- 			"based file [ino:orig %lu]\n", orig_inode->i_ino);
- 		return -EOPNOTSUPP;
--	} else if (!(EXT4_I(donor_inode)->i_flags & EXT4_EXTENTS_FL)) {
-+	} else if (!(ext4_test_inode_flag(donor_inode, EXT4_INODE_EXTENTS))) {
- 		ext4_debug("ext4 move extent: donor file is not extents "
- 			"based file [ino:donor %lu]\n", donor_inode->i_ino);
- 		return -EOPNOTSUPP;
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index 0c070fa..efab592 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -656,7 +656,7 @@ int ext4_htree_fill_tree(struct file *dir_file, __u32 start_hash,
- 	dxtrace(printk(KERN_DEBUG "In htree_fill_tree, start hash: %x:%x\n", 
- 		       start_hash, start_minor_hash));
- 	dir = dir_file->f_path.dentry->d_inode;
--	if (!(EXT4_I(dir)->i_flags & EXT4_INDEX_FL)) {
-+	if (!(ext4_test_inode_flag(dir, EXT4_INODE_INDEX))) {
- 		hinfo.hash_version = EXT4_SB(dir->i_sb)->s_def_hash_version;
- 		if (hinfo.hash_version <= DX_HASH_TEA)
- 			hinfo.hash_version +=
-@@ -801,7 +801,7 @@ static void ext4_update_dx_flag(struct inode *inode)
- {
- 	if (!EXT4_HAS_COMPAT_FEATURE(inode->i_sb,
- 				     EXT4_FEATURE_COMPAT_DIR_INDEX))
--		EXT4_I(inode)->i_flags &= ~EXT4_INDEX_FL;
-+		ext4_clear_inode_flag(inode, EXT4_INODE_INDEX);
+-	return node->ghost;
++	return node->unloaded_info;
++}
++
++/*
++ * Return a newly allocated profiling data set which contains the sum of
++ * all profiling data associated with the given node.
++ */
++static struct gcov_info *get_accumulated_info(struct gcov_node *node)
++{
++	struct gcov_info *info;
++	int i = 0;
++
++	if (node->unloaded_info)
++		info = gcov_info_dup(node->unloaded_info);
++	else
++		info = gcov_info_dup(node->loaded_info[i++]);
++	if (!info)
++		return NULL;
++	for (; i < node->num_loaded; i++)
++		gcov_info_add(info, node->loaded_info[i]);
++
++	return info;
  }
  
  /*
-@@ -1418,7 +1418,7 @@ static int make_indexed_dir(handle_t *handle, struct dentry *dentry,
- 		brelse(bh);
- 		return retval;
- 	}
--	EXT4_I(dir)->i_flags |= EXT4_INDEX_FL;
-+	ext4_set_inode_flag(dir, EXT4_INODE_INDEX);
- 	data1 = bh2->b_data;
+@@ -163,9 +186,10 @@ static int gcov_seq_open(struct inode *inode, struct file *file)
+ 	mutex_lock(&node_lock);
+ 	/*
+ 	 * Read from a profiling data copy to minimize reference tracking
+-	 * complexity and concurrent access.
++	 * complexity and concurrent access and to keep accumulating multiple
++	 * profiling data sets associated with one node simple.
+ 	 */
+-	info = gcov_info_dup(get_node_info(node));
++	info = get_accumulated_info(node);
+ 	if (!info)
+ 		goto out_unlock;
+ 	iter = gcov_iter_new(info);
+@@ -225,12 +249,25 @@ static struct gcov_node *get_node_by_name(const char *name)
+ 	return NULL;
+ }
  
- 	memcpy (data1, de, len);
-@@ -1491,7 +1491,7 @@ static int ext4_add_entry(handle_t *handle, struct dentry *dentry,
- 		retval = ext4_dx_add_entry(handle, dentry, inode);
- 		if (!retval || (retval != ERR_BAD_DX_DIR))
- 			return retval;
--		EXT4_I(dir)->i_flags &= ~EXT4_INDEX_FL;
-+		ext4_clear_inode_flag(dir, EXT4_INODE_INDEX);
- 		dx_fallback++;
- 		ext4_mark_inode_dirty(handle, dir);
++/*
++ * Reset all profiling data associated with the specified node.
++ */
++static void reset_node(struct gcov_node *node)
++{
++	int i;
++
++	if (node->unloaded_info)
++		gcov_info_reset(node->unloaded_info);
++	for (i = 0; i < node->num_loaded; i++)
++		gcov_info_reset(node->loaded_info[i]);
++}
++
+ static void remove_node(struct gcov_node *node);
+ 
+ /*
+  * write() implementation for gcov data files. Reset profiling data for the
+- * associated file. If the object file has been unloaded (i.e. this is
+- * a "ghost" node), remove the debug fs node as well.
++ * corresponding file. If all associated object files have been unloaded,
++ * remove the debug fs node as well.
+  */
+ static ssize_t gcov_seq_write(struct file *file, const char __user *addr,
+ 			      size_t len, loff_t *pos)
+@@ -245,10 +282,10 @@ static ssize_t gcov_seq_write(struct file *file, const char __user *addr,
+ 	node = get_node_by_name(info->filename);
+ 	if (node) {
+ 		/* Reset counts or remove node for unloaded modules. */
+-		if (node->ghost)
++		if (node->num_loaded == 0)
+ 			remove_node(node);
+ 		else
+-			gcov_info_reset(node->info);
++			reset_node(node);
  	}
-@@ -2297,7 +2297,7 @@ retry:
- 		}
- 	} else {
- 		/* clear the extent format for fast symlink */
--		EXT4_I(inode)->i_flags &= ~EXT4_EXTENTS_FL;
-+		ext4_clear_inode_flag(inode, EXT4_INODE_EXTENTS);
- 		inode->i_op = &ext4_fast_symlink_inode_operations;
- 		memcpy((char *)&EXT4_I(inode)->i_data, symname, l);
- 		inode->i_size = l-1;
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index aa947e0..2aa9314 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -4139,6 +4139,7 @@ static int __init init_ext4_fs(void)
+ 	/* Reset counts for open file. */
+ 	gcov_info_reset(info);
+@@ -378,7 +415,10 @@ static void init_node(struct gcov_node *node, struct gcov_info *info,
+ 	INIT_LIST_HEAD(&node->list);
+ 	INIT_LIST_HEAD(&node->children);
+ 	INIT_LIST_HEAD(&node->all);
+-	node->info = info;
++	if (node->loaded_info) {
++		node->loaded_info[0] = info;
++		node->num_loaded = 1;
++	}
+ 	node->parent = parent;
+ 	if (name)
+ 		strcpy(node->name, name);
+@@ -394,9 +434,13 @@ static struct gcov_node *new_node(struct gcov_node *parent,
+ 	struct gcov_node *node;
+ 
+ 	node = kzalloc(sizeof(struct gcov_node) + strlen(name) + 1, GFP_KERNEL);
+-	if (!node) {
+-		pr_warning("out of memory\n");
+-		return NULL;
++	if (!node)
++		goto err_nomem;
++	if (info) {
++		node->loaded_info = kcalloc(1, sizeof(struct gcov_info *),
++					   GFP_KERNEL);
++		if (!node->loaded_info)
++			goto err_nomem;
+ 	}
+ 	init_node(node, info, name, parent);
+ 	/* Differentiate between gcov data file nodes and directory nodes. */
+@@ -416,6 +460,11 @@ static struct gcov_node *new_node(struct gcov_node *parent,
+ 	list_add(&node->all, &all_head);
+ 
+ 	return node;
++
++err_nomem:
++	kfree(node);
++	pr_warning("out of memory\n");
++	return NULL;
+ }
+ 
+ /* Remove symbolic links associated with node. */
+@@ -441,8 +490,9 @@ static void release_node(struct gcov_node *node)
+ 	list_del(&node->all);
+ 	debugfs_remove(node->dentry);
+ 	remove_links(node);
+-	if (node->ghost)
+-		gcov_info_free(node->ghost);
++	kfree(node->loaded_info);
++	if (node->unloaded_info)
++		gcov_info_free(node->unloaded_info);
+ 	kfree(node);
+ }
+ 
+@@ -477,7 +527,7 @@ static struct gcov_node *get_child_by_name(struct gcov_node *parent,
+ 
+ /*
+  * write() implementation for reset file. Reset all profiling data to zero
+- * and remove ghost nodes.
++ * and remove nodes for which all associated object files are unloaded.
+  */
+ static ssize_t reset_write(struct file *file, const char __user *addr,
+ 			   size_t len, loff_t *pos)
+@@ -487,8 +537,8 @@ static ssize_t reset_write(struct file *file, const char __user *addr,
+ 	mutex_lock(&node_lock);
+ restart:
+ 	list_for_each_entry(node, &all_head, all) {
+-		if (node->info)
+-			gcov_info_reset(node->info);
++		if (node->num_loaded > 0)
++			reset_node(node);
+ 		else if (list_empty(&node->children)) {
+ 			remove_node(node);
+ 			/* Several nodes may have gone - restart loop. */
+@@ -564,37 +614,115 @@ err_remove:
+ }
+ 
+ /*
+- * The profiling data set associated with this node is being unloaded. Store a
+- * copy of the profiling data and turn this node into a "ghost".
++ * Associate a profiling data set with an existing node. Needs to be called
++ * with node_lock held.
+  */
+-static int ghost_node(struct gcov_node *node)
++static void add_info(struct gcov_node *node, struct gcov_info *info)
  {
- 	int err;
+-	node->ghost = gcov_info_dup(node->info);
+-	if (!node->ghost) {
+-		pr_warning("could not save data for '%s' (out of memory)\n",
+-			   node->info->filename);
+-		return -ENOMEM;
++	struct gcov_info **loaded_info;
++	int num = node->num_loaded;
++
++	/*
++	 * Prepare new array. This is done first to simplify cleanup in
++	 * case the new data set is incompatible, the node only contains
++	 * unloaded data sets and there's not enough memory for the array.
++	 */
++	loaded_info = kcalloc(num + 1, sizeof(struct gcov_info *), GFP_KERNEL);
++	if (!loaded_info) {
++		pr_warning("could not add '%s' (out of memory)\n",
++			   info->filename);
++		return;
++	}
++	memcpy(loaded_info, node->loaded_info,
++	       num * sizeof(struct gcov_info *));
++	loaded_info[num] = info;
++	/* Check if the new data set is compatible. */
++	if (num == 0) {
++		/*
++		 * A module was unloaded, modified and reloaded. The new
++		 * data set replaces the copy of the last one.
++		 */
++		if (!gcov_info_is_compatible(node->unloaded_info, info)) {
++			pr_warning("discarding saved data for %s "
++				   "(incompatible version)\n", info->filename);
++			gcov_info_free(node->unloaded_info);
++			node->unloaded_info = NULL;
++		}
++	} else {
++		/*
++		 * Two different versions of the same object file are loaded.
++		 * The initial one takes precedence.
++		 */
++		if (!gcov_info_is_compatible(node->loaded_info[0], info)) {
++			pr_warning("could not add '%s' (incompatible "
++				   "version)\n", info->filename);
++			kfree(loaded_info);
++			return;
++		}
+ 	}
+-	node->info = NULL;
++	/* Overwrite previous array. */
++	kfree(node->loaded_info);
++	node->loaded_info = loaded_info;
++	node->num_loaded = num + 1;
++}
  
-+	ext4_check_flag_values();
- 	err = init_ext4_system_zone();
- 	if (err)
- 		return err;
-diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
-index b4c5aa8..58f8bb6 100644
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -820,7 +820,7 @@ inserted:
- 						EXT4_I(inode)->i_block_group);
+-	return 0;
++/*
++ * Return the index of a profiling data set associated with a node.
++ */
++static int get_info_index(struct gcov_node *node, struct gcov_info *info)
++{
++	int i;
++
++	for (i = 0; i < node->num_loaded; i++) {
++		if (node->loaded_info[i] == info)
++			return i;
++	}
++	return -ENOENT;
+ }
  
- 			/* non-extent files can't have physical blocks past 2^32 */
--			if (!(EXT4_I(inode)->i_flags & EXT4_EXTENTS_FL))
-+			if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)))
- 				goal = goal & EXT4_MAX_BLOCK_FILE_PHYS;
+ /*
+- * Profiling data for this node has been loaded again. Add profiling data
+- * from previous instantiation and turn this node into a regular node.
++ * Save the data of a profiling data set which is being unloaded.
+  */
+-static void revive_node(struct gcov_node *node, struct gcov_info *info)
++static void save_info(struct gcov_node *node, struct gcov_info *info)
+ {
+-	if (gcov_info_is_compatible(node->ghost, info))
+-		gcov_info_add(info, node->ghost);
++	if (node->unloaded_info)
++		gcov_info_add(node->unloaded_info, info);
+ 	else {
+-		pr_warning("discarding saved data for '%s' (version changed)\n",
++		node->unloaded_info = gcov_info_dup(info);
++		if (!node->unloaded_info) {
++			pr_warning("could not save data for '%s' "
++				   "(out of memory)\n", info->filename);
++		}
++	}
++}
++
++/*
++ * Disassociate a profiling data set from a node. Needs to be called with
++ * node_lock held.
++ */
++static void remove_info(struct gcov_node *node, struct gcov_info *info)
++{
++	int i;
++
++	i = get_info_index(node, info);
++	if (i < 0) {
++		pr_warning("could not remove '%s' (not found)\n",
+ 			   info->filename);
++		return;
+ 	}
+-	gcov_info_free(node->ghost);
+-	node->ghost = NULL;
+-	node->info = info;
++	if (gcov_persist)
++		save_info(node, info);
++	/* Shrink array. */
++	node->loaded_info[i] = node->loaded_info[node->num_loaded - 1];
++	node->num_loaded--;
++	if (node->num_loaded > 0)
++		return;
++	/* Last loaded data set was removed. */
++	kfree(node->loaded_info);
++	node->loaded_info = NULL;
++	node->num_loaded = 0;
++	if (!node->unloaded_info)
++		remove_node(node);
+ }
  
- 			block = ext4_new_meta_blocks(handle, inode,
-@@ -828,7 +828,7 @@ inserted:
- 			if (error)
- 				goto cleanup;
- 
--			if (!(EXT4_I(inode)->i_flags & EXT4_EXTENTS_FL))
-+			if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)))
- 				BUG_ON(block > EXT4_MAX_BLOCK_FILE_PHYS);
- 
- 			ea_idebug(inode, "creating block %d", block);
+ /*
+@@ -609,30 +737,18 @@ void gcov_event(enum gcov_action action, struct gcov_info *info)
+ 	node = get_node_by_name(info->filename);
+ 	switch (action) {
+ 	case GCOV_ADD:
+-		/* Add new node or revive ghost. */
+-		if (!node) {
++		if (node)
++			add_info(node, info);
++		else
+ 			add_node(info);
+-			break;
+-		}
+-		if (gcov_persist)
+-			revive_node(node, info);
+-		else {
+-			pr_warning("could not add '%s' (already exists)\n",
+-				   info->filename);
+-		}
+ 		break;
+ 	case GCOV_REMOVE:
+-		/* Remove node or turn into ghost. */
+-		if (!node) {
++		if (node)
++			remove_info(node, info);
++		else {
+ 			pr_warning("could not remove '%s' (not found)\n",
+ 				   info->filename);
+-			break;
+ 		}
+-		if (gcov_persist) {
+-			if (!ghost_node(node))
+-				break;
+-		}
+-		remove_node(node);
+ 		break;
+ 	}
+ 	mutex_unlock(&node_lock);
 -- 
 1.7.3.3
 
