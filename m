@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750871Ab1ABG1B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 01:27:01 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:22611 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750730Ab1ABG07 (ORCPT
+	id S1750843Ab1ABHVP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:21:15 -0500
+Received: from mail.windriver.com ([147.11.1.11]:33794 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162Ab1ABHVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 01:26:59 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6213"; a="68737269"
-Message-ID: <4D201AB2.7050805@codeaurora.org>
-Date: Sat, 01 Jan 2011 22:26:58 -0800
-From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Rabin Vincent <rabin@rab.in>
-CC: Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Chao Xie <chao.xie@marvell.com>,
-        tglx@linutronix.de
-Subject: Re: [PATCH] GIC: Assign correct flow handler type in set_type callback
-References: <1293686960-12581-1-git-send-email-adharmap@codeaurora.org>	<AANLkTimA8ZP4WL8u0Uvtt-0MWXPkGfjwQ7437pL-h0D-@mail.gmail.com> <4D1DB2DD.3020701@codeaurora.org>
-In-Reply-To: <4D1DB2DD.3020701@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 2 Jan 2011 02:21:11 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: stable@kernel.org, linux-kernel@vger.kernel.org
+Cc: stable-review@kernel.org, Wei Yongjun <yjwei@cn.fujitsu.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [34-longterm 001/260] sctp: fix append error cause to ERROR chunk correctly
+Date: Sun,  2 Jan 2011 02:14:57 -0500
+Message-Id: <1293952756-15010-2-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.3.3
+In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
+X-OriginalArrivalTime: 02 Jan 2011 07:20:02.0100 (UTC) FILETIME=[787F3F40:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/31/2010 02:39 AM, Abhijeet Dharmapurikar wrote:
-> On 12/29/2010 10:27 PM, Rabin Vincent wrote:
->> On Thu, Dec 30, 2010 at 10:59 AM, Abhijeet Dharmapurikar
->> <adharmap@codeaurora.org> wrote:
->>> There are some interrupts that are true edge triggered in nature. If not
->>> marked IRQ_PENDING, when disabled, they will be lost.
->>>
->>> Use the set_type callback to assign the correct flow type handler for
->>> shared peripheral interrupts.
->>>
->>> Signed-off-by: Abhijeet Dharmapurikar<adharmap@codeaurora.org>
->>> ---
->>> This came to light when a edge triggered interrupt was supposed to
->>> wakeup the
->>> sytem. The flow handler was set to the default handle_level_irq. On
->>> the resume
->>> path the flow handler was invoked right after the I bit was cleared
->>> but before
->>> each individual interrupts were enabled. This made the
->>> handle_level_irq ignore
->>
->> Why does the flow handler hit when the interrupt is disabled? Have you
->> set
->> IRQF_NOSUSPEND on this interrupt?
->>
-> Since GIC doesnt have disable callback it implements lazy disabling. The
-> interrupt is only marked IRQ_DISABLED in the descriptor but is not
-> masked in the GIC. Hence the interrupt flow handler is hit.
->
-> Now that I re-read the code setting IRQF_NO_SUSPEND would fix the issue.
+From: Wei Yongjun <yjwei@cn.fujitsu.com>
 
-Let me correct myself, IRQF_NO_SUSPEND isnt exactly what I want to do. 
-If an interrupt triggers after suspend_device_irqs() is run and before 
-the I bit is set in arch_suspend_disable_irqs() the system will handle 
-the interrupt but will not abort suspend - check_wakeup_irqs() will 
-return 0.
+commit 2e3219b5c8a2e44e0b83ae6e04f52f20a82ac0f2 upstream.
 
-IMO, using handle_edge_irq() for an edge triggered wakeup interrupt 
-would be the right way to address the issue.
+commit 5fa782c2f5ef6c2e4f04d3e228412c9b4a4c8809
+  sctp: Fix skb_over_panic resulting from multiple invalid \
+    parameter errors (CVE-2010-1173) (v4)
+
+cause 'error cause' never be add the the ERROR chunk due to
+some typo when check valid length in sctp_init_cause_fixed().
+
+Signed-off-by: Wei Yongjun <yjwei@cn.fujitsu.com>
+Reviewed-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vladislav.yasevich@hp.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ net/sctp/sm_make_chunk.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/net/sctp/sm_make_chunk.c b/net/sctp/sm_make_chunk.c
+index 30c1767..70d6c10 100644
+--- a/net/sctp/sm_make_chunk.c
++++ b/net/sctp/sm_make_chunk.c
+@@ -141,7 +141,7 @@ int sctp_init_cause_fixed(struct sctp_chunk *chunk, __be16 cause_code,
+ 	len = sizeof(sctp_errhdr_t) + paylen;
+ 	err.length  = htons(len);
+ 
+-	if (skb_tailroom(chunk->skb) >  len)
++	if (skb_tailroom(chunk->skb) < len)
+ 		return -ENOSPC;
+ 	chunk->subh.err_hdr = sctp_addto_chunk_fixed(chunk,
+ 						     sizeof(sctp_errhdr_t),
+@@ -1421,7 +1421,7 @@ void *sctp_addto_chunk(struct sctp_chunk *chunk, int len, const void *data)
+ void *sctp_addto_chunk_fixed(struct sctp_chunk *chunk,
+ 			     int len, const void *data)
+ {
+-	if (skb_tailroom(chunk->skb) > len)
++	if (skb_tailroom(chunk->skb) >= len)
+ 		return sctp_addto_chunk(chunk, len, data);
+ 	else
+ 		return NULL;
+-- 
+1.7.3.3
 
