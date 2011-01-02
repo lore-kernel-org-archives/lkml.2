@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055Ab1ABH0G (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:26:06 -0500
-Received: from mail.windriver.com ([147.11.1.11]:37213 "EHLO
+	id S1755182Ab1ABH1m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:27:42 -0500
+Received: from mail.windriver.com ([147.11.1.11]:37223 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755047Ab1ABH0B (ORCPT
+	with ESMTP id S1754972Ab1ABH0D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:26:01 -0500
+	Sun, 2 Jan 2011 02:26:03 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+Cc: stable-review@kernel.org, Len Brown <len.brown@intel.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 254/260] USB: accept some invalid ep0-maxpacket values
-Date: Sun,  2 Jan 2011 02:19:10 -0500
-Message-Id: <1293952756-15010-255-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 210/260] intel_idle: PCI quirk to prevent Lenovo Ideapad s10-3 boot hang
+Date: Sun,  2 Jan 2011 02:18:26 -0500
+Message-Id: <1293952756-15010-211-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:24:47.0418 (UTC) FILETIME=[228F51A0:01CBAA4E]
+X-OriginalArrivalTime: 02 Jan 2011 07:23:59.0979 (UTC) FILETIME=[0648B3B0:01CBAA4E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Len Brown <len.brown@intel.com>
 
-commit 56626a72a47bf3e50875d960d6b5f17b9bee0ab2 upstream.
+commit 4731fdcf6f7bdab3e369a3f844d4ea4d4017284d upstream.
 
-A few devices (such as the RCA VR5220 voice recorder) are so
-non-compliant with the USB spec that they have invalid maxpacket sizes
-for endpoint 0.  Nevertheless, as long as we can safely use them, we
-may as well do so.
+When the Lenovo Ideapad S10-3 is booted with HT enabled,
+it hits a boot hang in the intel_idle driver.
 
-This patch (as1432) softens our acceptance criterion by allowing
-high-speed devices to have ep0-maxpacket sizes other than 64.  A
-warning is printed in the system log when this happens, and the
-existing error message is clarified.
+This occurs when entering ATM-C4 for the first time,
+unless BM_STS is first cleared.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: James <bjlockie@lockie.ca>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+acpi_idle doesn't see this because it first checks
+and clears BM_STS, but it would hit the same hang
+if that check were disabled.
+
+http://bugs.meego.com/show_bug.cgi?id=7093
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/634702
+
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/core/hub.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+ drivers/pci/quirks.c |   20 ++++++++++++++++++++
+ 1 files changed, 20 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 3e28f92..5b63c45 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2848,13 +2848,16 @@ hub_port_init (struct usb_hub *hub, struct usb_device *udev, int port1,
- 	else
- 		i = udev->descriptor.bMaxPacketSize0;
- 	if (le16_to_cpu(udev->ep0.desc.wMaxPacketSize) != i) {
--		if (udev->speed != USB_SPEED_FULL ||
-+		if (udev->speed == USB_SPEED_LOW ||
- 				!(i == 8 || i == 16 || i == 32 || i == 64)) {
--			dev_err(&udev->dev, "ep0 maxpacket = %d\n", i);
-+			dev_err(&udev->dev, "Invalid ep0 maxpacket: %d\n", i);
- 			retval = -EMSGSIZE;
- 			goto fail;
- 		}
--		dev_dbg(&udev->dev, "ep0 maxpacket = %d\n", i);
-+		if (udev->speed == USB_SPEED_FULL)
-+			dev_dbg(&udev->dev, "ep0 maxpacket = %d\n", i);
-+		else
-+			dev_warn(&udev->dev, "Using ep0 maxpacket: %d\n", i);
- 		udev->ep0.desc.wMaxPacketSize = cpu_to_le16(i);
- 		usb_ep0_reinit(udev);
- 	}
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index c582935..4a120b7 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -150,6 +150,26 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_NEC,	PCI_DEVICE_ID_NEC_CBUS_2,	quirk_isa_d
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_NEC,	PCI_DEVICE_ID_NEC_CBUS_3,	quirk_isa_dma_hangs);
+ 
+ /*
++ * Intel NM10 "TigerPoint" LPC PM1a_STS.BM_STS must be clear
++ * for some HT machines to use C4 w/o hanging.
++ */
++static void __devinit quirk_tigerpoint_bm_sts(struct pci_dev *dev)
++{
++	u32 pmbase;
++	u16 pm1a;
++
++	pci_read_config_dword(dev, 0x40, &pmbase);
++	pmbase = pmbase & 0xff80;
++	pm1a = inw(pmbase);
++
++	if (pm1a & 0x10) {
++		dev_info(&dev->dev, FW_BUG "TigerPoint LPC.BM_STS cleared\n");
++		outw(0x10, pmbase);
++	}
++}
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_TGP_LPC, quirk_tigerpoint_bm_sts);
++
++/*
+  *	Chipsets where PCI->PCI transfers vanish or hang
+  */
+ static void __devinit quirk_nopcipci(struct pci_dev *dev)
 -- 
 1.7.3.3
 
