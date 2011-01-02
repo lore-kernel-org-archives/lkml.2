@@ -1,117 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288Ab1ABVXV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 16:23:21 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35623 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab1ABVXU (ORCPT
+	id S1752679Ab1ABVcP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 16:32:15 -0500
+Received: from www84.your-server.de ([213.133.104.84]:47878 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599Ab1ABVcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 16:23:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=LvvaSr3QOmyEyj8Xqy87SBvOlwfskiCYqNmehpnehMiRa+txLCcA148QNoEX00yMxb
-         0Ik+vUNTtuo6bYa7o2/s5O4uxwW2ew8F6G/jhVJks675Z0R4kuLP95wjFOjY9FVt6jHL
-         vuqmRmZfyZKar/SDWfDbUnL2N5qw0ZmNDvQX4=
-MIME-Version: 1.0
-Date: Mon, 3 Jan 2011 08:23:18 +1100
-Message-ID: <AANLkTimJGF2rEY7QbRVKew+skwzpJicr1qrSSCk9SMEF@mail.gmail.com>
-Subject: Coding style change
-From: Michael Ahern <ahern.michael.t@gmail.com>
-To: gregkh@suse.de, u.kleine-koenig@pengutronix.de, julia@diku.dk,
-        nm127@freemail.hu, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=0016e6dbdedbe78e910498e3a4ba
+	Sun, 2 Jan 2011 16:32:14 -0500
+Subject: Re: [PATCH] new UDPCP Communication Protocol
+From: Stefani Seibold <stefani@seibold.net>
+To: Daniel Baluta <daniel.baluta@gmail.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        davem@davemloft.net, netdev@vger.kernel.org, eric.dumazet@gmail.com,
+        shemminger@vyatta.com
+In-Reply-To: <AANLkTi=7M=gSgBjcrCVEj+GKZ5cf5t4MPqm6r9NGr=MZ@mail.gmail.com>
+References: <1293982286-15389-1-git-send-email-stefani@seibold.net>
+	 <AANLkTi=7M=gSgBjcrCVEj+GKZ5cf5t4MPqm6r9NGr=MZ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Sun, 02 Jan 2011 22:33:13 +0100
+Message-ID: <1294003993.5675.3.camel@wall-e>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016e6dbdedbe78e910498e3a4ba
-Content-Type: text/plain; charset=ISO-8859-1
+Am Sonntag, den 02.01.2011, 21:48 +0200 schrieb Daniel Baluta:
+> Hello,
+> 
+> I have some style comments, please read below.
+> 
+> > +struct udpcp_statistics {
+> > +       unsigned int txMsgs;            /* Num of transmitted messages */
+> > +       unsigned int rxMsgs;            /* Num of received messages */
+> > +       unsigned int txNodes;           /* Num of receiver nodes */
+> > +       unsigned int rxNodes;           /* Num of transmitter nodes */
+> > +       unsigned int txTimeout;         /* Num of unsuccessful transmissions */
+> > +       unsigned int rxTimeout;         /* Num of partial message receptions */
+> > +       unsigned int txRetries;         /* Num of resends */
+> > +       unsigned int rxDiscardedFrags;  /* Num of discarded fragments */
+> > +       unsigned int crcErrors;         /* Num of crc errors detected */
+> 
+> Is there any strong reason to have this camel case naming?
+> I would prefer tx_msgs, rx_msgs etc..
+> 
 
-First attempt at patch process as outlined in Greg's tutorial. I hope
-this patch helps, please use as you see fit.
+This cannot be fixed for compatiblity reasons.
 
---0016e6dbdedbe78e910498e3a4ba
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0001-Staging-comedi-fix-line-length-coding-style-issue-in.patch"
-Content-Disposition: attachment; 
-	filename="0001-Staging-comedi-fix-line-length-coding-style-issue-in.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gigfygks0
+> > +struct udpcp_dest {
+> > +       struct list_head list;
+> > +       struct sk_buff_head xmit;
+> > +       unsigned long tx_time;
+> > +       unsigned long rx_time;
+> > +       u32 txTimeout;
+> > +       u32 rxTimeout;
+> 
+> Here you have mixed naming conventions. I guess
+> tx_timeout will fit in better than txTimeout.
+> 
+> > +       u32 txRetries;
+> > +       u32 rxDiscardedFrags;
+> > +       struct sk_buff *xmit_wait;
+> > +       struct sk_buff *xmit_last;
+> > +       struct sk_buff *recv_msg;
+> > +       struct sk_buff *recv_last;
+> > +       struct udpcphdr lastmsg;
+> > +       struct ipcm_cookie ipc;
+> > +       struct flowi fl;
+> > +       struct rtable *rt;
+> > +       __be32 addr;
+> > +       __be16 port;
+> > +       u16 msgid;
+> > +       u8 use_flag;
+> > +       u8 insync;
+> > +       u8 ackmode;
+> > +       u8 chkmode;
+> > +       u8 try;
+> > +       u8 acks;
+> > +       struct udp_sock udpsock;
+> > +       struct sk_buff_head assembly;
+> > +       u32 assembly_len;
+> > +       struct udpcp_dest *assembly_dest;
+> > +       wait_queue_head_t wq;
+> > +       struct list_head destlist;
+> > +       struct list_head udpcplist;
+> > +       struct timer_list timer;
+> > +       struct udpcp_statistics stat;
+> > +       u32 pending;
+> > +       unsigned long tx_timeout;
+> > +       unsigned long rx_timeout;
+> > +       void (*udp_data_ready) (struct sock *sk, int bytes);
+> > +       u8 ackmode;
+> > +       u8 chkmode;
+> > +       u8 maxtry;
+> > +       u8 acks;
+> > +       u8 timeout;
+> > +/* overall UDPCP statistics */
+> > +static atomic_t udpcp_txMsgs;
+> > +static atomic_t udpcp_rxMsgs;
+> > +static atomic_t udpcp_txNodes;
+> > +static atomic_t udpcp_rxNodes;
+> > +static atomic_t udpcp_txTimeout;
+> > +static atomic_t udpcp_rxTimeout;
+> > +static atomic_t udpcp_txRetries;
+> > +static atomic_t udpcp_rxDiscardedFrags;
+> > +static atomic_t udpcp_crcErrors;
+> 
+> same here.
+> 
 
-RnJvbSBjNGM4MTdiOTFlZWQwYTlmNTlkZTkzNWMyNGJmMzRmMDE0ODZlZjM5IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBtYWggPGFoZXJuLm1pY2hhZWwudEBnbWFpbC5jb20+CkRhdGU6
-IE1vbiwgMyBKYW4gMjAxMSAwNzo0ODozMyArMTEwMApTdWJqZWN0OiBbUEFUQ0hdIFN0YWdpbmc6
-IGNvbWVkaTogZml4IGxpbmUtbGVuZ3RoIGNvZGluZyBzdHlsZSBpc3N1ZSBpbiB1c2JkdXhmYXN0
-LmMKClRoaXMgcGF0Y2ggdG8gdXNiZHV4ZmFzdC5jIGZpbGUgdGhhdCBmaXhlcyB3YXJuaW5ncyBm
-b3VuZCBieSBjaGVja3BhdGNoLnBsIHRvb2wKClNpZ25lZC1vZmYtYnk6IE1pY2hhZWwgQWhlcm4g
-PGFoZXJuLm1pY2hhZWwudEBnbWFpbC5jb20+Ci0tLQogZHJpdmVycy9zdGFnaW5nL2NvbWVkaS9k
-cml2ZXJzL3VzYmR1eGZhc3QuYyB8ICAgNTQgKysrKysrKysrKysrKysrLS0tLS0tLS0tLS0KIDEg
-ZmlsZXMgY2hhbmdlZCwgMzEgaW5zZXJ0aW9ucygrKSwgMjMgZGVsZXRpb25zKC0pCgpkaWZmIC0t
-Z2l0IGEvZHJpdmVycy9zdGFnaW5nL2NvbWVkaS9kcml2ZXJzL3VzYmR1eGZhc3QuYyBiL2RyaXZl
-cnMvc3RhZ2luZy9jb21lZGkvZHJpdmVycy91c2JkdXhmYXN0LmMKaW5kZXggNWIxNWU2ZC4uYmU0
-ZjVlYyAxMDA2NDQKLS0tIGEvZHJpdmVycy9zdGFnaW5nL2NvbWVkaS9kcml2ZXJzL3VzYmR1eGZh
-c3QuYworKysgYi9kcml2ZXJzL3N0YWdpbmcvY29tZWRpL2RyaXZlcnMvdXNiZHV4ZmFzdC5jCkBA
-IC00NTMsMTQgKzQ1MywxNiBAQCBzdGF0aWMgaW50IHVzYmR1eGZhc3RzdWJfc3RhcnQoc3RydWN0
-IHVzYmR1eGZhc3RzdWJfcyAqdWRmcykKIAkvKiA3ZjkyIHRvIHplcm8gKi8KIAlsb2NhbF90cmFu
-c2Zlcl9idWZmZXJbMF0gPSAwOwogCS8qIGJSZXF1ZXN0LCAiRmlybXdhcmUiICovCi0JcmV0ID0g
-dXNiX2NvbnRyb2xfbXNnKHVkZnMtPnVzYmRldiwgdXNiX3NuZGN0cmxwaXBlKHVkZnMtPnVzYmRl
-diwgMCksIFVTQkRVWEZBU1RTVUJfRklSTVdBUkUsCi0JCQkJVkVORE9SX0RJUl9PVVQsCS8qIGJt
-UmVxdWVzdFR5cGUgKi8KLQkJCQlVU0JEVVhGQVNUU1VCX0NQVUNTLAkvKiBWYWx1ZSAqLwotCQkJ
-CTB4MDAwMCwJLyogSW5kZXggKi8KLQkJCQkvKiBhZGRyZXNzIG9mIHRoZSB0cmFuc2ZlciBidWZm
-ZXIgKi8KLQkJCQlsb2NhbF90cmFuc2Zlcl9idWZmZXIsCi0JCQkJMSwJLyogTGVuZ3RoICovCi0J
-CQkJRVpUSU1FT1VUKTsJLyogVGltZW91dCAqLworCXJldCA9IHVzYl9jb250cm9sX21zZyh1ZGZz
-LT51c2JkZXYsCisJCQkgICAgICB1c2Jfc25kY3RybHBpcGUodWRmcy0+dXNiZGV2LCAwKSwKKwkJ
-CSAgICAgIFVTQkRVWEZBU1RTVUJfRklSTVdBUkUsCisJCQkgICAgICBWRU5ET1JfRElSX09VVCwJ
-CS8qIGJtUmVxdWVzdFR5cGUgKi8KKwkJCSAgICAgIFVTQkRVWEZBU1RTVUJfQ1BVQ1MsCS8qIFZh
-bHVlICovCisJCQkgICAgICAweDAwMDAsCQkJLyogSW5kZXggKi8KKwkJCQkJLyogYWRkcmVzcyBv
-ZiB0aGUgdHJhbnNmZXIgYnVmZmVyICovCisJCQkgICAgICBsb2NhbF90cmFuc2Zlcl9idWZmZXIs
-CisJCQkgICAgICAxLAkJCS8qIExlbmd0aCAqLworCQkJICAgICAgRVpUSU1FT1VUKTsJCS8qIFRp
-bWVvdXQgKi8KIAlpZiAocmV0IDwgMCkgewogCQlwcmludGsoImNvbWVkaV86IHVzYmR1eGZhc3Rf
-OiBjb250cm9sIG1zZyBmYWlsZWQgKHN0YXJ0KVxuIik7CiAJCXJldHVybiByZXQ7CkBAIC00Nzcs
-MTIgKzQ3OSwxNiBAQCBzdGF0aWMgaW50IHVzYmR1eGZhc3RzdWJfc3RvcChzdHJ1Y3QgdXNiZHV4
-ZmFzdHN1Yl9zICp1ZGZzKQogCS8qIDdmOTIgdG8gb25lICovCiAJbG9jYWxfdHJhbnNmZXJfYnVm
-ZmVyWzBdID0gMTsKIAkvKiBiUmVxdWVzdCwgIkZpcm13YXJlIiAqLwotCXJldCA9IHVzYl9jb250
-cm9sX21zZyh1ZGZzLT51c2JkZXYsIHVzYl9zbmRjdHJscGlwZSh1ZGZzLT51c2JkZXYsIDApLCBV
-U0JEVVhGQVNUU1VCX0ZJUk1XQVJFLAotCQkJICAgICAgVkVORE9SX0RJUl9PVVQsCS8qIGJtUmVx
-dWVzdFR5cGUgKi8KKwlyZXQgPSB1c2JfY29udHJvbF9tc2codWRmcy0+dXNiZGV2LAorCQkJICAg
-ICAgdXNiX3NuZGN0cmxwaXBlKHVkZnMtPnVzYmRldiwgMCksCisJCQkgICAgICBVU0JEVVhGQVNU
-U1VCX0ZJUk1XQVJFLAorCQkJICAgICAgVkVORE9SX0RJUl9PVVQsCQkvKiBibVJlcXVlc3RUeXBl
-ICovCiAJCQkgICAgICBVU0JEVVhGQVNUU1VCX0NQVUNTLAkvKiBWYWx1ZSAqLwotCQkJICAgICAg
-MHgwMDAwLAkvKiBJbmRleCAqLwotCQkJICAgICAgbG9jYWxfdHJhbnNmZXJfYnVmZmVyLCAxLAkv
-KiBMZW5ndGggKi8KLQkJCSAgICAgIEVaVElNRU9VVCk7CS8qIFRpbWVvdXQgKi8KKwkJCSAgICAg
-IDB4MDAwMCwJCQkvKiBJbmRleCAqLworCQkJICAgICAgbG9jYWxfdHJhbnNmZXJfYnVmZmVyLAor
-CQkJICAgICAgMSwJCQkvKiBMZW5ndGggKi8KKwkJCSAgICAgIEVaVElNRU9VVCk7CQkvKiBUaW1l
-b3V0ICovCisKIAlpZiAocmV0IDwgMCkgewogCQlwcmludGsoS0VSTl9FUlIgImNvbWVkaV86IHVz
-YmR1eGZhc3Q6IGNvbnRyb2wgbXNnIGZhaWxlZCAiCiAJCSAgICAgICAiKHN0b3ApXG4iKTsKQEAg
-LTUwNCwxNCArNTEwLDE2IEBAIHN0YXRpYyBpbnQgdXNiZHV4ZmFzdHN1Yl91cGxvYWQoc3RydWN0
-IHVzYmR1eGZhc3RzdWJfcyAqdWRmcywKIAkgICAgICAgc3RhcnRBZGRyLCBsb2NhbF90cmFuc2Zl
-cl9idWZmZXJbMF0pOwogI2VuZGlmCiAJLyogYnJlcXVlc3QsIGZpcm13YXJlICovCi0JcmV0ID0g
-dXNiX2NvbnRyb2xfbXNnKHVkZnMtPnVzYmRldiwgdXNiX3NuZGN0cmxwaXBlKHVkZnMtPnVzYmRl
-diwgMCksIFVTQkRVWEZBU1RTVUJfRklSTVdBUkUsCi0JCQkJVkVORE9SX0RJUl9PVVQsCS8qIGJt
-UmVxdWVzdFR5cGUgKi8KLQkJCQlzdGFydEFkZHIsCS8qIHZhbHVlICovCi0JCQkJMHgwMDAwLAkv
-KiBpbmRleCAqLwotCQkJCS8qIG91ciBsb2NhbCBzYWZlIGJ1ZmZlciAqLwotCQkJCWxvY2FsX3Ry
-YW5zZmVyX2J1ZmZlciwKLQkJCQlsZW4sCS8qIGxlbmd0aCAqLwotCQkJCUVaVElNRU9VVCk7CS8q
-IHRpbWVvdXQgKi8KKwlyZXQgPSB1c2JfY29udHJvbF9tc2codWRmcy0+dXNiZGV2LAorCQkJICAg
-ICAgdXNiX3NuZGN0cmxwaXBlKHVkZnMtPnVzYmRldiwgMCksCisJCQkgICAgICBVU0JEVVhGQVNU
-U1VCX0ZJUk1XQVJFLAorCQkJICAgICAgVkVORE9SX0RJUl9PVVQsCS8qIGJtUmVxdWVzdFR5cGUg
-Ki8KKwkJCSAgICAgIHN0YXJ0QWRkciwJLyogdmFsdWUgKi8KKwkJCSAgICAgIDB4MDAwMCwJCS8q
-IGluZGV4ICovCisJCQkgICAgICAvKiBvdXIgbG9jYWwgc2FmZSBidWZmZXIgKi8KKwkJCSAgICAg
-IGxvY2FsX3RyYW5zZmVyX2J1ZmZlciwKKwkJCSAgICAgIGxlbiwJCS8qIGxlbmd0aCAqLworCQkJ
-ICAgICAgRVpUSU1FT1VUKTsJLyogdGltZW91dCAqLwogCiAjaWZkZWYgQ09ORklHX0NPTUVESV9E
-RUJVRwogCXByaW50ayhLRVJOX0RFQlVHICJjb21lZGlfOiB1c2JkdXhmYXN0OiByZXN1bHQ9JWRc
-biIsIHJldCk7CkBAIC0xNDM2LDcgKzE0NDQsNyBAQCBzdGF0aWMgdm9pZCB0aWR5X3VwKHN0cnVj
-dCB1c2JkdXhmYXN0c3ViX3MgKnVkZnMpCiAJdWRmcy0+YWlfY21kX3J1bm5pbmcgPSAwOwogfQog
-Ci1zdGF0aWMgdm9pZCB1c2JkdXhmYXN0X2Zpcm13YXJlX3JlcXVlc3RfY29tcGxldGVfaGFuZGxl
-cihjb25zdCBzdHJ1Y3QgZmlybXdhcmUKK3N0YXRpYyB2b2lkIHVzYmR1eGZhc3RfZmlybXdhcmVf
-cmVxX2NvbXBsZXRlX2hhbmRsZXIoY29uc3Qgc3RydWN0IGZpcm13YXJlCiAJCQkJCQkJICpmdywg
-dm9pZCAqY29udGV4dCkKIHsKIAlzdHJ1Y3QgdXNiZHV4ZmFzdHN1Yl9zICp1c2JkdXhmYXN0c3Vi
-X3RtcCA9IGNvbnRleHQ7CkBAIC0xNTc3LDcgKzE1ODUsNyBAQCBzdGF0aWMgaW50IHVzYmR1eGZh
-c3RzdWJfcHJvYmUoc3RydWN0IHVzYl9pbnRlcmZhY2UgKnVpbnRlcmYsCiAJCQkJICAgICAgJnVk
-ZXYtPmRldiwKIAkJCQkgICAgICBHRlBfS0VSTkVMLAogCQkJCSAgICAgIHVzYmR1eGZhc3RzdWIg
-KyBpbmRleCwKLQkJCQkgICAgICB1c2JkdXhmYXN0X2Zpcm13YXJlX3JlcXVlc3RfY29tcGxldGVf
-aGFuZGxlcik7CisJCQkJICAgICAgdXNiZHV4ZmFzdF9maXJtd2FyZV9yZXFfY29tcGxldGVfaGFu
-ZGxlcik7CiAKIAlpZiAocmV0KSB7CiAJCWRldl9lcnIoJnVkZXYtPmRldiwgImNvdWxkIG5vdCBs
-b2FkIGZpcm13YXJlIChlcnI9JWQpXG4iLCByZXQpOwotLSAKMS43LjAuNAoK
---0016e6dbdedbe78e910498e3a4ba--
+I think there is no nameing convention in linux, as i know it is a
+developer decision.
+
+
