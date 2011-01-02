@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab1ABOWD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 09:22:03 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:54982 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754535Ab1ABOVx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 09:21:53 -0500
-From: Stefan Weil <weil@mail.berlios.de>
-Cc: Stefan Weil <weil@mail.berlios.de>,
-        Geert Uytterhoeven <Geert.Uytterhoeven@sonycom.com>,
-        Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix spelling milisec -> ms in module parameter description
-Date: Sun,  2 Jan 2011 15:21:49 +0100
-Message-Id: <1293978109-5288-1-git-send-email-weil@mail.berlios.de>
-X-Mailer: git-send-email 1.7.2.3
-X-Provags-ID: V02:K0:TdZXfA0Nc9LtH082cjDZBQtrLSeD1aLDgjEDxI9smq/
- Xev6nW5PBEOmkII/eeprL9bW6secEsyCNJQSZMCK7U/ZOuH3Mh
- 2M4ILe4UZ4LTXLbFMRoMtYD2RJgOG6nRY1rL4u2riWZNsaXMoW
- pDlCe+NT8+h8VZUPesuIZtFdMfs9/pEScuAzicR2PnhG82wYC+
- z0moiqlmR1F8GJ2rpHCsQiCEX3/yVmm1WMmW9AvtIAG8RBgdke
- +v3xA6cY2ES6n
-To: unlisted-recipients:; (no To-header on input)
+	id S1754674Ab1ABO1u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 09:27:50 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:58790 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753977Ab1ABO1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jan 2011 09:27:48 -0500
+Date: Sun, 2 Jan 2011 15:27:42 +0100 (CET)
+From: Julia Lawall <julia@diku.dk>
+To: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH] drivers/video/carminefb.c: improve error handling
+Message-ID: <Pine.LNX.4.64.1101021527220.10933@ask.diku.dk>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of replacing 'milisec' by 'millisec', I decided to use
-the more common SI unit. Other drivers use 'milliseconds'
-or 'ms', too ('millisec' is never used).
+From: Julia Lawall <julia@diku.dk>
 
-Cc: Geert Uytterhoeven <Geert.Uytterhoeven@sonycom.com>
-Cc: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Stefan Weil <weil@mail.berlios.de>
+This code had an error handling goto to the wrong place, a misplaced
+release_mem_region, and a duplicated release_mem_region.
+
+The semantic match that finds the double release_mem_region is as follows:
+(http://coccinelle.lip6.fr/)
+
+// <smpl>
+@r@
+expression e1,e2,e3;
+position p1,p2,p3;
+@@
+release_mem_region@p1(e1, e2)@p3;
+... when != request_mem_region(e1,e2,e3)
+release_mem_region(e1, e2)@p2;
+
+@@
+expression e <= r.e1,e3;
+expression r.e1,e2;
+position r.p1,r.p2,r.p3,p!=r.p1;
+@@
+*release_mem_region(e1, e2)@p3;
+... when != e = e3
+*release_mem_region@p(e1, e2)@p2;// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
 ---
- sound/ppc/snd_ps3.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/sound/ppc/snd_ps3.c b/sound/ppc/snd_ps3.c
-index 581a670..edce8a2 100644
---- a/sound/ppc/snd_ps3.c
-+++ b/sound/ppc/snd_ps3.c
-@@ -51,7 +51,7 @@ static struct snd_ps3_card_info the_card;
- static int snd_ps3_start_delay = CONFIG_SND_PS3_DEFAULT_START_DELAY;
+diff --git a/drivers/video/carminefb.c b/drivers/video/carminefb.c
+index 6b19136..caaa27d 100644
+--- a/drivers/video/carminefb.c
++++ b/drivers/video/carminefb.c
+@@ -654,7 +654,7 @@ static int __devinit carminefb_probe(struct pci_dev *dev,
+ 		printk(KERN_ERR "carminefb: Memory bar is only %d bytes, %d "
+ 				"are required.", carminefb_fix.smem_len,
+ 				CARMINE_TOTAL_DIPLAY_MEM);
+-		goto err_free_reg_mmio;
++		goto err_unmap_vregs;
+ 	}
  
- module_param_named(start_delay, snd_ps3_start_delay, uint, 0644);
--MODULE_PARM_DESC(start_delay, "time to insert silent data in milisec");
-+MODULE_PARM_DESC(start_delay, "time to insert silent data in ms");
+ 	if (!request_mem_region(carminefb_fix.smem_start,
+@@ -667,8 +667,6 @@ static int __devinit carminefb_probe(struct pci_dev *dev,
+ 			carminefb_fix.smem_len);
+ 	if (!hw->screen_mem) {
+ 		printk(KERN_ERR "carmine: Can't ioremap smem area.\n");
+-		release_mem_region(carminefb_fix.smem_start,
+-				carminefb_fix.smem_len);
+ 		goto err_reg_smem;
+ 	}
  
- static int index = SNDRV_DEFAULT_IDX1;
- static char *id = SNDRV_DEFAULT_STR1;
--- 
-1.7.2.3
-
+@@ -710,7 +708,7 @@ err_deinit_hw:
+ err_unmap_screen:
+ 	iounmap(hw->screen_mem);
+ err_reg_smem:
+-	release_mem_region(carminefb_fix.mmio_start, carminefb_fix.mmio_len);
++	release_mem_region(carminefb_fix.smem_start, carminefb_fix.smem_len);
+ err_unmap_vregs:
+ 	iounmap(hw->v_regs);
+ err_free_reg_mmio:
