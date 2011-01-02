@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389Ab1ABHpZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:45:25 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36307 "EHLO
+	id S1755049Ab1ABHpt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:45:49 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36243 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754376Ab1ABHYX (ORCPT
+	with ESMTP id S1754336Ab1ABHYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:24:23 -0500
+	Sun, 2 Jan 2011 02:24:19 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Joerg Roedel <joerg.roedel@amd.com>,
+Cc: stable-review@kernel.org, "Erik J. Staab" <ejs@insightbb.com>,
+        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 172/260] x86/amd-iommu: Fix rounding-bug in __unmap_single
-Date: Sun,  2 Jan 2011 02:17:48 -0500
-Message-Id: <1293952756-15010-173-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 161/260] ALSA: oxygen: fix analog capture on Claro halo cards
+Date: Sun,  2 Jan 2011 02:17:37 -0500
+Message-Id: <1293952756-15010-162-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:23:19.0244 (UTC) FILETIME=[EE0108C0:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:23:07.0009 (UTC) FILETIME=[E6B61F10:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+From: Erik J. Staab <ejs@insightbb.com>
 
-commit 04e0463e088b41060c08c255eb0d3278a504f094 upstream.
+commit 0873a5ae747847ee55a63db409dff3476e45bcd9 upstream.
 
-In the __unmap_single function the dma_addr is rounded down
-to a page boundary before the dma pages are unmapped. The
-address is later also used to flush the TLB entries for that
-mapping. But without the offset into the dma page the amount
-of pages to flush might be miscalculated in the TLB flushing
-path. This patch fixes this bug by using the original
-address to flush the TLB.
+On the HT-Omega Claro halo card, the ADC data must be captured from the
+second I2S input.  Using the default first input, which isn't connected
+to anything, would result in silence.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Erik J. Staab <ejs@insightbb.com>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/kernel/amd_iommu.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ sound/pci/oxygen/oxygen.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/amd_iommu.c b/arch/x86/kernel/amd_iommu.c
-index 29e5e6e..1aae617 100644
---- a/arch/x86/kernel/amd_iommu.c
-+++ b/arch/x86/kernel/amd_iommu.c
-@@ -1886,6 +1886,7 @@ static void __unmap_single(struct dma_ops_domain *dma_dom,
- 			   size_t size,
- 			   int dir)
- {
-+	dma_addr_t flush_addr;
- 	dma_addr_t i, start;
- 	unsigned int pages;
- 
-@@ -1893,6 +1894,7 @@ static void __unmap_single(struct dma_ops_domain *dma_dom,
- 	    (dma_addr + size > dma_dom->aperture_size))
- 		return;
- 
-+	flush_addr = dma_addr;
- 	pages = iommu_num_pages(dma_addr, size, PAGE_SIZE);
- 	dma_addr &= PAGE_MASK;
- 	start = dma_addr;
-@@ -1907,7 +1909,7 @@ static void __unmap_single(struct dma_ops_domain *dma_dom,
- 	dma_ops_free_addresses(dma_dom, dma_addr, pages);
- 
- 	if (amd_iommu_unmap_flush || dma_dom->need_flush) {
--		iommu_flush_pages(&dma_dom->domain, dma_addr, size);
-+		iommu_flush_pages(&dma_dom->domain, flush_addr, size);
- 		dma_dom->need_flush = false;
+diff --git a/sound/pci/oxygen/oxygen.c b/sound/pci/oxygen/oxygen.c
+index 289cb4d..6c0a11a 100644
+--- a/sound/pci/oxygen/oxygen.c
++++ b/sound/pci/oxygen/oxygen.c
+@@ -543,6 +543,10 @@ static int __devinit get_oxygen_model(struct oxygen *chip,
+ 		chip->model.suspend = claro_suspend;
+ 		chip->model.resume = claro_resume;
+ 		chip->model.set_adc_params = set_ak5385_params;
++		chip->model.device_config = PLAYBACK_0_TO_I2S |
++					    PLAYBACK_1_TO_SPDIF |
++					    CAPTURE_0_FROM_I2S_2 |
++					    CAPTURE_1_FROM_SPDIF;
+ 		break;
  	}
- }
+ 	if (id->driver_data == MODEL_MERIDIAN ||
 -- 
 1.7.3.3
 
