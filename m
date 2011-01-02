@@ -1,56 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065Ab1ABH0I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:26:08 -0500
-Received: from mail.windriver.com ([147.11.1.11]:37217 "EHLO
+	id S1755079Ab1ABH0O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:26:14 -0500
+Received: from mail.windriver.com ([147.11.1.11]:37232 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754993Ab1ABH0C (ORCPT
+	with ESMTP id S1754996Ab1ABH0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:26:02 -0500
+	Sun, 2 Jan 2011 02:26:10 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, David Milburn <dmilburn@redhat.com>,
-        James Bottomley <James.Bottomley@suse.de>,
+Cc: stable-review@kernel.org, Julia Lawall <julia@diku.dk>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 256/260] libsas: fix NCQ mixing with non-NCQ
-Date: Sun,  2 Jan 2011 02:19:12 -0500
-Message-Id: <1293952756-15010-257-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 242/260] drivers/net/wireless/p54/eeprom.c: Return -ENOMEM on memory allocation failure
+Date: Sun,  2 Jan 2011 02:18:58 -0500
+Message-Id: <1293952756-15010-243-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:24:49.0449 (UTC) FILETIME=[23C53990:01CBAA4E]
+X-OriginalArrivalTime: 02 Jan 2011 07:24:34.0480 (UTC) FILETIME=[1AD92300:01CBAA4E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Milburn <dmilburn@redhat.com>
+From: Julia Lawall <julia@diku.dk>
 
-commit f0ad30d3d2dc924decc0e10b1ff6dc32525a5d99 upstream.
+commit 0d91f22b75347d9503b17a42b6c74d3f7750acd6 upstream.
 
-Some cards (like mvsas) have issue troubles if non-NCQ commands are
-mixed with NCQ ones.  Fix this by using the libata default NCQ check
-routine which waits until all NCQ commands are complete before issuing
-a non-NCQ one.  The impact to cards (like aic94xx) which don't need
-this logic should be minimal
+In this code, 0 is returned on memory allocation failure, even though other
+failures return -ENOMEM or other similar values.
 
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
+
+// <smpl>
+@@
+expression ret;
+expression x,e1,e2,e3;
+@@
+
+ret = 0
+... when != ret = e1
+*x = \(kmalloc\|kcalloc\|kzalloc\)(...)
+... when != ret = e2
+if (x == NULL) { ... when != ret = e3
+  return ret;
+}
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+Acked-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/scsi/libsas/sas_ata.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/net/wireless/p54/eeprom.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/scsi/libsas/sas_ata.c b/drivers/scsi/libsas/sas_ata.c
-index 8c496b5..fb78856 100644
---- a/drivers/scsi/libsas/sas_ata.c
-+++ b/drivers/scsi/libsas/sas_ata.c
-@@ -347,6 +347,7 @@ static int sas_ata_scr_read(struct ata_link *link, unsigned int sc_reg_in,
- static struct ata_port_operations sas_sata_ops = {
- 	.phy_reset		= sas_ata_phy_reset,
- 	.post_internal_cmd	= sas_ata_post_internal,
-+	.qc_defer               = ata_std_qc_defer,
- 	.qc_prep		= ata_noop_qc_prep,
- 	.qc_issue		= sas_ata_qc_issue,
- 	.qc_fill_rtf		= sas_ata_qc_fill_rtf,
+diff --git a/drivers/net/wireless/p54/eeprom.c b/drivers/net/wireless/p54/eeprom.c
+index 187e263..53d0f20 100644
+--- a/drivers/net/wireless/p54/eeprom.c
++++ b/drivers/net/wireless/p54/eeprom.c
+@@ -262,8 +262,10 @@ static int p54_generate_channel_lists(struct ieee80211_hw *dev)
+ 	list->max_entries = max_channel_num;
+ 	list->channels = kzalloc(sizeof(struct p54_channel_entry) *
+ 				 max_channel_num, GFP_KERNEL);
+-	if (!list->channels)
++	if (!list->channels) {
++		ret = -ENOMEM;
+ 		goto free;
++	}
+ 
+ 	for (i = 0; i < max_channel_num; i++) {
+ 		if (i < priv->iq_autocal_len) {
 -- 
 1.7.3.3
 
