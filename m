@@ -1,85 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614Ab1ABHY4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:24:56 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36703 "EHLO
+	id S1754660Ab1ABHjX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:39:23 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36726 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754520Ab1ABHYx (ORCPT
+	with ESMTP id S1754605Ab1ABHYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:24:53 -0500
+	Sun, 2 Jan 2011 02:24:55 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Tom Marshall <tdm.code@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: stable-review@kernel.org, Borislav Petkov <borislav.petkov@amd.com>,
+        Ingo Molnar <mingo@elte.hu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 199/260] tcp: Fix race in tcp_poll
-Date: Sun,  2 Jan 2011 02:18:15 -0500
-Message-Id: <1293952756-15010-200-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 189/260] x86, AMD, MCE thresholding: Fix the MCi_MISCj iteration order
+Date: Sun,  2 Jan 2011 02:18:05 -0500
+Message-Id: <1293952756-15010-190-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:23:48.0651 (UTC) FILETIME=[FF882FB0:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:23:37.0854 (UTC) FILETIME=[F918B1E0:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tom Marshall <tdm.code@gmail.com>
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-commit a4d258036ed9b2a1811c3670c6099203a0f284a0 upstream.
+commit 6dcbfe4f0b4e17e289d56fa534b7ce5a6b7f63a3 upstream.
 
-If a RST comes in immediately after checking sk->sk_err, tcp_poll will
-return POLLIN but not POLLOUT.  Fix this by checking sk->sk_err at the end
-of tcp_poll.  Additionally, ensure the correct order of operations on SMP
-machines with memory barriers.
+This fixes possible cases of not collecting valid error info in
+the MCE error thresholding groups on F10h hardware.
 
-Signed-off-by: Tom Marshall <tdm.code@gmail.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The current code contains a subtle problem of checking only the
+Valid bit of MSR0000_0413 (which is MC4_MISC0 - DRAM
+thresholding group) in its first iteration and breaking out if
+the bit is cleared.
+
+But (!), this MSR contains an offset value, BlkPtr[31:24], which
+points to the remaining MSRs in this thresholding group which
+might contain valid information too. But if we bail out only
+after we checked the valid bit in the first MSR and not the
+block pointer too, we miss that other information.
+
+The thing is, MC4_MISC0[BlkPtr] is not predicated on
+MCi_STATUS[MiscV] or MC4_MISC0[Valid] and should be checked
+prior to iterating over the MCI_MISCj thresholding group,
+irrespective of the MC4_MISC0[Valid] setting.
+
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/ipv4/tcp.c       |    7 +++++--
- net/ipv4/tcp_input.c |    2 ++
- 2 files changed, 7 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce_amd.c |    9 +++------
+ 1 files changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 1b40924..3fa16d9 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -388,8 +388,6 @@ unsigned int tcp_poll(struct file *file, struct socket *sock, poll_table *wait)
- 	 */
- 
- 	mask = 0;
--	if (sk->sk_err)
--		mask = POLLERR;
- 
- 	/*
- 	 * POLLHUP is certainly not done right. But poll() doesn't
-@@ -459,6 +457,11 @@ unsigned int tcp_poll(struct file *file, struct socket *sock, poll_table *wait)
- 		if (tp->urg_data & TCP_URG_VALID)
- 			mask |= POLLPRI;
- 	}
-+	/* This barrier is coupled with smp_wmb() in tcp_reset() */
-+	smp_rmb();
-+	if (sk->sk_err)
-+		mask |= POLLERR;
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+index 224392d..f80ff85 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+@@ -141,6 +141,7 @@ void mce_amd_feature_init(struct cpuinfo_x86 *c)
+ 				address = (low & MASK_BLKPTR_LO) >> 21;
+ 				if (!address)
+ 					break;
 +
- 	return mask;
- }
+ 				address += MCG_XBLK_ADDR;
+ 			} else
+ 				++address;
+@@ -148,12 +149,8 @@ void mce_amd_feature_init(struct cpuinfo_x86 *c)
+ 			if (rdmsr_safe(address, &low, &high))
+ 				break;
  
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index f240f57..dd0c9af 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -4040,6 +4040,8 @@ static void tcp_reset(struct sock *sk)
- 	default:
- 		sk->sk_err = ECONNRESET;
- 	}
-+	/* This barrier is coupled with smp_rmb() in tcp_poll() */
-+	smp_wmb();
+-			if (!(high & MASK_VALID_HI)) {
+-				if (block)
+-					continue;
+-				else
+-					break;
+-			}
++			if (!(high & MASK_VALID_HI))
++				continue;
  
- 	if (!sock_flag(sk, SOCK_DEAD))
- 		sk->sk_error_report(sk);
+ 			if (!(high & MASK_CNTP_HI)  ||
+ 			     (high & MASK_LOCKED_HI))
 -- 
 1.7.3.3
 
