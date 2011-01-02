@@ -1,107 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174Ab1ABIEJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 03:04:09 -0500
-Received: from mail.windriver.com ([147.11.1.11]:34691 "EHLO
+	id S1752890Ab1ABHWX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:22:23 -0500
+Received: from mail.windriver.com ([147.11.1.11]:34638 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752807Ab1ABHWV (ORCPT
+	with ESMTP id S1752430Ab1ABHWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:22:21 -0500
+	Sun, 2 Jan 2011 02:22:17 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Rudolf Marek <r.marek@assembler.cz>, Jean Delvare <khali@linux-fr.org>,
+Cc: stable-review@kernel.org, Robert Richter <robert.richter@amd.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 029/260] hwmon: (k8temp) Differentiate between AM2 and ASB1
-Date: Sun,  2 Jan 2011 02:15:25 -0500
-Message-Id: <1293952756-15010-30-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 060/260] oprofile, x86: fix init_sysfs() function stub
+Date: Sun,  2 Jan 2011 02:15:56 -0500
+Message-Id: <1293952756-15010-61-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:20:37.0866 (UTC) FILETIME=[8DD0B4A0:01CBAA4D]
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 02 Jan 2011 07:21:11.0132 (UTC) FILETIME=[A1A4B1C0:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
+From: Robert Richter <robert.richter@amd.com>
 
-commit a05e93f3b3fc2f53c1d0de3b17019e207c482349 upstream.
+commit 269f45c25028c75fe10e6d9be86e7202ab461fbc upstream.
 
-Commit 8bf0223ed515be24de0c671eedaff49e78bebc9c (hwmon, k8temp: Fix
-temperature reporting for ASB1 processor revisions) fixed temperature
-reporting for ASB1 CPUs. But those CPU models (model 0x6b, 0x6f, 0x7f)
-were packaged both as AM2 (desktop) and ASB1 (mobile). Thus the commit
-leads to wrong temperature reporting for AM2 CPU parts.
+The use of the return value of init_sysfs() with commit
 
-The solution is to determine the package type for models 0x6b, 0x6f,
-0x7f.
+ 10f0412 oprofile, x86: fix init_sysfs error handling
 
-This is done using BrandId from CPUID Fn8000_0001_EBX[15:0]. See
-"Constructing the processor Name String" in "Revision Guide for AMD
-NPT Family 0Fh Processors" (Rev. 3.46).
+discovered the following build error for !CONFIG_PM:
 
-Cc: Rudolf Marek <r.marek@assembler.cz>
-Reported-by: Vladislav Guberinic <neosisani@gmail.com>
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+ .../linux/arch/x86/oprofile/nmi_int.c: In function ‘op_nmi_init’:
+ .../linux/arch/x86/oprofile/nmi_int.c:784: error: expected expression before ‘do’
+ make[2]: *** [arch/x86/oprofile/nmi_int.o] Error 1
+ make[1]: *** [arch/x86/oprofile] Error 2
+
+This patch fixes this.
+
+Reported-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/hwmon/k8temp.c |   35 ++++++++++++++++++++++++++++++++---
- 1 files changed, 32 insertions(+), 3 deletions(-)
+ arch/x86/oprofile/nmi_int.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/hwmon/k8temp.c b/drivers/hwmon/k8temp.c
-index 8bdf80d..8364932 100644
---- a/drivers/hwmon/k8temp.c
-+++ b/drivers/hwmon/k8temp.c
-@@ -143,6 +143,37 @@ static const struct pci_device_id k8temp_ids[] = {
+diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+index 41b7228..3130a4b 100644
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -535,8 +535,10 @@ static void exit_sysfs(void)
+ }
  
- MODULE_DEVICE_TABLE(pci, k8temp_ids);
+ #else
+-#define init_sysfs() do { } while (0)
+-#define exit_sysfs() do { } while (0)
++
++static inline int  init_sysfs(void) { return 0; }
++static inline void exit_sysfs(void) { }
++
+ #endif /* CONFIG_PM */
  
-+static int __devinit is_rev_g_desktop(u8 model)
-+{
-+	u32 brandidx;
-+
-+	if (model < 0x69)
-+		return 0;
-+
-+	if (model == 0xc1 || model == 0x6c || model == 0x7c)
-+		return 0;
-+
-+	/*
-+	 * Differentiate between AM2 and ASB1.
-+	 * See "Constructing the processor Name String" in "Revision
-+	 * Guide for AMD NPT Family 0Fh Processors" (33610).
-+	 */
-+	brandidx = cpuid_ebx(0x80000001);
-+	brandidx = (brandidx >> 9) & 0x1f;
-+
-+	/* Single core */
-+	if ((model == 0x6f || model == 0x7f) &&
-+	    (brandidx == 0x7 || brandidx == 0x9 || brandidx == 0xc))
-+		return 0;
-+
-+	/* Dual core */
-+	if (model == 0x6b &&
-+	    (brandidx == 0xb || brandidx == 0xc))
-+		return 0;
-+
-+	return 1;
-+}
-+
- static int __devinit k8temp_probe(struct pci_dev *pdev,
- 				  const struct pci_device_id *id)
- {
-@@ -179,9 +210,7 @@ static int __devinit k8temp_probe(struct pci_dev *pdev,
- 				 "wrong - check erratum #141\n");
- 		}
- 
--		if ((model >= 0x69) &&
--		    !(model == 0xc1 || model == 0x6c || model == 0x7c ||
--		      model == 0x6b || model == 0x6f || model == 0x7f)) {
-+		if (is_rev_g_desktop(model)) {
- 			/*
- 			 * RevG desktop CPUs (i.e. no socket S1G1 or
- 			 * ASB1 parts) need additional offset,
+ static int __init p4_init(char **cpu_type)
 -- 
 1.7.3.3
 
