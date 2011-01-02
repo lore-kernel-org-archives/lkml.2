@@ -1,117 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679Ab1ABVcP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 16:32:15 -0500
-Received: from www84.your-server.de ([213.133.104.84]:47878 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751599Ab1ABVcO (ORCPT
+	id S1752410Ab1ABVe7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 16:34:59 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:11402 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751337Ab1ABVe6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 16:32:14 -0500
-Subject: Re: [PATCH] new UDPCP Communication Protocol
-From: Stefani Seibold <stefani@seibold.net>
-To: Daniel Baluta <daniel.baluta@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        davem@davemloft.net, netdev@vger.kernel.org, eric.dumazet@gmail.com,
-        shemminger@vyatta.com
-In-Reply-To: <AANLkTi=7M=gSgBjcrCVEj+GKZ5cf5t4MPqm6r9NGr=MZ@mail.gmail.com>
-References: <1293982286-15389-1-git-send-email-stefani@seibold.net>
-	 <AANLkTi=7M=gSgBjcrCVEj+GKZ5cf5t4MPqm6r9NGr=MZ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Sun, 02 Jan 2011 22:33:13 +0100
-Message-ID: <1294003993.5675.3.camel@wall-e>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	Sun, 2 Jan 2011 16:34:58 -0500
+Date: Sun, 2 Jan 2011 22:34:57 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Michael Ahern <ahern.michael.t@gmail.com>
+cc: gregkh@suse.de, u.kleine-koenig@pengutronix.de, julia@diku.dk,
+        nm127@freemail.hu, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Coding style change
+In-Reply-To: <AANLkTimJGF2rEY7QbRVKew+skwzpJicr1qrSSCk9SMEF@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1101022233450.11481@swampdragon.chaosbits.net>
+References: <AANLkTimJGF2rEY7QbRVKew+skwzpJicr1qrSSCk9SMEF@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, den 02.01.2011, 21:48 +0200 schrieb Daniel Baluta:
-> Hello,
-> 
-> I have some style comments, please read below.
-> 
-> > +struct udpcp_statistics {
-> > +       unsigned int txMsgs;            /* Num of transmitted messages */
-> > +       unsigned int rxMsgs;            /* Num of received messages */
-> > +       unsigned int txNodes;           /* Num of receiver nodes */
-> > +       unsigned int rxNodes;           /* Num of transmitter nodes */
-> > +       unsigned int txTimeout;         /* Num of unsuccessful transmissions */
-> > +       unsigned int rxTimeout;         /* Num of partial message receptions */
-> > +       unsigned int txRetries;         /* Num of resends */
-> > +       unsigned int rxDiscardedFrags;  /* Num of discarded fragments */
-> > +       unsigned int crcErrors;         /* Num of crc errors detected */
-> 
-> Is there any strong reason to have this camel case naming?
-> I would prefer tx_msgs, rx_msgs etc..
+On Mon, 3 Jan 2011, Michael Ahern wrote:
+
+> First attempt at patch process as outlined in Greg's tutorial. I hope
+> this patch helps, please use as you see fit.
 > 
 
-This cannot be fixed for compatiblity reasons.
+Looks good at a quick glance. Please, in the future, submit patches 
+inline, not as attachments - attachments are hard to comment on when just 
+doing a simple reply.
 
-> > +struct udpcp_dest {
-> > +       struct list_head list;
-> > +       struct sk_buff_head xmit;
-> > +       unsigned long tx_time;
-> > +       unsigned long rx_time;
-> > +       u32 txTimeout;
-> > +       u32 rxTimeout;
-> 
-> Here you have mixed naming conventions. I guess
-> tx_timeout will fit in better than txTimeout.
-> 
-> > +       u32 txRetries;
-> > +       u32 rxDiscardedFrags;
-> > +       struct sk_buff *xmit_wait;
-> > +       struct sk_buff *xmit_last;
-> > +       struct sk_buff *recv_msg;
-> > +       struct sk_buff *recv_last;
-> > +       struct udpcphdr lastmsg;
-> > +       struct ipcm_cookie ipc;
-> > +       struct flowi fl;
-> > +       struct rtable *rt;
-> > +       __be32 addr;
-> > +       __be16 port;
-> > +       u16 msgid;
-> > +       u8 use_flag;
-> > +       u8 insync;
-> > +       u8 ackmode;
-> > +       u8 chkmode;
-> > +       u8 try;
-> > +       u8 acks;
-> > +       struct udp_sock udpsock;
-> > +       struct sk_buff_head assembly;
-> > +       u32 assembly_len;
-> > +       struct udpcp_dest *assembly_dest;
-> > +       wait_queue_head_t wq;
-> > +       struct list_head destlist;
-> > +       struct list_head udpcplist;
-> > +       struct timer_list timer;
-> > +       struct udpcp_statistics stat;
-> > +       u32 pending;
-> > +       unsigned long tx_timeout;
-> > +       unsigned long rx_timeout;
-> > +       void (*udp_data_ready) (struct sock *sk, int bytes);
-> > +       u8 ackmode;
-> > +       u8 chkmode;
-> > +       u8 maxtry;
-> > +       u8 acks;
-> > +       u8 timeout;
-> > +/* overall UDPCP statistics */
-> > +static atomic_t udpcp_txMsgs;
-> > +static atomic_t udpcp_rxMsgs;
-> > +static atomic_t udpcp_txNodes;
-> > +static atomic_t udpcp_rxNodes;
-> > +static atomic_t udpcp_txTimeout;
-> > +static atomic_t udpcp_rxTimeout;
-> > +static atomic_t udpcp_txRetries;
-> > +static atomic_t udpcp_rxDiscardedFrags;
-> > +static atomic_t udpcp_crcErrors;
-> 
-> same here.
-> 
-
-I think there is no nameing convention in linux, as i know it is a
-developer decision.
-
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
 
