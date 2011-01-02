@@ -1,275 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374Ab1ABH7y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:59:54 -0500
-Received: from mail.windriver.com ([147.11.1.11]:35203 "EHLO
+	id S1753480Ab1ABHW4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:22:56 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35148 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753496Ab1ABHW6 (ORCPT
+	with ESMTP id S1753453Ab1ABHWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:22:58 -0500
+	Sun, 2 Jan 2011 02:22:54 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>,
+Cc: stable-review@kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 088/260] sched: Fix TASK_WAKING vs fork deadlock
-Date: Sun,  2 Jan 2011 02:16:24 -0500
-Message-Id: <1293952756-15010-89-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 082/260] sched: Kill the broken and deadlockable cpuset_lock/cpuset_cpus_allowed_locked code
+Date: Sun,  2 Jan 2011 02:16:18 -0500
+Message-Id: <1293952756-15010-83-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:21:46.0336 (UTC) FILETIME=[B6A06600:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:21:39.0117 (UTC) FILETIME=[B252DDD0:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 0017d735092844118bef006696a750a0e4ef6ebd upstream.
+commit 897f0b3c3ff40b443c84e271bef19bd6ae885195 upstream.
 
-Oleg noticed a few races with the TASK_WAKING usage on fork.
+This patch just states the fact the cpusets/cpuhotplug interaction is
+broken and removes the deadlockable code which only pretends to work.
 
- - since TASK_WAKING is basically a spinlock, it should be IRQ safe
- - since we set TASK_WAKING (*) without holding rq->lock it could
-   be there still is a rq->lock holder, thereby not actually
-   providing full serialization.
+- cpuset_lock() doesn't really work. It is needed for
+  cpuset_cpus_allowed_locked() but we can't take this lock in
+  try_to_wake_up()->select_fallback_rq() path.
 
-(*) in fact we clear PF_STARTING, which in effect enables TASK_WAKING.
+- cpuset_lock() is deadlockable. Suppose that a task T bound to CPU takes
+  callback_mutex. If cpu_down(CPU) happens before T drops callback_mutex
+  stop_machine() preempts T, then migration_call(CPU_DEAD) tries to take
+  cpuset_lock() and hangs forever because CPU is already dead and thus
+  T can't be scheduled.
 
-Cure the second issue by not setting TASK_WAKING in sched_fork(), but
-only temporarily in wake_up_new_task() while calling select_task_rq().
+- cpuset_cpus_allowed_locked() is deadlockable too. It takes task_lock()
+  which is not irq-safe, but try_to_wake_up() can be called from irq.
 
-Cure the first by holding rq->lock around the select_task_rq() call,
-this will disable IRQs, this however requires that we push down the
-rq->lock release into select_task_rq_fair()'s cgroup stuff.
+Kill them, and change select_fallback_rq() to use cpu_possible_mask, like
+we currently do without CONFIG_CPUSETS.
 
-Because select_task_rq_fair() still needs to drop the rq->lock we
-cannot fully get rid of TASK_WAKING.
+Also, with or without this patch, with or without CONFIG_CPUSETS, the
+callers of select_fallback_rq() can race with each other or with
+set_cpus_allowed() pathes.
 
-Reported-by: Oleg Nesterov <oleg@redhat.com>
+The subsequent patches try to to fix these problems.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <new-submission>
+LKML-Reference: <20100315091003.GA9123@redhat.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/sched.h   |    3 +-
- kernel/sched.c          |   65 +++++++++++++++++-----------------------------
- kernel/sched_fair.c     |    8 ++++-
- kernel/sched_idletask.c |    3 +-
- kernel/sched_rt.c       |    5 +--
- 5 files changed, 36 insertions(+), 48 deletions(-)
+ include/linux/cpuset.h |   13 -------------
+ kernel/cpuset.c        |   27 +--------------------------
+ kernel/sched.c         |   10 +++-------
+ 3 files changed, 4 insertions(+), 46 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index fbdbc26..25f9669 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1040,7 +1040,8 @@ struct sched_class {
- 	void (*put_prev_task) (struct rq *rq, struct task_struct *p);
+diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
+index a5740fc..eeaaee7 100644
+--- a/include/linux/cpuset.h
++++ b/include/linux/cpuset.h
+@@ -21,8 +21,6 @@ extern int number_of_cpusets;	/* How many cpusets are defined in system? */
+ extern int cpuset_init(void);
+ extern void cpuset_init_smp(void);
+ extern void cpuset_cpus_allowed(struct task_struct *p, struct cpumask *mask);
+-extern void cpuset_cpus_allowed_locked(struct task_struct *p,
+-				       struct cpumask *mask);
+ extern nodemask_t cpuset_mems_allowed(struct task_struct *p);
+ #define cpuset_current_mems_allowed (current->mems_allowed)
+ void cpuset_init_current_mems_allowed(void);
+@@ -69,9 +67,6 @@ struct seq_file;
+ extern void cpuset_task_status_allowed(struct seq_file *m,
+ 					struct task_struct *task);
  
- #ifdef CONFIG_SMP
--	int  (*select_task_rq)(struct task_struct *p, int sd_flag, int flags);
-+	int  (*select_task_rq)(struct rq *rq, struct task_struct *p,
-+			       int sd_flag, int flags);
+-extern void cpuset_lock(void);
+-extern void cpuset_unlock(void);
+-
+ extern int cpuset_mem_spread_node(void);
  
- 	void (*pre_schedule) (struct rq *this_rq, struct task_struct *task);
- 	void (*post_schedule) (struct rq *this_rq);
+ static inline int cpuset_do_page_mem_spread(void)
+@@ -105,11 +100,6 @@ static inline void cpuset_cpus_allowed(struct task_struct *p,
+ {
+ 	cpumask_copy(mask, cpu_possible_mask);
+ }
+-static inline void cpuset_cpus_allowed_locked(struct task_struct *p,
+-					      struct cpumask *mask)
+-{
+-	cpumask_copy(mask, cpu_possible_mask);
+-}
+ 
+ static inline nodemask_t cpuset_mems_allowed(struct task_struct *p)
+ {
+@@ -157,9 +147,6 @@ static inline void cpuset_task_status_allowed(struct seq_file *m,
+ {
+ }
+ 
+-static inline void cpuset_lock(void) {}
+-static inline void cpuset_unlock(void) {}
+-
+ static inline int cpuset_mem_spread_node(void)
+ {
+ 	return 0;
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index d109467..9a747f5 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -2182,19 +2182,10 @@ void __init cpuset_init_smp(void)
+ void cpuset_cpus_allowed(struct task_struct *tsk, struct cpumask *pmask)
+ {
+ 	mutex_lock(&callback_mutex);
+-	cpuset_cpus_allowed_locked(tsk, pmask);
+-	mutex_unlock(&callback_mutex);
+-}
+-
+-/**
+- * cpuset_cpus_allowed_locked - return cpus_allowed mask from a tasks cpuset.
+- * Must be called with callback_mutex held.
+- **/
+-void cpuset_cpus_allowed_locked(struct task_struct *tsk, struct cpumask *pmask)
+-{
+ 	task_lock(tsk);
+ 	guarantee_online_cpus(task_cs(tsk), pmask);
+ 	task_unlock(tsk);
++	mutex_unlock(&callback_mutex);
+ }
+ 
+ void cpuset_init_current_mems_allowed(void)
+@@ -2383,22 +2374,6 @@ int __cpuset_node_allowed_hardwall(int node, gfp_t gfp_mask)
+ }
+ 
+ /**
+- * cpuset_lock - lock out any changes to cpuset structures
+- *
+- * The out of memory (oom) code needs to mutex_lock cpusets
+- * from being changed while it scans the tasklist looking for a
+- * task in an overlapping cpuset.  Expose callback_mutex via this
+- * cpuset_lock() routine, so the oom code can lock it, before
+- * locking the task list.  The tasklist_lock is a spinlock, so
+- * must be taken inside callback_mutex.
+- */
+-
+-void cpuset_lock(void)
+-{
+-	mutex_lock(&callback_mutex);
+-}
+-
+-/**
+  * cpuset_unlock - release lock on cpuset changes
+  *
+  * Undo the lock taken in a previous cpuset_lock() call.
 diff --git a/kernel/sched.c b/kernel/sched.c
-index b969a56..31b0bae 100644
+index a4a3801..489d985 100644
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -916,14 +916,10 @@ static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
- /*
-  * Check whether the task is waking, we use this to synchronize against
-  * ttwu() so that task_cpu() reports a stable number.
-- *
-- * We need to make an exception for PF_STARTING tasks because the fork
-- * path might require task_rq_lock() to work, eg. it can call
-- * set_cpus_allowed_ptr() from the cpuset clone_ns code.
-  */
- static inline int task_is_waking(struct task_struct *p)
- {
--	return unlikely((p->state == TASK_WAKING) && !(p->flags & PF_STARTING));
-+	return unlikely(p->state == TASK_WAKING);
- }
+@@ -2302,11 +2302,9 @@ static int select_fallback_rq(int cpu, struct task_struct *p)
+ 		return dest_cpu;
  
- /*
-@@ -2326,9 +2322,9 @@ static int select_fallback_rq(int cpu, struct task_struct *p)
-  * The caller (fork, wakeup) owns TASK_WAKING, ->cpus_allowed is stable.
-  */
- static inline
--int select_task_rq(struct task_struct *p, int sd_flags, int wake_flags)
-+int select_task_rq(struct rq *rq, struct task_struct *p, int sd_flags, int wake_flags)
- {
--	int cpu = p->sched_class->select_task_rq(p, sd_flags, wake_flags);
-+	int cpu = p->sched_class->select_task_rq(rq, p, sd_flags, wake_flags);
+ 	/* No more Mr. Nice Guy. */
+-	if (dest_cpu >= nr_cpu_ids) {
+-		rcu_read_lock();
+-		cpuset_cpus_allowed_locked(p, &p->cpus_allowed);
+-		rcu_read_unlock();
+-		dest_cpu = cpumask_any_and(cpu_active_mask, &p->cpus_allowed);
++	if (unlikely(dest_cpu >= nr_cpu_ids)) {
++		cpumask_copy(&p->cpus_allowed, cpu_possible_mask);
++		dest_cpu = cpumask_any(cpu_active_mask);
  
- 	/*
- 	 * In order not to call set_task_cpu() on a blocking task we need
-@@ -2403,17 +2399,10 @@ static int try_to_wake_up(struct task_struct *p, unsigned int state,
- 	if (p->sched_class->task_waking)
- 		p->sched_class->task_waking(rq, p);
+ 		/*
+ 		 * Don't tell them about moving exiting tasks or
+@@ -5947,7 +5945,6 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
  
--	__task_rq_unlock(rq);
--
--	cpu = select_task_rq(p, SD_BALANCE_WAKE, wake_flags);
--	if (cpu != orig_cpu) {
--		/*
--		 * Since we migrate the task without holding any rq->lock,
--		 * we need to be careful with task_rq_lock(), since that
--		 * might end up locking an invalid rq.
--		 */
-+	cpu = select_task_rq(rq, p, SD_BALANCE_WAKE, wake_flags);
-+	if (cpu != orig_cpu)
- 		set_task_cpu(p, cpu);
--	}
-+	__task_rq_unlock(rq);
- 
- 	rq = cpu_rq(cpu);
- 	raw_spin_lock(&rq->lock);
-@@ -2590,11 +2579,11 @@ void sched_fork(struct task_struct *p, int clone_flags)
- 
- 	__sched_fork(p);
- 	/*
--	 * We mark the process as waking here. This guarantees that
-+	 * We mark the process as running here. This guarantees that
- 	 * nobody will actually run it, and a signal or other external
- 	 * event cannot wake it up and insert it on the runqueue either.
- 	 */
--	p->state = TASK_WAKING;
-+	p->state = TASK_RUNNING;
- 
- 	/*
- 	 * Revert to default priority/policy on fork if requested.
-@@ -2661,28 +2650,25 @@ void wake_up_new_task(struct task_struct *p, unsigned long clone_flags)
- 	int cpu __maybe_unused = get_cpu();
- 
- #ifdef CONFIG_SMP
-+	rq = task_rq_lock(p, &flags);
-+	p->state = TASK_WAKING;
-+
- 	/*
- 	 * Fork balancing, do it here and not earlier because:
- 	 *  - cpus_allowed can change in the fork path
- 	 *  - any previously selected cpu might disappear through hotplug
- 	 *
--	 * We still have TASK_WAKING but PF_STARTING is gone now, meaning
--	 * ->cpus_allowed is stable, we have preemption disabled, meaning
--	 * cpu_online_mask is stable.
-+	 * We set TASK_WAKING so that select_task_rq() can drop rq->lock
-+	 * without people poking at ->cpus_allowed.
- 	 */
--	cpu = select_task_rq(p, SD_BALANCE_FORK, 0);
-+	cpu = select_task_rq(rq, p, SD_BALANCE_FORK, 0);
- 	set_task_cpu(p, cpu);
--#endif
--
--	/*
--	 * Since the task is not on the rq and we still have TASK_WAKING set
--	 * nobody else will migrate this task.
--	 */
--	rq = cpu_rq(cpu);
--	raw_spin_lock_irqsave(&rq->lock, flags);
- 
--	BUG_ON(p->state != TASK_WAKING);
- 	p->state = TASK_RUNNING;
-+	task_rq_unlock(rq, &flags);
-+#endif
-+
-+	rq = task_rq_lock(p, &flags);
- 	update_rq_clock(rq);
- 	activate_task(rq, p, 0);
- 	trace_sched_wakeup_new(rq, p, 1);
-@@ -3129,19 +3115,15 @@ void sched_exec(void)
- {
- 	struct task_struct *p = current;
- 	struct migration_req req;
--	int dest_cpu, this_cpu;
- 	unsigned long flags;
- 	struct rq *rq;
--
--	this_cpu = get_cpu();
--	dest_cpu = p->sched_class->select_task_rq(p, SD_BALANCE_EXEC, 0);
--	if (dest_cpu == this_cpu) {
--		put_cpu();
--		return;
--	}
-+	int dest_cpu;
- 
- 	rq = task_rq_lock(p, &flags);
--	put_cpu();
-+	dest_cpu = p->sched_class->select_task_rq(rq, p, SD_BALANCE_EXEC, 0);
-+	if (dest_cpu == smp_processor_id())
-+		goto unlock;
-+
- 	/*
- 	 * select_task_rq() can race against ->cpus_allowed
- 	 */
-@@ -3159,6 +3141,7 @@ void sched_exec(void)
- 
- 		return;
- 	}
-+unlock:
- 	task_rq_unlock(rq, &flags);
- }
- 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 5a5ea2c..684e173 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1445,7 +1445,8 @@ select_idle_sibling(struct task_struct *p, struct sched_domain *sd, int target)
-  *
-  * preempt must be disabled.
-  */
--static int select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
-+static int
-+select_task_rq_fair(struct rq *rq, struct task_struct *p, int sd_flag, int wake_flags)
- {
- 	struct sched_domain *tmp, *affine_sd = NULL, *sd = NULL;
- 	int cpu = smp_processor_id();
-@@ -1541,8 +1542,11 @@ static int select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flag
- 				  cpumask_weight(sched_domain_span(sd))))
- 			tmp = affine_sd;
- 
--		if (tmp)
-+		if (tmp) {
-+			raw_spin_unlock(&rq->lock);
- 			update_shares(tmp);
-+			raw_spin_lock(&rq->lock);
-+		}
- 	}
- 
- 	if (affine_sd && wake_affine(affine_sd, p, sync))
-diff --git a/kernel/sched_idletask.c b/kernel/sched_idletask.c
-index a8a6d8a..5af709f 100644
---- a/kernel/sched_idletask.c
-+++ b/kernel/sched_idletask.c
-@@ -6,7 +6,8 @@
-  */
- 
- #ifdef CONFIG_SMP
--static int select_task_rq_idle(struct task_struct *p, int sd_flag, int flags)
-+static int
-+select_task_rq_idle(struct rq *rq, struct task_struct *p, int sd_flag, int flags)
- {
- 	return task_cpu(p); /* IDLE tasks as never migrated */
- }
-diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-index b5b920a..fd8c1a3 100644
---- a/kernel/sched_rt.c
-+++ b/kernel/sched_rt.c
-@@ -948,10 +948,9 @@ static void yield_task_rt(struct rq *rq)
- #ifdef CONFIG_SMP
- static int find_lowest_rq(struct task_struct *task);
- 
--static int select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
-+static int
-+select_task_rq_rt(struct rq *rq, struct task_struct *p, int sd_flag, int flags)
- {
--	struct rq *rq = task_rq(p);
--
- 	if (sd_flag != SD_BALANCE_WAKE)
- 		return smp_processor_id();
- 
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN:
+-		cpuset_lock(); /* around calls to cpuset_cpus_allowed_lock() */
+ 		migrate_live_tasks(cpu);
+ 		rq = cpu_rq(cpu);
+ 		kthread_stop(rq->migration_thread);
+@@ -5961,7 +5958,6 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 		rq->idle->sched_class = &idle_sched_class;
+ 		migrate_dead_tasks(cpu);
+ 		raw_spin_unlock_irq(&rq->lock);
+-		cpuset_unlock();
+ 		migrate_nr_uninterruptible(rq);
+ 		BUG_ON(rq->nr_running != 0);
+ 		calc_global_load_remove(rq);
 -- 
 1.7.3.3
 
