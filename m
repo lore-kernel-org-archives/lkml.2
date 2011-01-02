@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab1ABHrm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:47:42 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36152 "EHLO
+	id S1754192Ab1ABHYE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:24:04 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35997 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754152Ab1ABHYL (ORCPT
+	with ESMTP id S1754049Ab1ABHX7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:24:11 -0500
+	Sun, 2 Jan 2011 02:23:59 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Eric Paris <eparis@redhat.com>,
+Cc: stable-review@kernel.org, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 154/260] inotify: fix inotify oneshot support
-Date: Sun,  2 Jan 2011 02:17:30 -0500
-Message-Id: <1293952756-15010-155-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 119/260] tcp: Prevent overzealous packetization by SWS logic.
+Date: Sun,  2 Jan 2011 02:16:55 -0500
+Message-Id: <1293952756-15010-120-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:22:59.0244 (UTC) FILETIME=[E21546C0:01CBAA4D]
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 02 Jan 2011 07:22:19.0727 (UTC) FILETIME=[CA8775F0:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Paris <eparis@redhat.com>
+From: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
 
-commit ff311008ab8d2f2cfdbbefd407d1b05acc8164b2 upstream.
+commit 01f83d69844d307be2aa6fea88b0e8fe5cbdb2f4 upstream.
 
-During the large inotify rewrite to fsnotify I completely dropped support
-for IN_ONESHOT.  Reimplement that support.
+If peer uses tiny MSS (say, 75 bytes) and similarly tiny advertised
+window, the SWS logic will packetize to half the MSS unnecessarily.
 
-Signed-off-by: Eric Paris <eparis@redhat.com>
+This causes problems with some embedded devices.
+
+However for large MSS devices we do want to half-MSS packetize
+otherwise we never get enough packets into the pipe for things
+like fast retransmit and recovery to work.
+
+Be careful also to handle the case where MSS > window, otherwise
+we'll never send until the probe timer.
+
+Reported-by: ツ Leandro Melo de Sales <leandroal@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/notify/inotify/inotify_fsnotify.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ include/net/tcp.h |   18 ++++++++++++++++--
+ 1 files changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/fs/notify/inotify/inotify_fsnotify.c b/fs/notify/inotify/inotify_fsnotify.c
-index e27960c..5d3d2a7 100644
---- a/fs/notify/inotify/inotify_fsnotify.c
-+++ b/fs/notify/inotify/inotify_fsnotify.c
-@@ -72,6 +72,9 @@ static int inotify_handle_event(struct fsnotify_group *group, struct fsnotify_ev
- 			ret = 0;
- 	}
- 
-+	if (entry->mask & IN_ONESHOT)
-+		fsnotify_destroy_mark_by_entry(entry);
+diff --git a/include/net/tcp.h b/include/net/tcp.h
+index cae8c39..91cdffd 100644
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -518,8 +518,22 @@ extern unsigned int tcp_current_mss(struct sock *sk);
+ /* Bound MSS / TSO packet size with the half of the window */
+ static inline int tcp_bound_to_half_wnd(struct tcp_sock *tp, int pktsize)
+ {
+-	if (tp->max_window && pktsize > (tp->max_window >> 1))
+-		return max(tp->max_window >> 1, 68U - tp->tcp_header_len);
++	int cutoff;
 +
- 	/*
- 	 * If we hold the entry until after the event is on the queue
- 	 * IN_IGNORED won't be able to pass this event in the queue
++	/* When peer uses tiny windows, there is no use in packetizing
++	 * to sub-MSS pieces for the sake of SWS or making sure there
++	 * are enough packets in the pipe for fast recovery.
++	 *
++	 * On the other hand, for extremely large MSS devices, handling
++	 * smaller than MSS windows in this way does make sense.
++	 */
++	if (tp->max_window >= 512)
++		cutoff = (tp->max_window >> 1);
++	else
++		cutoff = tp->max_window;
++
++	if (cutoff && pktsize > cutoff)
++		return max_t(int, cutoff, 68U - tp->tcp_header_len);
+ 	else
+ 		return pktsize;
+ }
 -- 
 1.7.3.3
 
