@@ -1,243 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580Ab1ABIMx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 03:12:53 -0500
-Received: from mail.windriver.com ([147.11.1.11]:34075 "EHLO
+	id S1752098Ab1ABIMw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 03:12:52 -0500
+Received: from mail.windriver.com ([147.11.1.11]:34076 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404Ab1ABHVe (ORCPT
+	with ESMTP id S1751423Ab1ABHVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 2 Jan 2011 02:21:34 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Curt Wohlgemuth <curtw@google.com>,
+Cc: stable-review@kernel.org, Jan Kara <jack@suse.cz>,
         "Theodore Ts'o" <tytso@mit.edu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 018/260] ext4: check for a good block group before loading buddy pages
-Date: Sun,  2 Jan 2011 02:15:14 -0500
-Message-Id: <1293952756-15010-19-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 019/260] ext4: Show journal_checksum option
+Date: Sun,  2 Jan 2011 02:15:15 -0500
+Message-Id: <1293952756-15010-20-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:20:26.0147 (UTC) FILETIME=[86D48730:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:20:27.0178 (UTC) FILETIME=[8771D8A0:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Curt Wohlgemuth <curtw@google.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 8a57d9d61a6e361c7bb159dda797672c1df1a691 upstream.
+commit 39a4bade8c1826b658316d66ee81c09b0a4d7d42 upstream.
 
-This adds a new field in ext4_group_info to cache the largest available
-block range in a block group; and don't load the buddy pages until *after*
-we've done a sanity check on the block group.
+We failed to show journal_checksum option in /proc/mounts. Fix it.
 
-With large allocation requests (e.g., fallocate(), 8MiB) and relatively full
-partitions, it's easy to have no block groups with a block extent large
-enough to satisfy the input request length.  This currently causes the loop
-during cr == 0 in ext4_mb_regular_allocator() to load the buddy bitmap pages
-for EVERY block group.  That can be a lot of pages.  The patch below allows
-us to call ext4_mb_good_group() BEFORE we load the buddy pages (although we
-have check again after we lock the block group).
-
-Addresses-Google-Bug: #2578108
-Addresses-Google-Bug: #2704453
-
-Signed-off-by: Curt Wohlgemuth <curtw@google.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/ext4/ext4.h    |    1 +
- fs/ext4/mballoc.c |   70 +++++++++++++++++++++++++++++++++++++++++++----------
- 2 files changed, 58 insertions(+), 13 deletions(-)
+ fs/ext4/super.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index bf938cf..d266003 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1678,6 +1678,7 @@ struct ext4_group_info {
- 	ext4_grpblk_t	bb_first_free;	/* first free block */
- 	ext4_grpblk_t	bb_free;	/* total free blocks */
- 	ext4_grpblk_t	bb_fragments;	/* nr of freespace fragments */
-+	ext4_grpblk_t	bb_largest_free_order;/* order of largest frag in BG */
- 	struct          list_head bb_prealloc_list;
- #ifdef DOUBLE_CHECK
- 	void            *bb_bitmap;
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index 4f2d3a9..aa499fe 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -658,6 +658,27 @@ static void ext4_mb_mark_free_simple(struct super_block *sb,
- 	}
- }
- 
-+/*
-+ * Cache the order of the largest free extent we have available in this block
-+ * group.
-+ */
-+static void
-+mb_set_largest_free_order(struct super_block *sb, struct ext4_group_info *grp)
-+{
-+	int i;
-+	int bits;
-+
-+	grp->bb_largest_free_order = -1; /* uninit */
-+
-+	bits = sb->s_blocksize_bits + 1;
-+	for (i = bits; i >= 0; i--) {
-+		if (grp->bb_counters[i] > 0) {
-+			grp->bb_largest_free_order = i;
-+			break;
-+		}
-+	}
-+}
-+
- static noinline_for_stack
- void ext4_mb_generate_buddy(struct super_block *sb,
- 				void *buddy, void *bitmap, ext4_group_t group)
-@@ -700,6 +721,7 @@ void ext4_mb_generate_buddy(struct super_block *sb,
- 		 */
- 		grp->bb_free = free;
- 	}
-+	mb_set_largest_free_order(sb, grp);
- 
- 	clear_bit(EXT4_GROUP_INFO_NEED_INIT_BIT, &(grp->bb_state));
- 
-@@ -725,6 +747,9 @@ void ext4_mb_generate_buddy(struct super_block *sb,
-  * contain blocks_per_page (PAGE_CACHE_SIZE / blocksize)  blocks.
-  * So it can have information regarding groups_per_page which
-  * is blocks_per_page/2
-+ *
-+ * Locking note:  This routine takes the block group lock of all groups
-+ * for this page; do not hold this lock when calling this routine!
-  */
- 
- static int ext4_mb_init_cache(struct page *page, char *incore)
-@@ -910,6 +935,11 @@ out:
- 	return err;
- }
- 
-+/*
-+ * Locking note:  This routine calls ext4_mb_init_cache(), which takes the
-+ * block group lock of all groups for this page; do not hold the BG lock when
-+ * calling this routine!
-+ */
- static noinline_for_stack
- int ext4_mb_init_group(struct super_block *sb, ext4_group_t group)
- {
-@@ -1004,6 +1034,11 @@ err:
- 	return ret;
- }
- 
-+/*
-+ * Locking note:  This routine calls ext4_mb_init_cache(), which takes the
-+ * block group lock of all groups for this page; do not hold the BG lock when
-+ * calling this routine!
-+ */
- static noinline_for_stack int
- ext4_mb_load_buddy(struct super_block *sb, ext4_group_t group,
- 					struct ext4_buddy *e4b)
-@@ -1299,6 +1334,7 @@ static void mb_free_blocks(struct inode *inode, struct ext4_buddy *e4b,
- 			buddy = buddy2;
- 		} while (1);
- 	}
-+	mb_set_largest_free_order(sb, e4b->bd_info);
- 	mb_check_buddy(e4b);
- }
- 
-@@ -1427,6 +1463,7 @@ static int mb_mark_used(struct ext4_buddy *e4b, struct ext4_free_extent *ex)
- 		e4b->bd_info->bb_counters[ord]++;
- 		e4b->bd_info->bb_counters[ord]++;
- 	}
-+	mb_set_largest_free_order(e4b->bd_sb, e4b->bd_info);
- 
- 	mb_set_bits(EXT4_MB_BITMAP(e4b), ex->fe_start, len0);
- 	mb_check_buddy(e4b);
-@@ -1821,16 +1858,22 @@ void ext4_mb_scan_aligned(struct ext4_allocation_context *ac,
- 	}
- }
- 
-+/* This is now called BEFORE we load the buddy bitmap. */
- static int ext4_mb_good_group(struct ext4_allocation_context *ac,
- 				ext4_group_t group, int cr)
- {
- 	unsigned free, fragments;
--	unsigned i, bits;
- 	int flex_size = ext4_flex_bg_size(EXT4_SB(ac->ac_sb));
- 	struct ext4_group_info *grp = ext4_get_group_info(ac->ac_sb, group);
- 
- 	BUG_ON(cr < 0 || cr >= 4);
--	BUG_ON(EXT4_MB_GRP_NEED_INIT(grp));
-+
-+	/* We only do this if the grp has never been initialized */
-+	if (unlikely(EXT4_MB_GRP_NEED_INIT(grp))) {
-+		int ret = ext4_mb_init_group(ac->ac_sb, group);
-+		if (ret)
-+			return 0;
-+	}
- 
- 	free = grp->bb_free;
- 	fragments = grp->bb_fragments;
-@@ -1843,17 +1886,16 @@ static int ext4_mb_good_group(struct ext4_allocation_context *ac,
- 	case 0:
- 		BUG_ON(ac->ac_2order == 0);
- 
-+		if (grp->bb_largest_free_order < ac->ac_2order)
-+			return 0;
-+
- 		/* Avoid using the first bg of a flexgroup for data files */
- 		if ((ac->ac_flags & EXT4_MB_HINT_DATA) &&
- 		    (flex_size >= EXT4_FLEX_SIZE_DIR_ALLOC_SCHEME) &&
- 		    ((group % flex_size) == 0))
- 			return 0;
- 
--		bits = ac->ac_sb->s_blocksize_bits + 1;
--		for (i = ac->ac_2order; i <= bits; i++)
--			if (grp->bb_counters[i] > 0)
--				return 1;
--		break;
-+		return 1;
- 	case 1:
- 		if ((free / fragments) >= ac->ac_g_ex.fe_len)
- 			return 1;
-@@ -2024,14 +2066,11 @@ repeat:
- 		group = ac->ac_g_ex.fe_group;
- 
- 		for (i = 0; i < ngroups; group++, i++) {
--			struct ext4_group_info *grp;
--
- 			if (group == ngroups)
- 				group = 0;
- 
--			/* quick check to skip empty groups */
--			grp = ext4_get_group_info(sb, group);
--			if (grp->bb_free == 0)
-+			/* This now checks without needing the buddy page */
-+			if (!ext4_mb_good_group(ac, group, cr))
- 				continue;
- 
- 			err = ext4_mb_load_buddy(sb, group, &e4b);
-@@ -2039,8 +2078,12 @@ repeat:
- 				goto out;
- 
- 			ext4_lock_group(sb, group);
-+
-+			/*
-+			 * We need to check again after locking the
-+			 * block group
-+			 */
- 			if (!ext4_mb_good_group(ac, group, cr)) {
--				/* someone did allocation from this group */
- 				ext4_unlock_group(sb, group);
- 				ext4_mb_unload_buddy(&e4b);
- 				continue;
-@@ -2253,6 +2296,7 @@ int ext4_mb_add_groupinfo(struct super_block *sb, ext4_group_t group,
- 	INIT_LIST_HEAD(&meta_group_info[i]->bb_prealloc_list);
- 	init_rwsem(&meta_group_info[i]->alloc_sem);
- 	meta_group_info[i]->bb_free_root = RB_ROOT;
-+	meta_group_info[i]->bb_largest_free_order = -1;  /* uninit */
- 
- #ifdef DOUBLE_CHECK
- 	{
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index f9e57e1..aa947e0 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -942,6 +942,8 @@ static int ext4_show_options(struct seq_file *seq, struct vfsmount *vfs)
+ 	seq_puts(seq, test_opt(sb, BARRIER) ? "1" : "0");
+ 	if (test_opt(sb, JOURNAL_ASYNC_COMMIT))
+ 		seq_puts(seq, ",journal_async_commit");
++	else if (test_opt(sb, JOURNAL_CHECKSUM))
++		seq_puts(seq, ",journal_checksum");
+ 	if (test_opt(sb, NOBH))
+ 		seq_puts(seq, ",nobh");
+ 	if (test_opt(sb, I_VERSION))
 -- 
 1.7.3.3
 
