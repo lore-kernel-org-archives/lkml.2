@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615Ab1ABJAW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 04:00:22 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:51081 "EHLO
+	id S1754715Ab1ABJBW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 04:01:22 -0500
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:51091 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750895Ab1ABJAU (ORCPT
+	by vger.kernel.org with ESMTP id S1750853Ab1ABJBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 04:00:20 -0500
-Date: Sun, 2 Jan 2011 10:00:19 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Tony Lindgren <tony@atomide.com>,
-        Arnd Bergmann <arnd@arndb.de>, Daniel Walker <dwalker@codeaurora.org>
-Subject: Re: [PATCH 1/3] hvc_dcc: Fix bad code generation by marking
-	assembly volatile
-Message-ID: <20110102090019.GC32469@atrey.karlin.mff.cuni.cz>
-References: <1292649385-28771-1-git-send-email-sboyd@codeaurora.org> <1292875718-7980-1-git-send-email-sboyd@codeaurora.org> <1292875718-7980-2-git-send-email-sboyd@codeaurora.org> <alpine.LFD.2.00.1012201638150.10437@xanadu.home>
+	Sun, 2 Jan 2011 04:01:21 -0500
+Date: Sun, 2 Jan 2011 10:01:20 +0100
+From: Pavel Machek <pavel@atrey.karlin.mff.cuni.cz>
+To: alan@lxorguk.ukuu.org.uk, kernel list <linux-kernel@vger.kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+Subject: Re: VT console need rewrite (fwd)
+Message-ID: <20110102090120.GE32469@atrey.karlin.mff.cuni.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-2
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1012201638150.10437@xanadu.home>
+Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+> > Yes. These days kernel sources and kernel messages both contain
+> > non-ASCII characters... as well as many filesystems.
+> 
+> But not in kernel printed messages.
 
-> > diff --git a/drivers/char/hvc_dcc.c b/drivers/char/hvc_dcc.c
-> > index 6470f63..155ec10 100644
-> > --- a/drivers/char/hvc_dcc.c
-> > +++ b/drivers/char/hvc_dcc.c
-> > @@ -33,8 +33,7 @@
-> >  static inline u32 __dcc_getstatus(void)
-> >  {
-> >  	u32 __ret;
-> > -
-> > -	asm("mrc p14, 0, %0, c0, c1, 0	@ read comms ctrl reg"
-> > +	asm volatile("mrc p14, 0, %0, c0, c1, 0	@ read comms ctrl reg"
-> >  		: "=r" (__ret) : : "cc");
-> >  
-> >  	return __ret;
+Even in kernel messages.
 
-Is volatile needed here? If __dcc_getstatus() return value is
-discarded, we want assembly discarded, right?
+               "   ,
+On OLPC, I see "CAFE NAND ...: corrected 1 symbol errors"
 
+(old/vendor kernel, through).
 
-> > @@ -58,7 +57,7 @@ static inline char __dcc_getchar(void)
-> >  {
-> >  	char __c;
-> >  
-> > -	asm("mrc p14, 0, %0, c0, c5, 0	@ read comms data reg"
-> > +	asm volatile("mrc p14, 0, %0, c0, c5, 0	@ read comms data reg"
-> >  		: "=r" (__c));
-> >  
-> >  	return __c;
+It still has:
 
-Same here?
+MODULE_DESCRIPTION("NAND flash driver for OLPC CAFÉ chip");
+
+Aha, yes, bug is there even in new kernel:
+
+static struct pci_driver cafe_nand_pci_driver = {
+        .name = "CAFÉ NAND",
+        .id_table = cafe_nand_tbl,
+        .probe = cafe_nand_probe,
+        .remove = __devexit_p(cafe_nand_remove),
+        .resume = cafe_nand_resume,
+};
+
+That pci_driver.name does leak into
+kmsg. ./drivers/mtd/nand/cafe_nand.c . I complained about it before...
+
 									Pavel
 -- 
 (english) http://www.livejournal.com/~pavelmachek
 (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+
