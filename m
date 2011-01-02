@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab1ABXMU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 18:12:20 -0500
-Received: from cantor.suse.de ([195.135.220.2]:54635 "EHLO mx1.suse.de"
+	id S1753109Ab1ABXO6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 18:14:58 -0500
+Received: from imr3.ericy.com ([198.24.6.13]:49829 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750895Ab1ABXMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 18:12:19 -0500
-Date: Mon, 3 Jan 2011 00:12:16 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
-        "Rick L. Vinyard, Jr." <rvinyard@cs.nmsu.edu>
-Subject: Re: [PATCH] HID, hid-picolcd: Fix memory leak in
- picolcd_debug_out_report()
-In-Reply-To: <alpine.LNX.2.00.1101022212030.11481@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1101030012060.26685@pobox.suse.cz>
-References: <alpine.LNX.2.00.1101022212030.11481@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752545Ab1ABXO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jan 2011 18:14:56 -0500
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: torvalds@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 2.6.37
+Date: Sun, 2 Jan 2011 15:45:26 -0800
+Message-ID: <1294011926-6251-1-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.3.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2 Jan 2011, Jesper Juhl wrote:
+Hi Linus,
 
-> We have a memory leak in 
-> drivers/hid/hid-picolcd.c::picolcd_debug_out_report() in an error path..
-> We are not always freeing the memory allocated to 'buff' - this patch 
-> makes sure we always kfree() what we allocate with kmalloc() when it is 
-> no longer needed.
-> 
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  hid-picolcd.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
->   compile tested only.
-> 
-> diff --git a/drivers/hid/hid-picolcd.c b/drivers/hid/hid-picolcd.c
-> index bc2e077..ad6539a 100644
-> --- a/drivers/hid/hid-picolcd.c
-> +++ b/drivers/hid/hid-picolcd.c
-> @@ -1867,6 +1867,7 @@ static void picolcd_debug_out_report(struct picolcd_data *data,
->  			report->id, raw_size);
->  	hid_debug_event(hdev, buff);
->  	if (raw_size + 5 > sizeof(raw_data)) {
-> +		kfree(buff);
->  		hid_debug_event(hdev, " TOO BIG\n");
->  		return;
->  	} else {
-> 
+Please pull hwmon subsystem fixes for Linux 2.6.37 from:
 
-Good catch, applied, thanks Jesper.
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-for-linus
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Thanks,
+Guenter Roeck
+
+------
+
+The following changes since commit 9109f4eb847b7c0be61ae25fb21b1ce2acc9c2d6:
+
+  Merge branch 'kvm-updates/2.6.37' of git://git.kernel.org/pub/scm/virt/kvm/kvm (2011-01-02 10:44:21 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-for-linus
+
+Maurus Cuelenaere (1):
+      hwmon: (s3c-hwmon) Fix compilation
+
+ drivers/hwmon/s3c-hwmon.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
