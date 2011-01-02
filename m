@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab1ABHlG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:41:06 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36649 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754538Ab1ABHYt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754540Ab1ABHYt (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 2 Jan 2011 02:24:49 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36624 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754526Ab1ABHYr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jan 2011 02:24:47 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Ulrich Weber <uweber@astaro.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: stable-review@kernel.org, Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 192/260] xfrm4: strip ECN bits from tos field
-Date: Sun,  2 Jan 2011 02:18:08 -0500
-Message-Id: <1293952756-15010-193-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 187/260] wext: fix potential private ioctl memory content leak
+Date: Sun,  2 Jan 2011 02:18:03 -0500
+Message-Id: <1293952756-15010-188-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:23:40.0932 (UTC) FILETIME=[FAEE5C40:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:23:35.0807 (UTC) FILETIME=[F7E058F0:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ulrich Weber <uweber@astaro.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 94e2238969e89f5112297ad2a00103089dde7e8f upstream.
+commit df6d02300f7c2fbd0fbe626d819c8e5237d72c62 upstream.
 
-otherwise ECT(1) bit will get interpreted as RTO_ONLINK
-and routing will fail with XfrmOutBundleGenError.
+When a driver doesn't fill the entire buffer, old
+heap contents may remain, and if it also doesn't
+update the length properly, this old heap content
+will be copied back to userspace.
 
-Signed-off-by: Ulrich Weber <uweber@astaro.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+It is very unlikely that this happens in any of
+the drivers using private ioctls since it would
+show up as junk being reported by iwpriv, but it
+seems better to be safe here, so use kzalloc.
+
+Reported-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/ipv4/xfrm4_policy.c |    2 +-
+ net/wireless/wext-priv.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/net/ipv4/xfrm4_policy.c b/net/ipv4/xfrm4_policy.c
-index e4a1483..0670587 100644
---- a/net/ipv4/xfrm4_policy.c
-+++ b/net/ipv4/xfrm4_policy.c
-@@ -82,7 +82,7 @@ __xfrm4_find_bundle(struct flowi *fl, struct xfrm_policy *policy)
+diff --git a/net/wireless/wext-priv.c b/net/wireless/wext-priv.c
+index 3feb28e..674d426 100644
+--- a/net/wireless/wext-priv.c
++++ b/net/wireless/wext-priv.c
+@@ -152,7 +152,7 @@ static int ioctl_private_iw_point(struct iw_point *iwp, unsigned int cmd,
+ 	} else if (!iwp->pointer)
+ 		return -EFAULT;
  
- static int xfrm4_get_tos(struct flowi *fl)
- {
--	return fl->fl4_tos;
-+	return IPTOS_RT_MASK & fl->fl4_tos; /* Strip ECN bits */
- }
+-	extra = kmalloc(extra_size, GFP_KERNEL);
++	extra = kzalloc(extra_size, GFP_KERNEL);
+ 	if (!extra)
+ 		return -ENOMEM;
  
- static int xfrm4_init_path(struct xfrm_dst *path, struct dst_entry *dst,
 -- 
 1.7.3.3
 
