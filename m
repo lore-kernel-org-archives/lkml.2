@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752567Ab1ABIIm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 03:08:42 -0500
-Received: from mail.windriver.com ([147.11.1.11]:34415 "EHLO
+	id S1755445Ab1ABII4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 03:08:56 -0500
+Received: from mail.windriver.com ([147.11.1.11]:34411 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752281Ab1ABHWB (ORCPT
+	with ESMTP id S1752250Ab1ABHWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:22:01 -0500
+	Sun, 2 Jan 2011 02:22:00 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Dan Carpenter <error27@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+Cc: stable-review@kernel.org, Sunil Mushran <sunil.mushran@oracle.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 045/260] USB: ehci-ppc-of: problems in unwind
-Date: Sun,  2 Jan 2011 02:15:41 -0500
-Message-Id: <1293952756-15010-46-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 044/260] ocfs2: Fix incorrect checksum validation error
+Date: Sun,  2 Jan 2011 02:15:40 -0500
+Message-Id: <1293952756-15010-45-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:20:55.0273 (UTC) FILETIME=[9830CD90:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:20:54.0257 (UTC) FILETIME=[9795C610:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Carpenter <error27@gmail.com>
+From: Sunil Mushran <sunil.mushran@oracle.com>
 
-commit 08a3b3b1c2e622e378d9086aee9e2e42ce37591d upstream.
+commit f5ce5a08a40f2086435858ddc80cb40394b082eb upstream.
 
-The iounmap(ehci->ohci_hcctrl_reg); should be the first thing we do
-because the ioremap() was the last thing we did.  Also if we hit any of
-the goto statements in the original code then it would have led to a
-NULL dereference of "ehci".  This bug was introduced in: 796bcae7361c
-"USB: powerpc: Workaround for the PPC440EPX USBH_23 errata [take 3]"
+For local mounts, ocfs2_read_locked_inode() calls ocfs2_read_blocks_sync() to
+read the inode off the disk. The latter first checks to see if that block is
+cached in the journal, and, if so, returns that block. That is ok.
 
-I modified the few lines in front a little so that my code didn't
-obscure the return success code path.
+But ocfs2_read_locked_inode() goes wrong when it tries to validate the checksum
+of such blocks. Blocks that are cached in the journal may not have had their
+checksum computed as yet. We should not validate the checksums of such blocks.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Reviewed-by: Grant Likely <grant.likely@secretlab.ca>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Fixes ossbz#1282
+http://oss.oracle.com/bugzilla/show_bug.cgi?id=1282
+
+Signed-off-by: Sunil Mushran <sunil.mushran@oracle.com>
+Singed-off-by: Tao Ma <tao.ma@oracle.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/host/ehci-ppc-of.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
+ fs/ocfs2/inode.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/usb/host/ehci-ppc-of.c b/drivers/usb/host/ehci-ppc-of.c
-index 8df33b8..5c2fbd1 100644
---- a/drivers/usb/host/ehci-ppc-of.c
-+++ b/drivers/usb/host/ehci-ppc-of.c
-@@ -192,17 +192,19 @@ ehci_hcd_ppc_of_probe(struct of_device *op, const struct of_device_id *match)
+diff --git a/fs/ocfs2/inode.c b/fs/ocfs2/inode.c
+index af18988..bbecb19 100644
+--- a/fs/ocfs2/inode.c
++++ b/fs/ocfs2/inode.c
+@@ -484,7 +484,11 @@ static int ocfs2_read_locked_inode(struct inode *inode,
+ 						     OCFS2_BH_IGNORE_CACHE);
+ 	} else {
+ 		status = ocfs2_read_blocks_sync(osb, args->fi_blkno, 1, &bh);
+-		if (!status)
++		/*
++		 * If buffer is in jbd, then its checksum may not have been
++		 * computed as yet.
++		 */
++		if (!status && !buffer_jbd(bh))
+ 			status = ocfs2_validate_inode_block(osb->sb, bh);
  	}
- 
- 	rv = usb_add_hcd(hcd, irq, 0);
--	if (rv == 0)
--		return 0;
-+	if (rv)
-+		goto err_ehci;
-+
-+	return 0;
- 
-+err_ehci:
-+	if (ehci->has_amcc_usb23)
-+		iounmap(ehci->ohci_hcctrl_reg);
- 	iounmap(hcd->regs);
- err_ioremap:
- 	irq_dispose_mapping(irq);
- err_irq:
- 	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
--
--	if (ehci->has_amcc_usb23)
--		iounmap(ehci->ohci_hcctrl_reg);
- err_rmr:
- 	usb_put_hcd(hcd);
- 
+ 	if (status < 0) {
 -- 
 1.7.3.3
 
