@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab1ABHnx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:43:53 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36381 "EHLO
+	id S1754915Ab1ABHoH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:44:07 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36356 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754299Ab1ABHYa (ORCPT
+	with ESMTP id S1754413Ab1ABHY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:24:30 -0500
+	Sun, 2 Jan 2011 02:24:28 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Kenneth Waters <kwwaters@gmail.com>,
-        Dmitry Torokhov <dtor@mail.ru>,
+Cc: stable-review@kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Robert Richter <robert.richter@amd.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 178/260] Input: joydev - fix JSIOCSAXMAP ioctl
-Date: Sun,  2 Jan 2011 02:17:54 -0500
-Message-Id: <1293952756-15010-179-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 168/260] oprofile: Add Support for Intel CPU Family 6 / Model 29
+Date: Sun,  2 Jan 2011 02:17:44 -0500
+Message-Id: <1293952756-15010-169-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:23:25.0619 (UTC) FILETIME=[F1CDC830:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:23:14.0963 (UTC) FILETIME=[EB73CE30:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kenneth Waters <kwwaters@gmail.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-commit d2520a426dc3033c00077e923a553fc6c98c7564 upstream.
+commit bb7ab785ad05a97a2c9ffb3a06547ed39f3133e8 upstream.
 
-Fixed JSIOCSAXMAP ioctl to update absmap, the map from hardware axis to
-event axis in addition to abspam.  This fixes a regression introduced
-by 999b874f.
+This patch adds CPU type detection for dunnington processor (Family 6
+/ Model 29) to be identified as core 2 family cpu type (wikipedia
+source).
 
-Signed-off-by: Kenneth Waters <kwwaters@gmail.com>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+I tested oprofile on Intel(R) Xeon(R) CPU E7440 reporting itself as
+model 29, and it runs without an issue.
+
+Spec:
+
+ http://www.intel.com/Assets/en_US/PDF/specupdate/320336.pdf
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/input/joydev.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ arch/x86/oprofile/nmi_int.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/input/joydev.c b/drivers/input/joydev.c
-index 423e0e6..0325480 100644
---- a/drivers/input/joydev.c
-+++ b/drivers/input/joydev.c
-@@ -483,6 +483,9 @@ static int joydev_handle_JSIOCSAXMAP(struct joydev *joydev,
- 
- 	memcpy(joydev->abspam, abspam, len);
- 
-+	for (i = 0; i < joydev->nabs; i++)
-+		joydev->absmap[joydev->abspam[i]] = i;
-+
-  out:
- 	kfree(abspam);
- 	return retval;
+diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+index 238526b..ca6b336 100644
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -624,6 +624,7 @@ static int __init ppro_init(char **cpu_type)
+ 	case 0x0f:
+ 	case 0x16:
+ 	case 0x17:
++	case 0x1d:
+ 		*cpu_type = "i386/core_2";
+ 		break;
+ 	case 0x1a:
 -- 
 1.7.3.3
 
