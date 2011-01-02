@@ -1,157 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755436Ab1ABIFH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 03:05:07 -0500
-Received: from mail.windriver.com ([147.11.1.11]:34586 "EHLO
+	id S1753463Ab1ABIFE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 03:05:04 -0500
+Received: from mail.windriver.com ([147.11.1.11]:34597 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752567Ab1ABHWO (ORCPT
+	with ESMTP id S1752590Ab1ABHWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 2 Jan 2011 02:22:14 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Robert Richter <robert.richter@amd.com>,
+Cc: stable-review@kernel.org, Dmitry Monakhov <dmonakhov@openvz.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 058/260] oprofile: fix crash when accessing freed task structs
-Date: Sun,  2 Jan 2011 02:15:54 -0500
-Message-Id: <1293952756-15010-59-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 015/260] ext4: init statistics after journal recovery
+Date: Sun,  2 Jan 2011 02:15:11 -0500
+Message-Id: <1293952756-15010-16-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:21:09.0117 (UTC) FILETIME=[A0713AD0:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:20:22.0803 (UTC) FILETIME=[84D64630:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robert Richter <robert.richter@amd.com>
+From: Dmitry Monakhov <dmonakhov@openvz.org>
 
-commit 750d857c682f4db60d14722d430c7ccc35070962 upstream.
+commit 84061e07c5fbbbf9dc8aef8fb750fc3a2dfc31f3 upstream.
 
-This patch fixes a crash during shutdown reported below. The crash is
-caused by accessing already freed task structs. The fix changes the
-order for registering and unregistering notifier callbacks.
+Currently block/inode/dir counters initialized before journal was
+recovered. In fact after journal recovery this info will probably
+change. And freeblocks it critical for correct delalloc mode
+accounting.
 
-All notifiers must be initialized before buffers start working. To
-stop buffer synchronization we cancel all workqueues, unregister the
-notifier callback and then flush all buffers. After all of this we
-finally can free all tasks listed.
+https://bugzilla.kernel.org/show_bug.cgi?id=15768
 
-This should avoid accessing freed tasks.
-
-On 22.07.10 01:14:40, Benjamin Herrenschmidt wrote:
-
-> So the initial observation is a spinlock bad magic followed by a crash
-> in the spinlock debug code:
->
-> [ 1541.586531] BUG: spinlock bad magic on CPU#5, events/5/136
-> [ 1541.597564] Unable to handle kernel paging request for data at address 0x6b6b6b6b6b6b6d03
->
-> Backtrace looks like:
->
->       spin_bug+0x74/0xd4
->       ._raw_spin_lock+0x48/0x184
->       ._spin_lock+0x10/0x24
->       .get_task_mm+0x28/0x8c
->       .sync_buffer+0x1b4/0x598
->       .wq_sync_buffer+0xa0/0xdc
->       .worker_thread+0x1d8/0x2a8
->       .kthread+0xa8/0xb4
->       .kernel_thread+0x54/0x70
->
-> So we are accessing a freed task struct in the work queue when
-> processing the samples.
-
-Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Acked-by: Jan Kara <jack@suse.cz>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/oprofile/buffer_sync.c |   27 ++++++++++++++-------------
- drivers/oprofile/cpu_buffer.c  |    2 --
- 2 files changed, 14 insertions(+), 15 deletions(-)
+ fs/ext4/super.c |   40 ++++++++++++++++++----------------------
+ 1 files changed, 18 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/oprofile/buffer_sync.c b/drivers/oprofile/buffer_sync.c
-index a9352b2..b7e755f 100644
---- a/drivers/oprofile/buffer_sync.c
-+++ b/drivers/oprofile/buffer_sync.c
-@@ -141,16 +141,6 @@ static struct notifier_block module_load_nb = {
- 	.notifier_call = module_load_notify,
- };
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 00d09f5..d83cdcb 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -2794,24 +2794,6 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 	get_random_bytes(&sbi->s_next_generation, sizeof(u32));
+ 	spin_lock_init(&sbi->s_next_gen_lock);
  
+-	err = percpu_counter_init(&sbi->s_freeblocks_counter,
+-			ext4_count_free_blocks(sb));
+-	if (!err) {
+-		err = percpu_counter_init(&sbi->s_freeinodes_counter,
+-				ext4_count_free_inodes(sb));
+-	}
+-	if (!err) {
+-		err = percpu_counter_init(&sbi->s_dirs_counter,
+-				ext4_count_dirs(sb));
+-	}
+-	if (!err) {
+-		err = percpu_counter_init(&sbi->s_dirtyblocks_counter, 0);
+-	}
+-	if (err) {
+-		ext4_msg(sb, KERN_ERR, "insufficient memory");
+-		goto failed_mount3;
+-	}
 -
--static void end_sync(void)
--{
--	end_cpu_work();
--	/* make sure we don't leak task structs */
--	process_task_mortuary();
--	process_task_mortuary();
--}
--
--
- int sync_start(void)
- {
- 	int err;
-@@ -158,7 +148,7 @@ int sync_start(void)
- 	if (!zalloc_cpumask_var(&marked_cpus, GFP_KERNEL))
- 		return -ENOMEM;
+ 	sbi->s_stripe = ext4_get_stripe_size(sbi);
+ 	sbi->s_max_writeback_mb_bump = 128;
  
--	start_cpu_work();
-+	mutex_lock(&buffer_mutex);
+@@ -2911,6 +2893,20 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 	set_task_ioprio(sbi->s_journal->j_task, journal_ioprio);
  
- 	err = task_handoff_register(&task_free_nb);
- 	if (err)
-@@ -173,7 +163,10 @@ int sync_start(void)
- 	if (err)
- 		goto out4;
- 
-+	start_cpu_work();
-+
- out:
-+	mutex_unlock(&buffer_mutex);
- 	return err;
- out4:
- 	profile_event_unregister(PROFILE_MUNMAP, &munmap_nb);
-@@ -182,7 +175,6 @@ out3:
- out2:
- 	task_handoff_unregister(&task_free_nb);
- out1:
--	end_sync();
- 	free_cpumask_var(marked_cpus);
- 	goto out;
- }
-@@ -190,11 +182,20 @@ out1:
- 
- void sync_stop(void)
- {
-+	/* flush buffers */
-+	mutex_lock(&buffer_mutex);
-+	end_cpu_work();
- 	unregister_module_notifier(&module_load_nb);
- 	profile_event_unregister(PROFILE_MUNMAP, &munmap_nb);
- 	profile_event_unregister(PROFILE_TASK_EXIT, &task_exit_nb);
- 	task_handoff_unregister(&task_free_nb);
--	end_sync();
-+	mutex_unlock(&buffer_mutex);
-+	flush_scheduled_work();
-+
-+	/* make sure we don't leak task structs */
-+	process_task_mortuary();
-+	process_task_mortuary();
-+
- 	free_cpumask_var(marked_cpus);
- }
- 
-diff --git a/drivers/oprofile/cpu_buffer.c b/drivers/oprofile/cpu_buffer.c
-index de82183..6931f1b 100644
---- a/drivers/oprofile/cpu_buffer.c
-+++ b/drivers/oprofile/cpu_buffer.c
-@@ -120,8 +120,6 @@ void end_cpu_work(void)
- 
- 		cancel_delayed_work(&b->work);
+ no_journal:
++	err = percpu_counter_init(&sbi->s_freeblocks_counter,
++				  ext4_count_free_blocks(sb));
++	if (!err)
++		err = percpu_counter_init(&sbi->s_freeinodes_counter,
++					  ext4_count_free_inodes(sb));
++	if (!err)
++		err = percpu_counter_init(&sbi->s_dirs_counter,
++					  ext4_count_dirs(sb));
++	if (!err)
++		err = percpu_counter_init(&sbi->s_dirtyblocks_counter, 0);
++	if (err) {
++		ext4_msg(sb, KERN_ERR, "insufficient memory");
++		goto failed_mount_wq;
++	}
+ 	if (test_opt(sb, NOBH)) {
+ 		if (!(test_opt(sb, DATA_FLAGS) == EXT4_MOUNT_WRITEBACK_DATA)) {
+ 			ext4_msg(sb, KERN_WARNING, "Ignoring nobh option - "
+@@ -3060,6 +3056,10 @@ failed_mount_wq:
+ 		jbd2_journal_destroy(sbi->s_journal);
+ 		sbi->s_journal = NULL;
  	}
--
--	flush_scheduled_work();
- }
- 
- /*
++	percpu_counter_destroy(&sbi->s_freeblocks_counter);
++	percpu_counter_destroy(&sbi->s_freeinodes_counter);
++	percpu_counter_destroy(&sbi->s_dirs_counter);
++	percpu_counter_destroy(&sbi->s_dirtyblocks_counter);
+ failed_mount3:
+ 	if (sbi->s_flex_groups) {
+ 		if (is_vmalloc_addr(sbi->s_flex_groups))
+@@ -3067,10 +3067,6 @@ failed_mount3:
+ 		else
+ 			kfree(sbi->s_flex_groups);
+ 	}
+-	percpu_counter_destroy(&sbi->s_freeblocks_counter);
+-	percpu_counter_destroy(&sbi->s_freeinodes_counter);
+-	percpu_counter_destroy(&sbi->s_dirs_counter);
+-	percpu_counter_destroy(&sbi->s_dirtyblocks_counter);
+ failed_mount2:
+ 	for (i = 0; i < db_count; i++)
+ 		brelse(sbi->s_group_desc[i]);
 -- 
 1.7.3.3
 
