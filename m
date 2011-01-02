@@ -1,60 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965Ab1ABHWe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:22:34 -0500
-Received: from mail.windriver.com ([147.11.1.11]:34804 "EHLO
+	id S1751920Ab1ABHV7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:21:59 -0500
+Received: from mail.windriver.com ([147.11.1.11]:34256 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753077Ab1ABHWa (ORCPT
+	with ESMTP id S1751934Ab1ABHVu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:22:30 -0500
+	Sun, 2 Jan 2011 02:21:50 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Dmitry Torokhov <dtor@mail.ru>,
+Cc: stable-review@kernel.org, Ben Hutchings <ben@decadent.org.uk>,
+        "Theodore Ts'o" <tytso@mit.edu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 072/260] Input: i8042 - fix device removal on unload
-Date: Sun,  2 Jan 2011 02:16:08 -0500
-Message-Id: <1293952756-15010-73-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 025/260] ext4: Fix compat EXT4_IOC_ADD_GROUP
+Date: Sun,  2 Jan 2011 02:15:21 -0500
+Message-Id: <1293952756-15010-26-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:21:25.0976 (UTC) FILETIME=[AA7DB580:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:20:33.0256 (UTC) FILETIME=[8B114680:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit af045b86662f17bf130239a65995c61a34f00a6b upstream.
+commit 4d92dc0f00a775dc2e1267b0e00befb783902fe7 upstream.
 
-We need to call platform_device_unregister(i8042_platform_device)
-before calling platform_driver_unregister() because i8042_remove()
-resets i8042_platform_device to NULL. This leaves the platform device
-instance behind and prevents driver reload.
+struct ext4_new_group_input needs to be converted because u64 has
+only 32-bit alignment on some 32-bit architectures, notably i386.
 
-Fixes https://bugzilla.kernel.org/show_bug.cgi?id=16613
-
-Reported-by: Seryodkin Victor <vvscore@gmail.com>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/input/serio/i8042.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ fs/ext4/ext4.h  |   16 ++++++++++++++++
+ fs/ext4/ioctl.c |   25 +++++++++++++++++++++++--
+ 2 files changed, 39 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/input/serio/i8042.c b/drivers/input/serio/i8042.c
-index 6440a8f..f3c2bb7 100644
---- a/drivers/input/serio/i8042.c
-+++ b/drivers/input/serio/i8042.c
-@@ -1483,8 +1483,8 @@ static int __init i8042_init(void)
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 0419018..2e31640 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -29,6 +29,9 @@
+ #include <linux/wait.h>
+ #include <linux/blockgroup_lock.h>
+ #include <linux/percpu_counter.h>
++#ifdef __KERNEL__
++#include <linux/compat.h>
++#endif
  
- static void __exit i8042_exit(void)
- {
--	platform_driver_unregister(&i8042_driver);
- 	platform_device_unregister(i8042_platform_device);
-+	platform_driver_unregister(&i8042_driver);
- 	i8042_platform_exit();
+ /*
+  * The fourth extended filesystem constants/structures
+@@ -409,6 +412,18 @@ struct ext4_new_group_input {
+ 	__u16 unused;
+ };
  
- 	panic_blink = NULL;
++#if defined(__KERNEL__) && defined(CONFIG_COMPAT)
++struct compat_ext4_new_group_input {
++	u32 group;
++	compat_u64 block_bitmap;
++	compat_u64 inode_bitmap;
++	compat_u64 inode_table;
++	u32 blocks_count;
++	u16 reserved_blocks;
++	u16 unused;
++};
++#endif
++
+ /* The struct ext4_new_group_input in kernel space, with free_blocks_count */
+ struct ext4_new_group_data {
+ 	__u32 group;
+@@ -486,6 +501,7 @@ struct ext4_new_group_data {
+ #define EXT4_IOC32_GETRSVSZ		_IOR('f', 5, int)
+ #define EXT4_IOC32_SETRSVSZ		_IOW('f', 6, int)
+ #define EXT4_IOC32_GROUP_EXTEND		_IOW('f', 7, unsigned int)
++#define EXT4_IOC32_GROUP_ADD		_IOW('f', 8, struct compat_ext4_new_group_input)
+ #ifdef CONFIG_JBD2_DEBUG
+ #define EXT4_IOC32_WAIT_FOR_READONLY	_IOR('f', 99, int)
+ #endif
+diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+index 66fa0b0..6ddec84 100644
+--- a/fs/ext4/ioctl.c
++++ b/fs/ext4/ioctl.c
+@@ -373,8 +373,29 @@ long ext4_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	case EXT4_IOC32_SETRSVSZ:
+ 		cmd = EXT4_IOC_SETRSVSZ;
+ 		break;
+-	case EXT4_IOC_GROUP_ADD:
+-		break;
++	case EXT4_IOC32_GROUP_ADD: {
++		struct compat_ext4_new_group_input __user *uinput;
++		struct ext4_new_group_input input;
++		mm_segment_t old_fs;
++		int err;
++
++		uinput = compat_ptr(arg);
++		err = get_user(input.group, &uinput->group);
++		err |= get_user(input.block_bitmap, &uinput->block_bitmap);
++		err |= get_user(input.inode_bitmap, &uinput->inode_bitmap);
++		err |= get_user(input.inode_table, &uinput->inode_table);
++		err |= get_user(input.blocks_count, &uinput->blocks_count);
++		err |= get_user(input.reserved_blocks,
++				&uinput->reserved_blocks);
++		if (err)
++			return -EFAULT;
++		old_fs = get_fs();
++		set_fs(KERNEL_DS);
++		err = ext4_ioctl(file, EXT4_IOC_GROUP_ADD,
++				 (unsigned long) &input);
++		set_fs(old_fs);
++		return err;
++	}
+ 	case EXT4_IOC_MOVE_EXT:
+ 		break;
+ 	default:
 -- 
 1.7.3.3
 
