@@ -1,65 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918Ab1ABHXg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:23:36 -0500
-Received: from mail.windriver.com ([147.11.1.11]:35552 "EHLO
+	id S1754068Ab1ABHvn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:51:43 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35706 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753749Ab1ABHX0 (ORCPT
+	with ESMTP id S1753749Ab1ABHXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:23:26 -0500
+	Sun, 2 Jan 2011 02:23:37 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: stable-review@kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Fenghua Yu <fenghua.yu@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Helge Deller <deller@gmx.de>, James Bottomley <jejb@parisc-linux.org>,
+        Kyle McMartin <kyle@mcmartin.ca>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Ralf Baechle <ralf@linux-mips.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 116/260] bridge: Clear IPCB before possible entry into IP stack
-Date: Sun,  2 Jan 2011 02:16:52 -0500
-Message-Id: <1293952756-15010-117-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 080/260] compat: Make compat_alloc_user_space() incorporate the access_ok()
+Date: Sun,  2 Jan 2011 02:16:16 -0500
+Message-Id: <1293952756-15010-81-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:22:16.0665 (UTC) FILETIME=[C8B43C90:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:21:36.0976 (UTC) FILETIME=[B10C2D00:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+From: H. Peter Anvin <hpa@linux.intel.com>
 
-commit 17762060c25590bfddd68cc1131f28ec720f405f upstream.
+commit c41d68a513c71e35a14f66d71782d27a79a81ea6 upstream.
 
-The bridge protocol lives dangerously by having incestuous relations
-with the IP stack.  In this instance an abomination has been created
-where a bogus IPCB area from a bridged packet leads to a crash in
-the IP stack because it's interpreted as IP options.
+compat_alloc_user_space() expects the caller to independently call
+access_ok() to verify the returned area.  A missing call could
+introduce problems on some architectures.
 
-This patch papers over the problem by clearing the IPCB area in that
-particular spot.  To fix this properly we'd also need to parse any
-IP options if present but I'm way too lazy for that.
+This patch incorporates the access_ok() check into
+compat_alloc_user_space() and also adds a sanity check on the length.
+The existing compat_alloc_user_space() implementations are renamed
+arch_compat_alloc_user_space() and are used as part of the
+implementation of the new global function.
 
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+This patch assumes NULL will cause __get_user()/__put_user() to either
+fail or access userspace on all architectures.  This should be
+followed by checking the return value of compat_access_user_space()
+for NULL in the callers, at which time the access_ok() in the callers
+can also be removed.
 
-Cheers,
-Signed-off-by: David S. Miller <davem@davemloft.net>
-
+Reported-by: Ben Hawkes <hawkes@sota.gen.nz>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+Acked-by: David S. Miller <davem@davemloft.net>
+Acked-by: Ingo Molnar <mingo@elte.hu>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Tony Luck <tony.luck@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Helge Deller <deller@gmx.de>
+Cc: James Bottomley <jejb@parisc-linux.org>
+Cc: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/bridge/br_netfilter.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ arch/ia64/include/asm/compat.h    |    2 +-
+ arch/mips/include/asm/compat.h    |    2 +-
+ arch/parisc/include/asm/compat.h  |    2 +-
+ arch/powerpc/include/asm/compat.h |    2 +-
+ arch/s390/include/asm/compat.h    |    2 +-
+ arch/sparc/include/asm/compat.h   |    2 +-
+ arch/x86/include/asm/compat.h     |    2 +-
+ include/linux/compat.h            |    3 +++
+ kernel/compat.c                   |   21 +++++++++++++++++++++
+ 9 files changed, 31 insertions(+), 7 deletions(-)
 
-diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
-index 4c4977d..54d812e 100644
---- a/net/bridge/br_netfilter.c
-+++ b/net/bridge/br_netfilter.c
-@@ -601,6 +601,9 @@ static unsigned int br_nf_pre_routing(unsigned int hook, struct sk_buff *skb,
+diff --git a/arch/ia64/include/asm/compat.h b/arch/ia64/include/asm/compat.h
+index f90edc8..9301a28 100644
+--- a/arch/ia64/include/asm/compat.h
++++ b/arch/ia64/include/asm/compat.h
+@@ -199,7 +199,7 @@ ptr_to_compat(void __user *uptr)
+ }
  
- 	pskb_trim_rcsum(skb, len);
+ static __inline__ void __user *
+-compat_alloc_user_space (long len)
++arch_compat_alloc_user_space (long len)
+ {
+ 	struct pt_regs *regs = task_pt_regs(current);
+ 	return (void __user *) (((regs->r12 & 0xffffffff) & -16) - len);
+diff --git a/arch/mips/include/asm/compat.h b/arch/mips/include/asm/compat.h
+index 613f691..dbc5106 100644
+--- a/arch/mips/include/asm/compat.h
++++ b/arch/mips/include/asm/compat.h
+@@ -145,7 +145,7 @@ static inline compat_uptr_t ptr_to_compat(void __user *uptr)
+ 	return (u32)(unsigned long)uptr;
+ }
  
-+	/* BUG: Should really parse the IP options here. */
-+	memset(IPCB(skb), 0, sizeof(struct inet_skb_parm));
+-static inline void __user *compat_alloc_user_space(long len)
++static inline void __user *arch_compat_alloc_user_space(long len)
+ {
+ 	struct pt_regs *regs = (struct pt_regs *)
+ 		((unsigned long) current_thread_info() + THREAD_SIZE - 32) - 1;
+diff --git a/arch/parisc/include/asm/compat.h b/arch/parisc/include/asm/compat.h
+index 02b77ba..efa0b60 100644
+--- a/arch/parisc/include/asm/compat.h
++++ b/arch/parisc/include/asm/compat.h
+@@ -147,7 +147,7 @@ static inline compat_uptr_t ptr_to_compat(void __user *uptr)
+ 	return (u32)(unsigned long)uptr;
+ }
+ 
+-static __inline__ void __user *compat_alloc_user_space(long len)
++static __inline__ void __user *arch_compat_alloc_user_space(long len)
+ {
+ 	struct pt_regs *regs = &current->thread.regs;
+ 	return (void __user *)regs->gr[30];
+diff --git a/arch/powerpc/include/asm/compat.h b/arch/powerpc/include/asm/compat.h
+index 396d21a..a11d4ea 100644
+--- a/arch/powerpc/include/asm/compat.h
++++ b/arch/powerpc/include/asm/compat.h
+@@ -134,7 +134,7 @@ static inline compat_uptr_t ptr_to_compat(void __user *uptr)
+ 	return (u32)(unsigned long)uptr;
+ }
+ 
+-static inline void __user *compat_alloc_user_space(long len)
++static inline void __user *arch_compat_alloc_user_space(long len)
+ {
+ 	struct pt_regs *regs = current->thread.regs;
+ 	unsigned long usp = regs->gpr[1];
+diff --git a/arch/s390/include/asm/compat.h b/arch/s390/include/asm/compat.h
+index 104f200..a875c2f 100644
+--- a/arch/s390/include/asm/compat.h
++++ b/arch/s390/include/asm/compat.h
+@@ -181,7 +181,7 @@ static inline int is_compat_task(void)
+ 
+ #endif
+ 
+-static inline void __user *compat_alloc_user_space(long len)
++static inline void __user *arch_compat_alloc_user_space(long len)
+ {
+ 	unsigned long stack;
+ 
+diff --git a/arch/sparc/include/asm/compat.h b/arch/sparc/include/asm/compat.h
+index 5016f76..6f57325 100644
+--- a/arch/sparc/include/asm/compat.h
++++ b/arch/sparc/include/asm/compat.h
+@@ -167,7 +167,7 @@ static inline compat_uptr_t ptr_to_compat(void __user *uptr)
+ 	return (u32)(unsigned long)uptr;
+ }
+ 
+-static inline void __user *compat_alloc_user_space(long len)
++static inline void __user *arch_compat_alloc_user_space(long len)
+ {
+ 	struct pt_regs *regs = current_thread_info()->kregs;
+ 	unsigned long usp = regs->u_regs[UREG_I6];
+diff --git a/arch/x86/include/asm/compat.h b/arch/x86/include/asm/compat.h
+index 306160e..1d9cd27 100644
+--- a/arch/x86/include/asm/compat.h
++++ b/arch/x86/include/asm/compat.h
+@@ -205,7 +205,7 @@ static inline compat_uptr_t ptr_to_compat(void __user *uptr)
+ 	return (u32)(unsigned long)uptr;
+ }
+ 
+-static inline void __user *compat_alloc_user_space(long len)
++static inline void __user *arch_compat_alloc_user_space(long len)
+ {
+ 	struct pt_regs *regs = task_pt_regs(current);
+ 	return (void __user *)regs->sp - len;
+diff --git a/include/linux/compat.h b/include/linux/compat.h
+index 168f7da..c766441 100644
+--- a/include/linux/compat.h
++++ b/include/linux/compat.h
+@@ -360,5 +360,8 @@ extern ssize_t compat_rw_copy_check_uvector(int type,
+ 		const struct compat_iovec __user *uvector, unsigned long nr_segs,
+ 		unsigned long fast_segs, struct iovec *fast_pointer,
+ 		struct iovec **ret_pointer);
 +
- 	nf_bridge_put(skb->nf_bridge);
- 	if (!nf_bridge_alloc(skb))
- 		return NF_DROP;
++extern void __user *compat_alloc_user_space(unsigned long len);
++
+ #endif /* CONFIG_COMPAT */
+ #endif /* _LINUX_COMPAT_H */
+diff --git a/kernel/compat.c b/kernel/compat.c
+index 5adab05..91b33fb 100644
+--- a/kernel/compat.c
++++ b/kernel/compat.c
+@@ -1137,3 +1137,24 @@ compat_sys_sysinfo(struct compat_sysinfo __user *info)
+ 
+ 	return 0;
+ }
++
++/*
++ * Allocate user-space memory for the duration of a single system call,
++ * in order to marshall parameters inside a compat thunk.
++ */
++void __user *compat_alloc_user_space(unsigned long len)
++{
++	void __user *ptr;
++
++	/* If len would occupy more than half of the entire compat space... */
++	if (unlikely(len > (((compat_uptr_t)~0) >> 1)))
++		return NULL;
++
++	ptr = arch_compat_alloc_user_space(len);
++
++	if (unlikely(!access_ok(VERIFY_WRITE, ptr, len)))
++		return NULL;
++
++	return ptr;
++}
++EXPORT_SYMBOL_GPL(compat_alloc_user_space);
 -- 
 1.7.3.3
 
