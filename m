@@ -1,105 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754759Ab1ABHgy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:36:54 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36906 "EHLO
+	id S1754765Ab1ABHhf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:37:35 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36896 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754698Ab1ABHZI (ORCPT
+	with ESMTP id S1754676Ab1ABHZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:25:08 -0500
+	Sun, 2 Jan 2011 02:25:07 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Mel Gorman <mel@csn.ul.ie>,
-        Dave Chinner <david@fromorbit.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 146/260] mm: page allocator: drain per-cpu lists after direct reclaim allocation fails
-Date: Sun,  2 Jan 2011 02:17:22 -0500
-Message-Id: <1293952756-15010-147-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 214/260] x86: detect scattered cpuid features earlier
+Date: Sun,  2 Jan 2011 02:18:30 -0500
+Message-Id: <1293952756-15010-215-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:22:50.0165 (UTC) FILETIME=[DCABEE50:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:24:03.0854 (UTC) FILETIME=[0897FAE0:01CBAA4E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mel Gorman <mel@csn.ul.ie>
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
 
-commit 9ee493ce0a60bf42c0f8fd0b0fe91df5704a1cbf upstream.
+commit 1dedefd1a066a795a87afca9c0236e1a94de9bf6 upstream.
 
-When under significant memory pressure, a process enters direct reclaim
-and immediately afterwards tries to allocate a page.  If it fails and no
-further progress is made, it's possible the system will go OOM.  However,
-on systems with large amounts of memory, it's possible that a significant
-number of pages are on per-cpu lists and inaccessible to the calling
-process.  This leads to a process entering direct reclaim more often than
-it should increasing the pressure on the system and compounding the
-problem.
+Some extra CPU features such as ARAT is needed in early boot so
+that x86_init function pointers can be set up properly.
+http://lkml.org/lkml/2010/5/18/519
+At start_kernel() level, this patch moves init_scattered_cpuid_features()
+from check_bugs() to setup_arch() -> early_cpu_init() which is earlier than
+platform specific x86_init layer setup. Suggested by HPA.
 
-This patch notes that if direct reclaim is making progress but allocations
-are still failing that the system is already under heavy pressure.  In
-this case, it drains the per-cpu lists and tries the allocation a second
-time before continuing.
-
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Christoph Lameter <cl@linux.com>
-Cc: Dave Chinner <david@fromorbit.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+LKML-Reference: <1274295685-6774-2-git-send-email-jacob.jun.pan@linux.intel.com>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- mm/page_alloc.c |   20 ++++++++++++++++----
- 1 files changed, 16 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/common.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 35268ac..a2af9bc 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1703,6 +1703,7 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
- 	struct page *page = NULL;
- 	struct reclaim_state reclaim_state;
- 	struct task_struct *p = current;
-+	bool drained = false;
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index c4329af..497c3b2 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -576,6 +576,7 @@ void __cpuinit get_cpu_cap(struct cpuinfo_x86 *c)
+ 	if (c->extended_cpuid_level >= 0x80000007)
+ 		c->x86_power = cpuid_edx(0x80000007);
  
- 	cond_resched();
++	init_scattered_cpuid_features(c);
+ }
  
-@@ -1721,14 +1722,25 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
+ static void __cpuinit identify_cpu_without_cpuid(struct cpuinfo_x86 *c)
+@@ -731,7 +732,6 @@ static void __cpuinit generic_identify(struct cpuinfo_x86 *c)
  
- 	cond_resched();
+ 	get_model_name(c); /* Default name */
  
--	if (order != 0)
--		drain_all_pages();
-+	if (unlikely(!(*did_some_progress)))
-+		return NULL;
- 
--	if (likely(*did_some_progress))
--		page = get_page_from_freelist(gfp_mask, nodemask, order,
-+retry:
-+	page = get_page_from_freelist(gfp_mask, nodemask, order,
- 					zonelist, high_zoneidx,
- 					alloc_flags, preferred_zone,
- 					migratetype);
-+
-+	/*
-+	 * If an allocation failed after direct reclaim, it could be because
-+	 * pages are pinned on the per-cpu lists. Drain them and try again
-+	 */
-+	if (!page && !drained) {
-+		drain_all_pages();
-+		drained = true;
-+		goto retry;
-+	}
-+
- 	return page;
+-	init_scattered_cpuid_features(c);
+ 	detect_nopl(c);
  }
  
 -- 
