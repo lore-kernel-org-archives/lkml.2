@@ -1,195 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754693Ab1ABH5V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:57:21 -0500
-Received: from mail.windriver.com ([147.11.1.11]:35308 "EHLO
+	id S1755396Ab1ABH5h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:57:37 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35299 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753579Ab1ABHXH (ORCPT
+	with ESMTP id S1753324Ab1ABHXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 2 Jan 2011 02:23:07 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+Cc: stable-review@kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 095/260] sched: Fix select_idle_sibling() logic in select_task_rq_fair()
-Date: Sun,  2 Jan 2011 02:16:31 -0500
-Message-Id: <1293952756-15010-96-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 089/260] sched: Optimize task_rq_lock()
+Date: Sun,  2 Jan 2011 02:16:25 -0500
+Message-Id: <1293952756-15010-90-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:21:54.0571 (UTC) FILETIME=[BB88F5B0:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:21:47.0680 (UTC) FILETIME=[B76D7A00:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suresh Siddha <suresh.b.siddha@intel.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit 99bd5e2f245d8cd17d040c82d40becdb3efd9b69 upstream.
+commit 65cc8e4859ff29a9ddc989c88557d6059834c2a2 upstream.
 
-Issues in the current select_idle_sibling() logic in select_task_rq_fair()
-in the context of a task wake-up:
+Now that we hold the rq->lock over set_task_cpu() again, we can do
+away with most of the TASK_WAKING checks and reduce them again to
+set_cpus_allowed_ptr().
 
-a) Once we select the idle sibling, we use that domain (spanning the cpu that
-   the task is currently woken-up and the idle sibling that we found) in our
-   wake_affine() decisions. This domain is completely different from the
-   domain(we are supposed to use) that spans the cpu that the task currently
-   woken-up and the cpu where the task previously ran.
+Removes some conditionals from scheduling hot-paths.
 
-b) We do select_idle_sibling() check only for the cpu that the task is
-   currently woken-up on. If select_task_rq_fair() selects the previously run
-   cpu for waking the task, doing a select_idle_sibling() check
-   for that cpu also helps and we don't do this currently.
-
-c) In the scenarios where the cpu that the task is woken-up is busy but
-   with its HT siblings are idle, we are selecting the task be woken-up
-   on the idle HT sibling instead of a core that it previously ran
-   and currently completely idle. i.e., we are not taking decisions based on
-   wake_affine() but directly selecting an idle sibling that can cause
-   an imbalance at the SMT/MC level which will be later corrected by the
-   periodic load balancer.
-
-Fix this by first going through the load imbalance calculations using
-wake_affine() and once we make a decision of woken-up cpu vs previously-ran cpu,
-then choose a possible idle sibling for waking up the task on.
-
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1270079265.7835.8.camel@sbs-t61.sc.intel.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+LKML-Reference: <new-submission>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/sched_fair.c |   82 +++++++++++++++++++++++++--------------------------
- 1 files changed, 40 insertions(+), 42 deletions(-)
+ kernel/sched.c |   23 +++++++++++++++--------
+ 1 files changed, 15 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index a29df86..72eb9a6 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1408,29 +1408,48 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 31b0bae..e542c1e 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -914,8 +914,8 @@ static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
+ #endif /* __ARCH_WANT_UNLOCKED_CTXSW */
+ 
  /*
-  * Try and locate an idle CPU in the sched_domain.
+- * Check whether the task is waking, we use this to synchronize against
+- * ttwu() so that task_cpu() reports a stable number.
++ * Check whether the task is waking, we use this to synchronize ->cpus_allowed
++ * against ttwu().
   */
--static int
--select_idle_sibling(struct task_struct *p, struct sched_domain *sd, int target)
-+static int select_idle_sibling(struct task_struct *p, int target)
+ static inline int task_is_waking(struct task_struct *p)
  {
- 	int cpu = smp_processor_id();
- 	int prev_cpu = task_cpu(p);
-+	struct sched_domain *sd;
- 	int i;
+@@ -932,11 +932,9 @@ static inline struct rq *__task_rq_lock(struct task_struct *p)
+ 	struct rq *rq;
  
- 	/*
--	 * If this domain spans both cpu and prev_cpu (see the SD_WAKE_AFFINE
--	 * test in select_task_rq_fair) and the prev_cpu is idle then that's
--	 * always a better target than the current cpu.
-+	 * If the task is going to be woken-up on this cpu and if it is
-+	 * already idle, then it is the right target.
-+	 */
-+	if (target == cpu && idle_cpu(cpu))
-+		return cpu;
-+
+ 	for (;;) {
+-		while (task_is_waking(p))
+-			cpu_relax();
+ 		rq = task_rq(p);
+ 		raw_spin_lock(&rq->lock);
+-		if (likely(rq == task_rq(p) && !task_is_waking(p)))
++		if (likely(rq == task_rq(p)))
+ 			return rq;
+ 		raw_spin_unlock(&rq->lock);
+ 	}
+@@ -953,12 +951,10 @@ static struct rq *task_rq_lock(struct task_struct *p, unsigned long *flags)
+ 	struct rq *rq;
+ 
+ 	for (;;) {
+-		while (task_is_waking(p))
+-			cpu_relax();
+ 		local_irq_save(*flags);
+ 		rq = task_rq(p);
+ 		raw_spin_lock(&rq->lock);
+-		if (likely(rq == task_rq(p) && !task_is_waking(p)))
++		if (likely(rq == task_rq(p)))
+ 			return rq;
+ 		raw_spin_unlock_irqrestore(&rq->lock, *flags);
+ 	}
+@@ -5341,7 +5337,18 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
+ 	struct rq *rq;
+ 	int ret = 0;
+ 
 +	/*
-+	 * If the task is going to be woken-up on the cpu where it previously
-+	 * ran and if it is currently idle, then it the right target.
- 	 */
--	if (target == cpu && !cpu_rq(prev_cpu)->cfs.nr_running)
-+	if (target == prev_cpu && idle_cpu(prev_cpu))
- 		return prev_cpu;
++	 * Serialize against TASK_WAKING so that ttwu() and wunt() can
++	 * drop the rq->lock and still rely on ->cpus_allowed.
++	 */
++again:
++	while (task_is_waking(p))
++		cpu_relax();
+ 	rq = task_rq_lock(p, &flags);
++	if (task_is_waking(p)) {
++		task_rq_unlock(rq, &flags);
++		goto again;
++	}
  
- 	/*
--	 * Otherwise, iterate the domain and find an elegible idle cpu.
-+	 * Otherwise, iterate the domains and find an elegible idle cpu.
- 	 */
--	for_each_cpu_and(i, sched_domain_span(sd), &p->cpus_allowed) {
--		if (!cpu_rq(i)->cfs.nr_running) {
--			target = i;
-+	for_each_domain(target, sd) {
-+		if (!(sd->flags & SD_SHARE_PKG_RESOURCES))
- 			break;
-+
-+		for_each_cpu_and(i, sched_domain_span(sd), &p->cpus_allowed) {
-+			if (idle_cpu(i)) {
-+				target = i;
-+				break;
-+			}
- 		}
-+
-+		/*
-+		 * Lets stop looking for an idle sibling when we reached
-+		 * the domain that spans the current cpu and prev_cpu.
-+		 */
-+		if (cpumask_test_cpu(cpu, sched_domain_span(sd)) &&
-+		    cpumask_test_cpu(prev_cpu, sched_domain_span(sd)))
-+			break;
- 	}
- 
- 	return target;
-@@ -1454,7 +1473,7 @@ select_task_rq_fair(struct rq *rq, struct task_struct *p, int sd_flag, int wake_
- 	int cpu = smp_processor_id();
- 	int prev_cpu = task_cpu(p);
- 	int new_cpu = cpu;
--	int want_affine = 0, cpu_idle = !current->pid;
-+	int want_affine = 0;
- 	int want_sd = 1;
- 	int sync = wake_flags & WF_SYNC;
- 
-@@ -1494,36 +1513,13 @@ select_task_rq_fair(struct rq *rq, struct task_struct *p, int sd_flag, int wake_
- 		}
- 
- 		/*
--		 * While iterating the domains looking for a spanning
--		 * WAKE_AFFINE domain, adjust the affine target to any idle cpu
--		 * in cache sharing domains along the way.
-+		 * If both cpu and prev_cpu are part of this domain,
-+		 * cpu is a valid SD_WAKE_AFFINE target.
- 		 */
--		if (want_affine) {
--			int target = -1;
--
--			/*
--			 * If both cpu and prev_cpu are part of this domain,
--			 * cpu is a valid SD_WAKE_AFFINE target.
--			 */
--			if (cpumask_test_cpu(prev_cpu, sched_domain_span(tmp)))
--				target = cpu;
--
--			/*
--			 * If there's an idle sibling in this domain, make that
--			 * the wake_affine target instead of the current cpu.
--			 */
--			if (!cpu_idle && tmp->flags & SD_SHARE_PKG_RESOURCES)
--				target = select_idle_sibling(p, tmp, target);
--
--			if (target >= 0) {
--				if (tmp->flags & SD_WAKE_AFFINE) {
--					affine_sd = tmp;
--					want_affine = 0;
--					if (target != cpu)
--						cpu_idle = 1;
--				}
--				cpu = target;
--			}
-+		if (want_affine && (tmp->flags & SD_WAKE_AFFINE) &&
-+		    cpumask_test_cpu(prev_cpu, sched_domain_span(tmp))) {
-+			affine_sd = tmp;
-+			want_affine = 0;
- 		}
- 
- 		if (!want_sd && !want_affine)
-@@ -1554,8 +1550,10 @@ select_task_rq_fair(struct rq *rq, struct task_struct *p, int sd_flag, int wake_
- #endif
- 
- 	if (affine_sd) {
--		if (cpu_idle || cpu == prev_cpu || wake_affine(affine_sd, p, sync))
--			return cpu;
-+		if (cpu == prev_cpu || wake_affine(affine_sd, p, sync))
-+			return select_idle_sibling(p, cpu);
-+		else
-+			return select_idle_sibling(p, prev_cpu);
- 	}
- 
- 	while (sd) {
+ 	if (!cpumask_intersects(new_mask, cpu_active_mask)) {
+ 		ret = -EINVAL;
 -- 
 1.7.3.3
 
