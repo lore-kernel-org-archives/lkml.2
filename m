@@ -1,99 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab1ABHhx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:37:53 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36875 "EHLO
+	id S1754744Ab1ABHiX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:38:23 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36869 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754673Ab1ABHZF (ORCPT
+	with ESMTP id S1754666Ab1ABHZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:25:05 -0500
+	Sun, 2 Jan 2011 02:25:04 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Stanislaw Gruszka <sgruszka@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: stable-review@kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 203/260] skge: add quirk to limit DMA
-Date: Sun,  2 Jan 2011 02:18:19 -0500
-Message-Id: <1293952756-15010-204-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 176/260] v4l1: fix 32-bit compat microcode loading translation
+Date: Sun,  2 Jan 2011 02:17:52 -0500
+Message-Id: <1293952756-15010-177-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:23:52.0745 (UTC) FILETIME=[01F8E190:01CBAA4E]
+X-OriginalArrivalTime: 02 Jan 2011 07:23:23.0525 (UTC) FILETIME=[F08E4350:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 392bd0cb000d4aac9e88e4f50823db85e7220688 upstream.
+commit 3e645d6b485446c54c6745c5e2cf5c528fe4deec upstream.
 
-Skge devices installed on some Gigabyte motherboards are not able to
-perform 64 dma correctly due to board PCI implementation, so limit
-DMA to 32bit if such boards are detected.
+The compat code for the VIDIOCSMICROCODE ioctl is totally buggered.
+It's only used by the VIDEO_STRADIS driver, and that one is scheduled to
+staging and eventually removed unless somebody steps up to maintain it
+(at which point it should use request_firmware() rather than some magic
+ioctl).  So we'll get rid of it eventually.
 
-Bug was reported here:
-https://bugzilla.redhat.com/show_bug.cgi?id=447489
+But in the meantime, the compatibility ioctl code is broken, and this
+tries to get it to at least limp along (even if Mauro suggested just
+deleting it entirely, which may be the right thing to do - I don't think
+the compatibility translation code has ever worked unless you were very
+lucky).
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Tested-by: Luya Tshimbalanga <luya@fedoraproject.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Kees Cook <kees.cook@canonical.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/skge.c |   18 +++++++++++++++++-
- 1 files changed, 17 insertions(+), 1 deletions(-)
+ drivers/media/video/v4l2-compat-ioctl32.c |   32 +++++++++++++++++++----------
+ 1 files changed, 21 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/net/skge.c b/drivers/net/skge.c
-index 50eb706..e13cbd9 100644
---- a/drivers/net/skge.c
-+++ b/drivers/net/skge.c
-@@ -43,6 +43,7 @@
- #include <linux/seq_file.h>
- #include <linux/mii.h>
- #include <linux/slab.h>
-+#include <linux/dmi.h>
- #include <asm/irq.h>
- 
- #include "skge.h"
-@@ -3868,6 +3869,8 @@ static void __devinit skge_show_addr(struct net_device *dev)
- 	netif_info(skge, probe, skge->netdev, "addr %pM\n", dev->dev_addr);
- }
- 
-+static int only_32bit_dma;
-+
- static int __devinit skge_probe(struct pci_dev *pdev,
- 				const struct pci_device_id *ent)
- {
-@@ -3889,7 +3892,7 @@ static int __devinit skge_probe(struct pci_dev *pdev,
- 
- 	pci_set_master(pdev);
- 
--	if (!pci_set_dma_mask(pdev, DMA_BIT_MASK(64))) {
-+	if (!only_32bit_dma && !pci_set_dma_mask(pdev, DMA_BIT_MASK(64))) {
- 		using_dac = 1;
- 		err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(64));
- 	} else if (!(err = pci_set_dma_mask(pdev, DMA_BIT_MASK(32)))) {
-@@ -4147,8 +4150,21 @@ static struct pci_driver skge_driver = {
- 	.shutdown =	skge_shutdown,
+diff --git a/drivers/media/video/v4l2-compat-ioctl32.c b/drivers/media/video/v4l2-compat-ioctl32.c
+index f77f84b..e6a5d55 100644
+--- a/drivers/media/video/v4l2-compat-ioctl32.c
++++ b/drivers/media/video/v4l2-compat-ioctl32.c
+@@ -193,17 +193,24 @@ static int put_video_window32(struct video_window *kp, struct video_window32 __u
+ struct video_code32 {
+ 	char		loadwhat[16];	/* name or tag of file being passed */
+ 	compat_int_t	datasize;
+-	unsigned char	*data;
++	compat_uptr_t	data;
  };
  
-+static struct dmi_system_id skge_32bit_dma_boards[] = {
-+	{
-+		.ident = "Gigabyte nForce boards",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "Gigabyte Technology Co"),
-+			DMI_MATCH(DMI_BOARD_NAME, "nForce"),
-+		},
-+	},
-+	{}
-+};
-+
- static int __init skge_init_module(void)
+-static int get_microcode32(struct video_code *kp, struct video_code32 __user *up)
++static struct video_code __user *get_microcode32(struct video_code32 *kp)
  {
-+	if (dmi_check_system(skge_32bit_dma_boards))
-+		only_32bit_dma = 1;
- 	skge_debug_init();
- 	return pci_register_driver(&skge_driver);
+-	if (!access_ok(VERIFY_READ, up, sizeof(struct video_code32)) ||
+-		copy_from_user(kp->loadwhat, up->loadwhat, sizeof(up->loadwhat)) ||
+-		get_user(kp->datasize, &up->datasize) ||
+-		copy_from_user(kp->data, up->data, up->datasize))
+-			return -EFAULT;
+-	return 0;
++	struct video_code __user *up;
++
++	up = compat_alloc_user_space(sizeof(*up));
++
++	/*
++	 * NOTE! We don't actually care if these fail. If the
++	 * user address is invalid, the native ioctl will do
++	 * the error handling for us
++	 */
++	(void) copy_to_user(up->loadwhat, kp->loadwhat, sizeof(up->loadwhat));
++	(void) put_user(kp->datasize, &up->datasize);
++	(void) put_user(compat_ptr(kp->data), &up->data);
++	return up;
  }
+ 
+ #define VIDIOCGTUNER32		_IOWR('v', 4, struct video_tuner32)
+@@ -744,7 +751,7 @@ static long do_video_ioctl(struct file *file, unsigned int cmd, unsigned long ar
+ 		struct video_tuner vt;
+ 		struct video_buffer vb;
+ 		struct video_window vw;
+-		struct video_code vc;
++		struct video_code32 vc;
+ 		struct video_audio va;
+ #endif
+ 		struct v4l2_format v2f;
+@@ -823,8 +830,11 @@ static long do_video_ioctl(struct file *file, unsigned int cmd, unsigned long ar
+ 		break;
+ 
+ 	case VIDIOCSMICROCODE:
+-		err = get_microcode32(&karg.vc, up);
+-		compatible_arg = 0;
++		/* Copy the 32-bit "video_code32" to kernel space */
++		if (copy_from_user(&karg.vc, up, sizeof(karg.vc)))
++			return -EFAULT;
++		/* Convert the 32-bit version to a 64-bit version in user space */
++		up = get_microcode32(&karg.vc);
+ 		break;
+ 
+ 	case VIDIOCSFREQ:
 -- 
 1.7.3.3
 
