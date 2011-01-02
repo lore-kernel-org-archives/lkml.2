@@ -1,76 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753036Ab1ABHvG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:51:06 -0500
-Received: from mail.windriver.com ([147.11.1.11]:35778 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753988Ab1ABHXm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753994Ab1ABHXm (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 2 Jan 2011 02:23:42 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35748 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753763Ab1ABHXk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jan 2011 02:23:40 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Jan Kara <jack@suse.cz>,
-        Jens Axboe <jaxboe@fusionio.com>,
+Cc: stable-review@kernel.org, Andy Gospodarek <andy@greyhouse.net>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>, stable@kerne.org,
+        Jay Vosburgh <fubar@us.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 131/260] char: Mark /dev/zero and /dev/kmem as not capable of writeback
-Date: Sun,  2 Jan 2011 02:17:07 -0500
-Message-Id: <1293952756-15010-132-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 125/260] bonding: correctly process non-linear skbs
+Date: Sun,  2 Jan 2011 02:17:01 -0500
+Message-Id: <1293952756-15010-126-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:22:33.0462 (UTC) FILETIME=[D2B74160:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:22:26.0477 (UTC) FILETIME=[CE8D6DD0:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+From: Andy Gospodarek <andy@greyhouse.net>
 
-commit 371d217ee1ff8b418b8f73fb2a34990f951ec2d4 upstream.
+commit ab12811c89e88f2e66746790b1fe4469ccb7bdd9 upstream.
 
-These devices don't do any writeback but their device inodes still can get
-dirty so mark bdi appropriately so that bdi code does the right thing and files
-inodes to lists of bdi carrying the device inodes.
+It was recently brought to my attention that 802.3ad mode bonds would no
+longer form when using some network hardware after a driver update.
+After snooping around I realized that the particular hardware was using
+page-based skbs and found that skb->data did not contain a valid LACPDU
+as it was not stored there.  That explained the inability to form an
+802.3ad-based bond.  For balance-alb mode bonds this was also an issue
+as ARPs would not be properly processed.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+This patch fixes the issue in my tests and should be applied to 2.6.36
+and as far back as anyone cares to add it to stable.
+
+Thanks to Alexander Duyck <alexander.h.duyck@intel.com> and Jesse
+Brandeburg <jesse.brandeburg@intel.com> for the suggestions on this one.
+
+Signed-off-by: Andy Gospodarek <andy@greyhouse.net>
+CC: Alexander Duyck <alexander.h.duyck@intel.com>
+CC: Jesse Brandeburg <jesse.brandeburg@intel.com>
+CC: stable@kerne.org
+Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/char/mem.c |    3 ++-
- fs/char_dev.c      |    4 +++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/net/bonding/bond_3ad.c |    3 +++
+ drivers/net/bonding/bond_alb.c |    3 +++
+ 2 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/char/mem.c b/drivers/char/mem.c
-index f54dab8..16a4443 100644
---- a/drivers/char/mem.c
-+++ b/drivers/char/mem.c
-@@ -788,10 +788,11 @@ static const struct file_operations zero_fops = {
- /*
-  * capabilities for /dev/zero
-  * - permits private mappings, "copies" are taken of the source of zeros
-+ * - no writeback happens
-  */
- static struct backing_dev_info zero_bdi = {
- 	.name		= "char/mem",
--	.capabilities	= BDI_CAP_MAP_COPY,
-+	.capabilities	= BDI_CAP_MAP_COPY | BDI_CAP_NO_ACCT_AND_WRITEBACK,
- };
+diff --git a/drivers/net/bonding/bond_3ad.c b/drivers/net/bonding/bond_3ad.c
+index 822f586..0ddf4c6 100644
+--- a/drivers/net/bonding/bond_3ad.c
++++ b/drivers/net/bonding/bond_3ad.c
+@@ -2466,6 +2466,9 @@ int bond_3ad_lacpdu_recv(struct sk_buff *skb, struct net_device *dev, struct pac
+ 	if (!(dev->flags & IFF_MASTER))
+ 		goto out;
  
- static const struct file_operations full_fops = {
-diff --git a/fs/char_dev.c b/fs/char_dev.c
-index d6db933..be7613e 100644
---- a/fs/char_dev.c
-+++ b/fs/char_dev.c
-@@ -39,7 +39,9 @@ struct backing_dev_info directly_mappable_cdev_bdi = {
- #endif
- 		/* permit direct mmap, for read, write or exec */
- 		BDI_CAP_MAP_DIRECT |
--		BDI_CAP_READ_MAP | BDI_CAP_WRITE_MAP | BDI_CAP_EXEC_MAP),
-+		BDI_CAP_READ_MAP | BDI_CAP_WRITE_MAP | BDI_CAP_EXEC_MAP |
-+		/* no writeback happens */
-+		BDI_CAP_NO_ACCT_AND_WRITEBACK),
- };
++	if (!pskb_may_pull(skb, sizeof(struct lacpdu)))
++		goto out;
++
+ 	read_lock(&bond->lock);
+ 	slave = bond_get_slave_by_dev((struct bonding *)netdev_priv(dev),
+ 					orig_dev);
+diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
+index 40fdc41..0d42b38 100644
+--- a/drivers/net/bonding/bond_alb.c
++++ b/drivers/net/bonding/bond_alb.c
+@@ -368,6 +368,9 @@ static int rlb_arp_recv(struct sk_buff *skb, struct net_device *bond_dev, struct
+ 		goto out;
+ 	}
  
- static struct kobj_map *cdev_map;
++	if (!pskb_may_pull(skb, arp_hdr_len(bond_dev)))
++		goto out;
++
+ 	if (skb->len < sizeof(struct arp_pkt)) {
+ 		pr_debug("Packet is too small to be an ARP\n");
+ 		goto out;
 -- 
 1.7.3.3
 
