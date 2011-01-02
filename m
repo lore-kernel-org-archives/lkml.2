@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945Ab1ACMyt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 07:54:49 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:61140 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754896Ab1ACMyq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 07:54:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=tF/7YUFCVzUNLtQfaxqCDR1+3uEv5yKt2doeEaQOO87I2ilVUkXjwMwvzbGAphojKA
-         A7Nmzn9vDcAXJSjPHSbiF/ptomnSwJ2ztxIek9rk2jg6KcqrMD4Rtc4N2urOinSZFoID
-         bCZXv73EZxE93zRIv2GvB1irp/4RUSeDgLatk=
-Message-ID: <4D21C707.3010505@gmail.com>
-Date: Mon, 03 Jan 2011 20:54:31 +0800
-From: YangSheng <sickamd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	id S1754771Ab1ACNCf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 08:02:35 -0500
+Received: from s20.kerdos.gr ([193.92.32.2]:11251 "EHLO kerdos.gr"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754383Ab1ACNCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 08:02:34 -0500
+Message-ID: <52077.201.18.135.90.1293994240.squirrel@mail.kerdos.gr>
+Date: Sun, 2 Jan 2011 12:50:40 -0600 (CST)
+Subject: CONFIRM YOUR MTCN NUMBER
+From: "WESTERN UNION MONEY TRANSFER" <info@kerdos.gr>
+Reply-To: western.union.acctoffice@gmail.com
+User-Agent: SquirrelMail/1.4.9a
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH] Update atime from future.
-References: <1293631121-12667-1-git-send-email-sickamd@gmail.com> <20110103021708.d5abf7bd.akpm@linux-foundation.org>
-In-Reply-To: <20110103021708.d5abf7bd.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/2011 06:17 PM, Andrew Morton wrote:
-> On Wed, 29 Dec 2010 21:58:41 +0800 yangsheng<sickamd@gmail.com>  wrote:
->
->    
->> Signed-off-by: sickamd@gmail.com
->> ---
->>   fs/inode.c |    8 +++++++-
->>   1 files changed, 7 insertions(+), 1 deletions(-)
->>
->> diff --git a/fs/inode.c b/fs/inode.c
->> index da85e56..6c8effd 100644
->> --- a/fs/inode.c
->> +++ b/fs/inode.c
->> @@ -1469,7 +1469,13 @@ static int relatime_need_update(struct vfsmount *mnt, struct inode *inode,
->>   		return 1;
->>
->>   	/*
->> -	 * Is the previous atime value older than a day? If yes,
->> +	 * Is the previous atime value in future? If yes,
->> +	 * update atime:
->> +	 */
->> +	if ((long)(now.tv_sec - inode->i_atime.tv_sec)<  0)
->> +		return 1;
->> +	/*
->> +	 * Is the previous atime value old than a day? If yes,
->>   	 * update atime:
->>   	 */
->>   	if ((long)(now.tv_sec - inode->i_atime.tv_sec)>= 24*60*60)
->>      
-> Why do you believe this change is needed?  Did you observe some problem
-> which it fixes?  If so, please fully describe that problem.
->    
-If atime has been set to future(maybe cause by some accident system time 
-adjust or wrong set by touch). It cannot be update to reflect fact 
-access time before system time running over one day.
 
-Thanks
+Good Day
+
+I am Mr Ray Williams from Western Union®, On behalf of the International
+Monetary Fund/United Nation/ ECOWAS, I once again try to notify you as my
+earlier letter was returned undelivered. I hereby attempt to reach you
+again by this same email address been the beneficiary today been 2th Jan
+2011. If you received this mail, we are writing to inform you that we have
+been given the mandate to transfer your full compensation payment of
+$300,000.00USD via Western Union by the International Monetary Fund with
+United Nation and ECOWAS.
+
+We have decided to email you the MTCN and sender name, so you can pick up
+this $5000.00USD to enable us send another $5000.00USD by tomorrow(5th
+Jan.2011) as you know we will be sending you only $5000.00USD per day. 
+Please pick up this information and run to any Western Union® office in
+your location and your full name is the receivers name and don't forget
+that you have to pick up this money after receiving our mail, if you don't
+pick up the money in the next 3hrs, then the management will put the money
+on hold.
+
+Here is the Western Union® information to pick up the first $5,000
+
+Sender's First name: Duncan
+Sender's Last name: Pitts
+MTCN: 298-821-4315
+Amount: $5,000
+Test Question:  Pay
+Test Answer: Cash
+
+For verification Kindly check the availability of your via our web site
+below. https://wumt.westernunion.com/asp/orderStatus.asp?country=global
+
+If you are having any problem in picking up the money, Simply note that
+its because you didn't pick it on time, that is why you are having
+problem. If you wish to know more details or if you are having problem in
+picking up the money kindly contact post officer.
+
+Mr Ray Williams.
+Phone :(+234)-803-475-0364
+Email:western.union.acctoffice@gmail.com
+
+Sincerely,
+Western Union®  Customer Centre.
+
+
+
+
 
 
 
