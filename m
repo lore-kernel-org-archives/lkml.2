@@ -1,122 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab1ABHWy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:22:54 -0500
-Received: from mail.windriver.com ([147.11.1.11]:35106 "EHLO
+	id S1753573Ab1ABIBS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 03:01:18 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35136 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753415Ab1ABHWv (ORCPT
+	with ESMTP id S1753434Ab1ABHWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:22:51 -0500
+	Sun, 2 Jan 2011 02:22:53 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Roland McGrath <roland@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: stable-review@kernel.org, Roland McGrath <roland@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 079/260] x86-64, compat: Test %rax for the syscall number, not %eax
-Date: Sun,  2 Jan 2011 02:16:15 -0500
-Message-Id: <1293952756-15010-80-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 081/260] x86-64, compat: Retruncate rax after ia32 syscall entry tracing
+Date: Sun,  2 Jan 2011 02:16:17 -0500
+Message-Id: <1293952756-15010-82-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:21:34.0836 (UTC) FILETIME=[AFC5A340:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:21:37.0992 (UTC) FILETIME=[B1A73480:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: H. Peter Anvin <hpa@linux.intel.com>
+From: Roland McGrath <roland@redhat.com>
 
-commit 36d001c70d8a0144ac1d038f6876c484849a74de upstream.
+commit eefdca043e8391dcd719711716492063030b55ac upstream.
 
-On 64 bits, we always, by necessity, jump through the system call
-table via %rax.  For 32-bit system calls, in theory the system call
-number is stored in %eax, and the code was testing %eax for a valid
-system call number.  At one point we loaded the stored value back from
-the stack to enforce zero-extension, but that was removed in checkin
-d4d67150165df8bf1cc05e532f6efca96f907cab.  An actual 32-bit process
-will not be able to introduce a non-zero-extended number, but it can
-happen via ptrace.
+In commit d4d6715, we reopened an old hole for a 64-bit ptracer touching a
+32-bit tracee in system call entry.  A %rax value set via ptrace at the
+entry tracing stop gets used whole as a 32-bit syscall number, while we
+only check the low 32 bits for validity.
 
-Instead of re-introducing the zero-extension, test what we are
-actually going to use, i.e. %rax.  This only adds a handful of REX
-prefixes to the code.
+Fix it by truncating %rax back to 32 bits after syscall_trace_enter,
+in addition to testing the full 64 bits as has already been added.
 
 Reported-by: Ben Hawkes <hawkes@sota.gen.nz>
+Signed-off-by: Roland McGrath <roland@redhat.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Roland McGrath <roland@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/ia32/ia32entry.S |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ arch/x86/ia32/ia32entry.S |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
 diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index e790bc1..944e3fc 100644
+index 944e3fc..4f5f71e 100644
 --- a/arch/x86/ia32/ia32entry.S
 +++ b/arch/x86/ia32/ia32entry.S
-@@ -153,7 +153,7 @@ ENTRY(ia32_sysenter_target)
- 	testl  $_TIF_WORK_SYSCALL_ENTRY,TI_flags(%r10)
- 	CFI_REMEMBER_STATE
- 	jnz  sysenter_tracesys
--	cmpl	$(IA32_NR_syscalls-1),%eax
-+	cmpq	$(IA32_NR_syscalls-1),%rax
- 	ja	ia32_badsys
- sysenter_do_call:
- 	IA32_ARG_FIXUP
-@@ -195,7 +195,7 @@ sysexit_from_sys_call:
- 	movl $AUDIT_ARCH_I386,%edi	/* 1st arg: audit arch */
- 	call audit_syscall_entry
- 	movl RAX-ARGOFFSET(%rsp),%eax	/* reload syscall number */
--	cmpl $(IA32_NR_syscalls-1),%eax
-+	cmpq $(IA32_NR_syscalls-1),%rax
- 	ja ia32_badsys
- 	movl %ebx,%edi			/* reload 1st syscall arg */
- 	movl RCX-ARGOFFSET(%rsp),%esi	/* reload 2nd syscall arg */
-@@ -248,7 +248,7 @@ sysenter_tracesys:
- 	call	syscall_trace_enter
- 	LOAD_ARGS32 ARGOFFSET  /* reload args from stack in case ptrace changed it */
- 	RESTORE_REST
--	cmpl	$(IA32_NR_syscalls-1),%eax
-+	cmpq	$(IA32_NR_syscalls-1),%rax
- 	ja	int_ret_from_sys_call /* sysenter_tracesys has set RAX(%rsp) */
- 	jmp	sysenter_do_call
- 	CFI_ENDPROC
-@@ -314,7 +314,7 @@ ENTRY(ia32_cstar_target)
- 	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags(%r10)
- 	CFI_REMEMBER_STATE
- 	jnz   cstar_tracesys
--	cmpl $IA32_NR_syscalls-1,%eax
-+	cmpq $IA32_NR_syscalls-1,%rax
- 	ja  ia32_badsys
- cstar_do_call:
- 	IA32_ARG_FIXUP 1
-@@ -367,7 +367,7 @@ cstar_tracesys:
- 	LOAD_ARGS32 ARGOFFSET, 1  /* reload args from stack in case ptrace changed it */
- 	RESTORE_REST
- 	xchgl %ebp,%r9d
--	cmpl $(IA32_NR_syscalls-1),%eax
-+	cmpq $(IA32_NR_syscalls-1),%rax
- 	ja int_ret_from_sys_call /* cstar_tracesys has set RAX(%rsp) */
- 	jmp cstar_do_call
- END(ia32_cstar_target)
-@@ -425,7 +425,7 @@ ENTRY(ia32_syscall)
- 	orl   $TS_COMPAT,TI_status(%r10)
- 	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags(%r10)
- 	jnz ia32_tracesys
--	cmpl $(IA32_NR_syscalls-1),%eax
-+	cmpq $(IA32_NR_syscalls-1),%rax
- 	ja ia32_badsys
- ia32_do_call:
- 	IA32_ARG_FIXUP
-@@ -444,7 +444,7 @@ ia32_tracesys:
- 	call syscall_trace_enter
- 	LOAD_ARGS32 ARGOFFSET  /* reload args from stack in case ptrace changed it */
- 	RESTORE_REST
--	cmpl $(IA32_NR_syscalls-1),%eax
-+	cmpq $(IA32_NR_syscalls-1),%rax
- 	ja  int_ret_from_sys_call	/* ia32_tracesys has set RAX(%rsp) */
- 	jmp ia32_do_call
- END(ia32_syscall)
+@@ -50,7 +50,12 @@
+ 	/*
+ 	 * Reload arg registers from stack in case ptrace changed them.
+ 	 * We don't reload %eax because syscall_trace_enter() returned
+-	 * the value it wants us to use in the table lookup.
++	 * the %rax value we should see.  Instead, we just truncate that
++	 * value to 32 bits again as we did on entry from user mode.
++	 * If it's a new value set by user_regset during entry tracing,
++	 * this matches the normal truncation of the user-mode value.
++	 * If it's -1 to make us punt the syscall, then (u32)-1 is still
++	 * an appropriately invalid value.
+ 	 */
+ 	.macro LOAD_ARGS32 offset, _r9=0
+ 	.if \_r9
+@@ -60,6 +65,7 @@
+ 	movl \offset+48(%rsp),%edx
+ 	movl \offset+56(%rsp),%esi
+ 	movl \offset+64(%rsp),%edi
++	movl %eax,%eax			/* zero extension */
+ 	.endm
+ 	
+ 	.macro CFI_STARTPROC32 simple
 -- 
 1.7.3.3
 
