@@ -1,60 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751559Ab1ABVS5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 16:18:57 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:57955 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750730Ab1ABVS4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 16:18:56 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=cClOwn80Hov6r6/jCgI5wIKD1KENdj6wq0VT2AlNfeNEitvZ/aqKKU9P8dMX3dF1Dh
-         i1WyA8SribcryewE/6SVleVdwP+tAT3duJYuh0DqqcWXmUmjKlcKldH6AKIVdNxMUtc9
-         0N7diVPHn0nl7SpYIgpJRgrv6csuEOccfj8Bw=
-MIME-Version: 1.0
-In-Reply-To: <LbeBv-BNQpL.A.KT.IG8GNB@chimera>
-References: <odW4v9b6arG.A.2bH.uE8GNB@chimera>
-	<LbeBv-BNQpL.A.KT.IG8GNB@chimera>
-Date: Sun, 2 Jan 2011 21:18:55 +0000
-Message-ID: <AANLkTi=2PZ81T4_vV4RiXgxZB3PHzpEfEisEN-cO1jjg@mail.gmail.com>
-Subject: Re: [Bug #20332] [LogFS] [2.6.36-rc7] Kernel BUG at lib/btree.c:465!
-From: Prasad Joshi <prasadjoshi124@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
+	id S1752918Ab1ABVVE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 16:21:04 -0500
+Received: from mail.fuw.edu.pl ([193.0.80.14]:57878 "EHLO mail.fuw.edu.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751068Ab1ABVVD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jan 2011 16:21:03 -0500
+From: "R. J. Wysocki" <Rafal.Wysocki@fuw.edu.pl>
+To: Meelis Roos <mroos@linux.ee>
+Subject: Re: [Bug #16971] qla4xxx compile failure on 32-bit PowerPC: missing readq and writeq
+Date: Sun, 2 Jan 2011 22:20:43 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc8+; KDE/4.4.4; x86_64; ; )
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+References: <odW4v9b6arG.A.2bH.uE8GNB@chimera> <LbeBv-BNQpL.A.QKB.MI8GNB@chimera> <alpine.SOC.1.00.1101022215110.21244@math.ut.ee>
+In-Reply-To: <alpine.SOC.1.00.1101022215110.21244@math.ut.ee>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101022220.43565.rwys@fuw.edu.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Sunday, January 02, 2011, Meelis Roos wrote:
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16971
+> > Subject		: qla4xxx compile failure on 32-bit PowerPC: missing readq and writeq
+> > Submitter	: Meelis Roos <mroos@linux.ee>
+> > Date		: 2010-08-19 21:03 (133 days old)
+> > Message-ID	: <<<alpine.SOC.1.00.1008192359310.19654@math.ut.ee>>>
+> > References	: http://marc.info/?l=linux-kernel&m=128225184900892&w=2
+> > Patch		: http://marc.info/?l=linux-scsi&m=128590267608876&w=2
+> 
+> Still unpatched in mainline.
 
-I did not observe this bug with the latest kernel (2.6.37-rc8+).
+Thanks for the update.
 
-Thanks and Regards,
-Prasad
-
-On Wed, Dec 29, 2010 at 11:21 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.35 and 2.6.36.
->
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.35 and 2.6.36.  Please verify if it still should
-> be listed and let the tracking team know (either way).
->
->
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=20332
-> Subject         : [LogFS] [2.6.36-rc7] Kernel BUG at lib/btree.c:465!
-> Submitter       : Prasad Joshi <prasadjoshi124@gmail.com>
-> Date            : 2010-10-12 18:56 (79 days old)
-> Message-ID      : <AANLkTimAbCZNhLQ5nADUiAC+7JpAeJBEmjFwdxyZ-FxO@mail.gmail.com>
-> References      : http://marc.info/?l=linux-kernel&m=128690910501830&w=2
->
->
->
+Rafael
