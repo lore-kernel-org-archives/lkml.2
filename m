@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754097Ab1ABHv3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:51:29 -0500
-Received: from mail.windriver.com ([147.11.1.11]:35759 "EHLO
+	id S1753918Ab1ABHXg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:23:36 -0500
+Received: from mail.windriver.com ([147.11.1.11]:35552 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753964Ab1ABHXl (ORCPT
+	with ESMTP id S1753749Ab1ABHX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:23:41 -0500
+	Sun, 2 Jan 2011 02:23:26 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Tejun Heo <tj@kernel.org>,
+Cc: stable-review@kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 134/260] percpu: fix pcpu_last_unit_cpu
-Date: Sun,  2 Jan 2011 02:17:10 -0500
-Message-Id: <1293952756-15010-135-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 116/260] bridge: Clear IPCB before possible entry into IP stack
+Date: Sun,  2 Jan 2011 02:16:52 -0500
+Message-Id: <1293952756-15010-117-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:22:36.0946 (UTC) FILETIME=[D4CADF20:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:22:16.0665 (UTC) FILETIME=[C8B43C90:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tejun Heo <tj@kernel.org>
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
-commit 46b30ea9bc3698bc1d1e6fd726c9601d46fa0a91 upstream.
+commit 17762060c25590bfddd68cc1131f28ec720f405f upstream.
 
-pcpu_first/last_unit_cpu are used to track which cpu has the first and
-last units assigned.  This in turn is used to determine the span of a
-chunk for man/unmap cache flushes and whether an address belongs to
-the first chunk or not in per_cpu_ptr_to_phys().
+The bridge protocol lives dangerously by having incestuous relations
+with the IP stack.  In this instance an abomination has been created
+where a bogus IPCB area from a bridged packet leads to a crash in
+the IP stack because it's interpreted as IP options.
 
-When the number of possible CPUs isn't power of two, a chunk may
-contain unassigned units towards the end of a chunk.  The logic to
-determine pcpu_last_unit_cpu was incorrect when there was an unused
-unit at the end of a chunk.  It failed to ignore the unused unit and
-assigned the unused marker NR_CPUS to pcpu_last_unit_cpu.
+This patch papers over the problem by clearing the IPCB area in that
+particular spot.  To fix this properly we'd also need to parse any
+IP options if present but I'm way too lazy for that.
 
-This was discovered through kdump failure which was caused by
-malfunctioning per_cpu_ptr_to_phys() on a kvm setup with 50 possible
-CPUs by CAI Qian.
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: CAI Qian <caiqian@redhat.com>
+Cheers,
+Signed-off-by: David S. Miller <davem@davemloft.net>
+
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- mm/percpu.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ net/bridge/br_netfilter.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/mm/percpu.c b/mm/percpu.c
-index 6e09741..717cc6e 100644
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -1750,9 +1750,9 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
+index 4c4977d..54d812e 100644
+--- a/net/bridge/br_netfilter.c
++++ b/net/bridge/br_netfilter.c
+@@ -601,6 +601,9 @@ static unsigned int br_nf_pre_routing(unsigned int hook, struct sk_buff *skb,
  
- 			if (pcpu_first_unit_cpu == NR_CPUS)
- 				pcpu_first_unit_cpu = cpu;
-+			pcpu_last_unit_cpu = cpu;
- 		}
- 	}
--	pcpu_last_unit_cpu = cpu;
- 	pcpu_nr_units = unit;
+ 	pskb_trim_rcsum(skb, len);
  
- 	for_each_possible_cpu(cpu)
++	/* BUG: Should really parse the IP options here. */
++	memset(IPCB(skb), 0, sizeof(struct inet_skb_parm));
++
+ 	nf_bridge_put(skb->nf_bridge);
+ 	if (!nf_bridge_alloc(skb))
+ 		return NF_DROP;
 -- 
 1.7.3.3
 
