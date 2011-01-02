@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293Ab1ABHqv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:46:51 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36184 "EHLO
+	id S1755243Ab1ABHqu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:46:50 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36189 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754280Ab1ABHYO (ORCPT
+	with ESMTP id S1754284Ab1ABHYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 2 Jan 2011 02:24:14 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Michael Cree <mcree@orcon.net.nz>,
-        Matt Turner <mattst88@gmail.com>,
+Cc: stable-review@kernel.org, Luke Yelavich <luke.yelavich@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 158/260] alpha: Fix printk format errors
-Date: Sun,  2 Jan 2011 02:17:34 -0500
-Message-Id: <1293952756-15010-159-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 162/260] ALSA: hda - Add Dell Latitude E6400 model quirk
+Date: Sun,  2 Jan 2011 02:17:38 -0500
+Message-Id: <1293952756-15010-163-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 02 Jan 2011 07:23:03.0838 (UTC) FILETIME=[E4D243E0:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:23:08.0025 (UTC) FILETIME=[E7512690:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Cree <mcree@orcon.net.nz>
+From: Luke Yelavich <luke.yelavich@canonical.com>
 
-commit 3e073367a57d41e506f20aebb98e308387ce3090 upstream.
+commit 0f9f1ee9d1412d45a22bfd69dfd4d4324b506e9e upstream.
 
-When compiling alpha generic build get errors such as:
-arch/alpha/kernel/err_marvel.c: In function ‘marvel_print_err_cyc’:
-arch/alpha/kernel/err_marvel.c:119: error: format ‘%ld’ expects type ‘long int’, but argument 6 has type ‘u64’
+BugLink: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/643891
 
-Replaced a number of %ld format specifiers with %lld since u64
-is unsigned long long.
+Set the Dell Latitude E6400 (1028:0233) SSID to use AD1984_DELL_DESKTOP
 
-Signed-off-by: Michael Cree <mcree@orcon.net.nz>
-Signed-off-by: Matt Turner <mattst88@gmail.com>
+Signed-off-by: Luke Yelavich <luke.yelavich@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/alpha/kernel/err_marvel.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ sound/pci/hda/patch_analog.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/arch/alpha/kernel/err_marvel.c b/arch/alpha/kernel/err_marvel.c
-index 52a79df..5c905aa 100644
---- a/arch/alpha/kernel/err_marvel.c
-+++ b/arch/alpha/kernel/err_marvel.c
-@@ -109,7 +109,7 @@ marvel_print_err_cyc(u64 err_cyc)
- #define IO7__ERR_CYC__CYCLE__M	(0x7)
+diff --git a/sound/pci/hda/patch_analog.c b/sound/pci/hda/patch_analog.c
+index e9fdfc4..ca61b88 100644
+--- a/sound/pci/hda/patch_analog.c
++++ b/sound/pci/hda/patch_analog.c
+@@ -3629,6 +3629,7 @@ static struct snd_pci_quirk ad1984_cfg_tbl[] = {
+ 	/* Lenovo Thinkpad T61/X61 */
+ 	SND_PCI_QUIRK_VENDOR(0x17aa, "Lenovo Thinkpad", AD1984_THINKPAD),
+ 	SND_PCI_QUIRK(0x1028, 0x0214, "Dell T3400", AD1984_DELL_DESKTOP),
++	SND_PCI_QUIRK(0x1028, 0x0233, "Dell Latitude E6400", AD1984_DELL_DESKTOP),
+ 	{}
+ };
  
- 	printk("%s        Packet In Error: %s\n"
--	       "%s        Error in %s, cycle %ld%s%s\n",
-+	       "%s        Error in %s, cycle %lld%s%s\n",
- 	       err_print_prefix, 
- 	       packet_desc[EXTRACT(err_cyc, IO7__ERR_CYC__PACKET)],
- 	       err_print_prefix,
-@@ -313,7 +313,7 @@ marvel_print_po7_ugbge_sym(u64 ugbge_sym)
- 	}
- 
- 	printk("%s      Up Hose Garbage Symptom:\n"
--	       "%s        Source Port: %ld - Dest PID: %ld - OpCode: %s\n", 
-+	       "%s        Source Port: %lld - Dest PID: %lld - OpCode: %s\n",
- 	       err_print_prefix,
- 	       err_print_prefix, 
- 	       EXTRACT(ugbge_sym, IO7__PO7_UGBGE_SYM__UPH_SRC_PORT),
-@@ -552,7 +552,7 @@ marvel_print_pox_spl_cmplt(u64 spl_cmplt)
- #define IO7__POX_SPLCMPLT__REM_BYTE_COUNT__M	(0xfff)
- 
- 	printk("%s      Split Completion Error:\n"	
--	       "%s         Source (Bus:Dev:Func): %ld:%ld:%ld\n",
-+	       "%s         Source (Bus:Dev:Func): %lld:%lld:%lld\n",
- 	       err_print_prefix,
- 	       err_print_prefix,
- 	       EXTRACT(spl_cmplt, IO7__POX_SPLCMPLT__SOURCE_BUS),
 -- 
 1.7.3.3
 
