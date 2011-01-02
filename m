@@ -1,85 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660Ab1ABHjX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:39:23 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36726 "EHLO
+	id S1754671Ab1ABHjk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:39:40 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36720 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754605Ab1ABHYz (ORCPT
+	with ESMTP id S1754594Ab1ABHYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:24:55 -0500
+	Sun, 2 Jan 2011 02:24:54 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Borislav Petkov <borislav.petkov@amd.com>,
-        Ingo Molnar <mingo@elte.hu>,
+Cc: stable-review@kernel.org, Ben Hutchings <ben@decadent.org.uk>,
+        linux-mips@linux-mips.org, Martin Michlmayr <tbm@cyrius.com>,
+        Aurelien Jarno <aurelien@aurel32.net>, 584784@bugs.debian.org,
+        Ralf Baechle <ralf@linux-mips.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 189/260] x86, AMD, MCE thresholding: Fix the MCi_MISCj iteration order
-Date: Sun,  2 Jan 2011 02:18:05 -0500
-Message-Id: <1293952756-15010-190-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 156/260] MIPS: Set io_map_base for several PCI bridges lacking it
+Date: Sun,  2 Jan 2011 02:17:32 -0500
+Message-Id: <1293952756-15010-157-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:23:37.0854 (UTC) FILETIME=[F918B1E0:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:23:01.0681 (UTC) FILETIME=[E3892210:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 6dcbfe4f0b4e17e289d56fa534b7ce5a6b7f63a3 upstream.
+commit 8faf2e6c201d95b780cd3b4674b7a55ede6dcbbb upstream.
 
-This fixes possible cases of not collecting valid error info in
-the MCE error thresholding groups on F10h hardware.
+Several MIPS platforms don't set pci_controller::io_map_base for their
+PCI bridges.  This results in a panic in pci_iomap().  (The panic is
+conditional on CONFIG_PCI_DOMAINS, but that is now enabled for all PCI
+MIPS systems.)
 
-The current code contains a subtle problem of checking only the
-Valid bit of MSR0000_0413 (which is MC4_MISC0 - DRAM
-thresholding group) in its first iteration and breaking out if
-the bit is cleared.
-
-But (!), this MSR contains an offset value, BlkPtr[31:24], which
-points to the remaining MSRs in this thresholding group which
-might contain valid information too. But if we bail out only
-after we checked the valid bit in the first MSR and not the
-block pointer too, we miss that other information.
-
-The thing is, MC4_MISC0[BlkPtr] is not predicated on
-MCi_STATUS[MiscV] or MC4_MISC0[Valid] and should be checked
-prior to iterating over the MCI_MISCj thresholding group,
-irrespective of the MC4_MISC0[Valid] setting.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-mips@linux-mips.org
+Cc: Martin Michlmayr <tbm@cyrius.com>
+Cc: Aurelien Jarno <aurelien@aurel32.net>
+Cc: 584784@bugs.debian.org
+Patchwork: https://patchwork.linux-mips.org/patch/1377/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/kernel/cpu/mcheck/mce_amd.c |    9 +++------
- 1 files changed, 3 insertions(+), 6 deletions(-)
+ arch/mips/mti-malta/malta-pci.c      |    2 ++
+ arch/mips/nxp/pnx8550/common/pci.c   |    1 +
+ arch/mips/nxp/pnx8550/common/setup.c |    2 +-
+ arch/mips/pci/ops-pmcmsp.c           |    1 +
+ arch/mips/pci/pci-yosemite.c         |    1 +
+ 5 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-index 224392d..f80ff85 100644
---- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-@@ -141,6 +141,7 @@ void mce_amd_feature_init(struct cpuinfo_x86 *c)
- 				address = (low & MASK_BLKPTR_LO) >> 21;
- 				if (!address)
- 					break;
+diff --git a/arch/mips/mti-malta/malta-pci.c b/arch/mips/mti-malta/malta-pci.c
+index 2fbfa1a..bf80921 100644
+--- a/arch/mips/mti-malta/malta-pci.c
++++ b/arch/mips/mti-malta/malta-pci.c
+@@ -247,6 +247,8 @@ void __init mips_pcibios_init(void)
+ 	iomem_resource.end &= 0xfffffffffULL;			/* 64 GB */
+ 	ioport_resource.end = controller->io_resource->end;
+ 
++	controller->io_map_base = mips_io_port_base;
 +
- 				address += MCG_XBLK_ADDR;
- 			} else
- 				++address;
-@@ -148,12 +149,8 @@ void mce_amd_feature_init(struct cpuinfo_x86 *c)
- 			if (rdmsr_safe(address, &low, &high))
- 				break;
+ 	register_pci_controller(controller);
+ }
  
--			if (!(high & MASK_VALID_HI)) {
--				if (block)
--					continue;
--				else
--					break;
--			}
-+			if (!(high & MASK_VALID_HI))
-+				continue;
+diff --git a/arch/mips/nxp/pnx8550/common/pci.c b/arch/mips/nxp/pnx8550/common/pci.c
+index eee4f3d..98e86dd 100644
+--- a/arch/mips/nxp/pnx8550/common/pci.c
++++ b/arch/mips/nxp/pnx8550/common/pci.c
+@@ -44,6 +44,7 @@ extern struct pci_ops pnx8550_pci_ops;
  
- 			if (!(high & MASK_CNTP_HI)  ||
- 			     (high & MASK_LOCKED_HI))
+ static struct pci_controller pnx8550_controller = {
+ 	.pci_ops	= &pnx8550_pci_ops,
++	.io_map_base	= PNX8550_PORT_BASE,
+ 	.io_resource	= &pci_io_resource,
+ 	.mem_resource	= &pci_mem_resource,
+ };
+diff --git a/arch/mips/nxp/pnx8550/common/setup.c b/arch/mips/nxp/pnx8550/common/setup.c
+index 2aed50f..64246c9 100644
+--- a/arch/mips/nxp/pnx8550/common/setup.c
++++ b/arch/mips/nxp/pnx8550/common/setup.c
+@@ -113,7 +113,7 @@ void __init plat_mem_setup(void)
+ 	PNX8550_GLB2_ENAB_INTA_O = 0;
+ 
+ 	/* IO/MEM resources. */
+-	set_io_port_base(KSEG1);
++	set_io_port_base(PNX8550_PORT_BASE);
+ 	ioport_resource.start = 0;
+ 	ioport_resource.end = ~0;
+ 	iomem_resource.start = 0;
+diff --git a/arch/mips/pci/ops-pmcmsp.c b/arch/mips/pci/ops-pmcmsp.c
+index 04b3147..b7c03d8 100644
+--- a/arch/mips/pci/ops-pmcmsp.c
++++ b/arch/mips/pci/ops-pmcmsp.c
+@@ -944,6 +944,7 @@ static struct pci_controller msp_pci_controller = {
+ 	.pci_ops	= &msp_pci_ops,
+ 	.mem_resource	= &pci_mem_resource,
+ 	.mem_offset	= 0,
++	.io_map_base	= MSP_PCI_IOSPACE_BASE,
+ 	.io_resource	= &pci_io_resource,
+ 	.io_offset	= 0
+ };
+diff --git a/arch/mips/pci/pci-yosemite.c b/arch/mips/pci/pci-yosemite.c
+index 0357946..cf5e1a2 100644
+--- a/arch/mips/pci/pci-yosemite.c
++++ b/arch/mips/pci/pci-yosemite.c
+@@ -54,6 +54,7 @@ static int __init pmc_yosemite_setup(void)
+ 		panic(ioremap_failed);
+ 
+ 	set_io_port_base(io_v_base);
++	py_controller.io_map_base = io_v_base;
+ 	TITAN_WRITE(RM9000x2_OCD_LKM7, TITAN_READ(RM9000x2_OCD_LKM7) | 1);
+ 
+ 	ioport_resource.end = TITAN_IO_SIZE - 1;
 -- 
 1.7.3.3
 
