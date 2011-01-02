@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541Ab1ABPpW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 10:45:22 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:39370 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645Ab1ABPpL (ORCPT
+	id S1753426Ab1ABPpU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 10:45:20 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:63051 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752628Ab1ABPpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 10:45:11 -0500
+	Sun, 2 Jan 2011 10:45:07 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=lArd2UoUkvKiSYJvG9qsBjKwjDhmMrZY+zG8bNCwOSNBwM/eYoXrZkwGTuJw+BdRar
-         IDHFe/h5NYLgF8/JNvGk9qM8n0ZaBRM7oQEjHebkFA+USUmsbWEOOepd53V95e+oBmHS
-         oaMlyaIFdvJJQ3hOMgxo9UCvLn6qXaoNVlVeQ=
+        b=mcNpguRhYMjoRWwNLhPcPruyille46NlENVOpZjqR/12bDhV7okMHY82eoEZziNlkJ
+         WZ9nKKKlM+SMCvqnNl2tSh3NWxd92A4RDHBgBZb7VJxdZYTcg/q/7+/FDvWjMy6CbHRQ
+         jm5BRXwStZa4cBjhe7rWca7Es0YhCGpUnEhx8=
 From: Minchan Kim <minchan.kim@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Hugh Dickins <hughd@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: [PATCH v2 6/7] Good bye remove_from_page_cache
-Date: Mon,  3 Jan 2011 00:44:35 +0900
-Message-Id: <3733d2c036b930eba792e12c824516c04988556e.1293982522.git.minchan.kim@gmail.com>
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andi Kleen <andi@firstfloor.org>, Nick Piggin <npiggin@kernel.dk>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH v2 5/7] truncate: Change remove_from_page_cache
+Date: Mon,  3 Jan 2011 00:44:34 +0900
+Message-Id: <05cf42eb7ae72d22b5cf050f02b95874ce216ace.1293982522.git.minchan.kim@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <cover.1293982522.git.minchan.kim@gmail.com>
 References: <cover.1293982522.git.minchan.kim@gmail.com>
@@ -31,76 +33,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now delete_from_page_cache replaces remove_from_page_cache.
-So we remove remove_from_page_cache so fs or something out of
-mainline will notice it when compile time and can fix it.
+This patch series changes remove_from_page_cache's page ref counting
+rule. Page cache ref count is decreased in delete_from_page_cache.
+So we don't need decreasing page reference by caller.
 
-Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Nick Piggin <npiggin@kernel.dk>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
 Acked-by: Hugh Dickins <hughd@google.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 ---
- include/linux/pagemap.h |    1 -
- mm/filemap.c            |   27 +++++++++++----------------
- 2 files changed, 11 insertions(+), 17 deletions(-)
+ mm/truncate.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index 7a1cb49..7bf6587 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -455,7 +455,6 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
- 				pgoff_t index, gfp_t gfp_mask);
- int add_to_page_cache_lru(struct page *page, struct address_space *mapping,
- 				pgoff_t index, gfp_t gfp_mask);
--extern void remove_from_page_cache(struct page *page);
- extern void __remove_from_page_cache(struct page *page);
- extern void delete_from_page_cache(struct page *page);
+diff --git a/mm/truncate.c b/mm/truncate.c
+index 9ee5673..85404b0 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -108,13 +108,12 @@ truncate_complete_page(struct address_space *mapping, struct page *page)
+ 	cancel_dirty_page(page, PAGE_CACHE_SIZE);
  
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 1ca7475..a4c43f7 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -148,7 +148,17 @@ void __remove_from_page_cache(struct page *page)
- 	}
- }
- 
--void remove_from_page_cache(struct page *page)
-+/**
-+ * delete_from_page_cache - delete page from page cache
-+ *
-+ * @page: the page which the kernel is trying to remove from page cache
-+ *
-+ * This must be called only on pages that have
-+ * been verified to be in the page cache and locked.
-+ * It will never put the page into the free list,
-+ * the caller has a reference on the page.
-+ */
-+void delete_from_page_cache(struct page *page)
- {
- 	struct address_space *mapping = page->mapping;
- 	void (*freepage)(struct page *);
-@@ -163,22 +173,7 @@ void remove_from_page_cache(struct page *page)
- 
- 	if (freepage)
- 		freepage(page);
--}
--EXPORT_SYMBOL(remove_from_page_cache);
- 
--/**
-- * delete_from_page_cache - delete page from page cache
-- *
-- * @page: the page which the kernel is trying to remove from page cache
-- *
-- * This must be called only on pages that have
-- * been verified to be in the page cache and locked.
-- * It will never put the page into the free list,
-- * the caller has a reference on the page.
-- */
--void delete_from_page_cache(struct page *page)
--{
+ 	clear_page_mlock(page);
 -	remove_from_page_cache(page);
- 	page_cache_release(page);
++	delete_from_page_cache(page);
+ 	ClearPageMappedToDisk(page);
+-	/* this must be after the remove_from_page_cache which
++	/* this must be after the delete_from_page_cache which
+ 	 * calls cleancache_put_page (and note page->mapping is now NULL)
+ 	 */
+ 	cleancache_flush_page(mapping, page);
+-	page_cache_release(page);	/* pagecache ref */
+ 	return 0;
  }
- EXPORT_SYMBOL(delete_from_page_cache);
+ 
 -- 
 1.7.0.4
 
