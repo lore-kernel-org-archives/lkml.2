@@ -1,174 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469Ab1ABHm6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:42:58 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36453 "EHLO
+	id S1754538Ab1ABHnd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:43:33 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36402 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754463Ab1ABHYf (ORCPT
+	with ESMTP id S1754443Ab1ABHYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:24:35 -0500
+	Sun, 2 Jan 2011 02:24:32 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Ming Lei <tom.leiming@gmail.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Anand Gadiyar <gadiyar@ti.com>, Mike Frysinger <vapier@gentoo.org>,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+Cc: stable-review@kernel.org, "Luck, Tony" <tony.luck@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 166/260] usb: musb: gadget: fix kernel panic if using out ep with FIFO_TXRX style
-Date: Sun,  2 Jan 2011 02:17:42 -0500
-Message-Id: <1293952756-15010-167-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 149/260] guard page for stacks that grow upwards
+Date: Sun,  2 Jan 2011 02:17:25 -0500
+Message-Id: <1293952756-15010-150-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:23:12.0713 (UTC) FILETIME=[EA1C7B90:01CBAA4D]
+X-OriginalArrivalTime: 02 Jan 2011 07:22:53.0853 (UTC) FILETIME=[DEDEACD0:01CBAA4D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ming Lei <tom.leiming@gmail.com>
+From: Luck, Tony <tony.luck@intel.com>
 
-commit bd2e74d657fc7d514881cc2117e323790b257914 upstream.
+commit 8ca3eb08097f6839b2206e2242db4179aee3cfb3 upstream.
 
-For shared fifo hw endpoint(with FIFO_TXRX style), only ep_in
-field of musb_hw_ep is intialized in musb_g_init_endpoints, and
-ep_out is not initialized, but musb_g_rx and rxstate may access
-ep_out field of musb_hw_ep by the method below:
+pa-risc and ia64 have stacks that grow upwards. Check that
+they do not run into other mappings. By making VM_GROWSUP
+0x0 on architectures that do not ever use it, we can avoid
+some unpleasant #ifdefs in check_stack_guard_page().
 
-	musb_ep = &musb->endpoints[epnum].ep_out
-
-which can cause the kernel panic[1] below, this patch fixes the issue
-by getting 'musb_ep' from '&musb->endpoints[epnum].ep_in' for shared fifo
-endpoint.
-
-[1], kernel panic
-[root@OMAP3EVM /]# musb_interrupt 1583: ** IRQ peripheral usb0008 tx0000 rx4000
-musb_stage0_irq 460: <== Power=f0, DevCtl=99, int_usb=0x8
-musb_g_rx 772: <== (null), rxcsr 4007 ffffffe8
-musb_g_rx 786:  iso overrun on ffffffe8
-Unable to handle kernel NULL pointer dereference at virtual address 00000008
-pgd = c0004000
-[00000008] *pgd=00000000
-Internal error: Oops: 17 [#1] PREEMPT
-last sysfs file: /sys/devices/platform/musb_hdrc/usb1/usb_device/usbdev1.1/dev
-Modules linked in: g_zero
-CPU: 0    Tainted: G        W    (2.6.35-rc6-gkh-wl+ #92)
-PC is at musb_g_rx+0xfc/0x2ec
-LR is at vprintk+0x3f4/0x458
-pc : [<c02c07a4>]    lr : [<c006ccb0>]    psr: 20000193
-sp : c760bd78  ip : c03c9d70  fp : c760bdbc
-r10: 00000000  r9 : fa0ab1e0  r8 : 0000000e
-r7 : c7e80158  r6 : ffffffe8  r5 : 00000001  r4 : 00004003
-r3 : 00010003  r2 : c760bcd8  r1 : c03cd030  r0 : 0000002e
-Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-Control: 10c5387d  Table: 8778c019  DAC: 00000017
-Process kmemleak (pid: 421, stack limit = 0xc760a2e8)
-Stack: (0xc760bd78 to 0xc760c000)
-bd60:                                                       ffffffe8 c04b1b58
-bd80: ffffffe8 c7c01ac0 00000000 c7e80d24 c0084238 00000001 00000001 c7e80158
-bda0: 0000000e 00000008 00000099 000000f0 c760be04 c760bdc0 c02bcd68 c02c06b4
-bdc0: 00000099 00000008 00004000 c760bdd8 c03cc4f8 00000000 00000002 c7e80158
-bde0: c7d2e300 60000193 c760a000 0000005c 00000000 00000000 c760be24 c760be08
-be00: c02bcecc c02bc1ac c7d2e300 c7d2e300 0000005c c760a000 c760be54 c760be28
-be20: c00ad698 c02bce6c 00000000 c7d2e300 c067c258 0000005c c067c294 00000001
-be40: c760a000 00000000 c760be74 c760be58 c00af984 c00ad5fc 0000005c 00000000
-be60: 00000000 00000002 c760be8c c760be78 c0039080 c00af8d0 ffffffff fa200000
-be80: c760beec c760be90 c0039b6c c003900c 00000001 00000000 c7d1e240 00000000
-bea0: 00000000 c068bae8 00000000 60000013 00000001 00000000 00000000 c760beec
-bec0: c0064ecc c760bed8 c00ff7d0 c003a0a8 60000013 ffffffff 00000000 c068bae8
-bee0: c760bf24 c760bef0 c00ff7d0 c0064ec4 00000001 00000000 c00ff700 00000000
-bf00: c0087f00 00000000 60000013 c0d76a70 c0e23795 00000001 c760bf4c c760bf28
-bf20: c00ffdd8 c00ff70c c068bb08 c068bae8 60000013 c0100938 c068bb30 00000000
-bf40: c760bf84 c760bf50 c010014c c00ffd84 00000001 00000000 c010000c 00012c00
-bf60: c7c33f04 00012c00 c7c33f04 00000000 c0100938 00000000 c760bf9c c760bf88
-bf80: c01009a8 c0100018 c760bfa8 c7c33f04 c760bff4 c760bfa0 c0088000 c0100944
-bfa0: c760bf98 00000000 00000000 00000001 dead4ead ffffffff ffffffff c08ba2bc
-bfc0: 00000000 c049e7fa 00000000 c0087f70 c760bfd0 c760bfd0 c7c33f04 c0087f70
-bfe0: c006f5e8 00000013 00000000 c760bff8 c006f5e8 c0087f7c 7f0004ff df2000ff
-Backtrace:
-[<c02c06a8>] (musb_g_rx+0x0/0x2ec) from [<c02bcd68>] (musb_interrupt+0xbc8/0xcc0)
-[<c02bc1a0>] (musb_interrupt+0x0/0xcc0) from [<c02bcecc>] (generic_interrupt+0x6c/0x84)
-[<c02bce60>] (generic_interrupt+0x0/0x84) from [<c00ad698>] (handle_IRQ_event+0xa8/0x1ec)
- r7:c760a000 r6:0000005c r5:c7d2e300 r4:c7d2e300
-[<c00ad5f0>] (handle_IRQ_event+0x0/0x1ec) from [<c00af984>] (handle_level_irq+0xc0/0x13c)
-[<c00af8c4>] (handle_level_irq+0x0/0x13c) from [<c0039080>] (asm_do_IRQ+0x80/0xa0)
- r7:00000002 r6:00000000 r5:00000000 r4:0000005c
-[<c0039000>] (asm_do_IRQ+0x0/0xa0) from [<c0039b6c>] (__irq_svc+0x4c/0xb4)
-Exception stack(0xc760be90 to 0xc760bed8)
-be80:                                     00000001 00000000 c7d1e240 00000000
-bea0: 00000000 c068bae8 00000000 60000013 00000001 00000000 00000000 c760beec
-bec0: c0064ecc c760bed8 c00ff7d0 c003a0a8 60000013 ffffffff
- r5:fa200000 r4:ffffffff
-[<c0064eb8>] (sub_preempt_count+0x0/0x100) from [<c00ff7d0>] (find_and_get_object+0xd0/0x110)
- r5:c068bae8 r4:00000000
-[<c00ff700>] (find_and_get_object+0x0/0x110) from [<c00ffdd8>] (scan_block+0x60/0x104)
- r8:00000001 r7:c0e23795 r6:c0d76a70 r5:60000013 r4:00000000
-[<c00ffd78>] (scan_block+0x0/0x104) from [<c010014c>] (kmemleak_scan+0x140/0x484)
-[<c010000c>] (kmemleak_scan+0x0/0x484) from [<c01009a8>] (kmemleak_scan_thread+0x70/0xcc)
- r8:00000000 r7:c0100938 r6:00000000 r5:c7c33f04 r4:00012c00
-[<c0100938>] (kmemleak_scan_thread+0x0/0xcc) from [<c0088000>] (kthread+0x90/0x98)
- r5:c7c33f04 r4:c760bfa8
-[<c0087f70>] (kthread+0x0/0x98) from [<c006f5e8>] (do_exit+0x0/0x684)
- r7:00000013 r6:c006f5e8 r5:c0087f70 r4:c7c33f04
-Code: e3002312 e58d6000 e2833e16 eb0422d5 (e5963020)
----[ end trace f3d5e96f75c297b7 ]---
-
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-Reviewed-by:   Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: David Brownell <dbrownell@users.sourceforge.net>
-Cc: Anand Gadiyar <gadiyar@ti.com>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/musb/musb_gadget.c |   20 +++++++++++++++++---
- 1 files changed, 17 insertions(+), 3 deletions(-)
+ include/linux/mm.h |    8 +++++++-
+ mm/memory.c        |   15 +++++++++++----
+ mm/mmap.c          |    3 ---
+ 3 files changed, 18 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
-index 6fca870..de0ca90 100644
---- a/drivers/usb/musb/musb_gadget.c
-+++ b/drivers/usb/musb/musb_gadget.c
-@@ -568,11 +568,19 @@ static void rxstate(struct musb *musb, struct musb_request *req)
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 462acaf..04fb7f6 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -78,7 +78,11 @@ extern unsigned int kobjsize(const void *objp);
+ #define VM_MAYSHARE	0x00000080
+ 
+ #define VM_GROWSDOWN	0x00000100	/* general info on the segment */
++#if defined(CONFIG_STACK_GROWSUP) || defined(CONFIG_IA64)
+ #define VM_GROWSUP	0x00000200
++#else
++#define VM_GROWSUP	0x00000000
++#endif
+ #define VM_PFNMAP	0x00000400	/* Page-ranges managed without "struct page", just pure PFN */
+ #define VM_DENYWRITE	0x00000800	/* ETXTBSY on write attempts.. */
+ 
+@@ -1325,8 +1329,10 @@ unsigned long ra_submit(struct file_ra_state *ra,
+ 
+ /* Do stack extension */
+ extern int expand_stack(struct vm_area_struct *vma, unsigned long address);
+-#ifdef CONFIG_IA64
++#if VM_GROWSUP
+ extern int expand_upwards(struct vm_area_struct *vma, unsigned long address);
++#else
++  #define expand_upwards(vma, address) do { } while (0)
+ #endif
+ extern int expand_stack_downwards(struct vm_area_struct *vma,
+ 				  unsigned long address);
+diff --git a/mm/memory.c b/mm/memory.c
+index 47fb0a0..3410236 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2751,11 +2751,9 @@ out_release:
+ }
+ 
+ /*
+- * This is like a special single-page "expand_downwards()",
+- * except we must first make sure that 'address-PAGE_SIZE'
++ * This is like a special single-page "expand_{down|up}wards()",
++ * except we must first make sure that 'address{-|+}PAGE_SIZE'
+  * doesn't hit another vma.
+- *
+- * The "find_vma()" will do the right thing even if we wrap
+  */
+ static inline int check_stack_guard_page(struct vm_area_struct *vma, unsigned long address)
  {
- 	const u8		epnum = req->epnum;
- 	struct usb_request	*request = &req->request;
--	struct musb_ep		*musb_ep = &musb->endpoints[epnum].ep_out;
-+	struct musb_ep		*musb_ep;
- 	void __iomem		*epio = musb->endpoints[epnum].regs;
- 	unsigned		fifo_count = 0;
--	u16			len = musb_ep->packet_sz;
-+	u16			len;
- 	u16			csr = musb_readw(epio, MUSB_RXCSR);
-+	struct musb_hw_ep	*hw_ep = &musb->endpoints[epnum];
-+
-+	if (hw_ep->is_shared_fifo)
-+		musb_ep = &hw_ep->ep_in;
-+	else
-+		musb_ep = &hw_ep->ep_out;
-+
-+	len = musb_ep->packet_sz;
+@@ -2774,6 +2772,15 @@ static inline int check_stack_guard_page(struct vm_area_struct *vma, unsigned lo
  
- 	/* We shouldn't get here while DMA is active, but we do... */
- 	if (dma_channel_status(musb_ep->dma) == MUSB_DMA_STATUS_BUSY) {
-@@ -740,9 +748,15 @@ void musb_g_rx(struct musb *musb, u8 epnum)
- 	u16			csr;
- 	struct usb_request	*request;
- 	void __iomem		*mbase = musb->mregs;
--	struct musb_ep		*musb_ep = &musb->endpoints[epnum].ep_out;
-+	struct musb_ep		*musb_ep;
- 	void __iomem		*epio = musb->endpoints[epnum].regs;
- 	struct dma_channel	*dma;
-+	struct musb_hw_ep	*hw_ep = &musb->endpoints[epnum];
+ 		expand_stack(vma, address - PAGE_SIZE);
+ 	}
++	if ((vma->vm_flags & VM_GROWSUP) && address + PAGE_SIZE == vma->vm_end) {
++		struct vm_area_struct *next = vma->vm_next;
 +
-+	if (hw_ep->is_shared_fifo)
-+		musb_ep = &hw_ep->ep_in;
-+	else
-+		musb_ep = &hw_ep->ep_out;
++		/* As VM_GROWSDOWN but s/below/above/ */
++		if (next && next->vm_start == address + PAGE_SIZE)
++			return next->vm_flags & VM_GROWSUP ? 0 : -ENOMEM;
++
++		expand_upwards(vma, address + PAGE_SIZE);
++	}
+ 	return 0;
+ }
  
- 	musb_ep_select(mbase, epnum);
- 
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 3867cfc..10cb197 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1704,9 +1704,6 @@ static int acct_stack_growth(struct vm_area_struct *vma, unsigned long size, uns
+  * PA-RISC uses this for its stack; IA64 for its Register Backing Store.
+  * vma is the last one with address > vma->vm_end.  Have to extend vma.
+  */
+-#ifndef CONFIG_IA64
+-static
+-#endif
+ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
+ {
+ 	int error;
 -- 
 1.7.3.3
 
