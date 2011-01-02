@@ -1,75 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753501Ab1ABTpe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 14:45:34 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:43795 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753154Ab1ABTpc convert rfc822-to-8bit (ORCPT
+	id S1753398Ab1ABTsR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 14:48:17 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:36044 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192Ab1ABTsQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 14:45:32 -0500
+	Sun, 2 Jan 2011 14:48:16 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=EO/G9p5KQdKNbL7v8FrxFKzkOKXNZSd6W7Jubc4LNF9o9W2J7prJJ5NEma09VVWXMD
-         lHi8i0e8Q6ImFskYNngE1fXevfoNxVfypC422oxhUBGWDFRkyOgaWpJt0gJvfBYBb7Hl
-         hZwNaFD9gdIbQeIZNmQMLGHL5q4tEFIcsUnRI=
+        b=c5H37hta5IyA0qwA8XQ8KWFBsdyJZZ0LJcl2cwAZCTMeEdgy6hGVw5S83UIFqWphJh
+         25I5eS8+tjnmnPNHaOicmuTm2m9ISSzjAQoWZuXN5wH1DqTuE/W908saP1tJX1tOQgeB
+         OApkuia1oNq2rWTVlVquBm7mTGWtBhflpvvA4=
 MIME-Version: 1.0
-In-Reply-To: <CE761E84DADF2947A4AF22FB8D97A47331E875CD@shsmsx501.ccr.corp.intel.com>
-References: <1293023621-3077-1-git-send-email-tardyp@gmail.com>
-	<41EFD7A46E18724CAB128DAD00733480193D2AE61C@shsmsx502.ccr.corp.intel.com>
-	<AANLkTinYWODS785AefQ7hV+urPkAn1+En-fZEaFQygLG@mail.gmail.com>
-	<CE761E84DADF2947A4AF22FB8D97A47331E86F6E@shsmsx501.ccr.corp.intel.com>
-	<AANLkTimB7h0ZxvSOt2dUkO90RxE2c3Bu3CRqpasgzxw=@mail.gmail.com>
-	<CE761E84DADF2947A4AF22FB8D97A47331E875CD@shsmsx501.ccr.corp.intel.com>
-Date: Sun, 2 Jan 2011 20:45:31 +0100
-Message-ID: <AANLkTimbTwKMHrpmREwnq+19vwWZv6qYwQCkB=jr3aUp@mail.gmail.com>
-Subject: Re: [RFC] sdhci: use ios->clock to know when sdhci is idle
-From: Pierre Tardy <tardyp@gmail.com>
-To: "Gao, Yunpeng" <yunpeng.gao@intel.com>
-Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
-        "Yuan, Hang" <hang.yuan@intel.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Ball <cjb@laptop.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>, Takashi Iwai <tiwai@suse.de>,
-        Maxim Levitsky <maximlevitsky@gmail.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+In-Reply-To: <1293982286-15389-1-git-send-email-stefani@seibold.net>
+References: <1293982286-15389-1-git-send-email-stefani@seibold.net>
+Date: Sun, 2 Jan 2011 21:48:15 +0200
+Message-ID: <AANLkTi=7M=gSgBjcrCVEj+GKZ5cf5t4MPqm6r9NGr=MZ@mail.gmail.com>
+Subject: Re: [PATCH] new UDPCP Communication Protocol
+From: Daniel Baluta <daniel.baluta@gmail.com>
+To: stefani@seibold.net
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        davem@davemloft.net, netdev@vger.kernel.org, eric.dumazet@gmail.com,
+        shemminger@vyatta.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 30, 2010 at 11:37 AM, Gao, Yunpeng <yunpeng.gao@intel.com> wrote:
->>> So, why we have to move to the 'aggressive clock gating framework'?
->>
->>The aggressive clock gating makes more sense since the different
->>drivers will know better how to handle the gating. ios with f=0 can
->>be interpreted differently. Else every driver has to register
->>runtime PM hooks for this, which is less elegant.
->
-> Thanks for the response. I just curious that is this the only reason to change the framework? To my understanding, seems it's not a very strong reason :-)
->
-> Take the example of sd/mmc card -
-> by using the aggressive clock gating framework, it means the host controller will gate (clock gating or power gating) itself if not receiving requests for 8 clocks even if the request queue of mmc block driver is not empty at that time. So the host controller has to be gated / ungated repeatedly until the current request queue of mmc block driver becomes empty. I don't think this is elegant since most of the gating / ungating operations are not necessary.
+Hello,
 
-I'm also concerned by thrashing. Please see my original patch. I am
-using pm_runtime_put_autosuspend() so that suspend timeout can be
-tweaked in user space.
+I have some style comments, please read below.
 
-Please also note that clock gating only platforms must also be
-concerned by thrashing, as clock_disable() call might endup with PLL
-power down that will have to be warmed up again later...
+> +struct udpcp_statistics {
+> +       unsigned int txMsgs;            /* Num of transmitted messages */
+> +       unsigned int rxMsgs;            /* Num of received messages */
+> +       unsigned int txNodes;           /* Num of receiver nodes */
+> +       unsigned int rxNodes;           /* Num of transmitter nodes */
+> +       unsigned int txTimeout;         /* Num of unsuccessful transmissions */
+> +       unsigned int rxTimeout;         /* Num of partial message receptions */
+> +       unsigned int txRetries;         /* Num of resends */
+> +       unsigned int rxDiscardedFrags;  /* Num of discarded fragments */
+> +       unsigned int crcErrors;         /* Num of crc errors detected */
 
->
-> Instead, if we do it in the mmc block driver by just call the pm_runtime_put() once the current request queue is empty and call pm_runtime_get() once any new request comes, then the host controller can be gated/ungated appropriately.
-My original patch does not include any ignore_child() call. So that
-children can decide wether they want to prevent suspension of their
-parent.That will be the case of a wifi card who uses runtime_pm to
-manage its own power, and still wants its sdio bus to suspend
-automatically when not used (wifi idle)
+Is there any strong reason to have this camel case naming?
+I would prefer tx_msgs, rx_msgs etc..
 
+> +struct udpcp_dest {
+> +       struct list_head list;
+> +       struct sk_buff_head xmit;
+> +       unsigned long tx_time;
+> +       unsigned long rx_time;
+> +       u32 txTimeout;
+> +       u32 rxTimeout;
 
-Regards,
-Pierre
+Here you have mixed naming conventions. I guess
+tx_timeout will fit in better than txTimeout.
+
+> +       u32 txRetries;
+> +       u32 rxDiscardedFrags;
+> +       struct sk_buff *xmit_wait;
+> +       struct sk_buff *xmit_last;
+> +       struct sk_buff *recv_msg;
+> +       struct sk_buff *recv_last;
+> +       struct udpcphdr lastmsg;
+> +       struct ipcm_cookie ipc;
+> +       struct flowi fl;
+> +       struct rtable *rt;
+> +       __be32 addr;
+> +       __be16 port;
+> +       u16 msgid;
+> +       u8 use_flag;
+> +       u8 insync;
+> +       u8 ackmode;
+> +       u8 chkmode;
+> +       u8 try;
+> +       u8 acks;
+> +       struct udp_sock udpsock;
+> +       struct sk_buff_head assembly;
+> +       u32 assembly_len;
+> +       struct udpcp_dest *assembly_dest;
+> +       wait_queue_head_t wq;
+> +       struct list_head destlist;
+> +       struct list_head udpcplist;
+> +       struct timer_list timer;
+> +       struct udpcp_statistics stat;
+> +       u32 pending;
+> +       unsigned long tx_timeout;
+> +       unsigned long rx_timeout;
+> +       void (*udp_data_ready) (struct sock *sk, int bytes);
+> +       u8 ackmode;
+> +       u8 chkmode;
+> +       u8 maxtry;
+> +       u8 acks;
+> +       u8 timeout;
+> +/* overall UDPCP statistics */
+> +static atomic_t udpcp_txMsgs;
+> +static atomic_t udpcp_rxMsgs;
+> +static atomic_t udpcp_txNodes;
+> +static atomic_t udpcp_rxNodes;
+> +static atomic_t udpcp_txTimeout;
+> +static atomic_t udpcp_rxTimeout;
+> +static atomic_t udpcp_txRetries;
+> +static atomic_t udpcp_rxDiscardedFrags;
+> +static atomic_t udpcp_crcErrors;
+
+same here.
+
+> +
+> +module_param(debug, int, 0);
+> +MODULE_PARM_DESC(debug, "Debug enabled or not");
+> +
+
+thanks,
+Daniel.
