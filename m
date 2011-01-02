@@ -1,139 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519Ab1ABLQF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 06:16:05 -0500
-Received: from www84.your-server.de ([213.133.104.84]:34446 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751093Ab1ABLQD convert rfc822-to-8bit (ORCPT
+	id S1755507Ab1ABLXM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 06:23:12 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41584 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093Ab1ABLXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 06:16:03 -0500
-Subject: Re: [PATCH] new UDPCP Communication Protocol
-From: Stefani Seibold <stefani@seibold.net>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        davem@davemloft.net, netdev@vger.kernel.org, shemminger@vyatta.com
-In-Reply-To: <1293920601.2535.64.camel@edumazet-laptop>
-References: <1293918276-28773-1-git-send-email-stefani@seibold.net>
-	 <1293920601.2535.64.camel@edumazet-laptop>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Sun, 02 Jan 2011 12:17:03 +0100
-Message-ID: <1293967023.29525.16.camel@wall-e>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 8BIT
-X-Authenticated-Sender: stefani@seibold.net
+	Sun, 2 Jan 2011 06:23:11 -0500
+Date: Sun, 2 Jan 2011 11:22:27 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Viresh Kumar <viresh.kumar@st.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        yuanyabin1978@sina.com, linux-kernel@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>, Peter Pearse <peter.pearse@arm.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Alessandro Rubini <rubini@unipv.it>
+Subject: Re: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081
+	PrimeCells
+Message-ID: <20110102112227.GA10355@n2100.arm.linux.org.uk>
+References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com> <20101221182037.GA4783@n2100.arm.linux.org.uk> <20101222122904.GC14693@n2100.arm.linux.org.uk> <AANLkTikpyAggDCPef1pS=_QHnu9-FyLcpddGyVHnGwWx@mail.gmail.com> <20101223001012.GF29368@n2100.arm.linux.org.uk> <AANLkTimirgsuoM2che_ocrkvCZqGu6xEJjrjdmt9-69p@mail.gmail.com> <AANLkTikP+JZkN7AjqaNfHY8jZ7bVsV-af=YR=MTdfnNU@mail.gmail.com> <20101231215018.GB5012@n2100.arm.linux.org.uk> <AANLkTim08yVM2NceT-8tukJNNNG3WUdjPs-7MD9QBV-u@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTim08yVM2NceT-8tukJNNNG3WUdjPs-7MD9QBV-u@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Samstag, den 01.01.2011, 23:23 +0100 schrieb Eric Dumazet:
-> Le samedi 01 janvier 2011 à 22:44 +0100, stefani@seibold.net a écrit :
-> > From: Stefani Seibold <stefani@seibold.net>
-> > 
-> > Changelog:
-> > 31.12.2010 first proposal
-> > 01.01.2011 code cleanup and fixes suggest by Eric Dumazet
-> > 
-> > UDPCP is a communication protocol specified by the Open Base Station
-> > Architecture Initiative Special Interest Group (OBSAI SIG). The
-> > protocol is based on UDP and is designed to meet the needs of "Mobile
-> > Communcation Base Station" internal communications. It is widely used by
-> > the major networks infrastructure supplier.
-> > 
-> > The UDPCP communication service supports the following features:
-> > 
-> > -Connectionless communication for serial mode data transfer
-> > -Acknowledged and unacknowledged transfer modes
-> > -Retransmissions Algorithm
-> > -Checksum Algorithm using Adler32
-> > -Fragmentation of long messages (disassembly/reassembly) to match to the MTU
-> >  during transport:
-> > -Broadcasting and multicasting messages to multiple peers in unacknowledged
-> >  transfer mode
-> > 
-> > UDPCP supports application level messages up to 64 KBytes (limited by 16-bit
-> > packet data length field). Messages that are longer than the MTU will be
-> > fragmented to the MTU.
-> > 
-> > UDPCP provides a reliable transport service that will perform message
-> > retransmissions in case transport failures occur.
-> > 
-> > The code is also a nice example how to implement a UDP based protocol as
-> > a kernel socket modules.
-> > 
-> > Due the nature of UDPCP which has no sliding windows support, the latency has a
-> > huge impact. The perfomance increase by implementing as a kernel module is
-> > about the factor 10, because there are no context switches and data packets or
-> > ACKs will be handled in the interrupt service.
-> > 
-> > There are no side effects to the network subsystems so i ask for merge it
-> > into linux-next. Hope you like it.
-> > 
-> > The patch is against 2.6.37-rc8
-> > 
+On Sun, Jan 02, 2011 at 01:42:31AM -0800, Dan Williams wrote:
+> On Fri, Dec 31, 2010 at 1:50 PM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > Reason for asking is that there's no way at the moment to tell what the
+> > expectations are from a lot of the DMA engine support code - and that is
+> > _very_ bad news if you want DMA engine drivers to behave the same.
 > 
-> Hi Stefani
+> For the generic offload usage case dma drivers need to present
+> consistent behaviour because they are reused generically.
 > 
-> 1) Please base your next trys on net-next-2.6 : This is the reference
-> for stuff like that. It probably does not matter a lot, but still...
+> The slave usages are not generic.  They grew up around wanting to
+> reuse dmaengine's channel allocation boilerplate, while maintaining
+> architecture-specific (dma driver / slave driver pairing) behaviour.
+> Certainly the ->device_prep* methods can be made to present a
+> consistent/documented interface.
+
+The device_prep/submit/terminate/pause/resume interface is really what
+I was referring to - the behaviour of these needs to be really well
+defined otherwise there will be problems.
+
+> >        cookie = dmaengine_submit(desc);
+> >        if (dma_submit_error(cookie))
+> >                /* what DMA engine cleanup of desc is expected here? */
 > 
+> dma_submit_error() is something I should have removed after commit
+> a0587bcf "ioat1: move descriptor allocation from submit to prep" all
+> errors should be notified by prep failing to return a descriptor
+> handle.  Negative dma_cookie_t values are only returned by the
+> dma_async_memcpy* calls which translate a prep failure into -ENOMEM.
 
-Okay.
+Ok, that means error checking on the dmaengine_submit() result in slave
+DMA drivers should be removed - which makes things simpler.
 
+> > Note: I don't trust what's written in 3.3 of async-tx-api.txt, because
+> > that seems to be talking about the the async_* APIs rather than the
+> > DMA engine API. (see below.)
+> >
+> > 1. Is it valid to call dmaengine_terminate_all(chan) in those paths?
+> >
+> > 2. What is the expectations wrt the callback of a previously submitted
+> >   job at the point that dmaengine_terminate_all() returns?
+> >
+> > 3. What if the callback is running on a different CPU, waiting for a
+> >   spinlock you're holding at the time you call dmaengine_terminate_all()
+> >   within that very same spinlock?
+> >
+> > 4. What if dmaengine_terminate_all() is running, but parallel with it
+> >   the tasklet runs on a different CPU, and queues another DMA job?
+> >
+> > These can all be solved by requiring that the termination implementations
+> > call tasklet_disable(), then clean up the DMA state, followed by
+> > tasklet_enable().  tasklet_disable() will prevent the tasklet being
+> > scheduled, and wait for the tasklet to finish running before proceeding.
+> > This means that (2) becomes "the tasklet will not be running", (3)
+> > becomes illegal (due to deadlock), and (4) becomes predictable as we
+> > know that after tasklet_disable() we have consistent DMA engine state
+> > and we can terminate everything that's been queued.
+> >
 > 
-> 2) I still see some _irq() variants of spinlock(). Its not necessary in
-> network stack at the level you are working (process context, and
-> softirqs)
+> This assumes that all submission and completion occurs in tasklet
+> context?  I think something is wrong if the terminate_all
+> implementation is not taking the channel spinlock or otherwise
+> guaranteeing that it is not racing against new submissions and the
+> completion tasklet.
+
+I was initially thinking more of the case where we have:
+
+	tasklet->callback->attempted submission of next tx buffer,
+		submission failure->terminate_all->tasklet_disable
+
+As tasklet_disable() will wait for the tasklet to finish running, this
+results in deadlock.  This is exactly what could happen with the PL011
+UART driver's usage of the DMA engine API.  However, as a result of your
+comments, I've removed the terminate_all calls in those failure paths as
+they're entirely unnecessary.  So that problem is solved.
+
+However, that is not the only place where this can happen:
+
+CPU0		CPU1
+		takes slave driver spinlock
+tasklet
+callback
+spins on slave driver spinlock
+		terminate_all
+		tasklet_disable
+
+That also leads to deadlock - and again is something still to be solved
+between the PL011 UART driver and PL08x DMA driver.
+
+This scenario also applies if you do similar things in the DMA engine
+driver.  Most DMA engine drivers take a spinlock within their tasklet.
+
+CPU0		CPU1
+		terminate_all
+tasklet
+		takes DMA engine driver spinlock
+spins on DMA engine driver spinlock
+		tasklet_disable
+
+So... beware of DMA engine drivers which use tasklet_disable() in their
+terminate_all path!  (Maybe this should be a no-no.)
+
+> > Almost no one checks the result of dmaengine_submit() (or its open-coded
+> > equivalent).  Are all such drivers potentially leaking descriptors?  If
+> > not, how are the failed descriptors re-used?
 > 
-> Please only use _bh() variants, it's enough.
+> As per above, submit must fail if prep succeeds.
+
+I think you mean "submit must succeed if prep succeeds".
+
+> > What should be the initial value of tx->cookie after a successful
+> > prep_slave_sg() call?
 > 
+> Drivers are using -EBUSY to indicate descriptor is in the process of
+> being submitted.
 
-Will be fixed...
-
-> 3) I see UDPLITE references in your code. Are you sure UDPCP protocol
-> can really work on top of UDPLITE ? I think not, so please remove dead
-> code.
-> 
-
-I have not tested it yet. But i think i should work, the code is mostly
-stolen from the udp.c file. Since the stack not depend on the len field
-of the UDP header, it should not matter if UPD or UDP-Lite is used.
-
-> 4) udpcp_release_sock() seems expensive to me. Why not testing
-> usk->timeout before releasing sock lock, and save a lock/unlock pair ?
-> 
-> static inline void udpcp_release_sock(struct sock *sk)
-> {
-> 	struct udpcp_sock *usk = udpcp_sk(sk);
-> 
-> 	if (usk->timeout)
-> 		udpcp_handle_timeout(sk);
-> 	release_sock(sk);
-> }
-> 
-
-No... What is when a timer occurs between exiting udpcp_handle_timeout()
-and release_sock(). This timer will not longer handled.
-
-What about this:?
-
-static inline void udpcp_release_sock(struct sock *sk)
-{
-	while (usk->timeout) {
-		udpcp_handle_timeout(sk);
-	release_sock(sk);
-        check_timeout(sk);
-}
-
-> 5) In udpcp_timeout(), if you find socket is locked by user, you set
-> timeout to one and rearm a timer to udpcp_timer(sk, jiffies + 1); 
-> 
-> Why is it needed, since user process is going to handle the timeout
-> indication from udpcp_release_sock() ?
-> 
-
-It is only for paranoid reasons, maybe there is a bug in my wonderful
-code and than the stack will stop to work.... If it is okay, i didn't
-want to remove it, my cuts feels a little bit nervous. 
-
-
+Ok, so that's something else which needs fixing in PL08x.
