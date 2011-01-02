@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780Ab1ABHg1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:36:27 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36929 "EHLO
+	id S1754630Ab1ABHZI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:25:08 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36826 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754697Ab1ABHZM (ORCPT
+	with ESMTP id S1754662Ab1ABHZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:25:12 -0500
+	Sun, 2 Jan 2011 02:25:02 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        James Bottomley <James.Bottomley@suse.de>,
+Cc: stable-review@kernel.org, Paul Fertser <fercerpav@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 205/260] bsg: fix incorrect device_status value
-Date: Sun,  2 Jan 2011 02:18:21 -0500
-Message-Id: <1293952756-15010-206-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 208/260] b44: fix carrier detection on bind
+Date: Sun,  2 Jan 2011 02:18:24 -0500
+Message-Id: <1293952756-15010-209-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:23:54.0995 (UTC) FILETIME=[03503430:01CBAA4E]
+X-OriginalArrivalTime: 02 Jan 2011 07:23:58.0042 (UTC) FILETIME=[052123A0:01CBAA4E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+From: Paul Fertser <fercerpav@gmail.com>
 
-commit 478971600e47cb83ff2d3c63c5c24f2b04b0d6a1 upstream.
+commit bcf64aa379fcadd074449cbf0c049da70071b06f upstream.
 
-bsg incorrectly returns sg's masked_status value for device_status.
+For carrier detection to work properly when binding the driver with a cable
+unplugged, netif_carrier_off() should be called after register_netdev(),
+not before.
 
-[jejb: fix up expression logic]
-Reported-by: Douglas Gilbert <dgilbert@interlog.com>
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
-
+Signed-off-by: Paul Fertser <fercerpav@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- block/bsg.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/b44.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/block/bsg.c b/block/bsg.c
-index 82d5882..0c00870 100644
---- a/block/bsg.c
-+++ b/block/bsg.c
-@@ -426,7 +426,7 @@ static int blk_complete_sgv4_hdr_rq(struct request *rq, struct sg_io_v4 *hdr,
- 	/*
- 	 * fill in all the output members
- 	 */
--	hdr->device_status = status_byte(rq->errors);
-+	hdr->device_status = rq->errors & 0xff;
- 	hdr->transport_status = host_byte(rq->errors);
- 	hdr->driver_status = driver_byte(rq->errors);
- 	hdr->info = 0;
+diff --git a/drivers/net/b44.c b/drivers/net/b44.c
+index 69d9f3d..7a4d680 100644
+--- a/drivers/net/b44.c
++++ b/drivers/net/b44.c
+@@ -2170,8 +2170,6 @@ static int __devinit b44_init_one(struct ssb_device *sdev,
+ 	dev->irq = sdev->irq;
+ 	SET_ETHTOOL_OPS(dev, &b44_ethtool_ops);
+ 
+-	netif_carrier_off(dev);
+-
+ 	err = ssb_bus_powerup(sdev->bus, 0);
+ 	if (err) {
+ 		dev_err(sdev->dev,
+@@ -2211,6 +2209,8 @@ static int __devinit b44_init_one(struct ssb_device *sdev,
+ 		goto err_out_powerdown;
+ 	}
+ 
++	netif_carrier_off(dev);
++
+ 	ssb_set_drvdata(sdev, dev);
+ 
+ 	/* Chip reset provides power to the b44 MAC & PCI cores, which
 -- 
 1.7.3.3
 
