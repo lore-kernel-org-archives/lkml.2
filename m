@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab1ABHZk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:25:40 -0500
-Received: from mail.windriver.com ([147.11.1.11]:37108 "EHLO
+	id S1754914Ab1ABHdD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:33:03 -0500
+Received: from mail.windriver.com ([147.11.1.11]:37125 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754849Ab1ABHZh (ORCPT
+	with ESMTP id S1754868Ab1ABHZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 02:25:37 -0500
+	Sun, 2 Jan 2011 02:25:40 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Paul Fox <pgf@laptop.org>,
-        Daniel Drake <dsd@laptop.org>, dilinger@queued.net,
-        Ingo Molnar <mingo@elte.hu>,
+Cc: stable-review@kernel.org, Roland McGrath <roland@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 229/260] x86, olpc: Don't retry EC commands forever
-Date: Sun,  2 Jan 2011 02:18:45 -0500
-Message-Id: <1293952756-15010-230-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 216/260] execve: improve interactivity with large arguments
+Date: Sun,  2 Jan 2011 02:18:32 -0500
+Message-Id: <1293952756-15010-217-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:24:20.0730 (UTC) FILETIME=[12A70DA0:01CBAA4E]
+X-OriginalArrivalTime: 02 Jan 2011 07:24:05.0886 (UTC) FILETIME=[09CE09E0:01CBAA4E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Fox <pgf@laptop.org>
+From: Roland McGrath <roland@redhat.com>
 
-commit 286e5b97eb22baab9d9a41ca76c6b933a484252c upstream.
+commit 7993bc1f4663c0db67bb8f0d98e6678145b387cd upstream.
 
-Avoids a potential infinite loop.
+This adds a preemption point during the copying of the argument and
+environment strings for execve, in copy_strings().  There is already
+a preemption point in the count() loop, so this doesn't add any new
+points in the abstract sense.
 
-It was observed once, during an EC hacking/debugging
-session - not in regular operation.
+When the total argument+environment strings are very large, the time
+spent copying them can be much more than a normal user time slice.
+So this change improves the interactivity of the rest of the system
+when one process is doing an execve with very large arguments.
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
-Cc: dilinger@queued.net
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Roland McGrath <roland@redhat.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/kernel/olpc.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ fs/exec.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/olpc.c b/arch/x86/kernel/olpc.c
-index 8297160..a23b382 100644
---- a/arch/x86/kernel/olpc.c
-+++ b/arch/x86/kernel/olpc.c
-@@ -117,6 +117,7 @@ int olpc_ec_cmd(unsigned char cmd, unsigned char *inbuf, size_t inlen,
- 	unsigned long flags;
- 	int ret = -EIO;
- 	int i;
-+	int restarts = 0;
+diff --git a/fs/exec.c b/fs/exec.c
+index b884fde..b187ab0 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -419,6 +419,8 @@ static int copy_strings(int argc, char __user * __user * argv,
+ 		while (len > 0) {
+ 			int offset, bytes_to_copy;
  
- 	spin_lock_irqsave(&ec_lock, flags);
- 
-@@ -173,7 +174,9 @@ restart:
- 			if (wait_on_obf(0x6c, 1)) {
- 				printk(KERN_ERR "olpc-ec:  timeout waiting for"
- 						" EC to provide data!\n");
--				goto restart;
-+				if (restarts++ < 10)
-+					goto restart;
-+				goto err;
- 			}
- 			outbuf[i] = inb(0x68);
- 			printk(KERN_DEBUG "olpc-ec:  received 0x%x\n",
++			cond_resched();
++
+ 			offset = pos % PAGE_SIZE;
+ 			if (offset == 0)
+ 				offset = PAGE_SIZE;
 -- 
 1.7.3.3
 
