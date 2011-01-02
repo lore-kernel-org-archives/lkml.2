@@ -1,118 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465Ab1ABTvn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 14:51:43 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54873 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751990Ab1ABTvm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 14:51:42 -0500
-From: Ben Hutchings <ben@decadent.org.uk>
-To: roel kluin <roel.kluin@gmail.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4D209127.5080505@gmail.com>
-References: <4D1DECFC.8020701@gmail.com>
-	 <1293809262.2870.45.camel@localhost>  <4D209127.5080505@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-okZWYZPtMlXy5ZLi623H"
-Date: Sun, 02 Jan 2011 19:51:32 +0000
-Message-ID: <1293997892.3167.53.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [PATCH] net: eepro testing positive EBUSY return by
- request_irq()?
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+	id S1753750Ab1ABTw4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 14:52:56 -0500
+Received: from void.printf.net ([89.145.121.20]:36418 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751990Ab1ABTwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jan 2011 14:52:54 -0500
+Date: Sun, 2 Jan 2011 19:52:46 +0000
+From: Chris Ball <cjb@laptop.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: zhangfei gao <zhangfei.gao@gmail.com>, Philip Rakity <prakity@marvell.com>,
+        Aries Lee <arieslee@jmicron.com>, Qiming Wu <wuqm@marvell.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mmc: Test bus-width for old MMC devices (v2)
+Message-ID: <20110102195246.GD24820@void.printf.net>
+References: <s5hfwtzbj8v.wl%tiwai@suse.de> <20101216234032.GA17239@void.printf.net> <50D31EC8-BD9E-4920-8CEB-2AD10DF9C5C5@marvell.com> <20101217034342.GA19673@void.printf.net> <s5hy67o95to.wl%tiwai@suse.de> <AANLkTimSt5a998m1oqdppsWjGCVid0-Ub81pKgsPR36f@mail.gmail.com> <E81C83FE-E3AD-49DA-86BE-95631F1B81CD@marvell.com> <AANLkTim6pQW0sDtZRNbXbgbvzuXKCdsju7z_ADBxvXPd@mail.gmail.com> <s5h62umnpxb.wl%tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5h62umnpxb.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Takashi,
 
---=-okZWYZPtMlXy5ZLi623H
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Wed, Dec 22, 2010 at 09:59:44AM +0100, Takashi Iwai wrote:
+> Subject: [PATCH] mmc: fix mmc_set_bus_width_ddr() call without bus-width-test cap
+> 
+> With the bus-width test patch, mmc_set_bus_width*() isn't called properly
+> when the driver doesn't set MMC_CAP_BUS_WIDTH and no DDR mode.
+> This patch fixes the regression by moving the call up before the cap test.
+> 
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> ---
+>  drivers/mmc/core/mmc.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+> index 1d8409f..c86dd73 100644
+> --- a/drivers/mmc/core/mmc.c
+> +++ b/drivers/mmc/core/mmc.c
+> @@ -558,6 +558,8 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
+>  					 EXT_CSD_BUS_WIDTH,
+>  					 ext_csd_bits[idx][0]);
+>  			if (!err) {
+> +				mmc_set_bus_width_ddr(card->host,
+> +						      bus_width, MMC_SDR_MODE);
+>  				/*
+>  				 * If controller can't handle bus width test,
+>  				 * use the highest bus width to maintain
+> @@ -565,8 +567,6 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
+>  				 */
+>  				if (!(host->caps & MMC_CAP_BUS_WIDTH_TEST))
+>  					break;
+> -				mmc_set_bus_width_ddr(card->host,
+> -						      bus_width, MMC_SDR_MODE);
+>  				err = mmc_bus_test(card, bus_width);
+>  				if (!err)
+>  					break;
 
-On Sun, 2011-01-02 at 15:52 +0100, roel kluin wrote:
-> >> -		if (request_irq (*irqp, NULL, IRQF_SHARED, "bogus", dev) !=3D EBUSY=
-) {
-> >> +		if (request_irq (*irqp, NULL, IRQF_SHARED, "bogus", dev) !=3D -EBUS=
-Y) {
->=20
-> > This condition is completely bogus - request_irq() with a NULL handler
-> > now returns -EINVAL before even checking whether the IRQ is in use.  Th=
-e
-> > code should be fixed along the lines of what I did for 3c503 in commit
-> > b0cf4dfb7cd21556efd9a6a67edcba0840b4d98d.
-> >=20
-> > The e2100 and hp net drivers have the same bug.
-> >=20
-> > Ben.
->=20
-> I've made an attempt to fix the mentioned issues, but I'm not sure it is =
-complete.
-> The commit made some other changes as well which didn't seem appropriate =
-here to me.
+Thanks, I've pushed this fix to mmc-next now.
 
-They are absolutely necessary.
-
-In the bad old days before plug-and-play, some expansion cards would
-have jumpers to configure the IRQ number and no software mechanism to
-set or query it.  Users were expected to specify the IRQ to the driver
-explicitly.  probe_irq_{on,off}() allow drivers to avoid this by
-triggering an IRQ and checking which was received.  That assumes that
-there are no IRQ conflicts, and it only works reliably in a quiescent
-system.
-
-These drivers have been abusing request_irq(), probe_irq_{on,off}() to
-do resource allocation for hardware that *does* have a software
-mechanism to set the IRQ number.  This has become less reliable as
-driver loading has been made more dynamic, and is now broken completely
-due to the change in request_irq().  I believe the correct way to do
-this allocation is what I did in 3c503.  Possibly it's worth adding a
-generic function.
-
-> And I didn't compile or run test this.
-
-I compiled but didn't have hardware to test.
-
-> As a side note, in the function changed by the commit you mentioned, el2_=
-open(), it
-> appears that in current git, boolean `seen' cannot ever become true, can =
-it?
-[...]
-
-The IRQ handler data is set to &seen and el2_probe_interrupt() uses that
-pointer to set it.
-
-Ben.
-
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
-
---=-okZWYZPtMlXy5ZLi623H
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIVAwUATSDXP+e/yOyVhhEJAQIL6Q//Y5oC8FGsBf0i5K/guIIMG5KupgziTDxe
-ETP5rQLLGKS/N66nbSHQPCVMzGdj8U/4hHjDQaVBEpyD4XD4wea3kVPMzzoV84Mc
-R/52TwXXtDqI0C1v1AyBID/1swRTCzhFeb+EnLyBThTRIfM4NRZhQq6rQuS3T9xM
-pawLhG+0w+M31PPS198gKEQ7Nq40hnpzo8wZ4powzGKVciTzakmstY81GF37rFjh
-p0QLiNV5yR8mzjA7bx9cyjxxaq8ZRWIr1eNNYJBcldbVjgbMXYkimucmx1MXagzW
-639UzKuoECtuLJOj1EzwOWnoOK4GhjjDp0W5uLJIZiadZy18YppVEKFwQd+AOj3y
-dqF4DFozsL5l/8zHLl2PZlOpUB3x02QzxoDOwIpJ6RKsaPnymkfdv8W4mmZp8+FX
-P2e9I4ZxQd1m/qDhBf2XZ6+Zy6azexoHVeWTzDbmOu/a4yv0/zLVt+FVKUEq9rBh
-4zwbYc38tdzBuZTi6StyRHowSvfGM1wCfDoAITI1QXoMrljUtyunXjT9nDZ1b6YK
-aF5UkQM87MFVURdDG5GSx9UJbpklhCPcDE33SAXTK8F0q+Bmnm2gLv5rBRn/G87S
-sCMeSADzDElV4FB9xlQskOu7sIovr8OAIEYARvg+9PxgzNPAxX9zuARiXcvggyc3
-/HKbCa7mqH8=
-=cJt2
------END PGP SIGNATURE-----
-
---=-okZWYZPtMlXy5ZLi623H--
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
