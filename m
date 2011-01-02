@@ -1,84 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753694Ab1ABMRx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 07:17:53 -0500
-Received: from ist.d-labs.de ([213.239.218.44]:58283 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752789Ab1ABMRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 07:17:52 -0500
-Date: Sun, 2 Jan 2011 13:17:47 +0100
-From: Florian Mickler <florian@mickler.org>
-To: Dan Carpenter <error27@gmail.com>
-Cc: Jeff Mahoney <jeffm@suse.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, balbir@linux.vnet.ibm.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] taskstats: Use better ifdef for alignment
-Message-ID: <20110102131747.3e79107a@schatten.dmk.lab>
-In-Reply-To: <20110101165135.GJ1886@bicker>
-References: <4D1BCE58.4000902@suse.com>
-	<20101229161418.d34bf0d4.akpm@linux-foundation.org>
-	<4D1C180A.20000@suse.com>
-	<20101229213243.891b0db5.akpm@linux-foundation.org>
-	<4D1CAAA1.8030106@suse.com>
-	<20110101171946.6179c3b6@schatten.dmk.lab>
-	<20110101165135.GJ1886@bicker>
-X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753514Ab1ABMhc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 07:37:32 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48197 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752521Ab1ABMhb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jan 2011 07:37:31 -0500
+Date: Sun, 2 Jan 2011 12:37:48 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: roel kluin <roel.kluin@gmail.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: missing index in PTR_ERR() in
+ isl6271a_probe()
+Message-ID: <20110102123747.GA4935@opensource.wolfsonmicro.com>
+References: <4D1DF637.1060609@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D1DF637.1060609@gmail.com>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 1 Jan 2011 19:51:35 +0300
-Dan Carpenter <error27@gmail.com> wrote:
-
-> On Sat, Jan 01, 2011 at 05:19:46PM +0100, Florian Mickler wrote:
-> > Is there already a patch available or integrated into iotop which
-> > fixes this? I'd think that if the kernel could wait on fixed iotop's to
-> > be distributed it would be easier to sell the breakage on bugzilla &
-> > co...
-> > 
+On Fri, Dec 31, 2010 at 04:26:47PM +0100, roel kluin wrote:
+> The index is missing so the return is wrong.
 > 
-> The story is that 4be2c95d1f "taskstats: pad taskstats netlink response
-> for aligment issues on ia64" broke iotop on 64 bit processors (32 bit
-> was unaffected).  This patch fixes it for x86-64 and powerpc-64.
-> 
-> On the other 64 bit processors iotop works but instead you get a message
-> in dmesg:
-> kernel unaligned access to 0xe000023879dca9bc, ip=0xa000000100133d10
-> 
-> So on those arches you were already getting posts to bugzilla etc.  Now
-> those people can upgrade the kernel and download iotop version 0.4.2 or
-> higher.
-> 
-> regards,
-> dan carpenter
-> 
+> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
 
-Ah ok. And probably bug #24272 is related to this. If I
-understood it correctly 85893120 fixed some runtime warnings (or more
-exactly the misaligning) and broke iotop in the process (on all of 64
-bit). 
-
-4be2c95d1f undid that and enhanced the netlink messages on  IA64
-archs with a new type to fix the alignment and now it's changed to
-align well on all archs that need alignment, leaving archs unbroken that
-have efficient unaligned access (x86-64 and powerpc-64). Nice. 
-
-And to answer my original question, i just checked out (some?/the?)
-iotop sources from git://repo.or.cz/iotop.git and found a fix[1] for the
-issue with 85893120. 
-
-Is iotop parsing fixed to ignore the null-field in the meantime?
-
-Thx,
-Flo
-
-[1]git://repo.or.cz/iotop.git:commit 08211d209ae8fc7e67ea3bebb09979ff61c70f97
-Author: Guillaume Chazarain <guichaz@gmail.com>
-Date:   Sat Sep 4 13:57:43 2010 +0200
-
-    Instead of assuming the pid field is 4 bytes long, take its length from the header.
-    This is needed for http://lkml.org/lkml/2010/2/12/167
-    [PATCH] delayacct: align to 8 byte boundary on 64-bit systems
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
