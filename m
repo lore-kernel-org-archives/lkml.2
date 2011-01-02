@@ -1,101 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290Ab1ABHdX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 02:33:23 -0500
-Received: from mail.windriver.com ([147.11.1.11]:37120 "EHLO
+	id S1755124Ab1ABHdU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 02:33:20 -0500
+Received: from mail.windriver.com ([147.11.1.11]:37123 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754861Ab1ABHZj (ORCPT
+	with ESMTP id S1754867Ab1ABHZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 2 Jan 2011 02:25:39 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Cliff Wickman <cpw@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>, kexec@lists.infradead.org,
-        Ingo Molnar <mingo@elte.hu>,
+Cc: stable-review@kernel.org, Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 226/260] mm, x86: Saving vmcore with non-lazy freeing of vmas
-Date: Sun,  2 Jan 2011 02:18:42 -0500
-Message-Id: <1293952756-15010-227-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 234/260] KVM: MMU: fix conflict access permissions in direct sp
+Date: Sun,  2 Jan 2011 02:18:50 -0500
+Message-Id: <1293952756-15010-235-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
-X-OriginalArrivalTime: 02 Jan 2011 07:24:17.0151 (UTC) FILETIME=[1084F0F0:01CBAA4E]
+X-OriginalArrivalTime: 02 Jan 2011 07:24:26.0027 (UTC) FILETIME=[15CF4FB0:01CBAA4E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cliff Wickman <cpw@sgi.com>
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 
-commit 3ee48b6af49cf534ca2f481ecc484b156a41451d upstream.
+commit 5fd5387c89ec99ff6cb82d2477ffeb7211b781c2 upstream.
 
-During the reading of /proc/vmcore the kernel is doing
-ioremap()/iounmap() repeatedly. And the buildup of un-flushed
-vm_area_struct's is causing a great deal of overhead. (rb_next()
-is chewing up most of that time).
+In no-direct mapping, we mark sp is 'direct' when we mapping the
+guest's larger page, but its access is encoded form upper page-struct
+entire not include the last mapping, it will cause access conflict.
 
-This solution is to provide function set_iounmap_nonlazy(). It
-causes a subsequent call to iounmap() to immediately purge the
-vma area (with try_purge_vmap_area_lazy()).
+For example, have this mapping:
+        [W]
+      / PDE1 -> |---|
+  P[W]          |   | LPA
+      \ PDE2 -> |---|
+        [R]
 
-With this patch we have seen the time for writing a 250MB
-compressed dump drop from 71 seconds to 44 seconds.
+P have two children, PDE1 and PDE2, both PDE1 and PDE2 mapping the
+same lage page(LPA). The P's access is WR, PDE1's access is WR,
+PDE2's access is RO(just consider read-write permissions here)
 
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: kexec@lists.infradead.org
-LKML-Reference: <E1OwHZ4-0005WK-Tw@eag09.americas.sgi.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+When guest access PDE1, we will create a direct sp for LPA, the sp's
+access is from P, is W, then we will mark the ptes is W in this sp.
+
+Then, guest access PDE2, we will find LPA's shadow page, is the same as
+PDE's, and mark the ptes is RO.
+
+So, if guest access PDE1, the incorrect #PF is occured.
+
+Fixed by encode the last mapping access into direct shadow page
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/include/asm/io.h       |    1 +
- arch/x86/kernel/crash_dump_64.c |    1 +
- mm/vmalloc.c                    |    9 +++++++++
- 3 files changed, 11 insertions(+), 0 deletions(-)
+ arch/x86/kvm/paging_tmpl.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
-index 30a3e97..6a45ec4 100644
---- a/arch/x86/include/asm/io.h
-+++ b/arch/x86/include/asm/io.h
-@@ -206,6 +206,7 @@ static inline void __iomem *ioremap(resource_size_t offset, unsigned long size)
- 
- extern void iounmap(volatile void __iomem *addr);
- 
-+extern void set_iounmap_nonlazy(void);
- 
- #ifdef __KERNEL__
- 
-diff --git a/arch/x86/kernel/crash_dump_64.c b/arch/x86/kernel/crash_dump_64.c
-index 045b36c..ce96a6b 100644
---- a/arch/x86/kernel/crash_dump_64.c
-+++ b/arch/x86/kernel/crash_dump_64.c
-@@ -46,6 +46,7 @@ ssize_t copy_oldmem_page(unsigned long pfn, char *buf,
- 	} else
- 		memcpy(buf, vaddr + offset, csize);
- 
-+	set_iounmap_nonlazy();
- 	iounmap(vaddr);
- 	return csize;
- }
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index ae00746..20a402c 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -513,6 +513,15 @@ static atomic_t vmap_lazy_nr = ATOMIC_INIT(0);
- static void purge_fragmented_blocks_allcpus(void);
- 
- /*
-+ * called before a call to iounmap() if the caller wants vm_area_struct's
-+ * immediately freed.
-+ */
-+void set_iounmap_nonlazy(void)
-+{
-+	atomic_set(&vmap_lazy_nr, lazy_max_pages()+1);
-+}
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index a535c87..2bd2b3e 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -356,6 +356,8 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
+ 			direct = 1;
+ 			if (!is_dirty_gpte(gw->ptes[level - delta]))
+ 				access &= ~ACC_WRITE_MASK;
++			access &= gw->pte_access;
 +
-+/*
-  * Purges all lazily-freed vmap areas.
-  *
-  * If sync is 0 then don't purge if there is already a purge in progress.
+ 			table_gfn = gpte_to_gfn(gw->ptes[level - delta]);
+ 			/* advance table_gfn when emulating 1gb pages with 4k */
+ 			if (delta == 0)
 -- 
 1.7.3.3
 
