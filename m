@@ -1,144 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932103Ab1ACNvv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 08:51:51 -0500
-Received: from cantor.suse.de ([195.135.220.2]:45637 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932068Ab1ACNvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 08:51:50 -0500
-Date: Mon, 3 Jan 2011 14:51:48 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: introduce 'notimeout' blacklist for Dell Vostro
- V13 (was Re: Synaptics touchpad on Dell Vostro V13)
-In-Reply-To: <alpine.LNX.2.00.1012291444110.16569@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1101031450390.26685@pobox.suse.cz>
-References: <alpine.LNX.2.00.1012141547570.15140@pobox.suse.cz> <20101214170027.GA11318@core.coreip.homeip.net> <alpine.LNX.2.00.1012152348440.16569@pobox.suse.cz> <201012151523.09476.dmitry.torokhov@gmail.com> <alpine.LNX.2.00.1012281124030.16569@pobox.suse.cz>
- <20101229074410.GC13061@core.coreip.homeip.net> <alpine.LNX.2.00.1012291341550.16569@pobox.suse.cz> <alpine.LNX.2.00.1012291444110.16569@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755490Ab1ACNvV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 08:51:21 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60593 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755437Ab1ACNux (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 08:50:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=wjkCuODUlN/ihiX/WdBuGuAFfVKSOsHdaL04hfVCVdiM1MLjo2BC8AJBemGfqFew19
+         lBNHxkmD7zxEZSVoW3LrCmMrU3s8a3r41nuYityp9ShRDQeBg7p/GTOaUhGkcwoubYe3
+         1fs7FwfqrSR6l0dU5KpnYB11obUFn3wZyYe5o=
+From: Tejun Heo <tj@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>, Andy Grover <andy.grover@oracle.com>
+Subject: [PATCH 31/32] rds/ib: use system_wq instead of rds_ib_fmr_wq
+Date: Mon,  3 Jan 2011 14:49:54 +0100
+Message-Id: <1294062595-30097-32-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1294062595-30097-1-git-send-email-tj@kernel.org>
+References: <1294062595-30097-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Dec 2010, Jiri Kosina wrote:
+With cmwq, there's no reason to use dedicated rds_ib_fmr_wq - it's not
+in the memory reclaim path and the maximum number of concurrent work
+items is bound by the number of devices.  Drop it and use system_wq
+instead.  This rds_ib_fmr_init/exit() noops.  Both removed.
 
-> On Wed, 29 Dec 2010, Jiri Kosina wrote:
-> 
-> > > Well, another blacklist in i8042 I guess...
-> > 
-> > Sigh, seems so.
-> > 
-> > I'll send you patch once I get positive testing feedback.
-> 
-> 
-> 
-> 
-> From: Jiri Kosina <jkosina@suse.cz>
-> Subject: [PATCH] Input: introduce 'notimeout' blacklist for Dell Vostro V13
-> 
-> i8042 controller present in Dell Vostro V13 errorneously signals spurious
-> timeouts.
-> 
-> Introduce i8042.notimeout parameter for ignoring i8042-signalled timeouts
-> and apply this quirk automatically for Dell Vostro V13, based on DMI match.
-> 
-> In addition to that, this machine also needs to be added to nomux blacklist.
-> 
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-
-Just to be clear -- I have already received positive feedback from the 
-bugreporter I had. I have attached the patch for testing to
-
-	https://bugzilla.kernel.org/show_bug.cgi?id=15416
-
-as well, but I already have confirmation from person owning the hardware, 
-so I believe it could be applied.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Andy Grover <andy.grover@oracle.com>
+---
+Only compile tested.  Please feel free to take it into the subsystem
+tree or simply ack - I'll route it through the wq tree.
 
 Thanks.
 
-> ---
->  drivers/input/serio/i8042-x86ia64io.h |   21 +++++++++++++++++++++
->  drivers/input/serio/i8042.c           |    6 +++++-
->  2 files changed, 26 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
-> index a5475b5..b04dd27 100644
-> --- a/drivers/input/serio/i8042-x86ia64io.h
-> +++ b/drivers/input/serio/i8042-x86ia64io.h
-> @@ -424,6 +424,13 @@ static const struct dmi_system_id __initconst i8042_dmi_nomux_table[] = {
->  			DMI_MATCH(DMI_PRODUCT_VERSION, "0100"),
->  		},
->  	},
-> +	{
-> +		/* Dell Vostro V13 */
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "Vostro V13"),
-> +		},
-> +	},
->  	{ }
->  };
->  
-> @@ -545,6 +552,17 @@ static const struct dmi_system_id __initconst i8042_dmi_laptop_table[] = {
->  };
->  #endif
->  
-> +static const struct dmi_system_id __initconst i8042_dmi_notimeout_table[] = {
-> +	{
-> +		/* Dell Vostro V13 */
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "Vostro V13"),
-> +		},
-> +	},
-> +	{ }
-> +};
-> +
->  /*
->   * Some Wistron based laptops need us to explicitly enable the 'Dritek
->   * keyboard extension' to make their extra keys start generating scancodes.
-> @@ -897,6 +915,9 @@ static int __init i8042_platform_init(void)
->  	if (dmi_check_system(i8042_dmi_nomux_table))
->  		i8042_nomux = true;
->  
-> +	if (dmi_check_system(i8042_dmi_notimeout_table))
-> +		i8042_notimeout = true;
-> +
->  	if (dmi_check_system(i8042_dmi_dritek_table))
->  		i8042_dritek = true;
->  #endif /* CONFIG_X86 */
-> diff --git a/drivers/input/serio/i8042.c b/drivers/input/serio/i8042.c
-> index 18db5a8..039037d 100644
-> --- a/drivers/input/serio/i8042.c
-> +++ b/drivers/input/serio/i8042.c
-> @@ -61,6 +61,10 @@ static bool i8042_noloop;
->  module_param_named(noloop, i8042_noloop, bool, 0);
->  MODULE_PARM_DESC(noloop, "Disable the AUX Loopback command while probing for the AUX port");
->  
-> +static bool i8042_notimeout;
-> +module_param_named(notimeout, i8042_notimeout, bool, 0);
-> +MODULE_PARM_DESC(notimeout, "Ignore timeouts signalled by i8042");
-> +
->  #ifdef CONFIG_X86
->  static bool i8042_dritek;
->  module_param_named(dritek, i8042_dritek, bool, 0);
-> @@ -503,7 +507,7 @@ static irqreturn_t i8042_interrupt(int irq, void *dev_id)
->  	} else {
->  
->  		dfl = ((str & I8042_STR_PARITY) ? SERIO_PARITY : 0) |
-> -		      ((str & I8042_STR_TIMEOUT) ? SERIO_TIMEOUT : 0);
-> +		      ((str & I8042_STR_TIMEOUT && !i8042_notimeout) ? SERIO_TIMEOUT : 0);
->  
->  		port_no = (str & I8042_STR_AUXDATA) ?
->  				I8042_AUX_PORT_NO : I8042_KBD_PORT_NO;
-> -- 
-> 1.7.3.1
-> 
-> 
+ net/rds/ib.c      |    9 +--------
+ net/rds/ib.h      |    2 --
+ net/rds/ib_rdma.c |   27 +++------------------------
+ 3 files changed, 4 insertions(+), 34 deletions(-)
 
+diff --git a/net/rds/ib.c b/net/rds/ib.c
+index 4123967..cce19f9 100644
+--- a/net/rds/ib.c
++++ b/net/rds/ib.c
+@@ -364,7 +364,6 @@ void rds_ib_exit(void)
+ 	rds_ib_sysctl_exit();
+ 	rds_ib_recv_exit();
+ 	rds_trans_unregister(&rds_ib_transport);
+-	rds_ib_fmr_exit();
+ }
+ 
+ struct rds_transport rds_ib_transport = {
+@@ -400,13 +399,9 @@ int rds_ib_init(void)
+ 
+ 	INIT_LIST_HEAD(&rds_ib_devices);
+ 
+-	ret = rds_ib_fmr_init();
+-	if (ret)
+-		goto out;
+-
+ 	ret = ib_register_client(&rds_ib_client);
+ 	if (ret)
+-		goto out_fmr_exit;
++		goto out;
+ 
+ 	ret = rds_ib_sysctl_init();
+ 	if (ret)
+@@ -430,8 +425,6 @@ out_sysctl:
+ 	rds_ib_sysctl_exit();
+ out_ibreg:
+ 	rds_ib_unregister_client();
+-out_fmr_exit:
+-	rds_ib_fmr_exit();
+ out:
+ 	return ret;
+ }
+diff --git a/net/rds/ib.h b/net/rds/ib.h
+index e34ad03..4297d92 100644
+--- a/net/rds/ib.h
++++ b/net/rds/ib.h
+@@ -307,8 +307,6 @@ void *rds_ib_get_mr(struct scatterlist *sg, unsigned long nents,
+ void rds_ib_sync_mr(void *trans_private, int dir);
+ void rds_ib_free_mr(void *trans_private, int invalidate);
+ void rds_ib_flush_mrs(void);
+-int rds_ib_fmr_init(void);
+-void rds_ib_fmr_exit(void);
+ 
+ /* ib_recv.c */
+ int rds_ib_recv_init(void);
+diff --git a/net/rds/ib_rdma.c b/net/rds/ib_rdma.c
+index 18a833c..819c35a 100644
+--- a/net/rds/ib_rdma.c
++++ b/net/rds/ib_rdma.c
+@@ -38,8 +38,6 @@
+ #include "ib.h"
+ #include "xlist.h"
+ 
+-static struct workqueue_struct *rds_ib_fmr_wq;
+-
+ static DEFINE_PER_CPU(unsigned long, clean_list_grace);
+ #define CLEAN_LIST_BUSY_BIT 0
+ 
+@@ -307,7 +305,7 @@ static struct rds_ib_mr *rds_ib_alloc_fmr(struct rds_ib_device *rds_ibdev)
+ 	int err = 0, iter = 0;
+ 
+ 	if (atomic_read(&pool->dirty_count) >= pool->max_items / 10)
+-		queue_delayed_work(rds_ib_fmr_wq, &pool->flush_worker, 10);
++		schedule_delayed_work(&pool->flush_worker, 10);
+ 
+ 	while (1) {
+ 		ibmr = rds_ib_reuse_fmr(pool);
+@@ -696,24 +694,6 @@ out_nolock:
+ 	return ret;
+ }
+ 
+-int rds_ib_fmr_init(void)
+-{
+-	rds_ib_fmr_wq = create_workqueue("rds_fmr_flushd");
+-	if (!rds_ib_fmr_wq)
+-		return -ENOMEM;
+-	return 0;
+-}
+-
+-/*
+- * By the time this is called all the IB devices should have been torn down and
+- * had their pools freed.  As each pool is freed its work struct is waited on,
+- * so the pool flushing work queue should be idle by the time we get here.
+- */
+-void rds_ib_fmr_exit(void)
+-{
+-	destroy_workqueue(rds_ib_fmr_wq);
+-}
+-
+ static void rds_ib_mr_pool_flush_worker(struct work_struct *work)
+ {
+ 	struct rds_ib_mr_pool *pool = container_of(work, struct rds_ib_mr_pool, flush_worker.work);
+@@ -741,7 +721,7 @@ void rds_ib_free_mr(void *trans_private, int invalidate)
+ 	/* If we've pinned too many pages, request a flush */
+ 	if (atomic_read(&pool->free_pinned) >= pool->max_free_pinned ||
+ 	    atomic_read(&pool->dirty_count) >= pool->max_items / 10)
+-		queue_delayed_work(rds_ib_fmr_wq, &pool->flush_worker, 10);
++		schedule_delayed_work(&pool->flush_worker, 10);
+ 
+ 	if (invalidate) {
+ 		if (likely(!in_interrupt())) {
+@@ -749,8 +729,7 @@ void rds_ib_free_mr(void *trans_private, int invalidate)
+ 		} else {
+ 			/* We get here if the user created a MR marked
+ 			 * as use_once and invalidate at the same time. */
+-			queue_delayed_work(rds_ib_fmr_wq,
+-					   &pool->flush_worker, 10);
++			schedule_delayed_work(&pool->flush_worker, 10);
+ 		}
+ 	}
+ 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+1.7.1
+
