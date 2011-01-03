@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab1ACCuE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 21:50:04 -0500
-Received: from thunk.org ([69.25.196.29]:32960 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751782Ab1ACCuB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 21:50:01 -0500
-Date: Sun, 2 Jan 2011 18:21:01 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Andreas Gruenbacher <agruen@suse.de>
-Cc: Jeff Layton <jlayton@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        sfrench@us.ibm.com, ffilz@us.ibm.com, adilger@sun.com,
-        sandeen@redhat.com, bfields@citi.umich.edu,
-        linux-fsdevel@vger.kernel.org, nfsv4@linux-nfs.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V4 08/11] vfs: Add new file and directory create
- permission flags
-Message-ID: <20110102232101.GB11955@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Andreas Gruenbacher <agruen@suse.de>,
-	Jeff Layton <jlayton@redhat.com>,
-	"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-	sfrench@us.ibm.com, ffilz@us.ibm.com, adilger@sun.com,
-	sandeen@redhat.com, bfields@citi.umich.edu,
-	linux-fsdevel@vger.kernel.org, nfsv4@linux-nfs.org,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1285332494-12756-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1285332494-12756-9-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20100924115423.530813c3@tlielax.poochiereds.net>
- <201009271514.00279.agruen@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201009271514.00279.agruen@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1753468Ab1ACCvo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 21:51:44 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46293 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752513Ab1ACCvn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Jan 2011 21:51:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ToxM6QcLmeVLLCHlvc/alAft/xrZaorUdeChWRmoFRXYzwilPRv0bC6fFwaC8YtrhY
+         mPIJeFVC50d/peEZuVSQUyWJG1zO5jz3z+ZQ90jatPNEfbTrjfHCDomnDfb4tp8IddJb
+         4WPSBmGOpAelTYfh7W+RRWCycUf4nJFcWe+Gg=
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: dilinger@queued.net, sameo@linux.intel.com, akpm@linux-foundation.org,
+        tj@kernel.org, joe@perches.com, linux-kernel@vger.kernel.org
+Cc: Sedat Dilek <sedat.dilek@gmail.com>
+Subject: [PATCH] misc/cs5535: Fix section mismatch derived from cs5535_mfgpt_drv variable
+Date: Mon,  3 Jan 2011 03:51:28 +0100
+Message-Id: <1294023088-31687-1-git-send-email-sedat.dilek@gmail.com>
+X-Mailer: git-send-email 1.7.4.rc0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was going through some old patches in the ext4 patchwork list, and
-came across this.  It looks like this patch has never been applied to
-mainline.  If it's a "clear improvement", any reason not to submit it?
+>From my build.log:
 
-Regards,
+WARNING: drivers/misc/cs5535-mfgpt.o(.data+0x0): Section mismatch in reference from the variable cs5535_mfgpt_drv to the function .devinit.text:cs5535_mfgpt_probe()
+The variable cs5535_mfgpt_drv references
+the function __devinit cs5535_mfgpt_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or name the variable:
+*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console,
 
-	      	     	    		      - Ted
+This patch fixes the warning.
 
-On Mon, Sep 27, 2010 at 03:14:00PM +0200, Andreas Gruenbacher wrote:
-> 
-> Ah, you mean this:
-> 
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -2450,7 +2450,9 @@ int vfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *new_de
->  	if (!inode)
->  		return -ENOENT;
->  
-> -	error = may_create(dir, new_dentry, S_ISDIR(inode->i_mode));
-> +	if (S_ISDIR(inode->i_mode))
-> +		return -EPERM;
-> +	error = may_create(dir, new_dentry, 0);
->  	if (error)
->  		return error;
->  
-> @@ -2464,8 +2466,6 @@ int vfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *new_de
->  		return -EPERM;
->  	if (!dir->i_op->link)
->  		return -EPERM;
-> -	if (S_ISDIR(inode->i_mode))
-> -		return -EPERM;
->  
->  	error = security_inode_link(old_dentry, dir, new_dentry);
->  	if (error)
-> 
-> This is a clear improvement; I don't think it matters that user-space will
-> get -EPERM instead of -EXDEV when trying to hard-link a directory across
-> devices.
-> 
-> Thanks,
-> Andreas
+Tested with linux-next (next-20101231)
+
+Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+---
+ drivers/misc/cs5535-mfgpt.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/misc/cs5535-mfgpt.c b/drivers/misc/cs5535-mfgpt.c
+index d02d302..d80bd14 100644
+--- a/drivers/misc/cs5535-mfgpt.c
++++ b/drivers/misc/cs5535-mfgpt.c
+@@ -329,7 +329,7 @@ done:
+ 	return err;
+ }
+ 
+-static struct platform_driver cs5535_mfgpt_drv = {
++static struct platform_driver cs5535_mfgpt_drv __refdata = {
+ 	.driver = {
+ 		.name = DRV_NAME,
+ 		.owner = THIS_MODULE,
+-- 
+1.7.4.rc0
+
