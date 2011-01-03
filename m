@@ -1,40 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab1ACTmb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 14:42:31 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50687
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752229Ab1ACTma (ORCPT
+	id S1754550Ab1ACTou (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 14:44:50 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47896 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752229Ab1ACTot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 14:42:30 -0500
-Date: Mon, 03 Jan 2011 11:43:01 -0800 (PST)
-Message-Id: <20110103.114301.102556157.davem@davemloft.net>
-To: alex.buell@munted.org.uk
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Using s3virge card in Sun Blade 2000
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1294083541.17576.11.camel@lithium>
-References: <1294072336.17576.7.camel@lithium>
-	<20110103.105827.112602895.davem@davemloft.net>
-	<1294083541.17576.11.camel@lithium>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 3 Jan 2011 14:44:49 -0500
+Date: Mon, 3 Jan 2011 11:43:10 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sedat Dilek <sedat.dilek@googlemail.com>
+Cc: dilinger@queued.net, sameo@linux.intel.com, tj@kernel.org, joe@perches.com,
+        linux-kernel@vger.kernel.org, Sedat Dilek <sedat.dilek@gmail.com>
+Subject: Re: [PATCH] misc/cs5535: Fix section mismatch derived from
+ cs5535_mfgpt_drv variable
+Message-Id: <20110103114310.8b06e73e.akpm@linux-foundation.org>
+In-Reply-To: <1294023088-31687-1-git-send-email-sedat.dilek@gmail.com>
+References: <1294023088-31687-1-git-send-email-sedat.dilek@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Buell <alex.buell@munted.org.uk>
-Date: Mon, 03 Jan 2011 19:39:01 +0000
+On Mon,  3 Jan 2011 03:51:28 +0100
+Sedat Dilek <sedat.dilek@googlemail.com> wrote:
 
-> Secondly, is Linux fully capable of handling different graphic cards
-> simultaneously? For example, plug in a pair of monitors and have
-> consoles on both with disparate graphic cards i.e. XVR-500 and S3ViRGE
-> etc? 
+> >From my build.log:
+> 
+> WARNING: drivers/misc/cs5535-mfgpt.o(.data+0x0): Section mismatch in reference from the variable cs5535_mfgpt_drv to the function .devinit.text:cs5535_mfgpt_probe()
+> The variable cs5535_mfgpt_drv references
+> the function __devinit cs5535_mfgpt_probe()
+> If the reference is valid then annotate the
+> variable with __init* or __refdata (see linux/init.h) or name the variable:
+> *driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console,
 
-Technically I don't think it can do it currently.  Maybe just for
-kernel message logging, but not for actual login consoles.
+Confused.  cs5535_mfgpt_probe() _does_ have a name of the form
+"*_probe", so why did it warn?
 
-One TTY device is marked as the "console" and that's where all
-tty[0-9]+ devices get instantiated upon.
+
