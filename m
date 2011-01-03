@@ -1,36 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752819Ab1ACSaN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 13:30:13 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46738 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752034Ab1ACSaL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 13:30:11 -0500
-Message-ID: <4D22159C.6080402@zytor.com>
-Date: Mon, 03 Jan 2011 10:29:48 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1752714Ab1ACSrT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 13:47:19 -0500
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:50388 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751284Ab1ACSrS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 13:47:18 -0500
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Mon, 3 Jan 2011 19:45:33 +0100
+To: Kevin McNeely <Kevin.McNeely@cypress.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        David Brown <davidb@codeaurora.org>,
+        Trilok Soni <tsoni@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Eric Miao <eric.y.miao@gmail.com>, Mike Frysinger <vapier@gentoo.org>,
+        Alan Cox <alan@linux.intel.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [v3 1/3] 1/3 Touchscreen: Cypress TTSP G3 MTDEV Core Driver
+Message-ID: <20110103184533.GA7035@polaris.bitmath.org>
+References: <kev@cypress.com>
+ <1293650268-1561-1-git-send-email-kev@cypress.com>
+ <20101231115323.GA9709@polaris.bitmath.org>
+ <FB9C2CB29A07AB45B575A4E8D2AABC09013FFF98@labamba.mis.cypress.com>
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@novell.com>
-CC: mingo@elte.hu, tglx@linutronix.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: fix section mismatch in LAPIC initialization
-References: <4D21F338020000780002A112@vpn.id2.novell.com>
-In-Reply-To: <4D21F338020000780002A112@vpn.id2.novell.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <FB9C2CB29A07AB45B575A4E8D2AABC09013FFF98@labamba.mis.cypress.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 83.248.200.95
+X-Scan-Result: No virus found in message 1PZpPW-0004g9-CZ.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PZpPW-0004g9-CZ b071ae6b636695623e744385334b151b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/2011 07:03 AM, Jan Beulich wrote:
-> Doing things conditionally upon spm_processor_id() being zero is
-> generally a bad idea, as this means CPU 0 cannot be offlined and
-> brought back online later again. While there may be other places where
-> this is done, I think adding more of those should be avoided so that
-> some day SMP really becomes "symmetrical".
+> > If the in-kernel tracking module was in place, would you consider
+> > switching to the slots protocol?
 > 
-> Signed-off-by: Jan Beulich <jbeulich@novell.com>
+> Hi Henrik, can you please clarify?  Should I remove MTDEV from the patch
+> title?
 
-The description doesn't really match the subject line...
+Let me start over - is there a way to reliably track contacts from the
+device? If yes, the question is whether you would consider switching
+to type B right away. If no, the question was whether you would
+consider a switch to type B if there was a in-kernel tracking module
+to use. I understand if there are other reasons to stay with type A, I
+am mostly curious.
 
-	-hpa
+And perhaps MTDEV is a bit misplaced in the title, unless it has
+something to do with the device.
+
+Thanks,
+Henrik
