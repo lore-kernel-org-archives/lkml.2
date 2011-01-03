@@ -1,205 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940Ab1ACJxd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 04:53:33 -0500
-Received: from www84.your-server.de ([213.133.104.84]:45951 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460Ab1ACJxb convert rfc822-to-8bit (ORCPT
+	id S1754154Ab1ACJ62 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 04:58:28 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38738 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752777Ab1ACJ60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 04:53:31 -0500
-Subject: Re: [PATCH] new UDPCP Communication Protocol
-From: Stefani Seibold <stefani@seibold.net>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, davem@davemloft.net, netdev@vger.kernel.org,
-        shemminger@vyatta.com, daniel.baluta@gmail.com, jochen@jochen.org
-In-Reply-To: <1294046867.2892.101.camel@edumazet-laptop>
-References: <1294007971-18878-1-git-send-email-stefani@seibold.net>
-	 <1294008562.2535.263.camel@edumazet-laptop>
-	 <1294008917.18963.3.camel@wall-e>
-	 <alpine.LNX.2.00.1101022356550.11481@swampdragon.chaosbits.net>
-	 <1294045732.19666.6.camel@wall-e>
-	 <1294046867.2892.101.camel@edumazet-laptop>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 03 Jan 2011 10:54:29 +0100
-Message-ID: <1294048469.20187.13.camel@wall-e>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 8BIT
-X-Authenticated-Sender: stefani@seibold.net
+	Mon, 3 Jan 2011 04:58:26 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=r//3WEUu5khE2Bs+266yXybaLelZ68ONOgYqAIcoEdHWb/AAKizPCkEx4EuXSYoZ0v
+         QaqAmMWwzbEw+E3Yy76TyZzUCPDTv1/XCiUg5G5+sIYlO/pEjh8WZGwwUTPciaH4SEs7
+         5x3p6n9nlxRQHO6WXF8kU7vbumpx/P79wtEYc=
+Message-ID: <4D219CD4.1070307@gmail.com>
+Date: Mon, 03 Jan 2011 10:54:28 +0100
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: Pavel Machek <pavel@ucw.cz>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Tim Bird <tim.bird@am.sony.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 01/16 v5] pramfs: documentation
+References: <4D0A5377.1020007@gmail.com> <20110103074526.GA2687@ucw.cz>
+In-Reply-To: <20110103074526.GA2687@ucw.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, den 03.01.2011, 10:27 +0100 schrieb Eric Dumazet:
-> Le lundi 03 janvier 2011 à 10:08 +0100, Stefani Seibold a écrit :
+Il 03/01/2011 08:45, Pavel Machek ha scritto:
+> Hi!
 > 
-> > This will not work for two reasons:
-> > 
-> > - First there is no way to detect a dead connection. A connection can
-> > stay for a very long time without data transfer.
-> > 
-> > - Second it will not save against a attack where all communication slots
-> > will be eaten by an attacker and then new valid connections will be not
-> > handled.
-> > 
-> > The only thing what is possible to make an ioctl call which allows the
-> > user land client to cancel connections. 
-> > 
-> > But this will be in my opinion dead code, because white lists of trusted
-> > address must be fostered and this will make the upgrading of a
-> > infrastructure to complicate.
-> > 
-> > 
+>> +But the disk-based fs over non-volatile RAM block driver approach has
+>> +some drawbacks:
+>> +
+>> +1. Complexity of disk-based fs: disk-based filesystems such as ext2/ext3/ext4
+>> +   were designed for optimum performance on spinning disk media, so they
+>> +   implement features such as block groups, which attempts to group inode data
+>> +   into a contiguous set of data blocks to minimize disk seeking when accessing
+>> +   files. For RAM there is no such concern; a file's data blocks can be
 > 
-> Yep, and as UDP messages can easily spoofed, this means you need more
-> than a list of trusted addresses. You also need to encapsulate the thing
-> in an secured layer.
+> Yes, and they are also used on 99% of machines out there -> well
+> debugged.
+
+I know that you aren't a supporter for this kind of project...do you
+mean that the world finishes with ext4? Why do you ask for removing from
+mainline logfs, nilfs, btrs and so on? At the end all can use ext4
+everywhere and in all situations, other fs are crap. In addition, I
+really don't want to replace extN fs or say "my fs is absolute better of
+extN", I'm pointing out that a simpler and ad-hoc solution for *this use
+case* maybe it's better.
+
 > 
-> Stefani, your implementation has very litle chance being added in
-> standard kernel, because it is not correctly layered, or documented.
-> 
-> Copying hundred (thousand ?) of lines from existing code only shows
-> there is a design error in your proposal. It means every time we have to
-> make a change in this code, we'll have to do it twice.
+> Is there fsck for pramfs available, for example?
 > 
 
-I copied about 400 of 3000 lines with was heavy modified to need my
-needs. And i use only document features of the linux IP stack. So it is
-normal to have duplicate code for the basics.
+Currently not. First of all there isn't a device sdX to use, I could use
+mem but it's not always available when you use strict_devmem option
+because the memory region is marked "exclusive" (it's used to avoid to
+"play" with that memory region). In addition, since the simplicity and
+the scope of this fs I didn't find an use case that justifies writing an
+fsck.
 
-How can you do a routing, how can you determinate the MTU of the route.
-This are basics. Look into other code how this things will be handled is
-in my opinion the right way, since there a no function provide to do
-this.
+>> +   This increases the efficient use of space on the media, i.e. more
+>> +   space is dedicated to actual file data storage and less to meta-data
+>> +   needed to maintain that file data.
+> 
+> So... how big is overhead of pramfs compared to ext2?
 
-Otherwise you can say the same about all the filesystem or PCI
-drvivers , which do also a lot in the same way. But since this is the
-way to do it, it is the right way.
+You can find a lot of information on the tech web site page.
 
-> SUNRPC uses UDP/TCP sockets, and use callbacks to existing UDP/TCP code,
-> maybe you should take a look to implement an UDPCP stack in kernel.
+> 
+> Can pramfs handle powerdown at arbitrary time?
 > 
 
-I have looked around the whole LINUX source code, also in the SUNRPC
-sockets and i did not found anything which meet my needs.
+If you are asking for journaling, the answer is currently not. Adding
+journaling means a deeply rework and redesing. This effort can be
+justified only with high benefits. At the moment for the scope of this
+fs I didn't find them. I recall that we are not talking about replace an
+fs like ext4 for a desktop rootfs, but only to have a place to write not
+sensible and temporary information in an embedded system. There are
+other example of this kind as the pmem driver written by Google guys (it
+was in the staging tree) or the "persistent store" written by Tony Luck.
+The idea here is to provide a classic fs interface to that memory area.
 
-> For instance, a pure socket API seems not the correct choice for UDPCP,
-> since a transmit should give a report to user, of frame being
-> delivered/aknowledged or not to/by the remote side ?
-> 
-
-This will be done through the error queue. The user client will receive
-the unhandled packets back.
-
-> With send(), this means you have only one message in transit, no
-> asynchronous handling.
-> 
-
-No, the messages will be queued. You can have more than a messages in
-the send queue.
-
-> At least you forgot to document the API, and restrictions.
-> 
-
-API documentation is still there, i can these provide under
-Documentation/udpcp.txt if you like.
-
-Here is the API documentation:
-
-Socket interface programming manual
-
-The socket interface is a derivate of the UDP sockets. All setsockopt(),
-getsockopt() and ioctl() kernel system calls  which are valid for UDP
-sockets should work on UDPCP sockets. There are some extensions to the
-sockopt and ioctl interface for the UDPCP sockets.
-
-Include the C header file <net/udpcp.h> to use the UDPCP socket options
-and ioctl calls.
-
-A UDPCP can be opened with socket(PF_INET, SOCK_DGRAM, PF_UDPCP). All
-operation which are valid for UDP sockets can also performed with UDPCP
-sockets.
-
-sockopt
-
-The setsockopt and getsockopt are defined as following:
-
-int getsockopt(int sockfd, int level, int optname, void *optval,
-socklen_t *optlen);
-
-int setsockopt(int sockfd, int level, int optname, const void *optval,
-socklen_t optlen);
-
-The level parameter for the UDPCP socket is SOL_UDPCP, where the
-following options are defined:
-
-UDPCP_OPT_TRANSFER_MODE - set default transfer mode. The optval is one
-of the following:
-
-UDPCP_NOACK - no ACK for the transmitted message is requiered
-
-UDPCP_ACK - a ACK for each transmitted message fragment is requiered
-
-UDPCP_SINGLE_ACK - only a ACK for the last transmitted message fragment
-is requiered
-
-UDPCP_OPT_CHECKSUM_MODE - set the default checksum mode. The optval is
-one of the following:
-
-UDPCP_NOCHECKSUM - no checksum for the transmitted message is required
-
-UDPCP_CHECKSUM - a checksum test for the transmitted message is required
-
-UDPCP_OPT_TX_TIMEOUT - the timeout for a awaited ACK in milliseconds.
-
-The optval should between >= 1 and max. UDPCP_MAX_WAIT_SEC * 1000
-
-UDPCP_OPT_RX_TIMEOUT - timeout for a outstanding incoming message
-fragment in milliseconds.
-
-The optval should between >= 1 and max. UDPCP_MAX_WAIT_SEC * 1000
-
-UDPCP_OPT_MAXTRY - the number of tries to send a message fragment.
-
-The optval should between >= 1 and <= 10
-
-UDPCP_OPT_OUTSTANDING_ACKS: the number of outstanding acks.
-
-The optval should between >=1 and <= 255
-
-All optlen parameters are int's. There the optlen should be
-sizeof(optlen).
-
-The values UDPCP_NOACK, UDPCP_ACK, UDPCP_SINGLE_ACK, UDPCP_NOCHECKSUM
-and
-
-UDPCP_CHECKSUM can also passed as control message with sendmsg(). For
-details look at the manual page for sendmsg().
-
-ioctl interface
-
-The ioctl function call is defined as
-
-int ioctl(int d, int request, ...)
-
-For UDPCP sockets there are the following request commands defined:
-
-UDPCP_IOCTL_GET_STATISTICS
-
-This command returns the statistics of the socket in a struct
-udpcp_statistics. The address of this struct must be passed as third
-argument.
-
-UDPCP_IOCTL_RESET_STATISTICS
-
-This command resets the statistics of the socket
-
-UDPCP_IOCTL_SYNC 
-
-This command waits until all message fragments are transmitted. If the
-third argument is not zero, this is the max. timeout value in
-milliseconds, otherwise this call can block indefinitely.
-
-
-
+Marco
