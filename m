@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932176Ab1ACPGI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 10:06:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46836 "EHLO mx2.suse.de"
+	id S932198Ab1ACPGY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 10:06:24 -0500
+Received: from imr4.ericy.com ([198.24.6.8]:34177 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755174Ab1ACPGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 10:06:05 -0500
-Date: Mon, 3 Jan 2011 16:06:03 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: "Justin P. Mattock" <justinmattock@gmail.com>, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-scsi@vger.kernel.org,
-        spi-devel-general@lists.sourceforge.net, devel@driverdev.osuosl.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH 07/15]drivers:net:wireless:iwlwifi Typo change diable to
- disable.
-In-Reply-To: <4D1DF7CA.8040504@lwfinger.net>
-Message-ID: <alpine.LNX.2.00.1101031605540.26685@pobox.suse.cz>
-References: <1293750484-1161-1-git-send-email-justinmattock@gmail.com> <1293750484-1161-2-git-send-email-justinmattock@gmail.com> <1293750484-1161-3-git-send-email-justinmattock@gmail.com> <1293750484-1161-4-git-send-email-justinmattock@gmail.com>
- <1293750484-1161-5-git-send-email-justinmattock@gmail.com> <1293750484-1161-6-git-send-email-justinmattock@gmail.com> <1293750484-1161-7-git-send-email-justinmattock@gmail.com> <4D1DF7CA.8040504@lwfinger.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S932110Ab1ACPGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 10:06:22 -0500
+Date: Mon, 3 Jan 2011 07:03:28 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: "R, Durgadoss" <durgadoss.r@intel.com>
+CC: "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: Patch[1/2]X86:Adding_Notification_Support_to_therm_throt.c
+Message-ID: <20110103150328.GB25600@ericsson.com>
+References: <D6D887BA8C9DFF48B5233887EF04654105C1251710@bgsmsx502.gar.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <D6D887BA8C9DFF48B5233887EF04654105C1251710@bgsmsx502.gar.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 Dec 2010, Larry Finger wrote:
-
-> On 12/30/2010 05:07 PM, Justin P. Mattock wrote:
-> > The below patch fixes a typo "diable" to "disable". Please let me know if this 
-> > is correct or not.
-> > 
-> > Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-> > 
+On Mon, Jan 03, 2011 at 06:52:04AM -0500, R, Durgadoss wrote:
+> Hi,
 > 
-> ACKed-by: Larry Finger <Larry.Finger@lwfinger.net>
+> I am submitting a patch to add core thermal threshold notification
+> Support to therm_throt.c. These thresholds are supported by the 
+> IA32_THERM_INTERRUPT register. The status/log for the same is monitored
+> using the IA32_THERM_STATUS register. The necessary #defines are in
+> msr-index.h. A call back is added to mce.h, to further notify the
+> thermal stack, about the threshold events.
+> 
+> This patch is generated against stable Linux-2.6 kernel.
+> 
+> Kindly review and merge.
+> ---------------------------------------------------------------------------------
+> From: Durgadoss R <durgadoss.r@intel.com>
+> 
+> Date: Sun, 19 Dec 2010 22:42:45 +0530
+> Subject: [PATCH 1/2] X86:Adding_core_threshold_notification_to_therm_throt.c
+> 
+> This patch adds code to therm_throt.c to notify core thermal threshold
+> events. These thresholds are supported by the IA32_THERM_INTERRUPT register.
+> The status/log for the same is monitored using the IA32_THERM_STATUS register.
+> The necessary #defines are in msr-index.h. A call back is added to mce.h, to
+> further notify the thermal stack, about the threshold events.
+> 
+> Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
+> 
+If this is just a resubmit, you might instead consider trying to figure out
+why none of the x86 maintainers replied. Documentation/Submit* might help,
+as well as comparing your set of patches with other (accepted) patches.
 
-Applied, thanks.
+If you made some changes, it would be expected to see the patch version and
+to list the changes made. As it is, the headline and description of your patches
+did not change for the last two (or three) submissions, so there is no easy way
+to determine if anything has changed, nor is it possible to identify the most recent
+version from the mailing list archive.
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Guenter 
