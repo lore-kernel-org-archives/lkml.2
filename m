@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279Ab1ACOiV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 09:38:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53394 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754910Ab1ACOiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 09:38:20 -0500
-Subject: Re: [PATCH 24/32] dlm: dlm workqueues aren't used in memory
- reclaim path
-From: Steven Whitehouse <swhiteho@redhat.com>
+	id S1755304Ab1ACOjr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 09:39:47 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47970 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754936Ab1ACOjq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 09:39:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=HjWrx4i6PmPUHY41yRNUChXmGhLirv2t95eXyW08LeCVPqQq+1CLPpmmoXkALmfvrA
+         dDEjUZB2GM9x6cD3UbHxdMj6THwC36YxRK0+J3hET9eTeTTeqFnPxbJRG6d24J1yMS9J
+         bzuvPL8D3PzM+Nr6BE96mPRo8BgCYQe9oMB5I=
+Date: Mon, 3 Jan 2011 17:39:26 +0300
+From: Dan Carpenter <error27@gmail.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Christine Caulfield <ccaulfie@redhat.com>,
-        David Teigland <teigland@redhat.com>, cluster-devel@redhat.com
-In-Reply-To: <20110103142734.GR18831@htj.dyndns.org>
+Cc: linux-kernel@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, Todd Fischer <todd.fischer@ridgerun.com>
+Subject: Re: [PATCH 10/32] input/tps6507x-ts: use system_wq instead of
+ dedicated workqueue
+Message-ID: <20110103143926.GX1886@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	linux-input@vger.kernel.org,
+	Todd Fischer <todd.fischer@ridgerun.com>
 References: <1294062595-30097-1-git-send-email-tj@kernel.org>
-	 <1294062595-30097-25-git-send-email-tj@kernel.org>
-	 <1294063107.2429.34.camel@dolmen> <20110103140107.GP18831@htj.dyndns.org>
-	 <1294064489.2429.58.camel@dolmen>  <20110103142734.GR18831@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Mon, 03 Jan 2011 14:39:19 +0000
-Message-ID: <1294065559.2429.84.camel@dolmen>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+ <1294062595-30097-11-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294062595-30097-11-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mon, 2011-01-03 at 15:27 +0100, Tejun Heo wrote:
-> Hello again,
+On Mon, Jan 03, 2011 at 02:49:33PM +0100, Tejun Heo wrote:
+> With cmwq, there's no reason to use a separate workqueue.  Drop
+> tps6507x_ts->wq and use system_wq instead.
 > 
-> On Mon, Jan 03, 2011 at 02:21:29PM +0000, Steven Whitehouse wrote:
-> > > Ooh, I see.  Hmmm... maybe I've asked this before but do you really
-> > > need WQ_MEM_RECLAIM there?  Is dlm used during memory reclaim?
-> > 
-> > Yes, it is in case of deallocation of inodes, so we have to be careful
-> > about that,
-> 
-> I see.  I'm still slightly unsure about the WQ_MEM_RECLAIM rules when
-> it comes to distributed file systems and stuff related to them, but I
-> think it basically comes down to whether the code can be in the swap
-> path or not.  e.g. for nfs backed write shared mapped files, nfs
-> definitely can be used during memory reclaim _but_ it's not guaranteed
-> to make forward progress under memory pressure and thus can't be
-> depended upon and shouldn't be used for swap.  IOW, it may free memory
-> but it's not in the critical path which should guarantee forward
-> progress.  Isn't dlm the same case?
-> 
-> Thank you.
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Cc: linux-input@vger.kernel.org
+> Cc: Dan Carpenter <error27@gmail.com>
+> Cc: Todd Fischer <todd.fischer@ridgerun.com>
+> ---
+> Only compile tested.  Please feel free to take it into the subsystem
+> tree or simply ack - I'll route it through the wq tree.
 > 
 
-No, the issue arises in case an inode is being ejected from cache with a
-0 link count (and this need deallocation). At this point the dlm is
-required in order to coordinate which node will perform the
-deallocation, but if it blocks on memory reclaim (via the fs, so
-GFP_NOFS is ok, but GFP_KERNEL is not) then it can land up calling back
-into the fs via a shrink of the dcache which can potentially then also
-call back into the dlm.
+This is that driver that polls every 30 ms.  :/  Todd, is there no way
+to avoid this?  What was the status on that?
 
-Since there is no workqueue option to indicate that GFP_NOFS is ok, but
-GFP_KERNEL is not, I think in the workqueue case we must mark it as
-WQ_MEM_RECLAIM. So far as I can tell thats a limitation of task creation
-which was the reason for the pre-allocated rescuer thread. I'd rather be
-safe than sorry in this case,
-
-Steve.
+regards,
+dan carpenter
 
 
