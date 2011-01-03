@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab1ACLyH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 06:54:07 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:48697 "EHLO mprc.pku.edu.cn"
+	id S1754729Ab1ACLyn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 06:54:43 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:48699 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753430Ab1ACLyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 06:54:05 -0500
+	id S1753430Ab1ACLym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 06:54:42 -0500
 From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCHv1 7/8] unicore32 additional architecture files: low-level lib: checksum
-Date: Mon, 3 Jan 2011 19:54:03 +0800
-Message-ID: <013101cbab3c$eb0a7670$c11f6350$@mprc.pku.edu.cn>
+Subject: [PATCHv1 8/8] unicore32 additional architecture files: low-level lib: misc
+Date: Mon, 3 Jan 2011 19:54:41 +0800
+Message-ID: <013301cbab3d$01698b40$043ca1c0$@mprc.pku.edu.cn>
 MIME-Version: 1.0
 Content-Type: text/plain;
 	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AcurPOOj4M36NFNnT9a7X0eoOisFHQ==
+Thread-Index: AcurPPnj3DF5K3uoR4mFb1yccI/sJQ==
 Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,26 +24,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 
-Patch 7 implements low-level checksum libraries.
+Patch 8 implements the rest low-level libraries.
 
 Signed-off-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 ---
- arch/unicore32/include/asm/checksum.h       |  142 +++++++++++
- arch/unicore32/lib/csumipv6.S               |   36 +++
- arch/unicore32/lib/csumpartial.S            |  126 ++++++++++
- arch/unicore32/lib/csumpartialcopy.S        |   61 +++++
- arch/unicore32/lib/csumpartialcopygeneric.S |  335 +++++++++++++++++++++++++++
- arch/unicore32/lib/csumpartialcopyuser.S    |   92 ++++++++
- 6 files changed, 792 insertions(+), 0 deletions(-)
+ arch/unicore32/include/asm/assembler.h |  131 +++++++++++++++++++++
+ arch/unicore32/include/asm/bitops.h    |   47 ++++++++
+ arch/unicore32/include/asm/delay.h     |   52 ++++++++
+ arch/unicore32/include/asm/futex.h     |  143 +++++++++++++++++++++++
+ arch/unicore32/include/asm/mutex.h     |   20 +++
+ arch/unicore32/include/asm/swab.h      |   28 +++++
+ arch/unicore32/lib/Makefile            |   16 +++
+ arch/unicore32/lib/delay.S             |   51 ++++++++
+ arch/unicore32/lib/findbit.S           |   98 ++++++++++++++++
+ arch/unicore32/lib/sha1.S              |  200 ++++++++++++++++++++++++++++++++
+ 10 files changed, 786 insertions(+), 0 deletions(-)
 
-diff --git a/arch/unicore32/include/asm/checksum.h b/arch/unicore32/include/asm/checksum.h
+diff --git a/arch/unicore32/include/asm/assembler.h b/arch/unicore32/include/asm/assembler.h
 new file mode 100644
-index 0000000..59a97d8
+index 0000000..8e87ed7
 --- /dev/null
-+++ b/arch/unicore32/include/asm/checksum.h
-@@ -0,0 +1,142 @@
++++ b/arch/unicore32/include/asm/assembler.h
+@@ -0,0 +1,131 @@
 +/*
-+ * linux/arch/unicore32/include/asm/checksum.h
++ * linux/arch/unicore32/include/asm/assembler.h
 + *
 + * Code specific to PKUnity SoC and UniCore ISA
 + *
@@ -53,145 +57,476 @@ index 0000000..59a97d8
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + *
-+ * IP checksum routines
++ *  Do not include any C declarations in this file - it is included by
++ *  assembler source.
 + */
-+#ifndef __UNICORE_CHECKSUM_H__
-+#define __UNICORE_CHECKSUM_H__
-+
-+#include <linux/in6.h>
-+
-+/*
-+ * computes the checksum of a memory block at buff, length len,
-+ * and adds in "sum" (32-bit)
-+ *
-+ * returns a 32-bit number suitable for feeding into itself
-+ * or csum_tcpudp_magic
-+ *
-+ * this function must be called with even lengths, except
-+ * for the last fragment, which may be odd
-+ *
-+ * it's best to have buff aligned on a 32-bit boundary
-+ */
-+__wsum csum_partial(const void *buff, int len, __wsum sum);
-+
-+/*
-+ * the same as csum_partial, but copies from src while it
-+ * checksums, and handles user-space pointer exceptions correctly, when needed.
-+ *
-+ * here even more important to align src and dst on a 32-bit (or even
-+ * better 64-bit) boundary
-+ */
-+
-+__wsum
-+csum_partial_copy_nocheck(const void *src, void *dst, int len, __wsum sum);
-+
-+__wsum
-+csum_partial_copy_from_user(const void __user *src, void *dst,
-+		int len, __wsum sum, int *err_ptr);
-+
-+/*
-+ *	Fold a partial checksum without adding pseudo headers
-+ */
-+static inline __sum16 csum_fold(__wsum sum)
-+{
-+	__asm__(
-+	"add	%0, %1, %1 <> #16	@ csum_fold"
-+	: "=r" (sum)
-+	: "r" (sum)
-+	: "cc");
-+	return (__force __sum16)(~(__force u32)sum >> 16);
-+}
-+
-+/*
-+ *	This is a version of ip_compute_csum() optimized for IP headers,
-+ *	which always checksum on 4 octet boundaries.
-+ */
-+static inline __sum16
-+ip_fast_csum(const void *iph, unsigned int ihl)
-+{
-+	unsigned int tmp1;
-+	__wsum sum;
-+
-+	__asm__ __volatile__(
-+	"ldw.w	%0, [%1]+, #4		@ ip_fast_csum"
-+	"ldw.w	%3, [%1]+, #4"
-+	"sub	%2, %2, #5"
-+	"add.a	%0, %0, %3"
-+	"ldw.w	%3, [%1]+, #4"
-+	"addc.a	%0, %0, %3"
-+	"ldw.w	%3, [%1]+, #4"
-+"1:	addc.a	%0, %0, %3"
-+	"ldw.w	%3, [%1]+, #4"
-+	"cmpand.a	%2, #15		@ do this carefully"
-+	"beq	2f"
-+	"sub	%2, %2, #1		@ without destroying"
-+	"bne	1b			@ the carry flag"
-+"2:	addc.a	%0, %0, %3"
-+	"addc	%0, %0, #0"
-+	: "=r" (sum), "=r" (iph), "=r" (ihl), "=r" (tmp1)
-+	: "1" (iph), "2" (ihl)
-+	: "cc", "memory");
-+	return csum_fold(sum);
-+}
-+
-+static inline __wsum
-+csum_tcpudp_nofold(__be32 saddr, __be32 daddr, unsigned short len,
-+		   unsigned short proto, __wsum sum)
-+{
-+	__asm__(
-+	"add.a	%0, %1, %2		@ csum_tcpudp_nofold"
-+	"addc.a	%0, %0, %3"
-+	"addc.a	%0, %0, %4 << #8"
-+	"addc.a	%0, %0, %5"
-+	"addc	%0, %0, #0"
-+	: "=&r"(sum)
-+	: "r" (sum), "r" (daddr), "r" (saddr), "r" (len), "Ir" (htons(proto))
-+	: "cc");
-+	return sum;
-+}
-+/*
-+ * computes the checksum of the TCP/UDP pseudo-header
-+ * returns a 16-bit checksum, already complemented
-+ */
-+static inline __sum16
-+csum_tcpudp_magic(__be32 saddr, __be32 daddr, unsigned short len,
-+		  unsigned short proto, __wsum sum)
-+{
-+	return csum_fold(csum_tcpudp_nofold(saddr, daddr, len, proto, sum));
-+}
-+
-+
-+/*
-+ * this routine is used for miscellaneous IP-like checksums, mainly
-+ * in icmp.c
-+ */
-+static inline __sum16
-+ip_compute_csum(const void *buff, int len)
-+{
-+	return csum_fold(csum_partial(buff, len, 0));
-+}
-+
-+#define _HAVE_ARCH_IPV6_CSUM
-+extern __wsum
-+__csum_ipv6_magic(const struct in6_addr *saddr, const struct in6_addr *daddr,
-+		__be32 len, __be32 proto, __wsum sum);
-+
-+static inline __sum16
-+csum_ipv6_magic(const struct in6_addr *saddr, const struct in6_addr *daddr,
-+		__u32 len, unsigned short proto, __wsum sum)
-+{
-+	return csum_fold(__csum_ipv6_magic(saddr, daddr, htonl(len),
-+					   htonl(proto), sum));
-+}
++#ifndef __ASSEMBLY__
++#error "Only include this from assembly code"
 +#endif
-diff --git a/arch/unicore32/lib/csumipv6.S b/arch/unicore32/lib/csumipv6.S
-new file mode 100644
-index 0000000..47fad61
---- /dev/null
-+++ b/arch/unicore32/lib/csumipv6.S
-@@ -0,0 +1,36 @@
++
++#include <asm/ptrace.h>
++
 +/*
-+ * linux/arch/unicore32/lib/csumipv6.S
++ * Little Endian independent macros for shifting bytes within registers.
++ */
++#define pull            >>
++#define push            <<
++#define get_byte_0      << #0
++#define get_byte_1	>> #8
++#define get_byte_2	>> #16
++#define get_byte_3	>> #24
++#define put_byte_0      << #0
++#define put_byte_1	<< #8
++#define put_byte_2	<< #16
++#define put_byte_3	<< #24
++
++#define cadd		cmpadd
++#define cand		cmpand
++#define csub		cmpsub
++#define cxor		cmpxor
++
++/*
++ * Enable and disable interrupts
++ */
++	.macro disable_irq, temp
++	mov	\temp, asr
++	andn     \temp, \temp, #0xFF
++	or	\temp, \temp, #PSR_I_BIT | PRIV_MODE
++	mov.a	asr, \temp
++	.endm
++
++	.macro enable_irq, temp
++	mov	\temp, asr
++	andn     \temp, \temp, #0xFF
++	or	\temp, \temp, #PRIV_MODE
++	mov.a	asr, \temp
++	.endm
++
++#define USER(x...)				\
++9999:	x;					\
++	.pushsection __ex_table, "a";		\
++	.align	3;				\
++	.long	9999b, 9001f;			\
++	.popsection
++
++	.macro	notcond, cond, nexti = .+8
++	.ifc	\cond, eq
++		bne	\nexti
++	.else;	.ifc	\cond, ne
++		beq	\nexti
++	.else;	.ifc	\cond, ea
++		bub	\nexti
++	.else;	.ifc	\cond, ub
++		bea	\nexti
++	.else;	.ifc	\cond, fs
++		bns	\nexti
++	.else;	.ifc	\cond, ns
++		bfs	\nexti
++	.else;	.ifc	\cond, fv
++		bnv	\nexti
++	.else;	.ifc	\cond, nv
++		bfv	\nexti
++	.else;	.ifc	\cond, ua
++		beb	\nexti
++	.else;	.ifc	\cond, eb
++		bua	\nexti
++	.else;	.ifc	\cond, eg
++		bsl	\nexti
++	.else;	.ifc	\cond, sl
++		beg	\nexti
++	.else;	.ifc	\cond, sg
++		bel	\nexti
++	.else;	.ifc	\cond, el
++		bsg	\nexti
++	.else;	.ifnc	\cond, al
++		.error  "Unknown cond in notcond macro argument"
++	.endif;	.endif;	.endif;	.endif;	.endif;	.endif;	.endif
++	.endif;	.endif;	.endif;	.endif;	.endif;	.endif;	.endif
++	.endif
++	.endm
++
++	.macro	usracc, instr, reg, ptr, inc, cond, rept, abort
++	.rept	\rept
++	notcond	\cond, .+8
++9999 :
++	.if	\inc == 1
++	\instr\()b.u \reg, [\ptr], #\inc
++	.elseif	\inc == 4
++	\instr\()w.u \reg, [\ptr], #\inc
++	.else
++	.error	"Unsupported inc macro argument"
++	.endif
++
++	.pushsection __ex_table, "a"
++	.align	3
++	.long	9999b, \abort
++	.popsection
++	.endr
++	.endm
++
++	.macro	strusr, reg, ptr, inc, cond = al, rept = 1, abort = 9001f
++	usracc	st, \reg, \ptr, \inc, \cond, \rept, \abort
++	.endm
++
++	.macro	ldrusr, reg, ptr, inc, cond = al, rept = 1, abort = 9001f
++	usracc	ld, \reg, \ptr, \inc, \cond, \rept, \abort
++	.endm
++
++	.macro	nop8
++	.rept	8
++		nop
++	.endr
++	.endm
+diff --git a/arch/unicore32/include/asm/bitops.h b/arch/unicore32/include/asm/bitops.h
+new file mode 100644
+index 0000000..1628a63
+--- /dev/null
++++ b/arch/unicore32/include/asm/bitops.h
+@@ -0,0 +1,47 @@
++/*
++ * linux/arch/unicore32/include/asm/bitops.h
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef __UNICORE_BITOPS_H__
++#define __UNICORE_BITOPS_H__
++
++#define find_next_bit		__uc32_find_next_bit
++#define find_next_zero_bit	__uc32_find_next_zero_bit
++
++#define find_first_bit		__uc32_find_first_bit
++#define find_first_zero_bit	__uc32_find_first_zero_bit
++
++#define _ASM_GENERIC_BITOPS_FLS_H_
++#define _ASM_GENERIC_BITOPS___FLS_H_
++#define _ASM_GENERIC_BITOPS_FFS_H_
++#define _ASM_GENERIC_BITOPS___FFS_H_
++/*
++ * On UNICORE, those functions can be implemented around
++ * the cntlz instruction for much better code efficiency.
++ */
++
++static inline int fls(int x)
++{
++	int ret;
++
++	asm("cntlz\t%0, %1" : "=r" (ret) : "r" (x) : "cc");
++	ret = 32 - ret;
++
++	return ret;
++}
++
++#define __fls(x) (fls(x) - 1)
++#define ffs(x) ({ unsigned long __t = (x); fls(__t & -__t); })
++#define __ffs(x) (ffs(x) - 1)
++
++#include <asm-generic/bitops.h>
++
++#endif /* __UNICORE_BITOPS_H__ */
+diff --git a/arch/unicore32/include/asm/delay.h b/arch/unicore32/include/asm/delay.h
+new file mode 100644
+index 0000000..164ae61
+--- /dev/null
++++ b/arch/unicore32/include/asm/delay.h
+@@ -0,0 +1,52 @@
++/*
++ * linux/arch/unicore32/include/asm/delay.h
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Delay routines, using a pre-computed "loops_per_second" value.
++ */
++#ifndef __UNICORE_DELAY_H__
++#define __UNICORE_DELAY_H__
++
++#include <asm/param.h>	/* HZ */
++
++extern void __delay(int loops);
++
++/*
++ * This function intentionally does not exist; if you see references to
++ * it, it means that you're calling udelay() with an out of range value.
++ *
++ * With currently imposed limits, this means that we support a max delay
++ * of 2000us. Further limits: HZ<=1000 and bogomips<=3355
++ */
++extern void __bad_udelay(void);
++
++/*
++ * division by multiplication: you don't have to worry about
++ * loss of precision.
++ *
++ * Use only for very small delays ( < 1 msec).  Should probably use a
++ * lookup table, really, as the multiplications take much too long with
++ * short delays.  This is a "reasonable" implementation, though (and the
++ * first constant multiplications gets optimized away if the delay is
++ * a constant)
++ */
++extern void __udelay(unsigned long usecs);
++extern void __const_udelay(unsigned long);
++
++#define MAX_UDELAY_MS 2
++
++#define udelay(n)							\
++	(__builtin_constant_p(n) ?					\
++	  ((n) > (MAX_UDELAY_MS * 1000) ? __bad_udelay() :		\
++			__const_udelay((n) * ((2199023U*HZ)>>11))) :	\
++	  __udelay(n))
++
++#endif /* __UNICORE_DELAY_H__ */
++
+diff --git a/arch/unicore32/include/asm/futex.h b/arch/unicore32/include/asm/futex.h
+new file mode 100644
+index 0000000..07dea61
+--- /dev/null
++++ b/arch/unicore32/include/asm/futex.h
+@@ -0,0 +1,143 @@
++/*
++ * linux/arch/unicore32/include/asm/futex.h
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef __UNICORE_FUTEX_H__
++#define __UNICORE_FUTEX_H__
++
++#ifdef __KERNEL__
++
++#include <linux/futex.h>
++#include <linux/preempt.h>
++#include <linux/uaccess.h>
++#include <linux/errno.h>
++
++#define __futex_atomic_op(insn, ret, oldval, uaddr, oparg)	\
++	__asm__ __volatile__(					\
++	"1:	ldw.u	%1, [%2]\n"				\
++	"	" insn "\n"					\
++	"2:	stw.u	%0, [%2]\n"				\
++	"	mov	%0, #0\n"				\
++	"3:\n"							\
++	"	.pushsection __ex_table,\"a\"\n"		\
++	"	.align	3\n"					\
++	"	.long	1b, 4f, 2b, 4f\n"			\
++	"	.popsection\n"					\
++	"	.pushsection .fixup,\"ax\"\n"			\
++	"4:	mov	%0, %4\n"				\
++	"	b	3b\n"					\
++	"	.popsection"					\
++	: "=&r" (ret), "=&r" (oldval)				\
++	: "r" (uaddr), "r" (oparg), "Ir" (-EFAULT)		\
++	: "cc", "memory")
++
++static inline int
++futex_atomic_op_inuser(int encoded_op, int __user *uaddr)
++{
++	int op = (encoded_op >> 28) & 7;
++	int cmp = (encoded_op >> 24) & 15;
++	int oparg = (encoded_op << 8) >> 20;
++	int cmparg = (encoded_op << 20) >> 20;
++	int oldval = 0, ret;
++
++	if (encoded_op & (FUTEX_OP_OPARG_SHIFT << 28))
++		oparg = 1 << oparg;
++
++	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(int)))
++		return -EFAULT;
++
++	pagefault_disable();	/* implies preempt_disable() */
++
++	switch (op) {
++	case FUTEX_OP_SET:
++		__futex_atomic_op("mov	%0, %3", ret, oldval, uaddr, oparg);
++		break;
++	case FUTEX_OP_ADD:
++		__futex_atomic_op("add	%0, %1, %3", ret, oldval, uaddr, oparg);
++		break;
++	case FUTEX_OP_OR:
++		__futex_atomic_op("or	%0, %1, %3", ret, oldval, uaddr, oparg);
++		break;
++	case FUTEX_OP_ANDN:
++		__futex_atomic_op("and	%0, %1, %3",
++				ret, oldval, uaddr, ~oparg);
++		break;
++	case FUTEX_OP_XOR:
++		__futex_atomic_op("xor	%0, %1, %3", ret, oldval, uaddr, oparg);
++		break;
++	default:
++		ret = -ENOSYS;
++	}
++
++	pagefault_enable();	/* subsumes preempt_enable() */
++
++	if (!ret) {
++		switch (cmp) {
++		case FUTEX_OP_CMP_EQ:
++			ret = (oldval == cmparg);
++			break;
++		case FUTEX_OP_CMP_NE:
++			ret = (oldval != cmparg);
++			break;
++		case FUTEX_OP_CMP_LT:
++			ret = (oldval <  cmparg);
++			break;
++		case FUTEX_OP_CMP_GE:
++			ret = (oldval >= cmparg);
++			break;
++		case FUTEX_OP_CMP_LE:
++			ret = (oldval <= cmparg);
++			break;
++		case FUTEX_OP_CMP_GT:
++			ret = (oldval >  cmparg);
++			break;
++		default:
++			ret = -ENOSYS;
++		}
++	}
++	return ret;
++}
++
++static inline int
++futex_atomic_cmpxchg_inatomic(int __user *uaddr, int oldval, int newval)
++{
++	int val;
++
++	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(int)))
++		return -EFAULT;
++
++	pagefault_disable();	/* implies preempt_disable() */
++
++	__asm__ __volatile__("@futex_atomic_cmpxchg_inatomic\n"
++	"1:	ldw.u	%0, [%3]\n"
++	"	cmpxor.a	%0, %1\n"
++	"	bne	3f\n"
++	"2:	stw.u	%2, [%3]\n"
++	"3:\n"
++	"	.pushsection __ex_table,\"a\"\n"
++	"	.align	3\n"
++	"	.long	1b, 4f, 2b, 4f\n"
++	"	.popsection\n"
++	"	.pushsection .fixup,\"ax\"\n"
++	"4:	mov	%0, %4\n"
++	"	b	3b\n"
++	"	.popsection"
++	: "=&r" (val)
++	: "r" (oldval), "r" (newval), "r" (uaddr), "Ir" (-EFAULT)
++	: "cc", "memory");
++
++	pagefault_enable();	/* subsumes preempt_enable() */
++
++	return val;
++}
++
++#endif /* __KERNEL__ */
++#endif /* __UNICORE_FUTEX_H__ */
+diff --git a/arch/unicore32/include/asm/mutex.h b/arch/unicore32/include/asm/mutex.h
+new file mode 100644
+index 0000000..fab7d0e
+--- /dev/null
++++ b/arch/unicore32/include/asm/mutex.h
+@@ -0,0 +1,20 @@
++/*
++ * linux/arch/unicore32/include/asm/mutex.h
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * UniCore optimized mutex locking primitives
++ *
++ * Please look into asm-generic/mutex-xchg.h for a formal definition.
++ */
++#ifndef __UNICORE_MUTEX_H__
++#define __UNICORE_MUTEX_H__
++
++# include <asm-generic/mutex-xchg.h>
++#endif
+diff --git a/arch/unicore32/include/asm/swab.h b/arch/unicore32/include/asm/swab.h
+new file mode 100644
+index 0000000..8f0521f
+--- /dev/null
++++ b/arch/unicore32/include/asm/swab.h
+@@ -0,0 +1,28 @@
++/*
++ * linux/arch/unicore32/include/asm/swab.h
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * In little endian mode, the data bus is connected such
++ * that byte accesses appear as:
++ *  0 = d0...d7, 1 = d8...d15, 2 = d16...d23, 3 = d24...d31
++ * and word accesses (data or instruction) appear as:
++ *  d0...d31
++ */
++#ifndef __UNICORE_SWAB_H__
++#define __UNICORE_SWAB_H__
++
++#include <linux/compiler.h>
++#include <linux/types.h>
++#include <asm-generic/swab.h>
++
++#define __arch_swab32(x) __builtin_bswap32(x)
++
++#endif
++
+diff --git a/arch/unicore32/lib/Makefile b/arch/unicore32/lib/Makefile
+new file mode 100644
+index 0000000..f96b55c
+--- /dev/null
++++ b/arch/unicore32/lib/Makefile
+@@ -0,0 +1,16 @@
++#
++# linux/arch/unicore32/lib/Makefile
++#
++# Copyright (C) 2001-2010 GUAN Xue-tao
++#
++
++lib-y	:= backtrace.o delay.o findbit.o sha1.o	\
++	csumipv6.o csumpartial.o csumpartialcopy.o csumpartialcopyuser.o \
++	strncpy_from_user.o strnlen_user.o 				\
++	io-readsb.o io-writesb.o io-readsl.o				\
++	io-writesl.o io-readsw.o io-writesw.o				\
++	clear_user.o copy_page.o getuser.o putuser.o			\
++	copy_from_user.o copy_to_user.o
++
++$(obj)/csumpartialcopy.o:	$(obj)/csumpartialcopygeneric.S
++$(obj)/csumpartialcopyuser.o:	$(obj)/csumpartialcopygeneric.S
+diff --git a/arch/unicore32/lib/delay.S b/arch/unicore32/lib/delay.S
+new file mode 100644
+index 0000000..24664c0
+--- /dev/null
++++ b/arch/unicore32/lib/delay.S
+@@ -0,0 +1,51 @@
++/*
++ * linux/arch/unicore32/lib/delay.S
 + *
 + * Code specific to PKUnity SoC and UniCore ISA
 + *
@@ -203,37 +538,52 @@ index 0000000..47fad61
 + */
 +#include <linux/linkage.h>
 +#include <asm/assembler.h>
-+
++#include <asm/param.h>
 +		.text
 +
-+ENTRY(__csum_ipv6_magic)
-+		stw.w	lr, [sp+], #-4
-+		add.a	ip, r2, r3
++.LC0:		.word	loops_per_jiffy
++.LC1:		.word	(2199023*HZ)>>11
 +
-+		ldm   (r1 - r4), [r1]+
-+		addc.a	ip, ip, r1
-+		addc.a	ip, ip, r2
-+		addc.a	ip, ip, r3
-+		addc.a	ip, ip, r4
-+		ldm	(r0 - r3), [r0]+
-+		addc.a	r0, ip, r0
-+		addc.a	r0, r0, r1
-+		addc.a	r0, r0, r2
-+		ldw	r2, [sp+], #4
-+		addc.a	r0, r0, r3
-+		addc.a	r0, r0, r2
-+		addc.a	r0, r0, #0
-+		ldm.w	(pc), [sp]+
-+ENDPROC(__csum_ipv6_magic)
-+
-diff --git a/arch/unicore32/lib/csumpartial.S b/arch/unicore32/lib/csumpartial.S
-new file mode 100644
-index 0000000..23e36c5
---- /dev/null
-+++ b/arch/unicore32/lib/csumpartial.S
-@@ -0,0 +1,126 @@
 +/*
-+ * linux/arch/unicore32/lib/csumpartial.S
++ * r0  <= 2000
++ * lpj <= 0x01ffffff (max. 3355 bogomips)
++ * HZ  <= 1000
++ */
++
++ENTRY(__udelay)
++		ldw	r2, .LC1
++		mul	r0, r2, r0
++ENTRY(__const_udelay)				@ 0 <= r0 <= 0x7fffff06
++		ldw	r2, .LC0
++		ldw	r2, [r2]		@ max = 0x01ffffff
++		mov	r0, r0 >> #14		@ max = 0x0001ffff
++		mov	r2, r2 >> #10		@ max = 0x00007fff
++		mul	r0, r2, r0		@ max = 2^32-1
++		mov.a	r0, r0 >> #6
++		cmoveq	pc, lr
++
++/*
++ * loops = r0 * HZ * loops_per_jiffy / 1000000
++ *
++ * Oh, if only we had a cycle counter...
++ */
++
++@ Delay routine
++ENTRY(__delay)
++		sub.a	r0, r0, #2
++		bua	__delay
++		mov	pc, lr
++ENDPROC(__udelay)
++ENDPROC(__const_udelay)
++ENDPROC(__delay)
+diff --git a/arch/unicore32/lib/findbit.S b/arch/unicore32/lib/findbit.S
+new file mode 100644
+index 0000000..c360ce9
+--- /dev/null
++++ b/arch/unicore32/lib/findbit.S
+@@ -0,0 +1,98 @@
++/*
++ * linux/arch/unicore32/lib/findbit.S
 + *
 + * Code specific to PKUnity SoC and UniCore ISA
 + *
@@ -245,127 +595,99 @@ index 0000000..23e36c5
 + */
 +#include <linux/linkage.h>
 +#include <asm/assembler.h>
-+
-+		.text
++                .text
 +
 +/*
-+ * Function: __u32 csum_partial(const char *src, int len, __u32 sum)
-+ * Params  : r0 = buffer, r1 = len, r2 = checksum
-+ * Returns : r0 = new checksum
++ * Purpose  : Find a 'zero' bit
++ * Prototype: int find_first_zero_bit(void *addr, unsigned int maxbit);
 + */
-+
-+buf	.req	r0
-+len	.req	r1
-+sum	.req	r2
-+td0	.req	r3
-+td1	.req	r4
-+td2	.req	r5
-+td3	.req	r6
-+
-+.Lzero:		mov	r0, sum
-+		add	sp, sp, #4
-+		ldw.w	pc, [sp]+, #4
-+
-+		/*
-+		 * Handle 0 to 7 bytes, with any alignment of source and
-+		 * destination pointers.  Note that when we get here, C = 0
-+		 */
-+.Lless8:		cxor.a	len, #0			@ check for zero count
-+		beq	.Lzero
-+
-+		/* we must have at least one byte. */
-+		cand.a	buf, #1				@ odd address?
-+		beq	.Lless4
-+		mov	sum, sum <> #8
-+		ldb.w	td0, [buf]+, #1
-+		sub	len, len, #1
-+		addc.a	sum, sum, td0 put_byte_1
-+
-+.Lless4:	cand.a	len, #6
-+		beq	.Lless8_byte
-+
-+		/* we are now half-word aligned */
-+
-+.Lless8_wordlp:
-+		ldh.w	td0, [buf]+, #2
-+		sub	len, len, #2
-+		addc.a	sum, sum, td0
-+		cand.a	len, #6
-+		bne	.Lless8_wordlp
-+
-+.Lless8_byte:	cand.a	len, #1			@ odd number of bytes
-+		beq	.Ldone
-+		ldb.w	td0, [buf]+, #1		@ include last byte
-+		addc.a	sum, sum, td0 put_byte_0	@ update checksum
-+
-+.Ldone:		addc	r0, sum, #0		@ collect up the last carry
-+		ldw.w	td0, [sp]+, #4
-+		cand.a	td0, #1			@ check buffer alignment
-+		cmovne	r0, r0 <> #8		@ rotate checksum by 8 bits
-+		ldw.w	pc, [sp]+, #4		@ return
-+
-+.Lnot_aligned:	cand.a	buf, #1			@ odd address
-+		beq	201f
-+		ldb.w	td0, [buf]+, #1		@ make even
-+		sub	len, len, #1
-+		addc.a	sum, sum, td0 put_byte_1	@ update checksum
-+	201:
-+		cand.a	buf, #2			@ 32-bit aligned?
-+		beq	201f
-+		ldh.w	td0, [buf]+, #2		@ make 32-bit aligned
-+		sub	len, len, #2
-+		addc.a	sum, sum, td0		@ update checksum
-+	201:
++__uc32_find_first_zero_bit:
++		cxor.a	r1, #0
++		beq	3f
++		mov	r2, #0
++1:		ldb	r3, [r0+], r2 >> #3
++		xor.a	r3, r3, #0xff		@ invert bits
++		bne	.L_found		@ any now set - found zero bit
++		add	r2, r2, #8		@ next bit pointer
++2:		csub.a	r2, r1			@ any more?
++		bub	1b
++3:		mov	r0, r1			@ no free bits
 +		mov	pc, lr
 +
-+ENTRY(csum_partial)
-+		stm.w	(lr), [sp-]
-+		stm.w	(buf), [sp-]
-+		csub.a	len, #8			@ Ensure that we have at least
-+		bub	.Lless8			@ 8 bytes to copy.
-+
-+		cand.a	buf, #1
-+		cmovne	sum, sum <> #8
-+
-+		add.a	sum, sum, #0		@ C = 0
-+		cand.a	buf, #3			@ Test destination alignment
-+		bne.l	.Lnot_aligned		@ align destination, return here
-+
-+1:		andn.a	ip, len, #31
-+		beq	3f
-+
-+2:		ldm.w	(td0, td1, td2, td3), [buf]+
-+		addc.a	sum, sum, td0
-+		addc.a	sum, sum, td1
-+		addc.a	sum, sum, td2
-+		addc.a	sum, sum, td3
-+		ldm.w	(td0, td1, td2, td3), [buf]+
-+		addc.a	sum, sum, td0
-+		addc.a	sum, sum, td1
-+		addc.a	sum, sum, td2
-+		addc.a	sum, sum, td3
-+		sub	ip, ip, #32
-+		cxor.a	ip, #0
-+		bne	2b
-+
-+3:		cand.a	len, #0x1c		@ should not change C
-+		beq	.Lless4
-+
-+4:		ldw.w	td0, [buf]+, #4
-+		sub	len, len, #4
-+		addc.a	sum, sum, td0
-+		cand.a	len, #0x1c
-+		bne	4b
-+		b	.Lless4
-+ENDPROC(csum_partial)
-diff --git a/arch/unicore32/lib/csumpartialcopy.S b/arch/unicore32/lib/csumpartialcopy.S
-new file mode 100644
-index 0000000..e4fa5c2
---- /dev/null
-+++ b/arch/unicore32/lib/csumpartialcopy.S
-@@ -0,0 +1,61 @@
 +/*
-+ * linux/arch/unicore32/lib/csumpartialcopy.S
++ * Purpose  : Find next 'zero' bit
++ * Prototype: int find_next_zero_bit
++ *		(void *addr, unsigned int maxbit, int offset)
++ */
++ENTRY(__uc32_find_next_zero_bit)
++		cxor.a	r1, #0
++		beq	3b
++		and.a	ip, r2, #7
++		beq	1b			@ If new byte, goto old routine
++		ldb	r3, [r0+], r2 >> #3
++		xor	r3, r3, #0xff		@ now looking for a 1 bit
++		mov.a	r3, r3 >> ip		@ shift off unused bits
++		bne	.L_found
++		or	r2, r2, #7		@ if zero, then no bits here
++		add	r2, r2, #1		@ align bit pointer
++		b	2b			@ loop for next bit
++ENDPROC(__uc32_find_next_zero_bit)
++
++/*
++ * Purpose  : Find a 'one' bit
++ * Prototype: int find_first_bit
++ *		(const unsigned long *addr, unsigned int maxbit);
++ */
++__uc32_find_first_bit:
++		cxor.a	r1, #0
++		beq	3f
++		mov	r2, #0
++1:		ldb	r3, [r0+], r2 >> #3
++		mov.a	r3, r3
++		bne	.L_found		@ any now set - found zero bit
++		add	r2, r2, #8		@ next bit pointer
++2:		csub.a	r2, r1			@ any more?
++		bub	1b
++3:		mov	r0, r1			@ no free bits
++		mov	pc, lr
++
++/*
++ * Purpose  : Find next 'one' bit
++ * Prototype: int find_next_zero_bit
++ *		(void *addr, unsigned int maxbit, int offset)
++ */
++ENTRY(__uc32_find_next_bit)
++		cxor.a	r1, #0
++		beq	3b
++		and.a	ip, r2, #7
++		beq	1b			@ If new byte, goto old routine
++		ldb	r3, [r0+], r2 >> #3
++		mov.a	r3, r3 >> ip		@ shift off unused bits
++		bne	.L_found
++		or	r2, r2, #7		@ if zero, then no bits here
++		add	r2, r2, #1		@ align bit pointer
++		b	2b			@ loop for next bit
++ENDPROC(__uc32_find_next_bit)
++
++/*
++ * One or more bits in the LSB of r3 are assumed to be set.
++ */
++.L_found:
++		rsub	r1, r3, #0
++		and	r3, r3, r1
++		cntlz	r3, r3
++		rsub	r3, r3, #31
++		add	r0, r2, r3
++		mov	pc, lr
++
+diff --git a/arch/unicore32/lib/sha1.S b/arch/unicore32/lib/sha1.S
+new file mode 100644
+index 0000000..0c50895
+--- /dev/null
++++ b/arch/unicore32/lib/sha1.S
+@@ -0,0 +1,200 @@
++/*
++ * linux/arch/unicore32/lib/sha1.S
 + *
 + * Code specific to PKUnity SoC and UniCore ISA
 + *
@@ -374,494 +696,194 @@ index 0000000..e4fa5c2
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
++ *
++ *  The reference implementation for this code is linux/lib/sha1.c
 + */
++
 +#include <linux/linkage.h>
-+#include <asm/assembler.h>
 +
-+		.text
++	.text
 +
-+/*
-+ * Function: __u32 csum_partial_copy_nocheck
-+ * 			(const char *src, char *dst, int len, __u32 sum)
-+ * Params  : r0 = src, r1 = dst, r2 = len, r3 = checksum
-+ * Returns : r0 = new checksum
-+ */
-+
-+		.macro	save_regs
-+		mov	ip, sp
-+		stm.w	(fp, ip, lr, pc), [sp-]
-+		stm.w	(r1), [sp-]
-+		sub	fp, ip, #4
-+		.endm
-+
-+		.macro	load_regs
-+		ldm.w	(r1), [sp]+
-+		ldm	(fp, sp, pc), [sp]+
-+		.endm
-+
-+		.macro	load1b, reg1
-+		ldb.w	\reg1, [r0]+, #1
-+		.endm
-+
-+		.macro	load2b, reg1, reg2
-+		ldb.w	\reg1, [r0]+, #1
-+		ldb.w	\reg2, [r0]+, #1
-+		.endm
-+
-+		.macro	load1l, reg1
-+		ldw.w	\reg1, [r0]+, #4
-+		.endm
-+
-+		.macro	load2l, reg1, reg2
-+		ldw.w	\reg1, [r0]+, #4
-+		ldw.w	\reg2, [r0]+, #4
-+		.endm
-+
-+		.macro	load4l, reg1, reg2, reg3, reg4
-+		ldm.w	(\reg1, \reg2, \reg3, \reg4), [r0]+
-+		.endm
-+
-+#define FN_ENTRY	ENTRY(csum_partial_copy_nocheck)
-+#define FN_EXIT		ENDPROC(csum_partial_copy_nocheck)
-+
-+#include "csumpartialcopygeneric.S"
-diff --git a/arch/unicore32/lib/csumpartialcopygeneric.S b/arch/unicore32/lib/csumpartialcopygeneric.S
-new file mode 100644
-index 0000000..d5a4a3d
---- /dev/null
-+++ b/arch/unicore32/lib/csumpartialcopygeneric.S
-@@ -0,0 +1,335 @@
-+/*
-+ * linux/arch/unicore32/lib/csumpartialcopygeneric.S
-+ *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
 +
 +/*
-+ * unsigned int
-+ * csum_partial_copy_xxx(const char *src, char *dst, int len, int sum, )
-+ *  r0 = src, r1 = dst, r2 = len, r3 = sum
-+ *  Returns : r0 = checksum
++ * void sha_transform(__u32 *digest, const char *in, __u32 *W)
 + *
-+ * Note that 'tst' and 'teq' preserve the carry flag.
++ * Note: the "in" ptr may be unaligned.
 + */
 +
-+src	.req	r0
-+dst	.req	r1
-+len	.req	r2
-+sum	.req	r3
++ENTRY(sha_transform)
 +
-+.Lzero:		mov	r0, sum
-+		load_regs
++	stm.w	(lr), [sp-]
 +
-+		/*
-+		 * Align an unaligned destination pointer.  We know that
-+		 * we have >= 8 bytes here, so we don't need to check
-+		 * the length.  Note that the source pointer hasn't been
-+		 * aligned yet.
-+		 */
-+.Ldst_unaligned:
-+		cand.a	dst, #1
-+		beq	.Ldst_16bit
++	@ for (i = 0; i < 16; i++)
++	@         W[i] = be32_to_cpu(in[i]);
 +
-+		load1b	ip
-+		sub	len, len, #1
-+		addc.a	sum, sum, ip put_byte_1		@ update checksum
-+		stb.w	ip, [dst]+, #1
-+		cand.a	dst, #2
-+		cmoveq	pc, lr			@ dst is now 32bit aligned
++	mov	r3, r2
++	mov	lr, #16
++1:	ldb.w	r4, [r1]+, #1
++	ldb.w	r5, [r1]+, #1
++	ldb.w	r6, [r1]+, #1
++	ldb.w	r7, [r1]+, #1
++	sub.a	lr, lr, #1
++	or	r5, r5, r4 << #8
++	or	r6, r6, r5 << #8
++	or	r7, r7, r6 << #8
++	stw.w	r7, [r3]+, #4
++	bne	1b
 +
-+.Ldst_16bit:	load2b	r8, ip
-+		sub	len, len, #2
-+		addc.a	sum, sum, r8 put_byte_0
-+		stb.w	r8, [dst]+, #1
-+		addc.a	sum, sum, ip put_byte_1
-+		stb.w	ip, [dst]+, #1
-+		mov	pc, lr			@ dst is now 32bit aligned
++	@ for (i = 0; i < 64; i++)
++	@         W[i+16] = ror(W[i+13] ^ W[i+8] ^ W[i+2] ^ W[i], 31);
 +
-+		/*
-+		 * Handle 0 to 7 bytes, with any alignment of source and
-+		 * destination pointers.  Note that when we get here, C = 0
-+		 */
-+.Lless8:	cxor.a	len, #0			@ check for zero count
-+		beq	.Lzero
++	sub	r3, r2, #4
++	mov	lr, #64
++2:	ldw.w	r4, [r3+], #4
++	sub.a	lr, lr, #1
++	ldw	r5, [r3+], #8
++	ldw	r6, [r3+], #32
++	ldw	r7, [r3+], #52
++	xor	r4, r4, r5
++	xor	r4, r4, r6
++	xor	r4, r4, r7
++	mov	r4, r4 <> #31
++	stw	r4, [r3+], #64
++	bne	2b
 +
-+		/* we must have at least one byte. */
-+		cand.a	dst, #1				@ dst 16-bit aligned
-+		beq	.Lless8_aligned
++	/*
++	 * The SHA functions are:
++	 *
++	 * f1(B,C,D) = (D ^ (B & (C ^ D)))
++	 * f2(B,C,D) = (B ^ C ^ D)
++	 * f3(B,C,D) = ((B & C) | (D & (B | C)))
++	 *
++	 * Then the sub-blocks are processed as follows:
++	 *
++	 * A' = ror(A, 27) + f(B,C,D) + E + K + *W++
++	 * B' = A
++	 * C' = ror(B, 2)
++	 * D' = C
++	 * E' = D
++	 *
++	 * We therefore unroll each loop 5 times to avoid register shuffling.
++	 * Also the ror for C (and also D and E which are successivelyderived
++	 * from it) is applied in place to cut on an additional mov insn for
++	 * each round.
++	 */
 +
-+		/* Align dst */
-+		load1b	ip
-+		sub	len, len, #1
-+		addc.a	sum, sum, ip put_byte_1		@ update checksum
-+		stb.w	ip, [dst]+, #1
-+		cand.a	len, #6
-+		beq	.Lless8_byteonly
++	.macro	sha_f1, A, B, C, D, E
++	ldw.w	r3, [r2]+, #4
++	xor	ip, \C, \D
++	add	\E, r1, \E <> #2
++	and	ip, \B, ip <> #2
++	add	\E, \E, \A <> #27
++	xor	ip, ip, \D <> #2
++	add	\E, \E, r3
++	add	\E, \E, ip
++	.endm
 +
-+1:		load2b	r8, ip
-+		sub	len, len, #2
-+		addc.a	sum, sum, r8 put_byte_0
-+		stb.w	r8, [dst]+, #1
-+		addc.a	sum, sum, ip put_byte_1
-+		stb.w	ip, [dst]+, #1
-+.Lless8_aligned:
-+		cand.a	len, #6
-+		bne	1b
-+.Lless8_byteonly:
-+		cand.a	len, #1
-+		beq	.Ldone
-+		load1b	r8
-+		addc.a	sum, sum, r8 put_byte_0		@ update checksum
-+		stb.w	r8, [dst]+, #1
-+		b	.Ldone
++	.macro	sha_f2, A, B, C, D, E
++	ldw.w	r3, [r2]+, #4
++	add	\E, r1, \E <> #2
++	xor	ip, \B, \C <> #2
++	add	\E, \E, \A <> #27
++	xor	ip, ip, \D <> #2
++	add	\E, \E, r3
++	add	\E, \E, ip
++	.endm
 +
-+FN_ENTRY
-+		save_regs
++	.macro	sha_f3, A, B, C, D, E
++	ldw.w	r3, [r2]+, #4
++	add	\E, r1, \E <> #2
++	or	ip, \B, \C <> #2
++	add	\E, \E, \A <> #27
++	and	ip, ip, \D <> #2
++	add	\E, \E, r3
++	and	r3, \B, \C <> #2
++	or	ip, ip, r3
++	add	\E, \E, ip
++	.endm
 +
-+		csub.a	len, #8			@ Ensure that we have at least
-+		bub	.Lless8			@ 8 bytes to copy.
++	ldm	(r4 - r8), [r0]+
 +
-+		add.a	sum, sum, #0		@ C = 0
-+		cand.a	dst, #3			@ Test destination alignment
-+		bne.l	.Ldst_unaligned		@ align destination, return here
++	mov	lr, #4
++	ldw	r1, .L_sha_K + 0
 +
-+		/*
-+		 * Ok, the dst pointer is now 32bit aligned, and we know
-+		 * that we must have more than 4 bytes to copy.  Note
-+		 * that C contains the carry from the dst alignment above.
-+		 */
++	/* adjust initial values */
++	mov	r6, r6 <> #30
++	mov	r7, r7 <> #30
++	mov	r8, r8 <> #30
 +
-+		cand.a	src, #3			@ Test source alignment
-+		bne	.Lsrc_not_aligned
++3:	sub.a	lr, lr, #1
++	sha_f1	r4, r5, r6, r7, r8
++	sha_f1	r8, r4, r5, r6, r7
++	sha_f1	r7, r8, r4, r5, r6
++	sha_f1	r6, r7, r8, r4, r5
++	sha_f1	r5, r6, r7, r8, r4
++	bne	3b
 +
-+		/* Routine for src & dst aligned */
++	ldw	r1, .L_sha_K + 4
++	mov	lr, #4
 +
-+		andn.a	ip, len, #15
-+		beq	2f
++4:	sub.a	lr, lr, #1
++	sha_f2	r4, r5, r6, r7, r8
++	sha_f2	r8, r4, r5, r6, r7
++	sha_f2	r7, r8, r4, r5, r6
++	sha_f2	r6, r7, r8, r4, r5
++	sha_f2	r5, r6, r7, r8, r4
++	bne	4b
 +
-+1:		load4l	r4, r5, r6, r7
-+		stm.w	(r4, r5, r6, r7), [dst]+
-+		addc.a	sum, sum, r4
-+		addc.a	sum, sum, r5
-+		addc.a	sum, sum, r6
-+		addc.a	sum, sum, r7
-+		sub	ip, ip, #16
-+		cxor.a	ip, #0
-+		bne	1b
++	ldw	r1, .L_sha_K + 8
++	mov	lr, #4
 +
-+2:		and.a	ip, len, #12
-+		beq	4f
-+		cand.a	ip, #8
-+		beq	3f
-+		load2l	r4, r5
-+		stm.w	(r4, r5), [dst]+
-+		addc.a	sum, sum, r4
-+		addc.a	sum, sum, r5
-+		cand.a	ip, #4
-+		beq	4f
++5:	sub.a	lr, lr, #1
++	sha_f3	r4, r5, r6, r7, r8
++	sha_f3	r8, r4, r5, r6, r7
++	sha_f3	r7, r8, r4, r5, r6
++	sha_f3	r6, r7, r8, r4, r5
++	sha_f3	r5, r6, r7, r8, r4
++	bne	5b
 +
-+3:		load1l	r4
-+		stw.w	r4, [dst]+, #4
-+		addc.a	sum, sum, r4
++	ldw	r1, .L_sha_K + 12
++	mov	lr, #4
 +
-+4:		and.a	len, len, #3
-+		beq	.Ldone
-+		load1l	r4
-+		cand.a	len, #2
-+		mov	r5, r4 get_byte_0
-+		beq	.Lexit
-+		addc.a	sum, sum, r4 push #16
-+		stb.w	r5, [dst]+, #1
-+		mov	r5, r4 get_byte_1
-+		stb.w	r5, [dst]+, #1
-+		mov	r5, r4 get_byte_2
-+.Lexit:		cand.a	len, #1
-+		beq	.Ldone
-+		stb.w	r5, [dst]+, #1
-+		and	r5, r5, #255
-+		addc.a	sum, sum, r5 put_byte_0
++6:	sub.a	lr, lr, #1
++	sha_f2	r4, r5, r6, r7, r8
++	sha_f2	r8, r4, r5, r6, r7
++	sha_f2	r7, r8, r4, r5, r6
++	sha_f2	r6, r7, r8, r4, r5
++	sha_f2	r5, r6, r7, r8, r4
++	bne	6b
 +
-+		/*
-+		 * If the dst pointer was not 16-bit aligned, we
-+		 * need to rotate the checksum here to get around
-+		 * the inefficient byte manipulations in the
-+		 * architecture independent code.
-+		 */
-+.Ldone:		addc	r0, sum, #0
-+		ldw	sum, [sp+], #0		@ dst
-+		cand.a	sum, #1
-+		cmovne	r0, r0 <> #8
-+		load_regs
++	ldm	(r1, r2, r3, r9, r10), [r0]+
++	add	r4, r1, r4
++	add	r5, r2, r5
++	add	r6, r3, r6 <> #2
++	add	r7, r9, r7 <> #2
++	add	r8, r10, r8 <> #2
++	stm	(r4 - r8), [r0]+
 +
-+.Lsrc_not_aligned:
-+		addc	sum, sum, #0		@ include C from dst alignment
-+		and	ip, src, #3
-+		andn	src, src, #3
-+		load1l	r5
-+		csub.a	ip, #2
-+		beq	.Lsrc2_aligned
-+		bua	.Lsrc3_aligned
-+		mov	r4, r5 pull #8		@ C = 0
-+		andn.a	ip, len, #15
-+		beq	2f
-+1:		load4l	r5, r6, r7, r8
-+		or	r4, r4, r5 push #24
-+		mov	r5, r5 pull #8
-+		or	r5, r5, r6 push #24
-+		mov	r6, r6 pull #8
-+		or	r6, r6, r7 push #24
-+		mov	r7, r7 pull #8
-+		or	r7, r7, r8 push #24
-+		stm.w	(r4, r5, r6, r7), [dst]+
-+		addc.a	sum, sum, r4
-+		addc.a	sum, sum, r5
-+		addc.a	sum, sum, r6
-+		addc.a	sum, sum, r7
-+		mov	r4, r8 pull #8
-+		sub	ip, ip, #16
-+		cxor.a	ip, #0
-+		bne	1b
-+2:		and.a	ip, len, #12
-+		beq	4f
-+		cand.a	ip, #8
-+		beq	3f
-+		load2l	r5, r6
-+		or	r4, r4, r5 push #24
-+		mov	r5, r5 pull #8
-+		or	r5, r5, r6 push #24
-+		stm.w	(r4, r5), [dst]+
-+		addc.a	sum, sum, r4
-+		addc.a	sum, sum, r5
-+		mov	r4, r6 pull #8
-+		cand.a	ip, #4
-+		beq	4f
-+3:		load1l	r5
-+		or	r4, r4, r5 push #24
-+		stw.w	r4, [dst]+, #4
-+		addc.a	sum, sum, r4
-+		mov	r4, r5 pull #8
-+4:		and.a	len, len, #3
-+		beq	.Ldone
-+		mov	r5, r4 get_byte_0
-+		cand.a	len, #2
-+		beq	.Lexit
-+		addc.a	sum, sum, r4 push #16
-+		stb.w	r5, [dst]+, #1
-+		mov	r5, r4 get_byte_1
-+		stb.w	r5, [dst]+, #1
-+		mov	r5, r4 get_byte_2
-+		b	.Lexit
++	ldm.w	(pc), [sp]+
 +
-+.Lsrc2_aligned:	mov	r4, r5 pull #16
-+		add.a	sum, sum, #0
-+		andn.a	ip, len, #15
-+		beq	2f
-+1:		load4l	r5, r6, r7, r8
-+		or	r4, r4, r5 push #16
-+		mov	r5, r5 pull #16
-+		or	r5, r5, r6 push #16
-+		mov	r6, r6 pull #16
-+		or	r6, r6, r7 push #16
-+		mov	r7, r7 pull #16
-+		or	r7, r7, r8 push #16
-+		stm.w	(r4, r5, r6, r7), [dst]+
-+		addc.a	sum, sum, r4
-+		addc.a	sum, sum, r5
-+		addc.a	sum, sum, r6
-+		addc.a	sum, sum, r7
-+		mov	r4, r8 pull #16
-+		sub	ip, ip, #16
-+		cxor.a	ip, #0
-+		bne	1b
-+2:		and.a	ip, len, #12
-+		beq	4f
-+		cand.a	ip, #8
-+		beq	3f
-+		load2l	r5, r6
-+		or	r4, r4, r5 push #16
-+		mov	r5, r5 pull #16
-+		or	r5, r5, r6 push #16
-+		stm.w	(r4, r5), [dst]+
-+		addc.a	sum, sum, r4
-+		addc.a	sum, sum, r5
-+		mov	r4, r6 pull #16
-+		cand.a	ip, #4
-+		beq	4f
-+3:		load1l	r5
-+		or	r4, r4, r5 push #16
-+		stw.w	r4, [dst]+, #4
-+		addc.a	sum, sum, r4
-+		mov	r4, r5 pull #16
-+4:		and.a	len, len, #3
-+		beq	.Ldone
-+		mov	r5, r4 get_byte_0
-+		cand.a	len, #2
-+		beq	.Lexit
-+		addc.a	sum, sum, r4
-+		stb.w	r5, [dst]+, #1
-+		mov	r5, r4 get_byte_1
-+		stb.w	r5, [dst]+, #1
-+		cand.a	len, #1
-+		beq	.Ldone
-+		load1b	r5
-+		b	.Lexit
++ENDPROC(sha_transform)
 +
-+.Lsrc3_aligned:	mov	r4, r5 pull #24
-+		add.a	sum, sum, #0
-+		andn.a	ip, len, #15
-+		beq	2f
-+1:		load4l	r5, r6, r7, r8
-+		or	r4, r4, r5 push #8
-+		mov	r5, r5 pull #24
-+		or	r5, r5, r6 push #8
-+		mov	r6, r6 pull #24
-+		or	r6, r6, r7 push #8
-+		mov	r7, r7 pull #24
-+		or	r7, r7, r8 push #8
-+		stm.w	(r4, r5, r6, r7), [dst]+
-+		addc.a	sum, sum, r4
-+		addc.a	sum, sum, r5
-+		addc.a	sum, sum, r6
-+		addc.a	sum, sum, r7
-+		mov	r4, r8 pull #24
-+		sub	ip, ip, #16
-+		cxor.a	ip, #0
-+		bne	1b
-+2:		and.a	ip, len, #12
-+		beq	4f
-+		cand.a	ip, #8
-+		beq	3f
-+		load2l	r5, r6
-+		or	r4, r4, r5 push #8
-+		mov	r5, r5 pull #24
-+		or	r5, r5, r6 push #8
-+		stm.w	(r4, r5), [dst]+
-+		addc.a	sum, sum, r4
-+		addc.a	sum, sum, r5
-+		mov	r4, r6 pull #24
-+		cand.a	ip, #4
-+		beq	4f
-+3:		load1l	r5
-+		or	r4, r4, r5 push #8
-+		stw.w	r4, [dst]+, #4
-+		addc.a	sum, sum, r4
-+		mov	r4, r5 pull #24
-+4:		and.a	len, len, #3
-+		beq	.Ldone
-+		mov	r5, r4 get_byte_0
-+		cand.a	len, #2
-+		beq	.Lexit
-+		stb.w	r5, [dst]+, #1
-+		addc.a	sum, sum, r4
-+		load1l	r4
-+		mov	r5, r4 get_byte_0
-+		stb.w	r5, [dst]+, #1
-+		addc.a	sum, sum, r4 push #24
-+		mov	r5, r4 get_byte_1
-+		b	.Lexit
-+FN_EXIT
-diff --git a/arch/unicore32/lib/csumpartialcopyuser.S b/arch/unicore32/lib/csumpartialcopyuser.S
-new file mode 100644
-index 0000000..23a292f
---- /dev/null
-+++ b/arch/unicore32/lib/csumpartialcopyuser.S
-@@ -0,0 +1,92 @@
-+/*
-+ * linux/arch/unicore32/lib/csumpartialcopyuser.S
-+ *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * 27/03/03 Ian Molton Clean up CONFIG_CPU
-+ *
-+ */
-+#include <linux/linkage.h>
-+#include <asm/assembler.h>
-+#include <asm/errno.h>
-+#include <generated/asm-offsets.h>
++	.align	2
++.L_sha_K:
++	.word	0x5a827999, 0x6ed9eba1, 0x8f1bbcdc, 0xca62c1d6
 +
-+		.text
-+
-+		.macro	save_regs
-+		mov	ip, sp
-+		stm.w	(fp, ip, lr, pc), [sp-]
-+		stm.w	(r1 - r2), [sp-]
-+		sub	fp, ip, #4
-+		.endm
-+
-+		.macro	load_regs
-+		ldm.w	(r1 - r2), [sp]+
-+		ldm	(fp, sp, pc), [sp]+
-+		.endm
-+
-+		.macro	load1b,	reg1
-+		ldrusr	\reg1, r0, 1
-+		.endm
-+
-+		.macro	load2b, reg1, reg2
-+		ldrusr	\reg1, r0, 1
-+		ldrusr	\reg2, r0, 1
-+		.endm
-+
-+		.macro	load1l, reg1
-+		ldrusr	\reg1, r0, 4
-+		.endm
-+
-+		.macro	load2l, reg1, reg2
-+		ldrusr	\reg1, r0, 4
-+		ldrusr	\reg2, r0, 4
-+		.endm
-+
-+		.macro	load4l, reg1, reg2, reg3, reg4
-+		ldrusr	\reg1, r0, 4
-+		ldrusr	\reg2, r0, 4
-+		ldrusr	\reg3, r0, 4
-+		ldrusr	\reg4, r0, 4
-+		.endm
 +
 +/*
-+ * unsigned int
-+ * csum_partial_copy_from_user
-+ *		(const char *src, char *dst, int len, int sum, int *err_ptr)
-+ *  r0 = src, r1 = dst, r2 = len, r3 = sum, [sp] = *err_ptr
-+ *  Returns : r0 = checksum, [[sp, #0], #0] = 0 or -EFAULT
++ * void sha_init(__u32 *buf)
 + */
 +
-+#define FN_ENTRY	ENTRY(csum_partial_copy_from_user)
-+#define FN_EXIT		ENDPROC(csum_partial_copy_from_user)
++	.align	2
++.L_sha_initial_digest:
++	.word	0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0
 +
-+#include "csumpartialcopygeneric.S"
++ENTRY(sha_init)
 +
-+/*
-+ * FIXME: minor buglet here
-+ * We don't return the checksum for the data present in the buffer.  To do
-+ * so properly, we would have to add in whatever registers were loaded before
-+ * the fault, which, with the current asm above is not predictable.
-+ */
-+		.pushsection .fixup,"ax"
-+		.align	4
-+9001:		mov	r4, #-EFAULT
-+		ldw	r5, [sp+], #8*4		@ *err_ptr
-+		stw	r4, [r5]
-+		ldm	(r1, r2), [sp]+		@ retrieve dst, len
-+		add	r2, r2, r1
-+		mov	r0, #0			@ zero the buffer
-+9002:		cxor.a	r2, r1
-+		beq	201f
-+		stb.w	r0, [r1]+, #1
-+		b	9002b
-+201:
-+		load_regs
-+		.popsection
++	adr	r1, .L_sha_initial_digest
++	ldm	(r1 - r5), [r1]+
++	stm	(r1 - r5), [r0]+
++	mov	pc, lr
++
++ENDPROC(sha_init)
 
