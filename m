@@ -1,47 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab1ACUs7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 15:48:59 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:46499 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751285Ab1ACUs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 15:48:58 -0500
-Message-ID: <4D22362F.2040604@parallels.com>
-Date: Mon, 3 Jan 2011 14:48:47 -0600
-From: Rob Landley <rlandley@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1753812Ab1ACUuW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 15:50:22 -0500
+Received: from pfepa.post.tele.dk ([195.41.46.235]:60577 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752868Ab1ACUuV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 15:50:21 -0500
+Date: Mon, 3 Jan 2011 21:50:19 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Andres Salomon <dilinger@queued.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Sedat Dilek <sedat.dilek@googlemail.com>, sameo@linux.intel.com,
+        tj@kernel.org, joe@perches.com, linux-kernel@vger.kernel.org,
+        Sedat Dilek <sedat.dilek@gmail.com>
+Subject: Re: [PATCH] misc/cs5535: Fix section mismatch derived from
+	cs5535_mfgpt_drv variable
+Message-ID: <20110103205019.GA10739@merkur.ravnborg.org>
+References: <1294023088-31687-1-git-send-email-sedat.dilek@gmail.com> <20110103114310.8b06e73e.akpm@linux-foundation.org> <20110103195131.GA9568@merkur.ravnborg.org> <20110103123431.02a15ba4@queued.net>
 MIME-Version: 1.0
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: "Kirill A. Shutemov" <kas@openvz.org>, Rob Landley <rob@landley.net>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        Pavel Emelyanov <xemul@parallels.com>, <linux-nfs@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 00/12] make rpc_pipefs be mountable multiple time
-References: <1293628470-28386-1-git-send-email-kas@openvz.org>	 <AANLkTi=AXz21wDeE1vPVD-6cEtj6faXN9x09eHDCsTkB@mail.gmail.com>	 <20101230085139.GA29697@shutemov.name> <4D1C4C7C.6050606@parallels.com>	 <20101230094433.GB29697@shutemov.name>  <4D1C5953.6020200@parallels.com> <1293814441.2980.4.camel@heimdal.trondhjem.org>
-In-Reply-To: <1293814441.2980.4.camel@heimdal.trondhjem.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110103123431.02a15ba4@queued.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/31/2010 10:54 AM, Trond Myklebust wrote:
->> I'm kind of surprised that the kernel cares about a specific path under
->> /var/lib.  (Seems like policy in the kernel somehow.)  Can't it just
->> check the current process's mount list to see if an instance of
->> rpc_pipefs is mounted in the current namespace the way lxc looks for
->> cgroups?  Or are there potential performance/scalability issues with that?
->
-> The kernel doesn't give a damn about the /var/lib/nfs/rpc_pipefs bit.
-> That's all for the benefit of the userland utilities.
+On Mon, Jan 03, 2011 at 12:34:31PM -0800, Andres Salomon wrote:
+> On Mon, 3 Jan 2011 20:51:31 +0100
+> Sam Ravnborg <sam@ravnborg.org> wrote:
+> 
+> > On Mon, Jan 03, 2011 at 11:43:10AM -0800, Andrew Morton wrote:
+> > > On Mon,  3 Jan 2011 03:51:28 +0100
+> > > Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+> > > 
+> > > > >From my build.log:
+> > > > 
+> > > > WARNING: drivers/misc/cs5535-mfgpt.o(.data+0x0): Section mismatch
+> > > > in reference from the variable cs5535_mfgpt_drv to the
+> > > > function .devinit.text:cs5535_mfgpt_probe() The variable
+> > > > cs5535_mfgpt_drv references the function __devinit
+> > > > cs5535_mfgpt_probe() If the reference is valid then annotate the
+> > > > variable with __init* or __refdata (see linux/init.h) or name the
+> > > > variable: *driver, *_template, *_timer, *_sht, *_ops, *_probe,
+> > > > *_probe_one, *_console,
+> > > 
+> > > Confused.  cs5535_mfgpt_probe() _does_ have a name of the form
+> > > "*_probe", so why did it warn?
+> > 
+> > The varibale need to follow the naming scheme.
+> > In this case the function was named *_probe - which has no
+> > significance in the section mismatch checks.
+> > 
+> > > > variable with __init* or __refdata (see linux/init.h) or name the
+> > > > variable:
+> >     ^^^^^^^^
+> > ^^^^^^^^^ 
+> > 
+> > 	Sam
+> 
+> I see.  So it should really be renamed cs5535_mfgpt_driver, or _drv
+> added to the whitelist.  Or the whitelist dropped, and all drivers
+> changed to explicitly mark the structs with __devinitdata.
 
-Are you saying that if you go into a container and that mount point 
-doesn't exist, the kernel will still be able to find and use rpc_pipefs? 
-  Without userspace creating a specific magic path and mounting a 
-filesystem on it?
+It is preferred that the variables are annotated __refdata.
+> 
+> It's kind of bizarre that we have variable names signifying whether or
+> not warnings get issued..
 
-If so, I misread the patch...
+It really helped to remove a lot of nosie when we introduced this check.
 
-Rob
-
+	Sam
