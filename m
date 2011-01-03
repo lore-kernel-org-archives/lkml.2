@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320Ab1ACVQM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 16:16:12 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36542 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766Ab1ACVQK (ORCPT
+	id S1753617Ab1ACVQg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 16:16:36 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:48811 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766Ab1ACVQf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 16:16:10 -0500
+	Mon, 3 Jan 2011 16:16:35 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=googlemail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=EPJ3aw88HjLXwNlMmUQlyasE5GZDLC64QLrtBmppLdc3CmI6uEmS6yhq3z6fFr9Yw4
-         GsC1OZTx0XnsgQ6bS4bt1VF0EkfwDOeQ4x75wZOOO1AZOfJgmNlXhC8ceGebW4ltsXyg
-         h/x5RPSMqoq4HjumZwV+cIkGBh0juGgeLsolo=
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=MuLCc6XStW137EAhTXO7yd33w5nwGtUQNhsA7icWNnikcBj3lpMwNbSBQo25FPQnqm
+         FryLby8YohY5xhtFVDvxug5WnUNp8qmvJwyozfCzEskMWF2a9hj1HwU+FNzle29DmHLH
+         fKgafU+26bSIK20T4wUe1UuebTQhd0sdnxZHw=
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20110103.115319.245401044.davem@davemloft.net>
+References: <1294021724-30337-1-git-send-email-sedat.dilek@gmail.com>
+	<20110103.115319.245401044.davem@davemloft.net>
+Date: Mon, 3 Jan 2011 22:16:34 +0100
+Message-ID: <AANLkTimB3CsS5EVK-KiU9=MfAV9+Gu0=fL4770WKpA0i@mail.gmail.com>
+Subject: Re: [PATCH] smsc-ircc2: Fix section mismatch derived from
+ smsc_ircc_pnp_driver variable
 From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: samuel@sortiz.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        davem@davemloft.net
-Cc: Sedat Dilek <sedat.dilek@gmail.com>
-Subject: [PATCH] smsc-ircc2: Fix section mismatch derived from smsc_ircc_pnp_probe()
-Date: Mon,  3 Jan 2011 22:15:58 +0100
-Message-Id: <1294089358-2968-1-git-send-email-sedat.dilek@gmail.com>
-X-Mailer: git-send-email 1.7.4.rc0
+To: David Miller <davem@davemloft.net>
+Cc: samuel@sortiz.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the following warning:
+On Mon, Jan 3, 2011 at 8:53 PM, David Miller <davem@davemloft.net> wrote:
+> From: Sedat Dilek <sedat.dilek@googlemail.com>
+> Date: Mon,  3 Jan 2011 03:28:44 +0100
+>
+>>>From my build.log:
+>>
+>> drivers/net/irda/smsc-ircc2.o(.data+0x18): Section mismatch in reference from the variable smsc_ircc_pnp_driver to the function .init.text:smsc_ircc_pnp_probe()
+>> The variable smsc_ircc_pnp_driver references
+>> the function __init smsc_ircc_pnp_probe()
+>> If the reference is valid then annotate the
+>> variable with __init* or __refdata (see linux/init.h) or name the variable:
+>> *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console,
+>>
+>> This patch fixes the warning.
+>>
+>> Tested with linux-next (next-20101231)
+>>
+>> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+>
+> Just like your other patch, this fix is not correct.
+>
+> Mark smsc_ircc_pbp_probe() as __devinit instead of __init to fix
+> this bug.
+>
 
-drivers/net/irda/smsc-ircc2.o(.data+0x18): Section mismatch in reference from the variable smsc_ircc_pnp_driver to the function .init.text:smsc_ircc_pnp_probe()
-The variable smsc_ircc_pnp_driver references
-the function __init smsc_ircc_pnp_probe()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console,
+I have sent a new fixed version.
 
-Tested with linux-next (next-20101231)
-
-Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
----
- drivers/net/irda/smsc-ircc2.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/net/irda/smsc-ircc2.c b/drivers/net/irda/smsc-ircc2.c
-index 8c57bfb..1c1677c 100644
---- a/drivers/net/irda/smsc-ircc2.c
-+++ b/drivers/net/irda/smsc-ircc2.c
-@@ -376,7 +376,7 @@ MODULE_DEVICE_TABLE(pnp, smsc_ircc_pnp_table);
- static int pnp_driver_registered;
- 
- #ifdef CONFIG_PNP
--static int __init smsc_ircc_pnp_probe(struct pnp_dev *dev,
-+static int __devinit smsc_ircc_pnp_probe(struct pnp_dev *dev,
- 				      const struct pnp_device_id *dev_id)
- {
- 	unsigned int firbase, sirbase;
--- 
-1.7.4.rc0
-
+- Sedat -
