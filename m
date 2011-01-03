@@ -1,66 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab1ACUjL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 15:39:11 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:47580
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753358Ab1ACUjJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 15:39:09 -0500
-Date: Mon, 03 Jan 2011 12:39:39 -0800 (PST)
-Message-Id: <20110103.123939.02282416.davem@davemloft.net>
-To: alex.buell@munted.org.uk
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Using s3virge card in Sun Blade 2000
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1294086801.17576.14.camel@lithium>
-References: <1294083541.17576.11.camel@lithium>
-	<20110103.114301.102556157.davem@davemloft.net>
-	<1294086801.17576.14.camel@lithium>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1753295Ab1ACUjI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 15:39:08 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:33017 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751855Ab1ACUjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 15:39:07 -0500
+Message-ID: <4D2233DA.1070801@parallels.com>
+Date: Mon, 3 Jan 2011 14:38:50 -0600
+From: Rob Landley <rlandley@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: "Kirill A. Shutemov" <kas@openvz.org>
+CC: Rob Landley <rob@landley.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        Pavel Emelyanov <xemul@parallels.com>, <linux-nfs@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 00/12] make rpc_pipefs be mountable multiple time
+References: <1293628470-28386-1-git-send-email-kas@openvz.org> <AANLkTi=AXz21wDeE1vPVD-6cEtj6faXN9x09eHDCsTkB@mail.gmail.com> <20101230085139.GA29697@shutemov.name> <4D1C4C7C.6050606@parallels.com> <20101230094433.GB29697@shutemov.name> <4D1C5953.6020200@parallels.com> <20101230104416.GA31824@shutemov.name> <AANLkTim2QrkSW0HufD5wp=-8ikwydN5SUS+fdWK6JHqb@mail.gmail.com> <20101230114514.GA31976@shutemov.name> <4D1C809B.30405@parallels.com> <20101231130329.GA3610@shutemov.name>
+In-Reply-To: <20101231130329.GA3610@shutemov.name>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Buell <alex.buell@munted.org.uk>
-Date: Mon, 03 Jan 2011 20:33:21 +0000
+On 12/31/2010 07:03 AM, Kirill A. Shutemov wrote:
 
-> On Mon, 2011-01-03 at 11:43 -0800, David Miller wrote:
->> From: Alex Buell <alex.buell@munted.org.uk>
->> Date: Mon, 03 Jan 2011 19:39:01 +0000
->> 
->> > Secondly, is Linux fully capable of handling different graphic cards
->> > simultaneously? For example, plug in a pair of monitors and have
->> > consoles on both with disparate graphic cards i.e. XVR-500 and S3ViRGE
->> > etc? 
->> 
->> Technically I don't think it can do it currently.  Maybe just for
->> kernel message logging, but not for actual login consoles.
->> 
->> One TTY device is marked as the "console" and that's where all
->> tty[0-9]+ devices get instantiated upon.
-> 
-> Hmm, maybe it would be nice to introduce that capability. How doable
-> would it be? I understand the BKL is going away, perhaps it would now be
-> easier to introduce such a facility?
+> EXPORT_SYMBOL_GPL(get_rpc_pipefs);
+>
+> Something like this? Patch to replace patch #10 attached.
 
-It has nothing to do with the big kernel lock.
+Looks good to me.  Thanks.
 
-> I've just started digging into the innards of the s3fb driver, my first
-> attempt provoked this, simply by commenting out the check to see if it's
-> not the primary device and exits with -ENODEV: 
-> 
-> Jan  3 20:16:29 sodium kernel: ERROR(1): Cheetah error trap taken
-> afsr[0030100000000000] afar[00000000000003d0] TL1(0)
-> Jan  3 20:16:29 sodium kernel: ERROR(1): TPC[105918d8] TNPC[105918dc]
-> O7[10591884] TSTATE[4411001606]
-> Jan  3 20:16:29 sodium kernel: ERROR(1): TPC<s3_pci_probe+0x194/0x63c
-> [s3fb]>
-> Jan  3 20:16:29 sodium kernel: ERROR(1): M_SYND(0),  E_SYND(0), Multiple
-> Errors, Privileged
+acked-by: Rob Landley <rlandley@parallels.com>
 
-I know, this is what happens if you call vga_*() with a NULL first parameter
-on sparc64.  It's accessing garbage addresses.
+Rob
+
+
