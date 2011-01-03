@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192Ab1ACNuZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 08:50:25 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60593 "EHLO
+	id S932249Ab1ACNzz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 08:55:55 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36659 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755061Ab1ACNuS (ORCPT
+	with ESMTP id S1755163Ab1ACNuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 08:50:18 -0500
+	Mon, 3 Jan 2011 08:50:25 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=vl9/qsAOeaSJdRJmS5Y44wvaNfZ+uEqZ5TX3t+o8iETXnqWxFMi+7TJiRKfkHz/0pC
-         dlckez/NPEV4kBLPc/NViMSY5nN3t3t0FYv2g898MWcWg3b7qa0bLBlJYgCdCHyW4Pum
-         bI0ipTzW6BYzdQZfEnDH9UBsqomP1AOLoV2Ok=
+        b=xX13Yax1Cv40fDOWGjMKJpQf37kfZXJgpaPHoykAfPXfuuMhrjI2IlHTRddRr6iTHi
+         XKp5l8TkrEAvIkRx0PgsnmpWkOYZWzw919x/Zibsa4Jh6Ts8v5sXlaQSL8FxmgVG82gA
+         8sqAJ7kLDUUJ2QNMk1tKUYF+9CWM09koHy66Y=
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org
-Subject: [PATCH 05/32] crypto: mark crypto workqueues CPU_INTENSIVE
-Date: Mon,  3 Jan 2011 14:49:28 +0100
-Message-Id: <1294062595-30097-6-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, Dan Carpenter <error27@gmail.com>,
+        Todd Fischer <todd.fischer@ridgerun.com>
+Subject: [PATCH 10/32] input/tps6507x-ts: use system_wq instead of dedicated workqueue
+Date: Mon,  3 Jan 2011 14:49:33 +0100
+Message-Id: <1294062595-30097-11-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1294062595-30097-1-git-send-email-tj@kernel.org>
 References: <1294062595-30097-1-git-send-email-tj@kernel.org>
@@ -28,55 +29,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kcrypto_wq and pcrypt->wq's are used to run ciphers and may consume
-considerable amount of CPU cycles.  Mark both as CPU_INTENSIVE so that
-they don't block other work items.
-
-As the workqueues are primarily used to burn CPU cycles, concurrency
-levels shouldn't matter much and are left at 1.  A higher value may be
-beneficial and needs investigation.
+With cmwq, there's no reason to use a separate workqueue.  Drop
+tps6507x_ts->wq and use system_wq instead.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: linux-crypto@vger.kernel.org
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org
+Cc: Dan Carpenter <error27@gmail.com>
+Cc: Todd Fischer <todd.fischer@ridgerun.com>
 ---
 Only compile tested.  Please feel free to take it into the subsystem
 tree or simply ack - I'll route it through the wq tree.
 
 Thanks.
 
- crypto/crypto_wq.c |    3 ++-
- crypto/pcrypt.c    |    3 ++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ drivers/input/touchscreen/tps6507x-ts.c |   12 ++++--------
+ 1 files changed, 4 insertions(+), 8 deletions(-)
 
-diff --git a/crypto/crypto_wq.c b/crypto/crypto_wq.c
-index fdcf624..b980ee1 100644
---- a/crypto/crypto_wq.c
-+++ b/crypto/crypto_wq.c
-@@ -20,7 +20,8 @@ EXPORT_SYMBOL_GPL(kcrypto_wq);
+diff --git a/drivers/input/touchscreen/tps6507x-ts.c b/drivers/input/touchscreen/tps6507x-ts.c
+index c8c136c..4303149 100644
+--- a/drivers/input/touchscreen/tps6507x-ts.c
++++ b/drivers/input/touchscreen/tps6507x-ts.c
+@@ -43,7 +43,6 @@ struct tps6507x_ts {
+ 	struct input_dev	*input_dev;
+ 	struct device		*dev;
+ 	char			phys[32];
+-	struct workqueue_struct *wq;
+ 	struct delayed_work	work;
+ 	unsigned		polling;	/* polling is active */
+ 	struct ts_event		tc;
+@@ -220,8 +219,8 @@ done:
+ 	poll = 1;
  
- static int __init crypto_wq_init(void)
- {
--	kcrypto_wq = create_workqueue("crypto");
-+	kcrypto_wq = alloc_workqueue("crypto",
-+				     WQ_MEM_RECLAIM | WQ_CPU_INTENSIVE, 1);
- 	if (unlikely(!kcrypto_wq))
- 		return -ENOMEM;
- 	return 0;
-diff --git a/crypto/pcrypt.c b/crypto/pcrypt.c
-index 75586f1..29a89da 100644
---- a/crypto/pcrypt.c
-+++ b/crypto/pcrypt.c
-@@ -455,7 +455,8 @@ static int pcrypt_init_padata(struct padata_pcrypt *pcrypt,
+ 	if (poll) {
+-		schd = queue_delayed_work(tsc->wq, &tsc->work,
+-					  msecs_to_jiffies(tsc->poll_period));
++		schd = schedule_delayed_work(&tsc->work,
++					msecs_to_jiffies(tsc->poll_period));
+ 		if (schd)
+ 			tsc->polling = 1;
+ 		else {
+@@ -303,7 +302,6 @@ static int tps6507x_ts_probe(struct platform_device *pdev)
+ 	tsc->input_dev = input_dev;
  
- 	get_online_cpus();
+ 	INIT_DELAYED_WORK(&tsc->work, tps6507x_ts_handler);
+-	tsc->wq = create_workqueue("TPS6507x Touchscreen");
  
--	pcrypt->wq = create_workqueue(name);
-+	pcrypt->wq = alloc_workqueue(name,
-+				     WQ_MEM_RECLAIM | WQ_CPU_INTENSIVE, 1);
- 	if (!pcrypt->wq)
- 		goto err;
+ 	if (init_data) {
+ 		tsc->poll_period = init_data->poll_period;
+@@ -325,8 +323,8 @@ static int tps6507x_ts_probe(struct platform_device *pdev)
+ 	if (error)
+ 		goto err2;
+ 
+-	schd = queue_delayed_work(tsc->wq, &tsc->work,
+-				  msecs_to_jiffies(tsc->poll_period));
++	schd = schedule_delayed_work(&tsc->work,
++				     msecs_to_jiffies(tsc->poll_period));
+ 
+ 	if (schd)
+ 		tsc->polling = 1;
+@@ -341,7 +339,6 @@ static int tps6507x_ts_probe(struct platform_device *pdev)
+ 
+ err2:
+ 	cancel_delayed_work_sync(&tsc->work);
+-	destroy_workqueue(tsc->wq);
+ 	input_free_device(input_dev);
+ err1:
+ 	kfree(tsc);
+@@ -357,7 +354,6 @@ static int __devexit tps6507x_ts_remove(struct platform_device *pdev)
+ 	struct input_dev *input_dev = tsc->input_dev;
+ 
+ 	cancel_delayed_work_sync(&tsc->work);
+-	destroy_workqueue(tsc->wq);
+ 
+ 	input_unregister_device(input_dev);
  
 -- 
 1.7.1
