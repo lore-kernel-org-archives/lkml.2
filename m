@@ -1,52 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932410Ab1ACR7X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 12:59:23 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:51990 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755550Ab1ACR7W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 12:59:22 -0500
-Date: Mon, 3 Jan 2011 17:59:15 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, lenb@kernel.org
-Subject: Re: [PATCH] acpi: Update battery information on notification 0x81
-Message-ID: <20110103175915.GA789@srcf.ucam.org>
-References: <1281990739-17912-1-git-send-email-mjg@redhat.com> <20101215171928.GA17746@srcf.ucam.org> <20101223211638.GA7862@srcf.ucam.org> <201012232323.42702.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201012232323.42702.rjw@sisk.pl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1755568Ab1ACSCK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 13:02:10 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:36458 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752782Ab1ACSCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 13:02:08 -0500
+To: mingo@elte.hu
+Subject: [PATCH] x86, UV: BAU extend for more than 16 cpus per socket
+Cc: linux-kernel@vger.kernel.org
+Message-Id: <E1PZol7-0000mM-77@eag09.americas.sgi.com>
+From: Cliff Wickman <cpw@sgi.com>
+Date: Mon, 03 Jan 2011 12:03:53 -0600
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 23, 2010 at 11:23:42PM +0100, Rafael J. Wysocki wrote:
 
-> As I've already said on IRC, I'd simply add a new function like:
-> 
-> void acpi_battery_refresh(struct acpi_battery *battery)
-> {
-> 	if (!battery->bat.dev)
-> 		return;
-> 	acpi_battery_get_info(battery);
-> 	/* The battery may have changed its reporting units */
-> 	sysfs_remove_battery(battery);
-> 	sysfs_add_battery(battery);
-> }
-> 
-> and call it before acpi_battery_update()
-> (a) in acpi_battery_resume()
-> (b) in acpi_battery_notify() if event == ACPI_BATTERY_NOTIFY_INFO
-> 
-> That would be more straightforward IMHO.
+Fix a hard-coded limit of a maximum of 16 cpu's per socket.
 
-That might be more reasonable. Want to send that, or shall I?
+The UV Broadcast Assist Unit code initializes by scanning the cpu topology
+of the system and assigning a master cpu for each socket and UV hub.
+That scan had an assumption of a limit of 16 cpus per socket.
+With Westmere we are going over that limit.
+The UV hub hardware will allow up to 32.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+If the scan finds the system has gone over that limit it returns an error and
+we print a warning and fall back to doing TLB shootdowns without the BAU.
+
+Diffed against: 2.6.37-rc8
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+---
+ arch/x86/include/asm/uv/uv_bau.h |    9 +++++----
+ arch/x86/platform/uv/tlb_uv.c    |   23 +++++++++++++++++++----
+ 2 files changed, 24 insertions(+), 8 deletions(-)
+
+Index: linus.current/arch/x86/platform/uv/tlb_uv.c
+===================================================================
+--- linus.current.orig/arch/x86/platform/uv/tlb_uv.c
++++ linus.current/arch/x86/platform/uv/tlb_uv.c
+@@ -1341,7 +1341,7 @@ uv_activation_descriptor_init(int node,
+ 
+ 	/*
+ 	 * each bau_desc is 64 bytes; there are 8 (UV_ITEMS_PER_DESCRIPTOR)
+-	 * per cpu; and up to 32 (UV_ADP_SIZE) cpu's per uvhub
++	 * per cpu; and one per cpu on the uvhub (UV_ADP_SIZE)
+ 	 */
+ 	bau_desc = kmalloc_node(sizeof(struct bau_desc) * UV_ADP_SIZE
+ 				* UV_ITEMS_PER_DESCRIPTOR, GFP_KERNEL, node);
+@@ -1490,7 +1490,7 @@ calculate_destination_timeout(void)
+ /*
+  * initialize the bau_control structure for each cpu
+  */
+-static void __init uv_init_per_cpu(int nuvhubs)
++static int __init uv_init_per_cpu(int nuvhubs)
+ {
+ 	int i;
+ 	int cpu;
+@@ -1507,7 +1507,7 @@ static void __init uv_init_per_cpu(int n
+ 	struct bau_control *smaster = NULL;
+ 	struct socket_desc {
+ 		short num_cpus;
+-		short cpu_number[16];
++		short cpu_number[MAX_CPUS_PER_SOCKET];
+ 	};
+ 	struct uvhub_desc {
+ 		unsigned short socket_mask;
+@@ -1540,6 +1540,11 @@ static void __init uv_init_per_cpu(int n
+ 		sdp = &bdp->socket[socket];
+ 		sdp->cpu_number[sdp->num_cpus] = cpu;
+ 		sdp->num_cpus++;
++		if (sdp->num_cpus > MAX_CPUS_PER_SOCKET) {
++			printk(KERN_EMERG "%d cpus per socket invalid\n",
++				sdp->num_cpus);
++			return 1;
++		}
+ 	}
+ 	for (uvhub = 0; uvhub < nuvhubs; uvhub++) {
+ 		if (!(*(uvhub_mask + (uvhub/8)) & (1 << (uvhub%8))))
+@@ -1570,6 +1575,12 @@ static void __init uv_init_per_cpu(int n
+ 				bcp->uvhub_master = hmaster;
+ 				bcp->uvhub_cpu = uv_cpu_hub_info(cpu)->
+ 						blade_processor_id;
++				if (bcp->uvhub_cpu >= MAX_CPUS_PER_UVHUB) {
++					printk(KERN_EMERG
++						"%d cpus per uvhub invalid\n",
++						bcp->uvhub_cpu);
++					return 1;
++				}
+ 			}
+ nextsocket:
+ 			socket++;
+@@ -1595,6 +1606,7 @@ nextsocket:
+ 		bcp->congested_reps = congested_reps;
+ 		bcp->congested_period = congested_period;
+ 	}
++	return 0;
+ }
+ 
+ /*
+@@ -1625,7 +1637,10 @@ static int __init uv_bau_init(void)
+ 	spin_lock_init(&disable_lock);
+ 	congested_cycles = microsec_2_cycles(congested_response_us);
+ 
+-	uv_init_per_cpu(nuvhubs);
++	if (uv_init_per_cpu(nuvhubs)) {
++		nobau = 1;
++		return 0;
++	}
+ 
+ 	uv_partition_base_pnode = 0x7fffffff;
+ 	for (uvhub = 0; uvhub < nuvhubs; uvhub++)
+Index: linus.current/arch/x86/include/asm/uv/uv_bau.h
+===================================================================
+--- linus.current.orig/arch/x86/include/asm/uv/uv_bau.h
++++ linus.current/arch/x86/include/asm/uv/uv_bau.h
+@@ -26,20 +26,22 @@
+  * BAU_SB_DESCRIPTOR_BASE register, set 1 is located at BASE + 512,
+  * set 2 is at BASE + 2*512, set 3 at BASE + 3*512, and so on.
+  *
+- * We will use 31 sets, one for sending BAU messages from each of the 32
++ * We will use one set for sending BAU messages from each of the
+  * cpu's on the uvhub.
+  *
+  * TLB shootdown will use the first of the 8 descriptors of each set.
+  * Each of the descriptors is 64 bytes in size (8*64 = 512 bytes in a set).
+  */
+ 
++#define MAX_CPUS_PER_UVHUB		64
++#define MAX_CPUS_PER_SOCKET		32
++#define UV_ADP_SIZE			64 /* hardware-provided max. */
++#define UV_CPUS_PER_ACT_STATUS		32 /* hardware-provided max. */
+ #define UV_ITEMS_PER_DESCRIPTOR		8
+ /* the 'throttle' to prevent the hardware stay-busy bug */
+ #define MAX_BAU_CONCURRENT		3
+-#define UV_CPUS_PER_ACT_STATUS		32
+ #define UV_ACT_STATUS_MASK		0x3
+ #define UV_ACT_STATUS_SIZE		2
+-#define UV_ADP_SIZE			32
+ #define UV_DISTRIBUTION_SIZE		256
+ #define UV_SW_ACK_NPENDING		8
+ #define UV_NET_ENDPOINT_INTD		0x38
+@@ -100,7 +102,6 @@
+  * number of destination side software ack resources
+  */
+ #define DEST_NUM_RESOURCES		8
+-#define MAX_CPUS_PER_NODE		32
+ /*
+  * completion statuses for sending a TLB flush message
+  */
