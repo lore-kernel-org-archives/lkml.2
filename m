@@ -1,82 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421Ab1ACRwn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 12:52:43 -0500
-Received: from cobra.newdream.net ([66.33.216.30]:34126 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932322Ab1ACRwm (ORCPT
+	id S932439Ab1ACRw7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 12:52:59 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41212 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932371Ab1ACRw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 12:52:42 -0500
-Date: Mon, 3 Jan 2011 09:58:39 -0800 (PST)
-From: Sage Weil <sage@newdream.net>
-To: Tejun Heo <tj@kernel.org>
-cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
-Subject: Re: [PATCH 22/32] ceph: fsc->*_wq's aren't used in memory reclaim
- path
-In-Reply-To: <1294062595-30097-23-git-send-email-tj@kernel.org>
-Message-ID: <Pine.LNX.4.64.1101030958270.24679@cobra.newdream.net>
-References: <1294062595-30097-1-git-send-email-tj@kernel.org>
- <1294062595-30097-23-git-send-email-tj@kernel.org>
+	Mon, 3 Jan 2011 12:52:57 -0500
+Date: Mon, 3 Jan 2011 10:52:54 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, sodaville@linutronix.de,
+        Rob Landley <rob@landley.net>, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [sodaville] [PATCH 02/11] x86: Add device tree support
+Message-ID: <20110103175254.GD2522@angua.secretlab.ca>
+References: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de>
+ <1290706801-7323-3-git-send-email-bigeasy@linutronix.de>
+ <1290807736.32570.143.camel@pasglop>
+ <20101128134907.GA30784@www.tglx.de>
+ <20101230082654.GB11721@angua.secretlab.ca>
+ <AANLkTin2=T=v0ZNOpAGhwuM0i9Ts8Xr+kRtEJ95VGeOp@mail.gmail.com>
+ <AANLkTinSr_KYkFNUmWbL2PUzS2Ose7cA5q8xUbLeUr=J@mail.gmail.com>
+ <4D21F3DB.90504@linux.intel.com>
+ <4D21F718.8010600@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D21F718.8010600@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Jan 2011, Tejun Heo wrote:
-> fsc->*_wq's aren't depended upon during memory reclaim.  Convert to
-> alloc_workqueue() w/o WQ_MEM_RECLAIM.
+On Mon, Jan 03, 2011 at 08:19:36AM -0800, H. Peter Anvin wrote:
+> On 01/03/2011 08:05 AM, H. Peter Anvin wrote:
+> > On 12/30/2010 12:58 PM, Grant Likely wrote:
+> >>
+> >> Right, but in all of those cases a boot wrapper provides the same
+> >> functionality with better flexability, such as being able to provided
+> >> the dtb image(s) at install time instead of compile time.
+> >>
+> > 
+> > Assuming the boot wrapper is written correctly.  I have seen a number of
+> > cases in which it was not, and it being "already locked into firmware"
+> > and not changeable.
+> > 
+> > It's a nice theory.  And in theory, theory and practice agree.
+> > 
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Sage Weil <sage@newdream.net>
-> Cc: ceph-devel@vger.kernel.org
-> ---
-> Only compile tested.  Please feel free to take it into the subsystem
-> tree or simply ack - I'll route it through the wq tree.
+> By the way, this is the same reason we also allow the initramfs and even
+> the command line to be compiled in.
 
-I'll take this one through the ceph tree as well.
+I think we've got an impedance mismatch.
 
-Thanks!
-sage
+The whole point of the ppc boot wrapper, and the kind of boot wrapper
+that I'm talking about here, is that it becomes part of the kernel
+image and is *not* part of firmware.  ie. an executable wrapper which
+carries the kernel as it's payload.  I'm wary too of depending of
+firmware to get things right because it can be so painful to change.
 
-
-> 
-> Thanks.
-> 
->  fs/ceph/super.c |   10 +++++++---
->  1 files changed, 7 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/ceph/super.c b/fs/ceph/super.c
-> index 08b460a..1f6436e 100644
-> --- a/fs/ceph/super.c
-> +++ b/fs/ceph/super.c
-> @@ -443,13 +443,17 @@ struct ceph_fs_client *create_fs_client(struct ceph_mount_options *fsopt,
->  		goto fail_client;
->  
->  	err = -ENOMEM;
-> -	fsc->wb_wq = create_workqueue("ceph-writeback");
-> +	/*
-> +	 * The number of concurrent works can be high but they don't need
-> +	 * to be processed in parallel, limit concurrency.
-> +	 */
-> +	fsc->wb_wq = alloc_workqueue("ceph-writeback", 0, 1);
->  	if (fsc->wb_wq == NULL)
->  		goto fail_bdi;
-> -	fsc->pg_inv_wq = create_singlethread_workqueue("ceph-pg-invalid");
-> +	fsc->pg_inv_wq = alloc_workqueue("ceph-pg-invalid", 0, 1);
->  	if (fsc->pg_inv_wq == NULL)
->  		goto fail_wb_wq;
-> -	fsc->trunc_wq = create_singlethread_workqueue("ceph-trunc");
-> +	fsc->trunc_wq = alloc_workqueue("ceph-trunc", 0, 1);
->  	if (fsc->trunc_wq == NULL)
->  		goto fail_pg_inv_wq;
->  
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+g.
