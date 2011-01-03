@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755484Ab1ACQbJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 11:31:09 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:43570 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754320Ab1ACQbH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 11:31:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=IKrL/ttoFD1jxXvFlBltZINKnnIOfBDa0E6qwC03399teLdLRJjMjr0aBpEuZ+1Qk2
-         szoas3mc8PBoYtXHtXYpMySB1hMpIi1rm7VlnnOdgWNvxaEtIyYNUtIAvIDKkAraXxEq
-         /qgVeSvlWL4MxhAK86ZcPQT/mJnO2q9W1p6Qw=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH] writeback: avoid unnecessary determine_dirtyable_memory call
-Date: Tue,  4 Jan 2011 01:30:49 +0900
-Message-Id: <1294072249-2916-1-git-send-email-minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1755489Ab1ACQel (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 11:34:41 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:46035 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754456Ab1ACQej (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Mon, 3 Jan 2011 11:34:39 -0500
+Date: Mon, 3 Jan 2011 11:34:18 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Joe Jin <joe.jin@oracle.com>
+Cc: jeremy@goop.org, xen-devel@lists.xensource.com, ian.campbell@citrix.com,
+        gurudas.pai@oracle.com, guru.anbalagane@oracle.com,
+        greg.marsden@oracle.com, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Xen-devel] Re: [patch] xenfb: fix xenfb suspend/resume race
+Message-ID: <20110103163418.GA14102@dumpdata.com>
+References: <20101230125616.GA31537@joejin-pc.cn.oracle.com>
+ <20101230164051.GC24313@dumpdata.com>
+ <4D1D2A2D.80206@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D1D2A2D.80206@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think determine_dirtyable_memory is rather costly function since
-it need many atomic reads for gathering zone/global page state.
-But when we use vm_dirty_bytes && dirty_background_bytes, we don't
-need that costly calculation.
+> > I am unclear from your description whether the patch fixes
+> > the problem (I would presume so). Or does it take a long time
+> > to hit this race?
+> > 
+> Yes, more than 100 migrations. we hit this issue around 3 times.
 
-This patch eliminates such unnecessary overhead.
+OK, so you are still trying to find the culprit.
 
-NOTE : newly added if condition might add overhead in normal path.
-       But it should be _really_ small because anyway we need the
-       access both vm_dirty_bytes and dirty_background_bytes so it is
-       likely to hit the cache.
+Did you look at this patch from Ian:
 
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
----
- mm/page-writeback.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+https://patchwork.kernel.org/patch/403192/
 
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index fc93802..c340536 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -390,9 +390,12 @@ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
- {
- 	unsigned long background;
- 	unsigned long dirty;
--	unsigned long available_memory = determine_dirtyable_memory();
-+	unsigned long available_memory;
- 	struct task_struct *tsk;
- 
-+	if (!vm_dirty_bytes || !dirty_background_bytes)
-+		available_memory = determine_dirtyable_memory();
-+
- 	if (vm_dirty_bytes)
- 		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
- 	else
--- 
-1.7.0.4
+?
+> 
+> I dumped vmcore when guest crashed, from vmcore everything
+> looked good, fb_info, xenfb_info and so on.
 
+And the event channels are correct?
+
+.. snip..
+> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> index ac7b42f..4cfb5e2 100644
+> --- a/drivers/xen/events.c
+> +++ b/drivers/xen/events.c
+> @@ -175,6 +175,8 @@ static struct irq_info *info_for_irq(unsigned irq)
+>  
+>  static unsigned int evtchn_from_irq(unsigned irq)
+>  {
+> +	if (unlikely(irq < 0 || irq >= nr_irqs))
+> +		return 0;
+
+You could insert a WARN_ON here to see see if you get this during your
+migration process.
+
+Or use xen_raw_printk in case the guest is hung for good.
+
+>  	return info_for_irq(irq)->evtchn;
+>  }
+>  
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xensource.com
+> http://lists.xensource.com/xen-devel
