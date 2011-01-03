@@ -1,54 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932327Ab1ACQlb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 11:41:31 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:33071 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932162Ab1ACQla convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 11:41:30 -0500
-Subject: Re: [RFC][PATCH 08/17] sched: Drop the rq argument to
- sched_class::select_task_rq()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, Chris Mason <chris.mason@oracle.com>,
-        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-In-Reply-To: <1294072517.2016.101.camel@laptop>
-References: <20101224122338.172750730@chello.nl>
-	 <20101224123742.887559254@chello.nl> <20101229143136.GC2728@zhy>
-	 <1294053409.2016.59.camel@laptop> <20110103145902.GA7632@redhat.com>
-	 <1294068061.2016.84.camel@laptop>  <20110103154918.GB7632@redhat.com>
-	 <1294072517.2016.101.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 03 Jan 2011 17:41:36 +0100
-Message-ID: <1294072896.2016.103.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S932352Ab1ACQle (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 11:41:34 -0500
+Received: from smtp1-g21.free.fr ([212.27.42.1]:51897 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932069Ab1ACQlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 11:41:32 -0500
+Message-ID: <1294072882.4d21fc32d12f5@imp.free.fr>
+Date: Mon, 03 Jan 2011 17:41:22 +0100
+From: castet.matthieu@free.fr
+To: tj@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org, stf_xl@wp.pl
+Subject: Re: [PATCH 19/32] usb/ueagle-atm: use system_wq instead of dedicated workqueues
+References: <1294072680.4d21fb68cbdcf@imp.free.fr>
+In-Reply-To: <1294072680.4d21fb68cbdcf@imp.free.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+User-Agent: Internet Messaging Program (IMP) 3.2.8
+X-Originating-IP: 93.1.148.21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-03 at 17:35 +0100, Peter Zijlstra wrote:
-> > In fact, I am completely confused. I do not understand why do we
-> > check task_running() at all. If we see on_rq == 0 && on_cpu == 1,
-> > then this task is going to clear its on_cpu soon, once it finishes
-> > context_switch().
-> 
-> > Probably, this check was needed before, try_to_wake_up() could
-> > activate the task_running() task without migrating. But, at first
-> > glance, this is no longer possible after this series?
-> 
-> It can still do that, I think the problem is us dropping rq->lock in the
-> middle of schedule(), when the freshly woken migration thread comes in
-> between there and moves the task away, you can get into the situation
-> that two cpus reference the same task_struct at the same time, which
-> usually leads to 'interesting' situations. 
+Quoting castet.matthieu@free.fr:
 
-Frr, brainfart, you cannot schedule the migration thread without
-completely finishing prev.
+> Hi,
+>
+> could you CC me on ueagle-atm.c patches.
+>
+> From what I remind we sleep in the workqueue, that's why we couldn't use the
+> system one (freeze keyboard...). But may be the code changed.
+For the record we still do blocking usb transfert on the workqueue.
 
-/me goes ponder more
+>
+>
+> Matthieu
+>
+> Tejun Heo a écrit :
+> > With cmwq, there's no reason to use separate workqueues.  Drop
+> > uea_softc->work_q and use system_wq instead.  The used work item is
+> > sync flushed on driver detach.
+> >
+> > Signed-off-by: Tejun Heo <tj@kernel.org>
+> > Cc: Stanislaw Gruszka <stf_xl@wp.pl>
+> > Cc: linux-usb@vger.kernel.org
+> > ---
+> > Only compile tested.  Please feel free to take it into the subsystem
+> > tree or simply ack - I'll route it through the wq tree.
+> >
+> > Thanks.
+> >
+> >  drivers/usb/atm/ueagle-atm.c |   19 +++++--------------
+> >  1 files changed, 5 insertions(+), 14 deletions(-)
+> >
+> > diff --git a/drivers/usb/atm/ueagle-atm.c b/drivers/usb/atm/ueagle-atm.c
+> > index 44447f5..55c1d3b 100644
+> > --- a/drivers/usb/atm/ueagle-atm.c
+> > +++ b/drivers/usb/atm/ueagle-atm.c
+> > @@ -168,7 +168,6 @@ struct uea_softc {
+> >  	union cmv_dsc cmv_dsc;
+> >
+> >  	struct work_struct task;
+> > -	struct workqueue_struct *work_q;
+> >  	u16 pageno;
+> >  	u16 ovl;
+> >
+> > @@ -1879,7 +1878,7 @@ static int uea_start_reset(struct uea_softc *sc)
+> >  	/* start loading DSP */
+> >  	sc->pageno = 0;
+> >  	sc->ovl = 0;
+> > -	queue_work(sc->work_q, &sc->task);
+> > +	schedule_work(&sc->task);
+> >
+> >  	/* wait for modem ready CMV */
+> >  	ret = wait_cmv_ack(sc);
+> > @@ -2091,14 +2090,14 @@ static void uea_schedule_load_page_e1(struct
+> uea_softc
+> *sc,
+> >  {
+> >  	sc->pageno = intr->e1_bSwapPageNo;
+> >  	sc->ovl = intr->e1_bOvl >> 4 | intr->e1_bOvl << 4;
+> > -	queue_work(sc->work_q, &sc->task);
+> > +	schedule_work(&sc->task);
+> >  }
+> >
+> >  static void uea_schedule_load_page_e4(struct uea_softc *sc,
+> >  						struct intr_pkt *intr)
+> >  {
+> >  	sc->pageno = intr->e4_bSwapPageNo;
+> > -	queue_work(sc->work_q, &sc->task);
+> > +	schedule_work(&sc->task);
+> >  }
+> >
+> >  /*
+> > @@ -2170,13 +2169,6 @@ static int uea_boot(struct uea_softc *sc)
+> >
+> >  	init_waitqueue_head(&sc->sync_q);
+> >
+> > -	sc->work_q = create_workqueue("ueagle-dsp");
+> > -	if (!sc->work_q) {
+> > -		uea_err(INS_TO_USBDEV(sc), "cannot allocate workqueue\n");
+> > -		uea_leaves(INS_TO_USBDEV(sc));
+> > -		return -ENOMEM;
+> > -	}
+> > -
+> >  	if (UEA_CHIP_VERSION(sc) == ADI930)
+> >  		load_XILINX_firmware(sc);
+> >
+> > @@ -2222,7 +2214,6 @@ err1:
+> >  	sc->urb_int = NULL;
+> >  	kfree(intr);
+> >  err0:
+> > -	destroy_workqueue(sc->work_q);
+> >  	uea_leaves(INS_TO_USBDEV(sc));
+> >  	return -ENOMEM;
+> >  }
+> > @@ -2243,8 +2234,8 @@ static void uea_stop(struct uea_softc *sc)
+> >  	kfree(sc->urb_int->transfer_buffer);
+> >  	usb_free_urb(sc->urb_int);
+> >
+> > -	/* stop any pending boot process, when no one can schedule work */
+> > -	destroy_workqueue(sc->work_q);
+> > +	/* flush the work item, when no one can schedule it */
+> > +	flush_work_sync(&sc->task);
+> >
+> >  	if (sc->dsp_firm)
+> >  		release_firmware(sc->dsp_firm);
+>
+>
+
+
