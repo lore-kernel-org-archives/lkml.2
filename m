@@ -1,133 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab1ACQyB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 11:54:01 -0500
-Received: from shutemov.name ([188.40.19.243]:50826 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754197Ab1ACQx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 11:53:58 -0500
-Date: Mon, 3 Jan 2011 18:53:57 +0200
-From: "Kirill A. Shutemov" <kas@openvz.org>
-To: "Kirill A. Shutemov" <kas@openvz.org>
-Cc: Rob Landley <rlandley@parallels.com>, Rob Landley <rob@landley.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/12] make rpc_pipefs be mountable multiple time
-Message-ID: <20110103165357.GA32196@shutemov.name>
-References: <AANLkTi=AXz21wDeE1vPVD-6cEtj6faXN9x09eHDCsTkB@mail.gmail.com>
- <20101230085139.GA29697@shutemov.name>
- <4D1C4C7C.6050606@parallels.com>
- <20101230094433.GB29697@shutemov.name>
- <4D1C5953.6020200@parallels.com>
- <20101230104416.GA31824@shutemov.name>
- <AANLkTim2QrkSW0HufD5wp=-8ikwydN5SUS+fdWK6JHqb@mail.gmail.com>
- <20101230114514.GA31976@shutemov.name>
- <4D1C809B.30405@parallels.com>
- <20101231130329.GA3610@shutemov.name>
+	id S932183Ab1ACQyc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 11:54:32 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45487 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754197Ab1ACQyb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 11:54:31 -0500
+Date: Mon, 3 Jan 2011 16:52:27 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Viresh Kumar <viresh.kumar@st.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Linus Walleij <linus.ml.walleij@gmail.com>,
+        Peter Pearse <peter.pearse@arm.com>, linux-kernel@vger.kernel.org,
+        linux-raid <linux-raid@vger.kernel.org>,
+        Ben Dooks <ben-linux@fluff.org>, yuanyabin1978@sina.com,
+        linux-arm-kernel@lists.infradead.org,
+        Alessandro Rubini <rubini@unipv.it>
+Subject: Re: dmaengine: fix dma_unmap (was: Re: [PATCH 06/13] DMAENGINE:
+	driver for the ARM PL080/PL081 PrimeCells)
+Message-ID: <20110103165227.GC32508@n2100.arm.linux.org.uk>
+References: <AANLkTinJAULeb1EsWk=S=b32h69X1x-noRw73Ok0uyfx@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101231130329.GA3610@shutemov.name>
-User-Agent: Mutt/1.5.20 (2010-08-04)
+In-Reply-To: <AANLkTinJAULeb1EsWk=S=b32h69X1x-noRw73Ok0uyfx@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 31, 2010 at 03:03:29PM +0200, Kirill A. Shutemov wrote:
-> On Thu, Dec 30, 2010 at 06:52:43AM -0600, Rob Landley wrote:
-> > On 12/30/2010 05:45 AM, Kirill A. Shutemov wrote:
-> > > Currently, there is no association between rpc_pipefs and mount namespace,
-> > 
-> > There is in that the root context doesn't need to have this mounted, and 
-> > new namespaces do.  So there's an existing association between a LACK of 
-> > a namespace and a different default behavior.
-> >
-> > My understanding (correct me if I'm wrong) is that the historical 
-> > behavior is that there's only one, and it doesn't actually live anywhere 
-> > in the filesystem tree.  You're adding a special location.  I'm 
-> > wondering if there's any way for that location not to be special.
-> 
-> /var/lib/net/rpc_pipefs is default path where userspace part of NFS stack
-> (gssd, idmapd) want to see rpc_pipefs
-> 
-> > > so I don't see simple way to restrict number of rpc_pipefs per mount
-> > > namespace. Associating mount namespace with rpc_pipefs is not a good idea,
-> > > I think.
-> > 
-> > I'm talking about associating a default rpc_pipefs instance with a 
-> > namespace, which it seems to me you're already doing by emulating the 
-> > legacy behavior.  Before you CLONE_NEWNS you get a magic default mount 
-> > that doesn't exist in the tree.  After you CLONE_NEWNS you get something 
-> > like -EINVAL unless you supply your own default.
-> 
-> Root namespace is special. In case of nfsroot you need rpc_pipefs before
-> root available.
-> 
-> > (I'm actually not sure 
-> > why new namespaces don't fall back to the magic global one...)
-> 
-> It breaks isolation. Container should not use host's rpc_pipefs without
-> host's permission.
->  
-> > I'm suggesting that if the user doesn't specify -o rpcmount then the 
-> > default could be the first rpc_pipefs mount visible to the current 
-> > process context, rather than a specific path.  Logic to do that exists 
-> > in the proc/self/mounts code (which I'm reading through now...).
-> 
-> static int check_rpc_pipefs(struct vfsmount *mnt, void *arg)
-> {
->         struct vfsmount **rpcmount = arg;
->         struct path path = {
->                 .mnt = mnt,
->                 .dentry = mnt->mnt_root,
->         };
-> 
->         if (!mnt->mnt_sb)
->                 return 0;
->         if (mnt->mnt_sb->s_magic != RPCAUTH_GSSMAGIC)
->                 return 0;
-> 
->         if (!path_is_under(&path, &current->fs->root))
->                 return 0;
-> 
->         *rpcmount = mntget(mnt);
->         return 1;
-> }
-> 
-> struct vfsmount *get_rpc_pipefs(const char *p)
-> {
->         int error;
->         struct vfsmount *rpcmount = ERR_PTR(-EINVAL);
->         struct path path;
-> 
->         if (!p) {
->                 iterate_mounts(check_rpc_pipefs, &rpcmount,
->                                 current->nsproxy->mnt_ns->root);
-> 
->                 if (IS_ERR(rpcmount) && (current->nsproxy->mnt_ns ==
->                                         init_task.nsproxy->mnt_ns))
->                         return mntget(init_rpc_pipefs);
-> 
->                 return rpcmount;
->         }
-> 
->         error = kern_path(p, LOOKUP_FOLLOW | LOOKUP_DIRECTORY, &path);
->         if (error)
->                 return ERR_PTR(error);
-> 
->         check_rpc_pipefs(path.mnt, &rpcmount);
->         path_put(&path);
-> 
->         return rpcmount;
-> }
-> EXPORT_SYMBOL_GPL(get_rpc_pipefs);
-> 
-> Something like this? Patch to replace patch #10 attached.
+On Mon, Jan 03, 2011 at 08:36:00AM -0800, Dan Williams wrote:
+> For raid this will have implications for architectures that split
+> operation types on to different physical channels.  Preparing the
+> entire operation chain ahead of time is not possible on such
+> configuration because we need to remap the buffers for each channel
+> transition.
 
-Any comments?
+That's not entirely true.  You will only need to remap buffers if
+old_chan->device != new_chan->device, as the underlying struct device
+will be the different and could possibly have a different IOMMU or
+DMA-able memory parameters.
 
--- 
- Kirill A. Shutemov
+So, when changing channels, the optimization is not engine specific,
+but can be effected when the chan->device points to the same dma_device
+structure.  That means it should still be possible to chain several
+operations together, even if it means that they occur on different
+channels on the same device.
+
+One passing idea is the async_* operations need to chain buffers in
+terms of <virtual page+offset, len, dma_addr_t, struct dma_device *>, or
+maybe <struct dma_device *, scatterlist>.  If the dma_device pointer is
+initialized, the scatterlist is already mapped.  If this differs from
+the dma_device for the next selected operation, the previous operations
+need to be run, then unmap and remap for the new device.
+
+Does that sound possible?
+
+> > I'd also like to see DMA_COMPL_SKIP_*_UNMAP always set by prep_slave_sg()
+> > in tx->flags so we don't have to end up with "is this a slave operation"
+> > tests in the completion handler.
+> 
+> Longer term I do not see these flags surviving, but yes a 2.6.38
+> change along these lines makes sense.
+
+Well, if the idea is to kill those flags, then it would be a good idea
+not to introduce new uses of them as that'll only complicate matters.
+
+I do have an untested patch which adds the unmap to pl08x, but I'm
+wondering if it's worth it, or whether to disable the memcpy support
+for the time being.
