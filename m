@@ -1,87 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab1ACUep (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 15:34:45 -0500
-Received: from outbound-queue-1.mail.thdo.gradwell.net ([212.11.70.34]:56125
-	"EHLO outbound-queue-1.mail.thdo.gradwell.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751603Ab1ACUen convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752826Ab1ACUen (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 3 Jan 2011 15:34:43 -0500
-Subject: Re: Using s3virge card in Sun Blade 2000
-From: Alex Buell <alex.buell@munted.org.uk>
-Reply-To: alex.buell@munted.org.uk
-To: David Miller <davem@davemloft.net>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110103.114301.102556157.davem@davemloft.net>
-References: <1294072336.17576.7.camel@lithium>
-	 <20110103.105827.112602895.davem@davemloft.net>
-	 <1294083541.17576.11.camel@lithium>
-	 <20110103.114301.102556157.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: One very high maintenance cat for company
-Date: Mon, 03 Jan 2011 20:33:21 +0000
-Message-ID: <1294086801.17576.14.camel@lithium>
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:37971 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750995Ab1ACUem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 15:34:42 -0500
+Date: Mon, 3 Jan 2011 12:34:31 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Sedat Dilek <sedat.dilek@googlemail.com>, sameo@linux.intel.com,
+        tj@kernel.org, joe@perches.com, linux-kernel@vger.kernel.org,
+        Sedat Dilek <sedat.dilek@gmail.com>
+Subject: Re: [PATCH] misc/cs5535: Fix section mismatch derived from
+ cs5535_mfgpt_drv variable
+Message-ID: <20110103123431.02a15ba4@queued.net>
+In-Reply-To: <20110103195131.GA9568@merkur.ravnborg.org>
+References: <1294023088-31687-1-git-send-email-sedat.dilek@gmail.com>
+	<20110103114310.8b06e73e.akpm@linux-foundation.org>
+	<20110103195131.GA9568@merkur.ravnborg.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-X-Gradwell-MongoId: 4d2232e1.1a6a-29ec-2
-X-Gradwell-Auth-Method: mailbox
-X-Gradwell-Auth-Credentials: postmaster@pop3.munted.org.uk
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-03 at 11:43 -0800, David Miller wrote:
-> From: Alex Buell <alex.buell@munted.org.uk>
-> Date: Mon, 03 Jan 2011 19:39:01 +0000
+On Mon, 3 Jan 2011 20:51:31 +0100
+Sam Ravnborg <sam@ravnborg.org> wrote:
+
+> On Mon, Jan 03, 2011 at 11:43:10AM -0800, Andrew Morton wrote:
+> > On Mon,  3 Jan 2011 03:51:28 +0100
+> > Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+> > 
+> > > >From my build.log:
+> > > 
+> > > WARNING: drivers/misc/cs5535-mfgpt.o(.data+0x0): Section mismatch
+> > > in reference from the variable cs5535_mfgpt_drv to the
+> > > function .devinit.text:cs5535_mfgpt_probe() The variable
+> > > cs5535_mfgpt_drv references the function __devinit
+> > > cs5535_mfgpt_probe() If the reference is valid then annotate the
+> > > variable with __init* or __refdata (see linux/init.h) or name the
+> > > variable: *driver, *_template, *_timer, *_sht, *_ops, *_probe,
+> > > *_probe_one, *_console,
+> > 
+> > Confused.  cs5535_mfgpt_probe() _does_ have a name of the form
+> > "*_probe", so why did it warn?
 > 
-> > Secondly, is Linux fully capable of handling different graphic cards
-> > simultaneously? For example, plug in a pair of monitors and have
-> > consoles on both with disparate graphic cards i.e. XVR-500 and S3ViRGE
-> > etc? 
+> The varibale need to follow the naming scheme.
+> In this case the function was named *_probe - which has no
+> significance in the section mismatch checks.
 > 
-> Technically I don't think it can do it currently.  Maybe just for
-> kernel message logging, but not for actual login consoles.
+> > > variable with __init* or __refdata (see linux/init.h) or name the
+> > > variable:
+>     ^^^^^^^^
+> ^^^^^^^^^ 
 > 
-> One TTY device is marked as the "console" and that's where all
-> tty[0-9]+ devices get instantiated upon.
+> 	Sam
 
-Hmm, maybe it would be nice to introduce that capability. How doable
-would it be? I understand the BKL is going away, perhaps it would now be
-easier to introduce such a facility?
+I see.  So it should really be renamed cs5535_mfgpt_driver, or _drv
+added to the whitelist.  Or the whitelist dropped, and all drivers
+changed to explicitly mark the structs with __devinitdata.
 
-I've just started digging into the innards of the s3fb driver, my first
-attempt provoked this, simply by commenting out the check to see if it's
-not the primary device and exits with -ENODEV: 
-
-Jan  3 20:16:29 sodium kernel: ERROR(1): Cheetah error trap taken
-afsr[0030100000000000] afar[00000000000003d0] TL1(0)
-Jan  3 20:16:29 sodium kernel: ERROR(1): TPC[105918d8] TNPC[105918dc]
-O7[10591884] TSTATE[4411001606]
-Jan  3 20:16:29 sodium kernel: ERROR(1): TPC<s3_pci_probe+0x194/0x63c
-[s3fb]>
-Jan  3 20:16:29 sodium kernel: ERROR(1): M_SYND(0),  E_SYND(0), Multiple
-Errors, Privileged
-Jan  3 20:16:29 sodium kernel: ERROR(1): Highest priority error
-(0000100000000000) "Unmapped error from system bus"
-Jan  3 20:16:29 sodium kernel: ERROR(1): D-cache idx[0]
-tag[0000000000000000] utag[0000000000000000] stag[0000000000000000]
-Jan  3 20:16:29 sodium kernel: ERROR(1): D-cache data0[0000000000000000]
-data1[0000000000000000] data2[0000000000000000] data3[0000000000000000]
-Jan  3 20:16:29 sodium kernel: ERROR(1): I-cache idx[0]
-tag[0000000000000000] utag[0000000000000000] stag[0000000000000000]
-u[0000000000000000] l[0000000000000000]
-Jan  3 20:16:29 sodium kernel: ERROR(1): I-cache INSN0[0000000000000000]
-INSN1[0000000000000000] INSN2[0000000000000000] INSN3[0000000000000000]
-Jan  3 20:16:29 sodium kernel: ERROR(1): I-cache INSN4[0000000000000000]
-INSN5[0000000000000000] INSN6[0000000000000000] INSN7[0000000000000000]
-Jan  3 20:16:29 sodium kernel: ERROR(1): E-cache idx[3c0]
-tag[000000000b040000]
-Jan  3 20:16:29 sodium kernel: ERROR(1): E-cache data0[000c5aa000000011]
-data1[000f43d800000040] data2[0000000000000109] data3[0000000000000000]
-Jan  3 20:16:29 sodium kernel: Kernel panic - not syncing: Irrecoverable
-deferred error trap.
-
-Heh. ;)
--- 
-Tactical Nuclear Kittens
+It's kind of bizarre that we have variable names signifying whether or
+not warnings get issued..
