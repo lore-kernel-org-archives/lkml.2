@@ -1,133 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932352Ab1ACQle (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 11:41:34 -0500
-Received: from smtp1-g21.free.fr ([212.27.42.1]:51897 "EHLO smtp1-g21.free.fr"
+	id S932338Ab1ACQnk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 11:43:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49288 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932069Ab1ACQlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 11:41:32 -0500
-Message-ID: <1294072882.4d21fc32d12f5@imp.free.fr>
-Date: Mon, 03 Jan 2011 17:41:22 +0100
-From: castet.matthieu@free.fr
-To: tj@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org, stf_xl@wp.pl
-Subject: Re: [PATCH 19/32] usb/ueagle-atm: use system_wq instead of dedicated workqueues
-References: <1294072680.4d21fb68cbdcf@imp.free.fr>
-In-Reply-To: <1294072680.4d21fb68cbdcf@imp.free.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932069Ab1ACQnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 11:43:39 -0500
+Subject: Re: [PATCH] [SCSI] arcmsr: &/| confusion in arcmsr_build_ccb()
+From: James Bottomley <James.Bottomley@suse.de>
+To: roel kluin <roel.kluin@gmail.com>
+Cc: Matthew Wilcox <matthew@wil.cx>, just.for.lkml@googlemail.com,
+        nick.cheng@areca.com.tw, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org
+In-Reply-To: <4D1F7517.7080803@gmail.com>
+References: <4D1F5A17.4010807@gmail.com>
+	 <20110101170854.GB32652@parisc-linux.org>  <4D1F7517.7080803@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 03 Jan 2011 10:43:30 -0600
+Message-ID: <1294073011.4721.7.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 8bit
-User-Agent: Internet Messaging Program (IMP) 3.2.8
-X-Originating-IP: 93.1.148.21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting castet.matthieu@free.fr:
+On Sat, 2011-01-01 at 19:40 +0100, roel kluin wrote:
+> Make sure no other command which does a write, such as UNMAP and WRITE_32, is missed.
+> 
+> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+> ---
+>  drivers/scsi/arcmsr/arcmsr_hba.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> If you agree this is the right fix, please ack.
+> 
+> diff --git a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+> index 17e3df4..a5acedc 100644
+> --- a/drivers/scsi/arcmsr/arcmsr_hba.c
+> +++ b/drivers/scsi/arcmsr/arcmsr_hba.c
+> @@ -1171,7 +1171,7 @@ static int arcmsr_build_ccb(struct AdapterControlBlock *acb,
+>  	arcmsr_cdb->msgPages = arccdbsize/0x100 + (arccdbsize % 0x100 ? 1 : 0);
+>  	if ( arccdbsize > 256)
+>  		arcmsr_cdb->Flags |= ARCMSR_CDB_FLAG_SGL_BSIZE;
+> -	if (pcmd->cmnd[0]|WRITE_6 || pcmd->cmnd[0]|WRITE_10 || pcmd->cmnd[0]|WRITE_12 ){
+> +	if (pcmd->sc_data_direction == DMA_TO_DEVICE)
+>  		arcmsr_cdb->Flags |= ARCMSR_CDB_FLAG_WRITE;
+>  	}
+>  	ccb->arc_cdb_size = arccdbsize;
 
-> Hi,
->
-> could you CC me on ueagle-atm.c patches.
->
-> From what I remind we sleep in the workqueue, that's why we couldn't use the
-> system one (freeze keyboard...). But may be the code changed.
-For the record we still do blocking usb transfert on the workqueue.
+Compile checking patches you send in next time would be most welcome:
 
->
->
-> Matthieu
->
-> Tejun Heo a �crit :
-> > With cmwq, there's no reason to use separate workqueues.  Drop
-> > uea_softc->work_q and use system_wq instead.  The used work item is
-> > sync flushed on driver detach.
-> >
-> > Signed-off-by: Tejun Heo <tj@kernel.org>
-> > Cc: Stanislaw Gruszka <stf_xl@wp.pl>
-> > Cc: linux-usb@vger.kernel.org
-> > ---
-> > Only compile tested.  Please feel free to take it into the subsystem
-> > tree or simply ack - I'll route it through the wq tree.
-> >
-> > Thanks.
-> >
-> >  drivers/usb/atm/ueagle-atm.c |   19 +++++--------------
-> >  1 files changed, 5 insertions(+), 14 deletions(-)
-> >
-> > diff --git a/drivers/usb/atm/ueagle-atm.c b/drivers/usb/atm/ueagle-atm.c
-> > index 44447f5..55c1d3b 100644
-> > --- a/drivers/usb/atm/ueagle-atm.c
-> > +++ b/drivers/usb/atm/ueagle-atm.c
-> > @@ -168,7 +168,6 @@ struct uea_softc {
-> >  	union cmv_dsc cmv_dsc;
-> >
-> >  	struct work_struct task;
-> > -	struct workqueue_struct *work_q;
-> >  	u16 pageno;
-> >  	u16 ovl;
-> >
-> > @@ -1879,7 +1878,7 @@ static int uea_start_reset(struct uea_softc *sc)
-> >  	/* start loading DSP */
-> >  	sc->pageno = 0;
-> >  	sc->ovl = 0;
-> > -	queue_work(sc->work_q, &sc->task);
-> > +	schedule_work(&sc->task);
-> >
-> >  	/* wait for modem ready CMV */
-> >  	ret = wait_cmv_ack(sc);
-> > @@ -2091,14 +2090,14 @@ static void uea_schedule_load_page_e1(struct
-> uea_softc
-> *sc,
-> >  {
-> >  	sc->pageno = intr->e1_bSwapPageNo;
-> >  	sc->ovl = intr->e1_bOvl >> 4 | intr->e1_bOvl << 4;
-> > -	queue_work(sc->work_q, &sc->task);
-> > +	schedule_work(&sc->task);
-> >  }
-> >
-> >  static void uea_schedule_load_page_e4(struct uea_softc *sc,
-> >  						struct intr_pkt *intr)
-> >  {
-> >  	sc->pageno = intr->e4_bSwapPageNo;
-> > -	queue_work(sc->work_q, &sc->task);
-> > +	schedule_work(&sc->task);
-> >  }
-> >
-> >  /*
-> > @@ -2170,13 +2169,6 @@ static int uea_boot(struct uea_softc *sc)
-> >
-> >  	init_waitqueue_head(&sc->sync_q);
-> >
-> > -	sc->work_q = create_workqueue("ueagle-dsp");
-> > -	if (!sc->work_q) {
-> > -		uea_err(INS_TO_USBDEV(sc), "cannot allocate workqueue\n");
-> > -		uea_leaves(INS_TO_USBDEV(sc));
-> > -		return -ENOMEM;
-> > -	}
-> > -
-> >  	if (UEA_CHIP_VERSION(sc) == ADI930)
-> >  		load_XILINX_firmware(sc);
-> >
-> > @@ -2222,7 +2214,6 @@ err1:
-> >  	sc->urb_int = NULL;
-> >  	kfree(intr);
-> >  err0:
-> > -	destroy_workqueue(sc->work_q);
-> >  	uea_leaves(INS_TO_USBDEV(sc));
-> >  	return -ENOMEM;
-> >  }
-> > @@ -2243,8 +2234,8 @@ static void uea_stop(struct uea_softc *sc)
-> >  	kfree(sc->urb_int->transfer_buffer);
-> >  	usb_free_urb(sc->urb_int);
-> >
-> > -	/* stop any pending boot process, when no one can schedule work */
-> > -	destroy_workqueue(sc->work_q);
-> > +	/* flush the work item, when no one can schedule it */
-> > +	flush_work_sync(&sc->task);
-> >
-> >  	if (sc->dsp_firm)
-> >  		release_firmware(sc->dsp_firm);
->
->
+  CC [M]  drivers/scsi/arcmsr/arcmsr_hba.o
+drivers/scsi/arcmsr/arcmsr_hba.c:1177:5: error: expected ‘=’, ‘,’, ‘;’,
+‘asm’ or ‘__attribute__’ before ‘->’ token
+drivers/scsi/arcmsr/arcmsr_hba.c:1178:2: error: expected identifier or
+‘(’ before ‘return’
+drivers/scsi/arcmsr/arcmsr_hba.c:1179:1: error: expected identifier or
+‘(’ before ‘}’ token
+drivers/scsi/arcmsr/arcmsr_hba.c: In function ‘arcmsr_build_ccb’:
+drivers/scsi/arcmsr/arcmsr_hba.c:1176:2: warning: control reaches end of
+non-void function
+
+James
 
 
