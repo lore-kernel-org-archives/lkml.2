@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755141Ab1ACO0j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 09:26:39 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:53537 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754762Ab1ACO0i (ORCPT
+	id S1755210Ab1ACO1j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 09:27:39 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:46187 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754191Ab1ACO1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 09:26:38 -0500
-X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=4pdSCqo9-bIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=BJ3IY8WxZl4q7xCdmVUA:9 a=13c7ghXJcTpyIVSOn4ACf-SKUfUA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: Should we be using unlikely() around tests of GFP_ZERO?
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        David Rientjes <rientjes@google.com>, npiggin@kernel.dk
-In-Reply-To: <AANLkTik9VodSjNnubf4Psbb9TgOEufw0m2q1_e5+X165@mail.gmail.com>
-References: <E1PZXeb-0004AV-2b@tytso-glaptop>
-	 <AANLkTi=9ZNk6w8PxvveWHy5+okfTyKUj3L2ywFOuFjoq@mail.gmail.com>
-	 <AANLkTinz52Ky5BhU-gHq8vx9=1uoN+iuDn1f0C8fnSjQ@mail.gmail.com>
-	 <1294062351.3948.7.camel@gandalf.stny.rr.com>
-	 <AANLkTik9VodSjNnubf4Psbb9TgOEufw0m2q1_e5+X165@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 03 Jan 2011 09:26:36 -0500
-Message-ID: <1294064796.3948.12.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Jan 2011 09:27:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=QHtA4HSeEXexnYv460bTlSi9GkLBrvDW2+mlwNc/dD9O4hu+1HP/WzuRgovHzOE/IA
+         hnBCkeE3igqL2afIGVqBnWkRCfVzXZ+kCsWPxY+GolRM9mCYKML5YKfq2HsehKUMYNch
+         QmtaHwDk7nLV+9O8UtwShJTQBXi+6Zh/GstFs=
+Date: Mon, 3 Jan 2011 15:27:34 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Christine Caulfield <ccaulfie@redhat.com>,
+        David Teigland <teigland@redhat.com>, cluster-devel@redhat.com
+Subject: Re: [PATCH 24/32] dlm: dlm workqueues aren't used in memory
+ reclaim path
+Message-ID: <20110103142734.GR18831@htj.dyndns.org>
+References: <1294062595-30097-1-git-send-email-tj@kernel.org>
+ <1294062595-30097-25-git-send-email-tj@kernel.org>
+ <1294063107.2429.34.camel@dolmen>
+ <20110103140107.GP18831@htj.dyndns.org>
+ <1294064489.2429.58.camel@dolmen>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294064489.2429.58.camel@dolmen>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-03 at 16:10 +0200, Pekka Enberg wrote:
+Hello again,
 
-> >  correct incorrect  %        Function                  File              Line
-> >  ------- ---------  -        --------                  ----              ----
-> >  6890998  2784830  28        slab_alloc                slub.c            1719
-> >
-> > That's incorrect 28% of the time.
+On Mon, Jan 03, 2011 at 02:21:29PM +0000, Steven Whitehouse wrote:
+> > Ooh, I see.  Hmmm... maybe I've asked this before but do you really
+> > need WQ_MEM_RECLAIM there?  Is dlm used during memory reclaim?
 > 
-> Thanks! AFAICT, that number is high enough to justify removing the
-> unlikely() annotations, no?
+> Yes, it is in case of deallocation of inodes, so we have to be careful
+> about that,
 
-Personally, I think anything that is incorrect more that 5% of the time
-should not have any annotation.
+I see.  I'm still slightly unsure about the WQ_MEM_RECLAIM rules when
+it comes to distributed file systems and stuff related to them, but I
+think it basically comes down to whether the code can be in the swap
+path or not.  e.g. for nfs backed write shared mapped files, nfs
+definitely can be used during memory reclaim _but_ it's not guaranteed
+to make forward progress under memory pressure and thus can't be
+depended upon and shouldn't be used for swap.  IOW, it may free memory
+but it's not in the critical path which should guarantee forward
+progress.  Isn't dlm the same case?
 
-My rule is to use the annotation when a branch goes one way 95% or more.
-With the exception of times when we want a particular path to be the
-faster path, because we know its in a more critical position (as there
-are cases in the scheduler and the tracing infrastructure itself).
+Thank you.
 
-But here, I think removing it is the right decision.
-
--- Steve
-
-
+-- 
+tejun
