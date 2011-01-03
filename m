@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616Ab1ACWNh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 17:13:37 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:53006 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285Ab1ACWNf (ORCPT
+	id S1751603Ab1ACWdQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 17:33:16 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:59890 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750695Ab1ACWdP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 17:13:35 -0500
-Message-ID: <4D224A0B.8010408@canonical.com>
-Date: Mon, 03 Jan 2011 17:13:31 -0500
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Mon, 3 Jan 2011 17:33:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=rWFgsS5ipE2ONUgycvdVKXrb7hs/oWa/wOSufGltWw1/NppmMACckq+nXabYsEeMmj
+         XkPUCxB74+rHMyZvEQYD6pa4/ytGsGySmVZk6wPmkAymx1/TKwMYgQDCtymJJBxPEP/c
+         Adrpc7tzclx2jF8U2F5p0H9YGdvfFTsuBBpLQ=
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Michael Poole <mdpoole@troilus.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: magicmouse: Don't report REL_{X,Y} for Magic Trackpad
-References: <1291849685-2623-1-git-send-email-chase.douglas@canonical.com> <alpine.LNX.2.00.1012091440410.508@pobox.suse.cz> <4D00F217.6050609@canonical.com>
-In-Reply-To: <4D00F217.6050609@canonical.com>
+In-Reply-To: <alpine.DEB.2.00.1101031400550.10636@chino.kir.corp.google.com>
+References: <1294072249-2916-1-git-send-email-minchan.kim@gmail.com>
+	<alpine.DEB.2.00.1101031400550.10636@chino.kir.corp.google.com>
+Date: Tue, 4 Jan 2011 07:33:15 +0900
+Message-ID: <AANLkTinb+W-hByy18tko8NFtYYzQonABps0gi7+7kQ5R@mail.gmail.com>
+Subject: Re: [PATCH] writeback: avoid unnecessary determine_dirtyable_memory call
+From: Minchan Kim <minchan.kim@gmail.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2010 10:13 AM, Chase Douglas wrote:
-> On 12/09/2010 05:41 AM, Jiri Kosina wrote:
->> On Wed, 8 Dec 2010, Chase Douglas wrote:
->>
->>> With the recent switch to having the hid layer handle standard axis
->>> initialization, the Magic Trackpad now reports relative axes. This would
->>> be fine in the normal mode, but the driver puts the device in multitouch
->>> mode where no relative events are generated. Also, userspace software
->>> depends on accurate axis information for device type detection. Thus,
->>> ignoring the relative axes from the Magic Trackpad is best.
->>
->> Applied, thank you. I take it this should better go into .37 still, right?
-> 
-> Yes, please.
+On Tue, Jan 4, 2011 at 7:03 AM, David Rientjes <rientjes@google.com> wrote:
+> On Tue, 4 Jan 2011, Minchan Kim wrote:
+>
+>> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+>> index fc93802..c340536 100644
+>> --- a/mm/page-writeback.c
+>> +++ b/mm/page-writeback.c
+>> @@ -390,9 +390,12 @@ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
+>>  {
+>>       unsigned long background;
+>>       unsigned long dirty;
+>> -     unsigned long available_memory = determine_dirtyable_memory();
+>> +     unsigned long available_memory;
+>
+> You need unsigned long uninitialized_var(available_memory) to avoid the
+> warning.
 
-Jiri,
+Yes. It's my fault. Andrew already fixed it.
+Thanks, David.
 
-It looks like this never got pushed to .37. Can you add "Cc:
-stable@kernel.org" to the SOB area and push it?
 
-Thanks,
-
--- Chase
+-- 
+Kind regards,
+Minchan Kim
