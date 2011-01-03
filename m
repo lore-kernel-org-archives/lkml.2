@@ -1,49 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932222Ab1ACTwt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 14:52:49 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60338
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753898Ab1ACTws (ORCPT
+	id S1755596Ab1ACTwx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 14:52:53 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42924 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932228Ab1ACTwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 14:52:48 -0500
-Date: Mon, 03 Jan 2011 11:53:19 -0800 (PST)
-Message-Id: <20110103.115319.245401044.davem@davemloft.net>
-To: sedat.dilek@googlemail.com
-Cc: samuel@sortiz.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sedat.dilek@gmail.com
-Subject: Re: [PATCH] smsc-ircc2: Fix section mismatch derived from
- smsc_ircc_pnp_driver variable
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1294021724-30337-1-git-send-email-sedat.dilek@gmail.com>
-References: <1294021724-30337-1-git-send-email-sedat.dilek@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 3 Jan 2011 14:52:51 -0500
+Date: Mon, 3 Jan 2011 11:52:26 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Chris Ruffin <cmruffin@gmail.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ihex: fix unused return value compiler warning.
+Message-Id: <20110103115226.d4e4e4ae.akpm@linux-foundation.org>
+In-Reply-To: <1293996430-12598-1-git-send-email-cmruffin@gmail.com>
+References: <1293996430-12598-1-git-send-email-cmruffin@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-Date: Mon,  3 Jan 2011 03:28:44 +0100
+On Sun,  2 Jan 2011 11:27:10 -0800
+Chris Ruffin <cmruffin@gmail.com> wrote:
 
->>From my build.log:
+> fixed unusued return value compiler warnings due to unchecked write() calls.
 > 
-> drivers/net/irda/smsc-ircc2.o(.data+0x18): Section mismatch in reference from the variable smsc_ircc_pnp_driver to the function .init.text:smsc_ircc_pnp_probe()
-> The variable smsc_ircc_pnp_driver references
-> the function __init smsc_ircc_pnp_probe()
-> If the reference is valid then annotate the
-> variable with __init* or __refdata (see linux/init.h) or name the variable:
-> *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console,
+> Signed-off-by: Chris Ruffin <cmruffin@gmail.com>
+> ---
+>  firmware/ihex2fw.c |    9 +++++----
+>  1 files changed, 5 insertions(+), 4 deletions(-)
 > 
-> This patch fixes the warning.
-> 
-> Tested with linux-next (next-20101231)
-> 
-> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+> diff --git a/firmware/ihex2fw.c b/firmware/ihex2fw.c
+> index ba0cf0b..a079bdd 100644
+> --- a/firmware/ihex2fw.c
+> +++ b/firmware/ihex2fw.c
+> @@ -124,8 +124,7 @@ int main(int argc, char **argv)
+>  	if (process_ihex(data, st.st_size))
+>  		return 1;
+>  
+> -	output_records(outfd);
+> -	return 0;
+> +	return output_records(outfd);
+>  }
+>  
+>  static int process_ihex(uint8_t *data, ssize_t size)
+> @@ -269,11 +268,13 @@ static int output_records(int outfd)
+>  
+>  		p->addr = htonl(p->addr);
+>  		p->len = htons(p->len);
+> -		write(outfd, &p->addr, writelen);
+> +		if (write(outfd, &p->addr, writelen) != writelen)
+> +			return errno;
+>  		p = p->next;
+>  	}
+>  	/* EOF record is zero length, since we don't bother to represent
+>  	   the type field in the binary version */
+> -	write(outfd, zeroes, 6);
+> +	if (write(outfd, zeroes, 6) != 6)
+> +		return errno;
+>  	return 0;
+>  }
 
-Just like your other patch, this fix is not correct.
+write(1) will only set errno if it returned -1.  So in the case where
+write() returned a positive number less than `count', output_records()
+will return a garbage value of `errno'.
 
-Mark smsc_ircc_pbp_probe() as __devinit instead of __init to fix
-this bug.
+I guess this will suffice:
+
+--- a/firmware/ihex2fw.c~ihex-fix-unused-return-value-compiler-warning-fix
++++ a/firmware/ihex2fw.c
+@@ -269,12 +269,12 @@ static int output_records(int outfd)
+ 		p->addr = htonl(p->addr);
+ 		p->len = htons(p->len);
+ 		if (write(outfd, &p->addr, writelen) != writelen)
+-			return errno;
++			return 1;
+ 		p = p->next;
+ 	}
+ 	/* EOF record is zero length, since we don't bother to represent
+ 	   the type field in the binary version */
+ 	if (write(outfd, zeroes, 6) != 6)
+-		return errno;
++		return 1;
+ 	return 0;
+ }
+_
+
