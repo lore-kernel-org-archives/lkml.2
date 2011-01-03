@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754197Ab1ACRDg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 12:03:36 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:58570 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823Ab1ACRDf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 12:03:35 -0500
-Date: Mon, 3 Jan 2011 10:03:32 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Michal Simek <monstr@monstr.eu>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, davem@davemloft.net
-Subject: Re: [PATCH] ll_temac: Fix section mismatch from the temac_of_probe
-Message-ID: <20110103170332.GB2522@angua.secretlab.ca>
-References: <1294050756-31099-1-git-send-email-monstr@monstr.eu>
+	id S1755504Ab1ACRDr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 12:03:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35867 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753674Ab1ACRDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 12:03:45 -0500
+Date: Mon, 3 Jan 2011 18:03:17 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: castet.matthieu@free.fr
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org, stf_xl@wp.pl,
+        tj@kernel.org
+Subject: Re: your mail
+Message-ID: <20110103170308.GA2285@redhat.com>
+References: <1294072680.4d21fb68cbdcf@imp.free.fr>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1294050756-31099-1-git-send-email-monstr@monstr.eu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1294072680.4d21fb68cbdcf@imp.free.fr>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 03, 2011 at 11:32:36AM +0100, Michal Simek wrote:
-> Replace __init by __devinit.
+On Mon, Jan 03, 2011 at 05:38:00PM +0100, castet.matthieu@free.fr wrote:
+> Hi,
 > 
-> Warning message:
-> WARNING: vmlinux.o(.data+0xbc14): Section mismatch in reference from the variable
-> temac_of_driver to the function .init.text:temac_of_probe()
-> The variable temac_of_driver references
-> the function __init temac_of_probe()
-> If the reference is valid then annotate the
-> variable with __init* or __refdata (see linux/init.h) or name the variable:
-> *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console,
+> could you CC me on ueagle-atm.c patches.
 > 
-> Signed-off-by: Michal Simek <monstr@monstr.eu>
+> From what I remind we sleep in the workqueue, that's why we couldn't use the
+> system one (freeze keyboard...). But may be the code changed.
+In case when firmware is not available we can sleep for a few seconds in
+work function. That's block keyboard driver who also use common workqueue.
+If recent Tejun workqueue rewrite allow to long sleep in work func and
+not hurt other workqueue users, patch is ok.
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+Unfortunately I'm not able to test the patch, my ueagle device was physically
+damaged a few months ago.
 
-> ---
->  drivers/net/ll_temac_main.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/net/ll_temac_main.c b/drivers/net/ll_temac_main.c
-> index 9f8e702..beb6ed8 100644
-> --- a/drivers/net/ll_temac_main.c
-> +++ b/drivers/net/ll_temac_main.c
-> @@ -952,7 +952,7 @@ static const struct attribute_group temac_attr_group = {
->  	.attrs = temac_device_attrs,
->  };
->  
-> -static int __init
-> +static int __devinit
->  temac_of_probe(struct platform_device *op, const struct of_device_id *match)
->  {
->  	struct device_node *np;
-> -- 
-> 1.5.5.6
-> 
+Stanislaw
