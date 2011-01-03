@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474Ab1ACQ13 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 11:27:29 -0500
-Received: from idcmail-mo1so.shaw.ca ([24.71.223.10]:4799 "EHLO
-	idcmail-mo1so.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754197Ab1ACQ11 convert rfc822-to-8bit (ORCPT
+	id S1755484Ab1ACQbJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 11:31:09 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:43570 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754320Ab1ACQbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 11:27:27 -0500
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=fp/YrIG6YJuYYWILSlVONgBms0XWtFqTjqHWlNKfnDg= c=1 sm=1
- a=Dn-75YwQAYUA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
- a=c23vf5CSMVc0QQz9B4a6RA==:17 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8
- a=R7VPdpcKr-8wtAoHEkYA:9 a=wLyVq4jye_WCF2s8NgsA:7
- a=fAYNh-uBqPJVepnWytEO2Csnrd0A:4 a=CjuIK1q_8ugA:10 a=jEp0ucaQiEUA:10
- a=MSl-tDqOz04A:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-References: <1293631121-12667-1-git-send-email-sickamd@gmail.com> <1294050468.2429.2.camel@dolmen>
-In-Reply-To: <1294050468.2429.2.camel@dolmen>
-Mime-Version: 1.0 (iPhone Mail 8C148a)
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <E8737614-4ED4-4732-9B03-90811029A0F7@dilger.ca>
-Cc: yangsheng <sickamd@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "adilger.kernel@dilger.ca" <adilger.kernel@dilger.ca>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-X-Mailer: iPhone Mail (8C148a)
-From: Andreas Dilger <adilger@dilger.ca>
-Subject: Re: [PATCH] Update atime from future.
-Date: Mon, 3 Jan 2011 09:27:54 -0700
-To: Steven Whitehouse <swhiteho@redhat.com>
+	Mon, 3 Jan 2011 11:31:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=IKrL/ttoFD1jxXvFlBltZINKnnIOfBDa0E6qwC03399teLdLRJjMjr0aBpEuZ+1Qk2
+         szoas3mc8PBoYtXHtXYpMySB1hMpIi1rm7VlnnOdgWNvxaEtIyYNUtIAvIDKkAraXxEq
+         /qgVeSvlWL4MxhAK86ZcPQT/mJnO2q9W1p6Qw=
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH] writeback: avoid unnecessary determine_dirtyable_memory call
+Date: Tue,  4 Jan 2011 01:30:49 +0900
+Message-Id: <1294072249-2916-1-git-send-email-minchan.kim@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-01-03, at 3:27, Steven Whitehouse <swhiteho@redhat.com> wrote:
-> On Wed, 2010-12-29 at 21:58 +0800, yangsheng wrote:
->> Signed-off-by: sickamd@gmail.com
->> ---
->> fs/inode.c |    8 +++++++-
->> 1 files changed, 7 insertions(+), 1 deletions(-)
->> 
->> diff --git a/fs/inode.c b/fs/inode.c
->> index da85e56..6c8effd 100644
->> --- a/fs/inode.c
->> +++ b/fs/inode.c
->> @@ -1469,7 +1469,13 @@ static int relatime_need_update(struct vfsmount *mnt, struct inode *inode,
->>        return 1;
->> 
->>    /*
->> -     * Is the previous atime value older than a day? If yes,
->> +     * Is the previous atime value in future? If yes,
->> +     * update atime:
->> +     */
->> +    if ((long)(now.tv_sec - inode->i_atime.tv_sec) < 0)
->> +        return 1;
->> +    /*
->> +     * Is the previous atime value old than a day? If yes,
->>     * update atime:
->>     */
->>    if ((long)(now.tv_sec - inode->i_atime.tv_sec) >= 24*60*60)
-> 
-> I don't think this is a good plan for cluster filesystems, since if the
-> times on the nodes are not exactly synchronised (we do highly recommend
-> people run ntp or similar) then this might lead to excessive atime
-> updating. The current behaviour is to ignore atimes which are in the
-> future for exactly this reason,
+I think determine_dirtyable_memory is rather costly function since
+it need many atomic reads for gathering zone/global page state.
+But when we use vm_dirty_bytes && dirty_background_bytes, we don't
+need that costly calculation.
 
-The problem that is seen is if a tarball has stored a bad atime, or someone fat-fingers a "touch" then the future atime will never be fixed. Before the relatime patch, the future atime would be updated back to the current time on the next access. One if our regression tests for Lustre caught this. 
+This patch eliminates such unnecessary overhead.
 
-I wouldn't mind changing the relatime check so that it only updates the atime if it is more than one day in the future. That will avoid thrashing atime if the clocks are only slightly out of sync, but still allow fixing completely bogus atimes. 
+NOTE : newly added if condition might add overhead in normal path.
+       But it should be _really_ small because anyway we need the
+       access both vm_dirty_bytes and dirty_background_bytes so it is
+       likely to hit the cache.
 
-Cheers, Andreas
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+---
+ mm/page-writeback.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index fc93802..c340536 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -390,9 +390,12 @@ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
+ {
+ 	unsigned long background;
+ 	unsigned long dirty;
+-	unsigned long available_memory = determine_dirtyable_memory();
++	unsigned long available_memory;
+ 	struct task_struct *tsk;
+ 
++	if (!vm_dirty_bytes || !dirty_background_bytes)
++		available_memory = determine_dirtyable_memory();
++
+ 	if (vm_dirty_bytes)
+ 		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
+ 	else
+-- 
+1.7.0.4
+
