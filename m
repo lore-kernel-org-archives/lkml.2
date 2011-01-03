@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755489Ab1ACQel (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 11:34:41 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:46035 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754456Ab1ACQej (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 3 Jan 2011 11:34:39 -0500
-Date: Mon, 3 Jan 2011 11:34:18 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Joe Jin <joe.jin@oracle.com>
-Cc: jeremy@goop.org, xen-devel@lists.xensource.com, ian.campbell@citrix.com,
-        gurudas.pai@oracle.com, guru.anbalagane@oracle.com,
-        greg.marsden@oracle.com, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Xen-devel] Re: [patch] xenfb: fix xenfb suspend/resume race
-Message-ID: <20110103163418.GA14102@dumpdata.com>
-References: <20101230125616.GA31537@joejin-pc.cn.oracle.com>
- <20101230164051.GC24313@dumpdata.com>
- <4D1D2A2D.80206@oracle.com>
+	id S1755514Ab1ACQeu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 11:34:50 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42772 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755390Ab1ACQet (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 11:34:49 -0500
+Message-ID: <4D21FAA3.8030505@ridgerun.com>
+Date: Mon, 03 Jan 2011 09:34:43 -0700
+From: Todd Fischer <todd.fischer@ridgerun.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D1D2A2D.80206@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dan Carpenter <error27@gmail.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH 10/32] input/tps6507x-ts: use system_wq instead of dedicated
+ workqueue
+References: <1294062595-30097-1-git-send-email-tj@kernel.org> <1294062595-30097-11-git-send-email-tj@kernel.org> <20110103143926.GX1886@bicker>
+In-Reply-To: <20110103143926.GX1886@bicker>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > I am unclear from your description whether the patch fixes
-> > the problem (I would presume so). Or does it take a long time
-> > to hit this race?
-> > 
-> Yes, more than 100 migrations. we hit this issue around 3 times.
+Hi Dan,
 
-OK, so you are still trying to find the culprit.
+Polling is only necessary because I was given brain dead hardware.  I 
+was expecting updated hardware with the interrupt signal connected 
+properly, but haven't received it yet.
 
-Did you look at this patch from Ian:
+Any reasonable hardware will not need tps6507x-ts polling.  I was under 
+the impression I could only push patches that I have tested.  Since I 
+haven't tested an interrupt version of the driver, I didn't include a 
+patch that removes the polling and replaces it with interrupts.
 
-https://patchwork.kernel.org/patch/403192/
+I have another customer planning on using the TPS6507x chip for touch 
+screen.  I expect their hardware in around 3 weeks.
 
-?
-> 
-> I dumped vmcore when guest crashed, from vmcore everything
-> looked good, fb_info, xenfb_info and so on.
+Todd
 
-And the event channels are correct?
+On 01/03/2011 07:39 AM, Dan Carpenter wrote:
+> On Mon, Jan 03, 2011 at 02:49:33PM +0100, Tejun Heo wrote:
+>> With cmwq, there's no reason to use a separate workqueue.  Drop
+>> tps6507x_ts->wq and use system_wq instead.
+>>
+>> Signed-off-by: Tejun Heo<tj@kernel.org>
+>> Cc: Dmitry Torokhov<dmitry.torokhov@gmail.com>
+>> Cc: linux-input@vger.kernel.org
+>> Cc: Dan Carpenter<error27@gmail.com>
+>> Cc: Todd Fischer<todd.fischer@ridgerun.com>
+>> ---
+>> Only compile tested.  Please feel free to take it into the subsystem
+>> tree or simply ack - I'll route it through the wq tree.
+>>
+> This is that driver that polls every 30 ms.  :/  Todd, is there no way
+> to avoid this?  What was the status on that?
+>
+> regards,
+> dan carpenter
+>
+>
 
-.. snip..
-> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-> index ac7b42f..4cfb5e2 100644
-> --- a/drivers/xen/events.c
-> +++ b/drivers/xen/events.c
-> @@ -175,6 +175,8 @@ static struct irq_info *info_for_irq(unsigned irq)
->  
->  static unsigned int evtchn_from_irq(unsigned irq)
->  {
-> +	if (unlikely(irq < 0 || irq >= nr_irqs))
-> +		return 0;
-
-You could insert a WARN_ON here to see see if you get this during your
-migration process.
-
-Or use xen_raw_printk in case the guest is hung for good.
-
->  	return info_for_irq(irq)->evtchn;
->  }
->  
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xensource.com
-> http://lists.xensource.com/xen-devel
