@@ -1,134 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932084Ab1ACNvm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 08:51:42 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:36659 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755414Ab1ACNuu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 08:50:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=NpDq/J0eEYjOlovKcMN5WXGowesR/ZfQkq7YDPEgJsZNioGkxuwBG9oWi9uFmTEXLK
-         vu4UfGXVPfBUzmbAmH8veczjNRQuKHejOapzrVy4NhlMq/lEol7AuQZ0vidoQ8nKRewm
-         1SBdFl3bm/wT1iURs9muCz5OwvBYZGi6LoizU=
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, Eric Van Hensbergen <ericvh@gmail.com>,
-        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
-        v9fs-developer@lists.sourceforge.net
-Subject: [PATCH 29/32] net/9p: use system_wq instead of p9_mux_wq
-Date: Mon,  3 Jan 2011 14:49:52 +0100
-Message-Id: <1294062595-30097-30-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1294062595-30097-1-git-send-email-tj@kernel.org>
-References: <1294062595-30097-1-git-send-email-tj@kernel.org>
+	id S932103Ab1ACNvv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 08:51:51 -0500
+Received: from cantor.suse.de ([195.135.220.2]:45637 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932068Ab1ACNvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 08:51:50 -0500
+Date: Mon, 3 Jan 2011 14:51:48 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: introduce 'notimeout' blacklist for Dell Vostro
+ V13 (was Re: Synaptics touchpad on Dell Vostro V13)
+In-Reply-To: <alpine.LNX.2.00.1012291444110.16569@pobox.suse.cz>
+Message-ID: <alpine.LNX.2.00.1101031450390.26685@pobox.suse.cz>
+References: <alpine.LNX.2.00.1012141547570.15140@pobox.suse.cz> <20101214170027.GA11318@core.coreip.homeip.net> <alpine.LNX.2.00.1012152348440.16569@pobox.suse.cz> <201012151523.09476.dmitry.torokhov@gmail.com> <alpine.LNX.2.00.1012281124030.16569@pobox.suse.cz>
+ <20101229074410.GC13061@core.coreip.homeip.net> <alpine.LNX.2.00.1012291341550.16569@pobox.suse.cz> <alpine.LNX.2.00.1012291444110.16569@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With cmwq, there's no reason to use a dedicated workqueue in trans_fd.
-Drop p9_mux_wq and use system_wq instead.  The used work items are
-already sync canceled in p9_conn_destroy() and doesn't require further
-synchronization.
+On Wed, 29 Dec 2010, Jiri Kosina wrote:
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Eric Van Hensbergen <ericvh@gmail.com>
-Cc: Ron Minnich <rminnich@sandia.gov>
-Cc: Latchesar Ionkov <lucho@ionkov.net>
-Cc: v9fs-developer@lists.sourceforge.net
----
-Lightly tested with userland server.  Seems to work fine.  Please feel
-free to take it into the subsystem tree or simply ack - I'll route it
-through the wq tree.
+> On Wed, 29 Dec 2010, Jiri Kosina wrote:
+> 
+> > > Well, another blacklist in i8042 I guess...
+> > 
+> > Sigh, seems so.
+> > 
+> > I'll send you patch once I get positive testing feedback.
+> 
+> 
+> 
+> 
+> From: Jiri Kosina <jkosina@suse.cz>
+> Subject: [PATCH] Input: introduce 'notimeout' blacklist for Dell Vostro V13
+> 
+> i8042 controller present in Dell Vostro V13 errorneously signals spurious
+> timeouts.
+> 
+> Introduce i8042.notimeout parameter for ignoring i8042-signalled timeouts
+> and apply this quirk automatically for Dell Vostro V13, based on DMI match.
+> 
+> In addition to that, this machine also needs to be added to nomux blacklist.
+> 
+> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+
+Just to be clear -- I have already received positive feedback from the 
+bugreporter I had. I have attached the patch for testing to
+
+	https://bugzilla.kernel.org/show_bug.cgi?id=15416
+
+as well, but I already have confirmation from person owning the hardware, 
+so I believe it could be applied.
 
 Thanks.
 
- net/9p/trans_fd.c |   20 +++++---------------
- 1 files changed, 5 insertions(+), 15 deletions(-)
+> ---
+>  drivers/input/serio/i8042-x86ia64io.h |   21 +++++++++++++++++++++
+>  drivers/input/serio/i8042.c           |    6 +++++-
+>  2 files changed, 26 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
+> index a5475b5..b04dd27 100644
+> --- a/drivers/input/serio/i8042-x86ia64io.h
+> +++ b/drivers/input/serio/i8042-x86ia64io.h
+> @@ -424,6 +424,13 @@ static const struct dmi_system_id __initconst i8042_dmi_nomux_table[] = {
+>  			DMI_MATCH(DMI_PRODUCT_VERSION, "0100"),
+>  		},
+>  	},
+> +	{
+> +		/* Dell Vostro V13 */
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "Vostro V13"),
+> +		},
+> +	},
+>  	{ }
+>  };
+>  
+> @@ -545,6 +552,17 @@ static const struct dmi_system_id __initconst i8042_dmi_laptop_table[] = {
+>  };
+>  #endif
+>  
+> +static const struct dmi_system_id __initconst i8042_dmi_notimeout_table[] = {
+> +	{
+> +		/* Dell Vostro V13 */
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "Vostro V13"),
+> +		},
+> +	},
+> +	{ }
+> +};
+> +
+>  /*
+>   * Some Wistron based laptops need us to explicitly enable the 'Dritek
+>   * keyboard extension' to make their extra keys start generating scancodes.
+> @@ -897,6 +915,9 @@ static int __init i8042_platform_init(void)
+>  	if (dmi_check_system(i8042_dmi_nomux_table))
+>  		i8042_nomux = true;
+>  
+> +	if (dmi_check_system(i8042_dmi_notimeout_table))
+> +		i8042_notimeout = true;
+> +
+>  	if (dmi_check_system(i8042_dmi_dritek_table))
+>  		i8042_dritek = true;
+>  #endif /* CONFIG_X86 */
+> diff --git a/drivers/input/serio/i8042.c b/drivers/input/serio/i8042.c
+> index 18db5a8..039037d 100644
+> --- a/drivers/input/serio/i8042.c
+> +++ b/drivers/input/serio/i8042.c
+> @@ -61,6 +61,10 @@ static bool i8042_noloop;
+>  module_param_named(noloop, i8042_noloop, bool, 0);
+>  MODULE_PARM_DESC(noloop, "Disable the AUX Loopback command while probing for the AUX port");
+>  
+> +static bool i8042_notimeout;
+> +module_param_named(notimeout, i8042_notimeout, bool, 0);
+> +MODULE_PARM_DESC(notimeout, "Ignore timeouts signalled by i8042");
+> +
+>  #ifdef CONFIG_X86
+>  static bool i8042_dritek;
+>  module_param_named(dritek, i8042_dritek, bool, 0);
+> @@ -503,7 +507,7 @@ static irqreturn_t i8042_interrupt(int irq, void *dev_id)
+>  	} else {
+>  
+>  		dfl = ((str & I8042_STR_PARITY) ? SERIO_PARITY : 0) |
+> -		      ((str & I8042_STR_TIMEOUT) ? SERIO_TIMEOUT : 0);
+> +		      ((str & I8042_STR_TIMEOUT && !i8042_notimeout) ? SERIO_TIMEOUT : 0);
+>  
+>  		port_no = (str & I8042_STR_AUXDATA) ?
+>  				I8042_AUX_PORT_NO : I8042_KBD_PORT_NO;
+> -- 
+> 1.7.3.1
+> 
+> 
 
-diff --git a/net/9p/trans_fd.c b/net/9p/trans_fd.c
-index 078eb16..e9f797d 100644
---- a/net/9p/trans_fd.c
-+++ b/net/9p/trans_fd.c
-@@ -155,7 +155,6 @@ struct p9_conn {
- 
- static DEFINE_SPINLOCK(p9_poll_lock);
- static LIST_HEAD(p9_poll_pending_list);
--static struct workqueue_struct *p9_mux_wq;
- static struct task_struct *p9_poll_task;
- 
- static void p9_mux_poll_stop(struct p9_conn *m)
-@@ -384,7 +383,7 @@ static void p9_read_work(struct work_struct *work)
- 
- 		if (n & POLLIN) {
- 			P9_DPRINTK(P9_DEBUG_TRANS, "sched read work %p\n", m);
--			queue_work(p9_mux_wq, &m->rq);
-+			schedule_work(&m->rq);
- 		} else
- 			clear_bit(Rworksched, &m->wsched);
- 	} else
-@@ -497,7 +496,7 @@ static void p9_write_work(struct work_struct *work)
- 
- 		if (n & POLLOUT) {
- 			P9_DPRINTK(P9_DEBUG_TRANS, "sched write work %p\n", m);
--			queue_work(p9_mux_wq, &m->wq);
-+			schedule_work(&m->wq);
- 		} else
- 			clear_bit(Wworksched, &m->wsched);
- 	} else
-@@ -629,7 +628,7 @@ static void p9_poll_mux(struct p9_conn *m)
- 		P9_DPRINTK(P9_DEBUG_TRANS, "mux %p can read\n", m);
- 		if (!test_and_set_bit(Rworksched, &m->wsched)) {
- 			P9_DPRINTK(P9_DEBUG_TRANS, "sched read work %p\n", m);
--			queue_work(p9_mux_wq, &m->rq);
-+			schedule_work(&m->rq);
- 		}
- 	}
- 
-@@ -639,7 +638,7 @@ static void p9_poll_mux(struct p9_conn *m)
- 		if ((m->wsize || !list_empty(&m->unsent_req_list)) &&
- 		    !test_and_set_bit(Wworksched, &m->wsched)) {
- 			P9_DPRINTK(P9_DEBUG_TRANS, "sched write work %p\n", m);
--			queue_work(p9_mux_wq, &m->wq);
-+			schedule_work(&m->wq);
- 		}
- 	}
- }
-@@ -677,7 +676,7 @@ static int p9_fd_request(struct p9_client *client, struct p9_req_t *req)
- 		n = p9_fd_poll(m->client, NULL);
- 
- 	if (n & POLLOUT && !test_and_set_bit(Wworksched, &m->wsched))
--		queue_work(p9_mux_wq, &m->wq);
-+		schedule_work(&m->wq);
- 
- 	return 0;
- }
-@@ -1083,15 +1082,8 @@ static int p9_poll_proc(void *a)
- 
- int p9_trans_fd_init(void)
- {
--	p9_mux_wq = create_workqueue("v9fs");
--	if (!p9_mux_wq) {
--		printk(KERN_WARNING "v9fs: mux: creating workqueue failed\n");
--		return -ENOMEM;
--	}
--
- 	p9_poll_task = kthread_run(p9_poll_proc, NULL, "v9fs-poll");
- 	if (IS_ERR(p9_poll_task)) {
--		destroy_workqueue(p9_mux_wq);
- 		printk(KERN_WARNING "v9fs: mux: creating poll task failed\n");
- 		return PTR_ERR(p9_poll_task);
- 	}
-@@ -1109,6 +1101,4 @@ void p9_trans_fd_exit(void)
- 	v9fs_unregister_trans(&p9_tcp_trans);
- 	v9fs_unregister_trans(&p9_unix_trans);
- 	v9fs_unregister_trans(&p9_fd_trans);
--
--	destroy_workqueue(p9_mux_wq);
- }
 -- 
-1.7.1
-
+Jiri Kosina
+SUSE Labs, Novell Inc.
