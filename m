@@ -1,93 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293Ab1ACFTm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 00:19:42 -0500
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:21338 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750815Ab1ACFTl convert rfc822-to-8bit (ORCPT
+	id S1751499Ab1ACFWv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 00:22:51 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:55078 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947Ab1ACFWu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 00:19:41 -0500
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=cUTwMia+6fMZF7bjUHU44PO5dfBASsAn9IQPzcMrg/g= c=1 sm=1
- a=nokSTlOSMgUA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
- a=c23vf5CSMVc0QQz9B4a6RA==:17 a=VwQbUJbxAAAA:8 a=MC3XVy2y1B9GCZv2rooA:9
- a=gKtaiL8WpeEjnUOkKR4A:7 a=7bD4m929_6EHe8PMGPLdbvDofP8A:4 a=CjuIK1q_8ugA:10
- a=x8gzFH9gYPwA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-References: <1285332494-12756-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1285332494-12756-9-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20100924115423.530813c3@tlielax.poochiereds.net> <201009271514.00279.agruen@suse.de> <20110102232101.GB11955@thunk.org>
-In-Reply-To: <20110102232101.GB11955@thunk.org>
-Mime-Version: 1.0 (iPhone Mail 8C148a)
+	Mon, 3 Jan 2011 00:22:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=mazhRmVphkDOIc0NXLQmVhmp+5QZuGlEiWwTmw5C3zpYwxV9ZwD/+OhEgbYlCPZREx
+         ptpBCw74lye0DVCmVKCKSdOjZS19f1AiLqul9vopi9JRkvM8hsOlKfcDAqr8XclvUOOW
+         X0iUdaw4LyqnnProCeB/YR8zSXwyMs1aH//nE=
+MIME-Version: 1.0
+In-Reply-To: <4D1F7517.7080803@gmail.com>
+References: <4D1F5A17.4010807@gmail.com>
+	<20110101170854.GB32652@parisc-linux.org>
+	<4D1F7517.7080803@gmail.com>
+Date: Mon, 3 Jan 2011 06:22:49 +0100
+Message-ID: <AANLkTingw6peu9g1bN53L9Jtd9XkM-GzrJoNEF-x9Zcu@mail.gmail.com>
+Subject: Re: [PATCH] [SCSI] arcmsr: &/| confusion in arcmsr_build_ccb()
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+To: roel kluin <roel.kluin@gmail.com>
+Cc: Matthew Wilcox <matthew@wil.cx>, nick.cheng@areca.com.tw,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, James.Bottomley@suse.de,
+        linux-scsi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <B0449E28-B18A-4009-B6CA-8AEED22F4CD7@dilger.ca>
-Cc: Andreas Gruenbacher <agruen@suse.de>, Jeff Layton <jlayton@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "sfrench@us.ibm.com" <sfrench@us.ibm.com>,
-        "ffilz@us.ibm.com" <ffilz@us.ibm.com>,
-        "adilger@sun.com" <adilger@sun.com>,
-        "sandeen@redhat.com" <sandeen@redhat.com>,
-        "bfields@citi.umich.edu" <bfields@citi.umich.edu>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "nfsv4@linux-nfs.org" <nfsv4@linux-nfs.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-X-Mailer: iPhone Mail (8C148a)
-From: Andreas Dilger <adilger@dilger.ca>
-Subject: Re: [PATCH -V4 08/11] vfs: Add new file and directory create permission flags
-Date: Sun, 2 Jan 2011 22:20:08 -0700
-To: "Ted Ts'o" <tytso@mit.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Actually, I think it is required by POSIX that EXDEV is returned when cross-linking files. For mv calling rename() at least it uses a return EXDEV to copy the file to the target filesystem instead of just giving up and returning an error. It may be other applications like tar have a similar dependency for link(). 
+On Sat, Jan 1, 2011 at 7:40 PM, roel kluin <roel.kluin@gmail.com> wrote:
+> Make sure no other command which does a write, such as UNMAP and WRITE_32, is missed.
+>
+> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+> ---
+>  drivers/scsi/arcmsr/arcmsr_hba.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> If you agree this is the right fix, please ack.
+>
+> diff --git a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+> index 17e3df4..a5acedc 100644
+> --- a/drivers/scsi/arcmsr/arcmsr_hba.c
+> +++ b/drivers/scsi/arcmsr/arcmsr_hba.c
+> @@ -1171,7 +1171,7 @@ static int arcmsr_build_ccb(struct AdapterControlBlock *acb,
+>        arcmsr_cdb->msgPages = arccdbsize/0x100 + (arccdbsize % 0x100 ? 1 : 0);
+>        if ( arccdbsize > 256)
+>                arcmsr_cdb->Flags |= ARCMSR_CDB_FLAG_SGL_BSIZE;
+> -       if (pcmd->cmnd[0]|WRITE_6 || pcmd->cmnd[0]|WRITE_10 || pcmd->cmnd[0]|WRITE_12 ){
+> +       if (pcmd->sc_data_direction == DMA_TO_DEVICE)
 
-Cheers, Andreas
+If you remove the { from the if, then ...
 
-On 2011-01-02, at 16:21, Ted Ts'o <tytso@mit.edu> wrote:
+>                arcmsr_cdb->Flags |= ARCMSR_CDB_FLAG_WRITE;
+>        }
 
-> I was going through some old patches in the ext4 patchwork list, and
-> came across this.  It looks like this patch has never been applied to
-> mainline.  If it's a "clear improvement", any reason not to submit it?
-> 
-> Regards,
-> 
->                                         - Ted
-> 
-> On Mon, Sep 27, 2010 at 03:14:00PM +0200, Andreas Gruenbacher wrote:
->> 
->> Ah, you mean this:
->> 
->> --- a/fs/namei.c
->> +++ b/fs/namei.c
->> @@ -2450,7 +2450,9 @@ int vfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *new_de
->>    if (!inode)
->>        return -ENOENT;
->> 
->> -    error = may_create(dir, new_dentry, S_ISDIR(inode->i_mode));
->> +    if (S_ISDIR(inode->i_mode))
->> +        return -EPERM;
->> +    error = may_create(dir, new_dentry, 0);
->>    if (error)
->>        return error;
->> 
->> @@ -2464,8 +2466,6 @@ int vfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *new_de
->>        return -EPERM;
->>    if (!dir->i_op->link)
->>        return -EPERM;
->> -    if (S_ISDIR(inode->i_mode))
->> -        return -EPERM;
->> 
->>    error = security_inode_link(old_dentry, dir, new_dentry);
->>    if (error)
->> 
->> This is a clear improvement; I don't think it matters that user-space will
->> get -EPERM instead of -EXDEV when trying to hard-link a directory across
->> devices.
->> 
->> Thanks,
->> Andreas
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+... you also need to remove this }. ;-)
+
+>        ccb->arc_cdb_size = arccdbsize;
+>
