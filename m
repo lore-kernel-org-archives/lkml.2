@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751499Ab1ACFWv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 00:22:51 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55078 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750947Ab1ACFWu convert rfc822-to-8bit (ORCPT
+	id S1751858Ab1ACFuU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 00:50:20 -0500
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:48777 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751150Ab1ACFuT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 00:22:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=mazhRmVphkDOIc0NXLQmVhmp+5QZuGlEiWwTmw5C3zpYwxV9ZwD/+OhEgbYlCPZREx
-         ptpBCw74lye0DVCmVKCKSdOjZS19f1AiLqul9vopi9JRkvM8hsOlKfcDAqr8XclvUOOW
-         X0iUdaw4LyqnnProCeB/YR8zSXwyMs1aH//nE=
+	Mon, 3 Jan 2011 00:50:19 -0500
+Date: Mon, 3 Jan 2011 06:50:15 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: David Brown <davidb@codeaurora.org>
+Cc: Nicolas Pitre <nico@fluxnic.net>, Stephen Boyd <sboyd@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Tony Lindgren <tony@atomide.com>, Arnd Bergmann <arnd@arndb.de>,
+        Daniel Walker <dwalker@codeaurora.org>
+Subject: Re: [PATCH 1/3] hvc_dcc: Fix bad code generation by marking
+ assembly volatile
+Message-ID: <20110103055015.GA19801@elf.ucw.cz>
+References: <1292649385-28771-1-git-send-email-sboyd@codeaurora.org>
+ <1292875718-7980-1-git-send-email-sboyd@codeaurora.org>
+ <1292875718-7980-2-git-send-email-sboyd@codeaurora.org>
+ <alpine.LFD.2.00.1012201638150.10437@xanadu.home>
+ <20110102090019.GC32469@atrey.karlin.mff.cuni.cz>
+ <8yazkrjkuo3.fsf@huya.qualcomm.com>
 MIME-Version: 1.0
-In-Reply-To: <4D1F7517.7080803@gmail.com>
-References: <4D1F5A17.4010807@gmail.com>
-	<20110101170854.GB32652@parisc-linux.org>
-	<4D1F7517.7080803@gmail.com>
-Date: Mon, 3 Jan 2011 06:22:49 +0100
-Message-ID: <AANLkTingw6peu9g1bN53L9Jtd9XkM-GzrJoNEF-x9Zcu@mail.gmail.com>
-Subject: Re: [PATCH] [SCSI] arcmsr: &/| confusion in arcmsr_build_ccb()
-From: Torsten Kaiser <just.for.lkml@googlemail.com>
-To: roel kluin <roel.kluin@gmail.com>
-Cc: Matthew Wilcox <matthew@wil.cx>, nick.cheng@areca.com.tw,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, James.Bottomley@suse.de,
-        linux-scsi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8yazkrjkuo3.fsf@huya.qualcomm.com>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 1, 2011 at 7:40 PM, roel kluin <roel.kluin@gmail.com> wrote:
-> Make sure no other command which does a write, such as UNMAP and WRITE_32, is missed.
->
-> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
-> ---
->  drivers/scsi/arcmsr/arcmsr_hba.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> If you agree this is the right fix, please ack.
->
-> diff --git a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
-> index 17e3df4..a5acedc 100644
-> --- a/drivers/scsi/arcmsr/arcmsr_hba.c
-> +++ b/drivers/scsi/arcmsr/arcmsr_hba.c
-> @@ -1171,7 +1171,7 @@ static int arcmsr_build_ccb(struct AdapterControlBlock *acb,
->        arcmsr_cdb->msgPages = arccdbsize/0x100 + (arccdbsize % 0x100 ? 1 : 0);
->        if ( arccdbsize > 256)
->                arcmsr_cdb->Flags |= ARCMSR_CDB_FLAG_SGL_BSIZE;
-> -       if (pcmd->cmnd[0]|WRITE_6 || pcmd->cmnd[0]|WRITE_10 || pcmd->cmnd[0]|WRITE_12 ){
-> +       if (pcmd->sc_data_direction == DMA_TO_DEVICE)
+On Sun 2011-01-02 10:49:32, David Brown wrote:
+> On Sun, Jan 02 2011, Pavel Machek wrote:
+> 
+> >> > diff --git a/drivers/char/hvc_dcc.c b/drivers/char/hvc_dcc.c
+> >> > index 6470f63..155ec10 100644
+> >> > --- a/drivers/char/hvc_dcc.c
+> >> > +++ b/drivers/char/hvc_dcc.c
+> >> > @@ -33,8 +33,7 @@
+> >> >  static inline u32 __dcc_getstatus(void)
+> >> >  {
+> >> >  	u32 __ret;
+> >> > -
+> >> > -	asm("mrc p14, 0, %0, c0, c1, 0	@ read comms ctrl reg"
+> >> > +	asm volatile("mrc p14, 0, %0, c0, c1, 0	@ read comms ctrl reg"
+> >> >  		: "=r" (__ret) : : "cc");
+> >> >  
+> >> >  	return __ret;
+> >
+> > Is volatile needed here? If __dcc_getstatus() return value is
+> > discarded, we want assembly discarded, right?
+> 
+> That's not really the issue being fixed.  Without the volatile, the
+> compiler is free to cache and reuse a previously loaded status value.
+> It is important that the status be read each time.
+> 
+> I don't think there is a way of indicating that assembly needs to happen
+> for each use, but that it is OK to discard if the value isn't used.
+> 'volatile' is a bit overloaded.
 
-If you remove the { from the if, then ...
-
->                arcmsr_cdb->Flags |= ARCMSR_CDB_FLAG_WRITE;
->        }
-
-... you also need to remove this }. ;-)
-
->        ccb->arc_cdb_size = arccdbsize;
->
+Ok, thanks for explanation.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
