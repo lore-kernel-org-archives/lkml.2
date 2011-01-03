@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab1ACMqr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 07:46:47 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47986 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754306Ab1ACMqq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 07:46:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=cGcvi6JUkoUWk4JCc7OZAg6JI/ZgloNYOgYAQ1UMvIi8iCsbl/SxEVSIdN+Kn0pJW8
-         zl/IjGhKhJ/3/hHYmOY+q0KsyC+IvRCdIMvHzs/dYgCmbw6xxwX/5RGpRZfqr0QfVVzz
-         XDaJcbOPldESJbQw7N98hhpjHiYctIukMFrWM=
-Subject: Re: [PATCH 3/3 V13] RO/NX protection for loadable kernel
-From: Tobias Karnat <tobias.karnat@googlemail.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 03 Jan 2011 13:46:42 +0100
-Message-ID: <1294058802.19182.28.camel@Tobias-Karnat>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3
-Content-Transfer-Encoding: 7bit
+	id S1754885Ab1ACMwk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 07:52:40 -0500
+Received: from cantor.suse.de ([195.135.220.2]:43685 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754791Ab1ACMwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 07:52:39 -0500
+Date: Mon, 3 Jan 2011 13:52:37 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stefan Weil <weil@mail.berlios.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix spelling milisecond -> millisecond in comments and
+ debug messages
+In-Reply-To: <1293978101-5252-1-git-send-email-weil@mail.berlios.de>
+Message-ID: <alpine.LNX.2.00.1101031352150.26685@pobox.suse.cz>
+References: <1293978101-5252-1-git-send-email-weil@mail.berlios.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Sure.  I can verify that the patch series (a) doesn't break well-behaved
-> modules and (b) it *does* trigger for misbehaving modules (I sent the
-> VirtualBox crew a bug report for a module that tried to write to an area
-> marked executable).
+On Sun, 2 Jan 2011, Stefan Weil wrote:
 
-This seems to be fixed by VirtualBox 4.
+> Cc: Jiri Kosina <trivial@kernel.org>
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Stefan Weil <weil@mail.berlios.de>
+> ---
+>  arch/arm/mach-bcmring/include/csp/tmrHw.h |    4 ++--
+>  drivers/acpi/apei/einj.c                  |    2 +-
+>  drivers/acpi/apei/erst.c                  |    2 +-
+>  drivers/gpu/drm/nouveau/nouveau_bios.c    |    4 ++--
+>  drivers/net/wireless/wl1251/wl1251.h      |    2 +-
+>  drivers/net/wireless/wl12xx/wl1271.h      |    4 ++--
+>  6 files changed, 9 insertions(+), 9 deletions(-)
 
-I applied the patchset to 2.6.36.
-('All in one' patch, http://pastebin.com/raw.php?i=6CDnAkjP )
+Hi,
 
-I have however noticed that after enabling;
-CONFIG_DEBUG_KERNEL, CONFIG_DEBUG_RODATA and CONFIG_DEBUG_SET_MODULE_RONX
-there are three "Freeing unused kernel memory" messages, is this correct?
+I have folded this together with the 'meassage -> message' fix and 
+applied, thanks.
 
-Before applying patch:
-[    1.449499] Freeing initrd memory: 16328k freed
-[    3.336464] Freeing unused kernel memory: 844k freed
-
-After applying patch:
-[    1.449262] Freeing initrd memory: 16328k freed
-[    3.297901] Freeing unused kernel memory: 844k freed
-[    3.311849] Write protecting the kernel read-only data: 8192k
-[    3.327592] Freeing unused kernel memory: 448k freed
-[    3.342651] Freeing unused kernel memory: 276k freed
-
-And why does CONFIG_DEBUG_RODATA depend on CONFIG_DEBUG_KERNEL;
-Isn't it primarily a security enhancement?
-
--Tobias
-
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
