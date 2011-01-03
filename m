@@ -1,77 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932432Ab1ACSCx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 13:02:53 -0500
-Received: from 81-174-11-161.staticnet.ngi.it ([81.174.11.161]:36296 "EHLO
-	mail.enneenne.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S932322Ab1ACSCw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 13:02:52 -0500
-Date: Mon, 3 Jan 2011 19:02:47 +0100
-From: Rodolfo Giometti <giometti@enneenne.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, Russell Coker <russell@coker.com.au>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Message-ID: <20110103180247.GF22102@gundam.enneenne.com>
-Mail-Followup-To: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-	linux-kernel@vger.kernel.org, Russell Coker <russell@coker.com.au>,
-	Greg Kroah-Hartman <gregkh@suse.de>
-References: <1294067735-21466-1-git-send-email-giometti@linux.it> <1294067735-21466-2-git-send-email-giometti@linux.it> <20110103171452.5e258743@lxorguk.ukuu.org.uk>
+	id S1755587Ab1ACSFR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 13:05:17 -0500
+Received: from mga01.intel.com ([192.55.52.88]:15712 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753380Ab1ACSFP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 13:05:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,267,1291622400"; 
+   d="scan'208";a="874033157"
+Message-ID: <4D220FDB.4090000@linux.intel.com>
+Date: Mon, 03 Jan 2011 10:05:15 -0800
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+Organization: Intel Open Source Technology Center
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110103171452.5e258743@lxorguk.ukuu.org.uk>
-Organization: GNU/Linux Device Drivers, Embedded Systems and Courses
-X-PGP-Key: gpg --keyserver keyserver.linux.it --recv-keys D25A5633
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 192.168.32.254
-X-SA-Exim-Mail-From: giometti@enneenne.com
-Subject: Re: [PATCH] char nvtty: Network Virtual Terminal support
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on mail.enneenne.com)
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: Grant Likely <grant.likely@secretlab.ca>, sodaville@linutronix.de,
+        devicetree-discuss@lists.ozlabs.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [sodaville] [PATCH 02/15] x86: Add device tree support
+References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de>	<1292600033-12271-3-git-send-email-bigeasy@linutronix.de>	<20101230084311.GD11721@angua.secretlab.ca> <4D21BF17.6090209@linutronix.de>
+In-Reply-To: <4D21BF17.6090209@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 03, 2011 at 05:14:52PM +0000, Alan Cox wrote:
-> > By using these devices and a proper compatible server (not included
-> > here but you can use sredird) you can get access to a remote tty
-> > device as the tty device itself was conneted with your local host.
-> > All data and settings are sent and received through the network.
+On 01/03/2011 04:20 AM, Sebastian Andrzej Siewior wrote:
+> Grant Likely wrote:
+>>> +extern char cmd_line[COMMAND_LINE_SIZE];
+>>> +/* This number is used when no interrupt has been assigned */
+>>> +#define NO_IRQ		(-1)
+>>
+>> 0 means NO_IRQ on x86 and most architectures.  I will change this when
+>> I pick up the patch.
 > 
-> Interesting but would it not be better to keep all the network stuff in
-> user space given that most sane environments will have crypto on them ?
+> cat /proc/interrupts
+>             CPU0
+>    0:         40   IO-APIC-edge      timer
+> 
 
-Yes, but in most cases this is used on not-crypted connections (as far
-as I know there are no crypted server for this protocol yet), however
-we can easily get a crypted connection by connecting with localhost
-and then using a program like cryptcat for the crypto stuff.
+0 for the timer is special.  However, Linus has declared that NO_IRQ is
+to be zero, and that only very special interrupts like the PIT timer are
+allowed to break that.
 
-> It's also a less than ideal protocol in that it can't represent some of
-> the things termios can, nor can it report arbitary speeds properly.
-
-I see, but it is widely used and also it can be enhanced to better fit
-termios capabilities.
-
-However by using this protocol "as is" we can do several useful
-things! :)
-
-> Is there a reason it couldn't use pty/tty pairs either as is or tweaked
-> to better report termios changes and allow modem line reporting ?
-
-This is the solution that cyclades-serial-client uses (the userland
-program where my patch is derived from) but as far as I know pty/tty
-pairs cannot be used to report termios settings but only data... is
-that right? =:-o
-
-Ciao,
-
-Rodolfo
-
--- 
-
-GNU/Linux Solutions                  e-mail: giometti@enneenne.com
-Linux Device Driver                          giometti@linux.it
-Embedded Systems                     phone:  +39 349 2432127
-UNIX programming                     skype:  rodolfo.giometti
-Freelance ICT Italia - Consulente ICT Italia - www.consulenti-ict.it
+	-hpa
