@@ -1,89 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916Ab1ACNsL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 08:48:11 -0500
-Received: from cantor.suse.de ([195.135.220.2]:45550 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754503Ab1ACNsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 08:48:09 -0500
-Date: Mon, 3 Jan 2011 14:48:07 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Piotr Hosowicz <piotr@hosowicz.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: GIT question - am I doing it correctly?
-Message-ID: <20110103134807.GA3911@tiehlicka.suse.cz>
-References: <4D1B6066.9000701@example.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D1B6066.9000701@example.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754957Ab1ACNuE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 08:50:04 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36659 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754821Ab1ACNuC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 08:50:02 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:subject:date:message-id:x-mailer;
+        b=Sq1L4rYgkTXuIuB/2ZKKrXb5KAABoD+o/zMztTk5hyqybr6abU9y2V8W2GtCZIueOV
+         GGCDWPfojx6sg6PjLQ9S/KJqVzFwW3hdfm88VwSuhKwgRwOgBg6QV86s8GRI/G8bcmFo
+         3WhYoQJH1oNdhoUbjGGGoFmfzGd0rLGHDeceI=
+From: Tejun Heo <tj@kernel.org>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCHSET] workqueue: update workqueue users - replace create_workqueue()
+Date: Mon,  3 Jan 2011 14:49:23 +0100
+Message-Id: <1294062595-30097-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 29-12-10 17:23:02, Piotr Hosowicz wrote:
-> Hello,
+Hello,
 
-Hi,
+This patchset examines each user of create_workqueue() and update them
+to better fit the new workqueue implementation.  For backward
+compatibility, create_workqueue() is mapped to
 
-> 
-> Everytime I git pull tyhe Linus' sources but before I build I apply
-> Peter Zijlstra's fixes, Takashi Iwai's sources and Dave Miller's
-> sources. The sequence is:
-> 
-> # the Linus' sources
-> git pull
-> 
-> # external sources
-> git remote add some_name git://some_URL.git
-> 
-> # update
-> git remote update
-> 
-> Then configure and I build. I noticed that especially Peter's
-> git-update very quickly, not as long as they did before.
-> 
-> Is my procedure correct? I am new to GIT.
+ alloc_workqueue(@name, WQ_MEM_RECLAIM, 1)
 
-What do you want to achieve? You want to build the tree that you have
-added as a remote? If yes then you need to checkout a branch from that
-remote
+but for a lot of its users, WQ_MEM_RECLAIM is not required,
+@max_active of 1 is unnecessarily strict, or the dedicated workqueue
+simply isn't needed.
 
-git checkout -b your_branch_name some_name/branch_you_want
+* As the system workqueues can now host higher concurrency, a lot of
+  users can drop dedicated workqueues and use the system ones.
 
-then you will have a new your_branch_name which points to the tip of the
-remote's branch and you can configure and make the tree.
+* There are cases where keeping dedicated workqueues are necessary.
+  e.g. They are depended upon during memory reclaim, need to be
+  highpri or CPU intensive, serve work items which free themselves
+  (and thus work items can't be explicitly queued), or need to limit
+  max concurrency level from workqueue.  In these cases,
+  alloc_workqueue() calls with better fitting parameters are used.
 
-Please note that 'git remote add && git remote update' will just add
-commits from that remote tree and it doesn't affect your local copy
-anyhow.
+* This patchset mostly concentrates on converting create_workqueue()
+  users but it also updates general workqueue usages when it makes
+  sense to update them together.  Please read description of each
+  patch for deatils.
 
-If you are new to GIT I would strongly encourage you to read through the
-following ebook: http://progit.org/book/
+This simplifies code, removes unnecessary rescuer kernel thread and
+makes workqueue utilized more efficiently.
 
-> 
-> Regards,
-> 
-> Piotr Hosowicz
-> 
-> -- 
-> W trosce o najm?odsze pokolenie, nasi ustawodawcy winni znowelizowa?
-> ustaw? o wychowaniu w trze?wo?ci i przeciwdzia?aniu alkoholizmowi tak,
-> ?eby zakaza? wprowadzania na rynek gier planszowych, kt?rych celem
-> jest jak najszybsze dotarcie do mety.
-> NP: Peter Green Splinter Group - Turn Your Love Away
-> NB: 2.6.37-rc8
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+This patchset contains the following 32 patches.
 
--- 
-Michal Hocko
-L3 team 
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+ 0001-arm-omap-use-system_wq-in-mailbox.patch
+ 0002-powerpc-cell-use-system_wq-in-cpufreq_spudemand.patch
+ 0003-block-make-kblockd_workqueue-smarter.patch
+ 0004-bio-integrity-mark-kintegrityd_wq-highpri-and-CPU-in.patch
+ 0005-crypto-mark-crypto-workqueues-CPU_INTENSIVE.patch
+ 0006-acpi-kacpi-_wq-don-t-need-WQ_MEM_RECLAIM.patch
+ 0007-cpufreq-use-system_wq-instead-of-dedicated-workqueue.patch
+ 0008-drm-nouveau-use-system_wq-instead-of-dev_priv-wq.patch
+ 0009-drm-radeon-use-system_wq-instead-of-dev_priv-wq.patch
+ 0010-input-tps6507x-ts-use-system_wq-instead-of-dedicated.patch
+ 0011-v4l-cx18-update-workqueue-usage.patch
+ 0012-i2o-use-alloc_workqueue-instead-of-create_workqueue.patch
+ 0013-misc-iwmc3200top-use-system_wq-instead-of-dedicated-.patch
+ 0014-wireless-ipw2x00-use-system_wq-instead-of-dedicated-.patch
+ 0015-wireless-libertas-_tf-use-system_wq-instead-of-dedic.patch
+ 0016-scsi-be2iscsi-qla2xxx-convert-to-alloc_workqueue.patch
+ 0017-scsi-ibmvstgt-use-system_wq-instead-of-vtgtd-workque.patch
+ 0018-scsi-scsi_tgt_lib-scsi_tgtd-isn-t-used-in-memory-rec.patch
+ 0019-usb-ueagle-atm-use-system_wq-instead-of-dedicated-wo.patch
+ 0020-video-msm_fb-use-system_wq-instead-of-dedicated-work.patch
+ 0021-fs-aio-aio_wq-isn-t-used-in-memory-reclaim-path.patch
+ 0022-ceph-fsc-_wq-s-aren-t-used-in-memory-reclaim-path.patch
+ 0023-net-ceph-make-ceph_msgr_wq-non-reentrant.patch
+ 0024-dlm-dlm-workqueues-aren-t-used-in-memory-reclaim-pat.patch
+ 0025-ext4-convert-to-alloc_workqueue.patch
+ 0026-ocfs2-use-system_wq-instead-of-ocfs2_quota_wq.patch
+ 0027-reiserfs-make-commit_wq-use-the-default-concurrency-.patch
+ 0028-xfs-convert-to-alloc_workqueue.patch
+ 0029-net-9p-use-system_wq-instead-of-p9_mux_wq.patch
+ 0030-net-9p-replace-p9_poll_task-with-a-work.patch
+ 0031-rds-ib-use-system_wq-instead-of-rds_ib_fmr_wq.patch
+ 0032-rxrpc-rxrpc_workqueue-isn-t-used-during-memory-recla.patch
+
+The patches are based on 2.6.37-rc8 (b518a649) and available in the
+following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.g replace-create_workqueue
+
+ arch/arm/plat-omap/mailbox.c                    |   10 -
+ arch/powerpc/platforms/cell/cpufreq_spudemand.c |   20 --
+ block/blk-core.c                                |    4
+ crypto/crypto_wq.c                              |    3
+ crypto/pcrypt.c                                 |    3
+ drivers/acpi/osl.c                              |    6
+ drivers/cpufreq/cpufreq_conservative.c          |   22 --
+ drivers/cpufreq/cpufreq_ondemand.c              |   20 --
+ drivers/gpu/drm/nouveau/nouveau_drv.h           |    1
+ drivers/gpu/drm/nouveau/nouveau_irq.c           |    9 -
+ drivers/gpu/drm/nouveau/nouveau_state.c         |   19 +-
+ drivers/gpu/drm/nouveau/nv50_display.c          |    4
+ drivers/gpu/drm/radeon/evergreen.c              |    2
+ drivers/gpu/drm/radeon/r100.c                   |    2
+ drivers/gpu/drm/radeon/r600.c                   |    2
+ drivers/gpu/drm/radeon/radeon.h                 |    1
+ drivers/gpu/drm/radeon/radeon_device.c          |    6
+ drivers/gpu/drm/radeon/radeon_irq_kms.c         |    5
+ drivers/gpu/drm/radeon/radeon_pm.c              |   47 +----
+ drivers/gpu/drm/radeon/rs600.c                  |    2
+ drivers/input/touchscreen/tps6507x-ts.c         |   12 -
+ drivers/media/video/cx18/cx18-driver.c          |   24 --
+ drivers/media/video/cx18/cx18-driver.h          |    3
+ drivers/media/video/cx18/cx18-streams.h         |    3
+ drivers/message/i2o/driver.c                    |    3
+ drivers/misc/iwmc3200top/iwmc3200top.h          |    4
+ drivers/misc/iwmc3200top/main.c                 |   14 -
+ drivers/net/wireless/ipw2x00/ipw2100.c          |   70 +++-----
+ drivers/net/wireless/ipw2x00/ipw2100.h          |    1
+ drivers/net/wireless/ipw2x00/ipw2200.c          |  196 ++++++++++--------------
+ drivers/net/wireless/ipw2x00/ipw2200.h          |    2
+ drivers/net/wireless/libertas/if_sdio.c         |   10 -
+ drivers/net/wireless/libertas_tf/cmd.c          |    6
+ drivers/net/wireless/libertas_tf/libertas_tf.h  |    2
+ drivers/net/wireless/libertas_tf/main.c         |   16 -
+ drivers/scsi/be2iscsi/be_main.c                 |    2
+ drivers/scsi/ibmvscsi/ibmvstgt.c                |   15 -
+ drivers/scsi/qla2xxx/qla_os.c                   |    2
+ drivers/scsi/scsi_tgt_lib.c                     |    2
+ drivers/usb/atm/ueagle-atm.c                    |   19 --
+ drivers/video/msm/msm_fb.c                      |   11 -
+ fs/aio.c                                        |    4
+ fs/bio-integrity.c                              |    7
+ fs/ceph/super.c                                 |   10 -
+ fs/dlm/lowcomms.c                               |   19 --
+ fs/ext4/super.c                                 |    7
+ fs/ocfs2/quota.h                                |    3
+ fs/ocfs2/quota_global.c                         |   27 ---
+ fs/ocfs2/super.c                                |    7
+ fs/reiserfs/journal.c                           |    2
+ fs/xfs/linux-2.6/xfs_buf.c                      |    5
+ fs/xfs/xfs_mru_cache.c                          |    2
+ include/linux/ceph/messenger.h                  |    5
+ net/9p/trans_fd.c                               |   52 +-----
+ net/ceph/messenger.c                            |   46 -----
+ net/rds/ib.c                                    |    9 -
+ net/rds/ib.h                                    |    2
+ net/rds/ib_rdma.c                               |   27 ---
+ net/rxrpc/af_rxrpc.c                            |    2
+ 59 files changed, 270 insertions(+), 571 deletions(-)
+
+--
+tejun
