@@ -1,116 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752034Ab1ACWdb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 17:33:31 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:38021 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805Ab1ACWd3 (ORCPT
+	id S1751934Ab1ACWf4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 17:35:56 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42957
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750752Ab1ACWfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 17:33:29 -0500
-Subject: Re: [PATCH R2 7/7] xen/balloon: Xen memory balloon driver with
- memory hotplug support
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Daniel Kiper <dkiper@net-space.pl>
-Cc: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
-        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
-        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
-        v.tolstov@selfip.ru, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <20101229170702.GL2743@router-fw-old.local.net-space.pl>
-References: <20101229170702.GL2743@router-fw-old.local.net-space.pl>
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Mon, 03 Jan 2011 14:33:22 -0800
-Message-ID: <1294094002.18937.110.camel@nimitz>
+	Mon, 3 Jan 2011 17:35:55 -0500
+Date: Mon, 03 Jan 2011 14:36:25 -0800 (PST)
+Message-Id: <20110103.143625.193710368.davem@davemloft.net>
+To: alex.buell@munted.org.uk
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Using s3virge card in Sun Blade 2000
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1294090573.17576.16.camel@lithium>
+References: <1294086801.17576.14.camel@lithium>
+	<20110103.123939.02282416.davem@davemloft.net>
+	<1294090573.17576.16.camel@lithium>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-29 at 18:07 +0100, Daniel Kiper wrote:
-> +config XEN_BALLOON_MEMORY_HOTPLUG
-> +	bool "Xen memory balloon driver with memory hotplug support"
-> +	default n
-> +	depends on XEN_BALLOON && MEMORY_HOTPLUG
-> +	help
-> +	  Xen memory balloon driver with memory hotplug support allows expanding
-> +	  memory available for the system above limit declared at system startup.
-> +	  It is very useful on critical systems which require long run without
-> +	  rebooting.
+From: Alex Buell <alex.buell@munted.org.uk>
+Date: Mon, 03 Jan 2011 21:36:13 +0000
 
-This might be better phrased as "Memory hotplug support for Xen balloon
-driver".  It might otherwise confuse people about whether they're seeing
-some kind of choice or an _enhancement_ to the existing driver.
+> Those are 32 bit addresses, so I suppose I should be getting the base
+> address for the registers accesses from region 1, right? 
 
-Also, why bother even making this a config option?  What are the
-downsides if it was always compiled in?  You could even make it a
-non-prompting Kconfig option and just automatically turn it on with
-XEN_BALLOON && MEMORY_HOTPLUG.
-
-
-> +static int allocate_memory_resource(struct resource **r, unsigned long nr_pages)
->  {
-> -	unsigned long target = balloon_stats.target_pages;
-> +	int rc;
-> +	resource_size_t r_min, r_size;
-> +
-> +	/*
-> +	 * Look for first unused memory region starting at page
-> +	 * boundary. Skip last memory section created at boot time
-> +	 * becuase it may contains unused memory pages with PG_reserved
-> +	 * bit not set (online_pages require PG_reserved bit set).
-> +	 */
-> +
-> +	*r = kzalloc(sizeof(struct resource), GFP_KERNEL);
-> 
-> -	target = min(target,
-> -		     balloon_stats.current_pages +
-> -		     balloon_stats.balloon_low +
-> -		     balloon_stats.balloon_high);
-> +	if (!*r)
-> +		return -ENOMEM;
-> 
-> -	return target;
-> +	(*r)->name = "System RAM";
-> +	(*r)->flags = IORESOURCE_MEM | IORESOURCE_BUSY;
-> +	r_min = PFN_PHYS(section_nr_to_pfn(pfn_to_section_nr(balloon_stats.boot_max_pfn) + 1));
-> +	r_size = nr_pages << PAGE_SHIFT;
-> +
-> +	rc = allocate_resource(&iomem_resource, *r, r_size, r_min,
-> +					ULONG_MAX, PAGE_SIZE, NULL, NULL);
-> +
-> +	if (rc < 0) {
-> +		kfree(*r);
-> +		*r = NULL;
-> +	}
-> +
-> +	return rc;
->  }
-
-The double-pointer stuff here ends up looking a little funky.  Is there
-any reason you don't just use ERR_PTRs?  That might look a bit more
-sane.
-
-> +static void adjust_memory_resource(struct resource **r, unsigned long nr_pages)
-> +{
-> +	if ((*r)->end + 1 - (nr_pages << PAGE_SHIFT) == (*r)->start) {
-> +		BUG_ON(release_resource(*r) < 0);
-
-In some kernels, people do:
-
-	#define BUG_ON(...) do{}while(0)
-
-to save space.  If anyone ever does that with this code, it'll break
-horribly.  It's also hard to read these.  So, please break logic actions
-_out_ of the BUG_ON() arguments.
-
-That's repeated in quite a few places in here.  Make sure to go get them
-all.
-
-It also isn't evident what this patch set is trying to do until you get
-down to this 7/7 patch.  You might want to put a more complete
-description in 0/7.
-
--- Dave
-
+Yes, and pre-computed addresses exist in pci_region_start(pdev, 1).
