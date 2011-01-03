@@ -1,93 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755672Ab1ACUQI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 15:16:08 -0500
-Received: from smtprelay02.ispgateway.de ([80.67.29.24]:35821 "EHLO
-	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752678Ab1ACUQH (ORCPT
+	id S1753274Ab1ACUWb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 15:22:31 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:40161 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980Ab1ACUWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 15:16:07 -0500
-Message-ID: <4D222E7F.5080305@steffen-moser.de>
-Date: Mon, 03 Jan 2011 21:15:59 +0100
-From: Steffen Moser <lists@steffen-moser.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-CC: Jeff Garzik <jeff@garzik.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux IDE mailing list <linux-ide@vger.kernel.org>
-Subject: Re: IOMMU and DMA mode of pata_jmicron
-References: <4D1A7628.3050704@steffen-moser.de> <4D1A881C.3080109@garzik.org> <20110103112952.GA2100@amd.com>
-In-Reply-To: <20110103112952.GA2100@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 3 Jan 2011 15:22:30 -0500
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=MsfxUTlnwtkA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=d_wQqMYOy-r8hfbEupwA:9 a=oZLbcS_mN6WfjUvw3aMA:7 a=uQjyJmpdxBbSgAatITwsyC4rmKMA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][RT][PATCH 3/4] rtmutex: Revert Optimize rt lock wakeup
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Gregory Haskins <ghaskins@novell.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        ThomasGleixner <tglx@linutronix.de>,
+        Peter Morreale <PMorreale@novell.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <1294081596.3948.192.camel@gandalf.stny.rr.com>
+References: <20101223224755.078983538@goodmis.org>
+	 <20101223225116.729981172@goodmis.org>
+	 <4D13DF250200005A000793E1@novprvoes0310.provo.novell.com>
+	 <1293166464.22802.415.camel@gandalf.stny.rr.com>
+	 <4D19A8B20200005A00079658@novprvoes0310.provo.novell.com>
+	 <1294081596.3948.192.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 03 Jan 2011 15:22:27 -0500
+Message-ID: <1294086147.3948.194.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Df-Sender: lists@steffen-moser.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joerg,
+On Mon, 2011-01-03 at 14:06 -0500, Steven Rostedt wrote:
 
-On 01/03/2011 12:29 PM, Roedel, Joerg wrote:
-> On Tue, Dec 28, 2010 at 08:00:12PM -0500, Jeff Garzik wrote:
->> (CC'd linux-ide, Joerg)
->> 
->> On 12/28/2010 06:43 PM, Steffen Moser wrote:
->> > I've encountered a problem with my AMD 890FX based system
->> > and linux-2.6.35.10 (x86_64 platform).
->> >
->> > After activating the option "IOMMU" in the mainboard's BIOS
->> > setup, the onboard P-ATA controller "JMicron Technology Corp.
->> > JMB361 AHCI/IDE (rev 02)" puts itself back in the PIO mode.
->> > When loading the module, the kernel reports:
->> >
->> >    pata_jmicron 0000:06:00.1: BMDMA: failed to set dma mask, \
->> >                               falling back to PIO
->> [...]
->> > As soon as I deactivate IOMMU in BIOS setup, the P-ATA channel
->> > runs in the DMA mode again. The S-ATA controllers don't seem
->> > to be affected.
->> >
->> > My question is: Is this a known behavior? Are there any
->> > things I have to consider when activating IOMMU (which seems
->> > to be AMD-Vi) on an 890FX based system? Is it a problem of
->> > the chipset and/or the controller or is it related to a
->> > problem in the libata area?
->> >
->> > Some information about the affected system:
->> >
->> >  - Mainboard:    ASUS M4A89TD Pro/USB3
->> >  - BIOS version: 1101 (most recent version)
->> >  - Chipset:      AMD 890FX
->> >  - Processor:    AMD Phenom 1090T
->> >  - Memory:       4 x 4 GB (Kingston KVR1333D3E9S/4G)
->> >  - Distribution: openSUSE 11.3
->> >  - Kernel:       2.6.35.10 (from "kernel.org"), x86_64
->> >
->> 
->> This condition occurs when the PCI API cannot set the PCI device's DMA 
->> mask to the 32-bit value
->> 	#define ATA_DMA_MASK            0xffffffffULL
->> 
->> That is an unusual failure for such a modern system, which certainly can 
->> handle 32-bit masks like that, one would think.
 > 
-> Luckily I have exactly the same motherboard under my desk. It shows the
-> same issue. The problem is that the PCI device of the PATA controler
-> (4:00.1 in my case) is not described in the IVRS ACPI table. So the
-> IOMMU driver does not feel responsible for it and the dma_supported()
-> call on this device will fail. This also makes pci_set_dma_mask() fail
-> on this device. So it comes down to a BIOS bug. 
+> 	if (adaptive_wait(&waiter, orig_owner))
+> 		sleep = 1;
+> 	else
+> 		sleep = 0;
+> 
+> 	if (sleep)
 
-That sounds quite comprehensible for me.
 
-> I look into it to find a workaround.
+> 		raw_spin_lock(&lock->wait_lock);
+> 		saved_state = rt_set_current_block_state(saved_state);
+> 		if (!lock->owner && &waiter == rt_mutex_top_waiter(lock))
+> 			sleep = 0;
+> 		raw_spin_unlock(&lock->wait_lock);
 
-Thank you.
+I may be able to remove the above locks and replace it with:
 
-Beside a possible work-around, do you think, it makes sense to
-report the problem to ASUS as the straight way should be to have
-a correct IVRS table for the board?
+	saved_state = rt_set_current_blocked_state(saved_state);
+	if (orig_owner == rt_mutex_owner(lock))
+		schedule_rt_mutex(lock);
 
-Kind regards,
-Steffen
+-- Steve
+
+
+> 		if (sleep)
+> 			schedule_rt_mutex(lock);
+> 		saved_state = rt_restore_current_blocked_state(saved_state);
+> 	}
+> 
+> Otherwise we can risk the wakeup_next_waiter() missing the wakeup.
+> 
+> To clarify, we want the adaptive_wait() to run as TASK_RUNNING. Then if
+> we must sleep, then we must set the state to TASK_UNINTERRUPTIBLE, test
+> again if we can still the lock, and if not then sleep. Otherwise, if a
+> wakeup happens just before we set the state to TASK_UNINTERRUPTIBLE,
+> then we miss the wake up all together.
+> 
+> I can do this change, and see what impact it makes.
+> 
+> I'm also curious if this ever worked? If it did not, then are you sure
+> your tests that show the benefit of it was true. I don't have a large
+> scale box at my disposal ATM, so I can only see what this does on 4way
+> machines.
+> 
+> -- Steve
+> 
+
+
