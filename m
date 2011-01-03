@@ -1,43 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442Ab1ACRPc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 12:15:32 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53119 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750895Ab1ACRPb (ORCPT
+	id S932136Ab1ACRVP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 12:21:15 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:61096 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753203Ab1ACRVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 12:15:31 -0500
-Date: Mon, 3 Jan 2011 17:14:52 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Rodolfo Giometti <giometti@linux.it>
-Cc: linux-kernel@vger.kernel.org, Russell Coker <russell@coker.com.au>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH] char nvtty: Network Virtual Terminal support
-Message-ID: <20110103171452.5e258743@lxorguk.ukuu.org.uk>
-In-Reply-To: <1294067735-21466-2-git-send-email-giometti@linux.it>
-References: <1294067735-21466-1-git-send-email-giometti@linux.it>
-	<1294067735-21466-2-git-send-email-giometti@linux.it>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Jan 2011 12:21:14 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=message-id:from:date:to:reply-to:cc:subject;
+        b=IAzY614EElBWUDt48TctQuWVirpzVVWJtQLETnMb57J5qaNCE8e8BIjl2V4K76NEJS
+         u//lKSYsysWZ/fFg3FEg==
+Message-ID: <4d220584.4902d90a.23e4.0c78@mx.google.com>
+From: Stephane Eranian <eranian@google.com>
+Date: Mon, 3 Jan 2011 18:20:01 +0200
+To: linux-kernel@vger.kernel.org
+Reply-to: eranian@google.com
+Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
+        eranian@google.com, robert.richter@amd.com, acme@redhat.com,
+        lizf@cn.fujitsu.com
+Subject: [PATCH 0/5] perf_events: add support for per-cpu per-cgroup monitoring (v7)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> By using these devices and a proper compatible server (not included
-> here but you can use sredird) you can get access to a remote tty
-> device as the tty device itself was conneted with your local host.
-> All data and settings are sent and received through the network.
+This series of patches adds per-container (cgroup) filtering capability
+to per-cpu monitoring. In other words, we can monitor all threads belonging
+to a specific cgroup and running on a specific CPU. 
 
-Interesting but would it not be better to keep all the network stuff in
-user space given that most sane environments will have crypto on them ?
+This is useful to measure what is going on inside a cgroup. Something that
+cannot easily and cheaply be achieved with either per-thread or per-cpu mode.
+Cgroups can span multiple CPUs. CPUs can be shared between cgroups. Cgroups
+can have lots of threads. Threads can come and go during a measurement.
 
-It's also a less than ideal protocol in that it can't represent some of
-the things termios can, nor can it report arbitary speeds properly.
+To measure per-cgroup today requires using per-thread mode and attaching to
+all the current threads inside a cgroup and tracking new threads. That would
+require scanning of /proc/PID, which is subject to race conditions, and
+creating an event for each thread, each event requiring kernel memory.
 
-Is there a reason it couldn't use pty/tty pairs either as is or tweaked
-to better report termios changes and allow modem line reporting ?
+The approach taken by this patch is to leverage the per-cpu mode by simply
+adding a filtering capability on context switch only when necessary. That
+way the amount of kernel memory used remains bound by the number of CPUs.
+We also do not have to scan /proc. We are only interested in cgroup level
+counts, samples and not thread level.
 
-Alan
+The cgroup to monitor is designated by passing a file descriptor opened
+on the cgroup directory name in the cgroup filesystem. The cgroup mode
+is activated by passing a flag value in the perf_event syscall.
+
+The patch also includes changes to the perf tool to make use of cgroup
+filtering. Both perf stat and perf record have been extended to support
+cgroup via a new -G option. The cgroup is specified per event:
+
+$ perf stat -B -a -e cycles:u,cycles:u,cycles:u -G test1,,test2 -- sleep 1
+ Performance counter stats for 'sleep 1':
+
+      2,368,667,414  cycles                   test1
+      2,369,661,459  cycles                  
+      <not counted>  cycles                   test2
+
+        1.001856890  seconds time elapsed
+
+Here, we measure cycles in 3 different cgroups. When a cgroup is omitted,
+the "root" cgroup is used, i.e., all threads executing on the monitored
+CPUs are measured.
+
+In the second version, time tracking has been updated. In cgroup mode,
+time_enabled tracks the time during which the cgroup was active, i.e., threads
+from the cgroup executed on the monitored CPU. The meaning of time_running
+is unchanged. In non-cgroup mode, time_enabled still tracks wall-clock time
+for per-cpu events. Here is an example:
+
+In one shell, I do:
+$ echo $$ >/cgroup/test1/perf_events.perf
+$ taskset -c 1 noploop 600
+
+In another shell, I do:
+$ taskset -c 1 noploop 600
+
+Both noploops are competing on CPU1 (part of cgroup test1)
+
+$ perf stat -B -a -e cycles:u,cycles:u,cycles:u -G test1,,test2 -- sleep 1
+ Performance counter stats for 'sleep 1':
+
+      1,190,595,954  cycles                   test1
+      2,372,471,023  cycles                  
+      <not counted>  cycles                   test2
+
+        1.001845567  seconds time elapsed
+
+The second count reflects activity across all CPUs and cgroups.
+The first count reflects what happened inside cgroup test1. As shown,
+the noploop running inside test1, only got half the CPU cycles.
+
+In the third version, we have dropped dependency on NR_CPUS
+in favor of dynamic allocation with alloc_percpu(). We have
+also renamed get_event_time() to something more explicit:
+perf_event_time(). We cleaned the code so it compiles with
+CONFIG_CGROUPS disabled. We have also fixed a bug in the
+perf tool sampling module builtin-record.c
+
+In this fourth version, we have dropped changes to perf_event_attr.
+Instead we pass the cgroup file descriptor in the pid argument to
+the syscall and we active cgroup mode by passing PERF_FLAG_PID_CGROUP
+into flags.
+
+The fifth version updates the patch to 2.6.37-rc2 and contains improved
+time tracking support. Several bug fixes and cleanups. Context switch
+impact is also mitigated with dynamic jump labels.
+
+The sixth version breaks the series of patches into 5 parts and
+also updates the patch to 2.6.37-rc4-tip. It also includes a few
+bug fixes.
+
+In the seventh version, we upate the patch to 2.6.37-rc8-tip, and
+cleanup the code some more based on LKML comments. This patch adds
+a CONFIG_CGROUP_PERF option dependent on PERF_EVENTS && CGROUPS.
+
+PATCH 0/5: introduction
+PATCH 1/5: move code around
+PATCH 2/5: generalize use of event_filter_match()
+PATCH 3/5: add perf_event_time()
+PATCH 4/5: actual cgroup support
+PATCH 5/5: perf tool changes for cgroup
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
