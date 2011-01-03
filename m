@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab1ACCvo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Jan 2011 21:51:44 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46293 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752513Ab1ACCvn (ORCPT
+	id S1753730Ab1ACDqr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Jan 2011 22:46:47 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44339 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753442Ab1ACDqq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Jan 2011 21:51:43 -0500
+	Sun, 2 Jan 2011 22:46:46 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ToxM6QcLmeVLLCHlvc/alAft/xrZaorUdeChWRmoFRXYzwilPRv0bC6fFwaC8YtrhY
-         mPIJeFVC50d/peEZuVSQUyWJG1zO5jz3z+ZQ90jatPNEfbTrjfHCDomnDfb4tp8IddJb
-         4WPSBmGOpAelTYfh7W+RRWCycUf4nJFcWe+Gg=
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: dilinger@queued.net, sameo@linux.intel.com, akpm@linux-foundation.org,
-        tj@kernel.org, joe@perches.com, linux-kernel@vger.kernel.org
-Cc: Sedat Dilek <sedat.dilek@gmail.com>
-Subject: [PATCH] misc/cs5535: Fix section mismatch derived from cs5535_mfgpt_drv variable
-Date: Mon,  3 Jan 2011 03:51:28 +0100
-Message-Id: <1294023088-31687-1-git-send-email-sedat.dilek@gmail.com>
-X-Mailer: git-send-email 1.7.4.rc0
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=e+YN3eJktCQikTPppDVuIGYUwMsPrOuQ5902cykRfiSDXBL9zsoUIHJg+Qqr4ebpgJ
+         sAsQDeGWSKVLIBYTlIUSGSMmAbSrOBXNnM2lwFBW9NoT1kzMUWSsqlOwLGy7QIiaOU9e
+         w4L6nP3SZc+06NnIpf3UH2IqWWbGuKDChgsXg=
+MIME-Version: 1.0
+In-Reply-To: <E1PZXeb-0004AV-2b@tytso-glaptop>
+References: <E1PZXeb-0004AV-2b@tytso-glaptop>
+Date: Mon, 3 Jan 2011 12:46:45 +0900
+Message-ID: <AANLkTi=9ZNk6w8PxvveWHy5+okfTyKUj3L2ywFOuFjoq@mail.gmail.com>
+Subject: Re: Should we be using unlikely() around tests of GFP_ZERO?
+From: Minchan Kim <minchan.kim@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From my build.log:
+On Mon, Jan 3, 2011 at 8:48 AM, Theodore Ts'o <tytso@mit.edu> wrote:
+>
+> Given the patches being busily submitted by trivial patch submitters to
+> make use kmem_cache_zalloc(), et. al, I believe we should remove the
+> unlikely() tests around the (gfp_flags & __GFP_ZERO) tests, such as:
+>
+> -       if (unlikely((flags & __GFP_ZERO) && objp))
+> +       if ((flags & __GFP_ZERO) && objp)
+>                memset(objp, 0, obj_size(cachep));
+>
+> Agreed?  If so, I'll send a patch...
 
-WARNING: drivers/misc/cs5535-mfgpt.o(.data+0x0): Section mismatch in reference from the variable cs5535_mfgpt_drv to the function .devinit.text:cs5535_mfgpt_probe()
-The variable cs5535_mfgpt_drv references
-the function __devinit cs5535_mfgpt_probe()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console,
+I support it.
 
-This patch fixes the warning.
+Recently Steven tried to gather the information.
+http://thread.gmane.org/gmane.linux.kernel/1072767
+Maybe he might have a number for that.
 
-Tested with linux-next (next-20101231)
 
-Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
----
- drivers/misc/cs5535-mfgpt.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+>
+>                                                - Ted
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom policy in Canada: sign http://dissolvethecrtc.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
 
-diff --git a/drivers/misc/cs5535-mfgpt.c b/drivers/misc/cs5535-mfgpt.c
-index d02d302..d80bd14 100644
---- a/drivers/misc/cs5535-mfgpt.c
-+++ b/drivers/misc/cs5535-mfgpt.c
-@@ -329,7 +329,7 @@ done:
- 	return err;
- }
- 
--static struct platform_driver cs5535_mfgpt_drv = {
-+static struct platform_driver cs5535_mfgpt_drv __refdata = {
- 	.driver = {
- 		.name = DRV_NAME,
- 		.owner = THIS_MODULE,
+
+
 -- 
-1.7.4.rc0
-
+Kind regards,
+Minchan Kim
