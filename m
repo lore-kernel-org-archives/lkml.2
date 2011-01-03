@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885Ab1ACKvl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 05:51:41 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64207 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111Ab1ACKvj (ORCPT
+	id S1753322Ab1ACK6S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 05:58:18 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:55973 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab1ACK6R convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 05:51:39 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=gI8hxRoUgArH04UFh6sw4qoAShu9XJ3s1We1CxYKiHTSTfXaJR95P29urLvCRMlWNz
-         7YkgBVmERymOmUGyohCowtI9303KRElPEUFv7tUKtik647VFJ9iaIbWBV8vFDrBkFyyp
-         I+lZFEPUjsQjoVF0T3zRrYX434CpUzzjAy3lw=
-Date: Mon, 3 Jan 2011 12:51:25 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
-        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
-        Krzysztof Halasa <khc@pm.waw.pl>, Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH V8 08/13] posix clocks: cleanup the CLOCK_DISPTACH macro
-Message-ID: <20110103115125.GA3231@riccoc20.at.omicron.at>
-References: <cover.1293820862.git.richard.cochran@omicron.at>
- <503cd1fa268867573001cfc9bb5681ee3b5b32fa.1293820862.git.richard.cochran@omicron.at>
- <1294046949.2016.36.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294046949.2016.36.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 3 Jan 2011 05:58:17 -0500
+Subject: Re: [PATCH 4/7] perf: Check if HT is supported and enabled
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        lkml <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <1293526288.2457.4.camel@minggr.sh.intel.com>
+References: <1293464211.2695.104.camel@localhost>
+	 <AANLkTimp9VgD4qhOVmq-k1Ckzti9eeV8pf6Jvt5YB6nx@mail.gmail.com>
+	 <1293526288.2457.4.camel@minggr.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 03 Jan 2011 11:58:32 +0100
+Message-ID: <1294052312.2016.50.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 03, 2011 at 10:29:09AM +0100, Peter Zijlstra wrote:
-> On Fri, 2010-12-31 at 20:15 +0100, Richard Cochran wrote:
-> > +#define CLOCK_DISPATCH(clock, call, arglist) dispatch_##call arglist
+On Tue, 2010-12-28 at 16:51 +0800, Lin Ming wrote:
+> > +static bool ht_enabled(int cpu)
+> > +{
+> > +       int total_logical_processors, total_cores;
+> > +       unsigned int eax, ebx, ecx, edx;
+> > +
+> > +       cpuid(1, &eax, &ebx, &ecx, &edx);
+> > +
+> > +       /* Bit 28 in EDX indicates if it's HT capable */
+> > +       if (!(edx & 0x10000000))
+> > +               return false;
+> > +
+> > +       total_logical_processors = (ebx >> 16) & 0xff;
+> > +
+> > +       ecx = 0;
+> > +       cpuid(4, &eax, &ebx, &ecx, &edx);
+> > +       total_cores = ((eax >> 26) & 0x3f) + 1;
+> > +
+> > +       /* Thread nums per core */
+> > +       return (total_logical_processors / total_cores) > 1;
+> > +}
+> > +
 > 
-> How about you run something like:
+> This function can be simplified as below,
 > 
->  :% s/CLOCK_DISPATCH([^,]*, \([^,]*\), \([^)]*)\))/dispatch_\1\2/g
+> static bool ht_enabled()
+> {
+>         if (!cpu_has(&boot_cpu_data, X86_FEATURE_HT))
+>                 return false;
 > 
-> and remove that cruft all together?
+>         return smp_num_siblings > 1;
+> }
+> 
+> But this still can't detect if HT is on or off.
+> smp_num_siblings is always 2 even if HT is disabled in BIOS.
+> 
+> Any idea how to detect if HT is on or not?
 
-Gladly ;^)
+Not quite sure, the intel docs aren't really clear on how the HW
+supports HT, has 2 siblings but BIOS disabled it thing works. I just
+tried reading the arch/x86 code but that only got me more confused.
 
-Richard
-
+hpa, could you comment?
