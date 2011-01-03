@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418Ab1ACNuu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 08:50:50 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:36659 "EHLO
+	id S932115Ab1ACNwO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 08:52:14 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58971 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755103Ab1ACNup (ORCPT
+	with ESMTP id S1755385Ab1ACNut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 08:50:45 -0500
+	Mon, 3 Jan 2011 08:50:49 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=Iw7HGz7+l5fQ7Dg1HwpOCFod6hlkU7CDuVu6cDxQ4xaQycUWvaAMtu92iheRr5yDw6
-         +GUIjGCQ0ii6B38mDaOZrHrK5vL1eXZWgKfilu/TJ+9YwGaydMYYugkRNpCayuXjQbI7
-         TsgBAlGHKdWfaBMhoatIZuLBdhYVXVM27GzDE=
+        b=cqoTGsFMiFOXrSsK0A3XaUlyaRoHeyoHDgot1tzN6aqrHiL5bPxqXcy1mIWmK/V85A
+         jCo1tZky+Yj78MMuj/8IwpWQOfzO6HTsVXQy97OerygZcgOcZoMGaCzsCG+p56b6Qm6H
+         +GIyWeh142GmlhWix/3lj4+5S4yLlqPIt8r+c=
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
-Subject: [PATCH 25/32] ext4: convert to alloc_workqueue()
-Date: Mon,  3 Jan 2011 14:49:48 +0100
-Message-Id: <1294062595-30097-26-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>, Alex Elder <aelder@sgi.com>,
+        xfs-masters@oss.sgi.com, Christoph Hellwig <hch@infradead.org>
+Subject: [PATCH 28/32] xfs: convert to alloc_workqueue()
+Date: Mon,  3 Jan 2011 14:49:51 +0100
+Message-Id: <1294062595-30097-29-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1294062595-30097-1-git-send-email-tj@kernel.org>
 References: <1294062595-30097-1-git-send-email-tj@kernel.org>
@@ -28,41 +28,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert create_workqueue() to alloc_workqueue().  This is an identity
-conversion.
+Convert from create[_singlethread]_workqueue() to alloc_workqueue().
+
+* xfsdatad_workqueue and xfsconvertd_workqueue are identity converted.
+  Using higher concurrency limit might be useful but given the
+  complexity of workqueue usage in xfs, proceeding cautiously seems
+  better.
+
+* xfs_mru_reap_wq is converted to non-ordered workqueue with max
+  concurrency of 1 as the work items don't require any specific
+  ordering and already have proper synchronization.  It seems it was
+  singlethreaded to save worker threads, which is no longer a concern.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-ext4@vger.kernel.org
+Cc: Alex Elder <aelder@sgi.com>
+Cc: xfs-masters@oss.sgi.com
+Cc: Christoph Hellwig <hch@infradead.org>
 ---
-It might be helpful to use higher max concurrency.  I don't think it
-would make a lot of difference tho.  Please feel free to take it into
-the subsystem tree or simply ack - I'll route it through the wq tree.
+Only compile tested.  Please feel free to take it into the subsystem
+tree or simply ack - I'll route it through the wq tree.
 
 Thanks.
 
- fs/ext4/super.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+ fs/xfs/linux-2.6/xfs_buf.c |    5 +++--
+ fs/xfs/xfs_mru_cache.c     |    2 +-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index fb15c9c..f682c40 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -3495,7 +3495,12 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 	percpu_counter_set(&sbi->s_dirtyblocks_counter, 0);
+diff --git a/fs/xfs/linux-2.6/xfs_buf.c b/fs/xfs/linux-2.6/xfs_buf.c
+index 4c5deb6..d6da590 100644
+--- a/fs/xfs/linux-2.6/xfs_buf.c
++++ b/fs/xfs/linux-2.6/xfs_buf.c
+@@ -1944,11 +1944,12 @@ xfs_buf_init(void)
+ 	if (!xfslogd_workqueue)
+ 		goto out_free_buf_zone;
  
- no_journal:
--	EXT4_SB(sb)->dio_unwritten_wq = create_workqueue("ext4-dio-unwritten");
-+	/*
-+	 * The maximum number of concurrent works can be high and
-+	 * concurrency isn't really necessary.  Limit it to 1.
-+	 */
-+	EXT4_SB(sb)->dio_unwritten_wq =
-+		alloc_workqueue("ext4-dio-unwritten", WQ_MEM_RECLAIM, 1);
- 	if (!EXT4_SB(sb)->dio_unwritten_wq) {
- 		printk(KERN_ERR "EXT4-fs: failed to create DIO workqueue\n");
- 		goto failed_mount_wq;
+-	xfsdatad_workqueue = create_workqueue("xfsdatad");
++	xfsdatad_workqueue = alloc_workqueue("xfsdatad", WQ_MEM_RECLAIM, 1);
+ 	if (!xfsdatad_workqueue)
+ 		goto out_destroy_xfslogd_workqueue;
+ 
+-	xfsconvertd_workqueue = create_workqueue("xfsconvertd");
++	xfsconvertd_workqueue = alloc_workqueue("xfsconvertd",
++						WQ_MEM_RECLAIM, 1);
+ 	if (!xfsconvertd_workqueue)
+ 		goto out_destroy_xfsdatad_workqueue;
+ 
+diff --git a/fs/xfs/xfs_mru_cache.c b/fs/xfs/xfs_mru_cache.c
+index 45ce15d..2acdc77 100644
+--- a/fs/xfs/xfs_mru_cache.c
++++ b/fs/xfs/xfs_mru_cache.c
+@@ -309,7 +309,7 @@ xfs_mru_cache_init(void)
+ 	if (!xfs_mru_elem_zone)
+ 		goto out;
+ 
+-	xfs_mru_reap_wq = create_singlethread_workqueue("xfs_mru_cache");
++	xfs_mru_reap_wq = alloc_workqueue("xfs_mru_cache", WQ_MEM_RECLAIM, 1);
+ 	if (!xfs_mru_reap_wq)
+ 		goto out_destroy_mru_elem_zone;
+ 
 -- 
 1.7.1
 
