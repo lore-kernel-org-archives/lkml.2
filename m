@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753617Ab1ACVQg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 16:16:36 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:48811 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766Ab1ACVQf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 16:16:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=MuLCc6XStW137EAhTXO7yd33w5nwGtUQNhsA7icWNnikcBj3lpMwNbSBQo25FPQnqm
-         FryLby8YohY5xhtFVDvxug5WnUNp8qmvJwyozfCzEskMWF2a9hj1HwU+FNzle29DmHLH
-         fKgafU+26bSIK20T4wUe1UuebTQhd0sdnxZHw=
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20110103.115319.245401044.davem@davemloft.net>
-References: <1294021724-30337-1-git-send-email-sedat.dilek@gmail.com>
-	<20110103.115319.245401044.davem@davemloft.net>
-Date: Mon, 3 Jan 2011 22:16:34 +0100
-Message-ID: <AANLkTimB3CsS5EVK-KiU9=MfAV9+Gu0=fL4770WKpA0i@mail.gmail.com>
-Subject: Re: [PATCH] smsc-ircc2: Fix section mismatch derived from
- smsc_ircc_pnp_driver variable
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: David Miller <davem@davemloft.net>
-Cc: samuel@sortiz.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754040Ab1ACVQm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 16:16:42 -0500
+Received: from gherkin.frus.com ([192.158.254.49]:54054 "EHLO gherkin.frus.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753724Ab1ACVQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 16:16:39 -0500
+X-Greylist: delayed 1172 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Jan 2011 16:16:39 EST
+Date: Mon, 3 Jan 2011 14:57:05 -0600
+From: Bob Tracy <rct@gherkin.frus.com>
+To: linux-kernel@vger.kernel.org
+Subject: [BUG] 2.6.37-rc8 build failure on Alpha
+Message-ID: <20110103205705.GA24522@gherkin.frus.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 3, 2011 at 8:53 PM, David Miller <davem@davemloft.net> wrote:
-> From: Sedat Dilek <sedat.dilek@googlemail.com>
-> Date: Mon,  3 Jan 2011 03:28:44 +0100
->
->>>From my build.log:
->>
->> drivers/net/irda/smsc-ircc2.o(.data+0x18): Section mismatch in reference from the variable smsc_ircc_pnp_driver to the function .init.text:smsc_ircc_pnp_probe()
->> The variable smsc_ircc_pnp_driver references
->> the function __init smsc_ircc_pnp_probe()
->> If the reference is valid then annotate the
->> variable with __init* or __refdata (see linux/init.h) or name the variable:
->> *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console,
->>
->> This patch fixes the warning.
->>
->> Tested with linux-next (next-20101231)
->>
->> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
->
-> Just like your other patch, this fix is not correct.
->
-> Mark smsc_ircc_pbp_probe() as __devinit instead of __init to fix
-> this bug.
->
+This probably happened before -rc8, but was not an issue for 2.6.36.
 
-I have sent a new fixed version.
+The 2.6.37-rc8 kernel build on alpha fails as follows:
 
-- Sedat -
+(...)
+  LD      usr/built-in.o
+  AS      arch/alpha/kernel/entry.o
+  CC      arch/alpha/kernel/traps.o
+cc1: warnings being treated as errors
+In file included from /usr/src/linux-2.6/arch/alpha/include/asm/mmu_context.h:22,
+                 from arch/alpha/kernel/traps.c:26:
+/usr/src/linux-2.6/arch/alpha/include/asm/io.h: In function '__set_hae':
+/usr/src/linux-2.6/arch/alpha/include/asm/io.h:41: error: 'arch_local_irq_save' is static but used in inline function '__set_hae' which is not static
+/usr/src/linux-2.6/arch/alpha/include/asm/io.h:49: error: 'arch_local_irq_restore' is static but used in inline function '__set_hae' which is not static
+make[1]: *** [arch/alpha/kernel/traps.o] Error 1
+make: *** [arch/alpha/kernel] Error 2
+
+--Bob
+rct_at_frus_dot_com
