@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232Ab1ACOWr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 09:22:47 -0500
-Received: from 26.mail-out.ovh.net ([91.121.27.225]:42411 "HELO
-	26.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754784Ab1ACOWp (ORCPT
+	id S1755141Ab1ACO0j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 09:26:39 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:53537 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754762Ab1ACO0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 09:22:45 -0500
-Message-ID: <4D21DBB0.1080007@example.com>
-Date: Mon, 03 Jan 2011 15:22:40 +0100
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: GIT question - am I doing it correctly?
-References: <4D1B6066.9000701@example.com> <20110103134807.GA3911@tiehlicka.suse.cz>
-In-Reply-To: <20110103134807.GA3911@tiehlicka.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 15834656291108974861
-X-Ovh-Remote: 178.42.67.78 (afmp78.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	Mon, 3 Jan 2011 09:26:38 -0500
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=4pdSCqo9-bIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=BJ3IY8WxZl4q7xCdmVUA:9 a=13c7ghXJcTpyIVSOn4ACf-SKUfUA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: Should we be using unlikely() around tests of GFP_ZERO?
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Minchan Kim <minchan.kim@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        David Rientjes <rientjes@google.com>, npiggin@kernel.dk
+In-Reply-To: <AANLkTik9VodSjNnubf4Psbb9TgOEufw0m2q1_e5+X165@mail.gmail.com>
+References: <E1PZXeb-0004AV-2b@tytso-glaptop>
+	 <AANLkTi=9ZNk6w8PxvveWHy5+okfTyKUj3L2ywFOuFjoq@mail.gmail.com>
+	 <AANLkTinz52Ky5BhU-gHq8vx9=1uoN+iuDn1f0C8fnSjQ@mail.gmail.com>
+	 <1294062351.3948.7.camel@gandalf.stny.rr.com>
+	 <AANLkTik9VodSjNnubf4Psbb9TgOEufw0m2q1_e5+X165@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 03 Jan 2011 09:26:36 -0500
+Message-ID: <1294064796.3948.12.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03.01.2011 14:48, Michal Hocko wrote:
-> On Wed 29-12-10 17:23:02, Piotr Hosowicz wrote:
->> Hello,
->
-> Hi,
->
->>
->> Everytime I git pull tyhe Linus' sources but before I build I apply
->> Peter Zijlstra's fixes, Takashi Iwai's sources and Dave Miller's
->> sources. The sequence is:
->>
->> # the Linus' sources
->> git pull
->>
->> # external sources
->> git remote add some_name git://some_URL.git
->>
->> # update
->> git remote update
->>
->> Then configure and I build. I noticed that especially Peter's
->> git-update very quickly, not as long as they did before.
->>
->> Is my procedure correct? I am new to GIT.
->
-> What do you want to achieve? You want to build the tree that you have
-> added as a remote? If yes then you need to checkout a branch from that
-> remote
->
-> git checkout -b your_branch_name some_name/branch_you_want
->
-> then you will have a new your_branch_name which points to the tip of the
-> remote's branch and you can configure and make the tree.
->
-> Please note that 'git remote add&&  git remote update' will just add
-> commits from that remote tree and it doesn't affect your local copy
-> anyhow.
+On Mon, 2011-01-03 at 16:10 +0200, Pekka Enberg wrote:
 
-Well, this is exactly answer to my question, but it is straghtly 
-contrary to what Peter Zijlstra wrote me. Well, I'll build the kernel 
-now your way.
+> >  correct incorrect  %        Function                  File              Line
+> >  ------- ---------  -        --------                  ----              ----
+> >  6890998  2784830  28        slab_alloc                slub.c            1719
+> >
+> > That's incorrect 28% of the time.
+> 
+> Thanks! AFAICT, that number is high enough to justify removing the
+> unlikely() annotations, no?
 
-> If you are new to GIT I would strongly encourage you to read through the
-> following ebook: http://progit.org/book/
+Personally, I think anything that is incorrect more that 5% of the time
+should not have any annotation.
 
-I'am new. Thanks for the URL.
+My rule is to use the annotation when a branch goes one way 95% or more.
+With the exception of times when we want a particular path to be the
+faster path, because we know its in a more critical position (as there
+are cases in the scheduler and the tracing infrastructure itself).
 
-Regards,
+But here, I think removing it is the right decision.
 
-Piotr Hosowicz
+-- Steve
 
--- 
-- Za moich czasów to w sklepach by³ tylko ocet i denaturat!
-- Tato, przestañ, ¿e w ca³ym Tesco by³ tylko ocet i denaturat!
-NP: Peter Green Splinter Group - I Can't Help Myself
-NB: 2.6.37-rc8-git3
+
