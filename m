@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876Ab1ACVT0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 16:19:26 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46630 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751330Ab1ACVTZ (ORCPT
+	id S1753488Ab1ACVWa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 16:22:30 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47799 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064Ab1ACVW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 16:19:25 -0500
-Date: Mon, 3 Jan 2011 13:19:11 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jeff Moyer <jmoyer@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] compat: fix use of an uninitialized variable in
- compat_sys_io_setup()
-Message-Id: <20110103131911.c1c2adf6.akpm@linux-foundation.org>
-In-Reply-To: <1293182186-23462-1-git-send-email-namhyung@gmail.com>
-References: <1293182186-23462-1-git-send-email-namhyung@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Jan 2011 16:22:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=eHKW+PDyzPDAx2u8+1wKgaQGMTTjPO3z3++oDlD92qBqlJXP2jqcPxu/hJHzuEL8iD
+         oB+p+m/wkImyzSe9ALtaiY9s66yGK8RXUNJRq80zwpmrlNCALBVgEURL1/Om+asJQz2w
+         0WY31+ILetbWPoFtB+zX9YLFL7Frf/DJ2mUXY=
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net
+Cc: Sedat Dilek <sedat.dilek@gmail.com>
+Subject: [PATCH] depca: Fix section mismatch derived from depca_isa_probe()
+Date: Mon,  3 Jan 2011 22:22:15 +0100
+Message-Id: <1294089735-3031-1-git-send-email-sedat.dilek@gmail.com>
+X-Mailer: git-send-email 1.7.4.rc0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Dec 2010 18:16:26 +0900
-Namhyung Kim <namhyung@gmail.com> wrote:
+This fixes the following warning:
 
-> The upper bytes of ctx64 might contain garbages because it was
-> set by get_user() which copied only lower 4 bytes as its second
-> argument points to. Since sys_io_setup() requires its argumet
-> is properly initialized to 0 we should set it explicitly.
-> 
-> On x86, this was not a problem since its implementation of
-> get_user() does a C assignment so that it can fill upper bytes
-> with 0's. But other archs that use __get_user_asm() or something
-> might have a problem.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> Cc: Jeff Moyer <jmoyer@redhat.com>
-> ---
->  fs/compat.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/compat.c b/fs/compat.c
-> index 4376e07febbb..b074e9f79148 100644
-> --- a/fs/compat.c
-> +++ b/fs/compat.c
-> @@ -526,7 +526,7 @@ asmlinkage long
->  compat_sys_io_setup(unsigned nr_reqs, u32 __user *ctx32p)
->  {
->  	long ret;
-> -	aio_context_t ctx64;
-> +	aio_context_t ctx64 = 0;
->  
->  	mm_segment_t oldfs = get_fs();
->  	if (unlikely(get_user(ctx64, ctx32p)))
+WARNING: drivers/net/depca.o(.data+0x0): Section mismatch in reference from the variable depca_isa_driver to the function .init.text:depca_isa_probe()
+The variable depca_isa_driver references
+the function __init depca_isa_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or name the variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console,
 
-Well.  What _should_ a get_user(some_u64, some_u32*) do to `some_u64'?
+Tested with linux-next (next-20101231)
 
-I don't recall it coming up before but I'd say that the sane, expected
-and certainly *safe* behaviour would be for the implementation to zero
-out the upper 32 bits of `some_u64'.
+Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+---
+ drivers/net/depca.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-If that's the rule then those architectures need fixing.  Did you have
-any architectures in mind?
+diff --git a/drivers/net/depca.c b/drivers/net/depca.c
+index 91b3846..1b48b68 100644
+--- a/drivers/net/depca.c
++++ b/drivers/net/depca.c
+@@ -1513,7 +1513,7 @@ static enum depca_type __init depca_shmem_probe (ulong *mem_start)
+ 	return adapter;
+ }
+ 
+-static int __init depca_isa_probe (struct platform_device *device)
++static int __devinit depca_isa_probe (struct platform_device *device)
+ {
+ 	struct net_device *dev;
+ 	struct depca_private *lp;
+-- 
+1.7.4.rc0
 
