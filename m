@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013Ab1ACOUa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 09:20:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32395 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754785Ab1ACOU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 09:20:29 -0500
-Subject: Re: [PATCH 24/32] dlm: dlm workqueues aren't used in memory
- reclaim path
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Christine Caulfield <ccaulfie@redhat.com>,
-        David Teigland <teigland@redhat.com>, cluster-devel@redhat.com
-In-Reply-To: <20110103140107.GP18831@htj.dyndns.org>
-References: <1294062595-30097-1-git-send-email-tj@kernel.org>
-	 <1294062595-30097-25-git-send-email-tj@kernel.org>
-	 <1294063107.2429.34.camel@dolmen>  <20110103140107.GP18831@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Mon, 03 Jan 2011 14:21:29 +0000
-Message-ID: <1294064489.2429.58.camel@dolmen>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932071Ab1ACOVH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 09:21:07 -0500
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:49170 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754847Ab1ACOVG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 09:21:06 -0500
+Date: Mon, 3 Jan 2011 15:17:28 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Yegor Yefremov <yegorslists@googlemail.com>
+Cc: rpurdie@rpsys.net, lenz@cs.wisc.edu,
+        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
+        Cyril Hrubis <metan@ucw.cz>, thommycheck@gmail.com,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
+        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
+        Marek Vasut <marek.vasut@gmail.com>, gregkh@suse.de
+Subject: Re: zaurus bluetooth regression
+Message-ID: <20110103141727.GA1536@ucw.cz>
+References: <20110102204532.GA12860@elf.ucw.cz>
+ <20110102203023.GA1545@ucw.cz>
+ <AANLkTika7HAEc+BbqSnbo8viUt4nOqoeB69qWZs85-9s@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTika7HAEc+BbqSnbo8viUt4nOqoeB69qWZs85-9s@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi!
 
-On Mon, 2011-01-03 at 15:01 +0100, Tejun Heo wrote:
-> On Mon, Jan 03, 2011 at 01:58:27PM +0000, Steven Whitehouse wrote:
-> > Hi,
-> > 
-> > You already acked a patch to do this, which is in the DLM git tree,
-> > waiting for the next merge window:
-> > 
-> > http://git.kernel.org/?p=linux/kernel/git/teigland/dlm.git;a=commitdiff;h=dcce240ead802d42b1e45ad2fcb2ed4a399cb255
+> >> It seems this commit
+> >>
+> >> commit 7a56aa45982bb87bfca98a2832b5ae782c03364a
+> > ...
+> >> ...is responsible for my bluetooth problems on zaurus -- at least
+> >> bisect pointed to it,  as I use 16C950-based bluetooth card, it seems
+> >> very logical. I'll try 2.6.37-rc8 with that patch reverted...
+> >>
+> >
+> > And yes, 37-rc8 with that reverted results in working bluetooth, so
+> > yrs, that patch is responsible.
 > 
-> Ooh, I see.  Hmmm... maybe I've asked this before but do you really
-> need WQ_MEM_RECLAIM there?  Is dlm used during memory reclaim?
-> 
-> Thanks.
-> 
+> could you tell, what kind of problem you're encountering and if you
+> could tell, which flag UART_CAP_EFR or UART_CAP_SLEEP causes the
+> problem?
 
-Yes, it is in case of deallocation of inodes, so we have to be careful
-about that,
+Bluetooth will not work with 'tx command timeout', details should be
+in bugzilla.
 
-Steve.
+CAP_EFR seems to cause the problem.
+								Pavel
 
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
