@@ -1,36 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478Ab1ACPVX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 10:21:23 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:49340 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755270Ab1ACPVV (ORCPT
+	id S1755444Ab1ACP2y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 10:28:54 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:56480 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755385Ab1ACP2x convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 10:21:21 -0500
-Date: Mon, 3 Jan 2011 16:21:20 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        lkml <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 4/7] perf: Check if HT is supported and enabled
-Message-ID: <20110103152120.GC25713@one.firstfloor.org>
-References: <1293464211.2695.104.camel@localhost> <AANLkTimp9VgD4qhOVmq-k1Ckzti9eeV8pf6Jvt5YB6nx@mail.gmail.com> <1293526288.2457.4.camel@minggr.sh.intel.com> <1294052312.2016.50.camel@laptop>
+	Mon, 3 Jan 2011 10:28:53 -0500
+Subject: Re: [PATCH UPDATED] workqueue: relax lockdep annotation on
+ flush_work()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110103152017.GV18831@htj.dyndns.org>
+References: <20101229125711.GL488@htj.dyndns.org>
+	 <1294047091.2016.38.camel@laptop> <20110103141735.GQ18831@htj.dyndns.org>
+	 <1294066490.2016.81.camel@laptop> <20110103150052.GU18831@htj.dyndns.org>
+	 <1294067685.2016.83.camel@laptop>  <20110103152017.GV18831@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 03 Jan 2011 16:29:05 +0100
+Message-ID: <1294068545.2016.85.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294052312.2016.50.camel@laptop>
-User-Agent: Mutt/1.4.2.2i
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Not quite sure, the intel docs aren't really clear on how the HW
-> supports HT, has 2 siblings but BIOS disabled it thing works. I just
-> tried reading the arch/x86 code but that only got me more confused.
+On Mon, 2011-01-03 at 16:20 +0100, Tejun Heo wrote:
+> On Mon, Jan 03, 2011 at 04:14:45PM +0100, Peter Zijlstra wrote:
+> > > Hmmm?  The code applies the most strict contraints.  If the workqueue
+> > > has a rescuer, flushing another work from the workqueue will always
+> > > trigger lockdep warning.  The rule is relaxed only for workqueues
+> > > which aren't used for memory reclaiming && support parallel execution.
+> > 
+> > Ah, ok. I read it like: if the current thread is a rescue thread.
+> 
+> Ah, I see.  Rafael, can you please verify the updated version is okay
+> too (it should be but just in case)?  Peter, shall I route this
+> through workqueue tree with your ack?
 
-... or you just keep the original code which works fine in any case
-without this.
-
--Andi
+That's fine with me, thanks!
