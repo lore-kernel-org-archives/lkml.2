@@ -1,56 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab1ACHpl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 02:45:41 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:45225 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751127Ab1ACHpj (ORCPT
+	id S1753524Ab1ACICA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 03:02:00 -0500
+Received: from mx3.schottelius.org ([77.109.138.221]:53295 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751778Ab1ACIB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 02:45:39 -0500
-Date: Mon, 3 Jan 2011 08:45:27 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Tim Bird <tim.bird@am.sony.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 01/16 v5] pramfs: documentation
-Message-ID: <20110103074526.GA2687@ucw.cz>
-References: <4D0A5377.1020007@gmail.com>
+	Mon, 3 Jan 2011 03:01:59 -0500
+Date: Mon, 3 Jan 2011 09:03:03 +0100
+From: Nico Schottelius <nico-linux-20100709@schottelius.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: stable@kernel.org, linux-kernel@vger.kernel.org, stable-review@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Nico Schottelius <nico-linux-20100709@schottelius.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Florian Pritz <flo@xssn.at>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Len Brown <lenb@kernel.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [34-longterm 078/260] x86, tsc: Fix a preemption leak in
+ restore_sched_clock_state()
+Message-ID: <20110103080301.GC3611@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-linux-20100709@schottelius.org>,
+	Paul Gortmaker <paul.gortmaker@windriver.com>, stable@kernel.org,
+	linux-kernel@vger.kernel.org, stable-review@kernel.org,
+	Peter Zijlstra <peterz@infradead.org>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	Jesse Barnes <jbarnes@virtuousgeek.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Florian Pritz <flo@xssn.at>,
+	Suresh Siddha <suresh.b.siddha@intel.com>,
+	Len Brown <lenb@kernel.org>, Ingo Molnar <mingo@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7iMSBzlTiPOCCT2k"
 Content-Disposition: inline
-In-Reply-To: <4D0A5377.1020007@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1293952756-15010-79-git-send-email-paul.gortmaker@windriver.com>
+ <20110102101721.GA2277@schottelius.org>
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: kr (Linux 2.6.36-ARCH x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
 
-> +But the disk-based fs over non-volatile RAM block driver approach has
-> +some drawbacks:
-> +
-> +1. Complexity of disk-based fs: disk-based filesystems such as ext2/ext3/ext4
-> +   were designed for optimum performance on spinning disk media, so they
-> +   implement features such as block groups, which attempts to group inode data
-> +   into a contiguous set of data blocks to minimize disk seeking when accessing
-> +   files. For RAM there is no such concern; a file's data blocks can be
+--7iMSBzlTiPOCCT2k
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, and they are also used on 99% of machines out there -> well
-debugged.
+Good morning,
 
-Is there fsck for pramfs available, for example?
+Paul Gortmaker [Sun, Jan 02, 2011 at 02:16:14AM -0500]:
+> From: Peter Zijlstra <peterz@infradead.org>
+>=20
+> commit 55496c896b8a695140045099d4e0175cf09d4eae upstream.
+>=20
+> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+> index c65f741..4094ae0 100644
+> --- a/arch/x86/kernel/tsc.c
+> +++ b/arch/x86/kernel/tsc.c
+> @@ -655,7 +655,7 @@ void restore_sched_clock_state(void)
+> =20
+>  	local_irq_save(flags);
+> =20
+> -	get_cpu_var(cyc2ns_offset) =3D 0;
+> +	__get_cpu_var(cyc2ns_offset) =3D 0;
+>  	offset =3D cyc2ns_suspend - sched_clock();
 
-> +   This increases the efficient use of space on the media, i.e. more
-> +   space is dedicated to actual file data storage and less to meta-data
-> +   needed to maintain that file data.
+If I see that correctly, this has already been merged before
+2.6.37-rc7. As 2.6.37-rc7 again has the dark screen issue [0]
+I assume this does not fix this issue.
 
-So... how big is overhead of pramfs compared to ext2?
+I am compiling v2.6.37-rc8-33-gb518a64 right now, to give it
+a try.
 
-Can pramfs handle powerdown at arbitrary time?
+Cheers,
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Nico
+
+[0]: Subject: 2.6.37-rc7: screen black after several suspends
+
+
+--=20
+PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+
+--7iMSBzlTiPOCCT2k
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk0hgrUACgkQ19zI5DGHffA/cACg3v62+wL8umaLiQlDIOb5mC35
+qJEAoLmV4xrOFDdevNu+bXJDsWotBrKg
+=hdyv
+-----END PGP SIGNATURE-----
+
+--7iMSBzlTiPOCCT2k--
