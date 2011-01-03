@@ -1,351 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407Ab1ACQva (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 11:51:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49479 "EHLO mx2.suse.de"
+	id S1755466Ab1ACQyB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 11:54:01 -0500
+Received: from shutemov.name ([188.40.19.243]:50826 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932359Ab1ACQu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 11:50:59 -0500
-From: Thomas Renninger <trenn@suse.de>
-Cc: Thomas Renninger <trenn@suse.de>, Ingo Molnar <mingo@elte.hu>,
-        Jean Pihet <jean.pihet@newoldbits.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, rjw@sisk.pl,
-        linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org
-Subject: [PATCH 2/3] perf: Clean up power events
-Date: Mon,  3 Jan 2011 17:50:44 +0100
-Message-Id: <1294073445-14812-3-git-send-email-trenn@suse.de>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1294073445-14812-1-git-send-email-trenn@suse.de>
-References: <1294073445-14812-1-git-send-email-trenn@suse.de>
-To: j-pihet@ti.com, mingo@elte.hu, linux-kernel@vger.kernel.org, trenn@suse.de
+	id S1754197Ab1ACQx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 11:53:58 -0500
+Date: Mon, 3 Jan 2011 18:53:57 +0200
+From: "Kirill A. Shutemov" <kas@openvz.org>
+To: "Kirill A. Shutemov" <kas@openvz.org>
+Cc: Rob Landley <rlandley@parallels.com>, Rob Landley <rob@landley.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 00/12] make rpc_pipefs be mountable multiple time
+Message-ID: <20110103165357.GA32196@shutemov.name>
+References: <AANLkTi=AXz21wDeE1vPVD-6cEtj6faXN9x09eHDCsTkB@mail.gmail.com>
+ <20101230085139.GA29697@shutemov.name>
+ <4D1C4C7C.6050606@parallels.com>
+ <20101230094433.GB29697@shutemov.name>
+ <4D1C5953.6020200@parallels.com>
+ <20101230104416.GA31824@shutemov.name>
+ <AANLkTim2QrkSW0HufD5wp=-8ikwydN5SUS+fdWK6JHqb@mail.gmail.com>
+ <20101230114514.GA31976@shutemov.name>
+ <4D1C809B.30405@parallels.com>
+ <20101231130329.GA3610@shutemov.name>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101231130329.GA3610@shutemov.name>
+User-Agent: Mutt/1.5.20 (2010-08-04)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add these new power trace events:
+On Fri, Dec 31, 2010 at 03:03:29PM +0200, Kirill A. Shutemov wrote:
+> On Thu, Dec 30, 2010 at 06:52:43AM -0600, Rob Landley wrote:
+> > On 12/30/2010 05:45 AM, Kirill A. Shutemov wrote:
+> > > Currently, there is no association between rpc_pipefs and mount namespace,
+> > 
+> > There is in that the root context doesn't need to have this mounted, and 
+> > new namespaces do.  So there's an existing association between a LACK of 
+> > a namespace and a different default behavior.
+> >
+> > My understanding (correct me if I'm wrong) is that the historical 
+> > behavior is that there's only one, and it doesn't actually live anywhere 
+> > in the filesystem tree.  You're adding a special location.  I'm 
+> > wondering if there's any way for that location not to be special.
+> 
+> /var/lib/net/rpc_pipefs is default path where userspace part of NFS stack
+> (gssd, idmapd) want to see rpc_pipefs
+> 
+> > > so I don't see simple way to restrict number of rpc_pipefs per mount
+> > > namespace. Associating mount namespace with rpc_pipefs is not a good idea,
+> > > I think.
+> > 
+> > I'm talking about associating a default rpc_pipefs instance with a 
+> > namespace, which it seems to me you're already doing by emulating the 
+> > legacy behavior.  Before you CLONE_NEWNS you get a magic default mount 
+> > that doesn't exist in the tree.  After you CLONE_NEWNS you get something 
+> > like -EINVAL unless you supply your own default.
+> 
+> Root namespace is special. In case of nfsroot you need rpc_pipefs before
+> root available.
+> 
+> > (I'm actually not sure 
+> > why new namespaces don't fall back to the magic global one...)
+> 
+> It breaks isolation. Container should not use host's rpc_pipefs without
+> host's permission.
+>  
+> > I'm suggesting that if the user doesn't specify -o rpcmount then the 
+> > default could be the first rpc_pipefs mount visible to the current 
+> > process context, rather than a specific path.  Logic to do that exists 
+> > in the proc/self/mounts code (which I'm reading through now...).
+> 
+> static int check_rpc_pipefs(struct vfsmount *mnt, void *arg)
+> {
+>         struct vfsmount **rpcmount = arg;
+>         struct path path = {
+>                 .mnt = mnt,
+>                 .dentry = mnt->mnt_root,
+>         };
+> 
+>         if (!mnt->mnt_sb)
+>                 return 0;
+>         if (mnt->mnt_sb->s_magic != RPCAUTH_GSSMAGIC)
+>                 return 0;
+> 
+>         if (!path_is_under(&path, &current->fs->root))
+>                 return 0;
+> 
+>         *rpcmount = mntget(mnt);
+>         return 1;
+> }
+> 
+> struct vfsmount *get_rpc_pipefs(const char *p)
+> {
+>         int error;
+>         struct vfsmount *rpcmount = ERR_PTR(-EINVAL);
+>         struct path path;
+> 
+>         if (!p) {
+>                 iterate_mounts(check_rpc_pipefs, &rpcmount,
+>                                 current->nsproxy->mnt_ns->root);
+> 
+>                 if (IS_ERR(rpcmount) && (current->nsproxy->mnt_ns ==
+>                                         init_task.nsproxy->mnt_ns))
+>                         return mntget(init_rpc_pipefs);
+> 
+>                 return rpcmount;
+>         }
+> 
+>         error = kern_path(p, LOOKUP_FOLLOW | LOOKUP_DIRECTORY, &path);
+>         if (error)
+>                 return ERR_PTR(error);
+> 
+>         check_rpc_pipefs(path.mnt, &rpcmount);
+>         path_put(&path);
+> 
+>         return rpcmount;
+> }
+> EXPORT_SYMBOL_GPL(get_rpc_pipefs);
+> 
+> Something like this? Patch to replace patch #10 attached.
 
- power:cpu_idle
- power:cpu_frequency
- power:machine_suspend
+Any comments?
 
-The old C-state/idle accounting events:
-  power:power_start
-  power:power_end
-
-Have now a replacement (but we are still keeping the old
-tracepoints for compatibility):
-
-  power:cpu_idle
-
-and
-  power:power_frequency
-
-is replaced with:
-  power:cpu_frequency
-
-power:machine_suspend is newly introduced.
-
-Jean Pihet has a patch integrated into the generic layer
-(kernel/power/suspend.c) which will make use of it.
-
-the type= field got removed from both, it was never
-used and the type is differed by the event type itself.
-
-perf timechart userspace tool gets adjusted in a separate patch.
-
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Acked-by: Arjan van de Ven <arjan@linux.intel.com>
-Acked-by: Jean Pihet <jean.pihet@newoldbits.com>
-CC: Jean Pihet <jean.pihet@newoldbits.com>
-CC: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: rjw@sisk.pl
-CC: linux-kernel@vger.kernel.org
-CC: linux-perf-users@vger.kernel.org
-LKML-Reference: <1290072314-31155-2-git-send-email-trenn@suse.de>
----
- arch/x86/kernel/process.c    |    7 +++-
- arch/x86/kernel/process_32.c |    2 +-
- arch/x86/kernel/process_64.c |    2 +
- drivers/cpufreq/cpufreq.c    |    1 +
- drivers/cpuidle/cpuidle.c    |    1 +
- drivers/idle/intel_idle.c    |    1 +
- include/trace/events/power.h |   98 ++++++++++++++++++++++++++++++++++++++----
- kernel/trace/Kconfig         |   15 ++++++
- kernel/trace/power-traces.c  |    3 +
- 9 files changed, 119 insertions(+), 11 deletions(-)
-
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 90b26fb..8b0ad65 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -372,6 +372,7 @@ void default_idle(void)
- {
- 	if (hlt_use_halt()) {
- 		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
-+		trace_cpu_idle(1, smp_processor_id());
- 		current_thread_info()->status &= ~TS_POLLING;
- 		/*
- 		 * TS_POLLING-cleared state must be visible before we
-@@ -442,6 +443,7 @@ EXPORT_SYMBOL_GPL(cpu_idle_wait);
- void mwait_idle_with_hints(unsigned long ax, unsigned long cx)
- {
- 	trace_power_start(POWER_CSTATE, (ax>>4)+1, smp_processor_id());
-+	trace_cpu_idle((ax>>4)+1, smp_processor_id());
- 	if (!need_resched()) {
- 		if (cpu_has(&current_cpu_data, X86_FEATURE_CLFLUSH_MONITOR))
- 			clflush((void *)&current_thread_info()->flags);
-@@ -458,6 +460,7 @@ static void mwait_idle(void)
- {
- 	if (!need_resched()) {
- 		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
-+		trace_cpu_idle(1, smp_processor_id());
- 		if (cpu_has(&current_cpu_data, X86_FEATURE_CLFLUSH_MONITOR))
- 			clflush((void *)&current_thread_info()->flags);
- 
-@@ -479,10 +482,12 @@ static void mwait_idle(void)
- static void poll_idle(void)
- {
- 	trace_power_start(POWER_CSTATE, 0, smp_processor_id());
-+	trace_cpu_idle(0, smp_processor_id());
- 	local_irq_enable();
- 	while (!need_resched())
- 		cpu_relax();
--	trace_power_end(0);
-+	trace_power_end(smp_processor_id());
-+	trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
- }
- 
- /*
-diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
-index 96586c3..4b9befa 100644
---- a/arch/x86/kernel/process_32.c
-+++ b/arch/x86/kernel/process_32.c
-@@ -113,8 +113,8 @@ void cpu_idle(void)
- 			stop_critical_timings();
- 			pm_idle();
- 			start_critical_timings();
--
- 			trace_power_end(smp_processor_id());
-+			trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
- 		}
- 		tick_nohz_restart_sched_tick();
- 		preempt_enable_no_resched();
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index b3d7a3a..4c818a7 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -142,6 +142,8 @@ void cpu_idle(void)
- 			start_critical_timings();
- 
- 			trace_power_end(smp_processor_id());
-+			trace_cpu_idle(PWR_EVENT_EXIT,
-+				       smp_processor_id());
- 
- 			/* In many cases the interrupt that ended idle
- 			   has already called exit_idle. But some idle
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index c63a438..1109f68 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -355,6 +355,7 @@ void cpufreq_notify_transition(struct cpufreq_freqs *freqs, unsigned int state)
- 		dprintk("FREQ: %lu - CPU: %lu", (unsigned long)freqs->new,
- 			(unsigned long)freqs->cpu);
- 		trace_power_frequency(POWER_PSTATE, freqs->new, freqs->cpu);
-+		trace_cpu_frequency(freqs->new, freqs->cpu);
- 		srcu_notifier_call_chain(&cpufreq_transition_notifier_list,
- 				CPUFREQ_POSTCHANGE, freqs);
- 		if (likely(policy) && likely(policy->cpu == freqs->cpu))
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index a507108..08d5f05 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -107,6 +107,7 @@ static void cpuidle_idle_call(void)
- 	if (cpuidle_curr_governor->reflect)
- 		cpuidle_curr_governor->reflect(dev);
- 	trace_power_end(smp_processor_id());
-+	trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
- }
- 
- /**
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-index 15783d5..56ac09d 100644
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -221,6 +221,7 @@ static int intel_idle(struct cpuidle_device *dev, struct cpuidle_state *state)
- 
- 	stop_critical_timings();
- 	trace_power_start(POWER_CSTATE, (eax >> 4) + 1, cpu);
-+	trace_cpu_idle((eax >> 4) + 1, cpu);
- 	if (!need_resched()) {
- 
- 		__monitor((void *)&current_thread_info()->flags, 0, 0);
-diff --git a/include/trace/events/power.h b/include/trace/events/power.h
-index 286784d..1bcc2a8 100644
---- a/include/trace/events/power.h
-+++ b/include/trace/events/power.h
-@@ -7,16 +7,67 @@
- #include <linux/ktime.h>
- #include <linux/tracepoint.h>
- 
--#ifndef _TRACE_POWER_ENUM_
--#define _TRACE_POWER_ENUM_
--enum {
--	POWER_NONE	= 0,
--	POWER_CSTATE	= 1,	/* C-State */
--	POWER_PSTATE	= 2,	/* Fequency change or DVFS */
--	POWER_SSTATE	= 3,	/* Suspend */
--};
-+DECLARE_EVENT_CLASS(cpu,
-+
-+	TP_PROTO(unsigned int state, unsigned int cpu_id),
-+
-+	TP_ARGS(state, cpu_id),
-+
-+	TP_STRUCT__entry(
-+		__field(	u32,		state		)
-+		__field(	u32,		cpu_id		)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->state = state;
-+		__entry->cpu_id = cpu_id;
-+	),
-+
-+	TP_printk("state=%lu cpu_id=%lu", (unsigned long)__entry->state,
-+		  (unsigned long)__entry->cpu_id)
-+);
-+
-+DEFINE_EVENT(cpu, cpu_idle,
-+
-+	TP_PROTO(unsigned int state, unsigned int cpu_id),
-+
-+	TP_ARGS(state, cpu_id)
-+);
-+
-+/* This file can get included multiple times, TRACE_HEADER_MULTI_READ at top */
-+#ifndef _PWR_EVENT_AVOID_DOUBLE_DEFINING
-+#define _PWR_EVENT_AVOID_DOUBLE_DEFINING
-+
-+#define PWR_EVENT_EXIT -1
- #endif
- 
-+DEFINE_EVENT(cpu, cpu_frequency,
-+
-+	TP_PROTO(unsigned int frequency, unsigned int cpu_id),
-+
-+	TP_ARGS(frequency, cpu_id)
-+);
-+
-+TRACE_EVENT(machine_suspend,
-+
-+	TP_PROTO(unsigned int state),
-+
-+	TP_ARGS(state),
-+
-+	TP_STRUCT__entry(
-+		__field(	u32,		state		)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->state = state;
-+	),
-+
-+	TP_printk("state=%lu", (unsigned long)__entry->state)
-+);
-+
-+/* This code will be removed after deprecation time exceeded (2.6.41) */
-+#ifdef CONFIG_EVENT_POWER_TRACING_DEPRECATED
-+
- /*
-  * The power events are used for cpuidle & suspend (power_start, power_end)
-  *  and for cpufreq (power_frequency)
-@@ -75,6 +126,36 @@ TRACE_EVENT(power_end,
- 
- );
- 
-+/* Deprecated dummy functions must be protected against multi-declartion */
-+#ifndef _PWR_EVENT_AVOID_DOUBLE_DEFINING_DEPRECATED
-+#define _PWR_EVENT_AVOID_DOUBLE_DEFINING_DEPRECATED
-+
-+enum {
-+	POWER_NONE = 0,
-+	POWER_CSTATE = 1,
-+	POWER_PSTATE = 2,
-+};
-+#endif /* _PWR_EVENT_AVOID_DOUBLE_DEFINING_DEPRECATED */
-+
-+#else /* CONFIG_EVENT_POWER_TRACING_DEPRECATED */
-+
-+#ifndef _PWR_EVENT_AVOID_DOUBLE_DEFINING_DEPRECATED
-+#define _PWR_EVENT_AVOID_DOUBLE_DEFINING_DEPRECATED
-+enum {
-+       POWER_NONE = 0,
-+       POWER_CSTATE = 1,
-+       POWER_PSTATE = 2,
-+};
-+
-+/* These dummy declaration have to be ripped out when the deprecated
-+   events get removed */
-+static inline void trace_power_start(u64 type, u64 state, u64 cpuid) {};
-+static inline void trace_power_end(u64 cpuid) {};
-+static inline void trace_power_frequency(u64 type, u64 state, u64 cpuid) {};
-+#endif /* _PWR_EVENT_AVOID_DOUBLE_DEFINING_DEPRECATED */
-+
-+#endif /* CONFIG_EVENT_POWER_TRACING_DEPRECATED */
-+
- /*
-  * The clock events are used for clock enable/disable and for
-  *  clock rate change
-@@ -153,7 +234,6 @@ DEFINE_EVENT(power_domain, power_domain_target,
- 
- 	TP_ARGS(name, state, cpu_id)
- );
--
- #endif /* _TRACE_POWER_H */
- 
- /* This part must be outside protection */
-diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-index ea37e2f..14674dc 100644
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -69,6 +69,21 @@ config EVENT_TRACING
- 	select CONTEXT_SWITCH_TRACER
- 	bool
- 
-+config EVENT_POWER_TRACING_DEPRECATED
-+	depends on EVENT_TRACING
-+	bool "Deprecated power event trace API, to be removed"
-+	default y
-+	help
-+	  Provides old power event types:
-+	  C-state/idle accounting events:
-+	  power:power_start
-+	  power:power_end
-+	  and old cpufreq accounting event:
-+	  power:power_frequency
-+	  This is for userspace compatibility
-+	  and will vanish after 5 kernel iterations,
-+	  namely 2.6.41.
-+
- config CONTEXT_SWITCH_TRACER
- 	bool
- 
-diff --git a/kernel/trace/power-traces.c b/kernel/trace/power-traces.c
-index 0e0497d..f55fcf6 100644
---- a/kernel/trace/power-traces.c
-+++ b/kernel/trace/power-traces.c
-@@ -13,5 +13,8 @@
- #define CREATE_TRACE_POINTS
- #include <trace/events/power.h>
- 
-+#ifdef EVENT_POWER_TRACING_DEPRECATED
- EXPORT_TRACEPOINT_SYMBOL_GPL(power_start);
-+#endif
-+EXPORT_TRACEPOINT_SYMBOL_GPL(cpu_idle);
- 
 -- 
-1.7.3.1
-
+ Kirill A. Shutemov
