@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab1ACU5n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 15:57:43 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:53841 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750971Ab1ACU5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 15:57:42 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Paul Rolland (=?utf-8?b?44Od44O844Or44O744Ot44Op44Oz?=) 
-	<rol@witbe.net>
-Subject: Re: [Bug #22542] [2.6.37-rc1] drm:i195 errors
-Date: Mon, 3 Jan 2011 21:57:19 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc8+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "Dave Airlie" <airlied@redhat.com>,
-        "Keith Packard" <keithp@keithp.com>
-References: <96DQe4a_2tH.A.4RE.497GNB@chimera> <201012311647.24673.rjw@sisk.pl> <20110103091055.600c72d5@tux.DEF.witbe.net>
-In-Reply-To: <20110103091055.600c72d5@tux.DEF.witbe.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101032157.19528.rjw@sisk.pl>
+	id S1753587Ab1ACVHV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 16:07:21 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64550 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379Ab1ACVHT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 16:07:19 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=fTxI1HsCGk07oPVKpHY6delNRKjjpTu2WC8/xCXSVm+VEK4/gluZBekFyoQ40E8yrB
+         v4j8T45/Mjro0PtJRAXWqen9y6WjYQHONBiS8ULemSwuv9U4j8DWACNskkZkWI2il8Sg
+         XtoRzISdejDTpvlm9cQy+7Zw9LFTCvDL7f/L0=
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net
+Cc: Sedat Dilek <sedat.dilek@gmail.com>
+Subject: [PATCH] ksz884x: Fix section mismatch derived from pcidev_init()
+Date: Mon,  3 Jan 2011 22:06:58 +0100
+Message-Id: <1294088818-2903-1-git-send-email-sedat.dilek@gmail.com>
+X-Mailer: git-send-email 1.7.4.rc0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 03, 2011, Paul Rolland wrote:
-> Hello Rafael,
-> 
-> On Fri, 31 Dec 2010 16:47:24 +0100
-> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> 
-> > On Friday, December 31, 2010, Paul Rolland wrote:
-> > > Hello,
-> > > 
-> > > I'm now running 2.6.37-rc8, and I still have :
-> > > Dec 31 11:03:10 tux kernel: [drm:i915_gem_mmap_gtt_ioctl] *ERROR*
-> > > Attempting to mmap a purgeable buffer
-> > > 
-> > > as well as :
-> > > 
-> > > Dec 31 10:44:53 tux kernel: [drm:intel_panel_get_max_backlight] *ERROR*
-> > > fixme: max PWM is zero. Dec 31 10:49:34 tux kernel:
-> > > [drm:intel_panel_get_max_backlight] *ERROR* fixme: max PWM is zero.
-> > 
-> > There were some last-minute fixes related to i915 added to the Linus' tree
-> > after 2.6.37-rc8.  Perhaps you can give them a try?
-> 
-> OK, currently running : 
-> [root@tux ~]# uname -a
-> Linux tux.DEF.witbe.net 2.6.37-rc8-00014-g3643e0e #1 SMP Sun Jan 2 16:25:04 CET 2011 x86_64 x86_64 x86_64 GNU/Linux
-> 
-> and I've seen that too :
-> Jan  3 08:27:30 tux kernel: [drm:i915_gem_mmap_gtt_ioctl] *ERROR* Attempting to mmap a purgeable buffer
-> Jan  3 08:27:30 tux kernel: [drm:i915_gem_mmap_gtt_ioctl] *ERROR* Attempting to mmap a purgeable buffer
-> Jan  3 08:27:30 tux kernel: [drm:i915_gem_mmap_gtt_ioctl] *ERROR* Attempting to mmap a purgeable buffer
-> Jan  3 08:27:30 tux kernel: [drm:i915_gem_mmap_gtt_ioctl] *ERROR* Attempting to mmap a purgeable buffer
-> 
-> So, two possibilities :
->  - 2.6.37-rc8-00014-g3643e0e is not what you wanted me to test,
->  - the problem's still there.
+This fixes the following warning:
 
-I think it's still there.  Thanks for testing!
+WARNING: drivers/net/ksz884x.o(.data+0x18): Section mismatch in reference from the variable pci_device_driver to the function .init.text:pcidev_init()
+The variable pci_device_driver references
+the function __init pcidev_init()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or name the variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console,
 
-Rafael
+Tested with linux-next (next-20101231)
+
+Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+---
+ drivers/net/ksz884x.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/ksz884x.c b/drivers/net/ksz884x.c
+index 49ea870..540a8dc 100644
+--- a/drivers/net/ksz884x.c
++++ b/drivers/net/ksz884x.c
+@@ -6953,7 +6953,7 @@ static void read_other_addr(struct ksz_hw *hw)
+ #define PCI_VENDOR_ID_MICREL_KS		0x16c6
+ #endif
+ 
+-static int __init pcidev_init(struct pci_dev *pdev,
++static int __devinit pcidev_init(struct pci_dev *pdev,
+ 	const struct pci_device_id *id)
+ {
+ 	struct net_device *dev;
+-- 
+1.7.4.rc0
+
