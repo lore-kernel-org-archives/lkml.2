@@ -1,197 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411Ab1ACVam (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 16:30:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755315Ab1ACVak (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 16:30:40 -0500
-Date: Mon, 3 Jan 2011 16:29:18 -0500
-From: Rik van Riel <riel@redhat.com>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>
-Subject: [RFC -v3 PATCH 2/3] sched: add yield_to function
-Message-ID: <20110103162918.577a9620@annuminas.surriel.com>
-In-Reply-To: <20110103162637.29f23c40@annuminas.surriel.com>
-References: <20110103162637.29f23c40@annuminas.surriel.com>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754939Ab1ACVfs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 16:35:48 -0500
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:45778 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751603Ab1ACVfr convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 16:35:47 -0500
+MIME-Version: 1.0
+In-Reply-To: <1294062595-30097-2-git-send-email-tj@kernel.org>
+References: <1294062595-30097-1-git-send-email-tj@kernel.org>
+	<1294062595-30097-2-git-send-email-tj@kernel.org>
+Date: Mon, 3 Jan 2011 15:35:45 -0600
+Message-ID: <AANLkTimMK2Ec8SQiRyRBR+MdVKhAmMaaf+oa0VK3wWsf@mail.gmail.com>
+Subject: Re: [PATCH 01/32] arm/omap: use system_wq in mailbox
+From: "Kanigeri, Hari" <h-kanigeri2@ti.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Galbraith <efault@gmx.de>
+Tejun,
 
-Add a yield_to function to the scheduler code, allowing us to
-give enough of our timeslice to another thread to allow it to
-run and release whatever resource we need it to release.
+On Mon, Jan 3, 2011 at 7:49 AM, Tejun Heo <tj@kernel.org> wrote:
+> With cmwq, there's no reason to use a separate workqueue for mailbox.
+> Use the system_wq instead.  mbox->rxq->work is sync flushed in
+> omap_mbox_fini() to make sure it's not running on any cpu, which makes
+> sure that no mbox work is running when omap_mbox_exit() is entered.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Cc: linux-omap@vger.kernel.org
+> ---
+> Only compile tested.  Please feel free to take it into the subsystem
+> tree or simply ack - I'll route it through the wq tree.
 
-We may want to use this to provide a sys_yield_to system call
-one day.
+This was changed to dedicated work queue because of performance issues
+when there is heavy mailbox traffic between the cores.
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Not-signed-off-by: Mike Galbraith <efault@gmx.de>
+Reference:
+http://www.mail-archive.com/linux-omap@vger.kernel.org/msg24240.html
 
---- 
-Mike, want to change the above into a Signed-off-by: ? :)
-This code seems to work well.
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index c5f926c..0b8a3e6 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1083,6 +1083,7 @@ struct sched_class {
- 	void (*enqueue_task) (struct rq *rq, struct task_struct *p, int wakeup);
- 	void (*dequeue_task) (struct rq *rq, struct task_struct *p, int sleep);
- 	void (*yield_task) (struct rq *rq);
-+	int (*yield_to_task) (struct task_struct *p, int preempt);
- 
- 	void (*check_preempt_curr) (struct rq *rq, struct task_struct *p, int flags);
- 
-@@ -1981,6 +1982,7 @@ static inline int rt_mutex_getprio(struct task_struct *p)
- # define rt_mutex_adjust_pi(p)		do { } while (0)
- #endif
- 
-+extern void yield_to(struct task_struct *p, int preempt);
- extern void set_user_nice(struct task_struct *p, long nice);
- extern int task_prio(const struct task_struct *p);
- extern int task_nice(const struct task_struct *p);
-diff --git a/kernel/sched.c b/kernel/sched.c
-index f8e5a25..ffa7a9d 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -6901,6 +6901,53 @@ void __sched yield(void)
- }
- EXPORT_SYMBOL(yield);
- 
-+/**
-+ * yield_to - yield the current processor to another thread in
-+ * your thread group, or accelerate that thread toward the
-+ * processor it's on.
-+ *
-+ * It's the caller's job to ensure that the target task struct
-+ * can't go away on us before we can do any checks.
-+ */
-+void __sched yield_to(struct task_struct *p, int preempt)
-+{
-+	struct task_struct *curr = current;
-+	struct rq *rq, *p_rq;
-+	unsigned long flags;
-+	int yield = 0;
-+
-+	local_irq_save(flags);
-+	rq = this_rq();
-+
-+again:
-+	p_rq = task_rq(p);
-+	double_rq_lock(rq, p_rq);
-+	while (task_rq(p) != p_rq) {
-+		double_rq_unlock(rq, p_rq);
-+		goto again;
-+	}
-+
-+	if (task_running(p_rq, p) || p->state || !p->se.on_rq ||
-+			!same_thread_group(p, curr) ||
-+			!curr->sched_class->yield_to_task ||
-+			curr->sched_class != p->sched_class) {
-+		goto out;
-+	}
-+
-+	yield = curr->sched_class->yield_to_task(p, preempt);
-+
-+out:
-+	double_rq_unlock(rq, p_rq);
-+	local_irq_restore(flags);
-+
-+	if (yield) {
-+		set_current_state(TASK_RUNNING);
-+		schedule();
-+	}
-+}
-+EXPORT_SYMBOL(yield_to);
-+
-+
- /*
-  * This task is about to go to sleep on IO. Increment rq->nr_iowait so
-  * that process accounting knows that this is a task in IO wait state.
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 5119b08..3288e7c 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1119,6 +1119,61 @@ static void yield_task_fair(struct rq *rq)
- }
- 
- #ifdef CONFIG_SMP
-+static void pull_task(struct rq *src_rq, struct task_struct *p,
-+		      struct rq *this_rq, int this_cpu);
-+#endif
-+
-+static int yield_to_task_fair(struct task_struct *p, int preempt)
-+{
-+	struct sched_entity *se = &current->se;
-+	struct sched_entity *pse = &p->se;
-+	struct sched_entity *curr = &(task_rq(p)->curr)->se;
-+	struct cfs_rq *cfs_rq = cfs_rq_of(se);
-+	struct cfs_rq *p_cfs_rq = cfs_rq_of(pse);
-+	int yield = this_rq() == task_rq(p);
-+	int want_preempt = preempt;
-+
-+#ifdef CONFIG_FAIR_GROUP_SCHED
-+	if (cfs_rq->tg != p_cfs_rq->tg)
-+		return 0;
-+
-+	/* Preemption only allowed within the same task group. */
-+	if (preempt && cfs_rq->tg != cfs_rq_of(curr)->tg)
-+		preempt = 0;
-+#endif
-+	/* Preemption only allowed within the same thread group. */
-+	if (preempt && !same_thread_group(current, task_of(p_cfs_rq->curr)))
-+		preempt = 0;
-+
-+#ifdef CONFIG_SMP
-+	/*
-+	 * If this yield is important enough to want to preempt instead
-+	 * of only dropping a ->next hint, we're alone, and the target
-+	 * is not alone, pull the target to this cpu.
-+	 */
-+	if (want_preempt && !yield && cfs_rq->nr_running == 1 &&
-+			cpumask_test_cpu(smp_processor_id(), &p->cpus_allowed)) {
-+		pull_task(task_rq(p), p, this_rq(), smp_processor_id());
-+		p_cfs_rq = cfs_rq_of(pse);
-+		yield = 1;
-+	}
-+#endif
-+
-+	if (yield)
-+		clear_buddies(cfs_rq, se);
-+	else if (preempt)
-+		clear_buddies(p_cfs_rq, curr);
-+
-+	/* Tell the scheduler that we'd really like pse to run next. */
-+	p_cfs_rq->next = pse;
-+
-+	if (!yield && preempt)
-+		resched_task(task_of(p_cfs_rq->curr));
-+
-+	return yield;
-+}
-+
-+#ifdef CONFIG_SMP
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
- /*
-@@ -2081,6 +2136,7 @@ static const struct sched_class fair_sched_class = {
- 	.enqueue_task		= enqueue_task_fair,
- 	.dequeue_task		= dequeue_task_fair,
- 	.yield_task		= yield_task_fair,
-+	.yield_to_task		= yield_to_task_fair,
- 
- 	.check_preempt_curr	= check_preempt_wakeup,
- 
+>
+> Thanks.
+>
+>  arch/arm/plat-omap/mailbox.c |   10 ++--------
+>  1 files changed, 2 insertions(+), 8 deletions(-)
+>
+> diff --git a/arch/arm/plat-omap/mailbox.c b/arch/arm/plat-omap/mailbox.c
+> index d2fafb8..5bc4d7b 100644
+> --- a/arch/arm/plat-omap/mailbox.c
+> +++ b/arch/arm/plat-omap/mailbox.c
+> @@ -31,7 +31,6 @@
+>
+>  #include <plat/mailbox.h>
+>
+> -static struct workqueue_struct *mboxd;
+>  static struct omap_mbox **mboxes;
+>  static bool rq_full;
+>
+> @@ -186,7 +185,7 @@ static void __mbox_rx_interrupt(struct omap_mbox *mbox)
+>        /* no more messages in the fifo. clear IRQ source. */
+>        ack_mbox_irq(mbox, IRQ_RX);
+>  nomem:
+> -       queue_work(mboxd, &mbox->rxq->work);
+> +       schedule_work(&mbox->rxq->work);
+>  }
+>
+>  static irqreturn_t mbox_interrupt(int irq, void *p)
+> @@ -291,7 +290,7 @@ static void omap_mbox_fini(struct omap_mbox *mbox)
+>  {
+>        free_irq(mbox->irq, mbox);
+>        tasklet_kill(&mbox->txq->tasklet);
+> -       flush_work(&mbox->rxq->work);
+> +       flush_work_sync(&mbox->rxq->work);
+>        mbox_queue_free(mbox->txq);
+>        mbox_queue_free(mbox->rxq);
+>
+> @@ -385,10 +384,6 @@ static int __init omap_mbox_init(void)
+>        if (err)
+>                return err;
+>
+> -       mboxd = create_workqueue("mboxd");
+> -       if (!mboxd)
+> -               return -ENOMEM;
+> -
+>        /* kfifo size sanity check: alignment and minimal size */
+>        mbox_kfifo_size = ALIGN(mbox_kfifo_size, sizeof(mbox_msg_t));
+>        mbox_kfifo_size = max_t(unsigned int, mbox_kfifo_size, sizeof(mbox_msg_t));
+> @@ -399,7 +394,6 @@ subsys_initcall(omap_mbox_init);
+>
+>  static void __exit omap_mbox_exit(void)
+>  {
+> -       destroy_workqueue(mboxd);
+>        class_unregister(&omap_mbox_class);
+>  }
+>  module_exit(omap_mbox_exit);
+> --
+> 1.7.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
+
+
+-- 
+Thank you,
+Best regards,
+Hari Kanigeri
