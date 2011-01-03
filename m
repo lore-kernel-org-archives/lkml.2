@@ -1,75 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab1ACNml (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 08:42:41 -0500
-Received: from s20.kerdos.gr ([193.92.32.2]:15941 "EHLO kerdos.gr"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754762Ab1ACNmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 08:42:40 -0500
-Message-ID: <52335.201.18.135.90.1293994501.squirrel@mail.kerdos.gr>
-Date: Sun, 2 Jan 2011 12:55:01 -0600 (CST)
-Subject: CONFIRM YOUR MTCN NUMBER
-From: "WESTERN UNION MONEY TRANSFER" <info@kerdos.gr>
-Reply-To: western.union.acctoffice@gmail.com
-User-Agent: SquirrelMail/1.4.9a
-MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+	id S1754859Ab1ACNp4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 08:45:56 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:64251 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754762Ab1ACNpz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 08:45:55 -0500
+X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=4pdSCqo9-bIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=TSbVqHtbAAAA:8 a=BC2e34ar1K9Vy1x282oA:9 a=4nncSqCRAbj-uf8OCgkA:7 a=EL7hyAKsZmKzTpVvSXKAqbb_uikA:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: Should we be using unlikely() around tests of GFP_ZERO?
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Minchan Kim <minchan.kim@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        David Rientjes <rientjes@google.com>, npiggin@kernel.dk
+In-Reply-To: <AANLkTinz52Ky5BhU-gHq8vx9=1uoN+iuDn1f0C8fnSjQ@mail.gmail.com>
+References: <E1PZXeb-0004AV-2b@tytso-glaptop>
+	 <AANLkTi=9ZNk6w8PxvveWHy5+okfTyKUj3L2ywFOuFjoq@mail.gmail.com>
+	 <AANLkTinz52Ky5BhU-gHq8vx9=1uoN+iuDn1f0C8fnSjQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 03 Jan 2011 08:45:51 -0500
+Message-ID: <1294062351.3948.7.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2011-01-03 at 09:40 +0200, Pekka Enberg wrote:
+> Hi,
+> 
+> On Mon, Jan 3, 2011 at 8:48 AM, Theodore Ts'o <tytso@mit.edu> wrote:
+> >> Given the patches being busily submitted by trivial patch submitters to
+> >> make use kmem_cache_zalloc(), et. al, I believe we should remove the
+> >> unlikely() tests around the (gfp_flags & __GFP_ZERO) tests, such as:
+> >>
+> >> -       if (unlikely((flags & __GFP_ZERO) && objp))
+> >> +       if ((flags & __GFP_ZERO) && objp)
+> >>                memset(objp, 0, obj_size(cachep));
+> >>
+> >> Agreed?  If so, I'll send a patch...
+> 
+> On Mon, Jan 3, 2011 at 5:46 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> > I support it.
+> 
+> I guess the rationale here is that if you're going to take the hit of
+> memset() you can take the hit of unlikely() as well. We're optimizing
+> for hot call-sites that allocate a small amount of memory and
+> initialize everything themselves. That said, I don't think the
+> unlikely() annotation matters much either way and am for removing it
+> unless people object to that.
+> 
+> On Mon, Jan 3, 2011 at 5:46 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> > Recently Steven tried to gather the information.
+> > http://thread.gmane.org/gmane.linux.kernel/1072767
+> > Maybe he might have a number for that.
+> 
+> That would be interesting, sure.
 
-Good Day
+Note, you could do it yourself too. Just enable:
 
-I am Mr Ray Williams from Western Union®, On behalf of the International
-Monetary Fund/United Nation/ ECOWAS, I once again try to notify you as my
-earlier letter was returned undelivered. I hereby attempt to reach you
-again by this same email address been the beneficiary today been 2th Jan
-2011. If you received this mail, we are writing to inform you that we have
-been given the mandate to transfer your full compensation payment of
-$300,000.00USD via Western Union by the International Monetary Fund with
-United Nation and ECOWAS.
+  Kernel Hacking -> Tracers -> Branch Profiling
+    (Trace likely/unlikely profiler)
 
-We have decided to email you the MTCN and sender name, so you can pick up
-this $5000.00USD to enable us send another $5000.00USD by tomorrow(5th
-Jan.2011) as you know we will be sending you only $5000.00USD per day. 
-Please pick up this information and run to any Western Union® office in
-your location and your full name is the receivers name and don't forget
-that you have to pick up this money after receiving our mail, if you don't
-pick up the money in the next 3hrs, then the management will put the money
-on hold.
+   CONFIG_PROFILE_ANNOTATED_BRANCHES
 
-Here is the Western Union® information to pick up the first $5,000
+Then search /debug/tracing/trace_stats/branch_annotated.
 
-Sender's First name: Duncan
-Sender's Last name: Pitts
-MTCN: 298-821-4315
-Amount: $5,000
-Test Question:  Pay
-Test Answer: Cash
-
-For verification Kindly check the availability of your via our web site
-below. https://wumt.westernunion.com/asp/orderStatus.asp?country=global
-
-If you are having any problem in picking up the money, Simply note that
-its because you didn't pick it on time, that is why you are having
-problem. If you wish to know more details or if you are having problem in
-picking up the money kindly contact post officer.
-
-Mr Ray Williams.
-Phone :(+234)-803-475-0364
-Email:western.union.acctoffice@gmail.com
-
-Sincerely,
-Western Union®  Customer Centre.
+(hmm, the help in Kconfig is wrong, I need to fix that)
 
 
+Anyway, here's my box. I just started it an hour ago, and have not been
+doing too much on it yet. But here's what I got (using SLUB)
 
 
+ correct incorrect  %        Function                  File              Line
+ ------- ---------  -        --------                  ----              ----
+ 6890998  2784830  28        slab_alloc                slub.c            1719
 
+That's incorrect 28% of the time.
+
+-- Steve
 
 
