@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932198Ab1ACPGY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 10:06:24 -0500
-Received: from imr4.ericy.com ([198.24.6.8]:34177 "EHLO imr4.ericy.com"
+	id S932209Ab1ACPGp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 10:06:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63947 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932110Ab1ACPGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 10:06:22 -0500
-Date: Mon, 3 Jan 2011 07:03:28 -0800
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: "R, Durgadoss" <durgadoss.r@intel.com>
-CC: "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: Patch[1/2]X86:Adding_Notification_Support_to_therm_throt.c
-Message-ID: <20110103150328.GB25600@ericsson.com>
-References: <D6D887BA8C9DFF48B5233887EF04654105C1251710@bgsmsx502.gar.corp.intel.com>
+	id S932110Ab1ACPGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 10:06:44 -0500
+Date: Mon, 3 Jan 2011 15:59:02 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 08/17] sched: Drop the rq argument to
+	sched_class::select_task_rq()
+Message-ID: <20110103145902.GA7632@redhat.com>
+References: <20101224122338.172750730@chello.nl> <20101224123742.887559254@chello.nl> <20101229143136.GC2728@zhy> <1294053409.2016.59.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <D6D887BA8C9DFF48B5233887EF04654105C1251710@bgsmsx502.gar.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1294053409.2016.59.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 03, 2011 at 06:52:04AM -0500, R, Durgadoss wrote:
-> Hi,
-> 
-> I am submitting a patch to add core thermal threshold notification
-> Support to therm_throt.c. These thresholds are supported by the 
-> IA32_THERM_INTERRUPT register. The status/log for the same is monitored
-> using the IA32_THERM_STATUS register. The necessary #defines are in
-> msr-index.h. A call back is added to mce.h, to further notify the
-> thermal stack, about the threshold events.
-> 
-> This patch is generated against stable Linux-2.6 kernel.
-> 
-> Kindly review and merge.
-> ---------------------------------------------------------------------------------
-> From: Durgadoss R <durgadoss.r@intel.com>
-> 
-> Date: Sun, 19 Dec 2010 22:42:45 +0530
-> Subject: [PATCH 1/2] X86:Adding_core_threshold_notification_to_therm_throt.c
-> 
-> This patch adds code to therm_throt.c to notify core thermal threshold
-> events. These thresholds are supported by the IA32_THERM_INTERRUPT register.
-> The status/log for the same is monitored using the IA32_THERM_STATUS register.
-> The necessary #defines are in msr-index.h. A call back is added to mce.h, to
-> further notify the thermal stack, about the threshold events.
-> 
-> Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
-> 
-If this is just a resubmit, you might instead consider trying to figure out
-why none of the x86 maintainers replied. Documentation/Submit* might help,
-as well as comparing your set of patches with other (accepted) patches.
+On 01/03, Peter Zijlstra wrote:
+>
+> On Wed, 2010-12-29 at 22:31 +0800, Yong Zhang wrote:
+> > > -	/*
+> > > -	 * select_task_rq() can race against ->cpus_allowed
+> > > -	 */
+> > > -	if (cpumask_test_cpu(dest_cpu, &p->cpus_allowed) &&
+> > > -	    likely(cpu_active(dest_cpu)) && migrate_task(p, rq)) {
+> > > +	if (likely(cpu_active(dest_cpu)) && need_migrate_task(p)) {
+> >
+> > If we drop rq_lock, need_migrate_task() maybe return true but
+> > p is already running on other cpu. Thus we do a wrong migration
+> > call.
+>
+> Yeah, too bad.. ;-) exec load balancing is more an optimistic thing
+> anyway, if it got rebalanced under out feet we don't care.
 
-If you made some changes, it would be expected to see the patch version and
-to list the changes made. As it is, the headline and description of your patches
-did not change for the last two (or three) submissions, so there is no easy way
-to determine if anything has changed, nor is it possible to identify the most recent
-version from the mailing list archive.
+I don't understand this need_migrate_task() at all (with or without
+the patch). This task is current/running, it should always return T.
 
-Guenter 
+I guess, migrate_task() was needed before to initialize migration_req.
+
+Oleg.
+
