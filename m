@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932260Ab1ACN4U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 08:56:20 -0500
+	id S1755277Ab1ACN4y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 08:56:54 -0500
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:60593 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755026Ab1ACNuX (ORCPT
+	with ESMTP id S1755104Ab1ACNuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 08:50:23 -0500
+	Mon, 3 Jan 2011 08:50:21 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=a5IdEjIMoH6XzmCvkaVBBkJgszkw27kXJOhgUallDotLczVTDYS6vNPaIIXyPtDMai
-         mfSRwfCYvUATd5Awfc9szriQp9X9JRyZ1X1BdJnjAdd6hBeT3I+rACy5SK9p3lFDur+X
-         Y6wQNlpy40OUXfbdDT8GgRS6OzvjN/UUo+HiM=
+        b=Y2Vsp0l7TI90RyzLyhaShlsASJTLD5YdTkP82KrSP+AoMr/cq+tU0WebjgLnQ1P87B
+         oyIFeYve0X+re1w9rBlm+N+fiaZMdEvnOfeBQ1E3iutPNNRg8tp5cjH2XgLbowllUbfX
+         W1YiRD0AUqTas5HdlusjemU/4tNqYIvOaJRjA=
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org
-Subject: [PATCH 09/32] drm/radeon: use system_wq instead of dev_priv->wq
-Date: Mon,  3 Jan 2011 14:49:32 +0100
-Message-Id: <1294062595-30097-10-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>, Dave Jones <davej@redhat.com>,
+        cpufreq@vger.kernel.org
+Subject: [PATCH 07/32] cpufreq: use system_wq instead of dedicated workqueues
+Date: Mon,  3 Jan 2011 14:49:30 +0100
+Message-Id: <1294062595-30097-8-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1294062595-30097-1-git-send-email-tj@kernel.org>
 References: <1294062595-30097-1-git-send-email-tj@kernel.org>
@@ -28,287 +28,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With cmwq, there's no reason for radeon to use a dedicated workqueue.
-Drop dev_priv->wq and use system_wq instead.
-
-Because radeon_driver_irq_uninstall_kms() may be called from
-unsleepable context, the work items can't be flushed from there.
-Instead, init and flush from radeon_irq_kms_init/fini().
-
-While at it, simplify canceling/flushing of rdev->pm.dynpm_idle_work.
-Always initialize and sync cancel instead of being unnecessarily smart
-about it.
+With cmwq, there's no reason for cpufreq drivers to use separate
+workqueues.  Remove the dedicated workqueues from cpufreq_conservative
+and cpufreq_ondemand and use system_wq instead.  The work items are
+already sync canceled on stop, so it's already guaranteed that no work
+is running on module exit.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org
+Cc: Dave Jones <davej@redhat.com>
+Cc: cpufreq@vger.kernel.org
 ---
 Only compile tested.  Please feel free to take it into the subsystem
 tree or simply ack - I'll route it through the wq tree.
 
 Thanks.
 
- drivers/gpu/drm/radeon/evergreen.c      |    2 +-
- drivers/gpu/drm/radeon/r100.c           |    2 +-
- drivers/gpu/drm/radeon/r600.c           |    2 +-
- drivers/gpu/drm/radeon/radeon.h         |    1 -
- drivers/gpu/drm/radeon/radeon_device.c  |    6 ----
- drivers/gpu/drm/radeon/radeon_irq_kms.c |    5 ++-
- drivers/gpu/drm/radeon/radeon_pm.c      |   47 ++++++++++--------------------
- drivers/gpu/drm/radeon/rs600.c          |    2 +-
- 8 files changed, 23 insertions(+), 44 deletions(-)
+ drivers/cpufreq/cpufreq_conservative.c |   22 +++-------------------
+ drivers/cpufreq/cpufreq_ondemand.c     |   20 +++-----------------
+ 2 files changed, 6 insertions(+), 36 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index 7b337c3..6540adb 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -2516,7 +2516,7 @@ restart_ih:
- 	if (wptr != rdev->ih.wptr)
- 		goto restart_ih;
- 	if (queue_hotplug)
--		queue_work(rdev->wq, &rdev->hotplug_work);
-+		schedule_work(&rdev->hotplug_work);
- 	rdev->ih.rptr = rptr;
- 	WREG32(IH_RB_RPTR, rdev->ih.rptr);
- 	spin_unlock_irqrestore(&rdev->ih.lock, flags);
-diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
-index 8e10aa9..1d15748 100644
---- a/drivers/gpu/drm/radeon/r100.c
-+++ b/drivers/gpu/drm/radeon/r100.c
-@@ -622,7 +622,7 @@ int r100_irq_process(struct radeon_device *rdev)
- 	/* reset gui idle ack.  the status bit is broken */
- 	rdev->irq.gui_idle_acked = false;
- 	if (queue_hotplug)
--		queue_work(rdev->wq, &rdev->hotplug_work);
-+		schedule_work(&rdev->hotplug_work);
- 	if (rdev->msi_enabled) {
- 		switch (rdev->family) {
- 		case CHIP_RS400:
-diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
-index 9c92db7..f927cd4 100644
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -3419,7 +3419,7 @@ restart_ih:
- 	if (wptr != rdev->ih.wptr)
- 		goto restart_ih;
- 	if (queue_hotplug)
--		queue_work(rdev->wq, &rdev->hotplug_work);
-+		schedule_work(&rdev->hotplug_work);
- 	rdev->ih.rptr = rptr;
- 	WREG32(IH_RB_RPTR, rdev->ih.rptr);
- 	spin_unlock_irqrestore(&rdev->ih.lock, flags);
-diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
-index 3a70957..ba233a8 100644
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -1095,7 +1095,6 @@ struct radeon_device {
- 	struct r700_vram_scratch vram_scratch;
- 	int msi_enabled; /* msi enabled */
- 	struct r600_ih ih; /* r6/700 interrupt ring */
--	struct workqueue_struct *wq;
- 	struct work_struct hotplug_work;
- 	int num_crtc; /* number of crtcs */
- 	struct mutex dc_hw_i2c_mutex; /* display controller hw i2c mutex */
-diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
-index 501966a..4bc0012 100644
---- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -704,11 +704,6 @@ int radeon_device_init(struct radeon_device *rdev,
- 	init_waitqueue_head(&rdev->irq.vblank_queue);
- 	init_waitqueue_head(&rdev->irq.idle_queue);
+diff --git a/drivers/cpufreq/cpufreq_conservative.c b/drivers/cpufreq/cpufreq_conservative.c
+index 526bfbf..94284c8 100644
+--- a/drivers/cpufreq/cpufreq_conservative.c
++++ b/drivers/cpufreq/cpufreq_conservative.c
+@@ -81,8 +81,6 @@ static unsigned int dbs_enable;	/* number of CPUs using this policy */
+  */
+ static DEFINE_MUTEX(dbs_mutex);
  
--	/* setup workqueue */
--	rdev->wq = create_workqueue("radeon");
--	if (rdev->wq == NULL)
--		return -ENOMEM;
+-static struct workqueue_struct	*kconservative_wq;
 -
- 	/* Set asic functions */
- 	r = radeon_asic_init(rdev);
- 	if (r)
-@@ -806,7 +801,6 @@ void radeon_device_fini(struct radeon_device *rdev)
- 	/* evict vram memory */
- 	radeon_bo_evict_vram(rdev);
- 	radeon_fini(rdev);
--	destroy_workqueue(rdev->wq);
- 	vga_switcheroo_unregister_client(rdev->pdev);
- 	vga_client_register(rdev->pdev, NULL, NULL, NULL);
- 	if (rdev->rio_mem)
-diff --git a/drivers/gpu/drm/radeon/radeon_irq_kms.c b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-index a108c7e..33b9d21 100644
---- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-@@ -64,8 +64,6 @@ void radeon_driver_irq_preinstall_kms(struct drm_device *dev)
- 	struct radeon_device *rdev = dev->dev_private;
- 	unsigned i;
+ static struct dbs_tuners {
+ 	unsigned int sampling_rate;
+ 	unsigned int sampling_down_factor;
+@@ -560,7 +558,7 @@ static void do_dbs_timer(struct work_struct *work)
  
--	INIT_WORK(&rdev->hotplug_work, radeon_hotplug_work_func);
--
- 	/* Disable *all* interrupts */
- 	rdev->irq.sw_int = false;
- 	rdev->irq.gui_idle = false;
-@@ -110,6 +108,8 @@ int radeon_irq_kms_init(struct radeon_device *rdev)
- {
- 	int r = 0;
+ 	dbs_check_cpu(dbs_info);
  
-+	INIT_WORK(&rdev->hotplug_work, radeon_hotplug_work_func);
-+
- 	spin_lock_init(&rdev->irq.sw_lock);
- 	r = drm_vblank_init(rdev->ddev, rdev->num_crtc);
- 	if (r) {
-@@ -148,6 +148,7 @@ void radeon_irq_kms_fini(struct radeon_device *rdev)
- 		if (rdev->msi_enabled)
- 			pci_disable_msi(rdev->pdev);
- 	}
-+	flush_work_sync(&rdev->hotplug_work);
+-	queue_delayed_work_on(cpu, kconservative_wq, &dbs_info->work, delay);
++	schedule_delayed_work_on(cpu, &dbs_info->work, delay);
+ 	mutex_unlock(&dbs_info->timer_mutex);
  }
  
- void radeon_irq_kms_sw_irq_get(struct radeon_device *rdev)
-diff --git a/drivers/gpu/drm/radeon/radeon_pm.c b/drivers/gpu/drm/radeon/radeon_pm.c
-index 8c9b2ef..845f295 100644
---- a/drivers/gpu/drm/radeon/radeon_pm.c
-+++ b/drivers/gpu/drm/radeon/radeon_pm.c
-@@ -405,20 +405,13 @@ static ssize_t radeon_set_pm_method(struct device *dev,
- 		rdev->pm.dynpm_planned_action = DYNPM_ACTION_DEFAULT;
- 		mutex_unlock(&rdev->pm.mutex);
- 	} else if (strncmp("profile", buf, strlen("profile")) == 0) {
--		bool flush_wq = false;
--
- 		mutex_lock(&rdev->pm.mutex);
--		if (rdev->pm.pm_method == PM_METHOD_DYNPM) {
--			cancel_delayed_work(&rdev->pm.dynpm_idle_work);
--			flush_wq = true;
--		}
- 		/* disable dynpm */
- 		rdev->pm.dynpm_state = DYNPM_STATE_DISABLED;
- 		rdev->pm.dynpm_planned_action = DYNPM_ACTION_NONE;
- 		rdev->pm.pm_method = PM_METHOD_PROFILE;
- 		mutex_unlock(&rdev->pm.mutex);
--		if (flush_wq)
--			flush_workqueue(rdev->wq);
-+		cancel_delayed_work_sync(&rdev->pm.dynpm_idle_work);
- 	} else {
- 		DRM_ERROR("invalid power method!\n");
- 		goto fail;
-@@ -520,18 +513,14 @@ static void radeon_hwmon_fini(struct radeon_device *rdev)
+@@ -572,8 +570,7 @@ static inline void dbs_timer_init(struct cpu_dbs_info_s *dbs_info)
  
- void radeon_pm_suspend(struct radeon_device *rdev)
- {
--	bool flush_wq = false;
--
- 	mutex_lock(&rdev->pm.mutex);
- 	if (rdev->pm.pm_method == PM_METHOD_DYNPM) {
--		cancel_delayed_work(&rdev->pm.dynpm_idle_work);
- 		if (rdev->pm.dynpm_state == DYNPM_STATE_ACTIVE)
- 			rdev->pm.dynpm_state = DYNPM_STATE_SUSPENDED;
--		flush_wq = true;
- 	}
- 	mutex_unlock(&rdev->pm.mutex);
--	if (flush_wq)
--		flush_workqueue(rdev->wq);
-+
-+	cancel_delayed_work_sync(&rdev->pm.dynpm_idle_work);
+ 	dbs_info->enable = 1;
+ 	INIT_DELAYED_WORK_DEFERRABLE(&dbs_info->work, do_dbs_timer);
+-	queue_delayed_work_on(dbs_info->cpu, kconservative_wq, &dbs_info->work,
+-				delay);
++	schedule_delayed_work_on(dbs_info->cpu, &dbs_info->work, delay);
  }
  
- void radeon_pm_resume(struct radeon_device *rdev)
-@@ -546,8 +535,8 @@ void radeon_pm_resume(struct radeon_device *rdev)
- 	if (rdev->pm.pm_method == PM_METHOD_DYNPM
- 	    && rdev->pm.dynpm_state == DYNPM_STATE_SUSPENDED) {
- 		rdev->pm.dynpm_state = DYNPM_STATE_ACTIVE;
--		queue_delayed_work(rdev->wq, &rdev->pm.dynpm_idle_work,
--					msecs_to_jiffies(RADEON_IDLE_LOOP_MS));
-+		schedule_delayed_work(&rdev->pm.dynpm_idle_work,
-+				      msecs_to_jiffies(RADEON_IDLE_LOOP_MS));
- 	}
- 	mutex_unlock(&rdev->pm.mutex);
- 	radeon_pm_compute_clocks(rdev);
-@@ -581,6 +570,9 @@ int radeon_pm_init(struct radeon_device *rdev)
- 	ret = radeon_hwmon_init(rdev);
- 	if (ret)
- 		return ret;
-+
-+	INIT_DELAYED_WORK(&rdev->pm.dynpm_idle_work, radeon_dynpm_idle_work_handler);
-+
- 	if (rdev->pm.num_power_states > 1) {
- 		/* where's the best place to put these? */
- 		ret = device_create_file(rdev->dev, &dev_attr_power_profile);
-@@ -594,8 +586,6 @@ int radeon_pm_init(struct radeon_device *rdev)
- 		rdev->acpi_nb.notifier_call = radeon_acpi_event;
- 		register_acpi_notifier(&rdev->acpi_nb);
- #endif
--		INIT_DELAYED_WORK(&rdev->pm.dynpm_idle_work, radeon_dynpm_idle_work_handler);
--
- 		if (radeon_debugfs_pm_init(rdev)) {
- 			DRM_ERROR("Failed to register debugfs file for PM!\n");
- 		}
-@@ -609,25 +599,20 @@ int radeon_pm_init(struct radeon_device *rdev)
- void radeon_pm_fini(struct radeon_device *rdev)
+ static inline void dbs_timer_exit(struct cpu_dbs_info_s *dbs_info)
+@@ -716,25 +713,12 @@ struct cpufreq_governor cpufreq_gov_conservative = {
+ 
+ static int __init cpufreq_gov_dbs_init(void)
  {
- 	if (rdev->pm.num_power_states > 1) {
--		bool flush_wq = false;
+-	int err;
 -
- 		mutex_lock(&rdev->pm.mutex);
- 		if (rdev->pm.pm_method == PM_METHOD_PROFILE) {
- 			rdev->pm.profile = PM_PROFILE_DEFAULT;
- 			radeon_pm_update_profile(rdev);
- 			radeon_pm_set_clocks(rdev);
- 		} else if (rdev->pm.pm_method == PM_METHOD_DYNPM) {
--			/* cancel work */
--			cancel_delayed_work(&rdev->pm.dynpm_idle_work);
--			flush_wq = true;
- 			/* reset default clocks */
- 			rdev->pm.dynpm_state = DYNPM_STATE_DISABLED;
- 			rdev->pm.dynpm_planned_action = DYNPM_ACTION_DEFAULT;
- 			radeon_pm_set_clocks(rdev);
- 		}
- 		mutex_unlock(&rdev->pm.mutex);
--		if (flush_wq)
--			flush_workqueue(rdev->wq);
-+
-+		cancel_delayed_work_sync(&rdev->pm.dynpm_idle_work);
+-	kconservative_wq = create_workqueue("kconservative");
+-	if (!kconservative_wq) {
+-		printk(KERN_ERR "Creation of kconservative failed\n");
+-		return -EFAULT;
+-	}
+-
+-	err = cpufreq_register_governor(&cpufreq_gov_conservative);
+-	if (err)
+-		destroy_workqueue(kconservative_wq);
+-
+-	return err;
++	return cpufreq_register_governor(&cpufreq_gov_conservative);
+ }
  
- 		device_remove_file(rdev->dev, &dev_attr_power_profile);
- 		device_remove_file(rdev->dev, &dev_attr_power_method);
-@@ -686,12 +671,12 @@ void radeon_pm_compute_clocks(struct radeon_device *rdev)
- 					radeon_pm_get_dynpm_state(rdev);
- 					radeon_pm_set_clocks(rdev);
+ static void __exit cpufreq_gov_dbs_exit(void)
+ {
+ 	cpufreq_unregister_governor(&cpufreq_gov_conservative);
+-	destroy_workqueue(kconservative_wq);
+ }
  
--					queue_delayed_work(rdev->wq, &rdev->pm.dynpm_idle_work,
--							   msecs_to_jiffies(RADEON_IDLE_LOOP_MS));
-+					schedule_delayed_work(&rdev->pm.dynpm_idle_work,
-+							      msecs_to_jiffies(RADEON_IDLE_LOOP_MS));
- 				} else if (rdev->pm.dynpm_state == DYNPM_STATE_PAUSED) {
- 					rdev->pm.dynpm_state = DYNPM_STATE_ACTIVE;
--					queue_delayed_work(rdev->wq, &rdev->pm.dynpm_idle_work,
--							   msecs_to_jiffies(RADEON_IDLE_LOOP_MS));
-+					schedule_delayed_work(&rdev->pm.dynpm_idle_work,
-+							      msecs_to_jiffies(RADEON_IDLE_LOOP_MS));
- 					DRM_DEBUG_DRIVER("radeon: dynamic power management activated\n");
- 				}
- 			} else { /* count == 0 */
-@@ -796,8 +781,8 @@ static void radeon_dynpm_idle_work_handler(struct work_struct *work)
- 			radeon_pm_set_clocks(rdev);
- 		}
  
--		queue_delayed_work(rdev->wq, &rdev->pm.dynpm_idle_work,
--					msecs_to_jiffies(RADEON_IDLE_LOOP_MS));
-+		schedule_delayed_work(&rdev->pm.dynpm_idle_work,
-+				      msecs_to_jiffies(RADEON_IDLE_LOOP_MS));
+diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+index c631f27..58aa85e 100644
+--- a/drivers/cpufreq/cpufreq_ondemand.c
++++ b/drivers/cpufreq/cpufreq_ondemand.c
+@@ -104,8 +104,6 @@ static unsigned int dbs_enable;	/* number of CPUs using this policy */
+  */
+ static DEFINE_MUTEX(dbs_mutex);
+ 
+-static struct workqueue_struct	*kondemand_wq;
+-
+ static struct dbs_tuners {
+ 	unsigned int sampling_rate;
+ 	unsigned int up_threshold;
+@@ -667,7 +665,7 @@ static void do_dbs_timer(struct work_struct *work)
+ 		__cpufreq_driver_target(dbs_info->cur_policy,
+ 			dbs_info->freq_lo, CPUFREQ_RELATION_H);
  	}
- 	mutex_unlock(&rdev->pm.mutex);
- 	ttm_bo_unlock_delayed_workqueue(&rdev->mman.bdev, resched);
-diff --git a/drivers/gpu/drm/radeon/rs600.c b/drivers/gpu/drm/radeon/rs600.c
-index f1c6e02..2d707d4 100644
---- a/drivers/gpu/drm/radeon/rs600.c
-+++ b/drivers/gpu/drm/radeon/rs600.c
-@@ -634,7 +634,7 @@ int rs600_irq_process(struct radeon_device *rdev)
- 	/* reset gui idle ack.  the status bit is broken */
- 	rdev->irq.gui_idle_acked = false;
- 	if (queue_hotplug)
--		queue_work(rdev->wq, &rdev->hotplug_work);
-+		schedule_work(&rdev->hotplug_work);
- 	if (rdev->msi_enabled) {
- 		switch (rdev->family) {
- 		case CHIP_RS600:
+-	queue_delayed_work_on(cpu, kondemand_wq, &dbs_info->work, delay);
++	schedule_delayed_work_on(cpu, &dbs_info->work, delay);
+ 	mutex_unlock(&dbs_info->timer_mutex);
+ }
+ 
+@@ -681,8 +679,7 @@ static inline void dbs_timer_init(struct cpu_dbs_info_s *dbs_info)
+ 
+ 	dbs_info->sample_type = DBS_NORMAL_SAMPLE;
+ 	INIT_DELAYED_WORK_DEFERRABLE(&dbs_info->work, do_dbs_timer);
+-	queue_delayed_work_on(dbs_info->cpu, kondemand_wq, &dbs_info->work,
+-		delay);
++	schedule_delayed_work_on(dbs_info->cpu, &dbs_info->work, delay);
+ }
+ 
+ static inline void dbs_timer_exit(struct cpu_dbs_info_s *dbs_info)
+@@ -814,7 +811,6 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 
+ static int __init cpufreq_gov_dbs_init(void)
+ {
+-	int err;
+ 	cputime64_t wall;
+ 	u64 idle_time;
+ 	int cpu = get_cpu();
+@@ -838,22 +834,12 @@ static int __init cpufreq_gov_dbs_init(void)
+ 			MIN_SAMPLING_RATE_RATIO * jiffies_to_usecs(10);
+ 	}
+ 
+-	kondemand_wq = create_workqueue("kondemand");
+-	if (!kondemand_wq) {
+-		printk(KERN_ERR "Creation of kondemand failed\n");
+-		return -EFAULT;
+-	}
+-	err = cpufreq_register_governor(&cpufreq_gov_ondemand);
+-	if (err)
+-		destroy_workqueue(kondemand_wq);
+-
+-	return err;
++	return cpufreq_register_governor(&cpufreq_gov_ondemand);
+ }
+ 
+ static void __exit cpufreq_gov_dbs_exit(void)
+ {
+ 	cpufreq_unregister_governor(&cpufreq_gov_ondemand);
+-	destroy_workqueue(kondemand_wq);
+ }
+ 
+ 
 -- 
 1.7.1
 
