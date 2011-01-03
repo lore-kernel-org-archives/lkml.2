@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932157Ab1ACNw5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 08:52:57 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39769 "EHLO
+	id S1755333Ab1ACNul (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 08:50:41 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58971 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755325Ab1ACNum (ORCPT
+	with ESMTP id S1755241Ab1ACNuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 08:50:42 -0500
+	Mon, 3 Jan 2011 08:50:35 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=MjIOq4yCIxFI1s/pfVIxfgpfu2OCGNLP2dHFsPGi/dZsefpWglHUWm/K6CVmFaGGUW
-         y9SGyx+f6YbupjQxttpn0XOeMXcMkmnjhfNZlW2DzSY0AXODnC3SmTsacZoEwRXd8SfN
-         B3OlrbmmkKnv7f7RKma6KCpwru+v4RH3G3tII=
+        b=o0dkbltBC3AEx3DFLMqtaIwG+kojvRe0FxOKc/obE532ZOal+1M7xTV3VLOmvXJpQG
+         qv3dAccQNMpjvM583NmbR/bXBU0f107clQxclhkC5JzVuD4foDOLxpxgiRYHXaTcTqSG
+         3WwjTLmjGfEfRLntsC4rhOeWC7kD23Pv7fPFI=
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, Sage Weil <sage@newdream.net>,
-        ceph-devel@vger.kernel.org
-Subject: [PATCH 22/32] ceph: fsc->*_wq's aren't used in memory reclaim path
-Date: Mon,  3 Jan 2011 14:49:45 +0100
-Message-Id: <1294062595-30097-23-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>, FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH 17/32] scsi/ibmvstgt: use system_wq instead of vtgtd workqueue
+Date: Mon,  3 Jan 2011 14:49:40 +0100
+Message-Id: <1294062595-30097-18-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1294062595-30097-1-git-send-email-tj@kernel.org>
 References: <1294062595-30097-1-git-send-email-tj@kernel.org>
@@ -28,46 +29,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fsc->*_wq's aren't depended upon during memory reclaim.  Convert to
-alloc_workqueue() w/o WQ_MEM_RECLAIM.
+The target driver is not in the memory reclaim path and doesn't need a
+dedicated workqueue.  Drop vtgtd and use system_wq instead.  The used
+work item is sync flushed on removal.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Sage Weil <sage@newdream.net>
-Cc: ceph-devel@vger.kernel.org
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
+Cc: linux-scsi@vger.kernel.org
 ---
 Only compile tested.  Please feel free to take it into the subsystem
 tree or simply ack - I'll route it through the wq tree.
 
 Thanks.
 
- fs/ceph/super.c |   10 +++++++---
- 1 files changed, 7 insertions(+), 3 deletions(-)
+ drivers/scsi/ibmvscsi/ibmvstgt.c |   15 ++++-----------
+ 1 files changed, 4 insertions(+), 11 deletions(-)
 
-diff --git a/fs/ceph/super.c b/fs/ceph/super.c
-index 08b460a..1f6436e 100644
---- a/fs/ceph/super.c
-+++ b/fs/ceph/super.c
-@@ -443,13 +443,17 @@ struct ceph_fs_client *create_fs_client(struct ceph_mount_options *fsopt,
- 		goto fail_client;
+diff --git a/drivers/scsi/ibmvscsi/ibmvstgt.c b/drivers/scsi/ibmvscsi/ibmvstgt.c
+index 2256bab..47fc632 100644
+--- a/drivers/scsi/ibmvscsi/ibmvstgt.c
++++ b/drivers/scsi/ibmvscsi/ibmvstgt.c
+@@ -74,7 +74,6 @@ struct vio_port {
+ 	struct srp_rport *rport;
+ };
  
- 	err = -ENOMEM;
--	fsc->wb_wq = create_workqueue("ceph-writeback");
-+	/*
-+	 * The number of concurrent works can be high but they don't need
-+	 * to be processed in parallel, limit concurrency.
-+	 */
-+	fsc->wb_wq = alloc_workqueue("ceph-writeback", 0, 1);
- 	if (fsc->wb_wq == NULL)
- 		goto fail_bdi;
--	fsc->pg_inv_wq = create_singlethread_workqueue("ceph-pg-invalid");
-+	fsc->pg_inv_wq = alloc_workqueue("ceph-pg-invalid", 0, 1);
- 	if (fsc->pg_inv_wq == NULL)
- 		goto fail_wb_wq;
--	fsc->trunc_wq = create_singlethread_workqueue("ceph-trunc");
-+	fsc->trunc_wq = alloc_workqueue("ceph-trunc", 0, 1);
- 	if (fsc->trunc_wq == NULL)
- 		goto fail_pg_inv_wq;
+-static struct workqueue_struct *vtgtd;
+ static struct scsi_transport_template *ibmvstgt_transport_template;
  
+ /*
+@@ -546,7 +545,7 @@ static irqreturn_t ibmvstgt_interrupt(int dummy, void *data)
+ 	struct vio_port *vport = target_to_port(target);
+ 
+ 	vio_disable_interrupts(vport->dma_dev);
+-	queue_work(vtgtd, &vport->crq_work);
++	schedule_work(&vport->crq_work);
+ 
+ 	return IRQ_HANDLED;
+ }
+@@ -900,6 +899,7 @@ static int ibmvstgt_remove(struct vio_dev *dev)
+ 	crq_queue_destroy(target);
+ 	srp_remove_host(shost);
+ 	scsi_remove_host(shost);
++	flush_work_sync(&vport->crq_work);
+ 	scsi_tgt_free_queue(shost);
+ 	srp_target_free(target);
+ 	kfree(vport);
+@@ -967,21 +967,15 @@ static int __init ibmvstgt_init(void)
+ 	if (!ibmvstgt_transport_template)
+ 		return err;
+ 
+-	vtgtd = create_workqueue("ibmvtgtd");
+-	if (!vtgtd)
+-		goto release_transport;
+-
+ 	err = get_system_info();
+ 	if (err)
+-		goto destroy_wq;
++		goto release_transport;
+ 
+ 	err = vio_register_driver(&ibmvstgt_driver);
+ 	if (err)
+-		goto destroy_wq;
++		goto release_transport;
+ 
+ 	return 0;
+-destroy_wq:
+-	destroy_workqueue(vtgtd);
+ release_transport:
+ 	srp_release_transport(ibmvstgt_transport_template);
+ 	return err;
+@@ -991,7 +985,6 @@ static void __exit ibmvstgt_exit(void)
+ {
+ 	printk("Unregister IBM virtual SCSI driver\n");
+ 
+-	destroy_workqueue(vtgtd);
+ 	vio_unregister_driver(&ibmvstgt_driver);
+ 	srp_release_transport(ibmvstgt_transport_template);
+ }
 -- 
 1.7.1
 
