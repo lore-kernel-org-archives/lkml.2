@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986Ab1ACK0r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 05:26:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17726 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751482Ab1ACK0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 05:26:45 -0500
-Subject: Re: [PATCH] Update atime from future.
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: yangsheng <sickamd@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org
-In-Reply-To: <1293631121-12667-1-git-send-email-sickamd@gmail.com>
-References: <1293631121-12667-1-git-send-email-sickamd@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Mon, 03 Jan 2011 10:27:48 +0000
-Message-ID: <1294050468.2429.2.camel@dolmen>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754115Ab1ACKcn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 05:32:43 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36379 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752859Ab1ACKcl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 05:32:41 -0500
+From: Michal Simek <monstr@monstr.eu>
+To: grant.likely@secretlab.ca
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, davem@davemloft.net,
+        Michal Simek <monstr@monstr.eu>
+Subject: [PATCH] ll_temac: Fix section mismatch from the temac_of_probe
+Date: Mon,  3 Jan 2011 11:32:36 +0100
+Message-Id: <1294050756-31099-1-git-send-email-monstr@monstr.eu>
+X-Mailer: git-send-email 1.5.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Replace __init by __devinit.
 
-On Wed, 2010-12-29 at 21:58 +0800, yangsheng wrote:
-> Signed-off-by: sickamd@gmail.com
-> ---
->  fs/inode.c |    8 +++++++-
->  1 files changed, 7 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/inode.c b/fs/inode.c
-> index da85e56..6c8effd 100644
-> --- a/fs/inode.c
-> +++ b/fs/inode.c
-> @@ -1469,7 +1469,13 @@ static int relatime_need_update(struct vfsmount *mnt, struct inode *inode,
->  		return 1;
->  
->  	/*
-> -	 * Is the previous atime value older than a day? If yes,
-> +	 * Is the previous atime value in future? If yes,
-> +	 * update atime:
-> +	 */
-> +	if ((long)(now.tv_sec - inode->i_atime.tv_sec) < 0)
-> +		return 1;
-> +	/*
-> +	 * Is the previous atime value old than a day? If yes,
->  	 * update atime:
->  	 */
->  	if ((long)(now.tv_sec - inode->i_atime.tv_sec) >= 24*60*60)
+Warning message:
+WARNING: vmlinux.o(.data+0xbc14): Section mismatch in reference from the variable
+temac_of_driver to the function .init.text:temac_of_probe()
+The variable temac_of_driver references
+the function __init temac_of_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or name the variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console,
 
-I don't think this is a good plan for cluster filesystems, since if the
-times on the nodes are not exactly synchronised (we do highly recommend
-people run ntp or similar) then this might lead to excessive atime
-updating. The current behaviour is to ignore atimes which are in the
-future for exactly this reason,
+Signed-off-by: Michal Simek <monstr@monstr.eu>
+---
+ drivers/net/ll_temac_main.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Steve.
-
+diff --git a/drivers/net/ll_temac_main.c b/drivers/net/ll_temac_main.c
+index 9f8e702..beb6ed8 100644
+--- a/drivers/net/ll_temac_main.c
++++ b/drivers/net/ll_temac_main.c
+@@ -952,7 +952,7 @@ static const struct attribute_group temac_attr_group = {
+ 	.attrs = temac_device_attrs,
+ };
+ 
+-static int __init
++static int __devinit
+ temac_of_probe(struct platform_device *op, const struct of_device_id *match)
+ {
+ 	struct device_node *np;
+-- 
+1.5.5.6
 
