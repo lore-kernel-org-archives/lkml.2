@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755636Ab1ACSNg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 13:13:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63593 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755621Ab1ACSNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 13:13:35 -0500
-Date: Mon, 3 Jan 2011 19:05:34 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Chris Mason <chris.mason@oracle.com>,
-        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 08/17] sched: Drop the rq argument to
-	sched_class::select_task_rq()
-Message-ID: <20110103180534.GA16502@redhat.com>
-References: <20101224122338.172750730@chello.nl> <20101224123742.887559254@chello.nl>
+	id S1755628Ab1ACSVs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 13:21:48 -0500
+Received: from smh05.opentransfer.com ([98.130.1.173]:32783 "EHLO
+	smh05.opentransfer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755392Ab1ACSVq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 13:21:46 -0500
+X-Greylist: delayed 2089 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Jan 2011 13:21:46 EST
+X-Opentransfer-Authenticated: ronnie@dntplus.com
+Message-ID: <20110103204645.dms1x64c0s0kkkgk@webmail.opentransfer.com>
+Date: Mon, 03 Jan 2011 20:46:45 +0300
+From: Kimhold Finance Loan <ronnie@dntplus.com>
+Reply-to: kimholdfin@blumail.org
+To: undisclosed-recipients:;
+Subject: D?mesio: Naujieji metai Paskolos pasi?lymas - Taikyti dabar
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII;
+	DelSp=Yes	format=flowed
 Content-Disposition: inline
-In-Reply-To: <20101224123742.887559254@chello.nl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
+X-Originating-IP: 41.138.181.214
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/24, Peter Zijlstra wrote:
->
-> @@ -2680,24 +2681,17 @@ void wake_up_new_task(struct task_struct
->  {
->  	unsigned long flags;
->  	struct rq *rq;
-> -	int cpu __maybe_unused = get_cpu();
 
-Wait, I think this not right.
 
->  #ifdef CONFIG_SMP
->  	rq = task_rq_lock(p, &flags);
-> -	p->state = TASK_WAKING;
->
->  	/*
->  	 * Fork balancing, do it here and not earlier because:
->  	 *  - cpus_allowed can change in the fork path
->  	 *  - any previously selected cpu might disappear through hotplug
-> -	 *
-> -	 * We set TASK_WAKING so that select_task_rq() can drop rq->lock
-> -	 * without people poking at ->cpus_allowed.
->  	 */
-> -	cpu = select_task_rq(rq, p, SD_BALANCE_FORK, 0);
-> -	set_task_cpu(p, cpu);
-> +	set_task_cpu(p, select_task_rq(p, SD_BALANCE_FORK, 0));
->
-> -	p->state = TASK_RUNNING;
->  	task_rq_unlock(rq, &flags);
+Finansin?s pagalbos ekspert?
 
-We need preempt_disable() to protect us against CPU hotplug. This task
-was never activated, it won't be found/migrated if that CPU goes away
-before we take task_rq_lock().
+A? esu MR Morisas Fleisher, privati paskola Paskolos dav?jas ir  
+bendradarbiauti
+finans?, nekilnojamojo turto ir bet kok? verslo finansavimo r??i?. A? taip pat
+si?lome Paskolos gyventojams, ?mon?ms ir bendradarbiauti ?staig? ?emos  
+pal?kan?
+normos, paskolos s?lyg? veiksnys, Paskolos suma nuo LTL 5,000.00 suma (penkis
+t?kstan?ius svar?) GBP 10,000,000.00 (de?imt milijon? svar?). Paskolos pl?toti
+?mones konkurencin? prana?um? ir verslo pl?tra.
 
-Oleg.
+Mes si?lome teis?t? paskolas bet kokios r??ies. Jie greitai prieinama su
+pal?kan? norma tik 5% APR
 
+M?S? paketai apima;
+
+* Prad?ia Paskol?
+* Auto paskola
+* hipotekos paskol?
+* verslo paskol?
+* tarptautini? paskol?
+* asmenin?s paskolos
+* ir daug daugiau
+
+Nedvejokite ir susisiekite su mumis, jei suinteresuotas
+
+Vardas: __________________________
+Vardas: Pavard?: ___________________________
+Lytis: ______________________________
+?eimin? pad?tis: ______________________
+Kontaktai Adresas: _____________________
+Telefonas: _______________________________
+Miestas / Pa?to kodas: _______________________
+Gimimo data: _______________________
+Reikalinga suma, kaip paskola: _______________
+Paskolos trukm?: _______________________
+M?nesio pajamos / Metin?s pajamos: ________
+Pareigos: __________________________
+Tikslas Paskola: ____________________
+Faksas: _________________________________
+
+Pone Morisas Fleisher.
+Finans? kontrolierius / Londonas Operations Manager
+Pa?tas: kimholdfinanceloan1@gmail.com
