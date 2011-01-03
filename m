@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932274Ab1ACQiy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 11:38:54 -0500
-Received: from outbound-queue-1.mail.thdo.gradwell.net ([212.11.70.34]:56934
-	"EHLO outbound-queue-1.mail.thdo.gradwell.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932113Ab1ACQix convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 11:38:53 -0500
-X-Greylist: delayed 316 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Jan 2011 11:38:52 EST
-Subject: Using s3virge card in Sun Blade 2000
-From: Alex Buell <alex.buell@munted.org.uk>
-Reply-To: alex.buell@munted.org.uk
-To: linux-fbdev@vger.kernel.org,
-        Mailing Lists - Kernel Developers 
-	<linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: One very high maintenance cat for company
-Date: Mon, 03 Jan 2011 16:32:16 +0000
-Message-ID: <1294072336.17576.7.camel@lithium>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-X-Gradwell-MongoId: 4d21fa5e.2337-3f0d-2
-X-Gradwell-Auth-Method: mailbox
-X-Gradwell-Auth-Credentials: postmaster@pop3.munted.org.uk
+	id S932309Ab1ACQi7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 11:38:59 -0500
+Received: from sd-11162.dedibox.fr ([88.191.70.230]:35412 "EHLO
+	sd-11162.dedibox.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932276Ab1ACQi5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 11:38:57 -0500
+Date: Mon, 3 Jan 2011 17:38:55 +0100
+From: Stelian Pop <stelian@popies.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Fix my CREDITS entry
+Message-ID: <20110103163855.GB7475@calypso>
+Reply-To: Stelian Pop <stelian@popies.net>
+Mail-Followup-To: Stelian Pop <stelian@popies.net>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-AV-Checked: ClamAV using ClamSMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Update my entry.
 
-I hope the fbdev list is still in use. I have just been experimenting
-with using my old S3ViRGE PCI card in my Sun Blade 2000 as its primary
-display adapter has no X11 driver available for it. 
+Signed-off-by: Stelian Pop <stelian@popies.net>
+---
+ CREDITS |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-I put the card into my SPARC and booted up, after compiling in the s3fb
-driver into the kernel. 
-
-On boot-up, it uses the e3d framebuffer driver, and detects the s3fb
-card but ignores it as seen in dmesg:
-
-s3fb 0000:00:03.0: ignoring secondary device
-
-I then pulled out the primary graphic card (XVR-500) and rebooted. I got
-the following lines in dmesg:
-
-vgaarb: device added: PCI:0000:00:03.0,decodes=io
-+mem,owns=mem,locks=none
-vgaarb: loaded
-s3fb 0000:00:03.0: ignoring secondary device
-
-It seems a bit odd that it is still ignoring the S3ViRGE card given that
-it is now the only graphic adapter in the system. 
-
-I then commented out the following code in drivers/video/s3fb.c:
-
-      if (! svga_primary_device(dev)) {
-                dev_info(&(dev->dev), "ignoring secondary device\n");
-                return -ENODEV;
-        }
-
-and rebooted. 
-
-It got as far as the switching to console device before it hung. 
-
-I'm aware the s3fb driver has big endian issues, I can help fix those
-issues so I can get the card working. Or in other words, I'd welcome
-advice on how to proceed with this. 
-
-Thanks!
+diff --git a/CREDITS b/CREDITS
+index 41d8e63..bc70d46 100644
+--- a/CREDITS
++++ b/CREDITS
+@@ -2813,8 +2813,8 @@ D: CDROM driver "sonycd535" (Sony CDU-535/531)
+ N: Stelian Pop
+ E: stelian@popies.net
+ P: 1024D/EDBB6147 7B36 0E07 04BC 11DC A7A0  D3F7 7185 9E7A EDBB 6147
+-D: sonypi, meye drivers, mct_u232 usb serial hacks
+-S: Paris, France
++D: random kernel hacks
++S: Paimpont, France
+ 
+ N: Pete Popov
+ E: pete_popov@yahoo.com
 -- 
-Tactical Nuclear Kittens
+1.7.1
