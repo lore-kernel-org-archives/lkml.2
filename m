@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209Ab1ACPGp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 10:06:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63947 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932110Ab1ACPGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 10:06:44 -0500
-Date: Mon, 3 Jan 2011 15:59:02 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, Chris Mason <chris.mason@oracle.com>,
-        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 08/17] sched: Drop the rq argument to
-	sched_class::select_task_rq()
-Message-ID: <20110103145902.GA7632@redhat.com>
-References: <20101224122338.172750730@chello.nl> <20101224123742.887559254@chello.nl> <20101229143136.GC2728@zhy> <1294053409.2016.59.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S932218Ab1ACPHJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 10:07:09 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:48589 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755174Ab1ACPHH convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:3:1>);
+	Mon, 3 Jan 2011 10:07:07 -0500
+Message-Id: <4D21F426020000780002A120@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Mon, 03 Jan 2011 15:07:02 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>
+Cc: <akpm@linux-foundation.org>, <randy.dunlap@oracle.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] name_to_dev_t() must not call __init code
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1294053409.2016.59.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03, Peter Zijlstra wrote:
->
-> On Wed, 2010-12-29 at 22:31 +0800, Yong Zhang wrote:
-> > > -	/*
-> > > -	 * select_task_rq() can race against ->cpus_allowed
-> > > -	 */
-> > > -	if (cpumask_test_cpu(dest_cpu, &p->cpus_allowed) &&
-> > > -	    likely(cpu_active(dest_cpu)) && migrate_task(p, rq)) {
-> > > +	if (likely(cpu_active(dest_cpu)) && need_migrate_task(p)) {
-> >
-> > If we drop rq_lock, need_migrate_task() maybe return true but
-> > p is already running on other cpu. Thus we do a wrong migration
-> > call.
->
-> Yeah, too bad.. ;-) exec load balancing is more an optimistic thing
-> anyway, if it got rebalanced under out feet we don't care.
+The function can't be __init itself (being called from some sysfs
+handler), and hence none of the functions it calls can be either.
 
-I don't understand this need_migrate_task() at all (with or without
-the patch). This task is current/running, it should always return T.
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-I guess, migrate_task() was needed before to initialize migration_req.
+---
+ init/do_mounts.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Oleg.
+--- linux-2.6.37-rc8/init/do_mounts.c
++++ 2.6.37-rc8-do_mounts-sections/init/do_mounts.c
+@@ -93,7 +93,7 @@ no_match:
+  *
+  * Returns the matching dev_t on success or 0 on failure.
+  */
+-static dev_t __init devt_from_partuuid(char *uuid_str)
++static dev_t devt_from_partuuid(char *uuid_str)
+ {
+ 	dev_t res = 0;
+ 	struct device *dev = NULL;
+
+
 
