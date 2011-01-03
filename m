@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755134Ab1ACOBN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 09:01:13 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64430 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754933Ab1ACOBL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 09:01:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=JV0lkVdfPQDbOX8baI1Da/wpd7IhDfa1mLVHmt8sNYai4e2kdQX6OshPKieNXKh2r6
-         3vDperdb1x6bG1FzluBmIMli8V2l/5cq9DYHyWFrnGWLuN7flMlsjvoEeLxdcyQWDKTg
-         gxFLu+CPOtO+2eWojkEm3PzPkT5JJfaTA2yis=
-Date: Mon, 3 Jan 2011 15:01:07 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Christine Caulfield <ccaulfie@redhat.com>,
-        David Teigland <teigland@redhat.com>, cluster-devel@redhat.com
-Subject: Re: [PATCH 24/32] dlm: dlm workqueues aren't used in memory
- reclaim path
-Message-ID: <20110103140107.GP18831@htj.dyndns.org>
-References: <1294062595-30097-1-git-send-email-tj@kernel.org>
- <1294062595-30097-25-git-send-email-tj@kernel.org>
- <1294063107.2429.34.camel@dolmen>
+	id S1755318Ab1ACOBu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 09:01:50 -0500
+Received: from THUNK.ORG ([69.25.196.29]:56680 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754875Ab1ACOBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 09:01:49 -0500
+Date: Mon, 3 Jan 2011 08:58:15 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Rientjes <rientjes@google.com>, npiggin@kernel.dk
+Subject: Re: Should we be using unlikely() around tests of GFP_ZERO?
+Message-ID: <20110103135815.GA6024@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Pekka Enberg <penberg@kernel.org>,
+	Minchan Kim <minchan.kim@gmail.com>,
+	Christoph Lameter <cl@linux-foundation.org>,
+	Pekka Enberg <penberg@cs.helsinki.fi>,
+	Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org,
+	linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+	David Rientjes <rientjes@google.com>, npiggin@kernel.dk
+References: <E1PZXeb-0004AV-2b@tytso-glaptop>
+ <AANLkTi=9ZNk6w8PxvveWHy5+okfTyKUj3L2ywFOuFjoq@mail.gmail.com>
+ <AANLkTinz52Ky5BhU-gHq8vx9=1uoN+iuDn1f0C8fnSjQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1294063107.2429.34.camel@dolmen>
+In-Reply-To: <AANLkTinz52Ky5BhU-gHq8vx9=1uoN+iuDn1f0C8fnSjQ@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 03, 2011 at 01:58:27PM +0000, Steven Whitehouse wrote:
-> Hi,
-> 
-> You already acked a patch to do this, which is in the DLM git tree,
-> waiting for the next merge window:
-> 
-> http://git.kernel.org/?p=linux/kernel/git/teigland/dlm.git;a=commitdiff;h=dcce240ead802d42b1e45ad2fcb2ed4a399cb255
+On Mon, Jan 03, 2011 at 09:40:57AM +0200, Pekka Enberg wrote:
+> I guess the rationale here is that if you're going to take the hit of
+> memset() you can take the hit of unlikely() as well. We're optimizing
+> for hot call-sites that allocate a small amount of memory and
+> initialize everything themselves. That said, I don't think the
+> unlikely() annotation matters much either way and am for removing it
+> unless people object to that.
 
-Ooh, I see.  Hmmm... maybe I've asked this before but do you really
-need WQ_MEM_RECLAIM there?  Is dlm used during memory reclaim?
+I suspect for many slab caches, all of the slab allocations for a
+given slab cache type will have the GFP_ZERO flag passed.  So maybe it
+would be more efficient to zap the entire page when it is pressed into
+service for a particular slab cache, so we can avoid needing to use
+memset on a per-object basis?
 
-Thanks.
-
--- 
-tejun
+						- Ted
