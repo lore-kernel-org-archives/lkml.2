@@ -1,101 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288Ab1ACPNe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 10:13:34 -0500
-Received: from imr4.ericy.com ([198.24.6.8]:57899 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932229Ab1ACPNd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 10:13:33 -0500
-Date: Mon, 3 Jan 2011 07:12:42 -0800
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Urs Fleisch <urs.fleisch@gmail.com>
-CC: Jonathan Cameron <jic23@cam.ac.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LM Sensors <lm-sensors@lm-sensors.org>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH V3] hwmon: driver for Sensirion SHT21 humidity and
- temperature sensor
-Message-ID: <20110103151242.GC25600@ericsson.com>
-References: <20101229134511.cc466ac0.urs.fleisch@gmail.com>
- <4D1DF097.1080200@cam.ac.uk>
- <20110103081448.f96c413e.urs.fleisch@gmail.com>
- <4D21ADCB.4070206@cam.ac.uk>
- <20110103150134.e4858844.urs.fleisch@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110103150134.e4858844.urs.fleisch@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932216Ab1ACPOd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 10:14:33 -0500
+Received: from casper.infradead.org ([85.118.1.10]:54078 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755003Ab1ACPOc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 10:14:32 -0500
+Subject: Re: [PATCH UPDATED] workqueue: relax lockdep annotation on
+ flush_work()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110103150052.GU18831@htj.dyndns.org>
+References: <20101229125711.GL488@htj.dyndns.org>
+	 <1294047091.2016.38.camel@laptop> <20110103141735.GQ18831@htj.dyndns.org>
+	 <1294066490.2016.81.camel@laptop>  <20110103150052.GU18831@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 03 Jan 2011 16:14:45 +0100
+Message-ID: <1294067685.2016.83.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 03, 2011 at 09:01:34AM -0500, Urs Fleisch wrote:
-> Hi Jonathan,
+On Mon, 2011-01-03 at 16:00 +0100, Tejun Heo wrote:
+> Hello,
 > 
-> > Is there actualy a use case that means these can't both be set
-> > by platform data?  Also, if these are acceptable, should they have
-> > some means of indicating which combination of values are available?
+> On Mon, Jan 03, 2011 at 03:54:50PM +0100, Peter Zijlstra wrote:
+> > On Mon, 2011-01-03 at 15:17 +0100, Tejun Heo wrote:
+> > 
+> > > @@ -2384,8 +2384,18 @@ static bool start_flush_work(struct work_struct *work, struct wq_barrier *barr,
+> > >  	insert_wq_barrier(cwq, barr, work, worker);
+> > >  	spin_unlock_irq(&gcwq->lock);
+> > >  
+> > > -	lock_map_acquire(&cwq->wq->lockdep_map);
+> > > +	/*
+> > > +	 * If @max_active is 1 or rescuer is in use, flushing another work
+> > > +	 * item on the same workqueue may lead to deadlock.  Make sure the
+> > > +	 * flusher is not running on the same workqueue by verifying write
+> > > +	 * access.
+> > > +	 */
+> > > +	if (cwq->wq->saved_max_active == 1 || cwq->wq->flags & WQ_RESCUER)
+> > > +		lock_map_acquire(&cwq->wq->lockdep_map);
+> > > +	else
+> > > +		lock_map_acquire_read(&cwq->wq->lockdep_map);
+> > >  	lock_map_release(&cwq->wq->lockdep_map);
+> > > +
+> > >  	return true;
+> > >  already_gone:
+> > >  	spin_unlock_irq(&gcwq->lock);
+> > 
+> > Ah, but this violates the rule that you must always use the most strict
+> > constraints. Code doesn't know if it will run in a rescue thread or not,
+> > hence it must assume it does.
 > 
-> I can imagine a use case where an embedded device wants to operate in a
-> low-power mode while still monitoring humidity and/or temperature. Measurement
-> time and thus power consumption of the SHT21 are significantly smaller when
-> using a low resolution. Or you can use a low resolution while waiting for a
-> significant change in humidity and/or temperature and then switch to a higher
-> resolution to actually report the measurement values.
-> 
-> > Rely on platform data to get this right rather than an adhoc test that
-> > might well pass on some random devices.
-> 
-> I removed that probing stuff. As read and write addresses for the user
-> register are different, it would probably not pass on another device, but it
-> could disturb another device.
-> 
-> > Sorry to say I missed some error handling issues the first time around.
-> > Please always provide userspace with the most detailed and correct error
-> > possible. Normally this is the one comming up from the bus subsystem.
-> 
-> All error codes should now be passed up to userspace.
-> 
-> Thanks again,
-> Urs
-> 
-> Signed-off-by: Urs Fleisch <urs.fleisch@sensirion.com>
+> Hmmm?  The code applies the most strict contraints.  If the workqueue
+> has a rescuer, flushing another work from the workqueue will always
+> trigger lockdep warning.  The rule is relaxed only for workqueues
+> which aren't used for memory reclaiming && support parallel execution.
 
-All the above shows up in the commit log if the patch is applied. Just adds
-additional work for the maintainers.
+Ah, ok. I read it like: if the current thread is a rescue thread.
 
-> ---
-[ ...] 
-> +
-> +/**
-> + * sht21_show_temperature() - show temperature measurement value in sysfs
-> + * @dev: device
-> + * @attr: device attribute
-> + * @buf: sysfs buffer (PAGE_SIZE) where measurement values are written to
-> + *
-> + * Will be called on read access to temp1_input sysfs attribute.
-> + * Returns number of bytes written into buffer, negative errno on error.
-> + */
-> +static ssize_t sht21_show_temperature(struct device *dev,
-> +       struct device_attribute *attr,
-> +       char *buf)
-> +{
-> +       struct i2c_client *client = to_i2c_client(dev);
-> +       int result = sht21_update_measurements(client);
-> +       if (result >= 0) {
-> +               struct sht21 *sht21 = i2c_get_clientdata(client);
-> +
-> +               return sprintf(buf, "%d\n", sht21->temperature);
-> +       }
-> +       return result;
 
-Highly unusual way of detecting and returning errors. Common would be
-
-	if (result < 0)
-		return result;
-	/* other code */
-
-ie keep the code flow intact. Makes the code much easier to read.
-
-Guenter
