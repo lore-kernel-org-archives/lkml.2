@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751010Ab1ACFFP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 00:05:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4199 "EHLO mx1.redhat.com"
+	id S1751154Ab1ACFP7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 00:15:59 -0500
+Received: from lo.gmane.org ([80.91.229.12]:41960 "EHLO lo.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750714Ab1ACFFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 00:05:14 -0500
-Message-ID: <4D2158C4.5010107@redhat.com>
-Date: Mon, 03 Jan 2011 00:04:04 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Hillf Danton <dhillf@gmail.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Edwin Zhai <edwin.zhai@intel.com>
-Subject: Re: [RFC PATCH 2/3] sched: add yield_to function
-References: <AANLkTikqDDq2GWYONu=JyGkrETMATx14LCFbm+e4PSSZ@mail.gmail.com>	<4D20B38B.40007@redhat.com> <AANLkTi=hKcX5Sjei-gNjkknU9O4bZ=bxT9AuSA-US-H4@mail.gmail.com>
-In-Reply-To: <AANLkTi=hKcX5Sjei-gNjkknU9O4bZ=bxT9AuSA-US-H4@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1750855Ab1ACFP6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 00:15:58 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Alexander Clouter <alex@digriz.org.uk>
+Subject: Re: Measuring startup-time from userspace
+Date: Mon, 3 Jan 2011 05:12:24 +0000
+Message-ID: <oe28v7-g0t.ln1@chipmunk.wormnet.eu>
+References: <4D20FEF0.5020206@mozilla.com>
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: chipmunk.wormnet.eu
+User-Agent: tin/1.9.6-20100522 ("Lochruan") (UNIX) (Linux/2.6.32-5-sparc64-smp (sparc64))
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2011 11:18 PM, Hillf Danton wrote:
-> On Mon, Jan 3, 2011 at 1:19 AM, Rik van Riel<riel@redhat.com>  wrote:
->> On 01/02/2011 06:43 AM, Hillf Danton wrote:
->>
->>> The following work is based on what Rik posted, with a few changes.
->>
->> I threw out my patch before Christmas, replacing it with
->> Mike Galbraith's work.
->>
+Taras Glek <tglek@mozilla.com> wrote:
 >
-> Would you please share the work by Mike, or info where to get it?
+> Does Linux provide a reasonable way to measure how long a process has 
+> existed for? The goal is to have a function that returns the number of 
+> milliseconds since process-creation.
+>
+At a glance:
+----
+alex@berk:~$ stat /proc/16863/
+  File: `/proc/16863/'
+  Size: 0               Blocks: 0          IO Block: 1024   directory
+Device: 3h/3d   Inode: 837808      Links: 6
+Access: (0555/dr-xr-xr-x)  Uid: ( 1000/    alex)   Gid: ( 1000/    alex)
+Access: 2011-01-03 05:07:47.888363341 +0000
+Modify: 2011-01-03 05:07:47.888363341 +0000
+Change: 2011-01-03 05:07:47.888363341 +0000
+----
 
-Now that I finally got useful test results (after
-increasing ple_gap to be more useful on the X5670
-CPU), I will post the patch series.
+A nanosecond resolution timestamp for the moment when the pid is created 
+it seems.  I could be completely wrong, but this seems to be one of 
+those "too easy to be true" moments.
 
-Christmas holidays are a good thing, but expect
-patches tomorrow :)
+Cheers
 
 -- 
-All rights reversed
+Alexander Clouter
+.sigmonster says: Marriage is the sole cause of divorce.
+
