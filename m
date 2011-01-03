@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab1ACUod (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 15:44:33 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:57658 "EHLO e5.ny.us.ibm.com"
+	id S1753442Ab1ACUs7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 15:48:59 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:46499 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751155Ab1ACUoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 15:44:32 -0500
-Subject: Re: [PATCH 2/3] ntp: add ADJ_SETOFFSET mode bit
-From: John Stultz <john.stultz@linaro.org>
-To: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Richard Cochran <richardcochran@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richard.cochran@omicron.at>
-In-Reply-To: <AANLkTi=LqkC-tKzbb6y=iL0UvFYcfcHSuX=jVVFCk1uR@mail.gmail.com>
-References: <1293493244-17583-1-git-send-email-john.stultz@linaro.org>
-	 <1293493244-17583-3-git-send-email-john.stultz@linaro.org>
-	 <AANLkTi=LqkC-tKzbb6y=iL0UvFYcfcHSuX=jVVFCk1uR@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 03 Jan 2011 12:44:26 -0800
-Message-ID: <1294087466.2571.89.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1751285Ab1ACUs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 15:48:58 -0500
+Message-ID: <4D22362F.2040604@parallels.com>
+Date: Mon, 3 Jan 2011 14:48:47 -0600
+From: Rob Landley <rlandley@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: "Kirill A. Shutemov" <kas@openvz.org>, Rob Landley <rob@landley.net>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        Pavel Emelyanov <xemul@parallels.com>, <linux-nfs@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 00/12] make rpc_pipefs be mountable multiple time
+References: <1293628470-28386-1-git-send-email-kas@openvz.org>	 <AANLkTi=AXz21wDeE1vPVD-6cEtj6faXN9x09eHDCsTkB@mail.gmail.com>	 <20101230085139.GA29697@shutemov.name> <4D1C4C7C.6050606@parallels.com>	 <20101230094433.GB29697@shutemov.name>  <4D1C5953.6020200@parallels.com> <1293814441.2980.4.camel@heimdal.trondhjem.org>
+In-Reply-To: <1293814441.2980.4.camel@heimdal.trondhjem.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-29 at 05:47 +0900, Kuwahara,T. wrote:
-> On Tue, Dec 28, 2010 at 8:40 AM, John Stultz <john.stultz@linaro.org> wrote:
-> > From: Richard Cochran <richardcochran@gmail.com>
-> >
-> > This patch adds a new mode bit into the timex structure. When set, the
-> > bit instructs the kernel to add the given time value to the current time.
-> 
-> I came up with this simple solution: "Just use ADJ_OFFSET as usual,
-> but don't forget to disable the kernel PLL."
+On 12/31/2010 10:54 AM, Trond Myklebust wrote:
+>> I'm kind of surprised that the kernel cares about a specific path under
+>> /var/lib.  (Seems like policy in the kernel somehow.)  Can't it just
+>> check the current process's mount list to see if an instance of
+>> rpc_pipefs is mounted in the current namespace the way lxc looks for
+>> cgroups?  Or are there potential performance/scalability issues with that?
+>
+> The kernel doesn't give a damn about the /var/lib/nfs/rpc_pipefs bit.
+> That's all for the benefit of the userland utilities.
 
-Again, this seems to be trying to add new functionality into a corner
-case of a existing mode.
+Are you saying that if you go into a container and that mount point 
+doesn't exist, the kernel will still be able to find and use rpc_pipefs? 
+  Without userspace creating a specific magic path and mounting a 
+filesystem on it?
 
-I don't like this because it makes testing and validating that the code
-is correct for its uses difficult. Especially given that a number of
-combinations of modes might be set at once. What happens to freq
-adjustments done at the same time as an ADJ_OFFSET - STA_PLL?
+If so, I misread the patch...
 
-Personally, I see the adjtimex call as too flexible, as I'd prefer to
-have the modes be exclusive (adjusting one thing per call). As it is
-now, the kernel doesn't throw out enough invalid to invalid-ish cases.
-ie: MOD_NANO|MOD_MICRO: totally cool! We should fix these and make the
-input checking more strict, but in my mind moving to mode-numbers rather
-then mode-flags would be much nicer (and more extendable).
-
-Richard: Maybe this is a good thing to think about for clock_adjtime? If
-we are adding a new syscall, maybe we should make sure we clean up some
-of the old syscalls issues? It does add a good bit of complexity, as the
-idea of clock_adjtime being a multiplexing adjtimex was nice and simple.
-We'd also have to review the mode usage to see if multi-mode adjustments
-in a single call are all that common or not.
-
-Kuwahara: Maybe could you maybe better explain your passion against
-using a new mode-flag for this new functionality? You seem dead set
-against it, but have not expressed your rational well.
-
-thanks
--john
+Rob
 
