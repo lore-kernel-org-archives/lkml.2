@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926Ab1ACVhk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 16:37:40 -0500
-Received: from outbound-queue-1.mail.thdo.gradwell.net ([212.11.70.34]:46688
-	"EHLO outbound-queue-1.mail.thdo.gradwell.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751583Ab1ACVhi convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 16:37:38 -0500
-Subject: Re: Using s3virge card in Sun Blade 2000
-From: Alex Buell <alex.buell@munted.org.uk>
-Reply-To: alex.buell@munted.org.uk
-To: David Miller <davem@davemloft.net>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110103.123939.02282416.davem@davemloft.net>
-References: <1294083541.17576.11.camel@lithium>
-	 <20110103.114301.102556157.davem@davemloft.net>
-	 <1294086801.17576.14.camel@lithium>
-	 <20110103.123939.02282416.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: One very high maintenance cat for company
-Date: Mon, 03 Jan 2011 21:36:13 +0000
-Message-ID: <1294090573.17576.16.camel@lithium>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-X-Gradwell-MongoId: 4d22419e.13b5e-1da4-2
-X-Gradwell-Auth-Method: mailbox
-X-Gradwell-Auth-Credentials: postmaster@pop3.munted.org.uk
+	id S1755256Ab1ACVjC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 16:39:02 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49056 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751583Ab1ACVjA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 16:39:00 -0500
+Date: Mon, 3 Jan 2011 22:38:50 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-nfs@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+Message-ID: <20110103213850.GC25121@pengutronix.de>
+References: <20101230171453.GA5787@pengutronix.de> <1293731992.4919.5.camel@heimdal.trondhjem.org> <20101230191846.GB14221@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101230191846.GB14221@pengutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-03 at 12:39 -0800, David Miller wrote:
+On Thu, Dec 30, 2010 at 08:18:46PM +0100, Uwe Kleine-König wrote:
+> On Thu, Dec 30, 2010 at 12:59:52PM -0500, Trond Myklebust wrote:
+> > What filesystem are you exporting on the server? What is the NFS
+> > version? Is this nfsroot, autofs or an ordinary nfs mount?
+> This is an nfsroot of /home/ukl/nfsroot/tx28 which is a symlink to a
+> directory on a different partition.  I don't know the filesystem of my
+> homedir as it resides on a server I have no access to, but I asked the
+> admin, so I can follow up with this info later (I'd suspect ext3, too).
+Yes, it is ext3.
 
-> > I've just started digging into the innards of the s3fb driver, my first
-> > attempt provoked this, simply by commenting out the check to see if it's
-> > not the primary device and exits with -ENODEV: 
-> > 
-> > Jan  3 20:16:29 sodium kernel: ERROR(1): Cheetah error trap taken
-> > afsr[0030100000000000] afar[00000000000003d0] TL1(0)
-> > Jan  3 20:16:29 sodium kernel: ERROR(1): TPC[105918d8] TNPC[105918dc]
-> > O7[10591884] TSTATE[4411001606]
-> > Jan  3 20:16:29 sodium kernel: ERROR(1): TPC<s3_pci_probe+0x194/0x63c
-> > [s3fb]>
-> > Jan  3 20:16:29 sodium kernel: ERROR(1): M_SYND(0),  E_SYND(0), Multiple
-> > Errors, Privileged
+> The real root directory is on ext3 (rw,noatime).
 > 
-> I know, this is what happens if you call vga_*() with a NULL first parameter
-> on sparc64.  It's accessing garbage addresses.
+> The serving nfs-server is Debian's nfs-kernel-server 1:1.2.2-1.
+If that matters, kernel is linux-image-2.6.32-5-amd64 (2.6.32-29)
+provided by Debian.
 
-OK. 
+>                                                                I don't
+> know if testing that further would help or just waste of my time, so
+> please let me know if I can help you and how.
+This still applies
 
- # lspci -vvxx -s 0:0:03
-0000:00:03.0 VGA compatible controller: S3 Inc. ViRGE/DX or /GX (rev 01)
-(prog-if 00 [VGA controller])
-        Subsystem: S3 Inc. ViRGE/DX
-        Physical Slot: PCI 3
-        Control: I/O- Mem+ BusMaster- SpecCycle- MemWINV- VGASnoop-
-ParErr- Stepping- SERR- FastB2B- DisINTx-
-        Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium >TAbort-
-<TAbort- <MAbort- >SERR- <PERR- INTx-
-        Interrupt: pin A routed to IRQ 23
-        Region 0: Memory at 14000000 (32-bit, non-prefetchable)
-[size=64M]
-        Region 1: [virtual] Memory at fffff80200000000 (32-bit,
-non-prefetchable) [size=1]
-        Region 2: [virtual] Memory at fffff80200000000 (32-bit,
-non-prefetchable) [size=1]
-        Region 3: [virtual] Memory at fffff80200000000 (32-bit,
-non-prefetchable) [size=1]
-        Region 4: [virtual] Memory at fffff80200000000 (32-bit,
-non-prefetchable) [size=1]
-        Region 5: [virtual] Memory at fffff80200000000 (32-bit,
-non-prefetchable) [size=1]
-        Expansion ROM at 00130000 [disabled] [size=64K]
-        Kernel driver in use: s3fb
-        Kernel modules: s3fb
-00: 33 53 01 8a 02 00 00 02 01 00 00 03 00 40 00 00
-10: 00 00 00 14 00 00 00 00 00 00 00 00 00 00 00 00
-20: 00 00 00 00 00 00 00 00 00 00 00 00 33 53 01 8a
-30: 00 00 13 00 00 00 00 00 00 00 00 00 00 01 04 ff
+Uwe
 
-Those are 32 bit addresses, so I suppose I should be getting the base
-address for the registers accesses from region 1, right? 
 -- 
-Tactical Nuclear Kittens
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
