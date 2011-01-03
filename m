@@ -1,123 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283Ab1ACVnG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 16:43:06 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33388 "EHLO
+	id S1755428Ab1ACVqr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 16:46:47 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49888 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752762Ab1ACVnE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 16:43:04 -0500
-Date: Mon, 3 Jan 2011 13:40:04 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        Marc Zyngier <maz@misterjones.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com
-Subject: Re: [PATCH] gpio/ml_ioh_gpio: ML7213 GPIO driver
-Message-Id: <20110103134004.04814deb.akpm@linux-foundation.org>
-In-Reply-To: <1293105524-3250-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-References: <1293105524-3250-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	by vger.kernel.org with ESMTP id S1754960Ab1ACVqp convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 16:46:45 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110103131911.c1c2adf6.akpm@linux-foundation.org>
+References: <1293182186-23462-1-git-send-email-namhyung@gmail.com> <20110103131911.c1c2adf6.akpm@linux-foundation.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 3 Jan 2011 13:46:19 -0800
+Message-ID: <AANLkTinL8Zi2=XjRrb1g7Wg=tqGk3Tmk3C7-CzZY_QjJ@mail.gmail.com>
+Subject: Re: [PATCH] compat: fix use of an uninitialized variable in compat_sys_io_setup()
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Namhyung Kim <namhyung@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff Moyer <jmoyer@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Dec 2010 20:58:44 +0900
-Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com> wrote:
-
-> ML7213 is companion chip for Intel Atom E6xx series.
-> This driver can be used for OKI SEMICONDUCTOR ML7213 IOH(Input/Output Hub) which
-> is for IVI(In-Vehicle Infotainment) use.
-> This driver can access the IOH's GPIO device.
-> 
+On Mon, Jan 3, 2011 at 1:19 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Fri, 24 Dec 2010 18:16:26 +0900
+> Namhyung Kim <namhyung@gmail.com> wrote:
 >
-> ...
+>> The upper bytes of ctx64 might contain garbages because it was
+>> set by get_user() which copied only lower 4 bytes as its second
+>> argument points to. Since sys_io_setup() requires its argumet
+>> is properly initialized to 0 we should set it explicitly.
+>>
+>> On x86, this was not a problem since its implementation of
+>> get_user() does a C assignment so that it can fill upper bytes
+>> with 0's. But other archs that use __get_user_asm() or something
+>> might have a problem.
+>>
+>> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+>> Cc: Jeff Moyer <jmoyer@redhat.com>
+>> ---
+>>  fs/compat.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/fs/compat.c b/fs/compat.c
+>> index 4376e07febbb..b074e9f79148 100644
+>> --- a/fs/compat.c
+>> +++ b/fs/compat.c
+>> @@ -526,7 +526,7 @@ asmlinkage long
+>>  compat_sys_io_setup(unsigned nr_reqs, u32 __user *ctx32p)
+>>  {
+>>       long ret;
+>> -     aio_context_t ctx64;
+>> +     aio_context_t ctx64 = 0;
+>>
+>>       mm_segment_t oldfs = get_fs();
+>>       if (unlikely(get_user(ctx64, ctx32p)))
 >
-> +static int __devinit ioh_gpio_probe(struct pci_dev *pdev,
-> +				    const struct pci_device_id *id)
-> +{
-> +	int ret;
-> +	int i;
-> +	struct ioh_gpio *chip;
-> +	void __iomem *base;
-> +	void __iomem *chip_save;
-> +
-> +	ret = pci_enable_device(pdev);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "%s : pci_enable_device failed", __func__);
-> +		goto err_pci_enable;
-> +	}
-> +
-> +	ret = pci_request_regions(pdev, KBUILD_MODNAME);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "pci_request_regions failed-%d", ret);
-> +		goto err_request_regions;
-> +	}
-> +
-> +	base = pci_iomap(pdev, 1, 0);
-> +	if (base == 0) {
-> +		dev_err(&pdev->dev, "%s : pci_iomap failed", __func__);
-> +		ret = -ENOMEM;
-> +		goto err_iomap;
-> +	}
-> +
-> +	chip_save = kzalloc(sizeof(*chip) * 8, GFP_KERNEL);
-> +	if (chip_save == NULL) {
-> +		dev_err(&pdev->dev, "%s : kzalloc failed", __func__);
-> +		ret = -ENOMEM;
-> +		goto err_kzalloc;
-> +	}
-> +
-> +	for (i = 0, chip = chip_save; i < 8; i++, chip++) {
+> Well.  What _should_ a get_user(some_u64, some_u32*) do to `some_u64'?
 
-	chip = chip_save;
-	for (i = 0; i < 8; i++, chip++) {
+We do "get_user(int,char *)" etc all the time. It's expected to work,
+and do the proper zero- (or sign-) extension.
 
-is simpler, and simpler is better.
+The x86 code does:
 
-> +		chip->dev = &pdev->dev;
-> +		chip->base = base;
-> +		chip->reg = chip->base;
-> +		chip->ch = i;
-> +		mutex_init(&chip->lock);
-> +		ioh_gpio_setup(chip, num_ports[i]);
-> +		ret = gpiochip_add(&chip->gpio);
-> +		if (ret) {
-> +			dev_err(&pdev->dev, "IOH gpio: Failed to register GPIO\n");
-> +			goto err_gpiochip_add;
+  #define get_user(x, ptr)
+           ...
+           (x) = (__typeof__(*(ptr)))__val_gu;
 
-Here we should run gpiochip_remove() against chips 0 .. i-1, no?
+and that's the _only_ correct thing to do. That assignment, with the
+proper type expansion, is absolutely vital. And there's no way you can
+do that with any asm constructs, exactly because of the whole
+sign/zero extension requirement.
 
-> +		}
-> +	}
-> +
-> +	chip = chip_save;
-> +	pci_set_drvdata(pdev, chip);
-> +
-> +	return 0;
-> +
-> +err_gpiochip_add:
-> +	kfree(chip_save);
-> +
-> +err_kzalloc:
-> +	pci_iounmap(pdev, base);
-> +
-> +err_iomap:
-> +	pci_release_regions(pdev);
-> +
-> +err_request_regions:
-> +	pci_disable_device(pdev);
-> +
-> +err_pci_enable:
-> +
-> +	dev_err(&pdev->dev, "%s Failed returns %d\n", __func__, ret);
-> +	return ret;
-> +}
+If somebody only sets the low 32 bits of the result, that's simply a
+bug. That's a seriously buggered uaccess.h.
 
+So NAK on the patch, and please point to what architecture has this problem.
+
+                            Linus
