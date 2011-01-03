@@ -1,142 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168Ab1ACTEf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 14:04:35 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37663 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751285Ab1ACTEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 14:04:34 -0500
-Date: Mon, 3 Jan 2011 20:04:13 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] perf fixes
-Message-ID: <20110103190413.GA17782@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1754824Ab1ACTGl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 14:06:41 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:62729 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751960Ab1ACTGj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 14:06:39 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=MsfxUTlnwtkA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=L65Ci2r-81WHP9RreSsA:9 a=AYXiZG3S4vDJDYPj_cgA:7 a=pHkShnxYia06tUuivCFWpDOd1VYA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][RT][PATCH 3/4] rtmutex: Revert Optimize rt lock wakeup
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Gregory Haskins <ghaskins@novell.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        ThomasGleixner <tglx@linutronix.de>,
+        Peter Morreale <PMorreale@novell.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <4D19A8B20200005A00079658@novprvoes0310.provo.novell.com>
+References: <20101223224755.078983538@goodmis.org>
+	 <20101223225116.729981172@goodmis.org>
+	 <4D13DF250200005A000793E1@novprvoes0310.provo.novell.com>
+	 <1293166464.22802.415.camel@gandalf.stny.rr.com>
+	 <4D19A8B20200005A00079658@novprvoes0310.provo.novell.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 03 Jan 2011 14:06:36 -0500
+Message-ID: <1294081596.3948.192.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Tue, 2010-12-28 at 07:06 -0700, Gregory Haskins wrote:
+> >>> On 12/23/2010 at 11:54 PM, in message
 
-Please pull the latest perf-fixes-for-linus git tree from:
+> > Sure, but as I said, it is mostly broken anyway. I could even insert
+> > some tracepoints to show that this is always missed (heck I'll add an
+> > unlikely and do the branch profiler ;-)
+> 
+> Well, I think that would be a good datapoint and is one of the things I'd like to see.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-fixes-for-linus
+OK, here it is, after running a simple "dbench 10":
 
- Thanks,
+ correct incorrect  %        Function                  File              Line
+ ------- ---------  -        --------                  ----              ----
+     150   726979  99 wakeup_next_waiter             rtmutex.c            581
 
-	Ingo
+And the patch I added:
 
------------------->
-Ben Hutchings (1):
-      watchdog: Improve initialisation error message and documentation
-
-Frederic Weisbecker (1):
-      perf: Fix callchain hit bad cast on ascii display
-
-Robert Richter (1):
-      arch/x86/oprofile/op_model_amd.c: Perform initialisation on a single CPU
-
-
- Documentation/kernel-parameters.txt |    2 +-
- arch/x86/oprofile/op_model_amd.c    |   24 ++++++++++++++++--------
- kernel/watchdog.c                   |    3 ++-
- tools/perf/util/hist.c              |    2 +-
- 4 files changed, 20 insertions(+), 11 deletions(-)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 8b61c93..01ece1b 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1759,7 +1759,7 @@ and is between 256 and 4096 characters. It is defined in the file
+diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
+index 318d7ed..dacdcb6 100644
+--- a/kernel/rtmutex.c
++++ b/kernel/rtmutex.c
+@@ -578,7 +578,7 @@ static void wakeup_next_waiter(struct rt_mutex *lock, int savestate)
+ 		smp_mb();
  
- 	nousb		[USB] Disable the USB subsystem
- 
--	nowatchdog	[KNL] Disable the lockup detector.
-+	nowatchdog	[KNL] Disable the lockup detector (NMI watchdog).
- 
- 	nowb		[ARM]
- 
-diff --git a/arch/x86/oprofile/op_model_amd.c b/arch/x86/oprofile/op_model_amd.c
-index a011bcc..7d90d47 100644
---- a/arch/x86/oprofile/op_model_amd.c
-+++ b/arch/x86/oprofile/op_model_amd.c
-@@ -630,21 +630,29 @@ static int __init_ibs_nmi(void)
- 	return 0;
- }
- 
--/* initialize the APIC for the IBS interrupts if available */
-+/*
-+ * check and reserve APIC extended interrupt LVT offset for IBS if
-+ * available
-+ *
-+ * init_ibs() preforms implicitly cpu-local operations, so pin this
-+ * thread to its current CPU
-+ */
-+
- static void init_ibs(void)
- {
--	ibs_caps = get_ibs_caps();
-+	preempt_disable();
- 
-+	ibs_caps = get_ibs_caps();
- 	if (!ibs_caps)
--		return;
-+		goto out;
- 
--	if (__init_ibs_nmi()) {
-+	if (__init_ibs_nmi() < 0)
- 		ibs_caps = 0;
--		return;
--	}
-+	else
-+		printk(KERN_INFO "oprofile: AMD IBS detected (0x%08x)\n", ibs_caps);
- 
--	printk(KERN_INFO "oprofile: AMD IBS detected (0x%08x)\n",
--	       (unsigned)ibs_caps);
-+out:
-+	preempt_enable();
- }
- 
- static int (*create_arch_files)(struct super_block *sb, struct dentry *root);
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 6e3c41a..5b08215 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -364,7 +364,8 @@ static int watchdog_nmi_enable(int cpu)
- 		goto out_save;
+ 		/* If !RUNNING && !RUNNING_MUTEX */
+-		if (pendowner->state & ~TASK_RUNNING_MUTEX)
++		if (unlikely(pendowner->state & ~TASK_RUNNING_MUTEX))
+ 			wake_up_process_mutex(pendowner);
  	}
  
--	printk(KERN_ERR "NMI watchdog failed to create perf event on cpu%i: %p\n", cpu, event);
-+	printk(KERN_ERR "NMI watchdog disabled for cpu%i: unable to create perf event: %ld\n",
-+	       cpu, PTR_ERR(event));
- 	return PTR_ERR(event);
- 
- 	/* success path */
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 2022e87..76bcc35 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -356,7 +356,7 @@ static size_t ipchain__fprintf_graph_line(FILE *fp, int depth, int depth_mask,
- 
- static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
- 				     int depth, int depth_mask, int period,
--				     u64 total_samples, int hits,
-+				     u64 total_samples, u64 hits,
- 				     int left_margin)
- {
- 	int i;
+
+Interesting that we hit 150 times that the new owner was already awake.
+Perhaps it was because the new owner was about to spin on a spinlock
+after it had put itself into the TASK_INTERRUPTIBLE state, and it was
+woken up by someone else?
+
+
+> 
+> > 
+> > The reason is that adaptive spinners spin in some other state than
+> > TASK_RUNNING, thus it does not help adaptive spinners at all. I first
+> > tried to fix that, but it made dbench run even slower.
+> 
+> This is why I am skeptical.  You are essentially asserting there are two issues here, IIUC:
+> 
+> 1) The intent of avoiding a wakeup is broken and we take the double whammy of a mb()
+> plus the wakeup() anyway.
+
+Yep, this is what I believe is happening.
+
+> 
+> 2) mb() is apparently slower than wakeup().
+
+Forget this point, as #1 seems to be the main issue. Also, I'm not sure
+it is safe to "fix" this, as I started to try.
+
+
+> 
+> I agree (1) is plausible, though I would like to see the traces to confirm.  Its been a long time
+> since I looked at that code, but I think the original code either ran in RUNNING_MUTEX and was
+> inadvertently broken in the mean time or the other cpu would have transitioned to RUNNING on
+> its own when we flipped the owner before the release-side check was performed.  Or perhaps
+> we just plain screwed this up and it was racy ;)  I'm not sure.  But as Peter (M) stated, it seems
+> like a shame to walk away from the concept without further investigation.  I think everyone can
+> agree that at the very least, if it is in fact taking a double whammy we should fix that.
+
+[ cut out all the 2's since I'm not worried about that now, even if it 
+  is not a problem. ]
+
+
+Now, the way I was going to fix this is to have the adaptive wait be in
+TASK_RUNNING state, and then change the state iff we are going to sleep.
+
+But this can be a bit more race. Especially with Lai's new changes. With
+the new changes, the waiter->task does not get nulled anymore.
+
+The test to take the lock, now needs to be under the lock->wait_lock
+spinlock. We have to grab that lock, and see if the owner is null, and
+that we are the next waiter in the queue. Thus, on taking the lock we
+need to have something like this:
+
+
+	if (adaptive_wait(&waiter, orig_owner))
+		sleep = 1;
+	else
+		sleep = 0;
+
+	if (sleep)
+		raw_spin_lock(&lock->wait_lock);
+		saved_state = rt_set_current_block_state(saved_state);
+		if (!lock->owner && &waiter == rt_mutex_top_waiter(lock))
+			sleep = 0;
+		raw_spin_unlock(&lock->wait_lock);
+		if (sleep)
+			schedule_rt_mutex(lock);
+		saved_state = rt_restore_current_blocked_state(saved_state);
+	}
+
+Otherwise we can risk the wakeup_next_waiter() missing the wakeup.
+
+To clarify, we want the adaptive_wait() to run as TASK_RUNNING. Then if
+we must sleep, then we must set the state to TASK_UNINTERRUPTIBLE, test
+again if we can still the lock, and if not then sleep. Otherwise, if a
+wakeup happens just before we set the state to TASK_UNINTERRUPTIBLE,
+then we miss the wake up all together.
+
+I can do this change, and see what impact it makes.
+
+I'm also curious if this ever worked? If it did not, then are you sure
+your tests that show the benefit of it was true. I don't have a large
+scale box at my disposal ATM, so I can only see what this does on 4way
+machines.
+
+-- Steve
+
+
