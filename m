@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372Ab1ACOze (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 09:55:34 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61460 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754967Ab1ACOzd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 09:55:33 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=SjpHFBIRkbGcwIzKIEuheLbALYpBO7vnGVTwtzAb4SykmJAH5UwGLDtTN3fCXCSuR8
-         FiY+XgGeyI/yc94TshqEjerAvF6+e8OBOvmV+B0/lLsl7vj0SZpLUymz+6qZeGFIhtPk
-         l7S/8WIFdStwp1dSEA2h/QFJkBzbumSyh2J4M=
-Date: Mon, 3 Jan 2011 15:44:10 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Christine Caulfield <ccaulfie@redhat.com>,
-        David Teigland <teigland@redhat.com>, cluster-devel@redhat.com
-Subject: Re: [PATCH 24/32] dlm: dlm workqueues aren't used in memory
- reclaim path
-Message-ID: <20110103144410.GT18831@htj.dyndns.org>
-References: <1294062595-30097-1-git-send-email-tj@kernel.org>
- <1294062595-30097-25-git-send-email-tj@kernel.org>
- <1294063107.2429.34.camel@dolmen>
- <20110103140107.GP18831@htj.dyndns.org>
- <1294064489.2429.58.camel@dolmen>
- <20110103142734.GR18831@htj.dyndns.org>
- <1294065559.2429.84.camel@dolmen>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294065559.2429.84.camel@dolmen>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932100Ab1ACOzy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 09:55:54 -0500
+Received: from mga11.intel.com ([192.55.52.93]:33763 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754967Ab1ACOzx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 09:55:53 -0500
+Message-Id: <b7da2f$q1ffv6@fmsmga001.fm.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,267,1291622400"; 
+   d="scan'208";a="873971699"
+Date: Mon, 03 Jan 2011 14:54:53 +0000
+To: Knut Petersen <Knut_Petersen@t-online.de>, airlied@linux.ie
+Subject: Re: [PATCH] Fix i915 drm regression on AOpen i915GMm-HFS motherboard
+Cc: eric@anholt.net, jesse.barnes@intel.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        intel-gfx <intel-gfx@lists.freedesktop.org>, gregkh@suse.de
+In-Reply-To: <4D21DC41.8070408@t-online.de>
+References: <4D21DC41.8070408@t-online.de>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, 03 Jan 2011 15:25:05 +0100, Knut Petersen <Knut_Petersen@t-online.de> wrote:
+> The AOpen i915GMm-HFS is a desktop motherboard for the Intel Pentium M.
+> A mobile chipset is used
+> (Intel 915GM / ICH6-M). Kernel 2.6.31.14 works fine for that mobo, but
+> from 2.6.32 on graphics support
+> is broken because the i915 driver "detects" an lvds device with a
+> resolution of 1024x768 pixels that in reality
+> is not present. Unfortunately the driver assumes that the "detected"
+> lvds is the primary screen and uses the
+> wrong resolution also for the real VGA and DVI connectors.
 
-On Mon, Jan 03, 2011 at 02:39:19PM +0000, Steven Whitehouse wrote:
-> No, the issue arises in case an inode is being ejected from cache with a
-> 0 link count (and this need deallocation). At this point the dlm is
-> required in order to coordinate which node will perform the
-> deallocation, but if it blocks on memory reclaim (via the fs, so
-> GFP_NOFS is ok, but GFP_KERNEL is not) then it can land up calling back
-> into the fs via a shrink of the dcache which can potentially then also
-> call back into the dlm.
+Can you try:
 
-I see.  Thanks for the explanation.
-
-> Since there is no workqueue option to indicate that GFP_NOFS is ok, but
-> GFP_KERNEL is not, I think in the workqueue case we must mark it as
-> WQ_MEM_RECLAIM. So far as I can tell thats a limitation of task creation
-> which was the reason for the pre-allocated rescuer thread. I'd rather be
-> safe than sorry in this case,
-
-Yeap, in such case, WQ_MEM_RECLAIM seems like the right choice.  It
-may call into GFP_KERNEL path again, but the dependency chain isn't
-hard.  It will be broken pretty soon and rescuer will kick in.
-
-As the case is rather special, it might be a good idea to explain why
-WQ_MEM_RECLAIM is necessary for future references?
-
-Thank you.
+diff --git a/drivers/gpu/drm/i915/intel_i2c.c
+b/drivers/gpu/drm/i915/intel_i2c.c
+index 58040f6..111128d 100644
+--- a/drivers/gpu/drm/i915/intel_i2c.c
++++ b/drivers/gpu/drm/i915/intel_i2c.c
+@@ -384,7 +384,7 @@ int intel_setup_gmbus(struct drm_device *dev)
+                bus->reg0 = i | GMBUS_RATE_100KHZ;
+ 
+                /* XXX force bit banging until GMBUS is fully debugged */
+-               bus->force_bit = intel_gpio_create(dev_priv, i);
++               //bus->force_bit = intel_gpio_create(dev_priv, i);
+        }
+ 
+        intel_i2c_reset(dev_priv->dev);
+-Chris
 
 -- 
-tejun
+Chris Wilson, Intel Open Source Technology Centre
