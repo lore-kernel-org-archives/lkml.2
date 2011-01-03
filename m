@@ -1,139 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab1ACMEK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 07:04:10 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:56846 "EHLO mx2.mail.elte.hu"
+	id S1754685Ab1ACMES (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 07:04:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42900 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753995Ab1ACMEI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 07:04:08 -0500
-Date: Mon, 3 Jan 2011 13:03:10 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Robert Richter <robert.richter@amd.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "oprofile-list@lists.sourceforge.net" 
-	<oprofile-list@lists.sourceforge.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        atswartz@gmail.com, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Dan Carpenter <error27@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, stable@kernel.org
-Subject: Re: [PATCH] arch/x86/oprofile/op_model_amd.c: perform initialisation
- on a single CPU
-Message-ID: <20110103120310.GA23927@elte.hu>
-References: <20101230173847.GA2734@elte.hu>
- <20110103111514.GM4739@erda.amd.com>
+	id S1754562Ab1ACMEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 07:04:14 -0500
+Message-ID: <4D21BB35.9090401@redhat.com>
+Date: Mon, 03 Jan 2011 10:04:05 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110103111514.GM4739@erda.amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL for v2.6.37-rc8] V4L/DVB regression fixes
+References: <4D21B752.8070000@redhat.com>
+In-Reply-To: <4D21B752.8070000@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em 03-01-2011 09:47, Mauro Carvalho Chehab escreveu:
+> Hi Linus,
+> 
+> There are two regressions affecting audio at ivtv driver. One of them is at the
+> initial volume setting, and the other one at wm8775, and it is due to a new board
+> addition on another driver that uses it. Both patches are trivial: one checks
+> the volume range and the other just reverts the patch that broke wm8775+ivtv.
+> 
+> Could you please merge them before releasing 2.6.37?
 
-* Robert Richter <robert.richter@amd.com> wrote:
+Linus,
 
->  static void init_ibs(void)
->  {
->  	ibs_caps = get_ibs_caps();
+I added a one-line patch to the series, fixing a regression at em28xx radio, due
+to the BKL conversion.
 
-this get_ibs_caps() call is percpu too - still it now runs with preempt off.
+Please pull from:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
 
-> +		printk(KERN_INFO "oprofile: AMD IBS detected (0x%08x)\n",
-> +		       (unsigned)ibs_caps);
+Thanks!
+Mauro
 
-that cast looks ugly and unnecessary.
+--
 
-I fixed both in the commit below. (not tested yet)
+The following changes since commit 387c31c7e5c9805b0aef8833d1731a5fe7bdea14:
 
-Thanks,
+  Linux 2.6.37-rc8 (2010-12-28 17:05:48 -0800)
 
-	Ingo
+are available in the git repository at:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
 
---------------->
->From c7c25802b39c443b3745cfa973dc49a97a3491f8 Mon Sep 17 00:00:00 2001
-From: Robert Richter <robert.richter@amd.com>
-Date: Mon, 3 Jan 2011 12:15:14 +0100
-Subject: [PATCH] arch/x86/oprofile/op_model_amd.c: Perform initialisation on a single CPU
+Andy Walls (1):
+      [media] cx25840: Prevent device probe failure due to volume control ERANGE error
 
-Disable preemption in init_ibs(). The function only checks the
-ibs capabilities and sets up pci devices (if necessary). It runs
-only on one cpu but operates with the local APIC and some MSRs,
-thus it is better to disable preemption.
+Hans Verkuil (1):
+      [media] em28xx: radio_fops should also use unlocked_ioctl
 
-[    7.034377] BUG: using smp_processor_id() in preemptible [00000000] code: modprobe/483
-[    7.034385] caller is setup_APIC_eilvt+0x155/0x180
-[    7.034389] Pid: 483, comm: modprobe Not tainted 2.6.37-rc1-20101110+ #1
-[    7.034392] Call Trace:
-[    7.034400]  [<ffffffff812a2b72>] debug_smp_processor_id+0xd2/0xf0
-[    7.034404]  [<ffffffff8101e985>] setup_APIC_eilvt+0x155/0x180
-[ ... ]
+Mauro Carvalho Chehab (1):
+      [media] wm8775: Revert changeset fcb9757333 to avoid a regression
 
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=22812
+ drivers/media/video/cx25840/cx25840-core.c |   19 +++++-
+ drivers/media/video/cx88/cx88-alsa.c       |   99 +++-----------------------
+ drivers/media/video/cx88/cx88-cards.c      |    7 ++
+ drivers/media/video/cx88/cx88-video.c      |   27 +-------
+ drivers/media/video/cx88/cx88.h            |    6 +-
+ drivers/media/video/em28xx/em28xx-video.c  |    2 +-
+ drivers/media/video/wm8775.c               |  104 ++++++++++-----------------
+ include/media/wm8775.h                     |    3 -
+ 8 files changed, 79 insertions(+), 188 deletions(-)
 
-Reported-by: <atswartz@gmail.com>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
-Cc: oprofile-list@lists.sourceforge.net <oprofile-list@lists.sourceforge.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Dan Carpenter <error27@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: <stable@kernel.org>         [2.6.37.x]
-LKML-Reference: <20110103111514.GM4739@erda.amd.com>
-[ small cleanups ]
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/oprofile/op_model_amd.c |   24 ++++++++++++++++--------
- 1 files changed, 16 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/oprofile/op_model_amd.c b/arch/x86/oprofile/op_model_amd.c
-index a011bcc..7d90d47 100644
---- a/arch/x86/oprofile/op_model_amd.c
-+++ b/arch/x86/oprofile/op_model_amd.c
-@@ -630,21 +630,29 @@ static int __init_ibs_nmi(void)
- 	return 0;
- }
- 
--/* initialize the APIC for the IBS interrupts if available */
-+/*
-+ * check and reserve APIC extended interrupt LVT offset for IBS if
-+ * available
-+ *
-+ * init_ibs() preforms implicitly cpu-local operations, so pin this
-+ * thread to its current CPU
-+ */
-+
- static void init_ibs(void)
- {
--	ibs_caps = get_ibs_caps();
-+	preempt_disable();
- 
-+	ibs_caps = get_ibs_caps();
- 	if (!ibs_caps)
--		return;
-+		goto out;
- 
--	if (__init_ibs_nmi()) {
-+	if (__init_ibs_nmi() < 0)
- 		ibs_caps = 0;
--		return;
--	}
-+	else
-+		printk(KERN_INFO "oprofile: AMD IBS detected (0x%08x)\n", ibs_caps);
- 
--	printk(KERN_INFO "oprofile: AMD IBS detected (0x%08x)\n",
--	       (unsigned)ibs_caps);
-+out:
-+	preempt_enable();
- }
- 
- static int (*create_arch_files)(struct super_block *sb, struct dentry *root);
