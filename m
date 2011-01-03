@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753670Ab1ACIoe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 03:44:34 -0500
-Received: from demumfd001.nsn-inter.net ([93.183.12.32]:12362 "EHLO
-	demumfd001.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751988Ab1ACIod (ORCPT
+	id S1754018Ab1ACIyP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 03:54:15 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33998 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801Ab1ACIyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 03:44:33 -0500
-Date: Mon, 3 Jan 2011 09:48:42 +0100
-From: Domenico Andreoli <cavokz@gmail.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        alexdeucher@gmail.com, airlied@linux.ie, chris@chris-wilson.co.uk
-Subject: Re: Linux 2.6.37-rc8
-Message-ID: <20110103084842.GA6668@vixen>
-Mail-Followup-To: torvalds@linux-foundation.org,
-	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-	alexdeucher@gmail.com, airlied@linux.ie, chris@chris-wilson.co.uk
-References: <AANLkTi=-dNeeDjcSoznKtwcaNyw1mMXSqepFY89R2i+2@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=-dNeeDjcSoznKtwcaNyw1mMXSqepFY89R2i+2@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 3 Jan 2011 03:54:14 -0500
+From: Michal Simek <monstr@monstr.eu>
+To: davem@davemloft.net
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Michal Simek <monstr@monstr.eu>
+Subject: [PATCH] trivial: Fix typo fault in netdevice.h
+Date: Mon,  3 Jan 2011 09:54:09 +0100
+Message-Id: <1294044849-10601-1-git-send-email-monstr@monstr.eu>
+X-Mailer: git-send-email 1.5.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Signed-off-by: Michal Simek <monstr@monstr.eu>
+---
+ include/linux/netdevice.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-On Tue, Dec 28, 2010 at 05:18:12PM -0800, ext Linus Torvalds wrote:
-> Another week, another -rc. This should be the last for the 37 series,
-> so I still expect the merge window to open early January when people
-> are hopefully back to working order after having eaten (and drunk) too
-> much.
-> 
-> The -rc8 release shouldn't be all that exciting. The most noticeable
-> is probably the fact that hopefully the "blank screen" problem with
-> intel graphics is fixed. But on the whole, it's all just a collection
-> of random fixes all over.
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index d8fd2c2..c773bc8 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -683,7 +683,7 @@ struct netdev_rx_queue {
+  *	   neither operation.
+  *
+  * void (*ndo_vlan_rx_register)(struct net_device *dev, struct vlan_group *grp);
+- *	If device support VLAN receive accleration
++ *	If device support VLAN receive acceleration
+  *	(ie. dev->features & NETIF_F_HW_VLAN_RX), then this function is called
+  *	when vlan groups for the device changes.  Note: grp is NULL
+  *	if no vlan's groups are being used.
+-- 
+1.5.5.6
 
-confirmed, at least my blank screen is gone with this -rc8. Thank you all.
-
-ciao,
-Domenico
