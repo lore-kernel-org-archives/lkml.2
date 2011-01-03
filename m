@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486Ab1ACV6Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 16:58:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5530 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753993Ab1ACV6P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 16:58:15 -0500
-Date: Mon, 3 Jan 2011 16:57:21 -0500
-From: Josef Bacik <josef@redhat.com>
-To: Josef Bacik <josef@redhat.com>
-Cc: david@fromorbit.com, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, cmm@us.ibm.com,
-        cluster-devel@redhat.com, joel.becker@oracle.com, jack@suse.cz,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org
-Subject: Re: Hole Punching V3
-Message-ID: <20110103215720.GA8392@localhost.localdomain>
-References: <1290044780-2902-1-git-send-email-josef@redhat.com>
+	id S1755473Ab1ACWDk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 17:03:40 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:19075 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500Ab1ACWDj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 17:03:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=iWtMgMBTY32+/RGPvmIhCZqpHOSS9isi/gm51qvbgn0zmSGve24pAhUPyGxgEmH57U
+         iHxTehUjSoTPHpCvhycw==
+Date: Mon, 3 Jan 2011 14:03:31 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Minchan Kim <minchan.kim@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] writeback: avoid unnecessary determine_dirtyable_memory
+ call
+In-Reply-To: <1294072249-2916-1-git-send-email-minchan.kim@gmail.com>
+Message-ID: <alpine.DEB.2.00.1101031400550.10636@chino.kir.corp.google.com>
+References: <1294072249-2916-1-git-send-email-minchan.kim@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290044780-2902-1-git-send-email-josef@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 08:46:14PM -0500, Josef Bacik wrote:
-> This is version 3 of the hole punching series I've been posting.  Not much has
-> changed, the history is below
-> 
-> V2->V3
-> -FALLOC_FL_PUNCH_HOLE must also have FALLOC_FL_KEEP_SIZE in order to work
-> -formatting fixes
-> 
-> V1->V2
-> -Hole punching doesn't change file size
-> -Fixed the mode checks in ext4/btrfs/gfs2 so they do what they are supposed to
-> 
-> I've updated my local copies of the xfsprogs patches I have to test this to use
-> KEEP_SIZE and PUNCH_HOLE together, I'll post them after it looks like these
-> patches are good to go, including the manpage update.  The xfstest I wrote ran
-> fine both on xfs and btrfs (failing on btrfs obviously).  Thanks,
-> 
+On Tue, 4 Jan 2011, Minchan Kim wrote:
 
-I'd like to try and get this into the next merge window, it seems everybody is
-happy with it so far, any other comments?  Provided everybody is ok with it, how
-would you like me to send it to you Linus?  Would you prefer a pull request or
-will you just pull the patches off the mailinglist?  Thanks,
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index fc93802..c340536 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -390,9 +390,12 @@ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
+>  {
+>  	unsigned long background;
+>  	unsigned long dirty;
+> -	unsigned long available_memory = determine_dirtyable_memory();
+> +	unsigned long available_memory;
 
-Josef
+You need unsigned long uninitialized_var(available_memory) to avoid the 
+warning.
+
+>  	struct task_struct *tsk;
+>  
+> +	if (!vm_dirty_bytes || !dirty_background_bytes)
+> +		available_memory = determine_dirtyable_memory();
+> +
+>  	if (vm_dirty_bytes)
+>  		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
+>  	else
