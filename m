@@ -1,170 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754406Ab1ACLai (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 06:30:38 -0500
-Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:24989
-	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751367Ab1ACLag (ORCPT
+	id S1754244Ab1ACLcu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 06:32:50 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:45571 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753095Ab1ACLcs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 06:30:36 -0500
-X-Greylist: delayed 906 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Jan 2011 06:30:36 EST
-X-SpamScore: -18
-X-BigFish: VPS-18(zzbb2cK1432N98dN4015Lzz1202hzz8275bh8275dhz32i637h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LEG1XE-01-56L-02
-X-M-MSG: 
-Date: Mon, 3 Jan 2011 12:15:14 +0100
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "oprofile-list@lists.sourceforge.net" 
-	<oprofile-list@lists.sourceforge.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        <atswartz@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Dan Carpenter <error27@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, <stable@kernel.org>
-Subject: [PATCH] arch/x86/oprofile/op_model_amd.c: perform initialisation
- on a single CPU
-Message-ID: <20110103111514.GM4739@erda.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20101230173847.GA2734@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+	Mon, 3 Jan 2011 06:32:48 -0500
+Subject: Re: [RFC][PATCH 05/17] x86: Optimize arch_spin_unlock_wait()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
+        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
+        linux-kernel@vger.kernel.org, Nick Piggin <npiggin@kernel.dk>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+In-Reply-To: <AANLkTikGBsh0-QTe9CA2gwDtwzpdMi+fbDsTEKiJAL0P@mail.gmail.com>
+References: <20101224122338.172750730@chello.nl>
+	 <20101224123742.724459093@chello.nl>
+	 <AANLkTikGBsh0-QTe9CA2gwDtwzpdMi+fbDsTEKiJAL0P@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 03 Jan 2011 12:32:42 +0100
+Message-ID: <1294054362.2016.74.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30.12.10 12:38:47, Ingo Molnar wrote:
+On Fri, 2010-12-24 at 10:26 -0800, Linus Torvalds wrote:
+> On Fri, Dec 24, 2010 at 4:23 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > Only wait for the current holder to release the lock.
+> >
+> > spin_unlock_wait() can only be about the current holder, since
+> > completion of this function is inherently racy with new contenders.
+> > Therefore, there is no reason to wait until the lock is completely
+> > unlocked.
 > 
-> * Robert Richter <robert.richter@amd.com> wrote:
+> Is there really any reason for this patch? I'd rather keep the simpler
+> and more straightforward code unless you have actual numbers.
+
+No numbers, the testcase I use for this series is too unstable to really
+give that fine results. Its more a result of seeing the code an going:
+"oohh that can wait a long time when the lock is severely contended".
+
+But I think I can get rid of the need for calling this primitive
+alltogether, which is even better.
+
+> > +static inline void __ticket_spin_unlock_wait(arch_spinlock_t *lock)
+> > +{
+> > +       int tmp = ACCESS_ONCE(lock->slock);
+> > +
+> > +       if (!(((tmp >> TICKET_SHIFT) ^ tmp) & TICKET_MASK))
+> > +               return; /* not locked */
+> > +
+> > +       /* wait until the current lock holder goes away */
+> > +       while ((lock->slock & TICKET_MASK) == (tmp & TICKET_MASK))
+> > +               cpu_relax();
+> >  }
 > 
-> > On 29.12.10 11:37:43, Ingo Molnar wrote:
-> > 
-> > > Hm, i'm not sure this fix is correct:
-> > > 
-> > >  static int op_amd_init(struct oprofile_operations *ops)
-> > >  {
-> > > +       /*
-> > > +        * init_ibs() preforms implictly cpu-local operations, so pin this
-> > > +        * thread to its current CPU
-> > > +        */
-> > > +       preempt_disable();
-> > >         init_ibs();
-> > > +       preempt_enable();
-> > > 
-> > > If init_ibs() is indeed CPU local, then it needs to be called on all CPUs. Does 
-> > > that happen and if not why not? AFAICS it's only called on one CPU.
-> > 
-> > It is correct to run init_ibs() only on one cpu.  It only checks the ibs 
-> > capabilities and sets up pci devices (if necessary). It runs only on one cpu but 
-> > operates with the local APIC and some MSRs, thus it is better to disable 
-> > preemption.
-> 
-> Ok, but in that case the prempt_disable()/enable() should be put into init_ibs(), 
-> not be open-coded at the caller like that.
-> 
-> The comment about its cpu-localness could move to init_ibs() as well.
+> Also, the above is just ugly. You've lost the ACCESS_ONCE() on the
+> lock access, and it's using another model of masking than the regular
+> one. Both of which may be intentional (maybe you are _trying_ to get
+> the compiler to just load the low bytes and avoid the 'and'), but the
+> whole open-coding of the logic - twice, and with different looking
+> masking - just makes my skin itch.
 
-Ingo,
+I'm not sure I fully understand the complaint here. The ACCESS_ONCE is
+for the tmp variable, which we use several times and needs to contain a
+single load of the lock variable and should not be optimized away into
+multiple loads.
 
-the patch below addresses this.  Please apply to tip/perf/urgent.
+The first conditional: 
 
-Thanks,
+      if (!(((tmp >> TICKET_SHIFT) ^ tmp) & TICKET_MASK))
 
--Robert
+Is exactly like the regular __ticket_spin_is_contended, and while that
+is a somewhat overly clever way of writing head != tail, I don't see a
+problem with that.
 
---
+The second conditional:
 
->From 41659787561d3b384dac0b8458de95e35d8f2a34 Mon Sep 17 00:00:00 2001
-From: Robert Richter <robert.richter@amd.com>
-Date: Mon, 3 Jan 2011 10:36:53 +0100
-Subject: [PATCH] arch/x86/oprofile/op_model_amd.c: perform initialisation on a single CPU
+      while ((lock->slock & TICKET_MASK) == (tmp & TICKET_MASK))
 
-Disable preemption in init_ibs(). The function only checks the ibs
-capabilities and sets up pci devices (if necessary). It runs only on
-one cpu but operates with the local APIC and some MSRs, thus it is
-better to disable preemption.
+Is indeed different, it waits for the lock tail (new load) to change
+from the first observed (first load) tail. Once we observe the tail
+index changing we know the previous owner completed and we can drop out.
 
-[    7.034377] BUG: using smp_processor_id() in preemptible [00000000] code:
-modprobe/483
-[    7.034385] caller is setup_APIC_eilvt+0x155/0x180
-[    7.034389] Pid: 483, comm: modprobe Not tainted 2.6.37-rc1-20101110+ #1
-[    7.034392] Call Trace:
-[    7.034400]  [<ffffffff812a2b72>] debug_smp_processor_id+0xd2/0xf0
-[    7.034404]  [<ffffffff8101e985>] setup_APIC_eilvt+0x155/0x180
-[    7.034413]  [<ffffffffa002e168>] op_amd_init+0x88/0x2b0 [oprofile]
-[    7.034420]  [<ffffffffa0043000>] ? oprofile_init+0x0/0x42 [oprofile]
-[    7.034425]  [<ffffffffa0043315>] op_nmi_init+0x249/0x2af [oprofile]
-[    7.034431]  [<ffffffffa00430b4>] oprofile_arch_init+0x11/0x29 [oprofile]
-[    7.034437]  [<ffffffffa0043010>] oprofile_init+0x10/0x42 [oprofile]
-[    7.034441]  [<ffffffff810001e3>] do_one_initcall+0x43/0x170
-[    7.034445]  [<ffffffff8108a52a>] sys_init_module+0xba/0x200
-[    7.034449]  [<ffffffff8100285b>] system_call_fastpath+0x16/0x1b
-
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=22812
-
-Reported-by: <atswartz@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Dan Carpenter <error27@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: <stable@kernel.org>         [2.6.37.x]
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- arch/x86/oprofile/op_model_amd.c |   21 +++++++++++++++------
- 1 files changed, 15 insertions(+), 6 deletions(-)
-
-diff --git a/arch/x86/oprofile/op_model_amd.c b/arch/x86/oprofile/op_model_amd.c
-index a011bcc..8d7d883 100644
---- a/arch/x86/oprofile/op_model_amd.c
-+++ b/arch/x86/oprofile/op_model_amd.c
-@@ -630,7 +630,14 @@ static int __init_ibs_nmi(void)
- 	return 0;
- }
- 
--/* initialize the APIC for the IBS interrupts if available */
-+/*
-+ * check and reserve APIC extended interrupt LVT offset for IBS if
-+ * available
-+ *
-+ * init_ibs() preforms implicitly cpu-local operations, so pin this
-+ * thread to its current CPU
-+ */
-+
- static void init_ibs(void)
- {
- 	ibs_caps = get_ibs_caps();
-@@ -638,13 +645,15 @@ static void init_ibs(void)
- 	if (!ibs_caps)
- 		return;
- 
--	if (__init_ibs_nmi()) {
-+	preempt_disable();
-+
-+	if (__init_ibs_nmi())
- 		ibs_caps = 0;
--		return;
--	}
-+	else
-+		printk(KERN_INFO "oprofile: AMD IBS detected (0x%08x)\n",
-+		       (unsigned)ibs_caps);
- 
--	printk(KERN_INFO "oprofile: AMD IBS detected (0x%08x)\n",
--	       (unsigned)ibs_caps);
-+	preempt_enable();
- }
- 
- static int (*create_arch_files)(struct super_block *sb, struct dentry *root);
--- 
-1.7.3.2
-
-
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Anyway, if I can indeed get rid of my unlock_wait usage its all moot
+anyway, there aren't many users of this primitive.
