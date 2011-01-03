@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab1ACMUz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 07:20:55 -0500
-Received: from www.tglx.de ([62.245.132.106]:37306 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754189Ab1ACMUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 07:20:54 -0500
-Message-ID: <4D21BF17.6090209@linutronix.de>
-Date: Mon, 03 Jan 2011 13:20:39 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: linux-kernel@vger.kernel.org, sodaville@linutronix.de, x86@kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 02/15] x86: Add device tree support
-References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de> <1292600033-12271-3-git-send-email-bigeasy@linutronix.de> <20101230084311.GD11721@angua.secretlab.ca>
-In-Reply-To: <20101230084311.GD11721@angua.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754755Ab1ACMqr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 07:46:47 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47986 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754306Ab1ACMqq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 07:46:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=cGcvi6JUkoUWk4JCc7OZAg6JI/ZgloNYOgYAQ1UMvIi8iCsbl/SxEVSIdN+Kn0pJW8
+         zl/IjGhKhJ/3/hHYmOY+q0KsyC+IvRCdIMvHzs/dYgCmbw6xxwX/5RGpRZfqr0QfVVzz
+         XDaJcbOPldESJbQw7N98hhpjHiYctIukMFrWM=
+Subject: Re: [PATCH 3/3 V13] RO/NX protection for loadable kernel
+From: Tobias Karnat <tobias.karnat@googlemail.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 03 Jan 2011 13:46:42 +0100
+Message-ID: <1294058802.19182.28.camel@Tobias-Karnat>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely wrote:
->> +extern char cmd_line[COMMAND_LINE_SIZE];
->> +/* This number is used when no interrupt has been assigned */
->> +#define NO_IRQ		(-1)
-> 
-> 0 means NO_IRQ on x86 and most architectures.  I will change this when
-> I pick up the patch.
+> Sure.  I can verify that the patch series (a) doesn't break well-behaved
+> modules and (b) it *does* trigger for misbehaving modules (I sent the
+> VirtualBox crew a bug report for a module that tried to write to an area
+> marked executable).
 
-cat /proc/interrupts
-            CPU0
-   0:         40   IO-APIC-edge      timer
+This seems to be fixed by VirtualBox 4.
 
->> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
->> index 577d06b..26f2c9a 100644
->> --- a/arch/x86/kernel/setup.c
->> +++ b/arch/x86/kernel/setup.c
->> @@ -113,6 +113,7 @@
->>  #endif
->>  #include <asm/mce.h>
->>  #include <asm/alternative.h>
->> +#include <asm/prom.h>
->>  
->>  /*
->>   * end_pfn only includes RAM, while max_pfn_mapped includes all e820 entries.
->> @@ -445,6 +446,9 @@ static void __init parse_setup_data(void)
->>  		case SETUP_E820_EXT:
->>  			parse_e820_ext(data);
->>  			break;
->> +		case SETUP_DTB:
->> +			add_dtb(pa_data);
->> +			break;
-> 
-> Why is the physical address being passed in when the virtual address
-> is needed to be stored in initial_boot_params by add_dtb()?
+I applied the patchset to 2.6.36.
+('All in one' patch, http://pastebin.com/raw.php?i=6CDnAkjP )
 
-add_dtb() changes it via phys_to_virt() so it is stored as virtual. I
-can't touch this memory that early in the boot process so it is passed as
-phys. phys_to_virt() isn't working (yet) so you need a fixmap or an
-early_ioremap(). Earlier I used the device tree very late so the
-phys_to_virt() memory was working.
+I have however noticed that after enabling;
+CONFIG_DEBUG_KERNEL, CONFIG_DEBUG_RODATA and CONFIG_DEBUG_SET_MODULE_RONX
+there are three "Freeing unused kernel memory" messages, is this correct?
 
-Later in the series add_dtb() stores it in a custom u64 variable because I 
-might have to use the built-in dtb, I have to relocate the dtb (so the
-boot loader does not have to care about kernel's memory layout) and I have
-to use it "early" so I create a fixmap for it.
+Before applying patch:
+[    1.449499] Freeing initrd memory: 16328k freed
+[    3.336464] Freeing unused kernel memory: 844k freed
 
-The dtb is not usable before the ->get_config() hook (x86_dtb_get_config, 
-patch #5) is called. After that initial_boot_params is set and can be used.
+After applying patch:
+[    1.449262] Freeing initrd memory: 16328k freed
+[    3.297901] Freeing unused kernel memory: 844k freed
+[    3.311849] Write protecting the kernel read-only data: 8192k
+[    3.327592] Freeing unused kernel memory: 448k freed
+[    3.342651] Freeing unused kernel memory: 276k freed
 
->>  		default:
->>  			break;
->>  		}
->> -- 
->> 1.7.3.2
+And why does CONFIG_DEBUG_RODATA depend on CONFIG_DEBUG_KERNEL;
+Isn't it primarily a security enhancement?
 
-Sebastian
+-Tobias
+
