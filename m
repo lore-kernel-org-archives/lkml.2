@@ -1,151 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755568Ab1ACSCK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 13:02:10 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:36458 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752782Ab1ACSCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 13:02:08 -0500
-To: mingo@elte.hu
-Subject: [PATCH] x86, UV: BAU extend for more than 16 cpus per socket
-Cc: linux-kernel@vger.kernel.org
-Message-Id: <E1PZol7-0000mM-77@eag09.americas.sgi.com>
-From: Cliff Wickman <cpw@sgi.com>
-Date: Mon, 03 Jan 2011 12:03:53 -0600
+	id S932432Ab1ACSCx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 13:02:53 -0500
+Received: from 81-174-11-161.staticnet.ngi.it ([81.174.11.161]:36296 "EHLO
+	mail.enneenne.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S932322Ab1ACSCw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 13:02:52 -0500
+Date: Mon, 3 Jan 2011 19:02:47 +0100
+From: Rodolfo Giometti <giometti@enneenne.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org, Russell Coker <russell@coker.com.au>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Message-ID: <20110103180247.GF22102@gundam.enneenne.com>
+Mail-Followup-To: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	linux-kernel@vger.kernel.org, Russell Coker <russell@coker.com.au>,
+	Greg Kroah-Hartman <gregkh@suse.de>
+References: <1294067735-21466-1-git-send-email-giometti@linux.it> <1294067735-21466-2-git-send-email-giometti@linux.it> <20110103171452.5e258743@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110103171452.5e258743@lxorguk.ukuu.org.uk>
+Organization: GNU/Linux Device Drivers, Embedded Systems and Courses
+X-PGP-Key: gpg --keyserver keyserver.linux.it --recv-keys D25A5633
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 192.168.32.254
+X-SA-Exim-Mail-From: giometti@enneenne.com
+Subject: Re: [PATCH] char nvtty: Network Virtual Terminal support
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on mail.enneenne.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 03, 2011 at 05:14:52PM +0000, Alan Cox wrote:
+> > By using these devices and a proper compatible server (not included
+> > here but you can use sredird) you can get access to a remote tty
+> > device as the tty device itself was conneted with your local host.
+> > All data and settings are sent and received through the network.
+> 
+> Interesting but would it not be better to keep all the network stuff in
+> user space given that most sane environments will have crypto on them ?
 
-Fix a hard-coded limit of a maximum of 16 cpu's per socket.
+Yes, but in most cases this is used on not-crypted connections (as far
+as I know there are no crypted server for this protocol yet), however
+we can easily get a crypted connection by connecting with localhost
+and then using a program like cryptcat for the crypto stuff.
 
-The UV Broadcast Assist Unit code initializes by scanning the cpu topology
-of the system and assigning a master cpu for each socket and UV hub.
-That scan had an assumption of a limit of 16 cpus per socket.
-With Westmere we are going over that limit.
-The UV hub hardware will allow up to 32.
+> It's also a less than ideal protocol in that it can't represent some of
+> the things termios can, nor can it report arbitary speeds properly.
 
-If the scan finds the system has gone over that limit it returns an error and
-we print a warning and fall back to doing TLB shootdowns without the BAU.
+I see, but it is widely used and also it can be enhanced to better fit
+termios capabilities.
 
-Diffed against: 2.6.37-rc8
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
----
- arch/x86/include/asm/uv/uv_bau.h |    9 +++++----
- arch/x86/platform/uv/tlb_uv.c    |   23 +++++++++++++++++++----
- 2 files changed, 24 insertions(+), 8 deletions(-)
+However by using this protocol "as is" we can do several useful
+things! :)
 
-Index: linus.current/arch/x86/platform/uv/tlb_uv.c
-===================================================================
---- linus.current.orig/arch/x86/platform/uv/tlb_uv.c
-+++ linus.current/arch/x86/platform/uv/tlb_uv.c
-@@ -1341,7 +1341,7 @@ uv_activation_descriptor_init(int node,
- 
- 	/*
- 	 * each bau_desc is 64 bytes; there are 8 (UV_ITEMS_PER_DESCRIPTOR)
--	 * per cpu; and up to 32 (UV_ADP_SIZE) cpu's per uvhub
-+	 * per cpu; and one per cpu on the uvhub (UV_ADP_SIZE)
- 	 */
- 	bau_desc = kmalloc_node(sizeof(struct bau_desc) * UV_ADP_SIZE
- 				* UV_ITEMS_PER_DESCRIPTOR, GFP_KERNEL, node);
-@@ -1490,7 +1490,7 @@ calculate_destination_timeout(void)
- /*
-  * initialize the bau_control structure for each cpu
-  */
--static void __init uv_init_per_cpu(int nuvhubs)
-+static int __init uv_init_per_cpu(int nuvhubs)
- {
- 	int i;
- 	int cpu;
-@@ -1507,7 +1507,7 @@ static void __init uv_init_per_cpu(int n
- 	struct bau_control *smaster = NULL;
- 	struct socket_desc {
- 		short num_cpus;
--		short cpu_number[16];
-+		short cpu_number[MAX_CPUS_PER_SOCKET];
- 	};
- 	struct uvhub_desc {
- 		unsigned short socket_mask;
-@@ -1540,6 +1540,11 @@ static void __init uv_init_per_cpu(int n
- 		sdp = &bdp->socket[socket];
- 		sdp->cpu_number[sdp->num_cpus] = cpu;
- 		sdp->num_cpus++;
-+		if (sdp->num_cpus > MAX_CPUS_PER_SOCKET) {
-+			printk(KERN_EMERG "%d cpus per socket invalid\n",
-+				sdp->num_cpus);
-+			return 1;
-+		}
- 	}
- 	for (uvhub = 0; uvhub < nuvhubs; uvhub++) {
- 		if (!(*(uvhub_mask + (uvhub/8)) & (1 << (uvhub%8))))
-@@ -1570,6 +1575,12 @@ static void __init uv_init_per_cpu(int n
- 				bcp->uvhub_master = hmaster;
- 				bcp->uvhub_cpu = uv_cpu_hub_info(cpu)->
- 						blade_processor_id;
-+				if (bcp->uvhub_cpu >= MAX_CPUS_PER_UVHUB) {
-+					printk(KERN_EMERG
-+						"%d cpus per uvhub invalid\n",
-+						bcp->uvhub_cpu);
-+					return 1;
-+				}
- 			}
- nextsocket:
- 			socket++;
-@@ -1595,6 +1606,7 @@ nextsocket:
- 		bcp->congested_reps = congested_reps;
- 		bcp->congested_period = congested_period;
- 	}
-+	return 0;
- }
- 
- /*
-@@ -1625,7 +1637,10 @@ static int __init uv_bau_init(void)
- 	spin_lock_init(&disable_lock);
- 	congested_cycles = microsec_2_cycles(congested_response_us);
- 
--	uv_init_per_cpu(nuvhubs);
-+	if (uv_init_per_cpu(nuvhubs)) {
-+		nobau = 1;
-+		return 0;
-+	}
- 
- 	uv_partition_base_pnode = 0x7fffffff;
- 	for (uvhub = 0; uvhub < nuvhubs; uvhub++)
-Index: linus.current/arch/x86/include/asm/uv/uv_bau.h
-===================================================================
---- linus.current.orig/arch/x86/include/asm/uv/uv_bau.h
-+++ linus.current/arch/x86/include/asm/uv/uv_bau.h
-@@ -26,20 +26,22 @@
-  * BAU_SB_DESCRIPTOR_BASE register, set 1 is located at BASE + 512,
-  * set 2 is at BASE + 2*512, set 3 at BASE + 3*512, and so on.
-  *
-- * We will use 31 sets, one for sending BAU messages from each of the 32
-+ * We will use one set for sending BAU messages from each of the
-  * cpu's on the uvhub.
-  *
-  * TLB shootdown will use the first of the 8 descriptors of each set.
-  * Each of the descriptors is 64 bytes in size (8*64 = 512 bytes in a set).
-  */
- 
-+#define MAX_CPUS_PER_UVHUB		64
-+#define MAX_CPUS_PER_SOCKET		32
-+#define UV_ADP_SIZE			64 /* hardware-provided max. */
-+#define UV_CPUS_PER_ACT_STATUS		32 /* hardware-provided max. */
- #define UV_ITEMS_PER_DESCRIPTOR		8
- /* the 'throttle' to prevent the hardware stay-busy bug */
- #define MAX_BAU_CONCURRENT		3
--#define UV_CPUS_PER_ACT_STATUS		32
- #define UV_ACT_STATUS_MASK		0x3
- #define UV_ACT_STATUS_SIZE		2
--#define UV_ADP_SIZE			32
- #define UV_DISTRIBUTION_SIZE		256
- #define UV_SW_ACK_NPENDING		8
- #define UV_NET_ENDPOINT_INTD		0x38
-@@ -100,7 +102,6 @@
-  * number of destination side software ack resources
-  */
- #define DEST_NUM_RESOURCES		8
--#define MAX_CPUS_PER_NODE		32
- /*
-  * completion statuses for sending a TLB flush message
-  */
+> Is there a reason it couldn't use pty/tty pairs either as is or tweaked
+> to better report termios changes and allow modem line reporting ?
+
+This is the solution that cyclades-serial-client uses (the userland
+program where my patch is derived from) but as far as I know pty/tty
+pairs cannot be used to report termios settings but only data... is
+that right? =:-o
+
+Ciao,
+
+Rodolfo
+
+-- 
+
+GNU/Linux Solutions                  e-mail: giometti@enneenne.com
+Linux Device Driver                          giometti@linux.it
+Embedded Systems                     phone:  +39 349 2432127
+UNIX programming                     skype:  rodolfo.giometti
+Freelance ICT Italia - Consulente ICT Italia - www.consulenti-ict.it
