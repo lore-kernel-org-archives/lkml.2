@@ -1,59 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751603Ab1ACWdQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 17:33:16 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:59890 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750695Ab1ACWdP convert rfc822-to-8bit (ORCPT
+	id S1752034Ab1ACWdb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 17:33:31 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:38021 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751805Ab1ACWd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 17:33:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=rWFgsS5ipE2ONUgycvdVKXrb7hs/oWa/wOSufGltWw1/NppmMACckq+nXabYsEeMmj
-         XkPUCxB74+rHMyZvEQYD6pa4/ytGsGySmVZk6wPmkAymx1/TKwMYgQDCtymJJBxPEP/c
-         Adrpc7tzclx2jF8U2F5p0H9YGdvfFTsuBBpLQ=
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1101031400550.10636@chino.kir.corp.google.com>
-References: <1294072249-2916-1-git-send-email-minchan.kim@gmail.com>
-	<alpine.DEB.2.00.1101031400550.10636@chino.kir.corp.google.com>
-Date: Tue, 4 Jan 2011 07:33:15 +0900
-Message-ID: <AANLkTinb+W-hByy18tko8NFtYYzQonABps0gi7+7kQ5R@mail.gmail.com>
-Subject: Re: [PATCH] writeback: avoid unnecessary determine_dirtyable_memory call
-From: Minchan Kim <minchan.kim@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 3 Jan 2011 17:33:29 -0500
+Subject: Re: [PATCH R2 7/7] xen/balloon: Xen memory balloon driver with
+ memory hotplug support
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Daniel Kiper <dkiper@net-space.pl>
+Cc: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
+        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
+        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
+        v.tolstov@selfip.ru, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <20101229170702.GL2743@router-fw-old.local.net-space.pl>
+References: <20101229170702.GL2743@router-fw-old.local.net-space.pl>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Mon, 03 Jan 2011 14:33:22 -0800
+Message-ID: <1294094002.18937.110.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 4, 2011 at 7:03 AM, David Rientjes <rientjes@google.com> wrote:
-> On Tue, 4 Jan 2011, Minchan Kim wrote:
->
->> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
->> index fc93802..c340536 100644
->> --- a/mm/page-writeback.c
->> +++ b/mm/page-writeback.c
->> @@ -390,9 +390,12 @@ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
->>  {
->>       unsigned long background;
->>       unsigned long dirty;
->> -     unsigned long available_memory = determine_dirtyable_memory();
->> +     unsigned long available_memory;
->
-> You need unsigned long uninitialized_var(available_memory) to avoid the
-> warning.
+On Wed, 2010-12-29 at 18:07 +0100, Daniel Kiper wrote:
+> +config XEN_BALLOON_MEMORY_HOTPLUG
+> +	bool "Xen memory balloon driver with memory hotplug support"
+> +	default n
+> +	depends on XEN_BALLOON && MEMORY_HOTPLUG
+> +	help
+> +	  Xen memory balloon driver with memory hotplug support allows expanding
+> +	  memory available for the system above limit declared at system startup.
+> +	  It is very useful on critical systems which require long run without
+> +	  rebooting.
 
-Yes. It's my fault. Andrew already fixed it.
-Thanks, David.
+This might be better phrased as "Memory hotplug support for Xen balloon
+driver".  It might otherwise confuse people about whether they're seeing
+some kind of choice or an _enhancement_ to the existing driver.
+
+Also, why bother even making this a config option?  What are the
+downsides if it was always compiled in?  You could even make it a
+non-prompting Kconfig option and just automatically turn it on with
+XEN_BALLOON && MEMORY_HOTPLUG.
 
 
--- 
-Kind regards,
-Minchan Kim
+> +static int allocate_memory_resource(struct resource **r, unsigned long nr_pages)
+>  {
+> -	unsigned long target = balloon_stats.target_pages;
+> +	int rc;
+> +	resource_size_t r_min, r_size;
+> +
+> +	/*
+> +	 * Look for first unused memory region starting at page
+> +	 * boundary. Skip last memory section created at boot time
+> +	 * becuase it may contains unused memory pages with PG_reserved
+> +	 * bit not set (online_pages require PG_reserved bit set).
+> +	 */
+> +
+> +	*r = kzalloc(sizeof(struct resource), GFP_KERNEL);
+> 
+> -	target = min(target,
+> -		     balloon_stats.current_pages +
+> -		     balloon_stats.balloon_low +
+> -		     balloon_stats.balloon_high);
+> +	if (!*r)
+> +		return -ENOMEM;
+> 
+> -	return target;
+> +	(*r)->name = "System RAM";
+> +	(*r)->flags = IORESOURCE_MEM | IORESOURCE_BUSY;
+> +	r_min = PFN_PHYS(section_nr_to_pfn(pfn_to_section_nr(balloon_stats.boot_max_pfn) + 1));
+> +	r_size = nr_pages << PAGE_SHIFT;
+> +
+> +	rc = allocate_resource(&iomem_resource, *r, r_size, r_min,
+> +					ULONG_MAX, PAGE_SIZE, NULL, NULL);
+> +
+> +	if (rc < 0) {
+> +		kfree(*r);
+> +		*r = NULL;
+> +	}
+> +
+> +	return rc;
+>  }
+
+The double-pointer stuff here ends up looking a little funky.  Is there
+any reason you don't just use ERR_PTRs?  That might look a bit more
+sane.
+
+> +static void adjust_memory_resource(struct resource **r, unsigned long nr_pages)
+> +{
+> +	if ((*r)->end + 1 - (nr_pages << PAGE_SHIFT) == (*r)->start) {
+> +		BUG_ON(release_resource(*r) < 0);
+
+In some kernels, people do:
+
+	#define BUG_ON(...) do{}while(0)
+
+to save space.  If anyone ever does that with this code, it'll break
+horribly.  It's also hard to read these.  So, please break logic actions
+_out_ of the BUG_ON() arguments.
+
+That's repeated in quite a few places in here.  Make sure to go get them
+all.
+
+It also isn't evident what this patch set is trying to do until you get
+down to this 7/7 patch.  You might want to put a more complete
+description in 0/7.
+
+-- Dave
+
