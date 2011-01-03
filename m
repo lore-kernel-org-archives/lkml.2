@@ -1,98 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751238Ab1ACFQj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 00:16:39 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55616 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab1ACFQh (ORCPT
+	id S1751293Ab1ACFTm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 00:19:42 -0500
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:21338 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750815Ab1ACFTl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 00:16:37 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=l/slIRT7lBGievjZcXdbQALXBUXA723wScJBrH+oqo/nW/Bg1Ek4weTjmnWDac9Q8V
-         uE3nSP0WFGYSN5htOoLZKgoLQCT9x/WpOzYZgDGrR9iQsBUyVhkY/swqcipLU7K9/hfc
-         fQTtOAlaLfjm1Xzjt0G6U/wNW8YyfXtoSuigs=
-Date: Sun, 2 Jan 2011 21:15:30 -0800
-From: Kent Overstreet <kent.overstreet@gmail.com>
-To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Bcache version 10
-Message-ID: <20110103051530.GA1386@moria>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Jan 2011 00:19:41 -0500
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=cUTwMia+6fMZF7bjUHU44PO5dfBASsAn9IQPzcMrg/g= c=1 sm=1
+ a=nokSTlOSMgUA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
+ a=c23vf5CSMVc0QQz9B4a6RA==:17 a=VwQbUJbxAAAA:8 a=MC3XVy2y1B9GCZv2rooA:9
+ a=gKtaiL8WpeEjnUOkKR4A:7 a=7bD4m929_6EHe8PMGPLdbvDofP8A:4 a=CjuIK1q_8ugA:10
+ a=x8gzFH9gYPwA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+References: <1285332494-12756-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1285332494-12756-9-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20100924115423.530813c3@tlielax.poochiereds.net> <201009271514.00279.agruen@suse.de> <20110102232101.GB11955@thunk.org>
+In-Reply-To: <20110102232101.GB11955@thunk.org>
+Mime-Version: 1.0 (iPhone Mail 8C148a)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <B0449E28-B18A-4009-B6CA-8AEED22F4CD7@dilger.ca>
+Cc: Andreas Gruenbacher <agruen@suse.de>, Jeff Layton <jlayton@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "sfrench@us.ibm.com" <sfrench@us.ibm.com>,
+        "ffilz@us.ibm.com" <ffilz@us.ibm.com>,
+        "adilger@sun.com" <adilger@sun.com>,
+        "sandeen@redhat.com" <sandeen@redhat.com>,
+        "bfields@citi.umich.edu" <bfields@citi.umich.edu>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "nfsv4@linux-nfs.org" <nfsv4@linux-nfs.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+X-Mailer: iPhone Mail (8C148a)
+From: Andreas Dilger <adilger@dilger.ca>
+Subject: Re: [PATCH -V4 08/11] vfs: Add new file and directory create permission flags
+Date: Sun, 2 Jan 2011 22:20:08 -0700
+To: "Ted Ts'o" <tytso@mit.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bcache is a patch to use SSDs to transparently cache arbitrary block
-devices. Its main claim to fame is that it's designed for the
-performance characteristics of SSDs - it avoids random writes and
-extraneous IO at all costs, instead allocating buckets sized to your
-erase blocks and filling them up seqentially. It uses a hybrid
-btree/log, instead of a hash table as some other caches.
+Actually, I think it is required by POSIX that EXDEV is returned when cross-linking files. For mv calling rename() at least it uses a return EXDEV to copy the file to the target filesystem instead of just giving up and returning an error. It may be other applications like tar have a similar dependency for link(). 
 
-It does both writethrough and writeback caching - it can use most of
-your SSD for buffering random writes, which are then flushed
-sequentially to the backing device. Skips sequential IO, too.
+Cheers, Andreas
 
-Bcache currently looks suitable for noncritical use; don't throw it on
-your server without testing your specific configuration with it but the
-risk of data corruption is minimal.
+On 2011-01-02, at 16:21, Ted Ts'o <tytso@mit.edu> wrote:
 
----
-
-Since the last patch, there hasn't been a huge amount of user visible
-stuff. Much of the recent work has been on making memory allocation
-deadlock proof, which is mostly done at this point.
-
-Replaced some changes to the bio code with a different less intrusive
-way of doing things - this previously caused problems for btrfs and
-raid5 (as they used bios without calling bio_init() on them each time).
-
-The userspace interface has been changed a bit more: /sys/kernel/bcache
-moves to /sys/kernel/config/bcache, and attaching a cache to a backing
-device is now done more explicitly - see Documentation/bcache.txt.
-
-This will be the last version based on 2.6.35, next on my todo list is
-syncing up with mainline. All that's left before I'll consider it ready
-for mainline is replacing the hooks for transparent caching with
-something else; I'm hoping to be able to submit it by the next merge
-window but that could turn out to be pure fantasy...
-
-I was previously working on a device mapper interface to replace said
-transparent caching, but I'm giving up on that - dm just looks too
-unsuited to bcache's needs. If someone who knows the dm code better felt
-like taking a stab at it I'll be happy to help (and they should have an
-easy time of it, I got it minimally working) but I'm going to be doing
-something else.
-
-Further off, once the new block interface is done I'll be starting on
-thin provisioning, then tiered storage and multiple cache devices. As
-part of thin provisioning, bcache will be getting logical volume
-management. I'm perfectly happy to work with anyone else who's
-interested on interfaces, userspace and otherwise.
-
-Bcache is available from
-git://evilpiepirate.org/~kent/linux-bcache.git
-git://evilpiepirate.org/~kent/bcache-tools.git
-http://bcache.evilpiepirate.org
-
- Documentation/ABI/testing/sysfs-block-bcache |  156 +
- Documentation/bcache.txt                     |  178 +
- block/Kconfig                                |   16 +
- block/Makefile                               |    4 +
- block/bcache.c                               | 5505 ++++++++++++++++++++++++++
- block/bcache_util.c                          |   78 +
- block/bcache_util.h                          |  306 ++
- block/blk-core.c                             |    7 +-
- include/linux/bio.h                          |    1 +
- include/linux/blkdev.h                       |    1 +
- include/linux/fs.h                           |    5 +
- include/linux/sched.h                        |    4 +
- kernel/fork.c                                |    3 +
-13 files changed, 6262 insertions(+), 2 deletions(-)
-
+> I was going through some old patches in the ext4 patchwork list, and
+> came across this.  It looks like this patch has never been applied to
+> mainline.  If it's a "clear improvement", any reason not to submit it?
+> 
+> Regards,
+> 
+>                                         - Ted
+> 
+> On Mon, Sep 27, 2010 at 03:14:00PM +0200, Andreas Gruenbacher wrote:
+>> 
+>> Ah, you mean this:
+>> 
+>> --- a/fs/namei.c
+>> +++ b/fs/namei.c
+>> @@ -2450,7 +2450,9 @@ int vfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *new_de
+>>    if (!inode)
+>>        return -ENOENT;
+>> 
+>> -    error = may_create(dir, new_dentry, S_ISDIR(inode->i_mode));
+>> +    if (S_ISDIR(inode->i_mode))
+>> +        return -EPERM;
+>> +    error = may_create(dir, new_dentry, 0);
+>>    if (error)
+>>        return error;
+>> 
+>> @@ -2464,8 +2466,6 @@ int vfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *new_de
+>>        return -EPERM;
+>>    if (!dir->i_op->link)
+>>        return -EPERM;
+>> -    if (S_ISDIR(inode->i_mode))
+>> -        return -EPERM;
+>> 
+>>    error = security_inode_link(old_dentry, dir, new_dentry);
+>>    if (error)
+>> 
+>> This is a clear improvement; I don't think it matters that user-space will
+>> get -EPERM instead of -EXDEV when trying to hard-link a directory across
+>> devices.
+>> 
+>> Thanks,
+>> Andreas
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
