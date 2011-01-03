@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575Ab1ACT7I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 14:59:08 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:38194 "EHLO e4.ny.us.ibm.com"
+	id S932132Ab1ACT7k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 14:59:40 -0500
+Received: from mga14.intel.com ([143.182.124.37]:39696 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752425Ab1ACT7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 14:59:06 -0500
-Subject: RE: [PATCHv1 09/12] unicore32 core architecture: timer and time
-From: john stultz <johnstul@us.ibm.com>
-To: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <00ef01cbab0a$66bfce60$343f6b20$@mprc.pku.edu.cn>
-References: <00d601cba465$27154a70$753fdf50$@mprc.pku.edu.cn>
-	 <AANLkTinjzzMz4WFRYmjZiM=P6c1wtSxpY2bzOuUe0Vrd@mail.gmail.com>
-	 <008f01cbaa62$2001fff0$6005ffd0$@mprc.pku.edu.cn>
-	 <00ef01cbab0a$66bfce60$343f6b20$@mprc.pku.edu.cn>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 03 Jan 2011 11:58:53 -0800
-Message-ID: <1294084733.2571.54.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1753823Ab1ACT7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 14:59:39 -0500
+Message-Id: <849307$b0clt4@azsmga001.ch.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,268,1291622400"; 
+   d="scan'208";a="369514418"
+Date: Mon, 03 Jan 2011 19:59:34 +0000
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Knut Petersen <Knut_Petersen@t-online.de>
+Subject: Re: [PATCH] Fix i915 drm regression on AOpen i915GMm-HFS motherboard
+Cc: airlied@linux.ie, eric@anholt.net, jesse.barnes@intel.com,
+        linux-kernel@vger.kernel.org,
+        intel-gfx <intel-gfx@lists.freedesktop.org>, gregkh@suse.de
+In-Reply-To: <AANLkTikffkQJnVKzcGhEZjPqg_iQPQ+P2Bbqz7A9Unq_@mail.gmail.com>
+References: <4D21DC41.8070408@t-online.de> <b7da2f$q1ffv6@fmsmga001.fm.intel.com> <4D22119B.9050007@t-online.de> <AANLkTikffkQJnVKzcGhEZjPqg_iQPQ+P2Bbqz7A9Unq_@mail.gmail.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-03 at 13:52 +0800, Guan Xuetao wrote: 
-> > When using clocksource_register_hz(&cksrc_puv3_oscr, CLOCK_TICK_RATE ),
-> >  the shift value become 0, and mult value become 0x838a91a7, and the system will be broken
-> > after printing "Switching to clocksource oscr".
-> > 
-> > When using clocksource_register_khz(&cksrc_puv3_oscr, CLOCK_TICK_RATE ),
-> > the shift value become 0, and mult value become  0x4359611, and the system will run smoothly,
-> > but timer interrupt seems too frequently. Perhaps it is 4 times faster.
-> > 
-> > For comparison, originally, when shift value is set to 0x12, the mult value become 1175e5e.
-> > 
+On Mon, 3 Jan 2011 11:45:48 -0800, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> On Mon, Jan 3, 2011 at 10:12 AM, Knut Petersen
+> <Knut_Petersen@t-online.de> wrote:
+> >
+> > I tried 2.6.37-rc8-git2 with both patches applied.
 > 
-> The error is the implementation of do_div() function.
-> When replacing the arch-specific div64.h with asm-generic/div64.h, clocksource_rigister_hz() works.
+> I thought Chris meant "instead of", rather than "both". Chris?
 
-Oh great! You had me worried I had a bug in the mult/shift calculation.
+Right, I was trying to ascertain whether the intel_lvds_ddc_probe()
+correctly detected the missing panel. That function currently requires
+GMBUS to differentiate between a NAK and an IO error (bitbanging just
+returns EREMOTEIO regardless, iirc). So far it has been successful in
+detecting one false-positive for an AOpen All-in-one and hasn't fouled
+up LVDS detection for the laptops I have.
+-Chris
 
-Great to hear all is working now! If you run into other clock/time
-related troubles, please let me know.
-
-thanks
--john
-
-
-
+-- 
+Chris Wilson, Intel Open Source Technology Centre
