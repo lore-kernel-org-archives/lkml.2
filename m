@@ -1,50 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab1ACJCa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 04:02:30 -0500
-Received: from casper.infradead.org ([85.118.1.10]:39267 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752067Ab1ACJC0 convert rfc822-to-8bit (ORCPT
+	id S1754075Ab1ACJH5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 04:07:57 -0500
+Received: from www84.your-server.de ([213.133.104.84]:60424 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752991Ab1ACJH4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 04:02:26 -0500
-Subject: Re: Kernel oops - help interpreting partial trace info
-From: Peter Zijlstra <peterz@infradead.org>
-To: Samson Yeung <samson@editshare.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTim6Ac51K+31M9miS1apq7=B2a+pPXZuUy+V0UkB@mail.gmail.com>
-References: <AANLkTim6Ac51K+31M9miS1apq7=B2a+pPXZuUy+V0UkB@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 03 Jan 2011 10:02:49 +0100
-Message-ID: <1294045369.2016.35.camel@laptop>
+	Mon, 3 Jan 2011 04:07:56 -0500
+Subject: Re: [PATCH] new UDPCP Communication Protocol
+From: Stefani Seibold <stefani@seibold.net>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, davem@davemloft.net, netdev@vger.kernel.org,
+        shemminger@vyatta.com, daniel.baluta@gmail.com, jochen@jochen.org
+In-Reply-To: <alpine.LNX.2.00.1101022356550.11481@swampdragon.chaosbits.net>
+References: <1294007971-18878-1-git-send-email-stefani@seibold.net>
+	 <1294008562.2535.263.camel@edumazet-laptop>
+	 <1294008917.18963.3.camel@wall-e>
+	 <alpine.LNX.2.00.1101022356550.11481@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 03 Jan 2011 10:08:52 +0100
+Message-ID: <1294045732.19666.6.camel@wall-e>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 8BIT
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-30 at 08:35 -0800, Samson Yeung wrote:
-> Code: 00 44 8b 15 23 76 68 00 45 85 d2 74 32 48 8b 50 08 8b 5a 18 48
-> 8b 90 90 06 00 00 48 8b 4a 50 48 85 c9 74 1b 48 63 db 48 8b 51 20 <48>
-> 03 14 dd 00 fb 74 81 4c 01 32 48 8b 49 58 48 85 c9 75 e8 48
-> All code
-> ========
->    0:   00 44 8b 15             add    %al,0x15(%rbx,%rcx,4)
->    4:   23 76 68                and    0x68(%rsi),%esi
->    7:   00 45 85                add    %al,-0x7b(%rbp)
->    a:   d2                      (bad)
-> ...
+Am Montag, den 03.01.2011, 00:04 +0100 schrieb Jesper Juhl:
+> On Sun, 2 Jan 2011, Stefani Seibold wrote:
 > 
-> Should (bad) ever be output by decodecode? 
+> > Am Sonntag, den 02.01.2011, 23:49 +0100 schrieb Eric Dumazet:
+> > > Le dimanche 02 janvier 2011 à 23:39 +0100, stefani@seibold.net a écrit :
+> > > > +
+> > > > +/*
+> > > > + * Create a new destination descriptor for the given IPV4 address and port
+> > > > + */
+> > > > +static struct udpcp_dest *new_dest(struct sock *sk, __be32 addr, __be16 port)
+> > > > +{
+> > > > +	struct udpcp_dest *dest;
+> > > > +	struct udpcp_sock *usk = udpcp_sk(sk);
+> > > > +
+> > > > +	if (usk->connections >= udpcp_max_connections)
+> > > > +		return NULL;
+> > > > +
+> > > > +	dest = kzalloc(sizeof(*dest), sk->sk_allocation);
+> > > > +
+> > > > +	if (dest) {
+> > > > +		usk->connections++;
+> > > > +		skb_queue_head_init(&dest->xmit);
+> > > > +		dest->addr = addr;
+> > > > +		dest->port = port;
+> > > > +		dest->ackmode = UDPCP_ACK;
+> > > > +		list_add_tail(&dest->list, &usk->destlist);
+> > > > +	}
+> > > > +
+> > > > +	return dest;
+> > > > +}
+> > > > +
+> > > 
+> > > Hmm, so 'connections' is increased, never decreased.
+> > > 
+> > > This seems a fatal flaw in this protocol, since a malicious user can
+> > > easily fill the list with garbage, and block regular communications.
+> > 
+> > You are right, there is now way to detect which connection is no longer
+> > needed. I have not designed this protocol, so i cannot fix it. 
+> > 
+> > But in our environment this will be used together with an firewall
+> > and/or ipsec. In this case it it safe.
+> > 
+> 
+> Hmm, the first thing that springs into my head as a possible band-aid 
+> (which is probbaly wrong for many reasons I've not considered, so feel 
+> free to shoot it down) is; couldn't we use a timer (set to some outrageous 
+> high value by default and admin tunable) that would decrement 
+> 'connections' (discount dead connections) when there has not been any 
+> acctivity for a huge period of time? Kill off connections that have been 
+> idle for ages.
+> 
 
-Don't think so, my guess is the decoder started at a non ins boundary
-and got confused. "85 d2" is "test %edx, %edx" and is something that
-occurs quite frequently in the code. The following 74 is "je", which
-makes sense after a "test".
+This will not work for two reasons:
 
-"8b 15 xx xx xx xx" is "movl xx,%edx"
+- First there is no way to detect a dead connection. A connection can
+stay for a very long time without data transfer.
 
-That however does leave us with a 45 unexplained, that's usually part of
-a mem argument, its x(%ebp) like stuff.
+- Second it will not save against a attack where all communication slots
+will be eaten by an attacker and then new valid connections will be not
+handled.
 
-Dunno really..
+The only thing what is possible to make an ioctl call which allows the
+user land client to cancel connections. 
+
+But this will be in my opinion dead code, because white lists of trusted
+address must be fostered and this will make the upgrading of a
+infrastructure to complicate.
+
+
