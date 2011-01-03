@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab1ACTve (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 14:51:34 -0500
-Received: from pfepa.post.tele.dk ([195.41.46.235]:51363 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752680Ab1ACTvd (ORCPT
+	id S1755565Ab1ACTwU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 14:52:20 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60335
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752680Ab1ACTwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 14:51:33 -0500
-Date: Mon, 3 Jan 2011 20:51:31 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Sedat Dilek <sedat.dilek@googlemail.com>, dilinger@queued.net,
-        sameo@linux.intel.com, tj@kernel.org, joe@perches.com,
-        linux-kernel@vger.kernel.org, Sedat Dilek <sedat.dilek@gmail.com>
-Subject: Re: [PATCH] misc/cs5535: Fix section mismatch derived from
-	cs5535_mfgpt_drv variable
-Message-ID: <20110103195131.GA9568@merkur.ravnborg.org>
-References: <1294023088-31687-1-git-send-email-sedat.dilek@gmail.com> <20110103114310.8b06e73e.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110103114310.8b06e73e.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 3 Jan 2011 14:52:18 -0500
+Date: Mon, 03 Jan 2011 11:52:48 -0800 (PST)
+Message-Id: <20110103.115248.179942629.davem@davemloft.net>
+To: sedat.dilek@googlemail.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sedat.dilek@gmail.com
+Subject: Re: [PATCH] ksz884x: Fix section mismatch derived from
+ pci_device_driver variable
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1294020104-17124-1-git-send-email-sedat.dilek@gmail.com>
+References: <1294020104-17124-1-git-send-email-sedat.dilek@gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 03, 2011 at 11:43:10AM -0800, Andrew Morton wrote:
-> On Mon,  3 Jan 2011 03:51:28 +0100
-> Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+Date: Mon,  3 Jan 2011 03:01:44 +0100
+
+> WARNING: drivers/net/ksz884x.o(.data+0x18): Section mismatch in reference from the variable pci_device_driver to the function .init.text:pcidev_init()
+> The variable pci_device_driver references
+> the function __init pcidev_init()
+> If the reference is valid then annotate the
+> variable with __init* or __refdata (see linux/init.h) or name the variable:
+> *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console,
 > 
-> > >From my build.log:
-> > 
-> > WARNING: drivers/misc/cs5535-mfgpt.o(.data+0x0): Section mismatch in reference from the variable cs5535_mfgpt_drv to the function .devinit.text:cs5535_mfgpt_probe()
-> > The variable cs5535_mfgpt_drv references
-> > the function __devinit cs5535_mfgpt_probe()
-> > If the reference is valid then annotate the
-> > variable with __init* or __refdata (see linux/init.h) or name the variable:
-> > *driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console,
+> This patch fixes the warning.
 > 
-> Confused.  cs5535_mfgpt_probe() _does_ have a name of the form
-> "*_probe", so why did it warn?
+> Tested with linux-next (next-20101231)
+> 
+> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
 
-The varibale need to follow the naming scheme.
-In this case the function was named *_probe - which has no significance
-in the section mismatch checks.
-
-> > variable with __init* or __refdata (see linux/init.h) or name the variable:
-    ^^^^^^^^                                                          ^^^^^^^^^ 
-
-	Sam
+pcidev_init() should be marked __devinit instead of __init to fix this
+bug.
