@@ -1,106 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497Ab1ACQ6c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 11:58:32 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:51415 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754488Ab1ACQ6b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 11:58:31 -0500
-Date: Mon, 3 Jan 2011 11:58:21 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, mfasheh@suse.com,
-        joel.becker@oracle.com
-Subject: Re: [patch 7/8] fs: fix or note I_DIRTY handling bugs in filesystems
-Message-ID: <20110103165821.GA1336@infradead.org>
-References: <20101218014634.943276411@kernel.dk>
- <20101218015117.652706340@kernel.dk>
- <20101229150108.GA13358@infradead.org>
- <1294067009.2429.109.camel@dolmen>
+	id S1755516Ab1ACQ7k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 11:59:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53164 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754488Ab1ACQ7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 11:59:38 -0500
+Date: Mon, 3 Jan 2011 11:59:14 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: "Yan, Zheng" <zheng.z.yan@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
+        yanzheng@21cn.com
+Subject: Re: [PATCH] x86: hpet: Fix HPET timer + NMI watchdog panic
+Message-ID: <20110103165914.GA5685@redhat.com>
+References: <4D1AA079.8040603@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1294067009.2429.109.camel@dolmen>
+In-Reply-To: <4D1AA079.8040603@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 03, 2011 at 03:03:29PM +0000, Steven Whitehouse wrote:
+On Wed, Dec 29, 2010 at 10:44:09AM +0800, Yan, Zheng wrote:
+> HPET doesn't use timer_interrupt() as interrupt handler now. So count of
+> HPET interrupt isn't recorded in per_cpu(irq_stat, cpu).irq0_irqs. This
+> confuses NMI watchdog when using HPET as tick device.
 > 
->  - With "journaled data" files
->    - Do a log flush conditional upon the inode's glock
->    - The core code then writes back any dirty pages
+> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 
-Any data writeback is done before calling ->fsync.
+Not sure if this patch is needed because x86/kerne/apic/nmi.c will most
+likely disappear in 2.6.38 (it is already in gone in linux-next).  The new
+nmi watchdog doesn't rely on HPET stats but instead uses a more generic
+approach of a HRES timer.
 
->  - With regular files/directories
->   - If datasync is not set, we need to write back the metadata including
-> timestamp updates, so that is done via ->write_inode. Note that an extra
-> complication here is that we need to get the glock on the inode if we
-> don't already have it in order to check and conditionally update the
-> atime.The call to ->write_inode includes an implicit (conditional) log
-> flush.
->  - If datasync is set, we assume that only the data pages need to be
-> written out. My understanding of datasync was that it was only supposed
-> to write out data and never any of the metadata. The reason for the call
-> to flush the log for "stuffed" files is that the data shares a disk
-> block with the inode metadata, so we cannot avoid the log flush in this
-> case, since we must unpin the block to write it back.
+Cheers,
+Don
 
-What happens to indirect blocks, inode size updates, etc?  In general
-the only correct form to use the datasync argument is along the lines
-of:
-
-	if ((inode->i_state & I_DIRTY_DATASYNC) ||
-	    ((inode->i_state & I_DIRTY_SYNC) && !datasync)) {
-		/* write out the inode */
-	} else {
-		/*
-		 * VFS inode not dirty, no need to write it out.
-		 *
-		 * If the filesystem support asynchronous inode writes,
-		 * we may have to wait for them here.
-		 */
-	}
-
-or rather mostly correct, as pointed out by Nick in this series, that's
-why the above gets replaced with an equivalent check that also
-participates in the writeback locking protocol in this series.
-
-For gfs2 on current mainline an fsync respecting that would look like:
-
-static int gfs2_fsync(struct file *file, int datasync)
-{
-	struct inode *inode = file->f_mapping->host;
-	struct gfs2_inode *ip = GFS2_I(inode);
-	int ret = 0;
-
-	if (gfs2_is_jdata(ip) {
-		gfs2_log_flush(GFS2_SB(inode), ip);
-		return 0;
-	}
-
-	if ((inode->i_state & I_DIRTY_DATASYNC) ||
-	    ((inode->i_state & I_DIRTY_SYNC) && !datasync))
-		sync_inode_metadata(inode, 1);
-	else if (gfs2_is_stuffed(ip))
-		gfs2_log_flush(GFS2_SB(inode), ip->i_gl);
-}
-
-Note that the asynchronous write_inode_now is replaced with a
-sync_inode_metadata, which doesn't incorrectly write data again, and
-makes sure we do a synchronous write.
-
-I'm still not quite sure how the gfs2_log_flush are supposed to work.
-What's the reason we don't need the ->write_inode call for journaled
-data mode?  Also is it guaranteed that we might not have an asynchronous
-transaction that update the inode in the log, e.g. why doesn't gfs2
-need some sort of log flush even if the VFS inode is not dirty, unlike
-most other journaled filesystems.
-
+> 
+> ---
+> diff --git a/arch/x86/include/asm/hardirq.h b/arch/x86/include/asm/hardirq.h
+> index 55e4de6..cca94f2 100644
+> --- a/arch/x86/include/asm/hardirq.h
+> +++ b/arch/x86/include/asm/hardirq.h
+> @@ -12,6 +12,9 @@ typedef struct {
+>  	unsigned int apic_timer_irqs;	/* arch dependent */
+>  	unsigned int irq_spurious_count;
+>  #endif
+> +#ifdef CONFIG_HPET_TIMER
+> +	unsigned int hpet_timer_irqs;
+> +#endif
+>  	unsigned int x86_platform_ipis;	/* arch dependent */
+>  	unsigned int apic_perf_irqs;
+>  	unsigned int apic_irq_work_irqs;
+> diff --git a/arch/x86/kernel/apic/nmi.c b/arch/x86/kernel/apic/nmi.c
+> index c90041c..cdb38d9 100644
+> --- a/arch/x86/kernel/apic/nmi.c
+> +++ b/arch/x86/kernel/apic/nmi.c
+> @@ -80,8 +80,15 @@ static inline int mce_in_progress(void)
+>   */
+>  static inline unsigned int get_timer_irqs(int cpu)
+>  {
+> -	return per_cpu(irq_stat, cpu).apic_timer_irqs +
+> +	unsigned int irqs; 
+> +#ifdef CONFIG_HPET_TIMER
+> +	irqs = per_cpu(irq_stat, cpu).hpet_timer_irqs;
+> +#else
+> +	irqs = 0;
+> +#endif
+> +	irqs += per_cpu(irq_stat, cpu).apic_timer_irqs +
+>  		per_cpu(irq_stat, cpu).irq0_irqs;
+> +	return irqs;
+>  }
+>  
+>  #ifdef CONFIG_SMP
+> diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+> index 4ff5968..b536474c 100644
+> --- a/arch/x86/kernel/hpet.c
+> +++ b/arch/x86/kernel/hpet.c
+> @@ -517,6 +517,7 @@ static irqreturn_t hpet_interrupt_handler(int irq, void *data)
+>  	struct hpet_dev *dev = (struct hpet_dev *)data;
+>  	struct clock_event_device *hevt = &dev->evt;
+>  
+> +	inc_irq_stat(hpet_timer_irqs);
+>  	if (!hevt->event_handler) {
+>  		printk(KERN_INFO "Spurious HPET timer interrupt on HPET timer %d\n",
+>  				dev->num);
+> diff --git a/arch/x86/kernel/time.c b/arch/x86/kernel/time.c
+> index fb5cc5e1..2098c56 100644
+> --- a/arch/x86/kernel/time.c
+> +++ b/arch/x86/kernel/time.c
+> @@ -56,7 +56,7 @@ unsigned long profile_pc(struct pt_regs *regs)
+>  EXPORT_SYMBOL(profile_pc);
+>  
+>  /*
+> - * Default timer interrupt handler for PIT/HPET
+> + * Default timer interrupt handler for PIT
+>   */
+>  static irqreturn_t timer_interrupt(int irq, void *dev_id)
+>  {
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
