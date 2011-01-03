@@ -1,637 +1,867 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab1ACLx2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 06:53:28 -0500
-Received: from mga01.intel.com ([192.55.52.88]:61985 "EHLO mga01.intel.com"
+	id S1754746Ab1ACLyH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 06:54:07 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:48697 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753430Ab1ACLx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 06:53:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,266,1291622400"; 
-   d="txt'?scan'208";a="873934809"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Date: Mon, 3 Jan 2011 17:23:19 +0530
-Subject: Patch[2/2]:hwmon:Adding_Threshold_Support_to_Coretemp.c
-Thread-Topic: Patch[2/2]:hwmon:Adding_Threshold_Support_to_Coretemp.c
-Thread-Index: AcugDH7j0CGLX8P7R+WaTUw3u+AkagLMCoOg
-Message-ID: <D6D887BA8C9DFF48B5233887EF04654105C1251712@bgsmsx502.gar.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: multipart/mixed;
-	boundary="_003_D6D887BA8C9DFF48B5233887EF04654105C1251712bgsmsx502garc_"
+	id S1753430Ab1ACLyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 06:54:05 -0500
+From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
+To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCHv1 7/8] unicore32 additional architecture files: low-level lib: checksum
+Date: Mon, 3 Jan 2011 19:54:03 +0800
+Message-ID: <013101cbab3c$eb0a7670$c11f6350$@mprc.pku.edu.cn>
 MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AcurPOOj4M36NFNnT9a7X0eoOisFHQ==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_003_D6D887BA8C9DFF48B5233887EF04654105C1251712bgsmsx502garc_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 
-Hi,
+Patch 7 implements low-level checksum libraries.
 
-I am submitting a patch to enable core thermal threshold
-Support to coretemp.c. There are two core thermal thresholds
-available through sysfs interfaces temp1_max and temp1_max_hyst.
-The temp1_max_alarm is set when temperature reaches or crosses
-above temp1_max or drops below temp1_max_hyst.
-
-This patch is generated against stable Linux-2.6 kernel.
-
-Kindly review and merge.
-----------------------------------------------------------------
-From: Durgadoss R <durgadoss.r@intel.com>
-
-Date: Sun, 19 Dec 2010 22:44:54 +0530
-Subject: [PATCH 2/2] hwmon:Adding_Threshold_Support_to_Coretemp
-
-This patch adds core thermal thresholds support to coretemp.
-These thresholds can be configured via the sysfs interfaces temp1_max
-and temp1_max_hyst. An interrupt is generated when CPU temperature
-goes above temp1_max or drops below temp1_max_hyst.
-
-Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
-
+Signed-off-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 ---
- Documentation/hwmon/coretemp |    8 ++
- drivers/hwmon/coretemp.c     |  214 ++++++++++++++++++++++++++++++++++++++=
-----
- 2 files changed, 202 insertions(+), 20 deletions(-)
+ arch/unicore32/include/asm/checksum.h       |  142 +++++++++++
+ arch/unicore32/lib/csumipv6.S               |   36 +++
+ arch/unicore32/lib/csumpartial.S            |  126 ++++++++++
+ arch/unicore32/lib/csumpartialcopy.S        |   61 +++++
+ arch/unicore32/lib/csumpartialcopygeneric.S |  335 +++++++++++++++++++++++++++
+ arch/unicore32/lib/csumpartialcopyuser.S    |   92 ++++++++
+ 6 files changed, 792 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/hwmon/coretemp b/Documentation/hwmon/coretemp
-index 25568f8..615fdbe 100644
---- a/Documentation/hwmon/coretemp
-+++ b/Documentation/hwmon/coretemp
-@@ -29,6 +29,14 @@ the Out-Of-Spec bit. Following table summarizes the expo=
-rted sysfs files:
-=20
- temp1_input	 - Core temperature (in millidegrees Celsius).
- temp1_max	 - All cooling devices should be turned on (on Core2).
-+		   Initialized with IA32_TEMPERATURE_TARGET if supported,
-+		   otherwise initialized with (tjmax - 20). When the CPU
-+		   temperature reaches this temperature, an interrupt is
-+		   generated and temp1_max_alarm is set.
-+temp1_max_hyst	 - If the CPU temperature falls below than temperature,
-+		   an interrupt is generated and temp1_max_alarm is reset.
-+temp1_max_alarm - Set if the temperature reaches or exceeds temp1_max.
-+		   Reset if the temperature drops to or below temp1_max_hyst.
- temp1_crit	 - Maximum junction temperature (in millidegrees Celsius).
- temp1_crit_alarm - Set when Out-of-spec bit is set, never clears.
- 		   Correct CPU operation is no longer guaranteed.
-diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-index 42de98d..025902f 100644
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -36,11 +36,12 @@
- #include <asm/msr.h>
- #include <asm/processor.h>
- #include <asm/smp.h>
-+#include <asm/mce.h>
-=20
- #define DRVNAME	"coretemp"
-=20
--typedef enum { SHOW_TEMP, SHOW_TJMAX, SHOW_TTARGET, SHOW_LABEL,
--		SHOW_NAME } SHOW;
-+enum attributes { SHOW_TEMP, SHOW_TJMAX, CORE_TTARGET, CORE_TMIN, SHOW_LAB=
-EL,
-+		SHOW_NAME, SHOW_CRIT_ALARM, SHOW_MAX_ALARM } attrs;
-=20
- /*
-  * Functions declaration
-@@ -59,9 +60,14 @@ struct coretemp_data {
- 	int temp;
- 	int tjmax;
- 	int ttarget;
--	u8 alarm;
-+	int tmin;
-+	u8 max_alarm;
-+	u8 crit_alarm;
- };
-=20
-+static void update_alarm(struct coretemp_data *data);
-+static int set_core_threshold(struct coretemp_data *data, int temp, int th=
-res);
+diff --git a/arch/unicore32/include/asm/checksum.h b/arch/unicore32/include/asm/checksum.h
+new file mode 100644
+index 0000000..59a97d8
+--- /dev/null
++++ b/arch/unicore32/include/asm/checksum.h
+@@ -0,0 +1,142 @@
++/*
++ * linux/arch/unicore32/include/asm/checksum.h
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * IP checksum routines
++ */
++#ifndef __UNICORE_CHECKSUM_H__
++#define __UNICORE_CHECKSUM_H__
 +
- /*
-  * Sysfs stuff
-  */
-@@ -83,9 +89,15 @@ static ssize_t show_name(struct device *dev, struct devi=
-ce_attribute
- static ssize_t show_alarm(struct device *dev, struct device_attribute
- 			  *devattr, char *buf)
- {
--	struct coretemp_data *data =3D coretemp_update_device(dev);
--	/* read the Out-of-spec log, never clear */
--	return sprintf(buf, "%d\n", data->alarm);
-+	struct sensor_device_attribute *attr =3D to_sensor_dev_attr(devattr);
-+	struct coretemp_data *data =3D dev_get_drvdata(dev);
++#include <linux/in6.h>
 +
-+	update_alarm(data);
-+	if (attr->index =3D=3D SHOW_CRIT_ALARM)
-+		/* read the Out-of-spec log, never clear */
-+		return sprintf(buf, "%d\n", data->crit_alarm);
++/*
++ * computes the checksum of a memory block at buff, length len,
++ * and adds in "sum" (32-bit)
++ *
++ * returns a 32-bit number suitable for feeding into itself
++ * or csum_tcpudp_magic
++ *
++ * this function must be called with even lengths, except
++ * for the last fragment, which may be odd
++ *
++ * it's best to have buff aligned on a 32-bit boundary
++ */
++__wsum csum_partial(const void *buff, int len, __wsum sum);
 +
-+	return sprintf(buf, "%d\n", data->max_alarm);
- }
-=20
- static ssize_t show_temp(struct device *dev,
-@@ -93,33 +105,67 @@ static ssize_t show_temp(struct device *dev,
- {
- 	struct sensor_device_attribute *attr =3D to_sensor_dev_attr(devattr);
- 	struct coretemp_data *data =3D coretemp_update_device(dev);
--	int err;
-+	int err =3D -EINVAL;
-=20
--	if (attr->index =3D=3D SHOW_TEMP)
-+	switch (attr->index) {
-+	case SHOW_TEMP:
- 		err =3D data->valid ? sprintf(buf, "%d\n", data->temp) : -EAGAIN;
--	else if (attr->index =3D=3D SHOW_TJMAX)
-+		break;
-+	case SHOW_TJMAX:
- 		err =3D sprintf(buf, "%d\n", data->tjmax);
--	else
-+		break;
-+	case CORE_TTARGET:
- 		err =3D sprintf(buf, "%d\n", data->ttarget);
-+		break;
-+	case CORE_TMIN:
-+		err =3D sprintf(buf, "%d\n", data->tmin);
-+		break;
-+	}
++/*
++ * the same as csum_partial, but copies from src while it
++ * checksums, and handles user-space pointer exceptions correctly, when needed.
++ *
++ * here even more important to align src and dst on a 32-bit (or even
++ * better 64-bit) boundary
++ */
 +
- 	return err;
- }
-=20
++__wsum
++csum_partial_copy_nocheck(const void *src, void *dst, int len, __wsum sum);
 +
-+static ssize_t store_temp(struct device *dev,
-+		struct device_attribute *devattr, const char *buf, size_t count)
++__wsum
++csum_partial_copy_from_user(const void __user *src, void *dst,
++		int len, __wsum sum, int *err_ptr);
++
++/*
++ *	Fold a partial checksum without adding pseudo headers
++ */
++static inline __sum16 csum_fold(__wsum sum)
 +{
-+	struct sensor_device_attribute *attr =3D to_sensor_dev_attr(devattr);
-+	struct coretemp_data *data =3D dev_get_drvdata(dev);
-+	unsigned long val;
-+	int err;
-+
-+	if (strict_strtoul(buf, 10, &val))
-+		return -EINVAL;
-+
-+	err =3D set_core_threshold(data, val, attr->index);
-+
-+	return err ? err : count;
++	__asm__(
++	"add	%0, %1, %1 <> #16	@ csum_fold"
++	: "=r" (sum)
++	: "r" (sum)
++	: "cc");
++	return (__force __sum16)(~(__force u32)sum >> 16);
 +}
 +
- static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, show_temp, NULL,
- 			  SHOW_TEMP);
- static SENSOR_DEVICE_ATTR(temp1_crit, S_IRUGO, show_temp, NULL,
- 			  SHOW_TJMAX);
--static SENSOR_DEVICE_ATTR(temp1_max, S_IRUGO, show_temp, NULL,
--			  SHOW_TTARGET);
--static DEVICE_ATTR(temp1_crit_alarm, S_IRUGO, show_alarm, NULL);
-+static SENSOR_DEVICE_ATTR(temp1_max, S_IWUSR | S_IRUGO, show_temp,
-+						store_temp, CORE_TTARGET);
-+static SENSOR_DEVICE_ATTR(temp1_max_hyst, S_IWUSR | S_IRUGO, show_temp,
-+						store_temp, CORE_TMIN);
-+static SENSOR_DEVICE_ATTR(temp1_crit_alarm, S_IRUGO, show_alarm, NULL,
-+							SHOW_CRIT_ALARM);
-+static SENSOR_DEVICE_ATTR(temp1_max_alarm, S_IRUGO, show_alarm, NULL,
-+							SHOW_MAX_ALARM);
- static SENSOR_DEVICE_ATTR(temp1_label, S_IRUGO, show_name, NULL, SHOW_LABE=
-L);
- static SENSOR_DEVICE_ATTR(name, S_IRUGO, show_name, NULL, SHOW_NAME);
-=20
- static struct attribute *coretemp_attributes[] =3D {
- 	&sensor_dev_attr_name.dev_attr.attr,
- 	&sensor_dev_attr_temp1_label.dev_attr.attr,
--	&dev_attr_temp1_crit_alarm.attr,
-+	&sensor_dev_attr_temp1_crit_alarm.dev_attr.attr,
- 	&sensor_dev_attr_temp1_input.dev_attr.attr,
- 	&sensor_dev_attr_temp1_crit.dev_attr.attr,
-+	&sensor_dev_attr_temp1_max.dev_attr.attr,
-+	&sensor_dev_attr_temp1_max_hyst.dev_attr.attr,
-+	&sensor_dev_attr_temp1_max_alarm.dev_attr.attr,
- 	NULL
- };
-=20
-@@ -127,6 +173,26 @@ static const struct attribute_group coretemp_group =3D=
- {
- 	.attrs =3D coretemp_attributes,
- };
-=20
-+static void update_alarm(struct coretemp_data *data)
++/*
++ *	This is a version of ip_compute_csum() optimized for IP headers,
++ *	which always checksum on 4 octet boundaries.
++ */
++static inline __sum16
++ip_fast_csum(const void *iph, unsigned int ihl)
 +{
-+	u32 eax, edx;
++	unsigned int tmp1;
++	__wsum sum;
 +
-+	rdmsr_on_cpu(data->id, MSR_IA32_THERM_STATUS, &eax, &edx);
-+
-+	/* Update the critical temperature alarm */
-+	data->crit_alarm =3D (eax >> 5) & 1;
-+
-+	/* Temperature reached threshold1 */
-+	if (eax & THERM_LOG_THRESHOLD1)
-+		data->max_alarm =3D 1;
-+	/* Temperature reached threshold0 */
-+	else if (eax & THERM_LOG_THRESHOLD0)
-+		data->max_alarm =3D 0;
-+	/* If none of these cases, don't update max_alarm */
-+
-+	return;
++	__asm__ __volatile__(
++	"ldw.w	%0, [%1]+, #4		@ ip_fast_csum"
++	"ldw.w	%3, [%1]+, #4"
++	"sub	%2, %2, #5"
++	"add.a	%0, %0, %3"
++	"ldw.w	%3, [%1]+, #4"
++	"addc.a	%0, %0, %3"
++	"ldw.w	%3, [%1]+, #4"
++"1:	addc.a	%0, %0, %3"
++	"ldw.w	%3, [%1]+, #4"
++	"cmpand.a	%2, #15		@ do this carefully"
++	"beq	2f"
++	"sub	%2, %2, #1		@ without destroying"
++	"bne	1b			@ the carry flag"
++"2:	addc.a	%0, %0, %3"
++	"addc	%0, %0, #0"
++	: "=r" (sum), "=r" (iph), "=r" (ihl), "=r" (tmp1)
++	: "1" (iph), "2" (ihl)
++	: "cc", "memory");
++	return csum_fold(sum);
 +}
 +
- static struct coretemp_data *coretemp_update_device(struct device *dev)
- {
- 	struct coretemp_data *data =3D dev_get_drvdata(dev);
-@@ -138,7 +204,6 @@ static struct coretemp_data *coretemp_update_device(str=
-uct device *dev)
-=20
- 		data->valid =3D 0;
- 		rdmsr_on_cpu(data->id, MSR_IA32_THERM_STATUS, &eax, &edx);
--		data->alarm =3D (eax >> 5) & 1;
- 		/* update only if data has been valid */
- 		if (eax & 0x80000000) {
- 			data->temp =3D data->tjmax - (((eax >> 16)
-@@ -298,6 +363,106 @@ static void __devinit get_ucode_rev_on_cpu(void *edx)
- 	rdmsr(MSR_IA32_UCODE_REV, eax, *(u32 *)edx);
- }
-=20
-+/* Platform thermal Interrupt Handler */
-+static int coretemp_interrupt(__u64 msr_val)
++static inline __wsum
++csum_tcpudp_nofold(__be32 saddr, __be32 daddr, unsigned short len,
++		   unsigned short proto, __wsum sum)
 +{
-+
-+	if (msr_val & THERM_LOG_THRESHOLD0) {
-+		if (!(msr_val & THERM_STATUS_THRESHOLD0))
-+			pr_info("%s:Lower Threshold Reached\n", __func__);
-+		/* Reset the Threshold0 interrupt */
-+		wrmsrl(MSR_IA32_THERM_STATUS, msr_val & ~THERM_LOG_THRESHOLD0);
-+	}
-+
-+	if (msr_val & THERM_LOG_THRESHOLD1) {
-+		if (msr_val & THERM_STATUS_THRESHOLD1)
-+			pr_info("%s:Upper Threshold Reached\n", __func__);
-+		/* Reset the Threshold1 interrupt */
-+		wrmsrl(MSR_IA32_THERM_STATUS, msr_val & ~THERM_LOG_THRESHOLD1);
-+	}
-+
-+	return 0;
++	__asm__(
++	"add.a	%0, %1, %2		@ csum_tcpudp_nofold"
++	"addc.a	%0, %0, %3"
++	"addc.a	%0, %0, %4 << #8"
++	"addc.a	%0, %0, %5"
++	"addc	%0, %0, #0"
++	: "=&r"(sum)
++	: "r" (sum), "r" (daddr), "r" (saddr), "r" (len), "Ir" (htons(proto))
++	: "cc");
++	return sum;
++}
++/*
++ * computes the checksum of the TCP/UDP pseudo-header
++ * returns a 16-bit checksum, already complemented
++ */
++static inline __sum16
++csum_tcpudp_magic(__be32 saddr, __be32 daddr, unsigned short len,
++		  unsigned short proto, __wsum sum)
++{
++	return csum_fold(csum_tcpudp_nofold(saddr, daddr, len, proto, sum));
 +}
 +
-+static void configure_apic(void *info)
++
++/*
++ * this routine is used for miscellaneous IP-like checksums, mainly
++ * in icmp.c
++ */
++static inline __sum16
++ip_compute_csum(const void *buff, int len)
 +{
-+	u32 l;
-+	int *flag =3D (int *)info;
-+
-+	l =3D apic_read(APIC_LVTTHMR);
-+
-+	if (*flag)	/* Non-Zero flag Masks the APIC */
-+		apic_write(APIC_LVTTHMR, l | APIC_LVT_MASKED);
-+	else		/* Zero flag UnMasks the APIC */
-+		apic_write(APIC_LVTTHMR, l & ~APIC_LVT_MASKED);
++	return csum_fold(csum_partial(buff, len, 0));
 +}
 +
-+static int set_core_threshold(struct coretemp_data *data, int temp, int th=
-res)
++#define _HAVE_ARCH_IPV6_CSUM
++extern __wsum
++__csum_ipv6_magic(const struct in6_addr *saddr, const struct in6_addr *daddr,
++		__be32 len, __be32 proto, __wsum sum);
++
++static inline __sum16
++csum_ipv6_magic(const struct in6_addr *saddr, const struct in6_addr *daddr,
++		__u32 len, unsigned short proto, __wsum sum)
 +{
-+	u32 eax, edx;
-+	int diff;
-+	int flag =3D 1;
-+
-+	if (temp > data->tjmax)
-+		return -EINVAL;
-+
-+	mutex_lock(&data->update_lock);
-+
-+	diff =3D (data->tjmax - temp)/1000;
-+
-+	/* Mask the APIC */
-+	smp_call_function_single(data->id, &configure_apic, &flag, 1);
-+
-+	rdmsr_on_cpu(data->id, MSR_IA32_THERM_INTERRUPT, &eax, &edx);
-+
-+	if (thres =3D=3D CORE_TMIN) {
-+		eax =3D (eax & ~THERM_MASK_THRESHOLD0) |
-+					(diff << THERM_SHIFT_THRESHOLD0);
-+		data->tmin =3D temp;
-+	} else {
-+		eax =3D (eax & ~THERM_MASK_THRESHOLD1) |
-+					(diff << THERM_SHIFT_THRESHOLD1);
-+		data->ttarget =3D temp;
-+	}
-+
-+	wrmsr_on_cpu(data->id, MSR_IA32_THERM_INTERRUPT, eax, edx);
-+
-+	/* Unmask the APIC */
-+	flag =3D 0;
-+	smp_call_function_single(data->id, &configure_apic, &flag, 1);
-+
-+	mutex_unlock(&data->update_lock);
-+	return 0;
++	return csum_fold(__csum_ipv6_magic(saddr, daddr, htonl(len),
++					   htonl(proto), sum));
 +}
++#endif
+diff --git a/arch/unicore32/lib/csumipv6.S b/arch/unicore32/lib/csumipv6.S
+new file mode 100644
+index 0000000..47fad61
+--- /dev/null
++++ b/arch/unicore32/lib/csumipv6.S
+@@ -0,0 +1,36 @@
++/*
++ * linux/arch/unicore32/lib/csumipv6.S
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/linkage.h>
++#include <asm/assembler.h>
 +
-+static int __devinit config_thresh_intrpt(struct coretemp_data *data,
-+								int enable)
-+{
-+	u32 eax, edx;
-+	int flag =3D 1; /* Non-Zero Flag masks the apic */
++		.text
 +
-+	smp_call_function_single(data->id, &configure_apic, &flag, 1);
++ENTRY(__csum_ipv6_magic)
++		stw.w	lr, [sp+], #-4
++		add.a	ip, r2, r3
 +
-+	rdmsr_on_cpu(data->id, MSR_IA32_THERM_INTERRUPT, &eax, &edx);
++		ldm   (r1 - r4), [r1]+
++		addc.a	ip, ip, r1
++		addc.a	ip, ip, r2
++		addc.a	ip, ip, r3
++		addc.a	ip, ip, r4
++		ldm	(r0 - r3), [r0]+
++		addc.a	r0, ip, r0
++		addc.a	r0, r0, r1
++		addc.a	r0, r0, r2
++		ldw	r2, [sp+], #4
++		addc.a	r0, r0, r3
++		addc.a	r0, r0, r2
++		addc.a	r0, r0, #0
++		ldm.w	(pc), [sp]+
++ENDPROC(__csum_ipv6_magic)
 +
-+	if (enable) {
-+		eax |=3D (THERM_INT_THRESHOLD0_ENABLE |
-+						THERM_INT_THRESHOLD1_ENABLE);
-+		platform_thermal_notify =3D coretemp_interrupt;
-+	} else {
-+		eax &=3D (~(THERM_INT_THRESHOLD0_ENABLE |
-+						THERM_INT_THRESHOLD1_ENABLE));
-+		platform_thermal_notify =3D NULL;
-+	}
+diff --git a/arch/unicore32/lib/csumpartial.S b/arch/unicore32/lib/csumpartial.S
+new file mode 100644
+index 0000000..23e36c5
+--- /dev/null
++++ b/arch/unicore32/lib/csumpartial.S
+@@ -0,0 +1,126 @@
++/*
++ * linux/arch/unicore32/lib/csumpartial.S
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/linkage.h>
++#include <asm/assembler.h>
 +
-+	wrmsr_on_cpu(data->id, MSR_IA32_THERM_INTERRUPT, eax, edx);
++		.text
 +
-+	flag =3D 0; /*Flag should be zero to unmask the apic */
-+	smp_call_function_single(data->id, &configure_apic, &flag, 1);
++/*
++ * Function: __u32 csum_partial(const char *src, int len, __u32 sum)
++ * Params  : r0 = buffer, r1 = len, r2 = checksum
++ * Returns : r0 = new checksum
++ */
 +
-+	return 0;
-+}
++buf	.req	r0
++len	.req	r1
++sum	.req	r2
++td0	.req	r3
++td1	.req	r4
++td2	.req	r5
++td3	.req	r6
 +
- static int __devinit coretemp_probe(struct platform_device *pdev)
- {
- 	struct coretemp_data *data;
-@@ -351,6 +516,10 @@ static int __devinit coretemp_probe(struct platform_de=
-vice *pdev)
- 	}
-=20
- 	data->tjmax =3D get_tjmax(c, data->id, &pdev->dev);
-+	/* Initialize ttarget value. If IA32_TEMPERATURE_TARGET is
-+	 * supported, this value will be over written below
-+	 */
-+	data->ttarget =3D data->tjmax - 20000;
- 	platform_set_drvdata(pdev, data);
-=20
- 	/*
-@@ -368,13 +537,18 @@ static int __devinit coretemp_probe(struct platform_d=
-evice *pdev)
- 		} else {
- 			data->ttarget =3D data->tjmax -
- 					(((eax >> 8) & 0xff) * 1000);
--			err =3D device_create_file(&pdev->dev,
--					&sensor_dev_attr_temp1_max.dev_attr);
--			if (err)
--				goto exit_free;
- 		}
- 	}
-=20
-+	/* Enable threshold interrupt support */
-+	config_thresh_intrpt(data, 1);
++.Lzero:		mov	r0, sum
++		add	sp, sp, #4
++		ldw.w	pc, [sp]+, #4
 +
-+	/* Set Initial Core thresholds.
-+	 * The lower and upper threshold values here are assumed
-+	 */
-+	set_core_threshold(data, 0, CORE_TMIN);
-+	set_core_threshold(data, data->ttarget, CORE_TTARGET);
++		/*
++		 * Handle 0 to 7 bytes, with any alignment of source and
++		 * destination pointers.  Note that when we get here, C = 0
++		 */
++.Lless8:		cxor.a	len, #0			@ check for zero count
++		beq	.Lzero
 +
- 	if ((err =3D sysfs_create_group(&pdev->dev.kobj, &coretemp_group)))
- 		goto exit_dev;
-=20
-@@ -404,7 +578,7 @@ static int __devexit coretemp_remove(struct platform_de=
-vice *pdev)
-=20
- 	hwmon_device_unregister(data->hwmon_dev);
- 	sysfs_remove_group(&pdev->dev.kobj, &coretemp_group);
--	device_remove_file(&pdev->dev, &sensor_dev_attr_temp1_max.dev_attr);
-+	config_thresh_intrpt(data, 0);
- 	platform_set_drvdata(pdev, NULL);
- 	kfree(data);
- 	return 0;
---=20
-1.6.5.2
++		/* we must have at least one byte. */
++		cand.a	buf, #1				@ odd address?
++		beq	.Lless4
++		mov	sum, sum <> #8
++		ldb.w	td0, [buf]+, #1
++		sub	len, len, #1
++		addc.a	sum, sum, td0 put_byte_1
++
++.Lless4:	cand.a	len, #6
++		beq	.Lless8_byte
++
++		/* we are now half-word aligned */
++
++.Lless8_wordlp:
++		ldh.w	td0, [buf]+, #2
++		sub	len, len, #2
++		addc.a	sum, sum, td0
++		cand.a	len, #6
++		bne	.Lless8_wordlp
++
++.Lless8_byte:	cand.a	len, #1			@ odd number of bytes
++		beq	.Ldone
++		ldb.w	td0, [buf]+, #1		@ include last byte
++		addc.a	sum, sum, td0 put_byte_0	@ update checksum
++
++.Ldone:		addc	r0, sum, #0		@ collect up the last carry
++		ldw.w	td0, [sp]+, #4
++		cand.a	td0, #1			@ check buffer alignment
++		cmovne	r0, r0 <> #8		@ rotate checksum by 8 bits
++		ldw.w	pc, [sp]+, #4		@ return
++
++.Lnot_aligned:	cand.a	buf, #1			@ odd address
++		beq	201f
++		ldb.w	td0, [buf]+, #1		@ make even
++		sub	len, len, #1
++		addc.a	sum, sum, td0 put_byte_1	@ update checksum
++	201:
++		cand.a	buf, #2			@ 32-bit aligned?
++		beq	201f
++		ldh.w	td0, [buf]+, #2		@ make 32-bit aligned
++		sub	len, len, #2
++		addc.a	sum, sum, td0		@ update checksum
++	201:
++		mov	pc, lr
++
++ENTRY(csum_partial)
++		stm.w	(lr), [sp-]
++		stm.w	(buf), [sp-]
++		csub.a	len, #8			@ Ensure that we have at least
++		bub	.Lless8			@ 8 bytes to copy.
++
++		cand.a	buf, #1
++		cmovne	sum, sum <> #8
++
++		add.a	sum, sum, #0		@ C = 0
++		cand.a	buf, #3			@ Test destination alignment
++		bne.l	.Lnot_aligned		@ align destination, return here
++
++1:		andn.a	ip, len, #31
++		beq	3f
++
++2:		ldm.w	(td0, td1, td2, td3), [buf]+
++		addc.a	sum, sum, td0
++		addc.a	sum, sum, td1
++		addc.a	sum, sum, td2
++		addc.a	sum, sum, td3
++		ldm.w	(td0, td1, td2, td3), [buf]+
++		addc.a	sum, sum, td0
++		addc.a	sum, sum, td1
++		addc.a	sum, sum, td2
++		addc.a	sum, sum, td3
++		sub	ip, ip, #32
++		cxor.a	ip, #0
++		bne	2b
++
++3:		cand.a	len, #0x1c		@ should not change C
++		beq	.Lless4
++
++4:		ldw.w	td0, [buf]+, #4
++		sub	len, len, #4
++		addc.a	sum, sum, td0
++		cand.a	len, #0x1c
++		bne	4b
++		b	.Lless4
++ENDPROC(csum_partial)
+diff --git a/arch/unicore32/lib/csumpartialcopy.S b/arch/unicore32/lib/csumpartialcopy.S
+new file mode 100644
+index 0000000..e4fa5c2
+--- /dev/null
++++ b/arch/unicore32/lib/csumpartialcopy.S
+@@ -0,0 +1,61 @@
++/*
++ * linux/arch/unicore32/lib/csumpartialcopy.S
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/linkage.h>
++#include <asm/assembler.h>
++
++		.text
++
++/*
++ * Function: __u32 csum_partial_copy_nocheck
++ * 			(const char *src, char *dst, int len, __u32 sum)
++ * Params  : r0 = src, r1 = dst, r2 = len, r3 = checksum
++ * Returns : r0 = new checksum
++ */
++
++		.macro	save_regs
++		mov	ip, sp
++		stm.w	(fp, ip, lr, pc), [sp-]
++		stm.w	(r1), [sp-]
++		sub	fp, ip, #4
++		.endm
++
++		.macro	load_regs
++		ldm.w	(r1), [sp]+
++		ldm	(fp, sp, pc), [sp]+
++		.endm
++
++		.macro	load1b, reg1
++		ldb.w	\reg1, [r0]+, #1
++		.endm
++
++		.macro	load2b, reg1, reg2
++		ldb.w	\reg1, [r0]+, #1
++		ldb.w	\reg2, [r0]+, #1
++		.endm
++
++		.macro	load1l, reg1
++		ldw.w	\reg1, [r0]+, #4
++		.endm
++
++		.macro	load2l, reg1, reg2
++		ldw.w	\reg1, [r0]+, #4
++		ldw.w	\reg2, [r0]+, #4
++		.endm
++
++		.macro	load4l, reg1, reg2, reg3, reg4
++		ldm.w	(\reg1, \reg2, \reg3, \reg4), [r0]+
++		.endm
++
++#define FN_ENTRY	ENTRY(csum_partial_copy_nocheck)
++#define FN_EXIT		ENDPROC(csum_partial_copy_nocheck)
++
++#include "csumpartialcopygeneric.S"
+diff --git a/arch/unicore32/lib/csumpartialcopygeneric.S b/arch/unicore32/lib/csumpartialcopygeneric.S
+new file mode 100644
+index 0000000..d5a4a3d
+--- /dev/null
++++ b/arch/unicore32/lib/csumpartialcopygeneric.S
+@@ -0,0 +1,335 @@
++/*
++ * linux/arch/unicore32/lib/csumpartialcopygeneric.S
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++/*
++ * unsigned int
++ * csum_partial_copy_xxx(const char *src, char *dst, int len, int sum, )
++ *  r0 = src, r1 = dst, r2 = len, r3 = sum
++ *  Returns : r0 = checksum
++ *
++ * Note that 'tst' and 'teq' preserve the carry flag.
++ */
++
++src	.req	r0
++dst	.req	r1
++len	.req	r2
++sum	.req	r3
++
++.Lzero:		mov	r0, sum
++		load_regs
++
++		/*
++		 * Align an unaligned destination pointer.  We know that
++		 * we have >= 8 bytes here, so we don't need to check
++		 * the length.  Note that the source pointer hasn't been
++		 * aligned yet.
++		 */
++.Ldst_unaligned:
++		cand.a	dst, #1
++		beq	.Ldst_16bit
++
++		load1b	ip
++		sub	len, len, #1
++		addc.a	sum, sum, ip put_byte_1		@ update checksum
++		stb.w	ip, [dst]+, #1
++		cand.a	dst, #2
++		cmoveq	pc, lr			@ dst is now 32bit aligned
++
++.Ldst_16bit:	load2b	r8, ip
++		sub	len, len, #2
++		addc.a	sum, sum, r8 put_byte_0
++		stb.w	r8, [dst]+, #1
++		addc.a	sum, sum, ip put_byte_1
++		stb.w	ip, [dst]+, #1
++		mov	pc, lr			@ dst is now 32bit aligned
++
++		/*
++		 * Handle 0 to 7 bytes, with any alignment of source and
++		 * destination pointers.  Note that when we get here, C = 0
++		 */
++.Lless8:	cxor.a	len, #0			@ check for zero count
++		beq	.Lzero
++
++		/* we must have at least one byte. */
++		cand.a	dst, #1				@ dst 16-bit aligned
++		beq	.Lless8_aligned
++
++		/* Align dst */
++		load1b	ip
++		sub	len, len, #1
++		addc.a	sum, sum, ip put_byte_1		@ update checksum
++		stb.w	ip, [dst]+, #1
++		cand.a	len, #6
++		beq	.Lless8_byteonly
++
++1:		load2b	r8, ip
++		sub	len, len, #2
++		addc.a	sum, sum, r8 put_byte_0
++		stb.w	r8, [dst]+, #1
++		addc.a	sum, sum, ip put_byte_1
++		stb.w	ip, [dst]+, #1
++.Lless8_aligned:
++		cand.a	len, #6
++		bne	1b
++.Lless8_byteonly:
++		cand.a	len, #1
++		beq	.Ldone
++		load1b	r8
++		addc.a	sum, sum, r8 put_byte_0		@ update checksum
++		stb.w	r8, [dst]+, #1
++		b	.Ldone
++
++FN_ENTRY
++		save_regs
++
++		csub.a	len, #8			@ Ensure that we have at least
++		bub	.Lless8			@ 8 bytes to copy.
++
++		add.a	sum, sum, #0		@ C = 0
++		cand.a	dst, #3			@ Test destination alignment
++		bne.l	.Ldst_unaligned		@ align destination, return here
++
++		/*
++		 * Ok, the dst pointer is now 32bit aligned, and we know
++		 * that we must have more than 4 bytes to copy.  Note
++		 * that C contains the carry from the dst alignment above.
++		 */
++
++		cand.a	src, #3			@ Test source alignment
++		bne	.Lsrc_not_aligned
++
++		/* Routine for src & dst aligned */
++
++		andn.a	ip, len, #15
++		beq	2f
++
++1:		load4l	r4, r5, r6, r7
++		stm.w	(r4, r5, r6, r7), [dst]+
++		addc.a	sum, sum, r4
++		addc.a	sum, sum, r5
++		addc.a	sum, sum, r6
++		addc.a	sum, sum, r7
++		sub	ip, ip, #16
++		cxor.a	ip, #0
++		bne	1b
++
++2:		and.a	ip, len, #12
++		beq	4f
++		cand.a	ip, #8
++		beq	3f
++		load2l	r4, r5
++		stm.w	(r4, r5), [dst]+
++		addc.a	sum, sum, r4
++		addc.a	sum, sum, r5
++		cand.a	ip, #4
++		beq	4f
++
++3:		load1l	r4
++		stw.w	r4, [dst]+, #4
++		addc.a	sum, sum, r4
++
++4:		and.a	len, len, #3
++		beq	.Ldone
++		load1l	r4
++		cand.a	len, #2
++		mov	r5, r4 get_byte_0
++		beq	.Lexit
++		addc.a	sum, sum, r4 push #16
++		stb.w	r5, [dst]+, #1
++		mov	r5, r4 get_byte_1
++		stb.w	r5, [dst]+, #1
++		mov	r5, r4 get_byte_2
++.Lexit:		cand.a	len, #1
++		beq	.Ldone
++		stb.w	r5, [dst]+, #1
++		and	r5, r5, #255
++		addc.a	sum, sum, r5 put_byte_0
++
++		/*
++		 * If the dst pointer was not 16-bit aligned, we
++		 * need to rotate the checksum here to get around
++		 * the inefficient byte manipulations in the
++		 * architecture independent code.
++		 */
++.Ldone:		addc	r0, sum, #0
++		ldw	sum, [sp+], #0		@ dst
++		cand.a	sum, #1
++		cmovne	r0, r0 <> #8
++		load_regs
++
++.Lsrc_not_aligned:
++		addc	sum, sum, #0		@ include C from dst alignment
++		and	ip, src, #3
++		andn	src, src, #3
++		load1l	r5
++		csub.a	ip, #2
++		beq	.Lsrc2_aligned
++		bua	.Lsrc3_aligned
++		mov	r4, r5 pull #8		@ C = 0
++		andn.a	ip, len, #15
++		beq	2f
++1:		load4l	r5, r6, r7, r8
++		or	r4, r4, r5 push #24
++		mov	r5, r5 pull #8
++		or	r5, r5, r6 push #24
++		mov	r6, r6 pull #8
++		or	r6, r6, r7 push #24
++		mov	r7, r7 pull #8
++		or	r7, r7, r8 push #24
++		stm.w	(r4, r5, r6, r7), [dst]+
++		addc.a	sum, sum, r4
++		addc.a	sum, sum, r5
++		addc.a	sum, sum, r6
++		addc.a	sum, sum, r7
++		mov	r4, r8 pull #8
++		sub	ip, ip, #16
++		cxor.a	ip, #0
++		bne	1b
++2:		and.a	ip, len, #12
++		beq	4f
++		cand.a	ip, #8
++		beq	3f
++		load2l	r5, r6
++		or	r4, r4, r5 push #24
++		mov	r5, r5 pull #8
++		or	r5, r5, r6 push #24
++		stm.w	(r4, r5), [dst]+
++		addc.a	sum, sum, r4
++		addc.a	sum, sum, r5
++		mov	r4, r6 pull #8
++		cand.a	ip, #4
++		beq	4f
++3:		load1l	r5
++		or	r4, r4, r5 push #24
++		stw.w	r4, [dst]+, #4
++		addc.a	sum, sum, r4
++		mov	r4, r5 pull #8
++4:		and.a	len, len, #3
++		beq	.Ldone
++		mov	r5, r4 get_byte_0
++		cand.a	len, #2
++		beq	.Lexit
++		addc.a	sum, sum, r4 push #16
++		stb.w	r5, [dst]+, #1
++		mov	r5, r4 get_byte_1
++		stb.w	r5, [dst]+, #1
++		mov	r5, r4 get_byte_2
++		b	.Lexit
++
++.Lsrc2_aligned:	mov	r4, r5 pull #16
++		add.a	sum, sum, #0
++		andn.a	ip, len, #15
++		beq	2f
++1:		load4l	r5, r6, r7, r8
++		or	r4, r4, r5 push #16
++		mov	r5, r5 pull #16
++		or	r5, r5, r6 push #16
++		mov	r6, r6 pull #16
++		or	r6, r6, r7 push #16
++		mov	r7, r7 pull #16
++		or	r7, r7, r8 push #16
++		stm.w	(r4, r5, r6, r7), [dst]+
++		addc.a	sum, sum, r4
++		addc.a	sum, sum, r5
++		addc.a	sum, sum, r6
++		addc.a	sum, sum, r7
++		mov	r4, r8 pull #16
++		sub	ip, ip, #16
++		cxor.a	ip, #0
++		bne	1b
++2:		and.a	ip, len, #12
++		beq	4f
++		cand.a	ip, #8
++		beq	3f
++		load2l	r5, r6
++		or	r4, r4, r5 push #16
++		mov	r5, r5 pull #16
++		or	r5, r5, r6 push #16
++		stm.w	(r4, r5), [dst]+
++		addc.a	sum, sum, r4
++		addc.a	sum, sum, r5
++		mov	r4, r6 pull #16
++		cand.a	ip, #4
++		beq	4f
++3:		load1l	r5
++		or	r4, r4, r5 push #16
++		stw.w	r4, [dst]+, #4
++		addc.a	sum, sum, r4
++		mov	r4, r5 pull #16
++4:		and.a	len, len, #3
++		beq	.Ldone
++		mov	r5, r4 get_byte_0
++		cand.a	len, #2
++		beq	.Lexit
++		addc.a	sum, sum, r4
++		stb.w	r5, [dst]+, #1
++		mov	r5, r4 get_byte_1
++		stb.w	r5, [dst]+, #1
++		cand.a	len, #1
++		beq	.Ldone
++		load1b	r5
++		b	.Lexit
++
++.Lsrc3_aligned:	mov	r4, r5 pull #24
++		add.a	sum, sum, #0
++		andn.a	ip, len, #15
++		beq	2f
++1:		load4l	r5, r6, r7, r8
++		or	r4, r4, r5 push #8
++		mov	r5, r5 pull #24
++		or	r5, r5, r6 push #8
++		mov	r6, r6 pull #24
++		or	r6, r6, r7 push #8
++		mov	r7, r7 pull #24
++		or	r7, r7, r8 push #8
++		stm.w	(r4, r5, r6, r7), [dst]+
++		addc.a	sum, sum, r4
++		addc.a	sum, sum, r5
++		addc.a	sum, sum, r6
++		addc.a	sum, sum, r7
++		mov	r4, r8 pull #24
++		sub	ip, ip, #16
++		cxor.a	ip, #0
++		bne	1b
++2:		and.a	ip, len, #12
++		beq	4f
++		cand.a	ip, #8
++		beq	3f
++		load2l	r5, r6
++		or	r4, r4, r5 push #8
++		mov	r5, r5 pull #24
++		or	r5, r5, r6 push #8
++		stm.w	(r4, r5), [dst]+
++		addc.a	sum, sum, r4
++		addc.a	sum, sum, r5
++		mov	r4, r6 pull #24
++		cand.a	ip, #4
++		beq	4f
++3:		load1l	r5
++		or	r4, r4, r5 push #8
++		stw.w	r4, [dst]+, #4
++		addc.a	sum, sum, r4
++		mov	r4, r5 pull #24
++4:		and.a	len, len, #3
++		beq	.Ldone
++		mov	r5, r4 get_byte_0
++		cand.a	len, #2
++		beq	.Lexit
++		stb.w	r5, [dst]+, #1
++		addc.a	sum, sum, r4
++		load1l	r4
++		mov	r5, r4 get_byte_0
++		stb.w	r5, [dst]+, #1
++		addc.a	sum, sum, r4 push #24
++		mov	r5, r4 get_byte_1
++		b	.Lexit
++FN_EXIT
+diff --git a/arch/unicore32/lib/csumpartialcopyuser.S b/arch/unicore32/lib/csumpartialcopyuser.S
+new file mode 100644
+index 0000000..23a292f
+--- /dev/null
++++ b/arch/unicore32/lib/csumpartialcopyuser.S
+@@ -0,0 +1,92 @@
++/*
++ * linux/arch/unicore32/lib/csumpartialcopyuser.S
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * 27/03/03 Ian Molton Clean up CONFIG_CPU
++ *
++ */
++#include <linux/linkage.h>
++#include <asm/assembler.h>
++#include <asm/errno.h>
++#include <generated/asm-offsets.h>
++
++		.text
++
++		.macro	save_regs
++		mov	ip, sp
++		stm.w	(fp, ip, lr, pc), [sp-]
++		stm.w	(r1 - r2), [sp-]
++		sub	fp, ip, #4
++		.endm
++
++		.macro	load_regs
++		ldm.w	(r1 - r2), [sp]+
++		ldm	(fp, sp, pc), [sp]+
++		.endm
++
++		.macro	load1b,	reg1
++		ldrusr	\reg1, r0, 1
++		.endm
++
++		.macro	load2b, reg1, reg2
++		ldrusr	\reg1, r0, 1
++		ldrusr	\reg2, r0, 1
++		.endm
++
++		.macro	load1l, reg1
++		ldrusr	\reg1, r0, 4
++		.endm
++
++		.macro	load2l, reg1, reg2
++		ldrusr	\reg1, r0, 4
++		ldrusr	\reg2, r0, 4
++		.endm
++
++		.macro	load4l, reg1, reg2, reg3, reg4
++		ldrusr	\reg1, r0, 4
++		ldrusr	\reg2, r0, 4
++		ldrusr	\reg3, r0, 4
++		ldrusr	\reg4, r0, 4
++		.endm
++
++/*
++ * unsigned int
++ * csum_partial_copy_from_user
++ *		(const char *src, char *dst, int len, int sum, int *err_ptr)
++ *  r0 = src, r1 = dst, r2 = len, r3 = sum, [sp] = *err_ptr
++ *  Returns : r0 = checksum, [[sp, #0], #0] = 0 or -EFAULT
++ */
++
++#define FN_ENTRY	ENTRY(csum_partial_copy_from_user)
++#define FN_EXIT		ENDPROC(csum_partial_copy_from_user)
++
++#include "csumpartialcopygeneric.S"
++
++/*
++ * FIXME: minor buglet here
++ * We don't return the checksum for the data present in the buffer.  To do
++ * so properly, we would have to add in whatever registers were loaded before
++ * the fault, which, with the current asm above is not predictable.
++ */
++		.pushsection .fixup,"ax"
++		.align	4
++9001:		mov	r4, #-EFAULT
++		ldw	r5, [sp+], #8*4		@ *err_ptr
++		stw	r4, [r5]
++		ldm	(r1, r2), [sp]+		@ retrieve dst, len
++		add	r2, r2, r1
++		mov	r0, #0			@ zero the buffer
++9002:		cxor.a	r2, r1
++		beq	201f
++		stb.w	r0, [r1]+, #1
++		b	9002b
++201:
++		load_regs
++		.popsection
 
-
---_003_D6D887BA8C9DFF48B5233887EF04654105C1251712bgsmsx502garc_
-Content-Type: application/octet-stream;
-	name="0002-hwmon-Adding_Threshold_Support_to_Coretemp.patch"
-Content-Description: 0002-hwmon-Adding_Threshold_Support_to_Coretemp.patch
-Content-Disposition: attachment;
-	filename="0002-hwmon-Adding_Threshold_Support_to_Coretemp.patch"; size=10983;
-	creation-date="Mon, 20 Dec 2010 16:55:25 GMT";
-	modification-date="Mon, 20 Dec 2010 04:53:46 GMT"
-Content-Transfer-Encoding: base64
-
-RnJvbTogRHVyZ2Fkb3NzIFIgPGR1cmdhZG9zcy5yQGludGVsLmNvbT4KRGF0ZTogU3VuLCAxOSBE
-ZWMgMjAxMCAyMjo0NDo1NCArMDUzMApTdWJqZWN0OiBbUEFUQ0ggMi8yXSBod21vbjpBZGRpbmdf
-VGhyZXNob2xkX1N1cHBvcnRfdG9fQ29yZXRlbXAKClRoaXMgcGF0Y2ggYWRkcyBjb3JlIHRoZXJt
-YWwgdGhyZXNob2xkcyBzdXBwb3J0IHRvIGNvcmV0ZW1wLgpUaGVzZSB0aHJlc2hvbGRzIGNhbiBi
-ZSBjb25maWd1cmVkIHZpYSB0aGUgc3lzZnMgaW50ZXJmYWNlcyB0ZW1wMV9tYXgKYW5kIHRlbXAx
-X21heF9oeXN0LiBBbiBpbnRlcnJ1cHQgaXMgZ2VuZXJhdGVkIHdoZW4gQ1BVIHRlbXBlcmF0dXJl
-CmdvZXMgYWJvdmUgdGVtcDFfbWF4IG9yIGRyb3BzIGJlbG93IHRlbXAxX21heF9oeXN0LgoKU2ln
-bmVkLW9mZi1ieTogRHVyZ2Fkb3NzIFIgPGR1cmdhZG9zcy5yQGludGVsLmNvbT4KLS0tCiBEb2N1
-bWVudGF0aW9uL2h3bW9uL2NvcmV0ZW1wIHwgICAgOCArKwogZHJpdmVycy9od21vbi9jb3JldGVt
-cC5jICAgICB8ICAyMTQgKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKystLS0t
-CiAyIGZpbGVzIGNoYW5nZWQsIDIwMiBpbnNlcnRpb25zKCspLCAyMCBkZWxldGlvbnMoLSkKCmRp
-ZmYgLS1naXQgYS9Eb2N1bWVudGF0aW9uL2h3bW9uL2NvcmV0ZW1wIGIvRG9jdW1lbnRhdGlvbi9o
-d21vbi9jb3JldGVtcAppbmRleCAyNTU2OGY4Li42MTVmZGJlIDEwMDY0NAotLS0gYS9Eb2N1bWVu
-dGF0aW9uL2h3bW9uL2NvcmV0ZW1wCisrKyBiL0RvY3VtZW50YXRpb24vaHdtb24vY29yZXRlbXAK
-QEAgLTI5LDYgKzI5LDE0IEBAIHRoZSBPdXQtT2YtU3BlYyBiaXQuIEZvbGxvd2luZyB0YWJsZSBz
-dW1tYXJpemVzIHRoZSBleHBvcnRlZCBzeXNmcyBmaWxlczoKIAogdGVtcDFfaW5wdXQJIC0gQ29y
-ZSB0ZW1wZXJhdHVyZSAoaW4gbWlsbGlkZWdyZWVzIENlbHNpdXMpLgogdGVtcDFfbWF4CSAtIEFs
-bCBjb29saW5nIGRldmljZXMgc2hvdWxkIGJlIHR1cm5lZCBvbiAob24gQ29yZTIpLgorCQkgICBJ
-bml0aWFsaXplZCB3aXRoIElBMzJfVEVNUEVSQVRVUkVfVEFSR0VUIGlmIHN1cHBvcnRlZCwKKwkJ
-ICAgb3RoZXJ3aXNlIGluaXRpYWxpemVkIHdpdGggKHRqbWF4IC0gMjApLiBXaGVuIHRoZSBDUFUK
-KwkJICAgdGVtcGVyYXR1cmUgcmVhY2hlcyB0aGlzIHRlbXBlcmF0dXJlLCBhbiBpbnRlcnJ1cHQg
-aXMKKwkJICAgZ2VuZXJhdGVkIGFuZCB0ZW1wMV9tYXhfYWxhcm0gaXMgc2V0LgordGVtcDFfbWF4
-X2h5c3QJIC0gSWYgdGhlIENQVSB0ZW1wZXJhdHVyZSBmYWxscyBiZWxvdyB0aGFuIHRlbXBlcmF0
-dXJlLAorCQkgICBhbiBpbnRlcnJ1cHQgaXMgZ2VuZXJhdGVkIGFuZCB0ZW1wMV9tYXhfYWxhcm0g
-aXMgcmVzZXQuCit0ZW1wMV9tYXhfYWxhcm0gLSBTZXQgaWYgdGhlIHRlbXBlcmF0dXJlIHJlYWNo
-ZXMgb3IgZXhjZWVkcyB0ZW1wMV9tYXguCisJCSAgIFJlc2V0IGlmIHRoZSB0ZW1wZXJhdHVyZSBk
-cm9wcyB0byBvciBiZWxvdyB0ZW1wMV9tYXhfaHlzdC4KIHRlbXAxX2NyaXQJIC0gTWF4aW11bSBq
-dW5jdGlvbiB0ZW1wZXJhdHVyZSAoaW4gbWlsbGlkZWdyZWVzIENlbHNpdXMpLgogdGVtcDFfY3Jp
-dF9hbGFybSAtIFNldCB3aGVuIE91dC1vZi1zcGVjIGJpdCBpcyBzZXQsIG5ldmVyIGNsZWFycy4K
-IAkJICAgQ29ycmVjdCBDUFUgb3BlcmF0aW9uIGlzIG5vIGxvbmdlciBndWFyYW50ZWVkLgpkaWZm
-IC0tZ2l0IGEvZHJpdmVycy9od21vbi9jb3JldGVtcC5jIGIvZHJpdmVycy9od21vbi9jb3JldGVt
-cC5jCmluZGV4IDQyZGU5OGQuLjAyNTkwMmYgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvaHdtb24vY29y
-ZXRlbXAuYworKysgYi9kcml2ZXJzL2h3bW9uL2NvcmV0ZW1wLmMKQEAgLTM2LDExICszNiwxMiBA
-QAogI2luY2x1ZGUgPGFzbS9tc3IuaD4KICNpbmNsdWRlIDxhc20vcHJvY2Vzc29yLmg+CiAjaW5j
-bHVkZSA8YXNtL3NtcC5oPgorI2luY2x1ZGUgPGFzbS9tY2UuaD4KIAogI2RlZmluZSBEUlZOQU1F
-CSJjb3JldGVtcCIKIAotdHlwZWRlZiBlbnVtIHsgU0hPV19URU1QLCBTSE9XX1RKTUFYLCBTSE9X
-X1RUQVJHRVQsIFNIT1dfTEFCRUwsCi0JCVNIT1dfTkFNRSB9IFNIT1c7CitlbnVtIGF0dHJpYnV0
-ZXMgeyBTSE9XX1RFTVAsIFNIT1dfVEpNQVgsIENPUkVfVFRBUkdFVCwgQ09SRV9UTUlOLCBTSE9X
-X0xBQkVMLAorCQlTSE9XX05BTUUsIFNIT1dfQ1JJVF9BTEFSTSwgU0hPV19NQVhfQUxBUk0gfSBh
-dHRyczsKIAogLyoKICAqIEZ1bmN0aW9ucyBkZWNsYXJhdGlvbgpAQCAtNTksOSArNjAsMTQgQEAg
-c3RydWN0IGNvcmV0ZW1wX2RhdGEgewogCWludCB0ZW1wOwogCWludCB0am1heDsKIAlpbnQgdHRh
-cmdldDsKLQl1OCBhbGFybTsKKwlpbnQgdG1pbjsKKwl1OCBtYXhfYWxhcm07CisJdTggY3JpdF9h
-bGFybTsKIH07CiAKK3N0YXRpYyB2b2lkIHVwZGF0ZV9hbGFybShzdHJ1Y3QgY29yZXRlbXBfZGF0
-YSAqZGF0YSk7CitzdGF0aWMgaW50IHNldF9jb3JlX3RocmVzaG9sZChzdHJ1Y3QgY29yZXRlbXBf
-ZGF0YSAqZGF0YSwgaW50IHRlbXAsIGludCB0aHJlcyk7CisKIC8qCiAgKiBTeXNmcyBzdHVmZgog
-ICovCkBAIC04Myw5ICs4OSwxNSBAQCBzdGF0aWMgc3NpemVfdCBzaG93X25hbWUoc3RydWN0IGRl
-dmljZSAqZGV2LCBzdHJ1Y3QgZGV2aWNlX2F0dHJpYnV0ZQogc3RhdGljIHNzaXplX3Qgc2hvd19h
-bGFybShzdHJ1Y3QgZGV2aWNlICpkZXYsIHN0cnVjdCBkZXZpY2VfYXR0cmlidXRlCiAJCQkgICpk
-ZXZhdHRyLCBjaGFyICpidWYpCiB7Ci0Jc3RydWN0IGNvcmV0ZW1wX2RhdGEgKmRhdGEgPSBjb3Jl
-dGVtcF91cGRhdGVfZGV2aWNlKGRldik7Ci0JLyogcmVhZCB0aGUgT3V0LW9mLXNwZWMgbG9nLCBu
-ZXZlciBjbGVhciAqLwotCXJldHVybiBzcHJpbnRmKGJ1ZiwgIiVkXG4iLCBkYXRhLT5hbGFybSk7
-CisJc3RydWN0IHNlbnNvcl9kZXZpY2VfYXR0cmlidXRlICphdHRyID0gdG9fc2Vuc29yX2Rldl9h
-dHRyKGRldmF0dHIpOworCXN0cnVjdCBjb3JldGVtcF9kYXRhICpkYXRhID0gZGV2X2dldF9kcnZk
-YXRhKGRldik7CisKKwl1cGRhdGVfYWxhcm0oZGF0YSk7CisJaWYgKGF0dHItPmluZGV4ID09IFNI
-T1dfQ1JJVF9BTEFSTSkKKwkJLyogcmVhZCB0aGUgT3V0LW9mLXNwZWMgbG9nLCBuZXZlciBjbGVh
-ciAqLworCQlyZXR1cm4gc3ByaW50ZihidWYsICIlZFxuIiwgZGF0YS0+Y3JpdF9hbGFybSk7CisK
-KwlyZXR1cm4gc3ByaW50ZihidWYsICIlZFxuIiwgZGF0YS0+bWF4X2FsYXJtKTsKIH0KIAogc3Rh
-dGljIHNzaXplX3Qgc2hvd190ZW1wKHN0cnVjdCBkZXZpY2UgKmRldiwKQEAgLTkzLDMzICsxMDUs
-NjcgQEAgc3RhdGljIHNzaXplX3Qgc2hvd190ZW1wKHN0cnVjdCBkZXZpY2UgKmRldiwKIHsKIAlz
-dHJ1Y3Qgc2Vuc29yX2RldmljZV9hdHRyaWJ1dGUgKmF0dHIgPSB0b19zZW5zb3JfZGV2X2F0dHIo
-ZGV2YXR0cik7CiAJc3RydWN0IGNvcmV0ZW1wX2RhdGEgKmRhdGEgPSBjb3JldGVtcF91cGRhdGVf
-ZGV2aWNlKGRldik7Ci0JaW50IGVycjsKKwlpbnQgZXJyID0gLUVJTlZBTDsKIAotCWlmIChhdHRy
-LT5pbmRleCA9PSBTSE9XX1RFTVApCisJc3dpdGNoIChhdHRyLT5pbmRleCkgeworCWNhc2UgU0hP
-V19URU1QOgogCQllcnIgPSBkYXRhLT52YWxpZCA/IHNwcmludGYoYnVmLCAiJWRcbiIsIGRhdGEt
-PnRlbXApIDogLUVBR0FJTjsKLQllbHNlIGlmIChhdHRyLT5pbmRleCA9PSBTSE9XX1RKTUFYKQor
-CQlicmVhazsKKwljYXNlIFNIT1dfVEpNQVg6CiAJCWVyciA9IHNwcmludGYoYnVmLCAiJWRcbiIs
-IGRhdGEtPnRqbWF4KTsKLQllbHNlCisJCWJyZWFrOworCWNhc2UgQ09SRV9UVEFSR0VUOgogCQll
-cnIgPSBzcHJpbnRmKGJ1ZiwgIiVkXG4iLCBkYXRhLT50dGFyZ2V0KTsKKwkJYnJlYWs7CisJY2Fz
-ZSBDT1JFX1RNSU46CisJCWVyciA9IHNwcmludGYoYnVmLCAiJWRcbiIsIGRhdGEtPnRtaW4pOwor
-CQlicmVhazsKKwl9CisKIAlyZXR1cm4gZXJyOwogfQogCisKK3N0YXRpYyBzc2l6ZV90IHN0b3Jl
-X3RlbXAoc3RydWN0IGRldmljZSAqZGV2LAorCQlzdHJ1Y3QgZGV2aWNlX2F0dHJpYnV0ZSAqZGV2
-YXR0ciwgY29uc3QgY2hhciAqYnVmLCBzaXplX3QgY291bnQpCit7CisJc3RydWN0IHNlbnNvcl9k
-ZXZpY2VfYXR0cmlidXRlICphdHRyID0gdG9fc2Vuc29yX2Rldl9hdHRyKGRldmF0dHIpOworCXN0
-cnVjdCBjb3JldGVtcF9kYXRhICpkYXRhID0gZGV2X2dldF9kcnZkYXRhKGRldik7CisJdW5zaWdu
-ZWQgbG9uZyB2YWw7CisJaW50IGVycjsKKworCWlmIChzdHJpY3Rfc3RydG91bChidWYsIDEwLCAm
-dmFsKSkKKwkJcmV0dXJuIC1FSU5WQUw7CisKKwllcnIgPSBzZXRfY29yZV90aHJlc2hvbGQoZGF0
-YSwgdmFsLCBhdHRyLT5pbmRleCk7CisKKwlyZXR1cm4gZXJyID8gZXJyIDogY291bnQ7Cit9CisK
-IHN0YXRpYyBTRU5TT1JfREVWSUNFX0FUVFIodGVtcDFfaW5wdXQsIFNfSVJVR08sIHNob3dfdGVt
-cCwgTlVMTCwKIAkJCSAgU0hPV19URU1QKTsKIHN0YXRpYyBTRU5TT1JfREVWSUNFX0FUVFIodGVt
-cDFfY3JpdCwgU19JUlVHTywgc2hvd190ZW1wLCBOVUxMLAogCQkJICBTSE9XX1RKTUFYKTsKLXN0
-YXRpYyBTRU5TT1JfREVWSUNFX0FUVFIodGVtcDFfbWF4LCBTX0lSVUdPLCBzaG93X3RlbXAsIE5V
-TEwsCi0JCQkgIFNIT1dfVFRBUkdFVCk7Ci1zdGF0aWMgREVWSUNFX0FUVFIodGVtcDFfY3JpdF9h
-bGFybSwgU19JUlVHTywgc2hvd19hbGFybSwgTlVMTCk7CitzdGF0aWMgU0VOU09SX0RFVklDRV9B
-VFRSKHRlbXAxX21heCwgU19JV1VTUiB8IFNfSVJVR08sIHNob3dfdGVtcCwKKwkJCQkJCXN0b3Jl
-X3RlbXAsIENPUkVfVFRBUkdFVCk7CitzdGF0aWMgU0VOU09SX0RFVklDRV9BVFRSKHRlbXAxX21h
-eF9oeXN0LCBTX0lXVVNSIHwgU19JUlVHTywgc2hvd190ZW1wLAorCQkJCQkJc3RvcmVfdGVtcCwg
-Q09SRV9UTUlOKTsKK3N0YXRpYyBTRU5TT1JfREVWSUNFX0FUVFIodGVtcDFfY3JpdF9hbGFybSwg
-U19JUlVHTywgc2hvd19hbGFybSwgTlVMTCwKKwkJCQkJCQlTSE9XX0NSSVRfQUxBUk0pOworc3Rh
-dGljIFNFTlNPUl9ERVZJQ0VfQVRUUih0ZW1wMV9tYXhfYWxhcm0sIFNfSVJVR08sIHNob3dfYWxh
-cm0sIE5VTEwsCisJCQkJCQkJU0hPV19NQVhfQUxBUk0pOwogc3RhdGljIFNFTlNPUl9ERVZJQ0Vf
-QVRUUih0ZW1wMV9sYWJlbCwgU19JUlVHTywgc2hvd19uYW1lLCBOVUxMLCBTSE9XX0xBQkVMKTsK
-IHN0YXRpYyBTRU5TT1JfREVWSUNFX0FUVFIobmFtZSwgU19JUlVHTywgc2hvd19uYW1lLCBOVUxM
-LCBTSE9XX05BTUUpOwogCiBzdGF0aWMgc3RydWN0IGF0dHJpYnV0ZSAqY29yZXRlbXBfYXR0cmli
-dXRlc1tdID0gewogCSZzZW5zb3JfZGV2X2F0dHJfbmFtZS5kZXZfYXR0ci5hdHRyLAogCSZzZW5z
-b3JfZGV2X2F0dHJfdGVtcDFfbGFiZWwuZGV2X2F0dHIuYXR0ciwKLQkmZGV2X2F0dHJfdGVtcDFf
-Y3JpdF9hbGFybS5hdHRyLAorCSZzZW5zb3JfZGV2X2F0dHJfdGVtcDFfY3JpdF9hbGFybS5kZXZf
-YXR0ci5hdHRyLAogCSZzZW5zb3JfZGV2X2F0dHJfdGVtcDFfaW5wdXQuZGV2X2F0dHIuYXR0ciwK
-IAkmc2Vuc29yX2Rldl9hdHRyX3RlbXAxX2NyaXQuZGV2X2F0dHIuYXR0ciwKKwkmc2Vuc29yX2Rl
-dl9hdHRyX3RlbXAxX21heC5kZXZfYXR0ci5hdHRyLAorCSZzZW5zb3JfZGV2X2F0dHJfdGVtcDFf
-bWF4X2h5c3QuZGV2X2F0dHIuYXR0ciwKKwkmc2Vuc29yX2Rldl9hdHRyX3RlbXAxX21heF9hbGFy
-bS5kZXZfYXR0ci5hdHRyLAogCU5VTEwKIH07CiAKQEAgLTEyNyw2ICsxNzMsMjYgQEAgc3RhdGlj
-IGNvbnN0IHN0cnVjdCBhdHRyaWJ1dGVfZ3JvdXAgY29yZXRlbXBfZ3JvdXAgPSB7CiAJLmF0dHJz
-ID0gY29yZXRlbXBfYXR0cmlidXRlcywKIH07CiAKK3N0YXRpYyB2b2lkIHVwZGF0ZV9hbGFybShz
-dHJ1Y3QgY29yZXRlbXBfZGF0YSAqZGF0YSkKK3sKKwl1MzIgZWF4LCBlZHg7CisKKwlyZG1zcl9v
-bl9jcHUoZGF0YS0+aWQsIE1TUl9JQTMyX1RIRVJNX1NUQVRVUywgJmVheCwgJmVkeCk7CisKKwkv
-KiBVcGRhdGUgdGhlIGNyaXRpY2FsIHRlbXBlcmF0dXJlIGFsYXJtICovCisJZGF0YS0+Y3JpdF9h
-bGFybSA9IChlYXggPj4gNSkgJiAxOworCisJLyogVGVtcGVyYXR1cmUgcmVhY2hlZCB0aHJlc2hv
-bGQxICovCisJaWYgKGVheCAmIFRIRVJNX0xPR19USFJFU0hPTEQxKQorCQlkYXRhLT5tYXhfYWxh
-cm0gPSAxOworCS8qIFRlbXBlcmF0dXJlIHJlYWNoZWQgdGhyZXNob2xkMCAqLworCWVsc2UgaWYg
-KGVheCAmIFRIRVJNX0xPR19USFJFU0hPTEQwKQorCQlkYXRhLT5tYXhfYWxhcm0gPSAwOworCS8q
-IElmIG5vbmUgb2YgdGhlc2UgY2FzZXMsIGRvbid0IHVwZGF0ZSBtYXhfYWxhcm0gKi8KKworCXJl
-dHVybjsKK30KKwogc3RhdGljIHN0cnVjdCBjb3JldGVtcF9kYXRhICpjb3JldGVtcF91cGRhdGVf
-ZGV2aWNlKHN0cnVjdCBkZXZpY2UgKmRldikKIHsKIAlzdHJ1Y3QgY29yZXRlbXBfZGF0YSAqZGF0
-YSA9IGRldl9nZXRfZHJ2ZGF0YShkZXYpOwpAQCAtMTM4LDcgKzIwNCw2IEBAIHN0YXRpYyBzdHJ1
-Y3QgY29yZXRlbXBfZGF0YSAqY29yZXRlbXBfdXBkYXRlX2RldmljZShzdHJ1Y3QgZGV2aWNlICpk
-ZXYpCiAKIAkJZGF0YS0+dmFsaWQgPSAwOwogCQlyZG1zcl9vbl9jcHUoZGF0YS0+aWQsIE1TUl9J
-QTMyX1RIRVJNX1NUQVRVUywgJmVheCwgJmVkeCk7Ci0JCWRhdGEtPmFsYXJtID0gKGVheCA+PiA1
-KSAmIDE7CiAJCS8qIHVwZGF0ZSBvbmx5IGlmIGRhdGEgaGFzIGJlZW4gdmFsaWQgKi8KIAkJaWYg
-KGVheCAmIDB4ODAwMDAwMDApIHsKIAkJCWRhdGEtPnRlbXAgPSBkYXRhLT50am1heCAtICgoKGVh
-eCA+PiAxNikKQEAgLTI5OCw2ICszNjMsMTA2IEBAIHN0YXRpYyB2b2lkIF9fZGV2aW5pdCBnZXRf
-dWNvZGVfcmV2X29uX2NwdSh2b2lkICplZHgpCiAJcmRtc3IoTVNSX0lBMzJfVUNPREVfUkVWLCBl
-YXgsICoodTMyICopZWR4KTsKIH0KIAorLyogUGxhdGZvcm0gdGhlcm1hbCBJbnRlcnJ1cHQgSGFu
-ZGxlciAqLworc3RhdGljIGludCBjb3JldGVtcF9pbnRlcnJ1cHQoX191NjQgbXNyX3ZhbCkKK3sK
-KworCWlmIChtc3JfdmFsICYgVEhFUk1fTE9HX1RIUkVTSE9MRDApIHsKKwkJaWYgKCEobXNyX3Zh
-bCAmIFRIRVJNX1NUQVRVU19USFJFU0hPTEQwKSkKKwkJCXByX2luZm8oIiVzOkxvd2VyIFRocmVz
-aG9sZCBSZWFjaGVkXG4iLCBfX2Z1bmNfXyk7CisJCS8qIFJlc2V0IHRoZSBUaHJlc2hvbGQwIGlu
-dGVycnVwdCAqLworCQl3cm1zcmwoTVNSX0lBMzJfVEhFUk1fU1RBVFVTLCBtc3JfdmFsICYgflRI
-RVJNX0xPR19USFJFU0hPTEQwKTsKKwl9CisKKwlpZiAobXNyX3ZhbCAmIFRIRVJNX0xPR19USFJF
-U0hPTEQxKSB7CisJCWlmIChtc3JfdmFsICYgVEhFUk1fU1RBVFVTX1RIUkVTSE9MRDEpCisJCQlw
-cl9pbmZvKCIlczpVcHBlciBUaHJlc2hvbGQgUmVhY2hlZFxuIiwgX19mdW5jX18pOworCQkvKiBS
-ZXNldCB0aGUgVGhyZXNob2xkMSBpbnRlcnJ1cHQgKi8KKwkJd3Jtc3JsKE1TUl9JQTMyX1RIRVJN
-X1NUQVRVUywgbXNyX3ZhbCAmIH5USEVSTV9MT0dfVEhSRVNIT0xEMSk7CisJfQorCisJcmV0dXJu
-IDA7Cit9CisKK3N0YXRpYyB2b2lkIGNvbmZpZ3VyZV9hcGljKHZvaWQgKmluZm8pCit7CisJdTMy
-IGw7CisJaW50ICpmbGFnID0gKGludCAqKWluZm87CisKKwlsID0gYXBpY19yZWFkKEFQSUNfTFZU
-VEhNUik7CisKKwlpZiAoKmZsYWcpCS8qIE5vbi1aZXJvIGZsYWcgTWFza3MgdGhlIEFQSUMgKi8K
-KwkJYXBpY193cml0ZShBUElDX0xWVFRITVIsIGwgfCBBUElDX0xWVF9NQVNLRUQpOworCWVsc2UJ
-CS8qIFplcm8gZmxhZyBVbk1hc2tzIHRoZSBBUElDICovCisJCWFwaWNfd3JpdGUoQVBJQ19MVlRU
-SE1SLCBsICYgfkFQSUNfTFZUX01BU0tFRCk7Cit9CisKK3N0YXRpYyBpbnQgc2V0X2NvcmVfdGhy
-ZXNob2xkKHN0cnVjdCBjb3JldGVtcF9kYXRhICpkYXRhLCBpbnQgdGVtcCwgaW50IHRocmVzKQor
-eworCXUzMiBlYXgsIGVkeDsKKwlpbnQgZGlmZjsKKwlpbnQgZmxhZyA9IDE7CisKKwlpZiAodGVt
-cCA+IGRhdGEtPnRqbWF4KQorCQlyZXR1cm4gLUVJTlZBTDsKKworCW11dGV4X2xvY2soJmRhdGEt
-PnVwZGF0ZV9sb2NrKTsKKworCWRpZmYgPSAoZGF0YS0+dGptYXggLSB0ZW1wKS8xMDAwOworCisJ
-LyogTWFzayB0aGUgQVBJQyAqLworCXNtcF9jYWxsX2Z1bmN0aW9uX3NpbmdsZShkYXRhLT5pZCwg
-JmNvbmZpZ3VyZV9hcGljLCAmZmxhZywgMSk7CisKKwlyZG1zcl9vbl9jcHUoZGF0YS0+aWQsIE1T
-Ul9JQTMyX1RIRVJNX0lOVEVSUlVQVCwgJmVheCwgJmVkeCk7CisKKwlpZiAodGhyZXMgPT0gQ09S
-RV9UTUlOKSB7CisJCWVheCA9IChlYXggJiB+VEhFUk1fTUFTS19USFJFU0hPTEQwKSB8CisJCQkJ
-CShkaWZmIDw8IFRIRVJNX1NISUZUX1RIUkVTSE9MRDApOworCQlkYXRhLT50bWluID0gdGVtcDsK
-Kwl9IGVsc2UgeworCQllYXggPSAoZWF4ICYgflRIRVJNX01BU0tfVEhSRVNIT0xEMSkgfAorCQkJ
-CQkoZGlmZiA8PCBUSEVSTV9TSElGVF9USFJFU0hPTEQxKTsKKwkJZGF0YS0+dHRhcmdldCA9IHRl
-bXA7CisJfQorCisJd3Jtc3Jfb25fY3B1KGRhdGEtPmlkLCBNU1JfSUEzMl9USEVSTV9JTlRFUlJV
-UFQsIGVheCwgZWR4KTsKKworCS8qIFVubWFzayB0aGUgQVBJQyAqLworCWZsYWcgPSAwOworCXNt
-cF9jYWxsX2Z1bmN0aW9uX3NpbmdsZShkYXRhLT5pZCwgJmNvbmZpZ3VyZV9hcGljLCAmZmxhZywg
-MSk7CisKKwltdXRleF91bmxvY2soJmRhdGEtPnVwZGF0ZV9sb2NrKTsKKwlyZXR1cm4gMDsKK30K
-Kworc3RhdGljIGludCBfX2RldmluaXQgY29uZmlnX3RocmVzaF9pbnRycHQoc3RydWN0IGNvcmV0
-ZW1wX2RhdGEgKmRhdGEsCisJCQkJCQkJCWludCBlbmFibGUpCit7CisJdTMyIGVheCwgZWR4Owor
-CWludCBmbGFnID0gMTsgLyogTm9uLVplcm8gRmxhZyBtYXNrcyB0aGUgYXBpYyAqLworCisJc21w
-X2NhbGxfZnVuY3Rpb25fc2luZ2xlKGRhdGEtPmlkLCAmY29uZmlndXJlX2FwaWMsICZmbGFnLCAx
-KTsKKworCXJkbXNyX29uX2NwdShkYXRhLT5pZCwgTVNSX0lBMzJfVEhFUk1fSU5URVJSVVBULCAm
-ZWF4LCAmZWR4KTsKKworCWlmIChlbmFibGUpIHsKKwkJZWF4IHw9IChUSEVSTV9JTlRfVEhSRVNI
-T0xEMF9FTkFCTEUgfAorCQkJCQkJVEhFUk1fSU5UX1RIUkVTSE9MRDFfRU5BQkxFKTsKKwkJcGxh
-dGZvcm1fdGhlcm1hbF9ub3RpZnkgPSBjb3JldGVtcF9pbnRlcnJ1cHQ7CisJfSBlbHNlIHsKKwkJ
-ZWF4ICY9ICh+KFRIRVJNX0lOVF9USFJFU0hPTEQwX0VOQUJMRSB8CisJCQkJCQlUSEVSTV9JTlRf
-VEhSRVNIT0xEMV9FTkFCTEUpKTsKKwkJcGxhdGZvcm1fdGhlcm1hbF9ub3RpZnkgPSBOVUxMOwor
-CX0KKworCXdybXNyX29uX2NwdShkYXRhLT5pZCwgTVNSX0lBMzJfVEhFUk1fSU5URVJSVVBULCBl
-YXgsIGVkeCk7CisKKwlmbGFnID0gMDsgLypGbGFnIHNob3VsZCBiZSB6ZXJvIHRvIHVubWFzayB0
-aGUgYXBpYyAqLworCXNtcF9jYWxsX2Z1bmN0aW9uX3NpbmdsZShkYXRhLT5pZCwgJmNvbmZpZ3Vy
-ZV9hcGljLCAmZmxhZywgMSk7CisKKwlyZXR1cm4gMDsKK30KKwogc3RhdGljIGludCBfX2Rldmlu
-aXQgY29yZXRlbXBfcHJvYmUoc3RydWN0IHBsYXRmb3JtX2RldmljZSAqcGRldikKIHsKIAlzdHJ1
-Y3QgY29yZXRlbXBfZGF0YSAqZGF0YTsKQEAgLTM1MSw2ICs1MTYsMTAgQEAgc3RhdGljIGludCBf
-X2RldmluaXQgY29yZXRlbXBfcHJvYmUoc3RydWN0IHBsYXRmb3JtX2RldmljZSAqcGRldikKIAl9
-CiAKIAlkYXRhLT50am1heCA9IGdldF90am1heChjLCBkYXRhLT5pZCwgJnBkZXYtPmRldik7CisJ
-LyogSW5pdGlhbGl6ZSB0dGFyZ2V0IHZhbHVlLiBJZiBJQTMyX1RFTVBFUkFUVVJFX1RBUkdFVCBp
-cworCSAqIHN1cHBvcnRlZCwgdGhpcyB2YWx1ZSB3aWxsIGJlIG92ZXIgd3JpdHRlbiBiZWxvdwor
-CSAqLworCWRhdGEtPnR0YXJnZXQgPSBkYXRhLT50am1heCAtIDIwMDAwOwogCXBsYXRmb3JtX3Nl
-dF9kcnZkYXRhKHBkZXYsIGRhdGEpOwogCiAJLyoKQEAgLTM2OCwxMyArNTM3LDE4IEBAIHN0YXRp
-YyBpbnQgX19kZXZpbml0IGNvcmV0ZW1wX3Byb2JlKHN0cnVjdCBwbGF0Zm9ybV9kZXZpY2UgKnBk
-ZXYpCiAJCX0gZWxzZSB7CiAJCQlkYXRhLT50dGFyZ2V0ID0gZGF0YS0+dGptYXggLQogCQkJCQko
-KChlYXggPj4gOCkgJiAweGZmKSAqIDEwMDApOwotCQkJZXJyID0gZGV2aWNlX2NyZWF0ZV9maWxl
-KCZwZGV2LT5kZXYsCi0JCQkJCSZzZW5zb3JfZGV2X2F0dHJfdGVtcDFfbWF4LmRldl9hdHRyKTsK
-LQkJCWlmIChlcnIpCi0JCQkJZ290byBleGl0X2ZyZWU7CiAJCX0KIAl9CiAKKwkvKiBFbmFibGUg
-dGhyZXNob2xkIGludGVycnVwdCBzdXBwb3J0ICovCisJY29uZmlnX3RocmVzaF9pbnRycHQoZGF0
-YSwgMSk7CisKKwkvKiBTZXQgSW5pdGlhbCBDb3JlIHRocmVzaG9sZHMuCisJICogVGhlIGxvd2Vy
-IGFuZCB1cHBlciB0aHJlc2hvbGQgdmFsdWVzIGhlcmUgYXJlIGFzc3VtZWQKKwkgKi8KKwlzZXRf
-Y29yZV90aHJlc2hvbGQoZGF0YSwgMCwgQ09SRV9UTUlOKTsKKwlzZXRfY29yZV90aHJlc2hvbGQo
-ZGF0YSwgZGF0YS0+dHRhcmdldCwgQ09SRV9UVEFSR0VUKTsKKwogCWlmICgoZXJyID0gc3lzZnNf
-Y3JlYXRlX2dyb3VwKCZwZGV2LT5kZXYua29iaiwgJmNvcmV0ZW1wX2dyb3VwKSkpCiAJCWdvdG8g
-ZXhpdF9kZXY7CiAKQEAgLTQwNCw3ICs1NzgsNyBAQCBzdGF0aWMgaW50IF9fZGV2ZXhpdCBjb3Jl
-dGVtcF9yZW1vdmUoc3RydWN0IHBsYXRmb3JtX2RldmljZSAqcGRldikKIAogCWh3bW9uX2Rldmlj
-ZV91bnJlZ2lzdGVyKGRhdGEtPmh3bW9uX2Rldik7CiAJc3lzZnNfcmVtb3ZlX2dyb3VwKCZwZGV2
-LT5kZXYua29iaiwgJmNvcmV0ZW1wX2dyb3VwKTsKLQlkZXZpY2VfcmVtb3ZlX2ZpbGUoJnBkZXYt
-PmRldiwgJnNlbnNvcl9kZXZfYXR0cl90ZW1wMV9tYXguZGV2X2F0dHIpOworCWNvbmZpZ190aHJl
-c2hfaW50cnB0KGRhdGEsIDApOwogCXBsYXRmb3JtX3NldF9kcnZkYXRhKHBkZXYsIE5VTEwpOwog
-CWtmcmVlKGRhdGEpOwogCXJldHVybiAwOwotLSAKMS42LjUuMgoK
-
---_003_D6D887BA8C9DFF48B5233887EF04654105C1251712bgsmsx502garc_
-Content-Type: text/plain; name="ATT00001..txt"
-Content-Description: ATT00001..txt
-Content-Disposition: attachment; filename="ATT00001..txt"; size=156;
-	creation-date="Mon, 20 Dec 2010 11:42:39 GMT";
-	modification-date="Mon, 20 Dec 2010 11:42:39 GMT"
-Content-Transfer-Encoding: base64
-
-X19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX18NCmxtLXNlbnNv
-cnMgbWFpbGluZyBsaXN0DQpsbS1zZW5zb3JzQGxtLXNlbnNvcnMub3JnDQpodHRwOi8vbGlzdHMu
-bG0tc2Vuc29ycy5vcmcvbWFpbG1hbi9saXN0aW5mby9sbS1zZW5zb3Jz
-
---_003_D6D887BA8C9DFF48B5233887EF04654105C1251712bgsmsx502garc_--
