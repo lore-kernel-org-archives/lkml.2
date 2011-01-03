@@ -1,105 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889Ab1ACFws (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 00:52:48 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:50920 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751127Ab1ACFwr convert rfc822-to-8bit (ORCPT
+	id S1752041Ab1ACF5x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 00:57:53 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59197 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119Ab1ACF5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 00:52:47 -0500
-From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
-To: "'john stultz'" <johnstul@us.ibm.com>
-Cc: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <00d601cba465$27154a70$753fdf50$@mprc.pku.edu.cn> <AANLkTinjzzMz4WFRYmjZiM=P6c1wtSxpY2bzOuUe0Vrd@mail.gmail.com> <008f01cbaa62$2001fff0$6005ffd0$@mprc.pku.edu.cn>
-In-Reply-To: <008f01cbaa62$2001fff0$6005ffd0$@mprc.pku.edu.cn>
-Subject: RE: [PATCHv1 09/12] unicore32 core architecture: timer and time
-Date: Mon, 3 Jan 2011 13:52:26 +0800
-Message-ID: <00ef01cbab0a$66bfce60$343f6b20$@mprc.pku.edu.cn>
+	Mon, 3 Jan 2011 00:57:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=d3c1C6WLPgoPFf0cvt/7EfSds04g1l9XTc3jjKza60okEXDC4UAjh3/XVK4bYCsc1A
+         kzUXtMGBtSWoNw7Q7GSnwgaInxIz4F3LJ9zsEGVsj3IsQAEQVVRI395Gc0ChKGx2r9pH
+         JbIGvFsI4j2AcGkW15EOa3u4dVtI1hxKLmakc=
+Date: Mon, 3 Jan 2011 08:57:35 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: James Bottomley <James.Bottomley@suse.de>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: [patch 1/2] [SCSI] target: remove an unused variable
+Message-ID: <20110103055735.GU1886@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	"Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+	James Bottomley <James.Bottomley@suse.de>,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+	linux-scsi@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="ISO-8859-1"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQGO9latPfH2ndA/PgMgM9dOsVwpxAHTluFSAjdg6MiUF88hoA==
-Content-Language: zh-cn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We never use "fabric_cg" and also we leak it on the success path.
 
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-> -----Original Message-----
-> From: linux-arch-owner@vger.kernel.org [mailto:linux-arch-owner@vger.kernel.org] On Behalf Of Guan Xuetao
-> Sent: Sunday, January 02, 2011 5:48 PM
-> To: 'john stultz'
-> Cc: linux-arch@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: RE: [PATCHv1 09/12] unicore32 core architecture: timer and time
-> 
-> 
-> 
-> > -----Original Message-----
-> > From: johnstul.lkml@gmail.com [mailto:johnstul.lkml@gmail.com] On Behalf Of john stultz
-> > Sent: Tuesday, December 28, 2010 5:27 AM
-> > To: Guan Xuetao
-> > Cc: linux-arch@vger.kernel.org; linux-kernel@vger.kernel.org
-> > Subject: Re: [PATCHv1 09/12] unicore32 core architecture: timer and time
-> >
-> > 2010/12/25 Guan Xuetao <guanxuetao@mprc.pku.edu.cn>:
-> > > From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
-> > >
-> > > Patch 9 implements timer and time. RTC and PWM device drivers are also here.
-> > >
-> > > Signed-off-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
-> >
-> > Just a small request:
-> >
-> > > +static struct clocksource cksrc_puv3_oscr = {
-> > > +       .name           = "oscr",
-> > > +       .rating         = 200,
-> > > +       .read           = puv3_read_oscr,
-> > > +       .mask           = CLOCKSOURCE_MASK(32),
-> > > +       .shift          = 18,
-> >
-> > Drop the shift assignment here.
-> >
-> > > +       cksrc_puv3_oscr.mult =
-> > > +               clocksource_hz2mult(CLOCK_TICK_RATE, cksrc_puv3_oscr.shift);
-> > > +
-> > Drop the mult assignment here.
-> >
-> >
-> > > +       clocksource_register(&cksrc_puv3_oscr);
-> >
-> > Use "clocksource_register_hz(&cksrc_puv3_oscr, CLOCK_TICK_RATE );" and
-> > the kernel will fill in mult/shift appropriately.
-> >
-> > If you have any troubles after doing so, let me know.
-> 
-> When using clocksource_register_hz(&cksrc_puv3_oscr, CLOCK_TICK_RATE ),
->  the shift value become 0, and mult value become 0x838a91a7, and the system will be broken
-> after printing "Switching to clocksource oscr".
-> 
-> When using clocksource_register_khz(&cksrc_puv3_oscr, CLOCK_TICK_RATE ),
-> the shift value become 0, and mult value become  0x4359611, and the system will run smoothly,
-> but timer interrupt seems too frequently. Perhaps it is 4 times faster.
-> 
-> For comparison, originally, when shift value is set to 0x12, the mult value become 1175e5e.
-> 
-
-The error is the implementation of do_div() function.
-When replacing the arch-specific div64.h with asm-generic/div64.h, clocksource_rigister_hz() works.
-Thanks.
-
-> Which one is better?
-> 
-> >
-> > thanks
-> > -john
-> 
-> Thanks john.
-> 
-> Guan Xuetao
-> 
-
-Guan Xuetao
-
+diff --git a/drivers/target/target_core_configfs.c b/drivers/target/target_core_configfs.c
+index 18d15ff..d7b977d 100644
+--- a/drivers/target/target_core_configfs.c
++++ b/drivers/target/target_core_configfs.c
+@@ -117,7 +117,6 @@ static struct config_group *target_core_register_fabric(
+ 	struct config_group *group,
+ 	const char *name)
+ {
+-	struct config_group *fabric_cg;
+ 	struct target_fabric_configfs *tf;
+ 	int ret;
+ 
+@@ -131,9 +130,6 @@ static struct config_group *target_core_register_fabric(
+ 	if (transport_subsystem_check_init() < 0)
+ 		return ERR_PTR(-EINVAL);
+ 
+-	fabric_cg = kzalloc(sizeof(struct config_group), GFP_KERNEL);
+-	if (!(fabric_cg))
+-		return ERR_PTR(-ENOMEM);
+ 	/*
+ 	 * Below are some hardcoded request_module() calls to automatically
+ 	 * local fabric modules when the following is called:
+@@ -155,7 +151,6 @@ static struct config_group *target_core_register_fabric(
+ 		if (ret < 0) {
+ 			printk(KERN_ERR "request_module() failed for"
+ 				" iscsi_target_mod.ko: %d\n", ret);
+-			kfree(fabric_cg);
+ 			return ERR_PTR(-EINVAL);
+ 		}
+ 	} else if (!(strncmp(name, "loopback", 8))) {
+@@ -169,7 +164,6 @@ static struct config_group *target_core_register_fabric(
+ 		if (ret < 0) {
+ 			printk(KERN_ERR "request_module() failed for"
+ 				" tcm_loop.ko: %d\n", ret);
+-			kfree(fabric_cg);
+ 			return ERR_PTR(-EINVAL);
+ 		}
+ 	}
+@@ -178,7 +172,6 @@ static struct config_group *target_core_register_fabric(
+ 	if (!(tf)) {
+ 		printk(KERN_ERR "target_core_get_fabric() failed for %s\n",
+ 			name);
+-		kfree(fabric_cg);
+ 		return ERR_PTR(-EINVAL);
+ 	}
+ 	printk(KERN_INFO "Target_Core_ConfigFS: REGISTER -> Located fabric:"
