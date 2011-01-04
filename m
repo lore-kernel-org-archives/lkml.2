@@ -1,99 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529Ab1ADV3S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 16:29:18 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40157 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab1ADV3R (ORCPT
+	id S1751388Ab1ADVdP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 16:33:15 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53031 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750980Ab1ADVdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 16:29:17 -0500
-Date: Tue, 4 Jan 2011 22:29:16 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>
-Subject: Re: [PATCH 0/2] Annotate gpio-configuration with __must_check
-Message-ID: <20110104212916.GA14436@pengutronix.de>
-References: <1294159868-4989-1-git-send-email-w.sang@pengutronix.de>
- <20110104202718.GA31444@suse.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dDRMvlgZJXvWKvBx"
-Content-Disposition: inline
-In-Reply-To: <20110104202718.GA31444@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 4 Jan 2011 16:33:14 -0500
+Date: Tue, 4 Jan 2011 13:32:56 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: BruceChang@via.com.tw, linux-kernel@vger.kernel.org,
+        BenjaminPan@viatech.com, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH] MAINTAINERS: update entries affecting VIA Technologies
+ (resent as plaintext with hopefully all broken formatting fixed; merry
+ Christmas)
+Message-Id: <20110104133256.004ff54e.akpm@linux-foundation.org>
+In-Reply-To: <4D15045C.90909@gmx.de>
+References: <88652C7DDEB86A45A61D4100C612CD731E8CFB@exchtp12.taipei.via.com.tw>
+	<4D15045C.90909@gmx.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 24 Dec 2010 21:36:44 +0100
+Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
 
---dDRMvlgZJXvWKvBx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> From: Bruce Chang <BruceChang@via.com.tw>
+> Date: Fri, 17 Dec 2010 21:05:57 +0800
+> Subject: [PATCH] MAINTAINERS: update entries affecting VIA Technologies
+> 
+> Since the original maintainer-Joseph Chan (josephchan@via.com.tw)
+> doesn't handle the Linux driver for VIA now, I would like to request to
+> update the maintainer for the SD/MMC CARD CONTROLLER DRIVER and VIA
+> UNICHROME(PRO)/CHROME9 FRAMEBUFFER DRIVER before we find a better one.
+> Thank you very much for help.
+> 
+> Sign-off by: Bruce Chang < brucechang@via.com.tw >
+> 
+> --- linux-b4-modified/MAINTAINERS       2010-12-16 09:24:48.000000000 +0800
+> +++ linux-aftr-modified/MAINTAINERS     2010-12-17 16:50:00.793647029 +0800
+> @@ -6384,13 +6384,12 @@
+>   F:	drivers/i2c/busses/i2c-viapro.c
+> 
+>   VIA SD/MMC CARD CONTROLLER DRIVER
+> -M:	Joseph Chan <JosephChan@via.com.tw>
+> +M:	Bruce Chang <brucechang@via.com.tw>
+>   M:	Harald Welte <HaraldWelte@viatech.com>
+>   S:	Maintained
+>   F:	drivers/mmc/host/via-sdmmc.c
+> 
+>   VIA UNICHROME(PRO)/CHROME9 FRAMEBUFFER DRIVER
+> -M:	Joseph Chan <JosephChan@via.com.tw>
+>   M:	Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+>   L:	linux-fbdev@vger.kernel.org
+>   S:	Maintained
 
-On Tue, Jan 04, 2011 at 12:27:18PM -0800, Greg KH wrote:
-> On Tue, Jan 04, 2011 at 05:51:06PM +0100, Wolfram Sang wrote:
-> > Here is a small series generating a lot of warnings, especially in board
-> > bringup-files. Still, I think it is worthwhile to be strict about check=
-ing
-> > return values of gpio-configuration-functions. My suggestion to keep th=
-e noise
-> > a bit lower is to put it into linux-next for one cycle and then merge i=
-t for
-> > 2.6.39? That should give people some time to fix the issues in time. Lo=
-oking
-> > forward to comments.
->=20
-> It's ok to add this type of thing, but please, go through and fix the
-> warnings at the same time.  Otherwise it's a bit rude to force others to
-> fix their code for something that you did.
+- the patch was still space-stuffed.
 
-Yeah, I understand. I was a "victim" of the patch causing all those "key no=
-t in
-=2Edata" messages back then. So, I actually did start a coccinelle-script f=
-ixing
-the issues. I examined one sub-directory using a CPU/SoC I know relatively
-well. I had to learn that even then, it is pretty hard to determine what
-exactly to do if gpio_request() fails. For example, an unavailable GPIO bei=
-ng
-the write-protect-pin for SD-cards might be simply ignored, maybe a warning
-printed and the card will be rw by default. Another GPIO might be a chip-se=
-lect
-of a device I have never heard of before. It might be crucial and board_init
-should fail if it cannot be requested. Or not. Things get worse for
-architectures I never used before. This is why I think it is really better =
-to
-let people do the fixups who have/understand the hardware in question.
-Otherwise the fixups could indeed be more harmful than helpful.
+- Use "Signed-off-by:", not "Sign-off by:"
 
-If this is still too rude for your taste, then what about a mechanism simil=
-ar
-to DEBUG_SECTION_MISMATCH?
+- please cc the relevant mailing list and maintainer (Geert) on patches
 
-Kind regards,
+- As you (Florian) forwarded the patch, it should have included your
+  Signed-off-by: as well.  I made that change to my copy of the patch.
 
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---dDRMvlgZJXvWKvBx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAk0jkSwACgkQD27XaX1/VRvjxQCgj0e2rHLqA5IS2/pbEVVzA3eb
-DeQAoJG3A8Yd2SN06GqgvhIw9ux3NbOI
-=llyK
------END PGP SIGNATURE-----
-
---dDRMvlgZJXvWKvBx--
