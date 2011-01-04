@@ -1,113 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032Ab1ADS5g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 13:57:36 -0500
-Received: from ms01.sssup.it ([193.205.80.99]:34276 "EHLO sssup.it"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751348Ab1ADS5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 13:57:35 -0500
-Subject: Re: [RFC][PATCH 0/3] Refactoring sched_entity and sched_rt_entity.
-From: Dario Faggioli <raistlin@linux.it>
-To: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Gregory Haskins <ghaskins@novell.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Darren Hart <darren@dvhart.com>, oleg <oleg@redhat.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>, pjt@google.com,
-        bharata@linux.vnet.ibm.co
-In-Reply-To: <AANLkTi=G1b3OHH1ZUGCcL+nnb3LaeUDMWsXk8z+FzWT2@mail.gmail.com>
-References: <1294156524.6169.147.camel@Palantir>
-	 <AANLkTi=wCmetef0tjfvdHtZMS9x4eswhL_xAM5Ybdwq+@mail.gmail.com>
-	 <1294163897.6169.172.camel@Palantir>
-	 <AANLkTi=G1b3OHH1ZUGCcL+nnb3LaeUDMWsXk8z+FzWT2@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-DJIv3bGKFIEH4zSK/7bJ"
-Date: Tue, 04 Jan 2011 19:57:10 +0100
-Message-ID: <1294167430.6169.227.camel@Palantir>
+	id S1751869Ab1ADTAI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 14:00:08 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50577 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129Ab1ADTAG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 14:00:06 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
+         :mime-version:content-type:content-transfer-encoding;
+        b=OZ1EZxujv5ztNVQZQoD7bjvzxCPT/PPqKjhGj0Zsj4RpF/e0Ok4KQTjHnu/Qm21GTX
+         VF8UlYvk+zsAXGvPs0g5A0FTwZbDtIRfzkRw6HB7fhGMTM79n2h2X+MSDSGwRqjcjbnF
+         QDHzIixg0Jl/LhSJI3GjCCt1kFslymDM/EIF4=
+Date: Tue, 4 Jan 2011 20:00:01 +0100
+From: Urs Fleisch <urs.fleisch@gmail.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LM Sensors <lm-sensors@lm-sensors.org>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: Re: [PATCH] hwmon: driver for Sensirion SHT21 humidity and
+ temperature sensor
+Message-Id: <20110104200001.3328dae3.urs.fleisch@gmail.com>
+In-Reply-To: <20110104152837.GA32138@ericsson.com>
+References: <20101229134511.cc466ac0.urs.fleisch@gmail.com>
+	<4D1DF097.1080200@cam.ac.uk>
+	<20110103081448.f96c413e.urs.fleisch@gmail.com>
+	<4D21ADCB.4070206@cam.ac.uk>
+	<1294078159.9786.9.camel@groeck-laptop>
+	<4D230ED0.8060008@cam.ac.uk>
+	<20110104152837.GA32138@ericsson.com>
+X-Mailer: Sylpheed 3.1.0beta2 (GTK+ 2.22.0; i686-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Uses I know of are indeed more general environment monitoring.
+> Not seen one of these in conventional hardware monitoring but could be wrong.
+> I guess, Urs will have a better idea of where these tend to be used?
 
---=-DJIv3bGKFIEH4zSK/7bJ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Mobile phones could be a promising market for humidity sensors in a Linux system. Fujitsu already sells a mobile phone with built-in temperature and humidity sensors. So we hope to see also Linux-based mobile phones (e.g. Android, MeGoo) with a humidity sensor. Such a sensor could be used to monitor environmental conditions, but there could be other applications too, some of them may not make sense and others can not be foreseen. The humidity sensor could also be used to monitor the hardware of the phone, in this situation, hwmon makes sense. If a sensor can be used for various application, there is probably not one true category. There may be other sensors in hwmon, which can be used for applications other than hardware monitoring. I chose the hwmon directory because the sht15 was already there.
 
-On Tue, 2011-01-04 at 16:29 -0200, Lucas De Marchi wrote:=20
-> > Mmm... do I? While I'm cloning your git, could you elaborate a bit on
-> > why, because I don't seem to see that... :-P
->=20
-> Suppose a RT task blocks on a PI-mutex, the lock owner will be boosted
-> to RT and go through a class change in rt_mutex_setprio().
-> Since now a class change reinitializes the class-specific, if fair and
-> rt fields are on the same memory space, we need to save the
-> sched_fair_entity before changing the class to RT and put it again
-> when going back to the fair class.
->=20
-Well, I know, but you're deactivating+dequeueing and then
-activating+enqueueing it back and forth within the proper scheduling
-class, so that shouldn't be a big deal...
+> Highly unusual way of detecting and returning errors.
 
-Actually, the point might be that forgetting something like, e.g.,
-vruntime would then lead to unexpected behaviour when the task is back
-to fair scheduling, but do we need to cache the whole sched_[cfs|
-fair]_entity for that?
+If this is a problem, I can alter the code. I could also drop all user-register related attributes if they cause problems with the ABI.
 
-> Quoting Peter about this:
->=20
->  [ Initially I was thinking not, because the task slept we'll have to
-> reinsert it in the rb-tree anyway, but upon further consideration
-> that'll loose the old vruntime setting, which can lead to an unseemly
-> gain of time in place_entity()'s never backward check failing.
->=20
-> So yes, we'd have to place a copy of the old sched_entity in struct
-> rt_mutex_waiter, not very hard to do. ]
->=20
-Ok, exactly, I now see that, and it's probably not hard to do... But I'm
-now thinking of how many fields must be saved to avoid this. Surely, not
-these ones:
-...=20
-	struct rb_node          run_node;
-	struct list_head        group_node;
-
-#ifdef CONFIG_FAIR_GROUP_SCHED
-	struct sched_cfs_entity *parent;
-	/* rq on which this entity is (to be) queued: */
-	struct cfs_rq           *cfs_rq;
-	/* rq "owned" by this entity/group: */
-	struct cfs_rq           *my_q;
-#endif
-...
-
-I'll double check, but if it's just a matter of vruntime and a couple of
-other u64, isn't it worth to just save them?
-
-Thanks and Regards,
-Dario
-
---=20
-<<This happens because I choose it to happen!>> (Raistlin Majere)
-----------------------------------------------------------------------
-Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
-
-http://retis.sssup.it/people/faggioli -- dario.faggioli@jabber.org
-
---=-DJIv3bGKFIEH4zSK/7bJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAk0jbYYACgkQk4XaBE3IOsTBTQCgkSH/imyq1n7ld9IW5Ju5bcPo
-zOIAn1CT/0BuftBHHxR4qrARPkwG+aHl
-=k4CT
------END PGP SIGNATURE-----
-
---=-DJIv3bGKFIEH4zSK/7bJ--
-
+Regards,
+Urs
