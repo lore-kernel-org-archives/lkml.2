@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751656Ab1ADPsE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 10:48:04 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:53248 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150Ab1ADPsC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 10:48:02 -0500
-X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=MsfxUTlnwtkA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=BbT4ttFzhC7kX151OrUA:9 a=lJTZpJiFikjU_6BK7bXwwAVuh4EA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][RT][PATCH 3/4] rtmutex: Revert Optimize rt lock wakeup
-From: Steven Rostedt <rostedt@goodmis.org>
-To: pmorreale@novell.com
-Cc: Gregory Haskins <ghaskins@novell.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        ThomasGleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <1294154349.3371.24.camel@hermosa.morreale.net>
-References: <20101223224755.078983538@goodmis.org>
-	 <20101223225116.729981172@goodmis.org>
-	 <4D13DF250200005A000793E1@novprvoes0310.provo.novell.com>
-	 <1293166464.22802.415.camel@gandalf.stny.rr.com>
-	 <4D19A8B20200005A00079658@novprvoes0310.provo.novell.com>
-	 <1294081596.3948.192.camel@gandalf.stny.rr.com>
-	 <1294086147.3948.194.camel@gandalf.stny.rr.com>
-	 <1294154349.3371.24.camel@hermosa.morreale.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 04 Jan 2011 10:47:59 -0500
-Message-ID: <1294156079.3948.209.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1751719Ab1ADPwg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 10:52:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32813 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751100Ab1ADPwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 10:52:35 -0500
+Message-ID: <4D23423A.60707@redhat.com>
+Date: Tue, 04 Jan 2011 16:52:26 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20091014 Fedora/3.0-2.8.b4.fc11 Thunderbird/3.0b4
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Jens Axboe <jaxboe@fusionio.com>,
+        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <greg@kroah.com>
+Subject: [PATCH 1/2] kref: add kref_test_and_get
+References: <4CFF3DA4.5060705@jp.fujitsu.com> <4CFF9A2C.1070401@fusionio.com> <4D025154.8030400@redhat.com> <20101210165553.GE31737@redhat.com> <4D07D2AC.6000500@fusionio.com> <4D0B68AF.80804@redhat.com> <4D0BB4A1.8080305@fusionio.com> <4D13664C.3020500@redhat.com> <20101223153915.GE9502@redhat.com> <4D13810B.8000304@redhat.com> <20101224192916.GB2082@redhat.com>
+In-Reply-To: <20101224192916.GB2082@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-04 at 08:19 -0700, Peter W. Morreale wrote:
-> On Mon, 2011-01-03 at 15:22 -0500, Steven Rostedt wrote:
-> > On Mon, 2011-01-03 at 14:06 -0500, Steven Rostedt wrote:
-> > 
-> > > 
-> > > 	if (adaptive_wait(&waiter, orig_owner))
-> > > 		sleep = 1;
-> > > 	else
-> > > 		sleep = 0;
-> > > 
-> > > 	if (sleep)
-> > 
-> > 
-> > > 		raw_spin_lock(&lock->wait_lock);
-> > > 		saved_state = rt_set_current_block_state(saved_state);
-> > > 		if (!lock->owner && &waiter == rt_mutex_top_waiter(lock))
-> > > 			sleep = 0;
-> > > 		raw_spin_unlock(&lock->wait_lock);
-> > 
-> > I may be able to remove the above locks and replace it with:
-> > 
-> > 	saved_state = rt_set_current_blocked_state(saved_state);
-> > 	if (orig_owner == rt_mutex_owner(lock))
-> > 		schedule_rt_mutex(lock);
-> > 
-> > -- Steve
-> 
-> Isn't it possible to miss a wakeup here if the waiter becomes preempted?
 
-Why? Preemption doesn't change the task state.
+Add kref_test_and_get() function, which atomically add a reference only if
+refcount is not zero. This prevent to add a reference to an object that is
+already being removed.
 
-> 
-> Recall that adaptive wait is a preemptive wait.  Hence the (I believe)
-> original reason we did the adaptive spin in a (transitioning)  sleep
-> state.
+Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+---
+ include/linux/kref.h |    1 +
+ lib/kref.c           |   16 ++++++++++++++++
+ 2 files changed, 17 insertions(+)
 
-Yes it is a preemptive wait, I would not have accepted the patches if it
-was anything else. But preemption is not affected by the state of the
-task. A task could be TASK_RUNNING or TASK_INTERRUPTIBLE or
-TASK_UNINTERRUPTIBLE, and that would not affect how it acts when it is
-preempted.
-
--- Steve
-
-
+diff --git a/include/linux/kref.h b/include/linux/kref.h
+index 6cc38fc..90b9e44 100644
+--- a/include/linux/kref.h
++++ b/include/linux/kref.h
+@@ -23,6 +23,7 @@ struct kref {
+ 
+ void kref_init(struct kref *kref);
+ void kref_get(struct kref *kref);
++int kref_test_and_get(struct kref *kref);
+ int kref_put(struct kref *kref, void (*release) (struct kref *kref));
+ 
+ #endif /* _KREF_H_ */
+diff --git a/lib/kref.c b/lib/kref.c
+index d3d227a..5f663b9 100644
+--- a/lib/kref.c
++++ b/lib/kref.c
+@@ -37,6 +37,22 @@ void kref_get(struct kref *kref)
+ }
+ 
+ /**
++ * kref_test_and_get - increment refcount for object only if refcount is not
++ * zero.
++ * @kref: object.
++ *
++ * Return non-zero if the refcount was incremented, 0 otherwise
++ */
++int kref_test_and_get(struct kref *kref)
++{
++	int ret;
++	smp_mb__before_atomic_inc();
++	ret = atomic_inc_not_zero(&kref->refcount);
++	smp_mb__after_atomic_inc();
++	return ret;
++}
++
++/**
+  * kref_put - decrement refcount for object.
+  * @kref: object.
+  * @release: pointer to the function that will clean up the object when the
