@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751727Ab1ADTMF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 14:12:05 -0500
-Received: from mail.windriver.com ([147.11.1.11]:51362 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751315Ab1ADTME (ORCPT
+	id S1752115Ab1ADTNk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 14:13:40 -0500
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:57822 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413Ab1ADTNj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 14:12:04 -0500
-Date: Tue, 4 Jan 2011 14:11:58 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org, stable-review@kernel.org
-Subject: Re: [34-longterm 000/260] v2.6.34.8 longterm review
-Message-ID: <20110104191158.GO30150@windriver.com>
-References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
- <4D21A7E8.3090709@gmail.com>
-MIME-Version: 1.0
+	Tue, 4 Jan 2011 14:13:39 -0500
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=H95gfW32JB/XYJSBuOTvJ8IIviFcsPdfxXHbM7LS6jM= c=1 sm=1
+ a=0QKFYxT7T6UA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=xqWC_Br6kY4A:10
+ a=c23vf5CSMVc0QQz9B4a6RA==:17 a=M_OXT13CiP2tJL5tjDQA:9
+ a=DbwZjF02ryyCBxxI24sA:7 a=orUTy5U_4DvFXFA-J5E328yDcZQA:4 a=CjuIK1q_8ugA:10
+ a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [PATCH resend] Update atime from future.
+Mime-Version: 1.0 (Apple Message framework v1082)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D21A7E8.3090709@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 04 Jan 2011 19:11:59.0211 (UTC) FILETIME=[42B49BB0:01CBAC43]
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <13585.1294165307@localhost>
+Date: Tue, 4 Jan 2011 12:13:37 -0700
+Cc: yangsheng <sickamd@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        swhiteho@redhat.com, sickadm@gmail.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <2321F6F6-1042-48E8-9F21-12C52E8FFFCC@dilger.ca>
+References: <1294131418-3835-1-git-send-email-sickamd@gmail.com> <13585.1294165307@localhost>
+To: Valdis.Kletnieks@vt.edu
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Re: [34-longterm 000/260] v2.6.34.8 longterm review] On 03/01/2011 (Mon 11:41) Jiri Slaby wrote:
-
-> On 01/02/2011 08:14 AM, Paul Gortmaker wrote:
-> > This is the start of the longterm review cycle for the v2.6.34.8 release.
-> > There are 260 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let us know.  If anyone is a maintainer of the proper subsystem, and
-> > wants to add a Signed-off-by: line to the patch, please respond with it.
+On 2011-01-04, at 11:21, Valdis.Kletnieks@vt.edu wrote:
+> On Tue, 04 Jan 2011 16:56:58 +0800, yangsheng said:
+>> If atime has been wrong set to future, then it cannot
+>> be updated back to current time.
+>> 
+>> +#define RELATIME_MARGIN (24 * 60 * 60)
 > 
-> Hi, although I'm neither of that, I'm missing tty fixes. Please see:
-> https://lkml.org/lkml/2010/11/29/508
+> Nice patch overall.  Should this be a #define, or a CONFIG_ variable,
+> or a tweakable /proc/sys/fs variable?  Or am I senile and we thrashed
+> all this out once before when the relatime code landed?
 
-For some reason lkml.org won't show me that link currently, but I've got
-these patches already queued for the next round as part of watching what
-Greg added to the 27 release of 32-longterm.
+I recall the consensus was that a /proc tunable was "too much" for the initial patch.  An atime update interval of 1 day is sufficient for most applications, since they run daily to do file access scanning.  The #define was added because I dislike having multiple hard-coded values in any code.
 
---------------
-longterm-queue-2.6.34$grep -l Jiri next_round/*
-next_round/HID-hidraw-fix-a-NULL-pointer-dereference-in-hidraw_2.patch
-next_round/HID-hidraw-fix-a-NULL-pointer-dereference-in-hidraw_.patch
-next_round/hpet-unmap-unused-I-O-space.patch
-next_round/TTY-ldisc-fix-open-flag-handling.patch
-next_round/tty-prevent-DOS-in-the-flush_to_ldisc.patch
-next_round/TTY-restore-tty_ldisc_wait_idle.patch
-next_round/USB-gadget-AT91-fix-typo-in-atmel_usba_udc-driver.patch
-longterm-queue-2.6.34$
---------------
+I haven't heard of any complaints about the relatime update frequency, except for this "atime in the future" problem, so until that happens we may as well leave it as-is.
 
-If you want to look around at what else is in "next_round" you can grab
-the queue from:
+Cheers, Andreas
 
-git://git.kernel.org/pub/scm/linux/kernel/git/longterm/longterm-queue-2.6.34.git
 
-Let me know if you still think something is missing, and/or call out the
-upstream commit IDs explicitly and I'll do the right thing.
 
-Thanks,
-Paul.
 
-> and add the three in the next round.
-> 
-> thanks,
-> -- 
-> js
+
