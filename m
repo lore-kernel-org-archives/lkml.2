@@ -1,37 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751170Ab1ADKRi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 05:17:38 -0500
-Received: from casper.infradead.org ([85.118.1.10]:49230 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825Ab1ADKRh convert rfc822-to-8bit (ORCPT
+	id S1751283Ab1ADKSK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 05:18:10 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60739 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab1ADKSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 05:17:37 -0500
-Subject: Re: [PATCH 1/3] sched: add __rcu annotation
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4D22D4EE.3020604@cn.fujitsu.com>
-References: <4D22D4EE.3020604@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 04 Jan 2011 11:17:47 +0100
-Message-ID: <1294136267.2016.105.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 4 Jan 2011 05:18:08 -0500
+From: jean.pihet@newoldbits.com
+To: mingo@elte.hu, linux-kernel@vger.kernel.org, trenn@suse.de
+Cc: linux-omap@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>,
+        linux-perf-users@vger.kernel.org, rjw@sisk.pl,
+        Jean Pihet <j-pihet@ti.com>
+Subject: [PATCH 0/3] perf, tools: new power trace API
+Date: Tue,  4 Jan 2011 11:17:40 +0100
+Message-Id: <1294136263-24020-1-git-send-email-j-pihet@ti.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-04 at 16:06 +0800, Lai Jiangshan wrote:
-> Add __rcu annotation to :
-> 	(struct rq)->sd
+From: Jean Pihet <j-pihet@ti.com>
 
-That's a broken changelog, it's about as good as:
+Provides:
+. calls to machine_suspend trace point,
+. OMAP support,
+. API Documentation
 
- i++; /* increment i */
+Applies on top of Thomas's 8 latest power trace API patches, cf.
+http://marc.info/?l=linux-kernel&m=129130827309354&w=2
 
-I'm really starting to detest sparse (lock annotations), it keeps adding
-these annotations, but does it ever catch an actual bug?
+Jean Pihet (3):
+  perf: add calls to suspend trace point
+  perf: add OMAP support for the new power events
+  tools, perf: Documentation for the power events API
+
+ Documentation/trace/events-power.txt |   90 ++++++++++++++++++++++++++++++++++
+ arch/arm/mach-omap2/pm34xx.c         |    7 +++
+ arch/arm/mach-omap2/powerdomain.c    |    3 +
+ arch/arm/plat-omap/clock.c           |   13 ++++-
+ kernel/power/suspend.c               |    3 +
+ 5 files changed, 113 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/trace/events-power.txt
+
+-- 
+1.7.2.3
+
