@@ -1,58 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751285Ab1ADNwk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 08:52:40 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:35865 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903Ab1ADNwi convert rfc822-to-8bit (ORCPT
+	id S1751348Ab1ADNyJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 08:54:09 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47366 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751034Ab1ADNyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 08:52:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=bZMPc7bCp3WVMnY44l6TobQcwHlMz/bh8jv2wGDyUbQt9NnwwNNq7eKSs5j+hJYSbS
-         LMFtP72Tq6tPYqXXx/gA==
-MIME-Version: 1.0
-In-Reply-To: <1294148675.2016.139.camel@laptop>
-References: <1293464211.2695.104.camel@localhost>
-	<AANLkTimp9VgD4qhOVmq-k1Ckzti9eeV8pf6Jvt5YB6nx@mail.gmail.com>
-	<1293526288.2457.4.camel@minggr.sh.intel.com>
-	<1294052312.2016.50.camel@laptop>
-	<4D222926.9010206@zytor.com>
-	<1294139419.2016.115.camel@laptop>
-	<AANLkTinGmgB7YhRjnsGMjj2knDuJ8XFps9oyW4+EGOr5@mail.gmail.com>
-	<1294148675.2016.139.camel@laptop>
-Date: Tue, 4 Jan 2011 14:52:36 +0100
-Message-ID: <AANLkTima_wh1Nd2E-zQAcymmux1O0e1GzVEdnhLEMOo5@mail.gmail.com>
-Subject: Re: [PATCH 4/7] perf: Check if HT is supported and enabled
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Lin Ming <ming.m.lin@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Tue, 4 Jan 2011 08:54:08 -0500
+Date: Tue, 4 Jan 2011 13:53:13 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Libor Pechacek <lpechacek@suse.cz>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Peter Berger <pberger@brimson.com>,
+        Al Borchers <alborchers@steinerpoint.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2.6.36-rc3] USB: serial: handle Data Carrier Detect
+ changes
+Message-ID: <20110104135313.7bdd6deb@lxorguk.ukuu.org.uk>
+In-Reply-To: <20101217153422.GE20400@fm.suse.cz>
+References: <20101217153422.GE20400@fm.suse.cz>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 4, 2011 at 2:44 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Tue, 2011-01-04 at 14:38 +0100, Stephane Eranian wrote:
->> My solution at the time (2.6.30) was to do:
->>         ht_enabled = cpumask_weight(__get_cpu_var(cpu_sibling_map)) > 1;
->
-> Won't that report a machine a HT disabled when you offline a sibling?
+On Fri, 17 Dec 2010 16:34:23 +0100
+Libor Pechacek <lpechacek@suse.cz> wrote:
 
-I think you're right. I was not dealing with hotplug CPU.
+> Alan's commit 335f8514f200e63d689113d29cb7253a5c282967 introduced
+> .carrier_raised function in several drivers.  That also means
+> tty_port_block_til_ready can now suspend the process trying to open the serial
+> port when Carrier Detect is low and put it into tty_port.open_wait queue.  We
+> need to wake up the process when the Carrier Detect goes high.
 
-> Which kinda defeats the purpose of our usage here, since we need to know
-> it before either sibling comes online.
+(catching up after Christmas break)
 
-Then, it seems the only hope is to peek at a MSR that reports the BIOS setting.
-But I don't know which one it is.
+> @Greg: There are two drivers left to be fixed - drivers/usb/serial/cp210x.c and
+> drivers/usb/serial/keyspan_pda.c.  cp210x device does not seem to have an
+> interrupt endpoint to report the changes so a polling thread seems to be needed
+> to detect DCD changes.  I can implement the polling for cp210x if you don't
+> have a better idea.
 
-Couldn't you simply over-provision, and then when the CPU is online, use my
-ht_enabled statement to figure out whether or not you need to handle the sharing
-issue?
+It might be worth making tty_port_open know how to handle such devices as
+I'd bet there will be others out there somewhere. Perhaps add a dcd_poll
+field that holds the poll time in ms then in the tty_port_block_til_ready
+code change from
+
+	tty_unlock();
+	schedule();
+	tty_lock();
+
+to 
+
+	tty_unlock();
+	if (port->dcd_poll)
+		schedule_timeout(port->dcd_poll);
+	else
+		schedule();
+	tty_lock
+
+??
+
+> The keyspan_pda can report the changes asynchronously, but I haven't found the
+> message format description anywhere.  Any idea how that driver can be fixed
+> besides dropping .carrier_raised?
+
+I don't - Greg may have info or of course you could cheat and wake the
+queue whenever you see an unknown message format, then ask the device 8)
+
+> +/**
+> + *	usb_serial_handle_dcd_change - handle a change of carrier detect state
+> + *	@port: usb_serial_port structure for the open port
+> + *	@status: new carrier detect status, nonzero if active
+> + */
+> +void usb_serial_handle_dcd_change(struct usb_serial_port *usb_port,
+> +						unsigned int status)
+> +{
+> +	struct tty_port *port = &usb_port->port;
+> +	struct tty_struct *tty = port->tty;
+> +
+> +	dbg("%s - port %d, status %d", __func__, usb_port->number, status);
+> +
+> +	if (status)
+> +		wake_up_interruptible(&port->open_wait);
+> +	else if (tty && !C_CLOCAL(tty))
+> +		tty_hangup(tty);
+> +}
+> +EXPORT_SYMBOL_GPL(usb_serial_handle_dcd_change);
+
+This looks good except that port->tty isn't necessarily a safe
+de-reference so it would be better to pass the tty into the function so
+the caller must think about that problem (and all the calling points
+appear to have a tty reference held ready)
+
+Looks good
+
+Alan
