@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237Ab1ADJIg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 04:08:36 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:59922 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087Ab1ADJId (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 04:08:33 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=hC7tbQXaJmASNJh6Z5VGNxq6q58kZbriBhssa6zFypZYjluIU6KjGUHMRp0ojrqmUT
-         VCr1ZM6j6Jk9IzUfodu0DFgoRyUcQ4mLgpZfBlo7yUUGtZXU8dVGIyYD47za5BBDs2rc
-         i2P/e53eIzPICrs+sr8YGmI4eIF2DUy8C7nFo=
-From: yangsheng <sickamd@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: adilger@dilger.ca, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, swhiteho@redhat.com,
-        yangsheng <sickamd@gmail.com>
-Subject: [PATCH] Update atime from future.
-Date: Tue,  4 Jan 2011 17:08:12 +0800
-Message-Id: <1294132092-4423-1-git-send-email-sickamd@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S1752355Ab1ADJJk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 04:09:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19975 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750897Ab1ADJJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 04:09:38 -0500
+Message-ID: <4D22E3C0.7010808@redhat.com>
+Date: Tue, 04 Jan 2011 11:09:20 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Mike Galbraith <efault@gmx.de>
+CC: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Chris Wright <chrisw@sous-sol.org>
+Subject: Re: [RFC -v3 PATCH 0/3] directed yield for Pause Loop Exiting
+References: <20110103162637.29f23c40@annuminas.surriel.com> <1294123335.11283.26.camel@marge.simson.net>
+In-Reply-To: <1294123335.11283.26.camel@marge.simson.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If atime has been wrong set to future, then it cannot
-be updated back to current time.
+On 01/04/2011 08:42 AM, Mike Galbraith wrote:
+> A couple questions.
+>
+> On Mon, 2011-01-03 at 16:26 -0500, Rik van Riel wrote:
+> >  When running SMP virtual machines, it is possible for one VCPU to be
+> >  spinning on a spinlock, while the VCPU that holds the spinlock is not
+> >  currently running, because the host scheduler preempted it to run
+> >  something else.
+>
+> Do you have any numbers?
+>
+> If I were to, say, run a 256 CPU VM on my quad, would this help me get
+> more hackbench or whatever oomph from my (256X80386/20:) box?
 
-Signed-off-by: sickamd@gmail.com
-Reviewed-by: adilger@dilger.ca
----
- fs/inode.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+First of all, you can't run 256 guests on x86 kvm.  Second, you'll never 
+see better performance when you overcommit.  What this patchset does is 
+reduce the degradation from utterly ridiculous to something manageable.  
+This allows a host to deliver reasonable performance when overcommitted 
+vcpus are actually used, but it's not a good idea to run 64 vcpus on a 
+32 cpu host.
 
-diff --git a/fs/inode.c b/fs/inode.c
-index da85e56..d92779f 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -1446,6 +1446,8 @@ sector_t bmap(struct inode *inode, sector_t block)
- }
- EXPORT_SYMBOL(bmap);
- 
-+#define RELATIME_MARGIN (24 * 60 * 60)
-+
- /*
-  * With relative atime, only update atime if the previous atime is
-  * earlier than either the ctime or mtime or if at least a day has
-@@ -1469,10 +1471,16 @@ static int relatime_need_update(struct vfsmount *mnt, struct inode *inode,
- 		return 1;
- 
- 	/*
-+	 * Is the previous atime value in future? If yes,
-+	 * update atime:
-+	 */
-+	if ((long)(now.tv_sec - inode->i_atime.tv_sec) < -RELATIME_MARGIN)
-+		return 1;
-+	/*
- 	 * Is the previous atime value older than a day? If yes,
- 	 * update atime:
- 	 */
--	if ((long)(now.tv_sec - inode->i_atime.tv_sec) >= 24*60*60)
-+	if ((long)(now.tv_sec - inode->i_atime.tv_sec) >= RELATIME_MARGIN)
- 		return 1;
- 	/*
- 	 * Good, we can skip the atime update:
+> >  Both Intel and AMD CPUs have a feature that detects when a virtual
+> >  CPU is spinning on a lock and will trap to the host.
+>
+> Does an Intel Q6600 have this trap gizmo (iow will this do anything at
+> all for my little box if I were to try it out).
+
+Likely not.  Run 
+http://git.kernel.org/?p=virt/kvm/qemu-kvm.git;a=blob_plain;f=kvm/scripts/vmxcap;hb=HEAD, 
+look for 'PAUSE-loop exiting'.  I think the first processors to include 
+them were the Nehalem-EXs, and Westmeres have them as well.
+
 -- 
-1.7.2.3
+error compiling committee.c: too many arguments to function
 
