@@ -1,118 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751385Ab1ADXM7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 18:12:59 -0500
-Received: from mail2.shareable.org ([80.68.89.115]:55058 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967Ab1ADXM5 (ORCPT
+	id S1751369Ab1ADXVO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 18:21:14 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44371 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750801Ab1ADXVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 18:12:57 -0500
-Date: Tue, 4 Jan 2011 23:12:21 +0000
-From: Jamie Lokier <jamie@shareable.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Tomasz Fujak <t.fujak@samsung.com>, Daniel Walker <dwalker@codeaurora.org>,
-        Kyungmin Park <kmpark@infradead.org>, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>,
-        linux-mm@kvack.org, Johan MOSSBERG <johan.xx.mossberg@stericsson.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-media@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Ankita Garg <ankita@in.ibm.com>
-Subject: Re: [PATCHv8 00/12] Contiguous Memory Allocator
-Message-ID: <20110104231221.GA12222@shareable.org>
-References: <cover.1292443200.git.m.nazarewicz@samsung.com> <AANLkTim8_=0+-zM5z4j0gBaw3PF3zgpXQNetEn-CfUGb@mail.gmail.com> <20101223100642.GD3636@n2100.arm.linux.org.uk> <87k4j0ehdl.fsf@erwin.mina86.com> <20101223135120.GL3636@n2100.arm.linux.org.uk> <4D1357D5.9000507@samsung.com> <20101223142053.GN3636@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101223142053.GN3636@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	Tue, 4 Jan 2011 18:21:13 -0500
+Date: Tue, 4 Jan 2011 15:21:00 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Mimi Zohar <zohar@us.ibm.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>
+Subject: Re: [resend][PATCH] fs: use kernel's hex_to_bin() method
+Message-Id: <20110104152100.29d0da02.akpm@linux-foundation.org>
+In-Reply-To: <1291978505-29076-1-git-send-email-andy.shevchenko@gmail.com>
+References: <1291978505-29076-1-git-send-email-andy.shevchenko@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell King - ARM Linux wrote:
-> I'll give you another solution to the problem - lobby ARM Ltd to have
-> this restriction lifted from the architecture specification, which
-> will probably result in the speculative prefetching also having to be
-> removed.
+On Fri, 10 Dec 2010 12:55:05 +0200
+Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
 
-I don't know if there was lobbying involved, but the way some barriers
-on x86 turned out to be unnecessary, on both Intel and AMD, after
-years of specs which abstractly implied they might be necessary....  I
-guess someone realised the relaxed specs weren't providing a benefit
-at the hardware level.
+> Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+> Cc: linux-fsdevel@vger.kernel.org
+> ---
+>  fs/binfmt_misc.c |    7 +++----
+>  1 files changed, 3 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
+> index 1befe2e..a0fb271 100644
+> --- a/fs/binfmt_misc.c
+> +++ b/fs/binfmt_misc.c
+> @@ -28,6 +28,7 @@
+>  #include <linux/mount.h>
+>  #include <linux/syscalls.h>
+>  #include <linux/fs.h>
+> +#include <linux/kernel.h>
+>  
+>  #include <asm/uaccess.h>
+>  
+> @@ -244,10 +245,8 @@ static int unquote(char *from)
+>  	while ((c = *s++) != '\0') {
+>  		if (c == '\\' && *s == 'x') {
+>  			s++;
+> -			c = toupper(*s++);
+> -			*p = (c - (isdigit(c) ? '0' : 'A' - 10)) << 4;
+> -			c = toupper(*s++);
+> -			*p++ |= c - (isdigit(c) ? '0' : 'A' - 10);
+> +			*p = hex_to_bin(*s++) << 4;
+> +			*p++ |= hex_to_bin(*s++);
+>  			continue;
+>  		}
+>  		*p++ = c;
 
-Perhaps it is possible to draw this to ARM's attention as a rather
-serious performance-damaging thing, so they might tighten the rules in
-favour of common sense, at least for the majority of devices?
+Calling hex_to_bin() twice is a bit sad - we need a library function
+which does hex-to-bin on a digit string.
 
-Off the top of my head (and I really don't know much about the
-internals of an ARM), hardware that avoided speculation where there
-was no entry already in the TLB for the address... that would be
-workable, as page/range TLB flushes would be enough to protect
-pages from access.
+And lo, one just got added in linux-next.  However it cruelly didn't
+return anything useful, so...
 
-With regard to specific chips (i.e. current ones, while lobbying to
-tighten the rules for future ones).  Is there a control register on
-the chips which are known to have this annoying issue, to turn off the
-problematic cache behaviour (permanently while Linux runs), or some
-set of memory attributes that produces that effect?  (Obviously there
-is: Turn off all caching, but is there a weaker and equally effective
-one on current hardware with the problem?)
+From: Andrew Morton <akpm@linux-foundation.org>
 
-It might be there simply _isn't_ any solution that satisfies the
-generality of ARM spec, while satisfying the engineering requirements
-of particular media player chips on which the CMA+DMA may be perfectly
-safe.  That would be unpleasant but hardly the first time some feature
-was not usable on some chips and essential on some others.
+As a convenience to callers.
 
-Take, for example, those (now old) ARMs that mishandle SWP so it can't
-be used.  We still use SWP in kernels, and indeed userspace, which
-will break if run on those particular chips, but that's ok - it's an
-understood limitation.
+Not a terribly convenient convenience, as most callers will need to cast
+away the constness of the return value.  Oh well, those callers should
+have been using a `const char *' anyway.
 
-Russell, I think the repeated attempts to propose the same thing,
-which you keep rejecting (rightly), isn't because they're not
-listening, but because you haven't got a better solution - other than
-scrap the hardware :-)  Their code might actually be 100% reliable with
-the chips they use in those products, and it might be the _only_
-solution which works on those, thus solving a real problem.
+Cc: Mimi Zohar <zohar@us.ibm.com>
+Cc: Serge E. Hallyn <serge@hallyn.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
 
-What's the right thing to do in that case?  Maintain a fork out of
-tree, or some Kconfig animal that says you can't select this ARM
-subarch and that memory facility in the same kernel because they are
-technically incompatible - but at least everyone can see the code, and
-know which chip families to avoid for certain applications?
+ include/linux/kernel.h |    2 +-
+ lib/hexdump.c          |    3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
-Here is a hint of an idea for a way forward:
+diff -puN lib/hexdump.c~lib-hexdumpc-make-hex2bin-return-the-updated-src-address lib/hexdump.c
+--- a/lib/hexdump.c~lib-hexdumpc-make-hex2bin-return-the-updated-src-address
++++ a/lib/hexdump.c
+@@ -39,13 +39,14 @@ EXPORT_SYMBOL(hex_to_bin);
+  * @src: ascii hexadecimal string
+  * @count: result length
+  */
+-void hex2bin(u8 *dst, const char *src, size_t count)
++const char *hex2bin(u8 *dst, const char *src, size_t count)
+ {
+ 	while (count--) {
+ 		*dst = hex_to_bin(*src++) << 4;
+ 		*dst += hex_to_bin(*src++);
+ 		dst++;
+ 	}
++	return src;
+ }
+ EXPORT_SYMBOL(hex2bin);
+ 
+diff -puN include/linux/kernel.h~lib-hexdumpc-make-hex2bin-return-the-updated-src-address include/linux/kernel.h
+--- a/include/linux/kernel.h~lib-hexdumpc-make-hex2bin-return-the-updated-src-address
++++ a/include/linux/kernel.h
+@@ -278,7 +278,7 @@ static inline char *pack_hex_byte(char *
+ }
+ 
+ extern int hex_to_bin(char ch);
+-extern void hex2bin(u8 *dst, const char *src, size_t count);
++extern const char *hex2bin(u8 *dst, const char *src, size_t count);
+ 
+ /*
+  * General tracing related utility functions - trace_printk(),
+_
 
-    - An API that everyone can use (in drivers etc.), that behaves the
-      same for everyone, except that:
 
-    - On some chips (ARMv7...) some functions requires a large
-      up-front memory reservation at boot time, (but that's ok because
-      you probably have gobs of RAM with it anyway).
+After which we can change your patch thusly:
 
-    - On other chips (<= ARMv6?) it is safe to reduce the up-front
-      reservation to less, maybe zero.  (Better for smaller memories).
+--- a/fs/binfmt_misc.c~fs-binfmt_miscc-use-kernels-hex_to_bin-method-fix
++++ a/fs/binfmt_misc.c
+@@ -244,9 +244,7 @@ static int unquote(char *from)
+ 
+ 	while ((c = *s++) != '\0') {
+ 		if (c == '\\' && *s == 'x') {
+-			s++;
+-			*p = hex_to_bin(*s++) << 4;
+-			*p++ |= hex_to_bin(*s++);
++			s = (char *)hex2bin(p, s + 1, 1);
+ 			continue;
+ 		}
+ 		*p++ = c;
+_
 
-    - Maybe it even makes sense for drivers using the API to request,
-      at boot time, "_if_ you need early reservation, then _this_ is
-      how much I will need maximum".  The values can potentially
-      dynamic anti-fragmantation allocators too.  (I've done a bit of
-      research on this - a sort of "semi-reservation" where you don't
-      keep it free up front, but you limit how its used and grouped in
-      a precise way, to make sure other uses are sufficiently
-      reclaimable to satisfy the call when it comes.)
 
-    - Didn't reserve enough in advance for the architectural
-      constraints - get NULL back.  That's what allocators always do.
-      That's what /proc/cmdline's options have a long history helping
-      with - finding the setting which works on your kit.  People are
-      already used to a bit of fiddly tuning (and random crashes ;-)
-      with these media application sorts of things.
 
-Presumably the problem will ease off with IOMMUs and/or sensible SG
-(and/or sensible architectural constraints) becoming ubiquitous eventually.
-
--- Jamie
