@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823Ab1ADIbj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 03:31:39 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:21198 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750803Ab1ADIbi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 03:31:38 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAGdoIk15Ldpx/2dsb2JhbACkNnS7c4VKBJAq
-Date: Tue, 4 Jan 2011 19:31:32 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [patch 8/8] fs: add i_op->sync_inode
-Message-ID: <20110104083132.GA4485@amd>
-References: <20101218014634.943276411@kernel.dk>
- <20101218015117.759480620@kernel.dk>
- <20101229151246.GA22033@infradead.org>
- <20110104062725.GD3402@amd>
- <20110104065736.GA8013@infradead.org>
- <20110104080323.GC4090@amd>
+	id S1752149Ab1ADIcF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 03:32:05 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:63127 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751864Ab1ADIcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 03:32:03 -0500
+Message-ID: <4D22DB19.3000300@cn.fujitsu.com>
+Date: Tue, 04 Jan 2011 16:32:25 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110104080323.GC4090@amd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH] rcu: call __rcu_read_unlock() in exit_rcu()
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-01-04 16:31:44,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-01-04 16:31:44,
+	Serialize complete at 2011-01-04 16:31:44
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 04, 2011 at 07:03:23PM +1100, Nick Piggin wrote:
-> On Tue, Jan 04, 2011 at 01:57:37AM -0500, Christoph Hellwig wrote:
-> > > Also giving filesystems the flexibility to do the data writeout can
-> > > be more optimal by doing all writeout at once or ordering to suit their
-> > > writeback patterns. Having range data could give some performance
-> > > advantages writing back mappings or commit operations over network. I
-> > > don't see it as a big complexity. It gives a chance to do range fsyncs
-> > > and sync_file_range and such properly too.
-> > 
-> > We currently do all that just fine before calling into ->fsync.
-> 
-> What do you mean we do all that just fine? A filesystem can't schedule
-> data submission and waiting optimally versus metadata, it can't do
-> metadata operations or remote commits corresponding to data ranges, and
-> it doesn't support nfs sync operations.
 
-And actually I think it is much better to have sync_inode, which means
-we'll be able to get rid of commit_metadata (which should be an inode
-operation anyway, not an export operation which really should deal with
-exporting filesystems to a non-vfs namespace, not nfsd hacks).
+rcu_read_unlock() is a wrapper of many things:
+	the core __rcu_read_unlock(), debugs...etc.
 
-commit_metadata would just be sync_inode with a null range or no data
-sync flag set.
+It is better that we only calls the core __rcu_read_unlock() here.
 
+signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index a363871..94035a0 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -802,7 +802,7 @@ void exit_rcu(void)
+ 	if (t->rcu_read_lock_nesting == 0)
+ 		return;
+ 	t->rcu_read_lock_nesting = 1;
+-	rcu_read_unlock();
++	__rcu_read_unlock();
+ }
+ 
+ #else /* #ifdef CONFIG_TREE_PREEMPT_RCU */
