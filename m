@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734Ab1ADI4f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 03:56:35 -0500
-Received: from mga14.intel.com ([143.182.124.37]:8745 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750803Ab1ADI4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 03:56:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,271,1291622400"; 
-   d="scan'208";a="369758235"
-From: Sheng Yang <sheng@linux.intel.com>
-Organization: Intel Opensource Technology Center
-To: Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 1/2] apic: Move hypervisor detection of x2apic to hypervisor.h
-Date: Tue, 4 Jan 2011 16:57:35 +0800
-User-Agent: KMail/1.13.5 (Linux/2.6.35-23-generic; KDE/4.5.1; x86_64; ; )
-Cc: Avi Kivity <avi@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
-References: <1292912329-12451-1-git-send-email-sheng@linux.intel.com> <4D10E0C2.3020000@goop.org> <4D10EED0.2030507@redhat.com>
-In-Reply-To: <4D10EED0.2030507@redhat.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101041657.36123.sheng@linux.intel.com>
+	id S1752048Ab1ADI5a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 03:57:30 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53017 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155Ab1ADI52 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 03:57:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=U6UOpPuEYGVr6sDrWVtebf6DMBVDqiBVs23P0/h4jG1KcWhPasizgl02OfCvJNkWNg
+         yStXWoTWX0Q16QlczIHW8duvqrmMFKDwSzyfjLl4MfDK1Ao7waSrTUEacGXMMKtlxcg1
+         RHfN3WJ1WUrzzQtS1fHvPEt70BatToB4rW7qU=
+From: yangsheng <sickamd@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: adilger@dilger.ca, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, swhiteho@redhat.com,
+        yangsheng <sickamd@gmail.com>, sickadm@gmail.com
+Subject: [PATCH resend] Update atime from future.
+Date: Tue,  4 Jan 2011 16:56:58 +0800
+Message-Id: <1294131418-3835-1-git-send-email-sickamd@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 22 December 2010 02:15:44 Avi Kivity wrote:
-> On 12/21/2010 07:15 PM, Jeremy Fitzhardinge wrote:
-> > On 12/20/2010 10:18 PM, Sheng Yang wrote:
-> > >  Then we can reuse it for Xen later.
-> > 
-> > You should probably get someone kvm-ish to ack this too.
-> 
-> Looks good to me.
+If atime has been wrong set to future, then it cannot
+be updated back to current time.
 
-Ingo,
+CC: swhiteho@redhat.com
+Signed-off-by: sickadm@gmail.com
+Reviewed-by: adilger@dilger.ca
+---
+ fs/inode.c |   12 ++++++++++--
+ 1 files changed, 10 insertions(+), 2 deletions(-)
 
-Comments?
+diff --git a/fs/inode.c b/fs/inode.c
+index da85e56..9cf7375 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -1446,6 +1446,8 @@ sector_t bmap(struct inode *inode, sector_t block)
+ }
+ EXPORT_SYMBOL(bmap);
+ 
++#define RELATIME_MARGIN (24 * 60 * 60)
++
+ /*
+  * With relative atime, only update atime if the previous atime is
+  * earlier than either the ctime or mtime or if at least a day has
+@@ -1469,10 +1471,16 @@ static int relatime_need_update(struct vfsmount *mnt, struct inode *inode,
+ 		return 1;
+ 
+ 	/*
+-	 * Is the previous atime value older than a day? If yes,
++	 * Is the previous atime value in future? If yes,
++	 * update atime:
++	 */
++	if ((long)(now.tv_sec - inode->i_atime.tv_sec) < -RELATIME_MARGIN)
++		return 1;
++	/*
++	 * Is the previous atime value old than a day? If yes,
+ 	 * update atime:
+ 	 */
+-	if ((long)(now.tv_sec - inode->i_atime.tv_sec) >= 24*60*60)
++	if ((long)(now.tv_sec - inode->i_atime.tv_sec) >= RELATIME_MARGIN)
+ 		return 1;
+ 	/*
+ 	 * Good, we can skip the atime update:
+-- 
+1.7.2.3
 
---
-regards
-Yang, Sheng
