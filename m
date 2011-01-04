@@ -1,28 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051Ab1ADSaA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 13:30:00 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:33101 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696Ab1ADS37 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 13:29:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=psqJx8qmkIdcJi3JcF+jLd5k3d1sYCPTZKVgcX+CEwl/7SgU6gL6tMdOdlUVquZy3L
-         EL98cRMu4Wed/1Ehut9LvIZzjFXR213tUogiO/E4MQWJtqfixYBbBVBOOJtTiCwr30lV
-         T7Zv083lG1N6IFQ96yEMW7F6hByHJZnCHndAU=
-MIME-Version: 1.0
-In-Reply-To: <1294163897.6169.172.camel@Palantir>
-References: <1294156524.6169.147.camel@Palantir> <AANLkTi=wCmetef0tjfvdHtZMS9x4eswhL_xAM5Ybdwq+@mail.gmail.com>
- <1294163897.6169.172.camel@Palantir>
-From: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Date: Tue, 4 Jan 2011 16:29:38 -0200
-Message-ID: <AANLkTi=G1b3OHH1ZUGCcL+nnb3LaeUDMWsXk8z+FzWT2@mail.gmail.com>
+	id S1751421Ab1ADScS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 13:32:18 -0500
+Received: from ms01.sssup.it ([193.205.80.99]:43574 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751099Ab1ADScR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 13:32:17 -0500
 Subject: Re: [RFC][PATCH 0/3] Refactoring sched_entity and sched_rt_entity.
-To: Dario Faggioli <raistlin@linux.it>
+From: Dario Faggioli <raistlin@linux.it>
+To: Lucas De Marchi <lucas.de.marchi@gmail.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
@@ -33,42 +19,83 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Darren Hart <darren@dvhart.com>, oleg <oleg@redhat.com>,
         paulmck <paulmck@linux.vnet.ibm.com>, pjt@google.com,
         bharata@linux.vnet.ibm.co
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <AANLkTiks650aGw+SZzTYbKvMcn4w56XwQ+h+qT5V5hGD@mail.gmail.com>
+References: <1294156524.6169.147.camel@Palantir>
+	 <AANLkTiks650aGw+SZzTYbKvMcn4w56XwQ+h+qT5V5hGD@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-3GFhFdL0TdmbuCJBaIbR"
+Date: Tue, 04 Jan 2011 19:31:43 +0100
+Message-ID: <1294165903.6169.215.camel@Palantir>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 4, 2011 at 15:58, Dario Faggioli <raistlin@linux.it> wrote:
-> On Tue, 2011-01-04 at 14:37 -0200, Lucas De Marchi wrote:
->> > Suggestions on how to deal with that will be appreciated.
->>
->> Don't forget the PI case too. You will need to change
->> rt_mutex_setprio() to keep a copy of sched_cfs_entity in struct
->> rt_mutex_waiter.
->>
-> Mmm... do I? While I'm cloning your git, could you elaborate a bit on
-> why, because I don't seem to see that... :-P
 
-Suppose a RT task blocks on a PI-mutex, the lock owner will be boosted
-to RT and go through a class change in rt_mutex_setprio().
-Since now a class change reinitializes the class-specific, if fair and
-rt fields are on the same memory space, we need to save the
-sched_fair_entity before changing the class to RT and put it again
-when going back to the fair class.
+--=-3GFhFdL0TdmbuCJBaIbR
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Quoting Peter about this:
+On Tue, 2011-01-04 at 14:18 -0200, Lucas De Marchi wrote:=20
+> Hi Dario
+>=20
+Hi there,
 
- [ Initially I was thinking not, because the task slept we'll have to
-reinsert it in the rb-tree anyway, but upon further consideration
-that'll loose the old vruntime setting, which can lead to an unseemly
-gain of time in place_entity()'s never backward check failing.
+> > Suggestions on how to deal with that will be appreciated.
+> >
+>=20
+> In fact I created the patchset but I didn't have time to finish,
+> polish, test and send.=20
+>
+Heh, I know that feeling! :-)
 
-So yes, we'd have to place a copy of the old sched_entity in struct
-rt_mutex_waiter, not very hard to do. ]
+> There are several corner cases that must be
+> treated that made me think if it was really worth the work.
+>=20
+Ok, again, while git-clone and git-push do their jobs, feel free to
+share some of these concerns of yours with me, because I'm not sure I'm
+getting here...
+
+> In this repo you can find a greatly outdated branch that treats some
+> of the troubles you'll need to think about:
+>=20
+> git://git.profusion.mobi/users/lucas/linux-2.6.git schedentity
+>=20
+Ok, this is mine (it'll be ready in a while, I'm pushing it up):
+
+  git://gitorious.org/sched_deadline/linux-26.git schedentity
 
 
-As a side-note: irc this is one thing i didn't do when i prepared that patches.
+Right now I'm pushing my schedentity branch and cloning yours! :-D
+Unfortunately, both seems to be quite long operations... :-(
 
+> And this was a rebase I did, but irc it was not working well:
+>
+Well, I'll be very busy in the next days, but I plan to keep this
+updated enough, so feel free to comment and/or use it as a basis for
+further patching if you think it could help.
 
+Thanks and Regards,
+Dario
 
-Lucas De Marchi
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
+
+http://retis.sssup.it/people/faggioli -- dario.faggioli@jabber.org
+
+--=-3GFhFdL0TdmbuCJBaIbR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAk0jZ48ACgkQk4XaBE3IOsTFwACfXJWnXpCpMgon73feOGkPheFA
+OHIAnRFb1JfcfAXSwg6Hx2D4UYth2cad
+=JUd/
+-----END PGP SIGNATURE-----
+
+--=-3GFhFdL0TdmbuCJBaIbR--
+
