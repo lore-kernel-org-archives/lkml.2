@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751284Ab1ADDtJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 22:49:09 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:44175 "EHLO
+	id S1751565Ab1ADDtE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 22:49:04 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:44172 "EHLO
 	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354Ab1ADDsr (ORCPT
+	with ESMTP id S1751342Ab1ADDsq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 22:48:47 -0500
+	Mon, 3 Jan 2011 22:48:46 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Tom Zanussi <tzanussi@gmail.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 07/11] perf tools: Refactor cpumap to hold nr and the map
-Date: Tue,  4 Jan 2011 01:48:21 -0200
-Message-Id: <1294112905-25325-8-git-send-email-acme@infradead.org>
+Subject: [PATCH 08/11] perf tools: Refactor all_tids to hold nr and the map
+Date: Tue,  4 Jan 2011 01:48:22 -0200
+Message-Id: <1294112905-25325-9-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1294112905-25325-1-git-send-email-acme@infradead.org>
 References: <1294112905-25325-1-git-send-email-acme@infradead.org>
@@ -29,8 +29,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-So that later, we can pass the cpu_map instance instead of (nr_cpus, cpu_map)
-for things like perf_evsel__open and friends.
+So that later, we can pass the thread_map instance instead of
+(thread_num, thread_map) for things like perf_evsel__open and friends,
+just like was done with cpu_map.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -43,474 +44,392 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c |   14 +++---
- tools/perf/builtin-stat.c   |   36 ++++++------
- tools/perf/builtin-top.c    |   22 ++++----
- tools/perf/util/cpumap.c    |  123 +++++++++++++++++++++++++++++++++----------
- tools/perf/util/cpumap.h    |   10 +++-
- 5 files changed, 138 insertions(+), 67 deletions(-)
+ tools/perf/builtin-record.c |   39 +++++++++++++++------------------------
+ tools/perf/builtin-stat.c   |   41 +++++++++++++++++------------------------
+ tools/perf/builtin-top.c    |   35 +++++++++++++----------------------
+ tools/perf/util/thread.c    |   43 +++++++++++++++++++++++++++++--------------
+ tools/perf/util/thread.h    |   15 ++++++++++++++-
+ 5 files changed, 88 insertions(+), 85 deletions(-)
 
 diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 052de17..220e6e7 100644
+index 220e6e7..7bc0490 100644
 --- a/tools/perf/builtin-record.c
 +++ b/tools/perf/builtin-record.c
-@@ -39,7 +39,7 @@ static u64			user_interval			= ULLONG_MAX;
- static u64			default_interval		=      0;
- static u64			sample_type;
+@@ -54,8 +54,7 @@ static bool			sample_id_all_avail		=   true;
+ static bool			system_wide			=  false;
+ static pid_t			target_pid			=     -1;
+ static pid_t			target_tid			=     -1;
+-static pid_t			*all_tids			=      NULL;
+-static int			thread_num			=      0;
++static struct thread_map	*threads;
+ static pid_t			child_pid			=     -1;
+ static bool			no_inherit			=  false;
+ static enum write_mode_t	write_mode			= WRITE_FORCE;
+@@ -318,9 +317,9 @@ static void create_counter(struct perf_evsel *evsel, int cpu)
+ retry_sample_id:
+ 	attr->sample_id_all = sample_id_all_avail ? 1 : 0;
  
--static int			nr_cpus				=      0;
-+static struct cpu_map		*cpus;
- static unsigned int		page_size;
- static unsigned int		mmap_pages			=    128;
- static unsigned int		user_freq 			= UINT_MAX;
-@@ -670,8 +670,8 @@ static int __cmd_record(int argc, const char **argv)
- 	if (!system_wide && no_inherit && !cpu_list) {
- 		open_counters(-1);
- 	} else {
--		for (i = 0; i < nr_cpus; i++)
--			open_counters(cpumap[i]);
-+		for (i = 0; i < cpus->nr; i++)
-+			open_counters(cpus->map[i]);
+-	for (thread_index = 0; thread_index < thread_num; thread_index++) {
++	for (thread_index = 0; thread_index < threads->nr; thread_index++) {
+ try_again:
+-		FD(evsel, nr_cpu, thread_index) = sys_perf_event_open(attr, all_tids[thread_index], cpu, group_fd, 0);
++		FD(evsel, nr_cpu, thread_index) = sys_perf_event_open(attr, threads->map[thread_index], cpu, group_fd, 0);
+ 
+ 		if (FD(evsel, nr_cpu, thread_index) < 0) {
+ 			int err = errno;
+@@ -653,7 +652,7 @@ static int __cmd_record(int argc, const char **argv)
+ 		}
+ 
+ 		if (!system_wide && target_tid == -1 && target_pid == -1)
+-			all_tids[0] = child_pid;
++			threads->map[0] = child_pid;
+ 
+ 		close(child_ready_pipe[1]);
+ 		close(go_pipe[0]);
+@@ -793,7 +792,7 @@ static int __cmd_record(int argc, const char **argv)
+ 
+ 				list_for_each_entry(pos, &evsel_list, node) {
+ 					for (thread = 0;
+-						thread < thread_num;
++						thread < threads->nr;
+ 						thread++)
+ 						ioctl(FD(pos, i, thread),
+ 							PERF_EVENT_IOC_DISABLE);
+@@ -910,21 +909,13 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 		goto out_symbol_exit;
  	}
  
- 	perf_session__set_sample_type(session, sample_type);
-@@ -927,14 +927,14 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- 		thread_num = 1;
+-	if (target_pid != -1) {
++	if (target_pid != -1)
+ 		target_tid = target_pid;
+-		thread_num = find_all_tid(target_pid, &all_tids);
+-		if (thread_num <= 0) {
+-			fprintf(stderr, "Can't find all threads of pid %d\n",
+-					target_pid);
+-			usage_with_options(record_usage, record_options);
+-		}
+-	} else {
+-		all_tids=malloc(sizeof(pid_t));
+-		if (!all_tids)
+-			goto out_symbol_exit;
+ 
+-		all_tids[0] = target_tid;
+-		thread_num = 1;
++	threads = thread_map__new(target_pid, target_tid);
++	if (threads == NULL) {
++		pr_err("Problems finding threads of monitor\n");
++		usage_with_options(record_usage, record_options);
  	}
  
--	nr_cpus = read_cpu_map(cpu_list);
--	if (nr_cpus < 1) {
--		perror("failed to collect number of CPUs");
-+	cpus = cpu_map__new(cpu_list);
-+	if (cpus == NULL) {
-+		perror("failed to parse CPUs map");
- 		return -1;
+ 	cpus = cpu_map__new(cpu_list);
+@@ -934,11 +925,11 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
  	}
  
  	list_for_each_entry(pos, &evsel_list, node) {
--		if (perf_evsel__alloc_fd(pos, nr_cpus, thread_num) < 0)
-+		if (perf_evsel__alloc_fd(pos, cpus->nr, thread_num) < 0)
+-		if (perf_evsel__alloc_fd(pos, cpus->nr, thread_num) < 0)
++		if (perf_evsel__alloc_fd(pos, cpus->nr, threads->nr) < 0)
  			goto out_free_fd;
  	}
- 	event_array = malloc(
+-	event_array = malloc(
+-		sizeof(struct pollfd)*MAX_NR_CPUS*MAX_COUNTERS*thread_num);
++	event_array = malloc((sizeof(struct pollfd) * MAX_NR_CPUS *
++			      MAX_COUNTERS * threads->nr));
+ 	if (!event_array)
+ 		goto out_free_fd;
+ 
+@@ -965,8 +956,8 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ out_free_event_array:
+ 	free(event_array);
+ out_free_fd:
+-	free(all_tids);
+-	all_tids = NULL;
++	thread_map__delete(threads);
++	threads = NULL;
+ out_symbol_exit:
+ 	symbol__exit();
+ 	return err;
 diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 065e79e..3f4a431 100644
+index 3f4a431..6b9146c 100644
 --- a/tools/perf/builtin-stat.c
 +++ b/tools/perf/builtin-stat.c
-@@ -72,7 +72,7 @@ static struct perf_event_attr default_attrs[] = {
- };
+@@ -81,8 +81,7 @@ static bool			scale				=  true;
+ static bool			no_aggr				= false;
+ static pid_t			target_pid			= -1;
+ static pid_t			target_tid			= -1;
+-static pid_t			*all_tids			=  NULL;
+-static int			thread_num			=  0;
++static struct thread_map	*threads;
+ static pid_t			child_pid			= -1;
+ static bool			null_run			=  false;
+ static bool			big_num				=  true;
+@@ -175,7 +174,7 @@ static int create_perf_stat_counter(struct perf_evsel *evsel)
+ 		attr->enable_on_exec = 1;
+ 	}
  
- static bool			system_wide			=  false;
--static int			nr_cpus				=  0;
-+static struct cpu_map		*cpus;
- static int			run_idx				=  0;
+-	return perf_evsel__open_per_thread(evsel, thread_num, all_tids);
++	return perf_evsel__open_per_thread(evsel, threads->nr, threads->map);
+ }
  
- static int			run_count			=  1;
-@@ -167,7 +167,7 @@ static int create_perf_stat_counter(struct perf_evsel *evsel)
- 				    PERF_FORMAT_TOTAL_TIME_RUNNING;
- 
- 	if (system_wide)
--		return perf_evsel__open_per_cpu(evsel, nr_cpus, cpumap);
-+		return perf_evsel__open_per_cpu(evsel, cpus->nr, cpus->map);
- 
- 	attr->inherit = !no_inherit;
- 	if (target_pid == -1 && target_tid == -1) {
-@@ -200,7 +200,7 @@ static int read_counter_aggr(struct perf_evsel *counter)
+ /*
+@@ -200,7 +199,7 @@ static int read_counter_aggr(struct perf_evsel *counter)
  	u64 *count = counter->counts->aggr.values;
  	int i;
  
--	if (__perf_evsel__read(counter, nr_cpus, thread_num, scale) < 0)
-+	if (__perf_evsel__read(counter, cpus->nr, thread_num, scale) < 0)
+-	if (__perf_evsel__read(counter, cpus->nr, thread_num, scale) < 0)
++	if (__perf_evsel__read(counter, cpus->nr, threads->nr, scale) < 0)
  		return -1;
  
  	for (i = 0; i < 3; i++)
-@@ -233,7 +233,7 @@ static int read_counter(struct perf_evsel *counter)
- 	u64 *count;
- 	int cpu;
- 
--	for (cpu = 0; cpu < nr_cpus; cpu++) {
-+	for (cpu = 0; cpu < cpus->nr; cpu++) {
- 		if (__perf_evsel__read_on_cpu(counter, cpu, 0, scale) < 0)
- 			return -1;
- 
-@@ -259,9 +259,6 @@ static int run_perf_stat(int argc __used, const char **argv)
- 	const bool forks = (argc > 0);
- 	char buf;
- 
--	if (!system_wide)
--		nr_cpus = 1;
--
- 	if (forks && (pipe(child_ready_pipe) < 0 || pipe(go_pipe) < 0)) {
- 		perror("failed to create pipes");
- 		exit(1);
-@@ -351,12 +348,12 @@ static int run_perf_stat(int argc __used, const char **argv)
- 	if (no_aggr) {
- 		list_for_each_entry(counter, &evsel_list, node) {
- 			read_counter(counter);
--			perf_evsel__close_fd(counter, nr_cpus, 1);
-+			perf_evsel__close_fd(counter, cpus->nr, 1);
+@@ -298,7 +297,7 @@ static int run_perf_stat(int argc __used, const char **argv)
  		}
+ 
+ 		if (target_tid == -1 && target_pid == -1 && !system_wide)
+-			all_tids[0] = child_pid;
++			threads->map[0] = child_pid;
+ 
+ 		/*
+ 		 * Wait for the child to be ready to exec.
+@@ -353,7 +352,7 @@ static int run_perf_stat(int argc __used, const char **argv)
  	} else {
  		list_for_each_entry(counter, &evsel_list, node) {
  			read_counter_aggr(counter);
--			perf_evsel__close_fd(counter, nr_cpus, thread_num);
-+			perf_evsel__close_fd(counter, cpus->nr, thread_num);
+-			perf_evsel__close_fd(counter, cpus->nr, thread_num);
++			perf_evsel__close_fd(counter, cpus->nr, threads->nr);
  		}
  	}
  
-@@ -384,7 +381,7 @@ static void nsec_printout(int cpu, struct perf_evsel *evsel, double avg)
- 	if (no_aggr)
- 		sprintf(cpustr, "CPU%*d%s",
- 			csv_output ? 0 : -4,
--			cpumap[cpu], csv_sep);
-+			cpus->map[cpu], csv_sep);
- 
- 	fprintf(stderr, fmt, cpustr, msecs, csv_sep, event_name(evsel));
- 
-@@ -412,7 +409,7 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
- 	if (no_aggr)
- 		sprintf(cpustr, "CPU%*d%s",
- 			csv_output ? 0 : -4,
--			cpumap[cpu], csv_sep);
-+			cpus->map[cpu], csv_sep);
- 	else
- 		cpu = 0;
- 
-@@ -498,14 +495,14 @@ static void print_counter(struct perf_evsel *counter)
- 	u64 ena, run, val;
- 	int cpu;
- 
--	for (cpu = 0; cpu < nr_cpus; cpu++) {
-+	for (cpu = 0; cpu < cpus->nr; cpu++) {
- 		val = counter->counts->cpu[cpu].val;
- 		ena = counter->counts->cpu[cpu].ena;
- 		run = counter->counts->cpu[cpu].run;
- 		if (run == 0 || ena == 0) {
- 			fprintf(stderr, "CPU%*d%s%*s%s%-24s",
- 				csv_output ? 0 : -4,
--				cpumap[cpu], csv_sep,
-+				cpus->map[cpu], csv_sep,
- 				csv_output ? 0 : 18,
- 				"<not counted>", csv_sep,
- 				event_name(counter));
-@@ -697,12 +694,15 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+@@ -693,6 +692,15 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+ 		}
  	}
  
- 	if (system_wide)
--		nr_cpus = read_cpu_map(cpu_list);
-+		cpus = cpu_map__new(cpu_list);
- 	else
--		nr_cpus = 1;
-+		cpus = cpu_map__dummy_new();
- 
--	if (nr_cpus < 1)
-+	if (cpus == NULL) {
-+		perror("failed to parse CPUs map");
- 		usage_with_options(stat_usage, options);
-+		return -1;
++	if (target_pid != -1)
++		target_tid = target_pid;
++
++	threads = thread_map__new(target_pid, target_tid);
++	if (threads == NULL) {
++		pr_err("Problems finding threads of monitor\n");
++		usage_with_options(stat_usage, options);
 +	}
++
+ 	if (system_wide)
+ 		cpus = cpu_map__new(cpu_list);
+ 	else
+@@ -704,27 +712,10 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+ 		return -1;
+ 	}
  
- 	if (target_pid != -1) {
- 		target_tid = target_pid;
-@@ -723,8 +723,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 
+-	if (target_pid != -1) {
+-		target_tid = target_pid;
+-		thread_num = find_all_tid(target_pid, &all_tids);
+-		if (thread_num <= 0) {
+-			fprintf(stderr, "Can't find all threads of pid %d\n",
+-					target_pid);
+-			usage_with_options(stat_usage, options);
+-		}
+-	} else {
+-		all_tids=malloc(sizeof(pid_t));
+-		if (!all_tids)
+-			return -ENOMEM;
+-
+-		all_tids[0] = target_tid;
+-		thread_num = 1;
+-	}
+-
  	list_for_each_entry(pos, &evsel_list, node) {
  		if (perf_evsel__alloc_stat_priv(pos) < 0 ||
--		    perf_evsel__alloc_counts(pos, nr_cpus) < 0 ||
--		    perf_evsel__alloc_fd(pos, nr_cpus, thread_num) < 0)
-+		    perf_evsel__alloc_counts(pos, cpus->nr) < 0 ||
-+		    perf_evsel__alloc_fd(pos, cpus->nr, thread_num) < 0)
+ 		    perf_evsel__alloc_counts(pos, cpus->nr) < 0 ||
+-		    perf_evsel__alloc_fd(pos, cpus->nr, thread_num) < 0)
++		    perf_evsel__alloc_fd(pos, cpus->nr, threads->nr) < 0)
  			goto out_free_fd;
  	}
  
+@@ -752,5 +743,7 @@ out_free_fd:
+ 	list_for_each_entry(pos, &evsel_list, node)
+ 		perf_evsel__free_stat_priv(pos);
+ out:
++	thread_map__delete(threads);
++	threads = NULL;
+ 	return status;
+ }
 diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 27b9c14..0e42666 100644
+index 0e42666..1e67ab9 100644
 --- a/tools/perf/builtin-top.c
 +++ b/tools/perf/builtin-top.c
-@@ -71,7 +71,7 @@ static int			target_tid			=     -1;
- static pid_t			*all_tids			=      NULL;
- static int			thread_num			=      0;
+@@ -68,8 +68,7 @@ static int			print_entries;
+ 
+ static int			target_pid			=     -1;
+ static int			target_tid			=     -1;
+-static pid_t			*all_tids			=      NULL;
+-static int			thread_num			=      0;
++static struct thread_map	*threads;
  static bool			inherit				=  false;
--static int			nr_cpus				=      0;
-+static struct cpu_map		*cpus;
+ static struct cpu_map		*cpus;
  static int			realtime_prio			=      0;
- static bool			group				=  false;
- static unsigned int		page_size;
-@@ -564,12 +564,12 @@ static void print_sym_table(void)
- 		printf(" (all");
- 
- 	if (cpu_list)
--		printf(", CPU%s: %s)\n", nr_cpus > 1 ? "s" : "", cpu_list);
-+		printf(", CPU%s: %s)\n", cpus->nr > 1 ? "s" : "", cpu_list);
- 	else {
- 		if (target_tid != -1)
- 			printf(")\n");
- 		else
--			printf(", %d CPU%s)\n", nr_cpus, nr_cpus > 1 ? "s" : "");
-+			printf(", %d CPU%s)\n", cpus->nr, cpus->nr > 1 ? "s" : "");
- 	}
- 
- 	printf("%-*.*s\n", win_width, win_width, graph_dotted_line);
-@@ -1197,7 +1197,7 @@ static void perf_session__mmap_read(struct perf_session *self)
- 	struct perf_evsel *counter;
- 	int i, thread_index;
- 
--	for (i = 0; i < nr_cpus; i++) {
-+	for (i = 0; i < cpus->nr; i++) {
+@@ -1200,7 +1199,7 @@ static void perf_session__mmap_read(struct perf_session *self)
+ 	for (i = 0; i < cpus->nr; i++) {
  		list_for_each_entry(counter, &evsel_list, node) {
  			for (thread_index = 0;
- 				thread_index < thread_num;
-@@ -1221,7 +1221,7 @@ static void start_counter(int i, struct perf_evsel *evsel)
- 	int thread_index;
+-				thread_index < thread_num;
++				thread_index < threads->nr;
+ 				thread_index++) {
+ 				perf_session__mmap_read_counter(self,
+ 					counter, i, thread_index);
+@@ -1236,10 +1235,10 @@ static void start_counter(int i, struct perf_evsel *evsel)
+ 	attr->inherit		= (cpu < 0) && inherit;
+ 	attr->mmap		= 1;
  
- 	if (target_tid == -1)
--		cpu = cpumap[i];
-+		cpu = cpus->map[i];
+-	for (thread_index = 0; thread_index < thread_num; thread_index++) {
++	for (thread_index = 0; thread_index < threads->nr; thread_index++) {
+ try_again:
+ 		FD(evsel, i, thread_index) = sys_perf_event_open(attr,
+-				all_tids[thread_index], cpu, group_fd, 0);
++				threads->map[thread_index], cpu, group_fd, 0);
  
- 	attr = &evsel->attr;
+ 		if (FD(evsel, i, thread_index) < 0) {
+ 			int err = errno;
+@@ -1410,25 +1409,17 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+ 	if (argc)
+ 		usage_with_options(top_usage, options);
  
-@@ -1310,7 +1310,7 @@ static int __cmd_top(void)
- 	else
- 		event__synthesize_threads(event__process, session);
+-	if (target_pid != -1) {
++	if (target_pid != -1)
+ 		target_tid = target_pid;
+-		thread_num = find_all_tid(target_pid, &all_tids);
+-		if (thread_num <= 0) {
+-			fprintf(stderr, "Can't find all threads of pid %d\n",
+-				target_pid);
+-			usage_with_options(top_usage, options);
+-		}
+-	} else {
+-		all_tids=malloc(sizeof(pid_t));
+-		if (!all_tids)
+-			return -ENOMEM;
  
--	for (i = 0; i < nr_cpus; i++) {
-+	for (i = 0; i < cpus->nr; i++) {
- 		group_fd = -1;
- 		list_for_each_entry(counter, &evsel_list, node)
- 			start_counter(i, counter);
-@@ -1460,16 +1460,16 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+-		all_tids[0] = target_tid;
+-		thread_num = 1;
++	threads = thread_map__new(target_pid, target_tid);
++	if (threads == NULL) {
++		pr_err("Problems finding threads of monitor\n");
++		usage_with_options(top_usage, options);
  	}
  
- 	if (target_tid != -1)
--		nr_cpus = 1;
-+		cpus = cpu_map__dummy_new();
- 	else
--		nr_cpus = read_cpu_map(cpu_list);
-+		cpus = cpu_map__new(cpu_list);
+-	event_array = malloc(
+-		sizeof(struct pollfd)*MAX_NR_CPUS*MAX_COUNTERS*thread_num);
++	event_array = malloc((sizeof(struct pollfd) *
++			      MAX_NR_CPUS * MAX_COUNTERS * threads->nr));
+ 	if (!event_array)
+ 		return -ENOMEM;
  
--	if (nr_cpus < 1)
-+	if (cpus == NULL)
+@@ -1468,8 +1459,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
  		usage_with_options(top_usage, options);
  
  	list_for_each_entry(pos, &evsel_list, node) {
--		if (perf_evsel__alloc_mmap_per_thread(pos, nr_cpus, thread_num) < 0 ||
--		    perf_evsel__alloc_fd(pos, nr_cpus, thread_num) < 0)
-+		if (perf_evsel__alloc_mmap_per_thread(pos, cpus->nr, thread_num) < 0 ||
-+		    perf_evsel__alloc_fd(pos, cpus->nr, thread_num) < 0)
+-		if (perf_evsel__alloc_mmap_per_thread(pos, cpus->nr, thread_num) < 0 ||
+-		    perf_evsel__alloc_fd(pos, cpus->nr, thread_num) < 0)
++		if (perf_evsel__alloc_mmap_per_thread(pos, cpus->nr, threads->nr) < 0 ||
++		    perf_evsel__alloc_fd(pos, cpus->nr, threads->nr) < 0)
  			goto out_free_fd;
  		/*
  		 * Fill in the ones not specifically initialized via -c:
-diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
-index 0f9b8d7..3ccaa10 100644
---- a/tools/perf/util/cpumap.c
-+++ b/tools/perf/util/cpumap.c
-@@ -4,32 +4,53 @@
- #include <assert.h>
- #include <stdio.h>
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index 8c72d88..00f4ead 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -16,35 +16,50 @@ static int filter(const struct dirent *dir)
+ 		return 1;
+ }
  
--int cpumap[MAX_NR_CPUS];
+-int find_all_tid(int pid, pid_t ** all_tid)
++struct thread_map *thread_map__new_by_pid(pid_t pid)
+ {
++	struct thread_map *threads;
+ 	char name[256];
+ 	int items;
+ 	struct dirent **namelist = NULL;
+-	int ret = 0;
+ 	int i;
+ 
+ 	sprintf(name, "/proc/%d/task", pid);
+ 	items = scandir(name, &namelist, filter, NULL);
+ 	if (items <= 0)
+-                return -ENOENT;
+-	*all_tid = malloc(sizeof(pid_t) * items);
+-	if (!*all_tid) {
+-		ret = -ENOMEM;
+-		goto failure;
+-	}
 -
--static int default_cpu_map(void)
-+static struct cpu_map *cpu_map__default_new(void)
- {
--	int nr_cpus, i;
-+	struct cpu_map *cpus;
-+	int nr_cpus;
+-	for (i = 0; i < items; i++)
+-		(*all_tid)[i] = atoi(namelist[i]->d_name);
++                return NULL;
  
- 	nr_cpus = sysconf(_SC_NPROCESSORS_ONLN);
--	assert(nr_cpus <= MAX_NR_CPUS);
--	assert((int)nr_cpus >= 0);
-+	if (nr_cpus < 0)
-+		return NULL;
-+
-+	cpus = malloc(sizeof(*cpus) + nr_cpus * sizeof(int));
-+	if (cpus != NULL) {
-+		int i;
-+		for (i = 0; i < nr_cpus; ++i)
-+			cpus->map[i] = i;
- 
--	for (i = 0; i < nr_cpus; ++i)
--		cpumap[i] = i;
-+		cpus->nr = nr_cpus;
+-	ret = items;
++	threads = malloc(sizeof(*threads) + sizeof(pid_t) * items);
++	if (threads != NULL) {
++		for (i = 0; i < items; i++)
++			threads->map[i] = atoi(namelist[i]->d_name);
++		threads->nr = items;
 +	}
  
--	return nr_cpus;
-+	return cpus;
- }
+-failure:
+ 	for (i=0; i<items; i++)
+ 		free(namelist[i]);
+ 	free(namelist);
  
--static int read_all_cpu_map(void)
-+static struct cpu_map *cpu_map__trim_new(int nr_cpus, int *tmp_cpus)
- {
-+	size_t payload_size = nr_cpus * sizeof(int);
-+	struct cpu_map *cpus = malloc(sizeof(*cpus) + payload_size);
-+
-+	if (cpus != NULL) {
-+		cpus->nr = nr_cpus;
-+		memcpy(cpus->map, tmp_cpus, payload_size);
-+	}
-+
-+	return cpus;
+-	return ret;
++	return threads;
 +}
 +
-+static struct cpu_map *cpu_map__read_all_cpu_map(void)
++struct thread_map *thread_map__new_by_tid(pid_t tid)
 +{
-+	struct cpu_map *cpus = NULL;
- 	FILE *onlnf;
- 	int nr_cpus = 0;
-+	int *tmp_cpus = NULL, *tmp;
-+	int max_entries = 0;
- 	int n, cpu, prev;
- 	char sep;
- 
- 	onlnf = fopen("/sys/devices/system/cpu/online", "r");
- 	if (!onlnf)
--		return default_cpu_map();
-+		return cpu_map__default_new();
- 
- 	sep = 0;
- 	prev = -1;
-@@ -38,12 +59,28 @@ static int read_all_cpu_map(void)
- 		if (n <= 0)
- 			break;
- 		if (prev >= 0) {
--			assert(nr_cpus + cpu - prev - 1 < MAX_NR_CPUS);
-+			int new_max = nr_cpus + cpu - prev - 1;
++	struct thread_map *threads = malloc(sizeof(*threads) + sizeof(pid_t));
 +
-+			if (new_max >= max_entries) {
-+				max_entries = new_max + MAX_NR_CPUS / 2;
-+				tmp = realloc(tmp_cpus, max_entries * sizeof(int));
-+				if (tmp == NULL)
-+					goto out_free_tmp;
-+				tmp_cpus = tmp;
-+			}
-+
- 			while (++prev < cpu)
--				cpumap[nr_cpus++] = prev;
-+				tmp_cpus[nr_cpus++] = prev;
-+		}
-+		if (nr_cpus == max_entries) {
-+			max_entries += MAX_NR_CPUS;
-+			tmp = realloc(tmp_cpus, max_entries * sizeof(int));
-+			if (tmp == NULL)
-+				goto out_free_tmp;
-+			tmp_cpus = tmp;
- 		}
--		assert (nr_cpus < MAX_NR_CPUS);
--		cpumap[nr_cpus++] = cpu;
-+
-+		tmp_cpus[nr_cpus++] = cpu;
- 		if (n == 2 && sep == '-')
- 			prev = cpu;
- 		else
-@@ -51,24 +88,31 @@ static int read_all_cpu_map(void)
- 		if (n == 1 || sep == '\n')
- 			break;
- 	}
--	fclose(onlnf);
--	if (nr_cpus > 0)
--		return nr_cpus;
- 
--	return default_cpu_map();
-+	if (nr_cpus > 0)
-+		cpus = cpu_map__trim_new(nr_cpus, tmp_cpus);
-+	else
-+		cpus = cpu_map__default_new();
-+out_free_tmp:
-+	free(tmp_cpus);
-+	fclose(onlnf);
-+	return cpus;
- }
- 
--int read_cpu_map(const char *cpu_list)
-+struct cpu_map *cpu_map__new(const char *cpu_list)
- {
-+	struct cpu_map *cpus = NULL;
- 	unsigned long start_cpu, end_cpu = 0;
- 	char *p = NULL;
- 	int i, nr_cpus = 0;
-+	int *tmp_cpus = NULL, *tmp;
-+	int max_entries = 0;
- 
- 	if (!cpu_list)
--		return read_all_cpu_map();
-+		return cpu_map__read_all_cpu_map();
- 
- 	if (!isdigit(*cpu_list))
--		goto invalid;
-+		goto out;
- 
- 	while (isdigit(*cpu_list)) {
- 		p = NULL;
-@@ -94,21 +138,42 @@ int read_cpu_map(const char *cpu_list)
- 		for (; start_cpu <= end_cpu; start_cpu++) {
- 			/* check for duplicates */
- 			for (i = 0; i < nr_cpus; i++)
--				if (cpumap[i] == (int)start_cpu)
-+				if (tmp_cpus[i] == (int)start_cpu)
- 					goto invalid;
- 
--			assert(nr_cpus < MAX_NR_CPUS);
--			cpumap[nr_cpus++] = (int)start_cpu;
-+			if (nr_cpus == max_entries) {
-+				max_entries += MAX_NR_CPUS;
-+				tmp = realloc(tmp_cpus, max_entries * sizeof(int));
-+				if (tmp == NULL)
-+					goto invalid;
-+				tmp_cpus = tmp;
-+			}
-+			tmp_cpus[nr_cpus++] = (int)start_cpu;
- 		}
- 		if (*p)
- 			++p;
- 
- 		cpu_list = p;
- 	}
--	if (nr_cpus > 0)
--		return nr_cpus;
- 
--	return default_cpu_map();
-+	if (nr_cpus > 0)
-+		cpus = cpu_map__trim_new(nr_cpus, tmp_cpus);
-+	else
-+		cpus = cpu_map__default_new();
- invalid:
--	return -1;
-+	free(tmp_cpus);
-+out:
-+	return cpus;
-+}
-+
-+struct cpu_map *cpu_map__dummy_new(void)
-+{
-+	struct cpu_map *cpus = malloc(sizeof(*cpus) + sizeof(int));
-+
-+	if (cpus != NULL) {
-+		cpus->nr = 1;
-+		cpus->map[0] = -1;
++	if (threads != NULL) {
++		threads->map[0] = tid;
++		threads->nr	= 1;
 +	}
 +
-+	return cpus;
++	return threads;
++}
++
++struct thread_map *thread_map__new(pid_t pid, pid_t tid)
++{
++	if (pid != -1)
++		return thread_map__new_by_pid(pid);
++	return thread_map__new_by_tid(tid);
  }
-diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
-index 3e60f56..f7a4f42 100644
---- a/tools/perf/util/cpumap.h
-+++ b/tools/perf/util/cpumap.h
-@@ -1,7 +1,13 @@
- #ifndef __PERF_CPUMAP_H
- #define __PERF_CPUMAP_H
  
--extern int read_cpu_map(const char *cpu_list);
--extern int cpumap[];
-+struct cpu_map {
+ static struct thread *thread__new(pid_t pid)
+diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+index 688500f..d757410 100644
+--- a/tools/perf/util/thread.h
++++ b/tools/perf/util/thread.h
+@@ -18,11 +18,24 @@ struct thread {
+ 	int			comm_len;
+ };
+ 
++struct thread_map {
 +	int nr;
 +	int map[];
 +};
 +
-+struct cpu_map *cpu_map__new(const char *cpu_list);
-+struct cpu_map *cpu_map__dummy_new(void);
-+void *cpu_map__delete(struct cpu_map *map);
+ struct perf_session;
  
- #endif /* __PERF_CPUMAP_H */
+ void thread__delete(struct thread *self);
+ 
+-int find_all_tid(int pid, pid_t ** all_tid);
++struct thread_map *thread_map__new_by_pid(pid_t pid);
++struct thread_map *thread_map__new_by_tid(pid_t tid);
++struct thread_map *thread_map__new(pid_t pid, pid_t tid);
++
++static inline void thread_map__delete(struct thread_map *threads)
++{
++	free(threads);
++}
++
+ int thread__set_comm(struct thread *self, const char *comm);
+ int thread__comm_len(struct thread *self);
+ struct thread *perf_session__findnew(struct perf_session *self, pid_t pid);
 -- 
 1.6.2.5
 
