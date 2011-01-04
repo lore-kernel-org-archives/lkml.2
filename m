@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751246Ab1ADQOL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 11:14:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37731 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751037Ab1ADQOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 11:14:09 -0500
-Date: Tue, 4 Jan 2011 17:06:12 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Chris Mason <chris.mason@oracle.com>,
-        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
-        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 16/17] sched: Move the second half of ttwu() to
-	the remote cpu
-Message-ID: <20110104160612.GA9177@redhat.com>
-References: <20101224122338.172750730@chello.nl> <20101224123743.303699501@chello.nl> <20110104142805.GA4347@redhat.com> <1294152441.2016.148.camel@laptop> <20110104151826.GA6800@redhat.com> <1294155781.2016.160.camel@laptop>
+	id S1751306Ab1ADQSM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 11:18:12 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:39184 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994Ab1ADQSK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 11:18:10 -0500
+Date: Tue, 4 Jan 2011 21:48:05 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH v2 0/7] Change page reference handling semantic of page
+ cache
+Message-ID: <20110104161805.GE3120@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <cover.1293982522.git.minchan.kim@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1294155781.2016.160.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <cover.1293982522.git.minchan.kim@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04, Peter Zijlstra wrote:
+* MinChan Kim <minchan.kim@gmail.com> [2011-01-03 00:44:29]:
+
+> Now we increases page reference on add_to_page_cache but doesn't decrease it
+> in remove_from_page_cache. Such asymmetric makes confusing about
+> page reference so that caller should notice it and comment why they
+> release page reference. It's not good API.
+> 
+> Long time ago, Hugh tried it[1] but gave up of reason which
+> reiser4's drop_page had to unlock the page between removing it from
+> page cache and doing the page_cache_release. But now the situation is
+> changed. I think at least things in current mainline doesn't have any
+> obstacles. The problem is fs or somethings out of mainline.
+> If it has done such thing like reiser4, this patch could be a problem but
+> they found it when compile time since we remove remove_from_page_cache.
+> 
+> [1] http://lkml.org/lkml/2004/10/24/140
+> 
+> The series configuration is following as. 
+> 
+> [1/7] : This patch introduces new API delete_from_page_cache.
+> [2,3,4,5/7] : Change remove_from_page_cache with delete_from_page_cache.
+> Intentionally I divide patch per file since someone might have a concern 
+> about releasing page reference of delete_from_page_cache in 
+> somecase (ex, truncate.c)
+> [6/7] : Remove old API so out of fs can meet compile error when build time
+> and can notice it.
+> [7/7] : Change __remove_from_page_cache with __delete_from_page_cache, too.
+> In this time, I made all-in-one patch because it doesn't change old behavior
+> so it has no concern. Just clean up patch.
 >
-> On Tue, 2011-01-04 at 16:18 +0100, Oleg Nesterov wrote:
->
-> > > I don't think so, nobody should be migrating a TASK_WAKING task.
-> >
-> > I am not sure...
-> >
-> > Suppose that p was TASK_INTERRUPTIBLE and p->on_rq == 1 before, when
-> > set_cpus_allowed_ptr() was called. To simplify, suppose that
-> > the caller is preempted right after it drops p->pi_lock and before
-> > it does stop_one_cpu(migration_cpu_stop).
-> >
-> > After that p can complete chedule() and deactivate itself.
-> >
-> > Now, try_to_wake_up() can set TASK_WAKING, choose another CPU,
-> > and do ttwu_queue_remote().
-> >
-> > Finally, the caller of set_cpus_allowed_ptr() resumes and
-> > schedules migration_cpu_stop.
->
-> But __migrate_task() will then find !p->on_rq and not actually do
-> anything.
 
-But if it races with ttwu_do_activate() (which can hold another
-rq->lock != rq_src/rq_dest), it can check p->on_rq after
-activate_task() was already called.
+Could you please describe any testing done, was it mostly functional? 
 
-
-
-But I think this no longer matters,
-
-> > It is very possible I missed something, but what is the new
-> > locking rules for set_task_cpu() anyway? I mean, which rq->lock
-> > it needs?
->
-> In the patches I just posted: set_task_cpu(p, cpu) callers need to
-> either hold task_rq(p)->lock (the old rq) or p->pi_lock.
-
-Yes, thanks, I already noticed v4, and at first glance 11/18 plus
-set_task_cpu() in try_to_wake_up() should close the problems...
-
-Oleg.
-
+-- 
+	Three Cheers,
+	Balbir
