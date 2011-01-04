@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751174Ab1ADNoh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 08:44:37 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:54750 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897Ab1ADNog convert rfc822-to-8bit (ORCPT
+	id S1751328Ab1ADNqJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 08:46:09 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47748 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751026Ab1ADNqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 08:44:36 -0500
-Subject: Re: [PATCH 4/7] perf: Check if HT is supported and enabled
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Stephane Eranian <eranian@google.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Lin Ming <ming.m.lin@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTinGmgB7YhRjnsGMjj2knDuJ8XFps9oyW4+EGOr5@mail.gmail.com>
-References: <1293464211.2695.104.camel@localhost>
-	 <AANLkTimp9VgD4qhOVmq-k1Ckzti9eeV8pf6Jvt5YB6nx@mail.gmail.com>
-	 <1293526288.2457.4.camel@minggr.sh.intel.com>
-	 <1294052312.2016.50.camel@laptop> <4D222926.9010206@zytor.com>
-	 <1294139419.2016.115.camel@laptop>
-	 <AANLkTinGmgB7YhRjnsGMjj2knDuJ8XFps9oyW4+EGOr5@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 04 Jan 2011 14:44:35 +0100
-Message-ID: <1294148675.2016.139.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 4 Jan 2011 08:46:07 -0500
+Date: Tue, 4 Jan 2011 13:44:35 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: Lukasz Majewski <l.majewski@samsung.com>, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>
+Subject: Re: [PATCH v4 2/3] regulator MAX8998/LP3974: Support DVS-GPIO.
+Message-ID: <20110104134434.GC24774@opensource.wolfsonmicro.com>
+References: <20101224113805.GI27832@sortiz-mobl>
+ <1294118261-18906-3-git-send-email-myungjoo.ham@samsung.com>
+ <20110104084904.5765cd9e@lmajewski.digital.local>
+ <AANLkTi=dJ83par+U8YfbpC3HVjEkc9rfPU8pxSFN_mTb@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=dJ83par+U8YfbpC3HVjEkc9rfPU8pxSFN_mTb@mail.gmail.com>
+X-Cookie: Reply hazy, ask again later.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-04 at 14:38 +0100, Stephane Eranian wrote:
-> My solution at the time (2.6.30) was to do:
->         ht_enabled = cpumask_weight(__get_cpu_var(cpu_sibling_map)) > 1;
+On Tue, Jan 04, 2011 at 05:16:56PM +0900, MyungJoo Ham wrote:
+> On Tue, Jan 4, 2011 at 4:49 PM, Lukasz Majewski <l.majewski@samsung.com> wrote:
 
-Won't that report a machine a HT disabled when you offline a sibling?
-Which kinda defeats the purpose of our usage here, since we need to know
-it before either sibling comes online.
+> > Is it desirable to define all four for BUCK1 and two for BUCK2 DVS
+> > voltages in platform code?
+
+> In case a system with 4 buck1 preset voltages and 2 buck2 preset
+> voltages, it is desirable. :)
+
+I suspect Lukasz's question is more why this would be useful; I can
+imagine that the main reason would be performance and in any case I
+don't see it hurting to have the option.
