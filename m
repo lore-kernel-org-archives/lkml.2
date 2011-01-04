@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751423Ab1ADE6q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 23:58:46 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:44676 "EHLO smtps.tip.net.au"
+	id S1751340Ab1ADFHR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 00:07:17 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:50441 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751099Ab1ADE6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 23:58:44 -0500
-Date: Tue, 4 Jan 2011 15:58:43 +1100
+	id S1751069Ab1ADFHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 00:07:15 -0500
+Date: Tue, 4 Jan 2011 16:07:08 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Greg KH <greg@kroah.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
         Mac Lin <mkl0301@gmail.com>, Anton Vorontsov <cbouatmailru@gmail.com>,
         Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the usb tree with the arm tree
-Message-Id: <20110104155843.f65f0bcd.sfr@canb.auug.org.au>
+Subject: Re: linux-next: manual merge of the usb tree with the arm tree
+Message-Id: <20110104160708.770eb1e2.sfr@canb.auug.org.au>
+In-Reply-To: <20110104155843.f65f0bcd.sfr@canb.auug.org.au>
+References: <20110104155843.f65f0bcd.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__4_Jan_2011_16_07_08_+1100_CH/mJYH_BX5gPX.I"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Tue__4_Jan_2011_16_07_08_+1100_CH/mJYH_BX5gPX.I
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
 Hi Greg,
 
-Today's linux-next merge of the usb tree got a conflict in
-drivers/usb/host/ehci-hcd.c between commit
-760efe6910d5743084b586d3d0a3b65aea96fb2f ("USB: cns3xxx: Add EHCI and
-OHCI bus glue for cns3xxx SOCs") from the arm tree and various commits
-from the usb tree.
+On Tue, 4 Jan 2011 15:58:43 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
+rote:
+>
+> Today's linux-next merge of the usb tree got a conflict in
+> drivers/usb/host/ehci-hcd.c between commit
+> 760efe6910d5743084b586d3d0a3b65aea96fb2f ("USB: cns3xxx: Add EHCI and
+> OHCI bus glue for cns3xxx SOCs") from the arm tree and various commits
+> from the usb tree.
+>=20
+> I fixed it up (see below) and can carry the fix as necessary.
 
-I fixed it up (see below) and can carry the fix as necessary.
--- 
+The fix was not quite right (I left out a "#endif") - I fixed that up.
+
+--=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-diff --cc drivers/usb/host/ehci-hcd.c
-index d0c8f7c,72732da..0000000
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@@ -1216,9 -1229,19 +1229,23 @@@ MODULE_LICENSE ("GPL")
-  #define PLATFORM_DRIVER		ehci_octeon_driver
-  #endif
-  
- +#ifdef CONFIG_USB_CNS3XXX_EHCI
- +#include "ehci-cns3xxx.c"
- +#define PLATFORM_DRIVER		cns3xxx_ehci_driver
-++
-+ #ifdef CONFIG_ARCH_VT8500
-+ #include "ehci-vt8500.c"
-+ #define	PLATFORM_DRIVER		vt8500_ehci_driver
-+ #endif
-+ 
-+ #ifdef CONFIG_PLAT_SPEAR
-+ #include "ehci-spear.c"
-+ #define PLATFORM_DRIVER		spear_ehci_hcd_driver
-+ #endif
-+ 
-+ #ifdef CONFIG_USB_EHCI_MSM
-+ #include "ehci-msm.c"
-+ #define PLATFORM_DRIVER		ehci_msm_driver
-  #endif
-  
-  #if !defined(PCI_DRIVER) && !defined(PLATFORM_DRIVER) && \
+--Signature=_Tue__4_Jan_2011_16_07_08_+1100_CH/mJYH_BX5gPX.I
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNIqr8AAoJEDMEi1NhKgbsnBMH/jFTMqvzw6PGiuiPhWqO4W9l
+2d9F1KnYnjGuUVPGl2dIS5nbYcP1ETLPf4lyJsIs8qRID5mh9GjfZM4gMAhdW+21
+ySSfzKBHUN95u06WRbI3SoW1aebGBO1Fb6qGpG9IegkDe239SNXNJbpLh+Ai7aWT
+GYMz4g+6HOh4yuqEQ8UThc2BNL2eVxIuPJs2zcLhWYg47Vt1oP4Un4loqW4KBl0f
+Tj/eTXersumIHcrYWL0l+VXuOG2/+dt+J+i5ks0ML6V5yJZCejiH5Vs7GfuhDSo7
+SDdS6RffVXLSVs/rVYAkOb5D3UGzlHFkBpBjJKPLPM3sjYTe3zMSFVV+mOcaYV8=
+=DorP
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__4_Jan_2011_16_07_08_+1100_CH/mJYH_BX5gPX.I--
