@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751235Ab1ADDsl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 22:48:41 -0500
-Received: from casper.infradead.org ([85.118.1.10]:43464 "EHLO
+	id S1751306Ab1ADDsm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 22:48:42 -0500
+Received: from casper.infradead.org ([85.118.1.10]:43466 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971Ab1ADDsk (ORCPT
+	with ESMTP id S1750981Ab1ADDsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 22:48:40 -0500
+	Mon, 3 Jan 2011 22:48:41 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Tom Zanussi <tzanussi@gmail.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 04/11] perf evsel: Delete the event selectors at exit
-Date: Tue,  4 Jan 2011 01:48:18 -0200
-Message-Id: <1294112905-25325-5-git-send-email-acme@infradead.org>
+Subject: [PATCH 03/11] perf util: Move do_read from session to util
+Date: Tue,  4 Jan 2011 01:48:17 -0200
+Message-Id: <1294112905-25325-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1294112905-25325-1-git-send-email-acme@infradead.org>
 References: <1294112905-25325-1-git-send-email-acme@infradead.org>
@@ -29,8 +29,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Freeing all the possibly allocated resources, reducing complexity
-on each tool exit path.
+Not really something to be exported from session.c. Rename it to
+'readn' as others did in the past.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -43,103 +43,140 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c    |    2 --
- tools/perf/builtin-stat.c      |    4 +---
- tools/perf/builtin-top.c       |    4 +---
- tools/perf/perf.c              |    2 ++
- tools/perf/util/parse-events.c |   11 +++++++++++
- tools/perf/util/parse-events.h |    1 +
- 6 files changed, 16 insertions(+), 8 deletions(-)
+ tools/perf/util/header.c  |    6 +++---
+ tools/perf/util/session.c |   22 ++--------------------
+ tools/perf/util/session.h |    1 -
+ tools/perf/util/util.c    |   17 +++++++++++++++++
+ tools/perf/util/util.h    |    1 +
+ 5 files changed, 23 insertions(+), 24 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index e68aee3..052de17 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -965,8 +965,6 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- out_free_event_array:
- 	free(event_array);
- out_free_fd:
--	list_for_each_entry(pos, &evsel_list, node)
--		perf_evsel__free_fd(pos);
- 	free(all_tids);
- 	all_tids = NULL;
- out_symbol_exit:
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 3e5f356..589ba3a 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -844,10 +844,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 	if (status != -1)
- 		print_stat(argc, argv);
- out_free_fd:
--	list_for_each_entry(pos, &evsel_list, node) {
--		perf_evsel__free_fd(pos);
-+	list_for_each_entry(pos, &evsel_list, node)
- 		perf_evsel__free_stat_priv(pos);
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index ecb5a84..05dec98 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -604,7 +604,7 @@ int perf_header__write(struct perf_header *self, int fd, bool at_exit)
+ static int perf_header__getbuffer64(struct perf_header *self,
+ 				    int fd, void *buf, size_t size)
+ {
+-	if (do_read(fd, buf, size) <= 0)
++	if (readn(fd, buf, size) <= 0)
+ 		return -1;
+ 
+ 	if (self->needs_swap)
+@@ -660,7 +660,7 @@ int perf_file_header__read(struct perf_file_header *self,
+ {
+ 	lseek(fd, 0, SEEK_SET);
+ 
+-	if (do_read(fd, self, sizeof(*self)) <= 0 ||
++	if (readn(fd, self, sizeof(*self)) <= 0 ||
+ 	    memcmp(&self->magic, __perf_magic, sizeof(self->magic)))
+ 		return -1;
+ 
+@@ -821,7 +821,7 @@ static int perf_file_header__read_pipe(struct perf_pipe_file_header *self,
+ 				       struct perf_header *ph, int fd,
+ 				       bool repipe)
+ {
+-	if (do_read(fd, self, sizeof(*self)) <= 0 ||
++	if (readn(fd, self, sizeof(*self)) <= 0 ||
+ 	    memcmp(&self->magic, __perf_magic, sizeof(self->magic)))
+ 		return -1;
+ 
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 0f7e544..b163dfd 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -838,23 +838,6 @@ static struct thread *perf_session__register_idle_thread(struct perf_session *se
+ 	return thread;
+ }
+ 
+-int do_read(int fd, void *buf, size_t size)
+-{
+-	void *buf_start = buf;
+-
+-	while (size) {
+-		int ret = read(fd, buf, size);
+-
+-		if (ret <= 0)
+-			return ret;
+-
+-		size -= ret;
+-		buf += ret;
 -	}
- out:
- 	return status;
+-
+-	return buf - buf_start;
+-}
+-
+ #define session_done()	(*(volatile int *)(&session_done))
+ volatile int session_done;
+ 
+@@ -872,7 +855,7 @@ static int __perf_session__process_pipe_events(struct perf_session *self,
+ 
+ 	head = 0;
+ more:
+-	err = do_read(self->fd, &event, sizeof(struct perf_event_header));
++	err = readn(self->fd, &event, sizeof(struct perf_event_header));
+ 	if (err <= 0) {
+ 		if (err == 0)
+ 			goto done;
+@@ -892,8 +875,7 @@ more:
+ 	p += sizeof(struct perf_event_header);
+ 
+ 	if (size - sizeof(struct perf_event_header)) {
+-		err = do_read(self->fd, p,
+-			      size - sizeof(struct perf_event_header));
++		err = readn(self->fd, p, size - sizeof(struct perf_event_header));
+ 		if (err <= 0) {
+ 			if (err == 0) {
+ 				pr_err("unexpected end of event stream\n");
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index ffe4b98..decd83f 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -109,7 +109,6 @@ void mem_bswap_64(void *src, int byte_size);
+ 
+ int perf_session__create_kernel_maps(struct perf_session *self);
+ 
+-int do_read(int fd, void *buf, size_t size);
+ void perf_session__update_sample_type(struct perf_session *self);
+ void perf_session__set_sample_id_all(struct perf_session *session, bool value);
+ void perf_session__set_sample_type(struct perf_session *session, u64 type);
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 2142656..5b3ea49 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -114,3 +114,20 @@ unsigned long convert_unit(unsigned long value, char *unit)
+ 
+ 	return value;
  }
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 13a836e..27b9c14 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1495,10 +1495,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
- 
- 	status = __cmd_top();
- out_free_fd:
--	list_for_each_entry(pos, &evsel_list, node) {
--		perf_evsel__free_fd(pos);
-+	list_for_each_entry(pos, &evsel_list, node)
- 		perf_evsel__free_mmap(pos);
--	}
- 
- 	return status;
- }
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 595d0f4..5b1ecd6 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -286,6 +286,8 @@ static int run_builtin(struct cmd_struct *p, int argc, const char **argv)
- 	status = p->fn(argc, argv, prefix);
- 	exit_browser(status);
- 
-+	perf_evsel_list__delete();
 +
- 	if (status)
- 		return status & 0xff;
- 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 2d948ad..3a142e9 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -982,3 +982,14 @@ int perf_evsel_list__create_default(void)
- 	++nr_counters;
- 	return 0;
- }
-+
-+void perf_evsel_list__delete(void)
++int readn(int fd, void *buf, size_t n)
 +{
-+	struct perf_evsel *pos, *n;
++	void *buf_start = buf;
 +
-+	list_for_each_entry_safe(pos, n, &evsel_list, node) {
-+		list_del_init(&pos->node);
-+		perf_evsel__delete(pos);
++	while (n) {
++		int ret = read(fd, buf, n);
++
++		if (ret <= 0)
++			return ret;
++
++		n -= ret;
++		buf += ret;
 +	}
-+	nr_counters = 0;
++
++	return buf - buf_start;
 +}
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index 0f915a0..0a0abc1 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -12,6 +12,7 @@ struct perf_evsel;
- extern struct list_head evsel_list;
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 7562707..e833f26 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -265,6 +265,7 @@ void argv_free(char **argv);
+ bool strglobmatch(const char *str, const char *pat);
+ bool strlazymatch(const char *str, const char *pat);
+ unsigned long convert_unit(unsigned long value, char *unit);
++int readn(int fd, void *buf, size_t size);
  
- int perf_evsel_list__create_default(void);
-+void perf_evsel_list__delete(void);
- 
- struct option;
- 
+ #define _STR(x) #x
+ #define STR(x) _STR(x)
 -- 
 1.6.2.5
 
