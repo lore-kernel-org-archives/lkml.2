@@ -1,40 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751300Ab1ADOSN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 09:18:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48514 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750947Ab1ADOSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 09:18:12 -0500
-Message-ID: <4D232C20.80306@redhat.com>
-Date: Tue, 04 Jan 2011 09:18:08 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1751353Ab1ADOSw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 09:18:52 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48605 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947Ab1ADOSv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 09:18:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=lKqFj6LcXxH6TXwKwkzRJGC8OZJICfQ+wo9xev+ZmSiTeYH/wdaGqb8/hms5OuG9a8
+         PKRfLoSAkchqA63Jr2n2xW1uJvQTf4EEYbMxg/84YKAvMgJLZeTlarQj18UTunHrFBFU
+         55RnZtD/bSjAKATBmg47RNBsMuWjw5PxX8tbA=
 MIME-Version: 1.0
-To: "Zhai, Edwin" <edwin.zhai@intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "avi@redhat.com" <avi@redhat.com>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>
-Subject: Re: [PATCH] increase ple_gap default to 64
-References: <20110103101907.2926ecca@annuminas.surriel.com> <4D229221.8070305@intel.com>
-In-Reply-To: <4D229221.8070305@intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110104140355.GA1707@ucw.cz>
+References: <AANLkTim0Xmsnzz5yMLAx_+w-c7sSSReu0SKMAmjpbS+1@mail.gmail.com>
+	<20110104140355.GA1707@ucw.cz>
+Date: Tue, 4 Jan 2011 22:18:49 +0800
+Message-ID: <AANLkTinocDQ1J4FR5JO_j7qwLKv1QYPvZ1Y4r+v44esi@mail.gmail.com>
+Subject: Re: [PATCH v0] add nano semaphore in kernel
+From: Hillf Danton <dhillf@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/2011 10:21 PM, Zhai, Edwin wrote:
-> Riel,
-> Thanks for your patch. I have changed the ple_gap to 128 on xen side,
-> but forget the patch for KVM:(
+On Tue, Jan 4, 2011 at 10:03 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> Hi!
 >
-> A little bit big is no harm, but more perf data is better.
+>> +/*
+>> + * nano_semaphore_down - acquire the nano semaphore
+>> + * @s: the nano semaphore to be acquired
+>> + * @nano_secs: the nano seconds to wait if necessary,
+>> + *           could be zero if want to wait as long as possible.
+>> + *
+>> + * Returns >0 if acquired successfully, <=0 otherwise.
+>> + *
+>> + * Note unlike down() in semaphore, nano_semaphore_down is not looping until
+>> + * the nano semaphore is hold, but simply reports the result. And the callers
+>> + * could, if they like, loop in simple manner, for instance,
+>> + *   while (1 != nano_semaphore_down(s, 800));
+>> + *   do_home_work();
+>> + *   nano_semaphore_up(s);
+>
+> But thats spinlock, not semaphore, right?
+>
 
-So should I resend the patch with the ple_gap default
-changed to 128, or are you willing to ack the current
-patch?
+Though spin lock involved, the caller has to sleep 800ns per loop.
 
--- 
-All rights reversed
+> Also, your example does not use the API right -- according to
+> description, 42 is correct 'semaphore acquired' reply...
+>
+
+As I understand, the example, though could be totally removed, does
+not show the recommended usage of nano semaphore, but expresses the
+difference from semaphore. The recommended however looks
+
+       nano_semaphore_down(s, 0);
+       do_home_work();
+       nano_semaphore_up(s);
+
+if you like to wait as long as possible.
+
+Cheers
+Hillf
