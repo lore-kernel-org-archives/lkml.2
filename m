@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751392Ab1ADC3H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 21:29:07 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:42622 "EHLO smtps.tip.net.au"
+	id S1751322Ab1ADDVI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 22:21:08 -0500
+Received: from mga09.intel.com ([134.134.136.24]:15205 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751037Ab1ADC2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 21:28:52 -0500
-Date: Tue, 4 Jan 2011 13:28:47 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jon Mason <jon.mason@exar.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        stephen hemminger <shemminger@vyatta.com>
-Subject: linux-next: manual merge of the net tree with the pci tree
-Message-Id: <20110104132847.de49be89.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__4_Jan_2011_13_28_47_+1100_UUs6wAdx1GWG05ah"
+	id S1750855Ab1ADDVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 22:21:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,269,1291622400"; 
+   d="scan'208";a="693264723"
+Message-ID: <4D229221.8070305@intel.com>
+Date: Tue, 04 Jan 2011 11:21:05 +0800
+From: "Zhai, Edwin" <edwin.zhai@intel.com>
+User-Agent: Thunderbird 2.0.0.17 (Windows/20080914)
+MIME-Version: 1.0
+To: Rik van Riel <riel@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "avi@redhat.com" <avi@redhat.com>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>
+Subject: Re: [PATCH] increase ple_gap default to 64
+References: <20110103101907.2926ecca@annuminas.surriel.com>
+In-Reply-To: <20110103101907.2926ecca@annuminas.surriel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__4_Jan_2011_13_28_47_+1100_UUs6wAdx1GWG05ah
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Riel,
+Thanks for your patch. I have changed the ple_gap to 128 on xen side, 
+but forget the patch for KVM:(
 
-Hi all,
+A little bit big is no harm, but more perf data is better.
 
-Today's linux-next merge of the net tree got a conflict in
-drivers/net/skge.c between commit
-1d3c16a818e992c199844954d95c17fd7ce6cbba ("PCI: make pci_restore_state
-return void") from the pci tree and commit
-7dbf6acdbad2fbc6eea72b58404461dcb7c6d9d2 ("skge: Do not use legacy PCI
-power management") from the net tree.
 
-The latter removes the code modified by the former, so I used the latter.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Tue__4_Jan_2011_13_28_47_+1100_UUs6wAdx1GWG05ah
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNIoXfAAoJEDMEi1NhKgbsIdoH/jG8Bf8qBF3eRqkmn2eThoHq
-w5G3XAXiDXNtwa8LSNvt68tZutIivWGT0COhqe47zGajlgKjshAji2dfdVdsAWC2
-SSpFLQkn7r9cXZMcTDoSM2hZzC/+IJMhMmBolsH6dZVBCPe5KMCJkHgjCeVvb8sI
-LrxG6w9j4DPvmiV+kGv4/Z5hEpBI+p8uPHuGWtnnsN+J/lN133zHVBYYwGVtRm4j
-6sAccIvBCEdPxnugGyTfgiE+2foQ8uFtgKqFET2SOee4r3alotxWysuesDLYhghe
-DuZoSPXhhVSeJmkv0giP73uy5vI8tqvU2W+30VSdhKEDyKYCgTwh3HI3xRizqTU=
-=8aXW
------END PGP SIGNATURE-----
-
---Signature=_Tue__4_Jan_2011_13_28_47_+1100_UUs6wAdx1GWG05ah--
+Rik van Riel wrote:
+> On some CPUs, a ple_gap of 41 is simply insufficient to ever trigger
+> PLE exits, even with the minimalistic PLE test from kvm-unit-tests.
+>
+> http://git.kernel.org/?p=virt/kvm/kvm-unit-tests.git;a=commitdiff;h=eda71b28fa122203e316483b35f37aaacd42f545
+>
+> For example, the Xeon X5670 CPU needs a ple_gap of at least 48 in
+> order to get pause loop exits:
+>
+> # modprobe kvm_intel ple_gap=47
+> # taskset 1 /usr/local/bin/qemu-system-x86_64 -device testdev,chardev=log -chardev stdio,id=log -kernel x86/vmexit.flat -append ple-round-robin -smp 2
+> VNC server running on `::1:5900'
+> enabling apic
+> enabling apic
+> ple-round-robin 58298446
+> # rmmod kvm_intel
+> # modprobe kvm_intel ple_gap=48
+> # taskset 1 /usr/local/bin/qemu-system-x86_64 -device testdev,chardev=log -chardev stdio,id=log -kernel x86/vmexit.flat -append ple-round-robin -smp 2
+> VNC server running on `::1:5900'
+> enabling apic
+> enabling apic
+> ple-round-robin 36616
+>
+> Increase the ple_gap to 64 to be on the safe side.  
+>
+> Is this enough for a CPU with HT that has a busy sibling thread, or 
+> should it be even larger?   On the X5670, loading up the sibling thread
+> with an infinite loop does not seem to increase the required ple_gap.
+>
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+>
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index 81fcbe9..0e38b8e 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -90,14 +90,14 @@ module_param(vmm_exclusive, bool, S_IRUGO);
+>   * These 2 parameters are used to config the controls for Pause-Loop Exiting:
+>   * ple_gap:    upper bound on the amount of time between two successive
+>   *             executions of PAUSE in a loop. Also indicate if ple enabled.
+> - *             According to test, this time is usually small than 41 cycles.
+> + *             According to test, this time is usually smaller than 64 cycles.
+>   * ple_window: upper bound on the amount of time a guest is allowed to execute
+>   *             in a PAUSE loop. Tests indicate that most spinlocks are held for
+>   *             less than 2^12 cycles
+>   * Time is measured based on a counter that runs at the same rate as the TSC,
+>   * refer SDM volume 3b section 21.6.13 & 22.1.3.
+>   */
+> -#define KVM_VMX_DEFAULT_PLE_GAP    41
+> +#define KVM_VMX_DEFAULT_PLE_GAP    64
+>  #define KVM_VMX_DEFAULT_PLE_WINDOW 4096
+>  static int ple_gap = KVM_VMX_DEFAULT_PLE_GAP;
+>  module_param(ple_gap, int, S_IRUGO);
+>
+>   
