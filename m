@@ -1,264 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616Ab1ADPzX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 10:55:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2791 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751241Ab1ADPzW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 10:55:22 -0500
-Message-ID: <4D2342E1.8010405@redhat.com>
-Date: Tue, 04 Jan 2011 16:55:13 +0100
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20091014 Fedora/3.0-2.8.b4.fc11 Thunderbird/3.0b4
-MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Jens Axboe <jaxboe@fusionio.com>,
-        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <greg@kroah.com>
-Subject: [PATCH 2/2] block: fix accounting bug on cross partition merges
-References: <4CFF3DA4.5060705@jp.fujitsu.com> <4CFF9A2C.1070401@fusionio.com> <4D025154.8030400@redhat.com> <20101210165553.GE31737@redhat.com> <4D07D2AC.6000500@fusionio.com> <4D0B68AF.80804@redhat.com> <4D0BB4A1.8080305@fusionio.com> <4D13664C.3020500@redhat.com> <20101223153915.GE9502@redhat.com> <4D13810B.8000304@redhat.com> <20101224192916.GB2082@redhat.com> <4D23423A.60707@redhat.com>
-In-Reply-To: <4D23423A.60707@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751861Ab1ADPzt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 10:55:49 -0500
+Received: from ms01.sssup.it ([193.205.80.99]:52248 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751774Ab1ADPzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 10:55:48 -0500
+Subject: [RFC][PATCH 0/3] Refactoring sched_entity and sched_rt_entity.
+From: Dario Faggioli <raistlin@linux.it>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Gregory Haskins <ghaskins@novell.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Dhaval Giani <dhaval@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>, Dario <raistlin@linux.it>,
+        Darren Hart <darren@dvhart.com>, oleg <oleg@redhat.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>, pjt@google.com,
+        bharata@linux.vnet.ibm.co, lucas.de.marchi@gmail.com
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-qG9ZhoVVHJpClsGsJaFq"
+Date: Tue, 04 Jan 2011 16:55:24 +0100
+Message-ID: <1294156524.6169.147.camel@Palantir>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-/proc/diskstats would display a strange output as follows.
+--=-qG9ZhoVVHJpClsGsJaFq
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-$ cat /proc/diskstats |grep sda
-   8       0 sda 90524 7579 102154 20464 0 0 0 0 0 14096 20089
-   8       1 sda1 19085 1352 21841 4209 0 0 0 0 4294967064 15689 4293424691
-                                                ~~~~~~~~~~
-   8       2 sda2 71252 3624 74891 15950 0 0 0 0 232 23995 1562390
-   8       3 sda3 54 487 2188 92 0 0 0 0 0 88 92
-   8       4 sda4 4 0 8 0 0 0 0 0 0 0 0
-   8       5 sda5 81 2027 2130 138 0 0 0 0 0 87 137
+Hi everybody,
 
-Its reason is the wrong way of accounting hd_struct->in_flight. When a bio is
-merged into a request belongs to different partition by ELEVATOR_FRONT_MERGE.
+After having heard Peter talking about it many times, I finally decided
+to give this thing a spin. It is basically the idea of putting the
+current sched_entity and sched_rt_entity together in an union, contained
+in a more general structure which hosts the common fields of the twos.
+For example, it came out here: http://lkml.org/lkml/2009/7/9/153
 
-The detailed root cause is as follows.
+Therefore, this patchset _DOES_NOT_ do that! :-O
 
-Assuming that there are two partition, sda1 and sda2.
+In fact, this is some preliminary refactoring which I think it's needed
+before union-ify the two data structure, and on which I would like to
+get some preliminary comments, before going ahead with the wrong
+approach.
 
-1. A request for sda2 is in request_queue. Hence sda1's hd_struct->in_flight
-   is 0 and sda2's one is 1.
+Basically, I renamed struct sched_entity to struct sched_cfs_entity and
+put it and sched_rt_entity inside a more general struct sched_entity...
+Is that clear? :-)
+The patches just cope with that. Yes, there's some work done by a patch
+and undone by the next one. I now it's annoying, and I'm sorry, but I
+did such for the sake of reviewability and for making each patch compile
+cleanly.
+As for the name of CFS's scheduling entities, sched_fair_entity would
+probably have been better, but it's longer, and "_cfs" is already
+present in many places, so I went for it... No big deal in changing
+that, apart from stay-within-80-characters-per-line issues! :-P
 
-        | hd_struct->in_flight
-   ---------------------------
-   sda1 |          0
-   sda2 |          1
-   ---------------------------
+They're not inside an union yet, because I'm not sure on how to treat
+the task group case. In fact, tasks can only have _just_one_ scheduling
+policy at a time, and thus, for example, they need the run_list _or_ the
+rb_node for queueing (if the task is RT or fair, respectively), which is
+perfect with respect to using an union.
+OTOH, groups are always considered both fair _and_ RT entities, for
+example they're always queued in _both_ an RT run_list and a fair
+rb-tree. So I can't put them in an union, because I need both at the
+same time!
+Suggestions on how to deal with that will be appreciated.
 
-2. A bio belongs to sda1 is issued and is merged into the request mentioned on
-   step1 by ELEVATOR_BACK_MERGE. The first sector of the request is changed
-   from sda2 region to sda1 region. However the two partition's
-   hd_struct->in_flight are not changed.
+I compiled and tested this on x86_64, and for [!]SMP, [!]CGROUP_SCHED,
+[!]FAIR_GROUP_SCHED, [!]RT_GROUP_SCHED and [!]SCHEDSTATS, and some
+combinations of these, but can't guarantee full coverage of all the
+possibilities yet... Working on it, in the meanwhile, forgive me if you
+find some configuration that does not build. ;-D
 
-        | hd_struct->in_flight
-   ---------------------------
-   sda1 |          0
-   sda2 |          1
-   ---------------------------
+And as usual, comments of any kind are very very welcome! :-)
 
-3. The request is finished and blk_account_io_done() is called. In this case,
-   sda2's hd_struct->in_flight, not a sda1's one, is decremented.
+Thanks and Regards,
+Dario Faggioli=20
 
-        | hd_struct->in_flight
-   ---------------------------
-   sda1 |         -1
-   sda2 |          1
-   ---------------------------
+[RFC][PATCH 0/3] Refactoring sched_entity and sched_rt_entity.
+ include/linux/init_task.h |    8 +-
+ include/linux/sched.h     |   35 ++-
+ kernel/kthread.c          |    2 +-
+ kernel/posix-cpu-timers.c |    4 +-
+ kernel/sched.c            |  210 +++++++++------
+ kernel/sched_debug.c      |   20 +-
+ kernel/sched_fair.c       |  636 ++++++++++++++++++++++++-----------------=
+----
+ kernel/sched_rt.c         |   58 ++--
+ 8 files changed, 534 insertions(+), 439 deletions(-)
 
-The patch fixes the problem by caching the partition lookup
-inside the request structure, hence making sure that the increment
-and decrement will always happen on the same partition struct. This
-also speeds up IO with accounting enabled, since it cuts down on
-the number of lookups we have to do.
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
 
-Also add a refcount to struct hd_struct to keep the partition in
-memory as long as users exist. We use kref_test_and_get() to ensure
-we don't add a reference to a partition which is going away.
+http://retis.sssup.it/people/faggioli -- dario.faggioli@jabber.org
 
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
----
- block/blk-core.c       |   26 +++++++++++++++++++++-----
- block/blk-merge.c      |    3 ++-
- block/genhd.c          |    1 +
- fs/partitions/check.c  |   10 +++++++++-
- include/linux/blkdev.h |    1 +
- include/linux/genhd.h  |    2 ++
- 6 files changed, 36 insertions(+), 7 deletions(-)
+--=-qG9ZhoVVHJpClsGsJaFq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 4ce953f..409ad36 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -64,13 +64,27 @@ static void drive_stat_acct(struct request *rq, int new_io)
- 		return;
- 
- 	cpu = part_stat_lock();
--	part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
- 
--	if (!new_io)
-+	if (!new_io) {
-+		part = rq->part;
- 		part_stat_inc(cpu, part, merges[rw]);
--	else {
-+	} else {
-+		part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
-+		if (!kref_test_and_get(&part->ref)) {
-+			/*
-+			 * The partition is already being removed,
-+			 * the request will be accounted on the disk only
-+			 *
-+			 * We take a reference on disk->part0 although that
-+			 * partition will never be deleted, so we can treat
-+			 * it as any other partition.
-+			 */
-+			part = &rq->rq_disk->part0;
-+			kref_get(&part->ref);
-+		}
- 		part_round_stats(cpu, part);
- 		part_inc_in_flight(part, rw);
-+		rq->part = part;
- 	}
- 
- 	part_stat_unlock();
-@@ -128,6 +142,7 @@ void blk_rq_init(struct request_queue *q, struct request *rq)
- 	rq->ref_count = 1;
- 	rq->start_time = jiffies;
- 	set_start_time_ns(rq);
-+	rq->part = NULL;
- }
- EXPORT_SYMBOL(blk_rq_init);
- 
-@@ -1776,7 +1791,7 @@ static void blk_account_io_completion(struct request *req, unsigned int bytes)
- 		int cpu;
- 
- 		cpu = part_stat_lock();
--		part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
-+		part = req->part;
- 		part_stat_add(cpu, part, sectors[rw], bytes >> 9);
- 		part_stat_unlock();
- 	}
-@@ -1796,13 +1811,14 @@ static void blk_account_io_done(struct request *req)
- 		int cpu;
- 
- 		cpu = part_stat_lock();
--		part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
-+		part = req->part;
- 
- 		part_stat_inc(cpu, part, ios[rw]);
- 		part_stat_add(cpu, part, ticks[rw], duration);
- 		part_round_stats(cpu, part);
- 		part_dec_in_flight(part, rw);
- 
-+		kref_put(&part->ref, __delete_partition);
- 		part_stat_unlock();
- 	}
- }
-diff --git a/block/blk-merge.c b/block/blk-merge.c
-index 74bc4a7..23ea74b 100644
---- a/block/blk-merge.c
-+++ b/block/blk-merge.c
-@@ -351,11 +351,12 @@ static void blk_account_io_merge(struct request *req)
- 		int cpu;
- 
- 		cpu = part_stat_lock();
--		part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
-+		part = req->part;
- 
- 		part_round_stats(cpu, part);
- 		part_dec_in_flight(part, rq_data_dir(req));
- 
-+		kref_put(&part->ref, __delete_partition);
- 		part_stat_unlock();
- 	}
- }
-diff --git a/block/genhd.c b/block/genhd.c
-index 5fa2b44..0c55eae 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -1192,6 +1192,7 @@ struct gendisk *alloc_disk_node(int minors, int node_id)
- 			return NULL;
- 		}
- 		disk->part_tbl->part[0] = &disk->part0;
-+		kref_init(&disk->part0.ref);
- 
- 		disk->minors = minors;
- 		rand_initialize_disk(disk);
-diff --git a/fs/partitions/check.c b/fs/partitions/check.c
-index 0a8b0ad..0123717 100644
---- a/fs/partitions/check.c
-+++ b/fs/partitions/check.c
-@@ -372,6 +372,13 @@ static void delete_partition_rcu_cb(struct rcu_head *head)
- 	put_device(part_to_dev(part));
- }
- 
-+void __delete_partition(struct kref *ref)
-+{
-+	struct hd_struct *part = container_of(ref, struct hd_struct, ref);
-+
-+	call_rcu(&part->rcu_head, delete_partition_rcu_cb);
-+}
-+
- void delete_partition(struct gendisk *disk, int partno)
- {
- 	struct disk_part_tbl *ptbl = disk->part_tbl;
-@@ -390,7 +397,7 @@ void delete_partition(struct gendisk *disk, int partno)
- 	kobject_put(part->holder_dir);
- 	device_del(part_to_dev(part));
- 
--	call_rcu(&part->rcu_head, delete_partition_rcu_cb);
-+	kref_put(&part->ref, __delete_partition);
- }
- 
- static ssize_t whole_disk_show(struct device *dev,
-@@ -489,6 +496,7 @@ struct hd_struct *add_partition(struct gendisk *disk, int partno,
- 	if (!dev_get_uevent_suppress(ddev))
- 		kobject_uevent(&pdev->kobj, KOBJ_ADD);
- 
-+	kref_init(&p->ref);
- 	return p;
- 
- out_free_info:
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 36ab42c..7572b19 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -115,6 +115,7 @@ struct request {
- 	void *elevator_private3;
- 
- 	struct gendisk *rq_disk;
-+	struct hd_struct *part;
- 	unsigned long start_time;
- #ifdef CONFIG_BLK_CGROUP
- 	unsigned long long start_time_ns;
-diff --git a/include/linux/genhd.h b/include/linux/genhd.h
-index 7a7b9c1..2ba2792 100644
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -116,6 +116,7 @@ struct hd_struct {
- 	struct disk_stats dkstats;
- #endif
- 	struct rcu_head rcu_head;
-+	struct kref ref;
- };
- 
- #define GENHD_FL_REMOVABLE			1
-@@ -583,6 +584,7 @@ extern struct hd_struct * __must_check add_partition(struct gendisk *disk,
- 						     sector_t len, int flags,
- 						     struct partition_meta_info
- 						       *info);
-+extern void __delete_partition(struct kref *ref);
- extern void delete_partition(struct gendisk *, int);
- extern void printk_all_partitions(void);
- 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAk0jQuwACgkQk4XaBE3IOsSiEgCfXKgiVliu7bdjQo3ugKj+wuBU
+jiUAoJ5nTZtMIIkNL/i9RbV06je7pIHj
+=TR9t
+-----END PGP SIGNATURE-----
+
+--=-qG9ZhoVVHJpClsGsJaFq--
 
