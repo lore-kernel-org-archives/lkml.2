@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751977Ab1ADJFf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 04:05:35 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:41135 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750824Ab1ADJFb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 04:05:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=HNE9Qjy1wmOcnfLCkEOFH1++MBlb7SQE+5On3oGnFgkh75sCVJeL7HQ7OgPMZI/kDK
-         meAwWsTZ2PE6FpEbkUV/rAA+tKC4KUWU2BHS8zKrd4RAOl9fTMbPBU8OnoHxe+vhciKk
-         b2Gy8vAmvUMlcyyZIBGskUlE4wYa7mviSaIsA=
-Message-ID: <4D22E2CF.5050002@gmail.com>
-Date: Tue, 04 Jan 2011 17:05:19 +0800
-From: YangSheng <sickamd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
-MIME-Version: 1.0
-To: Andreas Schwab <schwab@linux-m68k.org>
-CC: linux-kernel@vger.kernel.org, adilger@dilger.ca,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        swhiteho@redhat.com, sickadm@gmail.com
-Subject: Re: [PATCH resend] Update atime from future.
-References: <1294131418-3835-1-git-send-email-sickamd@gmail.com> <m2d3od11p6.fsf@whitebox.home>
-In-Reply-To: <m2d3od11p6.fsf@whitebox.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751873Ab1ADJIX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 04:08:23 -0500
+Received: from lo.gmane.org ([80.91.229.12]:52836 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750824Ab1ADJIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 04:08:20 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Alexander Clouter <alex@digriz.org.uk>
+Subject: Re: strange fragmented udp packets
+Date: Tue, 4 Jan 2011 08:50:54 +0000
+Message-ID: <ek3bv7-3m6.ln1@chipmunk.wormnet.eu>
+References: <201012272354.44196.thomas@fjellstrom.ca> <201101031647.56077.thomas@fjellstrom.ca>
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: chipmunk.wormnet.eu
+User-Agent: tin/1.9.6-20100522 ("Lochruan") (UNIX) (Linux/2.6.32-5-sparc64-smp (sparc64))
+Cc: linux-net@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/2011 05:02 PM, Andreas Schwab wrote:
-> yangsheng<sickamd@gmail.com>  writes:
+Thomas Fjellstrom <thomas@fjellstrom.ca> wrote:
 >
->    
->> -	 * Is the previous atime value older than a day? If yes,
->> +	 * Is the previous atime value old than a day? If yes,
->>      
-> Why did you change that comment?
->    
-Sorry, It is a typo. I'll resent it.
-> Andreas.
->
->    
+>> I can't explain the packets getting fragmented (or I couldn't, see below).
+>> And only have a guess as to why my VOIP provider isn't seeing them, I've
+>> heard that some firewalls explicitly block fragmented UDP as its often
+>> used in DoS attacks, and for little else.
+>> 
+>> Here's at least what tcpdump has to say..
+>> 
+>> packet coming in:
+>> 23:38:26.136021 IP x.x.x.x.5060 > x.x.x.x.5060: SIP, length: 582
+>> 
+>> packet going out:
+>> 23:38:18.136085 IP x.x.x.x.5060 > x.x.x.x.5060: SIP, length: 544
+>> 23:38:18.136169 IP x.x.x.x > x.x.x.x: udp
+>> 
+>> ...
+>> 
+>> After writing all that I've realized that the problem is the mtu on the nic
+>> attached to my cable modem, it was set to 576 for some odd reason. Changing
+>> the mtu to 1500 fixes my problem, but what is causing it to auto select an
+>> mtu of 576 anyhow? Could my modem be telling it that 576 is better for it?
+> 
+> Anyone have a hint? I've checked with my sip provider and they don't have 
+> iptables set up, so nothing should be getting in the way of these packets. For 
+> some reason they just aren't reaching the SIP server.
+> 
+pmtu?
+
+Play around with the handy utility tracepath (and tracepath6) to 
+<phun>discover</phun> more!
+
+Cheers
+
+-- 
+Alexander Clouter
+.sigmonster says: May you have many handsome and obedient sons.
 
