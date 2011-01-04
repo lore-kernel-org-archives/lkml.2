@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751682Ab1ADDtI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 22:49:08 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:44174 "EHLO
+	id S1751284Ab1ADDtJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 22:49:09 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:44175 "EHLO
 	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353Ab1ADDsr (ORCPT
+	with ESMTP id S1751354Ab1ADDsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Jan 2011 22:48:47 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Tom Zanussi <tzanussi@gmail.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 05/11] perf evsel: Steal the counter reading routines from stat
-Date: Tue,  4 Jan 2011 01:48:19 -0200
-Message-Id: <1294112905-25325-6-git-send-email-acme@infradead.org>
+Subject: [PATCH 07/11] perf tools: Refactor cpumap to hold nr and the map
+Date: Tue,  4 Jan 2011 01:48:21 -0200
+Message-Id: <1294112905-25325-8-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1294112905-25325-1-git-send-email-acme@infradead.org>
 References: <1294112905-25325-1-git-send-email-acme@infradead.org>
@@ -29,8 +29,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Making them hopefully generic enough to be used in 'perf test',
-well see.
+So that later, we can pass the cpu_map instance instead of (nr_cpus, cpu_map)
+for things like perf_evsel__open and friends.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -43,449 +43,474 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-stat.c |  121 +++++++++++----------------------------------
- tools/perf/util/evsel.c   |   88 ++++++++++++++++++++++++++++++++
- tools/perf/util/evsel.h   |   79 +++++++++++++++++++++++++++++
- 3 files changed, 196 insertions(+), 92 deletions(-)
+ tools/perf/builtin-record.c |   14 +++---
+ tools/perf/builtin-stat.c   |   36 ++++++------
+ tools/perf/builtin-top.c    |   22 ++++----
+ tools/perf/util/cpumap.c    |  123 +++++++++++++++++++++++++++++++++----------
+ tools/perf/util/cpumap.h    |   10 +++-
+ 5 files changed, 138 insertions(+), 67 deletions(-)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 589ba3a..a8b00b4 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -93,12 +93,6 @@ static const char		*cpu_list;
- static const char		*csv_sep			= NULL;
- static bool			csv_output			= false;
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 052de17..220e6e7 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -39,7 +39,7 @@ static u64			user_interval			= ULLONG_MAX;
+ static u64			default_interval		=      0;
+ static u64			sample_type;
  
--struct cpu_counts {
--	u64 val;
--	u64 ena;
--	u64 run;
--};
--
- static volatile int done = 0;
- 
- struct stats
-@@ -108,15 +102,11 @@ struct stats
- 
- struct perf_stat {
- 	struct stats	  res_stats[3];
--	int		  scaled;
--	struct cpu_counts cpu_counts[];
- };
- 
--static int perf_evsel__alloc_stat_priv(struct perf_evsel *evsel, int ncpus)
-+static int perf_evsel__alloc_stat_priv(struct perf_evsel *evsel)
- {
--	size_t priv_size = (sizeof(struct perf_stat) +
--			    (ncpus * sizeof(struct cpu_counts)));
--	evsel->priv = zalloc(priv_size);
-+	evsel->priv = zalloc(sizeof(struct perf_stat));
- 	return evsel->priv == NULL ? -ENOMEM : 0;
- }
- 
-@@ -238,52 +228,14 @@ static inline int nsec_counter(struct perf_evsel *evsel)
-  * Read out the results of a single counter:
-  * aggregate counts across CPUs in system-wide mode
-  */
--static void read_counter_aggr(struct perf_evsel *counter)
-+static int read_counter_aggr(struct perf_evsel *counter)
- {
- 	struct perf_stat *ps = counter->priv;
--	u64 count[3], single_count[3];
--	int cpu;
--	size_t res, nv;
--	int scaled;
--	int i, thread;
--
--	count[0] = count[1] = count[2] = 0;
--
--	nv = scale ? 3 : 1;
--	for (cpu = 0; cpu < nr_cpus; cpu++) {
--		for (thread = 0; thread < thread_num; thread++) {
--			if (FD(counter, cpu, thread) < 0)
--				continue;
--
--			res = read(FD(counter, cpu, thread),
--					single_count, nv * sizeof(u64));
--			assert(res == nv * sizeof(u64));
--
--			close(FD(counter, cpu, thread));
--			FD(counter, cpu, thread) = -1;
--
--			count[0] += single_count[0];
--			if (scale) {
--				count[1] += single_count[1];
--				count[2] += single_count[2];
--			}
--		}
--	}
--
--	scaled = 0;
--	if (scale) {
--		if (count[2] == 0) {
--			ps->scaled = -1;
--			count[0] = 0;
--			return;
--		}
-+	u64 *count = counter->counts->aggr.values;
-+	int i;
- 
--		if (count[2] < count[1]) {
--			ps->scaled = 1;
--			count[0] = (unsigned long long)
--				((double)count[0] * count[1] / count[2] + 0.5);
--		}
--	}
-+	if (__perf_evsel__read(counter, nr_cpus, thread_num, scale) < 0)
-+		return -1;
- 
- 	for (i = 0; i < 3; i++)
- 		update_stats(&ps->res_stats[i], count[i]);
-@@ -302,46 +254,24 @@ static void read_counter_aggr(struct perf_evsel *counter)
- 		update_stats(&runtime_cycles_stats[0], count[0]);
- 	if (perf_evsel__match(counter, HARDWARE, HW_BRANCH_INSTRUCTIONS))
- 		update_stats(&runtime_branches_stats[0], count[0]);
-+
-+	return 0;
- }
- 
- /*
-  * Read out the results of a single counter:
-  * do not aggregate counts across CPUs in system-wide mode
-  */
--static void read_counter(struct perf_evsel *counter)
-+static int read_counter(struct perf_evsel *counter)
- {
--	struct cpu_counts *cpu_counts = counter->priv;
--	u64 count[3];
-+	u64 *count;
- 	int cpu;
--	size_t res, nv;
--
--	count[0] = count[1] = count[2] = 0;
--
--	nv = scale ? 3 : 1;
- 
- 	for (cpu = 0; cpu < nr_cpus; cpu++) {
-+		if (__perf_evsel__read_on_cpu(counter, cpu, 0, scale) < 0)
-+			return -1;
- 
--		if (FD(counter, cpu, 0) < 0)
--			continue;
--
--		res = read(FD(counter, cpu, 0), count, nv * sizeof(u64));
--
--		assert(res == nv * sizeof(u64));
--
--		close(FD(counter, cpu, 0));
--		FD(counter, cpu, 0) = -1;
--
--		if (scale) {
--			if (count[2] == 0) {
--				count[0] = 0;
--			} else if (count[2] < count[1]) {
--				count[0] = (unsigned long long)
--				((double)count[0] * count[1] / count[2] + 0.5);
--			}
--		}
--		cpu_counts[cpu].val = count[0]; /* scaled count */
--		cpu_counts[cpu].ena = count[1];
--		cpu_counts[cpu].run = count[2];
-+		count = counter->counts->cpu[cpu].values;
- 
- 		if (perf_evsel__match(counter, SOFTWARE, SW_TASK_CLOCK))
- 			update_stats(&runtime_nsecs_stats[cpu], count[0]);
-@@ -350,6 +280,8 @@ static void read_counter(struct perf_evsel *counter)
- 		if (perf_evsel__match(counter, HARDWARE, HW_BRANCH_INSTRUCTIONS))
- 			update_stats(&runtime_branches_stats[cpu], count[0]);
- 	}
-+
-+	return 0;
- }
- 
- static int run_perf_stat(int argc __used, const char **argv)
-@@ -449,12 +381,17 @@ static int run_perf_stat(int argc __used, const char **argv)
- 	update_stats(&walltime_nsecs_stats, t1 - t0);
- 
- 	if (no_aggr) {
--		list_for_each_entry(counter, &evsel_list, node)
-+		list_for_each_entry(counter, &evsel_list, node) {
- 			read_counter(counter);
-+			perf_evsel__close_fd(counter, nr_cpus, 1);
-+		}
+-static int			nr_cpus				=      0;
++static struct cpu_map		*cpus;
+ static unsigned int		page_size;
+ static unsigned int		mmap_pages			=    128;
+ static unsigned int		user_freq 			= UINT_MAX;
+@@ -670,8 +670,8 @@ static int __cmd_record(int argc, const char **argv)
+ 	if (!system_wide && no_inherit && !cpu_list) {
+ 		open_counters(-1);
  	} else {
--		list_for_each_entry(counter, &evsel_list, node)
-+		list_for_each_entry(counter, &evsel_list, node) {
- 			read_counter_aggr(counter);
-+			perf_evsel__close_fd(counter, nr_cpus, thread_num);
-+		}
+-		for (i = 0; i < nr_cpus; i++)
+-			open_counters(cpumap[i]);
++		for (i = 0; i < cpus->nr; i++)
++			open_counters(cpus->map[i]);
  	}
-+
- 	return WEXITSTATUS(status);
- }
  
-@@ -550,7 +487,7 @@ static void print_counter_aggr(struct perf_evsel *counter)
- {
- 	struct perf_stat *ps = counter->priv;
- 	double avg = avg_stats(&ps->res_stats[0]);
--	int scaled = ps->scaled;
-+	int scaled = counter->counts->scaled;
+ 	perf_session__set_sample_type(session, sample_type);
+@@ -927,14 +927,14 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 		thread_num = 1;
+ 	}
  
- 	if (scaled == -1) {
- 		fprintf(stderr, "%*s%s%-24s\n",
-@@ -590,14 +527,13 @@ static void print_counter_aggr(struct perf_evsel *counter)
-  */
- static void print_counter(struct perf_evsel *counter)
- {
--	struct perf_stat *ps = counter->priv;
- 	u64 ena, run, val;
- 	int cpu;
- 
- 	for (cpu = 0; cpu < nr_cpus; cpu++) {
--		val = ps->cpu_counts[cpu].val;
--		ena = ps->cpu_counts[cpu].ena;
--		run = ps->cpu_counts[cpu].run;
-+		val = counter->counts->cpu[cpu].val;
-+		ena = counter->counts->cpu[cpu].ena;
-+		run = counter->counts->cpu[cpu].run;
- 		if (run == 0 || ena == 0) {
- 			fprintf(stderr, "CPU%*d%s%*s%s%-24s",
- 				csv_output ? 0 : -4,
-@@ -818,7 +754,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+-	nr_cpus = read_cpu_map(cpu_list);
+-	if (nr_cpus < 1) {
+-		perror("failed to collect number of CPUs");
++	cpus = cpu_map__new(cpu_list);
++	if (cpus == NULL) {
++		perror("failed to parse CPUs map");
+ 		return -1;
  	}
  
  	list_for_each_entry(pos, &evsel_list, node) {
--		if (perf_evsel__alloc_stat_priv(pos, nr_cpus) < 0 ||
-+		if (perf_evsel__alloc_stat_priv(pos) < 0 ||
-+		    perf_evsel__alloc_counts(pos, nr_cpus) < 0 ||
- 		    perf_evsel__alloc_fd(pos, nr_cpus, thread_num) < 0)
+-		if (perf_evsel__alloc_fd(pos, nr_cpus, thread_num) < 0)
++		if (perf_evsel__alloc_fd(pos, cpus->nr, thread_num) < 0)
  			goto out_free_fd;
  	}
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 6539ec9..3f5de51 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -1,6 +1,8 @@
- #include "evsel.h"
- #include "util.h"
+ 	event_array = malloc(
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 065e79e..3f4a431 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -72,7 +72,7 @@ static struct perf_event_attr default_attrs[] = {
+ };
  
-+#define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
-+
- struct perf_evsel *perf_evsel__new(u32 type, u64 config, int idx)
+ static bool			system_wide			=  false;
+-static int			nr_cpus				=  0;
++static struct cpu_map		*cpus;
+ static int			run_idx				=  0;
+ 
+ static int			run_count			=  1;
+@@ -167,7 +167,7 @@ static int create_perf_stat_counter(struct perf_evsel *evsel)
+ 				    PERF_FORMAT_TOTAL_TIME_RUNNING;
+ 
+ 	if (system_wide)
+-		return perf_evsel__open_per_cpu(evsel, nr_cpus, cpumap);
++		return perf_evsel__open_per_cpu(evsel, cpus->nr, cpus->map);
+ 
+ 	attr->inherit = !no_inherit;
+ 	if (target_pid == -1 && target_tid == -1) {
+@@ -200,7 +200,7 @@ static int read_counter_aggr(struct perf_evsel *counter)
+ 	u64 *count = counter->counts->aggr.values;
+ 	int i;
+ 
+-	if (__perf_evsel__read(counter, nr_cpus, thread_num, scale) < 0)
++	if (__perf_evsel__read(counter, cpus->nr, thread_num, scale) < 0)
+ 		return -1;
+ 
+ 	for (i = 0; i < 3; i++)
+@@ -233,7 +233,7 @@ static int read_counter(struct perf_evsel *counter)
+ 	u64 *count;
+ 	int cpu;
+ 
+-	for (cpu = 0; cpu < nr_cpus; cpu++) {
++	for (cpu = 0; cpu < cpus->nr; cpu++) {
+ 		if (__perf_evsel__read_on_cpu(counter, cpu, 0, scale) < 0)
+ 			return -1;
+ 
+@@ -259,9 +259,6 @@ static int run_perf_stat(int argc __used, const char **argv)
+ 	const bool forks = (argc > 0);
+ 	char buf;
+ 
+-	if (!system_wide)
+-		nr_cpus = 1;
+-
+ 	if (forks && (pipe(child_ready_pipe) < 0 || pipe(go_pipe) < 0)) {
+ 		perror("failed to create pipes");
+ 		exit(1);
+@@ -351,12 +348,12 @@ static int run_perf_stat(int argc __used, const char **argv)
+ 	if (no_aggr) {
+ 		list_for_each_entry(counter, &evsel_list, node) {
+ 			read_counter(counter);
+-			perf_evsel__close_fd(counter, nr_cpus, 1);
++			perf_evsel__close_fd(counter, cpus->nr, 1);
+ 		}
+ 	} else {
+ 		list_for_each_entry(counter, &evsel_list, node) {
+ 			read_counter_aggr(counter);
+-			perf_evsel__close_fd(counter, nr_cpus, thread_num);
++			perf_evsel__close_fd(counter, cpus->nr, thread_num);
+ 		}
+ 	}
+ 
+@@ -384,7 +381,7 @@ static void nsec_printout(int cpu, struct perf_evsel *evsel, double avg)
+ 	if (no_aggr)
+ 		sprintf(cpustr, "CPU%*d%s",
+ 			csv_output ? 0 : -4,
+-			cpumap[cpu], csv_sep);
++			cpus->map[cpu], csv_sep);
+ 
+ 	fprintf(stderr, fmt, cpustr, msecs, csv_sep, event_name(evsel));
+ 
+@@ -412,7 +409,7 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
+ 	if (no_aggr)
+ 		sprintf(cpustr, "CPU%*d%s",
+ 			csv_output ? 0 : -4,
+-			cpumap[cpu], csv_sep);
++			cpus->map[cpu], csv_sep);
+ 	else
+ 		cpu = 0;
+ 
+@@ -498,14 +495,14 @@ static void print_counter(struct perf_evsel *counter)
+ 	u64 ena, run, val;
+ 	int cpu;
+ 
+-	for (cpu = 0; cpu < nr_cpus; cpu++) {
++	for (cpu = 0; cpu < cpus->nr; cpu++) {
+ 		val = counter->counts->cpu[cpu].val;
+ 		ena = counter->counts->cpu[cpu].ena;
+ 		run = counter->counts->cpu[cpu].run;
+ 		if (run == 0 || ena == 0) {
+ 			fprintf(stderr, "CPU%*d%s%*s%s%-24s",
+ 				csv_output ? 0 : -4,
+-				cpumap[cpu], csv_sep,
++				cpus->map[cpu], csv_sep,
+ 				csv_output ? 0 : 18,
+ 				"<not counted>", csv_sep,
+ 				event_name(counter));
+@@ -697,12 +694,15 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+ 	}
+ 
+ 	if (system_wide)
+-		nr_cpus = read_cpu_map(cpu_list);
++		cpus = cpu_map__new(cpu_list);
+ 	else
+-		nr_cpus = 1;
++		cpus = cpu_map__dummy_new();
+ 
+-	if (nr_cpus < 1)
++	if (cpus == NULL) {
++		perror("failed to parse CPUs map");
+ 		usage_with_options(stat_usage, options);
++		return -1;
++	}
+ 
+ 	if (target_pid != -1) {
+ 		target_tid = target_pid;
+@@ -723,8 +723,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+ 
+ 	list_for_each_entry(pos, &evsel_list, node) {
+ 		if (perf_evsel__alloc_stat_priv(pos) < 0 ||
+-		    perf_evsel__alloc_counts(pos, nr_cpus) < 0 ||
+-		    perf_evsel__alloc_fd(pos, nr_cpus, thread_num) < 0)
++		    perf_evsel__alloc_counts(pos, cpus->nr) < 0 ||
++		    perf_evsel__alloc_fd(pos, cpus->nr, thread_num) < 0)
+ 			goto out_free_fd;
+ 	}
+ 
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 27b9c14..0e42666 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -71,7 +71,7 @@ static int			target_tid			=     -1;
+ static pid_t			*all_tids			=      NULL;
+ static int			thread_num			=      0;
+ static bool			inherit				=  false;
+-static int			nr_cpus				=      0;
++static struct cpu_map		*cpus;
+ static int			realtime_prio			=      0;
+ static bool			group				=  false;
+ static unsigned int		page_size;
+@@ -564,12 +564,12 @@ static void print_sym_table(void)
+ 		printf(" (all");
+ 
+ 	if (cpu_list)
+-		printf(", CPU%s: %s)\n", nr_cpus > 1 ? "s" : "", cpu_list);
++		printf(", CPU%s: %s)\n", cpus->nr > 1 ? "s" : "", cpu_list);
+ 	else {
+ 		if (target_tid != -1)
+ 			printf(")\n");
+ 		else
+-			printf(", %d CPU%s)\n", nr_cpus, nr_cpus > 1 ? "s" : "");
++			printf(", %d CPU%s)\n", cpus->nr, cpus->nr > 1 ? "s" : "");
+ 	}
+ 
+ 	printf("%-*.*s\n", win_width, win_width, graph_dotted_line);
+@@ -1197,7 +1197,7 @@ static void perf_session__mmap_read(struct perf_session *self)
+ 	struct perf_evsel *counter;
+ 	int i, thread_index;
+ 
+-	for (i = 0; i < nr_cpus; i++) {
++	for (i = 0; i < cpus->nr; i++) {
+ 		list_for_each_entry(counter, &evsel_list, node) {
+ 			for (thread_index = 0;
+ 				thread_index < thread_num;
+@@ -1221,7 +1221,7 @@ static void start_counter(int i, struct perf_evsel *evsel)
+ 	int thread_index;
+ 
+ 	if (target_tid == -1)
+-		cpu = cpumap[i];
++		cpu = cpus->map[i];
+ 
+ 	attr = &evsel->attr;
+ 
+@@ -1310,7 +1310,7 @@ static int __cmd_top(void)
+ 	else
+ 		event__synthesize_threads(event__process, session);
+ 
+-	for (i = 0; i < nr_cpus; i++) {
++	for (i = 0; i < cpus->nr; i++) {
+ 		group_fd = -1;
+ 		list_for_each_entry(counter, &evsel_list, node)
+ 			start_counter(i, counter);
+@@ -1460,16 +1460,16 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+ 	}
+ 
+ 	if (target_tid != -1)
+-		nr_cpus = 1;
++		cpus = cpu_map__dummy_new();
+ 	else
+-		nr_cpus = read_cpu_map(cpu_list);
++		cpus = cpu_map__new(cpu_list);
+ 
+-	if (nr_cpus < 1)
++	if (cpus == NULL)
+ 		usage_with_options(top_usage, options);
+ 
+ 	list_for_each_entry(pos, &evsel_list, node) {
+-		if (perf_evsel__alloc_mmap_per_thread(pos, nr_cpus, thread_num) < 0 ||
+-		    perf_evsel__alloc_fd(pos, nr_cpus, thread_num) < 0)
++		if (perf_evsel__alloc_mmap_per_thread(pos, cpus->nr, thread_num) < 0 ||
++		    perf_evsel__alloc_fd(pos, cpus->nr, thread_num) < 0)
+ 			goto out_free_fd;
+ 		/*
+ 		 * Fill in the ones not specifically initialized via -c:
+diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
+index 0f9b8d7..3ccaa10 100644
+--- a/tools/perf/util/cpumap.c
++++ b/tools/perf/util/cpumap.c
+@@ -4,32 +4,53 @@
+ #include <assert.h>
+ #include <stdio.h>
+ 
+-int cpumap[MAX_NR_CPUS];
+-
+-static int default_cpu_map(void)
++static struct cpu_map *cpu_map__default_new(void)
  {
- 	struct perf_evsel *evsel = zalloc(sizeof(*evsel));
-@@ -21,15 +23,101 @@ int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
- 	return evsel->fd != NULL ? 0 : -ENOMEM;
+-	int nr_cpus, i;
++	struct cpu_map *cpus;
++	int nr_cpus;
+ 
+ 	nr_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+-	assert(nr_cpus <= MAX_NR_CPUS);
+-	assert((int)nr_cpus >= 0);
++	if (nr_cpus < 0)
++		return NULL;
++
++	cpus = malloc(sizeof(*cpus) + nr_cpus * sizeof(int));
++	if (cpus != NULL) {
++		int i;
++		for (i = 0; i < nr_cpus; ++i)
++			cpus->map[i] = i;
+ 
+-	for (i = 0; i < nr_cpus; ++i)
+-		cpumap[i] = i;
++		cpus->nr = nr_cpus;
++	}
+ 
+-	return nr_cpus;
++	return cpus;
  }
  
-+int perf_evsel__alloc_counts(struct perf_evsel *evsel, int ncpus)
-+{
-+	evsel->counts = zalloc((sizeof(*evsel->counts) +
-+				(ncpus * sizeof(struct perf_counts_values))));
-+	return evsel->counts != NULL ? 0 : -ENOMEM;
-+}
-+
- void perf_evsel__free_fd(struct perf_evsel *evsel)
+-static int read_all_cpu_map(void)
++static struct cpu_map *cpu_map__trim_new(int nr_cpus, int *tmp_cpus)
  {
- 	xyarray__delete(evsel->fd);
- 	evsel->fd = NULL;
- }
- 
-+void perf_evsel__close_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
-+{
-+	int cpu, thread;
++	size_t payload_size = nr_cpus * sizeof(int);
++	struct cpu_map *cpus = malloc(sizeof(*cpus) + payload_size);
 +
-+	for (cpu = 0; cpu < ncpus; cpu++)
-+		for (thread = 0; thread < nthreads; ++thread) {
-+			close(FD(evsel, cpu, thread));
-+			FD(evsel, cpu, thread) = -1;
-+		}
-+}
-+
- void perf_evsel__delete(struct perf_evsel *evsel)
- {
- 	assert(list_empty(&evsel->node));
- 	xyarray__delete(evsel->fd);
- 	free(evsel);
- }
-+
-+int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
-+			      int cpu, int thread, bool scale)
-+{
-+	struct perf_counts_values count;
-+	size_t nv = scale ? 3 : 1;
-+
-+	if (FD(evsel, cpu, thread) < 0)
-+		return -EINVAL;
-+
-+	if (readn(FD(evsel, cpu, thread), &count, nv * sizeof(u64)) < 0)
-+		return -errno;
-+
-+	if (scale) {
-+		if (count.run == 0)
-+			count.val = 0;
-+		else if (count.run < count.ena)
-+			count.val = (u64)((double)count.val * count.ena / count.run + 0.5);
-+	} else
-+		count.ena = count.run = 0;
-+
-+	evsel->counts->cpu[cpu] = count;
-+	return 0;
-+}
-+
-+int __perf_evsel__read(struct perf_evsel *evsel,
-+		       int ncpus, int nthreads, bool scale)
-+{
-+	size_t nv = scale ? 3 : 1;
-+	int cpu, thread;
-+	struct perf_counts_values *aggr = &evsel->counts->aggr, count;
-+
-+	aggr->val = 0;
-+
-+	for (cpu = 0; cpu < ncpus; cpu++) {
-+		for (thread = 0; thread < nthreads; thread++) {
-+			if (FD(evsel, cpu, thread) < 0)
-+				continue;
-+
-+			if (readn(FD(evsel, cpu, thread),
-+				  &count, nv * sizeof(u64)) < 0)
-+				return -errno;
-+
-+			aggr->val += count.val;
-+			if (scale) {
-+				aggr->ena += count.ena;
-+				aggr->run += count.run;
-+			}
-+		}
++	if (cpus != NULL) {
++		cpus->nr = nr_cpus;
++		memcpy(cpus->map, tmp_cpus, payload_size);
 +	}
 +
-+	evsel->counts->scaled = 0;
-+	if (scale) {
-+		if (aggr->run == 0) {
-+			evsel->counts->scaled = -1;
-+			aggr->val = 0;
-+			return 0;
-+		}
-+
-+		if (aggr->run < aggr->ena) {
-+			evsel->counts->scaled = 1;
-+			aggr->val = (u64)((double)aggr->val * aggr->ena / aggr->run + 0.5);
-+		}
-+	} else
-+		aggr->ena = aggr->run = 0;
-+
-+	return 0;
++	return cpus;
 +}
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 8a5cfb6..8b48ef1 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -2,15 +2,34 @@
- #define __PERF_EVSEL_H 1
++
++static struct cpu_map *cpu_map__read_all_cpu_map(void)
++{
++	struct cpu_map *cpus = NULL;
+ 	FILE *onlnf;
+ 	int nr_cpus = 0;
++	int *tmp_cpus = NULL, *tmp;
++	int max_entries = 0;
+ 	int n, cpu, prev;
+ 	char sep;
  
- #include <linux/list.h>
-+#include <stdbool.h>
- #include <linux/perf_event.h>
- #include "types.h"
- #include "xyarray.h"
-+ 
-+struct perf_counts_values {
-+	union {
-+		struct {
-+			u64 val;
-+			u64 ena;
-+			u64 run;
-+		};
-+		u64 values[3];
-+	};
+ 	onlnf = fopen("/sys/devices/system/cpu/online", "r");
+ 	if (!onlnf)
+-		return default_cpu_map();
++		return cpu_map__default_new();
+ 
+ 	sep = 0;
+ 	prev = -1;
+@@ -38,12 +59,28 @@ static int read_all_cpu_map(void)
+ 		if (n <= 0)
+ 			break;
+ 		if (prev >= 0) {
+-			assert(nr_cpus + cpu - prev - 1 < MAX_NR_CPUS);
++			int new_max = nr_cpus + cpu - prev - 1;
++
++			if (new_max >= max_entries) {
++				max_entries = new_max + MAX_NR_CPUS / 2;
++				tmp = realloc(tmp_cpus, max_entries * sizeof(int));
++				if (tmp == NULL)
++					goto out_free_tmp;
++				tmp_cpus = tmp;
++			}
++
+ 			while (++prev < cpu)
+-				cpumap[nr_cpus++] = prev;
++				tmp_cpus[nr_cpus++] = prev;
++		}
++		if (nr_cpus == max_entries) {
++			max_entries += MAX_NR_CPUS;
++			tmp = realloc(tmp_cpus, max_entries * sizeof(int));
++			if (tmp == NULL)
++				goto out_free_tmp;
++			tmp_cpus = tmp;
+ 		}
+-		assert (nr_cpus < MAX_NR_CPUS);
+-		cpumap[nr_cpus++] = cpu;
++
++		tmp_cpus[nr_cpus++] = cpu;
+ 		if (n == 2 && sep == '-')
+ 			prev = cpu;
+ 		else
+@@ -51,24 +88,31 @@ static int read_all_cpu_map(void)
+ 		if (n == 1 || sep == '\n')
+ 			break;
+ 	}
+-	fclose(onlnf);
+-	if (nr_cpus > 0)
+-		return nr_cpus;
+ 
+-	return default_cpu_map();
++	if (nr_cpus > 0)
++		cpus = cpu_map__trim_new(nr_cpus, tmp_cpus);
++	else
++		cpus = cpu_map__default_new();
++out_free_tmp:
++	free(tmp_cpus);
++	fclose(onlnf);
++	return cpus;
+ }
+ 
+-int read_cpu_map(const char *cpu_list)
++struct cpu_map *cpu_map__new(const char *cpu_list)
+ {
++	struct cpu_map *cpus = NULL;
+ 	unsigned long start_cpu, end_cpu = 0;
+ 	char *p = NULL;
+ 	int i, nr_cpus = 0;
++	int *tmp_cpus = NULL, *tmp;
++	int max_entries = 0;
+ 
+ 	if (!cpu_list)
+-		return read_all_cpu_map();
++		return cpu_map__read_all_cpu_map();
+ 
+ 	if (!isdigit(*cpu_list))
+-		goto invalid;
++		goto out;
+ 
+ 	while (isdigit(*cpu_list)) {
+ 		p = NULL;
+@@ -94,21 +138,42 @@ int read_cpu_map(const char *cpu_list)
+ 		for (; start_cpu <= end_cpu; start_cpu++) {
+ 			/* check for duplicates */
+ 			for (i = 0; i < nr_cpus; i++)
+-				if (cpumap[i] == (int)start_cpu)
++				if (tmp_cpus[i] == (int)start_cpu)
+ 					goto invalid;
+ 
+-			assert(nr_cpus < MAX_NR_CPUS);
+-			cpumap[nr_cpus++] = (int)start_cpu;
++			if (nr_cpus == max_entries) {
++				max_entries += MAX_NR_CPUS;
++				tmp = realloc(tmp_cpus, max_entries * sizeof(int));
++				if (tmp == NULL)
++					goto invalid;
++				tmp_cpus = tmp;
++			}
++			tmp_cpus[nr_cpus++] = (int)start_cpu;
+ 		}
+ 		if (*p)
+ 			++p;
+ 
+ 		cpu_list = p;
+ 	}
+-	if (nr_cpus > 0)
+-		return nr_cpus;
+ 
+-	return default_cpu_map();
++	if (nr_cpus > 0)
++		cpus = cpu_map__trim_new(nr_cpus, tmp_cpus);
++	else
++		cpus = cpu_map__default_new();
+ invalid:
+-	return -1;
++	free(tmp_cpus);
++out:
++	return cpus;
++}
++
++struct cpu_map *cpu_map__dummy_new(void)
++{
++	struct cpu_map *cpus = malloc(sizeof(*cpus) + sizeof(int));
++
++	if (cpus != NULL) {
++		cpus->nr = 1;
++		cpus->map[0] = -1;
++	}
++
++	return cpus;
+ }
+diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
+index 3e60f56..f7a4f42 100644
+--- a/tools/perf/util/cpumap.h
++++ b/tools/perf/util/cpumap.h
+@@ -1,7 +1,13 @@
+ #ifndef __PERF_CPUMAP_H
+ #define __PERF_CPUMAP_H
+ 
+-extern int read_cpu_map(const char *cpu_list);
+-extern int cpumap[];
++struct cpu_map {
++	int nr;
++	int map[];
 +};
 +
-+struct perf_counts {
-+	s8		   	  scaled;
-+	struct perf_counts_values aggr;
-+	struct perf_counts_values cpu[];
-+};
++struct cpu_map *cpu_map__new(const char *cpu_list);
++struct cpu_map *cpu_map__dummy_new(void);
++void *cpu_map__delete(struct cpu_map *map);
  
- struct perf_evsel {
- 	struct list_head	node;
- 	struct perf_event_attr	attr;
- 	char			*filter;
- 	struct xyarray		*fd;
-+	struct perf_counts	*counts;
- 	int			idx;
- 	void			*priv;
- };
-@@ -19,10 +38,70 @@ struct perf_evsel *perf_evsel__new(u32 type, u64 config, int idx);
- void perf_evsel__delete(struct perf_evsel *evsel);
- 
- int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
-+int perf_evsel__alloc_counts(struct perf_evsel *evsel, int ncpus);
- void perf_evsel__free_fd(struct perf_evsel *evsel);
-+void perf_evsel__close_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
- 
- #define perf_evsel__match(evsel, t, c)		\
- 	(evsel->attr.type == PERF_TYPE_##t &&	\
- 	 evsel->attr.config == PERF_COUNT_##c)
- 
-+int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
-+			      int cpu, int thread, bool scale);
-+
-+/**
-+ * perf_evsel__read_on_cpu - Read out the results on a CPU and thread
-+ *
-+ * @evsel - event selector to read value
-+ * @cpu - CPU of interest
-+ * @thread - thread of interest
-+ */
-+static inline int perf_evsel__read_on_cpu(struct perf_evsel *evsel,
-+					  int cpu, int thread)
-+{
-+	return __perf_evsel__read_on_cpu(evsel, cpu, thread, false);
-+}
-+
-+/**
-+ * perf_evsel__read_on_cpu_scaled - Read out the results on a CPU and thread, scaled
-+ *
-+ * @evsel - event selector to read value
-+ * @cpu - CPU of interest
-+ * @thread - thread of interest
-+ */
-+static inline int perf_evsel__read_on_cpu_scaled(struct perf_evsel *evsel,
-+						 int cpu, int thread)
-+{
-+	return __perf_evsel__read_on_cpu(evsel, cpu, thread, true);
-+}
-+
-+int __perf_evsel__read(struct perf_evsel *evsel, int ncpus, int nthreads,
-+		       bool scale);
-+
-+/**
-+ * perf_evsel__read - Read the aggregate results on all CPUs
-+ *
-+ * @evsel - event selector to read value
-+ * @ncpus - Number of cpus affected, from zero
-+ * @nthreads - Number of threads affected, from zero
-+ */
-+static inline int perf_evsel__read(struct perf_evsel *evsel,
-+				    int ncpus, int nthreads)
-+{
-+	return __perf_evsel__read(evsel, ncpus, nthreads, false);
-+}
-+
-+/**
-+ * perf_evsel__read_scaled - Read the aggregate results on all CPUs, scaled
-+ *
-+ * @evsel - event selector to read value
-+ * @ncpus - Number of cpus affected, from zero
-+ * @nthreads - Number of threads affected, from zero
-+ */
-+static inline int perf_evsel__read_scaled(struct perf_evsel *evsel,
-+					  int ncpus, int nthreads)
-+{
-+	return __perf_evsel__read(evsel, ncpus, nthreads, true);
-+}
-+
- #endif /* __PERF_EVSEL_H */
+ #endif /* __PERF_CPUMAP_H */
 -- 
 1.6.2.5
 
