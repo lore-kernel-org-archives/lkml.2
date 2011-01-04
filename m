@@ -1,79 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092Ab1ADIml (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 03:42:41 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:57790 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751155Ab1ADImk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 03:42:40 -0500
-Message-ID: <4D22DD95.7050308@cn.fujitsu.com>
-Date: Tue, 04 Jan 2011 16:43:01 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] rcu: remove SPARSE_RCU_POINTER
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-01-04 16:42:20,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-01-04 16:42:20,
-	Serialize complete at 2011-01-04 16:42:20
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1752425Ab1ADIoZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 03:44:25 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:40953 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944Ab1ADIoY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 03:44:24 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: v9fs-developer@lists.sourceforge.net
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH] fs/9p: Use the correct dentry operations
+Date: Tue,  4 Jan 2011 14:14:06 +0530
+Message-Id: <1294130646-32602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ad77dbce567128d59b37a14c9562c8af6f63aeca removed the changes
+done by 3c30750ffafbc32af040b09f777b67aa2486b063. This patch
+add the changes back and also simplifies the function
 
-As I known, __rcu annotations do not effect the result compiled kernel.
-
-They work only when we use spare("make C=1" or "make C=2"),
-So we don't need another new switch for it since we have one
-for debugging(use spare or not).
-
-signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
-diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-index 320d6c9..0ab21c2 100644
---- a/include/linux/compiler.h
-+++ b/include/linux/compiler.h
-@@ -16,11 +16,7 @@
- # define __release(x)	__context__(x,-1)
- # define __cond_lock(x,c)	((c) ? ({ __acquire(x); 1; }) : 0)
- # define __percpu	__attribute__((noderef, address_space(3)))
--#ifdef CONFIG_SPARSE_RCU_POINTER
- # define __rcu		__attribute__((noderef, address_space(4)))
--#else
--# define __rcu
--#endif
- extern void __chk_user_ptr(const volatile void __user *);
- extern void __chk_io_ptr(const volatile void __iomem *);
- #else
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 8be18e5..bf9c5d3 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -563,21 +563,6 @@ config PROVE_RCU_REPEATEDLY
+ fs/9p/vfs_inode_dotl.c |   73 +++++++++++++++++-------------------------------
+ 1 files changed, 26 insertions(+), 47 deletions(-)
+
+diff --git a/fs/9p/vfs_inode_dotl.c b/fs/9p/vfs_inode_dotl.c
+index 38d5880..8527742 100644
+--- a/fs/9p/vfs_inode_dotl.c
++++ b/fs/9p/vfs_inode_dotl.c
+@@ -197,61 +197,40 @@ v9fs_vfs_create_dotl(struct inode *dir, struct dentry *dentry, int omode,
+ 		goto error;
+ 	}
+ 	/* instantiate inode and assign the unopened fid to the dentry */
+-	if (v9ses->cache == CACHE_LOOSE || v9ses->cache == CACHE_FSCACHE ||
+-	    (nd && nd->flags & LOOKUP_OPEN)) {
+-		fid = p9_client_walk(dfid, 1, &name, 1);
+-		if (IS_ERR(fid)) {
+-			err = PTR_ERR(fid);
+-			P9_DPRINTK(P9_DEBUG_VFS, "p9_client_walk failed %d\n",
+-				err);
+-			fid = NULL;
+-			goto error;
+-		}
++	fid = p9_client_walk(dfid, 1, &name, 1);
++	if (IS_ERR(fid)) {
++		err = PTR_ERR(fid);
++		P9_DPRINTK(P9_DEBUG_VFS, "p9_client_walk failed %d\n", err);
++		fid = NULL;
++		goto error;
++	}
  
- 	 Say N if you are unsure.
+-		inode = v9fs_inode_from_fid(v9ses, fid, dir->i_sb);
+-		if (IS_ERR(inode)) {
+-			err = PTR_ERR(inode);
+-			P9_DPRINTK(P9_DEBUG_VFS, "inode creation failed %d\n",
+-				err);
+-			goto error;
+-		}
++	inode = v9fs_inode_from_fid(v9ses, fid, dir->i_sb);
++	if (IS_ERR(inode)) {
++		err = PTR_ERR(inode);
++		P9_DPRINTK(P9_DEBUG_VFS, "inode creation failed %d\n", err);
++		goto error;
++	}
++	if (v9ses->cache)
+ 		dentry->d_op = &v9fs_cached_dentry_operations;
+-		d_instantiate(dentry, inode);
+-		err = v9fs_fid_add(dentry, fid);
+-		if (err < 0)
+-			goto error;
+-		/* The fid would get clunked via a dput */
+-		fid = NULL;
+-	} else {
+-		/*
+-		 * Not in cached mode. No need to populate
+-		 * inode with stat. We need to get an inode
+-		 * so that we can set the acl with dentry
+-		 */
+-		inode = v9fs_get_inode(dir->i_sb, mode);
+-		if (IS_ERR(inode)) {
+-			err = PTR_ERR(inode);
+-			goto error;
+-		}
++	else
+ 		dentry->d_op = &v9fs_dentry_operations;
+-		d_instantiate(dentry, inode);
+-	}
++	d_instantiate(dentry, inode);
++	err = v9fs_fid_add(dentry, fid);
++	if (err < 0)
++		goto error;
++
+ 	/* Now set the ACL based on the default value */
+ 	v9fs_set_create_acl(dentry, dacl, pacl);
  
--config SPARSE_RCU_POINTER
--	bool "RCU debugging: sparse-based checks for pointer usage"
--	default n
--	help
--	 This feature enables the __rcu sparse annotation for
--	 RCU-protected pointers.  This annotation will cause sparse
--	 to flag any non-RCU used of annotated pointers.  This can be
--	 helpful when debugging RCU usage.  Please note that this feature
--	 is not intended to enforce code cleanliness; it is instead merely
--	 a debugging aid.
+-	/* if we are opening a file, assign the open fid to the file */
+-	if (nd && nd->flags & LOOKUP_OPEN) {
+-		filp = lookup_instantiate_filp(nd, dentry, generic_file_open);
+-		if (IS_ERR(filp)) {
+-			p9_client_clunk(ofid);
+-			return PTR_ERR(filp);
+-		}
+-		filp->private_data = ofid;
+-	} else
++	/* Since we are opening a file, assign the open fid to the file */
++	filp = lookup_instantiate_filp(nd, dentry, generic_file_open);
++	if (IS_ERR(filp)) {
+ 		p9_client_clunk(ofid);
 -
--	 Say Y to make sparse flag questionable use of RCU-protected pointers
++		return PTR_ERR(filp);
++	}
++	filp->private_data = ofid;
+ 	return 0;
 -
--	 Say N if you are unsure.
--
- config LOCKDEP
- 	bool
- 	depends on DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT
+ error:
+ 	if (ofid)
+ 		p9_client_clunk(ofid);
+-- 
+1.7.1
+
