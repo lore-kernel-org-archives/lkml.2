@@ -1,54 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab1ADRSc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 12:18:32 -0500
-Received: from casper.infradead.org ([85.118.1.10]:44077 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794Ab1ADRSb (ORCPT
+	id S1752788Ab1ADRS1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 12:18:27 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:60213 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193Ab1ADRS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 12:18:31 -0500
+	Tue, 4 Jan 2011 12:18:26 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        "David S . Miller" <davem@davemloft.net>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@gmail.com>,
         Stephane Eranian <eranian@google.com>,
         Tom Zanussi <tzanussi@gmail.com>
-Subject: [GIT PULL 0/3] perf/core improvements and fixes
-Date: Tue,  4 Jan 2011 15:18:02 -0200
-Message-Id: <1294161485-28528-1-git-send-email-acme@infradead.org>
+Subject: [PATCH 1/3] perf test: Clarify some error reports in the open syscall test
+Date: Tue,  4 Jan 2011 15:18:03 -0200
+Message-Id: <1294161485-28528-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+In-Reply-To: <1294161485-28528-1-git-send-email-acme@infradead.org>
+References: <1294161485-28528-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-        Please consider pulling from:
+Rebooted my devel machine, first thing I ran was perf test, that expects
+debugfs to be mounted, test fails. Be more clear about it.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+Also add missing newlines and add more informative message when
+sys_perf_event_open fails.
 
-Regards,
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-test.c |   18 +++++++++++-------
+ 1 files changed, 11 insertions(+), 7 deletions(-)
 
-- Arnaldo
-
-Arnaldo Carvalho de Melo (2):
-  perf test: Clarify some error reports in the open syscall test
-  perf evsel: Support perf_evsel__open(cpus > 1 && threads > 1)
-
-Stephane Eranian (1):
-  perf tools: Fix perf_event.h header usage
-
- tools/perf/builtin-test.c      |  124 +++++++++++++++++++++++++++++++++++++--
- tools/perf/util/evsel.c        |   75 +++++++++++++-----------
- tools/perf/util/evsel.h        |    2 +-
- tools/perf/util/parse-events.h |    2 +-
- 4 files changed, 159 insertions(+), 44 deletions(-)
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 6c99152..1c98434 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -268,24 +268,26 @@ static int test__open_syscall_event(void)
+ 	int id = trace_event__id("sys_enter_open");
+ 
+ 	if (id < 0) {
+-		pr_debug("trace_event__id(\"sys_enter_open\") ");
++		pr_debug("is debugfs mounted on /sys/kernel/debug?\n");
+ 		return -1;
+ 	}
+ 
+ 	threads = thread_map__new(-1, getpid());
+ 	if (threads == NULL) {
+-		pr_debug("thread_map__new ");
++		pr_debug("thread_map__new\n");
+ 		return -1;
+ 	}
+ 
+ 	evsel = perf_evsel__new(PERF_TYPE_TRACEPOINT, id, 0);
+ 	if (evsel == NULL) {
+-		pr_debug("perf_evsel__new ");
++		pr_debug("perf_evsel__new\n");
+ 		goto out_thread_map_delete;
+ 	}
+ 
+ 	if (perf_evsel__open_per_thread(evsel, threads) < 0) {
+-		pr_debug("perf_evsel__open_per_thread ");
++		pr_debug("failed to open counter: %s, "
++			 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
++			 strerror(errno));
+ 		goto out_evsel_delete;
+ 	}
+ 
+@@ -295,13 +297,15 @@ static int test__open_syscall_event(void)
+ 	}
+ 
+ 	if (perf_evsel__read_on_cpu(evsel, 0, 0) < 0) {
+-		pr_debug("perf_evsel__open_read_on_cpu ");
++		pr_debug("perf_evsel__open_read_on_cpu\n");
+ 		goto out_close_fd;
+ 	}
+ 
+-	if (evsel->counts->cpu[0].val != nr_open_calls)
+-		pr_debug("perf_evsel__read_on_cpu: expected to intercept %d calls, got %Ld ",
++	if (evsel->counts->cpu[0].val != nr_open_calls) {
++		pr_debug("perf_evsel__read_on_cpu: expected to intercept %d calls, got %Ld\n",
+ 			 nr_open_calls, evsel->counts->cpu[0].val);
++		goto out_close_fd;
++	}
+ 	
+ 	err = 0;
+ out_close_fd:
+-- 
+1.6.2.5
 
