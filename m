@@ -1,70 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751378Ab1ADSEF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 13:04:05 -0500
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:45107 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750954Ab1ADSED (ORCPT
+	id S1751452Ab1ADSEk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 13:04:40 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:41887 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954Ab1ADSEj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 13:04:03 -0500
-Message-ID: <4D23610C.1060009@ti.com>
-Date: Tue, 04 Jan 2011 12:03:56 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
-MIME-Version: 1.0
-To: jean.pihet@newoldbits.com
-CC: mingo@elte.hu, linux-kernel@vger.kernel.org, trenn@suse.de,
-        linux-omap@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>,
-        linux-perf-users@vger.kernel.org, rjw@sisk.pl,
-        Jean Pihet <j-pihet@ti.com>
-Subject: Re: [PATCH 2/3] perf: add OMAP support for the new power events
-References: <1294136263-24020-1-git-send-email-j-pihet@ti.com> <1294136263-24020-3-git-send-email-j-pihet@ti.com>
-In-Reply-To: <1294136263-24020-3-git-send-email-j-pihet@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Jan 2011 13:04:39 -0500
+Subject: Re: [RFC -v3 PATCH 2/3] sched: add yield_to function
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Rik van Riel <riel@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Avi Kiviti <avi@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>
+In-Reply-To: <20110103162918.577a9620@annuminas.surriel.com>
+References: <20110103162637.29f23c40@annuminas.surriel.com>
+	 <20110103162918.577a9620@annuminas.surriel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 04 Jan 2011 19:04:49 +0100
+Message-ID: <1294164289.2016.186.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-jean.pihet@newoldbits.com had written, on 01/04/2011 04:17 AM, the 
-following:
-[..]
-> diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
-> index 0ec8a04..0ee0b0e 100644
-> --- a/arch/arm/mach-omap2/pm34xx.c
-> +++ b/arch/arm/mach-omap2/pm34xx.c
-> @@ -29,6 +29,7 @@
->  #include <linux/delay.h>
->  #include <linux/slab.h>
->  #include <linux/console.h>
-> +#include <trace/events/power.h>
+On Mon, 2011-01-03 at 16:29 -0500, Rik van Riel wrote:
+> From: Mike Galbraith <efault@gmx.de>
+> 
+> Add a yield_to function to the scheduler code, allowing us to
+> give enough of our timeslice to another thread to allow it to
+> run and release whatever resource we need it to release.
+> 
+> We may want to use this to provide a sys_yield_to system call
+> one day.
+> 
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+> Not-signed-off-by: Mike Galbraith <efault@gmx.de>
+> 
+> --- 
+> Mike, want to change the above into a Signed-off-by: ? :)
+> This code seems to work well.
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index c5f926c..0b8a3e6 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1083,6 +1083,7 @@ struct sched_class {
+>  	void (*enqueue_task) (struct rq *rq, struct task_struct *p, int wakeup);
+>  	void (*dequeue_task) (struct rq *rq, struct task_struct *p, int sleep);
+>  	void (*yield_task) (struct rq *rq);
+> +	int (*yield_to_task) (struct task_struct *p, int preempt);
 >  
->  #include <plat/sram.h>
->  #include <plat/clockdomain.h>
-> @@ -506,8 +507,14 @@ static void omap3_pm_idle(void)
->  	if (omap_irq_pending() || need_resched())
->  		goto out;
+>  	void (*check_preempt_curr) (struct rq *rq, struct task_struct *p, int flags);
 >  
-> +	trace_power_start(POWER_CSTATE, 1, smp_processor_id());
-> +	trace_cpu_idle(1, smp_processor_id());
+> @@ -1981,6 +1982,7 @@ static inline int rt_mutex_getprio(struct task_struct *p)
+>  # define rt_mutex_adjust_pi(p)		do { } while (0)
+>  #endif
+>  
+> +extern void yield_to(struct task_struct *p, int preempt);
+>  extern void set_user_nice(struct task_struct *p, long nice);
+>  extern int task_prio(const struct task_struct *p);
+>  extern int task_nice(const struct task_struct *p);
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index f8e5a25..ffa7a9d 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -6901,6 +6901,53 @@ void __sched yield(void)
+>  }
+>  EXPORT_SYMBOL(yield);
+>  
+> +/**
+> + * yield_to - yield the current processor to another thread in
+> + * your thread group, or accelerate that thread toward the
+> + * processor it's on.
+> + *
+> + * It's the caller's job to ensure that the target task struct
+> + * can't go away on us before we can do any checks.
+> + */
+> +void __sched yield_to(struct task_struct *p, int preempt)
+> +{
+> +	struct task_struct *curr = current;
+> +	struct rq *rq, *p_rq;
+> +	unsigned long flags;
+> +	int yield = 0;
 > +
->  	omap_sram_idle();
+> +	local_irq_save(flags);
+> +	rq = this_rq();
+> +
+> +again:
+> +	p_rq = task_rq(p);
+> +	double_rq_lock(rq, p_rq);
+> +	while (task_rq(p) != p_rq) {
+> +		double_rq_unlock(rq, p_rq);
+> +		goto again;
+> +	}
+> +
+> +	if (task_running(p_rq, p) || p->state || !p->se.on_rq ||
+> +			!same_thread_group(p, curr) ||
+> +			!curr->sched_class->yield_to_task ||
+> +			curr->sched_class != p->sched_class) {
+> +		goto out;
+> +	}
+> +
+> +	yield = curr->sched_class->yield_to_task(p, preempt);
+> +
+> +out:
+> +	double_rq_unlock(rq, p_rq);
+> +	local_irq_restore(flags);
+> +
+> +	if (yield) {
+> +		set_current_state(TASK_RUNNING);
+> +		schedule();
+> +	}
+> +}
+> +EXPORT_SYMBOL(yield_to);
+
+This definitely wants to be EXPORT_SYMBOL_GPL() and if it were possible
+I'd make it so only kvm.o could use it. It really sucks that kvm is a
+module.
+
+>  /*
+>   * This task is about to go to sleep on IO. Increment rq->nr_iowait so
+>   * that process accounting knows that this is a task in IO wait state.
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index 5119b08..3288e7c 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -1119,6 +1119,61 @@ static void yield_task_fair(struct rq *rq)
+>  }
 >  
-> +	trace_power_end(smp_processor_id());
-> +	trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
+>  #ifdef CONFIG_SMP
+> +static void pull_task(struct rq *src_rq, struct task_struct *p,
+> +		      struct rq *this_rq, int this_cpu);
+> +#endif
+> +
+> +static int yield_to_task_fair(struct task_struct *p, int preempt)
+> +{
+> +	struct sched_entity *se = &current->se;
+> +	struct sched_entity *pse = &p->se;
+> +	struct sched_entity *curr = &(task_rq(p)->curr)->se;
+> +	struct cfs_rq *cfs_rq = cfs_rq_of(se);
+> +	struct cfs_rq *p_cfs_rq = cfs_rq_of(pse);
+> +	int yield = this_rq() == task_rq(p);
+> +	int want_preempt = preempt;
+> +
+> +#ifdef CONFIG_FAIR_GROUP_SCHED
+> +	if (cfs_rq->tg != p_cfs_rq->tg)
+> +		return 0;
+> +
+> +	/* Preemption only allowed within the same task group. */
+> +	if (preempt && cfs_rq->tg != cfs_rq_of(curr)->tg)
+> +		preempt = 0;
+> +#endif
 
-Dumb question: it just tells me which C state was attempted - not if 
-actually succeeded in hitting it rt? Does'nt this give us a false data?
+I'd simply bail if its not the same cgroup, who cares about that case
+anyway, all KVM vcpu threads should be in the same cgroup I think.
 
-[..]
-> diff --git a/arch/arm/plat-omap/clock.c b/arch/arm/plat-omap/clock.c
-> index fc62fb5..7cbb09b 100644
-> --- a/arch/arm/plat-omap/clock.c
-> +++ b/arch/arm/plat-omap/clock.c
-(from an offline discussion on a related topic): Would it also be nice 
-to hook on mach-omap2/clock.c points as well to hook on indirect changes?
-[..]
+> +	/* Preemption only allowed within the same thread group. */
+> +	if (preempt && !same_thread_group(current, task_of(p_cfs_rq->curr)))
+> +		preempt = 0;
 
--- 
-Regards,
-Nishanth Menon
+The calling site already checks for same_thread_group(), we never even
+get here if that's not the case.
+
+> +#ifdef CONFIG_SMP
+> +	/*
+> +	 * If this yield is important enough to want to preempt instead
+> +	 * of only dropping a ->next hint, we're alone, and the target
+> +	 * is not alone, pull the target to this cpu.
+> +	 */
+> +	if (want_preempt && !yield && cfs_rq->nr_running == 1 &&
+> +			cpumask_test_cpu(smp_processor_id(), &p->cpus_allowed)) {
+> +		pull_task(task_rq(p), p, this_rq(), smp_processor_id());
+
+This only works by the grace that the caller checked p->se.on_rq. A
+comment might be in order.
+
+> +		p_cfs_rq = cfs_rq_of(pse);
+> +		yield = 1;
+> +	}
+> +#endif
+> +
+> +	if (yield)
+> +		clear_buddies(cfs_rq, se);
+> +	else if (preempt)
+> +		clear_buddies(p_cfs_rq, curr);
+> +
+> +	/* Tell the scheduler that we'd really like pse to run next. */
+> +	p_cfs_rq->next = pse;
+> +
+> +	if (!yield && preempt)
+> +		resched_task(task_of(p_cfs_rq->curr));
+
+I don't get this.. Why would you resched the remote cpu, surely you
+didn't just pull its current task over..
+
+> +	return yield;
+> +}
+> +
+> +#ifdef CONFIG_SMP
+>  
+>  #ifdef CONFIG_FAIR_GROUP_SCHED
+>  /*
+> @@ -2081,6 +2136,7 @@ static const struct sched_class fair_sched_class = {
+>  	.enqueue_task		= enqueue_task_fair,
+>  	.dequeue_task		= dequeue_task_fair,
+>  	.yield_task		= yield_task_fair,
+> +	.yield_to_task		= yield_to_task_fair,
+>  
+>  	.check_preempt_curr	= check_preempt_wakeup,
+>  
+> 
+
+
