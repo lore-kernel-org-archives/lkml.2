@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751760Ab1ADTIr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 14:08:47 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:49173 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129Ab1ADTIq (ORCPT
+	id S1751727Ab1ADTMF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 14:12:05 -0500
+Received: from mail.windriver.com ([147.11.1.11]:51362 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751315Ab1ADTME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 14:08:46 -0500
-Subject: Re: [PATCH 2/3] ntp: add ADJ_SETOFFSET mode bit
-From: John Stultz <john.stultz@linaro.org>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richard.cochran@omicron.at>
-In-Reply-To: <20110104083733.GA4563@riccoc20.at.omicron.at>
-References: <1293493244-17583-1-git-send-email-john.stultz@linaro.org>
-	 <1293493244-17583-3-git-send-email-john.stultz@linaro.org>
-	 <AANLkTi=LqkC-tKzbb6y=iL0UvFYcfcHSuX=jVVFCk1uR@mail.gmail.com>
-	 <1294087466.2571.89.camel@work-vm>
-	 <20110104083733.GA4563@riccoc20.at.omicron.at>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 04 Jan 2011 11:08:31 -0800
-Message-ID: <1294168111.2694.3.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Jan 2011 14:12:04 -0500
+Date: Tue, 4 Jan 2011 14:11:58 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: stable@kernel.org, linux-kernel@vger.kernel.org, stable-review@kernel.org
+Subject: Re: [34-longterm 000/260] v2.6.34.8 longterm review
+Message-ID: <20110104191158.GO30150@windriver.com>
+References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
+ <4D21A7E8.3090709@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D21A7E8.3090709@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 04 Jan 2011 19:11:59.0211 (UTC) FILETIME=[42B49BB0:01CBAC43]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-04 at 09:37 +0100, Richard Cochran wrote:
-> On Mon, Jan 03, 2011 at 12:44:26PM -0800, John Stultz wrote:
-> > On Wed, 2010-12-29 at 05:47 +0900, Kuwahara,T. wrote:
-> > > I came up with this simple solution: "Just use ADJ_OFFSET as usual,
-> > > but don't forget to disable the kernel PLL."
-> > 
-> > Again, this seems to be trying to add new functionality into a corner
-> > case of a existing mode.
-> > 
-> > I don't like this because it makes testing and validating that the code
-> > is correct for its uses difficult. Especially given that a number of
-> > combinations of modes might be set at once. What happens to freq
-> > adjustments done at the same time as an ADJ_OFFSET - STA_PLL?
+[Re: [34-longterm 000/260] v2.6.34.8 longterm review] On 03/01/2011 (Mon 11:41) Jiri Slaby wrote:
+
+> On 01/02/2011 08:14 AM, Paul Gortmaker wrote:
+> > This is the start of the longterm review cycle for the v2.6.34.8 release.
+> > There are 260 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let us know.  If anyone is a maintainer of the proper subsystem, and
+> > wants to add a Signed-off-by: line to the patch, please respond with it.
 > 
-> Where are the mode bits and their combinations documented, anyhow?
+> Hi, although I'm neither of that, I'm missing tty fixes. Please see:
+> https://lkml.org/lkml/2010/11/29/508
+
+For some reason lkml.org won't show me that link currently, but I've got
+these patches already queued for the next round as part of watching what
+Greg added to the 27 release of 32-longterm.
+
+--------------
+longterm-queue-2.6.34$grep -l Jiri next_round/*
+next_round/HID-hidraw-fix-a-NULL-pointer-dereference-in-hidraw_2.patch
+next_round/HID-hidraw-fix-a-NULL-pointer-dereference-in-hidraw_.patch
+next_round/hpet-unmap-unused-I-O-space.patch
+next_round/TTY-ldisc-fix-open-flag-handling.patch
+next_round/tty-prevent-DOS-in-the-flush_to_ldisc.patch
+next_round/TTY-restore-tty_ldisc_wait_idle.patch
+next_round/USB-gadget-AT91-fix-typo-in-atmel_usba_udc-driver.patch
+longterm-queue-2.6.34$
+--------------
+
+If you want to look around at what else is in "next_round" you can grab
+the queue from:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/longterm/longterm-queue-2.6.34.git
+
+Let me know if you still think something is missing, and/or call out the
+upstream commit IDs explicitly and I'll do the right thing.
+
+Thanks,
+Paul.
+
+> and add the three in the next round.
 > 
-> There are lot of papers on NTP, and I have not read them all, but I
-> don't recall having seen a precise and succinct decription of the
-> ntp_adjtime interface anywhere.
-
-You can find the original ntp_adjtime description here:
-Page 22 of:
-http://www.eecis.udel.edu/~mills/database/rfc/rfc1589.txt
-
-This pre-dates the nanotime kernel paper, which added MOD_NANO.
-
-thanks
--john
-
-
-
+> thanks,
+> -- 
+> js
