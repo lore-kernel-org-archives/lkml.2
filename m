@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751650Ab1ADGE7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 01:04:59 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:22122 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751099Ab1ADGE5 (ORCPT
+	id S1751430Ab1ADGOb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 01:14:31 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36990 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926Ab1ADGO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 01:04:57 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAEBFIk15Ldpx/2dsb2JhbACkNXS7ToVKBJAq
-Date: Tue, 4 Jan 2011 17:04:52 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, mfasheh@suse.com,
-        joel.becker@oracle.com, swhiteho@redhat.com
-Subject: Re: [patch 7/8] fs: fix or note I_DIRTY handling bugs in
- filesystems
-Message-ID: <20110104060452.GC3402@amd>
-References: <20101218014634.943276411@kernel.dk>
- <20101218015117.652706340@kernel.dk>
- <20101229150108.GA13358@infradead.org>
+	Tue, 4 Jan 2011 01:14:29 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC -v3 PATCH 2/3] sched: add yield_to function
+Cc: kosaki.motohiro@jp.fujitsu.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>
+In-Reply-To: <20110103162918.577a9620@annuminas.surriel.com>
+References: <20110103162637.29f23c40@annuminas.surriel.com> <20110103162918.577a9620@annuminas.surriel.com>
+Message-Id: <20110104151345.3BC2.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101229150108.GA13358@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue,  4 Jan 2011 15:14:25 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 29, 2010 at 10:01:09AM -0500, Christoph Hellwig wrote:
-> As mentioned last round I think the exporting of inode_lock and pusing
-> of the I_DIRTY* complexities into the filesystems can be avoided.  See
+> From: Mike Galbraith <efault@gmx.de>
+> 
+> Add a yield_to function to the scheduler code, allowing us to
+> give enough of our timeslice to another thread to allow it to
+> run and release whatever resource we need it to release.
+> 
+> We may want to use this to provide a sys_yield_to system call
+> one day.
 
-Yes I did see that, I hoped to continue discussion of that detail.
+At least I want. Ruby has GIL(giant interpreter lock). And giant lock
+naturally enforce an app to implement cooperative multithreading model.
+Therefore it has similar problem with your one. Python solved this issue
+by slowing lock mechanism (two pthread-cond wakeup each GIL releasing), 
+but I don't want it.
 
-Let me start out by saying OK I will agree to hold off that change
-until inode_lock is removed at least, and concentrate on just the
-fixes.
-
-However I strongly believe that filesystems should be able to access
-and manipulate the inode dirty state directly. If you agree with that,
-then I think they should be able to access the lock required for that.
-Filesystems will want to keep their internal state in synch with vfs
-visible state most likely (eg. like your hfsplus patches), and _every_
-time we do "loose" coupling between state bits like this (eg. page and
-buffer state; page and pte state; etc), it turns out to be a huge mess
-of races and subtle code and ordering.
-
-
-> the patch below, which compiles and passes xfstests for xfs, but
-> otherwise isn't quite done yet.  The only code change vs the opencoded
-> variant in the patch is that we do a useless inode_lock roundtrip
-
-I dislike this style, except where it has some real advantages like
-get_block case. I prefer just to make the existing inode_writeback_begin
-into a "__special" variant, and make inode_writeback_begin just do the
-locking and masking for filesystems.
+Also, If pthread_cond_signal() call sys_yield_to imlicitly, we can
+avoid almost Nehalem (and other P2P cache arch) lock unfairness 
+problem. (probaby creating pthread_condattr_setautoyield_np or similar
+knob is good one)
 
 
-> for a non-dirty inode on gfs2, which is I think is acceptable,
-> especially once we have the lock split anyway.
-
-The bigger issue IMO is if filesystems want to be smarter with dirty
-bit handling and keep more internal state in sync with it. I don't
-see any problem at all with allowing them to lock the dirty state.
-(but will hold off the patch for now, as said).
- 
-Thanks,
-Nick
 
