@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751810Ab1ADXwa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 18:52:30 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:34822 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751397Ab1ADXw2 convert rfc822-to-8bit (ORCPT
+	id S1751533Ab1ADXy2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 18:54:28 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46392 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751337Ab1ADXy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 18:52:28 -0500
+	Tue, 4 Jan 2011 18:54:27 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=cZnq6mjZrJ4fkujo+a7IPayRdcNk2XYbiSzZkC5DyXDBOksGPY08xOqfubGF5SPrsv
-         6Fu5v2o3KstyJmNvWw+3De4asAV2EfZLaTqSVOMR3SHd7AnjMquZOuGLwCDuV4DrOr18
-         76FEYxC71kqZNf2HpLJa6fYbzZAZhKV13ZT3M=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=R0GAU4Kbn7bX2TRaJMGY3m4IXeluCs+8kiGwXQUG2/1Nrx1gONOlpGa2te0rLHtgL6
+         tXxS8kuSDm6FEAmOEkCsb/MNjGL3cZ0qYMRtc5h1SJo4nkfY19uNhRH/nyU+s9hfbv09
+         O2EdhfOSto/TjgEm+0s3FuSXr5dcUwKfWspA0=
+Date: Wed, 5 Jan 2011 00:54:21 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "nhorman@tuxdriver.com" <nhorman@tuxdriver.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC patch 2/5] trace event skb fix unassigned field
+Message-ID: <20110104235418.GD2911@nowhere>
+References: <E1PaGZY-0001EI-BD@smtp.tuxdriver.com>
 MIME-Version: 1.0
-In-Reply-To: <1294002510-2324-1-git-send-email-tardyp@gmail.com>
-References: <AANLkTin7OYXzCYty8pDxyzE_Bg83=+L8jmcaoEMSf4QM@mail.gmail.com>
-	<1294002510-2324-1-git-send-email-tardyp@gmail.com>
-Date: Wed, 5 Jan 2011 00:52:28 +0100
-X-Google-Sender-Auth: jh4s3JeGqt3LDv7T5bl-8EcURXY
-Message-ID: <AANLkTi=uqcFrWujZTG8zy9zQoZ+=O6N1VBSjzgQbfX3Q@mail.gmail.com>
-Subject: Re: [PATCH] mmc: add MMC_QUIRK_BROKEN_CLK_GATING
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Pierre Tardy <tardyp@gmail.com>
-Cc: "Gao, Yunpeng" <yunpeng.gao@intel.com>, "Yuan, Hang" <hang.yuan@intel.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Ball <cjb@laptop.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>, Takashi Iwai <tiwai@suse.de>,
-        Maxim Levitsky <maximlevitsky@gmail.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1PaGZY-0001EI-BD@smtp.tuxdriver.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/1/2 Pierre Tardy <tardyp@gmail.com>:
+On Tue, Jan 04, 2011 at 06:46:06PM -0500, nhorman@tuxdriver.com wrote:
+> Acked- by: Neil Horman <nhorman@tuxdriver.com>
+> 
+> 
+> Sent from my Verizon Wireless Phone
+> 
+> ----- Reply message -----
+> From: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> Date: Tue, Jan 4, 2011 6:16 pm
+> Subject: [RFC patch 2/5] trace event skb fix unassigned field
+> To: "LKML" <linux-kernel@vger.kernel.org>
+> Cc: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>, "Steven Rostedt" <rostedt@goodmis.org>, "Frederic Weisbecker" <fweisbec@gmail.com>, "Ingo Molnar" <mingo@elte.hu>, "Neil Horman" <nhorman@tuxdriver.com>, "Thomas Gleixner" <tglx@linutronix.de>
+> 
+> 
+> The field "protocol" in event kfree_skb is left unassigned if skb is NULL,
+> leaving its trace output as garbage. Assign the value to 0 when skb is NULL
+> instead.
 
-> Some sdio card are not following sdio standard, and does not work
-> when the sdio bus's clock is gated
+Hm, if the skb is already null, we probably shouldn't send any trace.
 
-Seem to me like it's pretty straight-forward and will work...
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+What about using TP_CONDITION() ?
 
-> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
-> index 82f4b90..6df1ead 100644
-> --- a/drivers/mmc/core/sdio.c
-> +++ b/drivers/mmc/core/sdio.c
-> @@ -785,6 +785,12 @@ int mmc_attach_sdio(struct mmc_host *host, u32 ocr)
->
->        mmc_release_host(host);
->
-> +        /*
-> +         * see comments in mmc_host_may_gate_card()
-> +         * this can be overidden by function drivers if they know that
-> +         * their sdio card works with clock gating
-> +         */
-> +        card->quirks |= MMC_QUIRK_BROKEN_CLK_GATING;
-
-...so the function driver will do something like this:
-
-/* May gate clock */
-card->quirks &= ~MMC_QUIRK_BROKEN_CLK_GATING;
-
-Do you have a candidate function driver to do this ...?
-
-Yours,
-Linus Walleij
+> 
+> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> CC: Steven Rostedt <rostedt@goodmis.org>
+> CC: Frederic Weisbecker <fweisbec@gmail.com>
+> CC: Ingo Molnar <mingo@elte.hu>
+> CC: Neil Horman <nhorman@tuxdriver.com>
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  include/trace/events/skb.h |    4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+> 
+> Index: linux-2.6-lttng/include/trace/events/skb.h
+> ===================================================================
+> --- linux-2.6-lttng.orig/include/trace/events/skb.h
+> +++ linux-2.6-lttng/include/trace/events/skb.h
+> @@ -25,9 +25,7 @@ TRACE_EVENT(kfree_skb,
+>  
+>  	TP_fast_assign(
+>  		__entry->skbaddr = skb;
+> -		if (skb) {
+> -			__entry->protocol = ntohs(skb->protocol);
+> -		}
+> +		__entry->protocol = skb ? ntohs(skb->protocol) : 0;
+>  		__entry->location = location;
+>  	),
+>  
+> 
+> 
