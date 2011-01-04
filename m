@@ -1,43 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751315Ab1ADK1Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 05:27:24 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:48928 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1750917Ab1ADK1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 05:27:23 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19RD5EQh/tR/8biAUsUllJyZJTZwECOUxuhfQSnxU
-	Z4SRndJAuB/Aa9
-Subject: Re: [RFC -v3 PATCH 0/3] directed yield for Pause Loop Exiting
-From: Mike Galbraith <efault@gmx.de>
-To: Avi Kivity <avi@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Chris Wright <chrisw@sous-sol.org>
-In-Reply-To: <4D22E4F9.4060909@redhat.com>
-References: <20110103162637.29f23c40@annuminas.surriel.com>
-	 <4D22E4F9.4060909@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 04 Jan 2011 11:26:49 +0100
-Message-ID: <1294136809.4379.4.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1751110Ab1ADK3W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 05:29:22 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:36340 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab1ADK3V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 05:29:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=CsXJSl2Nl/lKBMy2v0R1DFg32Q2e1snN/YXNKKHOUPwCG1R231+QJa5u+Ic9Y0VBVq
+         25cMktC8QaUvU3tKq6mZ9h7c+0JDaTZWNbGORbhTGD6Zu8fSBnGXf++TdqIZVJ7yZyM9
+         cSjWqkGeO7Z98hADemwsqlvIVrsjr45W0ONFA=
+Date: Tue, 4 Jan 2011 18:29:09 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Anca Emanuel <anca.emanuel@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, kernel-team@lists.ubuntu.com
+Subject: Re: Kernel build
+Message-ID: <20110104102909.GA5600@cr0.nay.redhat.com>
+References: <AANLkTins3HdRJ-Y7bCuXFjOhjx+-nxDHSqUxBPuuxFxg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTins3HdRJ-Y7bCuXFjOhjx+-nxDHSqUxBPuuxFxg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-04 at 11:14 +0200, Avi Kivity wrote:
+On Tue, Jan 04, 2011 at 09:59:29AM +0200, Anca Emanuel wrote:
+>Question: Why I need to rebuild all the modules, if they are already builded.
+>https://wiki.ubuntu.com/KernelTeam/GitKernelBuild
+>If I make an one line change, I need to wait one hour to make an new
+>kernel on an intel core duo at 2GHz sistem ?
 
-> Assuming there are no objections, Mike, can you get 2/3 into a 
-> fast-forward-only branch of tip.git?  I'll then merge it into kvm.git 
-> and apply 1/3 and 2/3.
+Depends on which file you change, if that is a header file,
+it is supposed to re-compile all the C source files that include it.
 
-Wrong guy.  Fast-forward is Peter's department.
-
-	-Mike
-
+Thanks.
