@@ -1,89 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752563Ab1ADR1E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 12:27:04 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:45121 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388Ab1ADR1D (ORCPT
+	id S1752594Ab1ADRbz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 12:31:55 -0500
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:51430 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752266Ab1ADRbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 12:27:03 -0500
-X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=MsfxUTlnwtkA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Ct3KpmEn6wzl-ax-vRIA:9 a=eNxaAOHMdy7k3UBXTTYA:7 a=iY3A_Vy0VZ9dj6iRpArSCvQHxlwA:4 a=PUjeQqilurYA:10 a=WsGbVyN5T98ustuj:21 a=a0iCG_TXSBU_U88X:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][RT][PATCH 3/4] rtmutex: Revert Optimize rt lock wakeup
-From: Steven Rostedt <rostedt@goodmis.org>
-To: pmorreale@novell.com
-Cc: Gregory Haskins <ghaskins@novell.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        ThomasGleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <1294161347.3371.80.camel@hermosa.morreale.net>
-References: <20101223224755.078983538@goodmis.org>
-	 <20101223225116.729981172@goodmis.org>
-	 <4D13DF250200005A000793E1@novprvoes0310.provo.novell.com>
-	 <1293166464.22802.415.camel@gandalf.stny.rr.com>
-	 <4D19A8B20200005A00079658@novprvoes0310.provo.novell.com>
-	 <1294081596.3948.192.camel@gandalf.stny.rr.com>
-	 <1294086147.3948.194.camel@gandalf.stny.rr.com>
-	 <1294154349.3371.24.camel@hermosa.morreale.net>
-	 <1294156079.3948.209.camel@gandalf.stny.rr.com>
-	 <1294161347.3371.80.camel@hermosa.morreale.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 04 Jan 2011 12:27:00 -0500
-Message-ID: <1294162020.3948.215.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Jan 2011 12:31:53 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+References: <cover.1292443200.git.m.nazarewicz@samsung.com><AANLkTim8_=0+-zM5z4j0gBaw3PF3zgpXQNetEn-CfUGb@mail.gmail.com><20101223100642.GD3636@n2100.arm.linux.org.uk><C832F8F5D375BD43BFA11E82E0FE9FE00829C13EB2@EXDCVYMBSTM005.EQ1STM.local>
+ <20110104171928.GB24935@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <20110104171928.GB24935@n2100.arm.linux.org.uk>
+Thread-Index: AcusNELZOYKiy8xIRmepKdx6Th5aewAAFd+w
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
+Date: Tue, 4 Jan 2011 23:01:39 +0530
+Message-ID: <02a71d80302932190e8edfddf82b7895@mail.gmail.com>
+Subject: RE: [PATCHv8 00/12] Contiguous Memory Allocator
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Johan MOSSBERG <johan.xx.mossberg@stericsson.com>
+Cc: Daniel Walker <dwalker@codeaurora.org>,
+        Kyungmin Park <kmpark@infradead.org>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Nazarewicz <m.nazarewicz@samsung.com>,
+        linux-kernel@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>,
+        linux-mm@kvack.org, Ankita Garg <ankita@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-04 at 10:15 -0700, Peter W. Morreale wrote:
+> -----Original Message-----
+> From: linux-arm-kernel-bounces@lists.infradead.org [mailto:linux-
+> arm-kernel-bounces@lists.infradead.org] On Behalf Of Russell King -
+> ARM Linux
+> Sent: Tuesday, January 04, 2011 10:49 PM
+> To: Johan MOSSBERG
+> Cc: Daniel Walker; Kyungmin Park; Mel Gorman; KAMEZAWA Hiroyuki;
+> Michal Nazarewicz; linux-kernel@vger.kernel.org; Michal Nazarewicz;
+> linux-mm@kvack.org; Ankita Garg; Andrew Morton; Marek Szyprowski;
+> linux-arm-kernel@lists.infradead.org; linux-media@vger.kernel.org
+> Subject: Re: [PATCHv8 00/12] Contiguous Memory Allocator
+>
+> On Tue, Jan 04, 2011 at 05:23:37PM +0100, Johan MOSSBERG wrote:
+> > Russell King wrote:
+> > > Has anyone addressed my issue with it that this is wide-open for
+> > > abuse by allocating large chunks of memory, and then remapping
+> > > them in some way with different attributes, thereby violating
+> the
+> > > ARM architecture specification?
+> >
+> > I seem to have missed the previous discussion about this issue.
+> > Where in the specification (preferably ARMv7) can I find
+> > information about this?
+>
+> Here's the extracts from the architecture reference manual:
+>
+> * If the same memory locations are marked as having different
+>   cacheability attributes, for example by the use of aliases in a
+>   virtual to physical address mapping, behavior is UNPREDICTABLE.
+>
+> A3.5.7 Memory access restrictions
+>
+> Behavior is UNPREDICTABLE if the same memory location:
+> * is marked as Shareable Normal and Non-shareable Normal
+> * is marked as having different memory types (Normal, Device, or
+>   Strongly-ordered)
+> * is marked as having different cacheability attributes
+> * is marked as being Shareable Device and Non-shareable Device
+> memory.
+>
+> Such memory marking contradictions can occur, for example, by the
+> use of
+> aliases in a virtual to physical address mapping.
+>
+> Glossary:
+> UNPREDICTABLE
+> Means the behavior cannot be relied upon. UNPREDICTABLE behavior
+> must not
+> represent security holes.  UNPREDICTABLE behavior must not halt or
+> hang
+> the processor, or any parts of the system. UNPREDICTABLE behavior
+> must not
+> be documented or promoted as having a defined effect.
+>
+> > Is the problem that it is simply
+> > forbidden to map an address multiple times with different cache
+> > setting and if this is done the hardware might start failing? Or
+> > is the problem that having an address mapped cached means that
+> > speculative pre-fetch can read it into the cache at any time,
+> > possibly causing problems if an un-cached mapping exists? In my
+> > opinion option number two can be handled and I've made an attempt
+> > at doing that in hwmem (posted on linux-mm a while ago), look in
+> > cache_handler.c. Hwmem currently does not use cma but the next
+> > version probably will.
+>
+> Given the extract from the architecture reference manual, do you
+> want
+> to run a system where you can't predict what the behaviour will be
+> if
+> you have two mappings present, one which is cacheable and one which
+> is
+> non-cacheable, and you're relying on the non-cacheable mapping to
+> never
+> return data from the cache?
+>
+> What if during your testing, it appears to work correctly, but out
+> in
+> the field, someone's loaded a different application to your setup
+> resulting in different memory access patterns, causing cache lines
+> to
+> appear in the non-cacheable mapping, and then the CPU hits them on
+> subsequent accesses corrupting data...
+>
+> You can't say that will never happen if you're relying on this
+> unpredictable behaviour.
+>
+Just to add to Russell's point, we did land up in un-traceable
+CPU deadlocks while running the kernel which was violating some of
+the rules set by ARM ARM.
+The usecase use to work ~98% of the time.
 
-> My bad.  I thought preemption did change task state.
-> 
-> This still requires the owner to run through try_to_wake_up() and all
-> its associated overhead only to find out that the waiter is running.  
-> 
-> The assumption I made when I suggested the original concept to Greg was
-> that if the new owner is running, there is *nothing* to do wrt
-> scheduling.  If that was a wrong assumption, then, yes, drop the patch
-> and clean things up.  
-> 
-> If that was a good assumption, then we are leaving 'cycles on the table'
-> as waking up a running process is a non-zero-overhead path and that is a
-> bad thing considering how many times spin_unlock() is called on an rt
-> system.
-> 
-> Bear in mind that this savings scales directly as the number of CPUs
-> (assuming all are vectored on the lock).  We can only have nr_cpus-1
-> spinning waiters at any given time, regardless of the number of tasks in
-> contention.  Perhaps this is too little to worry about on a 4way system,
-> but I suspect that it could be substantial on larger systems.  
-> 
-> I'll be quiet now as I know little about the intricacies of
-> preemption/scheduling (obviously) and like Greg, have been removed from
-> RT kernel work for several years. <sigh>
-
-No need to be quiet ;-)
-
-I'm working on making it spin in TASK_RUNNING state if possible, but it
-is making the code a bit more complex, as it seems that there is an
-assumption with the wakeup and the changing of the current->state in the
-rt_spin_lock_slowlock code all being under the lock->wait_lock. I think
-I'll scrap this idea.
-
-That said, I think your wakeup patch may be worth while with Lai's new
-code. His changes causes the owner to wake up the pending owner several
-times, because the pending owner is never removed from the lock
-wait_list. If a high prio task grabs and releases the same lock over and
-over, if there is a waiter it will try to wake up that waiter each time.
-
-Thus, having your patch may prevent that unnecessary wakeup.
-
-I'll look more into it. Thanks!
-
--- Steve
-
-
-
+Regards,
+Santosh
