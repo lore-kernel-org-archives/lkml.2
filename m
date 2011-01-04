@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751551Ab1ADIhr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 03:37:47 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54183 "EHLO
+	id S1752130Ab1ADIkf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 03:40:35 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42257 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab1ADIhq (ORCPT
+	with ESMTP id S1751432Ab1ADIke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 03:37:46 -0500
+	Tue, 4 Jan 2011 03:40:34 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=E4r0rc1zD6B+GmzjoKXAcqabyynHfSJp1LWHy5rSxFiUyTLyzx92+CoAl1cIRdA0/C
-         HWEjFi4Z5QFmUy3v6pD0rHx9rY+iU7mC3x4cdLXp/+2C45mkoG6ud8tfSHKfuymFk62X
-         eDYFhkowvz236LnGTwcQDj9+KT1Lju9ivc0+Y=
-Date: Tue, 4 Jan 2011 09:37:33 +0100
+        b=ZmaKSiCd2QmLVlJK3hxreMcbQjn61W2XVo6r9eBUG1bfSoLvmliAF3ppSdqS1V+XD4
+         d6jNzl2u+TDadZZBYQYTh+miDnmk9dqAQOuwWFht0q9IDpnjqxZ4ZtqqAlkBqC+JPPqq
+         wVDB+OiAOhJ9XOCNqwu1RswZFBEPoLxq7MrZA=
+Date: Tue, 4 Jan 2011 09:40:23 +0100
 From: Richard Cochran <richardcochran@gmail.com>
 To: John Stultz <john.stultz@linaro.org>
 Cc: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>,
         linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
         Richard Cochran <richard.cochran@omicron.at>
 Subject: Re: [PATCH 2/3] ntp: add ADJ_SETOFFSET mode bit
-Message-ID: <20110104083733.GA4563@riccoc20.at.omicron.at>
+Message-ID: <20110104084023.GB4563@riccoc20.at.omicron.at>
 References: <1293493244-17583-1-git-send-email-john.stultz@linaro.org>
  <1293493244-17583-3-git-send-email-john.stultz@linaro.org>
  <AANLkTi=LqkC-tKzbb6y=iL0UvFYcfcHSuX=jVVFCk1uR@mail.gmail.com>
@@ -36,23 +36,14 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, Jan 03, 2011 at 12:44:26PM -0800, John Stultz wrote:
-> On Wed, 2010-12-29 at 05:47 +0900, Kuwahara,T. wrote:
-> > I came up with this simple solution: "Just use ADJ_OFFSET as usual,
-> > but don't forget to disable the kernel PLL."
-> 
-> Again, this seems to be trying to add new functionality into a corner
-> case of a existing mode.
-> 
-> I don't like this because it makes testing and validating that the code
-> is correct for its uses difficult. Especially given that a number of
-> combinations of modes might be set at once. What happens to freq
-> adjustments done at the same time as an ADJ_OFFSET - STA_PLL?
+> Richard: Maybe this is a good thing to think about for clock_adjtime? If
+> we are adding a new syscall, maybe we should make sure we clean up some
+> of the old syscalls issues? It does add a good bit of complexity, as the
+> idea of clock_adjtime being a multiplexing adjtimex was nice and simple.
+> We'd also have to review the mode usage to see if multi-mode adjustments
+> in a single call are all that common or not.
 
-Where are the mode bits and their combinations documented, anyhow?
-
-There are lot of papers on NTP, and I have not read them all, but I
-don't recall having seen a precise and succinct decription of the
-ntp_adjtime interface anywhere.
+So, is the NTP source code the documentation of the kernel interface?
 
 Thanks,
 Richard
