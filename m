@@ -1,140 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751697Ab1ADO7l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 09:59:41 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:59606 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235Ab1ADO7k convert rfc822-to-8bit (ORCPT
+	id S1752048Ab1ADPAI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 10:00:08 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:57682 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324Ab1ADPAG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 09:59:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=g76vqx7RG41cxuQc6oHtFNGdujmxW5Bf84QApEKXFbAZTp8311Sc+TjWVqKjFcVfbq
-         vaSL1zbkU5vExNddatSA==
+	Tue, 4 Jan 2011 10:00:06 -0500
 MIME-Version: 1.0
-In-Reply-To: <AANLkTin6udBreRt0zYcmDfCZZDwLjkwhg93-hFafy=4f@mail.gmail.com>
-References: <1294112905-25325-1-git-send-email-acme@infradead.org>
-	<20110104071629.GB13299@elte.hu>
-	<AANLkTinjkC=4yQbiLxF7=G1izFa2pOuR=WvRXbha3wsj@mail.gmail.com>
-	<20110104140338.GA19989@ghostprotocols.net>
-	<AANLkTi=osr9ZB9OzPxZ_99FU1A5JzCA3rMM64fxws34S@mail.gmail.com>
-	<20110104141958.GC19989@ghostprotocols.net>
-	<20110104142715.GD19989@ghostprotocols.net>
-	<AANLkTik93yG1e80a8MBYDfFBu1YwZ+BA6LqOh-EsLHO_@mail.gmail.com>
-	<20110104143658.GF19989@ghostprotocols.net>
-	<AANLkTin6udBreRt0zYcmDfCZZDwLjkwhg93-hFafy=4f@mail.gmail.com>
-Date: Tue, 4 Jan 2011 15:59:36 +0100
-Message-ID: <AANLkTinqf+5cOv-pDMnhGt2dkHEkM2q_GcG6Aa-LzNAe@mail.gmail.com>
-Subject: Re: [GIT PULL||RFC 00/11] perf library and regression testing improvements
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Han Pingtian <phan@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        mingo@elte.hu
-Content-Type: text/plain; charset=UTF-8
+X-Originating-IP: [81.245.174.26]
+In-Reply-To: <20110104112919.GB9879@atrey.karlin.mff.cuni.cz>
+References: <1294136263-24020-1-git-send-email-j-pihet@ti.com>
+	<1294138109-24679-1-git-send-email-j-pihet@ti.com>
+	<20110104112919.GB9879@atrey.karlin.mff.cuni.cz>
+Date: Tue, 4 Jan 2011 16:00:05 +0100
+Message-ID: <AANLkTim_ekCNw6xhC_MGY7=gfXUCfinXkLeXtttpHaGc@mail.gmail.com>
+Subject: Re: [PATCH 1/3] perf: add calls to suspend trace point
+From: Jean Pihet <jean.pihet@newoldbits.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: mingo@elte.hu, trenn@suse.de, Len Brown <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        linux-perf-users@vger.kernel.org, Jean Pihet <j-pihet@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The issue is related to a mismatch in the data structure layout
-between builtin-stat.c and util/evsel.c. The offset of the counts fields
-is different between the two files. Getting closer.....
+Hi,
 
-On Tue, Jan 4, 2011 at 3:46 PM, Stephane Eranian <eranian@google.com> wrote:
-> On Tue, Jan 4, 2011 at 3:36 PM, Arnaldo Carvalho de Melo
-> <acme@infradead.org> wrote:
->> Em Tue, Jan 04, 2011 at 03:33:38PM +0100, Stephane Eranian escreveu:
->>> No improvement with this patch.
->>
->> I was guessing you were using it somehow without calling
->> perf_evsel__alloc_counts, now I guess you're just using what is in
->> tip/perf/core, no local changes, right?
->>
-> I am using:
-> git://git.eu.kernel.org/pub/scm/linux/kernel/git/x86/linux-2.6-tip.git
+On Tue, Jan 4, 2011 at 12:29 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> Hi!
 >
->> Next step: there are anonymous structs inside anonymous unions, what
->> compiler/distro?
-> Yes, I am looking at those right now.
+>> Uses the machine_suspend trace point, called from the
+>> generic kernel suspend_enter function.
 >>
-> gcc 4.4.3 or gcc 4.2.4 (ubuntu hardy or 10.04).
+>> Signed-off-by: Jean Pihet <j-pihet@ti.com>
+>> CC: Thomas Renninger <trenn@suse.de>
+>> ---
+>>  kernel/power/suspend.c |    3 +++
+>>  1 files changed, 3 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+>> index ecf7705..0650596 100644
+>> --- a/kernel/power/suspend.c
+>> +++ b/kernel/power/suspend.c
+>> @@ -22,6 +22,7 @@
+>>  #include <linux/mm.h>
+>>  #include <linux/slab.h>
+>>  #include <linux/suspend.h>
+>> +#include <trace/events/power.h>
+>>
+>>  #include "power.h"
+>>
+>> @@ -164,7 +165,9 @@ static int suspend_enter(suspend_state_t state)
+>>       error = sysdev_suspend(PMSG_SUSPEND);
+>>       if (!error) {
+>>               if (!suspend_test(TEST_CORE) && pm_check_wakeup_events()) {
+>> +                     trace_machine_suspend(state);
+>>                       error = suspend_ops->enter(state);
+>> +                     trace_machine_suspend(PWR_EVENT_EXIT);
+>>                       events_check_enabled = false;
+>>               }
+>>               sysdev_resume();
 >
->> - Arnaldo
->>
->>> On Tue, Jan 4, 2011 at 3:27 PM, Arnaldo Carvalho de Melo
->>> <acme@infradead.org> wrote:
->>> > Em Tue, Jan 04, 2011 at 12:19:58PM -0200, Arnaldo Carvalho de Melo escreveu:
->>> >> Em Tue, Jan 04, 2011 at 03:09:08PM +0100, Stephane Eranian escreveu:
->>> >> > Arnaldo,
->>> >> > Looks like what's wrong is not ps but count:
->>> >> >
->>> >> > Program received signal SIGSEGV, Segmentation fault.
->>> >> > [Switching to Thread 0x7f96967fd6e0 (LWP 5156)]
->>> >> > 0x0000000000412b58 in read_counter_aggr (counter=0x7d4820) at builtin-stat.c:206
->>> >> > 206 Â  Â  Â  Â  Â  Â  Â  Â  update_stats(&ps->res_stats[i], count[i]);
->>> >> > (gdb) print ps
->>> >> > $1 = (struct perf_stat *) 0x7d48a0
->>> >> > (gdb) print *ps
->>> >> > $2 = {res_stats = {{n = 0, mean = 0, M2 = 0}, {n = 0, mean = 0, M2 =
->>> >> > 0}, {n = 0, mean = 0, M2 = 0}}}
->>> >> > (gdb) print count
->>> >> > $3 = (u64 *) 0x12
->>> >> > (gdb) print *count
->>> >> > Cannot access memory at address 0x12
->>> >> > (gdb) print count
->>> >> > $4 = (u64 *) 0x12
->>> >>
->>> >> Count is:
->>> >>
->>> >> u64 *count = counter->counts->aggr.values;
->>> >
->>> > Can you try with this patch?
->>> >
->>> > diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
->>> > index 02b2d80..7876b11 100644
->>> > --- a/tools/perf/builtin-stat.c
->>> > +++ b/tools/perf/builtin-stat.c
->>> > @@ -196,12 +196,14 @@ static inline int nsec_counter(struct perf_evsel *evsel)
->>> > Â static int read_counter_aggr(struct perf_evsel *counter)
->>> > Â {
->>> > Â  Â  Â  Â struct perf_stat *ps = counter->priv;
->>> > - Â  Â  Â  u64 *count = counter->counts->aggr.values;
->>> > + Â  Â  Â  u64 *count;
->>> > Â  Â  Â  Â int i;
->>> >
->>> > Â  Â  Â  Â if (__perf_evsel__read(counter, cpus->nr, threads->nr, scale) < 0)
->>> > Â  Â  Â  Â  Â  Â  Â  Â return -1;
->>> >
->>> > + Â  Â  Â  count = counter->counts->aggr.values;
->>> > +
->>> > Â  Â  Â  Â for (i = 0; i < 3; i++)
->>> > Â  Â  Â  Â  Â  Â  Â  Â update_stats(&ps->res_stats[i], count[i]);
->>> >
->>> > diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
->>> > index d337761..26962ea 100644
->>> > --- a/tools/perf/util/evsel.c
->>> > +++ b/tools/perf/util/evsel.c
->>> > @@ -89,8 +89,12 @@ int __perf_evsel__read(struct perf_evsel *evsel,
->>> > Â {
->>> > Â  Â  Â  Â size_t nv = scale ? 3 : 1;
->>> > Â  Â  Â  Â int cpu, thread;
->>> > - Â  Â  Â  struct perf_counts_values *aggr = &evsel->counts->aggr, count;
->>> > + Â  Â  Â  struct perf_counts_values *aggr, count;
->>> >
->>> > + Â  Â  Â  if (evsel->counts == NULL && perf_evsel__alloc_counts(evsel, ncpus) < 0)
->>> > + Â  Â  Â  Â  Â  Â  Â  return -ENOMEM;
->>> > +
->>> > + Â  Â  Â  aggr = &evsel->counts->aggr;
->>> > Â  Â  Â  Â aggr->val = 0;
->>> >
->>> > Â  Â  Â  Â for (cpu = 0; cpu < ncpus; cpu++) {
->>> >
->>
+> Ok... why this place?
+This trace has been placed here because it traces the machine low
+level mode enter.
+
+> I mean, perhaps suspend time should include
+> device suspend?
+That makes sense. We have a few options here:
+1) keep the traces as proposed to trace the low level machine code only,
+2) move the traces to the entry and exit of suspend_enter so that it
+includes the prepare and late_prepare (+ the associated wake-up)
+callbacks as well,
+3) move the traces to suspend_devices_and_enter so that it includes 2)
+and the handling of the console and the devices,
+4) move the traces to enter_state do that it includes 3), the call to
+sys_sync and the user space freeze.
+
+Note that the the SNAPSHOT_2RAM ioctl code also calls
+suspend_devices_and_enter, so if only 4) is used no trace will be
+generated in that case.
+
+I am in favor of 3) of 4).
+What do you think?
+
+>                                                                        Pavel
+> --
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
 >
+
+Thanks,
+Jean
