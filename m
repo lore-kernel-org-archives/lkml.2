@@ -1,47 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751319Ab1ADSAL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 13:00:11 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:47136 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944Ab1ADSAI (ORCPT
+	id S1751378Ab1ADSEF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 13:04:05 -0500
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:45107 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750954Ab1ADSED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 13:00:08 -0500
-Date: Tue, 4 Jan 2011 12:56:21 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: trivial@kernel.org, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-scsi@vger.kernel.org,
-        spi-devel-general@lists.sourceforge.net, devel@driverdev.osuosl.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH 07/15]drivers:net:wireless:iwlwifi Typo change diable to
- disable.
-Message-ID: <20110104175621.GB11333@tuxdriver.com>
-References: <1293750484-1161-1-git-send-email-justinmattock@gmail.com>
- <1293750484-1161-2-git-send-email-justinmattock@gmail.com>
- <1293750484-1161-3-git-send-email-justinmattock@gmail.com>
- <1293750484-1161-4-git-send-email-justinmattock@gmail.com>
- <1293750484-1161-5-git-send-email-justinmattock@gmail.com>
- <1293750484-1161-6-git-send-email-justinmattock@gmail.com>
- <1293750484-1161-7-git-send-email-justinmattock@gmail.com>
+	Tue, 4 Jan 2011 13:04:03 -0500
+Message-ID: <4D23610C.1060009@ti.com>
+Date: Tue, 04 Jan 2011 12:03:56 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1293750484-1161-7-git-send-email-justinmattock@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: jean.pihet@newoldbits.com
+CC: mingo@elte.hu, linux-kernel@vger.kernel.org, trenn@suse.de,
+        linux-omap@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>,
+        linux-perf-users@vger.kernel.org, rjw@sisk.pl,
+        Jean Pihet <j-pihet@ti.com>
+Subject: Re: [PATCH 2/3] perf: add OMAP support for the new power events
+References: <1294136263-24020-1-git-send-email-j-pihet@ti.com> <1294136263-24020-3-git-send-email-j-pihet@ti.com>
+In-Reply-To: <1294136263-24020-3-git-send-email-j-pihet@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 30, 2010 at 03:07:56PM -0800, Justin P. Mattock wrote:
-> The below patch fixes a typo "diable" to "disable". Please let me know if this 
-> is correct or not.
-> 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-Acked-by: John W. Linville <linville@tuxdriver.com>
+jean.pihet@newoldbits.com had written, on 01/04/2011 04:17 AM, the 
+following:
+[..]
+> diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
+> index 0ec8a04..0ee0b0e 100644
+> --- a/arch/arm/mach-omap2/pm34xx.c
+> +++ b/arch/arm/mach-omap2/pm34xx.c
+> @@ -29,6 +29,7 @@
+>  #include <linux/delay.h>
+>  #include <linux/slab.h>
+>  #include <linux/console.h>
+> +#include <trace/events/power.h>
+>  
+>  #include <plat/sram.h>
+>  #include <plat/clockdomain.h>
+> @@ -506,8 +507,14 @@ static void omap3_pm_idle(void)
+>  	if (omap_irq_pending() || need_resched())
+>  		goto out;
+>  
+> +	trace_power_start(POWER_CSTATE, 1, smp_processor_id());
+> +	trace_cpu_idle(1, smp_processor_id());
+> +
+>  	omap_sram_idle();
+>  
+> +	trace_power_end(smp_processor_id());
+> +	trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
+
+Dumb question: it just tells me which C state was attempted - not if 
+actually succeeded in hitting it rt? Does'nt this give us a false data?
+
+[..]
+> diff --git a/arch/arm/plat-omap/clock.c b/arch/arm/plat-omap/clock.c
+> index fc62fb5..7cbb09b 100644
+> --- a/arch/arm/plat-omap/clock.c
+> +++ b/arch/arm/plat-omap/clock.c
+(from an offline discussion on a related topic): Would it also be nice 
+to hook on mach-omap2/clock.c points as well to hook on indirect changes?
+[..]
 
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Regards,
+Nishanth Menon
