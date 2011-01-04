@@ -1,217 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751319Ab1ADUXp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 15:23:45 -0500
-Received: from elasmtp-junco.atl.sa.earthlink.net ([209.86.89.63]:51626 "EHLO
-	elasmtp-junco.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751002Ab1ADUXn (ORCPT
+	id S1751351Ab1ADUZa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 15:25:30 -0500
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:54184 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840Ab1ADUZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 15:23:43 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=earthlink.net;
-  b=U6RlfPbyOPpWVpGz+kA80YOacWd0TyCAADimZuyzBiHyKy6kbhqrG1v9ZnKhc+ZZ;
-  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
-Message-ID: <4D2381CD.1050709@earthlink.net>
-Date: Tue, 04 Jan 2011 15:23:41 -0500
-From: Stephen Clark <sclark46@earthlink.net>
-Reply-To: sclark46@earthlink.net
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: sclark46@earthlink.net
-CC: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: panic in tg3 driver
-References: <4D2334B5.1060408@earthlink.net>
-In-Reply-To: <4D2334B5.1060408@earthlink.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec79520de4868064ce100967fc166c1c93b7350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 69.22.83.66
+	Tue, 4 Jan 2011 15:25:29 -0500
+From: Pekka Enberg <penberg@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Bart Van Assche <bart.vanassche@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>
+Subject: [PATCH] slub: Fix sysfs circular locking dependency
+Date: Tue,  4 Jan 2011 22:25:17 +0200
+Message-Id: <1294172717-6044-1-git-send-email-penberg@kernel.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/2011 09:54 AM, Stephen Clark wrote:
-> Hello,
->
->
-> The hardware is an Acrosser AR-M0898B micro box.
->  lspci
-> 00:00.0 Host bridge: VIA Technologies, Inc. CN700/VN800/P4M800CE/Pro 
-> Host Bridge
-> 00:00.1 Host bridge: VIA Technologies, Inc. CN700/VN800/P4M800CE/Pro 
-> Host Bridge
-> 00:00.2 Host bridge: VIA Technologies, Inc. CN700/VN800/P4M800CE/Pro 
-> Host Bridge
-> 00:00.3 Host bridge: VIA Technologies, Inc. PT890 Host Bridge
-> 00:00.4 Host bridge: VIA Technologies, Inc. CN700/VN800/P4M800CE/Pro 
-> Host Bridge
-> 00:00.7 Host bridge: VIA Technologies, Inc. CN700/VN800/P4M800CE/Pro 
-> Host Bridge
-> 00:01.0 PCI bridge: VIA Technologies, Inc. VT8237/VX700 PCI Bridge
-> 00:0f.0 IDE interface: VIA Technologies, Inc. VT8251 Serial ATA 
-> Controller (rev
-> 20)
-> 00:0f.1 IDE interface: VIA Technologies, Inc. 
-> VT82C586A/B/VT82C686/A/B/VT823x/A/
-> C PIPC Bus Master IDE (rev 07)
-> 00:10.0 USB Controller: VIA Technologies, Inc. VT82xxxxx UHCI USB 1.1 
-> Controller
->  (rev 91)
-> 00:10.1 USB Controller: VIA Technologies, Inc. VT82xxxxx UHCI USB 1.1 
-> Controller
->  (rev 91)
-> 00:10.2 USB Controller: VIA Technologies, Inc. VT82xxxxx UHCI USB 1.1 
-> Controller
->  (rev 91)
-> 00:10.3 USB Controller: VIA Technologies, Inc. VT82xxxxx UHCI USB 1.1 
-> Controller
->  (rev 91)
-> 00:10.4 USB Controller: VIA Technologies, Inc. USB 2.0 (rev 90)
-> 00:11.0 ISA bridge: VIA Technologies, Inc. VT8251 PCI to ISA Bridge
-> 00:11.7 Host bridge: VIA Technologies, Inc. VT8251 Ultra VLINK Controller
-> 00:13.0 Host bridge: VIA Technologies, Inc. VT8251 Host Bridge
-> 00:13.1 PCI bridge: VIA Technologies, Inc. VT8251 PCI to PCI Bridge
-> 02:08.0 Ethernet controller: Broadcom Corporation BCM4401 100Base-T 
-> (rev 02)
-> 02:09.0 Ethernet controller: Broadcom Corporation BCM4401 100Base-T 
-> (rev 02)
-> 80:00.0 PCI bridge: VIA Technologies, Inc. VT8251 PCIE Root Port
-> 80:00.1 PCI bridge: VIA Technologies, Inc. VT8251 PCIE Root Port
-> 81:00.0 Ethernet controller: Broadcom Corporation NetLink BCM5906M 
-> Fast Ethernet
->  PCI Express (rev 02)
-> 82:00.0 Ethernet controller: Broadcom Corporation NetLink BCM5906M 
-> Fast Ethernet
->  PCI Express (rev 02)
->
-> Kernel 2.6.36-2.el5.elrepo on an i686
->
-> When I try to ifconfig either of the BCM5906M ports the system panics.
->
-> Ideas, fixes ?
->
-> [root@Z1010 ~]# modprobe tg3
-> [root@Z1010 ~]# ifconfig eth2 2.2.2.2/24
-> ------------[ cut here ]------------
-> kernel BUG at drivers/net/tg3.c:4365!
-> invalid opcode: 0000 [#1] PREEMPT SMP
-> last sysfs file: /sys/class/net/eth3/address
-> Modules linked in: tg3 xt_tcpudp ipt_LOG xt_limit xt_state 
-> iptable_mangle af_ke]
->
-> Pid: 20303, comm: kworker/0:2 Not tainted 2.6.36-2.el5.elrepo #1 
-> CN700-8251/
-> EIP: 0060:[<e1c62f19>] EFLAGS: 00010202 CPU: 0
-> EIP is at tg3_tx_recover+0x1e/0x53 [tg3]
-> EAX: deece4c0 EBX: dfa9c000 ECX: deece4c0 EDX: ffffffff
-> ESI: deece4c0 EDI: deece500 EBP: c1801f38 ESP: c1801f30
->  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-> Process kworker/0:2 (pid: 20303, ti=c1801000 task=df0105d0 
-> task.ti=dee62000)
-> Stack:
->  dfa9c000 00000000 c1801f6c e1c630be c1801f6c deece4c0 00000840 00000000
-> <0> df251cc0 00000005 00000000 df979800 deece500 deece4c0 00000040 
-> c1801f94
-> <0> e1c661e5 00000000 00000040 c1801f88 e09df1d2 00000000 deece500 
-> dfab4000
-> Call Trace:
->  [<e1c630be>] ? tg3_tx+0x157/0x1a2 [tg3]
->  [<e1c661e5>] ? tg3_poll_work+0x2b/0x10b [tg3]
->  [<e09df1d2>] ? ssb_write32+0x11/0x14 [b44]
->  [<e1c662f9>] ? tg3_poll+0x34/0x9a [tg3]
->  [<c0674058>] ? net_rx_action+0x7e/0x11c
->  [<c04409c9>] ? __do_softirq+0x85/0x10c
->  [<c0440944>] ? __do_softirq+0x0/0x10c
-> <IRQ>
->  [<c04404ef>] ? _local_bh_enable_ip+0x68/0x87
->  [<c044051b>] ? local_bh_enable_ip+0xd/0xf
->  [<c046593b>] ? __raw_spin_unlock_bh+0x1c/0x1e
->  [<c06fa4f2>] ? _raw_spin_unlock_bh+0xd/0xf
->  [<e1c6281f>] ? spin_unlock_bh+0xd/0xf [tg3]
->  [<e1c62cbe>] ? tg3_full_unlock+0x10/0x12 [tg3]
->  [<e1c664c7>] ? tg3_reset_task+0xd7/0xe3 [tg3]
->  [<c044ec37>] ? process_one_work+0x10b/0x1bc
->  [<e1c663f0>] ? tg3_reset_task+0x0/0xe3 [tg3]
->  [<c044fd41>] ? worker_thread+0x77/0xf9
->  [<c0453048>] ? kthread+0x60/0x65
->  [<c044fcca>] ? worker_thread+0x0/0xf9
->  [<c0452fe8>] ? kthread+0x0/0x65
->  [<c040337e>] ? kernel_thread_helper+0x6/0x10
-> Code: f0 e8 88 ff ff ff 8d 65 f8 5b 5e 5d c3 55 89 e5 56 53 0f 1f 44 
-> 00 00 f6 8
-> EIP: [<e1c62f19>] tg3_tx_recover+0x1e/0x53 [tg3] SS:ESP 0068:c1801f30
-> ---[ end trace 82381e9b93e397ad ]---
-> Kernel panic - not syncing: Fatal exception in interrupt
-> Pid: 20303, comm: kworker/0:2 Tainted: G      D     
-> 2.6.36-2.el5.elrepo #1
-> Call Trace:
->  [<c043b3cd>] panic+0x62/0x15d
->  [<c06fb7d1>] oops_end+0x99/0xa8
->  [<e1c62f19>] ? tg3_tx_recover+0x1e/0x53 [tg3]
->  [<c0405a62>] die+0x58/0x5e
->
-> Thanks,
-> Steve
->
-Additonal info I compiled the latest kernel 2.6.37-rc8+ and still have 
-the problem.
-Also boot with noapic I see this in the dmesg log and interrupts are 
-increasing like crazy:
-tg3.c:v3.115 (October 14, 2010)
-tg3 0000:81:00.0: PCI INT A -> Link[LNKA] -> GSI 10 (level, low) -> IRQ 10
-tg3 0000:81:00.0: setting latency timer to 64
-tg3 0000:81:00.0: PCI: Disallowing DAC for device
-tg3 0000:81:00.0: eth2: Tigon3 [partno(BCM95906) rev c002] (PCI Express) 
-MAC add
-ress 00:02:b6:36:d1:39
-tg3 0000:81:00.0: eth2: attached PHY is 5906 (10/100Base-TX Ethernet) 
-(WireSpeed
-[0])
-tg3 0000:81:00.0: eth2: RXcsums[1] LinkChgREG[0] MIirq[0] ASF[0] TSOcap[1]
-tg3 0000:81:00.0: eth2: dma_rwctrl[76180000] dma_mask[32-bit]
-tg3 0000:82:00.0: PCI INT A -> Link[LNKA] -> GSI 10 (level, low) -> IRQ 10
-tg3 0000:82:00.0: setting latency timer to 64
-tg3 0000:82:00.0: PCI: Disallowing DAC for device
-tg3 0000:82:00.0: eth3: Tigon3 [partno(BCM95906) rev c002] (PCI Express) 
-MAC add
-ress 00:02:b6:36:d1:3a
-tg3 0000:82:00.0: eth3: attached PHY is 5906 (10/100Base-TX Ethernet) 
-(WireSpeed
-[0])
-tg3 0000:82:00.0: eth3: RXcsums[1] LinkChgREG[0] MIirq[0] ASF[0] TSOcap[1]
-tg3 0000:82:00.0: eth3: dma_rwctrl[76180000] dma_mask[32-bit]
-tg3 0000:81:00.0: irq 40 for MSI/MSI-X
-tg3 0000:81:00.0: eth2: No interrupt was generated using MSI. Switching 
-to INTx
-mode. Please report this failure to the PCI maintainer and include 
-system chipse
-t information
-ADDRCONF(NETDEV_UP): eth2: link is not ready
-[root@Z1010 ~]# cat /proc/interrupts
-            CPU0
-   0:        162    XT-PIC-XT-PIC    timer
-   1:          2    XT-PIC-XT-PIC    i8042
-   2:          0    XT-PIC-XT-PIC    cascade
-   3:          1    XT-PIC-XT-PIC
-   4:       4863    XT-PIC-XT-PIC    serial
-   6:          2    XT-PIC-XT-PIC    floppy
-   7:          5    XT-PIC-XT-PIC    ehci_hcd:usb1, uhci_hcd:usb3
-   8:          0    XT-PIC-XT-PIC    rtc0
-   9:          0    XT-PIC-XT-PIC    acpi
-  10:    2334234    XT-PIC-XT-PIC    uhci_hcd:usb2, eth0, eth2
+[ Bart, does this patch fix the problem for you? ]
 
-[root@Z1010 ~]# cat /proc/interrupts |grep eth2
-  10:   18388914    XT-PIC-XT-PIC    uhci_hcd:usb2, eth0, eth2
-[root@Z1010 ~]# cat /proc/interrupts |grep eth2
-  10:   18901627    XT-PIC-XT-PIC    uhci_hcd:usb2, eth0, eth2
+This patch fixes the following potential deadlock reported by Bart Van Assche:
 
+  =======================================================
+  [ INFO: possible circular locking dependency detected ]
+  2.6.37-rc6+ #12
+  -------------------------------------------------------
+  grep/10562 is trying to acquire lock:
+   (slub_lock){+++++.}, at: [<ffffffff8114baec>] show_slab_objects+0xfc/0x390
+
+  but task is already holding lock:
+   (s_active#182){++++.+}, at: [<ffffffff811c4b16>] sysfs_read_file+0x96/0x1c0
+
+  which lock already depends on the new lock.
+
+  the existing dependency chain (in reverse order) is:
+
+  -> #1 (s_active#182){++++.+}:
+         [<ffffffff81096b00>] lock_acquire+0xa0/0x150
+         [<ffffffff811c5b77>] sysfs_deactivate+0x157/0x1c0
+         [<ffffffff811c6273>] sysfs_addrm_finish+0x43/0x70
+         [<ffffffff811c637e>] sysfs_remove_dir+0x7e/0xa0
+         [<ffffffff812c3616>] kobject_del+0x16/0x40
+         [<ffffffff8114c132>] kmem_cache_destroy+0x2f2/0x380
+         [<ffffffffa01b4bd1>] 0xffffffffa01b4bd1
+         [<ffffffff810a1682>] sys_delete_module+0x1a2/0x280
+         [<ffffffff81003042>] system_call_fastpath+0x16/0x1b
+
+  -> #0 (slub_lock){+++++.}:
+         [<ffffffff810968c0>] __lock_acquire+0x1370/0x1510
+         [<ffffffff81096b00>] lock_acquire+0xa0/0x150
+         [<ffffffff81548f41>] down_read+0x51/0xa0
+         [<ffffffff8114baec>] show_slab_objects+0xfc/0x390
+         [<ffffffff8114be33>] objects_show+0x13/0x20
+         [<ffffffff81145e92>] slab_attr_show+0x22/0x30
+         [<ffffffff811c4b59>] sysfs_read_file+0xd9/0x1c0
+         [<ffffffff81158f8d>] vfs_read+0xcd/0x1a0
+         [<ffffffff81159854>] sys_read+0x54/0x90
+         [<ffffffff81003042>] system_call_fastpath+0x16/0x1b
+
+  other info that might help us debug this:
+
+  2 locks held by grep/10562:
+   #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff811c4ac6>] sysfs_read_file+0x46/0x1c0
+   #1:  (s_active#182){++++.+}, at: [<ffffffff811c4b16>] sysfs_read_file+0x96/0x1c0
+
+  stack backtrace:
+  Pid: 10562, comm: grep Tainted: G        W   2.6.37-rc6+ #12
+  Call Trace:
+   [<ffffffff81094379>] print_circular_bug+0xf9/0x100
+   [<ffffffff810968c0>] __lock_acquire+0x1370/0x1510
+   [<ffffffff8100a3d9>] ? sched_clock+0x9/0x10
+   [<ffffffff81148a5c>] ? check_object+0xac/0x250
+   [<ffffffff81096b00>] lock_acquire+0xa0/0x150
+   [<ffffffff8114baec>] ? show_slab_objects+0xfc/0x390
+   [<ffffffff8109522d>] ? trace_hardirqs_on_caller+0x14d/0x190
+   [<ffffffff81548f41>] down_read+0x51/0xa0
+   [<ffffffff8114baec>] ? show_slab_objects+0xfc/0x390
+   [<ffffffff8114baec>] show_slab_objects+0xfc/0x390
+   [<ffffffff8114be33>] objects_show+0x13/0x20
+   [<ffffffff81145e92>] slab_attr_show+0x22/0x30
+   [<ffffffff811c4b59>] sysfs_read_file+0xd9/0x1c0
+   [<ffffffff81158f8d>] vfs_read+0xcd/0x1a0
+   [<ffffffff81159854>] sys_read+0x54/0x90
+   [<ffffffff81003042>] system_call_fastpath+0x16/0x1b
+
+The problem here is that locking order is implicitly (1) sysfs internals and
+(2) slub_lock but we violate that in kmem_cache_destroy().
+
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=25622
+Reported-by: Bart Van Assche <bart.vanassche@gmail.com>
+Cc: Bart Van Assche <bart.vanassche@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+---
+ mm/slub.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/mm/slub.c b/mm/slub.c
+index bec0e35..9831004 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2516,7 +2516,13 @@ void kmem_cache_destroy(struct kmem_cache *s)
+ 		}
+ 		if (s->flags & SLAB_DESTROY_BY_RCU)
+ 			rcu_barrier();
++		/*
++		 * The locking order is (1) sysfs internal locks and (2)
++		 * slub_lock so drop the latter to avoid a deadlock.
++		 */
++		up_write(&slub_lock);
+ 		sysfs_slab_remove(s);
++		return;
+ 	}
+ 	up_write(&slub_lock);
+ }
 -- 
-
-"They that give up essential liberty to obtain temporary safety,
-deserve neither liberty nor safety."  (Ben Franklin)
-
-"The course of history shows that as a government grows, liberty
-decreases."  (Thomas Jefferson)
-
-
+1.7.0.4
 
