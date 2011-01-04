@@ -1,109 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751169Ab1ADXHD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 18:07:03 -0500
-Received: from piggy.rz.tu-ilmenau.de ([141.24.4.8]:35832 "EHLO
-	piggy.rz.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab1ADXHC (ORCPT
+	id S1751285Ab1ADXHj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 18:07:39 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:39465 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940Ab1ADXHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 18:07:02 -0500
-Date: Wed, 5 Jan 2011 00:06:44 +0100
-From: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>, Matt Mackall <mpm@selenic.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-        Harald Welte <HaraldWelte@viatech.com>,
-        Michal Ludvig <michal@logix.cz>
-Subject: Re: 2.6.37-rc7: Regression: b43: crashes in hwrng_register()
-Message-ID: <20110104230644.GJ27114@darkside.kls.lan>
-Mail-Followup-To: Mario 'BitKoenig' Holbe <Mario.Holbe@TU-Ilmenau.DE>,
-	Herbert Xu <herbert@gondor.hengli.com.au>,
-	Larry Finger <Larry.Finger@lwfinger.net>,
-	Matt Mackall <mpm@selenic.com>, LKML <linux-kernel@vger.kernel.org>,
-	Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-	Harald Welte <HaraldWelte@viatech.com>,
-	Michal Ludvig <michal@logix.cz>
-References: <20101231003735.GA24101@gondor.apana.org.au>
- <4D1D27E7.7030301@lwfinger.net>
- <20101231022550.GA2512@darkside.kls.lan>
- <20101231024653.GA24879@gondor.apana.org.au>
- <20101231085103.GA31935@darkside.kls.lan>
- <20110104043338.GA27604@gondor.apana.org.au>
- <20110104121957.GA27114@darkside.kls.lan>
- <20110104123824.GA31557@gondor.apana.org.au>
- <20110104125722.GC27114@darkside.kls.lan>
- <20110104224238.GA4978@gondor.apana.org.au>
+	Tue, 4 Jan 2011 18:07:38 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6216"; a="69262570"
+Message-ID: <4D23A839.6030205@codeaurora.org>
+Date: Tue, 04 Jan 2011 15:07:37 -0800
+From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090608)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BFVE2HhgxTpCzM8t"
-Content-Disposition: inline
-In-Reply-To: <20110104224238.GA4978@gondor.apana.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Jean Delvare <khali@linux-fr.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-i2c@vger.kernel.org, Rabin Vincent <rabin@rab.in>,
+        Ben Dooks <ben-linux@fluff.org>
+Subject: Re: [PATCH] i2c: Factor out runtime suspend checks from PM operations
+References: <1293712813-4090-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1293712813-4090-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---BFVE2HhgxTpCzM8t
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, Jan 05, 2011 at 09:42:38AM +1100, Herbert Xu wrote:
-> Can you please try this patch against vanilla to print out the
-> raw output of xstore?
-
-# ps -ef | grep 'rng[d]'
-# cat /sys/devices/virtual/misc/hw_random/rng_available
-via=20
-# hexdump -n 16 -C /dev/hwrng
-00000000  00 ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |..............=
-=2E.|
-00000010
-#=20
-
-kern.log meanwhile (lines numbered):
-     1  Jan  4 23:56:40 ideapad kernel: [  151.714225] 0x0
-     2  Jan  4 23:56:40 ideapad kernel: [  151.714236] 0xffffffff
-     3  Jan  4 23:56:40 ideapad kernel: [  151.714239] 0x0
-     4  Jan  4 23:56:40 ideapad kernel: [  151.714251] 0xffffffff
-=2E..
-   233  Jan  4 23:56:40 ideapad kernel: [  151.715967] 0x0
-   234  Jan  4 23:56:40 ideapad kernel: [  151.715980] 0xffffffff
-   235  Jan  4 23:56:40 ideapad kernel: [  151.715982] 0x0
-   236  Jan  4 23:56:40 ideapad kernel: [  151.715995] 0xffffffff
-   237  Jan  4 23:56:40 ideapad kernel: [  151.720342] 0x0
-   238  Jan  4 23:56:40 ideapad kernel: [  151.720347] 0x0
-   239  Jan  4 23:56:40 ideapad kernel: [  151.720361] 0x0
-   240  Jan  4 23:56:40 ideapad kernel: [  151.720365] 0x0
-=2E..
-  8163  Jan  4 23:56:40 ideapad kernel: [  151.987049] 0x0
-  8164  Jan  4 23:56:40 ideapad kernel: [  151.987061] 0x0
-  8165  Jan  4 23:56:40 ideapad kernel: [  151.987063] 0x0
-  8166  Jan  4 23:56:40 ideapad kernel: [  151.987075] 0x0
+Mark Brown wrote:
+> When devices use dev_pm_ops the I2C API is implementing standard functionality
+> for integration with runtime PM and for checking for the presence of a per
+> device op. The PM core provides pm_generic_ functions implementing this
+> behaviour - use them to reduce coupling with future PM updates.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  drivers/i2c/i2c-core.c |   68 ++++++++++++++---------------------------------
+>  1 files changed, 20 insertions(+), 48 deletions(-)
+> 
+> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+> index 6b4cc56..6793c51 100644
+> --- a/drivers/i2c/i2c-core.c
+> +++ b/drivers/i2c/i2c-core.c
+> @@ -196,88 +196,60 @@ static int i2c_device_pm_suspend(struct device *dev)
+>  {
+>  	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+>  
+> -	if (pm) {
+> -		if (pm_runtime_suspended(dev))
+> -			return 0;
+> -		else
+> -			return pm->suspend ? pm->suspend(dev) : 0;
+> -	}
+> -
+> -	return i2c_legacy_suspend(dev, PMSG_SUSPEND);
+> +	if (pm)
+> +		return pm_generic_suspend(dev);
 
 
-Mario
---=20
-If her DNA was off by one percentage point, she'd be a dolphin.
-                                -- Dr. Gregory House
+pm_generic_suspend() and others needs to be externed in linux/pm_runtime.h?
 
---BFVE2HhgxTpCzM8t
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEVAwUBTSOoBBS+e2HeSPbpAQL1jwgAlXRiDIIE+X1JDGa5IqeHJQYpHL3JurTH
-GZBuZQ8Typ84z646iEaQJptVSmCV/0MaH0mWUcq1nDEtXlZ3p3OOZvQTSYDYjMBL
-tu8qJc+BvGQP2nV5MVrzmCFBWBw39RXkljVLAFF2Kvsfdof4FnaWF7n8wDC+r762
-31O4LC23nNer7IiLV7SIUS+x0VXyPKQg3mBxBqdzzd0M6IqC1YipSNDcdpoAXmoa
-8Yo82UlClOozh/cmXcVAjvBu9xmY3wWwrhnexCAXLcgDZOWEPfzIrvK+UP+V5Bcg
-7aEWnw9UBkoQnQrKrsxLcOCpFc5xWxyJvlPS/nHLqAZdNdderH7FGg==
-=2Pa5
------END PGP SIGNATURE-----
-
---BFVE2HhgxTpCzM8t--
+--
+Sent by an employee of the Qualcomm Innovation Center, Inc. The Qualcomm 
+Innovation Center, Inc. is a member of the Code Aurora Forum.
