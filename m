@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751146Ab1ADWut (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 17:50:49 -0500
-Received: from isrv.corpit.ru ([86.62.121.231]:52567 "EHLO isrv.corpit.ru"
+	id S1751065Ab1ADW6K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 17:58:10 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:60336 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750871Ab1ADWus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 17:50:48 -0500
-Message-ID: <4D23A445.5050405@msgid.tls.msk.ru>
-Date: Wed, 05 Jan 2011 01:50:45 +0300
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.16) Gecko/20101227 Icedove/3.0.11
+	id S1750875Ab1ADW6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 17:58:08 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: suspend hangs at platform phase [was: mmotm 2010-12-23-16-58 uploaded]
+Date: Tue, 4 Jan 2011 23:57:08 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc8+; KDE/4.4.4; x86_64; ; )
+Cc: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        "Brown, Len" <len.brown@intel.com>, steiner@sgi.com,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>
+References: <201012240132.oBO1W8Ub022207@imap1.linux-foundation.org> <4D232352.2030809@gmail.com> <4D234F8E.7080102@gmail.com>
+In-Reply-To: <4D234F8E.7080102@gmail.com>
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: Linux-kernel <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: VERY slow scrolling on radeon graphics card: debugging a	timing
- issue?
-References: <4D0FC36D.9010304@msgid.tls.msk.ru> <20110102090001.GB32469@atrey.karlin.mff.cuni.cz>
-In-Reply-To: <20110102090001.GB32469@atrey.karlin.mff.cuni.cz>
-X-Enigmail-Version: 1.0.1
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201101042357.08600.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-02.01.2011 12:00, Pavel Machek wrote:
-> Hi!
+On Tuesday, January 04, 2011, Jiri Slaby wrote:
+> On 01/04/2011 02:40 PM, Jiri Slaby wrote:
+> > On 12/24/2010 01:58 AM, akpm@linux-foundation.org wrote:
+> >> The mm-of-the-moment snapshot 2010-12-23-16-58 has been uploaded to
+> > 
+> > Hi, this kernel regresses with respect to suspend to ram in comparison
+> > with mmotm 2010-12-16-14-56.
+> > 
+> > This is OK:
+> > echo devices > /sys/power/pm_test
+> > pm-suspend
+> > This hangs at suspend phase:
+> > echo platform > /sys/power/pm_test
+> > pm-suspend
+
+Hmm.  So it looks like _PTS hangs?
+
+> > Note that this kernel is based on next-20101221. Should I try newer (and
+> > clean) -next?
 > 
->> The thing is: that same scrolling becomes much faster
->> when I "do something" else while it scrolls up.  First
->> I noticed this when I wanted to switch to another vt
->> while it were scrolling -- I held down Ctrl key on my
->> keyboard, and out of the sudden the scroll speed up
->> dramatically.
->>
->> It turned out I can speed the thing to about 10 times
->> by generating some load: hit and hold a key on the
->> keyboard (generates interrupts?), run kernel compile
->> in the background (generates disk interrupts?), move
->> mouse...
+> Ok, bisected down to:
+> 16dc39c98a6ca56a27f22f7ac6731d8223237a2e is first bad commit
+> commit 16dc39c98a6ca56a27f22f7ac6731d8223237a2e
+> Author: Len Brown <len.brown@intel.com>
+> Date:   Thu Dec 16 23:12:23 2010 -0500
 > 
-> Try "irqpoll"?
-
-It turned out to be a bit less easy than I thought.
-
-The thing is, it appears the issue is not triggered
-on fresh boot - scrolling is reasonable fast there.
-But slowness returns back after suspend-to-RAM cycle
-(not suspend-to-disk).  I'm still trying ;)
-
-> Will cpu load speed it up, too? (Like yes > /dev/null)?
-
-Yes, CPU load fixes the issue immediately.  But switching
-from ondemand to performance CPU governor does not fix it.
-
->> Any hints on where to go from there are apprecated.
->>
->> The hardware is an AMD780g-based motherboard with
->> and Athlon CPU, I've seen the same behavour from
->> many other similar boards.  Kernels - all up to
->> the current 2.6.36.2, sine the old days when kms
->> for radeon first appeared in staging.
+>     ACPI: use ioremap_cache()
 > 
-> Watch /proc/interrupts to see if radeon uses them and if they appear
-> to work?
+>     Although the temporary boot-time ACPI table mappings
+>     were set up with CPU caching enabled, the permanent table
+>     mappings and AML run-time region memory accesses were
+>     set up with ioremap(), which on x86 is a synonym for
+>     ioremap_nocache().
+> 
+>     Changing this to ioremap_cache() improves performance as
+>     seen when accessing the tables via acpidump,
+>     or /sys/firmware/acpi/tables.  It should also improve
+>     AML run-time performance.
+> 
+>     No change on ia64.
+> 
+>     Reported-by: Jack Steiner <steiner@sgi.com>
+>     Signed-off-by: Len Brown <len.brown@intel.com>
+> 
+> :040000 040000 be35c5e8f214f10f94688c1a27f33ecfb8505220
+> 52581222d0edf190f160f3e5aa5d2c1af8e76988 M      arch
+> :040000 040000 ccdca0d41938b8312e946cde3c01c59b32d1c17c
+> 96ccf2357f2ac4a31d19cc41f5728d9f87b6cac0 M      drivers
+> 
+> Revert of that patch fixes the problem.
 
-I don't see any change in radeon interrupt numbers during the
-scrolling, so it's difficult to say.  The IRQ is shared between
-several devices:
+Can you send a dmesg output and acpidump output from the failing system, please?
 
-$ grep radeon /proc/interrupts
-  18:  510439  370  IO-APIC-fasteoi ohci_hcd:usb3, ohci_hcd:usb4, ohci_hcd:usb5, radeon
-
-The counter changes but very slowly (and not during the scroll
-test when I don't touch anything), I see on correlation between
-it any my actions.
-
-Thanks!
-
-/mjt
+Rafael
