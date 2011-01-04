@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752870Ab1ADPOP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 10:14:15 -0500
-Received: from casper.infradead.org ([85.118.1.10]:59933 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752338Ab1ADPMI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752352Ab1ADPMI (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 4 Jan 2011 10:12:08 -0500
-Message-Id: <20110104150102.661650041@chello.nl>
+Received: from casper.infradead.org ([85.118.1.10]:59924 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab1ADPMF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 10:12:05 -0500
+Message-Id: <20110104150102.812142468@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jan 2011 15:59:36 +0100
+Date: Tue, 04 Jan 2011 15:59:39 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Chris Mason <chris.mason@oracle.com>,
         Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
@@ -17,190 +17,98 @@ To: Chris Mason <chris.mason@oracle.com>,
         Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
         Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 07/18] sched: Drop the rq argument to sched_class::select_task_rq()
+Subject: [RFC][PATCH 10/18] sched: Also serialize ttwu_local() with p->pi_lock
 References: <20110104145929.772813816@chello.nl>
-Content-Disposition: inline; filename=sched-select_task_rq.patch
+Content-Disposition: inline; filename=sched-ttwu_local.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation of calling select_task_rq() without rq->lock held, drop
-the dependency on the rq argument.
+Since we now serialize ttwu() using p->pi_lock, we also need to
+serialize ttwu_local() using that, otherwise, once we drop the
+rq->lock from ttwu() it can race with ttwu_local().
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/linux/sched.h   |    3 +--
- kernel/sched.c          |   20 +++++++++++---------
- kernel/sched_fair.c     |    2 +-
- kernel/sched_idletask.c |    2 +-
- kernel/sched_rt.c       |   10 +++++++++-
- kernel/sched_stoptask.c |    3 +--
- 6 files changed, 24 insertions(+), 16 deletions(-)
+ kernel/sched.c |   28 +++++++++++++++++-----------
+ 1 file changed, 17 insertions(+), 11 deletions(-)
 
-Index: linux-2.6/include/linux/sched.h
-===================================================================
---- linux-2.6.orig/include/linux/sched.h
-+++ linux-2.6/include/linux/sched.h
-@@ -1063,8 +1063,7 @@ struct sched_class {
- 	void (*put_prev_task) (struct rq *rq, struct task_struct *p);
- 
- #ifdef CONFIG_SMP
--	int  (*select_task_rq)(struct rq *rq, struct task_struct *p,
--			       int sd_flag, int flags);
-+	int  (*select_task_rq)(struct task_struct *p, int sd_flag, int flags);
- 
- 	void (*pre_schedule) (struct rq *this_rq, struct task_struct *task);
- 	void (*post_schedule) (struct rq *this_rq);
 Index: linux-2.6/kernel/sched.c
 ===================================================================
 --- linux-2.6.orig/kernel/sched.c
 +++ linux-2.6/kernel/sched.c
-@@ -2138,13 +2138,15 @@ static int migration_cpu_stop(void *data
-  * The task's runqueue lock must be held.
-  * Returns true if you have to wait for migration thread.
+@@ -2513,9 +2513,9 @@ static int try_to_wake_up(struct task_st
+  * try_to_wake_up_local - try to wake up a local task with rq lock held
+  * @p: the thread to be awakened
+  *
+- * Put @p on the run-queue if it's not alredy there.  The caller must
++ * Put @p on the run-queue if it's not alredy there. The caller must
+  * ensure that this_rq() is locked, @p is bound to this_rq() and not
+- * the current task.  this_rq() stays locked over invocation.
++ * the current task.
   */
--static bool migrate_task(struct task_struct *p, struct rq *rq)
-+static bool need_migrate_task(struct task_struct *p)
+ static void try_to_wake_up_local(struct task_struct *p)
  {
- 	/*
- 	 * If the task is not on a runqueue (and not running), then
- 	 * the next wake-up will properly place the task.
- 	 */
--	return p->on_rq || task_running(rq, p);
-+	bool running = p->on_rq || p->on_cpu;
-+	smp_rmb(); /* finish_lock_switch() */
-+	return running;
+@@ -2523,16 +2523,21 @@ static void try_to_wake_up_local(struct 
+ 
+ 	BUG_ON(rq != this_rq());
+ 	BUG_ON(p == current);
+-	lockdep_assert_held(&rq->lock);
++
++	raw_spin_unlock(&rq->lock);
++	raw_spin_lock(&p->pi_lock);
++	raw_spin_lock(&rq->lock);
+ 
+ 	if (!(p->state & TASK_NORMAL))
+-		return;
++		goto out;
+ 
+ 	if (!p->on_rq)
+ 		activate_task(rq, p, ENQUEUE_WAKEUP);
+ 
+ 	ttwu_post_activation(p, rq, 0);
+ 	ttwu_stat(rq, p, smp_processor_id(), 0);
++out:
++	raw_spin_unlock(&p->pi_lock);
  }
  
- /*
-@@ -2337,9 +2339,9 @@ static int select_fallback_rq(int cpu, s
-  * The caller (fork, wakeup) owns p->pi_lock, ->cpus_allowed is stable.
+ /**
+@@ -3925,6 +3930,7 @@ pick_next_task(struct rq *rq)
   */
- static inline
--int select_task_rq(struct rq *rq, struct task_struct *p, int sd_flags, int wake_flags)
-+int select_task_rq(struct task_struct *p, int sd_flags, int wake_flags)
+ asmlinkage void __sched schedule(void)
  {
--	int cpu = p->sched_class->select_task_rq(rq, p, sd_flags, wake_flags);
-+	int cpu = p->sched_class->select_task_rq(p, sd_flags, wake_flags);
- 
- 	/*
- 	 * In order not to call set_task_cpu() on a blocking task we need
-@@ -2484,7 +2486,7 @@ static int try_to_wake_up(struct task_st
- 		en_flags |= ENQUEUE_WAKING;
++	struct task_struct *to_wakeup = NULL;
+ 	struct task_struct *prev, *next;
+ 	unsigned long *switch_count;
+ 	struct rq *rq;
+@@ -3958,21 +3964,21 @@ asmlinkage void __sched schedule(void)
+ 			 * task to maintain concurrency.  If so, wake
+ 			 * up the task.
+ 			 */
+-			if (prev->flags & PF_WQ_WORKER) {
+-				struct task_struct *to_wakeup;
+-
++			if (prev->flags & PF_WQ_WORKER)
+ 				to_wakeup = wq_worker_sleeping(prev, cpu);
+-				if (to_wakeup)
+-					try_to_wake_up_local(to_wakeup);
+-			}
+ 			deactivate_task(rq, prev, DEQUEUE_SLEEP);
+ 			prev->on_rq = 0;
+ 		}
+ 		switch_count = &prev->nvcsw;
  	}
  
--	cpu = select_task_rq(rq, p, SD_BALANCE_WAKE, wake_flags);
-+	cpu = select_task_rq(p, SD_BALANCE_WAKE, wake_flags);
- 	if (cpu != orig_cpu)
- 		set_task_cpu(p, cpu);
- 	__task_rq_unlock(rq);
-@@ -2694,7 +2696,7 @@ void wake_up_new_task(struct task_struct
- 	 * We set TASK_WAKING so that select_task_rq() can drop rq->lock
- 	 * without people poking at ->cpus_allowed.
- 	 */
--	cpu = select_task_rq(rq, p, SD_BALANCE_FORK, 0);
-+	cpu = select_task_rq(p, SD_BALANCE_FORK, 0);
- 	set_task_cpu(p, cpu);
- 
- 	p->state = TASK_RUNNING;
-@@ -3420,7 +3422,7 @@ void sched_exec(void)
- 	int dest_cpu;
- 
- 	rq = task_rq_lock(p, &flags);
--	dest_cpu = p->sched_class->select_task_rq(rq, p, SD_BALANCE_EXEC, 0);
-+	dest_cpu = p->sched_class->select_task_rq(p, SD_BALANCE_EXEC, 0);
- 	if (dest_cpu == smp_processor_id())
- 		goto unlock;
- 
-@@ -3428,7 +3430,7 @@ void sched_exec(void)
- 	 * select_task_rq() can race against ->cpus_allowed
- 	 */
- 	if (cpumask_test_cpu(dest_cpu, &p->cpus_allowed) &&
--	    likely(cpu_active(dest_cpu)) && migrate_task(p, rq)) {
-+	    likely(cpu_active(dest_cpu)) && need_migrate_task(p)) {
- 		struct migration_arg arg = { p, dest_cpu };
- 
- 		task_rq_unlock(rq, &flags);
-@@ -5681,7 +5683,7 @@ int set_cpus_allowed_ptr(struct task_str
- 		goto out;
- 
- 	dest_cpu = cpumask_any_and(cpu_active_mask, new_mask);
--	if (migrate_task(p, rq)) {
-+	if (need_migrate_task(p)) {
- 		struct migration_arg arg = { p, dest_cpu };
- 		/* Need help from migration thread: drop lock and wait. */
- 		__task_rq_unlock(rq);
-Index: linux-2.6/kernel/sched_fair.c
-===================================================================
---- linux-2.6.orig/kernel/sched_fair.c
-+++ linux-2.6/kernel/sched_fair.c
-@@ -1623,7 +1623,7 @@ static int select_idle_sibling(struct ta
-  * preempt must be disabled.
-  */
- static int
--select_task_rq_fair(struct rq *rq, struct task_struct *p, int sd_flag, int wake_flags)
-+select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
- {
- 	struct sched_domain *tmp, *affine_sd = NULL, *sd = NULL;
- 	int cpu = smp_processor_id();
-Index: linux-2.6/kernel/sched_idletask.c
-===================================================================
---- linux-2.6.orig/kernel/sched_idletask.c
-+++ linux-2.6/kernel/sched_idletask.c
-@@ -7,7 +7,7 @@
- 
- #ifdef CONFIG_SMP
- static int
--select_task_rq_idle(struct rq *rq, struct task_struct *p, int sd_flag, int flags)
-+select_task_rq_idle(struct task_struct *p, int sd_flag, int flags)
- {
- 	return task_cpu(p); /* IDLE tasks as never migrated */
- }
-Index: linux-2.6/kernel/sched_rt.c
-===================================================================
---- linux-2.6.orig/kernel/sched_rt.c
-+++ linux-2.6/kernel/sched_rt.c
-@@ -973,11 +973,18 @@ static void yield_task_rt(struct rq *rq)
- static int find_lowest_rq(struct task_struct *task);
- 
- static int
--select_task_rq_rt(struct rq *rq, struct task_struct *p, int sd_flag, int flags)
-+select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
- {
- 	if (sd_flag != SD_BALANCE_WAKE)
- 		return smp_processor_id();
- 
-+#if 0
 +	/*
-+	 * XXX without holding rq->lock the below is racy, need to
-+	 * rewrite it in a racy but non-dangerous way so that we mostly
-+	 * get the benefit of the heuristic but don't crash the kernel
-+	 * if we get it wrong ;-)
++	 * All three: try_to_wake_up_local(), pre_schedule() and idle_balance()
++	 * can drop rq->lock.
 +	 */
- 	/*
- 	 * If the current task is an RT task, then
- 	 * try to see if we can wake this RT task up on another
-@@ -1002,6 +1009,7 @@ select_task_rq_rt(struct rq *rq, struct 
++	if (to_wakeup)
++		try_to_wake_up_local(to_wakeup);
+ 	pre_schedule(rq, prev);
+-
+ 	if (unlikely(!rq->nr_running))
+ 		idle_balance(cpu, rq);
  
- 		return (cpu == -1) ? task_cpu(p) : cpu;
- 	}
-+#endif
- 
- 	/*
- 	 * Otherwise, just let it ride on the affined RQ and the
-Index: linux-2.6/kernel/sched_stoptask.c
-===================================================================
---- linux-2.6.orig/kernel/sched_stoptask.c
-+++ linux-2.6/kernel/sched_stoptask.c
-@@ -9,8 +9,7 @@
- 
- #ifdef CONFIG_SMP
- static int
--select_task_rq_stop(struct rq *rq, struct task_struct *p,
--		    int sd_flag, int flags)
-+select_task_rq_stop(struct task_struct *p, int sd_flag, int flags)
- {
- 	return task_cpu(p); /* stop tasks as never migrate */
- }
 
 
