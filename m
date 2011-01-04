@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751429Ab1ADPpI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 10:45:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48379 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750831Ab1ADPpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 10:45:07 -0500
-Date: Tue, 4 Jan 2011 13:44:39 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-        perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com
-Subject: Re: [PATCH] perf: fix perf_event.h header usage
-Message-ID: <20110104154439.GA26167@ghostprotocols.net>
-References: <4d233cf0.2308e30a.7b00.ffffc187@mx.google.com>
+	id S1751547Ab1ADPqf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 10:46:35 -0500
+Received: from mail.bspu.unibel.by ([195.50.2.21]:42650 "EHLO mail.bspu.local"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751104Ab1ADPqe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 10:46:34 -0500
+X-Greylist: delayed 1427 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Jan 2011 10:46:34 EST
+Message-ID: <4D2339F7.3090502@bspu.unibel.by>
+Date: Tue, 04 Jan 2011 17:17:11 +0200
+From: Dzianis Kahanovich <mahatma@bspu.unibel.by>
+Reply-To: mahatma@eu.by
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b7pre) Gecko/20101123 Firefox/4.0b7pre SeaMonkey/2.1b1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4d233cf0.2308e30a.7b00.ffffc187@mx.google.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] fix miscompiling with GCC 4.5 -finline-functions
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Jan 04, 2011 at 04:30:01PM +0200, Stephane Eranian escreveu:
-> This patch fixes the usage of the perf_event.h header file
-> between command modules and the supporting code in util.
-> 
-> It is necessary to ensure that ALL files use the SAME
-> perf_event.h header from the kernel source tree.
-> 
-> There were a couple of #include <linux/perf_event.h> mixed
-> with #include "../../perf_event.h".
-> 
-> This caused issues on some distros because of mismatch
-> in the layout of struct perf_event_attr. That eventually
-> led perf stat to segfault.
-> 
-> Signed-off-by: Stephane Eranian <eranian@google.com>
+Fixing broken automatic inlining for GCC 4.5+  (breaks build with
+-finline-functions or -O3 on x86_*).
 
-Thanks, applying.
+Signed-off-by: Dzianis Kahanovich <mahatma@eu.by>
+---
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -569,7 +569,7 @@ static inline void ept_sync_individual_a
+ 	}
+ }
 
-- Arnaldo
+-static unsigned long vmcs_readl(unsigned long field)
++static noinline unsigned long vmcs_readl(unsigned long field)
+ {
+ 	unsigned long value = 0;
+
+--- a/drivers/media/radio/radio-aimslab.c
++++ b/drivers/media/radio/radio-aimslab.c
+@@ -71,7 +71,7 @@ static struct rtrack rtrack_card;
+
+ /* local things */
+
+-static void sleep_delay(long n)
++static noinline void sleep_delay(long n)
+ {
+ 	/* Sleep nicely for 'n' uS */
+ 	int d = n / msecs_to_jiffies(1000);
+--
+WBR, Dzianis Kahanovich AKA Denis Kaganovich, http://mahatma.bspu.unibel.by/
