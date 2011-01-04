@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750994Ab1ADAWp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 19:22:45 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:26246 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750786Ab1ADAWo convert rfc822-to-8bit (ORCPT
+	id S1751110Ab1ADAe0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 19:34:26 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:17003 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889Ab1ADAeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 19:22:44 -0500
-X-IronPort-AV: E=Sophos;i="4.60,268,1291622400"; 
-   d="scan'208";a="501407636"
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: linux-nfs@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20110103213850.GC25121@pengutronix.de>
-References: <20101230171453.GA5787@pengutronix.de>
-	 <1293731992.4919.5.camel@heimdal.trondhjem.org>
-	 <20101230191846.GB14221@pengutronix.de>
-	 <20110103213850.GC25121@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Mon, 03 Jan 2011 19:22:38 -0500
-Message-ID: <1294100558.25100.8.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 04 Jan 2011 00:22:39.0991 (UTC) FILETIME=[7F102870:01CBABA5]
+	Mon, 3 Jan 2011 19:34:25 -0500
+Message-ID: <4D226AF8.1010102@oracle.com>
+Date: Tue, 04 Jan 2011 08:34:00 +0800
+From: Joe Jin <joe.jin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre OracleBeehiveExtension/1.0.0.2-OracleInternal ObetStats/CATLAF_1292475699435-498544290 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: jeremy@goop.org, xen-devel@lists.xensource.com, ian.campbell@citrix.com,
+        gurudas.pai@oracle.com, guru.anbalagane@oracle.com,
+        greg.marsden@oracle.com, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Xen-devel] Re: [patch] xenfb: fix xenfb suspend/resume race
+References: <20101230125616.GA31537@joejin-pc.cn.oracle.com> <20101230164051.GC24313@dumpdata.com> <4D1D2A2D.80206@oracle.com> <20110103163418.GA14102@dumpdata.com>
+In-Reply-To: <20110103163418.GA14102@dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-03 at 22:38 +0100, Uwe Kleine-König wrote: 
-> On Thu, Dec 30, 2010 at 08:18:46PM +0100, Uwe Kleine-König wrote:
-> > On Thu, Dec 30, 2010 at 12:59:52PM -0500, Trond Myklebust wrote:
-> > > What filesystem are you exporting on the server? What is the NFS
-> > > version? Is this nfsroot, autofs or an ordinary nfs mount?
-> > This is an nfsroot of /home/ukl/nfsroot/tx28 which is a symlink to a
-> > directory on a different partition.  I don't know the filesystem of my
-> > homedir as it resides on a server I have no access to, but I asked the
-> > admin, so I can follow up with this info later (I'd suspect ext3, too).
-> Yes, it is ext3.
+On 01/04/11 00:34, Konrad Rzeszutek Wilk wrote:
+>>> I am unclear from your description whether the patch fixes
+>>> the problem (I would presume so). Or does it take a long time
+>>> to hit this race?
+>>>
+>> Yes, more than 100 migrations. we hit this issue around 3 times.
 > 
-> > The real root directory is on ext3 (rw,noatime).
-> > 
-> > The serving nfs-server is Debian's nfs-kernel-server 1:1.2.2-1.
-> If that matters, kernel is linux-image-2.6.32-5-amd64 (2.6.32-29)
-> provided by Debian.
+> OK, so you are still trying to find the culprit.
 > 
-> >                                                                I don't
-> > know if testing that further would help or just waste of my time, so
-> > please let me know if I can help you and how.
-> This still applies
+> Did you look at this patch from Ian:
+> 
+> https://patchwork.kernel.org/patch/403192/
 
-I'm having trouble reproducing this with my own nfsroot setup (which is
-just a 'fedora 13 live' disk with NetworkManager turned firmly off).
+We have reproduced the issue with the patch.
 
-However looking back at your report, you said that when you remove the
-symlink, you get an error message of the form:
+> 
+> ?
+>>
+>> I dumped vmcore when guest crashed, from vmcore everything
+>> looked good, fb_info, xenfb_info and so on.
+> 
+> And the event channels are correct?
+> 
+> .. snip..
+>> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+>> index ac7b42f..4cfb5e2 100644
+>> --- a/drivers/xen/events.c
+>> +++ b/drivers/xen/events.c
+>> @@ -175,6 +175,8 @@ static struct irq_info *info_for_irq(unsigned irq)
+>>  
+>>  static unsigned int evtchn_from_irq(unsigned irq)
+>>  {
+>> +	if (unlikely(irq < 0 || irq >= nr_irqs))
+>> +		return 0;
+> 
+> You could insert a WARN_ON here to see see if you get this during your
+> migration process.
+> 
+> Or use xen_raw_printk in case the guest is hung for good.
+> 
 
-"starting splashutils daemon.../etc/rc.d/S00splashutils: line
-50: //sbin/fbsplashd.static: Unknown error 521"
-
-Error 521 is EBADHANDLE, which basically means your client got a
-corrupted filehandle. The 'fileid changed' thing also indicates some
-form of corruption.
-
-The question is whether this is something happening on the server or the
-client. Does an older client kernel boot without any trouble?
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+Thanks for your advice, will try it.
