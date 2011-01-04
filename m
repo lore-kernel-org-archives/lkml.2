@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873Ab1ADJIX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 04:08:23 -0500
-Received: from lo.gmane.org ([80.91.229.12]:52836 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750824Ab1ADJIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 04:08:20 -0500
-X-Injected-Via-Gmane: http://gmane.org/
+	id S1752237Ab1ADJIg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 04:08:36 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:59922 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752087Ab1ADJId (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 04:08:33 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=hC7tbQXaJmASNJh6Z5VGNxq6q58kZbriBhssa6zFypZYjluIU6KjGUHMRp0ojrqmUT
+         VCr1ZM6j6Jk9IzUfodu0DFgoRyUcQ4mLgpZfBlo7yUUGtZXU8dVGIyYD47za5BBDs2rc
+         i2P/e53eIzPICrs+sr8YGmI4eIF2DUy8C7nFo=
+From: yangsheng <sickamd@gmail.com>
 To: linux-kernel@vger.kernel.org
-From: Alexander Clouter <alex@digriz.org.uk>
-Subject: Re: strange fragmented udp packets
-Date: Tue, 4 Jan 2011 08:50:54 +0000
-Message-ID: <ek3bv7-3m6.ln1@chipmunk.wormnet.eu>
-References: <201012272354.44196.thomas@fjellstrom.ca> <201101031647.56077.thomas@fjellstrom.ca>
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: chipmunk.wormnet.eu
-User-Agent: tin/1.9.6-20100522 ("Lochruan") (UNIX) (Linux/2.6.32-5-sparc64-smp (sparc64))
-Cc: linux-net@vger.kernel.org
+Cc: adilger@dilger.ca, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, swhiteho@redhat.com,
+        yangsheng <sickamd@gmail.com>
+Subject: [PATCH] Update atime from future.
+Date: Tue,  4 Jan 2011 17:08:12 +0800
+Message-Id: <1294132092-4423-1-git-send-email-sickamd@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Fjellstrom <thomas@fjellstrom.ca> wrote:
->
->> I can't explain the packets getting fragmented (or I couldn't, see below).
->> And only have a guess as to why my VOIP provider isn't seeing them, I've
->> heard that some firewalls explicitly block fragmented UDP as its often
->> used in DoS attacks, and for little else.
->> 
->> Here's at least what tcpdump has to say..
->> 
->> packet coming in:
->> 23:38:26.136021 IP x.x.x.x.5060 > x.x.x.x.5060: SIP, length: 582
->> 
->> packet going out:
->> 23:38:18.136085 IP x.x.x.x.5060 > x.x.x.x.5060: SIP, length: 544
->> 23:38:18.136169 IP x.x.x.x > x.x.x.x: udp
->> 
->> ...
->> 
->> After writing all that I've realized that the problem is the mtu on the nic
->> attached to my cable modem, it was set to 576 for some odd reason. Changing
->> the mtu to 1500 fixes my problem, but what is causing it to auto select an
->> mtu of 576 anyhow? Could my modem be telling it that 576 is better for it?
-> 
-> Anyone have a hint? I've checked with my sip provider and they don't have 
-> iptables set up, so nothing should be getting in the way of these packets. For 
-> some reason they just aren't reaching the SIP server.
-> 
-pmtu?
+If atime has been wrong set to future, then it cannot
+be updated back to current time.
 
-Play around with the handy utility tracepath (and tracepath6) to 
-<phun>discover</phun> more!
+Signed-off-by: sickamd@gmail.com
+Reviewed-by: adilger@dilger.ca
+---
+ fs/inode.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
 
-Cheers
-
+diff --git a/fs/inode.c b/fs/inode.c
+index da85e56..d92779f 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -1446,6 +1446,8 @@ sector_t bmap(struct inode *inode, sector_t block)
+ }
+ EXPORT_SYMBOL(bmap);
+ 
++#define RELATIME_MARGIN (24 * 60 * 60)
++
+ /*
+  * With relative atime, only update atime if the previous atime is
+  * earlier than either the ctime or mtime or if at least a day has
+@@ -1469,10 +1471,16 @@ static int relatime_need_update(struct vfsmount *mnt, struct inode *inode,
+ 		return 1;
+ 
+ 	/*
++	 * Is the previous atime value in future? If yes,
++	 * update atime:
++	 */
++	if ((long)(now.tv_sec - inode->i_atime.tv_sec) < -RELATIME_MARGIN)
++		return 1;
++	/*
+ 	 * Is the previous atime value older than a day? If yes,
+ 	 * update atime:
+ 	 */
+-	if ((long)(now.tv_sec - inode->i_atime.tv_sec) >= 24*60*60)
++	if ((long)(now.tv_sec - inode->i_atime.tv_sec) >= RELATIME_MARGIN)
+ 		return 1;
+ 	/*
+ 	 * Good, we can skip the atime update:
 -- 
-Alexander Clouter
-.sigmonster says: May you have many handsome and obedient sons.
+1.7.2.3
 
