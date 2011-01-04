@@ -1,154 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751342Ab1ADM5q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 07:57:46 -0500
-Received: from piggy.rz.tu-ilmenau.de ([141.24.4.8]:36483 "EHLO
-	piggy.rz.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241Ab1ADM5o (ORCPT
+	id S1751322Ab1ADNAm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 08:00:42 -0500
+Received: from casper.infradead.org ([85.118.1.10]:46895 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903Ab1ADNAl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 07:57:44 -0500
-Date: Tue, 4 Jan 2011 13:57:22 +0100
-From: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>, Matt Mackall <mpm@selenic.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-        Harald Welte <HaraldWelte@viatech.com>,
-        Michal Ludvig <michal@logix.cz>
-Subject: Re: 2.6.37-rc7: Regression: b43: crashes in hwrng_register()
-Message-ID: <20110104125722.GC27114@darkside.kls.lan>
-Mail-Followup-To: Mario 'BitKoenig' Holbe <Mario.Holbe@TU-Ilmenau.DE>,
-	Herbert Xu <herbert@gondor.hengli.com.au>,
-	Larry Finger <Larry.Finger@lwfinger.net>,
-	Matt Mackall <mpm@selenic.com>, LKML <linux-kernel@vger.kernel.org>,
-	Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-	Harald Welte <HaraldWelte@viatech.com>,
-	Michal Ludvig <michal@logix.cz>
-References: <20101230204522.GC23219@darkside.kls.lan>
- <4D1D0C61.9050800@lwfinger.net>
- <20101231003735.GA24101@gondor.apana.org.au>
- <4D1D27E7.7030301@lwfinger.net>
- <20101231022550.GA2512@darkside.kls.lan>
- <20101231024653.GA24879@gondor.apana.org.au>
- <20101231085103.GA31935@darkside.kls.lan>
- <20110104043338.GA27604@gondor.apana.org.au>
- <20110104121957.GA27114@darkside.kls.lan>
- <20110104123824.GA31557@gondor.apana.org.au>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hQiwHBbRI9kgIhsi"
-Content-Disposition: inline
-In-Reply-To: <20110104123824.GA31557@gondor.apana.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 4 Jan 2011 08:00:41 -0500
+Subject: Re: [RFC][PATCH 08/17] sched: Drop the rq argument to
+ sched_class::select_task_rq()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
+        Jens Axboe <axboe@kernel.dk>, Steven Rostedt <rostedt@goodmis.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTimZB8M7BXfNmOmwN4aeP+YtWLp=WgdDOzKUOKOF@mail.gmail.com>
+References: <20101224122338.172750730@chello.nl>
+	 <20101224123742.887559254@chello.nl> <20101229143136.GC2728@zhy>
+	 <1294053409.2016.59.camel@laptop>
+	 <AANLkTimZB8M7BXfNmOmwN4aeP+YtWLp=WgdDOzKUOKOF@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 04 Jan 2011 14:00:52 +0100
+Message-ID: <1294146052.2016.136.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---hQiwHBbRI9kgIhsi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Tue, Jan 04, 2011 at 11:38:24PM +1100, Herbert Xu wrote:
-> On Tue, Jan 04, 2011 at 01:19:57PM +0100, Mario 'BitKoenig' Holbe wrote:
+On Tue, 2011-01-04 at 13:59 +0800, Yong Zhang wrote:
+> On Mon, Jan 3, 2011 at 7:16 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > On Wed, 2010-12-29 at 22:31 +0800, Yong Zhang wrote:
+> >> On Fri, Dec 24, 2010 at 01:23:46PM +0100, Peter Zijlstra wrote:
+> >> > In preparation of calling select_task_rq() without rq->lock held, drop
+> >> > the dependency on the rq argument.
+> >> >
+> >> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> >> > ---
+> >> > @@ -3416,27 +3409,22 @@ void sched_exec(void)
+> >> >  {
+> >> >     struct task_struct *p = current;
+> >> >     unsigned long flags;
+> >> > -   struct rq *rq;
+> >> >     int dest_cpu;
+> >> >
+> >> > -   rq = task_rq_lock(p, &flags);
+> >> > -   dest_cpu = p->sched_class->select_task_rq(rq, p, SD_BALANCE_EXEC, 0);
+> >> > +   raw_spin_lock_irqsave(&p->pi_lock, flags);
+> >>
+> >> Seems this should go to patch 07/17 ;)
 > >
-> > Hmmm, yes - the patch fixes the crashes, i.e. no more crashes with
-> > either sequence of module-loading, cat rng_available works as well,
-> > but...
-> >=20
-> > Having this patch active rngd complains:
-> > 	rngd[1435]: rngd 2-unofficial-mt.13 starting up...
-> > 	rngd[1435]: block failed FIPS test: 0x1f
-> > 	rngd[1435]: block failed FIPS test: 0x1f
-> > 	...
-> > 	rngd[1435]: stats: entropy added to kernel pool: 0
-> > 	rngd[1435]: stats: FIPS 140-2 successes: 0
-> > 	rngd[1435]: stats: FIPS 140-2 failures: 10
-> >=20
-> > It doesn't do this without the patch.
-> > The only available rng was via, I did blacklist the others just to be
-> > sure.
->=20
-> Hmm, can you print out what it's actually producing (e.g., by
-> stracing rngd)?
+> > Ah, the reason its here is that this patch removes the rq argument and
+> > thus we no longer need rq->lock. So this part relies on the property
+> > introduced by patch 7.
+> 
+> What I mean is we could firstly add pi_lock in patch 7 and then remove
+> the rq argument in this patch. :)
 
-# ps -ef | grep 'rng[d]'
-# cat /sys/devices/virtual/misc/hw_random/rng_available
-via=20
-# hexdump -n 512 -C /dev/hwrng
-00000000  00 ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |..............=
-=2E.|
-00000010  ff ff ff ff ff ff ff 00  00 00 00 00 00 00 00 00  |..............=
-=2E.|
-00000020  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |..............=
-=2E.|
-*
-00000200
-# hexdump -n 512 -C /dev/hwrng
-00000000  00 ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |..............=
-=2E.|
-00000010  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |..............=
-=2E.|
-*
-00000070  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |..............=
-=2E.|
-*
-00000200
-# hexdump -n 1024 -C /dev/hwrng
-00000000  00 ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |..............=
-=2E.|
-00000010  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |..............=
-=2E.|
-*
-00000060  ff ff ff ff 00 00 00 00  00 00 00 00 00 00 00 00  |..............=
-=2E.|
-00000070  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |..............=
-=2E.|
-*
-00000400
-# hexdump -n 1024 -C /dev/hwrng
-00000000  00 ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |..............=
-=2E.|
-00000010  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |..............=
-=2E.|
-*
-00000070  ff 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |..............=
-=2E.|
-00000080  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |..............=
-=2E.|
-*
-00000400
-#                                                                          =
-                                               =20
-> Can you also double-check that this doesn't happen with Larry's
-> patch?
-
-Nope, it doesn't do this with Larry's patch.
-
-
-Mario
---=20
-The Encyclopedia Galactica, in its chapter on Love states that it is far
-too complicated to define.
-The Hitchhiker's Guide to the Galaxy has this to say on the subject of
-love: Avoid, if at all possible.
-
---hQiwHBbRI9kgIhsi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEVAwUBTSMZMhS+e2HeSPbpAQK5zAgAg3/4GFc24riEzOjhHnfApANoUhzbrpAR
-uQZV/poVPo1KPd2cszNAwm12lTFRd16rB/sYQP0KkSszhReRBlwpmSJxEwYyZoUQ
-/gBjirQaZuzkgZF1cWxSzr7fJnVTPnwpqH0rRipiFOPNRbUMXVNlLBQ4YK3wBNI1
-5/n2Erous4CIcWIIjjUvg5yx9Pz37i9mT/cKuAK+uTOiZQrc1KRst1l4Cr+aHiR6
-xcDKM4jyf3eqElNXYmP3D8OZ9onE3V7VtEC7c6U369Cz1B1BchvOn4qtyaLZMDDd
-b7odLrCLXDVLvIbOTV2f8ysCaug0/EepBv7zZdjmkJ5CmupKAm//SA==
-=/9Zh
------END PGP SIGNATURE-----
-
---hQiwHBbRI9kgIhsi--
+No, that's the wrong way around.. anyway, I've pulled this into its own
+patch and the next posting should hopefully be clearer.
