@@ -1,80 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751096Ab1ADXFL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 18:05:11 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41166 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801Ab1ADXFJ (ORCPT
+	id S1751169Ab1ADXHD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 18:07:03 -0500
+Received: from piggy.rz.tu-ilmenau.de ([141.24.4.8]:35832 "EHLO
+	piggy.rz.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892Ab1ADXHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 18:05:09 -0500
-Date: Wed, 5 Jan 2011 00:05:08 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>
-Subject: Re: [PATCH 0/2] Annotate gpio-configuration with __must_check
-Message-ID: <20110104230508.GA18363@pengutronix.de>
-References: <1294159868-4989-1-git-send-email-w.sang@pengutronix.de>
- <20110104202718.GA31444@suse.de>
- <20110104212916.GA14436@pengutronix.de>
- <20110104213414.GA6774@suse.de>
+	Tue, 4 Jan 2011 18:07:02 -0500
+Date: Wed, 5 Jan 2011 00:06:44 +0100
+From: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>, Matt Mackall <mpm@selenic.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
+        Harald Welte <HaraldWelte@viatech.com>,
+        Michal Ludvig <michal@logix.cz>
+Subject: Re: 2.6.37-rc7: Regression: b43: crashes in hwrng_register()
+Message-ID: <20110104230644.GJ27114@darkside.kls.lan>
+Mail-Followup-To: Mario 'BitKoenig' Holbe <Mario.Holbe@TU-Ilmenau.DE>,
+	Herbert Xu <herbert@gondor.hengli.com.au>,
+	Larry Finger <Larry.Finger@lwfinger.net>,
+	Matt Mackall <mpm@selenic.com>, LKML <linux-kernel@vger.kernel.org>,
+	Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
+	Harald Welte <HaraldWelte@viatech.com>,
+	Michal Ludvig <michal@logix.cz>
+References: <20101231003735.GA24101@gondor.apana.org.au>
+ <4D1D27E7.7030301@lwfinger.net>
+ <20101231022550.GA2512@darkside.kls.lan>
+ <20101231024653.GA24879@gondor.apana.org.au>
+ <20101231085103.GA31935@darkside.kls.lan>
+ <20110104043338.GA27604@gondor.apana.org.au>
+ <20110104121957.GA27114@darkside.kls.lan>
+ <20110104123824.GA31557@gondor.apana.org.au>
+ <20110104125722.GC27114@darkside.kls.lan>
+ <20110104224238.GA4978@gondor.apana.org.au>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gBBFr7Ir9EOA20Yy"
+	protocol="application/pgp-signature"; boundary="BFVE2HhgxTpCzM8t"
 Content-Disposition: inline
-In-Reply-To: <20110104213414.GA6774@suse.de>
+In-Reply-To: <20110104224238.GA4978@gondor.apana.org.au>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---gBBFr7Ir9EOA20Yy
+--BFVE2HhgxTpCzM8t
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
+On Wed, Jan 05, 2011 at 09:42:38AM +1100, Herbert Xu wrote:
+> Can you please try this patch against vanilla to print out the
+> raw output of xstore?
 
-> > should fail if it cannot be requested. Or not. Things get worse for
-> > architectures I never used before. This is why I think it is really bet=
-ter to
-> > let people do the fixups who have/understand the hardware in question.
-> > Otherwise the fixups could indeed be more harmful than helpful.
->=20
-> Sure, they could be more harmful, but at least try.  Make the patches
-> up, submit them to the maintainers, and if they are wrong, they will be
-> the best to fix it up properly.
+# ps -ef | grep 'rng[d]'
+# cat /sys/devices/virtual/misc/hw_random/rng_available
+via=20
+# hexdump -n 16 -C /dev/hwrng
+00000000  00 ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |..............=
+=2E.|
+00000010
+#=20
 
-Well, I could generalize all cases and always issue a WARN() if the request
-fails. But this would just move a compile-time warning into a runtime warni=
-ng.
-Also, I have my doubts that even the arch/mach-maintainers know all the boa=
-rds
-and their peculiarities. There are thousands of them.
+kern.log meanwhile (lines numbered):
+     1  Jan  4 23:56:40 ideapad kernel: [  151.714225] 0x0
+     2  Jan  4 23:56:40 ideapad kernel: [  151.714236] 0xffffffff
+     3  Jan  4 23:56:40 ideapad kernel: [  151.714239] 0x0
+     4  Jan  4 23:56:40 ideapad kernel: [  151.714251] 0xffffffff
+=2E..
+   233  Jan  4 23:56:40 ideapad kernel: [  151.715967] 0x0
+   234  Jan  4 23:56:40 ideapad kernel: [  151.715980] 0xffffffff
+   235  Jan  4 23:56:40 ideapad kernel: [  151.715982] 0x0
+   236  Jan  4 23:56:40 ideapad kernel: [  151.715995] 0xffffffff
+   237  Jan  4 23:56:40 ideapad kernel: [  151.720342] 0x0
+   238  Jan  4 23:56:40 ideapad kernel: [  151.720347] 0x0
+   239  Jan  4 23:56:40 ideapad kernel: [  151.720361] 0x0
+   240  Jan  4 23:56:40 ideapad kernel: [  151.720365] 0x0
+=2E..
+  8163  Jan  4 23:56:40 ideapad kernel: [  151.987049] 0x0
+  8164  Jan  4 23:56:40 ideapad kernel: [  151.987061] 0x0
+  8165  Jan  4 23:56:40 ideapad kernel: [  151.987063] 0x0
+  8166  Jan  4 23:56:40 ideapad kernel: [  151.987075] 0x0
 
-Kind regards,
 
-   Wolfram
-
+Mario
 --=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+If her DNA was off by one percentage point, she'd be a dolphin.
+                                -- Dr. Gregory House
 
---gBBFr7Ir9EOA20Yy
+--BFVE2HhgxTpCzM8t
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 Content-Disposition: inline
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEARECAAYFAk0jp6QACgkQD27XaX1/VRsTzwCgin8EKY94gE24ZiTNIGcVJn83
-u6YAnjlOwk889mitgaMRwjVsxG5p+66E
-=4/6t
+iQEVAwUBTSOoBBS+e2HeSPbpAQL1jwgAlXRiDIIE+X1JDGa5IqeHJQYpHL3JurTH
+GZBuZQ8Typ84z646iEaQJptVSmCV/0MaH0mWUcq1nDEtXlZ3p3OOZvQTSYDYjMBL
+tu8qJc+BvGQP2nV5MVrzmCFBWBw39RXkljVLAFF2Kvsfdof4FnaWF7n8wDC+r762
+31O4LC23nNer7IiLV7SIUS+x0VXyPKQg3mBxBqdzzd0M6IqC1YipSNDcdpoAXmoa
+8Yo82UlClOozh/cmXcVAjvBu9xmY3wWwrhnexCAXLcgDZOWEPfzIrvK+UP+V5Bcg
+7aEWnw9UBkoQnQrKrsxLcOCpFc5xWxyJvlPS/nHLqAZdNdderH7FGg==
+=2Pa5
 -----END PGP SIGNATURE-----
 
---gBBFr7Ir9EOA20Yy--
+--BFVE2HhgxTpCzM8t--
