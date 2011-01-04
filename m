@@ -1,145 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941Ab1ADSVY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 13:21:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56128 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751370Ab1ADSVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 13:21:07 -0500
-Date: Tue, 4 Jan 2011 13:36:52 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Zachary Amsden <zamsden@redhat.com>
-Cc: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Glauber Costa <glommer@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [KVM Clock Synchronization 2/4] Keep TSC synchronized across
- host suspend
-Message-ID: <20110104153652.GB31340@amt.cnet>
-References: <1293601100-32109-1-git-send-email-zamsden@redhat.com>
- <1293601100-32109-3-git-send-email-zamsden@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1293601100-32109-3-git-send-email-zamsden@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1751974Ab1ADSWH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 13:22:07 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:39788 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283Ab1ADSWF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 13:22:05 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: yangsheng <sickamd@gmail.com>
+Cc: linux-kernel@vger.kernel.org, adilger@dilger.ca,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        swhiteho@redhat.com, sickadm@gmail.com
+Subject: Re: [PATCH resend] Update atime from future.
+In-Reply-To: Your message of "Tue, 04 Jan 2011 16:56:58 +0800."
+             <1294131418-3835-1-git-send-email-sickamd@gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1294131418-3835-1-git-send-email-sickamd@gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1294165307_4985P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 04 Jan 2011 13:21:47 -0500
+Message-ID: <13585.1294165307@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020207.4D23653C.0196,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 28, 2010 at 07:38:18PM -1000, Zachary Amsden wrote:
-> During a host suspend, TSC may go backwards, which KVM interprets
-> as an unstable TSC.  Technically, KVM should not be marking the
-> TSC unstable, which causes the TSC clocksource to go bad, but
-> should be adjusting the TSC offsets in such a case.
-> 
-> Signed-off-by: Zachary Amsden <zamsden@redhat.com>
-> ---
->  arch/x86/include/asm/kvm_host.h |    1 +
->  arch/x86/kvm/x86.c              |   66 +++++++++++++++++++++++++++++++++++---
->  2 files changed, 61 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index 9e6fe39..63a82b0 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -386,6 +386,7 @@ struct kvm_vcpu_arch {
->  	u64 last_kernel_ns;
->  	u64 last_tsc_nsec;
->  	u64 last_tsc_write;
-> +	u64 tsc_offset_adjustment;
->  	bool tsc_catchup;
->  
->  	bool nmi_pending;
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index b9118f4..b509c01 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -2042,12 +2042,20 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
->  	}
->  
->  	kvm_x86_ops->vcpu_load(vcpu, cpu);
-> +
-> +	/* Apply any externally detected TSC adjustments (due to suspend) */
-> +	if (unlikely(vcpu->arch.tsc_offset_adjustment)) {
-> +		kvm_x86_ops->adjust_tsc_offset(vcpu,
-> +			vcpu->arch.tsc_offset_adjustment);
-> +		vcpu->arch.tsc_offset_adjustment = 0;
-> +		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
-> +	}
->  	if (unlikely(vcpu->cpu != cpu) || check_tsc_unstable()) {
->  		/* Make sure TSC doesn't go backwards */
->  		s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 :
->  				native_read_tsc() - vcpu->arch.last_host_tsc;
->  		if (tsc_delta < 0)
-> -			mark_tsc_unstable("KVM discovered backwards TSC");
-> +			WARN_ON(!check_tsc_unstable());
->  		if (check_tsc_unstable()) {
->  			kvm_x86_ops->adjust_tsc_offset(vcpu, -tsc_delta);
->  			vcpu->arch.tsc_catchup = 1;
-> @@ -5778,14 +5786,60 @@ int kvm_arch_hardware_enable(void *garbage)
->  {
->  	struct kvm *kvm;
->  	struct kvm_vcpu *vcpu;
-> -	int i;
-> +	int i, ret;
-> +	u64 local_tsc;
-> +	u64 max_tsc = 0;
-> +	bool stable, backwards_tsc = false;
->  
->  	kvm_shared_msr_cpu_online();
-> -	list_for_each_entry(kvm, &vm_list, vm_list)
-> -		kvm_for_each_vcpu(i, vcpu, kvm)
-> -			if (vcpu->cpu == smp_processor_id())
-> +	local_tsc = native_read_tsc();
-> +	stable = !check_tsc_unstable();
-> +	ret = kvm_x86_ops->hardware_enable(garbage);
-> +	if (ret)
-> +		return ret;
-> +
-> +	list_for_each_entry(kvm, &vm_list, vm_list) {
-> +		kvm_for_each_vcpu(i, vcpu, kvm) {
-> +			if (!stable && vcpu->cpu == smp_processor_id())
->  				kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
-> -	return kvm_x86_ops->hardware_enable(garbage);
-> +			if (stable && vcpu->arch.last_host_tsc > local_tsc) {
-> +				backwards_tsc = true;
-> +				if (vcpu->arch.last_host_tsc > max_tsc)
-> +					max_tsc = vcpu->arch.last_host_tsc;
-> +			}
-> +		}
-> +	}
-> +
-> +	/*
-> +	 * Sometimes, reliable TSCs go backwards.  This happens
-> +	 * on platforms that reset TSC during suspend or hibernate
-> +	 * actions, but maintain synchronization.  We must compensate.
-> +	 * Unfortunately, we can't bring the TSCs fully up to date
-> +	 * with real time.  The reason is that we aren't yet far
-> +	 * enough into CPU bringup that we know how much real time
-> +	 * has actually elapsed; our helper function, get_kernel_ns()
-> +	 * will be using boot variables that haven't been updated yet.
-> +	 * We simply find the maximum observed TSC above, then record
-> +	 * the adjustment to TSC in each VCPU.  When the VCPU later
-> +	 * gets loaded, the adjustment will be applied.  Note that we
-> +	 * accumulate adjustments, in case multiple suspend cycles
-> +	 * happen before the VCPU gets a chance to run again.
-> +	 *
-> +	 * Note that unreliable TSCs will be compensated already by
-> +	 * the logic in vcpu_load, which sets the TSC to catchup mode.
-> +	 * This will catchup all VCPUs to real time, but cannot
-> +	 * guarantee synchronization.
-> +	 */
-> +	if (backwards_tsc) {
-> +		u64 delta_cyc = max_tsc - local_tsc;
-> +		list_for_each_entry(kvm, &vm_list, vm_list)
-> +			kvm_for_each_vcpu(i, vcpu, kvm) {
-> +				vcpu->arch.tsc_offset_adjustment += delta_cyc;
-> +				vcpu->arch.last_host_tsc = 0;
-> +			}
-> +	}
-> +
-> +	return 0;
->  }
+--==_Exmh_1294165307_4985P
+Content-Type: text/plain; charset=us-ascii
 
-Wouldnt it be simpler to use cyc2ns_offset (or something equivalent)? In
-any case, you forgot to compare smp_processor_id.
+On Tue, 04 Jan 2011 16:56:58 +0800, yangsheng said:
+> If atime has been wrong set to future, then it cannot
+> be updated back to current time.
+
+> +#define RELATIME_MARGIN (24 * 60 * 60)
+
+Nice patch overall.  Should this be a #define, or a CONFIG_ variable,
+or a tweakable /proc/sys/fs variable?  Or am I senile and we thrashed
+all this out once before when the relatime code landed?
+
+--==_Exmh_1294165307_4985P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFNI2U7cC3lWbTT17ARAgywAKD5Q+Q1kKqpD2mF0s1qbTE+kJDevQCgleQK
+nHQxjWnb1lqjWD6K7A8nLco=
+=EK1/
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1294165307_4985P--
 
