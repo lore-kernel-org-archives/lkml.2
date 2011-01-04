@@ -1,71 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751353Ab1ADOSw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 09:18:52 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:48605 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750947Ab1ADOSv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 09:18:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=lKqFj6LcXxH6TXwKwkzRJGC8OZJICfQ+wo9xev+ZmSiTeYH/wdaGqb8/hms5OuG9a8
-         PKRfLoSAkchqA63Jr2n2xW1uJvQTf4EEYbMxg/84YKAvMgJLZeTlarQj18UTunHrFBFU
-         55RnZtD/bSjAKATBmg47RNBsMuWjw5PxX8tbA=
+	id S1751401Ab1ADOT1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 09:19:27 -0500
+Received: from hera.kernel.org ([140.211.167.34]:32983 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750947Ab1ADOT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 09:19:26 -0500
+Date: Tue, 4 Jan 2011 14:18:52 GMT
+From: tip-bot for Mike Galbraith <efault@gmx.de>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, efault@gmx.de, oleg@redhat.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, efault@gmx.de, tglx@linutronix.de,
+        oleg@redhat.com, mingo@elte.hu
+In-Reply-To: <1292508592.5940.28.camel@maggy.simson.net>
+References: <1292508592.5940.28.camel@maggy.simson.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched, autogroup: Fix potential access to freed memory
+Message-ID: <tip-4f8219875a0dad2cfad9e93a3fafcd9626db98d2@git.kernel.org>
+Git-Commit-ID: 4f8219875a0dad2cfad9e93a3fafcd9626db98d2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20110104140355.GA1707@ucw.cz>
-References: <AANLkTim0Xmsnzz5yMLAx_+w-c7sSSReu0SKMAmjpbS+1@mail.gmail.com>
-	<20110104140355.GA1707@ucw.cz>
-Date: Tue, 4 Jan 2011 22:18:49 +0800
-Message-ID: <AANLkTinocDQ1J4FR5JO_j7qwLKv1QYPvZ1Y4r+v44esi@mail.gmail.com>
-Subject: Re: [PATCH v0] add nano semaphore in kernel
-From: Hillf Danton <dhillf@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 04 Jan 2011 14:18:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 4, 2011 at 10:03 PM, Pavel Machek <pavel@ucw.cz> wrote:
-> Hi!
->
->> +/*
->> + * nano_semaphore_down - acquire the nano semaphore
->> + * @s: the nano semaphore to be acquired
->> + * @nano_secs: the nano seconds to wait if necessary,
->> + *           could be zero if want to wait as long as possible.
->> + *
->> + * Returns >0 if acquired successfully, <=0 otherwise.
->> + *
->> + * Note unlike down() in semaphore, nano_semaphore_down is not looping until
->> + * the nano semaphore is hold, but simply reports the result. And the callers
->> + * could, if they like, loop in simple manner, for instance,
->> + *   while (1 != nano_semaphore_down(s, 800));
->> + *   do_home_work();
->> + *   nano_semaphore_up(s);
->
-> But thats spinlock, not semaphore, right?
->
+Commit-ID:  4f8219875a0dad2cfad9e93a3fafcd9626db98d2
+Gitweb:     http://git.kernel.org/tip/4f8219875a0dad2cfad9e93a3fafcd9626db98d2
+Author:     Mike Galbraith <efault@gmx.de>
+AuthorDate: Thu, 16 Dec 2010 15:09:52 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 4 Jan 2011 15:10:34 +0100
 
-Though spin lock involved, the caller has to sleep 800ns per loop.
+sched, autogroup: Fix potential access to freed memory
 
-> Also, your example does not use the API right -- according to
-> description, 42 is correct 'semaphore acquired' reply...
->
+Oleg pointed out that the /proc interface kref_get() useage may race with
+the final put during autogroup_move_group().  A signal->autogroup assignment
+may be in flight when the /proc interface dereference, leaving them taking
+a reference to an already dead group.
 
-As I understand, the example, though could be totally removed, does
-not show the recommended usage of nano semaphore, but expresses the
-difference from semaphore. The recommended however looks
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1292508592.5940.28.camel@maggy.simson.net>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched_autogroup.c |   25 +++++++++++++++++--------
+ 1 files changed, 17 insertions(+), 8 deletions(-)
 
-       nano_semaphore_down(s, 0);
-       do_home_work();
-       nano_semaphore_up(s);
-
-if you like to wait as long as possible.
-
-Cheers
-Hillf
+diff --git a/kernel/sched_autogroup.c b/kernel/sched_autogroup.c
+index 57a7ac2..c80fedc 100644
+--- a/kernel/sched_autogroup.c
++++ b/kernel/sched_autogroup.c
+@@ -41,6 +41,20 @@ static inline struct autogroup *autogroup_kref_get(struct autogroup *ag)
+ 	return ag;
+ }
+ 
++static inline struct autogroup *autogroup_task_get(struct task_struct *p)
++{
++	struct autogroup *ag;
++	unsigned long flags;
++
++	if (!lock_task_sighand(p, &flags))
++		return autogroup_kref_get(&autogroup_default);
++
++	ag = autogroup_kref_get(p->signal->autogroup);
++	unlock_task_sighand(p, &flags);
++
++	return ag;
++}
++
+ static inline struct autogroup *autogroup_create(void)
+ {
+ 	struct autogroup *ag = kzalloc(sizeof(*ag), GFP_KERNEL);
+@@ -149,11 +163,7 @@ EXPORT_SYMBOL(sched_autogroup_detach);
+ 
+ void sched_autogroup_fork(struct signal_struct *sig)
+ {
+-	struct task_struct *p = current;
+-
+-	spin_lock_irq(&p->sighand->siglock);
+-	sig->autogroup = autogroup_kref_get(p->signal->autogroup);
+-	spin_unlock_irq(&p->sighand->siglock);
++	sig->autogroup = autogroup_task_get(current);
+ }
+ 
+ void sched_autogroup_exit(struct signal_struct *sig)
+@@ -172,7 +182,6 @@ __setup("noautogroup", setup_autogroup);
+ 
+ #ifdef CONFIG_PROC_FS
+ 
+-/* Called with siglock held. */
+ int proc_sched_autogroup_set_nice(struct task_struct *p, int *nice)
+ {
+ 	static unsigned long next = INITIAL_JIFFIES;
+@@ -194,7 +203,7 @@ int proc_sched_autogroup_set_nice(struct task_struct *p, int *nice)
+ 		return -EAGAIN;
+ 
+ 	next = HZ / 10 + jiffies;
+-	ag = autogroup_kref_get(p->signal->autogroup);
++	ag = autogroup_task_get(p);
+ 
+ 	down_write(&ag->lock);
+ 	err = sched_group_set_shares(ag->tg, prio_to_weight[*nice + 20]);
+@@ -209,7 +218,7 @@ int proc_sched_autogroup_set_nice(struct task_struct *p, int *nice)
+ 
+ void proc_sched_autogroup_show_task(struct task_struct *p, struct seq_file *m)
+ {
+-	struct autogroup *ag = autogroup_kref_get(p->signal->autogroup);
++	struct autogroup *ag = autogroup_task_get(p);
+ 
+ 	down_read(&ag->lock);
+ 	seq_printf(m, "/autogroup-%ld nice %d\n", ag->id, ag->nice);
