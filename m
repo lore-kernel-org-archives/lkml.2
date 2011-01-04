@@ -1,98 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751456Ab1ADT2C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 14:28:02 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:14037 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751014Ab1ADT2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 14:28:00 -0500
-X-IronPort-AV: E=Sophos;i="4.60,273,1291611600"; 
-   d="scan'208";a="11776728"
-Subject: Re: [PATCH 3/8] xen/setup: Set identity mapping for non-RAM E820
- and E820 gaps.
-From: Ian Campbell <Ian.Campbell@eu.citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Jeremy Fitzhardinge" <jeremy@goop.org>,
-        "hpa@zytor.com" <hpa@zytor.com>, "Jan Beulich" <JBeulich@novell.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-In-Reply-To: <20110104183822.GA1505@dumpdata.com>
-References: <1293738517-7287-1-git-send-email-konrad.wilk@oracle.com>
-	 <1293738517-7287-4-git-send-email-konrad.wilk@oracle.com>
-	 <1294161538.3831.639.camel@zakaz.uk.xensource.com>
-	 <20110104183822.GA1505@dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Organization: Citrix Systems, Inc.
-Date: Tue, 4 Jan 2011 19:27:57 +0000
-Message-ID: <1294169277.3582.23.camel@localhost.localdomain>
+	id S1751398Ab1ADTeY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 14:34:24 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35538 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226Ab1ADTeW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 14:34:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=JQMii960E6WbbwSvjfuEhfJpKjc91Q587/H4mI3/Ost8h90DvgF5RnsjS7r1Ntt9H7
+         I4dSgBzegxAGADY5k2P5PIKIBaD1Evj77xcohkYDlnbW4jDwr4Q+f8W8nCys3eTcwW6k
+         nU/FCu48UuQxRSlLMjhscYLKtJKDH1pCldR4w=
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <60180.121.72.232.114.1294094426.squirrel@mail.orcon.net.nz>
+References: <20110103205705.GA24522@gherkin.frus.com> <60180.121.72.232.114.1294094426.squirrel@mail.orcon.net.nz>
+From: Matt Turner <mattst88@gmail.com>
+Date: Tue, 4 Jan 2011 14:34:00 -0500
+Message-ID: <AANLkTi=9xXBk6fgucRCLUdxUaY2PmqANyn8-rw5_Rv7A@mail.gmail.com>
+Subject: Re: [BUG] 2.6.37-rc8 build failure on Alpha
+To: Michael Cree <mcree@orcon.net.nz>
+Cc: Bob Tracy <rct@gherkin.frus.com>, linux-kernel@vger.kernel.org,
+        linux-alpha@vger.kernel.org,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-04 at 18:38 +0000, Konrad Rzeszutek Wilk wrote: 
-> On Tue, Jan 04, 2011 at 05:18:58PM +0000, Ian Campbell wrote:
-> > On Thu, 2010-12-30 at 19:48 +0000, Konrad Rzeszutek Wilk wrote:
-> > > We walk the E820 region and start at 0 (for PV guests we start
-> > > at ISA_END_ADDRESS)
-> > 
-> > I was trying to figure out what any of this had to do with HVM guests,
-> > but you mean as opposed to dom0, which with my pedant hat on is also a
-> > guest ;-).
-> > 
-> > >  and skip any E820 RAM regions. For all other
-> > > regions and as well the gaps we set them to be identity mappings.
-> > > 
-> > > The reasons we do not want to set the identity mapping from 0->
-> > > ISA_END_ADDRESS when running as PV is b/c that the kernel would
-> > > try to read DMI information and fail (no permissions to read that).
-> > 
-> > The reason for this special case is that in domU we have already punched
-> > a hole from 640k-1M into the e820 which the hypervisor gave us.
-> 
-> For the privileged guest - yes. But for the non-priviligied it does not have
-> such range and would end up failing.
+On Mon, Jan 3, 2011 at 5:40 PM, Michael Cree <mcree@orcon.net.nz> wrote:
+> On Tue, January 4, 2011 9:57 am, Bob Tracy wrote:
+>> This probably happened before -rc8, but was not an issue for 2.6.36.
+>>
+>> The 2.6.37-rc8 kernel build on alpha fails as follows:
+>>
+>> (...)
+>>   LD      usr/built-in.o
+>>   AS      arch/alpha/kernel/entry.o
+>>   CC      arch/alpha/kernel/traps.o
+>> cc1: warnings being treated as errors
+>> In file included from
+>> /usr/src/linux-2.6/arch/alpha/include/asm/mmu_context.h:22,
+>>                  from arch/alpha/kernel/traps.c:26:
+>> /usr/src/linux-2.6/arch/alpha/include/asm/io.h: In function '__set_hae':
+>> /usr/src/linux-2.6/arch/alpha/include/asm/io.h:41: error:
+>> 'arch_local_irq_save' is static but used in inline function '__set_hae'
+>> which is not static
+>> /usr/src/linux-2.6/arch/alpha/include/asm/io.h:49: error:
+>> 'arch_local_irq_restore' is static but used in inline function '__set_hae'
+>> which is not static
+>
+> A patch that fixes this was posted to linux-alpha some time ago (see
+> http://www.spinics.net/linux/lists/linux-alpha/msg00710.html).  I am not
+> sure why it hasn't made it through to Linus as yet.
+>
+> Cheers
+> Michael.
 
-xen_memory_setup has: 
-        e820_add_region(ISA_START_ADDRESS, ISA_END_ADDRESS - ISA_START_ADDRESS,
-                        E820_RESERVED);
-which is unconditional but is actually more for domU's benefit than
-dom0's which already sees the host e820 presumably with the right hole
-already in place, which we simply shadow, or maybe slightly extend,
-here.
+I haven't had much time for alpha things, so I haven't been keeping up
+with patches lately. I'll send everything in my patch queue to Linus
+for the .38 merge window.
 
-In a domU we do this because if you let these pages into the general
-allocation pool then they will potentially get used as page table pages
-(hence be R/O) but e.g. the DMI code tries to map them to probe for
-signatures and tries to does so R/W which fails. We could try and find
-everywhere in the kernel which does this or we can simply reserve the
-region which stops it getting used for page tables or other special
-things, and is somewhat less surprising for non-Xen code.
+Please send Ivan's patch to Linus directly, and CC Ivan so he can give
+his Signed-off-by tag.
 
-> > Should we perhaps be doing this identity mapping before we punch that
-> > extra hole? i.e. setup ID mappings based on the hypervisors idea of the
-> > guest e820 not the munged one we subsequently magicked up? Only the
-> 
-> You mean the ISA_START_ADDRESS->ISA_END_ADDRESS we mark as reserved?
+Thanks Michael and Bob.
 
-Yep. 
-
-> It sure would be easier
-
-> (and it would mean we can return that memory back to the hypervisor).
-
-I don't think you can return it, since something like the DMI code which
-wants to probe it expects to be able to map that PFN, if you've given
-the MFN back then that will fail.
-
-I suppose we could alias all such PFNs to the same scratch MFN but I'd
-be concerned about some piece of code which expects to interact with
-firmware scribbling over it and surprising some other piece of code
-which interacts with the firmware...
-
-Ian.
-
+Matt
