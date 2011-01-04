@@ -1,93 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751353Ab1ADLnT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 06:43:19 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:2472 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751091Ab1ADLnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 06:43:17 -0500
-X-IronPort-AV: E=Sophos;i="4.60,271,1291611600"; 
-   d="scan'208";a="129482615"
-Subject: Re: [Xen-devel] Re: [PATCH 2/3] drivers/xen/balloon.c: Various
- balloon features and fixes
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Pasi =?ISO-8859-1?Q?K=E4rkk=E4inen?= <pasik@iki.fi>
-CC: Daniel Kiper <dkiper@net-space.pl>, "jeremy@goop.org" <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "haicheng.li@linux.intel.com" <haicheng.li@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Vasiliy G Tolstov <v.tolstov@selfip.ru>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "andi.kleen@intel.com" <andi.kleen@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>
-In-Reply-To: <20101231112043.GZ2754@reaktio.net>
-References: <20101220134724.GC6749@router-fw-old.local.net-space.pl>
-	 <20101227150847.GA3728@dumpdata.com>
-	 <947c7677e042b3fd1ca22d775ca9aeb9@imap.selfip.ru>
-	 <20101227163918.GB7189@dumpdata.com>
-	 <92e9dd494cc640c04fdac03fa6d10e8d@imap.selfip.ru>
-	 <20101229164910.GD2743@router-fw-old.local.net-space.pl>
-	 <20101231112043.GZ2754@reaktio.net>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Tue, 4 Jan 2011 11:43:14 +0000
-Message-ID: <1294141394.3831.183.camel@zakaz.uk.xensource.com>
+	id S1751097Ab1ADL4J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 06:56:09 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:56224 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903Ab1ADL4H convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 06:56:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=TUV+UgpAfRJeXIIu6KQZog+FM3ukbQYLYT5rM2zKI2QQ9alsXFTCjB1hTmJUblqCO0
+         NlvVVSVTQK4688UVAC8/d9Fwx2t5FzBPJRb6DDICxxSqGM/gmVqDFsH1WhVxzpOfkyTM
+         4RsaiFB6qEIwvV6FSuqhrj90K6992bmArJi6s=
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110103141727.GA1536@ucw.cz>
+References: <20110102204532.GA12860@elf.ucw.cz>
+	<20110102203023.GA1545@ucw.cz>
+	<AANLkTika7HAEc+BbqSnbo8viUt4nOqoeB69qWZs85-9s@mail.gmail.com>
+	<20110103141727.GA1536@ucw.cz>
+Date: Tue, 4 Jan 2011 12:56:05 +0100
+Message-ID: <AANLkTimFTzHjLy1zSURiOdcDJUSa9b-ZU1kxL_qK+7-T@mail.gmail.com>
+Subject: Re: zaurus bluetooth regression
+From: Yegor Yefremov <yegorslists@googlemail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: rpurdie@rpsys.net, lenz@cs.wisc.edu,
+        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
+        Cyril Hrubis <metan@ucw.cz>, thommycheck@gmail.com,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
+        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
+        Marek Vasut <marek.vasut@gmail.com>, gregkh@suse.de
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-31 at 11:20 +0000, Pasi Kärkkäinen wrote:
-> On Wed, Dec 29, 2010 at 05:49:10PM +0100, Daniel Kiper wrote:
-> > Hi,
-> > 
-> > On Tue, Dec 28, 2010 at 12:52:03AM +0300, Vasiliy G Tolstov wrote:
-> > > On Mon, 27 Dec 2010 11:39:18 -0500, Konrad Rzeszutek Wilk
-> > > <konrad.wilk@oracle.com> wrote:
-> > > > On Mon, Dec 27, 2010 at 07:27:56PM +0300, Vasiliy G Tolstov wrote:
-> > > >> On Mon, 27 Dec 2010 10:08:47 -0500, Konrad Rzeszutek Wilk
-> > > >> <konrad.wilk@oracle.com> wrote:
-> > > >> > On Mon, Dec 20, 2010 at 02:47:24PM +0100, Daniel Kiper wrote:
-> > > >> >> Features and fixes:
-> > > >> >>   - HVM mode is supported now,
-> > > >> >>   - migration from mod_timer() to schedule_delayed_work(),
-> > > >> >>   - removal of driver_pages (I do not have seen any
-> > > >> >>     references to it),
-> > > >> >>   - protect before CPU exhaust by event/x process during
-> > > >> >>     errors by adding some delays in scheduling next event,
-> > > >> >>   - some other minor fixes.
-> > > >>
-> > > >> I have apply this patch to bare 2.6.36.2 kernel from kernel.org. If
-> > > >> memory=maxmemory pv guest run's on migrating fine.
-> > > >> If on already running domU i have xm mem-max xxx 1024 (before that it
-> > > >> has 768) and do xm mem-set 1024 guest now have 1024 memory, but after
-> > > >> that it can't migrate to another host.
-> > 
-> > Do you still need memory hotplug patch for jeremy stable-2.6.32.x ???
-> > 
-> 
-> I think it would be good to have it for xen/stable-2.6.32.x aswell!
+>> >> It seems this commit
+>> >>
+>> >> commit 7a56aa45982bb87bfca98a2832b5ae782c03364a
+>> > ...
+>> >> ...is responsible for my bluetooth problems on zaurus -- at least
+>> >> bisect pointed to it,  as I use 16C950-based bluetooth card, it seems
+>> >> very logical. I'll try 2.6.37-rc8 with that patch reverted...
+>> >>
+>> >
+>> > And yes, 37-rc8 with that reverted results in working bluetooth, so
+>> > yrs, that patch is responsible.
+>>
+>> could you tell, what kind of problem you're encountering and if you
+>> could tell, which flag UART_CAP_EFR or UART_CAP_SLEEP causes the
+>> problem?
+>
+> Bluetooth will not work with 'tx command timeout', details should be
+> in bugzilla.
+>
+> CAP_EFR seems to cause the problem.
 
-In general we are hoping to move development of new features to more
-recent upstream versions and become increasingly conservative with what
-gets taken into the 2.6.32.x branch.
+Aside from sleep functions the only impact CAP_EFR makes is enabling
+automatic CTS flow control. Below the cite from 16C950 data sheet:
 
-If we think a particular feature is worth having for 2.6.32.x then I
-think it would be worth getting them upstream and stabilised before
-considering it for backport to 2.6.32.x.
+"EFR[7]: Enable automatic CTS flow control.
+logic 0 ⇒   CTS flow control is disabled (default).
+logic 1 ⇒   CTS flow control is enabled in Enhanced mode
+(i.e. EFR[4] = 1), where the data transmission is
+prevented  whenever  the  CTS#  pin  is  held
+inactive high. 650 and 950-mode drivers should
+use  this  bit  to  enable  CTS  flow  control.    750
+mode drivers should use MCR[5].
 
-> (that's the tree that's used the most atm).
+When automatic CTS flow control is enabled and the CTS#
+input becomes active, the UART will disable transmission
+as soon as any current character transmission is complete.
+Transmission   is   resumed   whenever   the   CTS#   input
+becomes inactive. "
 
-But what is the demand for this particular functionality among the users
-of that tree who cannot or will not switch to a more recent upstream?
-Bearing in mind that this is primarily a domU feature and that domU
-support is well established upstream.
+I've tested with such an UART and transmitted some chunk of data with
+and without RTS/CTS flow control enabled at 460800 b/s. The test
+showed that in enabled state all data was transmitted correctly.
+Without RTS/CTS flow control enabled there was massive data loss, as
+expected. So the flow control function seems to work correctly.
 
-Ian.
-
-
+Regards,
+Yegor
