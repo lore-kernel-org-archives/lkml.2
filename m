@@ -1,107 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751856Ab1ADHMV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 02:12:21 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:26205 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751757Ab1ADHMT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 02:12:19 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEANJWIk15Ldpx/2dsb2JhbACkNXS7PIVKBJAq
-Date: Tue, 4 Jan 2011 18:12:12 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Steven Whitehouse <swhiteho@redhat.com>, Nick Piggin <npiggin@kernel.dk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, mfasheh@suse.com,
-        joel.becker@oracle.com
-Subject: Re: [patch 7/8] fs: fix or note I_DIRTY handling bugs in
- filesystems
-Message-ID: <20110104071212.GG3402@amd>
-References: <20101218014634.943276411@kernel.dk>
- <20101218015117.652706340@kernel.dk>
- <20101229150108.GA13358@infradead.org>
- <1294067009.2429.109.camel@dolmen>
- <20110103165821.GA1336@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110103165821.GA1336@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751763Ab1ADHMp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 02:12:45 -0500
+Received: from mga09.intel.com ([134.134.136.24]:31547 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751170Ab1ADHMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 02:12:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,271,1291622400"; 
+   d="scan'208";a="693309267"
+Subject: Re: [PATCH 5/7] perf: Optimise topology iteration
+From: Lin Ming <ming.m.lin@intel.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>,
+        "robert.richter@amd.com" <robert.richter@amd.com>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110103152025.GB25713@one.firstfloor.org>
+References: <1293464287.2695.106.camel@localhost>
+	 <1294052530.2016.52.camel@laptop>
+	 <20110103152025.GB25713@one.firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 04 Jan 2011 15:13:02 +0800
+Message-ID: <1294125182.23205.154.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 03, 2011 at 11:58:21AM -0500, Christoph Hellwig wrote:
-> On Mon, Jan 03, 2011 at 03:03:29PM +0000, Steven Whitehouse wrote:
+On Mon, 2011-01-03 at 23:20 +0800, Andi Kleen wrote:
+> On Mon, Jan 03, 2011 at 12:02:10PM +0100, Peter Zijlstra wrote:
+> > On Mon, 2010-12-27 at 23:38 +0800, Lin Ming wrote:
+> > > Currently we iterate the full machine looking for a matching core_id/nb
+> > > for the percore and the amd northbridge stuff , using a smaller topology
+> > > mask makes sense. 
 > > 
-> >  - With "journaled data" files
-> >    - Do a log flush conditional upon the inode's glock
-> >    - The core code then writes back any dirty pages
+> > Does topology_thread_cpumask() include offline cpus? I tried looking at
+> > it, but I cannot find any code clearing bits in that mask on offline.
 > 
-> Any data writeback is done before calling ->fsync.
-> 
-> >  - With regular files/directories
-> >   - If datasync is not set, we need to write back the metadata including
-> > timestamp updates, so that is done via ->write_inode. Note that an extra
-> > complication here is that we need to get the glock on the inode if we
-> > don't already have it in order to check and conditionally update the
-> > atime.The call to ->write_inode includes an implicit (conditional) log
-> > flush.
-> >  - If datasync is set, we assume that only the data pages need to be
-> > written out. My understanding of datasync was that it was only supposed
-> > to write out data and never any of the metadata. The reason for the call
-> > to flush the log for "stuffed" files is that the data shares a disk
-> > block with the inode metadata, so we cannot avoid the log flush in this
-> > case, since we must unpin the block to write it back.
-> 
-> What happens to indirect blocks, inode size updates, etc?  In general
-> the only correct form to use the datasync argument is along the lines
-> of:
-> 
-> 	if ((inode->i_state & I_DIRTY_DATASYNC) ||
-> 	    ((inode->i_state & I_DIRTY_SYNC) && !datasync)) {
-> 		/* write out the inode */
-> 	} else {
-> 		/*
-> 		 * VFS inode not dirty, no need to write it out.
-> 		 *
-> 		 * If the filesystem support asynchronous inode writes,
-> 		 * we may have to wait for them here.
-> 		 */
-> 	}
-> 
-> or rather mostly correct, as pointed out by Nick in this series, that's
-> why the above gets replaced with an equivalent check that also
-> participates in the writeback locking protocol in this series.
+> The problem is not only at offline, but also at online between CPUs
+> going online.  I don't think the patch is a good idea and it doesn't
 
-Just to recap, basically we have 2 main problems in vfs/filesystems:
+I didn't see the problem.
 
-- i_state dirtyness is checked outside the correct synchronization
-  protcol, so it may be seen as clean before a concurrent writer
-  has finished.
+Assume logical cpu 3, 7 are 2 threads in a core, and they are
+plug/unpluged as below sequence,
+CPU 3 offline, CPU7 offline, CPU3 online, CPU7 online
 
-- .write_inode is only guaranteed to be called once regardless of sync
-  or async mode, for a dirty inode at a sync point. Many filesystems
-  were incorrectly assuming they would be called once *in synchronous
-  mode*.
+1. After cpu3 offline
 
-  The optimal approach for .write_inode seems to be clean the struct
-  inode so that it may be eventually reclaimed. Then have your .fsync and
-  .sync_fs implementations enforce the actual data integrity.
+topology_thread_cpumask(3) returns empty
+topology_thread_cpumask(7) returns 7
 
-  Note that "clean struct inode" often means to copy the metadata
-  somewhere else to be scheduled for asynch writeout. You have to be
-  careful to note that if you allow the inode to be evicted at this
-  point without data integrity point also in .evict_inode, then you need
-  to keep in mind that .sync_fs (and subsequent .fsync, if the inode is
-  re opened) need to still enforce integrity for these potentially
-  evicted inodes.
+2. After CPU7 offline
 
-Everyone happy with this? Please review your filesystems and look at
-my patches :)
+topology_thread_cpumask(3) returns empty
+topology_thread_cpumask(7) returns empty
+
+3. When CPU3 online, calling intel_pmu_cpu_starting
+
+topology_thread_cpumask(3) returns 3
+topology_thread_cpumask(7) returns empty
+
+        for_each_cpu(i, topology_thread_cpumask(cpu)) {
+                struct intel_percore *pc = per_cpu(cpu_hw_events, i).per_core;
+
+                if (pc && pc->core_id == core_id) {
+                        kfree(cpuc->per_core);
+                        cpuc->per_core = pc;
+                        break;
+                }
+        }
+
+Above "if" statement will not be executed, because pc->core_id was
+initialized to -1 in intel_pmu_cpu_prepare.
+
+4. When CPU7 online, calling intel_pmu_cpu_starting
+
+topology_thread_cpumask(3) returns 3, 7
+topology_thread_cpumask(7) returns 3, 7
+
+
+        for_each_cpu(i, topology_thread_cpumask(cpu)) {
+                struct intel_percore *pc = per_cpu(cpu_hw_events, i).per_core;
+
+                if (pc && pc->core_id == core_id) {
+                        kfree(cpuc->per_core);
+                        cpuc->per_core = pc;
+                        break;
+                }
+        }
+
+        cpuc->per_core->core_id = core_id;
+        cpuc->per_core->refcnt++;
+
+Above "if" statement will be executed and the per_core data allocated
+for cpu7 will be freed.
+
+All above is right, or could you explain more about the problem at CPUs
+offline and online?
 
 Thanks,
-Nick
+Lin Ming
+
+> even have any advantages either since this is a initialization only
+> slow path.
+> 
+> -Andi
+
 
