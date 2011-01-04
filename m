@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751069Ab1ADKN4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 05:13:56 -0500
-Received: from cantor.suse.de ([195.135.220.2]:47128 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750779Ab1ADKNz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 05:13:55 -0500
-Date: Tue, 4 Jan 2011 11:13:51 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [PATCH] writeback: fix typo of global_dirty_limits comment
-In-Reply-To: <1294072608-3172-1-git-send-email-minchan.kim@gmail.com>
-Message-ID: <alpine.LNX.2.00.1101041113440.26685@pobox.suse.cz>
-References: <1294072608-3172-1-git-send-email-minchan.kim@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751205Ab1ADKOm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 05:14:42 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:33504 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851Ab1ADKOl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 05:14:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=r6X2DtS81uMrCPm+Qrssu1eRi/o2GDNogso6ohpHVVEqdCR5SP1WIx5/omwavbSPXV
+         22EBqXfs/H4512e55vk+TQaud3hiICQeStW/PSeDgQ8LdHlWkASsULS1xhZlMcy5tvDX
+         DuNUDhoBUnXOciL/m7RtV0W/dQWf1ZWwhulwM=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <AANLkTinkEQEhsHGGgJVp_pJohmrOAaa3dCJjNSDKS4Yj@mail.gmail.com>
+References: <20110104164723.8bafcf7f.sfr@canb.auug.org.au>
+	<AANLkTinkEQEhsHGGgJVp_pJohmrOAaa3dCJjNSDKS4Yj@mail.gmail.com>
+Date: Tue, 4 Jan 2011 12:14:34 +0200
+Message-ID: <AANLkTimHm5tgrvosqWPHAb4a_gCBGq5MiAR2tyUNCJPD@mail.gmail.com>
+Subject: Re: linux-next: Tree for January 4
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Jan 2011, Minchan Kim wrote:
-
-> Change runtime with real-time
-> 
-> Cc: Wu Fengguang <fengguang.wu@intel.com>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-> ---
->  mm/page-writeback.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index c340536..98b79e2 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -384,7 +384,7 @@ unsigned long determine_dirtyable_memory(void)
->   * - vm.dirty_background_ratio  or  vm.dirty_background_bytes
->   * - vm.dirty_ratio             or  vm.dirty_bytes
->   * The dirty limits will be lifted by 1/4 for PF_LESS_THROTTLE (ie. nfsd) and
-> - * runtime tasks.
-> + * real-time tasks.
->   */
->  void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
->  {
-
-Applied, thank you.
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+  CC [M]  drivers/usb/serial/opticon.o
+drivers/staging/cx25821/cx25821-video.c: In function ‘video_open’:
+drivers/staging/cx25821/cx25821-video.c:817: error: implicit
+declaration of function ‘lock_kernel’
+drivers/staging/cx25821/cx25821-video.c:834: error: implicit
+declaration of function ‘unlock_kernel’
+make[4]: *** [drivers/staging/cx25821/cx25821-video.o] Error 1
+make[3]: *** [drivers/staging/cx25821] Error 2
+make[2]: *** [drivers/staging] Error 2
