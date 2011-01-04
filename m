@@ -1,137 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538Ab1ADN7G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 08:59:06 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:38906 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379Ab1ADN7E convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 08:59:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=or99QXit7i2JgJUL5e2P0U1gjGa8IrSJLuOlT9hMjYNzART6ZWW3n2Y5iwBzhNELdX
-         L8K4OCqQ6NoKJphH5XAg==
-MIME-Version: 1.0
-In-Reply-To: <20110104071629.GB13299@elte.hu>
-References: <1294112905-25325-1-git-send-email-acme@infradead.org>
-	<20110104071629.GB13299@elte.hu>
-Date: Tue, 4 Jan 2011 14:59:00 +0100
-Message-ID: <AANLkTinjkC=4yQbiLxF7=G1izFa2pOuR=WvRXbha3wsj@mail.gmail.com>
-Subject: Re: [GIT PULL||RFC 00/11] perf library and regression testing improvements
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Han Pingtian <phan@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, mingo@elte.hu
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1751592Ab1ADOCL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 09:02:11 -0500
+Received: from smtp.nokia.com ([147.243.128.24]:19593 "EHLO mgw-da01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751430Ab1ADOCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 09:02:09 -0500
+Subject: Re: [PATCH v2 1/3] ECI: input: introduce ECI accessory input driver
+From: Tapio Vihuri <tapio.vihuri@nokia.com>
+Reply-To: tapio.vihuri@nokia.com
+To: ext Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: randy.dunlap@oracle.com, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, ilkka.koskinen@nokia.com,
+        samu.p.onkalo@nokia.com
+In-Reply-To: <20110102081922.GD5429@core.coreip.homeip.net>
+References: <1293716219-26089-1-git-send-email-tapio.vihuri@nokia.com>
+	 <1293716219-26089-2-git-send-email-tapio.vihuri@nokia.com>
+	 <20110102081922.GD5429@core.coreip.homeip.net>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Nokia Oyj
+Date: Tue, 04 Jan 2011 16:01:44 +0200
+Message-ID: <1294149704.2389.82.camel@dell>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo,
+On Sun, 2011-01-02 at 00:19 -0800, ext Dmitry Torokhov wrote:
+> Hi Tapio,
+> 
 
-The version of perf at tip-x86 commit 9274b36, segfaults for me:
+Hi Dmitry
 
-$ gdb perf
-(gdb) r stat date
+Thank you for good comments. I sent v3 patch set right after this email.
 
-Program received signal SIGSEGV, Segmentation fault.
-[Switching to Thread 0x7fdc602eb6e0 (LWP 4590)]
-cmd_stat (argc=1, argv=0x7fff6fa2a9f0, prefix=<value optimized out>)
-at builtin-stat.c:206
-206			update_stats(&ps->res_stats[i], count[i]);
-(gdb) bt
-#0  cmd_stat (argc=1, argv=0x7fff6fa2a9f0, prefix=<value optimized
-out>) at builtin-stat.c:206
-#1  0x0000000000405c8b in handle_internal_command (argc=2,
-argv=0x7fff6fa2a9f0) at perf.c:286
-#2  0x00000000004060b0 in main (argc=2, argv=0x7fff6fa2a680) at perf.c:403
+--------8<-------
 
-Most like ps is NULL.
+> Please keep Makefile and Kconfig sorted alphabetically.
+> 
+
+Corrected in patch set.
+
+--------8<-------
+
+> Consider switching to sparse keymap library. You won't be needing ugly
+> KEY_MAX + SW_XXX hacks and it will also support remapping keys from
+> userspace.
+> 
+
+Much nicer solution, thank you.
+
+--------8<-------
+
+> Do not break strings on 80 column boundaries, wither align the arguments
+> differently or just go past 80 columns, like this:
+> 
+>                         dev_err(eci->dev,
+>                                 "Unable to control headset microphone\n");
+> 
+Corrected in patch set.
+
+--------8<-------
 
 
-On Tue, Jan 4, 2011 at 8:16 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
->
->> Hi Ingo, Peter et al,
->>
->>       Trying to simplify using the API for tools and more specifically for
->> 'perf test' regression tests, please take a look, perhaps starting from the last
->> changeset, that implements a regression test using the resulting library API.
->>
->>       It also reduces the 'perf' tool footprint by not using hard coded array
->> sizes, more need to be done, but should be a good start, one changeset shows a
->> good reduction in BSS use.
->>
->>       Suggestions for naming most welcome, I thought about using "event__",
->> but that is taken, "perf_event__", but thought it would clash with "event_t",
->> so used the jargon used for the '-e' parameters: "Event Selector", but don't
->> like it that much, what do you think?
->>
->>       Writing the first regression test I think there are more ways to simplify,
->> on top of these, like not requiring a thread_map, i.e. passing NULL for that
->> parameter would mean: self-monitor, etc.
->>
->>         If you are pleased as-is, please pull from:
->>
->> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/test
->>
->> Regards,
->>
->> - Arnaldo
->>
->> Arnaldo Carvalho de Melo (11):
->>   perf tools: Introduce event selectors
->>   perf evsel: Adopt MATCH_EVENT macro from 'stat'
->>   perf util: Move do_read from session to util
->>   perf evsel: Delete the event selectors at exit
->>   perf evsel: Steal the counter reading routines from stat
->>   perf evsel: Introduce per cpu and per thread open helpers
->>   perf tools: Refactor cpumap to hold nr and the map
->>   perf tools: Refactor all_tids to hold nr and the map
->>   perf evsel: Use {cpu,thread}_map to shorten list of parameters
->>   perf evsel: Auto allocate resources needed for some methods
->>   perf test: Add test for counting open syscalls
->>
->>  tools/perf/Makefile                |    4 +
->>  tools/perf/builtin-record.c        |  152 +++++++--------
->>  tools/perf/builtin-stat.c          |  368 +++++++++++++++---------------------
->>  tools/perf/builtin-test.c          |   83 ++++++++
->>  tools/perf/builtin-top.c           |  221 ++++++++++++----------
->>  tools/perf/perf.c                  |    2 +
->>  tools/perf/util/cpumap.c           |  123 +++++++++---
->>  tools/perf/util/cpumap.h           |   10 +-
->>  tools/perf/util/evsel.c            |  186 ++++++++++++++++++
->>  tools/perf/util/evsel.h            |  115 +++++++++++
->>  tools/perf/util/header.c           |   15 +-
->>  tools/perf/util/header.h           |    3 +-
->>  tools/perf/util/parse-events.c     |   58 ++++--
->>  tools/perf/util/parse-events.h     |   18 ++-
->>  tools/perf/util/session.c          |   22 +--
->>  tools/perf/util/session.h          |    1 -
->>  tools/perf/util/thread.c           |   43 +++--
->>  tools/perf/util/thread.h           |   15 ++-
->>  tools/perf/util/trace-event-info.c |   30 ++--
->>  tools/perf/util/trace-event.h      |    5 +-
->>  tools/perf/util/util.c             |   17 ++
->>  tools/perf/util/util.h             |    1 +
->>  tools/perf/util/xyarray.c          |   20 ++
->>  tools/perf/util/xyarray.h          |   20 ++
->>  24 files changed, 1013 insertions(+), 519 deletions(-)
->>  create mode 100644 tools/perf/util/evsel.c
->>  create mode 100644 tools/perf/util/evsel.h
->>  create mode 100644 tools/perf/util/xyarray.c
->>  create mode 100644 tools/perf/util/xyarray.h
->
-> Pulled, thanks a lot Arnaldo!
->
->        Ingo
->
+> > +#define eci_initialize_debugfs(eci)  1
+> 
+> Should be 0 I think, and not have a parameter, preferably
+> 
+> static inline int eci_initialize_debugfs(void)
+> {
+>         return 0;
+> }
+> 
+
+I take this static inline solution, but I needed the parameter.
+
+--------8<-------
+
+> > +     struct eci_mem_block *ekey = (void *)buf;
+> > +     int ret;
+> > +
+> > +     /* Read always four bytes */
+> > +     ret = eci->eci_hw_ops->acc_read_direct(0, buf);
+> > +
+> > +     if (ret)
+> > +             return ret;
+> > +
+> > +     if (ekey->id != ECI_EKEY_BLOCK_ID)
+> > +             return -ENODEV;
+> > +
+> > +     *key = cpu_to_be16(ekey->size);
+> 
+> cpu_to_be16()??? This looks really wierd.
+> 
+
+The ECI specification says that data in ECI accessory's memory is in big
+endian order. This simply get 16-bit size parameter right in any
+endianes machine.
+
+--------8<-------
+
+
+> > +static ssize_t show_cable_plugged(struct device *dev,
+> > +             struct device_attribute *attr, char *buf)
+> > +{
+> > +     struct eci_data *eci = dev_get_drvdata(dev);
+> > +
+> > +     return snprintf(buf, sizeof(buf), "Cable plugged %s\n",
+> > +                             eci->plugged ? "in" : "out");
+> 
+> Should it be dsimple 0/1? How is this attribute supposed to be used?
+> 
+> > +static ssize_t store_cable_plugged(struct device *dev,
+> > +             struct device_attribute *attr,
+> > +             const char *buf, size_t len)
+> > +{
+--------8<-------
+
+> Same here. Should it be in debugfs probably?
+> 
+
+I made it now as 0/1. It's in sysfs as this is user space's interface
+for ECI acessories inserting.
+
+The other way is via ALSA sound driver providing jack detection, but
+it's not there yet.
+
+--------8<-------
+
+> > +     /*
+> > +      * Configure ECI buttons now as we have after parsed
+> > +      * enchancement features table
+> > +      */
+> 
+> I do not understand this comment.
+> 
+
+I have loose some word somewhere... Now it goes:
+ 	/*
+         * Configure ECI buttons now as we know how after
+         * enchancement features table has been parsed
+         */
+
+
+--------8<-------
+
+
+> > +     set_bit(EV_KEY, eci->acc_input->evbit);
+> > +     set_bit(EV_SW, eci->acc_input->evbit);
+> > +     set_bit(EV_REP, eci->acc_input->evbit);
+> 
+> __set_bit(), no neded to lock bus.
+> 
+Corrected in patch set.
+
+--------8<-------
+
+> > +
+> > +static struct miscdevice eci_device = {
+> > +     .minor = MISC_DYNAMIC_MINOR,
+> > +     .name = ECI_DRIVERNAME,
+> > +};
+> 
+> What does this device do?
+> 
+
+Nothing, and I can't even remember why I have put it there first place.
+Removed now.
+
+--------8<-------
+
+> Thank you.
+> 
+> --
+> Dmitry
+
+Thank you, now driver is better.
+
+-- 
+Tapsa
+
