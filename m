@@ -1,105 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940Ab1ADHtP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 02:49:15 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:48865 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696Ab1ADHtO (ORCPT
+	id S1751946Ab1ADHwy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 02:52:54 -0500
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:3864 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750897Ab1ADHwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 02:49:14 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=US-ASCII
-Date: Tue, 04 Jan 2011 08:49:04 +0100
-From: Lukasz Majewski <l.majewski@samsung.com>
-Subject: Re: [PATCH v4 2/3] regulator MAX8998/LP3974: Support DVS-GPIO.
-In-reply-to: <1294118261-18906-3-git-send-email-myungjoo.ham@samsung.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>, myungjoo.ham@gmail.com
-Message-id: <20110104084904.5765cd9e@lmajewski.digital.local>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-References: <20101224113805.GI27832@sortiz-mobl>
- <1294118261-18906-3-git-send-email-myungjoo.ham@samsung.com>
+	Tue, 4 Jan 2011 02:52:53 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEANpdIk15Ldpx/2dsb2JhbACkNnS7R4VKBJAq
+Date: Tue, 4 Jan 2011 18:52:48 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, mfasheh@suse.com,
+        joel.becker@oracle.com, swhiteho@redhat.com
+Subject: Re: [patch 7/8] fs: fix or note I_DIRTY handling bugs in
+ filesystems
+Message-ID: <20110104075248.GB4090@amd>
+References: <20101218014634.943276411@kernel.dk>
+ <20101218015117.652706340@kernel.dk>
+ <20101229150108.GA13358@infradead.org>
+ <20110104060452.GC3402@amd>
+ <20110104063944.GA1910@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110104063944.GA1910@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 04 Jan 2011 14:17:40 +0900
-MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
+On Tue, Jan 04, 2011 at 01:39:44AM -0500, Christoph Hellwig wrote:
+> On Tue, Jan 04, 2011 at 05:04:52PM +1100, Nick Piggin wrote:
+> > However I strongly believe that filesystems should be able to access
+> > and manipulate the inode dirty state directly. If you agree with that,
+> > then I think they should be able to access the lock required for that.
+> > Filesystems will want to keep their internal state in synch with vfs
+> > visible state most likely (eg. like your hfsplus patches), and _every_
+> > time we do "loose" coupling between state bits like this (eg. page and
+> > buffer state; page and pte state; etc), it turns out to be a huge mess
+> > of races and subtle code and ordering.
+> 
+> I've probably done the two most complicated fsync implementations in xfs
+> and hfsplys myself, and I'd really prefer the interface to be as simple
+> as possible.
 
-Hi all,
-
-I've posted some comments below:
-
-if (gpio_is_valid(pdata->buck2_set3)) {
-> -			if (max8998->buck2_vol[0] == i) {
-> -				max8998->buck2_idx = 0;
-> -				buck2_gpio_set(pdata->buck2_set3, 0);
-> -			} else {
-> -				max8998->buck2_idx = 1;
-> -				ret =
-> max8998_get_voltage_register(rdev, &reg, -
-> &shift,
-> -
-> &mask);
-> -				ret = max8998_write_reg(i2c, reg, i);
-> -				max8998->buck2_vol[1] = i;
-> -				buck2_gpio_set(pdata->buck2_set3, 1);
-> +
-> +			/* check if requested voltage */
-> +			/* value is already defined */
-> +			for (j = 0; j <
-> ARRAY_SIZE(max8998->buck2_vol); j++) {
-> +				if (max8998->buck2_vol[j] == i) {
-> +					max8998->buck2_idx = j;
-> +
-> buck2_gpio_set(pdata->buck2_set3, j);
-> +					goto buck2_exit;
-> +				}
->  			}
-> +
-> +			if (pdata->buck_voltage_lock)
-> +				return -EINVAL;
-> +
-> +			max8998_get_voltage_register(rdev,
-> +					&reg, &shift, &mask);
-> +			ret = max8998_write_reg(i2c, reg, i);
-> +			max8998->buck2_vol[max8998->buck2_idx] = i;
-> +
-> buck2_gpio_set(pdata->buck2_set3,max8998->buck2_idx); +buck2_exit:
-> dev_dbg(max8998->dev, "%s: SET3:%d\n", i2c->name,
-gpio_get_value(pdata->buck2_set3));
-
-Maybe only the matter of taste. The "for" loop for only two elements?
-
-> + * @buck_voltage_lock: Do NOT change the values of the following six
-> + *   registers set by buck?_voltage?. The voltage of BUCK1/2 cannot
-> + *   be other than the preset values.
-> + * @buck1_voltage1: BUCK1 DVS mode 1 voltage register
-> + * @buck1_voltage2: BUCK1 DVS mode 2 voltage register
-> + * @buck1_voltage3: BUCK1 DVS mode 3 voltage register
-> + * @buck1_voltage4: BUCK1 DVS mode 4 voltage register
-> + * @buck2_voltage1: BUCK2 DVS mode 1 voltage register
-> + * @buck2_voltage2: BUCK2 DVS mode 2 voltage register
-
-Is it desirable to define all four for BUCK1 and two for BUCK2 DVS
-voltages in platform code? 
-
-Why the "general purpose" slots approach for user changeable/definable
-voltages (as it was done previously) have been replaced? Is the current
-approach faster?
+Agree and as I said I'll change inode_writeback_begin/end to do the
+locking and just return the dirty bit mask etc.
 
 
--- 
-Best regards,
+>  The way the I_DIRTY_* flags and the datasync parameter to
+> ->fsync interact are almost a receipe for getting it wrong, which in
+> fact most implementations that tried to be smart did.  See gfs2 and
+> ocfs2 comments in this threads for classic examples.
 
-Lukasz Majewski
+Right if you want a helper to get the correct mask of bits required
+that's fine and I agree, but locking is a different issue too: if
+filesystems are trying to keep private state in sync with vfs state,
+then they _need_ to do it properly with the proper locking. I think
+your hfsplus implementation had a bug or two in this area didn't it?
+(although I ended up getting side tracked with all these bugs half
+way through looking at that).
 
-Samsung Poland R&D Center
-Platform Group
+
+> If we actually get filesystems that need to do smarts in
+> checking/clearing the I_DIRTY_* flag we can discuss proper interfaces
+> for it - duplicating guts of i_state manipulations sounds like a
+> relatively bad idea for that.
+
+I disagree, but we'll explore it further later.
+
+It is a couple of lines to check and clear dirty bits.  Not rocket
+science and I think it is far better to make it explicit what is
+happening to the filesystem. The disconnect between what the vfs is
+doing and what the filesystems throught should be happening is what
+caused all these bugs to start with.
+
+Anyway, long story short, I'll drop the inode_lock export and move the
+locking and manipulation into inode_writeback_begin/end for now.
+
+Thanks,
+Nick
+
