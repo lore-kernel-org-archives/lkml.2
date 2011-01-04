@@ -1,62 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751635Ab1ADSP5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 13:15:57 -0500
-Received: from web31813.mail.mud.yahoo.com ([68.142.207.76]:27340 "HELO
-	web31813.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751317Ab1ADSPz (ORCPT
+	id S1751768Ab1ADSQU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 13:16:20 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:41776 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751037Ab1ADSQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 13:15:55 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
-  b=audLovxZyJlOWcz6xJitFzjFDH/5V+I8XrxDBkOEBxpyQIxhu1tFsIoN8I0K607UyyTD7/G6JyOqJ1sO5A265dmBqhOadc6S4Z4Dus2lyTUzFX4kQhmj55YVQ5vrz5PxiVPK4ocV1A8lcEgSiQ5ADGyvlmq5CJh6jr9Eg6yoLjQ=;
-Message-ID: <914550.72241.qm@web31813.mail.mud.yahoo.com>
-X-YMail-OSG: pXAD61IVM1knpj7CfAohj_Ty_Fe4hS4PBUZIA4b2b8XrsRo
- JBHHVvLMA
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.108.291010
-Date: Tue, 4 Jan 2011 10:15:53 -0800 (PST)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: UASP updates (uasp.c)
-To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
+	Tue, 4 Jan 2011 13:16:18 -0500
+Message-ID: <4D2363E7.30101@linux.vnet.ibm.com>
+Date: Tue, 04 Jan 2011 10:16:07 -0800
+From: "Venkateswararao Jujjuri (JV)" <jvrao@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Nick Piggin <npiggin@kernel.dk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Eric Van Hensbergen <ericvh@gmail.com>
+Subject: Re: linux-next: manual merge of the vfs-scale tree with the v9fs
+ tree
+References: <20110104124054.c767a4ee.sfr@canb.auug.org.au>
+In-Reply-To: <20110104124054.c767a4ee.sfr@canb.auug.org.au>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are the updates you can find at https://github.com/ltuikov/linux-2.6:
+On 1/3/2011 5:40 PM, Stephen Rothwell wrote:
+> Hi Nick,
+> 
+> Today's linux-next merge of the vfs-scale tree got a conflict in
+> fs/9p/vfs_inode.c between commit 3d21652a1d23591e7f0bbbbedae29ce78c2c1113
+> ("fs/9p: Move dotl inode operations into a seperate file") from the v9fs
+> tree and various commits from the vfs-scale tree.
+> 
+> I fixed it up by using the v9fs changes to that file and then applying
+> the following merge fixup patch (which I can carry as necessary).
+> 
+> Someone will need to fix this up before one of these trees is merged by
+> Linus, or to send this merge fix to Linus.
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Tue, 4 Jan 2011 12:33:54 +1100
+> Subject: [PATCH] v9fs: merge fix for changes in the vfs-scale tree
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  fs/9p/vfs_inode_dotl.c |   22 +++++++++++-----------
+>  1 files changed, 11 insertions(+), 11 deletions(-)
+> 
+> diff --git a/fs/9p/vfs_inode_dotl.c b/fs/9p/vfs_inode_dotl.c
+> index 38d5880..9dd534b 100644
+> --- a/fs/9p/vfs_inode_dotl.c
+> +++ b/fs/9p/vfs_inode_dotl.c
+> @@ -78,11 +78,11 @@ static struct dentry *v9fs_dentry_from_dir_inode(struct inode *inode)
+>  {
+>  	struct dentry *dentry;
+> 
+> -	spin_lock(&dcache_lock);
+> +	spin_lock(&inode->i_lock);
+>  	/* Directory should have only one entry. */
+>  	BUG_ON(S_ISDIR(inode->i_mode) && !list_is_singular(&inode->i_dentry));
+>  	dentry = list_entry(inode->i_dentry.next, struct dentry, d_alias);
+> -	spin_unlock(&dcache_lock);
+> +	spin_unlock(&inode->i_lock);
 
-commit 7b725e4ffa88490cb2bb042a703644f75bcd52b9
-Author: Luben Tuikov <ltuikov@yahoo.com>
-Date:   Mon Jan 3 16:26:23 2011 -0800
+Are we doing away with dcache_lock?
 
-    [USB] UASP: Updates
-    
-    * Free the RESPONSE IU URB if unused, i.e. a
-      status urb was never used due to the failing
-      command.
-    * Make some debug messages clearer.
-    * REQ_HARDBARRIER no longer exists--update.
-    * scsi_host::queuecommand changed prototype--update.
-    
-    Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
+I am not sure if the i_lock can serve the same purpose..but looks like with the
+current code
+there may not need any lock around this code. Aneesh/Eric do you guys have any
+comments?
 
-commit 58f76dfb08d155644ed639a319677c5dd9e11f16
-Author: Luben Tuikov <ltuikov@yahoo.com>
-Date:   Mon Jan 3 15:38:21 2011 -0800
 
-    [USB] UASP: Remove conflict markers in Makefile
-    
-    Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
+>  	return dentry;
+>  }
+> 
+> @@ -215,7 +215,7 @@ v9fs_vfs_create_dotl(struct inode *dir, struct dentry *dentry, int omode,
+>  				err);
+>  			goto error;
+>  		}
+> -		dentry->d_op = &v9fs_cached_dentry_operations;
+> +		d_set_d_op(dentry, &v9fs_cached_dentry_operations);
 
-commit 1a15005eeb46c10067354b492ac73f09305c3e6b
-Author: Luben Tuikov <ltuikov@yahoo.com>
-Date:   Mon Jan 3 15:11:14 2011 -0800
+Assuming that this is a macro to the same operation.. rest of the changes look
+fine to me.
 
-    [USB] UASP: Remove confict markers in Kconfig
-    
-    Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
+Thanks,
+JV
+
+>  		d_instantiate(dentry, inode);
+>  		err = v9fs_fid_add(dentry, fid);
+>  		if (err < 0)
+> @@ -233,7 +233,7 @@ v9fs_vfs_create_dotl(struct inode *dir, struct dentry *dentry, int omode,
+>  			err = PTR_ERR(inode);
+>  			goto error;
+>  		}
+> -		dentry->d_op = &v9fs_dentry_operations;
+> +		d_set_d_op(dentry, &v9fs_dentry_operations);
+>  		d_instantiate(dentry, inode);
+>  	}
+>  	/* Now set the ACL based on the default value */
+> @@ -331,7 +331,7 @@ static int v9fs_vfs_mkdir_dotl(struct inode *dir,
+>  				err);
+>  			goto error;
+>  		}
+> -		dentry->d_op = &v9fs_cached_dentry_operations;
+> +		d_set_d_op(dentry, &v9fs_cached_dentry_operations);
+>  		d_instantiate(dentry, inode);
+>  		err = v9fs_fid_add(dentry, fid);
+>  		if (err < 0)
+> @@ -348,7 +348,7 @@ static int v9fs_vfs_mkdir_dotl(struct inode *dir,
+>  			err = PTR_ERR(inode);
+>  			goto error;
+>  		}
+> -		dentry->d_op = &v9fs_dentry_operations;
+> +		d_set_d_op(dentry, &v9fs_dentry_operations);
+>  		d_instantiate(dentry, inode);
+>  	}
+>  	/* Now set the ACL based on the default value */
+> @@ -589,7 +589,7 @@ v9fs_vfs_symlink_dotl(struct inode *dir, struct dentry *dentry,
+>  					err);
+>  			goto error;
+>  		}
+> -		dentry->d_op = &v9fs_cached_dentry_operations;
+> +		d_set_d_op(dentry, &v9fs_cached_dentry_operations);
+>  		d_instantiate(dentry, inode);
+>  		err = v9fs_fid_add(dentry, fid);
+>  		if (err < 0)
+> @@ -602,7 +602,7 @@ v9fs_vfs_symlink_dotl(struct inode *dir, struct dentry *dentry,
+>  			err = PTR_ERR(inode);
+>  			goto error;
+>  		}
+> -		dentry->d_op = &v9fs_dentry_operations;
+> +		d_set_d_op(dentry, &v9fs_dentry_operations);
+>  		d_instantiate(dentry, inode);
+>  	}
+> 
+> @@ -678,7 +678,7 @@ v9fs_vfs_link_dotl(struct dentry *old_dentry, struct inode *dir,
+>  		ihold(old_dentry->d_inode);
+>  	}
+> 
+> -	dentry->d_op = old_dentry->d_op;
+> +	d_set_d_op(dentry, old_dentry->d_op);
+>  	d_instantiate(dentry, old_dentry->d_inode);
+> 
+>  	return err;
+> @@ -757,7 +757,7 @@ v9fs_vfs_mknod_dotl(struct inode *dir, struct dentry *dentry, int omode,
+>  				err);
+>  			goto error;
+>  		}
+> -		dentry->d_op = &v9fs_cached_dentry_operations;
+> +		d_set_d_op(dentry, &v9fs_cached_dentry_operations);
+>  		d_instantiate(dentry, inode);
+>  		err = v9fs_fid_add(dentry, fid);
+>  		if (err < 0)
+> @@ -773,7 +773,7 @@ v9fs_vfs_mknod_dotl(struct inode *dir, struct dentry *dentry, int omode,
+>  			err = PTR_ERR(inode);
+>  			goto error;
+>  		}
+> -		dentry->d_op = &v9fs_dentry_operations;
+> +		d_set_d_op(dentry, &v9fs_dentry_operations);
+>  		d_instantiate(dentry, inode);
+>  	}
+>  	/* Now set the ACL based on the default value */
+
 
