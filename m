@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064Ab1ADQFV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 11:05:21 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:34439 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707Ab1ADQFT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 11:05:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=C6Xq1OAKHZ20sN/ommQxYYirNsNy9v70y/8sYE4ICrp6EhumqzGEfaYdWn59EO2D93
-         yEaPbXHUCdyXy7Q4+7rak56fGUVYbNUQdzZCi0u9NpGhTSwL0njgVwYyPzN/Kc14F14r
-         D+iFppkyPRQEHO09ocduTWVANDCctJsNS+Sxo=
-Subject: Re: [PATCH 1/2] kref: add kref_test_and_get
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
-        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <greg@kroah.com>
-In-Reply-To: <4D23423A.60707@redhat.com>
-References: <4CFF3DA4.5060705@jp.fujitsu.com>
-	 <4CFF9A2C.1070401@fusionio.com> <4D025154.8030400@redhat.com>
-	 <20101210165553.GE31737@redhat.com> <4D07D2AC.6000500@fusionio.com>
-	 <4D0B68AF.80804@redhat.com> <4D0BB4A1.8080305@fusionio.com>
-	 <4D13664C.3020500@redhat.com> <20101223153915.GE9502@redhat.com>
-	 <4D13810B.8000304@redhat.com> <20101224192916.GB2082@redhat.com>
-	 <4D23423A.60707@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 04 Jan 2011 17:05:14 +0100
-Message-ID: <1294157114.3579.102.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1751246Ab1ADQOL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 11:14:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37731 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751037Ab1ADQOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 11:14:09 -0500
+Date: Tue, 4 Jan 2011 17:06:12 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
+        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 16/17] sched: Move the second half of ttwu() to
+	the remote cpu
+Message-ID: <20110104160612.GA9177@redhat.com>
+References: <20101224122338.172750730@chello.nl> <20101224123743.303699501@chello.nl> <20110104142805.GA4347@redhat.com> <1294152441.2016.148.camel@laptop> <20110104151826.GA6800@redhat.com> <1294155781.2016.160.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294155781.2016.160.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 04 janvier 2011 à 16:52 +0100, Jerome Marchand a écrit :
-> Add kref_test_and_get() function, which atomically add a reference only if
-> refcount is not zero. This prevent to add a reference to an object that is
-> already being removed.
-> 
-> Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+On 01/04, Peter Zijlstra wrote:
+>
+> On Tue, 2011-01-04 at 16:18 +0100, Oleg Nesterov wrote:
+>
+> > > I don't think so, nobody should be migrating a TASK_WAKING task.
+> >
+> > I am not sure...
+> >
+> > Suppose that p was TASK_INTERRUPTIBLE and p->on_rq == 1 before, when
+> > set_cpus_allowed_ptr() was called. To simplify, suppose that
+> > the caller is preempted right after it drops p->pi_lock and before
+> > it does stop_one_cpu(migration_cpu_stop).
+> >
+> > After that p can complete chedule() and deactivate itself.
+> >
+> > Now, try_to_wake_up() can set TASK_WAKING, choose another CPU,
+> > and do ttwu_queue_remote().
+> >
+> > Finally, the caller of set_cpus_allowed_ptr() resumes and
+> > schedules migration_cpu_stop.
+>
+> But __migrate_task() will then find !p->on_rq and not actually do
+> anything.
 
-> +int kref_test_and_get(struct kref *kref)
-> +{
-> +	int ret;
-> +	smp_mb__before_atomic_inc();
-> +	ret = atomic_inc_not_zero(&kref->refcount);
-> +	smp_mb__after_atomic_inc();
-> +	return ret;
-> +}
-> +
-> +/**
-
-atomic_inc_not_zero() has full memory barrier semantic already, you dont
-need smp_mb__before_atomic_inc() or smp_mb__after_atomic_inc();
+But if it races with ttwu_do_activate() (which can hold another
+rq->lock != rq_src/rq_dest), it can check p->on_rq after
+activate_task() was already called.
 
 
+
+But I think this no longer matters,
+
+> > It is very possible I missed something, but what is the new
+> > locking rules for set_task_cpu() anyway? I mean, which rq->lock
+> > it needs?
+>
+> In the patches I just posted: set_task_cpu(p, cpu) callers need to
+> either hold task_rq(p)->lock (the old rq) or p->pi_lock.
+
+Yes, thanks, I already noticed v4, and at first glance 11/18 plus
+set_task_cpu() in try_to_wake_up() should close the problems...
+
+Oleg.
 
