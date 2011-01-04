@@ -1,43 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548Ab1ADRIE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 12:08:04 -0500
-Received: from casper.infradead.org ([85.118.1.10]:58155 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752075Ab1ADRIC convert rfc822-to-8bit (ORCPT
+	id S1752492Ab1ADRK0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 12:10:26 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:58950 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342Ab1ADRKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 12:08:02 -0500
-Subject: Re: [RFC -v3 PATCH 2/3] sched: add yield_to function
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>
-In-Reply-To: <AANLkTim8zmhKjPs-fVdR=65VPd6hybD8HA8pKEyKzm13@mail.gmail.com>
-References: <20110103162637.29f23c40@annuminas.surriel.com>
-	 <20110103162918.577a9620@annuminas.surriel.com>
-	 <AANLkTim1UFzHjBv52p7tyVyXerCVUVOBSAa3ajwQveuN@mail.gmail.com>
-	 <4D234E60.3010804@redhat.com>
-	 <AANLkTim8zmhKjPs-fVdR=65VPd6hybD8HA8pKEyKzm13@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 04 Jan 2011 18:08:10 +0100
-Message-ID: <1294160890.2016.171.camel@laptop>
+	Tue, 4 Jan 2011 12:10:25 -0500
+Date: Tue, 4 Jan 2011 09:10:06 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, akpm <akpm@linux-foundation.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Zimny Lech <napohybelskurwysynom2010@gmail.com>
+Subject: Re: [PATCH -next] thermal: depends on NET
+Message-Id: <20110104091006.159f1c9c.randy.dunlap@oracle.com>
+In-Reply-To: <20101213112033.d0060e6c.randy.dunlap@oracle.com>
+References: <20101213163607.0b0a7c3a.sfr@canb.auug.org.au>
+	<20101213112033.d0060e6c.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-05 at 00:51 +0800, Hillf Danton wrote:
-> Where is the yield_to callback in the patch for RT schedule class?
-> If @p is RT, what could you do? 
+On Mon, 13 Dec 2010 11:20:33 -0800 Randy Dunlap wrote:
 
-RT guests are a pipe dream, you first need to get the hypervisor (kvm in
-this case) to be RT, which it isn't. Then you either need to very
-statically set-up the host and the guest scheduling constraints (not
-possible with RR/FIFO) or have a complete paravirt RT scheduler which
-communicates its requirements to the host.
+This patch is still needed in linux-next 20110104.
 
 
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> ERROR: "genl_register_family" [drivers/thermal/thermal_sys.ko] undefined!
+> ERROR: "genl_unregister_family" [drivers/thermal/thermal_sys.ko] undefined!
+> ERROR: "init_net" [drivers/thermal/thermal_sys.ko] undefined!
+> ERROR: "__alloc_skb" [drivers/thermal/thermal_sys.ko] undefined!
+> ERROR: "netlink_broadcast" [drivers/thermal/thermal_sys.ko] undefined!
+> ERROR: "kfree_skb" [drivers/thermal/thermal_sys.ko] undefined!
+> ERROR: "genl_register_mc_group" [drivers/thermal/thermal_sys.ko] undefined!
+> ERROR: "nla_reserve" [drivers/thermal/thermal_sys.ko] undefined!
+> ERROR: "skb_put" [drivers/thermal/thermal_sys.ko] undefined!
+> 
+> Reported-by: Zimny Lech <napohybelskurwysynom2010@gmail.com>
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Cc: Zhang Rui <rui.zhang@intel.com>
+> ---
+>  drivers/thermal/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> --- linux-next-20101213.orig/drivers/thermal/Kconfig
+> +++ linux-next-20101213/drivers/thermal/Kconfig
+> @@ -4,6 +4,7 @@
+>  
+>  menuconfig THERMAL
+>  	tristate "Generic Thermal sysfs driver"
+> +	depends on NET
+>  	help
+>  	  Generic Thermal Sysfs driver offers a generic mechanism for
+>  	  thermal management. Usually it's made up of one or more thermal
+> --
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
+desserts:  http://www.xenotime.net/linux/recipes/
