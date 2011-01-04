@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869Ab1ADTAI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 14:00:08 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50577 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129Ab1ADTAG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 14:00:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
-         :mime-version:content-type:content-transfer-encoding;
-        b=OZ1EZxujv5ztNVQZQoD7bjvzxCPT/PPqKjhGj0Zsj4RpF/e0Ok4KQTjHnu/Qm21GTX
-         VF8UlYvk+zsAXGvPs0g5A0FTwZbDtIRfzkRw6HB7fhGMTM79n2h2X+MSDSGwRqjcjbnF
-         QDHzIixg0Jl/LhSJI3GjCCt1kFslymDM/EIF4=
-Date: Tue, 4 Jan 2011 20:00:01 +0100
-From: Urs Fleisch <urs.fleisch@gmail.com>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LM Sensors <lm-sensors@lm-sensors.org>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH] hwmon: driver for Sensirion SHT21 humidity and
- temperature sensor
-Message-Id: <20110104200001.3328dae3.urs.fleisch@gmail.com>
-In-Reply-To: <20110104152837.GA32138@ericsson.com>
-References: <20101229134511.cc466ac0.urs.fleisch@gmail.com>
-	<4D1DF097.1080200@cam.ac.uk>
-	<20110103081448.f96c413e.urs.fleisch@gmail.com>
-	<4D21ADCB.4070206@cam.ac.uk>
-	<1294078159.9786.9.camel@groeck-laptop>
-	<4D230ED0.8060008@cam.ac.uk>
-	<20110104152837.GA32138@ericsson.com>
-X-Mailer: Sylpheed 3.1.0beta2 (GTK+ 2.22.0; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752099Ab1ADTCI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 14:02:08 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59672 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751474Ab1ADTCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 14:02:07 -0500
+Message-ID: <4D236E47.5080500@zytor.com>
+Date: Tue, 04 Jan 2011 11:00:23 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Stephane Eranian <eranian@google.com>, Lin Ming <ming.m.lin@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/7] perf: Check if HT is supported and enabled
+References: <1293464211.2695.104.camel@localhost>	 <AANLkTimp9VgD4qhOVmq-k1Ckzti9eeV8pf6Jvt5YB6nx@mail.gmail.com>	 <1293526288.2457.4.camel@minggr.sh.intel.com>	 <1294052312.2016.50.camel@laptop> <4D222926.9010206@zytor.com>	 <1294139419.2016.115.camel@laptop>	 <AANLkTinGmgB7YhRjnsGMjj2knDuJ8XFps9oyW4+EGOr5@mail.gmail.com>	 <1294148675.2016.139.camel@laptop>	 <AANLkTima_wh1Nd2E-zQAcymmux1O0e1GzVEdnhLEMOo5@mail.gmail.com> <1294149501.2016.141.camel@laptop>
+In-Reply-To: <1294149501.2016.141.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Uses I know of are indeed more general environment monitoring.
-> Not seen one of these in conventional hardware monitoring but could be wrong.
-> I guess, Urs will have a better idea of where these tend to be used?
+On 01/04/2011 05:58 AM, Peter Zijlstra wrote:
+> On Tue, 2011-01-04 at 14:52 +0100, Stephane Eranian wrote:
+>>
+>> Couldn't you simply over-provision, and then when the CPU is online, use my
+>> ht_enabled statement to figure out whether or not you need to handle the sharing
+>> issue? 
+> 
+> That's pretty much what Lin's latest does:
+> 
+>  X86_FEATURE_HT && smp_num_siblings > 1
+> 
+> shows the CPU is capable of HT and will allocate the needed resources.
+> 
 
-Mobile phones could be a promising market for humidity sensors in a Linux system. Fujitsu already sells a mobile phone with built-in temperature and humidity sensors. So we hope to see also Linux-based mobile phones (e.g. Android, MeGoo) with a humidity sensor. Such a sensor could be used to monitor environmental conditions, but there could be other applications too, some of them may not make sense and others can not be foreseen. The humidity sensor could also be used to monitor the hardware of the phone, in this situation, hwmon makes sense. If a sensor can be used for various application, there is probably not one true category. There may be other sensors in hwmon, which can be used for applications other than hardware monitoring. I chose the hwmon directory because the sht15 was already there.
+>From the sound of it, it doesn't seem like it's worth optimizing out the
+fairly small memory allocation.
 
-> Highly unusual way of detecting and returning errors.
+	-hpa
 
-If this is a problem, I can alter the code. I could also drop all user-register related attributes if they cause problems with the ABI.
-
-Regards,
-Urs
