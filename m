@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305Ab1ADGjt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 01:39:49 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:59464 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab1ADGjs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 01:39:48 -0500
-Date: Tue, 4 Jan 2011 01:39:44 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, mfasheh@suse.com,
-        joel.becker@oracle.com, swhiteho@redhat.com
-Subject: Re: [patch 7/8] fs: fix or note I_DIRTY handling bugs in filesystems
-Message-ID: <20110104063944.GA1910@infradead.org>
-References: <20101218014634.943276411@kernel.dk>
- <20101218015117.652706340@kernel.dk>
- <20101229150108.GA13358@infradead.org>
- <20110104060452.GC3402@amd>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110104060452.GC3402@amd>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1751574Ab1ADGma (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 01:42:30 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:47996 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1750886Ab1ADGm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 01:42:28 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+ZM/Vh2Q6ZGyy3qV3Wj8QUnuDLQebgmdNZFYMRpd
+	9KOuBZUyPbul4k
+Subject: Re: [RFC -v3 PATCH 0/3] directed yield for Pause Loop Exiting
+From: Mike Galbraith <efault@gmx.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Avi Kiviti <avi@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Chris Wright <chrisw@sous-sol.org>
+In-Reply-To: <20110103162637.29f23c40@annuminas.surriel.com>
+References: <20110103162637.29f23c40@annuminas.surriel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 04 Jan 2011 07:42:15 +0100
+Message-ID: <1294123335.11283.26.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 04, 2011 at 05:04:52PM +1100, Nick Piggin wrote:
-> However I strongly believe that filesystems should be able to access
-> and manipulate the inode dirty state directly. If you agree with that,
-> then I think they should be able to access the lock required for that.
-> Filesystems will want to keep their internal state in synch with vfs
-> visible state most likely (eg. like your hfsplus patches), and _every_
-> time we do "loose" coupling between state bits like this (eg. page and
-> buffer state; page and pte state; etc), it turns out to be a huge mess
-> of races and subtle code and ordering.
+A couple questions.
 
-I've probably done the two most complicated fsync implementations in xfs
-and hfsplys myself, and I'd really prefer the interface to be as simple
-as possible.  The way the I_DIRTY_* flags and the datasync parameter to
-->fsync interact are almost a receipe for getting it wrong, which in
-fact most implementations that tried to be smart did.  See gfs2 and
-ocfs2 comments in this threads for classic examples.
+On Mon, 2011-01-03 at 16:26 -0500, Rik van Riel wrote:
+> When running SMP virtual machines, it is possible for one VCPU to be
+> spinning on a spinlock, while the VCPU that holds the spinlock is not
+> currently running, because the host scheduler preempted it to run
+> something else.
 
-If we actually get filesystems that need to do smarts in
-checking/clearing the I_DIRTY_* flag we can discuss proper interfaces
-for it - duplicating guts of i_state manipulations sounds like a
-relatively bad idea for that.  Note that my fsync_helper still gives
-filesystems a lot of information, just not in a redundant and confusing
-way.  The dirty argument still tells if datasync-relevant or
-non-datasyns relevant (aka timestampts) metadata was dirty, so if a
-filesystem needs to write them back in different ways it still can.
+Do you have any numbers?
+
+If I were to, say, run a 256 CPU VM on my quad, would this help me get
+more hackbench or whatever oomph from my (256X80386/20:) box?
+
+> Both Intel and AMD CPUs have a feature that detects when a virtual
+> CPU is spinning on a lock and will trap to the host.
+
+Does an Intel Q6600 have this trap gizmo (iow will this do anything at
+all for my little box if I were to try it out).
+
+	-Mike
 
