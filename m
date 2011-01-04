@@ -1,131 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751513Ab1ADTza (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 14:55:30 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:53476
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751002Ab1ADTz3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 14:55:29 -0500
-Date: Tue, 04 Jan 2011 11:56:00 -0800 (PST)
-Message-Id: <20110104.115600.245388910.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1751398Ab1ADUMv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 15:12:51 -0500
+Received: from outbound-queue-1.mail.thdo.gradwell.net ([212.11.70.34]:46020
+	"EHLO outbound-queue-1.mail.thdo.gradwell.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750840Ab1ADUMu convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 15:12:50 -0500
+Subject: Re: Using s3virge card in Sun Blade 2000
+From: Alex Buell <alex.buell@munted.org.uk>
+Reply-To: alex.buell@munted.org.uk
+To: David Miller <davem@davemloft.net>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20110104.092637.226761806.davem@davemloft.net>
+References: <1294090573.17576.16.camel@lithium>
+	 <20110103.143625.193710368.davem@davemloft.net>
+	 <1294156627.17576.21.camel@lithium>
+	 <20110104.092637.226761806.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: One very high maintenance cat for company
+Date: Tue, 04 Jan 2011 20:11:17 +0000
+Message-ID: <1294171877.17576.24.camel@lithium>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.2 
+X-Gradwell-MongoId: 4d237f40.865a-6a9c-2
+X-Gradwell-Auth-Method: mailbox
+X-Gradwell-Auth-Credentials: postmaster@pop3.munted.org.uk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2011-01-04 at 09:26 -0800, David Miller wrote:
+> From: Alex Buell <alex.buell@munted.org.uk>
+> Date: Tue, 04 Jan 2011 15:57:07 +0000
+> 
+> > On Mon, 2011-01-03 at 14:36 -0800, David Miller wrote:
+> >> From: Alex Buell <alex.buell@munted.org.uk>
+> >> Date: Mon, 03 Jan 2011 21:36:13 +0000
+> >> 
+> >> > Those are 32 bit addresses, so I suppose I should be getting the base
+> >> > address for the registers accesses from region 1, right? 
+> >> 
+> >> Yes, and pre-computed addresses exist in pci_region_start(pdev, 1).
+> > 
+> > Do you have any tips for reducing the amount of reboots I have to do
+> > whenever I try loading the s3fb module after changing code? 
+> 
+> You should build s3fb as a module, block it from auto-loading in
+> /etc/modules.conf, and then load it explicitly by hand as you
+> make changes and recompile.
 
-Some stragglers, the most important bit is the bridging multicast
-crash cure.
-
-1) MIPS build of starfire fails on some 64-bit platforms, fix from Ben
-   Hutchings.
-
-2) VLAN flags of ehea inadvertantly changed when modifying other
-   feature flags.  Fix from Breno Leitao.
-
-3) Don't expose kernel addresses in CAN proc files, from Dan
-   Rosenberg.
-
-4) skfp driver probe checks wrong return value for error, from Dan
-   Carpenter.
-
-5) Bridging netfilter expects SKB mac header to be initialized
-   properly, a simplification made to the STP code inadvertantly broke
-   that.  Fix from Florian Westphal.
-
-6) tg3_read_vpd() checks return value incorrectly, fix from David
-   Sterba.
-
-7) Bridging code doesn't handle non-linear SKBs properly when parsing
-   through ipv6 extension headers to get at the IGMP message bits.
-   Fix from Tomas Winkler.
-
-8) There's a rather pervasive CISCO ppp implementation bug regarding a
-   corner case of compression and protocol IDs, add a sysctl to work
-   around this so people can at least function while waiting for
-   various CISCO kit to get updated.  From Stephen Hemminger.
-
-9) Memory leaks in ISDN gigaset and broadcom CNIC drivers, from Jesper
-   Juhl.
-
-10) Changing ring parameters causes oops in atl1, fix from J. K. Cliburn.
-
-11) In ipv4 we ignore preferred source address setting for local routes,
-    fix from Joel Sing.
-
-12) Device leak in atmtcp.c, fix from Julia Lawall.
-
-Please pull, thanks a lot.
-
-The following changes since commit 989d873fc5b6a96695b97738dea8d9f02a60f8ab:
-
-  Merge master.kernel.org:/home/rmk/linux-2.6-arm (2011-01-03 16:37:01 -0800)
-
-are available in the git repository at:
-
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
-
-Ben Hutchings (1):
-      starfire: Fix dma_addr_t size test for MIPS
-
-Breno Leitao (1):
-      ehea: Avoid changing vlan flags
-
-Dan Carpenter (1):
-      skfp: testing the wrong variable in skfp_driver_init()
-
-Dan Rosenberg (1):
-      CAN: Use inode instead of kernel address for /proc file
-
-Dan Williams (1):
-      ueagle-atm: fix PHY signal initialization race
-
-David Sterba (1):
-      tg3: fix return value check in tg3_read_vpd()
-
-Florian Westphal (1):
-      bridge: stp: ensure mac header is set
-
-J. K. Cliburn (1):
-      atl1: fix oops when changing tx/rx ring params
-
-Jesper Juhl (2):
-      ISDN, Gigaset: Fix memory leak in do_disconnect_req()
-      Broadcom CNIC core network driver: fix mem leak on allocation failures in cnic_alloc_uio_rings()
-
-Joel Sing (1):
-      ipv4/route.c: respect prefsrc for local routes
-
-Julia Lawall (1):
-      drivers/atm/atmtcp.c: add missing atm_dev_put
-
-Tomas Winkler (1):
-      bridge: fix br_multicast_ipv6_rcv for paged skbs
-
-stephen hemminger (1):
-      ppp: allow disabling multilink protocol ID compression
-
- drivers/atm/atmtcp.c            |    5 ++++-
- drivers/isdn/gigaset/capi.c     |    1 +
- drivers/net/atlx/atl1.c         |   10 ++++++++++
- drivers/net/cnic.c              |   10 ++++++++--
- drivers/net/ehea/ehea_ethtool.c |    7 +++++++
- drivers/net/ppp_generic.c       |    9 +++++++--
- drivers/net/skfp/skfddi.c       |    2 +-
- drivers/net/starfire.c          |    2 +-
- drivers/net/tg3.c               |    2 +-
- drivers/usb/atm/ueagle-atm.c    |   22 +++++++++++++++++++---
- net/bridge/br_multicast.c       |   28 ++++++++++++++++++----------
- net/bridge/br_stp_bpdu.c        |    2 ++
- net/can/bcm.c                   |    4 ++--
- net/ipv4/route.c                |    8 ++++++--
- 14 files changed, 87 insertions(+), 25 deletions(-)
+I'm already doing that. In the instances where it results in a crash and
+reboots are impossible, dropping into the OpenPROM results in a total
+system freeze, cannot type anything in, this means a big red switch
+time. Solaris didn't have this problem. Any ideas why Linux does this to
+the OpenPROM? 
+-- 
+Tactical Nuclear Kittens
