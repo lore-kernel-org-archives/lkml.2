@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751401Ab1ADEjD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 23:39:03 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:45948 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981Ab1ADEjA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 23:39:00 -0500
-Date: Tue, 4 Jan 2011 15:38:55 +1100
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        linux-crypto@vger.kernel.org
-Subject: Re: [PATCH 05/32] crypto: mark crypto workqueues CPU_INTENSIVE
-Message-ID: <20110104043855.GC27632@gondor.apana.org.au>
-References: <1294062595-30097-1-git-send-email-tj@kernel.org> <1294062595-30097-6-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294062595-30097-6-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751355Ab1ADEzU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 23:55:20 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:41984 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751099Ab1ADEzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 23:55:19 -0500
+Date: Tue, 4 Jan 2011 15:55:13 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mac Lin <mkl0301@gmail.com>, Anton Vorontsov <cbouatmailru@gmail.com>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Deepak Sikri <deepak.sikri@st.com>, Viresh Kumar <viresh.kumar@st.com>,
+        Pavankumar Kondeti <pkondeti@codeaurora.org>
+Subject: linux-next: manual merge of the usb tree with the arm tree
+Message-Id: <20110104155513.e8c36240.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 03, 2011 at 02:49:28PM +0100, Tejun Heo wrote:
-> kcrypto_wq and pcrypt->wq's are used to run ciphers and may consume
-> considerable amount of CPU cycles.  Mark both as CPU_INTENSIVE so that
-> they don't block other work items.
-> 
-> As the workqueues are primarily used to burn CPU cycles, concurrency
-> levels shouldn't matter much and are left at 1.  A higher value may be
-> beneficial and needs investigation.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: linux-crypto@vger.kernel.org
+Hi Greg,
 
-Patch applied.  Thanks!
+Today's linux-next merge of the usb tree got a conflict in
+drivers/usb/Kconfig between commit
+760efe6910d5743084b586d3d0a3b65aea96fb2f ("USB: cns3xxx: Add EHCI and
+OHCI bus glue for cns3xxx SOCs") from the arm tree and commits
+c8c38de9d8002578599222296b90696745ac0fe3 ("USB host: Adding USB ehci &
+ohci support for spear platform") and
+b0848aea10da186372582f33152efdda43944f26 ("USB: EHCI: Add MSM Host
+Controller driver") from the usb tree.
+
+I fixed it up (see below) and can carry the fix as necessary.
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/usb/Kconfig
+index 5a7c8f1,b8e70a9..0000000
+--- a/drivers/usb/Kconfig
++++ b/drivers/usb/Kconfig
+@@@ -41,7 -41,7 +41,8 @@@ config USB_ARCH_HAS_OHC
+  	default y if MFD_TC6393XB
+  	default y if ARCH_W90X900
+  	default y if ARCH_DAVINCI_DA8XX
+ +	default y if ARCH_CNS3XXX
++ 	default y if PLAT_SPEAR
+  	# PPC:
+  	default y if STB03xxx
+  	default y if PPC_MPC52xx
+@@@ -67,7 -62,9 +63,10 @@@ config USB_ARCH_HAS_EHC
+  	default y if ARCH_AT91SAM9G45
+  	default y if ARCH_MXC
+  	default y if ARCH_OMAP3
+ +	default y if ARCH_CNS3XXX
++ 	default y if ARCH_VT8500
++ 	default y if PLAT_SPEAR
++ 	default y if ARCH_MSM
+  	default PCI
+  
+  # ARM SA1111 chips have a non-PCI based "OHCI-compatible" USB host interface.
