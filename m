@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751309Ab1ADCC0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 21:02:26 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:34999 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803Ab1ADCCZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 21:02:25 -0500
-MIME-Version: 1.0
-In-Reply-To: <1294070258.3320.4.camel@phoenix>
-References: <1294070258.3320.4.camel@phoenix>
-Date: Tue, 4 Jan 2011 10:02:24 +0800
-Message-ID: <AANLkTim-v0SesMCW-Nu=PX5Qzoe025dgwdfhjDzMNEgY@mail.gmail.com>
-Subject: Re: [PATCH] regulator: Assign return value of mc13xxx_reg_rmw to ret
-From: Yong Shen <yong.shen@linaro.org>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1750963Ab1ADC2t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 21:28:49 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:42616 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750757Ab1ADC2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 21:28:48 -0500
+Date: Tue, 4 Jan 2011 13:28:37 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jon Mason <jon.mason@exar.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: linux-next: manual merge of the net tree with the  tree
+Message-Id: <20110104132837.cfecc014.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__4_Jan_2011_13_28_37_+1100_gWXQ21Lg=xFmV4ME"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Yong Shen <yong.shen@linaro.org>
+--Signature=_Tue__4_Jan_2011_13_28_37_+1100_gWXQ21Lg=xFmV4ME
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jan 3, 2011 at 11:57 PM, Axel Lin <axel.lin@gmail.com> wrote:
-> Otherwise, we will not return error if write to MC13892_SWITCHERS5 failed.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/regulator/mc13892-regulator.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/regulator/mc13892-regulator.c b/drivers/regulator/mc13892-regulator.c
-> index 16a0532..1b8f739 100644
-> --- a/drivers/regulator/mc13892-regulator.c
-> +++ b/drivers/regulator/mc13892-regulator.c
-> @@ -550,7 +550,7 @@ static int __devinit mc13892_regulator_probe(struct platform_device *pdev)
->                if (ret)
->                        goto err_free;
->
-> -               mc13xxx_reg_rmw(mc13892, MC13892_SWITCHERS5,
-> +               ret = mc13xxx_reg_rmw(mc13892, MC13892_SWITCHERS5,
->                        MC13892_SWITCHERS5_SW3MODE_M |
->                        MC13892_SWITCHERS5_SW4MODE_M,
->                        MC13892_SWITCHERS5_SW3MODE_AUTO |
-> --
-> 1.7.0.4
->
->
->
->
+Hi all,
+
+Today's linux-next merge of the net tree got a conflict in
+drivers/net/sky2.c between
+commit1d3c16a818e992c199844954d95c17fd7ce6cbba  ("PCI: make
+pci_restore_state return void") from the  tree and commit
+0f333d10e3f689640b229c8cf00b16ea51ce4951 ("sky2: Do not use legacy PCI
+power management") from the net tree.
+
+The latter removes the code that the former modifies.  I used the latter.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__4_Jan_2011_13_28_37_+1100_gWXQ21Lg=xFmV4ME
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNIoXVAAoJEDMEi1NhKgbsgZkH/3XVI6R9d5aru9n36cylHa3U
+TMWONd+D1aoEZ1WkIPVIWnrKtPZnieAnXTUdSaLYZtmjDburZwYldUxR5O7kdy5y
+dDku/M5u6X2PPM4iuVJXeaGcdXAQwdDAbth0z9kQ6zJKi4kAApFg62R0ettepeXv
+hp3bGe+p3Hnym5yds1f6ZsSqSPHhsCDBoI8Wbj+MUIYddfcTM2eAASFIZtKxZ2Lt
+H2F+nzeUiNHRuaUsmQ0t1I+ZolvPWb4eh1BrqMZZ2K7GBhxi8OdnuvWgDfchj0xp
+QZd/KBiuF11KDA5LYw9Kc4XihipyK/IIJb1VVkGJhdJ/NCeOCw5hC6HAbE668Ss=
+=ykR6
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__4_Jan_2011_13_28_37_+1100_gWXQ21Lg=xFmV4ME--
