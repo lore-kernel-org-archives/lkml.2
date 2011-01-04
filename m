@@ -1,48 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149Ab1ADIcF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 03:32:05 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:63127 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751864Ab1ADIcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 03:32:03 -0500
-Message-ID: <4D22DB19.3000300@cn.fujitsu.com>
-Date: Tue, 04 Jan 2011 16:32:25 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH] rcu: call __rcu_read_unlock() in exit_rcu()
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-01-04 16:31:44,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-01-04 16:31:44,
-	Serialize complete at 2011-01-04 16:31:44
+	id S1752170Ab1ADIeg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 03:34:36 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54048 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206Ab1ADIef (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 03:34:35 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 4 Jan 2011 17:28:33 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "Figo.zhang" <zhangtianfei@leadcoretech.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@osdl.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Figo.zhang" <figo1802@gmail.com>,
+        "rientjes@google.com" <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH v3]mm/oom-kill: direct hardware access processes should
+ get bonus
+Message-Id: <20110104172833.1ff20b41.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4D22D190.1080706@leadcoretech.com>
+References: <1288662213.10103.2.camel@localhost.localdomain>
+	<1289305468.10699.2.camel@localhost.localdomain>
+	<1289402093.10699.25.camel@localhost.localdomain>
+	<1289402666.10699.28.camel@localhost.localdomain>
+	<4D22D190.1080706@leadcoretech.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 04 Jan 2011 15:51:44 +0800
+"Figo.zhang" <zhangtianfei@leadcoretech.com> wrote:
 
-rcu_read_unlock() is a wrapper of many things:
-	the core __rcu_read_unlock(), debugs...etc.
+> 
+> i had send the patch to protect the hardware access processes for 
+> oom-killer before, but rientjes have not agree with me.
+> 
+> but today i catch log from my desktop. oom-killer have kill my "minicom" 
+> and "Xorg". so i think it should add protection about it.
+> 
 
-It is better that we only calls the core __rcu_read_unlock() here.
+Off topic.
 
-signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index a363871..94035a0 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -802,7 +802,7 @@ void exit_rcu(void)
- 	if (t->rcu_read_lock_nesting == 0)
- 		return;
- 	t->rcu_read_lock_nesting = 1;
--	rcu_read_unlock();
-+	__rcu_read_unlock();
- }
- 
- #else /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+In this log, I found
+
+> > Jan  4 15:22:55 figo-desktop kernel: Free swap  = -1636kB
+> > Jan  4 15:22:55 figo-desktop kernel: Total swap = 0kB
+> > Jan  4 15:22:55 figo-desktop kernel: 515070 pages RAM
+
+... This means total_swap_pages = 0 while pages are read-in at swapoff.
+
+Let's see 'points' for oom 
+==
+points = (get_mm_rss(p->mm) + get_mm_counter(p->mm, MM_SWAPENTS)) * 1000 /
+                        totalpages;
+==
+
+Here, totalpages = total_ram + total_swap but totalswap is 0 here.
+
+So, points can be > 1000, easily.
+(This seems not to be related to the Xorg's death itself)
+
+
+
+Thanks,
+-Kame
+
