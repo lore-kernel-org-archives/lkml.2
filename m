@@ -1,79 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581Ab1ADPa7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 10:30:59 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:21156 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502Ab1ADPa6 (ORCPT
+	id S1752196Ab1ADPeW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 10:34:22 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:25383
+	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751624Ab1ADPeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 10:30:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=sfkPV5gYdy6zYzNT4RgP4sQ/CBLsugAibeevgseuMTfY539BnorEg/B1TJMD4zOA62
-         u0BYb3ber4UFdNY7yg0Q==
+	Tue, 4 Jan 2011 10:34:20 -0500
+X-SpamScore: -24
+X-BigFish: VPS-24(zzbb2cK1dbaL1432N98dN179dNzz1202hzz8275bhz32i637h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LEI8KZ-01-DW6-02
+X-M-MSG: 
+Date: Tue, 4 Jan 2011 16:34:11 +0100
+From: Robert Richter <robert.richter@amd.com>
+To: "graalfs@linux.vnet.ibm.com" <graalfs@linux.vnet.ibm.com>
+CC: "mingo@elte.hu" <mingo@elte.hu>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "borntraeger@de.ibm.com" <borntraeger@de.ibm.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
+        Maran Pakkirisamy <maranp@linux.vnet.ibm.com>
+Subject: Re: [patch 3/4] This patch introduces a new oprofile sample add
+ function (oprofile_add_ext_hw_sample)
+Message-ID: <20110104153411.GV4739@erda.amd.com>
+References: <20101220130541.446049933@linux.vnet.ibm.com>
+ <20101220130629.823952802@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikofO8hdT0Ku3xQHPRS6xHQz0W6Z6RY50_DD2FK@mail.gmail.com>
-References: <AANLkTinjkC=4yQbiLxF7=G1izFa2pOuR=WvRXbha3wsj@mail.gmail.com>
-	<20110104140338.GA19989@ghostprotocols.net>
-	<AANLkTi=osr9ZB9OzPxZ_99FU1A5JzCA3rMM64fxws34S@mail.gmail.com>
-	<20110104141958.GC19989@ghostprotocols.net>
-	<20110104142715.GD19989@ghostprotocols.net>
-	<AANLkTik93yG1e80a8MBYDfFBu1YwZ+BA6LqOh-EsLHO_@mail.gmail.com>
-	<20110104143658.GF19989@ghostprotocols.net>
-	<AANLkTin6udBreRt0zYcmDfCZZDwLjkwhg93-hFafy=4f@mail.gmail.com>
-	<AANLkTinqf+5cOv-pDMnhGt2dkHEkM2q_GcG6Aa-LzNAe@mail.gmail.com>
-	<AANLkTik=kHNPPbAo7ynD4AY68Vd3t1bxW_2stZx2QAFH@mail.gmail.com>
-	<20110104152442.GG19989@ghostprotocols.net>
-	<AANLkTikofO8hdT0Ku3xQHPRS6xHQz0W6Z6RY50_DD2FK@mail.gmail.com>
-Date: Tue, 4 Jan 2011 16:30:56 +0100
-Message-ID: <AANLkTinVncBZdNwBxgSb=BmnMes3LSrMF-r-NAq=T_YQ@mail.gmail.com>
-Subject: Re: [GIT PULL||RFC 00/11] perf library and regression testing improvements
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Han Pingtian <phan@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        mingo@elte.hu
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20101220130629.823952802@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 4, 2011 at 4:30 PM, Stephane Eranian <eranian@google.com> wrote:
-> Just submitted a patch to fix this.
->
-That also means that on your build machine, you have a matching perf_event.h.
-You cannot expect this from most distros.
+On 20.12.10 08:05:44, graalfs@linux.vnet.ibm.com wrote:
+> From: graalfs@linux.vnet.ibm.com
+> 
+> This patch introduces a new oprofile sample add function (oprofile_add_ext_hw_sample)
+> that can also take task_struct as an argument, which is used by the hwsampler kernel module 
+> when copying hardware samples to OProfile buffers.
+> 
+> Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+> Signed-off-by: Maran Pakkirisamy <maranp@linux.vnet.ibm.com>
+> Signed-off-by: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
+> ---
+>  drivers/oprofile/cpu_buffer.c |   26 +++++++++++++++++++-------
+>  1 file changed, 19 insertions(+), 7 deletions(-)
 
->
-> On Tue, Jan 4, 2011 at 4:24 PM, Arnaldo Carvalho de Melo
-> <acme@infradead.org> wrote:
->> Em Tue, Jan 04, 2011 at 04:10:17PM +0100, Stephane Eranian escreveu:
->>> Ok, The problem comes both files picking up a different verison for
->>> perf_event.h.
->>>
->>> In my case, util/evsel.c was using /usr/include/linux/perf_event.h whereas
->>> builtin-stat.c was using ../../include/linux/perf_event.h. Both have a different
->>> struct perf_event_attr.
->>>
->>> When I remove the /usr/include/linux/perf_event.h file, then I cannot compile
->>> perf anymore:
->>> In file included from perf.c:15:
->>> util/parse-events.h:7:30: error: linux/perf_event.h: No such file or directory
->>>
->>> Looks like something changed in the Makefile and the util modules don't know
->>> where to pickup perf_event.h
->>
->> Ouch, all need to use ../../include/linux/perf_event.h, I think, my bad,
->> checking that.
->>
->> Thanks for figuring out the issue!
->>
->> - Arnaldo
->>
->
+> +void oprofile_add_ext_hw_sample(unsigned long pc, struct pt_regs * const regs,
+> +				unsigned long event, int is_kernel,
+> +				struct task_struct *task)
+> +{
+> +	__oprofile_add_ext_sample(pc, regs, event, is_kernel, task);
+> +}
+> +EXPORT_SYMBOL_GPL(oprofile_add_ext_hw_sample);
+
+Hmm, I am not convinced of this new interface between the hwsampler
+module and oprofile. It is asymmetric and bloats the function's
+parameters list. A first simplification would be to not implement
+hwsampler as module and integrate this in oprofile. Then, we can look
+for a better way to add samples to the oprofile buffer. What do you
+think?
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
