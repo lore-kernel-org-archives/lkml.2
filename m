@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048Ab1ADI5a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 03:57:30 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:53017 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155Ab1ADI52 (ORCPT
+	id S1752375Ab1ADI55 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 03:57:57 -0500
+Received: from mga02.intel.com ([134.134.136.20]:59578 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751299Ab1ADI54 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 03:57:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=U6UOpPuEYGVr6sDrWVtebf6DMBVDqiBVs23P0/h4jG1KcWhPasizgl02OfCvJNkWNg
-         yStXWoTWX0Q16QlczIHW8duvqrmMFKDwSzyfjLl4MfDK1Ao7waSrTUEacGXMMKtlxcg1
-         RHfN3WJ1WUrzzQtS1fHvPEt70BatToB4rW7qU=
-From: yangsheng <sickamd@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: adilger@dilger.ca, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, swhiteho@redhat.com,
-        yangsheng <sickamd@gmail.com>, sickadm@gmail.com
-Subject: [PATCH resend] Update atime from future.
-Date: Tue,  4 Jan 2011 16:56:58 +0800
-Message-Id: <1294131418-3835-1-git-send-email-sickamd@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	Tue, 4 Jan 2011 03:57:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,271,1291622400"; 
+   d="scan'208";a="589657891"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+CC: "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Date: Tue, 4 Jan 2011 14:26:10 +0530
+Subject: RE: Patch[1/2]X86:Adding_Notification_Support_to_therm_throt.c
+Thread-Topic: Patch[1/2]X86:Adding_Notification_Support_to_therm_throt.c
+Thread-Index: AcurXFw7UTiYltcbQxGIVqPcNvzoBgAkC9jw
+Message-ID: <D6D887BA8C9DFF48B5233887EF04654105C12B6338@bgsmsx502.gar.corp.intel.com>
+References: <D6D887BA8C9DFF48B5233887EF04654105C1251710@bgsmsx502.gar.corp.intel.com>
+ <20110103150328.GB25600@ericsson.com>
+ <D6D887BA8C9DFF48B5233887EF04654105C125176B@bgsmsx502.gar.corp.intel.com>
+ <20110103153849.GA25747@ericsson.com>
+In-Reply-To: <20110103153849.GA25747@ericsson.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If atime has been wrong set to future, then it cannot
-be updated back to current time.
+Hi Guenter,
 
-CC: swhiteho@redhat.com
-Signed-off-by: sickadm@gmail.com
-Reviewed-by: adilger@dilger.ca
----
- fs/inode.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
+> > > > Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
+> > > >
+> > > If this is just a resubmit, you might instead consider trying to figure out
+> > > why none of the x86 maintainers replied. Documentation/Submit* might help,
+> > > as well as comparing your set of patches with other (accepted) patches.
+> > >
+> >
+> > This is a resubmission. I thought people might be on holidays..that's why
+> > resubmitted today. Anyway, I shall try to figure out the reason. Thanks
+> > for pointing it out Guenter..
+> >
+> > Any comments on the hwmon patch 2/2 ?
+> >
+> Not right now. Futile to spend more time on it unless the x86 changes are
+> accepted.
 
-diff --git a/fs/inode.c b/fs/inode.c
-index da85e56..9cf7375 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -1446,6 +1446,8 @@ sector_t bmap(struct inode *inode, sector_t block)
- }
- EXPORT_SYMBOL(bmap);
- 
-+#define RELATIME_MARGIN (24 * 60 * 60)
-+
- /*
-  * With relative atime, only update atime if the previous atime is
-  * earlier than either the ctime or mtime or if at least a day has
-@@ -1469,10 +1471,16 @@ static int relatime_need_update(struct vfsmount *mnt, struct inode *inode,
- 		return 1;
- 
- 	/*
--	 * Is the previous atime value older than a day? If yes,
-+	 * Is the previous atime value in future? If yes,
-+	 * update atime:
-+	 */
-+	if ((long)(now.tv_sec - inode->i_atime.tv_sec) < -RELATIME_MARGIN)
-+		return 1;
-+	/*
-+	 * Is the previous atime value old than a day? If yes,
- 	 * update atime:
- 	 */
--	if ((long)(now.tv_sec - inode->i_atime.tv_sec) >= 24*60*60)
-+	if ((long)(now.tv_sec - inode->i_atime.tv_sec) >= RELATIME_MARGIN)
- 		return 1;
- 	/*
- 	 * Good, we can skip the atime update:
--- 
-1.7.2.3
+The x86 patch has been accepted. Please find the details below:
 
+Commit-ID:  9e76a97efd31a08cb19d0ba12013b8fb4ad3e474
+Gitweb:     http://git.kernel.org/tip/9e76a97efd31a08cb19d0ba12013b8fb4ad3e474
+Author:     R, Durgadoss <durgadoss.r@intel.com>
+AuthorDate: Mon, 3 Jan 2011 17:22:04 +0530
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Mon, 3 Jan 2011 08:30:30 -0800
+
+Could you please let me know your comments on the hwmon patch[2/2] ?
+
+Thanks,
+Durga
