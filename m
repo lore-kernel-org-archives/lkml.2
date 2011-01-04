@@ -1,63 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751814Ab1ADUob (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 15:44:31 -0500
-Received: from mga02.intel.com ([134.134.136.20]:63402 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751416Ab1ADUoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 15:44:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,274,1291622400"; 
-   d="scan'208";a="693537687"
-From: Darren Hart <dvhart@linux.intel.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Tom Zanussi <tom.zanussi@intel.com>
-Cc: Darren Hart <dvhart@linux.intel.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Tom Zanussi <tom.zanussi@intel.com>
-Subject: [PATCH 2/3] trace-cmd: move trace-usage to lib objects
-Date: Tue,  4 Jan 2011 12:43:39 -0800
-Message-Id: <1294173820-7043-3-git-send-email-dvhart@linux.intel.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1294173820-7043-1-git-send-email-dvhart@linux.intel.com>
-References: <1294173820-7043-1-git-send-email-dvhart@linux.intel.com>
+	id S1751429Ab1ADUtG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 15:49:06 -0500
+Received: from charybdis-ext.suse.de ([195.135.221.2]:44810 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751100Ab1ADUtF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 15:49:05 -0500
+Subject: Re: [RFC][RT][PATCH 3/4] rtmutex: Revert Optimize rt lock wakeup
+From: "Peter W. Morreale" <pmorreale@novell.com>
+Reply-To: pmorreale@novell.com
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Gregory Haskins <ghaskins@novell.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        ThomasGleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+In-Reply-To: <1294164362.3948.220.camel@gandalf.stny.rr.com>
+References: <20101223224755.078983538@goodmis.org>
+	 <20101223225116.729981172@goodmis.org>
+	 <4D13DF250200005A000793E1@novprvoes0310.provo.novell.com>
+	 <1293166464.22802.415.camel@gandalf.stny.rr.com>
+	 <4D19A8B20200005A00079658@novprvoes0310.provo.novell.com>
+	 <1294081596.3948.192.camel@gandalf.stny.rr.com>
+	 <1294086147.3948.194.camel@gandalf.stny.rr.com>
+	 <1294154349.3371.24.camel@hermosa.morreale.net>
+	 <1294156079.3948.209.camel@gandalf.stny.rr.com>
+	 <1294161347.3371.80.camel@hermosa.morreale.net>
+	 <1294162020.3948.215.camel@gandalf.stny.rr.com>
+	 <1294163123.3371.89.camel@hermosa.morreale.net>
+	 <1294164362.3948.220.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: LSG - Novell Inc.
+Date: Tue, 04 Jan 2011 13:48:55 -0700
+Message-ID: <1294174135.3371.105.camel@hermosa.morreale.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the usage function available to shared objects, such as the python
-ctracecmd.so module built by the SWIG mechanism.
+On Tue, 2011-01-04 at 13:06 -0500, Steven Rostedt wrote:
+> On Tue, 2011-01-04 at 10:45 -0700, Peter W. Morreale wrote:
+> > On Tue, 2011-01-04 at 12:27 -0500, Steven Rostedt wrote:
+> 
+> > > That said, I think your wakeup patch may be worth while with Lai's new
+> > > code. His changes causes the owner to wake up the pending owner several
+> > > times, because the pending owner is never removed from the lock
+> > > wait_list. If a high prio task grabs and releases the same lock over and
+> > > over, if there is a waiter it will try to wake up that waiter each time.
+> > > 
+> > 
+> > 
+> > Oooohhhh  I wonder if that would enable 'lock-stealing' for FIFO?
+> 
+> I guess you mean literal FIFO order and not SCHED_FIFO.
+> 
+> But, if I understand you, it would allow for this. If a process has a
+> lock and two processes are blocked on it. When the first releases the
+> lock it gives it to the higher of the waiters. But if a high prio task
+> comes a long, it will steal that lock away, and this woken task will
+> need to race to get it from the other lower prio task that comes along.
+> And yes, if that other task is the same prio, we reverse the FIFO order
+> here.
+> 
+> Lai's patch prevents this. Either the woken task gets the lock or a
+> higher prio task does. No mixing around the order of taking the lock
+> here. The better side effect of Lai's patch is that it cleans up the
+> code quite a bit, which is what I really want, as we start to introduce
+> SCHED_DEADLINE.
+> 
 
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Tom Zanussi <tom.zanussi@intel.com>
----
- Makefile |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+I was referring to one of the original patches that allowing an incoming
+task of similar priority to 'steal' the lock over a pending waiter.  If
+the owner had been cleared and the pending waiter not yet given
+ownership, the incoming task could steal the lock.  
 
-diff --git a/Makefile b/Makefile
-index 41f0d43..74f2c44 100644
---- a/Makefile
-+++ b/Makefile
-@@ -261,8 +261,7 @@ $(obj)/%.o: $(src)/%.c
- 
- TRACE_GUI_OBJS = trace-filter.o trace-compat.o trace-hash.o trace-dialog.o \
- 		trace-xml.o
--TRACE_CMD_OBJS = trace-cmd.o trace-usage.o trace-read.o trace-split.o trace-listen.o \
--	trace-stack.o
-+TRACE_CMD_OBJS = trace-cmd.o trace-read.o trace-split.o trace-listen.o trace-stack.o
- TRACE_VIEW_OBJS = trace-view.o trace-view-store.o
- TRACE_GRAPH_OBJS = trace-graph.o trace-plot.o trace-plot-cpu.o trace-plot-task.o
- TRACE_VIEW_MAIN_OBJS = trace-view-main.o $(TRACE_VIEW_OBJS) $(TRACE_GUI_OBJS)
-@@ -272,7 +271,7 @@ KERNEL_SHARK_OBJS = $(TRACE_VIEW_OBJS) $(TRACE_GRAPH_OBJS) $(TRACE_GUI_OBJS) \
- 
- PEVENT_LIB_OBJS = parse-events.o trace-seq.o parse-filter.o parse-utils.o
- TCMD_LIB_OBJS = $(PEVENT_LIB_OBJS) trace-util.o trace-input.o trace-ftrace.o \
--			trace-output.o trace-record.o trace-restore.o
-+			trace-output.o trace-record.o trace-restore.o trace-usage.o
- 
- PLUGIN_OBJS = plugin_hrtimer.o plugin_kmem.o plugin_sched_switch.o \
- 	plugin_mac80211.o plugin_jbd2.o plugin_function.o plugin_kvm.o
--- 
-1.7.1
+IIRC, you had found a case wrt SCHED_FIFO tasks that could negatively
+impact performance/throughput in some way and it was restricted to
+non-SCHED_FIFO tasks. 
+
+This was just an idle question, it sounds like RT is moving towards (and
+perhaps already there) synchronized lock access.  
+
+-PWM
+
+
+> > 
+> > IIRC, you came up with a ping-pong scenario that prevented its use
+> > there.
+> 
+> Probably.
+> 
+> -- Steve
+> 
+> 
+
 
