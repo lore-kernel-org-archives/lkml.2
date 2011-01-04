@@ -1,120 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751298Ab1ADJuj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 04:50:39 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:33397 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903Ab1ADJuh (ORCPT
+	id S1751328Ab1ADJwg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 04:52:36 -0500
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:53059 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750781Ab1ADJwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 04:50:37 -0500
+	Tue, 4 Jan 2011 04:52:35 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAAV6Ik15Ldpx/2dsb2JhbACkNXS7e4VKBJAt
+Date: Tue, 4 Jan 2011 20:52:31 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch 8/8] fs: add i_op->sync_inode
+Message-ID: <20110104095231.GB4812@amd>
+References: <20101218014634.943276411@kernel.dk>
+ <20101218015117.759480620@kernel.dk>
+ <20101229151246.GA22033@infradead.org>
+ <20110104062725.GD3402@amd>
+ <20110104065736.GA8013@infradead.org>
+ <20110104080323.GC4090@amd>
+ <20110104083132.GA4485@amd>
+ <20110104092541.GC2760@infradead.org>
 MIME-Version: 1.0
-Date: Tue, 4 Jan 2011 10:50:36 +0100
-Message-ID: <AANLkTimsR3=BKSF8EyASu4_T_vTznw4yEqmxPS8gOQCy@mail.gmail.com>
-Subject: [PATCH] tracing, perf : add cpu hotplug trace events
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110104092541.GC2760@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please find below a proposal for adding new trace events for cpu
-hotplug.The goal is to measure the latency of each part (kernel,
-architecture and platform) and also to trace the cpu hotplug activity
-with other power events. I have tested these traces events on an arm
-platform
+On Tue, Jan 04, 2011 at 04:25:41AM -0500, Christoph Hellwig wrote:
+> On Tue, Jan 04, 2011 at 07:31:32PM +1100, Nick Piggin wrote:
+> > And actually I think it is much better to have sync_inode, which means
+> > we'll be able to get rid of commit_metadata (which should be an inode
+> > operation anyway, not an export operation which really should deal with
+> > exporting filesystems to a non-vfs namespace, not nfsd hacks).
+> > 
+> > commit_metadata would just be sync_inode with a null range or no data
+> > sync flag set.
+> 
+> As explained in the previous mail it's not just not writing data, it's
+> conceptually quite different from fsync.
 
-Comments are welcome.
+OK I missed that part about not requiring dirty metadata to be written,
+just currently ongoing async operations. But then I don't understand how
+it would be used by nfsd, how does nfsd start some async operation on
+the inode metadata such that ->commit_metadata would do anything useful
+for it?
 
-Date: Wed, 15 Dec 2010 11:22:21 +0100
-Subject: [PATCH] hotplug tracepoint
-
-this patch adds new events for cpu hotplug tracing
-* plug/unplug sequence
-* architecture and machine latency measurements
-
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
----
-include/trace/events/hotplug.h |   71 ++++++++++++++++++++++++++++++++++++++++
-1 files changed, 71 insertions(+), 0 deletions(-)
-create mode 100644 include/trace/events/hotplug.h
-
-diff --git a/include/trace/events/hotplug.h b/include/trace/events/hotplug.h
-new file mode 100644
-index 0000000..51c86ab
---- /dev/null
-+++ b/include/trace/events/hotplug.h
-@@ -0,0 +1,71 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM hotplug
-+
-+#if !defined(_TRACE_HOTPLUG_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_HOTPLUG_H
-+
-+#include <linux/ktime.h>
-+#include <linux/tracepoint.h>
-+
-+#ifndef _TRACE_HOTPLUG_ENUM_
-+#define _TRACE_HOTPLUG_ENUM_
-+enum hotplug_type {
-+ HOTPLUG_UNPLUG = 0,
-+ HOTPLUG_PLUG = 1
-+};
-+
-+enum hotplug_step {
-+ HOTPLUG_KERNEL = 0,
-+ HOTPLUG_ARCH = 1,
-+ HOTPLUG_MACH = 2
-+};
-+#endif
-+
-+TRACE_EVENT(hotplug_start,
-+
-+ TP_PROTO(unsigned int type, unsigned int step, unsigned int cpuid),
-+
-+ TP_ARGS(type, step, cpuid),
-+
-+ TP_STRUCT__entry(
-+ __field(u32, type)
-+ __field(u32, step)
-+ __field(u32, cpuid)
-+ ),
-+
-+ TP_fast_assign(
-+ __entry->type = type;
-+ __entry->step = step;
-+ __entry->cpuid = cpuid;
-+ ),
-+
-+ TP_printk("type=%lu step=%lu cpuid=%lu", (unsigned long)__entry->type,
-+ (unsigned long)__entry->step, (unsigned long)__entry->cpuid)
-+);
-+
-+TRACE_EVENT(hotplug_end,
-+
-+ TP_PROTO(unsigned int type, unsigned int step, unsigned int cpuid),
-+
-+ TP_ARGS(type, step, cpuid),
-+
-+ TP_STRUCT__entry(
-+ __field(u32, type)
-+ __field(u32, step)
-+ __field(u32, cpuid)
-+ ),
-+
-+ TP_fast_assign(
-+ __entry->type = type;
-+ __entry->step = step;
-+ __entry->cpuid = cpuid;
-+ ),
-+
-+ TP_printk("type=%lu step=%lu cpuid=%lu", (unsigned long)__entry->type,
-+ (unsigned long)__entry->step, (unsigned long)__entry->cpuid)
-+);
-+
-+#endif /* _TRACE_HOTPLUG_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
---
-1.7.0.4
