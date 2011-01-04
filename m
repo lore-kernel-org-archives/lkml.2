@@ -1,166 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751961Ab1ADIWR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 03:22:17 -0500
-Received: from hera.kernel.org ([140.211.167.34]:50171 "EHLO hera.kernel.org"
+	id S1751989Ab1ADIWZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 03:22:25 -0500
+Received: from hera.kernel.org ([140.211.167.34]:50183 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751690Ab1ADIWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 03:22:12 -0500
-Date: Tue, 4 Jan 2011 08:20:50 GMT
-From: "tip-bot for R, Durgadoss" <durgadoss.r@intel.com>
-Cc: linux-kernel@vger.kernel.org, durgadoss.r@intel.com, hpa@zytor.com,
-        mingo@redhat.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, durgadoss.r@intel.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <D6D887BA8C9DFF48B5233887EF04654105C1251710@bgsmsx502.gar.corp.intel.com>
-References: <D6D887BA8C9DFF48B5233887EF04654105C1251710@bgsmsx502.gar.corp.intel.com>
+	id S1751534Ab1ADIWW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 03:22:22 -0500
+Date: Tue, 4 Jan 2011 08:21:41 GMT
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
+        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
+        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/hwmon] x86, hwmon: Add core threshold notification to therm_throt.c
-Message-ID: <tip-9e76a97efd31a08cb19d0ba12013b8fb4ad3e474@git.kernel.org>
-Git-Commit-ID: 9e76a97efd31a08cb19d0ba12013b8fb4ad3e474
+Subject: [tip:perf/core] perf evsel: Adopt MATCH_EVENT macro from 'stat'
+Message-ID: <tip-daec78a09de3df5fbfbbd167da0304d49d7fcfe5@git.kernel.org>
+Git-Commit-ID: daec78a09de3df5fbfbbd167da0304d49d7fcfe5
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 04 Jan 2011 08:20:51 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 04 Jan 2011 08:21:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9e76a97efd31a08cb19d0ba12013b8fb4ad3e474
-Gitweb:     http://git.kernel.org/tip/9e76a97efd31a08cb19d0ba12013b8fb4ad3e474
-Author:     R, Durgadoss <durgadoss.r@intel.com>
-AuthorDate: Mon, 3 Jan 2011 17:22:04 +0530
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 3 Jan 2011 08:30:30 -0800
+Commit-ID:  daec78a09de3df5fbfbbd167da0304d49d7fcfe5
+Gitweb:     http://git.kernel.org/tip/daec78a09de3df5fbfbbd167da0304d49d7fcfe5
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Mon, 3 Jan 2011 16:49:44 -0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 3 Jan 2011 16:49:44 -0200
 
-x86, hwmon: Add core threshold notification to therm_throt.c
+perf evsel: Adopt MATCH_EVENT macro from 'stat'
 
-This patch adds code to therm_throt.c to notify core thermal threshold
-events. These thresholds are supported by the IA32_THERM_INTERRUPT register.
-The status/log for the same is monitored using the IA32_THERM_STATUS register.
-The necessary #defines are in msr-index.h. A call back is added to mce.h, to
-further notify the thermal stack, about the threshold events.
-
-Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
-LKML-Reference: <D6D887BA8C9DFF48B5233887EF04654105C1251710@bgsmsx502.gar.corp.intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/x86/include/asm/mce.h               |    3 ++
- arch/x86/include/asm/msr-index.h         |   12 +++++++++
- arch/x86/kernel/cpu/mcheck/therm_throt.c |   40 ++++++++++++++++++++++++++++++
- 3 files changed, 55 insertions(+), 0 deletions(-)
+ tools/perf/builtin-stat.c |   37 ++++++++++++++++---------------------
+ tools/perf/util/evsel.h   |    4 ++++
+ 2 files changed, 20 insertions(+), 21 deletions(-)
 
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index c62c13c..eb16e94 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -223,6 +223,9 @@ void intel_init_thermal(struct cpuinfo_x86 *c);
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 511ebaf..3e5f356 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -170,10 +170,6 @@ struct stats			runtime_cycles_stats[MAX_NR_CPUS];
+ struct stats			runtime_branches_stats[MAX_NR_CPUS];
+ struct stats			walltime_nsecs_stats;
  
- void mce_log_therm_throt_event(__u64 status);
+-#define MATCH_EVENT(t, c, evsel)			\
+-	(evsel->attr.type == PERF_TYPE_##t &&	\
+-	 evsel->attr.config == PERF_COUNT_##c)
+-
+ #define ERR_PERF_OPEN \
+ "counter %d, sys_perf_event_open() syscall returned with %d (%s).  /bin/dmesg may provide additional information."
  
-+/* Interrupt Handler for core thermal thresholds */
-+extern int (*platform_thermal_notify)(__u64 msr_val);
-+
- #ifdef CONFIG_X86_THERMAL_VECTOR
- extern void mcheck_intel_therm_init(void);
- #else
-diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
-index 6b89f5e..622c80b 100644
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -253,6 +253,18 @@
- #define PACKAGE_THERM_INT_LOW_ENABLE		(1 << 1)
- #define PACKAGE_THERM_INT_PLN_ENABLE		(1 << 24)
+@@ -229,10 +225,10 @@ static int create_perf_stat_counter(struct perf_evsel *evsel, bool *perm_err)
+ /*
+  * Does the counter have nsecs as a unit?
+  */
+-static inline int nsec_counter(struct perf_evsel *counter)
++static inline int nsec_counter(struct perf_evsel *evsel)
+ {
+-	if (MATCH_EVENT(SOFTWARE, SW_CPU_CLOCK, counter) ||
+-	    MATCH_EVENT(SOFTWARE, SW_TASK_CLOCK, counter))
++	if (perf_evsel__match(evsel, SOFTWARE, SW_CPU_CLOCK) ||
++	    perf_evsel__match(evsel, SOFTWARE, SW_TASK_CLOCK))
+ 		return 1;
  
-+/* Thermal Thresholds Support */
-+#define THERM_INT_THRESHOLD0_ENABLE    (1 << 15)
-+#define THERM_SHIFT_THRESHOLD0        8
-+#define THERM_MASK_THRESHOLD0          (0x7f << THERM_SHIFT_THRESHOLD0)
-+#define THERM_INT_THRESHOLD1_ENABLE    (1 << 23)
-+#define THERM_SHIFT_THRESHOLD1        16
-+#define THERM_MASK_THRESHOLD1          (0x7f << THERM_SHIFT_THRESHOLD1)
-+#define THERM_STATUS_THRESHOLD0        (1 << 6)
-+#define THERM_LOG_THRESHOLD0           (1 << 7)
-+#define THERM_STATUS_THRESHOLD1        (1 << 8)
-+#define THERM_LOG_THRESHOLD1           (1 << 9)
-+
- /* MISC_ENABLE bits: architectural */
- #define MSR_IA32_MISC_ENABLE_FAST_STRING	(1ULL << 0)
- #define MSR_IA32_MISC_ENABLE_TCC		(1ULL << 1)
-diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-index 4b68326..e12246f 100644
---- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-+++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-@@ -53,8 +53,13 @@ struct thermal_state {
- 	struct _thermal_state core_power_limit;
- 	struct _thermal_state package_throttle;
- 	struct _thermal_state package_power_limit;
-+	struct _thermal_state core_thresh0;
-+	struct _thermal_state core_thresh1;
- };
- 
-+/* Callback to handle core threshold interrupts */
-+int (*platform_thermal_notify)(__u64 msr_val);
-+
- static DEFINE_PER_CPU(struct thermal_state, thermal_state);
- 
- static atomic_t therm_throt_en	= ATOMIC_INIT(0);
-@@ -200,6 +205,22 @@ static int therm_throt_process(bool new_event, int event, int level)
  	return 0;
+@@ -300,11 +296,11 @@ static void read_counter_aggr(struct perf_evsel *counter)
+ 	/*
+ 	 * Save the full runtime - to allow normalization during printout:
+ 	 */
+-	if (MATCH_EVENT(SOFTWARE, SW_TASK_CLOCK, counter))
++	if (perf_evsel__match(counter, SOFTWARE, SW_TASK_CLOCK))
+ 		update_stats(&runtime_nsecs_stats[0], count[0]);
+-	if (MATCH_EVENT(HARDWARE, HW_CPU_CYCLES, counter))
++	if (perf_evsel__match(counter, HARDWARE, HW_CPU_CYCLES))
+ 		update_stats(&runtime_cycles_stats[0], count[0]);
+-	if (MATCH_EVENT(HARDWARE, HW_BRANCH_INSTRUCTIONS, counter))
++	if (perf_evsel__match(counter, HARDWARE, HW_BRANCH_INSTRUCTIONS))
+ 		update_stats(&runtime_branches_stats[0], count[0]);
  }
  
-+static int thresh_event_valid(int event)
-+{
-+	struct _thermal_state *state;
-+	unsigned int this_cpu = smp_processor_id();
-+	struct thermal_state *pstate = &per_cpu(thermal_state, this_cpu);
-+	u64 now = get_jiffies_64();
-+
-+	state = (event == 0) ? &pstate->core_thresh0 : &pstate->core_thresh1;
-+
-+	if (time_before64(now, state->next_check))
-+		return 0;
-+
-+	state->next_check = now + CHECK_INTERVAL;
-+	return 1;
-+}
-+
- #ifdef CONFIG_SYSFS
- /* Add/Remove thermal_throttle interface for CPU device: */
- static __cpuinit int thermal_throttle_add_dev(struct sys_device *sys_dev,
-@@ -313,6 +334,22 @@ device_initcall(thermal_throttle_init_device);
- #define PACKAGE_THROTTLED	((__u64)2 << 62)
- #define PACKAGE_POWER_LIMIT	((__u64)3 << 62)
+@@ -347,11 +343,11 @@ static void read_counter(struct perf_evsel *counter)
+ 		cpu_counts[cpu].ena = count[1];
+ 		cpu_counts[cpu].run = count[2];
  
-+static void notify_thresholds(__u64 msr_val)
-+{
-+	/* check whether the interrupt handler is defined;
-+	 * otherwise simply return
-+	 */
-+	if (!platform_thermal_notify)
-+		return;
-+
-+	/* lower threshold reached */
-+	if ((msr_val & THERM_LOG_THRESHOLD0) &&	thresh_event_valid(0))
-+		platform_thermal_notify(msr_val);
-+	/* higher threshold reached */
-+	if ((msr_val & THERM_LOG_THRESHOLD1) && thresh_event_valid(1))
-+		platform_thermal_notify(msr_val);
-+}
-+
- /* Thermal transition interrupt handler */
- static void intel_thermal_interrupt(void)
+-		if (MATCH_EVENT(SOFTWARE, SW_TASK_CLOCK, counter))
++		if (perf_evsel__match(counter, SOFTWARE, SW_TASK_CLOCK))
+ 			update_stats(&runtime_nsecs_stats[cpu], count[0]);
+-		if (MATCH_EVENT(HARDWARE, HW_CPU_CYCLES, counter))
++		if (perf_evsel__match(counter, HARDWARE, HW_CPU_CYCLES))
+ 			update_stats(&runtime_cycles_stats[cpu], count[0]);
+-		if (MATCH_EVENT(HARDWARE, HW_BRANCH_INSTRUCTIONS, counter))
++		if (perf_evsel__match(counter, HARDWARE, HW_BRANCH_INSTRUCTIONS))
+ 			update_stats(&runtime_branches_stats[cpu], count[0]);
+ 	}
+ }
+@@ -474,7 +470,7 @@ static void print_noise(struct perf_evsel *evsel, double avg)
+ 			100 * stddev_stats(&ps->res_stats[0]) / avg);
+ }
+ 
+-static void nsec_printout(int cpu, struct perf_evsel *counter, double avg)
++static void nsec_printout(int cpu, struct perf_evsel *evsel, double avg)
  {
-@@ -321,6 +358,9 @@ static void intel_thermal_interrupt(void)
+ 	double msecs = avg / 1e6;
+ 	char cpustr[16] = { '\0', };
+@@ -485,18 +481,17 @@ static void nsec_printout(int cpu, struct perf_evsel *counter, double avg)
+ 			csv_output ? 0 : -4,
+ 			cpumap[cpu], csv_sep);
  
- 	rdmsrl(MSR_IA32_THERM_STATUS, msr_val);
+-	fprintf(stderr, fmt, cpustr, msecs, csv_sep, event_name(counter));
++	fprintf(stderr, fmt, cpustr, msecs, csv_sep, event_name(evsel));
  
-+	/* Check for violation of core thermal thresholds*/
-+	notify_thresholds(msr_val);
+ 	if (csv_output)
+ 		return;
+ 
+-	if (MATCH_EVENT(SOFTWARE, SW_TASK_CLOCK, counter)) {
++	if (perf_evsel__match(evsel, SOFTWARE, SW_TASK_CLOCK))
+ 		fprintf(stderr, " # %10.3f CPUs ",
+ 				avg / avg_stats(&walltime_nsecs_stats));
+-	}
+ }
+ 
+-static void abs_printout(int cpu, struct perf_evsel *counter, double avg)
++static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
+ {
+ 	double total, ratio = 0.0;
+ 	char cpustr[16] = { '\0', };
+@@ -516,19 +511,19 @@ static void abs_printout(int cpu, struct perf_evsel *counter, double avg)
+ 	else
+ 		cpu = 0;
+ 
+-	fprintf(stderr, fmt, cpustr, avg, csv_sep, event_name(counter));
++	fprintf(stderr, fmt, cpustr, avg, csv_sep, event_name(evsel));
+ 
+ 	if (csv_output)
+ 		return;
+ 
+-	if (MATCH_EVENT(HARDWARE, HW_INSTRUCTIONS, counter)) {
++	if (perf_evsel__match(evsel, HARDWARE, HW_INSTRUCTIONS)) {
+ 		total = avg_stats(&runtime_cycles_stats[cpu]);
+ 
+ 		if (total)
+ 			ratio = avg / total;
+ 
+ 		fprintf(stderr, " # %10.3f IPC  ", ratio);
+-	} else if (MATCH_EVENT(HARDWARE, HW_BRANCH_MISSES, counter) &&
++	} else if (perf_evsel__match(evsel, HARDWARE, HW_BRANCH_MISSES) &&
+ 			runtime_branches_stats[cpu].n != 0) {
+ 		total = avg_stats(&runtime_branches_stats[cpu]);
+ 
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 3eb3989..8a5cfb6 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -21,4 +21,8 @@ void perf_evsel__delete(struct perf_evsel *evsel);
+ int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
+ void perf_evsel__free_fd(struct perf_evsel *evsel);
+ 
++#define perf_evsel__match(evsel, t, c)		\
++	(evsel->attr.type == PERF_TYPE_##t &&	\
++	 evsel->attr.config == PERF_COUNT_##c)
 +
- 	if (therm_throt_process(msr_val & THERM_STATUS_PROCHOT,
- 				THERMAL_THROTTLING_EVENT,
- 				CORE_LEVEL) != 0)
+ #endif /* __PERF_EVSEL_H */
