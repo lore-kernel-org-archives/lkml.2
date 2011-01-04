@@ -1,72 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375Ab1ADI55 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 03:57:57 -0500
-Received: from mga02.intel.com ([134.134.136.20]:59578 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751299Ab1ADI54 convert rfc822-to-8bit (ORCPT
+	id S1752577Ab1ADI60 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 03:58:26 -0500
+Received: from [120.204.251.227] ([120.204.251.227]:18498 "EHLO
+	LC-SHMAIL-01.SHANGHAI.LEADCORETECH.COM" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751298Ab1ADI6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 03:57:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,271,1291622400"; 
-   d="scan'208";a="589657891"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-CC: "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Date: Tue, 4 Jan 2011 14:26:10 +0530
-Subject: RE: Patch[1/2]X86:Adding_Notification_Support_to_therm_throt.c
-Thread-Topic: Patch[1/2]X86:Adding_Notification_Support_to_therm_throt.c
-Thread-Index: AcurXFw7UTiYltcbQxGIVqPcNvzoBgAkC9jw
-Message-ID: <D6D887BA8C9DFF48B5233887EF04654105C12B6338@bgsmsx502.gar.corp.intel.com>
-References: <D6D887BA8C9DFF48B5233887EF04654105C1251710@bgsmsx502.gar.corp.intel.com>
- <20110103150328.GB25600@ericsson.com>
- <D6D887BA8C9DFF48B5233887EF04654105C125176B@bgsmsx502.gar.corp.intel.com>
- <20110103153849.GA25747@ericsson.com>
-In-Reply-To: <20110103153849.GA25747@ericsson.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 4 Jan 2011 03:58:25 -0500
+Message-ID: <4D22E0CF.8000307@leadcoretech.com>
+Date: Tue, 04 Jan 2011 16:56:47 +0800
+From: "Figo.zhang" <zhangtianfei@leadcoretech.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101230 Lightning/1.0b2 Lanikai/3.1.7
 MIME-Version: 1.0
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@osdl.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Figo.zhang" <figo1802@gmail.com>,
+        "rientjes@google.com" <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH v3]mm/oom-kill: direct hardware access processes should
+ get bonus
+References: <1288662213.10103.2.camel@localhost.localdomain>	<1289305468.10699.2.camel@localhost.localdomain>	<1289402093.10699.25.camel@localhost.localdomain>	<1289402666.10699.28.camel@localhost.localdomain>	<4D22D190.1080706@leadcoretech.com> <20110104172833.1ff20b41.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110104172833.1ff20b41.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Jan 2011 08:58:24.0098 (UTC) FILETIME=[8B302C20:01CBABED]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+On 01/04/2011 04:28 PM, KAMEZAWA Hiroyuki wrote:
+> On Tue, 04 Jan 2011 15:51:44 +0800
+> "Figo.zhang"<zhangtianfei@leadcoretech.com>  wrote:
+>
+>>
+>> i had send the patch to protect the hardware access processes for
+>> oom-killer before, but rientjes have not agree with me.
+>>
+>> but today i catch log from my desktop. oom-killer have kill my "minicom"
+>> and "Xorg". so i think it should add protection about it.
+>>
+>
+> Off topic.
+>
+> In this log, I found
+>
+>>> Jan  4 15:22:55 figo-desktop kernel: Free swap  = -1636kB
+>>> Jan  4 15:22:55 figo-desktop kernel: Total swap = 0kB
+>>> Jan  4 15:22:55 figo-desktop kernel: 515070 pages RAM
+>
+> ... This means total_swap_pages = 0 while pages are read-in at swapoff.
+>
+> Let's see 'points' for oom
+> ==
+> points = (get_mm_rss(p->mm) + get_mm_counter(p->mm, MM_SWAPENTS)) * 1000 /
+>                          totalpages;
+> ==
+>
+> Here, totalpages = total_ram + total_swap but totalswap is 0 here.
+>
+> So, points can be>  1000, easily.
+> (This seems not to be related to the Xorg's death itself)
 
-> > > > Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
-> > > >
-> > > If this is just a resubmit, you might instead consider trying to figure out
-> > > why none of the x86 maintainers replied. Documentation/Submit* might help,
-> > > as well as comparing your set of patches with other (accepted) patches.
-> > >
-> >
-> > This is a resubmission. I thought people might be on holidays..that's why
-> > resubmitted today. Anyway, I shall try to figure out the reason. Thanks
-> > for pointing it out Guenter..
-> >
-> > Any comments on the hwmon patch 2/2 ?
-> >
-> Not right now. Futile to spend more time on it unless the x86 changes are
-> accepted.
+total_swap is 0, so
+totalpages = total_ram,
+get_mm_counter(p->mm, MM_SWAPENTS) = 0,
 
-The x86 patch has been accepted. Please find the details below:
+so
+points = (get_mm_rss(p->mm)) * 1000 / totalpages;
 
-Commit-ID:  9e76a97efd31a08cb19d0ba12013b8fb4ad3e474
-Gitweb:     http://git.kernel.org/tip/9e76a97efd31a08cb19d0ba12013b8fb4ad3e474
-Author:     R, Durgadoss <durgadoss.r@intel.com>
-AuthorDate: Mon, 3 Jan 2011 17:22:04 +0530
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 3 Jan 2011 08:30:30 -0800
+so points canot larger than 1000.
 
-Could you please let me know your comments on the hwmon patch[2/2] ?
 
-Thanks,
-Durga
+
+
+>
+>
+>
+> Thanks,
+> -Kame
+>
+>
+
