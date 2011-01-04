@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751354Ab1ADPnH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 10:43:07 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:33324 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002Ab1ADPnF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 10:43:05 -0500
-Subject: Re: [RFC][PATCH 16/17] sched: Move the second half of ttwu() to
- the remote cpu
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Chris Mason <chris.mason@oracle.com>,
-        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
-        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20110104151826.GA6800@redhat.com>
-References: <20101224122338.172750730@chello.nl>
-	 <20101224123743.303699501@chello.nl> <20110104142805.GA4347@redhat.com>
-	 <1294152441.2016.148.camel@laptop>  <20110104151826.GA6800@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 04 Jan 2011 16:43:01 +0100
-Message-ID: <1294155781.2016.160.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1751429Ab1ADPpI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 10:45:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48379 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750831Ab1ADPpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 10:45:07 -0500
+Date: Tue, 4 Jan 2011 13:44:39 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+        perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com
+Subject: Re: [PATCH] perf: fix perf_event.h header usage
+Message-ID: <20110104154439.GA26167@ghostprotocols.net>
+References: <4d233cf0.2308e30a.7b00.ffffc187@mx.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4d233cf0.2308e30a.7b00.ffffc187@mx.google.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-04 at 16:18 +0100, Oleg Nesterov wrote:
-
-> > I don't think so, nobody should be migrating a TASK_WAKING task.
+Em Tue, Jan 04, 2011 at 04:30:01PM +0200, Stephane Eranian escreveu:
+> This patch fixes the usage of the perf_event.h header file
+> between command modules and the supporting code in util.
 > 
-> I am not sure...
+> It is necessary to ensure that ALL files use the SAME
+> perf_event.h header from the kernel source tree.
 > 
-> Suppose that p was TASK_INTERRUPTIBLE and p->on_rq == 1 before, when
-> set_cpus_allowed_ptr() was called. To simplify, suppose that
-> the caller is preempted right after it drops p->pi_lock and before
-> it does stop_one_cpu(migration_cpu_stop).
+> There were a couple of #include <linux/perf_event.h> mixed
+> with #include "../../perf_event.h".
 > 
-> After that p can complete chedule() and deactivate itself.
+> This caused issues on some distros because of mismatch
+> in the layout of struct perf_event_attr. That eventually
+> led perf stat to segfault.
 > 
-> Now, try_to_wake_up() can set TASK_WAKING, choose another CPU,
-> and do ttwu_queue_remote().
-> 
-> Finally, the caller of set_cpus_allowed_ptr() resumes and
-> schedules migration_cpu_stop.
+> Signed-off-by: Stephane Eranian <eranian@google.com>
 
-But __migrate_task() will then find !p->on_rq and not actually do
-anything.
+Thanks, applying.
 
-> It is very possible I missed something, but what is the new
-> locking rules for set_task_cpu() anyway? I mean, which rq->lock
-> it needs?
-
-In the patches I just posted: set_task_cpu(p, cpu) callers need to
-either hold task_rq(p)->lock (the old rq) or p->pi_lock.
-
+- Arnaldo
