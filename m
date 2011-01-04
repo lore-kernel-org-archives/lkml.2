@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751384Ab1ADFSE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 00:18:04 -0500
-Received: from mail-ey0-f194.google.com ([209.85.215.194]:43379 "EHLO
-	mail-ey0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779Ab1ADFSC (ORCPT
+	id S1751395Ab1ADFUg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 00:20:36 -0500
+Received: from mail-ew0-f66.google.com ([209.85.215.66]:39941 "EHLO
+	mail-ew0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab1ADFUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 00:18:02 -0500
+	Tue, 4 Jan 2011 00:20:35 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=Ma4xj67tyNuv0rpOwQOIk3MYpL+y1HT9KY9WlrhhKfcOFW87gFBhhbegSvT4w/I2IF
-         SPPOtDvHe01cdoWqA+fvvPIWZp8N7BArVmWxZWGEm4CXZCJ4TfPRxMR0BtqHFH3dDPWD
-         I+4DcgZEJALRBw5t27cKZwprkL5/MrnP1UU9A=
-Date: Tue, 4 Jan 2011 06:17:51 +0100
+        b=wpfdu2M4rALsSkiU/Mb0b+l9vpYZbQ3ZWXDLNxJFitnaFKfmecj6acaZPTpykvYEzP
+         C2c9RLCLLAnmIHDVaQvR14DiqpOWAHxo6igzjlyfX4Fwin632qpNmGBNkt5qWLbF9dJf
+         eToEBslYfx9UJY9tVlpwrS8joOQNqzHuyaiX0=
+Date: Tue, 4 Jan 2011 06:20:27 +0100
 From: Tejun Heo <tj@kernel.org>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: castet.matthieu@free.fr, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, stf_xl@wp.pl
-Subject: Re: your mail
-Message-ID: <20110104051751.GB6748@mtj.dyndns.org>
-References: <1294072680.4d21fb68cbdcf@imp.free.fr>
- <20110103170308.GA2285@redhat.com>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: linux-kernel@vger.kernel.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        "James E.J. Bottomley" <James.Bottomley@hansenpartnership.com>,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 17/32] scsi/ibmvstgt: use system_wq instead of vtgtd
+ workqueue
+Message-ID: <20110104052027.GC6748@mtj.dyndns.org>
+References: <1294062595-30097-1-git-send-email-tj@kernel.org>
+ <1294062595-30097-18-git-send-email-tj@kernel.org>
+ <AANLkTimSmStMdz8KTQB2k+p2kcVpm9KghZV1xDfuTOS4@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110103170308.GA2285@redhat.com>
+In-Reply-To: <AANLkTimSmStMdz8KTQB2k+p2kcVpm9KghZV1xDfuTOS4@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 03, 2011 at 06:03:17PM +0100, Stanislaw Gruszka wrote:
-> On Mon, Jan 03, 2011 at 05:38:00PM +0100, castet.matthieu@free.fr wrote:
-> > could you CC me on ueagle-atm.c patches.
+Hello,
 
-Will try to, but maybe it's a good idea to add a MAINTAINERS entry?
+On Mon, Jan 03, 2011 at 06:45:33PM +0100, Bart Van Assche wrote:
+> No matter which storage target will go upstream, I'm afraid that this
+> patch will conflict with it. See e.g.
+> http://dchs.spinics.net/lists/linux-scsi/msg49105.html.
 
-> > From what I remind we sleep in the workqueue, that's why we couldn't use the
-> > system one (freeze keyboard...). But may be the code changed.
-> In case when firmware is not available we can sleep for a few seconds in
-> work function. That's block keyboard driver who also use common workqueue.
-> If recent Tejun workqueue rewrite allow to long sleep in work func and
-> not hurt other workqueue users, patch is ok.
+Ah, okay.  The full conversion is gonna span several devel cycles
+anyway.  I'll re-convert ibmvstgt when the dust settles down.
 
-Yeap, work items can sleep all they want on the system_wq.  It won't
-delay execution of other work items.
-
-Thanks.
+Thank you.
 
 --
 tejun
