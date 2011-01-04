@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751378Ab1ADMei (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 07:34:38 -0500
-Received: from casper.infradead.org ([85.118.1.10]:49608 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851Ab1ADMeh convert rfc822-to-8bit (ORCPT
+	id S1751353Ab1ADMig (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 07:38:36 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:42579 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906Ab1ADMif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 07:34:37 -0500
-Subject: Re: [RFC][PATCH 08/17] sched: Drop the rq argument to
- sched_class::select_task_rq()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Chris Mason <chris.mason@oracle.com>,
-        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTikj=t0s9MfiG85gR+JkTSBa_F9yFmu1R2rTuHv_@mail.gmail.com>
-References: <20101224122338.172750730@chello.nl>
-	 <20101224123742.887559254@chello.nl> <20101229143136.GC2728@zhy>
-	 <1294053409.2016.59.camel@laptop> <20110103145902.GA7632@redhat.com>
-	 <1294068061.2016.84.camel@laptop> <20110103154918.GB7632@redhat.com>
-	 <AANLkTikj=t0s9MfiG85gR+JkTSBa_F9yFmu1R2rTuHv_@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 04 Jan 2011 13:34:44 +0100
-Message-ID: <1294144484.2016.135.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 4 Jan 2011 07:38:35 -0500
+Date: Tue, 4 Jan 2011 23:38:24 +1100
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Matt Mackall <mpm@selenic.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
+        Harald Welte <HaraldWelte@viatech.com>,
+        Michal Ludvig <michal@logix.cz>
+Subject: Re: 2.6.37-rc7: Regression: b43: crashes in hwrng_register()
+Message-ID: <20110104123824.GA31557@gondor.apana.org.au>
+References: <4D1CD161.4040107@lwfinger.net> <20101230204522.GC23219@darkside.kls.lan> <4D1D0C61.9050800@lwfinger.net> <20101231003735.GA24101@gondor.apana.org.au> <4D1D27E7.7030301@lwfinger.net> <20101231022550.GA2512@darkside.kls.lan> <20101231024653.GA24879@gondor.apana.org.au> <20101231085103.GA31935@darkside.kls.lan> <20110104043338.GA27604@gondor.apana.org.au> <20110104121957.GA27114@darkside.kls.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110104121957.GA27114@darkside.kls.lan>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-04 at 15:27 +0800, Yong Zhang wrote:
-> On Mon, Jan 3, 2011 at 11:49 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> > Ah, sorry for the confusion, I only meant sched_exec() case.
-> > set_cpus_allowed_ptr() does need need_migrate_task(), of course.
-> >
-> >
-> > As for set_cpus_allowed_ptr()->need_migrate_task() path, I have another
-> > question,
-> >
-> >        static bool need_migrate_task(struct task_struct *p)
-> >        {
-> >                /*
-> >                 * If the task is not on a runqueue (and not running), then
-> >                 * the next wake-up will properly place the task.
-> >                 */
-> >                smp_rmb(); /* finish_lock_switch() */
-> >                return p->on_rq || p->on_cpu;
-> >        }
-> >
-> > I don't understand this smp_rmb(). Yes, finish_lock_switch() does
-> > wmb() before it clears ->on_cpu, but how these 2 barriers can pair?
-> >
-> > In fact, I am completely confused. I do not understand why do we
-> > check task_running() at all. If we see on_rq == 0 && on_cpu == 1,
-> > then this task is going to clear its on_cpu soon, once it finishes
-> > context_switch().
-> >
-> > Probably, this check was needed before, try_to_wake_up() could
-> > activate the task_running() task without migrating. But, at first
-> > glance, this is no longer possible after this series?
+On Tue, Jan 04, 2011 at 01:19:57PM +0100, Mario 'BitKoenig' Holbe wrote:
+>
+> Hmmm, yes - the patch fixes the crashes, i.e. no more crashes with
+> either sequence of module-loading, cat rng_available works as well,
+> but...
 > 
-> Yeah, task_running() is not needed after patch 13 which
-> may be the suitable place to poke :)
+> Having this patch active rngd complains:
+> 	rngd[1435]: rngd 2-unofficial-mt.13 starting up...
+> 	rngd[1435]: block failed FIPS test: 0x1f
+> 	rngd[1435]: block failed FIPS test: 0x1f
+> 	...
+> 	rngd[1435]: stats: entropy added to kernel pool: 0
+> 	rngd[1435]: stats: FIPS 140-2 successes: 0
+> 	rngd[1435]: stats: FIPS 140-2 failures: 10
+> 
+> It doesn't do this without the patch.
+> The only available rng was via, I did blacklist the others just to be
+> sure.
 
-That and patch 6, which removes the false negatives from ->on_rq.
+Hmm, can you print out what it's actually producing (e.g., by
+stracing rngd)?
+
+Can you also double-check that this doesn't happen with Larry's
+patch?
+
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
