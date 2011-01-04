@@ -1,100 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751893Ab1ADDtQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 22:49:16 -0500
-Received: from casper.infradead.org ([85.118.1.10]:43490 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751578Ab1ADDtF (ORCPT
+	id S1751626Ab1ADDtG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 22:49:06 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:44169 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751340Ab1ADDsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 22:49:05 -0500
+	Mon, 3 Jan 2011 22:48:45 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Han Pingtian <phan@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [GIT PULL||RFC 00/11] perf library and regression testing improvements
-Date: Tue,  4 Jan 2011 01:48:14 -0200
-Message-Id: <1294112905-25325-1-git-send-email-acme@infradead.org>
+        Tom Zanussi <tzanussi@gmail.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 06/11] perf evsel: Introduce per cpu and per thread open helpers
+Date: Tue,  4 Jan 2011 01:48:20 -0200
+Message-Id: <1294112905-25325-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+In-Reply-To: <1294112905-25325-1-git-send-email-acme@infradead.org>
+References: <1294112905-25325-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo, Peter et al,
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-	Trying to simplify using the API for tools and more specifically for
-'perf test' regression tests, please take a look, perhaps starting from the last
-changeset, that implements a regression test using the resulting library API.
+Abstracting away the loops needed to create the various event fd handlers.
 
-	It also reduces the 'perf' tool footprint by not using hard coded array
-sizes, more need to be done, but should be a good start, one changeset shows a
-good reduction in BSS use.
+The users have to pass a confiruged perf->evsel.attr field, which is already
+usable after perf_evsel__new (constructor) time, using defaults.
 
-	Suggestions for naming most welcome, I thought about using "event__",
-but that is taken, "perf_event__", but thought it would clash with "event_t",
-so used the jargon used for the '-e' parameters: "Event Selector", but don't
-like it that much, what do you think?
+Comes out of the ad-hoc routines in builtin-stat, that now uses it.
 
-	Writing the first regression test I think there are more ways to simplify,
-on top of these, like not requiring a thread_map, i.e. passing NULL for that
-parameter would mean: self-monitor, etc.
+Fixed a small silly bug where we were die()ing before killing our
+children, dysfunctional family this one 8-)
 
-        If you are pleased as-is, please pull from:
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-stat.c |   84 ++++++++++++++-------------------------------
+ tools/perf/util/evsel.c   |   52 ++++++++++++++++++++++++++++
+ tools/perf/util/evsel.h   |    5 +++
+ 3 files changed, 83 insertions(+), 58 deletions(-)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/test
-
-Regards,
-
-- Arnaldo
-
-Arnaldo Carvalho de Melo (11):
-  perf tools: Introduce event selectors
-  perf evsel: Adopt MATCH_EVENT macro from 'stat'
-  perf util: Move do_read from session to util
-  perf evsel: Delete the event selectors at exit
-  perf evsel: Steal the counter reading routines from stat
-  perf evsel: Introduce per cpu and per thread open helpers
-  perf tools: Refactor cpumap to hold nr and the map
-  perf tools: Refactor all_tids to hold nr and the map
-  perf evsel: Use {cpu,thread}_map to shorten list of parameters
-  perf evsel: Auto allocate resources needed for some methods
-  perf test: Add test for counting open syscalls
-
- tools/perf/Makefile                |    4 +
- tools/perf/builtin-record.c        |  152 +++++++--------
- tools/perf/builtin-stat.c          |  368 +++++++++++++++---------------------
- tools/perf/builtin-test.c          |   83 ++++++++
- tools/perf/builtin-top.c           |  221 ++++++++++++----------
- tools/perf/perf.c                  |    2 +
- tools/perf/util/cpumap.c           |  123 +++++++++---
- tools/perf/util/cpumap.h           |   10 +-
- tools/perf/util/evsel.c            |  186 ++++++++++++++++++
- tools/perf/util/evsel.h            |  115 +++++++++++
- tools/perf/util/header.c           |   15 +-
- tools/perf/util/header.h           |    3 +-
- tools/perf/util/parse-events.c     |   58 ++++--
- tools/perf/util/parse-events.h     |   18 ++-
- tools/perf/util/session.c          |   22 +--
- tools/perf/util/session.h          |    1 -
- tools/perf/util/thread.c           |   43 +++--
- tools/perf/util/thread.h           |   15 ++-
- tools/perf/util/trace-event-info.c |   30 ++--
- tools/perf/util/trace-event.h      |    5 +-
- tools/perf/util/util.c             |   17 ++
- tools/perf/util/util.h             |    1 +
- tools/perf/util/xyarray.c          |   20 ++
- tools/perf/util/xyarray.h          |   20 ++
- 24 files changed, 1013 insertions(+), 519 deletions(-)
- create mode 100644 tools/perf/util/evsel.c
- create mode 100644 tools/perf/util/evsel.h
- create mode 100644 tools/perf/util/xyarray.c
- create mode 100644 tools/perf/util/xyarray.h
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index a8b00b4..065e79e 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -53,8 +53,6 @@
+ #include <math.h>
+ #include <locale.h>
+ 
+-#define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
+-
+ #define DEFAULT_SEPARATOR	" "
+ 
+ static struct perf_event_attr default_attrs[] = {
+@@ -160,56 +158,24 @@ struct stats			runtime_cycles_stats[MAX_NR_CPUS];
+ struct stats			runtime_branches_stats[MAX_NR_CPUS];
+ struct stats			walltime_nsecs_stats;
+ 
+-#define ERR_PERF_OPEN \
+-"counter %d, sys_perf_event_open() syscall returned with %d (%s).  /bin/dmesg may provide additional information."
+-
+-static int create_perf_stat_counter(struct perf_evsel *evsel, bool *perm_err)
++static int create_perf_stat_counter(struct perf_evsel *evsel)
+ {
+ 	struct perf_event_attr *attr = &evsel->attr;
+-	int thread;
+-	int ncreated = 0;
+ 
+ 	if (scale)
+ 		attr->read_format = PERF_FORMAT_TOTAL_TIME_ENABLED |
+ 				    PERF_FORMAT_TOTAL_TIME_RUNNING;
+ 
+-	if (system_wide) {
+-		int cpu;
+-
+-		for (cpu = 0; cpu < nr_cpus; cpu++) {
+-			FD(evsel, cpu, 0) = sys_perf_event_open(attr,
+-					-1, cpumap[cpu], -1, 0);
+-			if (FD(evsel, cpu, 0) < 0) {
+-				if (errno == EPERM || errno == EACCES)
+-					*perm_err = true;
+-				error(ERR_PERF_OPEN, evsel->idx,
+-					FD(evsel, cpu, 0), strerror(errno));
+-			} else {
+-				++ncreated;
+-			}
+-		}
+-	} else {
+-		attr->inherit = !no_inherit;
+-		if (target_pid == -1 && target_tid == -1) {
+-			attr->disabled = 1;
+-			attr->enable_on_exec = 1;
+-		}
+-		for (thread = 0; thread < thread_num; thread++) {
+-			FD(evsel, 0, thread) = sys_perf_event_open(attr,
+-				all_tids[thread], -1, -1, 0);
+-			if (FD(evsel, 0, thread) < 0) {
+-				if (errno == EPERM || errno == EACCES)
+-					*perm_err = true;
+-				error(ERR_PERF_OPEN, evsel->idx,
+-					FD(evsel, 0, thread),
+-					 strerror(errno));
+-			} else {
+-				++ncreated;
+-			}
+-		}
++	if (system_wide)
++		return perf_evsel__open_per_cpu(evsel, nr_cpus, cpumap);
++
++	attr->inherit = !no_inherit;
++	if (target_pid == -1 && target_tid == -1) {
++		attr->disabled = 1;
++		attr->enable_on_exec = 1;
+ 	}
+ 
+-	return ncreated;
++	return perf_evsel__open_per_thread(evsel, thread_num, all_tids);
+ }
+ 
+ /*
+@@ -289,9 +255,7 @@ static int run_perf_stat(int argc __used, const char **argv)
+ 	unsigned long long t0, t1;
+ 	struct perf_evsel *counter;
+ 	int status = 0;
+-	int ncreated = 0;
+ 	int child_ready_pipe[2], go_pipe[2];
+-	bool perm_err = false;
+ 	const bool forks = (argc > 0);
+ 	char buf;
+ 
+@@ -349,19 +313,23 @@ static int run_perf_stat(int argc __used, const char **argv)
+ 		close(child_ready_pipe[0]);
+ 	}
+ 
+-	list_for_each_entry(counter, &evsel_list, node)
+-		ncreated += create_perf_stat_counter(counter, &perm_err);
+-
+-	if (ncreated < nr_counters) {
+-		if (perm_err)
+-			error("You may not have permission to collect %sstats.\n"
+-			      "\t Consider tweaking"
+-			      " /proc/sys/kernel/perf_event_paranoid or running as root.",
+-			      system_wide ? "system-wide " : "");
+-		die("Not all events could be opened.\n");
+-		if (child_pid != -1)
+-			kill(child_pid, SIGTERM);
+-		return -1;
++	list_for_each_entry(counter, &evsel_list, node) {
++		if (create_perf_stat_counter(counter) < 0) {
++			if (errno == -EPERM || errno == -EACCES) {
++				error("You may not have permission to collect %sstats.\n"
++				      "\t Consider tweaking"
++				      " /proc/sys/kernel/perf_event_paranoid or running as root.",
++				      system_wide ? "system-wide " : "");
++			} else {
++				error("open_counter returned with %d (%s). "
++				      "/bin/dmesg may provide additional information.\n",
++				       errno, strerror(errno));
++			}
++			if (child_pid != -1)
++				kill(child_pid, SIGTERM);
++			die("Not all events could be opened.\n");
++			return -1;
++		}
+ 	}
+ 
+ 	/*
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 3f5de51..e62cc5e 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -1,4 +1,5 @@
+ #include "evsel.h"
++#include "../perf.h"
+ #include "util.h"
+ 
+ #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
+@@ -121,3 +122,54 @@ int __perf_evsel__read(struct perf_evsel *evsel,
+ 
+ 	return 0;
+ }
++
++int perf_evsel__open_per_cpu(struct perf_evsel *evsel, int ncpus, int *cpu_map)
++{
++	int cpu;
++
++	for (cpu = 0; cpu < ncpus; cpu++) {
++		FD(evsel, cpu, 0) = sys_perf_event_open(&evsel->attr, -1,
++							cpu_map[cpu], -1, 0);
++		if (FD(evsel, cpu, 0) < 0)
++			goto out_close;
++	}
++
++	return 0;
++
++out_close:
++	while (--cpu >= 0) {
++		close(FD(evsel, cpu, 0));
++		FD(evsel, cpu, 0) = -1;
++	}
++	return -1;
++}
++
++int perf_evsel__open_per_thread(struct perf_evsel *evsel, int nthreads, int *thread_map)
++{
++	int thread;
++
++	for (thread = 0; thread < nthreads; thread++) {
++		FD(evsel, 0, thread) = sys_perf_event_open(&evsel->attr,
++							   thread_map[thread], -1, -1, 0);
++		if (FD(evsel, 0, thread) < 0)
++			goto out_close;
++	}
++
++	return 0;
++
++out_close:
++	while (--thread >= 0) {
++		close(FD(evsel, 0, thread));
++		FD(evsel, 0, thread) = -1;
++	}
++	return -1;
++}
++
++int perf_evsel__open(struct perf_evsel *evsel, int ncpus, int nthreads,
++		     int *cpu_map, int *thread_map)
++{
++	if (nthreads < 0)
++		return perf_evsel__open_per_cpu(evsel, ncpus, cpu_map);
++
++	return perf_evsel__open_per_thread(evsel, nthreads, thread_map);
++}
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 8b48ef1..a62fb55 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -42,6 +42,11 @@ int perf_evsel__alloc_counts(struct perf_evsel *evsel, int ncpus);
+ void perf_evsel__free_fd(struct perf_evsel *evsel);
+ void perf_evsel__close_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
+ 
++int perf_evsel__open_per_cpu(struct perf_evsel *evsel, int ncpus, int *cpu_map);
++int perf_evsel__open_per_thread(struct perf_evsel *evsel, int nthreads, int *thread_map);
++int perf_evsel__open(struct perf_evsel *evsel, int ncpus, int nthreads,
++		     int *cpu_map, int *thread_map);
++
+ #define perf_evsel__match(evsel, t, c)		\
+ 	(evsel->attr.type == PERF_TYPE_##t &&	\
+ 	 evsel->attr.config == PERF_COUNT_##c)
+-- 
+1.6.2.5
 
