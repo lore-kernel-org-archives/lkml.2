@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752342Ab1ADQ7G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 11:59:06 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:45285 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388Ab1ADQ7D (ORCPT
+	id S1752558Ab1ADQ7n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 11:59:43 -0500
+Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:21274 "EHLO
+	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752520Ab1ADQ7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 11:59:03 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=n2jxYEVt2CRr15L6V/SSBXvloJbxONesGUrp2rPIvOGMGn2eWOB7dBe+bUE0Eiz486
-         onDgsYBTw6v44queKYpIiw0AdxT5aYS6kkuG1VVlQdeJAvAZg6oSddNSVVJ06H0acp7G
-         /P4+Mg98PO2KgM7qbPphdNSOVIWYbW+7xymtA=
-MIME-Version: 1.0
-In-Reply-To: <C832F8F5D375BD43BFA11E82E0FE9FE00829C13EB2@EXDCVYMBSTM005.EQ1STM.local>
-References: <cover.1292443200.git.m.nazarewicz@samsung.com>
-	<AANLkTim8_=0+-zM5z4j0gBaw3PF3zgpXQNetEn-CfUGb@mail.gmail.com>
-	<20101223100642.GD3636@n2100.arm.linux.org.uk>
-	<C832F8F5D375BD43BFA11E82E0FE9FE00829C13EB2@EXDCVYMBSTM005.EQ1STM.local>
-Date: Tue, 4 Jan 2011 17:59:01 +0100
-X-Google-Sender-Auth: 4u6hTSSU6E0frTJlu2sADuphjRI
-Message-ID: <AANLkTim38-vyKzKg8UDzffX2jWAJrgQNJZd=rd7gbpCc@mail.gmail.com>
-Subject: Re: [PATCHv8 00/12] Contiguous Memory Allocator
-From: =?UTF-8?Q?Micha=C5=82_Nazarewicz?= <mina86@mina86.com>
-To: Johan MOSSBERG <johan.xx.mossberg@stericsson.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kyungmin Park <kmpark@infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Jan 2011 11:59:41 -0500
+From: Ian Campbell <ijc@hellion.org.uk>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        Jan Beulich <JBeulich@novell.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+In-Reply-To: <1294160028.3831.563.camel@zakaz.uk.xensource.com>
+References: <1293738517-7287-1-git-send-email-konrad.wilk@oracle.com>
+	 <1293738517-7287-3-git-send-email-konrad.wilk@oracle.com>
+	 <1294160028.3831.563.camel@zakaz.uk.xensource.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 04 Jan 2011 16:59:19 +0000
+Message-ID: <1294160359.3831.579.camel@zakaz.uk.xensource.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 62.200.22.2
+X-SA-Exim-Mail-From: ijc@hellion.org.uk
+Subject: Re: [PATCH 2/8] xen/mmu: Add the notion of identity (1-1) mapping.
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
+X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=ElWBgQNHElIA:10 a=IkcTkHD0fZMA:10 a=9LK883MKfsj71dkQuIQA:9 a=CaDgvDK8YC45D16O3xoA:7 a=RhISWYyJmt0_V-3-_z7vjSDvwRYA:4 a=QEXdDO2ut3YA:10 a=19jjMibb8a9Jz_zD:21 a=L1hc0XvolwldEPdj:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Russell King wrote:
->> Has anyone addressed my issue with it that this is wide-open for
->> abuse by allocating large chunks of memory, and then remapping
->> them in some way with different attributes, thereby violating the
->> ARM architecture specification?
+On Tue, 2011-01-04 at 16:53 +0000, Ian Campbell wrote:
+> 
+> If I do "__set_phys_to_machine(X, X)" where X happens to currently
+> correspond to p2m_mid_missing won't that cause all pfn entries in the
+> range covered by p2m_top[topidx] (i.e. quite a few, like 512^2 pages
+> or
+> something) to switch from missing to identity? Similarly for
+> p2m_top[topidx][mididx]?
+> 
+> Perhaps ranges of identity bits are often well aligned with the
+> boundaries in the p2m 3-level tree but wouldn't that just be
+> coincidence? 
 
-2011/1/4 Johan MOSSBERG <johan.xx.mossberg@stericsson.com>:
-> Where in the specification (preferably ARMv7) can I find
-> information about this? Is the problem that it is simply
-> forbidden to map an address multiple times with different cache
-> setting and if this is done the hardware might start failing? Or
-> is the problem that having an address mapped cached means that
-> speculative pre-fetch can read it into the cache at any time,
-> possibly causing problems if an un-cached mapping exists?
+I wonder if it would make sense to have a debugfs file which exports the
+p2m, for the purposes of eye-balling it for this sort of issue?
+comparing to the e820 etc...
 
-IIRC both apply.
+Maybe the whole thing in raw form would be overkill but spitting out a
+list of ranges of identity, invalid, normal pages, plus annotation
+regarding whether those come from a p2m_mid_identity style page or a
+leaf node, might be occasionally useful.
+
+Ian.
+-- 
+Ian Campbell
+Current Noise: Place of Skulls - The Watchers
+
+Call toll free number before digging.
+
