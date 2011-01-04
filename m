@@ -1,71 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751388Ab1ADVdP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 16:33:15 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53031 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750980Ab1ADVdO (ORCPT
+	id S1751456Ab1ADVkH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 16:40:07 -0500
+Received: from andromeda.dapyr.net ([206.212.254.10]:60182 "EHLO
+	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994Ab1ADVkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 16:33:14 -0500
-Date: Tue, 4 Jan 2011 13:32:56 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: BruceChang@via.com.tw, linux-kernel@vger.kernel.org,
-        BenjaminPan@viatech.com, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH] MAINTAINERS: update entries affecting VIA Technologies
- (resent as plaintext with hopefully all broken formatting fixed; merry
- Christmas)
-Message-Id: <20110104133256.004ff54e.akpm@linux-foundation.org>
-In-Reply-To: <4D15045C.90909@gmx.de>
-References: <88652C7DDEB86A45A61D4100C612CD731E8CFB@exchtp12.taipei.via.com.tw>
-	<4D15045C.90909@gmx.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 4 Jan 2011 16:40:04 -0500
+X-Greylist: delayed 578 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Jan 2011 16:39:56 EST
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reply-To: konrad.wilk@oracle.com
+Organization: Oracle
+To: Ian Campbell <Ian.Campbell@eu.citrix.com>
+Subject: Re: [PATCH 3/8] xen/setup: Set identity mapping for non-RAM E820 and E820 gaps.
+Date: Tue, 4 Jan 2011 16:28:25 -0500
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc4agp-pci-api+; KDE/4.5.1; i686; ; )
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Jeremy Fitzhardinge" <jeremy@goop.org>,
+        "hpa@zytor.com" <hpa@zytor.com>, "Jan Beulich" <JBeulich@novell.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+References: <1293738517-7287-1-git-send-email-konrad.wilk@oracle.com> <20110104183822.GA1505@dumpdata.com> <1294169277.3582.23.camel@localhost.localdomain>
+In-Reply-To: <1294169277.3582.23.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201101041628.25950.konrad.wilk@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Dec 2010 21:36:44 +0100
-Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
 
-> From: Bruce Chang <BruceChang@via.com.tw>
-> Date: Fri, 17 Dec 2010 21:05:57 +0800
-> Subject: [PATCH] MAINTAINERS: update entries affecting VIA Technologies
+> > For the privileged guest - yes. But for the non-priviligied it does not
+> > have such range and would end up failing.
 > 
-> Since the original maintainer-Joseph Chan (josephchan@via.com.tw)
-> doesn't handle the Linux driver for VIA now, I would like to request to
-> update the maintainer for the SD/MMC CARD CONTROLLER DRIVER and VIA
-> UNICHROME(PRO)/CHROME9 FRAMEBUFFER DRIVER before we find a better one.
-> Thank you very much for help.
+> xen_memory_setup has:
+>         e820_add_region(ISA_START_ADDRESS, ISA_END_ADDRESS -
+> ISA_START_ADDRESS, E820_RESERVED);
+> which is unconditional but is actually more for domU's benefit than
+> dom0's which already sees the host e820 presumably with the right hole
+> already in place, which we simply shadow, or maybe slightly extend,
+> here.
+
+Actually we don't do anything with that region in Dom0 case. We just
+return the PFN without consulting the P2M for 0->0x100 while for DomU _we_
+do consult the P2M and set those in the PTE. (look in xen_make_pte)
+
 > 
-> Sign-off by: Bruce Chang < brucechang@via.com.tw >
+> In a domU we do this because if you let these pages into the general
+> allocation pool then they will potentially get used as page table pages
+> (hence be R/O) but e.g. the DMI code tries to map them to probe for
+> signatures and tries to does so R/W which fails. We could try and find
+> everywhere in the kernel which does this or we can simply reserve the
+> region which stops it getting used for page tables or other special
+> things, and is somewhat less surprising for non-Xen code.
+
+Yeah, went that hole once.. too many generic pieces of code.
+.. snip..
+> > You mean the ISA_START_ADDRESS->ISA_END_ADDRESS we mark as reserved?
 > 
-> --- linux-b4-modified/MAINTAINERS       2010-12-16 09:24:48.000000000 +0800
-> +++ linux-aftr-modified/MAINTAINERS     2010-12-17 16:50:00.793647029 +0800
-> @@ -6384,13 +6384,12 @@
->   F:	drivers/i2c/busses/i2c-viapro.c
+> Yep.
 > 
->   VIA SD/MMC CARD CONTROLLER DRIVER
-> -M:	Joseph Chan <JosephChan@via.com.tw>
-> +M:	Bruce Chang <brucechang@via.com.tw>
->   M:	Harald Welte <HaraldWelte@viatech.com>
->   S:	Maintained
->   F:	drivers/mmc/host/via-sdmmc.c
+> > It sure would be easier
+> > 
+> > (and it would mean we can return that memory back to the hypervisor).
 > 
->   VIA UNICHROME(PRO)/CHROME9 FRAMEBUFFER DRIVER
-> -M:	Joseph Chan <JosephChan@via.com.tw>
->   M:	Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
->   L:	linux-fbdev@vger.kernel.org
->   S:	Maintained
+> I don't think you can return it, since something like the DMI code which
+> wants to probe it expects to be able to map that PFN, if you've given
+> the MFN back then that will fail.
 
-- the patch was still space-stuffed.
+Correct (for non-priviliged PV domain).
+> 
+> I suppose we could alias all such PFNs to the same scratch MFN but I'd
 
-- Use "Signed-off-by:", not "Sign-off by:"
+It actually works. I setup 0x1->0x100 to point to whatever the MFN was at
+0x0, and released the pages from 0x1->0x100 and it worked for DomU PV guests 
+(and dom0 since I ended up stomping those regions with the PFN|
+IDENTITY_BIT_FRAME).
 
-- please cc the relevant mailing list and maintainer (Geert) on patches
+However, the tools weren't happy ('xm save'). They did not like the same PFN 
+across a couple of entries in the P2M table and complained about a potential 
+race. But there is another way and that is to special case in 'xen_make_pte' 
+when we want to create a PTE for 0->ISA_END_ADDRESS and just give it the MFN 
+from P2M[0x0] (for !xen_initial_domain()) while having the the pfns from 0x1-
+>0x100 freed and set to be IDENTITY_BIT_FRAME... But that all just smacks of 
+weird corner cases. Thought the code that is there is already special casing 
+access to that region. Maybe it would clear it up a bit.
 
-- As you (Florian) forwarded the patch, it should have included your
-  Signed-off-by: as well.  I made that change to my copy of the patch.
 
+> be concerned about some piece of code which expects to interact with
+> firmware scribbling over it and surprising some other piece of code
+> which interacts with the firmware...
+
+Fortunatly the all look for a some signature first before trying to scribble.
