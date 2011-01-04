@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237Ab1ADPMH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 10:12:07 -0500
-Received: from casper.infradead.org ([85.118.1.10]:59923 "EHLO
+	id S1752407Ab1ADPMJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 10:12:09 -0500
+Received: from casper.infradead.org ([85.118.1.10]:59931 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752067Ab1ADPMF (ORCPT
+	with ESMTP id S1752221Ab1ADPMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 10:12:05 -0500
-Message-Id: <20110104150102.711032013@chello.nl>
+	Tue, 4 Jan 2011 10:12:07 -0500
+Message-Id: <20110104150102.911325900@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jan 2011 15:59:37 +0100
+Date: Tue, 04 Jan 2011 15:59:41 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Chris Mason <chris.mason@oracle.com>,
         Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
@@ -17,82 +17,68 @@ To: Chris Mason <chris.mason@oracle.com>,
         Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
         Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 08/18] sched: Remove rq argument to sched_class::task_waking()
+Subject: [RFC][PATCH 12/18] sched: Drop rq->lock from first part of wake_up_new_task()
 References: <20110104145929.772813816@chello.nl>
-Content-Disposition: inline; filename=sched-task_waking.patch
+Content-Disposition: inline; filename=sched-wunt.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation of calling this without rq->lock held, remove the
-dependency on the rq argument.
+Since p->pi_lock now protects all things needed to call
+select_task_rq() avoid the double remote rq->lock acquisition and rely
+on p->pi_lock.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/linux/sched.h |   10 +++++++---
- kernel/sched.c        |    2 +-
- kernel/sched_fair.c   |    4 +++-
- 3 files changed, 11 insertions(+), 5 deletions(-)
+ kernel/sched.c |   20 +++++---------------
+ 1 file changed, 5 insertions(+), 15 deletions(-)
 
-Index: linux-2.6/include/linux/sched.h
-===================================================================
---- linux-2.6.orig/include/linux/sched.h
-+++ linux-2.6/include/linux/sched.h
-@@ -1045,8 +1045,12 @@ struct sched_domain;
- #define WF_FORK		0x02		/* child wakeup after fork */
- 
- #define ENQUEUE_WAKEUP		1
--#define ENQUEUE_WAKING		2
--#define ENQUEUE_HEAD		4
-+#define ENQUEUE_HEAD		2
-+#ifdef CONFIG_SMP
-+#define ENQUEUE_WAKING		4	/* sched_class::task_waking was called */
-+#else
-+#define ENQUEUE_WAKING		0
-+#endif
- 
- #define DEQUEUE_SLEEP		1
- 
-@@ -1067,7 +1071,7 @@ struct sched_class {
- 
- 	void (*pre_schedule) (struct rq *this_rq, struct task_struct *task);
- 	void (*post_schedule) (struct rq *this_rq);
--	void (*task_waking) (struct rq *this_rq, struct task_struct *task);
-+	void (*task_waking) (struct task_struct *task);
- 	void (*task_woken) (struct rq *this_rq, struct task_struct *task);
- 
- 	void (*set_cpus_allowed)(struct task_struct *p,
 Index: linux-2.6/kernel/sched.c
 ===================================================================
 --- linux-2.6.orig/kernel/sched.c
 +++ linux-2.6/kernel/sched.c
-@@ -2481,7 +2481,7 @@ static int try_to_wake_up(struct task_st
- 	p->state = TASK_WAKING;
- 
- 	if (p->sched_class->task_waking) {
--		p->sched_class->task_waking(rq, p);
-+		p->sched_class->task_waking(p);
- 		en_flags |= ENQUEUE_WAKING;
- 	}
- 
-Index: linux-2.6/kernel/sched_fair.c
-===================================================================
---- linux-2.6.orig/kernel/sched_fair.c
-+++ linux-2.6/kernel/sched_fair.c
-@@ -1338,11 +1338,13 @@ static void yield_task_fair(struct rq *r
- 
- #ifdef CONFIG_SMP
- 
--static void task_waking_fair(struct rq *rq, struct task_struct *p)
-+static void task_waking_fair(struct task_struct *p)
+@@ -2681,28 +2681,18 @@ void wake_up_new_task(struct task_struct
  {
- 	struct sched_entity *se = &p->se;
- 	struct cfs_rq *cfs_rq = cfs_rq_of(se);
+ 	unsigned long flags;
+ 	struct rq *rq;
+-	int cpu __maybe_unused = get_cpu();
  
-+	lockdep_assert_held(&task_rq(p)->lock);
-+
- 	se->vruntime -= cfs_rq->min_vruntime;
++	raw_spin_lock_irqsave(&p->pi_lock, flags);
+ #ifdef CONFIG_SMP
+-	rq = task_rq_lock(p, &flags);
+-	p->state = TASK_WAKING;
+-
+ 	/*
+ 	 * Fork balancing, do it here and not earlier because:
+ 	 *  - cpus_allowed can change in the fork path
+ 	 *  - any previously selected cpu might disappear through hotplug
+-	 *
+-	 * We set TASK_WAKING so that select_task_rq() can drop rq->lock
+-	 * without people poking at ->cpus_allowed.
+ 	 */
+-	cpu = select_task_rq(p, SD_BALANCE_FORK, 0);
+-	set_task_cpu(p, cpu);
+-
+-	p->state = TASK_RUNNING;
+-	task_rq_unlock(rq, &flags);
++	set_task_cpu(p, select_task_rq(p, SD_BALANCE_FORK, 0));
+ #endif
+ 
+-	rq = task_rq_lock(p, &flags);
++	rq = __task_rq_lock(p);
+ 	activate_task(rq, p, 0);
+ 	trace_sched_wakeup_new(p, true);
+ 	check_preempt_curr(rq, p, WF_FORK);
+@@ -2710,8 +2700,8 @@ void wake_up_new_task(struct task_struct
+ 	if (p->sched_class->task_woken)
+ 		p->sched_class->task_woken(rq, p);
+ #endif
+-	task_rq_unlock(rq, &flags);
+-	put_cpu();
++	__task_rq_unlock(rq);
++	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
  }
  
+ #ifdef CONFIG_PREEMPT_NOTIFIERS
 
 
