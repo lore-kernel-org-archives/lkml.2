@@ -1,123 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283Ab1ADQvf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 11:51:35 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54440 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683Ab1ADQvb (ORCPT
+	id S1752423Ab1ADQvy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 11:51:54 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:44589 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120Ab1ADQvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 11:51:31 -0500
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <w.sang@pengutronix.de>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg KH <gregkh@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-doc@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: [PATCH 1/2] gpiolib: annotate gpio-intialization with __must_check
-Date: Tue,  4 Jan 2011 17:51:07 +0100
-Message-Id: <1294159868-4989-2-git-send-email-w.sang@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1294159868-4989-1-git-send-email-w.sang@pengutronix.de>
-References: <1294159868-4989-1-git-send-email-w.sang@pengutronix.de>
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 4 Jan 2011 11:51:33 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=h406xo70mryC6Skj7SGDnIaECypWbwvS8IDeol0WP50x0dp+wUiSVy86g9rsV+5eaM
+         4ikeHqtWWTyZ5VdgVu7JYKOrAGp6mfsVNIvHuiVdR/0fW9qIcSITkGykvFFBbyKwIBBe
+         NI/hiUAvUejoRDjrYsDsIi36ho1jzqk6ehJ10=
+MIME-Version: 1.0
+In-Reply-To: <4D234E60.3010804@redhat.com>
+References: <20110103162637.29f23c40@annuminas.surriel.com>
+	<20110103162918.577a9620@annuminas.surriel.com>
+	<AANLkTim1UFzHjBv52p7tyVyXerCVUVOBSAa3ajwQveuN@mail.gmail.com>
+	<4D234E60.3010804@redhat.com>
+Date: Wed, 5 Jan 2011 00:51:31 +0800
+Message-ID: <AANLkTim8zmhKjPs-fVdR=65VPd6hybD8HA8pKEyKzm13@mail.gmail.com>
+Subject: Re: [RFC -v3 PATCH 2/3] sched: add yield_to function
+From: Hillf Danton <dhillf@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Avi Kiviti <avi@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p04Gq6wJ012396
 
-Because GPIOs can have crucial functions especially in embedded systems,
-we are better safe than sorry regarding their configuration. For
-gpio_request, the documentation is simply enforced: <quote>"The return
-value of gpio_request() must be checked."</quote> For gpio_direction_*
-and gpio_request_*, we now act accordingly.
+On Wed, Jan 5, 2011 at 12:44 AM, Rik van Riel <riel@redhat.com> wrote:
+> On 01/04/2011 11:41 AM, Hillf Danton wrote:
+>
+>> /* ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† !curr->sched_class->yield_to_task || ¬† ¬† ¬† ¬†*/
+>>
+>>> + ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† curr->sched_class != p->sched_class) {
+>>> + ¬† ¬† ¬† ¬† ¬† ¬† ¬† goto out;
+>>> + ¬† ¬† ¬† }
+>>> +
+>>
+>> ¬† ¬† ¬† ¬†/*
+>> ¬† ¬† ¬† ¬† ¬†* ask scheduler to compute the next for successfully kicking
+>> @p onto its CPU
+>> ¬† ¬† ¬† ¬† ¬†* what if p_rq is rt_class to do?
+>> ¬† ¬† ¬† ¬† ¬†*/
+>> ¬† ¬† ¬† ¬†next = pick_next_task(p_rq);
+>> ¬† ¬† ¬† ¬†if (next != p)
+>> ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬†p->se.vruntime = next->se.vruntime -1;
+>> ¬† ¬† ¬† ¬†deactivate_task(p_rq, p, 0);
+>> ¬† ¬† ¬† ¬†activate_task(p_rq, p, 0);
+>> ¬† ¬† ¬† ¬†if (rq == p_rq)
+>> ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬†schedule();
+>> ¬† ¬† ¬† ¬†else
+>> ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬†resched_task(p_rq->curr);
+>> ¬† ¬† ¬† ¬†yield = 0;
+>
+> Wouldn't that break for FIFO and RR tasks?
+>
+> There's a reason all the scheduler folks wanted a
+> per-class yield_to_task function :)
+>
 
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-Cc: David Brownell <dbrownell@users.sourceforge.net>
-Cc: Greg KH <gregkh@suse.de>
----
- Documentation/gpio.txt     |    2 +-
- include/asm-generic/gpio.h |   10 +++++-----
- include/linux/gpio.h       |    6 +++---
- 3 files changed, 9 insertions(+), 9 deletions(-)
+Where is the yield_to callback in the patch for RT schedule class?
+If @p is RT, what could you do?
 
-diff --git a/Documentation/gpio.txt b/Documentation/gpio.txt
-index 792faa3..a492d92 100644
---- a/Documentation/gpio.txt
-+++ b/Documentation/gpio.txt
-@@ -135,7 +135,7 @@ setting up a platform_device using the GPIO, is mark its direction:
- 	int gpio_direction_input(unsigned gpio);
- 	int gpio_direction_output(unsigned gpio, int value);
- 
--The return value is zero for success, else a negative errno.  It should
-+The return value is zero for success, else a negative errno.  It must
- be checked, since the get/set calls don't have error returns and since
- misconfiguration is possible.  You should normally issue these calls from
- a task context.  However, for spinlock-safe GPIOs it's OK to use them
-diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-index ff5c660..6098cae 100644
---- a/include/asm-generic/gpio.h
-+++ b/include/asm-generic/gpio.h
-@@ -147,11 +147,11 @@ extern struct gpio_chip *gpiochip_find(void *data,
- /* Always use the library code for GPIO management calls,
-  * or when sleeping may be involved.
-  */
--extern int gpio_request(unsigned gpio, const char *label);
-+extern int __must_check gpio_request(unsigned gpio, const char *label);
- extern void gpio_free(unsigned gpio);
- 
--extern int gpio_direction_input(unsigned gpio);
--extern int gpio_direction_output(unsigned gpio, int value);
-+extern int __must_check gpio_direction_input(unsigned gpio);
-+extern int __must_check gpio_direction_output(unsigned gpio, int value);
- 
- extern int gpio_set_debounce(unsigned gpio, unsigned debounce);
- 
-@@ -192,8 +192,8 @@ struct gpio {
- 	const char	*label;
- };
- 
--extern int gpio_request_one(unsigned gpio, unsigned long flags, const char *label);
--extern int gpio_request_array(struct gpio *array, size_t num);
-+extern int __must_check gpio_request_one(unsigned gpio, unsigned long flags, const char *label);
-+extern int __must_check gpio_request_array(struct gpio *array, size_t num);
- extern void gpio_free_array(struct gpio *array, size_t num);
- 
- #ifdef CONFIG_GPIO_SYSFS
-diff --git a/include/linux/gpio.h b/include/linux/gpio.h
-index e41f7dd..1d5214a 100644
---- a/include/linux/gpio.h
-+++ b/include/linux/gpio.h
-@@ -29,7 +29,7 @@ static inline int gpio_is_valid(int number)
- 	return 0;
- }
- 
--static inline int gpio_request(unsigned gpio, const char *label)
-+static inline int __must_check gpio_request(unsigned gpio, const char *label)
- {
- 	return -ENOSYS;
- }
-@@ -42,12 +42,12 @@ static inline void gpio_free(unsigned gpio)
- 	WARN_ON(1);
- }
- 
--static inline int gpio_direction_input(unsigned gpio)
-+static inline int __must_check gpio_direction_input(unsigned gpio)
- {
- 	return -ENOSYS;
- }
- 
--static inline int gpio_direction_output(unsigned gpio, int value)
-+static inline int __must_check gpio_direction_output(unsigned gpio, int value)
- {
- 	return -ENOSYS;
- }
--- 
-1.7.2.3
-
+Hillf
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
