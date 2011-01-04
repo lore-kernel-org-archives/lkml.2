@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026Ab1ADPO7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 10:14:59 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:54796 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752229Ab1ADPMH (ORCPT
+	id S1752831Ab1ADPPZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 10:15:25 -0500
+Received: from casper.infradead.org ([85.118.1.10]:59929 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752185Ab1ADPMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 10:12:07 -0500
-Message-Id: <20110104150102.512628934@chello.nl>
+	Tue, 4 Jan 2011 10:12:06 -0500
+Message-Id: <20110104150102.613540930@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jan 2011 15:59:33 +0100
+Date: Tue, 04 Jan 2011 15:59:35 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Chris Mason <chris.mason@oracle.com>,
         Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
@@ -17,135 +17,134 @@ To: Chris Mason <chris.mason@oracle.com>,
         Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
         Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 04/18] sched: Clean up ttwu stats
+Subject: [RFC][PATCH 06/18] sched: Serialize p->cpus_allowed and ttwu() using p->pi_lock
 References: <20110104145929.772813816@chello.nl>
-Content-Disposition: inline; filename=sched-ttwu-stat.patch
+Content-Disposition: inline; filename=sched-pi_lock-wakeup.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Collect all ttwu stat code into a single function and ensure its
-always called for an actual wakeup (changing p->state to
-TASK_RUNNING).
+Currently p->pi_lock already serializes p->sched_class, also put
+p->cpus_allowed and try_to_wake_up() under it, this prepares the way
+to do the first part of ttwu() without holding rq->lock.
+
+By having p->sched_class and p->cpus_allowed serialized by p->pi_lock,
+we prepare the way to call select_task_rq() without holding rq->lock.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- kernel/sched.c |   67 +++++++++++++++++++++++++++------------------------------
- 1 file changed, 32 insertions(+), 35 deletions(-)
+ kernel/sched.c |   37 ++++++++++++++++---------------------
+ 1 file changed, 16 insertions(+), 21 deletions(-)
 
 Index: linux-2.6/kernel/sched.c
 ===================================================================
 --- linux-2.6.orig/kernel/sched.c
 +++ linux-2.6/kernel/sched.c
-@@ -2366,21 +2366,36 @@ static void update_avg(u64 *avg, u64 sam
- }
- #endif
+@@ -2301,7 +2301,7 @@ void task_oncpu_function_call(struct tas
  
--static inline void ttwu_activate(struct task_struct *p, struct rq *rq,
--				 bool is_sync, bool is_migrate, bool is_local,
--				 unsigned long en_flags)
-+static void
-+ttwu_stat(struct rq *rq, struct task_struct *p, int cpu, int wake_flags)
+ #ifdef CONFIG_SMP
+ /*
+- * ->cpus_allowed is protected by either TASK_WAKING or rq->lock held.
++ * ->cpus_allowed is protected by both rq->lock and p->pi_lock
+  */
+ static int select_fallback_rq(int cpu, struct task_struct *p)
  {
-+#ifdef CONFIG_SCHEDSTATS
-+	int this_cpu = smp_processor_id();
-+
-+	schedstat_inc(rq, ttwu_count);
- 	schedstat_inc(p, se.statistics.nr_wakeups);
--	if (is_sync)
-+
-+	if (wake_flags & WF_SYNC)
- 		schedstat_inc(p, se.statistics.nr_wakeups_sync);
--	if (is_migrate)
-+
-+	if (cpu != task_cpu(p))
- 		schedstat_inc(p, se.statistics.nr_wakeups_migrate);
--	if (is_local)
-+
-+	if (cpu == this_cpu) {
-+		schedstat_inc(rq, ttwu_local);
- 		schedstat_inc(p, se.statistics.nr_wakeups_local);
--	else
--		schedstat_inc(p, se.statistics.nr_wakeups_remote);
-+	} else {
-+		struct sched_domain *sd;
- 
--	activate_task(rq, p, en_flags);
-+		schedstat_inc(p, se.statistics.nr_wakeups_remote);
-+		for_each_domain(this_cpu, sd) {
-+			if (cpumask_test_cpu(cpu, sched_domain_span(sd))) {
-+				schedstat_inc(sd, ttwu_wake_remote);
-+				break;
-+			}
-+		}
-+	}
-+#endif /* CONFIG_SCHEDSTATS */
+@@ -2334,7 +2334,7 @@ static int select_fallback_rq(int cpu, s
  }
  
- static void
-@@ -2440,12 +2455,12 @@ static int try_to_wake_up(struct task_st
+ /*
+- * The caller (fork, wakeup) owns TASK_WAKING, ->cpus_allowed is stable.
++ * The caller (fork, wakeup) owns p->pi_lock, ->cpus_allowed is stable.
+  */
+ static inline
+ int select_task_rq(struct rq *rq, struct task_struct *p, int sd_flags, int wake_flags)
+@@ -2450,7 +2450,8 @@ static int try_to_wake_up(struct task_st
+ 	this_cpu = get_cpu();
+ 
+ 	smp_wmb();
+-	rq = task_rq_lock(p, &flags);
++	raw_spin_lock_irqsave(&p->pi_lock, flags);
++	rq = __task_rq_lock(p);
  	if (!(p->state & state))
  		goto out;
  
-+	cpu = task_cpu(p);
-+
- 	if (p->se.on_rq)
- 		goto out_running;
- 
--	cpu = task_cpu(p);
- 	orig_cpu = cpu;
--
- #ifdef CONFIG_SMP
- 	if (unlikely(task_running(rq, p)))
- 		goto out_activate;
-@@ -2486,27 +2501,12 @@ static int try_to_wake_up(struct task_st
- 	WARN_ON(task_cpu(p) != cpu);
- 	WARN_ON(p->state != TASK_WAKING);
- 
--#ifdef CONFIG_SCHEDSTATS
--	schedstat_inc(rq, ttwu_count);
--	if (cpu == this_cpu)
--		schedstat_inc(rq, ttwu_local);
--	else {
--		struct sched_domain *sd;
--		for_each_domain(this_cpu, sd) {
--			if (cpumask_test_cpu(cpu, sched_domain_span(sd))) {
--				schedstat_inc(sd, ttwu_wake_remote);
--				break;
--			}
--		}
--	}
--#endif /* CONFIG_SCHEDSTATS */
--
- out_activate:
- #endif /* CONFIG_SMP */
--	ttwu_activate(p, rq, wake_flags & WF_SYNC, orig_cpu != cpu,
--		      cpu == this_cpu, en_flags);
-+	activate_task(rq, p, en_flags);
- out_running:
- 	ttwu_post_activation(p, rq, wake_flags);
-+	ttwu_stat(rq, p, cpu, wake_flags);
+@@ -2508,7 +2509,8 @@ static int try_to_wake_up(struct task_st
+ 	ttwu_stat(rq, p, cpu, wake_flags);
  	success = 1;
  out:
- 	task_rq_unlock(rq, &flags);
-@@ -2534,14 +2534,11 @@ static void try_to_wake_up_local(struct 
- 	if (!(p->state & TASK_NORMAL))
- 		return;
+-	task_rq_unlock(rq, &flags);
++	__task_rq_unlock(rq);
++	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+ 	put_cpu();
  
--	if (!p->se.on_rq) {
--		if (likely(!task_running(rq, p))) {
--			schedstat_inc(rq, ttwu_count);
--			schedstat_inc(rq, ttwu_local);
--		}
--		ttwu_activate(p, rq, false, false, true, ENQUEUE_WAKEUP);
--	}
-+	if (!p->se.on_rq)
-+		activate_task(rq, p, ENQUEUE_WAKEUP);
+ 	return success;
+@@ -4543,6 +4545,8 @@ void rt_mutex_setprio(struct task_struct
+ 
+ 	BUG_ON(prio < 0 || prio > MAX_PRIO);
+ 
++	lockdep_assert_held(&p->pi_lock);
 +
- 	ttwu_post_activation(p, rq, 0);
-+	ttwu_stat(rq, p, smp_processor_id(), 0);
- }
+ 	rq = task_rq_lock(p, &flags);
  
- /**
+ 	trace_sched_pi_setprio(p, prio);
+@@ -5150,7 +5154,6 @@ long sched_getaffinity(pid_t pid, struct
+ {
+ 	struct task_struct *p;
+ 	unsigned long flags;
+-	struct rq *rq;
+ 	int retval;
+ 
+ 	get_online_cpus();
+@@ -5165,9 +5168,9 @@ long sched_getaffinity(pid_t pid, struct
+ 	if (retval)
+ 		goto out_unlock;
+ 
+-	rq = task_rq_lock(p, &flags);
++	raw_spin_lock_irqsave(&p->pi_lock, flags);
+ 	cpumask_and(mask, &p->cpus_allowed, cpu_online_mask);
+-	task_rq_unlock(rq, &flags);
++	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+ 
+ out_unlock:
+ 	rcu_read_unlock();
+@@ -5652,18 +5655,8 @@ int set_cpus_allowed_ptr(struct task_str
+ 	unsigned int dest_cpu;
+ 	int ret = 0;
+ 
+-	/*
+-	 * Serialize against TASK_WAKING so that ttwu() and wunt() can
+-	 * drop the rq->lock and still rely on ->cpus_allowed.
+-	 */
+-again:
+-	while (task_is_waking(p))
+-		cpu_relax();
+-	rq = task_rq_lock(p, &flags);
+-	if (task_is_waking(p)) {
+-		task_rq_unlock(rq, &flags);
+-		goto again;
+-	}
++	raw_spin_lock_irqsave(&p->pi_lock, flags);
++	rq = __task_rq_lock(p);
+ 
+ 	if (!cpumask_intersects(new_mask, cpu_active_mask)) {
+ 		ret = -EINVAL;
+@@ -5691,13 +5684,15 @@ int set_cpus_allowed_ptr(struct task_str
+ 	if (migrate_task(p, rq)) {
+ 		struct migration_arg arg = { p, dest_cpu };
+ 		/* Need help from migration thread: drop lock and wait. */
+-		task_rq_unlock(rq, &flags);
++		__task_rq_unlock(rq);
++		raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+ 		stop_one_cpu(cpu_of(rq), migration_cpu_stop, &arg);
+ 		tlb_migrate_finish(p->mm);
+ 		return 0;
+ 	}
+ out:
+-	task_rq_unlock(rq, &flags);
++	__task_rq_unlock(rq);
++	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+ 
+ 	return ret;
+ }
 
 
