@@ -1,171 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768Ab1ADSQU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 13:16:20 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:41776 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751037Ab1ADSQS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 13:16:18 -0500
-Message-ID: <4D2363E7.30101@linux.vnet.ibm.com>
-Date: Tue, 04 Jan 2011 10:16:07 -0800
-From: "Venkateswararao Jujjuri (JV)" <jvrao@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	id S1751712Ab1ADSVJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 13:21:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20271 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751348Ab1ADSVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 13:21:06 -0500
+Date: Tue, 4 Jan 2011 16:20:30 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Zachary Amsden <zamsden@redhat.com>
+Cc: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Glauber Costa <glommer@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [KVM Clock Synchronization 4/4] Add master clock for KVM clock
+Message-ID: <20110104182030.GA3220@amt.cnet>
+References: <1293601100-32109-1-git-send-email-zamsden@redhat.com>
+ <1293601100-32109-5-git-send-email-zamsden@redhat.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Nick Piggin <npiggin@kernel.dk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Eric Van Hensbergen <ericvh@gmail.com>
-Subject: Re: linux-next: manual merge of the vfs-scale tree with the v9fs
- tree
-References: <20110104124054.c767a4ee.sfr@canb.auug.org.au>
-In-Reply-To: <20110104124054.c767a4ee.sfr@canb.auug.org.au>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1293601100-32109-5-git-send-email-zamsden@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/3/2011 5:40 PM, Stephen Rothwell wrote:
-> Hi Nick,
+On Tue, Dec 28, 2010 at 07:38:20PM -1000, Zachary Amsden wrote:
+> On systems with synchronized TSCs, we still have VCPU individual
+> KVM clocks, each with their own computed offset.  As this all happens
+> at different times, the computed KVM clock offset can vary, causing a
+> globally visible backwards clock.  Currently this is protected against
+> by using an atomic compare to ensure it does not happen.
 > 
-> Today's linux-next merge of the vfs-scale tree got a conflict in
-> fs/9p/vfs_inode.c between commit 3d21652a1d23591e7f0bbbbedae29ce78c2c1113
-> ("fs/9p: Move dotl inode operations into a seperate file") from the v9fs
-> tree and various commits from the vfs-scale tree.
+> This change should remove that requirement.
 > 
-> I fixed it up by using the v9fs changes to that file and then applying
-> the following merge fixup patch (which I can carry as necessary).
-> 
-> Someone will need to fix this up before one of these trees is merged by
-> Linus, or to send this merge fix to Linus.
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 4 Jan 2011 12:33:54 +1100
-> Subject: [PATCH] v9fs: merge fix for changes in the vfs-scale tree
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Zachary Amsden <zamsden@redhat.com>
 > ---
->  fs/9p/vfs_inode_dotl.c |   22 +++++++++++-----------
->  1 files changed, 11 insertions(+), 11 deletions(-)
+>  arch/x86/include/asm/kvm_host.h |    1 +
+>  arch/x86/kvm/x86.c              |   42 ++++++++++++++++++++++++++++++++++++++-
+>  2 files changed, 42 insertions(+), 1 deletions(-)
 > 
-> diff --git a/fs/9p/vfs_inode_dotl.c b/fs/9p/vfs_inode_dotl.c
-> index 38d5880..9dd534b 100644
-> --- a/fs/9p/vfs_inode_dotl.c
-> +++ b/fs/9p/vfs_inode_dotl.c
-> @@ -78,11 +78,11 @@ static struct dentry *v9fs_dentry_from_dir_inode(struct inode *inode)
->  {
->  	struct dentry *dentry;
-> 
-> -	spin_lock(&dcache_lock);
-> +	spin_lock(&inode->i_lock);
->  	/* Directory should have only one entry. */
->  	BUG_ON(S_ISDIR(inode->i_mode) && !list_is_singular(&inode->i_dentry));
->  	dentry = list_entry(inode->i_dentry.next, struct dentry, d_alias);
-> -	spin_unlock(&dcache_lock);
-> +	spin_unlock(&inode->i_lock);
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index 8d829b8..ff651b7 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -445,6 +445,7 @@ struct kvm_arch {
+>  	unsigned long irq_sources_bitmap;
+>  	s64 kvmclock_offset;
+>  	spinlock_t clock_lock;
+> +	struct pvclock_vcpu_time_info master_clock;
+>  	u64 last_tsc_nsec;
+>  	u64 last_tsc_offset;
+>  	u64 last_tsc_write;
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 59d5999..a339e50 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -1116,6 +1116,38 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
+>  		return 0;
+>  
+>  	/*
+> +	 * If there is a stable TSC, we use a master reference clock for
+> +	 * the KVM clock; otherwise, individual computations for each VCPU
+> +	 * would exhibit slight drift relative to each other, which could
+> +	 * cause global time to go backwards.
+> +	 *
+> +	 * If the master clock has no TSC timestamp, that means we must
+> +	 * recompute the clock as either some real time has elapsed during
+> +	 * a suspend cycle, or we are measuring the clock for the first time
+> +	 * during VM creation (or following a migration).  Since master clock
+> +	 * changes should happen only at rare occasions, so we can ignore
+> +	 * the precautions below.
+> +	 */
+> +	if (!check_tsc_unstable()) {
+> +		struct pvclock_vcpu_time_info *master =
+> +						&v->kvm->arch.master_clock;
+> +		if (vcpu->hv_clock.version != master->version) {
+> +			spin_lock(&v->kvm->arch.clock_lock);
+> +			WARN_ON(master->version < vcpu->hv_clock.version);
+> +			if (!master->tsc_timestamp) {
+> +				pr_debug("KVM: computing new master clock\n");
+> +				update_pvclock(v, master, tsc_timestamp,
+> +						kernel_ns, tsc_khz);
+> +			}
+> +			memcpy(&vcpu->hv_clock, master, sizeof(*master));
+> +			spin_unlock(&v->kvm->arch.clock_lock);
+> +			update_user_kvmclock(v, &vcpu->hv_clock);
+> +		} else
+> +			pr_debug("ignoring spurious KVM clock update");
+> +		return 0;
+> +	}
 
-Are we doing away with dcache_lock?
+This assumes guest TSC is synchronized across vcpus... Is this always
+true?
 
-I am not sure if the i_lock can serve the same purpose..but looks like with the
-current code
-there may not need any lock around this code. Aneesh/Eric do you guys have any
-comments?
-
-
->  	return dentry;
->  }
-> 
-> @@ -215,7 +215,7 @@ v9fs_vfs_create_dotl(struct inode *dir, struct dentry *dentry, int omode,
->  				err);
->  			goto error;
->  		}
-> -		dentry->d_op = &v9fs_cached_dentry_operations;
-> +		d_set_d_op(dentry, &v9fs_cached_dentry_operations);
-
-Assuming that this is a macro to the same operation.. rest of the changes look
-fine to me.
-
-Thanks,
-JV
-
->  		d_instantiate(dentry, inode);
->  		err = v9fs_fid_add(dentry, fid);
->  		if (err < 0)
-> @@ -233,7 +233,7 @@ v9fs_vfs_create_dotl(struct inode *dir, struct dentry *dentry, int omode,
->  			err = PTR_ERR(inode);
->  			goto error;
->  		}
-> -		dentry->d_op = &v9fs_dentry_operations;
-> +		d_set_d_op(dentry, &v9fs_dentry_operations);
->  		d_instantiate(dentry, inode);
->  	}
->  	/* Now set the ACL based on the default value */
-> @@ -331,7 +331,7 @@ static int v9fs_vfs_mkdir_dotl(struct inode *dir,
->  				err);
->  			goto error;
->  		}
-> -		dentry->d_op = &v9fs_cached_dentry_operations;
-> +		d_set_d_op(dentry, &v9fs_cached_dentry_operations);
->  		d_instantiate(dentry, inode);
->  		err = v9fs_fid_add(dentry, fid);
->  		if (err < 0)
-> @@ -348,7 +348,7 @@ static int v9fs_vfs_mkdir_dotl(struct inode *dir,
->  			err = PTR_ERR(inode);
->  			goto error;
->  		}
-> -		dentry->d_op = &v9fs_dentry_operations;
-> +		d_set_d_op(dentry, &v9fs_dentry_operations);
->  		d_instantiate(dentry, inode);
->  	}
->  	/* Now set the ACL based on the default value */
-> @@ -589,7 +589,7 @@ v9fs_vfs_symlink_dotl(struct inode *dir, struct dentry *dentry,
->  					err);
->  			goto error;
->  		}
-> -		dentry->d_op = &v9fs_cached_dentry_operations;
-> +		d_set_d_op(dentry, &v9fs_cached_dentry_operations);
->  		d_instantiate(dentry, inode);
->  		err = v9fs_fid_add(dentry, fid);
->  		if (err < 0)
-> @@ -602,7 +602,7 @@ v9fs_vfs_symlink_dotl(struct inode *dir, struct dentry *dentry,
->  			err = PTR_ERR(inode);
->  			goto error;
->  		}
-> -		dentry->d_op = &v9fs_dentry_operations;
-> +		d_set_d_op(dentry, &v9fs_dentry_operations);
->  		d_instantiate(dentry, inode);
->  	}
-> 
-> @@ -678,7 +678,7 @@ v9fs_vfs_link_dotl(struct dentry *old_dentry, struct inode *dir,
->  		ihold(old_dentry->d_inode);
->  	}
-> 
-> -	dentry->d_op = old_dentry->d_op;
-> +	d_set_d_op(dentry, old_dentry->d_op);
->  	d_instantiate(dentry, old_dentry->d_inode);
-> 
->  	return err;
-> @@ -757,7 +757,7 @@ v9fs_vfs_mknod_dotl(struct inode *dir, struct dentry *dentry, int omode,
->  				err);
->  			goto error;
->  		}
-> -		dentry->d_op = &v9fs_cached_dentry_operations;
-> +		d_set_d_op(dentry, &v9fs_cached_dentry_operations);
->  		d_instantiate(dentry, inode);
->  		err = v9fs_fid_add(dentry, fid);
->  		if (err < 0)
-> @@ -773,7 +773,7 @@ v9fs_vfs_mknod_dotl(struct inode *dir, struct dentry *dentry, int omode,
->  			err = PTR_ERR(inode);
->  			goto error;
->  		}
-> -		dentry->d_op = &v9fs_dentry_operations;
-> +		d_set_d_op(dentry, &v9fs_dentry_operations);
->  		d_instantiate(dentry, inode);
->  	}
->  	/* Now set the ACL based on the default value */
-
+Also, for stable TSC hosts, kvmclock update is performed only on VM
+creation / host resume these days... Can you describe the problem in
+more detail?
 
