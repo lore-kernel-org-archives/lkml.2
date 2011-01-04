@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751261Ab1ADWO6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 17:14:58 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:62474 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010Ab1ADWO4 convert rfc822-to-8bit (ORCPT
+	id S1751116Ab1ADWTI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 17:19:08 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:50154 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843Ab1ADWTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 17:14:56 -0500
-Date: Tue, 4 Jan 2011 14:11:51 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Matt Turner <mattst88@gmail.com>, Bob Tracy <rct@gherkin.frus.com>,
-        linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org,
-        mcree@orcon.net.nz, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [BUG] implicit declaration of kfree/kzalloc in i2c-i801.c on
- Alpha
-Message-Id: <20110104141151.b6035bf3.randy.dunlap@oracle.com>
-In-Reply-To: <AANLkTikyX3F+NjHVTGVV6rKyJhZQCcb3150-91La0rHs@mail.gmail.com>
-References: <20110104061821.GA25886@gherkin.frus.com>
-	<AANLkTikOsULOVq01CEiPuoK4-sFTk+KWJiLY0wnzUZ17@mail.gmail.com>
-	<AANLkTikyX3F+NjHVTGVV6rKyJhZQCcb3150-91La0rHs@mail.gmail.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Tue, 4 Jan 2011 17:19:06 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=FW7hvHKKVjfGBgU9aEr1hx2n+yYVR2kwQN9uQcoF5IuZd3DL9UbBJVtHJBo4R5GdWg
+         T9xmuHykTTofSqf/z0+XR4y5AD8cQ6Lg9LYQB2wjYPn7U/5wjVQnEDbYN39as2VoQATn
+         6UigrdI4NW/sCn5dXKpTHTABfbe3HJTkx0GP0=
+Subject: Re: [PATCH 2/2] lib: cpu_rmap: CPU affinity reverse-mapping
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, David Miller <davem@davemloft.net>,
+        Tom Herbert <therbert@google.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-net-drivers@solarflare.com
+In-Reply-To: <1294178690.3636.49.camel@bwh-desktop>
+References: <1294169842.3636.31.camel@bwh-desktop>
+	 <1294169967.3636.34.camel@bwh-desktop>
+	 <1294175823.3420.7.camel@edumazet-laptop>
+	 <1294176216.3636.38.camel@bwh-desktop>
+	 <1294177548.3420.11.camel@edumazet-laptop>
+	 <1294178690.3636.49.camel@bwh-desktop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 04 Jan 2011 23:19:02 +0100
+Message-ID: <1294179542.3420.13.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Jan 2011 22:56:18 +0200 Pekka Enberg wrote:
+Le mardi 04 janvier 2011 Ã  22:04 +0000, Ben Hutchings a Ã©crit :
 
-> On Tue, Jan 4, 2011 at 9:37 PM, Matt Turner <mattst88@gmail.com> wrote:
-> > On Tue, Jan 4, 2011 at 1:18 AM, Bob Tracy <rct@gherkin.frus.com> wrote:
-> >> Another 2.6.37-rc8 build failure on alpha:
-> >>
-> >> (...)
-> >>  CC [M]  drivers/i2c/busses/i2c-i801.o
-> >> drivers/i2c/busses/i2c-i801.c: In function 'i801_probe':
-> >> drivers/i2c/busses/i2c-i801.c:737: error: implicit declaration of function 'kzalloc'
-> >> drivers/i2c/busses/i2c-i801.c:737: warning: assignment makes pointer from integer without a cast
-> >> drivers/i2c/busses/i2c-i801.c:855: error: implicit declaration of function 'kfree'
-> >> make[3]: *** [drivers/i2c/busses/i2c-i801.o] Error 1
-> >> make[2]: *** [drivers/i2c/busses] Error 2
-> >> make[1]: *** [drivers/i2c] Error 2
-> >> make: *** [drivers] Error 2
-> >>
-> >> --Bob
-> >
-> > Is this specific to alpha? I wonder why we don't see this on other platforms?
+> get_rps_cpu() will need to read from an arbitrary entry in cpu_rmap (not
+> the current CPU's entry) for each new flow and for each flow that went
+> idle for a while.  That's not fast path but it is part of the data path,
+> not the control path.
 > 
-> The x86 version of <asm/pci.h> includes <linux/slab.h> which hides the
-> problem on x86 at least. There was a big cleanup of implicit
-> <linux/slab.h> inclusions few months ago which has exposed the
-> problem.
+
+Hmm, I call this fast path :(
+
+> > Cache lines dont matter. I was not concerned about speed but memory
+> > needs.
+> > 
+> > NR_CPUS can be 4096 on some distros, that means a 32Kbyte allocation.
+> > 
+> > Really, you'll have to have very strong arguments to introduce an
+> > [NR_CPUS] array in the kernel today.
 > 
-> It's a bug in the driver, just add the include there.
+> I could replace this with a pointer to an array of size
+> num_possible_cpus().  But I think per_cpu is wrong here.
 
-exactly.
+Yes, an dynamic array is acceptable
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
-desserts:  http://www.xenotime.net/linux/recipes/
+You probably mean nr_cpu_ids 
+
+
+
+
