@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751456Ab1ADVkH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 16:40:07 -0500
-Received: from andromeda.dapyr.net ([206.212.254.10]:60182 "EHLO
-	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab1ADVkE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 16:40:04 -0500
-X-Greylist: delayed 578 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Jan 2011 16:39:56 EST
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Reply-To: konrad.wilk@oracle.com
-Organization: Oracle
-To: Ian Campbell <Ian.Campbell@eu.citrix.com>
-Subject: Re: [PATCH 3/8] xen/setup: Set identity mapping for non-RAM E820 and E820 gaps.
-Date: Tue, 4 Jan 2011 16:28:25 -0500
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc4agp-pci-api+; KDE/4.5.1; i686; ; )
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Jeremy Fitzhardinge" <jeremy@goop.org>,
-        "hpa@zytor.com" <hpa@zytor.com>, "Jan Beulich" <JBeulich@novell.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-References: <1293738517-7287-1-git-send-email-konrad.wilk@oracle.com> <20110104183822.GA1505@dumpdata.com> <1294169277.3582.23.camel@localhost.localdomain>
-In-Reply-To: <1294169277.3582.23.camel@localhost.localdomain>
+	id S1751554Ab1ADVkQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 16:40:16 -0500
+Received: from netnation.com ([204.174.223.2]:60253 "EHLO peace.netnation.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750994Ab1ADVkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 16:40:10 -0500
+Date: Tue, 4 Jan 2011 13:40:08 -0800
+From: Simon Kirby <sim@hostway.ca>
+To: Mark Moseley <moseleymark@gmail.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: System CPU increasing on idle 2.6.36
+Message-ID: <20110104214008.GH27727@hostway.ca>
+References: <20101208212505.GA18192@hostway.ca> <20101218010801.GE28367@hostway.ca> <20101229220313.GA13688@hostway.ca> <AANLkTinq074Q-B=5B4_aXuBm-3ELwGknsJv+OvS1z1OX@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101041628.25950.konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinq074Q-B=5B4_aXuBm-3ELwGknsJv+OvS1z1OX@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 04, 2011 at 09:42:14AM -0800, Mark Moseley wrote:
 
-> > For the privileged guest - yes. But for the non-priviligied it does not
-> > have such range and would end up failing.
+> On Wed, Dec 29, 2010 at 2:03 PM, Simon Kirby <sim@hostway.ca> wrote:
+>
+> > I've noticed nfs_inode_cache is ever-increasing as well with 2.6.37:
+> >
+> > ?OBJS ACTIVE ?USE OBJ SIZE ?SLABS OBJ/SLAB CACHE SIZE NAME
+> > 2562514 2541520 ?99% ? ?0.95K ?78739 ? ? ? 33 ? 2519648K nfs_inode_cache
+> > 467200 285110 ?61% ? ?0.02K ? 1825 ? ? ?256 ? ? ?7300K kmalloc-16
+> > 299397 242350 ?80% ? ?0.19K ?14257 ? ? ? 21 ? ? 57028K dentry
+> > 217434 131978 ?60% ? ?0.55K ? 7767 ? ? ? 28 ? ?124272K radix_tree_node
+> > 215232 ?81522 ?37% ? ?0.06K ? 3363 ? ? ? 64 ? ? 13452K kmalloc-64
+> > 183027 136802 ?74% ? ?0.10K ? 4693 ? ? ? 39 ? ? 18772K buffer_head
+> > 101120 ?71184 ?70% ? ?0.03K ? ?790 ? ? ?128 ? ? ?3160K kmalloc-32
+> > ?79616 ?59713 ?75% ? ?0.12K ? 2488 ? ? ? 32 ? ? ?9952K kmalloc-128
+> > ?66560 ?41257 ?61% ? ?0.01K ? ?130 ? ? ?512 ? ? ? 520K kmalloc-8
+> > ?42126 ?26650 ?63% ? ?0.75K ? 2006 ? ? ? 21 ? ? 32096K ext3_inode_cache
+> >
+> > http://0x.ca/sim/ref/2.6.37/inodes_nfs.png
+> > http://0x.ca/sim/ref/2.6.37/cpu2_nfs.png
+> >
+> > Perhaps I could bisect just fs/nfs changes between 2.6.35 and 2.6.36 to
+> > try to track this down without having to wait too long, unless somebody
+> > can see what is happening here.
 > 
-> xen_memory_setup has:
->         e820_add_region(ISA_START_ADDRESS, ISA_END_ADDRESS -
-> ISA_START_ADDRESS, E820_RESERVED);
-> which is unconditional but is actually more for domU's benefit than
-> dom0's which already sees the host e820 presumably with the right hole
-> already in place, which we simply shadow, or maybe slightly extend,
-> here.
-
-Actually we don't do anything with that region in Dom0 case. We just
-return the PFN without consulting the P2M for 0->0x100 while for DomU _we_
-do consult the P2M and set those in the PTE. (look in xen_make_pte)
-
+> I'll get started bisecting too, since this is something of a
+> show-stopper. Boxes that pre-2.6.36 would stay up for months at a time
+> now have to be powercycled every couple of days (which is about how
+> long it takes for this behavior to show up). This is across-the-board
+> for about 50 boxes, ranging from 2.6.36 to 2.6.36.2.
 > 
-> In a domU we do this because if you let these pages into the general
-> allocation pool then they will potentially get used as page table pages
-> (hence be R/O) but e.g. the DMI code tries to map them to probe for
-> signatures and tries to does so R/W which fails. We could try and find
-> everywhere in the kernel which does this or we can simply reserve the
-> region which stops it getting used for page tables or other special
-> things, and is somewhat less surprising for non-Xen code.
+> Simon: It's probably irrelevant since these are kernel threads, but
+> I'm curious what distro your boxes are running. Ours are Debian Lenny,
+> i386, Dell Poweredge 850s. Just trying to figure out any
+> commonalities. I'll get my boxes back on 2.6.36.2 and start watching
+> nfs_inode_cache as well.
 
-Yeah, went that hole once.. too many generic pieces of code.
-.. snip..
-> > You mean the ISA_START_ADDRESS->ISA_END_ADDRESS we mark as reserved?
-> 
-> Yep.
-> 
-> > It sure would be easier
-> > 
-> > (and it would mean we can return that memory back to the hypervisor).
-> 
-> I don't think you can return it, since something like the DMI code which
-> wants to probe it expects to be able to map that PFN, if you've given
-> the MFN back then that will fail.
+Same distro, x86_64, similar servers.
 
-Correct (for non-priviliged PV domain).
-> 
-> I suppose we could alias all such PFNs to the same scratch MFN but I'd
+I'm not sure if the two cases I am seeing are exactly the same problem,
+but on the log crunching boxes, system time seems proportional to
+nfs_inode_cache and nfs_inode_cache just keeps growing forever; however,
+if I stop the load and unmount the NFS mount points, all of the
+nfs_inode_cache objects do actually go away (after umount finishes).
 
-It actually works. I setup 0x1->0x100 to point to whatever the MFN was at
-0x0, and released the pages from 0x1->0x100 and it worked for DomU PV guests 
-(and dom0 since I ended up stomping those regions with the PFN|
-IDENTITY_BIT_FRAME).
+It seems the shrinker callback might not be working as intended here.
 
-However, the tools weren't happy ('xm save'). They did not like the same PFN 
-across a couple of entries in the P2M table and complained about a potential 
-race. But there is another way and that is to special case in 'xen_make_pte' 
-when we want to create a PTE for 0->ISA_END_ADDRESS and just give it the MFN 
-from P2M[0x0] (for !xen_initial_domain()) while having the the pfns from 0x1-
->0x100 freed and set to be IDENTITY_BIT_FRAME... But that all just smacks of 
-weird corner cases. Thought the code that is there is already special casing 
-access to that region. Maybe it would clear it up a bit.
+On the shared server case, the crazy spinlock contention from all of the
+flusher processes happens suddenly and overloads the boxes for 10-15
+minutes, and then everything recovers.  Over 21 of these boxes, they
+each have about 500k-700k nfs_inode_cache objects.  The log cruncher hit
+3.3 million nfs_inode_cache objects before I unmounted.
 
+Are your boxes repeating this behaviour at any predictable interval?
 
-> be concerned about some piece of code which expects to interact with
-> firmware scribbling over it and surprising some other piece of code
-> which interacts with the firmware...
-
-Fortunatly the all look for a some signature first before trying to scribble.
+Simon-
