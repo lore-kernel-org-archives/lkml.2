@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751828Ab1ADOfk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 09:35:40 -0500
-Received: from mga01.intel.com ([192.55.52.88]:62837 "EHLO mga01.intel.com"
+	id S1751861Ab1ADOfx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 09:35:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27622 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751727Ab1ADOfi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 09:35:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,272,1291622400"; 
-   d="scan'208";a="874301775"
-Message-ID: <4D233039.8010509@intel.com>
-Date: Tue, 04 Jan 2011 22:35:37 +0800
-From: "Zhai, Edwin" <edwin.zhai@intel.com>
-User-Agent: Thunderbird 2.0.0.17 (Windows/20080914)
+	id S1751507Ab1ADOfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 09:35:51 -0500
+Date: Tue, 4 Jan 2011 15:28:05 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
+        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 16/17] sched: Move the second half of ttwu() to
+	the remote cpu
+Message-ID: <20110104142805.GA4347@redhat.com>
+References: <20101224122338.172750730@chello.nl> <20101224123743.303699501@chello.nl>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Rik van Riel <riel@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>
-Subject: Re: [PATCH] increase ple_gap default to 64
-References: <20110103101907.2926ecca@annuminas.surriel.com>	<4D229221.8070305@intel.com> <4D232C20.80306@redhat.com> <4D232EB1.1000304@redhat.com>
-In-Reply-To: <4D232EB1.1000304@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101224123743.303699501@chello.nl>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Avi Kivity wrote:
-> On 01/04/2011 04:18 PM, Rik van Riel wrote:
->   
->>
->> So should I resend the patch with the ple_gap default
->> changed to 128, or are you willing to ack the current
->> patch?
->>
->>     
+On 12/24, Peter Zijlstra wrote:
 >
-> I think 128 is safer given than 41 was too low.  We have to take into 
-> account newer cpus and slower spin loops.  If the spin loop does a cache 
-> ping-pong (which would be a bad, bad possible, implementation), even 128 
-> might be too low.
->   
+> +static void
+> +ttwu_do_activate(struct rq *rq, struct task_struct *p, int wake_flags)
+> +{
+> +#ifdef CONFIG_SMP
+> +	if (task_cpu(p) != cpu_of(rq))
+> +		set_task_cpu(p, cpu_of(rq));
+> +#endif
 
-Agree with Avi. Let us use 128 at this point.
-Thanks,
-edwin
+This looks a bit suspicious.
+
+If this is called by sched_ttwu_pending() we are holding rq->lock,
+not task_rq_lock(). It seems, we can race with, say, migration
+thread running on task_cpu().
+
+
+
+OK, p->state = TASK_WAKING protects us against, say, set_cpus_allowed_ptr()
+which does task_rq_lock(p) and thus checks task_is_waking().
+
+But, at the same time,
+
+> +#ifdef CONFIG_SMP
+> +static void ttwu_queue_remote(struct task_struct *p, int cpu)
+> +{
+> +	struct task_struct *next = NULL;
+> +	struct rq *rq = cpu_rq(cpu);
+> +
+> +	for (;;) {
+> +		struct task_struct *old = next;
+> +
+> +		p->wake_entry = next;
+> +		next = cmpxchg(&rq->wake_list, old, p);
+> +		if (next == old)
+> +			break;
+> +	}
+> +
+> +	if (!next)
+> +		smp_send_reschedule(cpu);
+
+what if that cpu does set_cpus_allowed_ptr(p) ?
+
+It spins with irq disabled. Once the caller, try_to_wake_up(),
+drops ->pi_lock it will wait for !task_is_waking() forever, no?
+
+Oleg.
+
