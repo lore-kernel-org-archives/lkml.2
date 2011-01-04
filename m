@@ -1,50 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751299Ab1ADXkc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 18:40:32 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51105 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab1ADXkb (ORCPT
+	id S1751356Ab1ADXnP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 18:43:15 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:34398 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047Ab1ADXnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 18:40:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=qg6gkekO8m0k8BzbXFtogIUImqYVBnppUrtixt1PIJ4+1vDekf5DBbHaRiJo5BfK+4
-         1uv4rXH0onidC3kmKgQGHjdamozxq5bgwe2Go5g0E43lNR4I2aINkPhF3lIEO9KBo76O
-         APRUF8GlZidL+FD61NiKXQM1BSGG4q/j6TR4E=
-Message-ID: <4D23AFE8.3040207@gmail.com>
-Date: Wed, 05 Jan 2011 00:40:24 +0100
-From: Tommaso Cucinotta <tommaso.cucinotta@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Tommaso Cucinotta <tommaso.cucinotta@sssup.it>
-CC: Peter Zijlstra <peterz@infradead.org>, a.p.zijlstra@chello.nl,
-        Dario Faggioli <faggioli@gandalf.sssup.it>,
-        Dhaval Giani <dhaval@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>, riel@redhat.com,
-        Hillf Danton <dhillf@gmail.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>
-Subject: Re: [Fwd: Re: [RFC -v3 PATCH 2/3] sched: add yield_to function]
-References: <1294164920.6169.199.camel@Palantir> <4D23AF8A.6080306@sssup.it>
-In-Reply-To: <4D23AF8A.6080306@sssup.it>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Tue, 4 Jan 2011 18:43:14 -0500
+Subject: Re: [patch 1/2] [SCSI] target: remove an unused variable
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Dan Carpenter <error27@gmail.com>
+Cc: James Bottomley <James.Bottomley@suse.de>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, linux-scsi@vger.kernel.org
+In-Reply-To: <20110103055735.GU1886@bicker>
+References: <20110103055735.GU1886@bicker>
+Content-Type: text/plain
+Date: Tue, 04 Jan 2011 15:37:12 -0800
+Message-Id: <1294184232.29002.21.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 05/01/2011 00:38, Tommaso Cucinotta ha scritto:
-> Of course, don't misunderstand me: this is a necessary condition for a
-> stable performance of KVM VMs, I'm not saying it is sufficient for
->
-... it.
+On Mon, 2011-01-03 at 08:57 +0300, Dan Carpenter wrote:
+> We never use "fabric_cg" and also we leak it on the success path.
+> 
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
+> 
 
-Please, comment on this (reply to all, please, I'm not following LKML).
+Hi Dan,
 
-Thanks,
+Thanks for catching this left over allocation from v3.x days before
+target_core_register_fabric() accepted the fabric module's top level
+struct config_group.
 
-     Tommaso
+Committed as 7e7d89f6cf into lio-core-2.6.git.
+
+Best Regards,
+
+--nab
+
+> diff --git a/drivers/target/target_core_configfs.c b/drivers/target/target_core_configfs.c
+> index 18d15ff..d7b977d 100644
+> --- a/drivers/target/target_core_configfs.c
+> +++ b/drivers/target/target_core_configfs.c
+> @@ -117,7 +117,6 @@ static struct config_group *target_core_register_fabric(
+>  	struct config_group *group,
+>  	const char *name)
+>  {
+> -	struct config_group *fabric_cg;
+>  	struct target_fabric_configfs *tf;
+>  	int ret;
+>  
+> @@ -131,9 +130,6 @@ static struct config_group *target_core_register_fabric(
+>  	if (transport_subsystem_check_init() < 0)
+>  		return ERR_PTR(-EINVAL);
+>  
+> -	fabric_cg = kzalloc(sizeof(struct config_group), GFP_KERNEL);
+> -	if (!(fabric_cg))
+> -		return ERR_PTR(-ENOMEM);
+>  	/*
+>  	 * Below are some hardcoded request_module() calls to automatically
+>  	 * local fabric modules when the following is called:
+> @@ -155,7 +151,6 @@ static struct config_group *target_core_register_fabric(
+>  		if (ret < 0) {
+>  			printk(KERN_ERR "request_module() failed for"
+>  				" iscsi_target_mod.ko: %d\n", ret);
+> -			kfree(fabric_cg);
+>  			return ERR_PTR(-EINVAL);
+>  		}
+>  	} else if (!(strncmp(name, "loopback", 8))) {
+> @@ -169,7 +164,6 @@ static struct config_group *target_core_register_fabric(
+>  		if (ret < 0) {
+>  			printk(KERN_ERR "request_module() failed for"
+>  				" tcm_loop.ko: %d\n", ret);
+> -			kfree(fabric_cg);
+>  			return ERR_PTR(-EINVAL);
+>  		}
+>  	}
+> @@ -178,7 +172,6 @@ static struct config_group *target_core_register_fabric(
+>  	if (!(tf)) {
+>  		printk(KERN_ERR "target_core_get_fabric() failed for %s\n",
+>  			name);
+> -		kfree(fabric_cg);
+>  		return ERR_PTR(-EINVAL);
+>  	}
+>  	printk(KERN_INFO "Target_Core_ConfigFS: REGISTER -> Located fabric:"
+
