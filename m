@@ -1,352 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751029Ab1ACXuW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jan 2011 18:50:22 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:54048 "EHLO ogre.sisk.pl"
+	id S1750994Ab1ADAWp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jan 2011 19:22:45 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:26246 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750755Ab1ACXuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jan 2011 18:50:19 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [PATCH] PCI / ACPI: Request _OSC control once for each root bridge (v3)
-Date: Tue, 4 Jan 2011 00:49:54 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc8+; KDE/4.4.4; x86_64; ; )
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        linux-pci@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-References: <201012291324.45074.rjw@sisk.pl> <201012292018.29382.rjw@sisk.pl>
-In-Reply-To: <201012292018.29382.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101040049.54386.rjw@sisk.pl>
+	id S1750786Ab1ADAWo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Jan 2011 19:22:44 -0500
+X-IronPort-AV: E=Sophos;i="4.60,268,1291622400"; 
+   d="scan'208";a="501407636"
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-nfs@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20110103213850.GC25121@pengutronix.de>
+References: <20101230171453.GA5787@pengutronix.de>
+	 <1293731992.4919.5.camel@heimdal.trondhjem.org>
+	 <20101230191846.GB14221@pengutronix.de>
+	 <20110103213850.GC25121@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Mon, 03 Jan 2011 19:22:38 -0500
+Message-ID: <1294100558.25100.8.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 04 Jan 2011 00:22:39.0991 (UTC) FILETIME=[7F102870:01CBABA5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Mon, 2011-01-03 at 22:38 +0100, Uwe Kleine-König wrote: 
+> On Thu, Dec 30, 2010 at 08:18:46PM +0100, Uwe Kleine-König wrote:
+> > On Thu, Dec 30, 2010 at 12:59:52PM -0500, Trond Myklebust wrote:
+> > > What filesystem are you exporting on the server? What is the NFS
+> > > version? Is this nfsroot, autofs or an ordinary nfs mount?
+> > This is an nfsroot of /home/ukl/nfsroot/tx28 which is a symlink to a
+> > directory on a different partition.  I don't know the filesystem of my
+> > homedir as it resides on a server I have no access to, but I asked the
+> > admin, so I can follow up with this info later (I'd suspect ext3, too).
+> Yes, it is ext3.
+> 
+> > The real root directory is on ext3 (rw,noatime).
+> > 
+> > The serving nfs-server is Debian's nfs-kernel-server 1:1.2.2-1.
+> If that matters, kernel is linux-image-2.6.32-5-amd64 (2.6.32-29)
+> provided by Debian.
+> 
+> >                                                                I don't
+> > know if testing that further would help or just waste of my time, so
+> > please let me know if I can help you and how.
+> This still applies
 
-Move the evaluation of acpi_pci_osc_control_set() (to request control
-of PCI Express native features) into acpi_pci_root_add() to avoid
-calling it many times for the same root complex with the same
-arguments.  Additionally, check if all of the requisite _OSC
-support bits are set before calling acpi_pci_osc_control_set() for
-a given root complex.
+I'm having trouble reproducing this with my own nfsroot setup (which is
+just a 'fedora 13 live' disk with NetworkManager turned firmly off).
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
+However looking back at your report, you said that when you remove the
+symlink, you get an error message of the form:
 
-Hi,
+"starting splashutils daemon.../etc/rc.d/S00splashutils: line
+50: //sbin/fbsplashd.static: Unknown error 521"
 
-The previous versions were buggy, because they assumed that hest_init() would
-be called before acpi_pci_root_init(), but that need not be the case.  This
-version fixes the problem (hopefully, it's the last update of this patch).
+Error 521 is EBADHANDLE, which basically means your client got a
+corrupted filehandle. The 'fileid changed' thing also indicates some
+form of corruption.
 
-Thanks,
-Rafael
+The question is whether this is something happening on the server or the
+client. Does an older client kernel boot without any trouble?
 
----
- drivers/acpi/apei/hest.c        |   22 +++++++++-------------
- drivers/acpi/pci_root.c         |   35 +++++++++++++++++++++++++++++++++++
- drivers/pci/pci.h               |    8 --------
- drivers/pci/pcie/aer/aerdrv.c   |    1 +
- drivers/pci/pcie/aer/aerdrv.h   |    3 ---
- drivers/pci/pcie/portdrv.h      |    3 ---
- drivers/pci/pcie/portdrv_acpi.c |   23 ++++-------------------
- include/acpi/apei.h             |    6 ++++++
- include/linux/pci-acpi.h        |    6 ++++++
- include/linux/pci.h             |   11 +++++++++++
- 10 files changed, 72 insertions(+), 46 deletions(-)
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-Index: linux-2.6/drivers/acpi/pci_root.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/pci_root.c
-+++ linux-2.6/drivers/acpi/pci_root.c
-@@ -36,6 +36,7 @@
- #include <linux/slab.h>
- #include <acpi/acpi_bus.h>
- #include <acpi/acpi_drivers.h>
-+#include <acpi/apei.h>
- 
- #define PREFIX "ACPI: "
- 
-@@ -47,6 +48,11 @@ static int acpi_pci_root_add(struct acpi
- static int acpi_pci_root_remove(struct acpi_device *device, int type);
- static int acpi_pci_root_start(struct acpi_device *device);
- 
-+#define ACPI_PCIE_REQ_SUPPORT (OSC_EXT_PCI_CONFIG_SUPPORT \
-+				| OSC_ACTIVE_STATE_PWR_SUPPORT \
-+				| OSC_CLOCK_PWR_CAPABILITY_SUPPORT \
-+				| OSC_MSI_SUPPORT)
-+
- static const struct acpi_device_id root_device_ids[] = {
- 	{"PNP0A03", 0},
- 	{"", 0},
-@@ -566,6 +572,33 @@ static int __devinit acpi_pci_root_add(s
- 	if (flags != base_flags)
- 		acpi_pci_osc_support(root, flags);
- 
-+	if (!pcie_ports_disabled
-+	    && (flags & ACPI_PCIE_REQ_SUPPORT) == ACPI_PCIE_REQ_SUPPORT) {
-+		flags = OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL
-+			| OSC_PCI_EXPRESS_NATIVE_HP_CONTROL
-+			| OSC_PCI_EXPRESS_PME_CONTROL;
-+
-+		if (pci_aer_available()) {
-+			if (aer_acpi_firmware_first())
-+				dev_dbg(root->bus->bridge,
-+					"PCIe errors handled by BIOS.\n");
-+			else
-+				flags |= OSC_PCI_EXPRESS_AER_CONTROL;
-+		}
-+
-+		dev_info(root->bus->bridge,
-+			"Requesting ACPI _OSC control (0x%02x)\n", flags);
-+
-+		status = acpi_pci_osc_control_set(device->handle, &flags,
-+					OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL);
-+		if (ACPI_SUCCESS(status))
-+			dev_info(root->bus->bridge,
-+				"ACPI _OSC control (0x%02x) granted\n", flags);
-+		else
-+			dev_dbg(root->bus->bridge,
-+				"ACPI _OSC request failed (code %d)\n", status);
-+	}
-+
- 	pci_acpi_add_bus_pm_notifier(device, root->bus);
- 	if (device->wakeup.flags.run_wake)
- 		device_set_run_wake(root->bus->bridge, true);
-@@ -603,6 +636,8 @@ static int __init acpi_pci_root_init(voi
- 	if (acpi_pci_disabled)
- 		return 0;
- 
-+	acpi_hest_init();
-+
- 	pci_acpi_crs_quirks();
- 	if (acpi_bus_register_driver(&acpi_pci_root_driver) < 0)
- 		return -ENODEV;
-Index: linux-2.6/drivers/pci/pcie/portdrv_acpi.c
-===================================================================
---- linux-2.6.orig/drivers/pci/pcie/portdrv_acpi.c
-+++ linux-2.6/drivers/pci/pcie/portdrv_acpi.c
-@@ -33,7 +33,7 @@
-  */
- int pcie_port_acpi_setup(struct pci_dev *port, int *srv_mask)
- {
--	acpi_status status;
-+	struct acpi_pci_root *root;
- 	acpi_handle handle;
- 	u32 flags;
- 
-@@ -44,26 +44,11 @@ int pcie_port_acpi_setup(struct pci_dev
- 	if (!handle)
- 		return -EINVAL;
- 
--	flags = OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL
--		| OSC_PCI_EXPRESS_NATIVE_HP_CONTROL
--		| OSC_PCI_EXPRESS_PME_CONTROL;
--
--	if (pci_aer_available()) {
--		if (aer_acpi_firmware_first())
--			dev_dbg(&port->dev, "PCIe errors handled by BIOS.\n");
--		else
--			flags |= OSC_PCI_EXPRESS_AER_CONTROL;
--	}
--
--	status = acpi_pci_osc_control_set(handle, &flags,
--					OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL);
--	if (ACPI_FAILURE(status)) {
--		dev_dbg(&port->dev, "ACPI _OSC request failed (code %d)\n",
--			status);
-+	root = acpi_pci_find_root(handle);
-+	if (!root)
- 		return -ENODEV;
--	}
- 
--	dev_info(&port->dev, "ACPI _OSC control granted for 0x%02x\n", flags);
-+	flags = root->osc_control_set;
- 
- 	*srv_mask = PCIE_PORT_SERVICE_VC;
- 	if (flags & OSC_PCI_EXPRESS_NATIVE_HP_CONTROL)
-Index: linux-2.6/drivers/pci/pci.h
-===================================================================
---- linux-2.6.orig/drivers/pci/pci.h
-+++ linux-2.6/drivers/pci/pci.h
-@@ -146,14 +146,6 @@ static inline void pci_no_msi(void) { }
- static inline void pci_msi_init_pci_dev(struct pci_dev *dev) { }
- #endif
- 
--#ifdef CONFIG_PCIEAER
--void pci_no_aer(void);
--bool pci_aer_available(void);
--#else
--static inline void pci_no_aer(void) { }
--static inline bool pci_aer_available(void) { return false; }
--#endif
--
- static inline int pci_no_d1d2(struct pci_dev *dev)
- {
- 	unsigned int parent_dstates = 0;
-Index: linux-2.6/include/linux/pci.h
-===================================================================
---- linux-2.6.orig/include/linux/pci.h
-+++ linux-2.6/include/linux/pci.h
-@@ -993,6 +993,9 @@ extern void pci_restore_msi_state(struct
- extern int pci_msi_enabled(void);
- #endif
- 
-+extern bool pcie_ports_disabled;
-+extern bool pcie_ports_auto;
-+
- #ifndef CONFIG_PCIEASPM
- static inline int pcie_aspm_enabled(void)
- {
-@@ -1002,6 +1005,14 @@ static inline int pcie_aspm_enabled(void
- extern int pcie_aspm_enabled(void);
- #endif
- 
-+#ifdef CONFIG_PCIEAER
-+void pci_no_aer(void);
-+bool pci_aer_available(void);
-+#else
-+static inline void pci_no_aer(void) { }
-+static inline bool pci_aer_available(void) { return false; }
-+#endif
-+
- #ifndef CONFIG_PCIE_ECRC
- static inline void pcie_set_ecrc_checking(struct pci_dev *dev)
- {
-Index: linux-2.6/drivers/pci/pcie/aer/aerdrv.h
-===================================================================
---- linux-2.6.orig/drivers/pci/pcie/aer/aerdrv.h
-+++ linux-2.6/drivers/pci/pcie/aer/aerdrv.h
-@@ -132,7 +132,6 @@ static inline int aer_osc_setup(struct p
- 
- #ifdef CONFIG_ACPI_APEI
- extern int pcie_aer_get_firmware_first(struct pci_dev *pci_dev);
--extern bool aer_acpi_firmware_first(void);
- #else
- static inline int pcie_aer_get_firmware_first(struct pci_dev *pci_dev)
- {
-@@ -140,8 +139,6 @@ static inline int pcie_aer_get_firmware_
- 		return pci_dev->__aer_firmware_first;
- 	return 0;
- }
--
--static inline bool aer_acpi_firmware_first(void) { return false; }
- #endif
- 
- static inline void pcie_aer_force_firmware_first(struct pci_dev *pci_dev,
-Index: linux-2.6/include/linux/pci-acpi.h
-===================================================================
---- linux-2.6.orig/include/linux/pci-acpi.h
-+++ linux-2.6/include/linux/pci-acpi.h
-@@ -40,4 +40,10 @@ static inline acpi_handle acpi_find_root
- { return NULL; }
- #endif
- 
-+#ifdef CONFIG_ACPI_APEI
-+extern bool aer_acpi_firmware_first(void);
-+#else
-+static inline bool aer_acpi_firmware_first(void) { return false; }
-+#endif
-+
- #endif	/* _PCI_ACPI_H_ */
-Index: linux-2.6/drivers/pci/pcie/aer/aerdrv.c
-===================================================================
---- linux-2.6.orig/drivers/pci/pcie/aer/aerdrv.c
-+++ linux-2.6/drivers/pci/pcie/aer/aerdrv.c
-@@ -17,6 +17,7 @@
- 
- #include <linux/module.h>
- #include <linux/pci.h>
-+#include <linux/pci-acpi.h>
- #include <linux/sched.h>
- #include <linux/kernel.h>
- #include <linux/errno.h>
-Index: linux-2.6/drivers/pci/pcie/portdrv.h
-===================================================================
---- linux-2.6.orig/drivers/pci/pcie/portdrv.h
-+++ linux-2.6/drivers/pci/pcie/portdrv.h
-@@ -20,9 +20,6 @@
- 
- #define get_descriptor_id(type, service) (((type - 4) << 4) | service)
- 
--extern bool pcie_ports_disabled;
--extern bool pcie_ports_auto;
--
- extern struct bus_type pcie_port_bus_type;
- extern int pcie_port_device_register(struct pci_dev *dev);
- #ifdef CONFIG_PM
-Index: linux-2.6/drivers/acpi/apei/hest.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/apei/hest.c
-+++ linux-2.6/drivers/acpi/apei/hest.c
-@@ -195,24 +195,24 @@ static int __init setup_hest_disable(cha
- 
- __setup("hest_disable", setup_hest_disable);
- 
--static int __init hest_init(void)
-+void __init acpi_hest_init(void)
- {
- 	acpi_status status;
- 	int rc = -ENODEV;
- 	unsigned int ghes_count = 0;
- 
- 	if (acpi_disabled)
--		goto err;
-+		return;
- 
- 	if (hest_disable) {
--		pr_info(HEST_PFX "HEST tabling parsing is disabled.\n");
--		goto err;
-+		pr_info(HEST_PFX "Table parsing disabled.\n");
-+		return;
- 	}
- 
- 	status = acpi_get_table(ACPI_SIG_HEST, 0,
- 				(struct acpi_table_header **)&hest_tab);
- 	if (status == AE_NOT_FOUND) {
--		pr_info(HEST_PFX "Table is not found!\n");
-+		pr_info(HEST_PFX "Table not found.\n");
- 		goto err;
- 	} else if (ACPI_FAILURE(status)) {
- 		const char *msg = acpi_format_exception(status);
-@@ -226,15 +226,11 @@ static int __init hest_init(void)
- 		goto err;
- 
- 	rc = hest_ghes_dev_register(ghes_count);
--	if (rc)
--		goto err;
--
--	pr_info(HEST_PFX "HEST table parsing is initialized.\n");
-+	if (!rc) {
-+		pr_info(HEST_PFX "Table parsing has been initialized.\n");
-+		return;
-+	}
- 
--	return 0;
- err:
- 	hest_disable = 1;
--	return rc;
- }
--
--subsys_initcall(hest_init);
-Index: linux-2.6/include/acpi/apei.h
-===================================================================
---- linux-2.6.orig/include/acpi/apei.h
-+++ linux-2.6/include/acpi/apei.h
-@@ -19,6 +19,12 @@
- extern int hest_disable;
- extern int erst_disable;
- 
-+#ifdef CONFIG_ACPI_APEI
-+void __init acpi_hest_init(void);
-+#else
-+static inline void acpi_hest_init(void) { return; }
-+#endif
-+
- typedef int (*apei_hest_func_t)(struct acpi_hest_header *hest_hdr, void *data);
- int apei_hest_parse(apei_hest_func_t func, void *data);
- 
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
