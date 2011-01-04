@@ -1,125 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425Ab1ADIoZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 03:44:25 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:40953 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944Ab1ADIoY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 03:44:24 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: v9fs-developer@lists.sourceforge.net
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH] fs/9p: Use the correct dentry operations
-Date: Tue,  4 Jan 2011 14:14:06 +0530
-Message-Id: <1294130646-32602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1
+	id S1752429Ab1ADIs6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 03:48:58 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:59023 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750953Ab1ADIs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 03:48:57 -0500
+Date: Tue, 4 Jan 2011 09:48:47 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86, 64bit: Always make MAX_APICS to 32768
+Message-ID: <20110104084847.GB26209@elte.hu>
+References: <4D1D2C4D.4090806@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D1D2C4D.4090806@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ad77dbce567128d59b37a14c9562c8af6f63aeca removed the changes
-done by 3c30750ffafbc32af040b09f777b67aa2486b063. This patch
-add the changes back and also simplifies the function
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- fs/9p/vfs_inode_dotl.c |   73 +++++++++++++++++-------------------------------
- 1 files changed, 26 insertions(+), 47 deletions(-)
+* Yinghai Lu <yinghai@kernel.org> wrote:
 
-diff --git a/fs/9p/vfs_inode_dotl.c b/fs/9p/vfs_inode_dotl.c
-index 38d5880..8527742 100644
---- a/fs/9p/vfs_inode_dotl.c
-+++ b/fs/9p/vfs_inode_dotl.c
-@@ -197,61 +197,40 @@ v9fs_vfs_create_dotl(struct inode *dir, struct dentry *dentry, int omode,
- 		goto error;
- 	}
- 	/* instantiate inode and assign the unopened fid to the dentry */
--	if (v9ses->cache == CACHE_LOOSE || v9ses->cache == CACHE_FSCACHE ||
--	    (nd && nd->flags & LOOKUP_OPEN)) {
--		fid = p9_client_walk(dfid, 1, &name, 1);
--		if (IS_ERR(fid)) {
--			err = PTR_ERR(fid);
--			P9_DPRINTK(P9_DEBUG_VFS, "p9_client_walk failed %d\n",
--				err);
--			fid = NULL;
--			goto error;
--		}
-+	fid = p9_client_walk(dfid, 1, &name, 1);
-+	if (IS_ERR(fid)) {
-+		err = PTR_ERR(fid);
-+		P9_DPRINTK(P9_DEBUG_VFS, "p9_client_walk failed %d\n", err);
-+		fid = NULL;
-+		goto error;
-+	}
- 
--		inode = v9fs_inode_from_fid(v9ses, fid, dir->i_sb);
--		if (IS_ERR(inode)) {
--			err = PTR_ERR(inode);
--			P9_DPRINTK(P9_DEBUG_VFS, "inode creation failed %d\n",
--				err);
--			goto error;
--		}
-+	inode = v9fs_inode_from_fid(v9ses, fid, dir->i_sb);
-+	if (IS_ERR(inode)) {
-+		err = PTR_ERR(inode);
-+		P9_DPRINTK(P9_DEBUG_VFS, "inode creation failed %d\n", err);
-+		goto error;
-+	}
-+	if (v9ses->cache)
- 		dentry->d_op = &v9fs_cached_dentry_operations;
--		d_instantiate(dentry, inode);
--		err = v9fs_fid_add(dentry, fid);
--		if (err < 0)
--			goto error;
--		/* The fid would get clunked via a dput */
--		fid = NULL;
--	} else {
--		/*
--		 * Not in cached mode. No need to populate
--		 * inode with stat. We need to get an inode
--		 * so that we can set the acl with dentry
--		 */
--		inode = v9fs_get_inode(dir->i_sb, mode);
--		if (IS_ERR(inode)) {
--			err = PTR_ERR(inode);
--			goto error;
--		}
-+	else
- 		dentry->d_op = &v9fs_dentry_operations;
--		d_instantiate(dentry, inode);
--	}
-+	d_instantiate(dentry, inode);
-+	err = v9fs_fid_add(dentry, fid);
-+	if (err < 0)
-+		goto error;
-+
- 	/* Now set the ACL based on the default value */
- 	v9fs_set_create_acl(dentry, dacl, pacl);
- 
--	/* if we are opening a file, assign the open fid to the file */
--	if (nd && nd->flags & LOOKUP_OPEN) {
--		filp = lookup_instantiate_filp(nd, dentry, generic_file_open);
--		if (IS_ERR(filp)) {
--			p9_client_clunk(ofid);
--			return PTR_ERR(filp);
--		}
--		filp->private_data = ofid;
--	} else
-+	/* Since we are opening a file, assign the open fid to the file */
-+	filp = lookup_instantiate_filp(nd, dentry, generic_file_open);
-+	if (IS_ERR(filp)) {
- 		p9_client_clunk(ofid);
--
-+		return PTR_ERR(filp);
-+	}
-+	filp->private_data = ofid;
- 	return 0;
--
- error:
- 	if (ofid)
- 		p9_client_clunk(ofid);
--- 
-1.7.1
+> 
+> Found one x2apic pre-enabled system, x2apic_mode suddenly get corrupted
+> after register some cpus. when compiled CONFIG_NR_CPUS=255 instead of 512
+> 
+> It turns out that generic_processor_info() ==> phyid_set(apicid, phys_cpu_present_map) cause the problem.
+> 
+> phys_cpu_present_map is with MAX_APICS bits. and pre-enabled system some cpus apic id > 255.
+> 
+> the variable after phys_cpu_present_map may get corrupted.... siliently...
+> 
+> ffffffff828e8420 B phys_cpu_present_map
+> ffffffff828e8440 B apic_verbosity
+> ffffffff828e8444 B local_apic_timer_c2_ok
+> ffffffff828e8448 B disable_apic
+> ffffffff828e844c B x2apic_mode
+> ffffffff828e8450 B x2apic_disabled
+> ffffffff828e8454 B num_processors
+> ...
+> 
+> Actually phys_cpu_present_map is referenced via apic id, instead index. we should use
+> MAX_LOCAL_APIC instead MAX_APICIS. but that is another header.
+> 
+> So just let MAX_APICS equal to MAX_LOCAL_APIC at this point.
+> esp for 64 bit will be 32768 in all cases.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> ---
+>  arch/x86/include/asm/mpspec_def.h |    6 +-----
+>  1 file changed, 1 insertion(+), 5 deletions(-)
+> 
+> Index: linux-2.6/arch/x86/include/asm/mpspec_def.h
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/include/asm/mpspec_def.h
+> +++ linux-2.6/arch/x86/include/asm/mpspec_def.h
+> @@ -17,11 +17,7 @@
+>  # define MAX_MPC_ENTRY 1024
+>  # define MAX_APICS      256
+>  #else
+> -# if NR_CPUS <= 255
+> -#  define MAX_APICS     255
+> -# else
+> -#  define MAX_APICS   32768
+> -# endif
+> +# define MAX_APICS    32768
+>  #endif
+>  
+>  /* Intel MP Floating Pointer Structure */
 
+Please fix the real bug first: the lack of boundary checks when we set 
+phys_cpu_present_map!
+
+Then, once that bitmap op is not corrupting nearby variables silently but triggers a 
+fail-safe logic instead (ignoring apics that go outside the supported range? 
+printk-ing a warning?) can we think about upping the limit.
+
+But even with the limit upping, please show (in the changelog) a before/after 'size 
+vmlinux' comparison, to make sure that this rather drastic change of the limit does 
+not waste unreasonable amounts of memory.
+
+Thanks,
+
+	Ingo
