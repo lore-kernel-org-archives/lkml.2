@@ -1,62 +1,483 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751409Ab1ADLAr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 06:00:47 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49612 "EHLO arroyo.ext.ti.com"
+	id S1751459Ab1ADLA5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 06:00:57 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49615 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750755Ab1ADLAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751170Ab1ADLAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Jan 2011 06:00:46 -0500
 From: pavan_savoy@ti.com
 To: padovan@profusion.mobi, marcel@holtmann.org
 Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
         Pavan Savoy <pavan_savoy@ti.com>
-Subject: [RFC 0/2] remove BT references from TI_ST
-Date: Tue,  4 Jan 2011 04:59:46 -0600
-Message-Id: <1294138788-10307-1-git-send-email-pavan_savoy@ti.com>
+Subject: [RFC 2/2] Bluetooth: btwilink driver
+Date: Tue,  4 Jan 2011 04:59:48 -0600
+Message-Id: <1294138788-10307-3-git-send-email-pavan_savoy@ti.com>
 X-Mailer: git-send-email 1.5.6.3
+In-Reply-To: <1294138788-10307-2-git-send-email-pavan_savoy@ti.com>
+References: <1294138788-10307-1-git-send-email-pavan_savoy@ti.com>
+ <1294138788-10307-2-git-send-email-pavan_savoy@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pavan Savoy <pavan_savoy@ti.com>
 
-Gustavo,
+-- patch description --
 
-Based on your comments, that the underlying shared transport driver
-for btwilink driver made use of the BT references to peek into the packets
-I have modified the TI_ST.
+This is the bluetooth protocol driver for the TI WiLink7 chipsets.
+Texas Instrument's WiLink chipsets combine wireless technologies
+like BT, FM, GPS and WLAN onto a single chip.
 
-Since there lacks a generic way to parse the packets coming in from the
-UART into BT, FM or GPS, we have to look into the data to fragment assembled
-data or assemble fragmented data.
-For this reason, Now the above lying protocol drivers like BT, FM and GPS
-would send details about their packet types and header information which
-would assist shared transport driver to parse the data.
+This Bluetooth driver works on top of the TI_ST shared transport
+line discipline driver which also allows other drivers like
+FM V4L2 and GPS character driver to make use of the same UART interface.
 
-Gustavo, please also notice the change in btwilink driver in and around,
-st_register and suggest if something like this is OK.
-btwilink can also be modified to send in all the packet specific data
-in one shot, if that is preferred.
+Kconfig and Makefile modifications to enable the Bluetooth
+driver for Texas Instrument's WiLink 7 chipset.
 
-Please review and provide comments..
-
-Note:
-If this is alright, I will send out a modified patch with updated
-subject to lkml/Greg for linux-next.
-
-Thanks & Regards,
-Pavan Savoy.
-
-Pavan Savoy (2):
-  drivers:misc:ti-st: change protocol parse logic
-  Bluetooth: btwilink driver
-
+Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+---
  drivers/bluetooth/Kconfig    |   10 +
  drivers/bluetooth/Makefile   |    1 +
  drivers/bluetooth/btwilink.c |  397 ++++++++++++++++++++++++++++++++++++++++++
- drivers/misc/ti-st/st_core.c |  355 ++++++++++++--------------------------
- drivers/misc/ti-st/st_kim.c  |   56 +++---
- include/linux/ti_wilink_st.h |   40 +++--
- 6 files changed, 575 insertions(+), 284 deletions(-)
+ 3 files changed, 408 insertions(+), 0 deletions(-)
  create mode 100644 drivers/bluetooth/btwilink.c
+
+diff --git a/drivers/bluetooth/Kconfig b/drivers/bluetooth/Kconfig
+index 02deef4..8e0de9a 100644
+--- a/drivers/bluetooth/Kconfig
++++ b/drivers/bluetooth/Kconfig
+@@ -219,4 +219,14 @@ config BT_ATH3K
+ 	  Say Y here to compile support for "Atheros firmware download driver"
+ 	  into the kernel or say M to compile it as module (ath3k).
+ 
++config BT_WILINK
++	tristate "Texas Instruments WiLink7 driver"
++	depends on TI_ST
++	help
++	  This enables the Bluetooth driver for Texas Instrument's BT/FM/GPS
++	  combo devices. This makes use of shared transport line discipline
++	  core driver to communicate with the BT core of the combo chip.
++
++	  Say Y here to compile support for Texas Instrument's WiLink7 driver
++	  into the kernel or say M to compile it as module.
+ endmenu
+diff --git a/drivers/bluetooth/Makefile b/drivers/bluetooth/Makefile
+index 71bdf13..f4460f4 100644
+--- a/drivers/bluetooth/Makefile
++++ b/drivers/bluetooth/Makefile
+@@ -18,6 +18,7 @@ obj-$(CONFIG_BT_HCIBTSDIO)	+= btsdio.o
+ obj-$(CONFIG_BT_ATH3K)		+= ath3k.o
+ obj-$(CONFIG_BT_MRVL)		+= btmrvl.o
+ obj-$(CONFIG_BT_MRVL_SDIO)	+= btmrvl_sdio.o
++obj-$(CONFIG_BT_WILINK)		+= btwilink.o
+ 
+ btmrvl-y			:= btmrvl_main.o
+ btmrvl-$(CONFIG_DEBUG_FS)	+= btmrvl_debugfs.o
+diff --git a/drivers/bluetooth/btwilink.c b/drivers/bluetooth/btwilink.c
+new file mode 100644
+index 0000000..0201aca
+--- /dev/null
++++ b/drivers/bluetooth/btwilink.c
+@@ -0,0 +1,397 @@
++/*
++ *  Texas Instrument's Bluetooth Driver For Shared Transport.
++ *
++ *  Bluetooth Driver acts as interface between HCI core and
++ *  TI Shared Transport Layer.
++ *
++ *  Copyright (C) 2009-2010 Texas Instruments
++ *  Author: Raja Mani <raja_mani@ti.com>
++ *	Pavan Savoy <pavan_savoy@ti.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ */
++
++#include <linux/platform_device.h>
++#include <net/bluetooth/bluetooth.h>
++#include <net/bluetooth/hci_core.h>
++
++#include <linux/ti_wilink_st.h>
++
++/* Bluetooth Driver Version */
++#define VERSION               "1.0"
++
++/* Number of seconds to wait for registration completion
++ * when ST returns PENDING status.
++ */
++#define BT_REGISTER_TIMEOUT   6000	/* 6 sec */
++
++/**
++ * struct ti_st - driver operation structure
++ * @hdev: hci device pointer which binds to bt driver
++ * @reg_status: ST registration callback status
++ * @st_write: write function provided by the ST driver
++ *	to be used by the driver during send_frame.
++ * @wait_reg_completion - completion sync between ti_st_open
++ *	and ti_st_registration_completion_cb.
++ */
++struct ti_st {
++	struct hci_dev *hdev;
++	char reg_status;
++	long (*st_write) (struct sk_buff *);
++	struct completion wait_reg_completion;
++};
++
++/* Increments HCI counters based on pocket ID (cmd,acl,sco) */
++static inline void ti_st_tx_complete(struct ti_st *hst, int pkt_type)
++{
++	struct hci_dev *hdev = hst->hdev;
++
++	/* Update HCI stat counters */
++	switch (pkt_type) {
++	case HCI_COMMAND_PKT:
++		hdev->stat.cmd_tx++;
++		break;
++
++	case HCI_ACLDATA_PKT:
++		hdev->stat.acl_tx++;
++		break;
++
++	case HCI_SCODATA_PKT:
++		hdev->stat.sco_tx++;
++		break;
++	}
++}
++
++/* ------- Interfaces to Shared Transport ------ */
++
++/* Called by ST layer to indicate protocol registration completion
++ * status.ti_st_open() function will wait for signal from this
++ * API when st_register() function returns ST_PENDING.
++ */
++static void st_registration_completion_cb(void *priv_data, char data)
++{
++	struct ti_st *lhst = priv_data;
++
++	/* Save registration status for use in ti_st_open() */
++	lhst->reg_status = data;
++	/* complete the wait in ti_st_open() */
++	complete(&lhst->wait_reg_completion);
++}
++
++/* Called by Shared Transport layer when receive data is
++ * available */
++static long st_receive(void *priv_data, struct sk_buff *skb)
++{
++	struct ti_st *lhst = priv_data;
++	int err;
++
++	if (!skb)
++		return -EFAULT;
++
++	if (!lhst) {
++		kfree_skb(skb);
++		return -EFAULT;
++	}
++
++	skb->dev = (void *) lhst->hdev;
++
++	/* Forward skb to HCI core layer */
++	err = hci_recv_frame(skb);
++	if (err < 0) {
++		BT_ERR("Unable to push skb to HCI core(%d)", err);
++		return err;
++	}
++
++	lhst->hdev->stat.byte_rx += skb->len;
++
++	return 0;
++}
++
++/* ------- Interfaces to HCI layer ------ */
++/* protocol structure registered with shared transport */
++static struct st_proto_s ti_st_proto[3] = {
++	{
++		.chnl_id = 0x02, /* ACL */
++		.recv = st_receive,
++		.reg_complete_cb = st_registration_completion_cb,
++		.hdr_len = 4,
++		.offset_len_in_hdr = 2,
++		.len_size = 2,
++		.reserve = 8,
++	},
++	{
++		.chnl_id = 0x03, /* SCO */
++		.recv = st_receive,
++		.reg_complete_cb = st_registration_completion_cb,
++		.hdr_len = 3,
++		.offset_len_in_hdr = 2,
++		.len_size = 1,
++		.reserve = 8,
++	},
++	{
++		.chnl_id = 0x04, /* HCI Events */
++		.recv = st_receive,
++		.reg_complete_cb = st_registration_completion_cb,
++		.hdr_len = 2,
++		.offset_len_in_hdr = 1,
++		.len_size = 1,
++		.reserve = 8,
++	},
++};
++
++/* Called from HCI core to initialize the device */
++static int ti_st_open(struct hci_dev *hdev)
++{
++	unsigned long timeleft;
++	struct ti_st *hst;
++	int err, i;
++
++	BT_DBG("%s %p", hdev->name, hdev);
++	if (test_and_set_bit(HCI_RUNNING, &hdev->flags)) {
++		BT_ERR("btwilink already opened");
++		return -EBUSY;
++	}
++
++	/* provide contexts for callbacks from ST */
++	hst = hdev->driver_data;
++
++	for (i = 0; i < 3; i++) {
++		ti_st_proto[i].priv_data = hst;
++		ti_st_proto[i].max_frame_size = HCI_MAX_FRAME_SIZE;
++
++		err = st_register(&ti_st_proto[i]);
++		if (err == -EINPROGRESS) {
++			/* ST is busy with either protocol
++			 * registration or firmware download.
++			 */
++			/* Prepare wait-for-completion handler data structures.
++			*/
++			init_completion(&hst->wait_reg_completion);
++
++			/* Reset ST registration callback status flag,
++			 * this value will be updated in
++			 * ti_st_registration_completion_cb()
++			 * function whenever it called from ST driver.
++			 */
++			hst->reg_status = -EINPROGRESS;
++
++			BT_DBG("waiting for registration "
++			"completion signal from ST");
++			timeleft = wait_for_completion_timeout
++				(&hst->wait_reg_completion,
++				 msecs_to_jiffies(BT_REGISTER_TIMEOUT));
++			if (!timeleft) {
++				clear_bit(HCI_RUNNING, &hdev->flags);
++				BT_ERR("Timeout(%d sec),didn't get reg "
++						"completion signal from ST",
++						BT_REGISTER_TIMEOUT / 1000);
++				return -ETIMEDOUT;
++			}
++
++			/* Is ST registration callback
++			 * called with ERROR status? */
++			if (hst->reg_status != 0) {
++				clear_bit(HCI_RUNNING, &hdev->flags);
++				BT_ERR("ST registration completed with invalid "
++						"status %d", hst->reg_status);
++				return -EAGAIN;
++			}
++			err = 0;
++		} else if (err != 0) {
++			clear_bit(HCI_RUNNING, &hdev->flags);
++			BT_ERR("st_register failed %d", err);
++			return err;
++		}
++		hst->st_write = ti_st_proto[i].write;
++		if (!hst->st_write) {
++			BT_ERR("undefined ST write function");
++			clear_bit(HCI_RUNNING, &hdev->flags);
++
++			/* Undo registration with ST */
++			err = st_unregister(&ti_st_proto[i]);
++			if (err)
++				BT_ERR("st_unregister() failed with "
++				"error %d", err);
++
++			hst->st_write = NULL;
++			/* ti_st_proto.write is filled up by the
++			 * underlying shared transport driver
++			 * upon registration
++			 */
++			return err;
++		}
++	}
++
++	return err;
++}
++
++/* Close device */
++static int ti_st_close(struct hci_dev *hdev)
++{
++	int err, i;
++	struct ti_st *hst = hdev->driver_data;
++
++	if (!test_and_clear_bit(HCI_RUNNING, &hdev->flags))
++		return 0;
++
++	for (i = 0; i < 3; i++) {
++		/* continue to unregister from transport */
++		err = st_unregister(&ti_st_proto[i]);
++		if (err)
++			BT_ERR("st_unregister() failed with error %d", err);
++	}
++
++	hst->st_write = NULL;
++
++	return err;
++}
++
++static int ti_st_send_frame(struct sk_buff *skb)
++{
++	struct hci_dev *hdev;
++	struct ti_st *hst;
++	long len;
++
++	hdev = (struct hci_dev *)skb->dev;
++
++	if (!test_bit(HCI_RUNNING, &hdev->flags))
++		return -EBUSY;
++
++	hst = hdev->driver_data;
++
++	/* Prepend skb with frame type */
++	memcpy(skb_push(skb, 1), &bt_cb(skb)->pkt_type, 1);
++
++	BT_DBG("%s: type %d len %d", hdev->name, bt_cb(skb)->pkt_type,
++			skb->len);
++
++	/* Insert skb to shared transport layer's transmit queue.
++	 * Freeing skb memory is taken care in shared transport layer,
++	 * so don't free skb memory here.
++	 */
++	len = hst->st_write(skb);
++	if (len < 0) {
++		kfree_skb(skb);
++		BT_ERR("ST write failed (%ld)", len);
++		/* Try Again, would only fail if UART has gone bad */
++		return -EAGAIN;
++	}
++
++	/* ST accepted our skb. So, Go ahead and do rest */
++	hdev->stat.byte_tx += len;
++	ti_st_tx_complete(hst, bt_cb(skb)->pkt_type);
++
++	return 0;
++}
++
++static void ti_st_destruct(struct hci_dev *hdev)
++{
++	BT_DBG("%s", hdev->name);
++	kfree(hdev->driver_data);
++}
++
++static int bt_ti_probe(struct platform_device *pdev)
++{
++	static struct ti_st *hst;
++	struct hci_dev *hdev;
++	int err;
++
++	hst = kzalloc(sizeof(struct ti_st), GFP_KERNEL);
++	if (!hst)
++		return -ENOMEM;
++
++	/* Expose "hciX" device to user space */
++	hdev = hci_alloc_dev();
++	if (!hdev) {
++		kfree(hst);
++		return -ENOMEM;
++	}
++
++	BT_DBG("hdev %p", hdev);
++
++	hst->hdev = hdev;
++	hdev->bus = HCI_UART;
++	hdev->driver_data = hst;
++	hdev->open = ti_st_open;
++	hdev->close = ti_st_close;
++	hdev->flush = NULL;
++	hdev->send = ti_st_send_frame;
++	hdev->destruct = ti_st_destruct;
++	hdev->owner = THIS_MODULE;
++
++	err = hci_register_dev(hdev);
++	if (err < 0) {
++		BT_ERR("Can't register HCI device error %d", err);
++		kfree(hst);
++		hci_free_dev(hdev);
++		return err;
++	}
++
++	BT_DBG("HCI device registered (hdev %p)", hdev);
++
++	dev_set_drvdata(&pdev->dev, hst);
++	return err;
++}
++
++static int bt_ti_remove(struct platform_device *pdev)
++{
++	struct hci_dev *hdev;
++	struct ti_st *hst = dev_get_drvdata(&pdev->dev);
++
++	if (!hst)
++		return -EFAULT;
++
++	hdev = hst->hdev;
++	ti_st_close(hdev);
++	hci_unregister_dev(hdev);
++
++	hci_free_dev(hdev);
++	kfree(hst);
++
++	dev_set_drvdata(&pdev->dev, NULL);
++	return 0;
++}
++
++static struct platform_driver btwilink_driver = {
++	.probe = bt_ti_probe,
++	.remove = bt_ti_remove,
++	.driver = {
++		.name = "btwilink",
++		.owner = THIS_MODULE,
++	},
++};
++
++/* ------- Module Init/Exit interfaces ------ */
++static int __init btwilink_init(void)
++{
++	BT_INFO("Bluetooth Driver for TI WiLink - Version %s", VERSION);
++
++	return platform_driver_register(&btwilink_driver);
++}
++
++static void __exit btwilink_exit(void)
++{
++	platform_driver_unregister(&btwilink_driver);
++}
++
++module_init(btwilink_init);
++module_exit(btwilink_exit);
++
++/* ------ Module Info ------ */
++
++MODULE_AUTHOR("Raja Mani <raja_mani@ti.com>");
++MODULE_DESCRIPTION("Bluetooth Driver for TI Shared Transport" VERSION);
++MODULE_VERSION(VERSION);
++MODULE_LICENSE("GPL");
+-- 
+1.6.3.3
 
