@@ -1,80 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751893Ab1ADP4s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 10:56:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26832 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750989Ab1ADP4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 10:56:47 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Benjamin LaHaise <bcrl@kvack.org>,
-        linux-aio@kvack.org
-Subject: Re: [PATCH 21/32] fs/aio: aio_wq isn't used in memory reclaim path
-References: <1294062595-30097-1-git-send-email-tj@kernel.org>
-	<1294062595-30097-22-git-send-email-tj@kernel.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 04 Jan 2011 10:56:20 -0500
-In-Reply-To: <1294062595-30097-22-git-send-email-tj@kernel.org> (Tejun Heo's
-	message of "Mon, 3 Jan 2011 14:49:44 +0100")
-Message-ID: <x49d3ocacij.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751814Ab1ADP6l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 10:58:41 -0500
+Received: from outbound-queue-1.mail.thdo.gradwell.net ([212.11.70.34]:39083
+	"EHLO outbound-queue-1.mail.thdo.gradwell.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751357Ab1ADP6k convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 10:58:40 -0500
+Subject: Re: Using s3virge card in Sun Blade 2000
+From: Alex Buell <alex.buell@munted.org.uk>
+Reply-To: alex.buell@munted.org.uk
+To: David Miller <davem@davemloft.net>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20110103.143625.193710368.davem@davemloft.net>
+References: <1294086801.17576.14.camel@lithium>
+	 <20110103.123939.02282416.davem@davemloft.net>
+	 <1294090573.17576.16.camel@lithium>
+	 <20110103.143625.193710368.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: One very high maintenance cat for company
+Date: Tue, 04 Jan 2011 15:57:07 +0000
+Message-ID: <1294156627.17576.21.camel@lithium>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+X-Gradwell-MongoId: 4d2343ac.12c6-25a-2
+X-Gradwell-Auth-Method: mailbox
+X-Gradwell-Auth-Credentials: postmaster@pop3.munted.org.uk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo <tj@kernel.org> writes:
+On Mon, 2011-01-03 at 14:36 -0800, David Miller wrote:
+> From: Alex Buell <alex.buell@munted.org.uk>
+> Date: Mon, 03 Jan 2011 21:36:13 +0000
+> 
+> > Those are 32 bit addresses, so I suppose I should be getting the base
+> > address for the registers accesses from region 1, right? 
+> 
+> Yes, and pre-computed addresses exist in pci_region_start(pdev, 1).
 
-> aio_wq isn't used during memory reclaim.  Convert to alloc_workqueue()
-> without WQ_MEM_RECLAIM.  It's possible to use system_wq but given that
-> the number of work items is determined from userland and the work item
-> may block, enforcing strict concurrency limit would be a good idea.
-
-I would think that just given that it may block would be enough to keep
-it off of the system workqueue.
-
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Benjamin LaHaise <bcrl@kvack.org>
-> Cc: linux-aio@kvack.org
-> ---
-> Please feel free to take it into the subsystem tree or simply ack -
-> I'll route it through the wq tree.
->
-> Thanks.
->
->  fs/aio.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/fs/aio.c b/fs/aio.c
-> index 8c8f6c5..dc3fcbb 100644
-> --- a/fs/aio.c
-> +++ b/fs/aio.c
-> @@ -85,7 +85,7 @@ static int __init aio_setup(void)
->  	kiocb_cachep = KMEM_CACHE(kiocb, SLAB_HWCACHE_ALIGN|SLAB_PANIC);
->  	kioctx_cachep = KMEM_CACHE(kioctx,SLAB_HWCACHE_ALIGN|SLAB_PANIC);
->  
-> -	aio_wq = create_workqueue("aio");
-> +	aio_wq = alloc_workqueue("aio", 0, 1);	/* used to limit concurrency */
-
-OK, the only difference here is the removal of the WQ_MEM_RECLAIM flag,
-as you noted.
-
->  	abe_pool = mempool_create_kmalloc_pool(1, sizeof(struct aio_batch_entry));
->  	BUG_ON(!abe_pool);
->  
-> @@ -569,7 +569,7 @@ static int __aio_put_req(struct kioctx *ctx, struct kiocb *req)
->  		spin_lock(&fput_lock);
->  		list_add(&req->ki_list, &fput_head);
->  		spin_unlock(&fput_lock);
-> -		queue_work(aio_wq, &fput_work);
-> +		schedule_work(&fput_work);
-
-I'm not sure where this change fits into the patch description.  Why did
-you do this?
-
-Cheers,
-Jeff
+Do you have any tips for reducing the amount of reboots I have to do
+whenever I try loading the s3fb module after changing code? 
+-- 
+Tactical Nuclear Kittens
