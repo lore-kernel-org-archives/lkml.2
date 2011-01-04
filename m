@@ -1,98 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371Ab1ADPTU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 10:19:20 -0500
-Received: from charybdis-ext.suse.de ([195.135.221.2]:59163 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752130Ab1ADPTT (ORCPT
+	id S1751726Ab1ADPZC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 10:25:02 -0500
+Received: from casper.infradead.org ([85.118.1.10]:38316 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300Ab1ADPZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 10:19:19 -0500
-Subject: Re: [RFC][RT][PATCH 3/4] rtmutex: Revert Optimize rt lock wakeup
-From: "Peter W. Morreale" <pmorreale@novell.com>
-Reply-To: pmorreale@novell.com
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Gregory Haskins <ghaskins@novell.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+	Tue, 4 Jan 2011 10:25:01 -0500
+Date: Tue, 4 Jan 2011 13:24:42 -0200
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Han Pingtian <phan@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        ThomasGleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <1294086147.3948.194.camel@gandalf.stny.rr.com>
-References: <20101223224755.078983538@goodmis.org>
-	 <20101223225116.729981172@goodmis.org>
-	 <4D13DF250200005A000793E1@novprvoes0310.provo.novell.com>
-	 <1293166464.22802.415.camel@gandalf.stny.rr.com>
-	 <4D19A8B20200005A00079658@novprvoes0310.provo.novell.com>
-	 <1294081596.3948.192.camel@gandalf.stny.rr.com>
-	 <1294086147.3948.194.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: LSG - Novell Inc.
-Date: Tue, 04 Jan 2011 08:19:09 -0700
-Message-ID: <1294154349.3371.24.camel@hermosa.morreale.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+        Tom Zanussi <tzanussi@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        mingo@elte.hu
+Subject: Re: [GIT PULL||RFC 00/11] perf library and regression testing
+ improvements
+Message-ID: <20110104152442.GG19989@ghostprotocols.net>
+References: <AANLkTinjkC=4yQbiLxF7=G1izFa2pOuR=WvRXbha3wsj@mail.gmail.com>
+ <20110104140338.GA19989@ghostprotocols.net>
+ <AANLkTi=osr9ZB9OzPxZ_99FU1A5JzCA3rMM64fxws34S@mail.gmail.com>
+ <20110104141958.GC19989@ghostprotocols.net>
+ <20110104142715.GD19989@ghostprotocols.net>
+ <AANLkTik93yG1e80a8MBYDfFBu1YwZ+BA6LqOh-EsLHO_@mail.gmail.com>
+ <20110104143658.GF19989@ghostprotocols.net>
+ <AANLkTin6udBreRt0zYcmDfCZZDwLjkwhg93-hFafy=4f@mail.gmail.com>
+ <AANLkTinqf+5cOv-pDMnhGt2dkHEkM2q_GcG6Aa-LzNAe@mail.gmail.com>
+ <AANLkTik=kHNPPbAo7ynD4AY68Vd3t1bxW_2stZx2QAFH@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTik=kHNPPbAo7ynD4AY68Vd3t1bxW_2stZx2QAFH@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-03 at 15:22 -0500, Steven Rostedt wrote:
-> On Mon, 2011-01-03 at 14:06 -0500, Steven Rostedt wrote:
+Em Tue, Jan 04, 2011 at 04:10:17PM +0100, Stephane Eranian escreveu:
+> Ok, The problem comes both files picking up a different verison for
+> perf_event.h.
 > 
-> > 
-> > 	if (adaptive_wait(&waiter, orig_owner))
-> > 		sleep = 1;
-> > 	else
-> > 		sleep = 0;
-> > 
-> > 	if (sleep)
+> In my case, util/evsel.c was using /usr/include/linux/perf_event.h whereas
+> builtin-stat.c was using ../../include/linux/perf_event.h. Both have a different
+> struct perf_event_attr.
 > 
+> When I remove the /usr/include/linux/perf_event.h file, then I cannot compile
+> perf anymore:
+> In file included from perf.c:15:
+> util/parse-events.h:7:30: error: linux/perf_event.h: No such file or directory
 > 
-> > 		raw_spin_lock(&lock->wait_lock);
-> > 		saved_state = rt_set_current_block_state(saved_state);
-> > 		if (!lock->owner && &waiter == rt_mutex_top_waiter(lock))
-> > 			sleep = 0;
-> > 		raw_spin_unlock(&lock->wait_lock);
-> 
-> I may be able to remove the above locks and replace it with:
-> 
-> 	saved_state = rt_set_current_blocked_state(saved_state);
-> 	if (orig_owner == rt_mutex_owner(lock))
-> 		schedule_rt_mutex(lock);
-> 
-> -- Steve
+> Looks like something changed in the Makefile and the util modules don't know
+> where to pickup perf_event.h
 
-Isn't it possible to miss a wakeup here if the waiter becomes preempted?
+Ouch, all need to use ../../include/linux/perf_event.h, I think, my bad,
+checking that.
 
-Recall that adaptive wait is a preemptive wait.  Hence the (I believe)
-original reason we did the adaptive spin in a (transitioning)  sleep
-state.
+Thanks for figuring out the issue!
 
--PWM
-
-> 
-> 
-> > 		if (sleep)
-> > 			schedule_rt_mutex(lock);
-> > 		saved_state = rt_restore_current_blocked_state(saved_state);
-> > 	}
-> > 
-> > Otherwise we can risk the wakeup_next_waiter() missing the wakeup.
-> > 
-> > To clarify, we want the adaptive_wait() to run as TASK_RUNNING. Then if
-> > we must sleep, then we must set the state to TASK_UNINTERRUPTIBLE, test
-> > again if we can still the lock, and if not then sleep. Otherwise, if a
-> > wakeup happens just before we set the state to TASK_UNINTERRUPTIBLE,
-> > then we miss the wake up all together.
-> > 
-> > I can do this change, and see what impact it makes.
-> > 
-> > I'm also curious if this ever worked? If it did not, then are you sure
-> > your tests that show the benefit of it was true. I don't have a large
-> > scale box at my disposal ATM, so I can only see what this does on 4way
-> > machines.
-> > 
-> > -- Steve
-> > 
-> 
-> 
-
-
+- Arnaldo
