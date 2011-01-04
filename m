@@ -1,154 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147Ab1ADIXD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 03:23:03 -0500
-Received: from hera.kernel.org ([140.211.167.34]:59076 "EHLO hera.kernel.org"
+	id S1752089Ab1ADIXl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 03:23:41 -0500
+Received: from hera.kernel.org ([140.211.167.34]:59107 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751852Ab1ADIXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 03:23:00 -0500
-Date: Tue, 4 Jan 2011 08:22:37 GMT
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
-        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
+	id S1751203Ab1ADIXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 03:23:40 -0500
+Date: Tue, 4 Jan 2011 08:23:02 GMT
+From: tip-bot for Cliff Wickman <cpw@sgi.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com, cpw@sgi.com,
         tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
-        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <new-submission>
-References: <new-submission>
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        cpw@sgi.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <E1PZol7-0000mM-77@eag09.americas.sgi.com>
+References: <E1PZol7-0000mM-77@eag09.americas.sgi.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evsel: Delete the event selectors at exit
-Message-ID: <tip-70d544d0576775a2b3923a7e68cb49b0313d80c9@git.kernel.org>
-Git-Commit-ID: 70d544d0576775a2b3923a7e68cb49b0313d80c9
+Subject: [tip:x86/uv] x86, UV, BAU: Extend for more than 16 cpus per socket
+Message-ID: <tip-cfa60917f0ba6eca83f41aef3cb4a7dd7736ac9f@git.kernel.org>
+Git-Commit-ID: cfa60917f0ba6eca83f41aef3cb4a7dd7736ac9f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 04 Jan 2011 08:22:37 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 04 Jan 2011 08:23:03 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  70d544d0576775a2b3923a7e68cb49b0313d80c9
-Gitweb:     http://git.kernel.org/tip/70d544d0576775a2b3923a7e68cb49b0313d80c9
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 3 Jan 2011 16:51:39 -0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 3 Jan 2011 16:51:39 -0200
+Commit-ID:  cfa60917f0ba6eca83f41aef3cb4a7dd7736ac9f
+Gitweb:     http://git.kernel.org/tip/cfa60917f0ba6eca83f41aef3cb4a7dd7736ac9f
+Author:     Cliff Wickman <cpw@sgi.com>
+AuthorDate: Mon, 3 Jan 2011 12:03:53 -0600
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 3 Jan 2011 20:35:03 +0100
 
-perf evsel: Delete the event selectors at exit
+x86, UV, BAU: Extend for more than 16 cpus per socket
 
-Freeing all the possibly allocated resources, reducing complexity
-on each tool exit path.
+Fix a hard-coded limit of a maximum of 16 cpu's per socket.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+The UV Broadcast Assist Unit code initializes by scanning the
+cpu topology of the system and assigning a master cpu for each
+socket and UV hub. That scan had an assumption of a limit of 16
+cpus per socket. With Westmere we are going over that limit.
+The UV hub hardware will allow up to 32.
+
+If the scan finds the system has gone over that limit it returns
+an error and we print a warning and fall back to doing TLB
+shootdowns without the BAU.
+
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+Cc: <stable@kernel.org> # .37.x
+LKML-Reference: <E1PZol7-0000mM-77@eag09.americas.sgi.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- tools/perf/builtin-record.c    |    2 --
- tools/perf/builtin-stat.c      |    4 +---
- tools/perf/builtin-top.c       |    4 +---
- tools/perf/perf.c              |    2 ++
- tools/perf/util/parse-events.c |   11 +++++++++++
- tools/perf/util/parse-events.h |    1 +
- 6 files changed, 16 insertions(+), 8 deletions(-)
+ arch/x86/include/asm/uv/uv_bau.h |    9 +++++----
+ arch/x86/platform/uv/tlb_uv.c    |   22 ++++++++++++++++++----
+ 2 files changed, 23 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index e68aee3..052de17 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -965,8 +965,6 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- out_free_event_array:
- 	free(event_array);
- out_free_fd:
--	list_for_each_entry(pos, &evsel_list, node)
--		perf_evsel__free_fd(pos);
- 	free(all_tids);
- 	all_tids = NULL;
- out_symbol_exit:
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 3e5f356..589ba3a 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -844,10 +844,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 	if (status != -1)
- 		print_stat(argc, argv);
- out_free_fd:
--	list_for_each_entry(pos, &evsel_list, node) {
--		perf_evsel__free_fd(pos);
-+	list_for_each_entry(pos, &evsel_list, node)
- 		perf_evsel__free_stat_priv(pos);
--	}
- out:
- 	return status;
+diff --git a/arch/x86/include/asm/uv/uv_bau.h b/arch/x86/include/asm/uv/uv_bau.h
+index 42d412f..ce1d54c 100644
+--- a/arch/x86/include/asm/uv/uv_bau.h
++++ b/arch/x86/include/asm/uv/uv_bau.h
+@@ -26,20 +26,22 @@
+  * BAU_SB_DESCRIPTOR_BASE register, set 1 is located at BASE + 512,
+  * set 2 is at BASE + 2*512, set 3 at BASE + 3*512, and so on.
+  *
+- * We will use 31 sets, one for sending BAU messages from each of the 32
++ * We will use one set for sending BAU messages from each of the
+  * cpu's on the uvhub.
+  *
+  * TLB shootdown will use the first of the 8 descriptors of each set.
+  * Each of the descriptors is 64 bytes in size (8*64 = 512 bytes in a set).
+  */
+ 
++#define MAX_CPUS_PER_UVHUB		64
++#define MAX_CPUS_PER_SOCKET		32
++#define UV_ADP_SIZE			64 /* hardware-provided max. */
++#define UV_CPUS_PER_ACT_STATUS		32 /* hardware-provided max. */
+ #define UV_ITEMS_PER_DESCRIPTOR		8
+ /* the 'throttle' to prevent the hardware stay-busy bug */
+ #define MAX_BAU_CONCURRENT		3
+-#define UV_CPUS_PER_ACT_STATUS		32
+ #define UV_ACT_STATUS_MASK		0x3
+ #define UV_ACT_STATUS_SIZE		2
+-#define UV_ADP_SIZE			32
+ #define UV_DISTRIBUTION_SIZE		256
+ #define UV_SW_ACK_NPENDING		8
+ #define UV_NET_ENDPOINT_INTD		0x38
+@@ -100,7 +102,6 @@
+  * number of destination side software ack resources
+  */
+ #define DEST_NUM_RESOURCES		8
+-#define MAX_CPUS_PER_NODE		32
+ /*
+  * completion statuses for sending a TLB flush message
+  */
+diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
+index ba9caa8..df58e9c 100644
+--- a/arch/x86/platform/uv/tlb_uv.c
++++ b/arch/x86/platform/uv/tlb_uv.c
+@@ -1341,7 +1341,7 @@ uv_activation_descriptor_init(int node, int pnode)
+ 
+ 	/*
+ 	 * each bau_desc is 64 bytes; there are 8 (UV_ITEMS_PER_DESCRIPTOR)
+-	 * per cpu; and up to 32 (UV_ADP_SIZE) cpu's per uvhub
++	 * per cpu; and one per cpu on the uvhub (UV_ADP_SIZE)
+ 	 */
+ 	bau_desc = kmalloc_node(sizeof(struct bau_desc) * UV_ADP_SIZE
+ 				* UV_ITEMS_PER_DESCRIPTOR, GFP_KERNEL, node);
+@@ -1490,7 +1490,7 @@ calculate_destination_timeout(void)
+ /*
+  * initialize the bau_control structure for each cpu
+  */
+-static void __init uv_init_per_cpu(int nuvhubs)
++static int __init uv_init_per_cpu(int nuvhubs)
+ {
+ 	int i;
+ 	int cpu;
+@@ -1507,7 +1507,7 @@ static void __init uv_init_per_cpu(int nuvhubs)
+ 	struct bau_control *smaster = NULL;
+ 	struct socket_desc {
+ 		short num_cpus;
+-		short cpu_number[16];
++		short cpu_number[MAX_CPUS_PER_SOCKET];
+ 	};
+ 	struct uvhub_desc {
+ 		unsigned short socket_mask;
+@@ -1540,6 +1540,10 @@ static void __init uv_init_per_cpu(int nuvhubs)
+ 		sdp = &bdp->socket[socket];
+ 		sdp->cpu_number[sdp->num_cpus] = cpu;
+ 		sdp->num_cpus++;
++		if (sdp->num_cpus > MAX_CPUS_PER_SOCKET) {
++			printk(KERN_EMERG "%d cpus per socket invalid\n", sdp->num_cpus);
++			return 1;
++		}
+ 	}
+ 	for (uvhub = 0; uvhub < nuvhubs; uvhub++) {
+ 		if (!(*(uvhub_mask + (uvhub/8)) & (1 << (uvhub%8))))
+@@ -1570,6 +1574,12 @@ static void __init uv_init_per_cpu(int nuvhubs)
+ 				bcp->uvhub_master = hmaster;
+ 				bcp->uvhub_cpu = uv_cpu_hub_info(cpu)->
+ 						blade_processor_id;
++				if (bcp->uvhub_cpu >= MAX_CPUS_PER_UVHUB) {
++					printk(KERN_EMERG
++						"%d cpus per uvhub invalid\n",
++						bcp->uvhub_cpu);
++					return 1;
++				}
+ 			}
+ nextsocket:
+ 			socket++;
+@@ -1595,6 +1605,7 @@ nextsocket:
+ 		bcp->congested_reps = congested_reps;
+ 		bcp->congested_period = congested_period;
+ 	}
++	return 0;
  }
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 13a836e..27b9c14 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1495,10 +1495,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
  
- 	status = __cmd_top();
- out_free_fd:
--	list_for_each_entry(pos, &evsel_list, node) {
--		perf_evsel__free_fd(pos);
-+	list_for_each_entry(pos, &evsel_list, node)
- 		perf_evsel__free_mmap(pos);
--	}
+ /*
+@@ -1625,7 +1636,10 @@ static int __init uv_bau_init(void)
+ 	spin_lock_init(&disable_lock);
+ 	congested_cycles = microsec_2_cycles(congested_response_us);
  
- 	return status;
- }
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 595d0f4..5b1ecd6 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -286,6 +286,8 @@ static int run_builtin(struct cmd_struct *p, int argc, const char **argv)
- 	status = p->fn(argc, argv, prefix);
- 	exit_browser(status);
- 
-+	perf_evsel_list__delete();
-+
- 	if (status)
- 		return status & 0xff;
- 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 2d948ad..3a142e9 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -982,3 +982,14 @@ int perf_evsel_list__create_default(void)
- 	++nr_counters;
- 	return 0;
- }
-+
-+void perf_evsel_list__delete(void)
-+{
-+	struct perf_evsel *pos, *n;
-+
-+	list_for_each_entry_safe(pos, n, &evsel_list, node) {
-+		list_del_init(&pos->node);
-+		perf_evsel__delete(pos);
+-	uv_init_per_cpu(nuvhubs);
++	if (uv_init_per_cpu(nuvhubs)) {
++		nobau = 1;
++		return 0;
 +	}
-+	nr_counters = 0;
-+}
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index 0f915a0..0a0abc1 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -12,6 +12,7 @@ struct perf_evsel;
- extern struct list_head evsel_list;
  
- int perf_evsel_list__create_default(void);
-+void perf_evsel_list__delete(void);
- 
- struct option;
- 
+ 	uv_partition_base_pnode = 0x7fffffff;
+ 	for (uvhub = 0; uvhub < nuvhubs; uvhub++)
