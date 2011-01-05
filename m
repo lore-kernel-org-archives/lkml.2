@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091Ab1AEV3h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 16:29:37 -0500
-Received: from mail.windriver.com ([147.11.1.11]:64955 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab1AEV3g (ORCPT
+	id S1753128Ab1AEVb3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 16:31:29 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56673 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751429Ab1AEVb1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 16:29:36 -0500
-Date: Wed, 5 Jan 2011 16:29:21 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org, stable-review@kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [34-longterm 251/260] USB: atmel_usba_udc: force vbus_pin at
- -EINVAL when gpio_request failled
-Message-ID: <20110105212921.GZ30150@windriver.com>
-References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
- <1293952756-15010-252-git-send-email-paul.gortmaker@windriver.com>
- <20110105185917.GI2965@game.jcrosoft.org>
+	Wed, 5 Jan 2011 16:31:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110105185917.GI2965@game.jcrosoft.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 05 Jan 2011 21:29:22.0696 (UTC) FILETIME=[9E9E5880:01CBAD1F]
+In-Reply-To: <1294262208.2952.4.camel@heimdal.trondhjem.org>
+References: <1294254337.16957.13.camel@mulgrave.site> <AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com>
+ <1294256169.16957.18.camel@mulgrave.site> <20110105200008.GJ8638@n2100.arm.linux.org.uk>
+ <1294259637.16957.25.camel@mulgrave.site> <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com>
+ <20110105210448.GM8638@n2100.arm.linux.org.uk> <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com>
+ <1294262208.2952.4.camel@heimdal.trondhjem.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 5 Jan 2011 13:30:34 -0800
+Message-ID: <AANLkTi=3Gu-rz=-OdNtUXn4qw60Df6=YePnzvB=s-+Ov@mail.gmail.com>
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Re: [34-longterm 251/260] USB: atmel_usba_udc: force vbus_pin at -EINVAL when gpio_request failled] On 05/01/2011 (Wed 19:59) Jean-Christophe PLAGNIOL-VILLARD wrote:
+On Wed, Jan 5, 2011 at 1:16 PM, Trond Myklebust
+<Trond.Myklebust@netapp.com> wrote:
+>
+> So what should be the preferred way to ensure data gets flushed when
+> you've written directly to a page, and then want to read through the
+> vm_map_ram() virtual range? Should we be adding new semantics to
+> flush_kernel_dcache_page()?
 
-> On 02:19 Sun 02 Jan     , Paul Gortmaker wrote:
-> > From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> > 
-> > commit 969affff54702785330de553b790372e261e93f9 upstream.
-> > 
-> > to ensure gpio_is_valid return false
-> > 
-> > Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> > Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> > Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> > ---
-> >  drivers/usb/gadget/atmel_usba_udc.c |    3 +++
-> >  1 files changed, 3 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
-> > index 75a256f..8fd88e1 100644
-> > --- a/drivers/usb/gadget/atmel_usba_udc.c
-> > +++ b/drivers/usb/gadget/atmel_usba_udc.c
-> > @@ -2015,6 +2015,9 @@ static int __init usba_udc_probe(struct platform_device *pdev)
-> >  			} else {
-> >  				disable_irq(gpio_to_irq(udc->vbus_pin));
-> >  			}
-> > +		} else {
-> > +			/* gpio_request fail so use -EINVAL for gpio_is_valid */
-> > +			ubc->vbus_pin = -EINVAL;
-> there is a typo here
-> please change to 
-> 			udc->vbus_pin = -EINVAL;
+The "preferred way" is actually simple: "don't do that". IOW, if some
+page is accessed through a virtual mapping you've set up, then
+_always_ access it through that virtual mapping.
 
-Thanks -- I see I had the upstream typo fix (b488095186318) already
-queued up in next_round; but it looks like it needs to be dragged back
-into this round.
+Now, when that is impossible (and yes, it sometimes is), then you
+should flush after doing all writes. And if you do the write through
+the regular kernel mapping, you should use flush_dcache_page(). And if
+you did it through the virtual mapping, you should use
+"flush_kernel_vmap_range()" or whatever.
 
-I'll go do that now.
+NOTE! I really didn't look those up very closely, and if the accesses
+can happen concurrently you are basically screwed, so you do need to
+do locking or something else to guarantee that there is some nice
+sequential order.  And maybe I forgot something.  Which is why I do
+suggest "don't do that" as a primary approach to the problem if at all
+possible.
 
-Paul.
+Oh, and you may need to flush before reading too (and many writes do
+end up being "read-modify-write" cycles) in case it's possible that
+you have stale data from a previous read that was then invalidated by
+a write to the aliasing address. Even if that write was flushed out,
+the stale read data may exist at the virtual address. I forget what
+all we required - in the end the only sane model is "virtual caches
+suck so bad that anybody who does them should be laughed at for being
+a retard".
 
-> 
-> Best Regards,
-> J.
+                            Linus
