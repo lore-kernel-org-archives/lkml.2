@@ -1,165 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667Ab1AERGq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 12:06:46 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:57708 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129Ab1AERGo convert rfc822-to-8bit (ORCPT
+	id S1751612Ab1AERIE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 12:08:04 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:45188 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301Ab1AERIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 12:06:44 -0500
-Subject: Re: [PATCH] nfs4: set source address when callback is generated
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=us-ascii
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <20110105005835.GA14744@fieldses.org>
-Date: Wed, 5 Jan 2011 12:06:04 -0500
-Cc: Takuma Umeya <tumeya@redhat.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <F369CCC7-285D-4F4D-80D4-EEAC273E561C@oracle.com>
-References: <20101215050901.GB13532@redhat.com> <20101216034945.GH9646@fieldses.org> <A4BB9763-B67F-4559-B3FF-F7BC2DBD3B3A@oracle.com> <20110105005835.GA14744@fieldses.org>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-X-Mailer: Apple Mail (2.1082)
+	Wed, 5 Jan 2011 12:08:02 -0500
+From: "M. Mohan Kumar" <mohan@in.ibm.com>
+To: v9fs-developer@lists.sourceforge.net
+Subject: Re: [V9fs-developer] [PATCH] net/9p: Use proper data types
+Date: Wed, 5 Jan 2011 22:37:42 +0530
+User-Agent: KMail/1.13.5 (Linux/2.6.35.10-74.fc14.i686.PAE; KDE/4.5.4; i686; ; )
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <1294246423-8454-1-git-send-email-mohan@in.ibm.com>
+In-Reply-To: <1294246423-8454-1-git-send-email-mohan@in.ibm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101052237.42802.mohan@in.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit 33551d7be66cec324c47990ed526b7fe327b011f net/9p/protocol.c: Remove 
+duplicated macros from Thiago Farina <tfransosi@gmail.com> exposed this issue
 
-On Jan 4, 2011, at 7:58 PM, J. Bruce Fields wrote:
 
-> On Thu, Dec 16, 2010 at 10:54:00AM -0500, Chuck Lever wrote:
->> I don't recall creating svc_addr_u, but I'll take a stab at a guess.
->> 
->> It looks like someone thought that we should retain the idea of storing just the address part of the socket address, and not the other stuff (like the family and port, since this code doesn't appear to need that additional information).  It greatly reduces the size of the field.  A full sockaddr_storage is more than 128 bytes, since it has to be able to store an AF_UNIX pathname.
->> 
->> Doing this, there is a lot less data to keep around, but an IPv6 socket address has other items outside of in6_addr that can be used to form a full address.  We decided at some point we could copy this information from the other address storage field in the rqstp.
->> 
->> But the result of this space savings means we must construct a full socket address when needed, using logic such as the above.
+On Wednesday 05 January 2011 10:23:43 pm M. Mohan Kumar wrote:
+> Use proper data types for storing the count of the binary blob and
+> length of a string. Without this patch length calculation of string will
+> always result in -1 because of comparision between signed and unsigned
+> integer.
 > 
-> Seems to me we should either just waste the extra 100 bytes or define
-> something that would be useful elsewhere as well....
-
-In nfs-utils, we define:
-
-	union nfs_sockaddr {
-		struct sockaddr_in	s4;
-		struct sockaddr_in6	s6;
-		struct sockaddr		sa;
-	};
-
-A variable of this type is large enough to hold a full IPv6 sockaddr, but is significantly smaller than a sockaddr_storage.
-
-The addition of the "struct sockaddr" element is to enable access to such variables via a "struct sockaddr *" without type punning.  This seems to be preferred by gcc over type casting in order to handle optimizations involving address aliasing.  It also allows more precise type checking.
-
-A full conversion to use such a construct in kernel RPC and NFS components is, I fear, too late for 2.6.38, but might be considered for a future release if there is consensus on this approach.
-
-> But if we do it this way we can at least simplify a little.
+> Signed-off-by: M. Mohan Kumar <mohan@in.ibm.com>
+> ---
+>  net/9p/protocol.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
 > 
-> --b.
+> diff --git a/net/9p/protocol.c b/net/9p/protocol.c
+> index c5180fd..2902eb1 100644
+> --- a/net/9p/protocol.c
+> +++ b/net/9p/protocol.c
+> @@ -234,14 +234,14 @@ p9pdu_vreadf(struct p9_fcall *pdu, int proto_version,
+> const char *fmt, }
+>  			break;
+>  		case 'D':{
+> -				int32_t *count = va_arg(ap, int32_t *);
+> +				uint32_t *count = va_arg(ap, int32_t *);
+>  				void **data = va_arg(ap, void **);
 > 
-> commit 6f3d772fb8a039de8f21d725f5e38c252b4c0efd
-> Author: Takuma Umeya <tumeya@redhat.com>
-> Date:   Wed Dec 15 14:09:01 2010 +0900
+>  				errcode =
+>  				    p9pdu_readf(pdu, proto_version, "d", count);
+>  				if (!errcode) {
+>  					*count =
+> -					    min_t(int32_t, *count,
+> +					    min_t(uint32_t, *count,
+>  						  pdu->size - pdu->offset);
+>  					*data = &pdu->sdata[pdu->offset];
+>  				}
+> @@ -404,9 +404,9 @@ p9pdu_vwritef(struct p9_fcall *pdu, int proto_version,
+> const char *fmt, break;
+>  		case 's':{
+>  				const char *sptr = va_arg(ap, const char *);
+> -				int16_t len = 0;
+> +				uint16_t len = 0;
+>  				if (sptr)
+> -					len = min_t(int16_t, strlen(sptr),
+> +					len = min_t(uint16_t, strlen(sptr),
+>  								USHRT_MAX);
 > 
->    nfs4: set source address when callback is generated
-> 
->    when callback is generated in NFSv4 server, it doesn't set the source
->    address. When an alias IP is utilized on NFSv4 server and suppose the
->    client is accessing via that alias IP (e.g. eth0:0), the client invokes
->    the callback to the IP address that is set on the original device (e.g.
->    eth0). This behavior results in timeout of xprt.
->    The patch sets the IP address that the client should invoke callback to.
-> 
->    Signed-off-by: Takuma Umeya <tumeya@redhat.com>
->    [bfields@redhat.com: Simplify gen_callback arguments, use helper function]
->    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-> 
-> diff --git a/fs/nfsd/nfs4callback.c b/fs/nfsd/nfs4callback.c
-> index a085805..dd183af 100644
-> --- a/fs/nfsd/nfs4callback.c
-> +++ b/fs/nfsd/nfs4callback.c
-> @@ -484,6 +484,7 @@ static int setup_callback_client(struct nfs4_client *clp,
-> 		.net		= &init_net,
-> 		.address	= (struct sockaddr *) &conn->cb_addr,
-> 		.addrsize	= conn->cb_addrlen,
-> +		.saddress	= (struct sockaddr *) &conn->cb_saddr,
-> 		.timeout	= &timeparms,
-> 		.program	= &cb_program,
-> 		.version	= 0,
-> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-> index 87d4c48..b583e4e 100644
-> --- a/fs/nfsd/nfs4state.c
-> +++ b/fs/nfsd/nfs4state.c
-> @@ -1163,10 +1163,26 @@ find_unconfirmed_client_by_str(const char *dname, unsigned int hashval)
-> 	return NULL;
-> }
-> 
-> +static void rpc_svcaddr2sockaddr(struct sockaddr *sa, unsigned short family, union svc_addr_u *svcaddr)
-> +{
-> +	switch (family) {
-> +	case AF_INET:
-> +		((struct sockaddr_in *)sa)->sin_family = AF_INET;
-> +		((struct sockaddr_in *)sa)->sin_addr = svcaddr->addr;
-> +		return;
-> +	case AF_INET6:
-> +		((struct sockaddr_in6 *)sa)->sin6_family = AF_INET6;
-> +		((struct sockaddr_in6 *)sa)->sin6_addr = svcaddr->addr6;
-> +		return;
-> +	}
-> +}
-> +
-> static void
-> -gen_callback(struct nfs4_client *clp, struct nfsd4_setclientid *se, u32 scopeid)
-> +gen_callback(struct nfs4_client *clp, struct nfsd4_setclientid *se, struct svc_rqst *rqstp)
-> {
-> 	struct nfs4_cb_conn *conn = &clp->cl_cb_conn;
-> +	struct sockaddr	*sa = svc_addr(rqstp);
-> +	u32 scopeid = rpc_get_scope_id(sa);
-> 	unsigned short expected_family;
-> 
-> 	/* Currently, we only support tcp and tcp6 for the callback channel */
-> @@ -1192,6 +1208,7 @@ gen_callback(struct nfs4_client *clp, struct nfsd4_setclientid *se, u32 scopeid)
-> 
-> 	conn->cb_prog = se->se_callback_prog;
-> 	conn->cb_ident = se->se_callback_ident;
-> +	rpc_svcaddr2sockaddr((struct sockaddr *)&conn->cb_saddr, expected_family, &rqstp->rq_daddr);
-> 	return;
-> out_err:
-> 	conn->cb_addr.ss_family = AF_UNSPEC;
-> @@ -1768,7 +1785,6 @@ __be32
-> nfsd4_setclientid(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
-> 		  struct nfsd4_setclientid *setclid)
-> {
-> -	struct sockaddr		*sa = svc_addr(rqstp);
-> 	struct xdr_netobj 	clname = { 
-> 		.len = setclid->se_namelen,
-> 		.data = setclid->se_name,
-> @@ -1871,7 +1887,7 @@ nfsd4_setclientid(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
-> 	 * for consistent minorversion use throughout:
-> 	 */
-> 	new->cl_minorversion = 0;
-> -	gen_callback(new, setclid, rpc_get_scope_id(sa));
-> +	gen_callback(new, setclid, rqstp);
-> 	add_to_unconfirmed(new, strhashval);
-> 	setclid->se_clientid.cl_boot = new->cl_clientid.cl_boot;
-> 	setclid->se_clientid.cl_id = new->cl_clientid.cl_id;
-> diff --git a/fs/nfsd/state.h b/fs/nfsd/state.h
-> index 84b2302..cf6dc83 100644
-> --- a/fs/nfsd/state.h
-> +++ b/fs/nfsd/state.h
-> @@ -96,6 +96,7 @@ struct nfs4_delegation {
-> struct nfs4_cb_conn {
-> 	/* SETCLIENTID info */
-> 	struct sockaddr_storage	cb_addr;
-> +	struct sockaddr_storage	cb_saddr;
-> 	size_t			cb_addrlen;
-> 	u32                     cb_prog; /* used only in 4.0 case;
-> 					    per-session otherwise */
+>  				errcode = p9pdu_writef(pdu, proto_version,
 
--- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
-
-
+----
+M. Mohan Kumar
