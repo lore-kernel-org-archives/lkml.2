@@ -1,72 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672Ab1AETgR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 14:36:17 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:49881 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751330Ab1AETgP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 14:36:15 -0500
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
-In-Reply-To: <AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com>
-References: <1294254337.16957.13.camel@mulgrave.site>
-	 <AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 05 Jan 2011 13:36:09 -0600
-Message-ID: <1294256169.16957.18.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S1752688Ab1AETju (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 14:39:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27345 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751760Ab1AETjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 14:39:49 -0500
+Date: Wed, 5 Jan 2011 21:38:49 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Anthony Liguori <anthony@codemonkey.ws>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Jamie Lokier <jamie@shareable.org>,
+        Thomas Weber <swirl@gmx.li>, gleb@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] virtio-pci: add softlinks between virtio and pci
+Message-ID: <20110105193849.GB28688@redhat.com>
+References: <20110105191711.GA27489@redhat.com>
+ <4D24C662.9070804@codemonkey.ws>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D24C662.9070804@codemonkey.ws>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-05 at 11:18 -0800, Linus Torvalds wrote:
-> On Wed, Jan 5, 2011 at 11:05 AM, James Bottomley
-> <James.Bottomley@hansenpartnership.com> wrote:
+On Wed, Jan 05, 2011 at 01:28:34PM -0600, Anthony Liguori wrote:
+> On 01/05/2011 01:17 PM, Michael S. Tsirkin wrote:
+> >We sometimes need to map between the virtio device and
+> >the given pci device. One such use is OS installer that
+> >gets the boot pci device from BIOS and needs to
+> >find the relevant block device. Since it can't,
+> >installation fails.
+> 
+> I have no objection to this patch but I'm a tad confused by the description.
+> 
+> I assume you mean the installer is querying the boot device via
+> int13 get driver parameters such that it returns the pci address of
+> the device?
+> 
+> Or is it querying geometry information and then trying to find the
+> best match block device?
+
+I think it's the former.
+
+> If it's the former, I don't really understand the need for a
+> backlink since the PCI address gives you a link to the block device.
+
+It does? How does it?
+
+> OTOH, if it's the later, it would make sense but then your
+> description doesn't really make much sense.
+> 
+> At any rate, a better commit message would be helpful in explaining
+> the need for this.
+> 
+> Regards,
+> 
+> Anthony Liguori
+> 
+> >Supply softlinks between these to make it possible.
 > >
-> > I think the solution for the kernel direct mapping problem is to take
-> > the expected flushes and invalidates into kmap/kunmap[_atomic].
-> 
-> No, we really can't do that. Most of the time, the kmap() is the only
-> way we access the page anyway, so flushing things would just be
-> stupid. Why waste time and energy on doing something pointless?
-
-It's hardly pointless.  The kmap sets up an inequivalent alias in the
-cache.  When you write to the kmap region, you dirty the CPU caches for
-that alias.  If you tear down the mapping without flushing, the CPU will
-write out the cache lines at its leisure.  If you access the line via
-the other mapping *before* the CPU does writeout, you see stale data.
-
-When the kernel dirties a kmap region, it always has to flush somehow
-before kunmap.  One of the problems here is that that flush isn't in the
-NFS code.
-
-> In fact, kmap() here is a total non-issue. It's not the kmap() that
-> introduces any virtual aliases, and never has been. It's the
-> "vm_map_ram()" that is the problem. Unlike the kmap(), that really
-> _does_ introduce a virtual alias, and is a problem for any virtual
-> cache.
-> 
-> So don't blame kmap(). It's innocent and irrelevant - the bug could
-> happen entirely without it (think a 64-bit address space that doesn't
-> even _have_ kmap, but has software that mixes vm_map_ram() with
-> non-mapped accesses).
-
-I didn't say it was kmap's entire problem ... I just said, can't we
-simplify some of this by consolidating the flushing into the interfaces.
-
-James
-
-
+> >Signed-off-by: Michael S. Tsirkin<mst@redhat.com>
+> >---
+> >
+> >Gleb, could you please ack that this patch below
+> >will be enough to fix the installer issue that
+> >you see?
+> >
+> >  drivers/virtio/virtio_pci.c |   18 +++++++++++++++++-
+> >  1 files changed, 17 insertions(+), 1 deletions(-)
+> >
+> >diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+> >index ef8d9d5..06eb2f8 100644
+> >--- a/drivers/virtio/virtio_pci.c
+> >+++ b/drivers/virtio/virtio_pci.c
+> >@@ -25,6 +25,7 @@
+> >  #include<linux/virtio_pci.h>
+> >  #include<linux/highmem.h>
+> >  #include<linux/spinlock.h>
+> >+#include<linux/sysfs.h>
+> >
+> >  MODULE_AUTHOR("Anthony Liguori<aliguori@us.ibm.com>");
+> >  MODULE_DESCRIPTION("virtio-pci");
+> >@@ -667,8 +668,21 @@ static int __devinit virtio_pci_probe(struct pci_dev *pci_dev,
+> >  	if (err)
+> >  		goto out_set_drvdata;
+> >
+> >-	return 0;
+> >+	err = sysfs_create_link(&pci_dev->dev.kobj,&vp_dev->vdev.dev.kobj,
+> >+				"virtio_device");
+> >+	if (err)
+> >+		goto out_register_device;
+> >+
+> >+	err = sysfs_create_link(&vp_dev->vdev.dev.kobj,&pci_dev->dev.kobj,
+> >+				"bus_device");
+> >+	if (err)
+> >+		goto out_create_link;
+> >
+> >+	return 0;
+> >+out_create_link:
+> >+	sysfs_remove_link(&pci_dev->dev.kobj, "virtio_device");
+> >+out_register_device:
+> >+	unregister_virtio_device(&vp_dev->vdev);
+> >  out_set_drvdata:
+> >  	pci_set_drvdata(pci_dev, NULL);
+> >  	pci_iounmap(pci_dev, vp_dev->ioaddr);
+> >@@ -685,6 +699,8 @@ static void __devexit virtio_pci_remove(struct pci_dev *pci_dev)
+> >  {
+> >  	struct virtio_pci_device *vp_dev = pci_get_drvdata(pci_dev);
+> >
+> >+	sysfs_remove_link(&vp_dev->vdev.dev.kobj, "bus_device");
+> >+	sysfs_remove_link(&pci_dev->dev.kobj, "virtio_device");
+> >  	unregister_virtio_device(&vp_dev->vdev);
+> >  }
+> >
