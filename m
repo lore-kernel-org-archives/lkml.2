@@ -1,141 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751553Ab1AERRc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 12:17:32 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:44908 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751231Ab1AERRa convert rfc822-to-8bit (ORCPT
+	id S1751669Ab1AERTh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 12:19:37 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:36415 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231Ab1AERTg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 12:17:30 -0500
-X-IronPort-AV: E=Sophos;i="4.60,278,1291622400"; 
-   d="scan'208";a="501996151"
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-nfs@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>
-In-Reply-To: <20110105155230.GC8638@n2100.arm.linux.org.uk>
-References: <20101230191846.GB14221@pengutronix.de>
-	 <20110103213850.GC25121@pengutronix.de>
-	 <1294100558.25100.8.camel@heimdal.trondhjem.org>
-	 <20110105084014.GN25121@pengutronix.de>
-	 <20110105110517.GQ25121@pengutronix.de>
-	 <20110105112701.GA8638@n2100.arm.linux.org.uk>
-	 <20110105134045.GS25121@pengutronix.de>
-	 <1294239193.3014.9.camel@heimdal.trondhjem.org>
-	 <4D2487CA.5040501@pengutronix.de>
-	 <1294240457.3014.13.camel@heimdal.trondhjem.org>
-	 <20110105155230.GC8638@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
+	Wed, 5 Jan 2011 12:19:36 -0500
+Subject: Re: [PATCH] nfs4: set source address when callback is generated
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <20110105171111.GC13000@fieldses.org>
+Date: Wed, 5 Jan 2011 12:18:37 -0500
+Cc: Takuma Umeya <tumeya@redhat.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Wed, 05 Jan 2011 12:17:27 -0500
-Message-ID: <1294247847.2998.23.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 05 Jan 2011 17:17:29.0858 (UTC) FILETIME=[6EAA4620:01CBACFC]
+Message-Id: <3443745A-607D-4FD8-BA93-622669A09EAF@oracle.com>
+References: <20101215050901.GB13532@redhat.com> <20101216034945.GH9646@fieldses.org> <A4BB9763-B67F-4559-B3FF-F7BC2DBD3B3A@oracle.com> <20110105005835.GA14744@fieldses.org> <F369CCC7-285D-4F4D-80D4-EEAC273E561C@oracle.com> <20110105171111.GC13000@fieldses.org>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-05 at 15:52 +0000, Russell King - ARM Linux wrote: 
-> On Wed, Jan 05, 2011 at 10:14:17AM -0500, Trond Myklebust wrote:
-> > OK. So,the new behaviour in 2.6.37 is that we're writing to a series of
-> > pages via the usual kmap_atomic()/kunmap_atomic() and kmap()/kunmap()
-> > interfaces, but we can end up reading them via a virtual address range
-> > that gets set up via vm_map_ram() (that range gets set up before the
-> > write occurs).
-> 
-> kmap of lowmem pages will always reuses the existing kernel direct
-> mapping, so there won't be a problem there.
-> 
-> > Do we perhaps need an invalidate_kernel_vmap_range() before we can read
-> > the data on ARM in this kind of scenario?
-> 
-> Firstly, vm_map_ram() does no cache maintainence of any sort, nor does
-> it take care of page colouring - so any architecture where cache aliasing
-> can occur will see this problem.  It should not limited to ARM.
-> 
-> Secondly, no, invalidate_kernel_vmap_range() probably isn't sufficient.
-> There's two problems here:
-> 
-> 	addr = kmap(lowmem_page);
-> 	*addr = stuff;
-> 	kunmap(lowmem_page);
-> 
-> Such lowmem pages are accessed through their kernel direct mapping.
-> 
-> 	ptr = vm_map_ram(lowmem_page);
-> 	read = *ptr;
-> 
-> This creates a new mapping which can alias with the kernel direct mapping.
-> Now, as this is a new mapping, there should be no cache lines associated
-> with it.  (Looking at vm_unmap_ram(), it calls free_unmap_vmap_area_addr(),
-> free_unmap_vmap_area(), which then calls flush_cache_vunmap() on the
-> region.  vb_free() also calls flush_cache_vunmap() too.)
-> 
-> If the write after kmap() hits an already present cache line, the cache
-> line will be updated, but it won't be written back to memory.  So, on
-> a subsequent vm_map_ram(), with any kind of aliasing cache, there's
-> no guarantee that you'll hit that cache line and read the data just
-> written there.
-> 
-> The kernel direct mapping would need to be flushed.
 
-We should already be flushing the kernel direct mapping after writing by
-means of the calls to flush_dcache_page() in xdr_partial_copy_from_skb()
-and all the helpers in net/sunrpc/xdr.c.
+On Jan 5, 2011, at 12:11 PM, J. Bruce Fields wrote:
 
-The only new thing is the read access through the virtual address
-mapping. That mapping is created outside the loop in
-nfs_readdir_xdr_to_array(), which is why I'm thinking we do need the
-invalidate_kernel_vmap_range(): we're essentially doing a series of
-writes through the kernel direct mapping (i.e. readdir RPC calls), then
-reading the results through the virtual mapping.
-
-i.e. we're doing
-
-ptr = vm_map_ram(lowmem_pages);
-while (need_more_data) {
-
-for (i = 0; i < npages; i++) {
-addr = kmap_atomic(lowmem_page[i]);
-*addr = rpc_stuff;
-flush_dcache_page(lowmem_page[i]);
-kunmap_atomic(lowmem_page[i]);
-}
-
-invalidate_kernel_vmap_range(ptr); // Needed here?
-
-read = *ptr;
-}
-vm_unmap_ram(lowmem_pages)
-
-> I'm really getting to the point of hating the poliferation of RAM
-> remapping interfaces - it's going to (and is) causing nothing but lots
-> of pain on virtual cache architectures, needing more and more cache
-> flushing interfaces to be created.
+> On Wed, Jan 05, 2011 at 12:06:04PM -0500, Chuck Lever wrote:
+>> 
+>> On Jan 4, 2011, at 7:58 PM, J. Bruce Fields wrote:
+>> 
+>>> On Thu, Dec 16, 2010 at 10:54:00AM -0500, Chuck Lever wrote:
+>>>> I don't recall creating svc_addr_u, but I'll take a stab at a guess.
+>>>> 
+>>>> It looks like someone thought that we should retain the idea of storing just the address part of the socket address, and not the other stuff (like the family and port, since this code doesn't appear to need that additional information).  It greatly reduces the size of the field.  A full sockaddr_storage is more than 128 bytes, since it has to be able to store an AF_UNIX pathname.
+>>>> 
+>>>> Doing this, there is a lot less data to keep around, but an IPv6 socket address has other items outside of in6_addr that can be used to form a full address.  We decided at some point we could copy this information from the other address storage field in the rqstp.
+>>>> 
+>>>> But the result of this space savings means we must construct a full socket address when needed, using logic such as the above.
+>>> 
+>>> Seems to me we should either just waste the extra 100 bytes or define
+>>> something that would be useful elsewhere as well....
+>> 
+>> In nfs-utils, we define:
+>> 
+>> 	union nfs_sockaddr {
+>> 		struct sockaddr_in	s4;
+>> 		struct sockaddr_in6	s6;
+>> 		struct sockaddr		sa;
+>> 	};
+>> 
+>> A variable of this type is large enough to hold a full IPv6 sockaddr, but is significantly smaller than a sockaddr_storage.
+>> 
+>> The addition of the "struct sockaddr" element is to enable access to such variables via a "struct sockaddr *" without type punning.  This seems to be preferred by gcc over type casting in order to handle optimizations involving address aliasing.  It also allows more precise type checking.
 > 
-> Is there any other solution to this?
+> Sounds reasonable to me.
+> 
+>> 
+>> A full conversion to use such a construct in kernel RPC and NFS components is, I fear, too late for 2.6.38, but might be considered for a future release if there is consensus on this approach.
+> 
+> OK; I suppose for now I'll apply my revision of Takuma Umeya's patch
+> below (if I didn't screw it up).
 
-Arbitrary sized pages. :-)
+My thinking cap is still on vacation.  I don't see anything immediately wrong with this as a temporary fix.  Has anyone tested this with a multi-homed IPv6 server?  How about link-local IPv6 addresses?
 
-The problem here is that we want to read variable sized records (i.e.
-readdir() records) from a multi-page buffer. We could do that by copying
-those particular records that overlap with page boundaries, but that
-would make for a fairly intrusive rewrite too.
+> --b.
+> 
+>> 
+>>> But if we do it this way we can at least simplify a little.
+>>> 
+>>> --b.
+>>> 
+>>> commit 6f3d772fb8a039de8f21d725f5e38c252b4c0efd
+>>> Author: Takuma Umeya <tumeya@redhat.com>
+>>> Date:   Wed Dec 15 14:09:01 2010 +0900
+>>> 
+>>>   nfs4: set source address when callback is generated
+>>> 
+>>>   when callback is generated in NFSv4 server, it doesn't set the source
+>>>   address. When an alias IP is utilized on NFSv4 server and suppose the
+>>>   client is accessing via that alias IP (e.g. eth0:0), the client invokes
+>>>   the callback to the IP address that is set on the original device (e.g.
+>>>   eth0). This behavior results in timeout of xprt.
+>>>   The patch sets the IP address that the client should invoke callback to.
+>>> 
+>>>   Signed-off-by: Takuma Umeya <tumeya@redhat.com>
+>>>   [bfields@redhat.com: Simplify gen_callback arguments, use helper function]
+>>>   Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+>>> 
+>>> diff --git a/fs/nfsd/nfs4callback.c b/fs/nfsd/nfs4callback.c
+>>> index a085805..dd183af 100644
+>>> --- a/fs/nfsd/nfs4callback.c
+>>> +++ b/fs/nfsd/nfs4callback.c
+>>> @@ -484,6 +484,7 @@ static int setup_callback_client(struct nfs4_client *clp,
+>>> 		.net		= &init_net,
+>>> 		.address	= (struct sockaddr *) &conn->cb_addr,
+>>> 		.addrsize	= conn->cb_addrlen,
+>>> +		.saddress	= (struct sockaddr *) &conn->cb_saddr,
+>>> 		.timeout	= &timeparms,
+>>> 		.program	= &cb_program,
+>>> 		.version	= 0,
+>>> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+>>> index 87d4c48..b583e4e 100644
+>>> --- a/fs/nfsd/nfs4state.c
+>>> +++ b/fs/nfsd/nfs4state.c
+>>> @@ -1163,10 +1163,26 @@ find_unconfirmed_client_by_str(const char *dname, unsigned int hashval)
+>>> 	return NULL;
+>>> }
+>>> 
+>>> +static void rpc_svcaddr2sockaddr(struct sockaddr *sa, unsigned short family, union svc_addr_u *svcaddr)
+>>> +{
+>>> +	switch (family) {
+>>> +	case AF_INET:
+>>> +		((struct sockaddr_in *)sa)->sin_family = AF_INET;
+>>> +		((struct sockaddr_in *)sa)->sin_addr = svcaddr->addr;
+>>> +		return;
+>>> +	case AF_INET6:
+>>> +		((struct sockaddr_in6 *)sa)->sin6_family = AF_INET6;
+>>> +		((struct sockaddr_in6 *)sa)->sin6_addr = svcaddr->addr6;
+>>> +		return;
+>>> +	}
+>>> +}
+>>> +
+>>> static void
+>>> -gen_callback(struct nfs4_client *clp, struct nfsd4_setclientid *se, u32 scopeid)
+>>> +gen_callback(struct nfs4_client *clp, struct nfsd4_setclientid *se, struct svc_rqst *rqstp)
+>>> {
+>>> 	struct nfs4_cb_conn *conn = &clp->cl_cb_conn;
+>>> +	struct sockaddr	*sa = svc_addr(rqstp);
+>>> +	u32 scopeid = rpc_get_scope_id(sa);
+>>> 	unsigned short expected_family;
+>>> 
+>>> 	/* Currently, we only support tcp and tcp6 for the callback channel */
+>>> @@ -1192,6 +1208,7 @@ gen_callback(struct nfs4_client *clp, struct nfsd4_setclientid *se, u32 scopeid)
+>>> 
+>>> 	conn->cb_prog = se->se_callback_prog;
+>>> 	conn->cb_ident = se->se_callback_ident;
+>>> +	rpc_svcaddr2sockaddr((struct sockaddr *)&conn->cb_saddr, expected_family, &rqstp->rq_daddr);
+>>> 	return;
+>>> out_err:
+>>> 	conn->cb_addr.ss_family = AF_UNSPEC;
+>>> @@ -1768,7 +1785,6 @@ __be32
+>>> nfsd4_setclientid(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
+>>> 		  struct nfsd4_setclientid *setclid)
+>>> {
+>>> -	struct sockaddr		*sa = svc_addr(rqstp);
+>>> 	struct xdr_netobj 	clname = { 
+>>> 		.len = setclid->se_namelen,
+>>> 		.data = setclid->se_name,
+>>> @@ -1871,7 +1887,7 @@ nfsd4_setclientid(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
+>>> 	 * for consistent minorversion use throughout:
+>>> 	 */
+>>> 	new->cl_minorversion = 0;
+>>> -	gen_callback(new, setclid, rpc_get_scope_id(sa));
+>>> +	gen_callback(new, setclid, rqstp);
+>>> 	add_to_unconfirmed(new, strhashval);
+>>> 	setclid->se_clientid.cl_boot = new->cl_clientid.cl_boot;
+>>> 	setclid->se_clientid.cl_id = new->cl_clientid.cl_id;
+>>> diff --git a/fs/nfsd/state.h b/fs/nfsd/state.h
+>>> index 84b2302..cf6dc83 100644
+>>> --- a/fs/nfsd/state.h
+>>> +++ b/fs/nfsd/state.h
+>>> @@ -96,6 +96,7 @@ struct nfs4_delegation {
+>>> struct nfs4_cb_conn {
+>>> 	/* SETCLIENTID info */
+>>> 	struct sockaddr_storage	cb_addr;
+>>> +	struct sockaddr_storage	cb_saddr;
+>>> 	size_t			cb_addrlen;
+>>> 	u32                     cb_prog; /* used only in 4.0 case;
+>>> 					    per-session otherwise */
+>> 
+>> -- 
+>> Chuck Lever
+>> chuck[dot]lever[at]oracle[dot]com
+>> 
+>> 
+>> 
+>> 
 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+
 
 
