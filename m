@@ -1,117 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573Ab1AES6c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 13:58:32 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:39224 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752250Ab1AES6b convert rfc822-to-8bit (ORCPT
+	id S1752374Ab1AETEz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 14:04:55 -0500
+Received: from 63.mail-out.ovh.net ([91.121.185.56]:50494 "HELO
+	63.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751353Ab1AETEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 13:58:31 -0500
-Date: Wed, 5 Jan 2011 19:58:16 +0100
-From: matthieu castet <castet.matthieu@free.fr>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Peter Zijlstra <peterz@infradead.org>,
-        Siarhei Liakh <sliakh.lkml@gmail.com>,
-        Xuxian Jiang <jiang@cs.ncsu.edu>, Ingo Molnar <mingo@elte.hu>,
-        Arjan van de Ven <arjan@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, tglx <tglx@linutronix.de>
-Subject: Re: -tip tree resume fail, bisect to 5bd5a45(x86: Add NX protection
- for kernel data)
-Message-ID: <20110105195816.31457a59@mat-laptop>
-In-Reply-To: <1293415850.2565.269.camel@minggr.sh.intel.com>
-References: <1290410581.2405.24.camel@minggr.sh.intel.com>
-	<1290431008.2072.119.camel@laptop>
-	<1290443379.4cea9a73cd9ce@imp.free.fr>
-	<1290443758.2072.318.camel@laptop>
-	<20101122164247.GC21836@basil.fritz.box>
-	<20101123235527.54293b59@mat-laptop>
-	<20101126183144.300a71a4@mat-laptop>
-	<1291093230.2405.191.camel@minggr.sh.intel.com>
-	<20101224182644.062bdb3f@mat-laptop>
-	<1293415850.2565.269.camel@minggr.sh.intel.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 5 Jan 2011 14:04:54 -0500
+Date: Wed, 5 Jan 2011 19:59:17 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: stable@kernel.org, linux-kernel@vger.kernel.org, stable-review@kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [34-longterm 251/260] USB: atmel_usba_udc: force vbus_pin at
+ -EINVAL when gpio_request failled
+Message-ID: <20110105185917.GI2965@game.jcrosoft.org>
+References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
+ <1293952756-15010-252-git-send-email-paul.gortmaker@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1293952756-15010-252-git-send-email-paul.gortmaker@windriver.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 13894167802447047668
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Mon, 27 Dec 2010 10:10:50 +0800,
-Lin Ming <ming.m.lin@intel.com> a écrit :
-
-> On Sat, 2010-12-25 at 01:26 +0800, matthieu castet wrote:
-> > Hi,
-> > 
-> > Le Tue, 30 Nov 2010 13:00:30 +0800,
-> > Lin Ming <ming.m.lin@intel.com> a écrit :
-> > 
-> > > On Sat, 2010-11-27 at 01:31 +0800, mat wrote:
-> > > > Le Tue, 23 Nov 2010 23:55:27 +0100,
-> > > > mat <castet.matthieu@free.fr> a écrit :
-> > > > 
-> > > > > Le Mon, 22 Nov 2010 17:42:47 +0100,
-> > > > > Andi Kleen <andi@firstfloor.org> a écrit :
-> > > > > 
-> > > > > > > That seems to be a S3 specific code path, that won't fix
-> > > > > > > anything. Simply do:
-> > > > > > > 
-> > > > > > > echo 0 > /sys/devices/system/cpu/cpu1/online;
-> > > > > > > echo 1 > /sys/devices/system/cpu/cpu1/online;
-> > > > > > > 
-> > > > > > > and your machine will explode..
-> > > > > > 
-> > > > > > The SMP startup trampoline is copied I believe
-> > > > > > and only executed in real mode without page tables.
-> > > > > > 
-> > > > > > So it's perhaps not the trampoline, but the early startup 
-> > > > > > code that ends up being broken.
-> > > > > yes :
-> > > > > acpi wakeup code and smp trampoline are copied in low memory
-> > > > > (first 1MB).
-> > > > > 
-> > > > > So they can't end up int the kernel data mapping ?
-> > > > > 
-> > > > > So it should something else.
-> > > > > 
-> > > > > I will try to investigate on this.
-> > > > > 
-> > > > Unfortunately on my laptop supporting NX, suspend to ram seems
-> > > > broken (even without this patch) and I got only one core, so I
-> > > > am unable to test it.
-> > > > 
-> > > > Does cpu suspend/resume is broken ? Or it is only S3 ?
-> > > > 
-> > > > If yes, are there any interesting trace if we suspend only one
-> > > > core with sysfs.
-> > > 
-> > > echo 0 > /sys/devices/system/cpu/cpu1/online;
-> > > echo 1 > /sys/devices/system/cpu/cpu1/online;
-> > > 
-> > > then machine just reboots...
-> > > 
-> > Ok,
-> > 
-> > could you try the attached patch ?
+On 02:19 Sun 02 Jan     , Paul Gortmaker wrote:
+> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 > 
-> Unfortunately, it does not work against current tip/master(1f7107c8).
+> commit 969affff54702785330de553b790372e261e93f9 upstream.
 > 
-> Lin Ming
+> to ensure gpio_is_valid return false
 > 
-Thanks for the testing.
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> ---
+>  drivers/usb/gadget/atmel_usba_udc.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
+> index 75a256f..8fd88e1 100644
+> --- a/drivers/usb/gadget/atmel_usba_udc.c
+> +++ b/drivers/usb/gadget/atmel_usba_udc.c
+> @@ -2015,6 +2015,9 @@ static int __init usba_udc_probe(struct platform_device *pdev)
+>  			} else {
+>  				disable_irq(gpio_to_irq(udc->vbus_pin));
+>  			}
+> +		} else {
+> +			/* gpio_request fail so use -EINVAL for gpio_is_valid */
+> +			ubc->vbus_pin = -EINVAL;
+there is a typo here
+please change to 
+			udc->vbus_pin = -EINVAL;
 
-For the record I did some tests.
-- The x86_32 cpu hotplug is working fine.
-- On x86_64 we crash between the cpu1 is wakeup and before trampoline
-  jump to start_secondary
-
-A difference between 32 and 64 bit is that head_32.S use
-initial_page_table mmu table then switch to swapper_pg_dir
-while 64 bit version use init_level4_pgt for trampoline, head and
-kernel.
-
-But I fail to see where setting NX is level3_kernel_pgt aera can make
-the resume fail. When we enable NX we are in .text section (head_64).
-
-
-Matthieu
+Best Regards,
+J.
