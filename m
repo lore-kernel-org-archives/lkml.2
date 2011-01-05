@@ -1,32 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231Ab1AENOZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 08:14:25 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:54189 "EHLO mx2.mail.elte.hu"
+	id S1752244Ab1AENVY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 08:21:24 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:45721 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752130Ab1AENOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 08:14:24 -0500
-Date: Wed, 5 Jan 2011 14:14:11 +0100
+	id S1752098Ab1AENVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 08:21:23 -0500
+Date: Wed, 5 Jan 2011 14:21:08 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, "David S . Miller" <davem@davemloft.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
+To: Don Zickus <dzickus@redhat.com>
+Cc: akpm@linux-foundation.org, fweisbec@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [GIT PULL 0/3] perf/core improvements and fixes
-Message-ID: <20110105131411.GD10129@elte.hu>
-References: <1294161485-28528-1-git-send-email-acme@infradead.org>
- <20110105131117.GC10129@elte.hu>
+Subject: Re: [PATCH 1/2] panic:  ratelimit panic messages
+Message-ID: <20110105132108.GE10129@elte.hu>
+References: <1294198711-15492-1-git-send-email-dzickus@redhat.com>
+ <1294198711-15492-2-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110105131117.GC10129@elte.hu>
+In-Reply-To: <1294198711-15492-2-git-send-email-dzickus@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -40,23 +34,34 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-sorry, had to unpull it:
+* Don Zickus <dzickus@redhat.com> wrote:
 
-util/evsel.c: In function ‘perf_evsel__open_per_cpu’:
-util/evsel.c:137: error: dereferencing pointer ‘map__empty.57’ does break strict-aliasing rules
-util/evsel.c:158: error: dereferencing pointer ‘map__empty.57’ does break strict-aliasing rules
-util/evsel.c:141: error: dereferencing pointer ‘map__empty.57’ does break strict-aliasing rules
-util/evsel.c:142: error: dereferencing pointer ‘map__empty.57’ does break strict-aliasing rules
-util/evsel.c:185: note: initialized from here
-cc1: error: dereferencing pointer ‘map__empty.57’ does break strict-aliasing rules
-util/evsel.c:185: note: initialized from here
-make: *** [util/evsel.o] Error 1
-make: *** Waiting for unfinished jobs....
+> Sometimes when things go bad, so much spew is coming on the console it is hard
+> to figure out what happened.  This patch allows you to ratelimit the panic
+> messages with the intent that the first panic message will provide the info
+> we need to figure out what happened.
+> 
+> Adds new kernel param 'panic_ratelimit=on/<integer in seconds>'
+> 
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
+> ---
+>  Documentation/kernel-parameters.txt |    6 ++++++
+>  kernel/panic.c                      |   30 ++++++++++++++++++++++++++++++
+>  2 files changed, 36 insertions(+), 0 deletions(-)
 
-gcc version 4.4.4 20100630 (Red Hat 4.4.4-10) (GCC) 
+Well, but it's not just panics that can occur repeatedly (in fact panics tend to 
+trigger once), but recursive/repeated oopses.
 
-on a 32-bit Fedora 12 box.
+So if we try to do some sort of 'show first crash, rate-limit afterwards' thing (i'm 
+still not 100% sure about the wiseness of it) then we should cover all common 
+occurances of system panics/crashes.
 
-Thanks,
+btw., while printk-delay exists and can serve a similar purpose, it's pretty 
+cumbersome for panic ratelimit: it slows down bootups extremely, and it also slows 
+down regular, harmless printks.
+
+So having some sort of rate-limit for emitting crash screens may make sense, while 
+also preserving the oops counter or at least some other notification that we 'lost' 
+messages.
 
 	Ingo
