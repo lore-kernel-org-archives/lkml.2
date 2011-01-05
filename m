@@ -1,56 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752292Ab1AEVJP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 16:09:15 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56528 "EHLO
+	id S1752111Ab1AEVMf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 16:12:35 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48571 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751360Ab1AEVJN (ORCPT
+	by vger.kernel.org with ESMTP id S1751379Ab1AEVMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 16:09:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <20110105210448.GM8638@n2100.arm.linux.org.uk>
-References: <1294254337.16957.13.camel@mulgrave.site> <AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com>
- <1294256169.16957.18.camel@mulgrave.site> <20110105200008.GJ8638@n2100.arm.linux.org.uk>
- <1294259637.16957.25.camel@mulgrave.site> <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com>
- <20110105210448.GM8638@n2100.arm.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 5 Jan 2011 13:08:48 -0800
-Message-ID: <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com>
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 5 Jan 2011 16:12:34 -0500
+Date: Wed, 5 Jan 2011 13:11:51 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Eric B Munson <emunson@mgebm.net>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, mel@csn.ul.ie,
+        caiqian@redhat.com, mhocko@suse.cz
+Subject: Re: [PATCH V2] Do not allow pagesize >= MAX_ORDER pool adjustment
+Message-Id: <20110105131151.b5b9cf5b.akpm@linux-foundation.org>
+In-Reply-To: <1294259397-15553-1-git-send-email-emunson@mgebm.net>
+References: <1294259397-15553-1-git-send-email-emunson@mgebm.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 5, 2011 at 1:04 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Wed, Jan 05, 2011 at 12:48:32PM -0800, Linus Torvalds wrote:
->> (You can also force the problem with vmalloc() an then following the
->> kernel page tables, but I hope nobody does that any more. I suspect
->> I'm wrong, though, there's probably code that mixes vmalloc and
->> physical page accesses in various drivers)
->
-> Should vmalloc_to_page() (84 users)/vmalloc_to_pfn() (17 users) be
-> deprecated then? ;)
+On Wed,  5 Jan 2011 13:29:57 -0700
+Eric B Munson <emunson@mgebm.net> wrote:
 
-I do think that the "modern" way of doing it is
-"vmap()"/"vm_map_ram()" and friends, and it should be preferred over
-using vmalloc() and then looking up the pages.
+> Huge pages with order >= MAX_ORDER must be allocated at boot via
+> the kernel command line, they cannot be allocated or freed once
+> the kernel is up and running.  Currently we allow values to be
+> written to the sysfs and sysctl files controling pool size for these
+> huge page sizes.  This patch makes the store functions for nr_hugepages
+> and nr_overcommit_hugepages return -EINVAL when the pool for a
+> page size >= MAX_ORDER is changed.
+> 
 
-But in the end, the two approaches really are equivalent, so it's not
-like it really matters. So I don't think we need to deprecate things
-officially, but obviously we should make people more aware of the
-whole virtual alias thing that crops up whenever you use any of these
-approaches.
+gack, you people keep on making me look at the hugetlb code :(
 
-                           Linus
+> index 5cb71a9..15bd633 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -1443,6 +1443,12 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
+>  		return -EINVAL;
+
+Why do these functions do a `return 0' if strict_strtoul() failed?
+
+>  
+>  	h = kobj_to_hstate(kobj, &nid);
+> +
+> +	if (h->order >= MAX_ORDER) {
+> +		NODEMASK_FREE(nodes_allowed);
+> +		return -EINVAL;
+> +	}
+
+Let's avoid having multiple unwind-and-return paths in a function,
+please.  it often leads to resource leaks and locking errors as the
+code evolves.
+
+--- a/mm/hugetlb.c~hugetlb-do-not-allow-pagesize-=-max_order-pool-adjustment-fix
++++ a/mm/hugetlb.c
+@@ -1363,6 +1363,7 @@ static ssize_t nr_hugepages_show_common(
+ 
+ 	return sprintf(buf, "%lu\n", nr_huge_pages);
+ }
++
+ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
+ 			struct kobject *kobj, struct kobj_attribute *attr,
+ 			const char *buf, size_t len)
+@@ -1375,15 +1376,14 @@ static ssize_t nr_hugepages_store_common
+ 
+ 	err = strict_strtoul(buf, 10, &count);
+ 	if (err) {
+-		NODEMASK_FREE(nodes_allowed);
+-		return 0;
++		err = 0;		/* This seems wrong */
++		goto out;
+ 	}
+ 
+ 	h = kobj_to_hstate(kobj, &nid);
+-
+ 	if (h->order >= MAX_ORDER) {
+-		NODEMASK_FREE(nodes_allowed);
+-		return -EINVAL;
++		err = -EINVAL;
++		goto out;
+ 	}
+ 
+ 	if (nid == NUMA_NO_NODE) {
+@@ -1411,6 +1411,9 @@ static ssize_t nr_hugepages_store_common
+ 		NODEMASK_FREE(nodes_allowed);
+ 
+ 	return len;
++out:
++	NODEMASK_FREE(nodes_allowed);
++	return err;
+ }
+ 
+ static ssize_t nr_hugepages_show(struct kobject *kobj,
+_
+
