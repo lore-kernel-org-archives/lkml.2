@@ -1,121 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751672Ab1AERP0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 12:15:26 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51738 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751474Ab1AERPZ (ORCPT
+	id S1751930Ab1AERPr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 12:15:47 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:33498 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699Ab1AERPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 12:15:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ZiSVpfqC9JO3vwLgzwIOvnmyDz07PHVoAAdm5qxHAPcdlZ0aL3KpeVxGj1xPpwydwG
-         eUTHoLYPZQjEX07NhpE2rVdcddlAG54rbZH5NPIMtYqvqcFDGFkK5Pi4xjw5wLhpX91V
-         zki+zi6iSZBk+x5W91V3Yh56bLOml40R2uklg=
-Date: Wed, 5 Jan 2011 18:15:18 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jason Baron <jbaron@redhat.com>
-Cc: peterz@infradead.org, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
-        rostedt@goodmis.org, mingo@elte.hu, tglx@linutronix.de,
-        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] jump label: introduce static_branch()
-Message-ID: <20110105171516.GB1692@nowhere>
-References: <cover.1294239591.git.jbaron@redhat.com>
- <2d8c38bd7ca93e162aedb8e7acfc8bdb96d85de2.1294239591.git.jbaron@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2d8c38bd7ca93e162aedb8e7acfc8bdb96d85de2.1294239591.git.jbaron@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 5 Jan 2011 12:15:45 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Joel Becker <joel.becker@oracle.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: 2.6.37-next - kernel BUG at fs/dcache.c:1363
+From: Valdis.Kletnieks@vt.edu
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1294247741_7242P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 05 Jan 2011 12:15:41 -0500
+Message-ID: <8679.1294247741@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020209.4D24A73D.0197,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 05, 2011 at 10:43:12AM -0500, Jason Baron wrote:
-> diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-> index 152f7de..0ad9c2e 100644
-> --- a/include/linux/jump_label.h
-> +++ b/include/linux/jump_label.h
-> @@ -22,6 +22,11 @@ struct module;
->  
->  #ifdef HAVE_JUMP_LABEL
->  
-> +static __always_inline bool static_branch(struct jump_label_key *key)
-> +{
-> +	return __static_branch(key);
+--==_Exmh_1294247741_7242P
+Content-Type: text/plain; charset=us-ascii
 
-Not very important, but __static_branch() would be more self-explained
-if it was called arch_static_branch().
+Saw this crash on a linux-next pulled yesterday at 2PM EST, kernel dies very
+early (looks like first time it touches configfs for anything - trying to boot
+with netconsole enabled caused it to die even faster).  I can bisect this if
+it doesn't immediately ring a bell...
 
-> +}
-> +
->  extern struct jump_entry __start___jump_table[];
->  extern struct jump_entry __stop___jump_table[];
->  
-> @@ -42,11 +47,12 @@ struct jump_label_key {
->  	int state;
->  };
->  
-> -#define JUMP_LABEL(key, label)			\
-> -do {						\
-> -	if (unlikely(((struct jump_label_key *)key)->state))		\
-> -		goto label;			\
-> -} while (0)
-> +static __always_inline bool static_branch(struct jump_label_key *key)
-> +{
-> +	if (unlikely(key->state))
-> +		return true;
-> +	return false;
-> +}
->  
->  static inline int jump_label_enabled(struct jump_label_key *key)
->  {
-> @@ -78,14 +84,4 @@ static inline void jump_label_unlock(void) {}
->  
->  #endif
->  
-> -#define COND_STMT(key, stmt)					\
-> -do {								\
-> -	__label__ jl_enabled;					\
-> -	JUMP_LABEL_ELSE_ATOMIC_READ(key, jl_enabled);		\
-> -	if (0) {						\
-> -jl_enabled:							\
-> -		stmt;						\
-> -	}							\
-> -} while (0)
-> -
->  #endif
-> diff --git a/include/linux/jump_label_ref.h b/include/linux/jump_label_ref.h
-> index 8a76e89..5178696 100644
-> --- a/include/linux/jump_label_ref.h
-> +++ b/include/linux/jump_label_ref.h
-> @@ -7,19 +7,23 @@
->  struct jump_label_key_counter {
->  	atomic_t ref;
->  	struct jump_label_key key;
-> -}
-> +};
->  
->  #ifdef HAVE_JUMP_LABEL
->  
-> -#define JUMP_LABEL_ELSE_ATOMIC_READ(key, label, counter) JUMP_LABEL(key, label)
-> +static __always_inline bool static_branch_else_atomic_read(struct jump_label_key *key, atomic_t *count)
-> +{
-> +	return __static_branch(key);
-> +}
+It dies here:
 
-How about having only static_branch() but the key would be handled only
-by ways of get()/put().
+void d_set_d_op(struct dentry *dentry, const struct dentry_operations *op)
+{
+        BUG_ON(dentry->d_op);
 
-Simple boolean key enablement would work in this scheme as well as branches
-based on refcount. So that the users could avoid maintaining both key and count,
-this would be transparently handled by the jump label API.
+Am guessing configfs passed in a dentry that wasn't filled in enough.
 
-Or am I missing something?
+(hand-transcribed from a crappy cellphone pic)
 
-Other than that, looks like a very nice patch!
+kernel BUG at fs/dcache.c:1363
+invalid opcode: 0000 [#1] PREEMT SMP
+last sysfs file:
+CPU 0
+Modules linked in:
+
+Pid: 1, comm: swapper Not tainted 2.6.37-rc8-next-2011 (edge of pic)
+...
+
+configfs_attach_item.clone.14+0x11d/0x254
+configfs_attach_group.clone.15+0x1c/0x196
+? _raw_spinlock_unlock+0x5c/0x69
+configfs_register_subsystem_0xce/0x144
+? init_netconsole+0x0/0x21f
+init_netconsole+0x10d/0x21f
+? init_netconsole+0x0/0x21f
+do_one_initcall+0x52/0x12f
+kernel_init+0x162/0x1e7
+kernel_thread_helper+0x4/0x10
+? finish_task_switch_0x3f/0xe3
+? restore_args+0x0/0x30
+? kernel_init+0x0/0x1e7
+? kernel_thread_helper+0x0/0x10
+
+I d_net_d_op+0x38/0xb0
+
+
+
+--==_Exmh_1294247741_7242P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFNJKc9cC3lWbTT17ARAsZCAJ4/odytCNjco7ebIVuVqfPmqHinFwCfSZsr
+0VhR5hS6VUMT/3OIIk9Qx4c=
+=pU2T
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1294247741_7242P--
+
