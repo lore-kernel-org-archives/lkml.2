@@ -1,61 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751301Ab1AECe0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 21:34:26 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:25439 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751064Ab1AECeZ (ORCPT
+	id S1751310Ab1AECfq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 21:35:46 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:42559 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751064Ab1AECfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 21:34:25 -0500
-Message-ID: <280596192AA74D208C2C5F6389DBE8C1@hacdom.okisemi.com>
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "Grant Likely" <grant.likely@secretlab.ca>
-Cc: "David Brownell" <dbrownell@users.sourceforge.net>,
-        <spi-devel-general@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>, <qi.wang@intel.com>,
-        <yong.y.wang@intel.com>, <joel.clark@intel.com>,
-        <kok.howg.ewe@intel.com>,
-        "Toshiharu Okada" <toshiharu-linux@dsn.okisemi.com>
-References: <1293449027-3219-1-git-send-email-tomoya-linux@dsn.okisemi.com> <20101229064937.GC8172@angua.secretlab.ca>
-Subject: Re: [PATCH 1/3] spi_topcliff_pch: support new device ML7213
-Date: Wed, 5 Jan 2011 11:34:20 +0900
+	Tue, 4 Jan 2011 21:35:45 -0500
+Date: Tue, 4 Jan 2011 21:35:41 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC patch 3/5] ftrace trace event add missing semicolumn
+Message-ID: <20110105023541.GA12950@Krystal>
+References: <20110104231629.996422888@efficios.com> <20110104232419.441463699@efficios.com> <20110105000005.GE2911@nowhere> <20110105001837.GA9737@Krystal> <20110105020759.GG2911@nowhere>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="ISO-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5931
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110105020759.GG2911@nowhere>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 21:22:23 up 42 days,  7:25,  5 users,  load average: 0.00, 0.02,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
-
-On Wednesday, December 29, 2010 3:49 PM, Grant Likely wrote:
-> As previously discussed on this list, I would like to see support for
-> multiple bus instances implemented differently.  Rather than storing
-> the spi_master instances in an array in the pci device private data,
-> the pci device should register a separate platform_device for each spi
-> bus instance, and each of those bus instances should get bound to a
-> topcliff_spi_bus driver which doesn't need to have any special
-> knowledge about how many spi_master instances actually exist.
+* Frederic Weisbecker (fweisbec@gmail.com) wrote:
+> On Tue, Jan 04, 2011 at 07:18:37PM -0500, Mathieu Desnoyers wrote:
+> > * Frederic Weisbecker (fweisbec@gmail.com) wrote:
+> > > On Tue, Jan 04, 2011 at 06:16:32PM -0500, Mathieu Desnoyers wrote:
+> > > > Add a missing semicolumn at the end of a ftrace definition.
+> > > > 
+> > > > We currently are not seeing any impact of this missing semicolumn because extra
+> > > > semicolumns appear all over the place in the code generated from TRACE_EVENT
+> > > > within ftrace stages.
+> > > > 
+> > > > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> > > > CC: Steven Rostedt <rostedt@goodmis.org>
+> > > > CC: Frederic Weisbecker <fweisbec@gmail.com>
+> > > > CC: Ingo Molnar <mingo@elte.hu>
+> > > > CC: Thomas Gleixner <tglx@linutronix.de>
+> > > > ---
+> > > >  include/trace/ftrace.h |    2 +-
+> > > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > > 
+> > > > Index: linux-2.6-lttng/include/trace/ftrace.h
+> > > > ===================================================================
+> > > > --- linux-2.6-lttng.orig/include/trace/ftrace.h
+> > > > +++ linux-2.6-lttng/include/trace/ftrace.h
+> > > > @@ -69,7 +69,7 @@
+> > > >  #undef DEFINE_EVENT
+> > > >  #define DEFINE_EVENT(template, name, proto, args)	\
+> > > >  	static struct ftrace_event_call	__used		\
+> > > > -	__attribute__((__aligned__(4))) event_##name
+> > > > +	__attribute__((__aligned__(4))) event_##name;
+> > > 
+> > > But DEFINE_EVENT() calls are supposed to be ";" terminated, no?
+> > 
+> > Currently yes, but if you look at the preprocessor output currently generated by
+> > the current TRACE_EVENT()/DEFINE_EVENT() scheme, there are useless ";" added all
+> > over the place. I have a patch later in my queue that proposes removal of these
+> > extra ";" as a cleanup of the TRACE_EVENT() semantic, but I'm keeping it for
+> > later because it removes the extra ";" at the end of each TRACE_EVENT()
+> > instance (and thus is more intrusive code-wise).
+> > 
+> > Adding this semicolumn here ensures that all Ftrace macros are consistent wrt
+> > semicolumns. We can get away without consistency currently exactly because the
+> > current scheme adds many useless semicolumns between each TRACE_EVENT().
 > 
-> Basically, the way it is implemented in this patch isn't taking
-> advantage of the infrastructure and instance management provided by
-> the driver model.
+> Are you sure you want to put so much time on this?
 
-I see.
-I will modify like your suggestion.
-Could you show the reference SPI driver using multi-instance ?
+We are about to spend more time arguing about it that the time it takes cleaning
+it up. But here we go.
+
+> 
+> This will require a massive change for the sole win of removing double ";"
+> in generated code. This won't optimize much the build, and it will make the things
+> not so much more readable for very rare people who dare to have interest into the
+> TRACE_EVENT generated code. That notwithstanding the obfuscation of that generated
+> code resides more in the lack of indentation and newlines than in double
+> semicolons that we barely notice.
+
+Building:
+
+make kernel/sched.o V=1
+
+taking the gcc invokation, changing it to:
+
+gcc -Wp,-MD,kernel/.sched.o.d  -nostdinc -isystem /usr/local/lib/gcc/x86_64-unknown-linux-gnu/4.5.1/include -I/home/compudj/git/linux-tip/arch/x86/include -Iinclude  -include include/generated/autoconf.h -D__KERNEL__ -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -O2 -m64 -march=core2 -mno-red-zone -mcmodel=kernel -funit-at-a-time -maccumulate-outgoing-args -DCONFIG_AS_CFI=1 -DCONFIG_AS_CFI_SIGNAL_FRAME=1 -DCONFIG_AS_CFI_SECTIONS=1 -pipe -Wno-sign-compare -fno-asynchronous-unwind-tables -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -Wframe-larger-than=1024 -fno-stack-protector -fno-omit-frame-pointer -fno-optimize-sibling-calls -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack    -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(sched)"  -D"KBUILD_MODNAME=KBUILD_STR(sched)"  -E -o kernel/sched.pp kernel/sched.c
+
+An exerpt of the output, fed through "indent" for readability:
+
+static inline __attribute__ ((always_inline))
+     void
+# 275 "include/trace/events/sched.h"
+       check_trace_callback_type_sched_process_fork
+# 252 "include/trace/events/sched.h"
+      
+       (void (*cb)
+        (void *__data, struct task_struct * parent,
+         struct task_struct * child))
+{
+}
+# 275 "include/trace/events/sched.h"
+ ;
+
+
+
+
+
+
+# 305 "include/trace/events/sched.h"
+ ;
+
+
+As we can notice, a few extra ";" are added between each "entity" created by the
+ftrace trace event phase. This works only as long as we declare
+semicolumn-separated C structure elements, functions, and statements, because
+the compiler just skips the extra semicolumns, but forbids creation of arrays of
+events, which need to be comma-separated.
+
+These extra semicolumns we see here are simply polluting the compiler input, and
+I don't see any reason why we should leave them there.
 
 Thanks,
----
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
 
+Mathieu
+
+> 
+> Hm?
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
