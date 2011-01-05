@@ -1,68 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751752Ab1AEQin (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 11:38:43 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:55800 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751216Ab1AEQim (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 11:38:42 -0500
-Date: Wed, 5 Jan 2011 09:38:35 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com,
-        Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-Subject: Re: [PATCH 1/3] spi_topcliff_pch: support new device ML7213
-Message-ID: <20110105163835.GD17272@angua.secretlab.ca>
-References: <1293449027-3219-1-git-send-email-tomoya-linux@dsn.okisemi.com>
- <20101229064937.GC8172@angua.secretlab.ca>
- <280596192AA74D208C2C5F6389DBE8C1@hacdom.okisemi.com>
+	id S1751942Ab1AEQnD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 11:43:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7524 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751671Ab1AEQnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 11:43:00 -0500
+Date: Wed, 5 Jan 2011 17:35:42 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: roland@redhat.com, jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 7/7] ptrace: clean transitions between TASK_STOPPED and
+	TRACED
+Message-ID: <20110105163542.GA19474@redhat.com>
+References: <1293199257-11255-1-git-send-email-tj@kernel.org> <1293199257-11255-8-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <280596192AA74D208C2C5F6389DBE8C1@hacdom.okisemi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1293199257-11255-8-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 05, 2011 at 11:34:20AM +0900, Tomoya MORINAGA wrote:
-> Hi Grant,
-> 
-> On Wednesday, December 29, 2010 3:49 PM, Grant Likely wrote:
-> >As previously discussed on this list, I would like to see support for
-> >multiple bus instances implemented differently.  Rather than storing
-> >the spi_master instances in an array in the pci device private data,
-> >the pci device should register a separate platform_device for each spi
-> >bus instance, and each of those bus instances should get bound to a
-> >topcliff_spi_bus driver which doesn't need to have any special
-> >knowledge about how many spi_master instances actually exist.
-> >
-> >Basically, the way it is implemented in this patch isn't taking
-> >advantage of the infrastructure and instance management provided by
-> >the driver model.
-> 
-> I see.
-> I will modify like your suggestion.
-> Could you show the reference SPI driver using multi-instance ?
+To me, the whole series is fine.
 
-In an multi-instance scenario, the spi driver is just a plain-jane
-platform_driver.  There isn't anything special about it.  Instead, the
-pci_driver becomes responsible to register one or more platform
-devices for the child busses.  Much like one of the multifunction
-devices in drivers/mfd.
+As for the user-visible changes, I believe they are carefully documented,
+hopefully Roland and Jan can take a look.
 
-As far as examples go, drivers/mfd/timberdale.c seems reasonable, if a
-bit larger than what you need.
 
-g.
+This patch looks good too, a couple of minor nits below.
 
-> 
-> Thanks,
-> ---
-> Tomoya MORINAGA
-> OKI SEMICONDUCTOR CO., LTD.
-> 
+On 12/24, Tejun Heo wrote:
+>
+> + * task_clear_group_stop_trapping - clear group stop trapping bit
+> + * @task: target task
+> + *
+> + * If GROUP_STOP_TRAPPING is set, a ptracer is waiting for us.  Clear it
+> + * and wake up the ptracer.  Note that we don't need any further locking.
+> + * @task->siglock guarantees that @task->parent points to the ptracer.
+> + *
+> + * CONTEXT:
+> + * Must be called with @task->sighand->siglock held.
+> + */
+> +static void task_clear_group_stop_trapping(struct task_struct *task)
+> +{
+> +	if (unlikely(task->group_stop & GROUP_STOP_TRAPPING)) {
+> +		task->group_stop &= ~GROUP_STOP_TRAPPING;
+> +		__wake_up_sync(&task->parent->signal->wait_chldexit,
+> +			       TASK_UNINTERRUPTIBLE, 1);
+
+OK... we are doing __wake_up_sync_key(key => NULL), this looks unfriendly
+to child_wait_callback(). But TASK_UNINTERRUPTIBLE means we can't abuse
+the tracer's subthreads doing do_wait().
+
+>  void task_clear_group_stop(struct task_struct *task)
+>  {
+>  	task->group_stop &= ~(GROUP_STOP_PENDING | GROUP_STOP_CONSUME);
+> +	task_clear_group_stop_trapping(task);
+>  }
+
+Not a comment, but the question. I am not sure task_clear_group_stop()
+needs task_clear_group_stop_trapping(), please see below...
+
+> @@ -1694,6 +1716,14 @@ static void ptrace_stop(int exit_code, int why, int clear_code, siginfo_t *info)
+>  	}
+>  
+>  	/*
+> +	 * We're committing to trapping.  Clearing GROUP_STOP_TRAPPING and
+> +	 * transition to TASK_TRACED should be atomic with respect to
+> +	 * siglock.  Do it after the arch hook as siglock is released and
+> +	 * regrabbed across it.
+> +	 */
+> +	task_clear_group_stop_trapping(current);
+
+This wakes up the tracer. It can return from sys_ptrace(), call do_wait(),
+and take tasklist_lock before us.
+
+Of course, this is only theoretical problem, but perhaps it makes sense
+to do this after __set_current_state(TASK_TRACED), otherwise
+task_stopped_code() can fail.
+
+> @@ -1839,13 +1875,25 @@ static int do_signal_stop(int signr)
+>  		schedule();
+>
+>  		spin_lock_irq(&current->sighand->siglock);
+> -	} else
+> -		ptrace_stop(current->exit_code, CLD_STOPPED, 0, NULL);
+> +	} else {
+> +		ptrace_stop(current->group_stop & GROUP_STOP_SIGMASK,
+> +			    CLD_STOPPED, 0, NULL);
+> +		current->exit_code = 0;
+> +	}
+> +
+> +	/*
+> +	 * GROUP_STOP_PENDING could be set if another group stop has
+> +	 * started since being woken up or ptrace wants us to transit
+> +	 * between TASK_STOPPED and TRACED.  Retry group stop.
+> +	 */
+> +	if (current->group_stop & GROUP_STOP_PENDING) {
+> +		WARN_ON_ONCE(!(current->group_stop & GROUP_STOP_SIGMASK));
+> +		goto retry;
+> +	}
+>
+>  	spin_unlock_irq(&current->sighand->siglock);
+
+Can't we add task_clear_group_stop_trapping() right before we drop
+->siglock ? This way we can remove it from task_clear_group_stop(),
+afaics. Once again, this is up to you. Looks more clean to me, but
+this is of course subjective.
+
+If GROUP_STOP_PENDING is not set, but GROUP_STOP_TRAPPING is set,
+then this task was SIGKILL'ed or SIGCONT'ed, we can notify the
+tracer.
+
+Otherwise (ignoring ptrace_stop), there is no reasons to check
+GROUP_STOP_TRAPPING. It was set under ->siglock when the tracee
+was in TASK_STOPPED state few lines above.
+
+Oleg.
+
