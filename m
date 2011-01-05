@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751894Ab1AEPDD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 10:03:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17982 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751309Ab1AEPC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 10:02:59 -0500
-Message-ID: <4D2487F9.8030704@redhat.com>
-Date: Wed, 05 Jan 2011 16:02:17 +0100
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20091014 Fedora/3.0-2.8.b4.fc11 Thunderbird/3.0b4
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
-        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <greg@kroah.com>
-Subject: [PATCH 1/2 v2] kref: add kref_test_and_get
-References: <4CFF3DA4.5060705@jp.fujitsu.com>	 <4CFF9A2C.1070401@fusionio.com> <4D025154.8030400@redhat.com>	 <20101210165553.GE31737@redhat.com> <4D07D2AC.6000500@fusionio.com>	 <4D0B68AF.80804@redhat.com> <4D0BB4A1.8080305@fusionio.com>	 <4D13664C.3020500@redhat.com> <20101223153915.GE9502@redhat.com>	 <4D13810B.8000304@redhat.com> <20101224192916.GB2082@redhat.com>	 <4D23423A.60707@redhat.com> <1294157114.3579.102.camel@edumazet-laptop>
-In-Reply-To: <1294157114.3579.102.camel@edumazet-laptop>
-Content-Type: text/plain; charset=UTF-8
+	id S1751449Ab1AEPKg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 10:10:36 -0500
+Received: from queueout04-winn.ispmail.ntl.com ([81.103.221.58]:5558 "EHLO
+	queueout04-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751231Ab1AEPKf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 10:10:35 -0500
+X-Greylist: delayed 835 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Jan 2011 10:10:35 EST
+From: Ian Campbell <ijc@hellion.org.uk>
+To: Sheng Yang <sheng@linux.intel.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <201101051547.12107.sheng@linux.intel.com>
+References: <1292912329-12451-1-git-send-email-sheng@linux.intel.com>
+	 <1292912329-12451-2-git-send-email-sheng@linux.intel.com>
+	 <201101051547.12107.sheng@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 05 Jan 2011 14:56:28 +0000
+Message-ID: <1294239388.3831.3516.camel@zakaz.uk.xensource.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 62.200.22.2
+X-SA-Exim-Mail-From: ijc@hellion.org.uk
+Subject: Re: [PATCH 2/2 v2] xen: HVM X2APIC support
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
+X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=z0RUBZs6AVsA:10 a=IkcTkHD0fZMA:10 a=EqSVyYDxCmx5PoDwFIsA:9 a=qJ0bFeMbzbMGuu1AVugA:7 a=P7rXIyUuUSQbflqvmqnNICf3BD4A:4 a=QEXdDO2ut3YA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> > @@ -1384,6 +1365,17 @@ static bool __init xen_hvm_platform(void)
+> >       return true;
+> >  }
+> > 
+> > +bool xen_hvm_need_lapic(void)
+> > +{
+> > +     if (xen_pv_domain())
+> > +             return false;
+> > +     if (xen_hvm_domain() && xen_feature(XENFEAT_hvm_pirqs) &&
+> > +                     xen_have_vector_callback)
+> > +             return false;
+> > +     return (xen_cpuid_base() != 0);
+> > +}
+> > +EXPORT_SYMBOL_GPL(xen_hvm_need_lapic);
+> > +
 
-Add kref_test_and_get() function, which atomically add a reference only if
-refcount is not zero. This prevent to add a reference to an object that is
-already being removed.
+Since xen_hvm_domain() is always true if xen_cpuid_base() != 0, isn't
+this more obviously written as:
+	if (!xen_hvm_domain())
+		return false;
+	if (xen_feature(XENFEAT_hvm_pirqs) && xen_have_vector_callback)
+		return false;
+	return true;
+?
 
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
----
- include/linux/kref.h |    1 +
- lib/kref.c           |   12 ++++++++++++
- 2 files changed, 13 insertions(+)
+Also, checking for the XenVMMXenVMM signature alone seems like a very
+broad test for checking the availability of a specific feature, is there
+nothing more specific which we could/should be testing?
 
-diff --git a/include/linux/kref.h b/include/linux/kref.h
-index 6cc38fc..90b9e44 100644
---- a/include/linux/kref.h
-+++ b/include/linux/kref.h
-@@ -23,6 +23,7 @@ struct kref {
- 
- void kref_init(struct kref *kref);
- void kref_get(struct kref *kref);
-+int kref_test_and_get(struct kref *kref);
- int kref_put(struct kref *kref, void (*release) (struct kref *kref));
- 
- #endif /* _KREF_H_ */
-diff --git a/lib/kref.c b/lib/kref.c
-index d3d227a..e7a6e10 100644
---- a/lib/kref.c
-+++ b/lib/kref.c
-@@ -37,6 +37,18 @@ void kref_get(struct kref *kref)
- }
- 
- /**
-+ * kref_test_and_get - increment refcount for object only if refcount is not
-+ * zero.
-+ * @kref: object.
-+ *
-+ * Return non-zero if the refcount was incremented, 0 otherwise
-+ */
-+int kref_test_and_get(struct kref *kref)
-+{
-+	return atomic_inc_not_zero(&kref->refcount);
-+}
-+
-+/**
-  * kref_put - decrement refcount for object.
-  * @kref: object.
-  * @release: pointer to the function that will clean up the object when the
+Ian.
+
+-- 
+Ian Campbell
+Current Noise: Taint - Mass Appeal Sadness
+
+What's a cult?  It just means not enough people to make a minority.
+		-- Robert Altman
+
