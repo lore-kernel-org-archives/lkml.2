@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751994Ab1AEPvH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 10:51:07 -0500
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:44955 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750699Ab1AEPvG (ORCPT
+	id S1752087Ab1AEPxc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 10:53:32 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46884 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab1AEPxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 10:51:06 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 9kgrzW4VM1mu_BCixCIrd4doairuRC74ifgILIRuDmE_ia5
- WcxF98iWaMQNPkyT0qYFQOcVYD2YV_xl7tTN._iLB18xd2icCUY8AAmek9UU
- cHGnXhRbSGbWjLTmD3_.Ou98Ll69v.IX2z3K_c86UAHL5lpmct6edhMUa3_9
- AuAgC_T76cj.hl_R024NdsBVWZNeDeSoB.tEzqYRElEp04C1rSgcpDIdS9gd
- WNgu657iseZEMIQjKK6LcX3IwVBsdLPKmLgxq3dM1RPQPmIZ8zpyrI_mm7Hi
- h8NjWPAheO1LQgrQ24w8iRHVzex3p9RWFiuo70wxrBJylJjo-
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 5 Jan 2011 09:51:02 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: David Rientjes <rientjes@google.com>
-cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        Bart Van Assche <bart.vanassche@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] slub: Fix sysfs circular locking dependency
-In-Reply-To: <alpine.DEB.2.00.1101041939030.27551@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1101050943120.13032@router.home>
-References: <1294172717-6044-1-git-send-email-penberg@kernel.org> <alpine.DEB.2.00.1101041939030.27551@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 5 Jan 2011 10:53:31 -0500
+Date: Wed, 5 Jan 2011 15:52:30 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-nfs@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+Message-ID: <20110105155230.GC8638@n2100.arm.linux.org.uk>
+References: <20101230191846.GB14221@pengutronix.de> <20110103213850.GC25121@pengutronix.de> <1294100558.25100.8.camel@heimdal.trondhjem.org> <20110105084014.GN25121@pengutronix.de> <20110105110517.GQ25121@pengutronix.de> <20110105112701.GA8638@n2100.arm.linux.org.uk> <20110105134045.GS25121@pengutronix.de> <1294239193.3014.9.camel@heimdal.trondhjem.org> <4D2487CA.5040501@pengutronix.de> <1294240457.3014.13.camel@heimdal.trondhjem.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294240457.3014.13.camel@heimdal.trondhjem.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Jan 2011, David Rientjes wrote:
+On Wed, Jan 05, 2011 at 10:14:17AM -0500, Trond Myklebust wrote:
+> OK. So,the new behaviour in 2.6.37 is that we're writing to a series of
+> pages via the usual kmap_atomic()/kunmap_atomic() and kmap()/kunmap()
+> interfaces, but we can end up reading them via a virtual address range
+> that gets set up via vm_map_ram() (that range gets set up before the
+> write occurs).
 
-> slub_lock protects slab_state following kmem_cache_init() if caches are
-> created/destroyed prior to the sysfs slab initcall setting the global
-> variable, so couldn't this leak the kobject if its initialization and add
-> was deferred on kmem_cache_create() and added by slab_sysfs_init()?
+kmap of lowmem pages will always reuses the existing kernel direct
+mapping, so there won't be a problem there.
 
-Potentially.
+> Do we perhaps need an invalidate_kernel_vmap_range() before we can read
+> the data on ARM in this kind of scenario?
 
-Also note that the same lock inversion occurs in kmem_cache_create().
-slub lock is taken and then sysfs operations are performed.
+Firstly, vm_map_ram() does no cache maintainence of any sort, nor does
+it take care of page colouring - so any architecture where cache aliasing
+can occur will see this problem.  It should not limited to ARM.
 
-The problem is that slub_lock has multiple roles:
+Secondly, no, invalidate_kernel_vmap_range() probably isn't sufficient.
+There's two problems here:
 
-1. Protect the list of slab caches and the slab_state (thats why its
-   mainly used in kmem_cache_destroy and kmem_cache_create)
+	addr = kmap(lowmem_page);
+	*addr = stuff;
+	kunmap(lowmem_page);
 
-2. Protect against removal and adding of new cpus and nodes
-   (show_slab_objects)
+Such lowmem pages are accessed through their kernel direct mapping.
 
+	ptr = vm_map_ram(lowmem_page);
+	read = *ptr;
 
-If we could create another lock that protects against new cpus / nodes
-being added and removed then we could take that lock in
-show_slab_objects() instead.
+This creates a new mapping which can alias with the kernel direct mapping.
+Now, as this is a new mapping, there should be no cache lines associated
+with it.  (Looking at vm_unmap_ram(), it calls free_unmap_vmap_area_addr(),
+free_unmap_vmap_area(), which then calls flush_cache_vunmap() on the
+region.  vb_free() also calls flush_cache_vunmap() too.)
 
-IMHO the lock order must have the slub_lock at the top.
+If the write after kmap() hits an already present cache line, the cache
+line will be updated, but it won't be written back to memory.  So, on
+a subsequent vm_map_ram(), with any kind of aliasing cache, there's
+no guarantee that you'll hit that cache line and read the data just
+written there.
 
-The other lock that would prevent adding/removal of nodes / cpu can be
-taken in show_slab_objects and in the corresponding hotplug functions. We
-do not need to take the lock at all in show_slab_objects cpu and memory
-hotplug are not enabled. Maybe there is a hotplug specific lock that can
-be used instead?
+The kernel direct mapping would need to be flushed.
 
+I'm really getting to the point of hating the poliferation of RAM
+remapping interfaces - it's going to (and is) causing nothing but lots
+of pain on virtual cache architectures, needing more and more cache
+flushing interfaces to be created.
 
+Is there any other solution to this?
