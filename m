@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853Ab1AEXr1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:47:27 -0500
-Received: from kroah.org ([198.145.64.141]:41089 "EHLO coco.kroah.org"
+	id S1753811Ab1AEXqs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:46:48 -0500
+Received: from kroah.org ([198.145.64.141]:41100 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753672Ab1AEXpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:45:23 -0500
+	id S1753625Ab1AEXpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 18:45:25 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 15:03:27 2011
-Message-Id: <20110105230327.566454290@clark.site>
+Message-Id: <20110105230327.778832812@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 15:00:59 -0800
+Date: Wed, 05 Jan 2011 15:01:01 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Eduardo Costa <ecosta.tmp@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [41/49] p54usb: New USB ID for Gemtek WUBI-100GW
+        Saeed Bishara <saeed@marvell.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: [43/49] mv_xor: fix race in tasklet function
 In-Reply-To: <20110105234415.GA22369@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,31 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eduardo Costa <ecosta.tmp@gmail.com>
+From: Saeed Bishara <saeed@marvell.com>
 
-commit 56e6417b49132d4f56e9f2241d31942b90b46315 upstream.
+commit 8333f65ef094e47020cd01452b4637e7daf5a77f upstream.
 
-This USB ID is for the WUBI-100GW 802.11g Wireless LAN USB Device that
-uses p54usb.
+use mv_xor_slot_cleanup() instead of __mv_xor_slot_cleanup() as the former function
+aquires the spin lock that needed to protect the drivers data.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: Eduardo Costa <ecosta.tmp@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Saeed Bishara <saeed@marvell.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/p54/p54usb.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/dma/mv_xor.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/p54/p54usb.c
-+++ b/drivers/net/wireless/p54/p54usb.c
-@@ -59,6 +59,7 @@ static struct usb_device_id p54u_table[]
- 	{USB_DEVICE(0x107b, 0x55f2)},	/* Gateway WGU-210 (Gemtek) */
- 	{USB_DEVICE(0x124a, 0x4023)},	/* Shuttle PN15, Airvast WM168g, IOGear GWU513 */
- 	{USB_DEVICE(0x1435, 0x0210)},	/* Inventel UR054G */
-+	{USB_DEVICE(0x15a9, 0x0002)},	/* Gemtek WUBI-100GW 802.11g */
- 	{USB_DEVICE(0x1630, 0x0005)},	/* 2Wire 802.11g USB (v1) / Z-Com */
- 	{USB_DEVICE(0x182d, 0x096b)},	/* Sitecom WL-107 */
- 	{USB_DEVICE(0x1915, 0x2234)},	/* Linksys WUSB54G OEM */
+--- a/drivers/dma/mv_xor.c
++++ b/drivers/dma/mv_xor.c
+@@ -448,7 +448,7 @@ mv_xor_slot_cleanup(struct mv_xor_chan *
+ static void mv_xor_tasklet(unsigned long data)
+ {
+ 	struct mv_xor_chan *chan = (struct mv_xor_chan *) data;
+-	__mv_xor_slot_cleanup(chan);
++	mv_xor_slot_cleanup(chan);
+ }
+ 
+ static struct mv_xor_desc_slot *
 
 
