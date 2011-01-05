@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab1AEXNX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:13:23 -0500
-Received: from kroah.org ([198.145.64.141]:50677 "EHLO coco.kroah.org"
+	id S1753051Ab1AEXNn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:13:43 -0500
+Received: from kroah.org ([198.145.64.141]:50664 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752903Ab1AEXGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:06:13 -0500
+	id S1752637Ab1AEXGL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 18:06:11 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 15:03:23 2011
-Message-Id: <20110105230323.632697219@clark.site>
+Message-Id: <20110105230323.419831074@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 15:00:21 -0800
+Date: Wed, 05 Jan 2011 15:00:19 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Miklos Szeredi <mszeredi@suse.cz>, Tejun Heo <tj@kernel.org>
-Subject: [03/49] fuse: verify ioctl retries
+        Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [01/49] TTY: Fix error return from tty_ldisc_open()
 In-Reply-To: <20110105230438.GA26241@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +26,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit 7572777eef78ebdee1ecb7c258c0ef94d35bad16 upstream.
+The backported version of "TTY: ldisc, fix open flag handling" in
+2.6.32.27 causes tty_ldisc_open() to return 0 on error.  Fix that.
 
-Verify that the total length of the iovec returned in FUSE_IOCTL_RETRY
-doesn't overflow iov_length().
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-CC: Tejun Heo <tj@kernel.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/fuse/file.c |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ drivers/char/tty_ldisc.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -1619,6 +1619,20 @@ static int fuse_ioctl_copy_user(struct p
+--- a/drivers/char/tty_ldisc.c
++++ b/drivers/char/tty_ldisc.c
+@@ -451,6 +451,7 @@ static int tty_ldisc_open(struct tty_str
+ 		ret = ld->ops->open(tty);
+ 		if (ret)
+ 			clear_bit(TTY_LDISC_OPEN, &tty->flags);
++		return ret;
+ 	}
  	return 0;
  }
- 
-+/* Make sure iov_length() won't overflow */
-+static int fuse_verify_ioctl_iov(struct iovec *iov, size_t count)
-+{
-+	size_t n;
-+	u32 max = FUSE_MAX_PAGES_PER_REQ << PAGE_SHIFT;
-+
-+	for (n = 0; n < count; n++) {
-+		if (iov->iov_len > (size_t) max)
-+			return -ENOMEM;
-+		max -= iov->iov_len;
-+	}
-+	return 0;
-+}
-+
- /*
-  * For ioctls, there is no generic way to determine how much memory
-  * needs to be read and/or written.  Furthermore, ioctls are allowed
-@@ -1812,6 +1826,14 @@ long fuse_do_ioctl(struct file *file, un
- 		in_iov = page_address(iov_page);
- 		out_iov = in_iov + in_iovs;
- 
-+		err = fuse_verify_ioctl_iov(in_iov, in_iovs);
-+		if (err)
-+			goto out;
-+
-+		err = fuse_verify_ioctl_iov(out_iov, out_iovs);
-+		if (err)
-+			goto out;
-+
- 		goto retry;
- 	}
- 
 
 
