@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751430Ab1AEEsv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 23:48:51 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:62082 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144Ab1AEEsu (ORCPT
+	id S1751458Ab1AEExH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 23:53:07 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61419 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176Ab1AEExF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 23:48:50 -0500
+	Tue, 4 Jan 2011 23:53:05 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=WqhEPJ5yuq7OtRm+3B5uwuNB0TP4lHkx8MPbpTTE4UfFCshYD+DpFbe3RhGcXsV3Vf
-         AzFZmHOKhOBMQYfzayN6PjKVoEdn1zxajc0kMjqAfwTyi3ORyVmNicXHxorPv+w3GF34
-         MPlU/7T++6S6xu4oNVtmiOcAu2JfpCWsPsTGY=
+         :cc:content-type:content-transfer-encoding;
+        b=WRD+kDJ/kWS6s7LB4mRhPwMdQLfqBckeLbwVxgbwdKcAN2TS7utP7TMK+KkbKxPskV
+         e8hytDeHQLdmn5cghV4NNj3JRgwsOaWbWKjMsbcjOoUdKWEQVs2AIWeCWXnkhNz8P80M
+         ceJvAN3xK5NdXplSuFBuPLaDtANq/Zv9G3/B8=
 MIME-Version: 1.0
-In-Reply-To: <20110105130020.e2a854e4.nishimura@mxp.nes.nec.co.jp>
-References: <20110105130020.e2a854e4.nishimura@mxp.nes.nec.co.jp>
-Date: Wed, 5 Jan 2011 13:48:50 +0900
-Message-ID: <AANLkTikCQbzQcUjxtgLrSVtF76Jr9zTmXUhO_yDWss5k@mail.gmail.com>
-Subject: Re: [BUGFIX][PATCH] memcg: fix memory migration of shmem swapcache
+In-Reply-To: <20110104161805.GE3120@balbir.in.ibm.com>
+References: <cover.1293982522.git.minchan.kim@gmail.com>
+	<20110104161805.GE3120@balbir.in.ibm.com>
+Date: Wed, 5 Jan 2011 13:53:04 +0900
+Message-ID: <AANLkTinSuEF-+CCiCyoQbMfMMUJyQAw5JQB8iNrkHgmX@mail.gmail.com>
+Subject: Re: [PATCH v2 0/7] Change page reference handling semantic of page cache
 From: Minchan Kim <minchan.kim@gmail.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
+To: balbir@linux.vnet.ibm.com
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+        Hugh Dickins <hughd@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Balbir,
 
-On Wed, Jan 5, 2011 at 1:00 PM, Daisuke Nishimura
-<nishimura@mxp.nes.nec.co.jp> wrote:
-> Hi.
+On Wed, Jan 5, 2011 at 1:18 AM, Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> * MinChan Kim <minchan.kim@gmail.com> [2011-01-03 00:44:29]:
 >
-> This is a fix for a problem which has bothered me for a month.
+>> Now we increases page reference on add_to_page_cache but doesn't decrease it
+>> in remove_from_page_cache. Such asymmetric makes confusing about
+>> page reference so that caller should notice it and comment why they
+>> release page reference. It's not good API.
+>>
+>> Long time ago, Hugh tried it[1] but gave up of reason which
+>> reiser4's drop_page had to unlock the page between removing it from
+>> page cache and doing the page_cache_release. But now the situation is
+>> changed. I think at least things in current mainline doesn't have any
+>> obstacles. The problem is fs or somethings out of mainline.
+>> If it has done such thing like reiser4, this patch could be a problem but
+>> they found it when compile time since we remove remove_from_page_cache.
+>>
+>> [1] http://lkml.org/lkml/2004/10/24/140
+>>
+>> The series configuration is following as.
+>>
+>> [1/7] : This patch introduces new API delete_from_page_cache.
+>> [2,3,4,5/7] : Change remove_from_page_cache with delete_from_page_cache.
+>> Intentionally I divide patch per file since someone might have a concern
+>> about releasing page reference of delete_from_page_cache in
+>> somecase (ex, truncate.c)
+>> [6/7] : Remove old API so out of fs can meet compile error when build time
+>> and can notice it.
+>> [7/7] : Change __remove_from_page_cache with __delete_from_page_cache, too.
+>> In this time, I made all-in-one patch because it doesn't change old behavior
+>> so it has no concern. Just clean up patch.
+>>
 >
-> ===
-> From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
->
-> In current implimentation, mem_cgroup_end_migration() decides whether the page
-> migration has succeeded or not by checking "oldpage->mapping".
->
-> But if we are tring to migrate a shmem swapcache, the page->mapping of it is
-> NULL from the begining, so the check would be invalid.
-> As a result, mem_cgroup_end_migration() assumes the migration has succeeded
-> even if it's not, so "newpage" would be freed while it's not uncharged.
->
-> This patch fixes it by passing mem_cgroup_end_migration() the result of the
-> page migration.
->
-> Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> Could you please describe any testing done, was it mostly functional?
 
-Nice catch. I don't oppose the patch.
-But as looking the code in unmap_and_move, I feel part of mem cgroup
-migrate is rather awkward.
+I didn't test it since I think it's okay as a code review.
+Do you find any faults or guess it?
+Anyway, I should have tested it before sending patches.
 
-int unmap_and_move()
-{
-   charge = mem_cgroup_prepare_migration(xxx);
-   ..
-   BUG_ON(charge); <-- BUG if it is charged?
-   ..
-uncharge:
-   if (!charge)    <-- why do we have to uncharge !charge?
-      mem_group_end_migration(xxx);
-   ..
-}
-
-'charge' local variable isn't good. How about changing "uncharge" or whatever?
-Of course, It would be another patch.
-If you don't mind, I will send the patch or you may send the patch.
+we are now -rc8 and Andrew doesn't held a patch.
+So I will test it until he grab a patch.
 
 Thanks,
+
+>
+> --
+>        Three Cheers,
+>        Balbir
+>
+
+
 
 -- 
 Kind regards,
