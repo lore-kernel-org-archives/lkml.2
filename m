@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016Ab1AEL1b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 06:27:31 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50388 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678Ab1AEL13 (ORCPT
+	id S1752061Ab1AEL2O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 06:28:14 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:60536 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676Ab1AEL2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 06:27:29 -0500
-Date: Wed, 5 Jan 2011 11:27:01 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-Message-ID: <20110105112701.GA8638@n2100.arm.linux.org.uk>
-References: <20101230171453.GA5787@pengutronix.de> <1293731992.4919.5.camel@heimdal.trondhjem.org> <20101230191846.GB14221@pengutronix.de> <20110103213850.GC25121@pengutronix.de> <1294100558.25100.8.camel@heimdal.trondhjem.org> <20110105084014.GN25121@pengutronix.de> <20110105110517.GQ25121@pengutronix.de>
+	Wed, 5 Jan 2011 06:28:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=HdXlj40QJ4d++w/ZY/nkjK7aFxpt1sVMaUgLcyhy6wr/lSSa8Ru+B9x3f+jokdluEt
+         v+Dx1z0Yi8yaaaL8FCf0/HzlJKFMkGfCBaTp91GNLKZY5iZRrDvTexKoF3zeVSIWH3H+
+         FHOEt1crlbtRXIqW9Lz5fca+6XIfLudRVBKAY=
+Date: Wed, 5 Jan 2011 03:28:02 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Benjamin LaHaise <bcrl@kvack.org>,
+        linux-aio@kvack.org
+Subject: Re: [PATCH 21/32] fs/aio: aio_wq isn't used in memory reclaim path
+Message-ID: <20110105112802.GA7669@mtj.dyndns.org>
+References: <1294062595-30097-1-git-send-email-tj@kernel.org>
+ <1294062595-30097-22-git-send-email-tj@kernel.org>
+ <x49d3ocacij.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110105110517.GQ25121@pengutronix.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <x49d3ocacij.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 05, 2011 at 12:05:17PM +0100, Uwe Kleine-König wrote:
-> Hello Trond,
+Hello,
+
+On Tue, Jan 04, 2011 at 10:56:20AM -0500, Jeff Moyer wrote:
+> > aio_wq isn't used during memory reclaim.  Convert to alloc_workqueue()
+> > without WQ_MEM_RECLAIM.  It's possible to use system_wq but given that
+> > the number of work items is determined from userland and the work item
+> > may block, enforcing strict concurrency limit would be a good idea.
 > 
-> On Wed, Jan 05, 2011 at 09:40:14AM +0100, Uwe Kleine-König wrote:
-> > On Mon, Jan 03, 2011 at 07:22:38PM -0500, Trond Myklebust wrote:
-> > > The question is whether this is something happening on the server or the
-> > > client. Does an older client kernel boot without any trouble?
-> > I will set up a boot test with 2.6.37 (for statistics) and 2.6.36 to
-> > compare with.  If you don't consider .36 to be old enough let me now.
-> > Once the setup is done it should be easy to test .35 (say), too.
-> > 
-> Marc (cc'd) saw similar[1] problems with .37, when using .36.2 the
-> problems didn't occur.  This was more reliable to trigger and he was so
-> kind to bisect the problem.
+> I would think that just given that it may block would be enough to keep
+> it off of the system workqueue.
+
+Oh, workqueue now can handle parallel execution.  Blocking on system
+workqueue is no longer a problem.  One of the main reasons for this
+whole series.
+
+> > @@ -85,7 +85,7 @@ static int __init aio_setup(void)
+> >  	kiocb_cachep = KMEM_CACHE(kiocb, SLAB_HWCACHE_ALIGN|SLAB_PANIC);
+> >  	kioctx_cachep = KMEM_CACHE(kioctx,SLAB_HWCACHE_ALIGN|SLAB_PANIC);
+> >  
+> > -	aio_wq = create_workqueue("aio");
+> > +	aio_wq = alloc_workqueue("aio", 0, 1);	/* used to limit concurrency */
 > 
-> When testing v2.6.36-rc3-51-gafa8ccc init hanged.
-> (babddc72a9468884ce1a23db3c3d54b0afa299f0 is the first bad commit with
-> this hang.)  Commit 56e4ebf877b6043c289bda32a5a7385b80c17dee makes the
-> "init hangs" problem the "fileid changed on tab" problem.
+> OK, the only difference here is the removal of the WQ_MEM_RECLAIM flag,
+> as you noted.
+
+Yeap.  Do you agree that the concurrency limit is necessary?  If not,
+we can just put everything onto system_wq.
+
+> > @@ -569,7 +569,7 @@ static int __aio_put_req(struct kioctx *ctx, struct kiocb *req)
+> >  		spin_lock(&fput_lock);
+> >  		list_add(&req->ki_list, &fput_head);
+> >  		spin_unlock(&fput_lock);
+> > -		queue_work(aio_wq, &fput_work);
+> > +		schedule_work(&fput_work);
 > 
-> I could only reproduce that on armv5 machines (imx27, imx28 and at91)
-> but not on armv6 (imx35).
+> I'm not sure where this change fits into the patch description.  Why did
+> you do this?
 
-FYI, I've seen the "fileid changed" problem, and it looked like a 32-bit
-truncation of the fileid.  It occurred several times on successive
-reboots, so I tried to capture a tcpdump trace off the server (Linux
-2.6.23-rc8-ga64314e6 - its ancient because I've had issues with buggy
-IDE drivers trying to move it forward.)  However, for the last couple
-of weeks I've been unable to reproduce it.
+Yeah, that's me being forgetful.  Now that aio_wq is solely used to
+throttle the max concurrency of aio work items, I thought it would be
+better to push fput_work to system workqueue so that it doesn't
+interact with aio work items.  I'll update the patch description.
 
-The client was based on 2.6.37-rc6.
+Thanks.
 
-The "fileid changed" messages popped up after mounting an export with
-'nolock,intr,rsize=4096,soft', and then trying to use bash completion
-and 'ls' in a few subdirectories - and entries were missing from the
-directory lists without 'ls' reporting any errors (which I think is bad
-behaviour in itself.)
-
-I don't know why it's stopped producing the errors, although once it
-went I never investigated it any further (was far too busy trying to
-get AMBA DMA support working.)
+-- 
+tejun
