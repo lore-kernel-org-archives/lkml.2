@@ -1,480 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008Ab1AEQsm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 11:48:42 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:40896 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751697Ab1AEQsk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 11:48:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=PJodczM/N86ERew7oYCq8loBlSvAEG3YkWndqoq5HeN9+lwl46ManR7or1husTOKIb
-         GELtZLfPITSCjcRbvsNVNDj8TUQPZi3PAGMSLFDeDugZhZu0vEnNSnNuIYLK0e0IW9u4
-         8N4I2wI7kFtSuxerveRhPgrplN+eVNgfcGawk=
-Message-ID: <4D24A0E4.1070805@gmail.com>
-Date: Wed, 05 Jan 2011 17:48:36 +0100
-From: Angelo Dureghello <angelo70@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101030 Icedove/3.0.10
+	id S1752098Ab1AEQtX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 11:49:23 -0500
+Received: from mail.atmel.fr ([81.80.104.162]:61109 "EHLO atmel-es2.atmel.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751822Ab1AEQtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 11:49:21 -0500
+Message-ID: <4D24A108.2080609@atmel.com>
+Date: Wed, 05 Jan 2011 17:49:12 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: [RFC PATCH] m68knommu: added dm9000 support
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+CC: Andrew Victor <linux@maxim.org.za>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Hong XU <hong.xu@atmel.com>,
+        Patrice VILCHEZ <patrice.vilchez@atmel.com>
+Subject: Hit BUG_ON in dma-mapping.c:425
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allows to use the dm9000 network chip with a m68knommu 
-big-endian cpu. From the HW point of view, the cpu data bus connected to 
-the dm9000 chip should be hardware-byte-swapped, crossing the bytes 
-wires (D0:7 to D24:31, etc.). In anyway, has been also added an option 
-to swap the bytes in the driver, if some cpu has been wired straight 
-D0:D31 to dm9000.
+Hi,
 
-Signed-off-by: Angelo Dureghello <angelo70@gmail.com>
----
+While running mtd_stresstest on a dataflash (atmel_spi 
++ mtd_dataflash drivers) I hit the BUG_ON directive that 
+is at the beginning of ___dma_single_cpu_to_dev() function.
+This function is called from the SPI driver that do a 
+dma_map_single() before DMA operations on the buffer 
+transmitted from upper layers.
 
---- drivers/net/Kconfig.orig  2011-01-05 17:11:37.992376124 +0100
-+++ drivers/net/Kconfig 2011-01-04 22:33:14.132301872 +0100
-@@ -960,7 +960,7 @@ config TI_DAVINCI_EMAC
+It seems that this address is above "high_memory" limit because 
+it is allocated by vmalloc (in mtd_stresstest.c:285)...
 
-  config DM9000
-    tristate "DM9000 support"
--  depends on ARM || BLACKFIN || MIPS
-+  depends on COLDFIRE || ARM || BLACKFIN || MIPS
-    select CRC32
-    select MII
-    ---help---
-@@ -986,6 +986,14 @@ config DM9000_FORCE_SIMPLE_PHY_POLL
-      costly MII PHY reads. Note, this will not work if the chip is
-      operating with an external PHY.
+The question is: where the bug is relying? Is there a 
+configuration that I must modify in AT91 Linux to be able 
+to modify this behavior or is this an error in the use of 
+dma_map_single() in the atmel_spi.c driver?
 
-+config DM9000_32BIT_SW_SWAP
-+  bool "Software byte swap for 32 bit data bus"
-+  depends on DM9000 && COLDFIRE
-+  ---help---
-+    This configuration allows to swap data bytes from the dm9000
-+    driver itself, when the big endian cpu is wired straight to
-+    the dm9000 32 bit data bus.
-+
-  config ENC28J60
-    tristate "ENC28J60 support"
-    depends on EXPERIMENTAL && SPI && NET_ETHERNET
-@@ -3347,4 +3355,3 @@ config VMXNET3
-           module will be called vmxnet3.
+After searching the web, it seems it is quite common after 
+2.6.34 kernels... But I cannot figure out what is the issue.
 
-  endif # NETDEVICES
--
+Here is the Oops output:
+root@at91sam9m10g45ek:~# insmod ../n/mtd_stresstest.ko dev=3
 
+=================================================
+mtd_stresstest: MTD device: 3
+mtd_stresstest: MTD device size 4325376, eraseblock size 528, page size 528, count of eraseblocks 8192, pages per eraseblock 1, OOB size 0
+mtd_stresstest: doing operations
+mtd_stresstest: 0 operations done
+kernel BUG at /home/nferre/workspace/linux/linux-2.6-arm/arch/arm/mm/dma-mapping.c:425!
+Unable to handle kernel NULL pointer dereference at virtual address 00000000
+pgd = c31bc000
+[00000000] *pgd=732b1031, *pte=00000000, *ppte=00000000
+Internal error: Oops: 817 [#1]
+last sysfs file: /sys/devices/platform/atmel-ehci/usb1/1-2/1-2:1.0/host0/target0:0:0/0:0:0:0/block/sda/size
+Modules linked in: mtd_stresstest(+)
+CPU: 0    Not tainted  (2.6.37+ #2)
+PC is at __bug+0x1c/0x28
+LR is at __bug+0x18/0x28
+pc : [<c0030374>]    lr : [<c0030370>]    psr: 20000093
+sp : c3b09df8  ip : 00000200  fp : 00601c00
+r10: c4886000  r9 : 00001807  r8 : 74886000
+r7 : c38d37a0  r6 : c39660e8  r5 : c3b09ebc  r4 : c3b09e98
+r3 : 00000000  r2 : c3b09dec  r1 : c02ef2c1  r0 : 0000005e
+Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 0005317f  Table: 731bc000  DAC: 00000015
+Process insmod (pid: 1649, stack limit = 0xc3b08270)
+Stack: (0xc3b09df8 to 0xc3b0a000)
+9de0:                                                       ffffffff c0032b1c
+9e00: c3b09e98 c01817c4 c3966000 c3b09e3c 00000000 c38d37a0 c3966000 c018070c
+9e20: 60000013 c3b09e3c 00000000 c018076c c3b09ebc c0180914 c38d37a0 00000000
+9e40: c3b09e40 c3b09e40 c3979e00 00000420 c3b09f2c 00000210 00601c00 c0179ba8
+9e60: 00100100 00318e70 c38d37a0 c3979e24 00000000 c3979e00 00000000 00000004
+9e80: 73979e00 ffffffff 00000000 00000000 c3b09eb4 c3b09ebc c4886000 00000000
+9ea0: 00000210 ffffffff ffffffff 00000000 00000000 c3b09ebc c3b09e90 c3b09e90
+9ec0: c3b09eb4 c38d37a0 00000000 c0180ab8 c3b09e3c 00000000 ffffff8d 00000000
+9ee0: 00000000 00000000 00000000 00000000 00000000 00001807 00000000 0000601c
+9f00: 00318e70 00000420 00001808 bf0034b0 00000420 c3b09f2c c4886000 00000001
+9f20: 00000000 00000000 00000000 00000000 0000002e bf0005fc bf003000 00012008
+9f40: 00000000 c002cfa8 c3b08000 00000000 00012008 c002740c c035ecf4 00000001
+9f60: bf0005fc 00000000 00012008 bf0005fc 00000000 00012008 00011d23 c002cfa8
+9f80: 00000000 c0062dec 00012018 00011d23 00012008 00000000 00012008 00020000
+9fa0: 00000080 c002ce00 00000000 00012008 00012018 00011d23 00012008 00000001
+9fc0: 00000000 00012008 00020000 00000080 bec09efb bec09ef4 00012018 00012008
+9fe0: 00000003 bec09c94 00008d77 401c0054 60000010 00012018 657a6973 69657700
+[<c0030374>] (__bug+0x1c/0x28) from [<c0032b1c>] (___dma_single_cpu_to_dev+0x34/0x5c)
+[<c0032b1c>] (___dma_single_cpu_to_dev+0x34/0x5c) from [<c01817c4>] (atmel_spi_transfer+0xc8/0x1c4)
+[<c01817c4>] (atmel_spi_transfer+0xc8/0x1c4) from [<c018070c>] (__spi_async+0x94/0xa0)
+[<c018070c>] (__spi_async+0x94/0xa0) from [<c018076c>] (spi_async_locked+0x14/0x2c)
+[<c018076c>] (spi_async_locked+0x14/0x2c) from [<c0180914>] (__spi_sync+0x5c/0x9c)
+[<c0180914>] (__spi_sync+0x5c/0x9c) from [<c0179ba8>] (dataflash_write+0x180/0x1fc)
+[<c0179ba8>] (dataflash_write+0x180/0x1fc) from [<bf0034b0>] (mtd_stresstest_init+0x4b0/0x604 [mtd_stresstest])
+[<bf0034b0>] (mtd_stresstest_init+0x4b0/0x604 [mtd_stresstest]) from [<c002740c>] (do_one_initcall+0xcc/0x1a8)
+[<c002740c>] (do_one_initcall+0xcc/0x1a8) from [<c0062dec>] (sys_init_module+0x90/0x1a4)
+[<c0062dec>] (sys_init_module+0x90/0x1a4) from [<c002ce00>] (ret_fast_syscall+0x0/0x2c)
+Code: e59f0010 e1a01003 eb0916de e3a03000 (e5833000)
+---[ end trace 0f2f3786a6a31f57 ]---
+Segmentation fault
 
---- drivers/net/dm9000.c.orig    2010-12-30 23:19:39.747836070 +0100
-+++ drivers/net/dm9000.c    2011-01-05 16:30:48.636116500 +0100
-@@ -158,9 +158,17 @@ dm9000_reset(board_info_t * db)
-      dev_dbg(db->dev, "resetting device\n");
+This append on 2.6.37 kernel.
 
-      /* RESET device */
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+    writel(DM9000_NCR, db->io_addr);
-+#else
-      writeb(DM9000_NCR, db->io_addr);
-+#endif
-      udelay(200);
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+    writel(NCR_RST, db->io_data);
-+#else
-      writeb(NCR_RST, db->io_data);
-+#endif
-      udelay(200);
-  }
+Thanks for your help. Best regards,
 
-@@ -170,8 +178,13 @@ dm9000_reset(board_info_t * db)
-  static u8
-  ior(board_info_t * db, int reg)
-  {
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+    writel(reg, db->io_addr);
-+    return (u8)readl(db->io_data);
-+#else
-      writeb(reg, db->io_addr);
-      return readb(db->io_data);
-+#endif
-  }
-
-  /*
-@@ -181,43 +194,72 @@ ior(board_info_t * db, int reg)
-  static void
-  iow(board_info_t * db, int reg, int value)
-  {
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+    writel(reg, db->io_addr);
-+    writel(value, db->io_data);
-+#else
-      writeb(reg, db->io_addr);
-      writeb(value, db->io_data);
-+#endif
-  }
-
-  /* routines for sending block to chip */
-
-  static void dm9000_outblk_8bit(void __iomem *reg, void *data, int count)
-  {
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+    writesbsw(reg, data, count);
-+#else
-      writesb(reg, data, count);
-+#endif
-  }
-
-  static void dm9000_outblk_16bit(void __iomem *reg, void *data, int count)
-  {
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+    writeswsw(reg, data, (count+1) >> 1);
-+#else
-      writesw(reg, data, (count+1) >> 1);
-+#endif
-  }
-
-  static void dm9000_outblk_32bit(void __iomem *reg, void *data, int count)
-  {
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+    writeslsw(reg, data, (count+3) >> 2);
-+#else
-      writesl(reg, data, (count+3) >> 2);
-+#endif
-  }
-
-  /* input block from chip to memory */
-
-  static void dm9000_inblk_8bit(void __iomem *reg, void *data, int count)
-  {
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+    readsbsw(reg, data, count);
-+#else
-      readsb(reg, data, count);
-+#endif
-  }
-
-
-  static void dm9000_inblk_16bit(void __iomem *reg, void *data, int count)
-  {
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+    readswsw(reg, data, (count+1) >> 1);
-+#else
-      readsw(reg, data, (count+1) >> 1);
-+#endif
-  }
-
-  static void dm9000_inblk_32bit(void __iomem *reg, void *data, int count)
-  {
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+    readslsw(reg, data, (count+3) >> 2);
-+#else
-      readsl(reg, data, (count+3) >> 2);
-+#endif
-  }
-
-  /* dump block from chip to null */
-@@ -863,8 +905,13 @@ static void dm9000_timeout(struct net_de
-      netif_wake_queue(dev);
-
-      /* Restore previous register address */
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+    writel(reg_save, db->io_addr);
-+#else
-      writeb(reg_save, db->io_addr);
--    spin_unlock_irqrestore(&db->lock, flags);
-+#endif
-+
-+    spin_unlock_irqrestore(&db->lock,flags);
-  }
-
-  static void dm9000_send_packet(struct net_device *dev,
-@@ -908,7 +955,11 @@ dm9000_start_xmit(struct sk_buff *skb, s
-      spin_lock_irqsave(&db->lock, flags);
-
-      /* Move data to DM9000 TX RAM */
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+   writel(DM9000_MWCMD, db->io_addr);
-+#else
-      writeb(DM9000_MWCMD, db->io_addr);
-+#endif
-
-      (db->outblk)(db->io_data, skb->data, skb->len);
-      dev->stats.tx_bytes += skb->len;
-@@ -981,7 +1032,11 @@ dm9000_rx(struct net_device *dev)
-          ior(db, DM9000_MRCMDX);    /* Dummy read */
-
-          /* Get most updated data */
--        rxbyte = readb(db->io_data);
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+      rxbyte = (u8)readl(db->io_data);
-+#else
-+      rxbyte = readb(db->io_data);
-+#endif
-
-          /* Status check: this byte must be 0 or 1 */
-          if (rxbyte & DM9000_PKT_ERR) {
-@@ -996,8 +1051,13 @@ dm9000_rx(struct net_device *dev)
-
-          /* A packet ready now & Get status/length */
-          GoodPacket = true;
--        writeb(DM9000_MRCMD, db->io_addr);
-
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+        writel(DM9000_MRCMD, db->io_addr);
-+#else
-+      writeb(DM9000_MRCMD, db->io_addr);
-+#endif
-+
-          (db->inblk)(db->io_data, &rxhdr, sizeof(rxhdr));
-
-          RxLen = le16_to_cpu(rxhdr.RxLen);
-@@ -1077,7 +1137,7 @@ static irqreturn_t dm9000_interrupt(int
-      unsigned long flags;
-      u8 reg_save;
-
--    dm9000_dbg(db, 3, "entering %s\n", __func__);
-+    //dm9000_dbg(db, 3, "entering %s\n", __func__);
-
-      /* A real interrupt coming */
-
-@@ -1085,7 +1145,11 @@ static irqreturn_t dm9000_interrupt(int
-      spin_lock_irqsave(&db->lock, flags);
-
-      /* Save previous register address */
--    reg_save = readb(db->io_addr);
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+   reg_save = (u8)readl(db->io_addr);
-+#else
-+   reg_save = readb(db->io_addr);
-+#endif
-
-      /* Disable all interrupts */
-      iow(db, DM9000_IMR, IMR_PAR);
-@@ -1100,7 +1164,7 @@ static irqreturn_t dm9000_interrupt(int
-      /* Received the coming packet */
-      if (int_status & ISR_PRS)
-          dm9000_rx(dev);
--
-+
-      /* Trnasmit Interrupt check */
-      if (int_status & ISR_PTS)
-          dm9000_tx_done(dev, db);
-@@ -1116,8 +1180,12 @@ static irqreturn_t dm9000_interrupt(int
-      iow(db, DM9000_IMR, db->imr_all);
-
-      /* Restore previous register address */
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+    writel(reg_save, db->io_addr);
-+#else
-      writeb(reg_save, db->io_addr);
--
-+#endif
-+
-      spin_unlock_irqrestore(&db->lock, flags);
-
-      return IRQ_HANDLED;
-@@ -1233,11 +1301,15 @@ dm9000_phy_read(struct net_device *dev,
-      int ret;
-
-      mutex_lock(&db->addr_lock);
--
-+
-      spin_lock_irqsave(&db->lock,flags);
-
-      /* Save previous register address */
--    reg_save = readb(db->io_addr);
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+   reg_save = (u8)readl(db->io_addr);
-+#else
-+   reg_save = readb(db->io_addr);
-+#endif
-
-      /* Fill the phyxcer register into REG_0C */
-      iow(db, DM9000_EPAR, DM9000_PHY | reg);
-@@ -1250,7 +1322,11 @@ dm9000_phy_read(struct net_device *dev,
-      dm9000_msleep(db, 1);        /* Wait read complete */
-
-      spin_lock_irqsave(&db->lock,flags);
--    reg_save = readb(db->io_addr);
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+   reg_save = (u8)readl(db->io_addr);
-+#else
-+   reg_save = readb(db->io_addr);
-+#endif
-
-      iow(db, DM9000_EPCR, 0x0);    /* Clear phyxcer read command */
-
-@@ -1258,9 +1334,14 @@ dm9000_phy_read(struct net_device *dev,
-      ret = (ior(db, DM9000_EPDRH) << 8) | ior(db, DM9000_EPDRL);
-
-      /* restore the previous address */
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+    writel(reg_save, db->io_addr);
-+#else
-      writeb(reg_save, db->io_addr);
--    spin_unlock_irqrestore(&db->lock,flags);
-+#endif
-
-+    spin_unlock_irqrestore(&db->lock,flags);
-+
-      mutex_unlock(&db->addr_lock);
-
-      dm9000_dbg(db, 5, "phy_read[%02x] -> %04x\n", reg, ret);
-@@ -1284,7 +1365,11 @@ dm9000_phy_write(struct net_device *dev,
-      spin_lock_irqsave(&db->lock,flags);
-
-      /* Save previous register address */
--    reg_save = readb(db->io_addr);
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+   reg_save = (u8)readl(db->io_addr);
-+#else
-+   reg_save = readb(db->io_addr);
-+#endif
-
-      /* Fill the phyxcer register into REG_0C */
-      iow(db, DM9000_EPAR, DM9000_PHY | reg);
-@@ -1295,18 +1380,31 @@ dm9000_phy_write(struct net_device *dev,
-
-      iow(db, DM9000_EPCR, EPCR_EPOS | EPCR_ERPRW);    /* Issue phyxcer 
-write command */
-
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+    writel(reg_save, db->io_addr);
-+#else
-      writeb(reg_save, db->io_addr);
-+#endif
-+
-      spin_unlock_irqrestore(&db->lock, flags);
-
-      dm9000_msleep(db, 1);        /* Wait write complete */
-
-      spin_lock_irqsave(&db->lock,flags);
--    reg_save = readb(db->io_addr);
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+   reg_save = (u8)readl(db->io_addr);
-+#else
-+   reg_save = readb(db->io_addr);
-+#endif
-
-      iow(db, DM9000_EPCR, 0x0);    /* Clear phyxcer write command */
-
-      /* restore the previous address */
-+#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-+    writel(reg_save, db->io_addr);
-+#else
-      writeb(reg_save, db->io_addr);
-+#endif
-
-      spin_unlock_irqrestore(&db->lock, flags);
-      mutex_unlock(&db->addr_lock);
-@@ -1713,4 +1811,3 @@ MODULE_AUTHOR("Sascha Hauer, Ben Dooks")
-  MODULE_DESCRIPTION("Davicom DM9000 network driver");
-  MODULE_LICENSE("GPL");
-  MODULE_ALIAS("platform:dm9000");
--
-
---- arch/m68k/include/asm/io_no.h.orig    2011-01-05 16:53:55.904905038 
-+0100
-+++ arch/m68k/include/asm/io_no.h    2011-01-04 23:45:08.893049554 +0100
-@@ -47,6 +47,91 @@ static inline unsigned int _swapl(volati
-  #define writew(b,addr) (void)((*(volatile unsigned short *) (addr)) = (b))
-  #define writel(b,addr) (void)((*(volatile unsigned int *) (addr)) = (b))
-
-+static inline void writesb (void __iomem *reg, void *data, int count)
-+{
-+    unsigned char *p = (unsigned char*) data;
-+
-+    while (count--) writeb(*p++, reg);
-+}
-+
-+static inline void writesbsw (void __iomem *reg, void *data, int count)
-+{
-+    unsigned char *p = (unsigned char *) data;
-+
-+    while (count--) writel((int)(*p++), reg);
-+}
-+
-+static inline void writesw (void __iomem *reg, void *data, int count)
-+{
-+   unsigned short *p = (unsigned short*) data;
-+
-+   while (count--) writew(*p++, reg);
-+}
-+
-+static inline void writeswsw (void __iomem *reg, void *data, int count)
-+{
-+   unsigned short *p = (unsigned short *) data;
-+
-+   while (count--) writel((int)(_swapw(*p++)), reg);
-+}
-+
-+static inline void writesl (void __iomem *reg, void *data, int count)
-+{
-+   unsigned long *p = (unsigned long*) data;
-+
-+   while (count--) writel(*p++, reg);
-+}
-+
-+static inline void writeslsw (void __iomem *reg, void *data, int count)
-+{
-+   unsigned long *p = (unsigned long *) data;
-+
-+   while (count--) writel((int)(_swapl(*p++)), reg);
-+}
-+
-+static inline void readsb (void __iomem *reg, void *data, int count)
-+{
-+   unsigned char *p = (unsigned char *) data;
-+
-+   while (count--) *p++ = readb(reg);
-+}
-+
-+static inline void readsbsw (void __iomem *reg, void *data, int count)
-+{
-+   unsigned char *p = (unsigned char *) data;
-+
-+   while (count--) *p++ = (unsigned char)readl(reg);
-+}
-+
-+static inline void readsw (void __iomem *reg, void *data, int count)
-+{
-+   unsigned short *p = (unsigned short *) data;
-+
-+   while (count--) *p++ = readb(reg);
-+}
-+
-+static inline void readswsw (void __iomem *reg, void *data, int count)
-+{
-+   unsigned short *p = (unsigned short *) data;
-+
-+   while (count--) *p++ = _swapw((unsigned short)readw(reg));
-+}
-+
-+static inline void readsl (void __iomem *reg, void *data, int count)
-+{
-+   unsigned long *p = (unsigned long *) data;
-+
-+   while (count--) *p++ = readb(reg);
-+}
-+
-+static inline void readslsw (void __iomem *reg, void *data, int count)
-+{
-+   unsigned long *p = (unsigned long *) data;
-+
-+   while (count--) *p++ = _swapl(readl(reg));
-+}
-+
-+
-  #define __raw_readb readb
-  #define __raw_readw readw
-  #define __raw_readl readl
-@@ -180,4 +265,3 @@ extern void iounmap(void *addr);
-  #endif /* __KERNEL__ */
-
-  #endif /* _M68KNOMMU_IO_H */
--
+-- 
+Nicolas Ferre
 
