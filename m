@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751353Ab1AEOAx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 09:00:53 -0500
-Received: from mx2.fusionio.com ([64.244.102.31]:48283 "EHLO mx2.fusionio.com"
+	id S1751399Ab1AEOBR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 09:01:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55078 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751184Ab1AEOAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 09:00:52 -0500
-X-ASG-Debug-ID: 1294236042-71f760180001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D247984.2030103@fusionio.com>
-Date: Wed, 5 Jan 2011 15:00:36 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Jerome Marchand <jmarchan@redhat.com>
-CC: Vivek Goyal <vgoyal@redhat.com>,
-        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
+	id S1751174Ab1AEOBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 09:01:16 -0500
+Date: Wed, 5 Jan 2011 09:00:24 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: akpm@linux-foundation.org, fweisbec@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <greg@kroah.com>
-Subject: Re: [PATCH 2/2] block: fix accounting bug on cross partition merges
-References: <4CFF3DA4.5060705@jp.fujitsu.com> <4CFF9A2C.1070401@fusionio.com> <4D025154.8030400@redhat.com> <20101210165553.GE31737@redhat.com> <4D07D2AC.6000500@fusionio.com> <4D0B68AF.80804@redhat.com> <4D0BB4A1.8080305@fusionio.com> <4D13664C.3020500@redhat.com> <20101223153915.GE9502@redhat.com> <4D13810B.8000304@redhat.com> <20101224192916.GB2082@redhat.com> <4D23423A.60707@redhat.com> <4D2342E1.8010405@redhat.com>
-X-ASG-Orig-Subj: Re: [PATCH 2/2] block: fix accounting bug on cross partition merges
-In-Reply-To: <4D2342E1.8010405@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1294236042
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.41
-X-Barracuda-Spam-Status: No, SCORE=0.41 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=SUBJECT_FUZZY_TION
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.51500
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.41 SUBJECT_FUZZY_TION     Attempt to obfuscate words in Subject:
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 1/2] panic:  ratelimit panic messages
+Message-ID: <20110105140024.GI2317@redhat.com>
+References: <1294198711-15492-1-git-send-email-dzickus@redhat.com>
+ <1294198711-15492-2-git-send-email-dzickus@redhat.com>
+ <20110105132108.GE10129@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110105132108.GE10129@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-01-04 16:55, Jerome Marchand wrote:
-> +	} else {
-> +		part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
-> +		if (!kref_test_and_get(&part->ref)) {
-> +			/*
-> +			 * The partition is already being removed,
-> +			 * the request will be accounted on the disk only
-> +			 *
-> +			 * We take a reference on disk->part0 although that
-> +			 * partition will never be deleted, so we can treat
-> +			 * it as any other partition.
-> +			 */
-> +			part = &rq->rq_disk->part0;
-> +			kref_get(&part->ref);
-> +		}
+On Wed, Jan 05, 2011 at 02:21:08PM +0100, Ingo Molnar wrote:
+> 
+> * Don Zickus <dzickus@redhat.com> wrote:
+> 
+> > Sometimes when things go bad, so much spew is coming on the console it is hard
+> > to figure out what happened.  This patch allows you to ratelimit the panic
+> > messages with the intent that the first panic message will provide the info
+> > we need to figure out what happened.
+> > 
+> > Adds new kernel param 'panic_ratelimit=on/<integer in seconds>'
+> > 
+> > Signed-off-by: Don Zickus <dzickus@redhat.com>
+> > ---
+> >  Documentation/kernel-parameters.txt |    6 ++++++
+> >  kernel/panic.c                      |   30 ++++++++++++++++++++++++++++++
+> >  2 files changed, 36 insertions(+), 0 deletions(-)
+> 
+> Well, but it's not just panics that can occur repeatedly (in fact panics tend to 
+> trigger once), but recursive/repeated oopses.
+> 
+> So if we try to do some sort of 'show first crash, rate-limit afterwards' thing (i'm 
+> still not 100% sure about the wiseness of it) then we should cover all common 
+> occurances of system panics/crashes.
+> 
+> btw., while printk-delay exists and can serve a similar purpose, it's pretty 
+> cumbersome for panic ratelimit: it slows down bootups extremely, and it also slows 
+> down regular, harmless printks.
+> 
+> So having some sort of rate-limit for emitting crash screens may make sense, while 
+> also preserving the oops counter or at least some other notification that we 'lost' 
+> messages.
 
-This still doesn't work. So you are inside the if {} block, you know
-what someone has dropped the last reference and the call_rcu() is being
-scheduled. Adding a reference now will not prevent 'part' from going
-away as soon as you do part_stat_unlock(). As per my last email, you
-need a check in the rcu callback to ensure that the ref is 0.
+Ok.  I guess I am feeling a little slow today.  So would moving this to
+the kmsg_dump() function be the right place then?
 
+Cheers,
+Don
 
--- 
-Jens Axboe
-
+> 
+> 	Ingo
