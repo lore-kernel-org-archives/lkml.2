@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236Ab1AEXLo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:11:44 -0500
-Received: from kroah.org ([198.145.64.141]:50729 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753080Ab1AEXGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753156Ab1AEXGU (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 5 Jan 2011 18:06:20 -0500
+Received: from kroah.org ([198.145.64.141]:50699 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753078Ab1AEXGR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 18:06:17 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 15:03:24 2011
-Message-Id: <20110105230324.525851041@clark.site>
+Message-Id: <20110105230324.083483931@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 15:00:29 -0800
+Date: Wed, 05 Jan 2011 15:00:25 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sergey Vlasov <vsu@altlinux.ru>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [11/49] NFS: Fix fcntl F_GETLK not reporting some conflicts
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: [07/49] nohz: Fix printk_needs_cpu() return value on offline cpus
 In-Reply-To: <20110105230438.GA26241@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,46 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergey Vlasov <vsu@altlinux.ru>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 21ac19d484a8ffb66f64487846c8d53afef04d2b upstream.
+commit 61ab25447ad6334a74e32f60efb135a3467223f8 upstream.
 
-The commit 129a84de2347002f09721cda3155ccfd19fade40 (locks: fix F_GETLK
-regression (failure to find conflicts)) fixed the posix_test_lock()
-function by itself, however, its usage in NFS changed by the commit
-9d6a8c5c213e34c475e72b245a8eb709258e968c (locks: give posix_test_lock
-same interface as ->lock) remained broken - subsequent NFS-specific
-locking code received F_UNLCK instead of the user-specified lock type.
-To fix the problem, fl->fl_type needs to be saved before the
-posix_test_lock() call and restored if no local conflicts were reported.
+This patch fixes a hang observed with 2.6.32 kernels where timers got enqueued
+on offline cpus.
 
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=23892
-Tested-by: Alexander Morozov <amorozov@etersoft.ru>
-Signed-off-by: Sergey Vlasov <vsu@altlinux.ru>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+printk_needs_cpu() may return 1 if called on offline cpus. When a cpu gets
+offlined it schedules the idle process which, before killing its own cpu, will
+call tick_nohz_stop_sched_tick(). That function in turn will call
+printk_needs_cpu() in order to check if the local tick can be disabled. On
+offline cpus this function should naturally return 0 since regardless if the
+tick gets disabled or not the cpu will be dead short after. That is besides the
+fact that __cpu_disable() should already have made sure that no interrupts on
+the offlined cpu will be delivered anyway.
+
+In this case it prevents tick_nohz_stop_sched_tick() to call
+select_nohz_load_balancer(). No idea if that really is a problem. However what
+made me debug this is that on 2.6.32 the function get_nohz_load_balancer() is
+used within __mod_timer() to select a cpu on which a timer gets enqueued. If
+printk_needs_cpu() returns 1 then the nohz_load_balancer cpu doesn't get
+updated when a cpu gets offlined. It may contain the cpu number of an offline
+cpu. In turn timers get enqueued on an offline cpu and not very surprisingly
+they never expire and cause system hangs.
+
+This has been observed 2.6.32 kernels. On current kernels __mod_timer() uses
+get_nohz_timer_target() which doesn't have that problem. However there might be
+other problems because of the too early exit tick_nohz_stop_sched_tick() in
+case a cpu goes offline.
+
+Easiest way to fix this is just to test if the current cpu is offline and call
+printk_tick() directly which clears the condition.
+
+Alternatively I tried a cpu hotplug notifier which would clear the condition,
+however between calling the notifier function and printk_needs_cpu() something
+could have called printk() again and the problem is back again. This seems to
+be the safest fix.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <20101126120235.406766476@de.ibm.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/file.c |    2 ++
+ kernel/printk.c |    2 ++
  1 file changed, 2 insertions(+)
 
---- a/fs/nfs/file.c
-+++ b/fs/nfs/file.c
-@@ -680,6 +680,7 @@ static int do_getlk(struct file *filp, i
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1014,6 +1014,8 @@ void printk_tick(void)
+ 
+ int printk_needs_cpu(int cpu)
  {
- 	struct inode *inode = filp->f_mapping->host;
- 	int status = 0;
-+	unsigned int saved_type = fl->fl_type;
++	if (unlikely(cpu_is_offline(cpu)))
++		printk_tick();
+ 	return per_cpu(printk_pending, cpu);
+ }
  
- 	/* Try local locking first */
- 	posix_test_lock(filp, fl);
-@@ -687,6 +688,7 @@ static int do_getlk(struct file *filp, i
- 		/* found a conflict */
- 		goto out;
- 	}
-+	fl->fl_type = saved_type;
- 
- 	if (nfs_have_delegation(inode, FMODE_READ))
- 		goto out_noconflict;
 
 
