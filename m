@@ -1,44 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927Ab1AEU07 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 15:26:59 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41766 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752311Ab1AEU05 (ORCPT
+	id S1752385Ab1AEUaR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 15:30:17 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39184 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432Ab1AEUaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 15:26:57 -0500
-Date: Wed, 5 Jan 2011 20:26:45 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: mm: Poison freed init memory
-Message-ID: <20110105202645.GL8638@n2100.arm.linux.org.uk>
-References: <1294256845-29517-1-git-send-email-sboyd@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294256845-29517-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 5 Jan 2011 15:30:16 -0500
+From: Eric B Munson <emunson@mgebm.net>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, mel@csn.ul.ie,
+        caiqian@redhat.com, mhocko@suse.cz, Eric B Munson <emunson@mgebm.net>
+Subject: [PATCH V2] Do not allow pagesize >= MAX_ORDER pool adjustment
+Date: Wed,  5 Jan 2011 13:29:57 -0700
+Message-Id: <1294259397-15553-1-git-send-email-emunson@mgebm.net>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 05, 2011 at 11:47:25AM -0800, Stephen Boyd wrote:
-> Poisoning __init marked memory can be useful when tracking down
-> obscure memory corruption bugs. When a pointer is 0xCCCCCCCC in an
+Huge pages with order >= MAX_ORDER must be allocated at boot via
+the kernel command line, they cannot be allocated or freed once
+the kernel is up and running.  Currently we allow values to be
+written to the sysfs and sysctl files controling pool size for these
+huge page sizes.  This patch makes the store functions for nr_hugepages
+and nr_overcommit_hugepages return -EINVAL when the pool for a
+page size >= MAX_ORDER is changed.
 
-That's a bad idea for a value.  With a 3GB page offset and 256MB or
-more memory, accesses to such an address will always succeed.
+Reported-by: CAI Qian <caiqian@redhat.com>
 
-There's two things to be considered when selecting a possible poison
-value:
+Signed-off-by: Eric B Munson <emunson@mgebm.net>
+---
+Changes from V1:
+ Add check to sysctl handler
 
-1. what value is guaranteed to provoke an undefined instruction exception?
-2. what value when used as an address and dereferenced is mostly always
-   going to abort?
+ mm/hugetlb.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-1 for ARM mode implies an 0xe7fXXXfX value.  For Thumb mode 0xdeXX.  We
-use this space for breakpoints.
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 5cb71a9..15bd633 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1443,6 +1443,12 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
+ 		return -EINVAL;
+ 
+ 	h = kobj_to_hstate(kobj, &nid);
++
++	if (h->order >= MAX_ORDER) {
++		NODEMASK_FREE(nodes_allowed);
++		return -EINVAL;
++	}
++
+ 	if (nid == NUMA_NO_NODE) {
+ 		/*
+ 		 * global hstate attribute
+@@ -1517,6 +1523,9 @@ static ssize_t nr_overcommit_hugepages_store(struct kobject *kobj,
+ 	unsigned long input;
+ 	struct hstate *h = kobj_to_hstate(kobj, NULL);
+ 
++	if (h->order >= MAX_ORDER)
++		return -EINVAL;
++
+ 	err = strict_strtoul(buf, 10, &input);
+ 	if (err)
+ 		return -EINVAL;
+@@ -1926,6 +1935,9 @@ static int hugetlb_sysctl_handler_common(bool obey_mempolicy,
+ 	if (!write)
+ 		tmp = h->max_huge_pages;
+ 
++	if (write && h->order >= MAX_ORDER)
++		return -EINVAL;
++
+ 	table->data = &tmp;
+ 	table->maxlen = sizeof(unsigned long);
+ 	proc_doulongvec_minmax(table, write, buffer, length, ppos);
+-- 
+1.7.1
 
-2 unfortunately depends on the platform. 
