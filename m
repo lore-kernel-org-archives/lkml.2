@@ -1,71 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046Ab1AEMKJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 07:10:09 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:51121 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751716Ab1AEMKH (ORCPT
+	id S1752118Ab1AEMOe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 07:14:34 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53157 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716Ab1AEMOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 07:10:07 -0500
-Date: Wed, 5 Jan 2011 13:09:59 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: "James C. Georgas" <james.georgas@yahoo.ca>
-Cc: linux-kernel@vger.kernel.org, Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: can't resume from ACPI S3 with TICK_ONESHOT
-Message-ID: <20110105120959.GB4927@kryptos.osrc.amd.com>
-References: <1294191939.3889.49.camel@Tachyon>
+	Wed, 5 Jan 2011 07:14:33 -0500
+Message-ID: <4D246098.50908@pengutronix.de>
+Date: Wed, 05 Jan 2011 13:14:16 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294191939.3889.49.camel@Tachyon>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+References: <20101230171453.GA5787@pengutronix.de> <1293731992.4919.5.camel@heimdal.trondhjem.org> <20101230191846.GB14221@pengutronix.de> <20110103213850.GC25121@pengutronix.de> <1294100558.25100.8.camel@heimdal.trondhjem.org> <20110105084014.GN25121@pengutronix.de> <20110105110517.GQ25121@pengutronix.de> <20110105112701.GA8638@n2100.arm.linux.org.uk>
+In-Reply-To: <20110105112701.GA8638@n2100.arm.linux.org.uk>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig148BA6752573DA54B237FD26"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 04, 2011 at 06:45:39PM -0700, James C. Georgas wrote:
-> If I enable CONFIG_NO_HZ or CONFIG_HIGH_RES_TIMERS, then I can't resume
-> from the ACPI S3 state (AKA suspend to RAM). The fan starts up, and the
-> power LED stops blinking and comes back on, but then the fan spins down
-> again, the screen stays off, and the system is unresponsive to input. I
-> have to power down by holding the power button for four seconds.
-> 
-> The only thing I can see that both options have in common is that they
-> both enable CONFIG_TICK_ONESHOT.
-> 
-> Here are my kernel config and dmesg. This config has CONFIG_NO_HZ set. I
-> get the same result with it unset, and CONFIG_HIGH_RES_TIMERS set
-> instead.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig148BA6752573DA54B237FD26
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Can you try booting with "nohpet" on the kernel command line?
+On 01/05/2011 12:27 PM, Russell King - ARM Linux wrote:
+> On Wed, Jan 05, 2011 at 12:05:17PM +0100, Uwe Kleine-K=F6nig wrote:
+>> Hello Trond,
+>>
+>> On Wed, Jan 05, 2011 at 09:40:14AM +0100, Uwe Kleine-K=F6nig wrote:
+>>> On Mon, Jan 03, 2011 at 07:22:38PM -0500, Trond Myklebust wrote:
+>>>> The question is whether this is something happening on the server or=
+ the
+>>>> client. Does an older client kernel boot without any trouble?
+>>> I will set up a boot test with 2.6.37 (for statistics) and 2.6.36 to
+>>> compare with.  If you don't consider .36 to be old enough let me now.=
 
-..
+>>> Once the setup is done it should be easy to test .35 (say), too.
+>>>
+>> Marc (cc'd) saw similar[1] problems with .37, when using .36.2 the
+>> problems didn't occur.  This was more reliable to trigger and he was s=
+o
+>> kind to bisect the problem.
+>>
+>> When testing v2.6.36-rc3-51-gafa8ccc init hanged.
+>> (babddc72a9468884ce1a23db3c3d54b0afa299f0 is the first bad commit with=
 
-> Linux version 2.6.36.2-s2ram (root@Tachyon) (gcc version 4.4.4 (Gentoo 4.4.4-r2 p1.2, pie-0.4.5) ) #7 PREEMPT Tue Jan 4 17:43:43 MST 2011
+>> this hang.)  Commit 56e4ebf877b6043c289bda32a5a7385b80c17dee makes the=
 
-Is that a vanilla kernel from kernel.org or is it a gentoo one with some
-patches ontop?
+>> "init hangs" problem the "fileid changed on tab" problem.
+>>
+>> I could only reproduce that on armv5 machines (imx27, imx28 and at91)
+>> but not on armv6 (imx35).
+>=20
+> FYI, I've seen the "fileid changed" problem, and it looked like a 32-bi=
+t
+> truncation of the fileid.  It occurred several times on successive
+> reboots, so I tried to capture a tcpdump trace off the server (Linux
+> 2.6.23-rc8-ga64314e6 - its ancient because I've had issues with buggy
+> IDE drivers trying to move it forward.)  However, for the last couple
+> of weeks I've been unable to reproduce it.
 
-More questions:
+We have the problem with nfs-root. From the kernel command line:
 
-Can you try the freshly released 2.6.37 to see whether you see different
-results with it.
+root=3D/dev/nfs
+nfsroot=3D192.168.23.2:/home/mkl/pengutronix/xxx/bsp/OSELAS.BSP-xxx-Grabo=
+wski-trunk/platform-Ronetix-PM9263/root,v3,tcp
 
-Also, are you running the latest BIOS from your chipset vendor? Can you
-send dmidecode and "lspci -v" output too?
+/home/mkl/pengutronix is a link which points to a link
+/ptx/work/octopus/mkl (which is a ext3-based) which points to
+WORK_1/mkl which is also ext3-based.
 
-How exactly do you suspend to RAM? Using pm-suspend from pm-utils?
+The server is 2.6.32 and has been rebooted yesterday :), nfs-utils are
+1.2.2. I make a tcpdump if needed.
 
-That should be it for now.
+Cheers, Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
-Thanks.
 
--- 
-Regards/Gruss,
-Boris.
+--------------enig148BA6752573DA54B237FD26
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk0kYJsACgkQjTAFq1RaXHNrDgCdHFaAarn9iD+pTgumxo6exnnk
+lqsAn1CJHd1bSdP1T0mj1S31e/Ww7BWj
+=pSkw
+-----END PGP SIGNATURE-----
+
+--------------enig148BA6752573DA54B237FD26--
