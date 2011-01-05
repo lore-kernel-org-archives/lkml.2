@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841Ab1AEXrF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:47:05 -0500
-Received: from kroah.org ([198.145.64.141]:41094 "EHLO coco.kroah.org"
+	id S1753853Ab1AEXr1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:47:27 -0500
+Received: from kroah.org ([198.145.64.141]:41089 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753688Ab1AEXpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:45:24 -0500
+	id S1753672Ab1AEXpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 18:45:23 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 15:03:27 2011
-Message-Id: <20110105230327.678299782@clark.site>
+Message-Id: <20110105230327.566454290@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 15:01:00 -0800
+Date: Wed, 05 Jan 2011 15:00:59 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <drosenberg@vsecurity.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [42/49] sound: Prevent buffer overflow in OSS load_mixer_volumes
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Eduardo Costa <ecosta.tmp@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [41/49] p54usb: New USB ID for Gemtek WUBI-100GW
 In-Reply-To: <20110105234415.GA22369@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,47 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Eduardo Costa <ecosta.tmp@gmail.com>
 
-commit d81a12bc29ae4038770e05dce4ab7f26fd5880fb upstream.
+commit 56e6417b49132d4f56e9f2241d31942b90b46315 upstream.
 
-The load_mixer_volumes() function, which can be triggered by
-unprivileged users via the SOUND_MIXER_SETLEVELS ioctl, is vulnerable to
-a buffer overflow.  Because the provided "name" argument isn't
-guaranteed to be NULL terminated at the expected 32 bytes, it's possible
-to overflow past the end of the last element in the mixer_vols array.
-Further exploitation can result in an arbitrary kernel write (via
-subsequent calls to load_mixer_volumes()) leading to privilege
-escalation, or arbitrary kernel reads via get_mixer_levels().  In
-addition, the strcmp() may leak bytes beyond the mixer_vols array.
+This USB ID is for the WUBI-100GW 802.11g Wireless LAN USB Device that
+uses p54usb.
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Eduardo Costa <ecosta.tmp@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/oss/soundcard.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/p54/p54usb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/oss/soundcard.c
-+++ b/sound/oss/soundcard.c
-@@ -87,7 +87,7 @@ int *load_mixer_volumes(char *name, int
- 	int             i, n;
- 
- 	for (i = 0; i < num_mixer_volumes; i++) {
--		if (strcmp(name, mixer_vols[i].name) == 0) {
-+		if (strncmp(name, mixer_vols[i].name, 32) == 0) {
- 			if (present)
- 				mixer_vols[i].num = i;
- 			return mixer_vols[i].levels;
-@@ -99,7 +99,7 @@ int *load_mixer_volumes(char *name, int
- 	}
- 	n = num_mixer_volumes++;
- 
--	strcpy(mixer_vols[n].name, name);
-+	strncpy(mixer_vols[n].name, name, 32);
- 
- 	if (present)
- 		mixer_vols[n].num = n;
+--- a/drivers/net/wireless/p54/p54usb.c
++++ b/drivers/net/wireless/p54/p54usb.c
+@@ -59,6 +59,7 @@ static struct usb_device_id p54u_table[]
+ 	{USB_DEVICE(0x107b, 0x55f2)},	/* Gateway WGU-210 (Gemtek) */
+ 	{USB_DEVICE(0x124a, 0x4023)},	/* Shuttle PN15, Airvast WM168g, IOGear GWU513 */
+ 	{USB_DEVICE(0x1435, 0x0210)},	/* Inventel UR054G */
++	{USB_DEVICE(0x15a9, 0x0002)},	/* Gemtek WUBI-100GW 802.11g */
+ 	{USB_DEVICE(0x1630, 0x0005)},	/* 2Wire 802.11g USB (v1) / Z-Com */
+ 	{USB_DEVICE(0x182d, 0x096b)},	/* Sitecom WL-107 */
+ 	{USB_DEVICE(0x1915, 0x2234)},	/* Linksys WUSB54G OEM */
 
 
