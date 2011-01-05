@@ -1,91 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458Ab1AEExH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 23:53:07 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61419 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176Ab1AEExF convert rfc822-to-8bit (ORCPT
+	id S1751400Ab1AEEyz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 23:54:55 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:42538 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751150Ab1AEEyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 23:53:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=WRD+kDJ/kWS6s7LB4mRhPwMdQLfqBckeLbwVxgbwdKcAN2TS7utP7TMK+KkbKxPskV
-         e8hytDeHQLdmn5cghV4NNj3JRgwsOaWbWKjMsbcjOoUdKWEQVs2AIWeCWXnkhNz8P80M
-         ceJvAN3xK5NdXplSuFBuPLaDtANq/Zv9G3/B8=
+	Tue, 4 Jan 2011 23:54:54 -0500
+Date: Tue, 4 Jan 2011 23:54:47 -0500
+From: Nelson Elhage <nelhage@ksplice.com>
+To: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
+Subject: cgroup scheduling: Adding kthreadd to a non-RT cgroup can deadlock
+ the kernel
+Message-ID: <20110105045447.GN23414@ksplice.com>
 MIME-Version: 1.0
-In-Reply-To: <20110104161805.GE3120@balbir.in.ibm.com>
-References: <cover.1293982522.git.minchan.kim@gmail.com>
-	<20110104161805.GE3120@balbir.in.ibm.com>
-Date: Wed, 5 Jan 2011 13:53:04 +0900
-Message-ID: <AANLkTinSuEF-+CCiCyoQbMfMMUJyQAw5JQB8iNrkHgmX@mail.gmail.com>
-Subject: Re: [PATCH v2 0/7] Change page reference handling semantic of page cache
-From: Minchan Kim <minchan.kim@gmail.com>
-To: balbir@linux.vnet.ibm.com
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Balbir,
+Hi,
 
-On Wed, Jan 5, 2011 at 1:18 AM, Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> * MinChan Kim <minchan.kim@gmail.com> [2011-01-03 00:44:29]:
->
->> Now we increases page reference on add_to_page_cache but doesn't decrease it
->> in remove_from_page_cache. Such asymmetric makes confusing about
->> page reference so that caller should notice it and comment why they
->> release page reference. It's not good API.
->>
->> Long time ago, Hugh tried it[1] but gave up of reason which
->> reiser4's drop_page had to unlock the page between removing it from
->> page cache and doing the page_cache_release. But now the situation is
->> changed. I think at least things in current mainline doesn't have any
->> obstacles. The problem is fs or somethings out of mainline.
->> If it has done such thing like reiser4, this patch could be a problem but
->> they found it when compile time since we remove remove_from_page_cache.
->>
->> [1] http://lkml.org/lkml/2004/10/24/140
->>
->> The series configuration is following as.
->>
->> [1/7] : This patch introduces new API delete_from_page_cache.
->> [2,3,4,5/7] : Change remove_from_page_cache with delete_from_page_cache.
->> Intentionally I divide patch per file since someone might have a concern
->> about releasing page reference of delete_from_page_cache in
->> somecase (ex, truncate.c)
->> [6/7] : Remove old API so out of fs can meet compile error when build time
->> and can notice it.
->> [7/7] : Change __remove_from_page_cache with __delete_from_page_cache, too.
->> In this time, I made all-in-one patch because it doesn't change old behavior
->> so it has no concern. Just clean up patch.
->>
->
-> Could you please describe any testing done, was it mostly functional?
+I've found a bug where, on CONFIG_RT_GROUP_SCHED systems, adding the kthreadd
+task to a cgroup with cpu.rt_runtime_us = 0 (as some cgroup configuration
+scripts do, when they move all processes into a default cgroup), can result in
+deadlocks in the kernel.
 
-I didn't test it since I think it's okay as a code review.
-Do you find any faults or guess it?
-Anyway, I should have tested it before sending patches.
+On 2.6.37, the problem can be triggered via CPU hotplug. The following sequence
+of events will deadlock on an SMP system:
 
-we are now -rc8 and Andrew doesn't held a patch.
-So I will test it until he grab a patch.
+1. Add kthreadd to a cpu cgroup with rt_runtime_us = 0
+2. echo 0 > /sys/devices/system/cpu/cpu1/online
+3. echo 1 > /sys/devices/system/cpu/cpu1/online
+4. echo 0 > /sys/devices/system/cpu/cpu1/online
+5. echo 1 > /sys/devices/system/cpu/cpu1/online
 
-Thanks,
+In line (3), the CPU hotplug will cause us to create a new ksoftirqd/1
+thread. Since that thread is forked from kthreadd, it will end up in the same
+cgroup, also without any realtime access.
 
->
-> --
->        Three Cheers,
->        Balbir
->
+In step (4), cpu_callback in softirq.c will attempt to kill ksoftirqd by setting
+it to SCHED_FIFO and using kthread_stop(). It does this with
+'sched_setscheduler_nocheck', which bypasses the usual checks that prevent
+setting a process to an SCHED_FIFO if it is in a cgroup that would prevent it
+from running.
 
+Thus, ksoftirqd ends up at SCHED_FIFO but with a zero rt_runtime_us, and is
+never scheduled again, and kthread_stop blocks waiting on it.
 
+In (5), we try to call the CPU notifier chain again, but it is still locked from
+(4), and we deadlock.
 
--- 
-Kind regards,
-Minchan Kim
+For reasons I don't fully understand, just adding ksoftirqd/1 to a cgroup and
+then taking CPU 1 offline doesn't result in a hang, so I think there may be some
+detail of this situation I don't fully understand, but I'm pretty confident in
+the general analysis.
+
+Before 2.6.34, we can trigger a similar problem just by adding kthreadd to a
+cgroup and then calling stop_machine (e.g. by removing a module), since
+stop_machine created a new RT workqueue on each invocation. This is how I first
+found this problem: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/693594
+
+- Nelson
