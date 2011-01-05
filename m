@@ -1,125 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751351Ab1AEDvP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 22:51:15 -0500
-Received: from ozlabs.org ([203.10.76.45]:40769 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750995Ab1AEDvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 22:51:14 -0500
+	id S1751329Ab1AEDwj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 22:52:39 -0500
+Received: from piggy.rz.tu-ilmenau.de ([141.24.4.8]:57604 "EHLO
+	piggy.rz.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226Ab1AEDwh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 22:52:37 -0500
+Date: Wed, 5 Jan 2011 04:52:22 +0100
+From: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>, Matt Mackall <mpm@selenic.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
+        Harald Welte <HaraldWelte@viatech.com>,
+        Michal Ludvig <michal@logix.cz>
+Subject: Re: 2.6.37-rc7: Regression: b43: crashes in hwrng_register()
+Message-ID: <20110105035222.GA8762@darkside.kls.lan>
+Mail-Followup-To: Mario 'BitKoenig' Holbe <Mario.Holbe@TU-Ilmenau.DE>,
+	Herbert Xu <herbert@gondor.hengli.com.au>,
+	Larry Finger <Larry.Finger@lwfinger.net>,
+	Matt Mackall <mpm@selenic.com>, LKML <linux-kernel@vger.kernel.org>,
+	Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
+	Harald Welte <HaraldWelte@viatech.com>,
+	Michal Ludvig <michal@logix.cz>
+References: <20101231022550.GA2512@darkside.kls.lan>
+ <20101231024653.GA24879@gondor.apana.org.au>
+ <20101231085103.GA31935@darkside.kls.lan>
+ <20110104043338.GA27604@gondor.apana.org.au>
+ <20110104121957.GA27114@darkside.kls.lan>
+ <20110104123824.GA31557@gondor.apana.org.au>
+ <20110104125722.GC27114@darkside.kls.lan>
+ <20110104224238.GA4978@gondor.apana.org.au>
+ <20110104230644.GJ27114@darkside.kls.lan>
+ <20110105003020.GA5751@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="utf-8"
-Subject: [PATCH 0/2] Common struct clk implementation, v10
-Message-Id: <1294199462.347935.472473715866.0.gpush@pororo>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Ben Herrenchmidt <benh@kernel.crashing.org>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-Date: Wed, 05 Jan 2011 11:51:02 +0800
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PNTmBPCT7hxwcZjr"
+Content-Disposition: inline
+In-Reply-To: <20110105003020.GA5751@gondor.apana.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
 
-These patches are an attempt to allow platforms to share clock code. At
-present, the definitions of 'struct clk' are local to platform code,
-which makes allocating and initialising cross-platform clock sources
-difficult, and makes it impossible to compile a single image containing
-support for two ARM platforms with different struct clks.
+--PNTmBPCT7hxwcZjr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The two patches are for the architecture-independent kernel code,
-introducing the common clk infrastructure. The changelog for the first
-patch includes details about the new clock definitions.
+On Wed, Jan 05, 2011 at 11:30:20AM +1100, Herbert Xu wrote:
+> OK, so xstore really is producing crap.  Can you try this path
+> (also against vanilla) to print out some extra info?
 
-As requested by rmk, I've put together a small series of patches
-illustrating the usage of the common struct clock on the ARM imx51
-platform. These are available in my git tree:
+All right, here is what happens...
 
- git://kernel.ubuntu.com/jk/dt/linux-2.6
+On top of your 3rd patch:
 
-in the clk-common-mx51 branch (clk-common..clk-common-mx51). There is
-also a port for versatile (clk-common-versatile) in this tree too.
+--- linux-source-2.6.37-rc7/drivers/char/hw_random/via-rng.c.hxu3	2011-01-0=
+5 04:13:09.452322117 +0100
++++ linux-source-2.6.37-rc7/drivers/char/hw_random/via-rng.c	2011-01-05 03:=
+59:33.169316276 +0100
+@@ -97,6 +97,10 @@ static int via_rng_data_present(struct h
+ 	u32 bytes_out;
+ 	int i;
+=20
++	printk(KERN_DEBUG "buf=3D%p + %zu, via_rng_datum=3D%p\n",
++			buf, sizeof(buf), via_rng_datum);
++
++
+ 	/* We choose the recommended 1-byte-per-instruction RNG rate,
+ 	 * for greater randomness at the expense of speed.  Larger
+ 	 * values 2, 4, or 8 bytes-per-instruction yield greater
 
-The approach I've taken with the imx51 port is to temporarly duplicate
-the platform-common clock code (ie, for all mxc-based boards) to enable
-usage of the common struct clk on one machine (imx51), while leaving the
-others as-is. For a proper platform-wide usage of the common struct clk,
-we'd be better off doing the whole platform at once. However, mx51 is
-the only mxc-based HW I have, hence the duplicated example port.
+gives:
 
-In the example port, the first change simply converts the mxc's struct
-clk to a struct clk_mxc, using the new API.  The subsequent patches move
-certain clocks to more specific data structures (eg clk_fixed and
-clk_pll) where possible.
+[  103.276337] buf=3Df6e23f28 + 28, via_rng_datum=3Df6e23f30
+[  103.276351] f6e23f38 0x0 0x8
+[  103.276371] buf=3Df6e23f28 + 28, via_rng_datum=3Df6e23f30
+[  103.276380] f6e23f38 0xffffffff 0x8
+=2E..
 
-Also, Yong Shen has contributed a patch to export a tree of clock data
-(currently the clock rate and enable_count) through debugfs; this is in
-the clk-common-debug branch.
+According to the VIA PadLock Programming Guide, XSTORE increments EDI by
+the number of bytes stored.
+This did obviously not matter as long as the buffer was "sufficiently
+distant", but now you have the buffer close on the stack and I believe,
+the optimizer crops up, hence the EDI increment begins to matter.
 
-Ben Herrenschmidt is looking at using common struct clk code for powerpc
-too, hence the kernel-wide approach.
+IMHO EDI (and EDX - for completeness :)) should be put on the asm
+clobber-list, but if I try to do it, I always get:
+error: can't find a register in class 'DIREG' while reloading 'asm'
+error: 'asm' operand has impossible constraints
 
-Many thanks to the following for their input:
- * Ben Dooks <ben-linux@fluff.org>
- * Baruch Siach <baruch@tkos.co.il>
- * Russell King <linux@arm.linux.org.uk>
- * Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
- * Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
- * Vincent Guittot <vincent.guittot@linaro.org>
- * Sascha Hauer <s.hauer@pengutronix.de>
+So... I have the reason - solution is up to you :)
 
-Russell - now that we've had a few platforms ported to the common clk
-infrastructure, I believe it's ready to merge. If so, do you want this
-in the patch tracker? Otherwise, let me know what needs changing.
-
-Cheers,
+Btw: the 8 bytes increment (as well as the 8 in EAX 4:0) proves that
+XSTOR indeed writes more than 32bit :)
 
 
-Jeremy
+g'nite
+   Mario
+--=20
+The only thing to be scared of, son, is tomorrow.
+I don't live for tomorrow. Never saw the fun in it.
+                       -- Denny Crane, Boston Legal
 
---
-v10:
- * comment fixups, from Uwe's review
- * added DEFINE_CLK_FIXED
+--PNTmBPCT7hxwcZjr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-v9:
- * comment improvements
- * kerneldoc fixups
- * add WARN_ON to clk_disable
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-v8:
- * add atomic clocks, and locking wrappers
- * expand comments on clk and clk_ops
+iQEVAwUBTSPq9hS+e2HeSPbpAQIi2gf/TsnTxgNFdqGKUFY3tFLYpDx1SyJ39OgF
+BlSZZoidVkrmKQrYZqxmWcDDheqM+3x9fBmEoUTn3v19490+OMwNUPj/2BTN9irK
+w06BA9wwhfGhWULd2yWjpaSj8A7VPzXiDCWytMV5K8fEre9hdNGY17v978Bprx/z
+GvKML8kzqBXjd4cG9tVwG7f212LMSgTwwalh9dfQM+YtK1nFhxjk5WTDKc9tG+/2
+PSiWwpara+oUl4JX7/phvchoivrGd7xegbtDtL0AxZax2bSKtx7RG8xQWNI/DzVW
+qxsixKBoThfAB6HHE8wELra0R1isFU8jhPLqlt8KPpbwmR8UeeuoKg==
+=Vz/q
+-----END PGP SIGNATURE-----
 
-v7:
- * change CLK_INIT to initialise clk->mutex statically
-
-v6:
- * fixed up references to 'clk_operations' in the changelog
-
-v5:
- * uninline main API, and share definitions with !USE_COMMON_STRUCT_CLK
- * add __clk_get
- * delay mutex init
- * kerneldoc for struct clk
-
-v4:
- * use mutex for enable/disable locking
- * DEFINE_CLK -> INIT_CLK, and pass the clk name for mutex init
- * struct clk_operations -> struct clk_ops
-
-v3:
- * do clock usage refcounting in common code
- * provide sample port
-
-v2:
- * no longer ARM-specific
- * use clk_operations
-
----
-Jeremy Kerr (2):
-      Add a common struct clk
-      clk: Generic support for fixed-rate clocks
-
+--PNTmBPCT7hxwcZjr--
