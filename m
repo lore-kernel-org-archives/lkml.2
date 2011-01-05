@@ -1,145 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751255Ab1AEC64 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 21:58:56 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38617 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750895Ab1AEC6z (ORCPT
+	id S1751323Ab1AEDBt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 22:01:49 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:55843 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010Ab1AEDBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 21:58:55 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=PnfZGKE/UPKGnyrL+M5ybT6F+Y5L+KFdySBnh3NgT31mhUP94Dn5EtIL/k0U0w0JUo
-         miBcNP3hXwjrCnKghTR06+qUpQWWQW99mZY6B5Iw9Pu4qkSBxT52FLqPJqPrFF8V5x7v
-         Eb0a8A9aBRFuleB0NvEsZCZOFpNZ+fCcVJD2o=
-Date: Wed, 5 Jan 2011 03:58:50 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+	Tue, 4 Jan 2011 22:01:48 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
 Subject: Re: [RFC patch 3/5] ftrace trace event add missing semicolumn
-Message-ID: <20110105025848.GH2911@nowhere>
-References: <20110104231629.996422888@efficios.com>
- <20110104232419.441463699@efficios.com>
- <20110105000005.GE2911@nowhere>
- <20110105001837.GA9737@Krystal>
- <20110105020759.GG2911@nowhere>
- <20110105023541.GA12950@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110105023541.GA12950@Krystal>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: Your message of "Wed, 05 Jan 2011 03:08:02 +0100."
+             <20110105020759.GG2911@nowhere>
+From: Valdis.Kletnieks@vt.edu
+References: <20110104231629.996422888@efficios.com> <20110104232419.441463699@efficios.com> <20110105000005.GE2911@nowhere> <20110105001837.GA9737@Krystal>
+            <20110105020759.GG2911@nowhere>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1294196493_4845P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 04 Jan 2011 22:01:33 -0500
+Message-ID: <12932.1294196493@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020208.4D23DF10.0086,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 04, 2011 at 09:35:41PM -0500, Mathieu Desnoyers wrote:
-> * Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> > On Tue, Jan 04, 2011 at 07:18:37PM -0500, Mathieu Desnoyers wrote:
-> > > * Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> > > > On Tue, Jan 04, 2011 at 06:16:32PM -0500, Mathieu Desnoyers wrote:
-> > > > > Add a missing semicolumn at the end of a ftrace definition.
-> > > > > 
-> > > > > We currently are not seeing any impact of this missing semicolumn because extra
-> > > > > semicolumns appear all over the place in the code generated from TRACE_EVENT
-> > > > > within ftrace stages.
-> > > > > 
-> > > > > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > > > > CC: Steven Rostedt <rostedt@goodmis.org>
-> > > > > CC: Frederic Weisbecker <fweisbec@gmail.com>
-> > > > > CC: Ingo Molnar <mingo@elte.hu>
-> > > > > CC: Thomas Gleixner <tglx@linutronix.de>
-> > > > > ---
-> > > > >  include/trace/ftrace.h |    2 +-
-> > > > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > > > 
-> > > > > Index: linux-2.6-lttng/include/trace/ftrace.h
-> > > > > ===================================================================
-> > > > > --- linux-2.6-lttng.orig/include/trace/ftrace.h
-> > > > > +++ linux-2.6-lttng/include/trace/ftrace.h
-> > > > > @@ -69,7 +69,7 @@
-> > > > >  #undef DEFINE_EVENT
-> > > > >  #define DEFINE_EVENT(template, name, proto, args)	\
-> > > > >  	static struct ftrace_event_call	__used		\
-> > > > > -	__attribute__((__aligned__(4))) event_##name
-> > > > > +	__attribute__((__aligned__(4))) event_##name;
-> > > > 
-> > > > But DEFINE_EVENT() calls are supposed to be ";" terminated, no?
-> > > 
-> > > Currently yes, but if you look at the preprocessor output currently generated by
-> > > the current TRACE_EVENT()/DEFINE_EVENT() scheme, there are useless ";" added all
-> > > over the place. I have a patch later in my queue that proposes removal of these
-> > > extra ";" as a cleanup of the TRACE_EVENT() semantic, but I'm keeping it for
-> > > later because it removes the extra ";" at the end of each TRACE_EVENT()
-> > > instance (and thus is more intrusive code-wise).
-> > > 
-> > > Adding this semicolumn here ensures that all Ftrace macros are consistent wrt
-> > > semicolumns. We can get away without consistency currently exactly because the
-> > > current scheme adds many useless semicolumns between each TRACE_EVENT().
-> > 
-> > Are you sure you want to put so much time on this?
-> 
-> We are about to spend more time arguing about it that the time it takes cleaning
-> it up. But here we go.
+--==_Exmh_1294196493_4845P
+Content-Type: text/plain; charset=us-ascii
 
-Hardly, as the real cleanup requires dozens of patches to clean every trace events.
+On Wed, 05 Jan 2011 03:08:02 +0100, Frederic Weisbecker said:
+> On Tue, Jan 04, 2011 at 07:18:37PM -0500, Mathieu Desnoyers wrote:
 
-But dropping the requirement of a ";" after the macro calls still sounds sensible.
- 
-> > 
-> > This will require a massive change for the sole win of removing double ";"
-> > in generated code. This won't optimize much the build, and it will make the things
-> > not so much more readable for very rare people who dare to have interest into the
-> > TRACE_EVENT generated code. That notwithstanding the obfuscation of that generated
-> > code resides more in the lack of indentation and newlines than in double
-> > semicolons that we barely notice.
-> 
-> Building:
-> 
-> make kernel/sched.o V=1
-> 
-> taking the gcc invokation, changing it to:
-> 
-> gcc -Wp,-MD,kernel/.sched.o.d  -nostdinc -isystem /usr/local/lib/gcc/x86_64-unknown-linux-gnu/4.5.1/include -I/home/compudj/git/linux-tip/arch/x86/include -Iinclude  -include include/generated/autoconf.h -D__KERNEL__ -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -O2 -m64 -march=core2 -mno-red-zone -mcmodel=kernel -funit-at-a-time -maccumulate-outgoing-args -DCONFIG_AS_CFI=1 -DCONFIG_AS_CFI_SIGNAL_FRAME=1 -DCONFIG_AS_CFI_SECTIONS=1 -pipe -Wno-sign-compare -fno-asynchronous-unwind-tables -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -Wframe-larger-than=1024 -fno-stack-protector -fno-omit-frame-pointer -fno-optimize-sibling-calls -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack    -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(sched)"  -D"KBUILD_MODNAME=KBUILD_STR(sched)"  -E -o kernel/sched.pp kernel/sched.c
-> 
-> An exerpt of the output, fed through "indent" for readability:
-> 
-> static inline __attribute__ ((always_inline))
->      void
-> # 275 "include/trace/events/sched.h"
->        check_trace_callback_type_sched_process_fork
-> # 252 "include/trace/events/sched.h"
->       
->        (void (*cb)
->         (void *__data, struct task_struct * parent,
->          struct task_struct * child))
-> {
-> }
-> # 275 "include/trace/events/sched.h"
->  ;
-> 
-> 
-> 
-> 
-> 
-> 
-> # 305 "include/trace/events/sched.h"
->  ;
-> 
-> 
-> As we can notice, a few extra ";" are added between each "entity" created by the
-> ftrace trace event phase. This works only as long as we declare
-> semicolumn-separated C structure elements, functions, and statements, because
-> the compiler just skips the extra semicolumns, but forbids creation of arrays of
-> events, which need to be comma-separated.
+> > > > --- linux-2.6-lttng.orig/include/trace/ftrace.h
+> > > > +++ linux-2.6-lttng/include/trace/ftrace.h
+> > > > @@ -69,7 +69,7 @@
+> > > >  #undef DEFINE_EVENT
+> > > >  #define DEFINE_EVENT(template, name, proto, args)	\
+> > > >  	static struct ftrace_event_call	__used		\
+> > > > -	__attribute__((__aligned__(4))) event_##name
+> > > > +	__attribute__((__aligned__(4))) event_##name;
 
-So what are these arrays of events you have in mind?
+> > Adding this semicolumn here ensures that all Ftrace macros are consistent wrt
+> > semicolumns. We can get away without consistency currently exactly because the
+> > current scheme adds many useless semicolumns between each TRACE_EVENT().
 
-> These extra semicolumns we see here are simply polluting the compiler input, and
-> I don't see any reason why we should leave them there.
+> Are you sure you want to put so much time on this?
 
-Sure they are useless, I just wonder if that alone justifies such a massive change, although
-actually I don't care much :)
+> This will require a massive change for the sole win of removing double ";"
+> in generated code. This won't optimize much the build, and it will make the things
+> not so much more readable for very rare people who dare to have interest into the
+> TRACE_EVENT generated code. That notwithstanding the obfuscation of that generated
+> code resides more in the lack of indentation and newlines than in double
+> semicolons that we barely notice.
+
+Can DEFINE_EVENT ever be sensibly used in a context where the additional ; will
+cause an issue (for instance, a hypothetical array initialization like:
+
+static struct events[] = {DEFINE_EVENT(..), DEFINE_EVENT(...) }
+
+or other places we usually do the 'do { X } while (0)' trick to make the code legal?
+
+
+--==_Exmh_1294196493_4845P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFNI98NcC3lWbTT17ARAv+3AKDh/fn+jdvpnM0YLbLH3SZS9ZOyAACg7R5Q
+K3U9KWIZXkeHFtmkpPWLfaI=
+=Q17B
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1294196493_4845P--
+
