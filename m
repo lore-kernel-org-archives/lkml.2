@@ -1,93 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab1AEUjc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 15:39:32 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61158 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752552Ab1AEUjb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 15:39:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=cB3daiC+/iXJMAncGPM+ppU9XswkbEXNMZqcbXqg327W9aw7k1NHD2D+ZLlPp9f+3y
-         41FiBa2m1hxyfAgP/n/qYLUbV5oeoqirE1LQ946stWbFotfhr+C3VXSYOS1JCiNf7T5E
-         uET2HabZ027g+mfiaXYarQvrrfCTgxsJUDJhM=
+	id S1752884Ab1AEUrf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 15:47:35 -0500
+Received: from kroah.org ([198.145.64.141]:38752 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751322Ab1AEUre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 15:47:34 -0500
+Date: Wed, 5 Jan 2011 12:08:25 -0800
+From: Greg KH <greg@kroah.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] block: fix accounting bug on cross partition merges
+Message-ID: <20110105200825.GA11372@kroah.com>
+References: <4D13664C.3020500@redhat.com>
+ <20101223153915.GE9502@redhat.com>
+ <4D13810B.8000304@redhat.com>
+ <20101224192916.GB2082@redhat.com>
+ <4D23423A.60707@redhat.com>
+ <4D2342E1.8010405@redhat.com>
+ <20110104210011.GB4180@kroah.com>
+ <4D247867.9040502@fusionio.com>
+ <20110105155816.GD2072@kroah.com>
+ <4D24BC88.4090804@fusionio.com>
 MIME-Version: 1.0
-In-Reply-To: <20110104133256.004ff54e.akpm@linux-foundation.org>
-References: <88652C7DDEB86A45A61D4100C612CD731E8CFB@exchtp12.taipei.via.com.tw>
-	<4D15045C.90909@gmx.de>
-	<20110104133256.004ff54e.akpm@linux-foundation.org>
-Date: Wed, 5 Jan 2011 21:39:29 +0100
-X-Google-Sender-Auth: ZNkPY6YSTFHxwMY55wQXpM6gHX8
-Message-ID: <AANLkTi=UQhs=6+DpSjdGyNyEXEB=nV_8bDQVbCqp1FeK@mail.gmail.com>
-Subject: Re: [PATCH] MAINTAINERS: update entries affecting VIA Technologies
- (resent as plaintext with hopefully all broken formatting fixed; merry Christmas)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        BruceChang@via.com.tw, linux-kernel@vger.kernel.org,
-        BenjaminPan@viatech.com, Paul Mundt <lethal@linux-sh.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D24BC88.4090804@fusionio.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 4, 2011 at 22:32, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Fri, 24 Dec 2010 21:36:44 +0100
-> Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
->
->> From: Bruce Chang <BruceChang@via.com.tw>
->> Date: Fri, 17 Dec 2010 21:05:57 +0800
->> Subject: [PATCH] MAINTAINERS: update entries affecting VIA Technologies
->>
->> Since the original maintainer-Joseph Chan (josephchan@via.com.tw)
->> doesn't handle the Linux driver for VIA now, I would like to request to
->> update the maintainer for the SD/MMC CARD CONTROLLER DRIVER and VIA
->> UNICHROME(PRO)/CHROME9 FRAMEBUFFER DRIVER before we find a better one.
->> Thank you very much for help.
->>
->> Sign-off by: Bruce Chang < brucechang@via.com.tw >
->>
->> --- linux-b4-modified/MAINTAINERS       2010-12-16 09:24:48.000000000 +0800
->> +++ linux-aftr-modified/MAINTAINERS     2010-12-17 16:50:00.793647029 +0800
->> @@ -6384,13 +6384,12 @@
->>   F:  drivers/i2c/busses/i2c-viapro.c
->>
->>   VIA SD/MMC CARD CONTROLLER DRIVER
->> -M:   Joseph Chan <JosephChan@via.com.tw>
->> +M:   Bruce Chang <brucechang@via.com.tw>
->>   M:  Harald Welte <HaraldWelte@viatech.com>
->>   S:  Maintained
->>   F:  drivers/mmc/host/via-sdmmc.c
->>
->>   VIA UNICHROME(PRO)/CHROME9 FRAMEBUFFER DRIVER
->> -M:   Joseph Chan <JosephChan@via.com.tw>
->>   M:  Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
->>   L:  linux-fbdev@vger.kernel.org
->>   S:  Maintained
->
-> - the patch was still space-stuffed.
->
-> - Use "Signed-off-by:", not "Sign-off by:"
->
-> - please cc the relevant mailing list and maintainer (Geert) on patches
+On Wed, Jan 05, 2011 at 07:46:32PM +0100, Jens Axboe wrote:
+> On 2011-01-05 16:58, Greg KH wrote:
+> > On Wed, Jan 05, 2011 at 02:55:51PM +0100, Jens Axboe wrote:
+> >> On 2011-01-04 22:00, Greg KH wrote:
+> >>> On Tue, Jan 04, 2011 at 04:55:13PM +0100, Jerome Marchand wrote:
+> >>>> Also add a refcount to struct hd_struct to keep the partition in
+> >>>> memory as long as users exist. We use kref_test_and_get() to ensure
+> >>>> we don't add a reference to a partition which is going away.
+> >>>
+> >>> No, don't do this, use a kref correctly and no such function should be
+> >>> needed.
+> >>>
+> >>>> +	} else {
+> >>>> +		part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
+> >>>
+> >>> That is the function that should properly increment the reference count
+> >>> on the object.  If the object is "being removed", then it will return
+> >>> NULL and you need to check that.  Do that and you do not need to add:
+> >>
+> >> It doesn't matter if you do it in there of after the fact, since the
+> >> "lock" (RCU) is being held across the call. See my original suggestion
+> >> here:
+> >>
+> >> https://lkml.org/lkml/2010/12/17/275
+> > 
+> > Ok, that's fine, just do it without adding that kref function and I have
+> > no objection :)
+> 
+> Why? The code is perfectly fine. I originally objected to making an API
+> like this for simple reference counting - seems I was right. Please
+> actually look at the code and use. Alexey asked whether this was a toy
+> API or a real one, I'd like to know that as well. If this is meant just
+> for very basic get/put references, fine, then document that. But then
+> what's the point of having this API in the first place?
 
-Paul Mundt handles fbdev-2.6.git.
+The point is that you shouldn't have to roll your own reference count
+code all over the place, 99% of the time, you should just use the
+debugged, and documented, interface that the kernel provides with the
+kref interface.
 
-> - As you (Florian) forwarded the patch, it should have included your
->  Signed-off-by: as well.  I made that change to my copy of the patch.
+As for it being a "toy", it properly handles a very large majority of
+the kernel reference counting logic today, in a race-free manner, so I
+would not call that a "toy" at all.
 
-Gr{oetje,eeting}s,
+Just use it properly.  As this patch series points out, adding this type
+of function to the api is not a good idea, as it will be incorrect when
+used.
 
-                        Geert
+thanks,
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+greg k-h
