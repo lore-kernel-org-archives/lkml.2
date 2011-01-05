@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751832Ab1AEJuq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 04:50:46 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:59426 "EHLO
+	id S1751872Ab1AEJu6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 04:50:58 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:40041 "EHLO
 	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676Ab1AEJuo convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751653Ab1AEJu5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 04:50:44 -0500
-Subject: Re: [PATCH 7/7] perf: Add load latency monitoring on Intel
- Nehalem/Westmere v2
+	Wed, 5 Jan 2011 04:50:57 -0500
+Subject: Re: [PATCH 5/7] perf: Optimise topology iteration
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Lin Ming <ming.m.lin@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+Cc: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>,
         Stephane Eranian <eranian@google.com>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <1293464397.2695.109.camel@localhost>
-References: <1293464397.2695.109.camel@localhost>
+        "Richter, Robert" <robert.richter@amd.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+In-Reply-To: <1294205040.9261.4.camel@minggr.sh.intel.com>
+References: <1293464287.2695.106.camel@localhost>
+	 <1294142776.2016.133.camel@laptop>  <20110104142203.GA5207@aftab>
+	 <1294205040.9261.4.camel@minggr.sh.intel.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Wed, 05 Jan 2011 10:50:53 +0100
-Message-ID: <1294221053.2016.206.camel@laptop>
+Date: Wed, 05 Jan 2011 10:51:11 +0100
+Message-ID: <1294221071.2016.207.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-12-27 at 23:39 +0800, Lin Ming wrote:
-> +/* Bits(0-1) {L1, L2, L3, RAM} or {unknown, IO, uncached} */
-> +#define LD_LAT_L1                      0x00
-> +#define LD_LAT_L2                      0x01
-> +#define LD_LAT_L3                      0x02
-> +#define LD_LAT_RAM                     0x03
-> +#define LD_LAT_UNKNOWN                 0x00
-> +#define LD_LAT_IO                      0x01
-> +#define LD_LAT_UNCACHED                        0x02
-> +
-> +/* Bits(2-3) {not-used, snoop, local, remote} */
-> +#define LD_LAT_NOT_USED                        (0x00 << 2)
-> +#define LD_LAT_SNOOP                   (0x01 << 2)
-> +#define LD_LAT_LOCAL                   (0x02 << 2)
-> +#define LD_LAT_REMOTE                  (0x03 << 2)
-> +
-> +/* Bits(4-5) {modified, exclusive, shared, invalid} */
-> +#define LD_LAT_MODIFIED                        (0x00 << 4)
-> +#define LD_LAT_EXCLUSIVE               (0x01 << 4)
-> +#define LD_LAT_SHARED                  (0x02 << 4)
-> +#define LD_LAT_INVALID                 (0x03 << 4)
-> +
-> +#define LD_LAT_RESERVED                        0x3F
+On Wed, 2011-01-05 at 13:24 +0800, Lin Ming wrote:
+> > > > + for_each_cpu(i, topology_core_cpumask(cpu)) {
+> > > >           nb = per_cpu(cpu_hw_events, i).amd_nb;
+> > > >           if (WARN_ON_ONCE(!nb))
+> > > >                   continue;
+> > > 
+> > > Borislav, is topology_core_cpumask() the right mask for northbridge_id
+> > > span? I could imagine Magny-Cours would have all 12 cores in the
+> > > core_cpumask() and have the node_mask() be half that.
+> > 
+> > So, topology_core_cpumask() or cpu_core_mask() both are cpu_core_map
+> > which represents the socket mask. I.e., on a multisocket cpu you'll have
+> > in it all the cores on one socket. A 12-cores Magny-Cours contains two
+> > internal northbridges and this mask will have 12 bits set.
+> > 
+> > AFAICT, you want to iterate over the cores on a single node here
+> > (an internal node in the Magny-Cours case) so for this we have the
+> > llc_shared_map. See near the top of cache_shared_cpu_map_setup() in
+> > <arch/x86/kernel/cpu/intel_cacheinfo.c> for an example.
+> 
+> cpu_coregroup_mask() seems the right mask for northbridge_id span.
+> 
+> arch/x86/kernel/smpboot.c:
+> 
+> /* maps the cpu to the sched domain representing multi-core */
+> const struct cpumask *cpu_coregroup_mask(int cpu)
+> {
+>         struct cpuinfo_x86 *c = &cpu_data(cpu);
+>         /*
+>          * For perf, we return last level cache shared map.
+>          * And for power savings, we return cpu_core_map
+>          */
+>         if ((sched_mc_power_savings || sched_smt_power_savings) &&
+>             !(cpu_has(c, X86_FEATURE_AMD_DCM)))
+>                 return cpu_core_mask(cpu);
+>         else
+>                 return c->llc_shared_map;
+> } 
 
+Argh, that function really must die, its the most horrible brain damage
+around. Andreas promised he'd clean that up after making it worse for
+Magny-Cours.
 
-Also, I guess we need to go actually look at the POWER, IA64 and other
-PMU docs to see if this sufficiently covers their data-source
-capabilities.
-
-Stephane, do you know of more PMUs with data-source capabilities we need
-to include in the audit, and do you happen to have all their docs
-readily available or do I need to ask google?
+But yes, assuming all Magny-Cours have this AMD_DCM thing set, it seems
+to return the right map.
