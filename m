@@ -1,112 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751831Ab1AEKBZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 05:01:25 -0500
-Received: from www.tglx.de ([62.245.132.106]:38863 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751639Ab1AEKBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 05:01:24 -0500
-Date: Wed, 5 Jan 2011 11:01:12 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org, sodaville@linutronix.de, x86@kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 03/15] x86/dtb: Add a device tree for CE4100
-Message-ID: <20110105100112.GA670@www.tglx.de>
-References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de> <1292600033-12271-4-git-send-email-bigeasy@linutronix.de> <20101230085122.GE11721@angua.secretlab.ca>
+	id S1751786Ab1AEKEI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 05:04:08 -0500
+Received: from casper.infradead.org ([85.118.1.10]:36357 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507Ab1AEKEH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 05:04:07 -0500
+Subject: Re: [RFC -v3 PATCH 2/3] sched: add yield_to function
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>,
+        Darren Hart <dvhart@linux.intel.com>, tglx <tglx@linutronix.de>
+In-Reply-To: <20110105110837.B62A.A69D9226@jp.fujitsu.com>
+References: <20110104151345.3BC2.A69D9226@jp.fujitsu.com>
+	 <4D230C90.6060104@redhat.com> <20110105110837.B62A.A69D9226@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 05 Jan 2011 11:04:22 +0100
+Message-ID: <1294221862.2016.218.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20101230085122.GE11721@angua.secretlab.ca>
-User-Agent: Mutt/1.4.2.2i
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Grant Likely | 2010-12-30 01:51:22 [-0700]:
+On Wed, 2011-01-05 at 11:39 +0900, KOSAKI Motohiro wrote:
 
->> diff --git a/arch/x86/platform/ce4100/falconfalls.dts b/arch/x86/platform/ce4100/falconfalls.dts
->> new file mode 100644
->> index 0000000..24e67ca
->> --- /dev/null
->> +++ b/arch/x86/platform/ce4100/falconfalls.dts
->> @@ -0,0 +1,212 @@
->> +/*
->> + * CE4100 on Falcon Falls
->> + *
->> + * (c) Copyright 2010 Intel Corporation
->> + *
->> + * This program is free software; you can redistribute it and/or modify it
->> + * under the terms of the GNU General Public License as published by the
->> + * Free Software Foundation; version 2 of the License.
->> + */
->> +/dts-v1/;
->> +/ {
->> +	model = "Intel,FalconFalls";
->> +	compatible = "Intel,FalconFalls";
->
->To-date the convention has been to use all lowercase in compatible
->properties.  Ditto throughout this file.
-done
+> After calling pthread_cond_signal(), T1 which cond_signal caller and T2
+> which waked start to GIL grab race. But usually T1 is always win because
+> lock variable is in T1's cpu cache. Why kernel and userland have so much
+> different result? One of a reason is glibc doesn't have any ticket lock scheme. 
 
->> +	soc@0 {
->> +		#address-cells = <1>;
->> +		#size-cells = <1>;
->> +		device_type = "soc";
->
->Drop device_type property.
-done
+The problem is that making locks strictly fair is that that sucks for
+performance, iirc most futex ops are fifo-ordered when they his the
+block path, but we do allow for lock-stealing.
 
->> +		ioapic1: pic@fec00000 {
->> +			#interrupt-cells = <2>;
->> +			compatible = "Intel,ioapic";
->> +			interrupt-controller;
->> +			device_type = "interrupt-controller";
->
->Ditto
-done
+Lock-stealing greatly improves performance since it avoids lots of
+block/wakeup cycles, but it does make things unfair.
 
->> +		pci@3fc {
->> +			#address-cells = <3>;
->> +			#interrupt-cells = <1>;
->> +			#size-cells = <2>;
->> +			compatible = "Intel,ce4100-pci", "pci";
->> +			device_type = "pci";
->
->I'd like to say ditto here, but it might require a change to the
->current kernel code.  I believe ePAPR specified a compatible value
->alternative to 'device_type = "pci";'.
-I have the pci property. So I drop the device_type once it is possible.
+I'm not sure we have a futex option to disable lock-stealing, nor do I
+think you really want to, performance suffers really badly.
 
->> +			isa@0 {
->> +				#address-cells = <2>;
->> +				#size-cells = <1>;
->> +				compatible = "isa";
->> +				ranges = <1 0 0 0 0 0x100>;
->> +
->> +				rtc@70 {
->> +					compatible = "motorola,mc146818";
->> +					interrupts = <8 3>;
->> +					interrupt-parent = <&ioapic1>;
->
->If you put an interrupt-parent property in the root node, then it will
->become the default interrupt controller for the system which is
->usually convenient to have.
-Okay, I mode it once I have more common devices. I have two interrupt
-controller and most devices are attached to the second one (and are
-assigned via interrupt-map).
-
->> +			/* Secondary IO-APIC */
->> +			ioapic2: pic@bffff000 {
->> +				#interrupt-cells = <2>;
->> +				compatible = "Intel,ioapic-ce4100", "Intel,ioapic";
->> +				interrupt-controller;
->> +				device_type = "interrupt-controller";
->
->Drop device_type.
-done
-
-Sebastian
+[This btw is the reason why people reported a performance improvement
+when they wrapped all mmap() calls in a pthread_mutex, the
+rwsem_down_write() thing doesn't allow for lock-stealing since it needs
+to be strict fifo-fair]
