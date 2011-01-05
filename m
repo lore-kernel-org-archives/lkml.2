@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab1AEXGl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:06:41 -0500
-Received: from kroah.org ([198.145.64.141]:50799 "EHLO coco.kroah.org"
+	id S1753431Ab1AEXIH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:08:07 -0500
+Received: from kroah.org ([198.145.64.141]:50834 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753194Ab1AEXGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:06:32 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 15:03:25 2011
-Message-Id: <20110105230325.781267069@clark.site>
+	id S1753013Ab1AEXGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 18:06:38 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 15:03:26 2011
+Message-Id: <20110105230326.477177117@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 15:00:41 -0800
+Date: Wed, 05 Jan 2011 15:00:48 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        NeilBrown <neilb@suse.de>
-Subject: [23/49] md: fix bug with re-adding of partially recovered device.
+        Amit Shah <amit.shah@redhat.com>, linuxppc-dev@ozlabs.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [30/49] hvc_console: Fix race between hvc_close and hvc_remove
 In-Reply-To: <20110105230438.GA26241@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,62 +26,170 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Amit Shah <amit.shah@redhat.com>
 
-commit 1a855a0606653d2d82506281e2c686bacb4b2f45 upstream.
+commit e74d098c66543d0731de62eb747ccd5b636a6f4c upstream.
 
-With v0.90 metadata, a hot-spare does not become a full member of the
-array until recovery is complete.  So if we re-add such a device to
-the array, we know that all of it is as up-to-date as the event count
-would suggest, and so it a bitmap-based recovery is possible.
+Alan pointed out a race in the code where hvc_remove is invoked. The
+recent virtio_console work is the first user of hvc_remove().
 
-However with v1.x metadata, the hot-spare immediately becomes a full
-member of the array, but it record how much of the device has been
-recovered.  If the array is stopped and re-assembled recovery starts
-from this point.
+Alan describes it thus:
 
-When such a device is hot-added to an array we currently lose the 'how
-much is recovered' information and incorrectly included it as a full
-in-sync member (after bitmap-based fixup).
-This is wrong and unsafe and could corrupt data.
+The hvc_console assumes that a close and remove call can't occur at the
+same time.
 
-So be more careful about setting saved_raid_disk - which is what
-guides the re-adding of devices back into an array.
-The new code matches the code in slot_store which does a similar
-thing, which is encouraging.
+In addition tty_hangup(tty) is problematic as tty_hangup is asynchronous
+itself....
 
-This is suitable for any -stable kernel.
+So this can happen
 
-Reported-by: "Dailey, Nate" <Nate.Dailey@stratus.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+        hvc_close                               hvc_remove
+        hung up ? - no
+                                                lock
+                                                tty = hp->tty
+                                                unlock
+        lock
+        hp->tty = NULL
+        unlock
+        notify del
+        kref_put the hvc struct
+        close completes
+        tty is destroyed
+                                                tty_hangup dead tty
+                                                tty->ops will be NULL
+                                                NULL->...
+
+This patch adds some tty krefs and also converts to using tty_vhangup().
+
+Reported-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: linuxppc-dev@ozlabs.org
+CC: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/md.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/char/hvc_console.c |   31 +++++++++++++++++++++----------
+ 1 file changed, 21 insertions(+), 10 deletions(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -4802,7 +4802,7 @@ static int add_new_disk(mddev_t * mddev,
- 				PTR_ERR(rdev));
- 			return PTR_ERR(rdev);
- 		}
--		/* set save_raid_disk if appropriate */
-+		/* set saved_raid_disk if appropriate */
- 		if (!mddev->persistent) {
- 			if (info->state & (1<<MD_DISK_SYNC)  &&
- 			    info->raid_disk < mddev->raid_disks)
-@@ -4812,7 +4812,10 @@ static int add_new_disk(mddev_t * mddev,
- 		} else
- 			super_types[mddev->major_version].
- 				validate_super(mddev, rdev);
--		rdev->saved_raid_disk = rdev->raid_disk;
-+		if (test_bit(In_sync, &rdev->flags))
-+			rdev->saved_raid_disk = rdev->raid_disk;
-+		else
-+			rdev->saved_raid_disk = -1;
+--- a/drivers/char/hvc_console.c
++++ b/drivers/char/hvc_console.c
+@@ -312,6 +312,7 @@ static int hvc_open(struct tty_struct *t
+ 	spin_lock_irqsave(&hp->lock, flags);
+ 	/* Check and then increment for fast path open. */
+ 	if (hp->count++ > 0) {
++		tty_kref_get(tty);
+ 		spin_unlock_irqrestore(&hp->lock, flags);
+ 		hvc_kick();
+ 		return 0;
+@@ -319,7 +320,7 @@ static int hvc_open(struct tty_struct *t
  
- 		clear_bit(In_sync, &rdev->flags); /* just to be sure */
- 		if (info->state & (1<<MD_DISK_WRITEMOSTLY))
+ 	tty->driver_data = hp;
+ 
+-	hp->tty = tty;
++	hp->tty = tty_kref_get(tty);
+ 
+ 	spin_unlock_irqrestore(&hp->lock, flags);
+ 
+@@ -336,6 +337,7 @@ static int hvc_open(struct tty_struct *t
+ 		spin_lock_irqsave(&hp->lock, flags);
+ 		hp->tty = NULL;
+ 		spin_unlock_irqrestore(&hp->lock, flags);
++		tty_kref_put(tty);
+ 		tty->driver_data = NULL;
+ 		kref_put(&hp->kref, destroy_hvc_struct);
+ 		printk(KERN_ERR "hvc_open: request_irq failed with rc %d.\n", rc);
+@@ -363,13 +365,18 @@ static void hvc_close(struct tty_struct
+ 		return;
+ 
+ 	hp = tty->driver_data;
++
+ 	spin_lock_irqsave(&hp->lock, flags);
++	tty_kref_get(tty);
+ 
+ 	if (--hp->count == 0) {
+ 		/* We are done with the tty pointer now. */
+ 		hp->tty = NULL;
+ 		spin_unlock_irqrestore(&hp->lock, flags);
+ 
++		/* Put the ref obtained in hvc_open() */
++		tty_kref_put(tty);
++
+ 		if (hp->ops->notifier_del)
+ 			hp->ops->notifier_del(hp, hp->data);
+ 
+@@ -389,6 +396,7 @@ static void hvc_close(struct tty_struct
+ 		spin_unlock_irqrestore(&hp->lock, flags);
+ 	}
+ 
++	tty_kref_put(tty);
+ 	kref_put(&hp->kref, destroy_hvc_struct);
+ }
+ 
+@@ -424,10 +432,11 @@ static void hvc_hangup(struct tty_struct
+ 	spin_unlock_irqrestore(&hp->lock, flags);
+ 
+ 	if (hp->ops->notifier_hangup)
+-			hp->ops->notifier_hangup(hp, hp->data);
++		hp->ops->notifier_hangup(hp, hp->data);
+ 
+ 	while(temp_open_count) {
+ 		--temp_open_count;
++		tty_kref_put(tty);
+ 		kref_put(&hp->kref, destroy_hvc_struct);
+ 	}
+ }
+@@ -592,7 +601,7 @@ int hvc_poll(struct hvc_struct *hp)
+ 	}
+ 
+ 	/* No tty attached, just skip */
+-	tty = hp->tty;
++	tty = tty_kref_get(hp->tty);
+ 	if (tty == NULL)
+ 		goto bail;
+ 
+@@ -672,6 +681,8 @@ int hvc_poll(struct hvc_struct *hp)
+ 
+ 		tty_flip_buffer_push(tty);
+ 	}
++	if (tty)
++		tty_kref_put(tty);
+ 
+ 	return poll_mask;
+ }
+@@ -806,7 +817,7 @@ int hvc_remove(struct hvc_struct *hp)
+ 	struct tty_struct *tty;
+ 
+ 	spin_lock_irqsave(&hp->lock, flags);
+-	tty = hp->tty;
++	tty = tty_kref_get(hp->tty);
+ 
+ 	if (hp->index < MAX_NR_HVC_CONSOLES)
+ 		vtermnos[hp->index] = -1;
+@@ -818,18 +829,18 @@ int hvc_remove(struct hvc_struct *hp)
+ 	/*
+ 	 * We 'put' the instance that was grabbed when the kref instance
+ 	 * was initialized using kref_init().  Let the last holder of this
+-	 * kref cause it to be removed, which will probably be the tty_hangup
++	 * kref cause it to be removed, which will probably be the tty_vhangup
+ 	 * below.
+ 	 */
+ 	kref_put(&hp->kref, destroy_hvc_struct);
+ 
+ 	/*
+-	 * This function call will auto chain call hvc_hangup.  The tty should
+-	 * always be valid at this time unless a simultaneous tty close already
+-	 * cleaned up the hvc_struct.
++	 * This function call will auto chain call hvc_hangup.
+ 	 */
+-	if (tty)
+-		tty_hangup(tty);
++	if (tty) {
++		tty_vhangup(tty);
++		tty_kref_put(tty);
++	}
+ 	return 0;
+ }
+ 
 
 
