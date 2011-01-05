@@ -1,62 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181Ab1AENAj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 08:00:39 -0500
-Received: from mail.df.lth.se ([194.47.250.12]:49292 "EHLO df.lth.se"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751810Ab1AENAi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 08:00:38 -0500
-X-Greylist: delayed 1994 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Jan 2011 08:00:38 EST
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Dan Carpenter <error27@gmail.com>
-Subject: [PATCH] param: add null statement to compiled-in module params
-Date: Wed,  5 Jan 2011 13:27:04 +0100
-Message-Id: <1294230424-4089-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.0
+	id S1752198Ab1AENBx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 08:01:53 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:51488 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752122Ab1AENBw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 08:01:52 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=UgbwuDdBsgeDfhOBIU7GYqwQOLRk9H03HBbgBk33UhKfgjpES1pX5RAutwXx9da2nZ
+         8FFYjJOKYwmcHB/bl0Bw==
+MIME-Version: 1.0
+In-Reply-To: <1294226618.2016.259.camel@laptop>
+References: <4d2205a1.8b02e30a.3541.ffff8aee@mx.google.com>
+	<1294226618.2016.259.camel@laptop>
+Date: Wed, 5 Jan 2011 14:01:48 +0100
+Message-ID: <AANLkTin_NMwsymSaTaCkuMmkQ91YbW3VChhc2Mx41KN5@mail.gmail.com>
+Subject: Re: [PATCH 4/5] perf_events: add cgroup support (v7)
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
+        eranian@gmail.com, robert.richter@amd.com, acme@redhat.com,
+        lizf@cn.fujitsu.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an unused struct declaration statement requiring a
-terminating semicolon to the compile-in case to provoke an
-error if __MODULE_INFO() is used without the terminating
-semicolon. Previously MODULE_ALIAS("foo") (no semicolon)
-compiled fine if MODULE was not selected.
+On Wed, Jan 5, 2011 at 12:23 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2011-01-03 at 18:20 +0200, Stephane Eranian wrote:
+>
+>> +#ifdef CONFIG_CGROUP_PERF
+>> +/*
+>> + * perf_cgroup_info keeps track of time_enabled for a cgroup.
+>> + * This is a per-cpu dynamically allocated data structure.
+>> + */
+>> +struct perf_cgroup_info {
+>> +     u64 time;
+>> +     u64 timestamp;
+>> +};
+>> +
+>> +struct perf_cgroup {
+>> +     struct cgroup_subsys_state css;
+>> +     struct perf_cgroup_info *info;  /* timing info, one per cpu */
+>
+> I think 'they' want a __percpu annotation there.
+>
+Ok, I can fix this.
 
-Cc: Dan Carpenter <error27@gmail.com>
-Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
----
-More clever solutions appreciated, this thing works.
----
- include/linux/moduleparam.h |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+>> +};
+>> +#endif
+>
+>
+>> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+>> index b782b7a..905b91a 100644
+>> --- a/kernel/perf_event.c
+>> +++ b/kernel/perf_event.c
+>
+>
+>> +static inline void __update_cgrp_time(struct perf_cgroup *cgrp)
+>> +{
+>> +     struct perf_cgroup_info *t;
+>> +     u64 now;
+>> +
+>> +     now = perf_clock();
+>> +
+>> +     t = per_cpu_ptr(cgrp->info, smp_processor_id());
+>
+>  this_cpu_ptr(cgrp->info);
+>
+Fixed.
 
-diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
-index 112adf8..07b4195 100644
---- a/include/linux/moduleparam.h
-+++ b/include/linux/moduleparam.h
-@@ -16,15 +16,17 @@
- /* Chosen so that structs with an unsigned long line up. */
- #define MAX_PARAM_PREFIX_LEN (64 - sizeof(unsigned long))
- 
--#ifdef MODULE
- #define ___module_cat(a,b) __mod_ ## a ## b
- #define __module_cat(a,b) ___module_cat(a,b)
-+#ifdef MODULE
- #define __MODULE_INFO(tag, name, info)					  \
- static const char __module_cat(name,__LINE__)[]				  \
-   __used __attribute__((section(".modinfo"), unused, aligned(1)))	  \
-   = __stringify(tag) "=" info
- #else  /* !MODULE */
--#define __MODULE_INFO(tag, name, info)
-+/* This struct is here for syntactic coherency, it is not used */
-+#define __MODULE_INFO(tag, name, info)					  \
-+  struct __module_cat(name,__LINE__) {}
- #endif
- #define __MODULE_PARM_TYPE(name, _type)					  \
-   __MODULE_INFO(parmtype, name##type, #name ":" _type)
--- 
-1.7.3.4
+>> +
+>> +     t->time += now - t->timestamp;
+>> +     t->timestamp = now;
+>> +}
+>
+>
+>> +static inline void
+>> +perf_cgroup_set_timestamp(struct task_struct *task, u64 now)
+>> +{
+>> +     struct perf_cgroup *cgrp;
+>> +     struct perf_cgroup_info *info;
+>> +
+>> +     if (!task)
+>> +             return;
+>> +
+>> +     cgrp = perf_cgroup_from_task(task);
+>> +     info = per_cpu_ptr(cgrp->info, smp_processor_id());
+>
+>  this_cpu_ptr();
+>
+Fixed.
 
+>> +     info->timestamp = now;
+>> +}
+>> +
+>
+>> +/*
+>> + * called from perf_event_ask_sched_out() conditional to jump label
+>> + */
+>> +void
+>> +perf_cgroup_switch(struct task_struct *task, struct task_struct *next)
+>> +{
+>> +     struct perf_cgroup *cgrp_out = perf_cgroup_from_task(task);
+>> +     struct perf_cgroup *cgrp_in = perf_cgroup_from_task(next);
+>> +     struct perf_cpu_context *cpuctx;
+>> +     struct pmu *pmu;
+>> +     /*
+>> +      * if task is DEAD, then css_out is irrelevant, it has
+>> +      * been changed to init_cgrp in cgroup_exit() from do_exit().
+>> +      * Furthermore, perf_cgroup_exit_task(), has scheduled out
+>> +      * all css constrained events, only unconstrained events
+>> +      * remain. Therefore we need to reschedule based on css_in.
+>> +      */
+>> +     if (task->state != TASK_DEAD && cgrp_out == cgrp_in)
+>> +             return;
+>
+> I think that check is broken, TASK_DEAD is set way after calling
+> cgroup_exit(), so if we get preempted in between there you'll still go
+> funny.
+>
+> We do set PF_EXITING before calling cgroup_exit() though.
+>
+Switched to PF_EXITING. Thanks for catching this one.
+
+>> +     rcu_read_lock();
+>> +
+>> +     list_for_each_entry_rcu(pmu, &pmus, entry) {
+>> +
+>> +             cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
+>> +
+>> +             perf_pmu_disable(cpuctx->ctx.pmu);
+>> +
+>> +             /*
+>> +              * perf_cgroup_events says at least one
+>> +              * context on this CPU has cgroup events.
+>> +              *
+>> +              * ctx->nr_cgroups reports the number of cgroup
+>> +              * events for a context. Given there can be multiple
+>> +              * PMUs, there can be multiple contexts.
+>> +              */
+>> +             if (cpuctx->ctx.nr_cgroups > 0) {
+>> +                     /*
+>> +                      * schedule out everything we have
+>> +                      * task == DEAD: only unconstrained events
+>> +                      * task != DEAD: css constrained + unconstrained events
+>> +                      *
+>
+> Does this comment want an update? As per the above (broken) check, we
+> should never get here for DEAD tasks, hmm?
+>
+Updated.
+
+>> +                      * We kick out all events (even if unconstrained)
+>> +                      * to allow the constrained events to be scheduled
+>> +                      * based on their position in the event list (fairness)
+>> +                      */
+>> +                     cpu_ctx_sched_out(cpuctx, EVENT_ALL);
+>> +                     /*
+>> +                      * reschedule css_in constrained + unconstrained events
+>> +                      */
+>> +                     cpu_ctx_sched_in(cpuctx, EVENT_ALL, next, 1);
+>> +             }
+>> +
+>> +             perf_pmu_enable(cpuctx->ctx.pmu);
+>> +     }
+>> +
+>> +     rcu_read_unlock();
+>> +}
+>> +
+>> +static inline void
+>
+> Copy/paste fail?
+>
+>> +perf_cgroup_exit_task(struct task_struct *task)
+>> +{
+>
+>> +}
+>> +
+Dropped this one which is useless.
+
+>
+> +static inline int perf_cgroup_connect(int fd, struct perf_event *event,
+>> +                                   struct perf_event_attr *attr,
+>> +                                   struct perf_event *group_leader)
+>
+> Again, do we really need this 'inline' ?
+>
+Not really.
+
+>> +{
+>> +     struct perf_cgroup *cgrp;
+>> +     struct cgroup_subsys_state *css;
+>> +     struct file *file;
+>> +     int ret = 0, fput_needed;
+>> +
+>> +     file = fget_light(fd, &fput_needed);
+>> +     if (!file)
+>> +             return -EBADF;
+>> +
+>> +     css = cgroup_css_from_dir(file, perf_subsys_id);
+>> +     if (IS_ERR(css))
+>> +             return PTR_ERR(css);
+>> +
+>> +     cgrp = container_of(css, struct perf_cgroup, css);
+>> +     event->cgrp = cgrp;
+>
+>
+> If we do that perf_get_cgroup() here (unconditional).
+>
+That is exactly what I did in my revised patch.
+
+>> +     /*
+>> +      * all events in a group must monitor
+>> +      * the same cgroup because a thread belongs
+>> +      * to only one perf cgroup at a time
+>> +      */
+>> +     if (group_leader && group_leader->cgrp != cgrp) {
+>> +             perf_detach_cgroup(event);
+>> +             ret = -EINVAL;
+>> +     } else {
+>> +             /* must be done before we fput() the file */
+>> +             perf_get_cgroup(event);
+>> +     }
+>
+> Then you can have that conditional perf_detach_cgroup() here, right?
+
+Thanks.
+Will resubmit just this patch.
