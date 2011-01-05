@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751840Ab1AEPsi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 10:48:38 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:42733 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231Ab1AEPsh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 10:48:37 -0500
-Date: Wed, 5 Jan 2011 13:48:21 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, "David S . Miller" <davem@davemloft.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [GIT PULL 0/3] perf/core improvements and fixes
-Message-ID: <20110105154821.GB3159@ghostprotocols.net>
-References: <1294161485-28528-1-git-send-email-acme@infradead.org>
- <20110105131117.GC10129@elte.hu>
- <20110105131411.GD10129@elte.hu>
+	id S1752048Ab1AEPt1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 10:49:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22006 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750699Ab1AEPt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 10:49:26 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-aio@kvack.org
+Subject: Re: [PATCH 21/32] fs/aio: aio_wq isn't used in memory reclaim path
+References: <1294062595-30097-1-git-send-email-tj@kernel.org>
+	<1294062595-30097-22-git-send-email-tj@kernel.org>
+	<x49d3ocacij.fsf@segfault.boston.devel.redhat.com>
+	<20110105112802.GA7669@mtj.dyndns.org>
+	<x49d3obqu9a.fsf@segfault.boston.devel.redhat.com>
+	<20110105150048.GA32455@kvack.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 05 Jan 2011 10:49:19 -0500
+In-Reply-To: <20110105150048.GA32455@kvack.org> (Benjamin LaHaise's message of
+	"Wed, 5 Jan 2011 10:00:48 -0500")
+Message-ID: <x494o9nqrk0.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110105131411.GD10129@elte.hu>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Jan 05, 2011 at 02:14:11PM +0100, Ingo Molnar escreveu:
-> 
-> sorry, had to unpull it:
-> 
-> util/evsel.c: In function ‘perf_evsel__open_per_cpu’:
-> util/evsel.c:137: error: dereferencing pointer ‘map__empty.57’ does break strict-aliasing rules
-> util/evsel.c:158: error: dereferencing pointer ‘map__empty.57’ does break strict-aliasing rules
-> util/evsel.c:141: error: dereferencing pointer ‘map__empty.57’ does break strict-aliasing rules
-> util/evsel.c:142: error: dereferencing pointer ‘map__empty.57’ does break strict-aliasing rules
-> util/evsel.c:185: note: initialized from here
-> cc1: error: dereferencing pointer ‘map__empty.57’ does break strict-aliasing rules
-> util/evsel.c:185: note: initialized from here
-> make: *** [util/evsel.o] Error 1
-> make: *** Waiting for unfinished jobs....
-> 
-> gcc version 4.4.4 20100630 (Red Hat 4.4.4-10) (GCC) 
-> 
-> on a 32-bit Fedora 12 box.
+Benjamin LaHaise <bcrl@kvack.org> writes:
 
-Checking it,
+> On Wed, Jan 05, 2011 at 09:50:57AM -0500, Jeff Moyer wrote:
+>> > Yeap.  Do you agree that the concurrency limit is necessary?  If not,
+>> > we can just put everything onto system_wq.
+>> 
+>> I'm not sure whether it's strictly necessary (there may very well be a
+>> need for this in the usb gadgetfs code), but keeping it the same at
+>> least seems safe.
+>
+> Limiting concurrency on aio requests is exactly the opposite of what the 
+> usb gadgetfs requires.
 
-- Arnaldo
+I'll have to dig on what their requirements are.  After briefly looking
+at mailing list archives, it appears they use the aio workqueue to queue
+work after a completed I/O.  I think Zach actually had posted a patch to
+change them over to using their own workqueue for that.  At any rate, it
+may well be that they don't have a concurrency requirement (in fact, it
+would be surprising if they did).  However, I wasn't going to propose
+changing the way things were done w/o someone chiming in and saying they
+needed it.
+
+> It's similarly bad for filesystem aio when there's a mix of small and
+> large requests in flight.
+
+Well, the aio workqueue isn't actually used by the filesystem aio paths
+at all (except for the fput_work, and that's being moved to the system
+workqueue).
+
+Cheers,
+Jeff
