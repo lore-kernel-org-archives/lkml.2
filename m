@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266Ab1AEXGa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:06:30 -0500
-Received: from kroah.org ([198.145.64.141]:50748 "EHLO coco.kroah.org"
+	id S1753324Ab1AEXJn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:09:43 -0500
+Received: from kroah.org ([198.145.64.141]:50787 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753194Ab1AEXGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:06:23 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 15:03:24 2011
-Message-Id: <20110105230324.845120936@clark.site>
+	id S1753207Ab1AEXG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 18:06:29 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 15:03:25 2011
+Message-Id: <20110105230325.486403462@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 15:00:32 -0800
+Date: Wed, 05 Jan 2011 15:00:38 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Gabriele Gorla <gorlik@penguintown.net>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [14/49] hwmon: (adm1026) Fix setting fan_div
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [20/49] orinoco: fix TKIP countermeasure behaviour
 In-Reply-To: <20110105230438.GA26241@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,55 +25,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gabriele Gorla <gorlik@penguintown.net>
+From: David Kilroy <kilroyd@googlemail.com>
 
-commit 52bc9802ce849d0d287cc5fe76d06b0daa3986ca upstream.
+commit 0a54917c3fc295cb61f3fb52373c173fd3b69f48 upstream.
 
-Prevent setting fan_div from stomping on other fans that share the
-same I2C register.
+Enable the port when disabling countermeasures, and disable it on
+enabling countermeasures.
 
-Signed-off-by: Gabriele Gorla <gorlik@penguintown.net>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+This bug causes the response of the system to certain attacks to be
+ineffective.
+
+It also prevents wpa_supplicant from getting scan results, as
+wpa_supplicant disables countermeasures on startup - preventing the
+hardware from scanning.
+
+wpa_supplicant works with ap_mode=2 despite this bug because the commit
+handler re-enables the port.
+
+The log tends to look like:
+
+State: DISCONNECTED -> SCANNING
+Starting AP scan for wildcard SSID
+Scan requested (ret=0) - scan timeout 5 seconds
+EAPOL: disable timer tick
+EAPOL: Supplicant port status: Unauthorized
+Scan timeout - try to get results
+Failed to get scan results
+Failed to get scan results - try scanning again
+Setting scan request: 1 sec 0 usec
+Starting AP scan for wildcard SSID
+Scan requested (ret=-1) - scan timeout 5 seconds
+Failed to initiate AP scan.
+
+Reported by: Giacomo Comes <comes@naic.edu>
+Signed-off by: David Kilroy <kilroyd@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hwmon/adm1026.c |   16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ drivers/net/wireless/orinoco/wext.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/hwmon/adm1026.c
-+++ b/drivers/hwmon/adm1026.c
-@@ -919,7 +919,7 @@ static ssize_t set_fan_div(struct device
- 	int nr = sensor_attr->index;
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct adm1026_data *data = i2c_get_clientdata(client);
--	int val, orig_div, new_div, shift;
-+	int val, orig_div, new_div;
+--- a/drivers/net/wireless/orinoco/wext.c
++++ b/drivers/net/wireless/orinoco/wext.c
+@@ -1022,10 +1022,10 @@ static int orinoco_ioctl_set_auth(struct
+ 		 */
+ 		if (param->value) {
+ 			priv->tkip_cm_active = 1;
+-			ret = hermes_enable_port(hw, 0);
++			ret = hermes_disable_port(hw, 0);
+ 		} else {
+ 			priv->tkip_cm_active = 0;
+-			ret = hermes_disable_port(hw, 0);
++			ret = hermes_enable_port(hw, 0);
+ 		}
+ 		break;
  
- 	val = simple_strtol(buf, NULL, 10);
- 	new_div = DIV_TO_REG(val);
-@@ -929,15 +929,17 @@ static ssize_t set_fan_div(struct device
- 	data->fan_div[nr] = DIV_FROM_REG(new_div);
- 
- 	if (nr < 4) { /* 0 <= nr < 4 */
--		shift = 2 * nr;
- 		adm1026_write_value(client, ADM1026_REG_FAN_DIV_0_3,
--			((DIV_TO_REG(orig_div) & (~(0x03 << shift))) |
--			(new_div << shift)));
-+				    (DIV_TO_REG(data->fan_div[0]) << 0) |
-+				    (DIV_TO_REG(data->fan_div[1]) << 2) |
-+				    (DIV_TO_REG(data->fan_div[2]) << 4) |
-+				    (DIV_TO_REG(data->fan_div[3]) << 6));
- 	} else { /* 3 < nr < 8 */
--		shift = 2 * (nr - 4);
- 		adm1026_write_value(client, ADM1026_REG_FAN_DIV_4_7,
--			((DIV_TO_REG(orig_div) & (~(0x03 << (2 * shift)))) |
--			(new_div << shift)));
-+				    (DIV_TO_REG(data->fan_div[4]) << 0) |
-+				    (DIV_TO_REG(data->fan_div[5]) << 2) |
-+				    (DIV_TO_REG(data->fan_div[6]) << 4) |
-+				    (DIV_TO_REG(data->fan_div[7]) << 6));
- 	}
- 
- 	if (data->fan_div[nr] != orig_div) {
 
 
