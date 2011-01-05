@@ -1,101 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409Ab1AEXHH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:07:07 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:59467 "EHLO mx2.netapp.com"
+	id S1753348Ab1AEXGj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:06:39 -0500
+Received: from kroah.org ([198.145.64.141]:50802 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752671Ab1AEXHD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:07:03 -0500
-X-IronPort-AV: E=Sophos;i="4.60,279,1291622400"; 
-   d="scan'208";a="502146527"
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
-In-Reply-To: <AANLkTi=3Gu-rz=-OdNtUXn4qw60Df6=YePnzvB=s-+Ov@mail.gmail.com>
-References: <1294254337.16957.13.camel@mulgrave.site>
-	 <AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com>
-	 <1294256169.16957.18.camel@mulgrave.site>
-	 <20110105200008.GJ8638@n2100.arm.linux.org.uk>
-	 <1294259637.16957.25.camel@mulgrave.site>
-	 <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com>
-	 <20110105210448.GM8638@n2100.arm.linux.org.uk>
-	 <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com>
-	 <1294262208.2952.4.camel@heimdal.trondhjem.org>
-	 <AANLkTi=3Gu-rz=-OdNtUXn4qw60Df6=YePnzvB=s-+Ov@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Wed, 05 Jan 2011 18:06:48 -0500
-Message-ID: <1294268808.2952.18.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 05 Jan 2011 23:06:50.0496 (UTC) FILETIME=[3C2DD000:01CBAD2D]
+	id S1751805Ab1AEXGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 18:06:33 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 15:03:25 2011
+Message-Id: <20110105230325.876302655@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Wed, 05 Jan 2011 15:00:42 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Slava Pestov <slavapestov@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [24/49] tracing: Fix panic when lseek() called on "trace" opened for writing
+In-Reply-To: <20110105230438.GA26241@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-05 at 13:30 -0800, Linus Torvalds wrote: 
-> On Wed, Jan 5, 2011 at 1:16 PM, Trond Myklebust
-> <Trond.Myklebust@netapp.com> wrote:
-> >
-> > So what should be the preferred way to ensure data gets flushed when
-> > you've written directly to a page, and then want to read through the
-> > vm_map_ram() virtual range? Should we be adding new semantics to
-> > flush_kernel_dcache_page()?
-> 
-> The "preferred way" is actually simple: "don't do that". IOW, if some
-> page is accessed through a virtual mapping you've set up, then
-> _always_ access it through that virtual mapping.
-> 
-> Now, when that is impossible (and yes, it sometimes is), then you
-> should flush after doing all writes. And if you do the write through
-> the regular kernel mapping, you should use flush_dcache_page(). And if
-> you did it through the virtual mapping, you should use
-> "flush_kernel_vmap_range()" or whatever.
-> 
-> NOTE! I really didn't look those up very closely, and if the accesses
-> can happen concurrently you are basically screwed, so you do need to
-> do locking or something else to guarantee that there is some nice
-> sequential order.  And maybe I forgot something.  Which is why I do
-> suggest "don't do that" as a primary approach to the problem if at all
-> possible.
-> 
-> Oh, and you may need to flush before reading too (and many writes do
-> end up being "read-modify-write" cycles) in case it's possible that
-> you have stale data from a previous read that was then invalidated by
-> a write to the aliasing address. Even if that write was flushed out,
-> the stale read data may exist at the virtual address. I forget what
-> all we required - in the end the only sane model is "virtual caches
-> suck so bad that anybody who does them should be laughed at for being
-> a retard".
+2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
-Yes. The fix I sent out was a call to invalidate_kernel_vmap_range(),
-which takes care of invalidating the cache prior to a virtual address
-read.
+------------------
 
-My question was specifically about the write through the regular kernel
-mapping: according to Russell and my reading of the cachetlb.txt
-documentation, flush_dcache_page() is only guaranteed to have an effect
-on page cache pages.
-flush_kernel_dcache_page() (not to be confused with flush_dcache_page)
-would appear to be the closest fit according to my reading of the
-documentation, however the ARM implementation appears to be a no-op...
+From: Slava Pestov <slavapestov@google.com>
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+commit 364829b1263b44aa60383824e4c1289d83d78ca7 upstream.
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+The file_ops struct for the "trace" special file defined llseek as seq_lseek().
+However, if the file was opened for writing only, seq_open() was not called,
+and the seek would dereference a null pointer, file->private_data.
+
+This patch introduces a new wrapper for seq_lseek() which checks if the file
+descriptor is opened for reading first. If not, it does nothing.
+
+Signed-off-by: Slava Pestov <slavapestov@google.com>
+LKML-Reference: <1290640396-24179-1-git-send-email-slavapestov@google.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ kernel/trace/trace.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2199,11 +2199,19 @@ tracing_write_stub(struct file *filp, co
+ 	return count;
+ }
+ 
++static loff_t tracing_seek(struct file *file, loff_t offset, int origin)
++{
++	if (file->f_mode & FMODE_READ)
++		return seq_lseek(file, offset, origin);
++	else
++		return 0;
++}
++
+ static const struct file_operations tracing_fops = {
+ 	.open		= tracing_open,
+ 	.read		= seq_read,
+ 	.write		= tracing_write_stub,
+-	.llseek		= seq_lseek,
++	.llseek		= tracing_seek,
+ 	.release	= tracing_release,
+ };
+ 
+
 
