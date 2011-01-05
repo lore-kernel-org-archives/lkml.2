@@ -1,40 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752034Ab1AESOs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 13:14:48 -0500
-Received: from casper.infradead.org ([85.118.1.10]:44053 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751432Ab1AESOr convert rfc822-to-8bit (ORCPT
+	id S1752066Ab1AES0L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 13:26:11 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52211 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab1AES0J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 13:14:47 -0500
-Subject: Re: [RFC -v3 PATCH 2/3] sched: add yield_to function
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Avi Kivity <avi@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>
-In-Reply-To: <4D24A5F4.3000508@redhat.com>
-References: <20110103162637.29f23c40@annuminas.surriel.com>
-	 <20110103162918.577a9620@annuminas.surriel.com>
-	 <1294164289.2016.186.camel@laptop>  <4D24A5F4.3000508@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+	Wed, 5 Jan 2011 13:26:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=vmNBMVhE7Wz9jIO8AgCvUGgFmZi2A2Ko5Asjr2OKcpJiChuvor/Vhm5w50uGLfQoi0
+         KR/Abvpo5AUATUHDuot9NpC2eDpzRTeWQFjaXjNaoBLTeguA/Ti3Ox28kQvoSarmri9N
+         F0xZKGJyjBWSLuMJ0KvsFO+Mo72UVEtb9Hi+A=
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1101051108520.14761@router.home>
+References: <1294172717-6044-1-git-send-email-penberg@kernel.org>
+	<alpine.DEB.2.00.1101041939030.27551@chino.kir.corp.google.com>
+	<alpine.DEB.2.00.1101050943120.13032@router.home>
+	<alpine.DEB.2.00.1101051108520.14761@router.home>
+Date: Wed, 5 Jan 2011 20:26:08 +0200
+X-Google-Sender-Auth: 6CxGFlNs46tl00BMNvlzWiyMZMo
+Message-ID: <AANLkTinft80dXqE-U=YDB23d9=BgXLCxJzgiA_gF4cVL@mail.gmail.com>
+Subject: Re: [PATCH] slub: Fix sysfs circular locking dependency
+From: Pekka Enberg <penberg@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        Bart Van Assche <bart.vanassche@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Wed, 05 Jan 2011 18:15:18 +0100
-Message-ID: <1294247718.2016.269.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-05 at 19:10 +0200, Avi Kivity wrote:
-> On 01/04/2011 08:04 PM, Peter Zijlstra wrote:
-> > This definitely wants to be EXPORT_SYMBOL_GPL() and if it were possible
-> > I'd make it so only kvm.o could use it. It really sucks that kvm is a
-> > module.
-> 
-> Why does it suck?  I mean apart from the "virtualization is crap" song.
+On Wed, Jan 5, 2011 at 7:10 PM, Christoph Lameter <cl@linux.com> wrote:
+> How about this solution? In the common case of kernels without hotplug
+> support there will be no locking at all.
+>
+>
+> Subject: slub: Avoid use of slub_lock in show_slab_objects()
+>
+> The purpose of the locking is to prevent removal and additions
+> of nodes when statistics are gathered for a slab cache. So we
+> need to avoid racing with memory hotplug functionality.
+>
+> It is enough to take the memory hotplug locks there instead
+> of the slub_lock.
+>
+>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+>
+> ---
+>  mm/slub.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> Index: linux-2.6/mm/slub.c
+> ===================================================================
+> --- linux-2.6.orig/mm/slub.c    2011-01-05 09:55:34.000000000 -0600
+> +++ linux-2.6/mm/slub.c 2011-01-05 09:56:27.000000000 -0600
+> @@ -3821,7 +3821,7 @@ static ssize_t show_slab_objects(struct
+>                }
+>        }
+>
+> -       down_read(&slub_lock);
+> +       lock_memory_hotplug();
+>  #ifdef CONFIG_SLUB_DEBUG
+>        if (flags & SO_ALL) {
+>                for_each_node_state(node, N_NORMAL_MEMORY) {
+> @@ -3862,7 +3862,7 @@ static ssize_t show_slab_objects(struct
+>                        x += sprintf(buf + x, " N%d=%lu",
+>                                        node, nodes[node]);
+>  #endif
+> -       up_read(&slub_lock);
+> +       unlock_memory_hotplug();
+>        kfree(nodes);
+>        return x + sprintf(buf + x, "\n");
+>  }
 
-Because it needs hooks all over the core kernel, like this yield_to()
-stuff. Exporting this might lead to others wanting to use it too.
+Makes sense. Bart, does this fix the problem for you?
