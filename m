@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751456Ab1AEREV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 12:04:21 -0500
-Received: from casper.infradead.org ([85.118.1.10]:35822 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab1AERES (ORCPT
+	id S1751682Ab1AERE1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 12:04:27 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:59249 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751603Ab1AERE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 12:04:18 -0500
+	Wed, 5 Jan 2011 12:04:26 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -15,13 +15,13 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 4/5] perf script: Use the default lost event handler
-Date: Wed,  5 Jan 2011 15:04:05 -0200
-Message-Id: <1294247046-32352-5-git-send-email-acme@infradead.org>
+Subject: [PATCH 1/5] perf test: Clarify some error reports in the open syscall test
+Date: Wed,  5 Jan 2011 15:04:02 -0200
+Message-Id: <1294247046-32352-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1294247046-32352-1-git-send-email-acme@infradead.org>
 References: <1294247046-32352-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,8 +29,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-That already does what was being done here. The warning is now unconditionally
-given by __perf_session__process_pipe_events, just like for non pipe processing.
+Rebooted my devel machine, first thing I ran was perf test, that expects
+debugfs to be mounted, test fails. Be more clear about it.
+
+Also add missing newlines and add more informative message when
+sys_perf_event_open fails.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -42,50 +45,63 @@ Cc: Tom Zanussi <tzanussi@gmail.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-script.c |   15 +--------------
- 1 files changed, 1 insertions(+), 14 deletions(-)
+ tools/perf/builtin-test.c |   18 +++++++++++-------
+ 1 files changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 43480fd..27d568d 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -99,16 +99,6 @@ static int process_sample_event(event_t *event, struct sample_data *sample,
- 	return 0;
- }
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 6c99152..1c98434 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -268,24 +268,26 @@ static int test__open_syscall_event(void)
+ 	int id = trace_event__id("sys_enter_open");
  
--static u64 nr_lost;
--
--static int process_lost_event(event_t *event, struct sample_data *sample __used,
--			      struct perf_session *session __used)
--{
--	nr_lost += event->lost.lost;
--
--	return 0;
--}
--
- static struct perf_event_ops event_ops = {
- 	.sample	= process_sample_event,
- 	.comm	= event__process_comm,
-@@ -116,7 +106,6 @@ static struct perf_event_ops event_ops = {
- 	.event_type = event__process_event_type,
- 	.tracing_data = event__process_tracing_data,
- 	.build_id = event__process_build_id,
--	.lost = process_lost_event,
- 	.ordering_requires_timestamps = true,
- 	.ordered_samples = true,
- };
-@@ -136,10 +125,8 @@ static int __cmd_script(struct perf_session *session)
+ 	if (id < 0) {
+-		pr_debug("trace_event__id(\"sys_enter_open\") ");
++		pr_debug("is debugfs mounted on /sys/kernel/debug?\n");
+ 		return -1;
+ 	}
  
- 	ret = perf_session__process_events(session, &event_ops);
+ 	threads = thread_map__new(-1, getpid());
+ 	if (threads == NULL) {
+-		pr_debug("thread_map__new ");
++		pr_debug("thread_map__new\n");
+ 		return -1;
+ 	}
  
--	if (debug_mode) {
-+	if (debug_mode)
- 		pr_err("Misordered timestamps: %llu\n", nr_unordered);
--		pr_err("Lost events: %llu\n", nr_lost);
--	}
+ 	evsel = perf_evsel__new(PERF_TYPE_TRACEPOINT, id, 0);
+ 	if (evsel == NULL) {
+-		pr_debug("perf_evsel__new ");
++		pr_debug("perf_evsel__new\n");
+ 		goto out_thread_map_delete;
+ 	}
  
- 	return ret;
- }
+ 	if (perf_evsel__open_per_thread(evsel, threads) < 0) {
+-		pr_debug("perf_evsel__open_per_thread ");
++		pr_debug("failed to open counter: %s, "
++			 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
++			 strerror(errno));
+ 		goto out_evsel_delete;
+ 	}
+ 
+@@ -295,13 +297,15 @@ static int test__open_syscall_event(void)
+ 	}
+ 
+ 	if (perf_evsel__read_on_cpu(evsel, 0, 0) < 0) {
+-		pr_debug("perf_evsel__open_read_on_cpu ");
++		pr_debug("perf_evsel__open_read_on_cpu\n");
+ 		goto out_close_fd;
+ 	}
+ 
+-	if (evsel->counts->cpu[0].val != nr_open_calls)
+-		pr_debug("perf_evsel__read_on_cpu: expected to intercept %d calls, got %Ld ",
++	if (evsel->counts->cpu[0].val != nr_open_calls) {
++		pr_debug("perf_evsel__read_on_cpu: expected to intercept %d calls, got %Ld\n",
+ 			 nr_open_calls, evsel->counts->cpu[0].val);
++		goto out_close_fd;
++	}
+ 	
+ 	err = 0;
+ out_close_fd:
 -- 
 1.6.2.5
 
