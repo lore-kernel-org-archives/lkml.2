@@ -1,237 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198Ab1AENBx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 08:01:53 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:51488 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752122Ab1AENBw convert rfc822-to-8bit (ORCPT
+	id S1752209Ab1AENDv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 08:03:51 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:55121 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751925Ab1AENDu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 08:01:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=UgbwuDdBsgeDfhOBIU7GYqwQOLRk9H03HBbgBk33UhKfgjpES1pX5RAutwXx9da2nZ
-         8FFYjJOKYwmcHB/bl0Bw==
-MIME-Version: 1.0
-In-Reply-To: <1294226618.2016.259.camel@laptop>
-References: <4d2205a1.8b02e30a.3541.ffff8aee@mx.google.com>
-	<1294226618.2016.259.camel@laptop>
-Date: Wed, 5 Jan 2011 14:01:48 +0100
-Message-ID: <AANLkTin_NMwsymSaTaCkuMmkQ91YbW3VChhc2Mx41KN5@mail.gmail.com>
-Subject: Re: [PATCH 4/5] perf_events: add cgroup support (v7)
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
-        eranian@gmail.com, robert.richter@amd.com, acme@redhat.com,
-        lizf@cn.fujitsu.com
-Content-Type: text/plain; charset=UTF-8
+	Wed, 5 Jan 2011 08:03:50 -0500
+From: "Nori, Sekhar" <nsekhar@ti.com>
+To: Marc Kleine-Budde <mkl@pengutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Wed, 5 Jan 2011 18:32:58 +0530
+Subject: RE: still nfs problems [Was: Linux 2.6.37-rc8]
+Thread-Topic: still nfs problems [Was: Linux 2.6.37-rc8]
+Thread-Index: Acus0ofAKTAQtknsTbqIDIgmFbQ4UAAA1TIw
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB5930248201279@dbde02.ent.ti.com>
+References: <20101230171453.GA5787@pengutronix.de>
+	<1293731992.4919.5.camel@heimdal.trondhjem.org>
+	<20101230191846.GB14221@pengutronix.de>
+	<20110103213850.GC25121@pengutronix.de>
+	<1294100558.25100.8.camel@heimdal.trondhjem.org>
+	<20110105084014.GN25121@pengutronix.de>
+	<20110105110517.GQ25121@pengutronix.de>
+	<20110105112701.GA8638@n2100.arm.linux.org.uk>
+ <4D246098.50908@pengutronix.de>
+In-Reply-To: <4D246098.50908@pengutronix.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 5, 2011 at 12:23 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2011-01-03 at 18:20 +0200, Stephane Eranian wrote:
->
->> +#ifdef CONFIG_CGROUP_PERF
->> +/*
->> + * perf_cgroup_info keeps track of time_enabled for a cgroup.
->> + * This is a per-cpu dynamically allocated data structure.
->> + */
->> +struct perf_cgroup_info {
->> +     u64 time;
->> +     u64 timestamp;
->> +};
->> +
->> +struct perf_cgroup {
->> +     struct cgroup_subsys_state css;
->> +     struct perf_cgroup_info *info;  /* timing info, one per cpu */
->
-> I think 'they' want a __percpu annotation there.
->
-Ok, I can fix this.
+On Wed, Jan 05, 2011 at 17:44:16, Marc Kleine-Budde wrote:
+> On 01/05/2011 12:27 PM, Russell King - ARM Linux wrote:
+> > On Wed, Jan 05, 2011 at 12:05:17PM +0100, Uwe Kleine-K�nig wrote:
+> >> Hello Trond,
+> >>
+> >> On Wed, Jan 05, 2011 at 09:40:14AM +0100, Uwe Kleine-K�nig wrote:
+> >>> On Mon, Jan 03, 2011 at 07:22:38PM -0500, Trond Myklebust wrote:
+> >>>> The question is whether this is something happening on the server or the
+> >>>> client. Does an older client kernel boot without any trouble?
+> >>> I will set up a boot test with 2.6.37 (for statistics) and 2.6.36 to
+> >>> compare with.  If you don't consider .36 to be old enough let me now.
+> >>> Once the setup is done it should be easy to test .35 (say), too.
+> >>>
+> >> Marc (cc'd) saw similar[1] problems with .37, when using .36.2 the
+> >> problems didn't occur.  This was more reliable to trigger and he was so
+> >> kind to bisect the problem.
+> >>
+> >> When testing v2.6.36-rc3-51-gafa8ccc init hanged.
+> >> (babddc72a9468884ce1a23db3c3d54b0afa299f0 is the first bad commit with
+> >> this hang.)  Commit 56e4ebf877b6043c289bda32a5a7385b80c17dee makes the
+> >> "init hangs" problem the "fileid changed on tab" problem.
+> >>
+> >> I could only reproduce that on armv5 machines (imx27, imx28 and at91)
+> >> but not on armv6 (imx35).
+> > 
+> > FYI, I've seen the "fileid changed" problem, and it looked like a 32-bit
+> > truncation of the fileid.  It occurred several times on successive
+> > reboots, so I tried to capture a tcpdump trace off the server (Linux
+> > 2.6.23-rc8-ga64314e6 - its ancient because I've had issues with buggy
+> > IDE drivers trying to move it forward.)  However, for the last couple
+> > of weeks I've been unable to reproduce it.
+> 
+> We have the problem with nfs-root. From the kernel command line:
+> 
+> root=/dev/nfs
+> nfsroot=192.168.23.2:/home/mkl/pengutronix/xxx/bsp/OSELAS.BSP-xxx-Grabowski-trunk/platform-Ronetix-PM9263/root,v3,tcp
+> 
+> /home/mkl/pengutronix is a link which points to a link
+> /ptx/work/octopus/mkl (which is a ext3-based) which points to
+> WORK_1/mkl which is also ext3-based.
+> 
+> The server is 2.6.32 and has been rebooted yesterday :), nfs-utils are
+> 1.2.2. I make a tcpdump if needed.
 
->> +};
->> +#endif
->
->
->> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
->> index b782b7a..905b91a 100644
->> --- a/kernel/perf_event.c
->> +++ b/kernel/perf_event.c
->
->
->> +static inline void __update_cgrp_time(struct perf_cgroup *cgrp)
->> +{
->> +     struct perf_cgroup_info *t;
->> +     u64 now;
->> +
->> +     now = perf_clock();
->> +
->> +     t = per_cpu_ptr(cgrp->info, smp_processor_id());
->
->  this_cpu_ptr(cgrp->info);
->
-Fixed.
+I see the issue too with an ARMv5 based DM355 board with the just released
+v2.6.37 tag (nfs client). I too see the issue when using bash tab completion.
 
->> +
->> +     t->time += now - t->timestamp;
->> +     t->timestamp = now;
->> +}
->
->
->> +static inline void
->> +perf_cgroup_set_timestamp(struct task_struct *task, u64 now)
->> +{
->> +     struct perf_cgroup *cgrp;
->> +     struct perf_cgroup_info *info;
->> +
->> +     if (!task)
->> +             return;
->> +
->> +     cgrp = perf_cgroup_from_task(task);
->> +     info = per_cpu_ptr(cgrp->info, smp_processor_id());
->
->  this_cpu_ptr();
->
-Fixed.
+Here are some logs:
 
->> +     info->timestamp = now;
->> +}
->> +
->
->> +/*
->> + * called from perf_event_ask_sched_out() conditional to jump label
->> + */
->> +void
->> +perf_cgroup_switch(struct task_struct *task, struct task_struct *next)
->> +{
->> +     struct perf_cgroup *cgrp_out = perf_cgroup_from_task(task);
->> +     struct perf_cgroup *cgrp_in = perf_cgroup_from_task(next);
->> +     struct perf_cpu_context *cpuctx;
->> +     struct pmu *pmu;
->> +     /*
->> +      * if task is DEAD, then css_out is irrelevant, it has
->> +      * been changed to init_cgrp in cgroup_exit() from do_exit().
->> +      * Furthermore, perf_cgroup_exit_task(), has scheduled out
->> +      * all css constrained events, only unconstrained events
->> +      * remain. Therefore we need to reschedule based on css_in.
->> +      */
->> +     if (task->state != TASK_DEAD && cgrp_out == cgrp_in)
->> +             return;
->
-> I think that check is broken, TASK_DEAD is set way after calling
-> cgroup_exit(), so if we get preempted in between there you'll still go
-> funny.
->
-> We do set PF_EXITING before calling cgroup_exit() though.
->
-Switched to PF_EXITING. Thanks for catching this one.
+fileid changed fsid 0:c: expected fileid 0x2db61d, got 0x2dad20
 
->> +     rcu_read_lock();
->> +
->> +     list_for_each_entry_rcu(pmu, &pmus, entry) {
->> +
->> +             cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
->> +
->> +             perf_pmu_disable(cpuctx->ctx.pmu);
->> +
->> +             /*
->> +              * perf_cgroup_events says at least one
->> +              * context on this CPU has cgroup events.
->> +              *
->> +              * ctx->nr_cgroups reports the number of cgroup
->> +              * events for a context. Given there can be multiple
->> +              * PMUs, there can be multiple contexts.
->> +              */
->> +             if (cpuctx->ctx.nr_cgroups > 0) {
->> +                     /*
->> +                      * schedule out everything we have
->> +                      * task == DEAD: only unconstrained events
->> +                      * task != DEAD: css constrained + unconstrained events
->> +                      *
->
-> Does this comment want an update? As per the above (broken) check, we
-> should never get here for DEAD tasks, hmm?
->
-Updated.
+fileid changed fsid 0:c: expected fileid 0x100000000000, got 0x7070000000000000
 
->> +                      * We kick out all events (even if unconstrained)
->> +                      * to allow the constrained events to be scheduled
->> +                      * based on their position in the event list (fairness)
->> +                      */
->> +                     cpu_ctx_sched_out(cpuctx, EVENT_ALL);
->> +                     /*
->> +                      * reschedule css_in constrained + unconstrained events
->> +                      */
->> +                     cpu_ctx_sched_in(cpuctx, EVENT_ALL, next, 1);
->> +             }
->> +
->> +             perf_pmu_enable(cpuctx->ctx.pmu);
->> +     }
->> +
->> +     rcu_read_unlock();
->> +}
->> +
->> +static inline void
->
-> Copy/paste fail?
->
->> +perf_cgroup_exit_task(struct task_struct *task)
->> +{
->
->> +}
->> +
-Dropped this one which is useless.
+I am using Fedora 8 (2.6.25 kernel) on the server side. I will try the latest
+Ubuntu release on the server side and test.
 
->
-> +static inline int perf_cgroup_connect(int fd, struct perf_event *event,
->> +                                   struct perf_event_attr *attr,
->> +                                   struct perf_event *group_leader)
->
-> Again, do we really need this 'inline' ?
->
-Not really.
+Thanks,
+Sekhar
 
->> +{
->> +     struct perf_cgroup *cgrp;
->> +     struct cgroup_subsys_state *css;
->> +     struct file *file;
->> +     int ret = 0, fput_needed;
->> +
->> +     file = fget_light(fd, &fput_needed);
->> +     if (!file)
->> +             return -EBADF;
->> +
->> +     css = cgroup_css_from_dir(file, perf_subsys_id);
->> +     if (IS_ERR(css))
->> +             return PTR_ERR(css);
->> +
->> +     cgrp = container_of(css, struct perf_cgroup, css);
->> +     event->cgrp = cgrp;
->
->
-> If we do that perf_get_cgroup() here (unconditional).
->
-That is exactly what I did in my revised patch.
-
->> +     /*
->> +      * all events in a group must monitor
->> +      * the same cgroup because a thread belongs
->> +      * to only one perf cgroup at a time
->> +      */
->> +     if (group_leader && group_leader->cgrp != cgrp) {
->> +             perf_detach_cgroup(event);
->> +             ret = -EINVAL;
->> +     } else {
->> +             /* must be done before we fput() the file */
->> +             perf_get_cgroup(event);
->> +     }
->
-> Then you can have that conditional perf_detach_cgroup() here, right?
-
-Thanks.
-Will resubmit just this patch.
