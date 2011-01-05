@@ -1,130 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678Ab1AETrb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 14:47:31 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:21297 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369Ab1AETr3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 14:47:29 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6217"; a="69168215"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] arm: mm: Poison freed init memory
-Date: Wed,  5 Jan 2011 11:47:25 -0800
-Message-Id: <1294256845-29517-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.4.rc0
+	id S1752654Ab1AETuD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 14:50:03 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51142 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752250Ab1AETuA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 14:50:00 -0500
+MIME-Version: 1.0
+In-Reply-To: <1294256169.16957.18.camel@mulgrave.site>
+References: <1294254337.16957.13.camel@mulgrave.site> <AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com>
+ <1294256169.16957.18.camel@mulgrave.site>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 5 Jan 2011 11:49:12 -0800
+Message-ID: <AANLkTik214sj_wBJXhJMLRie34moG7ET1Xg62oQXsgxb@mail.gmail.com>
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Poisoning __init marked memory can be useful when tracking down
-obscure memory corruption bugs. When a pointer is 0xCCCCCCCC in an
-oops it's much more obvious that somebody is using __init marked
-memory after kernel initialization. This should help find
-incorrect __init markings earlier and mimics what other
-architectures are doing already.
+2011/1/5 James Bottomley <James.Bottomley@hansenpartnership.com>:
+>>
+>> No, we really can't do that. Most of the time, the kmap() is the only
+>> way we access the page anyway, so flushing things would just be
+>> stupid. Why waste time and energy on doing something pointless?
+>
+> It's hardly pointless.  The kmap sets up an inequivalent alias in the
+> cache.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
+NO IT DOES NOT.
 
-This is a minimal patch to get the idea across. I'm tempted to duplicate
-free_area() and rename it to free_init_area() and then have it take virtual
-addresses instead of pfns. Then the call sites could be cleaned up to pass
-virtual addresses in the case of init memory, and we could remove the NULL
-argument for the highpages and DMA users. Thoughts?
+Stop arguing, when you are so wrong.
 
- arch/arm/mm/init.c |   20 +++++++++++++-------
- 1 files changed, 13 insertions(+), 7 deletions(-)
+kmap() does not create any aliases. For low-memory, it just returns
+the physical address. No alias. And for high memory, there is no
+equivalent low memory address to alias _with_.
 
-diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index 5164069..b7535ec 100644
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -19,6 +19,7 @@
- #include <linux/gfp.h>
- #include <linux/memblock.h>
- #include <linux/sort.h>
-+#include <linux/poison.h>
- 
- #include <asm/mach-types.h>
- #include <asm/sections.h>
-@@ -358,7 +359,8 @@ void __init bootmem_init(void)
- 	max_pfn = max_high - PHYS_PFN_OFFSET;
- }
- 
--static inline int free_area(unsigned long pfn, unsigned long end, char *s)
-+static inline int free_area(unsigned long pfn, unsigned long end, char *s,
-+		bool init_mem)
- {
- 	unsigned int pages = 0, size = (end - pfn) << (PAGE_SHIFT - 10);
- 
-@@ -366,6 +368,9 @@ static inline int free_area(unsigned long pfn, unsigned long end, char *s)
- 		struct page *page = pfn_to_page(pfn);
- 		ClearPageReserved(page);
- 		init_page_count(page);
-+		if (init_mem)
-+			memset(__va(__pfn_to_phys(pfn)), POISON_FREE_INITMEM,
-+					PAGE_SIZE);
- 		__free_page(page);
- 		pages++;
- 	}
-@@ -472,7 +477,7 @@ static void __init free_highpages(void)
- 				res_end = end;
- 			if (res_start != start)
- 				totalhigh_pages += free_area(start, res_start,
--							     NULL);
-+							     NULL, false);
- 			start = res_end;
- 			if (start == end)
- 				break;
-@@ -480,7 +485,7 @@ static void __init free_highpages(void)
- 
- 		/* And now free anything which remains */
- 		if (start < end)
--			totalhigh_pages += free_area(start, end, NULL);
-+			totalhigh_pages += free_area(start, end, NULL, false);
- 	}
- 	totalram_pages += totalhigh_pages;
- #endif
-@@ -512,7 +517,8 @@ void __init mem_init(void)
- #ifdef CONFIG_SA1111
- 	/* now that our DMA memory is actually so designated, we can free it */
- 	totalram_pages += free_area(PHYS_PFN_OFFSET,
--				    __phys_to_pfn(__pa(swapper_pg_dir)), NULL);
-+				    __phys_to_pfn(__pa(swapper_pg_dir)), NULL,
-+				    false);
- #endif
- 
- 	free_highpages();
-@@ -644,13 +650,13 @@ void free_initmem(void)
- 
- 	totalram_pages += free_area(__phys_to_pfn(__pa(&__tcm_start)),
- 				    __phys_to_pfn(__pa(&__tcm_end)),
--				    "TCM link");
-+				    "TCM link", true);
- #endif
- 
- 	if (!machine_is_integrator() && !machine_is_cintegrator())
- 		totalram_pages += free_area(__phys_to_pfn(__pa(__init_begin)),
- 					    __phys_to_pfn(__pa(__init_end)),
--					    "init");
-+					    "init", true);
- }
- 
- #ifdef CONFIG_BLK_DEV_INITRD
-@@ -662,7 +668,7 @@ void free_initrd_mem(unsigned long start, unsigned long end)
- 	if (!keep_initrd)
- 		totalram_pages += free_area(__phys_to_pfn(__pa(start)),
- 					    __phys_to_pfn(__pa(end)),
--					    "initrd");
-+					    "initrd", true);
- }
- 
- static int __init keepinitrd_setup(char *__unused)
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Now, when you actually mix multiple kmap's and you have a virtually
+based cache, then the kmap's obviously need to flush that particular
+page when switching between each other. But that has nothing to do
+with the actual page being kmap'ed, it's entirely an internal issue
+about the particular virtual memory area being re-used. And ARM (and
+any other virtually based CPU) already does that in __kunmap_atomic().
 
+But notice the case of the low-mem. And understand that you are WRONG
+about the "inequivalent alias" thing.
+
+So I repeat: this has absolutely *NOTHING* to do with kmap(). Stop blathering.
+
+It's _purely_ an issue of vm_map_ram(). Nothing else.
+
+                          Linus
