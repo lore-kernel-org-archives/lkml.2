@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772Ab1AEXpw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:45:52 -0500
-Received: from kroah.org ([198.145.64.141]:41139 "EHLO coco.kroah.org"
+	id S1753806Ab1AEXqM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:46:12 -0500
+Received: from kroah.org ([198.145.64.141]:41132 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753731Ab1AEXpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:45:31 -0500
+	id S1753728Ab1AEXpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 18:45:30 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 15:03:28 2011
-Message-Id: <20110105230328.410867452@clark.site>
+Message-Id: <20110105230328.313555307@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 15:01:07 -0800
+Date: Wed, 05 Jan 2011 15:01:06 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [49/49] posix-cpu-timers: workaround to suppress the problems with mt exec
+        Vlad Yasevich <vladislav.yasevich@hp.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [48/49] sctp: Fix a race between ICMP protocol unreachable and connect()
 In-Reply-To: <20110105234415.GA22369@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,61 +26,178 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Vlad Yasevich <vladislav.yasevich@hp.com>
 
-commit e0a70217107e6f9844628120412cb27bb4cea194 upstream.
+commit 50b5d6ad63821cea324a5a7a19854d4de1a0a819 upstream.
 
-posix-cpu-timers.c correctly assumes that the dying process does
-posix_cpu_timers_exit_group() and removes all !CPUCLOCK_PERTHREAD
-timers from signal->cpu_timers list.
+ICMP protocol unreachable handling completely disregarded
+the fact that the user may have locked the socket.  It proceeded
+to destroy the association, even though the user may have
+held the lock and had a ref on the association.  This resulted
+in the following:
 
-But, it also assumes that timer->it.cpu.task is always the group
-leader, and thus the dead ->task means the dead thread group.
+Attempt to release alive inet socket f6afcc00
 
-This is obviously not true after de_thread() changes the leader.
-After that almost every posix_cpu_timer_ method has problems.
+=========================
+[ BUG: held lock freed! ]
+-------------------------
+somenu/2672 is freeing memory f6afcc00-f6afcfff, with a lock still held
+there!
+ (sk_lock-AF_INET){+.+.+.}, at: [<c122098a>] sctp_connect+0x13/0x4c
+1 lock held by somenu/2672:
+ #0:  (sk_lock-AF_INET){+.+.+.}, at: [<c122098a>] sctp_connect+0x13/0x4c
 
-It is not simple to fix this bug correctly. First of all, I think
-that timer->it.cpu should use struct pid instead of task_struct.
-Also, the locking should be reworked completely. In particular,
-tasklist_lock should not be used at all. This all needs a lot of
-nontrivial and hard-to-test changes.
+stack backtrace:
+Pid: 2672, comm: somenu Not tainted 2.6.32-telco #55
+Call Trace:
+ [<c1232266>] ? printk+0xf/0x11
+ [<c1038553>] debug_check_no_locks_freed+0xce/0xff
+ [<c10620b4>] kmem_cache_free+0x21/0x66
+ [<c1185f25>] __sk_free+0x9d/0xab
+ [<c1185f9c>] sk_free+0x1c/0x1e
+ [<c1216e38>] sctp_association_put+0x32/0x89
+ [<c1220865>] __sctp_connect+0x36d/0x3f4
+ [<c122098a>] ? sctp_connect+0x13/0x4c
+ [<c102d073>] ? autoremove_wake_function+0x0/0x33
+ [<c12209a8>] sctp_connect+0x31/0x4c
+ [<c11d1e80>] inet_dgram_connect+0x4b/0x55
+ [<c11834fa>] sys_connect+0x54/0x71
+ [<c103a3a2>] ? lock_release_non_nested+0x88/0x239
+ [<c1054026>] ? might_fault+0x42/0x7c
+ [<c1054026>] ? might_fault+0x42/0x7c
+ [<c11847ab>] sys_socketcall+0x6d/0x178
+ [<c10da994>] ? trace_hardirqs_on_thunk+0xc/0x10
+ [<c1002959>] syscall_call+0x7/0xb
 
-Change __exit_signal() to do posix_cpu_timers_exit_group() when
-the old leader dies during exec. This is not the fix, just the
-temporary hack to hide the problem for 2.6.37 and stable. IOW,
-this is obviously wrong but this is what we currently have anyway:
-cpu timers do not work after mt exec.
+This was because the sctp_wait_for_connect() would aqcure the socket
+lock and then proceed to release the last reference count on the
+association, thus cause the fully destruction path to finish freeing
+the socket.
 
-In theory this change adds another race. The exiting leader can
-detach the timers which were attached to the new leader. However,
-the window between de_thread() and release_task() is small, we
-can pretend that sys_timer_create() was called before de_thread().
+The simplest solution is to start a very short timer in case the socket
+is owned by user.  When the timer expires, we can do some verification
+and be able to do the release properly.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Vlad Yasevich <vladislav.yasevich@hp.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/exit.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ include/net/sctp/sm.h      |    1 +
+ include/net/sctp/structs.h |    3 +++
+ net/sctp/input.c           |   22 ++++++++++++++++++----
+ net/sctp/sm_sideeffect.c   |   35 +++++++++++++++++++++++++++++++++++
+ net/sctp/transport.c       |    2 ++
+ 5 files changed, 59 insertions(+), 4 deletions(-)
 
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -92,6 +92,14 @@ static void __exit_signal(struct task_st
- 		posix_cpu_timers_exit_group(tsk);
- 	else {
- 		/*
-+		 * This can only happen if the caller is de_thread().
-+		 * FIXME: this is the temporary hack, we should teach
-+		 * posix-cpu-timers to handle this case correctly.
-+		 */
-+		if (unlikely(has_group_leader_pid(tsk)))
-+			posix_cpu_timers_exit_group(tsk);
+--- a/include/net/sctp/sm.h
++++ b/include/net/sctp/sm.h
+@@ -278,6 +278,7 @@ int sctp_do_sm(sctp_event_t event_type,
+ /* 2nd level prototypes */
+ void sctp_generate_t3_rtx_event(unsigned long peer);
+ void sctp_generate_heartbeat_event(unsigned long peer);
++void sctp_generate_proto_unreach_event(unsigned long peer);
+ 
+ void sctp_ootb_pkt_free(struct sctp_packet *);
+ 
+--- a/include/net/sctp/structs.h
++++ b/include/net/sctp/structs.h
+@@ -1008,6 +1008,9 @@ struct sctp_transport {
+ 	/* Heartbeat timer is per destination. */
+ 	struct timer_list hb_timer;
+ 
++	/* Timer to handle ICMP proto unreachable envets */
++	struct timer_list proto_unreach_timer;
 +
-+		/*
- 		 * If there is any task waiting for the group exit
- 		 * then notify it:
- 		 */
+ 	/* Since we're using per-destination retransmission timers
+ 	 * (see above), we're also using per-destination "transmitted"
+ 	 * queues.  This probably ought to be a private struct
+--- a/net/sctp/input.c
++++ b/net/sctp/input.c
+@@ -427,11 +427,25 @@ void sctp_icmp_proto_unreachable(struct
+ {
+ 	SCTP_DEBUG_PRINTK("%s\n",  __func__);
+ 
+-	sctp_do_sm(SCTP_EVENT_T_OTHER,
+-		   SCTP_ST_OTHER(SCTP_EVENT_ICMP_PROTO_UNREACH),
+-		   asoc->state, asoc->ep, asoc, t,
+-		   GFP_ATOMIC);
++	if (sock_owned_by_user(sk)) {
++		if (timer_pending(&t->proto_unreach_timer))
++			return;
++		else {
++			if (!mod_timer(&t->proto_unreach_timer,
++						jiffies + (HZ/20)))
++				sctp_association_hold(asoc);
++		}
++
++	} else {
++		if (timer_pending(&t->proto_unreach_timer) &&
++		    del_timer(&t->proto_unreach_timer))
++			sctp_association_put(asoc);
+ 
++		sctp_do_sm(SCTP_EVENT_T_OTHER,
++			   SCTP_ST_OTHER(SCTP_EVENT_ICMP_PROTO_UNREACH),
++			   asoc->state, asoc->ep, asoc, t,
++			   GFP_ATOMIC);
++	}
+ }
+ 
+ /* Common lookup code for icmp/icmpv6 error handler. */
+--- a/net/sctp/sm_sideeffect.c
++++ b/net/sctp/sm_sideeffect.c
+@@ -397,6 +397,41 @@ out_unlock:
+ 	sctp_transport_put(transport);
+ }
+ 
++/* Handle the timeout of the ICMP protocol unreachable timer.  Trigger
++ * the correct state machine transition that will close the association.
++ */
++void sctp_generate_proto_unreach_event(unsigned long data)
++{
++	struct sctp_transport *transport = (struct sctp_transport *) data;
++	struct sctp_association *asoc = transport->asoc;
++
++	sctp_bh_lock_sock(asoc->base.sk);
++	if (sock_owned_by_user(asoc->base.sk)) {
++		SCTP_DEBUG_PRINTK("%s:Sock is busy.\n", __func__);
++
++		/* Try again later.  */
++		if (!mod_timer(&transport->proto_unreach_timer,
++				jiffies + (HZ/20)))
++			sctp_association_hold(asoc);
++		goto out_unlock;
++	}
++
++	/* Is this structure just waiting around for us to actually
++	 * get destroyed?
++	 */
++	if (asoc->base.dead)
++		goto out_unlock;
++
++	sctp_do_sm(SCTP_EVENT_T_OTHER,
++		   SCTP_ST_OTHER(SCTP_EVENT_ICMP_PROTO_UNREACH),
++		   asoc->state, asoc->ep, asoc, transport, GFP_ATOMIC);
++
++out_unlock:
++	sctp_bh_unlock_sock(asoc->base.sk);
++	sctp_association_put(asoc);
++}
++
++
+ /* Inject a SACK Timeout event into the state machine.  */
+ static void sctp_generate_sack_event(unsigned long data)
+ {
+--- a/net/sctp/transport.c
++++ b/net/sctp/transport.c
+@@ -108,6 +108,8 @@ static struct sctp_transport *sctp_trans
+ 			(unsigned long)peer);
+ 	setup_timer(&peer->hb_timer, sctp_generate_heartbeat_event,
+ 			(unsigned long)peer);
++	setup_timer(&peer->proto_unreach_timer,
++		    sctp_generate_proto_unreach_event, (unsigned long)peer);
+ 
+ 	/* Initialize the 64-bit random nonce sent with heartbeat. */
+ 	get_random_bytes(&peer->hb_nonce, sizeof(peer->hb_nonce));
 
 
