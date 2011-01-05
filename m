@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751231Ab1AEDRL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 22:17:11 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:40987 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010Ab1AEDRJ (ORCPT
+	id S1751309Ab1AEDUL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 22:20:11 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:18181 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750895Ab1AEDUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 22:17:09 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC -v3 PATCH 2/3] sched: add yield_to function
-Cc: kosaki.motohiro@jp.fujitsu.com, Rik van Riel <riel@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Avi Kiviti <avi@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>
-In-Reply-To: <1294161399.2016.175.camel@laptop>
-References: <20110104151345.3BC2.A69D9226@jp.fujitsu.com> <1294161399.2016.175.camel@laptop>
-Message-Id: <20110105120219.B639.A69D9226@jp.fujitsu.com>
+	Tue, 4 Jan 2011 22:20:10 -0500
+Message-ID: <4D23E315.9060900@oracle.com>
+Date: Wed, 05 Jan 2011 11:18:45 +0800
+From: DuanZhenzhong <zhenzhong.duan@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Thunderbird 2.0.0.24 (X11/20101209)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
+To: Jeff Garzik <jeff@garzik.org>
+CC: James Bottomley <James.Bottomley@suse.de>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: declare MODULE_FIRMWARE in libsas
+References: <4D22CF9F.1070005@oracle.com> <1294150132.4726.0.camel@mulgrave.site> <4D235CAC.5070309@garzik.org>
+In-Reply-To: <4D235CAC.5070309@garzik.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed,  5 Jan 2011 12:17:02 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> NAK NAK NAK, yield_to is utter crap, and the only reason kvm 'needs' it
-> is because its wants to be utter crap (run unmodified guests).
-> 
-> There is plenty of sane serialization primitives for userspace, fix your
-> locking mess instead of pushing crap.
-> 
-> The only reason I'm maybe half-way considering this is because its a
-> pure in-kernel interface which we can 'fix' once unmodified guests
-> aren't important anymore.
-
-KVM also have slow and inefficient mecanism. Userspace have a lot of
-slow primitives too.
-
-But okey, I'm withdraw this claim even though I disagree userspace have
-plenty of sane serialization. It's offtopic and we need more discuss
-at proper place.
-
-Thanks.
-
-
+Jeff Garzik 写道:
+> On 01/04/2011 09:08 AM, James Bottomley wrote:
+>> On Tue, 2011-01-04 at 15:43 +0800, DuanZhenzhong wrote:
+>>> Signed-off-by: Zhenzhong Duan<zhenzhong.duan@oracle.com>
+>>>
+>>> ---
+>>
+>> Description?  Since libsas has no firmware, surely some explanation is
+>> required.
+>
+> Indeed.  Looks bogus at first glance?
+>
+>
+I was finding all requested but not exported firmware in scsi driver for 
+generating dump initrd use.
+In sas_scsi_host.c, request_firmware is called with "sas_addr", sas_addr 
+neither builtin nor exported. Don't sas_addr a firmware? Please correct 
+me. thanks
 
