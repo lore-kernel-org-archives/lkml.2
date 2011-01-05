@@ -1,112 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029Ab1AETnZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 14:43:25 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:55265 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360Ab1AETnY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 14:43:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ayB5zOaxvRWqHjbOEVE8acA8ZkPmx0EoOWfviSgqQvw0PuO+5XeIX0NZV/njct98Pt
-         ZXaaOumvydLDhT2VmXVRq1Q7tSradHbXt7cbfTa7Alj5OG1rTuleAAMdXVYdx6gYtElz
-         8fKUQWCy/0N6RHzrVJ3MKdseGgcfu0sEUoH0U=
+	id S1752626Ab1AETpW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 14:45:22 -0500
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:57281 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751379Ab1AETpV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 14:45:21 -0500
 MIME-Version: 1.0
-In-Reply-To: <20110104214008.GH27727@hostway.ca>
-References: <20101208212505.GA18192@hostway.ca>
-	<20101218010801.GE28367@hostway.ca>
-	<20101229220313.GA13688@hostway.ca>
-	<AANLkTinq074Q-B=5B4_aXuBm-3ELwGknsJv+OvS1z1OX@mail.gmail.com>
-	<20110104214008.GH27727@hostway.ca>
-Date: Wed, 5 Jan 2011 11:43:23 -0800
-Message-ID: <AANLkTim6HoN5+m180-Du+oda+6N49qSaGga6ktMPV4U4@mail.gmail.com>
-Subject: Re: System CPU increasing on idle 2.6.36
-From: Mark Moseley <moseleymark@gmail.com>
-To: Simon Kirby <sim@hostway.ca>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTinNhBwjFPXwWFWUVfccUzJFN+6NDgxiuKNa_9N7@mail.gmail.com>
+References: <1294208410-4772-1-git-send-email-fernando.lugo@ti.com>
+	<AANLkTinNhBwjFPXwWFWUVfccUzJFN+6NDgxiuKNa_9N7@mail.gmail.com>
+Date: Wed, 5 Jan 2011 13:45:12 -0600
+Message-ID: <AANLkTi=g+Z1wGHYGUZFRZFPTyYVadQiHm7Ex3ET0PcVz@mail.gmail.com>
+Subject: Re: [PATCH] staging: tidspbridge - configure full L1 MMU range
+From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+To: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+Cc: gregkh@suse.de, rene.sapiens@ti.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Felipe Contreras <felipe.contreras@nokia.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 4, 2011 at 1:40 PM, Simon Kirby <sim@hostway.ca> wrote:
-> On Tue, Jan 04, 2011 at 09:42:14AM -0800, Mark Moseley wrote:
+On Wed, Jan 5, 2011 at 12:46 PM, Ramirez Luna, Omar <omar.ramirez@ti.com> wrote:
+> Hi,
 >
->> On Wed, Dec 29, 2010 at 2:03 PM, Simon Kirby <sim@hostway.ca> wrote:
+> On Wed, Jan 5, 2011 at 12:20 AM, Fernando Guzman Lugo
+> <fernando.lugo@ti.com> wrote:
+>> Otherwise a virtual address beyond of the L1 size is used,
+>> the MMU hardware will look into a memory that does not belong to
+>> L1 translation tables. IOW; the MMU would allow to access any
+>> memory, configured or not.
 >>
->> > I've noticed nfs_inode_cache is ever-increasing as well with 2.6.37:
->> >
->> > ?OBJS ACTIVE ?USE OBJ SIZE ?SLABS OBJ/SLAB CACHE SIZE NAME
->> > 2562514 2541520 ?99% ? ?0.95K ?78739 ? ? ? 33 ? 2519648K nfs_inode_cache
->> > 467200 285110 ?61% ? ?0.02K ? 1825 ? ? ?256 ? ? ?7300K kmalloc-16
->> > 299397 242350 ?80% ? ?0.19K ?14257 ? ? ? 21 ? ? 57028K dentry
->> > 217434 131978 ?60% ? ?0.55K ? 7767 ? ? ? 28 ? ?124272K radix_tree_node
->> > 215232 ?81522 ?37% ? ?0.06K ? 3363 ? ? ? 64 ? ? 13452K kmalloc-64
->> > 183027 136802 ?74% ? ?0.10K ? 4693 ? ? ? 39 ? ? 18772K buffer_head
->> > 101120 ?71184 ?70% ? ?0.03K ? ?790 ? ? ?128 ? ? ?3160K kmalloc-32
->> > ?79616 ?59713 ?75% ? ?0.12K ? 2488 ? ? ? 32 ? ? ?9952K kmalloc-128
->> > ?66560 ?41257 ?61% ? ?0.01K ? ?130 ? ? ?512 ? ? ? 520K kmalloc-8
->> > ?42126 ?26650 ?63% ? ?0.75K ? 2006 ? ? ? 21 ? ? 32096K ext3_inode_cache
->> >
->> > http://0x.ca/sim/ref/2.6.37/inodes_nfs.png
->> > http://0x.ca/sim/ref/2.6.37/cpu2_nfs.png
->> >
->> > Perhaps I could bisect just fs/nfs changes between 2.6.35 and 2.6.36 to
->> > try to track this down without having to wait too long, unless somebody
->> > can see what is happening here.
+>
+> How about:
+>
+> IVA MMU can manage up to 4GB of address space through its page tables,
+> given that it's L1 is divided into 1MB sections it requires at least
+> 16KB for its table which represents 4096 entries of 32 bits each.
+>
+> Previously, only 1GB was being handled by setting the page table size
+> to 4KB, any virtual address beyond of the L1 size used, would fall
+> into memory that does not belong to L1 translation tables, leading to
+> unpredictable results.
+>
+> So, set the L1 table size to cover the entire MMU range (4GB) whether
+> is meant to be used or not.
+
+looks good to me.
+
+>
+>> Reported-by: Felipe Contreras <felipe.contreras@nokia.com>
+>> Signed-off-by: Fernando Guzman Lugo <fernando.lugo@ti.com>
+>> Signed-off-by: Felipe Contreras <felipe.contreras@nokia.com>
+>> ---
+>>  drivers/staging/tidspbridge/core/tiomap3430.c |    6 ++----
+>>  1 files changed, 2 insertions(+), 4 deletions(-)
 >>
->> I'll get started bisecting too, since this is something of a
->> show-stopper. Boxes that pre-2.6.36 would stay up for months at a time
->> now have to be powercycled every couple of days (which is about how
->> long it takes for this behavior to show up). This is across-the-board
->> for about 50 boxes, ranging from 2.6.36 to 2.6.36.2.
+>> diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
+>> index 1be081f..ec96d1e 100644
+>> --- a/drivers/staging/tidspbridge/core/tiomap3430.c
+>> +++ b/drivers/staging/tidspbridge/core/tiomap3430.c
+>> @@ -70,6 +70,7 @@
+>>  #define MMU_LARGE_PAGE_MASK      0xFFFF0000
+>>  #define MMU_SMALL_PAGE_MASK      0xFFFFF000
+>>  #define OMAP3_IVA2_BOOTADDR_MASK 0xFFFFFC00
+>> +#define MMU_L1_SIZE              0x4000
+>>  #define PAGES_II_LVL_TABLE   512
+>>  #define PHYS_TO_PAGE(phys)      pfn_to_page((phys) >> PAGE_SHIFT)
 >>
->> Simon: It's probably irrelevant since these are kernel threads, but
->> I'm curious what distro your boxes are running. Ours are Debian Lenny,
->> i386, Dell Poweredge 850s. Just trying to figure out any
->> commonalities. I'll get my boxes back on 2.6.36.2 and start watching
->> nfs_inode_cache as well.
+>> @@ -786,10 +787,7 @@ static int bridge_dev_create(struct bridge_dev_context
+>>
+>>        pt_attrs = kzalloc(sizeof(struct pg_table_attrs), GFP_KERNEL);
+>>        if (pt_attrs != NULL) {
+>> -               /* Assuming that we use only DSP's memory map
+>> -                * until 0x4000:0000 , we would need only 1024
+>> -                * L1 enties i.e L1 size = 4K */
+>> -               pt_attrs->l1_size = 0x1000;
+>> +               pt_attrs->l1_size = MMU_L1_SIZE;
 >
-> Same distro, x86_64, similar servers.
->
-> I'm not sure if the two cases I am seeing are exactly the same problem,
-> but on the log crunching boxes, system time seems proportional to
-> nfs_inode_cache and nfs_inode_cache just keeps growing forever; however,
-> if I stop the load and unmount the NFS mount points, all of the
-> nfs_inode_cache objects do actually go away (after umount finishes).
->
-> It seems the shrinker callback might not be working as intended here.
->
-> On the shared server case, the crazy spinlock contention from all of the
-> flusher processes happens suddenly and overloads the boxes for 10-15
-> minutes, and then everything recovers.  Over 21 of these boxes, they
-> each have about 500k-700k nfs_inode_cache objects.  The log cruncher hit
-> 3.3 million nfs_inode_cache objects before I unmounted.
->
-> Are your boxes repeating this behaviour at any predictable interval?
+> How about using SZ_16K instead, struct member name already specifies
+> it is L1 size, is the new define needed?
 
-Simon:
-My boxes definitely fall into the latter category, with spinlock
-regularly sitting at 60-80% CPU (according to 'perf top'). As far as
-predictability, not strictly, but it's typically after an uptime of
-2-3 days. They take so long to get into this state that I've never
-seen the actual transition in person, just the after-effects of
-flush-0:xx gone crazy. These boxes have a number of other NFS mounts,
-but it's on the flush-0:xx's for the heavily written-to NFS mounts
-that are spinning wildly, which you'd expect to be the case. The
-infrequently written-to NFS servers' flush-0:xx isn't to be found in
-'top' output.
+Ok, maybe a comment to state why 16K is used should be good.
 
-I'd booted into older kernels after my initial reply, so I'm 14 hrs
-into booting a box back into 2.6.36.2 and another box into a
-double-bisected 2.6.35-2.6.36 kernel (my first bisect hit compile
-errors). Both are running normally but that fits with the pattern so
-far.
+I will make the changes.
 
-NFS Guys:
-Anything else we can be digging up to help debug this? This is a
-pretty ugly issue.
+Regards,
+Fernando.
+
+>
+> Regards,
+>
+> Omar
+>
