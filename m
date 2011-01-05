@@ -1,51 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751685Ab1AEHkr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 02:40:47 -0500
-Received: from claw.goop.org ([74.207.240.146]:37599 "EHLO claw.goop.org"
+	id S1751587Ab1AEHom (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 02:44:42 -0500
+Received: from mga14.intel.com ([143.182.124.37]:55058 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751507Ab1AEHkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 02:40:45 -0500
-Message-ID: <4D242070.3070602@goop.org>
-Date: Wed, 05 Jan 2011 18:40:32 +1100
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Sheng Yang <sheng@linux.intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Avi Kivity <avi@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+	id S1751420Ab1AEHol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 02:44:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,277,1291622400"; 
+   d="scan'208";a="370261188"
+From: Sheng Yang <sheng@linux.intel.com>
+Organization: Intel Opensource Technology Center
+To: Jeremy Fitzhardinge <jeremy@goop.org>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH 1/2] apic: Move hypervisor detection of x2apic to hypervisor.h
-References: <1292912329-12451-1-git-send-email-sheng@linux.intel.com> <201101041657.36123.sheng@linux.intel.com> <20110104092418.GA31281@elte.hu> <201101050952.00104.sheng@linux.intel.com>
-In-Reply-To: <201101050952.00104.sheng@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH 2/2 v2] xen: HVM X2APIC support
+Date: Wed, 5 Jan 2011 15:47:11 +0800
+User-Agent: KMail/1.13.5 (Linux/2.6.35-23-generic; KDE/4.5.1; x86_64; ; )
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+References: <1292912329-12451-1-git-send-email-sheng@linux.intel.com> <1292912329-12451-2-git-send-email-sheng@linux.intel.com>
+In-Reply-To: <1292912329-12451-2-git-send-email-sheng@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201101051547.12107.sheng@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2011 12:51 PM, Sheng Yang wrote:
-> On Tuesday 04 January 2011 17:24:18 Ingo Molnar wrote:
->> * Sheng Yang <sheng@linux.intel.com> wrote:
->>> On Wednesday 22 December 2010 02:15:44 Avi Kivity wrote:
->>>> On 12/21/2010 07:15 PM, Jeremy Fitzhardinge wrote:
->>>>> On 12/20/2010 10:18 PM, Sheng Yang wrote:
->>>>>>  Then we can reuse it for Xen later.
->>>>> You should probably get someone kvm-ish to ack this too.
->>>> Looks good to me.
->>> Ingo,
->>>
->>> Comments?
->> Acked-by: Ingo Molnar <mingo@elte.hu>
->>
->> I suspect these patches want to be carried in the Xen tree, right? Shouldnt
->> cause too bad conflicts, as long as the Xen tree is pushed after the x86
->> tree in the merge window.
-> Jeremy?
+On Tuesday 21 December 2010 14:18:49 Sheng Yang wrote:
+> This patch is similiar to Gleb Natapov's patch for KVM, which enable the
+> hypervisor to emulate x2apic feature for the guest. By this way, the
+> emulation of lapic would be simpler with x2apic interface(MSR), and
+> faster.
+> 
+> Acked-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> Signed-off-by: Sheng Yang <sheng@linux.intel.com>
+> ---
 
-Sure, I'm OK with that, but I'm on vacation until the 15th.  Konrad, can
-you pick this up?
+Jeremy & Konrad, 
 
-Thanks,
-    J
+We also need this one.
 
+Thanks!
+
+--
+regards
+Yang, Sheng
+
+>  arch/x86/include/asm/hypervisor.h     |    3 ++
+>  arch/x86/include/asm/xen/hypervisor.h |   35
+> +++++++++++++++++++++++++++++++++ arch/x86/xen/enlighten.c              | 
+>  30 ++++++++++----------------- 3 files changed, 49 insertions(+), 19
+> deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/hypervisor.h
+> b/arch/x86/include/asm/hypervisor.h index 0c6f7af..7a15153 100644
+> --- a/arch/x86/include/asm/hypervisor.h
+> +++ b/arch/x86/include/asm/hypervisor.h
+> @@ -21,6 +21,7 @@
+>  #define _ASM_X86_HYPERVISOR_H
+> 
+>  #include <asm/kvm_para.h>
+> +#include <asm/xen/hypervisor.h>
+> 
+>  extern void init_hypervisor(struct cpuinfo_x86 *c);
+>  extern void init_hypervisor_platform(void);
+> @@ -53,6 +54,8 @@ static inline bool hypervisor_x2apic_available(void)
+>  {
+>  	if (kvm_para_available())
+>  		return true;
+> +	if (xen_x2apic_para_available())
+> +		return true;
+>  	return false;
+>  }
+> 
+> diff --git a/arch/x86/include/asm/xen/hypervisor.h
+> b/arch/x86/include/asm/xen/hypervisor.h index 396ff4c..66d0fff 100644
+> --- a/arch/x86/include/asm/xen/hypervisor.h
+> +++ b/arch/x86/include/asm/xen/hypervisor.h
+> @@ -37,4 +37,39 @@
+>  extern struct shared_info *HYPERVISOR_shared_info;
+>  extern struct start_info *xen_start_info;
+> 
+> +#include <asm/processor.h>
+> +
+> +static inline uint32_t xen_cpuid_base(void)
+> +{
+> +	uint32_t base, eax, ebx, ecx, edx;
+> +	char signature[13];
+> +
+> +	for (base = 0x40000000; base < 0x40010000; base += 0x100) {
+> +		cpuid(base, &eax, &ebx, &ecx, &edx);
+> +		*(uint32_t *)(signature + 0) = ebx;
+> +		*(uint32_t *)(signature + 4) = ecx;
+> +		*(uint32_t *)(signature + 8) = edx;
+> +		signature[12] = 0;
+> +
+> +		if (!strcmp("XenVMMXenVMM", signature) && ((eax - base) >= 2))
+> +			return base;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +#ifdef CONFIG_XEN
+> +extern bool xen_hvm_need_lapic(void);
+> +
+> +static inline bool xen_x2apic_para_available(void)
+> +{
+> +	return xen_hvm_need_lapic();
+> +}
+> +#else
+> +static inline bool xen_x2apic_para_available(void)
+> +{
+> +	return (xen_cpuid_base() != 0);
+> +}
+> +#endif
+> +
+>  #endif /* _ASM_X86_XEN_HYPERVISOR_H */
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index 44dcad4..bb8aa31 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1256,25 +1256,6 @@ asmlinkage void __init xen_start_kernel(void)
+>  #endif
+>  }
+> 
+> -static uint32_t xen_cpuid_base(void)
+> -{
+> -	uint32_t base, eax, ebx, ecx, edx;
+> -	char signature[13];
+> -
+> -	for (base = 0x40000000; base < 0x40010000; base += 0x100) {
+> -		cpuid(base, &eax, &ebx, &ecx, &edx);
+> -		*(uint32_t *)(signature + 0) = ebx;
+> -		*(uint32_t *)(signature + 4) = ecx;
+> -		*(uint32_t *)(signature + 8) = edx;
+> -		signature[12] = 0;
+> -
+> -		if (!strcmp("XenVMMXenVMM", signature) && ((eax - base) >= 2))
+> -			return base;
+> -	}
+> -
+> -	return 0;
+> -}
+> -
+>  static int init_hvm_pv_info(int *major, int *minor)
+>  {
+>  	uint32_t eax, ebx, ecx, edx, pages, msr, base;
+> @@ -1384,6 +1365,17 @@ static bool __init xen_hvm_platform(void)
+>  	return true;
+>  }
+> 
+> +bool xen_hvm_need_lapic(void)
+> +{
+> +	if (xen_pv_domain())
+> +		return false;
+> +	if (xen_hvm_domain() && xen_feature(XENFEAT_hvm_pirqs) &&
+> +			xen_have_vector_callback)
+> +		return false;
+> +	return (xen_cpuid_base() != 0);
+> +}
+> +EXPORT_SYMBOL_GPL(xen_hvm_need_lapic);
+> +
+>  const __refconst struct hypervisor_x86 x86_hyper_xen_hvm = {
+>  	.name			= "Xen HVM",
+>  	.detect			= xen_hvm_platform,
