@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187Ab1AEX3n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:29:43 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:35491 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752903Ab1AEX3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:29:41 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: suspend hangs at platform phase [was: mmotm 2010-12-23-16-58 uploaded]
-Date: Thu, 6 Jan 2011 00:28:43 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37+; KDE/4.4.4; x86_64; ; )
-Cc: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        "Brown, Len" <len.brown@intel.com>, steiner@sgi.com,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>
-References: <201012240132.oBO1W8Ub022207@imap1.linux-foundation.org> <201101052339.46453.rjw@sisk.pl> <4D24F4A9.8010301@gmail.com>
-In-Reply-To: <4D24F4A9.8010301@gmail.com>
+	id S1753204Ab1AEXas (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:30:48 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:49899 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753112Ab1AEXar (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 18:30:47 -0500
+Message-ID: <4D24FF22.9010803@linux.vnet.ibm.com>
+Date: Wed, 05 Jan 2011 15:30:42 -0800
+From: "Venkateswararao Jujjuri (JV)" <jvrao@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+To: "M. Mohan Kumar" <mohan@in.ibm.com>
+CC: v9fs-developer <v9fs-developer@lists.sourceforge.net>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [V9fs-developer] [PATCH] net/9p: Use proper data types
+References: <1294246423-8454-1-git-send-email-mohan@in.ibm.com>
+In-Reply-To: <1294246423-8454-1-git-send-email-mohan@in.ibm.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101060028.43342.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, January 05, 2011, Jiri Slaby wrote:
-> On 01/05/2011 11:39 PM, Rafael J. Wysocki wrote:
-> > On Wednesday, January 05, 2011, Jiri Slaby wrote:
-> >> On 01/04/2011 11:57 PM, Rafael J. Wysocki wrote:
-> >>> On Tuesday, January 04, 2011, Jiri Slaby wrote:
-> >>>> On 01/04/2011 02:40 PM, Jiri Slaby wrote:
-> >>>>> On 12/24/2010 01:58 AM, akpm@linux-foundation.org wrote:
-> >>>>>> The mm-of-the-moment snapshot 2010-12-23-16-58 has been uploaded to
-> >>>>>
-> >>>>> Hi, this kernel regresses with respect to suspend to ram in comparison
-> >>>>> with mmotm 2010-12-16-14-56.
-> >>>>>
-> >>>>> This is OK:
-> >>>>> echo devices > /sys/power/pm_test
-> >>>>> pm-suspend
-> >>>>> This hangs at suspend phase:
-> >>>>> echo platform > /sys/power/pm_test
-> >>>>> pm-suspend
-> >>>
-> >>> Hmm.  So it looks like _PTS hangs?
-> >>
-> >> No _PST here :).
-> > 
-> > I really meant _PTS and yes, there is one and it does quite a lot of
-> > interesting stuff.
+On 1/5/2011 8:53 AM, M. Mohan Kumar wrote:
+> Use proper data types for storing the count of the binary blob and
+> length of a string. Without this patch length calculation of string will
+> always result in -1 because of comparision between signed and unsigned
+> integer.
 > 
-> Yeah, I grepped for _PTS, but in a wrong file. My bad.
+> Signed-off-by: M. Mohan Kumar <mohan@in.ibm.com>
+> ---
+>  net/9p/protocol.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
 > 
-> > Are you able to collect serial console (or equivalent) logs from that machine?
+> diff --git a/net/9p/protocol.c b/net/9p/protocol.c
+> index c5180fd..2902eb1 100644
+> --- a/net/9p/protocol.c
+> +++ b/net/9p/protocol.c
+> @@ -234,14 +234,14 @@ p9pdu_vreadf(struct p9_fcall *pdu, int proto_version, const char *fmt,
+>  			}
+>  			break;
+>  		case 'D':{
+> -				int32_t *count = va_arg(ap, int32_t *);
+> +				uint32_t *count = va_arg(ap, int32_t *);
+
+uinit32_t * inside the va_arg also to be consistent?
+>  				void **data = va_arg(ap, void **);
 > 
-> Unfortunately I don't have a second machine with serial port. What
-> exactly you want to dig out of the logs? Will netconsole work at that phase?
+>  				errcode =
+>  				    p9pdu_readf(pdu, proto_version, "d", count);
+>  				if (!errcode) {
+>  					*count =
+> -					    min_t(int32_t, *count,
+> +					    min_t(uint32_t, *count,
+>  						  pdu->size - pdu->offset);
+>  					*data = &pdu->sdata[pdu->offset];
+>  				}
 
-I don't think so, the adapter will have been already suspended.
+Did you take care of MAX/max_t comparisons too? Looks like you missed at least
+one for case 's'
 
-Hmm.  I guess you can boot with no_console_suspend in the kernel command line
-and use the video console to get some debug info.  At this point we would like
-to know where exactly it hangs, so you'd need to enable AML tracing in the
-kernel and basically see what's printed last. :-)
+Thanks,
+JV
 
-Two more questions:
-(1) Does the failing machine power off correctly with the kernel that fails to
-    suspend?
-(2) Is the failing suspend behavior reproducible if you run
-    "echo disk > /sys/power/state" instead of "pm-suspend" in the platform test?
 
-Rafael
+> @@ -404,9 +404,9 @@ p9pdu_vwritef(struct p9_fcall *pdu, int proto_version, const char *fmt,
+>  			break;
+>  		case 's':{
+>  				const char *sptr = va_arg(ap, const char *);
+> -				int16_t len = 0;
+> +				uint16_t len = 0;
+>  				if (sptr)
+> -					len = min_t(int16_t, strlen(sptr),
+> +					len = min_t(uint16_t, strlen(sptr),
+>  								USHRT_MAX);
+> 
+>  				errcode = p9pdu_writef(pdu, proto_version,
+
+
