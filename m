@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab1AES2j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 13:28:39 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54632 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357Ab1AES2i (ORCPT
+	id S1752190Ab1AESdw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 13:33:52 -0500
+Received: from elasmtp-dupuy.atl.sa.earthlink.net ([209.86.89.62]:51716 "EHLO
+	elasmtp-dupuy.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751649Ab1AESdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 13:28:38 -0500
-Date: Wed, 5 Jan 2011 18:27:54 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-nfs@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-Message-ID: <20110105182753.GG8638@n2100.arm.linux.org.uk>
-References: <20110105110517.GQ25121@pengutronix.de> <20110105112701.GA8638@n2100.arm.linux.org.uk> <20110105134045.GS25121@pengutronix.de> <1294239193.3014.9.camel@heimdal.trondhjem.org> <4D2487CA.5040501@pengutronix.de> <1294240457.3014.13.camel@heimdal.trondhjem.org> <20110105155230.GC8638@n2100.arm.linux.org.uk> <1294247847.2998.23.camel@heimdal.trondhjem.org> <20110105172641.GF8638@n2100.arm.linux.org.uk> <1294251145.3574.16.camel@heimdal.trondhjem.org>
+	Wed, 5 Jan 2011 13:33:51 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=dk20050327; d=earthlink.net;
+  b=ZRScNgAoNDIudAmCzicl2RzHtq/NqQNi64RAWT4r7WSFqkisSJ9DPWk7/lc315UP;
+  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:Subject:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
+Message-ID: <4D24B98D.6080307@earthlink.net>
+Date: Wed, 05 Jan 2011 13:33:49 -0500
+From: Stephen Clark <sclark46@earthlink.net>
+Reply-To: sclark46@earthlink.net
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294251145.3574.16.camel@heimdal.trondhjem.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Kernel 2.6.37 erroneously limiting to UDMA/33
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec79e08268ac84235dfcefc3281192bba066350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
+X-Originating-IP: 69.22.83.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 05, 2011 at 01:12:25PM -0500, Trond Myklebust wrote:
-> On Wed, 2011-01-05 at 17:26 +0000, Russell King - ARM Linux wrote: 
-> > On Wed, Jan 05, 2011 at 12:17:27PM -0500, Trond Myklebust wrote:
-> > > We should already be flushing the kernel direct mapping after writing by
-> > > means of the calls to flush_dcache_page() in xdr_partial_copy_from_skb()
-> > > and all the helpers in net/sunrpc/xdr.c.
-> > 
-> > Hmm, we're getting into the realms of what flush_dcache_page() is supposed
-> > to do and what it's not supposed to do.
-> > 
-> > Is this page an associated with a mapping (iow, page_mapping(page) is non-
-> > NULL)?  If not, flush_dcache_page() won't do anything, and from my
-> > understanding, its flush_anon_page() which you want to be using there
-> > instead.
-> 
-> Actually, none of these pages are ever mapped into userspace, nor are
-> they mapped into the page cache.
-> 
-> They are allocated directly using alloc_page() by the thread that called
-> the readdir() syscall, so afaics there should be no incoherent mappings
-> other than the kernel direct mapping and the one created by
-> vm_map_ram().
-> 
-> So, yes, you are right that we don't need the flush_dcache_page() here.
+Hello,
 
-I do still think you need _something_ there, otherwise data can remain
-in the direct map alias and not be visible via the vmap alias.  I don't
-see that we have anything in place to handle this at present though.
+Why is the kernel limiting me to udma/33 when the device says it can do
+ata2.01: CFA: TRANSCEND, 20070831, max UDMA/66
 
-jejb mentioned something about making kunmap_atomic() always flush the
-cache, even for lowmem pages, but I think that's going to be exceedingly
-painful, to the extent that I believe it will prevent our PIO-only MMC
-drivers working - or we need a scatterlist API that will let drivers
-iterate over the scatterlist without needing to continually kmap_atomic
-and kunmap_atomic each page.
+There is no cable the compact flash is a socket on the motherboard!
+
+Loading sd_mod.ko module
+Loading libata.ko module
+Loading ata_generic.ko module
+Loading pata_acpi.ko module
+pata_acpi 0000:00:0f.0: PCI INT B -> GSI 21 (level, low) -> IRQ 21
+pata_acpi 0000:00:0f.0: PCI INT B disabled
+Loading pata_via.ko module
+scsi0 : pata_via
+scsi1 : pata_via
+ata1: PATA max UDMA/133 cmd 0x1f0 ctl 0x3f6 bmdma 0xfa00 irq 14
+ata2: PATA max UDMA/133 cmd 0x170 ctl 0x376 bmdma 0xfa08 irq 15
+ata2.01: CFA: TRANSCEND, 20070831, max UDMA/66
+ata2.01: 7962192 sectors, multi 0: LBA
+ata2.01: limited to UDMA/33 due to 40-wire cable
+ata2.01: configured for UDMA/33
+scsi 1:0:1:0: Direct-Access     ATA      TRANSCEND        2007 PQ: 0 ANSI: 5
+sd 1:0:1:0: [sda] 7962192 512-byte logical blocks: (4.07 GB/3.79 GiB)
+sd 1:0:1:0: [sda] Write Protect is off
+sd 1:0:1:0: [sda] Write cache: disabled, read cache: enabled, doesn't 
+support DA
+  sda: sda1 sda2 sda3
+sd 1:0:1:0: [sda] Attached SCSI disk
+Loading ata_piix.ko module
+
+Thanks,
+Steve
+
+-- 
+
+"They that give up essential liberty to obtain temporary safety,
+deserve neither liberty nor safety."  (Ben Franklin)
+
+"The course of history shows that as a government grows, liberty
+decreases."  (Thomas Jefferson)
+
+
+
