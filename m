@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590Ab1AEIkZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 03:40:25 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36628 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab1AEIkY (ORCPT
+	id S1751695Ab1AEIkd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 03:40:33 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:59349 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751639Ab1AEIkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 03:40:24 -0500
-Date: Wed, 5 Jan 2011 09:40:14 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: linux-nfs@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-Message-ID: <20110105084014.GN25121@pengutronix.de>
-References: <20101230171453.GA5787@pengutronix.de> <1293731992.4919.5.camel@heimdal.trondhjem.org> <20101230191846.GB14221@pengutronix.de> <20110103213850.GC25121@pengutronix.de> <1294100558.25100.8.camel@heimdal.trondhjem.org>
+	Wed, 5 Jan 2011 03:40:31 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Avi Kivity <avi@redhat.com>
+Subject: Re: [RFC -v3 PATCH 2/3] sched: add yield_to function
+Cc: kosaki.motohiro@jp.fujitsu.com, Rik van Riel <riel@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>
+In-Reply-To: <4D242D60.9060301@redhat.com>
+References: <20110105110837.B62A.A69D9226@jp.fujitsu.com> <4D242D60.9060301@redhat.com>
+Message-Id: <20110105173823.B658.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1294100558.25100.8.camel@heimdal.trondhjem.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed,  5 Jan 2011 17:40:27 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Trond,
+> On 01/05/2011 04:39 AM, KOSAKI Motohiro wrote:
+> > >  On 01/04/2011 08:14 AM, KOSAKI Motohiro wrote:
+> > >  >  Also, If pthread_cond_signal() call sys_yield_to imlicitly, we can
+> > >  >  avoid almost Nehalem (and other P2P cache arch) lock unfairness
+> > >  >  problem. (probaby creating pthread_condattr_setautoyield_np or similar
+> > >  >  knob is good one)
+> > >
+> > >  Often, the thread calling pthread_cond_signal() wants to continue
+> > >  executing, not yield.
+> >
+> > Then, it doesn't work.
+> >
+> > After calling pthread_cond_signal(), T1 which cond_signal caller and T2
+> > which waked start to GIL grab race. But usually T1 is always win because
+> > lock variable is in T1's cpu cache. Why kernel and userland have so much
+> > different result? One of a reason is glibc doesn't have any ticket lock scheme.
+> >
+> > If you are interesting GIL mess and issue, please feel free to ask more.
+> 
+> I suggest looking into an explicit round-robin scheme, where each thread 
+> adds itself to a queue and an unlock wakes up the first waiter.
 
-On Mon, Jan 03, 2011 at 07:22:38PM -0500, Trond Myklebust wrote:
-> The question is whether this is something happening on the server or the
-> client. Does an older client kernel boot without any trouble?
-I will set up a boot test with 2.6.37 (for statistics) and 2.6.36 to
-compare with.  If you don't consider .36 to be old enough let me now.
-Once the setup is done it should be easy to test .35 (say), too.
+I'm sure you haven't try your scheme. but I did. It's slow.
 
-Best regards
-Uwe
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
