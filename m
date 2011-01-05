@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab1AES0L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 13:26:11 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52211 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211Ab1AES0J convert rfc822-to-8bit (ORCPT
+	id S1752131Ab1AES2j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 13:28:39 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54632 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357Ab1AES2i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 13:26:09 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=vmNBMVhE7Wz9jIO8AgCvUGgFmZi2A2Ko5Asjr2OKcpJiChuvor/Vhm5w50uGLfQoi0
-         KR/Abvpo5AUATUHDuot9NpC2eDpzRTeWQFjaXjNaoBLTeguA/Ti3Ox28kQvoSarmri9N
-         F0xZKGJyjBWSLuMJ0KvsFO+Mo72UVEtb9Hi+A=
+	Wed, 5 Jan 2011 13:28:38 -0500
+Date: Wed, 5 Jan 2011 18:27:54 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-nfs@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+Message-ID: <20110105182753.GG8638@n2100.arm.linux.org.uk>
+References: <20110105110517.GQ25121@pengutronix.de> <20110105112701.GA8638@n2100.arm.linux.org.uk> <20110105134045.GS25121@pengutronix.de> <1294239193.3014.9.camel@heimdal.trondhjem.org> <4D2487CA.5040501@pengutronix.de> <1294240457.3014.13.camel@heimdal.trondhjem.org> <20110105155230.GC8638@n2100.arm.linux.org.uk> <1294247847.2998.23.camel@heimdal.trondhjem.org> <20110105172641.GF8638@n2100.arm.linux.org.uk> <1294251145.3574.16.camel@heimdal.trondhjem.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1101051108520.14761@router.home>
-References: <1294172717-6044-1-git-send-email-penberg@kernel.org>
-	<alpine.DEB.2.00.1101041939030.27551@chino.kir.corp.google.com>
-	<alpine.DEB.2.00.1101050943120.13032@router.home>
-	<alpine.DEB.2.00.1101051108520.14761@router.home>
-Date: Wed, 5 Jan 2011 20:26:08 +0200
-X-Google-Sender-Auth: 6CxGFlNs46tl00BMNvlzWiyMZMo
-Message-ID: <AANLkTinft80dXqE-U=YDB23d9=BgXLCxJzgiA_gF4cVL@mail.gmail.com>
-Subject: Re: [PATCH] slub: Fix sysfs circular locking dependency
-From: Pekka Enberg <penberg@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        Bart Van Assche <bart.vanassche@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294251145.3574.16.camel@heimdal.trondhjem.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 5, 2011 at 7:10 PM, Christoph Lameter <cl@linux.com> wrote:
-> How about this solution? In the common case of kernels without hotplug
-> support there will be no locking at all.
->
->
-> Subject: slub: Avoid use of slub_lock in show_slab_objects()
->
-> The purpose of the locking is to prevent removal and additions
-> of nodes when statistics are gathered for a slab cache. So we
-> need to avoid racing with memory hotplug functionality.
->
-> It is enough to take the memory hotplug locks there instead
-> of the slub_lock.
->
->
-> Signed-off-by: Christoph Lameter <cl@linux.com>
->
-> ---
->  mm/slub.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> Index: linux-2.6/mm/slub.c
-> ===================================================================
-> --- linux-2.6.orig/mm/slub.c    2011-01-05 09:55:34.000000000 -0600
-> +++ linux-2.6/mm/slub.c 2011-01-05 09:56:27.000000000 -0600
-> @@ -3821,7 +3821,7 @@ static ssize_t show_slab_objects(struct
->                }
->        }
->
-> -       down_read(&slub_lock);
-> +       lock_memory_hotplug();
->  #ifdef CONFIG_SLUB_DEBUG
->        if (flags & SO_ALL) {
->                for_each_node_state(node, N_NORMAL_MEMORY) {
-> @@ -3862,7 +3862,7 @@ static ssize_t show_slab_objects(struct
->                        x += sprintf(buf + x, " N%d=%lu",
->                                        node, nodes[node]);
->  #endif
-> -       up_read(&slub_lock);
-> +       unlock_memory_hotplug();
->        kfree(nodes);
->        return x + sprintf(buf + x, "\n");
->  }
+On Wed, Jan 05, 2011 at 01:12:25PM -0500, Trond Myklebust wrote:
+> On Wed, 2011-01-05 at 17:26 +0000, Russell King - ARM Linux wrote: 
+> > On Wed, Jan 05, 2011 at 12:17:27PM -0500, Trond Myklebust wrote:
+> > > We should already be flushing the kernel direct mapping after writing by
+> > > means of the calls to flush_dcache_page() in xdr_partial_copy_from_skb()
+> > > and all the helpers in net/sunrpc/xdr.c.
+> > 
+> > Hmm, we're getting into the realms of what flush_dcache_page() is supposed
+> > to do and what it's not supposed to do.
+> > 
+> > Is this page an associated with a mapping (iow, page_mapping(page) is non-
+> > NULL)?  If not, flush_dcache_page() won't do anything, and from my
+> > understanding, its flush_anon_page() which you want to be using there
+> > instead.
+> 
+> Actually, none of these pages are ever mapped into userspace, nor are
+> they mapped into the page cache.
+> 
+> They are allocated directly using alloc_page() by the thread that called
+> the readdir() syscall, so afaics there should be no incoherent mappings
+> other than the kernel direct mapping and the one created by
+> vm_map_ram().
+> 
+> So, yes, you are right that we don't need the flush_dcache_page() here.
 
-Makes sense. Bart, does this fix the problem for you?
+I do still think you need _something_ there, otherwise data can remain
+in the direct map alias and not be visible via the vmap alias.  I don't
+see that we have anything in place to handle this at present though.
+
+jejb mentioned something about making kunmap_atomic() always flush the
+cache, even for lowmem pages, but I think that's going to be exceedingly
+painful, to the extent that I believe it will prevent our PIO-only MMC
+drivers working - or we need a scatterlist API that will let drivers
+iterate over the scatterlist without needing to continually kmap_atomic
+and kunmap_atomic each page.
