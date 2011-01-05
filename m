@@ -1,357 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077Ab1AEMAC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 07:00:02 -0500
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:35591 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751716Ab1AEL77 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 06:59:59 -0500
-From: Carmelo AMOROSO <carmelo.amoroso@st.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Filippo ARCIDIACONO <filippo.arcidiacono@st.com>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "vapier@gentoo.org" <vapier@gentoo.org>,
-        "nico@fluxnic.net" <nico@fluxnic.net>
-Date: Wed, 5 Jan 2011 12:59:18 +0100
-Subject: Re: [PATCH 1/2] stackprotector: add stack smashing protector
- generic implementation
-Thread-Topic: [PATCH 1/2] stackprotector: add stack smashing protector
- generic implementation
-Thread-Index: Acusz/wCt1NLUlNjT4Sk9FyFl9MPdA==
-Message-ID: <4D245D16.5010702@st.com>
-References: <1293111851-7175-1-git-send-email-filippo.arcidiacono@st.com>
-In-Reply-To: <1293111851-7175-1-git-send-email-filippo.arcidiacono@st.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-enigmail-version: 1.1.1
-user-agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13)
- Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	id S1752093Ab1AEMDo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 07:03:44 -0500
+Received: from vwp2514.webpack.hosteurope.de ([87.230.42.24]:38740 "EHLO
+	vwp2514.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751716Ab1AEMDn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 07:03:43 -0500
+X-Greylist: delayed 1217 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Jan 2011 07:03:42 EST
+Subject: kernel NULL pointer dereference in pxa3xx_nand_probe
+From: Sven Neumann <s.neumann@raumfeld.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Daniel Mack <daniel@caiaq.de>
+Content-Type: text/plain; charset="UTF-8"
+Organization: RAUMFELD GmbH
+Date: Wed, 05 Jan 2011 12:43:21 +0100
+Message-ID: <1294227801.3996.62.camel@sven>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-bounce-key: webpack.hosteurope.de;s.neumann@raumfeld.com;1294229022;a9e4ff8a;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Hi,
 
-On 12/23/2010 2:44 PM, Filippo ARCIDIACONO wrote:
-> The current implementation of SSP used for ARM architecture is based
-> on the global variable __stack_chk_guard
-> (see commit c743f38013aeff58ef6252601e397b5ba281c633 by Nicolas Pitre).
-> This implementation should be generic enough to be used for all
-> architectures that rely upon that global variable (i.e. SH), so the
-> ARM code can be widely used for all those architectures.
-> The kbuild uses a script to check if the architecture does actually
-> need to define the __stack_chk_guard, so it will use the generic SSP
-> code, otherwise it will fall back to the architecture specific one
-> (i.e. x86, x86_64).
-> 
-> Signed-off-by: Filippo Arcidiacono <filippo.arcidiacono@st.com>
-> Signed-off-by: Carmelo Amoroso <carmelo.amoroso@st.com>
-> ---
->  Makefile                                   |   14 ++++++++-
->  arch/Kconfig                               |   16 +++++++++++
->  arch/arm/Kconfig                           |   12 --------
->  arch/arm/Makefile                          |    4 ---
->  arch/arm/include/asm/stackprotector.h      |   38 ---------------------------
->  arch/arm/kernel/process.c                  |    6 ----
->  arch/x86/Kconfig                           |   16 -----------
->  include/asm-generic/stackprotector.h       |   39 ++++++++++++++++++++++++++++
->  include/linux/stackprotector.h             |    6 +++-
->  init/main.c                                |    5 +++
->  scripts/gcc-generic-has-stack-protector.sh |    9 ++++++
->  11 files changed, 86 insertions(+), 79 deletions(-)
->  delete mode 100644 arch/arm/include/asm/stackprotector.h
->  create mode 100644 include/asm-generic/stackprotector.h
->  create mode 100755 scripts/gcc-generic-has-stack-protector.sh
-> 
-> diff --git a/Makefile b/Makefile
-> index 77044b7..7530650 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -550,8 +550,18 @@ KBUILD_CFLAGS += $(call cc-option,-Wframe-larger-than=${CONFIG_FRAME_WARN})
->  endif
->  
->  # Force gcc to behave correct even for buggy distributions
-> -ifndef CONFIG_CC_STACKPROTECTOR
-> -KBUILD_CFLAGS += $(call cc-option, -fno-stack-protector)
-> +ifdef CONFIG_CC_STACKPROTECTOR
-> +stackp-y := $(call cc-option,-fstack-protector)
-> +ifeq ($(stackp-y),)
-> +  $(warning stack protector enabled but no compiler support)
-> +else
-> +cc_has_sp := $(srctree)/scripts/gcc-generic-has-stack-protector.sh
-> +ifeq ($(shell $(CONFIG_SHELL) $(cc_has_sp) $(CC)), y)
-> +  KBUILD_CFLAGS += $(stackp-y) -D__ARCH_WANT_STACK_CHK_GUARD
-> +endif
-> +endif
-> +else
-> +  KBUILD_CFLAGS += $(call cc-option, -fno-stack-protector)
->  endif
->  
->  ifdef CONFIG_FRAME_POINTER
-> diff --git a/arch/Kconfig b/arch/Kconfig
-> index 8bf0fa6..083245d 100644
-> --- a/arch/Kconfig
-> +++ b/arch/Kconfig
-> @@ -175,4 +175,20 @@ config HAVE_PERF_EVENTS_NMI
->  config HAVE_ARCH_JUMP_LABEL
->  	bool
->  
-> +config CC_STACKPROTECTOR
-> +	bool "Enable -fstack-protector buffer overflow detection"
-> +	help
-> +	  This option turns on the -fstack-protector GCC feature. This
-> +	  feature puts, at the beginning of functions, a canary value on
-> +	  the stack just before the return address, and validates
-> +	  the value just before actually returning.  Stack based buffer
-> +	  overflows (that need to overwrite this return address) now also
-> +	  overwrite the canary, which gets detected and the attack is then
-> +	  neutralized via a kernel panic.
-> +
-> +	  This feature requires gcc version 4.2 or above, or a distribution
-> +	  gcc with the feature backported. Older versions are automatically
-> +	  detected and for those versions, this configuration option is
-> +	  ignored. (and a warning is printed during bootup)
-> +
->  source "kernel/gcov/Kconfig"
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index d56d21c..58c29a5 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1522,18 +1522,6 @@ config SECCOMP
->  	  and the task is only allowed to execute a few safe syscalls
->  	  defined by each seccomp mode.
->  
-> -config CC_STACKPROTECTOR
-> -	bool "Enable -fstack-protector buffer overflow detection (EXPERIMENTAL)"
-> -	help
-> -	  This option turns on the -fstack-protector GCC feature. This
-> -	  feature puts, at the beginning of functions, a canary value on
-> -	  the stack just before the return address, and validates
-> -	  the value just before actually returning.  Stack based buffer
-> -	  overflows (that need to overwrite this return address) now also
-> -	  overwrite the canary, which gets detected and the attack is then
-> -	  neutralized via a kernel panic.
-> -	  This feature requires gcc version 4.2 or above.
-> -
->  config DEPRECATED_PARAM_STRUCT
->  	bool "Provide old way to pass kernel parameters"
->  	help
-> diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-> index b87aed0..ebbd003 100644
-> --- a/arch/arm/Makefile
-> +++ b/arch/arm/Makefile
-> @@ -37,10 +37,6 @@ ifeq ($(CONFIG_FRAME_POINTER),y)
->  KBUILD_CFLAGS	+=-fno-omit-frame-pointer -mapcs -mno-sched-prolog
->  endif
->  
-> -ifeq ($(CONFIG_CC_STACKPROTECTOR),y)
-> -KBUILD_CFLAGS	+=-fstack-protector
-> -endif
-> -
->  ifeq ($(CONFIG_CPU_BIG_ENDIAN),y)
->  KBUILD_CPPFLAGS	+= -mbig-endian
->  AS		+= -EB
-> diff --git a/arch/arm/include/asm/stackprotector.h b/arch/arm/include/asm/stackprotector.h
-> deleted file mode 100644
-> index de00332..0000000
-> --- a/arch/arm/include/asm/stackprotector.h
-> +++ /dev/null
-> @@ -1,38 +0,0 @@
-> -/*
-> - * GCC stack protector support.
-> - *
-> - * Stack protector works by putting predefined pattern at the start of
-> - * the stack frame and verifying that it hasn't been overwritten when
-> - * returning from the function.  The pattern is called stack canary
-> - * and gcc expects it to be defined by a global variable called
-> - * "__stack_chk_guard" on ARM.  This unfortunately means that on SMP
-> - * we cannot have a different canary value per task.
-> - */
-> -
-> -#ifndef _ASM_STACKPROTECTOR_H
-> -#define _ASM_STACKPROTECTOR_H 1
-> -
-> -#include <linux/random.h>
-> -#include <linux/version.h>
-> -
-> -extern unsigned long __stack_chk_guard;
-> -
-> -/*
-> - * Initialize the stackprotector canary value.
-> - *
-> - * NOTE: this must only be called from functions that never return,
-> - * and it must always be inlined.
-> - */
-> -static __always_inline void boot_init_stack_canary(void)
-> -{
-> -	unsigned long canary;
-> -
-> -	/* Try to get a semi random initial value. */
-> -	get_random_bytes(&canary, sizeof(canary));
-> -	canary ^= LINUX_VERSION_CODE;
-> -
-> -	current->stack_canary = canary;
-> -	__stack_chk_guard = current->stack_canary;
-> -}
-> -
-> -#endif	/* _ASM_STACKPROTECTOR_H */
-> diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-> index e76fcaa..067b4de 100644
-> --- a/arch/arm/kernel/process.c
-> +++ b/arch/arm/kernel/process.c
-> @@ -39,12 +39,6 @@
->  #include <asm/stacktrace.h>
->  #include <asm/mach/time.h>
->  
-> -#ifdef CONFIG_CC_STACKPROTECTOR
-> -#include <linux/stackprotector.h>
-> -unsigned long __stack_chk_guard __read_mostly;
-> -EXPORT_SYMBOL(__stack_chk_guard);
-> -#endif
-> -
->  static const char *processor_modes[] = {
->    "USER_26", "FIQ_26" , "IRQ_26" , "SVC_26" , "UK4_26" , "UK5_26" , "UK6_26" , "UK7_26" ,
->    "UK8_26" , "UK9_26" , "UK10_26", "UK11_26", "UK12_26", "UK13_26", "UK14_26", "UK15_26",
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index e330da2..b8704dd 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -1455,22 +1455,6 @@ config SECCOMP
->  
->  	  If unsure, say Y. Only embedded should say N here.
->  
-> -config CC_STACKPROTECTOR
-> -	bool "Enable -fstack-protector buffer overflow detection (EXPERIMENTAL)"
-> -	---help---
-> -	  This option turns on the -fstack-protector GCC feature. This
-> -	  feature puts, at the beginning of functions, a canary value on
-> -	  the stack just before the return address, and validates
-> -	  the value just before actually returning.  Stack based buffer
-> -	  overflows (that need to overwrite this return address) now also
-> -	  overwrite the canary, which gets detected and the attack is then
-> -	  neutralized via a kernel panic.
-> -
-> -	  This feature requires gcc version 4.2 or above, or a distribution
-> -	  gcc with the feature backported. Older versions are automatically
-> -	  detected and for those versions, this configuration option is
-> -	  ignored. (and a warning is printed during bootup)
-> -
->  source kernel/Kconfig.hz
->  
->  config KEXEC
-> diff --git a/include/asm-generic/stackprotector.h b/include/asm-generic/stackprotector.h
-> new file mode 100644
-> index 0000000..2cf9c65
-> --- /dev/null
-> +++ b/include/asm-generic/stackprotector.h
-> @@ -0,0 +1,39 @@
-> +/*
-> + * GCC stack protector support.
-> + * (Generic implementation based on __stack_chk_guard)
-> + *
-> + * Stack protector works by putting predefined pattern at the start of
-> + * the stack frame and verifying that it hasn't been overwritten when
-> + * returning from the function.  The pattern is called stack canary
-> + * and gcc expects it to be defined by a global variable called
-> + * "__stack_chk_guard". This unfortunately means that on SMP
-> + * we cannot have a different canary value per task.
-> + */
-> +
-> +#ifndef _LINUX_STACKPROTECTOR_H
-> +#error "Never use <asm-generic/stackprotector.h> directly; \
-> +include <linux/stackprotector.h> instead."
-> +#endif
-> +
-> +#include <linux/random.h>
-> +#include <linux/version.h>
-> +
-> +extern unsigned long __stack_chk_guard;
-> +
-> +/*
-> + * Initialize the stackprotector canary value.
-> + *
-> + * NOTE: this must only be called from functions that never return,
-> + * and it must always be inlined.
-> + */
-> +static __always_inline void boot_init_stack_canary(void)
-> +{
-> +	unsigned long canary;
-> +
-> +	/* Try to get a semi random initial value. */
-> +	get_random_bytes(&canary, sizeof(canary));
-> +	canary ^= LINUX_VERSION_CODE;
-> +
-> +	current->stack_canary = canary;
-> +	__stack_chk_guard = current->stack_canary;
-> +}
-> diff --git a/include/linux/stackprotector.h b/include/linux/stackprotector.h
-> index 6f3e54c..d71a437 100644
-> --- a/include/linux/stackprotector.h
-> +++ b/include/linux/stackprotector.h
-> @@ -6,7 +6,11 @@
->  #include <linux/random.h>
->  
->  #ifdef CONFIG_CC_STACKPROTECTOR
-> -# include <asm/stackprotector.h>
-> +#ifdef __ARCH_WANT_STACK_CHK_GUARD
-> +#include <asm-generic/stackprotector.h>
-> +#else
-> +#include <asm/stackprotector.h>
-> +#endif
->  #else
->  static inline void boot_init_stack_canary(void)
->  {
-> diff --git a/init/main.c b/init/main.c
-> index 8646401..8b2e070 100644
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -78,6 +78,11 @@
->  #include <asm/smp.h>
->  #endif
->  
-> +#if defined CONFIG_CC_STACKPROTECTOR && defined __ARCH_WANT_STACK_CHK_GUARD
-> +unsigned long __stack_chk_guard __read_mostly;
-> +EXPORT_SYMBOL(__stack_chk_guard);
-> +#endif
-> +
->  static int kernel_init(void *);
->  
->  extern void init_IRQ(void);
-> diff --git a/scripts/gcc-generic-has-stack-protector.sh b/scripts/gcc-generic-has-stack-protector.sh
-> new file mode 100755
-> index 0000000..11cc914
-> --- /dev/null
-> +++ b/scripts/gcc-generic-has-stack-protector.sh
-> @@ -0,0 +1,9 @@
-> +#!/bin/sh
-> +
-> +echo "int foo(void) { char X[200]; return 3; }" | $1 -S -xc -c -O0 \
-> +-fstack-protector - -o - 2> /dev/null | grep -q __stack_chk_guard
-> +if [ "$?" -eq "0" ] ; then
-> +	echo y
-> +else
-> +	echo n
-> +fi
+I've tried upgrading the kernel for a PXA300 based device from 2.6.36.2
+to 2.6.37 and now it crashes on boot. Looks like a regression in the
+PXA3XX NAND code. Does anyone have a clue on what might be going wrong
+or will I have to bisect this?
 
-Is someone interested into this stuff ?
+[    0.000000] Linux version 2.6.37 (sven@sven) (gcc version 4.3.5 (GCC) ) #1 Wed Jan 5 12:22:57 CET 2011
+[    0.000000] CPU: XScale-V3 based processor [69056881] revision 1 (ARMv5TE), cr=0000397f
+[    0.000000] CPU: VIVT data cache, VIVT instruction cache
+[    0.000000] Machine: Raumfeld Controller
+[    0.000000] Memory policy: ECC disabled, Data cache writeback
+[    0.000000] Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 32512
+[    0.000000] Kernel command line: console=ttyS0,115200 root=ubi0:RootFS rootfstype=ubifs rw ubi.mtd=3
+[    0.000000] PID hash table entries: 512 (order: -1, 2048 bytes)
+[    0.000000] Dentry cache hash table entries: 16384 (order: 4, 65536 bytes)
+[    0.000000] Inode-cache hash table entries: 8192 (order: 3, 32768 bytes)
+[    0.000000] Memory: 128MB = 128MB total
+[    0.000000] Memory: 124428k/124428k available, 6644k reserved, 0K highmem
+[    0.000000] Virtual kernel memory layout:
+[    0.000000]     vector  : 0xffff0000 - 0xffff1000   (   4 kB)
+[    0.000000]     fixmap  : 0xfff00000 - 0xfffe0000   ( 896 kB)
+[    0.000000]     DMA     : 0xffc00000 - 0xffe00000   (   2 MB)
+[    0.000000]     vmalloc : 0xc8800000 - 0xe8000000   ( 504 MB)
+[    0.000000]     lowmem  : 0xc0000000 - 0xc8000000   ( 128 MB)
+[    0.000000]     modules : 0xbf000000 - 0xc0000000   (  16 MB)
+[    0.000000]       .init : 0xc0008000 - 0xc0047000   ( 252 kB)
+[    0.000000]       .text : 0xc0047000 - 0xc04fcfc0   (4824 kB)
+[    0.000000]       .data : 0xc04fe000 - 0xc05240e0   ( 153 kB)
+[    0.000000] SLUB: Genslabs=13, HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+[    0.000000] NR_IRQS:288 nr_irqs:288 288
+[    0.000000] Console: colour dummy device 80x30
+[   24.433568] Calibrating delay loop... 103.83 BogoMIPS (lpj=519168)
+[   24.613627] pid_max: default: 32768 minimum: 301
+[   24.614271] Mount-cache hash table entries: 512
+[   24.615944] CPU: Testing write buffer coherency: ok
+[   24.637025] regulator: core version 0.5
+[   24.640368] regulator: dummy: 
+[   24.641070] NET: Registered protocol family 16
+[   24.800409] bio: create slab <bio-0> at 0
+[   24.811068] SCSI subsystem initialized
+[   24.816485] usbcore: registered new interface driver usbfs
+[   24.818824] usbcore: registered new interface driver hub
+[   24.820260] usbcore: registered new device driver usb
+[   24.829244] regulator: V6(LDO): 3300 mV normal 
+[   24.829495] max8660 1-0034: Maxim 8660/8661 regulator driver loaded
+[   24.829627] I2C: i2c-1: PXA I2C adapter
+[   24.833247] I2C: i2c-0: PXA I2C adapter
+[   24.841836] Advanced Linux Sound Architecture Driver Version 1.0.23.
+[   24.849337] cfg80211: Calling CRDA to update world regulatory domain
+[   24.856798] Switching to clocksource oscr0
+[   24.857409] FS-Cache: Loaded
+[   24.859185] CacheFiles: Loaded
+[   24.866203] Switched to NOHz mode on CPU #0
+[   24.989241] NET: Registered protocol family 2
+[   24.989794] IP route cache hash table entries: 1024 (order: 0, 4096 bytes)
+[   24.991284] TCP established hash table entries: 4096 (order: 3, 32768 bytes)
+[   24.992050] TCP bind hash table entries: 4096 (order: 2, 16384 bytes)
+[   24.992548] TCP: Hash tables configured (established 4096 bind 4096)
+[   24.992641] TCP reno registered
+[   24.992732] UDP hash table entries: 256 (order: 0, 4096 bytes)
+[   24.992924] UDP-Lite hash table entries: 256 (order: 0, 4096 bytes)
+[   24.994044] NET: Registered protocol family 1
+[   24.995271] RPC: Registered udp transport module.
+[   24.995365] RPC: Registered tcp transport module.
+[   24.995444] RPC: Registered tcp NFSv4.1 backchannel transport module.
+[   24.998402] CPUFREQ support for PXA3xx initialized
+[   25.039293] FS-Cache: Netfs 'nfs' registered for caching
+[   25.042156] msgmni has been set to 243
+[   25.043502] io scheduler noop registered
+[   25.043527] io scheduler deadline registered
+[   25.043712] io scheduler cfq registered (default)
+[   25.096255] Console: switching to colour frame buffer device 60x34
+[   25.110165] pxa3xx-gcu pxa3xx-gcu: registered @0x54000000, DMA 0xa6180000 (262144 bytes), IRQ 39
+[   25.901212] pxa2xx-uart.0: ttyS0 at MMIO 0x40100000 (irq = 22) is a FFUART
+[   26.264311] console [ttyS0] enabled
+[   26.280438] loop: module loaded
+[   26.288066] Unable to handle kernel NULL pointer dereference at virtual address 00000008
+[   26.296120] pgd = c0004000
+[   26.298893] [00000008] *pgd=00000000
+[   26.302445] Internal error: Oops: 5 [#1]
+[   26.306332] last sysfs file: 
+[   26.309272] Modules linked in:
+[   26.312301] CPU: 0    Not tainted  (2.6.37 #1)
+[   26.316724] PC is at __readid+0x10/0xd4
+[   26.320537] LR is at pxa3xx_nand_probe+0x350/0x6d0
+[   26.325293] pc : [<c0204a68>]    lr : [<c0205108>]    psr: 60000013
+[   26.325305] sp : c6031ed8  ip : 00000800  fp : 0000002d
+[   26.336695] r10: c05054e8  r9 : c62437a0  r8 : c60c2800
+[   26.341884] r7 : c0503d28  r6 : c6031ef8  r5 : 00000040  r4 : c60c2998
+[   26.348362] r3 : 00000000  r2 : c104dfff  r1 : c6031ef8  r0 : c60c2998
+[   26.354843] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+[   26.362103] Control: 0000397f  Table: a0004018  DAC: 00000035
+[   26.367806] Process swapper (pid: 1, stack limit = 0xc6030278)
+[   26.373596] Stack: (0xc6031ed8 to 0xc6032000)
+[   26.377925] 1ec0:                                                       c0503d20 c0503d28
+[   26.386055] 1ee0: c60c2998 00000040 c0503d20 c0205108 c0487ed2 c60c2998 ffffffff ffffffff
+[   26.394188] 1f00: c05149dc c0503d28 c0503d28 c05149dc c05149dc c0511098 00000000 00000000
+[   26.402322] 1f20: 00000000 c01daa70 c05149dc c01d9a94 c6232e40 c0503d28 c0503d5c c05149dc
+[   26.410455] 1f40: c6031f58 c01d9bd8 00000000 c01d9b78 c05149dc c01d92c4 c6004d38 c6056750
+[   26.418587] 1f60: c0511098 c00217bc c05149dc c05149dc c6232e40 c01d8b8c c0487ed2 c051b3cc
+[   26.426720] 1f80: c6243700 c00217bc c002195c c05149dc 00000013 c00188dc 00000000 c01d9ee0
+[   26.434853] 1fa0: c00217bc c002195c c0048984 00000013 c00188dc c0047404 00000033 00000000
+[   26.442985] 1fc0: 00000013 00000120 c05086ec c00217bc c002195c c0048984 00000013 00000000
+[   26.451117] 1fe0: 00000000 c000853c 00000000 00000000 c00084a4 c0048984 00000000 00000000
+[   26.459268] [<c0204a68>] (__readid+0x10/0xd4) from [<c0205108>] (pxa3xx_nand_probe+0x350/0x6d0)
+[   26.467942] [<c0205108>] (pxa3xx_nand_probe+0x350/0x6d0) from [<c01daa70>] (platform_drv_probe+0x1c/0x24)
+[   26.477464] [<c01daa70>] (platform_drv_probe+0x1c/0x24) from [<c01d9a94>] (driver_probe_device+0xb4/0x198)
+[   26.487067] [<c01d9a94>] (driver_probe_device+0xb4/0x198) from [<c01d9bd8>] (__driver_attach+0x60/0x84)
+[   26.496414] [<c01d9bd8>] (__driver_attach+0x60/0x84) from [<c01d92c4>] (bus_for_each_dev+0x4c/0x8c)
+[   26.505408] [<c01d92c4>] (bus_for_each_dev+0x4c/0x8c) from [<c01d8b8c>] (bus_add_driver+0xac/0x22c)
+[   26.514403] [<c01d8b8c>] (bus_add_driver+0xac/0x22c) from [<c01d9ee0>] (driver_register+0xc0/0x150)
+[   26.523416] [<c01d9ee0>] (driver_register+0xc0/0x150) from [<c0047404>] (do_one_initcall+0xc4/0x198)
+[   26.532506] [<c0047404>] (do_one_initcall+0xc4/0x198) from [<c000853c>] (kernel_init+0x98/0x150)
+[   26.541252] [<c000853c>] (kernel_init+0x98/0x150) from [<c0048984>] (kernel_thread_exit+0x0/0x8)
+[   26.549987] Code: e92d4070 e590322c e24dd008 e1a06001 (e1d310b8) 
+[   26.556173] ---[ end trace 5df7be383a843a01 ]---
+[   26.560823] Kernel panic - not syncing: Attempted to kill init!
+[   26.566768] [<c004c7d4>] (unwind_backtrace+0x0/0xec) from [<c0375c18>] (panic+0x4c/0x188)
+[   26.574955] [<c0375c18>] (panic+0x4c/0x188) from [<c005d9bc>] (do_exit+0x64/0x5e8)
+[   26.582531] [<c005d9bc>] (do_exit+0x64/0x5e8) from [<c004b59c>] (die+0x1b4/0x1e4)
+[   26.590027] [<c004b59c>] (die+0x1b4/0x1e4) from [<c004d930>] (__do_kernel_fault+0x64/0x88)
+[   26.598295] [<c004d930>] (__do_kernel_fault+0x64/0x88) from [<c004db0c>] (do_page_fault+0x1b8/0x1d0)
+[   26.607437] [<c004db0c>] (do_page_fault+0x1b8/0x1d0) from [<c00472dc>] (do_DataAbort+0x34/0x94)
+[   26.616099] [<c00472dc>] (do_DataAbort+0x34/0x94) from [<c0047b4c>] (__dabt_svc+0x4c/0x60)
+[   26.624339] Exception stack(0xc6031e90 to 0xc6031ed8)
+[   26.629391] 1e80:                                     c60c2998 c6031ef8 c104dfff 00000000
+[   26.637556] 1ea0: c60c2998 00000040 c6031ef8 c0503d28 c60c2800 c62437a0 c05054e8 0000002d
+[   26.645685] 1ec0: 00000800 c6031ed8 c0205108 c0204a68 60000013 ffffffff
+[   26.652304] [<c0047b4c>] (__dabt_svc+0x4c/0x60) from [<c0204a68>] (__readid+0x10/0xd4)
+[   26.660223] [<c0204a68>] (__readid+0x10/0xd4) from [<c0205108>] (pxa3xx_nand_probe+0x350/0x6d0)
+[   26.668930] [<c0205108>] (pxa3xx_nand_probe+0x350/0x6d0) from [<c01daa70>] (platform_drv_probe+0x1c/0x24)
+[   26.678498] [<c01daa70>] (platform_drv_probe+0x1c/0x24) from [<c01d9a94>] (driver_probe_device+0xb4/0x198)
+[   26.688146] [<c01d9a94>] (driver_probe_device+0xb4/0x198) from [<c01d9bd8>] (__driver_attach+0x60/0x84)
+[   26.697538] [<c01d9bd8>] (__driver_attach+0x60/0x84) from [<c01d92c4>] (bus_for_each_dev+0x4c/0x8c)
+[   26.706542] [<c01d92c4>] (bus_for_each_dev+0x4c/0x8c) from [<c01d8b8c>] (bus_add_driver+0xac/0x22c)
+[   26.715577] [<c01d8b8c>] (bus_add_driver+0xac/0x22c) from [<c01d9ee0>] (driver_register+0xc0/0x150)
+[   26.724627] [<c01d9ee0>] (driver_register+0xc0/0x150) from [<c0047404>] (do_one_initcall+0xc4/0x198)
+[   26.733757] [<c0047404>] (do_one_initcall+0xc4/0x198) from [<c000853c>] (kernel_init+0x98/0x150)
+[   26.742546] [<c000853c>] (kernel_init+0x98/0x150) from [<c0048984>] (kernel_thread_exit+0x0/0x8)
 
-Thanks,
-Carmelo
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (MingW32)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-iEYEARECAAYFAk0kXRYACgkQoRq/3BrK1s+ZOwCfdZ80u8gdnA9fJikmL+uxsX5I
-RWkAn2KUqB4F/RSQ6stRj4ajoPgvCRCa
-=ub67
------END PGP SIGNATURE-----
+Regards,
+Sven
+
+
