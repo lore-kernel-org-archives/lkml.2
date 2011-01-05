@@ -1,60 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043Ab1AER20 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 12:28:26 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:57224 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab1AER2Y convert rfc822-to-8bit (ORCPT
+	id S1752085Ab1AER2m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 12:28:42 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:57961 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752051Ab1AER2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 12:28:24 -0500
-Subject: Re: [RFC -v3 PATCH 2/3] sched: add yield_to function
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Avi Kivity <avi@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>
-In-Reply-To: <4D24A822.4000009@redhat.com>
-References: <20110103162637.29f23c40@annuminas.surriel.com>
-	 <20110103162918.577a9620@annuminas.surriel.com>
-	 <1294164289.2016.186.camel@laptop>  <4D24A5F4.3000508@redhat.com>
-	 <1294247718.2016.269.camel@laptop>  <4D24A822.4000009@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 05 Jan 2011 18:28:31 +0100
-Message-ID: <1294248511.2016.274.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 5 Jan 2011 12:28:41 -0500
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: "M. Mohan Kumar" <mohan@in.ibm.com>,
+        v9fs-developer <v9fs-developer@lists.sourceforge.net>,
+        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [V2] fs/9p: TREADLINK bugfix
+In-Reply-To: <1294246196-8354-1-git-send-email-mohan@in.ibm.com>
+References: <1294246196-8354-1-git-send-email-mohan@in.ibm.com>
+User-Agent: Notmuch/0.5-32-gf6c60cc (http://notmuchmail.org) Emacs/23.1.1 (i486-pc-linux-gnu)
+Date: Wed, 05 Jan 2011 22:58:36 +0530
+Message-ID: <8739p745vf.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-05 at 19:19 +0200, Avi Kivity wrote:
-> On 01/05/2011 07:15 PM, Peter Zijlstra wrote:
-> > On Wed, 2011-01-05 at 19:10 +0200, Avi Kivity wrote:
-> > >  On 01/04/2011 08:04 PM, Peter Zijlstra wrote:
-> > >  >  This definitely wants to be EXPORT_SYMBOL_GPL() and if it were possible
-> > >  >  I'd make it so only kvm.o could use it. It really sucks that kvm is a
-> > >  >  module.
-> > >
-> > >  Why does it suck?  I mean apart from the "virtualization is crap" song.
-> >
-> > Because it needs hooks all over the core kernel, like this yield_to()
-> > stuff. Exporting this might lead to others wanting to use it too.
+On Wed,  5 Jan 2011 22:19:56 +0530, "M. Mohan Kumar" <mohan@in.ibm.com> wrote:
+> Remove v9fs_vfs_readlink_dotl function and use generic_readlink. Update
+> v9fs_vfs_follow_link_dotl function to accommodate this change
 > 
-> Well, it's very convenient for development (modprobe vs. reboot).
+> Signed-off-by: M. Mohan Kumar <mohan@in.ibm.com>
+> Reported-by:  Dr. David Alan Gilbert <linux@treblig.org>
+> ---
+> Changes from previous version:
+> * Use __getname in v9fs_vfs_follow_link_dotl
+> * Remove v9fs_vfs_readlink_dotl function
+> 
+>  fs/9p/vfs_inode.c |   53 +++++++++++++++++------------------------------------
+>  1 files changed, 17 insertions(+), 36 deletions(-)
+> 
+> diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
+> index 2ce3668..7e613e8 100644
+> --- a/fs/9p/vfs_inode.c
+> +++ b/fs/9p/vfs_inode.c
+> @@ -1994,30 +1994,6 @@ error:
+>  	return err;
+>  }
+> 
+> -static int
+> -v9fs_vfs_readlink_dotl(struct dentry *dentry, char *buffer, int buflen)
+> -{
+> -	int retval;
+> -	struct p9_fid *fid;
+> -	char *target = NULL;
+> -
+> -	P9_DPRINTK(P9_DEBUG_VFS, " %s\n", dentry->d_name.name);
+> -	retval = -EPERM;
+> -	fid = v9fs_fid_lookup(dentry);
+> -	if (IS_ERR(fid))
+> -		return PTR_ERR(fid);
+> -
+> -	retval = p9_client_readlink(fid, &target);
+> -	if (retval < 0)
+> -		return retval;
+> -
+> -	strncpy(buffer, target, buflen);
+> -	P9_DPRINTK(P9_DEBUG_VFS, "%s -> %s\n", dentry->d_name.name, buffer);
+> -
+> -	retval = strnlen(buffer, buflen);
+> -	return retval;
+> -}
+> -
+>  /**
+>   * v9fs_vfs_follow_link_dotl - follow a symlink path
+>   * @dentry: dentry for symlink
+> @@ -2028,23 +2004,28 @@ v9fs_vfs_readlink_dotl(struct dentry *dentry, char *buffer, int buflen)
+>  static void *
+>  v9fs_vfs_follow_link_dotl(struct dentry *dentry, struct nameidata *nd)
+>  {
+> -	int len = 0;
+> +	int retval;
+> +	struct p9_fid *fid;
+>  	char *link = __getname();
+> +	char *target;
+> 
+> -	P9_DPRINTK(P9_DEBUG_VFS, "%s n", dentry->d_name.name);
+> +	P9_DPRINTK(P9_DEBUG_VFS, "%s\n", dentry->d_name.name);
+> 
+>  	if (!link)
+> -		link = ERR_PTR(-ENOMEM);
+> -	else {
+> -		len = v9fs_vfs_readlink_dotl(dentry, link, PATH_MAX);
+> -		if (len < 0) {
+> -			__putname(link);
+> -			link = ERR_PTR(len);
+> -		} else
+> -			link[min(len, PATH_MAX-1)] = 0;
+> +		return NULL;
+                
+That should either be return ERR_PTR(-ENOMEM);
+or link = ERR_PTR(-ENOME) ;nd_set_link(..); return NULL;
 
-Get a machine that boots fast ;-), it might be because I've never worked
-on anything modular, but typically stuff crashes when I got it wrong, in
-which case you're forced to power-cycle anyway.
+> +	fid = v9fs_fid_lookup(dentry);
+> +	if (IS_ERR(fid))
+> +		return fid;
+> +	retval = p9_client_readlink(fid, &target);
+> +	if (retval < 0) {
+> +		__putname(link);
+> +		kfree(target);
+> +		return NULL;
 
->   What hooks do you object to? 
+same here either return error or do nd_set_link and return NULL;
 
-Don't really keep a list, but every now and again see something that
-makes me think that ought not be exported.
+>  	}
+> -	nd_set_link(nd, link);
+> 
+> +	strcpy(link, target);
+> +	nd_set_link(nd, link);
+> +	kfree(target);
+>  	return NULL;
+>  }
+> 
+> @@ -2117,7 +2098,7 @@ static const struct inode_operations v9fs_symlink_inode_operations = {
+>  };
+> 
+>  static const struct inode_operations v9fs_symlink_inode_operations_dotl = {
+> -	.readlink = v9fs_vfs_readlink_dotl,
+> +	.readlink = generic_readlink,
+>  	.follow_link = v9fs_vfs_follow_link_dotl,
+>  	.put_link = v9fs_vfs_put_link,
+>  	.getattr = v9fs_vfs_getattr_dotl,
+> -- 
 
-> mmu notifiers are useful for some drivers, sched 
-> notifiers are useful for cmwq and possibly perf?
-
-Both use explicit function calls because its easier to read the code and
-faster.
+-aneesh
