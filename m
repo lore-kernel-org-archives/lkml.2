@@ -1,48 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752106Ab1AESnz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 13:43:55 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38700
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751353Ab1AESny (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 13:43:54 -0500
-Date: Wed, 05 Jan 2011 10:44:25 -0800 (PST)
-Message-Id: <20110105.104425.71112703.davem@davemloft.net>
-To: rostedt@goodmis.org
-Cc: ddaney@caviumnetworks.com, jbaron@redhat.com, ralf@linux-mips.org,
-        peterz@infradead.org, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
-        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, sam@ravnborg.org,
-        michael@ellerman.id.au, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] jump label: introduce static_branch()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1294249439.26623.35.camel@gandalf.stny.rr.com>
-References: <2d8c38bd7ca93e162aedb8e7acfc8bdb96d85de2.1294239591.git.jbaron@redhat.com>
-	<4D24AB1B.2010209@caviumnetworks.com>
-	<1294249439.26623.35.camel@gandalf.stny.rr.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1752342Ab1AESqL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 13:46:11 -0500
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:35757 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751964Ab1AESqJ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 13:46:09 -0500
+MIME-Version: 1.0
+In-Reply-To: <1294208410-4772-1-git-send-email-fernando.lugo@ti.com>
+References: <1294208410-4772-1-git-send-email-fernando.lugo@ti.com>
+Date: Wed, 5 Jan 2011 12:46:05 -0600
+Message-ID: <AANLkTinNhBwjFPXwWFWUVfccUzJFN+6NDgxiuKNa_9N7@mail.gmail.com>
+Subject: Re: [PATCH] staging: tidspbridge - configure full L1 MMU range
+From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+To: Fernando Guzman Lugo <fernando.lugo@ti.com>
+Cc: gregkh@suse.de, rene.sapiens@ti.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Felipe Contreras <felipe.contreras@nokia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
-Date: Wed, 05 Jan 2011 12:43:59 -0500
+Hi,
 
-> On Wed, 2011-01-05 at 09:32 -0800, David Daney wrote:
-> 
->> This patch will conflict with the MIPS jump label support that Ralf has 
->> queued up for 2.6.38.
-> 
-> Can you disable that support for now? As Linus said at Kernel Summit,
-> other archs jumped too quickly onto the jump label band wagon.
+On Wed, Jan 5, 2011 at 12:20 AM, Fernando Guzman Lugo
+<fernando.lugo@ti.com> wrote:
+> Otherwise a virtual address beyond of the L1 size is used,
+> the MMU hardware will look into a memory that does not belong to
+> L1 translation tables. IOW; the MMU would allow to access any
+> memory, configured or not.
+>
 
-I totally disagree with this assesment.  Implementing jump label for
-sparc64 as early as possible found so much broken stuff that otherwise
-would have merged in before any other architecture tried supporting
-it.
+How about:
 
+IVA MMU can manage up to 4GB of address space through its page tables,
+given that it's L1 is divided into 1MB sections it requires at least
+16KB for its table which represents 4096 entries of 32 bits each.
+
+Previously, only 1GB was being handled by setting the page table size
+to 4KB, any virtual address beyond of the L1 size used, would fall
+into memory that does not belong to L1 translation tables, leading to
+unpredictable results.
+
+So, set the L1 table size to cover the entire MMU range (4GB) whether
+is meant to be used or not.
+
+> Reported-by: Felipe Contreras <felipe.contreras@nokia.com>
+> Signed-off-by: Fernando Guzman Lugo <fernando.lugo@ti.com>
+> Signed-off-by: Felipe Contreras <felipe.contreras@nokia.com>
+> ---
+>  drivers/staging/tidspbridge/core/tiomap3430.c |    6 ++----
+>  1 files changed, 2 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
+> index 1be081f..ec96d1e 100644
+> --- a/drivers/staging/tidspbridge/core/tiomap3430.c
+> +++ b/drivers/staging/tidspbridge/core/tiomap3430.c
+> @@ -70,6 +70,7 @@
+>  #define MMU_LARGE_PAGE_MASK      0xFFFF0000
+>  #define MMU_SMALL_PAGE_MASK      0xFFFFF000
+>  #define OMAP3_IVA2_BOOTADDR_MASK 0xFFFFFC00
+> +#define MMU_L1_SIZE              0x4000
+>  #define PAGES_II_LVL_TABLE   512
+>  #define PHYS_TO_PAGE(phys)      pfn_to_page((phys) >> PAGE_SHIFT)
+>
+> @@ -786,10 +787,7 @@ static int bridge_dev_create(struct bridge_dev_context
+>
+>        pt_attrs = kzalloc(sizeof(struct pg_table_attrs), GFP_KERNEL);
+>        if (pt_attrs != NULL) {
+> -               /* Assuming that we use only DSP's memory map
+> -                * until 0x4000:0000 , we would need only 1024
+> -                * L1 enties i.e L1 size = 4K */
+> -               pt_attrs->l1_size = 0x1000;
+> +               pt_attrs->l1_size = MMU_L1_SIZE;
+
+How about using SZ_16K instead, struct member name already specifies
+it is L1 size, is the new define needed?
+
+Regards,
+
+Omar
