@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751474Ab1AEJCV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 04:02:21 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:9626 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751163Ab1AEJCT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 04:02:19 -0500
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-To: Samuel Ortiz <sameo@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        Marc Zyngier <maz@misterjones.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH linux-next-2.6] gpio/ml_ioh_gpio: fix resource leak issue
-Date: Wed,  5 Jan 2011 18:02:06 +0900
-Message-Id: <1294218126-5801-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-X-Mailer: git-send-email 1.6.2.5
+	id S1751538Ab1AEJIe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 04:08:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57887 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751298Ab1AEJIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 04:08:31 -0500
+Message-ID: <4D2434F6.4020904@redhat.com>
+Date: Wed, 05 Jan 2011 11:08:06 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>
+Subject: Re: [RFC -v3 PATCH 2/3] sched: add yield_to function
+References: <20110105110837.B62A.A69D9226@jp.fujitsu.com> <4D242D60.9060301@redhat.com> <20110105173823.B658.A69D9226@jp.fujitsu.com>
+In-Reply-To: <20110105173823.B658.A69D9226@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(1) add gpiochip_remove processing in case gpiochip_add fails.
-(2) for easy to read, move variable initialization to out of for-condition.
+On 01/05/2011 10:40 AM, KOSAKI Motohiro wrote:
+> >  On 01/05/2011 04:39 AM, KOSAKI Motohiro wrote:
+> >  >  >   On 01/04/2011 08:14 AM, KOSAKI Motohiro wrote:
+> >  >  >   >   Also, If pthread_cond_signal() call sys_yield_to imlicitly, we can
+> >  >  >   >   avoid almost Nehalem (and other P2P cache arch) lock unfairness
+> >  >  >   >   problem. (probaby creating pthread_condattr_setautoyield_np or similar
+> >  >  >   >   knob is good one)
+> >  >  >
+> >  >  >   Often, the thread calling pthread_cond_signal() wants to continue
+> >  >  >   executing, not yield.
+> >  >
+> >  >  Then, it doesn't work.
+> >  >
+> >  >  After calling pthread_cond_signal(), T1 which cond_signal caller and T2
+> >  >  which waked start to GIL grab race. But usually T1 is always win because
+> >  >  lock variable is in T1's cpu cache. Why kernel and userland have so much
+> >  >  different result? One of a reason is glibc doesn't have any ticket lock scheme.
+> >  >
+> >  >  If you are interesting GIL mess and issue, please feel free to ask more.
+> >
+> >  I suggest looking into an explicit round-robin scheme, where each thread
+> >  adds itself to a queue and an unlock wakes up the first waiter.
+>
+> I'm sure you haven't try your scheme. but I did. It's slow.
 
-Reported-by: Andrew Morton. <akpm@linux-foundation.org>
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
- drivers/gpio/ml_ioh_gpio.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+Won't anything with a heavily contented global/giant lock be slow?
 
-diff --git a/drivers/gpio/ml_ioh_gpio.c b/drivers/gpio/ml_ioh_gpio.c
-index 4fa3224..cead8e6 100644
---- a/drivers/gpio/ml_ioh_gpio.c
-+++ b/drivers/gpio/ml_ioh_gpio.c
-@@ -208,7 +208,8 @@ static int __devinit ioh_gpio_probe(struct pci_dev *pdev,
- 		goto err_kzalloc;
- 	}
- 
--	for (i = 0, chip = chip_save; i < 8; i++, chip++) {
-+	chip = chip_save;
-+	for (i = 0; i < 8; i++, chip++) {
- 		chip->dev = &pdev->dev;
- 		chip->base = base;
- 		chip->reg = chip->base;
-@@ -228,6 +229,12 @@ static int __devinit ioh_gpio_probe(struct pci_dev *pdev,
- 	return 0;
- 
- err_gpiochip_add:
-+	for (; i != 0; i--) {
-+		chip--;
-+		ret = gpiochip_remove(&chip->gpio);
-+		if (ret)
-+			dev_err(&pdev->dev, "Failed gpiochip_remove(%d)\n", i);
-+	}
- 	kfree(chip_save);
- 
- err_kzalloc:
+What's the average lock hold time per thread? 10%? 50%? 90%?
+
 -- 
-1.6.2.5
+error compiling committee.c: too many arguments to function
 
