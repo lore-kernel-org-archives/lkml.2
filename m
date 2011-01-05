@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043Ab1AEUyt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 15:54:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63468 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751989Ab1AEUys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 15:54:48 -0500
-Date: Wed, 5 Jan 2011 21:47:00 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Chris Mason <chris.mason@oracle.com>,
-        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
-        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 18/18] sched: Sort hotplug vs ttwu queueing
-Message-ID: <20110105204700.GA1313@redhat.com>
-References: <20110104145929.772813816@chello.nl> <20110104150103.214765376@chello.nl>
+	id S1752430Ab1AEVFg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 16:05:36 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52310 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751373Ab1AEVFf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 16:05:35 -0500
+Date: Wed, 5 Jan 2011 21:04:48 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+Message-ID: <20110105210448.GM8638@n2100.arm.linux.org.uk>
+References: <1294254337.16957.13.camel@mulgrave.site> <AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com> <1294256169.16957.18.camel@mulgrave.site> <20110105200008.GJ8638@n2100.arm.linux.org.uk> <1294259637.16957.25.camel@mulgrave.site> <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110104150103.214765376@chello.nl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04, Peter Zijlstra wrote:
->
-> +#ifdef CONFIG_HOTPLUG_CPU
-> +static void ttwu_queue_unplug(struct rq *rq)
-> +{
-> +	struct task_struct *p, *list = xchg(&rq->wake_list, NULL);
-> +	unsigned long flags;
-> +	int cpu;
-> +
-> +	if (!list)
-> +		return;
-> +
-> +	while (list) {
-> +		p = list;
-> +		list = list->wake_entry;
-> +
-> +		raw_spin_lock_irqsave(&p->pi_lock, flags);
-> +		cpu = select_task_rq(p, SD_BALANCE_WAKE, 0);
-> +		set_task_cpu(p, cpu);
-> +		ttwu_queue(p, cpu);
-> +		raw_spin_unlock_irqrestore(&p->pi_lock, flags);
-> +	}
-> +}
-> +#endif
-> +
->  /**
->   * try_to_wake_up - wake up a thread
->   * @p: the thread to be awakened
-> @@ -6151,6 +6174,11 @@ migration_call(struct notifier_block *nf
->  		migrate_nr_uninterruptible(rq);
->  		calc_global_load_remove(rq);
->  		break;
-> +
-> +	case CPU_DEAD:
-> +		ttwu_queue_unplug(cpu_rq(cpu));
+On Wed, Jan 05, 2011 at 12:48:32PM -0800, Linus Torvalds wrote:
+> (You can also force the problem with vmalloc() an then following the
+> kernel page tables, but I hope nobody does that any more. I suspect
+> I'm wrong, though, there's probably code that mixes vmalloc and
+> physical page accesses in various drivers)
 
-I think this is not strictly needed...
+Should vmalloc_to_page() (84 users)/vmalloc_to_pfn() (17 users) be
+deprecated then? ;)
 
-Afaics, take_cpu_down() can simply call sched_ttwu_pending() at the
-start. This will activate the pending tasks on the (almost) dead
-cpu but we don't care, they will be migrated later.
+However, we seem have new ways of doing this - rather than asking
+vmalloc() for some memory, and then getting at the pages by following
+the page tables, we now have ways to create mappings using arrays of
+struct pages and access them via their already known mappings:
 
-When __stop_machine(take_cpu_down) returns nobody can use this CPU
-as a target, iow rq->wake_list can't be used again.
+- vm_map_ram(struct page **pages, unsigned int count, int node, pgprot_t prot)
+- map_kernel_range_noflush(unsigned long addr, unsigned long size, pgprot_t prot, struct page **pages)
+- map_vm_area(struct vm_struct *area, pgprot_t prot, struct page ***pages)
+- vmap(struct page **pages, unsigned int count, unsigned long flags, pgprot_t prot)
 
-Oleg.
-
+So really it's the same problem, just created by some other easier
+to use methods.
