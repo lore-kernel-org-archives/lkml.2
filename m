@@ -1,48 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751356Ab1AEIVc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 03:21:32 -0500
-Received: from smtp.nokia.com ([147.243.1.47]:26023 "EHLO mgw-sa01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751170Ab1AEIVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 03:21:31 -0500
-Message-ID: <4D2429F3.80004@nokia.com>
-Date: Wed, 05 Jan 2011 10:21:07 +0200
-From: Peter Ujfalusi <peter.ujfalusi@nokia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110103 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1751373Ab1AEIZV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 03:25:21 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:34679 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750959Ab1AEIZU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 03:25:20 -0500
+Date: Wed, 5 Jan 2011 02:25:12 -0600
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+To: Roberto Sassu <roberto.sassu@polito.it>
+Cc: linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zohar@linux.vnet.ibm.com, dhowells@redhat.com, jmorris@namei.org,
+        safford@watson.ibm.com, ramunno@polito.it, kirkland@canonical.com
+Subject: Re: [RFC][PATCH v2 4/6] eCryptfs: export global eCryptfs definitions
+ to include/linux/ecryptfs.h
+Message-ID: <20110105082440.GB15439@boyd.l.tihix.com>
+References: <1293533302-22868-1-git-send-email-roberto.sassu@polito.it>
+ <1293533302-22868-5-git-send-email-roberto.sassu@polito.it>
 MIME-Version: 1.0
-To: "ext tapio.vihuri@nokia.com" <tapio.vihuri@nokia.com>
-CC: dmitry.torokhov@gmail.com, randy.dunlap@oracle.com,
-        alsa-devel@alsa-project.org, ilkka.koskinen@nokia.com,
-        linux-kernel@vger.kernel.org, samu.p.onkalo@nokia.com
-Subject: Re: [alsa-devel] [PATCH v3 2/3] ECI: introducing ECI bus driver
-References: <1294149748-13854-1-git-send-email-tapio.vihuri@nokia.com>	<1294149748-13854-2-git-send-email-tapio.vihuri@nokia.com> <1294149748-13854-3-git-send-email-tapio.vihuri@nokia.com>
-In-Reply-To: <1294149748-13854-3-git-send-email-tapio.vihuri@nokia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1293533302-22868-5-git-send-email-roberto.sassu@polito.it>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 01/04/11 16:02, ext tapio.vihuri@nokia.com wrote:
-> From: Tapio Vihuri <tapio.vihuri@nokia.com>
+On Tue Dec 28, 2010 at 11:48:14AM +0100, Roberto Sassu <roberto.sassu@polito.it> wrote:
+> Some eCryptfs specific definitions, such as the current version and the
+> authentication token structure, are moved to the new include file
+> 'include/linux/ecryptfs.h', in order to be available for all kernel
+> subsystems.
 > 
-> ECI bus controller is kind of bridge between host CPU I2C and ECI accessory
-> ECI communication.
+> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 
-There seams to be no change between v2 and v3 in regards to this micro
-controller driver, so my comments on the v2 applies here as well.
+Acked-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
 
-Would you rename the driver (to something other than ecibus)?
-If the intention is to make this driver only work on Intel's Moorestown
-platform, then be it, but you should mention it explicitly in the
-Kconfig, and the driver name shall reflect the same as well.
+> ---
+>  fs/ecryptfs/ecryptfs_kernel.h |  109 +---------------------------------------
+>  include/linux/ecryptfs.h      |  113 +++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 114 insertions(+), 108 deletions(-)
+>  create mode 100644 include/linux/ecryptfs.h
+> 
+> diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
+> index 0032a9f..a27cad4 100644
+> --- a/fs/ecryptfs/ecryptfs_kernel.h
+> +++ b/fs/ecryptfs/ecryptfs_kernel.h
+> @@ -36,125 +36,18 @@
+>  #include <linux/hash.h>
+>  #include <linux/nsproxy.h>
+>  #include <linux/backing-dev.h>
+> +#include <linux/ecryptfs.h>
+> 
+> -/* Version verification for shared data structures w/ userspace */
+> -#define ECRYPTFS_VERSION_MAJOR 0x00
+> -#define ECRYPTFS_VERSION_MINOR 0x04
+> -#define ECRYPTFS_SUPPORTED_FILE_VERSION 0x03
+> -/* These flags indicate which features are supported by the kernel
+> - * module; userspace tools such as the mount helper read
+> - * ECRYPTFS_VERSIONING_MASK from a sysfs handle in order to determine
+> - * how to behave. */
+> -#define ECRYPTFS_VERSIONING_PASSPHRASE            0x00000001
+> -#define ECRYPTFS_VERSIONING_PUBKEY                0x00000002
+> -#define ECRYPTFS_VERSIONING_PLAINTEXT_PASSTHROUGH 0x00000004
+> -#define ECRYPTFS_VERSIONING_POLICY                0x00000008
+> -#define ECRYPTFS_VERSIONING_XATTR                 0x00000010
+> -#define ECRYPTFS_VERSIONING_MULTKEY               0x00000020
+> -#define ECRYPTFS_VERSIONING_DEVMISC               0x00000040
+> -#define ECRYPTFS_VERSIONING_HMAC                  0x00000080
+> -#define ECRYPTFS_VERSIONING_FILENAME_ENCRYPTION   0x00000100
+> -#define ECRYPTFS_VERSIONING_GCM                   0x00000200
+> -#define ECRYPTFS_VERSIONING_MASK (ECRYPTFS_VERSIONING_PASSPHRASE \
+> -				  | ECRYPTFS_VERSIONING_PLAINTEXT_PASSTHROUGH \
+> -				  | ECRYPTFS_VERSIONING_PUBKEY \
+> -				  | ECRYPTFS_VERSIONING_XATTR \
+> -				  | ECRYPTFS_VERSIONING_MULTKEY \
+> -				  | ECRYPTFS_VERSIONING_DEVMISC \
+> -				  | ECRYPTFS_VERSIONING_FILENAME_ENCRYPTION)
+> -#define ECRYPTFS_MAX_PASSWORD_LENGTH 64
+> -#define ECRYPTFS_MAX_PASSPHRASE_BYTES ECRYPTFS_MAX_PASSWORD_LENGTH
+> -#define ECRYPTFS_SALT_SIZE 8
+> -#define ECRYPTFS_SALT_SIZE_HEX (ECRYPTFS_SALT_SIZE*2)
+> -/* The original signature size is only for what is stored on disk; all
+> - * in-memory representations are expanded hex, so it better adapted to
+> - * be passed around or referenced on the command line */
+> -#define ECRYPTFS_SIG_SIZE 8
+> -#define ECRYPTFS_SIG_SIZE_HEX (ECRYPTFS_SIG_SIZE*2)
+> -#define ECRYPTFS_PASSWORD_SIG_SIZE ECRYPTFS_SIG_SIZE_HEX
+> -#define ECRYPTFS_MAX_KEY_BYTES 64
+> -#define ECRYPTFS_MAX_ENCRYPTED_KEY_BYTES 512
+>  #define ECRYPTFS_DEFAULT_IV_BYTES 16
+> -#define ECRYPTFS_FILE_VERSION 0x03
+>  #define ECRYPTFS_DEFAULT_EXTENT_SIZE 4096
+>  #define ECRYPTFS_MINIMUM_HEADER_EXTENT_SIZE 8192
+>  #define ECRYPTFS_DEFAULT_MSG_CTX_ELEMS 32
+>  #define ECRYPTFS_DEFAULT_SEND_TIMEOUT HZ
+>  #define ECRYPTFS_MAX_MSG_CTX_TTL (HZ*3)
+> -#define ECRYPTFS_MAX_PKI_NAME_BYTES 16
+>  #define ECRYPTFS_DEFAULT_NUM_USERS 4
+>  #define ECRYPTFS_MAX_NUM_USERS 32768
+>  #define ECRYPTFS_XATTR_NAME "user.ecryptfs"
+> 
+> -#define RFC2440_CIPHER_DES3_EDE 0x02
+> -#define RFC2440_CIPHER_CAST_5 0x03
+> -#define RFC2440_CIPHER_BLOWFISH 0x04
+> -#define RFC2440_CIPHER_AES_128 0x07
+> -#define RFC2440_CIPHER_AES_192 0x08
+> -#define RFC2440_CIPHER_AES_256 0x09
+> -#define RFC2440_CIPHER_TWOFISH 0x0a
+> -#define RFC2440_CIPHER_CAST_6 0x0b
+> -
+> -#define RFC2440_CIPHER_RSA 0x01
+> -
+> -/**
+> - * For convenience, we may need to pass around the encrypted session
+> - * key between kernel and userspace because the authentication token
+> - * may not be extractable.  For example, the TPM may not release the
+> - * private key, instead requiring the encrypted data and returning the
+> - * decrypted data.
+> - */
+> -struct ecryptfs_session_key {
+> -#define ECRYPTFS_USERSPACE_SHOULD_TRY_TO_DECRYPT 0x00000001
+> -#define ECRYPTFS_USERSPACE_SHOULD_TRY_TO_ENCRYPT 0x00000002
+> -#define ECRYPTFS_CONTAINS_DECRYPTED_KEY 0x00000004
+> -#define ECRYPTFS_CONTAINS_ENCRYPTED_KEY 0x00000008
+> -	u32 flags;
+> -	u32 encrypted_key_size;
+> -	u32 decrypted_key_size;
+> -	u8 encrypted_key[ECRYPTFS_MAX_ENCRYPTED_KEY_BYTES];
+> -	u8 decrypted_key[ECRYPTFS_MAX_KEY_BYTES];
+> -};
+> -
+> -struct ecryptfs_password {
+> -	u32 password_bytes;
+> -	s32 hash_algo;
+> -	u32 hash_iterations;
+> -	u32 session_key_encryption_key_bytes;
+> -#define ECRYPTFS_PERSISTENT_PASSWORD 0x01
+> -#define ECRYPTFS_SESSION_KEY_ENCRYPTION_KEY_SET 0x02
+> -	u32 flags;
+> -	/* Iterated-hash concatenation of salt and passphrase */
+> -	u8 session_key_encryption_key[ECRYPTFS_MAX_KEY_BYTES];
+> -	u8 signature[ECRYPTFS_PASSWORD_SIG_SIZE + 1];
+> -	/* Always in expanded hex */
+> -	u8 salt[ECRYPTFS_SALT_SIZE];
+> -};
+> -
+> -enum ecryptfs_token_types {ECRYPTFS_PASSWORD, ECRYPTFS_PRIVATE_KEY};
+> -
+> -struct ecryptfs_private_key {
+> -	u32 key_size;
+> -	u32 data_len;
+> -	u8 signature[ECRYPTFS_PASSWORD_SIG_SIZE + 1];
+> -	char pki_type[ECRYPTFS_MAX_PKI_NAME_BYTES + 1];
+> -	u8 data[];
+> -};
+> -
+> -/* May be a password or a private key */
+> -struct ecryptfs_auth_tok {
+> -	u16 version; /* 8-bit major and 8-bit minor */
+> -	u16 token_type;
+> -#define ECRYPTFS_ENCRYPT_ONLY 0x00000001
+> -	u32 flags;
+> -	struct ecryptfs_session_key session_key;
+> -	u8 reserved[32];
+> -	union {
+> -		struct ecryptfs_password password;
+> -		struct ecryptfs_private_key private_key;
+> -	} token;
+> -} __attribute__ ((packed));
+> -
+>  void ecryptfs_dump_auth_tok(struct ecryptfs_auth_tok *auth_tok);
+>  extern void ecryptfs_to_hex(char *dst, char *src, size_t src_size);
+>  extern void ecryptfs_from_hex(char *dst, char *src, int dst_size);
+> diff --git a/include/linux/ecryptfs.h b/include/linux/ecryptfs.h
+> new file mode 100644
+> index 0000000..2224a8c
+> --- /dev/null
+> +++ b/include/linux/ecryptfs.h
+> @@ -0,0 +1,113 @@
+> +#ifndef _LINUX_ECRYPTFS_H
+> +#define _LINUX_ECRYPTFS_H
+> +
+> +/* Version verification for shared data structures w/ userspace */
+> +#define ECRYPTFS_VERSION_MAJOR 0x00
+> +#define ECRYPTFS_VERSION_MINOR 0x04
+> +#define ECRYPTFS_SUPPORTED_FILE_VERSION 0x03
+> +/* These flags indicate which features are supported by the kernel
+> + * module; userspace tools such as the mount helper read
+> + * ECRYPTFS_VERSIONING_MASK from a sysfs handle in order to determine
+> + * how to behave. */
+> +#define ECRYPTFS_VERSIONING_PASSPHRASE            0x00000001
+> +#define ECRYPTFS_VERSIONING_PUBKEY                0x00000002
+> +#define ECRYPTFS_VERSIONING_PLAINTEXT_PASSTHROUGH 0x00000004
+> +#define ECRYPTFS_VERSIONING_POLICY                0x00000008
+> +#define ECRYPTFS_VERSIONING_XATTR                 0x00000010
+> +#define ECRYPTFS_VERSIONING_MULTKEY               0x00000020
+> +#define ECRYPTFS_VERSIONING_DEVMISC               0x00000040
+> +#define ECRYPTFS_VERSIONING_HMAC                  0x00000080
+> +#define ECRYPTFS_VERSIONING_FILENAME_ENCRYPTION   0x00000100
+> +#define ECRYPTFS_VERSIONING_GCM                   0x00000200
+> +#define ECRYPTFS_VERSIONING_MASK (ECRYPTFS_VERSIONING_PASSPHRASE \
+> +				  | ECRYPTFS_VERSIONING_PLAINTEXT_PASSTHROUGH \
+> +				  | ECRYPTFS_VERSIONING_PUBKEY \
+> +				  | ECRYPTFS_VERSIONING_XATTR \
+> +				  | ECRYPTFS_VERSIONING_MULTKEY \
+> +				  | ECRYPTFS_VERSIONING_DEVMISC \
+> +				  | ECRYPTFS_VERSIONING_FILENAME_ENCRYPTION)
+> +#define ECRYPTFS_MAX_PASSWORD_LENGTH 64
+> +#define ECRYPTFS_MAX_PASSPHRASE_BYTES ECRYPTFS_MAX_PASSWORD_LENGTH
+> +#define ECRYPTFS_SALT_SIZE 8
+> +#define ECRYPTFS_SALT_SIZE_HEX (ECRYPTFS_SALT_SIZE*2)
+> +/* The original signature size is only for what is stored on disk; all
+> + * in-memory representations are expanded hex, so it better adapted to
+> + * be passed around or referenced on the command line */
+> +#define ECRYPTFS_SIG_SIZE 8
+> +#define ECRYPTFS_SIG_SIZE_HEX (ECRYPTFS_SIG_SIZE*2)
+> +#define ECRYPTFS_PASSWORD_SIG_SIZE ECRYPTFS_SIG_SIZE_HEX
+> +#define ECRYPTFS_MAX_KEY_BYTES 64
+> +#define ECRYPTFS_MAX_ENCRYPTED_KEY_BYTES 512
+> +#define ECRYPTFS_FILE_VERSION 0x03
+> +#define ECRYPTFS_MAX_PKI_NAME_BYTES 16
+> +
+> +#define RFC2440_CIPHER_DES3_EDE 0x02
+> +#define RFC2440_CIPHER_CAST_5 0x03
+> +#define RFC2440_CIPHER_BLOWFISH 0x04
+> +#define RFC2440_CIPHER_AES_128 0x07
+> +#define RFC2440_CIPHER_AES_192 0x08
+> +#define RFC2440_CIPHER_AES_256 0x09
+> +#define RFC2440_CIPHER_TWOFISH 0x0a
+> +#define RFC2440_CIPHER_CAST_6 0x0b
+> +
+> +#define RFC2440_CIPHER_RSA 0x01
+> +
+> +/**
+> + * For convenience, we may need to pass around the encrypted session
+> + * key between kernel and userspace because the authentication token
+> + * may not be extractable.  For example, the TPM may not release the
+> + * private key, instead requiring the encrypted data and returning the
+> + * decrypted data.
+> + */
+> +struct ecryptfs_session_key {
+> +#define ECRYPTFS_USERSPACE_SHOULD_TRY_TO_DECRYPT 0x00000001
+> +#define ECRYPTFS_USERSPACE_SHOULD_TRY_TO_ENCRYPT 0x00000002
+> +#define ECRYPTFS_CONTAINS_DECRYPTED_KEY 0x00000004
+> +#define ECRYPTFS_CONTAINS_ENCRYPTED_KEY 0x00000008
+> +	u32 flags;
+> +	u32 encrypted_key_size;
+> +	u32 decrypted_key_size;
+> +	u8 encrypted_key[ECRYPTFS_MAX_ENCRYPTED_KEY_BYTES];
+> +	u8 decrypted_key[ECRYPTFS_MAX_KEY_BYTES];
+> +};
+> +
+> +struct ecryptfs_password {
+> +	u32 password_bytes;
+> +	s32 hash_algo;
+> +	u32 hash_iterations;
+> +	u32 session_key_encryption_key_bytes;
+> +#define ECRYPTFS_PERSISTENT_PASSWORD 0x01
+> +#define ECRYPTFS_SESSION_KEY_ENCRYPTION_KEY_SET 0x02
+> +	u32 flags;
+> +	/* Iterated-hash concatenation of salt and passphrase */
+> +	u8 session_key_encryption_key[ECRYPTFS_MAX_KEY_BYTES];
+> +	u8 signature[ECRYPTFS_PASSWORD_SIG_SIZE + 1];
+> +	/* Always in expanded hex */
+> +	u8 salt[ECRYPTFS_SALT_SIZE];
+> +};
+> +
+> +enum ecryptfs_token_types {ECRYPTFS_PASSWORD, ECRYPTFS_PRIVATE_KEY};
+> +
+> +struct ecryptfs_private_key {
+> +	u32 key_size;
+> +	u32 data_len;
+> +	u8 signature[ECRYPTFS_PASSWORD_SIG_SIZE + 1];
+> +	char pki_type[ECRYPTFS_MAX_PKI_NAME_BYTES + 1];
+> +	u8 data[];
+> +};
+> +
+> +/* May be a password or a private key */
+> +struct ecryptfs_auth_tok {
+> +	u16 version; /* 8-bit major and 8-bit minor */
+> +	u16 token_type;
+> +#define ECRYPTFS_ENCRYPT_ONLY 0x00000001
+> +	u32 flags;
+> +	struct ecryptfs_session_key session_key;
+> +	u8 reserved[32];
+> +	union {
+> +		struct ecryptfs_password password;
+> +		struct ecryptfs_private_key private_key;
+> +	} token;
+> +} __attribute__ ((packed));
+> +
+> +#endif /* _LINUX_ECRYPTFS_H */
+> -- 
+> 1.7.2.3
+> 
 
-My comments on the intel specific intel_scu_ipc_iowrite8, and the i2c
-part still holds.
 
-Thanks,
-Péter
