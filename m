@@ -1,157 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753076Ab1AFACH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:02:07 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:40611 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392Ab1AFACF (ORCPT
+	id S1753344Ab1AFAD4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:03:56 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33807 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751650Ab1AFADy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:02:05 -0500
-Date: Thu, 6 Jan 2011 11:01:57 +1100
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Crypto Update for 2.6.38
-Message-ID: <20110106000157.GA16089@gondor.apana.org.au>
-References: <20081225001724.GA2813@gondor.apana.org.au> <20081225002020.GA2912@gondor.apana.org.au> <20090324044932.GA18245@gondor.apana.org.au> <20091204135530.GA29371@gondor.apana.org.au> <20100226004914.GA20812@gondor.apana.org.au> <20100519020603.GA19654@gondor.apana.org.au> <20100521104404.GA29530@gondor.apana.org.au> <20100804140448.GA4042@gondor.apana.org.au> <20101024061625.GA23715@gondor.apana.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101024061625.GA23715@gondor.apana.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 5 Jan 2011 19:03:54 -0500
+Date: Wed, 5 Jan 2011 14:57:25 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Subject: Re: [PATCH] Change wait_for_completion_*_timeout to return a signed
+ long
+Message-Id: <20110105145725.3fa6d659.akpm@linux-foundation.org>
+In-Reply-To: <20110105125016.64ccab0e@notabene.brown>
+References: <20110105125016.64ccab0e@notabene.brown>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+On Wed, 5 Jan 2011 12:50:16 +1100
+NeilBrown <neilb@suse.de> wrote:
 
-Here is the crypto update for 2.6.38:
+> 
+> wait_for_completion_*_timeout can return:
+> 
+>  0 if the wait timed out
+>  -ve if the wait was interrupted
+>  +ve if the completion was completed.
+> 
+> As they currently return an 'unsigned long', the last two cases are not
+> easily distinguished which can easily result in buggy code, as is the
+> case for the recently added wait_for_completion_interruptible_timeout
+> call in net/sunrpc/cache.c
+> 
+> So change them both to return 'long'.  As MAX_SCHEDULE_TIMEOUT is
+> LONG_MAX, a large +ve return value should never overflow.
+> 
+> ...
+>
+> --- a/include/linux/completion.h
+> +++ b/include/linux/completion.h
+> @@ -80,11 +80,11 @@ extern void wait_for_completion(struct completion *);
+>  extern int wait_for_completion_interruptible(struct completion *x);
+>  extern int wait_for_completion_killable(struct completion *x);
+>  extern unsigned long wait_for_completion_timeout(struct completion *x,
+>  						   unsigned long timeout);
+> -extern unsigned long wait_for_completion_interruptible_timeout(
+> -			struct completion *x, unsigned long timeout);
+> -extern unsigned long wait_for_completion_killable_timeout(
+> -			struct completion *x, unsigned long timeout);
+> +extern long wait_for_completion_interruptible_timeout(
+> +	struct completion *x, unsigned long timeout);
+> +extern long wait_for_completion_killable_timeout(
+> +	struct completion *x, unsigned long timeout);
+>  extern bool try_wait_for_completion(struct completion *x);
+>  extern bool completion_done(struct completion *x);
+>  
 
-* Crypto API interface for user-space (hash + skcipher)
-* Fixes for new OMAP driver.
-* 32-bit support in aesni-intel.
-* GCM support in aesni-intel.
-* Misc fixes.
+That's a half-patch, isn't it?  wait_for_completion_interruptible()
+still incorrectly returns `int' and wait_for_completion_timeout() still
+returns `unsigned long'.
 
-
-Please pull from
-
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-or
-
-master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-
-Adrian Hoban (1):
-      crypto: rfc4106 - Extending the RC4106 AES-GCM test vectors
-
-Adrian-Ken Rueegsegger (1):
-      crypto: ripemd - Set module author and update email address
-
-Dmitry Kasatkin (15):
-      crypto: omap-sham - uses digest buffer in request context
-      crypto: omap-sham - DMA initialization fixes for off mode
-      crypto: omap-sham - error handling improved
-      crypto: omap-sham - removed redundunt locking
-      crypto: omap-sham - crypto_ahash_final() now not need to be called.
-      crypto: omap-sham - hash-in-progress is stored in hw format
-      crypto: omap-sham - FLAGS_FIRST is redundant and removed
-      crypto: omap-sham - zero-copy scatterlist handling
-      crypto: omap-aes - DMA initialization fixes for OMAP off mode
-      crypto: omap-aes - redundant locking is removed
-      crypto: omap-aes - error handling implementation improved
-      crypto: omap-aes - unnecessary code removed
-      crypto: omap-aes - initialize aes module once per request
-      crypto: omap-aes - checkpatch --file warning fixes
-      crypto: omap-sham - backlog handling fix
-
-Herbert Xu (10):
-      crypto: hash - Fix async import on shash algorithm
-      net - Add AF_ALG macros
-      crypto: af_alg - User-space interface for Crypto API
-      crypto: algif_hash - User-space interface for hash operations
-      crypto: algif_skcipher - User-space interface for skcipher operations
-      crypto: algif_skcipher - Pass on error from af_alg_make_sg
-      crypto: af_alg - Add dependency on NET
-      crypto: algif_skcipher - Fixed overflow when sndbuf is page aligned
-      crypto: algif_skcipher - Handle unaligned receive buffer
-      crypto: gf128mul - Remove experimental tag
-
-Joe Perches (1):
-      crypto: Use vzalloc
-
-Mathias Krause (2):
-      crypto: aesni-intel - Ported implementation to x86-32
-      crypto: aesni-intel - Fixed build error on x86-32
-
-Miloslav Trmač (3):
-      include: Install linux/if_alg.h for user-space crypto API
-      net: Add missing lockdep class names for af_alg
-      crypto: af_alg - Make sure sk_security is initialized on accept()ed sockets
-
-Nicolas Kaiser (1):
-      crypto: cast5 - simplify if-statements
-
-Randy Dunlap (1):
-      crypto: af_alg - fix af_alg memory_allocated data type
-
-Roel Kluin (1):
-      crypto: mv_cesa - dont return PTR_ERR() of wrong pointer
-
-Steffen Klassert (2):
-      crypto: scatterwalk - Add scatterwalk_crypto_chain helper
-      crypto: Use scatterwalk_crypto_chain
-
-Tadeusz Struk (2):
-      crypto: aesni-intel - RFC4106 AES-GCM Driver Using Intel New Instructions
-      crypto: aesni-intel - Fixed build with binutils 2.16
-
-Tejun Heo (1):
-      crypto: mark crypto workqueues CPU_INTENSIVE
-
-Tracey Dent (1):
-      crypto: Makefile clean up
-
- arch/x86/crypto/aesni-intel_asm.S  | 1832 +++++++++++++++++++++++++++++++++++-
- arch/x86/crypto/aesni-intel_glue.c |  540 +++++++++++-
- crypto/Kconfig                     |   34 +-
- crypto/Makefile                    |   17 +-
- crypto/af_alg.c                    |  483 ++++++++++
- crypto/algif_hash.c                |  319 +++++++
- crypto/algif_skcipher.c            |  632 +++++++++++++
- crypto/authenc.c                   |   22 +-
- crypto/cast5.c                     |   74 +-
- crypto/crypto_wq.c                 |    3 +-
- crypto/deflate.c                   |    3 +-
- crypto/eseqiv.c                    |   18 +-
- crypto/gcm.c                       |   19 +-
- crypto/pcrypt.c                    |    3 +-
- crypto/rmd128.c                    |    3 +-
- crypto/rmd160.c                    |    3 +-
- crypto/rmd256.c                    |    3 +-
- crypto/rmd320.c                    |    3 +-
- crypto/shash.c                     |    8 +-
- crypto/tcrypt.c                    |   11 +
- crypto/testmgr.c                   |   24 +
- crypto/testmgr.h                   |  361 +++++++
- crypto/zlib.c                      |    3 +-
- drivers/crypto/mv_cesa.c           |    2 +-
- drivers/crypto/omap-aes.c          |  260 +++---
- drivers/crypto/omap-sham.c         |  374 +++++----
- include/crypto/if_alg.h            |   92 ++
- include/crypto/scatterwalk.h       |   15 +
- include/linux/Kbuild               |    1 +
- include/linux/if_alg.h             |   40 +
- include/linux/socket.h             |    5 +-
- net/core/sock.c                    |    6 +-
- 32 files changed, 4763 insertions(+), 450 deletions(-)
- 
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
