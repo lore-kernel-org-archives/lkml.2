@@ -1,104 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751601Ab1AEOxQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 09:53:16 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:37981 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751026Ab1AEOxP convert rfc822-to-8bit (ORCPT
+	id S1751618Ab1AEO6C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 09:58:02 -0500
+Received: from mail2.swift.com.ar ([200.70.34.4]:40307 "EHLO
+	mail2.swift.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283Ab1AEO6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 09:53:15 -0500
-X-IronPort-AV: E=Sophos;i="4.60,278,1291622400"; 
-   d="scan'208";a="501931063"
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-nfs@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>
-In-Reply-To: <20110105134045.GS25121@pengutronix.de>
-References: <20101230171453.GA5787@pengutronix.de>
-	 <1293731992.4919.5.camel@heimdal.trondhjem.org>
-	 <20101230191846.GB14221@pengutronix.de>
-	 <20110103213850.GC25121@pengutronix.de>
-	 <1294100558.25100.8.camel@heimdal.trondhjem.org>
-	 <20110105084014.GN25121@pengutronix.de>
-	 <20110105110517.GQ25121@pengutronix.de>
-	 <20110105112701.GA8638@n2100.arm.linux.org.uk>
-	 <20110105134045.GS25121@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Wed, 05 Jan 2011 09:53:13 -0500
-Message-ID: <1294239193.3014.9.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 05 Jan 2011 14:53:15.0058 (UTC) FILETIME=[48009920:01CBACE8]
+	Wed, 5 Jan 2011 09:58:01 -0500
+X-AuditID: 0afb2cc6-b7c1dae000003f7a-0b-4d248875e889
+Message-ID: <2758.82.128.17.238.1294234784.squirrel@webmail.swift.com.ar>
+Date: Wed, 5 Jan 2011 13:39:44 +0000
+Subject: 
+From: WESTERN UNION TRANSFER <williams@swift.com.ar>
+Reply-To: western_uniontransfer02@pkuit.com
+User-Agent: SquirrelMail/1.4.8
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-05 at 14:40 +0100, Uwe Kleine-König wrote: 
-> Hi Russell,
-> 
-> On Wed, Jan 05, 2011 at 11:27:01AM +0000, Russell King - ARM Linux wrote:
-> > On Wed, Jan 05, 2011 at 12:05:17PM +0100, Uwe Kleine-König wrote:
-> > > Hello Trond,
-> > > 
-> > > On Wed, Jan 05, 2011 at 09:40:14AM +0100, Uwe Kleine-König wrote:
-> > > > On Mon, Jan 03, 2011 at 07:22:38PM -0500, Trond Myklebust wrote:
-> > > > > The question is whether this is something happening on the server or the
-> > > > > client. Does an older client kernel boot without any trouble?
-> > > > I will set up a boot test with 2.6.37 (for statistics) and 2.6.36 to
-> > > > compare with.  If you don't consider .36 to be old enough let me now.
-> > > > Once the setup is done it should be easy to test .35 (say), too.
-> > > > 
-> > > Marc (cc'd) saw similar[1] problems with .37, when using .36.2 the
-> > > problems didn't occur.  This was more reliable to trigger and he was so
-> > > kind to bisect the problem.
-> > > 
-> > > When testing v2.6.36-rc3-51-gafa8ccc init hanged.
-> > > (babddc72a9468884ce1a23db3c3d54b0afa299f0 is the first bad commit with
-> > > this hang.)  Commit 56e4ebf877b6043c289bda32a5a7385b80c17dee makes the
-> > > "init hangs" problem the "fileid changed on tab" problem.
-> > > 
-> > > I could only reproduce that on armv5 machines (imx27, imx28 and at91)
-> > > but not on armv6 (imx35).
-> > 
-> > FYI, I've seen the "fileid changed" problem, and it looked like a 32-bit
-> > truncation of the fileid.  It occurred several times on successive
-> > reboots, so I tried to capture a tcpdump trace off the server (Linux
-> > 2.6.23-rc8-ga64314e6 - its ancient because I've had issues with buggy
-> > IDE drivers trying to move it forward.)  However, for the last couple
-> > of weeks I've been unable to reproduce it.
-> > 
-> > The client was based on 2.6.37-rc6.
-> > 
-> > The "fileid changed" messages popped up after mounting an export with
-> > 'nolock,intr,rsize=4096,soft', and then trying to use bash completion
-> > and 'ls' in a few subdirectories - and entries were missing from the
-> > directory lists without 'ls' reporting any errors (which I think is bad
-> > behaviour in itself.)
-> There was a bug in at least -rc5[1] that was considered already fixed in
-> -rc4[2]. The later announcements didn't mention it anymore. 
-> 
-> > I don't know why it's stopped producing the errors, although once it
-> > went I never investigated it any further (was far too busy trying to
-> > get AMBA DMA support working.)
-> It seems it was fixed for most users though. Trond?
 
-As I said, I can't reproduce it.
 
-I'm seeing a lot of mention of ARM above. Is anyone seeing this bug on
-x86, or does it appear to be architecture-specific?
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+We have been trying to reach you since the past few days,
+as my associate has helped me to send your first payment
+of $7,500 USD to you as instructed by Mr. David Cameron
+the United Kingdom prime minister after the last G20
+meeting that was held in United Kingdom, making you one
+of the beneficiaries. Here is the information below.
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+MONEY TRANSFER CONTROL NUMBER: 0224873876
+SENDER NAME: Jame Barry
+AMOUNT: $7,500 USD
+
+I told him to keep sending you $7,500 USD twice a week
+until the FULL payment of ($360.000 United State Dollars)
+is completed.
+
+Note a certificate will be made to change the Receiver Name as
+stated by the British prime minister, send your Full Names
+and your direct phone contact via Email to: Mr Gary Moore
+
+The money will not reflect until the clearance certificate is
+issue to you by the G20 committee.
+
+contact Mr. Gary Moore for your clearance certificate.
+
+Mr Gary Moore
+E-mail:western_uniontransfer02@pkuit.com
+D/L: +447024044997
+
+
 
