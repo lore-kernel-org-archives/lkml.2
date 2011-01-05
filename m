@@ -1,31 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029Ab1AEK6b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 05:58:31 -0500
-Received: from casper.infradead.org ([85.118.1.10]:46464 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751948Ab1AEK6a convert rfc822-to-8bit (ORCPT
+	id S1752066Ab1AELFg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 06:05:36 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43103 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041Ab1AELF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 05:58:30 -0500
-Subject: Re: [PATCH 0/5] perf_events: add support for per-cpu per-cgroup
- monitoring (v7)
-From: Peter Zijlstra <peterz@infradead.org>
-To: eranian@google.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
-        eranian@gmail.com, robert.richter@amd.com, acme@redhat.com,
-        lizf@cn.fujitsu.com
-In-Reply-To: <4d220584.4902d90a.23e4.0c78@mx.google.com>
-References: <4d220584.4902d90a.23e4.0c78@mx.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 05 Jan 2011 11:58:33 +0100
-Message-ID: <1294225113.2016.237.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 5 Jan 2011 06:05:28 -0500
+Date: Wed, 5 Jan 2011 12:05:17 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-nfs@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+Message-ID: <20110105110517.GQ25121@pengutronix.de>
+References: <20101230171453.GA5787@pengutronix.de> <1293731992.4919.5.camel@heimdal.trondhjem.org> <20101230191846.GB14221@pengutronix.de> <20110103213850.GC25121@pengutronix.de> <1294100558.25100.8.camel@heimdal.trondhjem.org> <20110105084014.GN25121@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110105084014.GN25121@pengutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've applied 1,2 and 3. I'll wait for a fixed 4 and a rebased 5 (won't
-apply to current -tip).
+Hello Trond,
+
+On Wed, Jan 05, 2011 at 09:40:14AM +0100, Uwe Kleine-König wrote:
+> On Mon, Jan 03, 2011 at 07:22:38PM -0500, Trond Myklebust wrote:
+> > The question is whether this is something happening on the server or the
+> > client. Does an older client kernel boot without any trouble?
+> I will set up a boot test with 2.6.37 (for statistics) and 2.6.36 to
+> compare with.  If you don't consider .36 to be old enough let me now.
+> Once the setup is done it should be easy to test .35 (say), too.
+> 
+Marc (cc'd) saw similar[1] problems with .37, when using .36.2 the
+problems didn't occur.  This was more reliable to trigger and he was so
+kind to bisect the problem.
+
+When testing v2.6.36-rc3-51-gafa8ccc init hanged.
+(babddc72a9468884ce1a23db3c3d54b0afa299f0 is the first bad commit with
+this hang.)  Commit 56e4ebf877b6043c289bda32a5a7385b80c17dee makes the
+"init hangs" problem the "fileid changed on tab" problem.
+
+I could only reproduce that on armv5 machines (imx27, imx28 and at91)
+but not on armv6 (imx35).
+
+Best regards
+Uwe
+
+[1] similar means: not during boot, but when hitting tab to get command
+completion in the shell.
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
