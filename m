@@ -1,112 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751760Ab1AEOHr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 09:07:47 -0500
-Received: from hera.kernel.org ([140.211.167.34]:58323 "EHLO hera.kernel.org"
+	id S1751856Ab1AEOH4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 09:07:56 -0500
+Received: from hera.kernel.org ([140.211.167.34]:58327 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751404Ab1AEOHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 09:07:45 -0500
-Date: Wed, 5 Jan 2011 14:07:12 GMT
-From: tip-bot for NeilBrown <neilb@suse.de>
-Cc: linux-kernel@vger.kernel.org, bfields@fieldses.org, hpa@zytor.com,
-        mingo@redhat.com, torvalds@linux-foundation.org,
-        a.p.zijlstra@chello.nl, neilb@suse.de, akpm@linux-foundation.org,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, bfields@fieldses.org,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, neilb@suse.de,
-        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20110105125016.64ccab0e@notabene.brown>
-References: <20110105125016.64ccab0e@notabene.brown>
+	id S1751421Ab1AEOHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 09:07:46 -0500
+Date: Wed, 5 Jan 2011 14:06:52 GMT
+From: tip-bot for Yinghai Lu <yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        yinghai@kernel.org, ebiederm@xmission.com, tglx@linutronix.de,
+        hpa@linux.intel.com, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, ebiederm@xmission.com, tglx@linutronix.de,
+        hpa@linux.intel.com, mingo@elte.hu
+In-Reply-To: <4D23BD9C.3070102@kernel.org>
+References: <4D23BD9C.3070102@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Change wait_for_completion_*_timeout() to return a signed long
-Message-ID: <tip-6bf4123760a5aece6e4829ce90b70b6ffd751d65@git.kernel.org>
-Git-Commit-ID: 6bf4123760a5aece6e4829ce90b70b6ffd751d65
+Subject: [tip:x86/apic] x86: Fix APIC ID sizing bug on larger systems, clean up MAX_APICS confusion
+Message-ID: <tip-cb2ded37fd2e1039f96c8c892da024a8f033add5@git.kernel.org>
+Git-Commit-ID: cb2ded37fd2e1039f96c8c892da024a8f033add5
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 05 Jan 2011 14:07:14 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 05 Jan 2011 14:06:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6bf4123760a5aece6e4829ce90b70b6ffd751d65
-Gitweb:     http://git.kernel.org/tip/6bf4123760a5aece6e4829ce90b70b6ffd751d65
-Author:     NeilBrown <neilb@suse.de>
-AuthorDate: Wed, 5 Jan 2011 12:50:16 +1100
+Commit-ID:  cb2ded37fd2e1039f96c8c892da024a8f033add5
+Gitweb:     http://git.kernel.org/tip/cb2ded37fd2e1039f96c8c892da024a8f033add5
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Tue, 4 Jan 2011 16:38:52 -0800
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 5 Jan 2011 14:15:50 +0100
+CommitDate: Wed, 5 Jan 2011 14:09:23 +0100
 
-sched: Change wait_for_completion_*_timeout() to return a signed long
+x86: Fix APIC ID sizing bug on larger systems, clean up MAX_APICS confusion
 
-wait_for_completion_*_timeout() can return:
+Found one x2apic pre-enabled system, x2apic_mode suddenly get
+corrupted after register some cpus, when compiled
+CONFIG_NR_CPUS=255 instead of 512.
 
-   0: if the wait timed out
- -ve: if the wait was interrupted
- +ve: if the completion was completed.
+It turns out that generic_processor_info() ==> phyid_set(apicid,
+phys_cpu_present_map) causes the problem.
 
-As they currently return an 'unsigned long', the last two cases
-are not easily distinguished which can easily result in buggy
-code, as is the case for the recently added
-wait_for_completion_interruptible_timeout() call in
-net/sunrpc/cache.c
+phys_cpu_present_map is sized by MAX_APICS bits, and pre-enabled
+system some cpus have an apic id > 255.
 
-So change them both to return 'long'.  As MAX_SCHEDULE_TIMEOUT
-is LONG_MAX, a large +ve return value should never overflow.
+The variable after phys_cpu_present_map may get corrupted
+silently:
 
-Signed-off-by: NeilBrown <neilb@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: J.  Bruce Fields <bfields@fieldses.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-LKML-Reference: <20110105125016.64ccab0e@notabene.brown>
+ ffffffff828e8420 B phys_cpu_present_map
+ ffffffff828e8440 B apic_verbosity
+ ffffffff828e8444 B local_apic_timer_c2_ok
+ ffffffff828e8448 B disable_apic
+ ffffffff828e844c B x2apic_mode
+ ffffffff828e8450 B x2apic_disabled
+ ffffffff828e8454 B num_processors
+ ...
+
+Actually phys_cpu_present_map is referenced via apic id, instead
+index. We should use MAX_LOCAL_APIC instead MAX_APICS.
+
+For 64-bit it will be 32768 in all cases. BSS will increase by 4k bytes
+on 64-bit:
+
+	text		data		bss		dec		filename
+	21696943	4193748		12787712	38678403	vmlinux.before
+	21696943	4193748		12791808	38682499	vmlinux.after
+
+No change on 32bit.
+
+Finally we can remove MAX_APCIS that was rather confusing.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+LKML-Reference: <4D23BD9C.3070102@kernel.org>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- include/linux/completion.h |    8 ++++----
- kernel/sched.c             |    4 ++--
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/mpspec.h          |   29 +++++++++++------------------
+ arch/x86/include/asm/mpspec_def.h      |    7 -------
+ arch/x86/kernel/acpi/boot.c            |    6 +++---
+ arch/x86/kernel/apic/io_apic.c         |    3 ++-
+ arch/x86/platform/sfi/sfi.c            |    4 ++--
+ arch/x86/platform/visws/visws_quirks.c |    2 +-
+ 6 files changed, 19 insertions(+), 32 deletions(-)
 
-diff --git a/include/linux/completion.h b/include/linux/completion.h
-index 36d57f7..51494e6 100644
---- a/include/linux/completion.h
-+++ b/include/linux/completion.h
-@@ -81,10 +81,10 @@ extern int wait_for_completion_interruptible(struct completion *x);
- extern int wait_for_completion_killable(struct completion *x);
- extern unsigned long wait_for_completion_timeout(struct completion *x,
- 						   unsigned long timeout);
--extern unsigned long wait_for_completion_interruptible_timeout(
--			struct completion *x, unsigned long timeout);
--extern unsigned long wait_for_completion_killable_timeout(
--			struct completion *x, unsigned long timeout);
-+extern long wait_for_completion_interruptible_timeout(
-+	struct completion *x, unsigned long timeout);
-+extern long wait_for_completion_killable_timeout(
-+	struct completion *x, unsigned long timeout);
- extern bool try_wait_for_completion(struct completion *x);
- extern bool completion_done(struct completion *x);
+diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
+index 7c1aebf..0c90dd9 100644
+--- a/arch/x86/include/asm/mpspec.h
++++ b/arch/x86/include/asm/mpspec.h
+@@ -5,6 +5,7 @@
  
-diff --git a/kernel/sched.c b/kernel/sched.c
-index f2f914e..114a0de 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -4395,7 +4395,7 @@ EXPORT_SYMBOL(wait_for_completion_interruptible);
-  * This waits for either a completion of a specific task to be signaled or for a
-  * specified timeout to expire. It is interruptible. The timeout is in jiffies.
-  */
--unsigned long __sched
-+long __sched
- wait_for_completion_interruptible_timeout(struct completion *x,
- 					  unsigned long timeout)
+ #include <asm/mpspec_def.h>
+ #include <asm/x86_init.h>
++#include <asm/apicdef.h>
+ 
+ extern int apic_version[];
+ extern int pic_mode;
+@@ -107,7 +108,7 @@ extern int mp_register_gsi(struct device *dev, u32 gsi, int edge_level,
+ 				 int active_high_low);
+ #endif /* CONFIG_ACPI */
+ 
+-#define PHYSID_ARRAY_SIZE	BITS_TO_LONGS(MAX_APICS)
++#define PHYSID_ARRAY_SIZE	BITS_TO_LONGS(MAX_LOCAL_APIC)
+ 
+ struct physid_mask {
+ 	unsigned long mask[PHYSID_ARRAY_SIZE];
+@@ -122,31 +123,31 @@ typedef struct physid_mask physid_mask_t;
+ 	test_and_set_bit(physid, (map).mask)
+ 
+ #define physids_and(dst, src1, src2)					\
+-	bitmap_and((dst).mask, (src1).mask, (src2).mask, MAX_APICS)
++	bitmap_and((dst).mask, (src1).mask, (src2).mask, MAX_LOCAL_APIC)
+ 
+ #define physids_or(dst, src1, src2)					\
+-	bitmap_or((dst).mask, (src1).mask, (src2).mask, MAX_APICS)
++	bitmap_or((dst).mask, (src1).mask, (src2).mask, MAX_LOCAL_APIC)
+ 
+ #define physids_clear(map)					\
+-	bitmap_zero((map).mask, MAX_APICS)
++	bitmap_zero((map).mask, MAX_LOCAL_APIC)
+ 
+ #define physids_complement(dst, src)				\
+-	bitmap_complement((dst).mask, (src).mask, MAX_APICS)
++	bitmap_complement((dst).mask, (src).mask, MAX_LOCAL_APIC)
+ 
+ #define physids_empty(map)					\
+-	bitmap_empty((map).mask, MAX_APICS)
++	bitmap_empty((map).mask, MAX_LOCAL_APIC)
+ 
+ #define physids_equal(map1, map2)				\
+-	bitmap_equal((map1).mask, (map2).mask, MAX_APICS)
++	bitmap_equal((map1).mask, (map2).mask, MAX_LOCAL_APIC)
+ 
+ #define physids_weight(map)					\
+-	bitmap_weight((map).mask, MAX_APICS)
++	bitmap_weight((map).mask, MAX_LOCAL_APIC)
+ 
+ #define physids_shift_right(d, s, n)				\
+-	bitmap_shift_right((d).mask, (s).mask, n, MAX_APICS)
++	bitmap_shift_right((d).mask, (s).mask, n, MAX_LOCAL_APIC)
+ 
+ #define physids_shift_left(d, s, n)				\
+-	bitmap_shift_left((d).mask, (s).mask, n, MAX_APICS)
++	bitmap_shift_left((d).mask, (s).mask, n, MAX_LOCAL_APIC)
+ 
+ static inline unsigned long physids_coerce(physid_mask_t *map)
  {
-@@ -4428,7 +4428,7 @@ EXPORT_SYMBOL(wait_for_completion_killable);
-  * signaled or for a specified timeout to expire. It can be
-  * interrupted by a kill signal. The timeout is in jiffies.
-  */
--unsigned long __sched
-+long __sched
- wait_for_completion_killable_timeout(struct completion *x,
- 				     unsigned long timeout)
+@@ -159,14 +160,6 @@ static inline void physids_promote(unsigned long physids, physid_mask_t *map)
+ 	map->mask[0] = physids;
+ }
+ 
+-/* Note: will create very large stack frames if physid_mask_t is big */
+-#define physid_mask_of_physid(physid)					\
+-	({								\
+-		physid_mask_t __physid_mask = PHYSID_MASK_NONE;		\
+-		physid_set(physid, __physid_mask);			\
+-		__physid_mask;						\
+-	})
+-
+ static inline void physid_set_mask_of_physid(int physid, physid_mask_t *map)
  {
+ 	physids_clear(*map);
+diff --git a/arch/x86/include/asm/mpspec_def.h b/arch/x86/include/asm/mpspec_def.h
+index 4a7f96d..c0a955a 100644
+--- a/arch/x86/include/asm/mpspec_def.h
++++ b/arch/x86/include/asm/mpspec_def.h
+@@ -15,13 +15,6 @@
+ 
+ #ifdef CONFIG_X86_32
+ # define MAX_MPC_ENTRY 1024
+-# define MAX_APICS      256
+-#else
+-# if NR_CPUS <= 255
+-#  define MAX_APICS     255
+-# else
+-#  define MAX_APICS   32768
+-# endif
+ #endif
+ 
+ /* Intel MP Floating Pointer Structure */
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 7235e5f..17c8090 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -915,13 +915,13 @@ static int __init acpi_parse_madt_lapic_entries(void)
+ 	acpi_register_lapic_address(acpi_lapic_addr);
+ 
+ 	count = acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_SAPIC,
+-				      acpi_parse_sapic, MAX_APICS);
++				      acpi_parse_sapic, MAX_LOCAL_APIC);
+ 
+ 	if (!count) {
+ 		x2count = acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_X2APIC,
+-						acpi_parse_x2apic, MAX_APICS);
++					acpi_parse_x2apic, MAX_LOCAL_APIC);
+ 		count = acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_APIC,
+-					      acpi_parse_lapic, MAX_APICS);
++					acpi_parse_lapic, MAX_LOCAL_APIC);
+ 	}
+ 	if (!count && !x2count) {
+ 		printk(KERN_ERR PREFIX "No LAPIC entries present\n");
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 943d814..2fc696e 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -4109,7 +4109,8 @@ void __init pre_init_apic_IRQ0(void)
+ 
+ 	printk(KERN_INFO "Early APIC setup for system timer0\n");
+ #ifndef CONFIG_SMP
+-	phys_cpu_present_map = physid_mask_of_physid(boot_cpu_physical_apicid);
++	physid_set_mask_of_physid(boot_cpu_physical_apicid,
++					 &phys_cpu_present_map);
+ #endif
+ 	/* Make sure the irq descriptor is set up */
+ 	cfg = alloc_irq_and_cfg_at(0, 0);
+diff --git a/arch/x86/platform/sfi/sfi.c b/arch/x86/platform/sfi/sfi.c
+index dd4c281..ca54875 100644
+--- a/arch/x86/platform/sfi/sfi.c
++++ b/arch/x86/platform/sfi/sfi.c
+@@ -48,9 +48,9 @@ static void __init mp_sfi_register_lapic_address(unsigned long address)
+ /* All CPUs enumerated by SFI must be present and enabled */
+ static void __cpuinit mp_sfi_register_lapic(u8 id)
+ {
+-	if (MAX_APICS - id <= 0) {
++	if (MAX_LOCAL_APIC - id <= 0) {
+ 		pr_warning("Processor #%d invalid (max %d)\n",
+-			id, MAX_APICS);
++			id, MAX_LOCAL_APIC);
+ 		return;
+ 	}
+ 
+diff --git a/arch/x86/platform/visws/visws_quirks.c b/arch/x86/platform/visws/visws_quirks.c
+index 3371bd0..6320376 100644
+--- a/arch/x86/platform/visws/visws_quirks.c
++++ b/arch/x86/platform/visws/visws_quirks.c
+@@ -171,7 +171,7 @@ static void __init MP_processor_info(struct mpc_cpu *m)
+ 	ver = m->apicver;
+ 	if ((ver >= 0x14 && m->apicid >= 0xff) || m->apicid >= 0xf) {
+ 		printk(KERN_ERR "Processor #%d INVALID. (Max ID: %d).\n",
+-			m->apicid, MAX_APICS);
++			m->apicid, MAX_LOCAL_APIC);
+ 		return;
+ 	}
+ 
