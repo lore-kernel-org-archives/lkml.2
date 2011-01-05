@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048Ab1AEPt1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 10:49:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22006 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750699Ab1AEPt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 10:49:26 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org
-Subject: Re: [PATCH 21/32] fs/aio: aio_wq isn't used in memory reclaim path
-References: <1294062595-30097-1-git-send-email-tj@kernel.org>
-	<1294062595-30097-22-git-send-email-tj@kernel.org>
-	<x49d3ocacij.fsf@segfault.boston.devel.redhat.com>
-	<20110105112802.GA7669@mtj.dyndns.org>
-	<x49d3obqu9a.fsf@segfault.boston.devel.redhat.com>
-	<20110105150048.GA32455@kvack.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 05 Jan 2011 10:49:19 -0500
-In-Reply-To: <20110105150048.GA32455@kvack.org> (Benjamin LaHaise's message of
-	"Wed, 5 Jan 2011 10:00:48 -0500")
-Message-ID: <x494o9nqrk0.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1751994Ab1AEPvH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 10:51:07 -0500
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:44955 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750699Ab1AEPvG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 10:51:06 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: 9kgrzW4VM1mu_BCixCIrd4doairuRC74ifgILIRuDmE_ia5
+ WcxF98iWaMQNPkyT0qYFQOcVYD2YV_xl7tTN._iLB18xd2icCUY8AAmek9UU
+ cHGnXhRbSGbWjLTmD3_.Ou98Ll69v.IX2z3K_c86UAHL5lpmct6edhMUa3_9
+ AuAgC_T76cj.hl_R024NdsBVWZNeDeSoB.tEzqYRElEp04C1rSgcpDIdS9gd
+ WNgu657iseZEMIQjKK6LcX3IwVBsdLPKmLgxq3dM1RPQPmIZ8zpyrI_mm7Hi
+ h8NjWPAheO1LQgrQ24w8iRHVzex3p9RWFiuo70wxrBJylJjo-
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 5 Jan 2011 09:51:02 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: David Rientjes <rientjes@google.com>
+cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        Bart Van Assche <bart.vanassche@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] slub: Fix sysfs circular locking dependency
+In-Reply-To: <alpine.DEB.2.00.1101041939030.27551@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1101050943120.13032@router.home>
+References: <1294172717-6044-1-git-send-email-penberg@kernel.org> <alpine.DEB.2.00.1101041939030.27551@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benjamin LaHaise <bcrl@kvack.org> writes:
+On Tue, 4 Jan 2011, David Rientjes wrote:
 
-> On Wed, Jan 05, 2011 at 09:50:57AM -0500, Jeff Moyer wrote:
->> > Yeap.  Do you agree that the concurrency limit is necessary?  If not,
->> > we can just put everything onto system_wq.
->> 
->> I'm not sure whether it's strictly necessary (there may very well be a
->> need for this in the usb gadgetfs code), but keeping it the same at
->> least seems safe.
->
-> Limiting concurrency on aio requests is exactly the opposite of what the 
-> usb gadgetfs requires.
+> slub_lock protects slab_state following kmem_cache_init() if caches are
+> created/destroyed prior to the sysfs slab initcall setting the global
+> variable, so couldn't this leak the kobject if its initialization and add
+> was deferred on kmem_cache_create() and added by slab_sysfs_init()?
 
-I'll have to dig on what their requirements are.  After briefly looking
-at mailing list archives, it appears they use the aio workqueue to queue
-work after a completed I/O.  I think Zach actually had posted a patch to
-change them over to using their own workqueue for that.  At any rate, it
-may well be that they don't have a concurrency requirement (in fact, it
-would be surprising if they did).  However, I wasn't going to propose
-changing the way things were done w/o someone chiming in and saying they
-needed it.
+Potentially.
 
-> It's similarly bad for filesystem aio when there's a mix of small and
-> large requests in flight.
+Also note that the same lock inversion occurs in kmem_cache_create().
+slub lock is taken and then sysfs operations are performed.
 
-Well, the aio workqueue isn't actually used by the filesystem aio paths
-at all (except for the fput_work, and that's being moved to the system
-workqueue).
+The problem is that slub_lock has multiple roles:
 
-Cheers,
-Jeff
+1. Protect the list of slab caches and the slab_state (thats why its
+   mainly used in kmem_cache_destroy and kmem_cache_create)
+
+2. Protect against removal and adding of new cpus and nodes
+   (show_slab_objects)
+
+
+If we could create another lock that protects against new cpus / nodes
+being added and removed then we could take that lock in
+show_slab_objects() instead.
+
+IMHO the lock order must have the slub_lock at the top.
+
+The other lock that would prevent adding/removal of nodes / cpu can be
+taken in show_slab_objects and in the corresponding hotplug functions. We
+do not need to take the lock at all in show_slab_objects cpu and memory
+hotplug are not enabled. Maybe there is a hotplug specific lock that can
+be used instead?
+
+
