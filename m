@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925Ab1AENk7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 08:40:59 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58715 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574Ab1AENk5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 08:40:57 -0500
-Date: Wed, 5 Jan 2011 14:40:45 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-Message-ID: <20110105134045.GS25121@pengutronix.de>
-References: <20101230171453.GA5787@pengutronix.de> <1293731992.4919.5.camel@heimdal.trondhjem.org> <20101230191846.GB14221@pengutronix.de> <20110103213850.GC25121@pengutronix.de> <1294100558.25100.8.camel@heimdal.trondhjem.org> <20110105084014.GN25121@pengutronix.de> <20110105110517.GQ25121@pengutronix.de> <20110105112701.GA8638@n2100.arm.linux.org.uk>
+	id S1751129Ab1AENvh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 08:51:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7888 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750699Ab1AENvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 08:51:36 -0500
+Message-ID: <4D247760.9050307@redhat.com>
+Date: Wed, 05 Jan 2011 14:51:28 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20091014 Fedora/3.0-2.8.b4.fc11 Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110105112701.GA8638@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Greg KH <greg@kroah.com>
+CC: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
+        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] block: fix accounting bug on cross partition merges
+References: <20101210165553.GE31737@redhat.com> <4D07D2AC.6000500@fusionio.com> <4D0B68AF.80804@redhat.com> <4D0BB4A1.8080305@fusionio.com> <4D13664C.3020500@redhat.com> <20101223153915.GE9502@redhat.com> <4D13810B.8000304@redhat.com> <20101224192916.GB2082@redhat.com> <4D23423A.60707@redhat.com> <4D2342E1.8010405@redhat.com> <20110104210011.GB4180@kroah.com>
+In-Reply-To: <20110104210011.GB4180@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
-
-On Wed, Jan 05, 2011 at 11:27:01AM +0000, Russell King - ARM Linux wrote:
-> On Wed, Jan 05, 2011 at 12:05:17PM +0100, Uwe Kleine-König wrote:
-> > Hello Trond,
-> > 
-> > On Wed, Jan 05, 2011 at 09:40:14AM +0100, Uwe Kleine-König wrote:
-> > > On Mon, Jan 03, 2011 at 07:22:38PM -0500, Trond Myklebust wrote:
-> > > > The question is whether this is something happening on the server or the
-> > > > client. Does an older client kernel boot without any trouble?
-> > > I will set up a boot test with 2.6.37 (for statistics) and 2.6.36 to
-> > > compare with.  If you don't consider .36 to be old enough let me now.
-> > > Once the setup is done it should be easy to test .35 (say), too.
-> > > 
-> > Marc (cc'd) saw similar[1] problems with .37, when using .36.2 the
-> > problems didn't occur.  This was more reliable to trigger and he was so
-> > kind to bisect the problem.
-> > 
-> > When testing v2.6.36-rc3-51-gafa8ccc init hanged.
-> > (babddc72a9468884ce1a23db3c3d54b0afa299f0 is the first bad commit with
-> > this hang.)  Commit 56e4ebf877b6043c289bda32a5a7385b80c17dee makes the
-> > "init hangs" problem the "fileid changed on tab" problem.
-> > 
-> > I could only reproduce that on armv5 machines (imx27, imx28 and at91)
-> > but not on armv6 (imx35).
+On 01/04/2011 10:00 PM, Greg KH wrote:
+> On Tue, Jan 04, 2011 at 04:55:13PM +0100, Jerome Marchand wrote:
+>> Also add a refcount to struct hd_struct to keep the partition in
+>> memory as long as users exist. We use kref_test_and_get() to ensure
+>> we don't add a reference to a partition which is going away.
 > 
-> FYI, I've seen the "fileid changed" problem, and it looked like a 32-bit
-> truncation of the fileid.  It occurred several times on successive
-> reboots, so I tried to capture a tcpdump trace off the server (Linux
-> 2.6.23-rc8-ga64314e6 - its ancient because I've had issues with buggy
-> IDE drivers trying to move it forward.)  However, for the last couple
-> of weeks I've been unable to reproduce it.
+> No, don't do this, use a kref correctly and no such function should be
+> needed.
 > 
-> The client was based on 2.6.37-rc6.
+>> +	} else {
+>> +		part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
 > 
-> The "fileid changed" messages popped up after mounting an export with
-> 'nolock,intr,rsize=4096,soft', and then trying to use bash completion
-> and 'ls' in a few subdirectories - and entries were missing from the
-> directory lists without 'ls' reporting any errors (which I think is bad
-> behaviour in itself.)
-There was a bug in at least -rc5[1] that was considered already fixed in
--rc4[2]. The later announcements didn't mention it anymore. 
+> That is the function that should properly increment the reference count
+> on the object.
 
-> I don't know why it's stopped producing the errors, although once it
-> went I never investigated it any further (was far too busy trying to
-> get AMBA DMA support working.)
-It seems it was fixed for most users though. Trond?
+Agreed.
 
-Uwe
+>  If the object is "being removed", then it will return
+> NULL and you need to check that.  Do that and you do not need to add:
 
-[1] http://lwn.net/Articles/418963/
-[2] http://lwn.net/Articles/417704/
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+The object is actually removed in a rcu callback function. We could
+certainly add a flag to hd_struct, set by the release function, to
+indicate disk_map_sector_rcu() that the partition is being removed, but
+why not use the refcount instead?
+
+Thanks,
+Jerome
+
+> 
+>> +		if (!kref_test_and_get(&part->ref)) {
+> 
+> At all.
+> 
+> thanks,
+> 
+> greg k-h
+
