@@ -1,65 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751741Ab1AEREa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 12:04:30 -0500
-Received: from casper.infradead.org ([85.118.1.10]:35827 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686Ab1AERE3 (ORCPT
+	id S1751920Ab1AERE6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 12:04:58 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:59265 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751617Ab1AERE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 12:04:29 -0500
+	Wed, 5 Jan 2011 12:04:27 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        "David S . Miller" <davem@davemloft.net>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@gmail.com>,
         Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [GIT PULL 0/5] perf/core fixes and cleanups
-Date: Wed,  5 Jan 2011 15:04:01 -0200
-Message-Id: <1294247046-32352-1-git-send-email-acme@infradead.org>
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 3/5] perf session: Warn about errors when processing pipe events too
+Date: Wed,  5 Jan 2011 15:04:04 -0200
+Message-Id: <1294247046-32352-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+In-Reply-To: <1294247046-32352-1-git-send-email-acme@infradead.org>
+References: <1294247046-32352-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-        Please consider pulling from:
+Just like we do at __perf_session__process_events
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/session.c |   57 ++++++++++++++++++++++++--------------------
+ 1 files changed, 31 insertions(+), 26 deletions(-)
 
-	I removed the patch that introduced map__empty and caused those
-aliasing problems on f12 i386, I tried but couldn't reproduce it on a f14
-i386 machine, will investigate more later.
-
-	The synch of master.k.o to g.k.o these days is taking a long time, so
-beware.
-
-Regards,
-
-- Arnaldo
-
-Arnaldo Carvalho de Melo (4):
-  perf test: Clarify some error reports in the open syscall test
-  perf session: Warn about errors when processing pipe events too
-  perf script: Use the default lost event handler
-  perf script: Make some lists static
-
-Stephane Eranian (1):
-  perf tools: Fix perf_event.h header usage
-
- tools/perf/builtin-script.c    |   19 ++-----------
- tools/perf/builtin-test.c      |   18 +++++++-----
- tools/perf/util/evsel.h        |    2 +-
- tools/perf/util/parse-events.h |    2 +-
- tools/perf/util/session.c      |   57 +++++++++++++++++++++------------------
- 5 files changed, 47 insertions(+), 51 deletions(-)
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index b163dfd..6fb4694 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -838,6 +838,35 @@ static struct thread *perf_session__register_idle_thread(struct perf_session *se
+ 	return thread;
+ }
+ 
++static void perf_session__warn_about_errors(const struct perf_session *session,
++					    const struct perf_event_ops *ops)
++{
++	if (ops->lost == event__process_lost &&
++	    session->hists.stats.total_lost != 0) {
++		ui__warning("Processed %Lu events and LOST %Lu!\n\n"
++			    "Check IO/CPU overload!\n\n",
++			    session->hists.stats.total_period,
++			    session->hists.stats.total_lost);
++	}
++
++	if (session->hists.stats.nr_unknown_events != 0) {
++		ui__warning("Found %u unknown events!\n\n"
++			    "Is this an older tool processing a perf.data "
++			    "file generated by a more recent tool?\n\n"
++			    "If that is not the case, consider "
++			    "reporting to linux-kernel@vger.kernel.org.\n\n",
++			    session->hists.stats.nr_unknown_events);
++	}
++
++ 	if (session->hists.stats.nr_invalid_chains != 0) {
++ 		ui__warning("Found invalid callchains!\n\n"
++ 			    "%u out of %u events were discarded for this reason.\n\n"
++ 			    "Consider reporting to linux-kernel@vger.kernel.org.\n\n",
++ 			    session->hists.stats.nr_invalid_chains,
++ 			    session->hists.stats.nr_events[PERF_RECORD_SAMPLE]);
++ 	}
++}
++
+ #define session_done()	(*(volatile int *)(&session_done))
+ volatile int session_done;
+ 
+@@ -911,6 +940,7 @@ more:
+ done:
+ 	err = 0;
+ out_err:
++	perf_session__warn_about_errors(self, ops);
+ 	perf_session_free_sample_buffers(self);
+ 	return err;
+ }
+@@ -1023,32 +1053,7 @@ more:
+ 	flush_sample_queue(session, ops);
+ out_err:
+ 	ui_progress__delete(progress);
+-
+-	if (ops->lost == event__process_lost &&
+-	    session->hists.stats.total_lost != 0) {
+-		ui__warning("Processed %Lu events and LOST %Lu!\n\n"
+-			    "Check IO/CPU overload!\n\n",
+-			    session->hists.stats.total_period,
+-			    session->hists.stats.total_lost);
+-	}
+-
+-	if (session->hists.stats.nr_unknown_events != 0) {
+-		ui__warning("Found %u unknown events!\n\n"
+-			    "Is this an older tool processing a perf.data "
+-			    "file generated by a more recent tool?\n\n"
+-			    "If that is not the case, consider "
+-			    "reporting to linux-kernel@vger.kernel.org.\n\n",
+-			    session->hists.stats.nr_unknown_events);
+-	}
+-
+- 	if (session->hists.stats.nr_invalid_chains != 0) {
+- 		ui__warning("Found invalid callchains!\n\n"
+- 			    "%u out of %u events were discarded for this reason.\n\n"
+- 			    "Consider reporting to linux-kernel@vger.kernel.org.\n\n",
+- 			    session->hists.stats.nr_invalid_chains,
+- 			    session->hists.stats.nr_events[PERF_RECORD_SAMPLE]);
+- 	}
+-
++	perf_session__warn_about_errors(session, ops);
+ 	perf_session_free_sample_buffers(session);
+ 	return err;
+ }
+-- 
+1.6.2.5
 
