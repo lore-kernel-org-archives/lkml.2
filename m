@@ -1,107 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751872Ab1AESMp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 13:12:45 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:29190 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751608Ab1AESMn convert rfc822-to-8bit (ORCPT
+	id S1752034Ab1AESOs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 13:14:48 -0500
+Received: from casper.infradead.org ([85.118.1.10]:44053 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432Ab1AESOr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 13:12:43 -0500
-X-IronPort-AV: E=Sophos;i="4.60,278,1291622400"; 
-   d="scan'208";a="502027171"
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-nfs@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>
-In-Reply-To: <20110105172641.GF8638@n2100.arm.linux.org.uk>
-References: <1294100558.25100.8.camel@heimdal.trondhjem.org>
-	 <20110105084014.GN25121@pengutronix.de>
-	 <20110105110517.GQ25121@pengutronix.de>
-	 <20110105112701.GA8638@n2100.arm.linux.org.uk>
-	 <20110105134045.GS25121@pengutronix.de>
-	 <1294239193.3014.9.camel@heimdal.trondhjem.org>
-	 <4D2487CA.5040501@pengutronix.de>
-	 <1294240457.3014.13.camel@heimdal.trondhjem.org>
-	 <20110105155230.GC8638@n2100.arm.linux.org.uk>
-	 <1294247847.2998.23.camel@heimdal.trondhjem.org>
-	 <20110105172641.GF8638@n2100.arm.linux.org.uk>
+	Wed, 5 Jan 2011 13:14:47 -0500
+Subject: Re: [RFC -v3 PATCH 2/3] sched: add yield_to function
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Avi Kivity <avi@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>
+In-Reply-To: <4D24A5F4.3000508@redhat.com>
+References: <20110103162637.29f23c40@annuminas.surriel.com>
+	 <20110103162918.577a9620@annuminas.surriel.com>
+	 <1294164289.2016.186.camel@laptop>  <4D24A5F4.3000508@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Wed, 05 Jan 2011 13:12:25 -0500
-Message-ID: <1294251145.3574.16.camel@heimdal.trondhjem.org>
+Date: Wed, 05 Jan 2011 18:15:18 +0100
+Message-ID: <1294247718.2016.269.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 05 Jan 2011 18:12:27.0389 (UTC) FILETIME=[1C2592D0:01CBAD04]
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-05 at 17:26 +0000, Russell King - ARM Linux wrote: 
-> On Wed, Jan 05, 2011 at 12:17:27PM -0500, Trond Myklebust wrote:
-> > We should already be flushing the kernel direct mapping after writing by
-> > means of the calls to flush_dcache_page() in xdr_partial_copy_from_skb()
-> > and all the helpers in net/sunrpc/xdr.c.
+On Wed, 2011-01-05 at 19:10 +0200, Avi Kivity wrote:
+> On 01/04/2011 08:04 PM, Peter Zijlstra wrote:
+> > This definitely wants to be EXPORT_SYMBOL_GPL() and if it were possible
+> > I'd make it so only kvm.o could use it. It really sucks that kvm is a
+> > module.
 > 
-> Hmm, we're getting into the realms of what flush_dcache_page() is supposed
-> to do and what it's not supposed to do.
-> 
-> Is this page an associated with a mapping (iow, page_mapping(page) is non-
-> NULL)?  If not, flush_dcache_page() won't do anything, and from my
-> understanding, its flush_anon_page() which you want to be using there
-> instead.
+> Why does it suck?  I mean apart from the "virtualization is crap" song.
 
-Actually, none of these pages are ever mapped into userspace, nor are
-they mapped into the page cache.
-
-They are allocated directly using alloc_page() by the thread that called
-the readdir() syscall, so afaics there should be no incoherent mappings
-other than the kernel direct mapping and the one created by
-vm_map_ram().
-
-So, yes, you are right that we don't need the flush_dcache_page() here.
-
-> > The only new thing is the read access through the virtual address
-> > mapping. That mapping is created outside the loop in
-> > nfs_readdir_xdr_to_array(), which is why I'm thinking we do need the
-> > invalidate_kernel_vmap_range(): we're essentially doing a series of
-> > writes through the kernel direct mapping (i.e. readdir RPC calls), then
-> > reading the results through the virtual mapping.
-> > 
-> > i.e. we're doing
-> > 
-> > ptr = vm_map_ram(lowmem_pages);
-> > while (need_more_data) {
-> > 
-> > for (i = 0; i < npages; i++) {
-> > addr = kmap_atomic(lowmem_page[i]);
-> > *addr = rpc_stuff;
-> > flush_dcache_page(lowmem_page[i]);
-> > kunmap_atomic(lowmem_page[i]);
-> > }
-> > 
-> > invalidate_kernel_vmap_range(ptr); // Needed here?
-> 
-> Yes, you're going to need some cache maintainence in there to make it work,
-> because accessing 'ptr' will load that data into the cache, and that won't
-> be updated by the writes via kmap_atomic().
-> 
-> Provided you don't write to ptr, then using invalidate_kernel_vmap_range()
-> will be safe.
-
-Thanks! That is what Marc's testing appears to confirm.
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+Because it needs hooks all over the core kernel, like this yield_to()
+stuff. Exporting this might lead to others wanting to use it too.
