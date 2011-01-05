@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752019Ab1AEKZZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 05:25:25 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:52345 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751692Ab1AEKZY (ORCPT
+	id S1752059Ab1AEKZp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 05:25:45 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:12853 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752025Ab1AEKZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 05:25:24 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Ben Gamari <bgamari.foss@gmail.com>
-Subject: Re: [PATCH 01/18] Altera FPGA firmware download module.
-Date: Wed, 5 Jan 2011 11:26:03 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r3; KDE/4.5.3; x86_64; ; )
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        "Igor M. Liplianin" <liplianin@me.by>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, aospan@netup.ru
-References: <201012310726.31851.liplianin@netup.ru> <4D1DC2DD.6050400@infradead.org> <8739pec7bm.fsf@gmail.com>
-In-Reply-To: <8739pec7bm.fsf@gmail.com>
+	Wed, 5 Jan 2011 05:25:42 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAAfWI015Ldpx/2dsb2JhbACkJHS/CoVMBIUk
+Date: Wed, 5 Jan 2011 21:25:34 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [announce] vfs-scale git tree update
+Message-ID: <20110105102534.GA6679@amd>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101051126.04180.laurent.pinchart@ideasonboard.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Git tree is here:
+  
+  git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git
+  
+Branch is:
 
-On Friday 31 December 2010 16:04:13 Ben Gamari wrote:
-> On Fri, 31 Dec 2010 09:47:41 -0200, Mauro Carvalho Chehab wrote:
-> > > I understand this. However, a complete JTAG state machine in the
-> > > kernel, plus an Altera firmware parser, seems to be a lot of code that
-> > > could live in userspace.
-> > 
-> > Moving it to userspace would mean a kernel driver that would depend on an
-> > userspace daemon^Wfirmware loader to work. I would NAK such designs.
-> 
-> Why? I agree that JTAG is a lot to place in the kernel and is much
-> better suited to be in user space. What exactly is your objection to
-> depending on a userspace utility? There is no shortage of precedent for
-> loading firmware in userspace (e.g. fx2 usb devices).
+    vfs-scale-working
 
-I agree with this. Mauro, why would a userspace firmware loader be such a bad 
-idea ?
+Changes since last posting:
+* Updated to 2.6.37 (Documentation/filesystems/Locking clash)
+* Switch names of vfsmount scalable counter helpers suggested by Andreas
+* Most significant are changes in Documentation/filesystems/path-lookup.txt
+  attempt to make it more readable, consistent and informative. Add some
+  interesting rcu-walk path lookup success and behaviour statistics.
 
-> > > If I understand it correctly the driver assumes the firmware is in an
-> > > Altera proprietary format. If we really want JTAG code in the kernel
-> > > we should at least split the file parser and the TAP access code.
-> > 
-> > Agreed, but I don't think this would be a good reason to block the code
-> > merge for .38.
-> 
-> I agree with the above isn't good reason to block it but if there is
-> still debate about the general architecture of the code (see above),
-> then it seems aren't ready yet. The code looks very nice, but I'm not at
-> all convinced that it needs to be in the kernel. Just my two-tenths of a
-> cent.
+Status:
+* Linus is planning to merge. It's never too late for review, though.
+* linux-next has been uneventful, but I don't think it nearly covers all
+  interesting and fiddly use cases.
+* Still has the barrier-less __seqcount optimisation that Linus didn't
+  like; I like the idea of a seqcount-switch API, but it just didn't
+  seem to fit well here. Let's leave that on the todo list?
 
--- 
-Regards,
+Future dcache / name lookup work:
+* Per-zone LRUs. Patch is simple and ready, but performance bisecting
+  might be a bit easier if we hold off. Also inode LRUs should be done at
+  the same time.
+* Filesystems will need to start implementing rcu-walk aware dentry
+  and permission ops. They've got simple examples to follow.
+* Rename scaling. The rename seqlock can explode on large systems,
+  getting into strange conditions where lookup performance crashes.
+  It is also a global lock for renames. Quite simple to break it up and
+  fix lookup performance and provide linear vfs scalability for parallel
+  same-directory renames (if they are in different directories). Doesn't
+  need to be merged yet, though.
+* Further optimise name string copying and comparison (may be as much as
+  10-20% in that).
+* rcu-walk for symlinks. A bit tricky, not impossible.
 
-Laurent Pinchart
