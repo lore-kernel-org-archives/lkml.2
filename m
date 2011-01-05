@@ -1,92 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557Ab1AESzI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 13:55:08 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:2639 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751780Ab1AESzH convert rfc822-to-8bit (ORCPT
+	id S1752423Ab1AES5T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 13:57:19 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33510 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322Ab1AES5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 13:55:07 -0500
-X-IronPort-AV: E=Sophos;i="4.60,278,1291622400"; 
-   d="scan'208";a="502046644"
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-nfs@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>
-In-Reply-To: <20110105182753.GG8638@n2100.arm.linux.org.uk>
-References: <20110105110517.GQ25121@pengutronix.de>
-	 <20110105112701.GA8638@n2100.arm.linux.org.uk>
-	 <20110105134045.GS25121@pengutronix.de>
-	 <1294239193.3014.9.camel@heimdal.trondhjem.org>
-	 <4D2487CA.5040501@pengutronix.de>
-	 <1294240457.3014.13.camel@heimdal.trondhjem.org>
-	 <20110105155230.GC8638@n2100.arm.linux.org.uk>
-	 <1294247847.2998.23.camel@heimdal.trondhjem.org>
-	 <20110105172641.GF8638@n2100.arm.linux.org.uk>
-	 <1294251145.3574.16.camel@heimdal.trondhjem.org>
-	 <20110105182753.GG8638@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Wed, 05 Jan 2011 13:55:05 -0500
-Message-ID: <1294253705.3574.21.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 05 Jan 2011 18:55:06.0299 (UTC) FILETIME=[116040B0:01CBAD0A]
+	Wed, 5 Jan 2011 13:57:18 -0500
+Date: Wed, 5 Jan 2011 19:57:16 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>
+Subject: Re: [PATCH 0/2] Annotate gpio-configuration with __must_check
+Message-ID: <20110105185716.GA6753@pengutronix.de>
+References: <1294159868-4989-1-git-send-email-w.sang@pengutronix.de>
+ <20110104202718.GA31444@suse.de>
+ <20110104212916.GA14436@pengutronix.de>
+ <20110104213414.GA6774@suse.de>
+ <20110104230508.GA18363@pengutronix.de>
+ <20110104234440.GC30328@suse.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qMm9M+Fa2AknHoGS"
+Content-Disposition: inline
+In-Reply-To: <20110104234440.GC30328@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-05 at 18:27 +0000, Russell King - ARM Linux wrote: 
-> On Wed, Jan 05, 2011 at 01:12:25PM -0500, Trond Myklebust wrote:
-> > On Wed, 2011-01-05 at 17:26 +0000, Russell King - ARM Linux wrote: 
-> > > On Wed, Jan 05, 2011 at 12:17:27PM -0500, Trond Myklebust wrote:
-> > > > We should already be flushing the kernel direct mapping after writing by
-> > > > means of the calls to flush_dcache_page() in xdr_partial_copy_from_skb()
-> > > > and all the helpers in net/sunrpc/xdr.c.
-> > > 
-> > > Hmm, we're getting into the realms of what flush_dcache_page() is supposed
-> > > to do and what it's not supposed to do.
-> > > 
-> > > Is this page an associated with a mapping (iow, page_mapping(page) is non-
-> > > NULL)?  If not, flush_dcache_page() won't do anything, and from my
-> > > understanding, its flush_anon_page() which you want to be using there
-> > > instead.
-> > 
-> > Actually, none of these pages are ever mapped into userspace, nor are
-> > they mapped into the page cache.
-> > 
-> > They are allocated directly using alloc_page() by the thread that called
-> > the readdir() syscall, so afaics there should be no incoherent mappings
-> > other than the kernel direct mapping and the one created by
-> > vm_map_ram().
-> > 
-> > So, yes, you are right that we don't need the flush_dcache_page() here.
-> 
-> I do still think you need _something_ there, otherwise data can remain
-> in the direct map alias and not be visible via the vmap alias.  I don't
-> see that we have anything in place to handle this at present though.
 
-Is that perhaps what flush_kernel_dcache_page() is supposed to do?
+--qMm9M+Fa2AknHoGS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> jejb mentioned something about making kunmap_atomic() always flush the
-> cache, even for lowmem pages, but I think that's going to be exceedingly
-> painful, to the extent that I believe it will prevent our PIO-only MMC
-> drivers working - or we need a scatterlist API that will let drivers
-> iterate over the scatterlist without needing to continually kmap_atomic
-> and kunmap_atomic each page.
+On Tue, Jan 04, 2011 at 03:44:40PM -0800, Greg KH wrote:
+> On Wed, Jan 05, 2011 at 12:05:08AM +0100, Wolfram Sang wrote:
+> >=20
+> > > > should fail if it cannot be requested. Or not. Things get worse for
+> > > > architectures I never used before. This is why I think it is really=
+ better to
+> > > > let people do the fixups who have/understand the hardware in questi=
+on.
+> > > > Otherwise the fixups could indeed be more harmful than helpful.
+> > >=20
+> > > Sure, they could be more harmful, but at least try.  Make the patches
+> > > up, submit them to the maintainers, and if they are wrong, they will =
+be
+> > > the best to fix it up properly.
+> >=20
+> > Well, I could generalize all cases and always issue a WARN() if the req=
+uest
+> > fails. But this would just move a compile-time warning into a runtime w=
+arning.
+> > Also, I have my doubts that even the arch/mach-maintainers know all the=
+ boards
+> > and their peculiarities. There are thousands of them.
+>=20
+> Well, they better know the peculiarities of the hardware they write code
+> for :)
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+For the architecture, yes certainly. But for every board? I wonder...
+Even if it is possible for one person to fix all the warnings, it is
+surely beyond my resources, because I believe it should be done
+manually. The pity is: My main intention was not primarily to cure old
+bugs, but to prevent new bugs from happening. Some CONFIG-option would
+still allow that which is what I'd prefer meanwhile. Okay, I can still
+apply my patches locally and simply send fixes for code which I use.
+Maybe others will do, too.
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+> But no, a WARN() might not be that nice as it usually is never seen by
+> embedded developers...
 
+Well, not after devices are deployed. It is seen during development
+which is also the time those bugs would typically appear.
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--qMm9M+Fa2AknHoGS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk0kvwwACgkQD27XaX1/VRuxSgCgn+SCA0YYQ3bE4hcpQBqEhmbn
+pgMAnjONMnWBmLa1CVw3/ZBxw093qGeG
+=qjHs
+-----END PGP SIGNATURE-----
+
+--qMm9M+Fa2AknHoGS--
