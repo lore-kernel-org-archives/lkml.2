@@ -1,83 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752289Ab1AEN0J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 08:26:09 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:34455 "EHLO
+	id S1752251Ab1AEN26 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 08:28:58 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:37716 "EHLO
 	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751926Ab1AEN0I (ORCPT
+	by vger.kernel.org with ESMTP id S1752014Ab1AEN25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 08:26:08 -0500
-Date: Wed, 5 Jan 2011 08:26:04 -0500
+	Wed, 5 Jan 2011 08:28:57 -0500
+Date: Wed, 5 Jan 2011 08:28:56 -0500
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Zhaolei <zhaolei@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC patch 2/5] trace event skb fix unassigned field
-Message-ID: <20110105132604.GA31831@Krystal>
-References: <E1PaGZY-0001EI-BD@smtp.tuxdriver.com> <20110104235418.GD2911@nowhere> <20110105004038.GB9737@Krystal> <20110105004903.GF2911@nowhere> <20110105012123.GA10416@Krystal> <20110105115908.GA4434@hmsreliant.think-freely.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [RFC patch 5/5] trace event sched: remove TP_perf_assign
+Message-ID: <20110105132856.GB31831@Krystal>
+References: <20110104231629.996422888@efficios.com> <20110104232419.782205410@efficios.com> <1294221486.2016.212.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110105115908.GA4434@hmsreliant.think-freely.org>
+In-Reply-To: <1294221486.2016.212.camel@laptop>
 X-Editor: vi
 X-Info: http://www.efficios.com
 X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 08:25:36 up 42 days, 18:28,  1 user,  load average: 0.00, 0.01,
-	0.00
+X-Uptime: 08:26:08 up 42 days, 18:29,  1 user,  load average: 0.16, 0.04,
+	0.01
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Neil Horman (nhorman@tuxdriver.com) wrote:
-[...]
-> > trace event skb remove duplicate null-pointer check
-> > 
-> > The check for NULL skb in the kfree_skb trace event is a duplicate from the
-> > check already done in its only caller, kfree_skb(). Remove this duplicate check.
-> > 
-> > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > CC: Steven Rostedt <rostedt@goodmis.org>
-> > CC: Frederic Weisbecker <fweisbec@gmail.com>
-> > CC: Ingo Molnar <mingo@elte.hu>
-> > CC: Thomas Gleixner <tglx@linutronix.de>
-> > CC: Neil Horman <nhorman@tuxdriver.com>
-> > ---
-> >  include/trace/events/skb.h |    4 +---
-> >  1 file changed, 1 insertion(+), 3 deletions(-)
-> > 
-> > Index: linux-2.6-lttng/include/trace/events/skb.h
-> > ===================================================================
-> > --- linux-2.6-lttng.orig/include/trace/events/skb.h
-> > +++ linux-2.6-lttng/include/trace/events/skb.h
-> > @@ -25,9 +25,7 @@ TRACE_EVENT(kfree_skb,
-> >  
-> >  	TP_fast_assign(
-> >  		__entry->skbaddr = skb;
-> > -		if (skb) {
-> > -			__entry->protocol = ntohs(skb->protocol);
-> > -		}
-> > +		__entry->protocol = ntohs(skb->protocol);
-> >  		__entry->location = location;
-> >  	),
-> >  
-> > 
-> > 
-> Acked-by: Neil Horman <nhorman@tuxdriver.com>
+* Peter Zijlstra (a.p.zijlstra@chello.nl) wrote:
+> On Tue, 2011-01-04 at 18:16 -0500, Mathieu Desnoyers wrote:
+> > plain text document attachment (trace-event-sched-remove-perf-count.patch)
+> > The TP_perf_assign part of 2 scheduler TRACE_EVENT are not used and don't act as
+> > TRACE_EVENT fields per se.
+> 
+> Hrm,. they should be used, include/trace/ftrace.h uses __perf_count().
+> If it doesn't actually work them something broke.
+> 
+> So NAK on removing them.
 
-Thanks!
+Good point, a fresh look at perf's use of __perf_count() shows that the __count
+and __addr local variables are acutally used. I'm therefore dropping this patch.
+
+Thanks,
 
 Mathieu
-
-> 
-> > -- 
-> > Mathieu Desnoyers
-> > Operating System Efficiency R&D Consultant
-> > EfficiOS Inc.
-> > http://www.efficios.com
-> > 
 
 -- 
 Mathieu Desnoyers
