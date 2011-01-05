@@ -1,120 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864Ab1AEWwW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 17:52:22 -0500
-Received: from sj-iport-1.cisco.com ([171.71.176.70]:16386 "EHLO
-	sj-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941Ab1AEWwU (ORCPT
+	id S1752357Ab1AEWxg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 17:53:36 -0500
+Received: from relay1.mentorg.com ([192.94.38.131]:45593 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277Ab1AEWxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 17:52:20 -0500
-Authentication-Results: sj-iport-1.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAN+EJE2rR7Hu/2dsb2JhbACkHHOmYJghhUwEhGiGIg
-X-IronPort-AV: E=Sophos;i="4.60,279,1291593600"; 
-   d="scan'208";a="396507387"
-From: Roland Dreier <rdreier@cisco.com>
-To: "J.H." <warthog9@kernel.org>
-Cc: David Brown <davidb@codeaurora.org>, sedat.dilek@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
-        ftpadmin@kernel.org, webmaster@kernel.org
-Subject: Re: patchwork.kernel.org down
-References: <AANLkTik4ktaeyDG3ihh-YRB+WVLxA46wSLOgWy6iY_68@mail.gmail.com>
-	<20101220204936.GA21290@huya.qualcomm.com>
-	<4D0FFC4B.9050301@kernel.org>
-X-Message-Flag: Warning: May contain useful information
-Date: Wed, 05 Jan 2011 14:52:17 -0800
-In-Reply-To: <4D0FFC4B.9050301@kernel.org> (J. H.'s message of "Mon, 20 Dec
-	2010 17:00:59 -0800")
-Message-ID: <ada62u3dkv2.fsf@cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Wed, 5 Jan 2011 17:53:35 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+	charset="utf-8"
+Organization: Mentor Graphics, Embedded Systems Division
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b2 Thunderbird/3.1.7
+Content-class: urn:content-classes:message
+Subject: Re: [PATCH] of/device: Don't register disabled devices
+Date: Wed, 5 Jan 2011 14:53:27 -0800
+Message-ID: <DD7A9A95166BF4418C4C1EB2033B6EE2038FA8E5@na3-mail.mgc.mentorg.com>
+In-Reply-To: <20110103230122.25772.72990.stgit@localhost6.localdomain6>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] of/device: Don't register disabled devices
+Thread-Index: AcutK14nb60BK/n7T5WdHHmLzJkm2A==
+References: <20110103230122.25772.72990.stgit@localhost6.localdomain6>
+From: "Blanchard, Hollis" <Hollis_Blanchard@mentor.com>
+To: "Grant Likely" <grant.likely@secretlab.ca>
+Cc: <devicetree-discuss@lists.ozlabs.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, "Scott Wood" <scottwood@freescale.com>,
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
+        "David Gibson" <david@gibson.dropbear.id.au>,
+        "Saxena, Deepak" <deepak_saxena@mentor.com>
+X-OriginalArrivalTime: 05 Jan 2011 22:53:28.0189 (UTC) FILETIME=[5DF77AD0:01CBAD2B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p05MrirK019811
 
- > More excitement from https://bugzilla.kernel.org/show_bug.cgi?id=20702
- > 
- > Anyone want to take a stab at it?  I know I'd be appreciative.  I am
- > running a debug kernel with everything I could find and enable I even
- > remotely thought might prove helpful.  Nothing has jumped out yet though.
+On 01/03/2011 03:01 PM, Grant Likely wrote:
+> Device nodes with the property status="disabled" are not usable and so
+> don't register them when parsing the device tree for devices.
+>
+This is great and all, but a fair amount of driver code explicitly 
+searches the tree, rather than registering a probe function. That's why 
+our earlier patches in this area were more comprehensive.
 
-A little late, but perhaps running with the patch below might help us
-make a bit of progress.  The idea is to dump the last /proc/net file
-opened and closed, so we can at least have a clue as to where the crash
-is coming from.  This should add lines like 
+What are your thoughts on handling those cases?
 
-    last procfs open:  /proc/2443/net/arp
-    last procfs close: /proc/2443/net/arp
+Hollis Blanchard
+Mentor Graphics, Embedded Systems Division
 
-to the oops output, so maybe we can zero in on things after you get a
-crash with this applied.
-
- - R.
-
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index 6e8752c..c67b8d6 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -18,6 +18,7 @@
- 
- #include <asm/stacktrace.h>
- 
-+void procfs_printk_last_file(void);
- 
- int panic_on_unrecovered_nmi;
- int panic_on_io_nmi;
-@@ -283,6 +284,7 @@ int __kprobes __die(const char *str, struct pt_regs *regs, long err)
- #endif
- 	printk("\n");
- 	sysfs_printk_last_file();
-+	procfs_printk_last_file();
- 	if (notify_die(DIE_OOPS, str, regs, err,
- 			current->thread.trap_no, SIGSEGV) == NOTIFY_STOP)
- 		return 1;
-diff --git a/fs/proc/proc_net.c b/fs/proc/proc_net.c
-index 9020ac1..1801cc1 100644
---- a/fs/proc/proc_net.c
-+++ b/fs/proc/proc_net.c
-@@ -26,6 +26,14 @@
- 
- #include "internal.h"
- 
-+/* used in crash dumps to help with debugging */
-+static char last_procfs_open[PATH_MAX];
-+static char last_procfs_close[PATH_MAX];
-+void procfs_printk_last_file(void)
-+{
-+	printk(KERN_EMERG "last procfs open:  %s\n", last_procfs_open);
-+	printk(KERN_EMERG "last procfs close: %s\n", last_procfs_close);
-+}
- 
- static struct net *get_proc_net(const struct inode *inode)
- {
-@@ -37,9 +45,14 @@ int seq_open_net(struct inode *ino, struct file *f,
- {
- 	struct net *net;
- 	struct seq_net_private *p;
-+	char *n;
- 
- 	BUG_ON(size < sizeof(*p));
- 
-+	n = d_path(&f->f_path, last_procfs_open, sizeof(last_procfs_open));
-+	if (!IS_ERR(n))
-+		memmove(last_procfs_open, n, strlen(n) + 1);
-+
- 	net = get_proc_net(ino);
- 	if (net == NULL)
- 		return -ENXIO;
-@@ -83,6 +96,11 @@ EXPORT_SYMBOL_GPL(single_open_net);
- int seq_release_net(struct inode *ino, struct file *f)
- {
- 	struct seq_file *seq;
-+	char *n;
-+
-+	n = d_path(&f->f_path, last_procfs_close, sizeof(last_procfs_close));
-+	if (!IS_ERR(n))
-+		memmove(last_procfs_close, n, strlen(n) + 1);
- 
- 	seq = f->private_data;
- 
+> ---
+>   drivers/of/platform.c |   22 ++++++++++++++--------
+>   1 files changed, 14 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> index 5b4a07f..c01cd1a 100644
+> --- a/drivers/of/platform.c
+> +++ b/drivers/of/platform.c
+> @@ -633,6 +633,9 @@ EXPORT_SYMBOL(of_device_alloc);
+>    * @np: pointer to node to create device for
+>    * @bus_id: name to assign device
+>    * @parent: Linux device model parent device.
+> + *
+> + * Returns pointer to created platform device, or NULL if a device was not
+> + * registered.  Unavailable devices will not get registered.
+>    */
+>   struct platform_device *of_platform_device_create(struct device_node *np,
+>   					    const char *bus_id,
+> @@ -640,6 +643,9 @@ struct platform_device *of_platform_device_create(struct device_node *np,
+>   {
+>   	struct platform_device *dev;
+>
+> +	if (!of_device_is_available(np))
+> +		return NULL;
+> +
+>   	dev = of_device_alloc(np, bus_id, parent);
+>   	if (!dev)
+>   		return NULL;
+> @@ -683,8 +689,9 @@ static int of_platform_bus_create(const struct device_node *bus,
+>   		pr_debug("   create child: %s\n", child->full_name);
+>   		dev = of_platform_device_create(child, NULL, parent);
+>   		if (dev == NULL)
+> -			rc = -ENOMEM;
+> -		else if (!of_match_node(matches, child))
+> +			continue;
+> +
+> +		if (!of_match_node(matches, child))
+>   			continue;
+>   		if (rc == 0) {
+>   			pr_debug("   and sub busses\n");
+> @@ -733,10 +740,9 @@ int of_platform_bus_probe(struct device_node *root,
+>   	if (of_match_node(matches, root)) {
+>   		pr_debug(" root match, create all sub devices\n");
+>   		dev = of_platform_device_create(root, NULL, parent);
+> -		if (dev == NULL) {
+> -			rc = -ENOMEM;
+> +		if (dev == NULL)
+>   			goto bail;
+> -		}
+> +
+>   		pr_debug(" create all sub busses\n");
+>   		rc = of_platform_bus_create(root, matches,&dev->dev);
+>   		goto bail;
+> @@ -748,9 +754,9 @@ int of_platform_bus_probe(struct device_node *root,
+>   		pr_debug("  match: %s\n", child->full_name);
+>   		dev = of_platform_device_create(child, NULL, parent);
+>   		if (dev == NULL)
+> -			rc = -ENOMEM;
+> -		else
+> -			rc = of_platform_bus_create(child, matches,&dev->dev);
+> +			continue;
+> +
+> +		rc = of_platform_bus_create(child, matches,&dev->dev);
+>   		if (rc) {
+>   			of_node_put(child);
+>   			break;
+>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
