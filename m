@@ -1,118 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab1AETju (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 14:39:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27345 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751760Ab1AETjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 14:39:49 -0500
-Date: Wed, 5 Jan 2011 21:38:49 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Anthony Liguori <anthony@codemonkey.ws>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Jamie Lokier <jamie@shareable.org>,
-        Thomas Weber <swirl@gmx.li>, gleb@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio-pci: add softlinks between virtio and pci
-Message-ID: <20110105193849.GB28688@redhat.com>
-References: <20110105191711.GA27489@redhat.com>
- <4D24C662.9070804@codemonkey.ws>
+	id S1752029Ab1AETnZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 14:43:25 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:55265 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360Ab1AETnY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 14:43:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ayB5zOaxvRWqHjbOEVE8acA8ZkPmx0EoOWfviSgqQvw0PuO+5XeIX0NZV/njct98Pt
+         ZXaaOumvydLDhT2VmXVRq1Q7tSradHbXt7cbfTa7Alj5OG1rTuleAAMdXVYdx6gYtElz
+         8fKUQWCy/0N6RHzrVJ3MKdseGgcfu0sEUoH0U=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D24C662.9070804@codemonkey.ws>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110104214008.GH27727@hostway.ca>
+References: <20101208212505.GA18192@hostway.ca>
+	<20101218010801.GE28367@hostway.ca>
+	<20101229220313.GA13688@hostway.ca>
+	<AANLkTinq074Q-B=5B4_aXuBm-3ELwGknsJv+OvS1z1OX@mail.gmail.com>
+	<20110104214008.GH27727@hostway.ca>
+Date: Wed, 5 Jan 2011 11:43:23 -0800
+Message-ID: <AANLkTim6HoN5+m180-Du+oda+6N49qSaGga6ktMPV4U4@mail.gmail.com>
+Subject: Re: System CPU increasing on idle 2.6.36
+From: Mark Moseley <moseleymark@gmail.com>
+To: Simon Kirby <sim@hostway.ca>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 05, 2011 at 01:28:34PM -0600, Anthony Liguori wrote:
-> On 01/05/2011 01:17 PM, Michael S. Tsirkin wrote:
-> >We sometimes need to map between the virtio device and
-> >the given pci device. One such use is OS installer that
-> >gets the boot pci device from BIOS and needs to
-> >find the relevant block device. Since it can't,
-> >installation fails.
-> 
-> I have no objection to this patch but I'm a tad confused by the description.
-> 
-> I assume you mean the installer is querying the boot device via
-> int13 get driver parameters such that it returns the pci address of
-> the device?
-> 
-> Or is it querying geometry information and then trying to find the
-> best match block device?
+On Tue, Jan 4, 2011 at 1:40 PM, Simon Kirby <sim@hostway.ca> wrote:
+> On Tue, Jan 04, 2011 at 09:42:14AM -0800, Mark Moseley wrote:
+>
+>> On Wed, Dec 29, 2010 at 2:03 PM, Simon Kirby <sim@hostway.ca> wrote:
+>>
+>> > I've noticed nfs_inode_cache is ever-increasing as well with 2.6.37:
+>> >
+>> > ?OBJS ACTIVE ?USE OBJ SIZE ?SLABS OBJ/SLAB CACHE SIZE NAME
+>> > 2562514 2541520 ?99% ? ?0.95K ?78739 ? ? ? 33 ? 2519648K nfs_inode_cache
+>> > 467200 285110 ?61% ? ?0.02K ? 1825 ? ? ?256 ? ? ?7300K kmalloc-16
+>> > 299397 242350 ?80% ? ?0.19K ?14257 ? ? ? 21 ? ? 57028K dentry
+>> > 217434 131978 ?60% ? ?0.55K ? 7767 ? ? ? 28 ? ?124272K radix_tree_node
+>> > 215232 ?81522 ?37% ? ?0.06K ? 3363 ? ? ? 64 ? ? 13452K kmalloc-64
+>> > 183027 136802 ?74% ? ?0.10K ? 4693 ? ? ? 39 ? ? 18772K buffer_head
+>> > 101120 ?71184 ?70% ? ?0.03K ? ?790 ? ? ?128 ? ? ?3160K kmalloc-32
+>> > ?79616 ?59713 ?75% ? ?0.12K ? 2488 ? ? ? 32 ? ? ?9952K kmalloc-128
+>> > ?66560 ?41257 ?61% ? ?0.01K ? ?130 ? ? ?512 ? ? ? 520K kmalloc-8
+>> > ?42126 ?26650 ?63% ? ?0.75K ? 2006 ? ? ? 21 ? ? 32096K ext3_inode_cache
+>> >
+>> > http://0x.ca/sim/ref/2.6.37/inodes_nfs.png
+>> > http://0x.ca/sim/ref/2.6.37/cpu2_nfs.png
+>> >
+>> > Perhaps I could bisect just fs/nfs changes between 2.6.35 and 2.6.36 to
+>> > try to track this down without having to wait too long, unless somebody
+>> > can see what is happening here.
+>>
+>> I'll get started bisecting too, since this is something of a
+>> show-stopper. Boxes that pre-2.6.36 would stay up for months at a time
+>> now have to be powercycled every couple of days (which is about how
+>> long it takes for this behavior to show up). This is across-the-board
+>> for about 50 boxes, ranging from 2.6.36 to 2.6.36.2.
+>>
+>> Simon: It's probably irrelevant since these are kernel threads, but
+>> I'm curious what distro your boxes are running. Ours are Debian Lenny,
+>> i386, Dell Poweredge 850s. Just trying to figure out any
+>> commonalities. I'll get my boxes back on 2.6.36.2 and start watching
+>> nfs_inode_cache as well.
+>
+> Same distro, x86_64, similar servers.
+>
+> I'm not sure if the two cases I am seeing are exactly the same problem,
+> but on the log crunching boxes, system time seems proportional to
+> nfs_inode_cache and nfs_inode_cache just keeps growing forever; however,
+> if I stop the load and unmount the NFS mount points, all of the
+> nfs_inode_cache objects do actually go away (after umount finishes).
+>
+> It seems the shrinker callback might not be working as intended here.
+>
+> On the shared server case, the crazy spinlock contention from all of the
+> flusher processes happens suddenly and overloads the boxes for 10-15
+> minutes, and then everything recovers.  Over 21 of these boxes, they
+> each have about 500k-700k nfs_inode_cache objects.  The log cruncher hit
+> 3.3 million nfs_inode_cache objects before I unmounted.
+>
+> Are your boxes repeating this behaviour at any predictable interval?
 
-I think it's the former.
+Simon:
+My boxes definitely fall into the latter category, with spinlock
+regularly sitting at 60-80% CPU (according to 'perf top'). As far as
+predictability, not strictly, but it's typically after an uptime of
+2-3 days. They take so long to get into this state that I've never
+seen the actual transition in person, just the after-effects of
+flush-0:xx gone crazy. These boxes have a number of other NFS mounts,
+but it's on the flush-0:xx's for the heavily written-to NFS mounts
+that are spinning wildly, which you'd expect to be the case. The
+infrequently written-to NFS servers' flush-0:xx isn't to be found in
+'top' output.
 
-> If it's the former, I don't really understand the need for a
-> backlink since the PCI address gives you a link to the block device.
+I'd booted into older kernels after my initial reply, so I'm 14 hrs
+into booting a box back into 2.6.36.2 and another box into a
+double-bisected 2.6.35-2.6.36 kernel (my first bisect hit compile
+errors). Both are running normally but that fits with the pattern so
+far.
 
-It does? How does it?
-
-> OTOH, if it's the later, it would make sense but then your
-> description doesn't really make much sense.
-> 
-> At any rate, a better commit message would be helpful in explaining
-> the need for this.
-> 
-> Regards,
-> 
-> Anthony Liguori
-> 
-> >Supply softlinks between these to make it possible.
-> >
-> >Signed-off-by: Michael S. Tsirkin<mst@redhat.com>
-> >---
-> >
-> >Gleb, could you please ack that this patch below
-> >will be enough to fix the installer issue that
-> >you see?
-> >
-> >  drivers/virtio/virtio_pci.c |   18 +++++++++++++++++-
-> >  1 files changed, 17 insertions(+), 1 deletions(-)
-> >
-> >diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-> >index ef8d9d5..06eb2f8 100644
-> >--- a/drivers/virtio/virtio_pci.c
-> >+++ b/drivers/virtio/virtio_pci.c
-> >@@ -25,6 +25,7 @@
-> >  #include<linux/virtio_pci.h>
-> >  #include<linux/highmem.h>
-> >  #include<linux/spinlock.h>
-> >+#include<linux/sysfs.h>
-> >
-> >  MODULE_AUTHOR("Anthony Liguori<aliguori@us.ibm.com>");
-> >  MODULE_DESCRIPTION("virtio-pci");
-> >@@ -667,8 +668,21 @@ static int __devinit virtio_pci_probe(struct pci_dev *pci_dev,
-> >  	if (err)
-> >  		goto out_set_drvdata;
-> >
-> >-	return 0;
-> >+	err = sysfs_create_link(&pci_dev->dev.kobj,&vp_dev->vdev.dev.kobj,
-> >+				"virtio_device");
-> >+	if (err)
-> >+		goto out_register_device;
-> >+
-> >+	err = sysfs_create_link(&vp_dev->vdev.dev.kobj,&pci_dev->dev.kobj,
-> >+				"bus_device");
-> >+	if (err)
-> >+		goto out_create_link;
-> >
-> >+	return 0;
-> >+out_create_link:
-> >+	sysfs_remove_link(&pci_dev->dev.kobj, "virtio_device");
-> >+out_register_device:
-> >+	unregister_virtio_device(&vp_dev->vdev);
-> >  out_set_drvdata:
-> >  	pci_set_drvdata(pci_dev, NULL);
-> >  	pci_iounmap(pci_dev, vp_dev->ioaddr);
-> >@@ -685,6 +699,8 @@ static void __devexit virtio_pci_remove(struct pci_dev *pci_dev)
-> >  {
-> >  	struct virtio_pci_device *vp_dev = pci_get_drvdata(pci_dev);
-> >
-> >+	sysfs_remove_link(&vp_dev->vdev.dev.kobj, "bus_device");
-> >+	sysfs_remove_link(&pci_dev->dev.kobj, "virtio_device");
-> >  	unregister_virtio_device(&vp_dev->vdev);
-> >  }
-> >
+NFS Guys:
+Anything else we can be digging up to help debug this? This is a
+pretty ugly issue.
