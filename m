@@ -1,107 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751420Ab1AEIb1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 03:31:27 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:48596 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750959Ab1AEIbZ (ORCPT
+	id S1751430Ab1AEIcl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 03:32:41 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:61702 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750959Ab1AEIck convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 03:31:25 -0500
-Date: Wed, 5 Jan 2011 02:31:13 -0600
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-To: Roberto Sassu <roberto.sassu@polito.it>
-Cc: linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        zohar@linux.vnet.ibm.com, dhowells@redhat.com, jmorris@namei.org,
-        safford@watson.ibm.com, ramunno@polito.it, kirkland@canonical.com
-Subject: Re: [RFC][PATCH v2 6/6] eCryptfs: added support for the encrypted
- key type
-Message-ID: <20110105083112.GC15439@boyd.l.tihix.com>
-References: <1293533302-22868-1-git-send-email-roberto.sassu@polito.it>
- <1293533302-22868-7-git-send-email-roberto.sassu@polito.it>
+	Wed, 5 Jan 2011 03:32:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=UumFgYCB3W6tETgEsbvGIEBNgbaIOQO5T31pLQMQzPQ4+3vliFNnDoDoIMIx87lyku
+         KP+MHBdpegmfjEtt2/sQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1293533302-22868-7-git-send-email-roberto.sassu@polito.it>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4D23E1D1.3000400@cn.fujitsu.com>
+References: <4d2205a1.8b02e30a.3541.ffff8aee@mx.google.com>
+	<4D23E1D1.3000400@cn.fujitsu.com>
+Date: Wed, 5 Jan 2011 09:32:37 +0100
+Message-ID: <AANLkTi=fCBQyq9GHw38P6d0ZFb6U7YUZk8vfC8i6yxE0@mail.gmail.com>
+Subject: Re: [PATCH 4/5] perf_events: add cgroup support (v7)
+From: Stephane Eranian <eranian@google.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+        perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com,
+        acme@redhat.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue Dec 28, 2010 at 11:48:16AM +0100, Roberto Sassu <roberto.sassu@polito.it> wrote:
-> The function ecryptfs_keyring_auth_tok_for_sig() has been modified in order
-> to search keys of both 'user' and 'encrypted' types.
-> 
-> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
-> ---
->  fs/ecryptfs/ecryptfs_kernel.h |   11 +++++++++--
->  fs/ecryptfs/keystore.c        |   15 +++++++++++----
->  2 files changed, 20 insertions(+), 6 deletions(-)
-> 
-> diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
-> index a27cad4..068eade 100644
-> --- a/fs/ecryptfs/ecryptfs_kernel.h
-> +++ b/fs/ecryptfs/ecryptfs_kernel.h
-> @@ -29,6 +29,7 @@
->  #define ECRYPTFS_KERNEL_H
-> 
->  #include <keys/user-type.h>
-> +#include <keys/encrypted-type.h>
->  #include <linux/fs.h>
->  #include <linux/fs_stack.h>
->  #include <linux/namei.h>
-> @@ -81,8 +82,14 @@ struct ecryptfs_page_crypt_context {
->  static inline struct ecryptfs_auth_tok *
->  ecryptfs_get_key_payload_data(struct key *key)
->  {
-> -	return (struct ecryptfs_auth_tok *)
-> -		(((struct user_key_payload*)key->payload.data)->data);
-> +#if defined(CONFIG_ENCRYPTED_KEYS) || defined(CONFIG_ENCRYPTED_KEYS_MODULE)
+Li,
 
-I'll echo Mimi's v1 patchset comments on moving these ifdefs to header
-files. Please see the "#ifdef and preprocessor use in general"
-subsection of Documentation/development-process/4.Coding for more info.
+Thanks for your comment. Good catch on perf_detach_cgroup().
+I will resubmit this patch (part 4/5).
 
-Tyler
-
-> +	if (key->type == &key_type_encrypted)
-> +		return (struct ecryptfs_auth_tok *)
-> +			(&((struct encrypted_key_payload *)key->payload.data)->payload_data);
-> +	else
-> +#endif
-> +		return (struct ecryptfs_auth_tok *)
-> +			(((struct user_key_payload *)key->payload.data)->data);
->  }
-> 
->  #define ECRYPTFS_SUPER_MAGIC 0xf15f
-> diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
-> index 73811cf..8d72635 100644
-> --- a/fs/ecryptfs/keystore.c
-> +++ b/fs/ecryptfs/keystore.c
-> @@ -1542,10 +1542,17 @@ int ecryptfs_keyring_auth_tok_for_sig(struct key **auth_tok_key,
-> 
->  	(*auth_tok_key) = request_key(&key_type_user, sig, NULL);
->  	if (!(*auth_tok_key) || IS_ERR(*auth_tok_key)) {
-> -		printk(KERN_ERR "Could not find key with description: [%s]\n",
-> -		       sig);
-> -		rc = process_request_key_err(PTR_ERR(*auth_tok_key));
-> -		goto out;
-> +#if defined(CONFIG_ENCRYPTED_KEYS) || defined(CONFIG_ENCRYPTED_KEYS_MODULE)
-> +		(*auth_tok_key) = request_key(&key_type_encrypted, sig, NULL);
-> +		if (!(*auth_tok_key) || IS_ERR(*auth_tok_key)) {
-> +#endif
-> +			printk(KERN_ERR "Could not find key with description: [%s]\n",
-> +			      sig);
-> +			rc = process_request_key_err(PTR_ERR(*auth_tok_key));
-> +			goto out;
-> +#if defined(CONFIG_ENCRYPTED_KEYS) || defined(CONFIG_ENCRYPTED_KEYS_MODULE)
-> +		}
-> +#endif
->  	}
->  	(*auth_tok) = ecryptfs_get_key_payload_data(*auth_tok_key);
->  	if (ecryptfs_verify_version((*auth_tok)->version)) {
-> -- 
-> 1.7.2.3
-> 
-
-
+On Wed, Jan 5, 2011 at 4:13 AM, Li Zefan <lizf@cn.fujitsu.com> wrote:
+> Stephane Eranian wrote:
+>> This kernel patch adds the ability to filter monitoring based on
+>> container groups (cgroups). This is for use in per-cpu mode only.
+>>
+>> The cgroup to monitor is passed as a file descriptor in the pid
+>> argument to the syscall. The file descriptor must be opened to
+>> the cgroup name in the cgroup filesystem. For instance, if the
+>> cgroup name is foo and cgroupfs is mounted in /cgroup, then the
+>> file descriptor is opened to /cgroup/foo. Cgroup mode is
+>> activated by passing PERF_FLAG_PID_CGROUP in the flags argument
+>> to the syscall.
+>>
+>> For instance to measure in cgroup foo on CPU1 assuming
+>> cgroupfs is mounted under /cgroup:
+>>
+>> struct perf_event_attr attr;
+>> int cgroup_fd, fd;
+>>
+>> cgroup_fd = open("/cgroup/foo", O_RDONLY);
+>> fd = perf_event_open(&attr, cgroup_fd, 1, -1, PERF_FLAG_PID_CGROUP);
+>> close(cgroup_fd);
+>>
+>> Signed-off-by: Stephane Eranian <eranian@google.com>
+>
+> For the cgroup part:
+>
+> Acked-by: Li Zefan <lizf@cn.fujitsu.com>
+>
+> a few comments below:
+>
+>>
+> ...
+>> +config CGROUP_PERF
+>> +     bool "Enable perf_event per-cpu per-container group (cgroup) monitoring"
+>> +     depends on PERF_EVENTS && CGROUPS
+>
+> Depending on CGROUPS is already implicated by "if CGROUPS"
+>
+>> +     help
+>> +       This option extends the per-cpu mode to restrict monitoring to
+>> +       threads which belong to the cgroup specificied and run on the
+>> +       designated cpu.
+>> +
+>> +       Say N if unsure.
+>> +
+>>  menuconfig CGROUP_SCHED
+>>       bool "Group CPU scheduler"
+>>       depends on EXPERIMENTAL
+> ...
+>> +static inline int perf_cgroup_connect(int fd, struct perf_event *event,
+>> +                                   struct perf_event_attr *attr,
+>> +                                   struct perf_event *group_leader)
+>> +{
+>> +     struct perf_cgroup *cgrp;
+>> +     struct cgroup_subsys_state *css;
+>> +     struct file *file;
+>> +     int ret = 0, fput_needed;
+>> +
+>> +     file = fget_light(fd, &fput_needed);
+>> +     if (!file)
+>> +             return -EBADF;
+>> +
+>> +     css = cgroup_css_from_dir(file, perf_subsys_id);
+>> +     if (IS_ERR(css))
+>> +             return PTR_ERR(css);
+>> +
+>> +     cgrp = container_of(css, struct perf_cgroup, css);
+>> +     event->cgrp = cgrp;
+>> +
+>> +     /*
+>> +      * all events in a group must monitor
+>> +      * the same cgroup because a thread belongs
+>> +      * to only one perf cgroup at a time
+>> +      */
+>> +     if (group_leader && group_leader->cgrp != cgrp) {
+>> +             perf_detach_cgroup(event);
+>
+> This doesn't seem right, because we haven't got the cgroup
+> refcount.
+>
+>> +             ret = -EINVAL;
+>> +     } else {
+>> +             /* must be done before we fput() the file */
+>> +             perf_get_cgroup(event);
+>> +     }
+>> +     fput_light(file, fput_needed);
+>> +     return ret;
+>> +}
+>
