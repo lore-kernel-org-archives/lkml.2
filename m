@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752244Ab1AERql (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 12:46:41 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:40121 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309Ab1AERqj (ORCPT
+	id S1752093Ab1AERu3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 12:50:29 -0500
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:55971 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751626Ab1AERu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 12:46:39 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=mIBq1ZzCEX8A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=8Ipz_qBANfp3AE-v800A:9 a=zN1l6uoZCkBcIX2Fq1WPesXacNIA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 2/2] jump label: introduce static_branch()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jason Baron <jbaron@redhat.com>, peterz@infradead.org,
-        mathieu.desnoyers@polymtl.ca, hpa@zytor.com, mingo@elte.hu,
-        tglx@linutronix.de, andi@firstfloor.org, roland@redhat.com,
-        rth@redhat.com, masami.hiramatsu.pt@hitachi.com, avi@redhat.com,
-        davem@davemloft.net, sam@ravnborg.org, ddaney@caviumnetworks.com,
-        michael@ellerman.id.au, linux-kernel@vger.kernel.org
-In-Reply-To: <20110105171516.GB1692@nowhere>
-References: <cover.1294239591.git.jbaron@redhat.com>
-	 <2d8c38bd7ca93e162aedb8e7acfc8bdb96d85de2.1294239591.git.jbaron@redhat.com>
-	 <20110105171516.GB1692@nowhere>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 05 Jan 2011 12:46:36 -0500
-Message-ID: <1294249596.26623.38.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Jan 2011 12:50:28 -0500
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Wed, 5 Jan 2011 18:49:27 +0100
+To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Cc: Stephane Chatty <chatty@enac.fr>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC v2 0/10] hid-multitouch: a first step towards multitouch
+ unification
+Message-ID: <20110105174927.GB2146@polaris.bitmath.org>
+References: <1294248468-19979-1-git-send-email-benjamin.tissoires@enac.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294248468-19979-1-git-send-email-benjamin.tissoires@enac.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 83.248.200.95
+X-Scan-Result: No virus found in message 1PaXUH-0003wx-8V.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PaXUH-0003wx-8V 4f2c575756594fb361dfd4e31b7ec7da
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-05 at 18:15 +0100, Frederic Weisbecker wrote:
-> On Wed, Jan 05, 2011 at 10:43:12AM -0500, Jason Baron wrote:
-> > diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-> > index 152f7de..0ad9c2e 100644
-> > --- a/include/linux/jump_label.h
-> > +++ b/include/linux/jump_label.h
-> > @@ -22,6 +22,11 @@ struct module;
-> >  
-> >  #ifdef HAVE_JUMP_LABEL
-> >  
-> > +static __always_inline bool static_branch(struct jump_label_key *key)
-> > +{
-> > +	return __static_branch(key);
-> 
-> Not very important, but __static_branch() would be more self-explained
-> if it was called arch_static_branch().
+Hi Benjamin,
 
-I disagree, I think it is very important ;-)
+> these patches is the set for the unified driver hid-multitouch.
+> I'm putting the flag RFC as I'm still waiting some testers feedback on some devices. But I don't think they will change a lot.
 
-Yes, the kernel has been moving to adding "arch_" to functions that are
-implemented dependently by different archs. Please change this to
-"arch_static_branch()".
+This will be an interesting read, thank you very much for the patches.
+
+> This would be great if this stuff could go into 2.6.38, if it's not too late.
+
+The merge window just opened, which generally means the work for
+2.6.38 is done. On top of that, we would expect some changes and
+further testing, and limited time from everybody involved. Given that
+also additional drivers should be added, which might affect the
+general solution, it seems like a good idea to let this mature over
+time, such that it is ready for the 2.6.39 merge window.
 
 Thanks,
-
--- Steve
-
-
+Henrik
