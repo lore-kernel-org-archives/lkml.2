@@ -1,190 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036Ab1AELFU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 06:05:20 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:39535 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751560Ab1AELFT convert rfc822-to-8bit (ORCPT
+	id S1751815Ab1AELS4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 06:18:56 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:52434 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507Ab1AELS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 06:05:19 -0500
+	Wed, 5 Jan 2011 06:18:56 -0500
+Date: Wed, 5 Jan 2011 11:18:53 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>
+Subject: Re: [PATCH 0/2] Annotate gpio-configuration with __must_check
+Message-ID: <20110105111853.GA10317@sirena.org.uk>
+References: <1294159868-4989-1-git-send-email-w.sang@pengutronix.de> <20110104202718.GA31444@suse.de> <20110104212916.GA14436@pengutronix.de> <20110104213414.GA6774@suse.de> <20110104230508.GA18363@pengutronix.de> <20110104234440.GC30328@suse.de>
 MIME-Version: 1.0
-X-Originating-IP: [81.245.174.26]
-In-Reply-To: <alpine.DEB.2.00.1101041146160.19319@utopia.booyaka.com>
-References: <1294136263-24020-1-git-send-email-j-pihet@ti.com>
-	<1294138484-24729-1-git-send-email-j-pihet@ti.com>
-	<alpine.DEB.2.00.1101041146160.19319@utopia.booyaka.com>
-Date: Wed, 5 Jan 2011 12:05:18 +0100
-Message-ID: <AANLkTi=3pek3+Vv+c1TCxBH2RJcoSXq8TL8CyK9ABMeu@mail.gmail.com>
-Subject: Re: [PATCH 2/3] perf: add OMAP support for the new power events
-From: Jean Pihet <jean.pihet@newoldbits.com>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: mingo@elte.hu, trenn@suse.de, Kevin Hilman <khilman@deeprootsystems.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        linux-perf-users@vger.kernel.org, rjw@sisk.pl,
-        Jean Pihet <j-pihet@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110104234440.GC30328@suse.de>
+X-Cookie: APL hackers do it in the quad.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Tue, Jan 04, 2011 at 03:44:40PM -0800, Greg KH wrote:
 
-On Tue, Jan 4, 2011 at 7:48 PM, Paul Walmsley <paul@pwsan.com> wrote:
-> Hello Jean,
->
-> On Tue, 4 Jan 2011, jean.pihet@newoldbits.com wrote:
->
->> From: Jean Pihet <j-pihet@ti.com>
->>
->> The patch adds the new power management trace points for
->> the OMAP architecture.
->>
->> The trace points are for:
->> - default idle handler. Since the cpuidle framework is
->>   instrumented in the generic way there is no need to
->>   add trace points in the OMAP specific cpuidle handler;
->> - cpufreq (DVFS),
->> - clocks changes (enable, disable, set_rate),
->
-> A question about these.  Are these only meant to track calls to these
-> functions from outside the clock code?  Or meant to track actual hardware
-> clock changes?
-The former: this is used to track the clock requests from outside the
-clock framework.
+> But no, a WARN() might not be that nice as it usually is never seen by
+> embedded developers...
 
-> If the latter, then it might make sense to put these
-> trace points into the functions that actually change the hardware
-> registers, e.g., omap2_dflt_clk_{enable,disable}(), etc., since a
-> clk_enable() on a leaf clock may result in many internal system clocks
-> being enabled up the clock tree.
-I agree with you it is better to track the actual clock changes instead.
-I propose to move the tracepoints to omap2_clk_{enable...} which
-enables all the clocks irrespectively of the installed handler.
-Note about the clock handlers: omap2_dflt_clk_enable happens to be the
-handler for all controllable clocks but could that change in the
-future?
-
->
->
-> - Paul
-
-Thanks,
-Jean
-
->
->> - change of power domains next power states.
->>
->> Signed-off-by: Jean Pihet <j-pihet@ti.com>
->> ---
->>  arch/arm/mach-omap2/pm34xx.c      |    7 +++++++
->>  arch/arm/mach-omap2/powerdomain.c |    3 +++
->>  arch/arm/plat-omap/clock.c        |   13 ++++++++++---
->>  3 files changed, 20 insertions(+), 3 deletions(-)
->>
->> diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
->> index 0ec8a04..0ee0b0e 100644
->> --- a/arch/arm/mach-omap2/pm34xx.c
->> +++ b/arch/arm/mach-omap2/pm34xx.c
->> @@ -29,6 +29,7 @@
->>  #include <linux/delay.h>
->>  #include <linux/slab.h>
->>  #include <linux/console.h>
->> +#include <trace/events/power.h>
->>
->>  #include <plat/sram.h>
->>  #include <plat/clockdomain.h>
->> @@ -506,8 +507,14 @@ static void omap3_pm_idle(void)
->>       if (omap_irq_pending() || need_resched())
->>               goto out;
->>
->> +     trace_power_start(POWER_CSTATE, 1, smp_processor_id());
->> +     trace_cpu_idle(1, smp_processor_id());
->> +
->>       omap_sram_idle();
->>
->> +     trace_power_end(smp_processor_id());
->> +     trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
->> +
->>  out:
->>       local_fiq_enable();
->>       local_irq_enable();
->> diff --git a/arch/arm/mach-omap2/powerdomain.c b/arch/arm/mach-omap2/powerdomain.c
->> index 6527ec3..73cbe9a 100644
->> --- a/arch/arm/mach-omap2/powerdomain.c
->> +++ b/arch/arm/mach-omap2/powerdomain.c
->> @@ -23,6 +23,7 @@
->>  #include <linux/errno.h>
->>  #include <linux/err.h>
->>  #include <linux/io.h>
->> +#include <trace/events/power.h>
->>
->>  #include <asm/atomic.h>
->>
->> @@ -440,6 +441,8 @@ int pwrdm_set_next_pwrst(struct powerdomain *pwrdm, u8 pwrst)
->>       pr_debug("powerdomain: setting next powerstate for %s to %0x\n",
->>                pwrdm->name, pwrst);
->>
->> +     trace_power_domain_target(pwrdm->name, pwrst, smp_processor_id());
->> +
->>       prm_rmw_mod_reg_bits(OMAP_POWERSTATE_MASK,
->>                            (pwrst << OMAP_POWERSTATE_SHIFT),
->>                            pwrdm->prcm_offs, pwrstctrl_reg_offs);
->> diff --git a/arch/arm/plat-omap/clock.c b/arch/arm/plat-omap/clock.c
->> index fc62fb5..7cbb09b 100644
->> --- a/arch/arm/plat-omap/clock.c
->> +++ b/arch/arm/plat-omap/clock.c
->> @@ -21,6 +21,7 @@
->>  #include <linux/cpufreq.h>
->>  #include <linux/debugfs.h>
->>  #include <linux/io.h>
->> +#include <trace/events/power.h>
->>
->>  #include <plat/clock.h>
->>
->> @@ -43,8 +44,10 @@ int clk_enable(struct clk *clk)
->>               return -EINVAL;
->>
->>       spin_lock_irqsave(&clockfw_lock, flags);
->> -     if (arch_clock->clk_enable)
->> +     if (arch_clock->clk_enable) {
->> +             trace_clock_enable(clk->name, 1, smp_processor_id());
->>               ret = arch_clock->clk_enable(clk);
->> +     }
->>       spin_unlock_irqrestore(&clockfw_lock, flags);
->>
->>       return ret;
->> @@ -66,8 +69,10 @@ void clk_disable(struct clk *clk)
->>               goto out;
->>       }
->>
->> -     if (arch_clock->clk_disable)
->> +     if (arch_clock->clk_disable) {
->> +             trace_clock_disable(clk->name, 0, smp_processor_id());
->>               arch_clock->clk_disable(clk);
->> +     }
->>
->>  out:
->>       spin_unlock_irqrestore(&clockfw_lock, flags);
->> @@ -120,8 +125,10 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
->>               return ret;
->>
->>       spin_lock_irqsave(&clockfw_lock, flags);
->> -     if (arch_clock->clk_set_rate)
->> +     if (arch_clock->clk_set_rate) {
->> +             trace_clock_set_rate(clk->name, rate, smp_processor_id());
->>               ret = arch_clock->clk_set_rate(clk, rate);
->> +     }
->>       if (ret == 0) {
->>               if (clk->recalc)
->>                       clk->rate = clk->recalc(clk);
->> --
->> 1.7.2.3
->>
->
->
-> - Paul
->
+They're probably about as relaible as build warning; spewing over the
+serial console is pretty visible if yu're using one.
