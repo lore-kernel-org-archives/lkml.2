@@ -1,127 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188Ab1AEVPt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 16:15:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2263 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751864Ab1AEVPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 16:15:47 -0500
-Date: Wed, 5 Jan 2011 16:14:44 -0500
-From: Jason Baron <jbaron@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: peterz@infradead.org, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
-        rostedt@goodmis.org, mingo@elte.hu, tglx@linutronix.de,
-        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] jump label: introduce static_branch()
-Message-ID: <20110105211444.GD2896@redhat.com>
-References: <cover.1294239591.git.jbaron@redhat.com> <2d8c38bd7ca93e162aedb8e7acfc8bdb96d85de2.1294239591.git.jbaron@redhat.com> <20110105171516.GB1692@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110105171516.GB1692@nowhere>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752524Ab1AEVQR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 16:16:17 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:44180 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751373Ab1AEVQO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 16:16:14 -0500
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
+In-Reply-To: <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com>
+References: <1294254337.16957.13.camel@mulgrave.site>
+	 <AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com>
+	 <1294256169.16957.18.camel@mulgrave.site>
+	 <20110105200008.GJ8638@n2100.arm.linux.org.uk>
+	 <1294259637.16957.25.camel@mulgrave.site>
+	 <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 05 Jan 2011 15:16:10 -0600
+Message-ID: <1294262170.16957.46.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 05, 2011 at 06:15:18PM +0100, Frederic Weisbecker wrote:
-> On Wed, Jan 05, 2011 at 10:43:12AM -0500, Jason Baron wrote:
-> > diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-> > index 152f7de..0ad9c2e 100644
-> > --- a/include/linux/jump_label.h
-> > +++ b/include/linux/jump_label.h
-> > @@ -22,6 +22,11 @@ struct module;
-> >  
-> >  #ifdef HAVE_JUMP_LABEL
-> >  
-> > +static __always_inline bool static_branch(struct jump_label_key *key)
-> > +{
-> > +	return __static_branch(key);
+On Wed, 2011-01-05 at 12:48 -0800, Linus Torvalds wrote:
+> On Wed, Jan 5, 2011 at 12:33 PM, James Bottomley
+> <James.Bottomley@hansenpartnership.com> wrote:
+> >
+> > well, that depends.  For us on parisc, kmap of a user page in !HIGHMEM
+> > sets up an inequivalent aliase still ... because the cache colour of the
+> > user and kernel virtual addresses are different.  Depending on the
+> > return path to userspace, we still usually have to flush to get the user
+> > to see the changes the kernel has made.
 > 
-> Not very important, but __static_branch() would be more self-explained
-> if it was called arch_static_branch().
+> Umm. Again, that has nothing to do with kmap().
 > 
-> > +}
-> > +
-> >  extern struct jump_entry __start___jump_table[];
-> >  extern struct jump_entry __stop___jump_table[];
-> >  
-> > @@ -42,11 +47,12 @@ struct jump_label_key {
-> >  	int state;
-> >  };
-> >  
-> > -#define JUMP_LABEL(key, label)			\
-> > -do {						\
-> > -	if (unlikely(((struct jump_label_key *)key)->state))		\
-> > -		goto label;			\
-> > -} while (0)
-> > +static __always_inline bool static_branch(struct jump_label_key *key)
-> > +{
-> > +	if (unlikely(key->state))
-> > +		return true;
-> > +	return false;
-> > +}
-> >  
-> >  static inline int jump_label_enabled(struct jump_label_key *key)
-> >  {
-> > @@ -78,14 +84,4 @@ static inline void jump_label_unlock(void) {}
-> >  
-> >  #endif
-> >  
-> > -#define COND_STMT(key, stmt)					\
-> > -do {								\
-> > -	__label__ jl_enabled;					\
-> > -	JUMP_LABEL_ELSE_ATOMIC_READ(key, jl_enabled);		\
-> > -	if (0) {						\
-> > -jl_enabled:							\
-> > -		stmt;						\
-> > -	}							\
-> > -} while (0)
-> > -
-> >  #endif
-> > diff --git a/include/linux/jump_label_ref.h b/include/linux/jump_label_ref.h
-> > index 8a76e89..5178696 100644
-> > --- a/include/linux/jump_label_ref.h
-> > +++ b/include/linux/jump_label_ref.h
-> > @@ -7,19 +7,23 @@
-> >  struct jump_label_key_counter {
-> >  	atomic_t ref;
-> >  	struct jump_label_key key;
-> > -}
-> > +};
-> >  
-> >  #ifdef HAVE_JUMP_LABEL
-> >  
-> > -#define JUMP_LABEL_ELSE_ATOMIC_READ(key, label, counter) JUMP_LABEL(key, label)
-> > +static __always_inline bool static_branch_else_atomic_read(struct jump_label_key *key, atomic_t *count)
-> > +{
-> > +	return __static_branch(key);
-> > +}
+> This time it's about the user space mapping.
 > 
-> How about having only static_branch() but the key would be handled only
-> by ways of get()/put().
+> Repeat after me: even without the kmap(), the kernel access to that
+> mapping would have caused cache aliases.
 > 
-> Simple boolean key enablement would work in this scheme as well as branches
-> based on refcount. So that the users could avoid maintaining both key and count,
-> this would be transparently handled by the jump label API.
-> 
-> Or am I missing something?
-> 
+> See? Once more, the kmap() is entirely innocent. You can have a
+> non-highmem mapping that you never use kmap for, and that you map into
+> user space, and you'd see exactly the same aliases. Notice? Look ma,
+> no kmap().
 
-right. this is a good point. I had a 'jump_label_inc()',
-'jump_label_dec()' essentially providing this. However, when jump labels
-are disabled we didn't want to incur an atomic_read() everywhere.
-Furthermore, the use of the atomic_t type within jump_label.h, causes
-#include dependencies problems, since atomic.h ends up including
-jump_label.h...
+Yes, I understand that (we have no highmem on parisc, so kmap is a nop).
+The problem (at least as I see it) is that once something within the
+kernel (well, OK, mostly within drivers) touches a user page via its
+kernel mapping, the flush often gets forgotten (mainly because it always
+works on x86). What I was thinking about is that every time the kernel
+touches a user space page, it has to be within a kmap/kunmap pair
+(because the page might be highmem) ... so it's possible to make
+kmap/kunmap do the flushing for this case so the driver writer can't
+ever forget it.
 
-Thus, what I've proposed here, is to the have the very simple
-jump_label_enable()/disable(), and leave reference counting to the
-caller.
+I think the problem case is only really touching scatter/gather elements
+outside of the DMA API (i.e. the driver pio case), so this may be
+overkill.  Russell also pointed out that a lot of the PIO iterators do
+excessive kmap_atomic/kunmap_atomic on the same page, so adding a flush
+could damage performance to the point where the flash root devices on
+arm might not work.  Plus the pio iterators already contain the
+appropriate flush, so perhaps just using them in every case fixes the
+problem.
 
-thanks,
+> So clearly kmap() is not the issue. The issue continues to be a
+> totally separate virtual mapping. Whether it's a user mapping or
+> vm_map_ram() is obviously immaterial - as far as the CPU is concerned,
+> there is no difference between the two (apart from the trivial
+> differences of virtual location and permissions).
+> 
+> (You can also force the problem with vmalloc() an then following the
+> kernel page tables, but I hope nobody does that any more. I suspect
+> I'm wrong, though, there's probably code that mixes vmalloc and
+> physical page accesses in various drivers)
 
--Jason
+Yes, unfortunately, we have seen this quite a bit; mainly to get large
+buffers.  Its not just confined to drivers:  xfs used to fail on both
+arm and parisc because it used a vmalloc region for its log buffer which
+it then had to do I/O on.
+
+James
+
+
