@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751314Ab1AEBaE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 20:30:04 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:60365 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751141Ab1AEBaC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 20:30:02 -0500
-Message-ID: <4D23C9B0.9060803@cn.fujitsu.com>
-Date: Wed, 05 Jan 2011 09:30:24 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1751329Ab1AEBcM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 20:32:12 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:13844 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064Ab1AEBcL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 20:32:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=Lz4TPBHPKP4qSpL6mVkDgrt6ASS7KVqD0dbyVpl9g+GzLAjcebFJxuEE3irkihRJFw
+         EEw1Jf/Pyc1Y0PMNHPqw==
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rcu: remove SPARSE_RCU_POINTER
-References: <4D22DD95.7050308@cn.fujitsu.com> <201101041136.02514.arnd@arndb.de> <20110104211938.GT2026@linux.vnet.ibm.com>
-In-Reply-To: <20110104211938.GT2026@linux.vnet.ibm.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-01-05 09:29:41,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-01-05 09:29:42,
-	Serialize complete at 2011-01-05 09:29:42
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <4D22D7BE.4070702@cn.fujitsu.com>
+References: <4D22D7BE.4070702@cn.fujitsu.com>
+From: Paul Menage <menage@google.com>
+Date: Tue, 4 Jan 2011 17:31:47 -0800
+Message-ID: <AANLkTinG2UkH4nsPiM6=jhLFBujonK9e0yf5CijhuaZ_@mail.gmail.com>
+Subject: Re: [PATCH RESEND] cgroups: fix incorrect using rcu_dereference() in cgroup_subsys_state()
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2011 05:19 AM, Paul E. McKenney wrote:
-> On Tue, Jan 04, 2011 at 11:36:02AM +0100, Arnd Bergmann wrote:
->> On Tuesday 04 January 2011 09:43:01 Lai Jiangshan wrote:
->>> As I known, __rcu annotations do not effect the result compiled kernel.
->>>
->>> They work only when we use spare("make C=1" or "make C=2"),
->>> So we don't need another new switch for it since we have one
->>> for debugging(use spare or not).
->>>
->>> signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
->>
->> The intention of this option was to avoid introducing an excessive
->> number of false positives when using sparse.
->>
->> We should only make that unconditional if we are reasonably convinced
->> that all the majority of warnings caused by it should actually
->> lead to changes in the code.
-> 
-> I agree with Arnd here -- the changes required are extensive in many
-> cases, and a number of subsystems are making decent progress.
-> 
-> 							Thanx, Paul
+On Tue, Jan 4, 2011 at 12:18 AM, Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
+> From: Li Zefan <lizf@cn.fujitsu.com>
+> Date: Mon, 25 Aug 2008 11:05:28 +0800
+> (Original) Subject: [PATCH] cgroup: fix wrong rcu_dereference()
+>
+> It is tsk->cgroups which is protected by RCU, not ->subsys[subsys_id].
+>
+> laijs: updated it(the surrounding code have been changed since these two years).
+>
+> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> ---
+> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+> index ed4ba11..a798814 100644
+> --- a/include/linux/cgroup.h
+> +++ b/include/linux/cgroup.h
+> @@ -535,10 +535,11 @@ static inline struct cgroup_subsys_state *cgroup_subsys_state(
+>  * cgroup_subsys::attach() methods.
+>  */
+>  #define task_subsys_state_check(task, subsys_id, __c)                  \
+> -       rcu_dereference_check(task->cgroups->subsys[subsys_id],         \
+> +       rcu_dereference_check(task->cgroups,                            \
+>                              rcu_read_lock_held() ||                   \
+>                              lockdep_is_held(&task->alloc_lock) ||     \
+> -                             cgroup_lock_is_held() || (__c))
+> +                             cgroup_lock_is_held() ||                  \
+> +                             (__c))->subsys[subsys_id]
 
-I also agree. Most guys like to use direct read to the rcu pointer
-on update side or direct read/write when initializing the rcu pointer.
-This causes a lot of false positives.
+Can you reformat this a bit? It took a fair bit of staring to realize
+that (__c))->subsys[subsys_id] wasn't trying to dereference __c.
 
-Thanks,
-Lai
+Maybe make it:
 
+#define task_subsys_state_check(task, subsys_id, __c) ({ \
+  struct css_set *_css = rcu_dereference_check(...); \
+  _css->subsys[subsys_id]; \
+})
+
+Paul
