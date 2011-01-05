@@ -1,76 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753326Ab1AEX71 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:59:27 -0500
-Received: from cantor.suse.de ([195.135.220.2]:51969 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751623Ab1AEX7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:59:25 -0500
-Date: Wed, 5 Jan 2011 15:57:48 -0800
-From: Greg KH <gregkh@suse.de>
-To: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-Cc: Greg KH <greg@kroah.com>, devel@driverdev.osuosl.org,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] staging: tidspbridge for 2.6.38
-Message-ID: <20110105235748.GB22850@suse.de>
-References: <1293178543-7556-1-git-send-email-omar.ramirez@ti.com>
- <20110105211847.GA16229@kroah.com>
- <AANLkTikWpxq+35pLN_r6B214jcO2Ss2rEv0KA9bcMJFL@mail.gmail.com>
+	id S1753252Ab1AFAAb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:00:31 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33566 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650Ab1AFAAa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:00:30 -0500
+Date: Wed, 5 Jan 2011 23:59:22 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+Message-ID: <20110105235922.GP8638@n2100.arm.linux.org.uk>
+References: <1294256169.16957.18.camel@mulgrave.site> <20110105200008.GJ8638@n2100.arm.linux.org.uk> <1294259637.16957.25.camel@mulgrave.site> <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com> <20110105210448.GM8638@n2100.arm.linux.org.uk> <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com> <1294262208.2952.4.camel@heimdal.trondhjem.org> <AANLkTi=3Gu-rz=-OdNtUXn4qw60Df6=YePnzvB=s-+Ov@mail.gmail.com> <1294268808.2952.18.camel@heimdal.trondhjem.org> <AANLkTi=SjMinMp+m726GS1iehj6cQgNy1RqSoUqKhjtv@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikWpxq+35pLN_r6B214jcO2Ss2rEv0KA9bcMJFL@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTi=SjMinMp+m726GS1iehj6cQgNy1RqSoUqKhjtv@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 05, 2011 at 05:47:47PM -0600, Ramirez Luna, Omar wrote:
-> On Wed, Jan 5, 2011 at 3:18 PM, Greg KH <greg@kroah.com> wrote:
-> > On Fri, Dec 24, 2010 at 02:15:43AM -0600, Omar Ramirez Luna wrote:
-> >> Hi Greg,
-> >>
-> >> This is the first pull request of changes for tidspbridge driver for 2.6.38,
-> >> I expect to make another request with at least one bug fix, but in the mean
-> >> time here it is the content for this one:
-> >>
-> >> The following changes since commit 90a8a73c06cc32b609a880d48449d7083327e11a:
-> >>
-> >>   Linux 2.6.37-rc7 (2010-12-21 11:26:40 -0800)
-> >>
-> >> are available in the git repository at:
-> >>   git://dev.omapzoom.org/pub/scm/tidspbridge/kernel-dspbridge.git dspbridge
+On Wed, Jan 05, 2011 at 03:28:53PM -0800, Linus Torvalds wrote:
+> On Wed, Jan 5, 2011 at 3:06 PM, Trond Myklebust
+> <Trond.Myklebust@netapp.com> wrote:
 > >
-> > Ick, no.  Why did you base this on -rc7?  My staging-next branch is
-> > based on -rc5 at the moment, and I really see no need to merge the rest
-> > of them into the tree for no good reason at all.
+> > Yes. The fix I sent out was a call to invalidate_kernel_vmap_range(),
+> > which takes care of invalidating the cache prior to a virtual address
+> > read.
+> >
+> > My question was specifically about the write through the regular kernel
+> > mapping: according to Russell and my reading of the cachetlb.txt
+> > documentation, flush_dcache_page() is only guaranteed to have an effect
+> > on page cache pages.
 > 
-> wrongly though staging-next would be at rc7+ at the time you could
-> take a look to the patches
-
-Why would I want to sync it?  You can (and should) always go off of my
-current staging-next tree if you are wanting me to take a git pull.
-It's ok if it is an older version, fast-forwards are just fine.
-
-> > Also, as you did send this before the merge window closed, but during
-> > the holidays, I couldn't get to it.  But in looking at this, it's going
-> > to have to wait for the next window, sorry, it's just too big, and too
-> > late.  You weren't expecting me to be working on kernel stuff during my
-> > holiday break, were you?
+> I don't think that should ever matter. It's not like the hardware can
+> know whether it's a dcache page or not.
 > 
-> No I wasn't :)
-> 
-> > So, feel free to redo this against 2.6.38-rc1 when that comes out.
-> 
-> No problem then, but could you consider a 2nd pull with a compilation
-> fix (which will be introduced in 2.6.38, right now present in
-> linux-next), and a bug fix.
+> And if the sw implementation cares, it's doing something really odd.
 
-I'll always take patches for bugfixes, but please wait for after I sync
-my current tree with Linus before I can do anything with it.
+>From the hardware perspective you're correct that it doesn't.  However,
+from the efficient implementation perspective it does matter.
 
-thanks,
+Take for example the read-ahead done on block devices.  We don't want to
+flush all those pages that were read in when we don't know that they're
+ever going to end up in a user mapping.  So what's commonly done (as
+suggested by DaveM) is that flush_dcache_page() detects that it's a
+dcache page, ensures that there's no user mappings, and sets a 'dirty'
+flag.  This flag is guaranteed to be clear when new, clean, unread
+pages enter the page cache.
 
-greg k-h
+When the page eventually ends up in a user mapping, that dirty flag is
+checked and the necessary cache flushing done at that point.
+
+Note that when there are user mappings, flush_dcache_page() has to flush
+those mappings too, otherwise mmap() <-> read()/write() coherency breaks.
+I believe this was what flush_dcache_page() was created to resolve.
+
+flush_kernel_dcache_page() was to solve the problem of PIO drivers
+writing to dcache pages, so that data written into the kernel mapping
+would be visible to subsequent user mappings.
+
+We chose a different overall approach - which had already been adopted by
+PPC - where we invert the meaning of this 'dirty' bit to mean that it's
+clean.  So every new page cache page starts out life as being marked
+dirty and so nothing needs to be done at flush_kernel_dcache_page().
+We continue to use davem's optimization but with the changed meaning of
+the bit, but as we now support SMP we do the flushing at set_pte_at()
+time.
+
+This also means that we don't have to rely on the (endlessly) buggy PIO
+drivers remembering to add flush_kernel_dcache_page() calls - something
+which has been a source of constant never-ending pain for us.
+
+The final piece of the jigsaw is flush_anon_page() which deals with
+kernel<->user coherency for anonymous pages by flushing both the user
+and kernel sides of the mapping.  This was to solve direct-io coherency
+problems.
+
+As the users of flush_anon_page() always do:
+
+	flush_anon_page(vma, page, addr);
+	flush_dcache_page(page);
+
+and documentation doesn't appear to imply that this will always be the
+case, we restrict flush_dcache_page() to only work on page cache pages,
+otherwise we end up flushing the kernel-side mapping multiple time in
+succession.
+
+Maybe we should make flush_anon_page() only flush the user mapping,
+stipulate that it shall always be followed by flush_dcache_page(),
+which shall flush the kernel side mapping even for anonymous pages?
+That sounds to me like a recipe for missing flush_dcache_page() calls
+causing bugs.
