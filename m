@@ -1,100 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab1AEXte (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:49:34 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50176 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753883Ab1AEXtc (ORCPT
+	id S1753881Ab1AEXuP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:50:15 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:65456 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753603Ab1AEXuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:49:32 -0500
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-        Sergej Pupykin <ml@sergej.pp.ru>, Alex Deucher <alexdeucher@gmail.com>,
-        Dave Airlie <airlied@redhat.com>, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, stable-review@kernel.org,
-        alan@lxorguk.ukuu.org.uk
-In-Reply-To: <20110105230323.978508482@clark.site>
-References: <20110105230323.978508482@clark.site>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-nnb46EEIJ3cOh3jiWtZV"
-Date: Wed, 05 Jan 2011 23:49:05 +0000
-Message-ID: <1294271346.3044.2.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [Stable-review] [06/49] drm/kms: remove spaces from connector
- names (v2)
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+	Wed, 5 Jan 2011 18:50:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=b0l8c8K+hMXVTkHdOYnUYx7vi21HJAhJF0cklA1GKd1nqmKu6vqpynXtpro+dVbcx3
+         8jV0WKYOIj9l7e2O9BJpQE4fm9/fEVBqMtlU+yA5ij+Hd99IzkNXnAVFcDA8KEPCi9Z+
+         yG2lDHbOQD4Y4f5Q0dhO3apToLRd0GVb2gONY=
+Message-ID: <4D2503B1.4080500@gmail.com>
+Date: Wed, 05 Jan 2011 17:50:09 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: sclark46@earthlink.net
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        ide <linux-ide@vger.kernel.org>
+Subject: Re: Kernel 2.6.37 erroneously limiting to UDMA/33
+References: <4D24B98D.6080307@earthlink.net>
+In-Reply-To: <4D24B98D.6080307@earthlink.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(CCing linux-ide)
 
---=-nnb46EEIJ3cOh3jiWtZV
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On 01/05/2011 12:33 PM, Stephen Clark wrote:
+> Hello,
+>
+> Why is the kernel limiting me to udma/33 when the device says it can do
+> ata2.01: CFA: TRANSCEND, 20070831, max UDMA/66
+>
+> There is no cable the compact flash is a socket on the motherboard!
 
-On Wed, 2011-01-05 at 15:00 -0800, Greg KH wrote:
-> 2.6.32-longterm review patch.  If anyone has any objections, please let u=
-s know.
->=20
-> ------------------
->=20
-> From: Alex Deucher <alexdeucher@gmail.com>
->=20
-> commit e76116ca9671e2e5239054a40303b94feab585ad upstream.
->=20
-> Grub doesn't parse spaces in parameters correctly, so
-> this makes it impossible to force video=3D parameters
-> for kms on the grub kernel command line.
->=20
-> v2: shorten the names to make them easier to type.
-[...]
-> --- a/drivers/gpu/drm/drm_crtc.c
-> +++ b/drivers/gpu/drm/drm_crtc.c
-> @@ -144,10 +144,10 @@ static struct drm_conn_prop_enum_list dr
->  	{ DRM_MODE_CONNECTOR_SVIDEO, "SVIDEO", 0 },
->  	{ DRM_MODE_CONNECTOR_LVDS, "LVDS", 0 },
->  	{ DRM_MODE_CONNECTOR_Component, "Component", 0 },
-> -	{ DRM_MODE_CONNECTOR_9PinDIN, "9-pin DIN", 0 },
-> -	{ DRM_MODE_CONNECTOR_DisplayPort, "DisplayPort", 0 },
-> -	{ DRM_MODE_CONNECTOR_HDMIA, "HDMI Type A", 0 },
-> -	{ DRM_MODE_CONNECTOR_HDMIB, "HDMI Type B", 0 },
-> +	{ DRM_MODE_CONNECTOR_9PinDIN, "DIN", 0 },
-> +	{ DRM_MODE_CONNECTOR_DisplayPort, "DP", 0 },
-[...]
+The kernel has no way to know that, and presumably the board isn't 
+connecting the signal for IDE pin 34 to ground in order to properly 
+signal that an 80-wire cable (or equivalent) is connected so that speeds 
+over UDMA33 can be used.
 
-Why change 'DisplayPort', which doesn't have a space in it?  This might
-break a previously working kernel command line.
+You should be able to use the libata.force=80c option on the kernel 
+command line to override the cable detection.
 
-Ben.
+>
+> Loading sd_mod.ko module
+> Loading libata.ko module
+> Loading ata_generic.ko module
+> Loading pata_acpi.ko module
+> pata_acpi 0000:00:0f.0: PCI INT B -> GSI 21 (level, low) -> IRQ 21
+> pata_acpi 0000:00:0f.0: PCI INT B disabled
+> Loading pata_via.ko module
+> scsi0 : pata_via
+> scsi1 : pata_via
+> ata1: PATA max UDMA/133 cmd 0x1f0 ctl 0x3f6 bmdma 0xfa00 irq 14
+> ata2: PATA max UDMA/133 cmd 0x170 ctl 0x376 bmdma 0xfa08 irq 15
+> ata2.01: CFA: TRANSCEND, 20070831, max UDMA/66
+> ata2.01: 7962192 sectors, multi 0: LBA
+> ata2.01: limited to UDMA/33 due to 40-wire cable
+> ata2.01: configured for UDMA/33
+> scsi 1:0:1:0: Direct-Access ATA TRANSCEND 2007 PQ: 0 ANSI: 5
+> sd 1:0:1:0: [sda] 7962192 512-byte logical blocks: (4.07 GB/3.79 GiB)
+> sd 1:0:1:0: [sda] Write Protect is off
+> sd 1:0:1:0: [sda] Write cache: disabled, read cache: enabled, doesn't
+> support DA
+> sda: sda1 sda2 sda3
+> sd 1:0:1:0: [sda] Attached SCSI disk
+> Loading ata_piix.ko module
+>
+> Thanks,
+> Steve
+>
 
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
-
---=-nnb46EEIJ3cOh3jiWtZV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIVAwUATSUDbOe/yOyVhhEJAQIq8A//Vio2dyctkz8ShPoGZF16JoMokgA2dVsI
-oX1X7NBmd0BtsVDoiwHu+dbwJoSKJ8oqo6nMhNDxUFzhvANGBZBldaEAsze4S4XW
-DqMaICm48VxNzvvU4IdNMWj3Uz81HCzw1zhUEe9J7d3x45Xsi3+EV/in4Bo+8Mys
-1u/KRoA5OZ4/hcygpq706sa1R2PuymGbetyIhzUVdP7kaf7hyFqO+yM849ONLTL+
-xPkJr9+hGGpgaUUsPTCB3uWJ5TjJ3F2nqH+x2UbfFNxbzmO8E8TF9gzaXYHPp0sF
-hDjmiUnZVgLF/Utd4NgA3eqN+8rs+qFfqmBcwI9UIaQAXrH5krrRjyzwhmpsdeZK
-j94gmoACEGEuou653otBEXqvD7kw2Y+yDNJ8n/VES8amoxFhNc+dzy+YmxlCyPse
-QTvn6p3YPe8xEFPoOgenhS+BORsm1WWXz3MfgW2k3NIwBbPFa1kDIC8Rc8nDUWdA
-CqCOqTBXQM12ZoHtcmTlosngHm48dncRN6Oa67Kh9FQqmvamG1qtIhqCQehP6T6l
-unkaQvUMzHineG9ifRzG5aysRmT+a6PAmbMv6RZ30PZSleA8ioPBcTbibkuqWX9d
-cFDyh+b+R0xSlUu4zk5hDuurv4QFI36xe4s5qiIHHHc5ep7M/qMmrIpMTXBS4Xvs
-+EeErdtzrtU=
-=hRAa
------END PGP SIGNATURE-----
-
---=-nnb46EEIJ3cOh3jiWtZV--
