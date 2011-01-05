@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978Ab1AEKYu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 05:24:50 -0500
-Received: from nm20-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.218]:21446 "HELO
-	nm20-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751692Ab1AEKYs (ORCPT
+	id S1752019Ab1AEKZZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 05:25:25 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:52345 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751692Ab1AEKZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 05:24:48 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 646734.43939.bm@omp1008.mail.sp2.yahoo.com
-Message-ID: <232289.97320.qm@web113301.mail.gq1.yahoo.com>
-X-YMail-OSG: S2BRAKEVM1mZzFiuy6KDoX6dZaCQc0kNXLX8tTAeFPykg3b
- SNRimYs0Ju_OPS8LGBYN52h9N1awYs8He3YH80ffnANepjTf_NhVAU0ir8K9
- CGhwkTgZ9ErzYrGqoIF7oux75LdZUTmMpmpAba7BsCNpezacYIgwf2rKmeqr
- vQXKivhOndhjI20RZTqnC8r4r_Cv8r2qKDGZuCfQMeR3WODfotcwLj8JsmGm
- V.e5Gm70tDFL_uKmT1fianjxmorJ3nPPZcZuI03kIt2VkxWAYbiofAqSDdH9
- xAd5EXJ4p6X.5DIwCK1J..wtWyvIdzUfi.8FKS4gf0o0b9RlOQT0tDmPbW5F
- MdhZ0Jj6gM4eyE.pQe55RAZB3za4n.swRmO6iOsZMSoWIxUCsHaOQ
-X-RocketYMMF: knobi.rm
-X-Mailer: YahooMailRC/553 YahooMailWebService/0.8.107.285259
-References: <20110104055900.GA5062@bicker> <1294124330.6617.15.camel@Joe-Laptop> <20110104092431.GB1886@bicker>
-Date: Wed, 5 Jan 2011 02:24:46 -0800 (PST)
-From: Martin Knoblauch <spamtrap@knobisoft.de>
-Subject: Re: [patch] checkpatch: putting the && or || on the wrong line
-To: Dan Carpenter <error27@gmail.com>, Joe Perches <joe@perches.com>
-Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-In-Reply-To: <20110104092431.GB1886@bicker>
+	Wed, 5 Jan 2011 05:25:24 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Ben Gamari <bgamari.foss@gmail.com>
+Subject: Re: [PATCH 01/18] Altera FPGA firmware download module.
+Date: Wed, 5 Jan 2011 11:26:03 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r3; KDE/4.5.3; x86_64; ; )
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        "Igor M. Liplianin" <liplianin@me.by>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, aospan@netup.ru
+References: <201012310726.31851.liplianin@netup.ru> <4D1DC2DD.6050400@infradead.org> <8739pec7bm.fsf@gmail.com>
+In-Reply-To: <8739pec7bm.fsf@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101051126.04180.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message ----
+Hi,
 
-> From: Dan Carpenter <error27@gmail.com>
-> To: Joe Perches <joe@perches.com>
-> Cc: Andy Whitcroft <apw@canonical.com>; linux-kernel@vger.kernel.org; 
->kernel-janitors@vger.kernel.org
-> Sent: Tue, January 4, 2011 10:24:31 AM
-> Subject: Re: [patch] checkpatch: putting the && or || on the wrong line
-> 
-> On Mon, Jan 03, 2011 at 10:58:50PM -0800, Joe Perches wrote:
-> > On Tue,  2011-01-04 at 08:59 +0300, Dan Carpenter wrote:
-> > > +             WARN("put the && or || at the end  of the previous line\n" . 
->$herecurr);
+On Friday 31 December 2010 16:04:13 Ben Gamari wrote:
+> On Fri, 31 Dec 2010 09:47:41 -0200, Mauro Carvalho Chehab wrote:
+> > > I understand this. However, a complete JTAG state machine in the
+> > > kernel, plus an Altera firmware parser, seems to be a lot of code that
+> > > could live in userspace.
 > > 
-> > I've submitted something  like this a couple of times and gotten
-> > various objections but I think  it's sensible.
+> > Moving it to userspace would mean a kernel driver that would depend on an
+> > userspace daemon^Wfirmware loader to work. I would NAK such designs.
+> 
+> Why? I agree that JTAG is a lot to place in the kernel and is much
+> better suited to be in user space. What exactly is your objection to
+> depending on a userspace utility? There is no shortage of precedent for
+> loading firmware in userspace (e.g. fx2 usb devices).
+
+I agree with this. Mauro, why would a userspace firmware loader be such a bad 
+idea ?
+
+> > > If I understand it correctly the driver assumes the firmware is in an
+> > > Altera proprietary format. If we really want JTAG code in the kernel
+> > > we should at least split the file parser and the TAP access code.
 > > 
-> > https://lkml.org/lkml/2009/12/5/65
-> > https://lkml.org/lkml/2010/7/11/92
+> > Agreed, but I don't think this would be a good reason to block the code
+> > merge for .38.
 > 
-> If everyone except you thinks  it's a waste of time, then stop asking me
-> to redo my patches.  :/   I don't care either way so long as CodingStyle
-> and checkpatch reflect the  rules.
-> 
+> I agree with the above isn't good reason to block it but if there is
+> still debate about the general architecture of the code (see above),
+> then it seems aren't ready yet. The code looks very nice, but I'm not at
+> all convinced that it needs to be in the kernel. Just my two-tenths of a
+> cent.
 
- The problem is that CodingStyle (here and elsewhere) is viewed a the holy-grail 
-or at least natural-law by some. It should not. It is just about style/taste and 
-that will never suit everybody. Insisting to much on style is just driving those 
-away that:
+-- 
+Regards,
 
-a) just want to contribute content
-b1) have their own style for decades
-b2) detest uniformity
-
- For *me* the sensible thing is to keep "style" when you make small 
-modifications/patches to existing stuff, but use whatever style is best for you 
-when contributing new stuff.
-
- Anyway, I just wanted to say "Happy New Year" to Linux :-)
-
-Cheers
-Martin
+Laurent Pinchart
