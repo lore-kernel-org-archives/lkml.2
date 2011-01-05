@@ -1,79 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752908Ab1AEVRC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 16:17:02 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:19326 "EHLO mx2.netapp.com"
+	id S1753000Ab1AEVRj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 16:17:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11176 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752817Ab1AEVQ7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 16:16:59 -0500
-X-IronPort-AV: E=Sophos;i="4.60,279,1291622400"; 
-   d="scan'208";a="502105158"
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
-In-Reply-To: <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com>
-References: <1294254337.16957.13.camel@mulgrave.site>
-	 <AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com>
-	 <1294256169.16957.18.camel@mulgrave.site>
-	 <20110105200008.GJ8638@n2100.arm.linux.org.uk>
-	 <1294259637.16957.25.camel@mulgrave.site>
-	 <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com>
-	 <20110105210448.GM8638@n2100.arm.linux.org.uk>
-	 <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Wed, 05 Jan 2011 16:16:48 -0500
-Message-ID: <1294262208.2952.4.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 05 Jan 2011 21:16:49.0607 (UTC) FILETIME=[DDBE1570:01CBAD1D]
+	id S1751351Ab1AEVRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 16:17:38 -0500
+Date: Wed, 5 Jan 2011 16:16:45 -0500
+From: Jason Baron <jbaron@redhat.com>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, peterz@infradead.org,
+        mathieu.desnoyers@polymtl.ca, hpa@zytor.com, rostedt@goodmis.org,
+        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        sam@ravnborg.org, michael@ellerman.id.au, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] jump label: introduce static_branch()
+Message-ID: <20110105211645.GE2896@redhat.com>
+References: <cover.1294239591.git.jbaron@redhat.com> <2d8c38bd7ca93e162aedb8e7acfc8bdb96d85de2.1294239591.git.jbaron@redhat.com> <4D24AB1B.2010209@caviumnetworks.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D24AB1B.2010209@caviumnetworks.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-05 at 13:08 -0800, Linus Torvalds wrote: 
-> On Wed, Jan 5, 2011 at 1:04 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > On Wed, Jan 05, 2011 at 12:48:32PM -0800, Linus Torvalds wrote:
-> >> (You can also force the problem with vmalloc() an then following the
-> >> kernel page tables, but I hope nobody does that any more. I suspect
-> >> I'm wrong, though, there's probably code that mixes vmalloc and
-> >> physical page accesses in various drivers)
-> >
-> > Should vmalloc_to_page() (84 users)/vmalloc_to_pfn() (17 users) be
-> > deprecated then? ;)
-> 
-> I do think that the "modern" way of doing it is
-> "vmap()"/"vm_map_ram()" and friends, and it should be preferred over
-> using vmalloc() and then looking up the pages.
-> 
-> But in the end, the two approaches really are equivalent, so it's not
-> like it really matters. So I don't think we need to deprecate things
-> officially, but obviously we should make people more aware of the
-> whole virtual alias thing that crops up whenever you use any of these
-> approaches.
+On Wed, Jan 05, 2011 at 09:32:11AM -0800, David Daney wrote:
+> On 01/05/2011 07:43 AM, Jason Baron wrote:
+>> Introduce:
+>>
+>> static __always_inline bool static_branch(struct jump_label_key *key)
+>>
+>> to replace the old JUMP_LABEL(key, label) macro.
+>>
+>> The new static_branch(), simplifies the usage of jump labels. Since,
+>> static_branch() returns a boolean, it can be used as part of an if()
+>> construct. It also, allows us to drop the 'label' argument from the
+>> prototype. Its probably best understood with an example, here is the part
+>> of the patch that converts the tracepoints to use unlikely_switch():
+>>
+>> --- a/include/linux/tracepoint.h
+>> +++ b/include/linux/tracepoint.h
+>> @@ -146,9 +146,7 @@ static inline void tracepoint_update_probe_range(struct tracepoint *begin,
+>>   	extern struct tracepoint __tracepoint_##name;			\
+>>   	static inline void trace_##name(proto)				\
+>>   	{								\
+>> -		JUMP_LABEL(&__tracepoint_##name.key, do_trace);		\
+>> -		return;							\
+>> -do_trace:								\
+>> +		if (static_branch(&__tracepoint_##name.key))		\
+>>   			__DO_TRACE(&__tracepoint_##name,		\
+>>   				TP_PROTO(data_proto),			\
+>>   				TP_ARGS(data_args));			\
+>>
+>>
+>> I analyzed the code produced by static_branch(), and it seems to be
+>> at least as good as the code generated by the JUMP_LABEL(). As a reminder,
+>> we get a single nop in the fastpath for -02. But will often times get
+>> a 'double jmp' in the -Os case. That is, 'jmp 0', followed by a jmp around
+>> the disabled code. We believe that future gcc tweaks to allow block
+>> re-ordering in the -Os, will solve the -Os case in the future.
+>>
+>> I also saw a 1-2% tbench throughput improvement when compiling with
+>> jump labels.
+>>
+>> This patch also addresses a build issue that Tetsuo Handa reported where
+>> gcc v3.3 currently chokes on compiling 'dynamic debug':
+>>
+>> include/net/inet_connection_sock.h: In function `inet_csk_reset_xmit_timer':
+>> include/net/inet_connection_sock.h:236: error: duplicate label declaration `do_printk'
+>> include/net/inet_connection_sock.h:219: error: this is a previous declaration
+>> include/net/inet_connection_sock.h:236: error: duplicate label declaration `out'
+>> include/net/inet_connection_sock.h:219: error: this is a previous declaration
+>> include/net/inet_connection_sock.h:236: error: duplicate label `do_printk'
+>> include/net/inet_connection_sock.h:236: error: duplicate label `out'
+>>
+>>
+>> Thanks to H. Peter Anvin for suggesting this improved syntax.
+>>
+>> Suggested-by: H. Peter Anvin<hpa@linux.intel.com>
+>> Signed-off-by: Jason Baron<jbaron@redhat.com>
+>> Tested-by: Tetsuo Handa<penguin-kernel@i-love.sakura.ne.jp>
+>> ---
+>>   arch/sparc/include/asm/jump_label.h |   25 ++++++++++++++-----------
+>>   arch/x86/include/asm/jump_label.h   |   22 +++++++++++++---------
+>>   arch/x86/kernel/jump_label.c        |    2 +-
+>>   include/linux/dynamic_debug.h       |   18 ++++--------------
+>>   include/linux/jump_label.h          |   26 +++++++++++---------------
+>>   include/linux/jump_label_ref.h      |   18 +++++++++++-------
+>>   include/linux/perf_event.h          |   26 +++++++++++++-------------
+>>   include/linux/tracepoint.h          |    4 +---
+>>   kernel/jump_label.c                 |    2 +-
+>>   9 files changed, 69 insertions(+), 74 deletions(-)
+>>
+> [...]
+>
+> This patch will conflict with the MIPS jump label support that Ralf has  
+> queued up for 2.6.38.
+>
+> David Daney
 
-So what should be the preferred way to ensure data gets flushed when
-you've written directly to a page, and then want to read through the
-vm_map_ram() virtual range? Should we be adding new semantics to
-flush_kernel_dcache_page()?
+indeed. If you look at the x86 or sparc bits the fixup should be quite
+small. The bulk of the changes are in the common code.
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+thanks,
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+-Jason
