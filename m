@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab1AEStq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 13:49:46 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:65328 "EHLO
+	id S1752271Ab1AESt7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 13:49:59 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:49015 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752303Ab1AESto (ORCPT
+	with ESMTP id S1752420Ab1AEStq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 13:49:44 -0500
+	Wed, 5 Jan 2011 13:49:46 -0500
 From: jean.pihet@newoldbits.com
 To: mingo@elte.hu, trenn@suse.de, Len Brown <len.brown@intel.com>,
         Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
 Cc: linux-omap@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>,
         linux-perf-users@vger.kernel.org, Jean Pihet <j-pihet@ti.com>
-Subject: [PATCH 1/2] perf: add calls to suspend trace point
-Date: Wed,  5 Jan 2011 19:49:01 +0100
-Message-Id: <1294253342-29056-2-git-send-email-j-pihet@ti.com>
+Subject: [PATCH 2/2] tools, perf: Documentation for the power events API
+Date: Wed,  5 Jan 2011 19:49:02 +0100
+Message-Id: <1294253342-29056-3-git-send-email-j-pihet@ti.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1294253342-29056-1-git-send-email-j-pihet@ti.com>
 References: <1294253342-29056-1-git-send-email-j-pihet@ti.com>
@@ -25,44 +25,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jean Pihet <j-pihet@ti.com>
 
-Uses the machine_suspend trace point, called from the
-generic kernel suspend_devices_and_enter function.
+Provides documentation for the following:
+- the new power trace API,
+- the old (legacy) power trace API,
+- the DEPRECATED Kconfig option usage.
 
 Signed-off-by: Jean Pihet <j-pihet@ti.com>
-CC: Thomas Renninger <trenn@suse.de>
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- kernel/power/suspend.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ Documentation/trace/events-power.txt |   90 ++++++++++++++++++++++++++++++++++
+ 1 files changed, 90 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/trace/events-power.txt
 
-diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
-index ecf7705..031d5e3 100644
---- a/kernel/power/suspend.c
-+++ b/kernel/power/suspend.c
-@@ -22,6 +22,7 @@
- #include <linux/mm.h>
- #include <linux/slab.h>
- #include <linux/suspend.h>
-+#include <trace/events/power.h>
- 
- #include "power.h"
- 
-@@ -201,6 +202,7 @@ int suspend_devices_and_enter(suspend_state_t state)
- 	if (!suspend_ops)
- 		return -ENOSYS;
- 
-+	trace_machine_suspend(state);
- 	if (suspend_ops->begin) {
- 		error = suspend_ops->begin(state);
- 		if (error)
-@@ -229,6 +231,7 @@ int suspend_devices_and_enter(suspend_state_t state)
-  Close:
- 	if (suspend_ops->end)
- 		suspend_ops->end();
-+	trace_machine_suspend(PWR_EVENT_EXIT);
- 	return error;
- 
-  Recover_platform:
+diff --git a/Documentation/trace/events-power.txt b/Documentation/trace/events-power.txt
+new file mode 100644
+index 0000000..96d87b6
+--- /dev/null
++++ b/Documentation/trace/events-power.txt
+@@ -0,0 +1,90 @@
++
++			Subsystem Trace Points: power
++
++The power tracing system captures events related to power transitions
++within the kernel. Broadly speaking there are three major subheadings:
++
++  o Power state switch which reports events related to suspend (S-states),
++     cpuidle (C-states) and cpufreq (P-states)
++  o System clock related changes
++  o Power domains related changes and transitions
++
++This document describes what each of the tracepoints is and why they
++might be useful.
++
++Cf. include/trace/events/power.h for the events definitions.
++
++1. Power state switch events
++============================
++
++1.1 New trace API
++-----------------
++
++A 'cpu' event class gathers the CPU-related events: cpuidle and
++cpufreq.
++
++cpu_idle		"state=%lu cpu_id=%lu"
++cpu_frequency		"state=%lu cpu_id=%lu"
++
++A suspend event is used to indicate the system going in and out of the
++suspend mode:
++
++machine_suspend		"state=%lu"
++
++
++Note: the value of '-1' or '4294967295' for state means an exit from the current state,
++i.e. trace_cpu_idle(4, smp_processor_id()) means that the system
++enters the idle state 4, while trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id())
++means that the system exits the previous idle state.
++
++The event which has 'state=4294967295' in the trace is very important to the user
++space tools which are using it to detect the end of the current state, and so to
++correctly draw the states diagrams and to calculate accurate statistics etc.
++
++1.2 DEPRECATED trace API
++------------------------
++
++A new Kconfig option CONFIG_EVENT_POWER_TRACING_DEPRECATED with the default value of
++'y' has been created. This allows the legacy trace power API to be used conjointly
++with the new trace API.
++The Kconfig option, the old trace API (in include/trace/events/power.h) and the
++old trace points will disappear in a future release (namely 2.6.41).
++
++power_start		"type=%lu state=%lu cpu_id=%lu"
++power_frequency		"type=%lu state=%lu cpu_id=%lu"
++power_end		"cpu_id=%lu"
++
++The 'type' parameter takes one of those macros:
++ . POWER_NONE	= 0,
++ . POWER_CSTATE	= 1,	/* C-State */
++ . POWER_PSTATE	= 2,	/* Fequency change or DVFS */
++
++The 'state' parameter is set depending on the type:
++ . Target C-state for type=POWER_CSTATE,
++ . Target frequency for type=POWER_PSTATE,
++
++power_end is used to indicate the exit of a state, corresponding to the latest
++power_start event.
++
++2. Clocks events
++================
++The clock events are used for clock enable/disable and for
++clock rate change.
++
++clock_enable		"%s state=%lu cpu_id=%lu"
++clock_disable		"%s state=%lu cpu_id=%lu"
++clock_set_rate		"%s state=%lu cpu_id=%lu"
++
++The first parameter gives the clock name (e.g. "gpio1_iclk").
++The second parameter is '1' for enable, '0' for disable, the target
++clock rate for set_rate.
++
++3. Power domains events
++=======================
++The power domain events are used for power domains transitions
++
++power_domain_target	"%s state=%lu cpu_id=%lu"
++
++The first parameter gives the power domain name (e.g. "mpu_pwrdm").
++The second parameter is the power domain target state.
++
 -- 
 1.7.2.3
 
