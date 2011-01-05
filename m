@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290Ab1AEXJU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:09:20 -0500
-Received: from kroah.org ([198.145.64.141]:50794 "EHLO coco.kroah.org"
+	id S1753266Ab1AEXGa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:06:30 -0500
+Received: from kroah.org ([198.145.64.141]:50748 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753271Ab1AEXGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:06:31 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 15:03:25 2011
-Message-Id: <20110105230325.686713163@clark.site>
+	id S1753194Ab1AEXGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 18:06:23 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 15:03:24 2011
+Message-Id: <20110105230324.845120936@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 15:00:40 -0800
+Date: Wed, 05 Jan 2011 15:00:32 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: [22/49] x86, amd: Fix panic on AMD CPU family 0x15
+        Gabriele Gorla <gorlik@penguintown.net>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [14/49] hwmon: (adm1026) Fix setting fan_div
 In-Reply-To: <20110105230438.GA26241@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,53 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
+From: Gabriele Gorla <gorlik@penguintown.net>
 
-[The mainline kernel doesn't have this problem. Commit "(23588c3) x86,
-amd: Add support for CPUID topology extension of AMD CPUs" removed the
-family check. But 2.6.32.y needs to be fixed.]
+commit 52bc9802ce849d0d287cc5fe76d06b0daa3986ca upstream.
 
-This CPU family check is not required -- existence of the NodeId MSR
-is indicated by a CPUID feature flag which is already checked in
-amd_fixup_dcm() -- and it needlessly prevents amd_fixup_dcm() to be
-called for newer AMD CPUs.
+Prevent setting fan_div from stomping on other fans that share the
+same I2C register.
 
-In worst case this can lead to a panic in the scheduler code for AMD
-family 0x15 multi-node AMD CPUs. I just have a picture of VGA console
-output so I can't copy-and-paste it herein, but the call stack of such
-a panic looked like:
-
-  do_divide_error
-  ...
-  find_busiest_group
-  run_rebalance_domains
-  ...
-  apic_timer_interrupt
-  ...
-  cpu_idle
-
-The mainline kernel doesn't have this problem. Commit "(23588c3) x86,
-amd: Add support for CPUID topology extension of AMD CPUs" removed the
-family check. But 2.6.32.y needs to be fixed.
-
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+Signed-off-by: Gabriele Gorla <gorlik@penguintown.net>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/amd.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/hwmon/adm1026.c |   16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -305,8 +305,7 @@ static void __cpuinit amd_detect_cmp(str
- 	/* use socket ID also for last level cache */
- 	per_cpu(cpu_llc_id, cpu) = c->phys_proc_id;
- 	/* fixup topology information on multi-node processors */
--	if ((c->x86 == 0x10) && (c->x86_model == 9))
--		amd_fixup_dcm(c);
-+	amd_fixup_dcm(c);
- #endif
- }
+--- a/drivers/hwmon/adm1026.c
++++ b/drivers/hwmon/adm1026.c
+@@ -919,7 +919,7 @@ static ssize_t set_fan_div(struct device
+ 	int nr = sensor_attr->index;
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct adm1026_data *data = i2c_get_clientdata(client);
+-	int val, orig_div, new_div, shift;
++	int val, orig_div, new_div;
  
+ 	val = simple_strtol(buf, NULL, 10);
+ 	new_div = DIV_TO_REG(val);
+@@ -929,15 +929,17 @@ static ssize_t set_fan_div(struct device
+ 	data->fan_div[nr] = DIV_FROM_REG(new_div);
+ 
+ 	if (nr < 4) { /* 0 <= nr < 4 */
+-		shift = 2 * nr;
+ 		adm1026_write_value(client, ADM1026_REG_FAN_DIV_0_3,
+-			((DIV_TO_REG(orig_div) & (~(0x03 << shift))) |
+-			(new_div << shift)));
++				    (DIV_TO_REG(data->fan_div[0]) << 0) |
++				    (DIV_TO_REG(data->fan_div[1]) << 2) |
++				    (DIV_TO_REG(data->fan_div[2]) << 4) |
++				    (DIV_TO_REG(data->fan_div[3]) << 6));
+ 	} else { /* 3 < nr < 8 */
+-		shift = 2 * (nr - 4);
+ 		adm1026_write_value(client, ADM1026_REG_FAN_DIV_4_7,
+-			((DIV_TO_REG(orig_div) & (~(0x03 << (2 * shift)))) |
+-			(new_div << shift)));
++				    (DIV_TO_REG(data->fan_div[4]) << 0) |
++				    (DIV_TO_REG(data->fan_div[5]) << 2) |
++				    (DIV_TO_REG(data->fan_div[6]) << 4) |
++				    (DIV_TO_REG(data->fan_div[7]) << 6));
+ 	}
+ 
+ 	if (data->fan_div[nr] != orig_div) {
 
 
