@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751554Ab1AEHJh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 02:09:37 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:46091 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751298Ab1AEHJg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 02:09:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=p4tMO4Vs6CA6V0GGEk3qNAi2NriWraXdOj9gxBiv/NF+JwVbKxPERiG5q1CGgieBAA
-         fwIEWjuNWxFg6kXhhWYtjHeqzJISbXcDCvqRpia02t4b/8YatonLHZYVGbunt5T9co/s
-         a3FgfIY+UBYuXs5y192IJvcq+XajOskMQz73Q=
-From: Vasily Khoruzhick <anarsoul@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] leds/h1940: Use gpiolib for latch access / fix build failure
-Date: Wed, 5 Jan 2011 09:08:13 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r3-anarsoul; KDE/4.5.4; i686; ; )
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ben Dooks <ben-linux@fluff.org>,
-        Vincent Sanders <support@simtec.co.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Richard Purdie <rpurdie@rpsys.net>
-References: <1291932292-16049-1-git-send-email-peterhuewe@gmx.de> <201012100016.58130.anarsoul@gmail.com> <20110104153725.2f3fede2.akpm@linux-foundation.org>
-In-Reply-To: <20110104153725.2f3fede2.akpm@linux-foundation.org>
+	id S1751557Ab1AEHLi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 02:11:38 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:57497 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751435Ab1AEHLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 02:11:37 -0500
+Message-ID: <4D2419C0.9010102@cn.fujitsu.com>
+Date: Wed, 05 Jan 2011 15:12:00 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFC][RT][PATCH 4/4] rtmutex: Ensure only the top waiter or higher
+ priority task can take the lock
+References: <20101223224755.078983538@goodmis.org>	 <20101223225117.180036615@goodmis.org> <1294113773.3948.203.camel@gandalf.stny.rr.com>
+In-Reply-To: <1294113773.3948.203.camel@gandalf.stny.rr.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-01-05 15:11:17,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-01-05 15:11:17,
+	Serialize complete at 2011-01-05 15:11:17
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101050908.14661.anarsoul@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 05 January 2011 01:37:25 Andrew Morton wrote:
-> On Fri, 10 Dec 2010 00:16:57 +0200
+On 01/04/2011 12:02 PM, Steven Rostedt wrote:
+> On Thu, 2010-12-23 at 17:47 -0500, Steven Rostedt wrote:
+>> plain text document attachment
+>> (0004-rtmutex-Ensure-only-the-top-waiter-or-higher-priorit.patch)
+>> From: Lai Jiangshan <laijs@cn.fujitsu.com>
+>>
+>> In current rtmutex, the pending owner may be boosted by the tasks
+>> in the rtmutex's waitlist when the pending owner is deboosted
+>> or a task in the waitlist is boosted. This boosting is unrelated,
+>> because the pending owner does not really take the rtmutex.
+>> It is not reasonable.
+>>
 > 
-> Vasily Khoruzhick <anarsoul@gmail.com> wrote:
-> > On Friday 10 December 2010 00:04:52 Peter Huewe wrote:
-> > > This patch fixes a build failure by converting leds-h1940.c to use
-> > > gpiolib for latch access introduced by 14477095abc6
-> > > (ARM: h1940: Use gpiolib for latch access)
-> > > 
-> > > Unfortunately this driver was not converted back then.
-> > 
-> > I sent similar patch (however, my patch does gpio_request/gpio_free)
-> > ~month ago.
-> > 
-> > Here's link:
-> > http://www.spinics.net/lists/arm-kernel/msg103429.html
+> I'm still hitting some bugs with the port to -rt, but I also noticed
+> something that doesn't look too good.
 > 
-> So which patch to use?
+> There's several places in the kernel where a task may release and
+> acquire the same lock multiple times in a row.
 > 
-> I queued Peter's patch because it's simpler.  I queued it for
-> 2.6.38-rc1, taged for backporting into 2.6.37.x, so we have a bit of
-> time to think about it.
+> The old way of removing the pending owner from the lists and waking it
+> up once, would have the high prio task wake it up once, and then it can
+> grab the locks multiple times without modifying the list, since the
+> pending owner is already awake and not in the pi list anymore.
+> 
+> The new way has the owner remove the woken task from its pi list and
+> wakes it up, but when it steals the lock again, it adds this owner back
+> to its pi list. When it releases the lock, it wakes it up again and
+> removes it from its pi list again. This happens over and over again.
 
-It's simplier, but it does not request gpio before use. It will work, but will 
-print nasty warning.
+It is a expected behavior.  With this behavior: we can assume that
+if a lock has waiter(s), the top waiter is always on the owner's pi list
+and the owner gets/(will get) boosted from it.
 
-Regards,
-Vasily
+This simplifies the code and the logic. But performance is more important,
+I will send 2 patches for it in this weekend.
+
+Thanks,
+Lai.
