@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab1AEXrv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:47:51 -0500
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:57183 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753031Ab1AEXrs convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:47:48 -0500
-MIME-Version: 1.0
-In-Reply-To: <20110105211847.GA16229@kroah.com>
-References: <1293178543-7556-1-git-send-email-omar.ramirez@ti.com>
-	<20110105211847.GA16229@kroah.com>
-Date: Wed, 5 Jan 2011 17:47:47 -0600
-Message-ID: <AANLkTikWpxq+35pLN_r6B214jcO2Ss2rEv0KA9bcMJFL@mail.gmail.com>
-Subject: Re: [GIT PULL] staging: tidspbridge for 2.6.38
-From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-To: Greg KH <greg@kroah.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753816Ab1AEXrn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:47:43 -0500
+Received: from kroah.org ([198.145.64.141]:41061 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753658Ab1AEXpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 18:45:19 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 15:03:27 2011
+Message-Id: <20110105230327.262541579@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Wed, 05 Jan 2011 15:00:56 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Florian Faber <faberman@linuxproaudio.org>
+Subject: [38/49] USB: ftdi_sio: Add D.O.Tec PID
+In-Reply-To: <20110105234415.GA22369@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 5, 2011 at 3:18 PM, Greg KH <greg@kroah.com> wrote:
-> On Fri, Dec 24, 2010 at 02:15:43AM -0600, Omar Ramirez Luna wrote:
->> Hi Greg,
->>
->> This is the first pull request of changes for tidspbridge driver for 2.6.38,
->> I expect to make another request with at least one bug fix, but in the mean
->> time here it is the content for this one:
->>
->> The following changes since commit 90a8a73c06cc32b609a880d48449d7083327e11a:
->>
->>   Linux 2.6.37-rc7 (2010-12-21 11:26:40 -0800)
->>
->> are available in the git repository at:
->>   git://dev.omapzoom.org/pub/scm/tidspbridge/kernel-dspbridge.git dspbridge
->
-> Ick, no.  Why did you base this on -rc7?  My staging-next branch is
-> based on -rc5 at the moment, and I really see no need to merge the rest
-> of them into the tree for no good reason at all.
+2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
-wrongly though staging-next would be at rc7+ at the time you could
-take a look to the patches
+------------------
 
-> Also, as you did send this before the merge window closed, but during
-> the holidays, I couldn't get to it.  But in looking at this, it's going
-> to have to wait for the next window, sorry, it's just too big, and too
-> late.  You weren't expecting me to be working on kernel stuff during my
-> holiday break, were you?
+From: Florian Faber <faberman@linuxproaudio.org>
 
-No I wasn't :)
+commit 5363cdc3c5da9bd431552cf5989ab481596f0c6d upstream.
 
-> So, feel free to redo this against 2.6.38-rc1 when that comes out.
+Add FTDI PID to identify D.O.Tec devices correctly.
 
-No problem then, but could you consider a 2nd pull with a compilation
-fix (which will be introduced in 2.6.38, right now present in
-linux-next), and a bug fix.
+Signed-off-by: Florian Faber <faberman@linuxproaudio.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-I'll send it and wait for any comments.
+---
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    5 +++++
+ 2 files changed, 6 insertions(+)
 
-Regards,
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -802,6 +802,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SCIENCESCOPE_LOGBOOKML_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SCIENCESCOPE_LS_LOGBOOK_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SCIENCESCOPE_HS_LOGBOOK_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_DOTEC_PID) },
+ 	{ USB_DEVICE(QIHARDWARE_VID, MILKYMISTONE_JTAGSERIAL_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ },					/* Optional parameter entry */
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1088,6 +1088,11 @@
+ #define MJSG_HD_RADIO_PID	0x937C
+ 
+ /*
++ * D.O.Tec products (http://www.directout.eu)
++ */
++#define FTDI_DOTEC_PID 0x9868
++
++/*
+  * Xverve Signalyzer tools (http://www.signalyzer.com/)
+  */
+ #define XVERVE_SIGNALYZER_ST_PID	0xBCA0
 
-Omar
+
