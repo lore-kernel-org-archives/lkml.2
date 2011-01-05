@@ -1,232 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751339Ab1AENwq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 08:52:46 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:57483 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751005Ab1AENwp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 08:52:45 -0500
-Date: Wed, 5 Jan 2011 08:52:42 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC patch 3/5] ftrace trace event add missing semicolumn
-Message-ID: <20110105135242.GC31831@Krystal>
-References: <20110104231629.996422888@efficios.com> <20110104232419.441463699@efficios.com> <20110105000005.GE2911@nowhere> <20110105001837.GA9737@Krystal> <20110105020759.GG2911@nowhere> <20110105023541.GA12950@Krystal> <20110105025848.GH2911@nowhere>
+	id S1751211Ab1AEN4J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 08:56:09 -0500
+Received: from mx2.fusionio.com ([64.244.102.31]:48253 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750854Ab1AEN4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 08:56:08 -0500
+X-ASG-Debug-ID: 1294235766-71f760120001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D247867.9040502@fusionio.com>
+Date: Wed, 5 Jan 2011 14:55:51 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110105025848.GH2911@nowhere>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 08:37:58 up 42 days, 18:41,  5 users,  load average: 0.00, 0.00,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Greg KH <greg@kroah.com>
+CC: Jerome Marchand <jmarchan@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] block: fix accounting bug on cross partition merges
+References: <20101210165553.GE31737@redhat.com> <4D07D2AC.6000500@fusionio.com> <4D0B68AF.80804@redhat.com> <4D0BB4A1.8080305@fusionio.com> <4D13664C.3020500@redhat.com> <20101223153915.GE9502@redhat.com> <4D13810B.8000304@redhat.com> <20101224192916.GB2082@redhat.com> <4D23423A.60707@redhat.com> <4D2342E1.8010405@redhat.com> <20110104210011.GB4180@kroah.com>
+X-ASG-Orig-Subj: Re: [PATCH 2/2] block: fix accounting bug on cross partition merges
+In-Reply-To: <20110104210011.GB4180@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1294235766
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.41
+X-Barracuda-Spam-Status: No, SCORE=0.41 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=SUBJECT_FUZZY_TION
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.51500
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.41 SUBJECT_FUZZY_TION     Attempt to obfuscate words in Subject:
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> On Tue, Jan 04, 2011 at 09:35:41PM -0500, Mathieu Desnoyers wrote:
-> > * Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> > > On Tue, Jan 04, 2011 at 07:18:37PM -0500, Mathieu Desnoyers wrote:
-> > > > * Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> > > > > On Tue, Jan 04, 2011 at 06:16:32PM -0500, Mathieu Desnoyers wrote:
-> > > > > > Add a missing semicolumn at the end of a ftrace definition.
-> > > > > > 
-> > > > > > We currently are not seeing any impact of this missing semicolumn because extra
-> > > > > > semicolumns appear all over the place in the code generated from TRACE_EVENT
-> > > > > > within ftrace stages.
-> > > > > > 
-> > > > > > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > > > > > CC: Steven Rostedt <rostedt@goodmis.org>
-> > > > > > CC: Frederic Weisbecker <fweisbec@gmail.com>
-> > > > > > CC: Ingo Molnar <mingo@elte.hu>
-> > > > > > CC: Thomas Gleixner <tglx@linutronix.de>
-> > > > > > ---
-> > > > > >  include/trace/ftrace.h |    2 +-
-> > > > > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > > > > 
-> > > > > > Index: linux-2.6-lttng/include/trace/ftrace.h
-> > > > > > ===================================================================
-> > > > > > --- linux-2.6-lttng.orig/include/trace/ftrace.h
-> > > > > > +++ linux-2.6-lttng/include/trace/ftrace.h
-> > > > > > @@ -69,7 +69,7 @@
-> > > > > >  #undef DEFINE_EVENT
-> > > > > >  #define DEFINE_EVENT(template, name, proto, args)	\
-> > > > > >  	static struct ftrace_event_call	__used		\
-> > > > > > -	__attribute__((__aligned__(4))) event_##name
-> > > > > > +	__attribute__((__aligned__(4))) event_##name;
-> > > > > 
-> > > > > But DEFINE_EVENT() calls are supposed to be ";" terminated, no?
-> > > > 
-> > > > Currently yes, but if you look at the preprocessor output currently generated by
-> > > > the current TRACE_EVENT()/DEFINE_EVENT() scheme, there are useless ";" added all
-> > > > over the place. I have a patch later in my queue that proposes removal of these
-> > > > extra ";" as a cleanup of the TRACE_EVENT() semantic, but I'm keeping it for
-> > > > later because it removes the extra ";" at the end of each TRACE_EVENT()
-> > > > instance (and thus is more intrusive code-wise).
-> > > > 
-> > > > Adding this semicolumn here ensures that all Ftrace macros are consistent wrt
-> > > > semicolumns. We can get away without consistency currently exactly because the
-> > > > current scheme adds many useless semicolumns between each TRACE_EVENT().
-> > > 
-> > > Are you sure you want to put so much time on this?
-> > 
-> > We are about to spend more time arguing about it that the time it takes cleaning
-> > it up. But here we go.
+On 2011-01-04 22:00, Greg KH wrote:
+> On Tue, Jan 04, 2011 at 04:55:13PM +0100, Jerome Marchand wrote:
+>> Also add a refcount to struct hd_struct to keep the partition in
+>> memory as long as users exist. We use kref_test_and_get() to ensure
+>> we don't add a reference to a partition which is going away.
 > 
-> Hardly, as the real cleanup requires dozens of patches to clean every trace
-> events.
-
-I know, but it's hardly a large change in terms of lines of code, not
-complexity.
-
+> No, don't do this, use a kref correctly and no such function should be
+> needed.
 > 
-> But dropping the requirement of a ";" after the macro calls still sounds
-> sensible.
-
-Glad to hear that :) More information below,
-
->  
-> > > 
-> > > This will require a massive change for the sole win of removing double ";"
-> > > in generated code. This won't optimize much the build, and it will make the things
-> > > not so much more readable for very rare people who dare to have interest into the
-> > > TRACE_EVENT generated code. That notwithstanding the obfuscation of that generated
-> > > code resides more in the lack of indentation and newlines than in double
-> > > semicolons that we barely notice.
-> > 
-> > Building:
-> > 
-> > make kernel/sched.o V=1
-> > 
-> > taking the gcc invokation, changing it to:
-> > 
-> > gcc -Wp,-MD,kernel/.sched.o.d  -nostdinc -isystem /usr/local/lib/gcc/x86_64-unknown-linux-gnu/4.5.1/include -I/home/compudj/git/linux-tip/arch/x86/include -Iinclude  -include include/generated/autoconf.h -D__KERNEL__ -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -O2 -m64 -march=core2 -mno-red-zone -mcmodel=kernel -funit-at-a-time -maccumulate-outgoing-args -DCONFIG_AS_CFI=1 -DCONFIG_AS_CFI_SIGNAL_FRAME=1 -DCONFIG_AS_CFI_SECTIONS=1 -pipe -Wno-sign-compare -fno-asynchronous-unwind-tables -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -Wframe-larger-than=1024 -fno-stack-protector -fno-omit-frame-pointer -fno-optimize-sibling-calls -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack    -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(sched)"  -D"KBUILD_MODNAME=KBUILD_STR(sched)"  -E -o kernel/sched.pp kernel/sched.c
-> > 
-> > An exerpt of the output, fed through "indent" for readability:
-> > 
-> > static inline __attribute__ ((always_inline))
-> >      void
-> > # 275 "include/trace/events/sched.h"
-> >        check_trace_callback_type_sched_process_fork
-> > # 252 "include/trace/events/sched.h"
-> >       
-> >        (void (*cb)
-> >         (void *__data, struct task_struct * parent,
-> >          struct task_struct * child))
-> > {
-> > }
-> > # 275 "include/trace/events/sched.h"
-> >  ;
-> > 
-> > 
-> > 
-> > 
-> > 
-> > 
-> > # 305 "include/trace/events/sched.h"
-> >  ;
-> > 
-> > 
-> > As we can notice, a few extra ";" are added between each "entity" created by the
-> > ftrace trace event phase. This works only as long as we declare
-> > semicolumn-separated C structure elements, functions, and statements, because
-> > the compiler just skips the extra semicolumns, but forbids creation of arrays of
-> > events, which need to be comma-separated.
+>> +	} else {
+>> +		part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
 > 
-> So what are these arrays of events you have in mind?
+> That is the function that should properly increment the reference count
+> on the object.  If the object is "being removed", then it will return
+> NULL and you need to check that.  Do that and you do not need to add:
 
-Currently, Ftrace is creating a "ftrace_define_fields_##call" function for each
-event to define the event fields, which consumes space. It also has the
-".fields" list head to keep a dynamically generated list of event fields.
+It doesn't matter if you do it in there of after the fact, since the
+"lock" (RCU) is being held across the call. See my original suggestion
+here:
 
-By allowing creation of arrays of events, we can do the following: turn the
-dynamically created list of event fields into a first-level const array listing
-event fields. We can use ARRAY_SIZE() on this array to know its size,
-statically. Then, in a following trace event stage, we can create another const
-array containing tuples of (pointers to the event-specific arrays, array size).
-
-So we get all the same information Ftrace currently gets with much less code
-overall, much less read-write data, and less dynamic initialization code.
-
-The following relevant code snippets does the trick. It's extracted from my
-LTTng git tree. Feel free to use any variation of it if you want.
-
-Thanks,
-
-Mathieu
-
-/*
- * Stage 1 of the trace events.
- *
- * Create event field type metadata section.
- * Each event produce an array of fields.
- */
-
-#include "lttng-events-reset.h" /* Reset all macros within TRACE_EVENT */
-
-/* Named field types must be defined in lttng-types.h */
-
-#undef __field
-#define __field(_type, _item)                                   \
-        { .name = #_item, .type = { .atype = atype_integer, .name = #_type} },
-
-[... same for __array, __dynamic_array, __string, ...]
-
-#undef TP_STRUCT__entry
-#define TP_STRUCT__entry(args...) args  /* Only one used in this phase */
-
-#undef DECLARE_EVENT_CLASS
-#define DECLARE_EVENT_CLASS(_name, _proto, _args, _tstruct, _assign, _print) \
-        static const struct lttng_event_field __event_fields___##_name[] = { \
-                _tstruct                                                     \
-        };
-
-#include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
-
-
-/*
- * Stage 2 of the trace events.
- *
- * Create an array of events.
- */
-
-/* Named field types must be defined in lttng-types.h */
-
-#include "lttng-events-reset.h" /* Reset all macros within TRACE_EVENT */
-
-#undef DEFINE_EVENT
-#define DEFINE_EVENT(_template, _name, _proto, _args)                          \
-                {                                                              \
-                        .fields = __event_fields___##_template,                \
-                        .name = #_name,                                        \
-                        .nr_fields = ARRAY_SIZE(__event_fields___##_template), \
-                },
-
-#define TP_ID1(_token, _system) _token##_system
-#define TP_ID(_token, _system)  TP_ID1(_token, _system)
-
-static const struct lttng_event_desc TP_ID(__event_desc___, TRACE_SYSTEM)[] = {
-#include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
-};
-
-#undef TP_ID1
-#undef TP_ID
-
-> 
-> > These extra semicolumns we see here are simply polluting the compiler input, and
-> > I don't see any reason why we should leave them there.
-> 
-> Sure they are useless, I just wonder if that alone justifies such a massive change, although
-> actually I don't care much :)
+https://lkml.org/lkml/2010/12/17/275
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Jens Axboe
+
