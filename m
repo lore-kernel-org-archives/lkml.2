@@ -1,81 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751397Ab1AEGIa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 01:08:30 -0500
-Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:40330 "HELO
-	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751047Ab1AEGI3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 01:08:29 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
-	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer:X-Identified-User;
-	b=xfbNRsATaZkzWmimORB75K75nwP+PRlYuHY29jXB9wlwrcWpDc2ZT04Khvwib6xHrAC8OgwWiRbueqeOQjHkg6u0Qp6CFqFXLQLSuSx34wtx0TMaUu2FhRhAD16HX3aL;
-From: Tao Ma <tm@tao.ma>
-To: linux-kernel@vger.kernel.org
-Cc: Li Zefan <lizf@cn.fujitsu.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH] Documentation/trace/events.txt: Remove obsolete sched_signal_send.
-Date: Wed,  5 Jan 2011 14:07:54 +0800
-Message-Id: <1294207674-3912-1-git-send-email-tm@tao.ma>
-X-Mailer: git-send-email 1.7.1
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 114.251.86.0 authed with tm@tao.ma}
+	id S1751413Ab1AEGLH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 01:11:07 -0500
+Received: from freeflow.nu ([178.79.134.28]:58746 "EHLO freeflow.nu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750938Ab1AEGLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 01:11:06 -0500
+Subject: Re: [PATCH 1/6] Staging: w35und: Merge wbhal_f.h to wbhal_s.h
+From: Pekka Enberg <penberg@kernel.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Greg KH <greg@kroah.com>, gregkh@suse.de, linux-kernel@vger.kernel.org
+In-Reply-To: <20110102090231.GF32469@atrey.karlin.mff.cuni.cz>
+References: <1291454177-5102-1-git-send-email-penberg@kernel.org>
+	 <20101207001253.GA20030@kroah.com> <4CFDD4D8.10403@kernel.org>
+	 <20110102090231.GF32469@atrey.karlin.mff.cuni.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Wed, 05 Jan 2011 08:11:02 +0200
+Message-ID: <1294207862.5248.37.camel@jaguar>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tao Ma <boyu.mt@taobao.com>
+On Sun, 2011-01-02 at 10:02 +0100, Pavel Machek wrote:
+> Hi!
+> 
+> >> This patch doesn't apply at all, what was it made against?
+> >
+> > They're actually patches that predate the ones you merged recently from  
+> > me. I just pulled your tree to mine and did "git format-patch" without  
+> > thinking about it too much.
+> >
+> >> Care to refresh this whole series so it can be applied?
+> >
+> > Sure, I can do that.
+> 
+> Thanks... and ACK for the whole series.
 
-'sched_signal_send' doesn't exist in the kernel now. Replace it
-with 'signal_generate' so that the example in events.txt can be
-executed successfully.
+Interesting enough, Greg had already merged them before I resent them:
 
-I also change some /debug to /sys/kernel/debug which is debugfs'
-default mount directory now(similar to commit 52ad51e).
+http://git.kernel.org/?p=linux/kernel/git/gregkh/staging-2.6.git;a=commitdiff;h=72ca8819f7f4ac4ddf82ab72ee614075821a3d00
 
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
----
- Documentation/trace/events.txt |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/Documentation/trace/events.txt b/Documentation/trace/events.txt
-index 09bd8e9..b510564 100644
---- a/Documentation/trace/events.txt
-+++ b/Documentation/trace/events.txt
-@@ -125,7 +125,7 @@ is the size of the data item, in bytes.
- For example, here's the information displayed for the 'sched_wakeup'
- event:
- 
--# cat /debug/tracing/events/sched/sched_wakeup/format
-+# cat /sys/kernel/debug/tracing/events/sched/sched_wakeup/format
- 
- name: sched_wakeup
- ID: 60
-@@ -201,19 +201,19 @@ to the 'filter' file for the given event.
- 
- For example:
- 
--# cd /debug/tracing/events/sched/sched_wakeup
-+# cd /sys/kernel/debug/tracing/events/sched/sched_wakeup
- # echo "common_preempt_count > 4" > filter
- 
- A slightly more involved example:
- 
--# cd /debug/tracing/events/sched/sched_signal_send
-+# cd /sys/kernel/debug/tracing/events/signal/signal_generate
- # echo "((sig >= 10 && sig < 15) || sig == 17) && comm != bash" > filter
- 
- If there is an error in the expression, you'll get an 'Invalid
- argument' error when setting it, and the erroneous string along with
- an error message can be seen by looking at the filter e.g.:
- 
--# cd /debug/tracing/events/sched/sched_signal_send
-+# cd /sys/kernel/debug/tracing/events/signal/signal_generate
- # echo "((sig >= 10 && sig < 15) || dsig == 17) && comm != bash" > filter
- -bash: echo: write error: Invalid argument
- # cat filter
--- 
-1.6.3.GIT
+I guess either me or Git was confused to think they hadn't been merged.
+It also explains why the patches didn't apply. ;-)
 
