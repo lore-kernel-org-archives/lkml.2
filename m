@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414Ab1AEXHu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:07:50 -0500
-Received: from kroah.org ([198.145.64.141]:50847 "EHLO coco.kroah.org"
+	id S1753364Ab1AEXGl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:06:41 -0500
+Received: from kroah.org ([198.145.64.141]:50799 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751805Ab1AEXGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:06:40 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 15:03:26 2011
-Message-Id: <20110105230326.680530408@clark.site>
+	id S1753194Ab1AEXGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 18:06:32 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 15:03:25 2011
+Message-Id: <20110105230325.781267069@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 15:00:50 -0800
+Date: Wed, 05 Jan 2011 15:00:41 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Slaby <jslaby@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
-        Antonio Ospite <ospite@studenti.unina.it>
-Subject: [32/49] HID: hidraw: fix window in hidraw_release
+        NeilBrown <neilb@suse.de>
+Subject: [23/49] md: fix bug with re-adding of partially recovered device.
 In-Reply-To: <20110105230438.GA26241@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,60 +25,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: NeilBrown <neilb@suse.de>
 
-commit cb174681a9ececa6702f114b85bdf82144b6a5af upstream.
+commit 1a855a0606653d2d82506281e2c686bacb4b2f45 upstream.
 
-[ Backport to .32.y by Antonio Ospite <ospite@studenti.unina.it> ]
+With v0.90 metadata, a hot-spare does not become a full member of the
+array until recovery is complete.  So if we re-add such a device to
+the array, we know that all of it is as up-to-date as the event count
+would suggest, and so it a bitmap-based recovery is possible.
 
-There is a window between hidraw_table check and its dereference.
-In that window, the device may be unplugged and removed form the
-system and we will then dereference NULL.
+However with v1.x metadata, the hot-spare immediately becomes a full
+member of the array, but it record how much of the device has been
+recovered.  If the array is stopped and re-assembled recovery starts
+from this point.
 
-Lock that place properly so that either we get NULL and jump out or we
-can work with real pointer.
+When such a device is hot-added to an array we currently lose the 'how
+much is recovered' information and incorrectly included it as a full
+in-sync member (after bitmap-based fixup).
+This is wrong and unsafe and could corrupt data.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
+So be more careful about setting saved_raid_disk - which is what
+guides the re-adding of devices back into an array.
+The new code matches the code in slot_store which does a similar
+thing, which is encouraging.
+
+This is suitable for any -stable kernel.
+
+Reported-by: "Dailey, Nate" <Nate.Dailey@stratus.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hid/hidraw.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/md/md.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/hid/hidraw.c
-+++ b/drivers/hid/hidraw.c
-@@ -211,11 +211,14 @@ static int hidraw_release(struct inode *
- 	unsigned int minor = iminor(inode);
- 	struct hidraw *dev;
- 	struct hidraw_list *list = file->private_data;
-+	int ret;
- 
-+	mutex_lock(&minors_lock);
- 	if (!hidraw_table[minor]) {
- 		printk(KERN_EMERG "hidraw device with minor %d doesn't exist\n",
- 				minor);
--		return -ENODEV;
-+		ret = -ENODEV;
-+		goto unlock;
- 	}
- 
- 	list_del(&list->node);
-@@ -229,10 +232,12 @@ static int hidraw_release(struct inode *
- 			kfree(list->hidraw);
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -4802,7 +4802,7 @@ static int add_new_disk(mddev_t * mddev,
+ 				PTR_ERR(rdev));
+ 			return PTR_ERR(rdev);
  		}
- 	}
--
- 	kfree(list);
-+	ret = 0;
-+unlock:
-+	mutex_unlock(&minors_lock);
+-		/* set save_raid_disk if appropriate */
++		/* set saved_raid_disk if appropriate */
+ 		if (!mddev->persistent) {
+ 			if (info->state & (1<<MD_DISK_SYNC)  &&
+ 			    info->raid_disk < mddev->raid_disks)
+@@ -4812,7 +4812,10 @@ static int add_new_disk(mddev_t * mddev,
+ 		} else
+ 			super_types[mddev->major_version].
+ 				validate_super(mddev, rdev);
+-		rdev->saved_raid_disk = rdev->raid_disk;
++		if (test_bit(In_sync, &rdev->flags))
++			rdev->saved_raid_disk = rdev->raid_disk;
++		else
++			rdev->saved_raid_disk = -1;
  
--	return 0;
-+	return ret;
- }
- 
- static long hidraw_ioctl(struct file *file, unsigned int cmd,
+ 		clear_bit(In_sync, &rdev->flags); /* just to be sure */
+ 		if (info->state & (1<<MD_DISK_WRITEMOSTLY))
 
 
