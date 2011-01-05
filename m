@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156Ab1AEXGU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:06:20 -0500
-Received: from kroah.org ([198.145.64.141]:50699 "EHLO coco.kroah.org"
+	id S1753293Ab1AEXMA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:12:00 -0500
+Received: from kroah.org ([198.145.64.141]:50725 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753078Ab1AEXGR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:06:17 -0500
+	id S1753141Ab1AEXGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 18:06:19 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 15:03:24 2011
-Message-Id: <20110105230324.083483931@clark.site>
+Message-Id: <20110105230324.424407145@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 15:00:25 -0800
+Date: Wed, 05 Jan 2011 15:00:28 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: [07/49] nohz: Fix printk_needs_cpu() return value on offline cpus
+        NeilBrown <neilb@suse.de>, "J. Bruce Fields" <bfields@redhat.com>
+Subject: [10/49] nfsd: Fix possible BUG_ON firing in set_change_info
 In-Reply-To: <20110105230438.GA26241@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,64 +25,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Neil Brown <neilb@suse.de>
 
-commit 61ab25447ad6334a74e32f60efb135a3467223f8 upstream.
+commit c1ac3ffcd0bc7e9617f62be8c7043d53ab84deac upstream.
 
-This patch fixes a hang observed with 2.6.32 kernels where timers got enqueued
-on offline cpus.
+If vfs_getattr in fill_post_wcc returns an error, we don't
+set fh_post_change.
+For NFSv4, this can result in set_change_info triggering a BUG_ON.
+i.e. fh_post_saved being zero isn't really a bug.
 
-printk_needs_cpu() may return 1 if called on offline cpus. When a cpu gets
-offlined it schedules the idle process which, before killing its own cpu, will
-call tick_nohz_stop_sched_tick(). That function in turn will call
-printk_needs_cpu() in order to check if the local tick can be disabled. On
-offline cpus this function should naturally return 0 since regardless if the
-tick gets disabled or not the cpu will be dead short after. That is besides the
-fact that __cpu_disable() should already have made sure that no interrupts on
-the offlined cpu will be delivered anyway.
+So:
+ - instead of BUGging when fh_post_saved is zero, just clear ->atomic.
+ - if vfs_getattr fails in fill_post_wcc, take a copy of i_ctime anyway.
+   This will be used i seg_change_info, but not overly trusted.
+ - While we are there, remove the pointless 'if' statements in set_change_info.
+   There is no harm setting all the values.
 
-In this case it prevents tick_nohz_stop_sched_tick() to call
-select_nohz_load_balancer(). No idea if that really is a problem. However what
-made me debug this is that on 2.6.32 the function get_nohz_load_balancer() is
-used within __mod_timer() to select a cpu on which a timer gets enqueued. If
-printk_needs_cpu() returns 1 then the nohz_load_balancer cpu doesn't get
-updated when a cpu gets offlined. It may contain the cpu number of an offline
-cpu. In turn timers get enqueued on an offline cpu and not very surprisingly
-they never expire and cause system hangs.
-
-This has been observed 2.6.32 kernels. On current kernels __mod_timer() uses
-get_nohz_timer_target() which doesn't have that problem. However there might be
-other problems because of the too early exit tick_nohz_stop_sched_tick() in
-case a cpu goes offline.
-
-Easiest way to fix this is just to test if the current cpu is offline and call
-printk_tick() directly which clears the condition.
-
-Alternatively I tried a cpu hotplug notifier which would clear the condition,
-however between calling the notifier function and printk_needs_cpu() something
-could have called printk() again and the problem is back again. This seems to
-be the safest fix.
-
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <20101126120235.406766476@de.ibm.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/printk.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/nfsd/nfs3xdr.c         |    6 ++++--
+ include/linux/nfsd/xdr4.h |   21 ++++++++++-----------
+ 2 files changed, 14 insertions(+), 13 deletions(-)
 
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -1014,6 +1014,8 @@ void printk_tick(void)
- 
- int printk_needs_cpu(int cpu)
- {
-+	if (unlikely(cpu_is_offline(cpu)))
-+		printk_tick();
- 	return per_cpu(printk_pending, cpu);
+--- a/fs/nfsd/nfs3xdr.c
++++ b/fs/nfsd/nfs3xdr.c
+@@ -273,9 +273,11 @@ void fill_post_wcc(struct svc_fh *fhp)
+ 	err = vfs_getattr(fhp->fh_export->ex_path.mnt, fhp->fh_dentry,
+ 			&fhp->fh_post_attr);
+ 	fhp->fh_post_change = fhp->fh_dentry->d_inode->i_version;
+-	if (err)
++	if (err) {
+ 		fhp->fh_post_saved = 0;
+-	else
++		/* Grab the ctime anyway - set_change_info might use it */
++		fhp->fh_post_attr.ctime = fhp->fh_dentry->d_inode->i_ctime;
++	} else
+ 		fhp->fh_post_saved = 1;
  }
  
+--- a/include/linux/nfsd/xdr4.h
++++ b/include/linux/nfsd/xdr4.h
+@@ -480,18 +480,17 @@ static inline bool nfsd4_not_cached(stru
+ static inline void
+ set_change_info(struct nfsd4_change_info *cinfo, struct svc_fh *fhp)
+ {
+-	BUG_ON(!fhp->fh_pre_saved || !fhp->fh_post_saved);
+-	cinfo->atomic = 1;
++	BUG_ON(!fhp->fh_pre_saved);
++	cinfo->atomic = fhp->fh_post_saved;
+ 	cinfo->change_supported = IS_I_VERSION(fhp->fh_dentry->d_inode);
+-	if (cinfo->change_supported) {
+-		cinfo->before_change = fhp->fh_pre_change;
+-		cinfo->after_change = fhp->fh_post_change;
+-	} else {
+-		cinfo->before_ctime_sec = fhp->fh_pre_ctime.tv_sec;
+-		cinfo->before_ctime_nsec = fhp->fh_pre_ctime.tv_nsec;
+-		cinfo->after_ctime_sec = fhp->fh_post_attr.ctime.tv_sec;
+-		cinfo->after_ctime_nsec = fhp->fh_post_attr.ctime.tv_nsec;
+-	}
++
++	cinfo->before_change = fhp->fh_pre_change;
++	cinfo->after_change = fhp->fh_post_change;
++	cinfo->before_ctime_sec = fhp->fh_pre_ctime.tv_sec;
++	cinfo->before_ctime_nsec = fhp->fh_pre_ctime.tv_nsec;
++	cinfo->after_ctime_sec = fhp->fh_post_attr.ctime.tv_sec;
++	cinfo->after_ctime_nsec = fhp->fh_post_attr.ctime.tv_nsec;
++
+ }
+ 
+ int nfs4svc_encode_voidres(struct svc_rqst *, __be32 *, void *);
 
 
