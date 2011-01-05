@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752244Ab1AENVY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 08:21:24 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:45721 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752098Ab1AENVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 08:21:23 -0500
-Date: Wed, 5 Jan 2011 14:21:08 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Don Zickus <dzickus@redhat.com>
-Cc: akpm@linux-foundation.org, fweisbec@gmail.com,
+	id S1752289Ab1AEN0J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 08:26:09 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:34455 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751926Ab1AEN0I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 08:26:08 -0500
+Date: Wed, 5 Jan 2011 08:26:04 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Zhaolei <zhaolei@cn.fujitsu.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 1/2] panic:  ratelimit panic messages
-Message-ID: <20110105132108.GE10129@elte.hu>
-References: <1294198711-15492-1-git-send-email-dzickus@redhat.com>
- <1294198711-15492-2-git-send-email-dzickus@redhat.com>
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC patch 2/5] trace event skb fix unassigned field
+Message-ID: <20110105132604.GA31831@Krystal>
+References: <E1PaGZY-0001EI-BD@smtp.tuxdriver.com> <20110104235418.GD2911@nowhere> <20110105004038.GB9737@Krystal> <20110105004903.GF2911@nowhere> <20110105012123.GA10416@Krystal> <20110105115908.GA4434@hmsreliant.think-freely.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1294198711-15492-2-git-send-email-dzickus@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110105115908.GA4434@hmsreliant.think-freely.org>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 08:25:36 up 42 days, 18:28,  1 user,  load average: 0.00, 0.01,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Neil Horman (nhorman@tuxdriver.com) wrote:
+[...]
+> > trace event skb remove duplicate null-pointer check
+> > 
+> > The check for NULL skb in the kfree_skb trace event is a duplicate from the
+> > check already done in its only caller, kfree_skb(). Remove this duplicate check.
+> > 
+> > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> > CC: Steven Rostedt <rostedt@goodmis.org>
+> > CC: Frederic Weisbecker <fweisbec@gmail.com>
+> > CC: Ingo Molnar <mingo@elte.hu>
+> > CC: Thomas Gleixner <tglx@linutronix.de>
+> > CC: Neil Horman <nhorman@tuxdriver.com>
+> > ---
+> >  include/trace/events/skb.h |    4 +---
+> >  1 file changed, 1 insertion(+), 3 deletions(-)
+> > 
+> > Index: linux-2.6-lttng/include/trace/events/skb.h
+> > ===================================================================
+> > --- linux-2.6-lttng.orig/include/trace/events/skb.h
+> > +++ linux-2.6-lttng/include/trace/events/skb.h
+> > @@ -25,9 +25,7 @@ TRACE_EVENT(kfree_skb,
+> >  
+> >  	TP_fast_assign(
+> >  		__entry->skbaddr = skb;
+> > -		if (skb) {
+> > -			__entry->protocol = ntohs(skb->protocol);
+> > -		}
+> > +		__entry->protocol = ntohs(skb->protocol);
+> >  		__entry->location = location;
+> >  	),
+> >  
+> > 
+> > 
+> Acked-by: Neil Horman <nhorman@tuxdriver.com>
 
-* Don Zickus <dzickus@redhat.com> wrote:
+Thanks!
 
-> Sometimes when things go bad, so much spew is coming on the console it is hard
-> to figure out what happened.  This patch allows you to ratelimit the panic
-> messages with the intent that the first panic message will provide the info
-> we need to figure out what happened.
+Mathieu
+
 > 
-> Adds new kernel param 'panic_ratelimit=on/<integer in seconds>'
-> 
-> Signed-off-by: Don Zickus <dzickus@redhat.com>
-> ---
->  Documentation/kernel-parameters.txt |    6 ++++++
->  kernel/panic.c                      |   30 ++++++++++++++++++++++++++++++
->  2 files changed, 36 insertions(+), 0 deletions(-)
+> > -- 
+> > Mathieu Desnoyers
+> > Operating System Efficiency R&D Consultant
+> > EfficiOS Inc.
+> > http://www.efficios.com
+> > 
 
-Well, but it's not just panics that can occur repeatedly (in fact panics tend to 
-trigger once), but recursive/repeated oopses.
-
-So if we try to do some sort of 'show first crash, rate-limit afterwards' thing (i'm 
-still not 100% sure about the wiseness of it) then we should cover all common 
-occurances of system panics/crashes.
-
-btw., while printk-delay exists and can serve a similar purpose, it's pretty 
-cumbersome for panic ratelimit: it slows down bootups extremely, and it also slows 
-down regular, harmless printks.
-
-So having some sort of rate-limit for emitting crash screens may make sense, while 
-also preserving the oops counter or at least some other notification that we 'lost' 
-messages.
-
-	Ingo
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
