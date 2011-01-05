@@ -1,67 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374Ab1AETEz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 14:04:55 -0500
-Received: from 63.mail-out.ovh.net ([91.121.185.56]:50494 "HELO
-	63.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751353Ab1AETEy (ORCPT
+	id S1752543Ab1AETFm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 14:05:42 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33148 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751432Ab1AETFk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 14:04:54 -0500
-Date: Wed, 5 Jan 2011 19:59:17 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org, stable-review@kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [34-longterm 251/260] USB: atmel_usba_udc: force vbus_pin at
- -EINVAL when gpio_request failled
-Message-ID: <20110105185917.GI2965@game.jcrosoft.org>
-References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com>
- <1293952756-15010-252-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1293952756-15010-252-git-send-email-paul.gortmaker@windriver.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 13894167802447047668
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	Wed, 5 Jan 2011 14:05:40 -0500
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Marc Kleine-Budde <mkl@pengutronix.de>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 05 Jan 2011 13:05:36 -0600
+Message-ID: <1294254337.16957.13.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02:19 Sun 02 Jan     , Paul Gortmaker wrote:
-> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> 
-> commit 969affff54702785330de553b790372e261e93f9 upstream.
-> 
-> to ensure gpio_is_valid return false
-> 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> ---
->  drivers/usb/gadget/atmel_usba_udc.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
-> index 75a256f..8fd88e1 100644
-> --- a/drivers/usb/gadget/atmel_usba_udc.c
-> +++ b/drivers/usb/gadget/atmel_usba_udc.c
-> @@ -2015,6 +2015,9 @@ static int __init usba_udc_probe(struct platform_device *pdev)
->  			} else {
->  				disable_irq(gpio_to_irq(udc->vbus_pin));
->  			}
-> +		} else {
-> +			/* gpio_request fail so use -EINVAL for gpio_is_valid */
-> +			ubc->vbus_pin = -EINVAL;
-there is a typo here
-please change to 
-			udc->vbus_pin = -EINVAL;
+[sorry for the unthreaded insertion.  We're seeing this on parisc too]
 
-Best Regards,
-J.
+> On Wed, Jan 05, 2011 at 10:14:17AM -0500, Trond Myklebust wrote:
+> > OK. So,the new behaviour in 2.6.37 is that we're writing to a series of
+> > pages via the usual kmap_atomic()/kunmap_atomic() and kmap()/kunmap()
+> > interfaces, but we can end up reading them via a virtual address range
+> > that gets set up via vm_map_ram() (that range gets set up before the
+> > write occurs).
+> 
+> kmap of lowmem pages will always reuses the existing kernel direct
+> mapping, so there won't be a problem there.
+> 
+> > Do we perhaps need an invalidate_kernel_vmap_range() before we can read
+> > the data on ARM in this kind of scenario?
+> 
+> Firstly, vm_map_ram() does no cache maintainence of any sort, nor does
+> it take care of page colouring - so any architecture where cache aliasing
+> can occur will see this problem.  It should not limited to ARM.
+> 
+> Secondly, no, invalidate_kernel_vmap_range() probably isn't sufficient.
+> There's two problems here:
+> 
+> 	addr = kmap(lowmem_page);
+> 	*addr = stuff;
+> 	kunmap(lowmem_page);
+> 
+> Such lowmem pages are accessed through their kernel direct mapping.
+> 
+> 	ptr = vm_map_ram(lowmem_page);
+> 	read = *ptr;
+> 
+> This creates a new mapping which can alias with the kernel direct mapping.
+> Now, as this is a new mapping, there should be no cache lines associated
+> with it.  (Looking at vm_unmap_ram(), it calls free_unmap_vmap_area_addr(),
+> free_unmap_vmap_area(), which then calls flush_cache_vunmap() on the
+> region.  vb_free() also calls flush_cache_vunmap() too.)
+> 
+> If the write after kmap() hits an already present cache line, the cache
+> line will be updated, but it won't be written back to memory.  So, on
+> a subsequent vm_map_ram(), with any kind of aliasing cache, there's
+> no guarantee that you'll hit that cache line and read the data just
+> written there.
+> 
+> The kernel direct mapping would need to be flushed.
+> 
+> I'm really getting to the point of hating the poliferation of RAM
+> remapping interfaces - it's going to (and is) causing nothing but lots
+> of pain on virtual cache architectures, needing more and more cache
+> flushing interfaces to be created.
+> 
+> Is there any other solution to this?
+
+I think the solution for the kernel direct mapping problem is to take
+the expected flushes and invalidates into kmap/kunmap[_atomic].  I think
+the original reason for not doing this was efficiency:  the user should
+know what they did with the data (i.e. if they're only reading it, it
+doesn't need to be flushed on unmap).  However, the difficulty of
+getting all this right seems to outweigh the efficiency of only using
+the necessary flushing.  At least on some architectures, we can look at
+the TLB flags to see if the page was dirtied (and only flush if it was).
+
+James
+
+
