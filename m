@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348Ab1AEXGj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:06:39 -0500
-Received: from kroah.org ([198.145.64.141]:50802 "EHLO coco.kroah.org"
+	id S1753414Ab1AEXHu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:07:50 -0500
+Received: from kroah.org ([198.145.64.141]:50847 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751805Ab1AEXGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:06:33 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 15:03:25 2011
-Message-Id: <20110105230325.876302655@clark.site>
+	id S1751805Ab1AEXGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 18:06:40 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 15:03:26 2011
+Message-Id: <20110105230326.680530408@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 15:00:42 -0800
+Date: Wed, 05 Jan 2011 15:00:50 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Slava Pestov <slavapestov@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [24/49] tracing: Fix panic when lseek() called on "trace" opened for writing
+        Jiri Slaby <jslaby@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
+        Antonio Ospite <ospite@studenti.unina.it>
+Subject: [32/49] HID: hidraw: fix window in hidraw_release
 In-Reply-To: <20110105230438.GA26241@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,48 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Slava Pestov <slavapestov@google.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit 364829b1263b44aa60383824e4c1289d83d78ca7 upstream.
+commit cb174681a9ececa6702f114b85bdf82144b6a5af upstream.
 
-The file_ops struct for the "trace" special file defined llseek as seq_lseek().
-However, if the file was opened for writing only, seq_open() was not called,
-and the seek would dereference a null pointer, file->private_data.
+[ Backport to .32.y by Antonio Ospite <ospite@studenti.unina.it> ]
 
-This patch introduces a new wrapper for seq_lseek() which checks if the file
-descriptor is opened for reading first. If not, it does nothing.
+There is a window between hidraw_table check and its dereference.
+In that window, the device may be unplugged and removed form the
+system and we will then dereference NULL.
 
-Signed-off-by: Slava Pestov <slavapestov@google.com>
-LKML-Reference: <1290640396-24179-1-git-send-email-slavapestov@google.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Lock that place properly so that either we get NULL and jump out or we
+can work with real pointer.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/trace/trace.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/hid/hidraw.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2199,11 +2199,19 @@ tracing_write_stub(struct file *filp, co
- 	return count;
+--- a/drivers/hid/hidraw.c
++++ b/drivers/hid/hidraw.c
+@@ -211,11 +211,14 @@ static int hidraw_release(struct inode *
+ 	unsigned int minor = iminor(inode);
+ 	struct hidraw *dev;
+ 	struct hidraw_list *list = file->private_data;
++	int ret;
+ 
++	mutex_lock(&minors_lock);
+ 	if (!hidraw_table[minor]) {
+ 		printk(KERN_EMERG "hidraw device with minor %d doesn't exist\n",
+ 				minor);
+-		return -ENODEV;
++		ret = -ENODEV;
++		goto unlock;
+ 	}
+ 
+ 	list_del(&list->node);
+@@ -229,10 +232,12 @@ static int hidraw_release(struct inode *
+ 			kfree(list->hidraw);
+ 		}
+ 	}
+-
+ 	kfree(list);
++	ret = 0;
++unlock:
++	mutex_unlock(&minors_lock);
+ 
+-	return 0;
++	return ret;
  }
  
-+static loff_t tracing_seek(struct file *file, loff_t offset, int origin)
-+{
-+	if (file->f_mode & FMODE_READ)
-+		return seq_lseek(file, offset, origin);
-+	else
-+		return 0;
-+}
-+
- static const struct file_operations tracing_fops = {
- 	.open		= tracing_open,
- 	.read		= seq_read,
- 	.write		= tracing_write_stub,
--	.llseek		= seq_lseek,
-+	.llseek		= tracing_seek,
- 	.release	= tracing_release,
- };
- 
+ static long hidraw_ioctl(struct file *file, unsigned int cmd,
 
 
