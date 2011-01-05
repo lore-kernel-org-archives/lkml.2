@@ -1,268 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827Ab1AEXvs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:51:48 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:34432 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753569Ab1AEXvp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:51:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=k9kZhkkmE+k0+Dw81TPIlF62u+Ovs4w1IDg/TmJkHQrtxFcHa6cjDTpNoSoMFG3WV6
-         wcRXbY15cSxPWw1/MelclFsUgHaHcDxp2fmH9c4IJRtjJAKhYSgFAYK1FeTQ4N1RGLX3
-         SMRXUFcyTSlALSOq8xMh+wa8il3oVIIQWrRW4=
+	id S1753569Ab1AEXyG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:54:06 -0500
+Received: from kroah.org ([198.145.64.141]:40862 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753275Ab1AEXov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 18:44:51 -0500
+Date: Wed, 5 Jan 2011 15:44:15 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [00/49] 2.6.32.28-longterm review (try 2)
+Message-ID: <20110105234415.GA22369@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <4D24B27F.3020104@gmail.com>
-References: <4D24B27F.3020104@gmail.com>
-Date: Wed, 5 Jan 2011 18:51:44 -0500
-Message-ID: <AANLkTi=E0hkTUSd-rXWh5tkct0wwYX_75E-oaSWaa2bn@mail.gmail.com>
-Subject: Re: [RFC v2 PATCH] m68knommu: added dm9000 support
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Angelo Dureghello <angelo70@gmail.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Randy Dunlap <randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+[sorry for the duplicate, the first round was incorrect, this is the
+right one.  The patch on kernel.org is correct, the mails were not.]
 
-[disclamer: I have no power whatsoever on the dm9k driver, and the
-only dm9000 chip I've access to belongs to hardware whose parent
-company is now defunct.]
+This is the start of the longterm review cycle for the 2.6.32.28
+release.  There are 49 patches in this series, all will be posted as a
+response to this one.  If anyone has any issues with these being
+applied, please let us know.  If anyone is a maintainer of the proper
+subsystem, and wants to add a Signed-off-by: line to the patch, please
+respond with it.
 
-Btw, Linux 68k folks is missing from the CC list.
+Responses should be made by Friday, January 7, 2011, 22:00:00 UTC.
+Anything received after that time might be too late.
 
-On Wed, Jan 5, 2011 at 1:03 PM, Angelo Dureghello <angelo70@gmail.com> wrote:
-> This patch allows to use the dm9000 network chip with a m68knommu
-> big-endian cpu. From the HW point of view,
-what hardware ?
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.28-rc1.gz
+and the diffstat can be found below.
 
-> the cpu data bus connected to
-> the dm9000 chip should be hardware-byte-swapped, crossing the bytes
-> wires (D0:7 to D24:31, etc.). In anyway, has been also added an option
-> to swap the bytes in the driver, if some cpu has been wired straight
-> D0:D31 to dm9000.
->
-> Signed-off-by: Angelo Dureghello <angelo70@gmail.com>
-> ---
->
-> --- linux/drivers/net/Kconfig.orig      2011-01-05 17:11:37.992376124 +0100
-> +++ linux/drivers/net/Kconfig   2011-01-04 22:33:14.132301872 +0100
-> @@ -960,7 +960,7 @@ config TI_DAVINCI_EMAC
->
->  config DM9000
->        tristate "DM9000 support"
-> -       depends on ARM || BLACKFIN || MIPS
-> +       depends on COLDFIRE || ARM || BLACKFIN || MIPS
->        select CRC32
->        select MII
->        ---help---
-> @@ -986,6 +986,14 @@ config DM9000_FORCE_SIMPLE_PHY_POLL
->          costly MII PHY reads. Note, this will not work if the chip is
->          operating with an external PHY.
->
-> +config DM9000_32BIT_SW_SWAP
-> +       bool "Software byte swap for 32 bit data bus"
-> +       depends on DM9000 && COLDFIRE
-> +       ---help---
-> +         This configuration allows to swap data bytes from the dm9000
-> +         driver itself, when the big endian cpu is wired straight to
-> +         the dm9000 32 bit data bus.
-> +
-I'm not sure COLDFIRE is the best dependency. AFAICS, it should
-depends on endianness, and potentially board specific settings.
+thanks,
 
->  config ENC28J60
->        tristate "ENC28J60 support"
->        depends on EXPERIMENTAL && SPI && NET_ETHERNET
-> @@ -3347,4 +3355,3 @@ config VMXNET3
->          module will be called vmxnet3.
->
->  endif # NETDEVICES
-> -
->
-useless whitespace change ...
+greg k-h
 
-> --- linux/drivers/net/dm9000.c.orig     2010-12-30 23:19:39.747836070 +0100
-> +++ linux/drivers/net/dm9000.c  2011-01-05 16:30:48.636116500 +0100
-> [...]
-> @@ -981,7 +1032,11 @@ dm9000_rx(struct net_device *dev)
->                ior(db, DM9000_MRCMDX); /* Dummy read */
->
->                /* Get most updated data */
-> -               rxbyte = readb(db->io_data);
-> +#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-> +      rxbyte = (u8)readl(db->io_data);
-> +#else
-> +      rxbyte = readb(db->io_data);
-> +#endif
->
->                /* Status check: this byte must be 0 or 1 */
->                if (rxbyte & DM9000_PKT_ERR) {
-> @@ -996,8 +1051,13 @@ dm9000_rx(struct net_device *dev)
->
->                /* A packet ready now  & Get status/length */
->                GoodPacket = true;
-> -               writeb(DM9000_MRCMD, db->io_addr);
->
-> +#ifdef CONFIG_DM9000_32BIT_SW_SWAP
-> +               writel(DM9000_MRCMD, db->io_addr);
-> +#else
-> +      writeb(DM9000_MRCMD, db->io_addr);
-> +#endif
-> +
-All these #ifdef make the driver quite horrible to read.
-
->                (db->inblk)(db->io_data, &rxhdr, sizeof(rxhdr));
->
->                RxLen = le16_to_cpu(rxhdr.RxLen);
-> @@ -1077,7 +1137,7 @@ static irqreturn_t dm9000_interrupt(int
->        unsigned long flags;
->        u8 reg_save;
->
-> -       dm9000_dbg(db, 3, "entering %s\n", __func__);
-> +       //dm9000_dbg(db, 3, "entering %s\n", __func__);
->
-C++ comment ... Why do you comment this ?
-
->        /* Disable all interrupts */
->        iow(db, DM9000_IMR, IMR_PAR);
-> @@ -1100,7 +1164,7 @@ static irqreturn_t dm9000_interrupt(int
->        /* Received the coming packet */
->        if (int_status & ISR_PRS)
->                dm9000_rx(dev);
-> -
-> +
-whitespace ...
-
-> @@ -1233,11 +1301,15 @@ dm9000_phy_read(struct net_device *dev,
->        int ret;
->
->        mutex_lock(&db->addr_lock);
-> -
-> +
-whitespace ...
-
-> @@ -1713,4 +1811,3 @@ MODULE_AUTHOR("Sascha Hauer, Ben Dooks")
->  MODULE_DESCRIPTION("Davicom DM9000 network driver");
->  MODULE_LICENSE("GPL");
->  MODULE_ALIAS("platform:dm9000");
-> -
-whitespace ...
-
-> --- linux/arch/m68k/include/asm/io_no.h.orig    2011-01-05 16:53:55.904905038 +0100
-> +++ linux/arch/m68k/include/asm/io_no.h 2011-01-04 23:45:08.893049554 +0100
-> @@ -47,6 +47,91 @@ static inline unsigned int _swapl(volati
->  #define writew(b,addr) (void)((*(volatile unsigned short *) (addr)) = (b))
->  #define writel(b,addr) (void)((*(volatile unsigned int *) (addr)) = (b))
->
-> +static inline void writesb (void __iomem *reg, void *data, int count)
-> +{
-> +       unsigned char *p = (unsigned char*) data;
-> +
-> +       while (count--) writeb(*p++, reg);
-> +}
-> +
-> +static inline void writesbsw (void __iomem *reg, void *data, int count)
-> +{
-> +       unsigned char *p = (unsigned char *) data;
-> +
-> +       while (count--) writel((int)(*p++), reg);
-> +}
-> +
-> +static inline void writesw (void __iomem *reg, void *data, int count)
-> +{
-> +   unsigned short *p = (unsigned short*) data;
-> +
-> +   while (count--) writew(*p++, reg);
-> +}
-> +
-> +static inline void writeswsw (void __iomem *reg, void *data, int count)
-> +{
-> +   unsigned short *p = (unsigned short *) data;
-> +
-> +   while (count--) writel((int)(_swapw(*p++)), reg);
-> +}
-> +
-> +static inline void writesl (void __iomem *reg, void *data, int count)
-> +{
-> +   unsigned long *p = (unsigned long*) data;
-> +
-> +   while (count--) writel(*p++, reg);
-> +}
-> +
-> +static inline void writeslsw (void __iomem *reg, void *data, int count)
-> +{
-> +   unsigned long *p = (unsigned long *) data;
-> +
-> +   while (count--) writel((int)(_swapl(*p++)), reg);
-> +}
-> +
-> +static inline void readsb (void __iomem *reg, void *data, int count)
-> +{
-> +   unsigned char *p = (unsigned char *) data;
-> +
-> +   while (count--) *p++ = readb(reg);
-> +}
-> +
-> +static inline void readsbsw (void __iomem *reg, void *data, int count)
-> +{
-> +   unsigned char *p = (unsigned char *) data;
-> +
-> +   while (count--) *p++ = (unsigned char)readl(reg);
-> +}
-> +
-> +static inline void readsw (void __iomem *reg, void *data, int count)
-> +{
-> +   unsigned short *p = (unsigned short *) data;
-> +
-> +   while (count--) *p++ = readb(reg);
-> +}
-> +
-> +static inline void readswsw (void __iomem *reg, void *data, int count)
-> +{
-> +   unsigned short *p = (unsigned short *) data;
-> +
-> +   while (count--) *p++ = _swapw((unsigned short)readw(reg));
-> +}
-> +
-> +static inline void readsl (void __iomem *reg, void *data, int count)
-> +{
-> +   unsigned long *p = (unsigned long *) data;
-> +
-> +   while (count--) *p++ = readb(reg);
-> +}
-> +
-> +static inline void readslsw (void __iomem *reg, void *data, int count)
-> +{
-> +   unsigned long *p = (unsigned long *) data;
-> +
-> +   while (count--) *p++ = _swapl(readl(reg));
-> +}
-> +
-> +
->  #define __raw_readb readb
->  #define __raw_readw readw
->  #define __raw_readl readl
-> @@ -180,4 +265,3 @@ extern void iounmap(void *addr);
->  #endif /* __KERNEL__ */
->
->  #endif /* _M68KNOMMU_IO_H */
-Could not this be moved to a separate patch ? That way arch specific
-changes are separated from the network arch-indep changes.
-
- - Arnaud
-
-> -
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+ Makefile                             |    2 +-
+ arch/x86/include/asm/processor.h     |   23 --------
+ arch/x86/kernel/apic/apic.c          |    8 +++
+ arch/x86/kernel/apic/io_apic.c       |    1 +
+ arch/x86/kernel/apic/probe_64.c      |    7 --
+ arch/x86/kernel/cpu/amd.c            |    3 +-
+ arch/x86/kernel/smpboot.c            |   85 ++++++++++++++++++++++++++++-
+ arch/x86/vdso/Makefile               |    4 +-
+ block/blk-merge.c                    |    6 +-
+ block/blk-settings.c                 |   24 +-------
+ drivers/acpi/acpica/dswexec.c        |   19 ++++++-
+ drivers/acpi/ec.c                    |    3 +
+ drivers/char/hvc_console.c           |   27 ++++++---
+ drivers/char/tty_ldisc.c             |    1 +
+ drivers/dma/mv_xor.c                 |    2 +-
+ drivers/edac/amd64_edac.c            |    2 +-
+ drivers/gpu/drm/drm_crtc.c           |    8 +-
+ drivers/hid/hidraw.c                 |   11 +++-
+ drivers/hwmon/adm1026.c              |   20 +++---
+ drivers/infiniband/core/uverbs_cmd.c |  101 +++++++++++++++++++---------------
+ drivers/md/dm-table.c                |    5 --
+ drivers/md/md.c                      |   10 ++--
+ drivers/net/igb/igb_main.c           |    2 +-
+ drivers/net/wireless/orinoco/main.c  |    6 ++
+ drivers/net/wireless/orinoco/wext.c  |    4 +-
+ drivers/net/wireless/p54/p54usb.c    |    6 ++
+ drivers/pci/dmar.c                   |    5 ++
+ drivers/pci/quirks.c                 |   23 ++++++++
+ drivers/scsi/bfa/bfa_core.c          |   22 +++++++
+ drivers/scsi/scsi_lib.c              |    3 +-
+ drivers/usb/misc/uss720.c            |    4 +-
+ drivers/usb/serial/ftdi_sio.c        |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h    |    5 ++
+ drivers/usb/storage/unusual_devs.h   |    7 ++
+ fs/exec.c                            |    5 ++
+ fs/fuse/file.c                       |   72 ++++++++++++++++++++++--
+ fs/nfs/file.c                        |    2 +
+ fs/nfs/mount_clnt.c                  |    4 +-
+ fs/nfsd/nfs3xdr.c                    |    6 +-
+ include/linux/blkdev.h               |    9 ++-
+ include/linux/nfsd/xdr4.h            |   21 +++----
+ include/net/sctp/sm.h                |    1 +
+ include/net/sctp/structs.h           |    3 +
+ kernel/exit.c                        |    8 +++
+ kernel/power/user.c                  |    2 +-
+ kernel/printk.c                      |    2 +
+ kernel/timer.c                       |    6 ++
+ kernel/trace/trace.c                 |   10 +++-
+ mm/mmap.c                            |   16 ++++-
+ net/core/dev.c                       |    8 +++
+ net/sctp/input.c                     |   22 ++++++-
+ net/sctp/sm_sideeffect.c             |   35 ++++++++++++
+ net/sctp/transport.c                 |    2 +
+ net/sunrpc/svc_xprt.c                |    9 +++-
+ security/integrity/ima/ima_policy.c  |    2 +
+ sound/oss/soundcard.c                |    4 +-
+ sound/pci/hda/hda_intel.c            |    2 +
+ sound/pci/hda/patch_realtek.c        |    1 +
+ 58 files changed, 523 insertions(+), 189 deletions(-)
