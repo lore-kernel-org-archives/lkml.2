@@ -1,63 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974Ab1AEKIa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 05:08:30 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:49376 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751948Ab1AEKI2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 05:08:28 -0500
-Message-ID: <4D24431F.2030205@cn.fujitsu.com>
-Date: Wed, 05 Jan 2011 18:08:31 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1751984Ab1AEKJj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 05:09:39 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:64118 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426Ab1AEKJh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 05:09:37 -0500
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/3] KVM: make make_all_cpus_request() lockless
-References: <4D243B95.3070203@cn.fujitsu.com> <4D243C7B.8060205@cn.fujitsu.com> <4D243FEF.6090105@redhat.com>
-In-Reply-To: <4D243FEF.6090105@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-01-05 18:08:08,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-01-05 18:08:09,
-	Serialize complete at 2011-01-05 18:08:09
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+X-Originating-IP: [81.245.174.26]
+In-Reply-To: <201101050001.23979.rjw@sisk.pl>
+References: <1294136263-24020-1-git-send-email-j-pihet@ti.com>
+	<20110104112919.GB9879@atrey.karlin.mff.cuni.cz>
+	<AANLkTim_ekCNw6xhC_MGY7=gfXUCfinXkLeXtttpHaGc@mail.gmail.com>
+	<201101050001.23979.rjw@sisk.pl>
+Date: Wed, 5 Jan 2011 11:09:35 +0100
+Message-ID: <AANLkTimRvZs2QBZ4y+AEO7CWUudwBSM6-K0ZQxFTF+Fm@mail.gmail.com>
+Subject: Re: [PATCH 1/3] perf: add calls to suspend trace point
+From: Jean Pihet <jean.pihet@newoldbits.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Pavel Machek <pavel@ucw.cz>, mingo@elte.hu, trenn@suse.de,
+        Len Brown <len.brown@intel.com>, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        linux-perf-users@vger.kernel.org, Jean Pihet <j-pihet@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2011 05:54 PM, Avi Kivity wrote:
+On Wed, Jan 5, 2011 at 12:01 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Tuesday, January 04, 2011, Jean Pihet wrote:
+>> Hi,
+>>
+>> On Tue, Jan 4, 2011 at 12:29 PM, Pavel Machek <pavel@ucw.cz> wrote:
+>> > Hi!
+>> >
+>> >> Uses the machine_suspend trace point, called from the
+>> >> generic kernel suspend_enter function.
+>> >>
+>> >> Signed-off-by: Jean Pihet <j-pihet@ti.com>
+>> >> CC: Thomas Renninger <trenn@suse.de>
+>> >> ---
+>> >>  kernel/power/suspend.c |    3 +++
+>> >>  1 files changed, 3 insertions(+), 0 deletions(-)
+>> >>
+>> >> diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+>> >> index ecf7705..0650596 100644
+>> >> --- a/kernel/power/suspend.c
+>> >> +++ b/kernel/power/suspend.c
+>> >> @@ -22,6 +22,7 @@
+>> >>  #include <linux/mm.h>
+>> >>  #include <linux/slab.h>
+>> >>  #include <linux/suspend.h>
+>> >> +#include <trace/events/power.h>
+>> >>
+>> >>  #include "power.h"
+>> >>
+>> >> @@ -164,7 +165,9 @@ static int suspend_enter(suspend_state_t state)
+>> >>       error = sysdev_suspend(PMSG_SUSPEND);
+>> >>       if (!error) {
+>> >>               if (!suspend_test(TEST_CORE) && pm_check_wakeup_events()) {
+>> >> +                     trace_machine_suspend(state);
+>> >>                       error = suspend_ops->enter(state);
+>> >> +                     trace_machine_suspend(PWR_EVENT_EXIT);
+>> >>                       events_check_enabled = false;
+>> >>               }
+>> >>               sysdev_resume();
+>> >
+>> > Ok... why this place?
+>> This trace has been placed here because it traces the machine low
+>> level mode enter.
+>>
+>> > I mean, perhaps suspend time should include
+>> > device suspend?
+>> That makes sense. We have a few options here:
+>> 1) keep the traces as proposed to trace the low level machine code only,
+>> 2) move the traces to the entry and exit of suspend_enter so that it
+>> includes the prepare and late_prepare (+ the associated wake-up)
+>> callbacks as well,
+>> 3) move the traces to suspend_devices_and_enter so that it includes 2)
+>> and the handling of the console and the devices,
+>> 4) move the traces to enter_state do that it includes 3), the call to
+>> sys_sync and the user space freeze.
+>>
+>> Note that the the SNAPSHOT_2RAM ioctl code also calls
+>> suspend_devices_and_enter, so if only 4) is used no trace will be
+>> generated in that case.
+>>
+>> I am in favor of 3) of 4).
+>> What do you think?
+>
+> Why don't we keep the tracepoints as proposed _and_ add two additional
+> tracepoints around device suspend-resume?
+I like the idea but that requires to extend the current API with
+additional suspend tracepoints or device state change tracepoints.
+That can be done once the current API is firmly in place.
+Today the only trace API for suspend is machine_suspend(unsigned int
+state), so I think the best option is 3) here above.
 
->> +        kvm_make_request(req, vcpu);
->>           cpu = vcpu->cpu;
->>           if (cpus != NULL&&  cpu != -1&&  cpu != me&&
->>           atomic_read(&vcpu->guest_mode))
->> @@ -163,7 +161,7 @@ static bool make_all_cpus_request(struct kvm *kvm, unsigned int req)
->>           smp_call_function_many(cpus, ack_flush, NULL, 1);
->>       else
->>           called = false;
->> -    raw_spin_unlock(&kvm->requests_lock);
->> +    put_cpu();
->>       free_cpumask_var(cpus);
->>       return called;
->>   }
-> 
-> Maybe we can drop 'cpu != me' and then we don't need to disable preemption?
-> 
+Unless there is an objection I am pushing 3) asap.
 
-Preemption should be disabled in the caller site of smp_call_function_many():
+Thanks!
+Jean
 
-......
-
- * You must not call this function with disabled interrupts or from a
- * hardware interrupt handler or from a bottom half handler. Preemption
- * must be disabled when calling this function.
- */
-void smp_call_function_many(const struct cpumask *mask,
-			    smp_call_func_t func, void *info, bool wait)
-{
-
-......
-
+>
+> Rafael
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
