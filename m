@@ -1,117 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212Ab1AEXkb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:40:31 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:32975 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753077Ab1AEXk3 (ORCPT
+	id S1753263Ab1AEXkp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:40:45 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:35988 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753222Ab1AEXko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:40:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ITrq9eaKvHCeAJBRnKRbVxibuVKCjMpxnsZkCyCosltlWZsMsvNbd7a95Rt7b8hRnw
-         mWEL4IY6SvF46POqcbiabQ7EMYIraYAtCzOEnkpZz+VKf9dHTMnVqmlOP4GIqi+ea1XK
-         vUoFSejgQ6yp8/RDzSfe2GBg2x+offCYB+TXA=
-Date: Thu, 6 Jan 2011 00:40:25 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC patch 3/5] ftrace trace event add missing semicolumn
-Message-ID: <20110105234021.GC1692@nowhere>
-References: <20110104231629.996422888@efficios.com>
- <20110104232419.441463699@efficios.com>
- <20110105000005.GE2911@nowhere>
- <20110105001837.GA9737@Krystal>
- <20110105020759.GG2911@nowhere>
- <20110105023541.GA12950@Krystal>
- <20110105025848.GH2911@nowhere>
- <20110105135242.GC31831@Krystal>
- <20110105150245.GA1692@nowhere>
- <20110105195612.GA9709@Krystal>
+	Wed, 5 Jan 2011 18:40:44 -0500
+Date: Wed, 5 Jan 2011 18:40:41 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: ltt-dev@lists.casi.polymtl.ca
+Cc: linux-kernel@vger.kernel.org
+Subject: [RELEASE/STATUS] LTTng 0.240 for kernel 2.6.36.2
+Message-ID: <20110105234041.GA11813@Krystal>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110105195612.GA9709@Krystal>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 18:10:15 up 43 days,  4:13,  2 users,  load average: 0.07, 0.03,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 05, 2011 at 02:56:12PM -0500, Mathieu Desnoyers wrote:
-> * Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> [...]
-> > Looks good!
-> > 
-> > I might be missing corner things but it seems this would reduce the code
-> > footprint (one function less) and turn more rw into ro datas.
-> > 
-> > So it seems to be a very valuable reason to change the semicolon requirement
-> > all over the place.
-> > 
-> > If you come up with this feature along the massive semicolon requirement
-> > change, we will probably happily apply the whole.
-> > 
-> > But coming with only the semicolon change is more like an empty shell.
-> 
-> My proposal here is to incrementally improve the tracing code, starting by
-> cleaning up what is already there. I cannot do this if you keep asking me for
-> larger changes to both Ftrace and Perf before any of the prerequisite cleanups
-> can make their way in.
-> 
-> In this thread, I demonstrated that the TRACE_EVENT cleanup I proposed opens a
-> lot of code/data size reduction cleanups for Ftrace and Perf. But let's get the
-> cleanup in there first (it does not break the current way Ftrace and Perf are
-> working), and once all the code-base has moved to the semicolumn-less semantic,
-> then we can start improving Ftrace and Perf.
+LTTng, the Linux Trace Toolkit Next Generation, is a project that aims at
+producing a highly efficient full system tracing solution.  It is composed of
+several components to allow tracing of the kernel, of userspace, trace viewing
+and analysis and trace streaming.  LTTng is open source software. It is being
+actively developed with the community.
 
-Don't be suprised of my reaction. The way the things were presented was:
+Changelog:
+- Implement a user-space trace clock into a new clock_gettime() clock id.
+  (will be used by the next UST release). It will provide consistent timestamps
+  between userspace and kernel traces taken on a LTTng-enabled Linux kernel.
+- Moved to stable kernel 2.6.36.2 (last LTTng release targeting 2.6.36.x,
+  moving on to 2.6.37 shortly)
 
-1) A patch with an meaningless changelog, absolutely no idea why that new
-semicolon is useful for.
+Project Status:
+- I am currently working on a LTTng redesign to better suit the need of Linux
+  distributions. The kernel-side work is very well advanced, and I'm now moving
+  on to the following steps: redesign lttd/lttctl/ltt-armall with a more
+  integrated approach (lttngtrace), and move LTTV to the new CTF (Common Trace
+  Format). I am keeping this redesign separate from the "stable" LTTng versions
+  for now, as it removes some of the LTTng-specific instrumentation to bring the
+  size of the patchset down to something more appealing to distributions.
+  The ongoing redesign is available in the lttng-modules git tree HEAD, but
+  depends on a reduced kernel tree LTTng patchset that I have not yet released.
 
-2) Me asking you why
+Project website: http://lttng.org
+Download link: http://lttng.org/content/download
+(please refer to the LTTng Manual for installation instructions)
 
-3) You explaining me it's actually part of a much bigger cleanup for
-a goal almost completely useless
-
-4) Me has a hard time considering the big cleanup useful as is. Expressing
-my worries.
-
-5) You detailing much more the semicolon symptoms, and finally dropping an
-evasive reason to do this cleanup, collapsed in the obsure notion of "arrays
-of event"..
-
-6) Me still puzzled by the big cleanup just for the sake of unnoticeable
-files.i pollution cleanup. But I try to give some chance by asking to
-expand the "arrays of event" idea.
-
-7) You explaining me something that looks like a meaningful, useful reason for
-the big cleanup, but as a possibility. You propose me that I reuse the Lttng code that
-you pick as an example, not suggesting you're planing to handle that part.
-
-8) Me: ok for the big cleanup then, if you plan to also handle the useful change
-you detailed, because otherwise it's meaningless.
-
-See? That meaningful reason came so late in the discussion, and was proposed
-so much under the angle of the possibility rather than something you plan
-that I just thought you would just drop that empty shell and run away.
-
-Hence my worries.
-
-But if you plan to do the thing incrementally, this is also perfectly ok.
-
-And you know what, may be you won't eventually have the time to complete
-with the useful part. And may be someone else will handle that part.
-Whatever, it's ok. We don't always finish everything.
-But at least fill your changelogs with the useful longterm goal so that we
-know we are going somewhere with this.
-
-
-> As we say in French, "il ne faut pas mettre la charrue devant les boeufs"
-> (roughly: don't put the cart before the horse)
-
-As we say in French, "oui mais il a fallu te tirer les vers du nez"
-(roughly: right, but still I had to worm it out of you)
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
