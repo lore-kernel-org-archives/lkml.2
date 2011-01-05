@@ -1,177 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751384Ab1AEAkj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 19:40:39 -0500
-Received: from ns2.cypress.com ([157.95.67.5]:47411 "EHLO ns2.cypress.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750875Ab1AEAkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 19:40:37 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1751456Ab1AEAkn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 19:40:43 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:56673 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750957Ab1AEAkl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 19:40:41 -0500
+Date: Tue, 4 Jan 2011 19:40:38 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>, Zhaolei <zhaolei@cn.fujitsu.com>
+Cc: "nhorman@tuxdriver.com" <nhorman@tuxdriver.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC patch 2/5] trace event skb fix unassigned field
+Message-ID: <20110105004038.GB9737@Krystal>
+References: <E1PaGZY-0001EI-BD@smtp.tuxdriver.com> <20110104235418.GD2911@nowhere>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Subject: RE: [v3 1/3] 1/3 Touchscreen: Cypress TTSP G3 MTDEV Core Driver
-Date: Tue, 4 Jan 2011 16:38:31 -0800
-Message-ID: <FB9C2CB29A07AB45B575A4E8D2AABC09014002D6@labamba.mis.cypress.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [v3 1/3] 1/3 Touchscreen: Cypress TTSP G3 MTDEV Core Driver
-Thread-Index: AcursU6e2be7y6FgSGmrrlqq9MFwEAAv3dYw
-References: <Kevin McNeely <kev@cypress.com> <1293650268-1561-1-git-send-email-kev@cypress.com> <1294105814.2570.17.camel@hongdev>
-From: "Kevin McNeely" <Kevin.McNeely@cypress.com>
-To: "Hong Liu" <hong.liu@intel.com>
-Cc: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
-        "David Brown" <davidb@codeaurora.org>,
-        "Trilok Soni" <tsoni@codeaurora.org>,
-        "Henrik Rydberg" <rydberg@euromail.se>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        "Eric Miao" <eric.y.miao@gmail.com>,
-        "Mike Frysinger" <vapier@gentoo.org>,
-        "Alan Cox" <alan@linux.intel.com>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 05 Jan 2011 00:39:32.0063 (UTC) FILETIME=[04B7D6F0:01CBAC71]
-X-Brightmail-Tracker: AAAAAA==
-X-MailScanner: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110104235418.GD2911@nowhere>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 19:37:33 up 42 days,  5:40,  5 users,  load average: 0.07, 0.02,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p050esGA014448
 
-Hello Hong,
-
-The uninitialized use of ts->dev will be fixed in v4.
-
-Thank you,
-Kevin
-
-
-> -----Original Message-----
-> From: Hong Liu [mailto:hong.liu@intel.com]
-> Sent: Monday, January 03, 2011 5:50 PM
-> To: Kevin McNeely
-> Cc: Dmitry Torokhov; David Brown; Trilok Soni; Henrik Rydberg; Samuel
-> Ortiz; Eric Miao; Mike Frysinger; Alan Cox; linux-
-> input@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [v3 1/3] 1/3 Touchscreen: Cypress TTSP G3 MTDEV Core
-> Driver
+* Frederic Weisbecker (fweisbec@gmail.com) wrote:
+> On Tue, Jan 04, 2011 at 06:46:06PM -0500, nhorman@tuxdriver.com wrote:
+> > Acked- by: Neil Horman <nhorman@tuxdriver.com>
+> > 
+> > 
+> > Sent from my Verizon Wireless Phone
+> > 
+> > ----- Reply message -----
+> > From: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> > Date: Tue, Jan 4, 2011 6:16 pm
+> > Subject: [RFC patch 2/5] trace event skb fix unassigned field
+> > To: "LKML" <linux-kernel@vger.kernel.org>
+> > Cc: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>, "Steven Rostedt" <rostedt@goodmis.org>, "Frederic Weisbecker" <fweisbec@gmail.com>, "Ingo Molnar" <mingo@elte.hu>, "Neil Horman" <nhorman@tuxdriver.com>, "Thomas Gleixner" <tglx@linutronix.de>
+> > 
+> > 
+> > The field "protocol" in event kfree_skb is left unassigned if skb is NULL,
+> > leaving its trace output as garbage. Assign the value to 0 when skb is NULL
+> > instead.
 > 
-> On Thu, 2010-12-30 at 03:17 +0800, Kevin McNeely wrote:
-> [...]
+> Hm, if the skb is already null, we probably shouldn't send any trace.
 > 
-> > +
-> > +void *cyttsp_core_init(struct cyttsp_bus_ops *bus_ops, struct device
-> *dev)
-> > +{
-> > +       struct input_dev *input_device;
-> > +
-> > +       struct cyttsp *ts = kzalloc(sizeof(*ts), GFP_KERNEL);
-> > +
-> > +       if (!ts) {
-> > +               dev_dbg(ts->dev, "%s: Error, kzalloc\n", __func__);
-> > +               goto error_alloc_data;
-> > +       }
-> 
-> ts->dev is not assigned yet.
-> 
-> Thanks,
-> Hong
-> 
-> > +
-> > +       if (dev == NULL || bus_ops == NULL) {
-> > +               kfree(ts);
-> > +               goto error_alloc_data;
-> > +       }
-> > +
-> > +       mutex_init(&ts->mutex);
-> > +       ts->dev = dev;
-> > +       ts->platform_data = dev->platform_data;
-> > +       ts->bus_ops = bus_ops;
-> > +       init_completion(&ts->bl_ready);
-> > +
-> > +       if (ts->platform_data->init) {
-> > +               if (ts->platform_data->init()) {
-> > +                       dev_dbg(ts->dev, "%s: Error, platform init
-> failed!\n",
-> > +                               __func__);
-> > +                       goto error_init;
-> > +               }
-> > +       }
-> > +
-> > +       ts->irq = gpio_to_irq(ts->platform_data->irq_gpio);
-> > +       if (ts->irq <= 0) {
-> > +               dev_dbg(ts->dev, "%s: Error, failed to allocate
-> irq\n",
-> > +                       __func__);
-> > +                       goto error_init;
-> > +       }
-> > +
-> > +       /* Create the input device and register it. */
-> > +       input_device = input_allocate_device();
-> > +       if (!input_device) {
-> > +               dev_dbg(ts->dev, "%s: Error, failed to allocate input
-> device\n",
-> > +                       __func__);
-> > +               goto error_input_allocate_device;
-> > +       }
-> > +
-> > +       ts->input = input_device;
-> > +       input_device->name = ts->platform_data->name;
-> > +       snprintf(ts->phys, sizeof(ts->phys), "%s", dev_name(dev));
-> > +       input_device->phys = ts->phys;
-> > +       input_device->dev.parent = ts->dev;
-> > +       ts->bus_type = bus_ops->dev->bus;
-> > +       input_device->open = cyttsp_open;
-> > +       input_device->close = cyttsp_close;
-> > +       input_set_drvdata(input_device, ts);
-> > +
-> > +       __set_bit(EV_SYN, input_device->evbit);
-> > +       __set_bit(EV_KEY, input_device->evbit);
-> > +       __set_bit(EV_ABS, input_device->evbit);
-> > +
-> > +       input_set_abs_params(input_device, ABS_MT_POSITION_X,
-> > +               0, ts->platform_data->maxx, 0, 0);
-> > +       input_set_abs_params(input_device, ABS_MT_POSITION_Y,
-> > +               0, ts->platform_data->maxy, 0, 0);
-> > +       input_set_abs_params(input_device, ABS_MT_TOUCH_MAJOR,
-> > +               0, CY_MAXZ, 0, 0);
-> > +
-> > +       if (input_register_device(input_device)) {
-> > +               dev_dbg(ts->dev, "%s: Error, failed to register input
-> device\n",
-> > +                       __func__);
-> > +               goto error_input_register_device;
-> > +       }
-> > +
-> > +       goto no_error;
-> > +
-> > +error_input_register_device:
-> > +       input_unregister_device(input_device);
-> > +error_input_allocate_device:
-> > +       if (ts->platform_data->exit)
-> > +               ts->platform_data->exit();
-> > +error_init:
-> > +       mutex_destroy(&ts->mutex);
-> > +       kfree(ts);
-> > +error_alloc_data:
-> > +no_error:
-> > +       return ts;
-> > +}
-> > +EXPORT_SYMBOL_GPL(cyttsp_core_init);
-> > +
-> > +MODULE_LICENSE("GPL");
-> > +MODULE_DESCRIPTION("Cypress TrueTouch(R) Standard touchscreen driver
-> core");
-> > +MODULE_AUTHOR("Cypress");
-> 
+> What about using TP_CONDITION() ?
 
+Hrm, let's see. It's been introduced by commit
+5cb3d1d9d34ac04bcaa2034139345b2a5fea54c1
+by Zhaolei.
 
----------------------------------------------------------------
-This message and any attachments may contain Cypress (or its
-subsidiaries) confidential information. If it has been received
-in error, please advise the sender and immediately delete this
-message.
----------------------------------------------------------------
+Event at the time of that commit, the only caller looked like:
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+void kfree_skb(struct sk_buff *skb)
+{
+        if (unlikely(!skb))
+                return;
+        if (likely(atomic_read(&skb->users) == 1))
+                smp_rmb();
+        else if (likely(!atomic_dec_and_test(&skb->users)))
+                return;
+        trace_kfree_skb(skb, __builtin_return_address(0));
+        __kfree_skb(skb);
+}
+EXPORT_SYMBOL(kfree_skb);
+
+So it already checks for a null pointer before calling the tracepoint. This
+leads me to wonder why why this check was added in the first place ?
+
+Mathieu
+
+> 
+> > 
+> > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> > CC: Steven Rostedt <rostedt@goodmis.org>
+> > CC: Frederic Weisbecker <fweisbec@gmail.com>
+> > CC: Ingo Molnar <mingo@elte.hu>
+> > CC: Neil Horman <nhorman@tuxdriver.com>
+> > CC: Thomas Gleixner <tglx@linutronix.de>
+> > ---
+> >  include/trace/events/skb.h |    4 +---
+> >  1 file changed, 1 insertion(+), 3 deletions(-)
+> > 
+> > Index: linux-2.6-lttng/include/trace/events/skb.h
+> > ===================================================================
+> > --- linux-2.6-lttng.orig/include/trace/events/skb.h
+> > +++ linux-2.6-lttng/include/trace/events/skb.h
+> > @@ -25,9 +25,7 @@ TRACE_EVENT(kfree_skb,
+> >  
+> >  	TP_fast_assign(
+> >  		__entry->skbaddr = skb;
+> > -		if (skb) {
+> > -			__entry->protocol = ntohs(skb->protocol);
+> > -		}
+> > +		__entry->protocol = skb ? ntohs(skb->protocol) : 0;
+> >  		__entry->location = location;
+> >  	),
+> >  
+> > 
+> > 
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
