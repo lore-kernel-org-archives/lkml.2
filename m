@@ -1,114 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984Ab1AEKJj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 05:09:39 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:64118 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426Ab1AEKJh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 05:09:37 -0500
-MIME-Version: 1.0
-X-Originating-IP: [81.245.174.26]
-In-Reply-To: <201101050001.23979.rjw@sisk.pl>
-References: <1294136263-24020-1-git-send-email-j-pihet@ti.com>
-	<20110104112919.GB9879@atrey.karlin.mff.cuni.cz>
-	<AANLkTim_ekCNw6xhC_MGY7=gfXUCfinXkLeXtttpHaGc@mail.gmail.com>
-	<201101050001.23979.rjw@sisk.pl>
-Date: Wed, 5 Jan 2011 11:09:35 +0100
-Message-ID: <AANLkTimRvZs2QBZ4y+AEO7CWUudwBSM6-K0ZQxFTF+Fm@mail.gmail.com>
-Subject: Re: [PATCH 1/3] perf: add calls to suspend trace point
-From: Jean Pihet <jean.pihet@newoldbits.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Pavel Machek <pavel@ucw.cz>, mingo@elte.hu, trenn@suse.de,
-        Len Brown <len.brown@intel.com>, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        linux-perf-users@vger.kernel.org, Jean Pihet <j-pihet@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751893Ab1AEKLk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 05:11:40 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:52176 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751426Ab1AEKLj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 05:11:39 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19weDd/THxwdG7CmZ5Z/uBVUOrkBunmAlWb0Bp6pR
+	eUxBubOftx0Dcy
+Subject: [PATCH] sched: fix struct autogroup memory leak
+From: Mike Galbraith <efault@gmx.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 05 Jan 2011 11:11:25 +0100
+Message-ID: <1294222285.8369.2.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 5, 2011 at 12:01 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Tuesday, January 04, 2011, Jean Pihet wrote:
->> Hi,
->>
->> On Tue, Jan 4, 2011 at 12:29 PM, Pavel Machek <pavel@ucw.cz> wrote:
->> > Hi!
->> >
->> >> Uses the machine_suspend trace point, called from the
->> >> generic kernel suspend_enter function.
->> >>
->> >> Signed-off-by: Jean Pihet <j-pihet@ti.com>
->> >> CC: Thomas Renninger <trenn@suse.de>
->> >> ---
->> >>  kernel/power/suspend.c |    3 +++
->> >>  1 files changed, 3 insertions(+), 0 deletions(-)
->> >>
->> >> diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
->> >> index ecf7705..0650596 100644
->> >> --- a/kernel/power/suspend.c
->> >> +++ b/kernel/power/suspend.c
->> >> @@ -22,6 +22,7 @@
->> >>  #include <linux/mm.h>
->> >>  #include <linux/slab.h>
->> >>  #include <linux/suspend.h>
->> >> +#include <trace/events/power.h>
->> >>
->> >>  #include "power.h"
->> >>
->> >> @@ -164,7 +165,9 @@ static int suspend_enter(suspend_state_t state)
->> >>       error = sysdev_suspend(PMSG_SUSPEND);
->> >>       if (!error) {
->> >>               if (!suspend_test(TEST_CORE) && pm_check_wakeup_events()) {
->> >> +                     trace_machine_suspend(state);
->> >>                       error = suspend_ops->enter(state);
->> >> +                     trace_machine_suspend(PWR_EVENT_EXIT);
->> >>                       events_check_enabled = false;
->> >>               }
->> >>               sysdev_resume();
->> >
->> > Ok... why this place?
->> This trace has been placed here because it traces the machine low
->> level mode enter.
->>
->> > I mean, perhaps suspend time should include
->> > device suspend?
->> That makes sense. We have a few options here:
->> 1) keep the traces as proposed to trace the low level machine code only,
->> 2) move the traces to the entry and exit of suspend_enter so that it
->> includes the prepare and late_prepare (+ the associated wake-up)
->> callbacks as well,
->> 3) move the traces to suspend_devices_and_enter so that it includes 2)
->> and the handling of the console and the devices,
->> 4) move the traces to enter_state do that it includes 3), the call to
->> sys_sync and the user space freeze.
->>
->> Note that the the SNAPSHOT_2RAM ioctl code also calls
->> suspend_devices_and_enter, so if only 4) is used no trace will be
->> generated in that case.
->>
->> I am in favor of 3) of 4).
->> What do you think?
->
-> Why don't we keep the tracepoints as proposed _and_ add two additional
-> tracepoints around device suspend-resume?
-I like the idea but that requires to extend the current API with
-additional suspend tracepoints or device state change tracepoints.
-That can be done once the current API is firmly in place.
-Today the only trace API for suspend is machine_suspend(unsigned int
-state), so I think the best option is 3) here above.
+Seems I lost a change somewhere, leaking memory.
 
-Unless there is an objection I am pushing 3) asap.
+sched: fix struct autogroup memory leak
 
-Thanks!
-Jean
+Add missing change to actually use autogroup_free().
 
->
-> Rafael
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+
+---
+ kernel/sched.c           |    1 +
+ kernel/sched_autogroup.c |    3 ++-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+Index: linux-2.6/kernel/sched.c
+===================================================================
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -8382,6 +8382,7 @@ static void free_sched_group(struct task
+ {
+ 	free_fair_sched_group(tg);
+ 	free_rt_sched_group(tg);
++	autogroup_free(tg);
+ 	kfree(tg);
+ }
+ 
+Index: linux-2.6/kernel/sched_autogroup.c
+===================================================================
+--- linux-2.6.orig/kernel/sched_autogroup.c
++++ linux-2.6/kernel/sched_autogroup.c
+@@ -20,7 +20,8 @@ static void autogroup_init(struct task_s
+ 
+ static inline void autogroup_free(struct task_group *tg)
+ {
+-	kfree(tg->autogroup);
++	if (tg->autogroup)
++		kfree(tg->autogroup);
+ }
+ 
+ static inline void autogroup_destroy(struct kref *kref)
+
+
