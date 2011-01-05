@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751301Ab1AECIJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 21:08:09 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50233 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875Ab1AECIH (ORCPT
+	id S1751301Ab1AECe0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 21:34:26 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:25439 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751064Ab1AECeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 21:08:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=fseo9aeyqt4ThhegVHtwqwDcB0wSqNuJMVLjL+VBtbLNxwD054EIfk0quhxVQcGK8p
-         54VitmYVQrNerFFc/tnxe/GcW6BLpmcsFDLQlNB/7jjmjY0Ae5YDhUdCDHZ20l83gzVz
-         cs/I9Df9mJbhR6TM+MrrdTnhVMY17d+Zpj5ZI=
-Date: Wed, 5 Jan 2011 03:08:02 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC patch 3/5] ftrace trace event add missing semicolumn
-Message-ID: <20110105020759.GG2911@nowhere>
-References: <20110104231629.996422888@efficios.com>
- <20110104232419.441463699@efficios.com>
- <20110105000005.GE2911@nowhere>
- <20110105001837.GA9737@Krystal>
+	Tue, 4 Jan 2011 21:34:25 -0500
+Message-ID: <280596192AA74D208C2C5F6389DBE8C1@hacdom.okisemi.com>
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "Grant Likely" <grant.likely@secretlab.ca>
+Cc: "David Brownell" <dbrownell@users.sourceforge.net>,
+        <spi-devel-general@lists.sourceforge.net>,
+        <linux-kernel@vger.kernel.org>, <qi.wang@intel.com>,
+        <yong.y.wang@intel.com>, <joel.clark@intel.com>,
+        <kok.howg.ewe@intel.com>,
+        "Toshiharu Okada" <toshiharu-linux@dsn.okisemi.com>
+References: <1293449027-3219-1-git-send-email-tomoya-linux@dsn.okisemi.com> <20101229064937.GC8172@angua.secretlab.ca>
+Subject: Re: [PATCH 1/3] spi_topcliff_pch: support new device ML7213
+Date: Wed, 5 Jan 2011 11:34:20 +0900
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110105001837.GA9737@Krystal>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	format=flowed;
+	charset="ISO-8859-1";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.5931
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 04, 2011 at 07:18:37PM -0500, Mathieu Desnoyers wrote:
-> * Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> > On Tue, Jan 04, 2011 at 06:16:32PM -0500, Mathieu Desnoyers wrote:
-> > > Add a missing semicolumn at the end of a ftrace definition.
-> > > 
-> > > We currently are not seeing any impact of this missing semicolumn because extra
-> > > semicolumns appear all over the place in the code generated from TRACE_EVENT
-> > > within ftrace stages.
-> > > 
-> > > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > > CC: Steven Rostedt <rostedt@goodmis.org>
-> > > CC: Frederic Weisbecker <fweisbec@gmail.com>
-> > > CC: Ingo Molnar <mingo@elte.hu>
-> > > CC: Thomas Gleixner <tglx@linutronix.de>
-> > > ---
-> > >  include/trace/ftrace.h |    2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > > Index: linux-2.6-lttng/include/trace/ftrace.h
-> > > ===================================================================
-> > > --- linux-2.6-lttng.orig/include/trace/ftrace.h
-> > > +++ linux-2.6-lttng/include/trace/ftrace.h
-> > > @@ -69,7 +69,7 @@
-> > >  #undef DEFINE_EVENT
-> > >  #define DEFINE_EVENT(template, name, proto, args)	\
-> > >  	static struct ftrace_event_call	__used		\
-> > > -	__attribute__((__aligned__(4))) event_##name
-> > > +	__attribute__((__aligned__(4))) event_##name;
-> > 
-> > But DEFINE_EVENT() calls are supposed to be ";" terminated, no?
+Hi Grant,
+
+On Wednesday, December 29, 2010 3:49 PM, Grant Likely wrote:
+> As previously discussed on this list, I would like to see support for
+> multiple bus instances implemented differently.  Rather than storing
+> the spi_master instances in an array in the pci device private data,
+> the pci device should register a separate platform_device for each spi
+> bus instance, and each of those bus instances should get bound to a
+> topcliff_spi_bus driver which doesn't need to have any special
+> knowledge about how many spi_master instances actually exist.
 > 
-> Currently yes, but if you look at the preprocessor output currently generated by
-> the current TRACE_EVENT()/DEFINE_EVENT() scheme, there are useless ";" added all
-> over the place. I have a patch later in my queue that proposes removal of these
-> extra ";" as a cleanup of the TRACE_EVENT() semantic, but I'm keeping it for
-> later because it removes the extra ";" at the end of each TRACE_EVENT()
-> instance (and thus is more intrusive code-wise).
-> 
-> Adding this semicolumn here ensures that all Ftrace macros are consistent wrt
-> semicolumns. We can get away without consistency currently exactly because the
-> current scheme adds many useless semicolumns between each TRACE_EVENT().
+> Basically, the way it is implemented in this patch isn't taking
+> advantage of the infrastructure and instance management provided by
+> the driver model.
 
-Are you sure you want to put so much time on this?
+I see.
+I will modify like your suggestion.
+Could you show the reference SPI driver using multi-instance ?
 
-This will require a massive change for the sole win of removing double ";"
-in generated code. This won't optimize much the build, and it will make the things
-not so much more readable for very rare people who dare to have interest into the
-TRACE_EVENT generated code. That notwithstanding the obfuscation of that generated
-code resides more in the lack of indentation and newlines than in double
-semicolons that we barely notice.
+Thanks,
+---
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
 
-Hm?
