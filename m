@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab1AEXkp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:40:45 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:35988 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753222Ab1AEXko (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:40:44 -0500
-Date: Wed, 5 Jan 2011 18:40:41 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: ltt-dev@lists.casi.polymtl.ca
-Cc: linux-kernel@vger.kernel.org
-Subject: [RELEASE/STATUS] LTTng 0.240 for kernel 2.6.36.2
-Message-ID: <20110105234041.GA11813@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 18:10:15 up 43 days,  4:13,  2 users,  load average: 0.07, 0.03,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753665Ab1AEXpT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:45:19 -0500
+Received: from kroah.org ([198.145.64.141]:41056 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753623Ab1AEXpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 18:45:18 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 15:03:27 2011
+Message-Id: <20110105230327.173873064@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Wed, 05 Jan 2011 15:00:55 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Thomas Sailer <t.sailer@alumni.ethz.ch>
+Subject: [37/49] USB: misc: uss720.c: add another vendor/product ID
+In-Reply-To: <20110105234415.GA22369@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LTTng, the Linux Trace Toolkit Next Generation, is a project that aims at
-producing a highly efficient full system tracing solution.  It is composed of
-several components to allow tracing of the kernel, of userspace, trace viewing
-and analysis and trace streaming.  LTTng is open source software. It is being
-actively developed with the community.
+2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
-Changelog:
-- Implement a user-space trace clock into a new clock_gettime() clock id.
-  (will be used by the next UST release). It will provide consistent timestamps
-  between userspace and kernel traces taken on a LTTng-enabled Linux kernel.
-- Moved to stable kernel 2.6.36.2 (last LTTng release targeting 2.6.36.x,
-  moving on to 2.6.37 shortly)
+------------------
 
-Project Status:
-- I am currently working on a LTTng redesign to better suit the need of Linux
-  distributions. The kernel-side work is very well advanced, and I'm now moving
-  on to the following steps: redesign lttd/lttctl/ltt-armall with a more
-  integrated approach (lttngtrace), and move LTTV to the new CTF (Common Trace
-  Format). I am keeping this redesign separate from the "stable" LTTng versions
-  for now, as it removes some of the LTTng-specific instrumentation to bring the
-  size of the patchset down to something more appealing to distributions.
-  The ongoing redesign is available in the lttng-modules git tree HEAD, but
-  depends on a reduced kernel tree LTTng patchset that I have not yet released.
+From: Thomas Sailer <t.sailer@alumni.ethz.ch>
 
-Project website: http://lttng.org
-Download link: http://lttng.org/content/download
-(please refer to the LTTng Manual for installation instructions)
+commit ecc1624a2fff45780959efbcb73ace18fdb3c58d upstream.
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Fabio Battaglia report that he has another cable that works with this
+driver, so this patch adds its vendor/product ID.
+
+Signed-off-by: Thomas Sailer <t.sailer@alumni.ethz.ch>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/usb/misc/uss720.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--- a/drivers/usb/misc/uss720.c
++++ b/drivers/usb/misc/uss720.c
+@@ -3,7 +3,7 @@
+ /*
+  *	uss720.c  --  USS720 USB Parport Cable.
+  *
+- *	Copyright (C) 1999, 2005
++ *	Copyright (C) 1999, 2005, 2010
+  *	    Thomas Sailer (t.sailer@alumni.ethz.ch)
+  *
+  *	This program is free software; you can redistribute it and/or modify
+@@ -775,6 +775,8 @@ static struct usb_device_id uss720_table
+ 	{ USB_DEVICE(0x0557, 0x2001) },
+ 	{ USB_DEVICE(0x0729, 0x1284) },
+ 	{ USB_DEVICE(0x1293, 0x0002) },
++	{ USB_DEVICE(0x1293, 0x0002) },
++	{ USB_DEVICE(0x050d, 0x0002) },
+ 	{ }						/* Terminating entry */
+ };
+ 
+
+
