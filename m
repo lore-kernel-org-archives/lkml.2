@@ -1,116 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118Ab1AEMOe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 07:14:34 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53157 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751716Ab1AEMOd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 07:14:33 -0500
-Message-ID: <4D246098.50908@pengutronix.de>
-Date: Wed, 05 Jan 2011 13:14:16 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1752112Ab1AEMaT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 07:30:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23600 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751970Ab1AEMaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 07:30:17 -0500
+Date: Wed, 5 Jan 2011 09:44:09 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Zachary Amsden <zamsden@redhat.com>
+Cc: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Glauber Costa <glommer@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [KVM Clock Synchronization 2/4] Keep TSC synchronized across
+ host suspend
+Message-ID: <20110105114409.GA32733@amt.cnet>
+References: <1293601100-32109-1-git-send-email-zamsden@redhat.com>
+ <1293601100-32109-3-git-send-email-zamsden@redhat.com>
+ <20110104153652.GB31340@amt.cnet>
+ <4D23F6DE.7090505@redhat.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-References: <20101230171453.GA5787@pengutronix.de> <1293731992.4919.5.camel@heimdal.trondhjem.org> <20101230191846.GB14221@pengutronix.de> <20110103213850.GC25121@pengutronix.de> <1294100558.25100.8.camel@heimdal.trondhjem.org> <20110105084014.GN25121@pengutronix.de> <20110105110517.GQ25121@pengutronix.de> <20110105112701.GA8638@n2100.arm.linux.org.uk>
-In-Reply-To: <20110105112701.GA8638@n2100.arm.linux.org.uk>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig148BA6752573DA54B237FD26"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D23F6DE.7090505@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig148BA6752573DA54B237FD26
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jan 04, 2011 at 06:43:10PM -1000, Zachary Amsden wrote:
+> On 01/04/2011 05:36 AM, Marcelo Tosatti wrote:
+> >On Tue, Dec 28, 2010 at 07:38:18PM -1000, Zachary Amsden wrote:
+> >>During a host suspend, TSC may go backwards, which KVM interprets
+> >>as an unstable TSC.  Technically, KVM should not be marking the
+> >>TSC unstable, which causes the TSC clocksource to go bad, but
+> >>should be adjusting the TSC offsets in such a case.
+> >>
+> >>Signed-off-by: Zachary Amsden<zamsden@redhat.com>
+> >>---
+> >>  arch/x86/include/asm/kvm_host.h |    1 +
+> >>  arch/x86/kvm/x86.c              |   66 +++++++++++++++++++++++++++++++++++---
+> >>  2 files changed, 61 insertions(+), 6 deletions(-)
+> >>
+> >>diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> >>index 9e6fe39..63a82b0 100644
+> >>--- a/arch/x86/include/asm/kvm_host.h
+> >>+++ b/arch/x86/include/asm/kvm_host.h
+> >>@@ -386,6 +386,7 @@ struct kvm_vcpu_arch {
+> >>  	u64 last_kernel_ns;
+> >>  	u64 last_tsc_nsec;
+> >>  	u64 last_tsc_write;
+> >>+	u64 tsc_offset_adjustment;
+> >>  	bool tsc_catchup;
+> >>
+> >>  	bool nmi_pending;
+> >>diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> >>index b9118f4..b509c01 100644
+> >>--- a/arch/x86/kvm/x86.c
+> >>+++ b/arch/x86/kvm/x86.c
+> >>@@ -2042,12 +2042,20 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+> >>  	}
+> >>
+> >>  	kvm_x86_ops->vcpu_load(vcpu, cpu);
+> >>+
+> >>+	/* Apply any externally detected TSC adjustments (due to suspend) */
+> >>+	if (unlikely(vcpu->arch.tsc_offset_adjustment)) {
+> >>+		kvm_x86_ops->adjust_tsc_offset(vcpu,
+> >>+			vcpu->arch.tsc_offset_adjustment);
+> >>+		vcpu->arch.tsc_offset_adjustment = 0;
+> >>+		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+> >>+	}
+> >>  	if (unlikely(vcpu->cpu != cpu) || check_tsc_unstable()) {
+> >>  		/* Make sure TSC doesn't go backwards */
+> >>  		s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 :
+> >>  				native_read_tsc() - vcpu->arch.last_host_tsc;
+> >>  		if (tsc_delta<  0)
+> >>-			mark_tsc_unstable("KVM discovered backwards TSC");
+> >>+			WARN_ON(!check_tsc_unstable());
+> >>  		if (check_tsc_unstable()) {
+> >>  			kvm_x86_ops->adjust_tsc_offset(vcpu, -tsc_delta);
+> >>  			vcpu->arch.tsc_catchup = 1;
+> >>@@ -5778,14 +5786,60 @@ int kvm_arch_hardware_enable(void *garbage)
+> >>  {
+> >>  	struct kvm *kvm;
+> >>  	struct kvm_vcpu *vcpu;
+> >>-	int i;
+> >>+	int i, ret;
+> >>+	u64 local_tsc;
+> >>+	u64 max_tsc = 0;
+> >>+	bool stable, backwards_tsc = false;
+> >>
+> >>  	kvm_shared_msr_cpu_online();
+> >>-	list_for_each_entry(kvm,&vm_list, vm_list)
+> >>-		kvm_for_each_vcpu(i, vcpu, kvm)
+> >>-			if (vcpu->cpu == smp_processor_id())
+> >>+	local_tsc = native_read_tsc();
+> >>+	stable = !check_tsc_unstable();
+> >>+	ret = kvm_x86_ops->hardware_enable(garbage);
+> >>+	if (ret)
+> >>+		return ret;
+> >>+
+> >>+	list_for_each_entry(kvm,&vm_list, vm_list) {
+> >>+		kvm_for_each_vcpu(i, vcpu, kvm) {
+> >>+			if (!stable&&  vcpu->cpu == smp_processor_id())
+> >>  				kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+> >>-	return kvm_x86_ops->hardware_enable(garbage);
+> >>+			if (stable&&  vcpu->arch.last_host_tsc>  local_tsc) {
+> >>+				backwards_tsc = true;
+> >>+				if (vcpu->arch.last_host_tsc>  max_tsc)
+> >>+					max_tsc = vcpu->arch.last_host_tsc;
+> >>+			}
+> >>+		}
+> >>+	}
+> >>+
+> >>+	/*
+> >>+	 * Sometimes, reliable TSCs go backwards.  This happens
+> >>+	 * on platforms that reset TSC during suspend or hibernate
+> >>+	 * actions, but maintain synchronization.  We must compensate.
+> >>+	 * Unfortunately, we can't bring the TSCs fully up to date
+> >>+	 * with real time.  The reason is that we aren't yet far
+> >>+	 * enough into CPU bringup that we know how much real time
+> >>+	 * has actually elapsed; our helper function, get_kernel_ns()
+> >>+	 * will be using boot variables that haven't been updated yet.
+> >>+	 * We simply find the maximum observed TSC above, then record
+> >>+	 * the adjustment to TSC in each VCPU.  When the VCPU later
+> >>+	 * gets loaded, the adjustment will be applied.  Note that we
+> >>+	 * accumulate adjustments, in case multiple suspend cycles
+> >>+	 * happen before the VCPU gets a chance to run again.
+> >>+	 *
+> >>+	 * Note that unreliable TSCs will be compensated already by
+> >>+	 * the logic in vcpu_load, which sets the TSC to catchup mode.
+> >>+	 * This will catchup all VCPUs to real time, but cannot
+> >>+	 * guarantee synchronization.
+> >>+	 */
+> >>+	if (backwards_tsc) {
+> >>+		u64 delta_cyc = max_tsc - local_tsc;
+> >>+		list_for_each_entry(kvm,&vm_list, vm_list)
+> >>+			kvm_for_each_vcpu(i, vcpu, kvm) {
+> >>+				vcpu->arch.tsc_offset_adjustment += delta_cyc;
+> >>+				vcpu->arch.last_host_tsc = 0;
+> >>+			}
+> >>+	}
+> >>+
+> >>+	return 0;
+> >>  }
+> >Wouldnt it be simpler to use cyc2ns_offset (or something equivalent)? In
+> >any case, you forgot to compare smp_processor_id.
+> 
+> I don't think so, as here, we're already dealing in units of cycles,
+> and we don't want to just fix the kvmclock, we want to make sure the
+> TSC also does not go backwards.
 
-On 01/05/2011 12:27 PM, Russell King - ARM Linux wrote:
-> On Wed, Jan 05, 2011 at 12:05:17PM +0100, Uwe Kleine-K=F6nig wrote:
->> Hello Trond,
->>
->> On Wed, Jan 05, 2011 at 09:40:14AM +0100, Uwe Kleine-K=F6nig wrote:
->>> On Mon, Jan 03, 2011 at 07:22:38PM -0500, Trond Myklebust wrote:
->>>> The question is whether this is something happening on the server or=
- the
->>>> client. Does an older client kernel boot without any trouble?
->>> I will set up a boot test with 2.6.37 (for statistics) and 2.6.36 to
->>> compare with.  If you don't consider .36 to be old enough let me now.=
+I meant calculate the backwards delta similarly to cyc2ns_offset, and
+use that to adjust offset on vcpu_load, instead of calculating manually
+via last_host_tsc.
 
->>> Once the setup is done it should be easy to test .35 (say), too.
->>>
->> Marc (cc'd) saw similar[1] problems with .37, when using .36.2 the
->> problems didn't occur.  This was more reliable to trigger and he was s=
-o
->> kind to bisect the problem.
->>
->> When testing v2.6.36-rc3-51-gafa8ccc init hanged.
->> (babddc72a9468884ce1a23db3c3d54b0afa299f0 is the first bad commit with=
+> And we deliberately do not check smp_processor_id.  The reasoning is
+> - if the TSC has gone backwards, but we have a stable TSC, it means
+> all TSCs have gone backwards together, and so should all be adjusted
+> equally.  Note that backwards_tsc is only set if TSC is marked as
+> stable.
 
->> this hang.)  Commit 56e4ebf877b6043c289bda32a5a7385b80c17dee makes the=
+OK. 
 
->> "init hangs" problem the "fileid changed on tab" problem.
->>
->> I could only reproduce that on armv5 machines (imx27, imx28 and at91)
->> but not on armv6 (imx35).
->=20
-> FYI, I've seen the "fileid changed" problem, and it looked like a 32-bi=
-t
-> truncation of the fileid.  It occurred several times on successive
-> reboots, so I tried to capture a tcpdump trace off the server (Linux
-> 2.6.23-rc8-ga64314e6 - its ancient because I've had issues with buggy
-> IDE drivers trying to move it forward.)  However, for the last couple
-> of weeks I've been unable to reproduce it.
-
-We have the problem with nfs-root. From the kernel command line:
-
-root=3D/dev/nfs
-nfsroot=3D192.168.23.2:/home/mkl/pengutronix/xxx/bsp/OSELAS.BSP-xxx-Grabo=
-wski-trunk/platform-Ronetix-PM9263/root,v3,tcp
-
-/home/mkl/pengutronix is a link which points to a link
-/ptx/work/octopus/mkl (which is a ext3-based) which points to
-WORK_1/mkl which is also ext3-based.
-
-The server is 2.6.32 and has been rebooted yesterday :), nfs-utils are
-1.2.2. I make a tcpdump if needed.
-
-Cheers, Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enig148BA6752573DA54B237FD26
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk0kYJsACgkQjTAFq1RaXHNrDgCdHFaAarn9iD+pTgumxo6exnnk
-lqsAn1CJHd1bSdP1T0mj1S31e/Ww7BWj
-=pSkw
------END PGP SIGNATURE-----
-
---------------enig148BA6752573DA54B237FD26--
