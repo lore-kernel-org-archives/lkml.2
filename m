@@ -1,37 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764Ab1AEWnv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 17:43:51 -0500
-Received: from kroah.org ([198.145.64.141]:59918 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752248Ab1AEWnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 17:43:42 -0500
-Date: Wed, 5 Jan 2011 14:43:06 -0800
-From: Greg KH <greg@kroah.com>
-To: Tsozik <tsozik@yahoo.com>
-Cc: Pete Zaitcev <zaitcev@redhat.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] mct_u232: added _ioctl, _msr_to_icount and
- _get_icount functions
-Message-ID: <20110105224306.GB18452@kroah.com>
-References: <87086.58416.qm@web65703.mail.ac4.yahoo.com>
+	id S1752816Ab1AEWqJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 17:46:09 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48371 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751941Ab1AEWqH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 17:46:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=QCbSjIk7m+xUH/IRngoUNH0Jjxek44v83qq4UzCt2EzUtEXp244rM0gpUu/LzJ/eEO
+         NDIhcoet8SG0XuX4dmzRVgstTZaJh/dNRd/eMYG4NBVmQe8OX6PbVJwQPnIyg2uf9xZy
+         TphjGzIGh37tRcVH2yehVQYeYJOr0j77ESPKA=
+Message-ID: <4D24F4A9.8010301@gmail.com>
+Date: Wed, 05 Jan 2011 23:46:01 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87086.58416.qm@web65703.mail.ac4.yahoo.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        "Brown, Len" <len.brown@intel.com>, steiner@sgi.com,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>
+Subject: Re: suspend hangs at platform phase [was: mmotm 2010-12-23-16-58
+ uploaded]
+References: <201012240132.oBO1W8Ub022207@imap1.linux-foundation.org> <201101042357.08600.rjw@sisk.pl> <4D24E444.6080308@gmail.com> <201101052339.46453.rjw@sisk.pl>
+In-Reply-To: <201101052339.46453.rjw@sisk.pl>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 27, 2010 at 12:55:38PM -0800, Tsozik wrote:
-> Pete,
+On 01/05/2011 11:39 PM, Rafael J. Wysocki wrote:
+> On Wednesday, January 05, 2011, Jiri Slaby wrote:
+>> On 01/04/2011 11:57 PM, Rafael J. Wysocki wrote:
+>>> On Tuesday, January 04, 2011, Jiri Slaby wrote:
+>>>> On 01/04/2011 02:40 PM, Jiri Slaby wrote:
+>>>>> On 12/24/2010 01:58 AM, akpm@linux-foundation.org wrote:
+>>>>>> The mm-of-the-moment snapshot 2010-12-23-16-58 has been uploaded to
+>>>>>
+>>>>> Hi, this kernel regresses with respect to suspend to ram in comparison
+>>>>> with mmotm 2010-12-16-14-56.
+>>>>>
+>>>>> This is OK:
+>>>>> echo devices > /sys/power/pm_test
+>>>>> pm-suspend
+>>>>> This hangs at suspend phase:
+>>>>> echo platform > /sys/power/pm_test
+>>>>> pm-suspend
+>>>
+>>> Hmm.  So it looks like _PTS hangs?
+>>
+>> No _PST here :).
 > 
-> You're absolutely right. My apology again, I re-checked values of MSR masks used to update icount counters and they all belong to upper MSR nibble, so they indeed track changes (not states). I took out counter increments from mct_u232_msr_to_state function and encapsulated them in the newly defined mct_u232_msr_to_icount function, effectively leaving the previous implementation of mct_u232_msr_to_state function intact. mct_u232_msr_to_icount uses delta nibble to track state changes. RM-60 testing showed the same levels as measured by PDM-2 in close proximity to RM-60. Please let me know if anything else needs to be corrected to roll this out,
+> I really meant _PTS and yes, there is one and it does quite a lot of
+> interesting stuff.
 
-Can you not attach the patch as a base64 attachment?  I can't apply it
-as-is, because of that, sorry.
+Yeah, I grepped for _PTS, but in a wrong file. My bad.
 
-thanks,
+> Are you able to collect serial console (or equivalent) logs from that machine?
 
-greg k-h
+Unfortunately I don't have a second machine with serial port. What
+exactly you want to dig out of the logs? Will netconsole work at that phase?
+
+regards,
+-- 
+js
