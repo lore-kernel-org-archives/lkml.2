@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034Ab1AEUtb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 15:49:31 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46706 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752286Ab1AEUt2 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 15:49:28 -0500
+	id S1753043Ab1AEUyt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 15:54:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63468 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751989Ab1AEUys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 15:54:48 -0500
+Date: Wed, 5 Jan 2011 21:47:00 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
+        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 18/18] sched: Sort hotplug vs ttwu queueing
+Message-ID: <20110105204700.GA1313@redhat.com>
+References: <20110104145929.772813816@chello.nl> <20110104150103.214765376@chello.nl>
 MIME-Version: 1.0
-In-Reply-To: <1294259637.16957.25.camel@mulgrave.site>
-References: <1294254337.16957.13.camel@mulgrave.site> <AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com>
- <1294256169.16957.18.camel@mulgrave.site> <20110105200008.GJ8638@n2100.arm.linux.org.uk>
- <1294259637.16957.25.camel@mulgrave.site>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 5 Jan 2011 12:48:32 -0800
-Message-ID: <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com>
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110104150103.214765376@chello.nl>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 5, 2011 at 12:33 PM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
+On 01/04, Peter Zijlstra wrote:
 >
-> well, that depends.  For us on parisc, kmap of a user page in !HIGHMEM
-> sets up an inequivalent aliase still ... because the cache colour of the
-> user and kernel virtual addresses are different.  Depending on the
-> return path to userspace, we still usually have to flush to get the user
-> to see the changes the kernel has made.
+> +#ifdef CONFIG_HOTPLUG_CPU
+> +static void ttwu_queue_unplug(struct rq *rq)
+> +{
+> +	struct task_struct *p, *list = xchg(&rq->wake_list, NULL);
+> +	unsigned long flags;
+> +	int cpu;
+> +
+> +	if (!list)
+> +		return;
+> +
+> +	while (list) {
+> +		p = list;
+> +		list = list->wake_entry;
+> +
+> +		raw_spin_lock_irqsave(&p->pi_lock, flags);
+> +		cpu = select_task_rq(p, SD_BALANCE_WAKE, 0);
+> +		set_task_cpu(p, cpu);
+> +		ttwu_queue(p, cpu);
+> +		raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+> +	}
+> +}
+> +#endif
+> +
+>  /**
+>   * try_to_wake_up - wake up a thread
+>   * @p: the thread to be awakened
+> @@ -6151,6 +6174,11 @@ migration_call(struct notifier_block *nf
+>  		migrate_nr_uninterruptible(rq);
+>  		calc_global_load_remove(rq);
+>  		break;
+> +
+> +	case CPU_DEAD:
+> +		ttwu_queue_unplug(cpu_rq(cpu));
 
-Umm. Again, that has nothing to do with kmap().
+I think this is not strictly needed...
 
-This time it's about the user space mapping.
+Afaics, take_cpu_down() can simply call sched_ttwu_pending() at the
+start. This will activate the pending tasks on the (almost) dead
+cpu but we don't care, they will be migrated later.
 
-Repeat after me: even without the kmap(), the kernel access to that
-mapping would have caused cache aliases.
+When __stop_machine(take_cpu_down) returns nobody can use this CPU
+as a target, iow rq->wake_list can't be used again.
 
-See? Once more, the kmap() is entirely innocent. You can have a
-non-highmem mapping that you never use kmap for, and that you map into
-user space, and you'd see exactly the same aliases. Notice? Look ma,
-no kmap().
+Oleg.
 
-So clearly kmap() is not the issue. The issue continues to be a
-totally separate virtual mapping. Whether it's a user mapping or
-vm_map_ram() is obviously immaterial - as far as the CPU is concerned,
-there is no difference between the two (apart from the trivial
-differences of virtual location and permissions).
-
-(You can also force the problem with vmalloc() an then following the
-kernel page tables, but I hope nobody does that any more. I suspect
-I'm wrong, though, there's probably code that mixes vmalloc and
-physical page accesses in various drivers)
-
-                    Linus
