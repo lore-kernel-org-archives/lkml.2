@@ -1,98 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930Ab1AERPr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 12:15:47 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:33498 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751699Ab1AERPp (ORCPT
+	id S1751553Ab1AERRc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 12:17:32 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:44908 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751231Ab1AERRa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 12:15:45 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Joel Becker <joel.becker@oracle.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: 2.6.37-next - kernel BUG at fs/dcache.c:1363
-From: Valdis.Kletnieks@vt.edu
+	Wed, 5 Jan 2011 12:17:30 -0500
+X-IronPort-AV: E=Sophos;i="4.60,278,1291622400"; 
+   d="scan'208";a="501996151"
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-nfs@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>
+In-Reply-To: <20110105155230.GC8638@n2100.arm.linux.org.uk>
+References: <20101230191846.GB14221@pengutronix.de>
+	 <20110103213850.GC25121@pengutronix.de>
+	 <1294100558.25100.8.camel@heimdal.trondhjem.org>
+	 <20110105084014.GN25121@pengutronix.de>
+	 <20110105110517.GQ25121@pengutronix.de>
+	 <20110105112701.GA8638@n2100.arm.linux.org.uk>
+	 <20110105134045.GS25121@pengutronix.de>
+	 <1294239193.3014.9.camel@heimdal.trondhjem.org>
+	 <4D2487CA.5040501@pengutronix.de>
+	 <1294240457.3014.13.camel@heimdal.trondhjem.org>
+	 <20110105155230.GC8638@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Wed, 05 Jan 2011 12:17:27 -0500
+Message-ID: <1294247847.2998.23.camel@heimdal.trondhjem.org>
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1294247741_7242P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 05 Jan 2011 12:15:41 -0500
-Message-ID: <8679.1294247741@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020209.4D24A73D.0197,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 05 Jan 2011 17:17:29.0858 (UTC) FILETIME=[6EAA4620:01CBACFC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1294247741_7242P
-Content-Type: text/plain; charset=us-ascii
+On Wed, 2011-01-05 at 15:52 +0000, Russell King - ARM Linux wrote: 
+> On Wed, Jan 05, 2011 at 10:14:17AM -0500, Trond Myklebust wrote:
+> > OK. So,the new behaviour in 2.6.37 is that we're writing to a series of
+> > pages via the usual kmap_atomic()/kunmap_atomic() and kmap()/kunmap()
+> > interfaces, but we can end up reading them via a virtual address range
+> > that gets set up via vm_map_ram() (that range gets set up before the
+> > write occurs).
+> 
+> kmap of lowmem pages will always reuses the existing kernel direct
+> mapping, so there won't be a problem there.
+> 
+> > Do we perhaps need an invalidate_kernel_vmap_range() before we can read
+> > the data on ARM in this kind of scenario?
+> 
+> Firstly, vm_map_ram() does no cache maintainence of any sort, nor does
+> it take care of page colouring - so any architecture where cache aliasing
+> can occur will see this problem.  It should not limited to ARM.
+> 
+> Secondly, no, invalidate_kernel_vmap_range() probably isn't sufficient.
+> There's two problems here:
+> 
+> 	addr = kmap(lowmem_page);
+> 	*addr = stuff;
+> 	kunmap(lowmem_page);
+> 
+> Such lowmem pages are accessed through their kernel direct mapping.
+> 
+> 	ptr = vm_map_ram(lowmem_page);
+> 	read = *ptr;
+> 
+> This creates a new mapping which can alias with the kernel direct mapping.
+> Now, as this is a new mapping, there should be no cache lines associated
+> with it.  (Looking at vm_unmap_ram(), it calls free_unmap_vmap_area_addr(),
+> free_unmap_vmap_area(), which then calls flush_cache_vunmap() on the
+> region.  vb_free() also calls flush_cache_vunmap() too.)
+> 
+> If the write after kmap() hits an already present cache line, the cache
+> line will be updated, but it won't be written back to memory.  So, on
+> a subsequent vm_map_ram(), with any kind of aliasing cache, there's
+> no guarantee that you'll hit that cache line and read the data just
+> written there.
+> 
+> The kernel direct mapping would need to be flushed.
 
-Saw this crash on a linux-next pulled yesterday at 2PM EST, kernel dies very
-early (looks like first time it touches configfs for anything - trying to boot
-with netconsole enabled caused it to die even faster).  I can bisect this if
-it doesn't immediately ring a bell...
+We should already be flushing the kernel direct mapping after writing by
+means of the calls to flush_dcache_page() in xdr_partial_copy_from_skb()
+and all the helpers in net/sunrpc/xdr.c.
 
-It dies here:
+The only new thing is the read access through the virtual address
+mapping. That mapping is created outside the loop in
+nfs_readdir_xdr_to_array(), which is why I'm thinking we do need the
+invalidate_kernel_vmap_range(): we're essentially doing a series of
+writes through the kernel direct mapping (i.e. readdir RPC calls), then
+reading the results through the virtual mapping.
 
-void d_set_d_op(struct dentry *dentry, const struct dentry_operations *op)
-{
-        BUG_ON(dentry->d_op);
+i.e. we're doing
 
-Am guessing configfs passed in a dentry that wasn't filled in enough.
+ptr = vm_map_ram(lowmem_pages);
+while (need_more_data) {
 
-(hand-transcribed from a crappy cellphone pic)
+for (i = 0; i < npages; i++) {
+addr = kmap_atomic(lowmem_page[i]);
+*addr = rpc_stuff;
+flush_dcache_page(lowmem_page[i]);
+kunmap_atomic(lowmem_page[i]);
+}
 
-kernel BUG at fs/dcache.c:1363
-invalid opcode: 0000 [#1] PREEMT SMP
-last sysfs file:
-CPU 0
-Modules linked in:
+invalidate_kernel_vmap_range(ptr); // Needed here?
 
-Pid: 1, comm: swapper Not tainted 2.6.37-rc8-next-2011 (edge of pic)
-...
+read = *ptr;
+}
+vm_unmap_ram(lowmem_pages)
 
-configfs_attach_item.clone.14+0x11d/0x254
-configfs_attach_group.clone.15+0x1c/0x196
-? _raw_spinlock_unlock+0x5c/0x69
-configfs_register_subsystem_0xce/0x144
-? init_netconsole+0x0/0x21f
-init_netconsole+0x10d/0x21f
-? init_netconsole+0x0/0x21f
-do_one_initcall+0x52/0x12f
-kernel_init+0x162/0x1e7
-kernel_thread_helper+0x4/0x10
-? finish_task_switch_0x3f/0xe3
-? restore_args+0x0/0x30
-? kernel_init+0x0/0x1e7
-? kernel_thread_helper+0x0/0x10
+> I'm really getting to the point of hating the poliferation of RAM
+> remapping interfaces - it's going to (and is) causing nothing but lots
+> of pain on virtual cache architectures, needing more and more cache
+> flushing interfaces to be created.
+> 
+> Is there any other solution to this?
 
-I d_net_d_op+0x38/0xb0
+Arbitrary sized pages. :-)
 
+The problem here is that we want to read variable sized records (i.e.
+readdir() records) from a multi-page buffer. We could do that by copying
+those particular records that overlap with page boundaries, but that
+would make for a fairly intrusive rewrite too.
 
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
---==_Exmh_1294247741_7242P
-Content-Type: application/pgp-signature
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNJKc9cC3lWbTT17ARAsZCAJ4/odytCNjco7ebIVuVqfPmqHinFwCfSZsr
-0VhR5hS6VUMT/3OIIk9Qx4c=
-=pU2T
------END PGP SIGNATURE-----
-
---==_Exmh_1294247741_7242P--
 
