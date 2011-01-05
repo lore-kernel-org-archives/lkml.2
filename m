@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642Ab1AETSj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 14:18:39 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45521 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752398Ab1AETSi (ORCPT
+	id S1752630Ab1AETTt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 14:19:49 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38940 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751523Ab1AETTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 14:18:38 -0500
+	Wed, 5 Jan 2011 14:19:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:cc:content-type;
+        b=Zmc1aOsGxc6th+yDTPUtZbVLjWXGD4sPmXPiC6AvqLPfwdjEXyUuCQaJSX8UcwLBfQ
+         eD3ERTkq6o8UFvQS57K2INKeY+A+z3Xd9gIe3+dgneMLF0qMG9HP93TTYP6qs1v0r48m
+         CqZHZEfMBXx+VhjTSJ8WD8EofAelbm5lZGhms=
 MIME-Version: 1.0
-In-Reply-To: <1294254337.16957.13.camel@mulgrave.site>
-References: <1294254337.16957.13.camel@mulgrave.site>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 5 Jan 2011 11:18:14 -0800
-Message-ID: <AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com>
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
+Date: Wed, 5 Jan 2011 22:19:47 +0300
+X-Google-Sender-Auth: 8lc4tTHBf9F75ikducU97k8ZJxE
+Message-ID: <AANLkTi=s_DvRRnDuzw96MMYmykhOYtOh0TJ4pBaR9GKj@mail.gmail.com>
+Subject: [PATCH 2/2] do_mounts: Small style cleanup in match_dev_by_uuid
+From: Kirill Smelkov <kirr@landau.phys.spbu.ru>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Kirill Smelkov <kirr@landau.phys.spbu.ru>, kirr@mns.spb.ru,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 5, 2011 at 11:05 AM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
->
-> I think the solution for the kernel direct mapping problem is to take
-> the expected flushes and invalidates into kmap/kunmap[_atomic].
+From: Kirill Smelkov <kirr@landau.phys.spbu.ru>
 
-No, we really can't do that. Most of the time, the kmap() is the only
-way we access the page anyway, so flushing things would just be
-stupid. Why waste time and energy on doing something pointless?
+Signed-off-by: Kirill Smelkov <kirr@landau.phys.spbu.ru>
+---
+ init/do_mounts.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-In fact, kmap() here is a total non-issue. It's not the kmap() that
-introduces any virtual aliases, and never has been. It's the
-"vm_map_ram()" that is the problem. Unlike the kmap(), that really
-_does_ introduce a virtual alias, and is a problem for any virtual
-cache.
+diff --git a/init/do_mounts.c b/init/do_mounts.c
+index 1315e8d..c75dbd5 100644
+--- a/init/do_mounts.c
++++ b/init/do_mounts.c
+@@ -75,7 +75,7 @@ static int match_dev_by_uuid(struct device *dev, void *data)
+ 		goto no_match;
 
-So don't blame kmap(). It's innocent and irrelevant - the bug could
-happen entirely without it (think a 64-bit address space that doesn't
-even _have_ kmap, but has software that mixes vm_map_ram() with
-non-mapped accesses).
+ 	if (memcmp(uuid, part->info->uuid, sizeof(part->info->uuid)))
+-			goto no_match;
++		goto no_match;
 
-                           Linus
+ 	return 1;
+ no_match:
+-- 
+1.7.3.4.626.g73e7b
