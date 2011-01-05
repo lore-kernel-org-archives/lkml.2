@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751731Ab1AEJuB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 04:50:01 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:41111 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab1AEJt7 (ORCPT
+	id S1751832Ab1AEJuq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 04:50:46 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:59426 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676Ab1AEJuo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 04:49:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:organization:to:subject:date:user-agent:cc:references
-         :in-reply-to:mime-version:content-type:content-transfer-encoding
-         :message-id;
-        b=CrIjqysq/bUHZwqC47Aa9oPMqLlEzFWZccxHwZAutWLEN+93S7fEx74vAwZeZQBp54
-         eByMiOJFqMCIVWbYJuQ5xc8DDv3p7vQpj74sts6CtGmRSyR7EWSgNKkpaajgLNuWEbal
-         XBf4qP6fzBhq3/5ai1KxcymRfVTox+Ew5iaF0=
-From: Florian Fainelli <florian@openwrt.org>
-Organization: OpenWrt
-To: Axel Lin <axel.lin@gmail.com>
-Subject: Re: [PATCH] net: r6040: Return proper error for r6040_init_one
-Date: Wed, 5 Jan 2011 10:50:45 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.35-24-server; KDE/4.5.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org
-References: <1294216804.19064.2.camel@mola>
-In-Reply-To: <1294216804.19064.2.camel@mola>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101051050.45381.florian@openwrt.org>
+	Wed, 5 Jan 2011 04:50:44 -0500
+Subject: Re: [PATCH 7/7] perf: Add load latency monitoring on Intel
+ Nehalem/Westmere v2
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <1293464397.2695.109.camel@localhost>
+References: <1293464397.2695.109.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 05 Jan 2011 10:50:53 +0100
+Message-ID: <1294221053.2016.206.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 05 January 2011 09:40:04 Axel Lin wrote:
-> Return -ENOMEM instead of 0 for the case of mdiobus_alloc and kmalloc
-> failure.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On Mon, 2010-12-27 at 23:39 +0800, Lin Ming wrote:
+> +/* Bits(0-1) {L1, L2, L3, RAM} or {unknown, IO, uncached} */
+> +#define LD_LAT_L1                      0x00
+> +#define LD_LAT_L2                      0x01
+> +#define LD_LAT_L3                      0x02
+> +#define LD_LAT_RAM                     0x03
+> +#define LD_LAT_UNKNOWN                 0x00
+> +#define LD_LAT_IO                      0x01
+> +#define LD_LAT_UNCACHED                        0x02
+> +
+> +/* Bits(2-3) {not-used, snoop, local, remote} */
+> +#define LD_LAT_NOT_USED                        (0x00 << 2)
+> +#define LD_LAT_SNOOP                   (0x01 << 2)
+> +#define LD_LAT_LOCAL                   (0x02 << 2)
+> +#define LD_LAT_REMOTE                  (0x03 << 2)
+> +
+> +/* Bits(4-5) {modified, exclusive, shared, invalid} */
+> +#define LD_LAT_MODIFIED                        (0x00 << 4)
+> +#define LD_LAT_EXCLUSIVE               (0x01 << 4)
+> +#define LD_LAT_SHARED                  (0x02 << 4)
+> +#define LD_LAT_INVALID                 (0x03 << 4)
+> +
+> +#define LD_LAT_RESERVED                        0x3F
 
-Acked-by: Florian Fainelli <florian@openwrt.org>
 
-> ---
->  drivers/net/r6040.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/net/r6040.c b/drivers/net/r6040.c
-> index 0b014c89..27e6f6d 100644
-> --- a/drivers/net/r6040.c
-> +++ b/drivers/net/r6040.c
-> @@ -1153,6 +1153,7 @@ static int __devinit r6040_init_one(struct pci_dev
-> *pdev, lp->mii_bus = mdiobus_alloc();
->  	if (!lp->mii_bus) {
->  		dev_err(&pdev->dev, "mdiobus_alloc() failed\n");
-> +		err = -ENOMEM;
->  		goto err_out_unmap;
->  	}
-> 
-> @@ -1165,6 +1166,7 @@ static int __devinit r6040_init_one(struct pci_dev
-> *pdev, lp->mii_bus->irq = kmalloc(sizeof(int)*PHY_MAX_ADDR, GFP_KERNEL);
-> if (!lp->mii_bus->irq) {
->  		dev_err(&pdev->dev, "mii_bus irq allocation failed\n");
-> +		err = -ENOMEM;
->  		goto err_out_mdio;
->  	}
+Also, I guess we need to go actually look at the POWER, IA64 and other
+PMU docs to see if this sufficiently covers their data-source
+capabilities.
+
+Stephane, do you know of more PMUs with data-source capabilities we need
+to include in the audit, and do you happen to have all their docs
+readily available or do I need to ask google?
