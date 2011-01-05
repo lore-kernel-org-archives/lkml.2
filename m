@@ -1,92 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214Ab1AEXbV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:31:21 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33250 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752934Ab1AEXbU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:31:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:from:date:x-google-sender-auth:message-id
-         :subject:to:cc:content-type;
-        b=ZIf97V9vanIVIxoQ9kfkyJVeDkmeSr+LR44pZyCZUJlFhuhmM1hKutLYMTnMKrCY6V
-         hiTy5V2b1OfWXNgE+pJKEMIUazw9KbQkTIFFH8hwU12/EilBtQQykKKebPGFuuFAhYeY
-         uwc5790gFG4GpOM1n/toX5J9eJa+fMF3hFFpg=
+	id S1753138Ab1AEXek (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:34:40 -0500
+Received: from ozlabs.org ([203.10.76.45]:54253 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752791Ab1AEXej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 18:34:39 -0500
+Date: Thu, 6 Jan 2011 10:20:39 +1100
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>, sodaville@linutronix.de,
+        devicetree-discuss@lists.ozlabs.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/15] x86/dtb: Add a device tree for CE4100
+Message-ID: <20110105232039.GA8846@yookeroo>
+Mail-Followup-To: David Gibson <david@gibson.dropbear.id.au>,
+	Grant Likely <grant.likely@secretlab.ca>,
+	Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+	sodaville@linutronix.de, devicetree-discuss@lists.ozlabs.org,
+	x86@kernel.org, linux-kernel@vger.kernel.org
+References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de>
+ <1292600033-12271-4-git-send-email-bigeasy@linutronix.de>
+ <20101230085122.GE11721@angua.secretlab.ca>
 MIME-Version: 1.0
-From: Brice Arnould <unbrice@vleu.net>
-Date: Thu, 6 Jan 2011 00:30:49 +0100
-X-Google-Sender-Auth: gL35CY-WtnyccO0U9zyewF_kHLs
-Message-ID: <AANLkTi=i=gp36q2dBxK93QHqsGWUvSefTUSK5Kuq72Mf@mail.gmail.com>
-Subject: Microbenchmarking userspace synchronisation primitives
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, corentin.chary@gmail.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101230085122.GE11721@angua.secretlab.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Dec 30, 2010 at 01:51:22AM -0700, Grant Likely wrote:
+> On Fri, Dec 17, 2010 at 04:33:41PM +0100, Sebastian Andrzej Siewior wrote:
+[snip]
+> > +/dts-v1/;
+> > +/ {
+> > +	model = "Intel,FalconFalls";
+> > +	compatible = "Intel,FalconFalls";
+> 
+> To-date the convention has been to use all lowercase in compatible
+> properties.  Ditto throughout this file.
 
-I was microbenchmarking synchronisation primitives, and got very
-surprising results. Among other things, it seems to be cheaper to
-synchronize two processes (with a pipe) than it is to synchronize two
-threads of the same process. Also the benchmark runs faster when it's
-constrained to a single CPU with sched_setaffinity() which I think
-might indicate a suboptimal scheduling.
-The experience is as follow : A first process (or thread) transmits an
-integer to a second process (or thread) via a pipe (or via shared
-memory). This second process (or thread) answers back with the integer
-multiplied by two. The first process (or thread) then checks that the
-multiplication was correct.
-A single run of that experience is called an exchange. The
-microbenchmark consists in many exchanges.
+IEEE1275 actually explicitly gives the convention on p164, in the
+context of the "name" property.  The vendor string can either be all
+uppercase, in which case it must be a stock ticker symbol ("AAPL" is
+seen in the wild, for example), or it can be another string with no
+uppercase.
 
-The average number of exchanges per second is as follow :
-- Processes synchronized by a pipe          : 059171 exchanges/second
-- Threads synchronized by a pipe            : 031746 exchanges/second
-- (Threads synchronized by a pthread_barrier: 017825 exchanges/second)
+I'm sure some intel peripheral chips must have been used on existing
+OF platforms at various points.  It might be worth seeking those out
+and double checking what was used in those cases.
 
-Kernel : 2.6.35-24-generic #42-Ubuntu SMP
-CPU    : Intel Core 2 Duo CPU T8100 @ 2.10GHz (in 32 bit mode)
-Code   : git://github.com/unbrice/20110103_lkml_bench.git
-         Build with "make"
-         Run like "./rpc-piped_thread 1000000 1"
-         or "./rpc-piped_process 1000000 1"
-libc   : Glibc 2.12.1-0ubuntu10
-
-I was expecting that performance would vary with the different
-synchronization primitives. And it seems plausible that
-pthread_barrier being more "generic" (because it allows for
-synchronizing more than one thread) it should be slower.
-I was however surprised to see that synchronizing two threads of a
-single process via a pipe is slower than synchronizing two processes
-via a pipe. If I'm not misinterpreting perf(1), almost all the time is
-spent in try_to_wake_up so the cause might be there.
-
-While trying to find an explanation for this behavior, I forced the
-threads and processes to run on a CPU of my choice using
-sched_setaffinity().
-When forcing the threads and process on different CPUs, the results
-were as before.
-When forcing the threads and process on a single CPU, performance
-increased and processes stayed ahead of threads :
-- Processes synchronized by a pipe          : 401606 exchanges/second
-- Threads synchronized by a pipe            : 177304 exchanges/second
-- (Threads synchronized by a pthread_barrier: 087032 exchanges/second)
-
-If I'm not misinterpreting perf(1), those difference might be related
-to a decreasing number of cache misses (from ~25k to ~13k).
-
-Those numbers defy my understanding of what should be happening, which
-is why I'm humbly asking for a hint or a pointer to an explanation.
-I'm also hoping that the possible scheduler's suboptimal behavior can
-be worked upon by competent gurus, but acknowledge that this may not
-be usefull because we are just speaking of a microbenchmark.
-Also I think that I am going to be in similar situation with real
-application (AIs in the context of an AI contest). Do you have any
-suggestion wrt performances of that kind of applications ?
-
-Thank you in advance,
-Brice
+-- 
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
