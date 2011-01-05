@@ -1,118 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907Ab1AEPkA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 10:40:00 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33453 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097Ab1AEPj7 (ORCPT
+	id S1751779Ab1AEPnZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 10:43:25 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36808 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab1AEPnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 10:39:59 -0500
-Message-ID: <4D2490C3.4000407@pengutronix.de>
-Date: Wed, 05 Jan 2011 16:39:47 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Wed, 5 Jan 2011 10:43:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ODvM1Kf707fNXcDgY2JJCUmvC8o3XK9pnvb/DvEpb108m891GCBucBdeuPnmQwfwSc
+         FmCChKBF+X2Coqnc+ffoz2cj1hKs35TN5JApPymF+qlfMSxQEJe237nvXDEm1FO1ISJv
+         Mgg1JZgjLH02w69qXM9Szv62GAszjtvkwm+Bo=
 MIME-Version: 1.0
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-nfs@vger.kernel.org,
+In-Reply-To: <4D2487F9.8030704@redhat.com>
+References: <4CFF3DA4.5060705@jp.fujitsu.com>
+	<4CFF9A2C.1070401@fusionio.com>
+	<4D025154.8030400@redhat.com>
+	<20101210165553.GE31737@redhat.com>
+	<4D07D2AC.6000500@fusionio.com>
+	<4D0B68AF.80804@redhat.com>
+	<4D0BB4A1.8080305@fusionio.com>
+	<4D13664C.3020500@redhat.com>
+	<20101223153915.GE9502@redhat.com>
+	<4D13810B.8000304@redhat.com>
+	<20101224192916.GB2082@redhat.com>
+	<4D23423A.60707@redhat.com>
+	<1294157114.3579.102.camel@edumazet-laptop>
+	<4D2487F9.8030704@redhat.com>
+Date: Wed, 5 Jan 2011 17:43:22 +0200
+Message-ID: <AANLkTinnVv5wE0U=RrSKR40-u88VC8_XMctx=X0O3Tg7@mail.gmail.com>
+Subject: Re: [PATCH 1/2 v2] kref: add kref_test_and_get
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>, stable@kernel.org
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-References: <20101230171453.GA5787@pengutronix.de>	 <1293731992.4919.5.camel@heimdal.trondhjem.org>	 <20101230191846.GB14221@pengutronix.de>	 <20110103213850.GC25121@pengutronix.de>	 <1294100558.25100.8.camel@heimdal.trondhjem.org>	 <20110105084014.GN25121@pengutronix.de>	 <20110105110517.GQ25121@pengutronix.de>	 <20110105112701.GA8638@n2100.arm.linux.org.uk>	 <20110105134045.GS25121@pengutronix.de>	 <1294239193.3014.9.camel@heimdal.trondhjem.org>	 <4D2487CA.5040501@pengutronix.de>	 <1294240457.3014.13.camel@heimdal.trondhjem.org> <1294241369.3014.15.camel@heimdal.trondhjem.org>
-In-Reply-To: <1294241369.3014.15.camel@heimdal.trondhjem.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigB02CF3540C51CE001DA01B7E"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <greg@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigB02CF3540C51CE001DA01B7E
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jan 5, 2011 at 5:02 PM, Jerome Marchand <jmarchan@redhat.com> wrote:
+> Add kref_test_and_get() function, which atomically add a reference only if
+> refcount is not zero. This prevent to add a reference to an object that is
+> already being removed.
 
-On 01/05/2011 04:29 PM, Trond Myklebust wrote:
-> On Wed, 2011-01-05 at 10:14 -0500, Trond Myklebust wrote:=20
->> OK. So,the new behaviour in 2.6.37 is that we're writing to a series o=
-f
->> pages via the usual kmap_atomic()/kunmap_atomic() and kmap()/kunmap()
->> interfaces, but we can end up reading them via a virtual address range=
-
->> that gets set up via vm_map_ram() (that range gets set up before the
->> write occurs).
->>
->> Do we perhaps need an invalidate_kernel_vmap_range() before we can rea=
-d
->> the data on ARM in this kind of scenario?
->=20
-> IOW: Does something like the following patch fix the problem?
->=20
-> -----------------------------------------------------------------------=
---------=20
-> From: Trond Myklebust <Trond.Myklebust@netapp.com>
-> NFS: Ensure we clean the TLB cache in nfs_readdir_xdr_to_array
->    =20
-> After calling nfs_readdir_xdr_filler(), we need a call to
-> invalidate_kernel_vmap_range() before we can proceed to read
-> the data back through the virtual address range.
->    =20
-> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-> ---
-> diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-> index 996dd89..4640470 100644
-> --- a/fs/nfs/dir.c
-> +++ b/fs/nfs/dir.c
-> @@ -587,6 +587,9 @@ int nfs_readdir_xdr_to_array(nfs_readdir_descriptor=
-_t *desc, struct page *page,
->  		if (status < 0)
->  			break;
->  		pglen =3D status;
-> +
-> +		invalidate_kernel_vmap_range(pages_ptr, pglen);
-> +
->  		status =3D nfs_readdir_page_filler(desc, &entry, pages_ptr, page, pg=
-len);
->  		if (status < 0) {
->  			if (status =3D=3D -ENOSPC)
-
-\o/ - Works for me (at91, armv5)
-
-Tested-by: Marc Kleine-Budde <mkl@pengutronix.de>
-
-This is a candidate for stable (Cc'd).
-
-Regards,
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enigB02CF3540C51CE001DA01B7E
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk0kkMYACgkQjTAFq1RaXHPajACffedzEyEWRnmcOeWvtOwT0eYz
-IE0AnjKE3Yl1uIDNmr4RH9Ma1tro+3+r
-=JxJd
------END PGP SIGNATURE-----
-
---------------enigB02CF3540C51CE001DA01B7E--
+Is kref supposed to be used only for "toy" structures where you aren't
+expected to do get possibly dead object?
