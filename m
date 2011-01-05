@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751370Ab1AEQRH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 11:17:07 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:58851 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097Ab1AEQRF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 11:17:05 -0500
-Date: Wed, 5 Jan 2011 09:17:00 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sam Ravnborg <sam@ravnborg.org>, David Miller <davem@davemloft.net>,
-        Andres Salomon <dilinger@queued.net>
-Subject: Re: linux-next: manual merge of the devicetree tree with the sparc
- tree
-Message-ID: <20110105161700.GB17272@angua.secretlab.ca>
-References: <20110105133557.dae27abf.sfr@canb.auug.org.au>
+	id S1751574Ab1AEQT2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 11:19:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34521 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751026Ab1AEQT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 11:19:27 -0500
+Message-ID: <4D249A07.5020507@redhat.com>
+Date: Wed, 05 Jan 2011 17:19:19 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20091014 Fedora/3.0-2.8.b4.fc11 Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110105133557.dae27abf.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Greg KH <greg@kroah.com>
+CC: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
+        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] block: fix accounting bug on cross partition merges
+References: <4D0B68AF.80804@redhat.com> <4D0BB4A1.8080305@fusionio.com> <4D13664C.3020500@redhat.com> <20101223153915.GE9502@redhat.com> <4D13810B.8000304@redhat.com> <20101224192916.GB2082@redhat.com> <4D23423A.60707@redhat.com> <4D2342E1.8010405@redhat.com> <20110104210011.GB4180@kroah.com> <4D247760.9050307@redhat.com> <20110105160034.GE2072@kroah.com>
+In-Reply-To: <20110105160034.GE2072@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 05, 2011 at 01:35:57PM +1100, Stephen Rothwell wrote:
-> Hi Grant,
+On 01/05/2011 05:00 PM, Greg KH wrote:
+> On Wed, Jan 05, 2011 at 02:51:28PM +0100, Jerome Marchand wrote:
+>> On 01/04/2011 10:00 PM, Greg KH wrote:
+>>> On Tue, Jan 04, 2011 at 04:55:13PM +0100, Jerome Marchand wrote:
+>>>> Also add a refcount to struct hd_struct to keep the partition in
+>>>> memory as long as users exist. We use kref_test_and_get() to ensure
+>>>> we don't add a reference to a partition which is going away.
+>>>
+>>> No, don't do this, use a kref correctly and no such function should be
+>>> needed.
+>>>
+>>>> +	} else {
+>>>> +		part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
+>>>
+>>> That is the function that should properly increment the reference count
+>>> on the object.
+>>
+>> Agreed.
+>>
+>>>  If the object is "being removed", then it will return
+>>> NULL and you need to check that.  Do that and you do not need to add:
+>>
+>> The object is actually removed in a rcu callback function. We could
+>> certainly add a flag to hd_struct, set by the release function, to
+>> indicate disk_map_sector_rcu() that the partition is being removed, but
+>> why not use the refcount instead?
 > 
-> Today's linux-next merge of the devicetree tree got a conflict in
-> arch/sparc/prom/tree_32.c between commit
-> 1f42be484ffc5559a29466c82adac7dd472d4439 ("sparc: remove unused prom tree
-> functions") from the sparc tree and commit
-> 4a3a255289e7e322b8044286cce85031990f888a ("sparc: explicitly cast
-> negative phandle checks to s32") from the devicetree tree.
+> Because you have to properly serialize the grabbing of a kref if you
+> don't have a valid pointer in the first place, otherwise it will not
+> work properly at all.  Your new function still does not properly handle
+> the race condition of dropping the last reference and then having the
+> kref be cleaned up.  You are giving false hope to the user of the api
+> that what they are doing is correct.
 > 
-> The former removes the code modified by the latter, so I just removed it.
 
-Okay, thanks Stephen.
+For clarification, is your objection only about not adding that misleading
+function to kref api (I understand that), or is my code actually racy?
 
-g.
-
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
-
+thanks,
+Jerome
 
