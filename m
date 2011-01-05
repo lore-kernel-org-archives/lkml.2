@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398Ab1AETcr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 14:32:47 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:11429 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324Ab1AETcq (ORCPT
+	id S1752648Ab1AETdc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 14:33:32 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:37983 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751723Ab1AETdc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 14:32:46 -0500
-Message-ID: <4D24C756.9070302@caviumnetworks.com>
-Date: Wed, 05 Jan 2011 11:32:38 -0800
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Jason Baron <jbaron@redhat.com>, Ralf Baechle <ralf@linux-mips.org>,
-        peterz@infradead.org, mathieu.desnoyers@polymtl.ca, tglx@linutronix.de,
-        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
-        davem@davemloft.net, sam@ravnborg.org, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] jump label: introduce static_branch()
-References: <cover.1294239591.git.jbaron@redhat.com> <2d8c38bd7ca93e162aedb8e7acfc8bdb96d85de2.1294239591.git.jbaron@redhat.com> <4D24AB1B.2010209@caviumnetworks.com> <1294249439.26623.35.camel@gandalf.stny.rr.com> <4D24BED1.5000900@zytor.com> <20110105191424.GA7820@elte.hu>
-In-Reply-To: <20110105191424.GA7820@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 05 Jan 2011 19:32:44.0342 (UTC) FILETIME=[53464560:01CBAD0F]
+	Wed, 5 Jan 2011 14:33:32 -0500
+Subject: Re: [RFC][PATCH 11/18] sched: Add p->pi_lock to task_rq_lock()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
+        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20110105184644.GA28306@redhat.com>
+References: <20110104145929.772813816@chello.nl>
+	 <20110104150102.862431889@chello.nl>  <20110105184644.GA28306@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 05 Jan 2011 20:33:34 +0100
+Message-ID: <1294256014.2016.284.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2011 11:14 AM, Ingo Molnar wrote:
->
-> * H. Peter Anvin<hpa@zytor.com>  wrote:
->
->> On 01/05/2011 09:43 AM, Steven Rostedt wrote:
->>> On Wed, 2011-01-05 at 09:32 -0800, David Daney wrote:
->>>
->>>> This patch will conflict with the MIPS jump label support that Ralf has
->>>> queued up for 2.6.38.
->>>
->>> Can you disable that support for now? As Linus said at Kernel Summit,
->>> other archs jumped too quickly onto the jump label band wagon. This
->>> change really needs to get in, and IMO, it is more critical to clean up
->>> the jump label code than to have other archs implementing it.
->>>
->>
->> Ralf is really good... perhaps we can get the conflicts resolved?
->
-> Yep, the best Git-ish way to handle that is to resolve the conflicts whenever they
-> happen - i.e. whoever merges his tree upstream later. No need for anyone to 'wait'
-> or undo anything.
->
+On Wed, 2011-01-05 at 19:46 +0100, Oleg Nesterov wrote:
 
-There will be no git conflicts, as the affected files are disjoint.  It 
-will be manifested as a build failure for MIPS, which is why I raised 
-the issue.
+> One purely cosmetic nit,
 
-No matter I guess.  We will undoubtedly have many -rc releases in which 
-we can merge any required adjustments.
+Fixed those, thanks!
 
-David Daney
+> Hmm, and normalize_rt_tasks(), it could just do task_rq_lock/task_rq_unlock.
+> And why it does read_lock_irqsave(tasklist), btw? _irqsave looks unneeded. 
+
+I'm not quite sure, I think we can make that an RCU iteration of the
+taskset as well, no need to even hold the task-lock, it would render the
+sysrq button useless in the face of a RT fork bomb, but I'm not sure we
+really care about that at all.
+
+Ingo, Thomas?
