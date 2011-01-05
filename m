@@ -1,39 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751696Ab1AEP3I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 10:29:08 -0500
-Received: from kanga.kvack.org ([205.233.56.17]:54919 "EHLO kanga.kvack.org"
+	id S1751855Ab1AEP3t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 10:29:49 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:5844 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751256Ab1AEP3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 10:29:07 -0500
-X-Greylist: delayed 1698 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Jan 2011 10:29:07 EST
-Date: Wed, 5 Jan 2011 10:00:48 -0500
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org
-Subject: Re: [PATCH 21/32] fs/aio: aio_wq isn't used in memory reclaim path
-Message-ID: <20110105150048.GA32455@kvack.org>
-References: <1294062595-30097-1-git-send-email-tj@kernel.org> <1294062595-30097-22-git-send-email-tj@kernel.org> <x49d3ocacij.fsf@segfault.boston.devel.redhat.com> <20110105112802.GA7669@mtj.dyndns.org> <x49d3obqu9a.fsf@segfault.boston.devel.redhat.com>
+	id S1751231Ab1AEP3r convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 10:29:47 -0500
+X-IronPort-AV: E=Sophos;i="4.60,278,1291622400"; 
+   d="scan'208";a="501946900"
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-nfs@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>
+In-Reply-To: <1294240457.3014.13.camel@heimdal.trondhjem.org>
+References: <20101230171453.GA5787@pengutronix.de>
+	 <1293731992.4919.5.camel@heimdal.trondhjem.org>
+	 <20101230191846.GB14221@pengutronix.de>
+	 <20110103213850.GC25121@pengutronix.de>
+	 <1294100558.25100.8.camel@heimdal.trondhjem.org>
+	 <20110105084014.GN25121@pengutronix.de>
+	 <20110105110517.GQ25121@pengutronix.de>
+	 <20110105112701.GA8638@n2100.arm.linux.org.uk>
+	 <20110105134045.GS25121@pengutronix.de>
+	 <1294239193.3014.9.camel@heimdal.trondhjem.org>
+	 <4D2487CA.5040501@pengutronix.de>
+	 <1294240457.3014.13.camel@heimdal.trondhjem.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Wed, 05 Jan 2011 10:29:29 -0500
+Message-ID: <1294241369.3014.15.camel@heimdal.trondhjem.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <x49d3obqu9a.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.4.2.2i
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 05 Jan 2011 15:29:31.0389 (UTC) FILETIME=[59325AD0:01CBACED]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 05, 2011 at 09:50:57AM -0500, Jeff Moyer wrote:
-> > Yeap.  Do you agree that the concurrency limit is necessary?  If not,
-> > we can just put everything onto system_wq.
+On Wed, 2011-01-05 at 10:14 -0500, Trond Myklebust wrote: 
+> OK. So,the new behaviour in 2.6.37 is that we're writing to a series of
+> pages via the usual kmap_atomic()/kunmap_atomic() and kmap()/kunmap()
+> interfaces, but we can end up reading them via a virtual address range
+> that gets set up via vm_map_ram() (that range gets set up before the
+> write occurs).
 > 
-> I'm not sure whether it's strictly necessary (there may very well be a
-> need for this in the usb gadgetfs code), but keeping it the same at
-> least seems safe.
+> Do we perhaps need an invalidate_kernel_vmap_range() before we can read
+> the data on ARM in this kind of scenario?
 
-Limiting concurrency on aio requests is exactly the opposite of what the 
-usb gadgetfs requires.  It's similarly bad for filesystem aio when there's 
-a mix of small and large requests in flight.
+IOW: Does something like the following patch fix the problem?
 
-		-ben
+------------------------------------------------------------------------------- 
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+NFS: Ensure we clean the TLB cache in nfs_readdir_xdr_to_array
+    
+After calling nfs_readdir_xdr_filler(), we need a call to
+invalidate_kernel_vmap_range() before we can proceed to read
+the data back through the virtual address range.
+    
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+---
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index 996dd89..4640470 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -587,6 +587,9 @@ int nfs_readdir_xdr_to_array(nfs_readdir_descriptor_t *desc, struct page *page,
+ 		if (status < 0)
+ 			break;
+ 		pglen = status;
++
++		invalidate_kernel_vmap_range(pages_ptr, pglen);
++
+ 		status = nfs_readdir_page_filler(desc, &entry, pages_ptr, page, pglen);
+ 		if (status < 0) {
+ 			if (status == -ENOSPC)
+
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
