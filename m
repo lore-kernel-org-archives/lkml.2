@@ -1,95 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab1AEVQx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 16:16:53 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49422 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751429Ab1AEVQw (ORCPT
+	id S1752908Ab1AEVRC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 16:17:02 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:19326 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752817Ab1AEVQ7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 16:16:52 -0500
-Date: Wed, 5 Jan 2011 13:16:13 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Eric B Munson <emunson@mgebm.net>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, mel@csn.ul.ie,
-        caiqian@redhat.com, mhocko@suse.cz, stable@kernel.org
-Subject: Re: [PATCH V2] Fix handling of parse errors in sysfs
-Message-Id: <20110105131613.92e2c274.akpm@linux-foundation.org>
-In-Reply-To: <1294258593-15009-1-git-send-email-emunson@mgebm.net>
-References: <1294258593-15009-1-git-send-email-emunson@mgebm.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Wed, 5 Jan 2011 16:16:59 -0500
+X-IronPort-AV: E=Sophos;i="4.60,279,1291622400"; 
+   d="scan'208";a="502105158"
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
+In-Reply-To: <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com>
+References: <1294254337.16957.13.camel@mulgrave.site>
+	 <AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com>
+	 <1294256169.16957.18.camel@mulgrave.site>
+	 <20110105200008.GJ8638@n2100.arm.linux.org.uk>
+	 <1294259637.16957.25.camel@mulgrave.site>
+	 <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com>
+	 <20110105210448.GM8638@n2100.arm.linux.org.uk>
+	 <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Wed, 05 Jan 2011 16:16:48 -0500
+Message-ID: <1294262208.2952.4.camel@heimdal.trondhjem.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 05 Jan 2011 21:16:49.0607 (UTC) FILETIME=[DDBE1570:01CBAD1D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  5 Jan 2011 13:16:33 -0700
-Eric B Munson <emunson@mgebm.net> wrote:
-
-> When parsing changes to the huge page pool sizes made from userspace
-> via the sysfs interface, bogus input values are being covered up
-> by nr_hugepages_store_common and nr_overcommit_hugepages_store
-> returning 0 when strict_strtoul returns an error.  This can cause an
-> infinite loop in the nr_hugepages_store code.  This patch changes
-> the return value for these functions to -EINVAL when strict_strtoul
-> returns an error.
+On Wed, 2011-01-05 at 13:08 -0800, Linus Torvalds wrote: 
+> On Wed, Jan 5, 2011 at 1:04 PM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > On Wed, Jan 05, 2011 at 12:48:32PM -0800, Linus Torvalds wrote:
+> >> (You can also force the problem with vmalloc() an then following the
+> >> kernel page tables, but I hope nobody does that any more. I suspect
+> >> I'm wrong, though, there's probably code that mixes vmalloc and
+> >> physical page accesses in various drivers)
+> >
+> > Should vmalloc_to_page() (84 users)/vmalloc_to_pfn() (17 users) be
+> > deprecated then? ;)
 > 
+> I do think that the "modern" way of doing it is
+> "vmap()"/"vm_map_ram()" and friends, and it should be preferred over
+> using vmalloc() and then looking up the pages.
+> 
+> But in the end, the two approaches really are equivalent, so it's not
+> like it really matters. So I don't think we need to deprecate things
+> officially, but obviously we should make people more aware of the
+> whole virtual alias thing that crops up whenever you use any of these
+> approaches.
 
-ah, OK, there we are.
+So what should be the preferred way to ensure data gets flushed when
+you've written directly to a page, and then want to read through the
+vm_map_ram() virtual range? Should we be adding new semantics to
+flush_kernel_dcache_page()?
 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 8585524..5cb71a9 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -1440,7 +1440,7 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
->  
->  	err = strict_strtoul(buf, 10, &count);
->  	if (err)
-> -		return 0;
-> +		return -EINVAL;
->  
->  	h = kobj_to_hstate(kobj, &nid);
->  	if (nid == NUMA_NO_NODE) {
-> @@ -1519,7 +1519,7 @@ static ssize_t nr_overcommit_hugepages_store(struct kobject *kobj,
->  
->  	err = strict_strtoul(buf, 10, &input);
->  	if (err)
-> -		return 0;
-> +		return -EINVAL;
->  
->  	spin_lock(&hugetlb_lock);
->  	h->nr_overcommit_huge_pages = input;
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-strict_strtoul() returns an errno - thise code should propagate it, not
-overwrite it.
-
-Here's what I ended up with:
-
-
-diff -puN mm/hugetlb.c~fix-handling-of-parse-errors-in-sysfs mm/hugetlb.c
---- a/mm/hugetlb.c~fix-handling-of-parse-errors-in-sysfs
-+++ a/mm/hugetlb.c
-@@ -1375,10 +1375,8 @@ static ssize_t nr_hugepages_store_common
- 	NODEMASK_ALLOC(nodemask_t, nodes_allowed, GFP_KERNEL | __GFP_NORETRY);
- 
- 	err = strict_strtoul(buf, 10, &count);
--	if (err) {
--		err = 0;		/* This seems wrong */
-+	if (err)
- 		goto out;
--	}
- 
- 	h = kobj_to_hstate(kobj, &nid);
- 	if (h->order >= MAX_ORDER) {
-@@ -1468,7 +1466,7 @@ static ssize_t nr_overcommit_hugepages_s
- 
- 	err = strict_strtoul(buf, 10, &input);
- 	if (err)
--		return 0;
-+		return err;
- 
- 	spin_lock(&hugetlb_lock);
- 	h->nr_overcommit_huge_pages = input;
-_
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
