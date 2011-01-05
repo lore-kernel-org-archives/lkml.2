@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439Ab1AEXIZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:08:25 -0500
-Received: from kroah.org ([198.145.64.141]:50826 "EHLO coco.kroah.org"
+	id S1753304Ab1AEXGg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:06:36 -0500
+Received: from kroah.org ([198.145.64.141]:50811 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753324Ab1AEXGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:06:37 -0500
+	id S1753279Ab1AEXGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 18:06:34 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 15:03:26 2011
-Message-Id: <20110105230326.382281092@clark.site>
+Message-Id: <20110105230326.068443369@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 15:00:47 -0800
+Date: Wed, 05 Jan 2011 15:00:44 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
         Suresh Siddha <suresh.b.siddha@intel.com>,
         Chris Wright <chrisw@sous-sol.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
         "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [29/49] x86, vt-d: Quirk for masking vtd spec errors to platform error handling logic
+Subject: [26/49] x86: Enable the intr-remap fault handling after local APIC setup
 In-Reply-To: <20110105230438.GA26241@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,72 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Suresh Siddha <suresh.b.siddha@intel.com>
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
 
-commit 254e42006c893f45bca48f313536fcba12206418 upstream.
+commit 7f7fbf45c6b748074546f7f16b9488ca71de99c1 upstream.
 
-On platforms with Intel 7500 chipset, there were some reports of system
-hang/NMI's during kexec/kdump in the presence of interrupt-remapping enabled.
+Interrupt-remapping gets enabled very early in the boot, as it determines the
+apic mode that the processor can use. And the current code enables the vt-d
+fault handling before the setup_local_APIC(). And hence the APIC LDR registers
+and data structure in the memory may not be initialized. So the vt-d fault
+handling in logical xapic/x2apic modes were broken.
 
-During kdump, there is a window where the devices might be still using old
-kernel's interrupt information, while the kdump kernel is coming up. This can
-cause vt-d faults as the interrupt configuration from the old kernel map to
-null IRTE entries in the new kernel etc. (with out interrupt-remapping enabled,
-we still have the same issue but in this case we will see benign spurious
-interrupt hit the new kernel).
+Fix this by enabling the vt-d fault handling in the end_local_APIC_setup()
 
-Based on platform config settings, these platforms seem to generate NMI/SMI
-when a vt-d fault happens and there were reports that the resulting SMI causes
-the  system to hang.
+A cleaner fix of enabling fault handling while enabling intr-remapping
+will be addressed for v2.6.38. [ Enabling intr-remapping determines the
+usage of x2apic mode and the apic mode determines the fault-handling
+configuration. ]
 
-Fix it by masking vt-d spec defined errors to platform error reporting logic.
-VT-d spec related errors are already handled by the VT-d OS code, so need to
-report the same error through other channels.
-
+Signed-off-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+LKML-Reference: <20101201062244.541996375@intel.com>
 Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-LKML-Reference: <1291667190.2675.8.camel@sbsiddha-MOBL3.sc.intel.com>
-Reported-by: Max Asbock <masbock@linux.vnet.ibm.com>
-Reported-and-tested-by: Takao Indoh <indou.takao@jp.fujitsu.com>
 Acked-by: Chris Wright <chrisw@sous-sol.org>
-Acked-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/quirks.c |   23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+ arch/x86/kernel/apic/apic.c     |    8 ++++++++
+ arch/x86/kernel/apic/probe_64.c |    7 -------
+ 2 files changed, 8 insertions(+), 7 deletions(-)
 
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2575,6 +2575,29 @@ extern struct pci_fixup __end_pci_fixups
- extern struct pci_fixup __start_pci_fixups_suspend[];
- extern struct pci_fixup __end_pci_fixups_suspend[];
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1361,6 +1361,14 @@ void __cpuinit end_local_APIC_setup(void
  
-+#if defined(CONFIG_DMAR) || defined(CONFIG_INTR_REMAP)
-+#define VTUNCERRMSK_REG	0x1ac
-+#define VTD_MSK_SPEC_ERRORS	(1 << 31)
-+/*
-+ * This is a quirk for masking vt-d spec defined errors to platform error
-+ * handling logic. With out this, platforms using Intel 7500, 5500 chipsets
-+ * (and the derivative chipsets like X58 etc) seem to generate NMI/SMI (based
-+ * on the RAS config settings of the platform) when a vt-d fault happens.
-+ * The resulting SMI caused the system to hang.
-+ *
-+ * VT-d spec related errors are already handled by the VT-d OS code, so no
-+ * need to report the same error through other channels.
-+ */
-+static void vtd_mask_spec_errors(struct pci_dev *dev)
-+{
-+	u32 word;
+ 	setup_apic_nmi_watchdog(NULL);
+ 	apic_pm_activate();
 +
-+	pci_read_config_dword(dev, VTUNCERRMSK_REG, &word);
-+	pci_write_config_dword(dev, VTUNCERRMSK_REG, word | VTD_MSK_SPEC_ERRORS);
-+}
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, 0x342e, vtd_mask_spec_errors);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, 0x3c28, vtd_mask_spec_errors);
-+#endif
++	/*
++	 * Now that local APIC setup is completed for BP, configure the fault
++	 * handling for interrupt remapping.
++	 */
++	if (!smp_processor_id() && intr_remapping_enabled)
++		enable_drhd_fault_handling();
++
+ }
  
- void pci_fixup_device(enum pci_fixup_pass pass, struct pci_dev *dev)
- {
+ #ifdef CONFIG_X86_X2APIC
+--- a/arch/x86/kernel/apic/probe_64.c
++++ b/arch/x86/kernel/apic/probe_64.c
+@@ -76,13 +76,6 @@ void __init default_setup_apic_routing(v
+ 		/* need to update phys_pkg_id */
+ 		apic->phys_pkg_id = apicid_phys_pkg_id;
+ 	}
+-
+-	/*
+-	 * Now that apic routing model is selected, configure the
+-	 * fault handling for intr remapping.
+-	 */
+-	if (intr_remapping_enabled)
+-		enable_drhd_fault_handling();
+ }
+ 
+ /* Same for both flat and physical. */
 
 
