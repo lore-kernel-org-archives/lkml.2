@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751329Ab1AEBcM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 20:32:12 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:13844 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064Ab1AEBcL convert rfc822-to-8bit (ORCPT
+	id S1751309Ab1AEBir (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 20:38:47 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:50745 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078Ab1AEBio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 20:32:11 -0500
+	Tue, 4 Jan 2011 20:38:44 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=Lz4TPBHPKP4qSpL6mVkDgrt6ASS7KVqD0dbyVpl9g+GzLAjcebFJxuEE3irkihRJFw
-         EEw1Jf/Pyc1Y0PMNHPqw==
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=aQi012e+dq6lawi8kUOMpayyFBH1MgcljARxkGS9JTVOlYrGNSFyuhHfdu28CSoXSV
+         BvWSn3yfRXRTdXz6SS93pt32IyBycj9kVb7Kqx7rUMyBUgYN/NY/x5cM3k0imp7ckzWw
+         HGR/NXpuJnV2gF13B2pbjkBSowrsr21ZC6eG8=
+Message-ID: <4D23CBAC.4000506@lwfinger.net>
+Date: Tue, 04 Jan 2011 19:38:52 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <4D22D7BE.4070702@cn.fujitsu.com>
-References: <4D22D7BE.4070702@cn.fujitsu.com>
-From: Paul Menage <menage@google.com>
-Date: Tue, 4 Jan 2011 17:31:47 -0800
-Message-ID: <AANLkTinG2UkH4nsPiM6=jhLFBujonK9e0yf5CijhuaZ_@mail.gmail.com>
-Subject: Re: [PATCH RESEND] cgroups: fix incorrect using rcu_dereference() in cgroup_subsys_state()
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+CC: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>,
+        Matt Mackall <mpm@selenic.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
+        Harald Welte <HaraldWelte@viatech.com>,
+        Michal Ludvig <michal@logix.cz>
+Subject: Re: 2.6.37-rc7: Regression: b43: crashes in hwrng_register()
+References: <4D1D27E7.7030301@lwfinger.net> <20101231022550.GA2512@darkside.kls.lan> <20101231024653.GA24879@gondor.apana.org.au> <20101231085103.GA31935@darkside.kls.lan> <20110104043338.GA27604@gondor.apana.org.au> <20110104121957.GA27114@darkside.kls.lan> <20110104123824.GA31557@gondor.apana.org.au> <20110104125722.GC27114@darkside.kls.lan> <20110104224238.GA4978@gondor.apana.org.au> <4D23B7D8.7090701@lwfinger.net> <20110105001940.GA5558@gondor.apana.org.au>
+In-Reply-To: <20110105001940.GA5558@gondor.apana.org.au>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 4, 2011 at 12:18 AM, Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
-> From: Li Zefan <lizf@cn.fujitsu.com>
-> Date: Mon, 25 Aug 2008 11:05:28 +0800
-> (Original) Subject: [PATCH] cgroup: fix wrong rcu_dereference()
->
-> It is tsk->cgroups which is protected by RCU, not ->subsys[subsys_id].
->
-> laijs: updated it(the surrounding code have been changed since these two years).
->
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
-> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-> index ed4ba11..a798814 100644
-> --- a/include/linux/cgroup.h
-> +++ b/include/linux/cgroup.h
-> @@ -535,10 +535,11 @@ static inline struct cgroup_subsys_state *cgroup_subsys_state(
->  * cgroup_subsys::attach() methods.
->  */
->  #define task_subsys_state_check(task, subsys_id, __c)                  \
-> -       rcu_dereference_check(task->cgroups->subsys[subsys_id],         \
-> +       rcu_dereference_check(task->cgroups,                            \
->                              rcu_read_lock_held() ||                   \
->                              lockdep_is_held(&task->alloc_lock) ||     \
-> -                             cgroup_lock_is_held() || (__c))
-> +                             cgroup_lock_is_held() ||                  \
-> +                             (__c))->subsys[subsys_id]
+On 01/04/2011 06:19 PM, Herbert Xu wrote:
+> 
+> PTR_ALIGN (and ALIGN) rounds up, not down.
 
-Can you reformat this a bit? It took a fair bit of staring to realize
-that (__c))->subsys[subsys_id] wasn't trying to dereference __c.
+I see where I got lost in the macro expansions.
 
-Maybe make it:
+I'm still trying to understand the need for the __attribute__ on the definition
+for buf.
 
-#define task_subsys_state_check(task, subsys_id, __c) ({ \
-  struct css_set *_css = rcu_dereference_check(...); \
-  _css->subsys[subsys_id]; \
-})
-
-Paul
+Larry
