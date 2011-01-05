@@ -1,401 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177Ab1AERei (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 12:34:38 -0500
-Received: from 89-230.252-81.static-ip.oleane.fr ([81.252.230.89]:38901 "EHLO
-	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257Ab1AERef (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 12:34:35 -0500
-X-Greylist: delayed 440 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Jan 2011 12:34:34 EST
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-To: Stephane Chatty <chatty@enac.fr>, Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Subject: [RFC v2 07/10] hid-multitouch: migrated support for MosArt panels
-Date: Wed,  5 Jan 2011 18:27:45 +0100
-Message-Id: <1294248468-19979-8-git-send-email-benjamin.tissoires@enac.fr>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1294248468-19979-1-git-send-email-benjamin.tissoires@enac.fr>
-References: <1294248468-19979-1-git-send-email-benjamin.tissoires@enac.fr>
+	id S1752412Ab1AERfq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 12:35:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28221 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752242Ab1AERfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 12:35:44 -0500
+Message-ID: <4D24ABD7.4040503@redhat.com>
+Date: Wed, 05 Jan 2011 19:35:19 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>
+CC: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>
+Subject: Re: [RFC -v3 PATCH 2/3] sched: add yield_to function
+References: <20110103162637.29f23c40@annuminas.surriel.com>	 <20110103162918.577a9620@annuminas.surriel.com>	 <1294164289.2016.186.camel@laptop>  <4D24A5F4.3000508@redhat.com>	 <1294247718.2016.269.camel@laptop>  <4D24A822.4000009@redhat.com> <1294248511.2016.274.camel@laptop>
+In-Reply-To: <1294248511.2016.274.camel@laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Migrated support for MosArt dual-touch panels to the unified driver.
+On 01/05/2011 07:28 PM, Peter Zijlstra wrote:
+> On Wed, 2011-01-05 at 19:19 +0200, Avi Kivity wrote:
+> >  On 01/05/2011 07:15 PM, Peter Zijlstra wrote:
+> >  >  On Wed, 2011-01-05 at 19:10 +0200, Avi Kivity wrote:
+> >  >  >   On 01/04/2011 08:04 PM, Peter Zijlstra wrote:
+> >  >  >   >   This definitely wants to be EXPORT_SYMBOL_GPL() and if it were possible
+> >  >  >   >   I'd make it so only kvm.o could use it. It really sucks that kvm is a
+> >  >  >   >   module.
+> >  >  >
+> >  >  >   Why does it suck?  I mean apart from the "virtualization is crap" song.
+> >  >
+> >  >  Because it needs hooks all over the core kernel, like this yield_to()
+> >  >  stuff. Exporting this might lead to others wanting to use it too.
+> >
+> >  Well, it's very convenient for development (modprobe vs. reboot).
+>
+> Get a machine that boots fast ;-), it might be because I've never worked
+> on anything modular, but typically stuff crashes when I got it wrong, in
+> which case you're forced to power-cycle anyway.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Signed-off-by: Stéphane Chatty <chatty@enac.fr>
----
- drivers/hid/Kconfig          |    6 -
- drivers/hid/Makefile         |    1 -
- drivers/hid/hid-mosart.c     |  275 ------------------------------------------
- drivers/hid/hid-multitouch.c |   15 +++
- 4 files changed, 15 insertions(+), 282 deletions(-)
- delete mode 100644 drivers/hid/hid-mosart.c
+I often get by with just guest crashes.  Or maybe it oopses, I look 
+around, then reboot at my leisure.
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index faf27c0..74c6bf5 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -266,12 +266,6 @@ config HID_MICROSOFT
- 	---help---
- 	Support for Microsoft devices that are not fully compliant with HID standard.
- 
--config HID_MOSART
--	tristate "MosArt dual-touch panels"
--	depends on USB_HID
--	---help---
--	Support for MosArt dual-touch panels.
--
- config HID_MONTEREY
- 	tristate "Monterey Genius KB29E keyboard" if EMBEDDED
- 	depends on USB_HID
-diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
-index 1a0190d..28144cb 100644
---- a/drivers/hid/Makefile
-+++ b/drivers/hid/Makefile
-@@ -44,7 +44,6 @@ obj-$(CONFIG_HID_LOGITECH)	+= hid-logitech.o
- obj-$(CONFIG_HID_MAGICMOUSE)    += hid-magicmouse.o
- obj-$(CONFIG_HID_MICROSOFT)	+= hid-microsoft.o
- obj-$(CONFIG_HID_MONTEREY)	+= hid-monterey.o
--obj-$(CONFIG_HID_MOSART)	+= hid-mosart.o
- obj-$(CONFIG_HID_MULTITOUCH)	+= hid-multitouch.o
- obj-$(CONFIG_HID_NTRIG)		+= hid-ntrig.o
- obj-$(CONFIG_HID_ORTEK)		+= hid-ortek.o
-diff --git a/drivers/hid/hid-mosart.c b/drivers/hid/hid-mosart.c
-deleted file mode 100644
-index ac5421d..0000000
---- a/drivers/hid/hid-mosart.c
-+++ /dev/null
-@@ -1,275 +0,0 @@
--/*
-- *  HID driver for the multitouch panel on the ASUS EeePC T91MT
-- *
-- *  Copyright (c) 2009-2010 Stephane Chatty <chatty@enac.fr>
-- *  Copyright (c) 2010 Teemu Tuominen <teemu.tuominen@cybercom.com>
-- *
-- */
--
--/*
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms of the GNU General Public License as published by the Free
-- * Software Foundation; either version 2 of the License, or (at your option)
-- * any later version.
-- */
--
--#include <linux/device.h>
--#include <linux/hid.h>
--#include <linux/module.h>
--#include <linux/slab.h>
--#include <linux/usb.h>
--#include "usbhid/usbhid.h"
--
--MODULE_AUTHOR("Stephane Chatty <chatty@enac.fr>");
--MODULE_DESCRIPTION("MosArt dual-touch panel");
--MODULE_LICENSE("GPL");
--
--#include "hid-ids.h"
--
--struct mosart_data {
--	__u16 x, y;
--	__u8 id;
--	bool valid;		/* valid finger data, or just placeholder? */
--	bool first;		/* is this the first finger in this frame? */
--	bool activity_now;	/* at least one active finger in this frame? */
--	bool activity;		/* at least one active finger previously? */
--};
--
--static int mosart_input_mapping(struct hid_device *hdev, struct hid_input *hi,
--		struct hid_field *field, struct hid_usage *usage,
--		unsigned long **bit, int *max)
--{
--	switch (usage->hid & HID_USAGE_PAGE) {
--
--	case HID_UP_GENDESK:
--		switch (usage->hid) {
--		case HID_GD_X:
--			hid_map_usage(hi, usage, bit, max,
--					EV_ABS, ABS_MT_POSITION_X);
--			/* touchscreen emulation */
--			input_set_abs_params(hi->input, ABS_X,
--						field->logical_minimum,
--						field->logical_maximum, 0, 0);
--			return 1;
--		case HID_GD_Y:
--			hid_map_usage(hi, usage, bit, max,
--					EV_ABS, ABS_MT_POSITION_Y);
--			/* touchscreen emulation */
--			input_set_abs_params(hi->input, ABS_Y,
--						field->logical_minimum,
--						field->logical_maximum, 0, 0);
--			return 1;
--		}
--		return 0;
--
--	case HID_UP_DIGITIZER:
--		switch (usage->hid) {
--		case HID_DG_CONFIDENCE:
--		case HID_DG_TIPSWITCH:
--		case HID_DG_INPUTMODE:
--		case HID_DG_DEVICEINDEX:
--		case HID_DG_CONTACTCOUNT:
--		case HID_DG_CONTACTMAX:
--		case HID_DG_TIPPRESSURE:
--		case HID_DG_WIDTH:
--		case HID_DG_HEIGHT:
--			return -1;
--		case HID_DG_INRANGE:
--			/* touchscreen emulation */
--			hid_map_usage(hi, usage, bit, max, EV_KEY, BTN_TOUCH);
--			return 1;
--
--		case HID_DG_CONTACTID:
--			hid_map_usage(hi, usage, bit, max,
--					EV_ABS, ABS_MT_TRACKING_ID);
--			return 1;
--
--		}
--		return 0;
--
--	case 0xff000000:
--		/* ignore HID features */
--		return -1;
--	}
--
--	return 0;
--}
--
--static int mosart_input_mapped(struct hid_device *hdev, struct hid_input *hi,
--		struct hid_field *field, struct hid_usage *usage,
--		unsigned long **bit, int *max)
--{
--	if (usage->type == EV_KEY || usage->type == EV_ABS)
--		clear_bit(usage->code, *bit);
--
--	return 0;
--}
--
--/*
-- * this function is called when a whole finger has been parsed,
-- * so that it can decide what to send to the input layer.
-- */
--static void mosart_filter_event(struct mosart_data *td, struct input_dev *input)
--{
--	td->first = !td->first; /* touchscreen emulation */
--
--	if (!td->valid) {
--		/*
--		 * touchscreen emulation: if no finger in this frame is valid
--		 * and there previously was finger activity, this is a release
--		 */ 
--		if (!td->first && !td->activity_now && td->activity) {
--			input_event(input, EV_KEY, BTN_TOUCH, 0);
--			td->activity = false;
--		}
--		return;
--	}
--
--	input_event(input, EV_ABS, ABS_MT_TRACKING_ID, td->id);
--	input_event(input, EV_ABS, ABS_MT_POSITION_X, td->x);
--	input_event(input, EV_ABS, ABS_MT_POSITION_Y, td->y);
--
--	input_mt_sync(input);
--	td->valid = false;
--
--	/* touchscreen emulation: if first active finger in this frame... */
--	if (!td->activity_now) {
--		/* if there was no previous activity, emit touch event */
--		if (!td->activity) {
--			input_event(input, EV_KEY, BTN_TOUCH, 1);
--			td->activity = true;
--		}
--		td->activity_now = true;
--		/* and in any case this is our preferred finger */
--		input_event(input, EV_ABS, ABS_X, td->x);
--		input_event(input, EV_ABS, ABS_Y, td->y);
--	}
--}
--
--
--static int mosart_event(struct hid_device *hid, struct hid_field *field,
--				struct hid_usage *usage, __s32 value)
--{
--	struct mosart_data *td = hid_get_drvdata(hid);
--
--	if (hid->claimed & HID_CLAIMED_INPUT) {
--		struct input_dev *input = field->hidinput->input;
--		switch (usage->hid) {
--		case HID_DG_INRANGE:
--			td->valid = !!value;
--			break;
--		case HID_GD_X:
--			td->x = value;
--			break;
--		case HID_GD_Y:
--			td->y = value;
--			mosart_filter_event(td, input);
--			break;
--		case HID_DG_CONTACTID:
--			td->id = value;
--			break;
--		case HID_DG_CONTACTCOUNT:
--			/* touch emulation: this is the last field in a frame */
--			td->first = false;
--			td->activity_now = false;
--			break;
--		case HID_DG_CONFIDENCE:
--		case HID_DG_TIPSWITCH:
--			/* avoid interference from generic hidinput handling */
--			break;
--
--		default:
--			/* fallback to the generic hidinput handling */
--			return 0;
--		}
--	}
--
--	/* we have handled the hidinput part, now remains hiddev */
--	if (hid->claimed & HID_CLAIMED_HIDDEV && hid->hiddev_hid_event)
--		hid->hiddev_hid_event(hid, field, usage, value);
--
--	return 1;
--}
--
--static int mosart_probe(struct hid_device *hdev, const struct hid_device_id *id)
--{
--	int ret;
--	struct mosart_data *td;
--
--
--	td = kmalloc(sizeof(struct mosart_data), GFP_KERNEL);
--	if (!td) {
--		dev_err(&hdev->dev, "cannot allocate MosArt data\n");
--		return -ENOMEM;
--	}
--	td->valid = false;
--	td->activity = false;
--	td->activity_now = false;
--	td->first = false;
--	hid_set_drvdata(hdev, td);
--
--	/* currently, it's better to have one evdev device only */
--#if 0
--	hdev->quirks |= HID_QUIRK_MULTI_INPUT;
--#endif
--
--	ret = hid_parse(hdev);
--	if (ret == 0)
--		ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
--
--	if (ret == 0) {
--		struct hid_report_enum *re = hdev->report_enum
--						+ HID_FEATURE_REPORT;
--		struct hid_report *r = re->report_id_hash[7];
--
--		r->field[0]->value[0] = 0x02;
--		usbhid_submit_report(hdev, r, USB_DIR_OUT);
--	} else 
--		kfree(td);
--
--	return ret;
--}
--
--static void mosart_remove(struct hid_device *hdev)
--{
--	hid_hw_stop(hdev);
--	kfree(hid_get_drvdata(hdev));
--	hid_set_drvdata(hdev, NULL);
--}
--
--static const struct hid_device_id mosart_devices[] = {
--	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUS, USB_DEVICE_ID_ASUS_T91MT) },
--	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUS, USB_DEVICE_ID_ASUSTEK_MULTITOUCH_YFO) },
--	{ }
--};
--MODULE_DEVICE_TABLE(hid, mosart_devices);
--
--static const struct hid_usage_id mosart_grabbed_usages[] = {
--	{ HID_ANY_ID, HID_ANY_ID, HID_ANY_ID },
--	{ HID_ANY_ID - 1, HID_ANY_ID - 1, HID_ANY_ID - 1}
--};
--
--static struct hid_driver mosart_driver = {
--	.name = "mosart",
--	.id_table = mosart_devices,
--	.probe = mosart_probe,
--	.remove = mosart_remove,
--	.input_mapping = mosart_input_mapping,
--	.input_mapped = mosart_input_mapped,
--	.usage_table = mosart_grabbed_usages,
--	.event = mosart_event,
--};
--
--static int __init mosart_init(void)
--{
--	return hid_register_driver(&mosart_driver);
--}
--
--static void __exit mosart_exit(void)
--{
--	hid_unregister_driver(&mosart_driver);
--}
--
--module_init(mosart_init);
--module_exit(mosart_exit);
--
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index f9d537e..d3574ab 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -66,6 +66,7 @@ struct mt_class {
- #define MT_CLS_DUAL1 1
- #define MT_CLS_DUAL2 2
- #define MT_CLS_CYPRESS 3
-+#define MT_CLS_MOSART 4
- 
- /*
-  * these device-dependent functions determine what slot corresponds
-@@ -90,6 +91,11 @@ static int cypress_compute_slot(struct mt_device *td)
- 		return -1;
- }
- 
-+static int slot_is_contactid_minus_one(struct mt_device *td)
-+{
-+	return td->curdata.contactid - 1;
-+}
-+
- static int find_slot_from_contactid(struct mt_device *td)
- {
- 	int i;
-@@ -110,6 +116,7 @@ struct mt_class mt_classes[] = {
- 	{ slot_is_contactid, 2 },             /* MT_CLS_DUAL1 */
- 	{ slot_is_contactnumber, 2 },         /* MT_CLS_DUAL2 */
- 	{ cypress_compute_slot, 10 },         /* MT_CLS_CYPRESS */
-+	{ slot_is_contactid_minus_one, 2 },   /* MT_CLS_MOSART */
- };
- 
- static void mt_feature_mapping(struct hid_device *hdev, struct hid_input *hi,
-@@ -429,6 +436,14 @@ static const struct hid_device_id mt_devices[] = {
- 		HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS,
- 			USB_DEVICE_ID_CYPRESS_TRUETOUCH) },
- 
-+	/* MosArt panels */
-+	{ .driver_data = MT_CLS_MOSART,
-+		HID_USB_DEVICE(USB_VENDOR_ID_ASUS,
-+			USB_DEVICE_ID_ASUS_T91MT)},
-+	{ .driver_data = MT_CLS_MOSART,
-+		HID_USB_DEVICE(USB_VENDOR_ID_ASUS,
-+			USB_DEVICE_ID_ASUSTEK_MULTITOUCH_YFO) },
-+
- 	{ }
- };
- MODULE_DEVICE_TABLE(hid, mt_devices);
+> >    What hooks do you object to?
+>
+> Don't really keep a list, but every now and again see something that
+> makes me think that ought not be exported.
+>
+> >  mmu notifiers are useful for some drivers, sched
+> >  notifiers are useful for cmwq and possibly perf?
+>
+> Both use explicit function calls because its easier to read the code and
+> faster.
+
+I doubt it's measurable, especially for perf with the msr tweaking it does.
+
+Tejun, why did you end up not using preempt_notifiers in cmwq?
+
 -- 
-1.7.3.4
+error compiling committee.c: too many arguments to function
 
