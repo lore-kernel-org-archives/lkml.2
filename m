@@ -1,67 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751421Ab1AEAy2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 19:54:28 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:56154 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab1AEAy1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 19:54:27 -0500
-Date: Wed, 05 Jan 2011 00:54:25 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: Re: [PATCH v4 2/3] regulator MAX8998/LP3974: Support DVS-GPIO.
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Lukasz Majewski <l.majewski@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
-        =?euc-kr?Q?=BD=C9=C1=D8=BF=B5?= <jy0922.shim@samsung.com>,
-        "myungjoo.ham@gmail.com" <myungjoo.ham@gmail.com>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20110105004451019@myungjoo.ham
-Msgkey: 20110105004451019@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20110105004451019@myungjoo.ham
-X-ParentMTR: 
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <24564862.361211294188865120.JavaMail.weblogic@epml11>
+	id S1751342Ab1AEA6j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 19:58:39 -0500
+Received: from fieldses.org ([174.143.236.118]:56423 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750919Ab1AEA6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 19:58:38 -0500
+Date: Tue, 4 Jan 2011 19:58:35 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Chuck Lever <chuck.lever@oracle.com>
+Cc: Takuma Umeya <tumeya@redhat.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] nfs4: set source address when callback is generated
+Message-ID: <20110105005835.GA14744@fieldses.org>
+References: <20101215050901.GB13532@redhat.com>
+ <20101216034945.GH9646@fieldses.org>
+ <A4BB9763-B67F-4559-B3FF-F7BC2DBD3B3A@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <A4BB9763-B67F-4559-B3FF-F7BC2DBD3B3A@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p050saJe014521
 
-On Tue, Jan 04, 2011 at 22:44PM +0900, Mark Brown wrote:
-> On Tue, Jan 04, 2011 at 05:16:56PM +0900, MyungJoo Ham wrote:
-> > On Tue, Jan 4, 2011 at 4:49 PM, Lukasz Majewski wrote:
+On Thu, Dec 16, 2010 at 10:54:00AM -0500, Chuck Lever wrote:
+> I don't recall creating svc_addr_u, but I'll take a stab at a guess.
 > 
-> > > Is it desirable to define all four for BUCK1 and two for BUCK2 DVS
-> > > voltages in platform code?
+> It looks like someone thought that we should retain the idea of storing just the address part of the socket address, and not the other stuff (like the family and port, since this code doesn't appear to need that additional information).  It greatly reduces the size of the field.  A full sockaddr_storage is more than 128 bytes, since it has to be able to store an AF_UNIX pathname.
 > 
-> > In case a system with 4 buck1 preset voltages and 2 buck2 preset
-> > voltages, it is desirable. :)
+> Doing this, there is a lot less data to keep around, but an IPv6 socket address has other items outside of in6_addr that can be used to form a full address.  We decided at some point we could copy this information from the other address storage field in the rqstp.
 > 
-> I suspect Lukasz's question is more why this would be useful; I can
-> imagine that the main reason would be performance and in any case I
-> don't see it hurting to have the option.
->
+> But the result of this space savings means we must construct a full socket address when needed, using logic such as the above.
 
-Yes, it is supposed to be faster to set GPIO pins rather than sending values thru I2C busses. And some boards require all the four BUCK1 voltages and two BUCK2 voltages; e.g., S5PC110-Universal.
+Seems to me we should either just waste the extra 100 bytes or define
+something that would be useful elsewhere as well....
 
- MyungJoo Ham (ÇÔ¸íÁÖ)
-Mobile Software Platform Lab,
-Digital Media and Communications (DMC) Business
-Samsung Electronics
-cell: +82-10-6714-2858 / office: +82-31-279-8033ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+But if we do it this way we can at least simplify a little.
+
+--b.
+
+commit 6f3d772fb8a039de8f21d725f5e38c252b4c0efd
+Author: Takuma Umeya <tumeya@redhat.com>
+Date:   Wed Dec 15 14:09:01 2010 +0900
+
+    nfs4: set source address when callback is generated
+    
+    when callback is generated in NFSv4 server, it doesn't set the source
+    address. When an alias IP is utilized on NFSv4 server and suppose the
+    client is accessing via that alias IP (e.g. eth0:0), the client invokes
+    the callback to the IP address that is set on the original device (e.g.
+    eth0). This behavior results in timeout of xprt.
+    The patch sets the IP address that the client should invoke callback to.
+    
+    Signed-off-by: Takuma Umeya <tumeya@redhat.com>
+    [bfields@redhat.com: Simplify gen_callback arguments, use helper function]
+    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+
+diff --git a/fs/nfsd/nfs4callback.c b/fs/nfsd/nfs4callback.c
+index a085805..dd183af 100644
+--- a/fs/nfsd/nfs4callback.c
++++ b/fs/nfsd/nfs4callback.c
+@@ -484,6 +484,7 @@ static int setup_callback_client(struct nfs4_client *clp,
+ 		.net		= &init_net,
+ 		.address	= (struct sockaddr *) &conn->cb_addr,
+ 		.addrsize	= conn->cb_addrlen,
++		.saddress	= (struct sockaddr *) &conn->cb_saddr,
+ 		.timeout	= &timeparms,
+ 		.program	= &cb_program,
+ 		.version	= 0,
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index 87d4c48..b583e4e 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -1163,10 +1163,26 @@ find_unconfirmed_client_by_str(const char *dname, unsigned int hashval)
+ 	return NULL;
+ }
+ 
++static void rpc_svcaddr2sockaddr(struct sockaddr *sa, unsigned short family, union svc_addr_u *svcaddr)
++{
++	switch (family) {
++	case AF_INET:
++		((struct sockaddr_in *)sa)->sin_family = AF_INET;
++		((struct sockaddr_in *)sa)->sin_addr = svcaddr->addr;
++		return;
++	case AF_INET6:
++		((struct sockaddr_in6 *)sa)->sin6_family = AF_INET6;
++		((struct sockaddr_in6 *)sa)->sin6_addr = svcaddr->addr6;
++		return;
++	}
++}
++
+ static void
+-gen_callback(struct nfs4_client *clp, struct nfsd4_setclientid *se, u32 scopeid)
++gen_callback(struct nfs4_client *clp, struct nfsd4_setclientid *se, struct svc_rqst *rqstp)
+ {
+ 	struct nfs4_cb_conn *conn = &clp->cl_cb_conn;
++	struct sockaddr	*sa = svc_addr(rqstp);
++	u32 scopeid = rpc_get_scope_id(sa);
+ 	unsigned short expected_family;
+ 
+ 	/* Currently, we only support tcp and tcp6 for the callback channel */
+@@ -1192,6 +1208,7 @@ gen_callback(struct nfs4_client *clp, struct nfsd4_setclientid *se, u32 scopeid)
+ 
+ 	conn->cb_prog = se->se_callback_prog;
+ 	conn->cb_ident = se->se_callback_ident;
++	rpc_svcaddr2sockaddr((struct sockaddr *)&conn->cb_saddr, expected_family, &rqstp->rq_daddr);
+ 	return;
+ out_err:
+ 	conn->cb_addr.ss_family = AF_UNSPEC;
+@@ -1768,7 +1785,6 @@ __be32
+ nfsd4_setclientid(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
+ 		  struct nfsd4_setclientid *setclid)
+ {
+-	struct sockaddr		*sa = svc_addr(rqstp);
+ 	struct xdr_netobj 	clname = { 
+ 		.len = setclid->se_namelen,
+ 		.data = setclid->se_name,
+@@ -1871,7 +1887,7 @@ nfsd4_setclientid(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
+ 	 * for consistent minorversion use throughout:
+ 	 */
+ 	new->cl_minorversion = 0;
+-	gen_callback(new, setclid, rpc_get_scope_id(sa));
++	gen_callback(new, setclid, rqstp);
+ 	add_to_unconfirmed(new, strhashval);
+ 	setclid->se_clientid.cl_boot = new->cl_clientid.cl_boot;
+ 	setclid->se_clientid.cl_id = new->cl_clientid.cl_id;
+diff --git a/fs/nfsd/state.h b/fs/nfsd/state.h
+index 84b2302..cf6dc83 100644
+--- a/fs/nfsd/state.h
++++ b/fs/nfsd/state.h
+@@ -96,6 +96,7 @@ struct nfs4_delegation {
+ struct nfs4_cb_conn {
+ 	/* SETCLIENTID info */
+ 	struct sockaddr_storage	cb_addr;
++	struct sockaddr_storage	cb_saddr;
+ 	size_t			cb_addrlen;
+ 	u32                     cb_prog; /* used only in 4.0 case;
+ 					    per-session otherwise */
