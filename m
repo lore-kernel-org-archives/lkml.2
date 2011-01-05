@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab1AEUfZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 15:35:25 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40167 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752544Ab1AEUfV (ORCPT
+	id S1752874Ab1AEUhp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 15:37:45 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51040 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421Ab1AEUhn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 15:35:21 -0500
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
-In-Reply-To: <AANLkTik214sj_wBJXhJMLRie34moG7ET1Xg62oQXsgxb@mail.gmail.com>
-References: <1294254337.16957.13.camel@mulgrave.site>
-	 <AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com>
-	 <1294256169.16957.18.camel@mulgrave.site>
-	 <AANLkTik214sj_wBJXhJMLRie34moG7ET1Xg62oQXsgxb@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 05 Jan 2011 20:35:17 +0000
-Message-ID: <1294259717.16957.27.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Jan 2011 15:37:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=MjV0FoomILGsGsx7t8G0El0m1xdH9JMI0hf5kGbMb14jZfR0pYgeeYXslNhE0tYeOH
+         KSfh0XQ3ZnUnkBe/dCtVFHgdXPmPCaw2SsjuXR168fjHkBJtissInl0upa9UXvY+foaw
+         ecAT7Q9674dV/u8jsm6fxKOn2lKeG+NHfEhyc=
+MIME-Version: 1.0
+In-Reply-To: <20110103.105827.112602895.davem@davemloft.net>
+References: <1294072336.17576.7.camel@lithium>
+	<20110103.105827.112602895.davem@davemloft.net>
+Date: Wed, 5 Jan 2011 21:37:41 +0100
+X-Google-Sender-Auth: 1I0tbqwR0mO6FoCyyeLdp5lIF6c
+Message-ID: <AANLkTimW0xQ1F1d-_=jP_QKyQH=Yy6FZUbGD0Cm4JaBO@mail.gmail.com>
+Subject: Re: Using s3virge card in Sun Blade 2000
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: David Miller <davem@davemloft.net>
+Cc: alex.buell@munted.org.uk, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-05 at 11:49 -0800, Linus Torvalds wrote:
-> 2011/1/5 James Bottomley <James.Bottomley@hansenpartnership.com>:
-> >>
-> >> No, we really can't do that. Most of the time, the kmap() is the only
-> >> way we access the page anyway, so flushing things would just be
-> >> stupid. Why waste time and energy on doing something pointless?
-> >
-> > It's hardly pointless.  The kmap sets up an inequivalent alias in the
-> > cache.
-> 
-> NO IT DOES NOT.
+On Mon, Jan 3, 2011 at 19:58, David Miller <davem@davemloft.net> wrote:
+> From: Alex Buell <alex.buell@munted.org.uk>
+> Date: Mon, 03 Jan 2011 16:32:16 +0000
+>
+>> I'm aware the s3fb driver has big endian issues, I can help fix those
+>> issues so I can get the card working. Or in other words, I'd welcome
+>> advice on how to proceed with this.
+>
+> It's not endian issues, this driver has other problems.
+>
+> It uses the VGA register accessors with a NULL regbase, which is not
+> going to work on sparc64.
+>
+> It needs to access the VGA register space relative to the I/O space
+> of the PCI controller domain it is behind.
+>
+> Probably if you replace the NULL values passes to vga_r*() and
+> vga_w*() with the I/O space resource base of the chip (should be
+> resource "1") it might work.
 
-Well, it does ... but not in this case because the page is freshly
-allocated (which I missed before) so it has no use cache colour yet.
+Probably s3fb also relies on a card having been initialized by the VGA BIOS.
 
-James
+Gr{oetje,eeting}s,
 
-> Stop arguing, when you are so wrong.
-> 
-> kmap() does not create any aliases. For low-memory, it just returns
-> the physical address. No alias. And for high memory, there is no
-> equivalent low memory address to alias _with_.
-> 
-> Now, when you actually mix multiple kmap's and you have a virtually
-> based cache, then the kmap's obviously need to flush that particular
-> page when switching between each other. But that has nothing to do
-> with the actual page being kmap'ed, it's entirely an internal issue
-> about the particular virtual memory area being re-used. And ARM (and
-> any other virtually based CPU) already does that in __kunmap_atomic().
-> 
-> But notice the case of the low-mem. And understand that you are WRONG
-> about the "inequivalent alias" thing.
-> 
-> So I repeat: this has absolutely *NOTHING* to do with kmap(). Stop blathering.
-> 
-> It's _purely_ an issue of vm_map_ram(). Nothing else.
-> 
->                           Linus
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
