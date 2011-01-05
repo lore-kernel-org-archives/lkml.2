@@ -1,67 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751249Ab1AECyY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 21:54:24 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:39931 "EHLO smtps.tip.net.au"
+	id S1751257Ab1AEC5z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 21:57:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21920 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751141Ab1AECyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 21:54:23 -0500
-Date: Wed, 5 Jan 2011 13:54:16 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Renninger <trenn@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: manual merge of the percpu tree with the tip tree
-Message-Id: <20110105135416.e87b4c26.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751047Ab1AEC5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jan 2011 21:57:54 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: x86@kernel.org
+Cc: Dongdong Deng <dongdong.deng@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 2/3] x86: Avoid calling arch_trigger_all_cpu_backtrace() at the same time
+Date: Tue,  4 Jan 2011 21:57:25 -0500
+Message-Id: <1294196246-14583-2-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1294196246-14583-1-git-send-email-dzickus@redhat.com>
+References: <1294196246-14583-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+From: Dongdong Deng <dongdong.deng@windriver.com>
 
-Today's linux-next merge of the percpu tree got a conflict in
-arch/x86/kernel/process.c between commit
-25e41933b58777f2d020c3b0186b430ea004ec28 ("perf: Clean up power events by
-introducing new, more generic ones") from the tip tree and commit
-7b543a5334ff4ea2e3ad3b777fc23cdb8072a988 ("x86: Replace uses of
-current_cpu_data with this_cpu ops") from the percpu tree.
+The spin_lock_debug/rcu_cpu_stall detector uses
+trigger_all_cpu_backtrace() to dump cpu backtrace.
+Therefore it is possible that trigger_all_cpu_backtrace()
+could be called at the same time on different CPUs, which
+triggers and 'unknown reason NMI' warning. The following case
+illustrates the problem:
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
+      CPU1                    CPU2                     ...   CPU N
+                       trigger_all_cpu_backtrace()
+                       set "backtrace_mask" to cpu mask
+                               |
+generate NMI interrupts  generate NMI interrupts       ...
+    \                          |                               /
+     \                         |                              /
+
+The "backtrace_mask" will be cleaned by the first NMI interrupt
+at nmi_watchdog_tick(), then the following NMI interrupts generated
+by other cpus's arch_trigger_all_cpu_backtrace() will be taken as
+unknown reason NMI interrupts.
+
+This patch uses a test_and_set to avoid the problem, and stop the
+arch_trigger_all_cpu_backtrace() from calling to avoid dumping a
+double cpu backtrace info when there is already a
+trigger_all_cpu_backtrace() in progress.
+
+Signed-off-by: Dongdong Deng <dongdong.deng@windriver.com>
+Reviewed-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Ingo Molnar <mingo@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>
+CC: x86@kernel.org
+CC: linux-kernel@vger.kernel.org
+CC: fweisbec@gmail.com
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ arch/x86/kernel/apic/hw_nmi.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+index 2b40a60..72ec29e 100644
+--- a/arch/x86/kernel/apic/hw_nmi.c
++++ b/arch/x86/kernel/apic/hw_nmi.c
+@@ -28,10 +28,20 @@ u64 hw_nmi_get_sample_period(void)
+ /* For reliability, we're prepared to waste bits here. */
+ static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
+ 
++/* "in progress" flag of arch_trigger_all_cpu_backtrace */
++static unsigned long backtrace_flag;
++
+ void arch_trigger_all_cpu_backtrace(void)
+ {
+ 	int i;
+ 
++	if (test_and_set_bit(0, &backtrace_flag))
++		/*
++		 * If there is already a trigger_all_cpu_backtrace() in progress
++		 * (backtrace_flag == 1), don't output double cpu dump infos.
++		 */
++		return;
++
+ 	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
+ 
+ 	printk(KERN_INFO "sending NMI to all CPUs:\n");
+@@ -43,6 +53,9 @@ void arch_trigger_all_cpu_backtrace(void)
+ 			break;
+ 		mdelay(1);
+ 	}
++
++	clear_bit(0, &backtrace_flag);
++	smp_mb__after_clear_bit();
+ }
+ 
+ static int __kprobes
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+1.7.3.4
 
-diff --cc arch/x86/kernel/process.c
-index c852041,dae1c07..0000000
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@@ -444,9 -444,8 +444,9 @@@ EXPORT_SYMBOL_GPL(cpu_idle_wait)
-  void mwait_idle_with_hints(unsigned long ax, unsigned long cx)
-  {
-  	trace_power_start(POWER_CSTATE, (ax>>4)+1, smp_processor_id());
- +	trace_cpu_idle((ax>>4)+1, smp_processor_id());
-  	if (!need_resched()) {
-- 		if (cpu_has(&current_cpu_data, X86_FEATURE_CLFLUSH_MONITOR))
-+ 		if (cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_CLFLUSH_MONITOR))
-  			clflush((void *)&current_thread_info()->flags);
-  
-  		__monitor((void *)&current_thread_info()->flags, 0, 0);
-@@@ -461,8 -460,7 +461,8 @@@ static void mwait_idle(void
-  {
-  	if (!need_resched()) {
-  		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
- +		trace_cpu_idle(1, smp_processor_id());
-- 		if (cpu_has(&current_cpu_data, X86_FEATURE_CLFLUSH_MONITOR))
-+ 		if (cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_CLFLUSH_MONITOR))
-  			clflush((void *)&current_thread_info()->flags);
-  
-  		__monitor((void *)&current_thread_info()->flags, 0, 0);
