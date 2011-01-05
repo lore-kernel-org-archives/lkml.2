@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751404Ab1AEPSL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 10:18:11 -0500
-Received: from casper.infradead.org ([85.118.1.10]:37104 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231Ab1AEPSJ convert rfc822-to-8bit (ORCPT
+	id S1751475Ab1AEPWx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 10:22:53 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:42178 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab1AEPWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 10:18:09 -0500
-Subject: Re: cgroup scheduling: Adding kthreadd to a non-RT cgroup can
- deadlock the kernel
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Nelson Elhage <nelhage@ksplice.com>
-Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTi=FC27TTngERgbS95Z29CYBqLGxR4Uuw9fSTVuO@mail.gmail.com>
-References: <20110105045447.GN23414@ksplice.com>
-	 <1294220650.2016.197.camel@laptop>
-	 <AANLkTi=FC27TTngERgbS95Z29CYBqLGxR4Uuw9fSTVuO@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 05 Jan 2011 16:18:30 +0100
-Message-ID: <1294240710.2016.264.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 5 Jan 2011 10:22:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=LuIgPqr5UOWOa1obAN4dSBXEpYObCrvjZ2IlTiDmdKnr2ZHvwb3uz56OKPAcUCsFj5
+         1GdMVinQasqNG14aeuZrJjD4kSTrDqn/kApVoGg3iYEV61FEvHf5lHoETxYx9BOY4/kg
+         iGIUEsbDGdxazs/llaYoWc4Dk4ubwcyTiLhCk=
+Message-ID: <4D248CC5.1050903@gmail.com>
+Date: Wed, 05 Jan 2011 07:22:45 -0800
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: Re: linux-next: manual merge of the trivial tree with the net tree
+References: <20110104142229.7aa6b99f.sfr@canb.auug.org.au> <alpine.LNX.2.00.1101051550240.26685@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1101051550240.26685@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-05 at 10:02 -0500, Nelson Elhage wrote:
-> Ok. I bothered reporting this here since the kernel /does/ try to prevent you
-> from shooting yourself in the foot in related ways, by moving existing
-> SCHED_FIFO tasks into a cgroup without any RT runtime, so I figured it might
-> make sense to add a check here. libcgroup, for example, will try to move all
-> processes into a default cgroup, ignoring errors, and relies on the kernel to
-> prevent it from shooting itself in the foot.
-> 
-> It sounds like you consider that behavior a bug, though, so I'll go report this
-> bug there.
+On 01/05/2011 06:51 AM, Jiri Kosina wrote:
+> On Tue, 4 Jan 2011, Stephen Rothwell wrote:
+>
+>> Today's linux-next merge of the trivial tree got a conflict in
+>> drivers/net/wireless/iwlwifi/iwl-core.c between commit
+>> 81baf6ec9c190ae128748cf2a026bff5cb811b70 ("iwlwifi: Legacy isr only used
+>> by legacy devices") from the net tree and commit
+>> 62e45c14fb9a978dca6c7a5dc8372cc8ea2f42c8 ("wireless: comment typo fix
+>> diable ->  disable") from the trivial tree.
+>>
+>> The former moves the code modified by the latter to
+>> drivers/net/wireless/iwlwifi/iwl-legacy.c. I didn't bother refixing the
+>> typo there.
+>
+> I will definitely be merging to Linus trivial queue later than davem will,
+> so I'll be resolving this. Thanks,
+>
 
-Right, so we try to catch obvious cases, but its near impossible to
-catch all cases.
 
-And its not only the scheduler controller, I bet you can get into
-trouble with some of the other controllers as well.
+yeah, I saw this, but was not sure how to reply due to not really 
+knowing what happened(looking at the patch these are just in comments,
+as opposed to the other patch(7) that actually changes code. keep in 
+mind im not sure if it was moved forward due to me having to send out 
+another version due to changes(haven't gotten around due to external 
+things that need to be taken care of))..
+
+Justin P. Mattock
