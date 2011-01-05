@@ -1,87 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006Ab1AELXU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 06:23:20 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:17898 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751560Ab1AELXR (ORCPT
+	id S1752053Ab1AELXY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 06:23:24 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:41058 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676Ab1AELXX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 06:23:17 -0500
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-To: David Brownell <dbrownell@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH linux-next-2.6] pch_udc: support new device ML7213 IOH
-Date: Wed,  5 Jan 2011 20:22:30 +0900
-Message-Id: <1294226550-4788-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-X-Mailer: git-send-email 1.6.2.5
+	Wed, 5 Jan 2011 06:23:23 -0500
+Subject: Re: [PATCH 4/5] perf_events: add cgroup support (v7)
+From: Peter Zijlstra <peterz@infradead.org>
+To: eranian@google.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
+        eranian@gmail.com, robert.richter@amd.com, acme@redhat.com,
+        lizf@cn.fujitsu.com
+In-Reply-To: <4d2205a1.8b02e30a.3541.ffff8aee@mx.google.com>
+References: <4d2205a1.8b02e30a.3541.ffff8aee@mx.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 05 Jan 2011 12:23:38 +0100
+Message-ID: <1294226618.2016.259.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support new device OKI SEMICONDUCTOR's ML7213 IOH(Input/Output Hub) which is for
-IVI(In-Vehicle Infotainment) use.
-The ML7213 is companion chip for Intel Atom E6xx series.
-The ML7213 is completely compatible for Intel EG20T PCH.
+On Mon, 2011-01-03 at 18:20 +0200, Stephane Eranian wrote:
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
- drivers/usb/gadget/Kconfig   |    7 ++++++-
- drivers/usb/gadget/pch_udc.c |    7 +++++++
- 2 files changed, 13 insertions(+), 1 deletions(-)
+> +#ifdef CONFIG_CGROUP_PERF
+> +/*
+> + * perf_cgroup_info keeps track of time_enabled for a cgroup.
+> + * This is a per-cpu dynamically allocated data structure.
+> + */
+> +struct perf_cgroup_info {
+> +	u64 time;
+> +	u64 timestamp;
+> +};
+> +
+> +struct perf_cgroup {
+> +	struct cgroup_subsys_state css;
+> +	struct perf_cgroup_info *info;	/* timing info, one per cpu */
 
-diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index 02f9049..533dbc8 100644
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -496,7 +496,7 @@ config USB_LANGWELL
- 	select USB_GADGET_SELECTED
+I think 'they' want a __percpu annotation there.
+
+> +};
+> +#endif
+
+
+> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> index b782b7a..905b91a 100644
+> --- a/kernel/perf_event.c
+> +++ b/kernel/perf_event.c
+
+
+> +static inline void __update_cgrp_time(struct perf_cgroup *cgrp)
+> +{
+> +	struct perf_cgroup_info *t;
+> +	u64 now;
+> +
+> +	now = perf_clock();
+> +
+> +	t = per_cpu_ptr(cgrp->info, smp_processor_id());
+
+  this_cpu_ptr(cgrp->info);
+
+> +
+> +	t->time += now - t->timestamp;
+> +	t->timestamp = now;
+> +}
+
+
+> +static inline void
+> +perf_cgroup_set_timestamp(struct task_struct *task, u64 now)
+> +{
+> +	struct perf_cgroup *cgrp;
+> +	struct perf_cgroup_info *info;
+> +
+> +	if (!task)
+> +		return;
+> +
+> +	cgrp = perf_cgroup_from_task(task);
+> +	info = per_cpu_ptr(cgrp->info, smp_processor_id());
+
+ this_cpu_ptr();
+
+> +	info->timestamp = now;
+> +}
+> +
+
+> +/*
+> + * called from perf_event_ask_sched_out() conditional to jump label
+> + */
+> +void
+> +perf_cgroup_switch(struct task_struct *task, struct task_struct *next)
+> +{
+> +	struct perf_cgroup *cgrp_out = perf_cgroup_from_task(task);
+> +	struct perf_cgroup *cgrp_in = perf_cgroup_from_task(next);
+> +	struct perf_cpu_context *cpuctx;
+> +	struct pmu *pmu;
+> +	/*
+> +	 * if task is DEAD, then css_out is irrelevant, it has
+> +	 * been changed to init_cgrp in cgroup_exit() from do_exit().
+> +	 * Furthermore, perf_cgroup_exit_task(), has scheduled out
+> +	 * all css constrained events, only unconstrained events
+> +	 * remain. Therefore we need to reschedule based on css_in.
+> +	 */
+> +	if (task->state != TASK_DEAD && cgrp_out == cgrp_in)
+> +		return;
+
+I think that check is broken, TASK_DEAD is set way after calling
+cgroup_exit(), so if we get preempted in between there you'll still go
+funny.
+
+We do set PF_EXITING before calling cgroup_exit() though.
+
+> +	rcu_read_lock();
+> +
+> +	list_for_each_entry_rcu(pmu, &pmus, entry) {
+> +
+> +		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
+> +
+> +		perf_pmu_disable(cpuctx->ctx.pmu);
+> +
+> +		/*
+> +		 * perf_cgroup_events says at least one
+> +		 * context on this CPU has cgroup events.
+> +		 *
+> +		 * ctx->nr_cgroups reports the number of cgroup
+> +		 * events for a context. Given there can be multiple
+> +		 * PMUs, there can be multiple contexts.
+> +		 */
+> +		if (cpuctx->ctx.nr_cgroups > 0) {
+> +			/*
+> +			 * schedule out everything we have
+> +			 * task == DEAD: only unconstrained events
+> +			 * task != DEAD: css constrained + unconstrained events
+> +			 *
+
+Does this comment want an update? As per the above (broken) check, we
+should never get here for DEAD tasks, hmm?
+
+> +			 * We kick out all events (even if unconstrained)
+> +			 * to allow the constrained events to be scheduled
+> +			 * based on their position in the event list (fairness)
+> +			 */
+> +			cpu_ctx_sched_out(cpuctx, EVENT_ALL);
+> +			/*
+> +			 * reschedule css_in constrained + unconstrained events
+> +			 */
+> +			cpu_ctx_sched_in(cpuctx, EVENT_ALL, next, 1);
+> +		}
+> +
+> +		perf_pmu_enable(cpuctx->ctx.pmu);
+> +	}
+> +
+> +	rcu_read_unlock();
+> +}
+> +
+> +static inline void
+
+Copy/paste fail?
+
+> +perf_cgroup_exit_task(struct task_struct *task)
+> +{
+
+> +}
+> +
+> +static inline int perf_cgroup_connect(int fd, struct perf_event *event,
+> +				      struct perf_event_attr *attr,
+> +				      struct perf_event *group_leader)
+
+Again, do we really need this 'inline' ?
+
+> +{
+> +	struct perf_cgroup *cgrp;
+> +	struct cgroup_subsys_state *css;
+> +	struct file *file;
+> +	int ret = 0, fput_needed;
+> +
+> +	file = fget_light(fd, &fput_needed);
+> +	if (!file)
+> +		return -EBADF;
+> +
+> +	css = cgroup_css_from_dir(file, perf_subsys_id);
+> +	if (IS_ERR(css))
+> +		return PTR_ERR(css);
+> +
+> +	cgrp = container_of(css, struct perf_cgroup, css);
+> +	event->cgrp = cgrp;
+
+
+If we do that perf_get_cgroup() here (unconditional).
+
+> +	/*
+> +	 * all events in a group must monitor
+> +	 * the same cgroup because a thread belongs
+> +	 * to only one perf cgroup at a time
+> +	 */
+> +	if (group_leader && group_leader->cgrp != cgrp) {
+> +		perf_detach_cgroup(event);
+> +		ret = -EINVAL;
+> +	} else {
+> +		/* must be done before we fput() the file */
+> +		perf_get_cgroup(event);
+> +	}
+
+Then you can have that conditional perf_detach_cgroup() here, right?
+
+> +	fput_light(file, fput_needed);
+> +	return ret;
+> +}
+
  
- config USB_GADGET_EG20T
--	boolean "Intel EG20T(Topcliff) USB Device controller"
-+	boolean "Intel EG20T PCH/OKI SEMICONDUCTOR ML7213 IOH UDC"
- 	depends on PCI
- 	select USB_GADGET_DUALSPEED
- 	help
-@@ -512,6 +512,11 @@ config USB_GADGET_EG20T
- 	  This driver dose not support interrupt transfer or isochronous
- 	  transfer modes.
- 
-+	  This driver also can be used for OKI SEMICONDUCTOR's ML7213 which is
-+	  for IVI(In-Vehicle Infotainment) use.
-+	  ML7213 is companion chip for Intel Atom E6xx series.
-+	  ML7213 is completely compatible for Intel EG20T PCH.
-+
- config USB_EG20T
- 	tristate
- 	depends on USB_GADGET_EG20T
-diff --git a/drivers/usb/gadget/pch_udc.c b/drivers/usb/gadget/pch_udc.c
-index 0c8dd81..cab47d6 100644
---- a/drivers/usb/gadget/pch_udc.c
-+++ b/drivers/usb/gadget/pch_udc.c
-@@ -361,6 +361,8 @@ struct pch_udc_dev {
- 
- #define PCH_UDC_PCI_BAR			1
- #define PCI_DEVICE_ID_INTEL_EG20T_UDC	0x8808
-+#define PCI_VENDOR_ID_ROHM 0x10DB
-+#define PCI_DEVICE_ID_ML7213_IOH_UDC	0x801D
- 
- static const char	ep0_string[] = "ep0in";
- static DEFINE_SPINLOCK(udc_stall_spinlock);	/* stall spin lock */
-@@ -2914,6 +2916,11 @@ static DEFINE_PCI_DEVICE_TABLE(pch_udc_pcidev_id) = {
- 		.class = (PCI_CLASS_SERIAL_USB << 8) | 0xfe,
- 		.class_mask = 0xffffffff,
- 	},
-+	{
-+		PCI_DEVICE(PCI_VENDOR_ID_ROHM, PCI_DEVICE_ID_ML7213_IOH_UDC),
-+		.class = (PCI_CLASS_SERIAL_USB << 8) | 0xfe,
-+		.class_mask = 0xffffffff,
-+	},
- 	{ 0 },
- };
- 
--- 
-1.6.2.5
+
 
