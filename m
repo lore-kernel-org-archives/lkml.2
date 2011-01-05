@@ -1,80 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881Ab1AEXuP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:50:15 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:65456 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753603Ab1AEXuL (ORCPT
+	id S1753682Ab1AEXuh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:50:37 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:24151 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681Ab1AEXud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:50:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=b0l8c8K+hMXVTkHdOYnUYx7vi21HJAhJF0cklA1GKd1nqmKu6vqpynXtpro+dVbcx3
-         8jV0WKYOIj9l7e2O9BJpQE4fm9/fEVBqMtlU+yA5ij+Hd99IzkNXnAVFcDA8KEPCi9Z+
-         yG2lDHbOQD4Y4f5Q0dhO3apToLRd0GVb2gONY=
-Message-ID: <4D2503B1.4080500@gmail.com>
-Date: Wed, 05 Jan 2011 17:50:09 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: sclark46@earthlink.net
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        ide <linux-ide@vger.kernel.org>
-Subject: Re: Kernel 2.6.37 erroneously limiting to UDMA/33
-References: <4D24B98D.6080307@earthlink.net>
-In-Reply-To: <4D24B98D.6080307@earthlink.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 5 Jan 2011 18:50:33 -0500
+Date: Wed, 5 Jan 2011 15:48:18 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Roland Dreier <rdreier@cisco.com>
+Cc: "J.H." <warthog9@kernel.org>, David Brown <davidb@codeaurora.org>,
+        sedat.dilek@gmail.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-next@vger.kernel.org, ftpadmin@kernel.org, webmaster@kernel.org
+Subject: Re: patchwork.kernel.org down
+Message-Id: <20110105154818.56b9976c.randy.dunlap@oracle.com>
+In-Reply-To: <ada62u3dkv2.fsf@cisco.com>
+References: <AANLkTik4ktaeyDG3ihh-YRB+WVLxA46wSLOgWy6iY_68@mail.gmail.com>
+	<20101220204936.GA21290@huya.qualcomm.com>
+	<4D0FFC4B.9050301@kernel.org>
+	<ada62u3dkv2.fsf@cisco.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(CCing linux-ide)
+On Wed, 05 Jan 2011 14:52:17 -0800 Roland Dreier wrote:
 
-On 01/05/2011 12:33 PM, Stephen Clark wrote:
-> Hello,
->
-> Why is the kernel limiting me to udma/33 when the device says it can do
-> ata2.01: CFA: TRANSCEND, 20070831, max UDMA/66
->
-> There is no cable the compact flash is a socket on the motherboard!
+>  > More excitement from https://bugzilla.kernel.org/show_bug.cgi?id=20702
+>  > 
+>  > Anyone want to take a stab at it?  I know I'd be appreciative.  I am
+>  > running a debug kernel with everything I could find and enable I even
+>  > remotely thought might prove helpful.  Nothing has jumped out yet though.
+> 
+> A little late, but perhaps running with the patch below might help us
+> make a bit of progress.  The idea is to dump the last /proc/net file
+> opened and closed, so we can at least have a clue as to where the crash
+> is coming from.  This should add lines like 
+> 
+>     last procfs open:  /proc/2443/net/arp
+>     last procfs close: /proc/2443/net/arp
+> 
+> to the oops output, so maybe we can zero in on things after you get a
+> crash with this applied.
+> 
+>  - R.
+> 
+> diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+> index 6e8752c..c67b8d6 100644
+> --- a/arch/x86/kernel/dumpstack.c
+> +++ b/arch/x86/kernel/dumpstack.c
+> @@ -18,6 +18,7 @@
+>  
+>  #include <asm/stacktrace.h>
+>  
+> +void procfs_printk_last_file(void);
+>  
+>  int panic_on_unrecovered_nmi;
+>  int panic_on_io_nmi;
+> @@ -283,6 +284,7 @@ int __kprobes __die(const char *str, struct pt_regs *regs, long err)
+>  #endif
+>  	printk("\n");
+>  	sysfs_printk_last_file();
+> +	procfs_printk_last_file();
+>  	if (notify_die(DIE_OOPS, str, regs, err,
+>  			current->thread.trap_no, SIGSEGV) == NOTIFY_STOP)
+>  		return 1;
+> diff --git a/fs/proc/proc_net.c b/fs/proc/proc_net.c
+> index 9020ac1..1801cc1 100644
+> --- a/fs/proc/proc_net.c
+> +++ b/fs/proc/proc_net.c
+> @@ -26,6 +26,14 @@
+>  
+>  #include "internal.h"
+>  
+> +/* used in crash dumps to help with debugging */
+> +static char last_procfs_open[PATH_MAX];
+> +static char last_procfs_close[PATH_MAX];
+> +void procfs_printk_last_file(void)
+> +{
+> +	printk(KERN_EMERG "last procfs open:  %s\n", last_procfs_open);
+> +	printk(KERN_EMERG "last procfs close: %s\n", last_procfs_close);
 
-The kernel has no way to know that, and presumably the board isn't 
-connecting the signal for IDE pin 34 to ground in order to properly 
-signal that an 80-wire cable (or equivalent) is connected so that speeds 
-over UDMA33 can be used.
+Let's not mislead the reader of a crash dump, please.  How about:
 
-You should be able to use the libata.force=80c option on the kernel 
-command line to override the cable detection.
++	printk(KERN_EMERG "last /proc..net open:  %s\n", last_procfs_open);
++	printk(KERN_EMERG "last /proc..net close: %s\n", last_procfs_close);
 
->
-> Loading sd_mod.ko module
-> Loading libata.ko module
-> Loading ata_generic.ko module
-> Loading pata_acpi.ko module
-> pata_acpi 0000:00:0f.0: PCI INT B -> GSI 21 (level, low) -> IRQ 21
-> pata_acpi 0000:00:0f.0: PCI INT B disabled
-> Loading pata_via.ko module
-> scsi0 : pata_via
-> scsi1 : pata_via
-> ata1: PATA max UDMA/133 cmd 0x1f0 ctl 0x3f6 bmdma 0xfa00 irq 14
-> ata2: PATA max UDMA/133 cmd 0x170 ctl 0x376 bmdma 0xfa08 irq 15
-> ata2.01: CFA: TRANSCEND, 20070831, max UDMA/66
-> ata2.01: 7962192 sectors, multi 0: LBA
-> ata2.01: limited to UDMA/33 due to 40-wire cable
-> ata2.01: configured for UDMA/33
-> scsi 1:0:1:0: Direct-Access ATA TRANSCEND 2007 PQ: 0 ANSI: 5
-> sd 1:0:1:0: [sda] 7962192 512-byte logical blocks: (4.07 GB/3.79 GiB)
-> sd 1:0:1:0: [sda] Write Protect is off
-> sd 1:0:1:0: [sda] Write cache: disabled, read cache: enabled, doesn't
-> support DA
-> sda: sda1 sda2 sda3
-> sd 1:0:1:0: [sda] Attached SCSI disk
-> Loading ata_piix.ko module
->
-> Thanks,
-> Steve
->
 
+> +}
+>  
+>  static struct net *get_proc_net(const struct inode *inode)
+>  {
+> @@ -37,9 +45,14 @@ int seq_open_net(struct inode *ino, struct file *f,
+>  {
+>  	struct net *net;
+>  	struct seq_net_private *p;
+> +	char *n;
+>  
+>  	BUG_ON(size < sizeof(*p));
+>  
+> +	n = d_path(&f->f_path, last_procfs_open, sizeof(last_procfs_open));
+> +	if (!IS_ERR(n))
+> +		memmove(last_procfs_open, n, strlen(n) + 1);
+> +
+>  	net = get_proc_net(ino);
+>  	if (net == NULL)
+>  		return -ENXIO;
+> @@ -83,6 +96,11 @@ EXPORT_SYMBOL_GPL(single_open_net);
+>  int seq_release_net(struct inode *ino, struct file *f)
+>  {
+>  	struct seq_file *seq;
+> +	char *n;
+> +
+> +	n = d_path(&f->f_path, last_procfs_close, sizeof(last_procfs_close));
+> +	if (!IS_ERR(n))
+> +		memmove(last_procfs_close, n, strlen(n) + 1);
+>  
+>  	seq = f->private_data;
+>  
+> --
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
