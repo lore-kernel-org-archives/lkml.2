@@ -1,124 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751259Ab1AEBV1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 20:21:27 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:49347 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750801Ab1AEBV0 (ORCPT
+	id S1751096Ab1AEB1b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 20:27:31 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:58513 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750801Ab1AEB1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 20:21:26 -0500
-Date: Tue, 4 Jan 2011 20:21:23 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Zhaolei <zhaolei@cn.fujitsu.com>,
-        "nhorman@tuxdriver.com" <nhorman@tuxdriver.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC patch 2/5] trace event skb fix unassigned field
-Message-ID: <20110105012123.GA10416@Krystal>
-References: <E1PaGZY-0001EI-BD@smtp.tuxdriver.com> <20110104235418.GD2911@nowhere> <20110105004038.GB9737@Krystal> <20110105004903.GF2911@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110105004903.GF2911@nowhere>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 20:17:24 up 42 days,  6:20,  5 users,  load average: 0.18, 0.06,
-	0.02
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Tue, 4 Jan 2011 20:27:30 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=kRJsYS2HAzkA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=DRY8zaNu5eAPE_yWa60A:9 a=ltpKl8NLRIcqrlPiGCo0KbvQE5IA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: trace-cmd: fix python bindings
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tom Zanussi <tom.zanussi@intel.com>
+In-Reply-To: <1294173820-7043-1-git-send-email-dvhart@linux.intel.com>
+References: <1294173820-7043-1-git-send-email-dvhart@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 04 Jan 2011 20:27:28 -0500
+Message-ID: <1294190848.3948.221.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> On Tue, Jan 04, 2011 at 07:40:38PM -0500, Mathieu Desnoyers wrote:
-> > * Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> > > On Tue, Jan 04, 2011 at 06:46:06PM -0500, nhorman@tuxdriver.com wrote:
-> > > > Acked- by: Neil Horman <nhorman@tuxdriver.com>
-> > > > 
-> > > > 
-> > > > Sent from my Verizon Wireless Phone
-> > > > 
-> > > > ----- Reply message -----
-> > > > From: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> > > > Date: Tue, Jan 4, 2011 6:16 pm
-> > > > Subject: [RFC patch 2/5] trace event skb fix unassigned field
-> > > > To: "LKML" <linux-kernel@vger.kernel.org>
-> > > > Cc: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>, "Steven Rostedt" <rostedt@goodmis.org>, "Frederic Weisbecker" <fweisbec@gmail.com>, "Ingo Molnar" <mingo@elte.hu>, "Neil Horman" <nhorman@tuxdriver.com>, "Thomas Gleixner" <tglx@linutronix.de>
-> > > > 
-> > > > 
-> > > > The field "protocol" in event kfree_skb is left unassigned if skb is NULL,
-> > > > leaving its trace output as garbage. Assign the value to 0 when skb is NULL
-> > > > instead.
-> > > 
-> > > Hm, if the skb is already null, we probably shouldn't send any trace.
-> > > 
-> > > What about using TP_CONDITION() ?
-> > 
-> > Hrm, let's see. It's been introduced by commit
-> > 5cb3d1d9d34ac04bcaa2034139345b2a5fea54c1
-> > by Zhaolei.
-> > 
-> > Event at the time of that commit, the only caller looked like:
-> > 
-> > void kfree_skb(struct sk_buff *skb)
-> > {
-> >         if (unlikely(!skb))
-> >                 return;
-> >         if (likely(atomic_read(&skb->users) == 1))
-> >                 smp_rmb();
-> >         else if (likely(!atomic_dec_and_test(&skb->users)))
-> >                 return;
-> >         trace_kfree_skb(skb, __builtin_return_address(0));
-> >         __kfree_skb(skb);
-> > }
-> > EXPORT_SYMBOL(kfree_skb);
-> > 
-> > So it already checks for a null pointer before calling the tracepoint. This
-> > leads me to wonder why why this check was added in the first place ?
-> 
-> Likely for no strong reasons :)
-> 
-> So I guess we can remove the check from the tracepoint?
+On Tue, 2011-01-04 at 12:43 -0800, Darren Hart wrote:
+> The python bindings stopped working after some changes to trace-cmd. This 
+> series addresses the bindings and python object member naming issues. With
+> these changes, event-viewer.py and the tracecmd.py self-tests work again.
 
-Yep, leading to this patch instead:
+Applied,
 
-trace event skb remove duplicate null-pointer check
+Thanks Darren!
 
-The check for NULL skb in the kfree_skb trace event is a duplicate from the
-check already done in its only caller, kfree_skb(). Remove this duplicate check.
-
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Neil Horman <nhorman@tuxdriver.com>
----
- include/trace/events/skb.h |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
-
-Index: linux-2.6-lttng/include/trace/events/skb.h
-===================================================================
---- linux-2.6-lttng.orig/include/trace/events/skb.h
-+++ linux-2.6-lttng/include/trace/events/skb.h
-@@ -25,9 +25,7 @@ TRACE_EVENT(kfree_skb,
- 
- 	TP_fast_assign(
- 		__entry->skbaddr = skb;
--		if (skb) {
--			__entry->protocol = ntohs(skb->protocol);
--		}
-+		__entry->protocol = ntohs(skb->protocol);
- 		__entry->location = location;
- 	),
- 
+-- Steve
 
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
