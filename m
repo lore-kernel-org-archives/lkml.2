@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324Ab1AEXJn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:09:43 -0500
-Received: from kroah.org ([198.145.64.141]:50787 "EHLO coco.kroah.org"
+	id S1753247Ab1AEXG2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:06:28 -0500
+Received: from kroah.org ([198.145.64.141]:50755 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753207Ab1AEXG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:06:29 -0500
+	id S1753079Ab1AEXGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 18:06:24 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 15:03:25 2011
-Message-Id: <20110105230325.486403462@clark.site>
+Message-Id: <20110105230324.955715805@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 15:00:38 -0800
+Date: Wed, 05 Jan 2011 15:00:33 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [20/49] orinoco: fix TKIP countermeasure behaviour
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [15/49] amd64_edac: Fix interleaving check
 In-Reply-To: <20110105230438.GA26241@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,61 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Kilroy <kilroyd@googlemail.com>
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-commit 0a54917c3fc295cb61f3fb52373c173fd3b69f48 upstream.
+commit e726f3c368e7c1919a7166ec09c5705759f1a69d upstream.
 
-Enable the port when disabling countermeasures, and disable it on
-enabling countermeasures.
+When matching error address to the range contained by one memory node,
+we're in valid range when node interleaving
 
-This bug causes the response of the system to certain attacks to be
-ineffective.
+1. is disabled, or
+2. enabled and when the address bits we interleave on match the
+interleave selector on this node (see the "Node Interleaving" section in
+the BKDG for an enlightening example).
 
-It also prevents wpa_supplicant from getting scan results, as
-wpa_supplicant disables countermeasures on startup - preventing the
-hardware from scanning.
+Thus, when we early-exit, we need to reverse the compound logic
+statement properly.
 
-wpa_supplicant works with ap_mode=2 despite this bug because the commit
-handler re-enables the port.
-
-The log tends to look like:
-
-State: DISCONNECTED -> SCANNING
-Starting AP scan for wildcard SSID
-Scan requested (ret=0) - scan timeout 5 seconds
-EAPOL: disable timer tick
-EAPOL: Supplicant port status: Unauthorized
-Scan timeout - try to get results
-Failed to get scan results
-Failed to get scan results - try scanning again
-Setting scan request: 1 sec 0 usec
-Starting AP scan for wildcard SSID
-Scan requested (ret=-1) - scan timeout 5 seconds
-Failed to initiate AP scan.
-
-Reported by: Giacomo Comes <comes@naic.edu>
-Signed-off by: David Kilroy <kilroyd@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/orinoco/wext.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/edac/amd64_edac.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/orinoco/wext.c
-+++ b/drivers/net/wireless/orinoco/wext.c
-@@ -1022,10 +1022,10 @@ static int orinoco_ioctl_set_auth(struct
- 		 */
- 		if (param->value) {
- 			priv->tkip_cm_active = 1;
--			ret = hermes_enable_port(hw, 0);
-+			ret = hermes_disable_port(hw, 0);
- 		} else {
- 			priv->tkip_cm_active = 0;
--			ret = hermes_disable_port(hw, 0);
-+			ret = hermes_enable_port(hw, 0);
- 		}
- 		break;
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -1628,7 +1628,7 @@ static int f10_match_to_this_node(struct
+ 	debugf1("   HoleOffset=0x%x  HoleValid=0x%x IntlvSel=0x%x\n",
+ 			hole_off, hole_valid, intlv_sel);
+ 
+-	if (intlv_en ||
++	if (intlv_en &&
+ 	    (intlv_sel != ((sys_addr >> 12) & intlv_en)))
+ 		return -EINVAL;
  
 
 
