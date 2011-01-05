@@ -1,564 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751423Ab1AEOpQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 09:45:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17782 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751329Ab1AEOpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 09:45:13 -0500
-Date: Wed, 5 Jan 2011 15:45:10 +0100
-From: Karel Zak <kzak@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        util-linux@vger.kernel.org
-Subject: [ANNOUNCE] util-linux v2.19-rc1
-Message-ID: <20110105144510.GC1869@nb.net.home>
+	id S1751458Ab1AEOsO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 09:48:14 -0500
+Received: from 81-174-11-161.staticnet.ngi.it ([81.174.11.161]:43709 "EHLO
+	mail.enneenne.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751097Ab1AEOsN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 09:48:13 -0500
+Date: Wed, 5 Jan 2011 15:48:00 +0100
+From: Rodolfo Giometti <giometti@enneenne.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kernel@vger.kernel.org, Russell Coker <russell@coker.com.au>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Message-ID: <20110105144758.GB3937@enneenne.com>
+Mail-Followup-To: Randy Dunlap <randy.dunlap@oracle.com>,
+	linux-kernel@vger.kernel.org, Russell Coker <russell@coker.com.au>,
+	Greg Kroah-Hartman <gregkh@suse.de>
+References: <1294067735-21466-1-git-send-email-giometti@linux.it>
+ <1294067735-21466-2-git-send-email-giometti@linux.it>
+ <20110103153231.ce70dbb5.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20110103153231.ce70dbb5.randy.dunlap@oracle.com>
+Organization: GNU/Linux Device Drivers, Embedded Systems and Courses
+X-PGP-Key: gpg --keyserver keyserver.linux.it --recv-keys D25A5633
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 192.168.32.37
+X-SA-Exim-Mail-From: giometti@enneenne.com
+Subject: Re: [PATCH] char nvtty: Network Virtual Terminal support
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on mail.enneenne.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 03, 2011 at 03:32:31PM -0800, Randy Dunlap wrote:
+> On Mon,  3 Jan 2011 16:15:35 +0100 Rodolfo Giometti wrote:
+> 
+> > A Network Virtual terminal (NVT tty) is a software device consisting
+> > of one halves: a client device, which is identical to a physical
+> > terminal, who, is turn, get connected with a remote server where real
+> > tty devices are located.
+> > 
+> > These devices are specified by RFC 854 and RFC 2217 and ther name into
+> > the system is /dev/nvttyX (by default you have 4 devices).
+> > 
+> > By using these devices and a proper compatible server (not included
+> > here but you can use sredird) you can get access to a remote tty
+> > device as the tty device itself was conneted with your local host.
+> > All data and settings are sent and received through the network.
+> > 
+> > Signed-off-by: Rodolfo Giometti <giometti@linux.it>
+> > ---
+> >  Documentation/ABI/testing/sysfs-nvtty |   35 +
+> >  drivers/char/Kconfig                  |   22 +
+> >  drivers/char/Makefile                 |    1 +
+> >  drivers/char/nvtty.c                  | 1557 +++++++++++++++++++++++++++++++++
+> >  4 files changed, 1615 insertions(+), 0 deletions(-)
+> >  create mode 100644 Documentation/ABI/testing/sysfs-nvtty
+> >  create mode 100644 drivers/char/nvtty.c
+> > 
+> 
+> > diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
+> > index 43d3395..13775be 100644
+> > --- a/drivers/char/Kconfig
+> > +++ b/drivers/char/Kconfig
+> > @@ -451,6 +451,28 @@ config UNIX98_PTYS
+> >  	  All modern Linux systems use the Unix98 ptys.  Say Y unless
+> >  	  you're on an embedded system and want to conserve memory.
+> >  
+> > +config NVT_TTY
+> > +	tristate "Network Virtual Terminal"
+> > +	default m
+> 
+> Don't enable random drivers, please.
 
-The first util-linux 2.19 release candidate is available at
+Ok, moved to 'n'.
 
-   ftp://ftp.kernel.org/pub/linux/utils/util-linux/v2.19/
+> > +	---help---
+> > +	  A Network Virtual terminal (NVT tty) is a software device
+> > +	  consisting of one halves: a client device, which is
+> 
+> 	"one" and "halves" do not go together.
 
-Feedback and bug reports, as always, are welcomed.
+Fixed.
 
-	Karel
+> > +	  identical to a physical terminal, who, is turn, get
+> 
+> 	                                         in turn, gets
 
+Fixed.
 
-Util-linux 2.19 Release Notes
-=============================
+> > +	  connected with a remote server where real tty devices are
+> 
+> 	            to a remote server
 
-The util-linux-ng project has been renamed back to util-linux.
+Fixed.
 
-Release highlights
-------------------
+> > +	  located.
+> > +
+> > +	  These devices are specified by RFC 854 and RFC 2217 and ther
+> 
+> 	                                                          the ?? or their ??
 
-lsblk(8):
-  - this NEW COMMAND lists information about all or selected block devices in
-    tree-like format.
+Fixed.
 
-partx(8):
-  - this command has been rewritten to use libblkid for partition tables
-    parsing. It supports aix, bsd, dos, gpt, mac, minix, sgi, solaris_x86, sun,
-    ultrix and unixware now.
+> > +	  name into the system is /dev/nvttyX (by default you have 4
+> 
+> 	                                      (by default there are 4
 
-  - supports new command line option "--show" to list partitions in new format
+Fixed.
 
-  - prints UUID and name for GPT and mac partitions
+> > +	  devices).
+> > +
+> > +	  By using these devices and a proper compatible server (not
+> > +	  included here but you can use sredird) you can get access to
+> > +	  a remote tty device as the tty device itself was conneted
+> 
+> 	                      as though the tty device itself was connected
 
-findmnt(8):
-  - supports new command line option "--submounts" to list all submounts for
-    selected mountpoint(s)
+Fixed.
 
-agetty(8):
-  - supports new command line options "-c" and "-s" to reuse already initialized
-    tty cflags and existing baud rate
+> > +	  with your local host.  All data and settings are sent and
+> > +	  received through the network.
+> > +
+> > +	  If unsure, say M.
+> > +
+> >  config DEVPTS_MULTIPLE_INSTANCES
+> >  	bool "Support multiple instances of devpts"
+> >  	depends on UNIX98_PTYS
 
-mount(8), umount(8):
-  - could be linked with libmount (--enable-libmount-mount) to manage userspace
-    mount options outside /etc/mtab on systems where the file is a symlink to
-    /proc/mounts. (EXPERIMENTAL)
+Thanks a lot, I'm going to repropose a new patch ASAP.
 
-losetup(8), mount(8):
-  - uses /sys/dev/block/<device>/loop/backing_file rather than loopdev ioctls
-    (requires kernel >= 2.6.37)
+Ciao,
 
-fsck(8):
-  - supports new command line option "-l" to lock whole-disk device by 
-    exclusive flock(2). This option is recommended when more fsck(8) instances
-    are executed in the same time. 
-
-rtcwake(8):
-   - supports new mode "show" to print the current RTC alarm time
-
-fstrim(8):
-   - this NEW COMMAND allows to discard unused blocks on a mounted filesystem
-     (wrapper for FITRIM ioctl)
-
-swapon(8):
-   - supports new options "discard" and "nofail"
-
-
-Changes between v2.18 and v2.19
--------------------------------
-
- For more details see ChangeLog files at:
- ftp://ftp.kernel.org/pub/linux/utils/util-linux/v2.19/
-
-addpart:
-   - code consolidation  [Karel Zak]
-agetty:
-   - Use EXIT_* and add noreturn attribute  [Marek Polacek]
-   - add -c to reuse cflags  [Karel Zak]
-   - add -s to reuse existing baud rate  [Karel Zak]
-   - fix -s option (baud rate setup)  [Karel Zak]
-   - use ignore_result() or write(1, ...)  [Karel Zak]
-   - use nl_langinfo()  [Karel Zak]
-   - don't wipe CLOCAL flag  [Karel Zak]
-blockdev:
-   - add BLKDISCARDZEROES  [Karel Zak]
-   - fix typo in blockdev.8  [Karel Zak]
-   - sync man page with code  [Karel Zak]
-build-sys:
-   - add --enable-libmount-mount  [Karel Zak]
-   - add mesg to .gitignore  [Karel Zak]
-   - add missing header  [Karel Zak]
-   - cleanup autogen.sh  [Karel Zak]
-   - drop shlibs/Makefile.am that only adds SUBDIRS  [Diego Elio 'Flameeyes' Pettenò]
-   - drop the getsize test out of Makefile.am  [Diego Elio 'Flameeyes' Pettenò]
-   - explicitly check for slang.h  [Karel Zak]
-   - fix lsblk building  [Karel Zak]
-   - man aliases don't depend on original man page  [Diego Elio 'Flameeyes' Pettenò]
-   - remove generated po/POTFILES.in  [Karel Zak]
-   - remove unnecessary header  [Karel Zak]
-   - require automake 1.10 as gtk-doc requires it anyway  [Diego Elio 'Flameeyes' Pettenò]
-   - use generated libtool-2 stuff  [Karel Zak]
-   - use the silent-rules prefix when generating man pages.  [Diego Elio 'Flameeyes' Pettenò]
-cal:
-   - follow HAVE_LANGINFO  [Karel Zak]
-   - use EXIT_* and program_invocation_short_name  [Karel Zak]
-cfdisk:
-   - close the program when terminal isn't present  [Francesco Cosoleto]
-   - don't use size of device based on cylinders  [Karel Zak]
-   - fix --with-slang  [Karel Zak]
-   - fix n+1 again  [Karel Zak]
-   - fix n+1 bug in error message  [Karel Zak]
-   - get_string not calculating correct limits  [Karel Zak]
-   - search for ncursesw/ncurses.h  [Mike Frysinger]
-chfn:
-   - Use EXIT_* and err()  [Marek Polacek]
-chrt:
-   - Add noreturn attribute to show_usage() function  [Marek Polacek]
-chsh:
-   - don't suggest ypchsh  [Karel Zak]
-   - use EXIT_* and err.h  [Karel Zak]
-col:
-   - use err.h and EXIT_* macros  [Karel Zak]
-   - use xalloc for memory allocation  [Davidlohr Bueso]
-column:
-   - EOF handling bug  [Sami Kerola]
-   - code readability improvements  [Sami Kerola]
-   - error messaging & exit codes  [Sami Kerola]
-   - getopt_long and new help output  [Sami Kerola]
-   - segfault on empty input  [Karel Zak]
-   - update manual page to match column switches  [Sami Kerola]
-ctrlaltdel:
-   - use err() instead of fprintf() and exit()  [Marek Polacek]
-ddate:
-   - fix typo in ddate.1  [Davidlohr Bueso]
-   - revert man page typo  [Karel Zak]
-delpart:
-   - code consolidation  [Karel Zak]
-dmesg:
-   - fix memory leak in dmesg(1).  [Davidlohr Bueso]
-docs:
-   - README fix typo  [Davidlohr Bueso]
-   - add COPYING.lib* files  [Karel Zak]
-   - add blkid --list-all to TODO  [Karel Zak]
-   - add note about agetty to TODO  [Karel Zak]
-   - add note about sfdisk to TODO  [Karel Zak]
-   - fix typos in man pages  [Karel Zak]
-   - make it easier to find mail list address  [Alexander Shishkin]
-   - mark line(1) as deprecated  [Karel Zak]
-   - remove ipc.texi (info with IPC API docs)  [Karel Zak]
-   - update AUTHORS file  [Karel Zak]
-   - update DEPRECATED file  [Karel Zak]
-   - update TODO  [Karel Zak]
-   - update TODO file  [Davidlohr Bueso]
-   - update TODO file  [Karel Zak]
-fallocate:
-   - fix build failure with old linux headers  [Mike Frysinger]
-   - fix typo  [Karel Zak]
-fdisk:
-   - don't keep internally device size in 512-byte sectors  [Karel Zak]
-   - eliminate redundant call to open()  [Markus Rinne]
-   - fix alignment check for non-512-byte logical sectors  [Karel Zak]
-   - fix freespace boundaries calculation on SGI disklabel  [Karel Zak]
-   - fix use of non portable type  [François Revol]
-   - update MBR after ID change  [Karel Zak]
-   - use canonicalized names for -l (and sfdisk -d)  [Karel Zak]
-findmnt:
-   - add --submounts option  [Karel Zak]
-   - add /etc/fstab.d support  [Karel Zak]
-   - add MAJ MIN  [Karel Zak]
-   - add support for fs-root (subvolumes and bind mounts)  [Karel Zak]
-   - apply new changes from tt.c  [Karel Zak]
-   - don't swap source and target if the source is a tag  [Karel Zak]
-   - fix exit code  [Karel Zak]
-   - fix support for -a option  [Milan Broz]
-   - follow HAVE_LANGINFO  [Karel Zak]
-   - use new libmount functions  [Karel Zak]
-   - use new tab parsing API  [Karel Zak]
-flock:
-   - fix file number in flock.1 man page  [Patrice Dumas]
-   - properly report exec() errors  [Karel Zak]
-   - use more useful example in flock.1  [Jakob Unterwurzacher]
-fsck:
-   - add support for whole-disk locking (-l option)  [Karel Zak]
-   - improve whole-disk check, detect stacked devices  [Karel Zak]
-   - inform about nonexistent devices in verbose mode  [Karel Zak]
-   - returns proper code on exec() error  [Karel Zak]
-fstrim:
-   - add new command  [Lukas Czerner]
-   - fix typo  [Karel Zak]
-hexdump:
-   - remove od functionality in favor to GNU coreutils od  [Sami Kerola]
-hwclock:
-   - [m68k] unbreak FTBFS with recent (>= 2.4.18?) kernels  [Thorsten Glaser]
-   - allow setting of RTC when it contains invalid data  [Peter Tyser]
-include:
-   - cleanup blkdev.h  [Karel Zak]
-ipc:
-   - remove .info file  [Karel Zak]
-last:
-   - Use EXIT_* and err()  [Marek Polacek]
-   - use xalloc lib  [Davidlohr Bueso]
-lib:
-   - add fallback for nl_langinfo()  [Karel Zak]
-   - add test program to canonicalize.c  [Karel Zak]
-   - add wrappers for "at" functions  [Karel Zak]
-   - [c] add ignore_result()  [Karel Zak]
-   - [env] consolidate safe_getenv() usage  [Karel Zak]
-   - fix mange() and unmangle() to handle NULL  [Karel Zak]
-   - fix syntax error in blkdev.c  [Karel Zak]
-   - [ismounted] don't wast time with mtab is /proc/mounts used  [Karel Zak]
-   - [strutils] general purpose string handling functions  [Davidlohr Bueso]
-   - [strutils] move strmode() from namei.c to strutils.c  [Karel Zak]
-   - [tt] add TT_FL_RIGHT, add columns list parser  [Karel Zak]
-   - [tt] fix alignment of the last tree child  [Karel Zak]
-   - [tt] fix langinfo build break  [Davidlohr Bueso]
-   - [xalloc] add xstrdup()  [Karel Zak]
-   - [xalloc] general purpose memory allocation handling wrappers  [Davidlohr Bueso]
-libblkid:
-   - 256MiB is min size of btrfs  [Karel Zak]
-   - NTFS volume label not found  [Karel Zak]
-   - add LINHIB0001 signature to swap prober  [Karel Zak]
-   - add blkid_probe_get_sectors()  [Davidlohr Bueso]
-   - add magic to vfat  [Jeroen Oortwijn]
-   - add nilfs2 filesystem superblock probe  [Jiro SEKIBA]
-   - add searching in attributes dir to BeFS  [Jeroen Oortwijn]
-   - add signature to FAT32 fsinfo block  [Jeroen Oortwijn]
-   - cache is incorrectly revalidated  [Karel Zak]
-   - consolidate magic strings detection code  [Karel Zak]
-   - don't ignore zero for SBMAGIC_OFFSET  [Karel Zak]
-   - don't probe directories  [Karel Zak]
-   - fix MBR detection on iPod and cleanup vfat code  [Karel Zak]
-   - fix endian conversion bug in NILFS  [Karel Zak]
-   - fix memory leak  [Igor Bazhitov]
-   - fix typo filesystem name nilfs to nilfs2  [Jiro SEKIBA]
-   - remove dead code section  [Valerie Aurora]
-   - remove unnecessary __UCLIBC__ check  [Mike Frysinger]
-   - remove unused variable  [Karel Zak]
-   - set tolerant flag for HFS  [Alexandre Peixoto Ferreira]
-   - support LIBBLKID_DEBUG= env.  [Karel Zak]
-   - use PRId64 in PT parser  [Karel Zak]
-   - wrong PT detection on RAID0  [Karel Zak]
-libmount:
-   - add /etc/fstab.d support  [Karel Zak]
-   - add DBG() to optstr.c  [Karel Zak]
-   - add FS detection  [Karel Zak]
-   - add LIBMOUNT_{MTAB,FSTAB}  [Karel Zak]
-   - add MNT_FS_SWAP flag  [Karel Zak]
-   - add debug messages and fix typos in tab_update  [Karel Zak]
-   - add first part of high-level API  [Karel Zak]
-   - add functions get mtab/utab paths  [Karel Zak]
-   - add mnt_context  [Karel Zak]
-   - add mnt_context_get_{fstab,mtab}()  [Karel Zak]
-   - add mnt_copy_fs() and mnt_fs_set_root()  [Karel Zak]
-   - add mnt_fs_get_root()  [Karel Zak]
-   - add mnt_fs_prepend_optstr()  [Karel Zak]
-   - add mnt_get_writable_mtab_path()  [Karel Zak]
-   - add mnt_optstr_fix_user  [Karel Zak]
-   - add mnt_optstr_get_mountflags()  [Karel Zak]
-   - add mnt_optstr_get_userspace_mountflags()  [Karel Zak]
-   - add mnt_optstr_prepend_option()  [Karel Zak]
-   - add mnt_split_optstr()  [Karel Zak]
-   - add mnt_tab_find_pair()  [Karel Zak]
-   - add mnt_tab_parse_mtab()  [Karel Zak]
-   - add mnt_tab_parse_stream()  [Karel Zak]
-   - add mnt_tab_set_parser_errcb()  [Karel Zak]
-   - add mntent.h compatible stuff  [Karel Zak]
-   - add mount(2) and /sbin/mount.<type> support  [Karel Zak]
-   - add mtab managment to context API  [Karel Zak]
-   - add new debug messages, fix umount return code  [Karel Zak]
-   - add new psetudo filesystems  [Karel Zak]
-   - add new pseudo filesystems  [Karel Zak]
-   - add routines for uid=, git= and context= translation  [Karel Zak]
-   - add support for mtab managment  [Karel Zak]
-   - add uhelper=, improve mnt_split_optstr()  [Karel Zak]
-   - add umount(2) support  [Karel Zak]
-   - add unit test for mnt_copy_fs()  [Karel Zak]
-   - add unmangle/mangle() functions to API  [Karel Zak]
-   - add utils for work with uid/gid  [Karel Zak]
-   - add utils to get FS root/mountpoint  [Karel Zak]
-   - add {start,end}swith() functions  [Karel Zak]
-   - allow to overwrite mtab/fstab paths  [Karel Zak]
-   - allows to swap source and target  [Karel Zak]
-   - always store rw/ro flags to mtab  [Karel Zak]
-   - better permissions and optstr evaliation  [Karel Zak]
-   - better work with mtab options  [Karel Zak]
-   - clean mnt_update_* target usage  [Karel Zak]
-   - clean up lock.c  [Karel Zak]
-   - clean up mnt_fs_set_optstr()  [Karel Zak]
-   - clean up mount.sym file  [Karel Zak]
-   - clean up mountflags usage  [Karel Zak]
-   - cleanup API and docs  [Karel Zak]
-   - cleanup MS_RDONLY usageand mnt_update_* symbols  [Karel Zak]
-   - cleanup context API  [Karel Zak]
-   - cleanup debug flags  [Karel Zak]
-   - cleanup fstab parser, improve mnt_tab errcb usage  [Karel Zak]
-   - cleanup helpers support  [Karel Zak]
-   - cleanup lock API  [Karel Zak]
-   - cleanup mangle() usage  [Karel Zak]
-   - cleanup mount.h  [Karel Zak]
-   - cleanup mount.sym  [Karel Zak]
-   - cleanup return codes (cache.c)  [Karel Zak]
-   - cleanup return codes (fs.c)  [Karel Zak]
-   - cleanup return codes (iter.c)  [Karel Zak]
-   - cleanup return codes (lock.c)  [Karel Zak]
-   - cleanup return codes (optmap.c)  [Karel Zak]
-   - cleanup return codes (optstr.c)  [Karel Zak]
-   - cleanup return codes (tab.c)  [Karel Zak]
-   - cleanup return codes (tab_parse.c)  [Karel Zak]
-   - correctly use "none" values  [Karel Zak]
-   - don't export some cache.c files  [Karel Zak]
-   - don't return old data from optls iterator  [Karel Zak]
-   - don't store filename to mnt_tab  [Karel Zak]
-   - don't use NULL pointer in mntenv  [Karel Zak]
-   - extend mnt_update_* API  [Karel Zak]
-   - fix Makefile and tests  [Karel Zak]
-   - fix comment for mnt_unlock_file()  [Karel Zak]
-   - fix context mount test  [Karel Zak]
-   - fix datatype for mountflags  [Karel Zak]
-   - fix merge_optstr (do not truncate 3 trailing characters)  [Petr Uzel]
-   - fix mnt_optstr_apply_flags() to work with optional variables  [Karel Zak]
-   - fix mnt_optstr_remove_option_at()  [Karel Zak]
-   - fix mount helpers call  [Karel Zak]
-   - fix mount.h includes  [Karel Zak]
-   - fix optstr test  [Karel Zak]
-   - fix tab_update test program  [Karel Zak]
-   - fix to work with btrfs subvolume user mounts  [Karel Zak]
-   - fix utab file and dir modes, add new debug messages  [Karel Zak]
-   - implement mnt_context_subst_optstr()  [Karel Zak]
-   - improve an rename API for mtab management  [Karel Zak]
-   - improve assert() and DBG() usage  [Karel Zak]
-   - improve debugging, fix optstr prepend  [Karel Zak]
-   - improve function for work with mtab paths  [Karel Zak]
-   - improve mnt_get_fs_root() and mnt_get_mountpoint()  [Karel Zak]
-   - improve parser return codes  [Karel Zak]
-   - improve parsers return codes  [Karel Zak]
-   - minor cleanup in optstr.c  [Karel Zak]
-   - minor fixes  [Karel Zak]
-   - minor fixes in cache.c  [Karel Zak]
-   - optimize blkid_devno_to_devname()  [Karel Zak]
-   - remove fs and tab printf functions  [Karel Zak]
-   - remove mnt_tab_strerr()  [Karel Zak]
-   - remove unnecessary options container  [Karel Zak]
-   - remove unused mnt_strconcat3()  [Karel Zak]
-   - remove utab from API, update tests  [Karel Zak]
-   - rewrite DBG() macro  [Karel Zak]
-   - rewrite mountinfo/fstab parsers to use sscanf()  [Karel Zak]
-   - rewrite optstr translation  [Karel Zak]
-   - rewrite update  [Karel Zak]
-   - split context.c  [Karel Zak]
-   - support /{proc,etc}/filesystems  [Karel Zak]
-   - update mount.sym  [Karel Zak]
-   - update mount.{h,sym}  [Karel Zak]
-   - update mtab after mount(2)  [Karel Zak]
-   - update tests  [Karel Zak]
-   - use attribute __format__ for debug routines  [Karel Zak]
-   - use better format for utab, improve bind mounts  [Karel Zak]
-   - use mnt_fs for mtab API  [Karel Zak]
-   - use separate buffer for userspace options, add mount attributes  [Karel Zak]
-login:
-   - fix "ignoring return value" errors  [Karel Zak]
-   - use EXIT_* and err.h, clean up return codes  [Marek Polacek]
-   - use EXIT_* in checktty()  [Karel Zak]
-   - use xalloc lib  [Davidlohr Bueso]
-look:
-   - fix conflict between locally defined err() and glibc's version  [Davidlohr Bueso]
-   - fix memory leak in look(1)  [Davidlohr Bueso]
-losetup:
-   - do not distinguish between malloc and realloc  [Tobias Klauser]
-   - remove unnecessary fstab.h include  [Karel Zak]
-   - use /sys/dev/block/.../loop/backing_file  [Karel Zak]
-   - use stdout and return 0 for --help  [Karel Zak]
-lsblk:
-   - add --nodeps  [Karel Zak]
-   - add new utility  [Milan Broz]
-   - rename "RA" column to "RE"  [Karel Zak]
-lscpu:
-   - add -x and {On,Off}-line CPU(s) mask/list  [Karel Zak]
-   - add byte order and bogoMIPS information  [Davidlohr Bueso]
-   - avoid len = 0 as a consequence of maxcpus = 0  [Gerrit Renker]
-   - really use 'mode' argument in path_fopen()  [Petr Uzel]
-   - support offline CPUs  [Karel Zak]
-   - support sysfs without cpu/online file  [Karel Zak]
-   - update lscpu.1 to include new additions.  [Davidlohr Bueso]
-   - use GPLv2+  [Karel Zak]
-man:
-   - add russian translation of ddate.1  [Karel Zak]
-mesg:
-   - Use EXIT_* and discard K&R style declaration.  [Marek Polacek]
-   - change error exit code from 1 to >1  [Francesco Cosoleto]
-misc-utils:
-   - use new xmalloc() wrapper  [Davidlohr Bueso]
-mkfs:
-   - add `mkfs.ext4` to section SEE ALSO of `mkfs.8`.  [Paul Menzel]
-more:
-   - use xalloc for memory allocation  [Davidlohr Bueso]
-mount:
-   - Add more pseudo filesystems.  [Davidlohr Bueso]
-   - Don't call canonicalize_*(SPEC) for 9p  [Sven Eckelmann]
-   - add info about type.subtype to /sbin/mount.<type> API description  [Karel Zak]
-   - add mnt_init_debug()  [Karel Zak]
-   - add note about context= remount to mount.8  [Karel Zak]
-   - add note about subtypes to fstab.5  [Karel Zak]
-   - avoid starting a man page line with a single quote  [Chris Frost]
-   - be more explicit about --move in mount.8  [Karel Zak]
-   - better describe UUIDs usage in man pages  [Karel Zak]
-   - clean up fstab.5  [Karel Zak]
-   - don't canonicalize "spec" with --no-canonicalize option  [Miklos Szeredi]
-   - don't use auto-clear loopdev if mtab is available  [Karel Zak]
-   - fix "mount -a" for auto-clear loopdevs and /proc/mounts  [Karel Zak]
-   - fix mount.8, shortname=mixed is now default for vfat  [Petr Uzel]
-   - get most recently mounted fs from /etc/mtab.  [Valerie Aurora]
-   - handle filesystems with subtype  [Miklos Szeredi]
-   - ignore *context= options on remount  [Karel Zak]
-   - improve verbose info  [Karel Zak]
-   - mark die() as nonreturn  [Karel Zak]
-   - read /sys for loopdev backing file  [Karel Zak]
-   - read mtab by libmount  [Karel Zak]
-   - remove warning about FS detection from mount.1  [Karel Zak]
-   - rewrite HAVE_LIBMOUNT_MOUNT code  [Karel Zak]
-   - rewrite is_readonly()  [Karel Zak]
-   - sanity check mount flags for MS_PROPAGATION  [Karel Zak]
-   - update relatime description in mount.8  [Karel Zak]
-   - use libmount for mtab/utab updates  [Karel Zak]
-   - use utimensat(AT_FDCWD) rather than open()+futimens()  [Karel Zak]
-   - use verbose  info for HAVE_LIBMOUNT_MOUNT only  [Karel Zak]
-namei:
-   - fix memory leak in namei(1)  [Davidlohr Bueso]
-   - parse all path arguments when an optarg path will fail  [Sami Kerola]
-newgrp:
-   - Use err() and EXIT_*  [Marek Polacek]
-partx:
-   - add mac partition table support  [Davidlohr Bueso]
-   - add sun partition table support  [Davidlohr Bueso]
-   - cleanup and add columns  [Karel Zak]
-   - complete rewrite  [Davidlohr Bueso, Karel Zak]
-   - fix authors section in man page  [Davidlohr Bueso]
-   - integrate support for mac and sun partitions, based on kpartx.  [Davidlohr Bueso]
-   - tiny change in usage()  [Karel Zak]
-pg:
-   - use xalloc for memory allocation  [Davidlohr Bueso]
-po:
-   - add gl.po (from translationproject.org)  [Fran Diéguez]
-   - add zh_TW.po (from translationproject.org)  [Wei-Lun Chao]
-   - fix note about license  [Karel Zak]
-   - merge changes  [Karel Zak]
-   - refresh gl and zh_TW  [Karel Zak]
-   - update after rename  [Karel Zak]
-   - update fr.po (from translationproject.org)  [Milan Bouchet-Valat]
-   - update hu.po (from translationproject.org)  [Gabor Kelemen]
-   - update ja.po (from translationproject.org)  [Makoto Kato]
-   - update nl.po (from translationproject.org)  [Benno Schulenberg]
-   - update pl.po (from translationproject.org)  [Jakub Bogusz]
-   - update vi.po (from translationproject.org)  [Clytie Siddall]
-portability:
-   - fix mntent.h and pty.h usage  [François Revol]
-   - use standard constants  [François Revol]
-renice:
-   - improve messages specifying what ID is referring to  [Francesco Cosoleto]
-   - make some functions static  [Francesco Cosoleto]
-   - remove hardcoded program name using warn() and warnx()  [Francesco Cosoleto]
-   - reverse %s position in error messages  [Francesco Cosoleto]
-   - rewrite usage()  [Karel Zak]
-   - update man page (nice rlimit was added to kernel)  [Francesco Cosoleto]
-rev:
-   - coding style, various fixes  [Davidlohr Bueso]
-   - use xalloc for memory allocation  [Davidlohr Bueso]
-rtcwake:
-   - add 'show' mode for rtc alarm  [Marek Otahal]
-   - use err.h routines  [Karel Zak]
-sfdisk:
-   - add option to use maximum partition size  [Karel Zak]
-   - save errno before calling perror  [Forest Bond]
-shutdown:
-   - Use EXIT_*  [Marek Polacek]
-simpleinit:
-   - Use EXIT_*  [Marek Polacek]
-   - move old init stuff to separate directory  [Karel Zak]
-swapon:
-   - Canonicalize swap device  [Alexey Gladkov]
-   - Document btrfs limitation with swapfiles  [Jeff Mahoney]
-   - add "discard" support  [Hugh Dickins]
-   - add support for "nofail" fstab mount option  [Karel Zak]
-   - better text for "discard", note about swapon in fstab.5  [Karel Zak]
-   - warn if file owner is not root  [Karel Zak]
-swpaon:
-   - use canonicalized devnames on -s output  [Karel Zak]
-sys-utils:
-   - make use xalloc wrappers  [Davidlohr Bueso]
-tailf:
-   - fixed timing issue that could cause duplicate data output  [Dima Kogan]
-   - use xalloc for memory allocation  [Davidlohr Bueso]
-taskset:
-   - proper numbers parsing  [Karel Zak]
-tests:
-   - add  regression tests  [Davidlohr Bueso]
-   - add basic libmount tests for mounting  [Karel Zak]
-   - add blkid test for partitioned RAID0  [Karel Zak]
-   - add libmount lock test  [Karel Zak]
-   - add libmount mtab tests  [Karel Zak]
-   - add libmount mtab update test  [Karel Zak]
-   - add libmount optstr.c tests  [Karel Zak]
-   - add libmount tab_parse.c tests  [Karel Zak]
-   - add libmount tags tests  [Karel Zak]
-   - add libmount utab tests  [Karel Zak]
-   - add libmount utils.c tests  [Karel Zak]
-   - add nilfs2 test for libblkid  [Jiro SEKIBA]
-   - add quoted optstr  [Karel Zak]
-   - add utab update tests  [Karel Zak]
-   - check for mtab  [Karel Zak]
-   - fix blkid MD test (missing tailing whitespaces)  [Karel Zak]
-   - fix strtosize() test  [Karel Zak]
-   - improve libmount context mount and umount test  [Karel Zak]
-   - improve subtests initialization  [Karel Zak]
-   - refresh libmount fstab parser tests  [Karel Zak]
-   - truncate BeFS and tuxonice images  [Karel Zak]
-   - update lscpu tests  [Karel Zak]
-   - update namei regression test  [Karel Zak]
-   - use findmnt(8) for mount --move test  [Karel Zak]
-   - use findmnt(8) for remount test  [Karel Zak]
-   - use {src,build}dir variables for tests  [Karel Zak]
-ul:
-   - fix memory leak.  [Davidlohr Bueso]
-   - use atexit() to deallocate buffer, print errors by err()  [Karel Zak]
-   - use xalloc for memory allocation  [Davidlohr Bueso]
-umount:
-   - add HAVE_LIBMOUNT_MOUNT code  [Karel Zak]
-   - umount -r segfault  [Karel Zak]
-   - use strtosize() for offset=  [Karel Zak]
-vipw:
-   - fix warn_unused_result gcc warning  [Karel Zak]
-   - use EXIT_* and err()  [Marek Polacek]
-wall:
-   - Use EXIT_* and err()  [Marek Polacek]
-   - fix coding style  [Karel Zak]
-   - remove progname  [Karel Zak]
-   - use xalloc lib  [Davidlohr Bueso]
-wipefs:
-   - fail if more device arguments specified  [Milan Broz]
-
- 
+Rodolfo
 
 -- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+
+GNU/Linux Solutions                  e-mail: giometti@enneenne.com
+Linux Device Driver                          giometti@linux.it
+Embedded Systems                     phone:  +39 349 2432127
+UNIX programming                     skype:  rodolfo.giometti
+Freelance ICT Italia - Consulente ICT Italia - www.consulenti-ict.it
