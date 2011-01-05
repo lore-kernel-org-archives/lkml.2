@@ -1,81 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406Ab1AEXGt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:06:49 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59230 "EHLO arroyo.ext.ti.com"
+	id S1753409Ab1AEXHH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:07:07 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:59467 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753385Ab1AEXGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:06:45 -0500
-From: Omar Ramirez Luna <omar.ramirez@ti.com>
-To: Omar Ramirez Luna <omar.ramirez@ti.com>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>,
-        Fernando Guzman Lugo <x0095840@ti.com>,
-        Rene Sapiens <rene.sapiens@ti.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Hari Kanigeri <h-kanigeri2@ti.com>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>
-Subject: [PATCH] staging: tidspbridge: replace mbox callback with notifier_call
-Date: Wed,  5 Jan 2011 16:55:28 -0600
-Message-Id: <1294268128-8220-1-git-send-email-omar.ramirez@ti.com>
-X-Mailer: git-send-email 1.7.1
+	id S1752671Ab1AEXHD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 18:07:03 -0500
+X-IronPort-AV: E=Sophos;i="4.60,279,1291622400"; 
+   d="scan'208";a="502146527"
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
+In-Reply-To: <AANLkTi=3Gu-rz=-OdNtUXn4qw60Df6=YePnzvB=s-+Ov@mail.gmail.com>
+References: <1294254337.16957.13.camel@mulgrave.site>
+	 <AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com>
+	 <1294256169.16957.18.camel@mulgrave.site>
+	 <20110105200008.GJ8638@n2100.arm.linux.org.uk>
+	 <1294259637.16957.25.camel@mulgrave.site>
+	 <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com>
+	 <20110105210448.GM8638@n2100.arm.linux.org.uk>
+	 <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com>
+	 <1294262208.2952.4.camel@heimdal.trondhjem.org>
+	 <AANLkTi=3Gu-rz=-OdNtUXn4qw60Df6=YePnzvB=s-+Ov@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Wed, 05 Jan 2011 18:06:48 -0500
+Message-ID: <1294268808.2952.18.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 05 Jan 2011 23:06:50.0496 (UTC) FILETIME=[3C2DD000:01CBAD2D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lately, mailbox callbacks have been replaced by notifier block
-call chains, this needs to be changed in the users of mailbox,
-otherwise compilation will break due to missing parameters.
+On Wed, 2011-01-05 at 13:30 -0800, Linus Torvalds wrote: 
+> On Wed, Jan 5, 2011 at 1:16 PM, Trond Myklebust
+> <Trond.Myklebust@netapp.com> wrote:
+> >
+> > So what should be the preferred way to ensure data gets flushed when
+> > you've written directly to a page, and then want to read through the
+> > vm_map_ram() virtual range? Should we be adding new semantics to
+> > flush_kernel_dcache_page()?
+> 
+> The "preferred way" is actually simple: "don't do that". IOW, if some
+> page is accessed through a virtual mapping you've set up, then
+> _always_ access it through that virtual mapping.
+> 
+> Now, when that is impossible (and yes, it sometimes is), then you
+> should flush after doing all writes. And if you do the write through
+> the regular kernel mapping, you should use flush_dcache_page(). And if
+> you did it through the virtual mapping, you should use
+> "flush_kernel_vmap_range()" or whatever.
+> 
+> NOTE! I really didn't look those up very closely, and if the accesses
+> can happen concurrently you are basically screwed, so you do need to
+> do locking or something else to guarantee that there is some nice
+> sequential order.  And maybe I forgot something.  Which is why I do
+> suggest "don't do that" as a primary approach to the problem if at all
+> possible.
+> 
+> Oh, and you may need to flush before reading too (and many writes do
+> end up being "read-modify-write" cycles) in case it's possible that
+> you have stale data from a previous read that was then invalidated by
+> a write to the aliasing address. Even if that write was flushed out,
+> the stale read data may exist at the virtual address. I forget what
+> all we required - in the end the only sane model is "virtual caches
+> suck so bad that anybody who does them should be laughed at for being
+> a retard".
 
-Reported-by: Hari Kanigeri <h-kanigeri2@ti.com>
-Signed-off-by: Omar Ramirez Luna <omar.ramirez@ti.com>
----
+Yes. The fix I sent out was a call to invalidate_kernel_vmap_range(),
+which takes care of invalidating the cache prior to a virtual address
+read.
 
-To be pushed after mailbox dependencies.
+My question was specifically about the write through the regular kernel
+mapping: according to Russell and my reading of the cachetlb.txt
+documentation, flush_dcache_page() is only guaranteed to have an effect
+on page cache pages.
+flush_kernel_dcache_page() (not to be confused with flush_dcache_page)
+would appear to be the closest fit according to my reading of the
+documentation, however the ARM implementation appears to be a no-op...
 
- drivers/staging/tidspbridge/core/tiomap3430.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
-index cacd30e..28bdce0 100644
---- a/drivers/staging/tidspbridge/core/tiomap3430.c
-+++ b/drivers/staging/tidspbridge/core/tiomap3430.c
-@@ -223,6 +223,10 @@ static struct bridge_drv_interface drv_interface_fxns = {
- 	bridge_msg_set_queue_id,
- };
- 
-+static struct notifier_block dsp_mbox_notifier = {
-+	.notifier_call = io_mbox_msg,
-+};
-+
- static inline void flush_all(struct bridge_dev_context *dev_context)
- {
- 	if (dev_context->dw_brd_state == BRD_DSP_HIBERNATION ||
-@@ -551,7 +555,7 @@ static int bridge_brd_start(struct bridge_dev_context *dev_ctxt,
- 		 * Enable Mailbox events and also drain any pending
- 		 * stale messages.
- 		 */
--		dev_context->mbox = omap_mbox_get("dsp");
-+		dev_context->mbox = omap_mbox_get("dsp", &dsp_mbox_notifier);
- 		if (IS_ERR(dev_context->mbox)) {
- 			dev_context->mbox = NULL;
- 			pr_err("%s: Failed to get dsp mailbox handle\n",
-@@ -561,8 +565,6 @@ static int bridge_brd_start(struct bridge_dev_context *dev_ctxt,
- 
- 	}
- 	if (!status) {
--		dev_context->mbox->rxq->callback = (int (*)(void *))io_mbox_msg;
--
- /*PM_IVA2GRPSEL_PER = 0xC0;*/
- 		temp = readl(resources->dw_per_pm_base + 0xA8);
- 		temp = (temp & 0xFFFFFF30) | 0xC0;
-@@ -683,7 +685,7 @@ static int bridge_brd_stop(struct bridge_dev_context *dev_ctxt)
- 	/* Disable the mailbox interrupts */
- 	if (dev_context->mbox) {
- 		omap_mbox_disable_irq(dev_context->mbox, IRQ_RX);
--		omap_mbox_put(dev_context->mbox);
-+		omap_mbox_put(dev_context->mbox, &dsp_mbox_notifier);
- 		dev_context->mbox = NULL;
- 	}
- 	/* Reset IVA2 clocks*/
 -- 
-1.7.1
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
