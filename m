@@ -1,90 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817Ab1AEVPk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 16:15:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21184 "EHLO mx1.redhat.com"
+	id S1752188Ab1AEVPt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 16:15:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2263 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751653Ab1AEVPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 16:15:39 -0500
-Date: Wed, 5 Jan 2011 22:07:54 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Chris Mason <chris.mason@oracle.com>,
-        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
-        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 17/18] sched: Move the second half of ttwu() to
-	the remote cpu
-Message-ID: <20110105210754.GA2579@redhat.com>
-References: <20110104145929.772813816@chello.nl> <20110104150103.164045216@chello.nl>
+	id S1751864Ab1AEVPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 16:15:47 -0500
+Date: Wed, 5 Jan 2011 16:14:44 -0500
+From: Jason Baron <jbaron@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: peterz@infradead.org, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
+        rostedt@goodmis.org, mingo@elte.hu, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, avi@redhat.com, davem@davemloft.net,
+        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] jump label: introduce static_branch()
+Message-ID: <20110105211444.GD2896@redhat.com>
+References: <cover.1294239591.git.jbaron@redhat.com> <2d8c38bd7ca93e162aedb8e7acfc8bdb96d85de2.1294239591.git.jbaron@redhat.com> <20110105171516.GB1692@nowhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110104150103.164045216@chello.nl>
+In-Reply-To: <20110105171516.GB1692@nowhere>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04, Peter Zijlstra wrote:
->
-> Now that we've removed the rq->lock requirement from the first part of
-> ttwu() and can compute placement without holding any rq->lock, ensure
-> we execute the second half of ttwu() on the actual cpu we want the
-> task to run on.
+On Wed, Jan 05, 2011 at 06:15:18PM +0100, Frederic Weisbecker wrote:
+> On Wed, Jan 05, 2011 at 10:43:12AM -0500, Jason Baron wrote:
+> > diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+> > index 152f7de..0ad9c2e 100644
+> > --- a/include/linux/jump_label.h
+> > +++ b/include/linux/jump_label.h
+> > @@ -22,6 +22,11 @@ struct module;
+> >  
+> >  #ifdef HAVE_JUMP_LABEL
+> >  
+> > +static __always_inline bool static_branch(struct jump_label_key *key)
+> > +{
+> > +	return __static_branch(key);
+> 
+> Not very important, but __static_branch() would be more self-explained
+> if it was called arch_static_branch().
+> 
+> > +}
+> > +
+> >  extern struct jump_entry __start___jump_table[];
+> >  extern struct jump_entry __stop___jump_table[];
+> >  
+> > @@ -42,11 +47,12 @@ struct jump_label_key {
+> >  	int state;
+> >  };
+> >  
+> > -#define JUMP_LABEL(key, label)			\
+> > -do {						\
+> > -	if (unlikely(((struct jump_label_key *)key)->state))		\
+> > -		goto label;			\
+> > -} while (0)
+> > +static __always_inline bool static_branch(struct jump_label_key *key)
+> > +{
+> > +	if (unlikely(key->state))
+> > +		return true;
+> > +	return false;
+> > +}
+> >  
+> >  static inline int jump_label_enabled(struct jump_label_key *key)
+> >  {
+> > @@ -78,14 +84,4 @@ static inline void jump_label_unlock(void) {}
+> >  
+> >  #endif
+> >  
+> > -#define COND_STMT(key, stmt)					\
+> > -do {								\
+> > -	__label__ jl_enabled;					\
+> > -	JUMP_LABEL_ELSE_ATOMIC_READ(key, jl_enabled);		\
+> > -	if (0) {						\
+> > -jl_enabled:							\
+> > -		stmt;						\
+> > -	}							\
+> > -} while (0)
+> > -
+> >  #endif
+> > diff --git a/include/linux/jump_label_ref.h b/include/linux/jump_label_ref.h
+> > index 8a76e89..5178696 100644
+> > --- a/include/linux/jump_label_ref.h
+> > +++ b/include/linux/jump_label_ref.h
+> > @@ -7,19 +7,23 @@
+> >  struct jump_label_key_counter {
+> >  	atomic_t ref;
+> >  	struct jump_label_key key;
+> > -}
+> > +};
+> >  
+> >  #ifdef HAVE_JUMP_LABEL
+> >  
+> > -#define JUMP_LABEL_ELSE_ATOMIC_READ(key, label, counter) JUMP_LABEL(key, label)
+> > +static __always_inline bool static_branch_else_atomic_read(struct jump_label_key *key, atomic_t *count)
+> > +{
+> > +	return __static_branch(key);
+> > +}
+> 
+> How about having only static_branch() but the key would be handled only
+> by ways of get()/put().
+> 
+> Simple boolean key enablement would work in this scheme as well as branches
+> based on refcount. So that the users could avoid maintaining both key and count,
+> this would be transparently handled by the jump label API.
+> 
+> Or am I missing something?
+> 
 
-Damn. I am reading this patch back and forth, many times, and
-I am not able to find any problem. So sad!
+right. this is a good point. I had a 'jump_label_inc()',
+'jump_label_dec()' essentially providing this. However, when jump labels
+are disabled we didn't want to incur an atomic_read() everywhere.
+Furthermore, the use of the atomic_t type within jump_label.h, causes
+#include dependencies problems, since atomic.h ends up including
+jump_label.h...
 
-I'll try to read it once again with the fresh head, though ;)
-I also have a couple of very minor nits... In particular, perhaps
-TASK_WAKING can die...
+Thus, what I've proposed here, is to the have the very simple
+jump_label_enable()/disable(), and leave reference counting to the
+caller.
 
-Just one question for today,
+thanks,
 
->  try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
->  {
-> -	int cpu, this_cpu, success = 0;
->  	unsigned long flags;
-> -	struct rq *rq;
-> -
-> -	this_cpu = get_cpu();
-> +	int cpu, success = 0;
->
->  	smp_wmb();
->  	raw_spin_lock_irqsave(&p->pi_lock, flags);
->  	if (!(p->state & state))
->  		goto out;
->
-> +	success = 1; /* we're going to change ->state */
->  	cpu = task_cpu(p);
->
-> -	if (p->on_rq) {
-> -		rq = __task_rq_lock(p);
-> -		if (p->on_rq)
-> -			goto out_running;
-> -		__task_rq_unlock(rq);
-> -	}
-> +	if (p->on_rq && ttwu_remote(p, wake_flags))
-> +		goto stat;
-> +
-> +	p->sched_contributes_to_load = !!task_contributes_to_load(p);
-> +	p->state = TASK_WAKING;
->
->  #ifdef CONFIG_SMP
-> +	/*
-> +	 * If the owning (remote) cpu is still in the middle of schedule() with
-> +	 * this task as prev, wait until its done referencing the task.
-> +	 */
->  	while (p->on_cpu)
->  		cpu_relax();
-
-Don't we need rmb() after that?
-
-No, I am not saying it _is_ needed. I am asking.
-
-(but need_migrate_task() can avoid on_cpu+rmb afaics)
-
-Oleg.
-
+-Jason
