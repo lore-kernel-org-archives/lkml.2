@@ -1,85 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204Ab1AEXas (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:30:48 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:49899 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112Ab1AEXar (ORCPT
+	id S1753214Ab1AEXbV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:31:21 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33250 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752934Ab1AEXbU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:30:47 -0500
-Message-ID: <4D24FF22.9010803@linux.vnet.ibm.com>
-Date: Wed, 05 Jan 2011 15:30:42 -0800
-From: "Venkateswararao Jujjuri (JV)" <jvrao@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Wed, 5 Jan 2011 18:31:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:from:date:x-google-sender-auth:message-id
+         :subject:to:cc:content-type;
+        b=ZIf97V9vanIVIxoQ9kfkyJVeDkmeSr+LR44pZyCZUJlFhuhmM1hKutLYMTnMKrCY6V
+         hiTy5V2b1OfWXNgE+pJKEMIUazw9KbQkTIFFH8hwU12/EilBtQQykKKebPGFuuFAhYeY
+         uwc5790gFG4GpOM1n/toX5J9eJa+fMF3hFFpg=
 MIME-Version: 1.0
-To: "M. Mohan Kumar" <mohan@in.ibm.com>
-CC: v9fs-developer <v9fs-developer@lists.sourceforge.net>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [V9fs-developer] [PATCH] net/9p: Use proper data types
-References: <1294246423-8454-1-git-send-email-mohan@in.ibm.com>
-In-Reply-To: <1294246423-8454-1-git-send-email-mohan@in.ibm.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+From: Brice Arnould <unbrice@vleu.net>
+Date: Thu, 6 Jan 2011 00:30:49 +0100
+X-Google-Sender-Auth: gL35CY-WtnyccO0U9zyewF_kHLs
+Message-ID: <AANLkTi=i=gp36q2dBxK93QHqsGWUvSefTUSK5Kuq72Mf@mail.gmail.com>
+Subject: Microbenchmarking userspace synchronisation primitives
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, corentin.chary@gmail.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/5/2011 8:53 AM, M. Mohan Kumar wrote:
-> Use proper data types for storing the count of the binary blob and
-> length of a string. Without this patch length calculation of string will
-> always result in -1 because of comparision between signed and unsigned
-> integer.
-> 
-> Signed-off-by: M. Mohan Kumar <mohan@in.ibm.com>
-> ---
->  net/9p/protocol.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/net/9p/protocol.c b/net/9p/protocol.c
-> index c5180fd..2902eb1 100644
-> --- a/net/9p/protocol.c
-> +++ b/net/9p/protocol.c
-> @@ -234,14 +234,14 @@ p9pdu_vreadf(struct p9_fcall *pdu, int proto_version, const char *fmt,
->  			}
->  			break;
->  		case 'D':{
-> -				int32_t *count = va_arg(ap, int32_t *);
-> +				uint32_t *count = va_arg(ap, int32_t *);
+Hello,
 
-uinit32_t * inside the va_arg also to be consistent?
->  				void **data = va_arg(ap, void **);
-> 
->  				errcode =
->  				    p9pdu_readf(pdu, proto_version, "d", count);
->  				if (!errcode) {
->  					*count =
-> -					    min_t(int32_t, *count,
-> +					    min_t(uint32_t, *count,
->  						  pdu->size - pdu->offset);
->  					*data = &pdu->sdata[pdu->offset];
->  				}
+I was microbenchmarking synchronisation primitives, and got very
+surprising results. Among other things, it seems to be cheaper to
+synchronize two processes (with a pipe) than it is to synchronize two
+threads of the same process. Also the benchmark runs faster when it's
+constrained to a single CPU with sched_setaffinity() which I think
+might indicate a suboptimal scheduling.
+The experience is as follow : A first process (or thread) transmits an
+integer to a second process (or thread) via a pipe (or via shared
+memory). This second process (or thread) answers back with the integer
+multiplied by two. The first process (or thread) then checks that the
+multiplication was correct.
+A single run of that experience is called an exchange. The
+microbenchmark consists in many exchanges.
 
-Did you take care of MAX/max_t comparisons too? Looks like you missed at least
-one for case 's'
+The average number of exchanges per second is as follow :
+- Processes synchronized by a pipe          : 059171 exchanges/second
+- Threads synchronized by a pipe            : 031746 exchanges/second
+- (Threads synchronized by a pthread_barrier: 017825 exchanges/second)
 
-Thanks,
-JV
+Kernel : 2.6.35-24-generic #42-Ubuntu SMP
+CPU    : Intel Core 2 Duo CPU T8100 @ 2.10GHz (in 32 bit mode)
+Code   : git://github.com/unbrice/20110103_lkml_bench.git
+         Build with "make"
+         Run like "./rpc-piped_thread 1000000 1"
+         or "./rpc-piped_process 1000000 1"
+libc   : Glibc 2.12.1-0ubuntu10
 
+I was expecting that performance would vary with the different
+synchronization primitives. And it seems plausible that
+pthread_barrier being more "generic" (because it allows for
+synchronizing more than one thread) it should be slower.
+I was however surprised to see that synchronizing two threads of a
+single process via a pipe is slower than synchronizing two processes
+via a pipe. If I'm not misinterpreting perf(1), almost all the time is
+spent in try_to_wake_up so the cause might be there.
 
-> @@ -404,9 +404,9 @@ p9pdu_vwritef(struct p9_fcall *pdu, int proto_version, const char *fmt,
->  			break;
->  		case 's':{
->  				const char *sptr = va_arg(ap, const char *);
-> -				int16_t len = 0;
-> +				uint16_t len = 0;
->  				if (sptr)
-> -					len = min_t(int16_t, strlen(sptr),
-> +					len = min_t(uint16_t, strlen(sptr),
->  								USHRT_MAX);
-> 
->  				errcode = p9pdu_writef(pdu, proto_version,
+While trying to find an explanation for this behavior, I forced the
+threads and processes to run on a CPU of my choice using
+sched_setaffinity().
+When forcing the threads and process on different CPUs, the results
+were as before.
+When forcing the threads and process on a single CPU, performance
+increased and processes stayed ahead of threads :
+- Processes synchronized by a pipe          : 401606 exchanges/second
+- Threads synchronized by a pipe            : 177304 exchanges/second
+- (Threads synchronized by a pthread_barrier: 087032 exchanges/second)
 
+If I'm not misinterpreting perf(1), those difference might be related
+to a decreasing number of cache misses (from ~25k to ~13k).
 
+Those numbers defy my understanding of what should be happening, which
+is why I'm humbly asking for a hint or a pointer to an explanation.
+I'm also hoping that the possible scheduler's suboptimal behavior can
+be worked upon by competent gurus, but acknowledge that this may not
+be usefull because we are just speaking of a microbenchmark.
+Also I think that I am going to be in similar situation with real
+application (AIs in the context of an AI contest). Do you have any
+suggestion wrt performances of that kind of applications ?
+
+Thank you in advance,
+Brice
