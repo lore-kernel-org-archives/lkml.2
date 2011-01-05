@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133Ab1AEXGS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 18:06:18 -0500
-Received: from kroah.org ([198.145.64.141]:50694 "EHLO coco.kroah.org"
+	id S1753178Ab1AEXM2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 18:12:28 -0500
+Received: from kroah.org ([198.145.64.141]:50720 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753074Ab1AEXGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 18:06:16 -0500
+	id S1753131Ab1AEXGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 18:06:18 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 15:03:24 2011
-Message-Id: <20110105230323.978508482@clark.site>
+Message-Id: <20110105230324.304662136@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 15:00:24 -0800
+Date: Wed, 05 Jan 2011 15:00:27 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sergej Pupykin <ml@sergej.pp.ru>, Alex Deucher <alexdeucher@gmail.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [06/49] drm/kms: remove spaces from connector names (v2)
+        Chuck Lever <chuck.lever@oracle.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [09/49] NFS: Fix panic after nfs_umount()
 In-Reply-To: <20110105230438.GA26241@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,42 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Chuck Lever <chuck.lever@oracle.com>
 
-commit e76116ca9671e2e5239054a40303b94feab585ad upstream.
+commit 5b362ac3799ff4225c40935500f520cad4d7ed66 upstream.
 
-Grub doesn't parse spaces in parameters correctly, so
-this makes it impossible to force video= parameters
-for kms on the grub kernel command line.
+After a few unsuccessful NFS mount attempts in which the client and
+server cannot agree on an authentication flavor both support, the
+client panics.  nfs_umount() is invoked in the kernel in this case.
 
-v2: shorten the names to make them easier to type.
+Turns out nfs_umount()'s UMNT RPC invocation causes the RPC client to
+write off the end of the rpc_clnt's iostat array.  This is because the
+mount client's nrprocs field is initialized with the count of defined
+procedures (two: MNT and UMNT), rather than the size of the client's
+proc array (four).
 
-Reported-by: Sergej Pupykin <ml@sergej.pp.ru>
+The fix is to use the same initialization technique used by most other
+upper layer clients in the kernel.
 
-Cc: Sergej Pupykin <ml@sergej.pp.ru>
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Introduced by commit 0b524123, which failed to update nrprocs when
+support was added for UMNT in the kernel.
+
+BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=24302
+BugLink: http://bugs.launchpad.net/bugs/683938
+
+Reported-by: Stefan Bader <stefan.bader@canonical.com>
+Tested-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/drm_crtc.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ fs/nfs/mount_clnt.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/drm_crtc.c
-+++ b/drivers/gpu/drm/drm_crtc.c
-@@ -144,10 +144,10 @@ static struct drm_conn_prop_enum_list dr
- 	{ DRM_MODE_CONNECTOR_SVIDEO, "SVIDEO", 0 },
- 	{ DRM_MODE_CONNECTOR_LVDS, "LVDS", 0 },
- 	{ DRM_MODE_CONNECTOR_Component, "Component", 0 },
--	{ DRM_MODE_CONNECTOR_9PinDIN, "9-pin DIN", 0 },
--	{ DRM_MODE_CONNECTOR_DisplayPort, "DisplayPort", 0 },
--	{ DRM_MODE_CONNECTOR_HDMIA, "HDMI Type A", 0 },
--	{ DRM_MODE_CONNECTOR_HDMIB, "HDMI Type B", 0 },
-+	{ DRM_MODE_CONNECTOR_9PinDIN, "DIN", 0 },
-+	{ DRM_MODE_CONNECTOR_DisplayPort, "DP", 0 },
-+	{ DRM_MODE_CONNECTOR_HDMIA, "HDMI-A", 0 },
-+	{ DRM_MODE_CONNECTOR_HDMIB, "HDMI-B", 0 },
- 	{ DRM_MODE_CONNECTOR_TV, "TV", 0 },
+--- a/fs/nfs/mount_clnt.c
++++ b/fs/nfs/mount_clnt.c
+@@ -503,13 +503,13 @@ static struct rpc_procinfo mnt3_procedur
+ 
+ static struct rpc_version mnt_version1 = {
+ 	.number		= 1,
+-	.nrprocs	= 2,
++	.nrprocs	= ARRAY_SIZE(mnt_procedures),
+ 	.procs		= mnt_procedures,
+ };
+ 
+ static struct rpc_version mnt_version3 = {
+ 	.number		= 3,
+-	.nrprocs	= 2,
++	.nrprocs	= ARRAY_SIZE(mnt3_procedures),
+ 	.procs		= mnt3_procedures,
  };
  
 
