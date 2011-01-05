@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037Ab1AEOIf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 09:08:35 -0500
-Received: from hera.kernel.org ([140.211.167.34]:58370 "EHLO hera.kernel.org"
+	id S1751808Ab1AEOJe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 09:09:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52253 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751745Ab1AEOId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 09:08:33 -0500
-Date: Wed, 5 Jan 2011 14:08:14 GMT
-From: tip-bot for Huang Ying <ying.huang@intel.com>
-Cc: linux-kernel@vger.kernel.org, ying.huang@intel.com, hpa@zytor.com,
-        mingo@redhat.com, tglx@linutronix.de, mingo@elte.hu,
-        dzickus@redhat.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, ying.huang@intel.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, dzickus@redhat.com,
-        mingo@elte.hu
-In-Reply-To: <1294198689-15447-3-git-send-email-dzickus@redhat.com>
-References: <1294198689-15447-3-git-send-email-dzickus@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] x86, NMI: Add touch_nmi_watchdog to io_check_error delay
-Message-ID: <tip-74d91e3c6a66359bb754fb5d8a5b54fb6ba2f9a6@git.kernel.org>
-Git-Commit-ID: 74d91e3c6a66359bb754fb5d8a5b54fb6ba2f9a6
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1751309Ab1AEOJc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 09:09:32 -0500
+Message-ID: <4D247B93.2010900@redhat.com>
+Date: Wed, 05 Jan 2011 15:09:23 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20091014 Fedora/3.0-2.8.b4.fc11 Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 05 Jan 2011 14:08:15 +0000 (UTC)
+To: Jens Axboe <jaxboe@fusionio.com>
+CC: Vivek Goyal <vgoyal@redhat.com>,
+        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <greg@kroah.com>
+Subject: Re: [PATCH 2/2] block: fix accounting bug on cross partition merges
+References: <4CFF3DA4.5060705@jp.fujitsu.com> <4CFF9A2C.1070401@fusionio.com> <4D025154.8030400@redhat.com> <20101210165553.GE31737@redhat.com> <4D07D2AC.6000500@fusionio.com> <4D0B68AF.80804@redhat.com> <4D0BB4A1.8080305@fusionio.com> <4D13664C.3020500@redhat.com> <20101223153915.GE9502@redhat.com> <4D13810B.8000304@redhat.com> <20101224192916.GB2082@redhat.com> <4D23423A.60707@redhat.com> <4D2342E1.8010405@redhat.com> <4D247984.2030103@fusionio.com>
+In-Reply-To: <4D247984.2030103@fusionio.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  74d91e3c6a66359bb754fb5d8a5b54fb6ba2f9a6
-Gitweb:     http://git.kernel.org/tip/74d91e3c6a66359bb754fb5d8a5b54fb6ba2f9a6
-Author:     Huang Ying <ying.huang@intel.com>
-AuthorDate: Tue, 4 Jan 2011 22:38:09 -0500
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 5 Jan 2011 14:22:58 +0100
+On 01/05/2011 03:00 PM, Jens Axboe wrote:
+> On 2011-01-04 16:55, Jerome Marchand wrote:
+>> +	} else {
+>> +		part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
+>> +		if (!kref_test_and_get(&part->ref)) {
+>> +			/*
+>> +			 * The partition is already being removed,
+>> +			 * the request will be accounted on the disk only
+>> +			 *
+>> +			 * We take a reference on disk->part0 although that
+>> +			 * partition will never be deleted, so we can treat
+>> +			 * it as any other partition.
+>> +			 */
+>> +			part = &rq->rq_disk->part0;
+>> +			kref_get(&part->ref);
+>> +		}
+> 
+> This still doesn't work. So you are inside the if {} block, you know
+> what someone has dropped the last reference and the call_rcu() is being
+> scheduled. Adding a reference now will not prevent 'part' from going
+> away as soon as you do part_stat_unlock().
 
-x86, NMI: Add touch_nmi_watchdog to io_check_error delay
+And what is the problem with that since we don't use 'part' (as returned
+by disk_map_sector_rcu()), but disk->part0 instead?
 
-Prevent the long delay in io_check_error making NMI watchdog
-timeout.
+> As per my last email, you
+> need a check in the rcu callback to ensure that the ref is 0.
+> 
+> 
 
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-LKML-Reference: <1294198689-15447-3-git-send-email-dzickus@redhat.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/traps.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index bb6f041..c76aaca 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -351,9 +351,11 @@ io_check_error(unsigned char reason, struct pt_regs *regs)
- 	reason = (reason & 0xf) | 8;
- 	outb(reason, 0x61);
- 
--	i = 2000;
--	while (--i)
--		udelay(1000);
-+	i = 20000;
-+	while (--i) {
-+		touch_nmi_watchdog();
-+		udelay(100);
-+	}
- 
- 	reason &= ~8;
- 	outb(reason, 0x61);
