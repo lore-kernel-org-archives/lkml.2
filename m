@@ -1,312 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751307Ab1AEAlz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jan 2011 19:41:55 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:52642 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801Ab1AEAlx (ORCPT
+	id S1751401Ab1AEAn6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jan 2011 19:43:58 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49287 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919Ab1AEAn4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jan 2011 19:41:53 -0500
-Message-ID: <4D23BD9C.3070102@kernel.org>
-Date: Tue, 04 Jan 2011 16:38:52 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	Tue, 4 Jan 2011 19:43:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=LnONXZ0/T6zI6yO+mQBF22+bVzG9Vkvmx1zhj0pfcgEM5ly7vKuFDwtNOuDSWFhdxR
+         +rlKQyF6eQF0JnVxqbbBiWcYrp0LQm3rEVuHGzrYoy1dRJkF9S7G1tuKbg9Y+L+3M6Dd
+         Yvzrpxicc1wgJEe1ndOdVQUEW23Y1dZ2s+rvI=
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, 64bit: Always make MAX_APICS to 32768
-References: <4D1D2C4D.4090806@kernel.org> <20110104084847.GB26209@elte.hu>
-In-Reply-To: <20110104084847.GB26209@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110104135651.GD24774@opensource.wolfsonmicro.com>
+References: <20101224113805.GI27832@sortiz-mobl>
+	<1294118261-18906-4-git-send-email-myungjoo.ham@samsung.com>
+	<20110104135651.GD24774@opensource.wolfsonmicro.com>
+Date: Wed, 5 Jan 2011 09:43:55 +0900
+X-Google-Sender-Auth: 5fAH_9I4IeG8PcLfIArEg5POmwQ
+Message-ID: <AANLkTikeQPAELfkGjxu-ve=sG=35cP0uj7ach1VDOSrY@mail.gmail.com>
+Subject: Re: [PATCH v4 3/3] MFD MAX8998/LP3974: Support Charger
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Anton Vorontsov <cbou@mail.ru>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        =?UTF-8?B?7ZWo66qF7KO8?= <myungjoo.ham@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/2011 12:48 AM, Ingo Molnar wrote:
-> 
-> * Yinghai Lu <yinghai@kernel.org> wrote:
-> 
+On Tue, Jan 4, 2011 at 10:56 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Tue, Jan 04, 2011 at 02:17:41PM +0900, MyungJoo Ham wrote:
+>> With the new regulator, "CHARGER", users can control charging
+>> current and turn on and off the charger. Note that the charger
+>> specification of LP3974 is different from that of MAX8998.
 >>
->> Found one x2apic pre-enabled system, x2apic_mode suddenly get corrupted
->> after register some cpus. when compiled CONFIG_NR_CPUS=255 instead of 512
->>
->> It turns out that generic_processor_info() ==> phyid_set(apicid, phys_cpu_present_map) cause the problem.
->>
->> phys_cpu_present_map is with MAX_APICS bits. and pre-enabled system some cpus apic id > 255.
->>
->> the variable after phys_cpu_present_map may get corrupted.... siliently...
->>
->> ffffffff828e8420 B phys_cpu_present_map
->> ffffffff828e8440 B apic_verbosity
->> ffffffff828e8444 B local_apic_timer_c2_ok
->> ffffffff828e8448 B disable_apic
->> ffffffff828e844c B x2apic_mode
->> ffffffff828e8450 B x2apic_disabled
->> ffffffff828e8454 B num_processors
->> ...
->>
->> Actually phys_cpu_present_map is referenced via apic id, instead index. we should use
->> MAX_LOCAL_APIC instead MAX_APICIS. but that is another header.
->>
->> So just let MAX_APICS equal to MAX_LOCAL_APIC at this point.
->> esp for 64 bit will be 32768 in all cases.
->>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>
->> ---
->>  arch/x86/include/asm/mpspec_def.h |    6 +-----
->>  1 file changed, 1 insertion(+), 5 deletions(-)
->>
->> Index: linux-2.6/arch/x86/include/asm/mpspec_def.h
->> ===================================================================
->> --- linux-2.6.orig/arch/x86/include/asm/mpspec_def.h
->> +++ linux-2.6/arch/x86/include/asm/mpspec_def.h
->> @@ -17,11 +17,7 @@
->>  # define MAX_MPC_ENTRY 1024
->>  # define MAX_APICS      256
->>  #else
->> -# if NR_CPUS <= 255
->> -#  define MAX_APICS     255
->> -# else
->> -#  define MAX_APICS   32768
->> -# endif
->> +# define MAX_APICS    32768
->>  #endif
->>  
->>  /* Intel MP Floating Pointer Structure */
-> 
-> Please fix the real bug first: the lack of boundary checks when we set 
-> phys_cpu_present_map!
-real bug is that MAX_APICS and MAX_LOCAL_APIC using is messed up.
+>> driver/power/max8998.c supports power supply APIs for
+>
+> It's probably better to split the power supply driver into a separate
+> patch as there should be no build time dependency between the two.  I've
+> added Anton to the CCs as he is the drivers/power maintainer.
+>
+> One thing that jumps out here is that there's no regulator API usage at
+> all in the power driver - the power driver just jumps straight in
+> and updates registers when it needs to do anything.  Are you sure that
+> the regulator API driver is needed at all, if it is I'd expect to see
+> use of it in the power API.
+>
+>> +static const char * const manufacturers[] = {
+>> +     [TYPE_MAX8998] = "Maxim",
+>> +     [TYPE_LP3974] = "National Semiconductor",
+>> +     [TYPE_UNKNOWN] = "Unknown",
+>
+> Normally this refers to the battery rather than the chip.
+>
+>> +static void _max8998_update_eoc(struct platform_device *pdev)
+>> +{
+>> +     struct max8998_battery_data *max8998 = platform_get_drvdata(pdev);
+>> +     struct i2c_client *i2c = max8998->iodev->i2c;
+>> +     int charge_current = 0;
+>> +     int target_eoc_ratio;
+>> +     u8 val;
+>> +
+>> +     /* Nothing to do. User set EOC with % */
+>> +     if (max8998->eoc_in_mA == 0)
+>> +             return;
+>> +
+>> +     /* Not initialized. */
+>> +     if (!charger_current_map_desc)
+>> +             return;
+>
+> This should be be driver data rather than a global for neatness (though
+> in reality the chances of more than one of these chargers in a system
+> are pretty low).
 
-could be MAX_APICS is from 32bit, and MAX_LOCAL_APIC is from 64bit.
+Ok. I'll make it possible to have max8998 and lp3974 at the same time
+on a board. :)
 
-> 
-> Then, once that bitmap op is not corrupting nearby variables silently but triggers a 
-> fail-safe logic instead (ignoring apics that go outside the supported range? 
-> printk-ing a warning?) can we think about upping the limit.
+>
+>> --- a/drivers/regulator/max8998.c
+>> +++ b/drivers/regulator/max8998.c
+>> @@ -86,6 +86,13 @@ static const struct voltage_map_desc buck3_voltage_map_desc = {
+>>  static const struct voltage_map_desc buck4_voltage_map_desc = {
+>>       .min = 800,     .step = 100,    .max = 2300,
+>>  };
+>> +static const int charger_current_map_desc_max8998[] = {
+>> +     90, 380, 475, 550, 570, 600, 700, 800
+>> +};
+>> +static const int charger_current_map_desc_lp3974[] = {
+>> +     100, 400, 450, 500, 550, 600, 700, 800
+>> +};
+>> +const int *charger_current_map_desc;
+>
+> Ah, this is exported from the regulator driver...  That's slightly odd.
+> For voltages we've an enumeration API for the supported settings, we
+> probably ought to add that for current regulators too.
+>
+>> +     dev_info(&rdev->dev, "charger current limit = %dmA (%xh)\n",
+>> +                     chosen_current, chosen);
+>
+> dev_dbg() or remove it entirely please, otherwise it might get a bit
+> noisy.
 
-Using MAX_APICS and MAX_LOCAL_APIC at same time cause confusing.
+Ok.
 
-We should just use MAX_LOCAL_APIC instead.
+>
+>> +static struct regulator_ops max8998_charger_ops = {
+>> +     .is_enabled             = max8998_ldo_is_enabled_negated,
+>> +     /* enable and disable are intentionally negated */
+>> +     .enable                 = max8998_ldo_disable,
+>> +     .disable                = max8998_ldo_enable,
+>
+> That's really confusing...  why?
+>
 
-If MAX_APICS is not just for apic entries number, we don't need it. NR_CPUS or nr_cpu_ids will do the
-check for us.
+I've negated max8998_charger_ops's enable/disable because other
+max8998 registers use 1 for "ON" while this register use 0 for "ON".
 
-> 
-> But even with the limit upping, please show (in the changelog) a before/after 'size 
-> vmlinux' comparison, to make sure that this rather drastic change of the limit does 
-> not waste unreasonable amounts of memory.
-
-about 4k for 64bit when NR_CPUS=255.
-
-please check if you like following patch instead. or just keep MAX_APICS == MAX_LOCAL_APIC
-
-[PATCH] x86: Remove MAX_APICS
-
-Found one x2apic pre-enabled system, x2apic_mode suddenly get corrupted
-after register some cpus. when compiled CONFIG_NR_CPUS=255 instead of 512
-
-It turns out that generic_processor_info() ==> phyid_set(apicid, phys_cpu_present_map) cause the problem.
-
-phys_cpu_present_map is with MAX_APICS bits. and pre-enabled system some cpus apic id > 255.
-
-the variable after phys_cpu_present_map may get corrupted.... siliently...
-
-ffffffff828e8420 B phys_cpu_present_map
-ffffffff828e8440 B apic_verbosity
-ffffffff828e8444 B local_apic_timer_c2_ok
-ffffffff828e8448 B disable_apic
-ffffffff828e844c B x2apic_mode
-ffffffff828e8450 B x2apic_disabled
-ffffffff828e8454 B num_processors
-...
-
-Actually phys_cpu_present_map is referenced via apic id, instead index. We should use
-MAX_LOCAL_APIC instead MAX_APICS.
-
-For 64 bit will be 32768 in all cases.
-
-   text	   data	    bss	    dec	    hex	filename
-21696943	4193748	12791808	38682499	24e3f83	vmlinux.after
-21696943	4193748	12787712	38678403	24e2f83	vmlinux.before
-
-bss will increase 4k bytes
-
-no change for 32bit.
-
-Finally could remove MAX_APCIS that causes confusing.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- arch/x86/include/asm/mpspec.h          |   29 +++++++++++------------------
- arch/x86/include/asm/mpspec_def.h      |    7 -------
- arch/x86/kernel/acpi/boot.c            |    6 +++---
- arch/x86/kernel/apic/io_apic.c         |    3 ++-
- arch/x86/platform/sfi/sfi.c            |    4 ++--
- arch/x86/platform/visws/visws_quirks.c |    2 +-
- 6 files changed, 19 insertions(+), 32 deletions(-)
-
-Index: linux-2.6/arch/x86/include/asm/mpspec.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/mpspec.h
-+++ linux-2.6/arch/x86/include/asm/mpspec.h
-@@ -5,6 +5,7 @@
- 
- #include <asm/mpspec_def.h>
- #include <asm/x86_init.h>
-+#include <asm/apicdef.h>
- 
- extern int apic_version[];
- extern int pic_mode;
-@@ -107,7 +108,7 @@ extern int mp_register_gsi(struct device
- 				 int active_high_low);
- #endif /* CONFIG_ACPI */
- 
--#define PHYSID_ARRAY_SIZE	BITS_TO_LONGS(MAX_APICS)
-+#define PHYSID_ARRAY_SIZE	BITS_TO_LONGS(MAX_LOCAL_APIC)
- 
- struct physid_mask {
- 	unsigned long mask[PHYSID_ARRAY_SIZE];
-@@ -122,31 +123,31 @@ typedef struct physid_mask physid_mask_t
- 	test_and_set_bit(physid, (map).mask)
- 
- #define physids_and(dst, src1, src2)					\
--	bitmap_and((dst).mask, (src1).mask, (src2).mask, MAX_APICS)
-+	bitmap_and((dst).mask, (src1).mask, (src2).mask, MAX_LOCAL_APIC)
- 
- #define physids_or(dst, src1, src2)					\
--	bitmap_or((dst).mask, (src1).mask, (src2).mask, MAX_APICS)
-+	bitmap_or((dst).mask, (src1).mask, (src2).mask, MAX_LOCAL_APIC)
- 
- #define physids_clear(map)					\
--	bitmap_zero((map).mask, MAX_APICS)
-+	bitmap_zero((map).mask, MAX_LOCAL_APIC)
- 
- #define physids_complement(dst, src)				\
--	bitmap_complement((dst).mask, (src).mask, MAX_APICS)
-+	bitmap_complement((dst).mask, (src).mask, MAX_LOCAL_APIC)
- 
- #define physids_empty(map)					\
--	bitmap_empty((map).mask, MAX_APICS)
-+	bitmap_empty((map).mask, MAX_LOCAL_APIC)
- 
- #define physids_equal(map1, map2)				\
--	bitmap_equal((map1).mask, (map2).mask, MAX_APICS)
-+	bitmap_equal((map1).mask, (map2).mask, MAX_LOCAL_APIC)
- 
- #define physids_weight(map)					\
--	bitmap_weight((map).mask, MAX_APICS)
-+	bitmap_weight((map).mask, MAX_LOCAL_APIC)
- 
- #define physids_shift_right(d, s, n)				\
--	bitmap_shift_right((d).mask, (s).mask, n, MAX_APICS)
-+	bitmap_shift_right((d).mask, (s).mask, n, MAX_LOCAL_APIC)
- 
- #define physids_shift_left(d, s, n)				\
--	bitmap_shift_left((d).mask, (s).mask, n, MAX_APICS)
-+	bitmap_shift_left((d).mask, (s).mask, n, MAX_LOCAL_APIC)
- 
- static inline unsigned long physids_coerce(physid_mask_t *map)
- {
-@@ -159,14 +160,6 @@ static inline void physids_promote(unsig
- 	map->mask[0] = physids;
- }
- 
--/* Note: will create very large stack frames if physid_mask_t is big */
--#define physid_mask_of_physid(physid)					\
--	({								\
--		physid_mask_t __physid_mask = PHYSID_MASK_NONE;		\
--		physid_set(physid, __physid_mask);			\
--		__physid_mask;						\
--	})
--
- static inline void physid_set_mask_of_physid(int physid, physid_mask_t *map)
- {
- 	physids_clear(*map);
-Index: linux-2.6/arch/x86/include/asm/mpspec_def.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/mpspec_def.h
-+++ linux-2.6/arch/x86/include/asm/mpspec_def.h
-@@ -15,13 +15,6 @@
- 
- #ifdef CONFIG_X86_32
- # define MAX_MPC_ENTRY 1024
--# define MAX_APICS      256
--#else
--# if NR_CPUS <= 255
--#  define MAX_APICS     255
--# else
--#  define MAX_APICS   32768
--# endif
- #endif
- 
- /* Intel MP Floating Pointer Structure */
-Index: linux-2.6/arch/x86/kernel/acpi/boot.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/acpi/boot.c
-+++ linux-2.6/arch/x86/kernel/acpi/boot.c
-@@ -903,13 +903,13 @@ static int __init acpi_parse_madt_lapic_
- 	register_lapic_address(acpi_lapic_addr);
- 
- 	count = acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_SAPIC,
--				      acpi_parse_sapic, MAX_APICS);
-+				      acpi_parse_sapic, MAX_LOCAL_APIC);
- 
- 	if (!count) {
- 		x2count = acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_X2APIC,
--						acpi_parse_x2apic, MAX_APICS);
-+					acpi_parse_x2apic, MAX_LOCAL_APIC);
- 		count = acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_APIC,
--					      acpi_parse_lapic, MAX_APICS);
-+					acpi_parse_lapic, MAX_LOCAL_APIC);
- 	}
- 	if (!count && !x2count) {
- 		printk(KERN_ERR PREFIX "No LAPIC entries present\n");
-Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c
-+++ linux-2.6/arch/x86/kernel/apic/io_apic.c
-@@ -4087,7 +4087,8 @@ void __init pre_init_apic_IRQ0(void)
- 
- 	printk(KERN_INFO "Early APIC setup for system timer0\n");
- #ifndef CONFIG_SMP
--	phys_cpu_present_map = physid_mask_of_physid(boot_cpu_physical_apicid);
-+	physid_set_mask_of_physid(boot_cpu_physical_apicid,
-+					 &phys_cpu_present_map);
- #endif
- 	/* Make sure the irq descriptor is set up */
- 	cfg = alloc_irq_and_cfg_at(0, 0);
-Index: linux-2.6/arch/x86/platform/sfi/sfi.c
-===================================================================
---- linux-2.6.orig/arch/x86/platform/sfi/sfi.c
-+++ linux-2.6/arch/x86/platform/sfi/sfi.c
-@@ -37,9 +37,9 @@ static unsigned long sfi_lapic_addr __in
- /* All CPUs enumerated by SFI must be present and enabled */
- static void __cpuinit mp_sfi_register_lapic(u8 id)
- {
--	if (MAX_APICS - id <= 0) {
-+	if (MAX_LOCAL_APIC - id <= 0) {
- 		pr_warning("Processor #%d invalid (max %d)\n",
--			id, MAX_APICS);
-+			id, MAX_LOCAL_APIC);
- 		return;
- 	}
- 
-Index: linux-2.6/arch/x86/platform/visws/visws_quirks.c
-===================================================================
---- linux-2.6.orig/arch/x86/platform/visws/visws_quirks.c
-+++ linux-2.6/arch/x86/platform/visws/visws_quirks.c
-@@ -171,7 +171,7 @@ static void __init MP_processor_info(str
- 	ver = m->apicver;
- 	if ((ver >= 0x14 && m->apicid >= 0xff) || m->apicid >= 0xf) {
- 		printk(KERN_ERR "Processor #%d INVALID. (Max ID: %d).\n",
--			m->apicid, MAX_APICS);
-+			m->apicid, MAX_LOCAL_APIC);
- 		return;
- 	}
- 
+-- 
+MyungJoo Ham (함명주), Ph.D.
+Mobile Software Platform Lab,
+Digital Media and Communications (DMC) Business
+Samsung Electronics
+cell: 82-10-6714-2858
