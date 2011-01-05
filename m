@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751915Ab1AEKFh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 05:05:37 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:58761 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751762Ab1AEKFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 05:05:35 -0500
-Message-ID: <4D24426F.5090000@cn.fujitsu.com>
-Date: Wed, 05 Jan 2011 18:05:35 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/3] KVM: send IPI to vcpu only when it's in guest mode
-References: <4D243B95.3070203@cn.fujitsu.com> <4D243C05.7060307@cn.fujitsu.com> <4D243E69.60603@redhat.com>
-In-Reply-To: <4D243E69.60603@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-01-05 18:05:13,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-01-05 18:05:13,
-	Serialize complete at 2011-01-05 18:05:13
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1751941Ab1AEKIV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 05:08:21 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:45149 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751778Ab1AEKIS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 05:08:18 -0500
+Subject: Re: [PATCH 4/7] perf: Check if HT is supported and enabled
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Stephane Eranian <eranian@google.com>, "Luck, Tony" <tony.luck@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <1294206320.9261.23.camel@minggr.sh.intel.com>
+References: <1293464211.2695.104.camel@localhost>
+	 <AANLkTimp9VgD4qhOVmq-k1Ckzti9eeV8pf6Jvt5YB6nx@mail.gmail.com>
+	 <1293526288.2457.4.camel@minggr.sh.intel.com>
+	 <1294052312.2016.50.camel@laptop>	<4D222926.9010206@zytor.com>
+	 <1294139419.2016.115.camel@laptop>
+	 <AANLkTinGmgB7YhRjnsGMjj2knDuJ8XFps9oyW4+EGOr5@mail.gmail.com>
+	 <1294148675.2016.139.camel@laptop>
+	 <AANLkTima_wh1Nd2E-zQAcymmux1O0e1GzVEdnhLEMOo5@mail.gmail.com>
+	 <1294206320.9261.23.camel@minggr.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 05 Jan 2011 11:08:41 +0100
+Message-ID: <1294222121.2016.221.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2011 05:48 PM, Avi Kivity wrote:
-
->>       srcu_read_unlock(&vcpu->kvm->srcu, idx);
->> +    atomic_set(&vcpu->guest_mode, 1);
->>       kvm_guest_enter();
+On Wed, 2011-01-05 at 13:45 +0800, Lin Ming wrote:
+> static void intel_pmu_cpu_starting(int cpu)
+> {
+>         struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
+>         struct intel_percore *pc;
+>         int core_id = topology_core_id(cpu);
+>         int i;
 > 
-> I think it needs an smp_wmb() (technically x86 needs it too, but x86 is strongly ordered)
-
-......
-
->> -        if (cpus != NULL&&  cpu != -1&&  cpu != me)
->> +        if (cpus != NULL&&  cpu != -1&&  cpu != me&&
->> +              atomic_read(&vcpu->guest_mode))
->>               cpumask_set_cpu(cpu, cpus);
+>         init_debug_store_on_cpu(cpu);
+>         /*
+>          * Deal with CPUs that don't clear their LBRs on power-up.
+>          */
+>         intel_pmu_lbr_reset();
 > 
-> and smp_rmb() before the atomic_read().
+>         if (!ht_enabled(cpu))
+>                 return;
+> 
+>         cpuc->per_core = kzalloc_node(sizeof(struct intel_percore),
+>                                       GFP_KERNEL, cpu_to_node(cpu));
 
-Yeah, you're right, i'll fix these in the next version.
+#define CPU_STARTING            0x000A /* CPU (unsigned)v soon running.
+                                        * Called on the new cpu, just before
+                                        * enabling interrupts. Must not sleep,
+                                        * must not fail */
 
-> 
->>       }
->>       if (unlikely(cpus == NULL))
-> 
-> Not sure if this is an optimization.  On one hand it removes an expensive IPI for the fraction of time the cpu is out of guest mode.  On the other hand it adds an unconditional cacheline bounce (and bounce back).
-> 
-> Hm. I see that ->guest_mode and ->requests are in fact in the same cache line.  So this is likely really an optimization.  We should probably reorganize kvm_vcpu so that this is made explicit.
-> 
 
-OK, will do it in the separate patch in the future, thanks!
+>         if (!cpuc->per_core)
+>                 return;
+> 
+>         raw_spin_lock_init(&cpuc->per_core->lock);
+>         pc = cpuc->per_core;
+> 
+>         for_each_cpu(i, topology_thread_cpumask(cpu)) {
+>                 cpuc = &per_cpu(cpu_hw_events, cpu);
+> 
+>                 cpuc->per_core = pc;
+>                 cpuc->per_core->core_id = core_id;
+>                 cpuc->per_core->refcnt++;
+>         }
+> } 
+
+Anyway, I think something like:
+
+static bool ht_capable(void)
+{
+	return boot_cpu_has(X86_FEATURE_HT) && smp_num_siblings > 1;
+}
+
+is sufficient, the whole hotplug issues makes relying on enumeration
+results impractical.
