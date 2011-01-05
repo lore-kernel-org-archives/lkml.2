@@ -1,40 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752065Ab1AERpc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 12:45:32 -0500
-Received: from mail.perches.com ([173.55.12.10]:2966 "EHLO mail.perches.com"
+	id S1752187Ab1AERqG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 12:46:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64139 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751245Ab1AERpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 12:45:31 -0500
-Subject: Re: [patch] checkpatch: putting the && or || on the wrong line
-From: Joe Perches <joe@perches.com>
-To: Krzysztof Halasa <khc@pm.waw.pl>
-Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Dan Carpenter <error27@gmail.com>, Andy Whitcroft <apw@canonical.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-In-Reply-To: <m3fwt7i740.fsf@intrepid.localdomain>
-References: <20110104055900.GA5062@bicker>
-	 <20110104163836.GA30317@fieldses.org>
-	 <20110104164414.GX5875@const.bordeaux.inria.fr>
-	 <1294160834.6617.51.camel@Joe-Laptop> <m3fwt7i740.fsf@intrepid.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 05 Jan 2011 09:45:29 -0800
-Message-ID: <1294249529.6617.118.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751705Ab1AERqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 12:46:03 -0500
+Date: Wed, 5 Jan 2011 09:46:01 -0800
+From: Chris Wright <chrisw@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbarnes@virtuousgeek.org, chrisw@redhat.com, avi@redhat.com
+Subject: Re: [PATCH] PCI: sysfs: Update ROM to include default owner write
+ access
+Message-ID: <20110105174601.GB4529@x200.localdomain>
+References: <20110105172615.20107.20267.stgit@s20.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110105172615.20107.20267.stgit@s20.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Increasing e.g.
-> readability of the code would be a good reason, but statistics?
+* Alex Williamson (alex.williamson@redhat.com) wrote:
+> The PCI sysfs ROM interface requires an enabling write to access
+> the ROM image, but the default file mode is 0400.  The original
+> proposed patch adding sysfs ROM support was a true read-only
+> interface, with the enabling bit coming in as a feature request.
+> I suspect it was simply an oversight that the file mode didn't
+> get updated to match the API.
 
-Standardization of style in a large project increases
-readability and decreases errors full stop.
+This is often not an issue given normal root capabilities, but once
+we strip those capabilities, the default 0400 causes O_RDWR to fail.
+As Alex said, given the only way to use the file is to write to it first,
+making it writable makes sense.
 
-Outside of that, it's _all_ bikeshedding.
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 
-cheers, Joe
-
+Acked-by: Chris Wright <chrisw@redhat.com>
