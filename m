@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725Ab1AETub (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 14:50:31 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45368 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752357Ab1AETu2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 14:50:28 -0500
+	id S1752721Ab1AETvU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 14:51:20 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:35134 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751324Ab1AETvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 14:51:19 -0500
+Date: Wed, 5 Jan 2011 20:50:43 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Jason Baron <jbaron@redhat.com>, Ralf Baechle <ralf@linux-mips.org>,
+        peterz@infradead.org, mathieu.desnoyers@polymtl.ca, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, sam@ravnborg.org, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] jump label: introduce static_branch()
+Message-ID: <20110105195043.GA9399@elte.hu>
+References: <cover.1294239591.git.jbaron@redhat.com>
+ <2d8c38bd7ca93e162aedb8e7acfc8bdb96d85de2.1294239591.git.jbaron@redhat.com>
+ <4D24AB1B.2010209@caviumnetworks.com>
+ <1294249439.26623.35.camel@gandalf.stny.rr.com>
+ <4D24BED1.5000900@zytor.com>
+ <20110105191424.GA7820@elte.hu>
+ <4D24C756.9070302@caviumnetworks.com>
 MIME-Version: 1.0
-In-Reply-To: <1294254867.2016.281.camel@laptop>
-References: <20101224122338.172750730@chello.nl> <20101224123742.724459093@chello.nl>
- <AANLkTikGBsh0-QTe9CA2gwDtwzpdMi+fbDsTEKiJAL0P@mail.gmail.com>
- <1294054362.2016.74.camel@laptop> <20110104064542.GF3402@amd> <1294254867.2016.281.camel@laptop>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 5 Jan 2011 11:43:12 -0800
-Message-ID: <AANLkTi=URmD1GYqp+PfVf6rc0tXvRnAQG808LMnBRgG1@mail.gmail.com>
-Subject: Re: [RFC][PATCH] spinlock: Kill spin_unlock_wait()
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Nick Piggin <npiggin@kernel.dk>, Chris Mason <chris.mason@oracle.com>,
-        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
-        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
-        linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>, Jeff Garzik <jeff@garzik.org>,
-        Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D24C756.9070302@caviumnetworks.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 5, 2011 at 11:14 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->
-> There appear to be only two callsites of said horror, one in the exit
-> path and one in ata-eh, neither appear to be performance critical so I
-> replaced them with a simple lock-unlock sequence.
 
-Again, WHY?
+* David Daney <ddaney@caviumnetworks.com> wrote:
 
-What's the problem with the current code? Instead of generating ugly
-patches to change it, and instead of removing it, just say what the
-PROBLEM is.
+> On 01/05/2011 11:14 AM, Ingo Molnar wrote:
+> >
+> >* H. Peter Anvin<hpa@zytor.com>  wrote:
+> >
+> >>On 01/05/2011 09:43 AM, Steven Rostedt wrote:
+> >>>On Wed, 2011-01-05 at 09:32 -0800, David Daney wrote:
+> >>>
+> >>>>This patch will conflict with the MIPS jump label support that Ralf has
+> >>>>queued up for 2.6.38.
+> >>>
+> >>>Can you disable that support for now? As Linus said at Kernel Summit,
+> >>>other archs jumped too quickly onto the jump label band wagon. This
+> >>>change really needs to get in, and IMO, it is more critical to clean up
+> >>>the jump label code than to have other archs implementing it.
+> >>>
+> >>
+> >>Ralf is really good... perhaps we can get the conflicts resolved?
+> >
+> >Yep, the best Git-ish way to handle that is to resolve the conflicts whenever they
+> >happen - i.e. whoever merges his tree upstream later. No need for anyone to 'wait'
+> >or undo anything.
+> >
+> 
+> There will be no git conflicts, as the affected files are disjoint.
 
-Stop this wanking already. The exit path is certainly not unimportant.
+I regularly resolve semantic conflicts in merge commits - or in the first followup 
+commit.
 
-And if you want to change the thing to be more efficient, I'm ok with
-that, as long as it's done PRETTILY instead of making the damn thing
-an unreadable mess.
+Thanks,
 
-The current "spin_unlock_wait()" is obvious. I'm perfectly happy
-improving on it, but I would want to retain the "obvious" part, which
-your previous patch certainly didn't do.
-
-Some simple helper functions to extract the tail/head part of the
-ticket lock to make the comparisons understandable, together with
-always accessing the lock with the proper ACCESS_ONCE() would have
-made your previous patch acceptable. But you ignored that feedback,
-and instead you now want to do a "let's just remove it entirely patch"
-that is even worse.
-
-And in NEITHER version did you actually give any actual *REASON* for
-the change in the first place.
-
-Why? WHY?
-
-                      Linus
+	Ingo
