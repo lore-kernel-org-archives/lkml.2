@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298Ab1AENfO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 08:35:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61555 "EHLO mx1.redhat.com"
+	id S1751625Ab1AENka (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 08:40:30 -0500
+Received: from shutemov.name ([188.40.19.243]:41448 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751370Ab1AENfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 08:35:13 -0500
-Message-ID: <4D247388.9060302@redhat.com>
-Date: Wed, 05 Jan 2011 14:35:04 +0100
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20091014 Fedora/3.0-2.8.b4.fc11 Thunderbird/3.0b4
+	id S1751298Ab1AENk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 08:40:29 -0500
+Date: Wed, 5 Jan 2011 15:40:28 +0200
+From: "Kirill A. Shutemov" <kas@openvz.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: "Kirill A. Shutemov" <kas@openvz.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 00/12] make rpc_pipefs be mountable multiple time
+Message-ID: <20110105134028.GA9620@shutemov.name>
+References: <1293628470-28386-1-git-send-email-kas@openvz.org>
+ <20110105114155.GN19804@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
-        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] kref: add kref_test_and_get
-References: <4D025154.8030400@redhat.com> <20101210165553.GE31737@redhat.com> <4D07D2AC.6000500@fusionio.com> <4D0B68AF.80804@redhat.com> <4D0BB4A1.8080305@fusionio.com> <4D13664C.3020500@redhat.com> <20101223153915.GE9502@redhat.com> <4D13810B.8000304@redhat.com> <20101224192916.GB2082@redhat.com> <4D23423A.60707@redhat.com> <20110104205720.GA4180@kroah.com>
-In-Reply-To: <20110104205720.GA4180@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110105114155.GN19804@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2010-08-04)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/2011 09:57 PM, Greg KH wrote:
-> On Tue, Jan 04, 2011 at 04:52:26PM +0100, Jerome Marchand wrote:
->>
->> Add kref_test_and_get() function, which atomically add a reference only if
->> refcount is not zero. This prevent to add a reference to an object that is
->> already being removed.
+On Wed, Jan 05, 2011 at 11:41:55AM +0000, Al Viro wrote:
+> On Wed, Dec 29, 2010 at 03:14:18PM +0200, Kirill A. Shutemov wrote:
+> > Prepare nfs/sunrpc stack to use multiple instances of rpc_pipefs.
 > 
-> We just removed a function like this recently as it really isn't the
-> solution for what you need here at all.
+> Won't that make sunrpc impossible to rmmod once you've got it in?
 
-What function are you talking about? kref_set? If yes, I don't see the
-similarity between this function and mine.
+Oops.. Nice catch.
 
-Regards
-Jerome
+I'll fix it by relacing remaing references of init_rpc_pipefs with
+get_rpc_pipefs(NULL) at the end of the patchset and move init_rpc_pipefs
+mounting to get_rpc_pipefs(). So, we will have temporary regression in the
+middle of the patchset, but I think it's not a problem.
 
-> 
-> Please use a lock that protects the desctruction of the kref, like the
-> rest of the kernel, to keep someone from grabing a reference while the
-> device could be going away.  That's the only way to safely do this.
-> 
-> See the archives for why this overall, isn't a good idea for a kref to
-> have this type of function.
-> 
-> thanks,
-> 
-> greg k-h
-
+-- 
+ Kirill A. Shutemov
