@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970Ab1AERnv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 12:43:51 -0500
-Received: from inx.pm.waw.pl ([195.116.170.130]:37009 "EHLO inx.pm.waw.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751474Ab1AERnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 12:43:50 -0500
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] net: ixp4xx_eth: Return proper error for eth_init_one
-References: <1294205046.8294.2.camel@mola>
-Date: Wed, 05 Jan 2011 18:43:22 +0100
-In-Reply-To: <1294205046.8294.2.camel@mola> (Axel Lin's message of "Wed, 05
-	Jan 2011 13:24:06 +0800")
-Message-ID: <m3bp3vi6v9.fsf@intrepid.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752172Ab1AERoE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 12:44:04 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:37868 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752066Ab1AERoC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 12:44:02 -0500
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=mIBq1ZzCEX8A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=ETOHwMdwKKQxYHaxwDwA:9 a=V8Sm6oWOqsAjdLb1qBG5gl4F9o0A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 2/2] jump label: introduce static_branch()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: Jason Baron <jbaron@redhat.com>, Ralf Baechle <ralf@linux-mips.org>,
+        peterz@infradead.org, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
+        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        sam@ravnborg.org, michael@ellerman.id.au, linux-kernel@vger.kernel.org
+In-Reply-To: <4D24AB1B.2010209@caviumnetworks.com>
+References: <cover.1294239591.git.jbaron@redhat.com>
+	 <2d8c38bd7ca93e162aedb8e7acfc8bdb96d85de2.1294239591.git.jbaron@redhat.com>
+	 <4D24AB1B.2010209@caviumnetworks.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 05 Jan 2011 12:43:59 -0500
+Message-ID: <1294249439.26623.35.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Axel Lin <axel.lin@gmail.com> writes:
+On Wed, 2011-01-05 at 09:32 -0800, David Daney wrote:
 
-> Return PTR_ERR(port->phydev) instead of 1 if phy_connect failed.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> This patch will conflict with the MIPS jump label support that Ralf has 
+> queued up for 2.6.38.
 
-> --- a/drivers/net/arm/ixp4xx_eth.c
-> +++ b/drivers/net/arm/ixp4xx_eth.c
-> @@ -1229,8 +1229,10 @@ static int __devinit eth_init_one(struct platform_device *pdev)
->  	snprintf(phy_id, MII_BUS_ID_SIZE + 3, PHY_ID_FMT, "0", plat->phy);
->  	port->phydev = phy_connect(dev, phy_id, &ixp4xx_adjust_link, 0,
->  				   PHY_INTERFACE_MODE_MII);
-> -	if ((err = IS_ERR(port->phydev)))
-> +	if (IS_ERR(port->phydev)) {
-> +		err = PTR_ERR(port->phydev);
->  		goto err_free_mem;
-> +	}
->  
->  	port->phydev->irq = PHY_POLL;
+Can you disable that support for now? As Linus said at Kernel Summit,
+other archs jumped too quickly onto the jump label band wagon. This
+change really needs to get in, and IMO, it is more critical to clean up
+the jump label code than to have other archs implementing it.
 
-Right. Thanks.
+-- Steve
 
-Acked-by: Krzysztof Halasa <khc@pm.waw.pl>
--- 
-Krzysztof Halasa
+
