@@ -1,27 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217Ab1AENK3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 08:10:29 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:50482 "EHLO mx3.mail.elte.hu"
+	id S1752193Ab1AENMD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 08:12:03 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:60129 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752051Ab1AENK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 08:10:28 -0500
-Date: Wed, 5 Jan 2011 14:10:20 +0100
+	id S1751970Ab1AENMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 08:12:01 -0500
+Date: Wed, 5 Jan 2011 14:11:17 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH] x86, 64bit: Always make MAX_APICS to 32768
-Message-ID: <20110105131020.GB10129@elte.hu>
-References: <4D1D2C4D.4090806@kernel.org>
- <20110104084847.GB26209@elte.hu>
- <4D23BD9C.3070102@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, "David S . Miller" <davem@davemloft.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Stephane Eranian <eranian@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [GIT PULL 0/3] perf/core improvements and fixes
+Message-ID: <20110105131117.GC10129@elte.hu>
+References: <1294161485-28528-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D23BD9C.3070102@kernel.org>
+In-Reply-To: <1294161485-28528-1-git-send-email-acme@infradead.org>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -35,17 +38,31 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Yinghai Lu <yinghai@kernel.org> wrote:
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-> > Please fix the real bug first: the lack of boundary checks when we set 
-> > phys_cpu_present_map!
->
-> real bug is that MAX_APICS and MAX_LOCAL_APIC using is messed up.
+> Hi Ingo,
 > 
-> could be MAX_APICS is from 32bit, and MAX_LOCAL_APIC is from 64bit.
+>         Please consider pulling from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+> 
+> Regards,
+> 
+> - Arnaldo
+> 
+> Arnaldo Carvalho de Melo (2):
+>   perf test: Clarify some error reports in the open syscall test
+>   perf evsel: Support perf_evsel__open(cpus > 1 && threads > 1)
+> 
+> Stephane Eranian (1):
+>   perf tools: Fix perf_event.h header usage
+> 
+>  tools/perf/builtin-test.c      |  124 +++++++++++++++++++++++++++++++++++++--
+>  tools/perf/util/evsel.c        |   75 +++++++++++++-----------
+>  tools/perf/util/evsel.h        |    2 +-
+>  tools/perf/util/parse-events.h |    2 +-
+>  4 files changed, 159 insertions(+), 44 deletions(-)
 
-Indeed - nice patch!
-
-Thanks,
+Pulled, thanks a lot Arnaldo!
 
 	Ingo
