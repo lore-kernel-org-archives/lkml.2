@@ -1,130 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751430Ab1AEIcl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 03:32:41 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:61702 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750959Ab1AEIck convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 03:32:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=UumFgYCB3W6tETgEsbvGIEBNgbaIOQO5T31pLQMQzPQ4+3vliFNnDoDoIMIx87lyku
-         KP+MHBdpegmfjEtt2/sQ==
+	id S1751533Ab1AEIgF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 03:36:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30064 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751309Ab1AEIgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 03:36:04 -0500
+Message-ID: <4D242D60.9060301@redhat.com>
+Date: Wed, 05 Jan 2011 10:35:44 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <4D23E1D1.3000400@cn.fujitsu.com>
-References: <4d2205a1.8b02e30a.3541.ffff8aee@mx.google.com>
-	<4D23E1D1.3000400@cn.fujitsu.com>
-Date: Wed, 5 Jan 2011 09:32:37 +0100
-Message-ID: <AANLkTi=fCBQyq9GHw38P6d0ZFb6U7YUZk8vfC8i6yxE0@mail.gmail.com>
-Subject: Re: [PATCH 4/5] perf_events: add cgroup support (v7)
-From: Stephane Eranian <eranian@google.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-        perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com,
-        acme@redhat.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>
+Subject: Re: [RFC -v3 PATCH 2/3] sched: add yield_to function
+References: <20110104151345.3BC2.A69D9226@jp.fujitsu.com> <4D230C90.6060104@redhat.com> <20110105110837.B62A.A69D9226@jp.fujitsu.com>
+In-Reply-To: <20110105110837.B62A.A69D9226@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Li,
+On 01/05/2011 04:39 AM, KOSAKI Motohiro wrote:
+> >  On 01/04/2011 08:14 AM, KOSAKI Motohiro wrote:
+> >  >  Also, If pthread_cond_signal() call sys_yield_to imlicitly, we can
+> >  >  avoid almost Nehalem (and other P2P cache arch) lock unfairness
+> >  >  problem. (probaby creating pthread_condattr_setautoyield_np or similar
+> >  >  knob is good one)
+> >
+> >  Often, the thread calling pthread_cond_signal() wants to continue
+> >  executing, not yield.
+>
+> Then, it doesn't work.
+>
+> After calling pthread_cond_signal(), T1 which cond_signal caller and T2
+> which waked start to GIL grab race. But usually T1 is always win because
+> lock variable is in T1's cpu cache. Why kernel and userland have so much
+> different result? One of a reason is glibc doesn't have any ticket lock scheme.
+>
+> If you are interesting GIL mess and issue, please feel free to ask more.
 
-Thanks for your comment. Good catch on perf_detach_cgroup().
-I will resubmit this patch (part 4/5).
+I suggest looking into an explicit round-robin scheme, where each thread 
+adds itself to a queue and an unlock wakes up the first waiter.
 
-On Wed, Jan 5, 2011 at 4:13 AM, Li Zefan <lizf@cn.fujitsu.com> wrote:
-> Stephane Eranian wrote:
->> This kernel patch adds the ability to filter monitoring based on
->> container groups (cgroups). This is for use in per-cpu mode only.
->>
->> The cgroup to monitor is passed as a file descriptor in the pid
->> argument to the syscall. The file descriptor must be opened to
->> the cgroup name in the cgroup filesystem. For instance, if the
->> cgroup name is foo and cgroupfs is mounted in /cgroup, then the
->> file descriptor is opened to /cgroup/foo. Cgroup mode is
->> activated by passing PERF_FLAG_PID_CGROUP in the flags argument
->> to the syscall.
->>
->> For instance to measure in cgroup foo on CPU1 assuming
->> cgroupfs is mounted under /cgroup:
->>
->> struct perf_event_attr attr;
->> int cgroup_fd, fd;
->>
->> cgroup_fd = open("/cgroup/foo", O_RDONLY);
->> fd = perf_event_open(&attr, cgroup_fd, 1, -1, PERF_FLAG_PID_CGROUP);
->> close(cgroup_fd);
->>
->> Signed-off-by: Stephane Eranian <eranian@google.com>
->
-> For the cgroup part:
->
-> Acked-by: Li Zefan <lizf@cn.fujitsu.com>
->
-> a few comments below:
->
->>
-> ...
->> +config CGROUP_PERF
->> +     bool "Enable perf_event per-cpu per-container group (cgroup) monitoring"
->> +     depends on PERF_EVENTS && CGROUPS
->
-> Depending on CGROUPS is already implicated by "if CGROUPS"
->
->> +     help
->> +       This option extends the per-cpu mode to restrict monitoring to
->> +       threads which belong to the cgroup specificied and run on the
->> +       designated cpu.
->> +
->> +       Say N if unsure.
->> +
->>  menuconfig CGROUP_SCHED
->>       bool "Group CPU scheduler"
->>       depends on EXPERIMENTAL
-> ...
->> +static inline int perf_cgroup_connect(int fd, struct perf_event *event,
->> +                                   struct perf_event_attr *attr,
->> +                                   struct perf_event *group_leader)
->> +{
->> +     struct perf_cgroup *cgrp;
->> +     struct cgroup_subsys_state *css;
->> +     struct file *file;
->> +     int ret = 0, fput_needed;
->> +
->> +     file = fget_light(fd, &fput_needed);
->> +     if (!file)
->> +             return -EBADF;
->> +
->> +     css = cgroup_css_from_dir(file, perf_subsys_id);
->> +     if (IS_ERR(css))
->> +             return PTR_ERR(css);
->> +
->> +     cgrp = container_of(css, struct perf_cgroup, css);
->> +     event->cgrp = cgrp;
->> +
->> +     /*
->> +      * all events in a group must monitor
->> +      * the same cgroup because a thread belongs
->> +      * to only one perf cgroup at a time
->> +      */
->> +     if (group_leader && group_leader->cgrp != cgrp) {
->> +             perf_detach_cgroup(event);
->
-> This doesn't seem right, because we haven't got the cgroup
-> refcount.
->
->> +             ret = -EINVAL;
->> +     } else {
->> +             /* must be done before we fput() the file */
->> +             perf_get_cgroup(event);
->> +     }
->> +     fput_light(file, fput_needed);
->> +     return ret;
->> +}
->
+-- 
+error compiling committee.c: too many arguments to function
+
