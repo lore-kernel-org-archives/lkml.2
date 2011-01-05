@@ -1,178 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990Ab1AERLQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 12:11:16 -0500
-Received: from fieldses.org ([174.143.236.118]:60877 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751255Ab1AERLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 12:11:15 -0500
-Date: Wed, 5 Jan 2011 12:11:11 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Chuck Lever <chuck.lever@oracle.com>
-Cc: Takuma Umeya <tumeya@redhat.com>, linux-nfs@vger.kernel.org,
+	id S1751672Ab1AERP0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 12:15:26 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51738 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751474Ab1AERPZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 12:15:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ZiSVpfqC9JO3vwLgzwIOvnmyDz07PHVoAAdm5qxHAPcdlZ0aL3KpeVxGj1xPpwydwG
+         eUTHoLYPZQjEX07NhpE2rVdcddlAG54rbZH5NPIMtYqvqcFDGFkK5Pi4xjw5wLhpX91V
+         zki+zi6iSZBk+x5W91V3Yh56bLOml40R2uklg=
+Date: Wed, 5 Jan 2011 18:15:18 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jason Baron <jbaron@redhat.com>
+Cc: peterz@infradead.org, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
+        rostedt@goodmis.org, mingo@elte.hu, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, avi@redhat.com, davem@davemloft.net,
+        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] nfs4: set source address when callback is generated
-Message-ID: <20110105171111.GC13000@fieldses.org>
-References: <20101215050901.GB13532@redhat.com>
- <20101216034945.GH9646@fieldses.org>
- <A4BB9763-B67F-4559-B3FF-F7BC2DBD3B3A@oracle.com>
- <20110105005835.GA14744@fieldses.org>
- <F369CCC7-285D-4F4D-80D4-EEAC273E561C@oracle.com>
+Subject: Re: [PATCH 2/2] jump label: introduce static_branch()
+Message-ID: <20110105171516.GB1692@nowhere>
+References: <cover.1294239591.git.jbaron@redhat.com>
+ <2d8c38bd7ca93e162aedb8e7acfc8bdb96d85de2.1294239591.git.jbaron@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <F369CCC7-285D-4F4D-80D4-EEAC273E561C@oracle.com>
+In-Reply-To: <2d8c38bd7ca93e162aedb8e7acfc8bdb96d85de2.1294239591.git.jbaron@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 05, 2011 at 12:06:04PM -0500, Chuck Lever wrote:
-> 
-> On Jan 4, 2011, at 7:58 PM, J. Bruce Fields wrote:
-> 
-> > On Thu, Dec 16, 2010 at 10:54:00AM -0500, Chuck Lever wrote:
-> >> I don't recall creating svc_addr_u, but I'll take a stab at a guess.
-> >> 
-> >> It looks like someone thought that we should retain the idea of storing just the address part of the socket address, and not the other stuff (like the family and port, since this code doesn't appear to need that additional information).  It greatly reduces the size of the field.  A full sockaddr_storage is more than 128 bytes, since it has to be able to store an AF_UNIX pathname.
-> >> 
-> >> Doing this, there is a lot less data to keep around, but an IPv6 socket address has other items outside of in6_addr that can be used to form a full address.  We decided at some point we could copy this information from the other address storage field in the rqstp.
-> >> 
-> >> But the result of this space savings means we must construct a full socket address when needed, using logic such as the above.
-> > 
-> > Seems to me we should either just waste the extra 100 bytes or define
-> > something that would be useful elsewhere as well....
-> 
-> In nfs-utils, we define:
-> 
-> 	union nfs_sockaddr {
-> 		struct sockaddr_in	s4;
-> 		struct sockaddr_in6	s6;
-> 		struct sockaddr		sa;
-> 	};
-> 
-> A variable of this type is large enough to hold a full IPv6 sockaddr, but is significantly smaller than a sockaddr_storage.
-> 
-> The addition of the "struct sockaddr" element is to enable access to such variables via a "struct sockaddr *" without type punning.  This seems to be preferred by gcc over type casting in order to handle optimizations involving address aliasing.  It also allows more precise type checking.
+On Wed, Jan 05, 2011 at 10:43:12AM -0500, Jason Baron wrote:
+> diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+> index 152f7de..0ad9c2e 100644
+> --- a/include/linux/jump_label.h
+> +++ b/include/linux/jump_label.h
+> @@ -22,6 +22,11 @@ struct module;
+>  
+>  #ifdef HAVE_JUMP_LABEL
+>  
+> +static __always_inline bool static_branch(struct jump_label_key *key)
+> +{
+> +	return __static_branch(key);
 
-Sounds reasonable to me.
+Not very important, but __static_branch() would be more self-explained
+if it was called arch_static_branch().
 
-> 
-> A full conversion to use such a construct in kernel RPC and NFS components is, I fear, too late for 2.6.38, but might be considered for a future release if there is consensus on this approach.
+> +}
+> +
+>  extern struct jump_entry __start___jump_table[];
+>  extern struct jump_entry __stop___jump_table[];
+>  
+> @@ -42,11 +47,12 @@ struct jump_label_key {
+>  	int state;
+>  };
+>  
+> -#define JUMP_LABEL(key, label)			\
+> -do {						\
+> -	if (unlikely(((struct jump_label_key *)key)->state))		\
+> -		goto label;			\
+> -} while (0)
+> +static __always_inline bool static_branch(struct jump_label_key *key)
+> +{
+> +	if (unlikely(key->state))
+> +		return true;
+> +	return false;
+> +}
+>  
+>  static inline int jump_label_enabled(struct jump_label_key *key)
+>  {
+> @@ -78,14 +84,4 @@ static inline void jump_label_unlock(void) {}
+>  
+>  #endif
+>  
+> -#define COND_STMT(key, stmt)					\
+> -do {								\
+> -	__label__ jl_enabled;					\
+> -	JUMP_LABEL_ELSE_ATOMIC_READ(key, jl_enabled);		\
+> -	if (0) {						\
+> -jl_enabled:							\
+> -		stmt;						\
+> -	}							\
+> -} while (0)
+> -
+>  #endif
+> diff --git a/include/linux/jump_label_ref.h b/include/linux/jump_label_ref.h
+> index 8a76e89..5178696 100644
+> --- a/include/linux/jump_label_ref.h
+> +++ b/include/linux/jump_label_ref.h
+> @@ -7,19 +7,23 @@
+>  struct jump_label_key_counter {
+>  	atomic_t ref;
+>  	struct jump_label_key key;
+> -}
+> +};
+>  
+>  #ifdef HAVE_JUMP_LABEL
+>  
+> -#define JUMP_LABEL_ELSE_ATOMIC_READ(key, label, counter) JUMP_LABEL(key, label)
+> +static __always_inline bool static_branch_else_atomic_read(struct jump_label_key *key, atomic_t *count)
+> +{
+> +	return __static_branch(key);
+> +}
 
-OK; I suppose for now I'll apply my revision of Takuma Umeya's patch
-below (if I didn't screw it up).
+How about having only static_branch() but the key would be handled only
+by ways of get()/put().
 
---b.
+Simple boolean key enablement would work in this scheme as well as branches
+based on refcount. So that the users could avoid maintaining both key and count,
+this would be transparently handled by the jump label API.
 
-> 
-> > But if we do it this way we can at least simplify a little.
-> > 
-> > --b.
-> > 
-> > commit 6f3d772fb8a039de8f21d725f5e38c252b4c0efd
-> > Author: Takuma Umeya <tumeya@redhat.com>
-> > Date:   Wed Dec 15 14:09:01 2010 +0900
-> > 
-> >    nfs4: set source address when callback is generated
-> > 
-> >    when callback is generated in NFSv4 server, it doesn't set the source
-> >    address. When an alias IP is utilized on NFSv4 server and suppose the
-> >    client is accessing via that alias IP (e.g. eth0:0), the client invokes
-> >    the callback to the IP address that is set on the original device (e.g.
-> >    eth0). This behavior results in timeout of xprt.
-> >    The patch sets the IP address that the client should invoke callback to.
-> > 
-> >    Signed-off-by: Takuma Umeya <tumeya@redhat.com>
-> >    [bfields@redhat.com: Simplify gen_callback arguments, use helper function]
-> >    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-> > 
-> > diff --git a/fs/nfsd/nfs4callback.c b/fs/nfsd/nfs4callback.c
-> > index a085805..dd183af 100644
-> > --- a/fs/nfsd/nfs4callback.c
-> > +++ b/fs/nfsd/nfs4callback.c
-> > @@ -484,6 +484,7 @@ static int setup_callback_client(struct nfs4_client *clp,
-> > 		.net		= &init_net,
-> > 		.address	= (struct sockaddr *) &conn->cb_addr,
-> > 		.addrsize	= conn->cb_addrlen,
-> > +		.saddress	= (struct sockaddr *) &conn->cb_saddr,
-> > 		.timeout	= &timeparms,
-> > 		.program	= &cb_program,
-> > 		.version	= 0,
-> > diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-> > index 87d4c48..b583e4e 100644
-> > --- a/fs/nfsd/nfs4state.c
-> > +++ b/fs/nfsd/nfs4state.c
-> > @@ -1163,10 +1163,26 @@ find_unconfirmed_client_by_str(const char *dname, unsigned int hashval)
-> > 	return NULL;
-> > }
-> > 
-> > +static void rpc_svcaddr2sockaddr(struct sockaddr *sa, unsigned short family, union svc_addr_u *svcaddr)
-> > +{
-> > +	switch (family) {
-> > +	case AF_INET:
-> > +		((struct sockaddr_in *)sa)->sin_family = AF_INET;
-> > +		((struct sockaddr_in *)sa)->sin_addr = svcaddr->addr;
-> > +		return;
-> > +	case AF_INET6:
-> > +		((struct sockaddr_in6 *)sa)->sin6_family = AF_INET6;
-> > +		((struct sockaddr_in6 *)sa)->sin6_addr = svcaddr->addr6;
-> > +		return;
-> > +	}
-> > +}
-> > +
-> > static void
-> > -gen_callback(struct nfs4_client *clp, struct nfsd4_setclientid *se, u32 scopeid)
-> > +gen_callback(struct nfs4_client *clp, struct nfsd4_setclientid *se, struct svc_rqst *rqstp)
-> > {
-> > 	struct nfs4_cb_conn *conn = &clp->cl_cb_conn;
-> > +	struct sockaddr	*sa = svc_addr(rqstp);
-> > +	u32 scopeid = rpc_get_scope_id(sa);
-> > 	unsigned short expected_family;
-> > 
-> > 	/* Currently, we only support tcp and tcp6 for the callback channel */
-> > @@ -1192,6 +1208,7 @@ gen_callback(struct nfs4_client *clp, struct nfsd4_setclientid *se, u32 scopeid)
-> > 
-> > 	conn->cb_prog = se->se_callback_prog;
-> > 	conn->cb_ident = se->se_callback_ident;
-> > +	rpc_svcaddr2sockaddr((struct sockaddr *)&conn->cb_saddr, expected_family, &rqstp->rq_daddr);
-> > 	return;
-> > out_err:
-> > 	conn->cb_addr.ss_family = AF_UNSPEC;
-> > @@ -1768,7 +1785,6 @@ __be32
-> > nfsd4_setclientid(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
-> > 		  struct nfsd4_setclientid *setclid)
-> > {
-> > -	struct sockaddr		*sa = svc_addr(rqstp);
-> > 	struct xdr_netobj 	clname = { 
-> > 		.len = setclid->se_namelen,
-> > 		.data = setclid->se_name,
-> > @@ -1871,7 +1887,7 @@ nfsd4_setclientid(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
-> > 	 * for consistent minorversion use throughout:
-> > 	 */
-> > 	new->cl_minorversion = 0;
-> > -	gen_callback(new, setclid, rpc_get_scope_id(sa));
-> > +	gen_callback(new, setclid, rqstp);
-> > 	add_to_unconfirmed(new, strhashval);
-> > 	setclid->se_clientid.cl_boot = new->cl_clientid.cl_boot;
-> > 	setclid->se_clientid.cl_id = new->cl_clientid.cl_id;
-> > diff --git a/fs/nfsd/state.h b/fs/nfsd/state.h
-> > index 84b2302..cf6dc83 100644
-> > --- a/fs/nfsd/state.h
-> > +++ b/fs/nfsd/state.h
-> > @@ -96,6 +96,7 @@ struct nfs4_delegation {
-> > struct nfs4_cb_conn {
-> > 	/* SETCLIENTID info */
-> > 	struct sockaddr_storage	cb_addr;
-> > +	struct sockaddr_storage	cb_saddr;
-> > 	size_t			cb_addrlen;
-> > 	u32                     cb_prog; /* used only in 4.0 case;
-> > 					    per-session otherwise */
-> 
-> -- 
-> Chuck Lever
-> chuck[dot]lever[at]oracle[dot]com
-> 
-> 
-> 
-> 
+Or am I missing something?
+
+Other than that, looks like a very nice patch!
