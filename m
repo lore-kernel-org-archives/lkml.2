@@ -1,142 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793Ab1AEUIe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 15:08:34 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55314 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752385Ab1AEUId (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 15:08:33 -0500
-Message-ID: <4D24CFC1.9020305@codemonkey.ws>
-Date: Wed, 05 Jan 2011 14:08:33 -0600
-From: Anthony Liguori <anthony@codemonkey.ws>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Lightning/1.0b1 Thunderbird/3.0.10
+	id S1752796Ab1AEUKU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 15:10:20 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:50268 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752303Ab1AEUKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 15:10:19 -0500
+Message-ID: <4D24CFD9.20805@zytor.com>
+Date: Wed, 05 Jan 2011 12:08:57 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>, Jamie Lokier <jamie@shareable.org>,
-        Thomas Weber <swirl@gmx.li>, gleb@redhat.com,
-        virtualization@lists.linux-foundation.org,
+To: David Daney <ddaney@caviumnetworks.com>
+CC: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Jason Baron <jbaron@redhat.com>, Ralf Baechle <ralf@linux-mips.org>,
+        peterz@infradead.org, mathieu.desnoyers@polymtl.ca, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, sam@ravnborg.org, michael@ellerman.id.au,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio-pci: add softlinks between virtio and pci
-References: <20110105191711.GA27489@redhat.com> <4D24C662.9070804@codemonkey.ws> <20110105200501.GA3224@redhat.com>
-In-Reply-To: <20110105200501.GA3224@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Subject: Re: [PATCH 2/2] jump label: introduce static_branch()
+References: <cover.1294239591.git.jbaron@redhat.com> <2d8c38bd7ca93e162aedb8e7acfc8bdb96d85de2.1294239591.git.jbaron@redhat.com> <4D24AB1B.2010209@caviumnetworks.com> <1294249439.26623.35.camel@gandalf.stny.rr.com> <4D24BED1.5000900@zytor.com> <20110105191424.GA7820@elte.hu> <4D24C756.9070302@caviumnetworks.com> <20110105195043.GA9399@elte.hu> <4D24CF95.5090006@caviumnetworks.com>
+In-Reply-To: <4D24CF95.5090006@caviumnetworks.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2011 02:05 PM, Michael S. Tsirkin wrote:
-> On Wed, Jan 05, 2011 at 01:28:34PM -0600, Anthony Liguori wrote:
->    
->> On 01/05/2011 01:17 PM, Michael S. Tsirkin wrote:
->>      
->>> We sometimes need to map between the virtio device and
->>> the given pci device. One such use is OS installer that
->>> gets the boot pci device from BIOS and needs to
->>> find the relevant block device. Since it can't,
->>> installation fails.
->>>        
->> I have no objection to this patch but I'm a tad confused by the description.
->>
->> I assume you mean the installer is querying the boot device via
->> int13 get driver parameters such that it returns the pci address of
->> the device?
->>
->> Or is it querying geometry information and then trying to find the
->> best match block device?
->>
->> If it's the former, I don't really understand the need for a
->> backlink since the PCI address gives you a link to the block device.
->> OTOH, if it's the later, it would make sense but then your
->> description doesn't really make much sense.
->>
->> At any rate, a better commit message would be helpful in explaining
->> the need for this.
->>
->> Regards,
->>
->> Anthony Liguori
->>      
-> OK just to clarify: we get pci address from BIOS
-> and need the virtio device to get at the linux device
-> (e.g. block) in the end.  Thus the link from pci to virtio.
-> I also added a backlink since I thought it's handy.
->
-> Does this answer the questions?
->
-> Rusty rewrites my commit logs anyway, he has better style :)
->    
+On 01/05/2011 12:07 PM, David Daney wrote:
+> 
+> But I am guessing that neither you, nor Linus, regularly build MIPS 
+> kernels with GCC-4.5.x *and* jump label support enabled.  So how would 
+> such semantic conflict ever be detected?  I would expect the conflict to 
+> first occur when Linus pulls Ralf's tree.
+> 
+> I don't expect anybody to magically fix such things, so whatever 
+> happens, I will test it and submit patches if required.
+> 
 
-It helps.  The real reason this is needed is because in a normal device, 
-there is only one struct device whereas with virtio-pci, the virtio-pci 
-device has a struct device and then the actual virtio device has another 
-one.  There's probably a better way to handle this in sysfs making 
-virtio-pci a proper bus with only a single device as a child or 
-something like that.
+If Ralf knows to expect them, then Ralf can take corrective actions as
+he thinks is appropriate.
 
-But the links are probably an easier solution.
-
-Regards,
-
-Anthony Liguori
-
->    
->>> Supply softlinks between these to make it possible.
->>>
->>> Signed-off-by: Michael S. Tsirkin<mst@redhat.com>
->>> ---
->>>
->>> Gleb, could you please ack that this patch below
->>> will be enough to fix the installer issue that
->>> you see?
->>>
->>>   drivers/virtio/virtio_pci.c |   18 +++++++++++++++++-
->>>   1 files changed, 17 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
->>> index ef8d9d5..06eb2f8 100644
->>> --- a/drivers/virtio/virtio_pci.c
->>> +++ b/drivers/virtio/virtio_pci.c
->>> @@ -25,6 +25,7 @@
->>>   #include<linux/virtio_pci.h>
->>>   #include<linux/highmem.h>
->>>   #include<linux/spinlock.h>
->>> +#include<linux/sysfs.h>
->>>
->>>   MODULE_AUTHOR("Anthony Liguori<aliguori@us.ibm.com>");
->>>   MODULE_DESCRIPTION("virtio-pci");
->>> @@ -667,8 +668,21 @@ static int __devinit virtio_pci_probe(struct pci_dev *pci_dev,
->>>   	if (err)
->>>   		goto out_set_drvdata;
->>>
->>> -	return 0;
->>> +	err = sysfs_create_link(&pci_dev->dev.kobj,&vp_dev->vdev.dev.kobj,
->>> +				"virtio_device");
->>> +	if (err)
->>> +		goto out_register_device;
->>> +
->>> +	err = sysfs_create_link(&vp_dev->vdev.dev.kobj,&pci_dev->dev.kobj,
->>> +				"bus_device");
->>> +	if (err)
->>> +		goto out_create_link;
->>>
->>> +	return 0;
->>> +out_create_link:
->>> +	sysfs_remove_link(&pci_dev->dev.kobj, "virtio_device");
->>> +out_register_device:
->>> +	unregister_virtio_device(&vp_dev->vdev);
->>>   out_set_drvdata:
->>>   	pci_set_drvdata(pci_dev, NULL);
->>>   	pci_iounmap(pci_dev, vp_dev->ioaddr);
->>> @@ -685,6 +699,8 @@ static void __devexit virtio_pci_remove(struct pci_dev *pci_dev)
->>>   {
->>>   	struct virtio_pci_device *vp_dev = pci_get_drvdata(pci_dev);
->>>
->>> +	sysfs_remove_link(&vp_dev->vdev.dev.kobj, "bus_device");
->>> +	sysfs_remove_link(&pci_dev->dev.kobj, "virtio_device");
->>>   	unregister_virtio_device(&vp_dev->vdev);
->>>   }
->>>
->>>        
-
+	-hpa
