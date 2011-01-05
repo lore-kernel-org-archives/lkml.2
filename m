@@ -1,100 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540Ab1AERhh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 12:37:37 -0500
-Received: from hera.kernel.org ([140.211.167.34]:59787 "EHLO hera.kernel.org"
+	id S1752407Ab1AERhs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 12:37:48 -0500
+Received: from hera.kernel.org ([140.211.167.34]:32909 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752398Ab1AERhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 12:37:35 -0500
-Date: Wed, 5 Jan 2011 17:37:01 GMT
-From: tip-bot for Stephane Eranian <eranian@google.com>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        eranian@google.com, hpa@zytor.com, mingo@redhat.com,
-        peterz@infradead.org, eranian@gmail.com, davem@davemloft.net,
-        robert.richter@amd.com, fweisbec@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
-        paulus@samba.org, linux-kernel@vger.kernel.org, acme@redhat.com,
-        peterz@infradead.org, eranian@gmail.com, davem@davemloft.net,
-        robert.richter@amd.com, fweisbec@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <4d233cf0.2308e30a.7b00.ffffc187@mx.google.com>
-References: <4d233cf0.2308e30a.7b00.ffffc187@mx.google.com>
+	id S1752184Ab1AERhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 12:37:45 -0500
+Date: Wed, 5 Jan 2011 17:37:24 GMT
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
+        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
+        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Fix perf_event.h header usage
-Message-ID: <tip-d030260ad33b482a371f999c7e9db79ef7a2111f@git.kernel.org>
-Git-Commit-ID: d030260ad33b482a371f999c7e9db79ef7a2111f
+Subject: [tip:perf/core] perf session: Warn about errors when processing pipe events too
+Message-ID: <tip-1109599458c06256064213dc44ca5f5fa8ee3833@git.kernel.org>
+Git-Commit-ID: 1109599458c06256064213dc44ca5f5fa8ee3833
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 05 Jan 2011 17:37:02 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 05 Jan 2011 17:37:24 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d030260ad33b482a371f999c7e9db79ef7a2111f
-Gitweb:     http://git.kernel.org/tip/d030260ad33b482a371f999c7e9db79ef7a2111f
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Tue, 4 Jan 2011 16:30:01 +0200
+Commit-ID:  1109599458c06256064213dc44ca5f5fa8ee3833
+Gitweb:     http://git.kernel.org/tip/1109599458c06256064213dc44ca5f5fa8ee3833
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Tue, 4 Jan 2011 16:25:15 -0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 5 Jan 2011 14:52:54 -0200
+CommitDate: Wed, 5 Jan 2011 14:53:10 -0200
 
-perf tools: Fix perf_event.h header usage
+perf session: Warn about errors when processing pipe events too
 
-This patch fixes the usage of the perf_event.h header file
-between command modules and the supporting code in util.
+Just like we do at __perf_session__process_events
 
-It is necessary to ensure that ALL files use the SAME
-perf_event.h header from the kernel source tree.
-
-There were a couple of #include <linux/perf_event.h> mixed
-with #include "../../perf_event.h".
-
-This caused issues on some distros because of mismatch
-in the layout of struct perf_event_attr. That eventually
-led perf stat to segfault.
-
-Cc: David S. Miller <davem@davemloft.net>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Stephane Eranian <eranian@gmail.com>
-LKML-Reference: <4d233cf0.2308e30a.7b00.ffffc187@mx.google.com>
-Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evsel.h        |    2 +-
- tools/perf/util/parse-events.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/util/session.c |   57 ++++++++++++++++++++++++--------------------
+ 1 files changed, 31 insertions(+), 26 deletions(-)
 
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 863d78d..a0ccd69 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -3,7 +3,7 @@
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index b163dfd..6fb4694 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -838,6 +838,35 @@ static struct thread *perf_session__register_idle_thread(struct perf_session *se
+ 	return thread;
+ }
  
- #include <linux/list.h>
- #include <stdbool.h>
--#include <linux/perf_event.h>
-+#include "../../../include/linux/perf_event.h"
- #include "types.h"
- #include "xyarray.h"
-  
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index 1c9043c..b82cafb 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -4,7 +4,7 @@
-  * Parse symbolic events/counts passed in as options:
-  */
++static void perf_session__warn_about_errors(const struct perf_session *session,
++					    const struct perf_event_ops *ops)
++{
++	if (ops->lost == event__process_lost &&
++	    session->hists.stats.total_lost != 0) {
++		ui__warning("Processed %Lu events and LOST %Lu!\n\n"
++			    "Check IO/CPU overload!\n\n",
++			    session->hists.stats.total_period,
++			    session->hists.stats.total_lost);
++	}
++
++	if (session->hists.stats.nr_unknown_events != 0) {
++		ui__warning("Found %u unknown events!\n\n"
++			    "Is this an older tool processing a perf.data "
++			    "file generated by a more recent tool?\n\n"
++			    "If that is not the case, consider "
++			    "reporting to linux-kernel@vger.kernel.org.\n\n",
++			    session->hists.stats.nr_unknown_events);
++	}
++
++ 	if (session->hists.stats.nr_invalid_chains != 0) {
++ 		ui__warning("Found invalid callchains!\n\n"
++ 			    "%u out of %u events were discarded for this reason.\n\n"
++ 			    "Consider reporting to linux-kernel@vger.kernel.org.\n\n",
++ 			    session->hists.stats.nr_invalid_chains,
++ 			    session->hists.stats.nr_events[PERF_RECORD_SAMPLE]);
++ 	}
++}
++
+ #define session_done()	(*(volatile int *)(&session_done))
+ volatile int session_done;
  
--#include <linux/perf_event.h>
-+#include "../../../include/linux/perf_event.h"
- 
- struct list_head;
- struct perf_evsel;
+@@ -911,6 +940,7 @@ more:
+ done:
+ 	err = 0;
+ out_err:
++	perf_session__warn_about_errors(self, ops);
+ 	perf_session_free_sample_buffers(self);
+ 	return err;
+ }
+@@ -1023,32 +1053,7 @@ more:
+ 	flush_sample_queue(session, ops);
+ out_err:
+ 	ui_progress__delete(progress);
+-
+-	if (ops->lost == event__process_lost &&
+-	    session->hists.stats.total_lost != 0) {
+-		ui__warning("Processed %Lu events and LOST %Lu!\n\n"
+-			    "Check IO/CPU overload!\n\n",
+-			    session->hists.stats.total_period,
+-			    session->hists.stats.total_lost);
+-	}
+-
+-	if (session->hists.stats.nr_unknown_events != 0) {
+-		ui__warning("Found %u unknown events!\n\n"
+-			    "Is this an older tool processing a perf.data "
+-			    "file generated by a more recent tool?\n\n"
+-			    "If that is not the case, consider "
+-			    "reporting to linux-kernel@vger.kernel.org.\n\n",
+-			    session->hists.stats.nr_unknown_events);
+-	}
+-
+- 	if (session->hists.stats.nr_invalid_chains != 0) {
+- 		ui__warning("Found invalid callchains!\n\n"
+- 			    "%u out of %u events were discarded for this reason.\n\n"
+- 			    "Consider reporting to linux-kernel@vger.kernel.org.\n\n",
+- 			    session->hists.stats.nr_invalid_chains,
+- 			    session->hists.stats.nr_events[PERF_RECORD_SAMPLE]);
+- 	}
+-
++	perf_session__warn_about_errors(session, ops);
+ 	perf_session_free_sample_buffers(session);
+ 	return err;
+ }
