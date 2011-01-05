@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654Ab1AETuD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 14:50:03 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51142 "EHLO
+	id S1752725Ab1AETub (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 14:50:31 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45368 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752250Ab1AETuA convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 14:50:00 -0500
+	by vger.kernel.org with ESMTP id S1752357Ab1AETu2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 14:50:28 -0500
 MIME-Version: 1.0
-In-Reply-To: <1294256169.16957.18.camel@mulgrave.site>
-References: <1294254337.16957.13.camel@mulgrave.site> <AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com>
- <1294256169.16957.18.camel@mulgrave.site>
+In-Reply-To: <1294254867.2016.281.camel@laptop>
+References: <20101224122338.172750730@chello.nl> <20101224123742.724459093@chello.nl>
+ <AANLkTikGBsh0-QTe9CA2gwDtwzpdMi+fbDsTEKiJAL0P@mail.gmail.com>
+ <1294054362.2016.74.camel@laptop> <20110104064542.GF3402@amd> <1294254867.2016.281.camel@laptop>
 From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 5 Jan 2011 11:49:12 -0800
-Message-ID: <AANLkTik214sj_wBJXhJMLRie34moG7ET1Xg62oQXsgxb@mail.gmail.com>
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
+Date: Wed, 5 Jan 2011 11:43:12 -0800
+Message-ID: <AANLkTi=URmD1GYqp+PfVf6rc0tXvRnAQG808LMnBRgG1@mail.gmail.com>
+Subject: Re: [RFC][PATCH] spinlock: Kill spin_unlock_wait()
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Nick Piggin <npiggin@kernel.dk>, Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
+        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
+        linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>, Jeff Garzik <jeff@garzik.org>,
+        Tejun Heo <tj@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/1/5 James Bottomley <James.Bottomley@hansenpartnership.com>:
->>
->> No, we really can't do that. Most of the time, the kmap() is the only
->> way we access the page anyway, so flushing things would just be
->> stupid. Why waste time and energy on doing something pointless?
+On Wed, Jan 5, 2011 at 11:14 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 >
-> It's hardly pointless.  The kmap sets up an inequivalent alias in the
-> cache.
+> There appear to be only two callsites of said horror, one in the exit
+> path and one in ata-eh, neither appear to be performance critical so I
+> replaced them with a simple lock-unlock sequence.
 
-NO IT DOES NOT.
+Again, WHY?
 
-Stop arguing, when you are so wrong.
+What's the problem with the current code? Instead of generating ugly
+patches to change it, and instead of removing it, just say what the
+PROBLEM is.
 
-kmap() does not create any aliases. For low-memory, it just returns
-the physical address. No alias. And for high memory, there is no
-equivalent low memory address to alias _with_.
+Stop this wanking already. The exit path is certainly not unimportant.
 
-Now, when you actually mix multiple kmap's and you have a virtually
-based cache, then the kmap's obviously need to flush that particular
-page when switching between each other. But that has nothing to do
-with the actual page being kmap'ed, it's entirely an internal issue
-about the particular virtual memory area being re-used. And ARM (and
-any other virtually based CPU) already does that in __kunmap_atomic().
+And if you want to change the thing to be more efficient, I'm ok with
+that, as long as it's done PRETTILY instead of making the damn thing
+an unreadable mess.
 
-But notice the case of the low-mem. And understand that you are WRONG
-about the "inequivalent alias" thing.
+The current "spin_unlock_wait()" is obvious. I'm perfectly happy
+improving on it, but I would want to retain the "obvious" part, which
+your previous patch certainly didn't do.
 
-So I repeat: this has absolutely *NOTHING* to do with kmap(). Stop blathering.
+Some simple helper functions to extract the tail/head part of the
+ticket lock to make the comparisons understandable, together with
+always accessing the lock with the proper ACCESS_ONCE() would have
+made your previous patch acceptable. But you ignored that feedback,
+and instead you now want to do a "let's just remove it entirely patch"
+that is even worse.
 
-It's _purely_ an issue of vm_map_ram(). Nothing else.
+And in NEITHER version did you actually give any actual *REASON* for
+the change in the first place.
 
-                          Linus
+Why? WHY?
+
+                      Linus
