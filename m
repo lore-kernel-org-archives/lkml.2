@@ -1,56 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738Ab1AFD1M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 22:27:12 -0500
-Received: from cantor.suse.de ([195.135.220.2]:56264 "EHLO mx1.suse.de"
+	id S1754832Ab1AFD1Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 22:27:24 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:60852 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753416Ab1AFD1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 22:27:10 -0500
-Date: Wed, 5 Jan 2011 19:19:50 -0800
-From: Greg KH <gregkh@suse.de>
-To: "Gorby, Russ" <russ.gorby@intel.com>
-Cc: "segoon@openwall.com" <segoon@openwall.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ahmed, Suhail" <suhail.ahmed@intel.com>
-Subject: Re: [PATCH 0/7] IFX6X60 patchset: 01/05/2011
-Message-ID: <20110106031950.GA19194@suse.de>
-References: <1294272313-15899-1-git-send-email-russ.gorby@intel.com>
- <20110106001452.GA10637@suse.de>
- <4C5E6457CD7911469A07260381288C28CB7DF6EA@orsmsx502.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C5E6457CD7911469A07260381288C28CB7DF6EA@orsmsx502.amr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754754Ab1AFD1U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 22:27:20 -0500
+Date: Thu, 6 Jan 2011 14:27:10 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (tty
+ tree related)
+Message-Id: <20110106142710.a0a04883.sfr@canb.auug.org.au>
+In-Reply-To: <alpine.LFD.2.00.1012171107310.12146@localhost6.localdomain6>
+References: <20101217171120.295b0c0c.sfr@canb.auug.org.au>
+	<20101217070431.GA25192@kroah.com>
+	<alpine.LFD.2.00.1012171107310.12146@localhost6.localdomain6>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__6_Jan_2011_14_27_10_+1100_+L+WgKxsEyi8NzF+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 05, 2011 at 04:33:39PM -0800, Gorby, Russ wrote:
-> 
-> 
-> >-----Original Message-----
-> >
-> >On Wed, Jan 05, 2011 at 04:05:06PM -0800, Russ Gorby wrote:
-> >> Hello SPI/Serial Maintainers,
-> >
-> >Um, you really got the cc: list wrong, please fix that next time.
-> >
-> [Gorby, Russ] sorry, get_maintainers.pl output was not properly consumed by my script and got some additional garbage addresses
+--Signature=_Thu__6_Jan_2011_14_27_10_+1100_+L+WgKxsEyi8NzF+
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That's some wierd email quoting, please fix your email client (i.e. use
-a sane one.)
+HI Greg,
 
-> >It's too late now, sorry.  We are in the middle of the big merge window
-> >for .38-rc1 (which means your patches needed to be in a maintainer's
-> >tree a few weeks ago).  I'll consider these after that comes out.
-> >
-> 
-> [Gorby, Russ] fair enough - do you want me to resubmit the patchset later on or will you cache it and take it up later?
+On Fri, 17 Dec 2010 11:16:17 +0100 (CET) Thomas Gleixner <tglx@linutronix.d=
+e> wrote:
+>
+> On Thu, 16 Dec 2010, Greg KH wrote:
+> > On Fri, Dec 17, 2010 at 05:11:20PM +1100, Stephen Rothwell wrote:
+> > > Hi Greg,
+> > >=20
+> > > After merging the final tree, today's linux-next build (powerpc
+> > > allyesconfig) failed like this:
+> > >=20
+> > > drivers/serial/apbuart.c:596: error: conflicting types for 'grlib_apb=
+uart_configure'
+> > > drivers/serial/apbuart.c:523: note: previous declaration of 'grlib_ap=
+buart_configure' was here
+> > >=20
+> > > Caused by commit 35c64e5d13c3d7d8c4ad061ad5e20498b9160c24 ("drivers:
+> > > serial: apbuart: Handle OF failures gracefully").  This build has
+> > > CONFIG_SERIAL_GRLIB_GAISLER_APBUART_CONSOLE set ...
+> > >=20
+> > > I have reverted this commit for today.
+> >=20
+> > Ugh.  Thomas, care to send me a patch?
+>=20
+> Sorry, I missed the console part. Patch below.
 
-Please send it again, as it isn't correct as pointed out by Alan :)
+Ping?
 
-thanks,
+> Thanks,
+>=20
+> 	tglx
+> ---
+> Subject: drivers: serial: apbuart: Fixup apbuart_console_init()
+> From: Thomas Gleixner <tglx@linutronix.de>
+> Date: Fri, 17 Dec 2010 11:09:49 +0100
+>=20
+> commit 35c64e5d (drivers: serial: apbuart: Handle OF failures
+> gracefully) missed that the modified grlib_apbuart_configure()
+> function is called from apbuart_console_init() as well.
+>=20
+> Fix the fallout.
+>=20
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  drivers/serial/apbuart.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+>=20
+> Index: linux-2.6-tip/drivers/serial/apbuart.c
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> --- linux-2.6-tip.orig/drivers/serial/apbuart.c
+> +++ linux-2.6-tip/drivers/serial/apbuart.c
+> @@ -520,11 +520,12 @@ static struct console grlib_apbuart_cons
+>  };
+> =20
+> =20
+> -static void grlib_apbuart_configure(void);
+> +static int grlib_apbuart_configure(void);
+> =20
+>  static int __init apbuart_console_init(void)
+>  {
+> -	grlib_apbuart_configure();
+> +	if (grlib_apbuart_configure())
+> +		return -ENODEV;
+>  	register_console(&grlib_apbuart_console);
+>  	return 0;
+>  }
 
-greg k-h
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__6_Jan_2011_14_27_10_+1100_+L+WgKxsEyi8NzF+
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNJTaOAAoJEDMEi1NhKgbsUnIH/RnPGiufxnNI/hShYw/py1dR
+yanGoDgsT1Ie5doFpgtVzL5IjkKPs4s5md80ABrObNgOOGQ+26Hh6uCOmZbIAIzd
+LGDHJmQdJ91WXM9KCxSI7pEFS0YiabvzjRHIffcmpBlU2Fp9GJ/uKIXIGN03MdKD
+QtBZbc1spV1p8aosa3wXsKcSn+eqGpBaj48oLKWz3r1MF6mOqSgBLrgPVA+FxzL5
+pkew7jdGhEOlMf5SHhJ+lFF5mszBaCipGtZsDO3ttcYTRNVSRar+mdAwHBc6KqAC
+8V1N0PsV3DjpYg9QbkQIx9JTNO0CbSABcjsGbgHpJdS6kc16Q/ga1gPTjEC6AfY=
+=Js4C
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__6_Jan_2011_14_27_10_+1100_+L+WgKxsEyi8NzF+--
