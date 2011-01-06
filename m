@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144Ab1AFAzg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:55:36 -0500
-Received: from kroah.org ([198.145.64.141]:35632 "EHLO coco.kroah.org"
+	id S1754080Ab1AFA3a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:29:30 -0500
+Received: from kroah.org ([198.145.64.141]:35574 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754050Ab1AFA3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:29:34 -0500
+	id S1754045Ab1AFA3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:29:25 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:00 2011
-Message-Id: <20110106002300.901648511@clark.site>
+Message-Id: <20110106002300.139856997@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:22:24 -0800
+Date: Wed, 05 Jan 2011 16:22:16 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [045/152] sparc: Remove prom_pathtoinode()
+        Rajkumar Manoharan <rmanoharan@atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [037/152] ath9k: Disable SWBA interrupt on remove_interface
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,89 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Rajkumar Manoharan <rmanoharan@atheros.com>
 
-From: David S. Miller <davem@davemloft.net>
+commit 46047784b8cdcfc916f6c1cccee0c18dd1223dfd upstream.
 
-[ Upstream commit 17d70d6df0c4ea7a203b444001572a91ad9c2bef ]
+while removing beaconing mode interface, SWBA interrupt
+was never disabled when there are no other beaconing interfaces.
 
-Unused.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Rajkumar Manoharan <rmanoharan@atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- arch/sparc/include/asm/oplib_32.h |    1 -
- arch/sparc/include/asm/oplib_64.h |    1 -
- arch/sparc/prom/tree_32.c         |   15 ---------------
- arch/sparc/prom/tree_64.c         |   18 ------------------
- 4 files changed, 35 deletions(-)
 
---- a/arch/sparc/include/asm/oplib_32.h
-+++ b/arch/sparc/include/asm/oplib_32.h
-@@ -238,7 +238,6 @@ extern int prom_node_has_property(int no
- extern int prom_setprop(int node, const char *prop_name, char *prop_value,
- 			int value_size);
+---
+ drivers/net/wireless/ath/ath9k/main.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -1484,6 +1484,7 @@ static void ath9k_remove_interface(struc
+ 	struct ath_softc *sc = aphy->sc;
+ 	struct ath_common *common = ath9k_hw_common(sc->sc_ah);
+ 	struct ath_vif *avp = (void *)vif->drv_priv;
++	bool bs_valid = false;
+ 	int i;
  
--extern int prom_pathtoinode(char *path);
- extern int prom_inst2pkg(int);
+ 	ath_print(common, ATH_DBG_CONFIG, "Detach Interface\n");
+@@ -1512,7 +1513,15 @@ static void ath9k_remove_interface(struc
+ 			       "slot\n", __func__);
+ 			sc->beacon.bslot[i] = NULL;
+ 			sc->beacon.bslot_aphy[i] = NULL;
+-		}
++		} else if (sc->beacon.bslot[i])
++			bs_valid = true;
++	}
++	if (!bs_valid && (sc->sc_ah->imask & ATH9K_INT_SWBA)) {
++		/* Disable SWBA interrupt */
++		sc->sc_ah->imask &= ~ATH9K_INT_SWBA;
++		ath9k_ps_wakeup(sc);
++		ath9k_hw_set_interrupts(sc->sc_ah, sc->sc_ah->imask);
++		ath9k_ps_restore(sc);
+ 	}
  
- /* Dorking with Bus ranges... */
---- a/arch/sparc/include/asm/oplib_64.h
-+++ b/arch/sparc/include/asm/oplib_64.h
-@@ -278,7 +278,6 @@ extern int prom_finddevice(const char *n
- extern int prom_setprop(int node, const char *prop_name, char *prop_value,
- 			int value_size);
- 
--extern int prom_pathtoinode(const char *path);
- extern int prom_inst2pkg(int);
- extern int prom_service_exists(const char *service_name);
- extern void prom_sun4v_guest_soft_state(void);
---- a/arch/sparc/prom/tree_32.c
-+++ b/arch/sparc/prom/tree_32.c
-@@ -341,18 +341,3 @@ int prom_inst2pkg(int inst)
- 	if (node == -1) return 0;
- 	return node;
- }
--
--/* Return 'node' assigned to a particular prom 'path'
-- * FIXME: Should work for v0 as well
-- */
--int prom_pathtoinode(char *path)
--{
--	int node, inst;
--	
--	inst = prom_devopen (path);
--	if (inst == -1) return 0;
--	node = prom_inst2pkg (inst);
--	prom_devclose (inst);
--	if (node == -1) return 0;
--	return node;
--}
---- a/arch/sparc/prom/tree_64.c
-+++ b/arch/sparc/prom/tree_64.c
-@@ -374,24 +374,6 @@ inline int prom_inst2pkg(int inst)
- 	return node;
- }
- 
--/* Return 'node' assigned to a particular prom 'path'
-- * FIXME: Should work for v0 as well
-- */
--int
--prom_pathtoinode(const char *path)
--{
--	int node, inst;
--
--	inst = prom_devopen (path);
--	if (inst == 0)
--		return 0;
--	node = prom_inst2pkg(inst);
--	prom_devclose(inst);
--	if (node == -1)
--		return 0;
--	return node;
--}
--
- int prom_ihandle2path(int handle, char *buffer, int bufsize)
- {
- 	unsigned long args[7];
+ 	sc->nvifs--;
 
 
