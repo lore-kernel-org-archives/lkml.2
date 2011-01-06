@@ -1,49 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab1AFL1T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 06:27:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22603 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752911Ab1AFL1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 06:27:18 -0500
-Message-ID: <4D25A710.5030500@redhat.com>
-Date: Thu, 06 Jan 2011 01:27:12 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [KVM TSC trapping / migration 2/2] Add TSC KHZ MSR
-References: <1294308645-31113-1-git-send-email-zamsden@redhat.com> <1294308645-31113-3-git-send-email-zamsden@redhat.com> <F57C0733-9A1A-4A6D-9D62-39B836559878@suse.de>
-In-Reply-To: <F57C0733-9A1A-4A6D-9D62-39B836559878@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753176Ab1AFL3i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 06:29:38 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:36803 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752555Ab1AFL3h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 06:29:37 -0500
+From: "M. Mohan Kumar" <mohan@in.ibm.com>
+To: "v9fs-developer" <v9fs-developer@lists.sourceforge.net>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH] [V4] fs/9p: TREADLINK bugfix
+Date: Thu,  6 Jan 2011 16:59:31 +0530
+Message-Id: <1294313371-17787-1-git-send-email-mohan@in.ibm.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2011 12:34 AM, Alexander Graf wrote:
-> Am 06.01.2011 um 11:10 schrieb Zachary Amsden<zamsden@redhat.com>:
->
->    
->> Use an MSR to allow "soft" migration to hosts which do not support
->> TSC trapping.  Rather than make this a required element of any
->> migration protocol, we allow the TSC rate to be exported as a data
->> field (useful in its own right), but we also allow a one time write
->> of the MSR during VM creation.  The result is that for the common
->> use case, no protocol change is required to communicate TSC rate
->> to the receiving host.
->>
->> This allows administrative tools to configure migration policy
->> as they see appropriate.  Rather than dictate this policy with the
->> KVM implementation, we properly allow migration to hosts which both
->> do and do not support setting of the TSC rate on the receiving end.
->> If it is wished to not support migration to a host which lacks
->> support for the TSC rate feature, that can be coordinated externally.
->>      
-> Isn't there a real hw equivalent of such a register? It might make more sense to just implement that then.
->
->    
+Remove v9fs_vfs_readlink_dotl function and use generic_readlink. Update
+v9fs_vfs_follow_link_dotl function to accommodate this change
 
-Unfortunately, no.
+Signed-off-by: M. Mohan Kumar <mohan@in.ibm.com>
+Reported-by:  Dr. David Alan Gilbert <linux@treblig.org>
+---
+Changes from previous version:
+* Proper error handling and freeing of memory
+* Use __getname in v9fs_vfs_follow_link_dotl
+* Remove v9fs_vfs_readlink_dotl function
+
+ fs/9p/vfs_inode.c |   58 ++++++++++++++++++++--------------------------------
+ 1 files changed, 22 insertions(+), 36 deletions(-)
+
+diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
+index 2ce3668..d6e4def 100644
+--- a/fs/9p/vfs_inode.c
++++ b/fs/9p/vfs_inode.c
+@@ -1994,30 +1994,6 @@ error:
+ 	return err;
+ }
+ 
+-static int
+-v9fs_vfs_readlink_dotl(struct dentry *dentry, char *buffer, int buflen)
+-{
+-	int retval;
+-	struct p9_fid *fid;
+-	char *target = NULL;
+-
+-	P9_DPRINTK(P9_DEBUG_VFS, " %s\n", dentry->d_name.name);
+-	retval = -EPERM;
+-	fid = v9fs_fid_lookup(dentry);
+-	if (IS_ERR(fid))
+-		return PTR_ERR(fid);
+-
+-	retval = p9_client_readlink(fid, &target);
+-	if (retval < 0)
+-		return retval;
+-
+-	strncpy(buffer, target, buflen);
+-	P9_DPRINTK(P9_DEBUG_VFS, "%s -> %s\n", dentry->d_name.name, buffer);
+-
+-	retval = strnlen(buffer, buflen);
+-	return retval;
+-}
+-
+ /**
+  * v9fs_vfs_follow_link_dotl - follow a symlink path
+  * @dentry: dentry for symlink
+@@ -2028,23 +2004,33 @@ v9fs_vfs_readlink_dotl(struct dentry *dentry, char *buffer, int buflen)
+ static void *
+ v9fs_vfs_follow_link_dotl(struct dentry *dentry, struct nameidata *nd)
+ {
+-	int len = 0;
++	int retval;
++	struct p9_fid *fid;
+ 	char *link = __getname();
++	char *target;
+ 
+-	P9_DPRINTK(P9_DEBUG_VFS, "%s n", dentry->d_name.name);
++	P9_DPRINTK(P9_DEBUG_VFS, "%s\n", dentry->d_name.name);
+ 
+-	if (!link)
++	if (!link) {
+ 		link = ERR_PTR(-ENOMEM);
+-	else {
+-		len = v9fs_vfs_readlink_dotl(dentry, link, PATH_MAX);
+-		if (len < 0) {
+-			__putname(link);
+-			link = ERR_PTR(len);
+-		} else
+-			link[min(len, PATH_MAX-1)] = 0;
++		goto ndset;
++	}
++	fid = v9fs_fid_lookup(dentry);
++	if (IS_ERR(fid)) {
++		__putname(link);
++		link = ERR_PTR(fid);
++		goto ndset;
+ 	}
++	retval = p9_client_readlink(fid, &target);
++	if (!retval) {
++		strcpy(link, target);
++		kfree(target);
++		goto ndset;
++	}
++	__putname(link);
++	link = ERR_PTR(retval);
++ndset:
+ 	nd_set_link(nd, link);
+-
+ 	return NULL;
+ }
+ 
+@@ -2117,7 +2103,7 @@ static const struct inode_operations v9fs_symlink_inode_operations = {
+ };
+ 
+ static const struct inode_operations v9fs_symlink_inode_operations_dotl = {
+-	.readlink = v9fs_vfs_readlink_dotl,
++	.readlink = generic_readlink,
+ 	.follow_link = v9fs_vfs_follow_link_dotl,
+ 	.put_link = v9fs_vfs_put_link,
+ 	.getattr = v9fs_vfs_getattr_dotl,
+-- 
+1.7.2.3
+
