@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754362Ab1AFXV3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 18:21:29 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5221 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751581Ab1AFXV2 (ORCPT
+	id S1754613Ab1AFXYW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 18:24:22 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:16034 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752543Ab1AFXYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 18:21:28 -0500
+	Thu, 6 Jan 2011 18:24:21 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp03.nvidia.com on Thu, 06 Jan 2011 15:21:04 -0800
+	by hqnvupgp05.nvidia.com on Thu, 06 Jan 2011 15:13:53 -0800
 From: Robert Morell <rmorell@nvidia.com>
 To: David Brownell <dbrownell@users.sourceforge.net>,
         Greg Kroah-Hartman <gregkh@suse.de>, Benoit Goby <benoit@android.com>,
@@ -21,9 +21,9 @@ Cc: Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>,
         Colin Cross <ccross@android.com>, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
         Robert Morell <rmorell@nvidia.com>
-Subject: [PATCH v4 1/2] USB: HCD: Add driver hooks for (un)?map_urb_for_dma
-Date: Thu,  6 Jan 2011 15:20:44 -0800
-Message-Id: <1294356045-1018-2-git-send-email-rmorell@nvidia.com>
+Subject: [PATCH v4 2/2] USB: ehci: tegra: Align DMA transfers to 32 bytes
+Date: Thu,  6 Jan 2011 15:20:45 -0800
+Message-Id: <1294356045-1018-3-git-send-email-rmorell@nvidia.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1292794698-19534-1-git-send-email-rmorell@nvidia.com>
 References: <1292794698-19534-1-git-send-email-rmorell@nvidia.com>
@@ -32,133 +32,136 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide optional hooks for the host controller driver to override the
-default DMA mapping and unmapping routines.  In general, these shouldn't
-be necessary unless the host controller has special DMA requirements,
-such as alignment contraints.  If these are not specified, the
-general usb_hcd_(un)?map_urb_for_dma functions will be used instead.
-Also, pass the status to unmap_urb_for_dma so it can know whether the
-DMA buffer has been overwritten.
+The Tegra2 USB controller doesn't properly deal with misaligned DMA
+buffers, causing corruption.  This is especially prevalent with USB
+network adapters, where skbuff alignment is often in the middle of a
+4-byte dword.
 
-Finally, add a flag to be used by these implementations if they
-allocated a temporary buffer so it can be freed properly when unmapping.
+To avoid this, allocate a temporary buffer for the DMA if the provided
+buffer isn't sufficiently aligned.
 
 Signed-off-by: Robert Morell <rmorell@nvidia.com>
 ---
- drivers/usb/core/hcd.c  |   25 +++++++++++++++++++++----
- include/linux/usb.h     |    1 +
- include/linux/usb/hcd.h |   15 +++++++++++++++
- 3 files changed, 37 insertions(+), 4 deletions(-)
+ drivers/usb/host/ehci-tegra.c |   92 +++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 92 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index 5cca00a..a1dd23e 100644
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -1263,7 +1263,15 @@ static void hcd_free_coherent(struct usb_bus *bus, dma_addr_t *dma_handle,
- 	*dma_handle = 0;
- }
+diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+index 21c58df..4aa484b 100644
+--- a/drivers/usb/host/ehci-tegra.c
++++ b/drivers/usb/host/ehci-tegra.c
+@@ -32,6 +32,8 @@
+ #define TEGRA_USB_USBMODE_HOST			(3 << 0)
+ #define TEGRA_USB_PORTSC1_PTC(x)		(((x) & 0xf) << 16)
  
--static void unmap_urb_for_dma(struct usb_hcd *hcd, struct urb *urb)
-+static void unmap_urb_for_dma(struct usb_hcd *hcd, struct urb *urb, int status)
++#define TEGRA_USB_DMA_ALIGN 32
++
+ struct tegra_ehci_context {
+ 	bool valid;
+ 	u32 command;
+@@ -456,6 +458,94 @@ static int tegra_ehci_bus_resume(struct usb_hcd *hcd)
+ }
+ #endif
+ 
++struct temp_buffer {
++	void *kmalloc_ptr;
++	void *old_xfer_buffer;
++	u8 data[0];
++};
++
++static void free_temp_buffer(struct urb *urb, int status)
 +{
-+	if (hcd->driver->unmap_urb_for_dma)
-+		hcd->driver->unmap_urb_for_dma(hcd, urb, status);
-+	else
-+		usb_hcd_unmap_urb_for_dma(hcd, urb);
++	enum dma_data_direction dir;
++	struct temp_buffer *temp;
++
++	if (!(urb->transfer_flags & URB_ALIGNED_TEMP_BUFFER))
++		return;
++
++	dir = usb_urb_dir_in(urb) ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
++
++	temp = container_of(urb->transfer_buffer, struct temp_buffer,
++			    data);
++
++	if (dir == DMA_FROM_DEVICE && !status)
++		memcpy(temp->old_xfer_buffer, temp->data,
++		       urb->transfer_buffer_length);
++	urb->transfer_buffer = temp->old_xfer_buffer;
++	kfree(temp->kmalloc_ptr);
++
++	urb->transfer_flags &= ~URB_ALIGNED_TEMP_BUFFER;
 +}
 +
-+void usb_hcd_unmap_urb_for_dma(struct usb_hcd *hcd, struct urb *urb)
- {
- 	enum dma_data_direction dir;
- 
-@@ -1311,6 +1319,15 @@ static void unmap_urb_for_dma(struct usb_hcd *hcd, struct urb *urb)
- static int map_urb_for_dma(struct usb_hcd *hcd, struct urb *urb,
- 			   gfp_t mem_flags)
- {
-+	if (hcd->driver->map_urb_for_dma)
-+		return hcd->driver->map_urb_for_dma(hcd, urb, mem_flags);
-+	else
-+		return usb_hcd_map_urb_for_dma(hcd, urb, mem_flags);
++static int alloc_temp_buffer(struct urb *urb, gfp_t mem_flags)
++{
++	enum dma_data_direction dir;
++	struct temp_buffer *temp, *kmalloc_ptr;
++	size_t kmalloc_size;
++	void *data;
++
++	if (urb->num_sgs || urb->sg ||
++	    urb->transfer_buffer_length == 0 ||
++	    !((uintptr_t)urb->transfer_buffer & (TEGRA_USB_DMA_ALIGN - 1)))
++		return 0;
++
++	dir = usb_urb_dir_in(urb) ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
++
++	/* Allocate a buffer with enough padding for alignment */
++	kmalloc_size = urb->transfer_buffer_length +
++		sizeof(struct temp_buffer) + TEGRA_USB_DMA_ALIGN - 1;
++
++	kmalloc_ptr = kmalloc(kmalloc_size, mem_flags);
++	if (!kmalloc_ptr)
++		return -ENOMEM;
++
++	/* Position our struct temp_buffer such that data is aligned */
++	temp = PTR_ALIGN(kmalloc_ptr + 1, TEGRA_USB_DMA_ALIGN) - 1;
++
++	temp->kmalloc_ptr = kmalloc_ptr;
++	temp->old_xfer_buffer = urb->transfer_buffer;
++	if (dir == DMA_TO_DEVICE)
++		memcpy(temp->data, urb->transfer_buffer,
++		       urb->transfer_buffer_length);
++	urb->transfer_buffer = temp->data;
++
++	urb->transfer_flags |= URB_ALIGNED_TEMP_BUFFER;
++
++	return 0;
 +}
 +
-+int usb_hcd_map_urb_for_dma(struct usb_hcd *hcd, struct urb *urb,
-+			    gfp_t mem_flags)
++static int tegra_ehci_map_urb_for_dma(struct usb_hcd *hcd, struct urb *urb,
++				      gfp_t mem_flags)
 +{
- 	enum dma_data_direction dir;
- 	int ret = 0;
- 
-@@ -1400,7 +1417,7 @@ static int map_urb_for_dma(struct usb_hcd *hcd, struct urb *urb,
- 		}
- 		if (ret && (urb->transfer_flags & (URB_SETUP_MAP_SINGLE |
- 				URB_SETUP_MAP_LOCAL)))
--			unmap_urb_for_dma(hcd, urb);
-+			usb_hcd_unmap_urb_for_dma(hcd, urb);
- 	}
- 	return ret;
- }
-@@ -1441,7 +1458,7 @@ int usb_hcd_submit_urb (struct urb *urb, gfp_t mem_flags)
- 		if (likely(status == 0)) {
- 			status = hcd->driver->urb_enqueue(hcd, urb, mem_flags);
- 			if (unlikely(status))
--				unmap_urb_for_dma(hcd, urb);
-+				unmap_urb_for_dma(hcd, urb, status);
- 		}
- 	}
- 
-@@ -1547,7 +1564,7 @@ void usb_hcd_giveback_urb(struct usb_hcd *hcd, struct urb *urb, int status)
- 			!status))
- 		status = -EREMOTEIO;
- 
--	unmap_urb_for_dma(hcd, urb);
-+	unmap_urb_for_dma(hcd, urb, status);
- 	usbmon_urb_complete(&hcd->self, urb, status);
- 	usb_unanchor_urb(urb);
- 
-diff --git a/include/linux/usb.h b/include/linux/usb.h
-index 35fe6ab..6d4566e 100644
---- a/include/linux/usb.h
-+++ b/include/linux/usb.h
-@@ -975,6 +975,7 @@ extern int usb_disabled(void);
- #define URB_SETUP_MAP_SINGLE	0x00100000	/* Setup packet DMA mapped */
- #define URB_SETUP_MAP_LOCAL	0x00200000	/* HCD-local setup packet */
- #define URB_DMA_SG_COMBINED	0x00400000	/* S-G entries were combined */
-+#define URB_ALIGNED_TEMP_BUFFER	0x00800000	/* Temp buffer was alloc'd */
- 
- struct usb_iso_packet_descriptor {
- 	unsigned int offset;
-diff --git a/include/linux/usb/hcd.h b/include/linux/usb/hcd.h
-index 3b571f1..fb3321d 100644
---- a/include/linux/usb/hcd.h
-+++ b/include/linux/usb/hcd.h
-@@ -233,6 +233,18 @@ struct hc_driver {
- 	int	(*urb_dequeue)(struct usb_hcd *hcd,
- 				struct urb *urb, int status);
- 
-+	/* (optional) these hooks allow an HCD to override the default DMA
-+	 * mapping and unmapping routines.  In general, they shouldn't be
-+	 * necessary unless the host controller has special DMA requirements,
-+	 * such as alignment contraints.  If these are not specified, the
-+	 * general usb_hcd_(un)?map_urb_for_dma functions will be used instead
-+	 * (and it may be a good idea to call these functions in your HCD
-+	 * implementation) */
-+	int	(*map_urb_for_dma)(struct usb_hcd *hcd, struct urb *urb,
-+				   gfp_t mem_flags);
-+	void    (*unmap_urb_for_dma)(struct usb_hcd *hcd, struct urb *urb,
-+				     int status);
++	int ret;
 +
- 	/* hw synch, freeing endpoint resources that urb_dequeue can't */
- 	void	(*endpoint_disable)(struct usb_hcd *hcd,
- 			struct usb_host_endpoint *ep);
-@@ -327,6 +339,9 @@ extern void usb_hcd_unlink_urb_from_ep(struct usb_hcd *hcd, struct urb *urb);
- 
- extern int usb_hcd_submit_urb(struct urb *urb, gfp_t mem_flags);
- extern int usb_hcd_unlink_urb(struct urb *urb, int status);
-+extern int usb_hcd_map_urb_for_dma(struct usb_hcd *hcd, struct urb *urb,
-+		gfp_t mem_flags);
-+extern void usb_hcd_unmap_urb_for_dma(struct usb_hcd *hcd, struct urb *urb);
- extern void usb_hcd_giveback_urb(struct usb_hcd *hcd, struct urb *urb,
- 		int status);
- extern void usb_hcd_flush_endpoint(struct usb_device *udev,
++	ret = alloc_temp_buffer(urb, mem_flags);
++	if (ret)
++		return ret;
++
++	ret = usb_hcd_map_urb_for_dma(hcd, urb, mem_flags);
++	if (ret)
++		free_temp_buffer(urb, ret);
++
++	return ret;
++}
++
++static void tegra_ehci_unmap_urb_for_dma(struct usb_hcd *hcd, struct urb *urb,
++					 int status)
++{
++	usb_hcd_unmap_urb_for_dma(hcd, urb);
++	free_temp_buffer(urb, status);
++}
++
+ static const struct hc_driver tegra_ehci_hc_driver = {
+ 	.description		= hcd_name,
+ 	.product_desc		= "Tegra EHCI Host Controller",
+@@ -471,6 +561,8 @@ static const struct hc_driver tegra_ehci_hc_driver = {
+ 	.shutdown		= tegra_ehci_shutdown,
+ 	.urb_enqueue		= ehci_urb_enqueue,
+ 	.urb_dequeue		= ehci_urb_dequeue,
++	.map_urb_for_dma	= tegra_ehci_map_urb_for_dma,
++	.unmap_urb_for_dma	= tegra_ehci_unmap_urb_for_dma,
+ 	.endpoint_disable	= ehci_endpoint_disable,
+ 	.endpoint_reset		= ehci_endpoint_reset,
+ 	.get_frame_number	= ehci_get_frame,
 -- 
 1.7.2.2
 
