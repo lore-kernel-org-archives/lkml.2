@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751559Ab1AFIEv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 03:04:51 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:40272 "EHLO mprc.pku.edu.cn"
+	id S1751635Ab1AFIFX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 03:05:23 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:57414 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751129Ab1AFIEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 03:04:48 -0500
+	id S1751257Ab1AFIFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 03:05:19 -0500
 From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 References: <01de01cbad77$3dbed0a0$b93c71e0$@mprc.pku.edu.cn>
 In-Reply-To: <01de01cbad77$3dbed0a0$b93c71e0$@mprc.pku.edu.cn>
 Subject: RE: [PATCHv1 0/8] unicore32 machine related files: summary
-Date: Thu, 6 Jan 2011 16:04:49 +0800
-Message-ID: <01e801cbad78$63e95d30$2bbc1790$@mprc.pku.edu.cn>
+Date: Thu, 6 Jan 2011 16:05:19 +0800
+Message-ID: <01ea01cbad78$7603ea80$620bbf80$@mprc.pku.edu.cn>
 MIME-Version: 1.0
 Content-Type: text/plain;
 	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQD5q7uzdbzaRxzFKhxkjRMpQze/MJVnmTcQ
+Thread-Index: AQD5q7uzdbzaRxzFKhxkjRMpQze/MJVnmVMA
 Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCHv1 5/8] unicore32 machine related files: fb driver
+[PATCHv1 6/8] unicore32 machine related files: ac97
 From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 
-Patch 5 implements frame buffer driver.
+Patch 6 implements ac97 driver.
 
 Signed-off-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 ---
- drivers/staging/puv3/puv3_unifb.c |  972 +++++++++++++++++++++++++++++++++++++
- include/linux/fb.h                |    2 +
- 2 files changed, 974 insertions(+), 0 deletions(-)
+ drivers/staging/puv3/puv3_ac97.c |  383 ++++++++++++++++++++++++++++++++
+ drivers/staging/puv3/puv3_pcm.c  |  449 ++++++++++++++++++++++++++++++++++++++
+ drivers/staging/puv3/puv3_pcm.h  |   33 +++
+ 3 files changed, 865 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/puv3/puv3_unifb.c b/drivers/staging/puv3/puv3_unifb.c
+diff --git a/drivers/staging/puv3/puv3_ac97.c b/drivers/staging/puv3/puv3_ac97.c
 new file mode 100644
-index 0000000..123cf6d
+index 0000000..f02707e
 --- /dev/null
-+++ b/drivers/staging/puv3/puv3_unifb.c
-@@ -0,0 +1,972 @@
++++ b/drivers/staging/puv3/puv3_ac97.c
+@@ -0,0 +1,383 @@
 +/*
-+ * linux/drivers/staging/puv3/puv3_unifb.c
++ * linux/drivers/staging/puv3/puv3_ac97.c
 + *
 + * Code specific to PKUnity SoC and UniCore ISA
 + *
@@ -53,979 +54,871 @@ index 0000000..123cf6d
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + *
-+ * Based on: drivers/video/vfb.c
++ * Based on: sound/arm/pxa2xx-ac97.c
 + *
 + * Contributors & Additions/Fixes:
-+ *     2008-12-11: First version by ZHONG Qi
++ *     2009-07-30: enhance the PM support, resume/suspend can operate
++ *                 while ac97 is working by ZHONG Qi
++ *     2009-07-23: cause the ac97's flaw, only support fix sample rate
++ *			by ZHONG Qi
++ *     2009-07-23: add ac97 PM support by ZHONG Qi
++ *     2009-03-11: First version by ZHONG Qi
 + *
 + * TODO:
++ *     1. local_ac97_read, local_ac97_write and puv3_codec_regs
++ *        are involved for fixing bug, about reseting codec automatically
 + */
 +
++#include <linux/init.h>
 +#include <linux/module.h>
 +#include <linux/kernel.h>
-+#include <linux/errno.h>
-+#include <linux/string.h>
-+#include <linux/mm.h>
-+#include <linux/vmalloc.h>
-+#include <linux/delay.h>
-+#include <linux/interrupt.h>
 +#include <linux/platform_device.h>
++#include <linux/interrupt.h>
++#include <linux/wait.h>
 +#include <linux/clk.h>
-+#include <linux/fb.h>
-+#include <linux/init.h>
-+#include <linux/console.h>
++#include <linux/delay.h>
 +
++#include <sound/core.h>
++#include <sound/pcm.h>
++#include <sound/ac97_codec.h>
++#include <sound/initval.h>
++
++#include <asm/irq.h>
++#include <linux/mutex.h>
 +#include <asm/mach/hardware.h>
 +
-+static char *unifb_option = NULL;
-+static unsigned long unifb_regs[10];
++#include "puv3_pcm.h"
 +
-+/*
-+ * cause UNIGFX don not have EDID
-+ * all the modes are organized as follow
-+ */
-+static const struct fb_videomode unifb_modes[] = {
-+	/* 0 640x480-60 VESA */
-+	{ "640x480@60",  60,  640, 480,  25175000,  48, 16, 34, 10,  96, 1,
-+	  0, FB_VMODE_NONINTERLACED, FB_MODE_IS_VESA },
-+	/* 1 640x480-75 VESA */
-+	{ "640x480@75",  75,  640, 480,  31500000, 120, 16, 18,  1,  64, 1,
-+	  0, FB_VMODE_NONINTERLACED, FB_MODE_IS_VESA },
-+	/* 2 800x600-60 VESA */
-+	{ "800x600@60",  60,  800, 600,  40000000,  88, 40, 26,  1, 128, 1,
-+	  0, FB_VMODE_NONINTERLACED, FB_MODE_IS_VESA },
-+	/* 3 800x600-75 VESA */
-+	{ "800x600@75",  75,  800, 600,  49500000, 160, 16, 23,  1,  80, 1,
-+	  0, FB_VMODE_NONINTERLACED, FB_MODE_IS_VESA },
-+	/* 4 1024x768-60 VESA */
-+	{ "1024x768@60", 60, 1024, 768,  65000000, 160, 24, 34,  3, 136, 1,
-+	  0, FB_VMODE_NONINTERLACED, FB_MODE_IS_VESA },
-+	/* 5 1024x768-75 VESA */
-+	{ "1024x768@75", 75, 1024, 768,  78750000, 176, 16, 30,  1,  96, 1,
-+	  0, FB_VMODE_NONINTERLACED, FB_MODE_IS_VESA },
-+	/* 6 1280x960-60 VESA */
-+	{ "1280x960@60", 60, 1280, 960, 108000000, 312, 96, 38,  1, 112, 1,
-+	  0, FB_VMODE_NONINTERLACED, FB_MODE_IS_VESA },
-+	/* 7 1440x900-60 VESA */
-+	{ "1440x900@60", 60, 1440, 900, 106500000, 232, 80, 30,  3, 152, 1,
-+	  0, FB_VMODE_NONINTERLACED, FB_MODE_IS_VESA },
-+	/* 8 FIXME 9 1024x600-60 VESA UNTESTED */
-+	{ "1024x600@60", 60, 1024, 600,  50650000, 160, 24, 26,  1, 136, 1,
-+	  0, FB_VMODE_NONINTERLACED, FB_MODE_IS_VESA },
-+	/* 9 FIXME 10 1024x600-75 VESA UNTESTED */
-+	{ "1024x600@75", 75, 1024, 600,  61500000, 176, 16, 23,  1,  96, 1,
-+	  0, FB_VMODE_NONINTERLACED, FB_MODE_IS_VESA },
-+	/* 10 FIXME 11 1366x768-60 VESA UNTESTED */
-+	{ "1366x768@60", 60, 1366, 768,  85500000, 256, 58, 18,  1,  112, 3,
-+	  0, FB_VMODE_NONINTERLACED, FB_MODE_IS_VESA },
++static DEFINE_MUTEX(car_mutex);
++
++typedef struct {
++	int (*startup)(struct snd_pcm_substream *, void *);
++	void (*shutdown)(struct snd_pcm_substream *, void *);
++	void (*suspend)(void *);
++	void (*resume)(void *);
++	void *priv;
++} puv3_audio_ops_t;
++
++unsigned short puv3_codec_regs[64] = {
++	0x5990, 0x8000, 0x8000, 0x8000, 0x0000, 0x8000, 0x8008, 0x8008,
++	0x8808, 0x8808, 0x8808, 0x8808, 0x8808, 0x0000, 0x8000, 0x0000,
++	0x0000, 0x0000, 0x0000, 0x000f, 0x0607, 0x0410, 0xbb80, 0x0000,
++	0x0000, 0xbb80, 0x0000, 0x0000, 0x0000, 0x2000, 0x0000, 0x0000,
++	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
++	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
++	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x2000, 0x2000, 0x000d,
++	0x044c, 0x044c, 0x0800, 0x0800, 0x0003, 0x0000, 0x0000, 0X4740,
 +};
 +
-+    /*
-+     *  RAM we reserve for the frame buffer. This defines the maximum screen
-+     *  size
-+     *
-+     *  The default can be overridden if the driver is compiled as a module
-+     */
-+#define VIDEOMEMSIZE	(4*1024*1024)	/* 4 MB for 1024*768*32b */
-+
-+static void *videomemory;
-+static u_long videomemorysize = VIDEOMEMSIZE;
-+module_param(videomemorysize, ulong, 0);
-+
-+static struct fb_var_screeninfo unifb_default = {
-+	.xres =		640,
-+	.yres =		480,
-+	.xres_virtual =	640,
-+	.yres_virtual =	480,
-+	.bits_per_pixel = 16,
-+	.red =		{ 11, 5, 0 },
-+	.green =	{ 5,  6, 0 },
-+	.blue =		{ 0,  5, 0 },
-+	.activate =	FB_ACTIVATE_NOW,
-+	.height =	-1,
-+	.width =	-1,
-+	.pixclock =	25175000,
-+	.left_margin =	48,
-+	.right_margin =	16,
-+	.upper_margin =	33,
-+	.lower_margin =	10,
-+	.hsync_len =	96,
-+	.vsync_len =	2,
-+	.vmode =	FB_VMODE_NONINTERLACED,
-+};
-+
-+static struct fb_fix_screeninfo unifb_fix = {
-+	.id =		"UNIGFX FB",
-+	.type =		FB_TYPE_PACKED_PIXELS,
-+	.visual =	FB_VISUAL_TRUECOLOR,
-+	.xpanstep =	1,
-+	.ypanstep =	1,
-+	.ywrapstep =	1,
-+	.accel =	FB_ACCEL_NONE,
-+};
-+
-+static int unifb_enable __initdata = 1;	/* enable by default */
-+module_param(unifb_enable, bool, 0);
-+
-+static int unifb_check_var(struct fb_var_screeninfo *var,
-+			 struct fb_info *info);
-+static int unifb_set_par(struct fb_info *info);
-+static int unifb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
-+			 u_int transp, struct fb_info *info);
-+static int unifb_pan_display(struct fb_var_screeninfo *var,
-+			   struct fb_info *info);
-+static int unifb_mmap(struct fb_info *info,
-+		    struct vm_area_struct *vma);
-+
-+#ifdef CONFIG_PUV3_UNIGFX_HWACCEL
-+static void unifb_sync(void)
++/* TODO This is unnecessary, except for fixing bug */
++unsigned short local_ac97_read(unsigned short reg)
 +{
-+	/* TODO: may, this can be replaced by interrupt */
-+	int cnt;
++	return puv3_codec_regs[reg/2];
++}
 +
-+	for (cnt = 0; cnt < 0x10000000; cnt++) {
-+		if (UGE_COMMAND & 0x1000000)
-+			return;
++/* TODO This is unnecessary, except for fixing bug */
++void local_ac97_write(unsigned short reg, unsigned short val)
++{
++	int i = 1000;
++
++	puv3_codec_regs[reg/2] = val;
++
++	PKUNITY_AC97_CRAC = AC97_CODEC_REG(reg) | AC97_CODEC_VAL(val);
++
++	while (!(PKUNITY_AC97_CONR & AC97_CODEC_WRITECOMPLETE)) {
++		if (!(i--)) {
++			printk(KERN_WARNING "AC97: %s timeout\n", __func__);
++			break;
++		}
++		udelay(1);
 +	}
-+
-+	if (cnt > 0x8000000)
-+		printk(KERN_WARNING "Warning: UniGFX GE time out ...\n");
 +}
 +
-+static void unifb_prim_fillrect(struct fb_info *info,
-+				const struct fb_fillrect *region)
++static unsigned short puv3_ac97_read(struct snd_ac97 *ac97, unsigned short reg)
 +{
-+	int awidth = region->width;
-+	int aheight = region->height;
-+	int m_iBpp = info->var.bits_per_pixel;
-+	int screen_width = info->var.xres;
-+	int src_sel = 1;	/* from fg_color */
-+	int pat_sel = 1;
-+	int src_x0 = 0;
-+	int dst_x0 = region->dx;
-+	int src_y0 = 0;
-+	int dst_y0 = region->dy;
-+	int rop_alpha_sel = 0;
-+	int rop_alpha_code = 0xCC;
-+	int x_dir = 1;
-+	int y_dir = 1;
-+	int alpha_r = 0;
-+	int alpha_sel = 0;
-+	int dst_pitch = screen_width * (m_iBpp / 8);
-+	int dst_offset = dst_y0 * dst_pitch + dst_x0 * (m_iBpp / 8);
-+	int src_pitch = screen_width * (m_iBpp / 8);
-+	int src_offset = src_y0 * src_pitch + src_x0 * (m_iBpp / 8);
-+	unsigned int command = 0;
-+	int clip_region = 0;
-+	int clip_en = 0;
-+	int tp_en = 0;
-+	int fg_color = 0;
-+	int bottom = info->var.yres - 1;
-+	int right = info->var.xres - 1;
-+	int top = 0;
-+
-+	bottom = (bottom << 16) | right;
-+	command = (rop_alpha_sel << 26) | (pat_sel << 18) | (src_sel << 16)
-+		| (x_dir << 20) | (y_dir << 21) | (command << 24)
-+		| (clip_region << 23) | (clip_en << 22) | (tp_en << 27);
-+	src_pitch = (dst_pitch << 16) | src_pitch;
-+	awidth = awidth | (aheight << 16);
-+	alpha_r = ((rop_alpha_code & 0xff) << 8) | (alpha_r & 0xff)
-+		| (alpha_sel << 16);
-+	src_x0 = (src_x0 & 0x1fff) | ((src_y0 & 0x1fff) << 16);
-+	dst_x0 = (dst_x0 & 0x1fff) | ((dst_y0 & 0x1fff) << 16);
-+	fg_color = region->color;
-+
-+	unifb_sync();
-+
-+	UGE_FCOLOR = ((u32 *)(info->pseudo_palette))[fg_color];
-+	UGE_BCOLOR = 0;
-+	UGE_PITCH = src_pitch;
-+	UGE_SRCSTART = src_offset;
-+	UGE_DSTSTART = dst_offset;
-+	UGE_WIDHEIGHT = awidth;
-+	UGE_CLIP0 = top;
-+	UGE_CLIP1 = bottom;
-+	UGE_ROPALPHA = alpha_r;
-+	UGE_SRCXY = src_x0;
-+	UGE_DSTXY = dst_x0;
-+	UGE_COMMAND = command;
++	return puv3_codec_regs[reg/2];
 +}
 +
-+static void unifb_fillrect(struct fb_info *info,
-+		const struct fb_fillrect *region)
++static void puv3_ac97_write(struct snd_ac97 *ac97, unsigned short reg,
++		unsigned short val)
 +{
-+	struct fb_fillrect modded;
-+	int vxres, vyres;
++	int i = 1000;
 +
-+	if (info->flags & FBINFO_HWACCEL_DISABLED) {
-+		sys_fillrect(info, region);
-+		return;
-+	}
++	mutex_lock(&car_mutex);
 +
-+	vxres = info->var.xres_virtual;
-+	vyres = info->var.yres_virtual;
-+
-+	memcpy(&modded, region, sizeof(struct fb_fillrect));
-+
-+	if (!modded.width || !modded.height ||
-+	    modded.dx >= vxres || modded.dy >= vyres)
-+		return;
-+
-+	if (modded.dx + modded.width > vxres)
-+		modded.width = vxres - modded.dx;
-+	if (modded.dy + modded.height > vyres)
-+		modded.height = vyres - modded.dy;
-+
-+	unifb_prim_fillrect(info, &modded);
-+}
-+
-+static void unifb_prim_copyarea(struct fb_info *info,
-+				const struct fb_copyarea *area)
-+{
-+	int awidth = area->width;
-+	int aheight = area->height;
-+	int m_iBpp = info->var.bits_per_pixel;
-+	int screen_width = info->var.xres;
-+	int src_sel = 2;	/* from mem */
-+	int pat_sel = 0;
-+	int src_x0 = area->sx;
-+	int dst_x0 = area->dx;
-+	int src_y0 = area->sy;
-+	int dst_y0 = area->dy;
-+
-+	int rop_alpha_sel = 0;
-+	int rop_alpha_code = 0xCC;
-+	int x_dir = 1;
-+	int y_dir = 1;
-+
-+	int alpha_r = 0;
-+	int alpha_sel = 0;
-+	int dst_pitch = screen_width * (m_iBpp / 8);
-+	int dst_offset = dst_y0 * dst_pitch + dst_x0 * (m_iBpp / 8);
-+	int src_pitch = screen_width * (m_iBpp / 8);
-+	int src_offset = src_y0 * src_pitch + src_x0 * (m_iBpp / 8);
-+	unsigned int command = 0;
-+	int clip_region = 0;
-+	int clip_en = 1;
-+	int tp_en = 0;
-+	int top = 0;
-+	int bottom = info->var.yres;
-+	int right = info->var.xres;
-+	int fg_color = 0;
-+	int bg_color = 0;
-+
-+	if (src_x0 < 0)
-+		src_x0 = 0;
-+	if (src_y0 < 0)
-+		src_y0 = 0;
-+
-+	if (src_y0 - dst_y0 > 0) {
-+		y_dir = 1;
-+	} else {
-+		y_dir = 0;
-+		src_offset = (src_y0 + aheight) * src_pitch +
-+				src_x0 * (m_iBpp / 8);
-+		dst_offset = (dst_y0 + aheight) * dst_pitch +
-+				dst_x0 * (m_iBpp / 8);
-+		src_y0 += aheight;
-+		dst_y0 += aheight;
-+	}
-+
-+	command = (rop_alpha_sel << 26) | (pat_sel << 18) | (src_sel << 16) |
-+		(x_dir << 20) | (y_dir << 21) | (command << 24) |
-+		(clip_region << 23) | (clip_en << 22) | (tp_en << 27);
-+	src_pitch = (dst_pitch << 16) | src_pitch;
-+	awidth = awidth | (aheight << 16);
-+	alpha_r = ((rop_alpha_code & 0xff) << 8) | (alpha_r & 0xff) |
-+		(alpha_sel << 16);
-+	src_x0 = (src_x0 & 0x1fff) | ((src_y0 & 0x1fff) << 16);
-+	dst_x0 = (dst_x0 & 0x1fff) | ((dst_y0 & 0x1fff) << 16);
-+	bottom = (bottom << 16) | right;
-+
-+	unifb_sync();
-+
-+	UGE_PITCH = src_pitch;
-+	UGE_SRCSTART = src_offset;
-+	UGE_DSTSTART = dst_offset;
-+	UGE_WIDHEIGHT = awidth;
-+	UGE_CLIP0 = top;
-+	UGE_CLIP1 = bottom;
-+	UGE_BCOLOR = bg_color;
-+	UGE_FCOLOR = fg_color;
-+	UGE_ROPALPHA = alpha_r;
-+	UGE_SRCXY = src_x0;
-+	UGE_DSTXY = dst_x0;
-+	UGE_COMMAND = command;
-+}
-+
-+static void unifb_copyarea(struct fb_info *info, const struct fb_copyarea *area)
-+{
-+	struct fb_copyarea modded;
-+	u32 vxres, vyres;
-+	modded.sx = area->sx;
-+	modded.sy = area->sy;
-+	modded.dx = area->dx;
-+	modded.dy = area->dy;
-+	modded.width = area->width;
-+	modded.height = area->height;
-+
-+	if (info->flags & FBINFO_HWACCEL_DISABLED) {
-+		sys_copyarea(info, area);
-+		return;
-+	}
-+
-+	vxres = info->var.xres_virtual;
-+	vyres = info->var.yres_virtual;
-+
-+	if (!modded.width || !modded.height ||
-+	    modded.sx >= vxres || modded.sy >= vyres ||
-+	    modded.dx >= vxres || modded.dy >= vyres)
-+		return;
-+
-+	if (modded.sx + modded.width > vxres)
-+		modded.width = vxres - modded.sx;
-+	if (modded.dx + modded.width > vxres)
-+		modded.width = vxres - modded.dx;
-+	if (modded.sy + modded.height > vyres)
-+		modded.height = vyres - modded.sy;
-+	if (modded.dy + modded.height > vyres)
-+		modded.height = vyres - modded.dy;
-+
-+	unifb_prim_copyarea(info, &modded);
-+}
-+
-+static void unifb_imageblit(struct fb_info *info, const struct fb_image *image)
-+{
-+	sys_imageblit(info, image);
-+}
-+#endif
-+
-+static struct fb_ops unifb_ops = {
-+	.fb_read        = fb_sys_read,
-+	.fb_write       = fb_sys_write,
-+	.fb_check_var	= unifb_check_var,
-+	.fb_set_par	= unifb_set_par,
-+	.fb_setcolreg	= unifb_setcolreg,
-+	.fb_pan_display	= unifb_pan_display,
-+#ifdef CONFIG_PUV3_UNIGFX_HWACCEL
-+	.fb_fillrect	= unifb_fillrect,
-+	.fb_copyarea	= unifb_copyarea,
-+	.fb_imageblit   = unifb_imageblit,
-+#else
-+	.fb_fillrect	= sys_fillrect,
-+	.fb_copyarea	= sys_copyarea,
-+	.fb_imageblit	= sys_imageblit,
-+#endif
-+	.fb_mmap	= unifb_mmap,
-+};
-+
-+    /*
-+     *  Internal routines
-+     */
-+
-+static u_long get_line_length(int xres_virtual, int bpp)
-+{
-+	u_long length;
-+
-+	length = xres_virtual * bpp;
-+	length = (length + 31) & ~31;
-+	length >>= 3;
-+	return length;
-+}
-+
-+    /*
-+     *  Setting the video mode has been split into two parts.
-+     *  First part, xxxfb_check_var, must not write anything
-+     *  to hardware, it should only verify and adjust var.
-+     *  This means it doesn't alter par but it does use hardware
-+     *  data from it to check this var.
-+     */
-+
-+static int unifb_check_var(struct fb_var_screeninfo *var,
-+			 struct fb_info *info)
-+{
-+	u_long line_length;
-+
-+	/*
-+	 *  FB_VMODE_CONUPDATE and FB_VMODE_SMOOTH_XPAN are equal!
-+	 *  as FB_VMODE_SMOOTH_XPAN is only used internally
-+	 */
-+
-+	if (var->vmode & FB_VMODE_CONUPDATE) {
-+		var->vmode |= FB_VMODE_YWRAP;
-+		var->xoffset = info->var.xoffset;
-+		var->yoffset = info->var.yoffset;
-+	}
-+
-+	/*
-+	 *  Some very basic checks
-+	 */
-+	if (!var->xres)
-+		var->xres = 1;
-+	if (!var->yres)
-+		var->yres = 1;
-+	if (var->xres > var->xres_virtual)
-+		var->xres_virtual = var->xres;
-+	if (var->yres > var->yres_virtual)
-+		var->yres_virtual = var->yres;
-+	if (var->bits_per_pixel <= 1)
-+		var->bits_per_pixel = 1;
-+	else if (var->bits_per_pixel <= 8)
-+		var->bits_per_pixel = 8;
-+	else if (var->bits_per_pixel <= 16)
-+		var->bits_per_pixel = 16;
-+	else if (var->bits_per_pixel <= 24)
-+		var->bits_per_pixel = 24;
-+	else if (var->bits_per_pixel <= 32)
-+		var->bits_per_pixel = 32;
++	if (reg == 0x2 || reg == 0x18)
++		puv3_codec_regs[reg/2] = val & 0x9F1F;
 +	else
-+		return -EINVAL;
++		puv3_codec_regs[reg/2] = val;
 +
-+	if (var->xres_virtual < var->xoffset + var->xres)
-+		var->xres_virtual = var->xoffset + var->xres;
-+	if (var->yres_virtual < var->yoffset + var->yres)
-+		var->yres_virtual = var->yoffset + var->yres;
++	PKUNITY_AC97_CRAC = AC97_CODEC_REG(reg) | AC97_CODEC_VAL(val);
 +
-+	/*
-+	 *  Memory limit
-+	 */
-+	line_length =
-+	    get_line_length(var->xres_virtual, var->bits_per_pixel);
-+	if (line_length * var->yres_virtual > videomemorysize)
-+		return -ENOMEM;
-+
-+	/*
-+	 * Now that we checked it we alter var. The reason being is that the
-+	 * video mode passed in might not work but slight changes to it might
-+	 * make it work. This way we let the user know what is acceptable.
-+	 */
-+	switch (var->bits_per_pixel) {
-+	case 1:
-+	case 8:
-+		var->red.offset = 0;
-+		var->red.length = 8;
-+		var->green.offset = 0;
-+		var->green.length = 8;
-+		var->blue.offset = 0;
-+		var->blue.length = 8;
-+		var->transp.offset = 0;
-+		var->transp.length = 0;
-+		break;
-+	case 16:		/* RGBA 5551 */
-+		if (var->transp.length) {
-+			var->red.offset = 0;
-+			var->red.length = 5;
-+			var->green.offset = 5;
-+			var->green.length = 5;
-+			var->blue.offset = 10;
-+			var->blue.length = 5;
-+			var->transp.offset = 15;
-+			var->transp.length = 1;
-+		} else {	/* RGB 565 */
-+			var->red.offset = 11;
-+			var->red.length = 5;
-+			var->green.offset = 5;
-+			var->green.length = 6;
-+			var->blue.offset = 0;
-+			var->blue.length = 5;
-+			var->transp.offset = 0;
-+			var->transp.length = 0;
++	while (!(PKUNITY_AC97_CONR & AC97_CODEC_WRITECOMPLETE)) {
++		if (!(i--)) {
++			printk(KERN_WARNING "AC97: %s timeout\n", __func__);
++			break;
 +		}
-+		break;
-+	case 24:		/* RGB 888 */
-+		var->red.offset = 0;
-+		var->red.length = 8;
-+		var->green.offset = 8;
-+		var->green.length = 8;
-+		var->blue.offset = 16;
-+		var->blue.length = 8;
-+		var->transp.offset = 0;
-+		var->transp.length = 0;
-+		break;
-+	case 32:		/* RGBA 8888 */
-+		var->red.offset = 16;
-+		var->red.length = 8;
-+		var->green.offset = 8;
-+		var->green.length = 8;
-+		var->blue.offset = 0;
-+		var->blue.length = 8;
-+		var->transp.offset = 24;
-+		var->transp.length = 8;
-+		break;
++		udelay(1);
 +	}
-+	var->red.msb_right = 0;
-+	var->green.msb_right = 0;
-+	var->blue.msb_right = 0;
-+	var->transp.msb_right = 0;
 +
-+	return 0;
++	mutex_unlock(&car_mutex);
 +}
 +
-+/* This routine actually sets the video mode. It's in here where we
-+ * the hardware state info->par and fix which can be affected by the
-+ * change in par. For this driver it doesn't do much.
-+ */
-+static int unifb_set_par(struct fb_info *info)
++static void puv3_ac97_reset(struct snd_ac97 *ac97)
 +{
-+	int hTotal, vTotal, hSyncStart, hSyncEnd, vSyncStart, vSyncEnd;
-+	int format;
++/*	int i = 3;
 +
-+#ifdef CONFIG_PUV3_PM
-+	struct clk *clk_vga;
-+	u32 pixclk = 0;
-+	int i;
++	PKUNITY_AC97_CONR = AC97_CMD_RESET;
++reset:
++	msleep(1);
 +
-+	for (i = 0; i <= 10; i++) {
-+		if    (info->var.xres         == unifb_modes[i].xres
-+		    && info->var.yres         == unifb_modes[i].yres
-+		    && info->var.upper_margin == unifb_modes[i].upper_margin
-+		    && info->var.lower_margin == unifb_modes[i].lower_margin
-+		    && info->var.left_margin  == unifb_modes[i].left_margin
-+		    && info->var.right_margin == unifb_modes[i].right_margin
-+		    && info->var.hsync_len    == unifb_modes[i].hsync_len
-+		    && info->var.vsync_len    == unifb_modes[i].vsync_len) {
-+			pixclk = unifb_modes[i].pixclock;
-+			break;
++	if ((PKUNITY_AC97_CONR & 0x2) == 2) {
++		msleep(1);
++		PKUNITY_AC97_CONR = 0x1;
++		if (i--)
++			goto reset;
++		else {
++			ac97_reset_err = -1;
++			printk("AC97 reset error!\n");
 +		}
 +	}
-+
-+	/* set clock rate */
-+	clk_vga = clk_get(NULL, "VGA_CLK");
-+	i = 0;
-+	if (pixclk != 0) {
-+		if (clk_set_rate(clk_vga, pixclk) == 0)
-+			i = 1;
-+	}
-+
-+	if (i == 0) {           /* set clock failed */
-+		info->fix = unifb_fix;
-+		info->var = unifb_default;
-+		clk_set_rate(clk_vga, unifb_default.pixclock);
-+	}
-+#endif
-+/* config DE */
-+	info->fix.line_length = get_line_length(info->var.xres_virtual,
-+						info->var.bits_per_pixel);
-+
-+	hSyncStart = info->var.xres + info->var.right_margin;
-+	hSyncEnd = hSyncStart + info->var.hsync_len;
-+	hTotal = hSyncEnd + info->var.left_margin;
-+
-+	vSyncStart = info->var.yres + info->var.lower_margin;
-+	vSyncEnd = vSyncStart + info->var.vsync_len;
-+	vTotal = vSyncEnd + info->var.upper_margin;
-+
-+	switch (info->var.bits_per_pixel) {
-+	case 8:
-+		format = UDE_CFG_DST8;
-+		break;
-+	case 16:
-+		format = UDE_CFG_DST16;
-+		break;
-+	case 24:
-+		format = UDE_CFG_DST24;
-+		break;
-+	case 32:
-+		format = UDE_CFG_DST32;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	UDE_FSA = unifb_regs[0] = PKUNITY_UNIGFX_MMAP_BASE;
-+	UDE_LS  = unifb_regs[1] = info->var.yres;
-+	UDE_PS  = unifb_regs[2] = get_line_length(info->var.xres,
-+				info->var.bits_per_pixel) >> 3;
-+				/* >> 3 for hw. */
-+	UDE_HAT = unifb_regs[3] = (hTotal << 16) | (info->var.xres);
-+	UDE_HBT = unifb_regs[4] = ((hTotal - 1) << 16) | (info->var.xres - 1);
-+	UDE_HST = unifb_regs[5] = ((hSyncEnd - 1) << 16) | (hSyncStart - 1);
-+	UDE_VAT = unifb_regs[6] = (vTotal << 16) | (info->var.yres);
-+	UDE_VBT = unifb_regs[7] = ((vTotal - 1) << 16) | (info->var.yres - 1);
-+	UDE_VST = unifb_regs[8] = ((vSyncEnd - 1) << 16) | (vSyncStart - 1);
-+	UDE_CFG = unifb_regs[9] = UDE_CFG_GDEN_ENABLE | UDE_CFG_TIMEUP_ENABLE
-+				| format | 0xC0000001;
-+
-+	return 0;
++*/
 +}
 +
-+    /*
-+     *  Set a single color register. The values supplied are already
-+     *  rounded down to the hardware's capabilities (according to the
-+     *  entries in the var structure). Return != 0 for invalid regno.
-+     */
++static struct snd_ac97_bus_ops puv3_ac97_ops = {
++	.read	= puv3_ac97_read,
++	.write	= puv3_ac97_write,
++	.reset	= puv3_ac97_reset,
++};
 +
-+static int unifb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
-+			 u_int transp, struct fb_info *info)
++static struct puv3_pcm_dma_params puv3_ac97_pcm_out = {
++	.name			= "AC97 PCM out",
++	.dev_addr		= PKUNITY_AC97_BASE + 0x20, /* OUT FIFO */
++};
++
++static struct puv3_pcm_dma_params puv3_ac97_pcm_in = {
++	.name			= "AC97 PCM in",
++	.dev_addr		= PKUNITY_AC97_BASE + 0x30, /* IN FIFO */
++};
++
++static struct snd_pcm *puv3_ac97_pcm;
++static struct snd_ac97 *puv3_ac97_ac97;
++
++static int puv3_ac97_pcm_startup(struct snd_pcm_substream *substream)
 +{
-+	if (regno >= 256)	/* no. of hw registers */
-+		return 1;
-+	/*
-+	 * Program hardware... do anything you want with transp
-+	 */
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	puv3_audio_ops_t *platform_ops;
++	int r;
 +
-+	/* grayscale works only partially under directcolor */
-+	if (info->var.grayscale) {
-+		/* grayscale = 0.30*R + 0.59*G + 0.11*B */
-+		red = green = blue =
-+		    (red * 77 + green * 151 + blue * 28) >> 8;
-+	}
++	runtime->hw.channels_min = 2;
++	runtime->hw.channels_max = 2;
 +
-+	/* Directcolor:
-+	 *   var->{color}.offset contains start of bitfield
-+	 *   var->{color}.length contains length of bitfield
-+	 *   {hardwarespecific} contains width of RAMDAC
-+	 *   cmap[X] is programmed to (X << red.offset) | (X << green.offset)
-+	 *				   | (X << blue.offset)
-+	 *   RAMDAC[X] is programmed to (red, green, blue)
-+	 *
-+	 * Pseudocolor:
-+	 *    uses offset = 0 && length = RAMDAC register width.
-+	 *    var->{color}.offset is 0
-+	 *    var->{color}.length contains widht of DAC
-+	 *    cmap is not used
-+	 *    RAMDAC[X] is programmed to (red, green, blue)
-+	 * Truecolor:
-+	 *    does not use DAC. Usually 3 are present.
-+	 *    var->{color}.offset contains start of bitfield
-+	 *    var->{color}.length contains length of bitfield
-+	 *    cmap is programmed to (red << red.offset) |
-+	 *				(green << green.offset) |
-+	 *				(blue << blue.offset) |
-+	 *				(transp << transp.offset)
-+	 *    RAMDAC does not exist
-+	 */
-+#define CNVT_TOHW(val, width) ((((val)<<(width))+0x7FFF-(val))>>16)
-+	switch (info->fix.visual) {
-+	case FB_VISUAL_TRUECOLOR:
-+	case FB_VISUAL_PSEUDOCOLOR:
-+		red = CNVT_TOHW(red, info->var.red.length);
-+		green = CNVT_TOHW(green, info->var.green.length);
-+		blue = CNVT_TOHW(blue, info->var.blue.length);
-+		transp = CNVT_TOHW(transp, info->var.transp.length);
-+		break;
-+	case FB_VISUAL_DIRECTCOLOR:
-+		red = CNVT_TOHW(red, 8);	/* expect 8 bit DAC */
-+		green = CNVT_TOHW(green, 8);
-+		blue = CNVT_TOHW(blue, 8);
-+		/* hey, there is bug in transp handling... */
-+		transp = CNVT_TOHW(transp, 8);
-+		break;
-+	}
-+#undef CNVT_TOHW
-+	/* Truecolor has hardware independent palette */
-+	if (info->fix.visual == FB_VISUAL_TRUECOLOR) {
-+		u32 v;
++	r = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) ?
++		AC97_RATES_FRONT_DAC : AC97_RATES_ADC;
 +
-+		if (regno >= 16)
-+			return 1;
-+
-+		v = (red << info->var.red.offset) |
-+		    (green << info->var.green.offset) |
-+		    (blue << info->var.blue.offset) |
-+		    (transp << info->var.transp.offset);
-+		switch (info->var.bits_per_pixel) {
-+		case 8:
-+			break;
-+		case 16:
-+			((u32 *) (info->pseudo_palette))[regno] = v;
-+			break;
-+		case 24:
-+		case 32:
-+			((u32 *) (info->pseudo_palette))[regno] = v;
-+			break;
-+		}
++	platform_ops = substream->pcm->card->dev->platform_data;
++	if (platform_ops && platform_ops->startup)
++		return platform_ops->startup(substream, platform_ops->priv);
++	else
 +		return 0;
-+	}
-+	return 0;
 +}
 +
-+    /*
-+     *  Pan or Wrap the Display
-+     *
-+     *  This call looks only at xoffset, yoffset and the FB_VMODE_YWRAP flag
-+     */
-+static int unifb_pan_display(struct fb_var_screeninfo *var,
-+			   struct fb_info *info)
++static void puv3_ac97_pcm_shutdown(struct snd_pcm_substream *substream)
 +{
-+	if (var->vmode & FB_VMODE_YWRAP) {
-+		if (var->yoffset < 0
-+		    || var->yoffset >= info->var.yres_virtual
-+		    || var->xoffset)
-+			return -EINVAL;
-+	} else {
-+		if (var->xoffset + var->xres > info->var.xres_virtual ||
-+		    var->yoffset + var->yres > info->var.yres_virtual)
-+			return -EINVAL;
-+	}
-+	info->var.xoffset = var->xoffset;
-+	info->var.yoffset = var->yoffset;
-+	if (var->vmode & FB_VMODE_YWRAP)
-+		info->var.vmode |= FB_VMODE_YWRAP;
-+	else
-+		info->var.vmode &= ~FB_VMODE_YWRAP;
-+	return 0;
++	puv3_audio_ops_t *platform_ops;
++
++	platform_ops = substream->pcm->card->dev->platform_data;
++	if (platform_ops && platform_ops->shutdown)
++		platform_ops->shutdown(substream, platform_ops->priv);
 +}
 +
-+int unifb_mmap(struct fb_info *info,
-+		    struct vm_area_struct *vma)
++static int puv3_ac97_pcm_prepare(struct snd_pcm_substream *substream)
 +{
-+	unsigned long size = vma->vm_end - vma->vm_start;
-+	unsigned long offset = vma->vm_pgoff << PAGE_SHIFT;
-+	unsigned long pos = info->fix.smem_start + offset;
-+
-+	if (offset + size > info->fix.smem_len)
-+		return -EINVAL;
-+
-+	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-+
-+	if (io_remap_pfn_range(vma, vma->vm_start, pos >> PAGE_SHIFT, size,
-+				vma->vm_page_prot))
-+		return -EAGAIN;
-+
-+	vma->vm_flags |= VM_RESERVED;	/* avoid to swap out this VMA */
-+	return 0;
-+
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	int reg = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) ?
++		  AC97_PCM_FRONT_DAC_RATE : AC97_PCM_LR_ADC_RATE;
++	return snd_ac97_set_rate(puv3_ac97_ac97, reg, runtime->rate);
 +}
 +
-+#ifndef MODULE
-+/*
-+ * The virtual framebuffer driver is only enabled if explicitly
-+ * requested by passing 'video=unifb:' (or any actual options).
-+ */
-+static int __init unifb_setup(char *options)
-+{
-+	char *this_opt;
-+
-+	unifb_enable = 0;
-+
-+	if (!options)
-+		return 1;
-+
-+	unifb_enable = 1;
-+
-+	if (!*options)
-+		return 1;
-+
-+	while ((this_opt = strsep(&options, ",")) != NULL) {
-+		if (!*this_opt)
-+			continue;
-+		/* Test disable for backwards compatibility */
-+		if (!strcmp(this_opt, "disable"))
-+			unifb_enable = 0;
-+	}
-+	return 1;
-+}
-+#endif  /*  MODULE  */
-+
-+    /*
-+     *  Initialisation
-+     */
-+
-+static int unifb_probe(struct platform_device *dev)
-+{
-+	struct fb_info *info;
-+	int retval = -ENOMEM;
-+
-+	/*
-+	 * For real video cards we use ioremap.
-+	 */
-+	videomemory = (void *)KUSER_UNIGFX_BASE;
-+
-+	/*
-+	 * VFB could clear memory to prevent kernel info
-+	 * leakage into userspace and set black screen
-+	 * VGA-based drivers MUST NOT clear memory if
-+	 * they want to be able to take over vgacon
-+	 */
-+	/* memset(videomemory, 0, videomemorysize); */
-+
-+	info = framebuffer_alloc(sizeof(u32)*256, &dev->dev);
-+	if (!info)
-+		goto err;
-+
-+	info->screen_base = (char __iomem *)videomemory;
-+	info->fbops = &unifb_ops;
-+
-+	retval = fb_find_mode(&info->var, info, unifb_option,
-+			      unifb_modes, 10, &unifb_modes[0], 16);
-+
-+	if (!retval || (retval == 4))
-+		info->var = unifb_default;
-+	unifb_fix.smem_start = PKUNITY_UNIGFX_MMAP_BASE;
-+	unifb_fix.smem_len = videomemorysize;
-+	unifb_fix.mmio_start = PKUNITY_UNIGFX_BASE;
-+	info->fix = unifb_fix;
-+	info->pseudo_palette = info->par;
-+	info->par = NULL;
-+	info->flags = FBINFO_FLAG_DEFAULT;
-+#ifdef CONFIG_PUV3_UNIGFX_HWACCEL
-+	info->fix.accel = FB_ACCEL_PKUNITY_UNIGFX;
-+	info->flags |= FBINFO_HWACCEL_COPYAREA | FBINFO_HWACCEL_FILLRECT;
-+#else
-+	info->flags |= FBINFO_HWACCEL_DISABLED;
-+#endif
-+
-+	retval = fb_alloc_cmap(&info->cmap, 256, 0);
-+	if (retval < 0)
-+		goto err1;
-+
-+	retval = register_framebuffer(info);
-+	if (retval < 0)
-+		goto err2;
-+	platform_set_drvdata(dev, info);
-+
-+	printk(KERN_INFO
-+	       "fb%d: Virtual frame buffer device, using %ldK of video memory\n",
-+	       info->node, videomemorysize >> 10);
-+	return 0;
-+err2:
-+	fb_dealloc_cmap(&info->cmap);
-+err1:
-+	framebuffer_release(info);
-+err:
-+	return retval;
-+}
-+
-+static int unifb_remove(struct platform_device *dev)
-+{
-+	struct fb_info *info = platform_get_drvdata(dev);
-+
-+	if (info) {
-+		unregister_framebuffer(info);
-+		fb_dealloc_cmap(&info->cmap);
-+		framebuffer_release(info);
-+	}
-+	return 0;
-+}
++static struct puv3_pcm_client puv3_ac97_pcm_client = {
++	.playback_params	= &puv3_ac97_pcm_out,
++	.capture_params		= &puv3_ac97_pcm_in,
++	.startup		= puv3_ac97_pcm_startup,
++	.shutdown		= puv3_ac97_pcm_shutdown,
++	.prepare		= puv3_ac97_pcm_prepare,
++};
 +
 +#ifdef CONFIG_PM
-+static int unifb_resume(struct platform_device *dev)
++
++static unsigned long ac97_regs[2];
++static unsigned long ac97_dma_regs[4];
++int ac97_dma_ch = 0;
++
++static int puv3_ac97_do_suspend(struct snd_card *card, pm_message_t state)
 +{
-+	int rc = 0;
++	puv3_audio_ops_t *platform_ops = card->dev->platform_data;
 +
-+	if (dev->dev.power.power_state.event == PM_EVENT_ON)
-+		return 0;
++	snd_power_change_state(card, SNDRV_CTL_POWER_D3cold);
++	snd_pcm_suspend_all(puv3_ac97_pcm);
++	snd_ac97_suspend(puv3_ac97_ac97);
++	if (platform_ops && platform_ops->suspend)
++		platform_ops->suspend(platform_ops->priv);
 +
-+	acquire_console_sem();
++	/* store DMA & ac97 */
++	ac97_dma_regs[0] = DMAC_SRCADDR(ac97_dma_ch);
++	ac97_dma_regs[1] = DMAC_DESTADDR(ac97_dma_ch);
++	ac97_dma_regs[2] = DMAC_CONTROL(ac97_dma_ch);
++	ac97_dma_regs[3] = DMAC_CONFIG(ac97_dma_ch);
 +
-+	if (dev->dev.power.power_state.event == PM_EVENT_SUSPEND) {
-+		UDE_FSA = unifb_regs[0];
-+		UDE_LS  = unifb_regs[1];
-+		UDE_PS  = unifb_regs[2];
-+		UDE_HAT = unifb_regs[3];
-+		UDE_HBT = unifb_regs[4];
-+		UDE_HST = unifb_regs[5];
-+		UDE_VAT = unifb_regs[6];
-+		UDE_VBT = unifb_regs[7];
-+		UDE_VST = unifb_regs[8];
-+		UDE_CFG = unifb_regs[9];
-+	}
-+	dev->dev.power.power_state = PMSG_ON;
-+
-+	release_console_sem();
-+
-+	return rc;
-+}
-+
-+static int unifb_suspend(struct platform_device *dev, pm_message_t mesg)
-+{
-+	if (mesg.event == dev->dev.power.power_state.event)
-+		return 0;
-+
-+	switch (mesg.event) {
-+	case PM_EVENT_FREEZE:		/* about to take snapshot */
-+	case PM_EVENT_PRETHAW:		/* before restoring snapshot */
-+		goto done;
-+	}
-+
-+	acquire_console_sem();
-+
-+	/* do nothing... */
-+
-+	release_console_sem();
-+
-+done:
-+	dev->dev.power.power_state = mesg;
++	ac97_regs[0] = PKUNITY_AC97_OUT_FIFO;
++	ac97_regs[1] = PKUNITY_AC97_IN_FIFO;
 +
 +	return 0;
 +}
++
++static int puv3_ac97_do_resume(struct snd_card *card)
++{
++	puv3_audio_ops_t *platform_ops = card->dev->platform_data;
++	int i;
++
++	if (platform_ops && platform_ops->resume)
++		platform_ops->resume(platform_ops->priv);
++	snd_ac97_resume(puv3_ac97_ac97);
++	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
++
++	/* restore DMA & codec & AC97 */
++
++	DMAC_SRCADDR(ac97_dma_ch)  = ac97_dma_regs[0];
++	DMAC_DESTADDR(ac97_dma_ch) = ac97_dma_regs[1];
++	DMAC_CONTROL(ac97_dma_ch)  = ac97_dma_regs[2];
++	DMAC_CONFIG(ac97_dma_ch)   = ac97_dma_regs[3];
++
++	for (i = 0; i < 64; i++)
++		local_ac97_write(i*2, puv3_codec_regs[i]);
++
++	PKUNITY_AC97_OCR = AC97_CMD_VPSAMPLE;	/* phone @ var sample rate */
++	PKUNITY_AC97_ICR = AC97_CMD_FCSAMPLE;	/* mic @ fix sample rate   */
++	PKUNITY_AC97_ENABLE = AC97_CMD_ENABLE;
++
++	local_ac97_write(0x2, 0x0000);
++
++	PKUNITY_AC97_OUT_FIFO  = ac97_regs[0];
++	PKUNITY_AC97_IN_FIFO   = ac97_regs[1];
++
++	return 0;
++}
++
++static int puv3_ac97_suspend(struct platform_device *dev, pm_message_t state)
++{
++	struct snd_card *card = platform_get_drvdata(dev);
++	int ret = 0;
++
++	if (card)
++		ret = puv3_ac97_do_suspend(card, PMSG_SUSPEND);
++
++	return ret;
++}
++
++static int puv3_ac97_resume(struct platform_device *dev)
++{
++	struct snd_card *card = platform_get_drvdata(dev);
++	int ret = 0;
++
++	if (card)
++		ret = puv3_ac97_do_resume(card);
++
++	return ret;
++}
++
 +#else
-+#define	unifb_resume	NULL
-+#define unifb_suspend	NULL
++#define puv3_ac97_suspend	NULL
++#define puv3_ac97_resume	NULL
 +#endif
 +
-+static struct platform_driver unifb_driver = {
-+	.probe	 = unifb_probe,
-+	.remove  = unifb_remove,
-+	.resume  = unifb_resume,
-+	.suspend = unifb_suspend,
-+	.driver  = {
-+		.name	= "unifb",
++static int __devinit puv3_ac97_probe(struct platform_device *dev)
++{
++	struct snd_card *card;
++	struct snd_ac97_bus *ac97_bus;
++	struct snd_ac97_template ac97_template;
++	int ret;
++
++	ret = -ENOMEM;
++	if (snd_card_create(SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1,
++			    THIS_MODULE, 0, &card) < 0)
++		goto err;
++
++	card->dev = &dev->dev;
++	strncpy(card->driver, dev->dev.driver->name, sizeof(card->driver));
++
++	ret = puv3_pcm_new(card, &puv3_ac97_pcm_client, &puv3_ac97_pcm);
++	if (ret)
++		goto err;
++
++	ret = snd_ac97_bus(card, 0, &puv3_ac97_ops, NULL, &ac97_bus);
++	if (ret)
++		goto err;
++	memset(&ac97_template, 0, sizeof(ac97_template));
++	ret = snd_ac97_mixer(ac97_bus, &ac97_template, &puv3_ac97_ac97);
++	if (ret)
++		goto err;
++
++	snprintf(card->shortname, sizeof(card->shortname),
++			"%s", snd_ac97_get_short_name(puv3_ac97_ac97));
++	snprintf(card->longname, sizeof(card->longname),
++			"%s (%s)", dev->dev.driver->name, card->mixername);
++
++	snd_card_set_dev(card, &dev->dev);
++	ret = snd_card_register(card);
++	if (ret == 0) {
++		platform_set_drvdata(dev, card);
++		/* phone @ var sample rate */
++		PKUNITY_AC97_OCR = AC97_CMD_VPSAMPLE;
++		/* mic @ fix sample rate   */
++		PKUNITY_AC97_ICR = AC97_CMD_FCSAMPLE;
++		PKUNITY_AC97_ENABLE = AC97_CMD_ENABLE;
++		return 0;
++	}
++
++err:
++	if (card)
++		snd_card_free(card);
++	return ret;
++}
++
++static int __devexit puv3_ac97_remove(struct platform_device *dev)
++{
++	struct snd_card *card = platform_get_drvdata(dev);
++
++	PKUNITY_AC97_ENABLE = AC97_CMD_DISABLE;
++
++	if (card) {
++		snd_card_free(card);
++		platform_set_drvdata(dev, NULL);
++	}
++
++	return 0;
++}
++
++static struct platform_driver puv3_ac97_driver = {
++	.probe		= puv3_ac97_probe,
++	.remove		= __devexit_p(puv3_ac97_remove),
++	.suspend	= puv3_ac97_suspend,
++	.resume		= puv3_ac97_resume,
++	.driver		= {
++		.name		= "PKUnity-v3-AC97",
++		.owner		= THIS_MODULE,
 +	},
 +};
 +
-+static struct platform_device *unifb_device;
-+
-+static int __init unifb_init(void)
++static int __init puv3_ac97_init(void)
 +{
++	return platform_driver_register(&puv3_ac97_driver);
++}
++
++static void __exit puv3_ac97_exit(void)
++{
++	platform_driver_unregister(&puv3_ac97_driver);
++}
++
++module_init(puv3_ac97_init);
++module_exit(puv3_ac97_exit);
++MODULE_AUTHOR("ZHONG Qi");
++MODULE_DESCRIPTION("AC97 driver for the PKUNITY chip");
++MODULE_LICENSE("GPL v2");
+diff --git a/drivers/staging/puv3/puv3_pcm.c b/drivers/staging/puv3/puv3_pcm.c
+new file mode 100644
+index 0000000..53ce7dc
+--- /dev/null
++++ b/drivers/staging/puv3/puv3_pcm.c
+@@ -0,0 +1,449 @@
++/*
++ * linux/drivers/staging/puv3/puv3_pcm.c
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ *	Maintained by GUAN Xue-tao <gxt@mprc.pku.edu.cn>
++ *	Copyright (C) 2001-2010 Guan Xuetao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Based on: sound/arm/pxa2xx-pcm.c
++ *
++ * Contributors & Additions/Fixes:
++ *     2009-07-30: 1. increase the size of dma_buffer for vphone's performance
++ *                 2. fix the XRUN bug by setting the dma buffer counter to zero
++ *			by ZHONG Qi
++ *     2009-07-23: cause the ac97's flaw, only support fix sample rate
++ *			by ZHONG Qi
++ *     2009-03-11: First version by ZHONG Qi
++ *
++ * TODO:
++ *     1. local_ac97_read, local_ac97_write and puv3_codec_regs
++ *        are involved for fixing bug, about reseting codec automatically
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/device.h>
++#include <linux/slab.h>
++#include <linux/dma-mapping.h>
++#include <linux/irqreturn.h>
++#include <linux/interrupt.h>
++#include <linux/timer.h>
++
++#include <sound/core.h>
++#include <sound/pcm.h>
++#include <sound/pcm_params.h>
++
++#include <asm/irq.h>
++#include <asm/mach/dma.h>
++#include <asm/mach/hardware.h>
++
++#include "puv3_pcm.h"
++
++#define COUNTER_SIZE	16
++#define PERIOD_SIZE	(4 * 1024)
++
++static void kick_dma(int, struct snd_pcm_substream *);
++static unsigned long next_counter(unsigned long);
++
++static const struct snd_pcm_hardware puv3_pcm_hardware = {
++	.info			= SNDRV_PCM_INFO_MMAP |
++				  SNDRV_PCM_INFO_MMAP_VALID |
++				  SNDRV_PCM_INFO_INTERLEAVED |
++				  SNDRV_PCM_INFO_PAUSE,
++	.formats		= SNDRV_PCM_FMTBIT_S16_LE,
++	.rates                  = SNDRV_PCM_RATE_48000,
++	.rate_min               = 48000,
++	.rate_max               = 48000,
++	.channels_min           = 1,
++	.channels_max           = 2,
++	.period_bytes_min	= PERIOD_SIZE,
++	.period_bytes_max	= PERIOD_SIZE,
++	.periods_min		= 1,
++	.periods_max		= COUNTER_SIZE, /* 2 */
++	.buffer_bytes_max	= COUNTER_SIZE * PERIOD_SIZE, /* 8 * 1024 */
++	.fifo_size		= 32,
++};
++
++struct puv3_runtime_data {
++	struct puv3_pcm_dma_params *params;
++	unsigned long buffer_counter;
++	size_t period;
++	int dma_lock;
++	int dma_ch;
++	/* TODO add other filed */
++};
++
++static unsigned long next_counter(unsigned long buffer_counter)
++{
++	return ++buffer_counter % COUNTER_SIZE;
++}
++
++static void reload_dma(int dma_ch, struct snd_pcm_substream *substream,
++		       struct snd_pcm_runtime *runtime,
++		       struct puv3_runtime_data *rtd)
++{
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
++		local_ac97_write(0x2,  puv3_codec_regs[0x2/2]);
++		local_ac97_write(0x18, puv3_codec_regs[0x18/2]);
++		local_ac97_write(0x2a, puv3_codec_regs[0x2a/2]);
++		local_ac97_write(0x2c, puv3_codec_regs[0x2c/2]);
++
++		DMAC_SRCADDR(dma_ch)  = runtime->dma_addr +
++					rtd->buffer_counter * rtd->period;
++		DMAC_DESTADDR(dma_ch) = rtd->params->dev_addr;
++		DMAC_CONTROL(dma_ch)  = DMAC_CONTROL_SIZE_WORD(rtd->period) |
++					DMAC_CONTROL_SI |
++					DMAC_CONTROL_BURST_8BYTE;
++		DMAC_CONFIG(dma_ch)   = DMAC_CONFIG_AC97WR;
++	} else {
++		local_ac97_write(0x1C, puv3_codec_regs[0x1C/2]);
++
++		DMAC_DESTADDR(rtd->dma_ch) = runtime->dma_addr +
++					rtd->buffer_counter * rtd->period;
++		DMAC_SRCADDR(rtd->dma_ch) = rtd->params->dev_addr;
++		DMAC_CONTROL(rtd->dma_ch) = DMAC_CONTROL_SIZE_WORD(rtd->period)
++					| DMAC_CONTROL_DI
++					| DMAC_CONTROL_BURST_8BYTE;
++		DMAC_CONFIG(rtd->dma_ch) = DMAC_CONFIG_AC97RD;
++	}
++}
++
++static void kick_dma(int dma_ch, struct snd_pcm_substream *substream)
++{
++	struct snd_pcm_runtime *runtime;
++	struct puv3_runtime_data *rtd;
++
++	runtime = substream->runtime;
++	rtd = runtime->private_data;
++
++	rtd->buffer_counter = next_counter(rtd->buffer_counter);
++
++	reload_dma(dma_ch, substream, runtime, rtd);
++
++	puv3_resume_dma(dma_ch);
++
++	return;
++}
++
++static void reset_dma(int dma_ch, struct snd_pcm_substream *substream)
++{
++	struct snd_pcm_runtime *runtime;
++	struct puv3_runtime_data *rtd;
++
++	puv3_stop_dma(dma_ch);
++
++	runtime = substream->runtime;
++	rtd = runtime->private_data;
++
++	rtd->buffer_counter = 0;
++
++	reload_dma(dma_ch, substream, runtime, rtd);
++
++	return;
++}
++
++static int puv3_pcm_hw_params(struct snd_pcm_substream *substream,
++			      struct snd_pcm_hw_params *params)
++{
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	struct puv3_runtime_data *rtd = runtime->private_data;
++	size_t period = params_period_bytes(params);
++	size_t totsize = params_buffer_bytes(params);
++
++	snd_pcm_set_runtime_buffer(substream, &substream->dma_buffer);
++	runtime->dma_bytes = totsize;
++
++	rtd->period = period;
++
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
++		DMAC_SRCADDR(rtd->dma_ch)  = runtime->dma_addr +
++					rtd->buffer_counter * rtd->period;
++		DMAC_DESTADDR(rtd->dma_ch) = rtd->params->dev_addr;
++		DMAC_CONTROL(rtd->dma_ch) = DMAC_CONTROL_SIZE_WORD(rtd->period)
++					| DMAC_CONTROL_SI
++					| DMAC_CONTROL_BURST_8BYTE;
++		DMAC_CONFIG(rtd->dma_ch)   = DMAC_CONFIG_AC97WR;
++	} else {
++		DMAC_DESTADDR(rtd->dma_ch) = runtime->dma_addr +
++					rtd->buffer_counter * rtd->period;
++		DMAC_SRCADDR(rtd->dma_ch)  = rtd->params->dev_addr;
++		DMAC_CONTROL(rtd->dma_ch) = DMAC_CONTROL_SIZE_WORD(rtd->period)
++					| DMAC_CONTROL_DI
++					| DMAC_CONTROL_BURST_8BYTE;
++		DMAC_CONFIG(rtd->dma_ch)   = DMAC_CONFIG_AC97RD;
++	}
++
++	return 0;
++}
++
++static int puv3_pcm_hw_free(struct snd_pcm_substream *substream)
++{
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	struct puv3_runtime_data *rtd = runtime->private_data;
++
++	puv3_stop_dma(rtd->dma_ch);
++	snd_pcm_set_runtime_buffer(substream, NULL);
++
++	return 0;
++}
++
++static int puv3_pcm_prepare(struct snd_pcm_substream *substream)
++{
++	struct puv3_pcm_client *client = substream->private_data;
++	return client->prepare(substream);
++}
++
++static int puv3_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
++{
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	struct puv3_runtime_data *rtd = runtime->private_data;
 +	int ret = 0;
 +
-+#ifndef MODULE
-+	if (fb_get_options("unifb", &unifb_option))
-+		return -ENODEV;
-+	unifb_setup(unifb_option);
-+#endif
++	switch (cmd) {
++	case SNDRV_PCM_TRIGGER_START:
++		rtd->dma_lock = 0;
++		puv3_resume_dma(rtd->dma_ch);
++		break;
 +
-+	if (!unifb_enable)
-+		return -ENXIO;
++	case SNDRV_PCM_TRIGGER_STOP:
++	case SNDRV_PCM_TRIGGER_SUSPEND:
++	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
++		rtd->dma_lock = 1;
++		ac97_dma_ch = rtd->dma_ch;
++		reset_dma(rtd->dma_ch, substream);
++		break;
 +
-+	ret = platform_driver_register(&unifb_driver);
++	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
++		puv3_resume_dma(rtd->dma_ch);
++		break;
 +
-+	if (!ret) {
-+		unifb_device = platform_device_alloc("unifb", 0);
-+
-+		if (unifb_device)
-+			ret = platform_device_add(unifb_device);
-+		else
-+			ret = -ENOMEM;
-+
-+		if (ret) {
-+			platform_device_put(unifb_device);
-+			platform_driver_unregister(&unifb_driver);
-+		}
++	default:
++		ret = -EINVAL;
 +	}
 +
 +	return ret;
 +}
 +
-+module_init(unifb_init);
-+
-+#ifdef MODULE
-+static void __exit unifb_exit(void)
++static void puv3_pcm_dma_irq(int dma_ch, void *dev_id)
 +{
-+	platform_device_unregister(unifb_device);
-+	platform_driver_unregister(&unifb_driver);
++	struct snd_pcm_substream *substream = dev_id;
++	struct puv3_runtime_data *rtd = substream->runtime->private_data;
++
++	if (!rtd->dma_lock)
++		kick_dma(dma_ch, substream);
++
++	snd_pcm_period_elapsed(substream);
 +}
 +
-+module_exit(unifb_exit);
++static snd_pcm_uframes_t puv3_pcm_pointer(struct snd_pcm_substream *substream)
++{
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	struct puv3_runtime_data *rtd = substream->runtime->private_data;
++	dma_addr_t ptr = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) ?
++			 DMAC_SRCADDR(rtd->dma_ch) : DMAC_DESTADDR(rtd->dma_ch);
++	snd_pcm_uframes_t x = bytes_to_frames(runtime, ptr - runtime->dma_addr);
++	if (x == runtime->buffer_size)
++		x = 0;
++	return x;
++}
 +
++static int puv3_pcm_hw_rule_mult32(struct snd_pcm_hw_params *params,
++		struct snd_pcm_hw_rule *rule)
++{
++	struct snd_interval *i = hw_param_interval(params, rule->var);
++	int changed = 0;
++
++	if (i->min & 31) {
++		i->min = (i->min & ~31) + 32;
++		i->openmin = 0;
++		changed = 1;
++	}
++
++	if (i->max & 31) {
++		i->max &= ~31;
++		i->openmax = 0;
++		changed = 1;
++	}
++
++	return changed;
++}
++
++static int puv3_pcm_open(struct snd_pcm_substream *substream)
++{
++	struct puv3_pcm_client *client = substream->private_data;
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	struct puv3_runtime_data *rtd;
++	int ret = 0;
++
++	runtime->hw = puv3_pcm_hardware;
++
++	/*
++	 * For mysterious reasons (and despite what the manual says)
++	 * playback samples are lost if the DMA count is not a multiple
++	 * of the DMA burst size.  Let's add a rule to enforce that.
++	 */
++	ret = snd_pcm_hw_rule_add(runtime, 0, SNDRV_PCM_HW_PARAM_PERIOD_BYTES,
++				  puv3_pcm_hw_rule_mult32, NULL,
++				  SNDRV_PCM_HW_PARAM_PERIOD_BYTES, -1);
++	if (ret)
++		goto out;
++	ret = snd_pcm_hw_rule_add(runtime, 0, SNDRV_PCM_HW_PARAM_BUFFER_BYTES,
++				  puv3_pcm_hw_rule_mult32, NULL,
++				  SNDRV_PCM_HW_PARAM_BUFFER_BYTES, -1);
++	if (ret)
++		goto out;
++
++	ret = -ENOMEM;
++	rtd = kmalloc(sizeof(*rtd), GFP_KERNEL);
++	if (!rtd)
++		goto out;
++
++	rtd->buffer_counter = 0;
++	rtd->dma_lock = 0;
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
++		/* TODO unnecessary */
++		local_ac97_write(0x2, 0x0000);
++
++	} else {
++		local_ac97_write(0x1A, 0);
++		local_ac97_write(0x1C, 0x0f0f);
++	}
++
++	rtd->params = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) ?
++		client->playback_params : client->capture_params;
++	ret = puv3_request_dma(rtd->params->name, DMA_PRIO_HIGH,
++			     puv3_pcm_dma_irq, NULL, substream);
++	if (ret < 0)
++		goto err;
++	rtd->dma_ch = ret;
++
++	runtime->private_data = rtd;
++	ret = client->startup(substream);
++	if (!ret)
++		goto out;
++
++	puv3_free_dma(rtd->dma_ch);
++ err:
++	kfree(rtd);
++ out:
++	return ret;
++}
++
++static int puv3_pcm_close(struct snd_pcm_substream *substream)
++{
++	struct puv3_pcm_client *client = substream->private_data;
++	struct puv3_runtime_data *rtd = substream->runtime->private_data;
++
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
++		local_ac97_write(0x1A, 0);
++		local_ac97_write(0x1C, 0x8000);
++	}
++
++	puv3_free_dma(rtd->dma_ch);
++	client->shutdown(substream);
++	kfree(rtd);
++
++	return 0;
++}
++
++static struct snd_pcm_ops puv3_pcm_ops = {
++	.open		= puv3_pcm_open,
++	.close		= puv3_pcm_close,
++	.ioctl		= snd_pcm_lib_ioctl,
++	.hw_params	= puv3_pcm_hw_params,
++	.hw_free	= puv3_pcm_hw_free,
++	.prepare	= puv3_pcm_prepare,
++	.trigger	= puv3_pcm_trigger,
++	.pointer	= puv3_pcm_pointer,
++};
++
++static int puv3_pcm_preallocate_dma_buffer(struct snd_pcm *pcm, int stream)
++{
++	struct snd_pcm_substream *substream = pcm->streams[stream].substream;
++	struct snd_dma_buffer *buf = &substream->dma_buffer;
++	size_t size = puv3_pcm_hardware.buffer_bytes_max;
++	buf->dev.type = SNDRV_DMA_TYPE_DEV;
++	buf->dev.dev = pcm->card->dev;
++	buf->private_data = NULL;
++	buf->area = dma_alloc_coherent(pcm->card->dev, size,
++					&buf->addr, GFP_KERNEL);
++	dma_cache_sync(pcm->card->dev, &buf->addr, size, DMA_BIDIRECTIONAL);
++	if (!buf->area)
++		return -ENOMEM;
++	buf->bytes = size;
++	return 0;
++}
++
++static void puv3_pcm_free_dma_buffers(struct snd_pcm *pcm)
++{
++	struct snd_pcm_substream *substream;
++	struct snd_dma_buffer *buf;
++	int stream;
++
++	for (stream = 0; stream < 2; stream++) {
++		substream = pcm->streams[stream].substream;
++		if (!substream)
++			continue;
++		buf = &substream->dma_buffer;
++		if (!buf->area)
++			continue;
++		dma_free_coherent(pcm->card->dev, buf->bytes,
++				buf->area, buf->addr);
++		buf->area = NULL;
++	}
++}
++
++static u64 puv3_pcm_dmamask = 0xffffffff;
++
++int puv3_pcm_new(struct snd_card *card, struct puv3_pcm_client *client,
++		struct snd_pcm **rpcm)
++{
++	struct snd_pcm *pcm;
++	int play = client->playback_params ? 1 : 0;
++	int capt = client->capture_params ? 1 : 0;
++	int ret;
++
++	ret = snd_pcm_new(card, "PKUNITY-PCM", 0, play, capt, &pcm);
++	if (ret)
++		goto out;
++
++	pcm->private_data = client;
++	pcm->private_free = puv3_pcm_free_dma_buffers;
++
++	if (!card->dev->dma_mask)
++		card->dev->dma_mask = &puv3_pcm_dmamask;
++	if (!card->dev->coherent_dma_mask)
++		card->dev->coherent_dma_mask = 0xffffffff;
++
++	if (play) {
++		int stream = SNDRV_PCM_STREAM_PLAYBACK;
++		snd_pcm_set_ops(pcm, stream, &puv3_pcm_ops);
++		ret = puv3_pcm_preallocate_dma_buffer(pcm, stream);
++		if (ret)
++			goto out;
++	}
++	if (capt) {
++		int stream = SNDRV_PCM_STREAM_CAPTURE;
++		snd_pcm_set_ops(pcm, stream, &puv3_pcm_ops);
++		ret = puv3_pcm_preallocate_dma_buffer(pcm, stream);
++		if (ret)
++			goto out;
++	}
++
++	if (rpcm)
++		*rpcm = pcm;
++	ret = 0;
++
++ out:
++	return ret;
++}
++EXPORT_SYMBOL(puv3_pcm_new);
++
++MODULE_AUTHOR("ZHONG Qi");
++MODULE_DESCRIPTION("PKUNITY PCM DMA module");
 +MODULE_LICENSE("GPL v2");
-+#endif				/* MODULE */
-diff --git a/include/linux/fb.h b/include/linux/fb.h
-index d1631d3..f88124a 100644
---- a/include/linux/fb.h
-+++ b/include/linux/fb.h
-@@ -152,6 +152,8 @@
- #define FB_ACCEL_PROSAVAGE_DDR  0x8d	/* S3 ProSavage DDR             */
- #define FB_ACCEL_PROSAVAGE_DDRK 0x8e	/* S3 ProSavage DDR-K           */
- 
-+#define FB_ACCEL_PKUNITY_UNIGFX 0xe1	/* PKUnity UniGFX               */
+diff --git a/drivers/staging/puv3/puv3_pcm.h b/drivers/staging/puv3/puv3_pcm.h
+new file mode 100644
+index 0000000..aa9be9b
+--- /dev/null
++++ b/drivers/staging/puv3/puv3_pcm.h
+@@ -0,0 +1,33 @@
++/*
++ * linux/drivers/staging/puv3/puv3_pcm.h
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Based on: sound/arm/pxa2xx-pcm.h
++ *
++ * Contributors & Additions/Fixes:
++ *	2009-03-11: First version by ZHONG Qi
++ */
 +
- struct fb_fix_screeninfo {
- 	char id[16];			/* identification string eg "TT Builtin" */
- 	unsigned long smem_start;	/* Start of frame buffer mem */
++struct puv3_pcm_dma_params {
++	char *name;			/* stream identifier */
++	u32 dev_addr;			/* device physical address for DMA */
++};
++
++struct puv3_pcm_client {
++	struct puv3_pcm_dma_params *playback_params;
++	struct puv3_pcm_dma_params *capture_params;
++	int (*startup)(struct snd_pcm_substream *);
++	void (*shutdown)(struct snd_pcm_substream *);
++	int (*prepare)(struct snd_pcm_substream *);
++};
++
++extern int puv3_pcm_new(struct snd_card *, struct puv3_pcm_client *,
++		struct snd_pcm **);
++extern void local_ac97_write(unsigned short, unsigned short);
++extern unsigned short local_ac97_read(unsigned short);
++extern unsigned short puv3_codec_regs[];
++extern int ac97_dma_ch;
++
 
 > -----Original Message-----
 > From: linux-arch-owner@vger.kernel.org [mailto:linux-arch-owner@vger.kernel.org] On Behalf Of Guan Xuetao
