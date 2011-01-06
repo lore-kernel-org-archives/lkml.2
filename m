@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288Ab1AFPLu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 10:11:50 -0500
-Received: from cantor.suse.de ([195.135.220.2]:44315 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753088Ab1AFPLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 10:11:49 -0500
-Date: Thu, 6 Jan 2011 16:11:46 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC v2 0/10] hid-multitouch: a first step towards multitouch
- unification
-In-Reply-To: <AANLkTikCqufvOgYqqBZLjfmtSdsgyQV4L2HyvEP07+vf@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1101061610270.26685@pobox.suse.cz>
-References: <1294248468-19979-1-git-send-email-benjamin.tissoires@enac.fr> <20110105174927.GB2146@polaris.bitmath.org> <AANLkTikCqufvOgYqqBZLjfmtSdsgyQV4L2HyvEP07+vf@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753324Ab1AFPR6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 10:17:58 -0500
+Received: from mail.pripojeni.net ([217.66.174.14]:45626 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753001Ab1AFPR4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 10:17:56 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: jbarnes@virtuousgeek.org
+Cc: linux-pci@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 1/1] PCI: tune up ICH4 quirk for broken BIOSes
+Date: Thu,  6 Jan 2011 16:17:46 +0100
+Message-Id: <1294327066-23518-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Jan 2011, Benjamin Tissoires wrote:
+There are BIOSes out there where they provide ACPI mapping that
+conflicts with fixed one. Then e.g. an IDE controller doesn't work due
+to I/O space conflict:
+pci 0000:00:1f.1: address space collision: [io  0x0170-0x0177] conflicts with 0000:00:1f.0 [io  0x0100-0x017f]
 
-> Hi Henrik,
-> 
-> thanks for the future review ;)
-> 
-> Well, patches n° 3,4,5,6 and 7 are only those sent by Stéphane and
-> reviewed by you 3 months ago with small changes:
->   - I took into account most of your comments
->   - I inserted suspend/resume support
->   - I implemented a way to find out the end of a mt report.
-> 
-> Patch 1 (hid: add feature_mapping callback) is new but not very
-> dangerous I think: it only adds a hook. Thanks to it, I could retrieve
-> the magic number which is device-specific.
-> 
-> Patch 2 (hid: set HID_MAX_FIELD at 128) may need further discussions
-> (but is required to use Stantum panels)
-> 
-> the last patches only introduce support for 3 devices, 1 of them is
-> new for the kernel.
-> 
-> The point is that currently we have users that want to have a proper
-> support for their device (PixCir, Cypress TrueTouch and GeneralTouch),
-> and it's a shame to ask them to wait for 3 more months.
-> 
-> Maybe a solution would be to make what we can here during this merge
-> window to add support for at least the new devices. Then, in 2.6.39
-> and above, we could still migrate other devices, and eventually modify
-> some lines in the code.
-> 
-> Jiri, Dmitry, what do you think?
+0x0170-0x0177 for IDE controllers is created in pci_setup_device.
+0x0100-0x017f for the ICH4 ISA bridge is created in quirk_ich4_lpc_acpi
 
-I still have to go through the patchset, my backlog has grown very badly 
-recently, sorry.
+The former is fixed, according to specs at that address.
+The latter is read from the bridge confspace which contains:
+00000000  86 80 a1 25 0f 00 80 02  02 00 01 06 00 00 80 00 |...%............|
+00000010  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00 |................|
+00000020  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00 |................|
+00000030  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00 |................|
+00000040  01 01 00 00 10 00 00 00  00 00 00 00 00 00 01 00 |................|
+00000050  00 00 00 00 00 00 00 00  01 05 00 00 10 00 00 00 |................|
+...
+I.e. 0x00000101 as a base (ORed by 1 meaning I/O space) for ACPI per
+ICH4 specs.
 
-In case the patchset doesn't impose danger of regressions for already 
-existing devices, we could merge this new 'unified' driver only for newly 
-supported devices, and finish the unification in 2.6.39.
+Don't accept bases below 0x180 for this dynamic mapping.
 
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+---
+ drivers/pci/quirks.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 53a786f..6d241eb 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -543,7 +543,14 @@ static void __devinit quirk_ich4_lpc_acpi(struct pci_dev *dev)
+ 	u32 region;
+ 
+ 	pci_read_config_dword(dev, 0x40, &region);
+-	quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES, "ICH4 ACPI/GPIO/TCO");
++	/*
++	 * some BIOSes are bogus and create this dynamic mapping so that it
++	 * conflicts with fixed. There is no space below 0x180 for
++	 * ACPI/GPIO/TCO which is 128B long and 128B aligned.
++	 */
++	if (region >= 0x180)
++		quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
++				"ICH4 ACPI/GPIO/TCO");
+ 
+ 	pci_read_config_dword(dev, 0x58, &region);
+ 	quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES+1, "ICH4 GPIO");
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+1.7.3.4
+
+
