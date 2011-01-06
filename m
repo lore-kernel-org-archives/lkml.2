@@ -1,115 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521Ab1AFPpq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 10:45:46 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35374 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753479Ab1AFPpo (ORCPT
+	id S1753549Ab1AFPpw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 10:45:52 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:49382 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753523Ab1AFPpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 10:45:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=HtPx9R4v63VZQDYZOOvg6EJe4NKH0jPVFVRyadTT50rj/A/ARKIatyp0AxmMk2RUem
-         TGzJwBUFqlWmh0XXNeJUf2HRRmCB81sHCe6Wb5r2SHhiAmuAXb1s6UrTXfDP9uSTqjfV
-         iKO+fwAvo8aQNoesLesdTxvQmUhJVsDh4x+Gw=
-Date: Thu, 6 Jan 2011 16:45:39 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: "H. Peter Anvin" <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Soeren Sandmann Pedersen <sandmann@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/2] x86: Fix rbp saving in pt_regs on irq entry
-Message-ID: <20110106154536.GA2308@nowhere>
-References: <1294325513-14276-1-git-send-email-fweisbec@gmail.com>
- <1294325513-14276-2-git-send-email-fweisbec@gmail.com>
- <4D25EB4B020000780002ABF7@vpn.id2.novell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D25EB4B020000780002ABF7@vpn.id2.novell.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 6 Jan 2011 10:45:50 -0500
+Subject: Re: [PATCH] mtd: allow mtd and jffs2 when ARCH=um
+From: David Woodhouse <dwmw2@infradead.org>
+To: Jason Lunz <lunz@acm.org>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Sam Ravnborg <sam@ravnborg.org>, atom ota <atomota@sleepyhammer.com>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        Jeff Dike <jdike@addtoit.com>, lkml <linux-kernel@vger.kernel.org>,
+        linux-mtd@lists.infradead.org, Rob Landley <rob@landley.net>
+Date: Thu, 06 Jan 2011 15:45:34 +0000
+In-Reply-To: <20101214195124.GA6010@falooley.org>
+References: <22c797d00709272118i33d32b9dy93d5f5ec8f8edd30@mail.gmail.com>
+	 <20071024011712.GA3762@falooley.org>
+	 <1193208689.26096.48.camel@pmac.infradead.org>
+	 <20071227181524.GA19051@falooley.org>
+	 <20071228174853.GA4252@uranus.ravnborg.org>
+	 <20101207072919.GA8511@falooley.org>
+	 <AANLkTineLxHdcDKZEUGiqVNAauSX_xyQrs49kKaqhiWo@mail.gmail.com>
+	 <20101207182012.GA10546@falooley.org> <1292343878.2538.80.camel@localhost>
+	 <20101214195124.GA6010@falooley.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 2.91.5 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1294328738.20779.10.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 06, 2011 at 03:18:19PM +0000, Jan Beulich wrote:
-> >>> On 06.01.11 at 15:51, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > From the x86_64 low level interrupt handlers, the frame pointer is
-> > saved in pt_regs in the wrong place, in the offset of rbx.
-> > 
-> > rbx is not part of the irq partial saved registers, so it's not
-> > critical, but later code that uses get_irq_regs() to get the
-> > interrupted frame pointer instead get a stale rbx value, causing
-> > unwinding code to fail miserably.
+On Tue, 2010-12-14 at 11:51 -0800, Jason Lunz wrote:
 > 
-> Code using get_irq_regs() can't rely on the not explicitly
-> saved registers' fields of pt_regs anyway; you now fix this
-> for %rbp, but someone else might look at a different
-> register and want that to be saved too. You just shouldn't,
-> and the fact that %rbp happens to be saved at all shouldn't
-> be taken to mean you can access it via the provided
-> pt_regs pointer. This saving of %rbp could go away or be
-> done in a different way at any point.
-
-Right. That was something I was wondering about: is rbp saved here
-as the beginning of the proc stack, or was is supposed to be
-part of the pt_regs although mistakenly recorded in rbp?
-
-So given what you are explaining me, it rather seem it wasn't supposed
-to be of part pt_regs and it's there because it begins the frame of the irq
-handler.
-
-I agree that in the case of common irqs, rbp is not supposed to be part
-of saved regs. I think may be we can change that semantic though as it
-requires very few changes. In fact the only added overhead is that addq
-below.
-
-I'm waiting for opinions though.
-
- 
-> > @@ -808,6 +813,8 @@ ret_from_intr:
-> >  	TRACE_IRQS_OFF
-> >  	decl PER_CPU_VAR(irq_count)
-> >  	leaveq
-> > +	/* we did not save rbx, restore only from ARGOFFSET */
-> > +	addq $8, %rsp
-> >  	CFI_RESTORE		rbp
-> >  	CFI_DEF_CFA_REGISTER	rsp
-> >  	CFI_ADJUST_CFA_OFFSET	-8
+> > Instead, you should solve this problem in UML code. I do not know how,
+> > but may be you can add readb/writeb there which actually do nothing or
+> > print a scary warning, or do BUG(), and let things which use them just
+> > fail run-time.
 > 
-> *If* the patch was to be taken anyway, I would strongly suggest
-> getting this mis-insertion fixed first: CFI annotations belong to the
-> immediately preceding instruction, and hence you must not insert
-> new instructions between an existing one and its annotation.
+> Something like this could work, but it would be error-prone for anyone
+> else who attempts using iomem-requiring drivers on uml. Instead of
+> getting obvious compile failures we'd have broken drivers that BUG() or
+> emit scary warnings. That doesn't seem to me like an improvement. 
 
-Good to know, will fix.
+Drivers should *never* BUG() or crash, or busy-loop, on getting 0xFF
+when they read from hardware. That can happen anyway in some
+circumstances.
 
-> Furthermore, an adjustment to %rsp (when it serves as the frame
-> pointer as is the case here, though would be better visible if the
-> added instruction was at the right place) needs to be annotated
-> itself.
+Doesn't iSeries take this approach?
 
+I don't much like the patch that Artem took into his l2-mtd tree; it
+doesn't even let you build mtdchar, which really *ought* to be
+permitted. It also didn't allow the nandsim or mtdram devices, which are
+purely virtual.
 
-Hmm, I'm not familiar with those CFI adjustments.
-Before we had:
+I think I'd prefer something similar to your original, Jason. I don't
+think the HAS_IOMEM dependencies have to be *so* complex to maintain. If
+anything we're just going to err on the side of inclusion and you'll
+occasionally have to send us patches to "hide" things from you again.
 
+-- 
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
 
-	leaveq
-
-	CFI_RESTORE             rbp
-	CFI_DEF_CFA_REGISTER    rsp
-	CFI_ADJUST_CFA_OFFSET   -8
-
-So CFI_RESTORE means rbp has now the value of the base frame of
-the calling frame (the base frame pointer of the interrupted proc) ?
-
-And what follows means that rsp-8 points to the return address?
-But it doesn't seem to be the case, the return address here beeing
-rip stored in pt_regs...
-
-I'm confused.
