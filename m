@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351Ab1AFQjW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 11:39:22 -0500
-Received: from mtxmxout6.matrox.com ([138.11.2.96]:54513 "EHLO
-	mtxmxout6.matrox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753190Ab1AFQjT (ORCPT
+	id S1753157Ab1AFQjR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 11:39:17 -0500
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:11070 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751899Ab1AFQjQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 11:39:19 -0500
-X-Greylist: delayed 1699 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Jan 2011 11:39:19 EST
-X-Virus-MTX-Scanned: by Matrox Virus scanner at mars.matrox.com
-Message-ID: <4D25E992.3070006@matrox.com>
-Date: Thu, 06 Jan 2011 11:10:58 -0500
-From: Yannick Heneault <yannick_heneault@matrox.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+	Thu, 6 Jan 2011 11:39:16 -0500
+Subject: [PATCH] cciss: make cciss_revalidate not loop through CISS_MAX_LUNS
+	volumes unnecessarily.
+To: axboe@kernel.dk
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: akpm@linux-foundation.org, smcameron@yahoo.com,
+        linux-kernel@vger.kernel.org, mike.miller@hp.com, thenzl@redhat.com
+Date: Thu, 06 Jan 2011 10:39:14 -0600
+Message-ID: <20110106163914.10177.81092.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        akpm@linux-foundation.org
-CC: airlied@redhat.com, hpa@zytor.com
-Subject: [PATCH] vgacon: checking for efi machine
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems there is a small problem of VGA palette corruption on EFI machine. When the kernel initializes the architecture, it checks if themachine is a EFI machine and assumes that a VGA console can exist. When it initialize the console in vgacon_startup it checks if itcan really use the VGA console. I think this is where a check ismissing. Currently, the function can fail if a VESA boot mode isdetected but not if a EFI boot mode was used. Thus, the function vgacon_startup doesn't fail and initialize thevideo card for a real VGA mode. This function change the first 16entries of the VGA palette. When the efifb driver kick-in, the paletteis not restored to default ramp value, thus the 16 first entry remain ina modified state. The following patch prevent this corruption.
+From: Stephen M. Cameron <StephenM.Cameron>
 
-Signed-off-by: Yannick Heneault<yheneaul@matrox.com>
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 ---
-diff -Nur linux-2.6.37-ori/drivers/video/console/vgacon.c linux-2.6.37/drivers/video/console/vgacon.c
---- linux-2.6.37-ori/drivers/video/console/vgacon.c	2011-01-04 19:50:19.000000000 -0500
-+++ linux-2.6.37/drivers/video/console/vgacon.c	2011-01-06 10:38:24.713590593 -0500
-@@ -375,7 +375,8 @@
-  	u16 saved1, saved2;
-  	volatile u16 *p;
+ drivers/block/cciss.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
--	if (screen_info.orig_video_isVGA == VIDEO_TYPE_VLFB) {
-+	if (screen_info.orig_video_isVGA == VIDEO_TYPE_VLFB ||
-+	    screen_info.orig_video_isVGA == VIDEO_TYPE_EFI) {
-  	      no_vga:
-  #ifdef CONFIG_DUMMY_CONSOLE
-  		conswitchp =&dummy_con;
-
-
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+index 8e0f925..8febc20 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -2833,7 +2833,7 @@ static int cciss_revalidate(struct gendisk *disk)
+ 	sector_t total_size;
+ 	InquiryData_struct *inq_buff = NULL;
+ 
+-	for (logvol = 0; logvol < CISS_MAX_LUN; logvol++) {
++	for (logvol = 0; logvol <= h->highest_lun; logvol++) {
+ 		if (!h->drv[logvol])
+ 			continue;
+ 		if (memcmp(h->drv[logvol]->LunID, drv->LunID,
 
