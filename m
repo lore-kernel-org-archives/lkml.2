@@ -1,145 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752034Ab1AFJVb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 04:21:31 -0500
-Received: from mga01.intel.com ([192.55.52.88]:9203 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751319Ab1AFJV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 04:21:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,282,1291622400"; 
-   d="scan'208";a="644002171"
-From: Sheng Yang <sheng@linux.intel.com>
-Organization: Intel Opensource Technology Center
-To: Ian Campbell <ijc@hellion.org.uk>
-Subject: Re: [PATCH 2/2 v2] xen: HVM X2APIC support
-Date: Thu, 6 Jan 2011 17:23:29 +0800
-User-Agent: KMail/1.13.5 (Linux/2.6.35-23-generic; KDE/4.5.1; x86_64; ; )
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-References: <1292912329-12451-1-git-send-email-sheng@linux.intel.com> <201101060920.47797.sheng@linux.intel.com> <1294305030.3831.3590.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1294305030.3831.3590.camel@zakaz.uk.xensource.com>
+	id S1752056Ab1AFJYt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 04:24:49 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42100 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751319Ab1AFJYp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 04:24:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=Q4VcGBeWnRNBEYLEjvmgrCn+lOFYhsyx9i5UY7UYNKpg5mTfCv/Zd8/1QQ4R7iU0ze
+         n1N247dCYaNR4L65LCJbKsEnVHEPsavgzbLYDZO8aYH/3Nu8UAg6zb0KDqVxIIJIYptO
+         VcB4EVwmGBP/IY/Uw/KhVNcAPn8v3n6Ok74Ws=
+Message-ID: <4D258A55.2040003@gmail.com>
+Date: Thu, 06 Jan 2011 10:24:37 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        "Brown, Len" <len.brown@intel.com>, steiner@sgi.com,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>
+Subject: Re: suspend hangs at platform phase [was: mmotm 2010-12-23-16-58
+ uploaded]
+References: <201012240132.oBO1W8Ub022207@imap1.linux-foundation.org> <201101052339.46453.rjw@sisk.pl> <4D24F4A9.8010301@gmail.com> <201101060028.43342.rjw@sisk.pl>
+In-Reply-To: <201101060028.43342.rjw@sisk.pl>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101061723.29523.sheng@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 06 January 2011 17:10:30 Ian Campbell wrote:
-> On Thu, 2011-01-06 at 09:20 +0800, Sheng Yang wrote:
-> > On Wednesday 05 January 2011 22:56:28 Ian Campbell wrote:
-> > > > > @@ -1384,6 +1365,17 @@ static bool __init xen_hvm_platform(void)
-> > > > > 
-> > > > >       return true;
-> > > > >  
-> > > > >  }
-> > > > > 
-> > > > > +bool xen_hvm_need_lapic(void)
-> > > > > +{
-> > > > > +     if (xen_pv_domain())
-> > > > > +             return false;
-> > > > > +     if (xen_hvm_domain() && xen_feature(XENFEAT_hvm_pirqs) &&
-> > > > > +                     xen_have_vector_callback)
-> > > > > +             return false;
-> > > > > +     return (xen_cpuid_base() != 0);
-> > > > > +}
-> > > > > +EXPORT_SYMBOL_GPL(xen_hvm_need_lapic);
-> > > > > +
-> > > 
-> > > Since xen_hvm_domain() is always true if xen_cpuid_base() != 0, isn't
-> > > 
-> > > this more obviously written as:
-> > > 	if (!xen_hvm_domain())
-> > > 	
-> > > 		return false;
-> > 
-> > XEN_HVM_DOMAIN works only when kernel built with CONFIG_XEN. This patch
-> > can also support kernel built without CONFIG_XEN but with
-> > CONFIG_X86_X2APIC.
-> 
-> This function is only compiled when CONFIG_XEN=y, you have a different
-> variant for the CONFIG_XEN=n case which just does the xen_cpuid_base()
-> check.
-> 
-> It's actually a bit confusing to have xen_x2apic_para_available() defer
-> to xen_hvm_need_lapic() when CONFIG_XEN is enabled but do the check
-> itself when it is not. Can we not simply have:
-> 
-> static inline bool xen_x2apic_para_available(void)
-> {
-> #ifdef CONFIG_XEN
-> 	if (!xen_hvm_domain())
-> 		return false;
-> 	if (xen_have_vector_callback)
-> 		return false;
-> 	return true;
-> #else
-> 	return xen_cpuid_base() != 0;
-> #endif
-> }
-> 
-> (either in include/asm/xen/hypervisor.h or out of line in
-> arch/x86/kernel/cpu/hypervisor.c if this leads to include dependency
-> hell)
-> 
-> Note that xen_have_vector_callback can be true only if
-> xen_feature(XENFEAT_hvm_callback_vector) so I think that bit of the
-> check was redundant.
+On 01/06/2011 12:28 AM, Rafael J. Wysocki wrote:
+> Two more questions:
+> (1) Does the failing machine power off correctly with the kernel that fails to
+>     suspend?
 
-I am not familiar with these dependence, and just followed Stefano's comments.
-> 
-> Maybe even better would be to separate the general Xen presence logic
-> from the decision to use x2apic, e.g.:
-> 
-> static inline bool xen_para_available(void)
-> {
-> #ifdef CONFIG_XEN
-> 	return xen_hvm_domain();
-> #else
-> 	return xen_cpuid_base() != 0;
-> #endif
-> }
-> 
-> static inline bool xen_x2apic_para_available(void)
-> {
-> 	if (!xen_para_available())
-> 		return false;
-> #ifdef CONFIG_XEN
-> 	if (xen_have_vector_callback)
-> 		return false;
-> #endif
-> 	return true;
-> }
-> 
-> This could be simplified further if xen_have_vector_callback was #define
-> to 0 when CONFIG_XEN=n.
+Poweroff is OK.
 
-Thanks for the comments, but seems it's a little late. The patches have been there 
-for more than a month since the first version, and now they are finally in the 
-tree... And since it's not a bug, could we leave it to the later clean up?
- 
-> > > Also, checking for the XenVMMXenVMM signature alone seems like a very
-> > > broad test for checking the availability of a specific feature, is
-> > > there nothing more specific which we could/should be testing?
-> > 
-> > The CPU flag x2apic is checked when we want to enable x2apic, and only
-> > Xen which supported x2apic emulation would show this flag.
-> 
-> A comment to that effect, in the checkin commentary if not the code,
-> would be a useful reminder of this.
+> (2) Is the failing suspend behavior reproducible if you run
+>     "echo disk > /sys/power/state" instead of "pm-suspend" in the platform test?
 
-The caller of the function indicate so, it's in the x2apic enabling code(which is 
-the same as KVM). So I think that maybe enough.
+Thanks for the hint no_console_suspend with hibernate shows somwthing
+(opposing to suspend). I've sent a patch for the oops which occured due
+to ioremap change. The ioremap change still needs to be reverted, obviously.
 
---
-regards
-Yang, Sheng
+The oops in question:
+http://www.fi.muni.cz/~xslaby/sklad/panics/suspend-oops.png
 
-> 
-> Thanks,
-> Ian.
+/proc/mtrr:
+reg00: base=0x0b0000000 ( 2816MB), size=  256MB, count=1: uncachable
+reg01: base=0x0c0000000 ( 3072MB), size= 1024MB, count=1: uncachable
+reg02: base=0x000000000 (    0MB), size= 4096MB, count=1: write-back
+reg03: base=0x100000000 ( 4096MB), size= 2048MB, count=1: write-back
+reg04: base=0x180000000 ( 6144MB), size= 1024MB, count=1: write-back
+reg05: base=0x1c0000000 ( 7168MB), size=  128MB, count=1: write-back
+reg06: base=0x1c8000000 ( 7296MB), size=   64MB, count=1: write-back
+reg07: base=0x0af600000 ( 2806MB), size=    2MB, count=1: uncachable
+
+/debug/x86/pat_memtype_list:
+PAT memtype list:
+uncached-minus @ 0xaf5b0000-0xaf5b7000
+uncached-minus @ 0xaf5be000-0xaf5c1000
+uncached-minus @ 0xaf5be000-0xaf5c1000
+uncached-minus @ 0xaf5be000-0xaf5bf000
+uncached-minus @ 0xb0200000-0xb0201000
+write-combining @ 0xd0000000-0xe0000000
+write-combining @ 0xd0001000-0xd0021000
+write-combining @ 0xd0030000-0xd0530000
+uncached-minus @ 0xe0000000-0xf0000000
+uncached-minus @ 0xfe6ff000-0xfe700000
+uncached-minus @ 0xfe7e0000-0xfe800000
+uncached-minus @ 0xfea00000-0xfea80000
+uncached-minus @ 0xfeb40000-0xfeb60000
+uncached-minus @ 0xfeb78000-0xfeb7c000
+uncached-minus @ 0xfeb7c000-0xfeb7d000
+uncached-minus @ 0xfeb7d000-0xfeb7e000
+uncached-minus @ 0xfeb7f000-0xfeb80000
+uncached-minus @ 0xfeb7f000-0xfeb80000
+uncached-minus @ 0xfeb80000-0xfec00000
+uncached-minus @ 0xfeb80000-0xfec00000
+uncached-minus @ 0xfed00000-0xfed01000
+uncached-minus @ 0xfed1f000-0xfed20000
+uncached-minus @ 0xffff0000-0xffff1000
+
+regards,
+-- 
+js
