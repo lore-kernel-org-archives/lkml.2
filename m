@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742Ab1AFAbj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:31:39 -0500
-Received: from kroah.org ([198.145.64.141]:36061 "EHLO coco.kroah.org"
+	id S1754752Ab1AFAbm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:31:42 -0500
+Received: from kroah.org ([198.145.64.141]:36075 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754722Ab1AFAbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:31:36 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:08 2011
-Message-Id: <20110106002308.881855048@clark.site>
+	id S1754722Ab1AFAbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:31:40 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:09 2011
+Message-Id: <20110106002309.150359580@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:23:48 -0800
+Date: Wed, 05 Jan 2011 16:23:51 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [129/152] drm/radeon/kms: fix evergreen asic reset
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [132/152] drm/i915/bios: Reverse order of 100/120 Mhz SSC clocks
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,60 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 9f0c4f9c2f835eee1bbb93f96bf9483d56f1892b upstream.
+commit 448f53a1ede54eb854d036abf54573281412d650 upstream.
 
-Only reset the grbm blocks, srbm tends to lock the GPU
-if not done properly and in most cases is not necessary.
-Also, no need to call asic init after reset the grbm blocks.
+Fixes the lack of output on the LVDS panel of the Lenovo U160.
 
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Reviewed-by: Jerome Glisse <jglisse@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=31596
+Reported-and-tested-by: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c |   15 ---------------
- 1 file changed, 15 deletions(-)
+ drivers/gpu/drm/i915/intel_bios.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -1423,7 +1423,6 @@ bool evergreen_gpu_is_lockup(struct rade
- static int evergreen_gpu_soft_reset(struct radeon_device *rdev)
- {
- 	struct evergreen_mc_save save;
--	u32 srbm_reset = 0;
- 	u32 grbm_reset = 0;
- 
- 	dev_info(rdev->dev, "GPU softreset \n");
-@@ -1462,16 +1461,6 @@ static int evergreen_gpu_soft_reset(stru
- 	udelay(50);
- 	WREG32(GRBM_SOFT_RESET, 0);
- 	(void)RREG32(GRBM_SOFT_RESET);
--
--	/* reset all the system blocks */
--	srbm_reset = SRBM_SOFT_RESET_ALL_MASK;
--
--	dev_info(rdev->dev, "  SRBM_SOFT_RESET=0x%08X\n", srbm_reset);
--	WREG32(SRBM_SOFT_RESET, srbm_reset);
--	(void)RREG32(SRBM_SOFT_RESET);
--	udelay(50);
--	WREG32(SRBM_SOFT_RESET, 0);
--	(void)RREG32(SRBM_SOFT_RESET);
- 	/* Wait a little for things to settle down */
- 	udelay(50);
- 	dev_info(rdev->dev, "  GRBM_STATUS=0x%08X\n",
-@@ -1482,10 +1471,6 @@ static int evergreen_gpu_soft_reset(stru
- 		RREG32(GRBM_STATUS_SE1));
- 	dev_info(rdev->dev, "  SRBM_STATUS=0x%08X\n",
- 		RREG32(SRBM_STATUS));
--	/* After reset we need to reinit the asic as GPU often endup in an
--	 * incoherent state.
--	 */
--	atom_asic_init(rdev->mode_info.atom_context);
- 	evergreen_mc_resume(rdev, &save);
- 	return 0;
- }
+--- a/drivers/gpu/drm/i915/intel_bios.c
++++ b/drivers/gpu/drm/i915/intel_bios.c
+@@ -276,7 +276,7 @@ parse_general_features(struct drm_i915_p
+ 					general->ssc_freq ? 66 : 48;
+ 			else if (IS_IRONLAKE(dev_priv->dev) || IS_GEN6(dev))
+ 				dev_priv->lvds_ssc_freq =
+-					general->ssc_freq ? 100 : 120;
++					general->ssc_freq ? 120 : 100;
+ 			else
+ 				dev_priv->lvds_ssc_freq =
+ 					general->ssc_freq ? 100 : 96;
 
 
