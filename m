@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754549Ab1AFApb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:45:31 -0500
-Received: from kroah.org ([198.145.64.141]:35861 "EHLO coco.kroah.org"
+	id S1754701Ab1AFApw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:45:52 -0500
+Received: from kroah.org ([198.145.64.141]:35848 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754433Ab1AFAa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:30:28 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:05 2011
-Message-Id: <20110106002305.126195006@clark.site>
+	id S1754416Ab1AFAaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:30:24 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:04 2011
+Message-Id: <20110106002304.811819845@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:23:07 -0800
+Date: Wed, 05 Jan 2011 16:23:04 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Paris <eparis@redhat.com>
-Subject: [088/152] inotify: stop kernel memory leak on file creation failure
+        Alexey Starikovskiy <astarikovskiy@suse.de>,
+        Len Brown <len.brown@intel.com>
+Subject: [085/152] ACPI: EC: Add another dmi match entry for MSI hardware
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,31 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Paris <eparis@redhat.com>
+From: Alexey Starikovskiy <astarikovskiy@suse.de>
 
-commit a2ae4cc9a16e211c8a128ba10d22a85431f093ab upstream.
+commit a5dc4f898c2a0f66e2cefada6c687db82ba2fcbc upstream.
 
-If inotify_init is unable to allocate a new file for the new inotify
-group we leak the new group.  This patch drops the reference on the
-group on file allocation failure.
+http://bugzilla.kernel.org/show_bug.cgi?id=15418
 
-Reported-by: Vegard Nossum <vegard.nossum@gmail.com>
-Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Alexey Starikovskiy <astarikovskiy@suse.de>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/notify/inotify/inotify_user.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/acpi/ec.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/fs/notify/inotify/inotify_user.c
-+++ b/fs/notify/inotify/inotify_user.c
-@@ -751,6 +751,7 @@ SYSCALL_DEFINE1(inotify_init1, int, flag
- 	if (ret >= 0)
- 		return ret;
- 
-+	fsnotify_put_group(group);
- 	atomic_dec(&user->inotify_devs);
- out_free_uid:
- 	free_uid(user);
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -929,6 +929,9 @@ static struct dmi_system_id __initdata e
+ 	ec_flag_msi, "MSI hardware", {
+ 	DMI_MATCH(DMI_CHASSIS_VENDOR, "MICRO-Star")}, NULL},
+ 	{
++	ec_flag_msi, "MSI hardware", {
++	DMI_MATCH(DMI_CHASSIS_VENDOR, "MICRO-STAR")}, NULL},
++	{
+ 	ec_validate_ecdt, "ASUS hardware", {
+ 	DMI_MATCH(DMI_BIOS_VENDOR, "ASUS") }, NULL},
+ 	{},
 
 
