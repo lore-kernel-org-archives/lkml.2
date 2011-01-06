@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab1AFAbY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:31:24 -0500
-Received: from kroah.org ([198.145.64.141]:36016 "EHLO coco.kroah.org"
+	id S1754725Ab1AFAbg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:31:36 -0500
+Received: from kroah.org ([198.145.64.141]:36051 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754636Ab1AFAbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:31:21 -0500
+	id S1754706Ab1AFAbc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:31:32 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:08 2011
-Message-Id: <20110106002308.152264353@clark.site>
+Message-Id: <20110106002308.709704422@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:23:40 -0800
+Date: Wed, 05 Jan 2011 16:23:46 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: [121/152] rtc: rs5c372: fix buffer size
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [127/152] mfd: Supply IRQ base for WM832x devices
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfram Sang <w.sang@pengutronix.de>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 118364948fad7b6c0469ef2d3ddaee447d7a0b5f upstream.
+commit bd7c72ed18d719c1fb0fdf6ff9042d8ab78fdf71 upstream.
 
-Match the buffer size to the amount of initialized values.  Before, it was
-one too big and thus destroyed the neighbouring register causing the clock
-to run at false speeds.
+Without this the IRQ base will not be correctly configured for the
+subdevices.
 
-Reported-by: Andre van Rooyen <a.v.rooyen@sercom.nl>
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/rtc/rtc-rs5c372.c |    2 +-
+ drivers/mfd/wm831x-core.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/rtc/rtc-rs5c372.c
-+++ b/drivers/rtc/rtc-rs5c372.c
-@@ -207,7 +207,7 @@ static int rs5c372_get_datetime(struct i
- static int rs5c372_set_datetime(struct i2c_client *client, struct rtc_time *tm)
- {
- 	struct rs5c372	*rs5c = i2c_get_clientdata(client);
--	unsigned char	buf[8];
-+	unsigned char	buf[7];
- 	int		addr;
+--- a/drivers/mfd/wm831x-core.c
++++ b/drivers/mfd/wm831x-core.c
+@@ -1621,7 +1621,7 @@ static int wm831x_device_init(struct wm8
+ 	case WM8321:
+ 		ret = mfd_add_devices(wm831x->dev, -1,
+ 				      wm8320_devs, ARRAY_SIZE(wm8320_devs),
+-				      NULL, 0);
++				      NULL, wm831x->irq_base);
+ 		break;
  
- 	dev_dbg(&client->dev, "%s: tm is secs=%d, mins=%d, hours=%d "
+ 	default:
 
 
