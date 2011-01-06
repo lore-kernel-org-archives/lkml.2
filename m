@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754113Ab1AFA3g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:29:36 -0500
-Received: from kroah.org ([198.145.64.141]:35619 "EHLO coco.kroah.org"
+	id S1754144Ab1AFAzg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:55:36 -0500
+Received: from kroah.org ([198.145.64.141]:35632 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753700Ab1AFA3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:29:33 -0500
+	id S1754050Ab1AFA3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:29:34 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:00 2011
-Message-Id: <20110106002300.696109593@clark.site>
+Message-Id: <20110106002300.901648511@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:22:22 -0800
+Date: Wed, 05 Jan 2011 16:22:24 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel Hellstrom <daniel@gaisler.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [043/152] SPARC/LEON: removed constant timer initialization as if HZ=100, now it reflects the value of HZ
+Subject: [045/152] sparc: Remove prom_pathtoinode()
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,36 +26,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Daniel Hellstrom <daniel@gaisler.com>
+From: David S. Miller <davem@davemloft.net>
 
-[ Upstream commit b690c425fe07c725e7f1f7d40303588416cba67f ]
+[ Upstream commit 17d70d6df0c4ea7a203b444001572a91ad9c2bef ]
 
-Signed-off-by: Daniel Hellstrom <daniel@gaisler.com>
+Unused.
+
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/sparc/kernel/leon_kernel.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/sparc/include/asm/oplib_32.h |    1 -
+ arch/sparc/include/asm/oplib_64.h |    1 -
+ arch/sparc/prom/tree_32.c         |   15 ---------------
+ arch/sparc/prom/tree_64.c         |   18 ------------------
+ 4 files changed, 35 deletions(-)
 
---- a/arch/sparc/kernel/leon_kernel.c
-+++ b/arch/sparc/kernel/leon_kernel.c
-@@ -114,7 +114,7 @@ void __init leon_init_timers(irq_handler
- 	if (leon3_gptimer_regs && leon3_irqctrl_regs) {
- 		LEON3_BYPASS_STORE_PA(&leon3_gptimer_regs->e[0].val, 0);
- 		LEON3_BYPASS_STORE_PA(&leon3_gptimer_regs->e[0].rld,
--				      (((1000000 / 100) - 1)));
-+				      (((1000000 / HZ) - 1)));
- 		LEON3_BYPASS_STORE_PA(&leon3_gptimer_regs->e[0].ctrl, 0);
+--- a/arch/sparc/include/asm/oplib_32.h
++++ b/arch/sparc/include/asm/oplib_32.h
+@@ -238,7 +238,6 @@ extern int prom_node_has_property(int no
+ extern int prom_setprop(int node, const char *prop_name, char *prop_value,
+ 			int value_size);
  
- #ifdef CONFIG_SMP
-@@ -128,7 +128,7 @@ void __init leon_init_timers(irq_handler
- 		}
+-extern int prom_pathtoinode(char *path);
+ extern int prom_inst2pkg(int);
  
- 		LEON3_BYPASS_STORE_PA(&leon3_gptimer_regs->e[1].val, 0);
--		LEON3_BYPASS_STORE_PA(&leon3_gptimer_regs->e[1].rld, (((1000000/100) - 1)));
-+		LEON3_BYPASS_STORE_PA(&leon3_gptimer_regs->e[1].rld, (((1000000/HZ) - 1)));
- 		LEON3_BYPASS_STORE_PA(&leon3_gptimer_regs->e[1].ctrl, 0);
- # endif
+ /* Dorking with Bus ranges... */
+--- a/arch/sparc/include/asm/oplib_64.h
++++ b/arch/sparc/include/asm/oplib_64.h
+@@ -278,7 +278,6 @@ extern int prom_finddevice(const char *n
+ extern int prom_setprop(int node, const char *prop_name, char *prop_value,
+ 			int value_size);
  
+-extern int prom_pathtoinode(const char *path);
+ extern int prom_inst2pkg(int);
+ extern int prom_service_exists(const char *service_name);
+ extern void prom_sun4v_guest_soft_state(void);
+--- a/arch/sparc/prom/tree_32.c
++++ b/arch/sparc/prom/tree_32.c
+@@ -341,18 +341,3 @@ int prom_inst2pkg(int inst)
+ 	if (node == -1) return 0;
+ 	return node;
+ }
+-
+-/* Return 'node' assigned to a particular prom 'path'
+- * FIXME: Should work for v0 as well
+- */
+-int prom_pathtoinode(char *path)
+-{
+-	int node, inst;
+-	
+-	inst = prom_devopen (path);
+-	if (inst == -1) return 0;
+-	node = prom_inst2pkg (inst);
+-	prom_devclose (inst);
+-	if (node == -1) return 0;
+-	return node;
+-}
+--- a/arch/sparc/prom/tree_64.c
++++ b/arch/sparc/prom/tree_64.c
+@@ -374,24 +374,6 @@ inline int prom_inst2pkg(int inst)
+ 	return node;
+ }
+ 
+-/* Return 'node' assigned to a particular prom 'path'
+- * FIXME: Should work for v0 as well
+- */
+-int
+-prom_pathtoinode(const char *path)
+-{
+-	int node, inst;
+-
+-	inst = prom_devopen (path);
+-	if (inst == 0)
+-		return 0;
+-	node = prom_inst2pkg(inst);
+-	prom_devclose(inst);
+-	if (node == -1)
+-		return 0;
+-	return node;
+-}
+-
+ int prom_ihandle2path(int handle, char *buffer, int bufsize)
+ {
+ 	unsigned long args[7];
 
 
