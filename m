@@ -1,91 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066Ab1AFRkW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 12:40:22 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33997 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753900Ab1AFRkT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 12:40:19 -0500
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
-In-Reply-To: <1294270104.16957.73.camel@mulgrave.site>
-References: <1294254337.16957.13.camel@mulgrave.site>
-	 <AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com>
-	 <1294256169.16957.18.camel@mulgrave.site>
-	 <20110105200008.GJ8638@n2100.arm.linux.org.uk>
-	 <1294259637.16957.25.camel@mulgrave.site>
-	 <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com>
-	 <20110105210448.GM8638@n2100.arm.linux.org.uk>
-	 <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com>
-	 <1294262208.2952.4.camel@heimdal.trondhjem.org>
-	 <AANLkTi=3Gu-rz=-OdNtUXn4qw60Df6=YePnzvB=s-+Ov@mail.gmail.com>
-	 <1294268808.2952.18.camel@heimdal.trondhjem.org>
-	 <1294270104.16957.73.camel@mulgrave.site>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 06 Jan 2011 11:40:13 -0600
-Message-ID: <1294335614.22825.154.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+	id S1753626Ab1AFRnI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 12:43:08 -0500
+Received: from mail.bspu.unibel.by ([195.50.2.21]:42366 "EHLO mail.bspu.local"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751233Ab1AFRnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 12:43:07 -0500
+Message-ID: <4D25FEEE.6070805@bspu.unibel.by>
+Date: Thu, 06 Jan 2011 19:42:06 +0200
+From: Dzianis Kahanovich <mahatma@bspu.unibel.by>
+Reply-To: mahatma@eu.by
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b7pre) Gecko/20101123 Firefox/4.0b7pre SeaMonkey/2.1b1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: mahatma@eu.by, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fix miscompiling with GCC 4.5 -finline-functions
+References: <4D2339F7.3090502@bspu.unibel.by> <20110105150226.f4e2f31e.akpm@linux-foundation.org>
+In-Reply-To: <20110105150226.f4e2f31e.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-05 at 23:28 +0000, James Bottomley wrote:
-> Can you explain how the code works? it looks to me like you read the xdr
-> stuff through the vmap region then write it out directly to the pages? 
+Andrew Morton wrote:
 
-OK, I think I see how this is supposed to work:  It's a sequential loop
-of reading in via the pages (i.e. through the kernel mapping) and then
-updating those pages via the vmap.  In which case, I think this patch is
-what you need.
+>> Fixing broken automatic inlining for GCC 4.5+  (breaks build with
+>> -finline-functions or -O3 on x86_*).
+>>
+> 
+> Please always quote the compiler output when addressing build errors
+> and warnings.
 
-The theory of operation is that the readdir on pages actually uses the
-network DMA operations to perform, so when it's finished, the underlying
-page is up to date.  After this you invalidate the vmap range, so we
-have no cache lines above it (so it picks up the values from the
-uptodate page).  Finally, after the operation on the vmap region has
-finished, you flush it so that any updated contents go back to the pages
-themselves before the next iteration begins.
+Sorry. linux-next, yesterday, gcc version 4.5.1 (Gentoo 4.5.1-r1 p1.4, pie-0.4.5):
 
-Does this look right to people?  I've verified it fixes the issues on
-parisc.
+make -j5 -s HOSTCC=x86_64-pc-linux-gnu-gcc ARCH=i386
+CROSS_COMPILE=i586-pc-linux-gnu- all -i
+arch/x86/kvm/vmx.c: Assembler messages:
+arch/x86/kvm/vmx.c:4036: Error: symbol `.Llaunched' is already defined
+arch/x86/kvm/vmx.c:4048: Error: symbol `.Lkvm_vmx_return' is already defined
+i586-pc-linux-gnu-ld: cannot find arch/x86/kvm/vmx.o: No such file or directory
+...
+ERROR: "__bad_udelay" [drivers/media/radio/radio-aimslab.ko] undefined!
 
-James
+I unsure in precise version boundaries, but first found on release tree weeks
+ago and first error only sometimes happened on x86_64 (version related?). On my
+own builds I used -fno-inline-functions in local Makefile's, but this is more
+local fix.
 
----
+> 
+>> --- a/arch/x86/kvm/vmx.c
+>> +++ b/arch/x86/kvm/vmx.c
+>> @@ -569,7 +569,7 @@ static inline void ept_sync_individual_a
+>>  	}
+>>  }
+>>
+>> -static unsigned long vmcs_readl(unsigned long field)
+>> +static noinline unsigned long vmcs_readl(unsigned long field)
+>>  {
+>>  	unsigned long value = 0;
+>>
+>> --- a/drivers/media/radio/radio-aimslab.c
+>> +++ b/drivers/media/radio/radio-aimslab.c
+>> @@ -71,7 +71,7 @@ static struct rtrack rtrack_card;
+>>
+>>  /* local things */
+>>
+>> -static void sleep_delay(long n)
+>> +static noinline void sleep_delay(long n)
+>>  {
+>>  	/* Sleep nicely for 'n' uS */
+>>  	int d = n / msecs_to_jiffies(1000);
+> 
+> A golden rule is that when a programmer reads some code, he should be
+> able to understand why it's there.  There is no way on this little
+> earth that a programmer will be able to look at this code and say
+> "ah-hah, that must be a workaround for gcc-4.5 -finline-functions!".
+> 
+> We fix that problem this way:
+> 
+> --- a/arch/x86/kvm/vmx.c~fix-miscompiling-with-gcc-45-finline-functions-fix
+> +++ a/arch/x86/kvm/vmx.c
+> @@ -569,6 +569,7 @@ static inline void ept_sync_individual_a
+>  	}
+>  }
+>  
+> +/* noinline works around gcc-4.5+ build error with -finline-functions */
+>  static noinline unsigned long vmcs_readl(unsigned long field)
+>  {
+>  	unsigned long value = 0;
+> --- a/drivers/media/radio/radio-aimslab.c~fix-miscompiling-with-gcc-45-finline-functions-fix
+> +++ a/drivers/media/radio/radio-aimslab.c
+> @@ -71,6 +71,7 @@ static struct rtrack rtrack_card;
+>  
+>  /* local things */
+>  
+> +/* noinline works around gcc-4.5+ build error with -finline-functions */
+>  static noinline void sleep_delay(long n)
+>  {
+>  	/* Sleep nicely for 'n' uS */
+> _
+> 
+> 
+> 
 
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index 996dd89..bde1911 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -587,12 +587,16 @@ int nfs_readdir_xdr_to_array(nfs_readdir_descriptor_t *desc, struct page *page,
- 		if (status < 0)
- 			break;
- 		pglen = status;
-+
-+		invalidate_kernel_vmap_range(pages_ptr, pglen);
-+
- 		status = nfs_readdir_page_filler(desc, &entry, pages_ptr, page, pglen);
- 		if (status < 0) {
- 			if (status == -ENOSPC)
- 				status = 0;
- 			break;
- 		}
-+		flush_kernel_vmap_range(pages_ptr, pglen);
- 	} while (array->eof_index < 0);
- 
- 	nfs_readdir_free_large_page(pages_ptr, pages, array_size);
 
-
+-- 
+WBR, Dzianis Kahanovich AKA Denis Kaganovich, http://mahatma.bspu.unibel.by/
