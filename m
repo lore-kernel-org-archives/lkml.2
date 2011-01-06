@@ -1,62 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab1AFKgJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 05:36:09 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:45757 "EHLO mx3.mail.elte.hu"
+	id S1752772Ab1AFKin (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 05:38:43 -0500
+Received: from mail.atmel.fr ([81.80.104.162]:33346 "EHLO atmel-es2.atmel.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752786Ab1AFKgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 05:36:06 -0500
-Date: Thu, 6 Jan 2011 11:35:55 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/paravirt for v2.6.38
-Message-ID: <20110106103555.GA25737@elte.hu>
+	id S1752516Ab1AFKim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 05:38:42 -0500
+Message-ID: <4D259B9C.6060409@atmel.com>
+Date: Thu, 06 Jan 2011 11:38:20 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-mtd <linux-mtd@lists.infradead.org>
+CC: "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Andrew Victor <linux@maxim.org.za>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Hong XU <hong.xu@atmel.com>,
+        Patrice VILCHEZ <patrice.vilchez@atmel.com>
+Subject: Re: Hit BUG_ON in dma-mapping.c:425
+References: <4D24A108.2080609@atmel.com> <20110105165551.GE8638@n2100.arm.linux.org.uk>
+In-Reply-To: <20110105165551.GE8638@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+(I include MTD mailing-list now)
 
-Please pull the latest x86-paravirt-for-linus git tree from:
+Le 05/01/2011 17:55, Russell King - ARM Linux :
+> On Wed, Jan 05, 2011 at 05:49:12PM +0100, Nicolas Ferre wrote:
+>> Hi,
+>>
+>> While running mtd_stresstest on a dataflash (atmel_spi 
+>> + mtd_dataflash drivers) I hit the BUG_ON directive that 
+>> is at the beginning of ___dma_single_cpu_to_dev() function.
+>> This function is called from the SPI driver that do a 
+>> dma_map_single() before DMA operations on the buffer 
+>> transmitted from upper layers.
+>>
+>> It seems that this address is above "high_memory" limit because 
+>> it is allocated by vmalloc (in mtd_stresstest.c:285)...
+> 
+> Well, its telling you is that you're not allowed to DMA to vmalloc
+> addresses.  Whether that's the fault of the map driver or not is a
+> question for mtd folk.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-paravirt-for-linus
+So you mean that those vmalloc calls should be changed to kmalloc in MTD like this:
 
- Thanks,
-
-	Ingo
-
------------------->
-Cliff Wickman (1):
-      x86, paravirt: Use native_halt on a halt, not native_safe_halt
-
-
- arch/x86/include/asm/paravirt.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-index ef99758..7709c12 100644
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -112,7 +112,7 @@ static inline void arch_safe_halt(void)
+--- a/drivers/mtd/tests/mtd_stresstest.c
++++ b/drivers/mtd/tests/mtd_stresstest.c
+@@ -26,7 +26,6 @@
+ #include <linux/mtd/mtd.h>
+ #include <linux/slab.h>
+ #include <linux/sched.h>
+-#include <linux/vmalloc.h>
  
- static inline void halt(void)
- {
--	PVOP_VCALL0(pv_irq_ops.safe_halt);
-+	PVOP_VCALL0(pv_irq_ops.halt);
- }
+ #define PRINT_PREF KERN_INFO "mtd_stresstest: "
  
- static inline void wbinvd(void)
+@@ -281,8 +280,8 @@ static int __init mtd_stresstest_init(void)
+        bufsize = mtd->erasesize * 2;
+ 
+        err = -ENOMEM;
+-       readbuf = vmalloc(bufsize);
+-       writebuf = vmalloc(bufsize);
++       readbuf = kmalloc(bufsize, GFP_KERNEL);
++       writebuf = kmalloc(bufsize, GFP_KERNEL);
+        offsets = kmalloc(ebcnt * sizeof(int), GFP_KERNEL);
+        if (!readbuf || !writebuf || !offsets) {
+                printk(PRINT_PREF "error: cannot allocate memory\n");
+@@ -313,8 +312,8 @@ static int __init mtd_stresstest_init(void)
+ out:
+        kfree(offsets);
+        kfree(bbt);
+-       vfree(writebuf);
+-       vfree(readbuf);
++       kfree(writebuf);
++       kfree(readbuf);
+        put_mtd_device(mtd);
+        if (err)
+                printk(PRINT_PREF "error %d occurred\n", err);
+
+
+I also discovered the same issue while trying to write with "dd" on /dev/mtdblockx
+
+Same vmalloc'ed memory seems to be used in mtdblock_writesect():
+mtdblk->cache_data = vmalloc(mtdblk->mbd.mtd->erasesize);
+
+I know that using "dd" on a block device is not the common case but it should work instead of not being able to transmit buffer with DMA... So what it implies to switch this to kmalloc? Is it regression-free to do this?
+
+Best regards,
+-- 
+Nicolas Ferre
