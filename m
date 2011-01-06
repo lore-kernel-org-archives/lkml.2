@@ -1,51 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608Ab1AFSGK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 13:06:10 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40661 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752370Ab1AFSGI (ORCPT
+	id S1752629Ab1AFSHD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 13:07:03 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43097 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752370Ab1AFSHC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 13:06:08 -0500
+	Thu, 6 Jan 2011 13:07:02 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=HNRgcBTgWEnIyvesYjbnsM6hCZh0+MuxRTddR28Q0PBfjigm2TUG9DkTwksYT5ORV8
+         VAsVlDX0YHpdd+7rRDGstzWfdI0znkUFfkgdmbWGa1PSVJls3LcRYdvQPvM3vjzx0dps
+         730HJKGqzZjIJODO9fyUjJ5yUbe32w9xcqF4o=
 MIME-Version: 1.0
-In-Reply-To: <20110106000157.GA16089@gondor.apana.org.au>
-References: <20081225001724.GA2813@gondor.apana.org.au> <20081225002020.GA2912@gondor.apana.org.au>
- <20090324044932.GA18245@gondor.apana.org.au> <20091204135530.GA29371@gondor.apana.org.au>
- <20100226004914.GA20812@gondor.apana.org.au> <20100519020603.GA19654@gondor.apana.org.au>
- <20100521104404.GA29530@gondor.apana.org.au> <20100804140448.GA4042@gondor.apana.org.au>
- <20101024061625.GA23715@gondor.apana.org.au> <20110106000157.GA16089@gondor.apana.org.au>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 6 Jan 2011 10:05:46 -0800
-Message-ID: <AANLkTikzg3Hndp8WRi59bvJdBLxi=p-1gt7aZDLYbSW8@mail.gmail.com>
-Subject: Re: Crypto Update for 2.6.38
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+In-Reply-To: <4D25FEEE.6070805@bspu.unibel.by>
+References: <4D2339F7.3090502@bspu.unibel.by>
+	<20110105150226.f4e2f31e.akpm@linux-foundation.org>
+	<4D25FEEE.6070805@bspu.unibel.by>
+Date: Thu, 6 Jan 2011 13:07:01 -0500
+Message-ID: <AANLkTi=tNwiTcdqLjnL+6YmYi51C9-CwvVt9hY0zzhVF@mail.gmail.com>
+Subject: Re: [PATCH] fix miscompiling with GCC 4.5 -finline-functions
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: mahatma@eu.by
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 5, 2011 at 4:01 PM, Herbert Xu <herbert@gondor.hengli.com.au> wrote:
+Hi,
+
+On Thu, Jan 6, 2011 at 12:42 PM, Dzianis Kahanovich
+<mahatma@bspu.unibel.by> wrote:
+> Andrew Morton wrote:
 >
-> * Crypto API interface for user-space (hash + skcipher)
+>>> Fixing broken automatic inlining for GCC 4.5+  (breaks build with
+>>> -finline-functions or -O3 on x86_*).
+>>>
+>>
+>> Please always quote the compiler output when addressing build errors
+>> and warnings.
+>
+> Sorry. linux-next, yesterday, gcc version 4.5.1 (Gentoo 4.5.1-r1 p1.4, pie-0.4.5):
+>
+> make -j5 -s HOSTCC=x86_64-pc-linux-gnu-gcc ARCH=i386
+> CROSS_COMPILE=i586-pc-linux-gnu- all -i
+> arch/x86/kvm/vmx.c: Assembler messages:
+> arch/x86/kvm/vmx.c:4036: Error: symbol `.Llaunched' is already defined
+> arch/x86/kvm/vmx.c:4048: Error: symbol `.Lkvm_vmx_return' is already defined
+> i586-pc-linux-gnu-ld: cannot find arch/x86/kvm/vmx.o: No such file or directory
+> ...
+> ERROR: "__bad_udelay" [drivers/media/radio/radio-aimslab.ko] undefined!
+>
+did you report this to gcc folks ?
 
-Is there really any point to this? And can we get more explanation of
-what the interface is, and who would use it?
+Btw, you said it showed with "-O3" or "-finline-functions", but I do
+not see any specific option passed to make. Could you remove the "-j5"
+switch and add "V=1" to see the full compiler command line ?
 
-If you need crypto in user space, it's almost invariably better done
-in user space. If the CPU can do crypto on its own, and doesn't expose
-those instructions to user space, it's just a stupid CPU - and the
-user/kernel transfer is likely going to make it slower than a pure
-software approach for any but the biggest transfers.
+Generally speaking, neither "-O3" or "-finline-functions" seems to be
+passed by default by kbuild, so I am not sure they are meant to be
+supported at all.
 
-And if the crypto engine is off-chip, the sw version is going to be
-faster anyway except for possible async versions that are hard to
-interface to user space.
+ - Arnaud
 
-So I really need more convincing about the whole user-space interface.
-Adding new interfaces willy-nilly isn't a good idea. They need damn
-good reasons.
-
-                                      Linus
+> I unsure in precise version boundaries, but first found on release tree weeks
+> ago and first error only sometimes happened on x86_64 (version related?). On my
+> own builds I used -fno-inline-functions in local Makefile's, but this is more
+> local fix.
+>
+>>
+>>> --- a/arch/x86/kvm/vmx.c
+>>> +++ b/arch/x86/kvm/vmx.c
+>>> @@ -569,7 +569,7 @@ static inline void ept_sync_individual_a
+>>>      }
+>>>  }
+>>>
+>>> -static unsigned long vmcs_readl(unsigned long field)
+>>> +static noinline unsigned long vmcs_readl(unsigned long field)
+>>>  {
+>>>      unsigned long value = 0;
+>>>
+>>> --- a/drivers/media/radio/radio-aimslab.c
+>>> +++ b/drivers/media/radio/radio-aimslab.c
+>>> @@ -71,7 +71,7 @@ static struct rtrack rtrack_card;
+>>>
+>>>  /* local things */
+>>>
+>>> -static void sleep_delay(long n)
+>>> +static noinline void sleep_delay(long n)
+>>>  {
+>>>      /* Sleep nicely for 'n' uS */
+>>>      int d = n / msecs_to_jiffies(1000);
+>>
+>> A golden rule is that when a programmer reads some code, he should be
+>> able to understand why it's there.  There is no way on this little
+>> earth that a programmer will be able to look at this code and say
+>> "ah-hah, that must be a workaround for gcc-4.5 -finline-functions!".
+>>
+>> We fix that problem this way:
+>>
+>> --- a/arch/x86/kvm/vmx.c~fix-miscompiling-with-gcc-45-finline-functions-fix
+>> +++ a/arch/x86/kvm/vmx.c
+>> @@ -569,6 +569,7 @@ static inline void ept_sync_individual_a
+>>       }
+>>  }
+>>
+>> +/* noinline works around gcc-4.5+ build error with -finline-functions */
+>>  static noinline unsigned long vmcs_readl(unsigned long field)
+>>  {
+>>       unsigned long value = 0;
+>> --- a/drivers/media/radio/radio-aimslab.c~fix-miscompiling-with-gcc-45-finline-functions-fix
+>> +++ a/drivers/media/radio/radio-aimslab.c
+>> @@ -71,6 +71,7 @@ static struct rtrack rtrack_card;
+>>
+>>  /* local things */
+>>
+>> +/* noinline works around gcc-4.5+ build error with -finline-functions */
+>>  static noinline void sleep_delay(long n)
+>>  {
+>>       /* Sleep nicely for 'n' uS */
+>> _
+>>
+>>
+>>
+>
+>
+> --
+> WBR, Dzianis Kahanovich AKA Denis Kaganovich, http://mahatma.bspu.unibel.by/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
