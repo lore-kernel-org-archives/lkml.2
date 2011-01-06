@@ -1,63 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab1AFA3s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:29:48 -0500
-Received: from kroah.org ([198.145.64.141]:35679 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754181Ab1AFA3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:29:45 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:01 2011
-Message-Id: <20110106002301.781715875@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:22:33 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [054/152] tcp: Increase TCP_MAXSEG socket option minimum.
-In-Reply-To: <20110106002500.GA3172@kroah.com>
+	id S1754566Ab1AFAw7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:52:59 -0500
+Received: from a-pb-sasl-sd.pobox.com ([64.74.157.62]:41009 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754210Ab1AFAw5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:52:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=to:subject:from
+	:date:message-id:mime-version:content-type
+	:content-transfer-encoding; q=dns; s=sasl; b=Cm3qE0pJEI2QVJvLgsx
+	A0gejU+kLqEx6OaVSNhLGEvPIHM0rs5C/Ms4PV7jGPiXTZ4ud2Cu1UGtxGXbs6rh
+	shFhsNHRCpBzcj0OLmrfVkvFOWkS0dlRrbtOSRU03RnlI64sNjSqZ5oA75yrpVbP
+	7bOVdTcCk3mA/vqEbvZeqceM=
+To: git@vger.kernel.org
+Subject: [ANNOUNCE] Git 1.7.3.5
+From: Junio C Hamano <gitster@pobox.com>
+Date: Wed, 05 Jan 2011 16:52:46 -0800
+Message-ID: <7vy66yc0pt.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+X-Pobox-Relay-ID: 60BD7740-192F-11E0-A09F-CBB45B885003-77302942!a-pb-sasl-sd.pobox.com
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.36-stable review patch.  If anyone has any objections, please let us know.
+The latest maintenance release Git 1.7.3.5 is available at the
+usual places:
 
-------------------
+  http://www.kernel.org/pub/software/scm/git/
 
+  git-1.7.3.5.tar.{gz,bz2}			(source tarball)
+  git-htmldocs-1.7.3.5.tar.{gz,bz2}		(preformatted docs)
+  git-manpages-1.7.3.5.tar.{gz,bz2}		(preformatted docs)
 
-From: David S. Miller <davem@davemloft.net>
+The RPM binary packages for a few architectures are found in:
 
-[ Upstream commit 7a1abd08d52fdeddb3e9a5a33f2f15cc6a5674d2 ]
+  RPMS/$arch/git-*-1.7.3.5-1.fc11.$arch.rpm	(RPM)
 
-As noted by Steve Chen, since commit
-f5fff5dc8a7a3f395b0525c02ba92c95d42b7390 ("tcp: advertise MSS
-requested by user") we can end up with a situation where
-tcp_select_initial_window() does a divide by a zero (or
-even negative) mss value.
+Just a handful of small fixes here and there, nothing spectacular, except
+perhaps for a fix to the "am --abort" safety issue Linus noticed the other
+day.
 
-The problem is that sometimes we effectively subtract
-TCPOLEN_TSTAMP_ALIGNED and/or TCPOLEN_MD5SIG_ALIGNED from the mss.
+----------------------------------------------------------------
 
-Fix this by increasing the minimum from 8 to 64.
+Changes since v1.7.3.4 are as follows:
 
-Reported-by: Steve Chen <schen@mvista.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/ipv4/tcp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Brandon Casey (1):
+      test-lib.sh/test_decode_color(): use octal not hex in awk script
 
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -2246,7 +2246,7 @@ static int do_tcp_setsockopt(struct sock
- 		/* Values greater than interface MTU won't take effect. However
- 		 * at the point when this call is done we typically don't yet
- 		 * know which interface is going to be used */
--		if (val < 8 || val > MAX_TCP_WINDOW) {
-+		if (val < 64 || val > MAX_TCP_WINDOW) {
- 			err = -EINVAL;
- 			break;
- 		}
+Jakub Narebski (1):
+      gitweb: Include links to feeds in HTML header only for '200 OK' response
 
+Jeff King (1):
+      ident: die on bogus date format
+
+Jiang Xin (1):
+      Fix typo in git-gc document.
+
+Jonathan Nieder (2):
+      t0050: fix printf format strings for portability
+      gitweb: skip logo in atom feed when there is none
+
+Junio C Hamano (5):
+      commit: die before asking to edit the log message
+      am --abort: keep unrelated commits since the last failure and warn
+      rebase --skip: correctly wrap-up when skipping the last patch
+      Prepare for 1.7.3.5
+      Git 1.7.3.5
+
+Kevin Ballard (1):
+      status: Quote paths with spaces in short format
+
+Kirill Smelkov (2):
+      t/t8006: Demonstrate blame is broken when cachetextconv is on
+      fill_textconv(): Don't get/put cache if sha1 is not valid
+
+Mark Lodato (1):
+      fsck docs: remove outdated and useless diagnostic
+
+Michael J Gruber (2):
+      git-difftool.txt: correct the description of $BASE and describe $MERGED
+      difftool: provide basename to external tools
+
+Ramsay Allan Jones (1):
+      t3419-*.sh: Fix arithmetic expansion syntax error
+
+René Scharfe (1):
+      close file on error in read_mmfile()
+
+Robin H. Johnson (2):
+      Fix false positives in t3404 due to SHELL=/bin/false
+      t9001: Fix test prerequisites
+
+Thomas Rast (1):
+      userdiff: fix typo in ruby and python word regexes
+
+Vasyl' Vavrychuk (1):
+      trace.c: mark file-local function static
 
