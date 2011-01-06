@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376Ab1AFNz7 (ORCPT <rfc822;w@1wt.eu>);
+	id S1752517Ab1AFN4C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 08:56:02 -0500
+Received: from cantor.suse.de ([195.135.220.2]:42148 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752392Ab1AFNz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Jan 2011 08:55:59 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:39144 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914Ab1AFNz5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 08:55:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=w4aq6TNMm2brBIa7TU3KPXt9dXsbjBJebnhzuhKrMxv6CxpoabL6ndRvI9nHw02ifP
-         2DFGZbcl2VBTD/qBfo7XhjZUl25cD4Q+tyB8ewu8F4c9XDceTX+fz6OWTPAlEoFLdENd
-         8WZAOZosSL4lugOjyWF+HAtBWswENSKBTBhmM=
-Message-ID: <4D25C9F5.1060907@lwfinger.net>
-Date: Thu, 06 Jan 2011 07:56:05 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+Date: Thu, 6 Jan 2011 14:55:58 +0100
+From: Michal Marek <mmarek@suse.cz>
+To: Roland Stigge <stigge@antcom.de>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Kernel build ignores missing mkimage on building uImage
+Message-ID: <20110106135558.GC1841@sepie.suse.cz>
+References: <4D0B8D85.5090605@antcom.de>
 MIME-Version: 1.0
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-CC: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>,
-        Matt Mackall <mpm@selenic.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-        Harald Welte <HaraldWelte@viatech.com>,
-        Michal Ludvig <michal@logix.cz>
-Subject: Re: 2.6.37-rc7: Regression: b43: crashes in hwrng_register()
-References: <20110104123824.GA31557@gondor.apana.org.au> <20110104125722.GC27114@darkside.kls.lan> <20110104224238.GA4978@gondor.apana.org.au> <20110104230644.GJ27114@darkside.kls.lan> <20110105003020.GA5751@gondor.apana.org.au> <20110105035222.GA8762@darkside.kls.lan> <20110105054735.GA7773@gondor.apana.org.au> <20110105131621.GA24769@darkside.kls.lan> <20110106061241.GA18939@gondor.apana.org.au> <20110106131516.GB8803@darkside.kls.lan> <20110106133541.GA22030@gondor.apana.org.au>
-In-Reply-To: <20110106133541.GA22030@gondor.apana.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D0B8D85.5090605@antcom.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2011 07:35 AM, Herbert Xu wrote:
-> On Thu, Jan 06, 2011 at 02:15:16PM +0100, Mario 'BitKoenig' Holbe wrote:
->>
->> The patch helps. No crashes, meaningful random data - perfect.
->> I still have 2 small annotations...
+On Fri, Dec 17, 2010 at 05:19:17PM +0100, Roland Stigge wrote:
+> Hi,
 > 
-> Thanks for testing!
+> on building an uImage, I get:
 > 
->> 1. Having ECX on the clobber-list is not really necessary.
->> XSTORE doesn't touch ECX at all.
->> REP XSTORE would touch it, but for this ECX would be an input anyways.
+> $ make uImage
+>   CHK     include/linux/version.h
+>   CHK     include/generated/utsrelease.h
+> make[1]: `include/generated/mach-types.h' is up to date.
+>   CALL    scripts/checksyscalls.sh
+>   CHK     include/generated/compile.h
+>   Kernel: arch/arm/boot/Image is ready
+>   SHIPPED arch/arm/boot/compressed/lib1funcs.S
+>   AS      arch/arm/boot/compressed/lib1funcs.o
+>   LD      arch/arm/boot/compressed/vmlinux
+>   OBJCOPY arch/arm/boot/zImage
+>   Kernel: arch/arm/boot/zImage is ready
+>   UIMAGE  arch/arm/boot/uImage
+> "mkimage" command not found - U-Boot images will not be built
+>   Image arch/arm/boot/uImage is ready
+> $
 > 
-> The documentation wasn't clear whether ECX would be updated without
-> the REP prefix so I included it to be on the safe side.  Unfortunately
-> my only VIA machine is on another continent at the moment so I can't
-> test it myself.  Can you verify that ECX isn't changed without the
-> REP prefix?
+> I.e. it says: "uImage is ready" even though the uImage file doesn't
+> exist because mkimage is missing.
 > 
->> 2. Would you mind doing the same for EDX as you did for EDI?
->> This doesn't really change anything currently, but will probably help
->> avoiding a debug-session like ours somewhere in the future :)
+> (I'm working with Linux' current mainline GIT and also see that the
+> problem is also present in the mmarek repo on git.kernel.org.)
 > 
-> According to my documentation EDX isn't be modified (nor would it
-> make sense as it would break REP XSTORE).  Are you seeing anything
-> different?
+> I propose the attached patch.
+> 
+> Thanks for considering.
 
-As an interested observer, I think this routine needs some really detailed comments.
+The patch makes sense and afaics none of the architectures relies on
+this behaviour (either they can't work without mkimage, or a
+uimage-style target has to be requested by the user). Can I assume
+"Signed-off-by: Roland Stigge <stigge@antcom.de>" on this patch.
 
-Larry
+Thanks,
+Michal
+> 
+> bye,
+>   Roland
+
+> diff --git a/scripts/mkuboot.sh b/scripts/mkuboot.sh
+> index 2e3d3cd..446739c 100755
+> --- a/scripts/mkuboot.sh
+> +++ b/scripts/mkuboot.sh
+> @@ -11,7 +11,7 @@ if [ -z "${MKIMAGE}" ]; then
+>  	if [ -z "${MKIMAGE}" ]; then
+>  		# Doesn't exist
+>  		echo '"mkimage" command not found - U-Boot images will not be built' >&2
+> -		exit 0;
+> +		exit 1;
+>  	fi
+>  fi
+>  
+
