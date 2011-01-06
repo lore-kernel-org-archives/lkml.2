@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754669Ab1AFAj4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:39:56 -0500
-Received: from kroah.org ([198.145.64.141]:35986 "EHLO coco.kroah.org"
+	id S1754608Ab1AFAbI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:31:08 -0500
+Received: from kroah.org ([198.145.64.141]:35960 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754622Ab1AFAbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:31:11 -0500
+	id S1754545Ab1AFAbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:31:02 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:07 2011
-Message-Id: <20110106002307.637727280@clark.site>
+Message-Id: <20110106002307.086652632@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:23:34 -0800
+Date: Wed, 05 Jan 2011 16:23:28 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andres Salomon <dilinger@queued.net>
-Subject: [115/152] cs5535-gpio: dont apply errata #36 to edge detect GPIOs
+        Christian Lamparter <chunkeey@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [109/152] p54usb: add 5 more USBIDs
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,71 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andres Salomon <dilinger@queued.net>
+From: Christian Lamparter <chunkeey@googlemail.com>
 
-commit 001851659354cce436b749a793f3512a53394d80 upstream.
+commit 16cad7fba037b34ca32cc0adac65bc089d969fb8 upstream.
 
-The edge detect status GPIOs function differently from the other atomic
-model CS5536 GPIO registers; writing 1 to the high bits clears the GPIO,
-but writing 1 to the lower bits also clears the bit.
+This patch adds five more USBIDs to the table.
 
-This means that read-modify-write doesn't actually work for it, so don't
-apply the errata here.  If a negative edge status gets lost after
-resume..  well, we tried our best!
+Source:
+http://www.linuxant.com/pipermail/driverloader/2005q3/002307.html
+http://wireless.kernel.org/en/users/Drivers/p54/devices (by M. Davis)
 
-Tested-by: Daniel Drake <dsd@laptop.org>
-Signed-off-by: Andres Salomon <dilinger@queued.net>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpio/cs5535-gpio.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ drivers/net/wireless/p54/p54usb.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/gpio/cs5535-gpio.c
-+++ b/drivers/gpio/cs5535-gpio.c
-@@ -56,15 +56,22 @@ static struct cs5535_gpio_chip {
-  * registers, see include/linux/cs5535.h.
-  */
+--- a/drivers/net/wireless/p54/p54usb.c
++++ b/drivers/net/wireless/p54/p54usb.c
+@@ -43,6 +43,7 @@ MODULE_FIRMWARE("isl3887usb");
  
--static void errata_outl(u32 val, unsigned long addr)
-+static void errata_outl(struct cs5535_gpio_chip *chip, u32 val,
-+		unsigned int reg)
- {
-+	unsigned long addr = chip->base + 0x80 + reg;
-+
- 	/*
- 	 * According to the CS5536 errata (#36), after suspend
- 	 * a write to the high bank GPIO register will clear all
- 	 * non-selected bits; the recommended workaround is a
- 	 * read-modify-write operation.
-+	 *
-+	 * Don't apply this errata to the edge status GPIOs, as writing
-+	 * to their lower bits will clear them.
- 	 */
--	val |= inl(addr);
-+	if (reg != GPIO_POSITIVE_EDGE_STS && reg != GPIO_NEGATIVE_EDGE_STS)
-+		val |= inl(addr);
- 	outl(val, addr);
- }
- 
-@@ -76,7 +83,7 @@ static void __cs5535_gpio_set(struct cs5
- 		outl(1 << offset, chip->base + reg);
- 	else
- 		/* high bank register */
--		errata_outl(1 << (offset - 16), chip->base + 0x80 + reg);
-+		errata_outl(chip, 1 << (offset - 16), reg);
- }
- 
- void cs5535_gpio_set(unsigned offset, unsigned int reg)
-@@ -98,7 +105,7 @@ static void __cs5535_gpio_clear(struct c
- 		outl(1 << (offset + 16), chip->base + reg);
- 	else
- 		/* high bank register */
--		errata_outl(1 << offset, chip->base + 0x80 + reg);
-+		errata_outl(chip, 1 << offset, reg);
- }
- 
- void cs5535_gpio_clear(unsigned offset, unsigned int reg)
+ static struct usb_device_id p54u_table[] __devinitdata = {
+ 	/* Version 1 devices (pci chip + net2280) */
++	{USB_DEVICE(0x0411, 0x0050)},	/* Buffalo WLI2-USB2-G54 */
+ 	{USB_DEVICE(0x045e, 0x00c2)},	/* Microsoft MN-710 */
+ 	{USB_DEVICE(0x0506, 0x0a11)},	/* 3COM 3CRWE254G72 */
+ 	{USB_DEVICE(0x06b9, 0x0120)},	/* Thomson SpeedTouch 120g */
+@@ -56,9 +57,12 @@ static struct usb_device_id p54u_table[]
+ 	{USB_DEVICE(0x0846, 0x4220)},	/* Netgear WG111 */
+ 	{USB_DEVICE(0x09aa, 0x1000)},	/* Spinnaker Proto board */
+ 	{USB_DEVICE(0x0cde, 0x0006)},	/* Medion 40900, Roper Europe */
++	{USB_DEVICE(0x0db0, 0x6826)},	/* MSI UB54G (MS-6826) */
+ 	{USB_DEVICE(0x107b, 0x55f2)},	/* Gateway WGU-210 (Gemtek) */
+ 	{USB_DEVICE(0x124a, 0x4023)},	/* Shuttle PN15, Airvast WM168g, IOGear GWU513 */
++	{USB_DEVICE(0x1435, 0x0210)},	/* Inventel UR054G */
+ 	{USB_DEVICE(0x1630, 0x0005)},	/* 2Wire 802.11g USB (v1) / Z-Com */
++	{USB_DEVICE(0x182d, 0x096b)},	/* Sitecom WL-107 */
+ 	{USB_DEVICE(0x1915, 0x2234)},	/* Linksys WUSB54G OEM */
+ 	{USB_DEVICE(0x1915, 0x2235)},	/* Linksys WUSB54G Portable OEM */
+ 	{USB_DEVICE(0x2001, 0x3701)},	/* DLink DWL-G120 Spinnaker */
+@@ -94,6 +98,7 @@ static struct usb_device_id p54u_table[]
+ 	{USB_DEVICE(0x1435, 0x0427)},	/* Inventel UR054G */
+ 	{USB_DEVICE(0x1668, 0x1050)},	/* Actiontec 802UIG-1 */
+ 	{USB_DEVICE(0x2001, 0x3704)},	/* DLink DWL-G122 rev A2 */
++	{USB_DEVICE(0x2001, 0x3705)},	/* D-Link DWL-G120 rev C1 */
+ 	{USB_DEVICE(0x413c, 0x5513)},	/* Dell WLA3310 USB Wireless Adapter */
+ 	{USB_DEVICE(0x413c, 0x8102)},	/* Spinnaker DUT */
+ 	{USB_DEVICE(0x413c, 0x8104)},	/* Cohiba Proto board */
 
 
