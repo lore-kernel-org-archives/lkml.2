@@ -1,109 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753626Ab1AFRnI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 12:43:08 -0500
-Received: from mail.bspu.unibel.by ([195.50.2.21]:42366 "EHLO mail.bspu.local"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751233Ab1AFRnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 12:43:07 -0500
-Message-ID: <4D25FEEE.6070805@bspu.unibel.by>
-Date: Thu, 06 Jan 2011 19:42:06 +0200
-From: Dzianis Kahanovich <mahatma@bspu.unibel.by>
-Reply-To: mahatma@eu.by
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b7pre) Gecko/20101123 Firefox/4.0b7pre SeaMonkey/2.1b1
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: mahatma@eu.by, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fix miscompiling with GCC 4.5 -finline-functions
-References: <4D2339F7.3090502@bspu.unibel.by> <20110105150226.f4e2f31e.akpm@linux-foundation.org>
-In-Reply-To: <20110105150226.f4e2f31e.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753085Ab1AFRn4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 12:43:56 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:53307 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233Ab1AFRny (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 12:43:54 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Martin Knoblauch <knobi@knobisoft.de>
+Cc: Joe Perches <joe@perches.com>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Samuel Thibault <samuel.thibault@ens-lyon.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Dan Carpenter <error27@gmail.com>, Andy Whitcroft <apw@canonical.com>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch] checkpatch: putting the && or || on the wrong line
+In-Reply-To: Your message of "Thu, 06 Jan 2011 04:11:31 PST."
+             <839814.56179.qm@web113319.mail.gq1.yahoo.com>
+From: Valdis.Kletnieks@vt.edu
+References: <20110104055900.GA5062@bicker> <20110104163836.GA30317@fieldses.org> <20110104164414.GX5875@const.bordeaux.inria.fr> <1294160834.6617.51.camel@Joe-Laptop> <m3fwt7i740.fsf@intrepid.localdomain> <1294249529.6617.118.camel@Joe-Laptop>
+            <839814.56179.qm@web113319.mail.gq1.yahoo.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1294335793_4821P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Thu, 06 Jan 2011 12:43:14 -0500
+Message-ID: <88124.1294335794@localhost>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020207.4D25FF35.0007,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton wrote:
+--==_Exmh_1294335793_4821P
+Content-Type: text/plain; charset=us-ascii
 
->> Fixing broken automatic inlining for GCC 4.5+  (breaks build with
->> -finline-functions or -O3 on x86_*).
->>
-> 
-> Please always quote the compiler output when addressing build errors
-> and warnings.
+On Thu, 06 Jan 2011 04:11:31 PST, Martin Knoblauch said:
+> If I am "just" a volunteer on some mainly volunteer open source project, why
+> should I care about "in my opinion" crap style. It will just drive me away from
+> that project.
 
-Sorry. linux-next, yesterday, gcc version 4.5.1 (Gentoo 4.5.1-r1 p1.4, pie-0.4.5):
+> Martrin (to hell with style)
 
-make -j5 -s HOSTCC=x86_64-pc-linux-gnu-gcc ARCH=i386
-CROSS_COMPILE=i586-pc-linux-gnu- all -i
-arch/x86/kvm/vmx.c: Assembler messages:
-arch/x86/kvm/vmx.c:4036: Error: symbol `.Llaunched' is already defined
-arch/x86/kvm/vmx.c:4048: Error: symbol `.Lkvm_vmx_return' is already defined
-i586-pc-linux-gnu-ld: cannot find arch/x86/kvm/vmx.o: No such file or directory
-...
-ERROR: "__bad_udelay" [drivers/media/radio/radio-aimslab.ko] undefined!
+http://www.ioccc.org/ is over there --------------------------->
 
-I unsure in precise version boundaries, but first found on release tree weeks
-ago and first error only sometimes happened on x86_64 (version related?). On my
-own builds I used -fno-inline-functions in local Makefile's, but this is more
-local fix.
+That's why you should care about style - because nobody likes debugging
+somebody else's ioccc award-winning code. ;)
 
-> 
->> --- a/arch/x86/kvm/vmx.c
->> +++ b/arch/x86/kvm/vmx.c
->> @@ -569,7 +569,7 @@ static inline void ept_sync_individual_a
->>  	}
->>  }
->>
->> -static unsigned long vmcs_readl(unsigned long field)
->> +static noinline unsigned long vmcs_readl(unsigned long field)
->>  {
->>  	unsigned long value = 0;
->>
->> --- a/drivers/media/radio/radio-aimslab.c
->> +++ b/drivers/media/radio/radio-aimslab.c
->> @@ -71,7 +71,7 @@ static struct rtrack rtrack_card;
->>
->>  /* local things */
->>
->> -static void sleep_delay(long n)
->> +static noinline void sleep_delay(long n)
->>  {
->>  	/* Sleep nicely for 'n' uS */
->>  	int d = n / msecs_to_jiffies(1000);
-> 
-> A golden rule is that when a programmer reads some code, he should be
-> able to understand why it's there.  There is no way on this little
-> earth that a programmer will be able to look at this code and say
-> "ah-hah, that must be a workaround for gcc-4.5 -finline-functions!".
-> 
-> We fix that problem this way:
-> 
-> --- a/arch/x86/kvm/vmx.c~fix-miscompiling-with-gcc-45-finline-functions-fix
-> +++ a/arch/x86/kvm/vmx.c
-> @@ -569,6 +569,7 @@ static inline void ept_sync_individual_a
->  	}
->  }
->  
-> +/* noinline works around gcc-4.5+ build error with -finline-functions */
->  static noinline unsigned long vmcs_readl(unsigned long field)
->  {
->  	unsigned long value = 0;
-> --- a/drivers/media/radio/radio-aimslab.c~fix-miscompiling-with-gcc-45-finline-functions-fix
-> +++ a/drivers/media/radio/radio-aimslab.c
-> @@ -71,6 +71,7 @@ static struct rtrack rtrack_card;
->  
->  /* local things */
->  
-> +/* noinline works around gcc-4.5+ build error with -finline-functions */
->  static noinline void sleep_delay(long n)
->  {
->  	/* Sleep nicely for 'n' uS */
-> _
-> 
-> 
-> 
+--==_Exmh_1294335793_4821P
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
--- 
-WBR, Dzianis Kahanovich AKA Denis Kaganovich, http://mahatma.bspu.unibel.by/
+iD8DBQFNJf8xcC3lWbTT17ARAjBMAKCb1440TxZJF9YoZ+sZnEkGfc0+BwCguto2
+NQvvFdYrsKYB8EcO/EpbB7E=
+=tOUM
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1294335793_4821P--
+
