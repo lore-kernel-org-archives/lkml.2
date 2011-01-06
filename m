@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789Ab1AFES0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 23:18:26 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:55462 "EHLO smtps.tip.net.au"
+	id S1752866Ab1AFEcI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 23:32:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64298 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752221Ab1AFESZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 23:18:25 -0500
-Date: Thu, 6 Jan 2011 15:18:15 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the percpu tree
-Message-Id: <20110106151815.9e5c2a1e.sfr@canb.auug.org.au>
-In-Reply-To: <20110104051314.GA6748@mtj.dyndns.org>
-References: <20110104152105.5cc7c3a9.sfr@canb.auug.org.au>
-	<20110104051314.GA6748@mtj.dyndns.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1752692Ab1AFEcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 23:32:07 -0500
+Subject: Re: [PATCH 09/32] drm/radeon: use system_wq instead of dev_priv->wq
+From: Dave Airlie <airlied@redhat.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+In-Reply-To: <AANLkTin0PtAj+RynsePYHcgVw3Oe0fq5kQMLU9z=V_1e@mail.gmail.com>
+References: <1294062595-30097-1-git-send-email-tj@kernel.org>
+	 <1294062595-30097-10-git-send-email-tj@kernel.org>
+	 <AANLkTin0PtAj+RynsePYHcgVw3Oe0fq5kQMLU9z=V_1e@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 06 Jan 2011 14:31:39 +1000
+Message-ID: <1294288300.8921.0.camel@clockmaker-el6>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__6_Jan_2011_15_18_15_+1100_=L4SgHQHIKYoFWP4"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__6_Jan_2011_15_18_15_+1100_=L4SgHQHIKYoFWP4
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2011-01-04 at 19:21 -0500, Alex Deucher wrote:
+> On Mon, Jan 3, 2011 at 8:49 AM, Tejun Heo <tj@kernel.org> wrote:
+> > With cmwq, there's no reason for radeon to use a dedicated workqueue.
+> > Drop dev_priv->wq and use system_wq instead.
+> >
+> > Because radeon_driver_irq_uninstall_kms() may be called from
+> > unsleepable context, the work items can't be flushed from there.
+> > Instead, init and flush from radeon_irq_kms_init/fini().
+> >
+> > While at it, simplify canceling/flushing of rdev->pm.dynpm_idle_work.
+> > Always initialize and sync cancel instead of being unnecessarily smart
+> > about it.
+> >
+> > Signed-off-by: Tejun Heo <tj@kernel.org>
+> > Cc: David Airlie <airlied@linux.ie>
+> > Cc: dri-devel@lists.freedesktop.org
+> > ---
+> > Only compile tested.  Please feel free to take it into the subsystem
+> > tree or simply ack - I'll route it through the wq tree.
+> 
+> Patch looks good to me.  I'm not sure what's the best way to send this
+> upstream.  I'm working on some irq changes in the same area now, so
+> I'd prefer if we pushed it through Dave's tree, but I can handle it
+> either way.
 
-Hi Tejun,
+I'll pull it into my tree for merging to Linus.
 
-On Tue, 4 Jan 2011 06:13:14 +0100 Tejun Heo <tj@kernel.org> wrote:
->
-> On Tue, Jan 04, 2011 at 03:21:05PM +1100, Stephen Rothwell wrote:
-> > After merging the percpu tree, today's linux-next build (x86_64
-> > allmodconfig) failed like this:
-> >=20
-> > arch/x86/kernel/cpu/mcheck/therm_throt.c: In function 'intel_thermal_in=
-terrupt':
-> > arch/x86/kernel/cpu/mcheck/therm_throt.c:368: error: implicit declarati=
-on of function 'this_cpu_has'
-> >=20
-> > Caused by commit 6ac0bb7148b93fb40bccba5dff06d51a3e3ea283 ("x86: use
-> > this_cpu_has for thermal_interrupt").
-> >=20
-> > this_cpu_has() does not exist anywhere except in this introduced usage.
-> >=20
-> > I have used the percpu tree from next-20101231 for today.
->=20
-> My apologies.  I forgot an earlier patch to introduce this_cpu_has()
-> macro.  I've reverted the offending commit.
+Dave.
 
-But that revert is not in your published for-next branch yet.  I have
-manually reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+> 
+> Acked-by: Alex Deucher <alexdeucher@gmail.com>
+> 
 
---Signature=_Thu__6_Jan_2011_15_18_15_+1100_=L4SgHQHIKYoFWP4
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNJUKHAAoJEDMEi1NhKgbsi0IIAJ4wl3B0O/gRcrms4rTXKT+v
-BRY2sjLFJ898QbFhYyKicaovioM3RWJu4aO9PtLUpAbFF1X7VFhmfQixl/TfIteP
-h14KryAoS/YgS9er5vWtKbMlMjwGpQ5pg53des5SwKVdzU1FpK1c9e1LUNBkP0AD
-kOCJqCe3pdSyxaqGvoV+G7GeAoLWKCPt9hZFYltDhJYRevITSRC7S78vLW3C6y2D
-gPeJgs2ZYnTuNmsfOEZk6vjrYRB70sLPjUWIidg8+34cZ1HljBqBB+e0o4i53K4O
-sjPhSixMHstgFiVfqzeXBIDob/DOKdSrbWFSKWqN281k+JxkFlbvVfbRGrBT6Ms=
-=EuyS
------END PGP SIGNATURE-----
-
---Signature=_Thu__6_Jan_2011_15_18_15_+1100_=L4SgHQHIKYoFWP4--
