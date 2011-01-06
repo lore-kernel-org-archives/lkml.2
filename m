@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab1AFWBe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 17:01:34 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:55239 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751988Ab1AFWBc (ORCPT
+	id S1754236Ab1AFWCJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 17:02:09 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37909 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751685Ab1AFWCI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 17:01:32 -0500
-Date: Thu, 6 Jan 2011 17:01:30 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: ltt-dev@lists.casi.polymtl.ca
-Cc: linux-kernel@vger.kernel.org
-Subject: [RELEASE] LTTng 0.241 and lttng-modules 0.19.4 for Linux 2.6.37
-Message-ID: <20110106220130.GA3926@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 16:57:28 up 44 days,  3:00,  5 users,  load average: 0.00, 0.00,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 6 Jan 2011 17:02:08 -0500
+Date: Thu, 6 Jan 2011 22:00:17 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Greg KH <gregkh@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [GIT PATCH] TTY/serial merge for .38
+Message-ID: <20110106220017.3c19f9e6@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110106215404.GA30624@kroah.com>
+References: <20110106215404.GA30624@kroah.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LTTng, the Linux Trace Toolkit Next Generation, is a project that aims at
-producing a highly efficient full system tracing solution.  It is composed of
-several components to allow tracing of the kernel, of userspace, trace viewing
-and analysis and trace streaming.  LTTng is open source software. It is being
-actively developed with the community.
+> There was some arguing about the tty console detection patches, but as
+> the existing ioctl does not work properly, Kay's patch was accepted to
+> resolve this issue and allow systemd to correctly detect consoles.  I
+> know Alan doesn't like this, but I feel it's the best way to solve the
+> issue (combined with the fact that there is no proposed other solution.)
 
-Changelog:
-- LTTng 0.241 has been rebased on Linux kernel 2.6.37.
-- lttng-modules 0.19.4 network probe has been adapted to the name change of the
-  0.241 lttng tracepoint (caused by a clash with the tracepoints added by
-  mainline). We should eventually sort out which tracepoints should stay and
-  which should be removed, but given that the distributed traces synchronization
-  algorithm depends on network events in LTTV, I prefer to leave the merging of
-  these tracepoints to someone who has time testing the implication of these
-  changes on the LTTV trace synchronization algorithm.
+I'm a bit confused about this one Greg - all the distributions used the
+ioctl you refer to below for this purpose and have for years
 
-Project website: http://lttng.org
-Download link: http://lttng.org/content/download
-(please refer to the LTTng Manual for installation instructions)
+> This series also includes the long-out-of-tree ioctl that SUSE and
+> Debian have been dragging around in their kernels for the past 10+
+> years.  Thanks to Werner for finally submitting it in a mergable form.
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Which I believe means we don't need the sysfs patch as well - Kay ?
+
