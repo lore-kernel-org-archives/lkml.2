@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754954Ab1AFArX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:47:23 -0500
-Received: from kroah.org ([198.145.64.141]:35807 "EHLO coco.kroah.org"
+	id S1754971Ab1AFAr0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:47:26 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:42174 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754346Ab1AFAaL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:30:11 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:04 2011
-Message-Id: <20110106002303.974951485@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:22:56 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [077/152] net: fix skb_defer_rx_timestamp()
-In-Reply-To: <20110106002500.GA3172@kroah.com>
+	id S1754820Ab1AFArX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:47:23 -0500
+Date: Thu, 6 Jan 2011 11:47:17 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>
+Subject: linux-next: manual merge of the nfsd tree with Linus' tree
+Message-Id: <20110106114717.32cd3a25.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.36-stable review patch.  If anyone has any objections, please let us know.
+Hi all,
 
-------------------
+Today's linux-next merge of the nfsd tree got a conflict in
+Documentation/filesystems/Locking between commit
+b83be6f20a0e468f715b14225c9f897538dfe5ad ("update
+Documentation/filesystems/Locking") from Linus' tree and commit
+e63eb9375089f9d2041305d04c3f33a194e0e014 ("nfsd4: eliminate lease delete
+callback") from the nfsd tree.
 
+I fixed it up (see below) and can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-
-[ Upstream commit a19faf0250e09b16cac169354126404bc8aa342b ]
-
-After commit c1f19b51d1d8 (net: support time stamping in phy devices.),
-kernel might crash if CONFIG_NETWORK_PHY_TIMESTAMPING=y and
-skb_defer_rx_timestamp() handles a packet without an ethernet header.
-
-Fixes kernel bugzilla #24102
-
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=24102
-Reported-and-tested-by: Andrew Watts <akwatts@ymail.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/core/timestamping.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
---- a/net/core/timestamping.c
-+++ b/net/core/timestamping.c
-@@ -96,11 +96,13 @@ bool skb_defer_rx_timestamp(struct sk_bu
- 	struct phy_device *phydev;
- 	unsigned int type;
- 
--	skb_push(skb, ETH_HLEN);
-+	if (skb_headroom(skb) < ETH_HLEN)
-+		return false;
-+	__skb_push(skb, ETH_HLEN);
- 
- 	type = classify(skb);
- 
--	skb_pull(skb, ETH_HLEN);
-+	__skb_pull(skb, ETH_HLEN);
- 
- 	switch (type) {
- 	case PTP_CLASS_V1_IPV4:
-
-
+diff --cc Documentation/filesystems/Locking
+index 33fa3e5,075be12..0000000
+--- a/Documentation/filesystems/Locking
++++ b/Documentation/filesystems/Locking
+@@@ -337,22 -327,17 +337,20 @@@ fl_release_private:	maybe		n
+  prototypes:
+  	int (*fl_compare_owner)(struct file_lock *, struct file_lock *);
+  	void (*fl_notify)(struct file_lock *);  /* unblock callback */
+ +	int (*fl_grant)(struct file_lock *, struct file_lock *, int);
+- 	void (*fl_release_private)(struct file_lock *);
+  	void (*fl_break)(struct file_lock *); /* break_lease callback */
+ +	int (*fl_mylease)(struct file_lock *, struct file_lock *);
+ +	int (*fl_change)(struct file_lock **, int);
+  
+  locking rules:
+ -			BKL	may block
+ -fl_compare_owner:	yes	no
+ -fl_notify:		yes	no
+ -fl_break:		yes	no
+ -
+ -	Currently only NFSD and NLM provide instances of this class. None of the
+ -them block. If you have out-of-tree instances - please, show up. Locking
+ -in that area will change.
+ +			file_lock_lock	may block
+ +fl_compare_owner:	yes		no
+ +fl_notify:		yes		no
+ +fl_grant:		no		no
+- fl_release_private:	maybe		no
+ +fl_break:		yes		no
+ +fl_mylease:		yes		no
+ +fl_change		yes		no
+ +
+  --------------------------- buffer_head -----------------------------------
+  prototypes:
+  	void (*b_end_io)(struct buffer_head *bh, int uptodate);
