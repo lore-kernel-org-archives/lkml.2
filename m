@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754094Ab1AFUrv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 15:47:51 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:25366 "EHLO
+	id S1754115Ab1AFUr4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 15:47:56 -0500
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:25426 "EHLO
 	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753141Ab1AFUrt (ORCPT
+	with ESMTP id S1753141Ab1AFUry (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 15:47:49 -0500
-Subject: [PATCH 01/11] hpsa: defend against zero sized buffers in passthru
-	ioctls
+	Thu, 6 Jan 2011 15:47:54 -0500
+Subject: [PATCH 02/11] hpsa: fixup DMA address before freeing.
 To: james.bottomley@hansenpartnership.com
 From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 Cc: linux-scsi@vger.kernel.org, mike.miller@hp.com,
         linux-kernel@vger.kernel.org, thenzl@redhat.com,
         akpm@linux-foundation.org, smcameron@yahoo.com
-Date: Thu, 06 Jan 2011 14:47:48 -0600
-Message-ID: <20110106204747.10753.16087.stgit@beardog.cce.hp.com>
+Date: Thu, 06 Jan 2011 14:47:53 -0600
+Message-ID: <20110106204753.10753.51529.stgit@beardog.cce.hp.com>
 In-Reply-To: <20110106204429.10753.92575.stgit@beardog.cce.hp.com>
 References: <20110106204429.10753.92575.stgit@beardog.cce.hp.com>
 User-Agent: StGit/0.15
@@ -26,87 +25,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+From: Stephen M. Cameron <StephenM.Cameron>
+
+Some low bits might have been set by the driver, causing
+a message like this to come out:
+
+ [   13.288062] ------------[ cut here ]------------
+ [   13.293211] WARNING: at lib/dma-debug.c:803 check_unmap+0x1a1/0x654()
+ [   13.300387] Hardware name: ProLiant DL180 G6
+ [   13.305335] hpsa 0000:06:00.0: DMA-API: device driver tries to free
+ DMA memory it has not allocated [device address=0x000000007f81e001]
+ [size=640 bytes]
 
 Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 ---
- drivers/scsi/hpsa.c |   36 ++++++++++++++++--------------------
- 1 files changed, 16 insertions(+), 20 deletions(-)
+ drivers/scsi/hpsa.c     |    2 +-
+ drivers/scsi/hpsa_cmd.h |    1 +
+ 2 files changed, 2 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 12deffc..e4b5f3c 100644
+index e4b5f3c..e2089a3 100644
 --- a/drivers/scsi/hpsa.c
 +++ b/drivers/scsi/hpsa.c
-@@ -2433,15 +2433,17 @@ static int hpsa_passthru_ioctl(struct ctlr_info *h, void __user *argp)
- 		buff = kmalloc(iocommand.buf_size, GFP_KERNEL);
- 		if (buff == NULL)
- 			return -EFAULT;
--	}
--	if (iocommand.Request.Type.Direction == XFER_WRITE) {
--		/* Copy the data into the buffer we created */
--		if (copy_from_user(buff, iocommand.buf, iocommand.buf_size)) {
--			kfree(buff);
--			return -EFAULT;
-+		if (iocommand.Request.Type.Direction == XFER_WRITE) {
-+			/* Copy the data into the buffer we created */
-+			if (copy_from_user(buff, iocommand.buf,
-+				iocommand.buf_size)) {
-+				kfree(buff);
-+				return -EFAULT;
-+			}
-+		} else {
-+			memset(buff, 0, iocommand.buf_size);
- 		}
--	} else
--		memset(buff, 0, iocommand.buf_size);
-+	}
- 	c = cmd_special_alloc(h);
- 	if (c == NULL) {
- 		kfree(buff);
-@@ -2487,8 +2489,8 @@ static int hpsa_passthru_ioctl(struct ctlr_info *h, void __user *argp)
- 		cmd_special_free(h, c);
- 		return -EFAULT;
- 	}
--
--	if (iocommand.Request.Type.Direction == XFER_READ) {
-+	if (iocommand.Request.Type.Direction == XFER_READ &&
-+		iocommand.buf_size > 0) {
- 		/* Copy the data out of the buffer we created */
- 		if (copy_to_user(iocommand.buf, buff, iocommand.buf_size)) {
- 			kfree(buff);
-@@ -2581,14 +2583,7 @@ static int hpsa_big_passthru_ioctl(struct ctlr_info *h, void __user *argp)
- 	}
- 	c->cmd_type = CMD_IOCTL_PEND;
- 	c->Header.ReplyQueue = 0;
--
--	if (ioc->buf_size > 0) {
--		c->Header.SGList = sg_used;
--		c->Header.SGTotal = sg_used;
--	} else {
--		c->Header.SGList = 0;
--		c->Header.SGTotal = 0;
--	}
-+	c->Header.SGList = c->Header.SGTotal = sg_used;
- 	memcpy(&c->Header.LUN, &ioc->LUN_info, sizeof(c->Header.LUN));
- 	c->Header.Tag.lower = c->busaddr;
- 	memcpy(&c->Request, &ioc->Request, sizeof(c->Request));
-@@ -2605,7 +2600,8 @@ static int hpsa_big_passthru_ioctl(struct ctlr_info *h, void __user *argp)
- 		}
- 	}
- 	hpsa_scsi_do_simple_cmd_core(h, c);
--	hpsa_pci_unmap(h->pdev, c, sg_used, PCI_DMA_BIDIRECTIONAL);
-+	if (sg_used)
-+		hpsa_pci_unmap(h->pdev, c, sg_used, PCI_DMA_BIDIRECTIONAL);
- 	check_ioctl_unit_attention(h, c);
- 	/* Copy the error information out */
- 	memcpy(&ioc->error_info, c->err_info, sizeof(ioc->error_info));
-@@ -2614,7 +2610,7 @@ static int hpsa_big_passthru_ioctl(struct ctlr_info *h, void __user *argp)
- 		status = -EFAULT;
- 		goto cleanup1;
- 	}
--	if (ioc->Request.Type.Direction == XFER_READ) {
-+	if (ioc->Request.Type.Direction == XFER_READ && ioc->buf_size > 0) {
- 		/* Copy the data out of the buffer we created */
- 		BYTE __user *ptr = ioc->buf;
- 		for (i = 0; i < sg_used; i++) {
+@@ -2267,7 +2267,7 @@ static void cmd_special_free(struct ctlr_info *h, struct CommandList *c)
+ 	pci_free_consistent(h->pdev, sizeof(*c->err_info),
+ 			    c->err_info, (dma_addr_t) temp64.val);
+ 	pci_free_consistent(h->pdev, sizeof(*c),
+-			    c, (dma_addr_t) c->busaddr);
++			    c, (dma_addr_t) (c->busaddr & DIRECT_LOOKUP_MASK));
+ }
+ 
+ #ifdef CONFIG_COMPAT
+diff --git a/drivers/scsi/hpsa_cmd.h b/drivers/scsi/hpsa_cmd.h
+index f5c4c3c..7910c14 100644
+--- a/drivers/scsi/hpsa_cmd.h
++++ b/drivers/scsi/hpsa_cmd.h
+@@ -265,6 +265,7 @@ struct ErrorInfo {
+ 
+ #define DIRECT_LOOKUP_SHIFT 5
+ #define DIRECT_LOOKUP_BIT 0x10
++#define DIRECT_LOOKUP_MASK (~((1 << DIRECT_LOOKUP_SHIFT) - 1))
+ 
+ #define HPSA_ERROR_BIT          0x02
+ struct ctlr_info; /* defined in hpsa.h */
 
