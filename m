@@ -1,107 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183Ab1AFUpQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 15:45:16 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:38812 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752541Ab1AFUpP (ORCPT
+	id S1753387Ab1AFUp3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 15:45:29 -0500
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:24525 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752627Ab1AFUp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 15:45:15 -0500
-Date: Thu, 6 Jan 2011 15:45:10 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [patch 8/8] fs: add i_op->sync_inode
-Message-ID: <20110106204510.GA2872@infradead.org>
-References: <20101218014634.943276411@kernel.dk>
- <20101218015117.759480620@kernel.dk>
- <20101229151246.GA22033@infradead.org>
- <20110104062725.GD3402@amd>
- <20110104065736.GA8013@infradead.org>
- <20110104080323.GC4090@amd>
- <20110104092501.GB2760@infradead.org>
- <20110104094922.GA4812@amd>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110104094922.GA4812@amd>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 6 Jan 2011 15:45:27 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: deTsOTYVM1lM9HlC4RiGP8ojvFzcY56vrvdi4GvN3.Ufc1l
+ uDeXCV_XUDg_m4c.toZQJP.RTZsk4XtEUspbBFsMPHb0Iwkhz7X.jwDscycO
+ _h76ygB6qL5JtVolhtmnhMMwH3PdRslVwkfWVAkkFfJqhWANZTgE_mtMgp4p
+ cI4iAZxaJEQdpLlPAleYfCQDK9Us4DdDG9K6ahgadxeVkJDGpapQT.1NiSLU
+ wQM9mrftBYApXx4DKxgC_SwZmBT51rTx1rWS0_nYrTrvfKJT3Ix4ZOL9cpVf
+ uw.c24owux4SqqXEmTihsOEn9hBA7jYuu6XyQzVUfsOnTjBo-
+X-Yahoo-Newman-Property: ymail-3
+Message-Id: <20110106204525.222395863@linux.com>
+User-Agent: quilt/0.48-1
+Date: Thu, 06 Jan 2011 14:45:14 -0600
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linux-foundation.org
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: linux-kernel@vger.kernel.org
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: [cpuops cmpxchg double V2 1/4] Generic support for this_cpu_cmpxchg_double
+References: <20110106204513.669098445@linux.com>
+Content-Disposition: inline; filename=cpuops_double_generic
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > The problem is that currently we almost never do a pure blocking
-> > ->write_inode.  The way the sync code is written we always do a
-> > non-blocking one first, then a blocking one.  If you always do the
-> > synchronous one we'll get a lot more overhead - the first previous
-> > asynchronous one will write the inode (be it just into the log, or for
-> > real), then we write back data, and then we'll have to write it again
-> > becaus it has usually been redirtied again due to the data writeback in
-> > the meantime.
-> 
-> It doesn't matter, the integrity still has to be enforced in .sync_fs,
-> because sync .write_inode may *never* get called, because of the fact
-> that async .write_inode also clears the inode metadata dirty bits.
-> 
-> So if .sync_fs has to enforce integrity anyway, then you don't ever need
-> to do any actual waiting in your sync .write_inode. See?
+Introduce this_cpu_cmpxchg_double. this_cpu_cmpxchg_double() allows the
+comparision between two consecutive words and replaces them if there is
+a match.
 
-I'm not talking about the actual waiting.  Right now we have two
-different use cases for ->write_inode:
+	bool this_cpu_cmpxchg_double(pcp1, pcp2,
+		old_word1, old_word2, new_word1, new_word2)
 
- 1) sync_mode == WB_SYNC_NONE
+this_cpu_cmpxchg_double does not return the old value (difficult since
+there are two words) but a boolean indicating if the operation was
+successful.
 
-	This tells the filesystem to start an opportunistic writeout.
+The first percpu variable must be double word aligned!
 
- 2) sync_mode == WB_SYNC_ALL
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-	This tells the filesystem it needs to to a mandatory writeout.
+---
+ include/linux/percpu.h |  130 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 130 insertions(+)
 
-Note that writeout is losely defined.  If a filesystems isn't
-exportable or implements the commit_metadata operation it's indeed
-enough to synchronize the state into internal fs data just enough for
-->sync_fs.
+Index: linux-2.6/include/linux/percpu.h
+===================================================================
+--- linux-2.6.orig/include/linux/percpu.h	2011-01-05 15:00:46.000000000 -0600
++++ linux-2.6/include/linux/percpu.h	2011-01-06 13:19:43.000000000 -0600
+@@ -259,6 +259,29 @@ extern void __bad_size_call_parameter(vo
+ 	pscr2_ret__;							\
+ })
+ 
++/*
++ * Special handling for cmpxchg_double. cmpxchg_double is passed two
++ * percpu variables. The first has to be aligned to a double word
++ * boundary and the second has to follow directly thereafter.
++ */
++#define __pcpu_double_call_return_int(stem, pcp1, pcp2, ...)		\
++({									\
++	int ret__;							\
++	__verify_pcpu_ptr(&pcp1);					\
++	VM_BUG_ON((unsigned long)(&pcp1) % (2 * sizeof(pcp1)));		\
++	VM_BUG_ON((unsigned long)(&pcp2) != (unsigned long)(&pcp1) + sizeof(pcp1));\
++	VM_BUG_ON(sizeof(pcp1) != sizeof(pcp2));			\
++	switch(sizeof(pcp1)) {						\
++	case 1: ret__ = stem##1(pcp1, pcp2, __VA_ARGS__);break;		\
++	case 2: ret__ = stem##2(pcp1, pcp2, __VA_ARGS__);break;		\
++	case 4: ret__ = stem##4(pcp1, pcp2, __VA_ARGS__);break;		\
++	case 8: ret__ = stem##8(pcp1, pcp2, __VA_ARGS__);break;		\
++	default:							\
++		__bad_size_call_parameter();break;			\
++	}								\
++	ret__;								\
++})
++
+ #define __pcpu_size_call(stem, variable, ...)				\
+ do {									\
+ 	__verify_pcpu_ptr(&(variable));					\
+@@ -422,6 +445,80 @@ do {									\
+ 				__this_cpu_cmpxchg_, pcp, oval, nval)
+ #endif
+ 
++/*
++ * cmpxchg_double replaces two adjacent scalars at once. The first two
++ * parameters are per cpu variables which have to be of the same size.
++ * A truth value is returned to indicate success or
++ * failure (since a double register result is difficult to handle).
++ * There is very limited hardware support for these operations. So only certain
++ * sizes may work.
++ */
++#define __this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
++({									\
++	int __ret = 0;							\
++	if (__this_cpu_read(pcp1) == (oval1) &&				\
++			 __this_cpu_read(pcp2)  == (oval2)) {		\
++		__this_cpu_write(pcp1, (nval1));			\
++		__this_cpu_write(pcp2, (nval2));			\
++		__ret = 1;						\
++	}								\
++	(__ret);							\
++})
++
++#ifndef __this_cpu_cmpxchg_double
++# ifndef __this_cpu_cmpxchg_double_1
++#  define __this_cpu_cmpxchg_double_1(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
++	__this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
++# endif
++# ifndef __this_cpu_cmpxchg_double_2
++#  define __this_cpu_cmpxchg_double_2(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
++	__this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
++# endif
++# ifndef __this_cpu_cmpxchg_double_4
++#  define __this_cpu_cmpxchg_double_4(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
++	__this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
++# endif
++# ifndef __this_cpu_cmpxchg_double_8
++#  define __this_cpu_cmpxchg_double_8(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
++	__this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
++# endif
++# define __this_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
++	__pcpu_double_call_return_int(__this_cpu_cmpxchg_double_, (pcp1), (pcp2)	\
++					 oval1, oval2, nval1, nval2)
++#endif
++
++#define _this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
++({									\
++	int ret__;							\
++	preempt_disable();						\
++	ret__ = __this_cpu_generic_cmpxchg_double(pcp1, pcp2,		\
++			oval1, oval2, nval1, nval2);			\
++	preempt_enable();						\
++	ret__;								\
++})
++
++#ifndef this_cpu_cmpxchg_double
++# ifndef this_cpu_cmpxchg_double_1
++#  define this_cpu_cmpxchg_double_1(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
++	_this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
++# endif
++# ifndef this_cpu_cmpxchg_double_2
++#  define this_cpu_cmpxchg_double_2(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
++	_this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
++# endif
++# ifndef this_cpu_cmpxchg_double_4
++#  define this_cpu_cmpxchg_double_4(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
++	_this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
++# endif
++# ifndef this_cpu_cmpxchg_double_8
++#  define this_cpu_cmpxchg_double_8(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
++	_this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
++# endif
++# define this_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
++	__pcpu_double_call_return_int(this_cpu_cmpxchg_double_, (pcp1), (pcp2),	\
++		oval1, oval2, nval1, nval2)
++#endif
++
+ #define _this_cpu_generic_to_op(pcp, val, op)				\
+ do {									\
+ 	preempt_disable();						\
+@@ -825,4 +922,37 @@ do {									\
+ # define irqsafe_cpu_cmpxchg(pcp, oval, nval)	__pcpu_size_call_return2(irqsafe_cpu_cmpxchg_, (pcp), oval, nval)
+ #endif
+ 
++#define irqsafe_generic_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
++({									\
++	int ret__;							\
++	unsigned long flags;						\
++	local_irq_save(flags);						\
++	ret__ = __this_cpu_generic_cmpxchg_double(pcp1, pcp2,		\
++			oval1, oval2, nval1, nval2);			\
++	local_irq_restore(flags);					\
++	ret__;								\
++})
++
++#ifndef irqsafe_cpu_cmpxchg_double
++# ifndef irqsafe_cpu_cmpxchg_double_1
++#  define irqsafe_cpu_cmpxchg_double_1(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
++	irqsafe_generic_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
++# endif
++# ifndef irqsafe_cpu_cmpxchg_double_2
++#  define irqsafe_cpu_cmpxchg_double_2(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
++	irqsafe_generic_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
++# endif
++# ifndef irqsafe_cpu_cmpxchg_double_4
++#  define irqsafe_cpu_cmpxchg_double_4(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
++	irqsafe_generic_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
++# endif
++# ifndef irqsafe_cpu_cmpxchg_double_8
++#  define irqsafe_cpu_cmpxchg_double_8(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
++	irqsafe_generic_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
++# endif
++# define irqsafe_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
++	__pcpu_double_call_return_int(irqsafe_cpu_cmpxchg_double_, (pcp1), (pcp2),	\
++		oval1, oval2, nval1, nval2)
++#endif
++
+ #endif /* __LINUX_PERCPU_H */
 
-Or that's how it should be.  As you pointed out the way the writeback
-code treats the WB_SYNC_NONE writeouts makes this not work as expected.
-
-There's various ways to fix this:
-
- 1) the one you advocate, that is treating all ->write_inode calls as
-    if they were WB_SYNC_ALL.  This does fix the issue of incorrectly
-    updating the dirty state, but causes a lot of additional I/O -
-    the way the sync process is designed we basically always call
-    ->write_inode with WB_SYNC_NONE first, and then with WB_SYNC_ALL
- 2) keep the WB_SYNC_NONE calls, but never update dirty state for them.
-    This also fixes the i_dirty state updates, but allows filesystems
-    that keep internal dirty state to be smarted about avoiding I/O
- 3) remove the calls to ->write_inode with WB_SYNC_NONE.  This might
-    work well for calls from the sync() callchain, but we rely on
-    inode background writeback from the flusher threads in lots of
-    places.  Note that we really do not want to block the flusher
-    threads with blocking writes, which is another argument against
-    (1).
- 4) require ->write_inode to update the dirty state itself after
-    the inode is on disk or in a data structure caught by ->sync_fs.
-    This keeps optimal behaviour, but requires a lot of code changes.
-
-If we want a quick fix only (2) seems feasibly to me, with the option
-of implementing (4) and parts of (3) later on.
-
-> > We need to propagate the VFS dirty state into the fs-internal state,
-> > e.g. for XFS start a transaction.  The reason for that is that the VFS
-> > simply writes timestamps into the inode and marks it dirty instead of
-> > telling the filesystem about timestamp updates.  For XFS in
-> > 2.6.38+ timestamp updates and i_size updates are the only unlogged
-> > metadata changes, and thus now the only thing going through
-> > ->write_inode.
-> 
-> Well then you have a bug, because a sync .write_inode *may never get
-> called*. You may only get an async one, even in the case of fsync,
-> because async writeback clears the vfs dirty bits.
-
-Yes, the bug about updating the dirty state for WB_SYNC_NONE affects
