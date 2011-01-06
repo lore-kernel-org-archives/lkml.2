@@ -1,63 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171Ab1AFAzs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:55:48 -0500
-Received: from terminus.msp.gub.uy ([200.40.197.69]:5745 "EHLO
-	terminus.msp.gub.uy" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754102Ab1AFAzq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:55:46 -0500
-X-Greylist: delayed 5591 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Jan 2011 19:55:46 EST
-Message-ID: <18288.41.206.12.1.1294269724.squirrel@trantor.msp.gub.uy>
-Date: Wed, 5 Jan 2011 23:22:04 -0000 (GMT)
-Subject: BARCLAYS PREMIER LEAGUE PROMOTION
-From: "BARCLAYS PROMOTION" <infor@barclays.com>
-Reply-To: westernunionm868@gmail.com
-User-Agent: SquirrelMail/1.4.9a
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+	id S1754326Ab1AFA4G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:56:06 -0500
+Received: from kroah.org ([198.145.64.141]:35603 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754081Ab1AFA3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:29:30 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:00 2011
+Message-Id: <20110106002300.610303857@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Wed, 05 Jan 2011 16:22:21 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [042/152] mac80211: Fix BUG in pskb_expand_head when transmitting shared skbs
+In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attention Winner,
+2.6.36-stable review patch.  If anyone has any objections, please let us know.
 
-We are please to announce you as one of the 3 lucky winners in the
-Barclays premier league
-National Promo draw held on 11th of December 2010.You have therefore been
-approved for a total pay out of (three hundred and sixty thousand) your
-e-mail address
-emerged as one of three winners in the category \I"D\" with the following
-winning information:
+------------------
 
+From: Helmut Schaa <helmut.schaa@googlemail.com>
 
-Confirm Your Winning No: 06 09 31 33 40 45, Bonus No: 41 and draw no. 1563.
-Ref No: IMP/73253CA/2010
-Batch No: 642376/CA/2010
+commit 7e2447075690860e2cea96b119fc9cadbaa7e83c upstream.
 
-Please note; you are hereby advice to reply to this email and  send the
-assign
-Fiduciary Agent, details below for processing of your claims.
+mac80211 doesn't handle shared skbs correctly at the moment. As a result
+a possible resize can trigger a BUG in pskb_expand_head.
 
-Mr Bishop Garry moore.
+[  676.030000] Kernel bug detected[#1]:
+[  676.030000] Cpu 0
+[  676.030000] $ 0   : 00000000 00000000 819662ff 00000002
+[  676.030000] $ 4   : 81966200 00000020 00000000 00000020
+[  676.030000] $ 8   : 819662e0 800043c0 00000002 00020000
+[  676.030000] $12   : 3b9aca00 00000000 00000000 00470000
+[  676.030000] $16   : 80ea2000 00000000 00000000 00000000
+[  676.030000] $20   : 818aa200 80ea2018 80ea2000 00000008
+[  676.030000] $24   : 00000002 800ace5c
+[  676.030000] $28   : 8199a000 8199bd20 81938f88 80f180d4
+[  676.030000] Hi    : 0000026e
+[  676.030000] Lo    : 0000757e
+[  676.030000] epc   : 801245e4 pskb_expand_head+0x44/0x1d8
+[  676.030000]     Not tainted
+[  676.030000] ra    : 80f180d4 ieee80211_skb_resize+0xb0/0x114 [mac80211]
+[  676.030000] Status: 1000a403    KERNEL EXL IE
+[  676.030000] Cause : 10800024
+[  676.030000] PrId  : 0001964c (MIPS 24Kc)
+[  676.030000] Modules linked in: mac80211_hwsim rt2800lib rt2x00soc rt2x00pci rt2x00lib mac80211 crc_itu_t crc_ccitt cfg80211 compat arc4 aes_generic deflate ecb cbc [last unloaded: rt2800pci]
+[  676.030000] Process kpktgend_0 (pid: 97, threadinfo=8199a000, task=81879f48, tls=00000000)
+[  676.030000] Stack : ffffffff 00000000 00000000 00000014 00000004 80ea2000 00000000 00000000
+[  676.030000]         818aa200 80f180d4 ffffffff 0000000a 81879f78 81879f48 81879f48 00000018
+[  676.030000]         81966246 80ea2000 818432e0 80f1a420 80203050 81814d98 00000001 81879f48
+[  676.030000]         81879f48 00000018 81966246 818432e0 0000001a 8199bdd4 0000001c 80f1b72c
+[  676.030000]         80203020 8001292c 80ef4aa2 7f10b55d 801ab5b8 81879f48 00000188 80005c90
+[  676.030000]         ...
+[  676.030000] Call Trace:
+[  676.030000] [<801245e4>] pskb_expand_head+0x44/0x1d8
+[  676.030000] [<80f180d4>] ieee80211_skb_resize+0xb0/0x114 [mac80211]
+[  676.030000] [<80f1a420>] ieee80211_xmit+0x150/0x22c [mac80211]
+[  676.030000] [<80f1b72c>] ieee80211_subif_start_xmit+0x6f4/0x73c [mac80211]
+[  676.030000] [<8014361c>] pktgen_thread_worker+0xfac/0x16f8
+[  676.030000] [<8002ebe8>] kthread+0x7c/0x88
+[  676.030000] [<80008e0c>] kernel_thread_helper+0x10/0x18
+[  676.030000]
+[  676.030000]
+[  676.030000] Code: 24020001  10620005  2502001f <0200000d> 0804917a  00000000  2502001f  00441023  00531021
 
-1. Full Names:
-2. Address:
-3. Marital Status:
-4. Occupation:
-5. Age:
-6. Sex:
-7. Telephone Number:
-8. Nationality:
-9. Country of Residence:
+Fix this by making a local copy of shared skbs prior to mangeling them.
+To avoid copying the skb unnecessarily move the skb_copy call below the
+checks that don't need write access to the skb.
 
-Congratulations!!
-Mr Garry moore
+Also, move the assignment of nh_pos and h_pos below the skb_copy to point
+to the correct skb.
 
+It would be possible to avoid another resize of the copied skb by using
+skb_copy_expand instead of skb_copy but that would make the patch more
+complex. Also, shared skbs are a corner case right now, so the resize
+shouldn't matter much.
 
+Cc: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: Helmut Schaa <helmut.schaa@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ net/mac80211/tx.c |   21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
+
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -1705,15 +1705,13 @@ netdev_tx_t ieee80211_subif_start_xmit(s
+ 	int nh_pos, h_pos;
+ 	struct sta_info *sta = NULL;
+ 	u32 sta_flags = 0;
++	struct sk_buff *tmp_skb;
+ 
+ 	if (unlikely(skb->len < ETH_HLEN)) {
+ 		ret = NETDEV_TX_OK;
+ 		goto fail;
+ 	}
+ 
+-	nh_pos = skb_network_header(skb) - skb->data;
+-	h_pos = skb_transport_header(skb) - skb->data;
+-
+ 	/* convert Ethernet header to proper 802.11 header (based on
+ 	 * operation mode) */
+ 	ethertype = (skb->data[12] << 8) | skb->data[13];
+@@ -1885,6 +1883,20 @@ netdev_tx_t ieee80211_subif_start_xmit(s
+ 		goto fail;
+ 	}
+ 
++	/*
++	 * If the skb is shared we need to obtain our own copy.
++	 */
++	if (skb_shared(skb)) {
++		tmp_skb = skb;
++		skb = skb_copy(skb, GFP_ATOMIC);
++		kfree_skb(tmp_skb);
++
++		if (!skb) {
++			ret = NETDEV_TX_OK;
++			goto fail;
++		}
++	}
++
+ 	hdr.frame_control = fc;
+ 	hdr.duration_id = 0;
+ 	hdr.seq_ctrl = 0;
+@@ -1903,6 +1915,9 @@ netdev_tx_t ieee80211_subif_start_xmit(s
+ 		encaps_len = 0;
+ 	}
+ 
++	nh_pos = skb_network_header(skb) - skb->data;
++	h_pos = skb_transport_header(skb) - skb->data;
++
+ 	skb_pull(skb, skip_header_bytes);
+ 	nh_pos -= skip_header_bytes;
+ 	h_pos -= skip_header_bytes;
 
 
