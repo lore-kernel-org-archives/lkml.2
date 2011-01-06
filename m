@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754641Ab1AFXZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 18:25:57 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50232 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752513Ab1AFXZz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 18:25:55 -0500
+	id S1754727Ab1AFX0W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 18:26:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53310 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753909Ab1AFX0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 18:26:20 -0500
+Date: Fri, 7 Jan 2011 00:26:18 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Cc: Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC v2 0/10] hid-multitouch: a first step towards multitouch
+ unification
+In-Reply-To: <AANLkTik9qHn4u_U6FGKR0A4AOyPoYPkXM7rTMxVjiXgk@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1101070024380.26685@pobox.suse.cz>
+References: <1294248468-19979-1-git-send-email-benjamin.tissoires@enac.fr> <20110105174927.GB2146@polaris.bitmath.org> <AANLkTikCqufvOgYqqBZLjfmtSdsgyQV4L2HyvEP07+vf@mail.gmail.com> <alpine.LNX.2.00.1101061610270.26685@pobox.suse.cz> <20110106160418.GA1790@polaris.bitmath.org>
+ <AANLkTik9qHn4u_U6FGKR0A4AOyPoYPkXM7rTMxVjiXgk@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110106225301.GA27358@gondor.apana.org.au>
-References: <20100804140448.GA4042@gondor.apana.org.au> <20101024061625.GA23715@gondor.apana.org.au>
- <20110106000157.GA16089@gondor.apana.org.au> <AANLkTikzg3Hndp8WRi59bvJdBLxi=p-1gt7aZDLYbSW8@mail.gmail.com>
- <20110106211645.GA26184@gondor.apana.org.au> <AANLkTimwaJCUxvMLoeS5Cpmu7FX3y=coeSdkPrrL4zcr@mail.gmail.com>
- <20110106213932.GA26538@gondor.apana.org.au> <AANLkTi=fggNhMm1LpOzzZ0_ofaU6w=ahX8SMGgFkHCui@mail.gmail.com>
- <20110106223042.GA27080@gondor.apana.org.au> <AANLkTinbH8i8rjUxACV5PkdLuVc9YccT+E5x=ZBWunyU@mail.gmail.com>
- <20110106225301.GA27358@gondor.apana.org.au>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 6 Jan 2011 15:25:32 -0800
-Message-ID: <AANLkTi=E3fqTos7A2fJ2PRKT=o5=sgWh+CzMv4G7P4rZ@mail.gmail.com>
-Subject: Re: Crypto Update for 2.6.38
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 6, 2011 at 2:53 PM, Herbert Xu <herbert@gondor.hengli.com.au> wrote:
-> On Thu, Jan 06, 2011 at 02:43:35PM -0800, Linus Torvalds wrote:
->>
->> Can you do the "bypass directly to the TCP stream" with the interface
->> you added? It isn't at all obvious how it would work.
->
-> Yes it can.  The interface allows zero-copy in both directions
-> using the splice interface.  Here is a sample program demonstrating
-> zero-copy in-place encryption.  It doesn't send the result over TCP
-> but I'm sure you can imagine what that would look like.
+On Thu, 6 Jan 2011, Benjamin Tissoires wrote:
 
-Ok. So can we actually get numbers for this?
+> >> I still have to go through the patchset, my backlog has grown very 
+> >> badly recently, sorry.
+> >>
+> >> In case the patchset doesn't impose danger of regressions for already
+> >> existing devices, we could merge this new 'unified' driver only for newly
+> >> supported devices, and finish the unification in 2.6.39.
+> >
+> > Sounds reasonable.
+> 
+> Thanks Henrik and Jiri.
+> 
+> Do you want me to send a new patchset with only the new devices?
 
-Put another way: I really really REALLY don't want to merge new
-user-space interfaces that don't actually work in reality. But if this
-allows direct encryption to a network interface, and it actually is
-able to saturate 10Gb on niagara (unlike a user-mode encryption thing,
-I assume, since those things are dog slow), then that would certainly
-be a good real-life test.
+Yes, that would be best. And we will finish the thing up in .39 (you can 
+start sending me the patches any time once you have finished the 
+separation, I'll put the into separate branch queued for .39).
 
-But I really don't want to merge it unless it has had at least
-real-life testing of actually doing better than regular sw user-space
-encryption.
+And thanks for doing this Benjamin, I am really looking forward to the 
+unified driver.
 
-I realize that on PC's, it's unlikely to ever help. So I'm not asking
-for "show me how this helps on my hardware". But I do want to get some
-case on _some_ actual hardware where it works on a real load.
-
-                    Linus
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
