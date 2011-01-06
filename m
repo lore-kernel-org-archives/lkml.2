@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab1AFAnW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:43:22 -0500
-Received: from kroah.org ([198.145.64.141]:35898 "EHLO coco.kroah.org"
+	id S1754477Ab1AFAak (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:30:40 -0500
+Received: from kroah.org ([198.145.64.141]:35886 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754257Ab1AFAam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:30:42 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:06 2011
-Message-Id: <20110106002306.033091115@clark.site>
+	id S1754463Ab1AFAai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:30:38 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:05 2011
+Message-Id: <20110106002305.750647318@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:23:16 -0800
+Date: Wed, 05 Jan 2011 16:23:13 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [097/152] x86: Enable the intr-remap fault handling after local APIC setup
+        Slava Pestov <slavapestov@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [094/152] tracing: Fix panic when lseek() called on "trace" opened for writing
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,67 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+From: Slava Pestov <slavapestov@google.com>
 
-commit 7f7fbf45c6b748074546f7f16b9488ca71de99c1 upstream.
+commit 364829b1263b44aa60383824e4c1289d83d78ca7 upstream.
 
-Interrupt-remapping gets enabled very early in the boot, as it determines the
-apic mode that the processor can use. And the current code enables the vt-d
-fault handling before the setup_local_APIC(). And hence the APIC LDR registers
-and data structure in the memory may not be initialized. So the vt-d fault
-handling in logical xapic/x2apic modes were broken.
+The file_ops struct for the "trace" special file defined llseek as seq_lseek().
+However, if the file was opened for writing only, seq_open() was not called,
+and the seek would dereference a null pointer, file->private_data.
 
-Fix this by enabling the vt-d fault handling in the end_local_APIC_setup()
+This patch introduces a new wrapper for seq_lseek() which checks if the file
+descriptor is opened for reading first. If not, it does nothing.
 
-A cleaner fix of enabling fault handling while enabling intr-remapping
-will be addressed for v2.6.38. [ Enabling intr-remapping determines the
-usage of x2apic mode and the apic mode determines the fault-handling
-configuration. ]
-
-Signed-off-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-LKML-Reference: <20101201062244.541996375@intel.com>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Acked-by: Chris Wright <chrisw@sous-sol.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Slava Pestov <slavapestov@google.com>
+LKML-Reference: <1290640396-24179-1-git-send-email-slavapestov@google.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/apic/apic.c     |    8 ++++++++
- arch/x86/kernel/apic/probe_64.c |    7 -------
- 2 files changed, 8 insertions(+), 7 deletions(-)
+ kernel/trace/trace.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1340,6 +1340,14 @@ void __cpuinit end_local_APIC_setup(void
- 
- 	setup_apic_nmi_watchdog(NULL);
- 	apic_pm_activate();
-+
-+	/*
-+	 * Now that local APIC setup is completed for BP, configure the fault
-+	 * handling for interrupt remapping.
-+	 */
-+	if (!smp_processor_id() && intr_remapping_enabled)
-+		enable_drhd_fault_handling();
-+
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2320,11 +2320,19 @@ tracing_write_stub(struct file *filp, co
+ 	return count;
  }
  
- #ifdef CONFIG_X86_X2APIC
---- a/arch/x86/kernel/apic/probe_64.c
-+++ b/arch/x86/kernel/apic/probe_64.c
-@@ -76,13 +76,6 @@ void __init default_setup_apic_routing(v
- 		/* need to update phys_pkg_id */
- 		apic->phys_pkg_id = apicid_phys_pkg_id;
- 	}
--
--	/*
--	 * Now that apic routing model is selected, configure the
--	 * fault handling for intr remapping.
--	 */
--	if (intr_remapping_enabled)
--		enable_drhd_fault_handling();
- }
++static loff_t tracing_seek(struct file *file, loff_t offset, int origin)
++{
++	if (file->f_mode & FMODE_READ)
++		return seq_lseek(file, offset, origin);
++	else
++		return 0;
++}
++
+ static const struct file_operations tracing_fops = {
+ 	.open		= tracing_open,
+ 	.read		= seq_read,
+ 	.write		= tracing_write_stub,
+-	.llseek		= seq_lseek,
++	.llseek		= tracing_seek,
+ 	.release	= tracing_release,
+ };
  
- /* Same for both flat and physical. */
 
 
