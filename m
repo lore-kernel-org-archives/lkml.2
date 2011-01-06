@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab1AFWTV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 17:19:21 -0500
-Received: from cantor.suse.de ([195.135.220.2]:55678 "EHLO mx1.suse.de"
+	id S1754347Ab1AFWTy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 17:19:54 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51820 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751988Ab1AFWTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 17:19:20 -0500
-Date: Thu, 6 Jan 2011 13:57:05 -0800
+	id S1754117Ab1AFWTx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 17:19:53 -0500
+Date: Thu, 6 Jan 2011 14:07:05 -0800
 From: Greg KH <gregkh@suse.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [000/152] 2.6.36.3-stable review
-Message-ID: <20110106215705.GA30799@suse.de>
-References: <20110106002500.GA3172@kroah.com>
- <20110106134254.68fa27ac@lxorguk.ukuu.org.uk>
+To: Pavan Savoy <pavan_savoy@sify.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: staging-tree: to stage or not to stage
+Message-ID: <20110106220705.GJ30799@suse.de>
+References: <AANLkTikgHBVoPiPTXumcBn-t620=6xy+=2AaY3WYPmmY@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110106134254.68fa27ac@lxorguk.ukuu.org.uk>
+In-Reply-To: <AANLkTikgHBVoPiPTXumcBn-t620=6xy+=2AaY3WYPmmY@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 06, 2011 at 01:42:54PM +0000, Alan Cox wrote:
-> On Wed, 5 Jan 2011 16:25:00 -0800
-> Greg KH <gregkh@suse.de> wrote:
+On Thu, Dec 23, 2010 at 04:11:43PM +0530, Pavan Savoy wrote:
+> Hi Greg,
 > 
-> > 
-> > This is the start of the stable review cycle for the 2.6.36.3 release.
-> > There are 152 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let us know.  If anyone is a maintainer of the proper subsystem, and
-> > wants to add a Signed-off-by: line to the patch, please respond with it.
+> <long mail warning...>
 > 
-> Look sane on first glance but we don't seem to have a revert for the
-> serial mess up yet ?
+> We've been having this discussion here and there, and there has been
+> various opinions about what staging is,
+> I've also read your mail @ http://lwn.net/Articles/285594/ on what the
+> tree IS and what it is NOT.
 > 
-> > 7a56aa45982bb87bfca98a2832b5ae782c03364a is the first bad commit 
-> > commit 7a56aa45982bb87bfca98a2832b5ae782c03364a
-> > Author: Yegor Yefremov <yegor_sub1@visionsystems.de>
-> > Date:   Wed Jun 16 16:29:55 2010 +0200
-> > 
-> >     serial: add UART_CAP_EFR and UART_CAP_SLEEP flags to 16C950 UARTs 
-> > definition
-> >     
-> >     Adding UART_CAP_EFR and UART_CAP_SLEEP flags will enable sleep 
-> > mode
-> >     and automatic CTS flow control for 16C950 UARTs. It will also 
-> > avoid
-> >     capabilities detection warning like this:
-> >     
-> >     "ttyS0: detected caps 00000700 should be 00000100"
-> >     
-> >     Signed-off-by: Yegor Yefremov <yegorslists@googlemail.com>
-> >     Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> 
-> 
-> Has been bisected by several people to be causing failures and reported ?
+> So, hoping you dispel all opinions and lay down some facts!!!
 
-Hm, I saw Pavel reported a problem, but I didn't get a definate "this
-must be reverted" resolution from that thread.  It looked like we should
-just drop one of these flags perhaps?
+Sure, please ask specific questions and I will be glad to answer them.
 
-I can revert it if it really is an issue, but it needs to be reverted in
-Linus's tree first, before going to stable.
+I understand you are frustrated that some of your code had to be
+rewritten numerous times, but that is just the nature of Linux kernel
+development sorry.  I'm pretty sure that you agree that the end result
+is much better than the original submissions, right?
 
 thanks,
 
