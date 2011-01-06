@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348Ab1AFPS3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 10:18:29 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:58736 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753001Ab1AFPS2 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:7:1>);
-	Thu, 6 Jan 2011 10:18:28 -0500
-Message-Id: <4D25EB4B020000780002ABF7@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Thu, 06 Jan 2011 15:18:19 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Frederic Weisbecker" <fweisbec@gmail.com>
-Cc: "H. Peter Anvin" <a.p.zijlstra@chello.nl>, "Ingo Molnar" <mingo@elte.hu>,
-        "Stephane Eranian" <eranian@google.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Arnaldo Carvalho de Melo" <acme@redhat.com>,
-        "Soeren Sandmann Pedersen" <sandmann@redhat.com>,
-        "LKML" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/2] x86: Fix rbp saving in pt_regs on irq
-	 entry
-References: <1294325513-14276-1-git-send-email-fweisbec@gmail.com>
- <1294325513-14276-2-git-send-email-fweisbec@gmail.com>
-In-Reply-To: <1294325513-14276-2-git-send-email-fweisbec@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1753309Ab1AFPV0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 10:21:26 -0500
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:49073 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753001Ab1AFPVZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 10:21:25 -0500
+Date: Fri, 7 Jan 2011 00:19:26 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] sh updates for 2.6.38-rc1
+Message-ID: <20110106151926.GA19310@linux-sh.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 06.01.11 at 15:51, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> From the x86_64 low level interrupt handlers, the frame pointer is
-> saved in pt_regs in the wrong place, in the offset of rbx.
-> 
-> rbx is not part of the irq partial saved registers, so it's not
-> critical, but later code that uses get_irq_regs() to get the
-> interrupted frame pointer instead get a stale rbx value, causing
-> unwinding code to fail miserably.
+Please pull from:
 
-Code using get_irq_regs() can't rely on the not explicitly
-saved registers' fields of pt_regs anyway; you now fix this
-for %rbp, but someone else might look at a different
-register and want that to be saved too. You just shouldn't,
-and the fact that %rbp happens to be saved at all shouldn't
-be taken to mean you can access it via the provided
-pt_regs pointer. This saving of %rbp could go away or be
-done in a different way at any point.
+	master.kernel.org:/pub/scm/linux/kernel/git/lethal/sh-2.6.git sh-latest
 
-> @@ -808,6 +813,8 @@ ret_from_intr:
->  	TRACE_IRQS_OFF
->  	decl PER_CPU_VAR(irq_count)
->  	leaveq
-> +	/* we did not save rbx, restore only from ARGOFFSET */
-> +	addq $8, %rsp
->  	CFI_RESTORE		rbp
->  	CFI_DEF_CFA_REGISTER	rsp
->  	CFI_ADJUST_CFA_OFFSET	-8
+Which contains:
 
-*If* the patch was to be taken anyway, I would strongly suggest
-getting this mis-insertion fixed first: CFI annotations belong to the
-immediately preceding instruction, and hence you must not insert
-new instructions between an existing one and its annotation.
+Magnus Damm (1):
+      sh: include Migo-R TS driver in Migo-R defconfig
 
-Furthermore, an adjustment to %rsp (when it serves as the frame
-pointer as is the case here, though would be better visible if the
-added instruction was at the right place) needs to be annotated
-itself.
+Paul Mundt (8):
+      sh: machvec IO death.
+      sh: migrate SH_CLK_MD to mode pin API.
+      sh: Enable optional gpiolib for all CPUs with pinmux tables.
+      sh: Break out cpuinfo_op procfs bits.
+      sh: mach-rsk: Add polled GPIO buttons support for RSK+7203.
+      sh: mach-sdk7786: Handle baseboard NMI source selection.
+      dma: shdma: NMI support.
+      sh: Tidy up SH-4A unaligned load support.
 
-Jan
+Roel Kluin (1):
+      sh: correct definitions to access stack pointers
 
+ arch/sh/Kconfig                           |   20 +-
+ arch/sh/boards/board-secureedge5410.c     |    2 -
+ arch/sh/boards/mach-rsk/devices-rsk7203.c |   37 +++-
+ arch/sh/boards/mach-sdk7786/Makefile      |    2 +-
+ arch/sh/boards/mach-sdk7786/nmi.c         |   83 +++++++
+ arch/sh/boards/mach-sdk7786/setup.c       |    1 +
+ arch/sh/boards/mach-se/7206/setup.c       |    6 +
+ arch/sh/boards/mach-se/board-se7619.c     |    6 +
+ arch/sh/configs/migor_defconfig           |    2 +
+ arch/sh/drivers/pci/pci.c                 |    3 +-
+ arch/sh/include/asm/io.h                  |  345 +++++++++++++++--------------
+ arch/sh/include/asm/io_generic.h          |   25 --
+ arch/sh/include/asm/machvec.h             |   21 --
+ arch/sh/include/asm/ptrace.h              |    4 +-
+ arch/sh/include/asm/ptrace_32.h           |    2 +-
+ arch/sh/include/asm/ptrace_64.h           |    2 +-
+ arch/sh/include/asm/unaligned-sh4a.h      |  164 +++++----------
+ arch/sh/include/mach-sdk7786/mach/fpga.h  |    8 +
+ arch/sh/kernel/Makefile                   |    6 +-
+ arch/sh/kernel/cpu/Makefile               |    2 +-
+ arch/sh/kernel/cpu/proc.c                 |  148 ++++++++++++
+ arch/sh/kernel/cpu/sh2/clock-sh7619.c     |   22 +-
+ arch/sh/kernel/cpu/sh2a/clock-sh7201.c    |   20 +-
+ arch/sh/kernel/cpu/sh2a/clock-sh7203.c    |   21 +-
+ arch/sh/kernel/cpu/sh2a/clock-sh7206.c    |   20 +-
+ arch/sh/kernel/io_generic.c               |  180 ---------------
+ arch/sh/kernel/iomap.c                    |  165 ++++++++++++++
+ arch/sh/kernel/ioport.c                   |   43 ++++
+ arch/sh/kernel/machvec.c                  |   22 --
+ arch/sh/kernel/setup.c                    |  144 ------------
+ drivers/dma/shdma.c                       |  132 ++++++++++--
+ drivers/dma/shdma.h                       |    1 +
+ 32 files changed, 907 insertions(+), 752 deletions(-)
+ create mode 100644 arch/sh/boards/mach-sdk7786/nmi.c
+ create mode 100644 arch/sh/kernel/cpu/proc.c
+ delete mode 100644 arch/sh/kernel/io_generic.c
+ create mode 100644 arch/sh/kernel/iomap.c
+ create mode 100644 arch/sh/kernel/ioport.c
