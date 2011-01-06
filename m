@@ -1,167 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752924Ab1AFOnP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 09:43:15 -0500
-Received: from piggy.rz.tu-ilmenau.de ([141.24.4.8]:44152 "EHLO
-	piggy.rz.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896Ab1AFOnN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 09:43:13 -0500
-Date: Thu, 6 Jan 2011 15:42:55 +0100
-From: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>, Matt Mackall <mpm@selenic.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-        Harald Welte <HaraldWelte@viatech.com>,
-        Michal Ludvig <michal@logix.cz>
-Subject: Re: 2.6.37-rc7: Regression: b43: crashes in hwrng_register()
-Message-ID: <20110106144254.GC8803@darkside.kls.lan>
-Mail-Followup-To: Mario 'BitKoenig' Holbe <Mario.Holbe@TU-Ilmenau.DE>,
-	Herbert Xu <herbert@gondor.hengli.com.au>,
-	Larry Finger <Larry.Finger@lwfinger.net>,
-	Matt Mackall <mpm@selenic.com>, LKML <linux-kernel@vger.kernel.org>,
-	Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-	Harald Welte <HaraldWelte@viatech.com>,
-	Michal Ludvig <michal@logix.cz>
-References: <20110104125722.GC27114@darkside.kls.lan>
- <20110104224238.GA4978@gondor.apana.org.au>
- <20110104230644.GJ27114@darkside.kls.lan>
- <20110105003020.GA5751@gondor.apana.org.au>
- <20110105035222.GA8762@darkside.kls.lan>
- <20110105054735.GA7773@gondor.apana.org.au>
- <20110105131621.GA24769@darkside.kls.lan>
- <20110106061241.GA18939@gondor.apana.org.au>
- <20110106131516.GB8803@darkside.kls.lan>
- <20110106133541.GA22030@gondor.apana.org.au>
+	id S1752991Ab1AFOoN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 09:44:13 -0500
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:47398 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752298Ab1AFOoL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 09:44:11 -0500
+From: Carmelo AMOROSO <carmelo.amoroso@st.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "vapier@gentoo.org" <vapier@gentoo.org>,
+        "nico@fluxnic.net" <nico@fluxnic.net>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Filippo ARCIDIACONO <filippo.arcidiacono@st.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Thu, 6 Jan 2011 15:43:33 +0100
+Subject: Re: [PATCH 1/2] stackprotector: add stack smashing protector
+	generic implementation
+Thread-Topic: [PATCH 1/2] stackprotector: add stack smashing protector
+	generic implementation
+Thread-Index: AcutsBjeXkdPybo1ScG0ZY7Wqp6QzA==
+Message-ID: <4D25D515.9060202@st.com>
+References: <1293111851-7175-1-git-send-email-filippo.arcidiacono@st.com>
+ <4D245D16.5010702@st.com> <20110106093940.GA31708@n2100.arm.linux.org.uk>
+ <4D25CEB9.7090205@st.com> <20110106141946.GE31708@n2100.arm.linux.org.uk>
+In-Reply-To: <20110106141946.GE31708@n2100.arm.linux.org.uk>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-enigmail-version: 1.1.1
+user-agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13)
+ Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+KJYzRxRHjYqLGl5"
-Content-Disposition: inline
-In-Reply-To: <20110106133541.GA22030@gondor.apana.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
---+KJYzRxRHjYqLGl5
-Content-Type: multipart/mixed; boundary="eHhjakXzOLJAF9wJ"
-Content-Disposition: inline
-
-
---eHhjakXzOLJAF9wJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Fri, Jan 07, 2011 at 12:35:41AM +1100, Herbert Xu wrote:
-> On Thu, Jan 06, 2011 at 02:15:16PM +0100, Mario 'BitKoenig' Holbe wrote:
-> > 1. Having ECX on the clobber-list is not really necessary.
-> > XSTORE doesn't touch ECX at all.
-> > REP XSTORE would touch it, but for this ECX would be an input anyways.
->=20
-> The documentation wasn't clear whether ECX would be updated without
-> the REP prefix so I included it to be on the safe side.  Unfortunately
-> my only VIA machine is on another continent at the moment so I can't
-> test it myself.  Can you verify that ECX isn't changed without the
-> REP prefix?
-
-session-log (including small test case) attached: ECX is not changed.
-
-> > 2. Would you mind doing the same for EDX as you did for EDI?
-> According to my documentation EDX isn't be modified (nor would it
-> make sense as it would break REP XSTORE).  Are you seeing anything
-> different?
-
-http://linux.via.com.tw/support/beginDownload.action?eleid=3D181&fid=3D261
-VIA PadLock Programming Guide, v1.66, 4th August 2005
-2.1 XSTORE Instructions (page 9)
-RNG Quality Factor: EDX
-[...] Only the lower two bits of EDX are meaningful; the upper 30 bits
-are ignored by the instruction and may be set to zero.
-                                   ^^^^^^^^^^^^^^^^^^
-
-http://hackipedia.org/Hardware/CPU/x86/chip,%20VIA/nano/Padlock,%20quick%20=
-reference%20v0.95%20(July%2025th,%202008).pdf
-PadLock Quick Reference, v0.95, 25th July 2008
-RANDOM NUMBER GENERATION (page 3)
-Register Usage: Output
-EDX Bits 0:1 are unchanged, all higher order bits are zero.
-                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-See the attached session-log as well: those EDX bits are indeed zeroed.
-
-
-Btw: I believe both documents are quite clear regarding ECX for XSTORE.
-
-
-Mario
---=20
-User sind wie ideale Gase - sie verteilen sich gleichmaessig ueber alle Pla=
-tten
-
---eHhjakXzOLJAF9wJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="via-rng-test.out"
-Content-Transfer-Encoding: quoted-printable
-
-holbe@ideapad ~ % cat via-rng-test.c
-#include <stdio.h>
-#include <string.h>
-
-static inline unsigned long xstore(unsigned long *addr, unsigned long edx)
-{
-	unsigned long eax_out;
-	unsigned long ecx =3D 0xaa55aa55;
-	int ts_state;
-
-	printf("ecx: %08lx\tedx: %08lx\tedi: %p\n", ecx, edx, addr);
-
-	asm(".byte 0x0F,0xA7,0xC0 /* xstore %%edi (addr=3D%0) */"
-		: "=3Dm" (*addr), "=3Da" (eax_out), "+D" (addr), "+d" (edx), "+c" (ecx));
-
-	printf("ecx: %08lx\tedx: %08lx\tedi: %p\n", ecx, edx, addr);
-
-	return eax_out;
-}
-
-int main(void) {
-	unsigned long addr[8];
-
-	memset(addr, 0, sizeof(addr));
-
-	printf("%p: %08lx\n", addr, *(unsigned long *)addr);
-	xstore(addr, 0xffffff03); /* 8 rand bits, 32 stored bits */
-	printf("%p: %08lx\n", addr, *(unsigned long *)addr);
-
-	return 0;
-}
-holbe@ideapad ~ % gcc -o via-rng-test via-rng-test.c
-holbe@ideapad ~ % ./via-rng-test
-0xbff09d40: 00000000
-ecx: aa55aa55   edx: ffffff03   edi: 0xbff09d40
-ecx: aa55aa55   edx: 00000003   edi: 0xbff09d48
-0xbff09d40: 339d4525
-holbe@ideapad ~ %=20
-
---eHhjakXzOLJAF9wJ--
-
---+KJYzRxRHjYqLGl5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
+On 1/6/2011 3:19 PM, Russell King - ARM Linux wrote:
+> On Thu, Jan 06, 2011 at 03:16:25PM +0100, Carmelo AMOROSO wrote:
+>  > Well, SH (in CC) does not have this support. Indeed we posted it
+>  > initially to linux-sh only. We got useful feedback from Paul, Mike and
+>  > Nicolas suggesting to promote the ARM/SH solution based on the global
+>  > __stack_chk_guard variable as a generic solution for all other
+>  > architectures. This is why I thought to post to the LKML instead of each
+>  > linux-<arch> list.
+> 
+> Have you thought about posting it to _the_ linux-arch list?
+> 
+I did not know this list. I'll do. Thanks.
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Version: GnuPG v1.4.10 (MingW32)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-iQEVAwUBTSXU7hS+e2HeSPbpAQIeSgf+MYwpGWC2YJzt7u//+8jUvRuwWxm0yWyp
-WFWiqUTqGRdgSnIvHkcELFM5sX1xcvqYQwF9CinynoKOUxYjAqekmd0jlneLVZXG
-eDudLBL9+6IUaBavCuv3b6pK82rS3RQojjge/omm9af8C94cTkOHoumYW+WSwgxl
-4FkeC2cUV06jCqBQpKEEtRS6ztDn/3TRTU4PUpqSGCTkzfemN+vNeus0cclo6+1O
-eBbudsWl6iVGRiKHJoIscxQgvNDmJPARvOlSeo/38e8j+rbE1NiI5KWpfyFdj0dk
-BrQxXw/nohY9DPeor9wDyrGJsnAN9bUWBpMml82C85ifXAd0h153mQ==
-=/ngJ
+iEYEARECAAYFAk0l1RUACgkQoRq/3BrK1s8a1gCgpSdHez/S8cJ8BM5jVhYH0TKy
+84gAnRkeALaLGMoXJqtxdDRL7Xusc6JT
+=L6Oj
 -----END PGP SIGNATURE-----
-
---+KJYzRxRHjYqLGl5--
