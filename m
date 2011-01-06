@@ -1,97 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328Ab1AFP3e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 10:29:34 -0500
-Received: from elasmtp-scoter.atl.sa.earthlink.net ([209.86.89.67]:52756 "EHLO
-	elasmtp-scoter.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753035Ab1AFP3d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 10:29:33 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=earthlink.net;
-  b=HnGtRx9VL1n2KWvWeaNEttAt4h3rs1a80SmAhNpedVu6nsoJ3oxLxzesu3mZ0t18;
-  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
-Message-ID: <4D25DFDA.8010909@earthlink.net>
-Date: Thu, 06 Jan 2011 10:29:30 -0500
-From: Stephen Clark <sclark46@earthlink.net>
-Reply-To: sclark46@earthlink.net
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S1753398Ab1AFPeE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 10:34:04 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:36921 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753042Ab1AFPeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 10:34:02 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jan Kara <jack@suse.cz>
+Subject: Re: [Bug #21092] Kernel 2.6.36 Bug during quotaon on reiserfs
+Date: Thu, 6 Jan 2011 16:33:17 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37+; KDE/4.4.4; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>, markus.gapp@gmx.net
+References: <odW4v9b6arG.A.2bH.uE8GNB@chimera> <LbeBv-BNQpL.A.aM.5F8GNB@chimera> <20110106105424.GC4641@quack.suse.cz>
+In-Reply-To: <20110106105424.GC4641@quack.suse.cz>
 MIME-Version: 1.0
-To: Andreas Mohr <andi@lisas.de>
-CC: Robert Hancock <hancockrwd@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        ide <linux-ide@vger.kernel.org>
-Subject: Re: Kernel 2.6.37 erroneously limiting to UDMA/33
-References: <20110106103035.GA3484@rhlx01.hs-esslingen.de>
-In-Reply-To: <20110106103035.GA3484@rhlx01.hs-esslingen.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec79a81a3602a128a90585dea040e7efa3b5350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 69.22.83.66
+Message-Id: <201101061633.17471.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2011 05:30 AM, Andreas Mohr wrote:
-> Hi,
->
-> Robert Hancock wrote:
->    
->> On 01/05/2011 12:33 PM, Stephen Clark wrote:
->>      
->>> Hello,
->>>
->>> Why is the kernel limiting me to udma/33 when the device says it can do
->>> ata2.01: CFA: TRANSCEND, 20070831, max UDMA/66
->>>
->>> There is no cable the compact flash is a socket on the motherboard!
->>>        
->> The kernel has no way to know that, and presumably the board isn't
->> connecting the signal for IDE pin 34 to ground in order to properly
->> signal that an 80-wire cable (or equivalent) is connected so that speeds
->> over UDMA33 can be used.
->>
->> You should be able to use the libata.force=80c option on the kernel
->> command line to override the cable detection.
->>      
-> Further comments for the OP:
->
-> If 80c happens to be correct for this machine (since it's soldered
-> it's quite obvious) and the machine is quite wide-spread, perhaps one needs
-> to add overrides within drivers/ata/pata_via.c/via_cable_detect() functionality,
-> analogous to the ata_piix.c/ich_pata_cable_detect() case where it uses
-> an entire ich_laptop device list to match against,
-> to detect special 80c compatible cases.
->
-> But since pata_via.c has the insightful comment
-> "Perform cable detection. Actually for the VIA case the BIOS
->   already did this for us."
-> it looks like your BIOS might be considered "broken"
-> due to not indicating 80c for such a solder job
-> -->  BIOS upgrade available?
->
->    
-Will check. The machine is an Acrosser AR-M0898B micro box, for use such as
-a firewall, vpn appliance, etc.
-> And perhaps better avoid mentioning a specific kernel in the subject
-> line unless it's a regression (which likely isn't the case here),
-> or write it like "..... (on 2.6.XXX)".
->
->    
-Good point.
+On Thursday, January 06, 2011, Jan Kara wrote:
+>   Hi,
+> 
+> On Thu 30-12-10 00:21:21, Rafael J. Wysocki wrote:
+> > This message has been generated automatically as a part of a report
+> > of regressions introduced between 2.6.35 and 2.6.36.
+> > 
+> > The following bug entry is on the current list of known regressions
+> > introduced between 2.6.35 and 2.6.36.  Please verify if it still should
+> > be listed and let the tracking team know (either way).
+> > 
+> > 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=21092
+> > Subject		: Kernel 2.6.36 Bug during quotaon on reiserfs
+> > Submitter	:  <markus.gapp@gmx.net>
+> > Date		: 2010-10-24 16:57 (67 days old)
+> > Handled-By	: Jan Kara <jack@suse.cz>
+> > Patch		: https://bugzilla.kernel.org/attachment.cgi?id=35292
+>   As far as I know, the problem has been fixed by commit
+> da905873effecd1c0166e578bc4b5006f041b18b in the end.
 
-> Andreas Mohr
->
->    
+Thanks, closing.
 
-
--- 
-
-"They that give up essential liberty to obtain temporary safety,
-deserve neither liberty nor safety."  (Ben Franklin)
-
-"The course of history shows that as a government grows, liberty
-decreases."  (Thomas Jefferson)
-
-
-
+Rafael
