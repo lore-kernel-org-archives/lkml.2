@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522Ab1AFAat (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:30:49 -0500
-Received: from kroah.org ([198.145.64.141]:35916 "EHLO coco.kroah.org"
+	id S1754602Ab1AFAmd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:42:33 -0500
+Received: from kroah.org ([198.145.64.141]:35922 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754506Ab1AFAaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:30:46 -0500
+	id S1754516Ab1AFAat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:30:49 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:06 2011
-Message-Id: <20110106002306.307793116@clark.site>
+Message-Id: <20110106002306.397303678@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:23:19 -0800
+Date: Wed, 05 Jan 2011 16:23:20 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [100/152] x86, vt-d: Quirk for masking vtd spec errors to platform error handling logic
+        Ivo van Doorn <IvDoorn@gmail.com>,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [101/152] rt2x00: Fix max TX power settings
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,72 +27,310 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Suresh Siddha <suresh.b.siddha@intel.com>
+From: Ivo van Doorn <ivdoorn@gmail.com>
 
-commit 254e42006c893f45bca48f313536fcba12206418 upstream.
+commit 8d1331b37d5b656a7a8e561f8e9d7661dd00c910 upstream.
 
-On platforms with Intel 7500 chipset, there were some reports of system
-hang/NMI's during kexec/kdump in the presence of interrupt-remapping enabled.
+During initialization each driver reads the default TX power
+for each individual channel. However mac80211 only accepts the
+maximum value (which is also handled as default value).
 
-During kdump, there is a window where the devices might be still using old
-kernel's interrupt information, while the kdump kernel is coming up. This can
-cause vt-d faults as the interrupt configuration from the old kernel map to
-null IRTE entries in the new kernel etc. (with out interrupt-remapping enabled,
-we still have the same issue but in this case we will see benign spurious
-interrupt hit the new kernel).
+As a result, the TX power of the device was being limited to
+the default value, which is often quite low compared to the
+real maximum acceptable value.
 
-Based on platform config settings, these platforms seem to generate NMI/SMI
-when a vt-d fault happens and there were reports that the resulting SMI causes
-the  system to hang.
+This patch allows each driver to set the maximum value on a
+per-channel basis which is forwarded to mac80211. The default
+value will be preserved for now, in case we want to update
+mac80211 to differentiate between the maximum and default txpower.
 
-Fix it by masking vt-d spec defined errors to platform error reporting logic.
-VT-d spec related errors are already handled by the VT-d OS code, so need to
-report the same error through other channels.
+This fixes bug complaining about limited TX power values like:
+https://bugzilla.kernel.org/show_bug.cgi?id=16358
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-LKML-Reference: <1291667190.2675.8.camel@sbsiddha-MOBL3.sc.intel.com>
-Reported-by: Max Asbock <masbock@linux.vnet.ibm.com>
-Reported-and-tested-by: Takao Indoh <indou.takao@jp.fujitsu.com>
-Acked-by: Chris Wright <chrisw@sous-sol.org>
-Acked-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Ivo van Doorn <IvDoorn@gmail.com>
+Acked-by: Helmut Schaa <helmut.schaa@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/quirks.c |   23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+ drivers/net/wireless/rt2x00/rt2400pci.c |    6 ++-
+ drivers/net/wireless/rt2x00/rt2500pci.c |   12 ++++--
+ drivers/net/wireless/rt2x00/rt2500usb.c |   12 ++++--
+ drivers/net/wireless/rt2x00/rt2800.h    |    7 +++
+ drivers/net/wireless/rt2x00/rt2800lib.c |   59 ++++++++++++++++++--------------
+ drivers/net/wireless/rt2x00/rt2x00.h    |    5 +-
+ drivers/net/wireless/rt2x00/rt2x00dev.c |    2 -
+ drivers/net/wireless/rt2x00/rt61pci.c   |   12 ++++--
+ drivers/net/wireless/rt2x00/rt73usb.c   |   12 ++++--
+ 9 files changed, 82 insertions(+), 45 deletions(-)
 
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2714,6 +2714,29 @@ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RI
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
- #endif /*CONFIG_MMC_RICOH_MMC*/
+--- a/drivers/net/wireless/rt2x00/rt2400pci.c
++++ b/drivers/net/wireless/rt2x00/rt2400pci.c
+@@ -1488,8 +1488,10 @@ static int rt2400pci_probe_hw_mode(struc
+ 	spec->channels_info = info;
  
-+#if defined(CONFIG_DMAR) || defined(CONFIG_INTR_REMAP)
-+#define VTUNCERRMSK_REG	0x1ac
-+#define VTD_MSK_SPEC_ERRORS	(1 << 31)
-+/*
-+ * This is a quirk for masking vt-d spec defined errors to platform error
-+ * handling logic. With out this, platforms using Intel 7500, 5500 chipsets
-+ * (and the derivative chipsets like X58 etc) seem to generate NMI/SMI (based
-+ * on the RAS config settings of the platform) when a vt-d fault happens.
-+ * The resulting SMI caused the system to hang.
-+ *
-+ * VT-d spec related errors are already handled by the VT-d OS code, so no
-+ * need to report the same error through other channels.
+ 	tx_power = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_START);
+-	for (i = 0; i < 14; i++)
+-		info[i].tx_power1 = TXPOWER_FROM_DEV(tx_power[i]);
++	for (i = 0; i < 14; i++) {
++		info[i].max_power = TXPOWER_FROM_DEV(MAX_TXPOWER);
++		info[i].default_power1 = TXPOWER_FROM_DEV(tx_power[i]);
++	}
+ 
+ 	return 0;
+ }
+--- a/drivers/net/wireless/rt2x00/rt2500pci.c
++++ b/drivers/net/wireless/rt2x00/rt2500pci.c
+@@ -1802,12 +1802,16 @@ static int rt2500pci_probe_hw_mode(struc
+ 	spec->channels_info = info;
+ 
+ 	tx_power = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_START);
+-	for (i = 0; i < 14; i++)
+-		info[i].tx_power1 = TXPOWER_FROM_DEV(tx_power[i]);
++	for (i = 0; i < 14; i++) {
++		info[i].max_power = MAX_TXPOWER;
++		info[i].default_power1 = TXPOWER_FROM_DEV(tx_power[i]);
++	}
+ 
+ 	if (spec->num_channels > 14) {
+-		for (i = 14; i < spec->num_channels; i++)
+-			info[i].tx_power1 = DEFAULT_TXPOWER;
++		for (i = 14; i < spec->num_channels; i++) {
++			info[i].max_power = MAX_TXPOWER;
++			info[i].default_power1 = DEFAULT_TXPOWER;
++		}
+ 	}
+ 
+ 	return 0;
+--- a/drivers/net/wireless/rt2x00/rt2500usb.c
++++ b/drivers/net/wireless/rt2x00/rt2500usb.c
+@@ -1705,12 +1705,16 @@ static int rt2500usb_probe_hw_mode(struc
+ 	spec->channels_info = info;
+ 
+ 	tx_power = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_START);
+-	for (i = 0; i < 14; i++)
+-		info[i].tx_power1 = TXPOWER_FROM_DEV(tx_power[i]);
++	for (i = 0; i < 14; i++) {
++		info[i].max_power = MAX_TXPOWER;
++		info[i].default_power1 = TXPOWER_FROM_DEV(tx_power[i]);
++	}
+ 
+ 	if (spec->num_channels > 14) {
+-		for (i = 14; i < spec->num_channels; i++)
+-			info[i].tx_power1 = DEFAULT_TXPOWER;
++		for (i = 14; i < spec->num_channels; i++) {
++			info[i].max_power = MAX_TXPOWER;
++			info[i].default_power1 = DEFAULT_TXPOWER;
++		}
+ 	}
+ 
+ 	return 0;
+--- a/drivers/net/wireless/rt2x00/rt2800.h
++++ b/drivers/net/wireless/rt2x00/rt2800.h
+@@ -1841,6 +1841,13 @@ struct mac_iveiv_entry {
+ #define EEPROM_RSSI_A2_LNA_A2		FIELD16(0xff00)
+ 
+ /*
++ * EEPROM Maximum TX power values
 + */
-+static void vtd_mask_spec_errors(struct pci_dev *dev)
-+{
-+	u32 word;
++#define EEPROM_MAX_TX_POWER		0x0027
++#define EEPROM_MAX_TX_POWER_24GHZ	FIELD16(0x00ff)
++#define EEPROM_MAX_TX_POWER_5GHZ	FIELD16(0xff00)
 +
-+	pci_read_config_dword(dev, VTUNCERRMSK_REG, &word);
-+	pci_write_config_dword(dev, VTUNCERRMSK_REG, word | VTD_MSK_SPEC_ERRORS);
-+}
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, 0x342e, vtd_mask_spec_errors);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, 0x3c28, vtd_mask_spec_errors);
-+#endif
++/*
+  * EEPROM TXpower delta: 20MHZ AND 40 MHZ use different power.
+  *	This is delta in 40MHZ.
+  * VALUE: Tx Power dalta value (MAX=4)
+--- a/drivers/net/wireless/rt2x00/rt2800lib.c
++++ b/drivers/net/wireless/rt2x00/rt2800lib.c
+@@ -1120,27 +1120,27 @@ static void rt2800_config_channel_rf2xxx
+ 		 * double meaning, and we should set a 7DBm boost flag.
+ 		 */
+ 		rt2x00_set_field32(&rf->rf3, RF3_TXPOWER_A_7DBM_BOOST,
+-				   (info->tx_power1 >= 0));
++				   (info->default_power1 >= 0));
  
- static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
- 			  struct pci_fixup *end)
+-		if (info->tx_power1 < 0)
+-			info->tx_power1 += 7;
++		if (info->default_power1 < 0)
++			info->default_power1 += 7;
+ 
+ 		rt2x00_set_field32(&rf->rf3, RF3_TXPOWER_A,
+-				   TXPOWER_A_TO_DEV(info->tx_power1));
++				   TXPOWER_A_TO_DEV(info->default_power1));
+ 
+ 		rt2x00_set_field32(&rf->rf4, RF4_TXPOWER_A_7DBM_BOOST,
+-				   (info->tx_power2 >= 0));
++				   (info->default_power2 >= 0));
+ 
+-		if (info->tx_power2 < 0)
+-			info->tx_power2 += 7;
++		if (info->default_power2 < 0)
++			info->default_power2 += 7;
+ 
+ 		rt2x00_set_field32(&rf->rf4, RF4_TXPOWER_A,
+-				   TXPOWER_A_TO_DEV(info->tx_power2));
++				   TXPOWER_A_TO_DEV(info->default_power2));
+ 	} else {
+ 		rt2x00_set_field32(&rf->rf3, RF3_TXPOWER_G,
+-				   TXPOWER_G_TO_DEV(info->tx_power1));
++				   TXPOWER_G_TO_DEV(info->default_power1));
+ 		rt2x00_set_field32(&rf->rf4, RF4_TXPOWER_G,
+-				   TXPOWER_G_TO_DEV(info->tx_power2));
++				   TXPOWER_G_TO_DEV(info->default_power2));
+ 	}
+ 
+ 	rt2x00_set_field32(&rf->rf4, RF4_HT40, conf_is_ht40(conf));
+@@ -1180,13 +1180,11 @@ static void rt2800_config_channel_rf3xxx
+ 	rt2800_rfcsr_write(rt2x00dev, 6, rfcsr);
+ 
+ 	rt2800_rfcsr_read(rt2x00dev, 12, &rfcsr);
+-	rt2x00_set_field8(&rfcsr, RFCSR12_TX_POWER,
+-			  TXPOWER_G_TO_DEV(info->tx_power1));
++	rt2x00_set_field8(&rfcsr, RFCSR12_TX_POWER, info->default_power1);
+ 	rt2800_rfcsr_write(rt2x00dev, 12, rfcsr);
+ 
+ 	rt2800_rfcsr_read(rt2x00dev, 13, &rfcsr);
+-	rt2x00_set_field8(&rfcsr, RFCSR13_TX_POWER,
+-			  TXPOWER_G_TO_DEV(info->tx_power2));
++	rt2x00_set_field8(&rfcsr, RFCSR13_TX_POWER, info->default_power2);
+ 	rt2800_rfcsr_write(rt2x00dev, 13, rfcsr);
+ 
+ 	rt2800_rfcsr_read(rt2x00dev, 23, &rfcsr);
+@@ -2516,6 +2514,13 @@ int rt2800_validate_eeprom(struct rt2x00
+ 				   default_lna_gain);
+ 	rt2x00_eeprom_write(rt2x00dev, EEPROM_RSSI_A2, word);
+ 
++	rt2x00_eeprom_read(rt2x00dev, EEPROM_MAX_TX_POWER, &word);
++	if (rt2x00_get_field16(word, EEPROM_MAX_TX_POWER_24GHZ) == 0xff)
++		rt2x00_set_field16(&word, EEPROM_MAX_TX_POWER_24GHZ, MAX_G_TXPOWER);
++	if (rt2x00_get_field16(word, EEPROM_MAX_TX_POWER_5GHZ) == 0xff)
++		rt2x00_set_field16(&word, EEPROM_MAX_TX_POWER_5GHZ, MAX_A_TXPOWER);
++	rt2x00_eeprom_write(rt2x00dev, EEPROM_MAX_TX_POWER, word);
++
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(rt2800_validate_eeprom);
+@@ -2755,9 +2760,10 @@ int rt2800_probe_hw_mode(struct rt2x00_d
+ {
+ 	struct hw_mode_spec *spec = &rt2x00dev->spec;
+ 	struct channel_info *info;
+-	char *tx_power1;
+-	char *tx_power2;
++	char *default_power1;
++	char *default_power2;
+ 	unsigned int i;
++	unsigned short max_power;
+ 	u16 eeprom;
+ 
+ 	/*
+@@ -2871,21 +2877,26 @@ int rt2800_probe_hw_mode(struct rt2x00_d
+ 
+ 	spec->channels_info = info;
+ 
+-	tx_power1 = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_BG1);
+-	tx_power2 = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_BG2);
++	rt2x00_eeprom_read(rt2x00dev, EEPROM_MAX_TX_POWER, &eeprom);
++	max_power = rt2x00_get_field16(eeprom, EEPROM_MAX_TX_POWER_24GHZ);
++	default_power1 = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_BG1);
++	default_power2 = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_BG2);
+ 
+ 	for (i = 0; i < 14; i++) {
+-		info[i].tx_power1 = TXPOWER_G_FROM_DEV(tx_power1[i]);
+-		info[i].tx_power2 = TXPOWER_G_FROM_DEV(tx_power2[i]);
++		info[i].max_power = max_power;
++		info[i].default_power1 = TXPOWER_G_FROM_DEV(default_power1[i]);
++		info[i].default_power2 = TXPOWER_G_FROM_DEV(default_power2[i]);
+ 	}
+ 
+ 	if (spec->num_channels > 14) {
+-		tx_power1 = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_A1);
+-		tx_power2 = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_A2);
++		max_power = rt2x00_get_field16(eeprom, EEPROM_MAX_TX_POWER_5GHZ);
++		default_power1 = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_A1);
++		default_power2 = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_A2);
+ 
+ 		for (i = 14; i < spec->num_channels; i++) {
+-			info[i].tx_power1 = TXPOWER_A_FROM_DEV(tx_power1[i]);
+-			info[i].tx_power2 = TXPOWER_A_FROM_DEV(tx_power2[i]);
++			info[i].max_power = max_power;
++			info[i].default_power1 = TXPOWER_A_FROM_DEV(default_power1[i]);
++			info[i].default_power2 = TXPOWER_A_FROM_DEV(default_power2[i]);
+ 		}
+ 	}
+ 
+--- a/drivers/net/wireless/rt2x00/rt2x00.h
++++ b/drivers/net/wireless/rt2x00/rt2x00.h
+@@ -212,8 +212,9 @@ struct channel_info {
+ 	unsigned int flags;
+ #define GEOGRAPHY_ALLOWED	0x00000001
+ 
+-	short tx_power1;
+-	short tx_power2;
++	short max_power;
++	short default_power1;
++	short default_power2;
+ };
+ 
+ /*
+--- a/drivers/net/wireless/rt2x00/rt2x00dev.c
++++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
+@@ -710,7 +710,7 @@ static int rt2x00lib_probe_hw_modes(stru
+ 	for (i = 0; i < spec->num_channels; i++) {
+ 		rt2x00lib_channel(&channels[i],
+ 				  spec->channels[i].channel,
+-				  spec->channels_info[i].tx_power1, i);
++				  spec->channels_info[i].max_power, i);
+ 	}
+ 
+ 	/*
+--- a/drivers/net/wireless/rt2x00/rt61pci.c
++++ b/drivers/net/wireless/rt2x00/rt61pci.c
+@@ -2661,13 +2661,17 @@ static int rt61pci_probe_hw_mode(struct
+ 	spec->channels_info = info;
+ 
+ 	tx_power = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_G_START);
+-	for (i = 0; i < 14; i++)
+-		info[i].tx_power1 = TXPOWER_FROM_DEV(tx_power[i]);
++	for (i = 0; i < 14; i++) {
++		info[i].max_power = MAX_TXPOWER;
++		info[i].default_power1 = TXPOWER_FROM_DEV(tx_power[i]);
++	}
+ 
+ 	if (spec->num_channels > 14) {
+ 		tx_power = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_A_START);
+-		for (i = 14; i < spec->num_channels; i++)
+-			info[i].tx_power1 = TXPOWER_FROM_DEV(tx_power[i]);
++		for (i = 14; i < spec->num_channels; i++) {
++			info[i].max_power = MAX_TXPOWER;
++			info[i].default_power1 = TXPOWER_FROM_DEV(tx_power[i]);
++		}
+ 	}
+ 
+ 	return 0;
+--- a/drivers/net/wireless/rt2x00/rt73usb.c
++++ b/drivers/net/wireless/rt2x00/rt73usb.c
+@@ -2091,13 +2091,17 @@ static int rt73usb_probe_hw_mode(struct
+ 	spec->channels_info = info;
+ 
+ 	tx_power = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_G_START);
+-	for (i = 0; i < 14; i++)
+-		info[i].tx_power1 = TXPOWER_FROM_DEV(tx_power[i]);
++	for (i = 0; i < 14; i++) {
++		info[i].max_power = MAX_TXPOWER;
++		info[i].default_power1 = TXPOWER_FROM_DEV(tx_power[i]);
++	}
+ 
+ 	if (spec->num_channels > 14) {
+ 		tx_power = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_A_START);
+-		for (i = 14; i < spec->num_channels; i++)
+-			info[i].tx_power1 = TXPOWER_FROM_DEV(tx_power[i]);
++		for (i = 14; i < spec->num_channels; i++) {
++			info[i].max_power = MAX_TXPOWER;
++			info[i].default_power1 = TXPOWER_FROM_DEV(tx_power[i]);
++		}
+ 	}
+ 
+ 	return 0;
 
 
