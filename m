@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998Ab1AFHp5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 02:45:57 -0500
-Received: from [69.28.251.93] ([69.28.251.93]:38733 "EHLO b32.net"
+	id S1755097Ab1AFHqE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 02:46:04 -0500
+Received: from [69.28.251.93] ([69.28.251.93]:38769 "EHLO b32.net"
 	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754955Ab1AFHpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 02:45:54 -0500
+	id S1755055Ab1AFHqC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 02:46:02 -0500
 From: Kevin Cernekee <cernekee@gmail.com>
 To: Ralf Baechle <ralf@linux-mips.org>
-Cc: <anemo@mba.ocn.ne.jp>, <linux-mips@linux-mips.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 RESEND 3/6] MIPS: Move FIXADDR_TOP into spaces.h
-Date: Wed, 05 Jan 2011 23:31:27 -0800
-Message-Id: <e89d5c8e0f776a2179da18ee6a92f280@localhost>
+Cc: <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH RESEND 5/6] MIPS: Install handlers for BMIPS software IRQs
+Date: Wed, 05 Jan 2011 23:31:29 -0800
+Message-Id: <15216cd202530798c9d4c5beeb45c6ba@localhost>
 In-Reply-To: <8eec0c63f92528c501c0e6a0c8396359@localhost>
 References: <8eec0c63f92528c501c0e6a0c8396359@localhost>
 User-Agent: vim 7.2
@@ -23,133 +22,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory maps and addressing quirks are normally defined in <spaces.h>.
-There are already three targets that need to override FIXADDR_TOP, and
-others exist.  This will be a cleaner approach than adding lots of
-ifdefs in fixmap.h .
+BMIPS4350/4380/5000 CMT/SMT all use SW INT0/INT1 for inter-thread
+signaling.
 
 Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 ---
- arch/mips/include/asm/fixmap.h              |   10 +---------
- arch/mips/include/asm/mach-bcm63xx/spaces.h |   17 +++++++++++++++++
- arch/mips/include/asm/mach-generic/spaces.h |    4 ++++
- arch/mips/include/asm/mach-tx39xx/spaces.h  |   17 +++++++++++++++++
- arch/mips/include/asm/mach-tx49xx/spaces.h  |   17 +++++++++++++++++
- 5 files changed, 56 insertions(+), 9 deletions(-)
- create mode 100644 arch/mips/include/asm/mach-bcm63xx/spaces.h
- create mode 100644 arch/mips/include/asm/mach-tx39xx/spaces.h
- create mode 100644 arch/mips/include/asm/mach-tx49xx/spaces.h
+ arch/mips/kernel/irq_cpu.c |   14 ++++++--------
+ 1 files changed, 6 insertions(+), 8 deletions(-)
 
-diff --git a/arch/mips/include/asm/fixmap.h b/arch/mips/include/asm/fixmap.h
-index 0b89b83..98bcc98 100644
---- a/arch/mips/include/asm/fixmap.h
-+++ b/arch/mips/include/asm/fixmap.h
-@@ -14,6 +14,7 @@
- #define _ASM_FIXMAP_H
+diff --git a/arch/mips/kernel/irq_cpu.c b/arch/mips/kernel/irq_cpu.c
+index 0262abe..70d4736 100644
+--- a/arch/mips/kernel/irq_cpu.c
++++ b/arch/mips/kernel/irq_cpu.c
+@@ -107,14 +107,12 @@ void __init mips_cpu_irq_init(void)
+ 	clear_c0_status(ST0_IM);
+ 	clear_c0_cause(CAUSEF_IP);
  
- #include <asm/page.h>
-+#include <spaces.h>
- #ifdef CONFIG_HIGHMEM
- #include <linux/threads.h>
- #include <asm/kmap_types.h>
-@@ -67,15 +68,6 @@ enum fixed_addresses {
-  * the start of the fixmap, and leave one page empty
-  * at the top of mem..
-  */
--#ifdef CONFIG_BCM63XX
--#define FIXADDR_TOP     ((unsigned long)(long)(int)0xff000000)
--#else
--#if defined(CONFIG_CPU_TX39XX) || defined(CONFIG_CPU_TX49XX)
--#define FIXADDR_TOP	((unsigned long)(long)(int)(0xff000000 - 0x20000))
--#else
--#define FIXADDR_TOP	((unsigned long)(long)(int)0xfffe0000)
--#endif
--#endif
- #define FIXADDR_SIZE	(__end_of_fixed_addresses << PAGE_SHIFT)
- #define FIXADDR_START	(FIXADDR_TOP - FIXADDR_SIZE)
+-	/*
+-	 * Only MT is using the software interrupts currently, so we just
+-	 * leave them uninitialized for other processors.
+-	 */
+-	if (cpu_has_mipsmt)
+-		for (i = irq_base; i < irq_base + 2; i++)
+-			set_irq_chip_and_handler(i, &mips_mt_cpu_irq_controller,
+-						 handle_percpu_irq);
++	/* Software interrupts are used for MT/CMT IPI */
++	for (i = irq_base; i < irq_base + 2; i++)
++		set_irq_chip_and_handler(i, cpu_has_mipsmt ?
++					 &mips_mt_cpu_irq_controller :
++					 &mips_cpu_irq_controller,
++					 handle_percpu_irq);
  
-diff --git a/arch/mips/include/asm/mach-bcm63xx/spaces.h b/arch/mips/include/asm/mach-bcm63xx/spaces.h
-new file mode 100644
-index 0000000..61e750f
---- /dev/null
-+++ b/arch/mips/include/asm/mach-bcm63xx/spaces.h
-@@ -0,0 +1,17 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 1994 - 1999, 2000, 03, 04 Ralf Baechle
-+ * Copyright (C) 2000, 2002  Maciej W. Rozycki
-+ * Copyright (C) 1990, 1999, 2000 Silicon Graphics, Inc.
-+ */
-+#ifndef _ASM_BCM63XX_SPACES_H
-+#define _ASM_BCM63XX_SPACES_H
-+
-+#define FIXADDR_TOP		((unsigned long)(long)(int)0xff000000)
-+
-+#include <asm/mach-generic/spaces.h>
-+
-+#endif /* __ASM_BCM63XX_SPACES_H */
-diff --git a/arch/mips/include/asm/mach-generic/spaces.h b/arch/mips/include/asm/mach-generic/spaces.h
-index c9fa4b1..d7a9efd 100644
---- a/arch/mips/include/asm/mach-generic/spaces.h
-+++ b/arch/mips/include/asm/mach-generic/spaces.h
-@@ -82,4 +82,8 @@
- #define PAGE_OFFSET		(CAC_BASE + PHYS_OFFSET)
- #endif
- 
-+#ifndef FIXADDR_TOP
-+#define FIXADDR_TOP		((unsigned long)(long)(int)0xfffe0000)
-+#endif
-+
- #endif /* __ASM_MACH_GENERIC_SPACES_H */
-diff --git a/arch/mips/include/asm/mach-tx39xx/spaces.h b/arch/mips/include/asm/mach-tx39xx/spaces.h
-new file mode 100644
-index 0000000..151fe7a
---- /dev/null
-+++ b/arch/mips/include/asm/mach-tx39xx/spaces.h
-@@ -0,0 +1,17 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 1994 - 1999, 2000, 03, 04 Ralf Baechle
-+ * Copyright (C) 2000, 2002  Maciej W. Rozycki
-+ * Copyright (C) 1990, 1999, 2000 Silicon Graphics, Inc.
-+ */
-+#ifndef _ASM_TX39XX_SPACES_H
-+#define _ASM_TX39XX_SPACES_H
-+
-+#define FIXADDR_TOP		((unsigned long)(long)(int)0xfefe0000)
-+
-+#include <asm/mach-generic/spaces.h>
-+
-+#endif /* __ASM_TX39XX_SPACES_H */
-diff --git a/arch/mips/include/asm/mach-tx49xx/spaces.h b/arch/mips/include/asm/mach-tx49xx/spaces.h
-new file mode 100644
-index 0000000..0cb10a6
---- /dev/null
-+++ b/arch/mips/include/asm/mach-tx49xx/spaces.h
-@@ -0,0 +1,17 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 1994 - 1999, 2000, 03, 04 Ralf Baechle
-+ * Copyright (C) 2000, 2002  Maciej W. Rozycki
-+ * Copyright (C) 1990, 1999, 2000 Silicon Graphics, Inc.
-+ */
-+#ifndef _ASM_TX49XX_SPACES_H
-+#define _ASM_TX49XX_SPACES_H
-+
-+#define FIXADDR_TOP		((unsigned long)(long)(int)0xfefe0000)
-+
-+#include <asm/mach-generic/spaces.h>
-+
-+#endif /* __ASM_TX49XX_SPACES_H */
+ 	for (i = irq_base + 2; i < irq_base + 8; i++)
+ 		set_irq_chip_and_handler(i, &mips_cpu_irq_controller,
 -- 
 1.7.0.4
 
