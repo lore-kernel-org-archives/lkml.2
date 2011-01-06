@@ -1,515 +1,322 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751718Ab1AFID3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 03:03:29 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:40255 "EHLO mprc.pku.edu.cn"
+	id S1752029Ab1AFIER (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 03:04:17 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:40267 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751378Ab1AFID2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 03:03:28 -0500
+	id S1751625Ab1AFIEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 03:04:16 -0500
 From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 References: <01de01cbad77$3dbed0a0$b93c71e0$@mprc.pku.edu.cn>
 In-Reply-To: <01de01cbad77$3dbed0a0$b93c71e0$@mprc.pku.edu.cn>
 Subject: RE: [PATCHv1 0/8] unicore32 machine related files: summary
-Date: Thu, 6 Jan 2011 16:03:28 +0800
-Message-ID: <01e401cbad78$34125ad0$9c371070$@mprc.pku.edu.cn>
+Date: Thu, 6 Jan 2011 16:04:17 +0800
+Message-ID: <01e601cbad78$50b374d0$f21a5e70$@mprc.pku.edu.cn>
 MIME-Version: 1.0
 Content-Type: text/plain;
 	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQD5q7uzdbzaRxzFKhxkjRMpQze/MJVnmLnA
+Thread-Index: AQD5q7uzdbzaRxzFKhxkjRMpQze/MJVnmPhg
 Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCHv1 3/8] unicore32 machine related files: pci bus
+[PATCHv1 4/8] unicore32 machine related files: ps2 driver
 From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 
-Patch 3 implements arch-specific pci bus driver.
+Patch 4 implements arch-specific ps2 driver.
 
 Signed-off-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 ---
- arch/unicore32/include/asm/pci.h |   46 +++++
- arch/unicore32/kernel/pci.c      |  404 ++++++++++++++++++++++++++++++++++++++
- drivers/pci/Makefile             |    1 +
- 3 files changed, 451 insertions(+), 0 deletions(-)
+ drivers/input/keyboard/Kconfig      |   11 ++++
+ drivers/input/keyboard/atkbd.c      |    4 ++
+ drivers/input/mouse/psmouse-base.c  |   41 +++++++++++++++
+ drivers/input/serio/i8042.h         |    2 +
+ drivers/staging/puv3/i8042-ucio.h   |   96 +++++++++++++++++++++++++++++++++++
+ drivers/staging/puv3/nb0916-atkbd.h |   43 ++++++++++++++++
+ 6 files changed, 197 insertions(+), 0 deletions(-)
 
-diff --git a/arch/unicore32/include/asm/pci.h b/arch/unicore32/include/asm/pci.h
+diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
+index 3a87f3b..c03c453 100644
+--- a/drivers/input/keyboard/Kconfig
++++ b/drivers/input/keyboard/Kconfig
+@@ -134,6 +134,17 @@ config KEYBOARD_QT2160
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called qt2160.
+ 
++config KEYBOARD_ATKBD_PKUNITY_KEYCODES
++	bool "Use PKUnity keyboard scancodes"
++	depends on ARCH_PUV3 && KEYBOARD_ATKBD
++	default y
++	help
++	  Say Y here if you have a PKUnity machine and want to use an AT or
++	  PS/2 keyboard, and your keyboard uses keycodes that are specific to
++	  PKUnity keyboards.
++
++	  Say N if you use a standard keyboard.
++
+ config KEYBOARD_BFIN
+ 	tristate "Blackfin BF54x keypad support"
+ 	depends on (BF54x && !BF544)
+diff --git a/drivers/input/keyboard/atkbd.c b/drivers/input/keyboard/atkbd.c
+index 11478eb..c206cf0 100644
+--- a/drivers/input/keyboard/atkbd.c
++++ b/drivers/input/keyboard/atkbd.c
+@@ -82,6 +82,10 @@ static const unsigned short atkbd_set2_keycode[ATKBD_KEYMAP_SIZE] = {
+ 
+ #include "hpps2atkbd.h"	/* include the keyboard scancodes */
+ 
++#elif CONFIG_KEYBOARD_ATKBD_PKUNITY_KEYCODES
++
++#include "../../staging/puv3/nb0916-atkbd.h"
++
+ #else
+ 	  0, 67, 65, 63, 61, 59, 60, 88,  0, 68, 66, 64, 62, 15, 41,117,
+ 	  0, 56, 42, 93, 29, 16,  2,  0,  0,  0, 44, 31, 30, 17,  3,  0,
+diff --git a/drivers/input/mouse/psmouse-base.c b/drivers/input/mouse/psmouse-base.c
+index cd9d0c9..d4497f7 100644
+--- a/drivers/input/mouse/psmouse-base.c
++++ b/drivers/input/mouse/psmouse-base.c
+@@ -61,7 +61,11 @@ static unsigned int psmouse_smartscroll = 1;
+ module_param_named(smartscroll, psmouse_smartscroll, bool, 0644);
+ MODULE_PARM_DESC(smartscroll, "Logitech Smartscroll autorepeat, 1 = enabled (default), 0 = disabled.");
+ 
++#if defined(CONFIG_UNICORE32) && defined(CONFIG_ARCH_PUV3)
++static unsigned int psmouse_resetafter = 1;
++#else
+ static unsigned int psmouse_resetafter = 5;
++#endif
+ module_param_named(resetafter, psmouse_resetafter, uint, 0644);
+ MODULE_PARM_DESC(resetafter, "Reset device after so many bad packets (0 = never).");
+ 
+@@ -132,6 +136,27 @@ static psmouse_ret_t psmouse_process_byte(struct psmouse *psmouse)
+ 	if (psmouse->pktcnt < psmouse->pktsize)
+ 		return PSMOUSE_GOOD_DATA;
+ 
++#if defined(CONFIG_UNICORE32) && defined(CONFIG_ARCH_PUV3)
++	if (!(packet[0] & 0x8))
++		return PSMOUSE_BAD_DATA;
++	else {
++		if (packet[1] > 127) {
++			if (!(packet[0] & 0x10))
++				return PSMOUSE_BAD_DATA;
++		} else {
++			if ((packet[0] & 0x10))
++				return PSMOUSE_BAD_DATA;
++		}
++
++		if (packet[2] > 127) {
++			if (!(packet[0] & 0x20))
++				return PSMOUSE_BAD_DATA;
++		} else {
++			if ((packet[0] & 0x20))
++				return PSMOUSE_BAD_DATA;
++		}
++	}
++#endif
+ /*
+  * Full packet accumulated, process it
+  */
+@@ -1004,9 +1029,19 @@ static void psmouse_initialize(struct psmouse *psmouse)
+ 
+ static void psmouse_activate(struct psmouse *psmouse)
+ {
++#if defined(CONFIG_UNICORE32) && defined(CONFIG_ARCH_PUV3)
++	int i;
++	for (i = 0; i < 1000; i++)
++		if (ps2_command(&psmouse->ps2dev, NULL, PSMOUSE_CMD_ENABLE))
++			printk(KERN_WARNING "psmouse.c: Failed to enable mouse on %s\n",
++				psmouse->ps2dev.serio->phys);
++		else
++			break;
++#else
+ 	if (ps2_command(&psmouse->ps2dev, NULL, PSMOUSE_CMD_ENABLE))
+ 		printk(KERN_WARNING "psmouse.c: Failed to enable mouse on %s\n",
+ 			psmouse->ps2dev.serio->phys);
++#endif
+ 
+ 	psmouse_set_state(psmouse, PSMOUSE_ACTIVATED);
+ }
+@@ -1413,6 +1448,12 @@ static int psmouse_reconnect(struct serio *serio)
+ 
+ 	psmouse_set_state(psmouse, PSMOUSE_INITIALIZING);
+ 
++#if defined(CONFIG_UNICORE32) && defined(CONFIG_ARCH_PUV3)
++	if (psmouse->protocol_handler(psmouse) ==  PSMOUSE_BAD_DATA) {
++		if (ps2_command(&psmouse->ps2dev, NULL, PSMOUSE_CMD_RESET_DIS))
++			goto out;
++	} else
++#endif
+ 	if (psmouse->reconnect) {
+ 		if (psmouse->reconnect(psmouse))
+ 			goto out;
+diff --git a/drivers/input/serio/i8042.h b/drivers/input/serio/i8042.h
+index cbc1beb..711b41c 100644
+--- a/drivers/input/serio/i8042.h
++++ b/drivers/input/serio/i8042.h
+@@ -26,6 +26,8 @@
+ #include "i8042-sparcio.h"
+ #elif defined(CONFIG_X86) || defined(CONFIG_IA64)
+ #include "i8042-x86ia64io.h"
++#elif defined(CONFIG_UNICORE32)
++#include "../../staging/puv3/i8042-ucio.h"
+ #else
+ #include "i8042-io.h"
+ #endif
+diff --git a/drivers/staging/puv3/i8042-ucio.h b/drivers/staging/puv3/i8042-ucio.h
 new file mode 100644
-index 0000000..fa54e6f
+index 0000000..1e6e310
 --- /dev/null
-+++ b/arch/unicore32/include/asm/pci.h
-@@ -0,0 +1,46 @@
++++ b/drivers/staging/puv3/i8042-ucio.h
+@@ -0,0 +1,96 @@
 +/*
-+ * linux/arch/unicore32/include/asm/pci.h
++ * linux/drivers/staging/puv3/i8042-ucio.h
 + *
 + * Code specific to PKUnity SoC and UniCore ISA
 + *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *	Maintained by GUAN Xue-tao <gxt@mprc.pku.edu.cn>
++ *	Copyright (C) 2001-2010 Guan Xuetao
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
++ *
++ * Based on: drivers/input/serio/i8042-io.h
++ *
++ * Contributors & Additions/Fixes:
++ *	2008: First version by HUANG Tao
++ *
++ * TODO:
 + */
-+#ifndef __UNICORE_PCI_H__
-+#define __UNICORE_PCI_H__
++#ifndef _I8042_UCIO_H
++#define _I8042_UCIO_H
 +
-+#ifdef __KERNEL__
-+#include <asm-generic/pci-dma-compat.h>
-+#include <asm-generic/pci.h>
-+#include <asm/mach/hardware.h> /* for PCIBIOS_MIN_* */
++#include <asm/mach/hardware.h>
++#include <linux/clk.h>
 +
-+static inline void pcibios_set_master(struct pci_dev *dev)
++/*
++ * Names.
++ */
++
++#define I8042_KBD_PHYS_DESC "isa0060/serio0"
++#define I8042_AUX_PHYS_DESC "isa0060/serio1"
++#define I8042_MUX_PHYS_DESC "isa0060/serio%d"
++
++/*
++ * IRQs.
++ */
++#define I8042_KBD_IRQ           IRQ_PS2_KBD
++#define I8042_AUX_IRQ           IRQ_PS2_AUX
++
++/*
++ * Register numbers.
++ */
++
++#define I8042_COMMAND_REG	((unsigned long)&PS2_COMMAND)
++#define I8042_STATUS_REG	((unsigned long)&PS2_STATUS)
++#define I8042_DATA_REG		((unsigned long)&PS2_DATA)
++
++void puv3_ps2_init(void)
 +{
-+	/* No special bus mastering setup handling */
++	struct clk *bclk32;
++
++	bclk32 = clk_get(NULL, "BUS32_CLK");
++	PS2_CNT = clk_get_rate(bclk32) / 200000; /* should > 5us */
 +}
 +
-+static inline void pcibios_penalize_isa_irq(int irq, int active)
++static inline int i8042_read_data(void)
 +{
-+	/* We don't do dynamic PCI IRQ allocation */
++	return inb(I8042_DATA_REG);
 +}
 +
-+#ifdef CONFIG_PCI
-+static inline void pci_dma_burst_advice(struct pci_dev *pdev,
-+					enum pci_dma_burst_strategy *strat,
-+					unsigned long *strategy_parameter)
++static inline int i8042_read_status(void)
 +{
-+	*strat = PCI_DMA_BURST_INFINITY;
-+	*strategy_parameter = ~0UL;
++	return inb(I8042_STATUS_REG);
 +}
-+#endif
 +
-+#define HAVE_PCI_MMAP
-+extern int pci_mmap_page_range(struct pci_dev *dev, struct vm_area_struct *vma,
-+	enum pci_mmap_state mmap_state, int write_combine);
++static inline void i8042_write_data(int val)
++{
++	outb(val, I8042_DATA_REG);
++}
 +
-+#endif /* __KERNEL__ */
++static inline void i8042_write_command(int val)
++{
++	outb(val, I8042_COMMAND_REG);
++}
 +
-+#endif
-diff --git a/arch/unicore32/kernel/pci.c b/arch/unicore32/kernel/pci.c
++static inline int i8042_platform_init(void)
++{
++/*
++ * On some platforms touching the i8042 data register region can do really
++ * bad things. Because of this the region is always reserved on such boxes.
++ */
++	puv3_ps2_init();
++
++	if (!request_region(I8042_DATA_REG, 16, "i8042"))
++		return -EBUSY;
++
++	i8042_reset = 1;
++	return 0;
++}
++
++static inline void i8042_platform_exit(void)
++{
++	release_region(I8042_DATA_REG, 16);
++}
++
++#endif /* _I8042_UCIO_H */
+diff --git a/drivers/staging/puv3/nb0916-atkbd.h b/drivers/staging/puv3/nb0916-atkbd.h
 new file mode 100644
-index 0000000..d4e55e2
+index 0000000..2abd398
 --- /dev/null
-+++ b/arch/unicore32/kernel/pci.c
-@@ -0,0 +1,404 @@
++++ b/drivers/staging/puv3/nb0916-atkbd.h
+@@ -0,0 +1,43 @@
 +/*
-+ * linux/arch/unicore32/kernel/pci.c
-+ *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ *  PCI bios-type initialisation for PCI machines
-+ *
++ * Special Key for NB0916
++ *	KEY_CAMERA: 212
++ *	KEY_WLAN: 238
++ *	KEY_BRIGHTNESSUP: 225
++ *	KEY_BRIGHTNESSDOWN: 224
++ *	KEY_SWITCHVIDEOMODE: 227
 + */
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/interrupt.h>
-+#include <linux/pci.h>
-+#include <linux/slab.h>
-+#include <linux/init.h>
-+#include <linux/io.h>
++	  0,  67,  65,  63,  61,  59,  60,  88,
++	  0,  68,  66,  64,  62,  15,  41, 117,
++	  0,  56,  42,  93,  29,  16,   2,   0,
++	  0,   0,  44,  31,  30,  17,   3,   0,
++	  0,  46,  45,  32,  18,   5,   4,  95,
++	  0,  57,  47,  33,  20,  19,   6, 183,
++	  0,  49,  48,  35,  34,  21,   7, 184,
++	  0,   0,  50,  36,  22,   8,   9, 185,
++	  0,  51,  37,  23,  24,  11,  10,   0,
++	  0,  52,  53,  38,  39,  25,  12,   0,
++	  0,  89,  40,   0,  26,  13,   0,   0,
++	 58,  54,  28,  27,   0,  43,   0,  85,
++	  0,  86,  91,  90,  92,   0,  14,  94,
++	  0,  79, 124,  75,  71, 121,   0,   0,
++	 82,  83,  80,  76,  77,  72,   1,  69,
++	 87,  78,  81,  74,  55,  73,  70,  99,
 +
-+static int debug_pci;
-+static int use_firmware;
++	  0,   0,   0,   0,   0, 212,   0,   0,
++	  0,   0,   0,   0,   0,   0,   0,   0,
++	217, 100, 255,   0,  97, 165,   0,   0,
++	156,   0, 238,   0,   0,   0,   0, 125,
++	173, 114,   0, 113,   0,   0,   0, 126,
++	128,   0,   0, 140,   0,   0,   0, 127,
++	159,   0, 115,   0, 164, 225,   0, 116,
++	158,   0, 172, 166, 224,   0,   0, 142,
++	157,   0,   0,   0,   0,   0,   0,   0,
++	155,   0,  98,   0,   0, 163,   0,   0,
++	226,   0,   0,   0,   0,   0,   0,   0,
++	  0, 255,  96,   0,   0,   0, 143,   0,
++	  0,   0,   0, 227,   0,   0,   0,   0,
++	  0, 107,   0, 105, 102,   0,   0, 112,
++	110, 111, 108, 112, 106, 103,   0, 119,
++	  0, 118, 109,   0,  99, 104, 119,   0,
 +
-+#define CONFIG_CMD(bus, devfn, where)	\
-+	(0x80000000 | (bus->number << 16) | (devfn << 8) | (where & ~3))
-+
-+static int
-+puv3_read_config(struct pci_bus *bus, unsigned int devfn, int where,
-+			int size, u32 *value)
-+{
-+	PCICFG_ADDR = CONFIG_CMD(bus, devfn, where);
-+	switch (size) {
-+	case 1:
-+		*value = (PCICFG_DATA >> ((where & 3) * 8)) & 0xFF;
-+		break;
-+	case 2:
-+		*value = (PCICFG_DATA >> ((where & 2) * 8)) & 0xFFFF;
-+		break;
-+	case 4:
-+		*value = PCICFG_DATA;
-+		break;
-+	}
-+	return PCIBIOS_SUCCESSFUL;
-+}
-+
-+static int
-+puv3_write_config(struct pci_bus *bus, unsigned int devfn, int where,
-+			int size, u32 value)
-+{
-+	PCICFG_ADDR = CONFIG_CMD(bus, devfn, where);
-+	switch (size) {
-+	case 1:
-+		PCICFG_DATA = (PCICFG_DATA & ~FMASK(8, (where&3)*8))
-+			| FIELD(value, 8, (where&3)*8);
-+		break;
-+	case 2:
-+		PCICFG_DATA = (PCICFG_DATA & ~FMASK(16, (where&2)*8))
-+			| FIELD(value, 16, (where&2)*8);
-+		break;
-+	case 4:
-+		PCICFG_DATA = value;
-+		break;
-+	}
-+	return PCIBIOS_SUCCESSFUL;
-+}
-+
-+struct pci_ops pci_puv3_ops = {
-+	.read  = puv3_read_config,
-+	.write = puv3_write_config,
-+};
-+
-+void pci_puv3_preinit(void)
-+{
-+	printk(KERN_DEBUG "PCI: PKUnity PCI Controller Initializing ...\n");
-+	/* config PCI bridge base */
-+	PCICFG_BRIBASE = PKUNITY_PCIBRI_BASE;
-+
-+	PCIBRI_AHBCTL0 = 0;
-+	PCIBRI_AHBBAR0 = PKUNITY_PCIBRI_BASE | PCIBRI_BARx_MEM;
-+	PCIBRI_AHBAMR0 = 0xFFFF0000;
-+	PCIBRI_AHBTAR0 = 0;
-+
-+	PCIBRI_AHBCTL1 = PCIBRI_CTLx_AT;
-+	PCIBRI_AHBBAR1 = PKUNITY_PCILIO_BASE | PCIBRI_BARx_IO;
-+	PCIBRI_AHBAMR1 = 0xFFFF0000;
-+	PCIBRI_AHBTAR1 = 0x00000000;
-+
-+	PCIBRI_AHBCTL2 = PCIBRI_CTLx_PREF;
-+	PCIBRI_AHBBAR2 = PKUNITY_PCIMEM_BASE | PCIBRI_BARx_MEM;
-+	PCIBRI_AHBAMR2 = 0xF8000000;
-+	PCIBRI_AHBTAR2 = 0;
-+
-+	PCIBRI_BAR1 = PKUNITY_PCIAHB_BASE | PCIBRI_BARx_MEM;
-+
-+	PCIBRI_PCICTL0 = PCIBRI_CTLx_AT | PCIBRI_CTLx_PREF;
-+	PCIBRI_PCIBAR0 = PKUNITY_PCIAHB_BASE | PCIBRI_BARx_MEM;
-+	PCIBRI_PCIAMR0 = 0xF8000000;
-+	PCIBRI_PCITAR0 = PKUNITY_SDRAM_BASE;
-+
-+	PCIBRI_CMD = PCIBRI_CMD | PCIBRI_CMD_IO | PCIBRI_CMD_MEM;
-+}
-+
-+static int __init pci_puv3_map_irq(struct pci_dev *dev, u8 slot, u8 pin)
-+{
-+	if (dev->bus->number == 0) {
-+#ifdef CONFIG_ARCH_FPGA /* 4 pci slots */
-+		if      (dev->devfn == 0x00)
-+			return IRQ_PCIINTA;
-+		else if (dev->devfn == 0x08)
-+			return IRQ_PCIINTB;
-+		else if (dev->devfn == 0x10)
-+			return IRQ_PCIINTC;
-+		else if (dev->devfn == 0x18)
-+			return IRQ_PCIINTD;
-+#endif
-+#ifdef CONFIG_PUV3_DB0913 /* 3 pci slots */
-+		if      (dev->devfn == 0x30)
-+			return IRQ_PCIINTB;
-+		else if (dev->devfn == 0x60)
-+			return IRQ_PCIINTC;
-+		else if (dev->devfn == 0x58)
-+			return IRQ_PCIINTD;
-+#endif
-+#if	defined(CONFIG_PUV3_NB0916) || defined(CONFIG_PUV3_SMW0919)
-+		/* only support 2 pci devices */
-+		if      (dev->devfn == 0x00)
-+			return IRQ_PCIINTC; /* sata */
-+#endif
-+	}
-+	return -1;
-+}
-+
-+/*
-+ * Only first 128MB of memory can be accessed via PCI.
-+ * We use GFP_DMA to allocate safe buffers to do map/unmap.
-+ * This is really ugly and we need a better way of specifying
-+ * DMA-capable regions of memory.
-+ */
-+void __init puv3_pci_adjust_zones(unsigned long *zone_size,
-+	unsigned long *zhole_size)
-+{
-+	unsigned int sz = SZ_128M >> PAGE_SHIFT;
-+
-+	/*
-+	 * Only adjust if > 128M on current system
-+	 */
-+	if (zone_size[0] <= sz)
-+		return;
-+
-+	zone_size[1] = zone_size[0] - sz;
-+	zone_size[0] = sz;
-+	zhole_size[1] = zhole_size[0];
-+	zhole_size[0] = 0;
-+}
-+
-+void __devinit pcibios_update_irq(struct pci_dev *dev, int irq)
-+{
-+	if (debug_pci)
-+		printk(KERN_DEBUG "PCI: Assigning IRQ %02d to %s\n",
-+				irq, pci_name(dev));
-+	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
-+}
-+
-+/*
-+ * If the bus contains any of these devices, then we must not turn on
-+ * parity checking of any kind.
-+ */
-+static inline int pdev_bad_for_parity(struct pci_dev *dev)
-+{
-+	return 0;
-+}
-+
-+/*
-+ * pcibios_fixup_bus - Called after each bus is probed,
-+ * but before its children are examined.
-+ */
-+void __devinit pcibios_fixup_bus(struct pci_bus *bus)
-+{
-+	struct pci_dev *dev;
-+	u16 features = PCI_COMMAND_SERR
-+		| PCI_COMMAND_PARITY
-+		| PCI_COMMAND_FAST_BACK;
-+
-+	bus->resource[0] = &ioport_resource;
-+	bus->resource[1] = &iomem_resource;
-+
-+	/*
-+	 * Walk the devices on this bus, working out what we can
-+	 * and can't support.
-+	 */
-+	list_for_each_entry(dev, &bus->devices, bus_list) {
-+		u16 status;
-+
-+		pci_read_config_word(dev, PCI_STATUS, &status);
-+
-+		/*
-+		 * If any device on this bus does not support fast back
-+		 * to back transfers, then the bus as a whole is not able
-+		 * to support them.  Having fast back to back transfers
-+		 * on saves us one PCI cycle per transaction.
-+		 */
-+		if (!(status & PCI_STATUS_FAST_BACK))
-+			features &= ~PCI_COMMAND_FAST_BACK;
-+
-+		if (pdev_bad_for_parity(dev))
-+			features &= ~(PCI_COMMAND_SERR
-+					| PCI_COMMAND_PARITY);
-+
-+		switch (dev->class >> 8) {
-+		case PCI_CLASS_BRIDGE_PCI:
-+			pci_read_config_word(dev, PCI_BRIDGE_CONTROL, &status);
-+			status |= PCI_BRIDGE_CTL_PARITY
-+				| PCI_BRIDGE_CTL_MASTER_ABORT;
-+			status &= ~(PCI_BRIDGE_CTL_BUS_RESET
-+				| PCI_BRIDGE_CTL_FAST_BACK);
-+			pci_write_config_word(dev, PCI_BRIDGE_CONTROL, status);
-+			break;
-+
-+		case PCI_CLASS_BRIDGE_CARDBUS:
-+			pci_read_config_word(dev, PCI_CB_BRIDGE_CONTROL,
-+					&status);
-+			status |= PCI_CB_BRIDGE_CTL_PARITY
-+				| PCI_CB_BRIDGE_CTL_MASTER_ABORT;
-+			pci_write_config_word(dev, PCI_CB_BRIDGE_CONTROL,
-+					status);
-+			break;
-+		}
-+	}
-+
-+	/*
-+	 * Now walk the devices again, this time setting them up.
-+	 */
-+	list_for_each_entry(dev, &bus->devices, bus_list) {
-+		u16 cmd;
-+
-+		pci_read_config_word(dev, PCI_COMMAND, &cmd);
-+		cmd |= features;
-+		pci_write_config_word(dev, PCI_COMMAND, cmd);
-+
-+		pci_write_config_byte(dev, PCI_CACHE_LINE_SIZE,
-+				      L1_CACHE_BYTES >> 2);
-+	}
-+
-+	/*
-+	 * Propagate the flags to the PCI bridge.
-+	 */
-+	if (bus->self && bus->self->hdr_type == PCI_HEADER_TYPE_BRIDGE) {
-+		if (features & PCI_COMMAND_FAST_BACK)
-+			bus->bridge_ctl |= PCI_BRIDGE_CTL_FAST_BACK;
-+		if (features & PCI_COMMAND_PARITY)
-+			bus->bridge_ctl |= PCI_BRIDGE_CTL_PARITY;
-+	}
-+
-+	/*
-+	 * Report what we did for this bus
-+	 */
-+	printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
-+		bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
-+}
-+#ifdef CONFIG_HOTPLUG
-+EXPORT_SYMBOL(pcibios_fixup_bus);
-+#endif
-+
-+static int __init pci_common_init(void)
-+{
-+	struct pci_bus *puv3_bus;
-+
-+	pci_puv3_preinit();
-+
-+	puv3_bus = pci_scan_bus(0, &pci_puv3_ops, NULL);
-+
-+	if (!puv3_bus)
-+		panic("PCI: unable to scan bus!");
-+
-+	pci_fixup_irqs(pci_common_swizzle, pci_puv3_map_irq);
-+
-+	if (!use_firmware) {
-+		/*
-+		 * Size the bridge windows.
-+		 */
-+		pci_bus_size_bridges(puv3_bus);
-+
-+		/*
-+		 * Assign resources.
-+		 */
-+		pci_bus_assign_resources(puv3_bus);
-+	}
-+
-+	/*
-+	 * Tell drivers about devices found.
-+	 */
-+	pci_bus_add_devices(puv3_bus);
-+
-+	return 0;
-+}
-+subsys_initcall(pci_common_init);
-+
-+char * __devinit pcibios_setup(char *str)
-+{
-+	if (!strcmp(str, "debug")) {
-+		debug_pci = 1;
-+		return NULL;
-+	} else if (!strcmp(str, "firmware")) {
-+		use_firmware = 1;
-+		return NULL;
-+	}
-+	return str;
-+}
-+
-+/*
-+ * From arch/i386/kernel/pci-i386.c:
-+ *
-+ * We need to avoid collisions with `mirrored' VGA ports
-+ * and other strange ISA hardware, so we always want the
-+ * addresses to be allocated in the 0x000-0x0ff region
-+ * modulo 0x400.
-+ *
-+ * Why? Because some silly external IO cards only decode
-+ * the low 10 bits of the IO address. The 0x00-0xff region
-+ * is reserved for motherboard devices that decode all 16
-+ * bits, so it's ok to allocate at, say, 0x2800-0x28ff,
-+ * but we want to try to avoid allocating at 0x2900-0x2bff
-+ * which might be mirrored at 0x0100-0x03ff..
-+ */
-+resource_size_t pcibios_align_resource(void *data, const struct resource *res,
-+				resource_size_t size, resource_size_t align)
-+{
-+	resource_size_t start = res->start;
-+
-+	if (res->flags & IORESOURCE_IO && start & 0x300)
-+		start = (start + 0x3ff) & ~0x3ff;
-+
-+	start = (start + align - 1) & ~(align - 1);
-+
-+	return start;
-+}
-+
-+/**
-+ * pcibios_enable_device - Enable I/O and memory.
-+ * @dev: PCI device to be enabled
-+ */
-+int pcibios_enable_device(struct pci_dev *dev, int mask)
-+{
-+	u16 cmd, old_cmd;
-+	int idx;
-+	struct resource *r;
-+
-+	pci_read_config_word(dev, PCI_COMMAND, &cmd);
-+	old_cmd = cmd;
-+	for (idx = 0; idx < 6; idx++) {
-+		/* Only set up the requested stuff */
-+		if (!(mask & (1 << idx)))
-+			continue;
-+
-+		r = dev->resource + idx;
-+		if (!r->start && r->end) {
-+			printk(KERN_ERR "PCI: Device %s not available because"
-+			       " of resource collisions\n", pci_name(dev));
-+			return -EINVAL;
-+		}
-+		if (r->flags & IORESOURCE_IO)
-+			cmd |= PCI_COMMAND_IO;
-+		if (r->flags & IORESOURCE_MEM)
-+			cmd |= PCI_COMMAND_MEMORY;
-+	}
-+
-+	/*
-+	 * Bridges (eg, cardbus bridges) need to be fully enabled
-+	 */
-+	if ((dev->class >> 16) == PCI_BASE_CLASS_BRIDGE)
-+		cmd |= PCI_COMMAND_IO | PCI_COMMAND_MEMORY;
-+
-+	if (cmd != old_cmd) {
-+		printk("PCI: enabling device %s (%04x -> %04x)\n",
-+		       pci_name(dev), old_cmd, cmd);
-+		pci_write_config_word(dev, PCI_COMMAND, cmd);
-+	}
-+	return 0;
-+}
-+
-+int pci_mmap_page_range(struct pci_dev *dev, struct vm_area_struct *vma,
-+			enum pci_mmap_state mmap_state, int write_combine)
-+{
-+	unsigned long phys;
-+
-+	if (mmap_state == pci_mmap_io)
-+		return -EINVAL;
-+
-+	phys = vma->vm_pgoff;
-+
-+	/*
-+	 * Mark this as IO
-+	 */
-+	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-+
-+	if (remap_pfn_range(vma, vma->vm_start, phys,
-+			     vma->vm_end - vma->vm_start,
-+			     vma->vm_page_prot))
-+		return -EAGAIN;
-+
-+	return 0;
-+}
-diff --git a/drivers/pci/Makefile b/drivers/pci/Makefile
-index 98e6fdf..77cf813 100644
---- a/drivers/pci/Makefile
-+++ b/drivers/pci/Makefile
-@@ -42,6 +42,7 @@ obj-$(CONFIG_PCI_IOV) += iov.o
- obj-$(CONFIG_X86) += setup-bus.o
- obj-$(CONFIG_ALPHA) += setup-bus.o setup-irq.o
- obj-$(CONFIG_ARM) += setup-bus.o setup-irq.o
-+obj-$(CONFIG_UNICORE32) += setup-bus.o setup-irq.o
- obj-$(CONFIG_PARISC) += setup-bus.o
- obj-$(CONFIG_SUPERH) += setup-bus.o setup-irq.o
- obj-$(CONFIG_PPC) += setup-bus.o
++	  0,   0,   0,  65,  99,
 
 > -----Original Message-----
 > From: linux-arch-owner@vger.kernel.org [mailto:linux-arch-owner@vger.kernel.org] On Behalf Of Guan Xuetao
