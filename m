@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573Ab1AFKQG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 05:16:06 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:50208 "EHLO mx2.mail.elte.hu"
+	id S1752615Ab1AFKUa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 05:20:30 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:42786 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752514Ab1AFKQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 05:16:03 -0500
-Date: Thu, 6 Jan 2011 11:15:55 +0100
+	id S1752427Ab1AFKU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 05:20:28 -0500
+Date: Thu, 6 Jan 2011 11:20:20 +0100
 From: Ingo Molnar <mingo@elte.hu>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/tsc changes for v2.6.38
-Message-ID: <20110106101555.GA22750@elte.hu>
+Subject: [GIT PULL] x86/uv changes for v2.6.38
+Message-ID: <20110106102020.GA23899@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -31,179 +31,301 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest x86-tsc-for-linus git tree from:
+Please pull the latest x86-uv-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-tsc-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-uv-for-linus
 
  Thanks,
 
 	Ingo
 
 ------------------>
-John Stultz (2):
-      x86: Make tsc=reliable override boot time stability checks
-      x86: Improve TSC calibration using a delayed workqueue
+Cliff Wickman (1):
+      x86, UV, BAU: Extend for more than 16 cpus per socket
 
-Thomas Gleixner (1):
-      x86: Check tsc available/disabled in the delayed init function
+Jack Steiner (2):
+      x86, UV: Add common uv_early_read_mmr() function for reading MMRs
+      x86, UV: Fix the effect of extra bits in the hub nodeid register
 
 
- Documentation/kernel-parameters.txt |    9 ++--
- arch/x86/kernel/tsc.c               |   96 +++++++++++++++++++++++++++++++++--
- 2 files changed, 96 insertions(+), 9 deletions(-)
+ arch/x86/include/asm/uv/uv_bau.h   |    9 +++--
+ arch/x86/kernel/apic/x2apic_uv_x.c |   61 ++++++++++++++++++++----------------
+ arch/x86/platform/uv/tlb_uv.c      |   22 ++++++++++--
+ 3 files changed, 57 insertions(+), 35 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 92e83e5..c7c8eca 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2467,12 +2467,13 @@ and is between 256 and 4096 characters. It is defined in the file
- 			to facilitate early boot debugging.
- 			See also Documentation/trace/events.txt
+diff --git a/arch/x86/include/asm/uv/uv_bau.h b/arch/x86/include/asm/uv/uv_bau.h
+index 42d412f..ce1d54c 100644
+--- a/arch/x86/include/asm/uv/uv_bau.h
++++ b/arch/x86/include/asm/uv/uv_bau.h
+@@ -26,20 +26,22 @@
+  * BAU_SB_DESCRIPTOR_BASE register, set 1 is located at BASE + 512,
+  * set 2 is at BASE + 2*512, set 3 at BASE + 3*512, and so on.
+  *
+- * We will use 31 sets, one for sending BAU messages from each of the 32
++ * We will use one set for sending BAU messages from each of the
+  * cpu's on the uvhub.
+  *
+  * TLB shootdown will use the first of the 8 descriptors of each set.
+  * Each of the descriptors is 64 bytes in size (8*64 = 512 bytes in a set).
+  */
  
--	tsc=		Disable clocksource-must-verify flag for TSC.
-+	tsc=		Disable clocksource stability checks for TSC.
- 			Format: <string>
- 			[x86] reliable: mark tsc clocksource as reliable, this
--			disables clocksource verification at runtime.
--			Used to enable high-resolution timer mode on older
--			hardware, and in virtualized environment.
-+			disables clocksource verification at runtime, as well
-+			as the stability checks done at bootup.	Used to enable
-+			high-resolution timer mode on older hardware, and in
-+			virtualized environment.
- 			[x86] noirqtime: Do not use TSC to do irq accounting.
- 			Used to run time disable IRQ_TIME_ACCOUNTING on any
- 			platforms where RDTSC is slow and this accounting
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 0c40d8b..356a0d4 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -872,6 +872,9 @@ __cpuinit int unsynchronized_tsc(void)
++#define MAX_CPUS_PER_UVHUB		64
++#define MAX_CPUS_PER_SOCKET		32
++#define UV_ADP_SIZE			64 /* hardware-provided max. */
++#define UV_CPUS_PER_ACT_STATUS		32 /* hardware-provided max. */
+ #define UV_ITEMS_PER_DESCRIPTOR		8
+ /* the 'throttle' to prevent the hardware stay-busy bug */
+ #define MAX_BAU_CONCURRENT		3
+-#define UV_CPUS_PER_ACT_STATUS		32
+ #define UV_ACT_STATUS_MASK		0x3
+ #define UV_ACT_STATUS_SIZE		2
+-#define UV_ADP_SIZE			32
+ #define UV_DISTRIBUTION_SIZE		256
+ #define UV_SW_ACK_NPENDING		8
+ #define UV_NET_ENDPOINT_INTD		0x38
+@@ -100,7 +102,6 @@
+  * number of destination side software ack resources
+  */
+ #define DEST_NUM_RESOURCES		8
+-#define MAX_CPUS_PER_NODE		32
+ /*
+  * completion statuses for sending a TLB flush message
+  */
+diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
+index c1c52c3..2a3f2a7 100644
+--- a/arch/x86/kernel/apic/x2apic_uv_x.c
++++ b/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -48,6 +48,16 @@ unsigned int uv_apicid_hibits;
+ EXPORT_SYMBOL_GPL(uv_apicid_hibits);
+ static DEFINE_SPINLOCK(uv_nmi_lock);
  
- 	if (boot_cpu_has(X86_FEATURE_CONSTANT_TSC))
- 		return 0;
++static unsigned long __init uv_early_read_mmr(unsigned long addr)
++{
++	unsigned long val, *mmr;
 +
-+	if (tsc_clocksource_reliable)
-+		return 0;
- 	/*
- 	 * Intel systems are normally all synchronized.
- 	 * Exceptions must mark TSC as unstable:
-@@ -879,14 +882,92 @@ __cpuinit int unsynchronized_tsc(void)
- 	if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL) {
- 		/* assume multi socket systems are not synchronized: */
- 		if (num_possible_cpus() > 1)
--			tsc_unstable = 1;
-+			return 1;
- 	}
- 
--	return tsc_unstable;
-+	return 0;
++	mmr = early_ioremap(UV_LOCAL_MMR_BASE | addr, sizeof(*mmr));
++	val = *mmr;
++	early_iounmap(mmr, sizeof(*mmr));
++	return val;
 +}
 +
-+
-+static void tsc_refine_calibration_work(struct work_struct *work);
-+static DECLARE_DELAYED_WORK(tsc_irqwork, tsc_refine_calibration_work);
-+/**
-+ * tsc_refine_calibration_work - Further refine tsc freq calibration
-+ * @work - ignored.
-+ *
-+ * This functions uses delayed work over a period of a
-+ * second to further refine the TSC freq value. Since this is
-+ * timer based, instead of loop based, we don't block the boot
-+ * process while this longer calibration is done.
-+ *
-+ * If there are any calibration anomolies (too many SMIs, etc),
-+ * or the refined calibration is off by 1% of the fast early
-+ * calibration, we throw out the new calibration and use the
-+ * early calibration.
-+ */
-+static void tsc_refine_calibration_work(struct work_struct *work)
-+{
-+	static u64 tsc_start = -1, ref_start;
-+	static int hpet;
-+	u64 tsc_stop, ref_stop, delta;
-+	unsigned long freq;
-+
-+	/* Don't bother refining TSC on unstable systems */
-+	if (check_tsc_unstable())
-+		goto out;
-+
-+	/*
-+	 * Since the work is started early in boot, we may be
-+	 * delayed the first time we expire. So set the workqueue
-+	 * again once we know timers are working.
-+	 */
-+	if (tsc_start == -1) {
-+		/*
-+		 * Only set hpet once, to avoid mixing hardware
-+		 * if the hpet becomes enabled later.
-+		 */
-+		hpet = is_hpet_enabled();
-+		schedule_delayed_work(&tsc_irqwork, HZ);
-+		tsc_start = tsc_read_refs(&ref_start, hpet);
-+		return;
-+	}
-+
-+	tsc_stop = tsc_read_refs(&ref_stop, hpet);
-+
-+	/* hpet or pmtimer available ? */
-+	if (!hpet && !ref_start && !ref_stop)
-+		goto out;
-+
-+	/* Check, whether the sampling was disturbed by an SMI */
-+	if (tsc_start == ULLONG_MAX || tsc_stop == ULLONG_MAX)
-+		goto out;
-+
-+	delta = tsc_stop - tsc_start;
-+	delta *= 1000000LL;
-+	if (hpet)
-+		freq = calc_hpet_ref(delta, ref_start, ref_stop);
-+	else
-+		freq = calc_pmtimer_ref(delta, ref_start, ref_stop);
-+
-+	/* Make sure we're within 1% */
-+	if (abs(tsc_khz - freq) > tsc_khz/100)
-+		goto out;
-+
-+	tsc_khz = freq;
-+	printk(KERN_INFO "Refined TSC clocksource calibration: "
-+		"%lu.%03lu MHz.\n", (unsigned long)tsc_khz / 1000,
-+					(unsigned long)tsc_khz % 1000);
-+
-+out:
-+	clocksource_register_khz(&clocksource_tsc, tsc_khz);
+ static inline bool is_GRU_range(u64 start, u64 end)
+ {
+ 	return start >= gru_start_paddr && end <= gru_end_paddr;
+@@ -58,28 +68,24 @@ static bool uv_is_untracked_pat_range(u64 start, u64 end)
+ 	return is_ISA_range(start, end) || is_GRU_range(start, end);
  }
  
--static void __init init_tsc_clocksource(void)
-+
-+static int __init init_tsc_clocksource(void)
+-static int early_get_nodeid(void)
++static int __init early_get_pnodeid(void)
  {
-+	if (!cpu_has_tsc || tsc_disabled > 0)
-+		return 0;
+ 	union uvh_node_id_u node_id;
+-	unsigned long *mmr;
+-
+-	mmr = early_ioremap(UV_LOCAL_MMR_BASE | UVH_NODE_ID, sizeof(*mmr));
+-	node_id.v = *mmr;
+-	early_iounmap(mmr, sizeof(*mmr));
++	union uvh_rh_gam_config_mmr_u  m_n_config;
++	int pnode;
+ 
+ 	/* Currently, all blades have same revision number */
++	node_id.v = uv_early_read_mmr(UVH_NODE_ID);
++	m_n_config.v = uv_early_read_mmr(UVH_RH_GAM_CONFIG_MMR);
+ 	uv_min_hub_revision_id = node_id.s.revision;
+ 
+-	return node_id.s.node_id;
++	pnode = (node_id.s.node_id >> 1) & ((1 << m_n_config.s.n_skt) - 1);
++	return pnode;
+ }
+ 
+ static void __init early_get_apic_pnode_shift(void)
+ {
+-	unsigned long *mmr;
+-
+-	mmr = early_ioremap(UV_LOCAL_MMR_BASE | UVH_APICID, sizeof(*mmr));
+-	uvh_apicid.v = *mmr;
+-	early_iounmap(mmr, sizeof(*mmr));
++	uvh_apicid.v = uv_early_read_mmr(UVH_APICID);
+ 	if (!uvh_apicid.v)
+ 		/*
+ 		 * Old bios, use default value
+@@ -95,21 +101,17 @@ static void __init early_get_apic_pnode_shift(void)
+ static void __init uv_set_apicid_hibit(void)
+ {
+ 	union uvh_lb_target_physical_apic_id_mask_u apicid_mask;
+-	unsigned long *mmr;
+ 
+-	mmr = early_ioremap(UV_LOCAL_MMR_BASE |
+-		UVH_LB_TARGET_PHYSICAL_APIC_ID_MASK, sizeof(*mmr));
+-	apicid_mask.v = *mmr;
+-	early_iounmap(mmr, sizeof(*mmr));
++	apicid_mask.v = uv_early_read_mmr(UVH_LB_TARGET_PHYSICAL_APIC_ID_MASK);
+ 	uv_apicid_hibits = apicid_mask.s.bit_enables & UV_APICID_HIBIT_MASK;
+ }
+ 
+ static int __init uv_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
+ {
+-	int nodeid;
++	int pnodeid;
+ 
+ 	if (!strcmp(oem_id, "SGI")) {
+-		nodeid = early_get_nodeid();
++		pnodeid = early_get_pnodeid();
+ 		early_get_apic_pnode_shift();
+ 		x86_platform.is_untracked_pat_range =  uv_is_untracked_pat_range;
+ 		x86_platform.nmi_init = uv_nmi_init;
+@@ -119,7 +121,7 @@ static int __init uv_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
+ 			uv_system_type = UV_X2APIC;
+ 		else if (!strcmp(oem_table_id, "UVH")) {
+ 			__get_cpu_var(x2apic_extra_bits) =
+-				nodeid << (uvh_apicid.s.pnode_shift - 1);
++				pnodeid << uvh_apicid.s.pnode_shift;
+ 			uv_system_type = UV_NON_UNIQUE_APIC;
+ 			uv_set_apicid_hibit();
+ 			return 1;
+@@ -682,27 +684,32 @@ void uv_nmi_init(void)
+ void __init uv_system_init(void)
+ {
+ 	union uvh_rh_gam_config_mmr_u  m_n_config;
++	union uvh_rh_gam_mmioh_overlay_config_mmr_u mmioh;
+ 	union uvh_node_id_u node_id;
+ 	unsigned long gnode_upper, lowmem_redir_base, lowmem_redir_size;
+-	int bytes, nid, cpu, lcpu, pnode, blade, i, j, m_val, n_val;
++	int bytes, nid, cpu, lcpu, pnode, blade, i, j, m_val, n_val, n_io;
+ 	int gnode_extra, max_pnode = 0;
+ 	unsigned long mmr_base, present, paddr;
+-	unsigned short pnode_mask;
++	unsigned short pnode_mask, pnode_io_mask;
+ 
+ 	map_low_mmrs();
+ 
+ 	m_n_config.v = uv_read_local_mmr(UVH_RH_GAM_CONFIG_MMR );
+ 	m_val = m_n_config.s.m_skt;
+ 	n_val = m_n_config.s.n_skt;
++	mmioh.v = uv_read_local_mmr(UVH_RH_GAM_MMIOH_OVERLAY_CONFIG_MMR);
++	n_io = mmioh.s.n_io;
+ 	mmr_base =
+ 	    uv_read_local_mmr(UVH_RH_GAM_MMR_OVERLAY_CONFIG_MMR) &
+ 	    ~UV_MMR_ENABLE;
+ 	pnode_mask = (1 << n_val) - 1;
++	pnode_io_mask = (1 << n_io) - 1;
 +
- 	if (tsc_clocksource_reliable)
- 		clocksource_tsc.flags &= ~CLOCK_SOURCE_MUST_VERIFY;
- 	/* lower the rating if we already know its unstable: */
-@@ -894,8 +975,14 @@ static void __init init_tsc_clocksource(void)
- 		clocksource_tsc.rating = 0;
- 		clocksource_tsc.flags &= ~CLOCK_SOURCE_IS_CONTINUOUS;
+ 	node_id.v = uv_read_local_mmr(UVH_NODE_ID);
+ 	gnode_extra = (node_id.s.node_id & ~((1 << n_val) - 1)) >> 1;
+ 	gnode_upper = ((unsigned long)gnode_extra  << m_val);
+-	printk(KERN_DEBUG "UV: N %d, M %d, gnode_upper 0x%lx, gnode_extra 0x%x\n",
+-			n_val, m_val, gnode_upper, gnode_extra);
++	printk(KERN_INFO "UV: N %d, M %d, N_IO: %d, gnode_upper 0x%lx, gnode_extra 0x%x, pnode_mask 0x%x, pnode_io_mask 0x%x\n",
++			n_val, m_val, n_io, gnode_upper, gnode_extra, pnode_mask, pnode_io_mask);
+ 
+ 	printk(KERN_DEBUG "UV: global MMR base 0x%lx\n", mmr_base);
+ 
+@@ -735,7 +742,7 @@ void __init uv_system_init(void)
+ 		for (j = 0; j < 64; j++) {
+ 			if (!test_bit(j, &present))
+ 				continue;
+-			pnode = (i * 64 + j);
++			pnode = (i * 64 + j) & pnode_mask;
+ 			uv_blade_info[blade].pnode = pnode;
+ 			uv_blade_info[blade].nr_possible_cpus = 0;
+ 			uv_blade_info[blade].nr_online_cpus = 0;
+@@ -756,6 +763,7 @@ void __init uv_system_init(void)
+ 		/*
+ 		 * apic_pnode_shift must be set before calling uv_apicid_to_pnode();
+ 		 */
++		uv_cpu_hub_info(cpu)->pnode_mask = pnode_mask;
+ 		uv_cpu_hub_info(cpu)->apic_pnode_shift = uvh_apicid.s.pnode_shift;
+ 		pnode = uv_apicid_to_pnode(apicid);
+ 		blade = boot_pnode_to_blade(pnode);
+@@ -772,7 +780,6 @@ void __init uv_system_init(void)
+ 		uv_cpu_hub_info(cpu)->numa_blade_id = blade;
+ 		uv_cpu_hub_info(cpu)->blade_processor_id = lcpu;
+ 		uv_cpu_hub_info(cpu)->pnode = pnode;
+-		uv_cpu_hub_info(cpu)->pnode_mask = pnode_mask;
+ 		uv_cpu_hub_info(cpu)->gpa_mask = (1UL << (m_val + n_val)) - 1;
+ 		uv_cpu_hub_info(cpu)->gnode_upper = gnode_upper;
+ 		uv_cpu_hub_info(cpu)->gnode_extra = gnode_extra;
+@@ -796,7 +803,7 @@ void __init uv_system_init(void)
+ 
+ 	map_gru_high(max_pnode);
+ 	map_mmr_high(max_pnode);
+-	map_mmioh_high(max_pnode);
++	map_mmioh_high(max_pnode & pnode_io_mask);
+ 
+ 	uv_cpu_init();
+ 	uv_scir_register_cpu_notifier();
+diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
+index ba9caa8..df58e9c 100644
+--- a/arch/x86/platform/uv/tlb_uv.c
++++ b/arch/x86/platform/uv/tlb_uv.c
+@@ -1341,7 +1341,7 @@ uv_activation_descriptor_init(int node, int pnode)
+ 
+ 	/*
+ 	 * each bau_desc is 64 bytes; there are 8 (UV_ITEMS_PER_DESCRIPTOR)
+-	 * per cpu; and up to 32 (UV_ADP_SIZE) cpu's per uvhub
++	 * per cpu; and one per cpu on the uvhub (UV_ADP_SIZE)
+ 	 */
+ 	bau_desc = kmalloc_node(sizeof(struct bau_desc) * UV_ADP_SIZE
+ 				* UV_ITEMS_PER_DESCRIPTOR, GFP_KERNEL, node);
+@@ -1490,7 +1490,7 @@ calculate_destination_timeout(void)
+ /*
+  * initialize the bau_control structure for each cpu
+  */
+-static void __init uv_init_per_cpu(int nuvhubs)
++static int __init uv_init_per_cpu(int nuvhubs)
+ {
+ 	int i;
+ 	int cpu;
+@@ -1507,7 +1507,7 @@ static void __init uv_init_per_cpu(int nuvhubs)
+ 	struct bau_control *smaster = NULL;
+ 	struct socket_desc {
+ 		short num_cpus;
+-		short cpu_number[16];
++		short cpu_number[MAX_CPUS_PER_SOCKET];
+ 	};
+ 	struct uvhub_desc {
+ 		unsigned short socket_mask;
+@@ -1540,6 +1540,10 @@ static void __init uv_init_per_cpu(int nuvhubs)
+ 		sdp = &bdp->socket[socket];
+ 		sdp->cpu_number[sdp->num_cpus] = cpu;
+ 		sdp->num_cpus++;
++		if (sdp->num_cpus > MAX_CPUS_PER_SOCKET) {
++			printk(KERN_EMERG "%d cpus per socket invalid\n", sdp->num_cpus);
++			return 1;
++		}
  	}
--	clocksource_register_khz(&clocksource_tsc, tsc_khz);
-+	schedule_delayed_work(&tsc_irqwork, 0);
+ 	for (uvhub = 0; uvhub < nuvhubs; uvhub++) {
+ 		if (!(*(uvhub_mask + (uvhub/8)) & (1 << (uvhub%8))))
+@@ -1570,6 +1574,12 @@ static void __init uv_init_per_cpu(int nuvhubs)
+ 				bcp->uvhub_master = hmaster;
+ 				bcp->uvhub_cpu = uv_cpu_hub_info(cpu)->
+ 						blade_processor_id;
++				if (bcp->uvhub_cpu >= MAX_CPUS_PER_UVHUB) {
++					printk(KERN_EMERG
++						"%d cpus per uvhub invalid\n",
++						bcp->uvhub_cpu);
++					return 1;
++				}
+ 			}
+ nextsocket:
+ 			socket++;
+@@ -1595,6 +1605,7 @@ nextsocket:
+ 		bcp->congested_reps = congested_reps;
+ 		bcp->congested_period = congested_period;
+ 	}
 +	return 0;
  }
-+/*
-+ * We use device_initcall here, to ensure we run after the hpet
-+ * is fully initialized, which may occur at fs_initcall time.
-+ */
-+device_initcall(init_tsc_clocksource);
  
- void __init tsc_init(void)
- {
-@@ -949,6 +1036,5 @@ void __init tsc_init(void)
- 		mark_tsc_unstable("TSCs unsynchronized");
+ /*
+@@ -1625,7 +1636,10 @@ static int __init uv_bau_init(void)
+ 	spin_lock_init(&disable_lock);
+ 	congested_cycles = microsec_2_cycles(congested_response_us);
  
- 	check_system_tsc_reliable();
--	init_tsc_clocksource();
- }
+-	uv_init_per_cpu(nuvhubs);
++	if (uv_init_per_cpu(nuvhubs)) {
++		nobau = 1;
++		return 0;
++	}
  
+ 	uv_partition_base_pnode = 0x7fffffff;
+ 	for (uvhub = 0; uvhub < nuvhubs; uvhub++)
