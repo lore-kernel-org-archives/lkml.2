@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978Ab1AFT5p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 14:57:45 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:44937 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751625Ab1AFT5o convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 14:57:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=WvywAkEkwTuM6lNAf5SI2OiFQCbtjdpXS3YApDmurJaMt50cEgKXPVtYMzTu3diCDq
-         sF9WdID6v9NJYakMx+2iDOsU3OIxWHGJOkN+zKbrCDYnHsxc2ey47N1DWDsHMhS8jzCX
-         plv4UvIOEQDlOv3Z1saMOTGO9MVSdTDEr+6vI=
-MIME-Version: 1.0
-In-Reply-To: <4D26166D.1020009@zytor.com>
-References: <20110106094423.GA17565@elte.hu>
-	<AANLkTinU423YzQxB9y7ZM9GQAYPQyTJUm9w18=6P_F88@mail.gmail.com>
-	<4D26166D.1020009@zytor.com>
-Date: Thu, 6 Jan 2011 11:57:43 -0800
-X-Google-Sender-Auth: 3PKlSlLYErV8Ew-zxPQ4t3dBh4Y
-Message-ID: <AANLkTik7tcZo8ka80y=FD-_UxwvB6-R8iRHRq+rkOSo+@mail.gmail.com>
-Subject: Re: [GIT PULL] x86/apic changes for v2.6.38
-From: Tony Luck <tony.luck@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>, Yinghai Lu <yinghai@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753877Ab1AFUAu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 15:00:50 -0500
+Received: from xes-mad.com ([216.165.139.218]:1269 "EHLO xes-mad.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753813Ab1AFUAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 15:00:46 -0500
+X-Greylist: delayed 359 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Jan 2011 15:00:46 EST
+From: Peter Tyser <ptyser@xes-inc.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Tyser <ptyser@xes-inc.com>, Alek Du <alek.du@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joe Perches <joe@perches.com>
+Subject: [PATCH 2/3] gpio: pca953x: Implement get_direction() hook
+Date: Thu,  6 Jan 2011 13:54:13 -0600
+Message-Id: <1294343654-20354-2-git-send-email-ptyser@xes-inc.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1294343654-20354-1-git-send-email-ptyser@xes-inc.com>
+References: <1294343654-20354-1-git-send-email-ptyser@xes-inc.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 6, 2011 at 11:22 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->  I don't know if this is applicable on IA64.
+Adding the get_direction() function allows the accurate GPIO pin
+direction data to be shown in sysfs.  Previously, the direction was
+was always initialized to 'input', even if the pin was configured as an
+output.
 
-I think that ia64 might need something like this too.  If I understand the
-change correctly, it makes sure that we read all entries for cpus from the
-SRAT table, so that we can figure out the topology for any cpus that we
-decide to use (which may be at arbitrary positions in the SRAT table
-as there is no guarantee that SRAT entries are in the same order as
-MADT entries ... we might try to boot the first four cpus we find in
-MADT, but those might be the last four entries in SRAT.)
+Cc: Alek Du <alek.du@intel.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>
+Cc: Eric Miao <eric.y.miao@gmail.com>
+Cc: Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Joe Perches <joe@perches.com>
+Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
+---
+ drivers/gpio/pca953x.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-It looks like this could be more simply achieved in an architecture
-neutral way by just passing "0" as the last argument to
-acpi_table_parse_srat() ... which will look at every entry
-in SRAT (this is not exactly the same ... but it seems unlikely
-that SRAT will have more than 32768 processor entries ... which
-you are apparently willing to allow for with the MAX_LOCAL_APIC
-value.)
+diff --git a/drivers/gpio/pca953x.c b/drivers/gpio/pca953x.c
+index 5018666..d291028 100644
+--- a/drivers/gpio/pca953x.c
++++ b/drivers/gpio/pca953x.c
+@@ -159,6 +159,16 @@ static int pca953x_gpio_direction_output(struct gpio_chip *gc,
+ 	return 0;
+ }
+ 
++static int pca953x_gpio_get_direction(struct gpio_chip *gc, unsigned off)
++{
++	struct pca953x_chip *chip;
++
++	chip = container_of(gc, struct pca953x_chip, gpio_chip);
++
++	/* return 0 if IO pin is input, 1 if its an output */
++	return chip->reg_direction & (1u << off) ? 0 : 1;
++}
++
+ static int pca953x_gpio_get_value(struct gpio_chip *gc, unsigned off)
+ {
+ 	struct pca953x_chip *chip;
+@@ -207,6 +217,7 @@ static void pca953x_setup_gpio(struct pca953x_chip *chip, int gpios)
+ 
+ 	gc->direction_input  = pca953x_gpio_direction_input;
+ 	gc->direction_output = pca953x_gpio_direction_output;
++	gc->get_direction = pca953x_gpio_get_direction;
+ 	gc->get = pca953x_gpio_get_value;
+ 	gc->set = pca953x_gpio_set_value;
+ 	gc->can_sleep = 1;
+-- 
+1.7.0.4
 
--Tony
