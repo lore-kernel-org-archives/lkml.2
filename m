@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab1AFAjP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:39:15 -0500
-Received: from kroah.org ([198.145.64.141]:36009 "EHLO coco.kroah.org"
+	id S1754671Ab1AFAjn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:39:43 -0500
+Received: from kroah.org ([198.145.64.141]:35990 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754634Ab1AFAbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:31:18 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:08 2011
-Message-Id: <20110106002307.980524129@clark.site>
+	id S1754627Ab1AFAbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:31:12 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:07 2011
+Message-Id: <20110106002307.729699204@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:23:38 -0800
+Date: Wed, 05 Jan 2011 16:23:35 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>, Chris Ball <cjb@laptop.org>
-Subject: [119/152] mmc: Fix re-probing with PM_POST_RESTORE notification
+        Andres Salomon <dilinger@queued.net>
+Subject: [116/152] cs5535-gpio: handle GPIO regs where higher (clear) bits are set
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Andres Salomon <dilinger@queued.net>
 
-commit 274476f8fe0b6ac9bac542cc39de12c3dd0f43f6 upstream.
+commit 44658a11f312fb9217674cb90b1a11cbe17fd18d upstream.
 
-In the error-path where PM notifies PM_POST_RESTORE, the rescan-blockage
-should be cleared as well.  Otherwise it'll be never re-probed.
+The default for non-READ_BACK GPIO regs is to have the clear bits set;
+this means that our original errata fix was too simplistic.  This
+changes it to the following behavior:
 
-Also, as a bonus, this fixes a bug in S4 with user-mode suspend in the
-current code, as it sends PM_POST_RESTORE instead of
-PM_POST_HIBERNATION wrongly.
+ - when setting GPIOs, ignore the higher order bits (they're for
+   clearing, we don't need to care about them).
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+ - when clearing GPIOs, keep all the bits, but unset (via XOR) the
+   lower order bit that negates the clear bit that we care about.  That
+   is, if we're clearing GPIO 26 (val = 0x04000000), we first XOR what's
+   currently in the register with 0x0400 (GPIO 26's SET bit), and then
+   OR that with the GPIO 26's CLEAR bit.
+
+Tested-by: Daniel Drake <dsd@laptop.org>
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mmc/core/core.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpio/cs5535-gpio.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -1720,6 +1720,7 @@ int mmc_pm_notify(struct notifier_block
+--- a/drivers/gpio/cs5535-gpio.c
++++ b/drivers/gpio/cs5535-gpio.c
+@@ -70,8 +70,12 @@ static void errata_outl(struct cs5535_gp
+ 	 * Don't apply this errata to the edge status GPIOs, as writing
+ 	 * to their lower bits will clear them.
+ 	 */
+-	if (reg != GPIO_POSITIVE_EDGE_STS && reg != GPIO_NEGATIVE_EDGE_STS)
+-		val |= inl(addr);
++	if (reg != GPIO_POSITIVE_EDGE_STS && reg != GPIO_NEGATIVE_EDGE_STS) {
++		if (val & 0xffff)
++			val |= (inl(addr) & 0xffff); /* ignore the high bits */
++		else
++			val |= (inl(addr) ^ (val >> 16));
++	}
+ 	outl(val, addr);
+ }
  
- 	case PM_POST_SUSPEND:
- 	case PM_POST_HIBERNATION:
-+	case PM_POST_RESTORE:
- 
- 		spin_lock_irqsave(&host->lock, flags);
- 		host->rescan_disable = 0;
 
 
