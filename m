@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751814Ab1AFR5e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 12:57:34 -0500
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:52637 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751355Ab1AFR5c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 12:57:32 -0500
-Message-ID: <4D260288.8070406@ti.com>
-Date: Thu, 06 Jan 2011 11:57:28 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
-MIME-Version: 1.0
-To: Koen Kooi <koen@dominion.thruhere.net>
-CC: Brad Parker <brad@heeltoe.com>, Anand Gadiyar <gadiyar@ti.com>,
-        Ming Lei <tom.leiming@gmail.com>, Benoit Cousson <b-cousson@ti.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Paul Walmsley <paul@pwsan.com>, Greg KH <greg@kroah.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        linux-omap@vger.kernel.org
-Subject: Re: linux-next: manual merge of the usb tree with the omap tree
-References: <20101223171859.f6842045.sfr@canb.auug.org.au><4D139517.3010608@ti.com> <AANLkTi=pTNg2iWN+=uEv=CyZHHCoddF51pmmCMjPeMUF@mail.gmail.com> <4ce0f816f951f24ca3de9c84d9f70842@mail.gmail.com> (sfid-20110106_100805_509520_6CE1697E) <4D25E313.4060202@heeltoe.com> <8B3471BB-CB3F-4CE6-B523-D9C5E87B9CEC@dominion.thruhere.net>
-In-Reply-To: <8B3471BB-CB3F-4CE6-B523-D9C5E87B9CEC@dominion.thruhere.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752083Ab1AFR55 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 12:57:57 -0500
+Received: from mail.perches.com ([173.55.12.10]:2996 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751355Ab1AFR54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 12:57:56 -0500
+Subject: Re: [patch] checkpatch: putting the && or || on the wrong line
+From: Joe Perches <joe@perches.com>
+To: Krzysztof Halasa <khc@pm.waw.pl>
+Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Dan Carpenter <error27@gmail.com>, Andy Whitcroft <apw@canonical.com>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+In-Reply-To: <m339p6p5zo.fsf@intrepid.localdomain>
+References: <20110104055900.GA5062@bicker>
+	 <20110104163836.GA30317@fieldses.org>
+	 <20110104164414.GX5875@const.bordeaux.inria.fr>
+	 <1294160834.6617.51.camel@Joe-Laptop> <m3fwt7i740.fsf@intrepid.localdomain>
+	 <1294249529.6617.118.camel@Joe-Laptop>
+	 <m339p6p5zo.fsf@intrepid.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 06 Jan 2011 09:57:54 -0800
+Message-ID: <1294336674.12561.81.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Koen Kooi had written, on 01/06/2011 10:59 AM, the following:
-> Op 6 jan 2011, om 16:43 heeft Brad Parker het volgende geschreven:
-> 
->> It's probably expected, but I can't get the EHCI USB port  to work
->> on a beagle board XM (36xx) using the current omap tree.
->>
->> It this most likely due to these clock issues?
-> 
-> You need this patch: http://thread.gmane.org/gmane.linux.ports.arm.omap/47807/
-> 
-> I'm currently too lazy to split it up like Nishant wants as I don't see the point splitting for the sake of splitting.--
-Alrite, if it is ok with you and Tony, I will help post the split up - 
-this will help multiple things:
-a) prevents the patch being held off because of multiline comments and 
-the link
-b) git bisect can isolate to a specific change.
-c) A patch should do a single logical thing for helping (b).
+On Thu, 2011-01-06 at 13:32 +0100, Krzysztof Halasa wrote:
+> Sure, standardization is a good thing - to a certain point.
+> We've passed this point long ago.
 
--- 
-Regards,
-Nishanth Menon
+Aren't you missing attached evidence too? :p
+
+cheers, Joe
+
