@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab1AFS1R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 13:27:17 -0500
-Received: from casper.infradead.org ([85.118.1.10]:55667 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686Ab1AFS1P convert rfc822-to-8bit (ORCPT
+	id S1752891Ab1AFS1Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 13:27:25 -0500
+Received: from utopia.booyaka.com ([72.9.107.138]:51075 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752845Ab1AFS1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 13:27:15 -0500
-Subject: Re: [RFC][PATCH] spinlock: Kill spin_unlock_wait()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>,
-        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
-        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
-        linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>, Jeff Garzik <jeff@garzik.org>,
-        Tejun Heo <tj@kernel.org>
-In-Reply-To: <20110106103841.GA3493@amd>
-References: <20101224122338.172750730@chello.nl>
-	 <20101224123742.724459093@chello.nl>
-	 <AANLkTikGBsh0-QTe9CA2gwDtwzpdMi+fbDsTEKiJAL0P@mail.gmail.com>
-	 <1294054362.2016.74.camel@laptop> <20110104064542.GF3402@amd>
-	 <1294254867.2016.281.camel@laptop>
-	 <AANLkTi=URmD1GYqp+PfVf6rc0tXvRnAQG808LMnBRgG1@mail.gmail.com>
-	 <1294306353.2016.304.camel@laptop>  <20110106103841.GA3493@amd>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 06 Jan 2011 19:26:35 +0100
-Message-ID: <1294338395.2016.381.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 6 Jan 2011 13:27:23 -0500
+Date: Thu, 6 Jan 2011 11:27:22 -0700 (MST)
+From: Paul Walmsley <paul@pwsan.com>
+To: Kevin Hilman <khilman@ti.com>
+cc: Koen Kooi <koen@dominion.thruhere.net>, Brad Parker <brad@heeltoe.com>,
+        Anand Gadiyar <gadiyar@ti.com>, Ming Lei <tom.leiming@gmail.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
+        linux-omap@vger.kernel.org
+Subject: Re: linux-next: manual merge of the usb tree with the omap tree
+In-Reply-To: <87pqs9vqya.fsf@ti.com>
+Message-ID: <alpine.DEB.2.00.1101061126440.31961@utopia.booyaka.com>
+References: <20101223171859.f6842045.sfr@canb.auug.org.au> <4D139517.3010608@ti.com> <AANLkTi=pTNg2iWN+=uEv=CyZHHCoddF51pmmCMjPeMUF@mail.gmail.com> <4ce0f816f951f24ca3de9c84d9f70842@mail.gmail.com> <4D25E313.4060202@heeltoe.com>
+ <8B3471BB-CB3F-4CE6-B523-D9C5E87B9CEC@dominion.thruhere.net> <87pqs9vqya.fsf@ti.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-06 at 21:38 +1100, Nick Piggin wrote:
-> I can't see how the usage in libata could be right. If we're waiting
-> for some modifications inside the critical section, then it seems we
-> could load some shared data before the lock is actually released, on
-> an architecture which does load/load reordering. At best it needs some
-> good comments and perhaps a barrier or two.
-> 
-> The spin_unlock_wait in do_exit seems like it shouldn't be needed --
-> exit_pi_state_list takes the pi_lock after the task has died anyway,
-> so I can't see what the problem would be. Removing the call (and
-> perhaps put a BUG_ON(!(curr->flags & PF_EXITING)) in exit_pi_state_list
-> would do the same thing, avoid the barrier, and localize fuxtex exit
-> protocol to futex.c. 
+On Thu, 6 Jan 2011, Kevin Hilman wrote:
 
-Jeff, Tejun, could you look at the ata-eh thing, then I'll put sorting
-through the futex thing on my todo list.
+> Koen Kooi <koen@dominion.thruhere.net> writes:
+> 
+> > Op 6 jan 2011, om 16:43 heeft Brad Parker het volgende geschreven:
+> >
+> >> It's probably expected, but I can't get the EHCI USB port  to work
+> >> on a beagle board XM (36xx) using the current omap tree.
+> >> 
+> >> It this most likely due to these clock issues?
+> >
+> > You need this patch: http://thread.gmane.org/gmane.linux.ports.arm.omap/47807/
+> >
+> > I'm currently too lazy to split it up like Nishant wants as I don't
+> > see the point splitting for the sake of splitting.--
+> 
+> IMO, it doesn't need to be split up.
+> 
+> But it does have to fix the other comments I made on the same thread[1]
+> 
+> 1) add a descriptive changelog, and
+> 2) Cc linux-arm-kernel
+
+and glancing at the patch
+
+3) Fix the multiline comments to conform to Documentation/CodingStyle
+
+as I think Nishanth mentioned.
+
+
+- Paul
