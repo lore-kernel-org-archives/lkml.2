@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753572Ab1AFBEC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 20:04:02 -0500
-Received: from kroah.org ([198.145.64.141]:35365 "EHLO coco.kroah.org"
+	id S1753457Ab1AFBLB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 20:11:01 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:44298 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752611Ab1AFA2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:28:46 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:22:57 2011
-Message-Id: <20110106002257.107394986@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:21:43 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [004/152] ALSA: HDA: Quirk for Dell Vostro 320 to make microphone work
-In-Reply-To: <20110106002500.GA3172@kroah.com>
+	id S1751312Ab1AFBK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 20:10:59 -0500
+Date: Thu, 6 Jan 2011 12:10:56 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dave Chinner <dchinner@redhat.com>
+Subject: linux-next: manual merge of the vfs-scale tree with the xfs tree
+Message-Id: <20110106121056.0758b16f.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.36-stable review patch.  If anyone has any objections, please let us know.
+Hi Nick,
 
-------------------
+Today's linux-next merge of the vfs-scale tree got a conflict in
+fs/xfs/xfs_iget.c between commits
+d95b7aaf9ab6738bef1ebcc52ab66563085e44ac ("xfs: rcu free inodes") and
+1a3e8f3da09c7082d25b512a0ffe569391e4c09a ("xfs: convert inode cache
+lookups to use RCU locking") from the xfs tree and commit
+bb3e8c37a0af21d0a8fe54a0b0f17aca16335a82 ("fs: icache RCU free inodes")
+from the vfs-scale tree.
 
-From: David Henningsson <david.henningsson@canonical.com>
+OK, so looking at this, the first xfs tree patch above does the same as
+the vfs-scale tree patch (just using i_dentry instead of the (union
+eqivalent) i_rcu.  I fixed it up (see below - the diff does not show that
+__xfs_inode_free has been removed) and can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-commit 8a96b1e02029aa512199b1b6d281dcede9ed81f1 upstream.
-
-BugLink: http://launchpad.net/497546
-
-Confirmed that the ideapad model works better than the current
-quirk for Dell Vostro 320.
-
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- sound/pci/hda/patch_conexant.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -3085,8 +3085,7 @@ static const char *cxt5066_models[CXT506
- static struct snd_pci_quirk cxt5066_cfg_tbl[] = {
- 	SND_PCI_QUIRK(0x14f1, 0x0101, "Conexant Reference board",
- 		      CXT5066_LAPTOP),
--	SND_PCI_QUIRK(0x1028, 0x02f5, "Dell",
--		      CXT5066_DELL_LAPTOP),
-+	SND_PCI_QUIRK(0x1028, 0x02f5, "Dell Vostro 320", CXT5066_IDEAPAD),
- 	SND_PCI_QUIRK(0x152d, 0x0833, "OLPC XO-1.5", CXT5066_OLPC_XO_1_5),
- 	SND_PCI_QUIRK(0x1028, 0x02d8, "Dell Vostro", CXT5066_DELL_VOSTO),
- 	SND_PCI_QUIRK(0x1028, 0x0402, "Dell Vostro", CXT5066_DELL_VOSTO),
-
-
+diff --cc fs/xfs/xfs_iget.c
+index 3ecad00,d7de5a3..0000000
+--- a/fs/xfs/xfs_iget.c
++++ b/fs/xfs/xfs_iget.c
+@@@ -157,17 -145,7 +156,17 @@@ xfs_inode_free
+  	ASSERT(!spin_is_locked(&ip->i_flags_lock));
+  	ASSERT(completion_done(&ip->i_flush));
+  
+ +	/*
+ +	 * Because we use RCU freeing we need to ensure the inode always
+ +	 * appears to be reclaimed with an invalid inode number when in the
+ +	 * free state. The ip->i_flags_lock provides the barrier against lookup
+ +	 * races.
+ +	 */
+ +	spin_lock(&ip->i_flags_lock);
+ +	ip->i_flags = XFS_IRECLAIM;
+ +	ip->i_ino = 0;
+ +	spin_unlock(&ip->i_flags_lock);
+- 	call_rcu((struct rcu_head *)&VFS_I(ip)->i_dentry, __xfs_inode_free);
++ 	call_rcu(&ip->i_vnode.i_rcu, xfs_inode_free_callback);
+  }
+  
+  /*
