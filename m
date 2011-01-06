@@ -1,46 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077Ab1AFRgh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 12:36:37 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:18805 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752849Ab1AFRgg (ORCPT
+	id S1754066Ab1AFRkW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 12:40:22 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33997 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753900Ab1AFRkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 12:36:36 -0500
-Message-ID: <4D25FDA3.5000807@caviumnetworks.com>
-Date: Thu, 06 Jan 2011 09:36:35 -0800
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Kevin Cernekee <cernekee@gmail.com>
-CC: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND 2/6] MIPS: pfn_valid() is broken on low memory
- HIGHMEM systems
-References: <8eec0c63f92528c501c0e6a0c8396359@localhost> <b2191149ada0fd929b3818c51298ae8d@localhost>
-In-Reply-To: <b2191149ada0fd929b3818c51298ae8d@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 6 Jan 2011 12:40:19 -0500
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
+In-Reply-To: <1294270104.16957.73.camel@mulgrave.site>
+References: <1294254337.16957.13.camel@mulgrave.site>
+	 <AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com>
+	 <1294256169.16957.18.camel@mulgrave.site>
+	 <20110105200008.GJ8638@n2100.arm.linux.org.uk>
+	 <1294259637.16957.25.camel@mulgrave.site>
+	 <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com>
+	 <20110105210448.GM8638@n2100.arm.linux.org.uk>
+	 <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com>
+	 <1294262208.2952.4.camel@heimdal.trondhjem.org>
+	 <AANLkTi=3Gu-rz=-OdNtUXn4qw60Df6=YePnzvB=s-+Ov@mail.gmail.com>
+	 <1294268808.2952.18.camel@heimdal.trondhjem.org>
+	 <1294270104.16957.73.camel@mulgrave.site>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 06 Jan 2011 11:40:13 -0600
+Message-ID: <1294335614.22825.154.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Jan 2011 17:36:36.0098 (UTC) FILETIME=[444A5E20:01CBADC8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2011 11:31 PM, Kevin Cernekee wrote:
-[...]
-> diff --git a/arch/mips/mm/init.c b/arch/mips/mm/init.c
-> index 2efcbd2..18183a4 100644
-> --- a/arch/mips/mm/init.c
-> +++ b/arch/mips/mm/init.c
-> @@ -370,7 +370,7 @@ void __init mem_init(void)
->   #ifdef CONFIG_DISCONTIGMEM
->   #error "CONFIG_HIGHMEM and CONFIG_DISCONTIGMEM dont work together yet"
->   #endif
-> -	max_mapnr = highend_pfn;
-> +	max_mapnr = highend_pfn ? : max_low_pfn;
+On Wed, 2011-01-05 at 23:28 +0000, James Bottomley wrote:
+> Can you explain how the code works? it looks to me like you read the xdr
+> stuff through the vmap region then write it out directly to the pages? 
 
-That is not standard C.
+OK, I think I see how this is supposed to work:  It's a sequential loop
+of reading in via the pages (i.e. through the kernel mapping) and then
+updating those pages via the vmap.  In which case, I think this patch is
+what you need.
 
-How about: max_mapnr = highend_pfn ? highend_pfn : max_low_pfn;
+The theory of operation is that the readdir on pages actually uses the
+network DMA operations to perform, so when it's finished, the underlying
+page is up to date.  After this you invalidate the vmap range, so we
+have no cache lines above it (so it picks up the values from the
+uptodate page).  Finally, after the operation on the vmap region has
+finished, you flush it so that any updated contents go back to the pages
+themselves before the next iteration begins.
 
-David Daney
+Does this look right to people?  I've verified it fixes the issues on
+parisc.
+
+James
+
+---
+
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index 996dd89..bde1911 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -587,12 +587,16 @@ int nfs_readdir_xdr_to_array(nfs_readdir_descriptor_t *desc, struct page *page,
+ 		if (status < 0)
+ 			break;
+ 		pglen = status;
++
++		invalidate_kernel_vmap_range(pages_ptr, pglen);
++
+ 		status = nfs_readdir_page_filler(desc, &entry, pages_ptr, page, pglen);
+ 		if (status < 0) {
+ 			if (status == -ENOSPC)
+ 				status = 0;
+ 			break;
+ 		}
++		flush_kernel_vmap_range(pages_ptr, pglen);
+ 	} while (array->eof_index < 0);
+ 
+ 	nfs_readdir_free_large_page(pages_ptr, pages, array_size);
+
+
