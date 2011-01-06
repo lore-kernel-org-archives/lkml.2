@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754914Ab1AFDtx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 22:49:53 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:33662 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754774Ab1AFDtv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 22:49:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=R0+j77qEQ2iZv8TOgiY4ZKeGo86a6R/qFW7rqdqjDS/Otf2Dx0856q/RyW6+eLxexW
-         SJCTV0JYZGrnH7TiUFhhXIK6Qk4xWXwcQWoVig4eMFQbePP2wFoXizyYV/cu0HF2n72r
-         VGBcncY7tnTM6zvkebmxZuTLz3+xxpvijN4vQ=
-Date: Wed, 5 Jan 2011 19:49:40 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>
-Subject: Re: [RFC -v3 PATCH 2/3] sched: add yield_to function
-Message-ID: <20110106034940.GC19416@mtj.dyndns.org>
-References: <20110103162637.29f23c40@annuminas.surriel.com>
- <20110103162918.577a9620@annuminas.surriel.com>
- <1294164289.2016.186.camel@laptop>
- <4D24A5F4.3000508@redhat.com>
- <1294247718.2016.269.camel@laptop>
- <4D24A822.4000009@redhat.com>
- <1294248511.2016.274.camel@laptop>
- <4D24ABD7.4040503@redhat.com>
- <1294249159.2016.275.camel@laptop>
+	id S1755006Ab1AFD66 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 22:58:58 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:56365 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754754Ab1AFD65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 22:58:57 -0500
+Message-ID: <4D253E01.6030006@cn.fujitsu.com>
+Date: Thu, 06 Jan 2011 11:58:57 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294249159.2016.275.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/3] KVM: send IPI to vcpu only when it's in guest mode
+References: <4D243B95.3070203@cn.fujitsu.com> <4D243C05.7060307@cn.fujitsu.com> <4D243E69.60603@redhat.com>
+In-Reply-To: <4D243E69.60603@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-01-06 11:58:35,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-01-06 11:58:36,
+	Serialize complete at 2011-01-06 11:58:36
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Wed, Jan 05, 2011 at 06:39:19PM +0100, Peter Zijlstra wrote:
-> On Wed, 2011-01-05 at 19:35 +0200, Avi Kivity wrote:
+On 01/05/2011 05:48 PM, Avi Kivity wrote:
+> On 01/05/2011 11:38 AM, Xiao Guangrong wrote:
+>> We can interrupt the vcpu only when it's running in guest mode
+>> to reduce IPI.
+>>
+>> It looks like only ia64 and x86 need to send IPI to other vcpus, so
+>> i only add the implementation of 'vcpu->guest_mode' in ia64, but i
+>> don't know ia64 well, please point out the right way for me if the
+>> implementation is incorrect
+>>
+>> And ia64 is not tested since i don't have ia64 box
+>>
+>> Signed-off-by: Xiao Guangrong<xiaoguangrong@cn.fujitsu.com>
+>> ---
+>>   arch/ia64/kvm/kvm-ia64.c |    2 ++
+>>   virt/kvm/kvm_main.c      |    3 ++-
+>>   2 files changed, 4 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/ia64/kvm/kvm-ia64.c b/arch/ia64/kvm/kvm-ia64.c
+>> index 70d224d..15c11b2 100644
+>> --- a/arch/ia64/kvm/kvm-ia64.c
+>> +++ b/arch/ia64/kvm/kvm-ia64.c
+>> @@ -662,6 +662,7 @@ again:
+>>           goto vcpu_run_fail;
+>>
+>>       srcu_read_unlock(&vcpu->kvm->srcu, idx);
+>> +    atomic_set(&vcpu->guest_mode, 1);
+>>       kvm_guest_enter();
 > 
-> > Tejun, why did you end up not using preempt_notifiers in cmwq?
+> I think it needs an smp_wmb() (technically x86 needs it too, but x86 is strongly ordered)
 > 
-> Because I told him to use explicit function calls because that keeps the
-> code easier to read.
 
-It went like the following.
+Hi Avi,
 
-* Beefing up preempt_notifier() results in too many different
-  notifiers.  They better be unified.
+After read the code of ia64 more carefully, i noticed ia64 doesn't check 'vcpu->requests'
+before go to guest mode, so it means we no need memory barrier here? right?
 
-* Unified notifiers are ugly (macro bonanza as expected) and cmwq
-  hooks are always enabled unlike other notifiers.  Let's just keep it
-  simple and specialized.
-
-So, the cmwq stuff is now mostly hard coded into scheduler.  For cmwq,
-everything is fine but it would still be great if the various
-notifiers can be assimilated in prettier way.
-
-Thanks.
-
--- 
-tejun
+Certainly, we need an smb_mb between setting vcpu->mode and checking vcpu->request in x86.
