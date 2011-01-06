@@ -1,107 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab1AFUT5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 15:19:57 -0500
-Received: from Mycroft.westnet.com ([216.187.52.7]:33376 "EHLO
-	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752727Ab1AFUTt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 15:19:49 -0500
+	id S1752284Ab1AFUXo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 15:23:44 -0500
+Received: from inx.pm.waw.pl ([195.116.170.130]:35333 "EHLO inx.pm.waw.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751564Ab1AFUXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 15:23:43 -0500
+From: Krzysztof Halasa <khc@pm.waw.pl>
+To: Joe Perches <joe@perches.com>
+Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Dan Carpenter <error27@gmail.com>, Andy Whitcroft <apw@canonical.com>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch] checkpatch: putting the && or || on the wrong line
+References: <20110104055900.GA5062@bicker>
+	<20110104163836.GA30317@fieldses.org>
+	<20110104164414.GX5875@const.bordeaux.inria.fr>
+	<1294160834.6617.51.camel@Joe-Laptop>
+	<m3fwt7i740.fsf@intrepid.localdomain>
+	<1294249529.6617.118.camel@Joe-Laptop>
+	<m339p6p5zo.fsf@intrepid.localdomain>
+	<1294336674.12561.81.camel@Joe-Laptop>
+Date: Thu, 06 Jan 2011 21:23:13 +0100
+In-Reply-To: <1294336674.12561.81.camel@Joe-Laptop> (Joe Perches's message of
+	"Thu, 06 Jan 2011 09:57:54 -0800")
+Message-ID: <m3r5cplr2m.fsf@intrepid.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19750.9173.909359.319214@quad.stoffel.home>
-Date: Thu, 6 Jan 2011 15:19:33 -0500
-From: "John Stoffel" <john@stoffel.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-In-Reply-To: <1294335614.22825.154.camel@mulgrave.site>
-References: <1294254337.16957.13.camel@mulgrave.site>
-	<AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com>
-	<1294256169.16957.18.camel@mulgrave.site>
-	<20110105200008.GJ8638@n2100.arm.linux.org.uk>
-	<1294259637.16957.25.camel@mulgrave.site>
-	<AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com>
-	<20110105210448.GM8638@n2100.arm.linux.org.uk>
-	<AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com>
-	<1294262208.2952.4.camel@heimdal.trondhjem.org>
-	<AANLkTi=3Gu-rz=-OdNtUXn4qw60Df6=YePnzvB=s-+Ov@mail.gmail.com>
-	<1294268808.2952.18.camel@heimdal.trondhjem.org>
-	<1294270104.16957.73.camel@mulgrave.site>
-	<1294335614.22825.154.camel@mulgrave.site>
-X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "James" == James Bottomley <James.Bottomley@HansenPartnership.com> writes:
+Joe Perches <joe@perches.com> writes:
 
-James> On Wed, 2011-01-05 at 23:28 +0000, James Bottomley wrote:
->> Can you explain how the code works? it looks to me like you read the xdr
->> stuff through the vmap region then write it out directly to the pages? 
+>> Sure, standardization is a good thing - to a certain point.
+>> We've passed this point long ago.
+>
+> Aren't you missing attached evidence too? :p
 
-James> OK, I think I see how this is supposed to work: It's a
-James> sequential loop of reading in via the pages (i.e. through the
-James> kernel mapping) and then updating those pages via the vmap.  In
-James> which case, I think this patch is what you need.
-
-James> The theory of operation is that the readdir on pages actually
-James> uses the network DMA operations to perform, so when it's
-James> finished, the underlying page is up to date.  After this you
-James> invalidate the vmap range, so we have no cache lines above it
-James> (so it picks up the values from the uptodate page).  Finally,
-James> after the operation on the vmap region has finished, you flush
-James> it so that any updated contents go back to the pages themselves
-James> before the next iteration begins.
-
-You need to re-spin this patch to include the above description into
-the magic steps your taking here, or at least document it more clearly
-somewhere why you need to make these funky steps.  
-
-John
-
-
-James> James
-
-James> ---
-
-James> diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-James> index 996dd89..bde1911 100644
-James> --- a/fs/nfs/dir.c
-James> +++ b/fs/nfs/dir.c
-James> @@ -587,12 +587,16 @@ int nfs_readdir_xdr_to_array(nfs_readdir_descriptor_t *desc, struct page *page,
-James>  		if (status < 0)
-James>  			break;
-James>  		pglen = status;
-James> +
-James> +		invalidate_kernel_vmap_range(pages_ptr, pglen);
-James> +
-James>  		status = nfs_readdir_page_filler(desc, &entry, pages_ptr, page, pglen);
-James>  		if (status < 0) {
-James>  			if (status == -ENOSPC)
-James>  				status = 0;
-James>  			break;
-James>  		}
-James> +		flush_kernel_vmap_range(pages_ptr, pglen);
-James>  	} while (array->eof_index < 0);
- 
-James>  	nfs_readdir_free_large_page(pages_ptr, pages, array_size);
-
-
-James> --
-James> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-James> the body of a message to majordomo@vger.kernel.org
-James> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-James> Please read the FAQ at  http://www.tux.org/lkml/
-
+No, it's all over the place.
 -- 
+Krzysztof Halasa
