@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591Ab1AFXXc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 18:23:32 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:15916 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543Ab1AFXXa (ORCPT
+	id S1754692Ab1AFXll (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 18:41:41 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53878 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752513Ab1AFXlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 18:23:30 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 06 Jan 2011 15:11:16 -0800
-From: Robert Morell <rmorell@nvidia.com>
-To: David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Benoit Goby <benoit@android.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
-        Oliver Neukum <oliver@neukum.org>
-Cc: Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>,
-        Colin Cross <ccross@android.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: [PATCH v4] Align tegra-ehci DMA transfers to 32B
-Date: Thu,  6 Jan 2011 15:20:43 -0800
-Message-Id: <1294356045-1018-1-git-send-email-rmorell@nvidia.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1292794698-19534-1-git-send-email-rmorell@nvidia.com>
-References: <1292794698-19534-1-git-send-email-rmorell@nvidia.com>
-X-NVConfidentiality: public
+	Thu, 6 Jan 2011 18:41:40 -0500
+Date: Thu, 6 Jan 2011 15:41:20 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rob Landley <rlandley@parallels.com>
+Cc: <trivial@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-embedded@vger.kernel.org>
+Subject: Re: [PATCH] Move an assert under DEBUG_KERNEL.
+Message-Id: <20110106154120.b69118c9.akpm@linux-foundation.org>
+In-Reply-To: <4D2579B2.7060704@parallels.com>
+References: <4D2579B2.7060704@parallels.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This small set of patches fixes an issue where DMA from the tegra EHCI
-controller could be corrupted.  It was most commonly seen with USB network
-adapters, though in theory it could happen with any USB traffic.
+On Thu, 6 Jan 2011 02:13:38 -0600
+Rob Landley <rlandley@parallels.com> wrote:
 
-Note: An attempt was made to fix this specifically for network devices with
-commit 367c3aab, which set NET_IP_ALIGN to 0 and NET_SKB_PAD to 32.
-Unfortunately, not all network drivers honor them (presumably since these are
-intended as optimizations rather than hard rules).  This does mean that
-properly behaved network drivers should fall through this code with very little
-overhead, however.
+> From: Rob Landley <rlandley@parallels.com>
+> 
+> Move an assert under DEBUG_KERNEL.
+> 
+> Signed-off-by: Rob Landley <rlandley@parallels.com>
+> ---
+> 
+> Saves about 3k from x86-64 defconfig according to scripts/bloat-o-meter.
+> 
+>   include/linux/rtnetlink.h |    4 ++++
+>   1 file changed, 4 insertions(+)
+> 
+> diff --git a/include/linux/rtnetlink.h b/include/linux/rtnetlink.h
+> index bbad657..28c4025 100644
+> --- a/include/linux/rtnetlink.h
+> +++ b/include/linux/rtnetlink.h
+> @@ -782,6 +782,7 @@ extern struct netdev_queue 
+> *dev_ingress_queue_create(struct net_device *dev);
+>   extern void rtnetlink_init(void);
+>   extern void __rtnl_unlock(void);
+> 
+> +#ifdef CONFIG_DEBUG_KERNEL
+>   #define ASSERT_RTNL() do { \
+>   	if (unlikely(!rtnl_is_locked())) { \
+>   		printk(KERN_ERR "RTNL: assertion failed at %s (%d)\n", \
+> @@ -789,6 +790,9 @@ extern void __rtnl_unlock(void);
+>   		dump_stack(); \
+>   	} \
+>   } while(0)
+> +#else
+> +#define ASSERT_RTNL()
+> +#endif
+> 
+>   static inline u32 rtm_get_table(struct rtattr **rta, u8 table)
+>   {
 
-Version 4 of this patchset adds logic to prevent data copy-out on failure.
+Probably a worthwhile thing to do, IMO.  If there's some net-specific
+CONFIG_DEBUG_ setting then that wold be a better thing to use.
 
+However the patch was a) wordwrapped, b) space-stuffed and c) not cc'ed
+to the networking list.  So its prospects are dim.
