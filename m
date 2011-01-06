@@ -1,27 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703Ab1AFAbb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:31:31 -0500
-Received: from kroah.org ([198.145.64.141]:36040 "EHLO coco.kroah.org"
+	id S1754547Ab1AFAax (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:30:53 -0500
+Received: from kroah.org ([198.145.64.141]:35932 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754636Ab1AFAb2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:31:28 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:08 2011
-Message-Id: <20110106002308.521042829@clark.site>
+	id S1754462Ab1AFAaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:30:52 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:06 2011
+Message-Id: <20110106002306.568071683@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:23:44 -0800
+Date: Wed, 05 Jan 2011 16:23:22 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Robert Richter <robert.richter@amd.com>,
-        "oprofile-list@lists.sourceforge.net" 
-	<oprofile-list@lists.sourceforge.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Dan Carpenter <error27@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [125/152] arch/x86/oprofile/op_model_amd.c: Perform initialisation on a single CPU
+        Yan Li <yan.i.li@intel.com>, Dmitry Torokhov <dtor@mail.ru>
+Subject: [103/152] Input: synaptics - fix handling of 2-button ClickPads
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,81 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robert Richter <robert.richter@amd.com>
+From: Yan Li <yan.i.li@intel.com>
 
-commit c7c25802b39c443b3745cfa973dc49a97a3491f8 upstream.
+commit 3bfa321e662edf90fb8123a02c987c2965fa50bb upstream.
 
-Disable preemption in init_ibs(). The function only checks the
-ibs capabilities and sets up pci devices (if necessary). It runs
-only on one cpu but operates with the local APIC and some MSRs,
-thus it is better to disable preemption.
+Lenovo S10-3t's ClickPad is a 2-button ClickPad that reports BTN_LEFT
+and BTN_RIGHT as normal touchpad, unlike the 1-button ClickPad used in
+HP mini 210 that reports solely BTN_MIDDLE.
 
-[    7.034377] BUG: using smp_processor_id() in preemptible [00000000] code: modprobe/483
-[    7.034385] caller is setup_APIC_eilvt+0x155/0x180
-[    7.034389] Pid: 483, comm: modprobe Not tainted 2.6.37-rc1-20101110+ #1
-[    7.034392] Call Trace:
-[    7.034400]  [<ffffffff812a2b72>] debug_smp_processor_id+0xd2/0xf0
-[    7.034404]  [<ffffffff8101e985>] setup_APIC_eilvt+0x155/0x180
-[ ... ]
+In 0xc0-cap response, the 1-button ClickPad has the 20-bit set while
+2-button ClickPad has the 8-bit set.
 
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=22812
+This patch makes the kernel only handle 1-button ClickPad specially,
+and treat 2-button ClickPad in the same fashion as regular touchpads.
 
-Reported-by: <atswartz@gmail.com>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
-Cc: oprofile-list@lists.sourceforge.net <oprofile-list@lists.sourceforge.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Dan Carpenter <error27@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-LKML-Reference: <20110103111514.GM4739@erda.amd.com>
-[ small cleanups ]
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+This fixes kernel bug #18122 and MeeGo bug #4807.
+
+Signed-off-by: Yan Li <yan.i.li@intel.com>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/oprofile/op_model_amd.c |   24 ++++++++++++++++--------
- 1 file changed, 16 insertions(+), 8 deletions(-)
+ drivers/input/mouse/synaptics.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/x86/oprofile/op_model_amd.c
-+++ b/arch/x86/oprofile/op_model_amd.c
-@@ -484,21 +484,29 @@ static int __init_ibs_nmi(void)
- 	return 0;
- }
+--- a/drivers/input/mouse/synaptics.h
++++ b/drivers/input/mouse/synaptics.h
+@@ -51,7 +51,8 @@
+ #define SYN_EXT_CAP_REQUESTS(c)		(((c) & 0x700000) >> 20)
+ #define SYN_CAP_MULTI_BUTTON_NO(ec)	(((ec) & 0x00f000) >> 12)
+ #define SYN_CAP_PRODUCT_ID(ec)		(((ec) & 0xff0000) >> 16)
+-#define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100100)
++#define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100000) /* 1-button ClickPad */
++#define SYN_CAP_CLICKPAD2BTN(ex0c)	((ex0c) & 0x000100) /* 2-button ClickPad */
+ #define SYN_CAP_MAX_DIMENSIONS(ex0c)	((ex0c) & 0x020000)
  
--/* initialize the APIC for the IBS interrupts if available */
-+/*
-+ * check and reserve APIC extended interrupt LVT offset for IBS if
-+ * available
-+ *
-+ * init_ibs() preforms implicitly cpu-local operations, so pin this
-+ * thread to its current CPU
-+ */
-+
- static void init_ibs(void)
- {
--	ibs_caps = get_ibs_caps();
-+	preempt_disable();
- 
-+	ibs_caps = get_ibs_caps();
- 	if (!ibs_caps)
--		return;
-+		goto out;
- 
--	if (__init_ibs_nmi()) {
-+	if (__init_ibs_nmi() < 0)
- 		ibs_caps = 0;
--		return;
--	}
-+	else
-+		printk(KERN_INFO "oprofile: AMD IBS detected (0x%08x)\n", ibs_caps);
- 
--	printk(KERN_INFO "oprofile: AMD IBS detected (0x%08x)\n",
--	       (unsigned)ibs_caps);
-+out:
-+	preempt_enable();
- }
- 
- static int (*create_arch_files)(struct super_block *sb, struct dentry *root);
+ /* synaptics modes query bits */
 
 
