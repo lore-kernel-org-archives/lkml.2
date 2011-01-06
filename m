@@ -1,170 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab1AFVTi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 16:19:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26053 "EHLO mx1.redhat.com"
+	id S1754058Ab1AFVTm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 16:19:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20456 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753977Ab1AFVTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 16:19:36 -0500
+	id S1753977Ab1AFVTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 16:19:38 -0500
 From: Don Zickus <dzickus@redhat.com>
 To: x86@kernel.org
 Cc: Peter Zijlstra <peterz@infradead.org>,
         Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
         gorcunov@gmail.com, LKML <linux-kernel@vger.kernel.org>,
         Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 3/6] x86, NMI: Add priorities to handlers
-Date: Thu,  6 Jan 2011 16:18:49 -0500
-Message-Id: <1294348732-15030-4-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 4/6] x86, NMI: Remove DIE_NMI_IPI
+Date: Thu,  6 Jan 2011 16:18:50 -0500
+Message-Id: <1294348732-15030-5-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1294348732-15030-1-git-send-email-dzickus@redhat.com>
 References: <1294348732-15030-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to consolidate the NMI die_chain events, we need to setup the priorities
-for the die notifiers.
+With priorities in place and no one really understanding the difference between
+DIE_NMI and DIE_NMI_IPI, just remove DIE_NMI_IPI and convert everyone to DIE_NMI.
 
-I started by defining a bunch of common priorities that can be used by the
-notifier blocks.  Then I modified the notifier blocks to use the newly created
-priorities.
+This also simplifies default_do_nmi() a little bit.  Instead of calling the
+die_notifier in both the if and else part, just pull it out and call it before
+the if-statement.  This has the side benefit of avoiding a call to the ioport
+to see if there is an external NMI sitting around until after the (more frequent)
+internal NMIs are dealt with.
 
-Now that the priorities are straightened out, it should be easier to remove the
-event DIE_NMI_IPI.
-
+Patch-Inspired-by: Huang Ying <ying.huang@intel.com>
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- arch/x86/include/asm/nmi.h              |   20 ++++++++++++++++++++
- arch/x86/kernel/apic/hw_nmi.c           |    2 +-
- arch/x86/kernel/cpu/mcheck/mce-inject.c |    2 +-
- arch/x86/kernel/cpu/perf_event.c        |    2 +-
- arch/x86/kernel/kgdb.c                  |    2 +-
- arch/x86/kernel/reboot.c                |    2 ++
- arch/x86/oprofile/nmi_int.c             |    2 +-
- arch/x86/oprofile/nmi_timer_int.c       |    2 +-
- 8 files changed, 28 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/kdebug.h           |    1 -
+ arch/x86/kernel/apic/hw_nmi.c           |    1 -
+ arch/x86/kernel/cpu/mcheck/mce-inject.c |    3 ++-
+ arch/x86/kernel/cpu/perf_event.c        |    1 -
+ arch/x86/kernel/kgdb.c                  |    4 ----
+ arch/x86/kernel/reboot.c                |    3 ++-
+ arch/x86/kernel/traps.c                 |   19 ++++++++-----------
+ arch/x86/oprofile/nmi_int.c             |    1 -
+ 8 files changed, 12 insertions(+), 21 deletions(-)
 
-diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
-index c4021b9..fb82fb6 100644
---- a/arch/x86/include/asm/nmi.h
-+++ b/arch/x86/include/asm/nmi.h
-@@ -23,6 +23,26 @@ void arch_trigger_all_cpu_backtrace(void);
- #define arch_trigger_all_cpu_backtrace arch_trigger_all_cpu_backtrace
- #endif
- 
-+/*
-+ * Define some priorities for the nmi notifier call chain.
-+ *
-+ * Create a local nmi bit that has a higher priority than
-+ * external nmis, because the local ones are more frequent.
-+ * 
-+ * Also setup some default high/normal/low settings for
-+ * subsystems to registers with.  Using 4 bits to seperate
-+ * the priorities.  This can go alot higher if needed be.
-+ */
-+
-+#define NMI_LOCAL_SHIFT		16	/* randomly picked */
-+#define NMI_LOCAL_BIT		(1ULL << NMI_LOCAL_SHIFT)
-+#define NMI_HIGH_PRIOR		(1ULL << 8)
-+#define NMI_NORMAL_PRIOR	(1ULL << 4)
-+#define NMI_LOW_PRIOR		(1ULL << 0)
-+#define NMI_LOCAL_HIGH_PRIOR	(NMI_LOCAL_BIT | NMI_HIGH_PRIOR)
-+#define NMI_LOCAL_NORMAL_PRIOR	(NMI_LOCAL_BIT | NMI_NORMAL_PRIOR)
-+#define NMI_LOCAL_LOW_PRIOR	(NMI_LOCAL_BIT | NMI_LOW_PRIOR)
-+
- void stop_nmi(void);
- void restart_nmi(void);
- 
+diff --git a/arch/x86/include/asm/kdebug.h b/arch/x86/include/asm/kdebug.h
+index f23eb25..ca242d3 100644
+--- a/arch/x86/include/asm/kdebug.h
++++ b/arch/x86/include/asm/kdebug.h
+@@ -18,7 +18,6 @@ enum die_val {
+ 	DIE_TRAP,
+ 	DIE_GPF,
+ 	DIE_CALL,
+-	DIE_NMI_IPI,
+ 	DIE_PAGE_FAULT,
+ 	DIE_NMIUNKNOWN,
+ };
 diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-index 72ec29e..8bc49f1 100644
+index 8bc49f1..79fd43c 100644
 --- a/arch/x86/kernel/apic/hw_nmi.c
 +++ b/arch/x86/kernel/apic/hw_nmi.c
-@@ -96,7 +96,7 @@ arch_trigger_all_cpu_backtrace_handler(struct notifier_block *self,
- static __read_mostly struct notifier_block backtrace_notifier = {
- 	.notifier_call          = arch_trigger_all_cpu_backtrace_handler,
- 	.next                   = NULL,
--	.priority               = 1
-+	.priority               = NMI_LOCAL_LOW_PRIOR,
- };
+@@ -68,7 +68,6 @@ arch_trigger_all_cpu_backtrace_handler(struct notifier_block *self,
  
- static int __init register_trigger_all_cpu_backtrace(void)
+ 	switch (cmd) {
+ 	case DIE_NMI:
+-	case DIE_NMI_IPI:
+ 		break;
+ 
+ 	default:
 diff --git a/arch/x86/kernel/cpu/mcheck/mce-inject.c b/arch/x86/kernel/cpu/mcheck/mce-inject.c
-index e7dbde7..59546c1 100644
+index 59546c1..a779719 100644
 --- a/arch/x86/kernel/cpu/mcheck/mce-inject.c
 +++ b/arch/x86/kernel/cpu/mcheck/mce-inject.c
-@@ -95,7 +95,7 @@ static int mce_raise_notify(struct notifier_block *self,
+@@ -25,6 +25,7 @@
+ #include <linux/gfp.h>
+ #include <asm/mce.h>
+ #include <asm/apic.h>
++#include <asm/nmi.h>
  
- static struct notifier_block mce_raise_nb = {
- 	.notifier_call = mce_raise_notify,
--	.priority = 1000,
-+	.priority = NMI_LOCAL_NORMAL_PRIOR,
- };
- 
- /* Inject mce on current CPU */
+ /* Update fake mce registers on current CPU. */
+ static void inject_mce(struct mce *m)
+@@ -83,7 +84,7 @@ static int mce_raise_notify(struct notifier_block *self,
+ 	struct die_args *args = (struct die_args *)data;
+ 	int cpu = smp_processor_id();
+ 	struct mce *m = &__get_cpu_var(injectm);
+-	if (val != DIE_NMI_IPI || !cpumask_test_cpu(cpu, mce_inject_cpumask))
++	if (val != DIE_NMI || !cpumask_test_cpu(cpu, mce_inject_cpumask))
+ 		return NOTIFY_DONE;
+ 	cpumask_clear_cpu(cpu, mce_inject_cpumask);
+ 	if (m->inject_flags & MCJ_EXCEPTION)
 diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 0a360d1..5e14b5e 100644
+index 5e14b5e..c71bae4 100644
 --- a/arch/x86/kernel/cpu/perf_event.c
 +++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1318,7 +1318,7 @@ perf_event_nmi_handler(struct notifier_block *self,
- static __read_mostly struct notifier_block perf_event_nmi_notifier = {
- 	.notifier_call		= perf_event_nmi_handler,
- 	.next			= NULL,
--	.priority		= 1
-+	.priority		= NMI_LOCAL_LOW_PRIOR,
- };
+@@ -1268,7 +1268,6 @@ perf_event_nmi_handler(struct notifier_block *self,
  
- static struct event_constraint unconstrained;
+ 	switch (cmd) {
+ 	case DIE_NMI:
+-	case DIE_NMI_IPI:
+ 		break;
+ 	case DIE_NMIUNKNOWN:
+ 		this_nmi = percpu_read(irq_stat.__nmi_count);
 diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
-index cd21b65..983fb54 100644
+index 983fb54..1e8b583 100644
 --- a/arch/x86/kernel/kgdb.c
 +++ b/arch/x86/kernel/kgdb.c
-@@ -606,7 +606,7 @@ static struct notifier_block kgdb_notifier = {
- 	/*
- 	 * Lowest-prio notifier priority, we want to be notified last:
- 	 */
--	.priority	= -INT_MAX,
-+	.priority	= NMI_LOCAL_LOW_PRIOR,
- };
+@@ -525,10 +525,6 @@ static int __kgdb_notify(struct die_args *args, unsigned long cmd)
+ 		}
+ 		return NOTIFY_DONE;
  
- /**
+-	case DIE_NMI_IPI:
+-		/* Just ignore, we will handle the roundup on DIE_NMI. */
+-		return NOTIFY_DONE;
+-
+ 	case DIE_NMIUNKNOWN:
+ 		if (was_in_debug_nmi[raw_smp_processor_id()]) {
+ 			was_in_debug_nmi[raw_smp_processor_id()] = 0;
 diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index c495aa8..9c1c83e 100644
+index 9c1c83e..fc7aae1 100644
 --- a/arch/x86/kernel/reboot.c
 +++ b/arch/x86/kernel/reboot.c
-@@ -778,6 +778,8 @@ static void smp_send_nmi_allbutself(void)
+@@ -18,6 +18,7 @@
+ #include <asm/pci_x86.h>
+ #include <asm/virtext.h>
+ #include <asm/cpu.h>
++#include <asm/nmi.h>
  
- static struct notifier_block crash_nmi_nb = {
- 	.notifier_call = crash_nmi_callback,
-+	/* we want to be the first one called */
-+	.priority = NMI_LOCAL_HIGH_PRIOR+1,
- };
+ #ifdef CONFIG_X86_32
+ # include <linux/ctype.h>
+@@ -747,7 +748,7 @@ static int crash_nmi_callback(struct notifier_block *self,
+ {
+ 	int cpu;
  
- /* Halt all other CPUs, calling the specified function on each of them
+-	if (val != DIE_NMI_IPI)
++	if (val != DIE_NMI)
+ 		return NOTIFY_OK;
+ 
+ 	cpu = raw_smp_processor_id();
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index c7fd1ce..23f6ac0 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -394,6 +394,14 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+ 	unsigned char reason = 0;
+ 	int cpu;
+ 
++	/*
++	 * CPU-specific NMI must be processed before non-CPU-specific
++	 * NMI, otherwise we may lose it, because the CPU-specific
++	 * NMI can not be detected/processed on other CPUs.
++	 */
++	if (notify_die(DIE_NMI, "nmi", regs, 0, 2, SIGINT) == NOTIFY_STOP)
++		return;
++
+ 	cpu = smp_processor_id();
+ 
+ 	/* Only the BSP gets external NMIs from the system. */
+@@ -401,21 +409,10 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+ 		reason = get_nmi_reason();
+ 
+ 	if (!(reason & NMI_REASON_MASK)) {
+-		if (notify_die(DIE_NMI_IPI, "nmi_ipi", regs, reason, 2, SIGINT)
+-								== NOTIFY_STOP)
+-			return;
+-
+-#ifdef CONFIG_X86_LOCAL_APIC
+-		if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT)
+-							== NOTIFY_STOP)
+-			return;
+-#endif
+ 		unknown_nmi_error(reason, regs);
+ 
+ 		return;
+ 	}
+-	if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT) == NOTIFY_STOP)
+-		return;
+ 
+ 	/* AK: following checks seem to be broken on modern chipsets. FIXME */
+ 	if (reason & NMI_REASON_SERR)
 diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-index 358c8b9..6e84ea4 100644
+index 6e84ea4..e77ea0b 100644
 --- a/arch/x86/oprofile/nmi_int.c
 +++ b/arch/x86/oprofile/nmi_int.c
-@@ -361,7 +361,7 @@ static void nmi_cpu_setup(void *dummy)
- static struct notifier_block profile_exceptions_nb = {
- 	.notifier_call = profile_exceptions_notify,
- 	.next = NULL,
--	.priority = 2
-+	.priority = NMI_LOCAL_LOW_PRIOR,
- };
+@@ -65,7 +65,6 @@ static int profile_exceptions_notify(struct notifier_block *self,
  
- static void nmi_cpu_restore_registers(struct op_msrs *msrs)
-diff --git a/arch/x86/oprofile/nmi_timer_int.c b/arch/x86/oprofile/nmi_timer_int.c
-index 0636dd9..720bf5a 100644
---- a/arch/x86/oprofile/nmi_timer_int.c
-+++ b/arch/x86/oprofile/nmi_timer_int.c
-@@ -38,7 +38,7 @@ static int profile_timer_exceptions_notify(struct notifier_block *self,
- static struct notifier_block profile_timer_exceptions_nb = {
- 	.notifier_call = profile_timer_exceptions_notify,
- 	.next = NULL,
--	.priority = 0
-+	.priority = NMI_LOW_PRIOR,
- };
- 
- static int timer_start(void)
+ 	switch (val) {
+ 	case DIE_NMI:
+-	case DIE_NMI_IPI:
+ 		if (ctr_running)
+ 			model->check_ctrs(args->regs, &__get_cpu_var(cpu_msrs));
+ 		else if (!nmi_enabled)
 -- 
 1.7.3.4
 
