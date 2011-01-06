@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704Ab1AFWZK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 17:25:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51920 "EHLO mx2.suse.de"
+	id S1754735Ab1AFW0F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 17:26:05 -0500
+Received: from kroah.org ([198.145.64.141]:55708 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754172Ab1AFWZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 17:25:07 -0500
-Date: Thu, 6 Jan 2011 14:24:36 -0800
-From: Greg KH <gregkh@suse.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [GIT PATCH] TTY/serial merge for .38
-Message-ID: <20110106222436.GA31994@suse.de>
+	id S1754564Ab1AFWYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 17:24:01 -0500
+From: Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: "Govindraj.R" <govindraj.raja@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 32/36] Serial: Avoid unbalanced IRQ wake disable during resume
+Date: Thu,  6 Jan 2011 14:23:21 -0800
+Message-Id: <1294352605-31906-32-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <20110106215404.GA30624@kroah.com>
 References: <20110106215404.GA30624@kroah.com>
- <20110106220017.3c19f9e6@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110106220017.3c19f9e6@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 06, 2011 at 10:00:17PM +0000, Alan Cox wrote:
-> > There was some arguing about the tty console detection patches, but as
-> > the existing ioctl does not work properly, Kay's patch was accepted to
-> > resolve this issue and allow systemd to correctly detect consoles.  I
-> > know Alan doesn't like this, but I feel it's the best way to solve the
-> > issue (combined with the fact that there is no proposed other solution.)
-> 
-> I'm a bit confused about this one Greg - all the distributions used the
-> ioctl you refer to below for this purpose and have for years
-> 
-> > This series also includes the long-out-of-tree ioctl that SUSE and
-> > Debian have been dragging around in their kernels for the past 10+
-> > years.  Thanks to Werner for finally submitting it in a mergable form.
-> 
-> Which I believe means we don't need the sysfs patch as well - Kay ?
+From: Govindraj.R <govindraj.raja@ti.com>
 
-I didn't think that the ioctl was sufficient for what systemd required,
-it was only needed for "old-style" initrd programs like what used to be
-used in SUSE and other distros, but are now being phased out.
+To avoid unbalanced IRQ wake disable, ensure that wakeups are disabled
+only when wakeups have been successfully enabled.
+Tested on OMAP3630SDP/ZOOM3.
 
-Kay?
+Signed-off-by: Govindraj.R <govindraj.raja@ti.com>
+Reported-by: Paul Walmsley <paul@pwsan.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Acked-by: Kevin Hilman <khilman@deeprootsystems.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/serial/serial_core.c |    8 ++++++--
+ include/linux/serial_core.h  |    1 +
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
-thanks,
+diff --git a/drivers/serial/serial_core.c b/drivers/serial/serial_core.c
+index 2835e29..76418c1 100644
+--- a/drivers/serial/serial_core.c
++++ b/drivers/serial/serial_core.c
+@@ -1986,7 +1986,8 @@ int uart_suspend_port(struct uart_driver *drv, struct uart_port *uport)
+ 
+ 	tty_dev = device_find_child(uport->dev, &match, serial_match_port);
+ 	if (device_may_wakeup(tty_dev)) {
+-		enable_irq_wake(uport->irq);
++		if (!enable_irq_wake(uport->irq))
++			uport->irq_wake = 1;
+ 		put_device(tty_dev);
+ 		mutex_unlock(&port->mutex);
+ 		return 0;
+@@ -2052,7 +2053,10 @@ int uart_resume_port(struct uart_driver *drv, struct uart_port *uport)
+ 
+ 	tty_dev = device_find_child(uport->dev, &match, serial_match_port);
+ 	if (!uport->suspended && device_may_wakeup(tty_dev)) {
+-		disable_irq_wake(uport->irq);
++		if (uport->irq_wake) {
++			disable_irq_wake(uport->irq);
++			uport->irq_wake = 0;
++		}
+ 		mutex_unlock(&port->mutex);
+ 		return 0;
+ 	}
+diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
+index 7a6daf1..a23fa29 100644
+--- a/include/linux/serial_core.h
++++ b/include/linux/serial_core.h
+@@ -365,6 +365,7 @@ struct uart_port {
+ 	struct device		*dev;			/* parent device */
+ 	unsigned char		hub6;			/* this should be in the 8250 driver */
+ 	unsigned char		suspended;
++	unsigned char		irq_wake;
+ 	unsigned char		unused[2];
+ 	void			*private_data;		/* generic platform data pointer */
+ };
+-- 
+1.7.3.2
 
-greg k-h
