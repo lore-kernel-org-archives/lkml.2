@@ -1,50 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab1AFJnB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 04:43:01 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59554 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752198Ab1AFJm7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 04:42:59 -0500
-Date: Thu, 6 Jan 2011 09:42:37 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Julien Boibessot <julien.boibessot@free.fr>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>, liu.y.victor@gmail.com,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, B02280@freescale.com
-Subject: Re: [PATCH v2] i.MX51 Framebuffer support
-Message-ID: <20110106094237.GB31708@n2100.arm.linux.org.uk>
-References: <1292842127-21406-1-git-send-email-s.hauer@pengutronix.de> <4D246C54.9060503@free.fr>
+	id S1752226Ab1AFJod (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 04:44:33 -0500
+Received: from mx1.fusionio.com ([64.244.102.30]:57721 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751260Ab1AFJob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 04:44:31 -0500
+X-ASG-Debug-ID: 1294307069-178980dd0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D258F7C.3050101@fusionio.com>
+Date: Thu, 6 Jan 2011 10:46:36 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4D246C54.9060503@free.fr>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Greg KH <greg@kroah.com>
+CC: Jerome Marchand <jmarchan@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] block: fix accounting bug on cross partition merges
+References: <4D13810B.8000304@redhat.com> <20101224192916.GB2082@redhat.com> <4D23423A.60707@redhat.com> <4D2342E1.8010405@redhat.com> <20110104210011.GB4180@kroah.com> <4D247867.9040502@fusionio.com> <20110105155816.GD2072@kroah.com> <4D24BC88.4090804@fusionio.com> <20110105200825.GA11372@kroah.com> <4D24E4C7.30906@fusionio.com> <20110105221623.GA17437@kroah.com>
+X-ASG-Orig-Subj: Re: [PATCH 2/2] block: fix accounting bug on cross partition merges
+In-Reply-To: <20110105221623.GA17437@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1294307069
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.4841 1.0000 0.0000
+X-Barracuda-Spam-Score: 0.41
+X-Barracuda-Spam-Status: No, SCORE=0.41 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=SUBJECT_FUZZY_TION
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.51578
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.41 SUBJECT_FUZZY_TION     Attempt to obfuscate words in Subject:
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 05, 2011 at 02:04:20PM +0100, Julien Boibessot wrote:
-> Hello,
+On 2011-01-05 23:16, Greg KH wrote:
+> On Wed, Jan 05, 2011 at 10:38:15PM +0100, Jens Axboe wrote:
+>> On 2011-01-05 21:08, Greg KH wrote:
+>>> On Wed, Jan 05, 2011 at 07:46:32PM +0100, Jens Axboe wrote:
+>>>> On 2011-01-05 16:58, Greg KH wrote:
+>>>>> On Wed, Jan 05, 2011 at 02:55:51PM +0100, Jens Axboe wrote:
+>>>>>> On 2011-01-04 22:00, Greg KH wrote:
+>>>>>>> On Tue, Jan 04, 2011 at 04:55:13PM +0100, Jerome Marchand wrote:
+>>>>>>>> Also add a refcount to struct hd_struct to keep the partition in
+>>>>>>>> memory as long as users exist. We use kref_test_and_get() to ensure
+>>>>>>>> we don't add a reference to a partition which is going away.
+>>>>>>>
+>>>>>>> No, don't do this, use a kref correctly and no such function should be
+>>>>>>> needed.
+>>>>>>>
+>>>>>>>> +	} else {
+>>>>>>>> +		part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
+>>>>>>>
+>>>>>>> That is the function that should properly increment the reference count
+>>>>>>> on the object.  If the object is "being removed", then it will return
+>>>>>>> NULL and you need to check that.  Do that and you do not need to add:
+>>>>>>
+>>>>>> It doesn't matter if you do it in there of after the fact, since the
+>>>>>> "lock" (RCU) is being held across the call. See my original suggestion
+>>>>>> here:
+>>>>>>
+>>>>>> https://lkml.org/lkml/2010/12/17/275
+>>>>>
+>>>>> Ok, that's fine, just do it without adding that kref function and I have
+>>>>> no objection :)
+>>>>
+>>>> Why? The code is perfectly fine. I originally objected to making an API
+>>>> like this for simple reference counting - seems I was right. Please
+>>>> actually look at the code and use. Alexey asked whether this was a toy
+>>>> API or a real one, I'd like to know that as well. If this is meant just
+>>>> for very basic get/put references, fine, then document that. But then
+>>>> what's the point of having this API in the first place?
+>>>
+>>> The point is that you shouldn't have to roll your own reference count
+>>> code all over the place, 99% of the time, you should just use the
+>>> debugged, and documented, interface that the kernel provides with the
+>>> kref interface.
+>>>
+>>> As for it being a "toy", it properly handles a very large majority of
+>>> the kernel reference counting logic today, in a race-free manner, so I
+>>> would not call that a "toy" at all.
+>>
+>> Dunno, then perhaps pointless. It's not like the API is saving lots of
+>> typing or easier to use than just atomics, imho.
 > 
-> Sascha Hauer a écrit :
-> > The following series adds i.MX51 framebuffer support based on the IPUv3. It
-> > is not perfect but I decided it is good enough to open it for a wider audience
-> > and collect first reviews. I tested this on a babbage board using both outputs
-> > (VGA/DVI) with different resolutions up to 1680x1050 and different colour depths.
-> > I also tested it on one custom board using a fixed display setting.
-> >   
-> This driver is also working fine for me on a custom i.MX51 board with a
-> 800x480 18 bits TFT LCD (16bpp mode).
+> Remember what Andrew said when you complained about this last time?
+> I'll paraphrase:
+> 	When we see someone use an atomic value for a reference count,
+> 	we then need to go audit the code to make sure they got the
+> 	flushing right, and all the other little stuff you need to do in
+> 	order to ensure the code works properly.
 > 
-> The only strange thing I noticed was a kind of uggly sprite/artefact
-> (32x32, I would say) appearing at the same time as the Linux console. I
-> think it may be related to a hardware cursor badly (?) initialised, but
-> I didn't find a fix yet.
-> It disappears when I launch a graphical application (Qt or SDL).
+> 	If you use a kref, then we know that all is correct, and we can
+> 	then focus on how the kref is used (very easy to audit) and
+> 	worry about the rest of the code.  It saves us time as
+> 	reviewers and maintainers also.
 
-In the top left corner?  That'll be the linux penguin logo, and if it's
-not coming out correctly, your framebuffer driver is badly broken.
-Maybe your RGB bitfield information or visual is wrong?
+And I agree with that. Which is even more reason to add advanced
+functionality to it, instead of just bog basic stuff. It's not like
+basic reference counts are black magic by any stretch of the
+imagination. If you just document with kerneldoc, there's a chance that
+people will actually read the documentation.
+
+>>> Just use it properly.  As this patch series points out, adding this type
+>>
+>> By adding pointless locks?
+> 
+> No.
+
+Then how would you suggest to use it properly, giving the context of
+this thread? Did you read more of the code than just the single kref
+function that was added?
+
+>> Your suggestion of doing the referencing
+>> inside the function being called is moot, since RCU is held off over the
+>> call. The point of the addition to the API is to _not_ grab a reference
+>> if someone has done the final put. We know that the RCU grace period has
+>> not ended, so the kref is valid. But if it is going away _in the future_
+>> after we drop the part lock, then we don't want a reference to it.
+>>
+>> So to "use it properly", I would have to slow down a fast path. No
+>> thanks.
+> 
+> Then don't use it.  a kref is NOT for a fast path, use RCU for that.
+> Heck, an atomic value is also not good for a fast path also, as it
+> causes major stalls, so you might want to reconsider not even using that
+> if you are thinking you should roll your own.
+
+There's a major difference between needing a reference count in a fast
+path, or needing a reference count and screwing locking just to be able
+to do that.
+
+>>> of function to the api is not a good idea, as it will be incorrect when
+>>> used.
+>>
+>> The code is fine, the use is fine. I think the only thing we have
+>> established here is that Jerome made the mistake of using the kref API
+>> for this. I'll rewrite that part to handle its own references.
+> 
+> Yes, that is true.  If you are already using RCU, then by all means,
+> don't use a kref.  There are lots of reference counts in the kernel that
+> don't use a kref, nor should they.
+
+I'll do that.
+
+-- 
+Jens Axboe
+
