@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856Ab1AGAVw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 19:21:52 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:53967 "EHLO smtps.tip.net.au"
+	id S1755244Ab1AFXxy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 18:53:54 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:60083 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753695Ab1AGAVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 19:21:51 -0500
-Date: Fri, 7 Jan 2011 11:21:43 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build warning after merge of the ia64 tree
-Message-Id: <20110107112143.2960451d.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__7_Jan_2011_11_21_43_+1100_SEMz5nL+hln/nI55"
+	id S1755174Ab1AFXxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 18:53:50 -0500
+Date: Fri, 7 Jan 2011 00:53:32 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] scheduler changes for v2.6.38
+Message-ID: <20110106235332.GA15940@elte.hu>
+References: <20110106092833.GA16125@elte.hu>
+ <AANLkTinotRxScOHEb0HgFgSpGPkq_6jKTv5CfvnQM=ee@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinotRxScOHEb0HgFgSpGPkq_6jKTv5CfvnQM=ee@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__7_Jan_2011_11_21_43_+1100_SEMz5nL+hln/nI55
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Tony,
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-After merging the ia64 tree, today's linux-next build (x86_64
-allmodconfig) produced this warning:
+> Ingo, can we please not do things like this:
+> 
+> > diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
+> > index 155a415..562c56e 100644
+> > --- a/kernel/trace/trace_selftest.c
+> > +++ b/kernel/trace/trace_selftest.c
+> > @@ -558,7 +558,7 @@ trace_selftest_startup_nop(struct tracer *trace, struct trace_array *tr)
+> >  static int trace_wakeup_test_thread(void *data)
+> >  {
+> >        /* Make this a RT thread, doesn't need to be too high */
+> > -       struct sched_param param = { .sched_priority = 5 };
+> > +       static struct sched_param param = { .sched_priority = 5 };
+> >        struct completion *x = data;
+> >
+> >        sched_setscheduler(current, SCHED_FIFO, &param);
+> > diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> > index 5b08215..c812c49 100644
+> > --- a/kernel/watchdog.c
+> > +++ b/kernel/watchdog.c
+> > @@ -307,7 +307,7 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+> >  */
+> >  static int watchdog(void *unused)
+> >  {
+> > -       struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
+> > +       static struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
+> >        struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
+> >
+> >        sched_setscheduler(current, SCHED_FIFO, &param);
+> 
+> It's just nasty and horrible.
 
-fs/pstore/inode.c: In function 'init_pstore_fs':
-fs/pstore/inode.c:266: warning: ignoring return value of 'sysfs_create_file=
-', declared with attribute warn_unused_result
+Agreed, and i keep flaming people every time i notice it. Alas here i didnt notice 
+it and it slipped through. Will fix it.
 
-This warning has been there for some time, I just didn't notice it among
-all the other earnings we get :-(
+Thanks,
 
-Caused by commit ca01d6dd2d7a2652000307520777538740efc286 ("pstore: new
-filesystem interface to platform persistent storage").
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__7_Jan_2011_11_21_43_+1100_SEMz5nL+hln/nI55
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNJlyXAAoJEDMEi1NhKgbskXIH/ieuiiNTAJZOz96I6Dy/S2cl
-8Ev6ON6rcaAqlv6pVYa0bvLn/CUEwTh5laKi/XsgC7+/0Aqfx0m7Xo2OzrTYHSPA
-vnOSXl4dMQ/g1UszEg42ejlp4eFqlh6ZmGQDS7cyI8UR6CMVMXVDs0G7HUJ+RM5b
-AWuVv+NyGTiHdJa4eF4EaNheAnTeknN6OBTh7Qmexy8tOc/JzmuwjVtrZYDI0/Sn
-4RPjfwh2fp2gdggSTibjs827iEAO3TtlAmhvoN9abzMCitFRDphKWMNboJesby66
-e59+WyLOV5aqofb3guzPrrKVNe+Ta/Lf46204xbZ1sxDj2YoaZDCZtrIOa8cRZc=
-=wUv8
------END PGP SIGNATURE-----
-
---Signature=_Fri__7_Jan_2011_11_21_43_+1100_SEMz5nL+hln/nI55--
+	Ingo
