@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530Ab1AFTCs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 14:02:48 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:32894 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751612Ab1AFTCr convert rfc822-to-8bit (ORCPT
+	id S1752694Ab1AFTLR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 14:11:17 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49003
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751153Ab1AFTLQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 14:02:47 -0500
-MIME-Version: 1.0
-In-Reply-To: <m1bp3uifln.fsf@fess.ebiederm.org>
-References: <1294302325-22593-1-git-send-email-amwang@redhat.com>
-	<m1bp3uifln.fsf@fess.ebiederm.org>
-Date: Thu, 6 Jan 2011 14:02:47 -0500
-Message-ID: <AANLkTinLhAuSny735kofonAkaqwJvjjDHMUed_r03rVc@mail.gmail.com>
-Subject: Re: [Patch] kexec_load: check CAP_SYS_MODULE
-From: Eric Paris <eparis@parisplace.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Amerigo Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
-        kexec@lists.infradead.org, eparis@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 6 Jan 2011 14:11:16 -0500
+Date: Thu, 06 Jan 2011 11:11:48 -0800 (PST)
+Message-Id: <20110106.111148.189705155.davem@davemloft.net>
+To: khc@pm.waw.pl
+Cc: axel.lin@gmail.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] net: ixp4xx_eth: Return proper error for eth_init_one
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <m3bp3vi6v9.fsf@intrepid.localdomain>
+References: <1294205046.8294.2.camel@mola>
+	<m3bp3vi6v9.fsf@intrepid.localdomain>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 6, 2011 at 3:47 AM, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> Amerigo Wang <amwang@redhat.com> writes:
->
->> Eric pointed out that kexec_load() actually allows you to
->> run any code you want in ring0, this is more like CAP_SYS_MODULE.
->
-> Let me get this straight you want to make the permission checks
-> less stringent by allowing either CAP_SYS_MODULE or CAP_SYS_BOOT?
+From: Krzysztof Halasa <khc@pm.waw.pl>
+Date: Wed, 05 Jan 2011 18:43:22 +0100
 
-Nope, read my patch again.  It actually requires BOTH of them.
-
-> CAP_SYS_BOOT is the correct capability.  Sure you can run any
-> code but only after rebooting.  I don't see how this differs
-> from any other reboot scenario.
-
-The difference is that after a reboot the bootloader and the system
-control what code is run.  kexec_load() immediately runs the new
-kernel which is not controlled by the bootloader or by the system.
-Imagine a situation where the bootloader and the /boot directory are
-RO (enforced by hardware).   kexec_load() would let you run any kernel
-code you want on the box whereas reboot would not.
-
->> Reported-by: Eric Paris <eparis@redhat.com>
->> Signed-off-by: WANG Cong <amwang@redhat.com>
+> Axel Lin <axel.lin@gmail.com> writes:
+> 
+>> Return PTR_ERR(port->phydev) instead of 1 if phy_connect failed.
 >>
->> ---
->> diff --git a/kernel/kexec.c b/kernel/kexec.c
->> index b55045b..c30d613 100644
->> --- a/kernel/kexec.c
->> +++ b/kernel/kexec.c
->> @@ -945,7 +945,7 @@ SYSCALL_DEFINE4(kexec_load, unsigned long, entry, unsigned long, nr_segments,
->>       int result;
->>
->>       /* We only trust the superuser with rebooting the system. */
->> -     if (!capable(CAP_SYS_BOOT))
->> +     if (!capable(CAP_SYS_BOOT) || !capable(CAP_SYS_MODULE))
->>               return -EPERM;
->>
->>       /*
+>> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> 
+>> --- a/drivers/net/arm/ixp4xx_eth.c
+>> +++ b/drivers/net/arm/ixp4xx_eth.c
+>> @@ -1229,8 +1229,10 @@ static int __devinit eth_init_one(struct platform_device *pdev)
+>>  	snprintf(phy_id, MII_BUS_ID_SIZE + 3, PHY_ID_FMT, "0", plat->phy);
+>>  	port->phydev = phy_connect(dev, phy_id, &ixp4xx_adjust_link, 0,
+>>  				   PHY_INTERFACE_MODE_MII);
+>> -	if ((err = IS_ERR(port->phydev)))
+>> +	if (IS_ERR(port->phydev)) {
+>> +		err = PTR_ERR(port->phydev);
+>>  		goto err_free_mem;
+>> +	}
+>>  
+>>  	port->phydev->irq = PHY_POLL;
+> 
+> Right. Thanks.
+> 
+> Acked-by: Krzysztof Halasa <khc@pm.waw.pl>
+
+I'll apply this, thanks.
