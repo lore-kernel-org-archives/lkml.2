@@ -1,48 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751893Ab1AFI1W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 03:27:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54165 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751030Ab1AFI1V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 03:27:21 -0500
-Message-ID: <4D257CE5.1030001@redhat.com>
-Date: Thu, 06 Jan 2011 16:27:17 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1751400Ab1AFIaI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 03:30:08 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:24707 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab1AFIaG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 03:30:06 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=PHNw664ySArzF+rck9fDsDHGsD/OZ/7DTNfvT09VQwSPPoPvE7+9LtrNyQBvdRLiIQ
+         Vz5+cWscYEAzxLP4xeZg==
+Date: Thu, 6 Jan 2011 00:29:58 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Pekka Enberg <penberg@kernel.org>
+cc: Bart Van Assche <bvanassche@acm.org>, Christoph Lameter <cl@linux.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] slub: Fix sysfs circular locking dependency
+In-Reply-To: <AANLkTinQMahgVrWLxR0J6Zbh-_SPjxVJ-wuZt8B5TNjc@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1101060019140.25879@chino.kir.corp.google.com>
+References: <1294172717-6044-1-git-send-email-penberg@kernel.org> <alpine.DEB.2.00.1101041939030.27551@chino.kir.corp.google.com> <alpine.DEB.2.00.1101050943120.13032@router.home> <alpine.DEB.2.00.1101051108520.14761@router.home>
+ <AANLkTinft80dXqE-U=YDB23d9=BgXLCxJzgiA_gF4cVL@mail.gmail.com> <AANLkTinCZzJWYGnxXq_Nwv7QSkEV4Tg-te-1y0PCeRRY@mail.gmail.com> <AANLkTinQMahgVrWLxR0J6Zbh-_SPjxVJ-wuZt8B5TNjc@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Amerigo Wang <amwang@redhat.com>
-CC: linux-kernel@vger.kernel.org, Eric Biederman <ebiederm@xmission.com>,
-        kexec@lists.infradead.org, Eric Paris <eparis@redhat.com>
-Subject: Re: [Patch] kexec_load: check CAP_SYS_MODULE
-References: <1294302325-22593-1-git-send-email-amwang@redhat.com>
-In-Reply-To: <1294302325-22593-1-git-send-email-amwang@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="531368966-2142406274-1294302599=:25879"
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Forgot Cc'ing Eric Paris, adding.)
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> Eric pointed out that kexec_load() actually allows you to
-> run any code you want in ring0, this is more like CAP_SYS_MODULE.
->
-> Reported-by: Eric Paris<eparis@redhat.com>
-> Signed-off-by: WANG Cong<amwang@redhat.com>
->
-> ---
-> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> index b55045b..c30d613 100644
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -945,7 +945,7 @@ SYSCALL_DEFINE4(kexec_load, unsigned long, entry, unsigned long, nr_segments,
->   	int result;
->
->   	/* We only trust the superuser with rebooting the system. */
-> -	if (!capable(CAP_SYS_BOOT))
-> +	if (!capable(CAP_SYS_BOOT) || !capable(CAP_SYS_MODULE))
->   		return -EPERM;
->
->   	/*
+--531368966-2142406274-1294302599=:25879
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
+On Wed, 5 Jan 2011, Pekka Enberg wrote:
+
+> >> > Subject: slub: Avoid use of slub_lock in show_slab_objects()
+> >> >
+> >> > The purpose of the locking is to prevent removal and additions
+> >> > of nodes when statistics are gathered for a slab cache. So we
+> >> > need to avoid racing with memory hotplug functionality.
+> >> >
+> >> > It is enough to take the memory hotplug locks there instead
+> >> > of the slub_lock.
+> >> >
+> >> >
+> >> > Signed-off-by: Christoph Lameter <cl@linux.com>
+> >> >
+> >> > ---
+> >> >  mm/slub.c |    4 ++--
+> >> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> >> >
+> >> > Index: linux-2.6/mm/slub.c
+> >> > ===================================================================
+> >> > --- linux-2.6.orig/mm/slub.c    2011-01-05 09:55:34.000000000 -0600
+> >> > +++ linux-2.6/mm/slub.c 2011-01-05 09:56:27.000000000 -0600
+> >> > @@ -3821,7 +3821,7 @@ static ssize_t show_slab_objects(struct
+> >> >                }
+> >> >        }
+> >> >
+> >> > -       down_read(&slub_lock);
+> >> > +       lock_memory_hotplug();
+> >> >  #ifdef CONFIG_SLUB_DEBUG
+> >> >        if (flags & SO_ALL) {
+> >> >                for_each_node_state(node, N_NORMAL_MEMORY) {
+> >> > @@ -3862,7 +3862,7 @@ static ssize_t show_slab_objects(struct
+> >> >                        x += sprintf(buf + x, " N%d=%lu",
+> >> >                                        node, nodes[node]);
+> >> >  #endif
+> >> > -       up_read(&slub_lock);
+> >> > +       unlock_memory_hotplug();
+> >> >        kfree(nodes);
+> >> >        return x + sprintf(buf + x, "\n");
+> >> >  }
+> >>
+> >> Makes sense. Bart, does this fix the problem for you?
+> >
+> > The action sequence that had triggered this sequence (invoke
+> > kmem_cache_create(); read all files in /sys/kernel/slab; invoke
+> > kmem_cache_destroy()) does now pass without triggering lock inversion
+> > complaints.
+> 
+> Thanks for testing. David, does Christoph's patch look OK to you?
+> 
+
+I think it certainly fixes the problem at hand, but I think we also need 
+to do lock_memory_hotplug() for memory hotplug in 
+slab_mem_going_online_callback() to make show_slab_objects() consistent 
+when being printed during concurrent node hot-add since it sets bits in 
+N_NORMAL_MEMORY.  The MEM_OFFLINE callback is already handled at a higher 
+level by taking the lock in the hotplug layer, but we need to protect the 
+MEM_GOING_ONLINE and MEM_CANCEL_ONLINE callbacks if slub_lock is no longer 
+used to protect node arrays (which was admittedly always convenient since 
+it's typically associated with an iteration through slab_caches).
+--531368966-2142406274-1294302599=:25879--
