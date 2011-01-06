@@ -1,104 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247Ab1AFQ3E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 11:29:04 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:39643 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab1AFQ3C convert rfc822-to-8bit (ORCPT
+	id S1752249Ab1AFQad (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 11:30:33 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34655 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751538Ab1AFQac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 11:29:02 -0500
-Subject: Re: [RFC][PATCH 14/18] sched: Remove rq->lock from the first half
- of ttwu()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Chris Mason <chris.mason@oracle.com>
-Cc: Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
-        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110104150103.012710349@chello.nl>
-References: <20110104145929.772813816@chello.nl>
-	 <20110104150103.012710349@chello.nl>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 06 Jan 2011 17:29:13 +0100
-Message-ID: <1294331353.2016.378.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 6 Jan 2011 11:30:32 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110106104816.GA4026@tiehlicka.suse.cz>
+References: <AANLkTikKA-nStyNjkdsVa8hd=PFQR3tYTJh3MnfpNkD8@mail.gmail.com> <20110106104816.GA4026@tiehlicka.suse.cz>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 6 Jan 2011 08:29:22 -0800
+Message-ID: <AANLkTi=aTKFVO8Lx=fDUGrxVaQL73XrsxoOP7-qYKksb@mail.gmail.com>
+Subject: Re: Linux 2.6.37
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-04 at 15:59 +0100, Peter Zijlstra wrote:
-> Index: linux-2.6/kernel/sched_fair.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/sched_fair.c
-> +++ linux-2.6/kernel/sched_fair.c
-> @@ -1343,8 +1343,7 @@ static void task_waking_fair(struct task
->         struct sched_entity *se = &p->se;
->         struct cfs_rq *cfs_rq = cfs_rq_of(se);
->  
-> -       lockdep_assert_held(&task_rq(p)->lock);
-> -
-> +       // XXX racy on 32bit
->         se->vruntime -= cfs_rq->min_vruntime;
->  } 
+On Thu, Jan 6, 2011 at 2:48 AM, Michal Hocko <mhocko@suse.cz> wrote:
+>
+> It seems that there is still a regression for intel graphic cards
+> backlight. One report is https://bugzilla.kernel.org/show_bug.cgi?id=22672.
+> I can reproduce the problem easily by:
+> xset dpms force standby; sleep 3s; xset dpms force on
+>
+> backlight doesn't get up (there is really dark picture though which
+> doesn't get brighter by function keys which work normally) after dpms on
+> until I close and open lid.
 
+Hmm. That commit no longer reverts cleanly, so it's not trivial to
+test whether all those things are exactly the same issue. It's been
+bisected in the bugzilla entry, but it would be good to verify that
+yes, reverting it really does fix the issue, and your issue is the
+exact same one.
 
-Best I can come up with is something like this:
+Chris, any ideas?
 
-
-Index: linux-2.6/kernel/sched.c
-===================================================================
---- linux-2.6.orig/kernel/sched.c
-+++ linux-2.6/kernel/sched.c
-@@ -315,6 +315,9 @@ struct cfs_rq {
- 
- 	u64 exec_clock;
- 	u64 min_vruntime;
-+#ifndef CONFIG_64BIT
-+	u64 min_vruntime_copy;
-+#endif
- 
- 	struct rb_root tasks_timeline;
- 	struct rb_node *rb_leftmost;
-Index: linux-2.6/kernel/sched_fair.c
-===================================================================
---- linux-2.6.orig/kernel/sched_fair.c
-+++ linux-2.6/kernel/sched_fair.c
-@@ -365,6 +365,10 @@ static void update_min_vruntime(struct c
- 	}
- 
- 	cfs_rq->min_vruntime = max_vruntime(cfs_rq->min_vruntime, vruntime);
-+#ifndef CONFIG_64BIT
-+	smp_wmb();
-+	cfs_rq->min_vruntime_copy = cfs_rq->min_vruntime;
-+#endif
- }
- 
- /*
-@@ -1342,9 +1346,21 @@ static void task_waking_fair(struct task
- {
- 	struct sched_entity *se = &p->se;
- 	struct cfs_rq *cfs_rq = cfs_rq_of(se);
-+	u64 min_vruntime;
- 
--	// XXX racy on 32bit
--	se->vruntime -= cfs_rq->min_vruntime;
-+#ifndef CONFIG_64BIT
-+	u64 min_vruntime_copy;
-+
-+	do {
-+		min_vruntime_copy = cfs_rq->min_vruntime_copy;
-+		smp_rmb();
-+		min_vruntime = cfs_rq->min_vruntime;
-+	} while (min_vruntime != min_vruntime_copy);
-+#else
-+	min_vruntime = cfs_rq->min_vruntime;
-+#endif
-+
-+	se->vruntime -= min_vruntime;
- }
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
-
+                       Linus
