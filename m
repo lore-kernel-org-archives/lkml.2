@@ -1,871 +1,1005 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752112Ab1AFJd7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 04:33:59 -0500
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:51906 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735Ab1AFJd4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 04:33:56 -0500
-From: "NickCheng" <nick.cheng@areca.com.tw>
-To: <James.Bottomley@suse.de>, "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: "'LKML'" <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>
-References: <4D1F5A17.4010807@gmail.com>
-Subject: Fix the issue of system hangup after commands timeout on ARC-1200(Type_B controller)
-Date: Thu, 6 Jan 2011 17:32:41 +0800
-Message-ID: <DDD2521416374E20B1DA60AC6177C279@arecaaebe11fae>
+	id S1752147Ab1AFJea (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 04:34:30 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:50158 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752096Ab1AFJe0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 04:34:26 -0500
+Date: Thu, 6 Jan 2011 10:34:13 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] timer changes for v2.6.38
+Message-ID: <20110106093413.GA16597@elte.hu>
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_0006_01CBADC7.BB4576A0"
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: Acup00RXoRz5ohSuR26YtfM6g8/4fgDsDXhA
-In-Reply-To: <4D1F5A17.4010807@gmail.com>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+Linus,
 
-------=_NextPart_000_0006_01CBADC7.BB4576A0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Please pull the latest timers-for-linus git tree from:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git timers-for-linus
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Changli Gao (1):
+      timer: Initialize the field slack of timer_list
+
+Christoph Lameter (1):
+      timers: Use this_cpu_read
+
+John Stultz (5):
+      timers: Introduce timerlist infrastructure.
+      timers: Rename timerlist infrastructure to timerqueue
+      timers: Fixup allmodconfig build issue
+      hrtimers: Convert hrtimers to use timerlist infrastructure
+      hrtimer: fix timerqueue conversion flub
+
+Kasper Pedersen (1):
+      time: Compensate for rounding on odd-frequency clocksources
+
+Namhyung Kim (1):
+      posix-timers: Annotate lock_timer()
+
+Nikitas Angelinas (1):
+      time: Use ARRAY_SIZE macro in timecompare.c
+
+Phil Carmody (1):
+      timer: Permit statically-declared work with deferrable timers
+
+Richard Kennedy (1):
+      timer_list: Remove alignment padding on 64 bit when CONFIG_TIMER_STATS
+
+Thomas Gleixner (2):
+      timerqueue: Make timerqueue_getnext() static inline
+      MAINTAINERS: Update timer related entries
+
+Yong Zhang (4):
+      timer: Make try_to_del_timer_sync() the same on SMP and UP
+      timer: Del_timer_sync() can be used in softirq context
+      timer: Warn when del_timer_sync() is called in hardirq context
+      hrtimer: Remove stale comment on curr_timer
 
 
-Fix the issue of system hangup after commands timeout on ARC-1200
+ MAINTAINERS                |   16 +++++++
+ include/linux/hrtimer.h    |   33 ++++++-------
+ include/linux/timer.h      |   32 ++++++++++++-
+ include/linux/timerqueue.h |   50 ++++++++++++++++++++
+ include/linux/workqueue.h  |    8 +++
+ kernel/hrtimer.c           |   83 +++++++++++-----------------------
+ kernel/posix-timers.c      |   10 +++-
+ kernel/time/timecompare.c  |    5 +-
+ kernel/time/timekeeping.c  |    9 +++-
+ kernel/time/timer_list.c   |    8 ++--
+ kernel/timer.c             |   50 ++++++---------------
+ lib/Makefile               |    2 +-
+ lib/timerqueue.c           |  107 ++++++++++++++++++++++++++++++++++++++++++++
+ 13 files changed, 289 insertions(+), 124 deletions(-)
+ create mode 100644 include/linux/timerqueue.h
+ create mode 100644 lib/timerqueue.c
 
-Signed-off-by: Nick Cheng <nick.cheng@areca.com.tw>
----
-diff --git a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
-index 475c31a..77b26f5 100644
---- a/drivers/scsi/arcmsr/arcmsr.h
-+++ b/drivers/scsi/arcmsr/arcmsr.h
-@@ -2,7 +2,7 @@
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 087912a..2a1b256 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2730,6 +2730,10 @@ M:	Thomas Gleixner <tglx@linutronix.de>
+ S:	Maintained
+ F:	Documentation/timers/
+ F:	kernel/hrtimer.c
++F:	kernel/time/clockevents.c
++F:	kernel/time/tick*.*
++F:	kernel/time/timer_*.c
++F	include/linux/clockevents.h
+ F:	include/linux/hrtimer.h
  
-****************************************************************************
-***
- **        O.S   : Linux
- **   FILE NAME  : arcmsr.h
--**        BY    : Erich Chen
-+**        BY    : Nick Cheng
- **   Description: SCSI RAID Device Driver for
- **                ARECA RAID Host adapter
+ HIGH-SPEED SCC DRIVER FOR AX.25
+@@ -4986,6 +4990,18 @@ F:	drivers/media/common/saa7146*
+ F:	drivers/media/video/*7146*
+ F:	include/media/*7146*
  
-****************************************************************************
-***
-@@ -46,8 +46,12 @@
- struct device_attribute;
- /*The limit of outstanding scsi command that firmware can handle*/
- #define ARCMSR_MAX_OUTSTANDING_CMD
-256
--#define ARCMSR_MAX_FREECCB_NUM
-320
--#define ARCMSR_DRIVER_VERSION		     "Driver Version 1.20.00.15
-2010/02/02"
-+#ifdef CONFIG_XEN
-+	#define ARCMSR_MAX_FREECCB_NUM	160
-+#else
-+	#define ARCMSR_MAX_FREECCB_NUM	320
-+#endif
-+#define ARCMSR_DRIVER_VERSION		     "Driver Version 1.20.00.15
-2010/08/05"
- #define ARCMSR_SCSI_INITIATOR_ID
-255
- #define ARCMSR_MAX_XFER_SECTORS
-512
- #define ARCMSR_MAX_XFER_SECTORS_B
-4096
-@@ -60,7 +64,6 @@ struct device_attribute;
- #define ARCMSR_MAX_HBB_POSTQUEUE
-264
- #define ARCMSR_MAX_XFER_LEN
-0x26000 /* 152K */
- #define ARCMSR_CDB_SG_PAGE_LENGTH
-256 
--#define SCSI_CMD_ARECA_SPECIFIC
-0xE1
- #ifndef PCI_DEVICE_ID_ARECA_1880
- #define PCI_DEVICE_ID_ARECA_1880 0x1880
-  #endif
-diff --git a/drivers/scsi/arcmsr/arcmsr_attr.c
-b/drivers/scsi/arcmsr/arcmsr_attr.c
-index a4e04c5..acdae33 100644
---- a/drivers/scsi/arcmsr/arcmsr_attr.c
-+++ b/drivers/scsi/arcmsr/arcmsr_attr.c
-@@ -2,7 +2,7 @@
- 
-****************************************************************************
-***
- **        O.S   : Linux
- **   FILE NAME  : arcmsr_attr.c
--**        BY    : Erich Chen
-+**        BY    : Nick Cheng
- **   Description: attributes exported to sysfs and device host
- 
-****************************************************************************
-***
- ** Copyright (C) 2002 - 2005, Areca Technology Corporation All rights
-reserved
-diff --git a/drivers/scsi/arcmsr/arcmsr_hba.c
-b/drivers/scsi/arcmsr/arcmsr_hba.c
-index 17e3df4..c650310 100644
---- a/drivers/scsi/arcmsr/arcmsr_hba.c
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c
-@@ -2,7 +2,7 @@
- 
-****************************************************************************
-***
- **        O.S   : Linux
- **   FILE NAME  : arcmsr_hba.c
--**        BY    : Erich Chen
-+**        BY    : Nick Cheng
- **   Description: SCSI RAID Device Driver for
- **                ARECA RAID Host adapter
- 
-****************************************************************************
-***
-@@ -76,7 +76,7 @@ MODULE_DESCRIPTION("ARECA (ARC11xx/12xx/16xx/1880)
-SATA/SAS RAID Host Bus Adapte
- MODULE_LICENSE("Dual BSD/GPL");
- MODULE_VERSION(ARCMSR_DRIVER_VERSION);
- static int sleeptime = 10;
--static int retrycount = 30;
-+static int retrycount = 12;
- wait_queue_head_t wait_q;
- static int arcmsr_iop_message_xfer(struct AdapterControlBlock *acb,
- 					struct scsi_cmnd *cmd);
-@@ -187,7 +187,6 @@ int arcmsr_sleep_for_bus_reset(struct scsi_cmnd *cmd)
- 		if (isleep > 0) {
- 			msleep(isleep*1000);
- 		}
--		printk(KERN_NOTICE "wake-up\n");
- 		return 0;
- }
- 
-@@ -921,7 +920,6 @@ static void arcmsr_report_ccb_state(struct
-AdapterControlBlock *acb,
- }
- 
- static void arcmsr_drain_donequeue(struct AdapterControlBlock *acb, struct
-CommandControlBlock *pCCB, bool error)
++TIMEKEEPING, NTP
++M:	John Stultz <johnstul@us.ibm.com>
++M:	Thomas Gleixner <tglx@linutronix.de>
++S:	Supported
++F:	include/linux/clocksource.h
++F:	include/linux/time.h
++F:	include/linux/timex.h
++F:	include/linux/timekeeping.h
++F:	kernel/time/clocksource.c
++F:	kernel/time/time*.c
++F:	kernel/time/ntp.c
++
+ TLG2300 VIDEO4LINUX-2 DRIVER
+ M:	Huang Shijie <shijie8@gmail.com>
+ M:	Kang Yong <kangyong@telegent.com>
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index fd0c1b8..330586f 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -22,7 +22,7 @@
+ #include <linux/wait.h>
+ #include <linux/percpu.h>
+ #include <linux/timer.h>
 -
++#include <linux/timerqueue.h>
+ 
+ struct hrtimer_clock_base;
+ struct hrtimer_cpu_base;
+@@ -79,8 +79,8 @@ enum hrtimer_restart {
+ 
+ /**
+  * struct hrtimer - the basic hrtimer structure
+- * @node:	red black tree node for time ordered insertion
+- * @_expires:	the absolute expiry time in the hrtimers internal
++ * @node:	timerqueue node, which also manages node.expires,
++ *		the absolute expiry time in the hrtimers internal
+  *		representation. The time is related to the clock on
+  *		which the timer is based. Is setup by adding
+  *		slack to the _softexpires value. For non range timers
+@@ -101,8 +101,7 @@ enum hrtimer_restart {
+  * The hrtimer structure must be initialized by hrtimer_init()
+  */
+ struct hrtimer {
+-	struct rb_node			node;
+-	ktime_t				_expires;
++	struct timerqueue_node		node;
+ 	ktime_t				_softexpires;
+ 	enum hrtimer_restart		(*function)(struct hrtimer *);
+ 	struct hrtimer_clock_base	*base;
+@@ -141,8 +140,7 @@ struct hrtimer_sleeper {
+ struct hrtimer_clock_base {
+ 	struct hrtimer_cpu_base	*cpu_base;
+ 	clockid_t		index;
+-	struct rb_root		active;
+-	struct rb_node		*first;
++	struct timerqueue_head	active;
+ 	ktime_t			resolution;
+ 	ktime_t			(*get_time)(void);
+ 	ktime_t			softirq_time;
+@@ -158,7 +156,6 @@ struct hrtimer_clock_base {
+  * @lock:		lock protecting the base and associated clock bases
+  *			and timers
+  * @clock_base:		array of clock bases for this cpu
+- * @curr_timer:		the timer which is executing a callback right now
+  * @expires_next:	absolute time of the next event which was scheduled
+  *			via clock_set_next_event()
+  * @hres_active:	State of high resolution mode
+@@ -184,43 +181,43 @@ struct hrtimer_cpu_base {
+ 
+ static inline void hrtimer_set_expires(struct hrtimer *timer, ktime_t time)
  {
- 	int id, lun;
- 	if ((pCCB->acb != acb) || (pCCB->startdone != ARCMSR_CCB_START)) {
-@@ -948,7 +946,7 @@ static void arcmsr_drain_donequeue(struct
-AdapterControlBlock *acb, struct Comma
- 				, pCCB->startdone
- 				, atomic_read(&acb->ccboutstandingcount));
- 		  return;
--		}
+-	timer->_expires = time;
++	timer->node.expires = time;
+ 	timer->_softexpires = time;
+ }
+ 
+ static inline void hrtimer_set_expires_range(struct hrtimer *timer, ktime_t time, ktime_t delta)
+ {
+ 	timer->_softexpires = time;
+-	timer->_expires = ktime_add_safe(time, delta);
++	timer->node.expires = ktime_add_safe(time, delta);
+ }
+ 
+ static inline void hrtimer_set_expires_range_ns(struct hrtimer *timer, ktime_t time, unsigned long delta)
+ {
+ 	timer->_softexpires = time;
+-	timer->_expires = ktime_add_safe(time, ns_to_ktime(delta));
++	timer->node.expires = ktime_add_safe(time, ns_to_ktime(delta));
+ }
+ 
+ static inline void hrtimer_set_expires_tv64(struct hrtimer *timer, s64 tv64)
+ {
+-	timer->_expires.tv64 = tv64;
++	timer->node.expires.tv64 = tv64;
+ 	timer->_softexpires.tv64 = tv64;
+ }
+ 
+ static inline void hrtimer_add_expires(struct hrtimer *timer, ktime_t time)
+ {
+-	timer->_expires = ktime_add_safe(timer->_expires, time);
++	timer->node.expires = ktime_add_safe(timer->node.expires, time);
+ 	timer->_softexpires = ktime_add_safe(timer->_softexpires, time);
+ }
+ 
+ static inline void hrtimer_add_expires_ns(struct hrtimer *timer, u64 ns)
+ {
+-	timer->_expires = ktime_add_ns(timer->_expires, ns);
++	timer->node.expires = ktime_add_ns(timer->node.expires, ns);
+ 	timer->_softexpires = ktime_add_ns(timer->_softexpires, ns);
+ }
+ 
+ static inline ktime_t hrtimer_get_expires(const struct hrtimer *timer)
+ {
+-	return timer->_expires;
++	return timer->node.expires;
+ }
+ 
+ static inline ktime_t hrtimer_get_softexpires(const struct hrtimer *timer)
+@@ -230,7 +227,7 @@ static inline ktime_t hrtimer_get_softexpires(const struct hrtimer *timer)
+ 
+ static inline s64 hrtimer_get_expires_tv64(const struct hrtimer *timer)
+ {
+-	return timer->_expires.tv64;
++	return timer->node.expires.tv64;
+ }
+ static inline s64 hrtimer_get_softexpires_tv64(const struct hrtimer *timer)
+ {
+@@ -239,12 +236,12 @@ static inline s64 hrtimer_get_softexpires_tv64(const struct hrtimer *timer)
+ 
+ static inline s64 hrtimer_get_expires_ns(const struct hrtimer *timer)
+ {
+-	return ktime_to_ns(timer->_expires);
++	return ktime_to_ns(timer->node.expires);
+ }
+ 
+ static inline ktime_t hrtimer_expires_remaining(const struct hrtimer *timer)
+ {
+-    return ktime_sub(timer->_expires, timer->base->get_time());
++	return ktime_sub(timer->node.expires, timer->base->get_time());
+ }
+ 
+ #ifdef CONFIG_HIGH_RES_TIMERS
+diff --git a/include/linux/timer.h b/include/linux/timer.h
+index 38cf093..6abd913 100644
+--- a/include/linux/timer.h
++++ b/include/linux/timer.h
+@@ -24,9 +24,9 @@ struct timer_list {
+ 	int slack;
+ 
+ #ifdef CONFIG_TIMER_STATS
++	int start_pid;
+ 	void *start_site;
+ 	char start_comm[16];
+-	int start_pid;
+ #endif
+ #ifdef CONFIG_LOCKDEP
+ 	struct lockdep_map lockdep_map;
+@@ -48,12 +48,38 @@ extern struct tvec_base boot_tvec_bases;
+ #define __TIMER_LOCKDEP_MAP_INITIALIZER(_kn)
+ #endif
+ 
++/*
++ * Note that all tvec_bases are 2 byte aligned and lower bit of
++ * base in timer_list is guaranteed to be zero. Use the LSB to
++ * indicate whether the timer is deferrable.
++ *
++ * A deferrable timer will work normally when the system is busy, but
++ * will not cause a CPU to come out of idle just to service it; instead,
++ * the timer will be serviced when the CPU eventually wakes up with a
++ * subsequent non-deferrable timer.
++ */
++#define TBASE_DEFERRABLE_FLAG		(0x1)
++
+ #define TIMER_INITIALIZER(_function, _expires, _data) {		\
+ 		.entry = { .prev = TIMER_ENTRY_STATIC },	\
+ 		.function = (_function),			\
+ 		.expires = (_expires),				\
+ 		.data = (_data),				\
+ 		.base = &boot_tvec_bases,			\
++		.slack = -1,					\
++		__TIMER_LOCKDEP_MAP_INITIALIZER(		\
++			__FILE__ ":" __stringify(__LINE__))	\
 +	}
- 	arcmsr_report_ccb_state(acb, pCCB, error);
- }
++
++#define TBASE_MAKE_DEFERRED(ptr) ((struct tvec_base *)		\
++		  ((unsigned char *)(ptr) + TBASE_DEFERRABLE_FLAG))
++
++#define TIMER_DEFERRED_INITIALIZER(_function, _expires, _data) {\
++		.entry = { .prev = TIMER_ENTRY_STATIC },	\
++		.function = (_function),			\
++		.expires = (_expires),				\
++		.data = (_data),				\
++		.base = TBASE_MAKE_DEFERRED(&boot_tvec_bases),	\
+ 		__TIMER_LOCKDEP_MAP_INITIALIZER(		\
+ 			__FILE__ ":" __stringify(__LINE__))	\
+ 	}
+@@ -248,11 +274,11 @@ static inline void timer_stats_timer_clear_start_info(struct timer_list *timer)
  
-@@ -981,7 +979,7 @@ static void arcmsr_done4abort_postqueue(struct
-AdapterControlBlock *acb)
- 	case ACB_ADAPTER_TYPE_B: {
- 		struct MessageUnit_B *reg = acb->pmuB;
- 		/*clear all outbound posted Q*/
--		writel(ARCMSR_DOORBELL_INT_CLEAR_PATTERN,
-&reg->iop2drv_doorbell); /* clear doorbell interrupt */
-+		writel(ARCMSR_DOORBELL_INT_CLEAR_PATTERN,
-reg->iop2drv_doorbell); /* clear doorbell interrupt */
- 		for (i = 0; i < ARCMSR_MAX_HBB_POSTQUEUE; i++) {
- 			if ((flag_ccb = readl(&reg->done_qbuffer[i])) != 0)
-{
- 				writel(0, &reg->done_qbuffer[i]);
-@@ -1171,7 +1169,7 @@ static int arcmsr_build_ccb(struct AdapterControlBlock
-*acb,
- 	arcmsr_cdb->msgPages = arccdbsize/0x100 + (arccdbsize % 0x100 ? 1 :
-0);
- 	if ( arccdbsize > 256)
- 		arcmsr_cdb->Flags |= ARCMSR_CDB_FLAG_SGL_BSIZE;
--	if (pcmd->cmnd[0]|WRITE_6 || pcmd->cmnd[0]|WRITE_10 ||
-pcmd->cmnd[0]|WRITE_12 ){
-+	if (pcmd->sc_data_direction == DMA_TO_DEVICE) {
- 		arcmsr_cdb->Flags |= ARCMSR_CDB_FLAG_WRITE;
+ extern void add_timer(struct timer_list *timer);
+ 
++extern int try_to_del_timer_sync(struct timer_list *timer);
++
+ #ifdef CONFIG_SMP
+-  extern int try_to_del_timer_sync(struct timer_list *timer);
+   extern int del_timer_sync(struct timer_list *timer);
+ #else
+-# define try_to_del_timer_sync(t)	del_timer(t)
+ # define del_timer_sync(t)		del_timer(t)
+ #endif
+ 
+diff --git a/include/linux/timerqueue.h b/include/linux/timerqueue.h
+new file mode 100644
+index 0000000..d24aaba
+--- /dev/null
++++ b/include/linux/timerqueue.h
+@@ -0,0 +1,50 @@
++#ifndef _LINUX_TIMERQUEUE_H
++#define _LINUX_TIMERQUEUE_H
++
++#include <linux/rbtree.h>
++#include <linux/ktime.h>
++
++
++struct timerqueue_node {
++	struct rb_node node;
++	ktime_t expires;
++};
++
++struct timerqueue_head {
++	struct rb_root head;
++	struct timerqueue_node *next;
++};
++
++
++extern void timerqueue_add(struct timerqueue_head *head,
++				struct timerqueue_node *node);
++extern void timerqueue_del(struct timerqueue_head *head,
++				struct timerqueue_node *node);
++extern struct timerqueue_node *timerqueue_iterate_next(
++						struct timerqueue_node *node);
++
++/**
++ * timerqueue_getnext - Returns the timer with the earlies expiration time
++ *
++ * @head: head of timerqueue
++ *
++ * Returns a pointer to the timer node that has the
++ * earliest expiration time.
++ */
++static inline
++struct timerqueue_node *timerqueue_getnext(struct timerqueue_head *head)
++{
++	return head->next;
++}
++
++static inline void timerqueue_init(struct timerqueue_node *node)
++{
++	RB_CLEAR_NODE(&node->node);
++}
++
++static inline void timerqueue_init_head(struct timerqueue_head *head)
++{
++	head->head = RB_ROOT;
++	head->next = NULL;
++}
++#endif /* _LINUX_TIMERQUEUE_H */
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index f11100f..88238c1 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -127,12 +127,20 @@ struct execute_work {
+ 	.timer = TIMER_INITIALIZER(NULL, 0, 0),			\
  	}
- 	ccb->arc_cdb_size = arccdbsize;
-@@ -1512,7 +1510,6 @@ static void arcmsr_hba_postqueue_isr(struct
-AdapterControlBlock *acb)
- 		arcmsr_drain_donequeue(acb, pCCB, error);
- 	}
- }
+ 
++#define __DEFERRED_WORK_INITIALIZER(n, f) {			\
++	.work = __WORK_INITIALIZER((n).work, (f)),		\
++	.timer = TIMER_DEFERRED_INITIALIZER(NULL, 0, 0),	\
++	}
++
+ #define DECLARE_WORK(n, f)					\
+ 	struct work_struct n = __WORK_INITIALIZER(n, f)
+ 
+ #define DECLARE_DELAYED_WORK(n, f)				\
+ 	struct delayed_work n = __DELAYED_WORK_INITIALIZER(n, f)
+ 
++#define DECLARE_DEFERRED_WORK(n, f)				\
++	struct delayed_work n = __DEFERRED_WORK_INITIALIZER(n, f)
++
+ /*
+  * initialize a work item's function pointer
+  */
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index ce66917..7a7a206 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -516,10 +516,13 @@ hrtimer_force_reprogram(struct hrtimer_cpu_base *cpu_base, int skip_equal)
+ 
+ 	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++, base++) {
+ 		struct hrtimer *timer;
++		struct timerqueue_node *next;
+ 
+-		if (!base->first)
++		next = timerqueue_getnext(&base->active);
++		if (!next)
+ 			continue;
+-		timer = rb_entry(base->first, struct hrtimer, node);
++		timer = container_of(next, struct hrtimer, node);
++
+ 		expires = ktime_sub(hrtimer_get_expires(timer), base->offset);
+ 		/*
+ 		 * clock_was_set() has changed base->offset so the
+@@ -840,48 +843,17 @@ EXPORT_SYMBOL_GPL(hrtimer_forward);
+ static int enqueue_hrtimer(struct hrtimer *timer,
+ 			   struct hrtimer_clock_base *base)
+ {
+-	struct rb_node **link = &base->active.rb_node;
+-	struct rb_node *parent = NULL;
+-	struct hrtimer *entry;
+-	int leftmost = 1;
 -
- static void arcmsr_hbb_postqueue_isr(struct AdapterControlBlock *acb)
- {
- 	uint32_t index;
-@@ -2107,10 +2104,6 @@ static int arcmsr_queue_command_lck(struct scsi_cmnd
-*cmd,
- 	if (atomic_read(&acb->ccboutstandingcount) >=
- 			ARCMSR_MAX_OUTSTANDING_CMD)
- 		return SCSI_MLQUEUE_HOST_BUSY;
--	if ((scsicmd == SCSI_CMD_ARECA_SPECIFIC)) {
--		printk(KERN_NOTICE "Receiveing SCSI_CMD_ARECA_SPECIFIC
-command..\n");
--		return 0;
--	}
- 	ccb = arcmsr_get_freeccb(acb);
- 	if (!ccb)
- 		return SCSI_MLQUEUE_HOST_BUSY;
-@@ -2394,6 +2387,7 @@ static int arcmsr_polling_hbb_ccbdone(struct
-AdapterControlBlock *acb,
- 	int index, rtn;
- 	bool error;
- 	polling_hbb_ccb_retry:
-+
- 	poll_count++;
- 	/* clear doorbell interrupt */
- 	writel(ARCMSR_DOORBELL_INT_CLEAR_PATTERN, reg->iop2drv_doorbell);
-@@ -2664,6 +2658,7 @@ static void arcmsr_request_hba_device_map(struct
-AdapterControlBlock *acb)
- {
- 	struct MessageUnit_A __iomem *reg = acb->pmuA;
- 	if (unlikely(atomic_read(&acb->rq_map_token) == 0) ||
-((acb->acb_flags & ACB_F_BUS_RESET) != 0 ) || ((acb->acb_flags &
-ACB_F_ABORT) != 0 )){
-+		mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6
-* HZ));
- 		return;
- 	} else {
- 		acb->fw_flag = FW_NORMAL;
-@@ -2671,8 +2666,10 @@ static void arcmsr_request_hba_device_map(struct
-AdapterControlBlock *acb)
- 			atomic_set(&acb->rq_map_token, 16);
- 		}
- 		atomic_set(&acb->ante_token_value,
-atomic_read(&acb->rq_map_token));
--		if (atomic_dec_and_test(&acb->rq_map_token))
-+		if (atomic_dec_and_test(&acb->rq_map_token)) {
-+			mod_timer(&acb->eternal_timer, jiffies +
-msecs_to_jiffies(6 * HZ));
- 			return;
-+		}
- 		writel(ARCMSR_INBOUND_MESG0_GET_CONFIG,
-&reg->inbound_msgaddr0);
- 		mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6
-* HZ));
- 	}
-@@ -2683,15 +2680,18 @@ static void arcmsr_request_hbb_device_map(struct
-AdapterControlBlock *acb)
- {
- 	struct MessageUnit_B __iomem *reg = acb->pmuB;
- 	if (unlikely(atomic_read(&acb->rq_map_token) == 0) ||
-((acb->acb_flags & ACB_F_BUS_RESET) != 0 ) || ((acb->acb_flags &
-ACB_F_ABORT) != 0 )){
-+		mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6
-* HZ));
- 		return;
- 	} else {
- 		acb->fw_flag = FW_NORMAL;
- 		if (atomic_read(&acb->ante_token_value) ==
-atomic_read(&acb->rq_map_token)) {
--			atomic_set(&acb->rq_map_token,16);
-+			atomic_set(&acb->rq_map_token, 16);
- 		}
- 		atomic_set(&acb->ante_token_value,
-atomic_read(&acb->rq_map_token));
--		if(atomic_dec_and_test(&acb->rq_map_token))
-+		if(atomic_dec_and_test(&acb->rq_map_token)) {
-+			mod_timer(&acb->eternal_timer, jiffies +
-msecs_to_jiffies(6 * HZ));
- 			return;
-+		}
- 		writel(ARCMSR_MESSAGE_GET_CONFIG, reg->drv2iop_doorbell);
- 		mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6
-* HZ));
- 	}
-@@ -2702,6 +2702,7 @@ static void arcmsr_request_hbc_device_map(struct
-AdapterControlBlock *acb)
- {
- 	struct MessageUnit_C __iomem *reg = acb->pmuC;
- 	if (unlikely(atomic_read(&acb->rq_map_token) == 0) ||
-((acb->acb_flags & ACB_F_BUS_RESET) != 0) || ((acb->acb_flags & ACB_F_ABORT)
-!= 0)) {
-+		mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6
-* HZ));
- 		return;
- 	} else {
- 		acb->fw_flag = FW_NORMAL;
-@@ -2709,8 +2710,10 @@ static void arcmsr_request_hbc_device_map(struct
-AdapterControlBlock *acb)
- 			atomic_set(&acb->rq_map_token, 16);
- 		}
- 		atomic_set(&acb->ante_token_value,
-atomic_read(&acb->rq_map_token));
--		if (atomic_dec_and_test(&acb->rq_map_token))
-+		if (atomic_dec_and_test(&acb->rq_map_token)) {
-+			mod_timer(&acb->eternal_timer, jiffies +
-msecs_to_jiffies(6 * HZ));
- 			return;
-+		}
- 		writel(ARCMSR_INBOUND_MESG0_GET_CONFIG,
-&reg->inbound_msgaddr0);
- 		writel(ARCMSR_HBCMU_DRV2IOP_MESSAGE_CMD_DONE,
-&reg->inbound_doorbell);
- 		mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6
-* HZ));
-@@ -2898,6 +2901,8 @@ static uint8_t arcmsr_iop_reset(struct
-AdapterControlBlock *acb)
- 	uint32_t intmask_org;
- 	uint8_t rtnval = 0x00;
- 	int i = 0;
-+	unsigned long flags;
-+
- 	if (atomic_read(&acb->ccboutstandingcount) != 0) {
- 		/* disable all outbound interrupt */
- 		intmask_org = arcmsr_disable_outbound_ints(acb);
-@@ -2908,7 +2913,12 @@ static uint8_t arcmsr_iop_reset(struct
-AdapterControlBlock *acb)
- 		for (i = 0; i < ARCMSR_MAX_FREECCB_NUM; i++) {
- 			ccb = acb->pccb_pool[i];
- 			if (ccb->startdone == ARCMSR_CCB_START) {
--				arcmsr_ccb_complete(ccb);
-+				scsi_dma_unmap(ccb->pcmd);
-+				ccb->startdone = ARCMSR_CCB_DONE;
-+				ccb->ccb_flags = 0;
-+				spin_lock_irqsave(&acb->ccblist_lock,
-flags);
-+				list_add_tail(&ccb->list,
-&acb->ccb_free_list);
-+				spin_unlock_irqrestore(&acb->ccblist_lock,
-flags);
- 			}
- 		}
- 		atomic_set(&acb->ccboutstandingcount, 0);
-@@ -2921,8 +2931,7 @@ static uint8_t arcmsr_iop_reset(struct
-AdapterControlBlock *acb)
+ 	debug_activate(timer);
  
- static int arcmsr_bus_reset(struct scsi_cmnd *cmd)
+-	/*
+-	 * Find the right place in the rbtree:
+-	 */
+-	while (*link) {
+-		parent = *link;
+-		entry = rb_entry(parent, struct hrtimer, node);
+-		/*
+-		 * We dont care about collisions. Nodes with
+-		 * the same expiry time stay together.
+-		 */
+-		if (hrtimer_get_expires_tv64(timer) <
+-				hrtimer_get_expires_tv64(entry)) {
+-			link = &(*link)->rb_left;
+-		} else {
+-			link = &(*link)->rb_right;
+-			leftmost = 0;
+-		}
+-	}
+-
+-	/*
+-	 * Insert the timer to the rbtree and check whether it
+-	 * replaces the first pending timer
+-	 */
+-	if (leftmost)
+-		base->first = &timer->node;
++	timerqueue_add(&base->active, &timer->node);
+ 
+-	rb_link_node(&timer->node, parent, link);
+-	rb_insert_color(&timer->node, &base->active);
+ 	/*
+ 	 * HRTIMER_STATE_ENQUEUED is or'ed to the current state to preserve the
+ 	 * state of a possibly running callback.
+ 	 */
+ 	timer->state |= HRTIMER_STATE_ENQUEUED;
+ 
+-	return leftmost;
++	return (&timer->node == base->active.next);
+ }
+ 
+ /*
+@@ -901,12 +873,7 @@ static void __remove_hrtimer(struct hrtimer *timer,
+ 	if (!(timer->state & HRTIMER_STATE_ENQUEUED))
+ 		goto out;
+ 
+-	/*
+-	 * Remove the timer from the rbtree and replace the first
+-	 * entry pointer if necessary.
+-	 */
+-	if (base->first == &timer->node) {
+-		base->first = rb_next(&timer->node);
++	if (&timer->node == timerqueue_getnext(&base->active)) {
+ #ifdef CONFIG_HIGH_RES_TIMERS
+ 		/* Reprogram the clock event device. if enabled */
+ 		if (reprogram && hrtimer_hres_active()) {
+@@ -919,7 +886,7 @@ static void __remove_hrtimer(struct hrtimer *timer,
+ 		}
+ #endif
+ 	}
+-	rb_erase(&timer->node, &base->active);
++	timerqueue_del(&base->active, &timer->node);
+ out:
+ 	timer->state = newstate;
+ }
+@@ -1123,11 +1090,13 @@ ktime_t hrtimer_get_next_event(void)
+ 	if (!hrtimer_hres_active()) {
+ 		for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++, base++) {
+ 			struct hrtimer *timer;
++			struct timerqueue_node *next;
+ 
+-			if (!base->first)
++			next = timerqueue_getnext(&base->active);
++			if (!next)
+ 				continue;
+ 
+-			timer = rb_entry(base->first, struct hrtimer, node);
++			timer = container_of(next, struct hrtimer, node);
+ 			delta.tv64 = hrtimer_get_expires_tv64(timer);
+ 			delta = ktime_sub(delta, base->get_time());
+ 			if (delta.tv64 < mindelta.tv64)
+@@ -1157,6 +1126,7 @@ static void __hrtimer_init(struct hrtimer *timer, clockid_t clock_id,
+ 
+ 	timer->base = &cpu_base->clock_base[clock_id];
+ 	hrtimer_init_timer_hres(timer);
++	timerqueue_init(&timer->node);
+ 
+ #ifdef CONFIG_TIMER_STATS
+ 	timer->start_site = NULL;
+@@ -1270,14 +1240,14 @@ retry:
+ 
+ 	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
+ 		ktime_t basenow;
+-		struct rb_node *node;
++		struct timerqueue_node *node;
+ 
+ 		basenow = ktime_add(now, base->offset);
+ 
+-		while ((node = base->first)) {
++		while ((node = timerqueue_getnext(&base->active))) {
+ 			struct hrtimer *timer;
+ 
+-			timer = rb_entry(node, struct hrtimer, node);
++			timer = container_of(node, struct hrtimer, node);
+ 
+ 			/*
+ 			 * The immediate goal for using the softexpires is
+@@ -1433,7 +1403,7 @@ void hrtimer_run_pending(void)
+  */
+ void hrtimer_run_queues(void)
  {
--	struct AdapterControlBlock *acb =
--		(struct AdapterControlBlock *)cmd->device->host->hostdata;
-+	struct AdapterControlBlock *acb;
- 	uint32_t intmask_org, outbound_doorbell;
- 	int retry_count = 0;
- 	int rtn = FAILED;
-@@ -2972,31 +2981,16 @@ sleep_again:
- 				atomic_set(&acb->rq_map_token, 16);
- 				atomic_set(&acb->ante_token_value, 16);
- 				acb->fw_flag = FW_NORMAL;
--				init_timer(&acb->eternal_timer);
--				acb->eternal_timer.expires = jiffies +
-msecs_to_jiffies(6*HZ);
--				acb->eternal_timer.data = (unsigned long)
-acb;
--				acb->eternal_timer.function =
-&arcmsr_request_device_map;
--				add_timer(&acb->eternal_timer);
-+				mod_timer(&acb->eternal_timer, jiffies +
-msecs_to_jiffies(6 * HZ));
- 				acb->acb_flags &= ~ACB_F_BUS_RESET;
- 				rtn = SUCCESS;
- 				printk(KERN_ERR "arcmsr: scsi  bus reset eh
-returns with success\n");
- 			} else {
- 				acb->acb_flags &= ~ACB_F_BUS_RESET;
--				if (atomic_read(&acb->rq_map_token) == 0) {
--					atomic_set(&acb->rq_map_token, 16);
--					atomic_set(&acb->ante_token_value,
-16);
--					acb->fw_flag = FW_NORMAL;
--					init_timer(&acb->eternal_timer);
--						acb->eternal_timer.expires =
-jiffies + msecs_to_jiffies(6*HZ);
--					acb->eternal_timer.data = (unsigned
-long) acb;
--					acb->eternal_timer.function =
-&arcmsr_request_device_map;
--					add_timer(&acb->eternal_timer);
--				} else {
--					atomic_set(&acb->rq_map_token, 16);
--					atomic_set(&acb->ante_token_value,
-16);
--					acb->fw_flag = FW_NORMAL;
--					mod_timer(&acb->eternal_timer,
-jiffies + msecs_to_jiffies(6*HZ));
--				}
-+				atomic_set(&acb->rq_map_token, 16);
-+				atomic_set(&acb->ante_token_value, 16);
-+				acb->fw_flag = FW_NORMAL;
-+				mod_timer(&acb->eternal_timer, jiffies +
-msecs_to_jiffies(6*HZ));
- 				rtn = SUCCESS;
- 			}
- 			break;
-@@ -3008,21 +3002,10 @@ sleep_again:
- 				rtn = FAILED;
- 			} else {
- 				acb->acb_flags &= ~ACB_F_BUS_RESET;
--				if (atomic_read(&acb->rq_map_token) == 0) {
--					atomic_set(&acb->rq_map_token, 16);
--					atomic_set(&acb->ante_token_value,
-16);
--					acb->fw_flag = FW_NORMAL;
--					init_timer(&acb->eternal_timer);
--						acb->eternal_timer.expires =
-jiffies + msecs_to_jiffies(6*HZ);
--					acb->eternal_timer.data = (unsigned
-long) acb;
--					acb->eternal_timer.function =
-&arcmsr_request_device_map;
--					add_timer(&acb->eternal_timer);
--				} else {
--					atomic_set(&acb->rq_map_token, 16);
--					atomic_set(&acb->ante_token_value,
-16);
--					acb->fw_flag = FW_NORMAL;
--					mod_timer(&acb->eternal_timer,
-jiffies + msecs_to_jiffies(6*HZ));
--				}
-+				atomic_set(&acb->rq_map_token, 16);
-+				atomic_set(&acb->ante_token_value, 16);
-+				acb->fw_flag = FW_NORMAL;
-+				mod_timer(&acb->eternal_timer, jiffies +
-msecs_to_jiffies(6 * HZ));
- 				rtn = SUCCESS;
- 			}
- 			break;
-@@ -3068,31 +3051,16 @@ sleep:
- 				atomic_set(&acb->rq_map_token, 16);
- 				atomic_set(&acb->ante_token_value, 16);
- 				acb->fw_flag = FW_NORMAL;
--				init_timer(&acb->eternal_timer);
--				acb->eternal_timer.expires = jiffies +
-msecs_to_jiffies(6 * HZ);
--				acb->eternal_timer.data = (unsigned long)
-acb;
--				acb->eternal_timer.function =
-&arcmsr_request_device_map;
--				add_timer(&acb->eternal_timer);
-+				mod_timer(&acb->eternal_timer, jiffies +
-msecs_to_jiffies(6 * HZ));
- 				acb->acb_flags &= ~ACB_F_BUS_RESET;
- 				rtn = SUCCESS;
- 				printk(KERN_ERR "arcmsr: scsi bus reset eh
-returns with success\n");
- 			} else {
- 				acb->acb_flags &= ~ACB_F_BUS_RESET;
--				if (atomic_read(&acb->rq_map_token) == 0) {
--					atomic_set(&acb->rq_map_token, 16);
--					atomic_set(&acb->ante_token_value,
-16);
--					acb->fw_flag = FW_NORMAL;
--					init_timer(&acb->eternal_timer);
--						acb->eternal_timer.expires =
-jiffies + msecs_to_jiffies(6*HZ);
--					acb->eternal_timer.data = (unsigned
-long) acb;
--					acb->eternal_timer.function =
-&arcmsr_request_device_map;
--					add_timer(&acb->eternal_timer);
--				} else {
--					atomic_set(&acb->rq_map_token, 16);
--					atomic_set(&acb->ante_token_value,
-16);
--					acb->fw_flag = FW_NORMAL;
--					mod_timer(&acb->eternal_timer,
-jiffies + msecs_to_jiffies(6*HZ));
--				}
-+				atomic_set(&acb->rq_map_token, 16);
-+				atomic_set(&acb->ante_token_value, 16);
-+				acb->fw_flag = FW_NORMAL;
-+				mod_timer(&acb->eternal_timer, jiffies +
-msecs_to_jiffies(6*HZ));
- 				rtn = SUCCESS;
- 			}
- 			break;
-
-------=_NextPart_000_0006_01CBADC7.BB4576A0
-Content-Type: application/octet-stream;
-	name="patch"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment;
-	filename="patch"
-
-diff --git a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h=0A=
-index 475c31a..77b26f5 100644=0A=
---- a/drivers/scsi/arcmsr/arcmsr.h=0A=
-+++ b/drivers/scsi/arcmsr/arcmsr.h=0A=
-@@ -2,7 +2,7 @@=0A=
- =
-*************************************************************************=
-******=0A=
- **        O.S   : Linux=0A=
- **   FILE NAME  : arcmsr.h=0A=
--**        BY    : Erich Chen=0A=
-+**        BY    : Nick Cheng=0A=
- **   Description: SCSI RAID Device Driver for=0A=
- **                ARECA RAID Host adapter=0A=
- =
-*************************************************************************=
-******=0A=
-@@ -46,8 +46,12 @@=0A=
- struct device_attribute;=0A=
- /*The limit of outstanding scsi command that firmware can handle*/=0A=
- #define ARCMSR_MAX_OUTSTANDING_CMD						256=0A=
--#define ARCMSR_MAX_FREECCB_NUM							320=0A=
--#define ARCMSR_DRIVER_VERSION		     "Driver Version 1.20.00.15 =
-2010/02/02"=0A=
-+#ifdef CONFIG_XEN=0A=
-+	#define ARCMSR_MAX_FREECCB_NUM	160=0A=
-+#else=0A=
-+	#define ARCMSR_MAX_FREECCB_NUM	320=0A=
-+#endif=0A=
-+#define ARCMSR_DRIVER_VERSION		     "Driver Version 1.20.00.15 =
-2010/08/05"=0A=
- #define ARCMSR_SCSI_INITIATOR_ID						255=0A=
- #define ARCMSR_MAX_XFER_SECTORS							512=0A=
- #define ARCMSR_MAX_XFER_SECTORS_B						4096=0A=
-@@ -60,7 +64,6 @@ struct device_attribute;=0A=
- #define ARCMSR_MAX_HBB_POSTQUEUE						264=0A=
- #define ARCMSR_MAX_XFER_LEN							0x26000 /* 152K */=0A=
- #define ARCMSR_CDB_SG_PAGE_LENGTH						256 =0A=
--#define SCSI_CMD_ARECA_SPECIFIC						0xE1=0A=
- #ifndef PCI_DEVICE_ID_ARECA_1880=0A=
- #define PCI_DEVICE_ID_ARECA_1880 0x1880=0A=
-  #endif=0A=
-diff --git a/drivers/scsi/arcmsr/arcmsr_attr.c =
-b/drivers/scsi/arcmsr/arcmsr_attr.c=0A=
-index a4e04c5..acdae33 100644=0A=
---- a/drivers/scsi/arcmsr/arcmsr_attr.c=0A=
-+++ b/drivers/scsi/arcmsr/arcmsr_attr.c=0A=
-@@ -2,7 +2,7 @@=0A=
- =
-*************************************************************************=
-******=0A=
- **        O.S   : Linux=0A=
- **   FILE NAME  : arcmsr_attr.c=0A=
--**        BY    : Erich Chen=0A=
-+**        BY    : Nick Cheng=0A=
- **   Description: attributes exported to sysfs and device host=0A=
- =
-*************************************************************************=
-******=0A=
- ** Copyright (C) 2002 - 2005, Areca Technology Corporation All rights =
-reserved=0A=
-diff --git a/drivers/scsi/arcmsr/arcmsr_hba.c =
-b/drivers/scsi/arcmsr/arcmsr_hba.c=0A=
-index 17e3df4..c650310 100644=0A=
---- a/drivers/scsi/arcmsr/arcmsr_hba.c=0A=
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c=0A=
-@@ -2,7 +2,7 @@=0A=
- =
-*************************************************************************=
-******=0A=
- **        O.S   : Linux=0A=
- **   FILE NAME  : arcmsr_hba.c=0A=
--**        BY    : Erich Chen=0A=
-+**        BY    : Nick Cheng=0A=
- **   Description: SCSI RAID Device Driver for=0A=
- **                ARECA RAID Host adapter=0A=
- =
-*************************************************************************=
-******=0A=
-@@ -76,7 +76,7 @@ MODULE_DESCRIPTION("ARECA (ARC11xx/12xx/16xx/1880) =
-SATA/SAS RAID Host Bus Adapte=0A=
- MODULE_LICENSE("Dual BSD/GPL");=0A=
- MODULE_VERSION(ARCMSR_DRIVER_VERSION);=0A=
- static int sleeptime =3D 10;=0A=
--static int retrycount =3D 30;=0A=
-+static int retrycount =3D 12;=0A=
- wait_queue_head_t wait_q;=0A=
- static int arcmsr_iop_message_xfer(struct AdapterControlBlock *acb,=0A=
- 					struct scsi_cmnd *cmd);=0A=
-@@ -187,7 +187,6 @@ int arcmsr_sleep_for_bus_reset(struct scsi_cmnd *cmd)=0A=
- 		if (isleep > 0) {=0A=
- 			msleep(isleep*1000);=0A=
- 		}=0A=
--		printk(KERN_NOTICE "wake-up\n");=0A=
- 		return 0;=0A=
- }=0A=
- =0A=
-@@ -921,7 +920,6 @@ static void arcmsr_report_ccb_state(struct =
-AdapterControlBlock *acb,=0A=
- }=0A=
- =0A=
- static void arcmsr_drain_donequeue(struct AdapterControlBlock *acb, =
-struct CommandControlBlock *pCCB, bool error)=0A=
--=0A=
- {=0A=
- 	int id, lun;=0A=
- 	if ((pCCB->acb !=3D acb) || (pCCB->startdone !=3D ARCMSR_CCB_START)) {=0A=
-@@ -948,7 +946,7 @@ static void arcmsr_drain_donequeue(struct =
-AdapterControlBlock *acb, struct Comma=0A=
- 				, pCCB->startdone=0A=
- 				, atomic_read(&acb->ccboutstandingcount));=0A=
- 		  return;=0A=
--		}=0A=
-+	}=0A=
- 	arcmsr_report_ccb_state(acb, pCCB, error);=0A=
- }=0A=
- =0A=
-@@ -981,7 +979,7 @@ static void arcmsr_done4abort_postqueue(struct =
-AdapterControlBlock *acb)=0A=
- 	case ACB_ADAPTER_TYPE_B: {=0A=
- 		struct MessageUnit_B *reg =3D acb->pmuB;=0A=
- 		/*clear all outbound posted Q*/=0A=
--		writel(ARCMSR_DOORBELL_INT_CLEAR_PATTERN, &reg->iop2drv_doorbell); /* =
-clear doorbell interrupt */=0A=
-+		writel(ARCMSR_DOORBELL_INT_CLEAR_PATTERN, reg->iop2drv_doorbell); /* =
-clear doorbell interrupt */=0A=
- 		for (i =3D 0; i < ARCMSR_MAX_HBB_POSTQUEUE; i++) {=0A=
- 			if ((flag_ccb =3D readl(&reg->done_qbuffer[i])) !=3D 0) {=0A=
- 				writel(0, &reg->done_qbuffer[i]);=0A=
-@@ -1171,7 +1169,7 @@ static int arcmsr_build_ccb(struct =
-AdapterControlBlock *acb,=0A=
- 	arcmsr_cdb->msgPages =3D arccdbsize/0x100 + (arccdbsize % 0x100 ? 1 : =
-0);=0A=
- 	if ( arccdbsize > 256)=0A=
- 		arcmsr_cdb->Flags |=3D ARCMSR_CDB_FLAG_SGL_BSIZE;=0A=
--	if (pcmd->cmnd[0]|WRITE_6 || pcmd->cmnd[0]|WRITE_10 || =
-pcmd->cmnd[0]|WRITE_12 ){=0A=
-+	if (pcmd->sc_data_direction =3D=3D DMA_TO_DEVICE) {=0A=
- 		arcmsr_cdb->Flags |=3D ARCMSR_CDB_FLAG_WRITE;=0A=
- 	}=0A=
- 	ccb->arc_cdb_size =3D arccdbsize;=0A=
-@@ -1512,7 +1510,6 @@ static void arcmsr_hba_postqueue_isr(struct =
-AdapterControlBlock *acb)=0A=
- 		arcmsr_drain_donequeue(acb, pCCB, error);=0A=
- 	}=0A=
- }=0A=
--=0A=
- static void arcmsr_hbb_postqueue_isr(struct AdapterControlBlock *acb)=0A=
- {=0A=
- 	uint32_t index;=0A=
-@@ -2107,10 +2104,6 @@ static int arcmsr_queue_command_lck(struct =
-scsi_cmnd *cmd,=0A=
- 	if (atomic_read(&acb->ccboutstandingcount) >=3D=0A=
- 			ARCMSR_MAX_OUTSTANDING_CMD)=0A=
- 		return SCSI_MLQUEUE_HOST_BUSY;=0A=
--	if ((scsicmd =3D=3D SCSI_CMD_ARECA_SPECIFIC)) {=0A=
--		printk(KERN_NOTICE "Receiveing SCSI_CMD_ARECA_SPECIFIC command..\n");=0A=
--		return 0;=0A=
--	}=0A=
- 	ccb =3D arcmsr_get_freeccb(acb);=0A=
- 	if (!ccb)=0A=
- 		return SCSI_MLQUEUE_HOST_BUSY;=0A=
-@@ -2394,6 +2387,7 @@ static int arcmsr_polling_hbb_ccbdone(struct =
-AdapterControlBlock *acb,=0A=
- 	int index, rtn;=0A=
- 	bool error;=0A=
- 	polling_hbb_ccb_retry:=0A=
-+=0A=
- 	poll_count++;=0A=
- 	/* clear doorbell interrupt */=0A=
- 	writel(ARCMSR_DOORBELL_INT_CLEAR_PATTERN, reg->iop2drv_doorbell);=0A=
-@@ -2664,6 +2658,7 @@ static void arcmsr_request_hba_device_map(struct =
-AdapterControlBlock *acb)=0A=
- {=0A=
- 	struct MessageUnit_A __iomem *reg =3D acb->pmuA;=0A=
- 	if (unlikely(atomic_read(&acb->rq_map_token) =3D=3D 0) || =
-((acb->acb_flags & ACB_F_BUS_RESET) !=3D 0 ) || ((acb->acb_flags & =
-ACB_F_ABORT) !=3D 0 )){=0A=
-+		mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6 * HZ));=0A=
- 		return;=0A=
- 	} else {=0A=
- 		acb->fw_flag =3D FW_NORMAL;=0A=
-@@ -2671,8 +2666,10 @@ static void arcmsr_request_hba_device_map(struct =
-AdapterControlBlock *acb)=0A=
- 			atomic_set(&acb->rq_map_token, 16);=0A=
- 		}=0A=
- 		atomic_set(&acb->ante_token_value, atomic_read(&acb->rq_map_token));=0A=
--		if (atomic_dec_and_test(&acb->rq_map_token))=0A=
-+		if (atomic_dec_and_test(&acb->rq_map_token)) {=0A=
-+			mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6 * HZ));=0A=
- 			return;=0A=
-+		}=0A=
- 		writel(ARCMSR_INBOUND_MESG0_GET_CONFIG, &reg->inbound_msgaddr0);=0A=
- 		mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6 * HZ));=0A=
- 	}=0A=
-@@ -2683,15 +2680,18 @@ static void arcmsr_request_hbb_device_map(struct =
-AdapterControlBlock *acb)=0A=
- {=0A=
- 	struct MessageUnit_B __iomem *reg =3D acb->pmuB;=0A=
- 	if (unlikely(atomic_read(&acb->rq_map_token) =3D=3D 0) || =
-((acb->acb_flags & ACB_F_BUS_RESET) !=3D 0 ) || ((acb->acb_flags & =
-ACB_F_ABORT) !=3D 0 )){=0A=
-+		mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6 * HZ));=0A=
- 		return;=0A=
- 	} else {=0A=
- 		acb->fw_flag =3D FW_NORMAL;=0A=
- 		if (atomic_read(&acb->ante_token_value) =3D=3D =
-atomic_read(&acb->rq_map_token)) {=0A=
--			atomic_set(&acb->rq_map_token,16);=0A=
-+			atomic_set(&acb->rq_map_token, 16);=0A=
- 		}=0A=
- 		atomic_set(&acb->ante_token_value, atomic_read(&acb->rq_map_token));=0A=
--		if(atomic_dec_and_test(&acb->rq_map_token))=0A=
-+		if(atomic_dec_and_test(&acb->rq_map_token)) {=0A=
-+			mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6 * HZ));=0A=
- 			return;=0A=
-+		}=0A=
- 		writel(ARCMSR_MESSAGE_GET_CONFIG, reg->drv2iop_doorbell);=0A=
- 		mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6 * HZ));=0A=
- 	}=0A=
-@@ -2702,6 +2702,7 @@ static void arcmsr_request_hbc_device_map(struct =
-AdapterControlBlock *acb)=0A=
- {=0A=
- 	struct MessageUnit_C __iomem *reg =3D acb->pmuC;=0A=
- 	if (unlikely(atomic_read(&acb->rq_map_token) =3D=3D 0) || =
-((acb->acb_flags & ACB_F_BUS_RESET) !=3D 0) || ((acb->acb_flags & =
-ACB_F_ABORT) !=3D 0)) {=0A=
-+		mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6 * HZ));=0A=
- 		return;=0A=
- 	} else {=0A=
- 		acb->fw_flag =3D FW_NORMAL;=0A=
-@@ -2709,8 +2710,10 @@ static void arcmsr_request_hbc_device_map(struct =
-AdapterControlBlock *acb)=0A=
- 			atomic_set(&acb->rq_map_token, 16);=0A=
- 		}=0A=
- 		atomic_set(&acb->ante_token_value, atomic_read(&acb->rq_map_token));=0A=
--		if (atomic_dec_and_test(&acb->rq_map_token))=0A=
-+		if (atomic_dec_and_test(&acb->rq_map_token)) {=0A=
-+			mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6 * HZ));=0A=
- 			return;=0A=
-+		}=0A=
- 		writel(ARCMSR_INBOUND_MESG0_GET_CONFIG, &reg->inbound_msgaddr0);=0A=
- 		writel(ARCMSR_HBCMU_DRV2IOP_MESSAGE_CMD_DONE, &reg->inbound_doorbell);=0A=
- 		mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6 * HZ));=0A=
-@@ -2898,6 +2901,8 @@ static uint8_t arcmsr_iop_reset(struct =
-AdapterControlBlock *acb)=0A=
- 	uint32_t intmask_org;=0A=
- 	uint8_t rtnval =3D 0x00;=0A=
- 	int i =3D 0;=0A=
-+	unsigned long flags;=0A=
-+=0A=
- 	if (atomic_read(&acb->ccboutstandingcount) !=3D 0) {=0A=
- 		/* disable all outbound interrupt */=0A=
- 		intmask_org =3D arcmsr_disable_outbound_ints(acb);=0A=
-@@ -2908,7 +2913,12 @@ static uint8_t arcmsr_iop_reset(struct =
-AdapterControlBlock *acb)=0A=
- 		for (i =3D 0; i < ARCMSR_MAX_FREECCB_NUM; i++) {=0A=
- 			ccb =3D acb->pccb_pool[i];=0A=
- 			if (ccb->startdone =3D=3D ARCMSR_CCB_START) {=0A=
--				arcmsr_ccb_complete(ccb);=0A=
-+				scsi_dma_unmap(ccb->pcmd);=0A=
-+				ccb->startdone =3D ARCMSR_CCB_DONE;=0A=
-+				ccb->ccb_flags =3D 0;=0A=
-+				spin_lock_irqsave(&acb->ccblist_lock, flags);=0A=
-+				list_add_tail(&ccb->list, &acb->ccb_free_list);=0A=
-+				spin_unlock_irqrestore(&acb->ccblist_lock, flags);=0A=
- 			}=0A=
- 		}=0A=
- 		atomic_set(&acb->ccboutstandingcount, 0);=0A=
-@@ -2921,8 +2931,7 @@ static uint8_t arcmsr_iop_reset(struct =
-AdapterControlBlock *acb)=0A=
- =0A=
- static int arcmsr_bus_reset(struct scsi_cmnd *cmd)=0A=
- {=0A=
--	struct AdapterControlBlock *acb =3D=0A=
--		(struct AdapterControlBlock *)cmd->device->host->hostdata;=0A=
-+	struct AdapterControlBlock *acb;=0A=
- 	uint32_t intmask_org, outbound_doorbell;=0A=
- 	int retry_count =3D 0;=0A=
- 	int rtn =3D FAILED;=0A=
-@@ -2972,31 +2981,16 @@ sleep_again:=0A=
- 				atomic_set(&acb->rq_map_token, 16);=0A=
- 				atomic_set(&acb->ante_token_value, 16);=0A=
- 				acb->fw_flag =3D FW_NORMAL;=0A=
--				init_timer(&acb->eternal_timer);=0A=
--				acb->eternal_timer.expires =3D jiffies + msecs_to_jiffies(6*HZ);=0A=
--				acb->eternal_timer.data =3D (unsigned long) acb;=0A=
--				acb->eternal_timer.function =3D &arcmsr_request_device_map;=0A=
--				add_timer(&acb->eternal_timer);=0A=
-+				mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6 * HZ));=0A=
- 				acb->acb_flags &=3D ~ACB_F_BUS_RESET;=0A=
- 				rtn =3D SUCCESS;=0A=
- 				printk(KERN_ERR "arcmsr: scsi  bus reset eh returns with =
-success\n");=0A=
- 			} else {=0A=
- 				acb->acb_flags &=3D ~ACB_F_BUS_RESET;=0A=
--				if (atomic_read(&acb->rq_map_token) =3D=3D 0) {=0A=
--					atomic_set(&acb->rq_map_token, 16);=0A=
--					atomic_set(&acb->ante_token_value, 16);=0A=
--					acb->fw_flag =3D FW_NORMAL;=0A=
--					init_timer(&acb->eternal_timer);=0A=
--						acb->eternal_timer.expires =3D jiffies + msecs_to_jiffies(6*HZ);=0A=
--					acb->eternal_timer.data =3D (unsigned long) acb;=0A=
--					acb->eternal_timer.function =3D &arcmsr_request_device_map;=0A=
--					add_timer(&acb->eternal_timer);=0A=
--				} else {=0A=
--					atomic_set(&acb->rq_map_token, 16);=0A=
--					atomic_set(&acb->ante_token_value, 16);=0A=
--					acb->fw_flag =3D FW_NORMAL;=0A=
--					mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6*HZ));=0A=
--				}=0A=
-+				atomic_set(&acb->rq_map_token, 16);=0A=
-+				atomic_set(&acb->ante_token_value, 16);=0A=
-+				acb->fw_flag =3D FW_NORMAL;=0A=
-+				mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6*HZ));=0A=
- 				rtn =3D SUCCESS;=0A=
- 			}=0A=
- 			break;=0A=
-@@ -3008,21 +3002,10 @@ sleep_again:=0A=
- 				rtn =3D FAILED;=0A=
- 			} else {=0A=
- 				acb->acb_flags &=3D ~ACB_F_BUS_RESET;=0A=
--				if (atomic_read(&acb->rq_map_token) =3D=3D 0) {=0A=
--					atomic_set(&acb->rq_map_token, 16);=0A=
--					atomic_set(&acb->ante_token_value, 16);=0A=
--					acb->fw_flag =3D FW_NORMAL;=0A=
--					init_timer(&acb->eternal_timer);=0A=
--						acb->eternal_timer.expires =3D jiffies + msecs_to_jiffies(6*HZ);=0A=
--					acb->eternal_timer.data =3D (unsigned long) acb;=0A=
--					acb->eternal_timer.function =3D &arcmsr_request_device_map;=0A=
--					add_timer(&acb->eternal_timer);=0A=
--				} else {=0A=
--					atomic_set(&acb->rq_map_token, 16);=0A=
--					atomic_set(&acb->ante_token_value, 16);=0A=
--					acb->fw_flag =3D FW_NORMAL;=0A=
--					mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6*HZ));=0A=
--				}=0A=
-+				atomic_set(&acb->rq_map_token, 16);=0A=
-+				atomic_set(&acb->ante_token_value, 16);=0A=
-+				acb->fw_flag =3D FW_NORMAL;=0A=
-+				mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6 * HZ));=0A=
- 				rtn =3D SUCCESS;=0A=
- 			}=0A=
- 			break;=0A=
-@@ -3068,31 +3051,16 @@ sleep:=0A=
- 				atomic_set(&acb->rq_map_token, 16);=0A=
- 				atomic_set(&acb->ante_token_value, 16);=0A=
- 				acb->fw_flag =3D FW_NORMAL;=0A=
--				init_timer(&acb->eternal_timer);=0A=
--				acb->eternal_timer.expires =3D jiffies + msecs_to_jiffies(6 * HZ);=0A=
--				acb->eternal_timer.data =3D (unsigned long) acb;=0A=
--				acb->eternal_timer.function =3D &arcmsr_request_device_map;=0A=
--				add_timer(&acb->eternal_timer);=0A=
-+				mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6 * HZ));=0A=
- 				acb->acb_flags &=3D ~ACB_F_BUS_RESET;=0A=
- 				rtn =3D SUCCESS;=0A=
- 				printk(KERN_ERR "arcmsr: scsi bus reset eh returns with success\n");=0A=
- 			} else {=0A=
- 				acb->acb_flags &=3D ~ACB_F_BUS_RESET;=0A=
--				if (atomic_read(&acb->rq_map_token) =3D=3D 0) {=0A=
--					atomic_set(&acb->rq_map_token, 16);=0A=
--					atomic_set(&acb->ante_token_value, 16);=0A=
--					acb->fw_flag =3D FW_NORMAL;=0A=
--					init_timer(&acb->eternal_timer);=0A=
--						acb->eternal_timer.expires =3D jiffies + msecs_to_jiffies(6*HZ);=0A=
--					acb->eternal_timer.data =3D (unsigned long) acb;=0A=
--					acb->eternal_timer.function =3D &arcmsr_request_device_map;=0A=
--					add_timer(&acb->eternal_timer);=0A=
--				} else {=0A=
--					atomic_set(&acb->rq_map_token, 16);=0A=
--					atomic_set(&acb->ante_token_value, 16);=0A=
--					acb->fw_flag =3D FW_NORMAL;=0A=
--					mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6*HZ));=0A=
--				}=0A=
-+				atomic_set(&acb->rq_map_token, 16);=0A=
-+				atomic_set(&acb->ante_token_value, 16);=0A=
-+				acb->fw_flag =3D FW_NORMAL;=0A=
-+				mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6*HZ));=0A=
- 				rtn =3D SUCCESS;=0A=
- 			}=0A=
- 			break;=0A=
-
-------=_NextPart_000_0006_01CBADC7.BB4576A0--
-
+-	struct rb_node *node;
++	struct timerqueue_node *node;
+ 	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
+ 	struct hrtimer_clock_base *base;
+ 	int index, gettime = 1;
+@@ -1443,8 +1413,7 @@ void hrtimer_run_queues(void)
+ 
+ 	for (index = 0; index < HRTIMER_MAX_CLOCK_BASES; index++) {
+ 		base = &cpu_base->clock_base[index];
+-
+-		if (!base->first)
++		if (!timerqueue_getnext(&base->active))
+ 			continue;
+ 
+ 		if (gettime) {
+@@ -1454,10 +1423,10 @@ void hrtimer_run_queues(void)
+ 
+ 		raw_spin_lock(&cpu_base->lock);
+ 
+-		while ((node = base->first)) {
++		while ((node = timerqueue_getnext(&base->active))) {
+ 			struct hrtimer *timer;
+ 
+-			timer = rb_entry(node, struct hrtimer, node);
++			timer = container_of(node, struct hrtimer, node);
+ 			if (base->softirq_time.tv64 <=
+ 					hrtimer_get_expires_tv64(timer))
+ 				break;
+@@ -1622,8 +1591,10 @@ static void __cpuinit init_hrtimers_cpu(int cpu)
+ 
+ 	raw_spin_lock_init(&cpu_base->lock);
+ 
+-	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++)
++	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
+ 		cpu_base->clock_base[i].cpu_base = cpu_base;
++		timerqueue_init_head(&cpu_base->clock_base[i].active);
++	}
+ 
+ 	hrtimer_init_hres(cpu_base);
+ }
+@@ -1634,10 +1605,10 @@ static void migrate_hrtimer_list(struct hrtimer_clock_base *old_base,
+ 				struct hrtimer_clock_base *new_base)
+ {
+ 	struct hrtimer *timer;
+-	struct rb_node *node;
++	struct timerqueue_node *node;
+ 
+-	while ((node = rb_first(&old_base->active))) {
+-		timer = rb_entry(node, struct hrtimer, node);
++	while ((node = timerqueue_getnext(&old_base->active))) {
++		timer = container_of(node, struct hrtimer, node);
+ 		BUG_ON(hrtimer_callback_running(timer));
+ 		debug_deactivate(timer);
+ 
+diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
+index 9ca4973..93bd2eb 100644
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -145,7 +145,13 @@ static int common_timer_del(struct k_itimer *timer);
+ 
+ static enum hrtimer_restart posix_timer_fn(struct hrtimer *data);
+ 
+-static struct k_itimer *lock_timer(timer_t timer_id, unsigned long *flags);
++static struct k_itimer *__lock_timer(timer_t timer_id, unsigned long *flags);
++
++#define lock_timer(tid, flags)						   \
++({	struct k_itimer *__timr;					   \
++	__cond_lock(&__timr->it_lock, __timr = __lock_timer(tid, flags));  \
++	__timr;								   \
++})
+ 
+ static inline void unlock_timer(struct k_itimer *timr, unsigned long flags)
+ {
+@@ -619,7 +625,7 @@ out:
+  * the find to the timer lock.  To avoid a dead lock, the timer id MUST
+  * be release with out holding the timer lock.
+  */
+-static struct k_itimer *lock_timer(timer_t timer_id, unsigned long *flags)
++static struct k_itimer *__lock_timer(timer_t timer_id, unsigned long *flags)
+ {
+ 	struct k_itimer *timr;
+ 	/*
+diff --git a/kernel/time/timecompare.c b/kernel/time/timecompare.c
+index ac38fbb..a9ae369 100644
+--- a/kernel/time/timecompare.c
++++ b/kernel/time/timecompare.c
+@@ -21,6 +21,7 @@
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/math64.h>
++#include <linux/kernel.h>
+ 
+ /*
+  * fixed point arithmetic scale factor for skew
+@@ -57,11 +58,11 @@ int timecompare_offset(struct timecompare *sync,
+ 	int index;
+ 	int num_samples = sync->num_samples;
+ 
+-	if (num_samples > sizeof(buffer)/sizeof(buffer[0])) {
++	if (num_samples > ARRAY_SIZE(buffer)) {
+ 		samples = kmalloc(sizeof(*samples) * num_samples, GFP_ATOMIC);
+ 		if (!samples) {
+ 			samples = buffer;
+-			num_samples = sizeof(buffer)/sizeof(buffer[0]);
++			num_samples = ARRAY_SIZE(buffer);
+ 		}
+ 	} else {
+ 		samples = buffer;
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 49010d8..5bb86da 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -32,6 +32,8 @@ struct timekeeper {
+ 	cycle_t cycle_interval;
+ 	/* Number of clock shifted nano seconds in one NTP interval. */
+ 	u64	xtime_interval;
++	/* shifted nano seconds left over when rounding cycle_interval */
++	s64	xtime_remainder;
+ 	/* Raw nano seconds accumulated per NTP interval. */
+ 	u32	raw_interval;
+ 
+@@ -62,7 +64,7 @@ struct timekeeper timekeeper;
+ static void timekeeper_setup_internals(struct clocksource *clock)
+ {
+ 	cycle_t interval;
+-	u64 tmp;
++	u64 tmp, ntpinterval;
+ 
+ 	timekeeper.clock = clock;
+ 	clock->cycle_last = clock->read(clock);
+@@ -70,6 +72,7 @@ static void timekeeper_setup_internals(struct clocksource *clock)
+ 	/* Do the ns -> cycle conversion first, using original mult */
+ 	tmp = NTP_INTERVAL_LENGTH;
+ 	tmp <<= clock->shift;
++	ntpinterval = tmp;
+ 	tmp += clock->mult/2;
+ 	do_div(tmp, clock->mult);
+ 	if (tmp == 0)
+@@ -80,6 +83,7 @@ static void timekeeper_setup_internals(struct clocksource *clock)
+ 
+ 	/* Go back from cycles -> shifted ns */
+ 	timekeeper.xtime_interval = (u64) interval * clock->mult;
++	timekeeper.xtime_remainder = ntpinterval - timekeeper.xtime_interval;
+ 	timekeeper.raw_interval =
+ 		((u64) interval * clock->mult) >> clock->shift;
+ 
+@@ -719,7 +723,8 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
+ 
+ 	/* Accumulate error between NTP and clock interval */
+ 	timekeeper.ntp_error += tick_length << shift;
+-	timekeeper.ntp_error -= timekeeper.xtime_interval <<
++	timekeeper.ntp_error -=
++	    (timekeeper.xtime_interval + timekeeper.xtime_remainder) <<
+ 				(timekeeper.ntp_error_shift + shift);
+ 
+ 	return offset;
+diff --git a/kernel/time/timer_list.c b/kernel/time/timer_list.c
+index ab8f5e3..32a19f9 100644
+--- a/kernel/time/timer_list.c
++++ b/kernel/time/timer_list.c
+@@ -79,26 +79,26 @@ print_active_timers(struct seq_file *m, struct hrtimer_clock_base *base,
+ {
+ 	struct hrtimer *timer, tmp;
+ 	unsigned long next = 0, i;
+-	struct rb_node *curr;
++	struct timerqueue_node *curr;
+ 	unsigned long flags;
+ 
+ next_one:
+ 	i = 0;
+ 	raw_spin_lock_irqsave(&base->cpu_base->lock, flags);
+ 
+-	curr = base->first;
++	curr = timerqueue_getnext(&base->active);
+ 	/*
+ 	 * Crude but we have to do this O(N*N) thing, because
+ 	 * we have to unlock the base when printing:
+ 	 */
+ 	while (curr && i < next) {
+-		curr = rb_next(curr);
++		curr = timerqueue_iterate_next(curr);
+ 		i++;
+ 	}
+ 
+ 	if (curr) {
+ 
+-		timer = rb_entry(curr, struct hrtimer, node);
++		timer = container_of(curr, struct hrtimer, node);
+ 		tmp = *timer;
+ 		raw_spin_unlock_irqrestore(&base->cpu_base->lock, flags);
+ 
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 97bf05b..beb97fd 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -88,18 +88,6 @@ struct tvec_base boot_tvec_bases;
+ EXPORT_SYMBOL(boot_tvec_bases);
+ static DEFINE_PER_CPU(struct tvec_base *, tvec_bases) = &boot_tvec_bases;
+ 
+-/*
+- * Note that all tvec_bases are 2 byte aligned and lower bit of
+- * base in timer_list is guaranteed to be zero. Use the LSB to
+- * indicate whether the timer is deferrable.
+- *
+- * A deferrable timer will work normally when the system is busy, but
+- * will not cause a CPU to come out of idle just to service it; instead,
+- * the timer will be serviced when the CPU eventually wakes up with a
+- * subsequent non-deferrable timer.
+- */
+-#define TBASE_DEFERRABLE_FLAG		(0x1)
+-
+ /* Functions below help us manage 'deferrable' flag */
+ static inline unsigned int tbase_get_deferrable(struct tvec_base *base)
+ {
+@@ -113,8 +101,7 @@ static inline struct tvec_base *tbase_get_base(struct tvec_base *base)
+ 
+ static inline void timer_set_deferrable(struct timer_list *timer)
+ {
+-	timer->base = ((struct tvec_base *)((unsigned long)(timer->base) |
+-				       TBASE_DEFERRABLE_FLAG));
++	timer->base = TBASE_MAKE_DEFERRED(timer->base);
+ }
+ 
+ static inline void
+@@ -343,15 +330,6 @@ void set_timer_slack(struct timer_list *timer, int slack_hz)
+ }
+ EXPORT_SYMBOL_GPL(set_timer_slack);
+ 
+-
+-static inline void set_running_timer(struct tvec_base *base,
+-					struct timer_list *timer)
+-{
+-#ifdef CONFIG_SMP
+-	base->running_timer = timer;
+-#endif
+-}
+-
+ static void internal_add_timer(struct tvec_base *base, struct timer_list *timer)
+ {
+ 	unsigned long expires = timer->expires;
+@@ -936,15 +914,12 @@ int del_timer(struct timer_list *timer)
+ }
+ EXPORT_SYMBOL(del_timer);
+ 
+-#ifdef CONFIG_SMP
+ /**
+  * try_to_del_timer_sync - Try to deactivate a timer
+  * @timer: timer do del
+  *
+  * This function tries to deactivate a timer. Upon successful (ret >= 0)
+  * exit the timer is not queued and the handler is not running on any CPU.
+- *
+- * It must not be called from interrupt contexts.
+  */
+ int try_to_del_timer_sync(struct timer_list *timer)
+ {
+@@ -973,6 +948,7 @@ out:
+ }
+ EXPORT_SYMBOL(try_to_del_timer_sync);
+ 
++#ifdef CONFIG_SMP
+ /**
+  * del_timer_sync - deactivate a timer and wait for the handler to finish.
+  * @timer: the timer to be deactivated
+@@ -983,7 +959,7 @@ EXPORT_SYMBOL(try_to_del_timer_sync);
+  *
+  * Synchronization rules: Callers must prevent restarting of the timer,
+  * otherwise this function is meaningless. It must not be called from
+- * interrupt contexts. The caller must not hold locks which would prevent
++ * hardirq contexts. The caller must not hold locks which would prevent
+  * completion of the timer's handler. The timer's handler must not call
+  * add_timer_on(). Upon exit the timer is not queued and the handler is
+  * not running on any CPU.
+@@ -993,14 +969,16 @@ EXPORT_SYMBOL(try_to_del_timer_sync);
+ int del_timer_sync(struct timer_list *timer)
+ {
+ #ifdef CONFIG_LOCKDEP
+-	unsigned long flags;
+-
+-	local_irq_save(flags);
++	local_bh_disable();
+ 	lock_map_acquire(&timer->lockdep_map);
+ 	lock_map_release(&timer->lockdep_map);
+-	local_irq_restore(flags);
++	local_bh_enable();
+ #endif
+-
++	/*
++	 * don't use it in hardirq context, because it
++	 * could lead to deadlock.
++	 */
++	WARN_ON(in_irq());
+ 	for (;;) {
+ 		int ret = try_to_del_timer_sync(timer);
+ 		if (ret >= 0)
+@@ -1111,7 +1089,7 @@ static inline void __run_timers(struct tvec_base *base)
+ 
+ 			timer_stats_account_timer(timer);
+ 
+-			set_running_timer(base, timer);
++			base->running_timer = timer;
+ 			detach_timer(timer, 1);
+ 
+ 			spin_unlock_irq(&base->lock);
+@@ -1119,7 +1097,7 @@ static inline void __run_timers(struct tvec_base *base)
+ 			spin_lock_irq(&base->lock);
+ 		}
+ 	}
+-	set_running_timer(base, NULL);
++	base->running_timer = NULL;
+ 	spin_unlock_irq(&base->lock);
+ }
+ 
+@@ -1249,7 +1227,7 @@ static unsigned long cmp_next_hrtimer_event(unsigned long now,
+  */
+ unsigned long get_next_timer_interrupt(unsigned long now)
+ {
+-	struct tvec_base *base = __get_cpu_var(tvec_bases);
++	struct tvec_base *base = __this_cpu_read(tvec_bases);
+ 	unsigned long expires;
+ 
+ 	spin_lock(&base->lock);
+@@ -1289,7 +1267,7 @@ void update_process_times(int user_tick)
+  */
+ static void run_timer_softirq(struct softirq_action *h)
+ {
+-	struct tvec_base *base = __get_cpu_var(tvec_bases);
++	struct tvec_base *base = __this_cpu_read(tvec_bases);
+ 
+ 	hrtimer_run_pending();
+ 
+diff --git a/lib/Makefile b/lib/Makefile
+index e6a3763..9e2db72 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -8,7 +8,7 @@ KBUILD_CFLAGS = $(subst -pg,,$(ORIG_CFLAGS))
+ endif
+ 
+ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+-	 rbtree.o radix-tree.o dump_stack.o \
++	 rbtree.o radix-tree.o dump_stack.o timerqueue.o\
+ 	 idr.o int_sqrt.o extable.o prio_tree.o \
+ 	 sha1.o irq_regs.o reciprocal_div.o argv_split.o \
+ 	 proportions.o prio_heap.o ratelimit.o show_mem.o \
+diff --git a/lib/timerqueue.c b/lib/timerqueue.c
+new file mode 100644
+index 0000000..e3a1050
+--- /dev/null
++++ b/lib/timerqueue.c
+@@ -0,0 +1,107 @@
++/*
++ *  Generic Timer-queue
++ *
++ *  Manages a simple queue of timers, ordered by expiration time.
++ *  Uses rbtrees for quick list adds and expiration.
++ *
++ *  NOTE: All of the following functions need to be serialized
++ *  to avoid races. No locking is done by this libary code.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#include <linux/timerqueue.h>
++#include <linux/rbtree.h>
++#include <linux/module.h>
++
++/**
++ * timerqueue_add - Adds timer to timerqueue.
++ *
++ * @head: head of timerqueue
++ * @node: timer node to be added
++ *
++ * Adds the timer node to the timerqueue, sorted by the
++ * node's expires value.
++ */
++void timerqueue_add(struct timerqueue_head *head, struct timerqueue_node *node)
++{
++	struct rb_node **p = &head->head.rb_node;
++	struct rb_node *parent = NULL;
++	struct timerqueue_node  *ptr;
++
++	/* Make sure we don't add nodes that are already added */
++	WARN_ON_ONCE(!RB_EMPTY_NODE(&node->node));
++
++	while (*p) {
++		parent = *p;
++		ptr = rb_entry(parent, struct timerqueue_node, node);
++		if (node->expires.tv64 < ptr->expires.tv64)
++			p = &(*p)->rb_left;
++		else
++			p = &(*p)->rb_right;
++	}
++	rb_link_node(&node->node, parent, p);
++	rb_insert_color(&node->node, &head->head);
++
++	if (!head->next || node->expires.tv64 < head->next->expires.tv64)
++		head->next = node;
++}
++EXPORT_SYMBOL_GPL(timerqueue_add);
++
++/**
++ * timerqueue_del - Removes a timer from the timerqueue.
++ *
++ * @head: head of timerqueue
++ * @node: timer node to be removed
++ *
++ * Removes the timer node from the timerqueue.
++ */
++void timerqueue_del(struct timerqueue_head *head, struct timerqueue_node *node)
++{
++	WARN_ON_ONCE(RB_EMPTY_NODE(&node->node));
++
++	/* update next pointer */
++	if (head->next == node) {
++		struct rb_node *rbn = rb_next(&node->node);
++
++		head->next = rbn ?
++			rb_entry(rbn, struct timerqueue_node, node) : NULL;
++	}
++	rb_erase(&node->node, &head->head);
++	RB_CLEAR_NODE(&node->node);
++}
++EXPORT_SYMBOL_GPL(timerqueue_del);
++
++/**
++ * timerqueue_iterate_next - Returns the timer after the provided timer
++ *
++ * @node: Pointer to a timer.
++ *
++ * Provides the timer that is after the given node. This is used, when
++ * necessary, to iterate through the list of timers in a timer list
++ * without modifying the list.
++ */
++struct timerqueue_node *timerqueue_iterate_next(struct timerqueue_node *node)
++{
++	struct rb_node *next;
++
++	if (!node)
++		return NULL;
++	next = rb_next(&node->node);
++	if (!next)
++		return NULL;
++	return container_of(next, struct timerqueue_node, node);
++}
++EXPORT_SYMBOL_GPL(timerqueue_iterate_next);
