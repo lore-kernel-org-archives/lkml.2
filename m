@@ -1,85 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916Ab1AFAdG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:33:06 -0500
-Received: from kroah.org ([198.145.64.141]:36153 "EHLO coco.kroah.org"
+	id S1754927Ab1AFAdi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:33:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49546 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754837Ab1AFAb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:31:56 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:10 2011
-Message-Id: <20110106002310.460550947@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:24:06 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [147/152] posix-cpu-timers: workaround to suppress the problems with mt exec
-In-Reply-To: <20110106002500.GA3172@kroah.com>
+	id S1754787Ab1AFAdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:33:36 -0500
+Date: Thu, 6 Jan 2011 11:33:27 +1100
+From: NeilBrown <neilb@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Subject: Re: [PATCH] Change wait_for_completion_*_timeout to return a signed
+ long
+Message-ID: <20110106113327.5d224a8c@notabene.brown>
+In-Reply-To: <20110105145725.3fa6d659.akpm@linux-foundation.org>
+References: <20110105125016.64ccab0e@notabene.brown>
+	<20110105145725.3fa6d659.akpm@linux-foundation.org>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.36-stable review patch.  If anyone has any objections, please let us know.
+On Wed, 5 Jan 2011 14:57:25 -0800 Andrew Morton <akpm@linux-foundation.org>
+wrote:
 
-------------------
+> On Wed, 5 Jan 2011 12:50:16 +1100
+> NeilBrown <neilb@suse.de> wrote:
+> 
+> > 
+> > wait_for_completion_*_timeout can return:
+> > 
+> >  0 if the wait timed out
+> >  -ve if the wait was interrupted
+> >  +ve if the completion was completed.
+> > 
+> > As they currently return an 'unsigned long', the last two cases are not
+> > easily distinguished which can easily result in buggy code, as is the
+> > case for the recently added wait_for_completion_interruptible_timeout
+> > call in net/sunrpc/cache.c
+> > 
+> > So change them both to return 'long'.  As MAX_SCHEDULE_TIMEOUT is
+> > LONG_MAX, a large +ve return value should never overflow.
+> > 
+> > ...
+> >
+> > --- a/include/linux/completion.h
+> > +++ b/include/linux/completion.h
+> > @@ -80,11 +80,11 @@ extern void wait_for_completion(struct completion *);
+> >  extern int wait_for_completion_interruptible(struct completion *x);
+> >  extern int wait_for_completion_killable(struct completion *x);
+> >  extern unsigned long wait_for_completion_timeout(struct completion *x,
+> >  						   unsigned long timeout);
+> > -extern unsigned long wait_for_completion_interruptible_timeout(
+> > -			struct completion *x, unsigned long timeout);
+> > -extern unsigned long wait_for_completion_killable_timeout(
+> > -			struct completion *x, unsigned long timeout);
+> > +extern long wait_for_completion_interruptible_timeout(
+> > +	struct completion *x, unsigned long timeout);
+> > +extern long wait_for_completion_killable_timeout(
+> > +	struct completion *x, unsigned long timeout);
+> >  extern bool try_wait_for_completion(struct completion *x);
+> >  extern bool completion_done(struct completion *x);
+> >  
+> 
+> That's a half-patch, isn't it?  wait_for_completion_interruptible()
+> still incorrectly returns `int' and wait_for_completion_timeout() still
+> returns `unsigned long'.
 
-From: Oleg Nesterov <oleg@redhat.com>
-
-commit e0a70217107e6f9844628120412cb27bb4cea194 upstream.
-
-posix-cpu-timers.c correctly assumes that the dying process does
-posix_cpu_timers_exit_group() and removes all !CPUCLOCK_PERTHREAD
-timers from signal->cpu_timers list.
-
-But, it also assumes that timer->it.cpu.task is always the group
-leader, and thus the dead ->task means the dead thread group.
-
-This is obviously not true after de_thread() changes the leader.
-After that almost every posix_cpu_timer_ method has problems.
-
-It is not simple to fix this bug correctly. First of all, I think
-that timer->it.cpu should use struct pid instead of task_struct.
-Also, the locking should be reworked completely. In particular,
-tasklist_lock should not be used at all. This all needs a lot of
-nontrivial and hard-to-test changes.
-
-Change __exit_signal() to do posix_cpu_timers_exit_group() when
-the old leader dies during exec. This is not the fix, just the
-temporary hack to hide the problem for 2.6.37 and stable. IOW,
-this is obviously wrong but this is what we currently have anyway:
-cpu timers do not work after mt exec.
-
-In theory this change adds another race. The exiting leader can
-detach the timers which were attached to the new leader. However,
-the window between de_thread() and release_task() is small, we
-can pretend that sys_timer_create() was called before de_thread().
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- kernel/exit.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
-
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -95,6 +95,14 @@ static void __exit_signal(struct task_st
- 		sig->tty = NULL;
- 	} else {
- 		/*
-+		 * This can only happen if the caller is de_thread().
-+		 * FIXME: this is the temporary hack, we should teach
-+		 * posix-cpu-timers to handle this case correctly.
-+		 */
-+		if (unlikely(has_group_leader_pid(tsk)))
-+			posix_cpu_timers_exit_group(tsk);
-+
-+		/*
- 		 * If there is any task waiting for the group exit
- 		 * then notify it:
- 		 */
+Half a patch is better than half a bug report is better than half an oops
+message is better than none ..... (am I showing my age?)
 
 
+wait_for_completion_interruptile returns either a negative error (-ERESTART)
+or 0.  So 'int' is fine.  Ditto for wait_for_completion_killable.
+wait_for_completion_timeout returns a positive timeout-remaining or 0, so
+'unsigned long' is fine.
+
+It is only when we come to combining 'interruptible' and 'timeout' that we
+need signed and long.
+
+Now maybe it would be good to use "signed long" for all of them because
+consistency is a nice thing.  Or maybe it is best to specify in each case the
+return type that is most clearly meaningful because that communicates more
+clearly.
+I really cannot say - I just wanted to fix a bug :-)
+
+NeilBrown
