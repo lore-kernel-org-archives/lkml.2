@@ -1,119 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105Ab1AFVCa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 16:02:30 -0500
-Received: from inx.pm.waw.pl ([195.116.170.130]:51961 "EHLO inx.pm.waw.pl"
+	id S1754127Ab1AFVCg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 16:02:36 -0500
+Received: from mail.perches.com ([173.55.12.10]:3002 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752933Ab1AFVC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 16:02:29 -0500
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
-        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH V8 12/13] ptp: Added a clock driver for the IXP46x.
-References: <cover.1293820862.git.richard.cochran@omicron.at>
-	<8151196c018776704df34748f333bdb159497d0b.1293820862.git.richard.cochran@omicron.at>
-Date: Thu, 06 Jan 2011 22:01:59 +0100
-In-Reply-To: <8151196c018776704df34748f333bdb159497d0b.1293820862.git.richard.cochran@omicron.at>
-	(Richard Cochran's message of "Fri, 31 Dec 2010 20:17:23 +0100")
-Message-ID: <m3ei8plpa0.fsf@intrepid.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753129Ab1AFVCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 16:02:34 -0500
+Subject: Re: [patch] checkpatch: putting the && or || on the wrong line
+From: Joe Perches <joe@perches.com>
+To: Krzysztof Halasa <khc@pm.waw.pl>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+In-Reply-To: <m3r5cplr2m.fsf@intrepid.localdomain>
+References: <20110104055900.GA5062@bicker>
+	 <20110104163836.GA30317@fieldses.org>
+	 <20110104164414.GX5875@const.bordeaux.inria.fr>
+	 <1294160834.6617.51.camel@Joe-Laptop> <m3fwt7i740.fsf@intrepid.localdomain>
+	 <1294249529.6617.118.camel@Joe-Laptop>
+	 <m339p6p5zo.fsf@intrepid.localdomain>
+	 <1294336674.12561.81.camel@Joe-Laptop>
+	 <m3r5cplr2m.fsf@intrepid.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 06 Jan 2011 13:02:33 -0800
+Message-ID: <1294347753.12561.106.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Cochran <richardcochran@gmail.com> writes:
+On Thu, 2011-01-06 at 21:23 +0100, Krzysztof Halasa wrote:
+> Joe Perches <joe@perches.com> writes:
+> >> Sure, standardization is a good thing - to a certain point.
+> >> We've passed this point long ago.
+> > Aren't you missing attached evidence too? :p
+> No, it's all over the place.
 
-> +struct ixp46x_channel_ctl {
-> +	u32 Ch_Control; /* 0x40 Time Synchronization Channel Control */
-> +	u32 Ch_Event;   /* 0x44 Time Synchronization Channel Event */
-> +	u32 TxSnapLo;   /* 0x48 Transmit Snapshot Low Register */
-> +	u32 TxSnapHi;   /* 0x4C Transmit Snapshot High Register */
-> +	u32 RxSnapLo;   /* 0x50 Receive Snapshot Low Register */
-> +	u32 RxSnapHi;   /* 0x54 Receive Snapshot High Register */
-> +	u32 SrcUUIDLo;  /* 0x58 Source UUID0 Low Register */
-> +	u32 SrcUUIDHi;  /* 0x5C Sequence Identifier/Source UUID0 High */
+Right.  It's all exactly the same.
+We agree.  Cites aren't necessary.
 
-I don't like these XxxYyyZzz either :-(
+cheers, Joe
 
-> +static void do_tx_timestamp(struct port *port, struct sk_buff *skb)
-> +{
-> +#ifdef __ARMEB__
-> +	struct skb_shared_hwtstamps shhwtstamps;
-> +	struct ixp46x_ts_regs *regs;
-> +	struct skb_shared_info *shtx;
-> +	u64 ns;
-> +	u32 ch, cnt, hi, lo, val;
-> +
-> +	shtx = skb_shinfo(skb);
-> +	if (unlikely(shtx->tx_flags & SKBTX_HW_TSTAMP && port->hwts_tx_en))
-> +		shtx->tx_flags |= SKBTX_IN_PROGRESS;
-> +	else
-> +		return;
-> +
-> +	ch = PORT2CHANNEL(port);
-> +
-> +	regs = (struct ixp46x_ts_regs __iomem *) IXP4XX_TIMESYNC_BASE_VIRT;
-> +
-> +	/*
-> +	 * This really stinks, but we have to poll for the Tx time stamp.
-> +	 * Usually, the time stamp is ready after 4 to 6 microseconds.
-> +	 */
-> +	for (cnt = 0; cnt < 100; cnt++) {
-> +		val = __raw_readl(&regs->channel[ch].Ch_Event);
-> +		if (val & TX_SNAPSHOT_LOCKED)
-> +			break;
-> +		udelay(1);
-> +	}
-> +	if (!(val & TX_SNAPSHOT_LOCKED)) {
-> +		shtx->tx_flags &= ~SKBTX_IN_PROGRESS;
-> +		return;
-> +	}
-> +
-> +	lo = __raw_readl(&regs->channel[ch].TxSnapLo);
-> +	hi = __raw_readl(&regs->channel[ch].TxSnapHi);
-> +	ns = ((u64) hi) << 32;
-> +	ns |= lo;
-> +	ns <<= TICKS_NS_SHIFT;
-> +
-> +	memset(&shhwtstamps, 0, sizeof(shhwtstamps));
-> +	shhwtstamps.hwtstamp = ns_to_ktime(ns);
-> +	skb_tstamp_tx(skb, &shhwtstamps);
-> +
-> +	__raw_writel(TX_SNAPSHOT_LOCKED, &regs->channel[ch].Ch_Event);
-> +#endif
-> +}
-
-And what if we're little-endian? Why does it depend on BE?
-
-> @@ -1171,6 +1357,11 @@ static int __devinit eth_init_one(struct platform_device *pdev)
->  	char phy_id[MII_BUS_ID_SIZE + 3];
->  	int err;
->  
-> +	if (ptp_filter_init(ptp_filter, ARRAY_SIZE(ptp_filter))) {
-> +		pr_err("ixp4xx_eth: bad ptp filter\n");
-> +		return -EINVAL;
-> +	}
-> +
->  	if (!(dev = alloc_etherdev(sizeof(struct port))))
->  		return -ENOMEM;
-
-Shouldn't it depend on CPU type?
-BTW which CPU is required? IXP46x (455/460/465)? Does it work on 43x?
-
-> +	if (NO_IRQ == irq)
-> +		return NO_IRQ;
-
-Don't like these either :-(
-Not showstoppers but...
-
-Also I don't like the ixp_read/ixp_write() trivial macros. Why not
-simply call __raw_readl() and __raw_writel()?
--- 
-Krzysztof Halasa
