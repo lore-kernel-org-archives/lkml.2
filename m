@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556Ab1AFSFv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 13:05:51 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48209 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752341Ab1AFSFt (ORCPT
+	id S1752608Ab1AFSGK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 13:06:10 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40661 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752370Ab1AFSGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 13:05:49 -0500
-Date: Thu, 6 Jan 2011 18:05:30 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-Message-ID: <20110106180530.GI31708@n2100.arm.linux.org.uk>
-References: <20110105200008.GJ8638@n2100.arm.linux.org.uk> <1294259637.16957.25.camel@mulgrave.site> <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com> <20110105210448.GM8638@n2100.arm.linux.org.uk> <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com> <1294262208.2952.4.camel@heimdal.trondhjem.org> <AANLkTi=3Gu-rz=-OdNtUXn4qw60Df6=YePnzvB=s-+Ov@mail.gmail.com> <1294268808.2952.18.camel@heimdal.trondhjem.org> <1294270104.16957.73.camel@mulgrave.site> <1294335614.22825.154.camel@mulgrave.site>
+	Thu, 6 Jan 2011 13:06:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294335614.22825.154.camel@mulgrave.site>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20110106000157.GA16089@gondor.apana.org.au>
+References: <20081225001724.GA2813@gondor.apana.org.au> <20081225002020.GA2912@gondor.apana.org.au>
+ <20090324044932.GA18245@gondor.apana.org.au> <20091204135530.GA29371@gondor.apana.org.au>
+ <20100226004914.GA20812@gondor.apana.org.au> <20100519020603.GA19654@gondor.apana.org.au>
+ <20100521104404.GA29530@gondor.apana.org.au> <20100804140448.GA4042@gondor.apana.org.au>
+ <20101024061625.GA23715@gondor.apana.org.au> <20110106000157.GA16089@gondor.apana.org.au>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 6 Jan 2011 10:05:46 -0800
+Message-ID: <AANLkTikzg3Hndp8WRi59bvJdBLxi=p-1gt7aZDLYbSW8@mail.gmail.com>
+Subject: Re: Crypto Update for 2.6.38
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 06, 2011 at 11:40:13AM -0600, James Bottomley wrote:
-> On Wed, 2011-01-05 at 23:28 +0000, James Bottomley wrote:
-> > Can you explain how the code works? it looks to me like you read the xdr
-> > stuff through the vmap region then write it out directly to the pages? 
-> 
-> OK, I think I see how this is supposed to work:  It's a sequential loop
-> of reading in via the pages (i.e. through the kernel mapping) and then
-> updating those pages via the vmap.  In which case, I think this patch is
-> what you need.
-> 
-> The theory of operation is that the readdir on pages actually uses the
-> network DMA operations to perform, so when it's finished, the underlying
+On Wed, Jan 5, 2011 at 4:01 PM, Herbert Xu <herbert@gondor.hengli.com.au> wrote:
+>
+> * Crypto API interface for user-space (hash + skcipher)
 
-What network DMA operations - what if your NIC doesn't do DMA because
-it's an SMSC device?
+Is there really any point to this? And can we get more explanation of
+what the interface is, and who would use it?
+
+If you need crypto in user space, it's almost invariably better done
+in user space. If the CPU can do crypto on its own, and doesn't expose
+those instructions to user space, it's just a stupid CPU - and the
+user/kernel transfer is likely going to make it slower than a pure
+software approach for any but the biggest transfers.
+
+And if the crypto engine is off-chip, the sw version is going to be
+faster anyway except for possible async versions that are hard to
+interface to user space.
+
+So I really need more convincing about the whole user-space interface.
+Adding new interfaces willy-nilly isn't a good idea. They need damn
+good reasons.
+
+                                      Linus
