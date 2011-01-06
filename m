@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752370Ab1AFSPu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 13:15:50 -0500
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:54348 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752149Ab1AFSPs (ORCPT
+	id S1752053Ab1AFSRX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 13:17:23 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33393 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751362Ab1AFSRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 13:15:48 -0500
-From: Kevin Hilman <khilman@ti.com>
-To: Koen Kooi <koen@dominion.thruhere.net>
-Cc: Brad Parker <brad@heeltoe.com>, Anand Gadiyar <gadiyar@ti.com>,
-        Ming Lei <tom.leiming@gmail.com>, Benoit Cousson <b-cousson@ti.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Paul Walmsley <paul@pwsan.com>, Greg KH <greg@kroah.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        linux-omap@vger.kernel.org
-Subject: Re: linux-next: manual merge of the usb tree with the omap tree
-Organization: Texas Instruments, Inc.
-References: <20101223171859.f6842045.sfr@canb.auug.org.au>
-	<4D139517.3010608@ti.com>
-	<AANLkTi=pTNg2iWN+=uEv=CyZHHCoddF51pmmCMjPeMUF@mail.gmail.com>
-	<4ce0f816f951f24ca3de9c84d9f70842@mail.gmail.com>
-	<4D25E313.4060202@heeltoe.com>
-	<8B3471BB-CB3F-4CE6-B523-D9C5E87B9CEC@dominion.thruhere.net>
-Date: Thu, 06 Jan 2011 10:15:41 -0800
-In-Reply-To: <8B3471BB-CB3F-4CE6-B523-D9C5E87B9CEC@dominion.thruhere.net>
-	(Koen Kooi's message of "Thu, 6 Jan 2011 17:59:21 +0100")
-Message-ID: <87pqs9vqya.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Thu, 6 Jan 2011 13:17:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20110106090808.GA15170@elte.hu>
+References: <20110106090808.GA15170@elte.hu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 6 Jan 2011 10:16:34 -0800
+Message-ID: <AANLkTikocAcVEAHXi3g7z2s+4y3mh5m0bs17iJnUWPhz@mail.gmail.com>
+Subject: Re: [GIT PULL] RCU changes for v2.6.38
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Koen Kooi <koen@dominion.thruhere.net> writes:
-
-> Op 6 jan 2011, om 16:43 heeft Brad Parker het volgende geschreven:
+On Thu, Jan 6, 2011 at 1:08 AM, Ingo Molnar <mingo@elte.hu> wrote:
 >
->> It's probably expected, but I can't get the EHCI USB port  to work
->> on a beagle board XM (36xx) using the current omap tree.
->> 
->> It this most likely due to these clock issues?
->
-> You need this patch: http://thread.gmane.org/gmane.linux.ports.arm.omap/47807/
->
-> I'm currently too lazy to split it up like Nishant wants as I don't
-> see the point splitting for the sake of splitting.--
+> Please pull the latest core-rcu-for-linus git tree from:
 
-IMO, it doesn't need to be split up.
+So I pulled, but I'm not convinced about the crazy busy-looping
+SRCU_SYNCHRONIZE_DELAY thing.
 
-But it does have to fix the other comments I made on the same thread[1]
+Why does it do a silly udelay(), instead of just looping over the
+srcu_readers_active_idx() for a few times? You're wasting CPU time
+anyway, why ask the user how many usecs to waste?
 
-1) add a descriptive changelog, and
-2) Cc linux-arm-kernel
+IOW, why isn't that "wait for no active readers" a nice helper
+function, and why doesn't it do
 
-Kevin
+   for (i = 0; i < CONFIG_SRCU_SYNCHRONIZE_DELAY; i++) {
+      if (!srcu_readers_active_idx(sp, idx))
+         return;
+      udelay(1);
+   }
+   while (srcu_readers_active_idx(sp, idx))
+      schedule_timeout_interruptible(1);
 
-[1] http://article.gmane.org/gmane.linux.ports.arm.omap/48920
+instead? And is it really sane to ask the kernel configurator to come
+up with a random value (ie that "CONFIG_SRCU_SYNCHRONIZE_DELAY" is
+just stupid and wrong)?
+
+Please fix this. And don't make people answer unanswerable questions.
+If YOU and Paul don't know the answer, why the hell do you expect
+somebody who does a "make config" to know the answer?
+
+Either pick a number, or pick an algorithm that self-tunes.
+
+Don't use the Kconfig system as a way to tell people that it's their
+fault when you made a bad decision. Really.
+
+                           Linus
