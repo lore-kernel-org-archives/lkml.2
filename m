@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754436Ab1AFAzA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:55:00 -0500
-Received: from kroah.org ([198.145.64.141]:35639 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754111Ab1AFA3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754113Ab1AFA3g (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 5 Jan 2011 19:29:36 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:01 2011
-Message-Id: <20110106002301.010061010@clark.site>
+Received: from kroah.org ([198.145.64.141]:35619 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753700Ab1AFA3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:29:33 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:00 2011
+Message-Id: <20110106002300.696109593@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:22:25 -0800
+Date: Wed, 05 Jan 2011 16:22:22 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Daniel Hellstrom <daniel@gaisler.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [046/152] sparc: Kill prom devops_{32,64}.c
+Subject: [043/152] SPARC/LEON: removed constant timer initialization as if HZ=100, now it reflects the value of HZ
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,251 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: David S. Miller <davem@davemloft.net>
+From: Daniel Hellstrom <daniel@gaisler.com>
 
-[ Upstream commit b148246912bea92bde2a0cba125ca94f1f776b12 ]
+[ Upstream commit b690c425fe07c725e7f1f7d40303588416cba67f ]
 
-Completely unused.
-
+Signed-off-by: Daniel Hellstrom <daniel@gaisler.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/sparc/include/asm/oplib_32.h |   19 --------
- arch/sparc/include/asm/oplib_64.h |   21 ---------
- arch/sparc/prom/Makefile          |    1 
- arch/sparc/prom/devops_32.c       |   87 --------------------------------------
- arch/sparc/prom/devops_64.c       |   67 -----------------------------
- 5 files changed, 195 deletions(-)
- delete mode 100644 arch/sparc/prom/devops_32.c
- delete mode 100644 arch/sparc/prom/devops_64.c
+ arch/sparc/kernel/leon_kernel.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/sparc/include/asm/oplib_32.h
-+++ b/arch/sparc/include/asm/oplib_32.h
-@@ -60,25 +60,6 @@ extern char *prom_getbootargs(void);
- extern char *prom_mapio(char *virt_hint, int io_space, unsigned int phys_addr, unsigned int num_bytes);
- extern void prom_unmapio(char *virt_addr, unsigned int num_bytes);
+--- a/arch/sparc/kernel/leon_kernel.c
++++ b/arch/sparc/kernel/leon_kernel.c
+@@ -114,7 +114,7 @@ void __init leon_init_timers(irq_handler
+ 	if (leon3_gptimer_regs && leon3_irqctrl_regs) {
+ 		LEON3_BYPASS_STORE_PA(&leon3_gptimer_regs->e[0].val, 0);
+ 		LEON3_BYPASS_STORE_PA(&leon3_gptimer_regs->e[0].rld,
+-				      (((1000000 / 100) - 1)));
++				      (((1000000 / HZ) - 1)));
+ 		LEON3_BYPASS_STORE_PA(&leon3_gptimer_regs->e[0].ctrl, 0);
  
--/* Device operations. */
--
--/* Open the device described by the passed string.  Note, that the format
-- * of the string is different on V0 vs. V2->higher proms.  The caller must
-- * know what he/she is doing!  Returns the device descriptor, an int.
-- */
--extern int prom_devopen(char *device_string);
--
--/* Close a previously opened device described by the passed integer
-- * descriptor.
-- */
--extern int prom_devclose(int device_handle);
--
--/* Do a seek operation on the device described by the passed integer
-- * descriptor.
-- */
--extern void prom_seek(int device_handle, unsigned int seek_hival,
--		      unsigned int seek_lowval);
--
- /* Miscellaneous routines, don't really fit in any category per se. */
+ #ifdef CONFIG_SMP
+@@ -128,7 +128,7 @@ void __init leon_init_timers(irq_handler
+ 		}
  
- /* Reboot the machine with the command line passed. */
---- a/arch/sparc/include/asm/oplib_64.h
-+++ b/arch/sparc/include/asm/oplib_64.h
-@@ -67,27 +67,6 @@ extern void prom_init(void *cif_handler,
- /* Boot argument acquisition, returns the boot command line string. */
- extern char *prom_getbootargs(void);
+ 		LEON3_BYPASS_STORE_PA(&leon3_gptimer_regs->e[1].val, 0);
+-		LEON3_BYPASS_STORE_PA(&leon3_gptimer_regs->e[1].rld, (((1000000/100) - 1)));
++		LEON3_BYPASS_STORE_PA(&leon3_gptimer_regs->e[1].rld, (((1000000/HZ) - 1)));
+ 		LEON3_BYPASS_STORE_PA(&leon3_gptimer_regs->e[1].ctrl, 0);
+ # endif
  
--/* Device utilities. */
--
--/* Device operations. */
--
--/* Open the device described by the passed string.  Note, that the format
-- * of the string is different on V0 vs. V2->higher proms.  The caller must
-- * know what he/she is doing!  Returns the device descriptor, an int.
-- */
--extern int prom_devopen(const char *device_string);
--
--/* Close a previously opened device described by the passed integer
-- * descriptor.
-- */
--extern int prom_devclose(int device_handle);
--
--/* Do a seek operation on the device described by the passed integer
-- * descriptor.
-- */
--extern void prom_seek(int device_handle, unsigned int seek_hival,
--		      unsigned int seek_lowval);
--
- /* Miscellaneous routines, don't really fit in any category per se. */
- 
- /* Reboot the machine with the command line passed. */
---- a/arch/sparc/prom/Makefile
-+++ b/arch/sparc/prom/Makefile
-@@ -6,7 +6,6 @@ ccflags := -Werror
- 
- lib-y                 := bootstr_$(BITS).o
- lib-$(CONFIG_SPARC32) += devmap.o
--lib-y                 += devops_$(BITS).o
- lib-y                 += init_$(BITS).o
- lib-$(CONFIG_SPARC32) += memory.o
- lib-y                 += misc_$(BITS).o
---- a/arch/sparc/prom/devops_32.c
-+++ /dev/null
-@@ -1,87 +0,0 @@
--/*
-- * devops.c:  Device operations using the PROM.
-- *
-- * Copyright (C) 1995 David S. Miller (davem@caip.rutgers.edu)
-- */
--#include <linux/types.h>
--#include <linux/kernel.h>
--#include <linux/sched.h>
--
--#include <asm/openprom.h>
--#include <asm/oplib.h>
--
--extern void restore_current(void);
--
--/* Open the device described by the string 'dstr'.  Returns the handle
-- * to that device used for subsequent operations on that device.
-- * Returns -1 on failure.
-- */
--int
--prom_devopen(char *dstr)
--{
--	int handle;
--	unsigned long flags;
--	spin_lock_irqsave(&prom_lock, flags);
--	switch(prom_vers) {
--	case PROM_V0:
--		handle = (*(romvec->pv_v0devops.v0_devopen))(dstr);
--		if(handle == 0) handle = -1;
--		break;
--	case PROM_V2:
--	case PROM_V3:
--		handle = (*(romvec->pv_v2devops.v2_dev_open))(dstr);
--		break;
--	default:
--		handle = -1;
--		break;
--	};
--	restore_current();
--	spin_unlock_irqrestore(&prom_lock, flags);
--
--	return handle;
--}
--
--/* Close the device described by device handle 'dhandle'. */
--int
--prom_devclose(int dhandle)
--{
--	unsigned long flags;
--	spin_lock_irqsave(&prom_lock, flags);
--	switch(prom_vers) {
--	case PROM_V0:
--		(*(romvec->pv_v0devops.v0_devclose))(dhandle);
--		break;
--	case PROM_V2:
--	case PROM_V3:
--		(*(romvec->pv_v2devops.v2_dev_close))(dhandle);
--		break;
--	default:
--		break;
--	};
--	restore_current();
--	spin_unlock_irqrestore(&prom_lock, flags);
--	return 0;
--}
--
--/* Seek to specified location described by 'seekhi' and 'seeklo'
-- * for device 'dhandle'.
-- */
--void
--prom_seek(int dhandle, unsigned int seekhi, unsigned int seeklo)
--{
--	unsigned long flags;
--	spin_lock_irqsave(&prom_lock, flags);
--	switch(prom_vers) {
--	case PROM_V0:
--		(*(romvec->pv_v0devops.v0_seekdev))(dhandle, seekhi, seeklo);
--		break;
--	case PROM_V2:
--	case PROM_V3:
--		(*(romvec->pv_v2devops.v2_dev_seek))(dhandle, seekhi, seeklo);
--		break;
--	default:
--		break;
--	};
--	restore_current();
--	spin_unlock_irqrestore(&prom_lock, flags);
--}
---- a/arch/sparc/prom/devops_64.c
-+++ /dev/null
-@@ -1,67 +0,0 @@
--/*
-- * devops.c:  Device operations using the PROM.
-- *
-- * Copyright (C) 1995 David S. Miller (davem@caip.rutgers.edu)
-- * Copyright (C) 1996,1997 Jakub Jelinek (jj@sunsite.mff.cuni.cz)
-- */
--#include <linux/types.h>
--#include <linux/kernel.h>
--#include <linux/sched.h>
--
--#include <asm/openprom.h>
--#include <asm/oplib.h>
--
--/* Open the device described by the string 'dstr'.  Returns the handle
-- * to that device used for subsequent operations on that device.
-- * Returns 0 on failure.
-- */
--int
--prom_devopen(const char *dstr)
--{
--	unsigned long args[5];
--
--	args[0] = (unsigned long) "open";
--	args[1] = 1;
--	args[2] = 1;
--	args[3] = (unsigned long) dstr;
--	args[4] = (unsigned long) -1;
--
--	p1275_cmd_direct(args);
--
--	return (int) args[4];
--}
--
--/* Close the device described by device handle 'dhandle'. */
--int
--prom_devclose(int dhandle)
--{
--	unsigned long args[4];
--
--	args[0] = (unsigned long) "close";
--	args[1] = 1;
--	args[2] = 0;
--	args[3] = (unsigned int) dhandle;
--
--	p1275_cmd_direct(args);
--
--	return 0;
--}
--
--/* Seek to specified location described by 'seekhi' and 'seeklo'
-- * for device 'dhandle'.
-- */
--void
--prom_seek(int dhandle, unsigned int seekhi, unsigned int seeklo)
--{
--	unsigned long args[7];
--
--	args[0] = (unsigned long) "seek";
--	args[1] = 3;
--	args[2] = 1;
--	args[3] = (unsigned int) dhandle;
--	args[4] = seekhi;
--	args[5] = seeklo;
--	args[6] = (unsigned long) -1;
--
--	p1275_cmd_direct(args);
--}
 
 
