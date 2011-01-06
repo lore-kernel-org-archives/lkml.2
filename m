@@ -1,230 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426Ab1AFCSF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 21:18:05 -0500
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:37299 "EHLO e1.ny.us.ibm.com"
+	id S1754609Ab1AFCSI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 21:18:08 -0500
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:37298 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753809Ab1AFCQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753798Ab1AFCQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Jan 2011 21:16:12 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: linux-kernel@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
+Cc: John Stultz <john.stultz@linaro.org>, Jamie Lokier <jamie@shareable.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>
-Subject: [PATCH 01/12] timers: Introduce timerlist infrastructure.
-Date: Wed,  5 Jan 2011 18:15:48 -0800
-Message-Id: <1294280159-2513-2-git-send-email-john.stultz@linaro.org>
+        Alexander Shishkin <virtuoso@slind.org>,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+Subject: [PATCH 09/12] [RFC] hrtimers: extend hrtimer base code to handle more then 2 clockids
+Date: Wed,  5 Jan 2011 18:15:56 -0800
+Message-Id: <1294280159-2513-10-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1294280159-2513-1-git-send-email-john.stultz@linaro.org>
 References: <1294280159-2513-1-git-send-email-john.stultz@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The timerlist infrastructure is a thin layer over the rbtree
-code that implements a simple list of timers sorted by an
-expires value, and a getnext function that provides a pointer
-to the earliest timer.
+The hrtimer code is written mainly with CLOCK_REALTIME and CLOCK_MONOTONIC
+in mind. These are clockids 0 and 1 resepctively. However, if we are
+to introduce any new hrtimer bases, using new clockids, we have to skip
+the cputimers (clockids 2,3) as well as other clockids that may not impelement
+timers.
 
-This infrastructure allows drivers and other kernel infrastructure
-to easily implement timers without duplicating code.
+This patch adds a little bit of indirection between the clockid and
+the base, so that we can extend the base by one when we add
+a new clockid at number 7 or so.
 
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-LKML Reference: <1290136329-18291-2-git-send-email-john.stultz@linaro.org>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-CC: Alessandro Zummo <a.zummo@towertech.it>
+CC: Jamie Lokier <jamie@shareable.org>
 CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Richard Cochran <richardcochran@gmail.com>
+CC: Alexander Shishkin <virtuoso@slind.org>
+CC: Arve Hjønnevåg <arve@android.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- include/linux/timerlist.h |   37 ++++++++++++++
- lib/Makefile              |    2 +-
- lib/timerlist.c           |  118 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 156 insertions(+), 1 deletions(-)
- create mode 100644 include/linux/timerlist.h
- create mode 100644 lib/timerlist.c
+ include/linux/hrtimer.h |    6 ++++-
+ kernel/hrtimer.c        |   48 ++++++++++++++++++++++++++++++++++------------
+ 2 files changed, 40 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/timerlist.h b/include/linux/timerlist.h
-new file mode 100644
-index 0000000..c46b28a
---- /dev/null
-+++ b/include/linux/timerlist.h
-@@ -0,0 +1,37 @@
-+#ifndef _LINUX_TIMERLIST_H
-+#define _LINUX_TIMERLIST_H
-+
-+#include <linux/rbtree.h>
-+#include <linux/ktime.h>
-+
-+
-+struct timerlist_node {
-+	struct rb_node node;
-+	ktime_t expires;
-+};
-+
-+struct timerlist_head {
-+	struct rb_root head;
-+	struct timerlist_node *next;
-+};
-+
-+
-+extern void timerlist_add(struct timerlist_head *head,
-+				struct timerlist_node *node);
-+extern void timerlist_del(struct timerlist_head *head,
-+				struct timerlist_node *node);
-+extern struct timerlist_node *timerlist_getnext(struct timerlist_head *head);
-+extern struct timerlist_node *timerlist_iterate_next(
-+						struct timerlist_node *node);
-+
-+static inline void timerlist_init(struct timerlist_node *node)
-+{
-+	RB_CLEAR_NODE(&node->node);
-+}
-+
-+static inline void timerlist_init_head(struct timerlist_head *head)
-+{
-+	head->head = RB_ROOT;
-+	head->next = NULL;
-+}
-+#endif /* _LINUX_TIMERLIST_H */
-diff --git a/lib/Makefile b/lib/Makefile
-index e6a3763..8b475cf 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -8,7 +8,7 @@ KBUILD_CFLAGS = $(subst -pg,,$(ORIG_CFLAGS))
- endif
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index 0a7abaa..f96c43d 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -149,7 +149,11 @@ struct hrtimer_clock_base {
+ #endif
+ };
  
- lib-y := ctype.o string.o vsprintf.o cmdline.o \
--	 rbtree.o radix-tree.o dump_stack.o \
-+	 rbtree.o radix-tree.o dump_stack.o timerlist.o\
- 	 idr.o int_sqrt.o extable.o prio_tree.o \
- 	 sha1.o irq_regs.o reciprocal_div.o argv_split.o \
- 	 proportions.o prio_heap.o ratelimit.o show_mem.o \
-diff --git a/lib/timerlist.c b/lib/timerlist.c
-new file mode 100644
-index 0000000..9101b42
---- /dev/null
-+++ b/lib/timerlist.c
-@@ -0,0 +1,118 @@
-+/*
-+ *  Generic Timer-list
-+ *
-+ *  Manages a simple list of timers, ordered by expiration time.
-+ *  Uses rbtrees for quick list adds and expiration.
-+ *
-+ *  NOTE: All of the following functions need to be serialized
-+ *  to avoid races. No locking is done by this libary code.
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License
-+ *  along with this program; if not, write to the Free Software
-+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
+-#define HRTIMER_MAX_CLOCK_BASES 2
++enum  hrtimer_base_type {
++	HRTIMER_BASE_REALTIME,
++	HRTIMER_BASE_MONOTONIC,
++	HRTIMER_MAX_CLOCK_BASES,
++};
+ 
+ /*
+  * struct hrtimer_cpu_base - the per cpu clock bases
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index f2429fc..fb20e08 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -53,11 +53,10 @@
+ /*
+  * The timer bases:
+  *
+- * Note: If we want to add new timer bases, we have to skip the two
+- * clock ids captured by the cpu-timers. We do this by holding empty
+- * entries rather than doing math adjustment of the clock ids.
+- * This ensures that we capture erroneous accesses to these clock ids
+- * rather than moving them into the range of valid clock id's.
++ * There are more clockids then hrtimer bases. Thus, we index
++ * into the timer bases by the hrtimer_base_type enum. When trying
++ * to reach a base using a clockid, hrtimer_clockid_to_base()
++ * is used to convert from clockid to the proper hrtimer_base_type.
+  */
+ DEFINE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases) =
+ {
+@@ -77,6 +76,17 @@ DEFINE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases) =
+ 	}
+ };
+ 
++static int hrtimer_clock_to_base_table[MAX_CLOCKS];
 +
-+#include <linux/timerlist.h>
-+#include <linux/rbtree.h>
-+
-+/**
-+ * timerlist_add - Adds timer to timerlist.
-+ *
-+ * @head: head of timerlist
-+ * @node: timer node to be added
-+ *
-+ * Adds the timer node to the timerlist, sorted by the
-+ * node's expires value.
-+ */
-+void timerlist_add(struct timerlist_head *head, struct timerlist_node *node)
++static inline int hrtimer_clockid_to_base(clockid_t clock_id)
 +{
-+	struct rb_node **p = &head->head.rb_node;
-+	struct rb_node *parent = NULL;
-+	struct timerlist_node  *ptr;
++	int ret = hrtimer_clock_to_base_table[clock_id];
 +
-+	/* Make sure we don't add nodes that are already added */
-+	WARN_ON_ONCE(!RB_EMPTY_NODE(&node->node));
-+
-+	while (*p) {
-+		parent = *p;
-+		ptr = rb_entry(parent, struct timerlist_node, node);
-+		if (node->expires.tv64 < ptr->expires.tv64)
-+			p = &(*p)->rb_left;
-+		else
-+			p = &(*p)->rb_right;
-+	}
-+	rb_link_node(&node->node, parent, p);
-+	rb_insert_color(&node->node, &head->head);
-+
-+	if (!head->next || node->expires.tv64 < head->next->expires.tv64)
-+		head->next = node;
-+}
-+
-+/**
-+ * timerlist_del - Removes a timer from the timerlist.
-+ *
-+ * @head: head of timerlist
-+ * @node: timer node to be removed
-+ *
-+ * Removes the timer node from the timerlist.
-+ */
-+void timerlist_del(struct timerlist_head *head, struct timerlist_node *node)
-+{
-+	WARN_ON_ONCE(RB_EMPTY_NODE(&node->node));
-+
-+	/* update next pointer */
-+	if (head->next == node) {
-+		struct rb_node *rbn = rb_next(&node->node);
-+
-+		head->next = rbn ?
-+			rb_entry(rbn, struct timerlist_node, node) : NULL;
-+	}
-+	rb_erase(&node->node, &head->head);
-+	RB_CLEAR_NODE(&node->node);
++	WARN_ON(ret == -1);
++	return ret;
 +}
 +
 +
-+/**
-+ * timerlist_getnext - Returns the timer with the earlies expiration time
-+ *
-+ * @head: head of timerlist
-+ *
-+ * Returns a pointer to the timer node that has the
-+ * earliest expiration time.
-+ */
-+struct timerlist_node *timerlist_getnext(struct timerlist_head *head)
-+{
-+	return head->next;
-+}
+ /*
+  * Get the coarse grained time at the softirq based on xtime and
+  * wall_to_monotonic.
+@@ -95,8 +105,8 @@ static void hrtimer_get_softirq_time(struct hrtimer_cpu_base *base)
+ 
+ 	xtim = timespec_to_ktime(xts);
+ 	tomono = timespec_to_ktime(tom);
+-	base->clock_base[CLOCK_REALTIME].softirq_time = xtim;
+-	base->clock_base[CLOCK_MONOTONIC].softirq_time =
++	base->clock_base[HRTIMER_BASE_REALTIME].softirq_time = xtim;
++	base->clock_base[HRTIMER_BASE_MONOTONIC].softirq_time =
+ 		ktime_add(xtim, tomono);
+ }
+ 
+@@ -184,10 +194,11 @@ switch_hrtimer_base(struct hrtimer *timer, struct hrtimer_clock_base *base,
+ 	struct hrtimer_cpu_base *new_cpu_base;
+ 	int this_cpu = smp_processor_id();
+ 	int cpu = hrtimer_get_target(this_cpu, pinned);
++	int basenum = hrtimer_clockid_to_base(base->index);
+ 
+ again:
+ 	new_cpu_base = &per_cpu(hrtimer_bases, cpu);
+-	new_base = &new_cpu_base->clock_base[base->index];
++	new_base = &new_cpu_base->clock_base[basenum];
+ 
+ 	if (base != new_base) {
+ 		/*
+@@ -627,7 +638,7 @@ static void retrigger_next_event(void *arg)
+ 
+ 	/* Adjust CLOCK_REALTIME offset */
+ 	raw_spin_lock(&base->lock);
+-	base->clock_base[CLOCK_REALTIME].offset =
++	base->clock_base[HRTIMER_BASE_REALTIME].offset =
+ 		timespec_to_ktime(realtime_offset);
+ 
+ 	hrtimer_force_reprogram(base, 0);
+@@ -725,8 +736,8 @@ static int hrtimer_switch_to_hres(void)
+ 		return 0;
+ 	}
+ 	base->hres_active = 1;
+-	base->clock_base[CLOCK_REALTIME].resolution = KTIME_HIGH_RES;
+-	base->clock_base[CLOCK_MONOTONIC].resolution = KTIME_HIGH_RES;
++	base->clock_base[HRTIMER_BASE_REALTIME].resolution = KTIME_HIGH_RES;
++	base->clock_base[HRTIMER_BASE_MONOTONIC].resolution = KTIME_HIGH_RES;
+ 
+ 	tick_setup_sched_timer();
+ 
+@@ -1121,6 +1132,7 @@ static void __hrtimer_init(struct hrtimer *timer, clockid_t clock_id,
+ 			   enum hrtimer_mode mode)
+ {
+ 	struct hrtimer_cpu_base *cpu_base;
++	int base;
+ 
+ 	memset(timer, 0, sizeof(struct hrtimer));
+ 
+@@ -1129,7 +1141,8 @@ static void __hrtimer_init(struct hrtimer *timer, clockid_t clock_id,
+ 	if (clock_id == CLOCK_REALTIME && mode != HRTIMER_MODE_ABS)
+ 		clock_id = CLOCK_MONOTONIC;
+ 
+-	timer->base = &cpu_base->clock_base[clock_id];
++	base = hrtimer_clockid_to_base(clock_id);
++	timer->base = &cpu_base->clock_base[base];
+ 	hrtimer_init_timer_hres(timer);
+ 	timerqueue_init(&timer->node);
+ 
+@@ -1165,9 +1178,10 @@ EXPORT_SYMBOL_GPL(hrtimer_init);
+ int hrtimer_get_res(const clockid_t which_clock, struct timespec *tp)
+ {
+ 	struct hrtimer_cpu_base *cpu_base;
++	int base = hrtimer_clockid_to_base(which_clock);
+ 
+ 	cpu_base = &__raw_get_cpu_var(hrtimer_bases);
+-	*tp = ktime_to_timespec(cpu_base->clock_base[which_clock].resolution);
++	*tp = ktime_to_timespec(cpu_base->clock_base[base].resolution);
+ 
+ 	return 0;
+ }
+@@ -1714,6 +1728,14 @@ static struct notifier_block __cpuinitdata hrtimers_nb = {
+ 
+ void __init hrtimers_init(void)
+ {
++	int i;
 +
++	/* Init the clockid -> base mapping */
++	for (i = 0; i < MAX_CLOCKS; i++)
++		hrtimer_clock_to_base_table[i] = -1;
++	hrtimer_clock_to_base_table[CLOCK_REALTIME] = HRTIMER_BASE_REALTIME;
++	hrtimer_clock_to_base_table[CLOCK_MONOTONIC] = HRTIMER_BASE_MONOTONIC;
 +
-+/**
-+ * timerlist_iterate_next - Returns the timer after the provided timer
-+ *
-+ * @node: Pointer to a timer.
-+ *
-+ * Provides the timer that is after the given node. This is used, when
-+ * necessary, to iterate through the list of timers in a timer list
-+ * without modifying the list.
-+ */
-+struct timerlist_node *timerlist_iterate_next(struct timerlist_node *node)
-+{
-+	struct rb_node *next;
-+
-+	if (!node)
-+		return NULL;
-+	next = rb_next(&node->node);
-+	if (!next)
-+		return NULL;
-+	return container_of(next, struct timerlist_node, node);
-+}
+ 	hrtimer_cpu_notify(&hrtimers_nb, (unsigned long)CPU_UP_PREPARE,
+ 			  (void *)(long)smp_processor_id());
+ 	register_cpu_notifier(&hrtimers_nb);
 -- 
 1.7.3.2.146.gca209
 
