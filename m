@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469Ab1AFSEO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 13:04:14 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:40830 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751856Ab1AFSEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 13:04:12 -0500
-Subject: Re: [PATCH 12/12] [RFC] Introduce Alarm (hybrid) timers
-From: John Stultz <john.stultz@linaro.org>
-To: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
-Cc: linux-kernel@vger.kernel.org, Brian Swetland <swetland@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>
-In-Reply-To: <AANLkTi=i9bnAz9FoB_Q1u4pTOwpBCTHK4S21iukZWBpF@mail.gmail.com>
-References: <1294280159-2513-1-git-send-email-john.stultz@linaro.org>
-	 <1294280159-2513-13-git-send-email-john.stultz@linaro.org>
-	 <AANLkTi=i9bnAz9FoB_Q1u4pTOwpBCTHK4S21iukZWBpF@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 06 Jan 2011 10:04:01 -0800
-Message-ID: <1294337041.4518.87.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1752556Ab1AFSFv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 13:05:51 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48209 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752341Ab1AFSFt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 13:05:49 -0500
+Date: Thu, 6 Jan 2011 18:05:30 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+Message-ID: <20110106180530.GI31708@n2100.arm.linux.org.uk>
+References: <20110105200008.GJ8638@n2100.arm.linux.org.uk> <1294259637.16957.25.camel@mulgrave.site> <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com> <20110105210448.GM8638@n2100.arm.linux.org.uk> <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com> <1294262208.2952.4.camel@heimdal.trondhjem.org> <AANLkTi=3Gu-rz=-OdNtUXn4qw60Df6=YePnzvB=s-+Ov@mail.gmail.com> <1294268808.2952.18.camel@heimdal.trondhjem.org> <1294270104.16957.73.camel@mulgrave.site> <1294335614.22825.154.camel@mulgrave.site>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294335614.22825.154.camel@mulgrave.site>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-05 at 20:07 -0800, Arve Hjønnevåg wrote:
-> On Wed, Jan 5, 2011 at 6:15 PM, John Stultz <john.stultz@linaro.org> wrote:
-> > Its possible that I've missed some subtleties of the Android
-> > alarm driver interface, and that some of the interface decisions
-> > I've made may not allow Android to use this interface directly,
-> > I'd be very interested if those details could be pointed out,
-> > and hopefully we can find a good solution to get this useful
-> > functionality upstream.
-> >
+On Thu, Jan 06, 2011 at 11:40:13AM -0600, James Bottomley wrote:
+> On Wed, 2011-01-05 at 23:28 +0000, James Bottomley wrote:
+> > Can you explain how the code works? it looks to me like you read the xdr
+> > stuff through the vmap region then write it out directly to the pages? 
 > 
-> I don't know how suited the posix interface is for this, but I think
-> it is critical to prevent suspend while an alarm is pending. If an
-> alarm is important enough to wake the system up from suspend, it is
-> probably not safe to suspend right after it triggered. The android
-> alarm driver holds a wakelock until user-space calls back in to wait
-> for the next alarm, while in-kernel alarms are called from interrupt
+> OK, I think I see how this is supposed to work:  It's a sequential loop
+> of reading in via the pages (i.e. through the kernel mapping) and then
+> updating those pages via the vmap.  In which case, I think this patch is
+> what you need.
+> 
+> The theory of operation is that the readdir on pages actually uses the
+> network DMA operations to perform, so when it's finished, the underlying
 
-Hrm. I was hoping to avoid wakelock discussions for now. What happens if
-an app sets a single alarm and then never calls back in? I assume
-closing the device drops the wakelock?
-
-> context. The apis provided in include/linux/pm_wakeup.h should provide
-> the functionality you need to prevent suspend until the alarms have
-> been fully processed, but I have not tried this api yet.
-
-Ok. I'll have to check out the pm_wakeup.h api and see if it can be
-used.
-
-> It would also be useful to still allow in-kernel alarms to be
-> activated from atomic context (we currently do this in a couple of
-> drivers to avoid using a second wakelock).
-
-This is useful. I think I was being overly cautious using a mutex
-instead of a spinlock for the base lock since I was worried about
-calling into the RTC code which require mutexes, but we only do that at
-suspend, so it should be ok to use a spinlock there. I'll revise and add
-that in.
-
-So otherwise, do you see any reason why android might not be able to
-adapt this code to replace the android alarm timers?
-
-thanks
--john
-
-
+What network DMA operations - what if your NIC doesn't do DMA because
+it's an SMSC device?
