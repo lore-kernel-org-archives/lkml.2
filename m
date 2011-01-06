@@ -1,90 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754491Ab1AFAam (ORCPT <rfc822;w@1wt.eu>);
+	id S1754517Ab1AFAnW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:43:22 -0500
+Received: from kroah.org ([198.145.64.141]:35898 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754257Ab1AFAam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Jan 2011 19:30:42 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:47357 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754257Ab1AFAah (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:30:37 -0500
-Date: Wed, 5 Jan 2011 16:27:53 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 2/3] Documentation: update kernel-docs.txt
-Message-Id: <20110105162753.d29c814c.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:06 2011
+Message-Id: <20110106002306.033091115@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Wed, 05 Jan 2011 16:23:16 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [097/152] x86: Enable the intr-remap fault handling after local APIC setup
+In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicolas Kaiser <nikai@nikai.net>
+2.6.36-stable review patch.  If anyone has any objections, please let us know.
 
-Fixed typos, and removed duplicated entries.
+------------------
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+
+commit 7f7fbf45c6b748074546f7f16b9488ca71de99c1 upstream.
+
+Interrupt-remapping gets enabled very early in the boot, as it determines the
+apic mode that the processor can use. And the current code enables the vt-d
+fault handling before the setup_local_APIC(). And hence the APIC LDR registers
+and data structure in the memory may not be initialized. So the vt-d fault
+handling in logical xapic/x2apic modes were broken.
+
+Fix this by enabling the vt-d fault handling in the end_local_APIC_setup()
+
+A cleaner fix of enabling fault handling while enabling intr-remapping
+will be addressed for v2.6.38. [ Enabling intr-remapping determines the
+usage of x2apic mode and the apic mode determines the fault-handling
+configuration. ]
+
+Signed-off-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+LKML-Reference: <20101201062244.541996375@intel.com>
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Acked-by: Chris Wright <chrisw@sous-sol.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- Documentation/kernel-docs.txt |   27 ++-------------------------
- 1 file changed, 2 insertions(+), 25 deletions(-)
+ arch/x86/kernel/apic/apic.c     |    8 ++++++++
+ arch/x86/kernel/apic/probe_64.c |    7 -------
+ 2 files changed, 8 insertions(+), 7 deletions(-)
 
---- lnx-2637-rc4.orig/Documentation/kernel-docs.txt
-+++ lnx-2637-rc4/Documentation/kernel-docs.txt
-@@ -537,7 +537,7 @@
-        Notes: Further information in
-        http://www.oreilly.com/catalog/linuxdrive2/
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1340,6 +1340,14 @@ void __cpuinit end_local_APIC_setup(void
  
--     * Title: "Linux Device Drivers, 3nd Edition"
-+     * Title: "Linux Device Drivers, 3rd Edition"
-        Authors: Jonathan Corbet, Alessandro Rubini, and Greg Kroah-Hartman
-        Publisher: O'Reilly & Associates.
-        Date: 2005.
-@@ -592,14 +592,6 @@
-        Pages: 600.
-        ISBN: 0-13-101908-2
+ 	setup_apic_nmi_watchdog(NULL);
+ 	apic_pm_activate();
++
++	/*
++	 * Now that local APIC setup is completed for BP, configure the fault
++	 * handling for interrupt remapping.
++	 */
++	if (!smp_processor_id() && intr_remapping_enabled)
++		enable_drhd_fault_handling();
++
+ }
  
--     * Title:  "The  Design  and Implementation of the 4.4 BSD UNIX
--       Operating System"
--       Author: Marshall Kirk McKusick, Keith Bostic, Michael J. Karels,
--       John S. Quarterman.
--       Publisher: Addison-Wesley.
--       Date: 1996.
--       ISBN: 0-201-54979-4
+ #ifdef CONFIG_X86_X2APIC
+--- a/arch/x86/kernel/apic/probe_64.c
++++ b/arch/x86/kernel/apic/probe_64.c
+@@ -76,13 +76,6 @@ void __init default_setup_apic_routing(v
+ 		/* need to update phys_pkg_id */
+ 		apic->phys_pkg_id = apicid_phys_pkg_id;
+ 	}
 -
-      * Title: "Programming for the real world - POSIX.4"
-        Author: Bill O. Gallmeister.
-        Publisher: O'Reilly & Associates, Inc..
-@@ -610,28 +602,13 @@
-        POSIX. Good reference.
+-	/*
+-	 * Now that apic routing model is selected, configure the
+-	 * fault handling for intr remapping.
+-	 */
+-	if (intr_remapping_enabled)
+-		enable_drhd_fault_handling();
+ }
  
-      * Title:  "UNIX  Systems  for  Modern Architectures: Symmetric
--       Multiprocesssing and Caching for Kernel Programmers"
-+       Multiprocessing and Caching for Kernel Programmers"
-        Author: Curt Schimmel.
-        Publisher: Addison Wesley.
-        Date: June, 1994.
-        Pages: 432.
-        ISBN: 0-201-63338-8
- 
--     * Title:  "The  Design  and Implementation of the 4.3 BSD UNIX
--       Operating System"
--       Author: Samuel J. Leffler, Marshall Kirk McKusick, Michael J.
--       Karels, John S. Quarterman.
--       Publisher: Addison-Wesley.
--       Date: 1989 (reprinted with corrections on October, 1990).
--       ISBN: 0-201-06196-1
--
--     * Title: "The Design of the UNIX Operating System"
--       Author: Maurice J. Bach.
--       Publisher: Prentice Hall.
--       Date: 1986.
--       Pages: 471.
--       ISBN: 0-13-201757-1
--
-      MISCELLANEOUS:
- 
-      * Name: linux/Documentation
+ /* Same for both flat and physical. */
+
+
