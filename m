@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856Ab1AFW3h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 17:29:37 -0500
-Received: from kroah.org ([198.145.64.141]:55644 "EHLO coco.kroah.org"
+	id S1754845Ab1AFW3e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 17:29:34 -0500
+Received: from kroah.org ([198.145.64.141]:55649 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754469Ab1AFWXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 17:23:42 -0500
+	id S1754512Ab1AFWXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 17:23:43 -0500
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Jiri Slaby <jslaby@suse.cz>, Helge Deller <deller@gmx.de>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        linux-parisc@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 12/36] parisc: cleanup console handling
-Date: Thu,  6 Jan 2011 14:23:01 -0800
-Message-Id: <1294352605-31906-12-git-send-email-gregkh@suse.de>
+Cc: Wolfram Sang <w.sang@pengutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 13/36] serial: mpc52xx: make printout for type more generic
+Date: Thu,  6 Jan 2011 14:23:02 -0800
+Message-Id: <1294352605-31906-13-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110106215404.GA30624@kroah.com>
 References: <20110106215404.GA30624@kroah.com>
@@ -21,52 +21,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Wolfram Sang <w.sang@pengutronix.de>
 
-* use newly added for_each_console for iterating consoles
-* add proper console locking
-* do not initialize tmp twice
-* no need to declare console_drivers, it's already done in console.h
+The printout for the type should be just "5xxx", so 512x users won't
+wonder why they have a mpc52xx-type UART.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Acked-by: Kyle McMartin <kyle@mcmartin.ca>
-Cc: Helge Deller <deller@gmx.de>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Cc: linux-parisc@vger.kernel.org
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/parisc/kernel/pdc_cons.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/serial/mpc52xx_uart.c |    6 +++++-
+ include/linux/serial_core.h   |    2 +-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/arch/parisc/kernel/pdc_cons.c b/arch/parisc/kernel/pdc_cons.c
-index 66d1f17..11bdd68 100644
---- a/arch/parisc/kernel/pdc_cons.c
-+++ b/arch/parisc/kernel/pdc_cons.c
-@@ -92,8 +92,6 @@ static int pdc_console_setup(struct console *co, char *options)
- 
- static struct timer_list pdc_console_timer;
- 
--extern struct console * console_drivers;
--
- static int pdc_console_tty_open(struct tty_struct *tty, struct file *filp)
+diff --git a/drivers/serial/mpc52xx_uart.c b/drivers/serial/mpc52xx_uart.c
+index c4399e2..126ec7f 100644
+--- a/drivers/serial/mpc52xx_uart.c
++++ b/drivers/serial/mpc52xx_uart.c
+@@ -838,7 +838,11 @@ mpc52xx_uart_set_termios(struct uart_port *port, struct ktermios *new,
+ static const char *
+ mpc52xx_uart_type(struct uart_port *port)
  {
+-	return port->type == PORT_MPC52xx ? "MPC52xx PSC" : NULL;
++	/*
++	 * We keep using PORT_MPC52xx for historic reasons although it applies
++	 * for MPC512x, too, but print "MPC5xxx" to not irritate users
++	 */
++	return port->type == PORT_MPC52xx ? "MPC5xxx PSC" : NULL;
+ }
  
-@@ -169,11 +167,13 @@ static int __init pdc_console_tty_driver_init(void)
- 	 * It is unregistered if the pdc console was not selected as the
- 	 * primary console. */
+ static void
+diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
+index 41603d6..9ff9b7d 100644
+--- a/include/linux/serial_core.h
++++ b/include/linux/serial_core.h
+@@ -95,7 +95,7 @@
+ /* PPC CPM type number */
+ #define PORT_CPM        58
  
--	struct console *tmp = console_drivers;
-+	struct console *tmp;
+-/* MPC52xx type numbers */
++/* MPC52xx (and MPC512x) type numbers */
+ #define PORT_MPC52xx	59
  
--	for (tmp = console_drivers; tmp; tmp = tmp->next)
-+	acquire_console_sem();
-+	for_each_console(tmp)
- 		if (tmp == &pdc_cons)
- 			break;
-+	release_console_sem();
- 
- 	if (!tmp) {
- 		printk(KERN_INFO "PDC console driver not registered anymore, not creating %s\n", pdc_cons.name);
+ /* IBM icom */
 -- 
 1.7.3.2
 
