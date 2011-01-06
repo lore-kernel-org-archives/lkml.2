@@ -1,120 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab1AFWsD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 17:48:03 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39278
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752589Ab1AFWsA (ORCPT
+	id S1754646Ab1AFWxK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 17:53:10 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:40892 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752589Ab1AFWxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 17:48:00 -0500
-Date: Thu, 06 Jan 2011 14:48:32 -0800 (PST)
-Message-Id: <20110106.144832.189697659.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Sparc
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 6 Jan 2011 17:53:08 -0500
+Date: Fri, 7 Jan 2011 09:53:01 +1100
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: Crypto Update for 2.6.38
+Message-ID: <20110106225301.GA27358@gondor.apana.org.au>
+References: <20100804140448.GA4042@gondor.apana.org.au> <20101024061625.GA23715@gondor.apana.org.au> <20110106000157.GA16089@gondor.apana.org.au> <AANLkTikzg3Hndp8WRi59bvJdBLxi=p-1gt7aZDLYbSW8@mail.gmail.com> <20110106211645.GA26184@gondor.apana.org.au> <AANLkTimwaJCUxvMLoeS5Cpmu7FX3y=coeSdkPrrL4zcr@mail.gmail.com> <20110106213932.GA26538@gondor.apana.org.au> <AANLkTi=fggNhMm1LpOzzZ0_ofaU6w=ahX8SMGgFkHCui@mail.gmail.com> <20110106223042.GA27080@gondor.apana.org.au> <AANLkTinbH8i8rjUxACV5PkdLuVc9YccT+E5x=ZBWunyU@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinbH8i8rjUxACV5PkdLuVc9YccT+E5x=ZBWunyU@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 06, 2011 at 02:43:35PM -0800, Linus Torvalds wrote:
+>
+> Can you do the "bypass directly to the TCP stream" with the interface
+> you added? It isn't at all obvious how it would work.
 
-Not a whole lot here, mainly:
+Yes it can.  The interface allows zero-copy in both directions
+using the splice interface.  Here is a sample program demonstrating
+zero-copy in-place encryption.  It doesn't send the result over TCP
+but I'm sure you can imagine what that would look like.
 
-1) sparc 32-bit LEON updates from Daniel Hellstrom.
+Note that the final read(2) looks like it copies, but it doesn't.
+The read(2) will setup SG lists using the user-space address and
+place the encryption result in there directly.  In this case as
+the source/destination addresses are identical, it performs in-place
+encryption.
 
-2) PROM cleanups and consolidation of the 32-bit and 64-bit
-   piggyback programs into one unified code base, from Sam
-   Ravnborg.
+#include <fcntl.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <linux/splice.h>
+#include <linux/types.h>
+#include <linux/af_alg.h>
 
-3) An atyfb on sparc bootup regression fix, which will be sent
-   to -stable.
+static char buf[4096] __attribute__((__aligned__(4096)));
 
-Please pull, thanks a lot.
+int main(void)
+{
+	int opfd;
+	int tfmfd;
+	struct sockaddr_alg sa = {
+		.salg_family = AF_ALG,
+		.salg_type = "skcipher",
+		.salg_name = "cbc(aes)"
+	};
+	struct msghdr msg = {};
+	struct cmsghdr *cmsg;
+	char cbuf[CMSG_SPACE(4) + CMSG_SPACE(20)];
+	struct aes_iv {
+		__u32 len;
+		__u8 iv[16];
+	} *iv;
+	struct iovec iov;
+	int i;
+	int pipes[2];
 
-The following changes since commit cb600d2f83c854ec3d6660063e4466431999489b:
+	pipe(pipes);
 
-  Merge branch 'x86-mm-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2011-01-06 11:12:17 -0800)
+	tfmfd = socket(AF_ALG, SOCK_SEQPACKET, 0);
 
-are available in the git repository at:
+	bind(tfmfd, (struct sockaddr *)&sa, sizeof(sa));
 
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/sparc-next-2.6.git master
+	setsockopt(tfmfd, SOL_ALG, ALG_SET_KEY,
+		   "\x06\xa9\x21\x40\x36\xb8\xa1\x5b"
+		   "\x51\x2e\x03\xd5\x34\x12\x00\x06", 16);
 
-Daniel Hellstrom (7):
-      SPARC/LEON: find IRQCTRL and Timer via OF-Tree, instead of hardcoded.
-      SPARC/LEON: added support for IRQAMP IRQ Controller
-      LEON: added raw AMBA vendor/device number to find TIMER, IRQCTRL
-      SPARC/LEON: added support for selecting Timer Core and Timer within core
-      SPARC/LEON: avoid AMBAPP name duplicates in openprom fs when REG is missing
-      APBUART: added raw AMBA vendor/device number to match against.
-      Added support for ampopts in APBUART driver. Used in AMP systems.
+	opfd = accept(tfmfd, NULL, 0);
 
-David S. Miller (3):
-      Merge master.kernel.org:/.../davem/sparc-2.6
-      sparc: Eliminate prom_stdin.
-      atyfb: Fix bootup hangs on sparc64.
+	msg.msg_control = cbuf;
+	msg.msg_controllen = sizeof(cbuf);
 
-Julian Calaby (1):
-      sparc: prom: Sanitize return value from prom_nbputchar()
+	cmsg = CMSG_FIRSTHDR(&msg);
+	cmsg->cmsg_level = SOL_ALG;
+	cmsg->cmsg_type = ALG_SET_OP;
+	cmsg->cmsg_len = CMSG_LEN(4);
+	*(__u32 *)CMSG_DATA(cmsg) = ALG_OP_ENCRYPT;
 
-Sam Ravnborg (15):
-      sparc: drop prom/devmap.c
-      sparc: drop prom/palloc.c
-      sparc: remove unused prom cpu functions
-      sparc: remove unused prom tree functions
-      sparc: fix sparse warnings in arch/sparc/prom for 32 bit build
-      sparc: refactor piggy_32.c
-      sparc: use trapbase in setup_arch
-      sparc: use _start for the start entry (like 64 bit does)
-      sparc: additional comments to piggyback_32.c
-      sparc: remove obsolete ELF support in piggyback_32.c
-      sparc: add $BITS to piggyback arguments
-      sparc: fix tftpboot.img for sparc64 on little-endian host
-      sparc: rename piggyback_32 to piggyback
-      sparc: unify strip command in boot/Makefile
-      sparc: update copyright in piggyback.c
+	cmsg = CMSG_NXTHDR(&msg, cmsg);
+	cmsg->cmsg_level = SOL_ALG;
+	cmsg->cmsg_type = ALG_SET_IV;
+	cmsg->cmsg_len = CMSG_LEN(20);
+	iv = (void *)CMSG_DATA(cmsg);
+	iv->len = 16;
+	memcpy(iv->iv, "\x3d\xaf\xba\x42\x9d\x9e\xb4\x30"
+		       "\xb4\x22\xda\x80\x2c\x9f\xac\x41", 16);
 
- arch/sparc/boot/Makefile           |   28 ++---
- arch/sparc/boot/piggyback.c        |  272 ++++++++++++++++++++++++++++++++++++
- arch/sparc/boot/piggyback_32.c     |  137 ------------------
- arch/sparc/boot/piggyback_64.c     |  110 ---------------
- arch/sparc/include/asm/leon.h      |   12 ++
- arch/sparc/include/asm/leon_amba.h |    6 +-
- arch/sparc/include/asm/openprom.h  |    2 +-
- arch/sparc/include/asm/oplib_32.h  |   83 +----------
- arch/sparc/include/asm/oplib_64.h  |   50 +------
- arch/sparc/kernel/head_32.S        |    3 +-
- arch/sparc/kernel/leon_kernel.c    |  114 +++++++++++++---
- arch/sparc/kernel/prom_32.c        |   27 +++-
- arch/sparc/kernel/setup_32.c       |    3 +-
- arch/sparc/mm/sun4c.c              |    8 +-
- arch/sparc/prom/Makefile           |    3 -
- arch/sparc/prom/bootstr_32.c       |    3 +-
- arch/sparc/prom/console_32.c       |   68 ++-------
- arch/sparc/prom/console_64.c       |   83 ++---------
- arch/sparc/prom/devmap.c           |   53 -------
- arch/sparc/prom/devops_32.c        |   87 ------------
- arch/sparc/prom/devops_64.c        |   67 ---------
- arch/sparc/prom/init_64.c          |    3 +-
- arch/sparc/prom/misc_32.c          |    2 +-
- arch/sparc/prom/misc_64.c          |   16 +--
- arch/sparc/prom/mp.c               |   78 ----------
- arch/sparc/prom/palloc.c           |   43 ------
- arch/sparc/prom/printf.c           |   35 ++++-
- arch/sparc/prom/ranges.c           |    6 +-
- arch/sparc/prom/tree_32.c          |   66 +--------
- arch/sparc/prom/tree_64.c          |   18 ---
- drivers/serial/apbuart.c           |    8 +-
- drivers/video/aty/atyfb_base.c     |   27 +---
- 32 files changed, 514 insertions(+), 1007 deletions(-)
- create mode 100644 arch/sparc/boot/piggyback.c
- delete mode 100644 arch/sparc/boot/piggyback_32.c
- delete mode 100644 arch/sparc/boot/piggyback_64.c
- delete mode 100644 arch/sparc/prom/devmap.c
- delete mode 100644 arch/sparc/prom/devops_32.c
- delete mode 100644 arch/sparc/prom/devops_64.c
- delete mode 100644 arch/sparc/prom/palloc.c
+	memcpy(buf, "Single block msg", 16);
+
+	iov.iov_base = buf;
+	iov.iov_len = 4096;
+
+	msg.msg_iovlen = 0;
+	msg.msg_flags = MSG_MORE;
+
+	sendmsg(opfd, &msg, 0);
+	vmsplice(pipes[1], &iov, 1, SPLICE_F_GIFT);
+	splice(pipes[0], NULL, opfd, NULL, 16, 0);
+	read(opfd, buf, 16);
+
+	for (i = 0; i < 16; i++) {
+		printf("%02x", (unsigned char)buf[i]);
+	}
+	printf("\n");
+
+	close(opfd);
+	close(tfmfd);
+
+	return 0;
+
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
