@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730Ab1AFAoU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:44:20 -0500
-Received: from kroah.org ([198.145.64.141]:35870 "EHLO coco.kroah.org"
+	id S1754555Ab1AFAoS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:44:18 -0500
+Received: from kroah.org ([198.145.64.141]:35878 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754456Ab1AFAac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:30:32 -0500
+	id S1754430Ab1AFAaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:30:35 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:05 2011
-Message-Id: <20110106002305.333910795@clark.site>
+Message-Id: <20110106002305.543785429@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:23:09 -0800
+Date: Wed, 05 Jan 2011 16:23:11 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [090/152] orinoco: clear countermeasure setting on commit
+        NeilBrown <neilb@suse.de>
+Subject: [092/152] md: fix bug with re-adding of partially recovered device.
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,42 +25,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Kilroy <kilroyd@googlemail.com>
+From: NeilBrown <neilb@suse.de>
 
-commit ba34fcee476d11e7c9df95932787a22a96ff6e68 upstream.
+commit 1a855a0606653d2d82506281e2c686bacb4b2f45 upstream.
 
-... and interface up.
+With v0.90 metadata, a hot-spare does not become a full member of the
+array until recovery is complete.  So if we re-add such a device to
+the array, we know that all of it is as up-to-date as the event count
+would suggest, and so it a bitmap-based recovery is possible.
 
-In these situations, you are usually trying to connect to a new AP, so
-keeping TKIP countermeasures active is confusing. This is already how
-the driver behaves (inadvertently). However, querying SIOCGIWAUTH may
-tell userspace that countermeasures are active when they aren't.
+However with v1.x metadata, the hot-spare immediately becomes a full
+member of the array, but it record how much of the device has been
+recovered.  If the array is stopped and re-assembled recovery starts
+from this point.
 
-Clear the setting so that the reporting matches what the driver has
-done..
+When such a device is hot-added to an array we currently lose the 'how
+much is recovered' information and incorrectly included it as a full
+in-sync member (after bitmap-based fixup).
+This is wrong and unsafe and could corrupt data.
 
-Signed-off by: David Kilroy <kilroyd@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+So be more careful about setting saved_raid_disk - which is what
+guides the re-adding of devices back into an array.
+The new code matches the code in slot_store which does a similar
+thing, which is encouraging.
+
+This is suitable for any -stable kernel.
+
+Reported-by: "Dailey, Nate" <Nate.Dailey@stratus.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/orinoco/main.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/md/md.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/orinoco/main.c
-+++ b/drivers/net/wireless/orinoco/main.c
-@@ -1813,6 +1813,12 @@ static int __orinoco_commit(struct orino
- 	struct net_device *dev = priv->ndev;
- 	int err = 0;
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -5150,7 +5150,7 @@ static int add_new_disk(mddev_t * mddev,
+ 				PTR_ERR(rdev));
+ 			return PTR_ERR(rdev);
+ 		}
+-		/* set save_raid_disk if appropriate */
++		/* set saved_raid_disk if appropriate */
+ 		if (!mddev->persistent) {
+ 			if (info->state & (1<<MD_DISK_SYNC)  &&
+ 			    info->raid_disk < mddev->raid_disks)
+@@ -5160,7 +5160,10 @@ static int add_new_disk(mddev_t * mddev,
+ 		} else
+ 			super_types[mddev->major_version].
+ 				validate_super(mddev, rdev);
+-		rdev->saved_raid_disk = rdev->raid_disk;
++		if (test_bit(In_sync, &rdev->flags))
++			rdev->saved_raid_disk = rdev->raid_disk;
++		else
++			rdev->saved_raid_disk = -1;
  
-+	/* If we've called commit, we are reconfiguring or bringing the
-+	 * interface up. Maintaining countermeasures across this would
-+	 * be confusing, so note that we've disabled them. The port will
-+	 * be enabled later in orinoco_commit or __orinoco_up. */
-+	priv->tkip_cm_active = 0;
-+
- 	err = orinoco_hw_program_rids(priv);
- 
- 	/* FIXME: what about netif_tx_lock */
+ 		clear_bit(In_sync, &rdev->flags); /* just to be sure */
+ 		if (info->state & (1<<MD_DISK_WRITEMOSTLY))
 
 
