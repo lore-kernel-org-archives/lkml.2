@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529Ab1AFAnz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:43:55 -0500
-Received: from kroah.org ([198.145.64.141]:35890 "EHLO coco.kroah.org"
+	id S1754629Ab1AFAnk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:43:40 -0500
+Received: from kroah.org ([198.145.64.141]:35894 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754473Ab1AFAaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:30:39 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:05 2011
-Message-Id: <20110106002305.845832963@clark.site>
+	id S1754481Ab1AFAal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:30:41 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:06 2011
+Message-Id: <20110106002305.931648588@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:23:14 -0800
+Date: Wed, 05 Jan 2011 16:23:15 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: [095/152] arch/tile: handle CLONE_SETTLS in copy_thread(), not user space
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [096/152] x86, gcc-4.6: Use gcc -m options when building vdso
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: H. Peter Anvin <hpa@linux.intel.com>
 
-commit bc4cf2bb271b2d557fc510426755da786fc985be upstream.
+commit de2a8cf98ecdde25231d6c5e7901e2cffaf32af9 upstream.
 
-Previously we were just setting up the "tp" register in the
-new task as started by clone() in libc.  However, this is not
-quite right, since in principle a signal might be delivered to
-the new task before it had its TLS set up.  (Of course, this race
-window still exists for resetting the libc getpid() cached value
-in the new task, in principle.  But in any case, we are now doing
-this exactly the way all other architectures do it.)
+The vdso Makefile passes linker-style -m options not to the linker but
+to gcc.  This happens to work with earlier gcc, but fails with gcc
+4.6.  Pass gcc-style -m options, instead.
 
-This change is important for 2.6.37 since the tile glibc we will
-be submitting upstream will not set TLS in user space any more,
-so it will only work on a kernel that has this fix.  It should
-also be taken for 2.6.36.x in the stable tree if possible.
+Note: all currently supported versions of gcc supports -m32, so there
+is no reason to conditionalize it any more.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+Reported-by: H. J. Lu <hjl.tools@gmail.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+LKML-Reference: <tip-*@git.kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/tile/kernel/process.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/x86/vdso/Makefile |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/tile/kernel/process.c
-+++ b/arch/tile/kernel/process.c
-@@ -212,6 +212,13 @@ int copy_thread(unsigned long clone_flag
- 	childregs->sp = sp;  /* override with new user stack pointer */
+--- a/arch/x86/vdso/Makefile
++++ b/arch/x86/vdso/Makefile
+@@ -25,7 +25,7 @@ targets += vdso.so vdso.so.dbg vdso.lds
  
- 	/*
-+	 * If CLONE_SETTLS is set, set "tp" in the new task to "r4",
-+	 * which is passed in as arg #5 to sys_clone().
-+	 */
-+	if (clone_flags & CLONE_SETTLS)
-+		childregs->tp = regs->regs[4];
-+
-+	/*
- 	 * Copy the callee-saved registers from the passed pt_regs struct
- 	 * into the context-switch callee-saved registers area.
- 	 * We have to restore the callee-saved registers since we may
+ export CPPFLAGS_vdso.lds += -P -C
+ 
+-VDSO_LDFLAGS_vdso.lds = -m elf_x86_64 -Wl,-soname=linux-vdso.so.1 \
++VDSO_LDFLAGS_vdso.lds = -m64 -Wl,-soname=linux-vdso.so.1 \
+ 		      	-Wl,-z,max-page-size=4096 -Wl,-z,common-page-size=4096
+ 
+ $(obj)/vdso.o: $(src)/vdso.S $(obj)/vdso.so
+@@ -69,7 +69,7 @@ vdso32.so-$(VDSO32-y)		+= sysenter
+ vdso32-images			= $(vdso32.so-y:%=vdso32-%.so)
+ 
+ CPPFLAGS_vdso32.lds = $(CPPFLAGS_vdso.lds)
+-VDSO_LDFLAGS_vdso32.lds = -m elf_i386 -Wl,-soname=linux-gate.so.1
++VDSO_LDFLAGS_vdso32.lds = -m32 -Wl,-soname=linux-gate.so.1
+ 
+ # This makes sure the $(obj) subdirectory exists even though vdso32/
+ # is not a kbuild sub-make subdirectory.
 
 
