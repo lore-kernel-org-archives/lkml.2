@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595Ab1AFAbG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:31:06 -0500
-Received: from kroah.org ([198.145.64.141]:35962 "EHLO coco.kroah.org"
+	id S1754654Ab1AFAk7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:40:59 -0500
+Received: from kroah.org ([198.145.64.141]:35969 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754580Ab1AFAbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:31:03 -0500
+	id S1754583Ab1AFAbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:31:05 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:07 2011
-Message-Id: <20110106002307.188228163@clark.site>
+Message-Id: <20110106002307.279243867@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:23:29 -0800
+Date: Wed, 05 Jan 2011 16:23:30 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Eduardo Costa <ecosta.tmp@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [110/152] p54usb: New USB ID for Gemtek WUBI-100GW
+        Ken Mills <ken.k.mills@intel.com>, Alan Cox <alan@linux.intel.com>
+Subject: [111/152] n_gsm: Fix message length handling when building header
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,31 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eduardo Costa <ecosta.tmp@gmail.com>
+From: Ken Mills <ken.k.mills@intel.com>
 
-commit 56e6417b49132d4f56e9f2241d31942b90b46315 upstream.
+commit be7a7411d63ccad165d66fe8e0b11b2ee336159b upstream.
 
-This USB ID is for the WUBI-100GW 802.11g Wireless LAN USB Device that
-uses p54usb.
+Fix message length handling when building header
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: Eduardo Costa <ecosta.tmp@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+When the message length is greater than 127, the length field in the header
+is built incorrectly. According to the spec, when the length is less than 128
+the length field is a single byte formatted as: bbbbbbb1. When it is greater
+than 127 then the field is two bytes of the format: bbbbbbb0 bbbbbbbb.
+
+Signed-off-by: Ken Mills <ken.k.mills@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/p54/p54usb.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/char/n_gsm.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/p54/p54usb.c
-+++ b/drivers/net/wireless/p54/p54usb.c
-@@ -61,6 +61,7 @@ static struct usb_device_id p54u_table[]
- 	{USB_DEVICE(0x107b, 0x55f2)},	/* Gateway WGU-210 (Gemtek) */
- 	{USB_DEVICE(0x124a, 0x4023)},	/* Shuttle PN15, Airvast WM168g, IOGear GWU513 */
- 	{USB_DEVICE(0x1435, 0x0210)},	/* Inventel UR054G */
-+	{USB_DEVICE(0x15a9, 0x0002)},	/* Gemtek WUBI-100GW 802.11g */
- 	{USB_DEVICE(0x1630, 0x0005)},	/* 2Wire 802.11g USB (v1) / Z-Com */
- 	{USB_DEVICE(0x182d, 0x096b)},	/* Sitecom WL-107 */
- 	{USB_DEVICE(0x1915, 0x2234)},	/* Linksys WUSB54G OEM */
+--- a/drivers/char/n_gsm.c
++++ b/drivers/char/n_gsm.c
+@@ -716,8 +716,8 @@ static void __gsm_data_queue(struct gsm_
+ 		if (msg->len < 128)
+ 			*--dp = (msg->len << 1) | EA;
+ 		else {
+-			*--dp = (msg->len >> 6) | EA;
+-			*--dp = (msg->len & 127) << 1;
++			*--dp = (msg->len >> 7);	/* bits 7 - 15 */
++			*--dp = (msg->len & 127) << 1;	/* bits 0 - 6 */
+ 		}
+ 	}
+ 
 
 
