@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab1AFAbN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:31:13 -0500
-Received: from kroah.org ([198.145.64.141]:35983 "EHLO coco.kroah.org"
+	id S1754504Ab1AFAao (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:30:44 -0500
+Received: from kroah.org ([198.145.64.141]:35882 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754619Ab1AFAbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:31:09 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:07 2011
-Message-Id: <20110106002307.549661910@clark.site>
+	id S1754462Ab1AFAag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:30:36 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:05 2011
+Message-Id: <20110106002305.646418041@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:23:33 -0800
+Date: Wed, 05 Jan 2011 16:23:12 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Florian Fainelli <florian@openwrt.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [114/152] gpio: Fix null pointer dereference while accessing rdc321x platform_data
+        NeilBrown <neilb@suse.de>
+Subject: [093/152] md: protect against NULL reference when waiting to start a raid10.
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +25,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Fainelli <florian@openwrt.org>
+From: NeilBrown <neilb@suse.de>
 
-commit fa6469cb5b2d16703464c344b943e2c025cb7858 upstream.
+commit 589a594be1fb8815b3f18e517be696c48664f728 upstream.
 
-rdc321x-gpio currently fetches its driver specific data by using the
-platform_device->platform_data pointer, this is wrong because the mfd
-device which registers our platform_device has been added using
-mfd_add_device() which sets the platform_device->driver_data pointer
-instead.
+When we fail to start a raid10 for some reason, we call
+md_unregister_thread to kill the thread that was created.
 
-Signed-off-by: Florian Fainelli <florian@openwrt.org>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+Unfortunately md_thread() will then make one call into the handler
+(raid10d) even though md_wakeup_thread has not been called.  This is
+not safe and as md_unregister_thread is called after mddev->private
+has been set to NULL, it will definitely cause a NULL dereference.
+
+So fix this at both ends:
+ - md_thread should only call the handler if THREAD_WAKEUP has been
+   set.
+ - raid10 should call md_unregister_thread before setting things
+   to NULL just like all the other raid modules do.
+
+This is applicable to 2.6.35 and later.
+
+Reported-by: "Citizen" <citizen_lee@thecus.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpio/rdc321x-gpio.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/md.c     |    5 ++---
+ drivers/md/raid10.c |    2 +-
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
---- a/drivers/gpio/rdc321x-gpio.c
-+++ b/drivers/gpio/rdc321x-gpio.c
-@@ -135,7 +135,7 @@ static int __devinit rdc321x_gpio_probe(
- 	struct rdc321x_gpio *rdc321x_gpio_dev;
- 	struct rdc321x_gpio_pdata *pdata;
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -6040,9 +6040,8 @@ static int md_thread(void * arg)
+ 			 || kthread_should_stop(),
+ 			 thread->timeout);
  
--	pdata = pdev->dev.platform_data;
-+	pdata = platform_get_drvdata(pdev);
- 	if (!pdata) {
- 		dev_err(&pdev->dev, "no platform data supplied\n");
- 		return -ENODEV;
+-		clear_bit(THREAD_WAKEUP, &thread->flags);
+-
+-		thread->run(thread->mddev);
++		if (test_and_clear_bit(THREAD_WAKEUP, &thread->flags))
++			thread->run(thread->mddev);
+ 	}
+ 
+ 	return 0;
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -2396,13 +2396,13 @@ static int run(mddev_t *mddev)
+ 	return 0;
+ 
+ out_free_conf:
++	md_unregister_thread(mddev->thread);
+ 	if (conf->r10bio_pool)
+ 		mempool_destroy(conf->r10bio_pool);
+ 	safe_put_page(conf->tmppage);
+ 	kfree(conf->mirrors);
+ 	kfree(conf);
+ 	mddev->private = NULL;
+-	md_unregister_thread(mddev->thread);
+ out:
+ 	return -EIO;
+ }
 
 
