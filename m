@@ -1,34 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753238Ab1AFLab (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 06:30:31 -0500
-Received: from wine.ocn.ne.jp ([122.1.235.145]:59346 "EHLO smtp.wine.ocn.ne.jp"
+	id S1753267Ab1AFLat (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 06:30:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56686 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752987Ab1AFLa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 06:30:29 -0500
-To: eparis@redhat.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Cc: serue@us.ibm.com, sgrubb@redhat.com
-Subject: Re: [PATCH] System Wide Capability Bounding Set
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <1294266337.3237.45.camel@localhost.localdomain>
-In-Reply-To: <1294266337.3237.45.camel@localhost.localdomain>
-Message-Id: <201101062030.AIC51020.HOLOFQSJFtVFMO@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Thu, 6 Jan 2011 20:30:24 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752873Ab1AFLar (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 06:30:47 -0500
+Message-ID: <4D25A7E3.4090101@redhat.com>
+Date: Thu, 06 Jan 2011 01:30:43 -1000
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Alexander Graf <agraf@suse.de>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [KVM TSC trapping / migration 1/2] Add TSC trapping for SVM and
+ VMX
+References: <1294308645-31113-1-git-send-email-zamsden@redhat.com> <1294308645-31113-2-git-send-email-zamsden@redhat.com> <9EEA19E7-668A-4CD0-B006-6B494D9FD242@suse.de>
+In-Reply-To: <9EEA19E7-668A-4CD0-B006-6B494D9FD242@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Paris wrote:
-> Not so long ago the global capability bounding set was removed from the
-> kernel.  Instead we created a new per task capability bounding set which
-> was inherited by children.
+On 01/06/2011 12:41 AM, Alexander Graf wrote:
+> Am 06.01.2011 um 11:10 schrieb Zachary Amsden<zamsden@redhat.com>:
+>
+>    
+>> Reasons to trap the TSC are numerous, but we want to avoid it as much
+>> as possible for performance reasons.
+>>
+>> We provide two conservative modes via modules parameters and userspace
+>> hinting.  First, the module can be loaded with "tsc_auto=1" as a module
+>> parameter, which turns on conservative TSC trapping only when it is
+>> required (when unstable TSC or faster KHZ CPU is detected).
+>>
+>> For userspace hinting, we enable trapping only if necessary.  Userspace
+>> can hint that a VM needs a fixed frequency TSC, and also that SMP
+>> stability will be required.  In that case, we conservatively turn on
+>> trapping when it is needed.  In addition, users may now specify the
+>> desired TSC rate at which to run.  If this rate differs significantly
+>> from the host rate, trapping will be enabled.
+>>
+>> There is also an override control to allow TSC trapping to be turned on
+>> or off unconditionally for testing.
+>>
+>> We indicate to pvclock users that the TSC is being trapped, to allow
+>> avoiding overhead and directly using RDTSCP (only for SVM).  This
+>> optimization is not yet implemented.
+>>      
+> When migrating, the implementation could switch from non-trapped to trapped, making it less attractive. The guest however does not get notified about this change. Same for the other way around.
+>    
 
-An LSM module can provide ability to aggregate several tasks into a group
-(called "security context" or "domain") and grant permissions against groups.
-We can selectively grant whatever capabilities against groups.
-Why do we need to get bothered by capability inheritance problem?
+That's a policy decision to be made by the userspace agent.  It's better 
+than the current situation, where there is no control at all of TSC 
+rate.  Here, we're flexible either way.
+
+Also note, moving to a faster processor, trapping kicks in... but the 
+processor is faster, so no actual loss is noticed, and the problem 
+corrects when the VM is power cycled.
+
+> Would it make sense to add a kvmclock interrupt to notify the guest of such a change?
+
+kvmclock is immune to frequency changes, so it needs no interrupt, it 
+just has a version controlled shared area, which is reset.
