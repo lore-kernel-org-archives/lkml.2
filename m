@@ -1,74 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085Ab1AFRn4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 12:43:56 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:53307 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233Ab1AFRny (ORCPT
+	id S1753751Ab1AFRr4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 12:47:56 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:24739 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752680Ab1AFRry convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 12:43:54 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Martin Knoblauch <knobi@knobisoft.de>
-Cc: Joe Perches <joe@perches.com>, Krzysztof Halasa <khc@pm.waw.pl>,
-        Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Dan Carpenter <error27@gmail.com>, Andy Whitcroft <apw@canonical.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] checkpatch: putting the && or || on the wrong line
-In-Reply-To: Your message of "Thu, 06 Jan 2011 04:11:31 PST."
-             <839814.56179.qm@web113319.mail.gq1.yahoo.com>
-From: Valdis.Kletnieks@vt.edu
-References: <20110104055900.GA5062@bicker> <20110104163836.GA30317@fieldses.org> <20110104164414.GX5875@const.bordeaux.inria.fr> <1294160834.6617.51.camel@Joe-Laptop> <m3fwt7i740.fsf@intrepid.localdomain> <1294249529.6617.118.camel@Joe-Laptop>
-            <839814.56179.qm@web113319.mail.gq1.yahoo.com>
+	Thu, 6 Jan 2011 12:47:54 -0500
+X-IronPort-AV: E=Sophos;i="4.60,284,1291622400"; 
+   d="scan'208";a="502424972"
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
+In-Reply-To: <1294335614.22825.154.camel@mulgrave.site>
+References: <1294254337.16957.13.camel@mulgrave.site>
+	 <AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com>
+	 <1294256169.16957.18.camel@mulgrave.site>
+	 <20110105200008.GJ8638@n2100.arm.linux.org.uk>
+	 <1294259637.16957.25.camel@mulgrave.site>
+	 <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com>
+	 <20110105210448.GM8638@n2100.arm.linux.org.uk>
+	 <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com>
+	 <1294262208.2952.4.camel@heimdal.trondhjem.org>
+	 <AANLkTi=3Gu-rz=-OdNtUXn4qw60Df6=YePnzvB=s-+Ov@mail.gmail.com>
+	 <1294268808.2952.18.camel@heimdal.trondhjem.org>
+	 <1294270104.16957.73.camel@mulgrave.site>
+	 <1294335614.22825.154.camel@mulgrave.site>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Thu, 06 Jan 2011 12:47:34 -0500
+Message-ID: <1294336054.2905.1.camel@heimdal.trondhjem.org>
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1294335793_4821P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 06 Jan 2011 12:43:14 -0500
-Message-ID: <88124.1294335794@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020207.4D25FF35.0007,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 06 Jan 2011 17:47:35.0700 (UTC) FILETIME=[CD71A540:01CBADC9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1294335793_4821P
-Content-Type: text/plain; charset=us-ascii
+On Thu, 2011-01-06 at 11:40 -0600, James Bottomley wrote: 
+> On Wed, 2011-01-05 at 23:28 +0000, James Bottomley wrote:
+> > Can you explain how the code works? it looks to me like you read the xdr
+> > stuff through the vmap region then write it out directly to the pages? 
+> 
+> OK, I think I see how this is supposed to work:  It's a sequential loop
+> of reading in via the pages (i.e. through the kernel mapping) and then
+> updating those pages via the vmap.  In which case, I think this patch is
+> what you need.
+> 
+> The theory of operation is that the readdir on pages actually uses the
+> network DMA operations to perform, so when it's finished, the underlying
+> page is up to date.  After this you invalidate the vmap range, so we
+> have no cache lines above it (so it picks up the values from the
+> uptodate page).  Finally, after the operation on the vmap region has
+> finished, you flush it so that any updated contents go back to the pages
+> themselves before the next iteration begins.
+> 
+> Does this look right to people?  I've verified it fixes the issues on
+> parisc.
+> 
+> James
+> 
+> ---
+> 
+> diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+> index 996dd89..bde1911 100644
+> --- a/fs/nfs/dir.c
+> +++ b/fs/nfs/dir.c
+> @@ -587,12 +587,16 @@ int nfs_readdir_xdr_to_array(nfs_readdir_descriptor_t *desc, struct page *page,
+>  		if (status < 0)
+>  			break;
+>  		pglen = status;
+> +
+> +		invalidate_kernel_vmap_range(pages_ptr, pglen);
+> +
+>  		status = nfs_readdir_page_filler(desc, &entry, pages_ptr, page, pglen);
+>  		if (status < 0) {
+>  			if (status == -ENOSPC)
+>  				status = 0;
+>  			break;
+>  		}
+> +		flush_kernel_vmap_range(pages_ptr, pglen);
 
-On Thu, 06 Jan 2011 04:11:31 PST, Martin Knoblauch said:
-> If I am "just" a volunteer on some mainly volunteer open source project, why
-> should I care about "in my opinion" crap style. It will just drive me away from
-> that project.
+Why is this line needed? We're not writing through the virtual mapping.
 
-> Martrin (to hell with style)
+We checked using just the invalidate_kernel_vmap_range(), and that
+appeared to suffice to fix the problem on ARM.
 
-http://www.ioccc.org/ is over there --------------------------->
+Cheers
+  Trond
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-That's why you should care about style - because nobody likes debugging
-somebody else's ioccc award-winning code. ;)
-
---==_Exmh_1294335793_4821P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNJf8xcC3lWbTT17ARAjBMAKCb1440TxZJF9YoZ+sZnEkGfc0+BwCguto2
-NQvvFdYrsKYB8EcO/EpbB7E=
-=tOUM
------END PGP SIGNATURE-----
-
---==_Exmh_1294335793_4821P--
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
