@@ -1,75 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658Ab1AFHtk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 02:49:40 -0500
-Received: from mga01.intel.com ([192.55.52.88]:22189 "EHLO mga01.intel.com"
+	id S1751456Ab1AFH4f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 02:56:35 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:50141 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752053Ab1AFHtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 02:49:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,282,1291622400"; 
-   d="scan'208";a="643983356"
-Subject: Re: [PATCH 7/7] perf: Add load latency monitoring on Intel
- Nehalem/Westmere v2
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <1294149804.2016.142.camel@laptop>
-References: <1293464397.2695.109.camel@localhost>
-	 <1294142361.2016.131.camel@laptop>  <1294149804.2016.142.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 06 Jan 2011 15:49:15 +0800
-Message-ID: <1294300155.9261.62.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+	id S1751328Ab1AFH4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 02:56:34 -0500
+From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
+To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCHv1 0/8] unicore32 machine related files: summary
+Date: Thu, 6 Jan 2011 15:56:35 +0800
+Message-ID: <01de01cbad77$3dbed0a0$b93c71e0$@mprc.pku.edu.cn>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AcutdN+H6CMsGCTsTY+zfNQC8VTI6Q==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-04 at 22:03 +0800, Peter Zijlstra wrote:
-> On Tue, 2011-01-04 at 12:59 +0100, Peter Zijlstra wrote:
-> > 
-> > Right, so I think I want this in 3 patches, one adding the load-latency
-> > extra reg thing and PERF_SAMPLE_ADDR usage, one adding
-> > PERF_SAMPLE_LATENCY and one adding PERF_SAMPLE_EXTRA, I really dislike
-> > the LATENCY_DATA name since that ties the extra data to the latency
-> > thing, which isn't at all true for other platforms.
-> 
-> Also, this wants a 4th patch to be fully mergable, we want to have
-> tools/perf/ support for these things..
+From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 
-I am thinking what can be added to perf tools....
+The whole patch could be fetched from:
+  git://git.kernel.org/pub/scm/linux/kernel/git/epip/unicore32.git
+  with branch name: unicore32.
+And it is divided into  three patch sets: core architecture files,
+  additional architecture files, and machine related files.
 
-Seems the average load latency values for each data source and data
-linear address is useful.
+This patch set adds the machine related files for UniCore32 ISA and PKUnity SoC. 
 
-We may add these support to perf stat or perf record/report.
+Patch 1 adds machine related  core files, also including build infrastructure.
 
-Any other idea?
+Patch 2 add all hardware registers definitions, which are not split and inserted into
+ different drivers.
 
-data source			average load latency(cycles)
-=========			=============================
-Unknown L3			xxx
-L1-local			xxx
-L2-snoop			xxx
-....
-....
-L3-miss,remote,exclusive        xxx
-IO                              xxx
-Uncached memory                 xxx
+Patch 3 implements arch-specific pci bus driver.
 
+Patch 4 implements arch-specific ps2 dirver.
 
-data linear address		avergage load latency(cycles)
-===================		=============================
-xxxxxxx				xxx
-xxxxxxx				xxx
-xxxxxxx				xxx
-....
-....
+Patch 5 implements frame buffer driver.
 
-Thanks,
-Lin Ming
+Patch 6 implements ac97 driver.
+
+Patch 7 implements arch-specific i2c bus driver.
+
+Patch 8 implements network driver.
+
+Signed-off-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+---
+ arch/unicore32/include/asm/mach/PKUnity.h     |  104 ++
+ arch/unicore32/include/asm/mach/bitfield.h    |   24 +
+ arch/unicore32/include/asm/mach/hardware.h    |   45 +
+ arch/unicore32/include/asm/mach/regs-ac97.h   |   32 +
+ arch/unicore32/include/asm/mach/regs-dmac.h   |   81 +
+ arch/unicore32/include/asm/mach/regs-gpio.h   |   70 +
+ arch/unicore32/include/asm/mach/regs-i2c.h    |   63 +
+ arch/unicore32/include/asm/mach/regs-intc.h   |   28 +
+ arch/unicore32/include/asm/mach/regs-nand.h   |   79 +
+ arch/unicore32/include/asm/mach/regs-ost.h    |   92 ++
+ arch/unicore32/include/asm/mach/regs-pci.h    |   94 ++
+ arch/unicore32/include/asm/mach/regs-pm.h     |  126 ++
+ arch/unicore32/include/asm/mach/regs-ps2.h    |   20 +
+ arch/unicore32/include/asm/mach/regs-resetc.h |   34 +
+ arch/unicore32/include/asm/mach/regs-rtc.h    |   37 +
+ arch/unicore32/include/asm/mach/regs-sdc.h    |  156 ++
+ arch/unicore32/include/asm/mach/regs-spi.h    |   98 ++
+ arch/unicore32/include/asm/mach/regs-uart.h   |    3 +
+ arch/unicore32/include/asm/mach/regs-umal.h   |  229 +++
+ arch/unicore32/include/asm/mach/regs-unigfx.h |  200 +++
+ arch/unicore32/include/asm/pci.h              |   46 +
+ arch/unicore32/kernel/pci.c                   |  404 +++++
+ arch/unicore32/kernel/puv3-core.c             |  266 ++++
+ arch/unicore32/kernel/puv3-nb0916.c           |  183 +++
+ arch/unicore32/kernel/puv3-smw0919.c          |  120 ++
+ drivers/input/keyboard/Kconfig                |   11 +
+ drivers/input/keyboard/atkbd.c                |    4 +
+ drivers/input/mouse/psmouse-base.c            |   41 +
+ drivers/input/serio/i8042.h                   |    2 +
+ drivers/pci/Makefile                          |    1 +
+ drivers/staging/puv3/Kconfig                  |  142 ++
+ drivers/staging/puv3/Makefile                 |   27 +
+ drivers/staging/puv3/TODO                     |    7 +
+ drivers/staging/puv3/i8042-ucio.h             |   96 ++
+ drivers/staging/puv3/nb0916-atkbd.h           |   43 +
+ drivers/staging/puv3/puv3_ac97.c              |  383 +++++
+ drivers/staging/puv3/puv3_i2c.c               |  325 ++++
+ drivers/staging/puv3/puv3_pcm.c               |  449 ++++++
+ drivers/staging/puv3/puv3_pcm.h               |   33 +
+ drivers/staging/puv3/puv3_umal.c              | 2082 +++++++++++++++++++++++++
+ drivers/staging/puv3/puv3_unifb.c             |  972 ++++++++++++
+ include/linux/fb.h                            |    2 +
+ 42 files changed, 7254 insertions(+), 0 deletions(-)
 
