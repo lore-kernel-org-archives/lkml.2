@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755113Ab1AFHqQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 02:46:16 -0500
-Received: from [69.28.251.93] ([69.28.251.93]:38783 "EHLO b32.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755073Ab1AFHqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 02:46:04 -0500
-From: Kevin Cernekee <cernekee@gmail.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 6/6] MIPS: Limit fixrange_init() to the FIXMAP region
-Date: Wed, 05 Jan 2011 23:31:30 -0800
-Message-Id: <e19154ae0e4900405b6e8586a31fa878@localhost>
-In-Reply-To: <8eec0c63f92528c501c0e6a0c8396359@localhost>
-References: <8eec0c63f92528c501c0e6a0c8396359@localhost>
-User-Agent: vim 7.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+	id S1752658Ab1AFHtk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 02:49:40 -0500
+Received: from mga01.intel.com ([192.55.52.88]:22189 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752053Ab1AFHtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 02:49:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,282,1291622400"; 
+   d="scan'208";a="643983356"
+Subject: Re: [PATCH 7/7] perf: Add load latency monitoring on Intel
+ Nehalem/Westmere v2
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <1294149804.2016.142.camel@laptop>
+References: <1293464397.2695.109.camel@localhost>
+	 <1294142361.2016.131.camel@laptop>  <1294149804.2016.142.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 06 Jan 2011 15:49:15 +0800
+Message-ID: <1294300155.9261.62.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixrange_init() allocates page tables for all addresses higher than
-FIXADDR_TOP.  On processors that override the default FIXADDR_TOP
-address of 0xfffe_0000, this can consume up to 4 pages (1 page per 4MB)
-for pgd's that are never used.
+On Tue, 2011-01-04 at 22:03 +0800, Peter Zijlstra wrote:
+> On Tue, 2011-01-04 at 12:59 +0100, Peter Zijlstra wrote:
+> > 
+> > Right, so I think I want this in 3 patches, one adding the load-latency
+> > extra reg thing and PERF_SAMPLE_ADDR usage, one adding
+> > PERF_SAMPLE_LATENCY and one adding PERF_SAMPLE_EXTRA, I really dislike
+> > the LATENCY_DATA name since that ties the extra data to the latency
+> > thing, which isn't at all true for other platforms.
+> 
+> Also, this wants a 4th patch to be fully mergable, we want to have
+> tools/perf/ support for these things..
 
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
----
- arch/mips/mm/init.c       |    6 +++---
- arch/mips/mm/pgtable-32.c |    2 +-
- arch/mips/mm/pgtable-64.c |    2 +-
- 3 files changed, 5 insertions(+), 5 deletions(-)
+I am thinking what can be added to perf tools....
 
-diff --git a/arch/mips/mm/init.c b/arch/mips/mm/init.c
-index 2efcbd2..deb8b3a 100644
---- a/arch/mips/mm/init.c
-+++ b/arch/mips/mm/init.c
-@@ -279,11 +279,11 @@ void __init fixrange_init(unsigned long start, unsigned long end,
- 	k = __pmd_offset(vaddr);
- 	pgd = pgd_base + i;
- 
--	for ( ; (i < PTRS_PER_PGD) && (vaddr != end); pgd++, i++) {
-+	for ( ; (i < PTRS_PER_PGD) && (vaddr < end); pgd++, i++) {
- 		pud = (pud_t *)pgd;
--		for ( ; (j < PTRS_PER_PUD) && (vaddr != end); pud++, j++) {
-+		for ( ; (j < PTRS_PER_PUD) && (vaddr < end); pud++, j++) {
- 			pmd = (pmd_t *)pud;
--			for (; (k < PTRS_PER_PMD) && (vaddr != end); pmd++, k++) {
-+			for (; (k < PTRS_PER_PMD) && (vaddr < end); pmd++, k++) {
- 				if (pmd_none(*pmd)) {
- 					pte = (pte_t *) alloc_bootmem_low_pages(PAGE_SIZE);
- 					set_pmd(pmd, __pmd((unsigned long)pte));
-diff --git a/arch/mips/mm/pgtable-32.c b/arch/mips/mm/pgtable-32.c
-index 575e401..adc6911 100644
---- a/arch/mips/mm/pgtable-32.c
-+++ b/arch/mips/mm/pgtable-32.c
-@@ -52,7 +52,7 @@ void __init pagetable_init(void)
- 	 * Fixed mappings:
- 	 */
- 	vaddr = __fix_to_virt(__end_of_fixed_addresses - 1) & PMD_MASK;
--	fixrange_init(vaddr, 0, pgd_base);
-+	fixrange_init(vaddr, vaddr + FIXADDR_SIZE, pgd_base);
- 
- #ifdef CONFIG_HIGHMEM
- 	/*
-diff --git a/arch/mips/mm/pgtable-64.c b/arch/mips/mm/pgtable-64.c
-index 78eaa4f..cda4e30 100644
---- a/arch/mips/mm/pgtable-64.c
-+++ b/arch/mips/mm/pgtable-64.c
-@@ -76,5 +76,5 @@ void __init pagetable_init(void)
- 	 * Fixed mappings:
- 	 */
- 	vaddr = __fix_to_virt(__end_of_fixed_addresses - 1) & PMD_MASK;
--	fixrange_init(vaddr, 0, pgd_base);
-+	fixrange_init(vaddr, vaddr + FIXADDR_SIZE, pgd_base);
- }
--- 
-1.7.0.4
+Seems the average load latency values for each data source and data
+linear address is useful.
+
+We may add these support to perf stat or perf record/report.
+
+Any other idea?
+
+data source			average load latency(cycles)
+=========			=============================
+Unknown L3			xxx
+L1-local			xxx
+L2-snoop			xxx
+....
+....
+L3-miss,remote,exclusive        xxx
+IO                              xxx
+Uncached memory                 xxx
+
+
+data linear address		avergage load latency(cycles)
+===================		=============================
+xxxxxxx				xxx
+xxxxxxx				xxx
+xxxxxxx				xxx
+....
+....
+
+Thanks,
+Lin Ming
 
