@@ -1,123 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698Ab1AFFUd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 00:20:33 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:40145 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153Ab1AFFUc (ORCPT
+	id S1752917Ab1AFFZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 00:25:57 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:31189 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab1AFFZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 00:20:32 -0500
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: "M. Mohan Kumar" <mohan@in.ibm.com>,
-        v9fs-developer <v9fs-developer@lists.sourceforge.net>,
-        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [V2] fs/9p: TREADLINK bugfix
-In-Reply-To: <1294246196-8354-1-git-send-email-mohan@in.ibm.com>
-References: <1294246196-8354-1-git-send-email-mohan@in.ibm.com>
-User-Agent: Notmuch/0.5-32-gf6c60cc (http://notmuchmail.org) Emacs/23.1.1 (i486-pc-linux-gnu)
-Date: Thu, 06 Jan 2011 10:50:26 +0530
-Message-ID: <87zkre38x1.fsf@linux.vnet.ibm.com>
+	Thu, 6 Jan 2011 00:25:56 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6217"; a="69226787"
+Message-ID: <4D255263.7040106@codeaurora.org>
+Date: Wed, 05 Jan 2011 21:25:55 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] arm: mm: Poison freed init memory
+References: <1294256845-29517-1-git-send-email-sboyd@codeaurora.org> <20110105202645.GL8638@n2100.arm.linux.org.uk>
+In-Reply-To: <20110105202645.GL8638@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  5 Jan 2011 22:19:56 +0530, "M. Mohan Kumar" <mohan@in.ibm.com> wrote:
-> Remove v9fs_vfs_readlink_dotl function and use generic_readlink. Update
-> v9fs_vfs_follow_link_dotl function to accommodate this change
-> 
-> Signed-off-by: M. Mohan Kumar <mohan@in.ibm.com>
-> Reported-by:  Dr. David Alan Gilbert <linux@treblig.org>
-> ---
-> Changes from previous version:
-> * Use __getname in v9fs_vfs_follow_link_dotl
-> * Remove v9fs_vfs_readlink_dotl function
-> 
->  fs/9p/vfs_inode.c |   53 +++++++++++++++++------------------------------------
->  1 files changed, 17 insertions(+), 36 deletions(-)
-> 
-> diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
-> index 2ce3668..7e613e8 100644
-> --- a/fs/9p/vfs_inode.c
-> +++ b/fs/9p/vfs_inode.c
-> @@ -1994,30 +1994,6 @@ error:
->  	return err;
->  }
-> 
-> -static int
-> -v9fs_vfs_readlink_dotl(struct dentry *dentry, char *buffer, int buflen)
-> -{
-> -	int retval;
-> -	struct p9_fid *fid;
-> -	char *target = NULL;
-> -
-> -	P9_DPRINTK(P9_DEBUG_VFS, " %s\n", dentry->d_name.name);
-> -	retval = -EPERM;
-> -	fid = v9fs_fid_lookup(dentry);
-> -	if (IS_ERR(fid))
-> -		return PTR_ERR(fid);
-> -
-> -	retval = p9_client_readlink(fid, &target);
-> -	if (retval < 0)
-> -		return retval;
-> -
-> -	strncpy(buffer, target, buflen);
-> -	P9_DPRINTK(P9_DEBUG_VFS, "%s -> %s\n", dentry->d_name.name, buffer);
-> -
-> -	retval = strnlen(buffer, buflen);
-> -	return retval;
-> -}
-> -
->  /**
->   * v9fs_vfs_follow_link_dotl - follow a symlink path
->   * @dentry: dentry for symlink
-> @@ -2028,23 +2004,28 @@ v9fs_vfs_readlink_dotl(struct dentry *dentry, char *buffer, int buflen)
->  static void *
->  v9fs_vfs_follow_link_dotl(struct dentry *dentry, struct nameidata *nd)
->  {
-> -	int len = 0;
-> +	int retval;
-> +	struct p9_fid *fid;
->  	char *link = __getname();
-> +	char *target;
-> 
-> -	P9_DPRINTK(P9_DEBUG_VFS, "%s n", dentry->d_name.name);
-> +	P9_DPRINTK(P9_DEBUG_VFS, "%s\n", dentry->d_name.name);
-> 
->  	if (!link)
-> -		link = ERR_PTR(-ENOMEM);
-> -	else {
-> -		len = v9fs_vfs_readlink_dotl(dentry, link, PATH_MAX);
-> -		if (len < 0) {
-> -			__putname(link);
-> -			link = ERR_PTR(len);
-> -		} else
-> -			link[min(len, PATH_MAX-1)] = 0;
-> +		return NULL;
-> +	fid = v9fs_fid_lookup(dentry);
-> +	if (IS_ERR(fid))
-> +		return fid;
+On 01/05/2011 12:26 PM, Russell King - ARM Linux wrote:
+> On Wed, Jan 05, 2011 at 11:47:25AM -0800, Stephen Boyd wrote:
+>> Poisoning __init marked memory can be useful when tracking down
+>> obscure memory corruption bugs. When a pointer is 0xCCCCCCCC in an
+>
+> That's a bad idea for a value.  With a 3GB page offset and 256MB or
+> more memory, accesses to such an address will always succeed.
+>
+> There's two things to be considered when selecting a possible poison
+> value:
+>
+> 1. what value is guaranteed to provoke an undefined instruction exception?
+> 2. what value when used as an address and dereferenced is mostly always
+>    going to abort?
+>
+> 1 for ARM mode implies an 0xe7fXXXfX value.  For Thumb mode 0xdeXX.  We
+> use this space for breakpoints.
+>
+> 2 unfortunately depends on the platform. 
 
-need to do a __putname(link) and do a nd_set_link(nd, ERR_PTR(fid))
+A coworker proposed we use a SWI instruction. We could do that if the
+poison is 0xEF and then do something in the SWI handler where that
+number causes us to blow up?
 
-> +	retval = p9_client_readlink(fid, &target);
-> +	if (retval < 0) {
-> +		__putname(link);
-> +		kfree(target);
+If I'm following correctly, point 1 is about __init functions and point
+2 is about __initdata. I'm more concerned about __initdata because
+__init functions called from non __init marked functions are usually
+caught with section mismatch checks. Also, if we're jumping to
+0xCCCCCCCC we're probably not in the text section of the kernel with a
+3GB offset anymore, right? __initdata is easier to reference from
+anywhere (ignoring function pointers) and it would definitely be nice to
+find those invalid accesses quicker. For point 2, perhaps an unaligned
+access would trigger sometimes?
 
-On error target should not be allocated right ? So why kfree ?
+Swapping the cheese for some cheese flavored poison is better than nothing.
 
-> +		return NULL;
->  	}
-> -	nd_set_link(nd, link);
-> 
-> +	strcpy(link, target);
-> +	nd_set_link(nd, link);
-> +	kfree(target);
->  	return NULL;
->  }
-> 
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
--aneesh
