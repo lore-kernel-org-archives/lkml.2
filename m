@@ -1,62 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754337Ab1AFAaJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:30:09 -0500
-Received: from kroah.org ([198.145.64.141]:35773 "EHLO coco.kroah.org"
+	id S1754980Ab1AFAru (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:47:50 -0500
+Received: from cantor.suse.de ([195.135.220.2]:52901 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754267Ab1AFAaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:30:03 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:03 2011
-Message-Id: <20110106002303.342849252@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:22:50 -0800
+	id S1754340Ab1AFAaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:30:10 -0500
+Date: Wed, 5 Jan 2011 16:30:03 -0800
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Changli Gao <xiaosuo@gmail.com>, Jamal Hadi Salim <hadi@cyberus.ca>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [071/152] ifb: goto resched directly if error happens and dp->tq isnt empty
-In-Reply-To: <20110106002500.GA3172@kroah.com>
+To: Robert Hancock <hancockrwd@gmail.com>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Linux-usb <linux-usb@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Sleeping function called from invalid context in 2.6.37
+ xhci_hcd
+Message-ID: <20110106003003.GA3337@suse.de>
+References: <4D250B2B.8090901@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D250B2B.8090901@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.36-stable review patch.  If anyone has any objections, please let us know.
+On Wed, Jan 05, 2011 at 06:22:03PM -0600, Robert Hancock wrote:
+> Just saw this on booting up on the latest Fedora Rawhide kernel
+> based on 2.6.37. Looks like we were trying to do a runtime suspend
+> on the xHCI USB controller and it disabled MSI-X while interrupts
+> were disabled?
 
-------------------
+Known issue, patches came in too late to make it for .37, hopefully will
+show up in .38-rc and then get backported to .37.  They are on the
+linux-usb mailing list if you need them now.
 
+Hope this helps,
 
-From: Changli Gao <xiaosuo@gmail.com>
-
-[ Upstream commit 75c1c82566f23dd539fb7ccbf57a1caa7ba82628 ]
-
-If we break the loop when there are still skbs in tq and no skb in
-rq, the skbs will be left in txq until new skbs are enqueued into rq.
-In rare cases, no new skb is queued, then these skbs will stay in rq
-forever.
-
-After this patch, if tq isn't empty when we break the loop, we goto
-resched directly.
-
-Signed-off-by: Changli Gao <xiaosuo@gmail.com>
-Signed-off-by: Jamal Hadi Salim <hadi@cyberus.ca>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/net/ifb.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/drivers/net/ifb.c
-+++ b/drivers/net/ifb.c
-@@ -104,6 +104,8 @@ static void ri_tasklet(unsigned long dev
- 			rcu_read_unlock();
- 			dev_kfree_skb(skb);
- 			stats->tx_dropped++;
-+			if (skb_queue_len(&dp->tq) != 0)
-+				goto resched;
- 			break;
- 		}
- 		rcu_read_unlock();
-
-
+greg k-h
