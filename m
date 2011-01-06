@@ -1,49 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019Ab1AFBAE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 20:00:04 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:40221 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753945Ab1AFBAA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 20:00:00 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=tuJCBBldQ9+v4XXMwoCYOBjjIVrl1WxLWydxN/01DfKEsNz0x2sQvMZ//0VeTZrC48
-         wtOUPaSPvsaeAKpzE/5l0jPVB+noBvBRTa2rtaHnJD1U58+YwdMmVzcy4dcx4qBCUCyd
-         B4/5ObZcH/BKhQjihtp34wJLnIGrtjhvHouX4=
-MIME-Version: 1.0
-In-Reply-To: <20110106003003.GA3337@suse.de>
-References: <4D250B2B.8090901@gmail.com>
-	<20110106003003.GA3337@suse.de>
-Date: Wed, 5 Jan 2011 18:59:59 -0600
-Message-ID: <AANLkTi=a=ARbmr6e9KvuNdtLWkQyfecrQOPeTHze5=Xf@mail.gmail.com>
-Subject: Re: Sleeping function called from invalid context in 2.6.37 xhci_hcd
-From: Robert Hancock <hancockrwd@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Linux-usb <linux-usb@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753924Ab1AFA3G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:29:06 -0500
+Received: from kroah.org ([198.145.64.141]:35444 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753747Ab1AFA3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:29:03 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:22:58 2011
+Message-Id: <20110106002258.568667321@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Wed, 05 Jan 2011 16:21:59 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        NeilBrown <neilb@suse.de>, "J. Bruce Fields" <bfields@redhat.com>
+Subject: [020/152] sunrpc: prevent use-after-free on clearing XPT_BUSY
+In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 5, 2011 at 6:30 PM, Greg KH <gregkh@suse.de> wrote:
-> On Wed, Jan 05, 2011 at 06:22:03PM -0600, Robert Hancock wrote:
->> Just saw this on booting up on the latest Fedora Rawhide kernel
->> based on 2.6.37. Looks like we were trying to do a runtime suspend
->> on the xHCI USB controller and it disabled MSI-X while interrupts
->> were disabled?
->
-> Known issue, patches came in too late to make it for .37, hopefully will
-> show up in .38-rc and then get backported to .37.  They are on the
-> linux-usb mailing list if you need them now.
+2.6.36-stable review patch.  If anyone has any objections, please let us know.
 
-Not sure if it's related to this issue or not, but I also noticed the
-USB 3.0 card wasn't detecting any connected devices until I disabled
-USB autosuspend on the controller through sysfs (which is enabled by
-default in that Fedora Rawhide kernel)..
+------------------
+
+From: NeilBrown <neilb@suse.de>
+
+commit ed2849d3ecfa339435818eeff28f6c3424300cec upstream.
+
+When an xprt is created, it has a refcount of 1, and XPT_BUSY is set.
+The refcount is *not* owned by the thread that created the xprt
+(as is clear from the fact that creators never put the reference).
+Rather, it is owned by the absence of XPT_DEAD.  Once XPT_DEAD is set,
+(And XPT_BUSY is clear) that initial reference is dropped and the xprt
+can be freed.
+
+So when a creator clears XPT_BUSY it is dropping its only reference and
+so must not touch the xprt again.
+
+However svc_recv, after calling ->xpo_accept (and so getting an XPT_BUSY
+reference on a new xprt), calls svc_xprt_recieved.  This clears
+XPT_BUSY and then svc_xprt_enqueue - this last without owning a reference.
+This is dangerous and has been seen to leave svc_xprt_enqueue working
+with an xprt containing garbage.
+
+So we need to hold an extra counted reference over that call to
+svc_xprt_received.
+
+For safety, any time we clear XPT_BUSY and then use the xprt again, we
+first get a reference, and the put it again afterwards.
+
+Note that svc_close_all does not need this extra protection as there are
+no threads running, and the final free can only be called asynchronously
+from such a thread.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ net/sunrpc/svc_xprt.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -212,6 +212,7 @@ int svc_create_xprt(struct svc_serv *ser
+ 	spin_lock(&svc_xprt_class_lock);
+ 	list_for_each_entry(xcl, &svc_xprt_class_list, xcl_list) {
+ 		struct svc_xprt *newxprt;
++		unsigned short newport;
+ 
+ 		if (strcmp(xprt_name, xcl->xcl_name))
+ 			continue;
+@@ -230,8 +231,9 @@ int svc_create_xprt(struct svc_serv *ser
+ 		spin_lock_bh(&serv->sv_lock);
+ 		list_add(&newxprt->xpt_list, &serv->sv_permsocks);
+ 		spin_unlock_bh(&serv->sv_lock);
++		newport = svc_xprt_local_port(newxprt);
+ 		clear_bit(XPT_BUSY, &newxprt->xpt_flags);
+-		return svc_xprt_local_port(newxprt);
++		return newport;
+ 	}
+  err:
+ 	spin_unlock(&svc_xprt_class_lock);
+@@ -431,8 +433,13 @@ void svc_xprt_received(struct svc_xprt *
+ {
+ 	BUG_ON(!test_bit(XPT_BUSY, &xprt->xpt_flags));
+ 	xprt->xpt_pool = NULL;
++	/* As soon as we clear busy, the xprt could be closed and
++	 * 'put', so we need a reference to call svc_xprt_enqueue with:
++	 */
++	svc_xprt_get(xprt);
+ 	clear_bit(XPT_BUSY, &xprt->xpt_flags);
+ 	svc_xprt_enqueue(xprt);
++	svc_xprt_put(xprt);
+ }
+ EXPORT_SYMBOL_GPL(svc_xprt_received);
+ 
+
+
