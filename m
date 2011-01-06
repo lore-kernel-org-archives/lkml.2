@@ -1,86 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041Ab1AFF3z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 00:29:55 -0500
-Received: from exht1.emulex.com ([138.239.113.183]:34007 "EHLO
-	exht1.ad.emulex.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752467Ab1AFF3x convert rfc822-to-8bit (ORCPT
+	id S1753294Ab1AFFmK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 00:42:10 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:56980 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883Ab1AFFmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 00:29:53 -0500
-From: <Sathya.Perla@Emulex.Com>
-To: <gregkh@suse.de>, <linux-kernel@vger.kernel.org>, <stable@kernel.org>
-CC: <stable-review@kernel.org>, <torvalds@linux-foundation.org>,
-        <akpm@linux-foundation.org>, <alan@lxorguk.ukuu.org.uk>,
-        <subbu.seetharaman@Emulex.Com>, <Sarveshwar.Bandi@Emulex.Com>,
-        <Ajit.Khaparde@Emulex.Com>, <joe.jin@oracle.com>,
-        <davem@davemloft.net>
-Date: Wed, 5 Jan 2011 21:29:23 -0800
-Subject: RE: [064/152] driver/net/benet: fix be_cmd_multicast_set() memcpy
- bug
-Thread-Topic: [064/152] driver/net/benet: fix be_cmd_multicast_set() memcpy
- bug
-Thread-Index: AcutONlDS8s4JR7xQfOd5smV6tPwSAAKcMmw
-Message-ID: <85ed0759-b208-4ee0-98a4-cdae0da5b430@exht1.ad.emulex.com>
-References: <20110106002500.GA3172@kroah.com>
- <20110106002302.664621558@clark.site>
-In-Reply-To: <20110106002302.664621558@clark.site>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 6 Jan 2011 00:42:08 -0500
+Date: Thu, 6 Jan 2011 11:12:00 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: Minchan Kim <minchan.kim@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+Subject: Re: [BUGFIX][PATCH v3] memcg: fix memory migration of shmem
+ swapcache
+Message-ID: <20110106054200.GG3722@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20110105130020.e2a854e4.nishimura@mxp.nes.nec.co.jp>
+ <20110105115840.GD4654@cmpxchg.org>
+ <20110106100923.24b1dd12.nishimura@mxp.nes.nec.co.jp>
+ <AANLkTi=rp=WZa7PP4V6anU0SQ3BM-RJQwiDu1fJuoDig@mail.gmail.com>
+ <20110106123415.895d6dfc.nishimura@mxp.nes.nec.co.jp>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110106123415.895d6dfc.nishimura@mxp.nes.nec.co.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch below is fine. Thanks.
+* nishimura@mxp.nes.nec.co.jp <nishimura@mxp.nes.nec.co.jp> [2011-01-06 12:34:15]:
 
--Sathya
+> > > diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> > > index 159a076..cc5a8fd 100644
+> > > --- a/include/linux/memcontrol.h
+> > > +++ b/include/linux/memcontrol.h
+> > > @@ -93,7 +93,7 @@ extern int
+> > >  mem_cgroup_prepare_migration(struct page *page,
+> > >        struct page *newpage, struct mem_cgroup **ptr);
+> > >  extern void mem_cgroup_end_migration(struct mem_cgroup *mem,
+> > > -       struct page *oldpage, struct page *newpage);
+> > > +       struct page *oldpage, struct page *newpage, bool success);
+> > 
+> > The term "success" implies present or future tense.
+> > The event this variable cares about in the past so "succeed" might be
+> > a more appropriate term.
+> > Sorry to be picky about the English but there is an important
+> > distinction here since we don't have any comment about the variable.
+> > 
+> > Am I being too fussy?
+> Not at all. Your comments are very helpful to make the code more readable :)
+> 
+> ===
+> From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> 
+> In current implimentation, mem_cgroup_end_migration() decides whether the page
+> migration has succeeded or not by checking "oldpage->mapping".
+> 
+> But if we are tring to migrate a shmem swapcache, the page->mapping of it is
+> NULL from the begining, so the check would be invalid.
+> As a result, mem_cgroup_end_migration() assumes the migration has succeeded
+> even if it's not, so "newpage" would be freed while it's not uncharged.
+> 
+> This patch fixes it by passing mem_cgroup_end_migration() the result of the
+> page migration.
+> 
+> Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+> v2->v3
+>   - s/success/succeed
+> 
+> v1->v2
+>   - pass mem_cgroup_end_migration() "bool" instead of "int".
+> 
+>  include/linux/memcontrol.h |    5 ++---
+>  mm/memcontrol.c            |    5 ++---
+>  mm/migrate.c               |    2 +-
+>  3 files changed, 5 insertions(+), 7 deletions(-)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 159a076..9f52b57 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -93,7 +93,7 @@ extern int
+>  mem_cgroup_prepare_migration(struct page *page,
+>  	struct page *newpage, struct mem_cgroup **ptr);
+>  extern void mem_cgroup_end_migration(struct mem_cgroup *mem,
+> -	struct page *oldpage, struct page *newpage);
+> +	struct page *oldpage, struct page *newpage, bool succeed);
 
------Original Message-----
-From: Greg KH [mailto:gregkh@suse.de] 
-Sent: Thursday, January 06, 2011 5:53 AM
-To: linux-kernel@vger.kernel.org; stable@kernel.org
-Cc: stable-review@kernel.org; torvalds@linux-foundation.org; akpm@linux-foundation.org; alan@lxorguk.ukuu.org.uk; Perla, Sathya; Seetharaman, Subramanian; Bandi, Sarveshwar; Khaparde, Ajit; Joe Jin; David S. Miller
-Subject: [064/152] driver/net/benet: fix be_cmd_multicast_set() memcpy bug
+Sorry for nit-picking but succeed is not as good as succeeded,
+successful, successful_migration or migration_ok
 
-2.6.36-stable review patch.  If anyone has any objections, please let us know.
+> 
+>  /*
+>   * For memory reclaim.
+> @@ -231,8 +231,7 @@ mem_cgroup_prepare_migration(struct page *page, struct page *newpage,
+>  }
+> 
+>  static inline void mem_cgroup_end_migration(struct mem_cgroup *mem,
+> -					struct page *oldpage,
+> -					struct page *newpage)
+> +		struct page *oldpage, struct page *newpage, bool succeed)
+>  {
+>  }
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 61678be..71a39bc 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2856,7 +2856,7 @@ int mem_cgroup_prepare_migration(struct page *page,
+> 
+>  /* remove redundant charge if migration failed*/
+>  void mem_cgroup_end_migration(struct mem_cgroup *mem,
+> -	struct page *oldpage, struct page *newpage)
+> +	struct page *oldpage, struct page *newpage, bool succeed)
+>  {
+>  	struct page *used, *unused;
+>  	struct page_cgroup *pc;
+> @@ -2865,8 +2865,7 @@ void mem_cgroup_end_migration(struct mem_cgroup *mem,
+>  		return;
+>  	/* blocks rmdir() */
+>  	cgroup_exclude_rmdir(&mem->css);
+> -	/* at migration success, oldpage->mapping is NULL. */
+> -	if (oldpage->mapping) {
+> +	if (!succeed) {
+>  		used = oldpage;
+>  		unused = newpage;
+>  	} else {
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index 6ae8a66..be66b23 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -756,7 +756,7 @@ rcu_unlock:
+>  		rcu_read_unlock();
+>  uncharge:
+>  	if (!charge)
+> -		mem_cgroup_end_migration(mem, page, newpage);
+> +		mem_cgroup_end_migration(mem, page, newpage, rc == 0);
+>  unlock:
+>  	unlock_page(page);
+> 
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom policy in Canada: sign http://dissolvethecrtc.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-------------------
-
-
-From: Joe Jin <joe.jin@oracle.com>
-
-[ Upstream commit 3fd40d0ceac9c234243730f4d7a6ffdb2fd3023a ]
-
-Regarding  benet be_cmd_multicast_set() function, now using
-netdev_for_each_mc_addr() helper for mac address copy, but
-when copying to req->mac[] did not increase of the index.
-
-Cc: Sathya Perla <sathyap@serverengines.com>
-Cc: Subbu Seetharaman <subbus@serverengines.com>
-Cc: Sarveshwar Bandi <sarveshwarb@serverengines.com>
-Cc: Ajit Khaparde <ajitk@serverengines.com>
-Signed-off-by: Joe Jin <joe.jin@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/net/benet/be_cmds.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/net/benet/be_cmds.c
-+++ b/drivers/net/benet/be_cmds.c
-@@ -1179,7 +1179,7 @@ int be_cmd_multicast_set(struct be_adapt
- 
- 		i = 0;
- 		netdev_for_each_mc_addr(ha, netdev)
--			memcpy(req->mac[i].byte, ha->addr, ETH_ALEN);
-+			memcpy(req->mac[i++].byte, ha->addr, ETH_ALEN);
- 	} else {
- 		req->promiscuous = 1;
- 	}
-
-
+-- 
+	Three Cheers,
+	Balbir
