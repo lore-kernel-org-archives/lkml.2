@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324Ab1AFPR6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 10:17:58 -0500
-Received: from mail.pripojeni.net ([217.66.174.14]:45626 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753001Ab1AFPR4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 10:17:56 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: jbarnes@virtuousgeek.org
-Cc: linux-pci@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 1/1] PCI: tune up ICH4 quirk for broken BIOSes
-Date: Thu,  6 Jan 2011 16:17:46 +0100
-Message-Id: <1294327066-23518-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.3.4
+	id S1753348Ab1AFPS3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 10:18:29 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:58736 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753001Ab1AFPS2 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:7:1>);
+	Thu, 6 Jan 2011 10:18:28 -0500
+Message-Id: <4D25EB4B020000780002ABF7@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 06 Jan 2011 15:18:19 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Frederic Weisbecker" <fweisbec@gmail.com>
+Cc: "H. Peter Anvin" <a.p.zijlstra@chello.nl>, "Ingo Molnar" <mingo@elte.hu>,
+        "Stephane Eranian" <eranian@google.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Arnaldo Carvalho de Melo" <acme@redhat.com>,
+        "Soeren Sandmann Pedersen" <sandmann@redhat.com>,
+        "LKML" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 1/2] x86: Fix rbp saving in pt_regs on irq
+	 entry
+References: <1294325513-14276-1-git-send-email-fweisbec@gmail.com>
+ <1294325513-14276-2-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1294325513-14276-2-git-send-email-fweisbec@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are BIOSes out there where they provide ACPI mapping that
-conflicts with fixed one. Then e.g. an IDE controller doesn't work due
-to I/O space conflict:
-pci 0000:00:1f.1: address space collision: [io  0x0170-0x0177] conflicts with 0000:00:1f.0 [io  0x0100-0x017f]
+>>> On 06.01.11 at 15:51, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> From the x86_64 low level interrupt handlers, the frame pointer is
+> saved in pt_regs in the wrong place, in the offset of rbx.
+> 
+> rbx is not part of the irq partial saved registers, so it's not
+> critical, but later code that uses get_irq_regs() to get the
+> interrupted frame pointer instead get a stale rbx value, causing
+> unwinding code to fail miserably.
 
-0x0170-0x0177 for IDE controllers is created in pci_setup_device.
-0x0100-0x017f for the ICH4 ISA bridge is created in quirk_ich4_lpc_acpi
+Code using get_irq_regs() can't rely on the not explicitly
+saved registers' fields of pt_regs anyway; you now fix this
+for %rbp, but someone else might look at a different
+register and want that to be saved too. You just shouldn't,
+and the fact that %rbp happens to be saved at all shouldn't
+be taken to mean you can access it via the provided
+pt_regs pointer. This saving of %rbp could go away or be
+done in a different way at any point.
 
-The former is fixed, according to specs at that address.
-The latter is read from the bridge confspace which contains:
-00000000  86 80 a1 25 0f 00 80 02  02 00 01 06 00 00 80 00 |...%............|
-00000010  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00 |................|
-00000020  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00 |................|
-00000030  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00 |................|
-00000040  01 01 00 00 10 00 00 00  00 00 00 00 00 00 01 00 |................|
-00000050  00 00 00 00 00 00 00 00  01 05 00 00 10 00 00 00 |................|
-...
-I.e. 0x00000101 as a base (ORed by 1 meaning I/O space) for ACPI per
-ICH4 specs.
+> @@ -808,6 +813,8 @@ ret_from_intr:
+>  	TRACE_IRQS_OFF
+>  	decl PER_CPU_VAR(irq_count)
+>  	leaveq
+> +	/* we did not save rbx, restore only from ARGOFFSET */
+> +	addq $8, %rsp
+>  	CFI_RESTORE		rbp
+>  	CFI_DEF_CFA_REGISTER	rsp
+>  	CFI_ADJUST_CFA_OFFSET	-8
 
-Don't accept bases below 0x180 for this dynamic mapping.
+*If* the patch was to be taken anyway, I would strongly suggest
+getting this mis-insertion fixed first: CFI annotations belong to the
+immediately preceding instruction, and hence you must not insert
+new instructions between an existing one and its annotation.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
----
- drivers/pci/quirks.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+Furthermore, an adjustment to %rsp (when it serves as the frame
+pointer as is the case here, though would be better visible if the
+added instruction was at the right place) needs to be annotated
+itself.
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 53a786f..6d241eb 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -543,7 +543,14 @@ static void __devinit quirk_ich4_lpc_acpi(struct pci_dev *dev)
- 	u32 region;
- 
- 	pci_read_config_dword(dev, 0x40, &region);
--	quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES, "ICH4 ACPI/GPIO/TCO");
-+	/*
-+	 * some BIOSes are bogus and create this dynamic mapping so that it
-+	 * conflicts with fixed. There is no space below 0x180 for
-+	 * ACPI/GPIO/TCO which is 128B long and 128B aligned.
-+	 */
-+	if (region >= 0x180)
-+		quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
-+				"ICH4 ACPI/GPIO/TCO");
- 
- 	pci_read_config_dword(dev, 0x58, &region);
- 	quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES+1, "ICH4 GPIO");
--- 
-1.7.3.4
-
+Jan
 
