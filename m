@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856Ab1AFAcA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:32:00 -0500
-Received: from kroah.org ([198.145.64.141]:36155 "EHLO coco.kroah.org"
+	id S1754687Ab1AFAeF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:34:05 -0500
+Received: from kroah.org ([198.145.64.141]:36139 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754828Ab1AFAb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:31:57 -0500
+	id S1754819Ab1AFAby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:31:54 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:10 2011
-Message-Id: <20110106002310.551424619@clark.site>
+Message-Id: <20110106002310.287789429@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:24:07 -0800
+Date: Wed, 05 Jan 2011 16:24:04 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Baruch Siach <baruch@tkos.co.il>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [148/152] [media] mx2_camera: fix pixel clock polarity configuration
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Mike Snitzer <snitzer@redhat.com>, Jens Axboe <jaxboe@fusionio.com>
+Subject: [145/152] block: Deprecate QUEUE_FLAG_CLUSTER and use queue_limits instead
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,32 +26,224 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Baruch Siach <baruch@tkos.co.il>
+From: Martin K. Petersen <martin.petersen@oracle.com>
 
-commit 42cc37fe20cc680fb58fe12ae5ba718d683b8ca2 upstream.
+commit e692cb668fdd5a712c6ed2a2d6f2a36ee83997b4 upstream.
 
-When SOCAM_PCLK_SAMPLE_FALLING, just leave CSICR1_REDGE unset, otherwise we get
-the inverted behaviour.
+When stacking devices, a request_queue is not always available. This
+forced us to have a no_cluster flag in the queue_limits that could be
+used as a carrier until the request_queue had been set up for a
+metadevice.
 
-Signed-off-by: Baruch Siach <baruch@tkos.co.il>
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+There were several problems with that approach. First of all it was up
+to the stacking device to remember to set queue flag after stacking had
+completed. Also, the queue flag and the queue limits had to be kept in
+sync at all times. We got that wrong, which could lead to us issuing
+commands that went beyond the max scatterlist limit set by the driver.
+
+The proper fix is to avoid having two flags for tracking the same thing.
+We deprecate QUEUE_FLAG_CLUSTER and use the queue limit directly in the
+block layer merging functions. The queue_limit 'no_cluster' is turned
+into 'cluster' to avoid double negatives and to ease stacking.
+Clustering defaults to being enabled as before. The queue flag logic is
+removed from the stacking function, and explicitly setting the cluster
+flag is no longer necessary in DM and MD.
+
+Reported-by: Ed Lin <ed.lin@promise.com>
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+Acked-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/mx2_camera.c |    2 --
- 1 file changed, 2 deletions(-)
+ block/blk-merge.c       |    6 +++---
+ block/blk-settings.c    |   25 ++-----------------------
+ block/blk-sysfs.c       |    2 +-
+ drivers/md/dm-table.c   |    5 -----
+ drivers/md/md.c         |    3 ---
+ drivers/scsi/scsi_lib.c |    3 +--
+ include/linux/blkdev.h  |    9 ++++++---
+ 7 files changed, 13 insertions(+), 40 deletions(-)
 
---- a/drivers/media/video/mx2_camera.c
-+++ b/drivers/media/video/mx2_camera.c
-@@ -791,8 +791,6 @@ static int mx2_camera_set_bus_param(stru
+--- a/block/blk-merge.c
++++ b/block/blk-merge.c
+@@ -21,7 +21,7 @@ static unsigned int __blk_recalc_rq_segm
+ 		return 0;
  
- 	if (common_flags & SOCAM_PCLK_SAMPLE_RISING)
- 		csicr1 |= CSICR1_REDGE;
--	if (common_flags & SOCAM_PCLK_SAMPLE_FALLING)
--		csicr1 |= CSICR1_INV_PCLK;
- 	if (common_flags & SOCAM_VSYNC_ACTIVE_HIGH)
- 		csicr1 |= CSICR1_SOF_POL;
- 	if (common_flags & SOCAM_HSYNC_ACTIVE_HIGH)
+ 	fbio = bio;
+-	cluster = test_bit(QUEUE_FLAG_CLUSTER, &q->queue_flags);
++	cluster = blk_queue_cluster(q);
+ 	seg_size = 0;
+ 	nr_phys_segs = 0;
+ 	for_each_bio(bio) {
+@@ -87,7 +87,7 @@ EXPORT_SYMBOL(blk_recount_segments);
+ static int blk_phys_contig_segment(struct request_queue *q, struct bio *bio,
+ 				   struct bio *nxt)
+ {
+-	if (!test_bit(QUEUE_FLAG_CLUSTER, &q->queue_flags))
++	if (!blk_queue_cluster(q))
+ 		return 0;
+ 
+ 	if (bio->bi_seg_back_size + nxt->bi_seg_front_size >
+@@ -123,7 +123,7 @@ int blk_rq_map_sg(struct request_queue *
+ 	int nsegs, cluster;
+ 
+ 	nsegs = 0;
+-	cluster = test_bit(QUEUE_FLAG_CLUSTER, &q->queue_flags);
++	cluster = blk_queue_cluster(q);
+ 
+ 	/*
+ 	 * for each bio in rq
+--- a/block/blk-settings.c
++++ b/block/blk-settings.c
+@@ -125,7 +125,7 @@ void blk_set_default_limits(struct queue
+ 	lim->alignment_offset = 0;
+ 	lim->io_opt = 0;
+ 	lim->misaligned = 0;
+-	lim->no_cluster = 0;
++	lim->cluster = 1;
+ }
+ EXPORT_SYMBOL(blk_set_default_limits);
+ 
+@@ -468,15 +468,6 @@ EXPORT_SYMBOL(blk_queue_io_opt);
+ void blk_queue_stack_limits(struct request_queue *t, struct request_queue *b)
+ {
+ 	blk_stack_limits(&t->limits, &b->limits, 0);
+-
+-	if (!t->queue_lock)
+-		WARN_ON_ONCE(1);
+-	else if (!test_bit(QUEUE_FLAG_CLUSTER, &b->queue_flags)) {
+-		unsigned long flags;
+-		spin_lock_irqsave(t->queue_lock, flags);
+-		queue_flag_clear(QUEUE_FLAG_CLUSTER, t);
+-		spin_unlock_irqrestore(t->queue_lock, flags);
+-	}
+ }
+ EXPORT_SYMBOL(blk_queue_stack_limits);
+ 
+@@ -547,7 +538,7 @@ int blk_stack_limits(struct queue_limits
+ 	t->io_min = max(t->io_min, b->io_min);
+ 	t->io_opt = lcm(t->io_opt, b->io_opt);
+ 
+-	t->no_cluster |= b->no_cluster;
++	t->cluster &= b->cluster;
+ 	t->discard_zeroes_data &= b->discard_zeroes_data;
+ 
+ 	/* Physical block size a multiple of the logical block size? */
+@@ -643,7 +634,6 @@ void disk_stack_limits(struct gendisk *d
+ 		       sector_t offset)
+ {
+ 	struct request_queue *t = disk->queue;
+-	struct request_queue *b = bdev_get_queue(bdev);
+ 
+ 	if (bdev_stack_limits(&t->limits, bdev, offset >> 9) < 0) {
+ 		char top[BDEVNAME_SIZE], bottom[BDEVNAME_SIZE];
+@@ -654,17 +644,6 @@ void disk_stack_limits(struct gendisk *d
+ 		printk(KERN_NOTICE "%s: Warning: Device %s is misaligned\n",
+ 		       top, bottom);
+ 	}
+-
+-	if (!t->queue_lock)
+-		WARN_ON_ONCE(1);
+-	else if (!test_bit(QUEUE_FLAG_CLUSTER, &b->queue_flags)) {
+-		unsigned long flags;
+-
+-		spin_lock_irqsave(t->queue_lock, flags);
+-		if (!test_bit(QUEUE_FLAG_CLUSTER, &b->queue_flags))
+-			queue_flag_clear(QUEUE_FLAG_CLUSTER, t);
+-		spin_unlock_irqrestore(t->queue_lock, flags);
+-	}
+ }
+ EXPORT_SYMBOL(disk_stack_limits);
+ 
+--- a/block/blk-sysfs.c
++++ b/block/blk-sysfs.c
+@@ -114,7 +114,7 @@ static ssize_t queue_max_segments_show(s
+ 
+ static ssize_t queue_max_segment_size_show(struct request_queue *q, char *page)
+ {
+-	if (test_bit(QUEUE_FLAG_CLUSTER, &q->queue_flags))
++	if (blk_queue_cluster(q))
+ 		return queue_var_show(queue_max_segment_size(q), (page));
+ 
+ 	return queue_var_show(PAGE_CACHE_SIZE, (page));
+--- a/drivers/md/dm-table.c
++++ b/drivers/md/dm-table.c
+@@ -1136,11 +1136,6 @@ void dm_table_set_restrictions(struct dm
+ 	 */
+ 	q->limits = *limits;
+ 
+-	if (limits->no_cluster)
+-		queue_flag_clear_unlocked(QUEUE_FLAG_CLUSTER, q);
+-	else
+-		queue_flag_set_unlocked(QUEUE_FLAG_CLUSTER, q);
+-
+ 	if (!dm_table_supports_discards(t))
+ 		queue_flag_clear_unlocked(QUEUE_FLAG_DISCARD, q);
+ 	else
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -4289,9 +4289,6 @@ static int md_alloc(dev_t dev, char *nam
+ 		goto abort;
+ 	mddev->queue->queuedata = mddev;
+ 
+-	/* Can be unlocked because the queue is new: no concurrency */
+-	queue_flag_set_unlocked(QUEUE_FLAG_CLUSTER, mddev->queue);
+-
+ 	blk_queue_make_request(mddev->queue, md_make_request);
+ 
+ 	disk = alloc_disk(1 << shift);
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -1632,9 +1632,8 @@ struct request_queue *__scsi_alloc_queue
+ 
+ 	blk_queue_max_segment_size(q, dma_get_max_seg_size(dev));
+ 
+-	/* New queue, no concurrency on queue_flags */
+ 	if (!shost->use_clustering)
+-		queue_flag_clear_unlocked(QUEUE_FLAG_CLUSTER, q);
++		q->limits.cluster = 0;
+ 
+ 	/*
+ 	 * set a reasonable default alignment on word boundaries: the
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -246,7 +246,7 @@ struct queue_limits {
+ 
+ 	unsigned char		misaligned;
+ 	unsigned char		discard_misaligned;
+-	unsigned char		no_cluster;
++	unsigned char		cluster;
+ 	signed char		discard_zeroes_data;
+ };
+ 
+@@ -369,7 +369,6 @@ struct request_queue
+ #endif
+ };
+ 
+-#define QUEUE_FLAG_CLUSTER	0	/* cluster several segments into 1 */
+ #define QUEUE_FLAG_QUEUED	1	/* uses generic tag queueing */
+ #define QUEUE_FLAG_STOPPED	2	/* queue is stopped */
+ #define	QUEUE_FLAG_SYNCFULL	3	/* read queue has been filled */
+@@ -392,7 +391,6 @@ struct request_queue
+ #define QUEUE_FLAG_SECDISCARD  19	/* supports SECDISCARD */
+ 
+ #define QUEUE_FLAG_DEFAULT	((1 << QUEUE_FLAG_IO_STAT) |		\
+-				 (1 << QUEUE_FLAG_CLUSTER) |		\
+ 				 (1 << QUEUE_FLAG_STACKABLE)	|	\
+ 				 (1 << QUEUE_FLAG_SAME_COMP)	|	\
+ 				 (1 << QUEUE_FLAG_ADD_RANDOM))
+@@ -550,6 +548,11 @@ enum {
+ 
+ #define rq_data_dir(rq)		((rq)->cmd_flags & 1)
+ 
++static inline unsigned int blk_queue_cluster(struct request_queue *q)
++{
++	return q->limits.cluster;
++}
++
+ /*
+  * We regard a request as sync, if either a read or a sync write
+  */
 
 
