@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885Ab1AFKoF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 05:44:05 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53683 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752734Ab1AFKoC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 05:44:02 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=SpRSjBog5HH4eUt3qOt2p3xG3JLavNzepexn6yxe4lHJqHTo405txCpOZI/VfObdl4
-         0GIDOU/TX6xUyhjL7zP87GhXNwqFXms26ZPZ3DSNmk13CyMSwuvqQq0Rq+tg66GvJlfQ
-         rglqwzA/btjSQvR/JTMK8JPnmrRDu+dZxl6uo=
+	id S1752946Ab1AFKsT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 05:48:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33851 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752797Ab1AFKsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 05:48:18 -0500
+Date: Thu, 6 Jan 2011 11:48:16 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: Linux 2.6.37
+Message-ID: <20110106104816.GA4026@tiehlicka.suse.cz>
+References: <AANLkTikKA-nStyNjkdsVa8hd=PFQR3tYTJh3MnfpNkD8@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <8679.1294247741@localhost>
-References: <8679.1294247741@localhost>
-Date: Thu, 6 Jan 2011 21:44:01 +1100
-Message-ID: <AANLkTimtrinH-7tnGE2zxtoNNTEnqqD3ZDTTTWM-m0Uk@mail.gmail.com>
-Subject: Re: 2.6.37-next - kernel BUG at fs/dcache.c:1363
-From: Nick Piggin <npiggin@gmail.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Joel Becker <joel.becker@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikKA-nStyNjkdsVa8hd=PFQR3tYTJh3MnfpNkD8@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 6, 2011 at 4:15 AM,  <Valdis.Kletnieks@vt.edu> wrote:
-> Saw this crash on a linux-next pulled yesterday at 2PM EST, kernel dies very
-> early (looks like first time it touches configfs for anything - trying to boot
-> with netconsole enabled caused it to die even faster).  I can bisect this if
-> it doesn't immediately ring a bell...
+Hi,
 
-Thanks, bah configfs isn't widely used.
+On Tue 04-01-11 17:15:45, Linus Torvalds wrote:
+[...]
+> We did have another revert to fix hopefullythe last "blank screen"
+> regression on intel graphics.
 
+It seems that there is still a regression for intel graphic cards
+backlight. One report is https://bugzilla.kernel.org/show_bug.cgi?id=22672.
+I can reproduce the problem easily by:
+xset dpms force standby; sleep 3s; xset dpms force on
 
-> It dies here:
->
-> void d_set_d_op(struct dentry *dentry, const struct dentry_operations *op)
-> {
->        BUG_ON(dentry->d_op);
->
-> Am guessing configfs passed in a dentry that wasn't filled in enough.
->
-> (hand-transcribed from a crappy cellphone pic)
->
-> kernel BUG at fs/dcache.c:1363
+backlight doesn't get up (there is really dark picture though which
+doesn't get brighter by function keys which work normally) after dpms on
+until I close and open lid. 
 
-Thanks. It actually passed in a dentry that appears to have already been
-used for something. This is not exactly a nice thing for a filesystem to do
-and probably indicates an underlying bug anyway (or at least something
-the vfs doesn't guarantee the safety of).
+The problem wasn't present in 2.6.36
 
-Taking a look now.
-
-Thanks,
-Nick
+$ lspci -vv
+[...]
+00:02.0 VGA compatible controller: Intel Corporation Mobile 945GM/GMS, 943/940GML Express Integrated Graphics Controller (rev 03) (prog-if 00 [VGA controller])
+        Subsystem: Fujitsu Limited. Device 137a
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0
+        Interrupt: pin A routed to IRQ 16
+        Region 0: Memory at f0300000 (32-bit, non-prefetchable) [size=512K]
+        Region 1: I/O ports at 1800 [size=8]
+        Region 2: Memory at e0000000 (32-bit, prefetchable) [size=256M]
+        Region 3: Memory at f0400000 (32-bit, non-prefetchable) [size=256K]
+        Expansion ROM at <unassigned> [disabled]
+        Capabilities: <access denied>
+        Kernel driver in use: i915
+[...]
+-- 
+Michal Hocko
+L3 team 
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
