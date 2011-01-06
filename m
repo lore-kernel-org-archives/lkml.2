@@ -1,124 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab1AFRUV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 12:20:21 -0500
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:25854
-	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753590Ab1AFRUS (ORCPT
+	id S1753990Ab1AFRYJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 12:24:09 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34096 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753626Ab1AFRYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 12:20:18 -0500
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275bh8275dhz32i637h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LEM2TE-02-0LB-02
-X-M-MSG: 
-Date: Thu, 6 Jan 2011 18:20:04 +0100
-From: Robert Richter <robert.richter@amd.com>
+	Thu, 6 Jan 2011 12:24:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Soc8Fc4QXEpEEpb6mRiHrE546zej3/xMeRQz2Tdm9NtM+MhAAxciQvMkuQ8YdacB3R
+         y220BYG10JRxakAbhNx1RKHAuADmBS24SHj3aZ7hAOW63HfQmcG0q/ohnqhYthzi8UC8
+         mMmYWkSJuSv1/PFNxpyRXXtSIdkL/X+C/9R00=
+Date: Thu, 6 Jan 2011 18:24:02 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Jan Beulich <JBeulich@novell.com>
-CC: "mingo@elte.hu" <mingo@elte.hu>, "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        "Roedel, Joerg" <Joerg.Roedel@amd.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: use PCI method for enabling AMD extended config
-	 space before MSR method
-Message-ID: <20110106172004.GM4739@erda.amd.com>
-References: <4D26028F020000780002AC8A@vpn.id2.novell.com>
+Cc: "H. Peter Anvin" <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Soeren Sandmann Pedersen <sandmann@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 1/2] x86: Fix rbp saving in pt_regs on irq entry
+Message-ID: <20110106172355.GE2308@nowhere>
+References: <1294325513-14276-1-git-send-email-fweisbec@gmail.com>
+ <1294325513-14276-2-git-send-email-fweisbec@gmail.com>
+ <4D25EB4B020000780002ABF7@vpn.id2.novell.com>
+ <20110106154536.GA2308@nowhere>
+ <4D25F79F020000780002AC20@vpn.id2.novell.com>
+ <20110106162236.GB2308@nowhere>
+ <4D25FE5B020000780002AC50@vpn.id2.novell.com>
+ <20110106165452.GC2308@nowhere>
+ <4D2602DE020000780002ACA3@vpn.id2.novell.com>
+ <20110106171231.GD2308@nowhere>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D26028F020000780002AC8A@vpn.id2.novell.com>
+In-Reply-To: <20110106171231.GD2308@nowhere>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06.01.11 11:57:35, Jan Beulich wrote:
-> While both methods should work equivalently well for the native case,
-> the Xen Dom0 case can't reliably work with the MSR one, since there's
-> no guarantee that the virtual CPUs it has available fully cover all
-> necessary physical ones.
+On Thu, Jan 06, 2011 at 06:12:33PM +0100, Frederic Weisbecker wrote:
+> On Thu, Jan 06, 2011 at 04:58:54PM +0000, Jan Beulich wrote:
+> > >>> On 06.01.11 at 17:54, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > > On Thu, Jan 06, 2011 at 04:39:39PM +0000, Jan Beulich wrote:
+> > >> >>> On 06.01.11 at 17:22, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > >> > On Thu, Jan 06, 2011 at 04:10:55PM +0000, Jan Beulich wrote:
+> > >> >> >>> On 06.01.11 at 16:45, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > >> >> > Before we had:
+> > >> >> > 
+> > >> >> > 
+> > >> >> > 	leaveq
+> > >> >> > 
+> > >> >> > 	CFI_RESTORE             rbp
+> > >> >> > 	CFI_DEF_CFA_REGISTER    rsp
+> > >> >> > 	CFI_ADJUST_CFA_OFFSET   -8
+> > >> >> > 
+> > >> >> > So CFI_RESTORE means rbp has now the value of the base frame of
+> > >> >> > the calling frame (the base frame pointer of the interrupted proc) ?
+> > >> >> 
+> > >> >> No - all it means is that %rbp now has its original (caller or
+> > >> >> interrupted procedure) value again (i.e. an unwinder should not
+> > >> >> try to read it from the stack [or other previously recorded
+> > >> >> location] anymore).
+> > >> >> 
+> > >> >> > And what follows means that rsp-8 points to the return address?
+> > >> >> 
+> > >> >> No - .cfi_def_cfa_register says which register serves as the frame
+> > >> >> pointer, and .cfi_adjust_cfa_offset says to adjust the offset from
+> > >> >> the frame pointer to the top [or bottom] of frame. At any time
+> > >> >> 
+> > >> >> 	CFA = cfa_register + cfa_offset
+> > >> >> 
+> > >> >> with CFA being what all locations on the stack are expressed
+> > >> >> relative to.
+> > >> > 
+> > >> > Ok.
+> > >> > 
+> > >> > So here rsp points to pt_regs::r11
+> > >> > 
+> > >> > I don't understand why locations relative to the stack must be
+> > >> > expressed here by taking rsp - 8 as a base.
+> > >> 
+> > >> Nothing says rsp-8. The annotations merely say to set the base
+> > >> register to rsp and to *adjust* the offset by -8 (after all, that's
+> > >> what the leaveq instruction does).
+> > > 
+> > > Ah! So CFA acts like a virtual frame base pointer right?
+> > 
+> > Correct.
 > 
-> As per the suggestion of Robert Richter the patch only adds the PCI
-> method, but leaves the MSR one as a fallback to cover new systems the
-> PCI IDs of which may not have got added to the code base yet.
+> Ah great. I was starting to prepare for the case you come to stab me :)
 > 
-> Signed-off-by: Jan Beulich <jbeulich@novell.com>
-> Cc: Robert Richter <robert.richter@amd.com>
-> Cc: Joerg Roedel <Joerg.Roedel@amd.com>
-> Cc: Andreas Herrmann <Andreas.Herrmann3@amd.com>
-> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+> So what do you think about that:
 > 
-> ---
->  arch/x86/include/asm/amd_nb.h |    7 ++++++
->  arch/x86/kernel/amd_nb.c      |    7 ++++++
->  arch/x86/kernel/aperture_64.c |   44 +++++++++++++++---------------------------
->  arch/x86/pci/amd_bus.c        |   30 ++++++++++++++++++++++++++++
->  4 files changed, 60 insertions(+), 28 deletions(-)
-
-> --- 2.6.37/arch/x86/pci/amd_bus.c
-> +++ 2.6.37-x86-amd-ecs/arch/x86/pci/amd_bus.c
-> @@ -4,6 +4,7 @@
->  #include <linux/cpu.h>
->  #include <linux/range.h>
->  
-> +#include <asm/amd_nb.h>
->  #include <asm/pci_x86.h>
->  
->  #include <asm/pci-direct.h>
-> @@ -386,6 +387,35 @@ static int __init pci_io_ecs_init(void)
->          if (boot_cpu_data.x86 < 0x10)
->  		return 0;
->  
-> +#ifdef CONFIG_AMD_NB
-> +	/* Try the PCI method first. */
-> +	if (early_pci_allowed()) {
-> +		unsigned int i, n;
-> +
-> +		for (n = i = 0; !n && amd_bus_dev_ranges[i].dev_limit; ++i) {
-> +			u8 bus = amd_bus_dev_ranges[i].bus;
-> +			u8 slot = amd_bus_dev_ranges[i].dev_base;
-> +			u8 limit = amd_bus_dev_ranges[i].dev_limit;
-> +
-> +			for (; slot < limit; ++slot) {
-> +				u32 val = read_pci_config(bus, slot, 3, 0);
-> +
-> +				if (!early_is_k8_nb(val))
-> +					continue;
-> +
-> +				val = read_pci_config(bus, slot, 3, 0x8c);
-> +				if (!(val & (ENABLE_CF8_EXT_CFG >> 32))) {
-> +					val |= ENABLE_CF8_EXT_CFG >> 32;
-> +					write_pci_config(bus, slot, 3, 0x8c,
-> +							 val);
-> +				}
-> +				++n;
-> +			}
-> +		}
-> +		pr_info("Extended Config Space enabled on %u nodes\n", n);
-
-Isn't i the number of nodes?
-
-Otherwise the patch looks good.
-
--Robert
-
-Acked-by: Robert Richter <robert.richter@amd.com>
-
-> +	}
-> +#endif
-> +
->  	register_cpu_notifier(&amd_cpu_notifier);
->  	for_each_online_cpu(cpu)
->  		amd_cpu_notify(&amd_cpu_notifier, (unsigned long)CPU_ONLINE,
+>         leaveq
 > 
+>         CFI_RESTORE             rbp
+>         CFI_DEF_CFA_REGISTER    rsp
+>         CFI_ADJUST_CFA_OFFSET   -8
 > 
-> 
+>        /* we did not save rbx, restore only from ARGOFFSET */
+>        addq $8, %rsp
+>        CFI_ADJUST_CFA_OFFSET   -16
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Or if CFI_ADJUST_CFA_OFFSET is already relative to its previous value,
+it should be CFI_ADJUST_CFA_OFFSET -8
