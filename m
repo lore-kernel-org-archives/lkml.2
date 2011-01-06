@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab1AFTyb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 14:54:31 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:43059 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752915Ab1AFTya (ORCPT
+	id S1751978Ab1AFT5p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 14:57:45 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:44937 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625Ab1AFT5o convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 14:54:30 -0500
-Date: Thu, 6 Jan 2011 14:54:28 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Jeff Moyer <jmoyer@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Li Zefan <lizf@cn.fujitsu.com>,
-        Alan.Brunelle@hp.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] trace event block fix unassigned field
-Message-ID: <20110106195428.GA3114@Krystal>
-References: <20110106184331.GA2449@Krystal> <4D261B23.5040100@kernel.dk>
+	Thu, 6 Jan 2011 14:57:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=WvywAkEkwTuM6lNAf5SI2OiFQCbtjdpXS3YApDmurJaMt50cEgKXPVtYMzTu3diCDq
+         sF9WdID6v9NJYakMx+2iDOsU3OIxWHGJOkN+zKbrCDYnHsxc2ey47N1DWDsHMhS8jzCX
+         plv4UvIOEQDlOv3Z1saMOTGO9MVSdTDEr+6vI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D261B23.5040100@kernel.dk>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 14:52:34 up 44 days, 55 min,  5 users,  load average: 0.06, 0.03,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4D26166D.1020009@zytor.com>
+References: <20110106094423.GA17565@elte.hu>
+	<AANLkTinU423YzQxB9y7ZM9GQAYPQyTJUm9w18=6P_F88@mail.gmail.com>
+	<4D26166D.1020009@zytor.com>
+Date: Thu, 6 Jan 2011 11:57:43 -0800
+X-Google-Sender-Auth: 3PKlSlLYErV8Ew-zxPQ4t3dBh4Y
+Message-ID: <AANLkTik7tcZo8ka80y=FD-_UxwvB6-R8iRHRq+rkOSo+@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/apic changes for v2.6.38
+From: Tony Luck <tony.luck@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>, Yinghai Lu <yinghai@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Jens Axboe (axboe@kernel.dk) wrote:
-> On 2011-01-06 19:43, Mathieu Desnoyers wrote:
-> > The "error" field in block_bio_complete is not assigned, leaving the
-> > memory area uninitialized (keeping garbage data). Pass an additional
-> > tracepoint argument to this event to initialize this field.
-> 
-> Thanks guys, applied.
+On Thu, Jan 6, 2011 at 11:22 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>  I don't know if this is applicable on IA64.
 
-Thanks Jens. A side-note for Frederic and Steven: for this patch specifically,
-going through the block layer tree seems like the right approach, because we
-also modify the tracepoint caller code.
+I think that ia64 might need something like this too.  If I understand the
+change correctly, it makes sure that we read all entries for cpus from the
+SRAT table, so that we can figure out the topology for any cpus that we
+decide to use (which may be at arbitrary positions in the SRAT table
+as there is no guarantee that SRAT entries are in the same order as
+MADT entries ... we might try to boot the first four cpus we find in
+MADT, but those might be the last four entries in SRAT.)
 
-Thanks,
+It looks like this could be more simply achieved in an architecture
+neutral way by just passing "0" as the last argument to
+acpi_table_parse_srat() ... which will look at every entry
+in SRAT (this is not exactly the same ... but it seems unlikely
+that SRAT will have more than 32768 processor entries ... which
+you are apparently willing to allow for with the MAX_LOCAL_APIC
+value.)
 
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+-Tony
