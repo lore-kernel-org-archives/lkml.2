@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829Ab1AFAbz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:31:55 -0500
-Received: from kroah.org ([198.145.64.141]:36118 "EHLO coco.kroah.org"
+	id S1754869Ab1AFAcE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:32:04 -0500
+Received: from kroah.org ([198.145.64.141]:36168 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754794Ab1AFAbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:31:50 -0500
+	id S1754828Ab1AFAcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:32:01 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:10 2011
-Message-Id: <20110106002309.949930724@clark.site>
+Message-Id: <20110106002310.826545803@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:24:00 -0800
+Date: Wed, 05 Jan 2011 16:24:10 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [141/152] libata-sff: fix HSM_ST_ERR handling in __ata_sff_port_intr()
+        =?ISO-8859-15?q?Jean-Fran=C3=A7ois=20Moine?= <moinejf@free.fr>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [151/152] [media] gspca - sonixj: Set the flag for some devices
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Jean-Francois Moine <moinejf@free.fr>
 
-commit 687a993339c4f3a63654746230da3aab8bbdbffd upstream.
+commit b2272a49e7df37732d73988f00468ce31e1ebc92 upstream.
 
-While separating out BMDMA irq handler from SFF, commit c3b28894
-(libata-sff: separate out BMDMA irq handler) incorrectly made
-__ata_sff_port_intr() consider an IRQ to be an idle one if the host
-state was transitioned to HSM_ST_ERR by ata_bmdma_port_intr().
+The flag PDN_INV indicates that the sensor pin S_PWR_DN has not the same
+value as other webcams with the same sensor. For now, only two webcams have
+been so detected: the Microsoft's VX1000 and VX3000.
 
-This makes BMDMA drivers ignore IRQs reporting host bus error which
-leads to timeouts instead of triggering EH immediately.  Fix it by
-making __ata_sff_port_intr() consider the IRQ to be an idle one iff
-the state is HSM_ST_IDLE.  This is equivalent to adding HSM_ST_ERR to
-the "break"ing case but less error-prone.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Antonio Toma <antonio.toma@gmail.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Jean-François Moine <moinejf@free.fr>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/libata-sff.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/media/video/gspca/sonixj.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/ata/libata-sff.c
-+++ b/drivers/ata/libata-sff.c
-@@ -1532,11 +1532,10 @@ static unsigned int __ata_sff_port_intr(
- 		if (!(qc->dev->flags & ATA_DFLAG_CDB_INTR))
- 			return ata_sff_idle_irq(ap);
- 		break;
--	case HSM_ST:
--	case HSM_ST_LAST:
--		break;
--	default:
-+	case HSM_ST_IDLE:
- 		return ata_sff_idle_irq(ap);
-+	default:
-+		break;
- 	}
+--- a/drivers/media/video/gspca/sonixj.c
++++ b/drivers/media/video/gspca/sonixj.c
+@@ -87,6 +87,9 @@ enum sensors {
+ 	SENSOR_SP80708,
+ };
  
- 	/* check main status, clearing INTRQ if needed */
++/* device flags */
++#define PDN_INV	1		/* inverse pin S_PWR_DN / sn_xxx tables */
++
+ /* V4L2 controls supported by the driver */
+ static int sd_setbrightness(struct gspca_dev *gspca_dev, __s32 val);
+ static int sd_getbrightness(struct gspca_dev *gspca_dev, __s32 *val);
+@@ -2990,8 +2993,8 @@ static const __devinitdata struct usb_de
+ 	{USB_DEVICE(0x0458, 0x7025), BS(SN9C120, MI0360)},
+ 	{USB_DEVICE(0x0458, 0x702e), BS(SN9C120, OV7660)},
+ #endif
+-	{USB_DEVICE(0x045e, 0x00f5), BS(SN9C105, OV7660)},
+-	{USB_DEVICE(0x045e, 0x00f7), BS(SN9C105, OV7660)},
++	{USB_DEVICE(0x045e, 0x00f5), BSF(SN9C105, OV7660, PDN_INV)},
++	{USB_DEVICE(0x045e, 0x00f7), BSF(SN9C105, OV7660, PDN_INV)},
+ 	{USB_DEVICE(0x0471, 0x0327), BS(SN9C105, MI0360)},
+ 	{USB_DEVICE(0x0471, 0x0328), BS(SN9C105, MI0360)},
+ 	{USB_DEVICE(0x0471, 0x0330), BS(SN9C105, MI0360)},
 
 
