@@ -1,99 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab1AFAfj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:35:39 -0500
-Received: from outbound-queue-1.mail.thdo.gradwell.net ([212.11.70.34]:37529
-	"EHLO outbound-queue-1.mail.thdo.gradwell.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754820Ab1AFAfe convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:35:34 -0500
-Subject: Re: Using s3virge card in Sun Blade 2000
-From: Alex Buell <alex.buell@munted.org.uk>
-Reply-To: alex.buell@munted.org.uk
-To: David Miller <davem@davemloft.net>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1294262022.24378.2.camel@lithium>
-References: <1294086801.17576.14.camel@lithium>
-	 <20110103.123939.02282416.davem@davemloft.net>
-	 <1294090573.17576.16.camel@lithium>
-	 <20110105.110705.104043006.davem@davemloft.net>
-	 <1294262022.24378.2.camel@lithium>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: One very high maintenance cat for company
-Date: Thu, 06 Jan 2011 00:33:49 +0000
-Message-ID: <1294274029.24378.11.camel@lithium>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-X-Gradwell-MongoId: 4d250e54.158a0-236e-2
-X-Gradwell-Auth-Method: mailbox
-X-Gradwell-Auth-Credentials: postmaster@pop3.munted.org.uk
+	id S1754807Ab1AFAgU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:36:20 -0500
+Received: from kroah.org ([198.145.64.141]:36090 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754755Ab1AFAbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:31:43 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:09 2011
+Message-Id: <20110106002309.434980933@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Wed, 05 Jan 2011 16:23:54 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Dan Rosenberg <drosenberg@vsecurity.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [135/152] sound: Prevent buffer overflow in OSS load_mixer_volumes
+In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-05 at 21:13 +0000, Alex Buell wrote:
+2.6.36-stable review patch.  If anyone has any objections, please let us know.
 
-> > Then replace all NULL vga_*() initial arguments in the driver
-> > with par->vga_iobase. 
-> 
-> No wonder it was crashing, there was nothing to access with region 1! I
-> will do as you suggest, and see if it works. Thank you!
+------------------
 
-After doing as you suggested:
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-	printk(KERN_INFO "s3fb: vga io base = 0x%p\n", par->vga_iobase);
+commit d81a12bc29ae4038770e05dce4ab7f26fd5880fb upstream.
 
-        /* Unlock regs */
-        cr38 = vga_rcrt(par->vga_iobase, 0x38);
-        cr39 = vga_rcrt(par->vga_iobase, 0x39);
-        vga_wseq(par->vga_iobase, 0x08, 0x06);
-        vga_wcrt(par->vga_iobase, 0x38, 0x48);
-        vga_wcrt(par->vga_iobase, 0x39, 0xA5);
+The load_mixer_volumes() function, which can be triggered by
+unprivileged users via the SOUND_MIXER_SETLEVELS ioctl, is vulnerable to
+a buffer overflow.  Because the provided "name" argument isn't
+guaranteed to be NULL terminated at the expected 32 bytes, it's possible
+to overflow past the end of the last element in the mixer_vols array.
+Further exploitation can result in an arbitrary kernel write (via
+subsequent calls to load_mixer_volumes()) leading to privilege
+escalation, or arbitrary kernel reads via get_mixer_levels().  In
+addition, the strcmp() may leak bytes beyond the mixer_vols array.
 
-        printk(KERN_INFO "s3fb ok...\n");
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-The above code seems to work, and crashes after this point:
+---
+ sound/oss/soundcard.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-   	/* Identify chip type */
-        par->chip = id->driver_data & CHIP_MASK;
-        par->rev = vga_rcrt(par->vga_iobase, 0x2f);
-        if (par->chip & CHIP_UNDECIDED_FLAG)
-                par->chip = s3_identification(par->chip);
+--- a/sound/oss/soundcard.c
++++ b/sound/oss/soundcard.c
+@@ -86,7 +86,7 @@ int *load_mixer_volumes(char *name, int
+ 	int             i, n;
+ 
+ 	for (i = 0; i < num_mixer_volumes; i++) {
+-		if (strcmp(name, mixer_vols[i].name) == 0) {
++		if (strncmp(name, mixer_vols[i].name, 32) == 0) {
+ 			if (present)
+ 				mixer_vols[i].num = i;
+ 			return mixer_vols[i].levels;
+@@ -98,7 +98,7 @@ int *load_mixer_volumes(char *name, int
+ 	}
+ 	n = num_mixer_volumes++;
+ 
+-	strcpy(mixer_vols[n].name, name);
++	strncpy(mixer_vols[n].name, name, 32);
+ 
+ 	if (present)
+ 		mixer_vols[n].num = n;
 
-The logs shows:
 
-Jan  5 23:16:29 sodium kernel: s3fb: vga io base = 0x000007ffef000000
-Jan  5 23:16:29 sodium kernel: s3fb ok...
-Jan  5 23:16:29 sodium kernel: ERROR(0): Cheetah error trap taken
-afsr[0030100000000000] afar[00000000000003d0] TL1(0)
-Jan  5 23:16:29 sodium kernel: ERROR(0): TPC[10583b54] TNPC[10583b58]
-O7[10583a3c] TSTATE[9911001606]
-Jan  5 23:16:29 sodium kernel: ERROR(0): TPC<s3_pci_probe+0x410/0x93c
-[s3fb]>
-Jan  5 23:16:29 sodium kernel: ERROR(0): M_SYND(0),  E_SYND(0), Multiple
-Errors, Privileged
-Jan  5 23:16:29 sodium kernel: ERROR(0): Highest priority error
-(0000100000000000) "Unmapped error from system bus"
-Jan  5 23:16:29 sodium kernel: ERROR(0): D-cache idx[0]
-tag[0000000000000000] utag[0000000000000000] stag[0000000000000000]
-Jan  5 23:16:29 sodium kernel: ERROR(0): D-cache data0[0000000000000000]
-data1[0000000000000000] data2[0000000000000000] data3[0000000000000000]
-Jan  5 23:16:29 sodium kernel: ERROR(0): I-cache idx[0]
-tag[0000000000000000] utag[0000000000000000] stag[0000000000000000]
-u[0000000000000000] l[0000000000000000]
-Jan  5 23:16:29 sodium kernel: ERROR(0): I-cache INSN0[0000000000000000]
-INSN1[0000000000000000] INSN2[0000000000000000] INSN3[0000000000000000]
-Jan  5 23:16:29 sodium kernel: ERROR(0): I-cache INSN4[0000000000000000]
-INSN5[0000000000000000] INSN6[0000000000000000] INSN7[0000000000000000]
-Jan  5 23:16:29 sodium kernel: ERROR(0): E-cache idx[3c0]
-tag[0000000002249249]
-Jan  5 23:16:29 sodium kernel: ERROR(0): E-cache data0[787072745f756e72]
-data1[656769737465725f] data2[7472616e73706f72] data3[7400787072745f72]
-Jan  5 23:16:29 sodium kernel: Kernel panic - not syncing: Irrecoverable
-deferred error trap.
-
-I'm still thinking that it probably isn't the right io_base if it's
-crashing trying to identify the s3 chipset. 
--- 
-Tactical Nuclear Kittens
