@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752065Ab1AFNgM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 08:36:12 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37255 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751522Ab1AFNgK (ORCPT
+	id S1752016Ab1AFNpJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 08:45:09 -0500
+Received: from vwp2514.webpack.hosteurope.de ([87.230.42.24]:53743 "EHLO
+	vwp2514.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751547Ab1AFNpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 08:36:10 -0500
-Date: Thu, 6 Jan 2011 13:34:55 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Claudio Scordino <claudio@evidence.eu.com>
-Cc: starvik@axis.com, Jesper Nilsson <Jesper.Nilsson@axis.com>,
-        linux-cris-kernel <linux-cris-kernel@axis.com>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] RS485 on Cris: use global value of TIOCSRS485
-Message-ID: <20110106133455.2f6175c6@lxorguk.ukuu.org.uk>
-In-Reply-To: <4D257C87.4040400@evidence.eu.com>
-References: <4D257C87.4040400@evidence.eu.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Thu, 6 Jan 2011 08:45:08 -0500
+Subject: Re: [patch] mtd: pxa3xx_nand: NULL dereference in pxa3xx_nand_probe
+From: Sven Neumann <s.neumann@raumfeld.com>
+To: Dan Carpenter <error27@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-mtd@lists.infradead.org, Daniel Mack <daniel@caiaq.de>,
+        leiwen@marvell.com, haojian.zhuang@marvell.com,
+        David.Woodhouse@intel.com, eric.y.miao@gmail.com,
+        Artem.Bityutskiy@nokia.com
+In-Reply-To: <20110106124525.GA1717@bicker>
+References: <1294227801.3996.62.camel@sven>  <20110106124525.GA1717@bicker>
+Content-Type: text/plain; charset="UTF-8"
+Organization: RAUMFELD GmbH
+Date: Thu, 06 Jan 2011 14:45:01 +0100
+Message-ID: <1294321502.2218.5.camel@sven>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
+X-bounce-key: webpack.hosteurope.de;s.neumann@raumfeld.com;1294321508;57c44bd7;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> With this patch, TIOCSRS485 gets the same value across all
-> architectures, making maintenance and portability of user-level code
-> easier.
+Hi Dan,
 
-I don't see why this is worth doing - no application code should ever
-hardcode the value.
+On Thu, 2011-01-06 at 15:45 +0300, Dan Carpenter wrote:
 
-> +	case TIOCSRS485DEPR:
-> +	{
-> +		printk(KERN_DEBUG "The use of this ioctl is deprecated. Use TIOCSRS485 instead\n");
-> +		/* Fall through */
-> +	}
+> Could you test this patch?  I don't have an arm so I can't compile this.
 
-and letting everyone spew printks is not a good thing.
+Yes, this change fixes the boot problem for me. Thanks for the quick
+help.
 
-NAK
+> This was introduced in 18c81b1828f8 "mtd: pxa3xx_nand: remove the flash
+> info in driver structure"
+> 
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
+
+Tested-by: Sven Neumann <s.neumann@raumfeld.com>
+
+> diff --git a/drivers/mtd/nand/pxa3xx_nand.c b/drivers/mtd/nand/pxa3xx_nand.c
+> index 17f8518..ea2c288 100644
+> --- a/drivers/mtd/nand/pxa3xx_nand.c
+> +++ b/drivers/mtd/nand/pxa3xx_nand.c
+> @@ -885,6 +885,7 @@ static int pxa3xx_nand_detect_config(struct pxa3xx_nand_info *info)
+>  	/* set info fields needed to __readid */
+>  	info->read_id_bytes = (info->page_size == 2048) ? 4 : 2;
+>  	info->reg_ndcr = ndcr;
+> +	info->cmdset = &default_cmdset;
+>  
+>  	if (__readid(info, &id))
+>  		return -ENODEV;
+> @@ -915,7 +916,6 @@ static int pxa3xx_nand_detect_config(struct pxa3xx_nand_info *info)
+>  
+>  	info->ndtr0cs0 = nand_readl(info, NDTR0CS0);
+>  	info->ndtr1cs0 = nand_readl(info, NDTR1CS0);
+> -	info->cmdset = &default_cmdset;
+>  
+>  	return 0;
+>  }
+> 
+
+
