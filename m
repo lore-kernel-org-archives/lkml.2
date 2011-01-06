@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754807Ab1AFAgU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:36:20 -0500
-Received: from kroah.org ([198.145.64.141]:36090 "EHLO coco.kroah.org"
+	id S1754824Ab1AFAf0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:35:26 -0500
+Received: from kroah.org ([198.145.64.141]:36106 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754755Ab1AFAbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:31:43 -0500
+	id S1754777Ab1AFAbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:31:48 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:09 2011
-Message-Id: <20110106002309.434980933@clark.site>
+Message-Id: <20110106002309.776735478@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:23:54 -0800
+Date: Wed, 05 Jan 2011 16:23:58 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <drosenberg@vsecurity.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [135/152] sound: Prevent buffer overflow in OSS load_mixer_volumes
+        Saeed Bishara <saeed@marvell.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: [139/152] mv_xor: fix race in tasklet function
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,47 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Saeed Bishara <saeed@marvell.com>
 
-commit d81a12bc29ae4038770e05dce4ab7f26fd5880fb upstream.
+commit 8333f65ef094e47020cd01452b4637e7daf5a77f upstream.
 
-The load_mixer_volumes() function, which can be triggered by
-unprivileged users via the SOUND_MIXER_SETLEVELS ioctl, is vulnerable to
-a buffer overflow.  Because the provided "name" argument isn't
-guaranteed to be NULL terminated at the expected 32 bytes, it's possible
-to overflow past the end of the last element in the mixer_vols array.
-Further exploitation can result in an arbitrary kernel write (via
-subsequent calls to load_mixer_volumes()) leading to privilege
-escalation, or arbitrary kernel reads via get_mixer_levels().  In
-addition, the strcmp() may leak bytes beyond the mixer_vols array.
+use mv_xor_slot_cleanup() instead of __mv_xor_slot_cleanup() as the former function
+aquires the spin lock that needed to protect the drivers data.
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Saeed Bishara <saeed@marvell.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/oss/soundcard.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/dma/mv_xor.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/oss/soundcard.c
-+++ b/sound/oss/soundcard.c
-@@ -86,7 +86,7 @@ int *load_mixer_volumes(char *name, int
- 	int             i, n;
+--- a/drivers/dma/mv_xor.c
++++ b/drivers/dma/mv_xor.c
+@@ -449,7 +449,7 @@ mv_xor_slot_cleanup(struct mv_xor_chan *
+ static void mv_xor_tasklet(unsigned long data)
+ {
+ 	struct mv_xor_chan *chan = (struct mv_xor_chan *) data;
+-	__mv_xor_slot_cleanup(chan);
++	mv_xor_slot_cleanup(chan);
+ }
  
- 	for (i = 0; i < num_mixer_volumes; i++) {
--		if (strcmp(name, mixer_vols[i].name) == 0) {
-+		if (strncmp(name, mixer_vols[i].name, 32) == 0) {
- 			if (present)
- 				mixer_vols[i].num = i;
- 			return mixer_vols[i].levels;
-@@ -98,7 +98,7 @@ int *load_mixer_volumes(char *name, int
- 	}
- 	n = num_mixer_volumes++;
- 
--	strcpy(mixer_vols[n].name, name);
-+	strncpy(mixer_vols[n].name, name, 32);
- 
- 	if (present)
- 		mixer_vols[n].num = n;
+ static struct mv_xor_desc_slot *
 
 
