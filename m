@@ -1,56 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab1AFGrQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 01:47:16 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:58968 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753866Ab1AFGrO (ORCPT
+	id S1754050Ab1AFGyb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 01:54:31 -0500
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:44069 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753940Ab1AFGya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 01:47:14 -0500
-Date: Thu, 6 Jan 2011 15:45:17 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Julia Lawall <julia@diku.dk>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] drivers/video/carminefb.c: improve error handling
-Message-ID: <20110106064517.GD15340@linux-sh.org>
-References: <Pine.LNX.4.64.1101021527220.10933@ask.diku.dk>
+	Thu, 6 Jan 2011 01:54:30 -0500
+Date: Thu, 6 Jan 2011 01:54:00 -0500 (EST)
+From: CAI Qian <caiqian@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, mel@csn.ul.ie,
+        mhocko@suse.cz, Eric B Munson <emunson@mgebm.net>
+Message-ID: <890783047.150265.1294296840281.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <20110105131151.b5b9cf5b.akpm@linux-foundation.org>
+Subject: Re: [PATCH V2] Do not allow pagesize >= MAX_ORDER pool adjustment
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1101021527220.10933@ask.diku.dk>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.5.72]
+X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Linux)/6.0.9_GA_2686)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 02, 2011 at 03:27:42PM +0100, Julia Lawall wrote:
-> From: Julia Lawall <julia@diku.dk>
+
+
+----- Original Message -----
+> On Wed, 5 Jan 2011 13:29:57 -0700
+> Eric B Munson <emunson@mgebm.net> wrote:
 > 
-> This code had an error handling goto to the wrong place, a misplaced
-> release_mem_region, and a duplicated release_mem_region.
+> > Huge pages with order >= MAX_ORDER must be allocated at boot via
+> > the kernel command line, they cannot be allocated or freed once
+> > the kernel is up and running. Currently we allow values to be
+> > written to the sysfs and sysctl files controling pool size for these
+> > huge page sizes. This patch makes the store functions for
+> > nr_hugepages
+> > and nr_overcommit_hugepages return -EINVAL when the pool for a
+> > page size >= MAX_ORDER is changed.
+> >
 > 
-> The semantic match that finds the double release_mem_region is as follows:
-> (http://coccinelle.lip6.fr/)
+> gack, you people keep on making me look at the hugetlb code :(
 > 
-> // <smpl>
-> @r@
-> expression e1,e2,e3;
-> position p1,p2,p3;
-> @@
-> release_mem_region@p1(e1, e2)@p3;
-> ... when != request_mem_region(e1,e2,e3)
-> release_mem_region(e1, e2)@p2;
+> > index 5cb71a9..15bd633 100644
+> > --- a/mm/hugetlb.c
+> > +++ b/mm/hugetlb.c
+> > @@ -1443,6 +1443,12 @@ static ssize_t nr_hugepages_store_common(bool
+> > obey_mempolicy,
+> >  		return -EINVAL;
 > 
-> @@
-> expression e <= r.e1,e3;
-> expression r.e1,e2;
-> position r.p1,r.p2,r.p3,p!=r.p1;
-> @@
-> *release_mem_region(e1, e2)@p3;
-> ... when != e = e3
-> *release_mem_region@p(e1, e2)@p2;// </smpl>
+> Why do these functions do a `return 0' if strict_strtoul() failed?
 > 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+> >
+> >  	h = kobj_to_hstate(kobj, &nid);
+> > +
+> > + if (h->order >= MAX_ORDER) {
+> > + NODEMASK_FREE(nodes_allowed);
+> > + return -EINVAL;
+> > + }
 > 
-Applied, thanks.
+> Let's avoid having multiple unwind-and-return paths in a function,
+> please. it often leads to resource leaks and locking errors as the
+> code evolves.
+> 
+> ---
+> a/mm/hugetlb.c~hugetlb-do-not-allow-pagesize-=-max_order-pool-adjustment-fix
+> +++ a/mm/hugetlb.c
+> @@ -1363,6 +1363,7 @@ static ssize_t nr_hugepages_show_common(
+> 
+> return sprintf(buf, "%lu\n", nr_huge_pages);
+> }
+> +
+> static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
+> struct kobject *kobj, struct kobj_attribute *attr,
+> const char *buf, size_t len)
+> @@ -1375,15 +1376,14 @@ static ssize_t nr_hugepages_store_common
+> 
+> err = strict_strtoul(buf, 10, &count);
+> if (err) {
+> - NODEMASK_FREE(nodes_allowed);
+> - return 0;
+> + err = 0; /* This seems wrong */
+> + goto out;
+> }
+> 
+> h = kobj_to_hstate(kobj, &nid);
+> -
+> if (h->order >= MAX_ORDER) {
+> - NODEMASK_FREE(nodes_allowed);
+> - return -EINVAL;
+> + err = -EINVAL;
+> + goto out;
+> }
+> 
+> if (nid == NUMA_NO_NODE) {
+> @@ -1411,6 +1411,9 @@ static ssize_t nr_hugepages_store_common
+> NODEMASK_FREE(nodes_allowed);
+> 
+> return len;
+> +out:
+> + NODEMASK_FREE(nodes_allowed);
+> + return err;
+> }
+> 
+> static ssize_t nr_hugepages_show(struct kobject *kobj,
+> _
+As I mentioned in another thread. This is missing checking in 
+hugetlb_overcommit_handler().
+
+CAI Qian
+
+-------------
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index c4a3558..60740bd 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1510,6 +1510,7 @@ static ssize_t nr_overcommit_hugepages_show(struct kobject *kobj,
+        struct hstate *h = kobj_to_hstate(kobj, NULL);
+        return sprintf(buf, "%lu\n", h->nr_overcommit_huge_pages);
+ }
++
+ static ssize_t nr_overcommit_hugepages_store(struct kobject *kobj,
+                struct kobj_attribute *attr, const char *buf, size_t count)
+ {
+@@ -1986,6 +1987,9 @@ int hugetlb_overcommit_handler(struct ctl_table *table, int write,
+        if (!write)
+                tmp = h->nr_overcommit_huge_pages;
+ 
++       if (write && h->order >= MAX_ORDER)
++               return -EINVAL;
++
+        table->data = &tmp;
+        table->maxlen = sizeof(unsigned long);
+        proc_doulongvec_minmax(table, write, buffer, length, ppos);
