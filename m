@@ -1,101 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab1AFBBH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 20:01:07 -0500
-Received: from kroah.org ([198.145.64.141]:35433 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753851Ab1AFA3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:29:01 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:22:58 2011
-Message-Id: <20110106002258.404373360@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:21:57 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        NeilBrown <neilb@suse.de>, "J. Bruce Fields" <bfields@redhat.com>
-Subject: [018/152] nfsd: Fix possible BUG_ON firing in set_change_info
-In-Reply-To: <20110106002500.GA3172@kroah.com>
+	id S1753990Ab1AFBBY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 20:01:24 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:57437 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753322Ab1AFBBV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 20:01:21 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 6 Jan 2011 09:55:28 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "Figo.zhang" <zhangtianfei@leadcoretech.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@osdl.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Figo.zhang" <figo1802@gmail.com>,
+        "rientjes@google.com" <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH v3]mm/oom-kill: direct hardware access processes should
+ get bonus
+Message-Id: <20110106095528.a8e12526.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4D22E0CF.8000307@leadcoretech.com>
+References: <1288662213.10103.2.camel@localhost.localdomain>
+	<1289305468.10699.2.camel@localhost.localdomain>
+	<1289402093.10699.25.camel@localhost.localdomain>
+	<1289402666.10699.28.camel@localhost.localdomain>
+	<4D22D190.1080706@leadcoretech.com>
+	<20110104172833.1ff20b41.kamezawa.hiroyu@jp.fujitsu.com>
+	<4D22E0CF.8000307@leadcoretech.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.36-stable review patch.  If anyone has any objections, please let us know.
+On Tue, 04 Jan 2011 16:56:47 +0800
+"Figo.zhang" <zhangtianfei@leadcoretech.com> wrote:
 
-------------------
+> On 01/04/2011 04:28 PM, KAMEZAWA Hiroyuki wrote:
+> > On Tue, 04 Jan 2011 15:51:44 +0800
+> > "Figo.zhang"<zhangtianfei@leadcoretech.com>  wrote:
+> >
+> >>
+> >> i had send the patch to protect the hardware access processes for
+> >> oom-killer before, but rientjes have not agree with me.
+> >>
+> >> but today i catch log from my desktop. oom-killer have kill my "minicom"
+> >> and "Xorg". so i think it should add protection about it.
+> >>
+> >
+> > Off topic.
+> >
+> > In this log, I found
+> >
+> >>> Jan  4 15:22:55 figo-desktop kernel: Free swap  = -1636kB
+> >>> Jan  4 15:22:55 figo-desktop kernel: Total swap = 0kB
+> >>> Jan  4 15:22:55 figo-desktop kernel: 515070 pages RAM
+> >
+> > ... This means total_swap_pages = 0 while pages are read-in at swapoff.
+> >
+> > Let's see 'points' for oom
+> > ==
+> > points = (get_mm_rss(p->mm) + get_mm_counter(p->mm, MM_SWAPENTS)) * 1000 /
+> >                          totalpages;
+> > ==
+> >
+> > Here, totalpages = total_ram + total_swap but totalswap is 0 here.
+> >
+> > So, points can be>  1000, easily.
+> > (This seems not to be related to the Xorg's death itself)
+> 
+> total_swap is 0, so
+> totalpages = total_ram,
+> get_mm_counter(p->mm, MM_SWAPENTS) = 0,
+> 
+> so
+> points = (get_mm_rss(p->mm)) * 1000 / totalpages;
+> 
+> so points canot larger than 1000.
 
-From: Neil Brown <neilb@suse.de>
+mm_counter's swap count is reduced only when swapents are removed from
+page table. But total_swap is reduced to be 0 before try_to_unuse().
 
-commit c1ac3ffcd0bc7e9617f62be8c7043d53ab84deac upstream.
 
-If vfs_getattr in fill_post_wcc returns an error, we don't
-set fh_post_change.
-For NFSv4, this can result in set_change_info triggering a BUG_ON.
-i.e. fh_post_saved being zero isn't really a bug.
+Thanks,
+-Kame
 
-So:
- - instead of BUGging when fh_post_saved is zero, just clear ->atomic.
- - if vfs_getattr fails in fill_post_wcc, take a copy of i_ctime anyway.
-   This will be used i seg_change_info, but not overly trusted.
- - While we are there, remove the pointless 'if' statements in set_change_info.
-   There is no harm setting all the values.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- fs/nfsd/nfs3xdr.c |    6 ++++--
- fs/nfsd/xdr4.h    |   21 ++++++++++-----------
- 2 files changed, 14 insertions(+), 13 deletions(-)
-
---- a/fs/nfsd/nfs3xdr.c
-+++ b/fs/nfsd/nfs3xdr.c
-@@ -260,9 +260,11 @@ void fill_post_wcc(struct svc_fh *fhp)
- 	err = vfs_getattr(fhp->fh_export->ex_path.mnt, fhp->fh_dentry,
- 			&fhp->fh_post_attr);
- 	fhp->fh_post_change = fhp->fh_dentry->d_inode->i_version;
--	if (err)
-+	if (err) {
- 		fhp->fh_post_saved = 0;
--	else
-+		/* Grab the ctime anyway - set_change_info might use it */
-+		fhp->fh_post_attr.ctime = fhp->fh_dentry->d_inode->i_ctime;
-+	} else
- 		fhp->fh_post_saved = 1;
- }
- 
---- a/fs/nfsd/xdr4.h
-+++ b/fs/nfsd/xdr4.h
-@@ -484,18 +484,17 @@ static inline bool nfsd4_not_cached(stru
- static inline void
- set_change_info(struct nfsd4_change_info *cinfo, struct svc_fh *fhp)
- {
--	BUG_ON(!fhp->fh_pre_saved || !fhp->fh_post_saved);
--	cinfo->atomic = 1;
-+	BUG_ON(!fhp->fh_pre_saved);
-+	cinfo->atomic = fhp->fh_post_saved;
- 	cinfo->change_supported = IS_I_VERSION(fhp->fh_dentry->d_inode);
--	if (cinfo->change_supported) {
--		cinfo->before_change = fhp->fh_pre_change;
--		cinfo->after_change = fhp->fh_post_change;
--	} else {
--		cinfo->before_ctime_sec = fhp->fh_pre_ctime.tv_sec;
--		cinfo->before_ctime_nsec = fhp->fh_pre_ctime.tv_nsec;
--		cinfo->after_ctime_sec = fhp->fh_post_attr.ctime.tv_sec;
--		cinfo->after_ctime_nsec = fhp->fh_post_attr.ctime.tv_nsec;
--	}
-+
-+	cinfo->before_change = fhp->fh_pre_change;
-+	cinfo->after_change = fhp->fh_post_change;
-+	cinfo->before_ctime_sec = fhp->fh_pre_ctime.tv_sec;
-+	cinfo->before_ctime_nsec = fhp->fh_pre_ctime.tv_nsec;
-+	cinfo->after_ctime_sec = fhp->fh_post_attr.ctime.tv_sec;
-+	cinfo->after_ctime_nsec = fhp->fh_post_attr.ctime.tv_nsec;
-+
- }
- 
- int nfs4svc_encode_voidres(struct svc_rqst *, __be32 *, void *);
 
 
