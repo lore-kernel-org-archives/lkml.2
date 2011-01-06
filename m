@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab1AFX1R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 18:27:17 -0500
-Received: from outbound-queue-1.mail.thdo.gradwell.net ([212.11.70.34]:40688
-	"EHLO outbound-queue-1.mail.thdo.gradwell.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752864Ab1AFX1P convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 18:27:15 -0500
-Subject: Re: Using s3virge card in Sun Blade 2000
-From: Alex Buell <alex.buell@munted.org.uk>
-Reply-To: alex.buell@munted.org.uk
-To: David Miller <davem@davemloft.net>
-Cc: romieu@fr.zoreil.com, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110106.142906.226774601.davem@davemloft.net>
-References: <20110106204240.GA6361@electric-eye.fr.zoreil.com>
-	 <1294347036.24378.13.camel@lithium> <1294352651.24378.17.camel@lithium>
-	 <20110106.142906.226774601.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: One very high maintenance cat for company
-Date: Thu, 06 Jan 2011 23:25:19 +0000
-Message-ID: <1294356319.24378.22.camel@lithium>
+	id S1753898Ab1AFXss (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 18:48:48 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54081 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751625Ab1AFXsq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 18:48:46 -0500
+Date: Thu, 6 Jan 2011 15:47:57 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [PATCH] sched: fix strncmp operation
+Message-Id: <20110106154757.75fb6b2a.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTinOPuYsVovrZpbuCCmG5deEyc8WgA_A1RJx_YK7@mail.gmail.com>
+References: <AANLkTinOPuYsVovrZpbuCCmG5deEyc8WgA_A1RJx_YK7@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-X-Gradwell-MongoId: 4d264fd0.82fc-16db-2
-X-Gradwell-Auth-Method: mailbox
-X-Gradwell-Auth-Credentials: postmaster@pop3.munted.org.uk
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-06 at 14:29 -0800, David Miller wrote:
-> You have to initialize par->state.vgabase in the s3fb driver to the
-> VGA area iomem pointer you calculated at boot time.
+On Thu, 6 Jan 2011 20:58:12 +0800
+Hillf Danton <dhillf@gmail.com> wrote:
 
-Thanks for that, I've just got past that, now it's changing modes that
-crashes the driver. I can load and unload the driver,  and it
-automatically selects 640x480.
+> One of the operands, buf, is incorrect, since it is stripped and the
+> correct address for subsequent string comparing could change if
+> leading white spaces, if any, are removed from buf.
+> 
+> It is fixed by replacing buf with cmp.
+> 
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+> ---
+> 
+> --- a/kernel/sched.c	2010-11-01 19:54:12.000000000 +0800
+> +++ b/kernel/sched.c	2011-01-06 20:52:02.000000000 +0800
+> @@ -751,7 +751,7 @@ sched_feat_write(struct file *filp, cons
+>  	buf[cnt] = 0;
+>  	cmp = strstrip(buf);
+> 
+> -	if (strncmp(buf, "NO_", 3) == 0) {
+> +	if (strncmp(cmp, "NO_", 3) == 0) {
+>  		neg = 1;
+>  		cmp += 3;
+>  	}
 
-How do I track down the offending line of code from the following entry
-in the logs:
-TPC<s3fb_set_par+0x1a0/0xf78 [s3fb]>
+Just remove the strstrip(), I'd say.  The kernel practically never
+strips leading whitespace from sysfs input, so why do it here? 
 
-Also, oddly enough, before calling save_vga it clears par->state, which
-was why it was crashing. Explicitly setting the par->state.vgabase to
-the vga_iobase address solved the problem as below. I also noticed that
-having VGA_SAVE_FONTS crashes the driver, so I left it out - a quick
-look through the code in vgastate.c indicate it needs rework to make it
-work but I've left that for later. 
 
-(in s3fb_open)
-
- if (par->ref_count == 0) {
-                memset(&(par->state), 0, sizeof(struct vgastate));
-
-                /* save_vga/restore_vga needs this to function */
-                par->state.vgabase = par->vga_iobase;
-
-                /*par->state.flags = VGA_SAVE_MODE | VGA_SAVE_FONTS | VGA_SAVE_CMAP;*/
-                par->state.flags = VGA_SAVE_MODE | VGA_SAVE_CMAP;
-                par->state.num_crtc = 0x70;
-                par->state.num_seq = 0x20;
-                save_vga(&(par->state));
-
-Thanks, seems it's starting to work bit by bit!
--- 
-Tactical Nuclear Kittens
