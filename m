@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab1AFA3k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:29:40 -0500
-Received: from kroah.org ([198.145.64.141]:35648 "EHLO coco.kroah.org"
+	id S1754179Ab1AFA3p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:29:45 -0500
+Received: from kroah.org ([198.145.64.141]:35662 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753720Ab1AFA3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:29:38 -0500
+	id S1754152Ab1AFA3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:29:42 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:01 2011
-Message-Id: <20110106002301.222040099@clark.site>
+Message-Id: <20110106002301.519180452@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:22:27 -0800
+Date: Wed, 05 Jan 2011 16:22:30 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         "David S. Miller" <davem@davemloft.net>
-Subject: [048/152] sparc64: Delete prom_setcallback().
+Subject: [051/152] sparc: Delete prom_*getchar().
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,56 +28,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David S. Miller <davem@davemloft.net>
 
-[ Upstream commit c540ee70e49b573535c7ddfd0e9a0fc9d549c8b7 ]
+[ Upstream commit 12c7a35ee6a1c605e740733f2cbd5b5079f09f0f ]
 
-Unused.
+Completely unused.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/sparc/include/asm/oplib_64.h |    8 --------
- arch/sparc/prom/misc_64.c         |   14 --------------
- 2 files changed, 22 deletions(-)
+ arch/sparc/include/asm/oplib_32.h |    5 ----
+ arch/sparc/include/asm/oplib_64.h |    5 ----
+ arch/sparc/prom/console_32.c      |   41 --------------------------------------
+ arch/sparc/prom/console_64.c      |   32 -----------------------------
+ 4 files changed, 83 deletions(-)
 
+--- a/arch/sparc/include/asm/oplib_32.h
++++ b/arch/sparc/include/asm/oplib_32.h
+@@ -102,11 +102,6 @@ extern int prom_getrev(void);
+ /* Get the prom firmware revision. */
+ extern int prom_getprev(void);
+ 
+-/* Character operations to/from the console.... */
+-
+-/* Blocking get character from console. */
+-extern void prom_getchar(char *buf);
+-
+ /* Blocking put character to console. */
+ extern void prom_putchar(const char *buf);
+ 
 --- a/arch/sparc/include/asm/oplib_64.h
 +++ b/arch/sparc/include/asm/oplib_64.h
-@@ -88,14 +88,6 @@ extern void prom_halt(void) __attribute_
- /* Halt and power-off the machine. */
- extern void prom_halt_power_off(void) __attribute__ ((noreturn));
+@@ -94,11 +94,6 @@ extern void prom_halt_power_off(void) __
+  */
+ extern unsigned char prom_get_idprom(char *idp_buffer, int idpbuf_size);
  
--/* Set the PROM 'sync' callback function to the passed function pointer.
-- * When the user gives the 'sync' command at the prom prompt while the
-- * kernel is still active, the prom will call this routine.
-- *
-- */
--typedef int (*callback_func_t)(long *cmd);
--extern void prom_setcallback(callback_func_t func_ptr);
+-/* Character operations to/from the console.... */
 -
- /* Acquire the IDPROM of the root node in the prom device tree.  This
-  * gets passed a buffer where you would like it stuffed.  The return value
-  * is the format type of this idprom or 0xff on error.
---- a/arch/sparc/prom/misc_64.c
-+++ b/arch/sparc/prom/misc_64.c
-@@ -150,20 +150,6 @@ void prom_halt_power_off(void)
- 	prom_halt();
- }
+-/* Blocking get character from console. */
+-extern void prom_getchar(char *buf);
+-
+ /* Blocking put character to console. */
+ extern void prom_putchar(const char *buf);
  
--/* Set prom sync handler to call function 'funcp'. */
--void prom_setcallback(callback_func_t funcp)
+--- a/arch/sparc/prom/console_32.c
++++ b/arch/sparc/prom/console_32.c
+@@ -16,37 +16,6 @@
+ 
+ extern void restore_current(void);
+ 
+-/* Non blocking get character from console input device, returns -1
+- * if no input was taken.  This can be used for polling.
+- */
+-static int prom_nbgetchar(char *buf)
 -{
--	unsigned long args[5];
--	if (!funcp)
--		return;
--	args[0] = (unsigned long) "set-callback";
--	args[1] = 1;
--	args[2] = 1;
--	args[3] = (unsigned long) funcp;
--	args[4] = (unsigned long) -1;
--	p1275_cmd_direct(args);
+-	unsigned long flags;
+-	int i = -1;
+-
+-	spin_lock_irqsave(&prom_lock, flags);
+-	switch(prom_vers) {
+-	case PROM_V0:
+-		i = (*(romvec->pv_nbgetchar))();
+-		if (i != -1) {
+-			*buf = i;
+-			i = 0;
+-		}
+-		break;
+-	case PROM_V2:
+-	case PROM_V3:
+-		if ((*(romvec->pv_v2devops).v2_dev_read)(*romvec->pv_v2bootargs.fd_stdin,
+-							 buf, 0x1) == 1)
+-			i = 0;
+-		break;
+-	default:
+-		break;
+-	};
+-	restore_current();
+-	spin_unlock_irqrestore(&prom_lock, flags);
+-	return i; /* Ugh, we could spin forever on unsupported proms ;( */
 -}
 -
- /* Get the idprom and stuff it into buffer 'idbuf'.  Returns the
-  * format type.  'num_bytes' is the number of bytes that your idbuf
-  * has space for.  Returns 0xff on error.
+ /* Non blocking put character to console device, returns -1 if
+  * unsuccessful.
+  */
+@@ -74,16 +43,6 @@ static int prom_nbputchar(const char *bu
+ 	return i; /* Ugh, we could spin forever on unsupported proms ;( */
+ }
+ 
+-/* Blocking version of get character routine above. */
+-void prom_getchar(char *buf)
+-{
+-	while (1) {
+-		int err = prom_nbgetchar(buf);
+-		if (!err)
+-			break;
+-	}
+-}
+-
+ /* Blocking version of put character routine above. */
+ void prom_putchar(const char *buf)
+ {
+--- a/arch/sparc/prom/console_64.c
++++ b/arch/sparc/prom/console_64.c
+@@ -15,28 +15,6 @@
+ 
+ extern int prom_stdin, prom_stdout;
+ 
+-/* Non blocking get character from console input device, returns -1
+- * if no input was taken.  This can be used for polling.
+- */
+-static int prom_nbgetchar(char *buf)
+-{
+-	unsigned long args[7];
+-
+-	args[0] = (unsigned long) "read";
+-	args[1] = 3;
+-	args[2] = 1;
+-	args[3] = (unsigned int) prom_stdin;
+-	args[4] = (unsigned long) buf;
+-	args[5] = 1;
+-	args[6] = (unsigned long) -1;
+-
+-	p1275_cmd_direct(args);
+-
+-	if (args[6] == 1)
+-		return 0;
+-	return -1;
+-}
+-
+ /* Non blocking put character to console device, returns -1 if
+  * unsuccessful.
+  */
+@@ -60,16 +38,6 @@ static int prom_nbputchar(const char *bu
+ 		return -1;
+ }
+ 
+-/* Blocking version of get character routine above. */
+-void prom_getchar(char *buf)
+-{
+-	while (1) {
+-		int err = prom_nbgetchar(buf);
+-		if (!err)
+-			break;
+-	}
+-}
+-
+ /* Blocking version of put character routine above. */
+ void prom_putchar(const char *buf)
+ {
 
 
