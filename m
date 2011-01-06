@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753671Ab1AFQBj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 11:01:39 -0500
-Received: from mail.nec-labs.com ([138.15.200.209]:56502 "EHLO
-	mail.nec-labs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241Ab1AFQBi (ORCPT
+	id S1753689Ab1AFQEE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 11:04:04 -0500
+Received: from vms173019pub.verizon.net ([206.46.173.19]:35174 "EHLO
+	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241Ab1AFQEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 11:01:38 -0500
-X-Greylist: delayed 769 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Jan 2011 11:01:38 EST
-From: Akshat Aranya <aranya@nec-labs.com>
-To: dhowells@redhat.com
-Cc: Akshat Aranya <aranya@nec-labs.com>, linux-cachefs@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] fscache: fix incorrect op count check for delayed operations
-Date: Thu,  6 Jan 2011 10:47:56 -0500
-Message-Id: <1294328876-8612-1-git-send-email-aranya@nec-labs.com>
-X-Mailer: git-send-email 1.7.1
-To: dhowells@redhat.com
+	Thu, 6 Jan 2011 11:04:02 -0500
+Date: Thu, 06 Jan 2011 11:03:41 -0500 (EST)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: len.brown@intel.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: Re: [PATCH 1/1] ia64: fix build of ioremap_cache
+In-reply-to: <1294302687-8051-1-git-send-email-jslaby@suse.cz>
+Message-id: <alpine.LFD.2.02.1101061103010.17728@x980>
+References: <4D257CD9.8060909@gmail.com>
+ <1294302687-8051-1-git-send-email-jslaby@suse.cz>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fscache_submit_exclusive_op() adds an operation to the pending list if
-other operations are pending.  Fixed the check for pending ops.
 
-Signed-off-by: Akshat Aranya <aranya@nec-labs.com>
----
- fs/fscache/operation.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> diff --git a/arch/ia64/include/asm/io.h b/arch/ia64/include/asm/io.h
+> index 009a7e0..e5a6c35 100644
+> --- a/arch/ia64/include/asm/io.h
+> +++ b/arch/ia64/include/asm/io.h
+> @@ -428,7 +428,7 @@ extern void __iomem * early_ioremap (unsigned long phys_addr, unsigned long size
+>  extern void early_iounmap (volatile void __iomem *addr, unsigned long size);
+>  static inline void __iomem * ioremap_cache (unsigned long phys_addr, unsigned long size)
+>  {
+> -	return ioremap(unsigned long phys_addr, unsigned long size);
+> +	return ioremap(phys_addr, size);
+>  }
 
-diff --git a/fs/fscache/operation.c b/fs/fscache/operation.c
-index b9f34ea..48a18f1 100644
---- a/fs/fscache/operation.c
-+++ b/fs/fscache/operation.c
-@@ -101,7 +101,7 @@ int fscache_submit_exclusive_op(struct fscache_object *object,
- 		object->n_ops++;
- 		object->n_exclusive++;	/* reads and writes must wait */
- 
--		if (object->n_ops > 0) {
-+		if (object->n_ops > 1) {
- 			atomic_inc(&op->usage);
- 			list_add_tail(&op->pend_link, &object->pending_ops);
- 			fscache_stat(&fscache_n_op_pend);
--- 
-1.7.1
+I pushed this fix 9 days ago, what tree are you running?
+
+thanks,
+Len Brown, Intel Open Source Technology Center
 
