@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890Ab1AFAdE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:33:04 -0500
-Received: from kroah.org ([198.145.64.141]:36162 "EHLO coco.kroah.org"
+	id S1754916Ab1AFAdG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:33:06 -0500
+Received: from kroah.org ([198.145.64.141]:36153 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754845Ab1AFAb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:31:59 -0500
+	id S1754837Ab1AFAb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:31:56 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:10 2011
-Message-Id: <20110106002310.638820587@clark.site>
+Message-Id: <20110106002310.460550947@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:24:08 -0800
+Date: Wed, 05 Jan 2011 16:24:06 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [149/152] [media] Dont export format_by_forcc on two different drivers
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [147/152] posix-cpu-timers: workaround to suppress the problems with mt exec
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,205 +25,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit a757ee2216211278680dd8ac869aabe7b4a9970d upstream.
+commit e0a70217107e6f9844628120412cb27bb4cea194 upstream.
 
-Drivers should append their name on exported symbols, to avoid
-conflicts with allyesconfig:
+posix-cpu-timers.c correctly assumes that the dying process does
+posix_cpu_timers_exit_group() and removes all !CPUCLOCK_PERTHREAD
+timers from signal->cpu_timers list.
 
-drivers/staging/built-in.o: In function `format_by_fourcc':
-/home/v4l/work_trees/linus/drivers/staging/cx25821/cx25821-video.c:96: multiple definition of `format_by_fourcc'
-drivers/media/built-in.o:/home/v4l/work_trees/linus/drivers/media/common/saa7146_video.c:88: first defined here
+But, it also assumes that timer->it.cpu.task is always the group
+leader, and thus the dead ->task means the dead thread group.
 
-Let's rename both occurences with a small shellscript:
+This is obviously not true after de_thread() changes the leader.
+After that almost every posix_cpu_timer_ method has problems.
 
-for i in drivers/staging/cx25821/*.[ch]; do sed s,format_by_fourcc,cx25821_format_by_fourcc,g <$i >a && mv a $i; done
-for i in drivers/media/common/saa7146*.[ch]; do sed s,format_by_fourcc,saa7146_format_by_fourcc,g <$i >a && mv a $i; done
-for i in include/media/saa7146*.[ch]; do sed s,format_by_fourcc,saa7146_format_by_fourcc,g <$i >a && mv a $i; done
+It is not simple to fix this bug correctly. First of all, I think
+that timer->it.cpu should use struct pid instead of task_struct.
+Also, the locking should be reworked completely. In particular,
+tasklist_lock should not be used at all. This all needs a lot of
+nontrivial and hard-to-test changes.
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Change __exit_signal() to do posix_cpu_timers_exit_group() when
+the old leader dies during exec. This is not the fix, just the
+temporary hack to hide the problem for 2.6.37 and stable. IOW,
+this is obviously wrong but this is what we currently have anyway:
+cpu timers do not work after mt exec.
+
+In theory this change adds another race. The exiting leader can
+detach the timers which were attached to the new leader. However,
+the window between de_thread() and release_task() is small, we
+can pretend that sys_timer_create() was called before de_thread().
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/common/saa7146_hlp.c      |    8 ++++----
- drivers/media/common/saa7146_video.c    |   16 ++++++++--------
- drivers/staging/cx25821/cx25821-video.c |    8 ++++----
- drivers/staging/cx25821/cx25821-video.h |    2 +-
- include/media/saa7146.h                 |    2 +-
- 5 files changed, 18 insertions(+), 18 deletions(-)
+ kernel/exit.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/media/common/saa7146_hlp.c
-+++ b/drivers/media/common/saa7146_hlp.c
-@@ -558,7 +558,7 @@ static void saa7146_set_window(struct sa
- static void saa7146_set_position(struct saa7146_dev *dev, int w_x, int w_y, int w_height, enum v4l2_field field, u32 pixelformat)
- {
- 	struct saa7146_vv *vv = dev->vv_data;
--	struct saa7146_format *sfmt = format_by_fourcc(dev, pixelformat);
-+	struct saa7146_format *sfmt = saa7146_format_by_fourcc(dev, pixelformat);
- 
- 	int b_depth = vv->ov_fmt->depth;
- 	int b_bpl = vv->ov_fb.fmt.bytesperline;
-@@ -702,7 +702,7 @@ static int calculate_video_dma_grab_pack
- 	struct saa7146_vv *vv = dev->vv_data;
- 	struct saa7146_video_dma vdma1;
- 
--	struct saa7146_format *sfmt = format_by_fourcc(dev,buf->fmt->pixelformat);
-+	struct saa7146_format *sfmt = saa7146_format_by_fourcc(dev,buf->fmt->pixelformat);
- 
- 	int width = buf->fmt->width;
- 	int height = buf->fmt->height;
-@@ -827,7 +827,7 @@ static int calculate_video_dma_grab_plan
- 	struct saa7146_video_dma vdma2;
- 	struct saa7146_video_dma vdma3;
- 
--	struct saa7146_format *sfmt = format_by_fourcc(dev,buf->fmt->pixelformat);
-+	struct saa7146_format *sfmt = saa7146_format_by_fourcc(dev,buf->fmt->pixelformat);
- 
- 	int width = buf->fmt->width;
- 	int height = buf->fmt->height;
-@@ -994,7 +994,7 @@ static void program_capture_engine(struc
- 
- void saa7146_set_capture(struct saa7146_dev *dev, struct saa7146_buf *buf, struct saa7146_buf *next)
- {
--	struct saa7146_format *sfmt = format_by_fourcc(dev,buf->fmt->pixelformat);
-+	struct saa7146_format *sfmt = saa7146_format_by_fourcc(dev,buf->fmt->pixelformat);
- 	struct saa7146_vv *vv = dev->vv_data;
- 	u32 vdma1_prot_addr;
- 
---- a/drivers/media/common/saa7146_video.c
-+++ b/drivers/media/common/saa7146_video.c
-@@ -84,7 +84,7 @@ static struct saa7146_format formats[] =
- 
- static int NUM_FORMATS = sizeof(formats)/sizeof(struct saa7146_format);
- 
--struct saa7146_format* format_by_fourcc(struct saa7146_dev *dev, int fourcc)
-+struct saa7146_format* saa7146_format_by_fourcc(struct saa7146_dev *dev, int fourcc)
- {
- 	int i, j = NUM_FORMATS;
- 
-@@ -266,7 +266,7 @@ static int saa7146_pgtable_build(struct
- 	struct videobuf_dmabuf *dma=videobuf_to_dma(&buf->vb);
- 	struct scatterlist *list = dma->sglist;
- 	int length = dma->sglen;
--	struct saa7146_format *sfmt = format_by_fourcc(dev,buf->fmt->pixelformat);
-+	struct saa7146_format *sfmt = saa7146_format_by_fourcc(dev,buf->fmt->pixelformat);
- 
- 	DEB_EE(("dev:%p, buf:%p, sg_len:%d\n",dev,buf,length));
- 
-@@ -408,7 +408,7 @@ static int video_begin(struct saa7146_fh
- 		}
- 	}
- 
--	fmt = format_by_fourcc(dev,fh->video_fmt.pixelformat);
-+	fmt = saa7146_format_by_fourcc(dev,fh->video_fmt.pixelformat);
- 	/* we need to have a valid format set here */
- 	BUG_ON(NULL == fmt);
- 
-@@ -460,7 +460,7 @@ static int video_end(struct saa7146_fh *
- 		return -EBUSY;
- 	}
- 
--	fmt = format_by_fourcc(dev,fh->video_fmt.pixelformat);
-+	fmt = saa7146_format_by_fourcc(dev,fh->video_fmt.pixelformat);
- 	/* we need to have a valid format set here */
- 	BUG_ON(NULL == fmt);
- 
-@@ -536,7 +536,7 @@ static int vidioc_s_fbuf(struct file *fi
- 		return -EPERM;
- 
- 	/* check args */
--	fmt = format_by_fourcc(dev, fb->fmt.pixelformat);
-+	fmt = saa7146_format_by_fourcc(dev, fb->fmt.pixelformat);
- 	if (NULL == fmt)
- 		return -EINVAL;
- 
-@@ -760,7 +760,7 @@ static int vidioc_try_fmt_vid_cap(struct
- 
- 	DEB_EE(("V4L2_BUF_TYPE_VIDEO_CAPTURE: dev:%p, fh:%p\n", dev, fh));
- 
--	fmt = format_by_fourcc(dev, f->fmt.pix.pixelformat);
-+	fmt = saa7146_format_by_fourcc(dev, f->fmt.pix.pixelformat);
- 	if (NULL == fmt)
- 		return -EINVAL;
- 
-@@ -1264,7 +1264,7 @@ static int buffer_prepare(struct videobu
- 		buf->fmt       = &fh->video_fmt;
- 		buf->vb.field  = fh->video_fmt.field;
- 
--		sfmt = format_by_fourcc(dev,buf->fmt->pixelformat);
-+		sfmt = saa7146_format_by_fourcc(dev,buf->fmt->pixelformat);
- 
- 		release_all_pagetables(dev, buf);
- 		if( 0 != IS_PLANAR(sfmt->trans)) {
-@@ -1378,7 +1378,7 @@ static int video_open(struct saa7146_dev
- 	fh->video_fmt.pixelformat = V4L2_PIX_FMT_BGR24;
- 	fh->video_fmt.bytesperline = 0;
- 	fh->video_fmt.field = V4L2_FIELD_ANY;
--	sfmt = format_by_fourcc(dev,fh->video_fmt.pixelformat);
-+	sfmt = saa7146_format_by_fourcc(dev,fh->video_fmt.pixelformat);
- 	fh->video_fmt.sizeimage = (fh->video_fmt.width * fh->video_fmt.height * sfmt->depth)/8;
- 
- 	videobuf_queue_sg_init(&fh->video_q, &video_qops,
---- a/drivers/staging/cx25821/cx25821-video.c
-+++ b/drivers/staging/cx25821/cx25821-video.c
-@@ -92,7 +92,7 @@ int cx25821_get_format_size(void)
- 	return ARRAY_SIZE(formats);
- }
- 
--struct cx25821_fmt *format_by_fourcc(unsigned int fourcc)
-+struct cx25821_fmt *cx25821_format_by_fourcc(unsigned int fourcc)
- {
- 	unsigned int i;
- 
-@@ -848,7 +848,7 @@ static int video_open(struct file *file)
-        pix_format =
- 	   (dev->channels[ch_id].pixel_formats ==
- 	    PIXEL_FRMT_411) ? V4L2_PIX_FMT_Y41P : V4L2_PIX_FMT_YUYV;
--       fh->fmt = format_by_fourcc(pix_format);
-+       fh->fmt = cx25821_format_by_fourcc(pix_format);
- 
-        v4l2_prio_open(&dev->channels[ch_id].prio, &fh->prio);
- 
-@@ -1009,7 +1009,7 @@ static int vidioc_s_fmt_vid_cap(struct f
-        if (0 != err)
- 	       return err;
- 
--       fh->fmt = format_by_fourcc(f->fmt.pix.pixelformat);
-+       fh->fmt = cx25821_format_by_fourcc(f->fmt.pix.pixelformat);
-        fh->vidq.field = f->fmt.pix.field;
- 
-        /* check if width and height is valid based on set standard */
-@@ -1117,7 +1117,7 @@ int cx25821_vidioc_try_fmt_vid_cap(struc
- 	enum v4l2_field field;
- 	unsigned int maxw, maxh;
- 
--	fmt = format_by_fourcc(f->fmt.pix.pixelformat);
-+	fmt = cx25821_format_by_fourcc(f->fmt.pix.pixelformat);
- 	if (NULL == fmt)
- 		return -EINVAL;
- 
---- a/drivers/staging/cx25821/cx25821-video.h
-+++ b/drivers/staging/cx25821/cx25821-video.h
-@@ -87,7 +87,7 @@ extern unsigned int vid_limit;
- 
- #define FORMAT_FLAGS_PACKED       0x01
- extern struct cx25821_fmt formats[];
--extern struct cx25821_fmt *format_by_fourcc(unsigned int fourcc);
-+extern struct cx25821_fmt *cx25821_format_by_fourcc(unsigned int fourcc);
- extern struct cx25821_data timeout_data[MAX_VID_CHANNEL_NUM];
- 
- extern void cx25821_dump_video_queue(struct cx25821_dev *dev,
---- a/include/media/saa7146.h
-+++ b/include/media/saa7146.h
-@@ -161,7 +161,7 @@ extern struct list_head saa7146_devices;
- extern struct mutex saa7146_devices_lock;
- int saa7146_register_extension(struct saa7146_extension*);
- int saa7146_unregister_extension(struct saa7146_extension*);
--struct saa7146_format* format_by_fourcc(struct saa7146_dev *dev, int fourcc);
-+struct saa7146_format* saa7146_format_by_fourcc(struct saa7146_dev *dev, int fourcc);
- int saa7146_pgtable_alloc(struct pci_dev *pci, struct saa7146_pgtable *pt);
- void saa7146_pgtable_free(struct pci_dev *pci, struct saa7146_pgtable *pt);
- int saa7146_pgtable_build_single(struct pci_dev *pci, struct saa7146_pgtable *pt, struct scatterlist *list, int length );
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -95,6 +95,14 @@ static void __exit_signal(struct task_st
+ 		sig->tty = NULL;
+ 	} else {
+ 		/*
++		 * This can only happen if the caller is de_thread().
++		 * FIXME: this is the temporary hack, we should teach
++		 * posix-cpu-timers to handle this case correctly.
++		 */
++		if (unlikely(has_group_leader_pid(tsk)))
++			posix_cpu_timers_exit_group(tsk);
++
++		/*
+ 		 * If there is any task waiting for the group exit
+ 		 * then notify it:
+ 		 */
 
 
