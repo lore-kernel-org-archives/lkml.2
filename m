@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754902Ab1AFHpt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 02:45:49 -0500
-Received: from [69.28.251.93] ([69.28.251.93]:38693 "EHLO b32.net"
+	id S1754781Ab1AFHpr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 02:45:47 -0500
+Received: from [69.28.251.93] ([69.28.251.93]:38686 "EHLO b32.net"
 	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754533Ab1AFHpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 02:45:46 -0500
+	id S1754482Ab1AFHpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 02:45:45 -0500
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Jan 2011 02:45:45 EST
 From: Kevin Cernekee <cernekee@gmail.com>
 To: Ralf Baechle <ralf@linux-mips.org>
-Cc: <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH RESEND 2/6] MIPS: pfn_valid() is broken on low memory HIGHMEM systems
-Date: Wed, 05 Jan 2011 23:31:26 -0800
-Message-Id: <b2191149ada0fd929b3818c51298ae8d@localhost>
-In-Reply-To: <8eec0c63f92528c501c0e6a0c8396359@localhost>
-References: <8eec0c63f92528c501c0e6a0c8396359@localhost>
+Cc: <macro@linux-mips.org>, <skuribay@pobox.com>, <raiko@niisi.msk.ru>,
+        <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH RESEND 1/6] MIPS: sync after cacheflush
+Date: Wed, 05 Jan 2011 23:31:25 -0800
+Message-Id: <8eec0c63f92528c501c0e6a0c8396359@localhost>
 User-Agent: vim 7.2
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -22,48 +22,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pfn_valid() compares the PFN to max_mapnr:
+On processors with deep write buffers, it is likely that many cycles
+will pass between a CACHE instruction and the time the data actually
+gets written out to DRAM.  Add a SYNC instruction to ensure that the
+buffers get emptied before the flush functions return.
 
-        __pfn >= min_low_pfn && __pfn < max_mapnr;
+Actual problem seen in the wild:
 
-On HIGHMEM kernels, highend_pfn is used to set the value of max_mapnr.
-Unfortunately, highend_pfn is left at zero if the system does not
-actually have enough RAM to reach into the HIGHMEM range.  This causes
-pfn_valid() to always return false, and when debug checks are enabled
-the kernel will fail catastrophically:
+1) dma_alloc_coherent() allocates cached memory
 
-Memory: 22432k/32768k available (2249k kernel code, 10336k reserved, 653k data, 1352k init, 0k highmem)
-NR_IRQS:128
-kfree_debugcheck: out of range ptr 81c02900h.
-Kernel bug detected[#1]:
-Cpu 0
-$ 0   : 00000000 10008400 00000034 00000000
-$ 4   : 8003e160 802a0000 8003e160 00000000
-$ 8   : 00000000 0000003e 00000747 00000747
-...
+2) memset() is called to clear the new pages
 
-On such a configuration, max_low_pfn should be used to set max_mapnr.
+3) dma_cache_wback_inv() is called to flush the zero data out to memory
 
-This was seen on 2.6.34.
+4) dma_alloc_coherent() returns an uncached (kseg1) pointer to the
+freshly allocated pages
+
+5) Caller writes data through the kseg1 pointer
+
+6) Buffered writeback data finally gets flushed out to DRAM
+
+7) Part of caller's data is inexplicably zeroed out
+
+This patch adds SYNC between steps 3 and 4, which fixed the problem.
 
 Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 ---
- arch/mips/mm/init.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/mips/mm/c-r4k.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/arch/mips/mm/init.c b/arch/mips/mm/init.c
-index 2efcbd2..18183a4 100644
---- a/arch/mips/mm/init.c
-+++ b/arch/mips/mm/init.c
-@@ -370,7 +370,7 @@ void __init mem_init(void)
- #ifdef CONFIG_DISCONTIGMEM
- #error "CONFIG_HIGHMEM and CONFIG_DISCONTIGMEM dont work together yet"
- #endif
--	max_mapnr = highend_pfn;
-+	max_mapnr = highend_pfn ? : max_low_pfn;
- #else
- 	max_mapnr = max_low_pfn;
- #endif
+diff --git a/arch/mips/mm/c-r4k.c b/arch/mips/mm/c-r4k.c
+index b4923a7..dc5d9c4 100644
+--- a/arch/mips/mm/c-r4k.c
++++ b/arch/mips/mm/c-r4k.c
+@@ -604,6 +604,7 @@ static void r4k_dma_cache_wback_inv(unsigned long addr, unsigned long size)
+ 			r4k_blast_scache();
+ 		else
+ 			blast_scache_range(addr, addr + size);
++		__sync();
+ 		return;
+ 	}
+ 
+@@ -620,6 +621,7 @@ static void r4k_dma_cache_wback_inv(unsigned long addr, unsigned long size)
+ 	}
+ 
+ 	bc_wback_inv(addr, size);
++	__sync();
+ }
+ 
+ static void r4k_dma_cache_inv(unsigned long addr, unsigned long size)
+@@ -647,6 +649,7 @@ static void r4k_dma_cache_inv(unsigned long addr, unsigned long size)
+ 				 (addr + size - 1) & almask);
+ 			blast_inv_scache_range(addr, addr + size);
+ 		}
++		__sync();
+ 		return;
+ 	}
+ 
+@@ -663,6 +666,7 @@ static void r4k_dma_cache_inv(unsigned long addr, unsigned long size)
+ 	}
+ 
+ 	bc_inv(addr, size);
++	__sync();
+ }
+ #endif /* CONFIG_DMA_NONCOHERENT */
+ 
 -- 
 1.7.0.4
 
