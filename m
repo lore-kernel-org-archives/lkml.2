@@ -1,93 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738Ab1AFVIF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 16:08:05 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38436 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753213Ab1AFVID (ORCPT
+	id S1753754Ab1AFVIs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 16:08:48 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:44750 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752831Ab1AFVIr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 16:08:03 -0500
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
-In-Reply-To: <1294338341.22825.216.camel@mulgrave.site>
-References: <20110105200008.GJ8638@n2100.arm.linux.org.uk>
-	 <1294259637.16957.25.camel@mulgrave.site>
-	 <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com>
-	 <20110105210448.GM8638@n2100.arm.linux.org.uk>
-	 <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com>
-	 <1294262208.2952.4.camel@heimdal.trondhjem.org>
-	 <AANLkTi=3Gu-rz=-OdNtUXn4qw60Df6=YePnzvB=s-+Ov@mail.gmail.com>
-	 <1294268808.2952.18.camel@heimdal.trondhjem.org>
-	 <1294270104.16957.73.camel@mulgrave.site>
-	 <1294335614.22825.154.camel@mulgrave.site>
-	 <20110106180530.GI31708@n2100.arm.linux.org.uk>
-	 <1294337670.22825.199.camel@mulgrave.site>
-	 <1294338341.22825.216.camel@mulgrave.site>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 06 Jan 2011 15:07:58 -0600
-Message-ID: <1294348078.22825.346.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 6 Jan 2011 16:08:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=a2ERK9CIL5g+A/RP3AIbwYUlfSDyfkTUs1vWa8QljeMjB3OjYr4CEqNteyniX4muAY
+         d9FZ9ERJzEKD9Y4zWBJP4gPsp336BRs3xPjtgMDIUEbTiLP4BmNRqTvcIqSmCQ9P7xp/
+         t2N7cgucjPOf9GpPubf9ii2KLpI7aKCjVuTTg=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinY5XysANA9Qd-h=U8wzDNjF4n0sSxMsXH4P+99@mail.gmail.com>
+References: <AANLkTikKA-nStyNjkdsVa8hd=PFQR3tYTJh3MnfpNkD8@mail.gmail.com>
+	<20110106104816.GA4026@tiehlicka.suse.cz>
+	<AANLkTi=aTKFVO8Lx=fDUGrxVaQL73XrsxoOP7-qYKksb@mail.gmail.com>
+	<1bdc18$j6a1ns@fmsmga002.fm.intel.com>
+	<AANLkTinY5XysANA9Qd-h=U8wzDNjF4n0sSxMsXH4P+99@mail.gmail.com>
+Date: Thu, 6 Jan 2011 22:08:46 +0100
+Message-ID: <AANLkTinhiAfhnTsHwR48Gq5NLApy5iAAMwv830+SJDZU@mail.gmail.com>
+Subject: Re: Linux 2.6.37
+From: Alex Riesen <raa.lkml@gmail.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-06 at 12:25 -0600, James Bottomley wrote:
-> OK, so thinking about this, it seems that the only danger is actually
-> what NFS is doing: reading cache pages via a vmap.  In that case, since
-> the requirement is to invalidate the vmap range to prepare for read, we
-> could have invalidate_kernel_vmap_range loop over the underlying pages
-> and flush them through the kernel alias if the architecture specific
-> flag indicates their contents might be dirty.
-> 
-> The loop adds expense that is probably largely unnecessary to
-> invalidate_kernel_vmap_range() but the alternative is adding to the API
-> proliferation with something that only flushes the kernel pages if the
-> arch specific flag says they're dirty.
+On Thu, Jan 6, 2011 at 21:55, Alex Riesen <raa.lkml@gmail.com> wrote:
+> On Thu, Jan 6, 2011 at 18:49, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>>
+>> My fear is that some machines have a dependency between the backlight
+>> and panel power status. The patch in question changed the timing between
+>> turning on the panel and adjusting the backlight which would be restore
+>> with:
+>>
+>> diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
+>> index aa23070..0b40b4f 100644
+>> --- a/drivers/gpu/drm/i915/intel_lvds.c
+>> +++ b/drivers/gpu/drm/i915/intel_lvds.c
+>> @@ -106,6 +106,12 @@ static void intel_lvds_enable(struct intel_lvds *intel_lvds)
+>>        I915_WRITE(ctl_reg, I915_READ(ctl_reg) | POWER_TARGET_ON);
+>>        POSTING_READ(lvds_reg);
+>>
+>> +       {
+>> +               u32 reg = HAS_PCH_SPLIT(dev) ? PCH_PP_STATUS : PPS_STATUS;
+...
+> FWIW it does not compile:
+>  CC      drivers/gpu/drm/i915/intel_lvds.o
+> drivers/gpu/drm/i915/intel_lvds.c: In function ‘intel_lvds_enable’:
+> drivers/gpu/drm/i915/intel_lvds.c:110: error: ‘PPS_STATUS’ undeclared
 
-This is what I think the arm patch would look like (example only: I
-can't compile it).  Is something like this too expensive? the loop can't
-be optimised away because of the need to check the pages (and
-vmalloc_to_page is a three level page table lookup).
+Ah, I see. Should be PP_STATUS. Whatever. It does not help. The backlight
+stays off.
 
-James
-
----
-
-diff --git a/arch/arm/include/asm/cacheflush.h b/arch/arm/include/asm/cacheflush.h
-index 3acd8fa..34469ca 100644
---- a/arch/arm/include/asm/cacheflush.h
-+++ b/arch/arm/include/asm/cacheflush.h
-@@ -414,8 +414,17 @@ static inline void flush_kernel_vmap_range(void *addr, int size)
- }
- static inline void invalidate_kernel_vmap_range(void *addr, int size)
- {
--	if ((cache_is_vivt() || cache_is_vipt_aliasing()))
--	  __cpuc_flush_dcache_area(addr, (size_t)size);
-+	if ((cache_is_vivt() || cache_is_vipt_aliasing())) {
-+		void *cursor = addr;
-+
-+		for ( ; cursor < addr + size; cursor += PAGE_SIZE) {
-+			struct page *page = vmalloc_to_page(cursor);
-+
-+			if (!test_and_set_bit(PG_dcache_clean, &page->flags))
-+				__flush_dcache_page(page_mapping(page), page);
-+		}
-+		__cpuc_flush_dcache_area(addr, (size_t)size);
-+	}
- }
- 
- #define ARCH_HAS_FLUSH_ANON_PAGE
-
-
+P.S. Probably unrelated, but I just noticed that the backlight never goes
+off when closing the lid. Am I supposed to hook up on the corresponding
+input event and put the panel in standby? It used to work all by itself,
+I think...
