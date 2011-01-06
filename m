@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889Ab1AFKm6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 05:42:58 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37213 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752799Ab1AFKm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 05:42:57 -0500
-Date: Thu, 6 Jan 2011 11:42:46 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] irq changes for v2.6.38
-Message-ID: <20110106104246.GA26427@elte.hu>
+	id S1752885Ab1AFKoF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 05:44:05 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53683 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752734Ab1AFKoC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 05:44:02 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=SpRSjBog5HH4eUt3qOt2p3xG3JLavNzepexn6yxe4lHJqHTo405txCpOZI/VfObdl4
+         0GIDOU/TX6xUyhjL7zP87GhXNwqFXms26ZPZ3DSNmk13CyMSwuvqQq0Rq+tg66GvJlfQ
+         rglqwzA/btjSQvR/JTMK8JPnmrRDu+dZxl6uo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <8679.1294247741@localhost>
+References: <8679.1294247741@localhost>
+Date: Thu, 6 Jan 2011 21:44:01 +1100
+Message-ID: <AANLkTimtrinH-7tnGE2zxtoNNTEnqqD3ZDTTTWM-m0Uk@mail.gmail.com>
+Subject: Re: 2.6.37-next - kernel BUG at fs/dcache.c:1363
+From: Nick Piggin <npiggin@gmail.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Joel Becker <joel.becker@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Thu, Jan 6, 2011 at 4:15 AM,  <Valdis.Kletnieks@vt.edu> wrote:
+> Saw this crash on a linux-next pulled yesterday at 2PM EST, kernel dies very
+> early (looks like first time it touches configfs for anything - trying to boot
+> with netconsole enabled caused it to die even faster).  I can bisect this if
+> it doesn't immediately ring a bell...
 
-Please pull the latest irq-core-for-linus git tree from:
-
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git irq-core-for-linus
-
- Thanks,
-
-	Ingo
-
------------------->
-Eric Dumazet (1):
-      irq: Better struct irqaction layout
+Thanks, bah configfs isn't widely used.
 
 
- include/linux/interrupt.h |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+> It dies here:
+>
+> void d_set_d_op(struct dentry *dentry, const struct dentry_operations *op)
+> {
+>        BUG_ON(dentry->d_op);
+>
+> Am guessing configfs passed in a dentry that wasn't filled in enough.
+>
+> (hand-transcribed from a crappy cellphone pic)
+>
+> kernel BUG at fs/dcache.c:1363
 
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index 79d0c4f..55e0d42 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -114,15 +114,15 @@ typedef irqreturn_t (*irq_handler_t)(int, void *);
- struct irqaction {
- 	irq_handler_t handler;
- 	unsigned long flags;
--	const char *name;
- 	void *dev_id;
- 	struct irqaction *next;
- 	int irq;
--	struct proc_dir_entry *dir;
- 	irq_handler_t thread_fn;
- 	struct task_struct *thread;
- 	unsigned long thread_flags;
--};
-+	const char *name;
-+	struct proc_dir_entry *dir;
-+} ____cacheline_internodealigned_in_smp;
- 
- extern irqreturn_t no_action(int cpl, void *dev_id);
- 
+Thanks. It actually passed in a dentry that appears to have already been
+used for something. This is not exactly a nice thing for a filesystem to do
+and probably indicates an underlying bug anyway (or at least something
+the vfs doesn't guarantee the safety of).
+
+Taking a look now.
+
+Thanks,
+Nick
