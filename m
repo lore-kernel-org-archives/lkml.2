@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599Ab1AFAlP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:41:15 -0500
-Received: from kroah.org ([198.145.64.141]:35954 "EHLO coco.kroah.org"
+	id S1754604Ab1AFAlj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:41:39 -0500
+Received: from kroah.org ([198.145.64.141]:35946 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754568Ab1AFAbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:31:00 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:07 2011
-Message-Id: <20110106002307.002121912@clark.site>
+	id S1754551Ab1AFAa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:30:56 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:06 2011
+Message-Id: <20110106002306.829434485@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:23:27 -0800
+Date: Wed, 05 Jan 2011 16:23:25 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Robert Lukassen <Robert.Lukassen@tomtom.com>
-Subject: [108/152] Revert "USB: gadget: Allow function access to device ID data during bind()"
+        Florian Faber <faberman@linuxproaudio.org>
+Subject: [106/152] USB: ftdi_sio: Add D.O.Tec PID
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,54 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@suse.de>
+From: Florian Faber <faberman@linuxproaudio.org>
 
-commit dbb442b85a1d82f91cfe0524c4f9b3a5196a10ca upstream.
+commit 5363cdc3c5da9bd431552cf5989ab481596f0c6d upstream.
 
-This reverts commit 1ab83238740ff1e1773d5c13ecac43c60cf4aec4.
+Add FTDI PID to identify D.O.Tec devices correctly.
 
-Turns out this doesn't allow for the device ids to be overridden
-properly, so we need to revert the thing.
-
-Reported-by: Jef Driesen <jefdriesen@telenet.be>
-Cc: Robert Lukassen <Robert.Lukassen@tomtom.com>
+Signed-off-by: Florian Faber <faberman@linuxproaudio.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/gadget/composite.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    5 +++++
+ 2 files changed, 6 insertions(+)
 
---- a/drivers/usb/gadget/composite.c
-+++ b/drivers/usb/gadget/composite.c
-@@ -1083,14 +1083,6 @@ static int composite_bind(struct usb_gad
- 	 */
- 	usb_ep_autoconfig_reset(cdev->gadget);
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -796,6 +796,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SCIENCESCOPE_LOGBOOKML_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SCIENCESCOPE_LS_LOGBOOK_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SCIENCESCOPE_HS_LOGBOOK_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_DOTEC_PID) },
+ 	{ USB_DEVICE(QIHARDWARE_VID, MILKYMISTONE_JTAGSERIAL_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ },					/* Optional parameter entry */
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1081,6 +1081,11 @@
+ #define MJSG_HD_RADIO_PID	0x937C
  
--	/* standardized runtime overrides for device ID data */
--	if (idVendor)
--		cdev->desc.idVendor = cpu_to_le16(idVendor);
--	if (idProduct)
--		cdev->desc.idProduct = cpu_to_le16(idProduct);
--	if (bcdDevice)
--		cdev->desc.bcdDevice = cpu_to_le16(bcdDevice);
--
- 	/* composite gadget needs to assign strings for whole device (like
- 	 * serial number), register function drivers, potentially update
- 	 * power state and consumption, etc
-@@ -1102,6 +1094,14 @@ static int composite_bind(struct usb_gad
- 	cdev->desc = *composite->dev;
- 	cdev->desc.bMaxPacketSize0 = gadget->ep0->maxpacket;
- 
-+	/* standardized runtime overrides for device ID data */
-+	if (idVendor)
-+		cdev->desc.idVendor = cpu_to_le16(idVendor);
-+	if (idProduct)
-+		cdev->desc.idProduct = cpu_to_le16(idProduct);
-+	if (bcdDevice)
-+		cdev->desc.bcdDevice = cpu_to_le16(bcdDevice);
+ /*
++ * D.O.Tec products (http://www.directout.eu)
++ */
++#define FTDI_DOTEC_PID 0x9868
 +
- 	/* strings can't be assigned before bind() allocates the
- 	 * releavnt identifiers
- 	 */
++/*
+  * Xverve Signalyzer tools (http://www.signalyzer.com/)
+  */
+ #define XVERVE_SIGNALYZER_ST_PID	0xBCA0
 
 
