@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870Ab1AFVYa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 16:24:30 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43631 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753079Ab1AFVY3 (ORCPT
+	id S1754039Ab1AFVZa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 16:25:30 -0500
+Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:57633 "EHLO
+	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753908Ab1AFVZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 16:24:29 -0500
+	Thu, 6 Jan 2011 16:25:29 -0500
+Message-ID: <4D263342.2090107@lougher.demon.co.uk>
+Date: Thu, 06 Jan 2011 21:25:22 +0000
+From: Phillip Lougher <phillip@lougher.demon.co.uk>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-In-Reply-To: <20110106211645.GA26184@gondor.apana.org.au>
-References: <20081225002020.GA2912@gondor.apana.org.au> <20090324044932.GA18245@gondor.apana.org.au>
- <20091204135530.GA29371@gondor.apana.org.au> <20100226004914.GA20812@gondor.apana.org.au>
- <20100519020603.GA19654@gondor.apana.org.au> <20100521104404.GA29530@gondor.apana.org.au>
- <20100804140448.GA4042@gondor.apana.org.au> <20101024061625.GA23715@gondor.apana.org.au>
- <20110106000157.GA16089@gondor.apana.org.au> <AANLkTikzg3Hndp8WRi59bvJdBLxi=p-1gt7aZDLYbSW8@mail.gmail.com>
- <20110106211645.GA26184@gondor.apana.org.au>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 6 Jan 2011 13:23:19 -0800
-Message-ID: <AANLkTimwaJCUxvMLoeS5Cpmu7FX3y=coeSdkPrrL4zcr@mail.gmail.com>
-Subject: Re: Crypto Update for 2.6.38
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linux Kernel Development <linux-kernel@vger.kernel.org>
+CC: linux-fsdevel@vger.kernel.org
+Subject: [PATCH 3/5] Squashfs: get rid of default n in Kconfig
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 6, 2011 at 1:16 PM, Herbert Xu <herbert@gondor.hengli.com.au> wrote:
-> On Thu, Jan 06, 2011 at 10:05:46AM -0800, Linus Torvalds wrote:
->>
->> Is there really any point to this? And can we get more explanation of
->> what the interface is, and who would use it?
->
-> I think you've answered it yourself in the third paragraph :)
 
-No I didn't.
+As pointed out by Geert Uytterhoeven, "default n" is the default,
+no reason to specify it.
 
-What part of "can we get more explanation of what the interface is" is unclear?
+Signed-off-by: Phillip Lougher <phillip@lougher.demon.co.uk>
+---
+  fs/squashfs/Kconfig |    3 ---
+  1 files changed, 0 insertions(+), 3 deletions(-)
 
-Explanations of interface. Code. Who uses it? What are the actual
-performance benefits on real code?
+diff --git a/fs/squashfs/Kconfig b/fs/squashfs/Kconfig
+index e5f63da..7c22188 100644
+--- a/fs/squashfs/Kconfig
++++ b/fs/squashfs/Kconfig
+@@ -29,7 +29,6 @@ config SQUASHFS
+  config SQUASHFS_XATTR
+  	bool "Squashfs XATTR support"
+  	depends on SQUASHFS
+-	default n
+  	help
+  	  Saying Y here includes support for extended attributes (xattrs).
+  	  Xattrs are name:value pairs associated with inodes by
+@@ -40,7 +39,6 @@ config SQUASHFS_XATTR
+  config SQUASHFS_LZO
+  	bool "Include support for LZO compressed file systems"
+  	depends on SQUASHFS
+-	default n
+  	select LZO_DECOMPRESS
+  	help
+  	  Saying Y here includes support for reading Squashfs file systems
+@@ -56,7 +54,6 @@ config SQUASHFS_LZO
+  config SQUASHFS_EMBEDDED
+  	bool "Additional option for memory-constrained systems"
+  	depends on SQUASHFS
+-	default n
+  	help
+  	  Saying Y here allows you to specify cache size.
 
-Quite frankly, asynchronous external devices using DMA or similar are
-seldom real performance improvements. The bus and cache traffic tends
-to overwhelm any other advantage, and commonly the result is (a) lower
-performance with (b) better-looking profiles.
+-- 
+1.6.3.3
 
-But "better-looking profiles" isn't actually a real advantage.
-
-And I really do want to hear about new kernel interfaces. What _are_
-the interfaces, and what are the advantages to them.
-
-                     Linus
