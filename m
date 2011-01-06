@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068Ab1AFAvr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:51:47 -0500
-Received: from kroah.org ([198.145.64.141]:35708 "EHLO coco.kroah.org"
+	id S1754481Ab1AFAwF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:52:05 -0500
+Received: from kroah.org ([198.145.64.141]:35703 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754225Ab1AFA3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:29:51 -0500
+	id S1754216Ab1AFA3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:29:50 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:02 2011
-Message-Id: <20110106002302.227696885@clark.site>
+Message-Id: <20110106002302.141581701@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:22:38 -0800
+Date: Wed, 05 Jan 2011 16:22:37 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Shan Wei <shanwei@cn.fujitsu.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        William Allen Simpson <william.allen.simpson@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [059/152] 8139cp: fix checksum broken
+Subject: [058/152] tcp: protect sysctl_tcp_cookie_size reads
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,47 +29,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Shan Wei <shanwei@cn.fujitsu.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit 24b7ea9f6c9787fad885442ed0cc010f1aa69cca ]
+[ Upstream commit f19872575ff7819a3723154657a497d9bca66b33 ]
 
-I am not family with RealTek RTL-8139C+ series 10/100 PCI Ethernet driver.
-I try to guess the meaning of RxProtoIP and IPFail.
-RxProtoIP stands for received IPv4 packet that upper protocol is not tcp and udp.
-!(status & IPFail) is true means that driver correctly to check checksum in IPv4 header.
+Make sure sysctl_tcp_cookie_size is read once in
+tcp_cookie_size_check(), or we might return an illegal value to caller
+if sysctl_tcp_cookie_size is changed by another cpu.
 
-If these are right, driver will set ip_summed with CHECKSUM_UNNECESSARY for other
-upper protocol, e.g. sctp, igmp protocol. This will cause protocol stack ignores
-checksum check for packets with invalid checksum.
-
-This patch is only compile-test.
-
-Signed-off-by: Shan Wei <shanwei@cn.fujitsu.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Ben Hutchings <bhutchings@solarflare.com>
+Cc: William Allen Simpson <william.allen.simpson@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/net/8139cp.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ net/ipv4/tcp_output.c |   27 +++++++++++++++------------
+ 1 file changed, 15 insertions(+), 12 deletions(-)
 
---- a/drivers/net/8139cp.c
-+++ b/drivers/net/8139cp.c
-@@ -490,13 +490,11 @@ static inline unsigned int cp_rx_csum_ok
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -391,27 +391,30 @@ struct tcp_out_options {
+  */
+ static u8 tcp_cookie_size_check(u8 desired)
  {
- 	unsigned int protocol = (status >> 16) & 0x3;
- 
--	if (likely((protocol == RxProtoTCP) && (!(status & TCPFail))))
-+	if (((protocol == RxProtoTCP) && !(status & TCPFail)) ||
-+	    ((protocol == RxProtoUDP) && !(status & UDPFail)))
- 		return 1;
--	else if ((protocol == RxProtoUDP) && (!(status & UDPFail)))
--		return 1;
--	else if ((protocol == RxProtoIP) && (!(status & IPFail)))
--		return 1;
--	return 0;
-+	else
-+		return 0;
+-	if (desired > 0) {
++	int cookie_size;
++
++	if (desired > 0)
+ 		/* previously specified */
+ 		return desired;
+-	}
+-	if (sysctl_tcp_cookie_size <= 0) {
++
++	cookie_size = ACCESS_ONCE(sysctl_tcp_cookie_size);
++	if (cookie_size <= 0)
+ 		/* no default specified */
+ 		return 0;
+-	}
+-	if (sysctl_tcp_cookie_size <= TCP_COOKIE_MIN) {
++
++	if (cookie_size <= TCP_COOKIE_MIN)
+ 		/* value too small, specify minimum */
+ 		return TCP_COOKIE_MIN;
+-	}
+-	if (sysctl_tcp_cookie_size >= TCP_COOKIE_MAX) {
++
++	if (cookie_size >= TCP_COOKIE_MAX)
+ 		/* value too large, specify maximum */
+ 		return TCP_COOKIE_MAX;
+-	}
+-	if (0x1 & sysctl_tcp_cookie_size) {
++
++	if (cookie_size & 1)
+ 		/* 8-bit multiple, illegal, fix it */
+-		return (u8)(sysctl_tcp_cookie_size + 0x1);
+-	}
+-	return (u8)sysctl_tcp_cookie_size;
++		cookie_size++;
++
++	return (u8)cookie_size;
  }
  
- static int cp_rx_poll(struct napi_struct *napi, int budget)
+ /* Write previously computed TCP options to the packet.
 
 
