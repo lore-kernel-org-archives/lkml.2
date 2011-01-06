@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab1AFAoS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:44:18 -0500
-Received: from kroah.org ([198.145.64.141]:35878 "EHLO coco.kroah.org"
+	id S1754883Ab1AFApA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:45:00 -0500
+Received: from kroah.org ([198.145.64.141]:35866 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754430Ab1AFAaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:30:35 -0500
+	id S1754443Ab1AFAaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:30:30 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:05 2011
-Message-Id: <20110106002305.543785429@clark.site>
+Message-Id: <20110106002305.230554027@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:23:11 -0800
+Date: Wed, 05 Jan 2011 16:23:08 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        NeilBrown <neilb@suse.de>
-Subject: [092/152] md: fix bug with re-adding of partially recovered device.
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [089/152] orinoco: fix TKIP countermeasure behaviour
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,62 +25,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: David Kilroy <kilroyd@googlemail.com>
 
-commit 1a855a0606653d2d82506281e2c686bacb4b2f45 upstream.
+commit 0a54917c3fc295cb61f3fb52373c173fd3b69f48 upstream.
 
-With v0.90 metadata, a hot-spare does not become a full member of the
-array until recovery is complete.  So if we re-add such a device to
-the array, we know that all of it is as up-to-date as the event count
-would suggest, and so it a bitmap-based recovery is possible.
+Enable the port when disabling countermeasures, and disable it on
+enabling countermeasures.
 
-However with v1.x metadata, the hot-spare immediately becomes a full
-member of the array, but it record how much of the device has been
-recovered.  If the array is stopped and re-assembled recovery starts
-from this point.
+This bug causes the response of the system to certain attacks to be
+ineffective.
 
-When such a device is hot-added to an array we currently lose the 'how
-much is recovered' information and incorrectly included it as a full
-in-sync member (after bitmap-based fixup).
-This is wrong and unsafe and could corrupt data.
+It also prevents wpa_supplicant from getting scan results, as
+wpa_supplicant disables countermeasures on startup - preventing the
+hardware from scanning.
 
-So be more careful about setting saved_raid_disk - which is what
-guides the re-adding of devices back into an array.
-The new code matches the code in slot_store which does a similar
-thing, which is encouraging.
+wpa_supplicant works with ap_mode=2 despite this bug because the commit
+handler re-enables the port.
 
-This is suitable for any -stable kernel.
+The log tends to look like:
 
-Reported-by: "Dailey, Nate" <Nate.Dailey@stratus.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+State: DISCONNECTED -> SCANNING
+Starting AP scan for wildcard SSID
+Scan requested (ret=0) - scan timeout 5 seconds
+EAPOL: disable timer tick
+EAPOL: Supplicant port status: Unauthorized
+Scan timeout - try to get results
+Failed to get scan results
+Failed to get scan results - try scanning again
+Setting scan request: 1 sec 0 usec
+Starting AP scan for wildcard SSID
+Scan requested (ret=-1) - scan timeout 5 seconds
+Failed to initiate AP scan.
+
+Reported by: Giacomo Comes <comes@naic.edu>
+Signed-off by: David Kilroy <kilroyd@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/md.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/net/wireless/orinoco/wext.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -5150,7 +5150,7 @@ static int add_new_disk(mddev_t * mddev,
- 				PTR_ERR(rdev));
- 			return PTR_ERR(rdev);
+--- a/drivers/net/wireless/orinoco/wext.c
++++ b/drivers/net/wireless/orinoco/wext.c
+@@ -904,10 +904,10 @@ static int orinoco_ioctl_set_auth(struct
+ 		 */
+ 		if (param->value) {
+ 			priv->tkip_cm_active = 1;
+-			ret = hermes_enable_port(hw, 0);
++			ret = hermes_disable_port(hw, 0);
+ 		} else {
+ 			priv->tkip_cm_active = 0;
+-			ret = hermes_disable_port(hw, 0);
++			ret = hermes_enable_port(hw, 0);
  		}
--		/* set save_raid_disk if appropriate */
-+		/* set saved_raid_disk if appropriate */
- 		if (!mddev->persistent) {
- 			if (info->state & (1<<MD_DISK_SYNC)  &&
- 			    info->raid_disk < mddev->raid_disks)
-@@ -5160,7 +5160,10 @@ static int add_new_disk(mddev_t * mddev,
- 		} else
- 			super_types[mddev->major_version].
- 				validate_super(mddev, rdev);
--		rdev->saved_raid_disk = rdev->raid_disk;
-+		if (test_bit(In_sync, &rdev->flags))
-+			rdev->saved_raid_disk = rdev->raid_disk;
-+		else
-+			rdev->saved_raid_disk = -1;
+ 		break;
  
- 		clear_bit(In_sync, &rdev->flags); /* just to be sure */
- 		if (info->state & (1<<MD_DISK_WRITEMOSTLY))
 
 
