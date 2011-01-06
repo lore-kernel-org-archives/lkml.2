@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754387Ab1AFAwb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:52:31 -0500
-Received: from kroah.org ([198.145.64.141]:35697 "EHLO coco.kroah.org"
+	id S1754574Ab1AFAwd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:52:33 -0500
+Received: from kroah.org ([198.145.64.141]:35693 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754204Ab1AFA3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:29:49 -0500
+	id S1754201Ab1AFA3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:29:48 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:02 2011
-Message-Id: <20110106002302.056807670@clark.site>
+Message-Id: <20110106002301.959353029@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:22:36 -0800
+Date: Wed, 05 Jan 2011 16:22:35 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
+        Nandita Dukkipati <nanditad@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [057/152] tcp: avoid a possible divide by zero
+Subject: [056/152] tcp: Bug fix in initialization of receive window.
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,47 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Nandita Dukkipati <nanditad@google.com>
 
-[ Upstream commit ad9f4f50fe9288bbe65b7dfd76d8820afac6a24c ]
+[ Upstream commit b1afde60f2b9ee8444fba4e012dc99a3b28d224d ]
 
-sysctl_tcp_tso_win_divisor might be set to zero while one cpu runs in
-tcp_tso_should_defer(). Make sure we dont allow a divide by zero by
-reading sysctl_tcp_tso_win_divisor exactly once.
+The bug has to do with boundary checks on the initial receive window.
+If the initial receive window falls between init_cwnd and the
+receive window specified by the user, the initial window is incorrectly
+brought down to init_cwnd. The correct behavior is to allow it to
+remain unchanged.
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Nandita Dukkipati <nanditad@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv4/tcp_output.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ net/ipv4/tcp_output.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
 --- a/net/ipv4/tcp_output.c
 +++ b/net/ipv4/tcp_output.c
-@@ -1518,6 +1518,7 @@ static int tcp_tso_should_defer(struct s
- 	struct tcp_sock *tp = tcp_sk(sk);
- 	const struct inet_connection_sock *icsk = inet_csk(sk);
- 	u32 send_win, cong_win, limit, in_flight;
-+	int win_divisor;
- 
- 	if (TCP_SKB_CB(skb)->flags & TCPHDR_FIN)
- 		goto send_now;
-@@ -1549,13 +1550,14 @@ static int tcp_tso_should_defer(struct s
- 	if ((skb != tcp_write_queue_tail(sk)) && (limit >= skb->len))
- 		goto send_now;
- 
--	if (sysctl_tcp_tso_win_divisor) {
-+	win_divisor = ACCESS_ONCE(sysctl_tcp_tso_win_divisor);
-+	if (win_divisor) {
- 		u32 chunk = min(tp->snd_wnd, tp->snd_cwnd * tp->mss_cache);
- 
- 		/* If at least some fraction of a window is available,
- 		 * just use it.
+@@ -237,11 +237,10 @@ void tcp_select_initial_window(int __spa
+ 		/* when initializing use the value from init_rcv_wnd
+ 		 * rather than the default from above
  		 */
--		chunk /= sysctl_tcp_tso_win_divisor;
-+		chunk /= win_divisor;
- 		if (limit >= chunk)
- 			goto send_now;
- 	} else {
+-		if (init_rcv_wnd &&
+-		    (*rcv_wnd > init_rcv_wnd * mss))
+-			*rcv_wnd = init_rcv_wnd * mss;
+-		else if (*rcv_wnd > init_cwnd * mss)
+-			*rcv_wnd = init_cwnd * mss;
++		if (init_rcv_wnd)
++			*rcv_wnd = min(*rcv_wnd, init_rcv_wnd * mss);
++		else
++			*rcv_wnd = min(*rcv_wnd, init_cwnd * mss);
+ 	}
+ 
+ 	/* Set the clamp no higher than max representable value */
 
 
