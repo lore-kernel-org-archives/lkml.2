@@ -1,40 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752083Ab1AFR55 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 12:57:57 -0500
-Received: from mail.perches.com ([173.55.12.10]:2996 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751355Ab1AFR54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 12:57:56 -0500
-Subject: Re: [patch] checkpatch: putting the && or || on the wrong line
-From: Joe Perches <joe@perches.com>
-To: Krzysztof Halasa <khc@pm.waw.pl>
-Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Dan Carpenter <error27@gmail.com>, Andy Whitcroft <apw@canonical.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-In-Reply-To: <m339p6p5zo.fsf@intrepid.localdomain>
-References: <20110104055900.GA5062@bicker>
-	 <20110104163836.GA30317@fieldses.org>
-	 <20110104164414.GX5875@const.bordeaux.inria.fr>
-	 <1294160834.6617.51.camel@Joe-Laptop> <m3fwt7i740.fsf@intrepid.localdomain>
-	 <1294249529.6617.118.camel@Joe-Laptop>
-	 <m339p6p5zo.fsf@intrepid.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 06 Jan 2011 09:57:54 -0800
-Message-ID: <1294336674.12561.81.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752177Ab1AFSB2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 13:01:28 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54947 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751510Ab1AFSB0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 13:01:26 -0500
+MIME-Version: 1.0
+In-Reply-To: <1294336054.2905.1.camel@heimdal.trondhjem.org>
+References: <1294254337.16957.13.camel@mulgrave.site> <AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com>
+ <1294256169.16957.18.camel@mulgrave.site> <20110105200008.GJ8638@n2100.arm.linux.org.uk>
+ <1294259637.16957.25.camel@mulgrave.site> <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com>
+ <20110105210448.GM8638@n2100.arm.linux.org.uk> <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com>
+ <1294262208.2952.4.camel@heimdal.trondhjem.org> <AANLkTi=3Gu-rz=-OdNtUXn4qw60Df6=YePnzvB=s-+Ov@mail.gmail.com>
+ <1294268808.2952.18.camel@heimdal.trondhjem.org> <1294270104.16957.73.camel@mulgrave.site>
+ <1294335614.22825.154.camel@mulgrave.site> <1294336054.2905.1.camel@heimdal.trondhjem.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 6 Jan 2011 09:55:30 -0800
+Message-ID: <AANLkTimusF4KCJ4vHPn+T1dUiKxapXaT0QTtFvh8Ykdd@mail.gmail.com>
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-06 at 13:32 +0100, Krzysztof Halasa wrote:
-> Sure, standardization is a good thing - to a certain point.
-> We've passed this point long ago.
+On Thu, Jan 6, 2011 at 9:47 AM, Trond Myklebust
+<Trond.Myklebust@netapp.com> wrote:
+>
+> Why is this line needed? We're not writing through the virtual mapping.
 
-Aren't you missing attached evidence too? :p
+I haven't looked at the sequence of accesses, but you need to be
+_very_ aware that "write-through" is absolutely NOT sufficient for
+cache coherency.
 
-cheers, Joe
+In cache coherency, you have three options:
 
+ - true coherency (eg physically indexed/tagged caches)
+
+ - exclusion (eg virtual caches, but with an exclusion guarantee that
+guarantees that aliases cannot happen: either by using physical
+tagging or by not allowing cases that could cause virtual aliases)
+
+ - write-through AND non-cached reads (ie "no caching at all").
+
+You seem to be forgetting the "no cached reads" part. It's not
+sufficient to flush after a write - you need to make sure that you
+also don't have a cached copy of the alias for the read.
+
+So "We're not writing through the virtual mapping" is NOT a sufficient
+excuse. If you're reading through the virtual mapping, you need to
+make sure that the virtual mapping is flushed _after_ any writes
+through any other mapping and _before_ any reads through the virtual
+one.
+
+This is why you really really really generally don't want to have
+aliasing. Purely virtual caches are pure crap. Really.
+
+                       Linus
