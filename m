@@ -1,61 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753459Ab1AFSvy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 13:51:54 -0500
-Received: from kroah.org ([198.145.64.141]:43342 "EHLO coco.kroah.org"
+	id S1753490Ab1AFSwH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 13:52:07 -0500
+Received: from kroah.org ([198.145.64.141]:43346 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752915Ab1AFSvw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 13:51:52 -0500
-Date: Thu, 6 Jan 2011 10:45:17 -0800
+	id S1753420Ab1AFSvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 13:51:53 -0500
+Date: Thu, 6 Jan 2011 10:48:40 -0800
 From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (tty
- tree related)
-Message-ID: <20110106184517.GA15901@kroah.com>
-References: <20101217171120.295b0c0c.sfr@canb.auug.org.au>
- <20101217070431.GA25192@kroah.com>
- <alpine.LFD.2.00.1012171107310.12146@localhost6.localdomain6>
- <20110106142710.a0a04883.sfr@canb.auug.org.au>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Pratyush Anand <pratyush.anand@st.com>
+Subject: Re: [PATCH V2] ST SPEAr: PCIE gadget suppport
+Message-ID: <20110106184840.GA21672@kroah.com>
+References: <137dfad4a093ea0ac80396f5eb7fbf0c382be698.1294314772.git.viresh.kumar@st.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110106142710.a0a04883.sfr@canb.auug.org.au>
+In-Reply-To: <137dfad4a093ea0ac80396f5eb7fbf0c382be698.1294314772.git.viresh.kumar@st.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 06, 2011 at 02:27:10PM +1100, Stephen Rothwell wrote:
-> HI Greg,
+On Thu, Jan 06, 2011 at 05:29:10PM +0530, Viresh Kumar wrote:
+> From: Pratyush Anand <pratyush.anand@st.com>
 > 
-> On Fri, 17 Dec 2010 11:16:17 +0100 (CET) Thomas Gleixner <tglx@linutronix.de> wrote:
-> >
-> > On Thu, 16 Dec 2010, Greg KH wrote:
-> > > On Fri, Dec 17, 2010 at 05:11:20PM +1100, Stephen Rothwell wrote:
-> > > > Hi Greg,
-> > > > 
-> > > > After merging the final tree, today's linux-next build (powerpc
-> > > > allyesconfig) failed like this:
-> > > > 
-> > > > drivers/serial/apbuart.c:596: error: conflicting types for 'grlib_apbuart_configure'
-> > > > drivers/serial/apbuart.c:523: note: previous declaration of 'grlib_apbuart_configure' was here
-> > > > 
-> > > > Caused by commit 35c64e5d13c3d7d8c4ad061ad5e20498b9160c24 ("drivers:
-> > > > serial: apbuart: Handle OF failures gracefully").  This build has
-> > > > CONFIG_SERIAL_GRLIB_GAISLER_APBUART_CONSOLE set ...
-> > > > 
-> > > > I have reverted this commit for today.
-> > > 
-> > > Ugh.  Thomas, care to send me a patch?
-> > 
-> > Sorry, I missed the console part. Patch below.
+> This is a configurable gadget. can be configured by sysfs interface. Any
+> IP available at PCIE bus can be programmed to be used by host
+> controller.It supoorts both INTX and MSI.
+> By default, gadget is configured for INTX and SYSRAM1 is mapped to BAR0
+> with size 0x1000
 > 
-> Ping?
+> Changes since V1:
+> - __iomem added for register addresses
+> - kerneldoc comment removed whereever not required.
+> - help node moved from sysfs to documentation/misc-devices
+> - strict_strtoul used instead of sscanf
+> 
+> Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+> ---
+>  Documentation/misc-devices/spear-pcie-gadget.txt |  125 ++++
 
-Ick, sorry about this, I've now applied this.
+New sysfs entries require updates to the Documentation/ABI/ directory
+for them.
 
-thanks for the reminder.
+Please rework the patch to include these entries.
+
+> +read behaviour of nodes:
+> +------------------------------
+> +link 		:gives ltssm status.
+> +int_type 	:type of supported interrupt
+> +no_of_msi read	:zero if MSI is not enabled by host.A positive value is the
+> +		number of MSI vector granted.
+> +vendor_id	:returns programmed vendor id (hex)
+> +device_id	:returns programmed device id(hex)
+> +bar0_size:	:retruns size of bar0 in hex.
+> +bar0_address	:returns address of bar0 mapped area in hex.
+> +bar0_rw_offset	:returns offset of bar0 for which bar0_data will return value.
+> +bar0_data	:returns data at bar0_rw_offset.
+> +
+> +write behaviour of nodes:
+> +------------------------------
+> +link 		:write UP to enable ltsmm DOWN to disable
+> +int_type	:write interrupt type to be configured and (int_type could be
+> +		INTA, MSI or NO_INT).select MSI only when you have programmed
+> +		no_of_msi node.
+> +no_of_msi	:number of MSI vector needed.
+> +inta		:write 1 to assert INTA and 0 to de-assert.
+> +send_msi	:write MSI vector to be send.
+> +vendor_id	:write vendor id(hex) to be programmed.
+> +device_id	:write device id(hex) to be programmed.
+> +bar0_size	:write size of bar0 in hex. default bar0 size is 1000 (hex)
+> +		bytes.
+> +bar0_address	:write	address of bar0 mapped area in hex. (default mapping of
+> +		bar0 is SYSRAM1(E0800000).Aalways program bar size before bar
+> +		address. kernel might modify bar size and address to align. So
+> +		read back bar size and address after writing to cross check.
+> +bar0_rw_offset	:write offset of bar0 for which	bar0_data will write value.
+> +bar0_data	:write data to be written at bar0_rw_offset.
+
+Should you use configfs for this instead of sysfs?  It looks like that
+is what you are looking for here.
+
+thanks,
 
 greg k-h
