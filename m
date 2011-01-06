@@ -1,84 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306Ab1AFSjH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 13:39:07 -0500
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:60044 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753105Ab1AFSjF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 13:39:05 -0500
-From: Kevin Hilman <khilman@ti.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: Koen Kooi <koen@dominion.thruhere.net>, Brad Parker <brad@heeltoe.com>,
-        Anand Gadiyar <gadiyar@ti.com>, Ming Lei <tom.leiming@gmail.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Paul Walmsley <paul@pwsan.com>, Greg KH <greg@kroah.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        linux-omap@vger.kernel.org
-Subject: Re: linux-next: manual merge of the usb tree with the omap tree
-Organization: Texas Instruments, Inc.
-References: <20101223171859.f6842045.sfr@canb.auug.org.au>
-	<4D139517.3010608@ti.com>
-	<AANLkTi=pTNg2iWN+=uEv=CyZHHCoddF51pmmCMjPeMUF@mail.gmail.com>
-	<4ce0f816f951f24ca3de9c84d9f70842@mail.gmail.com>
-	<4D25E313.4060202@heeltoe.com>
-	<8B3471BB-CB3F-4CE6-B523-D9C5E87B9CEC@dominion.thruhere.net>
-	<87pqs9vqya.fsf@ti.com> <4D260812.3010605@ti.com>
-Date: Thu, 06 Jan 2011 10:38:59 -0800
-In-Reply-To: <4D260812.3010605@ti.com> (Nishanth Menon's message of "Thu, 06
-	Jan 2011 12:21:06 -0600")
-Message-ID: <871v4pvpvg.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	id S1753261Ab1AFSne (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 13:43:34 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:48742 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753105Ab1AFSnd convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 13:43:33 -0500
+Date: Thu, 6 Jan 2011 13:43:31 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Jeff Moyer <jmoyer@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Jens Axboe <axboe@kernel.dk>,
+        Li Zefan <lizf@cn.fujitsu.com>, Alan.Brunelle@hp.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] trace event block fix unassigned field
+Message-ID: <20110106184331.GA2449@Krystal>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 13:40:21 up 43 days, 23:43,  5 users,  load average: 0.10, 0.12,
+	0.09
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nishanth Menon <nm@ti.com> writes:
+The "error" field in block_bio_complete is not assigned, leaving the memory area
+uninitialized (keeping garbage data). Pass an additional tracepoint argument to
+this event to initialize this field.
 
-> Kevin Hilman had written, on 01/06/2011 12:15 PM, the following:
->> Koen Kooi <koen@dominion.thruhere.net> writes:
->>
->>> Op 6 jan 2011, om 16:43 heeft Brad Parker het volgende geschreven:
->>>
->>>> It's probably expected, but I can't get the EHCI USB port  to work
->>>> on a beagle board XM (36xx) using the current omap tree.
->>>>
->>>> It this most likely due to these clock issues?
->>> You need this patch: http://thread.gmane.org/gmane.linux.ports.arm.omap/47807/
->>>
->>> I'm currently too lazy to split it up like Nishant wants as I don't
->>> see the point splitting for the sake of splitting.--
->>
->> IMO, it doesn't need to be split up.
->>
->> But it does have to fix the other comments I made on the same thread[1]
->>
->> 1) add a descriptive changelog, and
->> 2) Cc linux-arm-kernel
->
-> Kevin,
-> there are four things being done in the patch:
-> a) fix GPIO number for EHCI power on
-> b) fix GPIO number for DVI reset line
-> c) switch on DVI
-> d) switch on Camera
->
-> I have split the first 2 up. I just splitting the (c) up when I
-> noticed the code is confusing - I will reply in thread to the original
-> patch.
->
-> I apologize, but I disagree - as far as I see it, these are separate
-> changes being done.
+From: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Jens Axboe <axboe@kernel.dk>
+CC: Li Zefan <lizf@cn.fujitsu.com>
+CC: Alan.Brunelle@hp.com
+---
+ drivers/md/dm.c              |    2 +-
+ include/trace/events/block.h |    6 ++++--
+ 2 files changed, 5 insertions(+), 3 deletions(-)
 
-Sure, but there are all tiny and isolated.  For me, what's missing is
-just a changlog describing all the changes.
+Index: linux-2.6-lttng/include/trace/events/block.h
+===================================================================
+--- linux-2.6-lttng.orig/include/trace/events/block.h
++++ linux-2.6-lttng/include/trace/events/block.h
+@@ -206,15 +206,16 @@ TRACE_EVENT(block_bio_bounce,
+  * block_bio_complete - completed all work on the block operation
+  * @q: queue holding the block operation
+  * @bio: block operation completed
++ * @error: io error value
+  *
+  * This tracepoint indicates there is no further work to do on this
+  * block IO operation @bio.
+  */
+ TRACE_EVENT(block_bio_complete,
+ 
+-	TP_PROTO(struct request_queue *q, struct bio *bio),
++	TP_PROTO(struct request_queue *q, struct bio *bio, int error),
+ 
+-	TP_ARGS(q, bio),
++	TP_ARGS(q, bio, error),
+ 
+ 	TP_STRUCT__entry(
+ 		__field( dev_t,		dev		)
+@@ -228,6 +229,7 @@ TRACE_EVENT(block_bio_complete,
+ 		__entry->dev		= bio->bi_bdev->bd_dev;
+ 		__entry->sector		= bio->bi_sector;
+ 		__entry->nr_sector	= bio->bi_size >> 9;
++		__entry->error		= error;
+ 		blk_fill_rwbs(__entry->rwbs, bio->bi_rw, bio->bi_size);
+ 	),
+ 
+Index: linux-2.6-lttng/drivers/md/dm.c
+===================================================================
+--- linux-2.6-lttng.orig/drivers/md/dm.c
++++ linux-2.6-lttng/drivers/md/dm.c
+@@ -659,7 +659,7 @@ static void dec_pending(struct dm_io *io
+ 			free_io(md, io);
+ 
+ 			if (io_error != DM_ENDIO_REQUEUE) {
+-				trace_block_bio_complete(md->queue, bio);
++				trace_block_bio_complete(md->queue, bio, io_error);
+ 
+ 				bio_endio(bio, io_error);
+ 			}
 
-Feel free to break it up if you prefer, but IMO it would be mergable as
-a single patch if there was a descriptive changelog actually mentioning 
-all the changes made (as you just did above.)
-
-Kevin
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
