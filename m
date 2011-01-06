@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab1AFAx0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:53:26 -0500
-Received: from kroah.org ([198.145.64.141]:35669 "EHLO coco.kroah.org"
+	id S1754150Ab1AFA3m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:29:42 -0500
+Received: from kroah.org ([198.145.64.141]:35656 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754135Ab1AFA3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:29:44 -0500
+	id S1753955Ab1AFA3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:29:41 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:01 2011
-Message-Id: <20110106002301.602571043@clark.site>
+Message-Id: <20110106002301.429995042@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:22:31 -0800
+Date: Wed, 05 Jan 2011 16:22:29 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         "David S. Miller" <davem@davemloft.net>
-Subject: [052/152] sparc: Write to prom console using indirect buffer.
+Subject: [050/152] sparc: Pass buffer pointer all the way down to prom_{get,put}char().
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,187 +28,267 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David S. Miller <davem@davemloft.net>
 
-[ Upstream commit 595a251c0740785fd3c0d2156d78578c7479811e ]
+[ Upstream commit e62cac1fd035b4cde707285008499dbe71955a86 ]
 
-sparc64 systems have a restriction in that passing in buffer
-addressses above 4GB to prom calls is not reliable.
-
-We end up violating this when we do prom console writes, because we
-use an on-stack buffer to translate '\n' into '\r\n'.
-
-So instead, do this translation into an intermediate buffer, which is
-in the kernel image and thus below 4GB, then pass that to the PROM
-console write calls.
-
-On the 32-bit side we don't have to deal with any of these issues, so
-the new prom_console_write_buf() uses the existing prom_nbputchar()
-implementation.  However we can now mark those routines static.
-
-Since the 64-bit side completely uses new code we can delete the
-putchar bits as they are now completely unused.
+This gets us closer to being able to eliminate the use
+of dynamic and stack based buffers, so that we can adhere
+to the "no buffer addresses above 4GB" rule for PROM calls.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/sparc/include/asm/oplib_32.h |    4 ++--
- arch/sparc/include/asm/oplib_64.h |    4 ++--
- arch/sparc/prom/console_32.c      |   14 ++++++++------
- arch/sparc/prom/console_64.c      |   27 +++++++++++++--------------
- arch/sparc/prom/printf.c          |   32 +++++++++++++++++++++++++++-----
- 5 files changed, 52 insertions(+), 29 deletions(-)
+ arch/sparc/include/asm/openprom.h |    2 -
+ arch/sparc/include/asm/oplib_32.h |    4 +--
+ arch/sparc/include/asm/oplib_64.h |    4 +--
+ arch/sparc/prom/console_32.c      |   50 +++++++++++++++++++-------------------
+ arch/sparc/prom/console_64.c      |   34 ++++++++++++-------------
+ arch/sparc/prom/printf.c          |   15 ++++++-----
+ 6 files changed, 55 insertions(+), 54 deletions(-)
 
+--- a/arch/sparc/include/asm/openprom.h
++++ b/arch/sparc/include/asm/openprom.h
+@@ -37,7 +37,7 @@ struct linux_dev_v2_funcs {
+ 	int (*v2_dev_open)(char *devpath);
+ 	void (*v2_dev_close)(int d);
+ 	int (*v2_dev_read)(int d, char *buf, int nbytes);
+-	int (*v2_dev_write)(int d, char *buf, int nbytes);
++	int (*v2_dev_write)(int d, const char *buf, int nbytes);
+ 	int (*v2_dev_seek)(int d, int hi, int lo);
+ 
+ 	/* Never issued (multistage load support) */
 --- a/arch/sparc/include/asm/oplib_32.h
 +++ b/arch/sparc/include/asm/oplib_32.h
-@@ -102,8 +102,8 @@ extern int prom_getrev(void);
- /* Get the prom firmware revision. */
- extern int prom_getprev(void);
+@@ -105,10 +105,10 @@ extern int prom_getprev(void);
+ /* Character operations to/from the console.... */
  
--/* Blocking put character to console. */
--extern void prom_putchar(const char *buf);
-+/* Write a buffer of characters to the console. */
-+extern void prom_console_write_buf(const char *buf, int len);
+ /* Blocking get character from console. */
+-extern char prom_getchar(void);
++extern void prom_getchar(char *buf);
+ 
+ /* Blocking put character to console. */
+-extern void prom_putchar(char character);
++extern void prom_putchar(const char *buf);
  
  /* Prom's internal routines, don't use in kernel/boot code. */
  extern void prom_printf(const char *fmt, ...);
 --- a/arch/sparc/include/asm/oplib_64.h
 +++ b/arch/sparc/include/asm/oplib_64.h
-@@ -94,8 +94,8 @@ extern void prom_halt_power_off(void) __
-  */
- extern unsigned char prom_get_idprom(char *idp_buffer, int idpbuf_size);
+@@ -97,10 +97,10 @@ extern unsigned char prom_get_idprom(cha
+ /* Character operations to/from the console.... */
  
--/* Blocking put character to console. */
--extern void prom_putchar(const char *buf);
-+/* Write a buffer of characters to the console. */
-+extern void prom_console_write_buf(const char *buf, int len);
+ /* Blocking get character from console. */
+-extern char prom_getchar(void);
++extern void prom_getchar(char *buf);
+ 
+ /* Blocking put character to console. */
+-extern void prom_putchar(char character);
++extern void prom_putchar(const char *buf);
  
  /* Prom's internal routines, don't use in kernel/boot code. */
  extern void prom_printf(const char *fmt, ...);
 --- a/arch/sparc/prom/console_32.c
 +++ b/arch/sparc/prom/console_32.c
-@@ -43,12 +43,14 @@ static int prom_nbputchar(const char *bu
- 	return i; /* Ugh, we could spin forever on unsupported proms ;( */
+@@ -19,27 +19,27 @@ extern void restore_current(void);
+ /* Non blocking get character from console input device, returns -1
+  * if no input was taken.  This can be used for polling.
+  */
+-static int prom_nbgetchar(void)
++static int prom_nbgetchar(char *buf)
+ {
+-	static char inc;
+-	int i = -1;
+ 	unsigned long flags;
++	int i = -1;
+ 
+ 	spin_lock_irqsave(&prom_lock, flags);
+ 	switch(prom_vers) {
+ 	case PROM_V0:
+ 		i = (*(romvec->pv_nbgetchar))();
++		if (i != -1) {
++			*buf = i;
++			i = 0;
++		}
+ 		break;
+ 	case PROM_V2:
+ 	case PROM_V3:
+-		if( (*(romvec->pv_v2devops).v2_dev_read)(*romvec->pv_v2bootargs.fd_stdin , &inc, 0x1) == 1) {
+-			i = inc;
+-		} else {
+-			i = -1;
+-		}
++		if ((*(romvec->pv_v2devops).v2_dev_read)(*romvec->pv_v2bootargs.fd_stdin,
++							 buf, 0x1) == 1)
++			i = 0;
+ 		break;
+ 	default:
+-		i = -1;
+ 		break;
+ 	};
+ 	restore_current();
+@@ -50,27 +50,23 @@ static int prom_nbgetchar(void)
+ /* Non blocking put character to console device, returns -1 if
+  * unsuccessful.
+  */
+-static int prom_nbputchar(char c)
++static int prom_nbputchar(const char *buf)
+ {
+-	static char outc;
+ 	unsigned long flags;
+ 	int i = -1;
+ 
+ 	spin_lock_irqsave(&prom_lock, flags);
+ 	switch(prom_vers) {
+ 	case PROM_V0:
+-		i = (*(romvec->pv_nbputchar))(c);
++		i = (*(romvec->pv_nbputchar))(*buf);
+ 		break;
+ 	case PROM_V2:
+ 	case PROM_V3:
+-		outc = c;
+-		if( (*(romvec->pv_v2devops).v2_dev_write)(*romvec->pv_v2bootargs.fd_stdout, &outc, 0x1) == 1)
++		if ((*(romvec->pv_v2devops).v2_dev_write)(*romvec->pv_v2bootargs.fd_stdout,
++							  buf, 0x1) == 1)
+ 			i = 0;
+-		else
+-			i = -1;
+ 		break;
+ 	default:
+-		i = -1;
+ 		break;
+ 	};
+ 	restore_current();
+@@ -79,17 +75,21 @@ static int prom_nbputchar(char c)
  }
  
--/* Blocking version of put character routine above. */
--void prom_putchar(const char *buf)
-+void prom_console_write_buf(const char *buf, int len)
+ /* Blocking version of get character routine above. */
+-char
+-prom_getchar(void)
++void prom_getchar(char *buf)
  {
--	while (1) {
--		int err = prom_nbputchar(buf);
--		if (!err)
--			break;
-+	while (len) {
-+		int n = prom_nbputchar(buf);
-+		if (n)
-+			continue;
-+		len--;
-+		buf++;
- 	}
+-	int character;
+-	while((character = prom_nbgetchar()) == -1) ;
+-	return (char) character;
++	while (1) {
++		int err = prom_nbgetchar(buf);
++		if (!err)
++			break;
++	}
  }
-+
+ 
+ /* Blocking version of put character routine above. */
+-void
+-prom_putchar(char c)
++void prom_putchar(const char *buf)
+ {
+-	while(prom_nbputchar(c) == -1) ;
++	while (1) {
++		int err = prom_nbputchar(buf);
++		if (!err)
++			break;
++	}
+ }
 --- a/arch/sparc/prom/console_64.c
 +++ b/arch/sparc/prom/console_64.c
-@@ -15,35 +15,34 @@
- 
- extern int prom_stdin, prom_stdout;
- 
--/* Non blocking put character to console device, returns -1 if
-- * unsuccessful.
-- */
--static int prom_nbputchar(const char *buf)
-+static int __prom_console_write_buf(const char *buf, int len)
+@@ -18,41 +18,37 @@ extern int prom_stdin, prom_stdout;
+ /* Non blocking get character from console input device, returns -1
+  * if no input was taken.  This can be used for polling.
+  */
+-static int prom_nbgetchar(void)
++static int prom_nbgetchar(char *buf)
  {
  	unsigned long args[7];
-+	int ret;
+-	char inc;
+ 
+ 	args[0] = (unsigned long) "read";
+ 	args[1] = 3;
+ 	args[2] = 1;
+ 	args[3] = (unsigned int) prom_stdin;
+-	args[4] = (unsigned long) &inc;
++	args[4] = (unsigned long) buf;
+ 	args[5] = 1;
+ 	args[6] = (unsigned long) -1;
+ 
+ 	p1275_cmd_direct(args);
+ 
+ 	if (args[6] == 1)
+-		return inc;
++		return 0;
+ 	return -1;
+ }
+ 
+ /* Non blocking put character to console device, returns -1 if
+  * unsuccessful.
+  */
+-static int prom_nbputchar(char c)
++static int prom_nbputchar(const char *buf)
+ {
+ 	unsigned long args[7];
+-	char outc;
+-	
+-	outc = c;
  
  	args[0] = (unsigned long) "write";
  	args[1] = 3;
  	args[2] = 1;
  	args[3] = (unsigned int) prom_stdout;
- 	args[4] = (unsigned long) buf;
--	args[5] = 1;
-+	args[5] = (unsigned int) len;
+-	args[4] = (unsigned long) &outc;
++	args[4] = (unsigned long) buf;
+ 	args[5] = 1;
  	args[6] = (unsigned long) -1;
  
- 	p1275_cmd_direct(args);
- 
--	if (args[6] == 1)
--		return 0;
--	else
-+	ret = (int) args[6];
-+	if (ret < 0)
- 		return -1;
-+	return ret;
+@@ -65,17 +61,21 @@ static int prom_nbputchar(char c)
  }
  
--/* Blocking version of put character routine above. */
--void prom_putchar(const char *buf)
-+void prom_console_write_buf(const char *buf, int len)
+ /* Blocking version of get character routine above. */
+-char
+-prom_getchar(void)
++void prom_getchar(char *buf)
  {
--	while (1) {
--		int err = prom_nbputchar(buf);
--		if (!err)
--			break;
-+	while (len) {
-+		int n = __prom_console_write_buf(buf, len);
-+		if (n < 0)
-+			continue;
-+		len -= n;
-+		buf += len;
- 	}
+-	int character;
+-	while((character = prom_nbgetchar()) == -1) ;
+-	return (char) character;
++	while (1) {
++		int err = prom_nbgetchar(buf);
++		if (!err)
++			break;
++	}
+ }
+ 
+ /* Blocking version of put character routine above. */
+-void
+-prom_putchar(char c)
++void prom_putchar(const char *buf)
+ {
+-	prom_nbputchar(c);
++	while (1) {
++		int err = prom_nbputchar(buf);
++		if (!err)
++			break;
++	}
  }
 --- a/arch/sparc/prom/printf.c
 +++ b/arch/sparc/prom/printf.c
-@@ -15,23 +15,45 @@
- 
- #include <linux/kernel.h>
- #include <linux/compiler.h>
-+#include <linux/spinlock.h>
- 
- #include <asm/openprom.h>
- #include <asm/oplib.h>
- 
-+#define CONSOLE_WRITE_BUF_SIZE	1024
-+
- static char ppbuf[1024];
-+static char console_write_buf[CONSOLE_WRITE_BUF_SIZE];
-+static DEFINE_RAW_SPINLOCK(console_write_lock);
+@@ -23,13 +23,14 @@ static char ppbuf[1024];
  
  void notrace prom_write(const char *buf, unsigned int n)
  {
-+	unsigned int dest_len;
-+	unsigned long flags;
-+	char *dest;
-+
-+	dest = console_write_buf;
-+	raw_spin_lock_irqsave(&console_write_lock, flags);
-+
-+	dest_len = 0;
- 	while (n-- != 0) {
--		char ch = *buf;
-+		char ch = *buf++;
- 		if (ch == '\n') {
--			char tmp = '\r';
--			prom_putchar(&tmp);
-+			*dest++ = '\r';
-+			dest_len++;
+-	char ch;
+-
+-	while (n != 0) {
+-		--n;
+-		if ((ch = *buf++) == '\n')
+-			prom_putchar('\r');
+-		prom_putchar(ch);
++	while (n-- != 0) {
++		char ch = *buf;
++		if (ch == '\n') {
++			char tmp = '\r';
++			prom_putchar(&tmp);
 +		}
-+		*dest++ = ch;
-+		dest_len++;
-+		if (dest_len >= CONSOLE_WRITE_BUF_SIZE - 1) {
-+			prom_console_write_buf(console_write_buf, dest_len);
-+			dest = console_write_buf;
-+			dest_len = 0;
- 		}
--		prom_putchar(buf);
--		buf++;
++		prom_putchar(buf);
++		buf++;
  	}
-+	if (dest_len)
-+		prom_console_write_buf(console_write_buf, dest_len);
-+
-+	raw_spin_unlock_irqrestore(&console_write_lock, flags);
  }
  
- void notrace prom_printf(const char *fmt, ...)
 
 
