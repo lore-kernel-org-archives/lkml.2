@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab1AFAcG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:32:06 -0500
-Received: from kroah.org ([198.145.64.141]:36173 "EHLO coco.kroah.org"
+	id S1754816Ab1AFAbx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:31:53 -0500
+Received: from kroah.org ([198.145.64.141]:36122 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754858Ab1AFAcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:32:02 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:11 2011
-Message-Id: <20110106002310.929742038@clark.site>
+	id S1754722Ab1AFAbv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:31:51 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:10 2011
+Message-Id: <20110106002310.039926463@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:24:11 -0800
+Date: Wed, 05 Jan 2011 16:24:01 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?Jean-Fran=C3=A7ois=20Moine?= <moinejf@free.fr>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [152/152] [media] gspca - sonixj: Add a flag in the driver_info table
+        Johannes Berg <johannes.berg@intel.com>,
+        Javier Cardona <javier@cozybit.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [142/152] mac80211: fix mesh forwarding
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,50 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean-Francois Moine <moinejf@free.fr>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit c6c14330717f9850b4b4c054b81424b9979cd07d upstream.
+commit b51aff057c9d0ef6c529dc25fd9f775faf7b6c63 upstream.
 
-Signed-off-by: Jean-François Moine <moinejf@free.fr>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Under memory pressure, the mac80211 mesh code
+may helpfully print a message that it failed
+to clone a mesh frame and then will proceed
+to crash trying to use it anyway. Fix that.
+
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Acked-by: Javier Cardona <javier@cozybit.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/gspca/sonixj.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ net/mac80211/rx.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/media/video/gspca/sonixj.c
-+++ b/drivers/media/video/gspca/sonixj.c
-@@ -56,6 +56,7 @@ struct sd {
- 	u8 jpegqual;			/* webcam quality */
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -1712,9 +1712,11 @@ ieee80211_rx_h_mesh_fwding(struct ieee80
  
- 	u8 reg18;
-+	u8 flags;
+ 			fwd_skb = skb_copy(skb, GFP_ATOMIC);
  
- 	s8 ag_cnt;
- #define AG_CNT_START 13
-@@ -1780,7 +1781,8 @@ static int sd_config(struct gspca_dev *g
- 	struct cam *cam;
+-			if (!fwd_skb && net_ratelimit())
++			if (!fwd_skb && net_ratelimit()) {
+ 				printk(KERN_DEBUG "%s: failed to clone mesh frame\n",
+ 						   sdata->name);
++				goto out;
++			}
  
- 	sd->bridge = id->driver_info >> 16;
--	sd->sensor = id->driver_info;
-+	sd->sensor = id->driver_info >> 8;
-+	sd->flags = id->driver_info;
+ 			fwd_hdr =  (struct ieee80211_hdr *) fwd_skb->data;
+ 			memcpy(fwd_hdr->addr2, sdata->vif.addr, ETH_ALEN);
+@@ -1752,6 +1754,7 @@ ieee80211_rx_h_mesh_fwding(struct ieee80
+ 		}
+ 	}
  
- 	cam = &gspca_dev->cam;
- 	if (sd->sensor == SENSOR_ADCM1700) {
-@@ -2987,7 +2989,11 @@ static const struct sd_desc sd_desc = {
- /* -- module initialisation -- */
- #define BS(bridge, sensor) \
- 	.driver_info = (BRIDGE_ ## bridge << 16) \
--			| SENSOR_ ## sensor
-+			| (SENSOR_ ## sensor << 8)
-+#define BSF(bridge, sensor, flags) \
-+	.driver_info = (BRIDGE_ ## bridge << 16) \
-+			| (SENSOR_ ## sensor << 8) \
-+			| (flags)
- static const __devinitdata struct usb_device_id device_table[] = {
- #if !defined CONFIG_USB_SN9C102 && !defined CONFIG_USB_SN9C102_MODULE
- 	{USB_DEVICE(0x0458, 0x7025), BS(SN9C120, MI0360)},
++ out:
+ 	if (is_multicast_ether_addr(hdr->addr1) ||
+ 	    sdata->dev->flags & IFF_PROMISC)
+ 		return RX_CONTINUE;
 
 
