@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab1AFAbp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:31:45 -0500
-Received: from kroah.org ([198.145.64.141]:36084 "EHLO coco.kroah.org"
+	id S1754797Ab1AFAbu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:31:50 -0500
+Received: from kroah.org ([198.145.64.141]:36098 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754722Ab1AFAbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:31:42 -0500
+	id S1754722Ab1AFAbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:31:45 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:09 2011
-Message-Id: <20110106002309.335150008@clark.site>
+Message-Id: <20110106002309.606602619@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:23:53 -0800
+Date: Wed, 05 Jan 2011 16:23:56 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: [134/152] memcg: fix wrong VM_BUG_ON() in try_charge()s mm->owner check
+        Joerg Roedel <joerg.roedel@amd.com>, Avi Kivity <avi@redhat.com>
+Subject: [137/152] KVM: SVM: Do not report xsave in supported cpuid
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,63 +25,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit ebb76ce16daf6908dc030dec1c00827d37129fe5 upstream.
+commit 24d1b15f72abe3465e871d11cfc9dc34d1aab8b2 upstream.
 
-At __mem_cgroup_try_charge(), VM_BUG_ON(!mm->owner) is checked.
-But as commented in mem_cgroup_from_task(), mm->owner can be NULL
-in some racy case. This check of VM_BUG_ON() is bad.
+To support xsave properly for the guest the SVM module need
+software support for it. As long as this is not present do
+not report the xsave as supported feature in cpuid.
+As a side-effect this patch moves the bit() helper function
+into the x86.h file so that it can be used in svm.c too.
 
-A possible story to hit this is at swapoff()->try_to_unuse(). It passes
-mm_struct to mem_cgroup_try_charge_swapin() while mm->owner is NULL. If we
-can't get proper mem_cgroup from swap_cgroup information, mm->owner is used
-as charge target and we see NULL.
-
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reported-by: Hugh Dickins <hughd@google.com>
-Reported-by: Thomas Meyer <thomas@m3y3r.de>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: Balbir Singh <balbir@linux.vnet.ibm.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+KVM-Stable-Tag.
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/memcontrol.c |   19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+ arch/x86/kvm/svm.c |    4 ++++
+ arch/x86/kvm/vmx.c |    5 -----
+ arch/x86/kvm/x86.c |    5 -----
+ arch/x86/kvm/x86.h |    5 +++++
+ 4 files changed, 9 insertions(+), 10 deletions(-)
 
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1730,19 +1730,18 @@ again:
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -3383,6 +3383,10 @@ static void svm_cpuid_update(struct kvm_
+ static void svm_set_supported_cpuid(u32 func, struct kvm_cpuid_entry2 *entry)
+ {
+ 	switch (func) {
++	case 0x00000001:
++		/* Mask out xsave bit as long as it is not supported by SVM */
++		entry->ecx &= ~(bit(X86_FEATURE_XSAVE));
++		break;
+ 	case 0x80000001:
+ 		if (nested)
+ 			entry->ecx |= (1 << 2); /* Set SVM bit */
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -4248,11 +4248,6 @@ static int vmx_get_lpage_level(void)
+ 		return PT_PDPE_LEVEL;
+ }
  
- 		rcu_read_lock();
- 		p = rcu_dereference(mm->owner);
--		VM_BUG_ON(!p);
- 		/*
--		 * because we don't have task_lock(), "p" can exit while
--		 * we're here. In that case, "mem" can point to root
--		 * cgroup but never be NULL. (and task_struct itself is freed
--		 * by RCU, cgroup itself is RCU safe.) Then, we have small
--		 * risk here to get wrong cgroup. But such kind of mis-account
--		 * by race always happens because we don't have cgroup_mutex().
--		 * It's overkill and we allow that small race, here.
-+		 * Because we don't have task_lock(), "p" can exit.
-+		 * In that case, "mem" can point to root or p can be NULL with
-+		 * race with swapoff. Then, we have small risk of mis-accouning.
-+		 * But such kind of mis-account by race always happens because
-+		 * we don't have cgroup_mutex(). It's overkill and we allo that
-+		 * small race, here.
-+		 * (*) swapoff at el will charge against mm-struct not against
-+		 * task-struct. So, mm->owner can be NULL.
- 		 */
- 		mem = mem_cgroup_from_task(p);
--		VM_BUG_ON(!mem);
--		if (mem_cgroup_is_root(mem)) {
-+		if (!mem || mem_cgroup_is_root(mem)) {
- 			rcu_read_unlock();
- 			goto done;
- 		}
+-static inline u32 bit(int bitno)
+-{
+-	return 1 << (bitno & 31);
+-}
+-
+ static void vmx_cpuid_update(struct kvm_vcpu *vcpu)
+ {
+ 	struct kvm_cpuid_entry2 *best;
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -153,11 +153,6 @@ struct kvm_stats_debugfs_item debugfs_en
+ 
+ u64 __read_mostly host_xcr0;
+ 
+-static inline u32 bit(int bitno)
+-{
+-	return 1 << (bitno & 31);
+-}
+-
+ static void kvm_on_user_return(struct user_return_notifier *urn)
+ {
+ 	unsigned slot;
+--- a/arch/x86/kvm/x86.h
++++ b/arch/x86/kvm/x86.h
+@@ -65,6 +65,11 @@ static inline int is_paging(struct kvm_v
+ 	return kvm_read_cr0_bits(vcpu, X86_CR0_PG);
+ }
+ 
++static inline u32 bit(int bitno)
++{
++	return 1 << (bitno & 31);
++}
++
+ void kvm_before_handle_nmi(struct kvm_vcpu *vcpu);
+ void kvm_after_handle_nmi(struct kvm_vcpu *vcpu);
+ 
 
 
