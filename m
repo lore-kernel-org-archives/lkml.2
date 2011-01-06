@@ -1,336 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602Ab1AFAmd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:42:33 -0500
-Received: from kroah.org ([198.145.64.141]:35922 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754516Ab1AFAat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:30:49 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:06 2011
-Message-Id: <20110106002306.397303678@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:23:20 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ivo van Doorn <IvDoorn@gmail.com>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [101/152] rt2x00: Fix max TX power settings
-In-Reply-To: <20110106002500.GA3172@kroah.com>
+	id S1754569Ab1AFAmu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:42:50 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:47532 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754507Ab1AFAas (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:30:48 -0500
+Date: Wed, 5 Jan 2011 16:28:43 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3/3] kernel-doc: code reorganization
+Message-Id: <20110105162843.7c9cb976.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.36-stable review patch.  If anyone has any objections, please let us know.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-------------------
+Move 'main' code vs. subroutines around so that they are not so
+intermixed, for better readability/understanding (relative to Perl).
+It was messy to follow the primary flow of code execution with the
+code being mixed.  Now the code begins with data initialization,
+followed by all subroutines, then ends with the main code execution.
 
-From: Ivo van Doorn <ivdoorn@gmail.com>
+This is almost totally source code movement, with a few changes as
+needed for forward declarations.
 
-commit 8d1331b37d5b656a7a8e561f8e9d7661dd00c910 upstream.
-
-During initialization each driver reads the default TX power
-for each individual channel. However mac80211 only accepts the
-maximum value (which is also handled as default value).
-
-As a result, the TX power of the device was being limited to
-the default value, which is often quite low compared to the
-real maximum acceptable value.
-
-This patch allows each driver to set the maximum value on a
-per-channel basis which is forwarded to mac80211. The default
-value will be preserved for now, in case we want to update
-mac80211 to differentiate between the maximum and default txpower.
-
-This fixes bug complaining about limited TX power values like:
-https://bugzilla.kernel.org/show_bug.cgi?id=16358
-
-Signed-off-by: Ivo van Doorn <IvDoorn@gmail.com>
-Acked-by: Helmut Schaa <helmut.schaa@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 ---
- drivers/net/wireless/rt2x00/rt2400pci.c |    6 ++-
- drivers/net/wireless/rt2x00/rt2500pci.c |   12 ++++--
- drivers/net/wireless/rt2x00/rt2500usb.c |   12 ++++--
- drivers/net/wireless/rt2x00/rt2800.h    |    7 +++
- drivers/net/wireless/rt2x00/rt2800lib.c |   59 ++++++++++++++++++--------------
- drivers/net/wireless/rt2x00/rt2x00.h    |    5 +-
- drivers/net/wireless/rt2x00/rt2x00dev.c |    2 -
- drivers/net/wireless/rt2x00/rt61pci.c   |   12 ++++--
- drivers/net/wireless/rt2x00/rt73usb.c   |   12 ++++--
- 9 files changed, 82 insertions(+), 45 deletions(-)
+ scripts/kernel-doc |  102 ++++++++++++++++++++++---------------------
+ 1 file changed, 54 insertions(+), 48 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2400pci.c
-+++ b/drivers/net/wireless/rt2x00/rt2400pci.c
-@@ -1488,8 +1488,10 @@ static int rt2400pci_probe_hw_mode(struc
- 	spec->channels_info = info;
+--- lnx-2637-rc8.orig/scripts/kernel-doc
++++ lnx-2637-rc8/scripts/kernel-doc
+@@ -155,6 +155,8 @@ use strict;
+ # '@parameter' - name of a parameter
+ # '%CONST' - name of a constant.
  
- 	tx_power = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_START);
--	for (i = 0; i < 14; i++)
--		info[i].tx_power1 = TXPOWER_FROM_DEV(tx_power[i]);
-+	for (i = 0; i < 14; i++) {
-+		info[i].max_power = TXPOWER_FROM_DEV(MAX_TXPOWER);
-+		info[i].default_power1 = TXPOWER_FROM_DEV(tx_power[i]);
-+	}
- 
- 	return 0;
- }
---- a/drivers/net/wireless/rt2x00/rt2500pci.c
-+++ b/drivers/net/wireless/rt2x00/rt2500pci.c
-@@ -1802,12 +1802,16 @@ static int rt2500pci_probe_hw_mode(struc
- 	spec->channels_info = info;
- 
- 	tx_power = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_START);
--	for (i = 0; i < 14; i++)
--		info[i].tx_power1 = TXPOWER_FROM_DEV(tx_power[i]);
-+	for (i = 0; i < 14; i++) {
-+		info[i].max_power = MAX_TXPOWER;
-+		info[i].default_power1 = TXPOWER_FROM_DEV(tx_power[i]);
-+	}
- 
- 	if (spec->num_channels > 14) {
--		for (i = 14; i < spec->num_channels; i++)
--			info[i].tx_power1 = DEFAULT_TXPOWER;
-+		for (i = 14; i < spec->num_channels; i++) {
-+			info[i].max_power = MAX_TXPOWER;
-+			info[i].default_power1 = DEFAULT_TXPOWER;
-+		}
- 	}
- 
- 	return 0;
---- a/drivers/net/wireless/rt2x00/rt2500usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2500usb.c
-@@ -1705,12 +1705,16 @@ static int rt2500usb_probe_hw_mode(struc
- 	spec->channels_info = info;
- 
- 	tx_power = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_START);
--	for (i = 0; i < 14; i++)
--		info[i].tx_power1 = TXPOWER_FROM_DEV(tx_power[i]);
-+	for (i = 0; i < 14; i++) {
-+		info[i].max_power = MAX_TXPOWER;
-+		info[i].default_power1 = TXPOWER_FROM_DEV(tx_power[i]);
-+	}
- 
- 	if (spec->num_channels > 14) {
--		for (i = 14; i < spec->num_channels; i++)
--			info[i].tx_power1 = DEFAULT_TXPOWER;
-+		for (i = 14; i < spec->num_channels; i++) {
-+			info[i].max_power = MAX_TXPOWER;
-+			info[i].default_power1 = DEFAULT_TXPOWER;
-+		}
- 	}
- 
- 	return 0;
---- a/drivers/net/wireless/rt2x00/rt2800.h
-+++ b/drivers/net/wireless/rt2x00/rt2800.h
-@@ -1841,6 +1841,13 @@ struct mac_iveiv_entry {
- #define EEPROM_RSSI_A2_LNA_A2		FIELD16(0xff00)
- 
- /*
-+ * EEPROM Maximum TX power values
-+ */
-+#define EEPROM_MAX_TX_POWER		0x0027
-+#define EEPROM_MAX_TX_POWER_24GHZ	FIELD16(0x00ff)
-+#define EEPROM_MAX_TX_POWER_5GHZ	FIELD16(0xff00)
++## init lots of data
 +
-+/*
-  * EEPROM TXpower delta: 20MHZ AND 40 MHZ use different power.
-  *	This is delta in 40MHZ.
-  * VALUE: Tx Power dalta value (MAX=4)
---- a/drivers/net/wireless/rt2x00/rt2800lib.c
-+++ b/drivers/net/wireless/rt2x00/rt2800lib.c
-@@ -1120,27 +1120,27 @@ static void rt2800_config_channel_rf2xxx
- 		 * double meaning, and we should set a 7DBm boost flag.
- 		 */
- 		rt2x00_set_field32(&rf->rf3, RF3_TXPOWER_A_7DBM_BOOST,
--				   (info->tx_power1 >= 0));
-+				   (info->default_power1 >= 0));
+ my $errors = 0;
+ my $warnings = 0;
+ my $anon_struct_union = 0;
+@@ -218,21 +220,14 @@ my %highlights_list = ( $type_constant, 
+ 			$type_param, "\$1" );
+ my $blankline_list = "";
  
--		if (info->tx_power1 < 0)
--			info->tx_power1 += 7;
-+		if (info->default_power1 < 0)
-+			info->default_power1 += 7;
- 
- 		rt2x00_set_field32(&rf->rf3, RF3_TXPOWER_A,
--				   TXPOWER_A_TO_DEV(info->tx_power1));
-+				   TXPOWER_A_TO_DEV(info->default_power1));
- 
- 		rt2x00_set_field32(&rf->rf4, RF4_TXPOWER_A_7DBM_BOOST,
--				   (info->tx_power2 >= 0));
-+				   (info->default_power2 >= 0));
- 
--		if (info->tx_power2 < 0)
--			info->tx_power2 += 7;
-+		if (info->default_power2 < 0)
-+			info->default_power2 += 7;
- 
- 		rt2x00_set_field32(&rf->rf4, RF4_TXPOWER_A,
--				   TXPOWER_A_TO_DEV(info->tx_power2));
-+				   TXPOWER_A_TO_DEV(info->default_power2));
- 	} else {
- 		rt2x00_set_field32(&rf->rf3, RF3_TXPOWER_G,
--				   TXPOWER_G_TO_DEV(info->tx_power1));
-+				   TXPOWER_G_TO_DEV(info->default_power1));
- 		rt2x00_set_field32(&rf->rf4, RF4_TXPOWER_G,
--				   TXPOWER_G_TO_DEV(info->tx_power2));
-+				   TXPOWER_G_TO_DEV(info->default_power2));
- 	}
- 
- 	rt2x00_set_field32(&rf->rf4, RF4_HT40, conf_is_ht40(conf));
-@@ -1180,13 +1180,11 @@ static void rt2800_config_channel_rf3xxx
- 	rt2800_rfcsr_write(rt2x00dev, 6, rfcsr);
- 
- 	rt2800_rfcsr_read(rt2x00dev, 12, &rfcsr);
--	rt2x00_set_field8(&rfcsr, RFCSR12_TX_POWER,
--			  TXPOWER_G_TO_DEV(info->tx_power1));
-+	rt2x00_set_field8(&rfcsr, RFCSR12_TX_POWER, info->default_power1);
- 	rt2800_rfcsr_write(rt2x00dev, 12, rfcsr);
- 
- 	rt2800_rfcsr_read(rt2x00dev, 13, &rfcsr);
--	rt2x00_set_field8(&rfcsr, RFCSR13_TX_POWER,
--			  TXPOWER_G_TO_DEV(info->tx_power2));
-+	rt2x00_set_field8(&rfcsr, RFCSR13_TX_POWER, info->default_power2);
- 	rt2800_rfcsr_write(rt2x00dev, 13, rfcsr);
- 
- 	rt2800_rfcsr_read(rt2x00dev, 23, &rfcsr);
-@@ -2516,6 +2514,13 @@ int rt2800_validate_eeprom(struct rt2x00
- 				   default_lna_gain);
- 	rt2x00_eeprom_write(rt2x00dev, EEPROM_RSSI_A2, word);
- 
-+	rt2x00_eeprom_read(rt2x00dev, EEPROM_MAX_TX_POWER, &word);
-+	if (rt2x00_get_field16(word, EEPROM_MAX_TX_POWER_24GHZ) == 0xff)
-+		rt2x00_set_field16(&word, EEPROM_MAX_TX_POWER_24GHZ, MAX_G_TXPOWER);
-+	if (rt2x00_get_field16(word, EEPROM_MAX_TX_POWER_5GHZ) == 0xff)
-+		rt2x00_set_field16(&word, EEPROM_MAX_TX_POWER_5GHZ, MAX_A_TXPOWER);
-+	rt2x00_eeprom_write(rt2x00dev, EEPROM_MAX_TX_POWER, word);
-+
- 	return 0;
+-sub usage {
+-    print "Usage: $0 [ -v ] [ -docbook | -html | -text | -man | -list ]\n";
+-    print "         [ -no-doc-sections ]\n";
+-    print "         [ -function funcname [ -function funcname ...] ]\n";
+-    print "         [ -nofunction funcname [ -nofunction funcname ...] ]\n";
+-    print "         c source file(s) > outputfile\n";
+-    print "         -v : verbose output, more warnings & other info listed\n";
+-    exit 1;
+-}
+-
+ # read arguments
+ if ($#ARGV == -1) {
+     usage();
  }
- EXPORT_SYMBOL_GPL(rt2800_validate_eeprom);
-@@ -2755,9 +2760,10 @@ int rt2800_probe_hw_mode(struct rt2x00_d
- {
- 	struct hw_mode_spec *spec = &rt2x00dev->spec;
- 	struct channel_info *info;
--	char *tx_power1;
--	char *tx_power2;
-+	char *default_power1;
-+	char *default_power2;
- 	unsigned int i;
-+	unsigned short max_power;
- 	u16 eeprom;
  
- 	/*
-@@ -2871,21 +2877,26 @@ int rt2800_probe_hw_mode(struct rt2x00_d
++my $kernelversion;
++my $dohighlight = "";
++
+ my $verbose = 0;
+ my $output_mode = "man";
+ my $no_doc_sections = 0;
+@@ -245,7 +240,7 @@ my $man_date = ('January', 'February', '
+ 		'November', 'December')[(localtime)[4]] .
+   " " . ((localtime)[5]+1900);
  
- 	spec->channels_info = info;
+-# Essentially these are globals
++# Essentially these are globals.
+ # They probably want to be tidied up, made more localised or something.
+ # CAVEAT EMPTOR!  Some of the others I localised may not want to be, which
+ # could cause "use of undefined value" or other bugs.
+@@ -353,6 +348,18 @@ while ($ARGV[0] =~ m/^-(.*)/) {
+     }
+ }
  
--	tx_power1 = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_BG1);
--	tx_power2 = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_BG2);
-+	rt2x00_eeprom_read(rt2x00dev, EEPROM_MAX_TX_POWER, &eeprom);
-+	max_power = rt2x00_get_field16(eeprom, EEPROM_MAX_TX_POWER_24GHZ);
-+	default_power1 = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_BG1);
-+	default_power2 = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_BG2);
++# continue execution near EOF;
++
++sub usage {
++    print "Usage: $0 [ -v ] [ -docbook | -html | -text | -man | -list ]\n";
++    print "         [ -no-doc-sections ]\n";
++    print "         [ -function funcname [ -function funcname ...] ]\n";
++    print "         [ -nofunction funcname [ -nofunction funcname ...] ]\n";
++    print "         c source file(s) > outputfile\n";
++    print "         -v : verbose output, more warnings & other info listed\n";
++    exit 1;
++}
++
+ # get kernel version from env
+ sub get_kernel_version() {
+     my $version = 'unknown kernel version';
+@@ -362,15 +369,6 @@ sub get_kernel_version() {
+     }
+     return $version;
+ }
+-my $kernelversion = get_kernel_version();
+-
+-# generate a sequence of code that will splice in highlighting information
+-# using the s// operator.
+-my $dohighlight = "";
+-foreach my $pattern (keys %highlights) {
+-#   print STDERR "scanning pattern:$pattern, highlight:($highlights{$pattern})\n";
+-    $dohighlight .=  "\$contents =~ s:$pattern:$highlights{$pattern}:gs;\n";
+-}
  
- 	for (i = 0; i < 14; i++) {
--		info[i].tx_power1 = TXPOWER_G_FROM_DEV(tx_power1[i]);
--		info[i].tx_power2 = TXPOWER_G_FROM_DEV(tx_power2[i]);
-+		info[i].max_power = max_power;
-+		info[i].default_power1 = TXPOWER_G_FROM_DEV(default_power1[i]);
-+		info[i].default_power2 = TXPOWER_G_FROM_DEV(default_power2[i]);
+ ##
+ # dumps section contents to arrays/hashes intended for that purpose.
+@@ -1851,34 +1849,6 @@ sub dump_function($$) {
+ 		       });
+ }
+ 
+-sub process_file($);
+-
+-# Read the file that maps relative names to absolute names for
+-# separate source and object directories and for shadow trees.
+-if (open(SOURCE_MAP, "<.tmp_filelist.txt")) {
+-	my ($relname, $absname);
+-	while(<SOURCE_MAP>) {
+-		chop();
+-		($relname, $absname) = (split())[0..1];
+-		$relname =~ s:^/+::;
+-		$source_map{$relname} = $absname;
+-	}
+-	close(SOURCE_MAP);
+-}
+-
+-foreach (@ARGV) {
+-    chomp;
+-    process_file($_);
+-}
+-if ($verbose && $errors) {
+-  print STDERR "$errors errors\n";
+-}
+-if ($verbose && $warnings) {
+-  print STDERR "$warnings warnings\n";
+-}
+-
+-exit($errors);
+-
+ sub reset_state {
+     $function = "";
+     %constants = ();
+@@ -2285,3 +2255,39 @@ sub process_file($) {
  	}
- 
- 	if (spec->num_channels > 14) {
--		tx_power1 = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_A1);
--		tx_power2 = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_A2);
-+		max_power = rt2x00_get_field16(eeprom, EEPROM_MAX_TX_POWER_5GHZ);
-+		default_power1 = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_A1);
-+		default_power2 = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_A2);
- 
- 		for (i = 14; i < spec->num_channels; i++) {
--			info[i].tx_power1 = TXPOWER_A_FROM_DEV(tx_power1[i]);
--			info[i].tx_power2 = TXPOWER_A_FROM_DEV(tx_power2[i]);
-+			info[i].max_power = max_power;
-+			info[i].default_power1 = TXPOWER_A_FROM_DEV(default_power1[i]);
-+			info[i].default_power2 = TXPOWER_A_FROM_DEV(default_power2[i]);
- 		}
- 	}
- 
---- a/drivers/net/wireless/rt2x00/rt2x00.h
-+++ b/drivers/net/wireless/rt2x00/rt2x00.h
-@@ -212,8 +212,9 @@ struct channel_info {
- 	unsigned int flags;
- #define GEOGRAPHY_ALLOWED	0x00000001
- 
--	short tx_power1;
--	short tx_power2;
-+	short max_power;
-+	short default_power1;
-+	short default_power2;
- };
- 
- /*
---- a/drivers/net/wireless/rt2x00/rt2x00dev.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
-@@ -710,7 +710,7 @@ static int rt2x00lib_probe_hw_modes(stru
- 	for (i = 0; i < spec->num_channels; i++) {
- 		rt2x00lib_channel(&channels[i],
- 				  spec->channels[i].channel,
--				  spec->channels_info[i].tx_power1, i);
-+				  spec->channels_info[i].max_power, i);
- 	}
- 
- 	/*
---- a/drivers/net/wireless/rt2x00/rt61pci.c
-+++ b/drivers/net/wireless/rt2x00/rt61pci.c
-@@ -2661,13 +2661,17 @@ static int rt61pci_probe_hw_mode(struct
- 	spec->channels_info = info;
- 
- 	tx_power = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_G_START);
--	for (i = 0; i < 14; i++)
--		info[i].tx_power1 = TXPOWER_FROM_DEV(tx_power[i]);
-+	for (i = 0; i < 14; i++) {
-+		info[i].max_power = MAX_TXPOWER;
-+		info[i].default_power1 = TXPOWER_FROM_DEV(tx_power[i]);
+     }
+ }
++
++
++$kernelversion = get_kernel_version();
++
++# generate a sequence of code that will splice in highlighting information
++# using the s// operator.
++foreach my $pattern (keys %highlights) {
++#   print STDERR "scanning pattern:$pattern, highlight:($highlights{$pattern})\n";
++    $dohighlight .=  "\$contents =~ s:$pattern:$highlights{$pattern}:gs;\n";
++}
++
++# Read the file that maps relative names to absolute names for
++# separate source and object directories and for shadow trees.
++if (open(SOURCE_MAP, "<.tmp_filelist.txt")) {
++	my ($relname, $absname);
++	while(<SOURCE_MAP>) {
++		chop();
++		($relname, $absname) = (split())[0..1];
++		$relname =~ s:^/+::;
++		$source_map{$relname} = $absname;
 +	}
- 
- 	if (spec->num_channels > 14) {
- 		tx_power = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_A_START);
--		for (i = 14; i < spec->num_channels; i++)
--			info[i].tx_power1 = TXPOWER_FROM_DEV(tx_power[i]);
-+		for (i = 14; i < spec->num_channels; i++) {
-+			info[i].max_power = MAX_TXPOWER;
-+			info[i].default_power1 = TXPOWER_FROM_DEV(tx_power[i]);
-+		}
- 	}
- 
- 	return 0;
---- a/drivers/net/wireless/rt2x00/rt73usb.c
-+++ b/drivers/net/wireless/rt2x00/rt73usb.c
-@@ -2091,13 +2091,17 @@ static int rt73usb_probe_hw_mode(struct
- 	spec->channels_info = info;
- 
- 	tx_power = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_G_START);
--	for (i = 0; i < 14; i++)
--		info[i].tx_power1 = TXPOWER_FROM_DEV(tx_power[i]);
-+	for (i = 0; i < 14; i++) {
-+		info[i].max_power = MAX_TXPOWER;
-+		info[i].default_power1 = TXPOWER_FROM_DEV(tx_power[i]);
-+	}
- 
- 	if (spec->num_channels > 14) {
- 		tx_power = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_A_START);
--		for (i = 14; i < spec->num_channels; i++)
--			info[i].tx_power1 = TXPOWER_FROM_DEV(tx_power[i]);
-+		for (i = 14; i < spec->num_channels; i++) {
-+			info[i].max_power = MAX_TXPOWER;
-+			info[i].default_power1 = TXPOWER_FROM_DEV(tx_power[i]);
-+		}
- 	}
- 
- 	return 0;
-
-
++	close(SOURCE_MAP);
++}
++
++foreach (@ARGV) {
++    chomp;
++    process_file($_);
++}
++if ($verbose && $errors) {
++  print STDERR "$errors errors\n";
++}
++if ($verbose && $warnings) {
++  print STDERR "$warnings warnings\n";
++}
++
++exit($errors);
