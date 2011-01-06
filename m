@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab1AFMr1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 07:47:27 -0500
-Received: from mail-bw0-f66.google.com ([209.85.214.66]:59713 "EHLO
-	mail-bw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954Ab1AFMrZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 07:47:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=dXY5AHAifyeeuKXrdyUYpgJkJXbnXvZDTE+ceeTHQNCfVrPBOl2Dd07FbNj1NAZfsU
-         E/FaMkJVLY0OhM706Ptb10/ocEZPZ1ZACZxrUcHnK12IdPyu1X8zDNjuVHAeCIAfwAMr
-         6btmL3lx2XRmQSminpvikpcIX+rIIHNgH4Xps=
-Message-ID: <4D25B9D6.80503@gmail.com>
-Date: Thu, 06 Jan 2011 13:47:18 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+	id S1752429Ab1AFMyP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 07:54:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36739 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751545Ab1AFMyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 07:54:14 -0500
+Date: Thu, 6 Jan 2011 13:54:12 +0100
+From: Michal Marek <mmarek@suse.cz>
+To: Patrick LeBoutillier <patrick.leboutillier@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Bug in scripts/package/mkspec?
+Message-ID: <20110106125412.GB1841@sepie.suse.cz>
+References: <AANLkTin01j5oTUdh6fAgs--Gi46BZOWZCdypUPd8uhm4@mail.gmail.com>
+ <4CF7BA6D.60002@suse.cz>
+ <AANLkTinK9dKnSZdkH57dZNMysg0uVu7DfNtmmZdG8HZD@mail.gmail.com>
 MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: stable@kernel.org, linux-kernel@vger.kernel.org, stable-review@kernel.org,
-        Andi Kleen <andi@firstfloor.org>, Greg KH <gregkh@suse.de>
-Subject: Re: [34-longterm 000/260] v2.6.34.8 longterm review
-References: <1293952756-15010-1-git-send-email-paul.gortmaker@windriver.com> <4D21A7E8.3090709@gmail.com> <20110104191158.GO30150@windriver.com>
-In-Reply-To: <20110104191158.GO30150@windriver.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinK9dKnSZdkH57dZNMysg0uVu7DfNtmmZdG8HZD@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CCing:
-gregkh (32-stable)
-ak (35-stable)
-
-On 01/04/2011 08:11 PM, Paul Gortmaker wrote:
-> If you want to look around at what else is in "next_round" you can grab
-> the queue from:
+On Thu, Dec 02, 2010 at 04:15:20PM -0500, Patrick LeBoutillier wrote:
+> Hi Michal,
 > 
-> git://git.kernel.org/pub/scm/linux/kernel/git/longterm/longterm-queue-2.6.34.git
+> Sorry for the bad patch. Here is basically what I do:
 > 
-> Let me know if you still think something is missing, and/or call out the
-> upstream commit IDs explicitly and I'll do the right thing.
+> $ make menuconfig
+> $ make rpm
+> ...
+> Wrote: /root/rpmbuild/RPMS/x86_64/kernel-2.6.36.1-1.x86_64.rpm
+> ...
+> $ make menuconfig # tweak some configs
+> $ make rpm
+> ...
+> Wrote: /root/rpmbuild/RPMS/x86_64/kernel-2.6.36.1-1.x86_64.rpm
+> ...
+> 
+> 
+> My expectation (and perhaps it is incorrect) is that subsequent "make
+> rpm"s on the same build tree
+> yield rpms with increasing release numbers (2.6.36.1-1, 2.6.36.1-2,
+> ...). Is this how it's supposed
+> to work?
 
-Hi,
-e2efafbf139d2bfdfe96f2901f03189fecd172e4
-is still missing (I've just checked SLE11SP1 and openSUSE 11.3, which is
-based on .32 and .34 respectively and the problem is easily reproducible
-there). It is trivial to be backported.
+I see the problem now, unfortunatelly I haven't yet found a fix. The
+problem is that the .version file is updated during build, but rpm needs
+to know the release number in advance. The fact that there are about
+four places that deal with the .version file is also not helping :-(.
 
-thanks,
--- 
-js
+Michal
