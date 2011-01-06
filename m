@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940Ab1AFVQx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 16:16:53 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:43515 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753396Ab1AFVQw (ORCPT
+	id S1753967Ab1AFVRm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 16:17:42 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44136 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753546Ab1AFVRk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 16:16:52 -0500
-Date: Fri, 7 Jan 2011 08:16:46 +1100
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Re: Crypto Update for 2.6.38
-Message-ID: <20110106211645.GA26184@gondor.apana.org.au>
-References: <20081225002020.GA2912@gondor.apana.org.au> <20090324044932.GA18245@gondor.apana.org.au> <20091204135530.GA29371@gondor.apana.org.au> <20100226004914.GA20812@gondor.apana.org.au> <20100519020603.GA19654@gondor.apana.org.au> <20100521104404.GA29530@gondor.apana.org.au> <20100804140448.GA4042@gondor.apana.org.au> <20101024061625.GA23715@gondor.apana.org.au> <20110106000157.GA16089@gondor.apana.org.au> <AANLkTikzg3Hndp8WRi59bvJdBLxi=p-1gt7aZDLYbSW8@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikzg3Hndp8WRi59bvJdBLxi=p-1gt7aZDLYbSW8@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 6 Jan 2011 16:17:40 -0500
+Date: Thu, 6 Jan 2011 13:16:59 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [RESEND #2] [PATCH v2] LEDS: Add output invertion option to
+ backlight trigger
+Message-Id: <20110106131659.cedf8500.akpm@linux-foundation.org>
+In-Reply-To: <20110106130856.22b92a8b.randy.dunlap@oracle.com>
+References: <201012091441.51846.jkrzyszt@tis.icnet.pl>
+	<20110106130440.cfd77c8e.akpm@linux-foundation.org>
+	<20110106130856.22b92a8b.randy.dunlap@oracle.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 06, 2011 at 10:05:46AM -0800, Linus Torvalds wrote:
->
-> Is there really any point to this? And can we get more explanation of
-> what the interface is, and who would use it?
+On Thu, 6 Jan 2011 13:08:56 -0800
+Randy Dunlap <randy.dunlap@oracle.com> wrote:
 
-I think you've answered it yourself in the third paragraph :)
-
-> If you need crypto in user space, it's almost invariably better done
-> in user space. If the CPU can do crypto on its own, and doesn't expose
-> those instructions to user space, it's just a stupid CPU - and the
-> user/kernel transfer is likely going to make it slower than a pure
-> software approach for any but the biggest transfers.
-
-I agree completely.
-
-> And if the crypto engine is off-chip, the sw version is going to be
-> faster anyway except for possible async versions that are hard to
-> interface to user space.
+> On Thu, 6 Jan 2011 13:04:40 -0800 Andrew Morton wrote:
 > 
-> So I really need more convincing about the whole user-space interface.
-> Adding new interfaces willy-nilly isn't a good idea. They need damn
-> good reasons.
+> > On Thu, 9 Dec 2010 14:41:50 +0100
+> > Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> wrote:
+> > 
+> > > +static DEVICE_ATTR(invert, 0644, bl_trig_invert_show, bl_trig_invert_store);
+> > 
+> > This new sysfs file should be documented.  Where would be an
+> > appropriate place for that?  Documentation/leds-class.txt doesn't
+> > mention a sysfs API at all.  
+> > --
+> 
+> in Documentation/ABI/, where all sysfs interface info lives.
+> 
 
-Right.  This purpose of this interface is to access the async
-hardware crypto drivers that we have added over the past years.
+Spose so.  Documentation/ABI/stable/sysfs-class-backlight does have
+some stuff in it.
 
-For a modern x86-64 CPU it isn't interesting at all.  It's mainly
-for other architectures where the CPU may not be able to keep up
-with say 10Gb/s IPsec traffic and the encryption and/or hashing
-must be offloaded.
+Personally I tend to regard Documentation/ABI/ as fairly useless
+incomprehensible stuff, maintained to keep Greg happy ;) It'd be better
+to have a nice little well-maintained document for a subsystem such as
+this which actually explains its operation in a useful-to-humans way. 
+Rather than just mechanically filling out forms.
 
-This is also why only hash and skcipher are supported as they
-are the main algorithm types supported by teh current async
-drivers in the kernel.
+But a Documentation/ABI update is a heck of a lot better than nothing.
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
