@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab1AFAk7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:40:59 -0500
-Received: from kroah.org ([198.145.64.141]:35969 "EHLO coco.kroah.org"
+	id S1754599Ab1AFAlP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:41:15 -0500
+Received: from kroah.org ([198.145.64.141]:35954 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754583Ab1AFAbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:31:05 -0500
+	id S1754568Ab1AFAbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:31:00 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:07 2011
-Message-Id: <20110106002307.279243867@clark.site>
+Message-Id: <20110106002307.002121912@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:23:30 -0800
+Date: Wed, 05 Jan 2011 16:23:27 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ken Mills <ken.k.mills@intel.com>, Alan Cox <alan@linux.intel.com>
-Subject: [111/152] n_gsm: Fix message length handling when building header
+        Robert Lukassen <Robert.Lukassen@tomtom.com>
+Subject: [108/152] Revert "USB: gadget: Allow function access to device ID data during bind()"
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +25,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ken Mills <ken.k.mills@intel.com>
+From: Greg Kroah-Hartman <gregkh@suse.de>
 
-commit be7a7411d63ccad165d66fe8e0b11b2ee336159b upstream.
+commit dbb442b85a1d82f91cfe0524c4f9b3a5196a10ca upstream.
 
-Fix message length handling when building header
+This reverts commit 1ab83238740ff1e1773d5c13ecac43c60cf4aec4.
 
-When the message length is greater than 127, the length field in the header
-is built incorrectly. According to the spec, when the length is less than 128
-the length field is a single byte formatted as: bbbbbbb1. When it is greater
-than 127 then the field is two bytes of the format: bbbbbbb0 bbbbbbbb.
+Turns out this doesn't allow for the device ids to be overridden
+properly, so we need to revert the thing.
 
-Signed-off-by: Ken Mills <ken.k.mills@intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+Reported-by: Jef Driesen <jefdriesen@telenet.be>
+Cc: Robert Lukassen <Robert.Lukassen@tomtom.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/n_gsm.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/gadget/composite.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/char/n_gsm.c
-+++ b/drivers/char/n_gsm.c
-@@ -716,8 +716,8 @@ static void __gsm_data_queue(struct gsm_
- 		if (msg->len < 128)
- 			*--dp = (msg->len << 1) | EA;
- 		else {
--			*--dp = (msg->len >> 6) | EA;
--			*--dp = (msg->len & 127) << 1;
-+			*--dp = (msg->len >> 7);	/* bits 7 - 15 */
-+			*--dp = (msg->len & 127) << 1;	/* bits 0 - 6 */
- 		}
- 	}
+--- a/drivers/usb/gadget/composite.c
++++ b/drivers/usb/gadget/composite.c
+@@ -1083,14 +1083,6 @@ static int composite_bind(struct usb_gad
+ 	 */
+ 	usb_ep_autoconfig_reset(cdev->gadget);
  
+-	/* standardized runtime overrides for device ID data */
+-	if (idVendor)
+-		cdev->desc.idVendor = cpu_to_le16(idVendor);
+-	if (idProduct)
+-		cdev->desc.idProduct = cpu_to_le16(idProduct);
+-	if (bcdDevice)
+-		cdev->desc.bcdDevice = cpu_to_le16(bcdDevice);
+-
+ 	/* composite gadget needs to assign strings for whole device (like
+ 	 * serial number), register function drivers, potentially update
+ 	 * power state and consumption, etc
+@@ -1102,6 +1094,14 @@ static int composite_bind(struct usb_gad
+ 	cdev->desc = *composite->dev;
+ 	cdev->desc.bMaxPacketSize0 = gadget->ep0->maxpacket;
+ 
++	/* standardized runtime overrides for device ID data */
++	if (idVendor)
++		cdev->desc.idVendor = cpu_to_le16(idVendor);
++	if (idProduct)
++		cdev->desc.idProduct = cpu_to_le16(idProduct);
++	if (bcdDevice)
++		cdev->desc.bcdDevice = cpu_to_le16(bcdDevice);
++
+ 	/* strings can't be assigned before bind() allocates the
+ 	 * releavnt identifiers
+ 	 */
 
 
