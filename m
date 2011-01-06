@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865Ab1AFAg5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:36:57 -0500
-Received: from kroah.org ([198.145.64.141]:36066 "EHLO coco.kroah.org"
+	id S1754849Ab1AFAgg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:36:36 -0500
+Received: from kroah.org ([198.145.64.141]:36078 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754706Ab1AFAbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:31:37 -0500
+	id S1754746Ab1AFAbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:31:41 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:09 2011
-Message-Id: <20110106002308.971118368@clark.site>
+Message-Id: <20110106002309.237775716@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:23:49 -0800
+Date: Wed, 05 Jan 2011 16:23:52 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [130/152] drm/radeon/kms: reorder display resume to avoid problems
+        Eric Anholt <eric@anholt.net>, Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [133/152] drm/i915, intel_ips: When i915 loads after IPS, make IPS relink to i915.
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,62 +25,184 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Eric Anholt <eric@anholt.net>
 
-commit a93f344d3c04e4b84490c65f2a574387c593be40 upstream.
+commit 63ee41d794d9c555f84205517a68509848988760 upstream.
 
-On resume, we were attemping to unblank the displays before the
-timing and plls had be reprogrammed which led to atom timeouts
-waiting for things that are not yet programmed.  Re-program
-the mode first, then reset the dpms state.
+The IPS driver is designed to be able to run detached from i915 and
+just not enable GPU turbo in that case, in order to avoid module
+dependencies between the two drivers.  This means that we don't know
+what the load order between the two is going to be, and we had
+previously only supported IPS after (optionally) i915, but not i915
+after IPS.  If the wrong order was chosen, you'd get no GPU turbo, and
+something like half the possible graphics performance.
 
-This fixes the infamous atombios timeouts on resume.
-
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Eric Anholt <eric@anholt.net>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/atombios_crtc.c |    3 ++-
- drivers/gpu/drm/radeon/radeon_device.c |    9 ++++-----
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/i915/i915_dma.c  |   23 +++++++++++++++++++++++
+ drivers/platform/x86/intel_ips.c |   36 +++++++++++++++++++++++++++++++++---
+ drivers/platform/x86/intel_ips.h |   21 +++++++++++++++++++++
+ 3 files changed, 77 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/radeon/atombios_crtc.c
-+++ b/drivers/gpu/drm/radeon/atombios_crtc.c
-@@ -253,7 +253,8 @@ void atombios_crtc_dpms(struct drm_crtc
- 	case DRM_MODE_DPMS_SUSPEND:
- 	case DRM_MODE_DPMS_OFF:
- 		drm_vblank_pre_modeset(dev, radeon_crtc->crtc_id);
--		atombios_blank_crtc(crtc, ATOM_ENABLE);
-+		if (radeon_crtc->enabled)
-+			atombios_blank_crtc(crtc, ATOM_ENABLE);
- 		if (ASIC_IS_DCE3(rdev))
- 			atombios_enable_crtc_memreq(crtc, ATOM_DISABLE);
- 		atombios_enable_crtc(crtc, ATOM_DISABLE);
---- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -829,11 +829,6 @@ int radeon_resume_kms(struct drm_device
- 	radeon_pm_resume(rdev);
- 	radeon_restore_bios_scratch_regs(rdev);
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -34,6 +34,7 @@
+ #include "i915_drm.h"
+ #include "i915_drv.h"
+ #include "i915_trace.h"
++#include "../../../platform/x86/intel_ips.h"
+ #include <linux/pci.h>
+ #include <linux/vgaarb.h>
+ #include <linux/acpi.h>
+@@ -2047,6 +2048,26 @@ out_unlock:
+ EXPORT_SYMBOL_GPL(i915_gpu_turbo_disable);
  
--	/* turn on display hw */
--	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
--		drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
--	}
--
- 	radeon_fbdev_set_suspend(rdev, 0);
- 	release_console_sem();
- 
-@@ -841,6 +836,10 @@ int radeon_resume_kms(struct drm_device
- 	radeon_hpd_init(rdev);
- 	/* blat the mode back in */
- 	drm_helper_resume_force_mode(dev);
-+	/* turn on display hw */
-+	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
-+		drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
+ /**
++ * Tells the intel_ips driver that the i915 driver is now loaded, if
++ * IPS got loaded first.
++ *
++ * This awkward dance is so that neither module has to depend on the
++ * other in order for IPS to do the appropriate communication of
++ * GPU turbo limits to i915.
++ */
++static void
++ips_ping_for_i915_load(void)
++{
++	void (*link)(void);
++
++	link = symbol_get(ips_link_to_i915_driver);
++	if (link) {
++		link();
++		symbol_put(ips_link_to_i915_driver);
 +	}
++}
++
++/**
+  * i915_driver_load - setup chip and create an initial config
+  * @dev: DRM device
+  * @flags: startup flags
+@@ -2234,6 +2255,8 @@ int i915_driver_load(struct drm_device *
+ 	/* XXX Prevent module unload due to memory corruption bugs. */
+ 	__module_get(THIS_MODULE);
+ 
++	ips_ping_for_i915_load();
++
  	return 0;
+ 
+ out_workqueue_free:
+--- a/drivers/platform/x86/intel_ips.c
++++ b/drivers/platform/x86/intel_ips.c
+@@ -75,6 +75,7 @@
+ #include <drm/i915_drm.h>
+ #include <asm/msr.h>
+ #include <asm/processor.h>
++#include "intel_ips.h"
+ 
+ #define PCI_DEVICE_ID_INTEL_THERMAL_SENSOR 0x3b32
+ 
+@@ -245,6 +246,7 @@
+ #define thm_writel(off, val) writel((val), ips->regmap + (off))
+ 
+ static const int IPS_ADJUST_PERIOD = 5000; /* ms */
++static bool late_i915_load = false;
+ 
+ /* For initial average collection */
+ static const int IPS_SAMPLE_PERIOD = 200; /* ms */
+@@ -339,6 +341,9 @@ struct ips_driver {
+ 	u64 orig_turbo_ratios;
+ };
+ 
++static bool
++ips_gpu_turbo_enabled(struct ips_driver *ips);
++
+ /**
+  * ips_cpu_busy - is CPU busy?
+  * @ips: IPS driver struct
+@@ -517,7 +522,7 @@ static void ips_disable_cpu_turbo(struct
+  */
+ static bool ips_gpu_busy(struct ips_driver *ips)
+ {
+-	if (!ips->gpu_turbo_enabled)
++	if (!ips_gpu_turbo_enabled(ips))
+ 		return false;
+ 
+ 	return ips->gpu_busy();
+@@ -532,7 +537,7 @@ static bool ips_gpu_busy(struct ips_driv
+  */
+ static void ips_gpu_raise(struct ips_driver *ips)
+ {
+-	if (!ips->gpu_turbo_enabled)
++	if (!ips_gpu_turbo_enabled(ips))
+ 		return;
+ 
+ 	if (!ips->gpu_raise())
+@@ -549,7 +554,7 @@ static void ips_gpu_raise(struct ips_dri
+  */
+ static void ips_gpu_lower(struct ips_driver *ips)
+ {
+-	if (!ips->gpu_turbo_enabled)
++	if (!ips_gpu_turbo_enabled(ips))
+ 		return;
+ 
+ 	if (!ips->gpu_lower())
+@@ -1454,6 +1459,31 @@ out_err:
+ 	return false;
  }
  
++static bool
++ips_gpu_turbo_enabled(struct ips_driver *ips)
++{
++	if (!ips->gpu_busy && late_i915_load) {
++		if (ips_get_i915_syms(ips)) {
++			dev_info(&ips->dev->dev,
++				 "i915 driver attached, reenabling gpu turbo\n");
++			ips->gpu_turbo_enabled = !(thm_readl(THM_HTS) & HTS_GTD_DIS);
++		}
++	}
++
++	return ips->gpu_turbo_enabled;
++}
++
++void
++ips_link_to_i915_driver()
++{
++	/* We can't cleanly get at the various ips_driver structs from
++	 * this caller (the i915 driver), so just set a flag saying
++	 * that it's time to try getting the symbols again.
++	 */
++	late_i915_load = true;
++}
++EXPORT_SYMBOL_GPL(ips_link_to_i915_driver);
++
+ static DEFINE_PCI_DEVICE_TABLE(ips_id_table) = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL,
+ 		     PCI_DEVICE_ID_INTEL_THERMAL_SENSOR), },
+--- /dev/null
++++ b/drivers/platform/x86/intel_ips.h
+@@ -0,0 +1,21 @@
++/*
++ * Copyright (c) 2010 Intel Corporation
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * The full GNU General Public License is included in this distribution in
++ * the file called "COPYING".
++ */
++
++void ips_link_to_i915_driver(void);
 
 
