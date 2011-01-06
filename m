@@ -1,87 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601Ab1AFQzA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 11:55:00 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37918 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753505Ab1AFQy7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 11:54:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=RVi8FHmqzgF1/5p2bzkjWu45ymPu8YVzSHAaF1Z89ZWoWznFC5AjFWcjqyQ9bo2NUm
-         tCHgpQI8s/XZdNAP0pNHvTDZ7IRdgTJGyCSdMQATOAXIGlOFFK0nRGHNi1m5/CDDOVhy
-         WEf9znP+ccKykXlIjSvhqXqK1QgS0/+bCrnmo=
-Date: Thu, 6 Jan 2011 17:54:54 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: "H. Peter Anvin" <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Soeren Sandmann Pedersen <sandmann@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/2] x86: Fix rbp saving in pt_regs on irq entry
-Message-ID: <20110106165452.GC2308@nowhere>
-References: <1294325513-14276-1-git-send-email-fweisbec@gmail.com>
- <1294325513-14276-2-git-send-email-fweisbec@gmail.com>
- <4D25EB4B020000780002ABF7@vpn.id2.novell.com>
- <20110106154536.GA2308@nowhere>
- <4D25F79F020000780002AC20@vpn.id2.novell.com>
- <20110106162236.GB2308@nowhere>
- <4D25FE5B020000780002AC50@vpn.id2.novell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753686Ab1AFQ5l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 11:57:41 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:40420 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752737Ab1AFQ5k convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:5:1>);
+	Thu, 6 Jan 2011 11:57:40 -0500
+Message-Id: <4D26028F020000780002AC8A@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 06 Jan 2011 16:57:35 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: "Andreas Herrmann3" <Andreas.Herrmann3@amd.com>,
+        "Joerg Roedel" <joerg.roedel@amd.com>,
+        "Robert Richter" <robert.richter@amd.com>,
+        "Jeremy Fitzhardinge" <jeremy@goop.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: use PCI method for enabling AMD extended config
+	 space before MSR method
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <4D25FE5B020000780002AC50@vpn.id2.novell.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 06, 2011 at 04:39:39PM +0000, Jan Beulich wrote:
-> >>> On 06.01.11 at 17:22, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > On Thu, Jan 06, 2011 at 04:10:55PM +0000, Jan Beulich wrote:
-> >> >>> On 06.01.11 at 16:45, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> >> > Before we had:
-> >> > 
-> >> > 
-> >> > 	leaveq
-> >> > 
-> >> > 	CFI_RESTORE             rbp
-> >> > 	CFI_DEF_CFA_REGISTER    rsp
-> >> > 	CFI_ADJUST_CFA_OFFSET   -8
-> >> > 
-> >> > So CFI_RESTORE means rbp has now the value of the base frame of
-> >> > the calling frame (the base frame pointer of the interrupted proc) ?
-> >> 
-> >> No - all it means is that %rbp now has its original (caller or
-> >> interrupted procedure) value again (i.e. an unwinder should not
-> >> try to read it from the stack [or other previously recorded
-> >> location] anymore).
-> >> 
-> >> > And what follows means that rsp-8 points to the return address?
-> >> 
-> >> No - .cfi_def_cfa_register says which register serves as the frame
-> >> pointer, and .cfi_adjust_cfa_offset says to adjust the offset from
-> >> the frame pointer to the top [or bottom] of frame. At any time
-> >> 
-> >> 	CFA = cfa_register + cfa_offset
-> >> 
-> >> with CFA being what all locations on the stack are expressed
-> >> relative to.
-> > 
-> > Ok.
-> > 
-> > So here rsp points to pt_regs::r11
-> > 
-> > I don't understand why locations relative to the stack must be
-> > expressed here by taking rsp - 8 as a base.
-> 
-> Nothing says rsp-8. The annotations merely say to set the base
-> register to rsp and to *adjust* the offset by -8 (after all, that's
-> what the leaveq instruction does).
+While both methods should work equivalently well for the native case,
+the Xen Dom0 case can't reliably work with the MSR one, since there's
+no guarantee that the virtual CPUs it has available fully cover all
+necessary physical ones.
 
-Ah! So CFA acts like a virtual frame base pointer right?
+As per the suggestion of Robert Richter the patch only adds the PCI
+method, but leaves the MSR one as a fallback to cover new systems the
+PCI IDs of which may not have got added to the code base yet.
+
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: Joerg Roedel <Joerg.Roedel@amd.com>
+Cc: Andreas Herrmann <Andreas.Herrmann3@amd.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+
+---
+ arch/x86/include/asm/amd_nb.h |    7 ++++++
+ arch/x86/kernel/amd_nb.c      |    7 ++++++
+ arch/x86/kernel/aperture_64.c |   44 +++++++++++++++---------------------------
+ arch/x86/pci/amd_bus.c        |   30 ++++++++++++++++++++++++++++
+ 4 files changed, 60 insertions(+), 28 deletions(-)
+
+--- 2.6.37/arch/x86/include/asm/amd_nb.h
++++ 2.6.37-x86-amd-ecs/arch/x86/include/asm/amd_nb.h
+@@ -3,7 +3,14 @@
+ 
+ #include <linux/pci.h>
+ 
++struct amd_bus_dev_range {
++	u8 bus;
++	u8 dev_base;
++	u8 dev_limit;
++};
++
+ extern struct pci_device_id k8_nb_ids[];
++extern const struct amd_bus_dev_range amd_bus_dev_ranges[];
+ struct bootnode;
+ 
+ extern int early_is_k8_nb(u32 value);
+--- 2.6.37/arch/x86/kernel/amd_nb.c
++++ 2.6.37-x86-amd-ecs/arch/x86/kernel/amd_nb.c
+@@ -20,6 +20,13 @@ struct pci_device_id k8_nb_ids[] = {
+ };
+ EXPORT_SYMBOL(k8_nb_ids);
+ 
++const struct amd_bus_dev_range amd_bus_dev_ranges[] __initconst = {
++	{ 0x00, 0x18, 0x20 },
++	{ 0xff, 0x00, 0x20 },
++	{ 0xfe, 0x00, 0x20 },
++	{ }
++};
++
+ struct k8_northbridge_info k8_northbridges;
+ EXPORT_SYMBOL(k8_northbridges);
+ 
+--- 2.6.37/arch/x86/kernel/aperture_64.c
++++ 2.6.37-x86-amd-ecs/arch/x86/kernel/aperture_64.c
+@@ -39,18 +39,6 @@ int fallback_aper_force __initdata;
+ 
+ int fix_aperture __initdata = 1;
+ 
+-struct bus_dev_range {
+-	int bus;
+-	int dev_base;
+-	int dev_limit;
+-};
+-
+-static struct bus_dev_range bus_dev_ranges[] __initdata = {
+-	{ 0x00, 0x18, 0x20},
+-	{ 0xff, 0x00, 0x20},
+-	{ 0xfe, 0x00, 0x20}
+-};
+-
+ static struct resource gart_resource = {
+ 	.name	= "GART",
+ 	.flags	= IORESOURCE_MEM,
+@@ -294,13 +282,13 @@ void __init early_gart_iommu_check(void)
+ 	search_agp_bridge(&agp_aper_order, &valid_agp);
+ 
+ 	fix = 0;
+-	for (i = 0; i < ARRAY_SIZE(bus_dev_ranges); i++) {
++	for (i = 0; amd_bus_dev_ranges[i].dev_limit; i++) {
+ 		int bus;
+ 		int dev_base, dev_limit;
+ 
+-		bus = bus_dev_ranges[i].bus;
+-		dev_base = bus_dev_ranges[i].dev_base;
+-		dev_limit = bus_dev_ranges[i].dev_limit;
++		bus = amd_bus_dev_ranges[i].bus;
++		dev_base = amd_bus_dev_ranges[i].dev_base;
++		dev_limit = amd_bus_dev_ranges[i].dev_limit;
+ 
+ 		for (slot = dev_base; slot < dev_limit; slot++) {
+ 			if (!early_is_k8_nb(read_pci_config(bus, slot, 3, 0x00)))
+@@ -349,13 +337,13 @@ void __init early_gart_iommu_check(void)
+ 		return;
+ 
+ 	/* disable them all at first */
+-	for (i = 0; i < ARRAY_SIZE(bus_dev_ranges); i++) {
++	for (i = 0; i < amd_bus_dev_ranges[i].dev_limit; i++) {
+ 		int bus;
+ 		int dev_base, dev_limit;
+ 
+-		bus = bus_dev_ranges[i].bus;
+-		dev_base = bus_dev_ranges[i].dev_base;
+-		dev_limit = bus_dev_ranges[i].dev_limit;
++		bus = amd_bus_dev_ranges[i].bus;
++		dev_base = amd_bus_dev_ranges[i].dev_base;
++		dev_limit = amd_bus_dev_ranges[i].dev_limit;
+ 
+ 		for (slot = dev_base; slot < dev_limit; slot++) {
+ 			if (!early_is_k8_nb(read_pci_config(bus, slot, 3, 0x00)))
+@@ -390,14 +378,14 @@ int __init gart_iommu_hole_init(void)
+ 
+ 	fix = 0;
+ 	node = 0;
+-	for (i = 0; i < ARRAY_SIZE(bus_dev_ranges); i++) {
++	for (i = 0; i < amd_bus_dev_ranges[i].dev_limit; i++) {
+ 		int bus;
+ 		int dev_base, dev_limit;
+ 		u32 ctl;
+ 
+-		bus = bus_dev_ranges[i].bus;
+-		dev_base = bus_dev_ranges[i].dev_base;
+-		dev_limit = bus_dev_ranges[i].dev_limit;
++		bus = amd_bus_dev_ranges[i].bus;
++		dev_base = amd_bus_dev_ranges[i].dev_base;
++		dev_limit = amd_bus_dev_ranges[i].dev_limit;
+ 
+ 		for (slot = dev_base; slot < dev_limit; slot++) {
+ 			if (!early_is_k8_nb(read_pci_config(bus, slot, 3, 0x00)))
+@@ -505,7 +493,7 @@ out:
+ 	}
+ 
+ 	/* Fix up the north bridges */
+-	for (i = 0; i < ARRAY_SIZE(bus_dev_ranges); i++) {
++	for (i = 0; i < amd_bus_dev_ranges[i].dev_limit; i++) {
+ 		int bus, dev_base, dev_limit;
+ 
+ 		/*
+@@ -514,9 +502,9 @@ out:
+ 		 */
+ 		u32 ctl = DISTLBWALKPRB | aper_order << 1;
+ 
+-		bus = bus_dev_ranges[i].bus;
+-		dev_base = bus_dev_ranges[i].dev_base;
+-		dev_limit = bus_dev_ranges[i].dev_limit;
++		bus = amd_bus_dev_ranges[i].bus;
++		dev_base = amd_bus_dev_ranges[i].dev_base;
++		dev_limit = amd_bus_dev_ranges[i].dev_limit;
+ 		for (slot = dev_base; slot < dev_limit; slot++) {
+ 			if (!early_is_k8_nb(read_pci_config(bus, slot, 3, 0x00)))
+ 				continue;
+--- 2.6.37/arch/x86/pci/amd_bus.c
++++ 2.6.37-x86-amd-ecs/arch/x86/pci/amd_bus.c
+@@ -4,6 +4,7 @@
+ #include <linux/cpu.h>
+ #include <linux/range.h>
+ 
++#include <asm/amd_nb.h>
+ #include <asm/pci_x86.h>
+ 
+ #include <asm/pci-direct.h>
+@@ -386,6 +387,35 @@ static int __init pci_io_ecs_init(void)
+         if (boot_cpu_data.x86 < 0x10)
+ 		return 0;
+ 
++#ifdef CONFIG_AMD_NB
++	/* Try the PCI method first. */
++	if (early_pci_allowed()) {
++		unsigned int i, n;
++
++		for (n = i = 0; !n && amd_bus_dev_ranges[i].dev_limit; ++i) {
++			u8 bus = amd_bus_dev_ranges[i].bus;
++			u8 slot = amd_bus_dev_ranges[i].dev_base;
++			u8 limit = amd_bus_dev_ranges[i].dev_limit;
++
++			for (; slot < limit; ++slot) {
++				u32 val = read_pci_config(bus, slot, 3, 0);
++
++				if (!early_is_k8_nb(val))
++					continue;
++
++				val = read_pci_config(bus, slot, 3, 0x8c);
++				if (!(val & (ENABLE_CF8_EXT_CFG >> 32))) {
++					val |= ENABLE_CF8_EXT_CFG >> 32;
++					write_pci_config(bus, slot, 3, 0x8c,
++							 val);
++				}
++				++n;
++			}
++		}
++		pr_info("Extended Config Space enabled on %u nodes\n", n);
++	}
++#endif
++
+ 	register_cpu_notifier(&amd_cpu_notifier);
+ 	for_each_online_cpu(cpu)
+ 		amd_cpu_notify(&amd_cpu_notifier, (unsigned long)CPU_ONLINE,
+
+
