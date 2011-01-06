@@ -1,84 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547Ab1AFORd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 09:17:33 -0500
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:59538 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751861Ab1AFORc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 09:17:32 -0500
-From: Carmelo AMOROSO <carmelo.amoroso@st.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "vapier@gentoo.org" <vapier@gentoo.org>,
-        "nico@fluxnic.net" <nico@fluxnic.net>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Filippo ARCIDIACONO <filippo.arcidiacono@st.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Thu, 6 Jan 2011 15:16:25 +0100
-Subject: Re: [PATCH 1/2] stackprotector: add stack smashing protector
-	generic implementation
-Thread-Topic: [PATCH 1/2] stackprotector: add stack smashing protector
-	generic implementation
-Thread-Index: AcutrE4WYhI4FV1vSoeQSI1+XUwXXw==
-Message-ID: <4D25CEB9.7090205@st.com>
-References: <1293111851-7175-1-git-send-email-filippo.arcidiacono@st.com>
- <4D245D16.5010702@st.com> <20110106093940.GA31708@n2100.arm.linux.org.uk>
-In-Reply-To: <20110106093940.GA31708@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-enigmail-version: 1.1.1
-user-agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13)
- Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1752633Ab1AFOS4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 09:18:56 -0500
+Received: from mail-bw0-f66.google.com ([209.85.214.66]:33938 "EHLO
+	mail-bw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751861Ab1AFOSz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 09:18:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=OgXDcIgJ88+vmdukyRaK7k6gHCxoqfeIRGkjlChdPQRAYrYHLGbjv5EXX4vgG1xWYy
+         LrPvuVlQZ1vWihbl7bFRdf9ujVqX1qmyRD7s9qPM+XCYtpqMeyrqnzd34FKXuKgO9JdM
+         PMyRmsrBucqieLBsrN31keC+m1RoeSMUJ7AYI=
+Message-ID: <4D25CF4A.9090202@gmail.com>
+Date: Thu, 06 Jan 2011 15:18:50 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@suse.com>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: Resume hangs [was: mmotm 2010-12-02-16-34 uploaded]
+References: <201012030107.oB317ZSW019223@imap1.linux-foundation.org> <201012132210.51325.rjw@suse.com> <4D07EAE5.6050803@gmail.com> <201012142322.36053.rjw@suse.com>
+In-Reply-To: <201012142322.36053.rjw@suse.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-On 1/6/2011 10:39 AM, Russell King - ARM Linux wrote:
-> On Wed, Jan 05, 2011 at 12:59:18PM +0100, Carmelo AMOROSO wrote:
->  > Is someone interested into this stuff ?
+On 12/14/2010 11:22 PM, Rafael J. Wysocki wrote:
+> On Tuesday, December 14, 2010, Jiri Slaby wrote:
+>> On 12/13/2010 10:10 PM, Rafael J. Wysocki wrote:
+>>> On Monday, December 13, 2010, Jiri Slaby wrote:
+>>>> On 12/05/2010 02:08 PM, Rafael J. Wysocki wrote:
+>>>>> On Sunday, December 05, 2010, Jiri Slaby wrote:
+>>>>>> On 12/03/2010 01:34 AM, akpm@linux-foundation.org wrote:
+>>>>>>> The mm-of-the-moment snapshot 2010-12-02-16-34 has been uploaded to
+>>>>>>
+>>>>>> Hi, this kernel regresses with respect to resume. It doesn't wake up,
+>>>>>> the screen is black with blinking cursor at position [1, 1].
+>>>>>> 2010-11-23-16-12 seemed to be OK. In this one it is 100% reproducible so
+>>>>>> far.
+>>>>>>
+>>>>>> I'm using pm-suspend, any ideas what to test before I start to find the
+>>>>>> reason on my own?
+>>>>>
+>>>>> Please try the pm_test tests for core, processors and devices, eg.:
+>>>>
+>>>> Hmm, I haven't seen the issues since then. So it had to be some kind of
+>>>> coincidence -- I see the issue occasionally for some time already. Now
+>>>> it triggered twice in a row after I updated the kernel.
+>>>
+>>> Hmm.  What hardware is that?
+>>
+>> What exactly do you want to know about it? It's some specific intel
+>> desktop machine, 3 years old, 2 intel cores, 6G of mem, 2 sata disks in
+>> raid, dvb-t usb receiver (af9015), usb keyboard and mouse.
 > 
-> Looking at the CC list, you're asking the people who already have the
-> support in the kernel. I suspect they don't have that much of an
-> interest in it.
+> I'm seeing pretty much the same symptoms on quite different hardware, except
+> for one thing: USB keyboard and mouse.
 > 
-> Maybe you should try asking other architecture maintainers who don't
-> support this yet? Not every architecture maintainer is subscribed to,
-> or reads LKML...
-> 
+> Have you checked if writing 0 to /sys/power/pm_async helps?
 
-Hi Russel, thanks for your feedback.
-Well, SH (in CC) does not have this support. Indeed we posted it
-initially to linux-sh only. We got useful feedback from Paul, Mike and
-Nicolas suggesting to promote the ARM/SH solution based on the global
-__stack_chk_guard variable as a generic solution for all other
-architectures. This is why I thought to post to the LKML instead of each
-linux-<arch> list.
-The code is able to detect if the arch implementation is based on the
-global (if so the generic implementation should work cleanly), otherwise
-it will fail to compile when trying to include the
-linux/asm/stackprotector.h. This is an easy way to detect the lack of an
-arch specific implementation (but likely only x86 needs it... I don't know).
+It's very hard to reproduce (it happens once a week or two), so I can't
+say yet. As it happened yesterday again, going to test it from now on.
 
-So the idea is to use the ARM code as generic's one (tested on SH
-kernel). Mike Frysinger volunteered to try on blackfin for example.
-
-cheers
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (MingW32)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk0lzrkACgkQoRq/3BrK1s/JhACdERr4TFBaGmf4XuQEUA/9X/Kt
-lz4An0fctncE+n9fhHvvZEbIZEilJKNO
-=5yFm
------END PGP SIGNATURE-----
+thanks,
+-- 
+js
