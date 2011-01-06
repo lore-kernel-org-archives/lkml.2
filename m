@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964Ab1AFUrQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 15:47:16 -0500
-Received: from tac.ki.iif.hu ([193.6.222.43]:43652 "EHLO tac.ki.iif.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753050Ab1AFUrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 15:47:14 -0500
-From: Ferenc Wagner <wferi@niif.hu>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Replace the dangerous to_root_device macro with an inline function
-References: <44482f820e5700f952825c9b5ec6a9f080975d79.1294326889.git.wferi@niif.hu>
-	<20110106162032.GA10189@suse.de>
-Date: Thu, 06 Jan 2011 21:47:08 +0100
-In-Reply-To: <20110106162032.GA10189@suse.de> (Greg KH's message of "Thu, 6
-	Jan 2011 08:20:32 -0800")
-Message-ID: <87zkrd3gkz.fsf@tac.ki.iif.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1753235Ab1AFUrP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 15:47:15 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:10608 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752905Ab1AFUrN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 15:47:13 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=al5XsVb+Iv48UiNhhLrWaeqipR/yPaQpsV8V+I++iIpTQqOaZ+y74TZzKq3WYJh78c
+         sQJXmzm9OouaTqFkt05w==
+Date: Thu, 6 Jan 2011 12:47:08 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Christoph Lameter <cl@linux.com>
+cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Bart Van Assche <bvanassche@acm.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] slub: Fix sysfs circular locking dependency
+In-Reply-To: <alpine.DEB.2.00.1101061107500.8655@router.home>
+Message-ID: <alpine.DEB.2.00.1101061239520.30820@chino.kir.corp.google.com>
+References: <1294172717-6044-1-git-send-email-penberg@kernel.org> <alpine.DEB.2.00.1101041939030.27551@chino.kir.corp.google.com> <alpine.DEB.2.00.1101050943120.13032@router.home> <alpine.DEB.2.00.1101051108520.14761@router.home>
+ <AANLkTinft80dXqE-U=YDB23d9=BgXLCxJzgiA_gF4cVL@mail.gmail.com> <AANLkTinCZzJWYGnxXq_Nwv7QSkEV4Tg-te-1y0PCeRRY@mail.gmail.com> <AANLkTinQMahgVrWLxR0J6Zbh-_SPjxVJ-wuZt8B5TNjc@mail.gmail.com> <alpine.DEB.2.00.1101060019140.25879@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1101061107500.8655@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <gregkh@suse.de> writes:
+On Thu, 6 Jan 2011, Christoph Lameter wrote:
 
-> On Thu, Jan 06, 2011 at 04:24:24PM +0100, Ferenc Wagner wrote:
->
->> The original macro worked only when applied to variables named 'dev'.
->> While this could have been fixed by simply renaming the macro argument,
->> a more type-safe replacement is preferred.
->
-> Preferred for what?  This is a local macro, not exported to anything
-> else, is it causing problems today within this single file?
+> slab_mem_going_online_callback() etc already take the slub_lock since they
+> have to iterate over the list of slab caches in existence. We could take
+> the hotplug lock there as well.
+> 
+> Kame-san: Can you enlighten us on hotplug locking? And also check this
+> patch?
+> 
 
-No, it isn't a problem currently, because this macro is applied to
-variables named 'dev' exclusively.  But the macro definition is wrong,
-as it uses 'dev' (the macro argument) in two places, of which the second
-probably isn't intentional, as the third argument of the container_of
-macro is a structure member name, which should stay fixed to the literal
-string 'dev' in this case, not replaced by the actual macro argument.
-
-So you've got the choice of leaving things as they are and happen to
-work for the moment, fixing the definition of the to_root_device macro
-to use some other token as the name of the free variable instead of
-'dev', or to replace the macro with a function, which provides some
-type-checking advantages during compilation as well.  I thought this was
-a general reason for preferring inline functions over preprocessor
-macros in the kernel codebase, but maybe I was wrong.
--- 
-Regards,
-Feri.
+Yeah, I was going to suggest doing the lock_memory_hotplug() before taking 
+slub_lock in the callback, but I really think it should be done in 
+online_pages().  Since the offline case is already handled, this would 
+expand the semantics of lock_memory_hotplug() to serialize the access of 
+data structures that can change in a memory hotplug notifier callback 
+without locking at the lower level.
