@@ -1,131 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842Ab1AFAb5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:31:57 -0500
-Received: from kroah.org ([198.145.64.141]:36145 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754828Ab1AFAbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:31:55 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:10 2011
-Message-Id: <20110106002310.372154284@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:24:05 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jesper Juhl <jj@chaosbits.net>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Shaohua Li <shaohua.li@intel.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [146/152] x86/microcode: Fix double vfree() and remove redundant pointer checks before vfree()
-In-Reply-To: <20110106002500.GA3172@kroah.com>
+	id S1754897Ab1AFAcd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:32:33 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51641 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754788Ab1AFAcb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:32:31 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=IlkujQTe/sf7eUho507JbeeeKPhdkd3DCPGDesrTqa63r3EfH5X5RGGQ2CRf/SARni
+         nr7MZkUn/vEYHHAQd6BzIgLHHA2/swbbKtpdOvYt8vjylGxw2gXsT0yzjWmGgv6W4Skb
+         buDR7lFJ5TAZ7UJ9JpCiGC+hnQImjw4ORugmk=
+MIME-Version: 1.0
+In-Reply-To: <1294272284.3044.4.camel@localhost>
+References: <20110105230323.978508482@clark.site>
+	<1294271346.3044.2.camel@localhost>
+	<20110105235621.GA22850@suse.de>
+	<1294272284.3044.4.camel@localhost>
+Date: Wed, 5 Jan 2011 19:32:29 -0500
+Message-ID: <AANLkTimCANEZKzMDwRGgToiXetpZp1mv2DkVPgZ7e7pX@mail.gmail.com>
+Subject: Re: [Stable-review] [06/49] drm/kms: remove spaces from connector
+ names (v2)
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
+        Sergej Pupykin <ml@sergej.pp.ru>, Dave Airlie <airlied@redhat.com>,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.36-stable review patch.  If anyone has any objections, please let us know.
+On Wed, Jan 5, 2011 at 7:04 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
+> On Wed, 2011-01-05 at 15:56 -0800, Greg KH wrote:
+>> On Wed, Jan 05, 2011 at 11:49:05PM +0000, Ben Hutchings wrote:
+>> > On Wed, 2011-01-05 at 15:00 -0800, Greg KH wrote:
+>> > > 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+>> > >
+>> > > ------------------
+>> > >
+>> > > From: Alex Deucher <alexdeucher@gmail.com>
+>> > >
+>> > > commit e76116ca9671e2e5239054a40303b94feab585ad upstream.
+>> > >
+>> > > Grub doesn't parse spaces in parameters correctly, so
+>> > > this makes it impossible to force video= parameters
+>> > > for kms on the grub kernel command line.
+>> > >
+>> > > v2: shorten the names to make them easier to type.
+>> > [...]
+>> > > --- a/drivers/gpu/drm/drm_crtc.c
+>> > > +++ b/drivers/gpu/drm/drm_crtc.c
+>> > > @@ -144,10 +144,10 @@ static struct drm_conn_prop_enum_list dr
+>> > >   { DRM_MODE_CONNECTOR_SVIDEO, "SVIDEO", 0 },
+>> > >   { DRM_MODE_CONNECTOR_LVDS, "LVDS", 0 },
+>> > >   { DRM_MODE_CONNECTOR_Component, "Component", 0 },
+>> > > - { DRM_MODE_CONNECTOR_9PinDIN, "9-pin DIN", 0 },
+>> > > - { DRM_MODE_CONNECTOR_DisplayPort, "DisplayPort", 0 },
+>> > > - { DRM_MODE_CONNECTOR_HDMIA, "HDMI Type A", 0 },
+>> > > - { DRM_MODE_CONNECTOR_HDMIB, "HDMI Type B", 0 },
+>> > > + { DRM_MODE_CONNECTOR_9PinDIN, "DIN", 0 },
+>> > > + { DRM_MODE_CONNECTOR_DisplayPort, "DP", 0 },
+>> > [...]
+>> >
+>> > Why change 'DisplayPort', which doesn't have a space in it?  This might
+>> > break a previously working kernel command line.
+>>
+>> That's what happened in Linus's tree, I just mirror it :)
+>
+> Yeah, sorry, that was really directed at Alex.
 
-------------------
+We wanted to make them shorter so as to be easier to type on the
+command line.  I don't think anyone uses these much at the moment.
+Also, you can't force displayport on like other encoders, so if it's
+not detected, you are out of luck.
 
-From: Jesper Juhl <jj@chaosbits.net>
+Alex
 
-commit 5cdd2de0a76d0ac47f107c8a7b32d75d25768dc1 upstream.
-
-In arch/x86/kernel/microcode_intel.c::generic_load_microcode()
-we have  this:
-
-	while (leftover) {
-		...
-		if (get_ucode_data(mc, ucode_ptr, mc_size) ||
-		    microcode_sanity_check(mc) < 0) {
-			vfree(mc);
-			break;
-		}
-		...
-	}
-
-	if (mc)
-		vfree(mc);
-
-This will cause a double free of 'mc'. This patch fixes that by
-just  removing the vfree() call in the loop since 'mc' will be
-freed nicely just  after we break out of the loop.
-
-There's also a second change in the patch. I noticed a lot of
-checks for  pointers being NULL before passing them to vfree().
-That's completely  redundant since vfree() deals gracefully with
-being passed a NULL pointer.  Removing the redundant checks
-yields a nice size decrease for the object  file.
-
-Size before the patch:
-   text    data     bss     dec     hex filename
-   4578     240    1032    5850    16da arch/x86/kernel/microcode_intel.o
-Size after the patch:
-   text    data     bss     dec     hex filename
-   4489     240     984    5713    1651 arch/x86/kernel/microcode_intel.o
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-Acked-by: Tigran Aivazian <tigran@aivazian.fsnet.co.uk>
-Cc: Shaohua Li <shaohua.li@intel.com>
-LKML-Reference: <alpine.LNX.2.00.1012251946100.10759@swampdragon.chaosbits.net>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- arch/x86/kernel/microcode_intel.c |   16 +++++-----------
- 1 file changed, 5 insertions(+), 11 deletions(-)
-
---- a/arch/x86/kernel/microcode_intel.c
-+++ b/arch/x86/kernel/microcode_intel.c
-@@ -364,8 +364,7 @@ static enum ucode_state generic_load_mic
- 
- 		/* For performance reasons, reuse mc area when possible */
- 		if (!mc || mc_size > curr_mc_size) {
--			if (mc)
--				vfree(mc);
-+			vfree(mc);
- 			mc = vmalloc(mc_size);
- 			if (!mc)
- 				break;
-@@ -374,13 +373,11 @@ static enum ucode_state generic_load_mic
- 
- 		if (get_ucode_data(mc, ucode_ptr, mc_size) ||
- 		    microcode_sanity_check(mc) < 0) {
--			vfree(mc);
- 			break;
- 		}
- 
- 		if (get_matching_microcode(&uci->cpu_sig, mc, new_rev)) {
--			if (new_mc)
--				vfree(new_mc);
-+			vfree(new_mc);
- 			new_rev = mc_header.rev;
- 			new_mc  = mc;
- 			mc = NULL;	/* trigger new vmalloc */
-@@ -390,12 +387,10 @@ static enum ucode_state generic_load_mic
- 		leftover  -= mc_size;
- 	}
- 
--	if (mc)
--		vfree(mc);
-+	vfree(mc);
- 
- 	if (leftover) {
--		if (new_mc)
--			vfree(new_mc);
-+		vfree(new_mc);
- 		state = UCODE_ERROR;
- 		goto out;
- 	}
-@@ -405,8 +400,7 @@ static enum ucode_state generic_load_mic
- 		goto out;
- 	}
- 
--	if (uci->mc)
--		vfree(uci->mc);
-+	vfree(uci->mc);
- 	uci->mc = (struct microcode_intel *)new_mc;
- 
- 	pr_debug("CPU%d found a matching microcode update with version 0x%x (current=0x%x)\n",
-
-
+>
+> Ben.
+>
+> --
+> Ben Hutchings
+> Once a job is fouled up, anything done to improve it makes it worse.
+>
