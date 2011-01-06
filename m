@@ -1,45 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613Ab1AFVuF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 16:50:05 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:51520 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752450Ab1AFVuC (ORCPT
+	id S1754012Ab1AFVwZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 16:52:25 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:17695 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751087Ab1AFVwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 16:50:02 -0500
-Date: Fri, 7 Jan 2011 08:49:55 +1100
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Pavel Roskin <proski@gnu.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Re: Crypto Update for 2.6.38
-Message-ID: <20110106214955.GA26781@gondor.apana.org.au>
-References: <20091204135530.GA29371@gondor.apana.org.au> <20100226004914.GA20812@gondor.apana.org.au> <20100519020603.GA19654@gondor.apana.org.au> <20100521104404.GA29530@gondor.apana.org.au> <20100804140448.GA4042@gondor.apana.org.au> <20101024061625.GA23715@gondor.apana.org.au> <20110106000157.GA16089@gondor.apana.org.au> <AANLkTikzg3Hndp8WRi59bvJdBLxi=p-1gt7aZDLYbSW8@mail.gmail.com> <20110106211645.GA26184@gondor.apana.org.au> <4D26381A.8040901@gnu.org>
+	Thu, 6 Jan 2011 16:52:24 -0500
+Date: Thu, 6 Jan 2011 22:52:22 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-fsdevel@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH][rfc] xattr acl: Suspicious use of potentially null
+ pointer.
+Message-ID: <alpine.LNX.2.00.1101062247420.13988@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D26381A.8040901@gnu.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 06, 2011 at 04:46:02PM -0500, Pavel Roskin wrote:
->
-> Are there any chances AEAD will be supported?  Is the API extendable to  
-> allow that?
 
-Yes we can support AEAD.  However, as there weren't any existing
-user-space users that could benefit immediately, I have not added
-it at this point in time.
+In posix_acl_from_xattr() we have this at the head of the function:
 
-When combined-mode support in async hardware becomes more common
-this could change of course.
+  		posix_acl_xattr_header *header = (posix_acl_xattr_header *)value;
+   		posix_acl_xattr_entry *entry = (posix_acl_xattr_entry *)(header+1), *end;
 
-Cheers,
+Since 'value' is passed in by the caller and may be NULL, the second line 
+looks suspicious to me - taking a potentially NULL pointer (at least 
+btrfs will pass something allocated with kmalloc() which may be NULL), 
+adding one to it and casting it does not seem like it would always be such 
+a hot idea.
+
+How about rewriting it as per the patch below?
+
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ xattr_acl.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+diff --git a/fs/xattr_acl.c b/fs/xattr_acl.c
+index 8d5a506..ff0a3e6 100644
+--- a/fs/xattr_acl.c
++++ b/fs/xattr_acl.c
+@@ -17,14 +17,18 @@
+ struct posix_acl *
+ posix_acl_from_xattr(const void *value, size_t size)
+ {
+-	posix_acl_xattr_header *header = (posix_acl_xattr_header *)value;
+-	posix_acl_xattr_entry *entry = (posix_acl_xattr_entry *)(header+1), *end;
++	posix_acl_xattr_header *header;
++	posix_acl_xattr_entry *entry, *end;
+ 	int count;
+ 	struct posix_acl *acl;
+ 	struct posix_acl_entry *acl_e;
+ 
+ 	if (!value)
+ 		return NULL;
++
++	header = (posix_acl_xattr_header *)value;
++	entry = (posix_acl_xattr_entry *)(header+1)
++
+ 	if (size < sizeof(posix_acl_xattr_header))
+ 		 return ERR_PTR(-EINVAL);
+ 	if (header->a_version != cpu_to_le32(POSIX_ACL_XATTR_VERSION))
+@@ -35,12 +39,12 @@ posix_acl_from_xattr(const void *value, size_t size)
+ 		return ERR_PTR(-EINVAL);
+ 	if (count == 0)
+ 		return NULL;
+-	
++
+ 	acl = posix_acl_alloc(count, GFP_NOFS);
+ 	if (!acl)
+ 		return ERR_PTR(-ENOMEM);
+ 	acl_e = acl->a_entries;
+-	
++
+ 	for (end = entry + count; entry != end; acl_e++, entry++) {
+ 		acl_e->e_tag  = le16_to_cpu(entry->e_tag);
+ 		acl_e->e_perm = le16_to_cpu(entry->e_perm);
+
+
+
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
