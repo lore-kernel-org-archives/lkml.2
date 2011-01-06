@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387Ab1AFUp3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 15:45:29 -0500
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:24525 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752627Ab1AFUp1 (ORCPT
+	id S1753839Ab1AFUpm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 15:45:42 -0500
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:30926 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753286Ab1AFUp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 15:45:27 -0500
+	Thu, 6 Jan 2011 15:45:29 -0500
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: deTsOTYVM1lM9HlC4RiGP8ojvFzcY56vrvdi4GvN3.Ufc1l
- uDeXCV_XUDg_m4c.toZQJP.RTZsk4XtEUspbBFsMPHb0Iwkhz7X.jwDscycO
- _h76ygB6qL5JtVolhtmnhMMwH3PdRslVwkfWVAkkFfJqhWANZTgE_mtMgp4p
- cI4iAZxaJEQdpLlPAleYfCQDK9Us4DdDG9K6ahgadxeVkJDGpapQT.1NiSLU
- wQM9mrftBYApXx4DKxgC_SwZmBT51rTx1rWS0_nYrTrvfKJT3Ix4ZOL9cpVf
- uw.c24owux4SqqXEmTihsOEn9hBA7jYuu6XyQzVUfsOnTjBo-
+X-YMail-OSG: pAPN8YsVM1lrOgd5_CpH9CPv5wvUSNZlzg8SN2ipAAFxJGZ
+ KL0VB7mvQD3Z2alq9wPbmtHEEQs6codkUqOLMwDrqup476x6VjB3LOSvZqWJ
+ BnDN0HyRiJpiaRNQ9Z2WsI3ceD.LZoMyONdaoO09ALxT81h9b5DeDKD3u.32
+ xKEMeIrrNxVd1FmgMPSVIGEgOPqtjiHjzTn9fRIop2GxDEUoLvpQOmOYQqLs
+ Is357hvBVoY4hWzrvTtsovZmqO5GayAKxmtTcJ.JD1SjsCR6.E44gW4RjdQl
+ .feNjW9Afog23GzlZpGWPSh19LBsP0mo.nRKZjJCJZn.UIZk-
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20110106204525.222395863@linux.com>
+Message-Id: <20110106204526.977812009@linux.com>
 User-Agent: quilt/0.48-1
-Date: Thu, 06 Jan 2011 14:45:14 -0600
+Date: Thu, 06 Jan 2011 14:45:17 -0600
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linux-foundation.org
@@ -26,183 +26,438 @@ Cc: linux-kernel@vger.kernel.org
 Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [cpuops cmpxchg double V2 1/4] Generic support for this_cpu_cmpxchg_double
+Subject: [cpuops cmpxchg double V2 4/4] Lockless (and preemptless) fastpaths for slub
 References: <20110106204513.669098445@linux.com>
-Content-Disposition: inline; filename=cpuops_double_generic
+Content-Disposition: inline; filename=cpuops_double_slub_fastpath
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce this_cpu_cmpxchg_double. this_cpu_cmpxchg_double() allows the
-comparision between two consecutive words and replaces them if there is
-a match.
+Use the this_cpu_cmpxchg_double functionality to implement a lockless
+allocation algorithm on arches that support fast this_cpu_ops.
 
-	bool this_cpu_cmpxchg_double(pcp1, pcp2,
-		old_word1, old_word2, new_word1, new_word2)
+Each of the per cpu pointers is paired with a transaction id that ensures
+that updates of the per cpu information can only occur in sequence on
+a certain cpu.
 
-this_cpu_cmpxchg_double does not return the old value (difficult since
-there are two words) but a boolean indicating if the operation was
-successful.
+A transaction id is a "long" integer that is comprised of an event number
+and the cpu number. The event number is incremented for every change to the
+per cpu state. The cmpxchg instruction can therefore verify for an
+update that nothing else has interfered and that we are updating the percpu'
+structure for the processor where we initially picked up the information
+and that we are also currently on that processor.
 
-The first percpu variable must be double word aligned!
+So there is no need even to disable preemption.
+
+Test results show that the fastpath cycle count is reduced by up to ~ 40%
+(alloc/free test goes from ~140 cycles down to ~80). The slowpath for kfree
+adds a few cycles.
+
+Sadly this does nothing for the slowpath which is where the main issues with
+performance in slub are but the best case performance rises significantly.
+(For that see the more complex slub patches that require cmpxchg_double)
+
+Kmalloc: alloc/free test
+
+Before:
+
+10000 times kmalloc(8)/kfree -> 134 cycles
+10000 times kmalloc(16)/kfree -> 152 cycles
+10000 times kmalloc(32)/kfree -> 144 cycles
+10000 times kmalloc(64)/kfree -> 142 cycles
+10000 times kmalloc(128)/kfree -> 142 cycles
+10000 times kmalloc(256)/kfree -> 132 cycles
+10000 times kmalloc(512)/kfree -> 132 cycles
+10000 times kmalloc(1024)/kfree -> 135 cycles
+10000 times kmalloc(2048)/kfree -> 135 cycles
+10000 times kmalloc(4096)/kfree -> 135 cycles
+10000 times kmalloc(8192)/kfree -> 144 cycles
+10000 times kmalloc(16384)/kfree -> 754 cycles
+
+After:
+
+10000 times kmalloc(8)/kfree -> 78 cycles
+10000 times kmalloc(16)/kfree -> 78 cycles
+10000 times kmalloc(32)/kfree -> 82 cycles
+10000 times kmalloc(64)/kfree -> 88 cycles
+10000 times kmalloc(128)/kfree -> 79 cycles
+10000 times kmalloc(256)/kfree -> 79 cycles
+10000 times kmalloc(512)/kfree -> 85 cycles
+10000 times kmalloc(1024)/kfree -> 82 cycles
+10000 times kmalloc(2048)/kfree -> 82 cycles
+10000 times kmalloc(4096)/kfree -> 85 cycles
+10000 times kmalloc(8192)/kfree -> 82 cycles
+10000 times kmalloc(16384)/kfree -> 706 cycles
+
+
+Kmalloc: Repeatedly allocate then free test
+
+Before:
+
+10000 times kmalloc(8) -> 211 cycles kfree -> 113 cycles
+10000 times kmalloc(16) -> 174 cycles kfree -> 115 cycles
+10000 times kmalloc(32) -> 235 cycles kfree -> 129 cycles
+10000 times kmalloc(64) -> 222 cycles kfree -> 120 cycles
+10000 times kmalloc(128) -> 343 cycles kfree -> 139 cycles
+10000 times kmalloc(256) -> 827 cycles kfree -> 147 cycles
+10000 times kmalloc(512) -> 1048 cycles kfree -> 272 cycles
+10000 times kmalloc(1024) -> 2043 cycles kfree -> 528 cycles
+10000 times kmalloc(2048) -> 4002 cycles kfree -> 571 cycles
+10000 times kmalloc(4096) -> 7740 cycles kfree -> 628 cycles
+10000 times kmalloc(8192) -> 8062 cycles kfree -> 850 cycles
+10000 times kmalloc(16384) -> 8895 cycles kfree -> 1249 cycles
+
+After:
+
+10000 times kmalloc(8) -> 190 cycles kfree -> 129 cycles
+10000 times kmalloc(16) -> 76 cycles kfree -> 123 cycles
+10000 times kmalloc(32) -> 126 cycles kfree -> 124 cycles
+10000 times kmalloc(64) -> 181 cycles kfree -> 128 cycles
+10000 times kmalloc(128) -> 310 cycles kfree -> 140 cycles
+10000 times kmalloc(256) -> 809 cycles kfree -> 165 cycles
+10000 times kmalloc(512) -> 1005 cycles kfree -> 269 cycles
+10000 times kmalloc(1024) -> 1999 cycles kfree -> 527 cycles
+10000 times kmalloc(2048) -> 3967 cycles kfree -> 570 cycles
+10000 times kmalloc(4096) -> 7658 cycles kfree -> 637 cycles
+10000 times kmalloc(8192) -> 8111 cycles kfree -> 859 cycles
+10000 times kmalloc(16384) -> 8791 cycles kfree -> 1173 cycles
 
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
 ---
- include/linux/percpu.h |  130 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 130 insertions(+)
+ include/linux/slub_def.h |    5 -
+ mm/slub.c                |  205 ++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 207 insertions(+), 3 deletions(-)
 
-Index: linux-2.6/include/linux/percpu.h
+Index: linux-2.6/include/linux/slub_def.h
 ===================================================================
---- linux-2.6.orig/include/linux/percpu.h	2011-01-05 15:00:46.000000000 -0600
-+++ linux-2.6/include/linux/percpu.h	2011-01-06 13:19:43.000000000 -0600
-@@ -259,6 +259,29 @@ extern void __bad_size_call_parameter(vo
- 	pscr2_ret__;							\
- })
+--- linux-2.6.orig/include/linux/slub_def.h	2011-01-05 11:41:50.000000000 -0600
++++ linux-2.6/include/linux/slub_def.h	2011-01-05 11:47:18.000000000 -0600
+@@ -36,7 +36,10 @@ enum stat_item {
+ 	NR_SLUB_STAT_ITEMS };
  
+ struct kmem_cache_cpu {
+-	void **freelist;	/* Pointer to first free per cpu object */
++	void **freelist;	/* Pointer to next available object */
++#ifdef CONFIG_CMPXCHG_LOCAL
++	unsigned long tid;	/* Globally unique transaction id */
++#endif
+ 	struct page *page;	/* The slab from which we are allocating */
+ 	int node;		/* The node of the page (or -1 for debug) */
+ #ifdef CONFIG_SLUB_STATS
+Index: linux-2.6/mm/slub.c
+===================================================================
+--- linux-2.6.orig/mm/slub.c	2011-01-05 11:47:16.000000000 -0600
++++ linux-2.6/mm/slub.c	2011-01-05 13:37:50.000000000 -0600
+@@ -1492,6 +1492,77 @@ static void unfreeze_slab(struct kmem_ca
+ 	}
+ }
+ 
++#ifdef CONFIG_CMPXCHG_LOCAL
++#ifdef CONFIG_PREEMPT
 +/*
-+ * Special handling for cmpxchg_double. cmpxchg_double is passed two
-+ * percpu variables. The first has to be aligned to a double word
-+ * boundary and the second has to follow directly thereafter.
++ * Calculate the next globally unique transaction for disambiguiation
++ * during cmpxchg. The transactions start with the cpu number and are then
++ * incremented by CONFIG_NR_CPUS.
 + */
-+#define __pcpu_double_call_return_int(stem, pcp1, pcp2, ...)		\
-+({									\
-+	int ret__;							\
-+	__verify_pcpu_ptr(&pcp1);					\
-+	VM_BUG_ON((unsigned long)(&pcp1) % (2 * sizeof(pcp1)));		\
-+	VM_BUG_ON((unsigned long)(&pcp2) != (unsigned long)(&pcp1) + sizeof(pcp1));\
-+	VM_BUG_ON(sizeof(pcp1) != sizeof(pcp2));			\
-+	switch(sizeof(pcp1)) {						\
-+	case 1: ret__ = stem##1(pcp1, pcp2, __VA_ARGS__);break;		\
-+	case 2: ret__ = stem##2(pcp1, pcp2, __VA_ARGS__);break;		\
-+	case 4: ret__ = stem##4(pcp1, pcp2, __VA_ARGS__);break;		\
-+	case 8: ret__ = stem##8(pcp1, pcp2, __VA_ARGS__);break;		\
-+	default:							\
-+		__bad_size_call_parameter();break;			\
-+	}								\
-+	ret__;								\
-+})
-+
- #define __pcpu_size_call(stem, variable, ...)				\
- do {									\
- 	__verify_pcpu_ptr(&(variable));					\
-@@ -422,6 +445,80 @@ do {									\
- 				__this_cpu_cmpxchg_, pcp, oval, nval)
- #endif
- 
++#define TID_STEP  roundup_pow_of_two(CONFIG_NR_CPUS)
++#else
 +/*
-+ * cmpxchg_double replaces two adjacent scalars at once. The first two
-+ * parameters are per cpu variables which have to be of the same size.
-+ * A truth value is returned to indicate success or
-+ * failure (since a double register result is difficult to handle).
-+ * There is very limited hardware support for these operations. So only certain
-+ * sizes may work.
++ * No preemption supported therefore also no need to check for
++ * different cpus.
 + */
-+#define __this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+({									\
-+	int __ret = 0;							\
-+	if (__this_cpu_read(pcp1) == (oval1) &&				\
-+			 __this_cpu_read(pcp2)  == (oval2)) {		\
-+		__this_cpu_write(pcp1, (nval1));			\
-+		__this_cpu_write(pcp2, (nval2));			\
-+		__ret = 1;						\
-+	}								\
-+	(__ret);							\
-+})
-+
-+#ifndef __this_cpu_cmpxchg_double
-+# ifndef __this_cpu_cmpxchg_double_1
-+#  define __this_cpu_cmpxchg_double_1(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	__this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef __this_cpu_cmpxchg_double_2
-+#  define __this_cpu_cmpxchg_double_2(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	__this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef __this_cpu_cmpxchg_double_4
-+#  define __this_cpu_cmpxchg_double_4(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	__this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef __this_cpu_cmpxchg_double_8
-+#  define __this_cpu_cmpxchg_double_8(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	__this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# define __this_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	__pcpu_double_call_return_int(__this_cpu_cmpxchg_double_, (pcp1), (pcp2)	\
-+					 oval1, oval2, nval1, nval2)
++#define TID_STEP 1
 +#endif
 +
-+#define _this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+({									\
-+	int ret__;							\
-+	preempt_disable();						\
-+	ret__ = __this_cpu_generic_cmpxchg_double(pcp1, pcp2,		\
-+			oval1, oval2, nval1, nval2);			\
-+	preempt_enable();						\
-+	ret__;								\
-+})
++static inline unsigned long next_tid(unsigned long tid)
++{
++	return tid + TID_STEP;
++}
 +
-+#ifndef this_cpu_cmpxchg_double
-+# ifndef this_cpu_cmpxchg_double_1
-+#  define this_cpu_cmpxchg_double_1(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	_this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef this_cpu_cmpxchg_double_2
-+#  define this_cpu_cmpxchg_double_2(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	_this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef this_cpu_cmpxchg_double_4
-+#  define this_cpu_cmpxchg_double_4(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	_this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef this_cpu_cmpxchg_double_8
-+#  define this_cpu_cmpxchg_double_8(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	_this_cpu_generic_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# define this_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	__pcpu_double_call_return_int(this_cpu_cmpxchg_double_, (pcp1), (pcp2),	\
-+		oval1, oval2, nval1, nval2)
++static inline unsigned int tid_to_cpu(unsigned long tid)
++{
++	return tid % TID_STEP;
++}
++
++static inline unsigned long tid_to_event(unsigned long tid)
++{
++	return tid / TID_STEP;
++}
++
++static inline unsigned int init_tid(int cpu)
++{
++	return cpu;
++}
++
++static inline void note_cmpxchg_failure(const char *n,
++		const struct kmem_cache *s, unsigned long tid)
++{
++#ifdef CONFIG_DEBUG_VM
++	unsigned long actual_tid = __this_cpu_read(s->cpu_slab->tid);
++
++	printk(KERN_INFO "%s %s: cmpxchg redo ", n, s->name);
++
++#ifdef CONFIG_PREEMPT
++	if (tid_to_cpu(tid) != tid_to_cpu(actual_tid))
++		printk("due to cpu change %d -> %d\n",
++			tid_to_cpu(tid), tid_to_cpu(actual_tid));
++	else
++#endif
++	if (tid_to_event(tid) != tid_to_event(actual_tid))
++		printk("due to cpu running other code. Event %ld->%ld\n",
++			tid_to_event(tid), tid_to_event(actual_tid));
++	else
++		printk("for unknown reason: actual=%lx was=%lx target=%lx\n",
++			actual_tid, tid, next_tid(tid));
++#endif
++}
++
 +#endif
 +
- #define _this_cpu_generic_to_op(pcp, val, op)				\
- do {									\
- 	preempt_disable();						\
-@@ -825,4 +922,37 @@ do {									\
- # define irqsafe_cpu_cmpxchg(pcp, oval, nval)	__pcpu_size_call_return2(irqsafe_cpu_cmpxchg_, (pcp), oval, nval)
- #endif
++void init_kmem_cache_cpus(struct kmem_cache *s)
++{
++#if defined(CONFIG_CMPXCHG_LOCAL) && defined(CONFIG_PREEMPT)
++	int cpu;
++
++	for_each_possible_cpu(cpu)
++		per_cpu_ptr(s->cpu_slab, cpu)->tid = init_tid(cpu);
++#endif
++
++}
+ /*
+  * Remove the cpu slab
+  */
+@@ -1523,6 +1594,9 @@ static void deactivate_slab(struct kmem_
+ 		page->inuse--;
+ 	}
+ 	c->page = NULL;
++#ifdef CONFIG_CMPXCHG_LOCAL
++	c->tid = next_tid(c->tid);
++#endif
+ 	unfreeze_slab(s, page, tail);
+ }
  
-+#define irqsafe_generic_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+({									\
-+	int ret__;							\
-+	unsigned long flags;						\
-+	local_irq_save(flags);						\
-+	ret__ = __this_cpu_generic_cmpxchg_double(pcp1, pcp2,		\
-+			oval1, oval2, nval1, nval2);			\
-+	local_irq_restore(flags);					\
-+	ret__;								\
-+})
+@@ -1657,6 +1731,19 @@ static void *__slab_alloc(struct kmem_ca
+ {
+ 	void **object;
+ 	struct page *new;
++#ifdef CONFIG_CMPXCHG_LOCAL
++	unsigned long flags;
 +
-+#ifndef irqsafe_cpu_cmpxchg_double
-+# ifndef irqsafe_cpu_cmpxchg_double_1
-+#  define irqsafe_cpu_cmpxchg_double_1(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	irqsafe_generic_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef irqsafe_cpu_cmpxchg_double_2
-+#  define irqsafe_cpu_cmpxchg_double_2(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	irqsafe_generic_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef irqsafe_cpu_cmpxchg_double_4
-+#  define irqsafe_cpu_cmpxchg_double_4(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	irqsafe_generic_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# ifndef irqsafe_cpu_cmpxchg_double_8
-+#  define irqsafe_cpu_cmpxchg_double_8(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	irqsafe_generic_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)
-+# endif
-+# define irqsafe_cpu_cmpxchg_double(pcp1, pcp2, oval1, oval2, nval1, nval2)	\
-+	__pcpu_double_call_return_int(irqsafe_cpu_cmpxchg_double_, (pcp1), (pcp2),	\
-+		oval1, oval2, nval1, nval2)
++	local_irq_save(flags);
++#ifdef CONFIG_PREEMPT
++	/*
++	 * We may have been preempted and rescheduled on a different
++	 * cpu before disabling interrupts. Need to reload cpu area
++	 * pointer.
++	 */
++	c = this_cpu_ptr(s->cpu_slab);
++#endif
++#endif
+ 
+ 	/* We handle __GFP_ZERO in the caller */
+ 	gfpflags &= ~__GFP_ZERO;
+@@ -1683,6 +1770,10 @@ load_freelist:
+ 	c->node = page_to_nid(c->page);
+ unlock_out:
+ 	slab_unlock(c->page);
++#ifdef CONFIG_CMPXCHG_LOCAL
++	c->tid = next_tid(c->tid);
++	local_irq_restore(flags);
++#endif
+ 	stat(s, ALLOC_SLOWPATH);
+ 	return object;
+ 
+@@ -1744,23 +1835,76 @@ static __always_inline void *slab_alloc(
+ {
+ 	void **object;
+ 	struct kmem_cache_cpu *c;
++#ifdef CONFIG_CMPXCHG_LOCAL
++	unsigned long tid;
++#else
+ 	unsigned long flags;
++#endif
+ 
+ 	if (slab_pre_alloc_hook(s, gfpflags))
+ 		return NULL;
+ 
++#ifndef CONFIG_CMPXCHG_LOCAL
+ 	local_irq_save(flags);
++#else
++redo:
 +#endif
 +
- #endif /* __LINUX_PERCPU_H */
++	/*
++	 * Must read kmem_cache cpu data via this cpu ptr. Preemption is
++	 * enabled. We may switch back and forth between cpus while
++	 * reading from one cpu area. That does not matter as long
++	 * as we end up on the original cpu again when doing the cmpxchg.
++	 */
+ 	c = __this_cpu_ptr(s->cpu_slab);
++
++#ifdef CONFIG_CMPXCHG_LOCAL
++	/*
++	 * The transaction ids are globally unique per cpu and per operation on
++	 * a per cpu queue. Thus they can be guarantee that the cmpxchg_double
++	 * occurs on the right processor and that there was no operation on the
++	 * linked list in between.
++	 */
++	tid = c->tid;
++	barrier();
++#endif
++
+ 	object = c->freelist;
+ 	if (unlikely(!object || !node_match(c, node)))
+ 
+ 		object = __slab_alloc(s, gfpflags, node, addr, c);
+ 
+ 	else {
++#ifdef CONFIG_CMPXCHG_LOCAL
++		/*
++		 * The cmpxchg will only match if there was no additonal
++		 * operation and if we are on the right processor.
++		 *
++		 * The cmpxchg does the following atomically (without lock semantics!)
++		 * 1. Relocate first pointer to the current per cpu area.
++		 * 2. Verify that tid and freelist have not been changed
++		 * 3. If they were not changed replace tid and freelist
++		 *
++		 * Since this is without lock semantics the protection is only against
++		 * code executing on this cpu *not* from access by other cpus.
++		 */
++		if (unlikely(!this_cpu_cmpxchg_double(
++				s->cpu_slab->freelist, s->cpu_slab->tid,
++				object, tid,
++				get_freepointer(s, object), next_tid(tid)))) {
++
++			note_cmpxchg_failure("slab_alloc", s, tid);
++			goto redo;
++		}
++#else
+ 		c->freelist = get_freepointer(s, object);
++#endif
+ 		stat(s, ALLOC_FASTPATH);
+ 	}
++
++#ifndef CONFIG_CMPXCHG_LOCAL
+ 	local_irq_restore(flags);
++#endif
+ 
+ 	if (unlikely(gfpflags & __GFP_ZERO) && object)
+ 		memset(object, 0, s->objsize);
+@@ -1824,9 +1968,13 @@ static void __slab_free(struct kmem_cach
+ {
+ 	void *prior;
+ 	void **object = (void *)x;
++#ifdef CONFIG_CMPXCHG_LOCAL
++	unsigned long flags;
+ 
+-	stat(s, FREE_SLOWPATH);
++	local_irq_save(flags);
++#endif
+ 	slab_lock(page);
++	stat(s, FREE_SLOWPATH);
+ 
+ 	if (kmem_cache_debug(s))
+ 		goto debug;
+@@ -1856,6 +2004,9 @@ checks_ok:
+ 
+ out_unlock:
+ 	slab_unlock(page);
++#ifdef CONFIG_CMPXCHG_LOCAL
++	local_irq_restore(flags);
++#endif
+ 	return;
+ 
+ slab_empty:
+@@ -1867,6 +2018,9 @@ slab_empty:
+ 		stat(s, FREE_REMOVE_PARTIAL);
+ 	}
+ 	slab_unlock(page);
++#ifdef CONFIG_CMPXCHG_LOCAL
++	local_irq_restore(flags);
++#endif
+ 	stat(s, FREE_SLAB);
+ 	discard_slab(s, page);
+ 	return;
+@@ -1893,21 +2047,54 @@ static __always_inline void slab_free(st
+ {
+ 	void **object = (void *)x;
+ 	struct kmem_cache_cpu *c;
++#ifdef CONFIG_CMPXCHG_LOCAL
++	unsigned long tid;
++#else
+ 	unsigned long flags;
++#endif
+ 
+ 	slab_free_hook(s, x);
+ 
++#ifndef CONFIG_CMPXCHG_LOCAL
+ 	local_irq_save(flags);
++#endif
++
++redo:
++	/*
++	 * Determine the currently cpus per cpu slab.
++	 * The cpu may change afterward. However that does not matter since
++	 * data is retrieved via this pointer. If we are on the same cpu
++	 * during the cmpxchg then the free will succedd.
++	 */
+ 	c = __this_cpu_ptr(s->cpu_slab);
+ 
++#ifdef CONFIG_CMPXCHG_LOCAL
++	tid = c->tid;
++	barrier();
++#endif
++
+ 	if (likely(page == c->page && c->node != NUMA_NO_NODE)) {
+ 		set_freepointer(s, object, c->freelist);
++
++#ifdef CONFIG_CMPXCHG_LOCAL
++		if (unlikely(!this_cpu_cmpxchg_double(
++				s->cpu_slab->freelist, s->cpu_slab->tid,
++				c->freelist, tid,
++				object, next_tid(tid)))) {
++
++			note_cmpxchg_failure("slab_free", s, tid);
++			goto redo;
++		}
++#else
+ 		c->freelist = object;
++#endif
+ 		stat(s, FREE_FASTPATH);
+ 	} else
+ 		__slab_free(s, page, x, addr);
+ 
++#ifndef CONFIG_CMPXCHG_LOCAL
+ 	local_irq_restore(flags);
++#endif
+ }
+ 
+ void kmem_cache_free(struct kmem_cache *s, void *x)
+@@ -2110,9 +2297,23 @@ static inline int alloc_kmem_cache_cpus(
+ 	BUILD_BUG_ON(PERCPU_DYNAMIC_EARLY_SIZE <
+ 			SLUB_PAGE_SHIFT * sizeof(struct kmem_cache_cpu));
+ 
++#ifdef CONFIG_CMPXCHG_LOCAL
++	/*
++	 * Must align to double word boundary for the double cmpxchg instructions
++	 * to work.
++	 */
++	s->cpu_slab = __alloc_percpu(sizeof(struct kmem_cache_cpu), 2 * sizeof(void *));
++#else
++	/* Regular alignment is sufficient */
+ 	s->cpu_slab = alloc_percpu(struct kmem_cache_cpu);
++#endif
++
++	if (!s->cpu_slab)
++		return 0;
+ 
+-	return s->cpu_slab != NULL;
++	init_kmem_cache_cpus(s);
++
++	return 1;
+ }
+ 
+ static struct kmem_cache *kmem_cache_node;
 
