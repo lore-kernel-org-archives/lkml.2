@@ -1,167 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613Ab1AFXYW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 18:24:22 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:16034 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543Ab1AFXYV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 18:24:21 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 06 Jan 2011 15:13:53 -0800
-From: Robert Morell <rmorell@nvidia.com>
-To: David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Benoit Goby <benoit@android.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
-        Oliver Neukum <oliver@neukum.org>
-Cc: Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>,
-        Colin Cross <ccross@android.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        Robert Morell <rmorell@nvidia.com>
-Subject: [PATCH v4 2/2] USB: ehci: tegra: Align DMA transfers to 32 bytes
-Date: Thu,  6 Jan 2011 15:20:45 -0800
-Message-Id: <1294356045-1018-3-git-send-email-rmorell@nvidia.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1292794698-19534-1-git-send-email-rmorell@nvidia.com>
-References: <1292794698-19534-1-git-send-email-rmorell@nvidia.com>
-X-NVConfidentiality: public
+	id S1754641Ab1AFXZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 18:25:57 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:50232 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752513Ab1AFXZz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 18:25:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110106225301.GA27358@gondor.apana.org.au>
+References: <20100804140448.GA4042@gondor.apana.org.au> <20101024061625.GA23715@gondor.apana.org.au>
+ <20110106000157.GA16089@gondor.apana.org.au> <AANLkTikzg3Hndp8WRi59bvJdBLxi=p-1gt7aZDLYbSW8@mail.gmail.com>
+ <20110106211645.GA26184@gondor.apana.org.au> <AANLkTimwaJCUxvMLoeS5Cpmu7FX3y=coeSdkPrrL4zcr@mail.gmail.com>
+ <20110106213932.GA26538@gondor.apana.org.au> <AANLkTi=fggNhMm1LpOzzZ0_ofaU6w=ahX8SMGgFkHCui@mail.gmail.com>
+ <20110106223042.GA27080@gondor.apana.org.au> <AANLkTinbH8i8rjUxACV5PkdLuVc9YccT+E5x=ZBWunyU@mail.gmail.com>
+ <20110106225301.GA27358@gondor.apana.org.au>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 6 Jan 2011 15:25:32 -0800
+Message-ID: <AANLkTi=E3fqTos7A2fJ2PRKT=o5=sgWh+CzMv4G7P4rZ@mail.gmail.com>
+Subject: Re: Crypto Update for 2.6.38
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Tegra2 USB controller doesn't properly deal with misaligned DMA
-buffers, causing corruption.  This is especially prevalent with USB
-network adapters, where skbuff alignment is often in the middle of a
-4-byte dword.
+On Thu, Jan 6, 2011 at 2:53 PM, Herbert Xu <herbert@gondor.hengli.com.au> wrote:
+> On Thu, Jan 06, 2011 at 02:43:35PM -0800, Linus Torvalds wrote:
+>>
+>> Can you do the "bypass directly to the TCP stream" with the interface
+>> you added? It isn't at all obvious how it would work.
+>
+> Yes it can.  The interface allows zero-copy in both directions
+> using the splice interface.  Here is a sample program demonstrating
+> zero-copy in-place encryption.  It doesn't send the result over TCP
+> but I'm sure you can imagine what that would look like.
 
-To avoid this, allocate a temporary buffer for the DMA if the provided
-buffer isn't sufficiently aligned.
+Ok. So can we actually get numbers for this?
 
-Signed-off-by: Robert Morell <rmorell@nvidia.com>
----
- drivers/usb/host/ehci-tegra.c |   92 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 92 insertions(+), 0 deletions(-)
+Put another way: I really really REALLY don't want to merge new
+user-space interfaces that don't actually work in reality. But if this
+allows direct encryption to a network interface, and it actually is
+able to saturate 10Gb on niagara (unlike a user-mode encryption thing,
+I assume, since those things are dog slow), then that would certainly
+be a good real-life test.
 
-diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
-index 21c58df..4aa484b 100644
---- a/drivers/usb/host/ehci-tegra.c
-+++ b/drivers/usb/host/ehci-tegra.c
-@@ -32,6 +32,8 @@
- #define TEGRA_USB_USBMODE_HOST			(3 << 0)
- #define TEGRA_USB_PORTSC1_PTC(x)		(((x) & 0xf) << 16)
- 
-+#define TEGRA_USB_DMA_ALIGN 32
-+
- struct tegra_ehci_context {
- 	bool valid;
- 	u32 command;
-@@ -456,6 +458,94 @@ static int tegra_ehci_bus_resume(struct usb_hcd *hcd)
- }
- #endif
- 
-+struct temp_buffer {
-+	void *kmalloc_ptr;
-+	void *old_xfer_buffer;
-+	u8 data[0];
-+};
-+
-+static void free_temp_buffer(struct urb *urb, int status)
-+{
-+	enum dma_data_direction dir;
-+	struct temp_buffer *temp;
-+
-+	if (!(urb->transfer_flags & URB_ALIGNED_TEMP_BUFFER))
-+		return;
-+
-+	dir = usb_urb_dir_in(urb) ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
-+
-+	temp = container_of(urb->transfer_buffer, struct temp_buffer,
-+			    data);
-+
-+	if (dir == DMA_FROM_DEVICE && !status)
-+		memcpy(temp->old_xfer_buffer, temp->data,
-+		       urb->transfer_buffer_length);
-+	urb->transfer_buffer = temp->old_xfer_buffer;
-+	kfree(temp->kmalloc_ptr);
-+
-+	urb->transfer_flags &= ~URB_ALIGNED_TEMP_BUFFER;
-+}
-+
-+static int alloc_temp_buffer(struct urb *urb, gfp_t mem_flags)
-+{
-+	enum dma_data_direction dir;
-+	struct temp_buffer *temp, *kmalloc_ptr;
-+	size_t kmalloc_size;
-+	void *data;
-+
-+	if (urb->num_sgs || urb->sg ||
-+	    urb->transfer_buffer_length == 0 ||
-+	    !((uintptr_t)urb->transfer_buffer & (TEGRA_USB_DMA_ALIGN - 1)))
-+		return 0;
-+
-+	dir = usb_urb_dir_in(urb) ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
-+
-+	/* Allocate a buffer with enough padding for alignment */
-+	kmalloc_size = urb->transfer_buffer_length +
-+		sizeof(struct temp_buffer) + TEGRA_USB_DMA_ALIGN - 1;
-+
-+	kmalloc_ptr = kmalloc(kmalloc_size, mem_flags);
-+	if (!kmalloc_ptr)
-+		return -ENOMEM;
-+
-+	/* Position our struct temp_buffer such that data is aligned */
-+	temp = PTR_ALIGN(kmalloc_ptr + 1, TEGRA_USB_DMA_ALIGN) - 1;
-+
-+	temp->kmalloc_ptr = kmalloc_ptr;
-+	temp->old_xfer_buffer = urb->transfer_buffer;
-+	if (dir == DMA_TO_DEVICE)
-+		memcpy(temp->data, urb->transfer_buffer,
-+		       urb->transfer_buffer_length);
-+	urb->transfer_buffer = temp->data;
-+
-+	urb->transfer_flags |= URB_ALIGNED_TEMP_BUFFER;
-+
-+	return 0;
-+}
-+
-+static int tegra_ehci_map_urb_for_dma(struct usb_hcd *hcd, struct urb *urb,
-+				      gfp_t mem_flags)
-+{
-+	int ret;
-+
-+	ret = alloc_temp_buffer(urb, mem_flags);
-+	if (ret)
-+		return ret;
-+
-+	ret = usb_hcd_map_urb_for_dma(hcd, urb, mem_flags);
-+	if (ret)
-+		free_temp_buffer(urb, ret);
-+
-+	return ret;
-+}
-+
-+static void tegra_ehci_unmap_urb_for_dma(struct usb_hcd *hcd, struct urb *urb,
-+					 int status)
-+{
-+	usb_hcd_unmap_urb_for_dma(hcd, urb);
-+	free_temp_buffer(urb, status);
-+}
-+
- static const struct hc_driver tegra_ehci_hc_driver = {
- 	.description		= hcd_name,
- 	.product_desc		= "Tegra EHCI Host Controller",
-@@ -471,6 +561,8 @@ static const struct hc_driver tegra_ehci_hc_driver = {
- 	.shutdown		= tegra_ehci_shutdown,
- 	.urb_enqueue		= ehci_urb_enqueue,
- 	.urb_dequeue		= ehci_urb_dequeue,
-+	.map_urb_for_dma	= tegra_ehci_map_urb_for_dma,
-+	.unmap_urb_for_dma	= tegra_ehci_unmap_urb_for_dma,
- 	.endpoint_disable	= ehci_endpoint_disable,
- 	.endpoint_reset		= ehci_endpoint_reset,
- 	.get_frame_number	= ehci_get_frame,
--- 
-1.7.2.2
+But I really don't want to merge it unless it has had at least
+real-life testing of actually doing better than regular sw user-space
+encryption.
 
+I realize that on PC's, it's unlikely to ever help. So I'm not asking
+for "show me how this helps on my hardware". But I do want to get some
+case on _some_ actual hardware where it works on a real load.
+
+                    Linus
