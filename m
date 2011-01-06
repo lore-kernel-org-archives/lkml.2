@@ -1,94 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440Ab1AFWp7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 17:45:59 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:37866 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752782Ab1AFWnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 17:43:33 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Len Brown <lenb@kernel.org>
-Subject: [PATCH 2/11] ACPI / PM: Do not enable multiple devices to wake up simultaneously
-Date: Thu, 6 Jan 2011 23:33:30 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37+; KDE/4.4.4; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-References: <201101062331.17079.rjw@sisk.pl>
-In-Reply-To: <201101062331.17079.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1754559Ab1AFWsD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 17:48:03 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39278
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752589Ab1AFWsA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 17:48:00 -0500
+Date: Thu, 06 Jan 2011 14:48:32 -0800 (PST)
+Message-Id: <20110106.144832.189697659.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101062333.30960.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
 
-If a device is enabled to wake up the system from sleep states via
-/proc/acpi/wakeup and there are other devices associated with the
-same wakeup GPE, all of these devices are automatically enabled to
-wake up the system.  This isn't correct, because the fact the GPE is
-shared need not imply that wakeup power has to be enabled for all the
-devices at the same time (i.e. it is possible that one device will
-have its wakeup power enabled and it will wake up the system from a
-sleep state if the shared wakeup GPE is enabled, while another device
-having its wakeup power disabled will not wake up the system even
-though the GPE is enabled).  Rework acpi_system_write_wakeup_device()
-so that it only enables wakeup for one device at a time.
+Not a whole lot here, mainly:
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/acpi/proc.c |   26 +-------------------------
- 1 file changed, 1 insertion(+), 25 deletions(-)
+1) sparc 32-bit LEON updates from Daniel Hellstrom.
 
-Index: linux-2.6/drivers/acpi/proc.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/proc.c
-+++ linux-2.6/drivers/acpi/proc.c
-@@ -341,7 +341,6 @@ acpi_system_write_wakeup_device(struct f
- 	char strbuf[5];
- 	char str[5] = "";
- 	unsigned int len = count;
--	struct acpi_device *found_dev = NULL;
- 
- 	if (len > 4)
- 		len = 4;
-@@ -363,33 +362,10 @@ acpi_system_write_wakeup_device(struct f
- 		if (!strncmp(dev->pnp.bus_id, str, 4)) {
- 			dev->wakeup.state.enabled =
- 			    dev->wakeup.state.enabled ? 0 : 1;
--			found_dev = dev;
-+			physical_device_enable_wakeup(dev);
- 			break;
- 		}
- 	}
--	if (found_dev) {
--		physical_device_enable_wakeup(found_dev);
--		list_for_each_safe(node, next, &acpi_wakeup_device_list) {
--			struct acpi_device *dev = container_of(node,
--							       struct
--							       acpi_device,
--							       wakeup_list);
--
--			if ((dev != found_dev) &&
--			    (dev->wakeup.gpe_number ==
--			     found_dev->wakeup.gpe_number)
--			    && (dev->wakeup.gpe_device ==
--				found_dev->wakeup.gpe_device)) {
--				printk(KERN_WARNING
--				       "ACPI: '%s' and '%s' have the same GPE, "
--				       "can't disable/enable one separately\n",
--				       dev->pnp.bus_id, found_dev->pnp.bus_id);
--				dev->wakeup.state.enabled =
--				    found_dev->wakeup.state.enabled;
--				physical_device_enable_wakeup(dev);
--			}
--		}
--	}
- 	mutex_unlock(&acpi_device_lock);
- 	return count;
- }
+2) PROM cleanups and consolidation of the 32-bit and 64-bit
+   piggyback programs into one unified code base, from Sam
+   Ravnborg.
 
+3) An atyfb on sparc bootup regression fix, which will be sent
+   to -stable.
+
+Please pull, thanks a lot.
+
+The following changes since commit cb600d2f83c854ec3d6660063e4466431999489b:
+
+  Merge branch 'x86-mm-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2011-01-06 11:12:17 -0800)
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/sparc-next-2.6.git master
+
+Daniel Hellstrom (7):
+      SPARC/LEON: find IRQCTRL and Timer via OF-Tree, instead of hardcoded.
+      SPARC/LEON: added support for IRQAMP IRQ Controller
+      LEON: added raw AMBA vendor/device number to find TIMER, IRQCTRL
+      SPARC/LEON: added support for selecting Timer Core and Timer within core
+      SPARC/LEON: avoid AMBAPP name duplicates in openprom fs when REG is missing
+      APBUART: added raw AMBA vendor/device number to match against.
+      Added support for ampopts in APBUART driver. Used in AMP systems.
+
+David S. Miller (3):
+      Merge master.kernel.org:/.../davem/sparc-2.6
+      sparc: Eliminate prom_stdin.
+      atyfb: Fix bootup hangs on sparc64.
+
+Julian Calaby (1):
+      sparc: prom: Sanitize return value from prom_nbputchar()
+
+Sam Ravnborg (15):
+      sparc: drop prom/devmap.c
+      sparc: drop prom/palloc.c
+      sparc: remove unused prom cpu functions
+      sparc: remove unused prom tree functions
+      sparc: fix sparse warnings in arch/sparc/prom for 32 bit build
+      sparc: refactor piggy_32.c
+      sparc: use trapbase in setup_arch
+      sparc: use _start for the start entry (like 64 bit does)
+      sparc: additional comments to piggyback_32.c
+      sparc: remove obsolete ELF support in piggyback_32.c
+      sparc: add $BITS to piggyback arguments
+      sparc: fix tftpboot.img for sparc64 on little-endian host
+      sparc: rename piggyback_32 to piggyback
+      sparc: unify strip command in boot/Makefile
+      sparc: update copyright in piggyback.c
+
+ arch/sparc/boot/Makefile           |   28 ++---
+ arch/sparc/boot/piggyback.c        |  272 ++++++++++++++++++++++++++++++++++++
+ arch/sparc/boot/piggyback_32.c     |  137 ------------------
+ arch/sparc/boot/piggyback_64.c     |  110 ---------------
+ arch/sparc/include/asm/leon.h      |   12 ++
+ arch/sparc/include/asm/leon_amba.h |    6 +-
+ arch/sparc/include/asm/openprom.h  |    2 +-
+ arch/sparc/include/asm/oplib_32.h  |   83 +----------
+ arch/sparc/include/asm/oplib_64.h  |   50 +------
+ arch/sparc/kernel/head_32.S        |    3 +-
+ arch/sparc/kernel/leon_kernel.c    |  114 +++++++++++++---
+ arch/sparc/kernel/prom_32.c        |   27 +++-
+ arch/sparc/kernel/setup_32.c       |    3 +-
+ arch/sparc/mm/sun4c.c              |    8 +-
+ arch/sparc/prom/Makefile           |    3 -
+ arch/sparc/prom/bootstr_32.c       |    3 +-
+ arch/sparc/prom/console_32.c       |   68 ++-------
+ arch/sparc/prom/console_64.c       |   83 ++---------
+ arch/sparc/prom/devmap.c           |   53 -------
+ arch/sparc/prom/devops_32.c        |   87 ------------
+ arch/sparc/prom/devops_64.c        |   67 ---------
+ arch/sparc/prom/init_64.c          |    3 +-
+ arch/sparc/prom/misc_32.c          |    2 +-
+ arch/sparc/prom/misc_64.c          |   16 +--
+ arch/sparc/prom/mp.c               |   78 ----------
+ arch/sparc/prom/palloc.c           |   43 ------
+ arch/sparc/prom/printf.c           |   35 ++++-
+ arch/sparc/prom/ranges.c           |    6 +-
+ arch/sparc/prom/tree_32.c          |   66 +--------
+ arch/sparc/prom/tree_64.c          |   18 ---
+ drivers/serial/apbuart.c           |    8 +-
+ drivers/video/aty/atyfb_base.c     |   27 +---
+ 32 files changed, 514 insertions(+), 1007 deletions(-)
+ create mode 100644 arch/sparc/boot/piggyback.c
+ delete mode 100644 arch/sparc/boot/piggyback_32.c
+ delete mode 100644 arch/sparc/boot/piggyback_64.c
+ delete mode 100644 arch/sparc/prom/devmap.c
+ delete mode 100644 arch/sparc/prom/devops_32.c
+ delete mode 100644 arch/sparc/prom/devops_64.c
+ delete mode 100644 arch/sparc/prom/palloc.c
