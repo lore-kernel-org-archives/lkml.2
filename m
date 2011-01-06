@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752779Ab1AFKcd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 05:32:33 -0500
-Received: from cantor.suse.de ([195.135.220.2]:37025 "EHLO mx1.suse.de"
+	id S1752783Ab1AFKfz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 05:35:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33421 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752682Ab1AFKcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 05:32:23 -0500
-Date: Thu, 6 Jan 2011 11:32:22 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "James T. Dickson" <james.dickson@jtdata.net>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH] Input: introduce 'notimeout' blacklist for Dell Vostro
- V13 (was Re: Synaptics touchpad on Dell Vostro V13)
-In-Reply-To: <5171053.20.1294278131468.JavaMail.root@butch.jtdata.net>
-Message-ID: <alpine.LNX.2.00.1101061131460.26685@pobox.suse.cz>
-References: <5171053.20.1294278131468.JavaMail.root@butch.jtdata.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752516Ab1AFKfy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 05:35:54 -0500
+References: <1294308645-31113-1-git-send-email-zamsden@redhat.com> <1294308645-31113-3-git-send-email-zamsden@redhat.com>
+In-Reply-To: <1294308645-31113-3-git-send-email-zamsden@redhat.com>
+Mime-Version: 1.0 (iPhone Mail 8C148)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <F57C0733-9A1A-4A6D-9D62-39B836559878@suse.de>
+Cc: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Zachary Amsden <zamsden@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+X-Mailer: iPhone Mail (8C148)
+From: Alexander Graf <agraf@suse.de>
+Subject: Re: [KVM TSC trapping / migration 2/2] Add TSC KHZ MSR
+Date: Thu, 6 Jan 2011 11:34:43 +0100
+To: Zachary Amsden <zamsden@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Jan 2011, James T. Dickson wrote:
 
-> I have applied this patch and can report that it has fixed the problem Ubuntu 10.10. 
+Am 06.01.2011 um 11:10 schrieb Zachary Amsden <zamsden@redhat.com>:
 
-Thanks a lot for reporting back.
+> Use an MSR to allow "soft" migration to hosts which do not support
+> TSC trapping.  Rather than make this a required element of any
+> migration protocol, we allow the TSC rate to be exported as a data
+> field (useful in its own right), but we also allow a one time write
+> of the MSR during VM creation.  The result is that for the common
+> use case, no protocol change is required to communicate TSC rate
+> to the receiving host.
+> 
+> This allows administrative tools to configure migration policy
+> as they see appropriate.  Rather than dictate this policy with the
+> KVM implementation, we properly allow migration to hosts which both
+> do and do not support setting of the TSC rate on the receiving end.
+> If it is wished to not support migration to a host which lacks
+> support for the TSC rate feature, that can be coordinated externally.
 
-> However, the mouse freezes when a coming out of suspend and the system 
-> will not shutdown.
+Isn't there a real hw equivalent of such a register? It might make more sense to just implement that then.
 
-And that doesn't happen with the touchpad being only in PS/2 mode, right?
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Alex
+
+> 
