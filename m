@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235Ab1AFUrP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 15:47:15 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:10608 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752905Ab1AFUrN (ORCPT
+	id S1754038Ab1AFUrs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 15:47:48 -0500
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:9161 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753050Ab1AFUrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 15:47:13 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=al5XsVb+Iv48UiNhhLrWaeqipR/yPaQpsV8V+I++iIpTQqOaZ+y74TZzKq3WYJh78c
-         sQJXmzm9OouaTqFkt05w==
-Date: Thu, 6 Jan 2011 12:47:08 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Christoph Lameter <cl@linux.com>
-cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Bart Van Assche <bvanassche@acm.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] slub: Fix sysfs circular locking dependency
-In-Reply-To: <alpine.DEB.2.00.1101061107500.8655@router.home>
-Message-ID: <alpine.DEB.2.00.1101061239520.30820@chino.kir.corp.google.com>
-References: <1294172717-6044-1-git-send-email-penberg@kernel.org> <alpine.DEB.2.00.1101041939030.27551@chino.kir.corp.google.com> <alpine.DEB.2.00.1101050943120.13032@router.home> <alpine.DEB.2.00.1101051108520.14761@router.home>
- <AANLkTinft80dXqE-U=YDB23d9=BgXLCxJzgiA_gF4cVL@mail.gmail.com> <AANLkTinCZzJWYGnxXq_Nwv7QSkEV4Tg-te-1y0PCeRRY@mail.gmail.com> <AANLkTinQMahgVrWLxR0J6Zbh-_SPjxVJ-wuZt8B5TNjc@mail.gmail.com> <alpine.DEB.2.00.1101060019140.25879@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1101061107500.8655@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 6 Jan 2011 15:47:45 -0500
+Subject: [PATCH 00/11] hpsa: updates, January 2011 
+To: james.bottomley@hansenpartnership.com
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: linux-scsi@vger.kernel.org, mike.miller@hp.com,
+        linux-kernel@vger.kernel.org, thenzl@redhat.com,
+        akpm@linux-foundation.org, smcameron@yahoo.com
+Date: Thu, 06 Jan 2011 14:47:42 -0600
+Message-ID: <20110106204429.10753.92575.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Jan 2011, Christoph Lameter wrote:
+The following series contains a few miscellaneous fixes for hpsa.
+The biggest change is to the reset_devices code to fix the
+saving/restoring of PCI registers so that the "doorbell"
+reset method now works on those controllers which support it.
 
-> slab_mem_going_online_callback() etc already take the slub_lock since they
-> have to iterate over the list of slab caches in existence. We could take
-> the hotplug lock there as well.
-> 
-> Kame-san: Can you enlighten us on hotplug locking? And also check this
-> patch?
-> 
+---
 
-Yeah, I was going to suggest doing the lock_memory_hotplug() before taking 
-slub_lock in the callback, but I really think it should be done in 
-online_pages().  Since the offline case is already handled, this would 
-expand the semantics of lock_memory_hotplug() to serialize the access of 
-data structures that can change in a memory hotplug notifier callback 
-without locking at the lower level.
+Stephen M. Cameron (11):
+      hpsa: defend against zero sized buffers in passthru ioctls
+      hpsa: fixup DMA address before freeing.
+      hpsa: Remove duplicate defines of DIRECT_LOOKUP_ constants
+      hpsa: fix board status waiting code
+      hpsa: Use kernel provided PCI state save and restore functions
+      hpsa: limit commands allocated on reset_devices
+      hpsa: do not reset unknown boards on reset_devices
+      hpsa: take the adapter lock in hpsa_wait_for_mode_change_ack
+      hpsa: allow driver to put controller in either simple or performant mode
+      hpsa: use usleep_range not msleep for small sleeps
+      hpsa: Add a per controller commands_outstanding entry in /sys
+
+
+ Documentation/scsi/hpsa.txt |    6 +
+ drivers/scsi/hpsa.c         |  210 ++++++++++++++++++++++---------------------
+ drivers/scsi/hpsa.h         |    4 +
+ drivers/scsi/hpsa_cmd.h     |    1 
+ 4 files changed, 119 insertions(+), 102 deletions(-)
+
+-- 
+-- steve
