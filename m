@@ -1,81 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441Ab1AFQjo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 11:39:44 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:51491 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753198Ab1AFQjm convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:7:1>);
-	Thu, 6 Jan 2011 11:39:42 -0500
-Message-Id: <4D25FE5B020000780002AC50@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Thu, 06 Jan 2011 16:39:39 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Frederic Weisbecker" <fweisbec@gmail.com>
-Cc: "H. Peter Anvin" <a.p.zijlstra@chello.nl>, "Ingo Molnar" <mingo@elte.hu>,
-        "Stephane Eranian" <eranian@google.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Arnaldo Carvalho de Melo" <acme@redhat.com>,
-        "Soeren Sandmann Pedersen" <sandmann@redhat.com>,
-        "LKML" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/2] x86: Fix rbp saving in pt_regs on irq
-	 entry
-References: <1294325513-14276-1-git-send-email-fweisbec@gmail.com>
- <1294325513-14276-2-git-send-email-fweisbec@gmail.com>
- <4D25EB4B020000780002ABF7@vpn.id2.novell.com>
- <20110106154536.GA2308@nowhere>
- <4D25F79F020000780002AC20@vpn.id2.novell.com>
- <20110106162236.GB2308@nowhere>
-In-Reply-To: <20110106162236.GB2308@nowhere>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1753321Ab1AFQn4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 11:43:56 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46563 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752537Ab1AFQny (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 11:43:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=w2MSDC8jfDQLF5dzQuOf0Mxux0IUC9364THAcm/Jd9Wd3rgJXMnas0PxkKLThErfOM
+         Ts4RxtlKAfH/4ILfxsCXCej0PhNCkILd5BpXOMXS6Be/d4vIymSoXis1wtMIIKC77YLZ
+         sbmhCgmwAs1DxoaS+2lZDeQw0r07Kq80eZrEQ=
+Message-ID: <4D25ED22.3070900@gmail.com>
+Date: Thu, 06 Jan 2011 17:26:10 +0100
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>,
+        Tim Bird <tim.bird@am.sony.com>, Tony Luck <tony.luck@intel.com>
+Subject: Re: [PATCH 00/17] pramfs: persistent and protected RAM filesystem
+References: <4D25AEEE.1050401@gmail.com> <1294322613.2016.333.camel@laptop>
+In-Reply-To: <1294322613.2016.333.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 06.01.11 at 17:22, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Thu, Jan 06, 2011 at 04:10:55PM +0000, Jan Beulich wrote:
->> >>> On 06.01.11 at 16:45, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> > Before we had:
->> > 
->> > 
->> > 	leaveq
->> > 
->> > 	CFI_RESTORE             rbp
->> > 	CFI_DEF_CFA_REGISTER    rsp
->> > 	CFI_ADJUST_CFA_OFFSET   -8
->> > 
->> > So CFI_RESTORE means rbp has now the value of the base frame of
->> > the calling frame (the base frame pointer of the interrupted proc) ?
->> 
->> No - all it means is that %rbp now has its original (caller or
->> interrupted procedure) value again (i.e. an unwinder should not
->> try to read it from the stack [or other previously recorded
->> location] anymore).
->> 
->> > And what follows means that rsp-8 points to the return address?
->> 
->> No - .cfi_def_cfa_register says which register serves as the frame
->> pointer, and .cfi_adjust_cfa_offset says to adjust the offset from
->> the frame pointer to the top [or bottom] of frame. At any time
->> 
->> 	CFA = cfa_register + cfa_offset
->> 
->> with CFA being what all locations on the stack are expressed
->> relative to.
+Il 06/01/2011 15:03, Peter Zijlstra ha scritto:
+> On Thu, 2011-01-06 at 13:00 +0100, Marco Stornelli wrote:
+>> Hi all,
+>>
+>> after several reviews is time to submit the code for mainline. Thanks to
+>> CELF to believe and support actively the project and thanks to Tim Bird.
 > 
-> Ok.
+> Tony Luck was also playing with something like this I believe.
 > 
-> So here rsp points to pt_regs::r11
-> 
-> I don't understand why locations relative to the stack must be
-> expressed here by taking rsp - 8 as a base.
 
-Nothing says rsp-8. The annotations merely say to set the base
-register to rsp and to *adjust* the offset by -8 (after all, that's
-what the leaveq instruction does).
+Yes, I know. Even if the approach is different. He is trying to use a
+persistent space record-based and with a simple fs interface to store
+oops or something like this. The idea here is a little bit different,
+i.e. to have a place (a generic piece of memory) to write not sensible
+and temporary information with a complete fs structure. However we are
+on the same road :)
 
-Jan
-
+Marco
