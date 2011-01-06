@@ -1,151 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907Ab1AFRCn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 12:02:43 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:51996 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753633Ab1AFRCm convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:3:1>);
-	Thu, 6 Jan 2011 12:02:42 -0500
-Message-Id: <4D2603BF020000780002ACA7@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Thu, 06 Jan 2011 17:02:39 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: unify "numa=" command line option handling
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1753942Ab1AFRC6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 12:02:58 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:53717 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753869Ab1AFRC5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 12:02:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=i9yTqUA0drrvP2YiTR5+KtKb+kXcEfqQIfWwebYHKt7HrgQfhjzfYY9i4eAniWge/L
+         JKkreYnf1f0VQVdU6RWSHeUKA8r0HOJ/8Z4OJ4Ljc9n3Bj/OgN7kzfbu0rqEmW1+upKZ
+         M1u7d/nq/Sta18FyIvmfaeOlTtWBvAUZra75k=
+Message-ID: <4D25F4CF.1030009@gmail.com>
+Date: Thu, 06 Jan 2011 17:58:55 +0100
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: Marco Stornelli <marco.stornelli@gmail.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>,
+        Tim Bird <tim.bird@am.sony.com>, Tony Luck <tony.luck@intel.com>
+Subject: Re: [PATCH 00/17] pramfs: persistent and protected RAM filesystem
+References: <4D25AEEE.1050401@gmail.com> <1294322613.2016.333.camel@laptop> <4D25ED22.3070900@gmail.com>
+In-Reply-To: <4D25ED22.3070900@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to be able to suppress the use of SRAT tables that 32-bit
-Linux can't deal with (possibly leading to a non-bootable system,
-without disabling ACPI altogether), move the "numa=" option handling
-to common code.
+Il 06/01/2011 17:26, Marco Stornelli ha scritto:
+> Il 06/01/2011 15:03, Peter Zijlstra ha scritto:
+> and temporary information with a complete fs structure. However we are
+> 
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-
----
- arch/x86/include/asm/numa_32.h |    2 ++
- arch/x86/include/asm/numa_64.h |    1 +
- arch/x86/mm/numa.c             |   22 ++++++++++++++++++++++
- arch/x86/mm/numa_64.c          |   24 +++++-------------------
- arch/x86/mm/srat_32.c          |    1 -
- 5 files changed, 30 insertions(+), 20 deletions(-)
-
---- 2.6.37/arch/x86/include/asm/numa_32.h
-+++ 2.6.37-x86-numa-option/arch/x86/include/asm/numa_32.h
-@@ -1,6 +1,8 @@
- #ifndef _ASM_X86_NUMA_32_H
- #define _ASM_X86_NUMA_32_H
- 
-+extern int numa_off;
-+
- extern int pxm_to_nid(int pxm);
- extern void numa_remove_cpu(int cpu);
- 
---- 2.6.37/arch/x86/include/asm/numa_64.h
-+++ 2.6.37-x86-numa-option/arch/x86/include/asm/numa_64.h
-@@ -40,6 +40,7 @@ extern void __cpuinit numa_remove_cpu(in
- #ifdef CONFIG_NUMA_EMU
- #define FAKE_NODE_MIN_SIZE	((u64)64 << 20)
- #define FAKE_NODE_MIN_HASH_MASK	(~(FAKE_NODE_MIN_SIZE - 1UL))
-+void numa_emu_cmdline(char *);
- #endif /* CONFIG_NUMA_EMU */
- #else
- static inline void init_cpu_to_node(void)		{ }
---- 2.6.37/arch/x86/mm/numa.c
-+++ 2.6.37-x86-numa-option/arch/x86/mm/numa.c
-@@ -2,6 +2,28 @@
- #include <linux/topology.h>
- #include <linux/module.h>
- #include <linux/bootmem.h>
-+#include <asm/numa.h>
-+#include <asm/acpi.h>
-+
-+int __initdata numa_off;
-+
-+static __init int numa_setup(char *opt)
-+{
-+	if (!opt)
-+		return -EINVAL;
-+	if (!strncmp(opt, "off", 3))
-+		numa_off = 1;
-+#ifdef CONFIG_NUMA_EMU
-+	if (!strncmp(opt, "fake=", 5))
-+		numa_emu_cmdline(opt + 5);
-+#endif
-+#ifdef CONFIG_ACPI_NUMA
-+	if (!strncmp(opt, "noacpi", 6))
-+		acpi_numa = -1;
-+#endif
-+	return 0;
-+}
-+early_param("numa", numa_setup);
- 
- /*
-  * Which logical CPUs are on which nodes
---- 2.6.37/arch/x86/mm/numa_64.c
-+++ 2.6.37-x86-numa-option/arch/x86/mm/numa_64.c
-@@ -30,7 +30,6 @@ s16 apicid_to_node[MAX_LOCAL_APIC] __cpu
- 	[0 ... MAX_LOCAL_APIC-1] = NUMA_NO_NODE
- };
- 
--int numa_off __initdata;
- static unsigned long __initdata nodemap_addr;
- static unsigned long __initdata nodemap_size;
- 
-@@ -263,6 +262,11 @@ static struct bootnode nodes[MAX_NUMNODE
- static struct bootnode physnodes[MAX_NUMNODES] __initdata;
- static char *cmdline __initdata;
- 
-+void __init numa_emu_cmdline(char *str)
-+{
-+	cmdline = str;
-+}
-+
- static int __init setup_physnodes(unsigned long start, unsigned long end,
- 					int acpi, int k8)
- {
-@@ -661,24 +665,6 @@ unsigned long __init numa_free_all_bootm
- 	return pages;
- }
- 
--static __init int numa_setup(char *opt)
--{
--	if (!opt)
--		return -EINVAL;
--	if (!strncmp(opt, "off", 3))
--		numa_off = 1;
--#ifdef CONFIG_NUMA_EMU
--	if (!strncmp(opt, "fake=", 5))
--		cmdline = opt + 5;
--#endif
--#ifdef CONFIG_ACPI_NUMA
--	if (!strncmp(opt, "noacpi", 6))
--		acpi_numa = -1;
--#endif
--	return 0;
--}
--early_param("numa", numa_setup);
--
- #ifdef CONFIG_NUMA
- 
- static __init int find_near_online_node(int node)
---- 2.6.37/arch/x86/mm/srat_32.c
-+++ 2.6.37-x86-numa-option/arch/x86/mm/srat_32.c
-@@ -59,7 +59,6 @@ static struct node_memory_chunk_s __init
- static int __initdata num_memory_chunks; /* total number of memory chunks */
- static u8 __initdata apicid_to_pxm[MAX_APICID];
- 
--int numa_off __initdata;
- int acpi_numa __initdata;
- 
- static __init void bad_srat(void)
-
-
-
+Errata corrige: maybe I used the wrong term, I meant "volatile" instead
+of "temporary" information, i.e. I'd like to save this info to re-read
+it later but I don't want to store it in flash, a simple log, run-time
+information for debug like a flight-recorder or whatever you want.
