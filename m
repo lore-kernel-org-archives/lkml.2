@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893Ab1AFBDq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 20:03:46 -0500
-Received: from kroah.org ([198.145.64.141]:35372 "EHLO coco.kroah.org"
+	id S1753572Ab1AFBEC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 20:04:02 -0500
+Received: from kroah.org ([198.145.64.141]:35365 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751622Ab1AFA2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:28:47 -0500
+	id S1752611Ab1AFA2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:28:46 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:22:57 2011
-Message-Id: <20110106002257.196351070@clark.site>
+Message-Id: <20110106002257.107394986@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:21:44 -0800
+Date: Wed, 05 Jan 2011 16:21:43 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>
-Subject: [005/152] ALSA: hda - Do not wrongly restrict min_channels based on ELD
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [004/152] ALSA: HDA: Quirk for Dell Vostro 320 to make microphone work
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,69 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anssi Hannula <anssi.hannula@iki.fi>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 4b0dbdb17f846a8887e5f7fbeea2deb0703236bd upstream.
+commit 8a96b1e02029aa512199b1b6d281dcede9ed81f1 upstream.
 
-Commit bbbe33900d1f3c added functionality to restrict PCM parameters
-based on ELD info (derived from EDID data) of the audio sink.
+BugLink: http://launchpad.net/497546
 
-However, it wrongly assumes that the bits 0-2 of the first byte of
-CEA Short Audio Descriptors mean a supported number of channels. In
-reality, they mean the maximum number of channels (as per CEA-861-D
-7.5.2). This means that the channel count can only be used to restrict
-max_channels, not min_channels.
+Confirmed that the ideapad model works better than the current
+quirk for Dell Vostro 320.
 
-Restricting min_channels causes us to deny opening the device in stereo
-mode if the sink only has SADs that declare larger numbers of channels
-(like Primare SP32 AV Processor does).
-
-Fix that by not restricting min_channels based on ELD information.
-
-Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
-Reported-by: Jean-Yves Avenard <jyavenard@gmail.com>
-Tested-by: Jean-Yves Avenard <jyavenard@gmail.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/hda_eld.c    |    4 ----
- sound/pci/hda/patch_hdmi.c |    1 -
- 2 files changed, 5 deletions(-)
+ sound/pci/hda/patch_conexant.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/sound/pci/hda/hda_eld.c
-+++ b/sound/pci/hda/hda_eld.c
-@@ -607,13 +607,10 @@ void hdmi_eld_update_pcm_info(struct hdm
- 	pcm->rates = 0;
- 	pcm->formats = 0;
- 	pcm->maxbps = 0;
--	pcm->channels_min = -1;
- 	pcm->channels_max = 0;
- 	for (i = 0; i < eld->sad_count; i++) {
- 		struct cea_sad *a = &eld->sad[i];
- 		pcm->rates |= a->rates;
--		if (a->channels < pcm->channels_min)
--			pcm->channels_min = a->channels;
- 		if (a->channels > pcm->channels_max)
- 			pcm->channels_max = a->channels;
- 		if (a->format == AUDIO_CODING_TYPE_LPCM) {
-@@ -641,7 +638,6 @@ void hdmi_eld_update_pcm_info(struct hdm
- 	/* restrict the parameters by the values the codec provides */
- 	pcm->rates &= codec_pars->rates;
- 	pcm->formats &= codec_pars->formats;
--	pcm->channels_min = max(pcm->channels_min, codec_pars->channels_min);
- 	pcm->channels_max = min(pcm->channels_max, codec_pars->channels_max);
- 	pcm->maxbps = min(pcm->maxbps, codec_pars->maxbps);
- }
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -779,7 +779,6 @@ static int hdmi_pcm_open(struct hda_pcm_
- 			return -ENODEV;
- 	} else {
- 		/* fallback to the codec default */
--		hinfo->channels_min = codec_pars->channels_min;
- 		hinfo->channels_max = codec_pars->channels_max;
- 		hinfo->rates = codec_pars->rates;
- 		hinfo->formats = codec_pars->formats;
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -3085,8 +3085,7 @@ static const char *cxt5066_models[CXT506
+ static struct snd_pci_quirk cxt5066_cfg_tbl[] = {
+ 	SND_PCI_QUIRK(0x14f1, 0x0101, "Conexant Reference board",
+ 		      CXT5066_LAPTOP),
+-	SND_PCI_QUIRK(0x1028, 0x02f5, "Dell",
+-		      CXT5066_DELL_LAPTOP),
++	SND_PCI_QUIRK(0x1028, 0x02f5, "Dell Vostro 320", CXT5066_IDEAPAD),
+ 	SND_PCI_QUIRK(0x152d, 0x0833, "OLPC XO-1.5", CXT5066_OLPC_XO_1_5),
+ 	SND_PCI_QUIRK(0x1028, 0x02d8, "Dell Vostro", CXT5066_DELL_VOSTO),
+ 	SND_PCI_QUIRK(0x1028, 0x0402, "Dell Vostro", CXT5066_DELL_VOSTO),
 
 
