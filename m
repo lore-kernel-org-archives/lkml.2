@@ -1,85 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273Ab1AFFTL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 00:19:11 -0500
-Received: from home.kolivas.org ([59.167.196.135]:34045 "EHLO home.kolivas.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751087Ab1AFFTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 00:19:09 -0500
-From: Con Kolivas <kernel@kolivas.org>
-To: linux-kernel@vger.kernel.org
-Subject: 2.6.37-ck1
-Date: Thu, 6 Jan 2011 16:19:06 +1100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-ck1; KDE/4.4.5; x86_64; ; )
+	id S1752698Ab1AFFUd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 00:20:33 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:40145 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab1AFFUc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 00:20:32 -0500
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: "M. Mohan Kumar" <mohan@in.ibm.com>,
+        v9fs-developer <v9fs-developer@lists.sourceforge.net>,
+        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [V2] fs/9p: TREADLINK bugfix
+In-Reply-To: <1294246196-8354-1-git-send-email-mohan@in.ibm.com>
+References: <1294246196-8354-1-git-send-email-mohan@in.ibm.com>
+User-Agent: Notmuch/0.5-32-gf6c60cc (http://notmuchmail.org) Emacs/23.1.1 (i486-pc-linux-gnu)
+Date: Thu, 06 Jan 2011 10:50:26 +0530
+Message-ID: <87zkre38x1.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-X-Length: 2291
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101061619.06992.kernel@kolivas.org>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are patches designed to improve system responsiveness and interactivity 
-with specific emphasis on the desktop, but suitable to any workload.
+On Wed,  5 Jan 2011 22:19:56 +0530, "M. Mohan Kumar" <mohan@in.ibm.com> wrote:
+> Remove v9fs_vfs_readlink_dotl function and use generic_readlink. Update
+> v9fs_vfs_follow_link_dotl function to accommodate this change
+> 
+> Signed-off-by: M. Mohan Kumar <mohan@in.ibm.com>
+> Reported-by:  Dr. David Alan Gilbert <linux@treblig.org>
+> ---
+> Changes from previous version:
+> * Use __getname in v9fs_vfs_follow_link_dotl
+> * Remove v9fs_vfs_readlink_dotl function
+> 
+>  fs/9p/vfs_inode.c |   53 +++++++++++++++++------------------------------------
+>  1 files changed, 17 insertions(+), 36 deletions(-)
+> 
+> diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
+> index 2ce3668..7e613e8 100644
+> --- a/fs/9p/vfs_inode.c
+> +++ b/fs/9p/vfs_inode.c
+> @@ -1994,30 +1994,6 @@ error:
+>  	return err;
+>  }
+> 
+> -static int
+> -v9fs_vfs_readlink_dotl(struct dentry *dentry, char *buffer, int buflen)
+> -{
+> -	int retval;
+> -	struct p9_fid *fid;
+> -	char *target = NULL;
+> -
+> -	P9_DPRINTK(P9_DEBUG_VFS, " %s\n", dentry->d_name.name);
+> -	retval = -EPERM;
+> -	fid = v9fs_fid_lookup(dentry);
+> -	if (IS_ERR(fid))
+> -		return PTR_ERR(fid);
+> -
+> -	retval = p9_client_readlink(fid, &target);
+> -	if (retval < 0)
+> -		return retval;
+> -
+> -	strncpy(buffer, target, buflen);
+> -	P9_DPRINTK(P9_DEBUG_VFS, "%s -> %s\n", dentry->d_name.name, buffer);
+> -
+> -	retval = strnlen(buffer, buflen);
+> -	return retval;
+> -}
+> -
+>  /**
+>   * v9fs_vfs_follow_link_dotl - follow a symlink path
+>   * @dentry: dentry for symlink
+> @@ -2028,23 +2004,28 @@ v9fs_vfs_readlink_dotl(struct dentry *dentry, char *buffer, int buflen)
+>  static void *
+>  v9fs_vfs_follow_link_dotl(struct dentry *dentry, struct nameidata *nd)
+>  {
+> -	int len = 0;
+> +	int retval;
+> +	struct p9_fid *fid;
+>  	char *link = __getname();
+> +	char *target;
+> 
+> -	P9_DPRINTK(P9_DEBUG_VFS, "%s n", dentry->d_name.name);
+> +	P9_DPRINTK(P9_DEBUG_VFS, "%s\n", dentry->d_name.name);
+> 
+>  	if (!link)
+> -		link = ERR_PTR(-ENOMEM);
+> -	else {
+> -		len = v9fs_vfs_readlink_dotl(dentry, link, PATH_MAX);
+> -		if (len < 0) {
+> -			__putname(link);
+> -			link = ERR_PTR(len);
+> -		} else
+> -			link[min(len, PATH_MAX-1)] = 0;
+> +		return NULL;
+> +	fid = v9fs_fid_lookup(dentry);
+> +	if (IS_ERR(fid))
+> +		return fid;
 
+need to do a __putname(link) and do a nd_set_link(nd, ERR_PTR(fid))
 
-Apply to 2.6.37:
-http://www.kernel.org/pub/linux/kernel/people/ck/patches/2.6/2.6.37/2.6.37-
-ck1/patch-2.6.37-ck1.bz2
+> +	retval = p9_client_readlink(fid, &target);
+> +	if (retval < 0) {
+> +		__putname(link);
+> +		kfree(target);
 
-Broken out tarball:
-http://www.kernel.org/pub/linux/kernel/people/ck/patches/2.6/2.6.37/2.6.37-
-ck1/2.6.37-ck1-broken-out.tar.bz2
+On error target should not be allocated right ? So why kfree ?
 
-Discrete patches:
-http://www.kernel.org/pub/linux/kernel/people/ck/patches/2.6/2.6.37/2.6.37-
-ck1/patches/
+> +		return NULL;
+>  	}
+> -	nd_set_link(nd, link);
+> 
+> +	strcpy(link, target);
+> +	nd_set_link(nd, link);
+> +	kfree(target);
+>  	return NULL;
+>  }
+> 
 
-All -ck patches:
-http://www.kernel.org/pub/linux/kernel/people/ck/patches/
-
-
-Web:
-http://kernel.kolivas.org
-
-Code blog when I feel like it:
-http://ck-hack.blogspot.com/
-
-Each discrete patch contains a brief description of what it does at the top of 
-the patch itself.
-
-
-The most significant change is an updated BFS CPU scheduler, up to version 
-0.363. See the announce of that patch for the changelog. The rest is a resync.
-
-
-2.6.37-sched-bfs-363.patch
-sched-add-above-background-load-function.patch
-mm-make_swappiness_really_mean_it.patch
-mm-zero_swappiness.patch
-mm-enable_swaptoken_only_when_swap_full.patch
-mm-drop_swap_cache_aggressively.patch
-mm-kswapd_inherit_prio-1.patch
-mm-background_scan.patch
-mm-idleprio_prio-1.patch
-mm-lru_cache_add_lru_tail.patch
-mm-decrease_default_dirty_ratio.patch
-kconfig-expose_vmsplit_option.patch
-hz-default_1000.patch
-hz-no_default_250.patch
-hz-raise_max.patch
-preempt-desktop-tune.patch
-cpufreq-bfs_tweaks.patch
-ck1-version.patch
-
-
-
-I'll be offline shortly and in Japan for a few weeks so I'll be unlikely to 
-respond to any emails in that time.
-
-Enjoy!
-Con
--- 
--ck
+-aneesh
