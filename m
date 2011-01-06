@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab1AFAcu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:32:50 -0500
-Received: from kroah.org ([198.145.64.141]:36166 "EHLO coco.kroah.org"
+	id S1754890Ab1AFAdE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:33:04 -0500
+Received: from kroah.org ([198.145.64.141]:36162 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754848Ab1AFAcA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:32:00 -0500
+	id S1754845Ab1AFAb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:31:59 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:10 2011
-Message-Id: <20110106002310.722196020@clark.site>
+Message-Id: <20110106002310.638820587@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:24:09 -0800
+Date: Wed, 05 Jan 2011 16:24:08 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [150/152] orinoco: initialise priv->hw before assigning the interrupt
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [149/152] [media] Dont export format_by_forcc on two different drivers
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,89 +25,205 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Kilroy <kilroyd@googlemail.com>
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-commit 229bd792be0bad245b78ed8f119952733a4752e5 upstream.
+commit a757ee2216211278680dd8ac869aabe7b4a9970d upstream.
 
-The interrupt handler takes a lock - but since commit bcad6e80f3f this
-lock goes through an indirection specified in the hermes_t structure.
-We must therefore initialise the structure before setting up the
-interrupt handler.
+Drivers should append their name on exported symbols, to avoid
+conflicts with allyesconfig:
 
-Fix orinoco_cs and spectrum_cs
+drivers/staging/built-in.o: In function `format_by_fourcc':
+/home/v4l/work_trees/linus/drivers/staging/cx25821/cx25821-video.c:96: multiple definition of `format_by_fourcc'
+drivers/media/built-in.o:/home/v4l/work_trees/linus/drivers/media/common/saa7146_video.c:88: first defined here
 
-<https://bugzilla.kernel.org/show_bug.cgi?id=23932>
+Let's rename both occurences with a small shellscript:
 
-Bisected by: Matt Domsch <Matt_Domsch@dell.com>
-Signed-off by: David Kilroy <kilroyd@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+for i in drivers/staging/cx25821/*.[ch]; do sed s,format_by_fourcc,cx25821_format_by_fourcc,g <$i >a && mv a $i; done
+for i in drivers/media/common/saa7146*.[ch]; do sed s,format_by_fourcc,saa7146_format_by_fourcc,g <$i >a && mv a $i; done
+for i in include/media/saa7146*.[ch]; do sed s,format_by_fourcc,saa7146_format_by_fourcc,g <$i >a && mv a $i; done
+
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/orinoco/orinoco_cs.c  |   14 +++++++-------
- drivers/net/wireless/orinoco/spectrum_cs.c |   14 +++++++-------
- 2 files changed, 14 insertions(+), 14 deletions(-)
+ drivers/media/common/saa7146_hlp.c      |    8 ++++----
+ drivers/media/common/saa7146_video.c    |   16 ++++++++--------
+ drivers/staging/cx25821/cx25821-video.c |    8 ++++----
+ drivers/staging/cx25821/cx25821-video.h |    2 +-
+ include/media/saa7146.h                 |    2 +-
+ 5 files changed, 18 insertions(+), 18 deletions(-)
 
---- a/drivers/net/wireless/orinoco/orinoco_cs.c
-+++ b/drivers/net/wireless/orinoco/orinoco_cs.c
-@@ -248,20 +248,20 @@ orinoco_cs_config(struct pcmcia_device *
- 		goto failed;
+--- a/drivers/media/common/saa7146_hlp.c
++++ b/drivers/media/common/saa7146_hlp.c
+@@ -558,7 +558,7 @@ static void saa7146_set_window(struct sa
+ static void saa7146_set_position(struct saa7146_dev *dev, int w_x, int w_y, int w_height, enum v4l2_field field, u32 pixelformat)
+ {
+ 	struct saa7146_vv *vv = dev->vv_data;
+-	struct saa7146_format *sfmt = format_by_fourcc(dev, pixelformat);
++	struct saa7146_format *sfmt = saa7146_format_by_fourcc(dev, pixelformat);
+ 
+ 	int b_depth = vv->ov_fmt->depth;
+ 	int b_bpl = vv->ov_fb.fmt.bytesperline;
+@@ -702,7 +702,7 @@ static int calculate_video_dma_grab_pack
+ 	struct saa7146_vv *vv = dev->vv_data;
+ 	struct saa7146_video_dma vdma1;
+ 
+-	struct saa7146_format *sfmt = format_by_fourcc(dev,buf->fmt->pixelformat);
++	struct saa7146_format *sfmt = saa7146_format_by_fourcc(dev,buf->fmt->pixelformat);
+ 
+ 	int width = buf->fmt->width;
+ 	int height = buf->fmt->height;
+@@ -827,7 +827,7 @@ static int calculate_video_dma_grab_plan
+ 	struct saa7146_video_dma vdma2;
+ 	struct saa7146_video_dma vdma3;
+ 
+-	struct saa7146_format *sfmt = format_by_fourcc(dev,buf->fmt->pixelformat);
++	struct saa7146_format *sfmt = saa7146_format_by_fourcc(dev,buf->fmt->pixelformat);
+ 
+ 	int width = buf->fmt->width;
+ 	int height = buf->fmt->height;
+@@ -994,7 +994,7 @@ static void program_capture_engine(struc
+ 
+ void saa7146_set_capture(struct saa7146_dev *dev, struct saa7146_buf *buf, struct saa7146_buf *next)
+ {
+-	struct saa7146_format *sfmt = format_by_fourcc(dev,buf->fmt->pixelformat);
++	struct saa7146_format *sfmt = saa7146_format_by_fourcc(dev,buf->fmt->pixelformat);
+ 	struct saa7146_vv *vv = dev->vv_data;
+ 	u32 vdma1_prot_addr;
+ 
+--- a/drivers/media/common/saa7146_video.c
++++ b/drivers/media/common/saa7146_video.c
+@@ -84,7 +84,7 @@ static struct saa7146_format formats[] =
+ 
+ static int NUM_FORMATS = sizeof(formats)/sizeof(struct saa7146_format);
+ 
+-struct saa7146_format* format_by_fourcc(struct saa7146_dev *dev, int fourcc)
++struct saa7146_format* saa7146_format_by_fourcc(struct saa7146_dev *dev, int fourcc)
+ {
+ 	int i, j = NUM_FORMATS;
+ 
+@@ -266,7 +266,7 @@ static int saa7146_pgtable_build(struct
+ 	struct videobuf_dmabuf *dma=videobuf_to_dma(&buf->vb);
+ 	struct scatterlist *list = dma->sglist;
+ 	int length = dma->sglen;
+-	struct saa7146_format *sfmt = format_by_fourcc(dev,buf->fmt->pixelformat);
++	struct saa7146_format *sfmt = saa7146_format_by_fourcc(dev,buf->fmt->pixelformat);
+ 
+ 	DEB_EE(("dev:%p, buf:%p, sg_len:%d\n",dev,buf,length));
+ 
+@@ -408,7 +408,7 @@ static int video_begin(struct saa7146_fh
+ 		}
  	}
  
--	ret = pcmcia_request_irq(link, orinoco_interrupt);
--	if (ret)
--		goto failed;
--
--	/* We initialize the hermes structure before completing PCMCIA
--	 * configuration just in case the interrupt handler gets
--	 * called. */
- 	mem = ioport_map(link->resource[0]->start,
- 			resource_size(link->resource[0]));
- 	if (!mem)
- 		goto failed;
+-	fmt = format_by_fourcc(dev,fh->video_fmt.pixelformat);
++	fmt = saa7146_format_by_fourcc(dev,fh->video_fmt.pixelformat);
+ 	/* we need to have a valid format set here */
+ 	BUG_ON(NULL == fmt);
  
-+	/* We initialize the hermes structure before completing PCMCIA
-+	 * configuration just in case the interrupt handler gets
-+	 * called. */
- 	hermes_struct_init(hw, mem, HERMES_16BIT_REGSPACING);
- 
-+	ret = pcmcia_request_irq(link, orinoco_interrupt);
-+	if (ret)
-+		goto failed;
-+
- 	/*
- 	 * This actually configures the PCMCIA socket -- setting up
- 	 * the I/O windows and the interrupt mapping, and putting the
---- a/drivers/net/wireless/orinoco/spectrum_cs.c
-+++ b/drivers/net/wireless/orinoco/spectrum_cs.c
-@@ -310,21 +310,21 @@ spectrum_cs_config(struct pcmcia_device
- 		goto failed;
+@@ -460,7 +460,7 @@ static int video_end(struct saa7146_fh *
+ 		return -EBUSY;
  	}
  
--	ret = pcmcia_request_irq(link, orinoco_interrupt);
--	if (ret)
--		goto failed;
--
--	/* We initialize the hermes structure before completing PCMCIA
--	 * configuration just in case the interrupt handler gets
--	 * called. */
- 	mem = ioport_map(link->resource[0]->start,
- 			resource_size(link->resource[0]));
- 	if (!mem)
- 		goto failed;
+-	fmt = format_by_fourcc(dev,fh->video_fmt.pixelformat);
++	fmt = saa7146_format_by_fourcc(dev,fh->video_fmt.pixelformat);
+ 	/* we need to have a valid format set here */
+ 	BUG_ON(NULL == fmt);
  
-+	/* We initialize the hermes structure before completing PCMCIA
-+	 * configuration just in case the interrupt handler gets
-+	 * called. */
- 	hermes_struct_init(hw, mem, HERMES_16BIT_REGSPACING);
- 	hw->eeprom_pda = true;
+@@ -536,7 +536,7 @@ static int vidioc_s_fbuf(struct file *fi
+ 		return -EPERM;
  
-+	ret = pcmcia_request_irq(link, orinoco_interrupt);
-+	if (ret)
-+		goto failed;
-+
- 	/*
- 	 * This actually configures the PCMCIA socket -- setting up
- 	 * the I/O windows and the interrupt mapping, and putting the
+ 	/* check args */
+-	fmt = format_by_fourcc(dev, fb->fmt.pixelformat);
++	fmt = saa7146_format_by_fourcc(dev, fb->fmt.pixelformat);
+ 	if (NULL == fmt)
+ 		return -EINVAL;
+ 
+@@ -760,7 +760,7 @@ static int vidioc_try_fmt_vid_cap(struct
+ 
+ 	DEB_EE(("V4L2_BUF_TYPE_VIDEO_CAPTURE: dev:%p, fh:%p\n", dev, fh));
+ 
+-	fmt = format_by_fourcc(dev, f->fmt.pix.pixelformat);
++	fmt = saa7146_format_by_fourcc(dev, f->fmt.pix.pixelformat);
+ 	if (NULL == fmt)
+ 		return -EINVAL;
+ 
+@@ -1264,7 +1264,7 @@ static int buffer_prepare(struct videobu
+ 		buf->fmt       = &fh->video_fmt;
+ 		buf->vb.field  = fh->video_fmt.field;
+ 
+-		sfmt = format_by_fourcc(dev,buf->fmt->pixelformat);
++		sfmt = saa7146_format_by_fourcc(dev,buf->fmt->pixelformat);
+ 
+ 		release_all_pagetables(dev, buf);
+ 		if( 0 != IS_PLANAR(sfmt->trans)) {
+@@ -1378,7 +1378,7 @@ static int video_open(struct saa7146_dev
+ 	fh->video_fmt.pixelformat = V4L2_PIX_FMT_BGR24;
+ 	fh->video_fmt.bytesperline = 0;
+ 	fh->video_fmt.field = V4L2_FIELD_ANY;
+-	sfmt = format_by_fourcc(dev,fh->video_fmt.pixelformat);
++	sfmt = saa7146_format_by_fourcc(dev,fh->video_fmt.pixelformat);
+ 	fh->video_fmt.sizeimage = (fh->video_fmt.width * fh->video_fmt.height * sfmt->depth)/8;
+ 
+ 	videobuf_queue_sg_init(&fh->video_q, &video_qops,
+--- a/drivers/staging/cx25821/cx25821-video.c
++++ b/drivers/staging/cx25821/cx25821-video.c
+@@ -92,7 +92,7 @@ int cx25821_get_format_size(void)
+ 	return ARRAY_SIZE(formats);
+ }
+ 
+-struct cx25821_fmt *format_by_fourcc(unsigned int fourcc)
++struct cx25821_fmt *cx25821_format_by_fourcc(unsigned int fourcc)
+ {
+ 	unsigned int i;
+ 
+@@ -848,7 +848,7 @@ static int video_open(struct file *file)
+        pix_format =
+ 	   (dev->channels[ch_id].pixel_formats ==
+ 	    PIXEL_FRMT_411) ? V4L2_PIX_FMT_Y41P : V4L2_PIX_FMT_YUYV;
+-       fh->fmt = format_by_fourcc(pix_format);
++       fh->fmt = cx25821_format_by_fourcc(pix_format);
+ 
+        v4l2_prio_open(&dev->channels[ch_id].prio, &fh->prio);
+ 
+@@ -1009,7 +1009,7 @@ static int vidioc_s_fmt_vid_cap(struct f
+        if (0 != err)
+ 	       return err;
+ 
+-       fh->fmt = format_by_fourcc(f->fmt.pix.pixelformat);
++       fh->fmt = cx25821_format_by_fourcc(f->fmt.pix.pixelformat);
+        fh->vidq.field = f->fmt.pix.field;
+ 
+        /* check if width and height is valid based on set standard */
+@@ -1117,7 +1117,7 @@ int cx25821_vidioc_try_fmt_vid_cap(struc
+ 	enum v4l2_field field;
+ 	unsigned int maxw, maxh;
+ 
+-	fmt = format_by_fourcc(f->fmt.pix.pixelformat);
++	fmt = cx25821_format_by_fourcc(f->fmt.pix.pixelformat);
+ 	if (NULL == fmt)
+ 		return -EINVAL;
+ 
+--- a/drivers/staging/cx25821/cx25821-video.h
++++ b/drivers/staging/cx25821/cx25821-video.h
+@@ -87,7 +87,7 @@ extern unsigned int vid_limit;
+ 
+ #define FORMAT_FLAGS_PACKED       0x01
+ extern struct cx25821_fmt formats[];
+-extern struct cx25821_fmt *format_by_fourcc(unsigned int fourcc);
++extern struct cx25821_fmt *cx25821_format_by_fourcc(unsigned int fourcc);
+ extern struct cx25821_data timeout_data[MAX_VID_CHANNEL_NUM];
+ 
+ extern void cx25821_dump_video_queue(struct cx25821_dev *dev,
+--- a/include/media/saa7146.h
++++ b/include/media/saa7146.h
+@@ -161,7 +161,7 @@ extern struct list_head saa7146_devices;
+ extern struct mutex saa7146_devices_lock;
+ int saa7146_register_extension(struct saa7146_extension*);
+ int saa7146_unregister_extension(struct saa7146_extension*);
+-struct saa7146_format* format_by_fourcc(struct saa7146_dev *dev, int fourcc);
++struct saa7146_format* saa7146_format_by_fourcc(struct saa7146_dev *dev, int fourcc);
+ int saa7146_pgtable_alloc(struct pci_dev *pci, struct saa7146_pgtable *pt);
+ void saa7146_pgtable_free(struct pci_dev *pci, struct saa7146_pgtable *pt);
+ int saa7146_pgtable_build_single(struct pci_dev *pci, struct saa7146_pgtable *pt, struct scatterlist *list, int length );
 
 
