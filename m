@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924Ab1AFA3G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:29:06 -0500
-Received: from kroah.org ([198.145.64.141]:35444 "EHLO coco.kroah.org"
+	id S1753947Ab1AFBAr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 20:00:47 -0500
+Received: from kroah.org ([198.145.64.141]:35452 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753747Ab1AFA3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:29:03 -0500
+	id S1753918Ab1AFA3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:29:05 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:22:58 2011
-Message-Id: <20110106002258.568667321@clark.site>
+Message-Id: <20110106002258.746649540@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:21:59 -0800
+Date: Wed, 05 Jan 2011 16:22:01 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        NeilBrown <neilb@suse.de>, "J. Bruce Fields" <bfields@redhat.com>
-Subject: [020/152] sunrpc: prevent use-after-free on clearing XPT_BUSY
+        Gabriele Gorla <gorlik@penguintown.net>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [022/152] hwmon: (adm1026) Fix setting fan_div
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,78 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Gabriele Gorla <gorlik@penguintown.net>
 
-commit ed2849d3ecfa339435818eeff28f6c3424300cec upstream.
+commit 52bc9802ce849d0d287cc5fe76d06b0daa3986ca upstream.
 
-When an xprt is created, it has a refcount of 1, and XPT_BUSY is set.
-The refcount is *not* owned by the thread that created the xprt
-(as is clear from the fact that creators never put the reference).
-Rather, it is owned by the absence of XPT_DEAD.  Once XPT_DEAD is set,
-(And XPT_BUSY is clear) that initial reference is dropped and the xprt
-can be freed.
+Prevent setting fan_div from stomping on other fans that share the
+same I2C register.
 
-So when a creator clears XPT_BUSY it is dropping its only reference and
-so must not touch the xprt again.
-
-However svc_recv, after calling ->xpo_accept (and so getting an XPT_BUSY
-reference on a new xprt), calls svc_xprt_recieved.  This clears
-XPT_BUSY and then svc_xprt_enqueue - this last without owning a reference.
-This is dangerous and has been seen to leave svc_xprt_enqueue working
-with an xprt containing garbage.
-
-So we need to hold an extra counted reference over that call to
-svc_xprt_received.
-
-For safety, any time we clear XPT_BUSY and then use the xprt again, we
-first get a reference, and the put it again afterwards.
-
-Note that svc_close_all does not need this extra protection as there are
-no threads running, and the final free can only be called asynchronously
-from such a thread.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Gabriele Gorla <gorlik@penguintown.net>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/sunrpc/svc_xprt.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/hwmon/adm1026.c |   16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
---- a/net/sunrpc/svc_xprt.c
-+++ b/net/sunrpc/svc_xprt.c
-@@ -212,6 +212,7 @@ int svc_create_xprt(struct svc_serv *ser
- 	spin_lock(&svc_xprt_class_lock);
- 	list_for_each_entry(xcl, &svc_xprt_class_list, xcl_list) {
- 		struct svc_xprt *newxprt;
-+		unsigned short newport;
+--- a/drivers/hwmon/adm1026.c
++++ b/drivers/hwmon/adm1026.c
+@@ -916,7 +916,7 @@ static ssize_t set_fan_div(struct device
+ 	int nr = sensor_attr->index;
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct adm1026_data *data = i2c_get_clientdata(client);
+-	int val, orig_div, new_div, shift;
++	int val, orig_div, new_div;
  
- 		if (strcmp(xprt_name, xcl->xcl_name))
- 			continue;
-@@ -230,8 +231,9 @@ int svc_create_xprt(struct svc_serv *ser
- 		spin_lock_bh(&serv->sv_lock);
- 		list_add(&newxprt->xpt_list, &serv->sv_permsocks);
- 		spin_unlock_bh(&serv->sv_lock);
-+		newport = svc_xprt_local_port(newxprt);
- 		clear_bit(XPT_BUSY, &newxprt->xpt_flags);
--		return svc_xprt_local_port(newxprt);
-+		return newport;
+ 	val = simple_strtol(buf, NULL, 10);
+ 	new_div = DIV_TO_REG(val);
+@@ -926,15 +926,17 @@ static ssize_t set_fan_div(struct device
+ 	data->fan_div[nr] = DIV_FROM_REG(new_div);
+ 
+ 	if (nr < 4) { /* 0 <= nr < 4 */
+-		shift = 2 * nr;
+ 		adm1026_write_value(client, ADM1026_REG_FAN_DIV_0_3,
+-			((DIV_TO_REG(orig_div) & (~(0x03 << shift))) |
+-			(new_div << shift)));
++				    (DIV_TO_REG(data->fan_div[0]) << 0) |
++				    (DIV_TO_REG(data->fan_div[1]) << 2) |
++				    (DIV_TO_REG(data->fan_div[2]) << 4) |
++				    (DIV_TO_REG(data->fan_div[3]) << 6));
+ 	} else { /* 3 < nr < 8 */
+-		shift = 2 * (nr - 4);
+ 		adm1026_write_value(client, ADM1026_REG_FAN_DIV_4_7,
+-			((DIV_TO_REG(orig_div) & (~(0x03 << (2 * shift)))) |
+-			(new_div << shift)));
++				    (DIV_TO_REG(data->fan_div[4]) << 0) |
++				    (DIV_TO_REG(data->fan_div[5]) << 2) |
++				    (DIV_TO_REG(data->fan_div[6]) << 4) |
++				    (DIV_TO_REG(data->fan_div[7]) << 6));
  	}
-  err:
- 	spin_unlock(&svc_xprt_class_lock);
-@@ -431,8 +433,13 @@ void svc_xprt_received(struct svc_xprt *
- {
- 	BUG_ON(!test_bit(XPT_BUSY, &xprt->xpt_flags));
- 	xprt->xpt_pool = NULL;
-+	/* As soon as we clear busy, the xprt could be closed and
-+	 * 'put', so we need a reference to call svc_xprt_enqueue with:
-+	 */
-+	svc_xprt_get(xprt);
- 	clear_bit(XPT_BUSY, &xprt->xpt_flags);
- 	svc_xprt_enqueue(xprt);
-+	svc_xprt_put(xprt);
- }
- EXPORT_SYMBOL_GPL(svc_xprt_received);
  
+ 	if (data->fan_div[nr] != orig_div) {
 
 
