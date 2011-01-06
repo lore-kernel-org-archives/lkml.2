@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754451Ab1AFWXe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 17:23:34 -0500
-Received: from kroah.org ([198.145.64.141]:55608 "EHLO coco.kroah.org"
+	id S1754473Ab1AFWXh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 17:23:37 -0500
+Received: from kroah.org ([198.145.64.141]:55616 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754375Ab1AFWXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 17:23:32 -0500
+	id S1754375Ab1AFWXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 17:23:34 -0500
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Alexey Charkov <alchark@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 02/36] serial: Add support for UART on VIA VT8500 and compatibles
-Date: Thu,  6 Jan 2011 14:22:51 -0800
-Message-Id: <1294352605-31906-2-git-send-email-gregkh@suse.de>
+Cc: Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 04/36] n_gsm: clean up printks
+Date: Thu,  6 Jan 2011 14:22:53 -0800
+Message-Id: <1294352605-31906-4-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110106215404.GA30624@kroah.com>
 References: <20110106215404.GA30624@kroah.com>
@@ -19,725 +19,372 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexey Charkov <alchark@gmail.com>
+From: Alan Cox <alan@linux.intel.com>
 
-This adds a driver for the serial ports found in VIA and WonderMedia
-Systems-on-Chip. Interrupt-driven FIFO operation is implemented.
-The hardware also supports pure register-based operation (which is
-slower) and DMA-based FIFO operation. As the FIFOs are only 16 bytes
-long, DMA operation is probably not worth the hassle.
+[Original From Ken Mills but I redid it using pr_ helpers instead]
 
-Signed-off-by: Alexey Charkov <alchark@gmail.com>
+Also fix up coding style, there are two warnings left but that is where
+the CodingStyle tools blow up because they cannot handle
+
+	if (blah) {
+		foo
+	} else switch (x) {
+		case 1:
+		}
+
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/serial/Kconfig         |   10 +
- drivers/serial/Makefile        |    1 +
- drivers/serial/vt8500_serial.c |  648 ++++++++++++++++++++++++++++++++++++++++
- include/linux/serial_core.h    |    3 +
- 4 files changed, 662 insertions(+), 0 deletions(-)
- create mode 100644 drivers/serial/vt8500_serial.c
+ drivers/tty/n_gsm.c |  154 +++++++++++++++++++++++++++------------------------
+ 1 files changed, 81 insertions(+), 73 deletions(-)
 
-diff --git a/drivers/serial/Kconfig b/drivers/serial/Kconfig
-index 0b9cc17..388e371 100644
---- a/drivers/serial/Kconfig
-+++ b/drivers/serial/Kconfig
-@@ -1381,6 +1381,16 @@ config SERIAL_MSM_CONSOLE
- 	depends on SERIAL_MSM=y
- 	select SERIAL_CORE_CONSOLE
+diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
+index 5256087..11a25fa 100644
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -19,7 +19,7 @@
+  *
+  * TO DO:
+  *	Mostly done:	ioctls for setting modes/timing
+- *	Partly done: 	hooks so you can pull off frames to non tty devs
++ *	Partly done:	hooks so you can pull off frames to non tty devs
+  *	Restart DLCI 0 when it closes ?
+  *	Test basic encoding
+  *	Improve the tx engine
+@@ -73,8 +73,10 @@ module_param(debug, int, 0600);
+ #define T2	(2 * HZ)
+ #endif
  
-+config SERIAL_VT8500
-+	bool "VIA VT8500 on-chip serial port support"
-+	depends on ARM && ARCH_VT8500
-+	select SERIAL_CORE
-+
-+config SERIAL_VT8500_CONSOLE
-+	bool "VIA VT8500 serial console support"
-+	depends on SERIAL_VT8500=y
-+	select SERIAL_CORE_CONSOLE
-+
- config SERIAL_NETX
- 	tristate "NetX serial port support"
- 	depends on ARM && ARCH_NETX
-diff --git a/drivers/serial/Makefile b/drivers/serial/Makefile
-index 783638b..a5e2264 100644
---- a/drivers/serial/Makefile
-+++ b/drivers/serial/Makefile
-@@ -86,6 +86,7 @@ obj-$(CONFIG_SERIAL_TIMBERDALE)	+= timbuart.o
- obj-$(CONFIG_SERIAL_GRLIB_GAISLER_APBUART) += apbuart.o
- obj-$(CONFIG_SERIAL_ALTERA_JTAGUART) += altera_jtaguart.o
- obj-$(CONFIG_SERIAL_ALTERA_UART) += altera_uart.o
-+obj-$(CONFIG_SERIAL_VT8500) += vt8500_serial.o
- obj-$(CONFIG_SERIAL_MRST_MAX3110)	+= mrst_max3110.o
- obj-$(CONFIG_SERIAL_MFD_HSU)	+= mfd.o
- obj-$(CONFIG_SERIAL_OMAP) += omap-serial.o
-diff --git a/drivers/serial/vt8500_serial.c b/drivers/serial/vt8500_serial.c
-new file mode 100644
-index 0000000..322bf56
---- /dev/null
-+++ b/drivers/serial/vt8500_serial.c
-@@ -0,0 +1,648 @@
+-/* Semi-arbitary buffer size limits. 0710 is normally run with 32-64 byte
+-   limits so this is plenty */
 +/*
-+ * drivers/serial/vt8500_serial.c
-+ *
-+ * Copyright (C) 2010 Alexey Charkov <alchark@gmail.com>
-+ *
-+ * Based on msm_serial.c, which is:
-+ * Copyright (C) 2007 Google, Inc.
-+ * Author: Robert Love <rlove@google.com>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
++ * Semi-arbitary buffer size limits. 0710 is normally run with 32-64 byte
++ * limits so this is plenty
 + */
-+
-+#if defined(CONFIG_SERIAL_VT8500_CONSOLE) && defined(CONFIG_MAGIC_SYSRQ)
-+# define SUPPORT_SYSRQ
-+#endif
-+
-+#include <linux/hrtimer.h>
-+#include <linux/delay.h>
-+#include <linux/module.h>
-+#include <linux/io.h>
-+#include <linux/ioport.h>
-+#include <linux/irq.h>
-+#include <linux/init.h>
-+#include <linux/console.h>
-+#include <linux/tty.h>
-+#include <linux/tty_flip.h>
-+#include <linux/serial_core.h>
-+#include <linux/serial.h>
-+#include <linux/slab.h>
-+#include <linux/clk.h>
-+#include <linux/platform_device.h>
-+
-+/*
-+ * UART Register offsets
-+ */
-+
-+#define VT8500_URTDR		0x0000	/* Transmit data */
-+#define VT8500_URRDR		0x0004	/* Receive data */
-+#define VT8500_URDIV		0x0008	/* Clock/Baud rate divisor */
-+#define VT8500_URLCR		0x000C	/* Line control */
-+#define VT8500_URICR		0x0010	/* IrDA control */
-+#define VT8500_URIER		0x0014	/* Interrupt enable */
-+#define VT8500_URISR		0x0018	/* Interrupt status */
-+#define VT8500_URUSR		0x001c	/* UART status */
-+#define VT8500_URFCR		0x0020	/* FIFO control */
-+#define VT8500_URFIDX		0x0024	/* FIFO index */
-+#define VT8500_URBKR		0x0028	/* Break signal count */
-+#define VT8500_URTOD		0x002c	/* Time out divisor */
-+#define VT8500_TXFIFO		0x1000	/* Transmit FIFO (16x8) */
-+#define VT8500_RXFIFO		0x1020	/* Receive FIFO (16x10) */
-+
-+/*
-+ * Interrupt enable and status bits
-+ */
-+
-+#define TXDE	(1 << 0)	/* Tx Data empty */
-+#define RXDF	(1 << 1)	/* Rx Data full */
-+#define TXFAE	(1 << 2)	/* Tx FIFO almost empty */
-+#define TXFE	(1 << 3)	/* Tx FIFO empty */
-+#define RXFAF	(1 << 4)	/* Rx FIFO almost full */
-+#define RXFF	(1 << 5)	/* Rx FIFO full */
-+#define TXUDR	(1 << 6)	/* Tx underrun */
-+#define RXOVER	(1 << 7)	/* Rx overrun */
-+#define PER	(1 << 8)	/* Parity error */
-+#define FER	(1 << 9)	/* Frame error */
-+#define TCTS	(1 << 10)	/* Toggle of CTS */
-+#define RXTOUT	(1 << 11)	/* Rx timeout */
-+#define BKDONE	(1 << 12)	/* Break signal done */
-+#define ERR	(1 << 13)	/* AHB error response */
-+
-+#define RX_FIFO_INTS	(RXFAF | RXFF | RXOVER | PER | FER | RXTOUT)
-+#define TX_FIFO_INTS	(TXFAE | TXFE | TXUDR)
-+
-+struct vt8500_port {
-+	struct uart_port	uart;
-+	char			name[16];
-+	struct clk		*clk;
-+	unsigned int		ier;
-+};
-+
-+static inline void vt8500_write(struct uart_port *port, unsigned int val,
-+			     unsigned int off)
-+{
-+	writel(val, port->membase + off);
-+}
-+
-+static inline unsigned int vt8500_read(struct uart_port *port, unsigned int off)
-+{
-+	return readl(port->membase + off);
-+}
-+
-+static void vt8500_stop_tx(struct uart_port *port)
-+{
-+	struct vt8500_port *vt8500_port = container_of(port,
-+						       struct vt8500_port,
-+						       uart);
-+
-+	vt8500_port->ier &= ~TX_FIFO_INTS;
-+	vt8500_write(port, vt8500_port->ier, VT8500_URIER);
-+}
-+
-+static void vt8500_stop_rx(struct uart_port *port)
-+{
-+	struct vt8500_port *vt8500_port = container_of(port,
-+						       struct vt8500_port,
-+						       uart);
-+
-+	vt8500_port->ier &= ~RX_FIFO_INTS;
-+	vt8500_write(port, vt8500_port->ier, VT8500_URIER);
-+}
-+
-+static void vt8500_enable_ms(struct uart_port *port)
-+{
-+	struct vt8500_port *vt8500_port = container_of(port,
-+						       struct vt8500_port,
-+						       uart);
-+
-+	vt8500_port->ier |= TCTS;
-+	vt8500_write(port, vt8500_port->ier, VT8500_URIER);
-+}
-+
-+static void handle_rx(struct uart_port *port)
-+{
-+	struct tty_struct *tty = tty_port_tty_get(&port->state->port);
-+	if (!tty) {
-+		/* Discard data: no tty available */
-+		int count = (vt8500_read(port, VT8500_URFIDX) & 0x1f00) >> 8;
-+		u16 ch;
-+		while (count--)
-+			ch = readw(port->membase + VT8500_RXFIFO);
-+		return;
-+	}
-+
-+	/*
-+	 * Handle overrun
-+	 */
-+	if ((vt8500_read(port, VT8500_URISR) & RXOVER)) {
-+		port->icount.overrun++;
-+		tty_insert_flip_char(tty, 0, TTY_OVERRUN);
-+	}
-+
-+	/* and now the main RX loop */
-+	while (vt8500_read(port, VT8500_URFIDX) & 0x1f00) {
-+		unsigned int c;
-+		char flag = TTY_NORMAL;
-+
-+		c = readw(port->membase + VT8500_RXFIFO) & 0x3ff;
-+
-+		/* Mask conditions we're ignorning. */
-+		c &= ~port->read_status_mask;
-+
-+		if (c & FER) {
-+			port->icount.frame++;
-+			flag = TTY_FRAME;
-+		} else if (c & PER) {
-+			port->icount.parity++;
-+			flag = TTY_PARITY;
+ #define MAX_MRU 512
+ #define MAX_MTU 512
+ 
+@@ -290,7 +292,7 @@ static spinlock_t gsm_mux_lock;
+ #define MDM_DV			0x40
+ 
+ #define GSM0_SOF		0xF9
+-#define GSM1_SOF 		0x7E
++#define GSM1_SOF		0x7E
+ #define GSM1_ESCAPE		0x7D
+ #define GSM1_ESCAPE_BITS	0x20
+ #define XON			0x11
+@@ -433,61 +435,63 @@ static void gsm_print_packet(const char *hdr, int addr, int cr,
+ 	if (!(debug & 1))
+ 		return;
+ 
+-	printk(KERN_INFO "%s %d) %c: ", hdr, addr, "RC"[cr]);
++	pr_info("%s %d) %c: ", hdr, addr, "RC"[cr]);
+ 
+ 	switch (control & ~PF) {
+ 	case SABM:
+-		printk(KERN_CONT "SABM");
++		pr_cont("SABM");
+ 		break;
+ 	case UA:
+-		printk(KERN_CONT "UA");
++		pr_cont("UA");
+ 		break;
+ 	case DISC:
+-		printk(KERN_CONT "DISC");
++		pr_cont("DISC");
+ 		break;
+ 	case DM:
+-		printk(KERN_CONT "DM");
++		pr_cont("DM");
+ 		break;
+ 	case UI:
+-		printk(KERN_CONT "UI");
++		pr_cont("UI");
+ 		break;
+ 	case UIH:
+-		printk(KERN_CONT "UIH");
++		pr_cont("UIH");
+ 		break;
+ 	default:
+ 		if (!(control & 0x01)) {
+-			printk(KERN_CONT "I N(S)%d N(R)%d",
+-				(control & 0x0E) >> 1, (control & 0xE)>> 5);
++			pr_cont("I N(S)%d N(R)%d",
++				(control & 0x0E) >> 1, (control & 0xE) >> 5);
+ 		} else switch (control & 0x0F) {
+-		case RR:
+-			printk("RR(%d)", (control & 0xE0) >> 5);
+-			break;
+-		case RNR:
+-			printk("RNR(%d)", (control & 0xE0) >> 5);
+-			break;
+-		case REJ:
+-			printk("REJ(%d)", (control & 0xE0) >> 5);
+-			break;
+-		default:
+-			printk(KERN_CONT "[%02X]", control);
++			case RR:
++				pr_cont("RR(%d)", (control & 0xE0) >> 5);
++				break;
++			case RNR:
++				pr_cont("RNR(%d)", (control & 0xE0) >> 5);
++				break;
++			case REJ:
++				pr_cont("REJ(%d)", (control & 0xE0) >> 5);
++				break;
++			default:
++				pr_cont("[%02X]", control);
+ 		}
+ 	}
+ 
+ 	if (control & PF)
+-		printk(KERN_CONT "(P)");
++		pr_cont("(P)");
+ 	else
+-		printk(KERN_CONT "(F)");
++		pr_cont("(F)");
+ 
+ 	if (dlen) {
+ 		int ct = 0;
+ 		while (dlen--) {
+-			if (ct % 8 == 0)
+-				printk(KERN_CONT "\n    ");
+-			printk(KERN_CONT "%02X ", *data++);
++			if (ct % 8 == 0) {
++				pr_cont("\n");
++				pr_debug("    ");
++			}
++			pr_cont("%02X ", *data++);
+ 			ct++;
+ 		}
+ 	}
+-	printk(KERN_CONT "\n");
++	pr_cont("\n");
+ }
+ 
+ 
+@@ -526,11 +530,13 @@ static void hex_packet(const unsigned char *p, int len)
+ {
+ 	int i;
+ 	for (i = 0; i < len; i++) {
+-		if (i && (i % 16) == 0)
+-			printk("\n");
+-		printk("%02X ", *p++);
++		if (i && (i % 16) == 0) {
++			pr_cont("\n");
++			pr_debug("");
 +		}
-+		port->icount.rx++;
-+
-+		if (!uart_handle_sysrq_char(port, c))
-+			tty_insert_flip_char(tty, c, flag);
-+	}
-+
-+	tty_flip_buffer_push(tty);
-+	tty_kref_put(tty);
-+}
-+
-+static void handle_tx(struct uart_port *port)
-+{
-+	struct circ_buf *xmit = &port->state->xmit;
-+
-+	if (port->x_char) {
-+		writeb(port->x_char, port->membase + VT8500_TXFIFO);
-+		port->icount.tx++;
-+		port->x_char = 0;
-+	}
-+	if (uart_circ_empty(xmit) || uart_tx_stopped(port)) {
-+		vt8500_stop_tx(port);
-+		return;
-+	}
-+
-+	while ((vt8500_read(port, VT8500_URFIDX) & 0x1f) < 16) {
-+		if (uart_circ_empty(xmit))
-+			break;
-+
-+		writeb(xmit->buf[xmit->tail], port->membase + VT8500_TXFIFO);
-+
-+		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
-+		port->icount.tx++;
-+	}
-+
-+	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
-+		uart_write_wakeup(port);
-+
-+	if (uart_circ_empty(xmit))
-+		vt8500_stop_tx(port);
-+}
-+
-+static void vt8500_start_tx(struct uart_port *port)
-+{
-+	struct vt8500_port *vt8500_port = container_of(port,
-+						       struct vt8500_port,
-+						       uart);
-+
-+	vt8500_port->ier &= ~TX_FIFO_INTS;
-+	vt8500_write(port, vt8500_port->ier, VT8500_URIER);
-+	handle_tx(port);
-+	vt8500_port->ier |= TX_FIFO_INTS;
-+	vt8500_write(port, vt8500_port->ier, VT8500_URIER);
-+}
-+
-+static void handle_delta_cts(struct uart_port *port)
-+{
-+	port->icount.cts++;
-+	wake_up_interruptible(&port->state->port.delta_msr_wait);
-+}
-+
-+static irqreturn_t vt8500_irq(int irq, void *dev_id)
-+{
-+	struct uart_port *port = dev_id;
-+	unsigned long isr;
-+
-+	spin_lock(&port->lock);
-+	isr = vt8500_read(port, VT8500_URISR);
-+
-+	/* Acknowledge active status bits */
-+	vt8500_write(port, isr, VT8500_URISR);
-+
-+	if (isr & RX_FIFO_INTS)
-+		handle_rx(port);
-+	if (isr & TX_FIFO_INTS)
-+		handle_tx(port);
-+	if (isr & TCTS)
-+		handle_delta_cts(port);
-+
-+	spin_unlock(&port->lock);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static unsigned int vt8500_tx_empty(struct uart_port *port)
-+{
-+	return (vt8500_read(port, VT8500_URFIDX) & 0x1f) < 16 ?
-+						TIOCSER_TEMT : 0;
-+}
-+
-+static unsigned int vt8500_get_mctrl(struct uart_port *port)
-+{
-+	unsigned int usr;
-+
-+	usr = vt8500_read(port, VT8500_URUSR);
-+	if (usr & (1 << 4))
-+		return TIOCM_CTS;
-+	else
-+		return 0;
-+}
-+
-+static void vt8500_set_mctrl(struct uart_port *port, unsigned int mctrl)
-+{
-+}
-+
-+static void vt8500_break_ctl(struct uart_port *port, int break_ctl)
-+{
-+	if (break_ctl)
-+		vt8500_write(port, vt8500_read(port, VT8500_URLCR) | (1 << 9),
-+			     VT8500_URLCR);
-+}
-+
-+static int vt8500_set_baud_rate(struct uart_port *port, unsigned int baud)
-+{
-+	unsigned long div;
-+	unsigned int loops = 1000;
-+
-+	div = vt8500_read(port, VT8500_URDIV) & ~(0x3ff);
-+
-+	if (unlikely((baud < 900) || (baud > 921600)))
-+		div |= 7;
-+	else
-+		div |= (921600 / baud) - 1;
-+
-+	while ((vt8500_read(port, VT8500_URUSR) & (1 << 5)) && --loops)
-+		cpu_relax();
-+	vt8500_write(port, div, VT8500_URDIV);
-+
-+	return baud;
-+}
-+
-+static int vt8500_startup(struct uart_port *port)
-+{
-+	struct vt8500_port *vt8500_port =
-+			container_of(port, struct vt8500_port, uart);
-+	int ret;
-+
-+	snprintf(vt8500_port->name, sizeof(vt8500_port->name),
-+		 "vt8500_serial%d", port->line);
-+
-+	ret = request_irq(port->irq, vt8500_irq, IRQF_TRIGGER_HIGH,
-+			  vt8500_port->name, port);
-+	if (unlikely(ret))
-+		return ret;
-+
-+	vt8500_write(port, 0x03, VT8500_URLCR);	/* enable TX & RX */
-+
-+	return 0;
-+}
-+
-+static void vt8500_shutdown(struct uart_port *port)
-+{
-+	struct vt8500_port *vt8500_port =
-+			container_of(port, struct vt8500_port, uart);
-+
-+	vt8500_port->ier = 0;
-+
-+	/* disable interrupts and FIFOs */
-+	vt8500_write(&vt8500_port->uart, 0, VT8500_URIER);
-+	vt8500_write(&vt8500_port->uart, 0x880, VT8500_URFCR);
-+	free_irq(port->irq, port);
-+}
-+
-+static void vt8500_set_termios(struct uart_port *port,
-+			       struct ktermios *termios,
-+			       struct ktermios *old)
-+{
-+	struct vt8500_port *vt8500_port =
-+			container_of(port, struct vt8500_port, uart);
-+	unsigned long flags;
-+	unsigned int baud, lcr;
-+	unsigned int loops = 1000;
-+
-+	spin_lock_irqsave(&port->lock, flags);
-+
-+	/* calculate and set baud rate */
-+	baud = uart_get_baud_rate(port, termios, old, 900, 921600);
-+	baud = vt8500_set_baud_rate(port, baud);
-+	if (tty_termios_baud_rate(termios))
-+		tty_termios_encode_baud_rate(termios, baud, baud);
-+
-+	/* calculate parity */
-+	lcr = vt8500_read(&vt8500_port->uart, VT8500_URLCR);
-+	lcr &= ~((1 << 5) | (1 << 4));
-+	if (termios->c_cflag & PARENB) {
-+		lcr |= (1 << 4);
-+		termios->c_cflag &= ~CMSPAR;
-+		if (termios->c_cflag & PARODD)
-+			lcr |= (1 << 5);
-+	}
-+
-+	/* calculate bits per char */
-+	lcr &= ~(1 << 2);
-+	switch (termios->c_cflag & CSIZE) {
-+	case CS7:
-+		break;
-+	case CS8:
-+	default:
-+		lcr |= (1 << 2);
-+		termios->c_cflag &= ~CSIZE;
-+		termios->c_cflag |= CS8;
-+		break;
-+	}
-+
-+	/* calculate stop bits */
-+	lcr &= ~(1 << 3);
-+	if (termios->c_cflag & CSTOPB)
-+		lcr |= (1 << 3);
-+
-+	/* set parity, bits per char, and stop bit */
-+	vt8500_write(&vt8500_port->uart, lcr, VT8500_URLCR);
-+
-+	/* Configure status bits to ignore based on termio flags. */
-+	port->read_status_mask = 0;
-+	if (termios->c_iflag & IGNPAR)
-+		port->read_status_mask = FER | PER;
-+
-+	uart_update_timeout(port, termios->c_cflag, baud);
-+
-+	/* Reset FIFOs */
-+	vt8500_write(&vt8500_port->uart, 0x88c, VT8500_URFCR);
-+	while ((vt8500_read(&vt8500_port->uart, VT8500_URFCR) & 0xc)
-+							&& --loops)
-+		cpu_relax();
-+
-+	/* Every possible FIFO-related interrupt */
-+	vt8500_port->ier = RX_FIFO_INTS | TX_FIFO_INTS;
-+
-+	/*
-+	 * CTS flow control
-+	 */
-+	if (UART_ENABLE_MS(&vt8500_port->uart, termios->c_cflag))
-+		vt8500_port->ier |= TCTS;
-+
-+	vt8500_write(&vt8500_port->uart, 0x881, VT8500_URFCR);
-+	vt8500_write(&vt8500_port->uart, vt8500_port->ier, VT8500_URIER);
-+
-+	spin_unlock_irqrestore(&port->lock, flags);
-+}
-+
-+static const char *vt8500_type(struct uart_port *port)
-+{
-+	struct vt8500_port *vt8500_port =
-+			container_of(port, struct vt8500_port, uart);
-+	return vt8500_port->name;
-+}
-+
-+static void vt8500_release_port(struct uart_port *port)
-+{
-+}
-+
-+static int vt8500_request_port(struct uart_port *port)
-+{
-+	return 0;
-+}
-+
-+static void vt8500_config_port(struct uart_port *port, int flags)
-+{
-+	port->type = PORT_VT8500;
-+}
-+
-+static int vt8500_verify_port(struct uart_port *port,
-+			      struct serial_struct *ser)
-+{
-+	if (unlikely(ser->type != PORT_UNKNOWN && ser->type != PORT_VT8500))
-+		return -EINVAL;
-+	if (unlikely(port->irq != ser->irq))
-+		return -EINVAL;
-+	return 0;
-+}
-+
-+static struct vt8500_port *vt8500_uart_ports[4];
-+static struct uart_driver vt8500_uart_driver;
-+
-+#ifdef CONFIG_SERIAL_VT8500_CONSOLE
-+
-+static inline void wait_for_xmitr(struct uart_port *port)
-+{
-+	unsigned int status, tmout = 10000;
-+
-+	/* Wait up to 10ms for the character(s) to be sent. */
-+	do {
-+		status = vt8500_read(port, VT8500_URFIDX);
-+
-+		if (--tmout == 0)
-+			break;
-+		udelay(1);
-+	} while (status & 0x10);
-+}
-+
-+static void vt8500_console_putchar(struct uart_port *port, int c)
-+{
-+	wait_for_xmitr(port);
-+	writeb(c, port->membase + VT8500_TXFIFO);
-+}
-+
-+static void vt8500_console_write(struct console *co, const char *s,
-+			      unsigned int count)
-+{
-+	struct vt8500_port *vt8500_port = vt8500_uart_ports[co->index];
-+	unsigned long ier;
-+
-+	BUG_ON(co->index < 0 || co->index >= vt8500_uart_driver.nr);
-+
-+	ier = vt8500_read(&vt8500_port->uart, VT8500_URIER);
-+	vt8500_write(&vt8500_port->uart, VT8500_URIER, 0);
-+
-+	uart_console_write(&vt8500_port->uart, s, count,
-+			   vt8500_console_putchar);
-+
-+	/*
-+	 *	Finally, wait for transmitter to become empty
-+	 *	and switch back to FIFO
-+	 */
-+	wait_for_xmitr(&vt8500_port->uart);
-+	vt8500_write(&vt8500_port->uart, VT8500_URIER, ier);
-+}
-+
-+static int __init vt8500_console_setup(struct console *co, char *options)
-+{
-+	struct vt8500_port *vt8500_port;
-+	int baud = 9600;
-+	int bits = 8;
-+	int parity = 'n';
-+	int flow = 'n';
-+
-+	if (unlikely(co->index >= vt8500_uart_driver.nr || co->index < 0))
-+		return -ENXIO;
-+
-+	vt8500_port = vt8500_uart_ports[co->index];
-+
-+	if (!vt8500_port)
-+		return -ENODEV;
-+
-+	if (options)
-+		uart_parse_options(options, &baud, &parity, &bits, &flow);
-+
-+	return uart_set_options(&vt8500_port->uart,
-+				 co, baud, parity, bits, flow);
-+}
-+
-+static struct console vt8500_console = {
-+	.name = "ttyWMT",
-+	.write = vt8500_console_write,
-+	.device = uart_console_device,
-+	.setup = vt8500_console_setup,
-+	.flags = CON_PRINTBUFFER,
-+	.index = -1,
-+	.data = &vt8500_uart_driver,
-+};
-+
-+#define VT8500_CONSOLE	(&vt8500_console)
-+
-+#else
-+#define VT8500_CONSOLE	NULL
-+#endif
-+
-+static struct uart_ops vt8500_uart_pops = {
-+	.tx_empty	= vt8500_tx_empty,
-+	.set_mctrl	= vt8500_set_mctrl,
-+	.get_mctrl	= vt8500_get_mctrl,
-+	.stop_tx	= vt8500_stop_tx,
-+	.start_tx	= vt8500_start_tx,
-+	.stop_rx	= vt8500_stop_rx,
-+	.enable_ms	= vt8500_enable_ms,
-+	.break_ctl	= vt8500_break_ctl,
-+	.startup	= vt8500_startup,
-+	.shutdown	= vt8500_shutdown,
-+	.set_termios	= vt8500_set_termios,
-+	.type		= vt8500_type,
-+	.release_port	= vt8500_release_port,
-+	.request_port	= vt8500_request_port,
-+	.config_port	= vt8500_config_port,
-+	.verify_port	= vt8500_verify_port,
-+};
-+
-+static struct uart_driver vt8500_uart_driver = {
-+	.owner		= THIS_MODULE,
-+	.driver_name	= "vt8500_serial",
-+	.dev_name	= "ttyWMT",
-+	.nr		= 6,
-+	.cons		= VT8500_CONSOLE,
-+};
-+
-+static int __init vt8500_serial_probe(struct platform_device *pdev)
-+{
-+	struct vt8500_port *vt8500_port;
-+	struct resource *mmres, *irqres;
-+	int ret;
-+
-+	mmres = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	irqres = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-+	if (!mmres || !irqres)
-+		return -ENODEV;
-+
-+	vt8500_port = kzalloc(sizeof(struct vt8500_port), GFP_KERNEL);
-+	if (!vt8500_port)
-+		return -ENOMEM;
-+
-+	vt8500_port->uart.type = PORT_VT8500;
-+	vt8500_port->uart.iotype = UPIO_MEM;
-+	vt8500_port->uart.mapbase = mmres->start;
-+	vt8500_port->uart.irq = irqres->start;
-+	vt8500_port->uart.fifosize = 16;
-+	vt8500_port->uart.ops = &vt8500_uart_pops;
-+	vt8500_port->uart.line = pdev->id;
-+	vt8500_port->uart.dev = &pdev->dev;
-+	vt8500_port->uart.flags = UPF_IOREMAP | UPF_BOOT_AUTOCONF;
-+	vt8500_port->uart.uartclk = 24000000;
-+
-+	snprintf(vt8500_port->name, sizeof(vt8500_port->name),
-+		 "VT8500 UART%d", pdev->id);
-+
-+	vt8500_port->uart.membase = ioremap(mmres->start,
-+					    mmres->end - mmres->start + 1);
-+	if (!vt8500_port->uart.membase) {
-+		ret = -ENOMEM;
-+		goto err;
-+	}
-+
-+	vt8500_uart_ports[pdev->id] = vt8500_port;
-+
-+	uart_add_one_port(&vt8500_uart_driver, &vt8500_port->uart);
-+
-+	platform_set_drvdata(pdev, vt8500_port);
-+
-+	return 0;
-+
-+err:
-+	kfree(vt8500_port);
-+	return ret;
-+}
-+
-+static int __devexit vt8500_serial_remove(struct platform_device *pdev)
-+{
-+	struct vt8500_port *vt8500_port = platform_get_drvdata(pdev);
-+
-+	platform_set_drvdata(pdev, NULL);
-+	uart_remove_one_port(&vt8500_uart_driver, &vt8500_port->uart);
-+	kfree(vt8500_port);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver vt8500_platform_driver = {
-+	.probe  = vt8500_serial_probe,
-+	.remove = vt8500_serial_remove,
-+	.driver = {
-+		.name = "vt8500_serial",
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+static int __init vt8500_serial_init(void)
-+{
-+	int ret;
-+
-+	ret = uart_register_driver(&vt8500_uart_driver);
-+	if (unlikely(ret))
-+		return ret;
-+
-+	ret = platform_driver_register(&vt8500_platform_driver);
-+
-+	if (unlikely(ret))
-+		uart_unregister_driver(&vt8500_uart_driver);
-+
-+	return ret;
-+}
-+
-+static void __exit vt8500_serial_exit(void)
-+{
-+#ifdef CONFIG_SERIAL_VT8500_CONSOLE
-+	unregister_console(&vt8500_console);
-+#endif
-+	platform_driver_unregister(&vt8500_platform_driver);
-+	uart_unregister_driver(&vt8500_uart_driver);
-+}
-+
-+module_init(vt8500_serial_init);
-+module_exit(vt8500_serial_exit);
-+
-+MODULE_AUTHOR("Alexey Charkov <alchark@gmail.com>");
-+MODULE_DESCRIPTION("Driver for vt8500 serial device");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
-index 212eb4c..41603d6 100644
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -199,6 +199,9 @@
- /* TI OMAP-UART */
- #define PORT_OMAP	96
++		pr_cont("%02X ", *p++);
+ 	}
+-	printk("\n");
++	pr_cont("\n");
+ }
  
-+/* VIA VT8500 SoC */
-+#define PORT_VT8500	97
-+
- #ifdef __KERNEL__
+ /**
+@@ -680,7 +686,7 @@ static void gsm_data_kick(struct gsm_mux *gsm)
+ 		}
  
- #include <linux/compiler.h>
+ 		if (debug & 4) {
+-			printk("gsm_data_kick: \n");
++			pr_debug("gsm_data_kick:\n");
+ 			hex_packet(gsm->txframe, len);
+ 		}
+ 
+@@ -1233,7 +1239,7 @@ static void gsm_control_response(struct gsm_mux *gsm, unsigned int command,
+ }
+ 
+ /**
+- *	gsm_control_transmit 	-	send control packet
++ *	gsm_control_transmit	-	send control packet
+  *	@gsm: gsm mux
+  *	@ctrl: frame to send
+  *
+@@ -1363,7 +1369,7 @@ static void gsm_dlci_close(struct gsm_dlci *dlci)
+ {
+ 	del_timer(&dlci->t1);
+ 	if (debug & 8)
+-		printk("DLCI %d goes closed.\n", dlci->addr);
++		pr_debug("DLCI %d goes closed.\n", dlci->addr);
+ 	dlci->state = DLCI_CLOSED;
+ 	if (dlci->addr != 0) {
+ 		struct tty_struct  *tty = tty_port_tty_get(&dlci->port);
+@@ -1394,7 +1400,7 @@ static void gsm_dlci_open(struct gsm_dlci *dlci)
+ 	/* This will let a tty open continue */
+ 	dlci->state = DLCI_OPEN;
+ 	if (debug & 8)
+-		printk("DLCI %d goes open.\n", dlci->addr);
++		pr_debug("DLCI %d goes open.\n", dlci->addr);
+ 	wake_up(&dlci->gsm->event);
+ }
+ 
+@@ -1496,29 +1502,29 @@ static void gsm_dlci_data(struct gsm_dlci *dlci, u8 *data, int len)
+ 	unsigned int modem = 0;
+ 
+ 	if (debug & 16)
+-		printk("%d bytes for tty %p\n", len, tty);
++		pr_debug("%d bytes for tty %p\n", len, tty);
+ 	if (tty) {
+ 		switch (dlci->adaption)  {
+-			/* Unsupported types */
+-			/* Packetised interruptible data */
+-			case 4:
+-				break;
+-			/* Packetised uininterruptible voice/data */
+-			case 3:
+-				break;
+-			/* Asynchronous serial with line state in each frame */
+-			case 2:
+-				while (gsm_read_ea(&modem, *data++) == 0) {
+-					len--;
+-					if (len == 0)
+-						return;
+-				}
+-				gsm_process_modem(tty, dlci, modem);
+-			/* Line state will go via DLCI 0 controls only */
+-			case 1:
+-			default:
+-				tty_insert_flip_string(tty, data, len);
+-				tty_flip_buffer_push(tty);
++		/* Unsupported types */
++		/* Packetised interruptible data */
++		case 4:
++			break;
++		/* Packetised uininterruptible voice/data */
++		case 3:
++			break;
++		/* Asynchronous serial with line state in each frame */
++		case 2:
++			while (gsm_read_ea(&modem, *data++) == 0) {
++				len--;
++				if (len == 0)
++					return;
++			}
++			gsm_process_modem(tty, dlci, modem);
++		/* Line state will go via DLCI 0 controls only */
++		case 1:
++		default:
++			tty_insert_flip_string(tty, data, len);
++			tty_flip_buffer_push(tty);
+ 		}
+ 		tty_kref_put(tty);
+ 	}
+@@ -1656,7 +1662,7 @@ static void gsm_queue(struct gsm_mux *gsm)
+ 	if (gsm->fcs != GOOD_FCS) {
+ 		gsm->bad_fcs++;
+ 		if (debug & 4)
+-			printk("BAD FCS %02x\n", gsm->fcs);
++			pr_debug("BAD FCS %02x\n", gsm->fcs);
+ 		return;
+ 	}
+ 	address = gsm->address >> 1;
+@@ -1890,7 +1896,7 @@ static void gsm1_receive(struct gsm_mux *gsm, unsigned char c)
+ 		gsm->state = GSM_DATA;
+ 		break;
+ 	case GSM_DATA:		/* Data */
+-		if (gsm->count > gsm->mru ) {	/* Allow one for the FCS */
++		if (gsm->count > gsm->mru) {	/* Allow one for the FCS */
+ 			gsm->state = GSM_OVERRUN;
+ 			gsm->bad_size++;
+ 		} else
+@@ -2085,7 +2091,7 @@ static int gsmld_output(struct gsm_mux *gsm, u8 *data, int len)
+ 		return -ENOSPC;
+ 	}
+ 	if (debug & 4) {
+-		printk("-->%d bytes out\n", len);
++		pr_debug("-->%d bytes out\n", len);
+ 		hex_packet(data, len);
+ 	}
+ 	gsm->tty->ops->write(gsm->tty, data, len);
+@@ -2142,7 +2148,7 @@ static void gsmld_receive_buf(struct tty_struct *tty, const unsigned char *cp,
+ 	char flags;
+ 
+ 	if (debug & 4) {
+-		printk("Inbytes %dd\n", count);
++		pr_debug("Inbytes %dd\n", count);
+ 		hex_packet(cp, count);
+ 	}
+ 
+@@ -2159,7 +2165,7 @@ static void gsmld_receive_buf(struct tty_struct *tty, const unsigned char *cp,
+ 			gsm->error(gsm, *dp, flags);
+ 			break;
+ 		default:
+-			printk(KERN_ERR "%s: unknown flag %d\n",
++			WARN_ONCE("%s: unknown flag %d\n",
+ 			       tty_name(tty, buf), flags);
+ 			break;
+ 		}
+@@ -2354,7 +2360,7 @@ static int gsmld_config(struct tty_struct *tty, struct gsm_mux *gsm,
+ 	int need_restart = 0;
+ 
+ 	/* Stuff we don't support yet - UI or I frame transport, windowing */
+-	if ((c->adaption !=1 && c->adaption != 2) || c->k)
++	if ((c->adaption != 1 && c->adaption != 2) || c->k)
+ 		return -EOPNOTSUPP;
+ 	/* Check the MRU/MTU range looks sane */
+ 	if (c->mru > MAX_MRU || c->mtu > MAX_MTU || c->mru < 8 || c->mtu < 8)
+@@ -2448,7 +2454,7 @@ static int gsmld_ioctl(struct tty_struct *tty, struct file *file,
+ 			c.i = 1;
+ 		else
+ 			c.i = 2;
+-		printk("Ftype %d i %d\n", gsm->ftype, c.i);
++		pr_debug("Ftype %d i %d\n", gsm->ftype, c.i);
+ 		c.mru = gsm->mru;
+ 		c.mtu = gsm->mtu;
+ 		c.k = 0;
+@@ -2742,14 +2748,15 @@ static int __init gsm_init(void)
+ 	/* Fill in our line protocol discipline, and register it */
+ 	int status = tty_register_ldisc(N_GSM0710, &tty_ldisc_packet);
+ 	if (status != 0) {
+-		printk(KERN_ERR "n_gsm: can't register line discipline (err = %d)\n", status);
++		pr_err("n_gsm: can't register line discipline (err = %d)\n",
++								status);
+ 		return status;
+ 	}
+ 
+ 	gsm_tty_driver = alloc_tty_driver(256);
+ 	if (!gsm_tty_driver) {
+ 		tty_unregister_ldisc(N_GSM0710);
+-		printk(KERN_ERR "gsm_init: tty allocation failed.\n");
++		pr_err("gsm_init: tty allocation failed.\n");
+ 		return -EINVAL;
+ 	}
+ 	gsm_tty_driver->owner	= THIS_MODULE;
+@@ -2760,7 +2767,7 @@ static int __init gsm_init(void)
+ 	gsm_tty_driver->type		= TTY_DRIVER_TYPE_SERIAL;
+ 	gsm_tty_driver->subtype	= SERIAL_TYPE_NORMAL;
+ 	gsm_tty_driver->flags	= TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV
+-							| TTY_DRIVER_HARDWARE_BREAK;
++						| TTY_DRIVER_HARDWARE_BREAK;
+ 	gsm_tty_driver->init_termios	= tty_std_termios;
+ 	/* Fixme */
+ 	gsm_tty_driver->init_termios.c_lflag &= ~ECHO;
+@@ -2771,10 +2778,11 @@ static int __init gsm_init(void)
+ 	if (tty_register_driver(gsm_tty_driver)) {
+ 		put_tty_driver(gsm_tty_driver);
+ 		tty_unregister_ldisc(N_GSM0710);
+-		printk(KERN_ERR "gsm_init: tty registration failed.\n");
++		pr_err("gsm_init: tty registration failed.\n");
+ 		return -EBUSY;
+ 	}
+-	printk(KERN_INFO "gsm_init: loaded as %d,%d.\n", gsm_tty_driver->major, gsm_tty_driver->minor_start);
++	pr_debug("gsm_init: loaded as %d,%d.\n",
++			gsm_tty_driver->major, gsm_tty_driver->minor_start);
+ 	return 0;
+ }
+ 
+@@ -2782,10 +2790,10 @@ static void __exit gsm_exit(void)
+ {
+ 	int status = tty_unregister_ldisc(N_GSM0710);
+ 	if (status != 0)
+-		printk(KERN_ERR "n_gsm: can't unregister line discipline (err = %d)\n", status);
++		pr_err("n_gsm: can't unregister line discipline (err = %d)\n",
++								status);
+ 	tty_unregister_driver(gsm_tty_driver);
+ 	put_tty_driver(gsm_tty_driver);
+-	printk(KERN_INFO "gsm_init: unloaded.\n");
+ }
+ 
+ module_init(gsm_init);
 -- 
 1.7.3.2
 
