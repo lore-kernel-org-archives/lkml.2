@@ -1,104 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465Ab1AFPnd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 10:43:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40987 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753243Ab1AFPnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 10:43:31 -0500
-Date: Thu, 6 Jan 2011 16:43:17 +0100
-From: Jan Kara <jack@suse.cz>
-To: Josh Hunt <johunt@akamai.com>
-Cc: Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Resolve 'dereferencing pointer to incomplete type'
- when enabling EXT2_XATTR_DEBUG
-Message-ID: <20110106154317.GL4641@quack.suse.cz>
-References: <1293486398-25909-1-git-send-email-johunt@akamai.com>
+	id S1753493Ab1AFPou (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 10:44:50 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:53825 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753441Ab1AFPos (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 10:44:48 -0500
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: "M. Mohan Kumar" <mohan@in.ibm.com>,
+        v9fs-developer <v9fs-developer@lists.sourceforge.net>,
+        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Venkateswararao Jujjuri \(JV\)" <jvrao@linux.vnet.ibm.com>
+Subject: Re: [PATCH] [V2] net/9p: Use proper data types
+In-Reply-To: <1294305894-15951-1-git-send-email-mohan@in.ibm.com>
+References: <1294305894-15951-1-git-send-email-mohan@in.ibm.com>
+User-Agent: Notmuch/0.5-32-gf6c60cc (http://notmuchmail.org) Emacs/23.1.1 (i486-pc-linux-gnu)
+Date: Thu, 06 Jan 2011 21:14:41 +0530
+Message-ID: <87tyhm2g0m.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1293486398-25909-1-git-send-email-johunt@akamai.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 27-12-10 13:46:38, Josh Hunt wrote:
-> When I enable EXT2_XATTR_DEBUG in fs/ext2/xattr.c I get a build error stating
-> the following:
+On Thu,  6 Jan 2011 14:54:54 +0530, "M. Mohan Kumar" <mohan@in.ibm.com> wrote:
+> Use proper data types for storing the count of the binary blob and
+> length of a string. Without this patch length calculation of string will
+> always result in -1 because of comparision between signed and unsigned
+> integer.
 > 
->   CC      fs/ext2/xattr.o
-> fs/ext2/xattr.c: In function 'ext2_xattr_cache_insert':
-> fs/ext2/xattr.c:841: error: dereferencing pointer to incomplete type
-> fs/ext2/xattr.c:846: error: dereferencing pointer to incomplete type
-> make[2]: *** [fs/ext2/xattr.o] Error 1
-> make[1]: *** [fs/ext2] Error 2
-> make: *** [fs] Error 2
-> 
-> These lines reference ext2_xattr_cache->c_entry_count which is defined
-> in struct mb_cache. struct mb_cache is currently only defined in fs/mbcache.c.
-> Moving struct mb_cache definition to include/linux/mbcache.h to resolve the
-> issue.
-  Thanks. I've applied the patch.
+> Signed-off-by: M. Mohan Kumar <mohan@in.ibm.com>
 
-								Honza
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-> 
-> Signed-off-by: Josh Hunt <johunt@akamai.com>
 > ---
->  fs/mbcache.c            |   12 ------------
->  include/linux/mbcache.h |   11 +++++++++++
->  2 files changed, 11 insertions(+), 12 deletions(-)
+> Changes from previous version:
+> * Use uint32_t inside va_arg
+> * In function p9pdu_vreadf length of string can not be a signed int,
+>   change the data type to unsigned int and remove the max_t expression
+>   that becomes unnecessary with data type change
 > 
-> diff --git a/fs/mbcache.c b/fs/mbcache.c
-> index 9344474..a25444a 100644
-> --- a/fs/mbcache.c
-> +++ b/fs/mbcache.c
-> @@ -76,18 +76,6 @@ EXPORT_SYMBOL(mb_cache_entry_find_first);
->  EXPORT_SYMBOL(mb_cache_entry_find_next);
->  #endif
->  
-> -struct mb_cache {
-> -	struct list_head		c_cache_list;
-> -	const char			*c_name;
-> -	atomic_t			c_entry_count;
-> -	int				c_max_entries;
-> -	int				c_bucket_bits;
-> -	struct kmem_cache		*c_entry_cache;
-> -	struct list_head		*c_block_hash;
-> -	struct list_head		*c_index_hash;
-> -};
+> Commit 33551d7be66cec324c47990ed526b7fe327b011f net/9p/protocol.c:
+> Remove duplicated macros from Thiago Farina <tfransosi@gmail.com> exposed this
+> issue
+> 
+>  net/9p/protocol.c |   21 +++++++++------------
+>  1 files changed, 9 insertions(+), 12 deletions(-)
+> 
+> diff --git a/net/9p/protocol.c b/net/9p/protocol.c
+> index c5180fd..1e308f2 100644
+> --- a/net/9p/protocol.c
+> +++ b/net/9p/protocol.c
+> @@ -178,27 +178,24 @@ p9pdu_vreadf(struct p9_fcall *pdu, int proto_version, const char *fmt,
+>  			break;
+>  		case 's':{
+>  				char **sptr = va_arg(ap, char **);
+> -				int16_t len;
+> -				int size;
+> +				uint16_t len;
+> 
+>  				errcode = p9pdu_readf(pdu, proto_version,
+>  								"w", &len);
+>  				if (errcode)
+>  					break;
+> 
+> -				size = max_t(int16_t, len, 0);
 > -
-> -
->  /*
->   * Global data: list of all mbcache's, lru list, and a spinlock for
->   * accessing cache data structures on SMP machines. The lru list is
-> diff --git a/include/linux/mbcache.h b/include/linux/mbcache.h
-> index 54cbbac..5525d37 100644
-> --- a/include/linux/mbcache.h
-> +++ b/include/linux/mbcache.h
-> @@ -18,6 +18,17 @@ struct mb_cache_entry {
->  	} e_index;
->  };
->  
-> +struct mb_cache {
-> +	struct list_head		c_cache_list;
-> +	const char			*c_name;
-> +	atomic_t			c_entry_count;
-> +	int				c_max_entries;
-> +	int				c_bucket_bits;
-> +	struct kmem_cache		*c_entry_cache;
-> +	struct list_head		*c_block_hash;
-> +	struct list_head		*c_index_hash;
-> +};
-> +
->  /* Functions on caches */
->  
->  struct mb_cache *mb_cache_create(const char *, int);
+> -				*sptr = kmalloc(size + 1, GFP_KERNEL);
+> +				*sptr = kmalloc(len + 1, GFP_KERNEL);
+>  				if (*sptr == NULL) {
+>  					errcode = -EFAULT;
+>  					break;
+>  				}
+> -				if (pdu_read(pdu, *sptr, size)) {
+> +				if (pdu_read(pdu, *sptr, len)) {
+>  					errcode = -EFAULT;
+>  					kfree(*sptr);
+>  					*sptr = NULL;
+>  				} else
+> -					(*sptr)[size] = 0;
+> +					(*sptr)[len] = 0;
+>  			}
+>  			break;
+>  		case 'Q':{
+> @@ -234,14 +231,14 @@ p9pdu_vreadf(struct p9_fcall *pdu, int proto_version, const char *fmt,
+>  			}
+>  			break;
+>  		case 'D':{
+> -				int32_t *count = va_arg(ap, int32_t *);
+> +				uint32_t *count = va_arg(ap, uint32_t *);
+>  				void **data = va_arg(ap, void **);
+> 
+>  				errcode =
+>  				    p9pdu_readf(pdu, proto_version, "d", count);
+>  				if (!errcode) {
+>  					*count =
+> -					    min_t(int32_t, *count,
+> +					    min_t(uint32_t, *count,
+>  						  pdu->size - pdu->offset);
+>  					*data = &pdu->sdata[pdu->offset];
+>  				}
+> @@ -404,9 +401,9 @@ p9pdu_vwritef(struct p9_fcall *pdu, int proto_version, const char *fmt,
+>  			break;
+>  		case 's':{
+>  				const char *sptr = va_arg(ap, const char *);
+> -				int16_t len = 0;
+> +				uint16_t len = 0;
+>  				if (sptr)
+> -					len = min_t(int16_t, strlen(sptr),
+> +					len = min_t(uint16_t, strlen(sptr),
+>  								USHRT_MAX);
+> 
+>  				errcode = p9pdu_writef(pdu, proto_version,
+> @@ -439,7 +436,7 @@ p9pdu_vwritef(struct p9_fcall *pdu, int proto_version, const char *fmt,
+>  						 stbuf->n_gid, stbuf->n_muid);
+>  			} break;
+>  		case 'D':{
+> -				int32_t count = va_arg(ap, int32_t);
+> +				uint32_t count = va_arg(ap, uint32_t);
+>  				const void *data = va_arg(ap, const void *);
+> 
+>  				errcode = p9pdu_writef(pdu, proto_version, "d",
 > -- 
-> 1.7.0.4
+> 1.7.3.4
 > 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
