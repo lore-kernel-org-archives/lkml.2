@@ -1,51 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749Ab1AFSWq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 13:22:46 -0500
-Received: from mga03.intel.com ([143.182.124.21]:2929 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752122Ab1AFSWp convert rfc822-to-8bit (ORCPT
+	id S1752793Ab1AFSZr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 13:25:47 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:39569 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751686Ab1AFSZp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 13:22:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,284,1291622400"; 
-   d="scan'208";a="371045088"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>,
-        Tim Bird <tim.bird@am.sony.com>
-Date: Thu, 6 Jan 2011 10:22:42 -0800
-Subject: RE: [PATCH 00/17] pramfs: persistent and protected RAM filesystem
-Thread-Topic: [PATCH 00/17] pramfs: persistent and protected RAM filesystem
-Thread-Index: Acutw6kiJH0fa9mQR/ae+GLZ66yQswACnT9A
-Message-ID: <987664A83D2D224EAE907B061CE93D530193FC6AA2@orsmsx505.amr.corp.intel.com>
-References: <4D25AEEE.1050401@gmail.com> <1294322613.2016.333.camel@laptop>
- <4D25ED22.3070900@gmail.com> <4D25F4CF.1030009@gmail.com>
-In-Reply-To: <4D25F4CF.1030009@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 6 Jan 2011 13:25:45 -0500
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
+In-Reply-To: <1294337670.22825.199.camel@mulgrave.site>
+References: <20110105200008.GJ8638@n2100.arm.linux.org.uk>
+	 <1294259637.16957.25.camel@mulgrave.site>
+	 <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com>
+	 <20110105210448.GM8638@n2100.arm.linux.org.uk>
+	 <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com>
+	 <1294262208.2952.4.camel@heimdal.trondhjem.org>
+	 <AANLkTi=3Gu-rz=-OdNtUXn4qw60Df6=YePnzvB=s-+Ov@mail.gmail.com>
+	 <1294268808.2952.18.camel@heimdal.trondhjem.org>
+	 <1294270104.16957.73.camel@mulgrave.site>
+	 <1294335614.22825.154.camel@mulgrave.site>
+	 <20110106180530.GI31708@n2100.arm.linux.org.uk>
+	 <1294337670.22825.199.camel@mulgrave.site>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 06 Jan 2011 12:25:41 -0600
+Message-ID: <1294338341.22825.216.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Errata corrige: maybe I used the wrong term, I meant "volatile" instead
-> of "temporary" information, i.e. I'd like to save this info to re-read
-> it later but I don't want to store it in flash, a simple log, run-time
-> information for debug like a flight-recorder or whatever you want.
+On Thu, 2011-01-06 at 12:14 -0600, James Bottomley wrote:
+> On Thu, 2011-01-06 at 18:05 +0000, Russell King - ARM Linux wrote:
+> > What network DMA operations - what if your NIC doesn't do DMA because
+> > it's an SMSC device?
+> 
+> So this is the danger area ... we might be caught by our own flushing
+> tricks.  I can't test this on parisc since all my network drivers use
+> DMA (which automatically coheres the kernel mapping by
+> flush/invalidate).
+> 
+> What should happen is that the kernel mapping pages go through the
+> ->readdir() path.  Any return from this has to be ready to map the pages
+> back to user space, so the kernel alias has to be flushed to make the
+> underlying page up to date.
+> 
+> The exception is pages we haven't yet mapped to userspace.  Here we set
+> the PG_dcache_dirty bit (sparc trick) but don't flush the page, since we
+> expect the addition of a userspace mapping will detect this case and do
+> the flush and clear the bit before the mapping goes live.  I assume
+> you're thinking that because this page is allocated and freed internally
+> to NFS, it never gets a userspace mapping and therefore, we can return
+> from ->readdir() with a dirty kernel cache (and the corresponding flag
+> set)?  I think that is a possible hypothesis in certain cases.
 
-I'm puzzled by the use of "a generic piece of memory" to store "persistent"
-things (Perhaps this is made clear in the 17 parts of the patch? I haven't
-read them yet).  On x86 f/w typically clears all of memory on reset ... so
-you only get persistence if you use kexec to get from the old kernel to
-the new one.
+OK, so thinking about this, it seems that the only danger is actually
+what NFS is doing: reading cache pages via a vmap.  In that case, since
+the requirement is to invalidate the vmap range to prepare for read, we
+could have invalidate_kernel_vmap_range loop over the underlying pages
+and flush them through the kernel alias if the architecture specific
+flag indicates their contents might be dirty.
 
--Tony
+The loop adds expense that is probably largely unnecessary to
+invalidate_kernel_vmap_range() but the alternative is adding to the API
+proliferation with something that only flushes the kernel pages if the
+arch specific flag says they're dirty.
+
+James
+
+
