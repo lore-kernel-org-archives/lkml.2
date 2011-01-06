@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599Ab1AFA2s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:28:48 -0500
-Received: from kroah.org ([198.145.64.141]:35355 "EHLO coco.kroah.org"
+	id S1753893Ab1AFBDq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 20:03:46 -0500
+Received: from kroah.org ([198.145.64.141]:35372 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753460Ab1AFA2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:28:44 -0500
+	id S1751622Ab1AFA2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:28:47 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:22:57 2011
-Message-Id: <20110106002256.930987299@clark.site>
+Message-Id: <20110106002257.196351070@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:21:41 -0800
+Date: Wed, 05 Jan 2011 16:21:44 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Miklos Szeredi <mszeredi@suse.cz>, Tejun Heo <tj@kernel.org>
-Subject: [002/152] fuse: verify ioctl retries
+        Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>
+Subject: [005/152] ALSA: hda - Do not wrongly restrict min_channels based on ELD
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +25,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Anssi Hannula <anssi.hannula@iki.fi>
 
-commit 7572777eef78ebdee1ecb7c258c0ef94d35bad16 upstream.
+commit 4b0dbdb17f846a8887e5f7fbeea2deb0703236bd upstream.
 
-Verify that the total length of the iovec returned in FUSE_IOCTL_RETRY
-doesn't overflow iov_length().
+Commit bbbe33900d1f3c added functionality to restrict PCM parameters
+based on ELD info (derived from EDID data) of the audio sink.
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-CC: Tejun Heo <tj@kernel.org>
+However, it wrongly assumes that the bits 0-2 of the first byte of
+CEA Short Audio Descriptors mean a supported number of channels. In
+reality, they mean the maximum number of channels (as per CEA-861-D
+7.5.2). This means that the channel count can only be used to restrict
+max_channels, not min_channels.
+
+Restricting min_channels causes us to deny opening the device in stereo
+mode if the sink only has SADs that declare larger numbers of channels
+(like Primare SP32 AV Processor does).
+
+Fix that by not restricting min_channels based on ELD information.
+
+Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
+Reported-by: Jean-Yves Avenard <jyavenard@gmail.com>
+Tested-by: Jean-Yves Avenard <jyavenard@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/fuse/file.c |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ sound/pci/hda/hda_eld.c    |    4 ----
+ sound/pci/hda/patch_hdmi.c |    1 -
+ 2 files changed, 5 deletions(-)
 
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -1627,6 +1627,20 @@ static int fuse_ioctl_copy_user(struct p
- 	return 0;
+--- a/sound/pci/hda/hda_eld.c
++++ b/sound/pci/hda/hda_eld.c
+@@ -607,13 +607,10 @@ void hdmi_eld_update_pcm_info(struct hdm
+ 	pcm->rates = 0;
+ 	pcm->formats = 0;
+ 	pcm->maxbps = 0;
+-	pcm->channels_min = -1;
+ 	pcm->channels_max = 0;
+ 	for (i = 0; i < eld->sad_count; i++) {
+ 		struct cea_sad *a = &eld->sad[i];
+ 		pcm->rates |= a->rates;
+-		if (a->channels < pcm->channels_min)
+-			pcm->channels_min = a->channels;
+ 		if (a->channels > pcm->channels_max)
+ 			pcm->channels_max = a->channels;
+ 		if (a->format == AUDIO_CODING_TYPE_LPCM) {
+@@ -641,7 +638,6 @@ void hdmi_eld_update_pcm_info(struct hdm
+ 	/* restrict the parameters by the values the codec provides */
+ 	pcm->rates &= codec_pars->rates;
+ 	pcm->formats &= codec_pars->formats;
+-	pcm->channels_min = max(pcm->channels_min, codec_pars->channels_min);
+ 	pcm->channels_max = min(pcm->channels_max, codec_pars->channels_max);
+ 	pcm->maxbps = min(pcm->maxbps, codec_pars->maxbps);
  }
- 
-+/* Make sure iov_length() won't overflow */
-+static int fuse_verify_ioctl_iov(struct iovec *iov, size_t count)
-+{
-+	size_t n;
-+	u32 max = FUSE_MAX_PAGES_PER_REQ << PAGE_SHIFT;
-+
-+	for (n = 0; n < count; n++) {
-+		if (iov->iov_len > (size_t) max)
-+			return -ENOMEM;
-+		max -= iov->iov_len;
-+	}
-+	return 0;
-+}
-+
- /*
-  * For ioctls, there is no generic way to determine how much memory
-  * needs to be read and/or written.  Furthermore, ioctls are allowed
-@@ -1820,6 +1834,14 @@ long fuse_do_ioctl(struct file *file, un
- 		in_iov = page_address(iov_page);
- 		out_iov = in_iov + in_iovs;
- 
-+		err = fuse_verify_ioctl_iov(in_iov, in_iovs);
-+		if (err)
-+			goto out;
-+
-+		err = fuse_verify_ioctl_iov(out_iov, out_iovs);
-+		if (err)
-+			goto out;
-+
- 		goto retry;
- 	}
- 
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -779,7 +779,6 @@ static int hdmi_pcm_open(struct hda_pcm_
+ 			return -ENODEV;
+ 	} else {
+ 		/* fallback to the codec default */
+-		hinfo->channels_min = codec_pars->channels_min;
+ 		hinfo->channels_max = codec_pars->channels_max;
+ 		hinfo->rates = codec_pars->rates;
+ 		hinfo->formats = codec_pars->formats;
 
 
