@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab1AFA6e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:58:34 -0500
-Received: from kroah.org ([198.145.64.141]:35511 "EHLO coco.kroah.org"
+	id S1753986Ab1AFA3O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:29:14 -0500
+Received: from kroah.org ([198.145.64.141]:35472 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753993Ab1AFA3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:29:15 -0500
+	id S1753955Ab1AFA3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:29:10 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:22:59 2011
-Message-Id: <20110106002259.582310297@clark.site>
+Message-Id: <20110106002259.132070635@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:22:10 -0800
+Date: Wed, 05 Jan 2011 16:22:05 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <error27@gmail.com>, Roland Dreier <rolandd@cisco.com>
-Subject: [031/152] IB/uverbs: Handle large number of entries in poll CQ
+        Uk Kim <w0806.kim@samsung.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [026/152] ASoC: Fix off by one error in WM8994 EQ register bank size
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,163 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <error27@gmail.com>
+From: Uk Kim <w0806.kim@samsung.com>
 
-commit 7182afea8d1afd432a17c18162cc3fd441d0da93 upstream.
+commit 3fcc0afbb9c93f3599ba03273e59915670b6c2c2 upstream.
 
-In ib_uverbs_poll_cq() code there is a potential integer overflow if
-userspace passes in a large cmd.ne.  The calls to kmalloc() would
-allocate smaller buffers than intended, leading to memory corruption.
-There iss also an information leak if resp wasn't all used.
-Unprivileged userspace may call this function, although only if an
-RDMA device that uses this function is present.
-
-Fix this by copying CQ entries one at a time, which avoids the
-allocation entirely, and also by moving this copying into a function
-that makes sure to initialize all memory copied to userspace.
-
-Special thanks to Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-for his help and advice.
-
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-
-[ Monkey around with things a bit to avoid bad code generation by gcc
-  when designated initializers are used.  - Roland ]
-
-Signed-off-by: Roland Dreier <rolandd@cisco.com>
+Signed-off-by: Uk Kim <w0806.kim@samsung.com>
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/infiniband/core/uverbs_cmd.c |  101 +++++++++++++++++++----------------
- 1 file changed, 57 insertions(+), 44 deletions(-)
+ include/linux/mfd/wm8994/pdata.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/infiniband/core/uverbs_cmd.c
-+++ b/drivers/infiniband/core/uverbs_cmd.c
-@@ -891,68 +891,81 @@ out:
- 	return ret ? ret : in_len;
- }
+--- a/include/linux/mfd/wm8994/pdata.h
++++ b/include/linux/mfd/wm8994/pdata.h
+@@ -29,7 +29,7 @@ struct wm8994_ldo_pdata {
+ #define WM8994_CONFIGURE_GPIO 0x8000
  
-+static int copy_wc_to_user(void __user *dest, struct ib_wc *wc)
-+{
-+	struct ib_uverbs_wc tmp;
-+
-+	tmp.wr_id		= wc->wr_id;
-+	tmp.status		= wc->status;
-+	tmp.opcode		= wc->opcode;
-+	tmp.vendor_err		= wc->vendor_err;
-+	tmp.byte_len		= wc->byte_len;
-+	tmp.ex.imm_data		= (__u32 __force) wc->ex.imm_data;
-+	tmp.qp_num		= wc->qp->qp_num;
-+	tmp.src_qp		= wc->src_qp;
-+	tmp.wc_flags		= wc->wc_flags;
-+	tmp.pkey_index		= wc->pkey_index;
-+	tmp.slid		= wc->slid;
-+	tmp.sl			= wc->sl;
-+	tmp.dlid_path_bits	= wc->dlid_path_bits;
-+	tmp.port_num		= wc->port_num;
-+	tmp.reserved		= 0;
-+
-+	if (copy_to_user(dest, &tmp, sizeof tmp))
-+		return -EFAULT;
-+
-+	return 0;
-+}
-+
- ssize_t ib_uverbs_poll_cq(struct ib_uverbs_file *file,
- 			  const char __user *buf, int in_len,
- 			  int out_len)
- {
- 	struct ib_uverbs_poll_cq       cmd;
--	struct ib_uverbs_poll_cq_resp *resp;
-+	struct ib_uverbs_poll_cq_resp  resp;
-+	u8 __user                     *header_ptr;
-+	u8 __user                     *data_ptr;
- 	struct ib_cq                  *cq;
--	struct ib_wc                  *wc;
--	int                            ret = 0;
--	int                            i;
--	int                            rsize;
-+	struct ib_wc                   wc;
-+	int                            ret;
+ #define WM8994_DRC_REGS 5
+-#define WM8994_EQ_REGS  19
++#define WM8994_EQ_REGS  20
  
- 	if (copy_from_user(&cmd, buf, sizeof cmd))
- 		return -EFAULT;
- 
--	wc = kmalloc(cmd.ne * sizeof *wc, GFP_KERNEL);
--	if (!wc)
--		return -ENOMEM;
--
--	rsize = sizeof *resp + cmd.ne * sizeof(struct ib_uverbs_wc);
--	resp = kmalloc(rsize, GFP_KERNEL);
--	if (!resp) {
--		ret = -ENOMEM;
--		goto out_wc;
--	}
--
- 	cq = idr_read_cq(cmd.cq_handle, file->ucontext, 0);
--	if (!cq) {
--		ret = -EINVAL;
--		goto out;
--	}
-+	if (!cq)
-+		return -EINVAL;
- 
--	resp->count = ib_poll_cq(cq, cmd.ne, wc);
--
--	put_cq_read(cq);
-+	/* we copy a struct ib_uverbs_poll_cq_resp to user space */
-+	header_ptr = (void __user *)(unsigned long) cmd.response;
-+	data_ptr = header_ptr + sizeof resp;
-+
-+	memset(&resp, 0, sizeof resp);
-+	while (resp.count < cmd.ne) {
-+		ret = ib_poll_cq(cq, 1, &wc);
-+		if (ret < 0)
-+			goto out_put;
-+		if (!ret)
-+			break;
-+
-+		ret = copy_wc_to_user(data_ptr, &wc);
-+		if (ret)
-+			goto out_put;
- 
--	for (i = 0; i < resp->count; i++) {
--		resp->wc[i].wr_id 	   = wc[i].wr_id;
--		resp->wc[i].status 	   = wc[i].status;
--		resp->wc[i].opcode 	   = wc[i].opcode;
--		resp->wc[i].vendor_err 	   = wc[i].vendor_err;
--		resp->wc[i].byte_len 	   = wc[i].byte_len;
--		resp->wc[i].ex.imm_data    = (__u32 __force) wc[i].ex.imm_data;
--		resp->wc[i].qp_num 	   = wc[i].qp->qp_num;
--		resp->wc[i].src_qp 	   = wc[i].src_qp;
--		resp->wc[i].wc_flags 	   = wc[i].wc_flags;
--		resp->wc[i].pkey_index 	   = wc[i].pkey_index;
--		resp->wc[i].slid 	   = wc[i].slid;
--		resp->wc[i].sl 		   = wc[i].sl;
--		resp->wc[i].dlid_path_bits = wc[i].dlid_path_bits;
--		resp->wc[i].port_num 	   = wc[i].port_num;
-+		data_ptr += sizeof(struct ib_uverbs_wc);
-+		++resp.count;
- 	}
- 
--	if (copy_to_user((void __user *) (unsigned long) cmd.response, resp, rsize))
-+	if (copy_to_user(header_ptr, &resp, sizeof resp)) {
- 		ret = -EFAULT;
-+		goto out_put;
-+	}
- 
--out:
--	kfree(resp);
-+	ret = in_len;
- 
--out_wc:
--	kfree(wc);
--	return ret ? ret : in_len;
-+out_put:
-+	put_cq_read(cq);
-+	return ret;
- }
- 
- ssize_t ib_uverbs_req_notify_cq(struct ib_uverbs_file *file,
+ /**
+  * DRC configurations are specified with a label and a set of register
 
 
