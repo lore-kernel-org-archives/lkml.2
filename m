@@ -1,59 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab1AFPkE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 10:40:04 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:36947 "EHLO ogre.sisk.pl"
+	id S1753465Ab1AFPnd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 10:43:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40987 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753243Ab1AFPkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 10:40:01 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Prasad Joshi <prasadjoshi124@gmail.com>
-Subject: Re: [Bug #20332] [LogFS] [2.6.36-rc7] Kernel BUG at lib/btree.c:465!
-Date: Thu, 6 Jan 2011 16:39:35 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-References: <odW4v9b6arG.A.2bH.uE8GNB@chimera> <LbeBv-BNQpL.A.KT.IG8GNB@chimera> <AANLkTi=2PZ81T4_vV4RiXgxZB3PHzpEfEisEN-cO1jjg@mail.gmail.com>
-In-Reply-To: <AANLkTi=2PZ81T4_vV4RiXgxZB3PHzpEfEisEN-cO1jjg@mail.gmail.com>
+	id S1753243Ab1AFPnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 10:43:31 -0500
+Date: Thu, 6 Jan 2011 16:43:17 +0100
+From: Jan Kara <jack@suse.cz>
+To: Josh Hunt <johunt@akamai.com>
+Cc: Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Resolve 'dereferencing pointer to incomplete type'
+ when enabling EXT2_XATTR_DEBUG
+Message-ID: <20110106154317.GL4641@quack.suse.cz>
+References: <1293486398-25909-1-git-send-email-johunt@akamai.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101061639.35545.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1293486398-25909-1-git-send-email-johunt@akamai.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, January 02, 2011, Prasad Joshi wrote:
-> Hello,
+On Mon 27-12-10 13:46:38, Josh Hunt wrote:
+> When I enable EXT2_XATTR_DEBUG in fs/ext2/xattr.c I get a build error stating
+> the following:
 > 
-> I did not observe this bug with the latest kernel (2.6.37-rc8+).
-
-Thanks, closed.
-
-Rafael
-
-
-> On Wed, Dec 29, 2010 at 11:21 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > This message has been generated automatically as a part of a report
-> > of regressions introduced between 2.6.35 and 2.6.36.
-> >
-> > The following bug entry is on the current list of known regressions
-> > introduced between 2.6.35 and 2.6.36.  Please verify if it still should
-> > be listed and let the tracking team know (either way).
-> >
-> >
-> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=20332
-> > Subject         : [LogFS] [2.6.36-rc7] Kernel BUG at lib/btree.c:465!
-> > Submitter       : Prasad Joshi <prasadjoshi124@gmail.com>
-> > Date            : 2010-10-12 18:56 (79 days old)
-> > Message-ID      : <AANLkTimAbCZNhLQ5nADUiAC+7JpAeJBEmjFwdxyZ-FxO@mail.gmail.com>
-> > References      : http://marc.info/?l=linux-kernel&m=128690910501830&w=2
-> >
-> >
-> >
+>   CC      fs/ext2/xattr.o
+> fs/ext2/xattr.c: In function 'ext2_xattr_cache_insert':
+> fs/ext2/xattr.c:841: error: dereferencing pointer to incomplete type
+> fs/ext2/xattr.c:846: error: dereferencing pointer to incomplete type
+> make[2]: *** [fs/ext2/xattr.o] Error 1
+> make[1]: *** [fs/ext2] Error 2
+> make: *** [fs] Error 2
 > 
-> 
+> These lines reference ext2_xattr_cache->c_entry_count which is defined
+> in struct mb_cache. struct mb_cache is currently only defined in fs/mbcache.c.
+> Moving struct mb_cache definition to include/linux/mbcache.h to resolve the
+> issue.
+  Thanks. I've applied the patch.
 
+								Honza
+
+> 
+> Signed-off-by: Josh Hunt <johunt@akamai.com>
+> ---
+>  fs/mbcache.c            |   12 ------------
+>  include/linux/mbcache.h |   11 +++++++++++
+>  2 files changed, 11 insertions(+), 12 deletions(-)
+> 
+> diff --git a/fs/mbcache.c b/fs/mbcache.c
+> index 9344474..a25444a 100644
+> --- a/fs/mbcache.c
+> +++ b/fs/mbcache.c
+> @@ -76,18 +76,6 @@ EXPORT_SYMBOL(mb_cache_entry_find_first);
+>  EXPORT_SYMBOL(mb_cache_entry_find_next);
+>  #endif
+>  
+> -struct mb_cache {
+> -	struct list_head		c_cache_list;
+> -	const char			*c_name;
+> -	atomic_t			c_entry_count;
+> -	int				c_max_entries;
+> -	int				c_bucket_bits;
+> -	struct kmem_cache		*c_entry_cache;
+> -	struct list_head		*c_block_hash;
+> -	struct list_head		*c_index_hash;
+> -};
+> -
+> -
+>  /*
+>   * Global data: list of all mbcache's, lru list, and a spinlock for
+>   * accessing cache data structures on SMP machines. The lru list is
+> diff --git a/include/linux/mbcache.h b/include/linux/mbcache.h
+> index 54cbbac..5525d37 100644
+> --- a/include/linux/mbcache.h
+> +++ b/include/linux/mbcache.h
+> @@ -18,6 +18,17 @@ struct mb_cache_entry {
+>  	} e_index;
+>  };
+>  
+> +struct mb_cache {
+> +	struct list_head		c_cache_list;
+> +	const char			*c_name;
+> +	atomic_t			c_entry_count;
+> +	int				c_max_entries;
+> +	int				c_bucket_bits;
+> +	struct kmem_cache		*c_entry_cache;
+> +	struct list_head		*c_block_hash;
+> +	struct list_head		*c_index_hash;
+> +};
+> +
+>  /* Functions on caches */
+>  
+>  struct mb_cache *mb_cache_create(const char *, int);
+> -- 
+> 1.7.0.4
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
