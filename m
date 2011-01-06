@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab1AFWXt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 17:23:49 -0500
-Received: from kroah.org ([198.145.64.141]:55656 "EHLO coco.kroah.org"
+	id S1754827Ab1AFW2x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 17:28:53 -0500
+Received: from kroah.org ([198.145.64.141]:55666 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754520Ab1AFWXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 17:23:44 -0500
+	id S1754535Ab1AFWXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 17:23:49 -0500
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 15/36] serial: ifx6x60: Fix missing include for msleep
-Date: Thu,  6 Jan 2011 14:23:04 -0800
-Message-Id: <1294352605-31906-15-git-send-email-gregkh@suse.de>
+Cc: Vasiliy Kulikov <segoon@openwall.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 19/36] serial: ifx6x60: fix memory leak
+Date: Thu,  6 Jan 2011 14:23:08 -0800
+Message-Id: <1294352605-31906-19-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110106215404.GA30624@kroah.com>
 References: <20110106215404.GA30624@kroah.com>
@@ -19,27 +19,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+From: Vasiliy Kulikov <segoon@openwall.com>
 
-Noted by Stephen Rothwell
+If tty_register_driver() failed then tty_driver is still alive.
+Free it with put_tty_driver().
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
  drivers/serial/ifx6x60.c |    1 +
  1 files changed, 1 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/serial/ifx6x60.c b/drivers/serial/ifx6x60.c
-index b9b7e06..803264a 100644
+index 3f8d5ee..ab93763 100644
 --- a/drivers/serial/ifx6x60.c
 +++ b/drivers/serial/ifx6x60.c
-@@ -60,6 +60,7 @@
- #include <linux/pm.h>
- #include <linux/pm_runtime.h>
- #include <linux/spi/ifx_modem.h>
-+#include <linux/delay.h>
- 
- #include "ifx6x60.h"
+@@ -1384,6 +1384,7 @@ static int __init ifx_spi_init(void)
+ 	if (result) {
+ 		pr_err("%s: tty_register_driver failed(%d)",
+ 			DRVNAME, result);
++		put_tty_driver(tty_drv);
+ 		return result;
+ 	}
  
 -- 
 1.7.3.2
